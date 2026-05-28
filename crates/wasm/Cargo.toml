@@ -97,6 +97,7 @@ web-sys = { workspace = true, features = ["AbortController", "AbortSignal", "Eve
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test.workspace = true
+cow-sdk-transport-policy = { path = "../transport-policy", version = "0.1.0" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt-multi-thread", "test-util"] }

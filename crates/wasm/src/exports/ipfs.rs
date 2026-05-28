@@ -1,15 +1,12 @@
-use std::{
-    sync::Arc,
-    time::{Duration, UNIX_EPOCH},
-};
+use std::sync::Arc;
 
 use async_trait::async_trait;
 use cow_sdk_app_data::{AppDataError, IpfsFetchTransport};
-use cow_sdk_core::{
-    CancellationToken, HttpTransport, Redacted, TransportError, TransportErrorClass,
-};
+use cow_sdk_core::{HttpTransport, Redacted, TransportError, TransportErrorClass};
 use cow_sdk_pure_helpers as pure;
-use cow_sdk_transport_policy::{NetworkErrorKind, TransportPolicy, sleep};
+use cow_sdk_transport_policy::{
+    AttemptOutcome as RetryOutcome, LimiterKey, RetrySignal, TransportPolicy, run_with_retry,
+};
 use wasm_bindgen::prelude::*;
 
 use crate::exports::{
@@ -50,37 +47,57 @@ impl IpfsHttpAdapter {
 #[async_trait(?Send)]
 impl IpfsFetchTransport for IpfsHttpAdapter {
     async fn get(&self, uri: &str) -> Result<String, AppDataError> {
-        let retry = self.transport_policy.retry();
-        let rate_limiter = self.transport_policy.rate_limit();
-
-        for attempt_index in 1..=retry.max_attempts() {
-            let cancellation_token = CancellationToken::new();
-            rate_limiter
-                .acquire_global(&cancellation_token)
-                .await
-                .map_err(|_| AppDataError::Cancelled)?;
-
-            match self
-                .inner
-                .get(uri, &[], self.transport_policy.timeout())
-                .await
-            {
-                Ok(body) => return Ok(body),
-                Err(error) => {
-                    let Some(delay) =
-                        retry_delay_for_error(&self.transport_policy, &error, attempt_index)
-                    else {
-                        return Err(transport_to_app_data_error(error));
-                    };
-                    sleep(delay).await;
+        // The shared driver in `cow-sdk-transport-policy` owns the retry loop,
+        // rate-limit acquisition, backoff, and `Retry-After` clock — including
+        // the wasm-safe wall clock that keeps this browser path from aborting
+        // on a retryable gateway status. The closure performs one fetch and
+        // classifies the result into the unified outcome space.
+        let timeout = self.transport_policy.timeout();
+        run_with_retry::<String, AppDataError, _, _>(
+            self.transport_policy.retry(),
+            self.transport_policy.rate_limit(),
+            LimiterKey::Global,
+            |_attempt_index| async move {
+                match self.inner.get(uri, &[], timeout).await {
+                    Ok(body) => RetryOutcome::Success(body),
+                    Err(TransportError::HttpStatus {
+                        status,
+                        headers,
+                        body,
+                    }) => {
+                        let header_pairs = headers
+                            .iter()
+                            .map(|(name, value)| (name.clone(), value.as_inner().clone()))
+                            .collect::<Vec<_>>();
+                        RetryOutcome::Failure {
+                            error: transport_to_app_data_error(TransportError::HttpStatus {
+                                status,
+                                headers,
+                                body,
+                            }),
+                            signal: RetrySignal::HttpStatus {
+                                status,
+                                headers: header_pairs,
+                            },
+                        }
+                    }
+                    Err(error) => {
+                        // Preserve the prior IPFS contract: only categorical
+                        // transport failures are retried; configuration and any
+                        // future variant stay terminal (non-retryable class).
+                        let class = match &error {
+                            TransportError::Transport { class, .. } => *class,
+                            _ => TransportErrorClass::Builder,
+                        };
+                        RetryOutcome::Failure {
+                            error: transport_to_app_data_error(error),
+                            signal: RetrySignal::Transport { class },
+                        }
+                    }
                 }
-            }
-        }
-
-        Err(AppDataError::Transport {
-            class: TransportErrorClass::Other,
-            detail: Redacted::new("IPFS request attempts exhausted".to_owned()),
-        })
+            },
+        )
+        .await
     }
 }
 
@@ -224,34 +241,5 @@ fn transport_to_app_data_error(error: TransportError) -> AppDataError {
             class: TransportErrorClass::Other,
             detail: Redacted::new(error.to_string()),
         },
-    }
-}
-
-fn retry_delay_for_error(
-    transport_policy: &TransportPolicy,
-    error: &TransportError,
-    attempt_index: usize,
-) -> Option<Duration> {
-    let retry = transport_policy.retry();
-    if attempt_index >= retry.max_attempts() {
-        return None;
-    }
-
-    match error {
-        TransportError::HttpStatus {
-            status, headers, ..
-        } if retry.should_retry_status(*status) => {
-            let headers = headers
-                .iter()
-                .map(|(name, value)| (name.clone(), value.as_inner().clone()))
-                .collect::<Vec<_>>();
-            Some(retry.delay_for_status(attempt_index, *status, &headers, UNIX_EPOCH))
-        }
-        TransportError::Transport { class, .. }
-            if retry.should_retry_network(NetworkErrorKind::from_transport_error_class(*class)) =>
-        {
-            Some(retry.delay_for_attempt(attempt_index))
-        }
-        _ => None,
     }
 }

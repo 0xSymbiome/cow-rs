@@ -1,9 +1,9 @@
 # Transport Policy Coverage Audit
 
 Status: Current
-Last reviewed: 2026-05-17
-Owning surface: `cow-sdk-transport-policy` public retry, jitter, rate-limit, classification, and `Retry-After` parser surfaces, including the HTTP-date delegation to `httpdate::parse_http_date` on `retry_after.rs` and the bounded-jitter contract on `jitter.rs`
-Refresh trigger: Changes to any public function on `cow-sdk-transport-policy`; changes to `RetryPolicy`, `JitterStrategy`, `RequestRateLimiter`, `RetryAfter`, `NetworkErrorKind`, or `ErrorClassifier`; changes to the `Retry-After` HTTP-date delegation or its expected accept/reject contract; changes to the workspace `Retry-After` cooldown honor rule documented in `http-transport-contract-audit.md`
+Last reviewed: 2026-05-28
+Owning surface: `cow-sdk-transport-policy` public retry, jitter, rate-limit, classification, and `Retry-After` parser surfaces, the shared `run_with_retry` driver and its `AttemptOutcome`, `RetrySignal`, and `LimiterKey` types, and the target-neutral `system_now` wall clock, including the HTTP-date delegation to `httpdate::parse_http_date` on `retry_after.rs` and the bounded-jitter contract on `jitter.rs`
+Refresh trigger: Changes to any public function on `cow-sdk-transport-policy`; changes to `RetryPolicy`, `JitterStrategy`, `RequestRateLimiter`, `RetryAfter`, `NetworkErrorKind`, or `ErrorClassifier`; changes to `run_with_retry`, `AttemptOutcome`, `RetrySignal`, `LimiterKey`, or `system_now`; changes to the `Retry-After` HTTP-date delegation or its expected accept/reject contract; changes to the workspace `Retry-After` cooldown honor rule documented in `http-transport-contract-audit.md`
 Related docs:
 - [ADR 0041](../adr/0041-transport-policy-l3-layering.md)
 - [ADR 0033](../adr/0033-minimum-viable-panic-surface.md)
@@ -38,11 +38,21 @@ This audit covers:
   every `TransportErrorClass` variant including the wildcard arm
 - the optional `reqwest-classifier` feature's dispatch across `Builder`,
   `Request`, `Connect`, `Timeout`, and `HttpStatus` branches
+- the shared `run_with_retry` driver: the attempt loop, rate-limit
+  acquisition, the success / retryable-status / retryable-transport /
+  non-retryable / exhaustion outcome decisions, the `Retry-After`-aware
+  backoff selection, and the `attempt_index`-keyed retry and exhaustion
+  telemetry, exercised across the documented scenario matrix
+- the target-neutral `system_now` wall clock that feeds the `Retry-After`
+  HTTP-date evaluation on both native and `wasm32` targets
 
-It does not cover the orderbook retry orchestrator (see
-`http-transport-contract-audit.md` for the `Retry-After` cooldown honor rule),
-the transport adapters (`ReqwestTransport`, `FetchTransport`) which are
-covered separately, or the wasm-target build path.
+It does not cover the per-client attempt closures (request dispatch, success
+decoding, and typed-error construction stay owned by `cow-sdk-orderbook`,
+`cow-sdk-subgraph`, and `cow-sdk-wasm`; see `http-transport-contract-audit.md`
+for the cooldown honor rule and the client-side retry telemetry contract), the
+transport adapters (`ReqwestTransport`, `FetchTransport`) which are covered
+separately, or the in-browser execution of the wasm regression tests (run by
+the wasm workflow).
 
 ## Outcome Summary
 
@@ -53,6 +63,8 @@ covered separately, or the wasm-target build path.
 | Retry decision points | `should_retry_status` matches the public `RETRYABLE_STATUSES` list; `should_retry_network` retries only `Timeout`, `Connect`, `Request`, and `Other`; backoff clamps at `max_delay` once the exponent saturates; the case-insensitive `Retry-After` helper honours `429` and `503` and ignores other statuses; `max_attempts(0)` clamps to `1` | Conforms |
 | Rate-limit scope | `PerHost` scope keys by `Url::host_str`; `Global` scope uses the constant `"global"` key; `unlimited()` never delays or errors; `acquire_global` shares one bucket; pre-cancelled tokens short-circuit before sleeping the limiter interval | Conforms |
 | Error classifier | `NetworkErrorKind::from_transport_error_class` is total across every `TransportErrorClass` variant including `Redirect` and `Upgrade` through the wildcard arm; the optional reqwest classifier maps real `reqwest::Error` shapes into the same partition | Conforms |
+| Retry driver | `run_with_retry` returns on the first `AttemptOutcome::Success`, backs off and retries a retryable status or transport signal until `max_attempts`, returns the closure's terminal error on a non-retryable signal without re-dispatching, and surfaces the last terminal error on exhaustion; the recorded backoff sequence matches the policy schedule | Conforms |
+| Wall clock | `system_now` returns a real wall-clock `SystemTime` on native and `wasm32` targets without reading the standard `SystemTime::now`, so an HTTP-date `Retry-After` evaluates against the current time on both targets and the retry path never aborts a browser runtime | Conforms |
 | Panic-free posture | The `Retry-After` HTTP-date path delegates to `httpdate::parse_http_date`, an upstream maintained crate that surfaces malformed input as a typed `Err` rather than a panic, so an attacker-controlled `Retry-After` header value cannot panic the retry loop; documented panic-allowlist entries on `jitter.rs::bounded_offset` and `transport-policy/src/policy.rs` static-UA constructors stay justified | Conforms |
 
 ## Current Contract
@@ -131,6 +143,45 @@ maps real `reqwest::Error` shapes into the same partition through the
 documented `is_timeout`/`is_connect`/`is_decode`/`is_body`/`status`/
 `is_request`/`is_builder` dispatch ladder.
 
+### Retry Driver
+
+`run_with_retry(policy, rate_limiter, limiter_key, attempt)` is the shared
+retry loop consumed by the orderbook, subgraph, and IPFS clients. It is
+generic over the success payload `T` and the caller's error type `E`; the
+`attempt` closure runs once per 1-based attempt and returns an
+`AttemptOutcome<T, E>` that is either `Success(value)` or a
+`Failure { error, signal }`. For each attempt the driver acquires a
+rate-limit token from the bucket named by `LimiterKey` (`Global` or
+`PerUrl`), runs the closure, and then:
+
+- returns `Ok(value)` on `Success`;
+- on a `RetrySignal::HttpStatus { status, headers }` that
+  `should_retry_status` accepts and while `attempt_index < max_attempts`,
+  sleeps for `delay_for_status` and retries;
+- on a `RetrySignal::Transport { class }` that `should_retry_network`
+  accepts and while `attempt_index < max_attempts`, sleeps for
+  `delay_for_attempt` and retries;
+- otherwise returns the closure's terminal `error` — a non-retryable signal
+  returns immediately without re-dispatching, and a retryable signal returns
+  the last terminal error once `max_attempts` is reached.
+
+`run_with_retry` imposes no `Send` bound on the attempt future, so the same
+driver serves native (`Send`) and browser (`?Send`) transports. Cancellation
+is external: the driver holds no caller token and relies on the call-site
+`Cancellable::cancel_with` wrapper to drop the future — and any in-flight
+acquire or backoff sleep — when a token fires.
+
+### Wall Clock
+
+`system_now()` returns the current wall-clock `std::time::SystemTime`. On
+native targets it delegates to `std::time::SystemTime::now()`. On `wasm32`
+targets, where the standard clock is unavailable, it reads the browser wall
+clock through `web_time::SystemTime` and re-anchors the elapsed duration onto
+a `std::time::SystemTime` starting at `UNIX_EPOCH`, saturating at the epoch
+for a clock reported earlier. The driver passes `system_now()` to
+`delay_for_status`, so an HTTP-date `Retry-After` evaluates against the
+current time on both targets without the standard clock's wasm abort.
+
 ## Evidence
 
 Primary implementation points:
@@ -142,10 +193,14 @@ Primary implementation points:
 - `crates/transport-policy/src/classify.rs`
 - `crates/transport-policy/src/policy.rs`
 - `crates/transport-policy/src/status.rs`
+- `crates/transport-policy/src/runner.rs`
 - `crates/transport-policy/src/time.rs`
 
 Primary regression coverage:
 
+- `crates/transport-policy/src/runner.rs` (`tests::immediate_success_does_not_sleep`, `tests::retryable_status_then_success_backs_off_once`, `tests::delta_retry_after_overrides_backoff_floor`, `tests::http_date_retry_after_uses_the_injected_clock`, `tests::persistent_retryable_status_exhausts_attempts`, `tests::persistent_transport_error_exhausts_attempts`, `tests::non_retryable_status_returns_immediately`, `tests::non_retryable_transport_returns_without_redispatch`, `tests::mixed_transport_then_status_then_success`, `tests::no_retry_policy_makes_one_attempt`)
+- `crates/wasm/tests/wasm_retry_runner_contract.rs::system_now_returns_a_wall_clock_value_without_panicking`
+- `crates/wasm/tests/wasm_retry_runner_contract.rs::retryable_status_drives_backoff_without_panicking`
 - `crates/transport-policy/tests/retry_after_contract.rs`
 - `crates/transport-policy/tests/retry_after_fixture_contract.rs`
 - `parity/fixtures/retry_after/imf_fixdate_accept.json`

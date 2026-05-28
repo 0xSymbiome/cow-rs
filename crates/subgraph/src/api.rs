@@ -1,12 +1,15 @@
 //! Typed subgraph client configuration and query execution.
 
-use std::{fmt, sync::Arc, time::SystemTime};
+use std::{fmt, sync::Arc};
 
 use cow_sdk_core::{
     HttpClientPolicy, HttpTransport, Redacted, RedactedOptionalUrlMap, SupportedChainId,
     TransportError, TransportErrorClass, redact_response_body,
 };
-use cow_sdk_transport_policy::{NetworkErrorKind, RequestRateLimiter, TransportPolicy, sleep};
+use cow_sdk_transport_policy::{
+    AttemptOutcome as RetryOutcome, LimiterKey, RequestRateLimiter, RetrySignal, TransportPolicy,
+    run_with_retry,
+};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::{Value, json};
 
@@ -490,6 +493,7 @@ impl SubgraphApi {
         body: &str,
     ) -> Result<String, SubgraphError> {
         let headers = [("content-type".to_owned(), "application/json".to_owned())];
+        let headers = &headers;
         let timeout = self.transport_policy.timeout();
         let limiter_url = url::Url::parse(api).map_err(|error| {
             transport_error(
@@ -500,70 +504,52 @@ impl SubgraphApi {
                 format!("could not parse subgraph URL for rate limiting: {error}"),
             )
         })?;
-        let retry = self.transport_policy.retry();
-        let mut last_transport_error = None;
 
-        for attempt_index in 1..=retry.max_attempts() {
-            let cancellation_token = cow_sdk_core::CancellationToken::new();
-            self.rate_limiter
-                .acquire(&limiter_url, &cancellation_token)
-                .await?;
-
-            match self.transport.post(api, body, &headers, timeout).await {
-                Ok(body) => return Ok(body),
-                Err(TransportError::HttpStatus {
-                    status,
-                    headers,
-                    body,
-                }) => {
-                    let header_pairs = headers
-                        .into_iter()
-                        .map(|(name, value)| (name, value.into_inner()))
-                        .collect::<Vec<_>>();
-                    if retry.should_retry_status(status) && attempt_index < retry.max_attempts() {
-                        let delay = retry.delay_for_status(
-                            attempt_index,
-                            status,
-                            &header_pairs,
-                            SystemTime::now(),
-                        );
-                        sleep(delay).await;
-                        continue;
-                    }
-                    return Err(http_status_error(
-                        public_api,
-                        chain_id,
-                        request,
+        // The shared driver in `cow-sdk-transport-policy` owns the retry loop,
+        // rate-limit acquisition, backoff, `Retry-After` clock, and retry
+        // telemetry; the closure performs one GraphQL POST and classifies the
+        // result, building the typed `SubgraphError` for the terminal path.
+        run_with_retry::<String, SubgraphError, _, _>(
+            self.transport_policy.retry(),
+            &self.rate_limiter,
+            LimiterKey::PerUrl(&limiter_url),
+            |_attempt_index| async move {
+                match self.transport.post(api, body, headers, timeout).await {
+                    Ok(body) => RetryOutcome::Success(body),
+                    Err(TransportError::HttpStatus {
                         status,
-                        body.as_inner(),
-                    ));
-                }
-                Err(error) => {
-                    let (class, details) = transport_failure_parts(error);
-                    if retry
-                        .should_retry_network(NetworkErrorKind::from_transport_error_class(class))
-                        && attempt_index < retry.max_attempts()
-                    {
-                        last_transport_error = Some((class, details));
-                        sleep(retry.delay_for_attempt(attempt_index)).await;
-                        continue;
+                        headers,
+                        body,
+                    }) => {
+                        let header_pairs = headers
+                            .into_iter()
+                            .map(|(name, value)| (name, value.into_inner()))
+                            .collect::<Vec<_>>();
+                        RetryOutcome::Failure {
+                            error: http_status_error(
+                                public_api,
+                                chain_id,
+                                request,
+                                status,
+                                body.as_inner(),
+                            ),
+                            signal: RetrySignal::HttpStatus {
+                                status,
+                                headers: header_pairs,
+                            },
+                        }
                     }
-                    return Err(transport_error(
-                        public_api, chain_id, request, class, details,
-                    ));
+                    Err(error) => {
+                        let (class, details) = transport_failure_parts(error);
+                        RetryOutcome::Failure {
+                            error: transport_error(public_api, chain_id, request, class, details),
+                            signal: RetrySignal::Transport { class },
+                        }
+                    }
                 }
-            }
-        }
-
-        let (class, details) = last_transport_error.unwrap_or_else(|| {
-            (
-                TransportErrorClass::Other,
-                "query attempts exhausted".to_owned(),
-            )
-        });
-        Err(transport_error(
-            public_api, chain_id, request, class, details,
-        ))
+            },
+        )
+        .await
     }
 
     fn config_with_override(&self, config_override: &SubgraphConfigOverride) -> SubgraphConfig {

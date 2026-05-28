@@ -40,6 +40,21 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- The orderbook, subgraph, and IPFS clients run every HTTP attempt through
+  one shared retry driver, `cow_sdk_transport_policy::run_with_retry`, rather
+  than three hand-rolled retry loops. The driver owns the attempt loop,
+  rate-limit acquisition, exponential backoff, `Retry-After` honoring, and
+  retry telemetry, and is generic over the success payload and the caller's
+  error type through the `AttemptOutcome`, `RetrySignal`, and `LimiterKey`
+  surfaces. A non-retryable transport class returns immediately instead of
+  re-dispatching the request until the attempt limit is exhausted.
+  Retry-delay computation reads a target-neutral wall clock,
+  `cow_sdk_transport_policy::system_now`, so an HTTP-date `Retry-After`
+  evaluates against the current time on both native and `wasm32` targets and
+  the retry path no longer aborts a browser runtime through the standard
+  `SystemTime::now`. See
+  [ADR 0041](docs/adr/0041-transport-policy-l3-layering.md).
+
 - The EIP-1271 verification cache is now a positive-only set keyed on the
   full `(verifier, digest, signature_hash)` probe identity. The
   `cow_sdk_contracts::Eip1271VerificationCache` trait replaces its

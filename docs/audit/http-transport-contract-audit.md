@@ -1,9 +1,9 @@
 # HTTP Transport Contract Audit
 
 Status: Current
-Last reviewed: 2026-05-14
+Last reviewed: 2026-05-28
 Owning surface: `cow-sdk-core::HttpTransport` trait and the `ReqwestTransport` (native) and `FetchTransport` (browser) default adapters, including the sole-dispatch contract that binds every live REST or GraphQL call from `cow-sdk-orderbook` and `cow-sdk-subgraph` to the injected transport
-Refresh trigger: Trait signature, method set, or dyn-compatibility posture changes on `HttpTransport`; changes to `TransportError` or `TransportErrorClass`; changes to the `TransportError::HttpStatus` shape; changes to the URL-stripping contract on either default adapter; any change to the orderbook retry-orchestrator backoff schedule, jitter policy, retry tracing events, `Retry-After` honor contract, or the `Retry-After` IMF-fixdate civil-day arithmetic; a new shipped adapter crate that adopts the trait; any change that lets a live REST or GraphQL call from `OrderBookApi` or `SubgraphApi` bypass `self.transport`
+Refresh trigger: Trait signature, method set, or dyn-compatibility posture changes on `HttpTransport`; changes to `TransportError` or `TransportErrorClass`; changes to the `TransportError::HttpStatus` shape; changes to the URL-stripping contract on either default adapter; any change to the shared `run_with_retry` driver's backoff schedule, jitter policy, retry tracing events, `Retry-After` honor contract, the `Retry-After` IMF-fixdate civil-day arithmetic, or the `system_now` wall clock; a new shipped adapter crate that adopts the trait; any change that lets a live REST or GraphQL call from `OrderBookApi` or `SubgraphApi` bypass `self.transport`
 Related docs:
 - [ADR 0013](../adr/0013-http-transport-injection-and-typestate-builders.md)
 - [ADR 0019](../adr/0019-http-transport-sole-dispatch.md)
@@ -23,16 +23,18 @@ This audit covers:
   `cow-sdk-transport-wasm`
 - the typed `TransportError` enum and the `TransportErrorClass` partition
   every adapter is expected to populate
-- the orderbook retry orchestrator's use of transport-surfaced
-  `Retry-After` headers on `429` and `503` responses, its local jittered
-  backoff policy, and its retry tracing event shape
+- the shared `run_with_retry` driver's use of transport-surfaced
+  `Retry-After` headers on `429` and `503` responses, its jittered backoff
+  policy, its browser-safe wall clock, and its retry tracing event shape, as
+  consumed by the orderbook, subgraph, and IPFS clients
 - the sole-dispatch invariant that every live REST or GraphQL call from
   `OrderBookApi` or `SubgraphApi` flows through `self.transport` rather
   than a parallel HTTP client held inside those structs
 
-It does not cover user-agent layering, retry heuristics outside the
-orderbook request executor, or the
-`Provider` chain-RPC seam (a separate runtime contract).
+It does not cover user-agent layering, the retry policy primitives and the
+`run_with_retry` outcome contract themselves (see
+`transport-policy-coverage-audit.md`), or the `Provider` chain-RPC seam (a
+separate runtime contract).
 
 ## Outcome Summary
 
@@ -44,8 +46,8 @@ orderbook request executor, or the
 | Canonical HTTP and URL types | Orderbook and subgraph request code reaches `http` and `url` directly where the native client previously re-exported those types | Conforms |
 | URL redaction | Both defaults strip URLs before wrapping so credential-bearing query strings never surface through `Debug` or `Display` | Conforms |
 | Adapter parity | The native and browser adapters report the same `TransportErrorClass` for the same failure class on matching fixtures, and both surface non-2xx responses through `TransportError::HttpStatus` with the numeric status code preserved | Conforms |
-| Retry cooldowns | The orderbook retry orchestrator honors `Retry-After` on `429` and `503`, waiting for the larger of the jittered local backoff and the server cooldown | Conforms |
-| Retry observability | Retry events expose attempt index, backoff duration, and either response status or transport error class; request spans record attempts and response status | Conforms |
+| Retry cooldowns | The shared `run_with_retry` driver honors `Retry-After` on `429` and `503` for the orderbook, subgraph, and IPFS clients, waiting for the larger of the jittered local backoff and the server cooldown, evaluated against the browser-safe `system_now` wall clock | Conforms |
+| Retry observability | The shared driver emits retry events that expose attempt index, backoff duration, and either response status or transport error class; the orderbook request methods record attempts and response status on the current span | Conforms |
 | Sole-dispatch invariant | `OrderBookApi` and `SubgraphApi` hold only an `Arc<dyn HttpTransport + Send + Sync>` as their HTTP surface; every live REST and GraphQL call dispatches through that handle, and injected transports observe every request | Conforms |
 
 ## Current Contract
@@ -114,28 +116,32 @@ there is empty by design.
 
 ### Retry Cooldowns
 
-The shared transport policy reads `Retry-After` from
-`TransportError::HttpStatus.headers` on `429 Too Many Requests` and
-`503 Service Unavailable` responses. The parser accepts both
-delta-seconds and HTTP-date forms, parse failures fall back to the
-local exponential backoff schedule, and successful parses hold the
-retry loop for the larger of the jittered local backoff and the
-server-supplied cooldown. The HTTP-date branch performs its civil-day
-arithmetic in `i64` so an attacker-controlled year value cannot panic
-the retry loop through integer overflow; out-of-range timestamps fall
-back to local backoff through the documented `checked_mul` guard.
-`RetryPolicy::with_jitter` accepts an explicit `JitterStrategy`;
-`JitterStrategy::none` keeps deterministic wait schedules available
-for tests and controlled callers. The retry loop continues to honor
-the existing `max_attempts` limit and per-attempt timeout contract
-for both orderbook and subgraph clients.
+The shared `cow-sdk-transport-policy::run_with_retry` driver is the single
+retry loop for the orderbook, subgraph, and IPFS clients. It reads
+`Retry-After` from `TransportError::HttpStatus.headers` on
+`429 Too Many Requests` and `503 Service Unavailable` responses. The parser
+accepts both delta-seconds and HTTP-date forms, parse failures fall back to
+the local exponential backoff schedule, and successful parses hold the retry
+loop for the larger of the jittered local backoff and the server-supplied
+cooldown. The HTTP-date branch performs its civil-day arithmetic in `i64` so
+an attacker-controlled year value cannot panic the retry loop through integer
+overflow; out-of-range timestamps fall back to local backoff through the
+documented `checked_mul` guard. The "now" reference is the target-neutral
+`system_now` wall clock, so an HTTP-date `Retry-After` evaluates against the
+current time on both native and `wasm32` targets without the standard clock's
+wasm abort. `RetryPolicy::with_jitter` accepts an explicit `JitterStrategy`;
+`JitterStrategy::none` keeps deterministic wait schedules available for tests
+and controlled callers. The driver honors the `max_attempts` limit, returns
+immediately on a non-retryable transport class instead of re-dispatching, and
+each client's attempt closure keeps applying its per-call timeout contract.
 
-When the `tracing` feature is enabled, every retry decision emits a
-`debug` event with `attempt_index`, `backoff_ms`, and either `status`
-or `transport_error_class`. The final exhausted retry emits the same
-field shape at `warn` level. The request executor records `attempts`
-and `status` on the current request span, and the quote/order methods
-populate the documented `quote_id` field where the value is available.
+When the `tracing` feature is enabled, the shared driver emits a `debug`
+event for every retry decision with `attempt_index`, `backoff_ms`, and
+either `status` or `transport_error_class`; an exhausted retryable signal
+emits the same field shape at `warn` level. The orderbook request methods
+additionally record `attempts` and `status` on the current request span, and
+the quote/order methods populate the documented `quote_id` field where the
+value is available.
 
 ### Canonical Type Imports
 
@@ -151,14 +157,15 @@ orderbook, subgraph, and trading leaves.
 `Arc<dyn HttpTransport + Send + Sync>` as their HTTP surface. Every
 public method dispatches through `self.transport.<get|post|put|delete>(...)`;
 there is no parallel `reqwest::Client` field on either struct. The
-orderbook's request pipeline preserves its rate-limit gate, retry and
-backoff wrapper, and typed-error classification around the transport
-call, replacing only the single network-call line that previously
-invoked `reqwest::RequestBuilder::send`. The subgraph's
-`run_query_with_config` serializes the GraphQL envelope into a string,
-builds the `Content-Type: application/json` header, and calls
-`self.transport.post(&api, &body, &headers, self.client_policy().timeout()).await`,
-mapping `TransportError::HttpStatus` straight into
+orderbook's request pipeline runs the transport call inside the shared
+`run_with_retry` driver, which provides the rate-limit gate, backoff, and
+`Retry-After` cooldown, while the orderbook closure keeps the typed-error
+classification around the single network-call line that previously invoked
+`reqwest::RequestBuilder::send`. The subgraph's `run_query_with_config`
+serializes the GraphQL envelope into a string, builds the
+`Content-Type: application/json` header, and dispatches
+`self.transport.post(api, body, headers, timeout).await` through the same
+shared driver, mapping `TransportError::HttpStatus` straight into
 `SubgraphError::HttpStatus`. Injected transports — including the
 browser-native `FetchTransport` — therefore observe every live request.
 
@@ -172,11 +179,14 @@ Primary implementation points:
 - `crates/core/src/transport/reqwest.rs`
 - `crates/transport-wasm/src/fetch.rs`
 - `crates/transport-wasm/src/lib.rs`
+- `crates/transport-policy/src/runner.rs`
+- `crates/transport-policy/src/time.rs`
 - `crates/orderbook/src/api.rs`
 - `crates/orderbook/src/request.rs`
 - `crates/orderbook/src/builder.rs`
 - `crates/subgraph/src/api.rs`
 - `crates/subgraph/src/builder.rs`
+- `crates/wasm/src/exports/ipfs.rs`
 
 Primary regression coverage:
 
@@ -185,7 +195,8 @@ Primary regression coverage:
 - `crates/transport-policy/tests/retry_after_contract.rs`
 - `crates/transport-policy/tests/classify_contract.rs::network_error_kind_mapping_round_trip_is_total`
 - `crates/transport-policy/tests/policy_contract.rs::prop_tpp_031_retry_after_helper_is_case_insensitive`
-- `crates/orderbook/src/request.rs` (`tests::parse_retry_after_covers_documented_boundary_matrix`)
+- `crates/transport-policy/src/runner.rs` (`tests::non_retryable_transport_returns_without_redispatch`, `tests::http_date_retry_after_uses_the_injected_clock`, `tests::persistent_transport_error_exhausts_attempts`)
+- `crates/wasm/tests/wasm_retry_runner_contract.rs::retryable_status_drives_backoff_without_panicking`
 - `crates/orderbook/tests/request_contract.rs::seeded_jitter_decorrelates_parallel_retry_waits`
 - `crates/orderbook/tests/request_contract.rs::tracing_contract::execute_with_emits_retry_events_with_status_and_transport_error_fields`
 - `crates/orderbook/tests/request_contract.rs::tracing_contract::send_order_span_records_quote_id_attempts_and_status`

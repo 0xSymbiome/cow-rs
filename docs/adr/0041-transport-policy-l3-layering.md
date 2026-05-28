@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-05-08
-- Last reviewed: 2026-05-11
+- Last reviewed: 2026-05-28
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: transport, retry, layering
 - Related: [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), [ADR 0019](0019-http-transport-sole-dispatch.md), [ADR 0046](0046-transport-policy-js-exposure.md)
@@ -41,12 +41,22 @@ of separate client-specific policy wrappers.
 - Runtime and support: retryable statuses remain `408`, `425`, `429`, `500`,
   `502`, `503`, and `504`; `Retry-After` is honored for `429` and `503`;
   rate-limit state remains instance-scoped.
+- Shared driver: the retry driver loop is owned by `cow-sdk-transport-policy`
+  through `run_with_retry`. The orderbook, subgraph, and IPFS clients route
+  their retries through that driver instead of hand-rolling a per-client loop,
+  so the retry, backoff, `Retry-After`, rate-limit acquisition, and retry
+  telemetry behavior is defined once. A non-retryable transport class returns
+  immediately rather than re-dispatching.
+- Wall clock: retry-delay computation reads the wall clock through the
+  target-neutral `cow-sdk-transport-policy::system_now`, never
+  `std::time::SystemTime::now()` on a wasm-reachable path, so a retryable
+  response cannot abort a browser runtime.
 - Validation and review: the transport-policy crate must test default
   orderbook and subgraph policy stability, no-retry behavior, jitter bounds,
-  per-host limiter keying, status completeness, classifier totality, and
-  TypeScript config translation for wasm clients.
-- Cost: callers that used orderbook-specific or subgraph-specific policy names
-  must switch to `cow-sdk-transport-policy::TransportPolicy`.
+  per-host limiter keying, status completeness, classifier totality, the
+  `run_with_retry` outcome contract across the success, retry, exhaustion, and
+  non-retryable cases, the `system_now` browser-safe clock, and TypeScript
+  config translation for wasm clients.
 
 ## Alternatives Rejected
 

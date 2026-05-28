@@ -386,6 +386,13 @@ policies preserve the reviewed retryable status set (`408`, `425`, `429`,
 `500`, `502`, `503`, `504`), honor `Retry-After` on `429` and `503`, and keep
 rate-limit state instance-scoped.
 
+The same crate owns the retry driver itself: the orderbook, subgraph, and IPFS
+clients run every attempt through one shared `run_with_retry` loop, so the
+retry, backoff, `Retry-After`, rate-limit acquisition, and retry telemetry
+behavior is defined once rather than per client. `Retry-After` HTTP-date
+evaluation reads a target-neutral wall clock, so the retry path behaves the
+same on native and browser targets.
+
 ## Related Docs
 
 - [Architecture](architecture.md) — how `HttpTransport` fits into the

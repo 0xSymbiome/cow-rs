@@ -70,7 +70,7 @@ flowchart TD
 | --- | --- | --- |
 | `cow-sdk` | Thin public facade | You want the main Rust SDK entrypoint. |
 | `cow-sdk-core` | Shared domain types, config, validation, runtime traits, and the `HttpTransport` seam with its native `ReqwestTransport` default | You need the common typed contracts. |
-| `cow-sdk-transport-policy` | Shared HTTP retry, rate-limit, jitter, `Retry-After`, and transport classification policy | You need consistent transport behavior across typed clients. |
+| `cow-sdk-transport-policy` | Shared HTTP retry driver (`run_with_retry`), rate-limit, jitter, `Retry-After`, target-neutral wall clock, and transport classification policy | You need consistent transport behavior across typed clients. |
 | `cow-sdk-contracts` | `alloy::sol!`-generated typed bindings, the typed `Registry` deployment authority, and deterministic hashing and verification helpers | You need ABI-level, address-authority, or settlement-level primitives. |
 | `cow-sdk-signing` | Typed-data, signing, cancellation, UID helpers, and the `Eip1271VerificationCache` seam (the always-available `NoopEip1271VerificationCache` plus the feature-gated `InMemoryEip1271VerificationCache`) | You need signing without the full trading layer. |
 | `cow-sdk-app-data` | App-data encoding, schema handling, and CID behavior | You need app-data generation or validation. |
@@ -277,10 +277,12 @@ backend. The `HttpTransport` trait in `cow-sdk-core` is the HTTPS seam used
 by `cow-sdk-orderbook` and `cow-sdk-subgraph` for REST and GraphQL
 dispatch; native consumers get `ReqwestTransport` from `cow-sdk-core`, and
 browser consumers get `FetchTransport` from the dedicated
-`cow-sdk-transport-wasm` leaf crate. Retry, cooldown, rate-limit, and
-transport-error classification policy lives in `cow-sdk-transport-policy`
-so orderbook and subgraph clients keep the same behavior without widening
-the raw `HttpTransport` trait. The `Provider` trait (also in `cow-sdk-core`)
+`cow-sdk-transport-wasm` leaf crate. The shared retry driver
+(`run_with_retry`) plus retry, cooldown, rate-limit, target-neutral wall
+clock, and transport-error classification policy lives in
+`cow-sdk-transport-policy`, so the orderbook, subgraph, and IPFS clients run
+every attempt through one retry loop and keep the same behavior on native
+and browser targets without widening the raw `HttpTransport` trait. The `Provider` trait (also in `cow-sdk-core`)
 is the read-only chain-RPC seam used by on-chain helpers such as allowance
 reads, EIP-1271 verification, and on-chain cancellation. Signer creation for
 wallet-capable providers lives in `SigningProvider`; no provider implementation

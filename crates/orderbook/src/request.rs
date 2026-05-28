@@ -1,11 +1,10 @@
-use std::{
-    future::Future,
-    sync::Arc,
-    time::{Duration, SystemTime},
-};
+use std::{future::Future, sync::Arc, time::Duration};
 
-use cow_sdk_core::{CancellationToken, HttpTransport, Redacted, TransportError};
-use cow_sdk_transport_policy::{NetworkErrorKind, RequestRateLimiter, RetryPolicy, sleep};
+use cow_sdk_core::{HttpTransport, Redacted, TransportError};
+use cow_sdk_transport_policy::{
+    AttemptOutcome as RetryOutcome, LimiterKey, RequestRateLimiter, RetryPolicy, RetrySignal,
+    run_with_retry,
+};
 use http::header::{ACCEPT, CONTENT_TYPE, HeaderMap};
 use serde::de::DeserializeOwned;
 use serde_json::Value;
@@ -662,91 +661,61 @@ where
     Fut: Future<Output = Result<AttemptOutcome, (cow_sdk_core::TransportErrorClass, String)>>,
     D: Fn(&ResponseEnvelope) -> Result<T, OrderbookError>,
 {
-    let mut last_transport_error = None;
-
-    for attempt_index in 1..=policy.max_attempts() {
-        let cancellation_token = CancellationToken::new();
-        if let Some(url) = limiter_url {
-            rate_limiter.acquire(url, &cancellation_token).await?;
-        } else {
-            rate_limiter.acquire_global(&cancellation_token).await?;
-        }
-        #[cfg(feature = "tracing")]
-        record_span_attempts(attempt_index);
-
-        match attempt().await {
-            Ok(AttemptOutcome::Response(response)) if (200..300).contains(&response.status) => {
+    // The shared driver in `cow-sdk-transport-policy` owns the retry loop,
+    // rate-limit acquisition, backoff, `Retry-After` clock, and retry telemetry.
+    // The closure performs one dispatch and classifies the result into the
+    // unified outcome space; the success envelope is decoded after the driver
+    // returns so a decode failure stays terminal and is never retried.
+    let limiter_key = limiter_url.map_or(LimiterKey::Global, LimiterKey::PerUrl);
+    let response = run_with_retry::<ResponseEnvelope, OrderbookError, _, _>(
+        policy,
+        rate_limiter,
+        limiter_key,
+        |attempt_index| {
+            let future = attempt();
+            async move {
                 #[cfg(feature = "tracing")]
-                record_span_status(response.status);
-                return decode_success(&response);
-            }
-            Ok(outcome) => {
-                let (response, headers) = match outcome {
-                    AttemptOutcome::Response(response) => (response, None),
-                    AttemptOutcome::HttpError { response, headers } => (response, Some(headers)),
-                };
-                #[cfg(feature = "tracing")]
-                record_span_status(response.status);
-                let body = response.decoded_body();
-                let error = OrderBookApiError::new(response.status, response.status_text, body);
-                let should_retry = policy.should_retry_status(error.status)
-                    && attempt_index < policy.max_attempts();
+                record_span_attempts(attempt_index);
+                #[cfg(not(feature = "tracing"))]
+                let _ = attempt_index;
 
-                if should_retry {
-                    let delay = headers.as_ref().map_or_else(
-                        || policy.delay_for_attempt(attempt_index),
-                        |headers| {
-                            policy.delay_for_status(
-                                attempt_index,
-                                error.status,
-                                headers,
-                                SystemTime::now(),
-                            )
+                match future.await {
+                    Ok(AttemptOutcome::Response(response))
+                        if (200..300).contains(&response.status) =>
+                    {
+                        #[cfg(feature = "tracing")]
+                        record_span_status(response.status);
+                        RetryOutcome::Success(response)
+                    }
+                    Ok(outcome) => {
+                        let (response, headers) = match outcome {
+                            AttemptOutcome::Response(response) => (response, Vec::new()),
+                            AttemptOutcome::HttpError { response, headers } => (response, headers),
+                        };
+                        #[cfg(feature = "tracing")]
+                        record_span_status(response.status);
+                        let status = response.status;
+                        let body = response.decoded_body();
+                        let error = OrderBookApiError::new(status, response.status_text, body);
+                        RetryOutcome::Failure {
+                            error: error.into(),
+                            signal: RetrySignal::HttpStatus { status, headers },
+                        }
+                    }
+                    Err((class, detail)) => RetryOutcome::Failure {
+                        error: OrderbookError::Transport {
+                            class,
+                            detail: Redacted::new(detail),
                         },
-                    );
-                    #[cfg(feature = "tracing")]
-                    emit_retry_status_event(attempt_index, error.status, delay);
-                    sleep(delay).await;
-                    continue;
-                }
-
-                #[cfg(feature = "tracing")]
-                if policy.should_retry_status(error.status) {
-                    emit_final_status_event(attempt_index, error.status);
-                }
-                return Err(error.into());
-            }
-            Err(error) => {
-                #[cfg(feature = "tracing")]
-                let error_class = error.0;
-                let should_retry = policy
-                    .should_retry_network(NetworkErrorKind::from_transport_error_class(error.0))
-                    && attempt_index < policy.max_attempts();
-                last_transport_error = Some(error);
-
-                if should_retry {
-                    let delay = policy.delay_for_attempt(attempt_index);
-                    #[cfg(feature = "tracing")]
-                    emit_retry_transport_event(attempt_index, error_class, delay);
-                    sleep(delay).await;
-                } else {
-                    #[cfg(feature = "tracing")]
-                    emit_final_transport_event(attempt_index, error_class);
+                        signal: RetrySignal::Transport { class },
+                    },
                 }
             }
-        }
-    }
+        },
+    )
+    .await?;
 
-    let (class, detail) = last_transport_error.unwrap_or_else(|| {
-        (
-            cow_sdk_core::TransportErrorClass::Other,
-            "request attempts exhausted".to_owned(),
-        )
-    });
-    Err(OrderbookError::Transport {
-        class,
-        detail: Redacted::new(detail),
-    })
+    decode_success(&response)
 }
 
 #[cfg(feature = "tracing")]
@@ -758,55 +727,6 @@ fn record_span_attempts(attempt_index: usize) {
 #[cfg(feature = "tracing")]
 fn record_span_status(status: u16) {
     tracing::Span::current().record("status", u64::from(status));
-}
-
-#[cfg(feature = "tracing")]
-fn emit_retry_status_event(attempt_index: usize, status: u16, delay: Duration) {
-    tracing::debug!(
-        attempt_index = u64::try_from(attempt_index).unwrap_or(u64::MAX),
-        status = u64::from(status),
-        backoff_ms = duration_millis(delay),
-        "orderbook retry scheduled after status response"
-    );
-}
-
-#[cfg(feature = "tracing")]
-fn emit_final_status_event(attempt_index: usize, status: u16) {
-    tracing::warn!(
-        attempt_index = u64::try_from(attempt_index).unwrap_or(u64::MAX),
-        status = u64::from(status),
-        backoff_ms = 0_u64,
-        "orderbook retry attempts exhausted after status response"
-    );
-}
-
-#[cfg(feature = "tracing")]
-fn emit_retry_transport_event(
-    attempt_index: usize,
-    class: cow_sdk_core::TransportErrorClass,
-    delay: Duration,
-) {
-    tracing::debug!(
-        attempt_index = u64::try_from(attempt_index).unwrap_or(u64::MAX),
-        transport_error_class = class.as_str(),
-        backoff_ms = duration_millis(delay),
-        "orderbook retry scheduled after transport error"
-    );
-}
-
-#[cfg(feature = "tracing")]
-fn emit_final_transport_event(attempt_index: usize, class: cow_sdk_core::TransportErrorClass) {
-    tracing::warn!(
-        attempt_index = u64::try_from(attempt_index).unwrap_or(u64::MAX),
-        transport_error_class = class.as_str(),
-        backoff_ms = 0_u64,
-        "orderbook retry attempts exhausted after transport error"
-    );
-}
-
-#[cfg(feature = "tracing")]
-fn duration_millis(duration: Duration) -> u64 {
-    u64::try_from(duration.as_millis()).unwrap_or(u64::MAX)
 }
 
 fn decode_success_body<T>(response: &ResponseEnvelope) -> Result<T, OrderbookError>
