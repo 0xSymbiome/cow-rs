@@ -38,6 +38,46 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- `cow_sdk_orderbook::OrderBookApi::upload_app_data` verifies the
+  content-addressed-write invariant at both boundaries. The
+  inherent method now decodes the `PUT /api/v1/app_data/{hash}`
+  response body as `cow_sdk_core::AppDataHash` (a bare hex
+  string) for both HTTP 200 (already-existing document) and
+  HTTP 201 (newly stored) outcomes, matching the services PUT
+  response schema; the legacy `AppDataObject` envelope decode is
+  removed from the upload path and `upload_app_data` now returns
+  `Result<(), OrderbookError>` on both the inherent method and
+  the `cow_sdk_orderbook::OrderbookClient` trait. Before
+  dispatching, the SDK re-derives the digest through the new
+  `cow_sdk_core::AppDataHash::from_full_app_data(&str)` helper
+  and rejects with `OrderbookError::AppDataHashMismatch`
+  carrying `{ expected, observed, stage }` when the
+  caller-supplied hash disagrees with `keccak256(full_app_data)`;
+  the new non-exhaustive `cow_sdk_orderbook::HashMismatchStage`
+  enum carries `ClientPrecheck` (no network call) and
+  `ServerEcho` (server returned a different hash than what was
+  sent) so callers can branch on the disagreement source. The
+  new variant is distinct from
+  `cow_sdk_orderbook::OrderbookRejection::AppDataHashMismatch`,
+  which remains the services-emitted 400-class envelope detected
+  server-side. The bare-hex PUT response shape is locked by the
+  new `parity/fixtures/orderbook/app_data_upload_response.json`
+  regression fixture and the
+  `crates/orderbook/tests/parity_contract.rs::app_data_upload_response_fixture_decodes_as_app_data_hash`
+  case; coverage in `crates/orderbook/tests/api_contract.rs`
+  grows with three rows (client-precheck no-network,
+  server-echo mismatch, status-200 already-existing document)
+  and
+  `crates/orderbook/tests/error_variant_shape.rs::app_data_hash_mismatch_carries_typed_hashes_and_stage_discriminator`
+  pins the typed shape of the new variant. `AppDataObject`
+  remains the GET response wrapper for `get_app_data`. The
+  content-addressed-write invariant is recorded as `PROP-ORD-011`
+  in `PROPERTIES.md` and `docs/verification-matrix.md` carries
+  the matching evidence row, governed by
+  [ADR 0017](docs/adr/0017-typed-orderbook-rejection-parser.md)
+  and
+  [ADR 0031](docs/adr/0031-wire-dto-openapi-driven-with-order-auction-order-split.md).
+
 - `cow_sdk_contracts` exposes one closed-construction typestate for
   recoverable ECDSA signatures. `RecoverableSignature` holds an
   `alloy_primitives::Signature` behind a private field and accepts

@@ -194,7 +194,7 @@ pub trait OrderbookClient: Send + Sync {
         &self,
         app_data_hash: &CoreAppDataHash,
         full_app_data: &str,
-    ) -> Result<types::AppDataObject, error::OrderbookError>;
+    ) -> Result<(), error::OrderbookError>;
 }
 
 #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
@@ -244,7 +244,7 @@ impl OrderbookClient for api::OrderBookApi {
         &self,
         app_data_hash: &CoreAppDataHash,
         full_app_data: &str,
-    ) -> Result<types::AppDataObject, error::OrderbookError> {
+    ) -> Result<(), error::OrderbookError> {
         Self::upload_app_data(self, app_data_hash, full_app_data).await
     }
 }
@@ -253,7 +253,7 @@ pub use api::OrderBookApi;
 pub use builder::{
     ChainIdSet, ChainIdUnset, EnvSet, EnvUnset, OrderBookApiBuilder, TransportSet, TransportUnset,
 };
-pub use error::OrderbookError;
+pub use error::{HashMismatchStage, OrderbookError};
 pub use rejection::{OrderbookRejection, parse_rejection};
 pub use request::{HttpMethod, OrderBookApiError, ResponseBody};
 pub use transform::{calculate_total_fee, transform_order, transform_orders};

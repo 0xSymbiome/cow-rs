@@ -4,10 +4,13 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use cow_sdk_core::{Amount, CoreError, DEFAULT_HTTP_TIMEOUT, HttpClientPolicy, ValidationError};
+use cow_sdk_core::{
+    Amount, AppDataHash, CoreError, DEFAULT_HTTP_TIMEOUT, HttpClientPolicy, ValidationError,
+};
 use cow_sdk_orderbook::{
     ApiContextOverride, AppDataObject, CowEnv, GetOrdersRequest, GetTradesRequest,
-    OrderCancellations, OrderCreation, OrderStatus, QuoteSide, SigningScheme, SupportedChainId,
+    HashMismatchStage, OrderCancellations, OrderCreation, OrderStatus, OrderbookError, QuoteSide,
+    SigningScheme, SupportedChainId,
 };
 use cow_sdk_transport_policy::{
     DEFAULT_MAX_ATTEMPTS, DEFAULT_ORDERBOOK_USER_AGENT, RequestRateLimiter, RetryPolicy,
@@ -20,10 +23,11 @@ use wiremock::{
 };
 
 use crate::common::{
-    build_orderbook_api, build_orderbook_api_with_base_url, build_orderbook_api_with_policy,
-    build_orderbook_api_with_shared_client, default_context, sample_app_data_hash,
-    sample_order_json, sample_order_uid, sample_owner, sample_quote_response_json,
-    sample_signature, sample_trade_json, sample_tx_hash,
+    SAMPLE_UPLOAD_BODY, build_orderbook_api, build_orderbook_api_with_base_url,
+    build_orderbook_api_with_policy, build_orderbook_api_with_shared_client, default_context,
+    sample_app_data_hash, sample_order_json, sample_order_uid, sample_owner,
+    sample_quote_response_json, sample_signature, sample_trade_json, sample_tx_hash,
+    sample_upload_body_hash,
 };
 
 const fn retry_policy(max_attempts: usize) -> RetryPolicy {
@@ -579,23 +583,31 @@ async fn order_lookup_falls_back_to_staging_only_on_404() {
 #[tokio::test]
 async fn app_data_transport_helpers_use_get_and_put_hash_routes() {
     let server = MockServer::start().await;
-    let hash = sample_app_data_hash();
+    let get_hash = sample_app_data_hash();
+    let upload_hash = sample_upload_body_hash();
 
     Mock::given(method("GET"))
-        .and(path(format!("/api/v1/app_data/{}", hash.to_hex_string())))
+        .and(path(format!(
+            "/api/v1/app_data/{}",
+            get_hash.to_hex_string()
+        )))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "fullAppData": "{\"metadata\":true}"
         })))
         .mount(&server)
         .await;
+    // The orderbook responds to a successful PUT with the bare hex-encoded
+    // hash as the JSON body; AppDataHash#[serde(transparent)] decodes the
+    // form directly without an envelope.
     Mock::given(method("PUT"))
-        .and(path(format!("/api/v1/app_data/{}", hash.to_hex_string())))
+        .and(path(format!(
+            "/api/v1/app_data/{}",
+            upload_hash.to_hex_string()
+        )))
         .and(body_partial_json(
-            json!({ "fullAppData": "{\"metadata\":true}" }),
+            json!({ "fullAppData": SAMPLE_UPLOAD_BODY }),
         ))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
-            "fullAppData": "{\"metadata\":true}"
-        })))
+        .respond_with(ResponseTemplate::new(201).set_body_json(json!(upload_hash.to_hex_string())))
         .mount(&server)
         .await;
 
@@ -605,16 +617,129 @@ async fn app_data_transport_helpers_use_get_and_put_hash_routes() {
     );
 
     let downloaded: AppDataObject = api
-        .get_app_data(&hash)
+        .get_app_data(&get_hash)
         .await
         .expect("app-data fetch should succeed");
-    let uploaded = api
-        .upload_app_data(&hash, "{\"metadata\":true}")
+    api.upload_app_data(&upload_hash, SAMPLE_UPLOAD_BODY)
         .await
         .expect("app-data upload should succeed");
 
     assert_eq!(downloaded.full_app_data, "{\"metadata\":true}");
-    assert_eq!(uploaded.full_app_data, "{\"metadata\":true}");
+}
+
+#[tokio::test]
+async fn upload_app_data_rejects_client_precheck_mismatch_without_network() {
+    let server = MockServer::start().await;
+
+    // No mock mounted: any dispatch to this server returns 404 / wiremock-no-match,
+    // which the SDK would surface as a non-Cancelled error. The test passes only
+    // if the precheck short-circuits before the network call.
+    let api = build_orderbook_api_with_base_url(
+        default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
+        server.uri(),
+    );
+
+    let supplied = AppDataHash::ZERO;
+    let body = SAMPLE_UPLOAD_BODY;
+    let expected_observed = AppDataHash::from_full_app_data(body);
+
+    let error = api
+        .upload_app_data(&supplied, body)
+        .await
+        .expect_err("client precheck must reject the mismatched hash");
+
+    match error {
+        OrderbookError::AppDataHashMismatch {
+            expected,
+            observed,
+            stage,
+        } => {
+            assert_eq!(expected, supplied);
+            assert_eq!(observed, expected_observed);
+            assert_eq!(stage, HashMismatchStage::ClientPrecheck);
+        }
+        other => panic!("expected client-precheck mismatch, got {other:?}"),
+    }
+
+    assert!(
+        server
+            .received_requests()
+            .await
+            .unwrap_or_default()
+            .is_empty(),
+        "client precheck must not dispatch a network request",
+    );
+}
+
+#[tokio::test]
+async fn upload_app_data_rejects_server_echo_mismatch() {
+    let server = MockServer::start().await;
+    let body = SAMPLE_UPLOAD_BODY;
+    let supplied = AppDataHash::from_full_app_data(body);
+    let returned = AppDataHash::ZERO;
+
+    Mock::given(method("PUT"))
+        .and(path(format!(
+            "/api/v1/app_data/{}",
+            supplied.to_hex_string()
+        )))
+        .and(body_partial_json(json!({ "fullAppData": body })))
+        .respond_with(ResponseTemplate::new(201).set_body_json(json!(returned.to_hex_string())))
+        .mount(&server)
+        .await;
+
+    let api = build_orderbook_api_with_base_url(
+        default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
+        server.uri(),
+    );
+
+    let error = api
+        .upload_app_data(&supplied, body)
+        .await
+        .expect_err("server-echo verification must reject the disagreeing hash");
+
+    match error {
+        OrderbookError::AppDataHashMismatch {
+            expected,
+            observed,
+            stage,
+        } => {
+            assert_eq!(expected, supplied);
+            assert_eq!(observed, returned);
+            assert_eq!(stage, HashMismatchStage::ServerEcho);
+        }
+        other => panic!("expected server-echo mismatch, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn upload_app_data_accepts_status_200_for_already_existing_documents() {
+    // The orderbook returns HTTP 200 with the same hash payload when the
+    // document is already registered; HTTP 201 is the "newly stored" case.
+    // The SDK must treat both as success when the server echoes the
+    // caller-supplied hash.
+    let server = MockServer::start().await;
+    let body = SAMPLE_UPLOAD_BODY;
+    let supplied = AppDataHash::from_full_app_data(body);
+
+    Mock::given(method("PUT"))
+        .and(path(format!(
+            "/api/v1/app_data/{}",
+            supplied.to_hex_string()
+        )))
+        .and(body_partial_json(json!({ "fullAppData": body })))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!(supplied.to_hex_string())))
+        .mount(&server)
+        .await;
+
+    let api = build_orderbook_api_with_base_url(
+        default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
+        server.uri(),
+    );
+
+    api.upload_app_data(&supplied, body)
+        .await
+        .expect("already-existing upload (200) must succeed");
 }
 
 #[tokio::test]

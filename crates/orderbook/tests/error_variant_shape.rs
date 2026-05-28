@@ -8,8 +8,8 @@
 //! retry layers. Any future variant whose shape drifts from this contract
 //! fails the corresponding test at compile time.
 
-use cow_sdk_core::{TransportErrorClass, ValidationReason};
-use cow_sdk_orderbook::OrderbookError;
+use cow_sdk_core::{AppDataHash, TransportErrorClass, ValidationReason};
+use cow_sdk_orderbook::{HashMismatchStage, OrderbookError};
 
 #[test]
 fn transport_variant_carries_typed_class_and_detail() {
@@ -88,6 +88,48 @@ fn invalid_transform_carries_structured_field_and_reason() {
     };
     assert_eq!(*field, "executedFee");
     assert!(matches!(reason, ValidationReason::BadShape { .. }));
+}
+
+#[test]
+fn app_data_hash_mismatch_carries_typed_hashes_and_stage_discriminator() {
+    let expected = AppDataHash::from_full_app_data("{}");
+    let observed = AppDataHash::ZERO;
+
+    let client_precheck = OrderbookError::AppDataHashMismatch {
+        expected,
+        observed,
+        stage: HashMismatchStage::ClientPrecheck,
+    };
+    let OrderbookError::AppDataHashMismatch {
+        expected: e_pre,
+        observed: o_pre,
+        stage: s_pre,
+    } = &client_precheck
+    else {
+        panic!("expected AppDataHashMismatch variant, got {client_precheck:?}");
+    };
+    assert_eq!(*e_pre, expected);
+    assert_eq!(*o_pre, observed);
+    assert_eq!(*s_pre, HashMismatchStage::ClientPrecheck);
+    let pre_display = client_precheck.to_string();
+    assert!(
+        pre_display.contains("client precheck"),
+        "Display must surface the stage discriminator label: {pre_display}",
+    );
+    assert!(
+        pre_display.contains(&expected.to_hex_string()),
+        "Display must surface the typed expected hash: {pre_display}",
+    );
+
+    let server_echo = OrderbookError::AppDataHashMismatch {
+        expected,
+        observed,
+        stage: HashMismatchStage::ServerEcho,
+    };
+    assert!(
+        server_echo.to_string().contains("server echo"),
+        "ServerEcho Display must surface the stage discriminator label",
+    );
 }
 
 #[test]

@@ -436,6 +436,46 @@ fn signed_amount_checked_arithmetic_returns_i256_results() {
 }
 
 #[test]
+fn app_data_hash_from_full_app_data_matches_keccak256_of_bytes() {
+    // Lock the byte-canonical invariant: AppDataHash::from_full_app_data
+    // must equal keccak256 over the input bytes on every supported platform.
+    let body = "{\"appCode\":\"cow-rs\",\"metadata\":{},\"version\":\"1.6.0\"}";
+    let computed = AppDataHash::from_full_app_data(body);
+    let expected = AppDataHash::from_bytes(*alloy_primitives::keccak256(body.as_bytes()));
+    assert_eq!(computed, expected);
+
+    // Empty-document corner case: keccak256("{}") is non-zero by construction.
+    let empty_doc = AppDataHash::from_full_app_data("{}");
+    assert!(!empty_doc.is_zero());
+    assert_eq!(
+        empty_doc,
+        AppDataHash::from_bytes(*alloy_primitives::keccak256(b"{}")),
+    );
+}
+
+#[test]
+fn app_data_hash_from_full_app_data_is_deterministic() {
+    let body = "{\"appCode\":\"cow-rs\",\"metadata\":{},\"version\":\"1.6.0\"}";
+    let first = AppDataHash::from_full_app_data(body);
+    let second = AppDataHash::from_full_app_data(body);
+    assert_eq!(first, second);
+}
+
+#[test]
+fn app_data_hash_from_full_app_data_distinguishes_byte_distinct_inputs() {
+    // Two semantically-equal JSON documents that differ only in object key
+    // order produce different byte sequences and therefore different
+    // digests. This pins the byte-canonical contract documented on the
+    // helper: the caller is responsible for canonicalising before hashing.
+    let ordered = "{\"a\":1,\"b\":2}";
+    let reordered = "{\"b\":2,\"a\":1}";
+    assert_ne!(
+        AppDataHash::from_full_app_data(ordered),
+        AppDataHash::from_full_app_data(reordered)
+    );
+}
+
+#[test]
 fn cow_primitive_newtype_zero_constants_equal_alloy_zero() {
     // Every cow primitive newtype that carries a canonical zero ships
     // `pub const ZERO: Self`. The constant must equal the value the

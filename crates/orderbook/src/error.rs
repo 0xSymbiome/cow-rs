@@ -1,12 +1,48 @@
+use std::fmt;
+
 use cow_sdk_core::{
-    Cancelled, CoreError, HostPolicyError, Redacted, TransportErrorClass, ValidationReason,
+    AppDataHash, Cancelled, CoreError, HostPolicyError, Redacted, TransportErrorClass,
+    ValidationReason,
 };
 use http::StatusCode;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::rejection::{OrderbookRejection, parse_rejection};
 use crate::request::{OrderBookApiError, ResponseBody};
 use crate::types::SigningScheme;
+
+/// Stage at which an app-data hash mismatch was detected by the typed
+/// orderbook client.
+///
+/// [`HashMismatchStage::ClientPrecheck`] indicates the caller-supplied hash
+/// did not match `keccak256(full_app_data.as_bytes())` and was rejected
+/// before any network call.
+///
+/// [`HashMismatchStage::ServerEcho`] indicates the orderbook responded
+/// successfully but the hash returned in the response body did not equal the
+/// locally derived digest. A successful order signed under the caller's hash
+/// would not resolve to the document the SDK intended to register, so the
+/// SDK surfaces the disagreement instead of reporting success.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+#[non_exhaustive]
+pub enum HashMismatchStage {
+    /// Detected before any network call by re-hashing the supplied body.
+    ClientPrecheck,
+    /// Detected after the server responded with a hash that disagrees with
+    /// the locally derived digest.
+    ServerEcho,
+}
+
+impl fmt::Display for HashMismatchStage {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::ClientPrecheck => f.write_str("client precheck"),
+            Self::ServerEcho => f.write_str("server echo"),
+        }
+    }
+}
 
 /// Errors returned by the typed orderbook client and transport helpers.
 #[non_exhaustive]
@@ -78,6 +114,37 @@ pub enum OrderbookError {
         field: &'static str,
         /// Canonical validation-failure mode.
         reason: ValidationReason,
+    },
+    /// App-data hash does not match the keccak256 digest of the supplied body.
+    ///
+    /// Surfaced in two stages of the upload flow. When
+    /// [`stage`](HashMismatchStage) is
+    /// [`HashMismatchStage::ClientPrecheck`] the caller-supplied hash did
+    /// not equal `keccak256(full_app_data)` and the SDK rejected the request
+    /// before any network call. When [`stage`](HashMismatchStage) is
+    /// [`HashMismatchStage::ServerEcho`] the orderbook responded
+    /// successfully but the hash carried in the response body did not match
+    /// the locally derived digest.
+    ///
+    /// Both cases indicate a content-addressed-write invariant violation: an
+    /// order signed under `expected` would not resolve to the document the
+    /// SDK intended to register. Distinct from
+    /// [`OrderbookRejection::AppDataHashMismatch`], which is the
+    /// services-emitted 400-class envelope for the same invariant detected
+    /// server-side.
+    #[error(
+        "app-data hash mismatch ({stage}): expected {expected}, observed {observed}. \
+         If both sides represent the same document, verify the body is canonical-JSON \
+         serialized before computing the digest."
+    )]
+    AppDataHashMismatch {
+        /// Hash the caller supplied, or the hash the SDK locally derived for
+        /// the no-hash upload path.
+        expected: AppDataHash,
+        /// Hash observed by the verifier (locally computed or server-returned).
+        observed: AppDataHash,
+        /// Stage of the upload flow that detected the mismatch.
+        stage: HashMismatchStage,
     },
     /// A long-running orderbook operation was cancelled through a cooperative cancellation token.
     #[error("orderbook operation was cancelled")]

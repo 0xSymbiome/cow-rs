@@ -92,7 +92,9 @@ fn parse_bytes_rejects_every_recovery_byte_outside_the_canonical_set() {
             ContractsError::InvalidSignatureRecoveryByte { value } => {
                 assert_eq!(value, invalid_v);
             }
-            other => panic!("expected InvalidSignatureRecoveryByte for v = {invalid_v}, got {other:?}"),
+            other => {
+                panic!("expected InvalidSignatureRecoveryByte for v = {invalid_v}, got {other:?}")
+            }
         }
     }
 }
@@ -110,7 +112,9 @@ fn parse_bytes_rejects_eip155_chain_encoded_recovery_bytes() {
             ContractsError::InvalidSignatureRecoveryByte { value } => {
                 assert_eq!(value, eip155_v);
             }
-            other => panic!("expected InvalidSignatureRecoveryByte for v = {eip155_v}, got {other:?}"),
+            other => {
+                panic!("expected InvalidSignatureRecoveryByte for v = {eip155_v}, got {other:?}")
+            }
         }
     }
 }
@@ -156,9 +160,16 @@ fn parse_hex_rejects_envelope_failures() {
 fn parse_hex_to_hex_string_is_idempotent_on_accepted_inputs() {
     for &v in &[0u8, 1, 27, 28] {
         let bytes = synthetic_bytes(v);
-        let first = RecoverableSignature::parse_bytes(&bytes).unwrap().to_hex_string();
-        let second = RecoverableSignature::parse_hex(&first).unwrap().to_hex_string();
-        assert_eq!(first, second, "to_hex_string must be idempotent for v = {v}");
+        let first = RecoverableSignature::parse_bytes(&bytes)
+            .unwrap()
+            .to_hex_string();
+        let second = RecoverableSignature::parse_hex(&first)
+            .unwrap()
+            .to_hex_string();
+        assert_eq!(
+            first, second,
+            "to_hex_string must be idempotent for v = {v}"
+        );
     }
 }
 
@@ -167,7 +178,10 @@ fn to_hex_string_is_lowercase_and_prefixed() {
     let bytes = synthetic_bytes(27);
     let sig = RecoverableSignature::parse_bytes(&bytes).unwrap();
     let hex = sig.to_hex_string();
-    assert!(hex.starts_with("0x"), "hex must keep the 0x prefix, got {hex}");
+    assert!(
+        hex.starts_with("0x"),
+        "hex must keep the 0x prefix, got {hex}"
+    );
     assert_eq!(hex.len(), 132, "hex body must be 65 bytes encoded");
     assert!(
         hex[2..]
@@ -277,17 +291,29 @@ fn as_alloy_exposes_canonical_parity_to_the_inner_primitive() {
     // parity computed by the strict v-set match in `parse_bytes`.
     let bytes_v0 = synthetic_bytes(0);
     let from_v0 = RecoverableSignature::parse_bytes(&bytes_v0).unwrap();
-    assert!(!from_v0.as_alloy().v(), "v = 0 must canonicalize to parity false");
+    assert!(
+        !from_v0.as_alloy().v(),
+        "v = 0 must canonicalize to parity false"
+    );
 
     let bytes_v1 = synthetic_bytes(1);
     let from_v1 = RecoverableSignature::parse_bytes(&bytes_v1).unwrap();
-    assert!(from_v1.as_alloy().v(), "v = 1 must canonicalize to parity true");
+    assert!(
+        from_v1.as_alloy().v(),
+        "v = 1 must canonicalize to parity true"
+    );
 
     let bytes_v27 = synthetic_bytes(27);
     let from_v27 = RecoverableSignature::parse_bytes(&bytes_v27).unwrap();
-    assert!(!from_v27.as_alloy().v(), "v = 27 must canonicalize to parity false");
+    assert!(
+        !from_v27.as_alloy().v(),
+        "v = 27 must canonicalize to parity false"
+    );
 
     let bytes_v28 = synthetic_bytes(28);
     let from_v28 = RecoverableSignature::parse_bytes(&bytes_v28).unwrap();
-    assert!(from_v28.as_alloy().v(), "v = 28 must canonicalize to parity true");
+    assert!(
+        from_v28.as_alloy().v(),
+        "v = 28 must canonicalize to parity true"
+    );
 }

@@ -21,8 +21,7 @@ use cow_sdk_core::{
     TransactionRequest, TransactionStatus, TypedDataDomain, TypedDataField, TypedDataPayload,
 };
 use cow_sdk_orderbook::{
-    AppDataObject, Order, OrderCancellations, OrderCreation, OrderQuoteRequest, OrderQuoteResponse,
-    OrderbookError,
+    Order, OrderCancellations, OrderCreation, OrderQuoteRequest, OrderQuoteResponse, OrderbookError,
 };
 use cow_sdk_signing::eip1271::{Eip1271SignatureError, Eip1271SignatureProvider};
 use cow_sdk_trading::{
@@ -288,13 +287,13 @@ impl OrderbookClient for MockOrderbook {
         &self,
         app_data_hash: &AppDataHash,
         full_app_data: &str,
-    ) -> Result<AppDataObject, OrderbookError> {
+    ) -> Result<(), OrderbookError> {
         self.state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .uploads
             .push((*app_data_hash, full_app_data.to_owned()));
-        Ok(AppDataObject::new(full_app_data.to_owned()))
+        Ok(())
     }
 }
 

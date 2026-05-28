@@ -86,6 +86,17 @@ pub fn sample_app_data_hash() -> AppDataHash {
     app_data_hash("0x0000000000000000000000000000000000000000000000000000000000000000")
 }
 
+/// Canonical-form body used by upload-path tests. Paired with
+/// [`sample_upload_body_hash`] so the precheck on
+/// [`cow_sdk_orderbook::OrderBookApi::upload_app_data`] always succeeds and
+/// reaches the mocked transport.
+pub const SAMPLE_UPLOAD_BODY: &str = "{\"metadata\":{}}";
+
+/// Hash that matches `keccak256(SAMPLE_UPLOAD_BODY)`.
+pub fn sample_upload_body_hash() -> AppDataHash {
+    AppDataHash::from_full_app_data(SAMPLE_UPLOAD_BODY)
+}
+
 pub fn sample_owner() -> Address {
     address("0x6810e776880c02933d47db1b9fc05908e5386b96")
 }

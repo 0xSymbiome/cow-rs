@@ -521,7 +521,9 @@ fn assert_ecdsa_v_normalization(id: &str, expected: &Value) {
             .as_str()
             .unwrap_or_else(|| panic!("case {id}: positive case normalized must be a string"));
         assert_eq!(
-            RecoverableSignature::parse_hex(input).unwrap().to_hex_string(),
+            RecoverableSignature::parse_hex(input)
+                .unwrap()
+                .to_hex_string(),
             normalized,
             "case {id}: normalized ECDSA signature must match the pinned output for {input}",
         );

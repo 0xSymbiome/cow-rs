@@ -30,8 +30,9 @@ use wiremock::{
 };
 
 use crate::common::{
-    build_orderbook_api, build_orderbook_api_with_base_url, default_context, sample_app_data_hash,
-    sample_order_uid, sample_owner, sample_quote_response_json, sample_signature, sample_tx_hash,
+    SAMPLE_UPLOAD_BODY, build_orderbook_api, build_orderbook_api_with_base_url, default_context,
+    sample_app_data_hash, sample_order_uid, sample_owner, sample_quote_response_json,
+    sample_signature, sample_tx_hash, sample_upload_body_hash,
 };
 
 type CaseFuture<'a> =
@@ -120,7 +121,7 @@ const TESTED_METHODS: &[CancellationCase] = &[
     CancellationCase {
         method_name: "upload_app_data",
         http_method: "PUT",
-        path: path_app_data,
+        path: path_upload_app_data,
         invoke: invoke_upload_app_data,
     },
     CancellationCase {
@@ -313,6 +314,13 @@ fn path_total_surplus() -> String {
     )
 }
 
+fn path_upload_app_data() -> String {
+    format!(
+        "/api/v1/app_data/{}",
+        sample_upload_body_hash().to_hex_string(),
+    )
+}
+
 fn path_app_data() -> String {
     format!(
         "/api/v1/app_data/{}",
@@ -428,9 +436,8 @@ fn invoke_get_app_data(api: &OrderBookApi) -> CaseFuture<'_> {
 
 fn invoke_upload_app_data(api: &OrderBookApi) -> CaseFuture<'_> {
     Box::pin(async move {
-        api.upload_app_data(&sample_app_data_hash(), "{\"metadata\":true}")
+        api.upload_app_data(&sample_upload_body_hash(), SAMPLE_UPLOAD_BODY)
             .await
-            .map(|_: AppDataObject| ())
     })
 }
 

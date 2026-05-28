@@ -7,7 +7,7 @@ use serde_json::json;
 
 use crate::{
     builder::{ChainIdSet, ChainIdUnset, EnvSet, EnvUnset, OrderBookApiBuilder, TransportUnset},
-    error::OrderbookError,
+    error::{HashMismatchStage, OrderbookError},
     request::{
         FetchParams, HttpMethod, request_empty_with_timeout, request_json_with_timeout,
         request_text_with_timeout,
@@ -665,14 +665,37 @@ impl OrderBookApi {
 
     /// Uploads full app-data JSON for the provided app-data hash.
     ///
+    /// The SDK verifies the content-addressed-write invariant at both
+    /// boundaries. Before dispatching it computes
+    /// `keccak256(full_app_data.as_bytes())` and rejects with
+    /// [`OrderbookError::AppDataHashMismatch`] (stage
+    /// [`HashMismatchStage::ClientPrecheck`]) when the digest disagrees with
+    /// `app_data_hash`. After the orderbook responds it parses the returned
+    /// hash from the body and rejects with [`HashMismatchStage::ServerEcho`]
+    /// when the server's echo differs from `app_data_hash`. Both stages
+    /// guard against a successful order signed under `app_data_hash`
+    /// resolving to a document the SDK did not intend to register.
+    ///
+    /// The protocol treats app-data as byte-canonical: two semantically
+    /// equal JSON documents with different key orderings hash to different
+    /// values. Callers that build `full_app_data` by hand should serialise
+    /// through the canonical writer in `cow-sdk-app-data` before computing
+    /// the hash. The trading helpers in `cow-sdk-trading` already do this
+    /// on the dominant call path.
+    ///
     /// Callers that need cooperative cancellation wrap this future through
     /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site; an
     /// unacknowledged upload is a no-op on the orderbook service.
     ///
     /// # Errors
     ///
-    /// Returns [`OrderbookError`] if the request body cannot be encoded, the
-    /// API rejects the upload, or request execution fails.
+    /// Returns [`OrderbookError::AppDataHashMismatch`] for client-precheck
+    /// or server-echo digest disagreement. Returns the typed
+    /// [`OrderbookError::Rejected`] envelope when the orderbook rejects the
+    /// request, [`OrderbookError::Transport`] /
+    /// [`OrderbookError::Serialization`] for transport-level failures, and
+    /// [`OrderbookError::Cancelled`] when a cooperative cancellation token
+    /// fires.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(
@@ -689,14 +712,32 @@ impl OrderBookApi {
         &self,
         app_data_hash: &AppDataHash,
         full_app_data: &str,
-    ) -> Result<AppDataObject, OrderbookError> {
+    ) -> Result<(), OrderbookError> {
+        let computed = AppDataHash::from_full_app_data(full_app_data);
+        if computed != *app_data_hash {
+            return Err(OrderbookError::AppDataHashMismatch {
+                expected: *app_data_hash,
+                observed: computed,
+                stage: HashMismatchStage::ClientPrecheck,
+            });
+        }
+
         let params = FetchParams::new(
             format!("/api/v1/app_data/{}", app_data_hash.to_hex_string()),
             HttpMethod::Put,
         )
         .with_body(json!({ "fullAppData": full_app_data }));
 
-        self.fetch_json(params).await
+        let returned: AppDataHash = self.fetch_json(params).await?;
+        if returned != *app_data_hash {
+            return Err(OrderbookError::AppDataHashMismatch {
+                expected: *app_data_hash,
+                observed: returned,
+                stage: HashMismatchStage::ServerEcho,
+            });
+        }
+
+        Ok(())
     }
 
     /// Fetches solver-competition data by auction id.

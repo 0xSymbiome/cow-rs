@@ -26,7 +26,9 @@
 //! Failure messages carry the fixture case id so a reviewer looking at a
 //! broken CI run sees the exact upstream vector that diverged.
 
-use cow_sdk_core::{Amount, ApiContext, CowEnv, Redacted, SupportedChainId, default_api_base_urls};
+use cow_sdk_core::{
+    Amount, ApiContext, AppDataHash, CowEnv, Redacted, SupportedChainId, default_api_base_urls,
+};
 use cow_sdk_orderbook::{
     EVM_NATIVE_CURRENCY_ADDRESS, GetOrdersRequest, GetTradesRequest, OrderBookApi,
     OrderBookApiError, OrderCreation, OrderQuoteResponse, ResponseBody, SigningScheme, Trade,
@@ -684,5 +686,25 @@ fn assert_ethflow_transform(id: &str, expected: &Value) {
         transformed.sell_token.to_hex_string().to_lowercase(),
         EVM_NATIVE_CURRENCY_ADDRESS.to_lowercase(),
         "case {id}: EthFlow sellToken must be rewritten to the native ETH address",
+    );
+}
+
+/// Recorded wire-shape contract for the `PUT /api/v1/app_data/{appDataHash}`
+/// success response.
+///
+/// The orderbook returns the registered hash as a bare JSON string body
+/// (HTTP 201 when newly stored, HTTP 200 when the document was already
+/// registered under the same hash). The fixture pins that shape so a future
+/// edit to the decoder would have to either update the fixture explicitly
+/// or fail this test.
+#[test]
+fn app_data_upload_response_fixture_decodes_as_app_data_hash() {
+    let raw = include_str!("../../../parity/fixtures/orderbook/app_data_upload_response.json");
+    let decoded: AppDataHash = serde_json::from_str(raw.trim())
+        .expect("recorded app-data upload response fixture must decode as AppDataHash");
+    assert_eq!(
+        decoded.to_hex_string(),
+        "0xb48d38f93eaa084033fc5970bf96e559c33c4cdc07d889ab00b4d63f9590739d",
+        "fixture hash must match the canonical empty-document digest"
     );
 }

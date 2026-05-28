@@ -24,8 +24,7 @@ use cow_sdk_core::{
     TypedDataField, TypedDataPayload,
 };
 use cow_sdk_orderbook::{
-    AppDataObject, Order, OrderCancellations, OrderCreation, OrderQuoteRequest, OrderQuoteResponse,
-    OrderbookError,
+    Order, OrderCancellations, OrderCreation, OrderQuoteRequest, OrderQuoteResponse, OrderbookError,
 };
 use cow_sdk_trading::{
     AllowanceParameters, ApprovalParameters, OrderPostingResult, OrderTraderParameters,
@@ -263,7 +262,7 @@ impl OrderbookClient for DelayedOrderbook {
         &self,
         app_data_hash: &AppDataHash,
         full_app_data: &str,
-    ) -> Result<AppDataObject, OrderbookError> {
+    ) -> Result<(), OrderbookError> {
         self.wait().await;
         OrderbookClient::upload_app_data(&self.inner, app_data_hash, full_app_data).await
     }

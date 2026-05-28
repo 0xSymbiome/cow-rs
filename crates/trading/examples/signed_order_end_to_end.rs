@@ -43,7 +43,7 @@ mod native {
         TypedDataDomain, TypedDataField, ValidationReason,
     };
     use cow_sdk_orderbook::{
-        AppDataHash, AppDataObject, Order, OrderCancellations, OrderCreation, OrderQuoteRequest,
+        AppDataHash, Order, OrderCancellations, OrderCreation, OrderQuoteRequest,
         OrderQuoteResponse, OrderUid, OrderbookError,
     };
     use cow_sdk_trading::{OrderbookClient, TradeParameters, TradingError, TradingSdk};
@@ -214,13 +214,13 @@ mod native {
             &self,
             app_data_hash: &AppDataHash,
             full_app_data: &str,
-        ) -> Result<AppDataObject, OrderbookError> {
+        ) -> Result<(), OrderbookError> {
             self.state
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
                 .uploads
                 .push((*app_data_hash, full_app_data.to_owned()));
-            Ok(AppDataObject::new(full_app_data.to_owned()))
+            Ok(())
         }
     }
 

@@ -507,6 +507,23 @@ impl AppDataHash {
         Self(B256::new(bytes))
     }
 
+    /// Computes the canonical [`AppDataHash`] for a serialized app-data document.
+    ///
+    /// Returns `AppDataHash(keccak256(full_app_data.as_bytes()))`. The hashing
+    /// is byte-wise: the caller is responsible for serializing the document to
+    /// its canonical form before passing the string. Two semantically-equal
+    /// JSON documents with different key orderings hash to different values.
+    /// Use the canonical serializer in `cow-sdk-app-data` to produce the
+    /// canonical form before computing this hash.
+    ///
+    /// Equivalent to but cheaper than going through hex encoding and re-parsing
+    /// via [`AppDataHash::new`].
+    #[inline]
+    #[must_use]
+    pub fn from_full_app_data(full_app_data: &str) -> Self {
+        Self(alloy_primitives::keccak256(full_app_data.as_bytes()))
+    }
+
     /// Returns the canonical lowercase 0x-prefixed hex form as an owned
     /// [`String`].
     ///
