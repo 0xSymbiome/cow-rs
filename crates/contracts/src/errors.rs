@@ -42,6 +42,17 @@ pub enum ContractsError {
     /// A signing-scheme discriminator was not recognized.
     #[error("unsupported signing scheme value: {0}")]
     UnsupportedSigningScheme(u8),
+    /// An order-kind or token-balance marker decoded from an on-chain
+    /// `OrderPlacement` event did not match any canonical `GPv2` label hash.
+    #[error("unrecognized GPv2 order marker: {0}")]
+    UnknownOrderMarker(alloy_primitives::B256),
+    /// An on-chain event log carried a topic set that did not match the
+    /// expected event signature hash or indexed-parameter arity.
+    #[error("unexpected event log topics for {event}")]
+    UnexpectedEventTopics {
+        /// Event whose topic set failed validation.
+        event: &'static str,
+    },
     /// An encoded EIP-1271 signature payload was malformed.
     #[error("invalid EIP-1271 signature payload")]
     InvalidEip1271SignatureData,

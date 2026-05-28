@@ -32,6 +32,8 @@ pub mod eth_flow;
 pub mod hex_field;
 /// Typed interaction models and normalization helpers.
 pub mod interaction;
+/// Typed `CoWSwapOnchainOrders` event bindings and a fail-closed log decoder.
+pub mod onchain_orders;
 /// Order hashing, UID packing, and normalization helpers.
 pub mod order;
 /// Proxy inspection helpers for EIP-173 style ownership proxies.
@@ -48,11 +50,17 @@ pub mod swap;
 pub mod vault;
 /// Cache-aware EIP-1271 signature verification path.
 pub mod verify;
+/// Typed `IWrappedNativeToken` (WETH9-family) bindings and wrap / unwrap
+/// interaction helpers.
+pub mod weth;
 
 mod chain_ids;
 mod primitives;
 
-pub use primitives::{buy_balance_name, encode_address_word, order_kind_name, sell_balance_name};
+pub use primitives::{
+    buy_balance_from_marker, buy_balance_name, encode_address_word, order_kind_from_marker,
+    order_kind_name, sell_balance_from_marker, sell_balance_name,
+};
 
 pub use deploy::{
     ContractAddresses, ContractName, DEPLOYER_CONTRACT, SALT, deployment_address_hash_input,
@@ -66,10 +74,15 @@ pub use eip1271::IERC1271;
 pub use erc20::{IERC20, IERC20Permit, PERMIT_TYPE_HASH, permit_typed_data_hash};
 pub use errors::ContractsError;
 pub use eth_flow::{
-    EthFlowOrderData, encode_create_order_calldata, encode_invalidate_order_calldata,
+    EthFlowOnchainData, EthFlowOrderData, WRAP_ALL_SELECTOR, encode_create_order_calldata,
+    encode_invalidate_order_calldata, parse_eth_flow_onchain_data, wrap_all_interaction,
 };
 pub use interaction::{
     Interaction, InteractionLike, normalize_interaction, normalize_interactions,
+};
+pub use onchain_orders::{
+    ICoWSwapOnchainOrders, OnchainOrderInvalidation, OnchainOrderPlacement, OnchainSigningScheme,
+    decode_order_invalidation, decode_order_placement,
 };
 pub use order::{
     BUY_ETH_ADDRESS, CANCELLATIONS_TYPE_FIELDS, GPv2Order, GPv2OrderCancellations, NormalizedOrder,
@@ -101,3 +114,4 @@ pub use vault::{
     required_vault_role_calls, required_vault_roles,
 };
 pub use verify::{Eip1271VerificationCache, verify_eip1271_signature_cached};
+pub use weth::{IWrappedNativeToken, unwrap_interaction, wrap_interaction};

@@ -14,6 +14,28 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Added
 
+- `cow_sdk_contracts::onchain_orders` adds typed `CoWSwapOnchainOrders`
+  `OrderPlacement` / `OrderInvalidation` event bindings and a fail-closed,
+  provider-free log decoder (`decode_order_placement`,
+  `decode_order_invalidation`). The decoder validates the topic set, the
+  on-chain signing scheme, the EIP-1271 owner-payload length, the eth-flow
+  trailing-data length, and the 56-byte UID length, returning a typed
+  `ContractsError` rather than panicking on malformed input;
+  `OnchainOrderPlacement` resolves the order owner and derives the 56-byte
+  order UID through `compute_order_uid`. Topic-0 is byte-locked against an
+  independent keccak of the canonical signatures and the order hash against an
+  upstream contract vector. The decoding contract is documented in
+  [ADR 0054](docs/adr/0054-onchain-order-event-decoding-is-fail-closed.md) and
+  the [On-Chain Order Log Decoding Audit](docs/audit/onchain-order-log-decoding-audit.md).
+- `cow_sdk_contracts::weth` adds the `IWrappedNativeToken` (WETH9-family)
+  `deposit` / `withdraw` bindings with `wrap_interaction` / `unwrap_interaction`
+  helpers that emit the canonical settlement interaction, and
+  `cow_sdk_contracts::eth_flow` gains `parse_eth_flow_onchain_data`, the
+  `WRAP_ALL_SELECTOR` constant, and `wrap_all_interaction`. The Solidity
+  mirrors for the new surfaces are vendored byte-identically under
+  `crates/contracts/abi/eth-flow/` and `crates/contracts/abi/weth/` and gated by
+  the provenance contract in
+  [ADR 0012](docs/adr/0012-alloy-sol-bindings-and-registry-authority.md).
 - `cow_sdk_app_data::AppDataParams` gains two fluent terminal methods:
   `into_doc(self) -> AppDataDoc` produces the canonical JSON
   document without running the embedded schema validator, and
@@ -516,7 +538,7 @@ The first functional crate-family release begins at `0.1.0`.
 
 - New CI gate `cargo parity-verify-sol-provenance` enforces a
   byte-identity contract on every `.sol` file under
-  `crates/contracts/abi/`. All 37 shipped files are byte-identical
+  `crates/contracts/abi/`. All 40 shipped files are byte-identical
   mirrors of a single upstream source pinned in
   `parity/source-lock.yaml`; each `vendored:` manifest row carries the
   upstream path under the repository root and the SHA-256 of the

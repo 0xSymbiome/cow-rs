@@ -10,11 +10,13 @@
 //! the `alloy::sol!` macro. The Solidity excerpt used to author the bindings
 //! lives under `crates/contracts/abi/eth-flow/` for provenance.
 
+use alloy_primitives::Bytes;
 use alloy_sol_types::{SolCall, sol};
 
 use cow_sdk_core::{Address, Amount, AppDataHash, UnsignedOrder};
 
 use crate::ContractsError;
+use crate::interaction::Interaction;
 use crate::order::hash::reject_zero_receiver;
 
 sol! {
@@ -216,6 +218,85 @@ fn to_sol_struct(order: &EthFlowOrderData) -> ICoWSwapEthFlow::EthFlowOrderData 
         partiallyFillable: order.partially_fillable,
         quoteId: order.quote_id,
     }
+}
+
+/// Function selector for the `CoWSwapEthFlow` `wrapAll()` entrypoint.
+///
+/// Equals `keccak256("wrapAll()")[..4]`. The eth-flow contract wraps its entire
+/// native-asset balance into the wrapped-native token through this call; an
+/// on-chain order placed through eth-flow is preceded by a `wrapAll()`
+/// pre-interaction targeting the eth-flow contract.
+pub const WRAP_ALL_SELECTOR: [u8; 4] = [0x4c, 0x84, 0xc1, 0xc8];
+
+/// Builds the `wrapAll()` pre-interaction targeting a `CoWSwapEthFlow` contract.
+///
+/// The interaction calls `wrapAll()` on `eth_flow` with no arguments and zero
+/// native value; it is the pre-interaction associated with an eth-flow on-chain
+/// order.
+#[must_use]
+pub fn wrap_all_interaction(eth_flow: Address) -> Interaction {
+    Interaction::new(
+        eth_flow,
+        Amount::ZERO,
+        Bytes::from(WRAP_ALL_SELECTOR.to_vec()),
+    )
+}
+
+/// Decoded trailing data carried by an eth-flow `OrderPlacement` event.
+///
+/// The eth-flow contract sets the `OrderPlacement` event's trailing `data`
+/// field to `abi.encodePacked(int64 quoteId, uint32 userValidTo)` — a 12-byte,
+/// big-endian payload that carries the originating quote id and the trader's
+/// real (pre-clamp) order expiry, neither of which survives in the on-chain
+/// `GPv2` order whose `validTo` is fixed to `u32::MAX`.
+#[non_exhaustive]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EthFlowOnchainData {
+    /// Originating quote id; signed, and may be negative.
+    pub quote_id: i64,
+    /// The trader's real order expiry, before eth-flow clamps the on-chain
+    /// order's `validTo` to `u32::MAX`.
+    pub user_valid_to: u32,
+}
+
+/// Parses the 12-byte eth-flow `OrderPlacement` trailing data field.
+///
+/// Decodes `abi.encodePacked(int64 quoteId, uint32 userValidTo)` exactly: bytes
+/// `[0..8]` are the big-endian signed `quoteId`, bytes `[8..12]` the big-endian
+/// `userValidTo`.
+///
+/// # Errors
+///
+/// Returns [`ContractsError::InvalidDecodedLength`] when `data` is not exactly
+/// 12 bytes.
+///
+/// # Panics
+///
+/// Cannot panic in practice: the `[u8; 12]` conversion above guarantees the
+/// subsequent fixed-width `[..8]` and `[8..]` slice conversions are exact. The
+/// `expect` calls document that unreachability proof at the call site.
+pub fn parse_eth_flow_onchain_data(data: &[u8]) -> Result<EthFlowOnchainData, ContractsError> {
+    let bytes: [u8; 12] = data
+        .try_into()
+        .map_err(|_| ContractsError::InvalidDecodedLength {
+            field: "eth-flow onchain order data",
+            expected: 12,
+            actual: data.len(),
+        })?;
+    let quote_id = i64::from_be_bytes(
+        bytes[..8]
+            .try_into()
+            .expect("slice length 8 is guaranteed by the 12-byte array above"),
+    );
+    let user_valid_to = u32::from_be_bytes(
+        bytes[8..]
+            .try_into()
+            .expect("slice length 4 is guaranteed by the 12-byte array above"),
+    );
+    Ok(EthFlowOnchainData {
+        quote_id,
+        user_valid_to,
+    })
 }
 
 #[cfg(test)]

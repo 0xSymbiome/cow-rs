@@ -25,6 +25,12 @@ Security-relevant public surfaces worth a reviewer's attention include:
   partition, including the URL-stripping contract on
   `ReqwestTransport` (native) and the explicit URL omission on
   `FetchTransport` (browser)
+- the `CoWSwapOnchainOrders` `OrderPlacement` / `OrderInvalidation` log
+  decoder, which is fail-closed on untrusted chain logs: it validates the
+  topic set, the on-chain signing scheme, the EIP-1271 owner-payload length,
+  and the 56-byte UID length, returns a typed `ContractsError` rather than
+  panicking on malformed input, and performs no network I/O because it
+  borrows the log bytes
 
 It does not cover:
 

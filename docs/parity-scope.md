@@ -13,7 +13,7 @@ Pinned sources live in `parity/source-lock.yaml`.
 | --- | --- | --- |
 | `cowprotocol/cow-sdk` | Primary | SDK package configuration, COW Shed TypeScript constants, and shared package-level deployment evidence |
 | `cowprotocol/composable-cow` | Primary capability evidence | Byte-identical composable-order Solidity mirrors (gated by `cargo parity-verify-sol-provenance` against `parity/source-lock.yaml`), deployment rows, selector fixtures, EIP-1271 payload shapes, and watch-tower boundary evidence |
-| `cowprotocol/ethflowcontract` | Primary capability evidence | Byte-identical EthFlow Solidity mirrors (`CoWSwapEthFlow.sol`, `EthFlowOrder.sol`) and the `ReceiverMustBeSet()` revert-selector provenance |
+| `cowprotocol/ethflowcontract` | Primary capability evidence | Byte-identical EthFlow Solidity mirrors (`CoWSwapEthFlow.sol`, `EthFlowOrder.sol`, `ICoWSwapOnchainOrders.sol`, `CoWSwapOnchainOrders.sol`, `IWrappedNativeToken.sol`) and the `ReceiverMustBeSet()` revert-selector provenance |
 | `cowdao-grants/cow-shed` | Primary capability evidence | Byte-identical COW Shed Solidity mirrors, proxy creation-code bytes, factory address derivation, hook signature shape, and version-call evidence |
 | `cowprotocol/watch-tower` | Reference-only boundary evidence | Off-chain orchestration behavior used to define what remains outside the SDK |
 
@@ -304,7 +304,7 @@ entry for anyone who later considers reintroducing the surface.
   against the SHA-256 rows in `parity/source-lock.yaml` (governed by
   [ADR 0012](./adr/0012-alloy-sol-bindings-and-registry-authority.md)).
   Hand-rolled encoder helpers for `GPv2Settlement`, `GPv2VaultRelayer`,
-  `CoWSwapEthFlow`, the EIP-1967 proxy, and ERC-20 / ERC-20 Permit are
-  absent from the workspace; byte-identity parity with the upstream
+  `CoWSwapEthFlow`, `CoWSwapOnchainOrders`, the wrapped-native token, the
+  EIP-1967 proxy, and ERC-20 / ERC-20 Permit are absent from the workspace; byte-identity parity with the upstream
   Solidity surface is proven by the regression contract at
   `crates/contracts/tests/parity_contract.rs`.

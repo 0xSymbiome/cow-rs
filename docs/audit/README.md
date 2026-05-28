@@ -26,7 +26,7 @@ fragments, ADR replacement, or generic cleanup diaries.
 | Fix review | `<surface>-fix-review.md` | Focused public follow-up when previously reviewed findings are remediated |
 | Validation note | `<surface>-validation-note.md` | Narrow public confirmation record for an assurance point smaller than a full audit |
 
-The current public set is 55 standing audits and 1 validation note.
+The current public set is 56 standing audits and 1 validation note.
 
 ## Status Model
 
@@ -51,7 +51,8 @@ If the reviewed surface did not change, leave the audit alone.
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [Contract Bindings Parity Audit](contract-bindings-parity-audit.md) | Standing audit | `cow-sdk-contracts` `alloy::sol!`-generated binding surfaces | Byte-identity parity on the shipped settlement, vault-relayer, EthFlow, EIP-1967 proxy, ERC-20 / ERC-20 Permit bindings, and the shared EIP-712 domain-separator fixture | Current | 2026-05-22 |
+| [Contract Bindings Parity Audit](contract-bindings-parity-audit.md) | Standing audit | `cow-sdk-contracts` `alloy::sol!`-generated binding surfaces | Byte-identity parity on the shipped settlement, vault-relayer, EthFlow, CoWSwapOnchainOrders event, wrapped-native token, EIP-1967 proxy, ERC-20 / ERC-20 Permit bindings, and the shared EIP-712 domain-separator fixture | Current | 2026-05-28 |
+| [On-Chain Order Log Decoding Audit](onchain-order-log-decoding-audit.md) | Standing audit | `cow-sdk-contracts` `CoWSwapOnchainOrders` event decoder | Fail-closed `OrderPlacement` / `OrderInvalidation` log decoding, topic-0 byte-locks, owner resolution, UID derivation, and the eth-flow trailing-data parser | Current | 2026-05-28 |
 | [Deployment Registry Audit](deployment-registry-audit.md) | Standing audit | `cow-sdk-contracts::Registry` typed deployment authority | Typed `(ContractId, SupportedChainId, CowEnv)` key, embedded TOML manifest, per-chain provenance, compile-time validation, and override composition | Current | 2026-05-12 |
 | [Composable Contract Bindings Audit](composable-contract-bindings-audit.md) | Standing audit | Byte-identical composable-cow Solidity mirrors and deployment registry rows | Conditional-order binding mirrors, schema v2 deployment rows, provenance evidence, and coverage-only Ink posture | Current | 2026-05-15 |
 | [Composable Watch-Tower Boundary Audit](composable-watch-tower-boundary-audit.md) | Standing audit | Composable helper crate boundary | Selector, decoder, event, and single-call provider helper scope with production watcher behavior explicitly out of scope | Current | 2026-05-15 |

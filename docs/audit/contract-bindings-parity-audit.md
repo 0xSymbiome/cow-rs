@@ -1,8 +1,8 @@
 # Contract Bindings Parity Audit
 
 Status: Current
-Last reviewed: 2026-05-22
-Owning surface: `cow-sdk-contracts` `alloy::sol!`-generated bindings for `GPv2Settlement`, `GPv2VaultRelayer`, `CoWSwapEthFlow`, EIP-1967 proxy slots, and `IERC20` / `IERC20Permit`
+Last reviewed: 2026-05-28
+Owning surface: `cow-sdk-contracts` `alloy::sol!`-generated bindings for `GPv2Settlement`, `GPv2VaultRelayer`, `CoWSwapEthFlow`, `CoWSwapOnchainOrders` events, the wrapped-native token, EIP-1967 proxy slots, and `IERC20` / `IERC20Permit`
 Refresh trigger: A new binding family landing in `cow-sdk-contracts`; a signature change in any existing binding; a drift in the byte-identical Solidity mirror under `crates/contracts/abi/**/*.sol`; a change to a `vendored:` SHA-256 row under any repository in `parity/source-lock.yaml`; a change to the TypeScript-SDK-derived parity fixtures that back the regression suite; a change to the EIP-712 domain-separator fixture shared with the signing crate; a change to the wasm target feature contract for the alloy/k256 dependency path
 Related docs:
 - [ADR 0012](../adr/0012-alloy-sol-bindings-and-registry-authority.md)
@@ -27,9 +27,10 @@ This audit covers:
   byte-identical with the signing crate's fixture
 - the wasm target feature contract that keeps the `alloy-primitives`
   `k256` path buildable under `wasm32-unknown-unknown`
-- the five sol! interfaces currently shipped: `IGPv2Settlement`,
-  `IGPv2VaultRelayer`, `ICoWSwapEthFlow`, the EIP-1967 storage-slot
-  surface, and the `IERC20` / `IERC20Permit` ERC-20 surface
+- the seven sol! interface families currently shipped: `IGPv2Settlement`,
+  `IGPv2VaultRelayer`, `ICoWSwapEthFlow`, the `ICoWSwapOnchainOrders` event
+  surface, the `IWrappedNativeToken` (WETH9-family) surface, the EIP-1967
+  storage-slot surface, and the `IERC20` / `IERC20Permit` ERC-20 surface
 
 It does not cover deployed-address resolution (Registry authority, a
 separate audit) or the HTTP transport that delivers call-data to a
@@ -40,7 +41,7 @@ provider.
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
 | Single binding idiom | Every shipped binding is generated through `alloy::sol!`; no hand-rolled encoder remains in `cow-sdk-contracts` | Conforms |
-| Committed provenance | Every Solidity file under `crates/contracts/abi/` is a byte-identical mirror of a single upstream source pinned in `parity/source-lock.yaml`; `cargo parity-verify-sol-provenance` enforces SHA-256 equality against the manifest `vendored:` row and (when run with `--upstream-root`) against the live upstream bytes at the pinned commit. All 37 shipped `.sol` files follow this posture; no excerpt-style or documentation-only file ships in the workspace | Conforms |
+| Committed provenance | Every Solidity file under `crates/contracts/abi/` is a byte-identical mirror of a single upstream source pinned in `parity/source-lock.yaml`; `cargo parity-verify-sol-provenance` enforces SHA-256 equality against the manifest `vendored:` row and (when run with `--upstream-root`) against the live upstream bytes at the pinned commit. All 40 shipped `.sol` files follow this posture; no excerpt-style or documentation-only file ships in the workspace | Conforms |
 | Byte-identity parity | Encoded call-data and hashed payloads match the TypeScript-SDK-derived golden fixtures on every binding | Conforms |
 | Domain separator parity | `cow-sdk-contracts` and `cow-sdk-signing` route every EIP-712 domain separator through `alloy_sol_types::Eip712Domain::separator` and pin the same fixture value | Conforms |
 | Order EIP-712 hashing | The `GPv2 Order` and `OrderCancellations` typed-data structs are macro-emitted via `alloy_sol_types::sol!` and route their signing hashes through `<T as SolStruct>::eip712_signing_hash`; the eight per-chain rows in the order-digest fixture pin the wire-byte contract | Conforms |
@@ -49,7 +50,7 @@ provider.
 | EIP-1967 derivation | Proxy storage slots match the canonical `keccak256(label) - 1` formula as well as the golden byte payloads | Conforms |
 | Vault role hash parity | Vault-relayer role helpers emit the same packed role hashes as the upstream TypeScript role-grant helpers | Conforms |
 | WASM compatibility | The `alloy-primitives` `k256` path enables the browser `getrandom` backend for `wasm32-unknown-unknown` builds | Conforms |
-| Scope discipline | The shipped set is the five families named above; any new family follows the same provenance and parity contract before it lands | Conforms |
+| Scope discipline | The shipped set is the seven families named above; any new family follows the same provenance and parity contract before it lands | Conforms |
 
 ## Current Contract
 
@@ -98,6 +99,22 @@ and `IERC20Permit` (EIP-2612) for the subset of methods the SDK emits
 against any ERC-20 token, including the EIP-2612 `permit` domain
 separator type hash.
 
+`CoWSwapOnchainOrders` (`crates/contracts/src/onchain_orders.rs`) carries the
+`OrderPlacement` and `OrderInvalidation` event bindings used by on-chain order
+routers such as eth-flow. The topic-0 signature hashes are byte-locked against
+an independent keccak of the flattened-tuple signatures, and the fail-closed
+decoder reconstructs the broadcast `GPv2` order, resolves the owner from the
+on-chain signature, and derives the 56-byte order UID through
+`compute_order_uid`. The decoding contract is governed by
+[ADR 0054](../adr/0054-onchain-order-event-decoding-is-fail-closed.md) and the
+[On-Chain Order Log Decoding Audit](onchain-order-log-decoding-audit.md).
+
+The `IWrappedNativeToken` surface (`crates/contracts/src/weth.rs`) carries the
+WETH9-family `deposit` / `withdraw` methods, with `wrap_interaction` and
+`unwrap_interaction` helpers that emit the canonical settlement interaction for
+converting between the native asset and its wrapped form. The 4-byte selectors
+are byte-locked against an independent keccak of the canonical signatures.
+
 ### Provenance
 
 Every binding is introduced by a `sol! { ... }` block that reproduces
@@ -117,10 +134,10 @@ at the pinned commit live as a `vendored:` row under the matching
 repository. The verifier rejects any drift between the on-disk SHA and
 the manifest SHA, and (when run with `--upstream-root <path>`) any
 drift between the manifest SHA and the live upstream bytes at the
-pinned commit. All 37 shipped `.sol` files follow this posture; no
+pinned commit. All 40 shipped `.sol` files follow this posture; no
 excerpt-style or documentation-only file ships in the workspace.
 
-The 37 byte-identical mirrors are sourced from four upstream repositories,
+The 40 byte-identical mirrors are sourced from four upstream repositories,
 each pinned in `parity/source-lock.yaml`:
 
 - `cowprotocol/contracts` — `settlement/GPv2Settlement.sol`,
@@ -360,7 +377,7 @@ helpers on native and wasm targets.
 
 ### Scope Discipline
 
-Only the five binding families listed above are in scope for this
+Only the seven binding families listed above are in scope for this
 audit. Third-party protocol bindings (Aave, bridging adapters,
 condition schedulers) stay in their own capability crates and carry
 their own parity contracts when they land. Hand-rolled encoder helpers
@@ -598,8 +615,10 @@ Primary implementation points:
 - `crates/contracts/src/errors.rs`
 - `crates/contracts/src/vault.rs`
 - `crates/contracts/src/eth_flow.rs`
+- `crates/contracts/src/onchain_orders.rs`
 - `crates/contracts/src/proxy.rs`
 - `crates/contracts/src/erc20.rs`
+- `crates/contracts/src/weth.rs`
 - `crates/contracts/src/primitives.rs`
 - `crates/contracts/Cargo.toml`
 - `crates/trading/src/onchain.rs`
@@ -608,6 +627,7 @@ Primary implementation points:
 - `crates/contracts/abi/eth-flow/`
 - `crates/contracts/abi/eip1967/`
 - `crates/contracts/abi/erc20/`
+- `crates/contracts/abi/weth/`
 - `crates/contracts/tests/fixtures/domain_separator_parity.json`
 - `crates/signing/tests/fixtures/domain_separator_parity.json`
 - `parity/fixtures/contracts.json`
@@ -627,6 +647,11 @@ Primary regression coverage:
 - `crates/contracts/tests/interaction_contract.rs::interaction_encoder_neutral_for_unknown_custom_settlement_domain`
 - `crates/contracts/tests/vault_contract.rs::vault_role_hashes_match_the_canonical_solidity_packed_layout`
 - `crates/contracts/src/primitives.rs::tests::domain_separator_matches_shared_parity_fixture`
+- `crates/contracts/src/primitives.rs::tests::order_kind_marker_round_trips_and_rejects_unknown`
+- `crates/contracts/tests/onchain_orders.rs::order_placement_topic0_matches_canonical_hash`
+- `crates/contracts/tests/onchain_orders.rs::order_hash_matches_canonical_ethflow_foundry_vector`
+- `crates/contracts/tests/onchain_orders.rs::eip1271_placement_decodes_owner_uid_and_trailer`
+- `crates/contracts/tests/weth.rs::withdraw_selector_matches_canonical_keccak`
 - `crates/signing/src/domain.rs::tests::domain_separator_matches_shared_parity_fixture`
 - `crates/trading/tests/onchain_contract.rs`
 - `crates/trading/tests/parity_contract.rs`
@@ -644,6 +669,9 @@ Validation surface:
 cargo test -p cow-sdk-contracts --all-features
 cargo test -p cow-sdk-contracts --test property_contract
 cargo test -p cow-sdk-contracts --test interaction_contract
+cargo test -p cow-sdk-contracts --test onchain_orders
+cargo test -p cow-sdk-contracts --test weth
+cargo parity-verify-sol-provenance
 cargo test -p cow-sdk-contracts --test vault_contract vault_role_hashes_match_the_canonical_solidity_packed_layout
 cargo test -p cow-sdk-contracts --test parity_contract parity_fixture_cases_hold
 cargo test -p cow-sdk-contracts domain_separator_matches_shared_parity_fixture

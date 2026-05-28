@@ -71,7 +71,7 @@ flowchart TD
 | `cow-sdk` | Thin public facade | You want the main Rust SDK entrypoint. |
 | `cow-sdk-core` | Shared domain types, config, validation, runtime traits, and the `HttpTransport` seam with its native `ReqwestTransport` default | You need the common typed contracts. |
 | `cow-sdk-transport-policy` | Shared HTTP retry driver (`run_with_retry`), rate-limit, jitter, `Retry-After`, target-neutral wall clock, and transport classification policy | You need consistent transport behavior across typed clients. |
-| `cow-sdk-contracts` | `alloy::sol!`-generated typed bindings, the typed `Registry` deployment authority, and deterministic hashing and verification helpers | You need ABI-level, address-authority, or settlement-level primitives. |
+| `cow-sdk-contracts` | `alloy::sol!`-generated typed bindings, the typed `Registry` deployment authority, fail-closed `CoWSwapOnchainOrders` event decoding, and deterministic hashing and verification helpers | You need ABI-level, address-authority, or settlement-level primitives. |
 | `cow-sdk-signing` | Typed-data, signing, cancellation, UID helpers, and the `Eip1271VerificationCache` seam (the always-available `NoopEip1271VerificationCache` plus the feature-gated `InMemoryEip1271VerificationCache`) | You need signing without the full trading layer. |
 | `cow-sdk-app-data` | App-data encoding, schema handling, and CID behavior | You need app-data generation or validation. |
 | `cow-sdk-orderbook` | Typed orderbook transport over the `HttpTransport` seam, with the `OrderBookApiBuilder` typestate | You need explicit request and response control. |
@@ -421,6 +421,9 @@ switch success.
   under `crates/contracts/abi/` and gated by
   `cargo parity-verify-sol-provenance` against SHA-256 rows in
   `parity/source-lock.yaml`.
+- On-chain order event logs (`CoWSwapOnchainOrders` `OrderPlacement` /
+  `OrderInvalidation`) are decoded through a fail-closed, provider-free decoder
+  that validates every field and never panics on adversarial input.
 
 ## Related Docs
 

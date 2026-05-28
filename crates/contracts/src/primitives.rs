@@ -1,4 +1,7 @@
+use alloy_primitives::{B256, keccak256};
 use cow_sdk_core::{Address, BuyTokenDestination, OrderKind, SellTokenSource};
+
+use crate::ContractsError;
 
 pub(crate) const ORDER_UID_LENGTH_BYTES: usize = 56;
 
@@ -69,6 +72,68 @@ pub fn buy_balance_name(balance: BuyTokenDestination) -> &'static str {
     }
 }
 
+/// Resolves an order kind from its `GPv2` marker hash.
+///
+/// On the `GPv2Order` event ABI the `kind` field is a `bytes32` marker equal to
+/// the keccak-256 of the order-kind label (`"sell"` / `"buy"`). This is the
+/// inverse of [`order_kind_name`] and is keyed on the same canonical labels, so
+/// the forward and reverse mappings cannot drift.
+///
+/// # Errors
+///
+/// Returns [`ContractsError::UnknownOrderMarker`] when `marker` does not equal
+/// the keccak-256 of any supported order-kind label.
+pub fn order_kind_from_marker(marker: B256) -> Result<OrderKind, ContractsError> {
+    for candidate in [OrderKind::Buy, OrderKind::Sell] {
+        if marker == keccak256(order_kind_name(candidate).as_bytes()) {
+            return Ok(candidate);
+        }
+    }
+    Err(ContractsError::UnknownOrderMarker(marker))
+}
+
+/// Resolves a sell-token balance source from its `GPv2` marker hash.
+///
+/// The `sellTokenBalance` field on the `GPv2Order` event ABI is a `bytes32`
+/// marker equal to the keccak-256 of the settlement flag label
+/// (`"erc20"` / `"external"` / `"internal"`). Inverse of [`sell_balance_name`].
+///
+/// # Errors
+///
+/// Returns [`ContractsError::UnknownOrderMarker`] when `marker` does not equal
+/// the keccak-256 of any supported sell-token balance label.
+pub fn sell_balance_from_marker(marker: B256) -> Result<SellTokenSource, ContractsError> {
+    for candidate in [
+        SellTokenSource::Erc20,
+        SellTokenSource::External,
+        SellTokenSource::Internal,
+    ] {
+        if marker == keccak256(sell_balance_name(candidate).as_bytes()) {
+            return Ok(candidate);
+        }
+    }
+    Err(ContractsError::UnknownOrderMarker(marker))
+}
+
+/// Resolves a buy-token balance destination from its `GPv2` marker hash.
+///
+/// The `buyTokenBalance` field on the `GPv2Order` event ABI is a `bytes32`
+/// marker equal to the keccak-256 of the settlement flag label
+/// (`"erc20"` / `"internal"`). Inverse of [`buy_balance_name`].
+///
+/// # Errors
+///
+/// Returns [`ContractsError::UnknownOrderMarker`] when `marker` does not equal
+/// the keccak-256 of any supported buy-token balance label.
+pub fn buy_balance_from_marker(marker: B256) -> Result<BuyTokenDestination, ContractsError> {
+    for candidate in [BuyTokenDestination::Erc20, BuyTokenDestination::Internal] {
+        if marker == keccak256(buy_balance_name(candidate).as_bytes()) {
+            return Ok(candidate);
+        }
+    }
+    Err(ContractsError::UnknownOrderMarker(marker))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -115,5 +180,45 @@ mod tests {
     fn order_kind_name_table_matches_protocol_labels() {
         assert_eq!(order_kind_name(OrderKind::Buy), "buy");
         assert_eq!(order_kind_name(OrderKind::Sell), "sell");
+    }
+
+    #[test]
+    fn order_kind_marker_round_trips_and_rejects_unknown() {
+        for kind in [OrderKind::Buy, OrderKind::Sell] {
+            let marker = keccak256(order_kind_name(kind).as_bytes());
+            assert_eq!(order_kind_from_marker(marker).unwrap(), kind);
+        }
+        assert!(matches!(
+            order_kind_from_marker(B256::repeat_byte(0x01)),
+            Err(ContractsError::UnknownOrderMarker(_))
+        ));
+    }
+
+    #[test]
+    fn sell_balance_marker_round_trips_and_rejects_unknown() {
+        for source in [
+            SellTokenSource::Erc20,
+            SellTokenSource::External,
+            SellTokenSource::Internal,
+        ] {
+            let marker = keccak256(sell_balance_name(source).as_bytes());
+            assert_eq!(sell_balance_from_marker(marker).unwrap(), source);
+        }
+        assert!(matches!(
+            sell_balance_from_marker(B256::repeat_byte(0x02)),
+            Err(ContractsError::UnknownOrderMarker(_))
+        ));
+    }
+
+    #[test]
+    fn buy_balance_marker_round_trips_and_rejects_unknown() {
+        for destination in [BuyTokenDestination::Erc20, BuyTokenDestination::Internal] {
+            let marker = keccak256(buy_balance_name(destination).as_bytes());
+            assert_eq!(buy_balance_from_marker(marker).unwrap(), destination);
+        }
+        assert!(matches!(
+            buy_balance_from_marker(B256::repeat_byte(0x03)),
+            Err(ContractsError::UnknownOrderMarker(_))
+        ));
     }
 }

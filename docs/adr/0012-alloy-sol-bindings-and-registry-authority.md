@@ -1,11 +1,11 @@
 # ADR 0012: Canonical `alloy::sol!` Bindings And A Single Registry Authority
 
-- Status: Accepted
+- Status: Accepted (amended)
 - Date: 2026-04-21
-- Last reviewed: 2026-05-22
+- Last reviewed: 2026-05-28
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: contracts, bindings, abi, registry, deployments
-- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md), [ADR 0054](0054-onchain-order-event-decoding-is-fail-closed.md)
 
 ## Decision
 
@@ -122,3 +122,23 @@ the compile-time gate.
 
 - [Contract Bindings Parity Audit](../audit/contract-bindings-parity-audit.md)
 - [Deployment Registry Audit](../audit/deployment-registry-audit.md)
+
+## Amendment 2026-05-28: on-chain order event bindings and the wrapped-native token
+
+This decision now also governs three additional `alloy::sol!` bindings, each
+vendored byte-identically under the `ethflowcontract` repository in
+`parity/source-lock.yaml` and gated by the same `parity-verify-sol-provenance`
+contract:
+
+- the `CoWSwapOnchainOrders` event surface (`OrderPlacement` /
+  `OrderInvalidation`), whose fail-closed, provider-free log decoder is governed
+  by [ADR 0054](0054-onchain-order-event-decoding-is-fail-closed.md);
+- the `IWrappedNativeToken` (WETH9-family) `deposit` / `withdraw` surface, with
+  wrap / unwrap helpers that emit the canonical settlement interaction.
+
+The canonical binding families covered by this rule are therefore
+`GPv2Settlement`, `GPv2VaultRelayer`, `CoWSwapEthFlow`, `CoWSwapOnchainOrders`,
+the EIP-1967 proxy slot surface, `IERC20` / `IERC20Permit`, and
+`IWrappedNativeToken`. The committed Solidity mirror corpus moves from
+thirty-seven to forty files; every added mirror is a byte-identical pin
+verified on every push against GitHub-canonical content.

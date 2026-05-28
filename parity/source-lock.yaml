@@ -369,6 +369,9 @@ repositories:
   producer_paths:
   - src/CoWSwapEthFlow.sol
   - src/libraries/EthFlowOrder.sol
+  - src/interfaces/ICoWSwapOnchainOrders.sol
+  - src/mixins/CoWSwapOnchainOrders.sol
+  - src/interfaces/IWrappedNativeToken.sol
   vendored:
   - local: eth-flow/CoWSwapEthFlow.sol
     upstream: src/CoWSwapEthFlow.sol
@@ -376,6 +379,15 @@ repositories:
   - local: eth-flow/EthFlowOrder.sol
     upstream: src/libraries/EthFlowOrder.sol
     sha256: f6df001444c05bc44ac1140d777bce931f31b8a71e540aaec61623b74180715d
+  - local: eth-flow/ICoWSwapOnchainOrders.sol
+    upstream: src/interfaces/ICoWSwapOnchainOrders.sol
+    sha256: 9dfdd853858eb787e533edc26d316945646d94511c76b8f69a23ae58e0f40e66
+  - local: eth-flow/CoWSwapOnchainOrders.sol
+    upstream: src/mixins/CoWSwapOnchainOrders.sol
+    sha256: f6dd2d9d9cd0af65e964d9a709e94f4af4f2c40288cdb2fe20b5bd0be22df251
+  - local: weth/IWrappedNativeToken.sol
+    upstream: src/interfaces/IWrappedNativeToken.sol
+    sha256: ae888b45e1894c4c45a9b6440fcd0d6b0041e93afa07bd01a778f9609dfa1fd6
 - id: watch-tower
   remote: https://github.com/cowprotocol/watch-tower.git
   commit: 61eeaec55949337a42e66cb9d2439f400dd4e67a
