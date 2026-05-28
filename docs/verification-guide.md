@@ -41,9 +41,10 @@ the owning crate boundary as well: default diagnostics and serialized forms for
 credential-bearing config must keep secrets redacted while leaving explicit
 inputs and override seams intact. EIP-1271 verification routes through
 `verify_eip1271_signature_cached` with a mandatory
-`Eip1271VerificationCache` argument; only `Ok(())` and
-`Eip1271MagicValueMismatch` outcomes are cached, every other error class
-re-hits the chain.
+`Eip1271VerificationCache` argument; the cache is a positive-only set
+keyed on the full `(verifier, digest, signature_hash)` probe identity,
+records only `Ok(())` outcomes, and re-hits the chain for a mismatch and
+every other error class.
 
 ### Transport Ownership
 

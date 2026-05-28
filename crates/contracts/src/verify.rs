@@ -11,22 +11,40 @@
 //! `InMemoryEip1271VerificationCache` implementations in the signing
 //! crate.
 //!
-//! # Cached-value semantics
+//! # Cache key
 //!
-//! The cache stores `bool` values with one mapping:
+//! The cache key is the full probe identity `(verifier, digest,
+//! signature_hash)`, where `signature_hash` is the `keccak256` of the
+//! signature bytes. The on-chain `isValidSignature(hash, signature)`
+//! contract — and the upstream services validator — make the verdict a
+//! function of the signature as well as the digest, so the signature
+//! must be part of the key. Omitting it would let the cache return a
+//! verdict recorded for a *different* signature on the same digest.
 //!
-//! - `true` corresponds to a successful magic-value match (`Ok(())` from
-//!   the verifier).
-//! - `false` corresponds to a magic-value mismatch
-//!   (`Err(ContractsError::Eip1271MagicValueMismatch { .. })`).
+//! # Cached-value semantics (positive-only)
 //!
-//! Every other failure mode (transport, missing contract code,
-//! serialization, hex decode) is **never cached** — those probes must
-//! re-hit the chain on the next call so the caller observes the live
-//! state of the on-chain verifier.
+//! The cache is a *set* of probes observed VALID, not a `bool` map. Only
+//! a successful magic-value match (`Ok(())`) is recorded. A magic-value
+//! mismatch and every other failure mode (transport, missing contract
+//! code, serialization, hex decode) are **never recorded** — those
+//! probes re-hit the chain on the next call. Two safety properties
+//! follow:
+//!
+//! - a transient transport failure cannot pin a signer into a
+//!   "rejected" state; and
+//! - a not-yet-valid signature (for example a pre-sign/staged order that
+//!   becomes valid on-chain within the TTL) is never blocked by a stale
+//!   negative entry — the next probe observes the live activation.
+//!
+//! The TTL on the in-memory implementation bounds the only residual
+//! staleness, an optimistic VALID that survives an on-chain revocation
+//! until the entry expires; the cache is never an authoritative view of
+//! mutable on-chain state, and on-chain settlement re-checks the
+//! signature regardless.
 
 use std::fmt;
 
+use alloy_primitives::keccak256;
 use alloy_sol_types::SolCall;
 use cow_sdk_core::{Address, Provider};
 
@@ -39,26 +57,33 @@ use crate::signature::{
 
 /// Optional caching seam consumed by [`verify_eip1271_signature_cached`].
 ///
-/// Implementations carry the boolean outcome of an EIP-1271
-/// magic-value check keyed by the `(verifier, digest)` pair. The trait
-/// is `Send + Sync + 'static` so the cache may be shared across
-/// `tokio` tasks and across consumer crates without lifetime juggling.
+/// Implementations record the positive outcome of an EIP-1271 magic-value
+/// check, keyed by the full probe identity
+/// `(verifier, digest, signature_hash)`. The cache is a set of probes
+/// known to have verified VALID: there is no negative cache, so a probe
+/// that is not present (or has expired) re-hits the chain. The trait is
+/// `Send + Sync + 'static` so the cache may be shared across `tokio`
+/// tasks and across consumer crates without lifetime juggling.
 pub trait Eip1271VerificationCache: Send + Sync + 'static {
-    /// Returns the cached magic-value-check outcome for the
-    /// `(verifier, digest)` pair, if a non-expired entry is present.
+    /// Returns `true` iff the `(verifier, digest, signature_hash)` probe
+    /// was recorded VALID by a previous [`record_valid`] and the entry has
+    /// not expired. A `false` return means "unknown" — the caller must
+    /// re-check the chain; it never means "known invalid".
     ///
-    /// `Some(true)` corresponds to a previously observed `Ok(())`,
-    /// `Some(false)` corresponds to a previously observed
-    /// `Err(ContractsError::Eip1271MagicValueMismatch { .. })`, and
-    /// `None` indicates the cache has nothing reusable for the key.
-    fn get(&self, verifier: Address, digest: [u8; 32]) -> Option<bool>;
+    /// `signature_hash` is the `keccak256` of the signature bytes the
+    /// verifier consumes.
+    ///
+    /// [`record_valid`]: Eip1271VerificationCache::record_valid
+    fn contains_valid(&self, verifier: Address, digest: [u8; 32], signature_hash: [u8; 32])
+    -> bool;
 
-    /// Inserts the magic-value-check outcome for the
-    /// `(verifier, digest)` pair into the cache.
+    /// Records that the `(verifier, digest, signature_hash)` probe verified
+    /// VALID (the verifier returned the EIP-1271 magic value).
     ///
-    /// Implementations are free to evict pre-existing entries (TTL
-    /// expiry, capacity bounds, eviction policy) at insert time.
-    fn put(&self, verifier: Address, digest: [u8; 32], result: bool);
+    /// Only positive outcomes reach this method; implementations are free
+    /// to evict pre-existing entries (TTL expiry, capacity bounds, eviction
+    /// policy) at record time.
+    fn record_valid(&self, verifier: Address, digest: [u8; 32], signature_hash: [u8; 32]);
 }
 
 /// Verifies an EIP-1271 signature using an asynchronous provider, with
@@ -103,15 +128,16 @@ where
     C: Eip1271VerificationCache + ?Sized,
 {
     let digest_key = decode_digest_key(&request.digest);
+    let signature_key = keccak256(request.signature.as_slice()).0;
 
-    if let Some(cached) = cache.get(request.verifier, digest_key) {
+    if cache.contains_valid(request.verifier, digest_key, signature_key) {
         #[cfg(feature = "tracing")]
         tracing::debug!(
             target: "cow_sdk::verify_eip1271",
             cache_status = "hit",
-            verification_result = if cached { "valid" } else { "invalid" },
+            verification_result = "valid",
         );
-        return cache_hit_to_result(cached);
+        return Ok(());
     }
 
     #[cfg(feature = "tracing")]
@@ -156,56 +182,29 @@ where
         })?;
 
     let outcome = ensure_magic_value(&raw);
-    if let Some(cached) = cacheable_verification_outcome(&outcome) {
-        cache.put(request.verifier, digest_key, cached);
+    if outcome.is_ok() {
+        // Positive-only: only a verified VALID outcome is recorded.
+        cache.record_valid(request.verifier, digest_key, signature_key);
         #[cfg(feature = "tracing")]
         tracing::debug!(
             target: "cow_sdk::verify_eip1271",
             cache_status = "store",
-            verification_result = if cached { "valid" } else { "invalid" },
+            verification_result = "valid",
         );
-    } else {
-        #[cfg(feature = "tracing")]
-        emit_cache_skip_event();
+    }
+    #[cfg(feature = "tracing")]
+    if let Err(error) = &outcome {
+        if matches!(error, ContractsError::Eip1271MagicValueMismatch { .. }) {
+            tracing::debug!(
+                target: "cow_sdk::verify_eip1271",
+                cache_status = "skip",
+                verification_result = "invalid",
+            );
+        } else {
+            emit_cache_skip_event();
+        }
     }
     outcome
-}
-
-const fn cacheable_verification_outcome(outcome: &Result<(), ContractsError>) -> Option<bool> {
-    match outcome {
-        Ok(()) => Some(true),
-        Err(ContractsError::Eip1271MagicValueMismatch { .. }) => Some(false),
-        Err(
-            ContractsError::Core(_)
-            | ContractsError::Cancelled
-            | ContractsError::UnsupportedChain(_)
-            | ContractsError::InvalidOrderUidLength { .. }
-            | ContractsError::InvalidNumeric { .. }
-            | ContractsError::NumericOverflow { .. }
-            | ContractsError::InvalidFlags(_)
-            | ContractsError::UnsupportedSigningScheme(_)
-            | ContractsError::InvalidEip1271SignatureData
-            | ContractsError::UnsupportedEip1271Verifier { .. }
-            | ContractsError::Eip1271Provider { .. }
-            | ContractsError::MalformedEip1271Response { .. }
-            | ContractsError::MissingClearingPrice { .. }
-            | ContractsError::MissingExecutedAmount
-            | ContractsError::MissingTrade
-            | ContractsError::ZeroReceiver
-            | ContractsError::InvalidTokenIndex { .. }
-            | ContractsError::ForbiddenInteractionTarget { .. }
-            | ContractsError::Provider { .. }
-            | ContractsError::Abi(_)
-            | ContractsError::DecodeHex { .. }
-            | ContractsError::InvalidHexPrefix { .. }
-            | ContractsError::InvalidDecodedLength { .. }
-            | ContractsError::Serialization(_)
-            | ContractsError::InvalidSignatureLength { .. }
-            | ContractsError::InvalidSignatureRecoveryByte { .. }
-            | ContractsError::SignatureSchemeNotEcdsa
-            | ContractsError::SignatureRecovery { .. },
-        ) => None,
-    }
 }
 
 #[cfg(feature = "tracing")]
@@ -215,17 +214,6 @@ fn emit_cache_skip_event() {
         cache_status = "skip",
         verification_result = "error",
     );
-}
-
-const fn cache_hit_to_result(cached: bool) -> Result<(), ContractsError> {
-    if cached {
-        Ok(())
-    } else {
-        Err(ContractsError::Eip1271MagicValueMismatch {
-            expected: IERC1271::isValidSignatureCall::SELECTOR,
-            actual: [0u8; 4],
-        })
-    }
 }
 
 const fn decode_digest_key(digest: &cow_sdk_core::Hash32) -> [u8; 32] {

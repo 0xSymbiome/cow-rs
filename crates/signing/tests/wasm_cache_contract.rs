@@ -1,4 +1,4 @@
-#![cfg(target_arch = "wasm32")]
+#![cfg(all(target_arch = "wasm32", feature = "in-memory-cache"))]
 
 use std::{
     sync::{Arc, Mutex},
@@ -16,10 +16,11 @@ fn in_memory_cache_round_trips_without_panicking_on_wasm32() {
     let verifier = Address::new("0x1111111111111111111111111111111111111111")
         .expect("static verifier must stay valid");
     let digest = [0xAB; 32];
+    let signature_hash = [0xCD; 32];
 
-    assert_eq!(cache.get(verifier.clone(), digest), None);
-    cache.put(verifier.clone(), digest, true);
-    assert_eq!(cache.get(verifier, digest), Some(true));
+    assert!(!cache.contains_valid(verifier, digest, signature_hash));
+    cache.record_valid(verifier, digest, signature_hash);
+    assert!(cache.contains_valid(verifier, digest, signature_hash));
 }
 
 #[wasm_bindgen_test]
@@ -34,13 +35,14 @@ fn cache_ttl_boundary_holds_at_minus_one_and_misses_at_plus_one_on_wasm32() {
     let verifier = Address::new("0x2222222222222222222222222222222222222222")
         .expect("static verifier must stay valid");
     let digest = [0xCD; 32];
+    let signature_hash = [0xEF; 32];
 
-    cache.put(verifier.clone(), digest, true);
+    cache.record_valid(verifier, digest, signature_hash);
     clock.set(start + Duration::from_secs(4 * 60 + 59) + Duration::from_millis(999));
-    assert_eq!(cache.get(verifier.clone(), digest), Some(true));
+    assert!(cache.contains_valid(verifier, digest, signature_hash));
 
     clock.set(start + Duration::from_secs(5 * 60) + Duration::from_millis(1));
-    assert_eq!(cache.get(verifier, digest), None);
+    assert!(!cache.contains_valid(verifier, digest, signature_hash));
 }
 
 #[derive(Debug, Clone)]

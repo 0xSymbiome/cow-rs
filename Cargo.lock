@@ -1674,7 +1674,6 @@ dependencies = [
  "criterion",
  "futures-timer",
  "gloo-timers",
- "parking_lot",
  "proptest",
  "serde",
  "serde_json",

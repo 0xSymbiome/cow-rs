@@ -230,17 +230,6 @@ impl<C, A> TradingSdkBuilder<C, A> {
         self
     }
 
-    /// Returns a copy of this builder with an injected quote cache.
-    ///
-    /// The cache is instance-scoped and never registered globally on the
-    /// caller's behalf. Omitting this call keeps the pass-through
-    /// [`crate::NoopQuoteCache`] default.
-    #[must_use]
-    pub fn with_quote_cache(mut self, quote_cache: Arc<dyn crate::cache::QuoteCache>) -> Self {
-        self.options = self.options.with_quote_cache(quote_cache);
-        self
-    }
-
     fn validate_injected_orderbook_binding(&self) -> Result<(), TradingError> {
         if let Some(orderbook_client) = self.options.orderbook_client() {
             validate_orderbook_context(

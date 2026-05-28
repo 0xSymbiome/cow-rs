@@ -128,16 +128,18 @@ pub use cow_sdk_core::{HttpTransport, TransportError};
 pub use cow_sdk_core::{ReqwestTransport, ReqwestTransportConfig};
 pub use cow_sdk_orderbook as orderbook;
 pub use cow_sdk_signing as signing;
+#[cfg(feature = "in-memory-cache")]
+#[cfg_attr(docsrs, doc(cfg(feature = "in-memory-cache")))]
+pub use cow_sdk_signing::InMemoryEip1271VerificationCache;
 /// Optional caching seam for EIP-1271 signature verification.
 ///
 /// [`Eip1271VerificationCache`] is the trait consumed by
 /// [`cow_sdk_contracts::verify_eip1271_signature_cached`].
-/// [`NoopEip1271VerificationCache`] is the zero-sized default for callers
-/// that do not want caching; [`InMemoryEip1271VerificationCache`] ships
-/// a TTL-respecting, capacity-bounded in-memory store.
-pub use cow_sdk_signing::{
-    Eip1271VerificationCache, InMemoryEip1271VerificationCache, NoopEip1271VerificationCache,
-};
+/// [`NoopEip1271VerificationCache`] is the always-available zero-sized
+/// default for callers that do not want caching. The TTL-respecting,
+/// capacity-bounded [`InMemoryEip1271VerificationCache`] is re-exported only
+/// when the opt-in `in-memory-cache` feature is enabled.
+pub use cow_sdk_signing::{Eip1271VerificationCache, NoopEip1271VerificationCache};
 pub use cow_sdk_trading as trading;
 
 #[cfg(all(feature = "wasm", target_arch = "wasm32"))]

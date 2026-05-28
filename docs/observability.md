@@ -189,9 +189,11 @@ only `verifier`; it does not record `chain_id`, signature bytes, raw
 digest content, provider URLs, or response bodies.
 
 The same target emits `debug` events for cache and verification outcomes.
-`cache_status` is one of `hit`, `miss`, `store`, or `skip`.
-`verification_result` is present when the result is known and is one of
-`valid`, `invalid`, or `error`.
+`cache_status` is one of `hit`, `miss`, `store`, or `skip`. Because the
+cache records only positive verdicts, a `hit` and a `store` always carry
+`valid`; a magic-value mismatch surfaces as `skip` with `invalid`, and a
+transient error as `skip` with `error`. `verification_result` is present
+when the result is known and is one of `valid`, `invalid`, or `error`.
 
 ### `cow-sdk-signing`
 

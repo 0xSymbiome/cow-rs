@@ -40,6 +40,9 @@ alloy-signer = [
 ]
 browser-wallet = ["dep:cow-sdk-browser-wallet"]
 http-classifier = ["cow-sdk-transport-policy/reqwest-classifier"]
+# Re-exports the opt-in `InMemoryEip1271VerificationCache`. Off by default;
+# the trait and `NoopEip1271VerificationCache` are always available.
+in-memory-cache = ["cow-sdk-signing/in-memory-cache"]
 wasm = ["dep:cow-sdk-pure-helpers", "dep:cow-sdk-wasm"]
 tracing = [
     "cow-sdk-alloy?/tracing",

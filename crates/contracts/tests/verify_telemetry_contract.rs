@@ -63,27 +63,23 @@ async fn verifier_emits_canonical_span_and_safe_miss_store_events() {
 async fn verifier_emits_hit_event_without_reaching_provider() {
     let capture = TraceCapture::install();
     let provider = MockProvider::new();
-    let cache = TestCache::with_cached(false);
+    let cache = TestCache::with_valid();
 
-    let error = verify_eip1271_signature_cached(
+    verify_eip1271_signature_cached(
         &provider,
         &verification_request(address("0x1111111111111111111111111111111111111111"), "22"),
         &cache,
     )
     .await
-    .expect_err("cached invalid magic value should fail without provider I/O");
+    .expect("cached valid probe should verify without provider I/O");
 
-    assert!(matches!(
-        error,
-        ContractsError::Eip1271MagicValueMismatch { .. }
-    ));
     assert!(
         provider.calls.borrow().is_empty(),
         "cache hits must not perform a provider call"
     );
 
     let events = capture.events();
-    assert_cache_event(&events, "hit", Some("invalid"));
+    assert_cache_event(&events, "hit", Some("valid"));
     assert_events_have_no_forbidden_fields(&events);
 }
 
@@ -107,9 +103,10 @@ async fn verifier_emits_skip_event_for_non_cacheable_errors() {
         error,
         ContractsError::MalformedEip1271Response { .. }
     ));
-    assert!(
-        cache.puts().is_empty(),
-        "malformed responses must not be cached"
+    assert_eq!(
+        cache.records(),
+        0,
+        "malformed responses must not be recorded"
     );
 
     let events = capture.events();
@@ -183,39 +180,44 @@ fn assert_events_have_no_forbidden_fields(events: &[CapturedEvent]) {
 
 #[derive(Default)]
 struct TestCache {
-    cached: Mutex<Option<bool>>,
-    puts: Mutex<Vec<bool>>,
+    contains_valid: Mutex<bool>,
+    records: Mutex<usize>,
 }
 
 impl TestCache {
-    fn with_cached(cached: bool) -> Self {
+    fn with_valid() -> Self {
         Self {
-            cached: Mutex::new(Some(cached)),
-            puts: Mutex::default(),
+            contains_valid: Mutex::new(true),
+            records: Mutex::default(),
         }
     }
 
-    fn puts(&self) -> Vec<bool> {
-        self.puts
+    fn records(&self) -> usize {
+        *self
+            .records
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .clone()
     }
 }
 
 impl Eip1271VerificationCache for TestCache {
-    fn get(&self, _verifier: Address, _digest: [u8; 32]) -> Option<bool> {
+    fn contains_valid(
+        &self,
+        _verifier: Address,
+        _digest: [u8; 32],
+        _signature_hash: [u8; 32],
+    ) -> bool {
         *self
-            .cached
+            .contains_valid
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
-    fn put(&self, _verifier: Address, _digest: [u8; 32], result: bool) {
-        self.puts
+    fn record_valid(&self, _verifier: Address, _digest: [u8; 32], _signature_hash: [u8; 32]) {
+        *self
+            .records
             .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .push(result);
+            .unwrap_or_else(std::sync::PoisonError::into_inner) += 1;
     }
 }
 

@@ -32,8 +32,6 @@ pub use cow_sdk_orderbook::{OrderbookClient, OrderbookRuntimeBinding};
 pub mod allowance;
 /// Trading app-data generation and quote-to-post merge helpers.
 pub mod app_data;
-/// Opt-in quote-cache seam with pass-through and TTL reference implementations.
-pub mod cache;
 /// Off-chain cancellation helpers.
 pub mod cancel;
 /// Trading crate error types.
@@ -62,10 +60,6 @@ pub mod wait;
 
 pub use allowance::{approval_transaction, approve_cow_protocol, get_cow_protocol_allowance};
 pub use app_data::{build_app_data, merge_and_seal_app_data, params_from_doc};
-pub use cache::{
-    Clock, DEFAULT_QUOTE_CACHE_CAPACITY, DEFAULT_QUOTE_CACHE_TTL, InMemoryQuoteCache,
-    NoopQuoteCache, QuoteCache, QuoteCacheKey, SystemClock,
-};
 pub use cancel::off_chain_cancel_order;
 pub use error::{OrderbookContextValue, TradingError};
 pub use onchain::{

@@ -156,9 +156,9 @@ architecture record.
 newtypes around `alloy_primitives::U256` and `alloy_primitives::I256`
 respectively per
 [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md). The
-newtypes carry cow-owned `Display`, `Serialize`, `Deserialize`, and
-arithmetic operator (`Add`, `Sub`, `Mul`, `AddAssign`, etc.) impls,
-plus checked, saturating, and `pow` arithmetic surfaces. The
+newtypes carry cow-owned `Display`, `Serialize`, and `Deserialize`
+impls plus a fallible-by-return arithmetic surface (`checked_*`
+returning `Option`, and explicit `saturating_*` clamps). The
 decimal-string wire format is locked by the cow-owned
 `Serialize`/`Deserialize` impls; the strict-decimal-only fail-closed
 contract on the `Deserialize` boundary rejects `0x`/`0X`/`0o`/`0O`/`0b`/`0B`-prefixed
@@ -240,3 +240,32 @@ changing observable behaviour.
 The Trade-Parameter Lifecycle Audit and the Trading SDK Runtime
 Prerequisites Audit are the standing current-state proofs for the
 post-amendment invariant.
+
+## Amendment 2026-05-28: checked-only typed-amount arithmetic
+
+`Amount` and `SignedAmount` expose no bare arithmetic operators. The
+`Add` / `Sub` / `Mul` (and `*Assign`) impls and the `pow` method are
+removed from both newtypes. The supported arithmetic surface is
+`checked_add` / `checked_sub` / `checked_mul` / `checked_pow` (each
+returning `Option`), the explicit `saturating_*` clamps, and — on
+`SignedAmount` — `checked_neg` / `checked_abs` / `checked_unsigned_abs`.
+A caller that needs raw wrapping reaches through `as_u256` /
+`into_u256` (respectively `as_i256` / `into_i256`), keeping the wrapping
+intent visible at the type boundary.
+
+The bare operators delegated to the inner alloy primitives, whose
+overflow behaviour is unsafe for financial amounts: `U256` wraps
+silently in every build profile (so `sell - fee` for `fee > sell`
+silently became a value near `2^256`), while `I256` panicked only in
+debug builds and wrapped silently in release. Removing the operators
+makes the two newtypes symmetric and total/fallible — an overflow or
+underflow is always either an `Option::None` the caller must handle or
+an explicit clamp, never a silent corruption and never a
+runtime-input-dependent panic, which also aligns the typed-amount
+surface with [ADR 0033](0033-minimum-viable-panic-surface.md). The
+arithmetic-operator clause in the 2026-05-22 amendment above is
+superseded accordingly; the typed atomic-vs-decimal boundary and the
+typestate-builder terminals recorded in the Decision are preserved
+verbatim. A committed compile-fail witness pins the removal so a
+wrapping (or debug-only panicking) operator cannot silently return to
+the typed amount surface.

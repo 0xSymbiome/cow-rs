@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-21
-- Last reviewed: 2026-05-26
+- Last reviewed: 2026-05-28
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: signing, eip1271, caching, security
 - Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
@@ -39,27 +39,33 @@ crates away.
 
 ## Must Remain True
 
-- Public surface: `Eip1271VerificationCache` defines a narrow trait with
-  `get(verifier: Address, digest: [u8; 32]) -> Option<bool>` and
-  `put(verifier: Address, digest: [u8; 32], result: bool)` as the sole
-  methods, and `Send + Sync + 'static` as the bound. The function
+- Public surface: `Eip1271VerificationCache` defines a narrow positive-only
+  set trait with
+  `contains_valid(verifier: Address, digest: [u8; 32], signature_hash: [u8; 32]) -> bool`
+  and
+  `record_valid(verifier: Address, digest: [u8; 32], signature_hash: [u8; 32])`
+  as the sole methods, and `Send + Sync + 'static` as the bound (see the
+  2026-05-28 amendment for the move from `get`/`put` to this shape). The
+  key is the full probe identity including the signature hash; there is
+  no `bool` value and no negative cache. The function
   `verify_eip1271_signature_cached` takes `&impl Eip1271VerificationCache`
-  as a required parameter — there is no overload that defaults the
-  cache. `NoopEip1271VerificationCache` and
-  `InMemoryEip1271VerificationCache` are the shipped canonical impls;
-  third-party impls (Redis, bounded LRU, Postgres) are expected to live
-  in downstream code.
-- Runtime and support: the cache stores `true` only on a successful
-  magic-value match and `false` only on a verified
-  `Eip1271MagicValueMismatch` outcome. Every other error class
-  (transport failure, missing contract code, serialization error, hex
-  decode error, provider error) is never cached — those probes re-hit
-  the chain on the next call so a transient network failure cannot pin a
-  signer into a permanent "rejected" state and a stale `false` cannot
-  block a signer whose on-chain state has since changed. The TTL is the
-  second safety rail: `InMemoryEip1271VerificationCache` expires entries
-  after five minutes by default so the cache never pretends to be an
-  authoritative view of mutable on-chain state.
+  as a required parameter — there is no overload that defaults the cache.
+  `NoopEip1271VerificationCache` is always available and carries no
+  dependencies; `InMemoryEip1271VerificationCache` ships behind the
+  opt-in `in-memory-cache` feature (default off). Third-party impls
+  (Redis, bounded LRU, Postgres) are expected to live in downstream code.
+- Runtime and support: the cache records a probe only on a successful
+  magic-value match (`Ok(())`). A magic-value mismatch and every other
+  error class (transport failure, missing contract code, serialization
+  error, hex decode error, provider error) are never recorded — those
+  probes re-hit the chain on the next call, so a transient network
+  failure cannot pin a signer into a "rejected" state and a not-yet-valid
+  signature that becomes valid on-chain within the TTL is never blocked by
+  a stale negative entry. The TTL is the second safety rail:
+  `InMemoryEip1271VerificationCache` expires entries after five minutes by
+  default so the cache never pretends to be an authoritative view of
+  mutable on-chain state, and on-chain settlement re-checks the signature
+  regardless.
 - Validation and review: a Noop miss contract test asserts every
   `get` against `NoopEip1271VerificationCache` returns `None`. A TTL
   contract test asserts `InMemoryEip1271VerificationCache` drops an
@@ -162,3 +168,52 @@ signing-side read-then-write split because the trading cache preserves
 the existing lazy-expiry-on-lookup property: changing it to a read-only
 hot path would silently shift observable behaviour for downstream code
 that relies on lookup-driven eviction.
+
+> Superseded by the 2026-05-28 amendment below: the trading `QuoteCache`
+> is removed.
+
+## Amendment 2026-05-28: signature-keyed positive-only cache, feature gate, and quote-cache removal
+
+The cache contract was tightened in three ways and the sibling quote cache
+was removed.
+
+- **The key now includes the signature.** The trait keys on the full probe
+  identity `(verifier, digest, signature_hash)`, where `signature_hash` is
+  the `keccak256` of the signature bytes. The on-chain
+  `isValidSignature(hash, signature)` verdict, and the upstream off-chain
+  signature validator, are functions of the signature as well as the
+  digest. The previous `(verifier, digest)` key could return a verdict
+  recorded for a *different* signature on the same digest; the
+  `verify_eip1271_signature_cached` helper now folds the signature hash
+  into the key before consulting the cache.
+- **Positive-only set semantics.** The trait is now `contains_valid` /
+  `record_valid` rather than `get` / `put` over a `bool`. Only `Ok(())`
+  outcomes are recorded; a magic-value mismatch is never recorded. This
+  completes the safety goal the original decision already stated — that a
+  stale negative "cannot block a signer whose on-chain state has since
+  changed" — which caching a genuine `Eip1271MagicValueMismatch` did not
+  fully honour. A `contains_valid` miss now means "unknown", never "known
+  invalid", so a pre-sign or staged order that becomes valid on-chain
+  within the TTL is never blocked by a stale negative entry. Negative
+  caching is unrepresentable in the trait.
+- **The in-memory implementation sits behind a feature.** The trait and
+  the dependency-free `NoopEip1271VerificationCache` are always available;
+  the capacity-bounded, TTL-respecting `InMemoryEip1271VerificationCache`
+  and its `Clock` machinery now sit behind the opt-in `in-memory-cache`
+  feature (default off). That feature is the only reason the signing crate
+  pulls `parking_lot` (and, on `wasm32`, `web-time`), so the default build
+  and the default wasm bundle carry neither. The facade re-exports
+  `InMemoryEip1271VerificationCache` only under its own matching feature.
+
+This supersedes the 2026-05-26 amendment above: the `cow-sdk-trading`
+`QuoteCache` trait, its `QuoteCacheKey`, and its `NoopQuoteCache` /
+`InMemoryQuoteCache` implementations are removed. That seam was never
+consulted by the quote flow, its key omitted quote-determining inputs (the
+effective app-data document — including partner fee and hooks — and the
+price-quality variant), and a quote's economic value is intrinsically
+time-sensitive in a way a five-minute TTL cannot bound without an
+authoritative on-chain re-check. The shared cache *primitive* pattern
+(lock, clock seam, capacity bound, TTL boundary, wasm time source) remains
+documented for the EIP-1271 cache; any future cache built on it must carry
+an explicit argument that its key contains every input the cached value
+depends on.

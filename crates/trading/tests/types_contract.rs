@@ -20,7 +20,7 @@ use cow_sdk_core::{
 };
 use cow_sdk_orderbook::{OrderbookClient, SigningScheme};
 use cow_sdk_trading::{
-    LimitTradeParameters, NoopQuoteCache, OrderTraderParameters, PartialTraderParameters,
+    LimitTradeParameters, OrderTraderParameters, PartialTraderParameters,
     PostTradeAdditionalParams, QuoterParameters, SlippageToleranceRequest,
     SlippageToleranceResponse, TradeAdvancedSettings, TradeParameters, TraderParameters,
     TradingSdkOptions,
@@ -423,24 +423,14 @@ fn limit_trade_parameters_new_seeds_documented_defaults_and_with_setters_attach_
 }
 
 #[test]
-fn trading_sdk_options_builders_round_trip_and_debug_reflects_presence() {
+fn trading_sdk_options_default_reports_no_orderbook_client_and_debug_reflects_absence() {
     let empty = TradingSdkOptions::new();
     assert!(empty.orderbook_client().is_none());
-    assert!(empty.quote_cache().is_none());
 
     let debug = format!("{empty:?}");
     assert!(debug.contains("order_book_api: false"));
-    assert!(debug.contains("quote_cache: false"));
 
-    // Inject a noop quote cache and assert the option surfaces it.
-    let cache: Arc<dyn cow_sdk_trading::QuoteCache> = Arc::new(NoopQuoteCache);
-    let populated = empty.with_quote_cache(cache);
-    assert!(populated.quote_cache().is_some());
-    let debug = format!("{populated:?}");
-    assert!(debug.contains("quote_cache: true"));
-
-    // orderbook_client: take the default trait-object check without a real client.
-    // Implementations live in cow_sdk_orderbook; we use a trait object surfaced
-    // through TradingSdk's typed builder pattern via FakeClient avoidance.
+    // orderbook_client implementations live in cow_sdk_orderbook; the typed
+    // trait-object surface is exercised through TradingSdk's builder paths.
     drop::<Option<Arc<dyn OrderbookClient>>>(None);
 }

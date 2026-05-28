@@ -1,4 +1,4 @@
-#[cfg(not(feature = "browser-wallet"))]
+#[cfg(all(not(feature = "browser-wallet"), not(feature = "in-memory-cache")))]
 #[test]
 fn public_api_default_features_only_snapshot_matches() {
     use cow_sdk::{
@@ -31,7 +31,7 @@ fn public_api_default_features_only_snapshot_matches() {
     );
 }
 
-#[cfg(not(feature = "browser-wallet"))]
+#[cfg(all(not(feature = "browser-wallet"), not(feature = "in-memory-cache")))]
 const fn default_snapshot() -> &'static str {
     "\
 cow-sdk public API snapshot: default features
@@ -51,7 +51,6 @@ root exports:
 - ErrorClass
 - HelperOnlySdk
 - HttpTransport
-- InMemoryEip1271VerificationCache
 - NoopEip1271VerificationCache
 - OrderBookApi
 - OrderUid
@@ -69,6 +68,7 @@ root exports:
 feature-gated exports absent:
 - browser_wallet
 - BrowserWalletSigner
+- InMemoryEip1271VerificationCache
 "
 }
 

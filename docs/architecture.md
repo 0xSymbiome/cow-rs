@@ -72,10 +72,10 @@ flowchart TD
 | `cow-sdk-core` | Shared domain types, config, validation, runtime traits, and the `HttpTransport` seam with its native `ReqwestTransport` default | You need the common typed contracts. |
 | `cow-sdk-transport-policy` | Shared HTTP retry, rate-limit, jitter, `Retry-After`, and transport classification policy | You need consistent transport behavior across typed clients. |
 | `cow-sdk-contracts` | `alloy::sol!`-generated typed bindings, the typed `Registry` deployment authority, and deterministic hashing and verification helpers | You need ABI-level, address-authority, or settlement-level primitives. |
-| `cow-sdk-signing` | Typed-data, signing, cancellation, UID helpers, and the `Eip1271VerificationCache` default implementations | You need signing without the full trading layer. |
+| `cow-sdk-signing` | Typed-data, signing, cancellation, UID helpers, and the `Eip1271VerificationCache` seam (the always-available `NoopEip1271VerificationCache` plus the feature-gated `InMemoryEip1271VerificationCache`) | You need signing without the full trading layer. |
 | `cow-sdk-app-data` | App-data encoding, schema handling, and CID behavior | You need app-data generation or validation. |
 | `cow-sdk-orderbook` | Typed orderbook transport over the `HttpTransport` seam, with the `OrderBookApiBuilder` typestate | You need explicit request and response control. |
-| `cow-sdk-trading` | Quote-to-order workflows and the `QuoteCache` opt-in seam with `NoopQuoteCache` and `InMemoryQuoteCache` default implementations | You need the main trading orchestration layer. |
+| `cow-sdk-trading` | Quote-to-order workflows plus the quote, submit, cancel, and approve orchestration surface | You need the main trading orchestration layer. |
 | `cow-sdk-subgraph` | Read-only subgraph access over the `HttpTransport` seam, with the `SubgraphApiBuilder` typestate | You need GraphQL reads or custom subgraph queries. |
 | `cow-sdk-transport-wasm` | Browser-target `HttpTransport` implementation (`FetchTransport`) | You build for `wasm32-unknown-unknown` and need the shipped browser default. |
 | `cow-sdk-wasm` | TypeScript-callable wasm-bindgen bindings over deterministic SDK helpers, typed callbacks, orderbook/subgraph/IPFS clients, and trading flows | JavaScript or TypeScript should call the Rust SDK through wasm exports. |

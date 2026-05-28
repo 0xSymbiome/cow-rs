@@ -40,6 +40,22 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- The EIP-1271 verification cache is now a positive-only set keyed on the
+  full `(verifier, digest, signature_hash)` probe identity. The
+  `cow_sdk_contracts::Eip1271VerificationCache` trait replaces its
+  `get` / `put` methods with `contains_valid` / `record_valid`:
+  `verify_eip1271_signature_cached` folds `keccak256(signature)` into the
+  cache key and records only successful magic-value matches, so a probe
+  carrying a different signature on the same digest can never be served a
+  verdict recorded for another signature, and a magic-value mismatch is
+  never cached (a miss means "unknown", never "known invalid"). The
+  trait and the dependency-free `NoopEip1271VerificationCache` stay always
+  available; the in-memory `InMemoryEip1271VerificationCache` and the
+  `parking_lot` / `web-time` dependencies it requires now ship behind the
+  new default-off `in-memory-cache` feature on `cow-sdk-signing` and the
+  `cow-sdk` facade. See
+  [ADR 0014](docs/adr/0014-eip1271-verification-cache.md).
+
 - `cow_sdk_core::Amount` and `cow_sdk_core::SignedAmount` use a checked
   arithmetic surface — `checked_add` / `checked_sub` / `checked_mul` /
   `checked_pow` (returning `Option`) and explicit `saturating_*` clamps
@@ -93,6 +109,18 @@ The first functional crate-family release begins at `0.1.0`.
   authoritative declaration. The fallback value is unchanged.
 
 ### Removed
+
+- The `cow_sdk_trading` quote cache is removed: the `QuoteCache` trait,
+  its `QuoteCacheKey`, the `NoopQuoteCache` and `InMemoryQuoteCache`
+  implementations, the `TradingSdkBuilder::with_quote_cache` /
+  `TradingSdkOptions::with_quote_cache` setters, and the
+  `DEFAULT_QUOTE_CACHE_TTL` / `DEFAULT_QUOTE_CACHE_CAPACITY` constants. The
+  seam was never consulted by the quote flow, its key omitted
+  quote-determining inputs (the effective app-data document and the
+  price-quality variant), and a quote's economic value is too
+  time-sensitive to memoize behind a fixed TTL without an authoritative
+  on-chain re-check. This also drops the `parking_lot` dependency from
+  `cow-sdk-trading`.
 
 - `cow_sdk_trading::AppCode`, `cow_sdk_trading::AppCodeError`, and
   the trading-crate `crates/trading/src/types/app_code.rs` module

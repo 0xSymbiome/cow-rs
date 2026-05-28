@@ -15,7 +15,6 @@ root exports:
 - ErrorClass
 - HelperOnlySdk
 - HttpTransport
-- InMemoryEip1271VerificationCache
 - NoopEip1271VerificationCache
 - OrderBookApi
 - OrderUid
@@ -33,3 +32,4 @@ root exports:
 feature-gated exports absent:
 - browser_wallet
 - BrowserWalletSigner
+- InMemoryEip1271VerificationCache

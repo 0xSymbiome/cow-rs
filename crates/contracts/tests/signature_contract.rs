@@ -21,38 +21,54 @@ use sha3::{Digest, Keccak256};
 struct NoCache;
 
 impl Eip1271VerificationCache for NoCache {
-    fn get(&self, _verifier: Address, _digest: [u8; 32]) -> Option<bool> {
-        None
+    fn contains_valid(
+        &self,
+        _verifier: Address,
+        _digest: [u8; 32],
+        _signature_hash: [u8; 32],
+    ) -> bool {
+        false
     }
-    fn put(&self, _verifier: Address, _digest: [u8; 32], _result: bool) {}
+    fn record_valid(&self, _verifier: Address, _digest: [u8; 32], _signature_hash: [u8; 32]) {}
 }
+
+/// Recorded `(verifier, digest, signature_hash)` probe identity.
+type CacheWrite = (Address, [u8; 32], [u8; 32]);
 
 #[derive(Default)]
 struct RecordingCache {
-    hit: Mutex<Option<bool>>,
-    writes: Mutex<Vec<(Address, [u8; 32], bool)>>,
+    hit: Mutex<bool>,
+    writes: Mutex<Vec<CacheWrite>>,
 }
 
 impl RecordingCache {
-    const fn with_hit(hit: Option<bool>) -> Self {
+    const fn with_valid_hit() -> Self {
         Self {
-            hit: Mutex::new(hit),
+            hit: Mutex::new(true),
             writes: Mutex::new(Vec::new()),
         }
     }
 
-    fn writes(&self) -> Vec<(Address, [u8; 32], bool)> {
+    fn writes(&self) -> Vec<CacheWrite> {
         self.writes.lock().unwrap().clone()
     }
 }
 
 impl Eip1271VerificationCache for RecordingCache {
-    fn get(&self, _verifier: Address, _digest: [u8; 32]) -> Option<bool> {
+    fn contains_valid(
+        &self,
+        _verifier: Address,
+        _digest: [u8; 32],
+        _signature_hash: [u8; 32],
+    ) -> bool {
         *self.hit.lock().unwrap()
     }
 
-    fn put(&self, verifier: Address, digest: [u8; 32], result: bool) {
-        self.writes.lock().unwrap().push((verifier, digest, result));
+    fn record_valid(&self, verifier: Address, digest: [u8; 32], signature_hash: [u8; 32]) {
+        self.writes
+            .lock()
+            .unwrap()
+            .push((verifier, digest, signature_hash));
     }
 }
 
@@ -540,12 +556,12 @@ async fn async_eip1271_verification_reads_contract_code_and_magic_value() {
 }
 
 #[tokio::test(flavor = "current_thread")]
-async fn async_eip1271_cache_hit_false_fails_closed_without_provider_call() {
+async fn async_eip1271_cache_hit_valid_succeeds_without_provider_call() {
     let provider = AsyncMockProvider::new();
     let verifier = Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap();
-    let cache = RecordingCache::with_hit(Some(false));
+    let cache = RecordingCache::with_valid_hit();
 
-    let error = verify_eip1271_signature_cached(
+    verify_eip1271_signature_cached(
         &provider,
         &Eip1271VerificationRequest::new(
             verifier,
@@ -555,31 +571,26 @@ async fn async_eip1271_cache_hit_false_fails_closed_without_provider_call() {
         &cache,
     )
     .await
-    .expect_err("cached invalid EIP-1271 result must fail closed");
+    .expect("a cached valid probe must verify without provider I/O");
 
-    assert!(matches!(
-        error,
-        ContractsError::Eip1271MagicValueMismatch {
-            expected: [0x16, 0x26, 0xba, 0x7e],
-            actual: [0, 0, 0, 0],
-        }
-    ));
     assert!(
         provider.calls.borrow().is_empty(),
         "cache hits must not call the verifier contract",
     );
     assert!(
         cache.writes().is_empty(),
-        "cache hits must not rewrite the cache entry",
+        "cache hits must not re-record the probe",
     );
 }
 
 #[tokio::test(flavor = "current_thread")]
-async fn async_eip1271_verification_caches_only_magic_value_outcomes_by_digest() {
+async fn async_eip1271_verification_records_only_valid_outcomes_keyed_by_signature() {
     let provider = AsyncMockProvider::new();
     let verifier = Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap();
     provider.set_code(Some("0x6001600055"));
     let cache = RecordingCache::default();
+    // The key folds in the signature: keccak256 of the "0x1234" signature bytes.
+    let signature_hash: [u8; 32] = Keccak256::digest([0x12, 0x34]).into();
 
     provider.set_response("\"0x1626ba7e\"");
     verify_eip1271_signature_cached(
@@ -593,7 +604,7 @@ async fn async_eip1271_verification_caches_only_magic_value_outcomes_by_digest()
     )
     .await
     .expect("valid magic value must verify");
-    assert_eq!(cache.writes(), vec![(verifier, [0x77; 32], true)]);
+    assert_eq!(cache.writes(), vec![(verifier, [0x77; 32], signature_hash)]);
 
     provider.set_response("\"0xffffffff\"");
     let mismatch = verify_eip1271_signature_cached(
@@ -616,7 +627,8 @@ async fn async_eip1271_verification_caches_only_magic_value_outcomes_by_digest()
     ));
     assert_eq!(
         cache.writes(),
-        vec![(verifier, [0x77; 32], true), (verifier, [0x78; 32], false)]
+        vec![(verifier, [0x77; 32], signature_hash)],
+        "a magic-value mismatch must not be recorded (positive-only cache)",
     );
 
     provider.set_response("{\"unexpected\":true}");
@@ -631,7 +643,7 @@ async fn async_eip1271_verification_caches_only_magic_value_outcomes_by_digest()
         &cache,
     )
     .await
-    .expect_err("malformed responses must not be cached as verifier outcomes");
+    .expect_err("malformed responses must not be recorded as verifier outcomes");
     assert!(matches!(
         malformed,
         ContractsError::MalformedEip1271Response { .. }
@@ -639,7 +651,7 @@ async fn async_eip1271_verification_caches_only_magic_value_outcomes_by_digest()
     assert_eq!(
         cache.writes(),
         before_malformed,
-        "non-cacheable verifier errors must not be stored",
+        "non-cacheable verifier errors must not be recorded",
     );
 }
 
