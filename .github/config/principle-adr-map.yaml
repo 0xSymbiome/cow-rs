@@ -54,12 +54,12 @@ principles:
   - id: 8
     name: Chain-RPC Runtime Neutrality
     primary_adr: "0024"
-    supporting_adrs: ["0010", "0014", "0028"]
+    supporting_adrs: ["0010", "0014", "0028", "0057"]
 
   - id: 9
     name: Canonical Contract Bindings
     primary_adr: "0012"
-    supporting_adrs: ["0020", "0022", "0023", "0052"]
+    supporting_adrs: ["0020", "0022", "0023", "0052", "0054"]
 
   - id: 10
     name: Evidence-Backed Public Claims

@@ -116,7 +116,7 @@ The canonical EVM primitive layer is `alloy_primitives` and the canonical
 EIP-712 / Solidity-binding layer is `alloy_sol_types` per
 [ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md).
 
-**Anchored by**: [ADR 0012](adr/0012-alloy-sol-bindings-and-registry-authority.md) (primary). Supporting: [ADR 0020](adr/0020-ethflow-owner-threading.md), [ADR 0022](adr/0022-ecdsa-signature-v-normalization.md), [ADR 0023](adr/0023-legacy-compatibility-shim-removal.md), [ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md).
+**Anchored by**: [ADR 0012](adr/0012-alloy-sol-bindings-and-registry-authority.md) (primary). Supporting: [ADR 0020](adr/0020-ethflow-owner-threading.md), [ADR 0022](adr/0022-ecdsa-signature-v-normalization.md), [ADR 0023](adr/0023-legacy-compatibility-shim-removal.md), [ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md), [ADR 0054](adr/0054-onchain-order-event-decoding-is-fail-closed.md).
 
 **Operational doctrine**: [Alloy Doctrine](alloy-doctrine.md) — the
 three-bucket classification (ALWAYS-ALLOY, COW-OWNED, BOUNDARY-ADAPTER)

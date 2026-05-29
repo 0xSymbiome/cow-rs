@@ -289,33 +289,20 @@ pub struct EthFlowOnchainData {
 ///
 /// Returns [`ContractsError::InvalidDecodedLength`] when `data` is not exactly
 /// 12 bytes.
-///
-/// # Panics
-///
-/// Cannot panic in practice: the `[u8; 12]` conversion above guarantees the
-/// subsequent fixed-width `[..8]` and `[8..]` slice conversions are exact. The
-/// `expect` calls document that unreachability proof at the call site.
 pub fn parse_eth_flow_onchain_data(data: &[u8]) -> Result<EthFlowOnchainData, ContractsError> {
-    let bytes: [u8; 12] = data
-        .try_into()
-        .map_err(|_| ContractsError::InvalidDecodedLength {
-            field: "eth-flow onchain order data",
-            expected: 12,
-            actual: data.len(),
-        })?;
-    let quote_id = i64::from_be_bytes(
-        bytes[..8]
-            .try_into()
-            .expect("slice length 8 is guaranteed by the 12-byte array above"),
-    );
-    let user_valid_to = u32::from_be_bytes(
-        bytes[8..]
-            .try_into()
-            .expect("slice length 4 is guaranteed by the 12-byte array above"),
-    );
+    // Destructuring the validated `[u8; 12]` is infallible and panic-free: no
+    // slice index, no `expect`, no `unwrap`. `quoteId` occupies bytes 0..8 and
+    // `userValidTo` bytes 8..12, both big-endian.
+    let [q0, q1, q2, q3, q4, q5, q6, q7, v0, v1, v2, v3]: [u8; 12] =
+        data.try_into()
+            .map_err(|_| ContractsError::InvalidDecodedLength {
+                field: "eth-flow onchain order data",
+                expected: 12,
+                actual: data.len(),
+            })?;
     Ok(EthFlowOnchainData {
-        quote_id,
-        user_valid_to,
+        quote_id: i64::from_be_bytes([q0, q1, q2, q3, q4, q5, q6, q7]),
+        user_valid_to: u32::from_be_bytes([v0, v1, v2, v3]),
     })
 }
 
