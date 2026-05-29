@@ -393,6 +393,23 @@ behavior is defined once rather than per client. `Retry-After` HTTP-date
 evaluation reads a target-neutral wall clock, so the retry path behaves the
 same on native and browser targets.
 
+### Retry safety for writes
+
+The retry loop applies to every method, including the order-creation,
+order-cancellation, and app-data write paths. This is safe because the
+CoW Protocol write endpoints are idempotent on the server: order creation is
+content-addressed by order UID (a replayed create is rejected as a duplicate,
+never stored twice), cancellation is keyed by order state (a replayed cancel is
+a no-op once the order is cancelled), and app-data registration is
+content-addressed by hash (a replayed register matches the existing entry). A
+quote request carries no durable state. So a retried write cannot create a
+duplicate side effect. The one residual is benign: if a write commits on the
+server but its response is lost in transit, the retry can surface a
+"duplicate"/"already cancelled" response for an operation that actually
+succeeded — callers confirm the real state with an order lookup
+(`GET /orders/{uid}`). Retrying writes mirrors the upstream
+`@cowprotocol/cow-sdk` policy.
+
 ## Related Docs
 
 - [Architecture](architecture.md) — how `HttpTransport` fits into the

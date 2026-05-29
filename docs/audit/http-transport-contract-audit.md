@@ -50,6 +50,7 @@ separate runtime contract).
 | Adapter parity | The native and browser adapters report the same `TransportErrorClass` for the same failure class on matching fixtures, and both surface non-2xx responses through `TransportError::HttpStatus` with the numeric status code preserved | Conforms |
 | Retry cooldowns | The shared `run_with_retry` driver honors `Retry-After` on `429` and `503` for the orderbook, subgraph, and IPFS clients, waiting for the larger of the jittered local backoff and the server cooldown, evaluated against the browser-safe `system_now` wall clock | Conforms |
 | Retry observability | The shared driver emits retry events that expose attempt index, backoff duration, and either response status or transport error class; the orderbook request methods record attempts and response status on the current span | Conforms |
+| Write-retry idempotency | The driver replays writes (`POST`/`PUT`/`DELETE`) as well as reads on a retryable failure; this is safe because every CoW write endpoint is idempotent on the server (order creation by UID, cancellation by order state, app-data by hash), so a replay cannot create a duplicate side effect | Conforms |
 | Sole-dispatch invariant | `OrderBookApi` and `SubgraphApi` hold only an `Arc<dyn HttpTransport + Send + Sync>` as their HTTP surface; every live REST and GraphQL call dispatches through that handle, and injected transports observe every request | Conforms |
 
 ## Current Contract
@@ -144,6 +145,25 @@ emits the same field shape at `warn` level. The orderbook request methods
 additionally record `attempts` and `status` on the current request span, and
 the quote/order methods populate the documented `quote_id` field where the
 value is available.
+
+### Write-Retry Idempotency
+
+The shared driver is method-agnostic: it replays a failed write
+(`POST /orders`, `DELETE /orders`, `PUT` app-data) on the same retryable
+transport classes and statuses as a read, matching the upstream
+`@cowprotocol/cow-sdk` retry policy. This is safe because the CoW Protocol
+write endpoints are idempotent on the server. Order creation is
+content-addressed by order UID, so a replay is rejected as a duplicate
+(`DuplicatedOrder`, a non-retryable `400`) rather than stored twice;
+cancellation is keyed by order state, so a replay of an already-cancelled
+order is a no-op (`AlreadyCancelled`, non-retryable `400`); app-data
+registration is content-addressed by hash, so a replay matches the existing
+entry. A quote carries no durable state. A replayed write therefore cannot
+create a duplicate side effect. The one residual is benign and recoverable:
+when a write commits on the server but its response is lost in transit, the
+replay can surface the duplicate/already-cancelled rejection for an operation
+that succeeded; callers confirm the committed state with an order lookup
+(`GET /orders/{uid}`).
 
 ### Canonical Type Imports
 
