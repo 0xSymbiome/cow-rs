@@ -3,6 +3,8 @@ import type { WasmEnvelope } from "./envelope.js";
 import type { SigningOptions } from "./options.js";
 import type { CustomEip1271Callback, DigestSignerCallback, Eip1193RequestCallback, TypedDataSignerCallback } from "./callbacks.js";
 export declare function computeOrderUid(input: raw.OrderInput, chainId: number, owner: string): WasmEnvelope<raw.GeneratedOrderUidDto>;
+export declare function decodeEthFlowLog(log: raw.EventLogInput): WasmEnvelope<raw.EthFlowEventDto>;
+export declare function decodeSettlementLog(log: raw.EventLogInput): WasmEnvelope<raw.SettlementEventDto>;
 export declare function deploymentAddresses(chainId: number, env?: string | null): WasmEnvelope<raw.DeploymentAddressesDto>;
 export declare function domainSeparator(chainId: number): string;
 export declare function eip1271SignaturePayload(input: raw.OrderInput, ecdsaSignature: string): WasmEnvelope<string>;
@@ -14,7 +16,7 @@ export declare function signOrderWithEip1271(input: raw.OrderInput, chainId: num
 export declare function signOrderWithTypedDataSigner(input: raw.OrderInput, chainId: number, owner: string, typedDataSigner: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<raw.SignedOrderDto>>;
 export declare function supportedChainIds(): Uint32Array;
 export declare function wasmVersion(): string;
-export type { CowEip1271SignRequest, DeploymentAddressesDto, Eip1193Request, GeneratedOrderUidDto, OrderInput, OrderKindDto, OrderTraderParametersInput, PaginationOptions, SignedOrderDto, TokenBalanceDto, TradesQueryInput, TransactionRequestDto, TypedDataDomainDto, TypedDataEnvelopeDto, TypedDataFieldDto } from "./raw/signing.js";
+export type { CowEip1271SignRequest, DeploymentAddressesDto, Eip1193Request, EthFlowEventDto, EventLogInput, GeneratedOrderUidDto, OrderInput, OrderKindDto, OrderTraderParametersInput, PaginationOptions, SettlementEventDto, SignedOrderDto, TokenBalanceDto, TradesQueryInput, TransactionRequestDto, TypedDataDomainDto, TypedDataEnvelopeDto, TypedDataFieldDto } from "./raw/signing.js";
 export type { CowEip1271SignCallback, CustomEip1271Callback, DigestSignerCallback, Eip1193RequestCallback, TypedDataSignerCallback } from "./callbacks.js";
 export type { SdkError } from "./errors.js";
 export type { SchemaVersion, WasmEnvelope } from "./envelope.js";

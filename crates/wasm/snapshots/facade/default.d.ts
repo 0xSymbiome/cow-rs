@@ -55,6 +55,8 @@ export declare function buildCancelOrderTx(params: raw.OrderTraderParametersInpu
 export declare function buildPresignTx(params: raw.OrderTraderParametersInput): WasmEnvelope<raw.TransactionRequestDto>;
 export declare function cidToAppDataHex(cid: string): WasmEnvelope<string>;
 export declare function computeOrderUid(input: raw.OrderInput, chainId: number, owner: string): WasmEnvelope<raw.GeneratedOrderUidDto>;
+export declare function decodeEthFlowLog(log: raw.EventLogInput): WasmEnvelope<raw.EthFlowEventDto>;
+export declare function decodeSettlementLog(log: raw.EventLogInput): WasmEnvelope<raw.SettlementEventDto>;
 export declare function deploymentAddresses(chainId: number, env?: string | null): WasmEnvelope<raw.DeploymentAddressesDto>;
 export declare function domainSeparator(chainId: number): string;
 export declare function eip1271SignaturePayload(input: raw.OrderInput, ecdsaSignature: string): WasmEnvelope<string>;
@@ -70,7 +72,7 @@ export declare function signOrderWithTypedDataSigner(input: raw.OrderInput, chai
 export declare function supportedChainIds(): Uint32Array;
 export declare function validateAppDataDoc(doc: raw.AppDataDocInput): WasmEnvelope<raw.ValidationResultDto>;
 export declare function wasmVersion(): string;
-export type { AllowanceParametersInput, AppDataDocDto, AppDataDocInput, AppDataInfoDto, BuiltSellNativeCurrencyTxDto, ContractCallDto, CowEip1271SignRequest, DeploymentAddressesDto, Eip1193Request, GeneratedOrderUidDto, LimitTradeParametersInput, OrderCreationInput, OrderInput, OrderKindDto, OrderQuoteRequestInput, OrderTraderParametersInput, PaginationOptions, PartnerFeeInput, PartnerFeePolicyInput, QuoteResponseRefInput, QuoteResultsInput, SignedCancellationsInput, SignedOrderDto, SubgraphQueryInput, SwapParametersInput, TokenBalanceDto, TradesQueryInput, TransactionRequestDto, TypedDataDomainDto, TypedDataEnvelopeDto, TypedDataFieldDto, ValidationResultDto } from "./raw/default.js";
+export type { AllowanceParametersInput, AppDataDocDto, AppDataDocInput, AppDataInfoDto, BuiltSellNativeCurrencyTxDto, ContractCallDto, CowEip1271SignRequest, DeploymentAddressesDto, Eip1193Request, EthFlowEventDto, EventLogInput, GeneratedOrderUidDto, LimitTradeParametersInput, OrderCreationInput, OrderInput, OrderKindDto, OrderQuoteRequestInput, OrderTraderParametersInput, PaginationOptions, PartnerFeeInput, PartnerFeePolicyInput, QuoteResponseRefInput, QuoteResultsInput, SettlementEventDto, SignedCancellationsInput, SignedOrderDto, SubgraphQueryInput, SwapParametersInput, TokenBalanceDto, TradesQueryInput, TransactionRequestDto, TypedDataDomainDto, TypedDataEnvelopeDto, TypedDataFieldDto, ValidationResultDto } from "./raw/default.js";
 export type { ContractReadCallback, CowEip1271SignCallback, CustomEip1271Callback, DigestSignerCallback, Eip1193RequestCallback, TypedDataSignerCallback } from "./callbacks.js";
 export type { SdkError } from "./errors.js";
 export type { SchemaVersion, WasmEnvelope } from "./envelope.js";

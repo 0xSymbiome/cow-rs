@@ -377,6 +377,13 @@ test = false
 doc = false
 bench = false
 
+[[bin]]
+name = "fuzz_eth_flow_event_log_decode"
+path = "fuzz_targets/fuzz_eth_flow_event_log_decode.rs"
+test = false
+doc = false
+bench = false
+
 [workspace]
 # The fuzz crate stands alone because cargo-fuzz requires a nightly-only
 # toolchain with unstable RUSTFLAGS. Embedding it in the workspace at the

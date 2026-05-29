@@ -1,7 +1,7 @@
 # WASM Type Generation Audit
 
 Status: Current
-Last reviewed: 2026-05-22
+Last reviewed: 2026-05-29
 Owning surface: `cow-sdk-wasm` DTO exports, tsify-derived TypeScript declarations, and npm declaration snapshots
 Refresh trigger: Changes to exported DTOs, `tsify` usage, wasm-pack targets, declaration snapshots, or package export targets
 Related docs:
@@ -45,6 +45,13 @@ committed e2e fixtures.
 Types that cross the wasm ABI live in the `exports` module tree and derive the
 TypeScript declaration shape there. Host-safe protocol helpers live in the
 `cow-sdk-pure-helpers` crate and are tested without wasm32-only dependencies.
+
+The decoded event DTOs `SettlementEventDto` and `EthFlowEventDto` are
+internally tagged unions (serde `tag = "kind"`) generated through the same
+tsify path, so each decoded variant is a discriminated object on the `kind`
+field. The placement variant reuses the canonical `OrderInput` shape rather
+than introducing a parallel order declaration. The `EventLogInput` decode
+input carries the log `topics` and `data` as hex strings.
 
 ### Snapshot Gate
 

@@ -10,7 +10,9 @@
 
 use alloy_primitives::{Bytes, FixedBytes, LogData, U256, b256, keccak256};
 use alloy_sol_types::SolEvent;
-use cow_sdk_contracts::{ContractsError, IGPv2SettlementEvents, SettlementEvent, decode_settlement_log};
+use cow_sdk_contracts::{
+    ContractsError, IGPv2SettlementEvents, SettlementEvent, decode_settlement_log,
+};
 use cow_sdk_core::{Address, Amount, OrderUid};
 
 fn evm(byte: u8) -> alloy_primitives::Address {
@@ -108,7 +110,11 @@ fn interaction_round_trips_including_bytes4_selector() {
     .encode_log_data();
 
     match decode_settlement_log(&log).expect("decode Interaction") {
-        SettlementEvent::Interaction { target, value, selector } => {
+        SettlementEvent::Interaction {
+            target,
+            value,
+            selector,
+        } => {
             assert_eq!(target, Address::from_bytes([0x33; 20]));
             assert_eq!(value, Amount::from(42_u64));
             assert_eq!(selector, [0xde, 0xad, 0xbe, 0xef]);
@@ -153,7 +159,9 @@ fn unknown_topic0_is_rejected() {
     let log = LogData::new_unchecked(vec![FixedBytes::<32>::ZERO], Bytes::new());
     assert!(matches!(
         decode_settlement_log(&log),
-        Err(ContractsError::UnexpectedEventTopics { event: "settlement" })
+        Err(ContractsError::UnexpectedEventTopics {
+            event: "settlement"
+        })
     ));
 }
 

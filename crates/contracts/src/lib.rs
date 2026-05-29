@@ -74,7 +74,8 @@ pub use eip1271::IERC1271;
 pub use erc20::{IERC20, IERC20Permit, PERMIT_TYPE_HASH, permit_typed_data_hash};
 pub use errors::ContractsError;
 pub use eth_flow::{
-    EthFlowOnchainData, EthFlowOrderData, WRAP_ALL_SELECTOR, encode_create_order_calldata,
+    EthFlowEvent, EthFlowOnchainData, EthFlowOrderData, ICoWSwapEthFlowEvents, OnchainOrderRefund,
+    WRAP_ALL_SELECTOR, decode_eth_flow_log, decode_order_refund, encode_create_order_calldata,
     encode_invalidate_order_calldata, parse_eth_flow_onchain_data, wrap_all_interaction,
 };
 pub use interaction::{
@@ -97,13 +98,13 @@ pub use reader::{
     AllowListReader, SettlementReader, TradeSimulation, TradeSimulationBalanceDelta,
     TradeSimulationResult, TradeSimulator,
 };
+pub use settlement::events::{IGPv2SettlementEvents, SettlementEvent, decode_settlement_log};
 pub use settlement::{
     EncodedSettlement, InteractionStage, OrderFlags, OrderRefunds, Prices, SettlementEncoder,
     TokenRegistry, Trade, TradeExecution, TradeFlags, decode_order, decode_order_flags,
     decode_trade_flags, encode_order_flags, encode_signature_data, encode_trade,
     encode_trade_flags,
 };
-pub use settlement::events::{IGPv2SettlementEvents, SettlementEvent, decode_settlement_log};
 pub use signature::{
     Eip1271SignatureData, Eip1271VerificationRequest, MAX_SIGNATURE_HEX_BYTES,
     RecoverableSignature, Signature, SigningScheme, decode_eip1271_signature_data,

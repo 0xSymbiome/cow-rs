@@ -8,6 +8,8 @@ pub mod dto;
 pub mod eip1271;
 pub mod envelope;
 pub mod errors;
+#[cfg(feature = "signing")]
+pub mod events;
 #[cfg(feature = "ipfs")]
 pub mod ipfs;
 #[cfg(feature = "orderbook")]
@@ -50,7 +52,7 @@ pub use trading::*;
 pub use transport::*;
 pub use {cancel::*, chains::*, dto::*, envelope::*, errors::*};
 #[cfg(feature = "signing")]
-pub use {eip1271::*, signing::*};
+pub use {eip1271::*, events::*, signing::*};
 
 use wasm_bindgen::prelude::*;
 

@@ -144,6 +144,14 @@ export function computeOrderUid(
   return callSync(() => raw.computeOrderUid(input, chainId, owner));
 }
 
+export function decodeEthFlowLog(log: raw.EventLogInput): WasmEnvelope<raw.EthFlowEventDto> {
+  return callSync(() => raw.decodeEthFlowLog(log));
+}
+
+export function decodeSettlementLog(log: raw.EventLogInput): WasmEnvelope<raw.SettlementEventDto> {
+  return callSync(() => raw.decodeSettlementLog(log));
+}
+
 export function deploymentAddresses(
   chainId: number,
   env?: string | null
@@ -275,6 +283,8 @@ export type {
   CowEip1271SignRequest,
   DeploymentAddressesDto,
   Eip1193Request,
+  EthFlowEventDto,
+  EventLogInput,
   GeneratedOrderUidDto,
   OrderCreationInput,
   OrderInput,
@@ -282,6 +292,7 @@ export type {
   OrderQuoteRequestInput,
   OrderTraderParametersInput,
   PaginationOptions,
+  SettlementEventDto,
   SignedCancellationsInput,
   SignedOrderDto,
   TokenBalanceDto,

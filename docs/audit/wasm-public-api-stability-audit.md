@@ -1,7 +1,7 @@
 # WASM Public API Stability Audit
 
 Status: Current
-Last reviewed: 2026-05-22
+Last reviewed: 2026-05-29
 Owning surface: `cow-sdk-wasm` TypeScript facade declarations, package exports, runtime config shapes, error envelopes, and transport policy configuration
 Refresh trigger: Changes to facade declarations, package export maps, raw wasm-bindgen exports, TypeScript config objects, transport policy fields, or JS-visible error envelope schema
 Related docs:
@@ -42,7 +42,10 @@ code outside the repository fixtures.
 The facade snapshots under `crates/wasm/snapshots/facade/` are the reviewed
 TypeScript contract for each package flavor. They expose camelCase methods,
 named callback types, typed config objects, `dispose`, `SdkError`, and
-runtime-specific initialization helpers.
+runtime-specific initialization helpers. Every flavor that bundles the signing
+capability also exposes the deterministic `decodeSettlementLog` and
+`decodeEthFlowLog` helpers and their `EventLogInput` / `SettlementEventDto` /
+`EthFlowEventDto` declarations.
 
 ### Package Export Stability
 

@@ -1,9 +1,9 @@
 # On-Chain Order Log Decoding Audit
 
 Status: Current
-Last reviewed: 2026-05-28
-Owning surface: `cow-sdk-contracts` `CoWSwapOnchainOrders` event decoder
-Refresh trigger: a change to the `OrderPlacement` / `OrderInvalidation` event ABI, the on-chain signing-scheme set, the eth-flow trailing-data layout, the `GPv2` order markers, or the `compute_order_uid` hashing path
+Last reviewed: 2026-05-29
+Owning surface: `cow-sdk-contracts` eth-flow order event decoders (`CoWSwapOnchainOrders` and `CoWSwapEthFlow`)
+Refresh trigger: a change to the `OrderPlacement` / `OrderInvalidation` / `OrderRefund` event ABI, the `decode_eth_flow_log` dispatch set, the on-chain signing-scheme set, the eth-flow trailing-data layout, the `GPv2` order markers, or the `compute_order_uid` hashing path
 Related docs:
 - [ADR 0054](../adr/0054-onchain-order-event-decoding-is-fail-closed.md)
 - [ADR 0012](../adr/0012-alloy-sol-bindings-and-registry-authority.md)
@@ -17,8 +17,9 @@ This audit covers:
 - `decode_order_placement` / `decode_order_invalidation` and the `OnchainOrderPlacement` owner-resolution and UID-derivation surface
 - the eth-flow `OrderPlacement` trailing-data parser and the `wrapAll()` pre-interaction selector
 - the `GPv2` order-marker reverse mapping (`order_kind_from_marker`, `sell_balance_from_marker`, `buy_balance_from_marker`)
+- the `alloy::sol!` `ICoWSwapEthFlowEvents` `OrderRefund` binding, `decode_order_refund`, and the unified `decode_eth_flow_log` / `EthFlowEvent` dispatcher across `OrderPlacement` / `OrderInvalidation` / `OrderRefund`
 
-It does not cover live log retrieval, RPC transport, or settlement-event decoding beyond the on-chain order surface.
+It does not cover live log retrieval, RPC transport, or settlement-event decoding (reviewed in the settlement event log decoding audit).
 
 ## Outcome Summary
 
@@ -29,6 +30,7 @@ It does not cover live log retrieval, RPC transport, or settlement-event decodin
 | Owner resolution | PreSign owner is the event sender; EIP-1271 owner is the 20-byte signature payload, length-checked | Conforms |
 | UID derivation | A decoded order UID reuses `compute_order_uid` and reproduces the upstream order-hash vector | Conforms |
 | Provider independence | Decoding borrows `LogData` and performs no I/O | Conforms |
+| Refund + dispatch | `OrderRefund` topic-0 is byte-locked and its 56-byte UID is length-checked; `decode_eth_flow_log` routes each topic-0 to the matching fail-closed decoder | Conforms |
 
 ## Current Contract
 
@@ -43,6 +45,10 @@ It does not cover live log retrieval, RPC transport, or settlement-event decodin
 ### Owner resolution and UID derivation
 
 For a pre-signature placement the owner is the event sender; for an EIP-1271 placement the owner is the 20-byte address carried in the signature payload. A decoded order's UID is computed through `compute_order_uid` against the canonical settlement domain, so it equals the UID the settlement contract derives. The hashing path is locked against the upstream `dummyOrder()` order-hash vector.
+
+### Refund and unified dispatch
+
+`decode_order_refund` validates the topic set (topic-0 and the single indexed `refunder`) and length-checks the 56-byte order UID; its topic-0 is byte-locked against an independent keccak of the canonical signature. `decode_eth_flow_log` dispatches on topic-0 across `OrderPlacement`, `OrderInvalidation`, and `OrderRefund` and returns the `#[non_exhaustive]` `EthFlowEvent`, delegating to the matching fail-closed decoder and performing no I/O.
 
 ## Evidence
 
@@ -60,10 +66,14 @@ Primary regression coverage:
 - `crates/contracts/tests/onchain_orders.rs::eip1271_owner_requires_twenty_byte_signature_payload`
 - `crates/contracts/tests/onchain_orders.rs::order_invalidation_rejects_wrong_uid_length`
 - `crates/contracts/src/primitives.rs::tests::order_kind_marker_round_trips_and_rejects_unknown`
+- `crates/contracts/tests/eth_flow_events_contract.rs::order_refund_topic0_matches_canonical_hash`
+- `crates/contracts/tests/eth_flow_events_contract.rs::decode_eth_flow_log_dispatches_all_three_events`
+- `crates/contracts/tests/eth_flow_events_contract.rs::order_refund_wrong_uid_length_is_rejected`
 
 Validation surface:
 
 ```text
 cargo test -p cow-sdk-contracts --test onchain_orders
+cargo test -p cow-sdk-contracts --test eth_flow_events_contract
 cargo parity-verify-sol-provenance
 ```

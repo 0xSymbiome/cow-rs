@@ -39,6 +39,29 @@ export interface SdkClientOptions {
 
 
 /**
+ * A decoded `GPv2Settlement` (or inherited `GPv2Signing`) event.
+ *
+ * Mirrors `cow_sdk_contracts::SettlementEvent`. Addresses and the order UID
+ * are lowercase `0x`-prefixed hex; amounts are base-10 atom strings; the
+ * interaction `selector` is a `0x`-prefixed 4-byte hex string. The `kind`
+ * discriminator distinguishes the variants.
+ */
+export type SettlementEventDto = { kind: "trade"; owner: string; sellToken: string; buyToken: string; sellAmount: string; buyAmount: string; feeAmount: string; orderUid: string } | { kind: "interaction"; target: string; value: string; selector: string } | { kind: "settlement"; solver: string } | { kind: "orderInvalidated"; owner: string; orderUid: string } | { kind: "preSignature"; owner: string; orderUid: string; signed: boolean };
+
+/**
+ * A decoded eth-flow on-chain order lifecycle event.
+ *
+ * Mirrors `cow_sdk_contracts::EthFlowEvent`. The placement `order` reuses the
+ * canonical [`OrderInput`] shape (its `validTo` is the on-chain clamped value;
+ * the trader\'s real expiry travels in the opaque `data` trailer). `signature`
+ * and `data` are `0x`-prefixed hex strings carrying the raw on-chain signature
+ * payload and the opaque trailing data field; addresses and the order UID are
+ * lowercase `0x`-prefixed hex. The `kind` discriminator distinguishes the
+ * variants.
+ */
+export type EthFlowEventDto = { kind: "orderPlacement"; sender: string; order: OrderInput; signingScheme: string; signature: string; data: string } | { kind: "orderInvalidation"; orderUid: string } | { kind: "orderRefund"; orderUid: string; refunder: string };
+
+/**
  * Custom EIP-1271 callback request.
  */
 export interface CowEip1271SignRequest {
@@ -244,6 +267,25 @@ export interface PaginationOptions {
      * Pagination limit.
      */
     limit?: number;
+}
+
+/**
+ * Raw EVM event log accepted by the on-chain event decoders.
+ *
+ * `topics` carries the indexed log topics as `0x`-prefixed 32-byte hex
+ * strings with topic-0 (the event signature hash) first; `data` is the
+ * ABI-encoded non-indexed payload as a `0x`-prefixed hex string (`\"0x\"` for an
+ * empty payload).
+ */
+export interface EventLogInput {
+    /**
+     * Indexed log topics as 0x-prefixed 32-byte hex strings (topic-0 first).
+     */
+    topics: string[];
+    /**
+     * ABI-encoded non-indexed log data as a 0x-prefixed hex string.
+     */
+    data: string;
 }
 
 /**
@@ -526,6 +568,39 @@ export function __cow_sdk_wasm_init(): void;
  * @throws SdkError when the order, owner, or chain id is invalid.
  */
 export function computeOrderUid(input: OrderInput, chainId: number, owner: string): WasmEnvelope<GeneratedOrderUidDto>;
+
+/**
+ * Decodes an eth-flow on-chain order lifecycle event log into a typed event.
+ *
+ * Dispatches on the log's topic-0 across the `CoWSwapOnchainOrders`
+ * `OrderPlacement` / `OrderInvalidation` events and the `CoWSwapEthFlow`
+ * `OrderRefund` event. The decode is fail-closed: the topic set and on-chain
+ * signing scheme are validated and every order UID is length-checked, so a
+ * malformed or hostile log returns a typed error rather than panicking.
+ *
+ * @param log Raw log with `topics` (0x-prefixed 32-byte hex, topic-0 first)
+ * and `data` (0x-prefixed hex, `"0x"` when empty).
+ * @returns A versioned envelope containing the decoded eth-flow event.
+ * @throws SdkError when the log is malformed or its topic set matches no known
+ * eth-flow lifecycle event.
+ */
+export function decodeEthFlowLog(log: EventLogInput): WasmEnvelope<EthFlowEventDto>;
+
+/**
+ * Decodes a `GPv2Settlement` event log into a typed settlement event.
+ *
+ * Dispatches on the log's topic-0 across `Trade`, `Interaction`, `Settlement`,
+ * `OrderInvalidated`, and `PreSignature`. The decode is fail-closed: the topic
+ * set is validated before ABI decoding and every order UID is length-checked,
+ * so a malformed or hostile log returns a typed error rather than panicking.
+ *
+ * @param log Raw log with `topics` (0x-prefixed 32-byte hex, topic-0 first)
+ * and `data` (0x-prefixed hex, `"0x"` when empty).
+ * @returns A versioned envelope containing the decoded settlement event.
+ * @throws SdkError when the log is malformed or its topic set matches no known
+ * settlement event.
+ */
+export function decodeSettlementLog(log: EventLogInput): WasmEnvelope<SettlementEventDto>;
 
 /**
  * Returns canonical CoW Protocol deployment addresses for a chain.

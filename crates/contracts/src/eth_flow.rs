@@ -10,14 +10,20 @@
 //! the `alloy::sol!` macro. The Solidity excerpt used to author the bindings
 //! lives under `crates/contracts/abi/eth-flow/` for provenance.
 
-use alloy_primitives::Bytes;
-use alloy_sol_types::{SolCall, sol};
+use alloy_primitives::{Bytes, LogData};
+use alloy_sol_types::{SolCall, SolEvent, sol};
 
-use cow_sdk_core::{Address, Amount, AppDataHash, UnsignedOrder};
+use cow_sdk_core::{Address, Amount, AppDataHash, OrderUid, UnsignedOrder};
 
 use crate::ContractsError;
 use crate::interaction::Interaction;
+use crate::onchain_orders::{
+    ICoWSwapOnchainOrders, OnchainOrderInvalidation, OnchainOrderPlacement,
+    decode_order_invalidation, decode_order_placement,
+};
+use crate::order::ORDER_UID_LENGTH;
 use crate::order::hash::reject_zero_receiver;
+use crate::primitives::check_topics;
 
 sol! {
     // Canonical CoWSwapEthFlow ABI surface. Signatures are reproduced verbatim
@@ -45,6 +51,20 @@ sol! {
             returns (bytes32 orderHash);
 
         function invalidateOrder(EthFlowOrderData calldata order) external;
+    }
+}
+
+sol! {
+    // CoWSwapEthFlow event surface, kept separate from the call binding above so
+    // the events interface can be re-exported without exposing the call structs.
+    // `OrderRefund` is emitted when unspent native value is refunded for an
+    // expired order; the `emit OrderRefund(...)` site is in the committed
+    // `crates/contracts/abi/eth-flow/CoWSwapEthFlow.sol` mirror, and the topic-0
+    // is byte-locked against an independent keccak in the eth-flow event
+    // integration tests.
+    #[sol(rename_all = "camelcase")]
+    interface ICoWSwapEthFlowEvents {
+        event OrderRefund(bytes orderUid, address indexed refunder);
     }
 }
 
@@ -297,6 +317,103 @@ pub fn parse_eth_flow_onchain_data(data: &[u8]) -> Result<EthFlowOnchainData, Co
         quote_id,
         user_valid_to,
     })
+}
+
+/// A decoded `CoWSwapEthFlow::OrderRefund` event.
+#[non_exhaustive]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OnchainOrderRefund {
+    /// 56-byte UID of the order whose unspent native value was refunded.
+    pub order_uid: OrderUid,
+    /// Account that triggered the refund (the indexed event topic).
+    pub refunder: Address,
+}
+
+/// Decodes a `CoWSwapEthFlow::OrderRefund` log into typed Rust.
+///
+/// Fail-closed: validates the topic set (topic-0 and the single indexed
+/// `refunder`) and length-checks the 56-byte order UID, returning a typed
+/// [`ContractsError`] on any malformed input. Borrows the log bytes and
+/// performs no I/O.
+///
+/// # Errors
+///
+/// Returns [`ContractsError::UnexpectedEventTopics`] when the topic set does not
+/// match the `OrderRefund` signature, [`ContractsError::Abi`] when the ABI body
+/// is malformed, and [`ContractsError::InvalidOrderUidLength`] when the decoded
+/// UID is not exactly 56 bytes.
+pub fn decode_order_refund(log: &LogData) -> Result<OnchainOrderRefund, ContractsError> {
+    check_topics(
+        log,
+        ICoWSwapEthFlowEvents::OrderRefund::SIGNATURE_HASH,
+        2,
+        "OrderRefund",
+    )?;
+    let event = ICoWSwapEthFlowEvents::OrderRefund::decode_raw_log_validate(
+        log.topics().iter().copied(),
+        log.data.as_ref(),
+    )?;
+    let bytes = event.orderUid.as_ref();
+    let uid: [u8; ORDER_UID_LENGTH] =
+        bytes
+            .try_into()
+            .map_err(|_| ContractsError::InvalidOrderUidLength {
+                actual: bytes.len(),
+            })?;
+    Ok(OnchainOrderRefund {
+        order_uid: OrderUid::from_bytes(uid),
+        refunder: Address::from_bytes(event.refunder.into_array()),
+    })
+}
+
+/// A decoded event from the eth-flow on-chain order lifecycle.
+///
+/// Spans the `CoWSwapOnchainOrders` mixin events broadcast at order creation
+/// (`OrderPlacement`, `OrderInvalidation`) and the `CoWSwapEthFlow` `OrderRefund`
+/// event emitted when an expired order's unspent native value is returned.
+#[non_exhaustive]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum EthFlowEvent {
+    /// An eth-flow order was broadcast on-chain. Boxed because a placement
+    /// carries the full reconstructed order and is far larger than the other
+    /// variants; boxing keeps `EthFlowEvent` small to move and clone.
+    OrderPlacement(Box<OnchainOrderPlacement>),
+    /// A still-tradeable eth-flow order was invalidated on-chain.
+    OrderInvalidation(OnchainOrderInvalidation),
+    /// Unspent native value was refunded for an expired eth-flow order.
+    OrderRefund(OnchainOrderRefund),
+}
+
+/// Decodes any eth-flow lifecycle event log into a typed [`EthFlowEvent`].
+///
+/// Dispatches on `topics[0]` across the `CoWSwapOnchainOrders` `OrderPlacement`
+/// / `OrderInvalidation` events and the `CoWSwapEthFlow` `OrderRefund` event,
+/// then delegates to the matching fail-closed decoder. Borrows the log bytes and
+/// performs no I/O, so one implementation serves native, browser, and any RPC
+/// client.
+///
+/// # Errors
+///
+/// Returns [`ContractsError::UnexpectedEventTopics`] when the topic set does not
+/// match any eth-flow lifecycle event, and otherwise propagates the per-event
+/// decode error.
+pub fn decode_eth_flow_log(log: &LogData) -> Result<EthFlowEvent, ContractsError> {
+    let topic0 = log
+        .topics()
+        .first()
+        .copied()
+        .ok_or(ContractsError::UnexpectedEventTopics { event: "eth-flow" })?;
+
+    if topic0 == ICoWSwapOnchainOrders::OrderPlacement::SIGNATURE_HASH {
+        decode_order_placement(log)
+            .map(|placement| EthFlowEvent::OrderPlacement(Box::new(placement)))
+    } else if topic0 == ICoWSwapOnchainOrders::OrderInvalidation::SIGNATURE_HASH {
+        decode_order_invalidation(log).map(EthFlowEvent::OrderInvalidation)
+    } else if topic0 == ICoWSwapEthFlowEvents::OrderRefund::SIGNATURE_HASH {
+        decode_order_refund(log).map(EthFlowEvent::OrderRefund)
+    } else {
+        Err(ContractsError::UnexpectedEventTopics { event: "eth-flow" })
+    }
 }
 
 #[cfg(test)]

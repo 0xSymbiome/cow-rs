@@ -2,10 +2,10 @@
 //! TypeScript-callable wasm-bindgen leaf for the `CoW` Protocol Rust SDK.
 //!
 //! This crate exposes deterministic `CoW` Protocol helpers — order
-//! signing, EIP-1271 envelope construction, app-data hashing,
-//! orderbook, subgraph, IPFS, trading — to JavaScript and TypeScript
-//! consumers through typed DTOs and explicit JavaScript callbacks for
-//! wallet, signer, and HTTP transport.
+//! signing, EIP-1271 envelope construction, app-data hashing, on-chain
+//! event-log decoding, orderbook, subgraph, IPFS, trading — to JavaScript
+//! and TypeScript consumers through typed DTOs and explicit JavaScript
+//! callbacks for wallet, signer, and HTTP transport.
 //!
 //! The crate is appropriate for specialized cases: deterministic Rust
 //! signing parity, single-source-of-truth Rust + TypeScript embedding,

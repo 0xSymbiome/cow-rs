@@ -4,6 +4,8 @@ export type * from "../../dist/raw/signing-bundler/cow_sdk_wasm.js";
 
 export const __cow_sdk_wasm_init = wasm.__cow_sdk_wasm_init;
 export const computeOrderUid = wasm.computeOrderUid;
+export const decodeEthFlowLog = wasm.decodeEthFlowLog;
+export const decodeSettlementLog = wasm.decodeSettlementLog;
 export const deploymentAddresses = wasm.deploymentAddresses;
 export const domainSeparator = wasm.domainSeparator;
 export const eip1271SignaturePayload = wasm.eip1271SignaturePayload;

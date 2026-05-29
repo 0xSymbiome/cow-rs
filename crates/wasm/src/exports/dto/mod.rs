@@ -12,6 +12,8 @@ use crate::exports::errors::WasmError;
 mod app_data;
 mod contracts;
 mod core;
+#[cfg(feature = "signing")]
+mod events;
 mod orderbook;
 mod signing;
 mod subgraph;
@@ -24,6 +26,8 @@ pub use self::app_data::{AppDataDocDto, AppDataDocInput, AppDataInfoDto, Validat
 pub use self::contracts::{BuiltSellNativeCurrencyTxDto, ContractCallDto};
 pub use self::contracts::{DeploymentAddressesDto, TransactionRequestDto};
 pub use self::core::{OrderInput, OrderKindDto, TokenBalanceDto};
+#[cfg(feature = "signing")]
+pub use self::events::{EthFlowEventDto, EventLogInput, SettlementEventDto};
 #[cfg(feature = "orderbook")]
 pub use self::orderbook::{OrderCreationInput, OrderQuoteRequestInput};
 pub use self::orderbook::{PaginationOptions, TradesQueryInput};

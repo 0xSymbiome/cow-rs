@@ -38,6 +38,26 @@ The first functional crate-family release begins at `0.1.0`.
   decoding contract is documented in
   [ADR 0056](docs/adr/0056-settlement-event-decoding-is-fail-closed.md) and the
   [Settlement Event Log Decoding Audit](docs/audit/settlement-event-log-decoding-audit.md).
+- `cow_sdk_contracts::eth_flow` adds the `CoWSwapEthFlow` `OrderRefund` event
+  binding and a fail-closed `decode_order_refund`, plus a unified
+  `decode_eth_flow_log` dispatcher and `EthFlowEvent` enum that decode any
+  eth-flow lifecycle log (`OrderPlacement`, `OrderInvalidation`, `OrderRefund`)
+  into typed Rust. The decoder validates the topic set and length-checks the
+  56-byte order UID, returning a typed `ContractsError` rather than panicking on
+  malformed input, and the `OrderRefund` topic-0 is byte-locked against an
+  independent keccak of the canonical signature. The decoding contract is
+  documented in
+  [ADR 0054](docs/adr/0054-onchain-order-event-decoding-is-fail-closed.md) and
+  the [On-Chain Order Log Decoding Audit](docs/audit/onchain-order-log-decoding-audit.md).
+- `cow-sdk-wasm` adds the `decodeSettlementLog` and `decodeEthFlowLog` exports,
+  with `EventLogInput`, `SettlementEventDto`, and `EthFlowEventDto` DTOs, that
+  reconstruct borrowed log bytes from hex `topics` / `data` and dispatch to the
+  fail-closed, provider-free `cow_sdk_contracts` decoders, returning a versioned
+  `WasmEnvelope`. The decoders are deterministic and perform no I/O, so a
+  JavaScript host that already holds raw chain logs decodes settlement and
+  eth-flow events without network access; malformed input returns a typed
+  `WasmError`. The helpers are exposed in every package flavour that bundles the
+  signing capability.
 - `cow_sdk_contracts::weth` adds the `IWrappedNativeToken` (WETH9-family)
   `deposit` / `withdraw` bindings with `wrap_interaction` / `unwrap_interaction`
   helpers that emit the canonical settlement interaction, and

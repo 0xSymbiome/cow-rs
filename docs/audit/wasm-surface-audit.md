@@ -1,7 +1,7 @@
 # WASM Surface Audit
 
 Status: Current
-Last reviewed: 2026-05-11
+Last reviewed: 2026-05-29
 Owning surface: `cow-sdk-wasm` TypeScript-callable wasm-bindgen crate, npm package layout, and JavaScript callback runtime boundary
 Refresh trigger: Changes to `crates/wasm/src/**`, wasm-pack package exports, runtime support claims, wallet callback shapes, or the `JsCallbackHttpTransport` contract
 Related docs:
@@ -50,6 +50,7 @@ vendor compatibility outside the callback contract.
 | Surface layering | Pure helpers stay host-safe in `cow-sdk-pure-helpers`, while wasm-bindgen exports own JavaScript interop | Conforms |
 | Wallet callbacks | Typed-data, EIP-1193, digest, and custom EIP-1271 callbacks are explicit and fail closed | Conforms |
 | HTTP callbacks | `JsCallbackHttpTransport` owns timeout, abort signal, internal callback retention, and typed error mapping | Conforms |
+| Event decoding | `decodeSettlementLog` and `decodeEthFlowLog` turn raw settlement and eth-flow logs into typed events with no network access and fail closed on malformed input | Conforms |
 | Runtime packaging | Public imports use facade package exports; Cloudflare uses the web-target package subpaths | Conforms |
 | Error posture | `WasmError` preserves typed redaction before diagnostics reach JavaScript | Conforms |
 
@@ -58,10 +59,13 @@ vendor compatibility outside the callback contract.
 ### Surface Layers
 
 Layer 1 exposes deterministic helpers for chains, app-data, typed-data, UID,
-digest, and EIP-1271 payload computation through `cow-sdk-pure-helpers`.
-Layer 2 exposes wallet and signer callbacks. Layer 3 exposes orderbook,
-subgraph, and IPFS clients over default or callback HTTP. Layer 4 exposes
-trading clients for quote and post flows.
+digest, and EIP-1271 payload computation through `cow-sdk-pure-helpers`, plus
+the fail-closed, provider-free on-chain event-log decoders `decodeSettlementLog`
+and `decodeEthFlowLog`, which reconstruct borrowed log bytes and dispatch to the
+`cow-sdk-contracts` decoders without network access. Layer 2 exposes wallet and
+signer callbacks. Layer 3 exposes orderbook, subgraph, and IPFS clients over
+default or callback HTTP. Layer 4 exposes trading clients for quote and post
+flows.
 
 ### Runtime Boundary
 

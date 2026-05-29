@@ -117,9 +117,12 @@ pub enum SettlementEvent {
 
 /// Length-checks a decoded `bytes orderUid` field and wraps it as an [`OrderUid`].
 fn order_uid_from_bytes(bytes: &[u8]) -> Result<OrderUid, ContractsError> {
-    let uid: [u8; ORDER_UID_LENGTH] = bytes
-        .try_into()
-        .map_err(|_| ContractsError::InvalidOrderUidLength { actual: bytes.len() })?;
+    let uid: [u8; ORDER_UID_LENGTH] =
+        bytes
+            .try_into()
+            .map_err(|_| ContractsError::InvalidOrderUidLength {
+                actual: bytes.len(),
+            })?;
     Ok(OrderUid::from_bytes(uid))
 }
 
@@ -143,10 +146,17 @@ pub fn decode_settlement_log(log: &LogData) -> Result<SettlementEvent, Contracts
         .topics()
         .first()
         .copied()
-        .ok_or(ContractsError::UnexpectedEventTopics { event: "settlement" })?;
+        .ok_or(ContractsError::UnexpectedEventTopics {
+            event: "settlement",
+        })?;
 
     if topic0 == IGPv2SettlementEvents::Trade::SIGNATURE_HASH {
-        check_topics(log, IGPv2SettlementEvents::Trade::SIGNATURE_HASH, 2, "Trade")?;
+        check_topics(
+            log,
+            IGPv2SettlementEvents::Trade::SIGNATURE_HASH,
+            2,
+            "Trade",
+        )?;
         let event = IGPv2SettlementEvents::Trade::decode_raw_log_validate(
             log.topics().iter().copied(),
             log.data.as_ref(),
@@ -161,7 +171,12 @@ pub fn decode_settlement_log(log: &LogData) -> Result<SettlementEvent, Contracts
             order_uid: order_uid_from_bytes(&event.orderUid)?,
         })
     } else if topic0 == IGPv2SettlementEvents::Interaction::SIGNATURE_HASH {
-        check_topics(log, IGPv2SettlementEvents::Interaction::SIGNATURE_HASH, 2, "Interaction")?;
+        check_topics(
+            log,
+            IGPv2SettlementEvents::Interaction::SIGNATURE_HASH,
+            2,
+            "Interaction",
+        )?;
         let event = IGPv2SettlementEvents::Interaction::decode_raw_log_validate(
             log.topics().iter().copied(),
             log.data.as_ref(),
@@ -172,7 +187,12 @@ pub fn decode_settlement_log(log: &LogData) -> Result<SettlementEvent, Contracts
             selector: event.selector.0,
         })
     } else if topic0 == IGPv2SettlementEvents::Settlement::SIGNATURE_HASH {
-        check_topics(log, IGPv2SettlementEvents::Settlement::SIGNATURE_HASH, 2, "Settlement")?;
+        check_topics(
+            log,
+            IGPv2SettlementEvents::Settlement::SIGNATURE_HASH,
+            2,
+            "Settlement",
+        )?;
         let event = IGPv2SettlementEvents::Settlement::decode_raw_log_validate(
             log.topics().iter().copied(),
             log.data.as_ref(),
@@ -196,7 +216,12 @@ pub fn decode_settlement_log(log: &LogData) -> Result<SettlementEvent, Contracts
             order_uid: order_uid_from_bytes(&event.orderUid)?,
         })
     } else if topic0 == IGPv2SettlementEvents::PreSignature::SIGNATURE_HASH {
-        check_topics(log, IGPv2SettlementEvents::PreSignature::SIGNATURE_HASH, 2, "PreSignature")?;
+        check_topics(
+            log,
+            IGPv2SettlementEvents::PreSignature::SIGNATURE_HASH,
+            2,
+            "PreSignature",
+        )?;
         let event = IGPv2SettlementEvents::PreSignature::decode_raw_log_validate(
             log.topics().iter().copied(),
             log.data.as_ref(),
@@ -207,6 +232,8 @@ pub fn decode_settlement_log(log: &LogData) -> Result<SettlementEvent, Contracts
             signed: event.signed,
         })
     } else {
-        Err(ContractsError::UnexpectedEventTopics { event: "settlement" })
+        Err(ContractsError::UnexpectedEventTopics {
+            event: "settlement",
+        })
     }
 }

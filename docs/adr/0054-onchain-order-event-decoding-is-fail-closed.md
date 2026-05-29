@@ -1,6 +1,6 @@
 # ADR 0054: On-Chain Order Event Decoding Is Fail-Closed And Provider-Free
 
-- Status: Accepted
+- Status: Accepted (amended)
 - Date: 2026-05-28
 - Last reviewed: 2026-05-28
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
@@ -68,3 +68,16 @@ settlement contract derives.
 **Proven by:**
 
 - [On-Chain Order Log Decoding Audit](../audit/onchain-order-log-decoding-audit.md)
+
+## Amendment 2026-05-29: eth-flow refund and unified dispatcher
+
+The fail-closed, provider-free posture extends to the `CoWSwapEthFlow`
+`OrderRefund` event (`decode_order_refund`) and a unified `decode_eth_flow_log`
+dispatcher that routes the `OrderPlacement` / `OrderInvalidation` / `OrderRefund`
+topic-0 to the matching decoder and returns the typed `#[non_exhaustive]`
+`EthFlowEvent`. `decode_order_refund` borrows `LogData`, validates the topic set
+and the single indexed `refunder`, length-checks the 56-byte order UID, and
+byte-locks its topic-0 against an independent keccak of the canonical signature;
+the dispatcher performs no I/O. The `OrderRefund` event interface is bound in a
+dedicated `ICoWSwapEthFlowEvents` `sol!` block kept separate from the eth-flow
+call binding.
