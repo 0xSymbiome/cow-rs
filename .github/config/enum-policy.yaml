@@ -516,3 +516,9 @@ enums:
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: COW Shed nonce strong-type is a typed wrapper; the wrapping shape may grow with derivation variants.
+  - name: SettlementEvent
+    file: crates/contracts/src/settlement/events.rs
+    line: 61
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: GPv2Settlement on-chain event coverage can grow as the protocol adds settlement events.

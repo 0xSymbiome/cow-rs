@@ -103,6 +103,7 @@ pub use settlement::{
     decode_trade_flags, encode_order_flags, encode_signature_data, encode_trade,
     encode_trade_flags,
 };
+pub use settlement::events::{IGPv2SettlementEvents, SettlementEvent, decode_settlement_log};
 pub use signature::{
     Eip1271SignatureData, Eip1271VerificationRequest, MAX_SIGNATURE_HEX_BYTES,
     RecoverableSignature, Signature, SigningScheme, decode_eip1271_signature_data,

@@ -2,6 +2,7 @@
 
 mod codec;
 mod encoder;
+pub mod events;
 
 pub use self::{codec::*, encoder::*};
 

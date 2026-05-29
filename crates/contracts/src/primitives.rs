@@ -1,4 +1,4 @@
-use alloy_primitives::{B256, keccak256};
+use alloy_primitives::{B256, LogData, keccak256};
 use cow_sdk_core::{Address, BuyTokenDestination, OrderKind, SellTokenSource};
 
 use crate::ContractsError;
@@ -132,6 +132,32 @@ pub fn buy_balance_from_marker(marker: B256) -> Result<BuyTokenDestination, Cont
         }
     }
     Err(ContractsError::UnknownOrderMarker(marker))
+}
+
+/// Validates that an on-chain event log carries the expected topic-0 signature
+/// hash and indexed-parameter arity before ABI decoding.
+///
+/// This is the shared fail-closed topic guard used by the on-chain order and
+/// settlement event decoders: it rejects a malformed or hostile topic set with
+/// a typed error instead of letting a later slice or index panic on untrusted
+/// log bytes.
+///
+/// # Errors
+///
+/// Returns [`ContractsError::UnexpectedEventTopics`] when the topic count does
+/// not equal `expected_len` or when `topics[0]` does not equal
+/// `expected_topic0`.
+pub(crate) fn check_topics(
+    log: &LogData,
+    expected_topic0: B256,
+    expected_len: usize,
+    event: &'static str,
+) -> Result<(), ContractsError> {
+    let topics = log.topics();
+    if topics.len() != expected_len || topics.first() != Some(&expected_topic0) {
+        return Err(ContractsError::UnexpectedEventTopics { event });
+    }
+    Ok(())
 }
 
 #[cfg(test)]

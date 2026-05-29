@@ -63,6 +63,7 @@ public and runtime shape of `cow-rs`.
 | [0053](0053-typed-signer-rejection-classification.md) | Accepted | Classify EIP-1193 user rejections through a shared `cow_sdk_core::SignerError` trait so the signing crate emits a typed `SigningError::SignerRejection` variant across signer implementations. |
 | [0054](0054-onchain-order-event-decoding-is-fail-closed.md) | Accepted | Decode `CoWSwapOnchainOrders` `OrderPlacement` / `OrderInvalidation` logs through a fail-closed, provider-free decoder that validates every field and never panics on adversarial input. |
 | [0055](0055-bounded-response-reads.md) | Accepted | Bound every SDK-owned HTTP response read by a configurable per-client `max_response_bytes`, refuse an over-limit body with a typed non-retryable `TransportErrorClass::ResponseTooLarge` outcome measured on decoded bytes, and length-bound signature hex before decode. |
+| [0056](0056-settlement-event-decoding-is-fail-closed.md) | Accepted | Decode `GPv2Settlement` `Trade` / `Interaction` / `Settlement` / `OrderInvalidated` / `PreSignature` logs through a fail-closed, provider-free decoder that validates topics, length-checks the order UID, and never panics on adversarial input. |
 
 ## When To Write An ADR
 

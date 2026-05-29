@@ -26,7 +26,7 @@
 //! The Solidity excerpts used to author these bindings are committed under
 //! `crates/contracts/abi/eth-flow/` for provenance.
 
-use alloy_primitives::{B256, Bytes, LogData};
+use alloy_primitives::{Bytes, LogData};
 use alloy_sol_types::{SolEvent, sol};
 
 use cow_sdk_core::{
@@ -38,7 +38,7 @@ use crate::deployments::{ContractId, Registry};
 use crate::errors::ContractsError;
 use crate::order::{ORDER_UID_LENGTH, Order, compute_order_uid};
 use crate::primitives::{
-    buy_balance_from_marker, order_kind_from_marker, sell_balance_from_marker,
+    buy_balance_from_marker, check_topics, order_kind_from_marker, sell_balance_from_marker,
 };
 
 sol! {
@@ -234,7 +234,7 @@ pub fn decode_order_placement(log: &LogData) -> Result<OnchainOrderPlacement, Co
         2,
         "OrderPlacement",
     )?;
-    let event = ICoWSwapOnchainOrders::OrderPlacement::decode_raw_log(
+    let event = ICoWSwapOnchainOrders::OrderPlacement::decode_raw_log_validate(
         log.topics().iter().copied(),
         log.data.as_ref(),
     )?;
@@ -266,7 +266,7 @@ pub fn decode_order_invalidation(
         1,
         "OrderInvalidation",
     )?;
-    let event = ICoWSwapOnchainOrders::OrderInvalidation::decode_raw_log(
+    let event = ICoWSwapOnchainOrders::OrderInvalidation::decode_raw_log_validate(
         log.topics().iter().copied(),
         log.data.as_ref(),
     )?;
@@ -280,19 +280,6 @@ pub fn decode_order_invalidation(
     Ok(OnchainOrderInvalidation {
         order_uid: OrderUid::from_bytes(uid),
     })
-}
-
-fn check_topics(
-    log: &LogData,
-    expected_topic0: B256,
-    expected_len: usize,
-    event: &'static str,
-) -> Result<(), ContractsError> {
-    let topics = log.topics();
-    if topics.len() != expected_len || topics.first() != Some(&expected_topic0) {
-        return Err(ContractsError::UnexpectedEventTopics { event });
-    }
-    Ok(())
 }
 
 fn reconstruct_order(

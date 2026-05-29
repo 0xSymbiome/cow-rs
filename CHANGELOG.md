@@ -27,6 +27,17 @@ The first functional crate-family release begins at `0.1.0`.
   upstream contract vector. The decoding contract is documented in
   [ADR 0054](docs/adr/0054-onchain-order-event-decoding-is-fail-closed.md) and
   the [On-Chain Order Log Decoding Audit](docs/audit/onchain-order-log-decoding-audit.md).
+- `cow_sdk_contracts::settlement` adds typed `GPv2Settlement` event bindings and
+  a fail-closed, provider-free log decoder (`decode_settlement_log`) that maps
+  `Trade`, `Interaction`, `Settlement`, `OrderInvalidated`, and the inherited
+  `GPv2Signing` `PreSignature` logs into the typed `SettlementEvent` enum. The
+  decoder validates the topic set and indexed arity through a shared topic guard
+  and length-checks the 56-byte order UID, returning a typed `ContractsError`
+  rather than panicking on malformed input. The five event topic-0 hashes are
+  byte-locked against an independent keccak of the canonical signatures. The
+  decoding contract is documented in
+  [ADR 0056](docs/adr/0056-settlement-event-decoding-is-fail-closed.md) and the
+  [Settlement Event Log Decoding Audit](docs/audit/settlement-event-log-decoding-audit.md).
 - `cow_sdk_contracts::weth` adds the `IWrappedNativeToken` (WETH9-family)
   `deposit` / `withdraw` bindings with `wrap_interaction` / `unwrap_interaction`
   helpers that emit the canonical settlement interaction, and
