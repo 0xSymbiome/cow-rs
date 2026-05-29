@@ -36,7 +36,7 @@ public and runtime shape of `cow-rs`.
 | [0026](0026-alloy-major-release-absorption-plan.md) | Accepted (amended; runbook extracted) | Bound alloy major releases behind SDK-owned types and a configurable scheduled canary lane. |
 | [0027](0027-post-quantum-signing-absorption-plan.md) | Accepted (amended) | Add future signing schemes through non-exhaustive signature boundaries without widening ECDSA semantics. |
 | [0028](0028-account-abstraction-integration-plan.md) | Accepted (amended) | Integrate account abstraction through provider capability traits and EIP-1271-compatible signing surfaces. |
-| [0029](0029-trait-evolution-extension-traits.md) | Accepted | Evolve provider traits through opt-in extension traits rather than adding methods to frozen core trait shapes. |
+| [0029](0029-trait-evolution-extension-traits.md) | Accepted (amended) | Evolve provider traits through opt-in extension traits rather than adding methods to frozen core trait shapes; new RPC primitives land on the core read trait or a capability supertrait, not a blanket `*Ext`. |
 | [0030](0030-workspace-locked-versioning-tag-baseline.md) | Accepted | Keep workspace crate versions locked through `0.x` and run patch semver checks against the previous release tag. |
 | [0031](0031-wire-dto-openapi-driven-with-order-auction-order-split.md) | Accepted | Drive orderbook response DTO coverage from OpenAPI with separate `Order` and `AuctionOrder` Rust types. |
 | [0032](0032-deployment-authority-machine-readable-provenance.md) | Accepted (amended) | Back deployment-address authority with machine-readable provenance and dual-mode live confirmation. |
@@ -64,6 +64,7 @@ public and runtime shape of `cow-rs`.
 | [0054](0054-onchain-order-event-decoding-is-fail-closed.md) | Accepted (amended) | Decode `CoWSwapOnchainOrders` `OrderPlacement` / `OrderInvalidation` and `CoWSwapEthFlow` `OrderRefund` logs through a fail-closed, provider-free decoder and a unified `decode_eth_flow_log` dispatcher that validates every field and never panics on adversarial input. |
 | [0055](0055-bounded-response-reads.md) | Accepted | Bound every SDK-owned HTTP response read by a configurable per-client `max_response_bytes`, refuse an over-limit body with a typed non-retryable `TransportErrorClass::ResponseTooLarge` outcome measured on decoded bytes, and length-bound signature hex before decode. |
 | [0056](0056-settlement-event-decoding-is-fail-closed.md) | Accepted | Decode `GPv2Settlement` `Trade` / `Interaction` / `Settlement` / `OrderInvalidated` / `PreSignature` logs through a fail-closed, provider-free decoder that validates topics, length-checks the order UID, and never panics on adversarial input. |
+| [0057](0057-log-provider-capability-trait.md) | Accepted | Add an opt-in `LogProvider: Provider` capability supertrait whose single-call `get_logs` fetches event logs, mirroring the `SigningProvider` split and feeding the fail-closed decoders. |
 
 ## When To Write An ADR
 

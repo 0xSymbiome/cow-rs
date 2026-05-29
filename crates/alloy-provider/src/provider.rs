@@ -5,8 +5,8 @@ use std::{fmt, sync::Arc};
 use alloy_network::Ethereum;
 use alloy_provider::{DynProvider, Provider as AlloyProviderTrait};
 use cow_sdk_core::{
-    Address, BlockInfo, ChainId, ContractCall, ContractHandle, HexData, Provider, Redacted,
-    TransactionHash, TransactionReceipt, TransactionRequest,
+    Address, BlockInfo, ChainId, ContractCall, ContractHandle, HexData, LogProvider, LogQuery,
+    Provider, RawLog, Redacted, TransactionHash, TransactionReceipt, TransactionRequest,
 };
 
 use alloy_primitives::{B256, U256};
@@ -14,7 +14,8 @@ use alloy_primitives::{B256, U256};
 use crate::{
     builder::RpcAlloyProviderBuilder,
     conversion::{
-        alloy_to_cow_block_info, alloy_to_cow_receipt, cow_block_tag_to_alloy, cow_request_to_alloy,
+        alloy_log_to_cow_raw_log, alloy_to_cow_block_info, alloy_to_cow_receipt,
+        cow_block_tag_to_alloy, cow_log_query_to_alloy_filter, cow_request_to_alloy,
     },
     error::ProviderError,
     read_contract::execute_read_contract,
@@ -161,5 +162,17 @@ impl Provider for RpcAlloyProvider {
         abi_json: &str,
     ) -> Result<ContractHandle, Self::Error> {
         Ok(ContractHandle::new(*address, abi_json.to_owned()))
+    }
+}
+
+impl LogProvider for RpcAlloyProvider {
+    async fn get_logs(&self, query: &LogQuery) -> Result<Vec<RawLog>, Self::Error> {
+        let filter = cow_log_query_to_alloy_filter(query);
+        let logs = self
+            .inner()
+            .get_logs(&filter)
+            .await
+            .map_err(ProviderError::from_alloy_transport)?;
+        Ok(logs.iter().map(alloy_log_to_cow_raw_log).collect())
     }
 }

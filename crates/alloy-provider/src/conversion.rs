@@ -2,11 +2,13 @@
 
 use alloy_consensus::{BlockHeader as _, TxReceipt as _};
 use alloy_network::TransactionBuilder;
-use alloy_primitives::U256;
-use alloy_rpc_types_eth::{BlockId, BlockNumberOrTag, TransactionRequest as AlloyTransaction};
+use alloy_primitives::{B256, U256};
+use alloy_rpc_types_eth::{
+    BlockId, BlockNumberOrTag, Filter, Log as AlloyLog, TransactionRequest as AlloyTransaction,
+};
 use cow_sdk_core::{
-    Address, Amount, BlockHash, BlockInfo, TransactionHash, TransactionReceipt, TransactionRequest,
-    TransactionStatus,
+    Address, Amount, BlockHash, BlockInfo, LogMeta, LogQuery, RawLog, TransactionHash,
+    TransactionReceipt, TransactionRequest, TransactionStatus,
 };
 
 /// Converts a core transaction request into an Alloy transaction request.
@@ -110,6 +112,43 @@ pub(crate) fn alloy_to_cow_block_info(block: &alloy_rpc_types_eth::Block) -> Blo
     BlockInfo::new(number, Some(hash))
 }
 
+/// Converts a core [`LogQuery`] into an Alloy `eth_getLogs` filter.
+///
+/// Maps the caller-bounded `[from_block, to_block]` range, the optional contract
+/// address, and the topic-0 (event-signature) candidates. An empty topic list
+/// leaves topic-0 unconstrained.
+pub(crate) fn cow_log_query_to_alloy_filter(query: &LogQuery) -> Filter {
+    let mut filter = Filter::new()
+        .from_block(query.from_block)
+        .to_block(query.to_block);
+    if let Some(address) = &query.address {
+        filter = filter.address(*address.as_alloy());
+    }
+    if !query.topics.is_empty() {
+        let topic0: Vec<B256> = query.topics.iter().map(|topic| *topic.as_alloy()).collect();
+        filter = filter.event_signature(topic0);
+    }
+    filter
+}
+
+/// Converts an Alloy log into the core [`RawLog`] contract.
+///
+/// Positional metadata (`block_number`, `transaction_hash`, `log_index`) is read
+/// from the mined log; a bounded historical scan always carries it.
+pub(crate) fn alloy_log_to_cow_raw_log(log: &AlloyLog) -> RawLog {
+    let meta = LogMeta::new(
+        log.block_number.unwrap_or_default(),
+        log.transaction_hash
+            .map_or(TransactionHash::ZERO, TransactionHash::from),
+        log.log_index.unwrap_or_default(),
+    );
+    RawLog::new(
+        Address::from(log.inner.address),
+        log.inner.data.clone(),
+        meta,
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -164,6 +203,38 @@ mod tests {
 
         assert!(cow_receipt.to.is_none());
         assert_eq!(cow_receipt.from.unwrap().to_hex_string(), FROM_ADDR);
+    }
+
+    #[test]
+    fn cow_log_query_to_alloy_filter_sets_caller_bounded_range() {
+        let query = LogQuery::new(100, 200);
+        let filter = cow_log_query_to_alloy_filter(&query);
+        assert_eq!(filter.get_from_block(), Some(100));
+        assert_eq!(filter.get_to_block(), Some(200));
+    }
+
+    #[test]
+    fn alloy_log_to_cow_raw_log_maps_address_meta_and_payload() {
+        let log: AlloyLog = serde_json::from_value(json!({
+            "address": FROM_ADDR,
+            "topics": [HASH_1],
+            "data": "0x",
+            "blockHash": BLOCK_HASH,
+            "blockNumber": "0x4d2",
+            "transactionHash": HASH_1,
+            "transactionIndex": "0x0",
+            "logIndex": "0x2",
+            "removed": false
+        }))
+        .expect("log fixture must deserialize");
+
+        let raw = alloy_log_to_cow_raw_log(&log);
+
+        assert_eq!(raw.address.to_hex_string(), FROM_ADDR);
+        assert_eq!(raw.meta.block_number, 1234);
+        assert_eq!(raw.meta.transaction_hash.to_hex_string(), HASH_1);
+        assert_eq!(raw.meta.log_index, 2);
+        assert_eq!(raw.data.topics().len(), 1);
     }
 
     fn alloy_receipt(status_or_root: &Value) -> AlloyTransactionReceipt {

@@ -1,6 +1,6 @@
 # ADR 0029: Trait Evolution Through Extension Traits
 
-- Status: Accepted
+- Status: Accepted (amended)
 - Date: 2026-04-29
 - Last reviewed: 2026-04-29
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
@@ -69,3 +69,28 @@ This ADR supports Principle 11, Forward-Compatible Public Surfaces.
 **Proven by:**
 
 - `crates/core/tests/trait_evolution_contract.rs`
+
+## Amendment 2026-05-29: non-object-safe core traits and the new-primitive carve-out
+
+Two clarifications, surfaced when adding the `LogProvider` capability supertrait
+(ADR 0057):
+
+1. **The `dyn`-vtable rationale does not apply to the core traits.** `Provider`,
+   `Signer`, and `SigningProvider` use native `async fn` in trait and are
+   therefore not object-safe — there is no `dyn Trait` vtable for an added
+   method to break. The original "Why" above is retained as the historical
+   `*Ext` motivation, but the operative forward-compatibility basis for these
+   traits is the `cargo-semver-checks` patch gate (ADR 0030) plus core
+   minimalism (ADR 0008), not object-safety.
+2. **`*Ext` is for derivable capabilities only; new primitives are not `*Ext`.**
+   A blanket `*Ext` trait is appropriate when the new capability is *derivable*
+   from existing core-trait methods. A genuinely new RPC primitive — one that
+   cannot be expressed through existing methods, such as `get_logs` — lands
+   instead either on the core read trait (while pre-`0.1.0`, ADR 0030) or as a
+   `SigningProvider`-style capability supertrait, never as a non-derivable
+   blanket `*Ext`. This reconciles the existing `SigningProvider` (ADR 0024) and
+   the new `LogProvider` (ADR 0057) with this ADR: both are capability
+   supertraits that add primitives, not `*Ext` traits.
+
+The frozen-shape rule for `Provider` / `SigningProvider` and the `*Ext`-naming
+rule for derivable extension capabilities are unchanged.

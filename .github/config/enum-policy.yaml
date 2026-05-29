@@ -438,6 +438,18 @@ enums:
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: Wasm export diagnostics can grow as additional fallible helper paths are exposed.
+  - name: SettlementEventDto
+    file: crates/wasm/src/exports/dto/events.rs
+    line: 100
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Wasm settlement-event DTO mirrors the GPv2Settlement on-chain event family, which can grow as the protocol adds settlement events.
+  - name: EthFlowEventDto
+    file: crates/wasm/src/exports/dto/events.rs
+    line: 226
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Wasm eth-flow event DTO mirrors the eth-flow on-chain order lifecycle event family, which can grow as the protocol adds events.
   - name: RegistryError
     file: crates/contracts/src/deployments/registry.rs
     line: 294
@@ -518,7 +530,43 @@ enums:
     reason: COW Shed nonce strong-type is a typed wrapper; the wrapping shape may grow with derivation variants.
   - name: SettlementEvent
     file: crates/contracts/src/settlement/events.rs
-    line: 61
+    line: 67
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: GPv2Settlement on-chain event coverage can grow as the protocol adds settlement events.
+  - name: EthFlowEvent
+    file: crates/contracts/src/eth_flow.rs
+    line: 376
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Eth-flow on-chain order lifecycle event coverage can grow as the protocol adds events.
+  - name: OnchainSigningScheme
+    file: crates/contracts/src/onchain_orders.rs
+    line: 95
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: On-chain order signing schemes track the CoWSwapOnchainOrders contract enum and can grow with protocol signing families.
+  - name: HashMismatchStage
+    file: crates/orderbook/src/error.rs
+    line: 30
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: App-data hash-mismatch detection stages can grow as the orderbook client adds integrity checkpoints.
+  - name: RetrySignal
+    file: crates/transport-policy/src/runner.rs
+    line: 33
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Retry classification signals can grow as the transport runner distinguishes new failure shapes.
+  - name: AttemptOutcome
+    file: crates/transport-policy/src/runner.rs
+    line: 60
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Attempt-outcome variants can grow as the retry runner models new terminal or continuation states.
+  - name: LimiterKey
+    file: crates/transport-policy/src/runner.rs
+    line: 74
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Rate-limiter bucket selectors can grow as additional request-routing scopes are added.

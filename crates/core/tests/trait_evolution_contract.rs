@@ -9,6 +9,8 @@ const CORE_TRAITS_SOURCE: &str = concat!(
     "\n",
     include_str!("../src/traits/provider.rs"),
     "\n",
+    include_str!("../src/traits/log_provider.rs"),
+    "\n",
     include_str!("../src/traits/transport.rs"),
 );
 const HTTP_TRANSPORT_SOURCE: &str = include_str!("../src/transport/http.rs");
@@ -80,6 +82,14 @@ fn signing_provider_trait_shape_unchanged() {
     assert_eq!(
         trait_method_signatures(CORE_TRAITS_SOURCE, "SigningProvider"),
         ["async fn create_signer(&self, signer_hint: &str) -> Result<Self::Signer, Self::Error>;"],
+    );
+}
+
+#[test]
+fn log_provider_trait_shape() {
+    assert_eq!(
+        trait_method_signatures(CORE_TRAITS_SOURCE, "LogProvider"),
+        ["async fn get_logs(&self, query: &LogQuery) -> Result<Vec<RawLog>, Self::Error>;"],
     );
 }
 

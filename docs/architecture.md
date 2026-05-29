@@ -209,7 +209,11 @@ for the signer backend; the narrower [`Owner`], [`TypedDataSigner`], and
 [ADR 0045](adr/0045-async-signer-trait-narrowing.md) remain available for
 callback-shaped adapters that expose only one signing operation.
 Wallet-capable adapters implement `SigningProvider`, which extends `Provider`
-with signer creation. Native Alloy support is already shipped as
+with signer creation. Adapters that can fetch event logs additionally implement
+`LogProvider`, the opt-in log-fetch capability supertrait
+([ADR 0057](adr/0057-log-provider-capability-trait.md)); its `get_logs` performs
+a single bounded query that feeds the fail-closed event decoders.
+Native Alloy support is already shipped as
 `cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, and `cow-sdk-alloy`;
 browser-wallet support implements the same traits directly without widening
 the native facade.

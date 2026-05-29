@@ -1,6 +1,6 @@
 # Provider Adapters
 
-`cow-sdk-core` exposes three public traits that describe the runtime
+`cow-sdk-core` exposes four public traits that describe the runtime
 boundary between the SDK and a caller-supplied signer or RPC backend:
 
 - [`Signer`](https://docs.rs/cow-sdk-core/latest/cow_sdk_core/traits/trait.Signer.html)
@@ -10,6 +10,14 @@ boundary between the SDK and a caller-supplied signer or RPC backend:
   for read-only async-first RPC providers.
 - [`SigningProvider`](https://docs.rs/cow-sdk-core/latest/cow_sdk_core/traits/trait.SigningProvider.html)
   for async-first providers that can create signers.
+- [`LogProvider`](https://docs.rs/cow-sdk-core/latest/cow_sdk_core/traits/trait.LogProvider.html)
+  for providers that can additionally fetch event logs. This is an opt-in
+  capability supertrait layered on `Provider` (the same shape as
+  `SigningProvider`): read-only adapters implement only `Provider`, while a
+  log-capable adapter also implements `LogProvider`. `get_logs` is the
+  single-call entry point — one backend query over a caller-bounded block
+  range, returning raw logs for the fail-closed decoders, never a watcher or
+  indexer loop.
 
 This directory documents shipped and custom adapter paths against those trait
 surfaces. Consumers who use `cow-sdk-trading` should pick the native Alloy

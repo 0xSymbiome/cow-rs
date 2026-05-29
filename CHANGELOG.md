@@ -58,6 +58,17 @@ The first functional crate-family release begins at `0.1.0`.
   eth-flow events without network access; malformed input returns a typed
   `WasmError`. The helpers are exposed in every package flavour that bundles the
   signing capability.
+- `cow-sdk-core` adds an opt-in `LogProvider: Provider` capability supertrait for
+  event-log fetching, with `LogQuery` / `RawLog` / `LogMeta` types whose
+  single-call `get_logs` issues exactly one backend query over a caller-bounded
+  block range and returns raw logs for the fail-closed decoders, never a watcher
+  or indexer loop. `cow-sdk-alloy-provider` implements
+  `LogProvider` for `RpcAlloyProvider`. The capability mirrors the
+  `SigningProvider` split and leaves `Provider`'s shape frozen; it is documented
+  in [ADR 0057](docs/adr/0057-log-provider-capability-trait.md), with the
+  trait-evolution rule clarified in
+  [ADR 0029](docs/adr/0029-trait-evolution-extension-traits.md) and the
+  [Log-Provider Capability Audit](docs/audit/log-provider-capability-audit.md).
 - `cow_sdk_contracts::weth` adds the `IWrappedNativeToken` (WETH9-family)
   `deposit` / `withdraw` bindings with `wrap_interaction` / `unwrap_interaction`
   helpers that emit the canonical settlement interaction, and

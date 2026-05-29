@@ -47,8 +47,8 @@ pub use redaction::{
 /// consumer.
 pub use tokio_util::sync::CancellationToken;
 pub use traits::{
-    BlockInfo, ContractCall, ContractHandle, DigestSigner, Eip1193, GraphTransport, Owner,
-    PinningTransport, Provider, Signer, SignerError, SigningProvider, TransactionBroadcast,
+    BlockInfo, ContractCall, ContractHandle, DigestSigner, Eip1193, GraphTransport, LogProvider,
+    Owner, PinningTransport, Provider, Signer, SignerError, SigningProvider, TransactionBroadcast,
     TransactionReceipt, TransactionRequest, TransactionStatus, TypedDataDomain, TypedDataEnvelope,
     TypedDataField, TypedDataPayload, TypedDataSigner, TypedDataTypes,
 };
@@ -57,10 +57,11 @@ pub use transport::{HttpTransport, TransportError};
 pub use transport::{ReqwestTransport, ReqwestTransportConfig};
 pub use types::{
     Address, Amount, Amounts, AppCode, AppCodeError, AppDataHash, AppDataHex, BlockHash,
-    BuyTokenDestination, ChainId, Costs, DecimalAmount, FeeComponent, Hash32, HexData, NetworkFee,
-    ORDER_TYPE_FIELD_NAMES, Order, OrderDigest, OrderKind, OrderUid, QUOTE_AMOUNT_STAGE_NAMES,
-    QuoteAmountsAndCosts, QuoteRequest, QuoteResponse, SellTokenSource, SignedAmount, TokenInfo,
-    Trade, TradeModel, TransactionHash, UnsignedOrder, VALID_TO_MAX_RELATIVE_SECONDS,
-    VALID_TO_MIN_RELATIVE_SECONDS, ValidTo, addresses_equal, token_id,
+    BuyTokenDestination, ChainId, Costs, DecimalAmount, FeeComponent, Hash32, HexData, LogMeta,
+    LogQuery, NetworkFee, ORDER_TYPE_FIELD_NAMES, Order, OrderDigest, OrderKind, OrderUid,
+    QUOTE_AMOUNT_STAGE_NAMES, QuoteAmountsAndCosts, QuoteRequest, QuoteResponse, RawLog,
+    SellTokenSource, SignedAmount, TokenInfo, Trade, TradeModel, TransactionHash, UnsignedOrder,
+    VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS, ValidTo, addresses_equal,
+    token_id,
 };
 pub use validation::{TransportErrorClass, ValidationReason};
