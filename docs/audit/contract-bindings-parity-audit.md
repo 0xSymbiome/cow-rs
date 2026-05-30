@@ -181,7 +181,7 @@ For example, the `settlement/GPv2Settlement.sol` row is verified by:
 
 ```
 git -C <contracts-checkout> show \
-    c94c595a791681cf8ba7495117dcde397b932885:src/contracts/GPv2Settlement.sol \
+    c6b61ce75841ce4c25ab126def9cc981c568e6c6:src/contracts/GPv2Settlement.sol \
     | sha256sum
 ```
 

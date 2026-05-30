@@ -61,8 +61,8 @@ or contract family.
 
 | Authority | Rows | Source contract |
 | --- | ---: | --- |
-| `primary` | 16 | Production `Settlement` and `VaultRelayer` rows sourced from `cowprotocol/contracts` `networks.json` at commit `c94c595a791681cf8ba7495117dcde397b932885` |
-| `secondary` | 50 | Staging rows, Plasma/Linea/Ink `Settlement` and `VaultRelayer` rows, and all `EthFlow` rows sourced from `cowprotocol/cow-sdk` `packages/config/src/chains/const/contracts.ts` at commit `00c3dbd41c086ff9a51d5e5a30648615d4c66d0d` |
+| `primary` | 16 | Production `Settlement` and `VaultRelayer` rows sourced from `cowprotocol/contracts` `networks.json` at commit `c6b61ce75841ce4c25ab126def9cc981c568e6c6` |
+| `secondary` | 50 | Staging rows, Plasma/Linea/Ink `Settlement` and `VaultRelayer` rows, and all `EthFlow` rows sourced from `cowprotocol/cow-sdk` `packages/config/src/chains/const/contracts.ts` at commit `74393ee2923a2932584998169daca6ce3c2da60c` |
 
 ## Per-chain Provenance
 

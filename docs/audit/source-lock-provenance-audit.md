@@ -1,7 +1,7 @@
 # Source-Lock Provenance Audit
 
 Status: Current
-Last reviewed: 2026-05-12
+Last reviewed: 2026-05-29
 Owning surface: source-lock provenance and release preflight authority
 Refresh trigger: Changes to `parity/source-lock.yaml`, vendored parity OpenAPI or fixture provenance, any change to the maintained exclusion-list policy for historical progress snapshots, or any newly archived progress snapshot that should stay outside active preflight authority
 Related docs:
@@ -37,7 +37,7 @@ or changing SDK behavior.
 | --- | --- | --- |
 | Source-lock pins | `parity/source-lock.yaml` pins exact upstream commits for every repository that contributes parity evidence | Conforms |
 | Freshness disclosure | Current upstream HEADs are checked explicitly so stale pins are visible before release evidence relies on freshness | Conforms |
-| Re-affirmation outcome | CoW Protocol source-lock pins remain explicit; the 2026-05-08 upstream HEAD comparison shows `cow-sdk` still aligned and fresh `contracts` / `services` drift requiring normal parity triage before any freshness-based release claim | Conforms |
+| Refresh outcome | The 2026-05-29 sync advanced the three CoW Protocol pins (`cow-sdk`, `contracts`, `services`) to upstream HEAD, re-vendored the services OpenAPI, and re-aligned fixture provenance; parity validation, OpenAPI coverage, and freshness all pass with the three pins Current | Conforms |
 | Local-root warnings | Reviewer-supplied upstream roots are checked for independent git top-levels, expected remotes, and pinned `HEAD` commits without making repo-local validation depend on those roots | Conforms |
 | Publication preflight | Source-lock validation metadata lists the complete package-family dry-run contract with local patches for unpublished intra-family crates | Conforms |
 | Native Alloy provenance | `parity/source-lock.yaml` pins exact Alloy runtime and Alloy Core commits for source-derived dependency evidence used by the native adapter family | Conforms |
@@ -55,9 +55,9 @@ or changing SDK behavior.
 `parity/source-lock.yaml` is the committed provenance contract for parity
 fixtures and source-derived evidence. It currently pins:
 
-- `cow-sdk` at `00c3dbd41c086ff9a51d5e5a30648615d4c66d0d`
-- `contracts` at `c94c595a791681cf8ba7495117dcde397b932885`
-- `services` at `0720b9bc15138ecc362078f505d0e3ba1c7b9883`
+- `cow-sdk` at `74393ee2923a2932584998169daca6ce3c2da60c`
+- `contracts` at `c6b61ce75841ce4c25ab126def9cc981c568e6c6`
+- `services` at `1f80d54bc3521b3fa81cd8ad66d9f749c5450591`
 - `alloy` at `f3fe4cfff0553e9e234a53208bb69b7c222c66e5`
 - `alloy-core` at `e6b30e4c2407cd1d2ea93e79f2768e5a4f21d266`
 
@@ -67,17 +67,17 @@ upstream repositories before treating the evidence as current.
 
 ### Freshness State
 
-Upstream HEADs were checked on 2026-05-08:
+Upstream HEADs were checked on 2026-05-29:
 
 | Repository | Source-lock pin | Upstream HEAD | State |
 | --- | --- | --- | --- |
-| `cow-sdk` | `00c3dbd41c086ff9a51d5e5a30648615d4c66d0d` | `00c3dbd41c086ff9a51d5e5a30648615d4c66d0d` | Current |
-| `contracts` | `c94c595a791681cf8ba7495117dcde397b932885` | `c6b61ce75841ce4c25ab126def9cc981c568e6c6` | Drift visible |
-| `services` | `0720b9bc15138ecc362078f505d0e3ba1c7b9883` | `50694520c18b1e1fd52eb2fee72c7482cc4cf8f5` | Drift visible |
+| `cow-sdk` | `74393ee2923a2932584998169daca6ce3c2da60c` | `74393ee2923a2932584998169daca6ce3c2da60c` | Current |
+| `contracts` | `c6b61ce75841ce4c25ab126def9cc981c568e6c6` | `c6b61ce75841ce4c25ab126def9cc981c568e6c6` | Current |
+| `services` | `1f80d54bc3521b3fa81cd8ad66d9f749c5450591` | `1f80d54bc3521b3fa81cd8ad66d9f749c5450591` | Current |
 
-The source lock remains intentionally commit-based and is not updated by this
-review. Release claims that depend on upstream freshness must triage the
-visible `contracts` and `services` drift before publication.
+The source lock remains intentionally commit-based. In this review the three
+CoW Protocol pins were advanced to upstream HEAD, so no freshness drift remains
+for parity evidence to triage.
 
 The Alloy runtime and Alloy Core pins are tag-aligned dependency evidence for
 the native adapter family rather than CoW Protocol upstream parity evidence.
@@ -96,17 +96,18 @@ bundled root schemas through `cow_sdk_app_data::get_app_data_schema` and
 
 ### Release Re-affirmation
 
-The 2026-05-08 re-affirmation returned:
+The 2026-05-29 refresh returned:
 
 | Repository | Source-lock pin | `git ls-remote ... HEAD` result | Action |
 | --- | --- | --- | --- |
-| `cow-sdk` | `00c3dbd41c086ff9a51d5e5a30648615d4c66d0d` | `00c3dbd41c086ff9a51d5e5a30648615d4c66d0d` | Re-affirmed; no bump |
-| `contracts` | `c94c595a791681cf8ba7495117dcde397b932885` | `c6b61ce75841ce4c25ab126def9cc981c568e6c6` | Drift visible; no source-lock mutation in this review |
-| `services` | `0720b9bc15138ecc362078f505d0e3ba1c7b9883` | `50694520c18b1e1fd52eb2fee72c7482cc4cf8f5` | Drift visible; no source-lock mutation in this review |
+| `cow-sdk` | `74393ee2923a2932584998169daca6ce3c2da60c` | `74393ee2923a2932584998169daca6ce3c2da60c` | Advanced to HEAD |
+| `contracts` | `c6b61ce75841ce4c25ab126def9cc981c568e6c6` | `c6b61ce75841ce4c25ab126def9cc981c568e6c6` | Advanced to HEAD |
+| `services` | `1f80d54bc3521b3fa81cd8ad66d9f749c5450591` | `1f80d54bc3521b3fa81cd8ad66d9f749c5450591` | Advanced to HEAD |
 
-This review does not mutate `parity/source-lock.yaml`. If a later release
-candidate needs to move any upstream pin, that change remains a deliberate
-reviewed pull request with rationale, followed by refreshed parity validation.
+This review advances the three CoW Protocol pins to upstream HEAD as a
+deliberate, reviewed change, followed by refreshed parity validation. Future
+pin moves remain deliberate reviewed changes with rationale and re-run parity
+validation.
 
 ### Local-Root Warning Command
 
@@ -121,13 +122,21 @@ root choices visible before reviewers rely on them.
 
 ### Refresh Outcome
 
-The 2026-05-02 upstream comparison found `services` producer-path drift in
-`crates/shared/src/order_validation.rs` and no producer-path drift in
-`cow-sdk`, `contracts`, `crates/orderbook/openapi.yml`, or
-`crates/orderbook/src/app_data.rs`. The source-lock was refreshed to the
-current services HEAD, fixture provenance was aligned to the refreshed commit,
-the services OpenAPI was re-vendored, and the solver-execution DTO coverage was
-aligned with the committed OpenAPI `executedAmounts` payload shape.
+The 2026-05-29 upstream comparison advanced `cow-sdk`, `contracts`, and
+`services` to upstream HEAD. Every `contracts` producer path and vendored
+Solidity mirror is byte-identical at the new commit, so the contract bindings
+are unaffected. `services` producer-path drift is confined to
+`crates/shared/src/order_validation.rs` and `crates/orderbook/openapi.yml`; the
+OpenAPI change removes the deprecated v1 `solver_competition` paths (the
+`SolverCompetitionResponse` schema and the v2 routes are retained), expands the
+`SimulationRequest` schema, and rewords the quote `timeout` description, while
+every quote and order DTO schema (`OrderParameters`,
+`OrderQuoteRequest`/`OrderQuoteResponse`/`OrderQuoteSide`/`OrderQuoteValidity`,
+`PriceQuality`) is unchanged. `cow-sdk` drift is additive multi-chain and
+authentication surface (Solana support, an optional bearer token) that the
+EVM-first SDK does not model. The services OpenAPI was re-vendored, fixture
+provenance was aligned to the refreshed commits, and OpenAPI DTO coverage was
+re-validated.
 
 ### Publication Preflight Metadata
 

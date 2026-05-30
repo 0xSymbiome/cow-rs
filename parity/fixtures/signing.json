@@ -6,7 +6,7 @@
   "source_refs": [
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/order-signing/src/orderSigningUtils.ts",
       "anchors": [
         "COW_EIP712_TYPES",
@@ -21,7 +21,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/order-signing/src/utils.ts",
       "anchors": [
         "signOrder",
@@ -33,7 +33,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/order-signing/src/types.ts",
       "anchors": [
         "UnsignedOrder",
@@ -45,7 +45,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/order-signing/tests/orderSigningUtils.test.ts",
       "anchors": [
         "describe('OrderSigningUtils')",
@@ -57,7 +57,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/trading/src/getOrderTypedData.ts",
       "anchors": [
         "getOrderTypedData"
@@ -65,7 +65,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/trading/src/getOrderTypedData.test.ts",
       "anchors": [
         "describe('getOrderTypedData')"
@@ -73,7 +73,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/trading/src/calculateUniqueOrderId.ts",
       "anchors": [
         "calculateUniqueOrderId"
@@ -81,7 +81,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/trading/src/calculateUniqueOrderId.test.ts",
       "anchors": [
         "describe('calculateUniqueOrderId')"
@@ -89,7 +89,7 @@
     },
     {
       "repo": "contracts",
-      "commit": "c94c595a791681cf8ba7495117dcde397b932885",
+      "commit": "c6b61ce75841ce4c25ab126def9cc981c568e6c6",
       "path": "src/ts/order.ts",
       "anchors": [
         "ORDER_TYPE_FIELDS",
@@ -100,7 +100,7 @@
     },
     {
       "repo": "contracts",
-      "commit": "c94c595a791681cf8ba7495117dcde397b932885",
+      "commit": "c6b61ce75841ce4c25ab126def9cc981c568e6c6",
       "path": "src/ts/sign.ts",
       "anchors": [
         "SigningScheme",

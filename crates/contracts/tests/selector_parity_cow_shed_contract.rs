@@ -2,7 +2,7 @@
 //! cow-shed selectors fixture pins the deployed-runtime entry-point
 //! selectors and EIP-712 type hashes. Source authority is the
 //! cow-sdk TypeScript ABI L1 (pinned cow-sdk SHA
-//! `00c3dbd41c086ff9a51d5e5a30648615d4c66d0d`).
+//! `74393ee2923a2932584998169daca6ce3c2da60c`).
 
 use std::path::PathBuf;
 

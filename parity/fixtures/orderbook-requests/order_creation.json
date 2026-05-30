@@ -7,21 +7,21 @@
   "source_refs": [
     {
       "repo": "services",
-      "commit": "0720b9bc15138ecc362078f505d0e3ba1c7b9883",
+      "commit": "1f80d54bc3521b3fa81cd8ad66d9f749c5450591",
       "path": "crates/orderbook/openapi.yml",
       "line_start": 1122,
       "line_end": 1269
     },
     {
       "repo": "services",
-      "commit": "0720b9bc15138ecc362078f505d0e3ba1c7b9883",
+      "commit": "1f80d54bc3521b3fa81cd8ad66d9f749c5450591",
       "path": "crates/shared/src/order_validation.rs",
       "line_start": 916,
       "line_end": 917
     },
     {
       "repo": "services",
-      "commit": "0720b9bc15138ecc362078f505d0e3ba1c7b9883",
+      "commit": "1f80d54bc3521b3fa81cd8ad66d9f749c5450591",
       "path": "crates/model/src/order.rs",
       "line_start": 439,
       "line_end": 461

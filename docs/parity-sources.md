@@ -93,10 +93,10 @@ at a different commit than the source-lock pin.
 
 ## Pinned Revisions
 
-- `cow-sdk`: `00c3dbd41c086ff9a51d5e5a30648615d4c66d0d`
-- `contracts`: `c94c595a791681cf8ba7495117dcde397b932885`
+- `cow-sdk`: `74393ee2923a2932584998169daca6ce3c2da60c`
+- `contracts`: `c6b61ce75841ce4c25ab126def9cc981c568e6c6`
 - `ethflowcontract`: `762d182674f8f890bd27917872ee62125171b54d`
-- `services`: `0720b9bc15138ecc362078f505d0e3ba1c7b9883`
+- `services`: `1f80d54bc3521b3fa81cd8ad66d9f749c5450591`
 - `alloy`: `f3fe4cfff0553e9e234a53208bb69b7c222c66e5`
 - `alloy-core`: `e6b30e4c2407cd1d2ea93e79f2768e5a4f21d266`
 

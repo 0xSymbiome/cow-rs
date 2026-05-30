@@ -6,7 +6,7 @@
   "source_refs": [
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/app-data/src/api/appDataHexToCid.ts",
       "anchors": [
         "appDataHexToCid"
@@ -14,7 +14,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/app-data/src/api/appDataHexToCid.spec.ts",
       "anchors": [
         "describe('appDataHexToCid')"
@@ -22,7 +22,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/app-data/src/api/cidToAppDataHex.ts",
       "anchors": [
         "cidToAppDataHex"
@@ -30,7 +30,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/app-data/src/api/cidToAppDataHex.test.ts",
       "anchors": [
         "describe('cidToAppDataHex')"
@@ -38,7 +38,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/app-data/src/api/generateAppDataDoc.ts",
       "anchors": [
         "generateAppDataDoc",
@@ -47,7 +47,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/app-data/src/api/generateAppDataDoc.spec.ts",
       "anchors": [
         "Creates appDataDoc with empty metadata",
@@ -56,7 +56,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/app-data/src/api/getAppDataInfo.ts",
       "anchors": [
         "getAppDataInfo",
@@ -65,7 +65,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/app-data/src/api/getAppDataInfo.spec.ts",
       "anchors": [
         "describe('getAppDataInfo')"
@@ -73,7 +73,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/app-data/src/api/getAppDataSchema.ts",
       "anchors": [
         "getAppDataSchema"
@@ -81,7 +81,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/app-data/src/api/getAppDataSchema.spec.ts",
       "anchors": [
         "describe('getAppDataSchema')",
@@ -91,7 +91,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/app-data/src/api/validateAppDataDoc.ts",
       "anchors": [
         "validateAppDataDoc",
@@ -100,7 +100,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/app-data/src/api/validateAppDataDoc.spec.ts",
       "anchors": [
         "describe('validateAppDataDocument')",
@@ -110,7 +110,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/app-data/src/api/fetchDocFromCid.ts",
       "anchors": [
         "fetchDocFromCid"
@@ -118,7 +118,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/app-data/src/api/fetchDocFromCid.spec.ts",
       "anchors": [
         "describe('fetchDocFromCid')"
@@ -126,7 +126,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/app-data/src/api/fetchDocFromAppData.ts",
       "anchors": [
         "fetchDocFromAppDataHex"
@@ -134,7 +134,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/app-data/src/api/fetchDocFromAppData.spec.ts",
       "anchors": [
         "describe('fetchDocFromAppData')",
@@ -144,7 +144,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/app-data/src/api/uploadMetadataDocToIpfsLegacy.ts",
       "anchors": [
         "_pinJsonInPinataIpfs"
@@ -152,7 +152,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/app-data/src/types.ts",
       "anchors": [
         "AppDataParams",
@@ -163,7 +163,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/app-data/src/consts.ts",
       "anchors": [
         "DEFAULT_IPFS_READ_URI",
@@ -173,7 +173,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/app-data/src/importSchema.ts",
       "anchors": [
         "importSchema"
@@ -181,7 +181,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/app-data/src/utils/ipfs.ts",
       "anchors": [
         "parseCid",
@@ -190,7 +190,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/app-data/src/utils/stringify.ts",
       "anchors": [
         "stringifyDeterministic"
@@ -198,7 +198,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/app-data/src/generatedTypes/index.ts",
       "anchors": [
         "LATEST_APP_DATA_VERSION",
@@ -208,7 +208,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/app-data/src/generatedTypes/latest.ts",
       "anchors": [
         "cowAppDataLatestScheme"
@@ -216,7 +216,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/app-data/src/mocks.ts",
       "anchors": [
         "APP_DATA_DOC",
@@ -231,7 +231,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/app-data/test/schema.spec.ts",
       "anchors": [
         "Schema v0.1.0",
@@ -241,7 +241,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/app-data/test/schema-1.5.0.spec.ts",
       "anchors": [
         "Schema v1.5.0: Add bridging metadata 1.0.0"
@@ -249,7 +249,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/app-data/test/flashloan-v1.7.0.spec.ts",
       "anchors": [
         "Flashloan metadata v1.7.0"
@@ -257,7 +257,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/app-data/test/wrappers.v1.13.0.spec.ts",
       "anchors": [
         "Wrappers metadata v1.13.0"

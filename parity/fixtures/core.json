@@ -6,7 +6,7 @@
   "source_refs": [
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/common/src/adapters/AbstractSigner.ts",
       "anchors": [
         "AbstractSigner",
@@ -21,7 +21,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/common/src/adapters/AbstractProviderAdapter.ts",
       "anchors": [
         "AbstractProviderAdapter",
@@ -41,7 +41,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/common/src/utils/address.ts",
       "anchors": [
         "EVM_ADDRESS_PATTERN",
@@ -51,7 +51,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/common/src/utils/address.test.ts",
       "anchors": [
         "valid EVM addresses",
@@ -60,7 +60,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/common/src/utils/token.ts",
       "anchors": [
         "getTokenId",
@@ -71,7 +71,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/common/src/utils/token.test.ts",
       "anchors": [
         "getTokenId",
@@ -81,7 +81,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/config/src/types/configs.ts",
       "anchors": [
         "CowEnv",
@@ -94,7 +94,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/config/src/chains/types.ts",
       "anchors": [
         "SupportedChainId",
@@ -104,7 +104,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/config/src/constants/addresses.ts",
       "anchors": [
         "EVM_NATIVE_CURRENCY_ADDRESS"
@@ -112,7 +112,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/config/src/constants/wrappedTokens.ts",
       "anchors": [
         "WRAPPED_NATIVE_CURRENCIES",
@@ -121,7 +121,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/order-signing/src/types.ts",
       "anchors": [
         "UnsignedOrder",
@@ -132,7 +132,7 @@
     },
     {
       "repo": "cow-sdk",
-      "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/order-book/src/types.ts",
       "anchors": [
         "QuoteAmountsAndCosts",
@@ -142,7 +142,7 @@
     },
     {
       "repo": "contracts",
-      "commit": "c94c595a791681cf8ba7495117dcde397b932885",
+      "commit": "c6b61ce75841ce4c25ab126def9cc981c568e6c6",
       "path": "src/ts/order.ts",
       "anchors": [
         "ORDER_TYPE_FIELDS",

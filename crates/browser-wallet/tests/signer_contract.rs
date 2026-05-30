@@ -352,14 +352,14 @@ async fn regen_eth_sign_typed_data_request_fixture() {
         "source_refs": [
             {
                 "repo": "cow-sdk",
-                "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+                "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
                 "path": "packages/common/src/adapters/types/index.ts",
                 "line_start": 17,
                 "line_end": 23
             },
             {
                 "repo": "cow-sdk",
-                "commit": "00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+                "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
                 "path": "packages/contracts-ts/src/ContractsTs.ts",
                 "line_start": 109,
                 "line_end": 116

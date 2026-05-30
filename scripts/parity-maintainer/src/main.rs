@@ -237,6 +237,9 @@ const WATCH_TOWER_PATHS: &[&str] = &[
 const ETHFLOWCONTRACT_PATHS: &[&str] = &[
     "src/CoWSwapEthFlow.sol",
     "src/libraries/EthFlowOrder.sol",
+    "src/interfaces/ICoWSwapOnchainOrders.sol",
+    "src/mixins/CoWSwapOnchainOrders.sol",
+    "src/interfaces/IWrappedNativeToken.sol",
 ];
 const HELPER_REPO_TEMPLATES: &[RepoTemplate] = &[
     RepoTemplate {

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "source_authority": {
-    "factory_abi": "cow-sdk/packages/cow-shed/src/abi/CowShedFactoryAbi.ts (pinned cow-sdk SHA 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d)",
+    "factory_abi": "cow-sdk/packages/cow-shed/src/abi/CowShedFactoryAbi.ts (pinned cow-sdk SHA 74393ee2923a2932584998169daca6ce3c2da60c)",
     "solidity_reference": "cow-shed/src/*.sol (pinned cow-shed SHA 9e01a88e0010314ee1e4c1a822105897a87d3bda)",
     "deployment_runtime": "crates/contracts/abi/cow-shed/version-call-results.json"
   },

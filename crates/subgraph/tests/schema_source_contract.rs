@@ -13,7 +13,7 @@ fn subgraph_schema_sources_are_pinned_and_test_only() {
         "remote: https://github.com/cowprotocol/composable-cow.git",
         "remote: https://github.com/cowdao-grants/cow-shed.git",
         "remote: https://github.com/cowprotocol/watch-tower.git",
-        "commit: 00c3dbd41c086ff9a51d5e5a30648615d4c66d0d",
+        "commit: 74393ee2923a2932584998169daca6ce3c2da60c",
         "packages/cow-shed/src/const.ts",
         "src/ComposableCoW.sol",
         "src/COWShedFactory.sol",
