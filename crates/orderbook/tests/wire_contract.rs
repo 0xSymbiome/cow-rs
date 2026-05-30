@@ -7,7 +7,7 @@
 use serde::{Serialize, de::DeserializeOwned};
 
 use cow_sdk_orderbook::{
-    Amount, Auction, CompetitionOrderStatus, Order, OrderCreation, OrderKind, OrderQuoteResponse,
+    Amount, CompetitionOrderStatus, Order, OrderCreation, OrderKind, OrderQuoteResponse,
     OrderQuoteSide, QuoteData, SigningScheme, TotalSurplus, Trade,
 };
 
@@ -63,10 +63,6 @@ fn promoted_amount_dtos_roundtrip_byte_identical() {
     );
 
     assert_wire_roundtrip::<TotalSurplus>(r#"{"totalSurplus":"12345678901234567890"}"#);
-
-    assert_wire_roundtrip::<Auction>(
-        r#"{"id":1,"block":2,"latestSettlementBlock":3,"orders":[{"uid":"0x59920c85de0162e9e55df8d396e75f3b6b7c2dfdb535f03e5c807731c31585eaff714b8b0e2700303ec912bd40496c3997ceea2b616d6710","sellToken":"0x0000000000000000000000000000000000000001","buyToken":"0x0000000000000000000000000000000000000002","receiver":"0x0000000000000000000000000000000000000003","sellAmount":"1000000000000000000","buyAmount":"2000000000000000000","validTo":1700000000,"appData":"0x0000000000000000000000000000000000000000000000000000000000000000","kind":"sell","partiallyFillable":true,"owner":"0x0000000000000000000000000000000000000003","executed":"0","preInteractions":[{"target":"0x0000000000000000000000000000000000000001","value":"0","callData":"0x"}],"postInteractions":[{"target":"0x0000000000000000000000000000000000000002","value":"0","callData":"0x"}],"sellTokenBalance":"erc20","buyTokenBalance":"erc20","class":"limit","signature":"0x1234","protocolFees":[{"factor":0.5,"maxVolumeFactor":0.01,"quote":{"buyAmount":"2000000000000000000","fee":"0","sellAmount":"1000000000000000000"}}],"created":"1700000000","quote":{"sellAmount":"1000000000000000000","buyAmount":"2000000000000000000","fee":"0"}}],"prices":{"0x0000000000000000000000000000000000000001":"1000000000000000000"}}"#,
-    );
 
     assert_wire_roundtrip::<CompetitionOrderStatus>(
         r#"{"type":"solved","value":[{"solver":"solver-a","executedAmounts":{"sell":"100000000000000000","buy":"200000000000000000"}}]}"#,

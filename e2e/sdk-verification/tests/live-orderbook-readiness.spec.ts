@@ -13,7 +13,7 @@ import {
 const ORDER_UID = `0x${"11".repeat(56)}`;
 const SIGNATURE = `0x${"22".repeat(64)}1b`;
 const ORDERBOOK_LATEST_COMPETITION_URL =
-  "https://barn.api.cow.fi/mainnet/api/v1/solver_competition/latest";
+  "https://barn.api.cow.fi/mainnet/api/v2/solver_competition/latest";
 const ORDERBOOK_ORDER_URL = `https://barn.api.cow.fi/mainnet/api/v1/orders/${ORDER_UID}`;
 const ORDERBOOK_APP_DATA_URL = `https://barn.api.cow.fi/mainnet/api/v1/app_data/${APP_DATA_HASH}`;
 

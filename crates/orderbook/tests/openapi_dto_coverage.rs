@@ -2,8 +2,8 @@ use std::collections::BTreeSet;
 use std::path::Path;
 
 use cow_sdk_orderbook::{
-    AuctionOrder, OnchainOrderData, Order, OrderQuoteResponse, QuoteData, SolverExecution,
-    StoredOrderQuote, TotalSurplus, Trade,
+    OnchainOrderData, Order, OrderQuoteResponse, QuoteData, SolverExecution, StoredOrderQuote,
+    TotalSurplus, Trade,
 };
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
@@ -65,7 +65,6 @@ fn assert_fixture_roundtrips(entry: &DtoCoverage) {
     for fixture in &entry.fixtures {
         match entry.rust_type.as_str() {
             "cow_sdk_orderbook::Order" => roundtrip_fixture::<Order>(fixture),
-            "cow_sdk_orderbook::AuctionOrder" => roundtrip_fixture::<AuctionOrder>(fixture),
             "cow_sdk_orderbook::OrderQuoteResponse" => {
                 roundtrip_fixture::<OrderQuoteResponse>(fixture);
             }
@@ -95,7 +94,6 @@ fn openapi_coverage_manifest_roundtrips_required_orderbook_dtos() {
 
     let required = BTreeSet::from([
         "cow_sdk_orderbook::Order",
-        "cow_sdk_orderbook::AuctionOrder",
         "cow_sdk_orderbook::OrderQuoteResponse",
         "cow_sdk_orderbook::QuoteData",
         "cow_sdk_orderbook::Trade",

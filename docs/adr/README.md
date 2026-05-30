@@ -38,7 +38,7 @@ public and runtime shape of `cow-rs`.
 | [0028](0028-account-abstraction-integration-plan.md) | Accepted (amended) | Integrate account abstraction through provider capability traits and EIP-1271-compatible signing surfaces. |
 | [0029](0029-trait-evolution-extension-traits.md) | Accepted (amended) | Evolve provider traits through opt-in extension traits rather than adding methods to frozen core trait shapes; new RPC primitives land on the core read trait or a capability supertrait, not a blanket `*Ext`. |
 | [0030](0030-workspace-locked-versioning-tag-baseline.md) | Accepted | Keep workspace crate versions locked through `0.x` and run patch semver checks against the previous release tag. |
-| [0031](0031-wire-dto-openapi-driven-with-order-auction-order-split.md) | Accepted | Drive orderbook response DTO coverage from OpenAPI with separate `Order` and `AuctionOrder` Rust types. |
+| [0031](0031-wire-dto-openapi-driven-with-order-auction-order-split.md) | Accepted (amended) | Drive orderbook response DTO coverage from the source-lock OpenAPI inventory; the original `Order`/`AuctionOrder` split collapsed to a single `Order` type after the auction read proved non-public. |
 | [0032](0032-deployment-authority-machine-readable-provenance.md) | Accepted (amended) | Back deployment-address authority with machine-readable provenance and dual-mode live confirmation. |
 | [0033](0033-minimum-viable-panic-surface.md) | Accepted | Keep production panic sites allowlisted, documented, and limited to static invariants. |
 | [0034](0034-interaction-encoder-target-policy.md) | Accepted (amended) | Guard canonical vault-relayer interaction targets at the settlement encoder boundary while leaving custom domains to runtime authority. |

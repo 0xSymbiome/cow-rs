@@ -14,11 +14,10 @@ use crate::{
     },
     transform::{transform_order, transform_orders},
     types::{
-        ApiContext, ApiContextOverride, AppDataHash, AppDataObject, Auction,
-        CompetitionOrderStatus, CowEnv, ENVS_LIST, EnvBaseUrlOverrides, GetOrdersRequest,
-        GetTradesRequest, NativePriceResponse, Order, OrderCancellations, OrderCreation,
-        OrderQuoteRequest, OrderQuoteResponse, OrderUid, SolverCompetitionResponse, TotalSurplus,
-        Trade,
+        ApiContext, ApiContextOverride, AppDataHash, AppDataObject, CompetitionOrderStatus, CowEnv,
+        ENVS_LIST, EnvBaseUrlOverrides, GetOrdersRequest, GetTradesRequest, NativePriceResponse,
+        Order, OrderCancellations, OrderCreation, OrderQuoteRequest, OrderQuoteResponse, OrderUid,
+        SolverCompetitionResponse, TotalSurplus, Trade,
     },
 };
 
@@ -734,6 +733,12 @@ impl OrderBookApi {
         Ok(())
     }
 
+    // Solver-competition reads target the v2 routes. The v1 routes were retired
+    // upstream and the published OpenAPI exposes solver competition under v2
+    // only; v1 still answers in production today and some clients still call it,
+    // but a new integration follows the current contract. Solver display names
+    // are not part of the v2 payload — resolve them from a solver address
+    // through the CoW solvers registry at the presentation layer.
     /// Fetches solver-competition data by auction id.
     ///
     /// Callers that need cooperative cancellation wrap this future through
@@ -749,7 +754,7 @@ impl OrderBookApi {
             fields(
                 chain = ?self.context().chain_id,
                 env = ?self.context().env,
-                endpoint = "/api/v1/solver_competition/:auction",
+                endpoint = "/api/v2/solver_competition/:auction",
                 method = "GET",
             ),
         ),
@@ -759,7 +764,7 @@ impl OrderBookApi {
         auction_id: i64,
     ) -> Result<SolverCompetitionResponse, OrderbookError> {
         let params = FetchParams::new(
-            format!("/api/v1/solver_competition/{auction_id}"),
+            format!("/api/v2/solver_competition/{auction_id}"),
             HttpMethod::Get,
         );
 
@@ -781,7 +786,7 @@ impl OrderBookApi {
             fields(
                 chain = ?self.context().chain_id,
                 env = ?self.context().env,
-                endpoint = "/api/v1/solver_competition/by_tx_hash/:tx",
+                endpoint = "/api/v2/solver_competition/by_tx_hash/:tx",
                 method = "GET",
             ),
         ),
@@ -791,7 +796,7 @@ impl OrderBookApi {
         tx_hash: &str,
     ) -> Result<SolverCompetitionResponse, OrderbookError> {
         let params = FetchParams::new(
-            format!("/api/v1/solver_competition/by_tx_hash/{tx_hash}"),
+            format!("/api/v2/solver_competition/by_tx_hash/{tx_hash}"),
             HttpMethod::Get,
         );
 
@@ -813,7 +818,7 @@ impl OrderBookApi {
             fields(
                 chain = ?self.context().chain_id,
                 env = ?self.context().env,
-                endpoint = "/api/v1/solver_competition/latest",
+                endpoint = "/api/v2/solver_competition/latest",
                 method = "GET",
             ),
         ),
@@ -821,33 +826,7 @@ impl OrderBookApi {
     pub async fn get_latest_solver_competition(
         &self,
     ) -> Result<SolverCompetitionResponse, OrderbookError> {
-        let params = FetchParams::new("/api/v1/solver_competition/latest", HttpMethod::Get);
-
-        self.fetch_json(params).await
-    }
-
-    /// Fetches the current auction snapshot from the orderbook.
-    ///
-    /// Callers that need cooperative cancellation wrap this future through
-    /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`OrderbookError`] when request execution or response decoding fails.
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(
-            skip_all,
-            fields(
-                chain = ?self.context().chain_id,
-                env = ?self.context().env,
-                endpoint = "/api/v1/auction",
-                method = "GET",
-            ),
-        ),
-    )]
-    pub async fn get_auction(&self) -> Result<Auction, OrderbookError> {
-        let params = FetchParams::new("/api/v1/auction", HttpMethod::Get);
+        let params = FetchParams::new("/api/v2/solver_competition/latest", HttpMethod::Get);
 
         self.fetch_json(params).await
     }

@@ -19,7 +19,7 @@ use std::{
 
 use cow_sdk_core::{Amount, Cancellable, CancellationToken};
 use cow_sdk_orderbook::{
-    AppDataObject, Auction, CompetitionOrderStatus, CowEnv, GetOrdersRequest, GetTradesRequest,
+    AppDataObject, CompetitionOrderStatus, CowEnv, GetOrdersRequest, GetTradesRequest,
     NativePriceResponse, Order, OrderBookApi, OrderCancellations, OrderCreation, OrderQuoteRequest,
     OrderQuoteResponse, OrderQuoteSide, OrderUid, SigningScheme, SolverCompetitionResponse,
     SupportedChainId, TotalSurplus, Trade,
@@ -141,12 +141,6 @@ const TESTED_METHODS: &[CancellationCase] = &[
         http_method: "GET",
         path: path_latest_solver_competition,
         invoke: invoke_get_latest_solver_competition,
-    },
-    CancellationCase {
-        method_name: "get_auction",
-        http_method: "GET",
-        path: path_auction,
-        invoke: invoke_get_auction,
     },
 ];
 
@@ -329,19 +323,15 @@ fn path_app_data() -> String {
 }
 
 fn path_solver_competition_by_auction_id() -> String {
-    "/api/v1/solver_competition/7".to_owned()
+    "/api/v2/solver_competition/7".to_owned()
 }
 
 fn path_solver_competition_by_tx_hash() -> String {
-    format!("/api/v1/solver_competition/by_tx_hash/{}", sample_tx_hash())
+    format!("/api/v2/solver_competition/by_tx_hash/{}", sample_tx_hash())
 }
 
 fn path_latest_solver_competition() -> String {
-    "/api/v1/solver_competition/latest".to_owned()
-}
-
-fn path_auction() -> String {
-    "/api/v1/auction".to_owned()
+    "/api/v2/solver_competition/latest".to_owned()
 }
 
 fn invoke_get_quote(api: &OrderBookApi) -> CaseFuture<'_> {
@@ -463,10 +453,6 @@ fn invoke_get_latest_solver_competition(api: &OrderBookApi) -> CaseFuture<'_> {
             .await
             .map(|_: SolverCompetitionResponse| ())
     })
-}
-
-fn invoke_get_auction(api: &OrderBookApi) -> CaseFuture<'_> {
-    Box::pin(async move { api.get_auction().await.map(|_: Auction| ()) })
 }
 
 fn quote_request() -> OrderQuoteRequest {

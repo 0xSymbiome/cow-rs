@@ -123,6 +123,15 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- `cow-sdk-orderbook` solver-competition reads now target the orderbook `v2`
+  routes (`/api/v2/solver_competition/{auctionId}`, `/by_tx_hash/{txHash}`, and
+  `/latest`) and decode into a fully typed `SolverCompetitionResponse`.
+  Addresses, amounts, order UIDs, and transaction hashes use the workspace
+  domain newtypes; the response now carries the per-solver `referenceScores`
+  and each solution's touched `orders` (a new `SolverCompetitionOrder` type)
+  rather than dropping them. A shared `AuctionPrices`
+  (`BTreeMap<Address, Amount>`) types the clearing- and reference-price maps,
+  and `EthflowData::refund_tx_hash` is now a typed `TransactionHash`.
 - `cow_sdk_orderbook::OrderQuoteRequest` now models its quote `oneOf`s as typed
   Rust so an invalid request is unrepresentable rather than rejected at
   validation time, mirroring the orderbook quote schema. The mutually exclusive
@@ -234,6 +243,14 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Removed
 
+- Removed `OrderBookApi::get_auction` and the `Auction` response type. The
+  `/api/v1/auction` endpoint is not reachable for public clients and upstream
+  treats it as a liveness probe rather than a data feed. With no public auction
+  feed, the `AuctionOrder` response type and its auction-side `Quote` had no
+  reachable producer and are removed as well, collapsing the order-shaped
+  response surface to the single `Order` type. Auction retrieval, the
+  `AuctionOrder` mirror, and its quote can return as an additive change if the
+  endpoint becomes publicly consumable.
 - The `cow_sdk_trading` quote cache is removed: the `QuoteCache` trait,
   its `QuoteCacheKey`, the `NoopQuoteCache` and `InMemoryQuoteCache`
   implementations, the `TradingSdkBuilder::with_quote_cache` /
@@ -1783,8 +1800,8 @@ The first functional crate-family release begins at `0.1.0`.
   DTOs, `EthflowData`, `QuoteSide`, `QuoteData`, `GetOrdersRequest`,
   `GetTradesRequest`, `OrderCancellations`, `NativePriceResponse`,
   `TotalSurplus`, `AppDataObject`, `CompetitionOrderStatus`,
-  `CompetitionAuction`, `SolverCompetitionResponse`, `SolverSettlement`,
-  `SolverExecution`, and `Auction`. `cow-sdk-trading` annotates
+  `CompetitionAuction`, `SolverCompetitionResponse`, `SolverSettlement`, and
+  `SolverExecution`. `cow-sdk-trading` annotates
   `TradeParameters`, `LimitTradeParameters`, `TraderParameters`,
   `PartialTraderParameters`, `OrderTraderParameters`, `QuoterParameters`,
   `QuoteResults`, `QuoteRequestOverride`, `OrderPostingResult`,
@@ -3109,9 +3126,9 @@ The first functional crate-family release begins at `0.1.0`.
 
 - The order-level `fee_amount` descriptor is no longer a public field or a
   public builder setter on `cow_sdk_orderbook::QuoteData`,
-  `cow_sdk_orderbook::OrderCreation`, `cow_sdk_orderbook::Order`, or
-  `cow_sdk_orderbook::AuctionOrder`. Order submissions always wire
-  `"feeAmount": "0"` to satisfy the services `NonZeroFee` constraint and
+  `cow_sdk_orderbook::OrderCreation`, or `cow_sdk_orderbook::Order`. Order
+  submissions always wire `"feeAmount": "0"` to satisfy the services
+  `NonZeroFee` constraint and
   preserve the EIP-712 struct-hash contract, so callers no longer risk
   constructing an order that the orderbook would reject at submission. The
   network-cost amount returned by `/api/v1/quote` is now accessed through

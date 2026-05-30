@@ -1,8 +1,8 @@
 # ADR 0031: Wire DTOs Follow OpenAPI With Separate Order And AuctionOrder Types
 
-- Status: Accepted
+- Status: Accepted (amended)
 - Date: 2026-04-29
-- Last reviewed: 2026-04-29
+- Last reviewed: 2026-05-30
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: orderbook, dto, openapi, compatibility
 - Anchors: Principle 11 (primary)
@@ -43,10 +43,12 @@ keeps each Rust type faithful to its upstream schema.
   `cow_sdk_orderbook::QuoteData` mirror, so the `OrderQuoteResponse` `quote`
   field is validated for field-level fidelity rather than as an opaque object
   (see [ADR 0058](0058-typed-quote-request-response-surface.md)).
-- `Order` and `AuctionOrder` are exercised by separate fixtures.
-- `Order` does not carry auction-only fields.
-- `AuctionOrder` carries auction-only protocol-fee, interaction, created,
-  executed, and auction-side quote fields.
+- `Order` is exercised by a recorded fixture that passes
+  `openapi-coverage --validate`.
+- `Order` does not carry auction-only fields (`protocolFees`,
+  `preInteractions`, `postInteractions`, `created`, `executed`, or an
+  auction-side `quote`); those fields belong to the auction schema, which has
+  no public producer and is not mirrored (see the amendment below).
 - Adding a new upstream response field is a `0.x.0` minor update on the
   Rust SDK, never a `0.x.y` patch.
 - Response DTOs remain open to unknown fields under serde defaults.
@@ -64,6 +66,39 @@ keeps each Rust type faithful to its upstream schema.
 
 This ADR is the primary anchor for Principle 11,
 Forward-Compatible Public Surfaces.
+
+## Amendment (2026-05-29)
+
+Solver-competition reads target the orderbook `v2` routes and decode into a
+fully typed `SolverCompetitionResponse` — typed addresses, amounts, order UIDs,
+and transaction hashes; per-solver reference scores; and each solution's touched
+orders (`SolverCompetitionOrder`). A shared `AuctionPrices`
+(`BTreeMap<Address, Amount>`) types the clearing- and reference-price maps. This
+is consistent with this ADR's OpenAPI-driven, typed-response posture and with
+[ADR 0058](0058-typed-quote-request-response-surface.md).
+
+`OrderBookApi::get_auction` and the `Auction` response wrapper are not exposed:
+`/api/v1/auction` is not reachable for public clients and is treated upstream as
+a liveness probe rather than a consumer data feed. Because no public endpoint
+produces an auction snapshot, the `AuctionOrder` mirror and its auction-side
+`quote: Quote` had no reachable producer and are removed; the order-shaped
+response surface collapses to the single `Order` type, and the OpenAPI-driven
+coverage discipline above now governs `Order` and the remaining response DTOs
+(`OrderQuoteResponse`, `OrderParameters`/`QuoteData`, `Trade`,
+`StoredOrderQuote`, `OnchainOrderData`, `TotalSurplus`, and `SolverExecution`).
+An auction-retrieval method, the `AuctionOrder` mirror, and its quote can return
+additively if `/api/v1/auction` becomes publicly consumable.
+
+`SolverCompetitionResponse` is intentionally not enrolled in the
+`openapi-coverage --validate` manifest. The vendored v2 schema omits a
+`required:` block, so the optionality check would demand an all-`Option` shape;
+the upstream producer (the `Response` struct in `solver_competition_v2.rs`)
+instead treats the identity and collection fields as required and only
+`txHash` / `referenceScore` as optional, and the SDK mirrors that producer
+contract. The type is covered by a producer-pinned round-trip fixture
+(`parity/fixtures/orderbook/solver_competition_response.json`) rather than the
+OpenAPI-optionality manifest, which would degrade the typed boundary against the
+verified producer.
 
 ## Links
 

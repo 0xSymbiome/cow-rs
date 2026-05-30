@@ -1,7 +1,7 @@
 # Wire DTO Coverage Audit
 
 Status: Current
-Last reviewed: 2026-05-29
+Last reviewed: 2026-05-30
 Owning surface: cow-sdk-orderbook DTO coverage
 Refresh trigger: changes to `parity/openapi/services-orderbook.yml`, changes to `parity/openapi/coverage.yaml`, source-lock refreshes for the services OpenAPI, or public field changes on covered orderbook request or response DTOs
 Related docs:
@@ -14,10 +14,10 @@ Related docs:
 This audit covers:
 
 - source-lock-pinned OpenAPI vendoring for the orderbook service schema
-- inventory-backed Rust DTO coverage for `Order`, `AuctionOrder`, `OrderQuoteResponse`, `OrderParameters`, `Trade`, `StoredOrderQuote`, `OnchainOrderData`, `TotalSurplus`, and `SolverExecution`
+- inventory-backed Rust DTO coverage for `Order`, `OrderQuoteResponse`, `OrderParameters`, `Trade`, `StoredOrderQuote`, `OnchainOrderData`, `TotalSurplus`, and `SolverExecution`
 - reviewed request payload coverage for `OrderCreation`, `OrderQuoteRequest`,
   `AppDataObject`, and `OrderCancellations`
-- recorded fixture coverage and field-level round-trip tests for the nine covered DTOs
+- recorded fixture coverage and field-level round-trip tests for the eight covered DTOs
 - manifest-level required-field lists that must match each inventory's
   expanded OpenAPI `required` set
 - forward-compatible response deserialization without `serde(deny_unknown_fields)`
@@ -48,27 +48,45 @@ It does not cover app-data schema content, contract ABI DTOs, or live orderbook 
 The vendored orderbook OpenAPI document is committed at
 `parity/openapi/services-orderbook.yml`. The file records the upstream services
 commit and source path in its header. `parity/openapi/coverage.yaml` is the
-public manifest for the nine covered DTOs, and each manifest entry points to the
+public manifest for the eight covered DTOs, and each manifest entry points to the
 inventory and fixture used to validate that DTO.
 The manifest also carries the required-field set for each DTO. The
 `openapi-coverage --validate` command compares that list against the committed
 inventory's `expanded_required` values so required-field drift is visible even
 when optional additive fields remain forward-compatible.
 
-### DTO Separation
+### Order Field Scope
 
-`cow_sdk_orderbook::Order` and `cow_sdk_orderbook::AuctionOrder` cover separate
-OpenAPI schemas. `Order` models `OrderCreation`, `OrderMetaData`, and optional
-inline interactions. `AuctionOrder` models auction-only fields such as
-`protocolFees`, `preInteractions`, `postInteractions`, `created`, `executed`,
-and the auction-side `quote`.
+`cow_sdk_orderbook::Order` is the single order-shaped response DTO. It models
+`OrderCreation`, `OrderMetaData`, and optional inline interactions. It does not
+carry auction-only fields (`protocolFees`, `preInteractions`,
+`postInteractions`, `created`, `executed`, or an auction-side `quote`): those
+belong to the auction schema, which has no public producer and is not mirrored
+(see [ADR 0031](../adr/0031-wire-dto-openapi-driven-with-order-auction-order-split.md)).
+
+### Solver-Competition v2 Coverage
+
+`cow_sdk_orderbook::SolverCompetitionResponse` (the `/api/v2/solver_competition/*`
+payload) is deliberately not enrolled in the inventory manifest above. The
+vendored v2 schema omits a `required:` block, so `openapi-coverage --validate`
+would force every field — including the always-present `auctionId`, block
+deadlines, and `auction` — to `Option<T>`. The upstream producer (the `Response`
+struct in `services` `solver_competition_v2.rs`) instead models the identity and
+collection fields as required and only `txHash` / `referenceScore` as optional,
+and the typed `SolverCompetitionResponse` mirrors that producer contract exactly.
+Coverage is provided by a producer-pinned round-trip fixture
+(`parity/fixtures/orderbook/solver_competition_response.json`) built from the
+producer's own canonical serialization vector and exercised by
+`crates/orderbook/tests/transform_contract.rs::solver_competition_response_fixture_roundtrips_upstream_producer_vector`,
+rather than by the OpenAPI-optionality manifest. This divergence is recorded in
+[ADR 0031](../adr/0031-wire-dto-openapi-driven-with-order-auction-order-split.md)
+and [Parity Scope](../parity-scope.md).
 
 ### Field Provenance
 
 | Rust DTO | OpenAPI schema | Inventory | Fixture | Covered inventory fields |
 | --- | --- | --- | --- | --- |
 | `Order` | `components.schemas.Order` | `parity/openapi/order-inventory.yaml` | `parity/fixtures/orderbook/order_with_full_metadata.json` | `appData`, `appDataHash`, `availableBalance`, `buyAmount`, `buyToken`, `buyTokenBalance`, `class`, `creationDate`, `ethflowData`, `executedBuyAmount`, `executedFee`, `executedFeeAmount`, `executedFeeToken`, `executedSellAmount`, `executedSellAmountBeforeFees`, `feeAmount`, `from`, `fullAppData`, `fullBalanceCheck`, `interactions`, `invalidated`, `isLiquidityOrder`, `kind`, `onchainOrderData`, `onchainUser`, `owner`, `partiallyFillable`, `quote`, `quoteId`, `receiver`, `sellAmount`, `sellToken`, `sellTokenBalance`, `settlementContract`, `signature`, `signingScheme`, `status`, `uid`, `validTo` |
-| `AuctionOrder` | `components.schemas.AuctionOrder` | `parity/openapi/auction-order-inventory.yaml` | `parity/fixtures/orderbook/auction_order_with_protocol_fees.json` | `appData`, `buyAmount`, `buyToken`, `buyTokenBalance`, `class`, `created`, `executed`, `kind`, `owner`, `partiallyFillable`, `postInteractions`, `preInteractions`, `protocolFees`, `quote`, `receiver`, `sellAmount`, `sellToken`, `sellTokenBalance`, `signature`, `uid`, `validTo` |
 | `OrderQuoteResponse` | `components.schemas.OrderQuoteResponse` | `parity/openapi/order-quote-response-inventory.yaml` | `parity/fixtures/orderbook/order_quote_response.json` | `expiration`, `from`, `id`, `protocolFeeBps`, `quote`, `verified` |
 | `QuoteData` | `components.schemas.OrderParameters` | `parity/openapi/order-parameters-inventory.yaml` | `parity/fixtures/orderbook/order_parameters.json` | `appData`, `appDataHash`, `buyAmount`, `buyToken`, `buyTokenBalance`, `feeAmount`, `gasAmount`, `gasPrice`, `kind`, `partiallyFillable`, `receiver`, `sellAmount`, `sellToken`, `sellTokenBalance`, `sellTokenPrice`, `signingScheme`, `validTo` |
 | `Trade` | `components.schemas.Trade` | `parity/openapi/trade-inventory.yaml` | `parity/fixtures/orderbook/trade.json` | `blockNumber`, `buyAmount`, `buyToken`, `executedProtocolFees`, `logIndex`, `orderUid`, `owner`, `sellAmount`, `sellAmountBeforeFees`, `sellToken`, `txHash` |
@@ -128,7 +146,6 @@ Primary implementation points:
 - `parity/openapi/coverage.yaml`
 - `parity/openapi/services-orderbook.yml`
 - `parity/openapi/order-inventory.yaml`
-- `parity/openapi/auction-order-inventory.yaml`
 - `parity/openapi/order-quote-response-inventory.yaml`
 - `parity/openapi/trade-inventory.yaml`
 - `parity/openapi/stored-order-quote-inventory.yaml`
@@ -150,7 +167,6 @@ Primary regression coverage:
 - `crates/orderbook/tests/order_creation_fee_deserialize.rs::quote_data_deserialize_keeps_non_zero_network_cost_fee_amount`
 - `crates/orderbook/tests/order_creation_fee_deserialize.rs::order_creation_deserialize_fee_amount_boundary_is_zero_only`
 - `crates/orderbook/tests/transform_contract.rs::order_fixture_matches_openapi_inventory`
-- `crates/orderbook/tests/transform_contract.rs::auction_order_fixture_matches_openapi_inventory`
 - `crates/orderbook/tests/transform_contract.rs::order_quote_response_fixture_matches_openapi_inventory`
 - `crates/orderbook/tests/transform_contract.rs::trade_fixture_matches_openapi_inventory`
 - `crates/orderbook/tests/transform_contract.rs::stored_order_quote_fixture_matches_openapi_inventory`

@@ -155,8 +155,6 @@ The Rust SDK ships in scope:
 - typed orderbook transport (`cow-sdk-orderbook`)
   - `Order` covers the orderbook OpenAPI `Order` schema
     (`OrderCreation` + `OrderMetaData` + `interactions`)
-  - `AuctionOrder` covers the orderbook OpenAPI `AuctionOrder` schema as a
-    separate Rust type
   - `OrderQuoteResponse`, `Trade`, `StoredOrderQuote`, and
     `OnchainOrderData` cover their OpenAPI schemas as separate typed mirrors
 - typed subgraph transport (`cow-sdk-subgraph`)
@@ -297,6 +295,33 @@ entry for anyone who later considers reintroducing the surface.
   `crates/subgraph/tests/ui/builder_wasm32_missing_transport.rs`
   captures the compile error a browser consumer sees when `.build()`
   is attempted without `.transport(...)`.
+- **Auction-retrieval method (`get_auction`), the `Auction` response wrapper,
+  and the `AuctionOrder` mirror** — `/api/v1/auction` is not reachable for
+  public clients and is treated upstream as a liveness probe rather than a
+  consumer data feed, so the SDK exposes neither a `get_auction` method nor an
+  `Auction` response type. Because no public endpoint produces an auction
+  snapshot, the `AuctionOrder` mirror and its auction-side `quote: Quote` had no
+  reachable producer and are not modeled either; the order-shaped response
+  surface is the single `Order` type. As with the other retired surfaces above,
+  there is no negative test because the items do not exist and the Rust compiler
+  enforces the exclusion at every call site. Auction retrieval and the
+  `AuctionOrder` mirror can return as an additive change if the endpoint becomes
+  publicly consumable. Governed by
+  [ADR 0031](adr/0031-wire-dto-openapi-driven-with-order-auction-order-split.md).
+- **Strict OpenAPI-optionality coverage for `SolverCompetitionResponse`** — the
+  vendored `/api/v2/solver_competition/*` schema omits a `required:` block, so
+  the `openapi-coverage --validate` optionality check would force every field —
+  including the always-present `auctionId`, the block deadlines, and `auction` —
+  to `Option<T>`. The upstream producer (the `Response` struct in `services`
+  `solver_competition_v2.rs`, serialized behind that route) instead models the
+  identity and collection fields as required and only `txHash` / `referenceScore`
+  as optional, and the SDK's typed `SolverCompetitionResponse` mirrors that
+  producer contract exactly. The type is therefore covered by a producer-pinned
+  round-trip fixture (`parity/fixtures/orderbook/solver_competition_response.json`
+  exercised by `crates/orderbook/tests/transform_contract.rs`) rather than the
+  OpenAPI-optionality manifest, which would degrade the typed boundary against
+  the verified producer. Governed by
+  [ADR 0031](adr/0031-wire-dto-openapi-driven-with-order-auction-order-split.md).
 - **Hand-rolled ABI encoders in `cow-sdk-contracts`** — every binding
   shipped by the contracts crate is generated through `alloy::sol!` from
   the byte-identical Solidity mirrors committed under

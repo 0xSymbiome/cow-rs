@@ -3,7 +3,7 @@ import type { Page, Route } from "@playwright/test";
 export const ORDERBOOK_VERSION_URL = "https://barn.api.cow.fi/mainnet/api/v1/version";
 export const ORDERBOOK_QUOTE_URL = "https://barn.api.cow.fi/mainnet/api/v1/quote";
 export const ORDERBOOK_SOLVER_COMPETITION_LATEST_URL =
-  "https://barn.api.cow.fi/mainnet/api/v1/solver_competition/latest";
+  "https://barn.api.cow.fi/mainnet/api/v2/solver_competition/latest";
 export const ORDERBOOK_ORDER_BASE_URL = "https://barn.api.cow.fi/mainnet/api/v1/orders";
 export const ORDERBOOK_ORDER_URL_GLOB = `${ORDERBOOK_ORDER_BASE_URL}/*`;
 export const ORDERBOOK_TRADES_URL_GLOB = "https://barn.api.cow.fi/mainnet/api/v2/trades**";

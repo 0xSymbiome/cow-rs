@@ -313,8 +313,8 @@
       "kind": "behavior-scenario",
       "description": "Solver competition lookups support both auction-id and tx-hash route forms.",
       "expected": {
-        "auction_id_path_template": "/api/v1/solver_competition/{auctionId}",
-        "tx_hash_path_template": "/api/v1/solver_competition/by_tx_hash/{txHash}"
+        "auction_id_path_template": "/api/v2/solver_competition/{auctionId}",
+        "tx_hash_path_template": "/api/v2/solver_competition/by_tx_hash/{txHash}"
       }
     },
     {

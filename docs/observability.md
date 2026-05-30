@@ -147,7 +147,6 @@ and either `status` or `transport_error_class`.
 - `get_solver_competition_by_auction_id`
 - `get_solver_competition_by_tx_hash`
 - `get_latest_solver_competition`
-- `get_auction`
 
 ### `cow-sdk-subgraph`
 

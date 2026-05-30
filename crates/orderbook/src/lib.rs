@@ -285,15 +285,15 @@ pub use request::{HttpMethod, OrderBookApiError, ResponseBody};
 pub use transform::{calculate_total_fee, transform_order, transform_orders};
 pub use types::{
     Address, Amount, ApiBaseUrls, ApiContext, ApiContextOverride, AppDataHash, AppDataObject,
-    Auction, AuctionOrder, BuyTokenDestination, CompetitionAuction, CompetitionOrderStatus,
+    AuctionPrices, BuyTokenDestination, CompetitionAuction, CompetitionOrderStatus,
     CompetitionOrderStatusKind, CowEnv, ENVS_LIST, EVM_NATIVE_CURRENCY_ADDRESS, EcdsaSigningScheme,
     EnvBaseUrlOverrides, EthflowData, ExecutedAmounts, ExecutedProtocolFee, ExternalHostPolicy,
     FeePolicy, GetOrdersRequest, GetTradesRequest, HostPolicyError, InteractionData,
     NativePriceResponse, OnchainOrderData, Order, OrderCancellations, OrderClass, OrderCreation,
     OrderInteractions, OrderKind, OrderQuoteRequest, OrderQuoteResponse, OrderQuoteSide,
-    OrderStatus, OrderUid, PriceQuality, Quote, QuoteAmountsAndCosts, QuoteAppData, QuoteData,
+    OrderStatus, OrderUid, PriceQuality, QuoteAmountsAndCosts, QuoteAppData, QuoteData,
     QuoteSigningScheme, QuoteValidity, SellAmount, SellTokenSource, SigningScheme,
-    SigningSchemeNotEcdsa, SolverCompetitionResponse, SolverExecution, SolverSettlement,
-    StoredOrderQuote, SupportedChainId, TotalSurplus, Trade, TransactionHash,
+    SigningSchemeNotEcdsa, SolverCompetitionOrder, SolverCompetitionResponse, SolverExecution,
+    SolverSettlement, StoredOrderQuote, SupportedChainId, TotalSurplus, Trade, TransactionHash,
     default_verification_gas_limit,
 };

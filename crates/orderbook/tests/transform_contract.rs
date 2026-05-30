@@ -1,8 +1,8 @@
 mod common;
 
 use cow_sdk_orderbook::{
-    AuctionOrder, EVM_NATIVE_CURRENCY_ADDRESS, OnchainOrderData, Order, OrderQuoteResponse,
-    StoredOrderQuote, Trade, calculate_total_fee, transform_order,
+    EVM_NATIVE_CURRENCY_ADDRESS, OnchainOrderData, Order, OrderQuoteResponse,
+    SolverCompetitionResponse, StoredOrderQuote, Trade, calculate_total_fee, transform_order,
 };
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::Value;
@@ -108,45 +108,6 @@ fn order_fixture_matches_openapi_inventory() {
 }
 
 #[test]
-fn auction_order_fixture_matches_openapi_inventory() {
-    let (order, _, _) = assert_fixture_fields_roundtrip::<AuctionOrder>(
-        "auction_order_with_protocol_fees.json",
-        include_str!("../../../parity/fixtures/orderbook/auction_order_with_protocol_fees.json"),
-        &[
-            "appData",
-            "buyAmount",
-            "buyToken",
-            "buyTokenBalance",
-            "class",
-            "created",
-            "executed",
-            "kind",
-            "owner",
-            "partiallyFillable",
-            "postInteractions",
-            "preInteractions",
-            "protocolFees",
-            "quote",
-            "receiver",
-            "sellAmount",
-            "sellToken",
-            "sellTokenBalance",
-            "signature",
-            "uid",
-            "validTo",
-        ],
-    );
-
-    assert_eq!(order.protocol_fees.len(), 1);
-    assert_eq!(order.pre_interactions[0].call_data, "0x");
-    assert_eq!(
-        order.quote.as_ref().and_then(|quote| quote.fee.as_ref()),
-        Some(&amount("3000000000000000")),
-        "auction_order_with_protocol_fees.json: auction-side quote fee must deserialize",
-    );
-}
-
-#[test]
 fn order_quote_response_fixture_matches_openapi_inventory() {
     let (response, _, _) = assert_fixture_fields_roundtrip::<OrderQuoteResponse>(
         "order_quote_response.json",
@@ -236,6 +197,69 @@ fn onchain_order_data_fixture_matches_openapi_inventory() {
         "0x0000000000000000000000000000000000000005"
     );
     assert_eq!(data.placement_error.as_deref(), Some("none"));
+}
+
+// Source-locked to the upstream services producer's own v2 serialization
+// vector: the `Response` type in `services/crates/model/src/solver_competition_v2.rs`
+// is the struct serialized behind `/api/v2/solver_competition/*`. The vendored
+// orderbook OpenAPI omits a `required:` block for this schema, so the producer's
+// optionality (identity and collection fields non-optional; only `txHash` and
+// `referenceScore` optional) is the authoritative contract this fixture pins.
+// The type is therefore covered here by a producer-pinned round-trip rather than
+// the OpenAPI-optionality manifest (see ADR 0031 and docs/parity-scope.md).
+#[test]
+fn solver_competition_response_fixture_roundtrips_upstream_producer_vector() {
+    let (response, _, _) = assert_fixture_fields_roundtrip::<SolverCompetitionResponse>(
+        "solver_competition_response.json",
+        include_str!("../../../parity/fixtures/orderbook/solver_competition_response.json"),
+        &[
+            "auctionId",
+            "auctionStartBlock",
+            "auctionDeadlineBlock",
+            "transactionHashes",
+            "referenceScores",
+            "auction",
+            "solutions",
+        ],
+    );
+
+    assert_eq!(response.auction_id, 0);
+    assert_eq!(response.auction_start_block, 13);
+    assert_eq!(response.auction_deadline_block, 100);
+    assert_eq!(response.transaction_hashes.len(), 1);
+    assert_eq!(response.reference_scores.len(), 1);
+    assert_eq!(response.auction.orders.len(), 1);
+    assert_eq!(response.auction.prices.len(), 1);
+
+    let solution = response
+        .solutions
+        .first()
+        .expect("upstream vector carries one solution");
+    assert_eq!(solution.ranking, 1);
+    assert!(solution.is_winner);
+    assert!(!solution.filtered_out);
+    assert_eq!(solution.score, amount("123"));
+    assert_eq!(
+        solution.reference_score.as_ref(),
+        Some(&amount("10")),
+        "solver-settlement reference score must deserialize through the typed Amount",
+    );
+    assert!(
+        solution.tx_hash.is_some(),
+        "settlement transaction hash must deserialize"
+    );
+    assert_eq!(solution.clearing_prices.len(), 1);
+
+    let touched = solution
+        .orders
+        .first()
+        .expect("upstream vector carries one touched order");
+    assert_eq!(touched.sell_amount, amount("12"));
+    assert_eq!(touched.buy_amount, amount("13"));
+    assert!(
+        touched.buy_token.is_some() && touched.sell_token.is_some(),
+        "touched-order token addresses must be captured rather than dropped",
+    );
 }
 
 fn order_with_fee_fields(executed_fee: Option<&str>, executed_fee_amount: Option<&str>) -> Order {

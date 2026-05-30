@@ -545,8 +545,8 @@ fn assert_solver_competition_routes(id: &str, expected: &Value) {
     let tx = expected["tx_hash_path_template"]
         .as_str()
         .unwrap_or_else(|| panic!("case {id}: expected.tx_hash_path_template must be a string"));
-    assert_eq!(auction, "/api/v1/solver_competition/{auctionId}");
-    assert_eq!(tx, "/api/v1/solver_competition/by_tx_hash/{txHash}");
+    assert_eq!(auction, "/api/v2/solver_competition/{auctionId}");
+    assert_eq!(tx, "/api/v2/solver_competition/by_tx_hash/{txHash}");
 }
 
 fn assert_request_helper_policy(id: &str, expected: &Value) {

@@ -29,33 +29,6 @@ dtos:
     fixtures:
       - parity/fixtures/orderbook/order_with_full_metadata.json
 
-  - schema: components.schemas.AuctionOrder
-    rust_type: cow_sdk_orderbook::AuctionOrder
-    inventory: parity/openapi/auction-order-inventory.yaml
-    required_fields:
-      - appData
-      - buyAmount
-      - buyToken
-      - buyTokenBalance
-      - class
-      - created
-      - executed
-      - kind
-      - owner
-      - partiallyFillable
-      - postInteractions
-      - preInteractions
-      - protocolFees
-      - receiver
-      - sellAmount
-      - sellToken
-      - sellTokenBalance
-      - signature
-      - uid
-      - validTo
-    fixtures:
-      - parity/fixtures/orderbook/auction_order_with_protocol_fees.json
-
   - schema: components.schemas.OrderQuoteResponse
     rust_type: cow_sdk_orderbook::OrderQuoteResponse
     inventory: parity/openapi/order-quote-response-inventory.yaml

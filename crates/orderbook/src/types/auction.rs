@@ -1,130 +1,15 @@
+use std::collections::BTreeMap;
+
 use serde::{Deserialize, Serialize};
 
-use super::{
-    Address, Amount, AppDataHash, BuyTokenDestination, OrderKind, OrderUid, SellTokenSource,
-    enums::OrderClass,
-    order::{FeePolicy, InteractionData, Quote},
-};
+use super::{Address, Amount, OrderUid, TransactionHash};
 
-/// Order entry inside an auction snapshot.
+/// Reference prices keyed by token address.
 ///
-/// Closed internally so the SDK can add auction-side fields additively while
-/// external consumers avoid exhaustive destructuring.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-#[non_exhaustive]
-pub struct AuctionOrder {
-    /// Order UID.
-    pub uid: OrderUid,
-    /// Sell-token address.
-    pub sell_token: Address,
-    /// Buy-token address.
-    pub buy_token: Address,
-    /// Receiver override, nullable on the wire.
-    pub receiver: Option<Address>,
-    /// Sell amount in the upstream decimal-string wire shape.
-    pub sell_amount: Amount,
-    /// Buy amount in the upstream decimal-string wire shape.
-    pub buy_amount: Amount,
-    /// Absolute UNIX expiry timestamp.
-    pub valid_to: u32,
-    /// App-data hash.
-    pub app_data: AppDataHash,
-    /// Order kind.
-    pub kind: OrderKind,
-    /// Whether partial fills are allowed.
-    pub partially_fillable: bool,
-    /// Owner address of the auction order.
-    pub owner: Address,
-    /// Currently executed amount of the sell or buy token depending on order kind.
-    pub executed: Amount,
-    /// Interactions executed before the first execution of the order.
-    pub pre_interactions: Vec<InteractionData>,
-    /// Interactions executed after execution of the order.
-    pub post_interactions: Vec<InteractionData>,
-    /// Sell-token balance source.
-    #[serde(default)]
-    pub sell_token_balance: SellTokenSource,
-    /// Buy-token balance destination.
-    #[serde(default)]
-    pub buy_token_balance: BuyTokenDestination,
-    /// Auction order class.
-    pub class: OrderClass,
-    /// Raw signature string.
-    pub signature: String,
-    /// Protocol-fee policies used for this order.
-    pub protocol_fees: Vec<FeePolicy>,
-    /// Creation time denominated in epoch seconds.
-    pub created: String,
-    /// Winning auction-side quote, when present.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub quote: Option<Quote>,
-}
-
-/// Auction snapshot returned by the orderbook.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
-#[non_exhaustive]
-pub struct Auction {
-    /// Auction id, when exposed by the endpoint.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub id: Option<i64>,
-    /// Current auction block number.
-    pub block: u64,
-    /// Latest settlement block, when present.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub latest_settlement_block: Option<u64>,
-    /// Auction orders.
-    #[serde(default)]
-    pub orders: Vec<AuctionOrder>,
-    /// Clearing prices keyed by token address.
-    #[serde(default)]
-    pub prices: std::collections::BTreeMap<String, String>,
-}
-
-impl Auction {
-    /// Creates an auction snapshot pinned to the supplied block number.
-    ///
-    /// Additional fields are attached through the `with_*` setters.
-    #[must_use]
-    pub const fn new(block: u64) -> Self {
-        Self {
-            id: None,
-            block,
-            latest_settlement_block: None,
-            orders: Vec::new(),
-            prices: std::collections::BTreeMap::new(),
-        }
-    }
-
-    /// Returns a copy of this snapshot with an explicit auction id.
-    #[must_use]
-    pub const fn with_id(mut self, id: i64) -> Self {
-        self.id = Some(id);
-        self
-    }
-
-    /// Returns a copy of this snapshot with an explicit latest settlement block.
-    #[must_use]
-    pub const fn with_latest_settlement_block(mut self, block: u64) -> Self {
-        self.latest_settlement_block = Some(block);
-        self
-    }
-
-    /// Returns a copy of this snapshot with an explicit auction-order list.
-    #[must_use]
-    pub fn with_orders(mut self, orders: Vec<AuctionOrder>) -> Self {
-        self.orders = orders;
-        self
-    }
-
-    /// Returns a copy of this snapshot with an explicit clearing-prices map.
-    #[must_use]
-    pub fn with_prices(mut self, prices: std::collections::BTreeMap<String, String>) -> Self {
-        self.prices = prices;
-        self
-    }
-}
+/// Maps a token address to its price denominated in the chain's native token.
+/// Shared by the auction-side and solver-competition surfaces so one typed
+/// contract describes both.
+pub type AuctionPrices = BTreeMap<Address, Amount>;
 
 /// Competition-status kind returned by `/api/v1/orders/{uid}/status`.
 #[non_exhaustive]
@@ -231,10 +116,10 @@ impl CompetitionOrderStatus {
 pub struct CompetitionAuction {
     /// Order UIDs participating in the competition.
     #[serde(default)]
-    pub orders: Vec<String>,
+    pub orders: Vec<OrderUid>,
     /// Clearing prices keyed by token address.
     #[serde(default)]
-    pub prices: std::collections::BTreeMap<String, String>,
+    pub prices: AuctionPrices,
 }
 
 impl CompetitionAuction {
@@ -246,151 +131,215 @@ impl CompetitionAuction {
 
     /// Returns a copy of this snapshot with an explicit order-UID list.
     #[must_use]
-    pub fn with_orders(mut self, orders: Vec<String>) -> Self {
+    pub fn with_orders(mut self, orders: Vec<OrderUid>) -> Self {
         self.orders = orders;
         self
     }
 
     /// Returns a copy of this snapshot with an explicit clearing-prices map.
     #[must_use]
-    pub fn with_prices(mut self, prices: std::collections::BTreeMap<String, String>) -> Self {
+    pub fn with_prices(mut self, prices: AuctionPrices) -> Self {
         self.prices = prices;
         self
     }
 }
 
+/// A single order touched by a solver's settlement.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[non_exhaustive]
+pub struct SolverCompetitionOrder {
+    /// Order UID.
+    pub id: OrderUid,
+    /// Effective sell amount including all fees.
+    pub sell_amount: Amount,
+    /// Effective buy amount after all fees.
+    pub buy_amount: Amount,
+    /// Buy-token address, when rendered by the API.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub buy_token: Option<Address>,
+    /// Sell-token address, when rendered by the API.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sell_token: Option<Address>,
+}
+
+impl SolverCompetitionOrder {
+    /// Creates a touched-order entry with its required identity and amounts.
+    #[must_use]
+    pub const fn new(id: OrderUid, sell_amount: Amount, buy_amount: Amount) -> Self {
+        Self {
+            id,
+            sell_amount,
+            buy_amount,
+            buy_token: None,
+            sell_token: None,
+        }
+    }
+
+    /// Returns a copy carrying explicit buy- and sell-token addresses.
+    #[must_use]
+    pub const fn with_tokens(mut self, sell_token: Address, buy_token: Address) -> Self {
+        self.sell_token = Some(sell_token);
+        self.buy_token = Some(buy_token);
+        self
+    }
+}
+
 /// Settlement candidate nested inside solver-competition responses.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct SolverSettlement {
-    /// Optional settlement ranking score.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub ranking: Option<f64>,
-    /// Solver address, when present.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub solver_address: Option<String>,
-    /// Settlement score as rendered by the API.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub score: Option<String>,
-    /// Reference score used for comparison.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub reference_score: Option<String>,
-    /// Settlement transaction hash, when available.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub tx_hash: Option<String>,
+    /// Address the solver used to execute the settlement on-chain.
+    pub solver_address: Address,
+    /// Settlement score.
+    pub score: Amount,
+    /// Position of this solution in the competition ranking.
+    pub ranking: i64,
     /// Clearing prices keyed by token address.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub clearing_prices: Option<std::collections::BTreeMap<String, String>>,
-    /// Whether this settlement was the winning one.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub is_winner: Option<bool>,
-    /// Whether the settlement was filtered out by the API.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub filtered_out: Option<bool>,
+    #[serde(default)]
+    pub clearing_prices: AuctionPrices,
+    /// Orders touched by this solution.
+    #[serde(default)]
+    pub orders: Vec<SolverCompetitionOrder>,
+    /// Whether this solution won the right to be executed.
+    pub is_winner: bool,
+    /// Whether this solution was filtered out by the competition rules.
+    pub filtered_out: bool,
+    /// Reference score for this solution, when available.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reference_score: Option<Amount>,
+    /// Transaction in which the solution was executed on-chain, when available.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tx_hash: Option<TransactionHash>,
 }
 
 impl SolverSettlement {
-    /// Creates an empty settlement candidate; attach fields through the `with_*` setters.
+    /// Creates a settlement candidate with its required identity, score, and flags.
+    ///
+    /// Attach clearing prices, touched orders, the reference score, and the
+    /// settlement transaction hash through the `with_*` setters.
     #[must_use]
-    pub fn new() -> Self {
-        Self::default()
+    pub const fn new(
+        solver_address: Address,
+        score: Amount,
+        ranking: i64,
+        is_winner: bool,
+    ) -> Self {
+        Self {
+            solver_address,
+            score,
+            ranking,
+            clearing_prices: AuctionPrices::new(),
+            orders: Vec::new(),
+            is_winner,
+            filtered_out: false,
+            reference_score: None,
+            tx_hash: None,
+        }
     }
 
-    /// Returns a copy of this settlement with an explicit solver address.
+    /// Returns a copy carrying explicit clearing prices.
     #[must_use]
-    pub fn with_solver_address(mut self, address: impl Into<String>) -> Self {
-        self.solver_address = Some(address.into());
+    pub fn with_clearing_prices(mut self, clearing_prices: AuctionPrices) -> Self {
+        self.clearing_prices = clearing_prices;
         self
     }
 
-    /// Returns a copy of this settlement with an explicit score.
+    /// Returns a copy carrying the touched orders for this solution.
     #[must_use]
-    pub fn with_score(mut self, score: impl Into<String>) -> Self {
-        self.score = Some(score.into());
+    pub fn with_orders(mut self, orders: Vec<SolverCompetitionOrder>) -> Self {
+        self.orders = orders;
         self
     }
 
-    /// Returns a copy of this settlement with an explicit settlement transaction hash.
+    /// Returns a copy with the filtered-out flag set to `filtered_out`.
     #[must_use]
-    pub fn with_tx_hash(mut self, tx_hash: impl Into<String>) -> Self {
-        self.tx_hash = Some(tx_hash.into());
+    pub const fn with_filtered_out(mut self, filtered_out: bool) -> Self {
+        self.filtered_out = filtered_out;
         self
     }
 
-    /// Returns a copy of this settlement with an explicit winner flag.
+    /// Returns a copy carrying an explicit reference score.
     #[must_use]
-    pub const fn with_is_winner(mut self, is_winner: bool) -> Self {
-        self.is_winner = Some(is_winner);
+    pub const fn with_reference_score(mut self, reference_score: Amount) -> Self {
+        self.reference_score = Some(reference_score);
+        self
+    }
+
+    /// Returns a copy carrying an explicit settlement transaction hash.
+    #[must_use]
+    pub const fn with_tx_hash(mut self, tx_hash: TransactionHash) -> Self {
+        self.tx_hash = Some(tx_hash);
         self
     }
 }
 
 /// Solver-competition response returned by the orderbook.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct SolverCompetitionResponse {
-    /// Auction id, when present.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub auction_id: Option<i64>,
-    /// Start block of the auction, when present.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub auction_start_block: Option<u64>,
-    /// Deadline block of the auction, when present.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub auction_deadline_block: Option<u64>,
-    /// Settlement transaction hashes associated with the competition.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub transaction_hashes: Option<Vec<String>>,
-    /// Nested auction payload, when returned by the endpoint.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub auction: Option<CompetitionAuction>,
-    /// Settlement candidates, when returned by the endpoint.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub solutions: Option<Vec<SolverSettlement>>,
+    /// Identifier of the auction this competition is for.
+    pub auction_id: i64,
+    /// Block the auction started on.
+    pub auction_start_block: u64,
+    /// Block deadline by which the auction must be settled.
+    pub auction_deadline_block: u64,
+    /// Transaction hashes for the winning solutions of this competition.
+    #[serde(default)]
+    pub transaction_hashes: Vec<TransactionHash>,
+    /// Reference score for each winning solver, keyed by solver address.
+    #[serde(default)]
+    pub reference_scores: BTreeMap<Address, Amount>,
+    /// Auction snapshot for the competition.
+    pub auction: CompetitionAuction,
+    /// Settlement candidates submitted by solvers.
+    #[serde(default)]
+    pub solutions: Vec<SolverSettlement>,
 }
 
 impl SolverCompetitionResponse {
-    /// Creates an empty solver-competition response; attach fields through the `with_*` setters.
+    /// Creates a solver-competition response with its required auction identity.
+    ///
+    /// Attach transaction hashes, reference scores, and solutions through the
+    /// `with_*` setters.
     #[must_use]
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Returns a copy of this response with an explicit auction id.
-    #[must_use]
-    pub const fn with_auction_id(mut self, auction_id: i64) -> Self {
-        self.auction_id = Some(auction_id);
-        self
-    }
-
-    /// Returns a copy of this response with the auction block range.
-    #[must_use]
-    pub const fn with_auction_block_range(mut self, start: u64, deadline: u64) -> Self {
-        self.auction_start_block = Some(start);
-        self.auction_deadline_block = Some(deadline);
-        self
+    pub const fn new(
+        auction_id: i64,
+        auction_start_block: u64,
+        auction_deadline_block: u64,
+        auction: CompetitionAuction,
+    ) -> Self {
+        Self {
+            auction_id,
+            auction_start_block,
+            auction_deadline_block,
+            transaction_hashes: Vec::new(),
+            reference_scores: BTreeMap::new(),
+            auction,
+            solutions: Vec::new(),
+        }
     }
 
     /// Returns a copy of this response with explicit settlement transaction hashes.
     #[must_use]
-    pub fn with_transaction_hashes(mut self, hashes: Vec<String>) -> Self {
-        self.transaction_hashes = Some(hashes);
+    pub fn with_transaction_hashes(mut self, hashes: Vec<TransactionHash>) -> Self {
+        self.transaction_hashes = hashes;
         self
     }
 
-    /// Returns a copy of this response with an explicit nested auction payload.
+    /// Returns a copy of this response with explicit per-solver reference scores.
     #[must_use]
-    pub fn with_auction(mut self, auction: CompetitionAuction) -> Self {
-        self.auction = Some(auction);
+    pub fn with_reference_scores(mut self, reference_scores: BTreeMap<Address, Amount>) -> Self {
+        self.reference_scores = reference_scores;
         self
     }
 
     /// Returns a copy of this response with explicit settlement candidates.
     #[must_use]
     pub fn with_solutions(mut self, solutions: Vec<SolverSettlement>) -> Self {
-        self.solutions = Some(solutions);
+        self.solutions = solutions;
         self
     }
 }

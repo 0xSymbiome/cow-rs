@@ -2,6 +2,7 @@ use serde::{Deserialize, Deserializer, Serialize, de::Error as DeError, ser::Ser
 
 use super::{
     Address, Amount, AppDataHash, BuyTokenDestination, OrderKind, OrderUid, SellTokenSource,
+    TransactionHash,
     enums::{EcdsaSigningScheme, OrderClass, OrderStatus, SigningScheme},
     quote::QuoteData,
 };
@@ -368,9 +369,9 @@ impl OrderCancellations {
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct EthflowData {
-    /// Transaction hash for the refund path, when present.
+    /// Transaction in which the order was refunded, when present.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub refund_tx_hash: Option<String>,
+    pub refund_tx_hash: Option<TransactionHash>,
     /// User-facing validity timestamp for the `EthFlow` order.
     pub user_valid_to: u32,
 }
@@ -387,8 +388,8 @@ impl EthflowData {
 
     /// Returns a copy carrying an explicit refund-transaction hash.
     #[must_use]
-    pub fn with_refund_tx_hash(mut self, tx_hash: impl Into<String>) -> Self {
-        self.refund_tx_hash = Some(tx_hash.into());
+    pub const fn with_refund_tx_hash(mut self, tx_hash: TransactionHash) -> Self {
+        self.refund_tx_hash = Some(tx_hash);
         self
     }
 }
@@ -549,52 +550,7 @@ impl StoredOrderQuote {
     }
 }
 
-/// Auction-side quote payload referenced by auction orders.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
-#[non_exhaustive]
-pub struct Quote {
-    /// Quoted sell amount, when present.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub sell_amount: Option<Amount>,
-    /// Quoted buy amount, when present.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub buy_amount: Option<Amount>,
-    /// Quoted fee amount, when present.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub fee: Option<Amount>,
-}
-
-impl Quote {
-    /// Creates an empty auction-side quote payload.
-    #[must_use]
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Returns a copy carrying a sell amount.
-    #[must_use]
-    pub const fn with_sell_amount(mut self, sell_amount: Amount) -> Self {
-        self.sell_amount = Some(sell_amount);
-        self
-    }
-
-    /// Returns a copy carrying a buy amount.
-    #[must_use]
-    pub const fn with_buy_amount(mut self, buy_amount: Amount) -> Self {
-        self.buy_amount = Some(buy_amount);
-        self
-    }
-
-    /// Returns a copy carrying a fee amount.
-    #[must_use]
-    pub const fn with_fee(mut self, fee: Amount) -> Self {
-        self.fee = Some(fee);
-        self
-    }
-}
-
-/// Protocol-fee policy returned by the auction endpoint.
+/// Opaque protocol-fee policy descriptor returned on trade records.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct FeePolicy(pub serde_json::Value);

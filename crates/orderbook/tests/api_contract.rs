@@ -10,7 +10,7 @@ use cow_sdk_core::{
 use cow_sdk_orderbook::{
     ApiContextOverride, AppDataObject, CowEnv, GetOrdersRequest, GetTradesRequest,
     HashMismatchStage, OrderCancellations, OrderCreation, OrderQuoteSide, OrderStatus,
-    OrderbookError, SigningScheme, SupportedChainId,
+    OrderbookError, SigningScheme, SolverCompetitionResponse, SupportedChainId,
 };
 use cow_sdk_transport_policy::{
     DEFAULT_MAX_ATTEMPTS, DEFAULT_ORDERBOOK_USER_AGENT, RequestRateLimiter, RetryPolicy,
@@ -745,7 +745,7 @@ async fn upload_app_data_accepts_status_200_for_already_existing_documents() {
 }
 
 #[tokio::test]
-async fn native_price_surplus_solver_competition_and_auction_routes_are_covered() {
+async fn native_price_surplus_and_solver_competition_routes_are_covered() {
     let server = MockServer::start().await;
 
     Mock::given(method("GET"))
@@ -767,29 +767,31 @@ async fn native_price_surplus_solver_competition_and_auction_routes_are_covered(
         .mount(&server)
         .await;
     Mock::given(method("GET"))
-        .and(path("/api/v1/solver_competition/7"))
+        .and(path("/api/v2/solver_competition/7"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
-            "auctionId": 7
+            "auctionId": 7,
+            "auctionStartBlock": 100,
+            "auctionDeadlineBlock": 110,
+            "transactionHashes": [],
+            "referenceScores": {},
+            "auction": { "orders": [], "prices": {} },
+            "solutions": []
         })))
         .mount(&server)
         .await;
     Mock::given(method("GET"))
         .and(path(format!(
-            "/api/v1/solver_competition/by_tx_hash/{}",
+            "/api/v2/solver_competition/by_tx_hash/{}",
             sample_tx_hash()
         )))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
-            "auctionId": 8
-        })))
-        .mount(&server)
-        .await;
-    Mock::given(method("GET"))
-        .and(path("/api/v1/auction"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
-            "id": 1,
-            "block": 100,
-            "orders": [],
-            "prices": {}
+            "auctionId": 8,
+            "auctionStartBlock": 200,
+            "auctionDeadlineBlock": 210,
+            "transactionHashes": [],
+            "referenceScores": {},
+            "auction": { "orders": [], "prices": {} },
+            "solutions": []
         })))
         .mount(&server)
         .await;
@@ -815,19 +817,86 @@ async fn native_price_surplus_solver_competition_and_auction_routes_are_covered(
         .get_solver_competition_by_tx_hash(sample_tx_hash())
         .await
         .expect("competition by tx hash should succeed");
-    let auction = api
-        .get_auction()
-        .await
-        .expect("auction request should succeed");
 
     assert!((native_price.price - 0.0004).abs() < 1.0e-12);
     assert_eq!(
         surplus.total_surplus,
         Some(Amount::new("100000000").expect("test amount literal must be valid"))
     );
-    assert_eq!(by_auction.auction_id, Some(7));
-    assert_eq!(by_tx.auction_id, Some(8));
-    assert_eq!(auction.id, Some(1));
+    assert_eq!(by_auction.auction_id, 7);
+    assert_eq!(by_tx.auction_id, 8);
+}
+
+#[test]
+fn solver_competition_response_decodes_typed_with_reference_scores_and_orders() {
+    let uid = "0x59920c85de0162e9e55df8d396e75f3b6b7c2dfdb535f03e5c807731c31585eaff714b8b0e2700303ec912bd40496c3997ceea2b616d6710";
+    let solver = "0x2222222222222222222222222222222222222222";
+    let token = "0x0000000000000000000000000000000000000001";
+    let tx = "0x3333333333333333333333333333333333333333333333333333333333333333";
+    let body = json!({
+        "auctionId": 13_036_993,
+        "auctionStartBlock": 25_203_423,
+        "auctionDeadlineBlock": 25_203_426,
+        "transactionHashes": [tx],
+        "referenceScores": { solver: "15047858248418147" },
+        "auction": { "orders": [uid], "prices": { token: "1000000000000000000" } },
+        "solutions": [{
+            "solverAddress": solver,
+            "score": "15047858248418147",
+            "ranking": 1,
+            "clearingPrices": { token: "8" },
+            "orders": [{
+                "id": uid,
+                "sellAmount": "1000000000000",
+                "buyAmount": "999764982430588460321926",
+                "buyToken": token,
+                "sellToken": solver
+            }],
+            "isWinner": true,
+            "filteredOut": false,
+            "referenceScore": "15047858248418147",
+            "txHash": tx
+        }]
+    });
+
+    let parsed: SolverCompetitionResponse =
+        serde_json::from_value(body.clone()).expect("v2 solver-competition body must decode");
+
+    assert_eq!(parsed.auction_id, 13_036_993);
+    assert_eq!(
+        parsed.reference_scores.len(),
+        1,
+        "reference scores must be captured rather than dropped"
+    );
+    assert_eq!(parsed.auction.orders.len(), 1);
+    assert_eq!(parsed.auction.prices.len(), 1);
+    let solution = parsed.solutions.first().expect("one solution expected");
+    assert!(solution.is_winner);
+    assert_eq!(solution.ranking, 1);
+    let order = solution
+        .orders
+        .first()
+        .expect("per-solution touched orders must be captured rather than dropped");
+    assert!(
+        order.buy_token.is_some() && order.sell_token.is_some(),
+        "touched-order token addresses must be captured",
+    );
+    assert!(solution.reference_score.is_some());
+    assert!(solution.tx_hash.is_some());
+
+    // Unknown future fields must not break decoding (no deny_unknown_fields).
+    let mut forward = body;
+    forward["cipFutureField"] = json!(true);
+    forward["solutions"][0]["newSolutionField"] = json!(123);
+    serde_json::from_value::<SolverCompetitionResponse>(forward)
+        .expect("unknown future fields must be tolerated");
+
+    // Required scalars are non-optional: a missing one fails loudly.
+    let incomplete = json!({ "auctionId": 1, "auctionStartBlock": 1, "auction": {} });
+    assert!(
+        serde_json::from_value::<SolverCompetitionResponse>(incomplete).is_err(),
+        "a missing required field must error rather than silently default",
+    );
 }
 
 #[tokio::test]

@@ -134,10 +134,11 @@ the pinned commits during release validation.
 
 Wire-DTO coverage for upstream-services-controlled types is driven by the
 source-lock-pinned OpenAPI schema inventory at `parity/openapi/`. Each public
-response DTO has its own coverage target. `Order` and `AuctionOrder` are
-separate schemas and require separate Rust types and separate inventory files.
-Regression fixtures recorded from live or replayed services responses prove
-every modeled field round-trips.
+response DTO has its own coverage target: distinct OpenAPI schemas map to
+distinct Rust types with their own inventory files, so an auction-only field is
+never allowed to leak onto an ordinary order record. Regression fixtures
+recorded from live or replayed services responses prove every modeled field
+round-trips.
 
 Deployment authority claims are backed by structured provenance entries in
 `crates/contracts/deployment-provenance.yaml` plus release-mode live
