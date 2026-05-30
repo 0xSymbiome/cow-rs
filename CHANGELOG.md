@@ -137,6 +137,23 @@ The first functional crate-family release begins at `0.1.0`.
   `use cow_sdk::AppCode;`. The workspace enum-policy manifest
   records the source-of-truth file in `cow-sdk-core`.
 
+### Fixed
+
+- `cow_sdk_orderbook::OrderQuoteRequest::with_app_data_hash` now produces the
+  hash-only quote app-data wire form instead of pairing the requested hash with
+  the constructor's placeholder document. `OrderQuoteRequest::new` previously
+  seeded the zero app-data hash in the document slot, so attaching an explicit
+  hash produced a document-plus-hash body whose document the orderbook
+  re-hashes and rejects. The constructor now attaches no app-data by default,
+  which the orderbook resolves to the zero app-data hash, and composing a full
+  document with an explicit hash still yields the document-plus-hash form
+  expected by the orderbook `OrderParameters` contract.
+- `cow_sdk_orderbook::QuoteAppData` deserialization now resolves a lone
+  `appData` that is itself a 32-byte hash into the hash slot, matching the
+  orderbook's own app-data parsing, so a hash-only quote request round-trips
+  and its `app_data_hash` and `full_app_data` accessors stay accurate for a
+  decoded request.
+
 ### Changed
 
 - `cow_sdk_orderbook::OrderbookError::Serialization` now carries a structured

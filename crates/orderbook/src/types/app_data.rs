@@ -136,9 +136,24 @@ impl<'de> Deserialize<'de> for QuoteAppData {
         }
 
         let wire = Wire::deserialize(deserializer)?;
-        Ok(Self {
-            full: wire.app_data,
-            hash: wire.app_data_hash,
+        // Mirror the orderbook's own app-data parsing: a lone `appData` that is
+        // itself a 32-byte hash is the `Hash` form, so it resolves into the hash
+        // slot rather than being mistaken for a full document. This keeps the
+        // wire <-> struct mapping round-trip stable for every form, and keeps
+        // the [`QuoteAppData::full_app_data`] / [`QuoteAppData::app_data_hash`]
+        // accessors honest for a decoded request.
+        Ok(match (wire.app_data, wire.app_data_hash) {
+            (Some(app_data), None) => match AppDataHash::new(&app_data) {
+                Ok(hash) => Self {
+                    full: None,
+                    hash: Some(hash),
+                },
+                Err(_) => Self {
+                    full: Some(app_data),
+                    hash: None,
+                },
+            },
+            (full, hash) => Self { full, hash },
         })
     }
 }

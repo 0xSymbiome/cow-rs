@@ -228,19 +228,27 @@ fn quote_request_app_data_and_pagination_shape_roundtrip_without_normalization()
             serde_json::from_value(value.clone()).expect("request roundtrip must remain stable");
 
         assert_eq!(roundtrip, request);
+
+        // App-data wire shape after composition:
+        // - a full document (when set) travels under `appData`;
+        // - otherwise an explicit hash (when set) travels under `appData`;
+        // - with neither set, `appData` is omitted and the orderbook applies
+        //   its zero app-data hash default.
+        let expected_app_data = match (inline_app_data.as_deref(), app_data_hash) {
+            (Some(doc), _) => Some(doc.to_owned()),
+            (None, Some(hash)) => Some(hash.to_hex_string()),
+            (None, None) => None,
+        };
         assert_eq!(
             value.get("appData").and_then(serde_json::Value::as_str),
-            Some(
-                inline_app_data.as_deref().unwrap_or(
-                    "0x0000000000000000000000000000000000000000000000000000000000000000"
-                )
-            ),
-            "inline app-data must remain explicit through serialization"
+            expected_app_data.as_deref(),
+            "appData carries the document if set, else the explicit hash, else is omitted"
         );
+        // `appDataHash` appears only for the document-plus-hash form.
         assert_eq!(
             value.get("appDataHash").is_some(),
-            app_data_hash.is_some(),
-            "appDataHash presence must not be synthesized or dropped"
+            inline_app_data.is_some() && app_data_hash.is_some(),
+            "appDataHash appears only alongside a full document"
         );
 
         let owner_request = if rng.next_bool() {

@@ -94,10 +94,10 @@ fn quote_request_defaults_match_transport_contract() {
 
     assert_eq!(value["kind"], json!("sell"));
     assert_eq!(value["sellAmountBeforeFee"], json!("1000000"));
-    assert_eq!(
-        value["appData"],
-        json!("0x0000000000000000000000000000000000000000000000000000000000000000")
-    );
+    // A default request attaches no app-data; the orderbook treats an omitted
+    // app-data field as the zero app-data hash, so neither key is emitted.
+    assert!(value.get("appData").is_none());
+    assert!(value.get("appDataHash").is_none());
     // A default request now carries the protocol 30-minute relative validity
     // explicitly on the wire, matching the orderbook quote contract.
     assert_eq!(value["validFor"], json!(1_800));

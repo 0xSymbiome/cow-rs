@@ -26,7 +26,7 @@ fragments, ADR replacement, or generic cleanup diaries.
 | Fix review | `<surface>-fix-review.md` | Focused public follow-up when previously reviewed findings are remediated |
 | Validation note | `<surface>-validation-note.md` | Narrow public confirmation record for an assurance point smaller than a full audit |
 
-The current public set is 56 standing audits and 1 validation note.
+The current public set is 56 standing audits, 1 fix review, and 1 validation note.
 
 ## Status Model
 
@@ -142,6 +142,7 @@ If the reviewed surface did not change, leave the audit alone.
 | --- | --- | --- | --- | --- | --- |
 | [Wire DTO Coverage Audit](wire-dto-coverage-audit.md) | Standing audit | `cow-sdk-orderbook` DTO coverage | OpenAPI-vendored orderbook response DTO inventories, request-payload fixtures, field-level round trips, and response forward compatibility | Current | 2026-05-29 |
 | [Quote Response Surface Audit](quote-response-surface-audit.md) | Standing audit | `cow-sdk-orderbook` quote DTOs and `cow-sdk-trading` quote projection | Quote response `OrderParameters` fidelity and coverage, the `priceQuality` default, read-only quote network-cost fields, projection parity, and the bounds-validator trust posture | Current | 2026-05-29 |
+| [Quote Request App-Data Fix Review](quote-request-app-data-fix-review.md) | Fix review | `cow-sdk-orderbook` quote-request app-data wire shape (`OrderQuoteRequest`, `QuoteAppData`) | Hash-only, document-only, document-plus-hash, and default quote app-data wire forms and `QuoteAppData` round-trip stability | Current | 2026-05-30 |
 
 ## Transport And Routing
 

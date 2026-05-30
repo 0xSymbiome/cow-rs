@@ -383,11 +383,15 @@ pub struct OrderQuoteRequest {
 impl OrderQuoteRequest {
     /// Creates a quote request with stable orderbook defaults.
     ///
-    /// The default app-data is the zero hash, the signing scheme is EIP-712,
-    /// and both token balances default to ERC-20 balances. The price quality
-    /// defaults to [`PriceQuality::Optimal`], the mode used for a quote that
-    /// will be signed and submitted: it returns a quote identifier for order
-    /// placement.
+    /// No app-data is attached by default; the orderbook treats an omitted
+    /// app-data field as the zero app-data hash. Attach a full app-data
+    /// document with [`with_app_data`](Self::with_app_data), an explicit hash
+    /// with [`with_app_data_hash`](Self::with_app_data_hash), or the document
+    /// plus its expected hash by calling both setters. The signing scheme is
+    /// EIP-712 and both token balances default to ERC-20 balances. The price
+    /// quality defaults to [`PriceQuality::Optimal`], the mode used for a quote
+    /// that will be signed and submitted: it returns a quote identifier for
+    /// order placement.
     #[must_use]
     pub fn new(
         sell_token: Address,
@@ -400,7 +404,7 @@ impl OrderQuoteRequest {
             buy_token,
             receiver: None,
             validity: QuoteValidity::ValidFor(30 * 60),
-            app_data: QuoteAppData::full(format!("0x{}", "0".repeat(64))),
+            app_data: QuoteAppData::default(),
             partially_fillable: false,
             sell_token_balance: SellTokenSource::Erc20,
             buy_token_balance: BuyTokenDestination::Erc20,
@@ -439,15 +443,28 @@ impl OrderQuoteRequest {
         self
     }
 
-    /// Returns a copy of this request with inline full app-data content,
-    /// replacing any previously set full document.
+    /// Returns a copy of this request carrying the full app-data document,
+    /// replacing any previously set document.
+    ///
+    /// On its own this produces the document-only wire form
+    /// (`{"appData": <document>}`). Followed by
+    /// [`with_app_data_hash`](Self::with_app_data_hash) it produces the
+    /// document-plus-hash form (`{"appData": <document>, "appDataHash": ...}`),
+    /// pinning the expected hash of the document.
     #[must_use]
     pub fn with_app_data(mut self, app_data: impl Into<String>) -> Self {
         self.app_data.full = Some(app_data.into());
         self
     }
 
-    /// Returns a copy of this request with an explicit app-data hash.
+    /// Returns a copy of this request carrying an explicit app-data hash,
+    /// replacing any previously set hash.
+    ///
+    /// On its own this produces the hash-only wire form: the hash travels under
+    /// the `appData` key (the orderbook resolves it to the corresponding
+    /// document), never as an `appDataHash`-only body that the orderbook
+    /// rejects. Combined with [`with_app_data`](Self::with_app_data) it instead
+    /// pins the expected hash of that document.
     #[must_use]
     pub const fn with_app_data_hash(mut self, app_data_hash: AppDataHash) -> Self {
         self.app_data.hash = Some(app_data_hash);
