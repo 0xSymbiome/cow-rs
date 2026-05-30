@@ -268,6 +268,12 @@ entry for anyone who later considers reintroducing the surface.
   not re-emitted on the cow-rs wire. Covered by the same order-response
   wire-shape regressions in
   `crates/orderbook/tests/fee_amount_is_not_a_public_builder_setter.rs`.
+- **`availableBalance` order field** — the services schema marks this field
+  deprecated and documents it as unused, always `null`, and slated for removal.
+  The cow-rs `Order` response DTO does not model it; a response that still
+  carries `availableBalance` deserializes with the value ignored and it is
+  never re-emitted. Covered by the order-response wire-shape regression in
+  `crates/orderbook/tests/fee_amount_is_not_a_public_builder_setter.rs`.
 - **Legacy wire-string `Amount` wrapper** — the Rust SDK consolidated
   the canonical atomic amount to a single cow-owned
   `#[repr(transparent)]` newtype `cow_sdk_core::Amount` over

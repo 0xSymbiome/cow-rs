@@ -278,6 +278,18 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Removed
 
+- Removed the deprecated `availableBalance` field from the
+  `cow_sdk_orderbook::Order` response DTO. The orderbook OpenAPI marks it
+  deprecated and documents it as unused, always `null`, and slated for removal
+  upstream. The field is now ignored on deserialization and never re-emitted; a
+  response that still carries it round-trips without it.
+- Removed the unused `cow_sdk_app_data::IpfsUploadResult` type. It was never
+  constructed, and its documented contract — an app-data digest derived from the
+  Pinata upload CID — is not satisfiable: Pinata returns a sha2-256 CIDv0, which
+  is not the keccak-256 CIDv1 app-data identifier and is rejected by
+  `cid_to_app_data_hex`. The `pin_json_in_pinata_ipfs` helper returns the
+  backend's raw response; the canonical app-data hash comes from
+  `get_app_data_info`.
 - Removed the unused `cow_sdk_core::Order` envelope (the
   `{ unsigned, owner, uid }` wrapper around `OrderData`); it had no
   constructor caller, reader, or conversion, and no upstream analog. The bare

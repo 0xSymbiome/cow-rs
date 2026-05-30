@@ -720,9 +720,6 @@ pub struct Order {
     /// Creation timestamp string returned by the API.
     #[serde(default, alias = "creationTime")]
     pub creation_date: String,
-    /// Available remaining balance, when returned by the API.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub available_balance: Option<Amount>,
     /// Executed sell amount.
     #[serde(default)]
     pub executed_sell_amount: Amount,
@@ -832,7 +829,6 @@ impl Order {
             owner,
             uid,
             creation_date: String::new(),
-            available_balance: None,
             executed_sell_amount: Amount::ZERO,
             executed_sell_amount_before_fees: Amount::ZERO,
             executed_buy_amount: Amount::ZERO,

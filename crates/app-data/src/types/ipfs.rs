@@ -64,28 +64,6 @@ impl TransportResponse {
     }
 }
 
-/// Result returned by Pinata upload helpers.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[non_exhaustive]
-pub struct IpfsUploadResult {
-    /// `0x`-prefixed app-data digest derived from the returned CID.
-    #[serde(rename = "appData")]
-    pub app_data: String,
-    /// CID returned by the upload backend.
-    pub cid: String,
-}
-
-impl IpfsUploadResult {
-    /// Creates a Pinata upload result.
-    #[must_use]
-    pub fn new(app_data: impl Into<String>, cid: impl Into<String>) -> Self {
-        Self {
-            app_data: app_data.into(),
-            cid: cid.into(),
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

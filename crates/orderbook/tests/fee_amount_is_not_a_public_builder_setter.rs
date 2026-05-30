@@ -140,9 +140,12 @@ fn quote_data_surfaces_gas_estimates_through_read_only_accessors() {
 fn order_response_wire_form_excludes_zero_legacy_executed_fee_amount_and_full_fee_amount() {
     use serde_json::json;
 
-    // The current services schema retains `executedFee`; the legacy
-    // `executedFeeAmount` value stays read-only and is not re-emitted when it
-    // was absent or zero on the wire.
+    // The current services schema surfaces executed fees through the canonical
+    // `executedFee` component. The spec-required `executedFeeAmount` is modeled
+    // as a read-only sibling and is not re-emitted when it was absent or zero on
+    // the wire. The deprecated, spec-optional `availableBalance` is not modeled
+    // at all: a response that still carries it deserializes with the value
+    // ignored and it is never re-emitted.
     let payload = json!({
         "sellToken": "0x0000000000000000000000000000000000000002",
         "buyToken": "0x0000000000000000000000000000000000000003",
@@ -160,6 +163,7 @@ fn order_response_wire_form_excludes_zero_legacy_executed_fee_amount_and_full_fe
         "owner": "0x0000000000000000000000000000000000000004",
         "uid": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
         "creationDate": "2024-01-01T00:00:00Z",
+        "availableBalance": "999999999999999999",
         "status": "open",
         "class": "market",
         "executedSellAmount": "0",
@@ -177,6 +181,10 @@ fn order_response_wire_form_excludes_zero_legacy_executed_fee_amount_and_full_fe
     assert!(
         roundtrip.get("executedFeeAmount").is_none(),
         "Order responses must not re-emit a zero legacy executedFeeAmount descriptor",
+    );
+    assert!(
+        roundtrip.get("availableBalance").is_none(),
+        "Order responses must not re-emit the deprecated availableBalance descriptor",
     );
     assert!(
         roundtrip.get("fullFeeAmount").is_none(),

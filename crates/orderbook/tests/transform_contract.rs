@@ -47,7 +47,6 @@ fn order_fixture_matches_openapi_inventory() {
         &[
             "appData",
             "appDataHash",
-            "availableBalance",
             "buyAmount",
             "buyToken",
             "buyTokenBalance",
