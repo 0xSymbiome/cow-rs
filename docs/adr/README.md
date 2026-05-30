@@ -65,6 +65,7 @@ public and runtime shape of `cow-rs`.
 | [0055](0055-bounded-response-reads.md) | Accepted | Bound every SDK-owned HTTP response read by a configurable per-client `max_response_bytes`, refuse an over-limit body with a typed non-retryable `TransportErrorClass::ResponseTooLarge` outcome measured on decoded bytes, and length-bound signature hex before decode. |
 | [0056](0056-settlement-event-decoding-is-fail-closed.md) | Accepted | Decode `GPv2Settlement` `Trade` / `Interaction` / `Settlement` / `OrderInvalidated` / `PreSignature` logs through a fail-closed, provider-free decoder that validates topics, length-checks the order UID, and never panics on adversarial input. |
 | [0057](0057-log-provider-capability-trait.md) | Accepted | Add an opt-in `LogProvider: Provider` capability supertrait whose single-call `get_logs` fetches event logs, mirroring the `SigningProvider` split and feeding the fail-closed decoders. |
+| [0058](0058-typed-quote-request-response-surface.md) | Accepted | Mirror the orderbook `OrderParameters` quote payload in `QuoteData` with its own OpenAPI coverage target, default `priceQuality` to `optimal`, keep the quote network-cost fields read-only, and lock the quote-amounts projection with a parity test. |
 
 ## When To Write An ADR
 

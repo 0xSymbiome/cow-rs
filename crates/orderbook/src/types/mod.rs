@@ -8,8 +8,9 @@ pub use cow_sdk_core::{
     QuoteAmountsAndCosts, Redacted, SellTokenSource, SupportedChainId, TransactionHash,
 };
 
-pub use self::{auction::*, enums::*, lists::*, order::*, prices::*, quote::*};
+pub use self::{app_data::*, auction::*, enums::*, lists::*, order::*, prices::*, quote::*};
 
+mod app_data;
 mod auction;
 mod enums;
 mod lists;

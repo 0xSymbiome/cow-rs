@@ -8,12 +8,19 @@ use cow_sdk_contracts::SigningScheme as ContractsSigningScheme;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum PriceQuality {
-    /// Prefer the fastest available quote.
+    /// Fastest available estimate, intended for previews. The orderbook
+    /// returns an already-elapsed expiration for this mode, so a `Fast` quote
+    /// is not suitable for submission.
     Fast,
-    /// Prefer the best available quote, allowing additional search.
-    Optimal,
-    /// Require the orderbook's verified quote mode.
+    /// Best available quote within the quoting window.
+    ///
+    /// This is the default and the mode used for a quote that will be signed
+    /// and submitted: the orderbook returns a quote identifier for order
+    /// placement alongside an optimal price estimate.
     #[default]
+    Optimal,
+    /// `Optimal` plus on-chain simulation of the quoted amounts. The response
+    /// `verified` flag reports whether that simulation succeeded.
     Verified,
 }
 

@@ -14,6 +14,25 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Added
 
+- `cow_sdk_orderbook::QuoteData` now mirrors the full orderbook
+  `OrderParameters` quote payload: it models the network-cost gas estimates
+  `gasAmount`, `gasPrice`, and `sellTokenPrice` (decimal-string wire shape), the
+  optional `appDataHash` echo, and the `signingScheme` (defaulting to `eip712`
+  and always serialized). The gas estimates are read-only quote values surfaced
+  through accessors with no public setter, populated from the `/quote` response
+  and omitted from serialization when a locally constructed quote leaves them
+  empty. `QuoteData` is enrolled in the OpenAPI coverage manifest as the
+  `OrderParameters` mirror, so `openapi-coverage --validate` checks the quote
+  payload for field-level fidelity instead of treating it as an opaque object.
+  The contract is recorded in
+  [ADR 0058](docs/adr/0058-typed-quote-request-response-surface.md) and the
+  [Quote Response Surface Audit](docs/audit/quote-response-surface-audit.md).
+- A quote-amounts projection parity test
+  (`cow-sdk-trading/tests/quote_projection_parity.rs`) locks the signable
+  sell/buy amounts derived from a quote response: the sell-driven side folds
+  the network cost back into the sell amount and the buy-driven side carries
+  the network cost on the sell amount, matching the orderbook quote-amounts
+  contract.
 - `cow_sdk_contracts::onchain_orders` adds typed `CoWSwapOnchainOrders`
   `OrderPlacement` / `OrderInvalidation` event bindings and a fail-closed,
   provider-free log decoder (`decode_order_placement`,
@@ -104,6 +123,32 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- `cow_sdk_orderbook::OrderQuoteRequest` now models its quote `oneOf`s as typed
+  Rust so an invalid request is unrepresentable rather than rejected at
+  validation time, mirroring the orderbook quote schema. The mutually exclusive
+  `valid_for`/`valid_to` fields become a `QuoteValidity` (`ValidTo` xor
+  `ValidFor`); the `QuoteSide` struct becomes the `OrderQuoteSide` enum with a
+  `SellAmount` distinguishing the before-fee and after-fee sell amount; and the
+  flat `signing_scheme`/`onchain_order`/`verification_gas_limit` fields become a
+  `QuoteSigningScheme` enum that keeps the verification gas limit on EIP-1271
+  only and makes an ECDSA on-chain order unrepresentable (rejected on the wire by
+  a `try_from` guard). The `with_valid_to`/`with_valid_for`/`with_signing_scheme`/
+  `with_onchain_order`/`with_verification_gas_limit` builder methods are retained
+  and now drive the typed fields. Recorded in
+  [ADR 0058](docs/adr/0058-typed-quote-request-response-surface.md) and the
+  [Quote Response Surface Audit](docs/audit/quote-response-surface-audit.md).
+- Fixed: a hash-only quote request now serializes the app-data hash under the
+  `appData` key (the orderbook's accepted `Hash` form) instead of an
+  `appDataHash`-only body that the orderbook rejected with `invalid app data`.
+  `OrderQuoteRequest` app-data is encapsulated as `QuoteAppData` and routed
+  identically to the signed `OrderCreation` payload, so every form (full / hash /
+  both) is wire-correct.
+- The quote request now defaults `priceQuality` to `PriceQuality::Optimal`
+  (previously `Verified`). `Optimal` is the quote mode used for a quote that
+  will be signed and submitted: the orderbook returns a quote identifier for
+  order placement, and `Optimal` is the orderbook's own default quote quality.
+  The value is always serialized, so the wire request is explicit regardless
+  of the default.
 - The orderbook, subgraph, and IPFS clients run every HTTP attempt through
   one shared retry driver, `cow_sdk_transport_policy::run_with_retry`, rather
   than three hand-rolled retry loops. The driver owns the attempt loop,

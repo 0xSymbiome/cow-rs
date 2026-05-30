@@ -9,8 +9,8 @@ use cow_sdk_core::{
 };
 use cow_sdk_orderbook::{
     ApiContextOverride, AppDataObject, CowEnv, GetOrdersRequest, GetTradesRequest,
-    HashMismatchStage, OrderCancellations, OrderCreation, OrderStatus, OrderbookError, QuoteSide,
-    SigningScheme, SupportedChainId,
+    HashMismatchStage, OrderCancellations, OrderCreation, OrderQuoteSide, OrderStatus,
+    OrderbookError, SigningScheme, SupportedChainId,
 };
 use cow_sdk_transport_policy::{
     DEFAULT_MAX_ATTEMPTS, DEFAULT_ORDERBOOK_USER_AGENT, RequestRateLimiter, RetryPolicy,
@@ -490,7 +490,9 @@ async fn get_quote_and_send_order_cover_quote_and_duplicate_order_paths() {
             sample_owner(),
             crate::common::sample_buy_token(),
             sample_owner(),
-            QuoteSide::sell(Amount::new("1000000").expect("test amount literal must be valid")),
+            OrderQuoteSide::sell(
+                Amount::new("1000000").expect("test amount literal must be valid"),
+            ),
         ))
         .await
         .expect("quote should succeed");
@@ -1002,8 +1004,8 @@ mod recording_transport {
         Amount, ApiContext, HttpTransport, SupportedChainId, TransportError, TransportErrorClass,
     };
     use cow_sdk_orderbook::{
-        CowEnv, OrderBookApi, OrderCancellations, OrderCreation, OrderbookError,
-        OrderbookRejection, QuoteSide, SigningScheme,
+        CowEnv, OrderBookApi, OrderCancellations, OrderCreation, OrderQuoteSide, OrderbookError,
+        OrderbookRejection, SigningScheme,
     };
     use cow_sdk_transport_policy::TransportPolicy;
 
@@ -1199,7 +1201,9 @@ mod recording_transport {
                 sample_owner(),
                 sample_buy_token(),
                 sample_owner(),
-                QuoteSide::sell(Amount::new("1000000").expect("test amount literal must be valid")),
+                OrderQuoteSide::sell(
+                    Amount::new("1000000").expect("test amount literal must be valid"),
+                ),
             ))
             .await
             .expect("quote request must succeed through the injected transport");

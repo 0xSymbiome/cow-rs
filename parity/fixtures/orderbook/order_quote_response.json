@@ -11,7 +11,11 @@
     "kind": "sell",
     "partiallyFillable": true,
     "sellTokenBalance": "erc20",
-    "buyTokenBalance": "internal"
+    "buyTokenBalance": "internal",
+    "gasAmount": "150000",
+    "gasPrice": "15000000000",
+    "sellTokenPrice": "400000000000000",
+    "signingScheme": "eip712"
   },
   "from": "0x0000000000000000000000000000000000000004",
   "expiration": "2026-04-28T10:00:00Z",

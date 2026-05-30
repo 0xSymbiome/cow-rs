@@ -1,9 +1,9 @@
 mod common;
 
 use cow_sdk_orderbook::{
-    Amount, ApiContextOverride, BuyTokenDestination, CowEnv, GetOrdersRequest, GetTradesRequest,
-    OrderCreation, OrderKind, OrderQuoteRequest, OrderbookError, PriceQuality, QuoteSide,
-    SellTokenSource, SigningScheme, SupportedChainId,
+    Amount, ApiContextOverride, AppDataHash, BuyTokenDestination, CowEnv, GetOrdersRequest,
+    GetTradesRequest, OrderCreation, OrderKind, OrderQuoteRequest, OrderQuoteSide, PriceQuality,
+    QuoteAppData, QuoteSigningScheme, SellTokenSource, SigningScheme, SupportedChainId,
 };
 use serde_json::json;
 
@@ -22,7 +22,7 @@ fn quote_request_defaults_match_transport_contract() {
         sample_owner(),
         sample_buy_token(),
         sample_owner(),
-        QuoteSide::sell(amount("1000000")),
+        OrderQuoteSide::sell(amount("1000000")),
     );
 
     let value = serde_json::to_value(&request).expect("quote request must serialize");
@@ -33,8 +33,11 @@ fn quote_request_defaults_match_transport_contract() {
         value["appData"],
         json!("0x0000000000000000000000000000000000000000000000000000000000000000")
     );
-    assert!(value.get("validFor").is_none());
-    assert_eq!(value["priceQuality"], json!("verified"));
+    // A default request now carries the protocol 30-minute relative validity
+    // explicitly on the wire, matching the orderbook quote contract.
+    assert_eq!(value["validFor"], json!(1_800));
+    assert!(value.get("validTo").is_none());
+    assert_eq!(value["priceQuality"], json!("optimal"));
     assert_eq!(value["signingScheme"], json!("eip712"));
     assert_eq!(value["sellTokenBalance"], json!("erc20"));
     assert_eq!(value["buyTokenBalance"], json!("erc20"));
@@ -55,7 +58,7 @@ fn quote_request_supports_buy_side_and_context_overrides() {
         sample_owner(),
         sample_buy_token(),
         sample_owner(),
-        QuoteSide::buy(amount("900000")),
+        OrderQuoteSide::buy(amount("900000")),
     )
     .with_app_data_hash(sample_app_data_hash())
     .with_valid_for(1_800)
@@ -97,26 +100,17 @@ fn quote_request_supports_buy_side_and_context_overrides() {
 }
 
 #[test]
-fn quote_request_validate_rejects_incompatible_onchain_ecdsa_signing_pairs() {
-    for signing_scheme in [SigningScheme::Eip712, SigningScheme::EthSign] {
-        let error = OrderQuoteRequest::new(
-            sample_owner(),
-            sample_buy_token(),
-            sample_owner(),
-            QuoteSide::sell(amount("1000000")),
-        )
-        .with_signing_scheme(signing_scheme)
-        .with_onchain_order()
-        .validate()
-        .expect_err("ECDSA on-chain quote request must reject locally");
-
-        assert!(matches!(
-            error,
-            OrderbookError::IncompatibleSigningScheme {
-                signing_scheme: rejected_scheme,
-                onchain_order: true,
-            } if rejected_scheme == signing_scheme
-        ));
+fn quote_signing_scheme_rejects_incompatible_onchain_ecdsa_wire_pairs() {
+    // ECDSA on-chain is now unrepresentable in the typed builder; the wire
+    // try_from rejects the invalid combination on deserialization instead.
+    for scheme in ["eip712", "ethsign"] {
+        let json = format!(r#"{{"signingScheme":"{scheme}","onchainOrder":true}}"#);
+        let error = serde_json::from_str::<QuoteSigningScheme>(&json)
+            .expect_err("ECDSA on-chain signing scheme must reject on the wire");
+        assert!(
+            error.to_string().contains("on-chain"),
+            "error should explain the ECDSA on-chain rejection: {error}"
+        );
     }
 }
 
@@ -134,7 +128,7 @@ fn quote_request_validate_accepts_services_signing_scheme_pairs() {
             sample_owner(),
             sample_buy_token(),
             sample_owner(),
-            QuoteSide::sell(amount("1000000")),
+            OrderQuoteSide::sell(amount("1000000")),
         )
         .with_signing_scheme(signing_scheme);
         if onchain_order {
@@ -148,24 +142,67 @@ fn quote_request_validate_accepts_services_signing_scheme_pairs() {
 }
 
 #[test]
-fn quote_request_validate_rejects_verification_gas_limit_without_eip1271() {
-    let error = OrderQuoteRequest::new(
-        sample_owner(),
-        sample_buy_token(),
-        sample_owner(),
-        QuoteSide::sell(amount("1000000")),
+fn quote_signing_scheme_rejects_verification_gas_limit_without_eip1271() {
+    // A verification gas limit only belongs to EIP-1271; on any other scheme
+    // the wire try_from rejects it on deserialization.
+    let error = serde_json::from_str::<QuoteSigningScheme>(
+        r#"{"signingScheme":"eip712","verificationGasLimit":27000}"#,
     )
-    .with_verification_gas_limit(27_000)
-    .validate()
     .expect_err("verificationGasLimit must be reserved for eip1271");
 
-    assert!(matches!(
-        error,
-        OrderbookError::InvalidQuoteRequest {
-            field: "verificationGasLimit",
-            ..
-        }
-    ));
+    assert!(
+        error.to_string().contains("verificationGasLimit"),
+        "error should explain the verificationGasLimit rejection: {error}"
+    );
+}
+
+#[test]
+fn quote_request_app_data_routes_to_server_valid_wire_shapes() {
+    let hash = sample_app_data_hash();
+    let hash_wire = serde_json::to_value(hash).expect("hash serializes");
+    let base = || {
+        OrderQuoteRequest::new(
+            sample_owner(),
+            sample_buy_token(),
+            sample_owner(),
+            OrderQuoteSide::sell(amount("1000000")),
+        )
+    };
+
+    // Full only -> {"appData": <document>}, no appDataHash.
+    let full = base().with_app_data("{\"version\":\"1.4.0\"}");
+    let value = serde_json::to_value(&full).expect("request serializes");
+    assert_eq!(value["appData"], json!("{\"version\":\"1.4.0\"}"));
+    assert!(value.get("appDataHash").is_none());
+
+    // Hash only -> the hash hex lives under `appData` (services `Hash` form),
+    // never an `appDataHash`-only body that the orderbook rejects. This is the
+    // regression lock for the latent hash-only bug.
+    let mut hash_only = base();
+    hash_only.app_data = QuoteAppData::hash(hash);
+    let value = serde_json::to_value(&hash_only).expect("request serializes");
+    assert_eq!(value["appData"], hash_wire);
+    assert!(value.get("appDataHash").is_none());
+
+    // Both -> {"appData": <document>, "appDataHash": "0x<hash>"}.
+    let mut both = base();
+    both.app_data = QuoteAppData::both("{\"version\":\"1.4.0\"}", hash);
+    let value = serde_json::to_value(&both).expect("request serializes");
+    assert_eq!(value["appData"], json!("{\"version\":\"1.4.0\"}"));
+    assert_eq!(value["appDataHash"], hash_wire);
+
+    // Neither -> both keys omitted.
+    let mut empty = base();
+    empty.app_data = QuoteAppData::default();
+    let value = serde_json::to_value(&empty).expect("request serializes");
+    assert!(value.get("appData").is_none());
+    assert!(value.get("appDataHash").is_none());
+
+    // The hash-only wire shape round-trips and resolves back to the hash.
+    let roundtrip: OrderQuoteRequest =
+        serde_json::from_value(serde_json::to_value(&hash_only).unwrap())
+            .expect("hash-only request round-trips");
+    assert_eq!(roundtrip.app_data.resolved_hash(), Some(hash));
 }
 
 #[test]
@@ -285,6 +322,74 @@ fn order_creation_serialize_routes_app_data_combinations_to_services_variants() 
         .expect("OrderCreation serializes");
     assert_eq!(both["appData"], json!(full_doc));
     assert_eq!(both["appDataHash"], json!(hash_hex));
+}
+
+#[test]
+fn app_data_wire_contract_is_identical_across_order_creation_and_quote_request() {
+    // The signed `OrderCreation` submission DTO and the `OrderQuoteRequest`
+    // quote DTO both route their `(full, hash)` app-data pair through the one
+    // shared wire contract. This parity test locks "one wire contract, two
+    // DTOs": for every `(full, hash)` combination the two DTOs must emit
+    // identical `appData`/`appDataHash` keys, so the routing can never silently
+    // diverge between a quote request and the order it backs — the exact drift
+    // that hid the latent hash-only rejection in one DTO but not the other.
+
+    let full_doc = "{\"version\":\"1.0.0\",\"metadata\":{}}";
+    let hash = sample_app_data_hash();
+
+    let cases: [(Option<&str>, Option<AppDataHash>); 4] = [
+        (None, None),
+        (Some(full_doc), None),
+        (None, Some(hash)),
+        (Some(full_doc), Some(hash)),
+    ];
+
+    for (full, app_hash) in cases {
+        let mut order = OrderCreation::new(
+            sample_owner(),
+            sample_buy_token(),
+            amount("1000000"),
+            amount("900000"),
+            1_700_000_000,
+            OrderKind::Sell,
+            SigningScheme::Eip712,
+            sample_signature(),
+            sample_owner(),
+        );
+        if let Some(full) = full {
+            order = order.with_app_data(full);
+        }
+        if let Some(app_hash) = app_hash {
+            order = order.with_app_data_hash(app_hash);
+        }
+
+        let mut quote = OrderQuoteRequest::new(
+            sample_owner(),
+            sample_buy_token(),
+            sample_owner(),
+            OrderQuoteSide::sell(amount("1000000")),
+        );
+        quote.app_data = match (full, app_hash) {
+            (None, None) => QuoteAppData::default(),
+            (Some(full), None) => QuoteAppData::full(full),
+            (None, Some(app_hash)) => QuoteAppData::hash(app_hash),
+            (Some(full), Some(app_hash)) => QuoteAppData::both(full, app_hash),
+        };
+
+        let order_value = serde_json::to_value(&order).expect("OrderCreation serializes");
+        let quote_value = serde_json::to_value(&quote).expect("OrderQuoteRequest serializes");
+
+        assert_eq!(
+            order_value.get("appData"),
+            quote_value.get("appData"),
+            "appData must match across DTOs for (full={full:?}, hash={app_hash:?})"
+        );
+        assert_eq!(
+            order_value.get("appDataHash"),
+            quote_value.get("appDataHash"),
+            "appDataHash must match across DTOs for (full={full:?}, hash={app_hash:?})"
+        );
+    }
 }
 
 #[test]

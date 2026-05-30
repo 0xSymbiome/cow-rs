@@ -3,14 +3,19 @@
 //! Typed `CoW` Protocol orderbook transport models, request policy, and response
 //! transforms.
 //!
-//! # Parity-scope invariant: `fee_amount` is not a public builder setter
+//! # Parity-scope invariant: quote fee/gas fields are not public builder setters
 //!
 //! The cow-protocol services backend rejects orders that carry a non-zero
 //! order-level fee, so the submission path always wires `"feeAmount": "0"`
 //! and no public builder on this crate exposes a `fee_amount(...)` setter.
-//! The compile-fail witnesses below prove that attempting `.fee_amount(...)`
-//! on any public builder fails to compile. If any of the snippets ever
-//! compiles, the intentional parity-scope divergence has regressed.
+//! The orderbook's quote-cost estimates (`feeAmount`, `gasAmount`, `gasPrice`,
+//! `sellTokenPrice`) are likewise read-only on [`QuoteData`] (ADR 0021): they
+//! are populated only from the `/quote` response and surfaced through
+//! accessors, never through public setters. The compile-fail witnesses below
+//! prove that attempting `.fee_amount(...)`, `.gas_amount(...)`,
+//! `.gas_price(...)`, or `.sell_token_price(...)` on any public builder fails
+//! to compile. If any of the snippets ever compiles, the intentional
+//! parity-scope divergence has regressed.
 //!
 //! ```compile_fail
 //! use cow_sdk_core::{Address, Amount, AppDataHash, OrderKind};
@@ -50,6 +55,27 @@
 //!     address,
 //! )
 //! .fee_amount("1");
+//! ```
+//!
+//! ```compile_fail
+//! use cow_sdk_core::{Address, Amount, AppDataHash, OrderKind};
+//! use cow_sdk_orderbook::QuoteData;
+//!
+//! let address = Address::new("0x0000000000000000000000000000000000000001").unwrap();
+//! let app_data = AppDataHash::new(
+//!     "0x0000000000000000000000000000000000000000000000000000000000000000",
+//! )
+//! .unwrap();
+//! let _quote = QuoteData::new(
+//!     address.clone(),
+//!     address,
+//!     Amount::new("1").unwrap(),
+//!     Amount::new("1").unwrap(),
+//!     1,
+//!     app_data,
+//!     OrderKind::Sell,
+//! )
+//! .gas_amount("1");
 //! ```
 
 #![warn(missing_docs)]
@@ -264,8 +290,10 @@ pub use types::{
     EnvBaseUrlOverrides, EthflowData, ExecutedAmounts, ExecutedProtocolFee, ExternalHostPolicy,
     FeePolicy, GetOrdersRequest, GetTradesRequest, HostPolicyError, InteractionData,
     NativePriceResponse, OnchainOrderData, Order, OrderCancellations, OrderClass, OrderCreation,
-    OrderInteractions, OrderKind, OrderQuoteRequest, OrderQuoteResponse, OrderStatus, OrderUid,
-    PriceQuality, Quote, QuoteAmountsAndCosts, QuoteData, QuoteSide, SellTokenSource,
-    SigningScheme, SigningSchemeNotEcdsa, SolverCompetitionResponse, SolverExecution,
-    SolverSettlement, StoredOrderQuote, SupportedChainId, TotalSurplus, Trade, TransactionHash,
+    OrderInteractions, OrderKind, OrderQuoteRequest, OrderQuoteResponse, OrderQuoteSide,
+    OrderStatus, OrderUid, PriceQuality, Quote, QuoteAmountsAndCosts, QuoteAppData, QuoteData,
+    QuoteSigningScheme, QuoteValidity, SellAmount, SellTokenSource, SigningScheme,
+    SigningSchemeNotEcdsa, SolverCompetitionResponse, SolverExecution, SolverSettlement,
+    StoredOrderQuote, SupportedChainId, TotalSurplus, Trade, TransactionHash,
+    default_verification_gas_limit,
 };

@@ -1,5 +1,5 @@
 use cow_sdk_core::{ProtocolOptions, Signer};
-use cow_sdk_orderbook::{OrderQuoteRequest, PriceQuality, QuoteSide, SigningScheme};
+use cow_sdk_orderbook::{OrderQuoteRequest, OrderQuoteSide, PriceQuality, SigningScheme};
 use cow_sdk_signing::order_typed_data;
 
 pub use crate::app_data::{build_app_data, merge_and_seal_app_data, params_from_doc};
@@ -51,7 +51,16 @@ where
     .await
 }
 
-/// Builds quote results.
+/// Builds quote results, the entry point for the unmanaged "quote then sign"
+/// path.
+///
+/// The returned [`QuoteResults`] carries the projected
+/// `order_to_sign` (the signable order derived from the orderbook `/quote`
+/// response and the configured slippage, fees, and validity), the
+/// `amounts_and_costs` breakdown, and the resolved app-data. A caller that wants
+/// to sign and submit the order itself reads `order_to_sign`, computes its UID,
+/// signs it, and posts it — no managed submission is performed here. The managed
+/// one-call path is `post_swap_order`.
 ///
 /// `trade_parameters.owner` takes precedence. When it is absent, the signer
 /// address becomes the effective owner. Advanced settings override overlapping
@@ -305,8 +314,8 @@ fn build_quote_request(
 ) -> Result<OrderQuoteRequest, TradingError> {
     let receiver = trade_parameters.receiver.unwrap_or(trader.account);
     let side = match trade_parameters.kind {
-        cow_sdk_core::OrderKind::Sell => QuoteSide::sell(trade_parameters.amount),
-        cow_sdk_core::OrderKind::Buy => QuoteSide::buy(trade_parameters.amount),
+        cow_sdk_core::OrderKind::Sell => OrderQuoteSide::sell(trade_parameters.amount),
+        cow_sdk_core::OrderKind::Buy => OrderQuoteSide::buy(trade_parameters.amount),
     };
     let mut request = OrderQuoteRequest::new(
         trade_parameters.sell_token,
@@ -339,22 +348,18 @@ fn build_quote_request(
             .with_verification_gas_limit(0);
     }
 
-    apply_quote_request_override(&mut request, request_override);
+    apply_quote_request_override(&mut request, request_override)?;
     request.validate()?;
-
-    if request.valid_for.is_some() && request.valid_to.is_some() {
-        return Err(TradingError::QuoteValidityConflict);
-    }
 
     Ok(request)
 }
 
-const fn apply_quote_request_override(
+fn apply_quote_request_override(
     request: &mut OrderQuoteRequest,
     request_override: Option<&QuoteRequestOverride>,
-) {
+) -> Result<(), TradingError> {
     let Some(request_override) = request_override else {
-        return;
+        return Ok(());
     };
 
     if let Some(sell_token) = &request_override.sell_token {
@@ -367,12 +372,10 @@ const fn apply_quote_request_override(
         request.receiver = Some(*receiver);
     }
     if let Some(valid_for) = request_override.valid_for {
-        request.valid_for = Some(valid_for);
-        request.valid_to = None;
+        request.validity = cow_sdk_orderbook::QuoteValidity::ValidFor(valid_for);
     }
     if let Some(valid_to) = request_override.valid_to {
-        request.valid_to = Some(valid_to);
-        request.valid_for = None;
+        request.validity = cow_sdk_orderbook::QuoteValidity::ValidTo(valid_to);
     }
     if let Some(from) = &request_override.from {
         request.from = *from;
@@ -380,14 +383,63 @@ const fn apply_quote_request_override(
     if let Some(price_quality) = request_override.price_quality {
         request.price_quality = price_quality;
     }
-    if let Some(signing_scheme) = request_override.signing_scheme {
-        request.signing_scheme = signing_scheme;
-    }
-    if let Some(onchain_order) = request_override.onchain_order {
-        request.onchain_order = onchain_order;
-    }
-    if let Some(verification_gas_limit) = request_override.verification_gas_limit {
-        request.verification_gas_limit = Some(verification_gas_limit);
+    if request_override.signing_scheme.is_some()
+        || request_override.onchain_order.is_some()
+        || request_override.verification_gas_limit.is_some()
+    {
+        let base = request_override
+            .signing_scheme
+            .unwrap_or_else(|| request.signing_scheme.scheme());
+        let onchain = request_override
+            .onchain_order
+            .unwrap_or_else(|| request.signing_scheme.is_onchain_order());
+        let gas = request_override
+            .verification_gas_limit
+            .unwrap_or(match request.signing_scheme {
+                cow_sdk_orderbook::QuoteSigningScheme::Eip1271 {
+                    verification_gas_limit,
+                    ..
+                } => verification_gas_limit,
+                _ => cow_sdk_orderbook::default_verification_gas_limit(),
+            });
+        // An ECDSA scheme can never be an on-chain order; reject an override
+        // that pairs them rather than silently dropping the on-chain intent.
+        if onchain
+            && matches!(
+                base,
+                cow_sdk_orderbook::SigningScheme::Eip712
+                    | cow_sdk_orderbook::SigningScheme::EthSign
+            )
+        {
+            return Err(TradingError::Orderbook(
+                cow_sdk_orderbook::OrderbookError::IncompatibleSigningScheme {
+                    signing_scheme: base,
+                    onchain_order: true,
+                },
+            ));
+        }
+        request.signing_scheme = match base {
+            cow_sdk_orderbook::SigningScheme::Eip712 => {
+                cow_sdk_orderbook::QuoteSigningScheme::Eip712
+            }
+            cow_sdk_orderbook::SigningScheme::EthSign => {
+                cow_sdk_orderbook::QuoteSigningScheme::EthSign
+            }
+            cow_sdk_orderbook::SigningScheme::Eip1271 => {
+                cow_sdk_orderbook::QuoteSigningScheme::Eip1271 {
+                    onchain_order: onchain,
+                    verification_gas_limit: gas,
+                }
+            }
+            cow_sdk_orderbook::SigningScheme::PreSign => {
+                cow_sdk_orderbook::QuoteSigningScheme::PreSign {
+                    onchain_order: onchain,
+                }
+            }
+            // `SigningScheme` is upstream-growing; an unrecognized scheme falls
+            // back to the EIP-712 default rather than guessing on-chain intent.
+            _ => cow_sdk_orderbook::QuoteSigningScheme::Eip712,
+        };
     }
     if let Some(timeout) = request_override.timeout {
         request.timeout = Some(timeout);
@@ -401,4 +453,6 @@ const fn apply_quote_request_override(
     if let Some(balance) = request_override.buy_token_balance {
         request.buy_token_balance = balance;
     }
+
+    Ok(())
 }

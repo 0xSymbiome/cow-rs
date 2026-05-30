@@ -225,9 +225,10 @@ impl OrderBookApi {
     ///
     /// # Errors
     ///
-    /// Returns [`OrderbookError::InvalidQuoteRequest`] when the quote side is
-    /// not well-formed, or any transport/API/serialization error returned by
-    /// the orderbook request helpers.
+    /// Returns any transport, API, or serialization error returned by the
+    /// orderbook request helpers. The quote request's mutual-exclusion
+    /// invariants are enforced at the type level, so a constructed request is
+    /// always well-formed.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(
@@ -247,14 +248,7 @@ impl OrderBookApi {
         &self,
         request: &OrderQuoteRequest,
     ) -> Result<OrderQuoteResponse, OrderbookError> {
-        if !request.is_valid() {
-            return Err(OrderbookError::InvalidQuoteRequest {
-                field: "side",
-                reason: cow_sdk_core::ValidationReason::Precondition {
-                    details: "exactly one of sellAmountBeforeFee or buyAmountAfterFee must be set",
-                },
-            });
-        }
+        request.validate()?;
 
         let body = serde_json::to_value(request)?;
         let params = FetchParams::new("/api/v1/quote", HttpMethod::Post).with_body(body);

@@ -24,7 +24,7 @@ principles:
   - id: 2
     name: Explicit Runtime Boundaries
     primary_adr: "0010"
-    supporting_adrs: ["0019"]
+    supporting_adrs: ["0019", "0055"]
 
   - id: 3
     name: Thin Facade, Real Crate Boundaries
@@ -59,7 +59,7 @@ principles:
   - id: 9
     name: Canonical Contract Bindings
     primary_adr: "0012"
-    supporting_adrs: ["0020", "0022", "0023", "0052", "0054"]
+    supporting_adrs: ["0020", "0022", "0023", "0052", "0054", "0056"]
 
   - id: 10
     name: Evidence-Backed Public Claims
@@ -69,7 +69,7 @@ principles:
   - id: 11
     name: Forward-Compatible Public Surfaces
     primary_adr: "0031"
-    supporting_adrs: ["0027", "0029"]
+    supporting_adrs: ["0027", "0029", "0058"]
 
   - id: 12
     name: Credential Redaction by Construction

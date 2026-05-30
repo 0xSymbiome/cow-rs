@@ -8,7 +8,7 @@ use serde::{Serialize, de::DeserializeOwned};
 
 use cow_sdk_orderbook::{
     Amount, Auction, CompetitionOrderStatus, Order, OrderCreation, OrderKind, OrderQuoteResponse,
-    QuoteData, QuoteSide, SigningScheme, TotalSurplus, Trade,
+    OrderQuoteSide, QuoteData, SigningScheme, TotalSurplus, Trade,
 };
 
 mod common;
@@ -38,16 +38,16 @@ fn amount(value: &str) -> Amount {
 
 #[test]
 fn promoted_amount_dtos_roundtrip_byte_identical() {
-    assert_wire_roundtrip::<QuoteSide>(
+    assert_wire_roundtrip::<OrderQuoteSide>(
         r#"{"kind":"sell","sellAmountBeforeFee":"1000000000000000000"}"#,
     );
 
-    assert_wire_roundtrip::<QuoteSide>(
+    assert_wire_roundtrip::<OrderQuoteSide>(
         r#"{"kind":"buy","buyAmountAfterFee":"2000000000000000000"}"#,
     );
 
     assert_wire_roundtrip::<QuoteData>(
-        r#"{"sellToken":"0x0000000000000000000000000000000000000001","buyToken":"0x0000000000000000000000000000000000000002","receiver":"0x0000000000000000000000000000000000000003","sellAmount":"1000000000000000000","buyAmount":"2000000000000000000","validTo":1700000000,"appData":"0x0000000000000000000000000000000000000000000000000000000000000000","feeAmount":"300000000000000000","kind":"sell","partiallyFillable":true,"sellTokenBalance":"erc20","buyTokenBalance":"internal"}"#,
+        r#"{"sellToken":"0x0000000000000000000000000000000000000001","buyToken":"0x0000000000000000000000000000000000000002","receiver":"0x0000000000000000000000000000000000000003","sellAmount":"1000000000000000000","buyAmount":"2000000000000000000","validTo":1700000000,"appData":"0x0000000000000000000000000000000000000000000000000000000000000000","feeAmount":"300000000000000000","kind":"sell","partiallyFillable":true,"sellTokenBalance":"erc20","buyTokenBalance":"internal","gasAmount":"150000","gasPrice":"15000000000","sellTokenPrice":"400000000000000","signingScheme":"eip712"}"#,
     );
 
     assert_wire_roundtrip::<OrderCreation>(
@@ -94,7 +94,7 @@ fn promoted_amount_fields_reject_malformed_wire_amounts() {
         "order error should retain amount context: {order_error}"
     );
 
-    let side_error = serde_json::from_str::<QuoteSide>(
+    let side_error = serde_json::from_str::<OrderQuoteSide>(
         r#"{"kind":"sell","sellAmountBeforeFee":"not-a-decimal"}"#,
     )
     .expect_err("quote side must fail");

@@ -76,7 +76,7 @@ rather than reading raw Cargo output directly.
 `cow-sdk-trading` owns quote-to-order orchestration. Review trading changes at
 the workflow layer first, then inspect the lower-level crates it composes.
 That surface is responsible for preserving reviewed balance semantics across
-quote-derived and direct order construction, retrying order-id collisions
+quote-derived and direct order construction, locking the quote-amounts projection that derives the signable order from a `/quote` response with a parity regression test, retrying order-id collisions
 without reusing salts, falling back from an unset or zero receiver to the
 effective owner address, enforcing one injected-orderbook validation contract
 across all `TradingSdk` builder terminals, separating ready-state construction

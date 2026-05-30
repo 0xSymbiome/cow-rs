@@ -20,7 +20,7 @@ use cow_sdk_orderbook::request::{
 #[cfg(feature = "tracing")]
 use cow_sdk_orderbook::{CowEnv, SupportedChainId};
 #[cfg(feature = "tracing")]
-use cow_sdk_orderbook::{OrderCreation, OrderQuoteRequest, QuoteSide, SigningScheme};
+use cow_sdk_orderbook::{OrderCreation, OrderQuoteRequest, OrderQuoteSide, SigningScheme};
 use cow_sdk_transport_policy::{
     DEFAULT_INTERVAL_LABEL, DEFAULT_MAX_ATTEMPTS, DEFAULT_ORDERBOOK_USER_AGENT,
     DEFAULT_TOKENS_PER_INTERVAL, INTERNAL_SERVER_ERROR, JitterStrategy, RETRYABLE_STATUSES,
@@ -1070,7 +1070,7 @@ mod tracing_contract {
                 sample_owner(),
                 sample_buy_token(),
                 sample_owner(),
-                QuoteSide::sell(Amount::new("1000000").expect("test amount literal is valid")),
+                OrderQuoteSide::sell(Amount::new("1000000").expect("test amount literal is valid")),
             ))
             .await
             .expect("quote should succeed");

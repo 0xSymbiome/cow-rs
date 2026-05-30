@@ -15,7 +15,8 @@ mod common;
 use cow_sdk_core::Amount;
 use cow_sdk_orderbook::{
     BuyTokenDestination, GetOrdersRequest, GetTradesRequest, OrderQuoteRequest, OrderQuoteResponse,
-    PriceQuality, QuoteSide, SellTokenSource, SigningScheme, calculate_total_fee,
+    OrderQuoteSide, PriceQuality, QuoteSigningScheme, QuoteValidity, SellTokenSource,
+    SigningScheme, calculate_total_fee,
 };
 
 use crate::common::{
@@ -115,9 +116,9 @@ fn quote_request_shape_roundtrips_without_side_coercion() {
         let mut rng = CaseRng::new(seed + 1);
         let is_sell = rng.next_bool();
         let side = if is_sell {
-            QuoteSide::sell(generated_amount(&mut rng))
+            OrderQuoteSide::sell(generated_amount(&mut rng))
         } else {
-            QuoteSide::buy(generated_amount(&mut rng))
+            OrderQuoteSide::buy(generated_amount(&mut rng))
         };
         let mut request =
             OrderQuoteRequest::new(sample_owner(), sample_buy_token(), sample_owner(), side)
@@ -150,7 +151,6 @@ fn quote_request_shape_roundtrips_without_side_coercion() {
 
         let value = serde_json::to_value(&request).expect("request serialization must succeed");
 
-        assert!(request.is_valid());
         if is_sell {
             assert!(value.get("sellAmountBeforeFee").is_some());
             assert!(value.get("buyAmountAfterFee").is_none());
@@ -168,13 +168,17 @@ fn quote_request_shape_roundtrips_without_side_coercion() {
         );
         assert_eq!(
             value.get("validFor").is_some(),
-            request.valid_for.is_some(),
-            "validFor presence must stay explicit through serialization"
+            matches!(request.validity, QuoteValidity::ValidFor(_)),
+            "validFor presence must match the typed validity variant"
         );
         assert_eq!(
             value.get("validTo").is_some(),
-            request.valid_to.is_some(),
-            "validTo presence must stay explicit through serialization"
+            matches!(request.validity, QuoteValidity::ValidTo(_)),
+            "validTo presence must match the typed validity variant"
+        );
+        assert!(
+            value.get("validFor").is_some() ^ value.get("validTo").is_some(),
+            "exactly one of validFor or validTo must serialize"
         );
         assert_eq!(
             value.get("timeout").is_some(),
@@ -183,8 +187,8 @@ fn quote_request_shape_roundtrips_without_side_coercion() {
         );
         assert_eq!(
             value.get("verificationGasLimit").is_some(),
-            request.verification_gas_limit.is_some(),
-            "verificationGasLimit presence must stay explicit through serialization"
+            matches!(request.signing_scheme, QuoteSigningScheme::Eip1271 { .. }),
+            "verificationGasLimit serializes only for the EIP-1271 scheme"
         );
 
         let roundtrip: OrderQuoteRequest =
@@ -202,9 +206,9 @@ fn quote_request_app_data_and_pagination_shape_roundtrip_without_normalization()
             sample_buy_token(),
             sample_owner(),
             if rng.next_bool() {
-                QuoteSide::sell(generated_amount(&mut rng))
+                OrderQuoteSide::sell(generated_amount(&mut rng))
             } else {
-                QuoteSide::buy(generated_amount(&mut rng))
+                OrderQuoteSide::buy(generated_amount(&mut rng))
             },
         );
 

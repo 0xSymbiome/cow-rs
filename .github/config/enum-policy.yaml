@@ -216,6 +216,30 @@ enums:
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: Orderbook signing schemes track protocol and services-supported signature families.
+  - name: SellAmount
+    file: crates/orderbook/src/types/quote.rs
+    line: 20
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Mirrors the services quote sell-amount oneOf (sellAmountBeforeFee / sellAmountAfterFee), which is services-controlled.
+  - name: OrderQuoteSide
+    file: crates/orderbook/src/types/quote.rs
+    line: 84
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Mirrors the services OrderQuoteSide kind oneOf (sell / buy), which is services-controlled.
+  - name: QuoteValidity
+    file: crates/orderbook/src/types/quote.rs
+    line: 165
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Mirrors the services quote validity oneOf (validTo / validFor), which is services-controlled.
+  - name: QuoteSigningScheme
+    file: crates/orderbook/src/types/quote.rs
+    line: 240
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Mirrors the services QuoteSigningScheme oneOf with its on-chain and verification-gas constraints, which is services-controlled.
   - name: EcdsaSigningScheme
     file: crates/orderbook/src/types/enums.rs
     line: 40

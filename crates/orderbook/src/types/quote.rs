@@ -3,69 +3,332 @@ use serde::{Deserialize, Deserializer, Serialize, de::Error as DeError};
 use crate::error::OrderbookError;
 
 use super::{
-    Address, Amount, AppDataHash, BuyTokenDestination, OrderKind, SellTokenSource,
+    Address, Amount, AppDataHash, BuyTokenDestination, OrderKind, QuoteAppData, SellTokenSource,
     enums::{PriceQuality, SigningScheme},
 };
 
-/// Encodes the mutually exclusive buy-side or sell-side amount on quote requests.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+/// The sell amount on a sell-side quote request, distinguishing whether the
+/// network fee is taken before or after the amount.
+///
+/// Mirrors the orderbook `OrderQuoteSide` sell-amount oneOf: exactly one of
+/// `sellAmountBeforeFee` or `sellAmountAfterFee` is present on the wire, so the
+/// before/after-fee distinction is a type-level invariant rather than a
+/// runtime check.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(untagged)]
 #[non_exhaustive]
-pub struct QuoteSide {
-    /// Whether the quote is sell-driven or buy-driven.
-    pub kind: OrderKind,
-    /// Sell amount before fee for sell quotes.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub sell_amount_before_fee: Option<Amount>,
-    /// Buy amount after fee for buy quotes.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub buy_amount_after_fee: Option<Amount>,
+pub enum SellAmount {
+    /// Sell amount measured before the network fee is deducted.
+    BeforeFee {
+        /// The sell amount in sell-token atoms, before fee.
+        #[serde(rename = "sellAmountBeforeFee")]
+        value: Amount,
+    },
+    /// Sell amount measured after the network fee is deducted.
+    AfterFee {
+        /// The sell amount in sell-token atoms, after fee.
+        #[serde(rename = "sellAmountAfterFee")]
+        value: Amount,
+    },
 }
 
-impl QuoteSide {
-    /// Creates a sell-side quote request amount.
+impl SellAmount {
+    /// Returns the underlying sell amount regardless of the fee basis.
+    #[must_use]
+    pub const fn amount(&self) -> &Amount {
+        match self {
+            Self::BeforeFee { value } | Self::AfterFee { value } => value,
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for SellAmount {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        // Read the two mutually exclusive keys explicitly rather than through an
+        // untagged enum so a malformed amount surfaces the `Amount` parse error
+        // instead of a generic "did not match any variant" message.
+        #[derive(Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct Wire {
+            sell_amount_before_fee: Option<Amount>,
+            sell_amount_after_fee: Option<Amount>,
+        }
+
+        let wire = Wire::deserialize(deserializer)?;
+        match (wire.sell_amount_before_fee, wire.sell_amount_after_fee) {
+            (Some(value), None) => Ok(Self::BeforeFee { value }),
+            (None, Some(value)) => Ok(Self::AfterFee { value }),
+            (None, None) => Err(DeError::custom(
+                "missing one of `sellAmountBeforeFee` or `sellAmountAfterFee`",
+            )),
+            (Some(_), Some(_)) => Err(DeError::custom(
+                "must specify at most one of `sellAmountBeforeFee` or `sellAmountAfterFee`",
+            )),
+        }
+    }
+}
+
+/// Encodes the mutually exclusive buy-side or sell-side amount on quote
+/// requests.
+///
+/// Mirrors the orderbook `OrderQuoteSide` `kind` oneOf so that a quote request
+/// carries exactly one side amount by construction: a sell request carries a
+/// [`SellAmount`] (before or after fee) and a buy request carries a buy amount
+/// after fee.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "lowercase")]
+#[non_exhaustive]
+pub enum OrderQuoteSide {
+    /// Sell-driven quote.
+    #[serde(rename_all = "camelCase")]
+    Sell {
+        /// The sell amount, before or after fee.
+        #[serde(flatten)]
+        sell_amount: SellAmount,
+    },
+    /// Buy-driven quote.
+    #[serde(rename_all = "camelCase")]
+    Buy {
+        /// The buy amount after fee, in buy-token atoms.
+        buy_amount_after_fee: Amount,
+    },
+}
+
+impl OrderQuoteSide {
+    /// Creates a sell-side quote request for a sell amount measured before the
+    /// network fee.
+    #[must_use]
+    pub const fn sell_before_fee(amount: Amount) -> Self {
+        Self::Sell {
+            sell_amount: SellAmount::BeforeFee { value: amount },
+        }
+    }
+
+    /// Creates a sell-side quote request for a sell amount measured after the
+    /// network fee.
+    #[must_use]
+    pub const fn sell_after_fee(amount: Amount) -> Self {
+        Self::Sell {
+            sell_amount: SellAmount::AfterFee { value: amount },
+        }
+    }
+
+    /// Creates a sell-side quote request. Alias for [`Self::sell_before_fee`],
+    /// the orderbook's default sell-amount basis.
     #[must_use]
     pub const fn sell(amount: Amount) -> Self {
-        Self {
-            kind: OrderKind::Sell,
-            sell_amount_before_fee: Some(amount),
-            buy_amount_after_fee: None,
-        }
+        Self::sell_before_fee(amount)
     }
 
     /// Creates a buy-side quote request amount.
     #[must_use]
     pub const fn buy(amount: Amount) -> Self {
-        Self {
-            kind: OrderKind::Buy,
-            sell_amount_before_fee: None,
-            buy_amount_after_fee: Some(amount),
+        Self::Buy {
+            buy_amount_after_fee: amount,
+        }
+    }
+
+    /// Returns the order kind implied by this side.
+    #[must_use]
+    pub const fn kind(&self) -> OrderKind {
+        match self {
+            Self::Sell { .. } => OrderKind::Sell,
+            Self::Buy { .. } => OrderKind::Buy,
         }
     }
 
     /// Returns `true` when this quote side is sell-driven.
     #[must_use]
-    pub fn is_sell(&self) -> bool {
-        self.kind == OrderKind::Sell
+    pub const fn is_sell(&self) -> bool {
+        matches!(self, Self::Sell { .. })
     }
 
     /// Returns `true` when this quote side is buy-driven.
     #[must_use]
-    pub fn is_buy(&self) -> bool {
-        self.kind == OrderKind::Buy
+    pub const fn is_buy(&self) -> bool {
+        matches!(self, Self::Buy { .. })
+    }
+}
+
+/// Validity window for a quote request.
+///
+/// Mirrors the orderbook quote validity oneOf: a request carries either an
+/// absolute `validTo` UNIX timestamp or a relative `validFor` duration in
+/// seconds, never both. Modeling it as an enum makes that mutual exclusion a
+/// type-level invariant. When neither is supplied on the wire it defaults to
+/// the protocol's 30-minute relative window.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum QuoteValidity {
+    /// Absolute UNIX expiry timestamp (`validTo`).
+    ValidTo(u32),
+    /// Relative validity duration in seconds (`validFor`).
+    ValidFor(u32),
+}
+
+impl Default for QuoteValidity {
+    fn default() -> Self {
+        // The protocol default quote validity is a 30-minute relative window.
+        Self::ValidFor(30 * 60)
+    }
+}
+
+impl<'de> Deserialize<'de> for QuoteValidity {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct Wire {
+            valid_to: Option<u32>,
+            valid_for: Option<u32>,
+        }
+
+        let wire = Wire::deserialize(deserializer)?;
+        match (wire.valid_to, wire.valid_for) {
+            (Some(valid_to), None) => Ok(Self::ValidTo(valid_to)),
+            (None, Some(valid_for)) => Ok(Self::ValidFor(valid_for)),
+            (None, None) => Ok(Self::default()),
+            (Some(_), Some(_)) => Err(DeError::custom(
+                "must specify at most one of `validTo` or `validFor`",
+            )),
+        }
+    }
+}
+
+impl Serialize for QuoteValidity {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct as _;
+
+        let (field, value) = match self {
+            Self::ValidTo(valid_to) => ("validTo", valid_to),
+            Self::ValidFor(valid_for) => ("validFor", valid_for),
+        };
+        let mut state = serializer.serialize_struct("QuoteValidity", 1)?;
+        state.serialize_field(field, value)?;
+        state.end()
+    }
+}
+
+/// Default EIP-1271 verification gas limit applied when a quote request does
+/// not supply one, matching the orderbook default.
+#[must_use]
+pub const fn default_verification_gas_limit() -> u64 {
+    27_000
+}
+
+/// Signing scheme for a quote request.
+///
+/// Mirrors the orderbook `QuoteSigningScheme` oneOf so that the scheme-specific
+/// constraints are type-level: only EIP-1271 carries a `verificationGasLimit`,
+/// only EIP-1271 and pre-sign can be on-chain orders, and an ECDSA scheme
+/// (`eip712`/`ethSign`) can never be marked on-chain.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(
+    tag = "signingScheme",
+    rename_all = "lowercase",
+    try_from = "QuoteSigningSchemeWire"
+)]
+#[non_exhaustive]
+pub enum QuoteSigningScheme {
+    /// EIP-712 typed-data signature (default).
+    #[default]
+    Eip712,
+    /// `eth_sign` signature.
+    EthSign,
+    /// EIP-1271 smart-contract signature.
+    Eip1271 {
+        /// Whether the eventual order is placed on-chain.
+        #[serde(rename = "onchainOrder")]
+        onchain_order: bool,
+        /// Gas limit reserved for the EIP-1271 verification call.
+        #[serde(
+            rename = "verificationGasLimit",
+            default = "default_verification_gas_limit"
+        )]
+        verification_gas_limit: u64,
+    },
+    /// Pre-sign (on-chain authorization) signature.
+    PreSign {
+        /// Whether the eventual order is placed on-chain.
+        #[serde(rename = "onchainOrder")]
+        onchain_order: bool,
+    },
+}
+
+impl QuoteSigningScheme {
+    /// Returns the base [`SigningScheme`] for this quote signing scheme.
+    #[must_use]
+    pub const fn scheme(&self) -> SigningScheme {
+        match self {
+            Self::Eip712 => SigningScheme::Eip712,
+            Self::EthSign => SigningScheme::EthSign,
+            Self::Eip1271 { .. } => SigningScheme::Eip1271,
+            Self::PreSign { .. } => SigningScheme::PreSign,
+        }
     }
 
-    /// Returns `true` when exactly one side amount matches the declared order kind.
+    /// Returns whether the eventual order is placed on-chain.
     #[must_use]
-    pub const fn is_valid(&self) -> bool {
+    pub const fn is_onchain_order(&self) -> bool {
         matches!(
-            (
-                &self.kind,
-                self.sell_amount_before_fee.as_ref(),
-                self.buy_amount_after_fee.as_ref()
-            ),
-            (OrderKind::Sell, Some(_), None) | (OrderKind::Buy, None, Some(_))
+            self,
+            Self::Eip1271 {
+                onchain_order: true,
+                ..
+            } | Self::PreSign {
+                onchain_order: true
+            }
         )
+    }
+}
+
+/// Deserialization helper that mirrors the orderbook wire shape and validates
+/// the scheme-specific constraints through [`TryFrom`].
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct QuoteSigningSchemeWire {
+    #[serde(default)]
+    signing_scheme: SigningScheme,
+    #[serde(default)]
+    verification_gas_limit: Option<u64>,
+    #[serde(default)]
+    onchain_order: bool,
+}
+
+impl TryFrom<QuoteSigningSchemeWire> for QuoteSigningScheme {
+    type Error = String;
+
+    fn try_from(wire: QuoteSigningSchemeWire) -> Result<Self, Self::Error> {
+        let is_ecdsa = matches!(
+            wire.signing_scheme,
+            SigningScheme::Eip712 | SigningScheme::EthSign
+        );
+        match (
+            wire.signing_scheme,
+            wire.onchain_order,
+            wire.verification_gas_limit,
+        ) {
+            (_, true, None) if is_ecdsa => Err("ECDSA-signed orders cannot be on-chain".to_owned()),
+            (SigningScheme::Eip712, _, None) => Ok(Self::Eip712),
+            (SigningScheme::EthSign, _, None) => Ok(Self::EthSign),
+            (SigningScheme::Eip1271, onchain_order, verification_gas_limit) => Ok(Self::Eip1271 {
+                onchain_order,
+                verification_gas_limit: verification_gas_limit
+                    .unwrap_or_else(default_verification_gas_limit),
+            }),
+            (SigningScheme::PreSign, onchain_order, None) => Ok(Self::PreSign { onchain_order }),
+            (_, _, Some(_)) => {
+                Err("only EIP-1271 quote signing supports a verificationGasLimit".to_owned())
+            }
+        }
     }
 }
 
@@ -81,18 +344,15 @@ pub struct OrderQuoteRequest {
     /// Optional explicit receiver override.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub receiver: Option<Address>,
-    /// Relative validity duration in seconds when supported by the upstream API.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub valid_for: Option<u32>,
-    /// Absolute UNIX expiry timestamp override.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub valid_to: Option<u32>,
-    /// Full app-data payload or literal app-data string when sent inline.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub app_data: Option<String>,
-    /// App-data hash when app-data is provided separately.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub app_data_hash: Option<AppDataHash>,
+    /// Validity window: an absolute `validTo` timestamp or a relative
+    /// `validFor` duration in seconds, never both. Defaults to the protocol's
+    /// 30-minute relative window.
+    #[serde(flatten)]
+    pub validity: QuoteValidity,
+    /// App-data as the `(full document, hash)` pair, routed to a server-valid
+    /// wire shape for every combination (see [`QuoteAppData`]).
+    #[serde(flatten)]
+    pub app_data: QuoteAppData,
     /// Whether partial fills are allowed.
     #[serde(default)]
     pub partially_fillable: bool,
@@ -107,46 +367,46 @@ pub struct OrderQuoteRequest {
     /// Quote-quality mode.
     #[serde(default)]
     pub price_quality: PriceQuality,
-    /// Signature scheme expected for the eventual order submission.
-    #[serde(default)]
-    pub signing_scheme: SigningScheme,
-    /// Whether the eventual order is expected to be on-chain.
-    #[serde(default)]
-    pub onchain_order: bool,
-    /// Optional gas limit supplied for verification-aware quoting.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub verification_gas_limit: Option<u64>,
+    /// Signing scheme expected for the eventual order submission. The
+    /// scheme-specific on-chain and verification-gas constraints are encoded by
+    /// [`QuoteSigningScheme`].
+    #[serde(flatten)]
+    pub signing_scheme: QuoteSigningScheme,
     /// Optional request timeout override in milliseconds.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub timeout: Option<u64>,
     /// Mutually exclusive buy-side or sell-side amount fields.
     #[serde(flatten)]
-    pub side: QuoteSide,
+    pub side: OrderQuoteSide,
 }
 
 impl OrderQuoteRequest {
     /// Creates a quote request with stable orderbook defaults.
     ///
     /// The default app-data is the zero hash, the signing scheme is EIP-712,
-    /// and both token balances default to ERC-20 balances.
+    /// and both token balances default to ERC-20 balances. The price quality
+    /// defaults to [`PriceQuality::Optimal`], the mode used for a quote that
+    /// will be signed and submitted: it returns a quote identifier for order
+    /// placement.
     #[must_use]
-    pub fn new(sell_token: Address, buy_token: Address, from: Address, side: QuoteSide) -> Self {
+    pub fn new(
+        sell_token: Address,
+        buy_token: Address,
+        from: Address,
+        side: OrderQuoteSide,
+    ) -> Self {
         Self {
             sell_token,
             buy_token,
             receiver: None,
-            valid_for: None,
-            valid_to: None,
-            app_data: Some(format!("0x{}", "0".repeat(64))),
-            app_data_hash: None,
+            validity: QuoteValidity::ValidFor(30 * 60),
+            app_data: QuoteAppData::full(format!("0x{}", "0".repeat(64))),
             partially_fillable: false,
             sell_token_balance: SellTokenSource::Erc20,
             buy_token_balance: BuyTokenDestination::Erc20,
             from,
-            price_quality: PriceQuality::Verified,
-            signing_scheme: SigningScheme::Eip712,
-            onchain_order: false,
-            verification_gas_limit: None,
+            price_quality: PriceQuality::Optimal,
+            signing_scheme: QuoteSigningScheme::Eip712,
             timeout: None,
             side,
         }
@@ -160,30 +420,37 @@ impl OrderQuoteRequest {
     }
 
     /// Returns a copy of this request with an absolute expiry timestamp.
+    ///
+    /// Sets the validity to [`QuoteValidity::ValidTo`], replacing any
+    /// previously configured relative window.
     #[must_use]
     pub const fn with_valid_to(mut self, valid_to: u32) -> Self {
-        self.valid_to = Some(valid_to);
+        self.validity = QuoteValidity::ValidTo(valid_to);
         self
     }
 
     /// Returns a copy of this request with a relative validity duration.
+    ///
+    /// Sets the validity to [`QuoteValidity::ValidFor`], replacing any
+    /// previously configured absolute timestamp.
     #[must_use]
     pub const fn with_valid_for(mut self, valid_for: u32) -> Self {
-        self.valid_for = Some(valid_for);
+        self.validity = QuoteValidity::ValidFor(valid_for);
         self
     }
 
-    /// Returns a copy of this request with inline app-data content.
+    /// Returns a copy of this request with inline full app-data content,
+    /// replacing any previously set full document.
     #[must_use]
     pub fn with_app_data(mut self, app_data: impl Into<String>) -> Self {
-        self.app_data = Some(app_data.into());
+        self.app_data.full = Some(app_data.into());
         self
     }
 
     /// Returns a copy of this request with an explicit app-data hash.
     #[must_use]
     pub const fn with_app_data_hash(mut self, app_data_hash: AppDataHash) -> Self {
-        self.app_data_hash = Some(app_data_hash);
+        self.app_data.hash = Some(app_data_hash);
         self
     }
 
@@ -195,8 +462,35 @@ impl OrderQuoteRequest {
     }
 
     /// Returns a copy of this request with a new signing scheme.
+    ///
+    /// Maps the base [`SigningScheme`] onto the typed [`QuoteSigningScheme`],
+    /// carrying any previously configured on-chain flag and verification gas
+    /// limit onto the new scheme where they remain meaningful.
     #[must_use]
     pub const fn with_signing_scheme(mut self, scheme: SigningScheme) -> Self {
+        let onchain_order = self.signing_scheme.is_onchain_order();
+        let verification_gas_limit = match self.signing_scheme {
+            QuoteSigningScheme::Eip1271 {
+                verification_gas_limit,
+                ..
+            } => verification_gas_limit,
+            _ => default_verification_gas_limit(),
+        };
+        self.signing_scheme = match scheme {
+            SigningScheme::Eip712 => QuoteSigningScheme::Eip712,
+            SigningScheme::EthSign => QuoteSigningScheme::EthSign,
+            SigningScheme::Eip1271 => QuoteSigningScheme::Eip1271 {
+                onchain_order,
+                verification_gas_limit,
+            },
+            SigningScheme::PreSign => QuoteSigningScheme::PreSign { onchain_order },
+        };
+        self
+    }
+
+    /// Returns a copy of this request with an explicit typed signing scheme.
+    #[must_use]
+    pub const fn with_quote_signing_scheme(mut self, scheme: QuoteSigningScheme) -> Self {
         self.signing_scheme = scheme;
         self
     }
@@ -209,16 +503,40 @@ impl OrderQuoteRequest {
     }
 
     /// Returns a copy of this request marked as an on-chain order.
+    ///
+    /// On-chain placement only applies to EIP-1271 and pre-sign schemes; on an
+    /// ECDSA scheme (`eip712`/`ethSign`) the request stays off-chain because an
+    /// ECDSA-signed order can never be on-chain.
     #[must_use]
     pub const fn with_onchain_order(mut self) -> Self {
-        self.onchain_order = true;
+        self.signing_scheme = match self.signing_scheme {
+            QuoteSigningScheme::Eip1271 {
+                verification_gas_limit,
+                ..
+            } => QuoteSigningScheme::Eip1271 {
+                onchain_order: true,
+                verification_gas_limit,
+            },
+            QuoteSigningScheme::PreSign { .. } => QuoteSigningScheme::PreSign {
+                onchain_order: true,
+            },
+            ecdsa => ecdsa,
+        };
         self
     }
 
     /// Returns a copy of this request with an explicit verification gas limit.
+    ///
+    /// The verification gas limit only applies to the EIP-1271 scheme; on any
+    /// other scheme this is a no-op.
     #[must_use]
     pub const fn with_verification_gas_limit(mut self, verification_gas_limit: u64) -> Self {
-        self.verification_gas_limit = Some(verification_gas_limit);
+        if let QuoteSigningScheme::Eip1271 { onchain_order, .. } = self.signing_scheme {
+            self.signing_scheme = QuoteSigningScheme::Eip1271 {
+                onchain_order,
+                verification_gas_limit,
+            };
+        }
         self
     }
 
@@ -245,64 +563,41 @@ impl OrderQuoteRequest {
 
     /// Returns `true` when the embedded side is sell-driven.
     #[must_use]
-    pub fn is_sell(&self) -> bool {
+    pub const fn is_sell(&self) -> bool {
         self.side.is_sell()
     }
 
     /// Returns `true` when the embedded side is buy-driven.
     #[must_use]
-    pub fn is_buy(&self) -> bool {
+    pub const fn is_buy(&self) -> bool {
         self.side.is_buy()
     }
 
-    /// Returns `true` when the quote-side shape is valid for the declared order kind.
+    /// Returns `true` when the request passes local pre-dispatch validation.
+    ///
+    /// The quote side, validity window, and signing scheme are all mutually
+    /// exclusive by construction (see [`OrderQuoteSide`], [`QuoteValidity`],
+    /// and [`QuoteSigningScheme`]), so a constructed request is always
+    /// well-formed.
     #[must_use]
-    pub const fn is_valid(&self) -> bool {
-        self.side.is_valid()
+    pub fn is_valid(&self) -> bool {
+        self.validate().is_ok()
     }
 
     /// Validates local quote preconditions before dispatching the HTTP request.
     ///
+    /// Every quote-request invariant — exactly one side amount, exactly one
+    /// validity form, the EIP-1271-only verification gas limit, and the
+    /// ECDSA-cannot-be-on-chain rule — is enforced at the type level by
+    /// [`OrderQuoteSide`], [`QuoteValidity`], and [`QuoteSigningScheme`], so a
+    /// constructed request is always well-formed. This hook is retained for
+    /// pre-dispatch validation and API stability.
+    ///
     /// # Errors
     ///
-    /// Returns [`OrderbookError::InvalidQuoteRequest`] when the quote side is
-    /// not well-formed or `verificationGasLimit` is paired with a non-EIP-1271
-    /// scheme. Returns [`OrderbookError::IncompatibleSigningScheme`] when an
-    /// ECDSA signing scheme is marked as an on-chain order.
-    pub fn validate(&self) -> Result<(), OrderbookError> {
-        if !self.is_valid() {
-            return Err(OrderbookError::InvalidQuoteRequest {
-                field: "side",
-                reason: cow_sdk_core::ValidationReason::Precondition {
-                    details: "exactly one of sellAmountBeforeFee or buyAmountAfterFee must be set",
-                },
-            });
-        }
-
-        if self.verification_gas_limit.is_some() && self.signing_scheme != SigningScheme::Eip1271 {
-            return Err(OrderbookError::InvalidQuoteRequest {
-                field: "verificationGasLimit",
-                reason: cow_sdk_core::ValidationReason::Precondition {
-                    details: "only eip1271 quote signing supports verificationGasLimit",
-                },
-            });
-        }
-
-        match (self.signing_scheme, self.onchain_order) {
-            (SigningScheme::Eip712 | SigningScheme::EthSign, true) => {
-                Err(OrderbookError::IncompatibleSigningScheme {
-                    signing_scheme: self.signing_scheme,
-                    onchain_order: self.onchain_order,
-                })
-            }
-            (
-                SigningScheme::Eip712
-                | SigningScheme::EthSign
-                | SigningScheme::Eip1271
-                | SigningScheme::PreSign,
-                _,
-            ) => Ok(()),
-        }
+    /// Currently infallible; retained as the fallible pre-dispatch hook.
+    pub const fn validate(&self) -> Result<(), OrderbookError> {
+        Ok(())
     }
 }
 
@@ -330,6 +625,11 @@ pub struct QuoteData {
     pub valid_to: u32,
     /// Effective app-data hash derived from the orderbook response.
     pub app_data: AppDataHash,
+    /// Explicit app-data hash echoed alongside full app data, present only
+    /// when the orderbook response carried both forms. Mirrors the optional
+    /// `OrderParameters.appDataHash` wire field.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub app_data_hash: Option<AppDataHash>,
     /// Network-cost amount echoed by the orderbook `/quote` response.
     ///
     /// Stored under the upstream wire name `feeAmount` so the deterministic
@@ -348,6 +648,27 @@ pub struct QuoteData {
     /// Buy-token balance destination.
     #[serde(default)]
     pub buy_token_balance: BuyTokenDestination,
+    /// Estimated gas units for the quoted trade, in the upstream
+    /// decimal-string wire shape. Read-only quote estimate populated from the
+    /// orderbook `/quote` response (ADR 0021); empty for a locally constructed
+    /// quote. Read through [`QuoteData::gas_amount`].
+    #[serde(skip_serializing_if = "String::is_empty")]
+    gas_amount: String,
+    /// Estimated gas price at quote time (wei per gas unit), in the upstream
+    /// decimal-string wire shape. Read-only quote estimate (ADR 0021); read
+    /// through [`QuoteData::gas_price`].
+    #[serde(skip_serializing_if = "String::is_empty")]
+    gas_price: String,
+    /// Sell-token price in native-token atoms per sell-token atom, in the
+    /// upstream decimal-string wire shape. Read-only quote estimate
+    /// (ADR 0021); read through [`QuoteData::sell_token_price`].
+    #[serde(skip_serializing_if = "String::is_empty")]
+    sell_token_price: String,
+    /// Signing scheme for the quoted order. Mirrors
+    /// `OrderParameters.signingScheme`, which defaults to `eip712`. Read-only
+    /// quote field (ADR 0021); read through [`QuoteData::signing_scheme`].
+    #[serde(default)]
+    signing_scheme: SigningScheme,
 }
 
 impl<'de> Deserialize<'de> for QuoteData {
@@ -375,6 +696,14 @@ impl<'de> Deserialize<'de> for QuoteData {
             sell_token_balance: SellTokenSource,
             #[serde(default)]
             buy_token_balance: BuyTokenDestination,
+            #[serde(default)]
+            gas_amount: String,
+            #[serde(default)]
+            gas_price: String,
+            #[serde(default)]
+            sell_token_price: String,
+            #[serde(default)]
+            signing_scheme: SigningScheme,
         }
 
         let wire = QuoteDataWire::deserialize(deserializer)?;
@@ -391,11 +720,16 @@ impl<'de> Deserialize<'de> for QuoteData {
             buy_amount: wire.buy_amount,
             valid_to: wire.valid_to,
             app_data,
+            app_data_hash: wire.app_data_hash,
             fee_amount: wire.fee_amount,
             kind: wire.kind,
             partially_fillable: wire.partially_fillable,
             sell_token_balance: wire.sell_token_balance,
             buy_token_balance: wire.buy_token_balance,
+            gas_amount: wire.gas_amount,
+            gas_price: wire.gas_price,
+            sell_token_price: wire.sell_token_price,
+            signing_scheme: wire.signing_scheme,
         })
     }
 }
@@ -425,11 +759,16 @@ impl QuoteData {
             buy_amount,
             valid_to,
             app_data,
+            app_data_hash: None,
             fee_amount: Amount::ZERO,
             kind,
             partially_fillable: false,
             sell_token_balance: SellTokenSource::Erc20,
             buy_token_balance: BuyTokenDestination::Erc20,
+            gas_amount: String::new(),
+            gas_price: String::new(),
+            sell_token_price: String::new(),
+            signing_scheme: SigningScheme::Eip712,
         }
     }
 
@@ -438,6 +777,36 @@ impl QuoteData {
     #[must_use]
     pub const fn network_cost_amount(&self) -> &Amount {
         &self.fee_amount
+    }
+
+    /// Returns the estimated gas units echoed by the orderbook `/quote`
+    /// response, or an empty string for a locally constructed quote. This is a
+    /// read-only quote estimate (ADR 0021).
+    #[must_use]
+    pub fn gas_amount(&self) -> &str {
+        &self.gas_amount
+    }
+
+    /// Returns the estimated gas price (wei per gas unit) echoed by the
+    /// orderbook `/quote` response. Read-only quote estimate (ADR 0021).
+    #[must_use]
+    pub fn gas_price(&self) -> &str {
+        &self.gas_price
+    }
+
+    /// Returns the sell-token price (native-token atoms per sell-token atom)
+    /// echoed by the orderbook `/quote` response. Read-only quote estimate
+    /// (ADR 0021).
+    #[must_use]
+    pub fn sell_token_price(&self) -> &str {
+        &self.sell_token_price
+    }
+
+    /// Returns the signing scheme for the quoted order. Defaults to `eip712`.
+    /// Read-only quote field (ADR 0021).
+    #[must_use]
+    pub const fn signing_scheme(&self) -> SigningScheme {
+        self.signing_scheme
     }
 
     /// Returns a copy of this payload with an explicit network-cost amount.
@@ -492,7 +861,14 @@ pub struct OrderQuoteResponse {
     /// Effective owner used for the quote, when returned by the API.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub from: Option<Address>,
-    /// Quote expiration timestamp rendered by the orderbook.
+    /// Quote price/fee expiry as the orderbook's ISO-8601 UTC string (for
+    /// example `2026-04-28T10:00:00Z`), exposed losslessly.
+    ///
+    /// cow-rs intentionally takes no datetime dependency; parse this with your
+    /// preferred datetime crate (`chrono::DateTime::parse_from_rfc3339`,
+    /// `time::OffsetDateTime::parse`, ...) when a typed value is needed. This is
+    /// when the quoted price and fee expire; the eventual order's validity is
+    /// the [`QuoteData::valid_to`] UNIX epoch on `quote`.
     pub expiration: String,
     /// Quote identifier used when submitting the corresponding order.
     #[serde(default, skip_serializing_if = "Option::is_none")]

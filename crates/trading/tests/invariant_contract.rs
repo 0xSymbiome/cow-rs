@@ -392,8 +392,15 @@ async fn quote_results_preserve_generated_override_shape_across_request_and_orde
         assert_eq!(request.receiver, expected_request_receiver);
         assert_eq!(result.trade_parameters.valid_for, expected_valid_for);
         assert_eq!(result.trade_parameters.valid_to, expected_valid_to);
-        assert_eq!(request.valid_for, expected_valid_for);
-        assert_eq!(request.valid_to, expected_valid_to);
+        let expected_validity = match (expected_valid_for, expected_valid_to) {
+            (Some(valid_for), None) => cow_sdk_orderbook::QuoteValidity::ValidFor(valid_for),
+            (None, Some(valid_to)) => cow_sdk_orderbook::QuoteValidity::ValidTo(valid_to),
+            // build_quote_request defaults to the protocol 30-minute window when
+            // neither side supplies a validity.
+            (None, None) => cow_sdk_orderbook::QuoteValidity::ValidFor(1_800),
+            (Some(_), Some(_)) => unreachable!("quote validity is mutually exclusive"),
+        };
+        assert_eq!(request.validity, expected_validity);
         assert_eq!(
             result.trade_parameters.partially_fillable,
             expected_partially_fillable

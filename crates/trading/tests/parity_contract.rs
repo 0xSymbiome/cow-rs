@@ -400,13 +400,9 @@ async fn assert_quote_validity_contract(case_id: &str, input: &Value, expected: 
         .cloned()
         .unwrap_or_else(|| panic!("case {case_id}: default validity request must be recorded"));
     assert_eq!(
-        default_request.valid_for,
-        Some(default_valid_for),
-        "case {case_id}: default-validity request.valid_for must equal the fixture default",
-    );
-    assert_eq!(
-        default_request.valid_to, None,
-        "case {case_id}: default-validity request.valid_to must remain None",
+        default_request.validity,
+        cow_sdk_orderbook::QuoteValidity::ValidFor(default_valid_for),
+        "case {case_id}: default-validity request must carry the fixture default validFor",
     );
 
     // Exact path: valid_to is set → request carries valid_to, valid_for cleared.
@@ -426,13 +422,9 @@ async fn assert_quote_validity_contract(case_id: &str, input: &Value, expected: 
         .cloned()
         .unwrap_or_else(|| panic!("case {case_id}: exact validity request must be recorded"));
     assert_eq!(
-        exact_request.valid_to,
-        Some(exact_valid_to),
-        "case {case_id}: exact-validity request.valid_to must equal the fixture value",
-    );
-    assert_eq!(
-        exact_request.valid_for, None,
-        "case {case_id}: exact-validity request.valid_for must be cleared",
+        exact_request.validity,
+        cow_sdk_orderbook::QuoteValidity::ValidTo(exact_valid_to),
+        "case {case_id}: exact-validity request must carry the fixture validTo",
     );
 
     // Conflict path: both set → typed rejection carrying the documented text.
@@ -509,7 +501,7 @@ async fn assert_eth_sell_defaults(case_id: &str, expected: &Value) {
         wrapped_native_token(SupportedChainId::Sepolia).address,
         "case {case_id}: request.sell_token must be the wrapped native token",
     );
-    let scheme_label = match request.signing_scheme {
+    let scheme_label = match request.signing_scheme.scheme() {
         SigningScheme::Eip712 => "eip712",
         SigningScheme::EthSign => "ethsign",
         SigningScheme::Eip1271 => "eip1271",
@@ -523,13 +515,20 @@ async fn assert_eth_sell_defaults(case_id: &str, expected: &Value) {
         "case {case_id}: request.signing_scheme must match the pinned vector",
     );
     assert!(
-        request.onchain_order,
-        "case {case_id}: request.onchain_order must be true",
+        request.signing_scheme.is_onchain_order(),
+        "case {case_id}: request signing scheme must be an on-chain order",
     );
+    let actual_verification_gas = match request.signing_scheme {
+        cow_sdk_orderbook::QuoteSigningScheme::Eip1271 {
+            verification_gas_limit,
+            ..
+        } => Some(verification_gas_limit),
+        _ => None,
+    };
     assert_eq!(
-        request.verification_gas_limit,
+        actual_verification_gas,
         Some(expected_verification_gas),
-        "case {case_id}: request.verification_gas_limit must match the pinned vector",
+        "case {case_id}: request verification gas limit must match the pinned vector",
     );
     assert_eq!(
         default_slippage_bps(SupportedChainId::Sepolia, true),

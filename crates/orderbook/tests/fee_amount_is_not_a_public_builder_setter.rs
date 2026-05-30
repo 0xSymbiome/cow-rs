@@ -85,6 +85,58 @@ fn order_creation_from_quote_zeroes_fee_amount_on_submission() {
 }
 
 #[test]
+fn quote_data_surfaces_gas_estimates_through_read_only_accessors() {
+    // The orderbook `/quote` response carries the network-fee inputs
+    // (`gasAmount`, `gasPrice`, `sellTokenPrice`) and the `signingScheme`.
+    // These are read-only quote estimates (ADR 0021): they deserialize from
+    // the wire and are surfaced through accessors, with no public setter.
+    let quote: QuoteData = serde_json::from_str(
+        r#"{
+            "sellToken": "0x0000000000000000000000000000000000000001",
+            "buyToken": "0x0000000000000000000000000000000000000002",
+            "sellAmount": "1000000000000000000",
+            "buyAmount": "2000000000000000000",
+            "validTo": 1700000000,
+            "appData": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "feeAmount": "3000000000000000",
+            "kind": "sell",
+            "partiallyFillable": true,
+            "sellTokenBalance": "erc20",
+            "buyTokenBalance": "erc20",
+            "gasAmount": "150000",
+            "gasPrice": "15000000000",
+            "sellTokenPrice": "400000000000000",
+            "signingScheme": "ethsign"
+        }"#,
+    )
+    .expect("quote with gas estimates must deserialize");
+
+    assert_eq!(quote.gas_amount(), "150000");
+    assert_eq!(quote.gas_price(), "15000000000");
+    assert_eq!(quote.sell_token_price(), "400000000000000");
+    assert_eq!(quote.signing_scheme(), SigningScheme::EthSign);
+
+    // A locally constructed quote leaves the gas estimates empty and defaults
+    // the signing scheme to `eip712`, matching the orderbook schema default.
+    let address = Address::new("0x0000000000000000000000000000000000000001")
+        .expect("literal address must parse");
+    let app_data =
+        AppDataHash::new("0x0000000000000000000000000000000000000000000000000000000000000000")
+            .expect("literal app-data hash must parse");
+    let local = QuoteData::new(
+        address,
+        address,
+        amount("1000"),
+        amount("900"),
+        1_700_000_000,
+        app_data,
+        OrderKind::Sell,
+    );
+    assert_eq!(local.gas_amount(), "");
+    assert_eq!(local.signing_scheme(), SigningScheme::Eip712);
+}
+
+#[test]
 fn order_response_wire_form_excludes_zero_legacy_executed_fee_amount_and_full_fee_amount() {
     use serde_json::json;
 

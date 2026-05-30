@@ -66,6 +66,25 @@ dtos:
     fixtures:
       - parity/fixtures/orderbook/order_quote_response.json
 
+  - schema: components.schemas.OrderParameters
+    rust_type: cow_sdk_orderbook::QuoteData
+    inventory: parity/openapi/order-parameters-inventory.yaml
+    required_fields:
+      - appData
+      - buyAmount
+      - buyToken
+      - feeAmount
+      - gasAmount
+      - gasPrice
+      - kind
+      - partiallyFillable
+      - sellAmount
+      - sellToken
+      - sellTokenPrice
+      - validTo
+    fixtures:
+      - parity/fixtures/orderbook/order_parameters.json
+
   - schema: components.schemas.Trade
     rust_type: cow_sdk_orderbook::Trade
     inventory: parity/openapi/trade-inventory.yaml

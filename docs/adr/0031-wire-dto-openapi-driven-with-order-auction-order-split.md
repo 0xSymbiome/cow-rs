@@ -6,7 +6,7 @@
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: orderbook, dto, openapi, compatibility
 - Anchors: Principle 11 (primary)
-- Related: [ADR 0017](0017-typed-orderbook-rejection-parser.md), [ADR 0027](0027-post-quantum-signing-absorption-plan.md)
+- Related: [ADR 0017](0017-typed-orderbook-rejection-parser.md), [ADR 0027](0027-post-quantum-signing-absorption-plan.md), [ADR 0058](0058-typed-quote-request-response-surface.md)
 
 ## Decision
 
@@ -39,6 +39,10 @@ keeps each Rust type faithful to its upstream schema.
 
 - Every public response DTO listed in `parity/openapi/coverage.yaml` has
   a Rust mirror that passes `openapi-coverage --validate`.
+- `OrderParameters` (the quote response payload) is covered by the
+  `cow_sdk_orderbook::QuoteData` mirror, so the `OrderQuoteResponse` `quote`
+  field is validated for field-level fidelity rather than as an opaque object
+  (see [ADR 0058](0058-typed-quote-request-response-surface.md)).
 - `Order` and `AuctionOrder` are exercised by separate fixtures.
 - `Order` does not carry auction-only fields.
 - `AuctionOrder` carries auction-only protocol-fee, interaction, created,
@@ -71,5 +75,7 @@ Forward-Compatible Public Surfaces.
 **Proven by:**
 
 - [Wire DTO Coverage Audit](../audit/wire-dto-coverage-audit.md)
+- [Quote Response Surface Audit](../audit/quote-response-surface-audit.md)
 - `scripts/parity-maintainer/src/openapi_coverage.rs`
 - `crates/orderbook/tests/transform_contract.rs`
+- `crates/orderbook/tests/openapi_dto_coverage.rs`

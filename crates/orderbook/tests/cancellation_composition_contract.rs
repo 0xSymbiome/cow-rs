@@ -21,7 +21,7 @@ use cow_sdk_core::{Amount, Cancellable, CancellationToken};
 use cow_sdk_orderbook::{
     AppDataObject, Auction, CompetitionOrderStatus, CowEnv, GetOrdersRequest, GetTradesRequest,
     NativePriceResponse, Order, OrderBookApi, OrderCancellations, OrderCreation, OrderQuoteRequest,
-    OrderQuoteResponse, OrderUid, QuoteSide, SigningScheme, SolverCompetitionResponse,
+    OrderQuoteResponse, OrderQuoteSide, OrderUid, SigningScheme, SolverCompetitionResponse,
     SupportedChainId, TotalSurplus, Trade,
 };
 use wiremock::{
@@ -474,7 +474,7 @@ fn quote_request() -> OrderQuoteRequest {
         sample_owner(),
         crate::common::sample_buy_token(),
         sample_owner(),
-        QuoteSide::sell(Amount::new("1000000").expect("test amount literal must be valid")),
+        OrderQuoteSide::sell(Amount::new("1000000").expect("test amount literal must be valid")),
     )
 }
 

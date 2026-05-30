@@ -89,8 +89,10 @@ async fn quote_validity_uses_valid_for_by_default_and_exact_valid_to_when_reques
         .last()
         .cloned()
         .expect("default quote request recorded");
-    assert_eq!(default_request.valid_for, Some(1_800));
-    assert_eq!(default_request.valid_to, None);
+    assert_eq!(
+        default_request.validity,
+        cow_sdk_orderbook::QuoteValidity::ValidFor(1_800)
+    );
 
     let mut exact_trade = sample_trade_parameters(OrderKind::Sell);
     exact_trade.valid_to = Some(2_524_608_000);
@@ -108,8 +110,10 @@ async fn quote_validity_uses_valid_for_by_default_and_exact_valid_to_when_reques
         .last()
         .cloned()
         .expect("exact validTo request recorded");
-    assert_eq!(exact_request.valid_to, Some(2_524_608_000));
-    assert_eq!(exact_request.valid_for, None);
+    assert_eq!(
+        exact_request.validity,
+        cow_sdk_orderbook::QuoteValidity::ValidTo(2_524_608_000)
+    );
 
     let mut invalid_trade = sample_trade_parameters(OrderKind::Sell);
     invalid_trade.valid_for = Some(600);
@@ -154,10 +158,11 @@ async fn native_sell_quote_uses_wrapped_native_and_onchain_defaults() {
     );
     assert_eq!(
         request.signing_scheme,
-        cow_sdk_orderbook::SigningScheme::Eip1271
+        cow_sdk_orderbook::QuoteSigningScheme::Eip1271 {
+            onchain_order: true,
+            verification_gas_limit: 0
+        }
     );
-    assert!(request.onchain_order);
-    assert_eq!(request.verification_gas_limit, Some(0));
 }
 
 #[tokio::test]
@@ -496,7 +501,10 @@ async fn quote_results_apply_advanced_owner_validity_slippage_and_partner_fee_pr
         address(crate::common::ALT_RECEIVER)
     );
     assert_eq!(result.trade_parameters.valid_to, Some(5_600_000));
-    assert_eq!(request.valid_to, Some(5_600_000));
+    assert_eq!(
+        request.validity,
+        cow_sdk_orderbook::QuoteValidity::ValidTo(5_600_000)
+    );
     assert_eq!(result.order_to_sign.valid_to, 5_600_000);
     assert_eq!(result.trade_parameters.slippage_bps, Some(77));
     assert_eq!(

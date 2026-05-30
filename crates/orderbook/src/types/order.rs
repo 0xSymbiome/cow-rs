@@ -89,20 +89,11 @@ impl Serialize for OrderCreation {
         map.serialize_entry("sellAmount", &self.sell_amount)?;
         map.serialize_entry("buyAmount", &self.buy_amount)?;
         map.serialize_entry("validTo", &self.valid_to)?;
-        match (self.app_data.as_ref(), self.app_data_hash.as_ref()) {
-            (None, None) => {}
-            (Some(full), None) => {
-                map.serialize_entry("appData", full)?;
-            }
-            (None, Some(hash)) => {
-                // services `Hash` variant: the hash hex string lives under the `appData` key.
-                map.serialize_entry("appData", hash)?;
-            }
-            (Some(full), Some(hash)) => {
-                map.serialize_entry("appData", full)?;
-                map.serialize_entry("appDataHash", hash)?;
-            }
-        }
+        super::app_data::serialize_app_data_pair(
+            &mut map,
+            self.app_data.as_deref(),
+            self.app_data_hash.as_ref(),
+        )?;
         map.serialize_entry("feeAmount", &self.fee_amount)?;
         if self.full_balance_check {
             map.serialize_entry("fullBalanceCheck", &self.full_balance_check)?;
