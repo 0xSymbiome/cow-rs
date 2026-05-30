@@ -57,6 +57,7 @@ pub enum RetrySignal {
 /// so the caller controls the terminal error shape while the runner controls
 /// the retry decision.
 #[non_exhaustive]
+#[derive(Debug)]
 pub enum AttemptOutcome<T, E> {
     /// The attempt succeeded; [`run_with_retry`] returns `Ok(value)`.
     Success(T),
@@ -71,6 +72,7 @@ pub enum AttemptOutcome<T, E> {
 
 /// Selects which rate-limiter bucket an attempt draws a token from.
 #[non_exhaustive]
+#[derive(Debug)]
 pub enum LimiterKey<'a> {
     /// Draw from the shared global bucket.
     Global,
