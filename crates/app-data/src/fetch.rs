@@ -114,6 +114,13 @@ pub async fn fetch_doc_from_cid_with_policy(
 
 /// Fetches an app-data document using the app-data hex digest.
 ///
+/// The primary way to read a document you uploaded is the orderbook
+/// `GET /app_data/{hash}` request, which is served from the orderbook database
+/// and needs no IPFS gateway. This helper is the secondary, not-in-database
+/// path: it derives the keccak-256 CIDv1 from `app_data_hex` and reads it
+/// through the injected transport, so `ipfs_uri` must point at a gateway that
+/// can resolve keccak-CID documents — a generic public gateway cannot.
+///
 /// # Errors
 ///
 /// Returns [`AppDataError`] if CID derivation, policy creation, transport execution,

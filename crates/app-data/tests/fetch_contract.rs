@@ -4,8 +4,8 @@ use std::{collections::HashMap, sync::Mutex};
 
 use async_trait::async_trait;
 use cow_sdk_app_data::{
-    AppDataError, IpfsConfig, IpfsFetchPolicy, IpfsFetchTransport, fetch_doc_from_app_data_hex,
-    fetch_doc_from_cid, fetch_doc_from_cid_with_policy,
+    AppDataError, DEFAULT_IPFS_READ_URI, IpfsConfig, IpfsFetchPolicy, IpfsFetchTransport,
+    fetch_doc_from_app_data_hex, fetch_doc_from_cid, fetch_doc_from_cid_with_policy,
 };
 use serde_json::Value;
 
@@ -45,7 +45,7 @@ impl IpfsFetchTransport for RecordingFetchTransport {
 #[tokio::test]
 async fn async_trait_fetches_cid_with_default_ipfs_uri() {
     let transport = RecordingFetchTransport::default().with_response(
-        &format!("https://cloudflare-ipfs.com/ipfs/{CID}"),
+        &format!("https://gnosis.mypinata.cloud/ipfs/{CID}"),
         APP_DATA_STRING,
     );
 
@@ -56,14 +56,14 @@ async fn async_trait_fetches_cid_with_default_ipfs_uri() {
     );
     assert_eq!(
         transport.requests(),
-        vec![format!("https://cloudflare-ipfs.com/ipfs/{CID}")]
+        vec![format!("https://gnosis.mypinata.cloud/ipfs/{CID}")]
     );
 }
 
 #[tokio::test]
 async fn async_trait_fetches_doc_from_app_data_hex() {
     let transport = RecordingFetchTransport::default().with_response(
-        &format!("https://cloudflare-ipfs.com/ipfs/{CID}"),
+        &format!("https://gnosis.mypinata.cloud/ipfs/{CID}"),
         APP_DATA_STRING,
     );
 
@@ -77,7 +77,7 @@ async fn async_trait_fetches_doc_from_app_data_hex() {
     );
     assert_eq!(
         transport.requests(),
-        vec![format!("https://cloudflare-ipfs.com/ipfs/{CID}")]
+        vec![format!("https://gnosis.mypinata.cloud/ipfs/{CID}")]
     );
 }
 
@@ -104,11 +104,23 @@ fn fetch_policy_defaults_and_trims_explicit_read_base_urls() {
 
     assert_eq!(
         default_policy.read_base_uri(),
-        "https://cloudflare-ipfs.com/ipfs"
+        "https://gnosis.mypinata.cloud/ipfs"
     );
     assert_eq!(
         explicit_policy.read_base_uri(),
         "https://ipfs.example.test/ipfs"
+    );
+}
+
+/// Pins the default IPFS read gateway to the upstream `@cowprotocol/config`
+/// value. App-data reads resolve keccak-256 CIDv1 documents, which a generic
+/// public gateway cannot serve, so an upstream gateway change must land here in
+/// lockstep rather than surface as a silent read failure for consumers.
+#[test]
+fn default_ipfs_read_gateway_tracks_upstream_config() {
+    assert_eq!(
+        DEFAULT_IPFS_READ_URI, "https://gnosis.mypinata.cloud/ipfs",
+        "DEFAULT_IPFS_READ_URI must mirror @cowprotocol/config; update both together",
     );
 }
 
@@ -170,11 +182,11 @@ async fn fetch_helpers_accept_typed_policy_and_custom_read_base_uri() {
 async fn fetch_helpers_keep_distinct_cid_requests() {
     let transport = RecordingFetchTransport::default()
         .with_response(
-            &format!("https://cloudflare-ipfs.com/ipfs/{CID}"),
+            &format!("https://gnosis.mypinata.cloud/ipfs/{CID}"),
             APP_DATA_STRING,
         )
         .with_response(
-            &format!("https://cloudflare-ipfs.com/ipfs/{CID_2}"),
+            &format!("https://gnosis.mypinata.cloud/ipfs/{CID_2}"),
             APP_DATA_STRING_2,
         );
 
@@ -189,8 +201,8 @@ async fn fetch_helpers_keep_distinct_cid_requests() {
     assert_eq!(
         transport.requests(),
         vec![
-            format!("https://cloudflare-ipfs.com/ipfs/{CID}"),
-            format!("https://cloudflare-ipfs.com/ipfs/{CID_2}")
+            format!("https://gnosis.mypinata.cloud/ipfs/{CID}"),
+            format!("https://gnosis.mypinata.cloud/ipfs/{CID_2}")
         ]
     );
 }
@@ -199,7 +211,7 @@ async fn fetch_helpers_keep_distinct_cid_requests() {
 async fn fetch_doc_from_cid_with_policy_rejects_malformed_json() {
     let policy = IpfsFetchPolicy::default();
     let transport = RecordingFetchTransport::default().with_response(
-        &format!("https://cloudflare-ipfs.com/ipfs/{CID}"),
+        &format!("https://gnosis.mypinata.cloud/ipfs/{CID}"),
         "not-json",
     );
 
