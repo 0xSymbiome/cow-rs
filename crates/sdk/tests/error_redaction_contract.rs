@@ -2,7 +2,7 @@ use std::fmt::{Debug, Display};
 
 use cow_sdk::{
     SdkError,
-    app_data::{AppDataError, SchemaVersion},
+    app_data::{AppDataError, AppDataParams, SchemaVersion},
     contracts::ContractsError,
     core::{
         Address, Amount, AppCodeError, CoreError, CowEnv, HostPolicyError, TransportError,
@@ -167,7 +167,7 @@ fn orderbook_errors_redact_api_transport_and_source_payloads() {
         OrderbookError::HostPolicy(HostPolicyError::HostNotAllowed {
             host: secret_payload().into(),
         }),
-        OrderbookError::Serialization(json_error()),
+        OrderbookError::from(json_error()),
         OrderbookError::InvalidTradesQuery {
             field: "owner",
             reason: ValidationReason::Missing,
@@ -313,6 +313,56 @@ fn app_data_errors_redact_public_serialized_payloads() {
 
     assert_all_render("AppDataError", &errors);
     assert_all_serialize("AppDataError", &errors);
+}
+
+/// The orderbook decode-failure variant must surface only the serde failure
+/// category and structural position. A `serde_json::Error` rendering can echo
+/// the decoded upstream response bytes — an unknown field name under
+/// `deny_unknown_fields`, or a type-mismatched value — so the construction
+/// path drops them before the `Display`/`Debug` surface ever sees them.
+#[test]
+fn orderbook_serialization_error_drops_decoded_response_bytes() {
+    let errors = [
+        OrderbookError::from(serde_unknown_field_error()),
+        OrderbookError::from(serde_type_mismatch_error()),
+    ];
+    assert_all_render("OrderbookError::Serialization", &errors);
+}
+
+/// The typed sub-metadata deserializer lifts caller-supplied `metadata.signer`,
+/// `metadata.flashloan`, and `metadata.hooks` values out of an app-data
+/// document. A malformed value must surface a fixed, field-tagged message and
+/// never the caller's offending key or value, even though the raw
+/// `serde_json::Error` rendering would echo it.
+#[test]
+fn app_data_metadata_parse_failures_do_not_echo_caller_input() {
+    let signer_input = json!({ "metadata": { "signer": PRIVATE_KEY_SECRET } });
+
+    let mut flashloan_object = serde_json::Map::new();
+    flashloan_object.insert(AUTH_SECRET.to_owned(), json!(1));
+    let flashloan_input = json!({ "metadata": { "flashloan": Value::Object(flashloan_object) } });
+
+    for input in [signer_input, flashloan_input] {
+        let serde_error = serde_json::from_value::<AppDataParams>(input)
+            .err()
+            .expect("malformed metadata must fail to deserialize");
+        let error = AppDataError::from(serde_error);
+        assert_render("AppDataError::Json (metadata parse)", &error);
+        assert_serialize("AppDataError::Json (metadata parse)", &error);
+    }
+}
+
+/// `AppDataError::Calculation` boxes a typed source whose rendering could embed
+/// caller-derived bytes. The variant must surface only the stable operation
+/// label through `Display` and `Serialize`; the source detail stays reachable
+/// solely through [`std::error::Error::source`].
+#[test]
+fn app_data_calculation_error_does_not_render_boxed_source() {
+    let error = AppDataError::Calculation {
+        source: Box::new(SecretSourceError),
+    };
+    assert_render("AppDataError::Calculation", &error);
+    assert_serialize("AppDataError::Calculation", &error);
 }
 
 #[test]
@@ -875,6 +925,33 @@ fn json_error() -> serde_json::Error {
     serde_json::from_str::<Value>("{ malformed").unwrap_err()
 }
 
+/// A `serde_json::Error` whose rendering echoes a secret-bearing field *name*,
+/// produced by feeding a `deny_unknown_fields` struct an unknown field keyed on
+/// a redaction sentinel.
+fn serde_unknown_field_error() -> serde_json::Error {
+    #[derive(serde::Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Strict {
+        #[serde(default)]
+        #[allow(dead_code)]
+        known: u8,
+    }
+
+    let mut object = serde_json::Map::new();
+    object.insert(AUTH_SECRET.to_owned(), json!(1));
+    serde_json::from_value::<Strict>(Value::Object(object))
+        .err()
+        .expect("an unknown field must fail the deny_unknown_fields struct")
+}
+
+/// A `serde_json::Error` whose rendering echoes a secret-bearing *value*,
+/// produced by a type mismatch feeding a numeric target a secret string.
+fn serde_type_mismatch_error() -> serde_json::Error {
+    serde_json::from_value::<u64>(json!(PRIVATE_KEY_SECRET))
+        .err()
+        .expect("a string payload must fail u64 deserialization")
+}
+
 fn address(value: &str) -> Address {
     Address::new(value).expect("address fixture must parse")
 }
@@ -899,3 +976,14 @@ impl Display for SafeSourceError {
 }
 
 impl std::error::Error for SafeSourceError {}
+
+#[derive(Debug)]
+struct SecretSourceError;
+
+impl Display for SecretSourceError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str(&secret_payload())
+    }
+}
+
+impl std::error::Error for SecretSourceError {}

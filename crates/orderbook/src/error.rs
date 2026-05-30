@@ -78,9 +78,24 @@ pub enum OrderbookError {
     /// Explicit service endpoint override failed host-policy validation.
     #[error(transparent)]
     HostPolicy(#[from] HostPolicyError),
-    /// JSON or text decoding failure while parsing a successful or error response.
-    #[error("serialization error: {0}")]
-    Serialization(#[from] serde_json::Error),
+    /// JSON decoding of an orderbook response body failed.
+    ///
+    /// Only the serde failure category and the structural position are
+    /// surfaced. The raw `serde_json::Error` rendering can echo bytes from
+    /// the decoded upstream response body, so the orderbook client never
+    /// renders it into a `Display` or `Debug` surface (ADR 0025); the
+    /// `category`/`line`/`column` triple is the safe structural diagnostic.
+    #[error("serialization error ({category}) at line {line} column {column}")]
+    Serialization {
+        /// serde failure category: `"syntax"`, `"data"`, `"eof"`, or `"io"`.
+        category: &'static str,
+        /// 1-based line in the response body where decoding failed, or `0`
+        /// when the position is unknown.
+        line: usize,
+        /// 1-based column in the response body where decoding failed, or `0`
+        /// when the position is unknown.
+        column: usize,
+    },
     /// Invalid trades query assembled locally before any network request was sent.
     #[error("invalid trades query for field `{field}`: {reason}")]
     InvalidTradesQuery {
@@ -175,6 +190,34 @@ impl From<OrderBookApiError> for OrderbookError {
 impl From<Cancelled> for OrderbookError {
     fn from(_: Cancelled) -> Self {
         Self::Cancelled
+    }
+}
+
+impl From<serde_json::Error> for OrderbookError {
+    /// Captures only the serde failure category and structural position.
+    ///
+    /// The raw `serde_json::Error` rendering can echo bytes from the decoded
+    /// upstream response body (a `data` failure renders the offending value,
+    /// an unknown field renders its name), so it is intentionally dropped
+    /// here. Surfacing only the `category`/`line`/`column` triple keeps the
+    /// orderbook decode-failure diagnostic free of upstream-authored content
+    /// (ADR 0025).
+    fn from(error: serde_json::Error) -> Self {
+        Self::Serialization {
+            category: serialization_error_category(&error),
+            line: error.line(),
+            column: error.column(),
+        }
+    }
+}
+
+/// Maps a `serde_json` failure to its stable category tag.
+fn serialization_error_category(error: &serde_json::Error) -> &'static str {
+    match error.classify() {
+        serde_json::error::Category::Io => "io",
+        serde_json::error::Category::Syntax => "syntax",
+        serde_json::error::Category::Data => "data",
+        serde_json::error::Category::Eof => "eof",
     }
 }
 

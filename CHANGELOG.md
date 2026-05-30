@@ -139,6 +139,25 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- `cow_sdk_orderbook::OrderbookError::Serialization` now carries a structured
+  `{ category, line, column }` triple instead of wrapping the raw
+  `serde_json::Error`. The orderbook client surfaces only the serde failure
+  category (`syntax`, `data`, `eof`, or `io`) and the 1-based structural
+  position of a response-decode failure, so a malformed or unexpected orderbook
+  response body can no longer echo decoded bytes through the error's `Display`
+  or `Debug` surface (ADR 0025). Construction stays ergonomic through
+  `From<serde_json::Error>`.
+- `cow_sdk_app_data::AppDataError::Calculation` renders only the stable
+  `appDataHex calculation failed` label through `Display` and JSON
+  serialization; the typed source stays reachable through
+  `std::error::Error::source` for callers that deliberately cross the redaction
+  boundary, so a future hashing or CID backend cannot leak caller-derived bytes
+  through the default error surface (ADR 0025).
+- Malformed `metadata.signer`, `metadata.flashloan`, and `metadata.hooks`
+  values in an app-data document now surface a fixed, field-tagged validation
+  message that names only the public wire key, never the caller-supplied key or
+  value, keeping the app-data document parser inside the credential-redaction
+  convention (ADR 0025).
 - Renamed the canonical signed-order payload `cow_sdk_core::UnsignedOrder` to
   `cow_sdk_core::OrderData`, aligning the Rust SDK's name with the upstream
   services `model::order::OrderData` it mirrors byte-for-byte. The rename is

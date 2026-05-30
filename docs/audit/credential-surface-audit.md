@@ -1,9 +1,9 @@
 # Credential Surface Audit
 
 Status: Current
-Last reviewed: 2026-05-28
+Last reviewed: 2026-05-30
 Owning surface: Credential-bearing builder storage, URL configuration, host-policy errors, public error diagnostics, wallet add-chain payloads, Pinata upload-trait headers, wasm error envelopes, and the SDK facade
-Refresh trigger: Changes to orderbook or subgraph builder API-key storage, URL-bearing public configuration fields, external host-policy validation, public error message/detail/body/data fields, browser wallet add-chain URL payload construction, `IpfsUploadTransport::post_json` header typing or Pinata header assembly, the `redact_response_body` token-detection layers, the `cow_sdk_app_data::AppDataError::Schema` rendering pipeline or the matching `ValidationResult::errors` field's safe-by-construction masking surface, or any new credential-bearing surface that lands without a redacting storage type or an equivalent safe-by-construction render
+Refresh trigger: Changes to orderbook or subgraph builder API-key storage, URL-bearing public configuration fields, external host-policy validation, public error message/detail/body/data fields, browser wallet add-chain URL payload construction, `IpfsUploadTransport::post_json` header typing or Pinata header assembly, the `redact_response_body` token-detection layers, the `cow_sdk_app_data::AppDataError::Schema` rendering pipeline or the matching `ValidationResult::errors` field's safe-by-construction masking surface, the `cow_sdk_orderbook::OrderbookError::Serialization` structural-diagnostic shape or its `From<serde_json::Error>` construction, the `cow_sdk_app_data::AppDataError::Calculation` render, the `cow_sdk_app_data::AppDataParams` sub-metadata deserializer, or any new credential-bearing surface that lands without a redacting storage type or an equivalent safe-by-construction render
 Related docs:
 - [ADR 0025](../adr/0025-workspace-url-redaction-convention.md)
 - [URL Credential Redaction Audit](url-credential-redaction-audit.md)
@@ -37,6 +37,7 @@ It does not cover unrelated transport error redaction or credential handling out
 | Host-policy errors | Orderbook and subgraph host-policy failures retain only a redacted host component and never serialize raw URL credentials, paths, queries, or fragments | Conforms |
 | Public error diagnostics | Provider, signer, RPC, transport, response-body, subgraph context, orderbook API, orderbook rejection, and facade error payloads wrap secret-bearing messages in `Redacted<T>`, render through a safe-by-construction sanitization pipeline, or sanitize protocol identifiers before rendering, and redact credential-bearing diagnostics across `Debug`, `Display`, and existing `Serialize` surfaces | Conforms |
 | App-data schema validator output | `AppDataError::Schema.message` and `ValidationResult::errors` carry a path-prefixed validator render produced through `jsonschema::ValidationError::masked()` with surgical paths for the variant kinds that embed caller content in the kind itself (rejected-property-name lists are rendered as counts rather than names), so the rendered text never embeds caller-supplied instance values or property names and is safe to interpolate into `Display`, `Debug`, and `Serialize` without a `Redacted<T>` wrapper | Conforms |
+| JSON decode-failure and digest-calculation diagnostics | The orderbook response-decode failure surfaces only the serde failure category and the 1-based line/column position, the app-data document sub-metadata deserializer maps malformed caller values to fixed field-tagged messages, and `AppDataError::Calculation` surfaces only a stable label, so none of these paths renders the raw serde error or boxed source that could echo decoded or caller-supplied bytes | Conforms |
 | Pinata upload trait | `IpfsUploadTransport::post_json` carries `Redacted<String>` header values and the Pinata header vector stays redacted under `Debug` | Conforms |
 | WASM error envelope | `WasmError` maps transport, app-data, signing, orderbook, subgraph, and trading errors through display-safe messages and redacted response-body handling | Conforms |
 | Response-body credential scanner | `redact_response_body` enforces a defense-in-depth detector pipeline (JWT, Bearer, strict URL, bare userinfo, credential-keyed value with recursive key-prefix scanning) and the credential-key matcher recognizes `apikey`, `token`, `secret`, `password`, `authorization`, and `bearer` substrings so a partial or mangled credential key does not bypass redaction | Conforms |
@@ -94,6 +95,31 @@ sanitized orderbook rejection tags remain visible so errors stay actionable.
 The SDK facade regression test constructs every reviewed public error family
 with URL, bearer-token, private-key-shaped, and PEM-shaped payloads and
 verifies no secret substring appears in public renderings.
+
+### JSON Decode-Failure And Digest-Calculation Diagnostics
+
+`cow_sdk_orderbook::OrderbookError::Serialization` carries a structured
+`{ category, line, column }` triple rather than the raw `serde_json::Error`.
+The `From<serde_json::Error>` conversion in `crates/orderbook/src/error.rs`
+captures only the serde failure category (`syntax`, `data`, `eof`, or `io`)
+and the 1-based line and column position, so a malformed or unexpected
+orderbook response body — an unknown field under `deny_unknown_fields`, or a
+type-mismatched value — can never reach the error's `Display` or `Debug`
+surface. The orderbook decode path therefore stays free of upstream-authored
+content while keeping an actionable structural diagnostic.
+
+`cow_sdk_app_data::AppDataParams` lifts caller-supplied `metadata.signer`,
+`metadata.flashloan`, and `metadata.hooks` values out of an app-data document
+through scoped deserializers. A malformed value maps to a fixed, field-tagged
+message that names only the public wire key, so the offending caller key or
+value is never folded into the surfaced error.
+
+`cow_sdk_app_data::AppDataError::Calculation` renders only the stable
+`appDataHex calculation failed` label through `Display` and `Serialize`; the
+boxed typed source stays behind the `#[source]` chain for callers that
+deliberately cross the redaction boundary. The label-only render keeps the
+digest-calculation surface safe even if a future hashing or CID backend embeds
+caller-derived bytes in its own message.
 
 ### App-Data Schema Validator Output
 
@@ -161,6 +187,7 @@ Primary implementation points:
 - `crates/orderbook/src/request.rs`
 - `crates/app-data/src/types/ipfs.rs`
 - `crates/app-data/src/errors.rs`
+- `crates/app-data/src/types/params.rs`
 - `crates/app-data/src/pinning.rs`
 - `crates/sdk/src/lib.rs`
 - `crates/wasm/src/exports/errors.rs`
@@ -177,6 +204,9 @@ Primary regression coverage:
 - `crates/app-data/tests/pinning_contract.rs::pinning_headers_debug_redacts_secret_bytes`
 - `crates/app-data/tests/pinning_contract.rs::pinning_config_display_redacts_secret_bytes`
 - `crates/sdk/tests/error_redaction_contract.rs`
+- `crates/sdk/tests/error_redaction_contract.rs::orderbook_serialization_error_drops_decoded_response_bytes`
+- `crates/sdk/tests/error_redaction_contract.rs::app_data_metadata_parse_failures_do_not_echo_caller_input`
+- `crates/sdk/tests/error_redaction_contract.rs::app_data_calculation_error_does_not_render_boxed_source`
 - `crates/app-data/tests/schema_contract.rs::schema_error_message_masks_failing_instance_values`
 - `crates/app-data/tests/schema_contract.rs::schema_error_message_does_not_leak_unexpected_property_names`
 - `crates/core/tests/config_contract.rs::external_host_policy_accepts_canonical_and_explicit_hosts_only`

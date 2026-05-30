@@ -609,8 +609,11 @@ async fn request_json_surfaces_malformed_success_payloads() {
     .expect_err("malformed success payload should fail");
 
     match error {
-        cow_sdk_orderbook::OrderbookError::Serialization(message) => {
-            assert!(!message.to_string().is_empty());
+        cow_sdk_orderbook::OrderbookError::Serialization { category, .. } => {
+            assert!(
+                matches!(category, "syntax" | "data" | "eof" | "io"),
+                "serialization category must be a known tag, got {category:?}",
+            );
         }
         other => panic!("expected serialization error, got {other:?}"),
     }
@@ -941,11 +944,10 @@ fn orderbook_transport_error_from_conversion_classifies_without_url_exposure() {
                 "wrapped transport detail must not include the URL scheme prefix: {detail}"
             );
         }
-        OrderbookError::Serialization(inner) => {
-            let body = inner.to_string();
+        OrderbookError::Serialization { .. } => {
             assert!(
-                !body.contains("http://"),
-                "wrapped serialization body must not include the URL scheme prefix: {body}"
+                !rendered.contains("http://"),
+                "serialization diagnostic must not include the URL scheme prefix: {rendered}"
             );
         }
         other => panic!("expected Transport or Serialization variant, got {other:?}"),

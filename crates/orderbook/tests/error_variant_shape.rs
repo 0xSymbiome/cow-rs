@@ -35,11 +35,20 @@ fn serialization_variant_wraps_serde_json_error_via_from_conversion() {
     let error: OrderbookError = source.into();
 
     match &error {
-        OrderbookError::Serialization(inner) => {
-            let _ = inner;
+        OrderbookError::Serialization {
+            category,
+            line,
+            column,
+        } => {
+            assert_eq!(*category, "syntax");
+            assert!(*line >= 1 && *column >= 1);
         }
-        other => panic!("expected Serialization(#[from] serde_json::Error), got {other:?}"),
+        other => panic!("expected Serialization variant, got {other:?}"),
     }
+    assert!(
+        error.to_string().contains("serialization error (syntax)"),
+        "Display must surface the structural category, not the serde message: {error}",
+    );
 }
 
 #[test]

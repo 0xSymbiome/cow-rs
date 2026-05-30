@@ -129,23 +129,36 @@ impl<'de> Deserialize<'de> for AppDataParams {
             mut metadata,
         } = Wire::deserialize(deserializer)?;
 
+        // The typed sub-metadata values come from the caller's own app-data
+        // document. The inner `serde_json::Error` rendering echoes the
+        // offending key or value, so each failure is mapped to a fixed,
+        // field-tagged message that names only the public wire key and never
+        // the caller-supplied bytes (ADR 0025). The structural detail is
+        // intentionally dropped rather than folded into the deserializer
+        // error message.
         let signer = match metadata.remove("signer") {
-            Some(value) => {
-                Some(serde_json::from_value::<Address>(value).map_err(serde::de::Error::custom)?)
-            }
+            Some(value) => Some(
+                serde_json::from_value::<Address>(value).map_err(|_| {
+                    <D::Error as serde::de::Error>::custom("metadata.signer is not a valid address")
+                })?,
+            ),
             None => None,
         };
         let flashloan = match metadata.remove("flashloan") {
             Some(value) => Some(
-                serde_json::from_value::<crate::metadata::FlashloanHints>(value)
-                    .map_err(serde::de::Error::custom)?,
+                serde_json::from_value::<crate::metadata::FlashloanHints>(value).map_err(|_| {
+                    <D::Error as serde::de::Error>::custom(
+                        "metadata.flashloan failed flash-loan hints validation",
+                    )
+                })?,
             ),
             None => None,
         };
         let hooks = match metadata.get("hooks").cloned() {
             Some(value) => Some(
-                serde_json::from_value::<crate::metadata::HookList>(value)
-                    .map_err(serde::de::Error::custom)?,
+                serde_json::from_value::<crate::metadata::HookList>(value).map_err(|_| {
+                    <D::Error as serde::de::Error>::custom("metadata.hooks failed hooks validation")
+                })?,
             ),
             None => None,
         };

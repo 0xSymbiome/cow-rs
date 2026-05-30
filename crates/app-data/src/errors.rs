@@ -94,12 +94,20 @@ pub enum AppDataError {
     },
     /// CID or digest calculation failed with a typed underlying error
     /// preserved through the error-source chain.
-    #[error("appDataHex calculation failed: {source}")]
+    ///
+    /// The boxed source is intentionally not rendered into `Display` or
+    /// `Serialize`: a future hashing or CID backend could embed
+    /// caller-derived bytes in its message, so only the stable operation
+    /// label is surfaced (ADR 0025). Callers that need the precise failure
+    /// walk [`std::error::Error::source`].
+    #[error("appDataHex calculation failed")]
     Calculation {
         /// Typed source error returned by the underlying hashing or CID
         /// crate. Boxed as a trait object so the variant can carry either
         /// a [`cid`]-crate or a [`multihash`]-crate failure without
-        /// widening the enum surface.
+        /// widening the enum surface. Reachable through
+        /// [`std::error::Error::source`] for callers that deliberately cross
+        /// the redaction boundary.
         #[source]
         source: Box<dyn std::error::Error + Send + Sync + 'static>,
     },
@@ -186,9 +194,12 @@ impl Serialize for AppDataError {
                 map.serialize_entry("field", field)?;
                 map.serialize_entry("reason", &reason.to_string())?;
             }
-            Self::Calculation { source } => {
+            Self::Calculation { .. } => {
                 map.serialize_entry("type", "Calculation")?;
-                map.serialize_entry("message", &source.to_string())?;
+                // The boxed source is not serialized: it could embed
+                // caller-derived bytes. Only the stable label is emitted
+                // (ADR 0025); callers walk `Error::source` for the detail.
+                map.serialize_entry("message", "appDataHex calculation failed")?;
             }
             Self::Transport { class, detail } => {
                 map.serialize_entry("type", "Transport")?;
