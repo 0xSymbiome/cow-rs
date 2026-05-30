@@ -2,8 +2,8 @@
 
 use cow_sdk_alloy::AlloyClient;
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, BuyTokenDestination, OrderKind, SellTokenSource, Signer,
-    SigningProvider, SupportedChainId, UnsignedOrder,
+    Address, Amount, AppDataHash, BuyTokenDestination, OrderData, OrderKind, SellTokenSource,
+    Signer, SigningProvider, SupportedChainId,
 };
 use cow_sdk_signing::{ORDER_PRIMARY_TYPE, order_typed_data_payload};
 
@@ -69,8 +69,8 @@ fn order_payload() -> cow_sdk_core::TypedDataPayload {
     order_typed_data_payload(SupportedChainId::Mainnet, &sample_order(), None).unwrap()
 }
 
-fn sample_order() -> UnsignedOrder {
-    UnsignedOrder::new(
+fn sample_order() -> OrderData {
+    OrderData::new(
         Address::new("0xd057b63f5e69cf1b929b356b579cba08d7688048").unwrap(),
         Address::new("0x7b878668cd1a3adf89764d3a331e0a7bb832192d").unwrap(),
         Address::new("0xa6ddbd0de6b310819b49f680f65871bee85f517e").unwrap(),

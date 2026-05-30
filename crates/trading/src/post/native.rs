@@ -1,5 +1,5 @@
 use cow_sdk_core::{Address, Signer};
-use cow_sdk_orderbook::{OrderCreation, SigningScheme};
+use cow_sdk_orderbook::SigningScheme;
 
 use super::generic::current_unix_seconds;
 use crate::types::{validate_orderbook_context, validate_orderbook_env_context};
@@ -74,22 +74,11 @@ where
     )
     .await?;
 
-    let preview_from = tx.from;
-    let preview = OrderCreation::new(
-        tx.order_to_sign.sell_token,
-        tx.order_to_sign.buy_token,
-        tx.order_to_sign.sell_amount,
-        tx.order_to_sign.buy_amount,
-        tx.order_to_sign.valid_to,
-        tx.order_to_sign.kind,
-        SigningScheme::Eip1271,
-        String::new(),
-        preview_from,
-    );
     let validator = OrderBoundsValidator::services_default_for_chain(canonical_chain_id);
     validator
         .validate(
-            &preview,
+            &tx.order_to_sign,
+            tx.from,
             SigningScheme::Eip1271,
             app_data_signer,
             current_unix_seconds(),

@@ -18,13 +18,13 @@ use sha3::{Digest, Keccak256};
 
 use alloy_primitives::Bytes;
 use cow_sdk_contracts::{
-    InteractionLike, InteractionStage, Order, OrderFlags, OrderRefunds, SettlementEncoder,
-    Signature, SigningScheme, TokenRegistry, Trade, TradeExecution, TradeFlags, decode_order,
+    InteractionLike, InteractionStage, OrderFlags, OrderRefunds, SettlementEncoder, Signature,
+    SigningScheme, TokenRegistry, Trade, TradeExecution, TradeFlags, decode_order,
     decode_order_flags, decode_trade_flags, encode_order_flags, encode_trade_flags,
 };
 use cow_sdk_core::{
-    Address, Amount, AppDataHex, BuyTokenDestination, OrderKind, OrderUid, SellTokenSource,
-    TypedDataDomain,
+    Address, Amount, AppDataHex, BuyTokenDestination, OrderData, OrderKind, OrderUid,
+    SellTokenSource, TypedDataDomain,
 };
 
 use common::fixture_case;
@@ -42,11 +42,11 @@ fn sample_domain() -> TypedDataDomain {
     )
 }
 
-fn sample_order(kind: OrderKind, partially_fillable: bool) -> Order {
-    Order::new(
+fn sample_order(kind: OrderKind, partially_fillable: bool) -> OrderData {
+    OrderData::new(
         Address::new("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2").unwrap(),
         Address::new("0x6b175474e89094c44da98b954eedeac495271d0f").unwrap(),
-        None,
+        Address::ZERO,
         Amount::new("1000000000000000000").unwrap(),
         Amount::new("2000000000000000000000").unwrap(),
         1_709_990_000,
@@ -55,8 +55,8 @@ fn sample_order(kind: OrderKind, partially_fillable: bool) -> Order {
         Amount::new("5000000000000000").unwrap(),
         kind,
         partially_fillable,
-        Some(SellTokenSource::Internal),
-        Some(BuyTokenDestination::Internal),
+        SellTokenSource::Internal,
+        BuyTokenDestination::Internal,
     )
 }
 

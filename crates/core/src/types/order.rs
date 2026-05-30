@@ -134,21 +134,25 @@ pub fn token_id(chain_id: ChainId, address: &Address) -> String {
 
 /// User-domain order shape prepared for signing and trading workflows.
 ///
-/// This is not an orderbook wire DTO or an ABI struct. Contract hashing converts
-/// it into `cow_sdk_contracts::Order`, where receiver and token-balance defaults
-/// are normalized for EIP-712 hashing.
+/// It is the canonical signed-order payload and mirrors the upstream services
+/// `OrderData` byte-for-byte (the same field set, EIP-712 type hash, and field
+/// ordering). This is not an orderbook wire DTO or an ABI struct. It is hashed
+/// directly by `cow_sdk_contracts::hash_order` for the EIP-712 digest and UID
+/// (a `receiver` of `address(0)` is the legal "pay-to-owner" sentinel). It is
+/// submitted to the orderbook as `cow_sdk_orderbook::OrderCreation` and read
+/// back as the separate `cow_sdk_orderbook::Order` response record.
 ///
-/// Downstream crates construct orders through [`UnsignedOrder::new`] and the
+/// Downstream crates construct orders through [`OrderData::new`] and the
 /// chainable `with_*` setters rather than a struct literal so additive fields
 /// remain semver-compatible.
 ///
 /// ```compile_fail
 /// use cow_sdk_core::{
 ///     Address, Amount, AppDataHash, BuyTokenDestination, OrderKind, SellTokenSource,
-///     UnsignedOrder,
+///     OrderData,
 /// };
 ///
-/// let _order = UnsignedOrder {
+/// let _order = OrderData {
 ///     sell_token: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
 ///     buy_token: Address::new("0x2222222222222222222222222222222222222222").unwrap(),
 ///     receiver: Address::new("0x3333333333333333333333333333333333333333").unwrap(),
@@ -169,7 +173,7 @@ pub fn token_id(chain_id: ChainId, address: &Address) -> String {
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct UnsignedOrder {
+pub struct OrderData {
     /// Sell token address.
     pub sell_token: Address,
     /// Buy token address.
@@ -199,7 +203,7 @@ pub struct UnsignedOrder {
     pub buy_token_balance: BuyTokenDestination,
 }
 
-impl UnsignedOrder {
+impl OrderData {
     /// Creates an unsigned order from the canonical EIP-712 field set.
     #[must_use]
     #[expect(
@@ -282,40 +286,6 @@ impl UnsignedOrder {
     #[must_use]
     pub const fn field_names() -> &'static [&'static str; ORDER_TYPE_FIELD_NAMES.len()] {
         &ORDER_TYPE_FIELD_NAMES
-    }
-}
-
-/// Optional order envelope used by SDK consumers that need owner or uid context
-/// alongside the user-domain unsigned order.
-#[non_exhaustive]
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Order {
-    /// Unsigned user-domain order payload.
-    #[serde(flatten)]
-    pub unsigned: UnsignedOrder,
-    /// Optional order owner.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub owner: Option<Address>,
-    /// Optional persisted order UID.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub uid: Option<OrderUid>,
-}
-
-impl Order {
-    /// Creates an optional order envelope around an unsigned order.
-    #[inline]
-    #[must_use]
-    pub const fn new(
-        unsigned: UnsignedOrder,
-        owner: Option<Address>,
-        uid: Option<OrderUid>,
-    ) -> Self {
-        Self {
-            unsigned,
-            owner,
-            uid,
-        }
     }
 }
 

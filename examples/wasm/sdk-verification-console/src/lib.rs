@@ -8,7 +8,7 @@ use cow_sdk::app_data::{
 };
 use cow_sdk::contracts::deployment_for_chain;
 use cow_sdk::core::{
-    AppDataHex, BuyTokenDestination, OrderKind, SellTokenSource, UnsignedOrder,
+    AppDataHex, BuyTokenDestination, OrderKind, SellTokenSource, OrderData,
     wrapped_native_token,
 };
 use cow_sdk::orderbook::{
@@ -676,7 +676,7 @@ fn parse_order_uid(value: &str) -> Result<OrderUid, JsValue> {
     OrderUid::new(value).map_err(|error| to_js_error(error.to_string()))
 }
 
-fn parse_order(order_json: &str) -> Result<UnsignedOrder, JsValue> {
+fn parse_order(order_json: &str) -> Result<OrderData, JsValue> {
     parse_json(order_json, "unsignedOrder")
 }
 
@@ -721,8 +721,8 @@ fn sample_owner() -> Address {
         .expect("static example owner must remain valid")
 }
 
-fn sample_unsigned_order(chain_id: SupportedChainId) -> UnsignedOrder {
-    UnsignedOrder::new(
+fn sample_unsigned_order(chain_id: SupportedChainId) -> OrderData {
+    OrderData::new(
         wrapped_native_token(chain_id).address,
         Address::new("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48")
             .expect("static example address must remain valid"),

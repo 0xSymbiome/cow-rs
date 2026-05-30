@@ -1,13 +1,13 @@
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
 
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, BuyTokenDestination, OrderKind, SellTokenSource,
-    SupportedChainId, UnsignedOrder,
+    Address, Amount, AppDataHash, BuyTokenDestination, OrderData, OrderKind, SellTokenSource,
+    SupportedChainId,
 };
 use cow_sdk_signing::order_typed_data_payload;
 
-fn sample_order() -> UnsignedOrder {
-    UnsignedOrder::new(
+fn sample_order() -> OrderData {
+    OrderData::new(
         Address::new("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2").unwrap(),
         Address::new("0x6b175474e89094c44da98b954eedeac495271d0f").unwrap(),
         Address::new("0x3333333333333333333333333333333333333333").unwrap(),

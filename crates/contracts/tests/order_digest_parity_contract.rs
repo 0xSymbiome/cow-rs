@@ -1,18 +1,21 @@
-//! `GPv2` `Order` EIP-712 hashing parity contract.
+//! `GPv2` order EIP-712 signing-hash parity contract.
 //!
 //! Drives the eight representative rows in
-//! `parity/fixtures/eip712/order_digests.json` against the canonical
-//! `alloy_sol_types::SolStruct::eip712_signing_hash` path exposed by
-//! [`cow_sdk_contracts::GPv2Order`]. Each row pins the per-domain
-//! separator, the per-order struct hash, and the final signing hash so a
-//! future change to the EIP-712 typed-data encoding cannot silently
-//! move the wire bytes.
+//! `parity/fixtures/eip712/order_digests.json` through the crate's public
+//! [`cow_sdk_contracts::hash_order`] entrypoint so the canonical
+//! `keccak256(0x19 || 0x01 || domain_separator || struct_hash)` order
+//! signing hash stays byte-stable across mainnet, Gnosis Chain, Sepolia,
+//! Arbitrum One, and Base. Driving `hash_order` (rather than the generated
+//! codec directly) anchors the regression on the real enum-to-string and
+//! EIP-712 composition path the SDK ships rather than on the underlying
+//! `alloy` codec call. The fixture header type hash is checked against
+//! [`cow_sdk_contracts::order_eip712_type_hash`].
 
-use std::str::FromStr;
-
-use alloy_primitives::{Address as AlloyAddress, B256, U256};
-use alloy_sol_types::{Eip712Domain, SolStruct};
-use cow_sdk_contracts::GPv2Order;
+use cow_sdk_contracts::{hash_order, order_eip712_type_hash};
+use cow_sdk_core::{
+    Address, Amount, AppDataHash, BuyTokenDestination, OrderData, OrderKind, SellTokenSource,
+    TypedDataDomain,
+};
 use serde::Deserialize;
 
 const FIXTURE: &str = include_str!("../../../parity/fixtures/eip712/order_digests.json");
@@ -62,8 +65,6 @@ struct OrderCase {
 
 #[derive(Debug, Deserialize)]
 struct Expected {
-    domain_separator: String,
-    order_struct_hash: String,
     signing_hash: String,
 }
 
@@ -73,11 +74,8 @@ fn order_digest_fixture_rows_hold() {
     assert_eq!(fixture.schema_version, 1, "fixture schema version pinned");
     assert_eq!(
         fixture.order_type_hash,
-        format!(
-            "0x{}",
-            alloy_primitives::hex::encode(GPv2Order::default().eip712_type_hash().as_slice())
-        ),
-        "fixture order_type_hash matches GPv2Order::eip712_type_hash",
+        order_eip712_type_hash().to_hex_string(),
+        "fixture order_type_hash matches the public order_eip712_type_hash()",
     );
     assert_eq!(
         fixture.rows.len(),
@@ -86,63 +84,75 @@ fn order_digest_fixture_rows_hold() {
     );
 
     for row in &fixture.rows {
-        let alloy_domain = Eip712Domain {
-            name: Some(row.domain.name.clone().into()),
-            version: Some(row.domain.version.clone().into()),
-            chain_id: Some(U256::from(row.domain.chain_id)),
-            verifying_contract: Some(parse_address(&row.domain.verifying_contract)),
-            salt: None,
-        };
+        let domain = TypedDataDomain::new(
+            row.domain.name.clone(),
+            row.domain.version.clone(),
+            row.domain.chain_id,
+            parse_address(&row.domain.verifying_contract),
+        );
         let order = build_order(&row.order);
 
-        let actual_domain_separator = format!("{}", alloy_domain.separator());
-        assert_eq!(
-            actual_domain_separator, row.expected.domain_separator,
-            "row {}: domain separator must match the fixture",
-            row.name
-        );
-
-        let actual_struct_hash = format!("{}", order.eip712_hash_struct());
-        assert_eq!(
-            actual_struct_hash, row.expected.order_struct_hash,
-            "row {}: order struct hash must match the fixture",
-            row.name
-        );
-
-        let actual_signing_hash = format!("{}", order.eip712_signing_hash(&alloy_domain));
+        let actual_signing_hash = hash_order(&domain, &order)
+            .expect("hash_order succeeds for every fixture row")
+            .to_hex_string();
         assert_eq!(
             actual_signing_hash, row.expected.signing_hash,
-            "row {}: signing hash must match the fixture",
+            "row {}: order signing hash must match the fixture",
             row.name
         );
     }
 }
 
-fn build_order(case: &OrderCase) -> GPv2Order {
-    GPv2Order {
-        sellToken: parse_address(&case.sellToken),
-        buyToken: parse_address(&case.buyToken),
-        receiver: parse_address(&case.receiver),
-        sellAmount: parse_u256(&case.sellAmount),
-        buyAmount: parse_u256(&case.buyAmount),
-        validTo: case.validTo,
-        appData: parse_b256(&case.appData),
-        feeAmount: parse_u256(&case.feeAmount),
-        kind: case.kind.clone(),
-        partiallyFillable: case.partiallyFillable,
-        sellTokenBalance: case.sellTokenBalance.clone(),
-        buyTokenBalance: case.buyTokenBalance.clone(),
+fn build_order(case: &OrderCase) -> OrderData {
+    OrderData::new(
+        parse_address(&case.sellToken),
+        parse_address(&case.buyToken),
+        parse_address(&case.receiver),
+        parse_amount(&case.sellAmount),
+        parse_amount(&case.buyAmount),
+        case.validTo,
+        parse_app_data(&case.appData),
+        parse_amount(&case.feeAmount),
+        parse_kind(&case.kind),
+        case.partiallyFillable,
+        parse_sell_balance(&case.sellTokenBalance),
+        parse_buy_balance(&case.buyTokenBalance),
+    )
+}
+
+fn parse_address(value: &str) -> Address {
+    Address::new(value).expect("fixture address parses")
+}
+
+fn parse_amount(value: &str) -> Amount {
+    Amount::new(value).expect("fixture amount parses")
+}
+
+fn parse_app_data(value: &str) -> AppDataHash {
+    AppDataHash::new(value).expect("fixture app data hash parses")
+}
+
+fn parse_kind(value: &str) -> OrderKind {
+    match value {
+        "sell" => OrderKind::Sell,
+        "buy" => OrderKind::Buy,
+        other => panic!("unexpected order kind in fixture: {other}"),
     }
 }
 
-fn parse_address(value: &str) -> AlloyAddress {
-    AlloyAddress::from_str(value).expect("fixture address parses")
+fn parse_sell_balance(value: &str) -> SellTokenSource {
+    match value {
+        "erc20" => SellTokenSource::Erc20,
+        "external" => SellTokenSource::External,
+        "internal" => SellTokenSource::Internal,
+        other => panic!("unexpected sell token balance in fixture: {other}"),
+    }
 }
 
-fn parse_b256(value: &str) -> B256 {
-    B256::from_str(value).expect("fixture b256 parses")
-}
-
-fn parse_u256(value: &str) -> U256 {
-    U256::from_str_radix(value, 10).expect("fixture u256 parses")
+fn parse_buy_balance(value: &str) -> BuyTokenDestination {
+    match value {
+        "erc20" => BuyTokenDestination::Erc20,
+        "internal" => BuyTokenDestination::Internal,
+        other => panic!("unexpected buy token balance in fixture: {other}"),
+    }
 }

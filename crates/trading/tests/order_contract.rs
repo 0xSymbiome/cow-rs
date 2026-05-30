@@ -5,8 +5,8 @@ use std::time::Duration;
 
 use cow_sdk_contracts::{ContractId, Registry};
 use cow_sdk_core::{
-    Amount, BuyTokenDestination, CowEnv, MAX_VALID_TO_EPOCH, ProtocolOptions, SellTokenSource,
-    SupportedChainId, UnsignedOrder, wrapped_native_token,
+    Amount, BuyTokenDestination, CowEnv, MAX_VALID_TO_EPOCH, OrderData, ProtocolOptions,
+    SellTokenSource, SupportedChainId, wrapped_native_token,
 };
 use cow_sdk_signing::generate_order_id;
 use cow_sdk_trading::{
@@ -16,8 +16,8 @@ use tokio::time::timeout;
 
 use crate::common::{MockEthFlowChecker, OWNER, address, app_data_hash, sample_limit_parameters};
 
-fn sample_ethflow_order(buy_amount: &str) -> UnsignedOrder {
-    UnsignedOrder::new(
+fn sample_ethflow_order(buy_amount: &str) -> OrderData {
+    OrderData::new(
         address("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"),
         address("0x0625aFB445C3B6B7B929342a04A22599fd5dBB59"),
         address("0xc8c753Ee51E8Fc80e199AB297fB575634a1aC1d3"),

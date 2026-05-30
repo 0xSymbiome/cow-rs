@@ -1,8 +1,8 @@
 use alloy_primitives::{I256, U256};
 use cow_sdk_core::{
     Address, Amount, Amounts, AppDataHash, AppDataHex, BuyTokenDestination, Costs, DecimalAmount,
-    FeeComponent, Hash32, HexData, NetworkFee, ORDER_TYPE_FIELD_NAMES, OrderKind, OrderUid,
-    QUOTE_AMOUNT_STAGE_NAMES, QuoteAmountsAndCosts, SellTokenSource, SignedAmount, UnsignedOrder,
+    FeeComponent, Hash32, HexData, NetworkFee, ORDER_TYPE_FIELD_NAMES, OrderData, OrderKind,
+    OrderUid, QUOTE_AMOUNT_STAGE_NAMES, QuoteAmountsAndCosts, SellTokenSource, SignedAmount,
     VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS, ValidTo, ValidationError,
     addresses_equal, token_id,
 };
@@ -95,7 +95,7 @@ fn canonical_order_and_quote_shapes_are_pinned() {
     assert_eq!(ORDER_TYPE_FIELD_NAMES.to_vec(), expected_fields);
     assert_eq!(QUOTE_AMOUNT_STAGE_NAMES.to_vec(), expected_stages);
 
-    let order = UnsignedOrder::new(
+    let order = OrderData::new(
         Address::new("0x1111111111111111111111111111111111111111").unwrap(),
         Address::new("0x2222222222222222222222222222222222222222").unwrap(),
         Address::new("0x3333333333333333333333333333333333333333").unwrap(),

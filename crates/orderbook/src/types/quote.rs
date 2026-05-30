@@ -603,9 +603,13 @@ impl OrderQuoteRequest {
 
 /// Quote order data returned by the orderbook API.
 ///
-/// This is a wire DTO, not the user-domain signing order and not the contract
-/// ABI order. It accepts the orderbook's full-app-data echo shape and resolves
-/// that into the app-data hash used by downstream order creation.
+/// This mirrors the orderbook `OrderParameters` schema — the order
+/// parameters payload returned inside a `/quote` response — and is named
+/// `QuoteData` for that role (see ADR 0058). It is a wire DTO, not the
+/// user-domain signing order (`cow_sdk_core::OrderData`), which is also the
+/// contract EIP-712 hashing input. It accepts the orderbook's full-app-data
+/// echo shape and resolves that into the app-data hash used by downstream
+/// order creation.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]

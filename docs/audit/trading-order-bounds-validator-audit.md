@@ -1,7 +1,7 @@
 # Trading Order-Bounds Validator Audit
 
 Status: Current
-Last reviewed: 2026-05-27
+Last reviewed: 2026-05-30
 Owning surface: `cow-sdk-trading` `OrderBoundsValidator`,
 `OrderValidityBounds`, `SubmissionClass`, `ClientRejection`,
 `AmountSide`, and the `TradingError::ClientRejected` lifting variant.
@@ -51,7 +51,7 @@ encoder.
 
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
-| Validator signature | `validate(&order, scheme, app_data_signer: Option<Address>, now: u64, is_eth_flow: bool) -> Result<(), ClientRejection>` is the canonical entry point | Conforms |
+| Validator signature | `validate(order: &OrderData, from: Address, scheme, app_data_signer: Option<Address>, now: u64, is_eth_flow: bool) -> Result<(), ClientRejection>` is the canonical entry point | Conforms |
 | Variant coverage | Every reviewed services protocol-invariant rejection has a typed `ClientRejection` variant; the enum is `#[non_exhaustive]` | Conforms |
 | Default policy | `OrderValidityBounds::SERVICES_DEFAULT` matches the published 60 s minimum, 3 h market maximum, and 1 y limit-class ceiling | Conforms |
 | Submission-seam policy | Every public submission seam constructs the validator via `OrderBoundsValidator::services_default_for_chain` and runs `validate` between order construction and HTTP upload | Conforms |
@@ -72,7 +72,9 @@ encoder.
 
 `OrderBoundsValidator::validate` lives at
 `crates/trading/src/validation.rs`. The entry point accepts the
-`OrderCreation` payload, the `SigningScheme`, the typed
+signing order (`cow_sdk_core::OrderData`), the submission owner
+(`from: Address`, threaded separately because the signing order
+carries no owner field), the `SigningScheme`, the typed
 `Option<Address>` declared signer carried inside the app-data
 metadata envelope, the caller-supplied UNIX-seconds `now`, and the
 `is_eth_flow` flag. Returning `Result<(), ClientRejection>` keeps

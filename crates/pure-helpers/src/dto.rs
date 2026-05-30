@@ -4,8 +4,8 @@ use std::collections::BTreeMap;
 
 use cow_sdk_app_data::{AppDataDoc, AppDataInfo, ValidationResult};
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, BuyTokenDestination, OrderKind, SellTokenSource, TypedDataDomain,
-    TypedDataField, TypedDataPayload, TypedDataTypes, UnsignedOrder,
+    Address, Amount, AppDataHash, BuyTokenDestination, OrderData, OrderKind, SellTokenSource,
+    TypedDataDomain, TypedDataField, TypedDataPayload, TypedDataTypes,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -98,7 +98,7 @@ impl OrderInput {
     /// # Errors
     ///
     /// Returns [`PureError`] when any typed field fails validation.
-    pub fn to_unsigned_order(&self) -> Result<UnsignedOrder, PureError> {
+    pub fn to_unsigned_order(&self) -> Result<OrderData, PureError> {
         let sell_token = parse_address("sellToken", &self.sell_token)?;
         let buy_token = parse_address("buyToken", &self.buy_token)?;
         let receiver = match &self.receiver {
@@ -113,7 +113,7 @@ impl OrderInput {
         let fee_amount = parse_amount("feeAmount", &self.fee_amount)?;
         let buy_token_balance = self.buy_token_balance.into_buy_destination()?;
 
-        Ok(UnsignedOrder::new(
+        Ok(OrderData::new(
             sell_token,
             buy_token,
             receiver,

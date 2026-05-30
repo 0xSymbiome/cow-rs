@@ -15,8 +15,10 @@
 
 use std::panic::{AssertUnwindSafe, catch_unwind};
 
-use cow_sdk_core::{Address, Amount, OrderKind};
-use cow_sdk_orderbook::{OrderCreation, SigningScheme};
+use cow_sdk_core::{
+    Address, Amount, AppDataHash, BuyTokenDestination, OrderData, OrderKind, SellTokenSource,
+};
+use cow_sdk_orderbook::SigningScheme;
 use cow_sdk_trading::{AmountSide, ClientRejection, OrderBoundsValidator};
 use proptest::prelude::*;
 use proptest::test_runner::FileFailurePersistence;
@@ -61,7 +63,7 @@ fn signing_scheme_strategy() -> impl Strategy<Value = SigningScheme> {
     })
 }
 
-fn arbitrary_order() -> impl Strategy<Value = OrderCreation> {
+fn arbitrary_order() -> impl Strategy<Value = (OrderData, Address)> {
     (
         address_strategy(),
         address_strategy(),
@@ -69,10 +71,8 @@ fn arbitrary_order() -> impl Strategy<Value = OrderCreation> {
         amount_strategy(),
         any::<u32>(),
         order_kind_strategy(),
-        signing_scheme_strategy(),
-        any::<[u8; 8]>(),
         address_strategy(),
-        prop::option::of(address_strategy()),
+        address_strategy(),
         any::<bool>(),
     )
         .prop_map(
@@ -83,45 +83,53 @@ fn arbitrary_order() -> impl Strategy<Value = OrderCreation> {
                 buy_amount,
                 valid_to,
                 kind,
-                signing_scheme,
-                signature_seed,
                 from,
                 receiver,
                 partially_fillable,
             )| {
-                let signature = format!("0x{}", alloy_primitives::hex::encode(signature_seed));
-                let mut order = OrderCreation::new(
+                let order = OrderData::new(
                     sell_token,
                     buy_token,
+                    receiver,
                     sell_amount,
                     buy_amount,
                     valid_to,
+                    app_data_hash(),
+                    Amount::ZERO,
                     kind,
-                    signing_scheme,
-                    signature,
-                    from,
-                )
-                .with_partially_fillable(partially_fillable);
-                if let Some(receiver) = receiver {
-                    order = order.with_receiver(receiver);
-                }
-                order
+                    partially_fillable,
+                    SellTokenSource::Erc20,
+                    BuyTokenDestination::Erc20,
+                );
+                (order, from)
             },
         )
 }
 
-fn order_template() -> OrderCreation {
-    OrderCreation::new(
+fn order_template() -> OrderData {
+    OrderData::new(
         address("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
         address("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"),
+        template_from(),
         Amount::new("1000000000000000000").expect("fixture amount must be valid"),
         Amount::new("1000000").expect("fixture amount must be valid"),
         u32::MAX,
+        app_data_hash(),
+        Amount::ZERO,
         OrderKind::Sell,
-        SigningScheme::Eip712,
-        "0x",
-        address("0x1111111111111111111111111111111111111111"),
+        false,
+        SellTokenSource::Erc20,
+        BuyTokenDestination::Erc20,
     )
+}
+
+fn template_from() -> Address {
+    address("0x1111111111111111111111111111111111111111")
+}
+
+fn app_data_hash() -> AppDataHash {
+    AppDataHash::new("0x0000000000000000000000000000000000000000000000000000000000000000")
+        .expect("app-data hash literal must be valid")
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -164,7 +172,14 @@ fn same_token_validation_class_is_buy_side_only() {
     buy_order.buy_token = buy_order.sell_token;
     buy_order.kind = OrderKind::Buy;
 
-    let buy_outcome = validator.validate(&buy_order, SigningScheme::Eip712, None, now, false);
+    let buy_outcome = validator.validate(
+        &buy_order,
+        template_from(),
+        SigningScheme::Eip712,
+        None,
+        now,
+        false,
+    );
     assert_eq!(
         validation_class(&buy_outcome),
         ValidationClass::SameBuyAndSellToken
@@ -172,7 +187,14 @@ fn same_token_validation_class_is_buy_side_only() {
 
     let mut sell_order = buy_order;
     sell_order.kind = OrderKind::Sell;
-    let sell_outcome = validator.validate(&sell_order, SigningScheme::Eip712, None, now, false);
+    let sell_outcome = validator.validate(
+        &sell_order,
+        template_from(),
+        SigningScheme::Eip712,
+        None,
+        now,
+        false,
+    );
     assert_eq!(validation_class(&sell_outcome), ValidationClass::Accepted);
 }
 
@@ -189,7 +211,7 @@ proptest! {
 
     #[test]
     fn validator_is_monotonic_within_window_via_proptest(
-        mut order in arbitrary_order(),
+        (mut order, from) in arbitrary_order(),
         scheme in signing_scheme_strategy(),
         app_data_signer in prop::option::of(address_strategy()),
         now_seconds in any::<u64>(),
@@ -204,6 +226,7 @@ proptest! {
         let validator = OrderBoundsValidator::services_default();
         let outcome_now = validator.validate(
             &order,
+            from,
             scheme,
             app_data_signer,
             now,
@@ -211,6 +234,7 @@ proptest! {
         );
         let outcome_then = validator.validate(
             &order,
+            from,
             scheme,
             app_data_signer,
             then,
@@ -246,7 +270,14 @@ fn validator_handles_u32_max_validto_without_overflow() {
         (u64::MAX, ValidationClass::ValidToInsufficient),
     ] {
         let outcome = catch_unwind(AssertUnwindSafe(|| {
-            validator.validate(&order, SigningScheme::Eip712, None, now, false)
+            validator.validate(
+                &order,
+                template_from(),
+                SigningScheme::Eip712,
+                None,
+                now,
+                false,
+            )
         }))
         .expect("validator must not panic at timestamp extremes");
 

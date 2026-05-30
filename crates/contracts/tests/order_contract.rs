@@ -14,23 +14,19 @@
 
 mod common;
 
-use alloy_sol_types::SolStruct;
 use cow_sdk_contracts::{
-    BUY_ETH_ADDRESS, CANCELLATIONS_TYPE_FIELDS, ContractId, GPv2Order, ORDER_TYPE_FIELDS, Order,
-    OrderCancellations, OrderFlags, OrderUidParams, Registry, compute_order_uid,
-    decode_order_flags, encode_order_flags, extract_order_uid_params, hash_order,
-    hash_order_cancellation, hash_order_cancellations, normalize_order, pack_order_uid_params,
+    BUY_ETH_ADDRESS, CANCELLATIONS_TYPE_FIELDS, ContractId, ORDER_TYPE_FIELDS, OrderCancellations,
+    OrderFlags, OrderUidParams, Registry, compute_order_uid, decode_order_flags,
+    encode_order_flags, extract_order_uid_params, hash_order, hash_order_cancellation,
+    hash_order_cancellations, order_eip712_type_hash, pack_order_uid_params,
 };
 
 fn gpv2_order_type_hash_hex() -> String {
-    format!(
-        "0x{}",
-        alloy_primitives::hex::encode(GPv2Order::default().eip712_type_hash().as_slice())
-    )
+    order_eip712_type_hash().to_hex_string()
 }
 use cow_sdk_core::{
-    Address, Amount, AppDataHex, BuyTokenDestination, CowEnv, OrderKind, SellTokenSource,
-    SupportedChainId, TypedDataDomain, UnsignedOrder,
+    Address, Amount, AppDataHex, BuyTokenDestination, CowEnv, OrderData, OrderKind,
+    SellTokenSource, SupportedChainId, TypedDataDomain,
 };
 
 use common::fixture_case;
@@ -49,11 +45,11 @@ fn sample_domain() -> TypedDataDomain {
     )
 }
 
-fn sample_order() -> Order {
-    Order::new(
+fn sample_order() -> OrderData {
+    OrderData::new(
         Address::new("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2").unwrap(),
         Address::new("0x6b175474e89094c44da98b954eedeac495271d0f").unwrap(),
-        None,
+        Address::ZERO,
         Amount::new("1000000000000000000").unwrap(),
         Amount::new("2000000000000000000000").unwrap(),
         1_709_990_000,
@@ -62,8 +58,8 @@ fn sample_order() -> Order {
         Amount::new("5000000000000000").unwrap(),
         OrderKind::Sell,
         false,
-        None,
-        Some(BuyTokenDestination::Internal),
+        SellTokenSource::Erc20,
+        BuyTokenDestination::Internal,
     )
 }
 
@@ -78,8 +74,8 @@ fn signing_fixture_case(id: &str) -> serde_json::Value {
         .unwrap_or_else(|| panic!("missing signing fixture case {id}"))
 }
 
-fn upstream_signing_sample_order() -> UnsignedOrder {
-    UnsignedOrder::new(
+fn upstream_signing_sample_order() -> OrderData {
+    OrderData::new(
         Address::new("0xd057b63f5e69cf1b929b356b579cba08d7688048").unwrap(),
         Address::new("0x7b878668cd1a3adf89764d3a331e0a7bb832192d").unwrap(),
         Address::new("0xa6ddbd0de6b310819b49f680f65871bee85f517e").unwrap(),
@@ -150,13 +146,12 @@ fn order_contract_matches_fixture_and_normalization_rules() {
     );
 
     let order = sample_order();
-    let normalized = normalize_order(&order).unwrap();
     assert_eq!(
-        normalized.receiver.to_hex_string(),
+        order.receiver.to_hex_string(),
         "0x0000000000000000000000000000000000000000"
     );
-    assert_eq!(normalized.sell_token_balance, SellTokenSource::Erc20);
-    assert_eq!(normalized.buy_token_balance, BuyTokenDestination::Internal);
+    assert_eq!(order.sell_token_balance, SellTokenSource::Erc20);
+    assert_eq!(order.buy_token_balance, BuyTokenDestination::Internal);
     assert_eq!(
         BUY_ETH_ADDRESS,
         "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
@@ -200,48 +195,6 @@ fn order_hash_and_uid_helpers_are_consistent() {
 }
 
 #[test]
-fn unsigned_order_conversion_makes_user_domain_and_contract_boundaries_explicit() {
-    let unsigned = UnsignedOrder::new(
-        Address::new("0x1111111111111111111111111111111111111111").unwrap(),
-        Address::new("0x2222222222222222222222222222222222222222").unwrap(),
-        Address::new("0x3333333333333333333333333333333333333333").unwrap(),
-        Amount::new("1000").unwrap(),
-        Amount::new("900").unwrap(),
-        1_700_000_000,
-        AppDataHex::new("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
-            .unwrap(),
-        Amount::new("10").unwrap(),
-        OrderKind::Sell,
-        true,
-        SellTokenSource::External,
-        BuyTokenDestination::Internal,
-    );
-
-    let contract = Order::from(&unsigned);
-
-    assert_eq!(contract.sell_token, unsigned.sell_token);
-    assert_eq!(contract.buy_token, unsigned.buy_token);
-    assert_eq!(contract.receiver, Some(unsigned.receiver));
-    assert_eq!(contract.sell_amount, unsigned.sell_amount);
-    assert_eq!(contract.buy_amount, unsigned.buy_amount);
-    assert_eq!(contract.valid_to, unsigned.valid_to);
-    assert_eq!(contract.app_data, unsigned.app_data);
-    assert_eq!(contract.fee_amount, unsigned.fee_amount);
-    assert_eq!(contract.kind, unsigned.kind);
-    assert_eq!(contract.partially_fillable, unsigned.partially_fillable);
-    assert_eq!(
-        contract.sell_token_balance,
-        Some(unsigned.sell_token_balance)
-    );
-    assert_eq!(contract.buy_token_balance, Some(unsigned.buy_token_balance));
-
-    let normalized = contract.normalize().unwrap();
-    assert_eq!(normalized.receiver, unsigned.receiver);
-    assert_eq!(normalized.sell_token_balance, SellTokenSource::External);
-    assert_eq!(normalized.buy_token_balance, BuyTokenDestination::Internal);
-}
-
-#[test]
 fn canonical_unsigned_order_path_matches_upstream_signing_fixture_digest_and_uid() {
     let fixture = signing_fixture_case("signing-generate-order-id");
     assert_eq!(
@@ -260,14 +213,13 @@ fn canonical_unsigned_order_path_matches_upstream_signing_fixture_digest_and_uid
     );
 
     let unsigned = upstream_signing_sample_order();
-    let order = Order::from(&unsigned);
     let domain = upstream_signing_domain();
     let owner = Address::new(UPSTREAM_SEPOLIA_ORDER_OWNER).unwrap();
 
-    let digest = hash_order(&domain, &order).unwrap();
+    let digest = hash_order(&domain, &unsigned).unwrap();
     assert_eq!(digest.to_hex_string(), UPSTREAM_SEPOLIA_ORDER_DIGEST);
 
-    let uid = compute_order_uid(&domain, &order, &owner).unwrap();
+    let uid = compute_order_uid(&domain, &unsigned, &owner).unwrap();
     assert_eq!(uid.to_hex_string(), UPSTREAM_SEPOLIA_ORDER_UID);
 
     let unpacked = extract_order_uid_params(&uid).unwrap();

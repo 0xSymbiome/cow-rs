@@ -1,4 +1,4 @@
-use cow_sdk::core::{AppDataHex, BuyTokenDestination, OrderKind, SellTokenSource, UnsignedOrder};
+use cow_sdk::core::{AppDataHex, BuyTokenDestination, OrderData, OrderKind, SellTokenSource};
 use cow_sdk::prelude::{
     Address, Amount, SupportedChainId, TradeParameters, TraderParameters, TradingSdkBuilder,
     TradingSdkOptions,
@@ -25,7 +25,7 @@ fn public_api_reexports_cover_primary_root_surface() {
     assert_eq!(ORDER_PRIMARY_TYPE, "Order");
 
     let owner = Address::new("0x4444444444444444444444444444444444444444").unwrap();
-    let order = UnsignedOrder::new(
+    let order = OrderData::new(
         Address::new("0x1111111111111111111111111111111111111111").unwrap(),
         Address::new("0x2222222222222222222222222222222222222222").unwrap(),
         Address::new("0x3333333333333333333333333333333333333333").unwrap(),

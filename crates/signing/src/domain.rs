@@ -1,7 +1,7 @@
 use cow_sdk_contracts::{CANCELLATIONS_TYPE_FIELDS, ContractId, ORDER_TYPE_FIELDS, Registry};
 use cow_sdk_core::{
-    CowEnv, ProtocolOptions, SupportedChainId, TypedDataDomain, TypedDataEnvelope, TypedDataField,
-    TypedDataPayload, TypedDataTypes, UnsignedOrder,
+    CowEnv, OrderData, ProtocolOptions, SupportedChainId, TypedDataDomain, TypedDataEnvelope,
+    TypedDataField, TypedDataPayload, TypedDataTypes,
 };
 use serde::Serialize;
 
@@ -10,7 +10,7 @@ use crate::SigningError;
 /// Primary type name for `CoW` order typed-data payloads.
 pub const ORDER_PRIMARY_TYPE: &str = "Order";
 /// Typed-data envelope alias for explicit `CoW` order signing.
-pub type OrderTypedData = TypedDataEnvelope<UnsignedOrder>;
+pub type OrderTypedData = TypedDataEnvelope<OrderData>;
 
 /// Builds the `CoW` typed-data domain for a chain and optional protocol overrides.
 ///
@@ -91,7 +91,7 @@ pub fn domain_separator_for(domain: &TypedDataDomain) -> Result<String, SigningE
 /// Returns [`SigningError`] if domain construction or message serialization fails.
 pub fn order_typed_data(
     chain_id: SupportedChainId,
-    order: &UnsignedOrder,
+    order: &OrderData,
     options: Option<&ProtocolOptions>,
 ) -> Result<OrderTypedData, SigningError> {
     Ok(order_typed_data_payload(chain_id, order, options)?.with_message(order.clone()))
@@ -104,7 +104,7 @@ pub fn order_typed_data(
 /// Returns [`SigningError`] if domain construction or message serialization fails.
 pub fn order_typed_data_payload(
     chain_id: SupportedChainId,
-    order: &UnsignedOrder,
+    order: &OrderData,
     options: Option<&ProtocolOptions>,
 ) -> Result<TypedDataPayload, SigningError> {
     Ok(TypedDataPayload::new(

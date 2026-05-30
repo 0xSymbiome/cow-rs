@@ -1,7 +1,7 @@
 # `fuzz_typed_data_digest` Corpus
 
 This corpus seeds `fuzz/fuzz_targets/fuzz_typed_data_digest.rs`. The
-target consumes bytes through `arbitrary` into a typed `UnsignedOrder`
+target consumes bytes through `arbitrary` into a typed `OrderData`
 plus `TypedDataDomain`, runs them through `hash_order`, and also
 exercises `hash_order_cancellations` against the packed UID. The
 structured-input width is bounded by the `Arbitrary` derive on the

@@ -4,7 +4,7 @@
 //! iterates every documented case, and asserts the Rust helpers produce the
 //! pinned upstream values. The helpers exercised are:
 //!
-//! * [`ORDER_TYPE_FIELDS`], the [`GPv2Order`] type hash, [`CANCELLATIONS_TYPE_FIELDS`],
+//! * [`ORDER_TYPE_FIELDS`], the `GPv2Order` type hash, [`CANCELLATIONS_TYPE_FIELDS`],
 //!   [`ORDER_UID_LENGTH`] — canonical EIP-712 and UID layout constants.
 //! * [`extract_order_uid_params`] — UID length validation through
 //!   [`ContractsError::InvalidOrderUidLength`].
@@ -40,15 +40,15 @@ use alloy_sol_types::{
 use cow_sdk_contracts::{
     AllowListReader, CANCELLATIONS_TYPE_FIELDS, ContractId, DEPLOYER_CONTRACT, Eip1967Slot,
     EthFlowOrderData, IERC20, IERC20Permit, IERC1271, InteractionLike, ORDER_TYPE_FIELDS,
-    ORDER_UID_LENGTH, Order, OrderFlags, Registry, SALT, SettlementEncoder, SettlementReader,
-    Signature, SigningScheme, Swap, TokenRegistry, TradeExecution, TradeFlags, TradeSimulator,
+    ORDER_UID_LENGTH, OrderFlags, Registry, SALT, SettlementEncoder, SettlementReader, Signature,
+    SigningScheme, Swap, TokenRegistry, TradeExecution, TradeFlags, TradeSimulator,
     VAULT_INTERFACE, encode_create_order_calldata, encode_invalidate_order_calldata,
     encode_order_flags, encode_swap_step, encode_trade_flags, normalize_interaction,
     permit_typed_data_hash, required_vault_roles,
 };
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, AppDataHex, BuyTokenDestination, CowEnv, OrderDigest, OrderKind,
-    OrderUid, SellTokenSource, SupportedChainId, TypedDataDomain,
+    Address, Amount, AppDataHash, AppDataHex, BuyTokenDestination, CowEnv, OrderData, OrderDigest,
+    OrderKind, OrderUid, SellTokenSource, SupportedChainId, TypedDataDomain,
 };
 use serde_json::Value;
 
@@ -201,18 +201,14 @@ fn assert_order_type_fields(id: &str, expected: &Value) {
 }
 
 fn assert_order_type_hash(id: &str, expected: &Value) {
-    use alloy_sol_types::SolStruct;
-    use cow_sdk_contracts::GPv2Order;
+    use cow_sdk_contracts::order_eip712_type_hash;
     let expected_hash = expected["hash"]
         .as_str()
         .unwrap_or_else(|| panic!("case {id}: expected.hash must be a string"));
-    let actual_hash = format!(
-        "0x{}",
-        alloy_primitives::hex::encode(GPv2Order::default().eip712_type_hash().as_slice())
-    );
+    let actual_hash = order_eip712_type_hash().to_hex_string();
     assert_eq!(
         actual_hash, expected_hash,
-        "case {id}: GPv2Order type hash must equal the pinned contracts-ts constant",
+        "case {id}: order EIP-712 type hash must equal the pinned contracts-ts constant",
     );
 }
 
@@ -1037,11 +1033,11 @@ fn settlement_sample_order(
     sell_amount: &str,
     buy_amount: &str,
     valid_to: u32,
-) -> Order {
-    Order::new(
+) -> OrderData {
+    OrderData::new(
         Address::new(sell_token).unwrap(),
         Address::new(buy_token).unwrap(),
-        None,
+        Address::ZERO,
         Amount::new(sell_amount).unwrap(),
         Amount::new(buy_amount).unwrap(),
         valid_to,
@@ -1050,8 +1046,8 @@ fn settlement_sample_order(
         Amount::ZERO,
         OrderKind::Sell,
         false,
-        Some(SellTokenSource::Erc20),
-        Some(BuyTokenDestination::Erc20),
+        SellTokenSource::Erc20,
+        BuyTokenDestination::Erc20,
     )
 }
 

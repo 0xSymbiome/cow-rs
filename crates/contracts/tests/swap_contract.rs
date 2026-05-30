@@ -1,9 +1,10 @@
 mod common;
 
 use alloy_primitives::Bytes;
-use cow_sdk_contracts::{BatchSwapStep, Order, Signature, Swap, SwapEncoder, encode_swap_step};
+use cow_sdk_contracts::{BatchSwapStep, Signature, Swap, SwapEncoder, encode_swap_step};
 use cow_sdk_core::{
-    Address, Amount, AppDataHex, BuyTokenDestination, OrderKind, SellTokenSource, TypedDataDomain,
+    Address, Amount, AppDataHex, BuyTokenDestination, OrderData, OrderKind, SellTokenSource,
+    TypedDataDomain,
 };
 
 use common::fixture_case;
@@ -17,11 +18,11 @@ fn sample_domain() -> TypedDataDomain {
     )
 }
 
-fn sample_order(kind: OrderKind) -> Order {
-    Order::new(
+fn sample_order(kind: OrderKind) -> OrderData {
+    OrderData::new(
         Address::new("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2").unwrap(),
         Address::new("0x6b175474e89094c44da98b954eedeac495271d0f").unwrap(),
-        None,
+        Address::ZERO,
         Amount::new("1000000000000000000").unwrap(),
         Amount::new("2000000000000000000000").unwrap(),
         1_709_990_000,
@@ -30,8 +31,8 @@ fn sample_order(kind: OrderKind) -> Order {
         Amount::new("5000000000000000").unwrap(),
         kind,
         false,
-        Some(SellTokenSource::Erc20),
-        Some(BuyTokenDestination::Erc20),
+        SellTokenSource::Erc20,
+        BuyTokenDestination::Erc20,
     )
 }
 

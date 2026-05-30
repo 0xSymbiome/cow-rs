@@ -9,14 +9,13 @@ use crate::TradingError;
 /// Returns an error when the signing domain cannot be resolved or when the order digest cannot be
 /// derived for the verification request.
 pub fn eip1271_order_verification_request(
-    order_to_sign: &cow_sdk_core::UnsignedOrder,
+    order_to_sign: &cow_sdk_core::OrderData,
     chain_id: cow_sdk_core::SupportedChainId,
     verification: &crate::types::Eip1271VerificationParameters,
     options: Option<&ProtocolOptions>,
 ) -> Result<cow_sdk_contracts::Eip1271VerificationRequest, TradingError> {
     let domain = cow_sdk_signing::get_domain(chain_id, options)?;
-    let digest =
-        cow_sdk_contracts::hash_order(&domain, &cow_sdk_contracts::Order::from(order_to_sign))?;
+    let digest = cow_sdk_contracts::hash_order(&domain, order_to_sign)?;
 
     Ok(cow_sdk_contracts::Eip1271VerificationRequest::new(
         verification.verifier,
@@ -33,7 +32,7 @@ pub fn eip1271_order_verification_request(
 /// missing code, malformed responses, or an invalid EIP-1271 magic value.
 pub async fn verify_eip1271_order_signature<P>(
     provider: &P,
-    order_to_sign: &cow_sdk_core::UnsignedOrder,
+    order_to_sign: &cow_sdk_core::OrderData,
     chain_id: cow_sdk_core::SupportedChainId,
     verification: &crate::types::Eip1271VerificationParameters,
     options: Option<&ProtocolOptions>,

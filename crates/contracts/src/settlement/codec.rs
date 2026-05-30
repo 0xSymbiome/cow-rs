@@ -1,10 +1,9 @@
-use cow_sdk_core::{Address, Amount, BuyTokenDestination, OrderKind, SellTokenSource};
+use cow_sdk_core::{Address, Amount, BuyTokenDestination, OrderData, OrderKind, SellTokenSource};
 
 use crate::{
     ContractsError,
     hex_field::decode_hex_field,
     interaction::Interaction,
-    order::{NormalizedOrder, Order},
     signature::{Signature, decode_signing_scheme, encode_eip1271_signature_data},
 };
 
@@ -148,14 +147,17 @@ fn normalize_signature_hex(value: &str) -> Result<String, ContractsError> {
     Ok(alloy_primitives::hex::encode_prefixed(bytes))
 }
 
-/// Encodes a normalized order, signature, and execution into a settlement trade.
+/// Encodes an order, signature, and execution into a settlement trade.
+///
+/// A `receiver` of `address(0)` is encoded verbatim (the pay-to-owner
+/// sentinel); this codec never rejects it.
 ///
 /// # Errors
 ///
 /// Returns [`ContractsError`] if flags or signature encoding fails.
 pub fn encode_trade(
     tokens: &mut TokenRegistry,
-    order: &NormalizedOrder,
+    order: &OrderData,
     signature: &Signature,
     execution: &TradeExecution,
 ) -> Result<Trade, ContractsError> {
@@ -257,13 +259,18 @@ pub(super) fn encode_settle_call(
     })
 }
 
-/// Decodes an encoded trade back into the contract-order representation.
+/// Decodes an encoded trade back into the user-domain order representation.
+///
+/// The decoded `Trade` always carries a concrete receiver and concrete flag
+/// enums, so the result is a concrete [`cow_sdk_core::OrderData`]. A decoded
+/// `receiver` of `address(0)` (the pay-to-owner sentinel) is returned
+/// verbatim.
 ///
 /// # Errors
 ///
 /// Returns [`ContractsError`] if token indexes are out of range or trade flags
 /// cannot be decoded.
-pub fn decode_order(trade: &Trade, tokens: &[Address]) -> Result<Order, ContractsError> {
+pub fn decode_order(trade: &Trade, tokens: &[Address]) -> Result<OrderData, ContractsError> {
     if trade.sell_token_index >= tokens.len() || trade.buy_token_index >= tokens.len() {
         let offending = trade.sell_token_index.max(trade.buy_token_index);
         return Err(ContractsError::InvalidTokenIndex {
@@ -272,10 +279,10 @@ pub fn decode_order(trade: &Trade, tokens: &[Address]) -> Result<Order, Contract
         });
     }
     let flags = decode_order_flags(trade.flags)?;
-    Ok(Order::new(
+    Ok(OrderData::new(
         tokens[trade.sell_token_index],
         tokens[trade.buy_token_index],
-        Some(trade.receiver),
+        trade.receiver,
         trade.sell_amount,
         trade.buy_amount,
         trade.valid_to,
@@ -283,8 +290,8 @@ pub fn decode_order(trade: &Trade, tokens: &[Address]) -> Result<Order, Contract
         trade.fee_amount,
         flags.kind,
         flags.partially_fillable,
-        Some(flags.sell_token_balance),
-        Some(flags.buy_token_balance),
+        flags.sell_token_balance,
+        flags.buy_token_balance,
     ))
 }
 

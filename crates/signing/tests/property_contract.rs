@@ -27,8 +27,8 @@ use std::collections::BTreeMap;
 
 use cow_sdk_contracts::{OrderCancellations, SigningScheme, hash_order, hash_order_cancellations};
 use cow_sdk_core::{
-    Address, Amount, AppDataHex, BuyTokenDestination, CowEnv, OrderKind, OrderUid, ProtocolOptions,
-    SellTokenSource, SupportedChainId, TypedDataDomain, UnsignedOrder,
+    Address, Amount, AppDataHex, BuyTokenDestination, CowEnv, OrderData, OrderKind, OrderUid,
+    ProtocolOptions, SellTokenSource, SupportedChainId, TypedDataDomain,
 };
 use cow_sdk_signing::{
     ORDER_PRIMARY_TYPE, domain_fields, domain_separator_for, eip1271_signature_payload,
@@ -147,7 +147,7 @@ fn domain_and_changed_strategy() -> impl Strategy<Value = (TypedDataDomain, Type
 }
 
 /// Strategy that emits a deterministic unsigned order.
-fn unsigned_order_strategy() -> impl Strategy<Value = UnsignedOrder> {
+fn unsigned_order_strategy() -> impl Strategy<Value = OrderData> {
     (
         address_strategy(),
         address_strategy(),
@@ -187,7 +187,7 @@ fn unsigned_order_strategy() -> impl Strategy<Value = UnsignedOrder> {
                     _ => BuyTokenDestination::Internal,
                 };
 
-                UnsignedOrder::new(
+                OrderData::new(
                     sell_token,
                     buy_token,
                     receiver,
@@ -297,11 +297,7 @@ proptest! {
         let repeated_payload = order_typed_data_payload(chain, &order, None).unwrap();
         let generated = generate_order_id(chain, &order, &owner, None).unwrap();
         let repeated_generated = generate_order_id(chain, &order, &owner, None).unwrap();
-        let expected_digest = hash_order(
-            &get_domain(chain, None).unwrap(),
-            &cow_sdk_contracts::Order::from(&order),
-        )
-        .unwrap();
+        let expected_digest = hash_order(&get_domain(chain, None).unwrap(), &order).unwrap();
 
         prop_assert_eq!(&payload, &repeated_payload);
         prop_assert_eq!(&generated, &repeated_generated);

@@ -1,7 +1,7 @@
 # Contract Bindings Parity Audit
 
 Status: Current
-Last reviewed: 2026-05-28
+Last reviewed: 2026-05-30
 Owning surface: `cow-sdk-contracts` `alloy::sol!`-generated bindings for `GPv2Settlement`, `GPv2VaultRelayer`, `CoWSwapEthFlow`, `CoWSwapOnchainOrders` events, the wrapped-native token, EIP-1967 proxy slots, and `IERC20` / `IERC20Permit`
 Refresh trigger: A new binding family landing in `cow-sdk-contracts`; a signature change in any existing binding; a drift in the byte-identical Solidity mirror under `crates/contracts/abi/**/*.sol`; a change to a `vendored:` SHA-256 row under any repository in `parity/source-lock.yaml`; a change to the TypeScript-SDK-derived parity fixtures that back the regression suite; a change to the EIP-712 domain-separator fixture shared with the signing crate; a change to the wasm target feature contract for the alloy/k256 dependency path
 Related docs:
@@ -77,10 +77,10 @@ receiver field with `ContractsError::ZeroReceiver`. The rejection mirrors
 the upstream `EthFlowOrder.toCoWSwapOrder` library function's
 `ReceiverMustBeSet()` revert (selector `0xefc9ccdf`), which fires on both
 the `createOrder` and `invalidateOrder` write paths through the shared
-library call. The same predicate is shared with
-`cow_sdk_contracts::order::hash::normalize_order` via a private
-`reject_zero_receiver` helper, so the receiver-rejection rule lives in
-one place across the contracts crate. The unit test
+library call. The rule lives in the private `reject_zero_receiver`
+helper invoked by the `EthFlowOrderData` construction paths; the general
+order hash path treats `address(0)` as the protocol's pay-to-owner
+sentinel and hashes it verbatim rather than rejecting it. The unit test
 `zero_receiver_invariant_matches_ethflow_on_chain_revert_selector` in
 `crates/contracts/src/eth_flow.rs` re-derives the selector via
 `alloy_primitives::keccak256("ReceiverMustBeSet()")[..4]` and pins it
@@ -284,8 +284,10 @@ The `GPv2` order and batch-cancellation EIP-712 schemas are
 macro-emitted via `alloy_sol_types::sol!` at
 `crates/contracts/src/order/sol_types.rs` (`Order`) and
 `crates/contracts/src/order/sol_cancellations.rs`
-(`OrderCancellations`). Both structs are re-exported publicly at the
-crate root as `cow_sdk_contracts::GPv2Order` and
+(`OrderCancellations`). The order struct is crate-internal codec
+machinery — order hashing flows through `hash_order` and the canonical
+type hash is exposed as `cow_sdk_contracts::order_eip712_type_hash()` —
+while the cancellation struct is re-exported at the crate root as
 `cow_sdk_contracts::GPv2OrderCancellations`. The macro emits the
 canonical EIP-712 type strings at expansion time:
 `Order(address sellToken,address buyToken,address receiver,uint256
@@ -296,8 +298,8 @@ constant
 `0xd5a25ba2e97094ad7d83dc28a6572da797d6b3e7fc6663bd93efb789fc17e489`
 and `OrderCancellations(bytes[] orderUids)` keccak-hashes to the
 canonical batch-cancellation type hash. Callers route order signing
-hashes through `<GPv2Order as SolStruct>::eip712_signing_hash` and
-batch-cancellation signing hashes through
+hashes through `<Order as SolStruct>::eip712_signing_hash` on the
+crate-internal codec struct and batch-cancellation signing hashes through
 `<GPv2OrderCancellations as SolStruct>::eip712_signing_hash`; the
 public functions `cow_sdk_contracts::hash_order`,
 `cow_sdk_contracts::hash_order_cancellation`, and

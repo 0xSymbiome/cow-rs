@@ -5,7 +5,12 @@ use serde::{Deserialize, Serialize};
 use crate::primitives::ORDER_UID_LENGTH_BYTES;
 
 pub use self::sol_cancellations::OrderCancellations as GPv2OrderCancellations;
-pub use self::sol_types::Order as GPv2Order;
+// The generated `sol!` order struct (`sol_types::Order`) is internal codec
+// machinery: this crate owns no public order *type* of its own. The single
+// user-domain order type is `cow_sdk_core::OrderData`, and this module exposes
+// hashing / UID / encoding *functions* over it (`hash_order`,
+// `compute_order_uid`, `order_eip712_type_hash`, …). The `sol!` struct stays
+// `pub(crate)`; `hash` is its only consumer.
 pub use self::{hash::*, types::*, uid::*};
 
 pub(crate) mod hash;

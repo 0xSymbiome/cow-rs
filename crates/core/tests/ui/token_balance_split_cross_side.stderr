@@ -1,8 +1,8 @@
 error[E0308]: mismatched types
   --> tests/ui/token_balance_split_cross_side.rs:39:9
    |
-26 |     let _order = UnsignedOrder::new(
-   |                  ------------------ arguments to this function are incorrect
+26 |     let _order = OrderData::new(
+   |                  -------------- arguments to this function are incorrect
 ...
 39 |         sell_source,
    |         ^^^^^^^^^^^ expected `BuyTokenDestination`, found `SellTokenSource`

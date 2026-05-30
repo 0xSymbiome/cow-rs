@@ -1,6 +1,6 @@
 //! Signing payload helpers.
 
-use cow_sdk_core::{Address, SupportedChainId, TypedDataPayload, UnsignedOrder};
+use cow_sdk_core::{Address, OrderData, SupportedChainId, TypedDataPayload};
 use cow_sdk_signing::{GeneratedOrderId, SigningError};
 
 /// Builds signer-facing EIP-712 typed data for an order.
@@ -10,7 +10,7 @@ use cow_sdk_signing::{GeneratedOrderId, SigningError};
 /// Returns [`SigningError`] when domain construction or serialization fails.
 pub fn order_typed_data_payload(
     chain_id: SupportedChainId,
-    order: &UnsignedOrder,
+    order: &OrderData,
 ) -> Result<TypedDataPayload, SigningError> {
     cow_sdk_signing::domain::order_typed_data_payload(chain_id, order, None)
 }
@@ -22,7 +22,7 @@ pub fn order_typed_data_payload(
 /// Returns [`SigningError`] when domain construction, hashing, or UID packing fails.
 pub fn generate_order_id(
     chain_id: SupportedChainId,
-    order: &UnsignedOrder,
+    order: &OrderData,
     owner: &Address,
 ) -> Result<GeneratedOrderId, SigningError> {
     cow_sdk_signing::generate_order_id(chain_id, order, owner, None)
@@ -34,7 +34,7 @@ pub fn generate_order_id(
 ///
 /// Returns [`SigningError`] when order normalization or ABI-style encoding fails.
 pub fn eip1271_signature_payload(
-    order: &UnsignedOrder,
+    order: &OrderData,
     ecdsa_signature: &str,
 ) -> Result<String, SigningError> {
     cow_sdk_signing::eip1271_signature_payload(order, ecdsa_signature)

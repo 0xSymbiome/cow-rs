@@ -14,12 +14,12 @@
 use alloy_primitives::{B256, Bytes, LogData, U256, b256, keccak256};
 use alloy_sol_types::SolEvent;
 use cow_sdk_contracts::{
-    ContractsError, ICoWSwapOnchainOrders, OnchainSigningScheme, Order, compute_order_uid,
+    ContractsError, ICoWSwapOnchainOrders, OnchainSigningScheme, compute_order_uid,
     decode_order_invalidation, decode_order_placement, hash_order, parse_eth_flow_onchain_data,
 };
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, BuyTokenDestination, OrderKind, OrderUid, SellTokenSource,
-    TypedDataDomain,
+    Address, Amount, AppDataHash, BuyTokenDestination, OrderData, OrderKind, OrderUid,
+    SellTokenSource, TypedDataDomain,
 };
 use sha3::{Digest, Keccak256};
 
@@ -114,10 +114,10 @@ fn order_hash_matches_canonical_ethflow_foundry_vector() {
         31337,
         settlement,
     );
-    let order = Order::new(
+    let order = OrderData::new(
         Address::from_bytes([0x01; 20]),
         Address::from_bytes([0x02; 20]),
-        Some(Address::from_bytes([0x03; 20])),
+        Address::from_bytes([0x03; 20]),
         Amount::new("42000000000000000000").unwrap(),
         Amount::new("13370000000000000000").unwrap(),
         0xffff_ffff,
@@ -125,8 +125,8 @@ fn order_hash_matches_canonical_ethflow_foundry_vector() {
         Amount::new("1000000000000000000").unwrap(),
         OrderKind::Sell,
         false,
-        Some(SellTokenSource::Erc20),
-        Some(BuyTokenDestination::Erc20),
+        SellTokenSource::Erc20,
+        BuyTokenDestination::Erc20,
     );
 
     let digest = hash_order(&domain, &order).expect("hashing must succeed");

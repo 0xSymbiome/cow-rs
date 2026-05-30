@@ -26,7 +26,7 @@ pub struct EthFlowTransaction {
     /// Transaction request to submit.
     pub transaction: TransactionRequest,
     /// Unsigned order payload used to derive `order_id` and the transaction body.
-    pub order_to_sign: cow_sdk_core::UnsignedOrder,
+    pub order_to_sign: cow_sdk_core::OrderData,
     /// Signer-derived owner resolved at transaction construction via
     /// [`Signer::get_address`].
     ///
@@ -47,7 +47,7 @@ impl EthFlowTransaction {
     pub const fn new(
         order_id: cow_sdk_core::OrderUid,
         transaction: TransactionRequest,
-        order_to_sign: cow_sdk_core::UnsignedOrder,
+        order_to_sign: cow_sdk_core::OrderData,
         from: cow_sdk_core::Address,
     ) -> Self {
         Self {
@@ -422,7 +422,7 @@ fn order_uid_bytes(order_uid: &cow_sdk_core::OrderUid) -> AlloyBytes {
 }
 
 fn encode_ethflow_create_order(
-    order: &cow_sdk_core::UnsignedOrder,
+    order: &cow_sdk_core::OrderData,
     quote_id: i64,
 ) -> Result<String, TradingError> {
     let payload = EthFlowOrderData::from_unsigned_order(order, quote_id)?;

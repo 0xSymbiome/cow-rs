@@ -6,7 +6,7 @@ use serde_json::json;
 use cow_sdk::core::{
     Amount, AppDataHex, BlockInfo, BuyTokenDestination, ContractCall, ContractHandle, Hash32,
     HexData, OrderKind, Provider, SellTokenSource, Signer, TransactionBroadcast,
-    TransactionReceipt, TransactionRequest, TypedDataDomain, TypedDataField, UnsignedOrder,
+    TransactionReceipt, TransactionRequest, TypedDataDomain, TypedDataField, OrderData,
 };
 use cow_sdk::orderbook::{
     ApiContext, AppDataHash, Order, OrderCancellations, OrderCreation, OrderQuoteRequest,
@@ -67,8 +67,8 @@ pub fn orderbook_version_response(version: &str) -> ResponseTemplate {
     ResponseTemplate::new(200).set_body_raw(version.as_bytes(), "text/plain; charset=utf-8")
 }
 
-pub fn sample_unsigned_order() -> UnsignedOrder {
-    UnsignedOrder::new(
+pub fn sample_unsigned_order() -> OrderData {
+    OrderData::new(
         sample_sell_token(),
         sample_buy_token(),
         address(ALT_RECEIVER),

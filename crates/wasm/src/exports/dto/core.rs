@@ -99,8 +99,8 @@ impl From<OrderInput> for pure::dto::OrderInput {
     }
 }
 
-impl From<&cow_sdk_core::UnsignedOrder> for OrderInput {
-    fn from(value: &cow_sdk_core::UnsignedOrder) -> Self {
+impl From<&cow_sdk_core::OrderData> for OrderInput {
+    fn from(value: &cow_sdk_core::OrderData) -> Self {
         Self {
             sell_token: value.sell_token.to_hex_string(),
             buy_token: value.buy_token.to_hex_string(),
@@ -130,7 +130,7 @@ impl From<&cow_sdk_core::UnsignedOrder> for OrderInput {
     }
 }
 
-pub fn parse_order(input: OrderInput) -> Result<cow_sdk_core::UnsignedOrder, WasmError> {
+pub fn parse_order(input: OrderInput) -> Result<cow_sdk_core::OrderData, WasmError> {
     let pure: pure::dto::OrderInput = input.into();
     pure.to_unsigned_order().map_err(WasmError::from)
 }

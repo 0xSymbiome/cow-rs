@@ -27,7 +27,7 @@
 //!   different UID produces a different batch digest.
 
 use cow_sdk_contracts::{
-    Order, OrderCancellations, OrderUidParams, hash_order_cancellation, hash_order_cancellations,
+    OrderCancellations, OrderUidParams, hash_order_cancellation, hash_order_cancellations,
     pack_order_uid_params,
 };
 use cow_sdk_core::{Address, ChainId, OrderDigest, OrderUid, TypedDataDomain};
@@ -108,11 +108,6 @@ fuzz_target!(|input: FuzzInput| {
             );
         }
     }
-
-    // Touch the typed-`Order` boundary used by the surrounding module so the
-    // imported alias is exercised even when the input collapses to the
-    // empty cancellation batch.
-    let _: Option<Order> = None;
 });
 
 fn build_uids(

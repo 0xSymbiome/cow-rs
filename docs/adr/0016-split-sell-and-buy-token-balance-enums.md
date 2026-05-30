@@ -30,7 +30,7 @@ the buy side is a silent rewriting of a reviewed wire contract.
 Splitting the enums in `cow-sdk-core` lifts the side discipline
 into the type system, makes cross-side coercion a compile error
 across the workspace, and lets the `OrderCreation`,
-`UnsignedOrder`, `QuoteData`, and `Order` DTOs carry the
+`OrderData`, `QuoteData`, and `Order` DTOs carry the
 side-specific type on the right field.
 
 ## Must Remain True
@@ -59,7 +59,7 @@ side-specific type on the right field.
   pinned compile-fail witness under
   `crates/core/tests/ui/token_balance_split_cross_side.rs` proves
   that assigning a `SellTokenSource` value into a
-  `BuyTokenDestination`-typed field on `UnsignedOrder` fails to
+  `BuyTokenDestination`-typed field on `OrderData` fails to
   compile.
 - Cost: every shipped crate (`cow-sdk-core`, `cow-sdk-contracts`,
   `cow-sdk-orderbook`, `cow-sdk-signing`, `cow-sdk-trading`,

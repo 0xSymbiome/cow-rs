@@ -10,7 +10,7 @@ use cow_sdk::browser_wallet::{
     MockEip1193Transport, WalletEvent, WalletSession,
 };
 use cow_sdk::core::{
-    AppDataHash, AppDataHex, BuyTokenDestination, OrderKind, SellTokenSource, UnsignedOrder,
+    AppDataHash, AppDataHex, BuyTokenDestination, OrderKind, SellTokenSource, OrderData,
     wrapped_native_token,
 };
 use cow_sdk::orderbook::{
@@ -862,8 +862,8 @@ fn sample_trade_parameters(chain_id: SupportedChainId) -> TradeParameters {
     .with_valid_for(1800)
 }
 
-fn sample_unsigned_order(chain_id: SupportedChainId) -> UnsignedOrder {
-    UnsignedOrder::new(
+fn sample_unsigned_order(chain_id: SupportedChainId) -> OrderData {
+    OrderData::new(
         wrapped_native_token(chain_id).address,
         sample_buy_token(),
         sample_owner(),
@@ -938,7 +938,7 @@ fn parse_order_uid(value: &str) -> Result<OrderUid, JsValue> {
     OrderUid::new(value).map_err(|error| to_js_error(error.to_string()))
 }
 
-fn parse_order(order_json: &str) -> Result<UnsignedOrder, JsValue> {
+fn parse_order(order_json: &str) -> Result<OrderData, JsValue> {
     parse_json(order_json, "unsignedOrder")
 }
 

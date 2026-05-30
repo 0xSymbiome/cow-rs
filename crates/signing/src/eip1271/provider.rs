@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use cow_sdk_core::UnsignedOrder;
+use cow_sdk_core::OrderData;
 
 use super::Eip1271SignatureError;
 
@@ -12,5 +12,5 @@ pub trait Eip1271SignatureProvider: Send + Sync {
     /// # Errors
     ///
     /// Returns [`Eip1271SignatureError`] when signing fails.
-    async fn sign(&self, order_to_sign: &UnsignedOrder) -> Result<String, Eip1271SignatureError>;
+    async fn sign(&self, order_to_sign: &OrderData) -> Result<String, Eip1271SignatureError>;
 }

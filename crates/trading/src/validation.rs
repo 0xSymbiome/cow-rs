@@ -17,8 +17,10 @@
 
 use std::time::Duration;
 
-use cow_sdk_core::{Address, Amount, EVM_NATIVE_CURRENCY_ADDRESS, OrderKind, SupportedChainId};
-use cow_sdk_orderbook::{OrderCreation, SigningScheme};
+use cow_sdk_core::{
+    Address, Amount, EVM_NATIVE_CURRENCY_ADDRESS, OrderData, OrderKind, SupportedChainId,
+};
+use cow_sdk_orderbook::SigningScheme;
 use serde::{Deserialize, Serialize};
 
 /// Typed client-side rejection variants produced by
@@ -53,15 +55,15 @@ pub enum ClientRejection {
         /// Maximum lifetime in seconds enforced by the configured bounds.
         max_seconds: u64,
     },
-    /// `OrderCreation.from` is the zero address.
+    /// The submitted owner address (`from`) is the zero address.
     #[error("missing from: order.from must not be the zero address")]
     MissingFrom,
-    /// App-data `metadata.signer` disagrees with `OrderCreation.from`.
+    /// App-data `metadata.signer` disagrees with the submitted owner (`from`).
     #[error("appdata-from mismatch: metadata.signer={appdata_signer}, order.from={from}")]
     AppdataFromMismatch {
         /// Declared signer carried inside `metadata.signer`.
         appdata_signer: Address,
-        /// `OrderCreation.from` address submitted alongside the order.
+        /// Owner address (`from`) submitted alongside the order.
         from: Address,
     },
     /// A buy-side order's sell and buy tokens collapse to the same address
@@ -148,7 +150,7 @@ impl Default for OrderValidityBounds {
 /// Every cow-rs submission seam currently routes through `Limit` because
 /// the reviewed services validator classifies any order carrying a
 /// zero-`fee_amount` on the wire as a limit order. The `Market` variant is
-/// exposed so offline helpers that assemble an `OrderCreation` outside the
+/// exposed so offline helpers that assemble a signing order outside the
 /// hot path can still exercise the tighter market-class bound.
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -162,7 +164,8 @@ pub enum SubmissionClass {
 }
 
 /// Pure client-side validator that enforces the reviewed services protocol
-/// invariants on an [`OrderCreation`] before it reaches the orderbook.
+/// invariants on a signing order ([`cow_sdk_core::OrderData`]) and its
+/// submission owner before the order reaches the orderbook.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct OrderBoundsValidator {
     bounds: OrderValidityBounds,
@@ -230,8 +233,13 @@ impl OrderBoundsValidator {
         self.weth_address.as_ref()
     }
 
-    /// Validates the supplied [`OrderCreation`] against the reviewed
-    /// protocol-invariant matrix.
+    /// Validates the supplied signing order ([`cow_sdk_core::OrderData`])
+    /// and its submission owner against the reviewed protocol-invariant matrix.
+    ///
+    /// `from` is the submission owner — the order owner for an ECDSA-signed
+    /// order, or the on-chain user for an `EthFlow` order — and is the address
+    /// the owner-presence and app-data-signer checks run against. It is threaded
+    /// separately because the canonical signing order carries no owner field.
     ///
     /// The helper is pure — `now` is a caller-supplied UNIX-seconds
     /// timestamp and no `SystemTime::now` is read inside the validator.
@@ -252,13 +260,14 @@ impl OrderBoundsValidator {
     /// caller can surface a typed error before any HTTP transport runs.
     pub fn validate(
         &self,
-        order: &OrderCreation,
+        order: &OrderData,
+        from: Address,
         scheme: SigningScheme,
         app_data_signer: Option<Address>,
         now: u64,
         is_eth_flow: bool,
     ) -> Result<(), ClientRejection> {
-        if order.from == zero_address() {
+        if from == zero_address() {
             return Err(ClientRejection::MissingFrom);
         }
 
@@ -289,11 +298,11 @@ impl OrderBoundsValidator {
         validate_amount("buyAmount", AmountSide::Buy, &order.buy_amount)?;
 
         if let Some(appdata_signer) = app_data_signer
-            && appdata_signer != order.from
+            && appdata_signer != from
         {
             return Err(ClientRejection::AppdataFromMismatch {
                 appdata_signer,
-                from: order.from,
+                from,
             });
         }
 
@@ -422,8 +431,10 @@ pub fn assert_owner_matches_signer(
 #[cfg(test)]
 mod tests {
     use super::{ClientRejection, OrderBoundsValidator, OrderValidityBounds, SubmissionClass};
-    use cow_sdk_core::{Address, Amount, OrderKind};
-    use cow_sdk_orderbook::{OrderCreation, SigningScheme};
+    use cow_sdk_core::{
+        Address, Amount, AppDataHash, BuyTokenDestination, OrderData, OrderKind, SellTokenSource,
+    };
+    use cow_sdk_orderbook::SigningScheme;
 
     const FROM: &str = "0x1111111111111111111111111111111111111111";
     const SELL_TOKEN: &str = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
@@ -435,18 +446,26 @@ mod tests {
         Address::new(hex).expect("fixture address must be valid")
     }
 
-    fn order() -> OrderCreation {
-        OrderCreation::new(
+    fn order() -> OrderData {
+        OrderData::new(
             address(SELL_TOKEN),
             address(BUY_TOKEN),
+            address(FROM),
             Amount::new("1000000000000000000").expect("test amount literal must be valid"),
             Amount::new("1000000").expect("test amount literal must be valid"),
             VALID_TO,
+            app_data_hash(),
+            Amount::ZERO,
             OrderKind::Sell,
-            SigningScheme::Eip712,
-            "0x",
-            address(FROM),
+            false,
+            SellTokenSource::Erc20,
+            BuyTokenDestination::Erc20,
         )
+    }
+
+    fn app_data_hash() -> AppDataHash {
+        AppDataHash::new("0x0000000000000000000000000000000000000000000000000000000000000000")
+            .expect("app-data hash literal must be valid")
     }
 
     #[test]
@@ -458,7 +477,14 @@ mod tests {
         let mut order = order();
         order.valid_to = u32::try_from(NOW + 31_536_001).expect("valid_to must fit in u32");
         validator
-            .validate(&order, SigningScheme::Eip712, None, NOW, false)
+            .validate(
+                &order,
+                address(FROM),
+                SigningScheme::Eip712,
+                None,
+                NOW,
+                false,
+            )
             .expect("Liquidity class must bypass the lifetime ceiling");
     }
 
@@ -471,7 +497,14 @@ mod tests {
         let mut order = order();
         order.valid_to = u32::try_from(NOW + 10_801).expect("valid_to must fit in u32");
         let error = validator
-            .validate(&order, SigningScheme::Eip712, None, NOW, false)
+            .validate(
+                &order,
+                address(FROM),
+                SigningScheme::Eip712,
+                None,
+                NOW,
+                false,
+            )
             .expect_err("market class must enforce the 3h ceiling");
         assert!(matches!(
             error,
@@ -492,7 +525,14 @@ mod tests {
         let mut order = order();
         order.valid_to = u32::try_from(NOW + 60).expect("valid_to must fit in u32");
         let error = validator
-            .validate(&order, SigningScheme::Eip712, None, NOW, false)
+            .validate(
+                &order,
+                address(FROM),
+                SigningScheme::Eip712,
+                None,
+                NOW,
+                false,
+            )
             .expect_err("custom 120s minimum must reject a 60s lifetime");
         assert!(matches!(
             error,

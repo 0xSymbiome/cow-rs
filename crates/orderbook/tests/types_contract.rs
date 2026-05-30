@@ -1,9 +1,11 @@
 mod common;
 
+use cow_sdk_core::OrderData;
 use cow_sdk_orderbook::{
-    Amount, ApiContextOverride, AppDataHash, BuyTokenDestination, CowEnv, GetOrdersRequest,
-    GetTradesRequest, OrderCreation, OrderKind, OrderQuoteRequest, OrderQuoteSide, PriceQuality,
-    QuoteAppData, QuoteSigningScheme, SellTokenSource, SigningScheme, SupportedChainId,
+    Address, Amount, ApiContextOverride, AppDataHash, BuyTokenDestination, CowEnv,
+    GetOrdersRequest, GetTradesRequest, OrderCreation, OrderKind, OrderQuoteRequest,
+    OrderQuoteSide, PriceQuality, QuoteAppData, QuoteSigningScheme, SellTokenSource, SigningScheme,
+    SupportedChainId,
 };
 use serde_json::json;
 
@@ -14,6 +16,69 @@ use crate::common::{
 
 fn amount(value: &str) -> Amount {
     Amount::new(value).expect("test amount literal must be valid")
+}
+
+#[test]
+fn order_creation_from_signed_mirrors_the_signed_order() {
+    let sell_token = Address::new("0x1111111111111111111111111111111111111111").unwrap();
+    let buy_token = Address::new("0x2222222222222222222222222222222222222222").unwrap();
+    let receiver = Address::new("0x3333333333333333333333333333333333333333").unwrap();
+    let from = Address::new("0x4444444444444444444444444444444444444444").unwrap();
+    let app_data_hash =
+        AppDataHash::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+            .unwrap();
+
+    let order_to_sign = OrderData::new(
+        sell_token,
+        buy_token,
+        receiver,
+        amount("1000000000000000000"),
+        amount("900000000"),
+        1_700_000_000,
+        app_data_hash,
+        amount("0"),
+        OrderKind::Sell,
+        true,
+        SellTokenSource::External,
+        BuyTokenDestination::Internal,
+    );
+
+    let creation = OrderCreation::from_signed(
+        &order_to_sign,
+        SigningScheme::Eip712,
+        "0xsignature",
+        from,
+        Some("{\"version\":\"1.0.0\"}".to_owned()),
+        Some(99),
+    );
+
+    // Every signed economic field is copied verbatim from the signing order.
+    assert_eq!(creation.sell_token, sell_token);
+    assert_eq!(creation.buy_token, buy_token);
+    assert_eq!(creation.receiver, Some(receiver));
+    assert_eq!(creation.sell_amount, amount("1000000000000000000"));
+    assert_eq!(creation.buy_amount, amount("900000000"));
+    assert_eq!(creation.valid_to, 1_700_000_000);
+    assert_eq!(
+        creation.app_data.as_deref(),
+        Some("{\"version\":\"1.0.0\"}")
+    );
+    // The wire hash is taken from the signed order's `app_data` commitment, not
+    // a separate caller-supplied value that could diverge from what was signed.
+    assert_eq!(creation.app_data_hash, Some(app_data_hash));
+    assert_eq!(creation.kind, OrderKind::Sell);
+    assert!(creation.partially_fillable);
+    assert_eq!(creation.sell_token_balance, SellTokenSource::External);
+    assert_eq!(creation.buy_token_balance, BuyTokenDestination::Internal);
+    assert_eq!(creation.signing_scheme, SigningScheme::Eip712);
+    assert_eq!(creation.signature, "0xsignature");
+    assert_eq!(creation.from, from);
+    assert_eq!(creation.quote_id, Some(99));
+
+    // The order-level fee is always wired as "0" on submission, independent of
+    // any fee carried on the signing order.
+    let value = serde_json::to_value(&creation).expect("submission payload must serialize");
+    assert_eq!(value["feeAmount"], json!("0"));
 }
 
 #[test]

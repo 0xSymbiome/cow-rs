@@ -19,34 +19,21 @@ use crate::{
 };
 
 fn build_order_body(
-    order_to_sign: &cow_sdk_core::UnsignedOrder,
+    order_to_sign: &cow_sdk_core::OrderData,
     app_data: &TradingAppDataInfo,
     scheme: SigningScheme,
     signature: String,
     from: Address,
     params: &LimitTradeParameters,
 ) -> OrderCreation {
-    let mut order_body = OrderCreation::new(
-        order_to_sign.sell_token,
-        order_to_sign.buy_token,
-        order_to_sign.sell_amount,
-        order_to_sign.buy_amount,
-        order_to_sign.valid_to,
-        order_to_sign.kind,
+    OrderCreation::from_signed(
+        order_to_sign,
         scheme,
         signature,
         from,
+        Some(app_data.full_app_data.clone()),
+        params.quote_id,
     )
-    .with_receiver(order_to_sign.receiver)
-    .with_app_data(app_data.full_app_data.clone())
-    .with_app_data_hash(app_data.app_data_keccak256)
-    .with_partially_fillable(order_to_sign.partially_fillable)
-    .with_sell_token_balance(order_to_sign.sell_token_balance)
-    .with_buy_token_balance(order_to_sign.buy_token_balance);
-    if let Some(quote_id) = params.quote_id {
-        order_body = order_body.with_quote_id(quote_id);
-    }
-    order_body
 }
 
 /// Signs and submits a `CoW` Protocol order.
@@ -171,18 +158,11 @@ where
         &app_data.app_data_keccak256,
     )?;
 
-    let preview = build_order_body(
-        &order_to_sign,
-        app_data,
-        requested_scheme,
-        String::new(),
-        from,
-        &params,
-    );
     let validator = OrderBoundsValidator::services_default_for_chain(chain_id);
     validator
         .validate(
-            &preview,
+            &order_to_sign,
+            from,
             requested_scheme,
             app_data_signer,
             current_unix_seconds(),
@@ -275,7 +255,7 @@ pub(super) fn advanced_additional_params(
 }
 
 async fn sign_order_for_submission<S>(
-    order_to_sign: &cow_sdk_core::UnsignedOrder,
+    order_to_sign: &cow_sdk_core::OrderData,
     chain_id: cow_sdk_core::SupportedChainId,
     signer: &S,
     scheme: SigningScheme,

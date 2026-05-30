@@ -3,8 +3,8 @@ mod common;
 use std::sync::{Arc, Mutex};
 
 use cow_sdk_core::{
-    Amount, AppCode, BuyTokenDestination, CowEnv, MAX_VALID_TO_EPOCH, ProtocolOptions,
-    SellTokenSource, SupportedChainId, UnsignedOrder, ValidationReason, wrapped_native_token,
+    Amount, AppCode, BuyTokenDestination, CowEnv, MAX_VALID_TO_EPOCH, OrderData, ProtocolOptions,
+    SellTokenSource, SupportedChainId, ValidationReason, wrapped_native_token,
 };
 
 fn test_app_code() -> AppCode {
@@ -389,7 +389,7 @@ async fn quote_results_capture_originating_orderbook_runtime_binding() {
 #[tokio::test]
 async fn order_id_collision_retries_with_new_salt_until_success_or_cap() {
     let chain_id = SupportedChainId::Sepolia;
-    let order = UnsignedOrder::new(
+    let order = OrderData::new(
         address(cow_sdk_core::EVM_NATIVE_CURRENCY_ADDRESS),
         address(crate::common::COW),
         address(OWNER),

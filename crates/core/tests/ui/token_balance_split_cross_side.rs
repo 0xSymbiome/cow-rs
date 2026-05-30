@@ -15,7 +15,7 @@
 //! source and its captured `stderr` remain pinned in the tree.
 
 use cow_sdk_core::{
-    Address, Amount, AppDataHex, BuyTokenDestination, OrderKind, SellTokenSource, UnsignedOrder,
+    Address, Amount, AppDataHex, BuyTokenDestination, OrderKind, SellTokenSource, OrderData,
 };
 
 fn main() {
@@ -23,7 +23,7 @@ fn main() {
 
     // Cross-side assignment of a `SellTokenSource` into a
     // `BuyTokenDestination`-typed field must fail to compile.
-    let _order = UnsignedOrder::new(
+    let _order = OrderData::new(
         Address::new("0x1111111111111111111111111111111111111111").unwrap(),
         Address::new("0x2222222222222222222222222222222222222222").unwrap(),
         Address::new("0x3333333333333333333333333333333333333333").unwrap(),

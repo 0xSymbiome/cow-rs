@@ -1,12 +1,13 @@
 # Shared Logic Reviewability Audit
 
 Status: Current  
-Last reviewed: 2026-05-26
+Last reviewed: 2026-05-30
 Owning surface: Orderbook, signing, and trading shared-logic reviewability boundary, plus the canonical primitive-layer invocation paths shared across the cow-rs workspace  
 Refresh trigger: Changes to shared orderbook request execution, signing payload construction, thin posting wrappers, boundary-specific order DTO separation, or the canonical primitive-layer invocation paths (keccak256, U256 and quantity parsing, address encoding, hex serde, typed-primitive bridges, and identity-wire-form preservation) that materially affect correctness or reviewability  
 Related docs:
 - [ADR 0005](../adr/0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
 - [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md)
+- [ADR 0059](../adr/0059-hash-concrete-orderdata-directly.md)
 - [Architecture](../architecture.md)
 - [Verification Guide](../verification-guide.md)
 
@@ -35,7 +36,7 @@ internal refactors that do not affect correctness or reviewability.
 | Shared retry, status, and rate-limit execution | Use one shared executor for JSON, text, and empty responses | Conforms |
 | Shared signing payload preparation | Share payload construction across the async signing entry points | Conforms |
 | Thin trading posting wrappers | Keep ergonomic entry points thin and route workflow logic through the async implementation path | Conforms |
-| Boundary-specific order DTO separation | Retain distinct DTOs only where ABI, API, normalized, or user-domain boundaries differ materially | Conforms |
+| Boundary-specific order DTO separation | Retain distinct DTOs only where ABI, API, or user-domain boundaries differ materially; hash the concrete user-domain `OrderData` directly rather than carrying a contracts-layer order type | Conforms |
 | Canonical primitive-layer invocation | Use one canonical entry point per shared primitive across the workspace, with cow-owned `#[repr(transparent)]` newtypes over `alloy_primitives` per ADR 0052 | Current |
 
 ## Current Contract
@@ -66,17 +67,18 @@ in:
 ### Boundary-Specific Order DTO Separation
 
 Order-like DTO separation is retained only where the boundary is materially
-different:
+different. The contracts crate hashes the concrete `cow_sdk_core::OrderData`
+directly, so it carries no order type of its own; the surviving order-like DTOs
+are:
 
-- `cow_sdk_core::UnsignedOrder`
-- `cow_sdk_contracts::Order`
-- `cow_sdk_contracts::NormalizedOrder`
-- `cow_sdk_orderbook::QuoteData`
-- `cow_sdk_orderbook::OrderCreation`
-- `cow_sdk_orderbook::Order`
+- `cow_sdk_core::OrderData` — the EIP-712 signing and hashing input
+- `cow_sdk_orderbook::QuoteData` — the `/quote` request and response payload
+- `cow_sdk_orderbook::OrderCreation` — the order-submission payload
+- `cow_sdk_orderbook::Order` — the fetched-order response record
 
-Generated or schema-derived artifacts remain internal or test-only and are not
-part of the public SDK API.
+Generated or schema-derived artifacts — including the crate-internal EIP-712
+codec struct — remain internal or test-only and are not part of the public SDK
+API.
 
 ### Canonical Primitive Layer Invocation
 
@@ -148,7 +150,7 @@ Primary regression coverage:
 - `crates/orderbook/tests/request_contract.rs::rate_limiter_spaces_requests_after_token_budget_is_consumed`
 - `crates/signing/tests/order_signing_contract.rs::async_sign_order_paths_match_sync_signing_behavior`
 - `crates/signing/tests/cancellation_contract.rs::async_cancellation_signing_paths_match_sync_variants`
-- `crates/contracts/tests/order_contract.rs::unsigned_order_conversion_makes_user_domain_and_contract_boundaries_explicit`
+- `crates/contracts/tests/order_contract.rs::canonical_unsigned_order_path_matches_upstream_signing_fixture_digest_and_uid`
 - `crates/orderbook/tests/types_contract.rs::order_creation_from_quote_keeps_quote_shape_and_quote_id`
 - `crates/orderbook/tests/signing_scheme_bridge_contract.rs`
 - `crates/core/tests/wire_format_preservation_contract.rs`

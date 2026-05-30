@@ -58,9 +58,9 @@ pub use transport::{ReqwestTransport, ReqwestTransportConfig};
 pub use types::{
     Address, Amount, Amounts, AppCode, AppCodeError, AppDataHash, AppDataHex, BlockHash,
     BuyTokenDestination, ChainId, Costs, DecimalAmount, FeeComponent, Hash32, HexData, LogMeta,
-    LogQuery, NetworkFee, ORDER_TYPE_FIELD_NAMES, Order, OrderDigest, OrderKind, OrderUid,
+    LogQuery, NetworkFee, ORDER_TYPE_FIELD_NAMES, OrderData, OrderDigest, OrderKind, OrderUid,
     QUOTE_AMOUNT_STAGE_NAMES, QuoteAmountsAndCosts, QuoteRequest, QuoteResponse, RawLog,
-    SellTokenSource, SignedAmount, TokenInfo, Trade, TradeModel, TransactionHash, UnsignedOrder,
+    SellTokenSource, SignedAmount, TokenInfo, Trade, TradeModel, TransactionHash,
     VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS, ValidTo, addresses_equal,
     token_id,
 };

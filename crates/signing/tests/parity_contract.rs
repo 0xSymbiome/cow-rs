@@ -28,8 +28,8 @@ use std::collections::BTreeMap;
 
 use cow_sdk_contracts::{ContractsError, RecoverableSignature, SigningScheme};
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, ChainId, CowEnv, OrderKind, ProtocolOptions, SupportedChainId,
-    UnsignedOrder,
+    Address, Amount, AppDataHash, ChainId, CowEnv, OrderData, OrderKind, ProtocolOptions,
+    SupportedChainId,
 };
 use cow_sdk_signing::{
     ORDER_CANCELLATIONS_PRIMARY_TYPE, ORDER_PRIMARY_TYPE, SigningError, cancellation_fields,
@@ -572,8 +572,8 @@ fn scheme_label_to_rust(id: &str, label: &str) -> SigningScheme {
     }
 }
 
-fn sample_order() -> UnsignedOrder {
-    UnsignedOrder::new(
+fn sample_order() -> OrderData {
+    OrderData::new(
         Address::new("0x1111111111111111111111111111111111111111").unwrap(),
         Address::new("0x2222222222222222222222222222222222222222").unwrap(),
         Address::new("0x3333333333333333333333333333333333333333").unwrap(),

@@ -12,8 +12,7 @@ mod validity;
 #[cfg(test)]
 mod tests {
     use super::{
-        Address, Amount, AppDataHash, BuyTokenDestination, OrderKind, SellTokenSource,
-        UnsignedOrder,
+        Address, Amount, AppDataHash, BuyTokenDestination, OrderData, OrderKind, SellTokenSource,
     };
 
     #[test]
@@ -29,7 +28,7 @@ mod tests {
                 .unwrap();
         let fee_amount = Amount::new("5").unwrap();
 
-        let from_builder = UnsignedOrder::new(
+        let from_builder = OrderData::new(
             sell_token,
             buy_token,
             receiver,
@@ -50,7 +49,7 @@ mod tests {
         .with_sell_token_balance(SellTokenSource::External)
         .with_buy_token_balance(BuyTokenDestination::Internal);
 
-        let from_literal = UnsignedOrder {
+        let from_literal = OrderData {
             sell_token,
             buy_token,
             receiver,

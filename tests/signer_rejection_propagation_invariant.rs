@@ -21,8 +21,8 @@
 
 use cow_sdk_browser_wallet::BrowserWalletError;
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, BuyTokenDestination, OrderKind, SellTokenSource,
-    SupportedChainId, TypedDataPayload, TypedDataSigner, UnsignedOrder,
+    Address, Amount, AppDataHash, BuyTokenDestination, OrderData, OrderKind, SellTokenSource,
+    SupportedChainId, TypedDataPayload, TypedDataSigner,
 };
 use cow_sdk_signing::{SigningError, sign_order};
 
@@ -50,8 +50,8 @@ impl TypedDataSigner for RejectingSigner {
     }
 }
 
-fn sample_order() -> UnsignedOrder {
-    UnsignedOrder::new(
+fn sample_order() -> OrderData {
+    OrderData::new(
         Address::new("0x1111111111111111111111111111111111111111").unwrap(),
         Address::new("0x2222222222222222222222222222222222222222").unwrap(),
         Address::new("0x4444444444444444444444444444444444444444").unwrap(),

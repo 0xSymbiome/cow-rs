@@ -14,6 +14,22 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Added
 
+- `cow_sdk_orderbook::OrderCreation::from_signed` is the canonical conversion
+  from a signed `cow_sdk_core::OrderData` into a submission payload: it copies
+  every signed economic field verbatim, wires the order-level fee as `"0"`, and
+  derives the wire `appDataHash` from the signed order's `app_data` so the
+  submitted hash cannot diverge from the signed commitment. The managed
+  trade-posting path builds the submission body through it.
+- `cow_sdk_orderbook::Order::signing_order` projects a fetched order back into
+  the `cow_sdk_core::OrderData` used for EIP-712 hashing and UID re-derivation,
+  resolving an omitted receiver to the pay-to-owner zero-address sentinel. It
+  returns `None` for `EthFlow` orders, whose response fields are rewritten for
+  display and therefore cannot reproduce the on-chain digest, so the projection
+  fails closed rather than yielding a silently wrong hashing input.
+- `cow_sdk_contracts::order_eip712_type_hash()` returns the canonical EIP-712
+  `Order` type hash (matching the upstream services `OrderData::TYPE_HASH`) for
+  callers pinning or verifying an order digest without reaching for a generated
+  codec struct.
 - `cow_sdk_orderbook::QuoteData` now mirrors the full orderbook
   `OrderParameters` quote payload: it models the network-cost gas estimates
   `gasAmount`, `gasPrice`, and `sellTokenPrice` (decimal-string wire shape), the
@@ -123,6 +139,25 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- Renamed the canonical signed-order payload `cow_sdk_core::UnsignedOrder` to
+  `cow_sdk_core::OrderData`, aligning the Rust SDK's name with the upstream
+  services `model::order::OrderData` it mirrors byte-for-byte. The rename is
+  wire-neutral: the EIP-712 field set, type hash, and serialized shape are
+  unchanged.
+- `cow_sdk_trading::OrderBoundsValidator::validate` now takes the signing order
+  (`cow_sdk_core::OrderData`) plus its submission owner (`from: Address`)
+  instead of a fully built `cow_sdk_orderbook::OrderCreation`. The validator
+  only inspects the order's economic fields and the owner, so the eth-flow
+  submission path no longer fabricates a throwaway `OrderCreation` with an empty
+  signature solely to validate. The `ClientRejection` variants and every
+  enforced invariant are unchanged.
+- The remaining `cow-sdk-contracts` order encode and decode surfaces take the
+  concrete `cow_sdk_core::OrderData` in place of the removed contracts-crate order
+  types: `SettlementEncoder::encode_trade`, the `encode_trade` codec free function,
+  and the swap-encoder `encode_trade` accept `&OrderData`; `decode_order` returns
+  `OrderData`; and the `cow_sdk_contracts::OnchainOrderPlacement.order` field is an
+  `OrderData`. The encoded settlement calldata, the decoded values, and the
+  on-chain event shape are unchanged — only the order type moves.
 - `cow-sdk-orderbook` solver-competition reads now target the orderbook `v2`
   routes (`/api/v2/solver_competition/{auctionId}`, `/by_tx_hash/{txHash}`, and
   `/latest`) and decode into a fully typed `SolverCompetitionResponse`.
@@ -243,6 +278,26 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Removed
 
+- Removed the unused `cow_sdk_core::Order` envelope (the
+  `{ unsigned, owner, uid }` wrapper around `OrderData`); it had no
+  constructor caller, reader, or conversion, and no upstream analog. The bare
+  `Order` re-export was also dropped from the `cow-sdk` prelude. Reach the
+  order types by module path instead: `cow_sdk::core::OrderData` (the EIP-712
+  signing and hashing input) and `cow_sdk::orderbook::Order` (the response
+  record).
+- Removed the `cow_sdk_contracts::Order` and `cow_sdk_contracts::NormalizedOrder`
+  order types and the generated `cow_sdk_contracts::GPv2Order` `sol!` struct from
+  the public API. EIP-712 order hashing and UID derivation now operate directly
+  on the concrete `cow_sdk_core::OrderData`: `hash_order`, `compute_order_uid`,
+  and the cancellation hashers take `&OrderData`, and the canonical type hash is
+  exposed through `order_eip712_type_hash()`. The contracts crate no longer
+  defines its own order type — the macro-emitted EIP-712 codec struct is
+  crate-internal machinery with no consumer journey, and the optional-to-concrete
+  normalization step it required is gone because a concrete order maps straight
+  onto the codec layout. A `receiver` of `address(0)` is hashed verbatim as the
+  protocol's pay-to-owner sentinel; the eth-flow construction path keeps its own
+  `ContractsError::ZeroReceiver` guard. Recorded in
+  [ADR 0059](docs/adr/0059-hash-concrete-orderdata-directly.md).
 - Removed `OrderBookApi::get_auction` and the `Auction` response type. The
   `/api/v1/auction` endpoint is not reachable for public clients and upstream
   treats it as a liveness probe rather than a data feed. With no public auction
@@ -710,9 +765,10 @@ The first functional crate-family release begins at `0.1.0`.
   mirrors the deployed contract's `ReceiverMustBeSet()` revert (selector
   `0xefc9ccdf`), raised from `EthFlowOrder.toCoWSwapOrder` on both the
   `createOrder` and `invalidateOrder` write paths through the shared
-  library function. The same predicate now backs the regular-order
-  `normalize_order` rejection through a shared private helper so the
-  receiver-rejection rule lives in one place across `cow-sdk-contracts`.
+  library function. The predicate lives in one private `reject_zero_receiver`
+  helper invoked by the `EthFlowOrderData` construction paths; the general
+  order hash path hashes a `receiver` of `address(0)` verbatim as the
+  protocol's pay-to-owner sentinel and does not reject it.
   Downstream encoders in `cow-sdk-trading` and the `cow-sdk-wasm` bridge
   propagate the typed error through their existing `Result` surfaces;
   the trading-layer `OrderBoundsValidator` pre-empts the case before any
@@ -1169,9 +1225,10 @@ The first functional crate-family release begins at `0.1.0`.
   with `ContractsError::ZeroReceiver`, pre-empting the deployed
   `CoWSwapEthFlow` contract's `ReceiverMustBeSet()` revert (selector
   `0xefc9ccdf`) raised by `EthFlowOrder.toCoWSwapOrder` on both the
-  `createOrder` and `invalidateOrder` write paths. The same predicate is
-  shared with `cow_sdk_contracts::order::hash::normalize_order` via a
-  private `reject_zero_receiver` helper. Governed by ADR 0020.
+  `createOrder` and `invalidateOrder` write paths. The rule lives in the
+  private `reject_zero_receiver` helper invoked by the `EthFlowOrderData`
+  construction paths; the general order hash path treats `address(0)` as the
+  pay-to-owner sentinel and hashes it verbatim. Governed by ADR 0020.
 
 - ADR 0052 (`docs/adr/0052-alloy-primitives-canonical-primitive-layer.md`)
   publishes `alloy_primitives` as the canonical EVM primitive layer and
@@ -2455,7 +2512,7 @@ The first functional crate-family release begins at `0.1.0`.
   allowance path and the buy-side payout path as separate enums that
   mirror the services `model::order::SellTokenSource` and
   `model::order::BuyTokenDestination` byte-identically on the wire.
-  Every `OrderCreation`, `UnsignedOrder`, `QuoteData`, `Order`,
+  Every `OrderCreation`, `OrderData`, `QuoteData`, `Order`,
   `OrderFlags`, `TradeFlags`, `TradeSimulation`, `TradeParameters`,
   `LimitTradeParameters`, `QuoteRequestOverride`, `QuoteCacheKey`, and
   related SDK surface now carries the side-specific type on its
@@ -2611,7 +2668,7 @@ The first functional crate-family release begins at `0.1.0`.
   covering the deterministic codec boundaries: `fuzz_order_uid_pack_unpack`
   asserts the pack-and-extract round-trip for `OrderUid` components;
   `fuzz_typed_data_digest` asserts `hash_order` stays deterministic under
-  Arbitrary-derived `UnsignedOrder` shapes and exercises
+  Arbitrary-derived `OrderData` shapes and exercises
   `hash_order_cancellations`; `fuzz_app_data_cid_roundtrip` asserts
   `cid_to_app_data_hex(app_data_hex_to_cid(x)?)? == x` on both the
   keccak-256 and sha2-256 multihash paths and typed-error-not-panic on
@@ -2681,8 +2738,8 @@ The first functional crate-family release begins at `0.1.0`.
   declaration (with the `preserve_order` feature preserved) routed through
   `[workspace.dependencies]`, rather than a duplicated entry across the
   `[dependencies]` and `[dev-dependencies]` tables. The internal
-  backward-compatibility `TypedOrder = UnsignedOrder` alias in
-  `cow-sdk-signing` is retired; the canonical `UnsignedOrder` type is the
+  backward-compatibility `TypedOrder = OrderData` alias in
+  `cow-sdk-signing` is retired; the canonical `OrderData` type is the
   single name for the pre-signature order state exported through the public
   signing surface and the `cow-sdk` prelude.
 
@@ -2902,10 +2959,10 @@ The first functional crate-family release begins at `0.1.0`.
   and wallet-side capabilities land additively.
 
 - `cow_sdk_core::SupportedChainId`, `cow_sdk_core::CowEnv`, and
-  `cow_sdk_core::UnsignedOrder` are now `#[non_exhaustive]` public
+  `cow_sdk_core::OrderData` are now `#[non_exhaustive]` public
   surfaces so additive chain, environment, and order-shape evolution
   remains semver-compatible ahead of `0.1.0`. Downstream crates now
-  construct unsigned orders through `UnsignedOrder::new(...)` and its
+  construct unsigned orders through `OrderData::new(...)` and its
   chainable `with_receiver`, `with_app_data`, `with_fee_amount`,
   `with_partially_fillable`, `with_sell_token_balance`, and
   `with_buy_token_balance` setters, while downstream `match` expressions

@@ -1,6 +1,6 @@
-use cow_sdk_core::{Address, OrderDigest, OrderUid, TypedDataDomain};
+use cow_sdk_core::{Address, OrderData, OrderDigest, OrderUid, TypedDataDomain};
 
-use super::{ORDER_UID_LENGTH, Order, OrderUidParams, hash::hash_order};
+use super::{ORDER_UID_LENGTH, OrderUidParams, hash::hash_order};
 use crate::ContractsError;
 
 /// Computes the encoded order UID for an order and owner.
@@ -11,7 +11,7 @@ use crate::ContractsError;
 #[inline]
 pub fn compute_order_uid(
     domain: &TypedDataDomain,
-    order: &Order,
+    order: &OrderData,
     owner: &Address,
 ) -> Result<OrderUid, ContractsError> {
     pack_order_uid_params(&OrderUidParams::new(

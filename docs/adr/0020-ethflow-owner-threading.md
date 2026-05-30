@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-22
-- Last reviewed: 2026-05-26
+- Last reviewed: 2026-05-30
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: trading, eth-flow, validation, client-side, defense-in-depth
 - Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md), [ADR 0015](0015-client-side-order-bounds-validator.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
@@ -14,14 +14,15 @@ The EthFlow transaction bundle returned by
 `from: cow_sdk_core::Address` field carrying the signer-derived
 owner resolved during transaction construction via
 `Signer::get_address`. The submission seam
-`post_sell_native_currency_order` builds its pre-HTTP
-validation preview from `tx.from.clone()`, not from
-`tx.order_to_sign.receiver.clone()`. Receiver continues to carry
+`post_sell_native_currency_order` passes `tx.from` (the
+signer-derived owner) as the validation owner to
+`OrderBoundsValidator::validate(&tx.order_to_sign, tx.from, …)`,
+not `tx.order_to_sign.receiver`. Receiver continues to carry
 the payout-recipient semantic unchanged; owner is always
 signer-derived on the EthFlow path. `OrderBoundsValidator::validate`
-checks `app_data_signer` against `OrderCreation.from`, and the
-submission preview therefore compares the declared app-data signer
-against the owner identity rather than against the payout address.
+checks `app_data_signer` against the `from` argument, and the
+seam therefore compares the declared app-data signer against the
+owner identity rather than against the payout address.
 
 ## Why
 
@@ -31,7 +32,7 @@ payout to a recipient that is not the signer. The client-side
 validator introduced by ADR 0015 enforces the reviewed services
 protocol-invariant matrix before any bytes cross the wire, and
 that matrix compares the declared app-data signer against the
-`OrderCreation.from` owner. Seeding the preview from the receiver
+owner passed as `from`. Seeding that owner from the receiver
 conflates the two identities: a legitimate EthFlow with a custom
 receiver and a matching app-data signer raises a false
 `AppdataFromMismatch`, and a tampered flow whose crafted app-data
@@ -59,10 +60,11 @@ the signer.
   seam. Receiver semantics are unchanged: `tx.order_to_sign.receiver`
   remains the payout identity and may legitimately differ from
   `tx.from`.
-- Runtime and support: `post_sell_native_currency_order`
-  reads `let preview_from = tx.from.clone()` when building the
-  preview `OrderCreation` for `OrderBoundsValidator::validate`.
-  No receiver-as-owner fallback remains on the submission path.
+- Runtime and support: `post_sell_native_currency_order` passes
+  `tx.from` (the resolved owner) directly to
+  `OrderBoundsValidator::validate(&tx.order_to_sign, tx.from, …)`;
+  no intermediate `OrderCreation` is built for validation, and no
+  receiver-as-owner fallback remains on the submission path.
   The owner is resolved exactly once inside
   `get_eth_flow_transaction` and forwarded onto the
   bundle; the submission seam does not call
@@ -88,19 +90,18 @@ the signer.
   parameter added to the public `EthFlowTransaction::new`
   constructor, one reuse of the existing local `from` inside
   `get_eth_flow_transaction` at the return site, and one
-  single-line change inside `post_sell_native_currency_order`
-  replacing the prior receiver-as-preview-owner assignment. No
-  change to the public validator surface, the payout semantics,
-  or the EthFlow transaction encoding.
+  change inside `post_sell_native_currency_order` that passes
+  `tx.from` (the owner) as the validation owner. No change to the
+  payout semantics or the EthFlow transaction encoding.
 - Construction-time receiver invariant:
   `cow_sdk_contracts::EthFlowOrderData::new` and
   `EthFlowOrderData::from_unsigned_order` return
   `Result<Self, ContractsError>`, rejecting
   `receiver == Address::ZERO` with `ContractsError::ZeroReceiver`.
-  The same predicate is shared with
-  `cow_sdk_contracts::order::hash::normalize_order` via a private
-  `reject_zero_receiver` helper, so the receiver-rejection rule is
-  expressed in one place across the contracts crate. The shared
+  The rule is expressed once in the private `reject_zero_receiver`
+  helper, invoked by the `EthFlowOrderData` construction paths; the
+  general order hash path treats `address(0)` as the pay-to-owner
+  sentinel and hashes it verbatim. The eth-flow
   rule mirrors the deployed `CoWSwapEthFlow` contract's
   `ReceiverMustBeSet()` revert (selector `0xefc9ccdf`), raised
   from `EthFlowOrder.toCoWSwapOrder` at the calldata-construction

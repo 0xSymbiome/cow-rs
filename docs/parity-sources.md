@@ -109,21 +109,36 @@ single-version resolution across both families.
 
 ## Source Ownership
 
-Primary sources:
+`cow-rs` interoperates with a live protocol, so its parity authorities are the
+upstream producers that define the protocol contract on the wire and on-chain.
 
-- `https://github.com/cowprotocol/cow-sdk.git`
-- `https://github.com/cowprotocol/contracts.git`
-- `https://github.com/cowprotocol/ethflowcontract.git`
+Primary protocol authorities:
 
-Reference-only source:
+- `https://github.com/cowprotocol/services.git` — the off-chain authority for
+  the orderbook HTTP API, the OpenAPI schemas, the wire DTOs, and the
+  order-validation and rejection semantics the SDK must match to interoperate.
+- `https://github.com/cowprotocol/contracts.git` — the on-chain authority for
+  EIP-712 order hashing, the settlement ABI, and deployment addresses.
+- `https://github.com/cowprotocol/ethflowcontract.git` — the on-chain authority
+  for the EthFlow order surface.
 
-- `https://github.com/cowprotocol/services.git`
+Cross-language reference:
+
+- `https://github.com/cowprotocol/cow-sdk.git` — the upstream TypeScript SDK. It
+  is the reference for which consumer workflows a CoW Protocol SDK should offer
+  and for the app-data and subgraph query shapes, but it is a different language
+  with different idioms. It is not the authority for the Rust public API shape
+  (Rust idiom governs that) nor for the wire format (services governs that).
+  Where the TypeScript SDK and services differ on a name or shape, services is
+  authoritative.
+
+Dependency provenance:
+
 - `https://github.com/alloy-rs/alloy.git`
 - `https://github.com/alloy-rs/core.git`
 
-`services` is used for transport and validation semantics only. The Alloy
-repositories are dependency-provenance evidence for native adapter crates.
-They are not publish-time git dependencies.
+The Alloy repositories are dependency-provenance evidence for the native adapter
+crates. None of the repositories above are publish-time git dependencies.
 
 ## Surface Map
 

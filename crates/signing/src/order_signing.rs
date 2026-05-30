@@ -3,13 +3,12 @@ use std::fmt;
 use alloy_primitives::{Bytes as AlloyBytes, keccak256};
 use alloy_sol_types::SolValue;
 use cow_sdk_contracts::{
-    Order as ContractsOrder, OrderUidParams, RecoverableSignature, SigningScheme, buy_balance_name,
-    hash_order, hex_field::decode_hex_field, normalize_order, order_kind_name,
-    pack_order_uid_params, sell_balance_name,
+    OrderUidParams, RecoverableSignature, SigningScheme, buy_balance_name, hash_order,
+    hex_field::decode_hex_field, order_kind_name, pack_order_uid_params, sell_balance_name,
 };
 use cow_sdk_core::{
-    Address, DigestSigner, OrderDigest, OrderUid, ProtocolOptions, SignerError, SupportedChainId,
-    TypedDataPayload, TypedDataSigner, UnsignedOrder,
+    Address, DigestSigner, OrderData, OrderDigest, OrderUid, ProtocolOptions, SignerError,
+    SupportedChainId, TypedDataPayload, TypedDataSigner,
 };
 use serde::{Deserialize, Serialize};
 
@@ -74,7 +73,7 @@ struct OrderSigningPayload {
 ///
 /// Returns [`SigningError`] if payload construction, hashing, or signer execution fails.
 pub async fn sign_order<S>(
-    order: &UnsignedOrder,
+    order: &OrderData,
     chain_id: SupportedChainId,
     signer: &S,
     options: Option<&ProtocolOptions>,
@@ -111,7 +110,7 @@ where
     ),
 )]
 pub async fn sign_order_with_scheme<S>(
-    order: &UnsignedOrder,
+    order: &OrderData,
     chain_id: SupportedChainId,
     signer: &S,
     scheme: SigningScheme,
@@ -132,12 +131,12 @@ where
 /// Returns [`SigningError`] if domain construction, hashing, or UID packing fails.
 pub fn generate_order_id(
     chain_id: SupportedChainId,
-    order: &UnsignedOrder,
+    order: &OrderData,
     owner: &Address,
     options: Option<&ProtocolOptions>,
 ) -> Result<GeneratedOrderId, SigningError> {
     let domain = get_domain(chain_id, options)?;
-    let order_digest = hash_order(&domain, &contracts_order(order))?;
+    let order_digest = hash_order(&domain, order)?;
     let order_id =
         pack_order_uid_params(&OrderUidParams::new(order_digest, *owner, order.valid_to))?;
 
@@ -161,34 +160,34 @@ pub fn generate_order_id(
 ///
 /// # Errors
 ///
-/// Returns [`SigningError`] if order normalization, address parsing,
-/// or signature decoding fails.
+/// Returns [`SigningError`] if address parsing or signature decoding fails.
 pub fn eip1271_signature_payload(
-    order: &UnsignedOrder,
+    order: &OrderData,
     ecdsa_signature: &str,
 ) -> Result<String, SigningError> {
-    let normalized = normalize_order(&contracts_order(order))?;
     let signature_bytes = RecoverableSignature::parse_hex(ecdsa_signature)?.to_bytes();
 
-    // The cow `Amount` newtype is `#[repr(transparent)]` over
-    // `alloy_primitives::U256` and `AppDataHash` over
-    // `alloy_primitives::B256` per ADR 0052, so the conversions to the
-    // sol-typed surface are a single deref of the inner alloy primitive
-    // with no intermediate bigint allocation and no overflow guard
-    // required.
+    // The concrete `OrderData` maps straight onto the on-chain verifier struct;
+    // there is no normalization step. The cow `Amount` newtype is
+    // `#[repr(transparent)]` over `alloy_primitives::U256` and `AppDataHash`
+    // over `alloy_primitives::B256` per ADR 0052, so the conversions to the
+    // sol-typed surface are a single deref of the inner alloy primitive with no
+    // intermediate bigint allocation and no overflow guard required. `kind` and
+    // the balance fields are the `keccak256` of the canonical label string, the
+    // on-chain encoding the verifier consumes.
     let onchain_order = OnchainOrder {
-        sellToken: *normalized.sell_token.as_alloy(),
-        buyToken: *normalized.buy_token.as_alloy(),
-        receiver: *normalized.receiver.as_alloy(),
-        sellAmount: *normalized.sell_amount.as_u256(),
-        buyAmount: *normalized.buy_amount.as_u256(),
-        validTo: normalized.valid_to,
-        appData: *normalized.app_data.as_alloy(),
-        feeAmount: *normalized.fee_amount.as_u256(),
-        kind: keccak256(order_kind_name(normalized.kind).as_bytes()),
-        partiallyFillable: normalized.partially_fillable,
-        sellTokenBalance: keccak256(sell_balance_name(normalized.sell_token_balance).as_bytes()),
-        buyTokenBalance: keccak256(buy_balance_name(normalized.buy_token_balance).as_bytes()),
+        sellToken: *order.sell_token.as_alloy(),
+        buyToken: *order.buy_token.as_alloy(),
+        receiver: *order.receiver.as_alloy(),
+        sellAmount: *order.sell_amount.as_u256(),
+        buyAmount: *order.buy_amount.as_u256(),
+        validTo: order.valid_to,
+        appData: *order.app_data.as_alloy(),
+        feeAmount: *order.fee_amount.as_u256(),
+        kind: keccak256(order_kind_name(order.kind).as_bytes()),
+        partiallyFillable: order.partially_fillable,
+        sellTokenBalance: keccak256(sell_balance_name(order.sell_token_balance).as_bytes()),
+        buyTokenBalance: keccak256(buy_balance_name(order.buy_token_balance).as_bytes()),
     };
     let payload: OrderAndSignature = (onchain_order, AlloyBytes::from(signature_bytes));
 
@@ -236,21 +235,17 @@ where
 }
 
 fn order_signing_payload(
-    order: &UnsignedOrder,
+    order: &OrderData,
     chain_id: SupportedChainId,
     options: Option<&ProtocolOptions>,
 ) -> Result<OrderSigningPayload, SigningError> {
     let domain = get_domain(chain_id, options)?;
-    let digest = hash_order(&domain, &contracts_order(order))?;
+    let digest = hash_order(&domain, order)?;
 
     Ok(OrderSigningPayload {
         payload: order_typed_data_payload(chain_id, order, options)?,
         digest: digest.to_hex_string(),
     })
-}
-
-pub(crate) fn contracts_order(order: &UnsignedOrder) -> ContractsOrder {
-    ContractsOrder::from(order)
 }
 
 #[allow(

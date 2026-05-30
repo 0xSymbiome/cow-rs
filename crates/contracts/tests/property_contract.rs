@@ -21,16 +21,16 @@
 )]
 
 use cow_sdk_contracts::{
-    ContractsError, Eip1271SignatureData, EthFlowOrderData, Order, OrderFlags, OrderUidParams,
+    ContractsError, Eip1271SignatureData, EthFlowOrderData, OrderFlags, OrderUidParams,
     RecoverableSignature, Signature, SigningScheme, TokenRegistry, Trade, TradeExecution,
     TradeFlags, compute_order_uid, decode_eip1271_signature_data, decode_order, decode_order_flags,
     decode_signing_scheme, decode_trade_flags, encode_eip1271_signature_data, encode_order_flags,
     encode_signing_scheme, encode_trade, encode_trade_flags, extract_order_uid_params, hash_order,
-    normalize_order, pack_order_uid_params,
+    pack_order_uid_params,
 };
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, AppDataHex, BuyTokenDestination, OrderDigest, OrderKind,
-    SellTokenSource, TypedDataDomain,
+    Address, Amount, AppDataHash, AppDataHex, BuyTokenDestination, OrderData, OrderDigest,
+    OrderKind, SellTokenSource, TypedDataDomain,
 };
 use proptest::prelude::*;
 use proptest::test_runner::{FileFailurePersistence, TestRunner};
@@ -144,7 +144,7 @@ fn buy_balance_strategy() -> impl Strategy<Value = BuyTokenDestination> {
 /// Strategy that emits a deterministic order suitable for hashing and
 /// trade encoding. All typed fields are drawn from their reviewed
 /// domains; the balance fields cycle through every admitted variant.
-fn order_strategy() -> impl Strategy<Value = Order> {
+fn order_strategy() -> impl Strategy<Value = OrderData> {
     (
         address_strategy(),
         address_strategy(),
@@ -174,10 +174,10 @@ fn order_strategy() -> impl Strategy<Value = Order> {
                 sell_token_balance,
                 buy_token_balance,
             )| {
-                Order::new(
+                OrderData::new(
                     sell_token,
                     buy_token,
-                    Some(receiver),
+                    receiver,
                     sell_amount,
                     buy_amount,
                     valid_to,
@@ -189,34 +189,11 @@ fn order_strategy() -> impl Strategy<Value = Order> {
                         OrderKind::Buy
                     },
                     partially_fillable,
-                    Some(sell_token_balance),
-                    Some(buy_token_balance),
+                    sell_token_balance,
+                    buy_token_balance,
                 )
             },
         )
-}
-
-/// Strategy that emits an order plus an equivalent order under the
-/// balance-default rule for `normalize_order`. `sell_token_balance ==
-/// Some(Erc20)` is equivalent to `None` on the sell side; `buy_token_balance ==
-/// Some(Erc20)` is equivalent to `None` on the buy side. The two orders must
-/// produce byte-identical [`normalize_order`] output and therefore the same
-/// [`hash_order`] digest under a shared typed-data domain.
-fn equivalent_order_pair_strategy() -> impl Strategy<Value = (Order, Order)> {
-    order_strategy().prop_flat_map(|order| {
-        let sell_is_erc20 = order.sell_token_balance == Some(SellTokenSource::Erc20);
-        let buy_is_erc20 = order.buy_token_balance == Some(BuyTokenDestination::Erc20);
-        (any::<bool>(), any::<bool>()).prop_map(move |(erase_sell, erase_buy)| {
-            let mut equivalent = order.clone();
-            if sell_is_erc20 && erase_sell {
-                equivalent.sell_token_balance = None;
-            }
-            if buy_is_erc20 && erase_buy {
-                equivalent.buy_token_balance = None;
-            }
-            (order.clone(), equivalent)
-        })
-    })
 }
 
 /// Strategy that emits a typed-data domain whose `verifying_contract`
@@ -453,23 +430,14 @@ proptest! {
     }
 
     /// [`hash_order`] is deterministic under a fixed `(domain, order)`
-    /// input; [`normalize_order`] is deterministic; and semantically
-    /// equivalent orders (same fields modulo the reviewed balance-
-    /// normalization rule) produce the same normalized form and the same
-    /// digest under a shared domain.
+    /// input: hashing the same concrete [`OrderData`] twice produces a
+    /// byte-identical digest.
     #[test]
-    fn order_hashing_is_deterministic_for_equivalent_normalized_inputs(
+    fn order_hashing_is_deterministic(
         domain in domain_strategy(),
-        (order, equivalent) in equivalent_order_pair_strategy(),
+        order in order_strategy(),
     ) {
-        let normalized = normalize_order(&order).unwrap();
-        let equivalent_normalized = normalize_order(&equivalent).unwrap();
-        prop_assert_eq!(&normalized, &equivalent_normalized);
-
         let hash = hash_order(&domain, &order).unwrap();
-        let equivalent_hash = hash_order(&domain, &equivalent).unwrap();
-        prop_assert_eq!(hash.to_hex_string(), equivalent_hash.to_hex_string());
-
         let repeat = hash_order(&domain, &order).unwrap();
         prop_assert_eq!(repeat.to_hex_string(), hash.to_hex_string());
     }
@@ -497,7 +465,7 @@ proptest! {
         let mut uppercase_order = order.clone();
         uppercase_order.sell_token = uppercase(&order.sell_token);
         uppercase_order.buy_token = uppercase(&order.buy_token);
-        uppercase_order.receiver = order.receiver.as_ref().map(uppercase);
+        uppercase_order.receiver = uppercase(&order.receiver);
 
         prop_assert_eq!(&order.sell_token, &uppercase_order.sell_token);
 
@@ -507,31 +475,29 @@ proptest! {
     }
 
     /// [`encode_trade`] / [`decode_order`] / [`decode_trade_flags`]
-    /// preserve the normalized-order boundary: encoding a normalized
-    /// order with any supported signing-scheme signature and decoding
-    /// through the token registry reproduces the normalized kind,
-    /// partial-fill flag, sell balance, buy balance, executed amount,
-    /// and normalized order shape.
+    /// preserve the order boundary: encoding a concrete [`OrderData`]
+    /// with any supported signing-scheme signature and decoding through
+    /// the token registry reproduces the order's kind, partial-fill flag,
+    /// sell balance, buy balance, executed amount, and the order itself.
     #[test]
-    fn encoded_trades_preserve_the_normalized_order_boundary(
+    fn encoded_trades_preserve_the_order_boundary(
         order in order_strategy(),
         executed_amount in amount_strategy(),
         (_scheme, signature) in scheme_and_signature_strategy(),
     ) {
-        let normalized = normalize_order(&order).unwrap();
         let execution = TradeExecution::new(executed_amount);
         let mut tokens = TokenRegistry::new();
 
-        let trade = encode_trade(&mut tokens, &normalized, &signature, &execution).unwrap();
+        let trade = encode_trade(&mut tokens, &order, &signature, &execution).unwrap();
         let decoded_flags = decode_trade_flags(trade.flags).unwrap();
         let decoded_order = decode_order(&trade, &tokens.addresses()).unwrap();
 
-        prop_assert_eq!(decoded_flags.kind, normalized.kind);
-        prop_assert_eq!(decoded_flags.partially_fillable, normalized.partially_fillable);
-        prop_assert_eq!(decoded_flags.sell_token_balance, normalized.sell_token_balance);
-        prop_assert_eq!(decoded_flags.buy_token_balance, normalized.buy_token_balance);
+        prop_assert_eq!(decoded_flags.kind, order.kind);
+        prop_assert_eq!(decoded_flags.partially_fillable, order.partially_fillable);
+        prop_assert_eq!(decoded_flags.sell_token_balance, order.sell_token_balance);
+        prop_assert_eq!(decoded_flags.buy_token_balance, order.buy_token_balance);
         prop_assert_eq!(&trade.executed_amount, &execution.executed_amount);
-        prop_assert_eq!(&normalize_order(&decoded_order).unwrap(), &normalized);
+        prop_assert_eq!(&decoded_order, &order);
     }
 
     /// [`encode_order_flags`] / [`decode_order_flags`] and

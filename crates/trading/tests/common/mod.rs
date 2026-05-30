@@ -681,7 +681,7 @@ pub struct MockEip1271Provider;
 impl Eip1271SignatureProvider for MockEip1271Provider {
     async fn sign(
         &self,
-        _order_to_sign: &cow_sdk_core::UnsignedOrder,
+        _order_to_sign: &cow_sdk_core::OrderData,
     ) -> Result<String, Eip1271SignatureError> {
         Ok("0x7e57c0de".to_owned())
     }

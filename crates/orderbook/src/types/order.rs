@@ -271,6 +271,51 @@ impl OrderCreation {
         }
     }
 
+    /// Creates a submission payload from a signed user-domain order.
+    ///
+    /// This is the canonical `OrderData` to `OrderCreation` conversion: it
+    /// copies every signed economic field from `order_to_sign` verbatim so the
+    /// submitted body cannot drift from what was signed, wires the order-level
+    /// fee as `"0"` (services rejects a non-zero `feeAmount`), and attaches the
+    /// signature, signing scheme, owner (`from`), the optional full app-data
+    /// document, and the optional quote id. The signing input it mirrors is
+    /// [`cow_sdk_core::OrderData`], which is also the EIP-712 hashing view of
+    /// the same order.
+    ///
+    /// The wire `appDataHash` is taken from `order_to_sign.app_data` — the hash
+    /// the order was signed against — so the submitted hash cannot diverge from
+    /// the signed commitment.
+    #[must_use]
+    pub fn from_signed(
+        order_to_sign: &cow_sdk_core::OrderData,
+        signing_scheme: SigningScheme,
+        signature: impl Into<String>,
+        from: Address,
+        app_data_document: Option<String>,
+        quote_id: Option<i64>,
+    ) -> Self {
+        Self {
+            sell_token: order_to_sign.sell_token,
+            buy_token: order_to_sign.buy_token,
+            receiver: Some(order_to_sign.receiver),
+            sell_amount: order_to_sign.sell_amount,
+            buy_amount: order_to_sign.buy_amount,
+            valid_to: order_to_sign.valid_to,
+            app_data: app_data_document,
+            app_data_hash: Some(order_to_sign.app_data),
+            fee_amount: order_creation_zero_fee_amount(),
+            full_balance_check: false,
+            kind: order_to_sign.kind,
+            partially_fillable: order_to_sign.partially_fillable,
+            sell_token_balance: order_to_sign.sell_token_balance,
+            buy_token_balance: order_to_sign.buy_token_balance,
+            signing_scheme,
+            signature: signature.into(),
+            from,
+            quote_id,
+        }
+    }
+
     /// Returns a copy of this submission payload with an explicit receiver.
     #[must_use]
     pub const fn with_receiver(mut self, receiver: Address) -> Self {
@@ -604,7 +649,12 @@ impl ExecutedProtocolFee {
 ///
 /// This response includes status, owner, uid, execution totals, and `EthFlow`
 /// metadata that are not part of the user-domain signing order or contract ABI
-/// hashing payload.
+/// hashing payload. It is one of two order-shaped types: the signing and
+/// EIP-712 hashing pivot is `cow_sdk_core::OrderData`, and this is the
+/// orderbook record. Use [`Order::signing_order`] to project a fetched order
+/// back into the `cow_sdk_core::OrderData` for client-side digest or UID
+/// re-derivation; it fails closed for `EthFlow` orders, whose response fields
+/// are rewritten for display.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
@@ -801,5 +851,43 @@ impl Order {
             interactions: None,
             total_fee: Amount::ZERO,
         }
+    }
+
+    /// Projects this response order back into the `cow_sdk_core::OrderData`
+    /// used for EIP-712 hashing and UID re-derivation, when the response still
+    /// reflects the signed order.
+    ///
+    /// Returns `Some` for ordinary orders: their response fields equal the
+    /// signed order, so `cow_sdk_contracts::hash_order` over the result
+    /// reproduces the stored `uid`. The response's optional receiver is mapped
+    /// `None -> Address::ZERO` — the "receiver same as owner" sentinel the order
+    /// was signed against — so the digest re-derives byte-for-byte.
+    ///
+    /// Returns `None` for `EthFlow` orders. The orderbook response transform
+    /// rewrites `valid_to`, `owner`, and `sell_token` to the user-facing view,
+    /// while the on-chain order is signed against the wrapped native token with
+    /// `validTo = u32::MAX` and the `EthFlow` contract as owner. A projected
+    /// order therefore cannot reproduce the on-chain digest or UID, so this
+    /// fails closed rather than returning a silently wrong hashing input.
+    /// Detect this case directly via `self.ethflow_data`.
+    #[must_use]
+    pub fn signing_order(&self) -> Option<cow_sdk_core::OrderData> {
+        if self.ethflow_data.is_some() {
+            return None;
+        }
+        Some(cow_sdk_core::OrderData::new(
+            self.sell_token,
+            self.buy_token,
+            self.receiver.unwrap_or(Address::ZERO),
+            self.sell_amount,
+            self.buy_amount,
+            self.valid_to,
+            self.app_data,
+            self.fee_amount,
+            self.kind,
+            self.partially_fillable,
+            self.sell_token_balance,
+            self.buy_token_balance,
+        ))
     }
 }

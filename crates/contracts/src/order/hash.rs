@@ -1,10 +1,10 @@
 use alloy_primitives::Bytes as AlloyBytes;
 use alloy_sol_types::SolStruct;
-use cow_sdk_core::{Address, Hash32, OrderDigest, OrderUid, TypedDataDomain};
+use cow_sdk_core::{Address, Hash32, OrderData, OrderDigest, OrderUid, TypedDataDomain};
 
+use super::OrderCancellations;
 use super::sol_cancellations::OrderCancellations as SolOrderCancellations;
 use super::sol_types::Order as SolOrder;
-use super::{NormalizedOrder, Order, OrderCancellations};
 use crate::ContractsError;
 use crate::primitives::{buy_balance_name, order_kind_name, sell_balance_name};
 
@@ -34,48 +34,32 @@ pub(crate) fn reject_zero_receiver(receiver: &Address) -> Result<(), ContractsEr
     }
 }
 
-/// Normalizes an order into its canonical contract hashing form.
-///
-/// # Errors
-///
-/// Returns [`ContractsError::ZeroReceiver`] when the receiver is explicitly set
-/// to the zero address.
-pub fn normalize_order(order: &Order) -> Result<NormalizedOrder, ContractsError> {
-    if let Some(receiver) = order.receiver.as_ref() {
-        reject_zero_receiver(receiver)?;
-    }
-
-    Ok(NormalizedOrder::new(
-        order.sell_token,
-        order.buy_token,
-        order.receiver.unwrap_or(Address::ZERO),
-        order.sell_amount,
-        order.buy_amount,
-        order.valid_to,
-        order.app_data,
-        order.fee_amount,
-        order.kind,
-        order.partially_fillable,
-        order.sell_token_balance.unwrap_or_default(),
-        order.buy_token_balance.unwrap_or_default(),
-    ))
-}
-
 /// Computes the EIP-712 digest for an order.
 ///
 /// Returns the canonical
 /// `keccak256(0x19 || 0x01 || domain_separator || struct_hash)`
 /// envelope per the EIP-712 specification, evaluated against the
-/// macro-emitted [`crate::order::sol_types::Order`] struct hash. The
+/// macro-emitted internal `Order` codec struct hash. The concrete
+/// [`cow_sdk_core::OrderData`] maps straight onto that codec struct, so no
+/// intermediate normalization step is needed. The
 /// `parity/fixtures/eip712/order_digests.json` rows lock the per-row
-/// byte contract.
+/// byte contract, and [`order_eip712_type_hash`] exposes the matching
+/// EIP-712 type hash.
+///
+/// A `receiver` of `address(0)` is hashed verbatim: the `GPv2` order surface
+/// reads it as the `RECEIVER_SAME_AS_OWNER` (pay-to-owner) sentinel, so this
+/// general hash path never rejects it.
 ///
 /// # Errors
 ///
-/// Returns [`ContractsError`] if order normalization or address parsing fails.
-pub fn hash_order(domain: &TypedDataDomain, order: &Order) -> Result<OrderDigest, ContractsError> {
-    let normalized = normalize_order(order)?;
-    let sol_order = sol_order_from_normalized(&normalized);
+/// Returns [`ContractsError`] if address parsing fails. The signature stays
+/// fallible so callers can thread `?` through the shared [`ContractsError`]
+/// envelope.
+pub fn hash_order(
+    domain: &TypedDataDomain,
+    order: &OrderData,
+) -> Result<OrderDigest, ContractsError> {
+    let sol_order = sol_order_from_order_data(order);
     let alloy_domain = domain.into_alloy_domain();
     let digest = sol_order.eip712_signing_hash(&alloy_domain);
     Ok(OrderDigest::from_bytes(digest.into()))
@@ -121,13 +105,28 @@ pub fn hash_order_cancellations(
     Ok(Hash32::from_bytes(digest.into()))
 }
 
-fn sol_order_from_normalized(order: &NormalizedOrder) -> SolOrder {
-    // The cow `Amount` newtype is `#[repr(transparent)]` over
-    // `alloy_primitives::U256` and `AppDataHash` over
-    // `alloy_primitives::B256` per ADR 0052, so the conversions to the
-    // sol-typed surface are a single deref of the inner alloy primitive
-    // with no intermediate bigint allocation and no overflow guard
-    // required.
+/// Returns the canonical EIP-712 `Order` type hash.
+///
+/// This is `keccak256` of the `Order(address sellToken,…)` EIP-712 type string
+/// the `GPv2Settlement` contract verifies against; it matches the upstream
+/// services `OrderData::TYPE_HASH`. Callers verifying an order digest or its
+/// signed typed-data envelope can pin this value.
+#[must_use]
+pub fn order_eip712_type_hash() -> Hash32 {
+    Hash32::from_bytes(SolOrder::default().eip712_type_hash().0)
+}
+
+/// Maps a concrete user-domain [`cow_sdk_core::OrderData`] straight onto the
+/// macro-emitted `GPv2` `Order` codec struct.
+///
+/// There is no "normalize" step: `OrderData` carries a concrete receiver and
+/// concrete balance enums, so the historical Option-fill collapses to a
+/// verbatim field copy. The cow `Amount` newtype is `#[repr(transparent)]`
+/// over `alloy_primitives::U256` and `AppDataHash` over
+/// `alloy_primitives::B256` per ADR 0052, so the conversions to the sol-typed
+/// surface are a single deref of the inner alloy primitive with no
+/// intermediate bigint allocation and no overflow guard required.
+fn sol_order_from_order_data(order: &OrderData) -> SolOrder {
     SolOrder {
         sellToken: *order.sell_token.as_alloy(),
         buyToken: *order.buy_token.as_alloy(),
@@ -155,7 +154,7 @@ mod tests {
     use crate::encode_address_word;
     use alloy_primitives::U256;
     use cow_sdk_core::{
-        Amount, AppDataHash, BuyTokenDestination, CowEnv, OrderKind, SellTokenSource,
+        Amount, AppDataHash, BuyTokenDestination, CowEnv, OrderData, OrderKind, SellTokenSource,
         SupportedChainId,
     };
     use sha3::{Digest, Keccak256};
@@ -176,11 +175,11 @@ mod tests {
         )
     }
 
-    fn sample_order() -> Order {
-        Order::new(
+    fn sample_order() -> OrderData {
+        OrderData::new(
             Address::new("0x1111111111111111111111111111111111111111").unwrap(),
             Address::new("0x2222222222222222222222222222222222222222").unwrap(),
-            None,
+            Address::ZERO,
             Amount::new("1000").unwrap(),
             Amount::new("900").unwrap(),
             1_700_000_000,
@@ -189,8 +188,8 @@ mod tests {
             Amount::new("10").unwrap(),
             OrderKind::Sell,
             true,
-            Some(SellTokenSource::External),
-            Some(BuyTokenDestination::Internal),
+            SellTokenSource::External,
+            BuyTokenDestination::Internal,
         )
     }
 
@@ -232,7 +231,7 @@ mod tests {
         Keccak256::digest(&encoded).into()
     }
 
-    fn manual_struct_hash(order: &NormalizedOrder) -> [u8; 32] {
+    fn manual_struct_hash(order: &OrderData) -> [u8; 32] {
         const ORDER_TYPE_STRING: &[u8] = b"Order(address sellToken,address buyToken,address receiver,uint256 sellAmount,uint256 buyAmount,uint32 validTo,bytes32 appData,uint256 feeAmount,string kind,bool partiallyFillable,string sellTokenBalance,string buyTokenBalance)";
         let mut encoded = Vec::new();
         let type_hash: [u8; 32] = Keccak256::digest(ORDER_TYPE_STRING).into();
@@ -260,8 +259,7 @@ mod tests {
     fn order_hash_and_struct_hash_match_manual_eip712_encoding() {
         let domain = sample_domain();
         let order = sample_order();
-        let normalized = normalize_order(&order).unwrap();
-        let expected_struct_hash = manual_struct_hash(&normalized);
+        let expected_struct_hash = manual_struct_hash(&order);
 
         let mut digest_payload = Vec::with_capacity(66);
         digest_payload.extend_from_slice(&[0x19, 0x01]);
@@ -269,7 +267,7 @@ mod tests {
         digest_payload.extend_from_slice(&expected_struct_hash);
         let expected_digest = Keccak256::digest(&digest_payload);
 
-        let sol_order = sol_order_from_normalized(&normalized);
+        let sol_order = sol_order_from_order_data(&order);
         assert_eq!(sol_order.eip712_hash_struct().0, expected_struct_hash);
         assert_eq!(
             hash_order(&domain, &order).unwrap().to_hex_string(),

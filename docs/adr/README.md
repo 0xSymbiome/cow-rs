@@ -27,10 +27,10 @@ public and runtime shape of `cow-rs`.
 | [0017](0017-typed-orderbook-rejection-parser.md) | Accepted (amended) | Classify non-2xx orderbook responses through a typed `OrderbookRejection` enum with a permanent `Unknown { code, message }` fallback and promote the typed payload onto `OrderbookError::Rejected`. |
 | [0018](0018-typed-app-data-merge.md) | Accepted (amended) | Run quote-to-post app-data edits through a single typed merge pipeline and retire the opaque `serde_json::Value`-taking merge helper so the typed `signer`, `flashloan`, and `metadata.hooks` replacement semantics stay enforced end-to-end. |
 | [0019](0019-http-transport-sole-dispatch.md) | Accepted (amended) | Make `HttpTransport` in `cow-sdk-core` the sole live-dispatch surface on `OrderBookApi` and `SubgraphApi` and carry non-2xx responses through the typed `TransportError::HttpStatus` channel. |
-| [0020](0020-ethflow-owner-threading.md) | Accepted (amended) | Thread the signer-derived owner onto `EthFlowTransaction` and read `tx.from` (not `tx.order_to_sign.receiver`) when building the pre-HTTP validator preview on the native-currency submission seam. |
+| [0020](0020-ethflow-owner-threading.md) | Accepted (amended) | Thread the signer-derived owner onto `EthFlowTransaction` and read `tx.from` (not `tx.order_to_sign.receiver`) as the owner passed to the pre-HTTP validator on the native-currency submission seam. |
 | [0021](0021-orderbook-total-fee-policy.md) | Accepted (amended) | Define `Order.total_fee` narrowly as the canonical executed-fee component and surface the deprecated `executedFeeAmount` wire field as a typed read-only sibling so consumers compute any legacy summation explicitly. |
 | [0022](0022-ecdsa-signature-v-normalization.md) | Accepted (amended) | Canonicalize recoverable ECDSA signatures at the contracts boundary so every emitted signature carries a Solidity-compatible `27` / `28` recovery byte. |
-| [0023](0023-legacy-compatibility-shim-removal.md) | Accepted (amended) | Remove the legacy compatibility order helpers and models so contract digests flow only through the canonical `UnsignedOrder` to `Order` path. |
+| [0023](0023-legacy-compatibility-shim-removal.md) | Accepted (amended) | Remove the legacy compatibility order helpers and models so contract digests flow only through the canonical `OrderData` path. |
 | [0024](0024-asyncprovider-asyncsigningprovider-capability-split.md) | Accepted | Split `Provider` into a read-only chain-RPC trait and a `SigningProvider` extension that owns signer creation. |
 | [0025](0025-workspace-url-redaction-convention.md) | Accepted | Store credential-bearing URL fields in redacting types before they become public SDK state. |
 | [0026](0026-alloy-major-release-absorption-plan.md) | Accepted (amended; runbook extracted) | Bound alloy major releases behind SDK-owned types and a configurable scheduled canary lane. |
@@ -66,6 +66,7 @@ public and runtime shape of `cow-rs`.
 | [0056](0056-settlement-event-decoding-is-fail-closed.md) | Accepted | Decode `GPv2Settlement` `Trade` / `Interaction` / `Settlement` / `OrderInvalidated` / `PreSignature` logs through a fail-closed, provider-free decoder that validates topics, length-checks the order UID, and never panics on adversarial input. |
 | [0057](0057-log-provider-capability-trait.md) | Accepted | Add an opt-in `LogProvider: Provider` capability supertrait whose single-call `get_logs` fetches event logs, mirroring the `SigningProvider` split and feeding the fail-closed decoders. |
 | [0058](0058-typed-quote-request-response-surface.md) | Accepted | Mirror the orderbook `OrderParameters` quote payload in `QuoteData` with its own OpenAPI coverage target, default `priceQuality` to `optimal`, keep the quote network-cost fields read-only, and lock the quote-amounts projection with a parity test. |
+| [0059](0059-hash-concrete-orderdata-directly.md) | Accepted | Hash the concrete `cow_sdk_core::OrderData` directly and remove the contracts-layer `Order` / `NormalizedOrder` types and the `GPv2Order` re-export, collapsing the order-type topology to one concrete type. |
 
 ## When To Write An ADR
 

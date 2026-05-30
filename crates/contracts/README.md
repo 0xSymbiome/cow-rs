@@ -22,10 +22,10 @@ cow-sdk-contracts = "0.1"
 ## Minimal example
 
 ```rust
-use cow_sdk_contracts::{ContractId, Order, Registry, hash_order};
+use cow_sdk_contracts::{ContractId, Registry, hash_order};
 use cow_sdk_core::{
     Address, Amount, AppDataHash, BuyTokenDestination, CowEnv, OrderKind, SellTokenSource,
-    SupportedChainId, TypedDataDomain, UnsignedOrder,
+    SupportedChainId, TypedDataDomain, OrderData,
 };
 
 let verifying_contract = Registry::default()
@@ -39,7 +39,7 @@ let domain = TypedDataDomain::new(
 );
 let trader_address = Address::new("0x3333333333333333333333333333333333333333").unwrap();
 
-let order = Order::from(&UnsignedOrder::new(
+let order = OrderData::new(
     Address::new("0x1111111111111111111111111111111111111111").unwrap(),
     Address::new("0x2222222222222222222222222222222222222222").unwrap(),
     trader_address,
@@ -52,7 +52,7 @@ let order = Order::from(&UnsignedOrder::new(
     false,
     SellTokenSource::Erc20,
     BuyTokenDestination::Erc20,
-));
+);
 
 let _digest = hash_order(&domain, &order).unwrap();
 ```

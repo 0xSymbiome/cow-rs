@@ -862,11 +862,9 @@ dependencies = [
  "async-trait",
  "cow-sdk-contracts",
  "cow-sdk-core",
- "parking_lot",
  "serde",
  "serde_json",
  "thiserror",
- "web-time",
 ]
 
 [[package]]
@@ -896,7 +894,6 @@ dependencies = [
  "cow-sdk-signing",
  "futures-timer",
  "gloo-timers",
- "parking_lot",
  "serde",
  "serde_json",
  "thiserror",
@@ -2660,8 +2657,6 @@ dependencies = [
  "rustls",
  "rustls-pki-types",
  "rustls-platform-verifier",
- "serde",
- "serde_json",
  "sync_wrapper",
  "tokio",
  "tokio-rustls",

@@ -3,7 +3,7 @@ use alloy_primitives::aliases::I512;
 use cow_sdk_contracts::{ContractId, Registry};
 use cow_sdk_core::{
     Address, Amount, AppDataHash, CowEnv, EVM_NATIVE_CURRENCY_ADDRESS, MAX_VALID_TO_EPOCH,
-    ProtocolOptions, SupportedChainId, UnsignedOrder, ValidTo, wrapped_native_token,
+    OrderData, ProtocolOptions, SupportedChainId, ValidTo, wrapped_native_token,
 };
 use cow_sdk_orderbook::OrderQuoteResponse;
 use cow_sdk_signing::{GeneratedOrderId, generate_order_id};
@@ -205,7 +205,7 @@ pub fn get_order_to_sign(
     params: OrderToSignParams,
     limit_parameters: &LimitTradeParameters,
     app_data_keccak256: &AppDataHash,
-) -> Result<UnsignedOrder, TradingError> {
+) -> Result<OrderData, TradingError> {
     let network_costs_amount = params.network_costs_amount.unwrap_or(Amount::ZERO);
     let receiver = limit_parameters
         .receiver
@@ -272,7 +272,7 @@ pub fn get_order_to_sign(
         (limit_parameters.sell_amount, limit_parameters.buy_amount)
     };
 
-    Ok(UnsignedOrder::new(
+    Ok(OrderData::new(
         limit_parameters.sell_token,
         limit_parameters.buy_token,
         receiver,
@@ -307,7 +307,7 @@ pub fn get_order_to_sign(
 /// cannot be reached from an unmodified binary.
 pub async fn calculate_unique_order_id(
     chain_id: SupportedChainId,
-    order: &UnsignedOrder,
+    order: &OrderData,
     checker: Option<&dyn EthFlowOrderExistsChecker>,
     options: Option<&ProtocolOptions>,
 ) -> Result<GeneratedOrderId, TradingError> {

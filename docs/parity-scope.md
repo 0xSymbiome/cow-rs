@@ -11,7 +11,9 @@ Pinned sources live in `parity/source-lock.yaml`.
 
 | Producer | Pinned role | Used for |
 | --- | --- | --- |
-| `cowprotocol/cow-sdk` | Primary | SDK package configuration, COW Shed TypeScript constants, and shared package-level deployment evidence |
+| `cowprotocol/services` | Primary protocol authority | Orderbook HTTP API, OpenAPI schemas, wire DTOs, and order-validation and rejection semantics |
+| `cowprotocol/contracts` | Primary protocol authority | EIP-712 order hashing, settlement ABI, and deployment addresses |
+| `cowprotocol/cow-sdk` | Cross-language reference | Consumer-workflow and ergonomic reference (a different language with different idioms); SDK package configuration, COW Shed TypeScript constants, and shared package-level deployment evidence |
 | `cowprotocol/composable-cow` | Primary capability evidence | Byte-identical composable-order Solidity mirrors (gated by `cargo parity-verify-sol-provenance` against `parity/source-lock.yaml`), deployment rows, selector fixtures, EIP-1271 payload shapes, and watch-tower boundary evidence |
 | `cowprotocol/ethflowcontract` | Primary capability evidence | Byte-identical EthFlow Solidity mirrors (`CoWSwapEthFlow.sol`, `EthFlowOrder.sol`, `ICoWSwapOnchainOrders.sol`, `CoWSwapOnchainOrders.sol`, `IWrappedNativeToken.sol`) and the `ReceiverMustBeSet()` revert-selector provenance |
 | `cowdao-grants/cow-shed` | Primary capability evidence | Byte-identical COW Shed Solidity mirrors, proxy creation-code bytes, factory address derivation, hook signature shape, and version-call evidence |
@@ -227,7 +229,8 @@ Rust analogue and are not in scope.
 
 ## Intentionally Out-of-Scope
 
-Parity in `cow-rs` is byte-identity on implemented surfaces, not
+Parity in `cow-rs` is byte-identity with the protocol authorities — services
+on the wire and the contracts on-chain — on implemented surfaces, not
 feature-identity with the TypeScript SDK. The following upstream surfaces
 are intentionally excluded from the Rust SDK because they carry no
 pre-release user value, re-introduce known protocol footguns, or have
@@ -276,12 +279,12 @@ entry for anyone who later considers reintroducing the surface.
   the exclusion at every call site. Governed by
   [ADR 0011](./adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md).
 - **`TypedOrder` alias on `cow-sdk-signing`** — the canonical
-  pre-signature order state is `cow_sdk_core::UnsignedOrder`; the
-  former `TypedOrder = UnsignedOrder` backward-compatibility alias is
-  absent from the workspace. As with the retired wire-string `Amount`
-  wrapper, there is no negative test because the type does not exist
-  and the Rust compiler itself enforces the exclusion at every call
-  site.
+  signed-order payload is `cow_sdk_core::OrderData` (the name mirrors
+  the upstream services `OrderData`); the former `TypedOrder`
+  backward-compatibility alias is absent from the workspace. As with the
+  retired wire-string `Amount` wrapper, there is no negative test because
+  the type does not exist and the Rust compiler itself enforces the
+  exclusion at every call site.
 - **Legacy free-function constructors on `OrderBookApi` and
   `SubgraphApi`** — the shipped construction seam for both clients is
   the typestate builder (`OrderBookApi::builder()` and

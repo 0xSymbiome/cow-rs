@@ -10,13 +10,17 @@
 //! **Corpus README:** `../corpus/fuzz_order_bounds_validator/README.md`.
 //!
 //! The fuzzer maps arbitrary bytes into an
-//! `(OrderCreation, SigningScheme, Option<Address>, u64, bool)` tuple and
-//! runs the tuple through the services-default validator. A small seed-class
-//! byte keeps committed corpus files reproducible while the remaining bytes
-//! still perturb addresses, amounts, scheme, time, and path flags.
+//! `(OrderData, Address, SigningScheme, Option<Address>, u64, bool)` tuple
+//! — the signing order plus its submission owner (`from`) — and runs the tuple
+//! through the services-default validator. A small seed-class byte keeps
+//! committed corpus files reproducible while the remaining bytes still perturb
+//! addresses, amounts, scheme, time, and path flags.
 
-use cow_sdk_core::{Address, Amount, EVM_NATIVE_CURRENCY_ADDRESS, OrderKind, ValidationReason};
-use cow_sdk_orderbook::{OrderCreation, SigningScheme};
+use cow_sdk_core::{
+    Address, Amount, AppDataHash, BuyTokenDestination, EVM_NATIVE_CURRENCY_ADDRESS, OrderKind,
+    SellTokenSource, OrderData, ValidationReason,
+};
+use cow_sdk_orderbook::SigningScheme;
 use cow_sdk_trading::{
     ClientRejection, OrderBoundsValidator, validation::assert_owner_matches_signer,
 };
@@ -31,7 +35,8 @@ const WETH: &str = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 
 #[derive(Debug)]
 struct ValidatorInput {
-    order: OrderCreation,
+    order: OrderData,
+    from: Address,
     scheme: SigningScheme,
     app_data_signer: Option<Address>,
     now: u64,
@@ -40,9 +45,10 @@ struct ValidatorInput {
 }
 
 impl ValidatorInput {
-    fn into_tuple(self) -> (OrderCreation, SigningScheme, Option<Address>, u64, bool) {
+    fn into_tuple(self) -> (OrderData, Address, SigningScheme, Option<Address>, u64, bool) {
         (
             self.order,
+            self.from,
             self.scheme,
             self.app_data_signer,
             self.now,
@@ -57,14 +63,14 @@ impl<'a> Arbitrary<'a> for ValidatorInput {
         let mut now = bounded_now(read_u64(bytes, DEFAULT_NOW));
         let mut scheme = signing_scheme(read_u8(bytes, 0));
         let mut is_eth_flow = read_bool(bytes, false);
-        let mut order = base_order(now, scheme);
+        let mut order = base_order(now);
+        let mut from = address_from_bytes(read_address_bytes(bytes, 0x11));
 
         order.sell_token = address_from_bytes(read_address_bytes(bytes, 0xaa));
         order.buy_token = address_from_bytes(read_address_bytes(bytes, 0xbb));
         order.sell_amount = amount_from_u128(read_u128(bytes, 1_000_000_000_000_000_000));
         order.buy_amount = amount_from_u128(read_u128(bytes, 1_000_000));
         order.valid_to = valid_to_after(now, DEFAULT_VALID_FOR);
-        order.from = address_from_bytes(read_address_bytes(bytes, 0x11));
         order.kind = if read_bool(bytes, false) {
             OrderKind::Buy
         } else {
@@ -80,11 +86,12 @@ impl<'a> Arbitrary<'a> for ValidatorInput {
 
         match seed_class {
             0 => {
-                order = base_order(now, scheme);
+                order = base_order(now);
+                from = address_from_seed(0x11);
                 app_data_signer = None;
                 is_eth_flow = false;
             }
-            1 => order.from = zero_address(),
+            1 => from = zero_address(),
             2 => order.valid_to = valid_to_after(now, 59),
             3 => {
                 now = 0;
@@ -95,7 +102,7 @@ impl<'a> Arbitrary<'a> for ValidatorInput {
                 order.sell_token = native_sentinel();
                 is_eth_flow = false;
             }
-            5 => order.buy_token = order.sell_token.clone(),
+            5 => order.buy_token = order.sell_token,
             6 => order.sell_amount = Amount::ZERO,
             7 => order.buy_amount = Amount::ZERO,
             8 => app_data_signer = Some(address_from_seed(0x33)),
@@ -122,6 +129,7 @@ impl<'a> Arbitrary<'a> for ValidatorInput {
 
         Ok(Self {
             order,
+            from,
             scheme,
             app_data_signer,
             now,
@@ -133,14 +141,14 @@ impl<'a> Arbitrary<'a> for ValidatorInput {
 
 fuzz_target!(|input: ValidatorInput| {
     let partner_fee_probe = input.partner_fee_probe;
-    let (order, scheme, app_data_signer, now, is_eth_flow) = input.into_tuple();
+    let (order, from, scheme, app_data_signer, now, is_eth_flow) = input.into_tuple();
     let validator = OrderBoundsValidator::services_default().with_weth_address(weth_address());
 
-    let validation = validator.validate(&order, scheme, app_data_signer.clone(), now, is_eth_flow);
+    let validation = validator.validate(&order, from, scheme, app_data_signer.clone(), now, is_eth_flow);
     assert_well_defined(&validation);
 
     if let Some(recovered) = app_data_signer.as_ref() {
-        let owner_check = assert_owner_matches_signer(&order.from, recovered);
+        let owner_check = assert_owner_matches_signer(&from, recovered);
         assert_well_defined(&owner_check);
     }
 
@@ -225,17 +233,20 @@ fn valid_to_after(now: u64, valid_for: u64) -> u32 {
     u32::try_from(now + valid_for).unwrap_or(u32::MAX)
 }
 
-fn base_order(now: u64, scheme: SigningScheme) -> OrderCreation {
-    OrderCreation::new(
+fn base_order(now: u64) -> OrderData {
+    OrderData::new(
         address_from_seed(0xaa),
         address_from_seed(0xbb),
+        address_from_seed(0x11),
         amount_from_u128(1_000_000_000_000_000_000),
         amount_from_u128(1_000_000),
         valid_to_after(now, DEFAULT_VALID_FOR),
+        app_data_hash(),
+        Amount::ZERO,
         OrderKind::Sell,
-        scheme,
-        "0x",
-        address_from_seed(0x11),
+        false,
+        SellTokenSource::Erc20,
+        BuyTokenDestination::Erc20,
     )
 }
 
@@ -250,6 +261,11 @@ fn signing_scheme(value: u8) -> SigningScheme {
 
 fn amount_from_u128(value: u128) -> Amount {
     Amount::new(value.to_string()).expect("u128 string must remain a valid amount")
+}
+
+fn app_data_hash() -> AppDataHash {
+    AppDataHash::new("0x0000000000000000000000000000000000000000000000000000000000000000")
+        .expect("app-data hash literal must remain valid")
 }
 
 fn address_from_seed(seed: u8) -> Address {

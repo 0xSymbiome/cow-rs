@@ -13,7 +13,7 @@
 use alloy_primitives::{Bytes, LogData};
 use alloy_sol_types::{SolCall, SolEvent, sol};
 
-use cow_sdk_core::{Address, Amount, AppDataHash, OrderUid, UnsignedOrder};
+use cow_sdk_core::{Address, Amount, AppDataHash, OrderData, OrderUid};
 
 use crate::ContractsError;
 use crate::interaction::Interaction;
@@ -145,10 +145,7 @@ impl EthFlowOrderData {
     ///
     /// Returns [`ContractsError::ZeroReceiver`] under the same condition
     /// as [`Self::new`].
-    pub fn from_unsigned_order(
-        order: &UnsignedOrder,
-        quote_id: i64,
-    ) -> Result<Self, ContractsError> {
+    pub fn from_unsigned_order(order: &OrderData, quote_id: i64) -> Result<Self, ContractsError> {
         Self::new(
             order.buy_token,
             order.receiver,
@@ -424,9 +421,9 @@ mod tests {
         .expect("sample order uses non-zero receiver")
     }
 
-    fn sample_unsigned_order(receiver: Address) -> UnsignedOrder {
+    fn sample_unsigned_order(receiver: Address) -> OrderData {
         use cow_sdk_core::{BuyTokenDestination, OrderKind, SellTokenSource};
-        UnsignedOrder::new(
+        OrderData::new(
             Address::new("0x3333333333333333333333333333333333333333").unwrap(),
             Address::new("0x1111111111111111111111111111111111111111").unwrap(),
             receiver,

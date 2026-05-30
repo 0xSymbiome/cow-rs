@@ -1,9 +1,9 @@
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
 
-use cow_sdk_contracts::{ContractId, Order, Registry, hash_order};
+use cow_sdk_contracts::{ContractId, Registry, hash_order};
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, BuyTokenDestination, CowEnv, OrderKind, SellTokenSource,
-    SupportedChainId, TypedDataDomain,
+    Address, Amount, AppDataHash, BuyTokenDestination, CowEnv, OrderData, OrderKind,
+    SellTokenSource, SupportedChainId, TypedDataDomain,
 };
 
 fn sample_domain() -> TypedDataDomain {
@@ -21,11 +21,11 @@ fn sample_domain() -> TypedDataDomain {
     )
 }
 
-fn sample_order() -> Order {
-    Order::new(
+fn sample_order() -> OrderData {
+    OrderData::new(
         Address::new("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2").unwrap(),
         Address::new("0x6b175474e89094c44da98b954eedeac495271d0f").unwrap(),
-        Some(Address::new("0x3333333333333333333333333333333333333333").unwrap()),
+        Address::new("0x3333333333333333333333333333333333333333").unwrap(),
         Amount::new("1000000000000000000").unwrap(),
         Amount::new("2000000000000000000000").unwrap(),
         1_709_990_000,
@@ -34,8 +34,8 @@ fn sample_order() -> Order {
         Amount::new("5000000000000000").unwrap(),
         OrderKind::Sell,
         false,
-        Some(SellTokenSource::Erc20),
-        Some(BuyTokenDestination::Erc20),
+        SellTokenSource::Erc20,
+        BuyTokenDestination::Erc20,
     )
 }
 

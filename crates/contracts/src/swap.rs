@@ -1,11 +1,10 @@
 use alloy_primitives::Bytes;
 use serde::{Deserialize, Serialize};
 
-use cow_sdk_core::{Address, Amount, TypedDataDomain};
+use cow_sdk_core::{Address, Amount, OrderData, TypedDataDomain};
 
 use crate::{
     ContractsError,
-    order::Order,
     settlement::{TokenRegistry, Trade, TradeExecution, encode_trade},
     signature::Signature,
 };
@@ -165,19 +164,19 @@ impl SwapEncoder {
 
     /// Encodes the trade associated with the swap sequence.
     ///
+    /// A `receiver` of `address(0)` is encoded verbatim (the pay-to-owner
+    /// sentinel); this encoder never rejects it.
+    ///
     /// # Errors
     ///
-    /// Returns [`ContractsError::ZeroReceiver`] when the order explicitly uses
-    /// `address(0)` as receiver. Signature payload failures are surfaced
-    /// through the typed signature and hex decoding variants on
-    /// [`ContractsError`].
+    /// Signature payload failures are surfaced through the typed signature and
+    /// hex decoding variants on [`ContractsError`].
     pub fn encode_trade(
         &mut self,
-        order: &Order,
+        order: &OrderData,
         signature: &Signature,
         swap_execution: Option<SwapExecution>,
     ) -> Result<(), ContractsError> {
-        let order = crate::order::normalize_order(order)?;
         let limit_amount = swap_execution.map_or_else(
             || match order.kind {
                 cow_sdk_core::OrderKind::Sell => order.buy_amount,
@@ -187,7 +186,7 @@ impl SwapEncoder {
         );
         self.trade = Some(encode_trade(
             &mut self.tokens,
-            &order,
+            order,
             signature,
             &TradeExecution::new(limit_amount),
         )?);

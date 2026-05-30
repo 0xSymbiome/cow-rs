@@ -341,6 +341,49 @@ fn ethflow_transform_rewrites_owner_sell_token_and_valid_to() {
 }
 
 #[test]
+fn signing_order_projects_regular_order_and_fails_closed_for_ethflow() {
+    let uid = sample_order_uid();
+
+    // A regular order's response fields still equal the signed order, so the
+    // projection is available and preserves every hashing input verbatim.
+    let order = serde_json::from_value::<Order>(sample_order_json(&uid))
+        .expect("order fixture must deserialize");
+    let projected = order
+        .signing_order()
+        .expect("a regular order must project to a user-domain order");
+    let projected = serde_json::to_value(&projected).expect("user-domain order must serialize");
+    let wire = serde_json::to_value(&order).expect("response order must serialize");
+    for field in [
+        "sellToken",
+        "buyToken",
+        "receiver",
+        "sellAmount",
+        "buyAmount",
+        "validTo",
+        "appData",
+        "kind",
+        "sellTokenBalance",
+        "buyTokenBalance",
+    ] {
+        assert_eq!(
+            projected.get(field),
+            wire.get(field),
+            "signing_order projection must preserve `{field}` from the response order",
+        );
+    }
+
+    // An eth-flow order's response fields are rewritten by the transform
+    // (valid_to/owner/sell_token), so the projection fails closed instead of
+    // returning a user-domain order that cannot reproduce the on-chain digest.
+    let ethflow = serde_json::from_value::<Order>(sample_ethflow_order_json(&uid))
+        .expect("ethflow fixture must deserialize");
+    assert!(
+        ethflow.signing_order().is_none(),
+        "an eth-flow order must not project to a re-derivable user-domain order",
+    );
+}
+
+#[test]
 fn regular_order_transform_keeps_order_shape_and_adds_total_fee() {
     let uid = sample_order_uid();
     let order = serde_json::from_value::<Order>(sample_order_json(&uid))

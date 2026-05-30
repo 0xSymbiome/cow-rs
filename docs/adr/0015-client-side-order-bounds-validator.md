@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-21
-- Last reviewed: 2026-05-27
+- Last reviewed: 2026-05-30
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: trading, validation, client-side, defense-in-depth, error-typing
 - Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md), [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
@@ -41,9 +41,12 @@ under replay.
 
 ## Must Remain True
 
-- Public surface: `OrderBoundsValidator::validate(&order, scheme,
-  app_data_signer: Option<Address>, now: u64, is_eth_flow: bool) ->
-  Result<(), ClientRejection>` is the canonical entry point.
+- Public surface: `OrderBoundsValidator::validate(order: &OrderData,
+  from: Address, scheme, app_data_signer: Option<Address>, now: u64,
+  is_eth_flow: bool) -> Result<(), ClientRejection>` is the canonical entry
+  point. It validates the signing order plus its submission owner (`from`),
+  which is threaded separately because the canonical signing order carries no
+  owner field.
   `OrderBoundsValidator::services_default()` and
   `OrderBoundsValidator::services_default_for_chain(chain_id)` are
   the public constructors; the latter attaches the chain's

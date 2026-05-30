@@ -3,15 +3,11 @@
 //! Fuzz target for the EIP-712 typed-data digest pipeline.
 //!
 //! **Property:** `PROP-SIG-005`.
-//! Builds a plausible [`UnsignedOrder`] field vector plus a
-//! [`TypedDataDomain`] from arbitrary input, converts it into the
-//! contract-side [`Order`] representation, and hashes it through
-//! [`hash_order`]. The target asserts:
+//! Builds a plausible [`OrderData`] field vector plus a
+//! [`TypedDataDomain`] from arbitrary input and hashes the concrete
+//! order directly through [`hash_order`]. The target asserts:
 //!
 //! * [`hash_order`] is panic-free on every arbitrary input.
-//!   Inputs rejected by the typed order normalizer return early because
-//!   they exercise the documented validation path rather than a digest
-//!   contract.
 //! * [`hash_order`] is deterministic: hashing the same input twice
 //!   produces the same digest.
 //! * [`hash_order_cancellations`] is panic-free on every arbitrary
@@ -24,11 +20,11 @@
 //! inherent to the struct shape rather than needing a separate
 //! `MAX_FUZZ_INPUT` constant.
 
-use cow_sdk_contracts::order::{Order, hash_order, hash_order_cancellations};
+use cow_sdk_contracts::order::{hash_order, hash_order_cancellations};
 use cow_sdk_contracts::{OrderCancellations, OrderUidParams, pack_order_uid_params};
 use cow_sdk_core::{
     Address, Amount, AppDataHash, BuyTokenDestination, ChainId, OrderDigest, OrderKind,
-    SellTokenSource, TypedDataDomain, UnsignedOrder,
+    SellTokenSource, TypedDataDomain, OrderData,
 };
 use libfuzzer_sys::{arbitrary::Arbitrary, fuzz_target};
 
@@ -57,7 +53,7 @@ struct FuzzInput {
 }
 
 fuzz_target!(|input: FuzzInput| {
-    let unsigned = UnsignedOrder::new(
+    let unsigned = OrderData::new(
         Address::from_bytes(input.sell_token),
         Address::from_bytes(input.buy_token),
         Address::from_bytes(input.receiver),
@@ -78,7 +74,6 @@ fuzz_target!(|input: FuzzInput| {
         sell_token_source_from_code(input.sell_token_balance_code),
         buy_token_destination_from_code(input.buy_token_balance_code),
     );
-    let order: Order = (&unsigned).into();
 
     let domain = TypedDataDomain::new(
         bounded_ascii(input.domain_name_ascii_seed, input.domain_name_len),
@@ -87,14 +82,13 @@ fuzz_target!(|input: FuzzInput| {
         Address::from_bytes(input.verifying_contract),
     );
 
-    // `hash_order` is deterministic for a fixed accepted input. Rejected
-    // orders are valid typed failures for the normalizer and are not
-    // crashes for this digest target.
-    let first = match hash_order(&domain, &order) {
+    // `hash_order` is deterministic and panic-free for the concrete order on
+    // every arbitrary input.
+    let first = match hash_order(&domain, &unsigned) {
         Ok(digest) => digest,
         Err(_) => return,
     };
-    let second = hash_order(&domain, &order).expect("hash_order must remain deterministic");
+    let second = hash_order(&domain, &unsigned).expect("hash_order must remain deterministic");
     assert_eq!(
         first, second,
         "hash_order must produce the same digest for identical inputs",

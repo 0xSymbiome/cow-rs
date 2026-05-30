@@ -30,13 +30,13 @@ use alloy_primitives::{Bytes, LogData};
 use alloy_sol_types::{SolEvent, sol};
 
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, CowEnv, OrderUid, SupportedChainId, TypedDataDomain,
+    Address, Amount, AppDataHash, CowEnv, OrderData, OrderUid, SupportedChainId, TypedDataDomain,
 };
 
 use crate::SigningScheme;
 use crate::deployments::{ContractId, Registry};
 use crate::errors::ContractsError;
-use crate::order::{ORDER_UID_LENGTH, Order, compute_order_uid};
+use crate::order::{ORDER_UID_LENGTH, compute_order_uid};
 use crate::primitives::{
     buy_balance_from_marker, check_topics, order_kind_from_marker, sell_balance_from_marker,
 };
@@ -129,7 +129,7 @@ pub struct OnchainOrderPlacement {
     /// `sender`). This is not necessarily the order owner.
     pub sender: Address,
     /// The reconstructed `GPv2` order.
-    pub order: Order,
+    pub order: OrderData,
     /// On-chain signing scheme used to validate the order.
     pub signing_scheme: OnchainSigningScheme,
     /// Raw on-chain signature payload. For [`OnchainSigningScheme::Eip1271`]
@@ -284,20 +284,14 @@ pub fn decode_order_invalidation(
 
 fn reconstruct_order(
     order: &ICoWSwapOnchainOrders::GPv2OrderData,
-) -> Result<Order, ContractsError> {
-    let receiver = Address::from_bytes(order.receiver.into_array());
-    // `address(0)` on the wire is the GPv2 RECEIVER_SAME_AS_OWNER sentinel; the
-    // cow `Order` models it as `None` and normalizes it back to the zero word
-    // during hashing, preserving the on-chain digest byte-for-byte.
-    let receiver = if receiver.is_zero() {
-        None
-    } else {
-        Some(receiver)
-    };
-    Ok(Order::new(
+) -> Result<OrderData, ContractsError> {
+    // `address(0)` on the wire is the GPv2 RECEIVER_SAME_AS_OWNER sentinel. The
+    // concrete `OrderData` carries it verbatim and `hash_order` hashes the zero
+    // word directly, preserving the on-chain digest byte-for-byte.
+    Ok(OrderData::new(
         Address::from_bytes(order.sellToken.into_array()),
         Address::from_bytes(order.buyToken.into_array()),
-        receiver,
+        Address::from_bytes(order.receiver.into_array()),
         Amount::from_u256(order.sellAmount),
         Amount::from_u256(order.buyAmount),
         order.validTo,
@@ -305,8 +299,8 @@ fn reconstruct_order(
         Amount::from_u256(order.feeAmount),
         order_kind_from_marker(order.kind)?,
         order.partiallyFillable,
-        Some(sell_balance_from_marker(order.sellTokenBalance)?),
-        Some(buy_balance_from_marker(order.buyTokenBalance)?),
+        sell_balance_from_marker(order.sellTokenBalance)?,
+        buy_balance_from_marker(order.buyTokenBalance)?,
     ))
 }
 

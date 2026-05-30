@@ -3,13 +3,13 @@ use std::collections::BTreeMap;
 use alloy_primitives::Bytes;
 use alloy_sol_types::SolCall;
 
-use cow_sdk_core::{Address, Amount, SupportedChainId, TypedDataDomain};
+use cow_sdk_core::{Address, Amount, OrderData, SupportedChainId, TypedDataDomain};
 
 use crate::{
     ContractsError,
     deployments::{ContractId, Registry},
     interaction::{Interaction, InteractionLike, normalize_interaction},
-    order::{Order, extract_order_uid_params, normalize_order},
+    order::extract_order_uid_params,
     signature::Signature,
 };
 
@@ -144,15 +144,14 @@ impl SettlementEncoder {
     ///
     /// # Errors
     ///
-    /// Returns [`ContractsError`] if order normalization fails, if execution is
-    /// missing for a partially fillable order, or if trade encoding fails.
+    /// Returns [`ContractsError`] if execution is missing for a partially
+    /// fillable order, or if trade encoding fails.
     pub fn encode_trade(
         &mut self,
-        order: &Order,
+        order: &OrderData,
         signature: &Signature,
         execution: Option<TradeExecution>,
     ) -> Result<(), ContractsError> {
-        let order = normalize_order(order)?;
         let execution = match execution {
             Some(execution) => execution,
             None if order.partially_fillable => return Err(ContractsError::MissingExecutedAmount),
@@ -160,7 +159,7 @@ impl SettlementEncoder {
         };
         self.trades.push(encode_settlement_trade(
             &mut self.tokens,
-            &order,
+            order,
             signature,
             &execution,
         )?);
@@ -296,18 +295,18 @@ impl SettlementEncoder {
 #[cfg(test)]
 mod tests {
     use cow_sdk_core::{
-        Address, Amount, AppDataHash, BuyTokenDestination, OrderKind, SellTokenSource,
+        Address, Amount, AppDataHash, BuyTokenDestination, OrderData, OrderKind, SellTokenSource,
     };
 
-    use crate::{order::Order, signature::Signature};
+    use crate::signature::Signature;
 
     use super::*;
 
-    fn sample_order(partially_fillable: bool) -> Order {
-        Order::new(
+    fn sample_order(partially_fillable: bool) -> OrderData {
+        OrderData::new(
             Address::new("0x1111111111111111111111111111111111111111").unwrap(),
             Address::new("0x2222222222222222222222222222222222222222").unwrap(),
-            Some(Address::new("0x3333333333333333333333333333333333333333").unwrap()),
+            Address::new("0x3333333333333333333333333333333333333333").unwrap(),
             Amount::new("10").unwrap(),
             Amount::new("20").unwrap(),
             123,
@@ -316,8 +315,8 @@ mod tests {
             Amount::new("1").unwrap(),
             OrderKind::Buy,
             partially_fillable,
-            Some(SellTokenSource::Internal),
-            Some(BuyTokenDestination::Internal),
+            SellTokenSource::Internal,
+            BuyTokenDestination::Internal,
         )
     }
 

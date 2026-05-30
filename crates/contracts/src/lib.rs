@@ -86,10 +86,10 @@ pub use onchain_orders::{
     decode_order_invalidation, decode_order_placement,
 };
 pub use order::{
-    BUY_ETH_ADDRESS, CANCELLATIONS_TYPE_FIELDS, GPv2Order, GPv2OrderCancellations, NormalizedOrder,
-    ORDER_TYPE_FIELDS, ORDER_UID_LENGTH, Order, OrderCancellations, OrderTypeField, OrderUidParams,
-    compute_order_uid, extract_order_uid_params, hash_order, hash_order_cancellation,
-    hash_order_cancellations, normalize_order, pack_order_uid_params,
+    BUY_ETH_ADDRESS, CANCELLATIONS_TYPE_FIELDS, GPv2OrderCancellations, ORDER_TYPE_FIELDS,
+    ORDER_UID_LENGTH, OrderCancellations, OrderTypeField, OrderUidParams, compute_order_uid,
+    extract_order_uid_params, hash_order, hash_order_cancellation, hash_order_cancellations,
+    order_eip712_type_hash, pack_order_uid_params,
 };
 pub use proxy::{
     Eip1967Slot, IEip173Proxy, SlotBytes, admin_address, implementation_address, owner_address,

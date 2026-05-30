@@ -7,6 +7,11 @@ workflow. Specialized DTOs, helper functions, constants, and protocol-specific
 utilities stay available through named-module re-exports such as
 `cow_sdk::trading`, `cow_sdk::orderbook`, `cow_sdk::contracts`,
 `cow_sdk::signing`, `cow_sdk::app_data`, and `cow_sdk::core`.
+
+The bare name `Order` is intentionally not re-exported here. The orderbook
+response record is `cow_sdk::orderbook::Order`; the EIP-712 signing and hashing
+input is `cow_sdk::core::OrderData`. Reach each by its module path so the
+meaning is explicit at the use site.
 "]
 
 pub use crate::{ErrorClass, SdkError};
@@ -18,7 +23,7 @@ pub use cow_sdk_app_data::{AppDataParams, AppDataValidated};
 #[cfg_attr(docsrs, doc(cfg(feature = "browser-wallet")))]
 pub use cow_sdk_browser_wallet::Eip1193Signer as BrowserWalletSigner;
 // contracts
-pub use cow_sdk_contracts::{ContractsError, Order, Signature};
+pub use cow_sdk_contracts::{ContractsError, Signature};
 // core
 pub use cow_sdk_core::{
     Address, Amount, AppCode, AppCodeError, Cancellable, CowEnv, HttpTransport, OrderUid, Provider,

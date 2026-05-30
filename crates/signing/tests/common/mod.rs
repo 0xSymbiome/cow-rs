@@ -6,8 +6,8 @@
 use std::{cell::RefCell, fmt, rc::Rc};
 
 use cow_sdk_core::{
-    Address, Amount, Hash32, Signer, TransactionBroadcast, TransactionRequest, TypedDataDomain,
-    TypedDataField, UnsignedOrder,
+    Address, Amount, Hash32, OrderData, Signer, TransactionBroadcast, TransactionRequest,
+    TypedDataDomain, TypedDataField,
 };
 use serde_json::Value;
 
@@ -119,7 +119,7 @@ pub fn fixture_case(id: &str) -> Value {
         .unwrap_or_else(|| panic!("missing fixture case {id}"))
 }
 
-pub fn sample_order() -> UnsignedOrder {
+pub fn sample_order() -> OrderData {
     serde_json::from_value(serde_json::json!({
         "sellToken": "0xd057b63f5e69cf1b929b356b579cba08d7688048",
         "buyToken": "0x7b878668cd1a3adf89764d3a331e0a7bb832192d",

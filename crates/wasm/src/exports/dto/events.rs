@@ -9,13 +9,12 @@
 //! underlying decoders never panic.
 
 use alloy_primitives::{B256, Bytes, LogData};
-use cow_sdk_contracts::{EthFlowEvent, OnchainSigningScheme, Order, SettlementEvent};
-use cow_sdk_core::{Address, BuyTokenDestination, OrderKind, SellTokenSource};
+use cow_sdk_contracts::{EthFlowEvent, OnchainSigningScheme, SettlementEvent};
 use serde::{Deserialize, Serialize};
 use tsify::Tsify;
 use wasm_bindgen::prelude::*;
 
-use super::{OrderInput, OrderKindDto, TokenBalanceDto};
+use super::OrderInput;
 use crate::exports::errors::WasmError;
 
 /// Raw EVM event log accepted by the on-chain event decoders.
@@ -295,34 +294,5 @@ impl EthFlowEventDto {
                 ));
             }
         })
-    }
-}
-
-impl From<&Order> for OrderInput {
-    fn from(order: &Order) -> Self {
-        Self {
-            sell_token: order.sell_token.to_hex_string(),
-            buy_token: order.buy_token.to_hex_string(),
-            receiver: order.receiver.as_ref().map(Address::to_hex_string),
-            sell_amount: order.sell_amount.to_string(),
-            buy_amount: order.buy_amount.to_string(),
-            valid_to: order.valid_to,
-            app_data: order.app_data.to_hex_string(),
-            fee_amount: order.fee_amount.to_string(),
-            kind: match order.kind {
-                OrderKind::Sell => OrderKindDto::Sell,
-                OrderKind::Buy => OrderKindDto::Buy,
-            },
-            partially_fillable: order.partially_fillable,
-            sell_token_balance: match order.sell_token_balance {
-                Some(SellTokenSource::External) => TokenBalanceDto::External,
-                Some(SellTokenSource::Internal) => TokenBalanceDto::Internal,
-                _ => TokenBalanceDto::Erc20,
-            },
-            buy_token_balance: match order.buy_token_balance {
-                Some(BuyTokenDestination::Internal) => TokenBalanceDto::Internal,
-                _ => TokenBalanceDto::Erc20,
-            },
-        }
     }
 }

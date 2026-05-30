@@ -7,10 +7,10 @@ use alloy_sol_types::{
 use cow_sdk_contracts::{
     BatchSwapStep, ContractAddresses, ContractName, Eip1271SignatureData,
     Eip1271VerificationRequest, EthFlowOrderData, GrantRoleCall, Interaction, InteractionLike,
-    NormalizedOrder, Order, OrderCancellations, OrderFlags, OrderRefunds, OrderTypeField,
-    OrderUidParams, RequiredVaultRole, Signature, SigningScheme, Swap, SwapExecution, Trade,
-    TradeExecution, TradeFlags, TradeSimulation, TradeSimulationBalanceDelta,
-    TradeSimulationResult, encode_create_order_calldata,
+    OrderCancellations, OrderFlags, OrderRefunds, OrderTypeField, OrderUidParams,
+    RequiredVaultRole, Signature, SigningScheme, Swap, SwapExecution, Trade, TradeExecution,
+    TradeFlags, TradeSimulation, TradeSimulationBalanceDelta, TradeSimulationResult,
+    encode_create_order_calldata,
 };
 use cow_sdk_core::{
     Address, Amount, AppDataHash, BuyTokenDestination, Hash32, HexData, OrderDigest, OrderKind,
@@ -107,58 +107,6 @@ fn order_type_field_new_preserves_wire_shape() {
     let field = OrderTypeField::new("sellToken", "address");
 
     assert_json_bytes(&field, r#"{"name":"sellToken","type":"address"}"#);
-}
-
-#[test]
-fn order_new_preserves_wire_shape() {
-    let order = Order::new(
-        address(ADDR1),
-        address(ADDR2),
-        Some(address(ADDR3)),
-        amount("1"),
-        amount("2"),
-        42,
-        app_data(),
-        amount("3"),
-        OrderKind::Sell,
-        true,
-        Some(SellTokenSource::Erc20),
-        Some(BuyTokenDestination::Internal),
-    );
-    let expected = format!(
-        "{{\"sellToken\":\"{ADDR1}\",\"buyToken\":\"{ADDR2}\",\"receiver\":\"{ADDR3}\",\
-         \"sellAmount\":\"1\",\"buyAmount\":\"2\",\"validTo\":42,\"appData\":\"{APP_DATA}\",\
-         \"feeAmount\":\"3\",\"kind\":\"sell\",\"partiallyFillable\":true,\
-         \"sellTokenBalance\":\"erc20\",\"buyTokenBalance\":\"internal\"}}"
-    );
-
-    assert_json_bytes(&order, &expected);
-}
-
-#[test]
-fn normalized_order_new_preserves_wire_shape() {
-    let order = NormalizedOrder::new(
-        address(ADDR1),
-        address(ADDR2),
-        address(ADDR3),
-        amount("4"),
-        amount("5"),
-        43,
-        app_data(),
-        amount("6"),
-        OrderKind::Buy,
-        false,
-        SellTokenSource::External,
-        BuyTokenDestination::Erc20,
-    );
-    let expected = format!(
-        "{{\"sellToken\":\"{ADDR1}\",\"buyToken\":\"{ADDR2}\",\"receiver\":\"{ADDR3}\",\
-         \"sellAmount\":\"4\",\"buyAmount\":\"5\",\"validTo\":43,\"appData\":\"{APP_DATA}\",\
-         \"feeAmount\":\"6\",\"kind\":\"buy\",\"partiallyFillable\":false,\
-         \"sellTokenBalance\":\"external\",\"buyTokenBalance\":\"erc20\"}}"
-    );
-
-    assert_json_bytes(&order, &expected);
 }
 
 #[test]

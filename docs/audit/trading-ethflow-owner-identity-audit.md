@@ -1,17 +1,17 @@
 # Trading EthFlow Owner Identity Audit
 
 Status: Current
-Last reviewed: 2026-05-27
+Last reviewed: 2026-05-30
 Owning surface: `cow-sdk-trading` EthFlow submission seam,
 including the `EthFlowTransaction` bundle shape, the
 `get_eth_flow_transaction` owner resolution, and the
-`post_sell_native_currency_order` pre-HTTP validation
-preview that feeds `OrderBoundsValidator::validate`.
+`post_sell_native_currency_order` pre-HTTP call to
+`OrderBoundsValidator::validate` on the signing order.
 Refresh trigger: Changes to the `EthFlowTransaction` public
 field set or constructor signature; changes to the
 `get_eth_flow_transaction` owner resolution; any change
-that lets `preview_from` diverge from `tx.from` on the
-submission seam; any extension to
+that lets the owner passed to the validator diverge from
+`tx.from` on the submission seam; any extension to
 `OrderBoundsValidator::validate` that reads a different
 identity for the `AppdataFromMismatch` check on the EthFlow
 path; changes to the EthFlow-aware invocation of the validator
@@ -36,10 +36,9 @@ This audit covers:
   parameter it accepts
 - the `get_eth_flow_transaction` helper and the owner
   resolution that populates `EthFlowTransaction.from`
-- the `post_sell_native_currency_order` submission seam
-  and its `preview_from = tx.from.clone()` read when building
-  the preview `OrderCreation` for
-  `OrderBoundsValidator::validate`
+- the `post_sell_native_currency_order` submission seam and its
+  `OrderBoundsValidator::validate(&tx.order_to_sign, tx.from, …)` call,
+  which validates the signing order against its resolved owner
 - the EthFlow-aware invocation of the validator
   (`is_eth_flow: true`) and the owner-versus-receiver
   identity contract on the `AppdataFromMismatch { appdata_signer,
@@ -56,7 +55,7 @@ or the orderbook authoritative server-side validation.
 | --- | --- | --- |
 | Bundle shape | `EthFlowTransaction` carries a public typed `from: Address` field populated at construction | Conforms |
 | Owner resolution | `get_eth_flow_transaction` resolves the owner through `Signer::get_address` exactly once and stores the value on the returned bundle | Conforms |
-| Submission preview | `post_sell_native_currency_order` reads `preview_from = tx.from.clone()` when building the validator preview; no receiver-as-owner fallback remains | Conforms |
+| Submission validation | `post_sell_native_currency_order` passes `tx.from` (the resolved owner) directly to `validate(&tx.order_to_sign, tx.from, …)`; no intermediate `OrderCreation` is built and no receiver-as-owner fallback remains | Conforms |
 | Identity on rejections | `ClientRejection::AppdataFromMismatch { appdata_signer, from }` reports the owner in `from`, not the payout receiver | Conforms |
 | EthFlow-aware invariants | The validator still fires for zero amount, same token, owner mismatch, and lifetime bounds on the EthFlow path; only the native-currency-sentinel sell-token check is skipped | Conforms |
 | Receiver semantics | Receiver continues to carry the payout-recipient role and may legitimately differ from owner without triggering false rejections | Conforms |
@@ -67,7 +66,7 @@ or the orderbook authoritative server-side validation.
 
 `cow_sdk_trading::EthFlowTransaction` is a `#[non_exhaustive]`
 struct with `order_id: OrderUid`, `transaction:
-TransactionRequest`, `order_to_sign: UnsignedOrder`, and a
+TransactionRequest`, `order_to_sign: OrderData`, and a
 typed `from: cow_sdk_core::Address`. The `from` field carries
 the signer-derived owner captured at transaction construction
 and documents the owner-versus-receiver distinction in its
@@ -84,23 +83,23 @@ for order-body derivation and forwarded onto the returned
 `EthFlowTransaction` bundle via the typed `from` field. No
 second signer round-trip happens on the submission seam.
 
-### Submission Preview
+### Submission Validation
 
-`post_sell_native_currency_order` reads
-`let preview_from = tx.from.clone()` when constructing the
-preview `OrderCreation` for
-`OrderBoundsValidator::validate`. The previous assignment that
-sourced `preview_from` from `tx.order_to_sign.receiver` is gone.
-Receiver semantics are unchanged: the `OrderCreation.receiver`
-field continues to carry the payout address, and the on-chain
-EthFlow encoding continues to honor the receiver through the
+`post_sell_native_currency_order` passes `tx.from` (the resolved
+owner) directly to
+`OrderBoundsValidator::validate(&tx.order_to_sign, tx.from, …)`.
+No intermediate `OrderCreation` is constructed for validation, and
+no receiver-as-owner fallback remains on the submission path.
+Receiver semantics are unchanged: `tx.order_to_sign.receiver`
+continues to carry the payout address, and the on-chain EthFlow
+encoding continues to honor the receiver through the
 `cow_sdk_contracts::eth_flow::EthFlowOrderData` surface.
 
 ### Identity On Rejections
 
 `OrderBoundsValidator::validate` compares `app_data_signer`
-against `order.from`. Because the preview `from` now carries
-the owner, the typed `AppdataFromMismatch { appdata_signer,
+against the `from` argument. Because the seam passes `tx.from`
+(the owner), the typed `AppdataFromMismatch { appdata_signer,
 from }` payload reports the owner identity in its `from`
 field both on success-side consistency checks and on
 rejection-side diagnostics. Consumers pattern-matching on the
@@ -123,10 +122,9 @@ non-EthFlow submission seams.
 `tx.order_to_sign.receiver` continues to mean the native-currency
 payout recipient. The EthFlow transaction encoding, the on-chain
 order hash, and the reviewed services authority all treat the
-receiver as payout-only. The only change from the prior state
-is the submission-seam preview source: `tx.from` is the owner,
-and receiver may legitimately differ from owner without
-triggering a false rejection.
+receiver as payout-only. The owner passed to the validator is
+`tx.from`, and receiver may legitimately differ from owner
+without triggering a false rejection.
 
 ## Evidence
 

@@ -13,7 +13,7 @@
 
 mod common;
 
-use cow_sdk_contracts::{Order as ContractsOrder, OrderUidParams, SigningScheme, hash_order};
+use cow_sdk_contracts::{OrderUidParams, SigningScheme, hash_order};
 use cow_sdk_core::{Address, Amount, SupportedChainId};
 use std::str::FromStr;
 
@@ -91,7 +91,7 @@ async fn sign_order_uses_typed_data_for_eip712_and_digest_for_ethsign() {
 
     let expected_digest = hash_order(
         &get_domain(SupportedChainId::Sepolia, None).unwrap(),
-        &contracts_order(&order),
+        &order,
     )
     .unwrap();
 
@@ -110,7 +110,7 @@ async fn eth_sign_routes_raw_32_byte_digest_to_sign_message() {
     let signer = MockSigner::new();
     let expected_digest = hash_order(
         &get_domain(SupportedChainId::Sepolia, None).unwrap(),
-        &contracts_order(&order),
+        &order,
     )
     .unwrap();
 
@@ -207,7 +207,7 @@ fn generate_order_id_reuses_contract_hashing_and_uid_packing() {
     let generated = generate_order_id(SupportedChainId::Sepolia, &order, &owner, None).unwrap();
     let expected_digest = hash_order(
         &get_domain(SupportedChainId::Sepolia, None).unwrap(),
-        &contracts_order(&order),
+        &order,
     )
     .unwrap();
     let expected_uid = cow_sdk_contracts::pack_order_uid_params(&OrderUidParams::new(
@@ -293,23 +293,6 @@ fn eip1271_signature_payload_keeps_full_bytes32_app_data_and_exact_word_padding(
             .iter()
             .all(|byte| *byte == 0)
     );
-}
-
-fn contracts_order(order: &cow_sdk_core::UnsignedOrder) -> ContractsOrder {
-    ContractsOrder::new(
-        order.sell_token,
-        order.buy_token,
-        Some(order.receiver),
-        order.sell_amount,
-        order.buy_amount,
-        order.valid_to,
-        order.app_data,
-        order.fee_amount,
-        order.kind,
-        order.partially_fillable,
-        Some(order.sell_token_balance),
-        Some(order.buy_token_balance),
-    )
 }
 
 fn parse_hex_word(value: &str, expected_len: usize) -> Vec<u8> {

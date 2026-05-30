@@ -71,7 +71,7 @@ fn eip1271_signature_data_rejects_malformed_verifier_or_payload() {
     ));
 }
 
-fn independent_payload(order: &cow_sdk_core::UnsignedOrder, ecdsa_signature: &str) -> String {
+fn independent_payload(order: &cow_sdk_core::OrderData, ecdsa_signature: &str) -> String {
     let mut encoded = Vec::new();
     encoded.extend_from_slice(&encode_address(&order.sell_token.to_hex_string()));
     encoded.extend_from_slice(&encode_address(&order.buy_token.to_hex_string()));

@@ -8,6 +8,20 @@ Authority order:
 4. `docs/release-checklist.md`
 5. committed parity fixtures and executable tests
 
+## Upstream Authority Model
+
+The primary parity authorities are the producers that define the protocol
+contract: `cowprotocol/services` for the off-chain orderbook API, OpenAPI
+schemas, wire DTOs, and validation semantics, and `cowprotocol/contracts` (with
+`cowprotocol/ethflowcontract`) for on-chain EIP-712 hashing, ABI, and
+addresses. The upstream TypeScript `cowprotocol/cow-sdk` is a cross-language
+reference for consumer-workflow and ergonomic coverage; it does not govern the
+Rust public API shape or the wire format. In the "Primary upstream producers"
+column below, a `cow-sdk` entry names the workflow a surface mirrors, while the
+wire and on-chain shapes that surface must match are owned by services and the
+contracts. See [Parity Sources](parity-sources.md#source-ownership) for the
+full ownership split.
+
 ## Supported Networks
 
 The Rust SDK supports the CoW Protocol chains enumerated by

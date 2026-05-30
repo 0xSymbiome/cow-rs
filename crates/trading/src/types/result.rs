@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use cow_sdk_app_data::AppDataDoc;
-use cow_sdk_core::{AppDataHash, OrderUid, QuoteAmountsAndCosts, TransactionHash, UnsignedOrder};
+use cow_sdk_core::{AppDataHash, OrderData, OrderUid, QuoteAmountsAndCosts, TransactionHash};
 use cow_sdk_orderbook::{OrderQuoteResponse, OrderbookRuntimeBinding, SigningScheme};
 use cow_sdk_signing::OrderTypedData;
 
@@ -19,7 +19,7 @@ pub struct QuoteResults {
     /// Fee and amount breakdown derived from the orderbook quote.
     pub amounts_and_costs: QuoteAmountsAndCosts,
     /// Unsigned order payload produced for signing or on-chain submission.
-    pub order_to_sign: UnsignedOrder,
+    pub order_to_sign: OrderData,
     /// Raw orderbook quote response.
     pub quote_response: OrderQuoteResponse,
     /// App-data document, serialized payload, and digest used by the quote flow.
@@ -42,7 +42,7 @@ impl QuoteResults {
         trade_parameters: TradeParameters,
         suggested_slippage_bps: u32,
         amounts_and_costs: QuoteAmountsAndCosts,
-        order_to_sign: UnsignedOrder,
+        order_to_sign: OrderData,
         quote_response: OrderQuoteResponse,
         app_data_info: TradingAppDataInfo,
         order_typed_data: OrderTypedData,
@@ -82,7 +82,7 @@ pub struct OrderPostingResult {
     /// Signature payload sent to the orderbook, or empty string for transaction-only flows.
     pub signature: String,
     /// Unsigned order payload used for signing or transaction generation.
-    pub order_to_sign: UnsignedOrder,
+    pub order_to_sign: OrderData,
 }
 
 impl OrderPostingResult {
@@ -92,7 +92,7 @@ impl OrderPostingResult {
         order_id: OrderUid,
         signing_scheme: SigningScheme,
         signature: impl Into<String>,
-        order_to_sign: UnsignedOrder,
+        order_to_sign: OrderData,
     ) -> Self {
         Self {
             order_id,

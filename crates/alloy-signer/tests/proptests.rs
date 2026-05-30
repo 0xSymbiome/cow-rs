@@ -4,10 +4,10 @@ use std::str::FromStr;
 
 use alloy_primitives::Signature as AlloySignature;
 use cow_sdk_alloy_signer::LocalAlloyKeystoreSigner;
-use cow_sdk_contracts::{Order as ContractsOrder, SigningScheme, hash_order};
+use cow_sdk_contracts::{SigningScheme, hash_order};
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, BuyTokenDestination, Hash32, OrderKind, SellTokenSource, Signer,
-    SupportedChainId, UnsignedOrder,
+    Address, Amount, AppDataHash, BuyTokenDestination, Hash32, OrderData, OrderKind,
+    SellTokenSource, Signer, SupportedChainId,
 };
 use cow_sdk_signing::{get_domain, order_typed_data_payload};
 use proptest::prelude::*;
@@ -92,29 +92,12 @@ fn runtime() -> tokio::runtime::Runtime {
         .unwrap()
 }
 
-fn order_digest(order: &UnsignedOrder) -> Hash32 {
-    hash_order(
-        &get_domain(SupportedChainId::Mainnet, None).unwrap(),
-        &ContractsOrder::new(
-            order.sell_token,
-            order.buy_token,
-            Some(order.receiver),
-            order.sell_amount,
-            order.buy_amount,
-            order.valid_to,
-            order.app_data,
-            order.fee_amount,
-            order.kind,
-            order.partially_fillable,
-            Some(order.sell_token_balance),
-            Some(order.buy_token_balance),
-        ),
-    )
-    .unwrap()
+fn order_digest(order: &OrderData) -> Hash32 {
+    hash_order(&get_domain(SupportedChainId::Mainnet, None).unwrap(), order).unwrap()
 }
 
-fn sample_order() -> UnsignedOrder {
-    UnsignedOrder::new(
+fn sample_order() -> OrderData {
+    OrderData::new(
         Address::new("0xd057b63f5e69cf1b929b356b579cba08d7688048").unwrap(),
         Address::new("0x7b878668cd1a3adf89764d3a331e0a7bb832192d").unwrap(),
         Address::new("0xa6ddbd0de6b310819b49f680f65871bee85f517e").unwrap(),
