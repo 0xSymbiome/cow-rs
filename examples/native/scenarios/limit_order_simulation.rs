@@ -2,8 +2,8 @@ use std::{error::Error, sync::Arc};
 
 use serde_json::json;
 
-use cow_sdk::prelude::{SupportedChainId, TradingSdk};
-use cow_sdk::trading::TradingSdkOptions;
+use cow_sdk::prelude::{SupportedChainId, Trading};
+use cow_sdk::trading::TradingOptions;
 
 use cow_sdk_examples_native::support::{
     MockOrderbook, MockSigner, sample_limit_parameters, sample_owner, sample_quote_response,
@@ -13,10 +13,10 @@ use cow_sdk_examples_native::support::{
 async fn main() -> Result<(), Box<dyn Error>> {
     let orderbook = MockOrderbook::new(SupportedChainId::Sepolia, sample_quote_response());
     let signer = MockSigner::default();
-    let sdk = TradingSdk::builder()
+    let sdk = Trading::builder()
         .with_chain_id(SupportedChainId::Sepolia)
         .with_app_code("cow-rs-limit-order")
-        .with_options(TradingSdkOptions::new().with_orderbook_client(Arc::new(orderbook.clone())))
+        .with_options(TradingOptions::new().with_orderbook_client(Arc::new(orderbook.clone())))
         .build_ready()?;
 
     let posted = sdk
@@ -29,7 +29,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .expect("example limit order must be sent");
 
     let report = json!({
-        "surface": "cow-sdk::TradingSdk::post_limit_order",
+        "surface": "cow-sdk::Trading::post_limit_order",
         "mode": "simulated-transport",
         "result": {
             "orderId": posted.order_id.to_hex_string(),

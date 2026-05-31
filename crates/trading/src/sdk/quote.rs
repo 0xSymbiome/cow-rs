@@ -1,12 +1,12 @@
 use cow_sdk_core::Signer;
 
-use super::TradingSdk;
+use super::Trading;
 use crate::{
     QuoteResults, TradeAdvancedSettings, TradeParameters, TradingError, get_quote_only,
     get_quote_results,
 };
 
-impl TradingSdk {
+impl Trading {
     /// Fetches quote-only results using SDK defaults plus optional advanced settings.
     ///
     /// Owner precedence: advanced-settings `quote_request.from`, then

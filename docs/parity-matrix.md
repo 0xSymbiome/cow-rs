@@ -31,7 +31,7 @@ wrapped-native-token evidence are maintained in the
 [Deployment Registry Audit](audit/deployment-registry-audit.md#per-chain-provenance)
 instead of being repeated here.
 
-Endpoint discovery via `OrderBookApi::new(env, chain_id)` and
+Endpoint discovery via `OrderbookApi::new(env, chain_id)` and
 `SubgraphApi::new(env, chain_id)` continues to honor production versus staging
 environment selection through the typed API context.
 

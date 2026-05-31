@@ -4,10 +4,10 @@
 //! iterates every documented case, and asserts the Rust orderbook helpers
 //! preserve the pinned upstream API contracts. The helpers exercised are:
 //!
-//! * [`OrderBookApi::effective_base_url`] / [`default_api_base_urls`] —
+//! * [`OrderbookApi::effective_base_url`] / [`default_api_base_urls`] —
 //!   prod, staging, partner-prod, and partner-staging base URL resolution.
 //! * Endpoint path templates embedded in the tracing `endpoint` fields of the
-//!   reviewed `OrderBookApi` methods (version, orders, trades, txOrders,
+//!   reviewed `OrderbookApi` methods (version, orders, trades, txOrders,
 //!   auction, quote, cancellation, native-price, total-surplus, app-data,
 //!   solver-competition).
 //! * [`GetOrdersRequest`] / [`GetTradesRequest`] — pagination defaults and
@@ -30,8 +30,8 @@ use cow_sdk_core::{
     Amount, ApiContext, AppDataHash, CowEnv, Redacted, SupportedChainId, default_api_base_urls,
 };
 use cow_sdk_orderbook::{
-    EVM_NATIVE_CURRENCY_ADDRESS, GetOrdersRequest, GetTradesRequest, OrderBookApi,
-    OrderBookApiError, OrderCreation, OrderQuoteResponse, ResponseBody, SigningScheme, Trade,
+    EVM_NATIVE_CURRENCY_ADDRESS, GetOrdersRequest, GetTradesRequest, OrderCreation,
+    OrderQuoteResponse, OrderbookApi, OrderbookApiError, ResponseBody, SigningScheme, Trade,
     calculate_total_fee,
 };
 use cow_sdk_transport_policy::{
@@ -169,10 +169,10 @@ fn assert_base_url_resolution(id: &str, expected: &Value) {
     let ctx_no_key = ApiContext::new(SupportedChainId::Mainnet, CowEnv::Prod);
     let ctx_with_key = ApiContext::new(SupportedChainId::Mainnet, CowEnv::Prod)
         .with_api_key(Redacted::new("partner-key".to_owned()));
-    let api_no_key = OrderBookApi::builder_from_context(ctx_no_key)
+    let api_no_key = OrderbookApi::builder_from_context(ctx_no_key)
         .build()
         .expect("default orderbook client must build");
-    let api_with_key = OrderBookApi::builder_from_context(ctx_with_key)
+    let api_with_key = OrderbookApi::builder_from_context(ctx_with_key)
         .build()
         .expect("partner orderbook client must build");
     let base_no_key = api_no_key
@@ -211,13 +211,13 @@ fn assert_get_order_endpoints(id: &str, case: &Value, expected: &Value) {
         .as_str()
         .unwrap_or_else(|| panic!("case {id}: expected.mainnet_path must be a string"));
 
-    let gnosis_api = OrderBookApi::builder_from_context(ApiContext::new(
+    let gnosis_api = OrderbookApi::builder_from_context(ApiContext::new(
         SupportedChainId::GnosisChain,
         CowEnv::Prod,
     ))
     .build()
     .expect("default orderbook client must build");
-    let mainnet_api = OrderBookApi::builder_from_context(ApiContext::new(
+    let mainnet_api = OrderbookApi::builder_from_context(ApiContext::new(
         SupportedChainId::Mainnet,
         CowEnv::Prod,
     ))
@@ -256,11 +256,11 @@ fn assert_get_order_multi_env_fallback(id: &str, expected: &Value) {
     assert_eq!(expected["fallback_env"].as_str(), Some("staging"));
 
     // The multi-env helper routes through `get_order_multi_env` on the
-    // `OrderBookApi` surface. A production router without a test
+    // `OrderbookApi` surface. A production router without a test
     // `reqwest::Client` can still be constructed; using the constructor here
     // pins the public constructor surface and leaves the actual fallback-on-404
     // behavior to the live orderbook suite.
-    let _api = OrderBookApi::builder_from_context(ApiContext::new(
+    let _api = OrderbookApi::builder_from_context(ApiContext::new(
         SupportedChainId::Mainnet,
         CowEnv::Prod,
     ))
@@ -455,7 +455,7 @@ fn assert_rejection_error(id: &str, expected: &Value) {
         .as_str()
         .unwrap_or_else(|| panic!("case {id}: expected.display must be a string"));
 
-    let api_error = OrderBookApiError::new(
+    let api_error = OrderbookApiError::new(
         expected_status.try_into().unwrap(),
         "Error",
         ResponseBody::Json(json!({
@@ -553,7 +553,7 @@ fn assert_request_helper_policy(id: &str, expected: &Value) {
     let error_type = expected["error_type"]
         .as_str()
         .unwrap_or_else(|| panic!("case {id}: expected.error_type must be a string"));
-    assert_eq!(error_type, "OrderBookApiError");
+    assert_eq!(error_type, "OrderbookApiError");
 
     let retry_statuses: Vec<u16> = expected["retry_statuses"]
         .as_array()

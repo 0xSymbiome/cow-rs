@@ -46,7 +46,7 @@ mod native {
         AppDataHash, Order, OrderCancellations, OrderCreation, OrderQuoteRequest,
         OrderQuoteResponse, OrderUid, OrderbookError,
     };
-    use cow_sdk_trading::{OrderbookClient, TradeParameters, TradingError, TradingSdk};
+    use cow_sdk_trading::{OrderbookClient, TradeParameters, Trading, TradingError};
     use serde_json::json;
 
     const OWNER: &str = "0xc8c753ee51e8fc80e199ab297fb575634a1ac1d3";
@@ -72,7 +72,7 @@ mod native {
         // `.build_ready()` is only possible after `appCode` and chain authority
         // are set, then validates that the injected orderbook runtime agrees
         // with the trader defaults.
-        let sdk: TradingSdk = TradingSdk::builder()
+        let sdk: Trading = Trading::builder()
             .with_chain_id(SupportedChainId::Sepolia)
             .with_app_code("cow-rs-signed-order-example")
             .with_orderbook_client(orderbook)

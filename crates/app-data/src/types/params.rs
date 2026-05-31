@@ -137,11 +137,9 @@ impl<'de> Deserialize<'de> for AppDataParams {
         // intentionally dropped rather than folded into the deserializer
         // error message.
         let signer = match metadata.remove("signer") {
-            Some(value) => Some(
-                serde_json::from_value::<Address>(value).map_err(|_| {
-                    <D::Error as serde::de::Error>::custom("metadata.signer is not a valid address")
-                })?,
-            ),
+            Some(value) => Some(serde_json::from_value::<Address>(value).map_err(|_| {
+                <D::Error as serde::de::Error>::custom("metadata.signer is not a valid address")
+            })?),
             None => None,
         };
         let flashloan = match metadata.remove("flashloan") {
@@ -273,7 +271,7 @@ impl AppDataParams {
     ///
     /// Recommended entry point for the full-cycle "tag, hash, upload" flow.
     /// The returned [`AppDataValidated::info`] carries the digest and
-    /// canonical content ready to feed into `OrderBookApi::upload_app_data`.
+    /// canonical content ready to feed into `OrderbookApi::upload_app_data`.
     ///
     /// # Errors
     ///

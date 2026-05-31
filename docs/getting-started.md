@@ -5,7 +5,7 @@
 This guide is the canonical first-touch path for SDK consumers who want to:
 
 1. understand the public crate surface
-2. build a ready-state `TradingSdk`
+2. build a ready-state `Trading`
 3. verify the deterministic signing contract
 4. verify a simulated order-submission flow without live services
 5. branch into the maintained native and WASM example families
@@ -139,11 +139,11 @@ The WASM package keeps wallet libraries outside the Rust crate. Supply typed
 JavaScript callbacks for typed-data signing, EIP-1193 requests, digest signing,
 custom EIP-1271 signatures, and HTTP fetch dispatch.
 
-## Step 1: Build A Ready-State `TradingSdk`
+## Step 1: Build A Ready-State `Trading`
 
 The ready-state builder contract is intentionally small.
 
-`TradingSdk::builder().build_ready()` is only reachable after:
+`Trading::builder().build_ready()` is only reachable after:
 
 - a default `chainId`
 - a stable `appCode`
@@ -166,10 +166,10 @@ Good examples include values such as `acme-trader-web`,
 Minimal ready-state builder:
 
 ```rust
-use cow_sdk::{SupportedChainId, TradingSdk};
+use cow_sdk::{SupportedChainId, Trading};
 
-fn build_ready_sdk() -> Result<TradingSdk, Box<dyn std::error::Error>> {
-    let sdk = TradingSdk::builder()
+fn build_ready_sdk() -> Result<Trading, Box<dyn std::error::Error>> {
+    let sdk = Trading::builder()
         .with_chain_id(SupportedChainId::Sepolia)
         .with_app_code("your-app-code")
         .build_ready()?;
@@ -209,28 +209,28 @@ fn quote_request(owner: Address) -> Result<TradeParameters, Box<dyn std::error::
 On `wasm32-unknown-unknown`, the ready-state trading API is the same, but
 the browser cannot use the native default HTTP transport. Build an orderbook
 client with `cow-sdk-transport-wasm::FetchTransport` and inject it once
-through `TradingSdkOptions`:
+through `TradingOptions`:
 
 ```rust,ignore
 use std::sync::Arc;
 
 use cow_sdk::{
-    CowEnv, HttpTransport, OrderBookApi, SupportedChainId, TradingSdk, TradingSdkOptions,
+    CowEnv, HttpTransport, OrderbookApi, SupportedChainId, Trading, TradingOptions,
 };
 use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
 
-fn build_browser_ready_sdk() -> Result<TradingSdk, Box<dyn std::error::Error>> {
+fn build_browser_ready_sdk() -> Result<Trading, Box<dyn std::error::Error>> {
     let transport: Arc<dyn HttpTransport + Send + Sync> = Arc::new(FetchTransport::new(
         &FetchTransportConfig::new("https://api.cow.fi"),
     ));
-    let orderbook = OrderBookApi::builder()
+    let orderbook = OrderbookApi::builder()
         .chain(SupportedChainId::Sepolia)
         .environment(CowEnv::Prod)
         .transport(transport)
         .build()?;
 
-    let options = TradingSdkOptions::new().with_orderbook_client(Arc::new(orderbook));
-    let sdk = TradingSdk::builder()
+    let options = TradingOptions::new().with_orderbook_client(Arc::new(orderbook));
+    let sdk = Trading::builder()
         .with_chain_id(SupportedChainId::Sepolia)
         .with_app_code("your-browser-app-code")
         .with_options(options)
@@ -248,10 +248,10 @@ SDK. Common examples are allowance and approval screens, pre-sign transaction
 tools, and on-chain cancellation tools.
 
 ```rust
-use cow_sdk::{HelperOnlySdk, SupportedChainId, TradingSdk};
+use cow_sdk::{TradingHelpers, SupportedChainId, Trading};
 
-fn build_helper_only_sdk() -> Result<HelperOnlySdk, Box<dyn std::error::Error>> {
-    let sdk = TradingSdk::builder()
+fn build_helper_only_sdk() -> Result<TradingHelpers, Box<dyn std::error::Error>> {
+    let sdk = Trading::builder()
         .with_chain_id(SupportedChainId::Sepolia)
         .build_helper_only()?;
 
@@ -261,19 +261,19 @@ fn build_helper_only_sdk() -> Result<HelperOnlySdk, Box<dyn std::error::Error>> 
 
 A helper-only SDK can drive allowance reads, approval submission, pre-sign
 transaction construction, and on-chain cancellation. Quote, post, order lookup,
-and off-chain cancellation methods are only available on `TradingSdk`; choose
+and off-chain cancellation methods are only available on `Trading`; choose
 `build_ready()` when those flows are needed.
 
 ### What This Step Proves
 
 This builder step proves the top-level SDK contract:
 
-- the facade entrypoint is `TradingSdk::builder()`
+- the facade entrypoint is `Trading::builder()`
 - `SupportedChainId` is the public chain selector type
 - `appCode` is a required ready-state default and a stable integration
   identifier
-- `build_ready()` returns `TradingSdk`, while `build_helper_only()` returns
-  `HelperOnlySdk` for chain-bound helper flows
+- `build_ready()` returns `Trading`, while `build_helper_only()` returns
+  `TradingHelpers` for chain-bound helper flows
 - `Address::new(...)` is the public validated address constructor
 - `CoreError` is the canonical shared validation and configuration error type
 
@@ -451,7 +451,7 @@ A successful run from the committed example currently prints:
 
 ```json
 {
-  "surface": "cow-sdk::TradingSdk::post_limit_order",
+  "surface": "cow-sdk::Trading::post_limit_order",
   "mode": "simulated-transport",
   "result": {
     "orderId": "0xd64389693b6cf89ad6c140a113b10df08073e5ef3063d05a02f3f42e1a42f0ad0b7795e18767259cc253a2af471dbc4c72b49516ffffffff",
@@ -471,7 +471,7 @@ A successful run from the committed example currently prints:
 
 `surface`
 
-- confirms the scenario is exercising the high-level `TradingSdk` post path
+- confirms the scenario is exercising the high-level `Trading` post path
 
 `mode`
 
@@ -513,7 +513,7 @@ The signing scenario proves the typed signing contract in isolation.
 
 This second scenario proves the broader trading shape:
 
-- `TradingSdk` can carry ready-state defaults into a trade flow
+- `Trading` can carry ready-state defaults into a trade flow
 - quote-derived submission data stays typed
 - app-data handling is part of the same high-level path
 - the SDK returns stable user-facing submission output

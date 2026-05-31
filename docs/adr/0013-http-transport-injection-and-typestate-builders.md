@@ -23,7 +23,7 @@ rate-limit, and jitter is injected through
 transport-agnostic; new transports land as additive peers without changing the
 builder API.
 
-`OrderBookApi` and `SubgraphApi` construct exclusively through their typestate
+`OrderbookApi` and `SubgraphApi` construct exclusively through their typestate
 builders. Marker types use private tuple fields so external crates cannot
 construct them, and `.build()` is reachable only from the fully-set state.
 Native targets keep `.client(reqwest::Client)` as a convenience over

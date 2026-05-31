@@ -56,7 +56,7 @@ The native Alloy family is opt-in:
 - `cow-sdk-alloy-provider` implements read-only `Provider`.
 - `cow-sdk-alloy-signer` implements local private-key `Signer`.
 - `cow-sdk-alloy` composes provider and signer support and implements
-  `SigningProvider` for `TradingSdk` helper flows.
+  `SigningProvider` for `Trading` helper flows.
 
 The root facade exposes matching features named `alloy-provider`,
 `alloy-signer`, and `alloy`. These features are native-only and hard-fail on
@@ -118,7 +118,7 @@ Their roles are:
   native default is `ReqwestTransport`; the browser default is
   `FetchTransport` from `cow-sdk-transport-wasm`. Custom implementations
   install through the builder's `.transport(Arc::new(...))` setter on
-  both `OrderBookApi::builder()` and `SubgraphApi::builder()`. See
+  both `OrderbookApi::builder()` and `SubgraphApi::builder()`. See
   [Transport](transport.md) for the full seam.
 
 `cow-sdk-core` also ships narrower capability traits — [`Owner`],

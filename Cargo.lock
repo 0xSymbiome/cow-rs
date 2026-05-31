@@ -1671,6 +1671,7 @@ dependencies = [
  "cow-sdk-core",
  "cow-sdk-orderbook",
  "cow-sdk-signing",
+ "cow-sdk-transport-policy",
  "cow-sdk-transport-wasm",
  "criterion",
  "futures-timer",

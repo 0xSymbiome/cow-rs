@@ -23,7 +23,7 @@ use cow_sdk_trading::{
     LimitTradeParameters, OrderTraderParameters, PartialTraderParameters,
     PostTradeAdditionalParams, QuoterParameters, SlippageToleranceRequest,
     SlippageToleranceResponse, TradeAdvancedSettings, TradeParameters, TraderParameters,
-    TradingSdkOptions,
+    TradingOptions,
 };
 
 const VALID_ADDRESS: &str = "0x1111111111111111111111111111111111111111";
@@ -324,7 +324,7 @@ fn limit_order_advanced_settings_builders_round_trip_and_debug_renders() {
 }
 
 // -------------------------------------------------------------------------
-// TradingSdkOptions
+// TradingOptions
 // -------------------------------------------------------------------------
 
 // -------------------------------------------------------------------------
@@ -424,13 +424,13 @@ fn limit_trade_parameters_new_seeds_documented_defaults_and_with_setters_attach_
 
 #[test]
 fn trading_sdk_options_default_reports_no_orderbook_client_and_debug_reflects_absence() {
-    let empty = TradingSdkOptions::new();
+    let empty = TradingOptions::new();
     assert!(empty.orderbook_client().is_none());
 
     let debug = format!("{empty:?}");
     assert!(debug.contains("order_book_api: false"));
 
     // orderbook_client implementations live in cow_sdk_orderbook; the typed
-    // trait-object surface is exercised through TradingSdk's builder paths.
+    // trait-object surface is exercised through Trading's builder paths.
     drop::<Option<Arc<dyn OrderbookClient>>>(None);
 }

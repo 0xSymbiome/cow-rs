@@ -2,9 +2,9 @@
 #[test]
 fn public_api_with_all_features_snapshot_matches() {
     use cow_sdk::{
-        Address, Amount, AppCode, AppCodeError, ErrorClass, HelperOnlySdk, HttpTransport,
-        OrderBookApi, OrderUid, SdkError, Signature, SupportedChainId, TradeParameters,
-        TraderParameters, TradingSdk, TradingSdkBuilder, TradingSdkOptions,
+        Address, Amount, AppCode, AppCodeError, ErrorClass, HttpTransport, OrderUid, OrderbookApi,
+        SdkError, Signature, SupportedChainId, TradeParameters, TraderParameters, Trading,
+        TradingBuilder, TradingHelpers, TradingOptions,
     };
 
     let _ = core::any::type_name::<Address>();
@@ -12,18 +12,18 @@ fn public_api_with_all_features_snapshot_matches() {
     let _ = core::any::type_name::<AppCode>();
     let _ = core::any::type_name::<AppCodeError>();
     let _ = core::any::type_name::<ErrorClass>();
-    let _ = core::any::type_name::<HelperOnlySdk>();
+    let _ = core::any::type_name::<TradingHelpers>();
     let _ = core::any::type_name::<dyn HttpTransport>();
-    let _ = core::any::type_name::<OrderBookApi>();
+    let _ = core::any::type_name::<OrderbookApi>();
     let _ = core::any::type_name::<OrderUid>();
     let _ = core::any::type_name::<SdkError>();
     let _ = core::any::type_name::<Signature>();
     let _ = core::any::type_name::<SupportedChainId>();
     let _ = core::any::type_name::<TradeParameters>();
     let _ = core::any::type_name::<TraderParameters>();
-    let _ = core::any::type_name::<TradingSdk>();
-    let _ = core::any::type_name::<TradingSdkBuilder>();
-    let _ = core::any::type_name::<TradingSdkOptions>();
+    let _ = core::any::type_name::<Trading>();
+    let _ = core::any::type_name::<TradingBuilder>();
+    let _ = core::any::type_name::<TradingOptions>();
     let _ = core::any::type_name::<cow_sdk::browser_wallet::Eip1193Signer>();
     let _ = core::any::type_name::<cow_sdk::prelude::BrowserWalletSigner>();
 
@@ -53,11 +53,11 @@ root exports:
 - AppCodeError
 - BrowserWalletSigner (prelude)
 - ErrorClass
-- HelperOnlySdk
+- TradingHelpers
 - HttpTransport
 - InMemoryEip1271VerificationCache
 - NoopEip1271VerificationCache
-- OrderBookApi
+- OrderbookApi
 - OrderUid
 - RegistryError
 - SdkError
@@ -65,9 +65,9 @@ root exports:
 - SupportedChainId
 - TradeParameters
 - TraderParameters
-- TradingSdk
-- TradingSdkBuilder
-- TradingSdkOptions
+- Trading
+- TradingBuilder
+- TradingOptions
 - TransportError
 - TransportErrorClass
 "

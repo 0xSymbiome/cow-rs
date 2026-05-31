@@ -1,7 +1,7 @@
 # URL Credential Redaction Audit
 
 Status: Current
-Last reviewed: 2026-05-14
+Last reviewed: 2026-05-31
 Owning surface: Credential-bearing URL storage and dispatch boundaries across core, orderbook, subgraph, browser-wallet, app-data, and wasm error conversion
 Refresh trigger: Changes to URL-bearing public configuration fields, browser wallet add-chain URL payload construction, IPFS URI dispatch, wasm transport-error mapping, the `RedactedUrlMap` and `RedactedOptionalUrlMap` contracts, or the `redact_response_body` token-detection layers
 Related docs:
@@ -40,11 +40,11 @@ where they share the same `Redacted<T>` storage contract.
 ### Core And Orderbook Base URLs
 
 `cow-sdk-core::ApiBaseUrls` is a `RedactedUrlMap<u64>`.
-`ApiContext`, `ApiContextOverride`, and `OrderBookApiBuilder` store explicit
+`ApiContext`, `ApiContextOverride`, and `OrderbookApiBuilder` store explicit
 base-URL maps in that type. Public formatting and JSON output retain the chain
 id keys and emit `[redacted]` for every URL value. Base-URL resolution reads the
 raw map through `as_inner()` immediately before routing.
-`OrderBookApiBuilder` debug output follows the same rule for custom
+`OrderbookApiBuilder` debug output follows the same rule for custom
 userinfo-bearing base-URL overrides.
 
 ### Subgraph Base URLs

@@ -30,9 +30,9 @@ pub use cow_sdk_core::{
     Signer, SupportedChainId,
 };
 // orderbook
-pub use cow_sdk_orderbook::{OrderBookApi, OrderBookApiBuilder, OrderbookError};
+pub use cow_sdk_orderbook::{OrderbookApi, OrderbookApiBuilder, OrderbookError};
 // trading
 pub use cow_sdk_trading::{
-    HelperOnlySdk, TradeParameters, TraderParameters, TradingError, TradingSdk, TradingSdkBuilder,
-    TradingSdkOptions,
+    TradeParameters, TraderParameters, Trading, TradingBuilder, TradingError, TradingHelpers,
+    TradingOptions,
 };

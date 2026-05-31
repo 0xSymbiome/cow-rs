@@ -1,7 +1,7 @@
-use super::TradingSdk;
+use super::Trading;
 use crate::{OrderTraderParameters, TradingError};
 
-impl TradingSdk {
+impl Trading {
     /// Fetches an order from the active orderbook binding.
     ///
     /// Callers that need cooperative cancellation wrap this future through

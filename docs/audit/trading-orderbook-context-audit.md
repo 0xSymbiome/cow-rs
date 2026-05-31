@@ -1,7 +1,7 @@
 # Trading Orderbook Context Audit
 
 Status: Current  
-Last reviewed: 2026-05-12
+Last reviewed: 2026-05-31
 Owning surface: `cow-sdk-trading` runtime authority for orderbook-bound helpers  
 Refresh trigger: Changes to orderbook-bound quote, post, or off-chain cancellation helpers, or to chain and environment resolution when an orderbook client is injected  
 Related docs:
@@ -51,7 +51,7 @@ signing, and submission-time routing.
 
 ### Non-Orderbook Helper Boundary
 
-This keeps the direct helper surface aligned with `TradingSdk` rather than
+This keeps the direct helper surface aligned with `Trading` rather than
 allowing two competing runtime authorities to coexist inside the same request.
 Helpers that do not take an injected orderbook client keep their explicit
 caller-resolved authority model.

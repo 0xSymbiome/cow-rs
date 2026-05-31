@@ -3,17 +3,17 @@ use std::sync::Arc;
 
 use cow_sdk_core::{Amount, CowEnv, Provider, Signer, SupportedChainId, TransactionHash};
 #[cfg(not(target_arch = "wasm32"))]
-use cow_sdk_orderbook::OrderBookApi;
+use cow_sdk_orderbook::OrderbookApi;
 
-use super::{HelperOnlySdk, helpers::ResolvedOrderbookBinding};
+use super::{TradingHelpers, helpers::ResolvedOrderbookBinding};
 use crate::{
     AllowanceParameters, ApprovalParameters, OrderTraderParameters, PartialTraderParameters,
-    TradingError, TradingSdkOptions, cancel_order_onchain, get_cow_protocol_allowance,
+    TradingError, TradingOptions, cancel_order_onchain, get_cow_protocol_allowance,
     get_pre_sign_transaction, onchain::protocol_options_for_partial_order,
     types::validate_orderbook_context,
 };
 
-impl HelperOnlySdk {
+impl TradingHelpers {
     /// Returns the stored trader defaults.
     #[must_use]
     pub const fn trader_defaults(&self) -> &PartialTraderParameters {
@@ -22,7 +22,7 @@ impl HelperOnlySdk {
 
     /// Returns the stored SDK options.
     #[must_use]
-    pub const fn options(&self) -> &TradingSdkOptions {
+    pub const fn options(&self) -> &TradingOptions {
         &self.options
     }
 
@@ -240,7 +240,7 @@ impl HelperOnlySdk {
         {
             let chain_id = requested_chain.ok_or(missing_chain_error)?;
             let env = requested_env.unwrap_or(CowEnv::Prod);
-            let client = OrderBookApi::builder()
+            let client = OrderbookApi::builder()
                 .chain(chain_id)
                 .environment(env)
                 .build()?;

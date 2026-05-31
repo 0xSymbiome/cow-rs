@@ -1,12 +1,12 @@
 use cow_sdk_core::SupportedChainId;
-use cow_sdk_trading::{OrderTraderParameters, TradingSdkBuilder};
+use cow_sdk_trading::{OrderTraderParameters, TradingBuilder};
 
 fn order_parameters() -> OrderTraderParameters {
     unimplemented!()
 }
 
 fn main() {
-    let sdk = TradingSdkBuilder::new()
+    let sdk = TradingBuilder::new()
         .with_chain_id(SupportedChainId::Sepolia)
         .build_helper_only()
         .unwrap();

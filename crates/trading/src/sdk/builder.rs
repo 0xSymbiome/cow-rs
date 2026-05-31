@@ -3,62 +3,62 @@ use std::sync::Arc;
 
 use cow_sdk_core::{AppCode, AppCodeError, CowEnv, SupportedChainId};
 
-use super::{AppCodeSet, AppCodeUnset, ChainIdSet, ChainIdUnset, HelperOnlySdk, TradingSdk};
+use super::{AppCodeSet, AppCodeUnset, ChainIdSet, ChainIdUnset, Trading, TradingHelpers};
 use crate::{
-    OrderbookClient, PartialTraderParameters, TraderParameters, TradingError, TradingSdkOptions,
+    OrderbookClient, PartialTraderParameters, TraderParameters, TradingError, TradingOptions,
     types::validate_orderbook_context,
 };
 
-/// Builder for [`TradingSdk`].
+/// Builder for [`Trading`].
 ///
 /// The builder carries two typestate markers that track whether the required
-/// [`chain_id`](TradingSdkBuilder::with_chain_id) and
-/// [`app_code`](TradingSdkBuilder::with_app_code) prerequisites have been
-/// supplied. When both are set, [`TradingSdkBuilder::build_ready`] is
-/// available and returns a fully-configured [`TradingSdk`] with only a
+/// [`chain_id`](TradingBuilder::with_chain_id) and
+/// [`app_code`](TradingBuilder::with_app_code) prerequisites have been
+/// supplied. When both are set, [`TradingBuilder::build_ready`] is
+/// available and returns a fully-configured [`Trading`] with only a
 /// runtime orderbook-binding check remaining. When only a chain id is set,
-/// [`TradingSdkBuilder::build_helper_only`] returns a [`HelperOnlySdk`] with
+/// [`TradingBuilder::build_helper_only`] returns a [`TradingHelpers`] with
 /// no quote, post, order-lookup, or off-chain cancellation methods.
 ///
 /// On `wasm32`, the SDK keeps a documented runtime terminal for ready-state
-/// orderbook injection: [`TradingSdkBuilder::build_ready`] requires
-/// [`TradingSdkBuilder::with_orderbook_client`] or
-/// [`TradingSdkBuilder::with_options`] with an injected orderbook client, and
+/// orderbook injection: [`TradingBuilder::build_ready`] requires
+/// [`TradingBuilder::with_orderbook_client`] or
+/// [`TradingBuilder::with_options`] with an injected orderbook client, and
 /// returns [`TradingError::MissingInjectedOrderbookClient`] when that runtime
 /// requirement is not satisfied.
 #[derive(Debug, Clone)]
-pub struct TradingSdkBuilder<C = ChainIdUnset, A = AppCodeUnset> {
+pub struct TradingBuilder<C = ChainIdUnset, A = AppCodeUnset> {
     trader_defaults: PartialTraderParameters,
-    options: TradingSdkOptions,
+    options: TradingOptions,
     app_code_error: Option<AppCodeError>,
     _state: PhantomData<(C, A)>,
 }
 
-impl Default for TradingSdkBuilder<ChainIdUnset, AppCodeUnset> {
+impl Default for TradingBuilder<ChainIdUnset, AppCodeUnset> {
     fn default() -> Self {
         Self {
             trader_defaults: PartialTraderParameters::default(),
-            options: TradingSdkOptions::default(),
+            options: TradingOptions::default(),
             app_code_error: None,
             _state: PhantomData,
         }
     }
 }
 
-impl TradingSdkBuilder<ChainIdUnset, AppCodeUnset> {
+impl TradingBuilder<ChainIdUnset, AppCodeUnset> {
     /// Creates a new builder with empty defaults.
     ///
     /// The returned builder is in the typestate `<ChainIdUnset, AppCodeUnset>`
-    /// so the compile-time-checked [`TradingSdkBuilder::build_ready`] and
-    /// [`TradingSdkBuilder::build_helper_only`] terminals are only unlocked
-    /// after the corresponding [`TradingSdkBuilder::with_chain_id`] and
-    /// [`TradingSdkBuilder::with_app_code`] prerequisites are supplied.
+    /// so the compile-time-checked [`TradingBuilder::build_ready`] and
+    /// [`TradingBuilder::build_helper_only`] terminals are only unlocked
+    /// after the corresponding [`TradingBuilder::with_chain_id`] and
+    /// [`TradingBuilder::with_app_code`] prerequisites are supplied.
     #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Builds a ready-state [`TradingSdk`] from total trader parameters.
+    /// Builds a ready-state [`Trading`] from total trader parameters.
     ///
     /// This one-call terminal is for callers that already hold the complete
     /// [`TraderParameters`] shape. It intentionally does not accept
@@ -73,8 +73,8 @@ impl TradingSdkBuilder<ChainIdUnset, AppCodeUnset> {
     /// when no orderbook client has been supplied.
     pub fn ready(
         params: TraderParameters,
-        options: TradingSdkOptions,
-    ) -> Result<TradingSdk, TradingError> {
+        options: TradingOptions,
+    ) -> Result<Trading, TradingError> {
         let TraderParameters {
             chain_id,
             app_code,
@@ -101,7 +101,7 @@ impl TradingSdkBuilder<ChainIdUnset, AppCodeUnset> {
         builder.build_ready()
     }
 
-    /// Builds a [`HelperOnlySdk`] from total chain authority.
+    /// Builds a [`TradingHelpers`] from total chain authority.
     ///
     /// This one-call terminal is for chain-bound helper workflows that need no
     /// quote or submission attribution. The returned type does not expose
@@ -113,8 +113,8 @@ impl TradingSdkBuilder<ChainIdUnset, AppCodeUnset> {
     /// chain id conflicts with an injected orderbook client.
     pub fn helper_only(
         chain_id: SupportedChainId,
-        options: TradingSdkOptions,
-    ) -> Result<HelperOnlySdk, TradingError> {
+        options: TradingOptions,
+    ) -> Result<TradingHelpers, TradingError> {
         Self::new()
             .with_options(options)
             .with_chain_id(chain_id)
@@ -122,14 +122,14 @@ impl TradingSdkBuilder<ChainIdUnset, AppCodeUnset> {
     }
 }
 
-impl<C, A> TradingSdkBuilder<C, A> {
+impl<C, A> TradingBuilder<C, A> {
     /// Returns a copy of this builder with trader defaults replaced.
     ///
     /// Replacing the defaults does not transition the typestate markers;
     /// callers that want the compile-time-checked terminals must still reach
     /// the chain-id and app-code states through the explicit
-    /// [`TradingSdkBuilder::with_chain_id`] and
-    /// [`TradingSdkBuilder::with_app_code`] setters.
+    /// [`TradingBuilder::with_chain_id`] and
+    /// [`TradingBuilder::with_app_code`] setters.
     #[must_use]
     pub fn with_trader_defaults(mut self, trader_defaults: PartialTraderParameters) -> Self {
         self.trader_defaults = trader_defaults;
@@ -140,11 +140,11 @@ impl<C, A> TradingSdkBuilder<C, A> {
     ///
     /// Transitions the builder's chain-id typestate to
     /// [`ChainIdSet`], which unlocks
-    /// [`TradingSdkBuilder::build_helper_only`] for any app-code state and
-    /// [`TradingSdkBuilder::build_ready`] once app code is also set.
+    /// [`TradingBuilder::build_helper_only`] for any app-code state and
+    /// [`TradingBuilder::build_ready`] once app code is also set.
     #[must_use]
-    pub fn with_chain_id(self, chain_id: SupportedChainId) -> TradingSdkBuilder<ChainIdSet, A> {
-        TradingSdkBuilder {
+    pub fn with_chain_id(self, chain_id: SupportedChainId) -> TradingBuilder<ChainIdSet, A> {
+        TradingBuilder {
             trader_defaults: PartialTraderParameters {
                 chain_id: Some(chain_id),
                 ..self.trader_defaults
@@ -158,14 +158,14 @@ impl<C, A> TradingSdkBuilder<C, A> {
     /// Returns a copy of this builder with a validated default app code.
     ///
     /// Transitions the builder's app-code typestate to [`AppCodeSet`], which
-    /// completes the typestate for [`TradingSdkBuilder::build_ready`] once
+    /// completes the typestate for [`TradingBuilder::build_ready`] once
     /// chain id is also set.
     ///
     /// Invalid input is recorded and surfaced by the builder terminal as
     /// [`TradingError::AppCode`]. Deferring the error to the terminal keeps the
     /// fluent construction chain ergonomic while preserving typed validation.
     #[must_use]
-    pub fn with_app_code<T>(self, app_code: T) -> TradingSdkBuilder<C, AppCodeSet>
+    pub fn with_app_code<T>(self, app_code: T) -> TradingBuilder<C, AppCodeSet>
     where
         T: TryInto<AppCode>,
         T::Error: Into<AppCodeError>,
@@ -175,7 +175,7 @@ impl<C, A> TradingSdkBuilder<C, A> {
             Err(error) => (None, Some(error.into())),
         };
 
-        TradingSdkBuilder {
+        TradingBuilder {
             trader_defaults: PartialTraderParameters {
                 app_code,
                 ..self.trader_defaults
@@ -215,7 +215,7 @@ impl<C, A> TradingSdkBuilder<C, A> {
 
     /// Returns a copy of this builder with explicit SDK options.
     #[must_use]
-    pub fn with_options(mut self, options: TradingSdkOptions) -> Self {
+    pub fn with_options(mut self, options: TradingOptions) -> Self {
         self.options = options;
         self
     }
@@ -243,8 +243,8 @@ impl<C, A> TradingSdkBuilder<C, A> {
     }
 }
 
-impl<A> TradingSdkBuilder<ChainIdSet, A> {
-    /// Builds a [`HelperOnlySdk`].
+impl<A> TradingBuilder<ChainIdSet, A> {
+    /// Builds a [`TradingHelpers`].
     ///
     /// The returned SDK exposes only chain-bound helpers: pre-sign
     /// transaction construction, allowance reads, approval submission, and
@@ -260,28 +260,28 @@ impl<A> TradingSdkBuilder<ChainIdSet, A> {
     /// Returns [`TradingError::InjectedOrderbookContextConflict`] when the
     /// builder's default chain or environment conflicts with an injected
     /// orderbook client.
-    pub fn build_helper_only(self) -> Result<HelperOnlySdk, TradingError> {
+    pub fn build_helper_only(self) -> Result<TradingHelpers, TradingError> {
         if let Some(error) = self.app_code_error {
             return Err(error.into());
         }
         self.validate_injected_orderbook_binding()?;
 
-        Ok(HelperOnlySdk {
+        Ok(TradingHelpers {
             trader_defaults: self.trader_defaults,
             options: self.options,
         })
     }
 }
 
-impl TradingSdkBuilder<ChainIdSet, AppCodeSet> {
-    /// Builds a fully-configured ready-state [`TradingSdk`].
+impl TradingBuilder<ChainIdSet, AppCodeSet> {
+    /// Builds a fully-configured ready-state [`Trading`].
     ///
     /// The compile-time typestate guarantees that both chain id and app code
     /// have been supplied before this terminal runs. On native targets the
     /// default orderbook factory resolves the remaining runtime prerequisite
     /// for quote and post flows. On `wasm32` targets, the builder requires an
     /// injected orderbook client through
-    /// [`crate::TradingSdkOptions::with_orderbook_client`] because the browser
+    /// [`crate::TradingOptions::with_orderbook_client`] because the browser
     /// runtime does not ship a default HTTP transport; see ADR 0013.
     /// This is the chosen `wasm32` posture for the ready terminal: the
     /// requirement remains a documented runtime terminal check rather than a
@@ -299,20 +299,20 @@ impl TradingSdkBuilder<ChainIdSet, AppCodeSet> {
     /// client has been supplied.
     ///
     /// ```compile_fail
-    /// use cow_sdk_trading::TradingSdkBuilder;
-    /// let _ = TradingSdkBuilder::new()
+    /// use cow_sdk_trading::TradingBuilder;
+    /// let _ = TradingBuilder::new()
     ///     .with_app_code("test")
     ///     .build_ready();
     /// ```
     ///
     /// ```compile_fail
     /// use cow_sdk_core::SupportedChainId;
-    /// use cow_sdk_trading::TradingSdkBuilder;
-    /// let _ = TradingSdkBuilder::new()
+    /// use cow_sdk_trading::TradingBuilder;
+    /// let _ = TradingBuilder::new()
     ///     .with_chain_id(SupportedChainId::Mainnet)
     ///     .build_ready();
     /// ```
-    pub fn build_ready(self) -> Result<TradingSdk, TradingError> {
+    pub fn build_ready(self) -> Result<Trading, TradingError> {
         if let Some(error) = self.app_code_error {
             return Err(error.into());
         }
@@ -327,7 +327,7 @@ impl TradingSdkBuilder<ChainIdSet, AppCodeSet> {
             return Err(TradingError::MissingInjectedOrderbookClient);
         }
 
-        Ok(TradingSdk {
+        Ok(Trading {
             trader_defaults: self.trader_defaults,
             options: self.options,
         })

@@ -1,5 +1,5 @@
 use cow_sdk_core::{AppCode, AppCodeError, SupportedChainId};
-use cow_sdk_trading::{TradingError, TradingSdkBuilder};
+use cow_sdk_trading::{TradingBuilder, TradingError};
 
 #[test]
 fn app_code_accepts_source_backed_examples_without_extra_shape_rules() {
@@ -33,7 +33,7 @@ fn app_code_rejects_only_empty_nul_and_ascii_control_characters() {
 
 #[test]
 fn builder_surfaces_app_code_validation_as_typed_trading_error() {
-    let error = TradingSdkBuilder::new()
+    let error = TradingBuilder::new()
         .with_chain_id(SupportedChainId::Sepolia)
         .with_app_code("")
         .build_ready()

@@ -14,7 +14,7 @@ use cow_sdk_core::{
 use cow_sdk_orderbook::OrderbookError;
 use cow_sdk_orderbook::error::classify_reqwest_error;
 use cow_sdk_orderbook::request::{
-    FetchParams, HttpMethod, OrderBookApiError, ResponseBody, ResponseEnvelope, execute_empty_with,
+    FetchParams, HttpMethod, OrderbookApiError, ResponseBody, ResponseEnvelope, execute_empty_with,
     execute_json_with, request_empty, request_json, request_text,
 };
 #[cfg(feature = "tracing")]
@@ -513,7 +513,7 @@ async fn cancelling_waiting_attempt_keeps_limiter_reusable() {
 
 #[test]
 fn typed_api_error_preserves_status_body_and_message() {
-    let error = OrderBookApiError::new(
+    let error = OrderbookApiError::new(
         400,
         "Bad Request",
         ResponseBody::Json(json!({
@@ -535,7 +535,7 @@ fn typed_api_error_preserves_status_body_and_message() {
 
 #[test]
 fn json_envelope_classifies_to_typed_rejection_through_from_api_error() {
-    let api_error = OrderBookApiError::new(
+    let api_error = OrderbookApiError::new(
         400,
         "Bad Request",
         ResponseBody::Json(json!({

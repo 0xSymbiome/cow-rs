@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use cow_sdk_core::{Address, CowEnv, SupportedChainId};
 #[cfg(not(target_arch = "wasm32"))]
-use cow_sdk_orderbook::OrderBookApi;
+use cow_sdk_orderbook::OrderbookApi;
 
-use super::TradingSdk;
+use super::Trading;
 use crate::{
     OrderbookClient, PartialTraderParameters, QuoterParameters, TradeAdvancedSettings,
     TradeParameters, TraderParameters, TradingError, types::validate_orderbook_context,
@@ -17,7 +17,7 @@ pub(super) struct ResolvedOrderbookBinding {
     pub(super) env: CowEnv,
 }
 
-impl TradingSdk {
+impl Trading {
     pub(super) fn resolve_quote_owner(
         params: &TradeParameters,
         advanced_settings: Option<&TradeAdvancedSettings>,
@@ -139,7 +139,7 @@ impl TradingSdk {
         {
             let chain_id = requested_chain.ok_or(missing_chain_error)?;
             let env = requested_env.unwrap_or(CowEnv::Prod);
-            let client = OrderBookApi::builder()
+            let client = OrderbookApi::builder()
                 .chain(chain_id)
                 .environment(env)
                 .build()?;
@@ -154,8 +154,8 @@ impl TradingSdk {
             // On `wasm32` the typestate builder requires an explicit
             // `HttpTransport`. Browser consumers compose a `FetchTransport`
             // from `cow-sdk-transport-wasm` and inject the resulting
-            // [`OrderBookApi`] through
-            // [`TradingSdkOptions::with_orderbook_client`].
+            // [`OrderbookApi`] through
+            // [`TradingOptions::with_orderbook_client`].
             let _ = (requested_chain, requested_env);
             Err(missing_chain_error)
         }

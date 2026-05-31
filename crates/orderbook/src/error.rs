@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::rejection::{OrderbookRejection, parse_rejection};
-use crate::request::{OrderBookApiError, ResponseBody};
+use crate::request::{OrderbookApiError, ResponseBody};
 use crate::types::SigningScheme;
 
 /// Stage at which an app-data hash mismatch was detected by the typed
@@ -54,7 +54,7 @@ pub enum OrderbookError {
     /// Structured non-2xx response returned by the orderbook API whose body
     /// did not carry a recognisable rejection envelope.
     #[error(transparent)]
-    Api(Box<OrderBookApiError>),
+    Api(Box<OrderbookApiError>),
     /// Structured rejection classified from the non-2xx response body using
     /// the typed [`OrderbookRejection`] taxonomy.
     #[error("orderbook rejected the request ({status}): {rejection}")]
@@ -65,7 +65,7 @@ pub enum OrderbookError {
         rejection: OrderbookRejection,
         /// Raw transport-level envelope preserved for diagnostics.
         #[source]
-        source: Box<OrderBookApiError>,
+        source: Box<OrderbookApiError>,
     },
     /// Network or request-execution failure before a structured API response was decoded.
     #[error("transport error ({class}): {detail}")]
@@ -166,8 +166,8 @@ pub enum OrderbookError {
     Cancelled,
 }
 
-impl From<OrderBookApiError> for OrderbookError {
-    fn from(value: OrderBookApiError) -> Self {
+impl From<OrderbookApiError> for OrderbookError {
+    fn from(value: OrderbookApiError) -> Self {
         let status = StatusCode::from_u16(value.status).ok();
         let rejection = match (status, value.body.as_inner()) {
             (Some(status_code), ResponseBody::Json(body)) => serde_json::to_vec(body)

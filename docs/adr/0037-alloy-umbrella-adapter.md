@@ -80,7 +80,7 @@ to success through Alloy's higher-level `status()` helper.
   vectors, chain-coherence verification through `build_checked()` or
   `verify_chain_id().await`, redaction, cancellation, no-broadcast
   `sign_transaction`, compile-fail capability exclusions, examples, and
-  TradingSdk integration.
+  Trading integration.
 
 ## Alternatives Rejected
 

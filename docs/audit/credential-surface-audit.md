@@ -1,7 +1,7 @@
 # Credential Surface Audit
 
 Status: Current
-Last reviewed: 2026-05-30
+Last reviewed: 2026-05-31
 Owning surface: Credential-bearing builder storage, URL configuration, host-policy errors, public error diagnostics, wallet add-chain payloads, Pinata upload-trait headers, wasm error envelopes, and the SDK facade
 Refresh trigger: Changes to orderbook or subgraph builder API-key storage, URL-bearing public configuration fields, external host-policy validation, public error message/detail/body/data fields, browser wallet add-chain URL payload construction, `IpfsUploadTransport::post_json` header typing or Pinata header assembly, the `redact_response_body` token-detection layers, the `cow_sdk_app_data::AppDataError::Schema` rendering pipeline or the matching `ValidationResult::errors` field's safe-by-construction masking surface, the `cow_sdk_orderbook::OrderbookError::Serialization` structural-diagnostic shape or its `From<serde_json::Error>` construction, the `cow_sdk_app_data::AppDataError::Calculation` render, the `cow_sdk_app_data::AppDataParams` sub-metadata deserializer, or any new credential-bearing surface that lands without a redacting storage type or an equivalent safe-by-construction render
 Related docs:
@@ -17,7 +17,7 @@ Related docs:
 
 This audit covers:
 
-- `cow-sdk-orderbook::OrderBookApiBuilder` partner API-key storage
+- `cow-sdk-orderbook::OrderbookApiBuilder` partner API-key storage
 - `cow-sdk-subgraph::SubgraphApiBuilder` partner API-key storage
 - credential-bearing URL fields in core, orderbook, subgraph, browser-wallet, and app-data
 - sanitized host-policy failures for orderbook and subgraph endpoint overrides
@@ -31,7 +31,7 @@ It does not cover unrelated transport error redaction or credential handling out
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
 | Native Alloy adapters | Provider URLs, private-key material, signer internals, transport details, and pending-transaction details are redacted across the provider, signer, umbrella, and facade error tests | Conforms |
-| Orderbook builder | `OrderBookApiBuilder` stores the partner API key as `Redacted<String>` so builder debug output cannot print the raw key | Conforms |
+| Orderbook builder | `OrderbookApiBuilder` stores the partner API key as `Redacted<String>` so builder debug output cannot print the raw key | Conforms |
 | Subgraph builder | `SubgraphApiBuilder` stores the partner API key as `Redacted<String>` so builder debug output cannot print the raw key | Conforms |
 | URL configuration | Credential-bearing URL values use redacting storage types for debug, display, and serialization, and unwrap only at dispatch seams | Conforms |
 | Host-policy errors | Orderbook and subgraph host-policy failures retain only a redacted host component and never serialize raw URL credentials, paths, queries, or fragments | Conforms |

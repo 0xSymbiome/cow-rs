@@ -1,12 +1,12 @@
 use cow_sdk_core::{Signer, TransactionHash};
 
-use super::TradingSdk;
+use super::Trading;
 use crate::{
     OrderTraderParameters, TradingError, cancel_order_onchain, off_chain_cancel_order,
     onchain::protocol_options_for_partial_order,
 };
 
-impl TradingSdk {
+impl Trading {
     /// Signs and submits an off-chain cancellation.
     ///
     /// Callers that need cooperative cancellation wrap this future through

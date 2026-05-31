@@ -6,11 +6,11 @@ use cow_sdk_core::{
     ProtocolOptions, Provider, Signer, TransactionBroadcast, TransactionHash, TransactionReceipt,
     TransactionRequest, TypedDataDomain, TypedDataField, TypedDataSigner,
 };
-use cow_sdk_orderbook::{OrderBookApi, SigningScheme};
+use cow_sdk_orderbook::{OrderbookApi, SigningScheme};
 use cow_sdk_pure_helpers as pure;
 use cow_sdk_trading::{
     AllowanceParameters, GAS_LIMIT_DEFAULT, LimitTradeParameters, OrderPostingResult,
-    QuoteRequestOverride, TradeAdvancedSettings, TradeParameters, TradingSdk,
+    QuoteRequestOverride, TradeAdvancedSettings, TradeParameters, Trading,
 };
 use cow_sdk_transport_policy::TransportPolicy;
 use js_sys::Function;
@@ -58,7 +58,7 @@ extern "C" {
 /// client keeps app-code, chain, environment, transport, and policy defaults.
 #[wasm_bindgen]
 pub struct TradingClient {
-    orderbook: OrderBookApi,
+    orderbook: OrderbookApi,
     chain_id: u32,
     env: Option<String>,
     app_code: String,
@@ -394,7 +394,7 @@ impl TradingClient {
 }
 
 impl TradingClient {
-    fn trading_for_scope(&self, scope: &ClientCallScope) -> Result<TradingSdk, JsValue> {
+    fn trading_for_scope(&self, scope: &ClientCallScope) -> Result<Trading, JsValue> {
         let orderbook = orderbook_for_scope(&self.orderbook, scope);
         build_trading_with_orderbook(
             self.chain_id,
@@ -409,12 +409,12 @@ fn build_trading_with_orderbook(
     chain_id: u32,
     env: Option<String>,
     app_code: String,
-    orderbook: Arc<OrderBookApi>,
-) -> Result<TradingSdk, JsValue> {
+    orderbook: Arc<OrderbookApi>,
+) -> Result<Trading, JsValue> {
     let chain = parse_chain(chain_id)?;
     let env_value = pure::chains::env_from_str(env.as_deref())
         .map_err(|error| WasmError::from(error).into_js())?;
-    TradingSdk::builder()
+    Trading::builder()
         .with_chain_id(chain)
         .with_app_code(app_code)
         .with_env(env_value)
@@ -424,7 +424,7 @@ fn build_trading_with_orderbook(
 }
 
 async fn trading_get_quote(
-    inner: &TradingSdk,
+    inner: &Trading,
     params: SwapParametersInput,
 ) -> Result<JsValue, JsValue> {
     let params: TradeParameters = from_json_value("params", params.into_value()?)?;
@@ -436,8 +436,8 @@ async fn trading_get_quote(
 }
 
 async fn trading_post_swap_order(
-    inner: &TradingSdk,
-    orderbook: &OrderBookApi,
+    inner: &Trading,
+    orderbook: &OrderbookApi,
     chain_id: u32,
     params: SwapParametersInput,
     owner: String,
@@ -481,7 +481,7 @@ async fn trading_post_swap_order(
 }
 
 async fn trading_post_swap_order_from_quote(
-    orderbook: &OrderBookApi,
+    orderbook: &OrderbookApi,
     chain_id: u32,
     quote_results: QuoteResultsInput,
     owner: String,
@@ -519,7 +519,7 @@ async fn trading_post_swap_order_from_quote(
 }
 
 async fn trading_post_limit_order(
-    inner: &TradingSdk,
+    inner: &Trading,
     params: LimitTradeParametersInput,
     owner: String,
     signer_callback: Function,
@@ -595,7 +595,7 @@ async fn trading_build_sell_native_currency_tx(
 }
 
 async fn trading_get_cow_protocol_allowance(
-    inner: &TradingSdk,
+    inner: &Trading,
     params: AllowanceParametersInput,
     read_contract_callback: Function,
 ) -> Result<JsValue, JsValue> {
@@ -609,8 +609,8 @@ async fn trading_get_cow_protocol_allowance(
 }
 
 async fn trading_post_swap_order_with_eip1271(
-    inner: &TradingSdk,
-    orderbook: &OrderBookApi,
+    inner: &Trading,
+    orderbook: &OrderbookApi,
     chain_id: u32,
     params: SwapParametersInput,
     owner: String,

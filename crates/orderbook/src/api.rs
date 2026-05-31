@@ -6,7 +6,7 @@ use http::header::{HeaderMap, HeaderValue};
 use serde_json::json;
 
 use crate::{
-    builder::{ChainIdSet, ChainIdUnset, EnvSet, EnvUnset, OrderBookApiBuilder, TransportUnset},
+    builder::{ChainIdSet, ChainIdUnset, EnvSet, EnvUnset, OrderbookApiBuilder, TransportUnset},
     error::{HashMismatchStage, OrderbookError},
     request::{
         FetchParams, HttpMethod, request_empty_with_timeout, request_json_with_timeout,
@@ -34,7 +34,7 @@ const API_KEY_HEADER: &str = "X-API-Key";
 /// drops the in-flight request future when the token fires, so the underlying
 /// socket is released promptly rather than waiting for the request deadline.
 #[derive(Debug, Clone)]
-pub struct OrderBookApi {
+pub struct OrderbookApi {
     context: ApiContext,
     transport_policy: TransportPolicy,
     rate_limiter: RequestRateLimiter,
@@ -42,19 +42,19 @@ pub struct OrderBookApi {
     transport: Arc<dyn HttpTransport + Send + Sync>,
 }
 
-impl OrderBookApi {
-    /// Returns a fresh [`OrderBookApiBuilder`] for typestate-checked
+impl OrderbookApi {
+    /// Returns a fresh [`OrderbookApiBuilder`] for typestate-checked
     /// construction.
     ///
     /// The builder enforces at compile time that the chain id, environment,
     /// and HTTP transport are all supplied before
-    /// [`OrderBookApiBuilder::build`] becomes callable. On native targets the
+    /// [`OrderbookApiBuilder::build`] becomes callable. On native targets the
     /// builder also exposes a `build` overload that defaults the transport to
     /// the [`ReqwestTransport`](cow_sdk_core::ReqwestTransport) when the
     /// caller does not supply one.
     #[must_use]
-    pub fn builder() -> OrderBookApiBuilder<ChainIdUnset, EnvUnset, TransportUnset> {
-        OrderBookApiBuilder::new()
+    pub fn builder() -> OrderbookApiBuilder<ChainIdUnset, EnvUnset, TransportUnset> {
+        OrderbookApiBuilder::new()
     }
 
     /// Returns a builder seeded from the supplied [`ApiContext`].
@@ -63,15 +63,15 @@ impl OrderBookApi {
     /// API key, and base-URL map onto the typestate builder. The transport
     /// is left unset so the caller can either inject an explicit
     /// [`HttpTransport`] or fall through to the native-default
-    /// [`OrderBookApiBuilder::build`] path.
+    /// [`OrderbookApiBuilder::build`] path.
     #[must_use]
     pub fn builder_from_context(
         context: ApiContext,
-    ) -> OrderBookApiBuilder<ChainIdSet, EnvSet, TransportUnset> {
-        OrderBookApiBuilder::from_context(context)
+    ) -> OrderbookApiBuilder<ChainIdSet, EnvSet, TransportUnset> {
+        OrderbookApiBuilder::from_context(context)
     }
 
-    /// Crate-private constructor used by [`OrderBookApiBuilder::build`].
+    /// Crate-private constructor used by [`OrderbookApiBuilder::build`].
     #[must_use]
     pub(crate) fn from_parts(
         context: ApiContext,

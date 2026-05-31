@@ -1,6 +1,6 @@
-//! High-level `TradingSdk` facade and builder.
+//! High-level `Trading` facade and builder.
 
-use crate::{PartialTraderParameters, TradingSdkOptions};
+use crate::{PartialTraderParameters, TradingOptions};
 mod allowance;
 mod builder;
 mod cancel;
@@ -11,7 +11,7 @@ mod presign;
 mod query;
 mod quote;
 
-pub use self::builder::TradingSdkBuilder;
+pub use self::builder::TradingBuilder;
 /// Typestate marker for a builder that has not yet been given a chain id.
 #[derive(Debug, Clone, Copy)]
 pub struct ChainIdUnset(());
@@ -30,27 +30,27 @@ pub struct AppCodeSet(());
 
 /// High-level trading facade that stores trader defaults plus optional injected services.
 #[derive(Debug, Clone)]
-pub struct TradingSdk {
+pub struct Trading {
     trader_defaults: PartialTraderParameters,
-    options: TradingSdkOptions,
+    options: TradingOptions,
 }
 
 /// Helper-only trading facade for chain-bound helper workflows.
 ///
-/// `HelperOnlySdk` intentionally exposes only allowance, approval, pre-sign,
+/// `TradingHelpers` intentionally exposes only allowance, approval, pre-sign,
 /// and on-chain cancellation helpers. Quote, post, order lookup, and off-chain
-/// cancellation methods exist only on [`TradingSdk`].
+/// cancellation methods exist only on [`Trading`].
 #[derive(Debug, Clone)]
-pub struct HelperOnlySdk {
+pub struct TradingHelpers {
     trader_defaults: PartialTraderParameters,
-    options: TradingSdkOptions,
+    options: TradingOptions,
 }
 
-impl TradingSdk {
-    /// Returns a new [`TradingSdkBuilder`] in the `<ChainIdUnset, AppCodeUnset>` typestate.
+impl Trading {
+    /// Returns a new [`TradingBuilder`] in the `<ChainIdUnset, AppCodeUnset>` typestate.
     #[must_use]
-    pub fn builder() -> TradingSdkBuilder<ChainIdUnset, AppCodeUnset> {
-        TradingSdkBuilder::new()
+    pub fn builder() -> TradingBuilder<ChainIdUnset, AppCodeUnset> {
+        TradingBuilder::new()
     }
 
     /// Returns the stored trader defaults.
@@ -61,7 +61,7 @@ impl TradingSdk {
 
     /// Returns the stored SDK options.
     #[must_use]
-    pub const fn options(&self) -> &TradingSdkOptions {
+    pub const fn options(&self) -> &TradingOptions {
         &self.options
     }
 }

@@ -19,7 +19,7 @@ struct Surface {
 
 const SURFACES: &[Surface] = &[
     Surface {
-        type_name: "OrderBookApi",
+        type_name: "OrderbookApi",
         source_paths: &["crates/orderbook/src/api.rs"],
         table_path: "crates/orderbook/tests/cancellation_composition_contract.rs",
         seed_methods: &["get_version"],
@@ -31,7 +31,7 @@ const SURFACES: &[Surface] = &[
         seed_methods: &["get_totals"],
     },
     Surface {
-        type_name: "TradingSdk",
+        type_name: "Trading",
         source_paths: &["crates/trading/src/sdk"],
         table_path: "crates/trading/tests/cancellation_composition_contract.rs",
         seed_methods: &["get_quote_only"],
@@ -81,7 +81,7 @@ fn cancellation_tables_cover_every_public_async_method() {
 #[test]
 fn trading_sdk_source_directory_aggregates_public_async_methods() {
     let root = workspace_root();
-    let public_async = public_async_methods(&root, &["crates/trading/src/sdk"], "TradingSdk");
+    let public_async = public_async_methods(&root, &["crates/trading/src/sdk"], "Trading");
     let expected = [
         "approve_cow_protocol",
         "get_cow_protocol_allowance",
@@ -101,7 +101,7 @@ fn trading_sdk_source_directory_aggregates_public_async_methods() {
 
     assert_eq!(
         public_async, expected,
-        "TradingSdk directory scan must preserve the reviewed cancellation surface",
+        "Trading directory scan must preserve the reviewed cancellation surface",
     );
 }
 

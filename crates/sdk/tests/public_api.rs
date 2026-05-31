@@ -1,23 +1,23 @@
 use cow_sdk::core::{AppDataHex, BuyTokenDestination, OrderData, OrderKind, SellTokenSource};
 use cow_sdk::prelude::{
-    Address, Amount, SupportedChainId, TradeParameters, TraderParameters, TradingSdkBuilder,
-    TradingSdkOptions,
+    Address, Amount, SupportedChainId, TradeParameters, TraderParameters, TradingBuilder,
+    TradingOptions,
 };
 use cow_sdk::signing::{ORDER_PRIMARY_TYPE, generate_order_id, order_typed_data};
 use cow_sdk::trading::{PartialTraderParameters, PartnerFee, PartnerFeePolicy};
 
 #[test]
 fn public_api_reexports_cover_primary_root_surface() {
-    let _ready_sdk = TradingSdkBuilder::ready(
+    let _ready_sdk = TradingBuilder::ready(
         TraderParameters::new(SupportedChainId::Sepolia, "cow-rs/public-api")
             .expect("app code should validate"),
-        TradingSdkOptions::default(),
+        TradingOptions::default(),
     )
     .expect("ready trading sdk construction should succeed");
     let _helper_only_sdk =
-        TradingSdkBuilder::helper_only(SupportedChainId::Sepolia, TradingSdkOptions::default())
+        TradingBuilder::helper_only(SupportedChainId::Sepolia, TradingOptions::default())
             .expect("helper-only trading sdk construction should succeed");
-    let _builder = TradingSdkBuilder::new()
+    let _builder = TradingBuilder::new()
         .with_trader_defaults(PartialTraderParameters::default())
         .with_chain_id(SupportedChainId::Sepolia)
         .build_helper_only()
@@ -96,14 +96,14 @@ fn module_reexports_cover_expected_leaf_crates() {
         cow_sdk::app_data::get_app_data_schema(cow_sdk::app_data::SchemaVersion::latest().as_str())
             .unwrap();
     let deployment = cow_sdk::contracts::deployment_for_chain(11_155_111).unwrap();
-    let api = cow_sdk::orderbook::OrderBookApi::builder_from_context(
+    let api = cow_sdk::orderbook::OrderbookApi::builder_from_context(
         cow_sdk::core::ApiContext::default(),
     )
     .build()
     .expect("default facade orderbook client must build");
-    let _sdk = cow_sdk::trading::TradingSdkBuilder::helper_only(
+    let _sdk = cow_sdk::trading::TradingBuilder::helper_only(
         cow_sdk::core::SupportedChainId::Sepolia,
-        cow_sdk::trading::TradingSdkOptions::default(),
+        cow_sdk::trading::TradingOptions::default(),
     )
     .expect("default facade helper-only trading sdk construction should succeed");
 

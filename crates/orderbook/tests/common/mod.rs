@@ -17,7 +17,7 @@
 use serde_json::{Value, json};
 
 use cow_sdk_orderbook::{
-    Address, ApiContext, AppDataHash, CowEnv, ExternalHostPolicy, OrderBookApi, OrderUid,
+    Address, ApiContext, AppDataHash, CowEnv, ExternalHostPolicy, OrderUid, OrderbookApi,
     SupportedChainId,
 };
 use cow_sdk_transport_policy::TransportPolicy;
@@ -38,8 +38,8 @@ pub fn default_context(chain_id: SupportedChainId, env: CowEnv) -> ApiContext {
     ApiContext::new(chain_id, env)
 }
 
-pub fn build_orderbook_api(context: ApiContext) -> OrderBookApi {
-    OrderBookApi::builder_from_context(context)
+pub fn build_orderbook_api(context: ApiContext) -> OrderbookApi {
+    OrderbookApi::builder_from_context(context)
         .build()
         .expect("default orderbook test client must build")
 }
@@ -47,8 +47,8 @@ pub fn build_orderbook_api(context: ApiContext) -> OrderBookApi {
 pub fn build_orderbook_api_with_base_url(
     context: ApiContext,
     base_url: impl Into<String>,
-) -> OrderBookApi {
-    OrderBookApi::builder_from_context(context)
+) -> OrderbookApi {
+    OrderbookApi::builder_from_context(context)
         .with_external_host_policy(ExternalHostPolicy::Test)
         .base_url(base_url)
         .build()
@@ -58,8 +58,8 @@ pub fn build_orderbook_api_with_base_url(
 pub fn build_orderbook_api_with_policy(
     context: ApiContext,
     policy: TransportPolicy,
-) -> OrderBookApi {
-    OrderBookApi::builder_from_context(context)
+) -> OrderbookApi {
+    OrderbookApi::builder_from_context(context)
         .transport_policy(policy)
         .build()
         .expect("orderbook test client with custom policy must build")
@@ -68,8 +68,8 @@ pub fn build_orderbook_api_with_policy(
 pub fn build_orderbook_api_with_shared_client(
     client: reqwest::Client,
     context: ApiContext,
-) -> OrderBookApi {
-    OrderBookApi::builder_from_context(context)
+) -> OrderbookApi {
+    OrderbookApi::builder_from_context(context)
         .with_external_host_policy(ExternalHostPolicy::Test)
         .client(client)
         .build()
@@ -88,7 +88,7 @@ pub fn sample_app_data_hash() -> AppDataHash {
 
 /// Canonical-form body used by upload-path tests. Paired with
 /// [`sample_upload_body_hash`] so the precheck on
-/// [`cow_sdk_orderbook::OrderBookApi::upload_app_data`] always succeeds and
+/// [`cow_sdk_orderbook::OrderbookApi::upload_app_data`] always succeeds and
 /// reaches the mocked transport.
 pub const SAMPLE_UPLOAD_BODY: &str = "{\"metadata\":{}}";
 

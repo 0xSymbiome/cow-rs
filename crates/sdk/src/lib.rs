@@ -22,10 +22,10 @@
 //! Native/default ready-state setup:
 //!
 //! ```rust
-//! use cow_sdk::{Address, SupportedChainId, TradingSdk};
+//! use cow_sdk::{Address, SupportedChainId, Trading};
 //!
 //! let _address = Address::new("0x1111111111111111111111111111111111111111").unwrap();
-//! let _sdk = TradingSdk::builder()
+//! let _sdk = Trading::builder()
 //!     .with_chain_id(SupportedChainId::Sepolia)
 //!     .with_app_code("your-app-code")
 //!     .build_ready()
@@ -36,9 +36,9 @@
 //! not need quote or submission flows, construct a helper-only SDK:
 //!
 //! ```rust
-//! use cow_sdk::{SupportedChainId, TradingSdk};
+//! use cow_sdk::{SupportedChainId, Trading};
 //!
-//! let _sdk = TradingSdk::builder()
+//! let _sdk = Trading::builder()
 //!     .with_chain_id(SupportedChainId::Sepolia)
 //!     .build_helper_only()
 //!     .unwrap();

@@ -2,8 +2,8 @@ use std::{error::Error, sync::Arc};
 
 use serde_json::json;
 
-use cow_sdk::prelude::{SupportedChainId, TraderParameters, TradingSdkBuilder};
-use cow_sdk::trading::TradingSdkOptions;
+use cow_sdk::prelude::{SupportedChainId, TraderParameters, TradingBuilder};
+use cow_sdk::trading::TradingOptions;
 
 use cow_sdk_examples_native::support::{
     MockOrderbook, sample_quote_response, sample_trade_parameters,
@@ -12,10 +12,10 @@ use cow_sdk_examples_native::support::{
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let orderbook = MockOrderbook::new(SupportedChainId::Sepolia, sample_quote_response());
-    let sdk = TradingSdkBuilder::ready(
+    let sdk = TradingBuilder::ready(
         TraderParameters::new(SupportedChainId::Sepolia, "cow-rs-quote-only")
             .expect("app code should validate"),
-        TradingSdkOptions::new().with_orderbook_client(Arc::new(orderbook.clone())),
+        TradingOptions::new().with_orderbook_client(Arc::new(orderbook.clone())),
     )?;
 
     let quote = sdk.get_quote_only(sample_trade_parameters(), None).await?;
@@ -27,7 +27,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .expect("example quote request must be captured");
 
     let report = json!({
-        "surface": "cow-sdk::TradingSdk::get_quote_only",
+        "surface": "cow-sdk::Trading::get_quote_only",
         "mode": "simulated-transport",
         "quote": {
             "id": quote.quote_response.id,

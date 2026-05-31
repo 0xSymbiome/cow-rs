@@ -1073,7 +1073,7 @@ mod recording_transport {
         Amount, ApiContext, HttpTransport, SupportedChainId, TransportError, TransportErrorClass,
     };
     use cow_sdk_orderbook::{
-        CowEnv, OrderBookApi, OrderCancellations, OrderCreation, OrderQuoteSide, OrderbookError,
+        CowEnv, OrderCancellations, OrderCreation, OrderQuoteSide, OrderbookApi, OrderbookError,
         OrderbookRejection, SigningScheme,
     };
     use cow_sdk_transport_policy::TransportPolicy;
@@ -1220,16 +1220,16 @@ mod recording_transport {
         }
     }
 
-    fn api_with_recorder(recorder: Arc<RecordingTransport>) -> OrderBookApi {
+    fn api_with_recorder(recorder: Arc<RecordingTransport>) -> OrderbookApi {
         api_with_recorder_and_policy(recorder, TransportPolicy::default())
     }
 
     fn api_with_recorder_and_policy(
         recorder: Arc<RecordingTransport>,
         policy: TransportPolicy,
-    ) -> OrderBookApi {
+    ) -> OrderbookApi {
         let context = ApiContext::new(SupportedChainId::Mainnet, CowEnv::Prod);
-        OrderBookApi::builder_from_context(context)
+        OrderbookApi::builder_from_context(context)
             .transport_policy(policy)
             .transport(recorder as Arc<dyn HttpTransport + Send + Sync>)
             .build()

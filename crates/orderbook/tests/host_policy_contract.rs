@@ -1,5 +1,5 @@
 use cow_sdk_orderbook::{
-    CowEnv, ExternalHostPolicy, HostPolicyError, OrderBookApi, OrderbookError, SupportedChainId,
+    CowEnv, ExternalHostPolicy, HostPolicyError, OrderbookApi, OrderbookError, SupportedChainId,
 };
 
 fn rejected_host(error: OrderbookError) -> HostPolicyError {
@@ -11,7 +11,7 @@ fn rejected_host(error: OrderbookError) -> HostPolicyError {
 
 #[test]
 fn orderbook_builder_blocks_custom_hosts_by_default() {
-    let error = OrderBookApi::builder()
+    let error = OrderbookApi::builder()
         .chain(SupportedChainId::GnosisChain)
         .environment(CowEnv::Prod)
         .base_url("https://user:pass@mirror.example/xdai?token=secret")
@@ -34,7 +34,7 @@ fn orderbook_builder_blocks_custom_hosts_by_default() {
 
 #[test]
 fn orderbook_builder_accepts_explicit_allow_and_loopback_policy() {
-    let allow = OrderBookApi::builder()
+    let allow = OrderbookApi::builder()
         .chain(SupportedChainId::GnosisChain)
         .environment(CowEnv::Prod)
         .with_external_host_policy(ExternalHostPolicy::Allow(vec!["mirror.example".to_owned()]))
@@ -47,7 +47,7 @@ fn orderbook_builder_accepts_explicit_allow_and_loopback_policy() {
         "http://localhost:39111/xdai",
         "http://[::1]:39111/xdai",
     ] {
-        let api = OrderBookApi::builder()
+        let api = OrderbookApi::builder()
             .chain(SupportedChainId::GnosisChain)
             .environment(CowEnv::Prod)
             .with_external_host_policy(ExternalHostPolicy::Test)
@@ -62,7 +62,7 @@ fn orderbook_builder_accepts_explicit_allow_and_loopback_policy() {
 
 #[test]
 fn partner_api_routing_x_host_policy_compose_correctly() {
-    let partner = OrderBookApi::builder()
+    let partner = OrderbookApi::builder()
         .chain(SupportedChainId::Mainnet)
         .environment(CowEnv::Prod)
         .api_key("partner-key")
@@ -74,7 +74,7 @@ fn partner_api_routing_x_host_policy_compose_correctly() {
         "https://partners.cow.fi/mainnet"
     );
 
-    let blocked = OrderBookApi::builder()
+    let blocked = OrderbookApi::builder()
         .chain(SupportedChainId::Mainnet)
         .environment(CowEnv::Prod)
         .api_key("partner-key")
@@ -86,7 +86,7 @@ fn partner_api_routing_x_host_policy_compose_correctly() {
         HostPolicyError::HostNotAllowed { .. }
     ));
 
-    let allowed = OrderBookApi::builder()
+    let allowed = OrderbookApi::builder()
         .chain(SupportedChainId::Mainnet)
         .environment(CowEnv::Prod)
         .api_key("partner-key")

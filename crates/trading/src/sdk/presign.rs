@@ -1,12 +1,12 @@
 use cow_sdk_core::Signer;
 
-use super::TradingSdk;
+use super::Trading;
 use crate::{
     OrderTraderParameters, TradingError, get_pre_sign_transaction,
     onchain::protocol_options_for_partial_order,
 };
 
-impl TradingSdk {
+impl Trading {
     /// Builds the pre-sign transaction for an order.
     ///
     /// Callers that need cooperative cancellation wrap this future through

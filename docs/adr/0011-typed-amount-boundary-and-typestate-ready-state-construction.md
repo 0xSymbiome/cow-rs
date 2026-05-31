@@ -10,7 +10,7 @@
 ## Decision
 
 Public amount-carrying surfaces distinguish atomic and decimal-scaled
-values through dedicated newtypes, and `TradingSdkBuilder` advertises its
+values through dedicated newtypes, and `TradingBuilder` advertises its
 prerequisites through typestate terminals. `Amount` wraps an unsigned
 256-bit integer as a typed `BigUint` with wire-native base-10 string
 serialization for ABI and transport use; `DecimalAmount` pairs an atomic
@@ -30,7 +30,7 @@ removed so construction flows through those two typestate-gated terminals.
 A protocol SDK that accepts raw `BigUint` everywhere makes the most common
 class of bot bug — confusing a human-readable `1.5` with its atomic
 `1_500_000_000_000_000_000` — a runtime failure at first submission
-instead of a compile-time refusal. A `TradingSdk` that builds successfully
+instead of a compile-time refusal. A `Trading` that builds successfully
 without `chain_id` or `app_code` and then fails on the first quote
 pushes the same discovery to hours after startup. Moving both discoveries
 to the type system removes entire classes of latent defect without
@@ -44,25 +44,25 @@ widening the runtime surface.
   `TryFrom<&str>` conversions keep atomic interop ergonomic, and
   `Amount::as_biguint` / `Amount::into_biguint` expose the inner value
   for typed arithmetic without reparsing a decimal string.
-  `TradingSdkBuilder` exposes exactly two terminals: `build_ready`
+  `TradingBuilder` exposes exactly two terminals: `build_ready`
   (requires both markers set) and `build_helper_only` (requires only the
   chain-id marker).
-- `TradingSdk` and `TradingSdkBuilder` expose ready-state and helper-only
+- `Trading` and `TradingBuilder` expose ready-state and helper-only
   construction exclusively through typestate-builder terminal methods.
-  **Inherent associated constructors** (`TradingSdk::new`,
-  `TradingSdk::new_partial`, or any future equivalent) are forbidden in
+  **Inherent associated constructors** (`Trading::new`,
+  `Trading::new_partial`, or any future equivalent) are forbidden in
   shipped crates. One-call ergonomic shortcuts (e.g.,
-  `TradingSdkBuilder::ready(...)`) are typestate terminals consuming
+  `TradingBuilder::ready(...)`) are typestate terminals consuming
   *total* typed inputs and never `Partial*` shapes.
 - On `wasm32` targets, `build_ready()` additionally requires an injected
-  orderbook client through `TradingSdkOptions::with_orderbook_client(...)`.
+  orderbook client through `TradingOptions::with_orderbook_client(...)`.
   The default orderbook factory does not run on `wasm32` because the
   browser runtime does not ship a default `HttpTransport` (see ADR 0013).
 - Runtime and support: the wire form of every amount remains the
   canonical base-10 string already defined by the orderbook contract.
   `Amount` serializes to that exact string via a custom serializer;
   decimal scaling is a pure presentation concern. Helper-only flows use
-  the distinct `HelperOnlySdk` type, which exposes pre-sign, allowance,
+  the distinct `TradingHelpers` type, which exposes pre-sign, allowance,
   approval, and on-chain cancellation helpers and does not expose quote,
   post, or off-chain cancellation methods.
 - Validation and review: the wire and ABI boundary remains byte-equal
@@ -117,7 +117,7 @@ widening the runtime surface.
   prerequisites: matches many builder-pattern crates, but defers the
   discovery to the first quote or post call when the consumer is already
   in production.
-- Make `TradingSdk` generic over a mode type parameter: compile-time
+- Make `Trading` generic over a mode type parameter: compile-time
   safe, but forces every downstream signature to leak the mode and
   collapses the ergonomic path for consumers who do not care about the
   helper-only lane.
@@ -217,7 +217,7 @@ internal definition that is invoked once per target struct.
 The `owner` field is a per-trade attribution that lives on
 `TradeParameters`, `LimitTradeParameters`, and `OrderTraderParameters`.
 It does not live on `PartialTraderParameters`, on `TraderParameters`,
-or on the `TradingSdkBuilder`. The SDK does not store a default
+or on the `TradingBuilder`. The SDK does not store a default
 owner; the call-level owner is the only owner the SDK observes.
 
 For signer-backed flows (`post_swap_order`,
@@ -231,7 +231,7 @@ For signer-backed flows (`post_swap_order`,
 `TradingError::MissingOwner` at the call boundary.
 
 The retired SDK-default-owner surface
-(`TradingSdkBuilder::with_owner`, `PartialTraderParameters::owner`,
+(`TradingBuilder::with_owner`, `PartialTraderParameters::owner`,
 `PartialTraderParameters::with_owner`) was load-bearing for no shipped
 flow because per-call `TradeParameters.owner` won precedence in every
 observing helper. The removal narrows the public surface without

@@ -10,7 +10,7 @@ use cow_sdk::orderbook::{
     ApiContext, ExternalHostPolicy, OrderCreation, OrderQuoteRequest, PriceQuality, QuoteSide,
     SigningScheme as OrderbookSigningScheme,
 };
-use cow_sdk::prelude::{Amount, CowEnv, OrderBookApi, SupportedChainId};
+use cow_sdk::prelude::{Amount, CowEnv, OrderbookApi, SupportedChainId};
 
 use cow_sdk_examples_native::support::{
     orderbook_version_response, sample_buy_token, sample_order_uid, sample_owner,
@@ -50,7 +50,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .mount(&server)
         .await;
 
-    let api = OrderBookApi::builder_from_context(ApiContext::new(
+    let api = OrderbookApi::builder_from_context(ApiContext::new(
         SupportedChainId::Sepolia,
         CowEnv::Prod,
     ))

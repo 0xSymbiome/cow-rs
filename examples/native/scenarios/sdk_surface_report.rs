@@ -8,19 +8,19 @@ use cow_sdk::app_data::{
 };
 use cow_sdk::contracts::deployment_for_chain;
 use cow_sdk::core::wrapped_native_token;
-use cow_sdk::prelude::{SupportedChainId, TraderParameters, TradingSdkBuilder};
+use cow_sdk::prelude::{SupportedChainId, TraderParameters, TradingBuilder};
 use cow_sdk::signing::{generate_order_id, order_typed_data};
-use cow_sdk::trading::TradingSdkOptions;
+use cow_sdk::trading::TradingOptions;
 
 use cow_sdk_examples_native::support::{sample_owner, sample_unsigned_order};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let chain_id = SupportedChainId::Sepolia;
     let app_code = AppCode::new("cow-rs/native-capability-report")?;
-    let sdk = TradingSdkBuilder::ready(
+    let sdk = TradingBuilder::ready(
         TraderParameters::new(chain_id, app_code.clone())
             .expect("app code should validate"),
-        TradingSdkOptions::default(),
+        TradingOptions::default(),
     )?;
     let app_data_doc = generate_app_data_doc(
         AppDataParams::new(app_code).with_environment("review"),

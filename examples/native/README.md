@@ -39,7 +39,7 @@ After that, branch by goal through the full scenario table below.
 | `cancellation_combinator` | Cancel an in-flight quote with `Cancellable::cancel_with(&token)` |
 | `limit_order_simulation` | Build and simulate signed limit-order submission |
 | `order_lifecycle_simulation` | Inspect order lookup and off-chain cancellation |
-| `trading_sdk_simulation` | Inspect high-level `TradingSdk` quote, allowance, and approval flow |
+| `trading_sdk_simulation` | Inspect high-level `Trading` quote, allowance, and approval flow |
 | `ethflow_transaction_simulation` | Build native-sell / EthFlow transaction data |
 | `onchain_order_actions_simulation` | Build pre-sign and on-chain cancellation transactions |
 | `orderbook_transport_roundtrip` | Inspect typed orderbook transport behavior |
@@ -53,7 +53,7 @@ After that, branch by goal through the full scenario table below.
 | `transaction_lifecycle` | Compare helper-based receipt waiting with broadcast-only submission through the composed Alloy signer |
 | `alloy_provider_with_custom_signer` | Pair the Alloy provider leaf with a consumer-supplied async signer |
 | `alloy_signer_with_custom_provider` | Pair the Alloy signer leaf with a consumer-supplied async provider |
-| `alloy_trading_full_flow` | Invoke allowance, approval receipt waiting, and pre-sign TradingSdk async boundaries through `AlloyClient` |
+| `alloy_trading_full_flow` | Invoke allowance, approval receipt waiting, and pre-sign Trading async boundaries through `AlloyClient` |
 
 Subgraph scenarios use `cow-sdk-subgraph` directly rather than the root
 facade.
@@ -119,9 +119,9 @@ examples compile under the pinned MSRV and require no RPC credentials.
 
 | Crate | Example | Primary user journey |
 | --- | --- | --- |
-| `cow-sdk-trading` | `signed_order_end_to_end` | full quote → sign → post flow through `TradingSdk::builder()` against an injected in-process orderbook and signer |
+| `cow-sdk-trading` | `signed_order_end_to_end` | full quote → sign → post flow through `Trading::builder()` against an injected in-process orderbook and signer |
 | `cow-sdk-trading` | `typestate_builder_example` | ready versus helper-only builder terminals and their fail-closed mode boundary |
-| `cow-sdk-orderbook` | `paginated_orders_fetch` | paginated `GetOrdersRequest` loop through `OrderBookApi::builder_from_context(...).base_url(...).build()` against a `wiremock::MockServer` |
+| `cow-sdk-orderbook` | `paginated_orders_fetch` | paginated `GetOrdersRequest` loop through `OrderbookApi::builder_from_context(...).base_url(...).build()` against a `wiremock::MockServer` |
 | `cow-sdk-subgraph` | `typed_query_with_escape_hatch` | canonical `TOTALS_QUERY` typed path plus the explicit `run_query` raw-document escape hatch, both against a `wiremock::MockServer` |
 
 Run them with:
@@ -151,5 +151,5 @@ example stays runnable without network access:
 
 When a consumer wants to adapt a per-crate example to a real service,
 replacing the mock server with the production URL (or replacing the
-inline `OrderbookClient` with the live `OrderBookApi`) is the only
+inline `OrderbookClient` with the live `OrderbookApi`) is the only
 change required.

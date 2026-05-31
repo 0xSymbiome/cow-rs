@@ -23,9 +23,9 @@ cow-sdk-orderbook = "0.1"
 ## Minimal example
 
 ```rust
-use cow_sdk_orderbook::{CowEnv, OrderBookApi, SupportedChainId};
+use cow_sdk_orderbook::{CowEnv, OrderbookApi, SupportedChainId};
 
-let _api = OrderBookApi::builder()
+let _api = OrderbookApi::builder()
     .chain(SupportedChainId::Sepolia)
     .environment(CowEnv::Prod)
     .build()

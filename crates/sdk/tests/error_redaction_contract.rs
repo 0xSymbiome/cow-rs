@@ -9,7 +9,7 @@ use cow_sdk::{
         TransportErrorClass, UrlParseFailureClass, ValidationError, ValidationReason,
     },
     orderbook::{
-        OrderBookApiError, OrderbookError, OrderbookRejection, ResponseBody, SigningScheme,
+        OrderbookApiError, OrderbookError, OrderbookRejection, ResponseBody, SigningScheme,
     },
     signing::SigningError,
     trading::{ClientRejection, OrderbookContextValue, TradingError},
@@ -139,10 +139,10 @@ fn fixed_width_identity_constructors_drop_offending_input_character_and_offset()
 #[test]
 fn orderbook_errors_redact_api_transport_and_source_payloads() {
     let api_error =
-        OrderBookApiError::new(500, secret_payload(), ResponseBody::Text(secret_payload()));
-    assert_render("OrderBookApiError", &api_error);
+        OrderbookApiError::new(500, secret_payload(), ResponseBody::Text(secret_payload()));
+    assert_render("OrderbookApiError", &api_error);
 
-    let rejected_api_error = OrderBookApiError::new(
+    let rejected_api_error = OrderbookApiError::new(
         422,
         secret_payload(),
         ResponseBody::Json(json!({
@@ -154,7 +154,7 @@ fn orderbook_errors_redact_api_transport_and_source_payloads() {
 
     let errors = [
         OrderbookError::Core(CoreError::Serialization(secret_payload().into())),
-        OrderbookError::Api(Box::new(OrderBookApiError::new(
+        OrderbookError::Api(Box::new(OrderbookApiError::new(
             500,
             secret_payload(),
             ResponseBody::Json(json!({ "detail": secret_payload() })),

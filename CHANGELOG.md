@@ -156,6 +156,20 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- Renamed the orderbook client types to single-word `Orderbook` casing for Rust
+  idiom consistency with the sibling `cow_sdk_orderbook::OrderbookError`,
+  `OrderbookClient`, and `OrderbookRejection` types: `OrderBookApi` is now
+  `OrderbookApi`, `OrderBookApiBuilder` is now `OrderbookApiBuilder`, and the
+  public transport-error type `OrderBookApiError` is now `OrderbookApiError`.
+  The `cow-sdk` facade prelude and module re-exports are updated. The
+  TypeScript-callable WASM client class intentionally keeps its `OrderBookClient`
+  name to match the JavaScript SDK naming convention at the browser boundary.
+- Renamed the trading entry types to drop the `Sdk` suffix stutter:
+  `TradingSdk` is now `Trading`, `TradingSdkBuilder` is now `TradingBuilder`,
+  `TradingSdkOptions` is now `TradingOptions`, and `HelperOnlySdk` is now
+  `TradingHelpers`. Construction remains exclusively through the typestate-builder
+  terminals (`TradingBuilder::ready(...)` and `TradingBuilder::helper_only(...)`);
+  the `cow-sdk` facade prelude re-exports are updated to the new names.
 - `cow_sdk_orderbook::OrderbookError::Serialization` now carries a structured
   `{ category, line, column }` triple instead of wrapping the raw
   `serde_json::Error`. The orderbook client surfaces only the serde failure

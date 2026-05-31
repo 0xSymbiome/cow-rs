@@ -53,7 +53,7 @@ pub enum ResponseBody {
 /// Structured non-2xx error returned by the orderbook transport layer.
 #[derive(Debug, Clone, PartialEq, Error)]
 #[error("{message}")]
-pub struct OrderBookApiError {
+pub struct OrderbookApiError {
     /// HTTP status code.
     pub status: u16,
     /// HTTP status text.
@@ -63,7 +63,7 @@ pub struct OrderBookApiError {
     message: Redacted<String>,
 }
 
-impl OrderBookApiError {
+impl OrderbookApiError {
     /// Creates a typed API error from status metadata and a decoded body.
     #[must_use]
     pub fn new(status: u16, status_text: impl Into<String>, body: ResponseBody) -> Self {
@@ -696,7 +696,7 @@ where
                         record_span_status(response.status);
                         let status = response.status;
                         let body = response.decoded_body();
-                        let error = OrderBookApiError::new(status, response.status_text, body);
+                        let error = OrderbookApiError::new(status, response.status_text, body);
                         RetryOutcome::Failure {
                             error: error.into(),
                             signal: RetrySignal::HttpStatus { status, headers },

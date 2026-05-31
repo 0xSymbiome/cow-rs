@@ -1,30 +1,30 @@
-//! Typestate builder for [`OrderBookApi`].
+//! Typestate builder for [`OrderbookApi`].
 //!
-//! [`OrderBookApiBuilder`] is the sole production construction path for an
-//! [`OrderBookApi`]. The compiler enforces that the chain id, environment,
-//! and HTTP transport are all supplied before [`OrderBookApiBuilder::build`]
+//! [`OrderbookApiBuilder`] is the sole production construction path for an
+//! [`OrderbookApi`]. The compiler enforces that the chain id, environment,
+//! and HTTP transport are all supplied before [`OrderbookApiBuilder::build`]
 //! becomes callable. Optional configuration — request policy, API key, and
 //! per-environment base-URL overrides — is layered on through fluent methods
 //! that do not affect the typestate.
 //!
-//! On native targets the builder also exposes [`OrderBookApiBuilder::build`]
+//! On native targets the builder also exposes [`OrderbookApiBuilder::build`]
 //! against the typestate where transport is unset, defaulting the transport
 //! to [`ReqwestTransport`](cow_sdk_core::ReqwestTransport) so the common
 //! single-target consumer never has to wire a transport explicitly. On
 //! `wasm32` targets the default-transport build path is unavailable: the
 //! caller MUST supply a `FetchTransport` from `cow-sdk-transport-wasm`
-//! through [`OrderBookApiBuilder::transport`] before `build` becomes
+//! through [`OrderbookApiBuilder::transport`] before `build` becomes
 //! reachable.
 //!
 //! # Examples
 //!
 //! ```
 //! use cow_sdk_core::{CowEnv, SupportedChainId};
-//! use cow_sdk_orderbook::OrderBookApi;
+//! use cow_sdk_orderbook::OrderbookApi;
 //!
 //! # #[cfg(not(target_arch = "wasm32"))]
 //! # {
-//! let api = OrderBookApi::builder()
+//! let api = OrderbookApi::builder()
 //!     .chain(SupportedChainId::Mainnet)
 //!     .environment(CowEnv::Prod)
 //!     .build()
@@ -48,7 +48,7 @@ use cow_sdk_transport_policy::TransportPolicy;
 #[cfg(not(target_arch = "wasm32"))]
 use reqwest::Client;
 
-use crate::api::OrderBookApi;
+use crate::api::OrderbookApi;
 use crate::error::OrderbookError;
 use crate::types::{ApiContext, EnvBaseUrlOverrides};
 
@@ -73,15 +73,15 @@ pub struct TransportUnset(());
 #[derive(Debug, Clone, Copy)]
 pub struct TransportSet(());
 
-/// Typestate-checked builder for [`OrderBookApi`].
+/// Typestate-checked builder for [`OrderbookApi`].
 ///
 /// The four type parameters track which of the required inputs (chain id,
-/// environment, transport) have been supplied. [`OrderBookApiBuilder::build`]
+/// environment, transport) have been supplied. [`OrderbookApiBuilder::build`]
 /// is implemented only against the typestates that satisfy the documented
 /// preconditions, so calling it with any required field still unset is a
 /// compile-time error rather than a runtime failure.
 #[derive(Debug, Clone)]
-pub struct OrderBookApiBuilder<
+pub struct OrderbookApiBuilder<
     ChainState = ChainIdUnset,
     EnvState = EnvUnset,
     TransportState = TransportUnset,
@@ -97,13 +97,13 @@ pub struct OrderBookApiBuilder<
     _phantom: PhantomData<(ChainState, EnvState, TransportState)>,
 }
 
-impl Default for OrderBookApiBuilder<ChainIdUnset, EnvUnset, TransportUnset> {
+impl Default for OrderbookApiBuilder<ChainIdUnset, EnvUnset, TransportUnset> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl OrderBookApiBuilder<ChainIdUnset, EnvUnset, TransportUnset> {
+impl OrderbookApiBuilder<ChainIdUnset, EnvUnset, TransportUnset> {
     /// Creates a fresh builder with no required fields supplied.
     #[must_use]
     pub fn new() -> Self {
@@ -128,7 +128,7 @@ impl OrderBookApiBuilder<ChainIdUnset, EnvUnset, TransportUnset> {
     #[must_use]
     pub fn from_context(
         context: ApiContext,
-    ) -> OrderBookApiBuilder<ChainIdSet, EnvSet, TransportUnset> {
+    ) -> OrderbookApiBuilder<ChainIdSet, EnvSet, TransportUnset> {
         let mut builder = Self::new().chain(context.chain_id).environment(context.env);
         if let Some(api_key) = context.api_key {
             builder.api_key = Some(api_key);
@@ -140,13 +140,13 @@ impl OrderBookApiBuilder<ChainIdUnset, EnvUnset, TransportUnset> {
     }
 }
 
-impl<E, T> OrderBookApiBuilder<ChainIdUnset, E, T> {
+impl<E, T> OrderbookApiBuilder<ChainIdUnset, E, T> {
     /// Supplies the chain id for the orderbook context.
     ///
     /// Transitions the chain typestate from [`ChainIdUnset`] to [`ChainIdSet`].
     #[must_use]
-    pub fn chain(self, chain: SupportedChainId) -> OrderBookApiBuilder<ChainIdSet, E, T> {
-        OrderBookApiBuilder {
+    pub fn chain(self, chain: SupportedChainId) -> OrderbookApiBuilder<ChainIdSet, E, T> {
+        OrderbookApiBuilder {
             chain: Some(chain),
             env: self.env,
             transport: self.transport,
@@ -160,13 +160,13 @@ impl<E, T> OrderBookApiBuilder<ChainIdUnset, E, T> {
     }
 }
 
-impl<C, T> OrderBookApiBuilder<C, EnvUnset, T> {
+impl<C, T> OrderbookApiBuilder<C, EnvUnset, T> {
     /// Supplies the deployment environment for the orderbook context.
     ///
     /// Transitions the environment typestate from [`EnvUnset`] to [`EnvSet`].
     #[must_use]
-    pub fn environment(self, env: CowEnv) -> OrderBookApiBuilder<C, EnvSet, T> {
-        OrderBookApiBuilder {
+    pub fn environment(self, env: CowEnv) -> OrderbookApiBuilder<C, EnvSet, T> {
+        OrderbookApiBuilder {
             chain: self.chain,
             env: Some(env),
             transport: self.transport,
@@ -180,7 +180,7 @@ impl<C, T> OrderBookApiBuilder<C, EnvUnset, T> {
     }
 }
 
-impl<C, E> OrderBookApiBuilder<C, E, TransportUnset> {
+impl<C, E> OrderbookApiBuilder<C, E, TransportUnset> {
     /// Supplies the [`HttpTransport`] dispatch seam.
     ///
     /// Transitions the transport typestate from [`TransportUnset`] to
@@ -192,8 +192,8 @@ impl<C, E> OrderBookApiBuilder<C, E, TransportUnset> {
     pub fn transport(
         self,
         transport: Arc<dyn HttpTransport + Send + Sync>,
-    ) -> OrderBookApiBuilder<C, E, TransportSet> {
-        OrderBookApiBuilder {
+    ) -> OrderbookApiBuilder<C, E, TransportSet> {
+        OrderbookApiBuilder {
             chain: self.chain,
             env: self.env,
             transport: Some(transport),
@@ -208,13 +208,13 @@ impl<C, E> OrderBookApiBuilder<C, E, TransportUnset> {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-impl<C, E> OrderBookApiBuilder<C, E, TransportUnset> {
+impl<C, E> OrderbookApiBuilder<C, E, TransportUnset> {
     /// Reuses an externally-built [`reqwest::Client`] as the backing
     /// transport.
     ///
     /// Multi-chain consumers compose one shared [`reqwest::Client`] (with its
     /// TCP, TLS, and HTTP/2 connection cache) across every
-    /// [`OrderBookApi`] they construct, which is the recommended pattern
+    /// [`OrderbookApi`] they construct, which is the recommended pattern
     /// for production bots that issue requests on behalf of several chains
     /// or trading accounts. The shared client is wrapped into a
     /// [`ReqwestTransport`] so every live request still flows through the
@@ -222,17 +222,17 @@ impl<C, E> OrderBookApiBuilder<C, E, TransportUnset> {
     /// against the empty base URL so the orderbook request helpers keep
     /// building full URLs from the API context.
     #[must_use]
-    pub fn client(self, client: Client) -> OrderBookApiBuilder<C, E, TransportSet> {
+    pub fn client(self, client: Client) -> OrderbookApiBuilder<C, E, TransportSet> {
         let transport: Arc<dyn HttpTransport + Send + Sync> =
             Arc::new(ReqwestTransport::with_client(client, ""));
         self.transport(transport)
     }
 }
 
-impl<C, E, T> OrderBookApiBuilder<C, E, T> {
+impl<C, E, T> OrderbookApiBuilder<C, E, T> {
     /// Sets the request retry, rate-limit, and HTTP-client policy bundle.
     ///
-    /// When this method is not called, [`OrderBookApiBuilder::build`] uses
+    /// When this method is not called, [`OrderbookApiBuilder::build`] uses
     /// [`TransportPolicy::default_orderbook`] which preserves the documented
     /// rate-limit and retry behavior.
     #[must_use]
@@ -282,10 +282,10 @@ impl<C, E, T> OrderBookApiBuilder<C, E, T> {
     /// Adds a base-URL override for the environment already supplied to the
     /// builder.
     ///
-    /// Convenience over [`OrderBookApiBuilder::env_base_url`] when the caller
+    /// Convenience over [`OrderbookApiBuilder::env_base_url`] when the caller
     /// has just configured the environment through
-    /// [`OrderBookApiBuilder::environment`] or
-    /// [`OrderBookApiBuilder::from_context`] and wants to anchor the override
+    /// [`OrderbookApiBuilder::environment`] or
+    /// [`OrderbookApiBuilder::from_context`] and wants to anchor the override
     /// to the same environment.
     ///
     /// # Panics
@@ -315,7 +315,7 @@ impl<C, E, T> OrderBookApiBuilder<C, E, T> {
     fn finish(
         self,
         transport: Arc<dyn HttpTransport + Send + Sync>,
-    ) -> Result<OrderBookApi, OrderbookError> {
+    ) -> Result<OrderbookApi, OrderbookError> {
         validate_orderbook_base_urls(
             self.base_urls.as_ref(),
             &self.env_base_url_overrides,
@@ -343,7 +343,7 @@ impl<C, E, T> OrderBookApiBuilder<C, E, T> {
         if let Some(base_urls) = self.base_urls {
             context.base_urls = Some(base_urls);
         }
-        Ok(OrderBookApi::from_parts(
+        Ok(OrderbookApi::from_parts(
             context,
             transport_policy,
             rate_limiter,
@@ -353,8 +353,8 @@ impl<C, E, T> OrderBookApiBuilder<C, E, T> {
     }
 }
 
-impl OrderBookApiBuilder<ChainIdSet, EnvSet, TransportSet> {
-    /// Builds the [`OrderBookApi`] with the supplied chain, environment, and
+impl OrderbookApiBuilder<ChainIdSet, EnvSet, TransportSet> {
+    /// Builds the [`OrderbookApi`] with the supplied chain, environment, and
     /// transport.
     ///
     /// # Errors
@@ -366,7 +366,7 @@ impl OrderBookApiBuilder<ChainIdSet, EnvSet, TransportSet> {
     ///
     /// Panics only if the typestate marker is bypassed and the required
     /// transport is missing at build time.
-    pub fn build(self) -> Result<OrderBookApi, OrderbookError> {
+    pub fn build(self) -> Result<OrderbookApi, OrderbookError> {
         let transport = self
             .transport
             .clone()
@@ -379,13 +379,13 @@ impl OrderBookApiBuilder<ChainIdSet, EnvSet, TransportSet> {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-impl OrderBookApiBuilder<ChainIdSet, EnvSet, TransportUnset> {
-    /// Builds the [`OrderBookApi`] with the supplied chain and environment,
+impl OrderbookApiBuilder<ChainIdSet, EnvSet, TransportUnset> {
+    /// Builds the [`OrderbookApi`] with the supplied chain and environment,
     /// defaulting the transport to a native [`ReqwestTransport`] handle.
     ///
     /// This convenience build path is only available on non-`wasm32` targets;
     /// browser consumers must call
-    /// [`OrderBookApiBuilder::transport`] with a `FetchTransport` before
+    /// [`OrderbookApiBuilder::transport`] with a `FetchTransport` before
     /// reaching `build`.
     ///
     /// # Errors
@@ -399,7 +399,7 @@ impl OrderBookApiBuilder<ChainIdSet, EnvSet, TransportUnset> {
     /// [`ReqwestTransport`] cannot be encoded as an HTTP header value;
     /// the workspace-shipped default carries a header-safe user-agent
     /// literal so the panic is not reachable from safe code.
-    pub fn build(self) -> Result<OrderBookApi, OrderbookError> {
+    pub fn build(self) -> Result<OrderbookApi, OrderbookError> {
         let user_agent = self
             .transport_policy
             .as_ref()

@@ -3,9 +3,9 @@ use std::{error::Error, sync::Arc};
 use serde_json::json;
 
 use cow_sdk::core::HexData;
-use cow_sdk::prelude::{SupportedChainId, TradingSdk};
+use cow_sdk::prelude::{SupportedChainId, Trading};
 use cow_sdk::trading::{
-    OrderTraderParameters, TradingSdkOptions, get_pre_sign_transaction,
+    OrderTraderParameters, TradingOptions, get_pre_sign_transaction,
     onchain_cancellation_transaction,
 };
 
@@ -24,9 +24,9 @@ fn sample_ethflow_order() -> cow_sdk::orderbook::Order {
     order
 }
 
-fn trading_sdk(orderbook: MockOrderbook) -> TradingSdk {
+fn trading_sdk(orderbook: MockOrderbook) -> Trading {
     let trader = sample_trader_parameters();
-    let mut builder = TradingSdk::builder()
+    let mut builder = Trading::builder()
         .with_chain_id(trader.chain_id)
         .with_app_code(trader.app_code);
     if let Some(env) = trader.env {
@@ -34,7 +34,7 @@ fn trading_sdk(orderbook: MockOrderbook) -> TradingSdk {
     }
 
     builder
-        .with_options(TradingSdkOptions::new().with_orderbook_client(Arc::new(orderbook)))
+        .with_options(TradingOptions::new().with_orderbook_client(Arc::new(orderbook)))
         .build_ready()
         .expect("example trading sdk construction should succeed")
 }
@@ -83,7 +83,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .expect("ethflow cancellation should send a transaction");
 
     let report = json!({
-        "surface": "cow-sdk::trading::get_pre_sign_transaction + cow-sdk::TradingSdk::on_chain_cancel_order",
+        "surface": "cow-sdk::trading::get_pre_sign_transaction + cow-sdk::Trading::on_chain_cancel_order",
         "mode": "simulated-transport",
         "preSignTransaction": {
             "orderUid": order_uid.to_hex_string(),

@@ -3,7 +3,7 @@
 //! This example shows the public `cow-sdk-orderbook` path for iterating
 //! through an owner's order history without requiring live API credentials.
 //! A `wiremock::MockServer` stands in for the real orderbook HTTP endpoint,
-//! and `OrderBookApi` points at the mock through the typestate builder,
+//! and `OrderbookApi` points at the mock through the typestate builder,
 //! with a native `ReqwestTransport` dispatched against the mock URL via
 //! the builder's `.base_url(...)` step. The example mirrors the behavior
 //! a real consumer would see: `GetOrdersRequest` carries the owner plus a
@@ -22,7 +22,7 @@
 //! - a final summary with the total orders aggregated across pages
 
 use cow_sdk_orderbook::{
-    ApiContext, CowEnv, ExternalHostPolicy, GetOrdersRequest, OrderBookApi, OrderUid,
+    ApiContext, CowEnv, ExternalHostPolicy, GetOrdersRequest, OrderUid, OrderbookApi,
     SupportedChainId, types::Address,
 };
 use serde_json::json;
@@ -65,7 +65,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Page 2: empty, ending the iteration.
     mount_page(&server, &owner, PAGE_SIZE * 2, PAGE_SIZE, vec![]).await;
 
-    let api = OrderBookApi::builder_from_context(ApiContext::new(
+    let api = OrderbookApi::builder_from_context(ApiContext::new(
         SupportedChainId::GnosisChain,
         CowEnv::Prod,
     ))

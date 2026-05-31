@@ -12,7 +12,7 @@
 Orderbook and subgraph retry, `Retry-After`, jitter, rate-limit, and
 transport-error classification behavior lives in `cow-sdk-transport-policy`.
 The crate sits above `cow-sdk-core::HttpTransport` and below typed clients.
-`OrderBookApiBuilder` and `SubgraphApiBuilder` accept the shared
+`OrderbookApiBuilder` and `SubgraphApiBuilder` accept the shared
 `TransportPolicy` through `.transport_policy(...)`.
 
 The TypeScript-callable package exposes the same policy through a typed

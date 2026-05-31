@@ -1,9 +1,9 @@
 # Trading Order Construction Integrity Audit
 
 Status: Current
-Last reviewed: 2026-05-27
+Last reviewed: 2026-05-31
 Owning surface: `cow-sdk-trading` order assembly, injected-orderbook builder terminal parity, and recoverable-signature posting boundary
-Refresh trigger: Changes to quote-derived or direct order construction, `TradingSdk` builder terminals with injected orderbooks, recoverable-signature posting validation, upstream services `crates/shared/src/order_validation.rs` same-token semantics, the `TradeParameters::validate` / `LimitTradeParameters::validate` same-token predicate, the `LimitTradeParametersFromQuote` newtype invariant or its `EthFlow` entry binding, or the `scripts/check-services-drift.sh` Semantic Surfaces section
+Refresh trigger: Changes to quote-derived or direct order construction, `Trading` builder terminals with injected orderbooks, recoverable-signature posting validation, upstream services `crates/shared/src/order_validation.rs` same-token semantics, the `TradeParameters::validate` / `LimitTradeParameters::validate` same-token predicate, the `LimitTradeParametersFromQuote` newtype invariant or its `EthFlow` entry binding, or the `scripts/check-services-drift.sh` Semantic Surfaces section
 Related docs:
 - [ADR 0002](../adr/0002-dedicated-trading-orchestration-crate.md)
 - [Architecture](../architecture.md)
@@ -22,7 +22,7 @@ This audit covers:
 - quote-derived order assembly and direct posting flows
 - public `TradeParameters::validate` and `LimitTradeParameters::validate`
   builder-level same-token semantics
-- `TradingSdk` builder terminals that accept injected orderbook context
+- `Trading` builder terminals that accept injected orderbook context
 - local signature validation before orderbook submission
 
 It does not cover browser-wallet session management, approval flows, or
@@ -36,7 +36,7 @@ unrelated leaf-crate transport policy.
 | Receiver fallback | Signing payload construction falls back to the effective `from` address when `receiver` is unset or zero-address | Conforms |
 | Same-token builder policy | Public trade-parameter validators reject buy-side same-token orders and accept sell-side same-token orders before order construction | Conforms |
 | Same-token posting policy | Direct posting rejects buy-side same-token orders before upload or signing and submits sell-side same-token orders | Conforms |
-| `TradingSdk` injected-orderbook terminals | Typestate and total-input builder terminals enforce one fail-fast authority contract | Conforms |
+| `Trading` injected-orderbook terminals | Typestate and total-input builder terminals enforce one fail-fast authority contract | Conforms |
 | Recoverable signature posting | Reject explicit owner or signer mismatch before submission | Conforms |
 | `EthFlow` entry binding | The `EthFlow` native-currency submission entry and the `EthFlow` transaction helper accept only `LimitTradeParametersFromQuote`, lifting the quote-id requirement to the type system at the public boundary while preserving the documented `MissingQuoteId` diagnostic | Conforms |
 
@@ -80,7 +80,7 @@ continue through upload, signing, and submission.
 
 ### Builder Terminal Parity
 
-Typestate and total-input builder terminals for `TradingSdk` share the same
+Typestate and total-input builder terminals for `Trading` share the same
 injected-orderbook validation boundary. If explicit trader or quoter defaults
 conflict with the injected orderbook context, SDK construction fails before the
 surface is exposed.

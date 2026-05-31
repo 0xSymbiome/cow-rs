@@ -5,7 +5,7 @@
 //!
 //! # Async-first entry points
 //!
-//! Every public free function and [`TradingSdk`] method in this crate is
+//! Every public free function and [`Trading`] method in this crate is
 //! `pub async fn` and accepts any signer implementing
 //! [`cow_sdk_core::Signer`]. The crate ships one canonical async
 //! entry per operation; callers in non-async contexts thread an executor
@@ -46,7 +46,7 @@ pub mod parameters;
 pub mod post;
 /// Quote construction and quote-request precedence helpers.
 pub mod quote;
-/// High-level `TradingSdk` facade and builder.
+/// High-level `Trading` facade and builder.
 pub mod sdk;
 /// Slippage and fee calculation helpers.
 pub mod slippage;
@@ -77,8 +77,7 @@ pub use post::{
 };
 pub use quote::{get_quote_only, get_quote_results};
 pub use sdk::{
-    AppCodeSet, AppCodeUnset, ChainIdSet, ChainIdUnset, HelperOnlySdk, TradingSdk,
-    TradingSdkBuilder,
+    AppCodeSet, AppCodeUnset, ChainIdSet, ChainIdUnset, Trading, TradingBuilder, TradingHelpers,
 };
 pub use slippage::{
     DEFAULT_QUOTE_VALIDITY, DEFAULT_SLIPPAGE_BPS, GAS_LIMIT_DEFAULT, GAS_MARGIN_PERCENT,
@@ -92,7 +91,7 @@ pub use types::{
     PartialTraderParameters, PostTradeAdditionalParams, QuoteRequestOverride, QuoteResults,
     QuoterParameters, SlippageSuggestionProvider, SlippageToleranceRequest,
     SlippageToleranceResponse, TradeAdvancedSettings, TradeParameters, TraderParameters,
-    TradingAppDataInfo, TradingSdkOptions, TradingTransactionParams,
+    TradingAppDataInfo, TradingOptions, TradingTransactionParams,
 };
 pub use validation::{
     AmountSide, ClientRejection, OrderBoundsValidator, OrderValidityBounds, SubmissionClass,

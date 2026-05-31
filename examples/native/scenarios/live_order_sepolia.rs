@@ -48,10 +48,10 @@ use std::{env, error::Error, io, time::Duration};
 use serde_json::json;
 
 use cow_sdk::{
-    SupportedChainId, TradingSdk,
+    SupportedChainId, Trading,
     alloy::AlloyClient,
     core::{Address, Amount, OrderKind, Redacted, Signer, SigningProvider},
-    orderbook::{ApiContext, CowEnv, OrderBookApi, OrderStatus},
+    orderbook::{ApiContext, CowEnv, OrderbookApi, OrderStatus},
     trading::{
         AllowanceParameters, ApprovalParameters, TradeParameters, WaitOptions,
         approval_transaction, submit_and_wait_for_receipt,
@@ -118,12 +118,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let signer = client.create_signer("live-order-sepolia").await?;
     let owner = signer.get_address().await?;
 
-    let sdk = TradingSdk::builder()
+    let sdk = Trading::builder()
         .with_chain_id(SupportedChainId::Sepolia)
         .with_app_code(app_code.as_str())
         .build_ready()?;
     let context = ApiContext::new(SupportedChainId::Sepolia, CowEnv::Prod);
-    let orderbook = OrderBookApi::builder_from_context(context).build()?;
+    let orderbook = OrderbookApi::builder_from_context(context).build()?;
 
     let allowance_params = AllowanceParameters::new(sell_token, owner);
     let current_allowance = sdk
@@ -170,7 +170,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 }
 
 async fn poll_order_status(
-    orderbook: &OrderBookApi,
+    orderbook: &OrderbookApi,
     order_id: &cow_sdk::orderbook::OrderUid,
     poll_seconds: u64,
 ) -> Result<(), Box<dyn Error>> {

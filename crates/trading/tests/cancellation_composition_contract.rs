@@ -28,7 +28,7 @@ use cow_sdk_orderbook::{
 };
 use cow_sdk_trading::{
     AllowanceParameters, ApprovalParameters, OrderPostingResult, OrderTraderParameters,
-    OrderbookClient, QuoteResults, TradingError, TradingSdk, TradingSdkOptions,
+    OrderbookClient, QuoteResults, Trading, TradingError, TradingOptions,
 };
 
 use crate::common::{
@@ -36,7 +36,7 @@ use crate::common::{
     regular_order, sample_limit_parameters, sample_trade_parameters, sell_quote_response,
 };
 
-// Every public async method on `TradingSdk` composes with
+// Every public async method on `Trading` composes with
 // `cancel_with(&token)`. The table below pins one case per method.
 
 type CaseFuture<'a> = Pin<Box<dyn Future<Output = Result<(), TradingError>> + 'a>>;
@@ -161,7 +161,7 @@ impl Drop for DropSpy {
 }
 
 struct TradingHarness {
-    sdk: TradingSdk,
+    sdk: Trading,
     quote_results: QuoteResults,
     signer: SlowSigner,
     provider: SlowProvider,
@@ -171,11 +171,11 @@ impl TradingHarness {
     async fn new(delay: Duration) -> Self {
         let quote_results = quote_results_fixture().await;
         let orderbook = Arc::new(DelayedOrderbook::new(delay));
-        let sdk = TradingSdk::builder()
+        let sdk = Trading::builder()
             .with_chain_id(SupportedChainId::Sepolia)
             .with_app_code("cancellation-composition")
             .with_env(CowEnv::Prod)
-            .with_options(TradingSdkOptions::new().with_orderbook_client(orderbook))
+            .with_options(TradingOptions::new().with_orderbook_client(orderbook))
             .build_ready()
             .expect("trading sdk must construct for cancellation composition tests");
 
@@ -190,11 +190,11 @@ impl TradingHarness {
 
 async fn quote_results_fixture() -> QuoteResults {
     let orderbook = Arc::new(DelayedOrderbook::new(Duration::ZERO));
-    let sdk = TradingSdk::builder()
+    let sdk = Trading::builder()
         .with_chain_id(SupportedChainId::Sepolia)
         .with_app_code("cancellation-composition")
         .with_env(CowEnv::Prod)
-        .with_options(TradingSdkOptions::new().with_orderbook_client(orderbook))
+        .with_options(TradingOptions::new().with_orderbook_client(orderbook))
         .build_ready()
         .expect("fixture sdk must construct");
 

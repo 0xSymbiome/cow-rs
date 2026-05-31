@@ -73,7 +73,7 @@ families do not silently widen the default facade contract.
 
 ## Sole Construction Seam
 
-`OrderBookApi`, `SubgraphApi`, and `TradingSdk` construct exclusively through
+`OrderbookApi`, `SubgraphApi`, and `Trading` construct exclusively through
 their typestate builders. The required inputs (chain, environment or API key,
 transport, appCode) are encoded as compile-time markers so a misconstructed
 client is a build error rather than a first-quote runtime surprise. **No
@@ -186,8 +186,8 @@ credentials through `Display`, `Debug`, or `Error::source()`.
 
 ## Cooperative Cancellation Coverage
 
-Every long-running async public method on `OrderBookApi`, `SubgraphApi`,
-`TradingSdk`, or any future client is composable with
+Every long-running async public method on `OrderbookApi`, `SubgraphApi`,
+`Trading`, or any future client is composable with
 `cow_sdk_core::Cancellable::cancel_with(&token)`. The error aggregate of every
 public API lifts `Cancelled` through `From`. Cancellation is cooperative —
 callers own the token, and the SDK never installs hidden global cancellation

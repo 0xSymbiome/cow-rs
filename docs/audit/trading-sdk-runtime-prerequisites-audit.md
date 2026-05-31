@@ -1,9 +1,9 @@
 # Trading SDK Runtime Prerequisites Audit
 
 Status: Current
-Last reviewed: 2026-05-28
-Owning surface: `cow-sdk-trading` ready-state `TradingSdk` construction, helper-only `HelperOnlySdk` construction, helper-specific prerequisite contract, and per-trade owner attribution
-Refresh trigger: Changes to ready-state `TradingSdk` builder terminals, helper-only setup entry points, method-specific prerequisite enforcement, the per-trade owner-attribution placement, or any change that weakens the wasm32 orderbook-client requirement inside `build_ready()`
+Last reviewed: 2026-05-31
+Owning surface: `cow-sdk-trading` ready-state `Trading` construction, helper-only `TradingHelpers` construction, helper-specific prerequisite contract, and per-trade owner attribution
+Refresh trigger: Changes to ready-state `Trading` builder terminals, helper-only setup entry points, method-specific prerequisite enforcement, the per-trade owner-attribution placement, or any change that weakens the wasm32 orderbook-client requirement inside `build_ready()`
 Related docs:
 - [ADR 0002](../adr/0002-dedicated-trading-orchestration-crate.md)
 - [ADR 0006](../adr/0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
@@ -17,7 +17,7 @@ Related docs:
 
 This audit covers:
 
-- ready-state `TradingSdk` and helper-only `HelperOnlySdk` construction
+- ready-state `Trading` and helper-only `TradingHelpers` construction
 - method-specific prerequisites across quote, post, cancellation, allowance,
   approval, and pre-sign helper flows
 - the boundary between trading attribution requirements and chain-bound helper
@@ -31,9 +31,9 @@ or unrelated credential-hygiene questions.
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
 | AppCode attribution | Trading attribution uses the `AppCode` newtype, rejecting empty strings, NUL bytes, and ASCII control characters before ready-state construction | Conforms |
-| Typestate ready construction | `TradingSdkBuilder::build_ready` and `TradingSdkBuilder::ready` require total chain id plus validated `appCode` inputs before ready-state construction | Conforms |
+| Typestate ready construction | `TradingBuilder::build_ready` and `TradingBuilder::ready` require total chain id plus validated `appCode` inputs before ready-state construction | Conforms |
 | wasm32 build_ready() requires injected orderbook client | `build_ready()` returns `TradingError::MissingInjectedOrderbookClient` when `options.orderbook_client().is_none()` on `wasm32` | Conforms |
-| Helper-only construction | `TradingSdkBuilder::build_helper_only` and `TradingSdkBuilder::helper_only` return the distinct `HelperOnlySdk` type on native and wasm32 without weakening the ready-state contract | Conforms |
+| Helper-only construction | `TradingBuilder::build_helper_only` and `TradingBuilder::helper_only` return the distinct `TradingHelpers` type on native and wasm32 without weakening the ready-state contract | Conforms |
 | Chain-bound helper prerequisites | Allowance, approval, pre-sign, and on-chain cancellation no longer require `appCode` when only chain and protocol context are needed | Conforms |
 | Per-trade owner attribution | `TradeParameters.owner`, `LimitTradeParameters.owner`, and `OrderTraderParameters` carry the per-trade owner. The SDK does not store a default owner; for signer-backed flows the signer address resolved through `Signer::get_address` is the implicit fallback, and for quote-only flows the owner must come from `TradeParameters.owner` or `advanced_settings.quote_request.from`. | Conforms |
 
@@ -41,16 +41,16 @@ or unrelated credential-hygiene questions.
 
 ### Ready-State Construction
 
-`TradingSdkBuilder::build_ready` is available only after the builder has both
+`TradingBuilder::build_ready` is available only after the builder has both
 chain id and `AppCode` typestate markers set, so missing ready-state
 prerequisites are rejected at compile time for fluent builder callers and
 invalid attribution strings are rejected before the SDK handle is returned.
-`TradingSdkBuilder::ready` is the one-call ready-state shortcut for callers
+`TradingBuilder::ready` is the one-call ready-state shortcut for callers
 that already hold total `TraderParameters`; it does not accept partial defaults.
 
 ### wasm32 Typestate Ready Terminal
 
-`TradingSdkBuilder::build_ready()` is the stronger typestate terminal. On
+`TradingBuilder::build_ready()` is the stronger typestate terminal. On
 native targets it remains compatible with the default orderbook factory. On
 `wasm32`, the terminal additionally requires an injected orderbook client
 because the browser runtime does not ship a default HTTP transport; the
@@ -58,18 +58,18 @@ terminal now returns `TradingError::MissingInjectedOrderbookClient` instead of
 returning a misleading ready-state handle whose first quote or post call would
 fail in orderbook binding resolution.
 
-The root `cow-sdk` facade re-exports `TradingSdkOptions` so consumers can
+The root `cow-sdk` facade re-exports `TradingOptions` so consumers can
 inject the browser orderbook client from the same first-touch import surface
 used by native ready-state construction.
 
 ### Helper-Only Construction
 
-`TradingSdkBuilder::build_helper_only` and `TradingSdkBuilder::helper_only`
+`TradingBuilder::build_helper_only` and `TradingBuilder::helper_only`
 keep the narrower helper-only contract explicit. They are intended for
 workflows such as allowance reads, approval submission, pre-sign transaction
 construction, and on-chain cancellation, where chain and protocol context
 matter but quote or submission attribution does not. Both construction paths
-require a chain id and produce `HelperOnlySdk`. On `wasm32`, helper-only
+require a chain id and produce `TradingHelpers`. On `wasm32`, helper-only
 construction does not require an injected orderbook client because the
 resulting type does not expose quote, post, or off-chain cancellation methods.
 
@@ -86,7 +86,7 @@ helpers that do not consume that contract.
 The trading SDK does not store a default owner. The `owner` field
 lives on the per-trade types (`TradeParameters`, `LimitTradeParameters`)
 and on `OrderTraderParameters` for order-context flows. The
-`TradingSdkBuilder` does not expose `with_owner`, and
+`TradingBuilder` does not expose `with_owner`, and
 `PartialTraderParameters` does not carry an `owner` field.
 
 Resolved owner precedence is:

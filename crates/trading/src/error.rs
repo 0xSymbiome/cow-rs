@@ -165,7 +165,7 @@ pub enum TradingError {
     /// An injected orderbook client is required on `wasm32` targets because
     /// the browser runtime does not ship a default HTTP transport.
     #[error(
-        "wasm32 targets require an injected orderbook client through TradingSdkOptions::with_orderbook_client"
+        "wasm32 targets require an injected orderbook client through TradingOptions::with_orderbook_client"
     )]
     MissingInjectedOrderbookClient,
 }

@@ -8,7 +8,7 @@ use cow_sdk::core::{
     Amount, CowEnv, OrderUid, SigningProvider, SupportedChainId, TransactionHash, TransactionStatus,
 };
 use cow_sdk::trading::{
-    AllowanceParameters, ApprovalParameters, OrderTraderParameters, TradingSdk, WaitOptions,
+    AllowanceParameters, ApprovalParameters, OrderTraderParameters, Trading, WaitOptions,
     approval_transaction, submit_and_wait_for_receipt,
 };
 use serde_json::{Value, json};
@@ -33,7 +33,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .build_checked()
         .await?;
     let signer = client.create_signer("local-key").await?;
-    let sdk = TradingSdk::builder()
+    let sdk = Trading::builder()
         .with_chain_id(SupportedChainId::Mainnet)
         .with_env(CowEnv::Prod)
         .build_helper_only()?;
@@ -72,7 +72,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .unwrap_or_else(std::sync::PoisonError::into_inner)
         .clone();
     let report = json!({
-        "surface": "cow-sdk::alloy::AlloyClient with TradingSdk",
+        "surface": "cow-sdk::alloy::AlloyClient with Trading",
         "allowance": allowance,
         "approvalTxHash": approval_receipt.transaction_hash.to_hex_string(),
         "approvalStatus": format!("{:?}", approval_receipt.status),

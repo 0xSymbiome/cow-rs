@@ -21,7 +21,7 @@
 //!   fallback-gas handling.
 //! * [`build_app_data`] / [`merge_and_seal_app_data`] — partner-fee metadata.
 //! * [`suggest_slippage_bps`] — bounds clamping and `EthFlow` minimum.
-//! * [`TradingSdk`] — quote-only owner mode, chain-authority requirements,
+//! * [`Trading`] — quote-only owner mode, chain-authority requirements,
 //!   and contract-override precedence.
 //!
 //! Every `assert_eq!` carries the fixture case id and the field under
@@ -52,8 +52,8 @@ use cow_sdk_orderbook::{PriceQuality, SigningScheme};
 use cow_sdk_trading::{
     GAS_LIMIT_DEFAULT, LimitTradeParametersFromQuote, MAX_SLIPPAGE_BPS, OrderToSignParams,
     OrderTraderParameters, PartnerFeePolicy, PostTradeAdditionalParams, QuoteRequestOverride,
-    QuoterParameters, TradeAdvancedSettings, TraderParameters, TradingError, TradingSdkBuilder,
-    TradingSdkOptions, build_app_data, default_slippage_bps, get_eth_flow_transaction,
+    QuoterParameters, TradeAdvancedSettings, TraderParameters, TradingBuilder, TradingError,
+    TradingOptions, build_app_data, default_slippage_bps, get_eth_flow_transaction,
     get_order_to_sign, get_pre_sign_transaction, get_quote_only, get_quote_results,
     is_ethflow_order, merge_and_seal_app_data, onchain_cancellation_transaction, post_limit_order,
     post_sell_native_currency_order, post_swap_order, suggest_slippage_bps,
@@ -1427,11 +1427,11 @@ async fn assert_sdk_quote_only_owner_mode(case_id: &str, expected: &Value) {
         SupportedChainId::Sepolia,
         sell_quote_response(),
     ));
-    let sdk = TradingSdkBuilder::ready(
+    let sdk = TradingBuilder::ready(
         TraderParameters::new(SupportedChainId::Sepolia, "0x007")
             .expect("app code should validate")
             .with_env(CowEnv::Prod),
-        TradingSdkOptions::new().with_orderbook_client(orderbook.clone()),
+        TradingOptions::new().with_orderbook_client(orderbook.clone()),
     )
     .unwrap_or_else(|error| panic!("case {case_id}: sdk construction must succeed, got {error:?}"));
     let mut trade = sample_trade_parameters(OrderKind::Sell);
@@ -1460,7 +1460,7 @@ async fn assert_sdk_quote_only_owner_mode(case_id: &str, expected: &Value) {
     );
 
     let helper_only =
-        TradingSdkBuilder::helper_only(SupportedChainId::Sepolia, TradingSdkOptions::default())
+        TradingBuilder::helper_only(SupportedChainId::Sepolia, TradingOptions::default())
             .unwrap_or_else(|error| {
                 panic!("case {case_id}: helper-only construction must succeed, got {error:?}")
             });

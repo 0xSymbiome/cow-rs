@@ -13,10 +13,10 @@ root exports:
 - AppCode
 - AppCodeError
 - ErrorClass
-- HelperOnlySdk
+- TradingHelpers
 - HttpTransport
 - NoopEip1271VerificationCache
-- OrderBookApi
+- OrderbookApi
 - OrderUid
 - RegistryError
 - SdkError
@@ -24,9 +24,9 @@ root exports:
 - SupportedChainId
 - TradeParameters
 - TraderParameters
-- TradingSdk
-- TradingSdkBuilder
-- TradingSdkOptions
+- Trading
+- TradingBuilder
+- TradingOptions
 - TransportError
 - TransportErrorClass
 feature-gated exports absent:

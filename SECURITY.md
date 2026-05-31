@@ -119,7 +119,7 @@ surface through sanitized `HostPolicyError` variants that do not retain raw
 URL credentials, paths, queries, or fragments.
 
 Operator recommendation: use the canonical
-`OrderBookApi::builder().environment(CowEnv::Prod)` default for production
+`OrderbookApi::builder().environment(CowEnv::Prod)` default for production
 bots that do not need partner-relay support. Use
 `ExternalHostPolicy::Allow` only for reviewed private endpoints, and keep
 `ExternalHostPolicy::Test` limited to loopback test fixtures.

@@ -7,7 +7,7 @@ use cow_sdk_core::{
     Amount, CowEnv, HexData, OrderUid, SigningProvider, SupportedChainId, TransactionHash,
     TransactionRequest,
 };
-use cow_sdk_trading::{AllowanceParameters, ApprovalParameters, OrderTraderParameters, TradingSdk};
+use cow_sdk_trading::{AllowanceParameters, ApprovalParameters, OrderTraderParameters, Trading};
 use serde_json::{Value, json};
 use wiremock::{Mock, MockServer, ResponseTemplate, matchers::method};
 
@@ -32,7 +32,7 @@ async fn alloy_client_satisfies_trading_sdk_boundaries() {
         .await
         .unwrap();
     let signer = client.create_signer("local-key").await.unwrap();
-    let sdk = TradingSdk::builder()
+    let sdk = Trading::builder()
         .with_chain_id(SupportedChainId::Mainnet)
         .with_env(CowEnv::Prod)
         .build_helper_only()

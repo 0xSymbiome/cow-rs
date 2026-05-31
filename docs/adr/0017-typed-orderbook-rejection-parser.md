@@ -21,10 +21,10 @@ Amount }` lifts the typed payload through the same parser. The
 public free function `parse_rejection(status: http::StatusCode,
 body: &[u8]) -> Option<OrderbookRejection>` exposes the same
 classification at the byte-slice level, and
-`OrderbookError::Rejected { status, rejection, source: Box<OrderBookApiError> }`
+`OrderbookError::Rejected { status, rejection, source: Box<OrderbookApiError> }`
 promotes the typed payload onto the per-call error tree whenever
 the response body carries a recognisable rejection envelope. The
-prior stringly-typed `OrderBookApiError::error_type() -> Option<&str>`
+prior stringly-typed `OrderbookApiError::error_type() -> Option<&str>`
 helper is retired in favour of the typed channel.
 
 ## Why
@@ -38,7 +38,7 @@ new tag through the dedicated `Unknown { code, message }` fallback
 without the orderbook needing a coordinated SDK release. Putting
 the parser at the byte-slice level keeps it usable from consumers
 that hold a raw HTTP response and never go through the
-`OrderBookApiError` envelope, and the
+`OrderbookApiError` envelope, and the
 `OrderbookError::Rejected` promotion keeps the original transport
 envelope reachable for telemetry while exposing the typed payload
 on the happy diagnostic path.
@@ -53,16 +53,16 @@ on the happy diagnostic path.
   variant. `parse_rejection(status, body) -> Option<OrderbookRejection>`
   classifies a raw `http::StatusCode` plus byte slice; it returns
   `None` whenever the envelope fails to deserialize so the
-  `From<OrderBookApiError>` promotion in `error.rs` falls back to
-  `OrderbookError::Api(Box<OrderBookApiError>)` (preserving the
+  `From<OrderbookApiError>` promotion in `error.rs` falls back to
+  `OrderbookError::Api(Box<OrderbookApiError>)` (preserving the
   decoded `ResponseBody` — including the `Text` variant for
   plain-text bodies — and the derived public message) instead of
   silently coercing unknown payloads into a default rejection.
-  `OrderbookError::Rejected { status, rejection, source: Box<OrderBookApiError> }`
+  `OrderbookError::Rejected { status, rejection, source: Box<OrderbookApiError> }`
   is the typed promotion path on the per-call error tree, wired
-  through `From<OrderBookApiError>` whenever the response body
+  through `From<OrderbookApiError>` whenever the response body
   carries a recognisable rejection envelope. The retired
-  `OrderBookApiError::error_type()` accessor does not exist on the
+  `OrderbookApiError::error_type()` accessor does not exist on the
   shipped surface.
 - Runtime and support: the parser is pure. It performs no network
   I/O, reads no environment, and returns `None` rather than
@@ -79,7 +79,7 @@ on the happy diagnostic path.
   `Unknown` fallback for unknown and malformed inputs, the
   `DuplicateOrder` historical typo regression that now classifies
   through `Unknown`, the `None`-on-malformed-body path, and the
-  `From<OrderBookApiError>` promotion. The
+  `From<OrderbookApiError>` promotion. The
   `cow_sdk::SdkError::class` classification still lifts a
   `Rejected` response onto `ErrorClass::Remote` so downstream
   telemetry partitions remain stable.
@@ -98,7 +98,7 @@ on the happy diagnostic path.
   becomes invisible and consumers cannot tell whether the new
   payload was a known variant or a forward-compatibility case.
 - Skip the byte-slice entry point and require every consumer to
-  go through `OrderBookApiError`: simpler module, but blocks
+  go through `OrderbookApiError`: simpler module, but blocks
   consumers that hold a raw HTTP response from reaching the typed
   classification.
 - Spread the rejection tags across multiple unrelated enums by

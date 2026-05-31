@@ -356,7 +356,7 @@ struct RejectionEnvelope {
 /// The parser returns `None` when the supplied `body` is not a JSON
 /// object with a string `errorType` field. Callers surface that case
 /// through [`crate::OrderbookError::Api`] (wrapping the structured
-/// [`crate::OrderBookApiError`] envelope, which preserves the decoded
+/// [`crate::OrderbookApiError`] envelope, which preserves the decoded
 /// [`crate::ResponseBody`] — including the `Text` variant for
 /// plain-text bodies — and the derived public message) rather than
 /// through [`crate::OrderbookError::Rejected`]. Unknown tags are

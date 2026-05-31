@@ -67,9 +67,9 @@ impl TraderParameters {
     }
 }
 
-/// Partial trader defaults stored on [`crate::TradingSdk`] and its builder.
+/// Partial trader defaults stored on [`crate::Trading`] and its builder.
 ///
-/// Carries the protocol-resolution defaults a `TradingSdk` instance
+/// Carries the protocol-resolution defaults a `Trading` instance
 /// applies when call-level parameters omit them: chain id, app code,
 /// environment, settlement-contract overrides, and `EthFlow`-contract
 /// overrides. The SDK does not store a default owner; per-call

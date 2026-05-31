@@ -74,7 +74,7 @@ flowchart TD
 | `cow-sdk-contracts` | `alloy::sol!`-generated typed bindings, the typed `Registry` deployment authority, fail-closed `CoWSwapOnchainOrders` event decoding, and deterministic hashing and verification helpers | You need ABI-level, address-authority, or settlement-level primitives. |
 | `cow-sdk-signing` | Typed-data, signing, cancellation, UID helpers, and the `Eip1271VerificationCache` seam (the always-available `NoopEip1271VerificationCache` plus the feature-gated `InMemoryEip1271VerificationCache`) | You need signing without the full trading layer. |
 | `cow-sdk-app-data` | App-data encoding, schema handling, and CID behavior | You need app-data generation or validation. |
-| `cow-sdk-orderbook` | Typed orderbook transport over the `HttpTransport` seam, with the `OrderBookApiBuilder` typestate | You need explicit request and response control. |
+| `cow-sdk-orderbook` | Typed orderbook transport over the `HttpTransport` seam, with the `OrderbookApiBuilder` typestate | You need explicit request and response control. |
 | `cow-sdk-trading` | Quote-to-order workflows plus the quote, submit, cancel, and approve orchestration surface | You need the main trading orchestration layer. |
 | `cow-sdk-subgraph` | Read-only subgraph access over the `HttpTransport` seam, with the `SubgraphApiBuilder` typestate | You need GraphQL reads or custom subgraph queries. |
 | `cow-sdk-transport-wasm` | Browser-target `HttpTransport` implementation (`FetchTransport`) | You build for `wasm32-unknown-unknown` and need the shipped browser default. |
@@ -310,7 +310,7 @@ override support.
 
 Production deployments that issue requests across several chains can pool
 a single `reqwest::Client` across every orderbook and subgraph instance
-they build. On native targets, `OrderBookApi::builder()` and
+they build. On native targets, `OrderbookApi::builder()` and
 `SubgraphApi::builder()` both expose a `.client(shared_client)` convenience
 method over `ReqwestTransport` that preserves any custom keep-alive,
 timeout, or TLS settings verbatim, so one warm connection cache backs
@@ -322,8 +322,8 @@ accompanies each opt-in setting.
 
 ### Cancellation
 
-Long-running public operations on `OrderBookApi`, `SubgraphApi`, and
-`TradingSdk` each expose one canonical async method, and callers compose
+Long-running public operations on `OrderbookApi`, `SubgraphApi`, and
+`Trading` each expose one canonical async method, and callers compose
 cooperative cancellation by wrapping the returned future through
 `cow_sdk_core::Cancellable::cancel_with(&token)` at the call site. The
 `cow_sdk_core::CancellationToken` is a re-export of
@@ -368,8 +368,8 @@ to a different orderbook endpoint, chain, or environment. Reviewed
 `sellTokenBalance` and `buyTokenBalance` semantics remain part of the same
 workflow contract through quote, order, sign, and post seams. The typestate
 builder and its total-input shortcuts share the same injected-orderbook
-validation boundary. Ready-state `TradingSdk` construction requires a validated
-`AppCode` plus explicit or injected chain authority, while `HelperOnlySdk`
+validation boundary. Ready-state `Trading` construction requires a validated
+`AppCode` plus explicit or injected chain authority, while `TradingHelpers`
 construction remains available for chain-bound helper flows such as allowance,
 approval, pre-sign, and on-chain cancellation. Recoverable-signature posting
 rejects explicit owner or signer mismatch before submission, and user-facing
@@ -409,7 +409,7 @@ switch success.
 - Reviewed subgraph query constants may be public when they are deliberately
   stabilized, but saved GraphQL breadth beyond that reviewed set and test-only
   schema fixtures stay non-public.
-- `OrderBookApi`, `SubgraphApi`, and `TradingSdk` construct exclusively
+- `OrderbookApi`, `SubgraphApi`, and `Trading` construct exclusively
   through their typestate builders; no free-function public constructors
   remain on any of the three.
 - Native Alloy dependencies are confined to the reviewed opt-in adapter crates:

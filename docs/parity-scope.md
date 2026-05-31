@@ -291,9 +291,9 @@ entry for anyone who later considers reintroducing the surface.
   retired wire-string `Amount` wrapper, there is no negative test because
   the type does not exist and the Rust compiler itself enforces the
   exclusion at every call site.
-- **Legacy free-function constructors on `OrderBookApi` and
+- **Legacy free-function constructors on `OrderbookApi` and
   `SubgraphApi`** — the shipped construction seam for both clients is
-  the typestate builder (`OrderBookApi::builder()` and
+  the typestate builder (`OrderbookApi::builder()` and
   `SubgraphApi::builder()`, governed by
   [ADR 0013](./adr/0013-http-transport-injection-and-typestate-builders.md)).
   The earlier family of free-function constructors (for example

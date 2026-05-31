@@ -1,9 +1,9 @@
 use cow_sdk_core::{Amount, CowEnv, Provider, Signer, TransactionHash};
 
-use super::TradingSdk;
+use super::Trading;
 use crate::{AllowanceParameters, ApprovalParameters, TradingError, get_cow_protocol_allowance};
 
-impl TradingSdk {
+impl Trading {
     /// Reads the `CoW` Protocol allowance.
     ///
     /// Callers that need cooperative cancellation wrap this future through

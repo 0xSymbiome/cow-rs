@@ -6,7 +6,7 @@ order actions.
 
 This is the orchestration layer that turns configured signers,
 providers, and orderbook clients into a single ready-state trading
-facade. The primary entry point is `TradingSdk`. Most end-user code
+facade. The primary entry point is `Trading`. Most end-user code
 reaches this crate through [`cow-sdk`](https://crates.io/crates/cow-sdk);
 depend on it directly when you want the trading entry points without
 the browser-wallet optional dependency.
@@ -20,18 +20,18 @@ cow-sdk-trading = "0.1"
 
 ## Minimal example
 
-The `TradingSdkBuilder::ready` one-call shortcut accepts a complete
+The `TradingBuilder::ready` one-call shortcut accepts a complete
 `TraderParameters` plus an options bundle and returns a ready-state
-`TradingSdk`:
+`Trading`:
 
 ```rust
 use cow_sdk_core::SupportedChainId;
-use cow_sdk_trading::{TraderParameters, TradingSdkBuilder, TradingSdkOptions};
+use cow_sdk_trading::{TraderParameters, TradingBuilder, TradingOptions};
 
-let _sdk = TradingSdkBuilder::ready(
+let _sdk = TradingBuilder::ready(
     TraderParameters::new(SupportedChainId::Sepolia, "your-app-code")
         .expect("app code validates"),
-    TradingSdkOptions::default(),
+    TradingOptions::default(),
 )
 .expect("ready-state construction");
 ```
@@ -41,36 +41,36 @@ injection, use the full builder:
 
 ```rust
 use cow_sdk_core::{CowEnv, SupportedChainId};
-use cow_sdk_trading::{TradingSdk, TradingSdkOptions};
+use cow_sdk_trading::{Trading, TradingOptions};
 
-let _sdk = TradingSdk::builder()
+let _sdk = Trading::builder()
     .with_chain_id(SupportedChainId::Sepolia)
     .with_app_code("your-app-code")
     .with_env(CowEnv::Prod)
-    .with_options(TradingSdkOptions::new())
+    .with_options(TradingOptions::new())
     .build_ready()
     .expect("ready-state construction");
 ```
 
-Use `TradingSdkBuilder::helper_only` (or `build_helper_only()` on the
+Use `TradingBuilder::helper_only` (or `build_helper_only()` on the
 full builder) for chain-bound helper workflows that do not need quote,
 post, order lookup, or off-chain cancellation submission through the
 SDK:
 
 ```rust
 use cow_sdk_core::SupportedChainId;
-use cow_sdk_trading::{TradingSdkBuilder, TradingSdkOptions};
+use cow_sdk_trading::{TradingBuilder, TradingOptions};
 
-let _sdk = TradingSdkBuilder::helper_only(
+let _sdk = TradingBuilder::helper_only(
     SupportedChainId::Sepolia,
-    TradingSdkOptions::default(),
+    TradingOptions::default(),
 )
 .expect("helper-only construction");
 ```
 
 Helper-only SDKs support allowance reads, approval submission, pre-sign
 transaction construction, and on-chain cancellation. Quote, post, order lookup,
-and off-chain cancellation methods are available only on `TradingSdk`.
+and off-chain cancellation methods are available only on `Trading`.
 
 Owner attribution lives on the per-trade `TradeParameters` (or
 `LimitTradeParameters`); the SDK does not store a default owner. For

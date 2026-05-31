@@ -1,11 +1,11 @@
 use cow_sdk_core::Signer;
 
-use super::TradingSdk;
+use super::Trading;
 use crate::{
     LimitTradeParameters, QuoteResults, TradeAdvancedSettings, TradeParameters, TradingError,
 };
 
-impl TradingSdk {
+impl Trading {
     /// Quotes and posts a swap order.
     ///
     /// Callers that need cooperative cancellation wrap this future through

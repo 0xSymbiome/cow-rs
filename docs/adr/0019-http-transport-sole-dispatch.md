@@ -10,7 +10,7 @@
 ## Decision
 
 `HttpTransport` in `cow-sdk-core` is the sole live-dispatch surface on
-`OrderBookApi` and `SubgraphApi`. Both clients hold exactly one HTTP surface:
+`OrderbookApi` and `SubgraphApi`. Both clients hold exactly one HTTP surface:
 `Arc<dyn HttpTransport + Send + Sync>`. Every REST or GraphQL request dispatches
 through `self.transport.<get|post|put|delete>(...)`; no parallel
 `reqwest::Client` field exists on either client.

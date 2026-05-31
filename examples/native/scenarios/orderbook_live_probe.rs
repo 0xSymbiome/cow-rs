@@ -4,7 +4,7 @@ use serde_json::json;
 
 use cow_sdk::core::Redacted;
 use cow_sdk::orderbook::{ApiContext, ExternalHostPolicy};
-use cow_sdk::prelude::{CowEnv, OrderBookApi, SupportedChainId};
+use cow_sdk::prelude::{CowEnv, OrderbookApi, SupportedChainId};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -21,12 +21,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .clone()
         .unwrap_or(context.resolved_base_url()?);
     let api = if let Some(base_url) = base_url_override {
-        OrderBookApi::builder_from_context(context)
+        OrderbookApi::builder_from_context(context)
             .with_external_host_policy(ExternalHostPolicy::AllowAny)
             .base_url(base_url)
             .build()?
     } else {
-        OrderBookApi::builder_from_context(context).build()?
+        OrderbookApi::builder_from_context(context).build()?
     };
 
     let version = api.get_version().await?;

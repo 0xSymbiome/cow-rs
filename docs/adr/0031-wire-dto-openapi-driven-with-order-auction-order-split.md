@@ -77,7 +77,7 @@ orders (`SolverCompetitionOrder`). A shared `AuctionPrices`
 is consistent with this ADR's OpenAPI-driven, typed-response posture and with
 [ADR 0058](0058-typed-quote-request-response-surface.md).
 
-`OrderBookApi::get_auction` and the `Auction` response wrapper are not exposed:
+`OrderbookApi::get_auction` and the `Auction` response wrapper are not exposed:
 `/api/v1/auction` is not reachable for public clients and is treated upstream as
 a liveness probe rather than a consumer data feed. Because no public endpoint
 produces an auction snapshot, the `AuctionOrder` mirror and its auction-side

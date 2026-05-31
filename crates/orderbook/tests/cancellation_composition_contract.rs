@@ -20,9 +20,9 @@ use std::{
 use cow_sdk_core::{Amount, Cancellable, CancellationToken};
 use cow_sdk_orderbook::{
     AppDataObject, CompetitionOrderStatus, CowEnv, GetOrdersRequest, GetTradesRequest,
-    NativePriceResponse, Order, OrderBookApi, OrderCancellations, OrderCreation, OrderQuoteRequest,
-    OrderQuoteResponse, OrderQuoteSide, OrderUid, SigningScheme, SolverCompetitionResponse,
-    SupportedChainId, TotalSurplus, Trade,
+    NativePriceResponse, Order, OrderCancellations, OrderCreation, OrderQuoteRequest,
+    OrderQuoteResponse, OrderQuoteSide, OrderUid, OrderbookApi, SigningScheme,
+    SolverCompetitionResponse, SupportedChainId, TotalSurplus, Trade,
 };
 use wiremock::{
     Mock, MockServer, ResponseTemplate,
@@ -42,7 +42,7 @@ struct CancellationCase {
     method_name: &'static str,
     http_method: &'static str,
     path: fn() -> String,
-    invoke: for<'a> fn(&'a OrderBookApi) -> CaseFuture<'a>,
+    invoke: for<'a> fn(&'a OrderbookApi) -> CaseFuture<'a>,
 }
 
 const TESTED_METHODS: &[CancellationCase] = &[
@@ -334,7 +334,7 @@ fn path_latest_solver_competition() -> String {
     "/api/v2/solver_competition/latest".to_owned()
 }
 
-fn invoke_get_quote(api: &OrderBookApi) -> CaseFuture<'_> {
+fn invoke_get_quote(api: &OrderbookApi) -> CaseFuture<'_> {
     Box::pin(async move {
         let request = quote_request();
         api.get_quote(&request)
@@ -343,14 +343,14 @@ fn invoke_get_quote(api: &OrderBookApi) -> CaseFuture<'_> {
     })
 }
 
-fn invoke_send_order(api: &OrderBookApi) -> CaseFuture<'_> {
+fn invoke_send_order(api: &OrderbookApi) -> CaseFuture<'_> {
     Box::pin(async move {
         let order = order_creation();
         api.send_order(&order).await.map(|_: OrderUid| ())
     })
 }
 
-fn invoke_send_signed_order_cancellations(api: &OrderBookApi) -> CaseFuture<'_> {
+fn invoke_send_signed_order_cancellations(api: &OrderbookApi) -> CaseFuture<'_> {
     Box::pin(async move {
         let cancellation =
             OrderCancellations::new(vec![sample_order_uid()], sample_signature().to_owned());
@@ -358,11 +358,11 @@ fn invoke_send_signed_order_cancellations(api: &OrderBookApi) -> CaseFuture<'_> 
     })
 }
 
-fn invoke_get_order(api: &OrderBookApi) -> CaseFuture<'_> {
+fn invoke_get_order(api: &OrderbookApi) -> CaseFuture<'_> {
     Box::pin(async move { api.get_order(&sample_order_uid()).await.map(|_: Order| ()) })
 }
 
-fn invoke_get_order_multi_env(api: &OrderBookApi) -> CaseFuture<'_> {
+fn invoke_get_order_multi_env(api: &OrderbookApi) -> CaseFuture<'_> {
     Box::pin(async move {
         api.get_order_multi_env(&sample_order_uid())
             .await
@@ -370,14 +370,14 @@ fn invoke_get_order_multi_env(api: &OrderBookApi) -> CaseFuture<'_> {
     })
 }
 
-fn invoke_get_orders(api: &OrderBookApi) -> CaseFuture<'_> {
+fn invoke_get_orders(api: &OrderbookApi) -> CaseFuture<'_> {
     Box::pin(async move {
         let request = GetOrdersRequest::new(sample_owner());
         api.get_orders(&request).await.map(|_: Vec<Order>| ())
     })
 }
 
-fn invoke_get_tx_orders(api: &OrderBookApi) -> CaseFuture<'_> {
+fn invoke_get_tx_orders(api: &OrderbookApi) -> CaseFuture<'_> {
     Box::pin(async move {
         api.get_tx_orders(sample_tx_hash())
             .await
@@ -385,14 +385,14 @@ fn invoke_get_tx_orders(api: &OrderBookApi) -> CaseFuture<'_> {
     })
 }
 
-fn invoke_get_trades(api: &OrderBookApi) -> CaseFuture<'_> {
+fn invoke_get_trades(api: &OrderbookApi) -> CaseFuture<'_> {
     Box::pin(async move {
         let request = GetTradesRequest::by_owner(sample_owner());
         api.get_trades(&request).await.map(|_: Vec<Trade>| ())
     })
 }
 
-fn invoke_get_order_competition_status(api: &OrderBookApi) -> CaseFuture<'_> {
+fn invoke_get_order_competition_status(api: &OrderbookApi) -> CaseFuture<'_> {
     Box::pin(async move {
         api.get_order_competition_status(&sample_order_uid())
             .await
@@ -400,7 +400,7 @@ fn invoke_get_order_competition_status(api: &OrderBookApi) -> CaseFuture<'_> {
     })
 }
 
-fn invoke_get_native_price(api: &OrderBookApi) -> CaseFuture<'_> {
+fn invoke_get_native_price(api: &OrderbookApi) -> CaseFuture<'_> {
     Box::pin(async move {
         api.get_native_price(&sample_owner())
             .await
@@ -408,7 +408,7 @@ fn invoke_get_native_price(api: &OrderBookApi) -> CaseFuture<'_> {
     })
 }
 
-fn invoke_get_total_surplus(api: &OrderBookApi) -> CaseFuture<'_> {
+fn invoke_get_total_surplus(api: &OrderbookApi) -> CaseFuture<'_> {
     Box::pin(async move {
         api.get_total_surplus(&sample_owner())
             .await
@@ -416,7 +416,7 @@ fn invoke_get_total_surplus(api: &OrderBookApi) -> CaseFuture<'_> {
     })
 }
 
-fn invoke_get_app_data(api: &OrderBookApi) -> CaseFuture<'_> {
+fn invoke_get_app_data(api: &OrderbookApi) -> CaseFuture<'_> {
     Box::pin(async move {
         api.get_app_data(&sample_app_data_hash())
             .await
@@ -424,14 +424,14 @@ fn invoke_get_app_data(api: &OrderBookApi) -> CaseFuture<'_> {
     })
 }
 
-fn invoke_upload_app_data(api: &OrderBookApi) -> CaseFuture<'_> {
+fn invoke_upload_app_data(api: &OrderbookApi) -> CaseFuture<'_> {
     Box::pin(async move {
         api.upload_app_data(&sample_upload_body_hash(), SAMPLE_UPLOAD_BODY)
             .await
     })
 }
 
-fn invoke_get_solver_competition_by_auction_id(api: &OrderBookApi) -> CaseFuture<'_> {
+fn invoke_get_solver_competition_by_auction_id(api: &OrderbookApi) -> CaseFuture<'_> {
     Box::pin(async move {
         api.get_solver_competition_by_auction_id(7)
             .await
@@ -439,7 +439,7 @@ fn invoke_get_solver_competition_by_auction_id(api: &OrderBookApi) -> CaseFuture
     })
 }
 
-fn invoke_get_solver_competition_by_tx_hash(api: &OrderBookApi) -> CaseFuture<'_> {
+fn invoke_get_solver_competition_by_tx_hash(api: &OrderbookApi) -> CaseFuture<'_> {
     Box::pin(async move {
         api.get_solver_competition_by_tx_hash(sample_tx_hash())
             .await
@@ -447,7 +447,7 @@ fn invoke_get_solver_competition_by_tx_hash(api: &OrderBookApi) -> CaseFuture<'_
     })
 }
 
-fn invoke_get_latest_solver_competition(api: &OrderBookApi) -> CaseFuture<'_> {
+fn invoke_get_latest_solver_competition(api: &OrderbookApi) -> CaseFuture<'_> {
     Box::pin(async move {
         api.get_latest_solver_competition()
             .await

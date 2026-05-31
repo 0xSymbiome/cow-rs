@@ -173,7 +173,7 @@ convenience step, which constructs a `ReqwestTransport` around the
 supplied client and preserves any custom keep-alive, timeout, or TLS
 settings verbatim:
 
-- [`cow_sdk_orderbook::OrderBookApi::builder`] exposes `.client(shared)`.
+- [`cow_sdk_orderbook::OrderbookApi::builder`] exposes `.client(shared)`.
 - [`cow_sdk_subgraph::SubgraphApi::builder`] exposes the matching
   `.client(shared)` step on the subgraph gateway surface.
 
@@ -203,7 +203,7 @@ requests inherit the latency.
 use std::time::Duration;
 
 use cow_sdk_core::SupportedChainId;
-use cow_sdk_orderbook::{CowEnv, OrderBookApi};
+use cow_sdk_orderbook::{CowEnv, OrderbookApi};
 use cow_sdk_subgraph::SubgraphApi;
 use cow_sdk_transport_policy::DEFAULT_ORDERBOOK_USER_AGENT;
 
@@ -234,8 +234,8 @@ fn assemble_sdk_clients(
     chain: SupportedChainId,
     environment: CowEnv,
     subgraph_api_key: impl Into<String>,
-) -> (OrderBookApi, SubgraphApi) {
-    let orderbook = OrderBookApi::builder()
+) -> (OrderbookApi, SubgraphApi) {
+    let orderbook = OrderbookApi::builder()
         .chain(chain)
         .environment(environment)
         .client(shared.clone())

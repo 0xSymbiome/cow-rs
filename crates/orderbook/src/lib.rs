@@ -89,7 +89,7 @@ use serde::{Deserialize, Serialize};
 
 /// High-level orderbook client with chain/env-aware endpoint resolution.
 pub mod api;
-/// Typestate-checked construction surface for [`OrderBookApi`].
+/// Typestate-checked construction surface for [`OrderbookApi`].
 pub mod builder;
 /// Typed orderbook client errors.
 pub mod error;
@@ -225,7 +225,7 @@ pub trait OrderbookClient: Send + Sync {
 
 #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 #[cfg_attr(not(target_arch = "wasm32"), async_trait)]
-impl OrderbookClient for api::OrderBookApi {
+impl OrderbookClient for api::OrderbookApi {
     fn context(&self) -> &CoreApiContext {
         self.context()
     }
@@ -275,13 +275,13 @@ impl OrderbookClient for api::OrderBookApi {
     }
 }
 
-pub use api::OrderBookApi;
+pub use api::OrderbookApi;
 pub use builder::{
-    ChainIdSet, ChainIdUnset, EnvSet, EnvUnset, OrderBookApiBuilder, TransportSet, TransportUnset,
+    ChainIdSet, ChainIdUnset, EnvSet, EnvUnset, OrderbookApiBuilder, TransportSet, TransportUnset,
 };
 pub use error::{HashMismatchStage, OrderbookError};
 pub use rejection::{OrderbookRejection, parse_rejection};
-pub use request::{HttpMethod, OrderBookApiError, ResponseBody};
+pub use request::{HttpMethod, OrderbookApiError, ResponseBody};
 pub use transform::{calculate_total_fee, transform_order, transform_orders};
 pub use types::{
     Address, Amount, ApiBaseUrls, ApiContext, ApiContextOverride, AppDataHash, AppDataObject,

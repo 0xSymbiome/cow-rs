@@ -15,11 +15,11 @@ root exports:
 - AppCodeError
 - BrowserWalletSigner (prelude)
 - ErrorClass
-- HelperOnlySdk
+- TradingHelpers
 - HttpTransport
 - InMemoryEip1271VerificationCache
 - NoopEip1271VerificationCache
-- OrderBookApi
+- OrderbookApi
 - OrderUid
 - RegistryError
 - SdkError
@@ -27,8 +27,8 @@ root exports:
 - SupportedChainId
 - TradeParameters
 - TraderParameters
-- TradingSdk
-- TradingSdkBuilder
-- TradingSdkOptions
+- Trading
+- TradingBuilder
+- TradingOptions
 - TransportError
 - TransportErrorClass

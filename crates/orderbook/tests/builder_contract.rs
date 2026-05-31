@@ -1,4 +1,4 @@
-//! Public-surface contract assertions for [`OrderBookApiBuilder`].
+//! Public-surface contract assertions for [`OrderbookApiBuilder`].
 //!
 //! Every test exercises one observable shape of the typestate-checked
 //! construction path. Inline `compile_fail` doctests pin the typestate
@@ -6,7 +6,7 @@
 //! transport are supplied is a compile-time error. Runtime tests cover the
 //! happy-path build variants and assert that transport injection,
 //! per-environment base-URL overrides, partner API keys, and shared
-//! `reqwest::Client` reuse all flow through the resulting `OrderBookApi`.
+//! `reqwest::Client` reuse all flow through the resulting `OrderbookApi`.
 
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -16,7 +16,7 @@ use cow_sdk_core::{
     ApiContext, CowEnv, HttpTransport, REDACTED_PLACEHOLDER, RedactedUrlMap, ReqwestTransport,
     ReqwestTransportConfig, SupportedChainId, TransportError,
 };
-use cow_sdk_orderbook::{EnvBaseUrlOverrides, ExternalHostPolicy, OrderBookApi};
+use cow_sdk_orderbook::{EnvBaseUrlOverrides, ExternalHostPolicy, OrderbookApi};
 use cow_sdk_transport_policy::{RetryPolicy, TransportPolicy};
 
 #[derive(Debug, Default)]
@@ -63,7 +63,7 @@ impl HttpTransport for StubTransport {
 
 #[test]
 fn build_with_required_inputs_yields_a_typed_api() {
-    let api = OrderBookApi::builder()
+    let api = OrderbookApi::builder()
         .chain(SupportedChainId::Mainnet)
         .environment(CowEnv::Prod)
         .transport(Arc::new(StubTransport))
@@ -76,7 +76,7 @@ fn build_with_required_inputs_yields_a_typed_api() {
 
 #[test]
 fn native_default_build_path_supplies_a_reqwest_transport() {
-    let api = OrderBookApi::builder()
+    let api = OrderbookApi::builder()
         .chain(SupportedChainId::Sepolia)
         .environment(CowEnv::Staging)
         .build()
@@ -97,7 +97,7 @@ fn builder_from_context_propagates_chain_environment_api_key_and_base_urls() {
         .with_api_key(cow_sdk_core::Redacted::new("partner-key".to_owned()))
         .with_base_urls(base_urls.clone());
 
-    let api = OrderBookApi::builder_from_context(context)
+    let api = OrderbookApi::builder_from_context(context)
         .with_external_host_policy(ExternalHostPolicy::Allow(vec![
             "shipped.example".to_owned(),
         ]))
@@ -124,7 +124,7 @@ fn builder_from_context_propagates_chain_environment_api_key_and_base_urls() {
 
 #[test]
 fn builder_debug_redacts_partner_api_key() {
-    let builder = OrderBookApi::builder()
+    let builder = OrderbookApi::builder()
         .chain(SupportedChainId::Mainnet)
         .environment(CowEnv::Prod)
         .api_key("partner-key");
@@ -141,7 +141,7 @@ fn builder_debug_redacts_base_url_credentials() {
         u64::from(SupportedChainId::Mainnet),
         "https://user:pass@example.test/path?apiKey=secret-token".to_owned(),
     )]);
-    let builder = OrderBookApi::builder()
+    let builder = OrderbookApi::builder()
         .chain(SupportedChainId::Mainnet)
         .environment(CowEnv::Prod)
         .base_urls(base_urls);
@@ -156,7 +156,7 @@ fn builder_debug_redacts_base_url_credentials() {
 
 #[test]
 fn builder_debug_redacts_userinfo_in_custom_base_url_overrides() {
-    let builder = OrderBookApi::builder()
+    let builder = OrderbookApi::builder()
         .chain(SupportedChainId::Mainnet)
         .environment(CowEnv::Prod)
         .base_url("https://user:pass@custom.example/mainnet?apiKey=secret");
@@ -187,7 +187,7 @@ fn env_base_url_overrides_debug_redacts_embedded_credentials() {
 fn policy_override_replaces_default_request_policy() {
     let policy =
         TransportPolicy::default().with_retry(RetryPolicy::builder().max_attempts(1).build());
-    let api = OrderBookApi::builder()
+    let api = OrderbookApi::builder()
         .chain(SupportedChainId::Mainnet)
         .environment(CowEnv::Prod)
         .transport_policy(policy)
@@ -208,7 +208,7 @@ fn explicit_transport_overrides_default_native_handle() {
         .expect("reqwest transport must build for the explicit-injection test"),
     );
 
-    let api = OrderBookApi::builder()
+    let api = OrderbookApi::builder()
         .chain(SupportedChainId::Mainnet)
         .environment(CowEnv::Prod)
         .transport(transport.clone())
@@ -315,7 +315,7 @@ impl HttpTransport for BuilderRecordingTransport {
 async fn injected_transport_observes_every_live_request_from_the_built_client() {
     let recorder = Arc::new(BuilderRecordingTransport::with_response("v1.2.3"));
     let transport: Arc<dyn HttpTransport + Send + Sync> = recorder.clone();
-    let api = OrderBookApi::builder()
+    let api = OrderbookApi::builder()
         .chain(SupportedChainId::Mainnet)
         .environment(CowEnv::Prod)
         .transport(transport.clone())
@@ -355,15 +355,15 @@ fn shared_client_override_reuses_caller_built_reqwest_client() {
         .build()
         .expect("reqwest client must build for the shared-client test");
 
-    // Two builders fed the same client must produce two `OrderBookApi`
+    // Two builders fed the same client must produce two `OrderbookApi`
     // handles whose pipelines share the underlying connection pool.
-    let _ = OrderBookApi::builder()
+    let _ = OrderbookApi::builder()
         .chain(SupportedChainId::Mainnet)
         .environment(CowEnv::Prod)
         .client(shared.clone())
         .build()
         .expect("first shared-client orderbook handle must build");
-    let _ = OrderBookApi::builder()
+    let _ = OrderbookApi::builder()
         .chain(SupportedChainId::GnosisChain)
         .environment(CowEnv::Prod)
         .client(shared)
@@ -375,10 +375,10 @@ fn shared_client_override_reuses_caller_built_reqwest_client() {
 /// missing.
 ///
 /// ```compile_fail
-/// use cow_sdk_orderbook::OrderBookApi;
+/// use cow_sdk_orderbook::OrderbookApi;
 /// use cow_sdk_core::CowEnv;
 ///
-/// let _ = OrderBookApi::builder()
+/// let _ = OrderbookApi::builder()
 ///     .environment(CowEnv::Prod)
 ///     .build();
 /// ```
@@ -389,10 +389,10 @@ fn typestate_compile_fail_no_chain_documented() {}
 /// is missing.
 ///
 /// ```compile_fail
-/// use cow_sdk_orderbook::OrderBookApi;
+/// use cow_sdk_orderbook::OrderbookApi;
 /// use cow_sdk_core::SupportedChainId;
 ///
-/// let _ = OrderBookApi::builder()
+/// let _ = OrderbookApi::builder()
 ///     .chain(SupportedChainId::Mainnet)
 ///     .build();
 /// ```
@@ -403,9 +403,9 @@ fn typestate_compile_fail_no_environment_documented() {}
 /// required chain id nor environment have been supplied.
 ///
 /// ```compile_fail
-/// use cow_sdk_orderbook::OrderBookApi;
+/// use cow_sdk_orderbook::OrderbookApi;
 ///
-/// let _ = OrderBookApi::builder().build();
+/// let _ = OrderbookApi::builder().build();
 /// ```
 #[test]
 fn typestate_compile_fail_empty_builder_documented() {}

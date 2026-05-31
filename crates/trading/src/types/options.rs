@@ -2,21 +2,21 @@ use std::{fmt, sync::Arc};
 
 use cow_sdk_orderbook::OrderbookClient;
 
-/// Options stored on [`crate::TradingSdk`] that do not belong in trader defaults.
+/// Options stored on [`crate::Trading`] that do not belong in trader defaults.
 #[derive(Clone, Default)]
-pub struct TradingSdkOptions {
+pub struct TradingOptions {
     order_book_api: Option<Arc<dyn OrderbookClient>>,
 }
 
-impl fmt::Debug for TradingSdkOptions {
+impl fmt::Debug for TradingOptions {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("TradingSdkOptions")
+        f.debug_struct("TradingOptions")
             .field("order_book_api", &self.order_book_api.is_some())
             .finish()
     }
 }
 
-impl TradingSdkOptions {
+impl TradingOptions {
     /// Creates an empty options bundle.
     #[must_use]
     pub fn new() -> Self {

@@ -91,13 +91,13 @@ Events or streaming subscriptions.
 ## The Native Default: `ReqwestTransport`
 
 On native targets, `cow-sdk-core::ReqwestTransport` is the ready-to-use
-default. `OrderBookApi::builder()` and `SubgraphApi::builder()` install
+default. `OrderbookApi::builder()` and `SubgraphApi::builder()` install
 it automatically when the caller does not supply `.transport(...)`.
 
 ```rust,ignore
-use cow_sdk::{CowEnv, OrderBookApi, SupportedChainId};
+use cow_sdk::{CowEnv, OrderbookApi, SupportedChainId};
 
-let orderbook = OrderBookApi::builder()
+let orderbook = OrderbookApi::builder()
     .chain(SupportedChainId::Mainnet)
     .environment(CowEnv::Prod)
     .build()?;
@@ -116,7 +116,7 @@ let transport: Arc<dyn HttpTransport + Send + Sync> =
 ```
 
 Multi-chain consumers reuse a single `reqwest::Client` across every
-`OrderBookApi` and `SubgraphApi` instance through the builder's
+`OrderbookApi` and `SubgraphApi` instance through the builder's
 convenience `.client(reqwest_client)` setter. This is a shortcut over
 installing a shared `ReqwestTransport`; the connection-pool reuse is
 the same.
@@ -131,13 +131,13 @@ browser consumers supply the transport explicitly:
 
 ```rust,ignore
 use std::sync::Arc;
-use cow_sdk::{CowEnv, HttpTransport, OrderBookApi, SupportedChainId};
+use cow_sdk::{CowEnv, HttpTransport, OrderbookApi, SupportedChainId};
 use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
 
 let transport: Arc<dyn HttpTransport + Send + Sync> = Arc::new(FetchTransport::new(
     &FetchTransportConfig::new("https://api.cow.fi"),
 ));
-let orderbook = OrderBookApi::builder()
+let orderbook = OrderbookApi::builder()
     .chain(SupportedChainId::Mainnet)
     .environment(CowEnv::Prod)
     .transport(transport)
@@ -362,10 +362,10 @@ Install it through the builder's `.transport(...)` setter:
 
 ```rust,ignore
 use std::sync::Arc;
-use cow_sdk::{OrderBookApi, SupportedChainId};
+use cow_sdk::{OrderbookApi, SupportedChainId};
 
 let transport: Arc<dyn cow_sdk::HttpTransport + Send + Sync> = Arc::new(fixture_transport);
-let orderbook = OrderBookApi::builder()
+let orderbook = OrderbookApi::builder()
     .chain(SupportedChainId::Mainnet)
     .environment(/* prod | staging */)
     .transport(transport)

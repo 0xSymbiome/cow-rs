@@ -7,7 +7,7 @@
 //! by [`parse_rejection`], plus the permanent `Unknown { code, message }`
 //! fallback with sanitized code and redacted message rendering, the `None`
 //! outcome on non-envelope bodies, and the
-//! `From<OrderBookApiError>` path that promotes the envelope into
+//! `From<OrderbookApiError>` path that promotes the envelope into
 //! [`OrderbookError::Rejected`] inside the SDK transport stack.
 //!
 //! Authoritative spellings are sourced from the handler files under the
@@ -26,7 +26,7 @@
 
 use cow_sdk_core::{Amount, REDACTED_PLACEHOLDER};
 use cow_sdk_orderbook::{
-    OrderBookApiError, OrderbookError, OrderbookRejection, ResponseBody, parse_rejection,
+    OrderbookApiError, OrderbookError, OrderbookRejection, ResponseBody, parse_rejection,
 };
 use http::StatusCode;
 use serde_json::json;
@@ -506,7 +506,7 @@ fn body_missing_error_type_field_returns_none() {
 
 #[test]
 fn from_api_error_promotes_recognised_body_to_rejected_variant() {
-    let api_error = OrderBookApiError::new(
+    let api_error = OrderbookApiError::new(
         400,
         "Bad Request",
         ResponseBody::Json(json!({
@@ -531,7 +531,7 @@ fn from_api_error_promotes_recognised_body_to_rejected_variant() {
 
 #[test]
 fn from_api_error_falls_back_to_api_when_body_has_no_envelope() {
-    let api_error = OrderBookApiError::new(500, "Internal Server Error", ResponseBody::Empty);
+    let api_error = OrderbookApiError::new(500, "Internal Server Error", ResponseBody::Empty);
 
     match OrderbookError::from(api_error) {
         OrderbookError::Api(envelope) => {

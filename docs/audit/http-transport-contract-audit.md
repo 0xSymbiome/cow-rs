@@ -1,9 +1,9 @@
 # HTTP Transport Contract Audit
 
 Status: Current
-Last reviewed: 2026-05-29
+Last reviewed: 2026-05-31
 Owning surface: `cow-sdk-core::HttpTransport` trait and the `ReqwestTransport` (native) and `FetchTransport` (browser) default adapters, including the sole-dispatch contract that binds every live REST or GraphQL call from `cow-sdk-orderbook` and `cow-sdk-subgraph` to the injected transport
-Refresh trigger: Trait signature, method set, or dyn-compatibility posture changes on `HttpTransport`; changes to `TransportError` or `TransportErrorClass`; changes to the `TransportError::HttpStatus` shape; changes to the URL-stripping contract on either default adapter; any change to the shared `run_with_retry` driver's backoff schedule, jitter policy, retry tracing events, `Retry-After` honor contract, the `Retry-After` IMF-fixdate civil-day arithmetic, or the `system_now` wall clock; a new shipped adapter crate that adopts the trait; any change that lets a live REST or GraphQL call from `OrderBookApi` or `SubgraphApi` bypass `self.transport`
+Refresh trigger: Trait signature, method set, or dyn-compatibility posture changes on `HttpTransport`; changes to `TransportError` or `TransportErrorClass`; changes to the `TransportError::HttpStatus` shape; changes to the URL-stripping contract on either default adapter; any change to the shared `run_with_retry` driver's backoff schedule, jitter policy, retry tracing events, `Retry-After` honor contract, the `Retry-After` IMF-fixdate civil-day arithmetic, or the `system_now` wall clock; a new shipped adapter crate that adopts the trait; any change that lets a live REST or GraphQL call from `OrderbookApi` or `SubgraphApi` bypass `self.transport`
 Related docs:
 - [ADR 0013](../adr/0013-http-transport-injection-and-typestate-builders.md)
 - [ADR 0019](../adr/0019-http-transport-sole-dispatch.md)
@@ -30,7 +30,7 @@ This audit covers:
   policy, its browser-safe wall clock, and its retry tracing event shape, as
   consumed by the orderbook, subgraph, and IPFS clients
 - the sole-dispatch invariant that every live REST or GraphQL call from
-  `OrderBookApi` or `SubgraphApi` flows through `self.transport` rather
+  `OrderbookApi` or `SubgraphApi` flows through `self.transport` rather
   than a parallel HTTP client held inside those structs
 
 It does not cover user-agent layering, the retry policy primitives and the
@@ -51,7 +51,7 @@ separate runtime contract).
 | Retry cooldowns | The shared `run_with_retry` driver honors `Retry-After` on `429` and `503` for the orderbook, subgraph, and IPFS clients, waiting for the larger of the jittered local backoff and the server cooldown, evaluated against the browser-safe `system_now` wall clock | Conforms |
 | Retry observability | The shared driver emits retry events that expose attempt index, backoff duration, and either response status or transport error class; the orderbook request methods record attempts and response status on the current span | Conforms |
 | Write-retry idempotency | The driver replays writes (`POST`/`PUT`/`DELETE`) as well as reads on a retryable failure; this is safe because every CoW write endpoint is idempotent on the server (order creation by UID, cancellation by order state, app-data by hash), so a replay cannot create a duplicate side effect | Conforms |
-| Sole-dispatch invariant | `OrderBookApi` and `SubgraphApi` hold only an `Arc<dyn HttpTransport + Send + Sync>` as their HTTP surface; every live REST and GraphQL call dispatches through that handle, and injected transports observe every request | Conforms |
+| Sole-dispatch invariant | `OrderbookApi` and `SubgraphApi` hold only an `Arc<dyn HttpTransport + Send + Sync>` as their HTTP surface; every live REST and GraphQL call dispatches through that handle, and injected transports observe every request | Conforms |
 
 ## Current Contract
 
@@ -175,7 +175,7 @@ orderbook, subgraph, and trading leaves.
 
 ### Sole-Dispatch Invariant
 
-`OrderBookApi` and `SubgraphApi` hold only an
+`OrderbookApi` and `SubgraphApi` hold only an
 `Arc<dyn HttpTransport + Send + Sync>` as their HTTP surface. Every
 public method dispatches through `self.transport.<get|post|put|delete>(...)`;
 there is no parallel `reqwest::Client` field on either struct. The

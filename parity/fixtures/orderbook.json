@@ -320,9 +320,9 @@
     {
       "id": "orderbook-request-helper-policy",
       "kind": "behavior-contract",
-      "description": "The request helper exposes a typed OrderBookApiError with response and body, default retry policy for selected transient status codes, and explicit default limiter settings.",
+      "description": "The request helper exposes a typed OrderbookApiError with response and body, default retry policy for selected transient status codes, and explicit default limiter settings.",
       "expected": {
-        "error_type": "OrderBookApiError",
+        "error_type": "OrderbookApiError",
         "retry_statuses": [
           408,
           425,

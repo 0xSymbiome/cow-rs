@@ -3,7 +3,7 @@
 //! Fuzz target for the orderbook response-envelope decoding surface.
 //!
 //! **Surface:** `cow_sdk_orderbook::request::ResponseEnvelope::empty`
-//! and `OrderBookApiError::new`. The internal `decoded_body` and
+//! and `OrderbookApiError::new`. The internal `decoded_body` and
 //! `canonical_status_text` helpers are crate-private; the target
 //! exercises them through these two public constructors, which together
 //! cover every observable side of the documented decoding contract.
@@ -27,11 +27,11 @@
 //!   status == 204; `Json` iff content-type starts with
 //!   `application/json` or is absent and the body parses as JSON;
 //!   otherwise `Text`) preserves the documented partition.
-//! * Feeding that `ResponseBody` to [`OrderBookApiError::new`] never
+//! * Feeding that `ResponseBody` to [`OrderbookApiError::new`] never
 //!   panics, never observably mutates the status, and produces a
 //!   deterministic error message string on identical input.
 
-use cow_sdk_orderbook::{OrderBookApiError, ResponseBody, request::ResponseEnvelope};
+use cow_sdk_orderbook::{OrderbookApiError, ResponseBody, request::ResponseEnvelope};
 use libfuzzer_sys::{
     arbitrary::{Arbitrary, Unstructured},
     fuzz_target,
@@ -143,25 +143,25 @@ fuzz_target!(|input: DecodedBodyInput| {
         }
     }
 
-    // OrderBookApiError::new is the public assembly path that consumes
+    // OrderbookApiError::new is the public assembly path that consumes
     // the decoded body; it must never panic and must be deterministic.
-    let error = OrderBookApiError::new(input.status, envelope.status_text.clone(), body.clone());
+    let error = OrderbookApiError::new(input.status, envelope.status_text.clone(), body.clone());
     assert_eq!(
         error.status, input.status,
-        "OrderBookApiError::new must preserve the supplied status",
+        "OrderbookApiError::new must preserve the supplied status",
     );
     let rendered = format!("{error}");
     let rendered_twin = format!(
         "{}",
-        OrderBookApiError::new(input.status, envelope.status_text.clone(), body),
+        OrderbookApiError::new(input.status, envelope.status_text.clone(), body),
     );
     assert_eq!(
         rendered, rendered_twin,
-        "OrderBookApiError Display must be deterministic on identical input",
+        "OrderbookApiError Display must be deterministic on identical input",
     );
     assert!(
         !rendered.contains('\0'),
-        "OrderBookApiError Display must not carry raw null bytes: {rendered}",
+        "OrderbookApiError Display must not carry raw null bytes: {rendered}",
     );
 });
 

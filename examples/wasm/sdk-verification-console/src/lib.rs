@@ -15,7 +15,7 @@ use cow_sdk::orderbook::{
     ApiContext, AppDataHash, GetOrdersRequest, GetTradesRequest, OrderQuoteRequest,
 };
 use cow_sdk::prelude::{
-    Address, Amount, CowEnv, OrderBookApi, OrderUid, OrderbookError, SupportedChainId, TradingSdk,
+    Address, Amount, CowEnv, OrderbookApi, OrderUid, OrderbookError, SupportedChainId, Trading,
 };
 use cow_sdk::signing::{
     ORDER_PRIMARY_TYPE, domain_separator, eip1271_signature_payload, generate_order_id,
@@ -23,7 +23,7 @@ use cow_sdk::signing::{
 };
 use cow_sdk::trading::{
     ApprovalParameters, DEFAULT_QUOTE_VALIDITY, DEFAULT_SLIPPAGE_BPS, GAS_LIMIT_DEFAULT,
-    GAS_MARGIN_PERCENT, MAX_SLIPPAGE_BPS, PartnerFee, PartnerFeePolicy, TradingSdkOptions,
+    GAS_MARGIN_PERCENT, MAX_SLIPPAGE_BPS, PartnerFee, PartnerFeePolicy, TradingOptions,
     approval_transaction, default_slippage_bps, is_ethflow_order, partner_fee_bps,
     sanitize_protocol_fee_bps, suggest_slippage_from_fee, suggest_slippage_from_volume,
     swap_params_to_limit_order_params,
@@ -64,11 +64,11 @@ pub fn capability_report_json(chain_id: u32, env: &str) -> Result<String, JsValu
     let chain_id = parse_chain_id(chain_id)?;
     let env = parse_env(env)?;
     let orderbook_client = orderbook_api(chain_id, env);
-    let sdk = TradingSdk::builder()
+    let sdk = Trading::builder()
         .with_chain_id(chain_id)
         .with_app_code("cow-rs/wasm-console")
         .with_env(env)
-        .with_options(TradingSdkOptions::default().with_orderbook_client(Arc::new(
+        .with_options(TradingOptions::default().with_orderbook_client(Arc::new(
             orderbook_client,
         )))
         .build_ready()
@@ -344,11 +344,11 @@ pub async fn trading_quote_preview_json(
     params.env = params.env.or(Some(env));
 
     let orderbook_client = orderbook_api(chain_id, env);
-    let sdk = TradingSdk::builder()
+    let sdk = Trading::builder()
         .with_chain_id(chain_id)
         .with_app_code(app_code.trim())
         .with_env(env)
-        .with_options(TradingSdkOptions::default().with_orderbook_client(Arc::new(
+        .with_options(TradingOptions::default().with_orderbook_client(Arc::new(
             orderbook_client,
         )))
         .build_ready()
@@ -589,7 +589,7 @@ pub async fn subgraph_last_hours_volume_json(
     pretty_json(&volume)
 }
 
-fn orderbook_api(chain_id: SupportedChainId, env: CowEnv) -> OrderBookApi {
+fn orderbook_api(chain_id: SupportedChainId, env: CowEnv) -> OrderbookApi {
     let context = api_context(chain_id, env);
 
     #[cfg(target_arch = "wasm32")]
@@ -602,7 +602,7 @@ fn orderbook_api(chain_id: SupportedChainId, env: CowEnv) -> OrderBookApi {
         let base_url = context.resolved_base_url().unwrap_or_default();
         let transport: Arc<dyn HttpTransport + Send + Sync> =
             Arc::new(FetchTransport::new(&FetchTransportConfig::new(base_url)));
-        OrderBookApi::builder_from_context(context)
+        OrderbookApi::builder_from_context(context)
             .transport(transport)
             .build()
             .expect("verification console orderbook client must build")
@@ -610,7 +610,7 @@ fn orderbook_api(chain_id: SupportedChainId, env: CowEnv) -> OrderBookApi {
 
     #[cfg(not(target_arch = "wasm32"))]
     {
-        OrderBookApi::builder_from_context(context)
+        OrderbookApi::builder_from_context(context)
             .build()
             .expect("verification console orderbook client must build")
     }

@@ -1,7 +1,7 @@
 # Cooperative Cancellation Contract Audit
 
 Status: Current
-Last reviewed: 2026-05-26
+Last reviewed: 2026-05-31
 Owning surface: Cross-cutting cooperative cancellation across `cow-sdk-core`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-trading`, native Alloy adapters, and `cow-sdk-wasm` callback transport
 Refresh trigger: Changes to the `Cancellable` combinator, to the `CancellationToken` re-export, to the canonical long-running public methods on client surfaces, to wasm abort/timeout bridging, or to the `From<Cancelled>` bridges on typed error aggregates
 Related docs:
@@ -20,8 +20,8 @@ This audit covers:
 - the shared `CancellationToken` re-export on `cow-sdk-core`
 - the `Cancellable` extension trait and its `WithCancellation<'t, F>`
   wrapper on `cow-sdk-core`
-- the canonical long-running public methods on `OrderBookApi`,
-  `SubgraphApi`, and `TradingSdk`, each composed with the combinator at
+- the canonical long-running public methods on `OrderbookApi`,
+  `SubgraphApi`, and `Trading`, each composed with the combinator at
   the call site
 - typed `Cancelled` variants on `CoreError`, `OrderbookError`,
   `SubgraphError`, `TradingError`, `SigningError`, `BrowserWalletError`,
@@ -42,7 +42,7 @@ policy, or future capability crates outside the published surface.
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
 | Shared token import | One typed cancellation token re-export across every public crate | Conforms |
-| Canonical public methods | Every long-running public operation on `OrderBookApi`, `SubgraphApi`, and `TradingSdk` is exposed as one canonical async method; cancellation composes through `Cancellable::cancel_with(&token)` at the call site | Conforms |
+| Canonical public methods | Every long-running public operation on `OrderbookApi`, `SubgraphApi`, and `Trading` is exposed as one canonical async method; cancellation composes through `Cancellable::cancel_with(&token)` at the call site | Conforms |
 | Typed `Cancelled` variants | Every affected error aggregate surfaces cancellation as a discrete typed variant, and each carries a `From<Cancelled>` bridge so the marker propagates with `?` across every public boundary | Conforms |
 | Trading wait helper | `WaitError::Cancelled(Cancelled)` and its `From<Cancelled>` bridge let receipt-wait helpers propagate `Cancellable::cancel_with(&token)` cancellation without erasing signer or provider error types | Conforms |
 | Native Alloy adapters | Provider, signer, and umbrella adapter error aggregates expose cancellation as typed variants and propagate the marker through the same combinator contract | Conforms |
@@ -71,8 +71,8 @@ result's `From<Cancelled>` implementation.
 
 ### Canonical Public Methods
 
-Every long-running public operation on `OrderBookApi`, `SubgraphApi`, and
-`TradingSdk` is exposed as one canonical async method that performs its
+Every long-running public operation on `OrderbookApi`, `SubgraphApi`, and
+`Trading` is exposed as one canonical async method that performs its
 request directly and carries the observability instrumentation for the
 operation. Callers that need cooperative cancellation wrap that future
 through the combinator at the call site.

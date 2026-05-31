@@ -123,7 +123,7 @@ contains the URL scheme, host, credentials, query string, or fragment.
 
 ### `cow-sdk-orderbook`
 
-Every public async method on `OrderBookApi` emits one span. Spans carry
+Every public async method on `OrderbookApi` emits one span. Spans carry
 `chain`, `env`, `endpoint`, and `method`; retry-bearing spans populate
 `attempts` and `status`, and `quote_id`, `order_uid`, and `owner` are added
 where the request or response exposes them. When the `tracing` feature is
@@ -161,7 +161,7 @@ protocol `env` axis.
 
 ### `cow-sdk-trading`
 
-Every public async method on `TradingSdk` plus the module-level async
+Every public async method on `Trading` plus the module-level async
 helpers emit one span each. Spans carry `chain`, `env`, and `endpoint`;
 `order_uid` is added on order-bound helpers. The EIP-1271 order verifier
 also wraps its lower-level contract call in a

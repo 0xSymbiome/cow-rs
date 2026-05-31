@@ -1,5 +1,5 @@
 use cow_sdk::orderbook::{ApiContext, ExternalHostPolicy, OrderbookError};
-use cow_sdk::prelude::{CowEnv, OrderBookApi, OrderUid, SupportedChainId};
+use cow_sdk::prelude::{CowEnv, OrderbookApi, OrderUid, SupportedChainId};
 use cow_sdk::trading::OrderbookClient;
 use cow_sdk_examples_native::support::{
     MESSAGE_SIGNATURE, MockOrderbook, TYPED_SIGNATURE, orderbook_version_response,
@@ -48,7 +48,7 @@ async fn version_fixture_is_plain_text() {
         .mount(&server)
         .await;
 
-    let api = OrderBookApi::builder_from_context(ApiContext::new(
+    let api = OrderbookApi::builder_from_context(ApiContext::new(
         SupportedChainId::Sepolia,
         CowEnv::Prod,
     ))

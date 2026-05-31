@@ -30,9 +30,9 @@ see the workspace
 guide for that wiring.
 
 ```rust
-use cow_sdk::prelude::{SupportedChainId, TradingSdk};
+use cow_sdk::prelude::{SupportedChainId, Trading};
 
-let _sdk = TradingSdk::builder()
+let _sdk = Trading::builder()
     .with_chain_id(SupportedChainId::Sepolia)
     .with_app_code("your-app-code")
     .build_ready()
@@ -40,12 +40,12 @@ let _sdk = TradingSdk::builder()
 ```
 
 For allowance, approval, pre-sign, or on-chain cancellation helpers that do
-not need quote, order lookup, or submission flows, build a `HelperOnlySdk`:
+not need quote, order lookup, or submission flows, build a `TradingHelpers`:
 
 ```rust
-use cow_sdk::prelude::{SupportedChainId, TradingSdk};
+use cow_sdk::prelude::{SupportedChainId, Trading};
 
-let _sdk = TradingSdk::builder()
+let _sdk = Trading::builder()
     .with_chain_id(SupportedChainId::Sepolia)
     .build_helper_only()
     .unwrap();

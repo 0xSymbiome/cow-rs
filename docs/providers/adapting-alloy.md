@@ -17,7 +17,7 @@ free of transport plumbing.
 | --- | --- |
 | Read-only chain RPC through `Provider` | `cow-sdk-alloy-provider` or `cow-sdk` feature `alloy-provider` |
 | Local private-key signing through `Signer` | `cow-sdk-alloy-signer` or `cow-sdk` feature `alloy-signer` |
-| Composed provider plus signer for `TradingSdk` async helpers | `cow-sdk-alloy` or `cow-sdk` feature `alloy` |
+| Composed provider plus signer for `Trading` async helpers | `cow-sdk-alloy` or `cow-sdk` feature `alloy` |
 
 The default `cow-sdk` facade remains provider-neutral. Native Alloy support is
 explicitly enabled by feature or direct crate dependency and is not available
@@ -121,14 +121,14 @@ being coerced into success.
 
 ## Trading Integration
 
-The async helper paths on `TradingSdk` accept the umbrella through the core
+The async helper paths on `Trading` accept the umbrella through the core
 traits. Typical uses include allowance reads, approval submission, pre-sign
 transaction construction, and on-chain cancellation.
 
 ```rust,no_run
 use cow_sdk_alloy::AlloyClient;
 use cow_sdk_core::SupportedChainId;
-use cow_sdk_trading::TradingSdk;
+use cow_sdk_trading::Trading;
 
 # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 let client = AlloyClient::builder()
@@ -138,7 +138,7 @@ let client = AlloyClient::builder()
     .build_checked()
     .await?;
 
-let sdk = TradingSdk::builder()
+let sdk = Trading::builder()
     .with_chain_id(SupportedChainId::Sepolia)
     .build_helper_only()?;
 

@@ -1,6 +1,6 @@
 use cow_sdk_core::{Address, OrderUid};
 use cow_sdk_orderbook::{
-    GetOrdersRequest, GetTradesRequest, OrderBookApi, OrderCancellations, OrderCreation,
+    GetOrdersRequest, GetTradesRequest, OrderCancellations, OrderCreation, OrderbookApi,
 };
 use cow_sdk_pure_helpers as pure;
 use cow_sdk_transport_policy::TransportPolicy;
@@ -41,7 +41,7 @@ extern "C" {
 /// resources through the facade `dispose()` method.
 #[wasm_bindgen]
 pub struct OrderBookClient {
-    inner: OrderBookApi,
+    inner: OrderbookApi,
     _callback_guard: crate::exports::registry::FetchCallbackGuard,
 }
 
@@ -342,11 +342,11 @@ pub(crate) fn build_orderbook(
     transport: std::sync::Arc<dyn cow_sdk_core::HttpTransport + Send + Sync>,
     transport_policy: TransportPolicy,
     api_key: Option<String>,
-) -> Result<OrderBookApi, JsValue> {
+) -> Result<OrderbookApi, JsValue> {
     let chain = parse_chain(chain_id)?;
     let env = pure::chains::env_from_str(env.as_deref())
         .map_err(|error| WasmError::from(error).into_js())?;
-    let mut builder = OrderBookApi::builder()
+    let mut builder = OrderbookApi::builder()
         .chain(chain)
         .environment(env)
         .transport(transport)
@@ -359,7 +359,7 @@ pub(crate) fn build_orderbook(
         .map_err(|error| WasmError::from(error).into_js())
 }
 
-pub(crate) fn orderbook_for_scope(inner: &OrderBookApi, scope: &ClientCallScope) -> OrderBookApi {
+pub(crate) fn orderbook_for_scope(inner: &OrderbookApi, scope: &ClientCallScope) -> OrderbookApi {
     inner
         .clone()
         .with_transport_policy(transport_policy_with_timeout(
@@ -369,7 +369,7 @@ pub(crate) fn orderbook_for_scope(inner: &OrderBookApi, scope: &ClientCallScope)
 }
 
 async fn orderbook_get_quote(
-    inner: &OrderBookApi,
+    inner: &OrderbookApi,
     request: OrderQuoteRequestInput,
 ) -> Result<JsValue, JsValue> {
     let request = from_json_value("quote", request.into_value()?)?;
@@ -381,7 +381,7 @@ async fn orderbook_get_quote(
 }
 
 async fn orderbook_send_order(
-    inner: &OrderBookApi,
+    inner: &OrderbookApi,
     signed: SignedOrderDto,
 ) -> Result<JsValue, JsValue> {
     let request = order_creation_from_signed(signed)?;
@@ -394,7 +394,7 @@ async fn orderbook_send_order(
 }
 
 async fn orderbook_send_order_creation(
-    inner: &OrderBookApi,
+    inner: &OrderbookApi,
     input: OrderCreationInput,
 ) -> Result<JsValue, JsValue> {
     let request = from_json_value("order", input.into_value()?)?;
@@ -406,7 +406,7 @@ async fn orderbook_send_order_creation(
     to_js_value(&WasmEnvelope::v1(uid))
 }
 
-async fn orderbook_get_order(inner: &OrderBookApi, order_uid: String) -> Result<JsValue, JsValue> {
+async fn orderbook_get_order(inner: &OrderbookApi, order_uid: String) -> Result<JsValue, JsValue> {
     let order_uid = parse_order_uid(order_uid)?;
     let order = inner
         .get_order(&order_uid)
@@ -416,7 +416,7 @@ async fn orderbook_get_order(inner: &OrderBookApi, order_uid: String) -> Result<
 }
 
 async fn orderbook_get_trades(
-    inner: &OrderBookApi,
+    inner: &OrderbookApi,
     query: TradesQueryInput,
 ) -> Result<JsValue, JsValue> {
     let mut request = match (query.owner, query.order_uid) {
@@ -444,7 +444,7 @@ async fn orderbook_get_trades(
 }
 
 async fn orderbook_get_orders_by_owner(
-    inner: &OrderBookApi,
+    inner: &OrderbookApi,
     owner: String,
     pagination: Option<PaginationOptions>,
 ) -> Result<JsValue, JsValue> {
@@ -466,7 +466,7 @@ async fn orderbook_get_orders_by_owner(
 }
 
 async fn orderbook_get_native_price(
-    inner: &OrderBookApi,
+    inner: &OrderbookApi,
     token: String,
 ) -> Result<JsValue, JsValue> {
     let token = parse_address("token", token)?;
@@ -478,7 +478,7 @@ async fn orderbook_get_native_price(
 }
 
 async fn orderbook_cancel_orders(
-    inner: &OrderBookApi,
+    inner: &OrderbookApi,
     signed: SignedCancellationsInput,
 ) -> Result<JsValue, JsValue> {
     let order_uids = signed

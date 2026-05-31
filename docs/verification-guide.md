@@ -79,7 +79,7 @@ That surface is responsible for preserving reviewed balance semantics across
 quote-derived and direct order construction, locking the quote-amounts projection that derives the signable order from a `/quote` response with a parity regression test, retrying order-id collisions
 without reusing salts, falling back from an unset or zero receiver to the
 effective owner address, enforcing one injected-orderbook validation contract
-across all `TradingSdk` builder terminals, separating ready-state construction
+across all `Trading` builder terminals, separating ready-state construction
 from helper-only setup, and rejecting recoverable-signature owner or signer
 mismatch before submission. User-facing partner-fee policy also remains typed
 here until the explicit app-data metadata translation boundary.

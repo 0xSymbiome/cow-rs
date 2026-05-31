@@ -62,7 +62,7 @@ and [cow-sdk-wasm](../crates/wasm/README.md).
   [ADR 0038](adr/0038-transaction-lifecycle-types.md).
 - How do I plug in a custom HTTP transport? Every `HttpTransport` impl
   installs through the builder's `.transport(...)` setter on both
-  `OrderBookApi` and `SubgraphApi`. Native consumers get
+  `OrderbookApi` and `SubgraphApi`. Native consumers get
   `ReqwestTransport` by default; browser consumers install
   `FetchTransport` from `cow-sdk-transport-wasm`. See
   [Transport](transport.md) for the full seam.

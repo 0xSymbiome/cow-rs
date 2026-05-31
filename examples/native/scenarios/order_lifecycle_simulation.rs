@@ -2,8 +2,8 @@ use std::{error::Error, sync::Arc};
 
 use serde_json::json;
 
-use cow_sdk::prelude::{SupportedChainId, TradingSdk};
-use cow_sdk::trading::{OrderTraderParameters, TradingSdkOptions};
+use cow_sdk::prelude::{SupportedChainId, Trading};
+use cow_sdk::trading::{OrderTraderParameters, TradingOptions};
 
 use cow_sdk_examples_native::support::{
     MockOrderbook, MockSigner, sample_open_order, sample_order_uid, sample_owner,
@@ -15,10 +15,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let orderbook = MockOrderbook::new(SupportedChainId::Sepolia, sample_quote_response());
     orderbook.push_order(sample_open_order());
     let signer = MockSigner::default();
-    let sdk = TradingSdk::builder()
+    let sdk = Trading::builder()
         .with_chain_id(SupportedChainId::Sepolia)
         .with_app_code("cow-rs-order-lifecycle")
-        .with_options(TradingSdkOptions::new().with_orderbook_client(Arc::new(orderbook.clone())))
+        .with_options(TradingOptions::new().with_orderbook_client(Arc::new(orderbook.clone())))
         .build_ready()?;
 
     let params = OrderTraderParameters::new(sample_order_uid());
@@ -28,7 +28,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let state = orderbook.state();
 
     let report = json!({
-        "surface": "cow-sdk::TradingSdk::order_lifecycle",
+        "surface": "cow-sdk::Trading::order_lifecycle",
         "mode": "simulated-transport",
         "order": {
             "uid": order.uid.to_hex_string(),
