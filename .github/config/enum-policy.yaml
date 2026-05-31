@@ -282,6 +282,12 @@ enums:
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: Services can add new orderbook rejection tags; Unknown preserves forward compatibility.
+  - name: OrderbookRejectionCategory
+    file: crates/orderbook/src/rejection.rs
+    line: 343
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: SDK-owned coarse partition over OrderbookRejection; non_exhaustive keeps new categories additive.
   - name: OrderbookError
     file: crates/orderbook/src/error.rs
     line: 12

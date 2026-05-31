@@ -1367,6 +1367,7 @@ dependencies = [
  "cow-sdk-subgraph",
  "cow-sdk-trading",
  "cow-sdk-transport-policy",
+ "cow-sdk-transport-wasm",
  "cow-sdk-wasm",
  "num-bigint",
  "serde",

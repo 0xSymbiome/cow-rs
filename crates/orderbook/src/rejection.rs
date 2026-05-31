@@ -328,6 +328,103 @@ pub enum OrderbookRejection {
     },
 }
 
+/// Coarse, action-oriented partition over [`OrderbookRejection`].
+///
+/// [`OrderbookRejection::category`] returns this for callers that only need
+/// to decide *what to do* about a rejection — fix the request, fund the
+/// wallet, re-quote, stop, wait and retry, or escalate — without matching
+/// every typed wire tag. It is an additive accessor: the full
+/// [`OrderbookRejection`] taxonomy is unchanged, and this partition is
+/// `#[non_exhaustive]` so a new category can be introduced without a breaking
+/// change. The category carries no message or code, so it never re-exposes a
+/// redacted rejection payload.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum OrderbookRejectionCategory {
+    /// Refused on policy or permission grounds; not fixable by editing the order.
+    Authorization,
+    /// Sell-side balance or allowance is insufficient; fund or approve, then resubmit unchanged.
+    InsufficientFunds,
+    /// The request is malformed or violates a validation rule; fix the parameters and rebuild.
+    InvalidOrder,
+    /// The referenced quote or order does not exist.
+    NotFound,
+    /// The order's lifecycle state conflicts with the request and it cannot be retried as is.
+    Conflict,
+    /// No solver, route, or liquidity can currently fill the trade; the condition may clear later.
+    Unfulfillable,
+    /// An upstream server-side fault.
+    Server,
+    /// A wire tag the SDK does not yet model, preserved for forward compatibility.
+    Unknown,
+}
+
+impl OrderbookRejection {
+    /// Returns the coarse [`OrderbookRejectionCategory`] for this rejection.
+    ///
+    /// The category names the consumer action a rejection calls for, so a
+    /// caller that only needs coarse handling avoids matching every typed
+    /// variant. The mapping is exhaustive over the typed tags with no
+    /// wildcard arm, so a future wire variant must be assigned a category at
+    /// the source and cannot be silently misclassified.
+    #[must_use]
+    pub const fn category(&self) -> OrderbookRejectionCategory {
+        match self {
+            Self::Forbidden => OrderbookRejectionCategory::Authorization,
+            Self::InsufficientBalance | Self::InsufficientAllowance => {
+                OrderbookRejectionCategory::InsufficientFunds
+            }
+            Self::QuoteNotFound | Self::OrderNotFound | Self::NotFound { .. } => {
+                OrderbookRejectionCategory::NotFound
+            }
+            Self::DuplicatedOrder
+            | Self::OldOrderActivelyBidOn
+            | Self::AlreadyCancelled
+            | Self::OrderFullyExecuted
+            | Self::OrderExpired
+            | Self::OnChainOrder => OrderbookRejectionCategory::Conflict,
+            Self::NoLiquidity
+            | Self::InsufficientLiquidity
+            | Self::TradingOutsideAllowedWindow
+            | Self::TokenTemporarilySuspended
+            | Self::CustomSolverError => OrderbookRejectionCategory::Unfulfillable,
+            Self::InternalServerError | Self::MetadataSerializationFailed => {
+                OrderbookRejectionCategory::Server
+            }
+            Self::Unknown { .. } => OrderbookRejectionCategory::Unknown,
+            Self::QuoteNotVerified
+            | Self::MissingFrom
+            | Self::WrongOwner
+            | Self::InvalidEip1271Signature
+            | Self::InvalidSignature
+            | Self::IncompatibleSigningScheme
+            | Self::ZeroAmount
+            | Self::NonZeroFee
+            | Self::SellAmountOverflow
+            | Self::TooMuchGas
+            | Self::TooManyLimitOrders
+            | Self::TransferSimulationFailed
+            | Self::InsufficientValidTo
+            | Self::ExcessiveValidTo
+            | Self::InvalidNativeSellToken
+            | Self::SameBuyAndSellToken
+            | Self::UnsupportedToken
+            | Self::UnsupportedBuyTokenDestination
+            | Self::UnsupportedSellTokenSource
+            | Self::UnsupportedOrderType
+            | Self::AppDataInvalid { .. }
+            | Self::InvalidAppData
+            | Self::AppDataHashMismatch
+            | Self::AppDataMismatch { .. }
+            | Self::AppdataFromMismatch
+            | Self::InvalidTradeFilter
+            | Self::InvalidLimit
+            | Self::LimitOutOfBounds
+            | Self::SellAmountDoesNotCoverFee { .. } => OrderbookRejectionCategory::InvalidOrder,
+        }
+    }
+}
+
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct RejectionEnvelope {

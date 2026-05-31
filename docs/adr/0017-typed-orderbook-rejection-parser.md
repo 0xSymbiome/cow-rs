@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-21
-- Last reviewed: 2026-05-22
+- Last reviewed: 2026-05-31
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: orderbook, errors, rejections, transport, error-typing
 - Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
@@ -126,3 +126,16 @@ decimal-string wire format is preserved through the cow-owned
 fail-closed contract on the `Deserialize` boundary rejects radix-prefixed
 payloads that alloy's underlying `ruint::Uint::FromStr` would otherwise
 accept.
+
+## Amendment 2026-05-31: coarse category accessor
+
+`OrderbookRejection::category()` returns a coarse, action-oriented
+`OrderbookRejectionCategory` partition (`Authorization`, `InsufficientFunds`,
+`InvalidOrder`, `NotFound`, `Conflict`, `Unfulfillable`, `Server`, `Unknown`).
+It is an **additive accessor**: the typed per-tag taxonomy and the permanent
+`Unknown` fallback are unchanged, and the partition itself is
+`#[non_exhaustive]`. The mapping is exhaustive over the typed tags with no
+wildcard arm, so a newly added wire tag must be assigned a category at the
+source rather than being silently misclassified. The category carries no `code`
+or `message`, so it never re-exposes a redacted rejection payload and is safe to
+log or partition telemetry on directly.

@@ -14,6 +14,24 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Added
 
+- `cow_sdk::ErrorClass::RateLimited` classifies an orderbook response that
+  signalled HTTP 429 after the transport layer's retry budget was exhausted, so
+  observers can distinguish an outlasting throttle from a generic remote
+  response instead of bucketing both as `ErrorClass::Remote`. The transport
+  layer already retries 429s with `Retry-After` honoring, so this class is a
+  telemetry signal rather than a control-flow change.
+- `cow_sdk_orderbook::OrderbookRejection::category()` returns a coarse,
+  action-oriented `OrderbookRejectionCategory` (authorization, insufficient
+  funds, invalid order, not found, conflict, unfulfillable, server, or unknown).
+  The full typed rejection taxonomy is unchanged; the accessor lets callers
+  branch on the action a rejection calls for without matching every wire tag,
+  and the category carries no message so it never re-exposes a redacted payload.
+  Governed by [ADR 0017](docs/adr/0017-typed-orderbook-rejection-parser.md).
+- On `wasm32` targets the `cow-sdk` facade re-exports the browser
+  `FetchTransport` and `FetchTransportConfig`, mirroring the native
+  `ReqwestTransport` re-export, and exposes `cow_sdk::wasm::pure_helpers` on both
+  targets so the host-safe helper path resolves the same way regardless of
+  build target.
 - `cow_sdk_subgraph::SubgraphError::TransportConfiguration` is an additive
   (`#[non_exhaustive]`) variant carrying the transport classification and a
   `Redacted<String>` detail. It is returned by the native default-transport
@@ -169,6 +187,10 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- `cow_sdk::prelude` no longer re-exports `AppCodeError`; reach it through
+  `cow_sdk::core::AppCodeError`. The prelude keeps the `AppCode` value type and
+  stays focused on the common quote, sign, post, and error-handling workflow
+  rather than carrying leaf validation errors.
 - The `cow_sdk_orderbook::OrderbookApiBuilder` and
   `cow_sdk_subgraph::SubgraphApiBuilder` typestate markers now carry the value
   they prove is present (chain id, environment or API key, and transport), so
@@ -354,6 +376,8 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Removed
 
+- Removed the unused `cow_sdk_core::TradeModel` alias for `Trade`; it had no
+  consumers, so use `cow_sdk_core::Trade` directly.
 - Removed the deprecated `availableBalance` field from the
   `cow_sdk_orderbook::Order` response DTO. The orderbook OpenAPI marks it
   deprecated and documents it as unused, always `null`, and slated for removal

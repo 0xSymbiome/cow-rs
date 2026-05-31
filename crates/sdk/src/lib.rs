@@ -121,7 +121,7 @@ pub use cow_sdk_core::TransportErrorClass;
 ///
 /// [`HttpTransport`] is the async injection point downstream clients
 /// consume; [`TransportError`] is its typed failure surface. The native
-/// default implementation is [`ReqwestTransport`]; the browser default
+/// default implementation is `ReqwestTransport`; the browser default
 /// lives in `cow-sdk-transport-wasm`.
 pub use cow_sdk_core::{HttpTransport, TransportError};
 #[cfg(not(target_arch = "wasm32"))]
@@ -137,14 +137,30 @@ pub use cow_sdk_signing::InMemoryEip1271VerificationCache;
 /// [`cow_sdk_contracts::verify_eip1271_signature_cached`].
 /// [`NoopEip1271VerificationCache`] is the always-available zero-sized
 /// default for callers that do not want caching. The TTL-respecting,
-/// capacity-bounded [`InMemoryEip1271VerificationCache`] is re-exported only
+/// capacity-bounded `InMemoryEip1271VerificationCache` is re-exported only
 /// when the opt-in `in-memory-cache` feature is enabled.
 pub use cow_sdk_signing::{Eip1271VerificationCache, NoopEip1271VerificationCache};
 pub use cow_sdk_trading as trading;
+/// Browser-native HTTP transport surface — the `wasm32` sibling of the native
+/// `ReqwestTransport` default. [`FetchTransport`] is the browser default
+/// implementation of [`HttpTransport`]; compose it into typed clients as
+/// `Arc<dyn HttpTransport + Send + Sync>` exactly like the native transport.
+#[cfg(target_arch = "wasm32")]
+#[cfg_attr(docsrs, doc(cfg(target_arch = "wasm32")))]
+pub use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
 
 #[cfg(all(feature = "wasm", target_arch = "wasm32"))]
 #[cfg_attr(docsrs, doc(cfg(feature = "wasm")))]
-pub use cow_sdk_wasm as wasm;
+/// TypeScript-callable WASM surface plus the host-safe protocol helpers.
+///
+/// `pure_helpers` is reachable here on both targets so a single
+/// `cow_sdk::wasm::pure_helpers` path works whether the crate is built for
+/// the host or for `wasm32`.
+pub mod wasm {
+    /// Host-safe protocol helper modules shared with the WASM crate.
+    pub use cow_sdk_pure_helpers as pure_helpers;
+    pub use cow_sdk_wasm::*;
+}
 
 #[cfg(all(feature = "wasm", not(target_arch = "wasm32")))]
 #[cfg_attr(docsrs, doc(cfg(feature = "wasm")))]
@@ -200,6 +216,13 @@ pub enum ErrorClass {
     Transport,
     /// The remote endpoint returned a structured error response.
     Remote,
+    /// The remote endpoint signalled rate limiting (HTTP 429) and the
+    /// transport layer's retry budget was exhausted before it cleared.
+    ///
+    /// Transport retries already honor `Retry-After`, so reaching this
+    /// class means the throttle outlived the retry policy rather than a
+    /// transient spike the client absorbed.
+    RateLimited,
     /// A signing, provider, or cryptographic helper surfaced an error.
     Signing,
     /// A long-running operation was cancelled through a cooperative token.
@@ -271,6 +294,12 @@ const fn classify_app_data(error: &cow_sdk_app_data::AppDataError) -> ErrorClass
 const fn classify_orderbook(error: &cow_sdk_orderbook::OrderbookError) -> ErrorClass {
     match error {
         cow_sdk_orderbook::OrderbookError::Core(core_error) => classify_core(core_error),
+        cow_sdk_orderbook::OrderbookError::Rejected { status, .. } if status.as_u16() == 429 => {
+            ErrorClass::RateLimited
+        }
+        cow_sdk_orderbook::OrderbookError::Api(error) if error.status == 429 => {
+            ErrorClass::RateLimited
+        }
         cow_sdk_orderbook::OrderbookError::Api(_)
         | cow_sdk_orderbook::OrderbookError::Rejected { .. } => ErrorClass::Remote,
         cow_sdk_orderbook::OrderbookError::Transport { .. } => ErrorClass::Transport,
