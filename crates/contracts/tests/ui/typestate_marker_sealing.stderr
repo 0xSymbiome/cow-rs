@@ -19,8 +19,8 @@ error[E0423]: cannot initialize a tuple struct which contains private fields
 note: constructor is not visible here due to private fields
   --> $WORKSPACE/crates/orderbook/src/builder.rs
    |
-   | pub struct ChainIdSet(());
-   |                       ^^ private field
+   | pub struct ChainIdSet(SupportedChainId);
+   |                       ^^^^^^^^^^^^^^^^ private field
 
 error[E0423]: cannot initialize a tuple struct which contains private fields
   --> tests/ui/typestate_marker_sealing.rs:15:13
@@ -43,8 +43,8 @@ error[E0423]: cannot initialize a tuple struct which contains private fields
 note: constructor is not visible here due to private fields
   --> $WORKSPACE/crates/orderbook/src/builder.rs
    |
-   | pub struct EnvSet(());
-   |                   ^^ private field
+   | pub struct EnvSet(CowEnv);
+   |                   ^^^^^^ private field
 
 error[E0423]: cannot initialize a tuple struct which contains private fields
   --> tests/ui/typestate_marker_sealing.rs:17:13
@@ -67,8 +67,8 @@ error[E0423]: cannot initialize a tuple struct which contains private fields
 note: constructor is not visible here due to private fields
   --> $WORKSPACE/crates/orderbook/src/builder.rs
    |
-   | pub struct TransportSet(());
-   |                         ^^ private field
+   | pub struct TransportSet(Arc<dyn HttpTransport + Send + Sync>);
+   |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private field
 
 error[E0423]: cannot initialize a tuple struct which contains private fields
   --> tests/ui/typestate_marker_sealing.rs:20:13
@@ -91,8 +91,8 @@ error[E0423]: cannot initialize a tuple struct which contains private fields
 note: constructor is not visible here due to private fields
   --> $WORKSPACE/crates/subgraph/src/builder.rs
    |
-   | pub struct ChainIdSet(());
-   |                       ^^ private field
+   | pub struct ChainIdSet(SupportedChainId);
+   |                       ^^^^^^^^^^^^^^^^ private field
 
 error[E0423]: cannot initialize a tuple struct which contains private fields
   --> tests/ui/typestate_marker_sealing.rs:22:13
@@ -115,8 +115,8 @@ error[E0423]: cannot initialize a tuple struct which contains private fields
 note: constructor is not visible here due to private fields
   --> $WORKSPACE/crates/subgraph/src/builder.rs
    |
-   | pub struct ApiKeySet(());
-   |                      ^^ private field
+   | pub struct ApiKeySet(Redacted<String>);
+   |                      ^^^^^^^^^^^^^^^^ private field
 
 error[E0423]: cannot initialize a tuple struct which contains private fields
   --> tests/ui/typestate_marker_sealing.rs:24:13
@@ -139,5 +139,5 @@ error[E0423]: cannot initialize a tuple struct which contains private fields
 note: constructor is not visible here due to private fields
   --> $WORKSPACE/crates/subgraph/src/builder.rs
    |
-   | pub struct TransportSet(());
-   |                         ^^ private field
+   | pub struct TransportSet(Arc<dyn HttpTransport + Send + Sync>);
+   |                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ private field

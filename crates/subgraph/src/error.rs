@@ -121,6 +121,25 @@ pub enum SubgraphError {
         /// Transport-layer error details from the HTTP client.
         details: Redacted<String>,
     },
+    /// The default native transport could not be constructed from the
+    /// resolved transport policy before any request was issued.
+    ///
+    /// Surfaced only by the native default-transport build path, where the
+    /// configured user-agent failed HTTP header-value encoding while
+    /// constructing the backing
+    /// [`ReqwestTransport`](cow_sdk_core::ReqwestTransport). Distinct from
+    /// [`SubgraphError::Transport`], which carries per-request
+    /// [`SubgraphRequestErrorContext`] for failures observed once a query is
+    /// in flight; a transport-construction failure happens before any chain,
+    /// route, or document context is bound to a request, so there is no
+    /// context to attach.
+    #[error("subgraph transport configuration error ({class}): {details}")]
+    TransportConfiguration {
+        /// Classification of the underlying transport-construction failure.
+        class: TransportErrorClass,
+        /// Redacted transport-layer detail from the HTTP client builder.
+        details: Redacted<String>,
+    },
     /// Explicit service endpoint override failed host-policy validation.
     #[error(transparent)]
     HostPolicy(#[from] HostPolicyError),
@@ -241,6 +260,11 @@ impl Serialize for SubgraphError {
             } => {
                 map.serialize_entry("type", "Transport")?;
                 map.serialize_entry("context", context)?;
+                map.serialize_entry("class", &class.to_string())?;
+                map.serialize_entry("details", details)?;
+            }
+            Self::TransportConfiguration { class, details } => {
+                map.serialize_entry("type", "TransportConfiguration")?;
                 map.serialize_entry("class", &class.to_string())?;
                 map.serialize_entry("details", details)?;
             }

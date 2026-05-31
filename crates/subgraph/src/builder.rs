@@ -33,7 +33,6 @@
 //! # }
 //! ```
 
-use std::marker::PhantomData;
 use std::sync::Arc;
 
 use cow_sdk_core::{
@@ -41,7 +40,7 @@ use cow_sdk_core::{
     validate_external_service_url,
 };
 #[cfg(not(target_arch = "wasm32"))]
-use cow_sdk_core::{ReqwestTransport, ReqwestTransportConfig};
+use cow_sdk_core::{ReqwestTransport, ReqwestTransportConfig, TransportError, TransportErrorClass};
 #[cfg(not(target_arch = "wasm32"))]
 use cow_sdk_transport_policy::DEFAULT_SUBGRAPH_USER_AGENT;
 use cow_sdk_transport_policy::TransportPolicy;
@@ -54,23 +53,23 @@ use crate::error::SubgraphError;
 /// Typestate marker — chain id has not been supplied.
 #[derive(Debug, Clone, Copy)]
 pub struct ChainIdUnset(());
-/// Typestate marker — chain id has been supplied.
+/// Typestate marker carrying the supplied chain id.
 #[derive(Debug, Clone, Copy)]
-pub struct ChainIdSet(());
+pub struct ChainIdSet(SupportedChainId);
 
 /// Typestate marker — API key has not been supplied.
 #[derive(Debug, Clone, Copy)]
 pub struct ApiKeyUnset(());
-/// Typestate marker — API key has been supplied.
-#[derive(Debug, Clone, Copy)]
-pub struct ApiKeySet(());
+/// Typestate marker carrying the supplied partner Graph API key.
+#[derive(Debug, Clone)]
+pub struct ApiKeySet(Redacted<String>);
 
 /// Typestate marker — transport has not been supplied.
 #[derive(Debug, Clone, Copy)]
 pub struct TransportUnset(());
-/// Typestate marker — transport has been supplied.
-#[derive(Debug, Clone, Copy)]
-pub struct TransportSet(());
+/// Typestate marker carrying the supplied HTTP transport.
+#[derive(Debug, Clone)]
+pub struct TransportSet(Arc<dyn HttpTransport + Send + Sync>);
 
 /// Typestate-checked builder for [`SubgraphApi`].
 ///
@@ -85,13 +84,12 @@ pub struct SubgraphApiBuilder<
     ApiKeyState = ApiKeyUnset,
     TransportState = TransportUnset,
 > {
-    chain: Option<SupportedChainId>,
-    api_key: Option<Redacted<String>>,
-    transport: Option<Arc<dyn HttpTransport + Send + Sync>>,
+    chain: ChainState,
+    api_key: ApiKeyState,
+    transport: TransportState,
     transport_policy: Option<TransportPolicy>,
     base_urls: Option<SubgraphApiBaseUrls>,
     host_policy: ExternalHostPolicy,
-    _phantom: PhantomData<(ChainState, ApiKeyState, TransportState)>,
 }
 
 impl Default for SubgraphApiBuilder<ChainIdUnset, ApiKeyUnset, TransportUnset> {
@@ -103,15 +101,14 @@ impl Default for SubgraphApiBuilder<ChainIdUnset, ApiKeyUnset, TransportUnset> {
 impl SubgraphApiBuilder<ChainIdUnset, ApiKeyUnset, TransportUnset> {
     /// Creates a fresh builder with no required fields supplied.
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
-            chain: None,
-            api_key: None,
-            transport: None,
+            chain: ChainIdUnset(()),
+            api_key: ApiKeyUnset(()),
+            transport: TransportUnset(()),
             transport_policy: None,
             base_urls: None,
             host_policy: ExternalHostPolicy::Default,
-            _phantom: PhantomData,
         }
     }
 }
@@ -123,13 +120,12 @@ impl<A, T> SubgraphApiBuilder<ChainIdUnset, A, T> {
     #[must_use]
     pub fn chain(self, chain: SupportedChainId) -> SubgraphApiBuilder<ChainIdSet, A, T> {
         SubgraphApiBuilder {
-            chain: Some(chain),
+            chain: ChainIdSet(chain),
             api_key: self.api_key,
             transport: self.transport,
             transport_policy: self.transport_policy,
             base_urls: self.base_urls,
             host_policy: self.host_policy,
-            _phantom: PhantomData,
         }
     }
 }
@@ -145,12 +141,11 @@ impl<C, T> SubgraphApiBuilder<C, ApiKeyUnset, T> {
     pub fn api_key(self, api_key: impl Into<String>) -> SubgraphApiBuilder<C, ApiKeySet, T> {
         SubgraphApiBuilder {
             chain: self.chain,
-            api_key: Some(Redacted::new(api_key.into())),
+            api_key: ApiKeySet(Redacted::new(api_key.into())),
             transport: self.transport,
             transport_policy: self.transport_policy,
             base_urls: self.base_urls,
             host_policy: self.host_policy,
-            _phantom: PhantomData,
         }
     }
 }
@@ -169,11 +164,10 @@ impl<C, A> SubgraphApiBuilder<C, A, TransportUnset> {
         SubgraphApiBuilder {
             chain: self.chain,
             api_key: self.api_key,
-            transport: Some(transport),
+            transport: TransportSet(transport),
             transport_policy: self.transport_policy,
             base_urls: self.base_urls,
             host_policy: self.host_policy,
-            _phantom: PhantomData,
         }
     }
 }
@@ -232,34 +226,27 @@ impl<C, A, T> SubgraphApiBuilder<C, A, T> {
         self.base_urls = Some(base_urls.into());
         self
     }
+}
 
-    /// Finalizes the builder once a transport has been selected.
+impl<T> SubgraphApiBuilder<ChainIdSet, ApiKeySet, T> {
+    /// Finalizes the builder once a transport has been resolved.
+    ///
+    /// The chain id and API key are read directly from the data-carrying
+    /// [`ChainIdSet`] / [`ApiKeySet`] typestate markers, so finalization
+    /// performs no `Option` unwrap and contains no typestate-guard panic.
     ///
     /// # Errors
     ///
     /// Returns [`SubgraphError`] when explicit base-URL overrides fail the
     /// configured external host policy.
-    ///
-    /// # Panics
-    ///
-    /// Panics only if the typestate marker invariants are bypassed and the
-    /// chain id or API key was not supplied before finalization.
     fn finish(
         self,
         transport: Arc<dyn HttpTransport + Send + Sync>,
     ) -> Result<SubgraphApi, SubgraphError> {
         validate_subgraph_base_urls(self.base_urls.as_ref(), &self.host_policy)?;
 
-        let chain = self
-            .chain
-            // SAFETY: finish is reached only by typestate build paths that set
-            // the chain marker.
-            .expect("typestate guarantees chain id is supplied at build time");
-        let api_key = self
-            .api_key
-            // SAFETY: finish is reached only by typestate build paths that set
-            // the API-key marker.
-            .expect("typestate guarantees api key is supplied at build time");
+        let chain = self.chain.0;
+        let api_key = self.api_key.0;
         let transport_policy = self
             .transport_policy
             .unwrap_or_else(TransportPolicy::default_subgraph);
@@ -288,19 +275,8 @@ impl SubgraphApiBuilder<ChainIdSet, ApiKeySet, TransportSet> {
     ///
     /// Returns [`SubgraphError`] when explicit base-URL overrides fail the
     /// configured external host policy.
-    ///
-    /// # Panics
-    ///
-    /// Panics only if the typestate marker is bypassed and the required
-    /// transport is missing at build time.
     pub fn build(self) -> Result<SubgraphApi, SubgraphError> {
-        let transport = self
-            .transport
-            .clone()
-            // SAFETY: this impl is only available for the TransportSet
-            // typestate, so a missing transport means the marker invariant was
-            // bypassed.
-            .expect("typestate guarantees a transport is supplied at build time");
+        let transport = self.transport.0.clone();
         self.finish(transport)
     }
 }
@@ -318,14 +294,10 @@ impl SubgraphApiBuilder<ChainIdSet, ApiKeySet, TransportUnset> {
     /// # Errors
     ///
     /// Returns [`SubgraphError`] when explicit base-URL overrides fail the
-    /// configured external host policy.
-    ///
-    /// # Panics
-    ///
-    /// Panics only if the validated user-agent for the default native
-    /// [`ReqwestTransport`] cannot be encoded as an HTTP header value;
-    /// the workspace-shipped default carries a header-safe user-agent
-    /// literal so the panic is not reachable from safe code.
+    /// configured external host policy, or
+    /// [`SubgraphError::TransportConfiguration`] when the configured transport
+    /// policy yields a user-agent that cannot be encoded as an HTTP header
+    /// value while constructing the default native [`ReqwestTransport`].
     pub fn build(self) -> Result<SubgraphApi, SubgraphError> {
         let user_agent = self
             .transport_policy
@@ -347,12 +319,36 @@ impl SubgraphApiBuilder<ChainIdSet, ApiKeySet, TransportUnset> {
         if let Some(max_response_bytes) = max_response_bytes {
             config = config.with_max_response_bytes(max_response_bytes);
         }
-        let transport = ReqwestTransport::new(config)
-            // SAFETY: the default user-agent comes from a validated static
-            // literal or from an existing HttpClientPolicy.
-            .expect("default ReqwestTransport must build with the validated user-agent");
+        let transport =
+            ReqwestTransport::new(config).map_err(subgraph_transport_configuration_error)?;
         self.finish(Arc::new(transport))
     }
+}
+
+/// Maps a transport-construction failure from the default native
+/// [`ReqwestTransport`] onto the context-free
+/// [`SubgraphError::TransportConfiguration`] variant.
+///
+/// The default-transport build path runs before any request is assembled, so
+/// no per-request context is available to populate the context-carrying
+/// [`SubgraphError::Transport`] variant; the redacted transport detail is
+/// carried through unchanged so the workspace redaction posture is preserved
+/// (ADR 0025).
+#[cfg(not(target_arch = "wasm32"))]
+fn subgraph_transport_configuration_error(error: TransportError) -> SubgraphError {
+    let (class, details) = match error {
+        TransportError::Configuration { message } => (TransportErrorClass::Builder, message),
+        TransportError::Transport { class, detail } => (class, detail),
+        TransportError::HttpStatus { status, .. } => (
+            TransportErrorClass::Status,
+            Redacted::new(format!("transport returned HTTP status {status}")),
+        ),
+        _ => (
+            TransportErrorClass::Other,
+            Redacted::new("transport configuration error".to_owned()),
+        ),
+    };
+    SubgraphError::TransportConfiguration { class, details }
 }
 
 fn validate_subgraph_base_urls(
@@ -374,13 +370,14 @@ mod tests {
 
     #[test]
     fn typestate_markers_are_sealed_against_external_construction() {
-        // These constructors are visible only inside this module because the
-        // tuple field is private; external callers cannot write `Marker(())`.
+        // These constructors are visible only inside this module because each
+        // marker's field is private; external crates cannot construct them, so
+        // the typestate cannot be forged from outside the crate. The "set"
+        // markers carry their value through the same private field.
         let _ = ChainIdUnset(());
-        let _ = ChainIdSet(());
+        let _ = ChainIdSet(SupportedChainId::Mainnet);
         let _ = ApiKeyUnset(());
-        let _ = ApiKeySet(());
+        let _ = ApiKeySet(Redacted::new("partner-graph-api-key".to_owned()));
         let _ = TransportUnset(());
-        let _ = TransportSet(());
     }
 }

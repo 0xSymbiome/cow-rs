@@ -1,7 +1,7 @@
 # Subgraph Error Display Audit
 
 Status: Current
-Last reviewed: 2026-05-28
+Last reviewed: 2026-05-31
 Owning surface: `cow-sdk-subgraph`
 Refresh trigger: any new variant on `cow_sdk_subgraph::SubgraphError`, any change to the `#[error(...)]` template on an existing variant, any change to `SubgraphRequestErrorContext`'s `Redacted<T>` field set, or any change to the workspace `Redacted<T>` `Display` impl that would alter the placeholder rendering
 Related docs:
@@ -13,8 +13,9 @@ Related docs:
 This audit covers:
 
 - The `Display` rendering of every diagnostic variant on
-  `cow_sdk_subgraph::SubgraphError` (`Transport`, `HttpStatus`,
-  `Serialization`, `GraphQl`, `MissingData`, `UnsupportedNetwork`)
+  `cow_sdk_subgraph::SubgraphError` (`Transport`, `TransportConfiguration`,
+  `HttpStatus`, `Serialization`, `GraphQl`, `MissingData`,
+  `UnsupportedNetwork`)
 - The pairing rule between redacted route identity (carried under
   `Redacted<String>` in `SubgraphRequestErrorContext.api`) and the
   plaintext structural diagnostic each variant interpolates alongside it
@@ -33,12 +34,13 @@ strings are exhaustively descriptive on their own.
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
 | `Transport` Display | Pairs the typed `class` label with plaintext chain id; redacted `api` and `details` stay behind the workspace placeholder | Conforms |
+| `TransportConfiguration` Display | Context-free build-time variant: pairs the variant prose with the typed `class` label and keeps the redacted `details` behind the workspace placeholder; carries no request chain id | Conforms |
 | `HttpStatus` Display | Pairs the numeric `status` code with plaintext chain id; redacted `api` and `body` stay behind the workspace placeholder | Conforms |
 | `Serialization` Display | Pairs plaintext chain id with response-body byte count taken from the inner string length; redacted `api`, `body`, and `details` stay behind the workspace placeholder | Conforms |
 | `GraphQl` Display | Pairs plaintext chain id with the error count and the first error's first source location when present; redacted `api` and per-error `message` stay behind the workspace placeholder | Conforms |
 | `MissingData` Display | Pairs the variant tag with plaintext chain id; redacted `api` stays behind the workspace placeholder | Conforms |
 | `UnsupportedNetwork` Display | Carries plaintext chain id only; no redacted fields | Conforms |
-| `format!("{e}")` actionability | Every diagnostic variant carries at least one ASCII-digit token in its Display rendering, so the default formatting path remains useful when every `Redacted<T>` field collapses to the placeholder | Conforms |
+| `format!("{e}")` actionability | Every chain-scoped diagnostic variant carries at least one ASCII-digit token in its Display rendering, and the context-free `TransportConfiguration` carries the non-redacted typed `class` label, so the default formatting path stays useful when every `Redacted<T>` field collapses to the placeholder | Conforms |
 | `Redacted<T>` posture | No `Display` template interpolates `.as_inner()` on any redacted field, including the free-form `errors[].message` payload on the `GraphQl` variant | Conforms |
 
 ## Current Contract
@@ -59,6 +61,16 @@ alongside it as structural diagnostic.
 response body taken from `body.as_inner().len()`. `GraphQl`
 additionally interpolates `errors.len()` and, when present, the first
 GraphQL error's first source location formatted as `at line:column`.
+
+`TransportConfiguration` carries no `SubgraphRequestErrorContext`: it is
+returned by the native default-transport build path before any request is
+assembled, so no route identity or chain id exists yet. Its `Display`
+interpolates the typed `TransportErrorClass` label as the plaintext
+structural diagnostic and keeps the `details: Redacted<String>` behind the
+workspace placeholder, rendering as
+`subgraph transport configuration error (<class>): <placeholder>`. The
+typed `class` label — not a chain-id digit — is this variant's plaintext
+diagnostic.
 
 ### `GraphQl` location helper
 
@@ -91,7 +103,10 @@ acceptance set covers `UnsupportedNetwork` (chain id), `Transport`
 location), and `MissingData` (chain id). The check forbids a regression
 that drops every plaintext field into `Redacted<T>`-only territory and
 collapses the rendered output to a tautological
-`for [redacted]` shape.
+`for [redacted]` shape. The context-free `TransportConfiguration` variant
+sits outside this chain-scoped digit set: it has no request context, and
+its non-redacted typed `class` label is the plaintext token that keeps the
+rendering from collapsing to a placeholder-only string.
 
 ### Caller access pattern for upstream-authored content
 

@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-21
-- Last reviewed: 2026-05-09
+- Last reviewed: 2026-05-31
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: transport, typestate, builders, wasm, async
 - Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md), [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md)
@@ -25,7 +25,10 @@ builder API.
 
 `OrderbookApi` and `SubgraphApi` construct exclusively through their typestate
 builders. Marker types use private tuple fields so external crates cannot
-construct them, and `.build()` is reachable only from the fully-set state.
+construct them; the fully-set markers carry the value they prove is present
+(chain id, environment or API key, and transport), so `.build()` reads each
+input directly from the marker without unwrapping an `Option` or retaining a
+typestate-guard panic, and it is reachable only from the fully-set state.
 Native targets keep `.client(reqwest::Client)` as a convenience over
 `ReqwestTransport`; wasm targets must inject an explicit transport.
 

@@ -146,7 +146,7 @@ impl SubgraphApi {
     /// [`ReqwestTransport`](cow_sdk_core::ReqwestTransport) when the
     /// caller does not supply one.
     #[must_use]
-    pub fn builder() -> SubgraphApiBuilder<ChainIdUnset, ApiKeyUnset, TransportUnset> {
+    pub const fn builder() -> SubgraphApiBuilder<ChainIdUnset, ApiKeyUnset, TransportUnset> {
         SubgraphApiBuilder::new()
     }
 

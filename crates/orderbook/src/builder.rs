@@ -7,6 +7,12 @@
 //! per-environment base-URL overrides — is layered on through fluent methods
 //! that do not affect the typestate.
 //!
+//! The typestate markers carry the value they prove is present (chain id,
+//! environment, transport), so the build terminals read the configured value
+//! directly from the type-level marker instead of unwrapping an `Option`. A
+//! misconstructed builder is a compile error, and the terminals contain no
+//! typestate-guard `expect`.
+//!
 //! On native targets the builder also exposes [`OrderbookApiBuilder::build`]
 //! against the typestate where transport is unset, defaulting the transport
 //! to [`ReqwestTransport`](cow_sdk_core::ReqwestTransport) so the common
@@ -33,7 +39,6 @@
 //! # }
 //! ```
 
-use std::marker::PhantomData;
 use std::sync::Arc;
 
 use cow_sdk_core::{
@@ -55,46 +60,46 @@ use crate::types::{ApiContext, EnvBaseUrlOverrides};
 /// Typestate marker — chain id has not been supplied.
 #[derive(Debug, Clone, Copy)]
 pub struct ChainIdUnset(());
-/// Typestate marker — chain id has been supplied.
+/// Typestate marker carrying the supplied chain id.
 #[derive(Debug, Clone, Copy)]
-pub struct ChainIdSet(());
+pub struct ChainIdSet(SupportedChainId);
 
 /// Typestate marker — environment has not been supplied.
 #[derive(Debug, Clone, Copy)]
 pub struct EnvUnset(());
-/// Typestate marker — environment has been supplied.
+/// Typestate marker carrying the supplied environment.
 #[derive(Debug, Clone, Copy)]
-pub struct EnvSet(());
+pub struct EnvSet(CowEnv);
 
 /// Typestate marker — transport has not been supplied.
 #[derive(Debug, Clone, Copy)]
 pub struct TransportUnset(());
-/// Typestate marker — transport has been supplied.
-#[derive(Debug, Clone, Copy)]
-pub struct TransportSet(());
+/// Typestate marker carrying the supplied HTTP transport.
+#[derive(Debug, Clone)]
+pub struct TransportSet(Arc<dyn HttpTransport + Send + Sync>);
 
 /// Typestate-checked builder for [`OrderbookApi`].
 ///
-/// The four type parameters track which of the required inputs (chain id,
-/// environment, transport) have been supplied. [`OrderbookApiBuilder::build`]
-/// is implemented only against the typestates that satisfy the documented
-/// preconditions, so calling it with any required field still unset is a
-/// compile-time error rather than a runtime failure.
+/// The three type parameters track which of the required inputs (chain id,
+/// environment, transport) have been supplied, and the "set" markers carry the
+/// value. [`OrderbookApiBuilder::build`] is implemented only against the
+/// typestates that satisfy the documented preconditions, so calling it with
+/// any required field still unset is a compile-time error rather than a
+/// runtime failure.
 #[derive(Debug, Clone)]
 pub struct OrderbookApiBuilder<
     ChainState = ChainIdUnset,
     EnvState = EnvUnset,
     TransportState = TransportUnset,
 > {
-    chain: Option<SupportedChainId>,
-    env: Option<CowEnv>,
-    transport: Option<Arc<dyn HttpTransport + Send + Sync>>,
+    chain: ChainState,
+    env: EnvState,
+    transport: TransportState,
     transport_policy: Option<TransportPolicy>,
     api_key: Option<Redacted<String>>,
     base_urls: Option<ApiBaseUrls>,
     env_base_url_overrides: EnvBaseUrlOverrides,
     host_policy: ExternalHostPolicy,
-    _phantom: PhantomData<(ChainState, EnvState, TransportState)>,
 }
 
 impl Default for OrderbookApiBuilder<ChainIdUnset, EnvUnset, TransportUnset> {
@@ -108,15 +113,14 @@ impl OrderbookApiBuilder<ChainIdUnset, EnvUnset, TransportUnset> {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            chain: None,
-            env: None,
-            transport: None,
+            chain: ChainIdUnset(()),
+            env: EnvUnset(()),
+            transport: TransportUnset(()),
             transport_policy: None,
             api_key: None,
             base_urls: None,
             env_base_url_overrides: EnvBaseUrlOverrides::default(),
             host_policy: ExternalHostPolicy::Default,
-            _phantom: PhantomData,
         }
     }
 
@@ -143,11 +147,12 @@ impl OrderbookApiBuilder<ChainIdUnset, EnvUnset, TransportUnset> {
 impl<E, T> OrderbookApiBuilder<ChainIdUnset, E, T> {
     /// Supplies the chain id for the orderbook context.
     ///
-    /// Transitions the chain typestate from [`ChainIdUnset`] to [`ChainIdSet`].
+    /// Transitions the chain typestate from [`ChainIdUnset`] to [`ChainIdSet`],
+    /// which carries the supplied chain id.
     #[must_use]
     pub fn chain(self, chain: SupportedChainId) -> OrderbookApiBuilder<ChainIdSet, E, T> {
         OrderbookApiBuilder {
-            chain: Some(chain),
+            chain: ChainIdSet(chain),
             env: self.env,
             transport: self.transport,
             transport_policy: self.transport_policy,
@@ -155,7 +160,6 @@ impl<E, T> OrderbookApiBuilder<ChainIdUnset, E, T> {
             base_urls: self.base_urls,
             env_base_url_overrides: self.env_base_url_overrides,
             host_policy: self.host_policy,
-            _phantom: PhantomData,
         }
     }
 }
@@ -163,19 +167,19 @@ impl<E, T> OrderbookApiBuilder<ChainIdUnset, E, T> {
 impl<C, T> OrderbookApiBuilder<C, EnvUnset, T> {
     /// Supplies the deployment environment for the orderbook context.
     ///
-    /// Transitions the environment typestate from [`EnvUnset`] to [`EnvSet`].
+    /// Transitions the environment typestate from [`EnvUnset`] to [`EnvSet`],
+    /// which carries the supplied environment.
     #[must_use]
     pub fn environment(self, env: CowEnv) -> OrderbookApiBuilder<C, EnvSet, T> {
         OrderbookApiBuilder {
             chain: self.chain,
-            env: Some(env),
+            env: EnvSet(env),
             transport: self.transport,
             transport_policy: self.transport_policy,
             api_key: self.api_key,
             base_urls: self.base_urls,
             env_base_url_overrides: self.env_base_url_overrides,
             host_policy: self.host_policy,
-            _phantom: PhantomData,
         }
     }
 }
@@ -184,10 +188,10 @@ impl<C, E> OrderbookApiBuilder<C, E, TransportUnset> {
     /// Supplies the [`HttpTransport`] dispatch seam.
     ///
     /// Transitions the transport typestate from [`TransportUnset`] to
-    /// [`TransportSet`]. The transport is the runtime-neutral injection point
-    /// for native and browser HTTP backends; downstream consumers compose the
-    /// typed client around the same `Arc<dyn HttpTransport + Send + Sync>`
-    /// regardless of target.
+    /// [`TransportSet`], which carries the supplied transport. The transport is
+    /// the runtime-neutral injection point for native and browser HTTP
+    /// backends; downstream consumers compose the typed client around the same
+    /// `Arc<dyn HttpTransport + Send + Sync>` regardless of target.
     #[must_use]
     pub fn transport(
         self,
@@ -196,13 +200,12 @@ impl<C, E> OrderbookApiBuilder<C, E, TransportUnset> {
         OrderbookApiBuilder {
             chain: self.chain,
             env: self.env,
-            transport: Some(transport),
+            transport: TransportSet(transport),
             transport_policy: self.transport_policy,
             api_key: self.api_key,
             base_urls: self.base_urls,
             env_base_url_overrides: self.env_base_url_overrides,
             host_policy: self.host_policy,
-            _phantom: PhantomData,
         }
     }
 }
@@ -278,40 +281,44 @@ impl<C, E, T> OrderbookApiBuilder<C, E, T> {
             .set(env, normalize_base_url(&base_url));
         self
     }
+}
 
+impl<C, T> OrderbookApiBuilder<C, EnvSet, T> {
     /// Adds a base-URL override for the environment already supplied to the
     /// builder.
     ///
-    /// Convenience over [`OrderbookApiBuilder::env_base_url`] when the caller
-    /// has just configured the environment through
+    /// Convenience over [`OrderbookApiBuilder::env_base_url`] that reuses the
+    /// environment carried by the [`EnvSet`] typestate. The method is reachable
+    /// only after the environment has been supplied through
     /// [`OrderbookApiBuilder::environment`] or
-    /// [`OrderbookApiBuilder::from_context`] and wants to anchor the override
-    /// to the same environment.
+    /// [`OrderbookApiBuilder::from_context`], so calling it before the
+    /// environment is set is a compile error rather than a runtime panic.
     ///
-    /// # Panics
+    /// ```compile_fail
+    /// use cow_sdk_core::SupportedChainId;
+    /// use cow_sdk_orderbook::OrderbookApi;
     ///
-    /// Panics when the environment has not been supplied to the builder.
+    /// // `base_url` is gated on the `EnvSet` typestate, so reaching it before
+    /// // `.environment(...)` does not compile: the method is not in scope
+    /// // until the environment has been supplied.
+    /// let _ = OrderbookApi::builder()
+    ///     .chain(SupportedChainId::Mainnet)
+    ///     .base_url("https://api.cow.fi");
+    /// ```
     #[must_use]
     pub fn base_url(self, base_url: impl Into<String>) -> Self {
-        let env = self
-            .env
-            // SAFETY: this panic documents misuse of the convenience method;
-            // callers can avoid it by setting environment/from_context first.
-            .expect("base_url requires environment to be supplied first via `.environment(...)` or `.from_context(...)`");
+        let env = self.env.0;
         self.env_base_url(env, base_url)
     }
+}
 
-    /// Finalizes the builder once a transport has been selected.
+impl<T> OrderbookApiBuilder<ChainIdSet, EnvSet, T> {
+    /// Finalizes the builder once a transport has been resolved.
     ///
     /// # Errors
     ///
     /// Returns [`OrderbookError`] when explicit base-URL overrides fail the
     /// configured external host policy.
-    ///
-    /// # Panics
-    ///
-    /// Panics only if the typestate marker invariants are bypassed and the
-    /// chain or environment was not supplied before finalization.
     fn finish(
         self,
         transport: Arc<dyn HttpTransport + Send + Sync>,
@@ -322,16 +329,8 @@ impl<C, E, T> OrderbookApiBuilder<C, E, T> {
             &self.host_policy,
         )?;
 
-        let chain = self
-            .chain
-            // SAFETY: finish is reached only by typestate build paths that set
-            // the chain marker.
-            .expect("typestate guarantees chain id is supplied at build time");
-        let env = self
-            .env
-            // SAFETY: finish is reached only by typestate build paths that set
-            // the environment marker.
-            .expect("typestate guarantees environment is supplied at build time");
+        let chain = self.chain.0;
+        let env = self.env.0;
         let transport_policy = self
             .transport_policy
             .unwrap_or_else(TransportPolicy::default_orderbook);
@@ -361,19 +360,8 @@ impl OrderbookApiBuilder<ChainIdSet, EnvSet, TransportSet> {
     ///
     /// Returns [`OrderbookError`] when explicit base-URL overrides fail the
     /// configured external host policy.
-    ///
-    /// # Panics
-    ///
-    /// Panics only if the typestate marker is bypassed and the required
-    /// transport is missing at build time.
     pub fn build(self) -> Result<OrderbookApi, OrderbookError> {
-        let transport = self
-            .transport
-            .clone()
-            // SAFETY: this impl is only available for the TransportSet
-            // typestate, so a missing transport means the marker invariant was
-            // bypassed.
-            .expect("typestate guarantees a transport is supplied at build time");
+        let transport = self.transport.0.clone();
         self.finish(transport)
     }
 }
@@ -391,14 +379,9 @@ impl OrderbookApiBuilder<ChainIdSet, EnvSet, TransportUnset> {
     /// # Errors
     ///
     /// Returns [`OrderbookError`] when explicit base-URL overrides fail the
-    /// configured external host policy.
-    ///
-    /// # Panics
-    ///
-    /// Panics only if the validated user-agent for the default native
-    /// [`ReqwestTransport`] cannot be encoded as an HTTP header value;
-    /// the workspace-shipped default carries a header-safe user-agent
-    /// literal so the panic is not reachable from safe code.
+    /// configured external host policy, or when the configured transport policy
+    /// yields a user-agent that cannot be encoded as an HTTP header value while
+    /// constructing the default native [`ReqwestTransport`].
     pub fn build(self) -> Result<OrderbookApi, OrderbookError> {
         let user_agent = self
             .transport_policy
@@ -420,10 +403,7 @@ impl OrderbookApiBuilder<ChainIdSet, EnvSet, TransportUnset> {
         if let Some(max_response_bytes) = max_response_bytes {
             config = config.with_max_response_bytes(max_response_bytes);
         }
-        let transport = ReqwestTransport::new(config)
-            // SAFETY: the default user-agent comes from a validated static
-            // literal or from an existing HttpClientPolicy.
-            .expect("default ReqwestTransport must build with the validated user-agent");
+        let transport = ReqwestTransport::new(config)?;
         self.finish(Arc::new(transport))
     }
 }
@@ -462,13 +442,14 @@ mod tests {
 
     #[test]
     fn typestate_markers_are_sealed_against_external_construction() {
-        // These constructors are visible only inside this module because the
-        // tuple field is private; external callers cannot write `Marker(())`.
+        // These constructors are visible only inside this module because each
+        // marker's field is private; external crates cannot construct them, so
+        // the typestate cannot be forged from outside the crate. The "set"
+        // markers carry their value through the same private field.
         let _ = ChainIdUnset(());
-        let _ = ChainIdSet(());
+        let _ = ChainIdSet(SupportedChainId::Mainnet);
         let _ = EnvUnset(());
-        let _ = EnvSet(());
+        let _ = EnvSet(CowEnv::Prod);
         let _ = TransportUnset(());
-        let _ = TransportSet(());
     }
 }

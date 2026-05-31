@@ -14,6 +14,13 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Added
 
+- `cow_sdk_subgraph::SubgraphError::TransportConfiguration` is an additive
+  (`#[non_exhaustive]`) variant carrying the transport classification and a
+  `Redacted<String>` detail. It is returned by the native default-transport
+  `SubgraphApiBuilder::build` path when constructing the backing
+  `ReqwestTransport` fails before any request context exists, and is distinct
+  from `SubgraphError::Transport`, which carries per-request context for
+  failures observed once a query is in flight.
 - `cow_sdk_trading::TradingOptions::with_transport_policy` sets the request
   retry, rate-limit, and HTTP-client policy applied to the orderbook client the
   trading SDK builds on its default construction path. An injected orderbook
@@ -162,6 +169,19 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- The `cow_sdk_orderbook::OrderbookApiBuilder` and
+  `cow_sdk_subgraph::SubgraphApiBuilder` typestate markers now carry the value
+  they prove is present (chain id, environment or API key, and transport), so
+  the build terminals read each input directly from the type-level marker
+  instead of unwrapping an `Option`. The builders construct panic-free: the
+  native default-transport `build` path returns a typed error
+  (`OrderbookError::Transport` or `SubgraphError::TransportConfiguration`)
+  instead of panicking when a configured user-agent cannot be encoded as an
+  HTTP header value. `OrderbookApiBuilder::base_url` is now reachable only on
+  the environment-set typestate, so calling it before `.environment(...)` or
+  `.from_context(...)` is a compile error rather than a runtime panic. The
+  public construction API and the private-field marker seal are unchanged, so
+  no existing caller needs to migrate.
 - Renamed the orderbook client types to single-word `Orderbook` casing for Rust
   idiom consistency with the sibling `cow_sdk_orderbook::OrderbookError`,
   `OrderbookClient`, and `OrderbookRejection` types: `OrderBookApi` is now

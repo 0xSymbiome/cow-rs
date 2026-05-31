@@ -32,8 +32,9 @@ This audit covers:
 - the native Alloy provider, signer, and umbrella builders that expose
   terminal construction only after their sealed transport, key-source, and
   chain marker states are satisfied
-- the sealed marker structs that prevent direct external construction of
-  typestate witnesses
+- the sealed, data-carrying marker structs that prevent direct external
+  construction of typestate witnesses, proven by a `trybuild` compile-fail
+  witness
 - the wasm32 transport-required invariant proven by a `trybuild`
   compile-fail witness
 - the retirement of the legacy free-function constructors on
@@ -50,8 +51,9 @@ the trading-sdk runtime prerequisites audit.
 | --- | --- | --- |
 | OrderbookApi construction | `OrderbookApi::builder()` is the only production construction path; every required input is encoded as a compile-time marker | Conforms |
 | SubgraphApi construction | `SubgraphApi::builder()` is the only production construction path; every required input is encoded as a compile-time marker | Conforms |
-| Marker sealing | Public marker types use private tuple fields, so external callers cannot construct typestate witnesses directly | Conforms |
+| Marker sealing | Public marker types use private tuple fields — the `…Set` markers carry their supplied value in that private field — so external callers cannot construct typestate witnesses directly | Conforms |
 | Native convenience | Both builders carry a default-transport `.build()` impl gated on `#[cfg(not(target_arch = "wasm32"))]` that installs a `ReqwestTransport` | Conforms |
+| Panic-free terminals | Build terminals read each input from the data-carrying marker and return typed errors; no typestate-guard `expect`/`panic!` remains | Conforms |
 | Host policy | Explicit orderbook and subgraph endpoint overrides are validated at build time and fail through typed host-policy errors | Conforms |
 | wasm32 invariant | `trybuild` compile-fail coverage asserts `.build()` without `.transport(...)` does not compile on `wasm32` | Conforms |
 | Trading SDK construction | `build_ready` requires chain id plus validated `AppCode`, `build_helper_only` requires chain id only, and the terminals return distinct SDK types | Conforms |
@@ -70,14 +72,22 @@ method is implemented only on the fully-set state; attempting to
 call it before every marker is set is a compile error. The fluent
 layer additionally exposes optional setters for transport policy,
 external host policy, shared `reqwest::Client` reuse on native targets,
-and per-chain base-URL overrides. The `.build()` method returns a
-`Result` so explicit endpoint overrides can fail closed before a client
-is constructed.
+and per-chain base-URL overrides. The `.base_url(...)` convenience —
+which reuses the environment already carried by the `EnvSet` marker — is
+implemented only on the `EnvSet` state, so calling it before
+`.environment(...)` is a compile error rather than a runtime panic. The
+`.build()` method returns a `Result` so explicit endpoint overrides can
+fail closed before a client is constructed.
 
-The public marker types are tuple structs with private unit fields. The
-type names remain available in builder type signatures and diagnostics,
-but callers outside the defining module cannot construct `Marker(())`
-values directly.
+The public marker types are tuple structs with private fields. The
+`…Set` markers carry the supplied value — chain id, environment, or the
+`Arc<dyn HttpTransport + Send + Sync>` — in that private field, so the
+build terminal reads each input directly from the type-level witness
+instead of unwrapping an `Option`; the `…Unset` markers carry a private
+unit field. The type names remain available in builder type signatures
+and diagnostics, but callers outside the defining module cannot construct
+either form directly, and the build terminals therefore contain no
+typestate-guard panic.
 
 ### SubgraphApi Construction
 
@@ -105,7 +115,11 @@ pointed at an unreviewed service host.
 
 On non-`wasm32` targets, a convenience `.build()` impl is defined on the
 `(ChainSet, EnvironmentSet | ApiKeySet, TransportUnset)` state and
-installs a default `ReqwestTransport`. On `wasm32` this convenience impl
+installs a default `ReqwestTransport`. Constructing that default
+transport is fallible: a user-agent that cannot be encoded as an HTTP
+header value returns a typed error (`OrderbookError::Transport` for the
+orderbook builder, `SubgraphError::TransportConfiguration` for the
+subgraph builder) rather than panicking. On `wasm32` this convenience impl
 is absent, so a caller must invoke `.transport(...)` explicitly to
 reach `.build()`. The `trybuild` UI harness at
 `crates/subgraph/tests/ui/builder_wasm32_missing_transport.rs` captures
@@ -175,6 +189,7 @@ Primary regression coverage:
 - `crates/subgraph/tests/builder_contract.rs`
 - `crates/subgraph/tests/host_policy_contract.rs`
 - `crates/subgraph/tests/ui/builder_wasm32_missing_transport.rs`
+- `crates/contracts/tests/ui/typestate_marker_sealing.rs`
 - `crates/trading/tests/sdk_contract.rs`
 - `crates/trading/tests/app_code_contract.rs`
 - `crates/trading/tests/ui.rs`

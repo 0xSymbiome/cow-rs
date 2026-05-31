@@ -554,6 +554,10 @@ fn subgraph_errors_and_contexts_redact_serialized_request_payloads() {
             class: TransportErrorClass::Timeout,
             details: secret_payload().into(),
         },
+        SubgraphError::TransportConfiguration {
+            class: TransportErrorClass::Builder,
+            details: secret_payload().into(),
+        },
         SubgraphError::HostPolicy(HostPolicyError::HostNotAllowed {
             host: secret_payload().into(),
         }),

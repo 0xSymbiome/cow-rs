@@ -1,8 +1,8 @@
 use std::fmt;
 
 use cow_sdk_core::{
-    AppDataHash, Cancelled, CoreError, HostPolicyError, Redacted, TransportErrorClass,
-    ValidationReason,
+    AppDataHash, Cancelled, CoreError, HostPolicyError, Redacted, TransportError,
+    TransportErrorClass, ValidationReason,
 };
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
@@ -183,6 +183,26 @@ impl From<OrderbookApiError> for OrderbookError {
                 source: Box::new(value),
             },
             _ => Self::Api(Box::new(value)),
+        }
+    }
+}
+
+impl From<TransportError> for OrderbookError {
+    fn from(error: TransportError) -> Self {
+        match error {
+            TransportError::Transport { class, detail } => Self::Transport { class, detail },
+            TransportError::Configuration { message } => Self::Transport {
+                class: TransportErrorClass::Builder,
+                detail: message,
+            },
+            TransportError::HttpStatus { status, .. } => Self::Transport {
+                class: TransportErrorClass::Status,
+                detail: Redacted::new(format!("transport returned HTTP status {status}")),
+            },
+            _ => Self::Transport {
+                class: TransportErrorClass::Other,
+                detail: Redacted::new("transport error".to_owned()),
+            },
         }
     }
 }

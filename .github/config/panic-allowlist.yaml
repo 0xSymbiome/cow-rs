@@ -69,15 +69,6 @@ allowed:
   - file: crates/contracts/src/signature.rs
     item: decode_eip1271_signature_data
     reason: The slice-to-array conversion in decode_eip1271_signature_data operates on a slice whose length is guaranteed by the bytes.len() < 20 early-return guard above; the try_into-to-[u8; 20] conversion cannot fail under that guard, and the expect call documents the unreachability proof inline through a // SAFETY comment naming the guarantee.
-  - file: crates/orderbook/src/builder.rs
-    item: OrderbookApiBuilder::base_url
-    reason: The convenience method is documented as requiring environment to be set before use.
-  - file: crates/orderbook/src/builder.rs
-    item: OrderbookApiBuilder::finish
-    reason: Typestate terminal methods guarantee chain and environment markers are present before finish.
-  - file: crates/orderbook/src/builder.rs
-    item: OrderbookApiBuilder::build
-    reason: Typestate terminal methods guarantee required transport or validated default transport inputs.
   - file: crates/orderbook/src/request.rs
     item: ResponseEnvelope::json
     reason: Test-only response envelope helper serializes serde_json::Value fixtures.
@@ -90,12 +81,6 @@ allowed:
   - file: crates/signing/src/domain.rs
     item: get_domain
     reason: Canonical settlement address is guaranteed by the validated deployment registry.
-  - file: crates/subgraph/src/builder.rs
-    item: SubgraphApiBuilder::finish
-    reason: Typestate terminal methods guarantee chain and API key markers are present before finish.
-  - file: crates/subgraph/src/builder.rs
-    item: SubgraphApiBuilder::build
-    reason: Typestate terminal methods guarantee required transport or validated default transport inputs.
   - file: crates/trading/src/allowance.rs
     item: resolve_vault_relayer
     reason: Canonical vault-relayer address is guaranteed by the validated deployment registry.
