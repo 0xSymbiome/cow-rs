@@ -14,6 +14,12 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Added
 
+- `cow_sdk_trading::TradingOptions::with_transport_policy` sets the request
+  retry, rate-limit, and HTTP-client policy applied to the orderbook client the
+  trading SDK builds on its default construction path. An injected orderbook
+  client keeps its own transport policy, so the setting is consulted only when
+  the SDK builds the client itself. Governed by
+  [ADR 0041](docs/adr/0041-transport-policy-l3-layering.md).
 - `cow_sdk_orderbook::OrderCreation::from_signed` is the canonical conversion
   from a signed `cow_sdk_core::OrderData` into a submission payload: it copies
   every signed economic field verbatim, wires the order-level fee as `"0"`, and

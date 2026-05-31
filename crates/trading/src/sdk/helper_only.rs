@@ -240,10 +240,11 @@ impl TradingHelpers {
         {
             let chain_id = requested_chain.ok_or(missing_chain_error)?;
             let env = requested_env.unwrap_or(CowEnv::Prod);
-            let client = OrderbookApi::builder()
-                .chain(chain_id)
-                .environment(env)
-                .build()?;
+            let mut builder = OrderbookApi::builder().chain(chain_id).environment(env);
+            if let Some(policy) = self.options.transport_policy() {
+                builder = builder.transport_policy(policy);
+            }
+            let client = builder.build()?;
             Ok(ResolvedOrderbookBinding {
                 client: Arc::new(client),
                 chain_id,
