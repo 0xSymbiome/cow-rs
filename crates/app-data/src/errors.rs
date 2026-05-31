@@ -1,4 +1,4 @@
-use cow_sdk_core::{Cancelled, Redacted, TransportErrorClass, ValidationReason};
+use cow_sdk_core::{Cancelled, ErrorClass, Redacted, TransportErrorClass, ValidationReason};
 use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
 use thiserror::Error;
@@ -146,6 +146,28 @@ pub enum AppDataError {
 impl From<Cancelled> for AppDataError {
     fn from(_: Cancelled) -> Self {
         Self::Cancelled
+    }
+}
+
+impl AppDataError {
+    /// Returns the coarse-grained [`ErrorClass`] for this error.
+    #[must_use]
+    pub const fn class(&self) -> ErrorClass {
+        match self {
+            Self::InvalidAppDataHex
+            | Self::InvalidCid
+            | Self::InvalidSchemaVersion(_)
+            | Self::UnknownSchemaVersion(_)
+            | Self::MissingSchemaVersion
+            | Self::InvalidAppDataProvided { .. }
+            | Self::MissingIpfsCredentials
+            | Self::TooLarge { .. } => ErrorClass::Validation,
+            Self::Transport { .. } | Self::Pinning { .. } => ErrorClass::Transport,
+            Self::Cancelled => ErrorClass::Cancelled,
+            // Json, Schema, Calculation, and partner-fee / flashloan validation
+            // failures plus any future additive variants classify as internal.
+            _ => ErrorClass::Internal,
+        }
     }
 }
 

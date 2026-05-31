@@ -39,7 +39,7 @@ principles:
   - id: 5
     name: Strong Typed Public Surfaces
     primary_adr: "0011"
-    supporting_adrs: ["0005", "0015", "0016", "0017", "0018", "0021", "0052", "0053", "0059"]
+    supporting_adrs: ["0005", "0015", "0016", "0017", "0018", "0021", "0052", "0053", "0059", "0060"]
 
   - id: 6
     name: Additive Optional Ecosystems

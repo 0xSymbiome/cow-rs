@@ -14,6 +14,16 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Added
 
+- Every public error type the `cow-sdk` facade aggregates now exposes a
+  `class() -> ErrorClass` accessor (`CoreError`, `AppDataError`, `SigningError`,
+  `ContractsError`, `OrderbookError`, `TradingError`, and `BrowserWalletError`),
+  so a caller holding a bare leaf error can obtain the coarse failure class
+  without re-implementing the per-variant match. `ErrorClass` now lives in
+  `cow-sdk-core` (re-exported from `cow-sdk`, so `cow_sdk::ErrorClass` is
+  unchanged), and `SdkError::class()` delegates to the per-type accessors;
+  composite errors delegate to the wrapped error so a wrapped 429 stays
+  `ErrorClass::RateLimited`. Governed by
+  [ADR 0060](docs/adr/0060-uniform-error-classification.md).
 - `cow_sdk::ErrorClass::RateLimited` classifies an orderbook response that
   signalled HTTP 429 after the transport layer's retry budget was exhausted, so
   observers can distinguish an outlasting throttle from a generic remote
@@ -170,6 +180,11 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Fixed
 
+- `cow_sdk_trading::Trading::off_chain_cancel_order` and `on_chain_cancel_order`
+  tracing spans now record the effective chain and environment resolved from the
+  SDK's trader defaults instead of `None` when the caller supplies an
+  `OrderTraderParameters` without them, matching the quote-path spans and the
+  `chain` field contract in `docs/observability.md`.
 - `cow_sdk_orderbook::OrderQuoteRequest::with_app_data_hash` now produces the
   hash-only quote app-data wire form instead of pairing the requested hash with
   the constructor's placeholder document. `OrderQuoteRequest::new` previously

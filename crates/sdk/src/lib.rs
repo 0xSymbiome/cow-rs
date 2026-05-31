@@ -200,36 +200,12 @@ pub enum SdkError {
     BrowserWallet(#[from] cow_sdk_browser_wallet::BrowserWalletError),
 }
 
-/// Coarse-grained classification surface for [`SdkError`].
+/// Coarse-grained failure classification, re-exported from `cow-sdk-core`.
 ///
-/// Downstream telemetry layers partition failures through this class set
-/// without pattern-matching every nested variant by hand. Retry policies
-/// typically only retry [`ErrorClass::Transport`] and
-/// [`ErrorClass::Remote`]; the other classes signal caller-side or
-/// protocol-level conditions that benefit from different recovery paths.
-#[non_exhaustive]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum ErrorClass {
-    /// Caller-side input failed a client-side validation boundary.
-    Validation,
-    /// A transport-layer failure occurred before a complete response was received.
-    Transport,
-    /// The remote endpoint returned a structured error response.
-    Remote,
-    /// The remote endpoint signalled rate limiting (HTTP 429) and the
-    /// transport layer's retry budget was exhausted before it cleared.
-    ///
-    /// Transport retries already honor `Retry-After`, so reaching this
-    /// class means the throttle outlived the retry policy rather than a
-    /// transient spike the client absorbed.
-    RateLimited,
-    /// A signing, provider, or cryptographic helper surfaced an error.
-    Signing,
-    /// A long-running operation was cancelled through a cooperative token.
-    Cancelled,
-    /// An internal invariant or helper contract was violated.
-    Internal,
-}
+/// Every public error type the facade aggregates exposes a matching
+/// `class()` accessor, so the classification is consistent whether a caller
+/// holds the facade [`SdkError`] or a bare leaf error.
+pub use cow_sdk_core::ErrorClass;
 
 impl SdkError {
     /// Returns the coarse-grained class for this error.
@@ -241,14 +217,14 @@ impl SdkError {
     #[must_use]
     pub const fn class(&self) -> ErrorClass {
         match self {
-            Self::Types(error) => classify_core(error),
-            Self::Signing(error) => classify_signing(error),
-            Self::AppData(error) => classify_app_data(error),
-            Self::Contracts(error) => classify_contracts(error),
-            Self::Orderbook(error) => classify_orderbook(error),
-            Self::Trading(error) => classify_trading(error),
+            Self::Types(error) => error.class(),
+            Self::Signing(error) => error.class(),
+            Self::AppData(error) => error.class(),
+            Self::Contracts(error) => error.class(),
+            Self::Orderbook(error) => error.class(),
+            Self::Trading(error) => error.class(),
             #[cfg(feature = "browser-wallet")]
-            Self::BrowserWallet(error) => classify_browser_wallet(error),
+            Self::BrowserWallet(error) => error.class(),
         }
     }
 }
@@ -259,110 +235,5 @@ impl From<cow_sdk_core::Cancelled> for SdkError {
     }
 }
 
-const fn classify_core(error: &cow_sdk_core::CoreError) -> ErrorClass {
-    match error {
-        cow_sdk_core::CoreError::Validation(_) | cow_sdk_core::CoreError::MissingBaseUrl { .. } => {
-            ErrorClass::Validation
-        }
-        cow_sdk_core::CoreError::Cancelled => ErrorClass::Cancelled,
-        // Serialization and transport-contract failures plus any future
-        // additive variants signal invariant violations, so they are
-        // classified as internal.
-        _ => ErrorClass::Internal,
-    }
-}
-
-const fn classify_app_data(error: &cow_sdk_app_data::AppDataError) -> ErrorClass {
-    match error {
-        cow_sdk_app_data::AppDataError::InvalidAppDataHex
-        | cow_sdk_app_data::AppDataError::InvalidCid
-        | cow_sdk_app_data::AppDataError::InvalidSchemaVersion(_)
-        | cow_sdk_app_data::AppDataError::UnknownSchemaVersion(_)
-        | cow_sdk_app_data::AppDataError::MissingSchemaVersion
-        | cow_sdk_app_data::AppDataError::InvalidAppDataProvided { .. }
-        | cow_sdk_app_data::AppDataError::MissingIpfsCredentials
-        | cow_sdk_app_data::AppDataError::TooLarge { .. } => ErrorClass::Validation,
-        cow_sdk_app_data::AppDataError::Transport { .. }
-        | cow_sdk_app_data::AppDataError::Pinning { .. } => ErrorClass::Transport,
-        cow_sdk_app_data::AppDataError::Cancelled => ErrorClass::Cancelled,
-        // Json, Schema, Calculation failures plus any future additive
-        // variants signal invariant violations and classify as internal.
-        _ => ErrorClass::Internal,
-    }
-}
-
-const fn classify_orderbook(error: &cow_sdk_orderbook::OrderbookError) -> ErrorClass {
-    match error {
-        cow_sdk_orderbook::OrderbookError::Core(core_error) => classify_core(core_error),
-        cow_sdk_orderbook::OrderbookError::Rejected { status, .. } if status.as_u16() == 429 => {
-            ErrorClass::RateLimited
-        }
-        cow_sdk_orderbook::OrderbookError::Api(error) if error.status == 429 => {
-            ErrorClass::RateLimited
-        }
-        cow_sdk_orderbook::OrderbookError::Api(_)
-        | cow_sdk_orderbook::OrderbookError::Rejected { .. } => ErrorClass::Remote,
-        cow_sdk_orderbook::OrderbookError::Transport { .. } => ErrorClass::Transport,
-        cow_sdk_orderbook::OrderbookError::InvalidTradesQuery { .. }
-        | cow_sdk_orderbook::OrderbookError::InvalidQuoteRequest { .. } => ErrorClass::Validation,
-        cow_sdk_orderbook::OrderbookError::Cancelled => ErrorClass::Cancelled,
-        // Serialization and transform failures plus any future additive
-        // variants classify as internal.
-        _ => ErrorClass::Internal,
-    }
-}
-
-const fn classify_trading(error: &cow_sdk_trading::TradingError) -> ErrorClass {
-    match error {
-        cow_sdk_trading::TradingError::Core(core_error) => classify_core(core_error),
-        cow_sdk_trading::TradingError::AppData(app_data_error) => classify_app_data(app_data_error),
-        cow_sdk_trading::TradingError::Orderbook(orderbook_error) => {
-            classify_orderbook(orderbook_error)
-        }
-        cow_sdk_trading::TradingError::Signing(signing_error) => classify_signing(signing_error),
-        cow_sdk_trading::TradingError::Contracts(contracts_error) => {
-            classify_contracts(contracts_error)
-        }
-        cow_sdk_trading::TradingError::Signer { .. }
-        | cow_sdk_trading::TradingError::Provider { .. } => ErrorClass::Signing,
-        cow_sdk_trading::TradingError::Cancelled => ErrorClass::Cancelled,
-        // Every remaining variant represents a caller-side input failure
-        // (missing parameters, validity conflicts, owner mismatches, or
-        // numeric input failures) and classifies as validation. Future
-        // additive validation variants fall through the same arm.
-        _ => ErrorClass::Validation,
-    }
-}
-
-const fn classify_signing(error: &cow_sdk_signing::SigningError) -> ErrorClass {
-    match error {
-        cow_sdk_signing::SigningError::Core(core_error) => classify_core(core_error),
-        cow_sdk_signing::SigningError::Cancelled => ErrorClass::Cancelled,
-        // Contracts, Serialization, Signer, and UnsupportedSignerGeneratedScheme
-        // failures plus any future additive variants classify as signing.
-        _ => ErrorClass::Signing,
-    }
-}
-
-const fn classify_contracts(error: &cow_sdk_contracts::ContractsError) -> ErrorClass {
-    match error {
-        cow_sdk_contracts::ContractsError::Core(core_error) => classify_core(core_error),
-        cow_sdk_contracts::ContractsError::Cancelled => ErrorClass::Cancelled,
-        // Contract encoding, ABI, provider, signature, and EIP-1271 failures
-        // plus future additive variants classify as signing-edge failures.
-        _ => ErrorClass::Signing,
-    }
-}
-
-#[cfg(feature = "browser-wallet")]
-const fn classify_browser_wallet(error: &cow_sdk_browser_wallet::BrowserWalletError) -> ErrorClass {
-    match error {
-        cow_sdk_browser_wallet::BrowserWalletError::Core(core_error) => classify_core(core_error),
-        cow_sdk_browser_wallet::BrowserWalletError::Cancelled => ErrorClass::Cancelled,
-        // Every other typed wallet failure (user rejection, disconnected,
-        // wrong chain, malformed response, JS interop, serialization, or
-        // unclassified RPC payload) plus any future additive variants
-        // classify as signing because they surface from the signing edge.
-        _ => ErrorClass::Signing,
-    }
-}
+// The per-variant classification now lives on each leaf error type's
+// `class()` accessor; `SdkError::class()` above delegates to them.

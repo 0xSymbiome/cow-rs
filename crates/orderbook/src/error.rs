@@ -1,7 +1,7 @@
 use std::fmt;
 
 use cow_sdk_core::{
-    AppDataHash, Cancelled, CoreError, HostPolicyError, Redacted, TransportError,
+    AppDataHash, Cancelled, CoreError, ErrorClass, HostPolicyError, Redacted, TransportError,
     TransportErrorClass, ValidationReason,
 };
 use http::StatusCode;
@@ -210,6 +210,32 @@ impl From<TransportError> for OrderbookError {
 impl From<Cancelled> for OrderbookError {
     fn from(_: Cancelled) -> Self {
         Self::Cancelled
+    }
+}
+
+impl OrderbookError {
+    /// Returns the coarse-grained [`ErrorClass`] for this error.
+    ///
+    /// A 429 rejection that outlived the transport retry budget classifies as
+    /// [`ErrorClass::RateLimited`]; other structured non-2xx responses are
+    /// [`ErrorClass::Remote`].
+    #[must_use]
+    pub const fn class(&self) -> ErrorClass {
+        match self {
+            Self::Core(error) => error.class(),
+            Self::Rejected { status, .. } if status.as_u16() == 429 => ErrorClass::RateLimited,
+            Self::Api(error) if error.status == 429 => ErrorClass::RateLimited,
+            Self::Api(_) | Self::Rejected { .. } => ErrorClass::Remote,
+            Self::Transport { .. } => ErrorClass::Transport,
+            Self::InvalidTradesQuery { .. } | Self::InvalidQuoteRequest { .. } => {
+                ErrorClass::Validation
+            }
+            Self::Cancelled => ErrorClass::Cancelled,
+            // HostPolicy, Serialization, IncompatibleSigningScheme,
+            // InvalidTransform, and AppDataHashMismatch plus future additive
+            // variants classify as internal.
+            _ => ErrorClass::Internal,
+        }
     }
 }
 

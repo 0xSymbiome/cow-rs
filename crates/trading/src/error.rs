@@ -3,7 +3,7 @@ use cow_sdk_contracts::{ContractsError, SigningScheme};
 use std::fmt;
 
 use cow_sdk_core::{
-    AppCodeError, Cancelled, ChainId, CoreError, CowEnv, Redacted, ValidationReason,
+    AppCodeError, Cancelled, ChainId, CoreError, CowEnv, ErrorClass, Redacted, ValidationReason,
 };
 use cow_sdk_orderbook::OrderbookError;
 use cow_sdk_signing::SigningError;
@@ -173,6 +173,29 @@ pub enum TradingError {
 impl From<Cancelled> for TradingError {
     fn from(_: Cancelled) -> Self {
         Self::Cancelled
+    }
+}
+
+impl TradingError {
+    /// Returns the coarse-grained [`ErrorClass`] for this error.
+    ///
+    /// Wrapped errors delegate to the inner type's `class()` so granularity
+    /// (for example a wrapped 429 orderbook rejection) is preserved.
+    #[must_use]
+    pub const fn class(&self) -> ErrorClass {
+        match self {
+            Self::Core(error) => error.class(),
+            Self::AppData(error) => error.class(),
+            Self::Orderbook(error) => error.class(),
+            Self::Signing(error) => error.class(),
+            Self::Contracts(error) => error.class(),
+            Self::Signer { .. } | Self::Provider { .. } => ErrorClass::Signing,
+            Self::Cancelled => ErrorClass::Cancelled,
+            // AppCode, missing-parameter, validity-conflict, owner, binding,
+            // client-rejection, numeric, and input failures plus future
+            // additive variants are caller-side validation failures.
+            _ => ErrorClass::Validation,
+        }
     }
 }
 

@@ -1,14 +1,19 @@
-//! Contract for `SdkError::class()` rate-limit classification.
+//! Contract for the coarse-grained [`ErrorClass`] partition.
 //!
-//! A throttled orderbook response is retried with `Retry-After` honoring by
-//! the transport layer, so a 429 that survives to `SdkError` is an
-//! exhausted-retry throttle. `class()` reports it as `ErrorClass::RateLimited`
-//! instead of bucketing it with generic remote responses, on both the
-//! recognised-rejection (`Rejected`) and unparsed-envelope (`Api`) paths.
+//! Every public error type exposes a `class()` accessor and the facade
+//! [`SdkError::class()`] delegates to them, so the classification is identical
+//! whether a caller holds the facade error or a bare leaf error. A throttled
+//! orderbook response is retried with `Retry-After` honoring by the transport
+//! layer, so a 429 that survives is an exhausted-retry throttle and reports as
+//! [`ErrorClass::RateLimited`] on both the recognised-rejection (`Rejected`)
+//! and unparsed-envelope (`Api`) paths.
 
 use cow_sdk::{
     ErrorClass, SdkError,
+    core::{CoreError, TransportErrorClass, ValidationError},
     orderbook::{OrderbookApiError, OrderbookError, ResponseBody},
+    signing::SigningError,
+    trading::TradingError,
 };
 use serde_json::json;
 
@@ -55,5 +60,73 @@ fn non_429_remote_responses_stay_remote() {
     assert_eq!(
         SdkError::Orderbook(rejected(400, "ZeroAmount")).class(),
         ErrorClass::Remote,
+    );
+}
+
+#[test]
+fn error_class_partitions_every_bucket() {
+    // Validation — caller-side input boundaries.
+    assert_eq!(
+        CoreError::Validation(ValidationError::EmptyField { field: "appCode" }).class(),
+        ErrorClass::Validation
+    );
+    assert_eq!(TradingError::MissingOwner.class(), ErrorClass::Validation);
+
+    // Transport — failure before a complete response.
+    assert_eq!(
+        OrderbookError::Transport {
+            class: TransportErrorClass::Connect,
+            detail: "connect failed".to_owned().into(),
+        }
+        .class(),
+        ErrorClass::Transport
+    );
+
+    // Remote vs RateLimited on the leaf accessor directly.
+    assert_eq!(api(500).class(), ErrorClass::Remote);
+    assert_eq!(api(429).class(), ErrorClass::RateLimited);
+
+    // Signing — surfaced from the signing edge.
+    assert_eq!(
+        SigningError::Signer {
+            operation: "typed-data signature",
+            message: "signer failed".to_owned().into(),
+        }
+        .class(),
+        ErrorClass::Signing
+    );
+
+    // Cancelled — cooperative cancellation across every error type.
+    assert_eq!(CoreError::Cancelled.class(), ErrorClass::Cancelled);
+    assert_eq!(OrderbookError::Cancelled.class(), ErrorClass::Cancelled);
+    assert_eq!(TradingError::Cancelled.class(), ErrorClass::Cancelled);
+
+    // Internal — invariant or helper-contract violations.
+    assert_eq!(
+        CoreError::Serialization("decode failed".to_owned().into()).class(),
+        ErrorClass::Internal
+    );
+}
+
+#[test]
+fn error_class_delegates_through_trading_and_facade() {
+    // The composite TradingError delegates to the wrapped error, so a wrapped
+    // 429 stays RateLimited rather than collapsing to a coarse bucket.
+    assert_eq!(
+        TradingError::Orderbook(api(429)).class(),
+        ErrorClass::RateLimited
+    );
+
+    // SdkError delegates to each leaf accessor: the class is identical whether
+    // a caller holds the facade error or the bare leaf error.
+    let transport = OrderbookError::Transport {
+        class: TransportErrorClass::Connect,
+        detail: "connect failed".to_owned().into(),
+    };
+    let leaf_class = transport.class();
+    assert_eq!(SdkError::from(transport).class(), leaf_class);
+    assert_eq!(
+        SdkError::from(TradingError::Cancelled).class(),
+        ErrorClass::Cancelled
     );
 }

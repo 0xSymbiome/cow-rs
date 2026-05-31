@@ -1,5 +1,5 @@
 use cow_sdk_contracts::{ContractsError, SigningScheme};
-use cow_sdk_core::{Cancelled, CoreError, Redacted};
+use cow_sdk_core::{Cancelled, CoreError, ErrorClass, Redacted};
 use thiserror::Error;
 
 /// Errors returned by explicit signing helpers.
@@ -56,5 +56,19 @@ pub enum SigningError {
 impl From<Cancelled> for SigningError {
     fn from(_: Cancelled) -> Self {
         Self::Cancelled
+    }
+}
+
+impl SigningError {
+    /// Returns the coarse-grained [`ErrorClass`] for this error.
+    #[must_use]
+    pub const fn class(&self) -> ErrorClass {
+        match self {
+            Self::Core(error) => error.class(),
+            Self::Cancelled => ErrorClass::Cancelled,
+            // Contracts, Serialization, Signer, SignerRejection, and
+            // UnsupportedSignerGeneratedScheme failures classify as signing.
+            _ => ErrorClass::Signing,
+        }
     }
 }

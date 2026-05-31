@@ -1,4 +1,4 @@
-use cow_sdk_core::{Address, Cancelled, CoreError, Redacted};
+use cow_sdk_core::{Address, Cancelled, CoreError, ErrorClass, Redacted};
 use thiserror::Error;
 
 /// Errors returned by low-level `CoW` contract helpers.
@@ -194,5 +194,19 @@ pub enum ContractsError {
 impl From<Cancelled> for ContractsError {
     fn from(_: Cancelled) -> Self {
         Self::Cancelled
+    }
+}
+
+impl ContractsError {
+    /// Returns the coarse-grained [`ErrorClass`] for this error.
+    #[must_use]
+    pub const fn class(&self) -> ErrorClass {
+        match self {
+            Self::Core(error) => error.class(),
+            Self::Cancelled => ErrorClass::Cancelled,
+            // Contract encoding, ABI, provider, signature, and EIP-1271
+            // failures classify as signing-edge failures.
+            _ => ErrorClass::Signing,
+        }
     }
 }

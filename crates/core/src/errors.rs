@@ -124,3 +124,51 @@ impl From<Cancelled> for CoreError {
         Self::Cancelled
     }
 }
+
+/// Coarse-grained failure classification shared across the workspace error
+/// family.
+///
+/// Every public error type that the `cow-sdk` facade aggregates exposes a
+/// `class(&self) -> ErrorClass` accessor that resolves to one of these
+/// buckets, so downstream telemetry and retry layers can partition failures
+/// without pattern-matching every nested variant by hand. Retry policies
+/// typically retry only [`ErrorClass::Transport`] and [`ErrorClass::Remote`];
+/// the other classes signal caller-side or protocol-level conditions that
+/// benefit from different recovery paths.
+#[non_exhaustive]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ErrorClass {
+    /// Caller-side input failed a client-side validation boundary.
+    Validation,
+    /// A transport-layer failure occurred before a complete response was received.
+    Transport,
+    /// The remote endpoint returned a structured error response.
+    Remote,
+    /// The remote endpoint signalled rate limiting (HTTP 429) and the
+    /// transport layer's retry budget was exhausted before it cleared.
+    ///
+    /// Transport retries already honor `Retry-After`, so reaching this class
+    /// means the throttle outlived the retry policy rather than a transient
+    /// spike the client absorbed.
+    RateLimited,
+    /// A signing, provider, or cryptographic helper surfaced an error.
+    Signing,
+    /// A long-running operation was cancelled through a cooperative token.
+    Cancelled,
+    /// An internal invariant or helper contract was violated.
+    Internal,
+}
+
+impl CoreError {
+    /// Returns the coarse-grained [`ErrorClass`] for this error.
+    #[must_use]
+    pub const fn class(&self) -> ErrorClass {
+        match self {
+            Self::Validation(_) | Self::MissingBaseUrl { .. } => ErrorClass::Validation,
+            Self::Cancelled => ErrorClass::Cancelled,
+            // Serialization, transport-contract, and CID failures plus any
+            // future additive variants signal invariant violations.
+            _ => ErrorClass::Internal,
+        }
+    }
+}

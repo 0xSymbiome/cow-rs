@@ -7,11 +7,11 @@ enums:
     expected_marker: non_exhaustive
     reason: Facade error aggregation can grow as leaf crate capabilities are added.
   - name: ErrorClass
-    file: crates/sdk/src/lib.rs
-    line: 191
+    file: crates/core/src/errors.rs
+    line: 140
     category: sdk-local-state
     expected_marker: non_exhaustive
-    reason: Public diagnostic partition can grow with new facade error classes.
+    reason: Shared diagnostic partition can grow with new workspace error classes.
   - name: InjectedWalletDiscoverySource
     file: crates/browser-wallet/src/wallet/discovery.rs
     line: 17

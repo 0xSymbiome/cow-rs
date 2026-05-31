@@ -3,7 +3,7 @@
 //! Browser runtime failures are normalized before they cross the public Rust boundary so callers
 //! receive typed wallet and transport errors rather than raw JS values.
 
-use cow_sdk_core::{Cancelled, ChainId, CoreError, Redacted};
+use cow_sdk_core::{Cancelled, ChainId, CoreError, ErrorClass, Redacted};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use thiserror::Error;
@@ -202,6 +202,21 @@ pub enum BrowserWalletError {
 impl From<Cancelled> for BrowserWalletError {
     fn from(_: Cancelled) -> Self {
         Self::Cancelled
+    }
+}
+
+impl BrowserWalletError {
+    /// Returns the coarse-grained [`ErrorClass`] for this error.
+    #[must_use]
+    pub const fn class(&self) -> ErrorClass {
+        match self {
+            Self::Core(error) => error.class(),
+            Self::Cancelled => ErrorClass::Cancelled,
+            // Every other typed wallet failure (user rejection, disconnected,
+            // wrong chain, malformed response, JS interop, serialization, or
+            // unclassified RPC payload) surfaces from the signing edge.
+            _ => ErrorClass::Signing,
+        }
     }
 }
 
