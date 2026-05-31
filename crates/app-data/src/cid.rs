@@ -1,10 +1,10 @@
 //! CID conversion helpers for app-data documents.
 //!
-//! `cow-sdk-app-data` supports exactly one CID shape: CIDv1 with the raw
+//! `cow-sdk-app-data` supports exactly one CID shape: `CIDv1` with the raw
 //! multicodec (`0x55`) over a keccak-256 multihash (`0x1b`). This is the
 //! shape the cow-protocol services backend emits for every app-data
 //! document, so the conversion helpers below accept no other codec or
-//! hash combination. Historical CIDv0 values (dag-pb + sha2-256) are
+//! hash combination. Historical `CIDv0` values (dag-pb + sha2-256) are
 //! rejected at the decoder boundary with a typed
 //! [`AppDataError::InvalidCid`]; consumers that need to parse such
 //! values use a general-purpose `cid` crate directly.

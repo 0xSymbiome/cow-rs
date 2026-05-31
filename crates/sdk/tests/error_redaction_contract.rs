@@ -344,8 +344,7 @@ fn app_data_metadata_parse_failures_do_not_echo_caller_input() {
 
     for input in [signer_input, flashloan_input] {
         let serde_error = serde_json::from_value::<AppDataParams>(input)
-            .err()
-            .expect("malformed metadata must fail to deserialize");
+            .expect_err("malformed metadata must fail to deserialize");
         let error = AppDataError::from(serde_error);
         assert_render("AppDataError::Json (metadata parse)", &error);
         assert_serialize("AppDataError::Json (metadata parse)", &error);
@@ -937,7 +936,10 @@ fn serde_unknown_field_error() -> serde_json::Error {
     #[serde(deny_unknown_fields)]
     struct Strict {
         #[serde(default)]
-        #[allow(dead_code)]
+        #[allow(
+            dead_code,
+            reason = "field exercises serde(deny_unknown_fields) without being read"
+        )]
         known: u8,
     }
 
@@ -952,8 +954,7 @@ fn serde_unknown_field_error() -> serde_json::Error {
 /// produced by a type mismatch feeding a numeric target a secret string.
 fn serde_type_mismatch_error() -> serde_json::Error {
     serde_json::from_value::<u64>(json!(PRIVATE_KEY_SECRET))
-        .err()
-        .expect("a string payload must fail u64 deserialization")
+        .expect_err("a string payload must fail u64 deserialization")
 }
 
 fn address(value: &str) -> Address {

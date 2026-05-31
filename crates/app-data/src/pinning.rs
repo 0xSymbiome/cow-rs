@@ -24,8 +24,8 @@ pub trait IpfsUploadTransport {
 /// Pins a JSON document through the Pinata `pinJSONToIPFS` API and returns the
 /// backend's raw JSON response.
 ///
-/// The `IpfsHash` in that response is Pinata's sha2-256 CIDv0. It is **not** the
-/// canonical app-data identifier: it differs from the keccak-256 CIDv1 produced
+/// The `IpfsHash` in that response is Pinata's sha2-256 `CIDv0`. It is **not** the
+/// canonical app-data identifier: it differs from the keccak-256 `CIDv1` produced
 /// by `get_app_data_info`, is rejected by `cid_to_app_data_hex`, and a document
 /// pinned this way is not retrievable through `fetch_doc_from_app_data_hex`,
 /// which derives the keccak CID. To obtain the canonical app-data hash that an

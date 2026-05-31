@@ -12,7 +12,7 @@ mod validation;
 pub const DEFAULT_APP_CODE: &str = "CoW Swap";
 /// Default IPFS read gateway for app-data documents.
 ///
-/// The gateway must resolve keccak-256 CIDv1 values — the app-data CID shape —
+/// The gateway must resolve keccak-256 `CIDv1` values — the app-data CID shape —
 /// which generic public IPFS gateways do not serve.
 pub const DEFAULT_IPFS_READ_URI: &str = "https://gnosis.mypinata.cloud/ipfs";
 /// Default Pinata base URI used for write operations.

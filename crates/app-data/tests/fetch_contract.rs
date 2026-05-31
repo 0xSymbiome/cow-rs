@@ -113,7 +113,7 @@ fn fetch_policy_defaults_and_trims_explicit_read_base_urls() {
 }
 
 /// Pins the default IPFS read gateway to the upstream `@cowprotocol/config`
-/// value. App-data reads resolve keccak-256 CIDv1 documents, which a generic
+/// value. App-data reads resolve keccak-256 `CIDv1` documents, which a generic
 /// public gateway cannot serve, so an upstream gateway change must land here in
 /// lockstep rather than surface as a silent read failure for consumers.
 #[test]

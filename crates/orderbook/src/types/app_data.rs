@@ -143,16 +143,16 @@ impl<'de> Deserialize<'de> for QuoteAppData {
         // the [`QuoteAppData::full_app_data`] / [`QuoteAppData::app_data_hash`]
         // accessors honest for a decoded request.
         Ok(match (wire.app_data, wire.app_data_hash) {
-            (Some(app_data), None) => match AppDataHash::new(&app_data) {
-                Ok(hash) => Self {
-                    full: None,
-                    hash: Some(hash),
-                },
-                Err(_) => Self {
+            (Some(app_data), None) => AppDataHash::new(&app_data).map_or_else(
+                |_| Self {
                     full: Some(app_data),
                     hash: None,
                 },
-            },
+                |hash| Self {
+                    full: None,
+                    hash: Some(hash),
+                },
+            ),
             (full, hash) => Self { full, hash },
         })
     }
