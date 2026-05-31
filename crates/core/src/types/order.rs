@@ -318,6 +318,3 @@ impl Trade {
         }
     }
 }
-
-/// Backward-compatible alias for the user-domain trade model.
-pub type TradeModel = Trade;

@@ -26,8 +26,8 @@ pub use cow_sdk_browser_wallet::Eip1193Signer as BrowserWalletSigner;
 pub use cow_sdk_contracts::{ContractsError, Signature};
 // core
 pub use cow_sdk_core::{
-    Address, Amount, AppCode, AppCodeError, Cancellable, CowEnv, HttpTransport, OrderUid, Provider,
-    Signer, SupportedChainId,
+    Address, Amount, AppCode, Cancellable, CowEnv, HttpTransport, OrderUid, Provider, Signer,
+    SupportedChainId,
 };
 // orderbook
 pub use cow_sdk_orderbook::{OrderbookApi, OrderbookApiBuilder, OrderbookError};

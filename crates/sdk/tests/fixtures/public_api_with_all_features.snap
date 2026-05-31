@@ -12,7 +12,6 @@ root exports:
 - Address
 - Amount
 - AppCode
-- AppCodeError
 - BrowserWalletSigner (prelude)
 - ErrorClass
 - TradingHelpers

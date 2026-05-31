@@ -60,7 +60,7 @@ pub use types::{
     BuyTokenDestination, ChainId, Costs, DecimalAmount, FeeComponent, Hash32, HexData, LogMeta,
     LogQuery, NetworkFee, ORDER_TYPE_FIELD_NAMES, OrderData, OrderDigest, OrderKind, OrderUid,
     QUOTE_AMOUNT_STAGE_NAMES, QuoteAmountsAndCosts, QuoteRequest, QuoteResponse, RawLog,
-    SellTokenSource, SignedAmount, TokenInfo, Trade, TradeModel, TransactionHash,
+    SellTokenSource, SignedAmount, TokenInfo, Trade, TransactionHash,
     VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS, ValidTo, addresses_equal,
     token_id,
 };
