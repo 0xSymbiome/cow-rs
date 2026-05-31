@@ -61,6 +61,12 @@ alongside it as structural diagnostic.
 response body taken from `body.as_inner().len()`. `GraphQl`
 additionally interpolates `errors.len()` and, when present, the first
 GraphQL error's first source location formatted as `at line:column`.
+The Graph returns these errors with only `message` and optional
+`locations` and no machine-readable error code, so the error count and
+the first source location are the full set of safe structured signal this
+variant's `Display` can surface; the originating condition (authentication,
+an unknown subgraph, an invalid query, or unavailable indexers) survives
+only inside the redacted `message`.
 
 `TransportConfiguration` carries no `SubgraphRequestErrorContext`: it is
 returned by the native default-transport build path before any request is

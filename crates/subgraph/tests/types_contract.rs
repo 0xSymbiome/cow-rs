@@ -114,34 +114,38 @@ fn graphql_error_payload_allows_missing_locations() {
 }
 
 #[test]
-fn subgraph_graphql_error_extensions_classification_table() {
-    for (code, expected_class) in [
-        ("GRAPHQL_VALIDATION_FAILED", "validation"),
-        ("BAD_USER_INPUT", "bad-user-input"),
-        ("INTERNAL_SERVER_ERROR", "server"),
-        ("RATE_LIMITED", "other"),
-    ] {
-        let error: SubgraphGraphQlError = serde_json::from_value(json!({
-            "message": "GraphQL request failed",
-            "extensions": {
-                "code": code
-            }
-        }))
-        .unwrap();
-        let actual_class = match error
-            .extensions
-            .as_ref()
-            .and_then(|extensions| extensions.as_inner().get("code"))
-            .and_then(serde_json::Value::as_str)
-        {
-            Some("GRAPHQL_VALIDATION_FAILED") => "validation",
-            Some("BAD_USER_INPUT") => "bad-user-input",
-            Some("INTERNAL_SERVER_ERROR") => "server",
-            Some(_) | None => "other",
-        };
+fn subgraph_graphql_error_decodes_the_graph_wire_shape() {
+    // The Graph returns GraphQL errors as `message` plus optional `locations`,
+    // with no `extensions` and no machine-readable error code. A
+    // gateway-authored failure (here, no available indexers) decodes with
+    // empty locations and absent extensions.
+    let gateway_error: SubgraphGraphQlError =
+        serde_json::from_value(json!({ "message": "no indexers found" })).unwrap();
+    assert!(gateway_error.locations.is_empty());
+    assert!(gateway_error.extensions.is_none());
 
-        assert_eq!(actual_class, expected_class);
-    }
+    // An indexer query error carries source locations but still exposes no
+    // extensions or code.
+    let indexer_error: SubgraphGraphQlError = serde_json::from_value(json!({
+        "message": "Failed to decode value for field `number`",
+        "locations": [{ "line": 3, "column": 5 }]
+    }))
+    .unwrap();
+    assert_eq!(
+        indexer_error.locations,
+        vec![SubgraphGraphQlErrorLocation::new(3, 5)]
+    );
+    assert!(indexer_error.extensions.is_none());
+
+    // `extensions` stays an opaque pass-through for any GraphQL endpoint that
+    // does populate it: the SDK preserves the field without ascribing
+    // coded-reason semantics to it.
+    let with_extensions: SubgraphGraphQlError = serde_json::from_value(json!({
+        "message": "GraphQL request failed",
+        "extensions": { "code": "GRAPHQL_VALIDATION_FAILED" }
+    }))
+    .unwrap();
+    assert!(with_extensions.extensions.is_some());
 }
 
 #[test]

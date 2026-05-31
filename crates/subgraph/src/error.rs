@@ -15,7 +15,14 @@ pub struct SubgraphGraphQlError {
     /// Optional source locations within the submitted document.
     #[serde(default)]
     pub locations: Vec<SubgraphGraphQlErrorLocation>,
-    /// Optional GraphQL extension metadata returned by the endpoint.
+    /// Optional GraphQL `extensions` metadata, preserved verbatim (redacted)
+    /// when a GraphQL endpoint provides it.
+    ///
+    /// The Graph's gateway and indexers do not populate this field — their
+    /// errors carry only `message` and `locations` — so it is normally absent
+    /// and exposes no machine-readable error `code` to classify against. It
+    /// remains an opaque pass-through for any GraphQL endpoint that does set
+    /// it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub extensions: Option<Redacted<Value>>,
 }
@@ -177,6 +184,18 @@ pub enum SubgraphError {
     /// access on the carried `errors` vector; the `.as_inner()` call is the
     /// workspace marker that the caller is crossing the redaction boundary
     /// on purpose.
+    ///
+    /// The Graph returns these failures as an HTTP 200 response carrying a
+    /// GraphQL `errors` array whose entries hold only `message` and,
+    /// optionally, `locations` — there is no machine-readable error `code` on
+    /// the wire. The originating condition (authentication, an unknown
+    /// subgraph, an invalid query, or unavailable / unhealthy indexers)
+    /// survives only inside the free-form `message`, which stays redacted
+    /// because the gateway URL embeds the partner API key and the SDK cannot
+    /// assume the upstream message never echoes it. This variant therefore
+    /// carries the raw `errors` for opt-in inspection rather than a typed
+    /// reason discriminant: there is no stable coded reason on the wire to
+    /// classify against.
     ///
     /// ```rust,ignore
     /// use cow_sdk_subgraph::SubgraphError;
