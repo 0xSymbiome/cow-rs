@@ -21,8 +21,8 @@ impl Trading {
         tracing::instrument(
             skip_all,
             fields(
-                chain = ?params.chain_id,
-                env = ?params.env,
+                chain = ?params.chain_id.or(self.trader_defaults.chain_id),
+                env = ?params.env.or(self.trader_defaults.env),
                 endpoint = "trading.off_chain_cancel_order",
                 order_uid = %params.order_uid,
             ),
@@ -70,8 +70,8 @@ impl Trading {
         tracing::instrument(
             skip_all,
             fields(
-                chain = ?params.chain_id,
-                env = ?params.env,
+                chain = ?params.chain_id.or(self.trader_defaults.chain_id),
+                env = ?params.env.or(self.trader_defaults.env),
                 endpoint = "trading.on_chain_cancel_order",
                 order_uid = %params.order_uid,
             ),
