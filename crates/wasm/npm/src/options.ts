@@ -21,15 +21,20 @@ export type JitterStrategyConfig = "none" | "full" | "equal" | "decorrelated";
 export type LimiterScopeConfig = "global" | "perHost";
 
 export interface RetryPolicyConfig {
+  /** Maximum attempts, including the initial request. */
   maxAttempts?: number;
-  initialDelayMs?: number;
+  /** Base exponential-backoff delay in milliseconds. */
+  baseDelayMs?: number;
+  /** Maximum exponential-backoff delay in milliseconds. */
   maxDelayMs?: number;
 }
 
 export interface RequestRateLimiterConfig {
-  enabled?: boolean;
-  burst?: number;
-  refillPerSecond?: number;
+  /** Request tokens granted per interval. Zero disables limiting. */
+  tokensPerInterval?: number;
+  /** Limiter interval in milliseconds. */
+  intervalMs?: number;
+  /** Bucket scope. */
   scope?: LimiterScopeConfig;
 }
 

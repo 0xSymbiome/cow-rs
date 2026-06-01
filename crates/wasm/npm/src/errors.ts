@@ -1,5 +1,22 @@
 import type { SchemaVersion } from "./envelope.js";
 
+/**
+ * Coarse, switchable classification of an orderbook rejection. Lets a consumer
+ * branch on the action a rejection calls for — fix the request, fund the
+ * wallet, re-quote, wait, or escalate — without matching every wire tag. The
+ * `__unknown` member is the forward-compatible sentinel for a category a newer
+ * SDK may introduce.
+ */
+export type OrderbookRejectionCategory =
+  | "authorization"
+  | "insufficientFunds"
+  | "invalidOrder"
+  | "notFound"
+  | "conflict"
+  | "unfulfillable"
+  | "server"
+  | "__unknown";
+
 export type SdkError =
   | { schemaVersion: "v1"; kind: "invalidInput"; message: string; field?: string }
   | { schemaVersion: "v1"; kind: "unknownEnumValue"; message: string; field: string; value: string }
@@ -22,7 +39,13 @@ export type SdkError =
       headers?: [string, string][];
       body?: string;
     }
-  | { schemaVersion: "v1"; kind: "orderbook"; code?: string; message: string }
+  | {
+      schemaVersion: "v1";
+      kind: "orderbook";
+      code?: string;
+      category?: OrderbookRejectionCategory;
+      message: string;
+    }
   | { schemaVersion: "v1"; kind: "subgraph"; message: string }
   | { schemaVersion: "v1"; kind: "signing"; message: string }
   | { schemaVersion: "v1"; kind: "appData"; class?: string; message: string }

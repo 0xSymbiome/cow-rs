@@ -56,17 +56,13 @@ pub struct CowFetchResponse {
 #[cfg(feature = "transport-policy")]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct RetryPolicyConfig {
     /// Maximum attempts, including the initial request.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub max_attempts: Option<u32>,
     /// Base exponential-backoff delay in milliseconds.
-    #[serde(
-        default,
-        alias = "initialDelayMs",
-        skip_serializing_if = "Option::is_none"
-    )]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub base_delay_ms: Option<u32>,
     /// Maximum exponential-backoff delay in milliseconds.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -110,7 +106,7 @@ impl From<LimiterScope> for LimiterScopeConfig {
 #[cfg(feature = "transport-policy")]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct RequestRateLimiterConfig {
     /// Request tokens granted per interval. Zero disables limiting.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -168,7 +164,7 @@ impl From<JitterStrategy> for JitterStrategyConfig {
 #[cfg(feature = "transport-policy")]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct TransportPolicyConfig {
     /// Retry-policy override.
     #[serde(default, skip_serializing_if = "Option::is_none")]

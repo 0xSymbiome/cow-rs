@@ -12,12 +12,16 @@ export declare class OrderBookClient {
     cancelOrders(signed: raw.SignedCancellationsInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<{
         cancelled: true;
     }>>;
-    getNativePrice(token: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<unknown>>;
-    getOrder(orderUid: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<unknown>>;
-    getOrders(owner: string, pagination?: raw.PaginationOptions | null, options?: SdkClientOptions | null): Promise<WasmEnvelope<unknown>>;
-    getOrdersByOwner(owner: string, pagination?: raw.PaginationOptions | null, options?: SdkClientOptions | null): Promise<WasmEnvelope<unknown>>;
-    getQuote(request: raw.OrderQuoteRequestInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<unknown>>;
-    getTrades(query: raw.TradesQueryInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<unknown>>;
+    getNativePrice(token: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<raw.NativePriceResponseDto>>;
+    getOrder(orderUid: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<raw.OrderDto>>;
+    getOrders(owner: string, pagination?: raw.PaginationOptions | null, options?: SdkClientOptions | null): Promise<WasmEnvelope<raw.OrderDto[]>>;
+    getOrdersByOwner(owner: string, pagination?: raw.PaginationOptions | null, options?: SdkClientOptions | null): Promise<WasmEnvelope<raw.OrderDto[]>>;
+    getQuote(request: raw.OrderQuoteRequestInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<raw.OrderQuoteResponseDto>>;
+    getTrades(query: raw.TradesQueryInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<raw.TradeDto[]>>;
+    getAppData(appDataHash: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<raw.AppDataObjectDto>>;
+    uploadAppData(appDataHash: string, fullAppData: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<{
+        uploaded: true;
+    }>>;
     sendOrder(signed: raw.SignedOrderDto, options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>;
     sendOrderCreation(input: raw.OrderCreationInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>;
     dispose(): void;
@@ -25,13 +29,13 @@ export declare class OrderBookClient {
 export declare class TradingClient {
     #private;
     constructor(config: TradingClientConfig);
-    buildSellNativeCurrencyTx(order: raw.OrderInput, quoteId: bigint, from: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<raw.BuiltSellNativeCurrencyTxDto>>;
+    buildSellNativeCurrencyTx(order: raw.OrderInput, quoteId: number, from: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<raw.BuiltSellNativeCurrencyTxDto>>;
     getCowProtocolAllowance(params: raw.AllowanceParametersInput, readContractCallback: ContractReadCallback, options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>;
-    getQuote(params: raw.SwapParametersInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<unknown>>;
-    postLimitOrder(params: raw.LimitTradeParametersInput, owner: string, signerCallback: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<unknown>>;
-    postSwapOrder(params: raw.SwapParametersInput, owner: string, signerCallback: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<unknown>>;
-    postSwapOrderFromQuote(quoteResults: raw.QuoteResultsInput, owner: string, signerCallback: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<unknown>>;
-    postSwapOrderWithEip1271(params: raw.SwapParametersInput, owner: string, customCallback: CustomEip1271Callback, options?: SigningOptions | null): Promise<WasmEnvelope<unknown>>;
+    getQuote(params: raw.SwapParametersInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<raw.QuoteResultsDto>>;
+    postLimitOrder(params: raw.LimitTradeParametersInput, owner: string, signerCallback: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<raw.OrderPostingResultDto>>;
+    postSwapOrder(params: raw.SwapParametersInput, owner: string, signerCallback: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<raw.OrderPostingResultDto>>;
+    postSwapOrderFromQuote(quoteResults: raw.QuoteResultsDto, owner: string, signerCallback: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<raw.OrderPostingResultDto>>;
+    postSwapOrderWithEip1271(params: raw.SwapParametersInput, owner: string, customCallback: CustomEip1271Callback, options?: SigningOptions | null): Promise<WasmEnvelope<raw.OrderPostingResultDto>>;
     dispose(): void;
 }
 export declare function appDataDoc(doc: raw.AppDataDocInput): WasmEnvelope<raw.AppDataDocDto>;
@@ -58,8 +62,8 @@ export declare function signOrderWithTypedDataSigner(input: raw.OrderInput, chai
 export declare function supportedChainIds(): Uint32Array;
 export declare function validateAppDataDoc(doc: raw.AppDataDocInput): WasmEnvelope<raw.ValidationResultDto>;
 export declare function wasmVersion(): string;
-export type { AllowanceParametersInput, AppDataDocDto, AppDataDocInput, AppDataInfoDto, BuiltSellNativeCurrencyTxDto, ContractCallDto, CowEip1271SignRequest, DeploymentAddressesDto, Eip1193Request, EthFlowEventDto, EventLogInput, GeneratedOrderUidDto, InitInput, LimitTradeParametersInput, OrderCreationInput, OrderInput, OrderKindDto, OrderQuoteRequestInput, OrderTraderParametersInput, PaginationOptions, PartnerFeeInput, PartnerFeePolicyInput, QuoteResponseRefInput, QuoteResultsInput, SettlementEventDto, SignedCancellationsInput, SignedOrderDto, SwapParametersInput, TokenBalanceDto, TradesQueryInput, TransactionRequestDto, TypedDataDomainDto, TypedDataEnvelopeDto, TypedDataFieldDto, ValidationResultDto } from "./raw/cloudflare.js";
+export type { AllowanceParametersInput, AmountsDto, AppDataDocDto, AppDataDocInput, AppDataInfoDto, AppDataObjectDto, BuiltSellNativeCurrencyTxDto, ContractCallDto, CostsDto, CowEip1271SignRequest, CowEnvDto, DeploymentAddressesDto, Eip1193Request, EthFlowEventDto, EthflowDataDto, EventLogInput, ExecutedProtocolFeeDto, FeeComponentDto, GeneratedOrderUidDto, InitInput, InteractionDataDto, LimitTradeParametersInput, NativePriceResponseDto, NetworkFeeDto, OnchainOrderDataDto, OrderClassDto, OrderCreationInput, OrderDataDto, OrderDto, OrderInput, OrderInteractionsDto, OrderKindDto, OrderPostingResultDto, OrderQuoteRequestInput, OrderQuoteResponseDto, OrderStatusDto, OrderTraderParametersInput, OrderbookRuntimeBindingDto, PaginationOptions, PartnerFeeDto, PartnerFeeInput, PartnerFeePolicyDto, PartnerFeePolicyInput, QuoteAmountsAndCostsDto, QuoteDataDto, QuoteResultsDto, SettlementEventDto, SignedCancellationsInput, SignedOrderDto, SigningSchemeDto, StoredOrderQuoteDto, SwapParametersInput, TokenBalanceDto, TradeDto, TradeParametersDto, TradesQueryInput, TradingAppDataInfoDto, TransactionRequestDto, TypedDataDomainDto, TypedDataEnvelopeDto, TypedDataFieldDto, ValidationResultDto } from "./raw/cloudflare.js";
 export type { ContractReadCallback, CowEip1271SignCallback, CustomEip1271Callback, DigestSignerCallback, Eip1193RequestCallback, TypedDataSignerCallback } from "./callbacks.js";
-export type { SdkError } from "./errors.js";
+export type { OrderbookRejectionCategory, SdkError } from "./errors.js";
 export type { SchemaVersion, WasmEnvelope } from "./envelope.js";
 export type { HttpTransportConfig, SdkClientOptions, SigningOptions, TradingClientConfig, TransportPolicyConfig, WalletConfig } from "./options.js";

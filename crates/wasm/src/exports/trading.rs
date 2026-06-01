@@ -4,13 +4,14 @@ use cow_sdk_contracts::eth_flow::{EthFlowOrderData, encode_create_order_calldata
 use cow_sdk_core::{
     Address, Amount, BlockInfo, ContractCall, ContractHandle, EVM_NATIVE_CURRENCY_ADDRESS, HexData,
     ProtocolOptions, Provider, Signer, TransactionBroadcast, TransactionHash, TransactionReceipt,
-    TransactionRequest, TypedDataDomain, TypedDataField, TypedDataSigner,
+    TransactionRequest, TypedDataDomain, TypedDataField,
 };
 use cow_sdk_orderbook::{OrderbookApi, SigningScheme};
 use cow_sdk_pure_helpers as pure;
+use cow_sdk_signing::eip1271::Eip1271SignatureProvider;
 use cow_sdk_trading::{
-    AllowanceParameters, GAS_LIMIT_DEFAULT, LimitTradeParameters, OrderPostingResult,
-    QuoteRequestOverride, TradeAdvancedSettings, TradeParameters, Trading,
+    AllowanceParameters, GAS_LIMIT_DEFAULT, LimitTradeParameters, PostTradeAdditionalParams,
+    QuoteRequestOverride, QuoteResults, TradeAdvancedSettings, TradeParameters, Trading,
 };
 use cow_sdk_transport_policy::TransportPolicy;
 use js_sys::Function;
@@ -23,17 +24,15 @@ use crate::exports::{
     },
     dto::{
         AllowanceParametersInput, BuiltSellNativeCurrencyTxDto, ContractCallDto,
-        CowEip1271SignRequest, LimitTradeParametersInput, OrderInput, QuoteResultsInput,
-        SwapParametersInput, TransactionRequestDto, TypedDataEnvelopeDto, from_json_value,
-        parse_chain, parse_order, to_js_value, transport_policy_from_config,
+        CowEip1271SignRequest, LimitTradeParametersInput, OrderInput, SwapParametersInput,
+        TransactionRequestDto, TypedDataEnvelopeDto, from_json_value, parse_chain, parse_order,
+        to_js_value, transport_policy_from_config,
     },
+    eip1271::ResolvedEip1271Provider,
     envelope::WasmEnvelope,
     errors::WasmError,
-    orderbook::{build_orderbook, order_creation_from_signed, orderbook_for_scope},
-    signing::{
-        JsTypedDataSigner, await_callback_string, js_error_to_string, normalize_signature,
-        signed_order_from_parts,
-    },
+    orderbook::{build_orderbook, orderbook_for_scope},
+    signing::{await_callback_string, js_error_to_string, normalize_signature},
     transport::{
         configured_fetch_transport, optional_string, optional_timeout, required_string,
         required_u32,
@@ -125,7 +124,10 @@ impl TradingClient {
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.trading.get_quote"))
     )]
-    #[wasm_bindgen(js_name = "getQuote")]
+    #[wasm_bindgen(
+        js_name = "getQuote",
+        unchecked_return_type = "WasmEnvelope<QuoteResultsDto>"
+    )]
     pub async fn get_quote(
         &self,
         params: SwapParametersInput,
@@ -156,7 +158,10 @@ impl TradingClient {
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.trading.post_swap_order"))
     )]
-    #[wasm_bindgen(js_name = "postSwapOrder")]
+    #[wasm_bindgen(
+        js_name = "postSwapOrder",
+        unchecked_return_type = "WasmEnvelope<OrderPostingResultDto>"
+    )]
     pub async fn post_swap_order(
         &self,
         params: SwapParametersInput,
@@ -169,19 +174,8 @@ impl TradingClient {
         let scope = ClientCallScope::new(options_ref)?;
         let wallet_timeout_ms = signing_wallet_timeout_ms(options_ref)?;
         let inner = self.trading_for_scope(&scope)?;
-        let orderbook = orderbook_for_scope(&self.orderbook, &scope);
-        let chain_id = self.chain_id;
         run_with_client_options(scope, async move {
-            trading_post_swap_order(
-                &inner,
-                &orderbook,
-                chain_id,
-                params,
-                owner,
-                signer_callback,
-                wallet_timeout_ms,
-            )
-            .await
+            trading_post_swap_order(&inner, params, owner, signer_callback, wallet_timeout_ms).await
         })
         .await
     }
@@ -204,10 +198,14 @@ impl TradingClient {
             fields(endpoint = "wasm.trading.post_swap_order_from_quote")
         )
     )]
-    #[wasm_bindgen(js_name = "postSwapOrderFromQuote")]
+    #[wasm_bindgen(
+        js_name = "postSwapOrderFromQuote",
+        unchecked_return_type = "WasmEnvelope<OrderPostingResultDto>"
+    )]
     pub async fn post_swap_order_from_quote(
         &self,
-        #[wasm_bindgen(js_name = quoteResults)] quote_results: QuoteResultsInput,
+        #[wasm_bindgen(js_name = quoteResults, unchecked_param_type = "QuoteResultsDto")]
+        quote_results: JsValue,
         owner: String,
         #[wasm_bindgen(js_name = signerCallback, unchecked_param_type = "TypedDataSignerCallback")]
         signer_callback: Function,
@@ -216,12 +214,10 @@ impl TradingClient {
         let options_ref = options.as_ref().map(AsRef::as_ref);
         let scope = ClientCallScope::new(options_ref)?;
         let wallet_timeout_ms = signing_wallet_timeout_ms(options_ref)?;
-        let orderbook = orderbook_for_scope(&self.orderbook, &scope);
-        let chain_id = self.chain_id;
+        let inner = self.trading_for_scope(&scope)?;
         run_with_client_options(scope, async move {
             trading_post_swap_order_from_quote(
-                &orderbook,
-                chain_id,
+                &inner,
                 quote_results,
                 owner,
                 signer_callback,
@@ -247,7 +243,10 @@ impl TradingClient {
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.trading.post_limit_order"))
     )]
-    #[wasm_bindgen(js_name = "postLimitOrder")]
+    #[wasm_bindgen(
+        js_name = "postLimitOrder",
+        unchecked_return_type = "WasmEnvelope<OrderPostingResultDto>"
+    )]
     pub async fn post_limit_order(
         &self,
         params: LimitTradeParametersInput,
@@ -293,11 +292,12 @@ impl TradingClient {
     pub async fn build_sell_native_currency_tx(
         &self,
         order: OrderInput,
-        #[wasm_bindgen(js_name = quoteId)] quote_id: i64,
+        #[wasm_bindgen(js_name = quoteId)] quote_id: f64,
         from: String,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
     ) -> Result<JsValue, JsValue> {
         let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+        let quote_id = quote_id_from_js(quote_id)?;
         let chain_id = self.chain_id;
         let env = self.env.clone();
         run_with_client_options(scope, async move {
@@ -362,7 +362,10 @@ impl TradingClient {
             fields(endpoint = "wasm.trading.post_swap_order_with_eip1271")
         )
     )]
-    #[wasm_bindgen(js_name = "postSwapOrderWithEip1271")]
+    #[wasm_bindgen(
+        js_name = "postSwapOrderWithEip1271",
+        unchecked_return_type = "WasmEnvelope<OrderPostingResultDto>"
+    )]
     pub async fn post_swap_order_with_eip1271(
         &self,
         params: SwapParametersInput,
@@ -375,12 +378,10 @@ impl TradingClient {
         let scope = ClientCallScope::new(options_ref)?;
         let wallet_timeout_ms = signing_wallet_timeout_ms(options_ref)?;
         let inner = self.trading_for_scope(&scope)?;
-        let orderbook = orderbook_for_scope(&self.orderbook, &scope);
         let chain_id = self.chain_id;
         run_with_client_options(scope, async move {
             trading_post_swap_order_with_eip1271(
                 &inner,
-                &orderbook,
                 chain_id,
                 params,
                 owner,
@@ -437,8 +438,6 @@ async fn trading_get_quote(
 
 async fn trading_post_swap_order(
     inner: &Trading,
-    orderbook: &OrderbookApi,
-    chain_id: u32,
     params: SwapParametersInput,
     owner: String,
     signer_callback: Function,
@@ -447,74 +446,29 @@ async fn trading_post_swap_order(
     let owner = parse_address("owner", owner)?;
     let mut params: TradeParameters = from_json_value("params", params.into_value()?)?;
     params.owner = Some(owner.clone());
-    let quote = inner
-        .get_quote_only(params, None)
+    let signer = JsTradingSigner::new(owner, signer_callback, wallet_timeout_ms);
+    let result = inner
+        .post_swap_order(params, &signer, None)
         .await
         .map_err(|error| WasmError::from(error).into_js())?;
-    let chain = parse_chain(chain_id)?;
-    let payload = pure::signing::order_typed_data_payload(chain, &quote.order_to_sign)
-        .map_err(|error| WasmError::from(error).into_js())?;
-    let typed_data = TypedDataEnvelopeDto::from_payload(&payload)?;
-    let signer = JsTypedDataSigner::new(owner.clone(), signer_callback, wallet_timeout_ms);
-    let signature = signer
-        .sign_typed_data_payload(&payload)
-        .await
-        .map_err(|error| WasmError::wallet("signTypedData", error).into_js())?;
-    let generated = pure::signing::generate_order_id(chain, &quote.order_to_sign, &owner)
-        .map_err(|error| WasmError::from(error).into_js())?;
-    let signed = signed_order_from_parts(
-        generated,
-        owner,
-        typed_data,
-        signature.clone(),
-        "eip712",
-        quote.quote_response.id,
-    );
-    let request = order_creation_from_signed(signed)?;
-    let uid = orderbook
-        .send_order(&request)
-        .await
-        .map_err(|error| WasmError::from(error).into_js())?;
-    let result =
-        OrderPostingResult::new(uid, SigningScheme::Eip712, signature, quote.order_to_sign);
     to_js_value(&WasmEnvelope::v1(result))
 }
 
 async fn trading_post_swap_order_from_quote(
-    orderbook: &OrderbookApi,
-    chain_id: u32,
-    quote_results: QuoteResultsInput,
+    inner: &Trading,
+    quote_results: JsValue,
     owner: String,
     signer_callback: Function,
     wallet_timeout_ms: Option<u32>,
 ) -> Result<JsValue, JsValue> {
+    let results: QuoteResults = serde_wasm_bindgen::from_value(quote_results)
+        .map_err(|error| WasmError::invalid("quoteResults", error.to_string()).into_js())?;
     let owner = parse_address("owner", owner)?;
-    let order = parse_order(quote_results.order_to_sign.clone())?;
-    let chain = parse_chain(chain_id)?;
-    let payload = pure::signing::order_typed_data_payload(chain, &order)
-        .map_err(|error| WasmError::from(error).into_js())?;
-    let typed_data = TypedDataEnvelopeDto::from_payload(&payload)?;
-    let signer = JsTypedDataSigner::new(owner.clone(), signer_callback, wallet_timeout_ms);
-    let signature = signer
-        .sign_typed_data_payload(&payload)
-        .await
-        .map_err(|error| WasmError::wallet("signTypedData", error).into_js())?;
-    let generated = pure::signing::generate_order_id(chain, &order, &owner)
-        .map_err(|error| WasmError::from(error).into_js())?;
-    let signed = signed_order_from_parts(
-        generated,
-        owner,
-        typed_data,
-        signature.clone(),
-        "eip712",
-        quote_results.quote_id(),
-    );
-    let request = order_creation_from_signed(signed)?;
-    let uid = orderbook
-        .send_order(&request)
+    let signer = JsTradingSigner::new(owner, signer_callback, wallet_timeout_ms);
+    let result = inner
+        .post_swap_order_from_quote(&results, &signer, None)
         .await
         .map_err(|error| WasmError::from(error).into_js())?;
-    let result = OrderPostingResult::new(uid, SigningScheme::Eip712, signature, order);
     to_js_value(&WasmEnvelope::v1(result))
 }
 
@@ -594,6 +548,28 @@ async fn trading_build_sell_native_currency_tx(
     to_js_value(&WasmEnvelope::v1(result))
 }
 
+/// Converts a JavaScript `number` quote id into the native `i64`, rejecting
+/// non-integral or out-of-range values so a lossy float cannot reach the
+/// on-chain order data. Quote ids are non-negative database integers well
+/// within the JavaScript safe-integer range, so `number` is the precise and
+/// consistent representation across the ABI.
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "value is validated as a non-negative integer at most 2^53-1 before the cast, so the i64 conversion is exact"
+)]
+fn quote_id_from_js(value: f64) -> Result<i64, WasmError> {
+    /// Largest integer a JavaScript `number` represents exactly (2^53 - 1).
+    const MAX_SAFE_INTEGER: f64 = 9_007_199_254_740_991.0;
+    if value.is_finite() && value.fract() == 0.0 && (0.0..=MAX_SAFE_INTEGER).contains(&value) {
+        Ok(value as i64)
+    } else {
+        Err(WasmError::invalid(
+            "quoteId",
+            "quote id must be a non-negative integer within the JavaScript safe-integer range",
+        ))
+    }
+}
+
 async fn trading_get_cow_protocol_allowance(
     inner: &Trading,
     params: AllowanceParametersInput,
@@ -610,14 +586,13 @@ async fn trading_get_cow_protocol_allowance(
 
 async fn trading_post_swap_order_with_eip1271(
     inner: &Trading,
-    orderbook: &OrderbookApi,
     chain_id: u32,
     params: SwapParametersInput,
     owner: String,
     custom_callback: Function,
     wallet_timeout_ms: Option<u32>,
 ) -> Result<JsValue, JsValue> {
-    let owner_address = parse_address("owner", owner.clone())?;
+    let owner_address = parse_address("owner", owner)?;
     let mut params: TradeParameters = from_json_value("params", params.into_value()?)?;
     params.owner = Some(owner_address.clone());
     let quote_settings = TradeAdvancedSettings::new().with_quote_request(
@@ -629,13 +604,15 @@ async fn trading_post_swap_order_with_eip1271(
         .get_quote_only(params, Some(&quote_settings))
         .await
         .map_err(|error| WasmError::from(error).into_js())?;
+    // Resolve the contract signature at the wallet boundary, then hand the managed
+    // submission path a pure provider that carries it.
     let chain = parse_chain(chain_id)?;
     let payload = pure::signing::order_typed_data_payload(chain, &quote.order_to_sign)
         .map_err(|error| WasmError::from(error).into_js())?;
     let typed_data = TypedDataEnvelopeDto::from_payload(&payload)?;
     let request = CowEip1271SignRequest {
         order: OrderInput::from(&quote.order_to_sign),
-        typed_data: typed_data.clone(),
+        typed_data,
         owner: owner_address.to_hex_string(),
         chain_id,
     };
@@ -646,23 +623,16 @@ async fn trading_post_swap_order_with_eip1271(
         wallet_timeout_ms,
     )
     .await?;
-    let generated = pure::signing::generate_order_id(chain, &quote.order_to_sign, &owner_address)
-        .map_err(|error| WasmError::from(error).into_js())?;
-    let signed = signed_order_from_parts(
-        generated,
-        owner_address,
-        typed_data,
-        signature.clone(),
-        "eip1271",
-        quote.quote_response.id,
+    let provider: Arc<dyn Eip1271SignatureProvider> =
+        Arc::new(ResolvedEip1271Provider::new(signature));
+    let settings = quote_settings.with_additional_params(
+        PostTradeAdditionalParams::new().with_custom_eip1271_signature(provider),
     );
-    let request = order_creation_from_signed(signed)?;
-    let uid = orderbook
-        .send_order(&request)
+    let signer = JsTradingSigner::new(owner_address, custom_callback, wallet_timeout_ms);
+    let result = inner
+        .post_swap_order_from_quote(&quote, &signer, Some(&settings))
         .await
         .map_err(|error| WasmError::from(error).into_js())?;
-    let result =
-        OrderPostingResult::new(uid, SigningScheme::Eip1271, signature, quote.order_to_sign);
     to_js_value(&WasmEnvelope::v1(result))
 }
 

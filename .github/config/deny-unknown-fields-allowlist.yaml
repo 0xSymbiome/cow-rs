@@ -24,3 +24,12 @@ allowed:
   - file: crates/contracts/src/deployments/coverage.rs
     item: DeploymentCoverageRecord
     reason: Build-time YAML deployment-coverage row; unknown fields indicate a repository bug.
+  - file: crates/wasm/src/exports/dto/transport.rs
+    item: RetryPolicyConfig
+    reason: JS-facing retry-policy override request DTO; an unknown field is a caller typo that must fail loudly rather than silently drop the override.
+  - file: crates/wasm/src/exports/dto/transport.rs
+    item: RequestRateLimiterConfig
+    reason: JS-facing rate-limiter override request DTO; an unknown field is a caller typo that must fail loudly rather than silently drop the override.
+  - file: crates/wasm/src/exports/dto/transport.rs
+    item: TransportPolicyConfig
+    reason: JS-facing transport-policy override request DTO; an unknown field is a caller typo that must fail loudly rather than silently drop the override.

@@ -10,12 +10,16 @@ export declare class OrderBookClient {
     cancelOrders(signed: raw.SignedCancellationsInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<{
         cancelled: true;
     }>>;
-    getNativePrice(token: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<unknown>>;
-    getOrder(orderUid: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<unknown>>;
-    getOrders(owner: string, pagination?: raw.PaginationOptions | null, options?: SdkClientOptions | null): Promise<WasmEnvelope<unknown>>;
-    getOrdersByOwner(owner: string, pagination?: raw.PaginationOptions | null, options?: SdkClientOptions | null): Promise<WasmEnvelope<unknown>>;
-    getQuote(request: raw.OrderQuoteRequestInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<unknown>>;
-    getTrades(query: raw.TradesQueryInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<unknown>>;
+    getNativePrice(token: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<raw.NativePriceResponseDto>>;
+    getOrder(orderUid: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<raw.OrderDto>>;
+    getOrders(owner: string, pagination?: raw.PaginationOptions | null, options?: SdkClientOptions | null): Promise<WasmEnvelope<raw.OrderDto[]>>;
+    getOrdersByOwner(owner: string, pagination?: raw.PaginationOptions | null, options?: SdkClientOptions | null): Promise<WasmEnvelope<raw.OrderDto[]>>;
+    getQuote(request: raw.OrderQuoteRequestInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<raw.OrderQuoteResponseDto>>;
+    getTrades(query: raw.TradesQueryInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<raw.TradeDto[]>>;
+    getAppData(appDataHash: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<raw.AppDataObjectDto>>;
+    uploadAppData(appDataHash: string, fullAppData: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<{
+        uploaded: true;
+    }>>;
     sendOrder(signed: raw.SignedOrderDto, options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>;
     sendOrderCreation(input: raw.OrderCreationInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>;
     dispose(): void;
@@ -39,8 +43,8 @@ export declare function signOrderWithEip1271(input: raw.OrderInput, chainId: num
 export declare function signOrderWithTypedDataSigner(input: raw.OrderInput, chainId: number, owner: string, typedDataSigner: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<raw.SignedOrderDto>>;
 export declare function supportedChainIds(): Uint32Array;
 export declare function wasmVersion(): string;
-export type { CowEip1271SignRequest, DeploymentAddressesDto, Eip1193Request, EthFlowEventDto, EventLogInput, GeneratedOrderUidDto, OrderCreationInput, OrderInput, OrderKindDto, OrderQuoteRequestInput, OrderTraderParametersInput, PaginationOptions, SettlementEventDto, SignedCancellationsInput, SignedOrderDto, TokenBalanceDto, TradesQueryInput, TransactionRequestDto, TypedDataDomainDto, TypedDataEnvelopeDto, TypedDataFieldDto } from "./raw/orderbook.js";
+export type { AppDataObjectDto, CowEip1271SignRequest, DeploymentAddressesDto, Eip1193Request, EthFlowEventDto, EthflowDataDto, EventLogInput, ExecutedProtocolFeeDto, GeneratedOrderUidDto, InteractionDataDto, NativePriceResponseDto, OnchainOrderDataDto, OrderClassDto, OrderCreationInput, OrderDto, OrderInput, OrderInteractionsDto, OrderKindDto, OrderQuoteRequestInput, OrderQuoteResponseDto, OrderStatusDto, OrderTraderParametersInput, PaginationOptions, QuoteDataDto, SettlementEventDto, SignedCancellationsInput, SignedOrderDto, SigningSchemeDto, StoredOrderQuoteDto, TokenBalanceDto, TradeDto, TradesQueryInput, TransactionRequestDto, TypedDataDomainDto, TypedDataEnvelopeDto, TypedDataFieldDto } from "./raw/orderbook.js";
 export type { CowEip1271SignCallback, CustomEip1271Callback, DigestSignerCallback, Eip1193RequestCallback, TypedDataSignerCallback } from "./callbacks.js";
-export type { SdkError } from "./errors.js";
+export type { OrderbookRejectionCategory, SdkError } from "./errors.js";
 export type { SchemaVersion, WasmEnvelope } from "./envelope.js";
 export type { SdkClientOptions, SigningOptions, WalletConfig } from "./options.js";

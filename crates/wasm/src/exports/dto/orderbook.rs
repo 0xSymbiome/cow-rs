@@ -11,6 +11,180 @@ use super::{OrderKindDto, TokenBalanceDto};
 #[cfg(feature = "orderbook")]
 use crate::exports::errors::WasmError;
 
+/// Signature scheme carried on posted and returned orders, mirroring
+/// `cow_sdk_orderbook::SigningScheme`, whose wire form is the lowercased
+/// variant name.
+#[cfg(feature = "orderbook")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "lowercase")]
+#[non_exhaustive]
+pub enum SigningSchemeDto {
+    /// EIP-712 typed-data signature.
+    Eip712,
+    /// `eth_sign` style message signature.
+    EthSign,
+    /// EIP-1271 smart-account signature.
+    Eip1271,
+    /// Pre-sign on-chain approval.
+    PreSign,
+}
+
+/// Full app-data document returned by the orderbook app-data endpoint.
+#[cfg(feature = "orderbook")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+pub struct AppDataObjectDto {
+    /// Full serialized app-data payload.
+    pub full_app_data: String,
+}
+
+#[cfg(feature = "orderbook")]
+impl From<cow_sdk_orderbook::AppDataObject> for AppDataObjectDto {
+    fn from(value: cow_sdk_orderbook::AppDataObject) -> Self {
+        Self {
+            full_app_data: value.full_app_data,
+        }
+    }
+}
+
+/// Native-price response from the orderbook native-price endpoint, mirroring
+/// `cow_sdk_orderbook::NativePriceResponse`.
+#[cfg(feature = "orderbook")]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+pub struct NativePriceResponseDto {
+    /// Token price quoted in the chain's native asset.
+    pub price: f64,
+}
+
+/// Executed protocol-fee component of a trade, mirroring
+/// `cow_sdk_orderbook::ExecutedProtocolFee`.
+#[cfg(feature = "orderbook")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+pub struct ExecutedProtocolFeeDto {
+    /// Fee policy that produced this fee, when services returns it (arbitrary
+    /// JSON mirroring the upstream policy shape).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub policy: Option<Value>,
+    /// Fee amount taken.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub amount: Option<String>,
+    /// Token in which the fee was taken.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub token: Option<String>,
+}
+
+/// Trade returned by the orderbook trades endpoint, mirroring
+/// `cow_sdk_orderbook::Trade`.
+#[cfg(feature = "orderbook")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+pub struct TradeDto {
+    /// Block number containing the trade event.
+    pub block_number: u64,
+    /// Log index within the block.
+    pub log_index: u64,
+    /// Order UID associated with the trade.
+    pub order_uid: String,
+    /// Owner address.
+    pub owner: String,
+    /// Sell-token address.
+    pub sell_token: String,
+    /// Buy-token address.
+    pub buy_token: String,
+    /// Executed sell amount in the upstream decimal-string wire shape.
+    pub sell_amount: String,
+    /// Executed sell amount before fees.
+    #[serde(default)]
+    pub sell_amount_before_fees: String,
+    /// Executed buy amount in the upstream decimal-string wire shape.
+    pub buy_amount: String,
+    /// Protocol fees executed as part of the trade, when services returns them.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub executed_protocol_fees: Option<Vec<ExecutedProtocolFeeDto>>,
+    /// Settlement transaction hash.
+    pub tx_hash: Option<String>,
+}
+
+/// Resolved quote payload echoed by the orderbook `/quote` response, mirroring
+/// `cow_sdk_orderbook::QuoteData`.
+#[cfg(feature = "orderbook")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+pub struct QuoteDataDto {
+    /// Sell-token address.
+    pub sell_token: String,
+    /// Buy-token address.
+    pub buy_token: String,
+    /// Optional receiver override.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub receiver: Option<String>,
+    /// Sell amount in the upstream decimal-string wire shape.
+    pub sell_amount: String,
+    /// Buy amount in the upstream decimal-string wire shape.
+    pub buy_amount: String,
+    /// Absolute UNIX expiry timestamp.
+    pub valid_to: u32,
+    /// Effective app-data hash derived from the orderbook response.
+    pub app_data: String,
+    /// Explicit app-data hash echoed alongside full app data, when present.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub app_data_hash: Option<String>,
+    /// Network-cost amount echoed by the orderbook `/quote` response.
+    pub fee_amount: String,
+    /// Order kind.
+    pub kind: OrderKindDto,
+    /// Whether partial fills are allowed.
+    pub partially_fillable: bool,
+    /// Sell-token balance source.
+    pub sell_token_balance: TokenBalanceDto,
+    /// Buy-token balance destination.
+    pub buy_token_balance: TokenBalanceDto,
+    /// Estimated gas units for the quoted trade; empty for a locally
+    /// constructed quote.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub gas_amount: String,
+    /// Estimated gas price at quote time (wei per gas unit).
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub gas_price: String,
+    /// Sell-token price in native-token atoms per sell-token atom.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub sell_token_price: String,
+    /// Signing scheme for the quoted order.
+    pub signing_scheme: SigningSchemeDto,
+}
+
+/// Raw orderbook quote response, mirroring
+/// `cow_sdk_orderbook::OrderQuoteResponse`.
+#[cfg(feature = "orderbook")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+pub struct OrderQuoteResponseDto {
+    /// Resolved quote payload.
+    pub quote: QuoteDataDto,
+    /// Effective owner used for the quote, when returned by the API.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub from: Option<String>,
+    /// Quote price/fee expiry as an ISO-8601 UTC string.
+    pub expiration: String,
+    /// Quote identifier used when submitting the corresponding order.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub id: Option<i64>,
+    /// Whether the quote was verified by the orderbook.
+    pub verified: bool,
+    /// Optional protocol fee basis points for the quote.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub protocol_fee_bps: Option<String>,
+}
+
 /// Orderbook quote request input.
 #[cfg(feature = "orderbook")]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Tsify)]

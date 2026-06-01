@@ -48,11 +48,14 @@ export class OrderBookClient {
   async getNativePrice(
     token: string,
     options?: SdkClientOptions | null
-  ): Promise<WasmEnvelope<unknown>> {
+  ): Promise<WasmEnvelope<raw.NativePriceResponseDto>> {
     return this.#call((client, merged) => client.getNativePrice(token, merged), options);
   }
 
-  async getOrder(orderUid: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<unknown>> {
+  async getOrder(
+    orderUid: string,
+    options?: SdkClientOptions | null
+  ): Promise<WasmEnvelope<raw.OrderDto>> {
     return this.#call((client, merged) => client.getOrder(orderUid, merged), options);
   }
 
@@ -60,7 +63,7 @@ export class OrderBookClient {
     owner: string,
     pagination?: raw.PaginationOptions | null,
     options?: SdkClientOptions | null
-  ): Promise<WasmEnvelope<unknown>> {
+  ): Promise<WasmEnvelope<raw.OrderDto[]>> {
     return this.#call((client, merged) => client.getOrders(owner, pagination ?? null, merged), options);
   }
 
@@ -68,7 +71,7 @@ export class OrderBookClient {
     owner: string,
     pagination?: raw.PaginationOptions | null,
     options?: SdkClientOptions | null
-  ): Promise<WasmEnvelope<unknown>> {
+  ): Promise<WasmEnvelope<raw.OrderDto[]>> {
     return this.#call(
       (client, merged) => client.getOrdersByOwner(owner, pagination ?? null, merged),
       options
@@ -78,15 +81,33 @@ export class OrderBookClient {
   async getQuote(
     request: raw.OrderQuoteRequestInput,
     options?: SdkClientOptions | null
-  ): Promise<WasmEnvelope<unknown>> {
+  ): Promise<WasmEnvelope<raw.OrderQuoteResponseDto>> {
     return this.#call((client, merged) => client.getQuote(request, merged), options);
   }
 
   async getTrades(
     query: raw.TradesQueryInput,
     options?: SdkClientOptions | null
-  ): Promise<WasmEnvelope<unknown>> {
+  ): Promise<WasmEnvelope<raw.TradeDto[]>> {
     return this.#call((client, merged) => client.getTrades(query, merged), options);
+  }
+
+  async getAppData(
+    appDataHash: string,
+    options?: SdkClientOptions | null
+  ): Promise<WasmEnvelope<raw.AppDataObjectDto>> {
+    return this.#call((client, merged) => client.getAppData(appDataHash, merged), options);
+  }
+
+  async uploadAppData(
+    appDataHash: string,
+    fullAppData: string,
+    options?: SdkClientOptions | null
+  ): Promise<WasmEnvelope<{ uploaded: true }>> {
+    return this.#call(
+      (client, merged) => client.uploadAppData(appDataHash, fullAppData, merged),
+      options
+    );
   }
 
   async sendOrder(
@@ -280,22 +301,37 @@ export function wasmVersion(): string {
 }
 
 export type {
+  AppDataObjectDto,
   CowEip1271SignRequest,
   DeploymentAddressesDto,
   Eip1193Request,
   EthFlowEventDto,
+  EthflowDataDto,
   EventLogInput,
+  ExecutedProtocolFeeDto,
   GeneratedOrderUidDto,
+  InteractionDataDto,
+  NativePriceResponseDto,
+  OnchainOrderDataDto,
+  OrderClassDto,
   OrderCreationInput,
+  OrderDto,
   OrderInput,
+  OrderInteractionsDto,
   OrderKindDto,
   OrderQuoteRequestInput,
+  OrderQuoteResponseDto,
+  OrderStatusDto,
   OrderTraderParametersInput,
   PaginationOptions,
+  QuoteDataDto,
   SettlementEventDto,
   SignedCancellationsInput,
   SignedOrderDto,
+  SigningSchemeDto,
+  StoredOrderQuoteDto,
   TokenBalanceDto,
+  TradeDto,
   TradesQueryInput,
   TransactionRequestDto,
   TypedDataDomainDto,
@@ -309,6 +345,6 @@ export type {
   Eip1193RequestCallback,
   TypedDataSignerCallback
 } from "./callbacks.js";
-export type { SdkError } from "./errors.js";
+export type { OrderbookRejectionCategory, SdkError } from "./errors.js";
 export type { SchemaVersion, WasmEnvelope } from "./envelope.js";
 export type { SdkClientOptions, SigningOptions, WalletConfig } from "./options.js";

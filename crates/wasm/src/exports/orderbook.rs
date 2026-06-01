@@ -1,4 +1,4 @@
-use cow_sdk_core::{Address, OrderUid};
+use cow_sdk_core::{Address, AppDataHash, OrderUid};
 use cow_sdk_orderbook::{
     GetOrdersRequest, GetTradesRequest, OrderCancellations, OrderCreation, OrderbookApi,
 };
@@ -12,7 +12,7 @@ use crate::exports::{
         ClientCallScope, SdkClientOptions, run_with_client_options, transport_policy_with_timeout,
     },
     dto::{
-        OrderCreationInput, OrderInput, OrderQuoteRequestInput, PaginationOptions,
+        AppDataObjectDto, OrderCreationInput, OrderInput, OrderQuoteRequestInput, PaginationOptions,
         SignedCancellationsInput, SignedOrderDto, TradesQueryInput, ecdsa_signing_scheme,
         from_json_value, orderbook_signing_scheme, parse_chain, parse_order, to_js_value,
         transport_policy_from_config,
@@ -89,7 +89,10 @@ impl OrderBookClient {
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.get_quote"))
     )]
-    #[wasm_bindgen(js_name = "getQuote")]
+    #[wasm_bindgen(
+        js_name = "getQuote",
+        unchecked_return_type = "WasmEnvelope<OrderQuoteResponseDto>"
+    )]
     pub async fn get_quote(
         &self,
         request: OrderQuoteRequestInput,
@@ -177,7 +180,10 @@ impl OrderBookClient {
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.get_order"))
     )]
-    #[wasm_bindgen(js_name = "getOrder")]
+    #[wasm_bindgen(
+        js_name = "getOrder",
+        unchecked_return_type = "WasmEnvelope<OrderDto>"
+    )]
     pub async fn get_order(
         &self,
         #[wasm_bindgen(js_name = orderUid)] order_uid: String,
@@ -204,7 +210,10 @@ impl OrderBookClient {
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.get_trades"))
     )]
-    #[wasm_bindgen(js_name = "getTrades")]
+    #[wasm_bindgen(
+        js_name = "getTrades",
+        unchecked_return_type = "WasmEnvelope<TradeDto[]>"
+    )]
     pub async fn get_trades(
         &self,
         query: TradesQueryInput,
@@ -233,7 +242,10 @@ impl OrderBookClient {
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.get_orders_by_owner"))
     )]
-    #[wasm_bindgen(js_name = "getOrdersByOwner")]
+    #[wasm_bindgen(
+        js_name = "getOrdersByOwner",
+        unchecked_return_type = "WasmEnvelope<OrderDto[]>"
+    )]
     pub async fn get_orders_by_owner(
         &self,
         owner: String,
@@ -262,7 +274,10 @@ impl OrderBookClient {
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.get_orders"))
     )]
-    #[wasm_bindgen(js_name = "getOrders")]
+    #[wasm_bindgen(
+        js_name = "getOrders",
+        unchecked_return_type = "WasmEnvelope<OrderDto[]>"
+    )]
     pub async fn get_orders(
         &self,
         owner: String,
@@ -290,7 +305,10 @@ impl OrderBookClient {
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.get_native_price"))
     )]
-    #[wasm_bindgen(js_name = "getNativePrice")]
+    #[wasm_bindgen(
+        js_name = "getNativePrice",
+        unchecked_return_type = "WasmEnvelope<NativePriceResponseDto>"
+    )]
     pub async fn get_native_price(
         &self,
         token: String,
@@ -334,6 +352,71 @@ impl OrderBookClient {
         })
         .await
     }
+
+    /// Fetches the full app-data document registered for an app-data hash.
+    ///
+    /// Use this to retrieve the canonical app-data payload the orderbook holds
+    /// for a given hash, for example to display or re-verify a document
+    /// referenced by an order.
+    ///
+    /// @param appDataHash App-data hash as a `0x`-prefixed 32-byte hex string.
+    /// @param options Optional per-call cancellation and timeout settings.
+    /// @returns A versioned envelope containing the app-data document.
+    /// @throws SdkError for an invalid hash, transport failure, or timeout.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.get_app_data"))
+    )]
+    #[wasm_bindgen(
+        js_name = "getAppData",
+        unchecked_return_type = "WasmEnvelope<AppDataObjectDto>"
+    )]
+    pub async fn get_app_data(
+        &self,
+        #[wasm_bindgen(js_name = appDataHash)] app_data_hash: String,
+        #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
+    ) -> Result<JsValue, JsValue> {
+        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+        let inner = orderbook_for_scope(&self.inner, &scope);
+        run_with_client_options(scope, async move {
+            orderbook_get_app_data(&inner, app_data_hash).await
+        })
+        .await
+    }
+
+    /// Uploads the full app-data JSON for a content-addressed app-data hash.
+    ///
+    /// The SDK enforces the content-addressed-write invariant: the keccak-256
+    /// digest of `fullAppData` must equal `appDataHash`, or the call rejects
+    /// before any network request. Serialize `fullAppData` with the canonical
+    /// app-data writer so the digest matches.
+    ///
+    /// @param appDataHash App-data hash as a `0x`-prefixed 32-byte hex string.
+    /// @param fullAppData Canonically serialized app-data JSON payload.
+    /// @param options Optional per-call cancellation and timeout settings.
+    /// @returns A versioned envelope containing `{ uploaded: true }` on success.
+    /// @throws SdkError for a hash mismatch, invalid hash, transport failure, or timeout.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.upload_app_data"))
+    )]
+    #[wasm_bindgen(
+        js_name = "uploadAppData",
+        unchecked_return_type = "WasmEnvelope<{ uploaded: true }>"
+    )]
+    pub async fn upload_app_data(
+        &self,
+        #[wasm_bindgen(js_name = appDataHash)] app_data_hash: String,
+        #[wasm_bindgen(js_name = fullAppData)] full_app_data: String,
+        #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
+    ) -> Result<JsValue, JsValue> {
+        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+        let inner = orderbook_for_scope(&self.inner, &scope);
+        run_with_client_options(scope, async move {
+            orderbook_upload_app_data(&inner, app_data_hash, full_app_data).await
+        })
+        .await
+    }
 }
 
 pub(crate) fn build_orderbook(
@@ -366,6 +449,36 @@ pub(crate) fn orderbook_for_scope(inner: &OrderbookApi, scope: &ClientCallScope)
             inner.transport_policy(),
             scope.timeout(),
         ))
+}
+
+async fn orderbook_get_app_data(
+    inner: &OrderbookApi,
+    app_data_hash: String,
+) -> Result<JsValue, JsValue> {
+    let hash = parse_app_data_hash(&app_data_hash)?;
+    let object = inner
+        .get_app_data(&hash)
+        .await
+        .map_err(|error| WasmError::from(error).into_js())?;
+    to_js_value(&WasmEnvelope::v1(AppDataObjectDto::from(object)))
+}
+
+async fn orderbook_upload_app_data(
+    inner: &OrderbookApi,
+    app_data_hash: String,
+    full_app_data: String,
+) -> Result<JsValue, JsValue> {
+    let hash = parse_app_data_hash(&app_data_hash)?;
+    inner
+        .upload_app_data(&hash, &full_app_data)
+        .await
+        .map_err(|error| WasmError::from(error).into_js())?;
+    to_js_value(&WasmEnvelope::v1(json!({ "uploaded": true })))
+}
+
+fn parse_app_data_hash(value: &str) -> Result<AppDataHash, JsValue> {
+    AppDataHash::new(value.to_owned())
+        .map_err(|error| WasmError::invalid("appDataHash", error.to_string()).into_js())
 }
 
 async fn orderbook_get_quote(

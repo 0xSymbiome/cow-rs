@@ -139,6 +139,25 @@ export type SettlementEventDto = { kind: "trade"; owner: string; sellToken: stri
 export type EthFlowEventDto = { kind: "orderPlacement"; sender: string; order: OrderInput; signingScheme: string; signature: string; data: string } | { kind: "orderInvalidation"; orderUid: string } | { kind: "orderRefund"; orderUid: string; refunder: string };
 
 /**
+ * A single pre/post interaction attached to an order, mirroring
+ * `cow_sdk_orderbook::InteractionData`.
+ */
+export interface InteractionDataDto {
+    /**
+     * Contract address targeted by the interaction.
+     */
+    target: string;
+    /**
+     * Native token value sent with the interaction.
+     */
+    value: string;
+    /**
+     * Hex-encoded calldata forwarded to `target`.
+     */
+    callData: string;
+}
+
+/**
  * Allowance helper parameters.
  */
 export interface AllowanceParametersInput {
@@ -197,6 +216,25 @@ export interface AppDataDocDto {
 }
 
 /**
+ * App-data document, serialized payload, and digest used by the quote flow,
+ * mirroring `cow_sdk_trading::TradingAppDataInfo`.
+ */
+export interface TradingAppDataInfoDto {
+    /**
+     * Parsed app-data document (arbitrary JSON).
+     */
+    doc: Value;
+    /**
+     * Canonically serialized app-data payload.
+     */
+    fullAppData: string;
+    /**
+     * Keccak-256 digest used in protocol order payloads.
+     */
+    appDataKeccak256: string;
+}
+
+/**
  * App-data info output.
  */
 export interface AppDataInfoDto {
@@ -227,6 +265,17 @@ export interface ValidationResultDto {
      */
     errors?: string;
 }
+
+/**
+ * Coarse, switchable classification of an orderbook rejection, mirrored for
+ * the JS error surface.
+ *
+ * A consumer can branch on the action a rejection calls for — fix the
+ * request, fund the wallet, re-quote, wait, or escalate — without matching
+ * every wire tag. The category carries no message or code, so it never
+ * re-exposes redacted rejection text.
+ */
+export type OrderbookRejectionCategoryDto = "authorization" | "insufficientFunds" | "invalidOrder" | "notFound" | "conflict" | "unfulfillable" | "server" | "__unknown";
 
 /**
  * Contract-read callback request.
@@ -305,6 +354,99 @@ export interface Eip1193Request {
 }
 
 /**
+ * Effective trade parameters after SDK defaults and advanced settings were
+ * applied, mirroring `cow_sdk_trading::TradeParameters`.
+ */
+export interface TradeParametersDto {
+    /**
+     * Order side.
+     */
+    kind: OrderKindDto;
+    /**
+     * Optional owner override.
+     */
+    owner?: string;
+    /**
+     * Sell-token address.
+     */
+    sellToken: string;
+    /**
+     * Buy-token address.
+     */
+    buyToken: string;
+    /**
+     * Amount interpreted according to `kind`.
+     */
+    amount: string;
+    /**
+     * Optional environment override.
+     */
+    env?: CowEnvDto;
+    /**
+     * Optional settlement-contract overrides keyed by chain id. Typed as
+     * `Record` rather than `Map` for runtime alignment (the wire form is a
+     * plain JSON object).
+     */
+    settlementContractOverride?: Record<string, string>;
+    /**
+     * Optional `EthFlow`-contract overrides keyed by chain id.
+     */
+    ethFlowContractOverride?: Record<string, string>;
+    /**
+     * Whether partial fills are allowed.
+     */
+    partiallyFillable: boolean;
+    /**
+     * Sell-token balance source.
+     */
+    sellTokenBalance: TokenBalanceDto;
+    /**
+     * Buy-token balance destination.
+     */
+    buyTokenBalance: TokenBalanceDto;
+    /**
+     * Optional explicit slippage tolerance in basis points.
+     */
+    slippageBps?: number;
+    /**
+     * Optional receiver override.
+     */
+    receiver?: string;
+    /**
+     * Optional relative validity duration in seconds.
+     */
+    validFor?: number;
+    /**
+     * Optional absolute UNIX expiry timestamp.
+     */
+    validTo?: number;
+    /**
+     * Optional partner-fee metadata.
+     */
+    partnerFee?: PartnerFeeDto;
+}
+
+/**
+ * Executed protocol-fee component of a trade, mirroring
+ * `cow_sdk_orderbook::ExecutedProtocolFee`.
+ */
+export interface ExecutedProtocolFeeDto {
+    /**
+     * Fee policy that produced this fee, when services returns it (arbitrary
+     * JSON mirroring the upstream policy shape).
+     */
+    policy?: Value;
+    /**
+     * Fee amount taken.
+     */
+    amount?: string;
+    /**
+     * Token in which the fee was taken.
+     */
+    token?: string;
+}
+
+/**
  * Explicit raw GraphQL query input.
  */
 export interface SubgraphQueryInput {
@@ -320,6 +462,89 @@ export interface SubgraphQueryInput {
      * Optional operation name.
      */
     operationName?: string;
+}
+
+/**
+ * Fee component represented by an amount and a basis-point value.
+ */
+export interface FeeComponentDto {
+    /**
+     * Fee amount.
+     */
+    amount: string;
+    /**
+     * Fee in basis points.
+     */
+    bps: number;
+}
+
+/**
+ * Full app-data document returned by the orderbook app-data endpoint.
+ */
+export interface AppDataObjectDto {
+    /**
+     * Full serialized app-data payload.
+     */
+    fullAppData: string;
+}
+
+/**
+ * Full quote cost breakdown.
+ */
+export interface CostsDto {
+    /**
+     * Network-fee component.
+     */
+    networkFee: NetworkFeeDto;
+    /**
+     * Partner-fee component.
+     */
+    partnerFee: FeeComponentDto;
+    /**
+     * Protocol-fee component.
+     */
+    protocolFee: FeeComponentDto;
+}
+
+/**
+ * Fully resolved quote result produced by trading quote helpers, mirroring
+ * `cow_sdk_trading::QuoteResults`.
+ *
+ * Returned by `getQuote` and accepted by `postSwapOrderFromQuote` unchanged.
+ */
+export interface QuoteResultsDto {
+    /**
+     * Effective trade parameters after SDK defaults and advanced settings.
+     */
+    tradeParameters: TradeParametersDto;
+    /**
+     * Suggested slippage in basis points after resolution.
+     */
+    suggestedSlippageBps: number;
+    /**
+     * Fee and amount breakdown derived from the orderbook quote.
+     */
+    amountsAndCosts: QuoteAmountsAndCostsDto;
+    /**
+     * Unsigned order payload produced for signing or on-chain submission.
+     */
+    orderToSign: OrderDataDto;
+    /**
+     * Raw orderbook quote response.
+     */
+    quoteResponse: OrderQuoteResponseDto;
+    /**
+     * App-data document, serialized payload, and digest used by the quote flow.
+     */
+    appDataInfo: TradingAppDataInfoDto;
+    /**
+     * Originating orderbook runtime binding captured by the quote flow.
+     */
+    orderbookBinding?: OrderbookRuntimeBindingDto;
+    /**
+     * Typed order-facing EIP-712 envelope kept for consumers.
+     */
+    orderTypedData: TypedDataEnvelopeDto;
 }
 
 /**
@@ -350,7 +575,7 @@ export type Hash32 = string;
 /**
  * JS-visible typed error envelope for every wasm export.
  */
-export type WasmError = { kind: "invalidInput"; schemaVersion: SchemaVersion; message: string; field?: string } | { kind: "unknownEnumValue"; schemaVersion: SchemaVersion; message: string; field: string; value: string } | { kind: "unsupportedChain"; schemaVersion: SchemaVersion; message: string; chainId: number } | { kind: "walletRequest"; schemaVersion: SchemaVersion; method: string; code?: number; message: string; data?: Value } | { kind: "walletTimeout"; schemaVersion: SchemaVersion; message: string; timeoutMs: number } | { kind: "transport"; schemaVersion: SchemaVersion; class: string; message: string; status?: number; headers?: [string, string][]; body?: string } | { kind: "orderbook"; schemaVersion: SchemaVersion; code?: string; message: string } | { kind: "subgraph"; schemaVersion: SchemaVersion; message: string } | { kind: "signing"; schemaVersion: SchemaVersion; message: string } | { kind: "appData"; schemaVersion: SchemaVersion; class?: string; message: string } | { kind: "forbiddenInteraction"; schemaVersion: SchemaVersion; message: string; target: string; reason: string } | { kind: "cancelled"; schemaVersion: SchemaVersion; message: string } | { kind: "internal"; schemaVersion: SchemaVersion; message: string } | { kind: "__unknown"; schemaVersion: SchemaVersion; message: string; raw: Value };
+export type WasmError = { kind: "invalidInput"; schemaVersion: SchemaVersion; message: string; field?: string } | { kind: "unknownEnumValue"; schemaVersion: SchemaVersion; message: string; field: string; value: string } | { kind: "unsupportedChain"; schemaVersion: SchemaVersion; message: string; chainId: number } | { kind: "walletRequest"; schemaVersion: SchemaVersion; method: string; code?: number; message: string; data?: Value } | { kind: "walletTimeout"; schemaVersion: SchemaVersion; message: string; timeoutMs: number } | { kind: "transport"; schemaVersion: SchemaVersion; class: string; message: string; status?: number; headers?: [string, string][]; body?: string } | { kind: "orderbook"; schemaVersion: SchemaVersion; code?: string; category?: OrderbookRejectionCategoryDto; message: string } | { kind: "subgraph"; schemaVersion: SchemaVersion; message: string } | { kind: "signing"; schemaVersion: SchemaVersion; message: string } | { kind: "appData"; schemaVersion: SchemaVersion; class?: string; message: string } | { kind: "forbiddenInteraction"; schemaVersion: SchemaVersion; message: string; target: string; reason: string } | { kind: "cancelled"; schemaVersion: SchemaVersion; message: string } | { kind: "internal"; schemaVersion: SchemaVersion; message: string } | { kind: "__unknown"; schemaVersion: SchemaVersion; message: string; raw: Value };
 
 /**
  * Jitter strategy accepted by JS client constructors.
@@ -443,24 +668,6 @@ export interface LimitTradeParametersInput {
 }
 
 /**
- * Minimal quote-results payload accepted by `TradingClient.postSwapOrderFromQuote`.
- */
-export interface QuoteResultsInput {
-    /**
-     * Order returned by a previous quote response.
-     */
-    orderToSign: OrderInput;
-    /**
-     * Upstream quote response reference.
-     */
-    quoteResponse?: QuoteResponseRefInput;
-    /**
-     * Direct quote id fallback.
-     */
-    quoteId?: number;
-}
-
-/**
  * Native-currency sell transaction bundle.
  */
 export interface BuiltSellNativeCurrencyTxDto {
@@ -481,6 +688,58 @@ export interface BuiltSellNativeCurrencyTxDto {
      */
     from: string;
 }
+
+/**
+ * Native-price response from the orderbook native-price endpoint, mirroring
+ * `cow_sdk_orderbook::NativePriceResponse`.
+ */
+export interface NativePriceResponseDto {
+    /**
+     * Token price quoted in the chain\'s native asset.
+     */
+    price: number;
+}
+
+/**
+ * Network-fee amounts expressed in both quote currencies.
+ */
+export interface NetworkFeeDto {
+    /**
+     * Network fee expressed in sell-token units.
+     */
+    amountInSellCurrency: string;
+    /**
+     * Network fee expressed in buy-token units.
+     */
+    amountInBuyCurrency: string;
+}
+
+/**
+ * On-chain placement metadata, mirroring
+ * `cow_sdk_orderbook::OnchainOrderData`.
+ */
+export interface OnchainOrderDataDto {
+    /**
+     * Sender address associated with the on-chain placement.
+     */
+    sender: string;
+    /**
+     * Placement error emitted by services, when on-chain placement failed.
+     */
+    placementError?: string;
+}
+
+/**
+ * One typed partner-fee policy object, mirroring
+ * `cow_sdk_app_data::PartnerFeePolicy`.
+ */
+export type PartnerFeePolicyDto = { volumeBps: number; recipient: string } | { surplusBps: number; maxVolumeBps: number; recipient: string } | { priceImprovementBps: number; maxVolumeBps: number; recipient: string };
+
+/**
+ * Order class surfaced by the orderbook API, mirroring
+ * `cow_sdk_orderbook::OrderClass`.
+ */
+export type OrderClassDto = "market" | "limit" | "liquidity";
 
 /**
  * Order input shared by signing and UID exports.
@@ -534,6 +793,178 @@ export interface OrderInput {
      * Buy balance destination.
      */
     buyTokenBalance: TokenBalanceDto;
+}
+
+/**
+ * Order lifecycle status returned by the orderbook API, mirroring
+ * `cow_sdk_orderbook::OrderStatus`.
+ */
+export type OrderStatusDto = "presignaturePending" | "open" | "fulfilled" | "cancelled" | "expired";
+
+/**
+ * Order returned by the orderbook order endpoints, mirroring
+ * `cow_sdk_orderbook::Order` (the enriched order shape, with the normalized
+ * `totalFee` folded in).
+ */
+export interface OrderDto {
+    /**
+     * Sell-token address.
+     */
+    sellToken: string;
+    /**
+     * Buy-token address.
+     */
+    buyToken: string;
+    /**
+     * Optional receiver override.
+     */
+    receiver?: string;
+    /**
+     * Sell amount in the upstream decimal-string wire shape.
+     */
+    sellAmount: string;
+    /**
+     * Buy amount in the upstream decimal-string wire shape.
+     */
+    buyAmount: string;
+    /**
+     * Absolute UNIX expiry timestamp.
+     */
+    validTo: number;
+    /**
+     * App-data hash attached to the order.
+     */
+    appData: string;
+    /**
+     * Optional app-data hash echoed for debugging by the orderbook.
+     */
+    appDataHash?: string;
+    /**
+     * Order-level fee echoed on the orderbook response; always `\"0\"` in
+     * practice because services rejects non-zero order-level fees.
+     */
+    feeAmount: string;
+    /**
+     * Strict balance-check flag, present only when the order was created with
+     * it set.
+     */
+    fullBalanceCheck?: boolean;
+    /**
+     * Order kind.
+     */
+    kind: OrderKindDto;
+    /**
+     * Whether partial fills are allowed.
+     */
+    partiallyFillable: boolean;
+    /**
+     * Sell-token balance source.
+     */
+    sellTokenBalance: TokenBalanceDto;
+    /**
+     * Buy-token balance destination.
+     */
+    buyTokenBalance: TokenBalanceDto;
+    /**
+     * Signature scheme used for `signature`.
+     */
+    signingScheme: SigningSchemeDto;
+    /**
+     * Raw signature string.
+     */
+    signature: string;
+    /**
+     * Effective owner field returned by the API, when present.
+     */
+    from?: string;
+    /**
+     * Quote id used when the order originated from a quote.
+     */
+    quoteId?: number;
+    /**
+     * Order class.
+     */
+    class: OrderClassDto;
+    /**
+     * Canonical owner surfaced by the orderbook response.
+     */
+    owner: string;
+    /**
+     * Order UID.
+     */
+    uid: string;
+    /**
+     * Creation timestamp string returned by the API.
+     */
+    creationDate?: string;
+    /**
+     * Executed sell amount.
+     */
+    executedSellAmount?: string;
+    /**
+     * Executed sell amount before fees.
+     */
+    executedSellAmountBeforeFees?: string;
+    /**
+     * Executed buy amount.
+     */
+    executedBuyAmount?: string;
+    /**
+     * Executed fee component, when provided.
+     */
+    executedFee?: string;
+    /**
+     * Deprecated legacy executed-fee value, present on older order payloads.
+     */
+    executedFeeAmount?: string;
+    /**
+     * Token in which the executed fee was captured, when returned.
+     */
+    executedFeeToken?: string;
+    /**
+     * Whether the order was invalidated by the protocol.
+     */
+    invalidated?: boolean;
+    /**
+     * Order lifecycle status.
+     */
+    status: OrderStatusDto;
+    /**
+     * Whether services classified the order as a liquidity order.
+     */
+    isLiquidityOrder?: boolean;
+    /**
+     * On-chain user for `EthFlow`-style orders.
+     */
+    onchainUser?: string;
+    /**
+     * `EthFlow`-specific metadata.
+     */
+    ethflowData?: EthflowDataDto;
+    /**
+     * On-chain placement metadata, when services returns it.
+     */
+    onchainOrderData?: OnchainOrderDataDto;
+    /**
+     * Full app-data payload, when services returns it.
+     */
+    fullAppData?: string;
+    /**
+     * Settlement contract address against which the order was signed.
+     */
+    settlementContract: string;
+    /**
+     * Stored quote metadata for quote-linked orders.
+     */
+    quote?: StoredOrderQuoteDto;
+    /**
+     * Optional pre and post interactions associated with the order.
+     */
+    interactions?: OrderInteractionsDto;
+    /**
+     * Total fee normalized by the SDK transform layer.
+     */
+    totalFee?: string;
 }
 
 /**
@@ -735,6 +1166,25 @@ export interface OrderQuoteRequestInput {
 }
 
 /**
+ * Originating orderbook runtime binding captured by the quote flow, mirroring
+ * `cow_sdk_orderbook::OrderbookRuntimeBinding`.
+ */
+export interface OrderbookRuntimeBindingDto {
+    /**
+     * Chain id fixed by the orderbook client.
+     */
+    chainId: number;
+    /**
+     * Environment fixed by the orderbook client.
+     */
+    env: CowEnvDto;
+    /**
+     * Resolved base URL used by the orderbook client when available.
+     */
+    resolvedBaseUrl?: string;
+}
+
+/**
  * Pagination options shared by orderbook list helpers.
  */
 export interface PaginationOptions {
@@ -752,6 +1202,11 @@ export interface PaginationOptions {
  * Partner-fee input accepted by trading swap parameters.
  */
 export type PartnerFeeInput = PartnerFeePolicyInput | PartnerFeePolicyInput[];
+
+/**
+ * Partner-fee metadata, mirroring `cow_sdk_app_data::PartnerFee`.
+ */
+export type PartnerFeeDto = PartnerFeePolicyDto | PartnerFeePolicyDto[];
 
 /**
  * Partner-fee policy input for trading swap parameters.
@@ -780,13 +1235,18 @@ export interface PartnerFeePolicyInput {
 }
 
 /**
- * Quote-response reference accepted by quote-derived posting helpers.
+ * Pre/post interactions associated with an order, mirroring
+ * `cow_sdk_orderbook::OrderInteractions`.
  */
-export interface QuoteResponseRefInput {
+export interface OrderInteractionsDto {
     /**
-     * Upstream quote id.
+     * Interactions executed before the order\'s trade.
      */
-    id?: number;
+    pre?: InteractionDataDto[];
+    /**
+     * Interactions executed after the order\'s trade.
+     */
+    post?: InteractionDataDto[];
 }
 
 /**
@@ -814,6 +1274,37 @@ export interface EventLogInput {
 }
 
 /**
+ * Raw orderbook quote response, mirroring
+ * `cow_sdk_orderbook::OrderQuoteResponse`.
+ */
+export interface OrderQuoteResponseDto {
+    /**
+     * Resolved quote payload.
+     */
+    quote: QuoteDataDto;
+    /**
+     * Effective owner used for the quote, when returned by the API.
+     */
+    from?: string;
+    /**
+     * Quote price/fee expiry as an ISO-8601 UTC string.
+     */
+    expiration: string;
+    /**
+     * Quote identifier used when submitting the corresponding order.
+     */
+    id?: number;
+    /**
+     * Whether the quote was verified by the orderbook.
+     */
+    verified: boolean;
+    /**
+     * Optional protocol fee basis points for the quote.
+     */
+    protocolFeeBps?: string;
+}
+
+/**
  * Request-rate limiter override accepted by JS client constructors.
  */
 export interface RequestRateLimiterConfig {
@@ -829,6 +1320,110 @@ export interface RequestRateLimiterConfig {
      * Bucket scope.
      */
     scope?: LimiterScopeConfig;
+}
+
+/**
+ * Resolved quote payload echoed by the orderbook `/quote` response, mirroring
+ * `cow_sdk_orderbook::QuoteData`.
+ */
+export interface QuoteDataDto {
+    /**
+     * Sell-token address.
+     */
+    sellToken: string;
+    /**
+     * Buy-token address.
+     */
+    buyToken: string;
+    /**
+     * Optional receiver override.
+     */
+    receiver?: string;
+    /**
+     * Sell amount in the upstream decimal-string wire shape.
+     */
+    sellAmount: string;
+    /**
+     * Buy amount in the upstream decimal-string wire shape.
+     */
+    buyAmount: string;
+    /**
+     * Absolute UNIX expiry timestamp.
+     */
+    validTo: number;
+    /**
+     * Effective app-data hash derived from the orderbook response.
+     */
+    appData: string;
+    /**
+     * Explicit app-data hash echoed alongside full app data, when present.
+     */
+    appDataHash?: string;
+    /**
+     * Network-cost amount echoed by the orderbook `/quote` response.
+     */
+    feeAmount: string;
+    /**
+     * Order kind.
+     */
+    kind: OrderKindDto;
+    /**
+     * Whether partial fills are allowed.
+     */
+    partiallyFillable: boolean;
+    /**
+     * Sell-token balance source.
+     */
+    sellTokenBalance: TokenBalanceDto;
+    /**
+     * Buy-token balance destination.
+     */
+    buyTokenBalance: TokenBalanceDto;
+    /**
+     * Estimated gas units for the quoted trade; empty for a locally
+     * constructed quote.
+     */
+    gasAmount?: string;
+    /**
+     * Estimated gas price at quote time (wei per gas unit).
+     */
+    gasPrice?: string;
+    /**
+     * Sell-token price in native-token atoms per sell-token atom.
+     */
+    sellTokenPrice?: string;
+    /**
+     * Signing scheme for the quoted order.
+     */
+    signingScheme: SigningSchemeDto;
+}
+
+/**
+ * Result returned by a managed trading submission
+ * (`cow_sdk_trading::OrderPostingResult`).
+ */
+export interface OrderPostingResultDto {
+    /**
+     * Final order UID.
+     */
+    orderId: string;
+    /**
+     * Transaction hash when the flow submitted an on-chain transaction directly.
+     */
+    txHash?: string;
+    /**
+     * Signature scheme used for the posted order.
+     */
+    signingScheme: SigningSchemeDto;
+    /**
+     * Signature payload sent to the orderbook, or an empty string for
+     * transaction-only flows.
+     */
+    signature: string;
+    /**
+     * Unsigned order payload used for signing or transaction generation.
+     */
+    orderToSign: OrderDataDto;
 }
 
 /**
@@ -848,6 +1443,27 @@ export interface RetryPolicyConfig {
      */
     maxDelayMs?: number;
 }
+
+/**
+ * Sell/buy amount pair at one quote stage.
+ */
+export interface AmountsDto {
+    /**
+     * Sell-side amount.
+     */
+    sellAmount: string;
+    /**
+     * Buy-side amount.
+     */
+    buyAmount: string;
+}
+
+/**
+ * Signature scheme carried on posted and returned orders, mirroring
+ * `cow_sdk_orderbook::SigningScheme`, whose wire form is the lowercased
+ * variant name.
+ */
+export type SigningSchemeDto = "eip712" | "ethsign" | "eip1271" | "presign";
 
 /**
  * Signed order DTO returned by wallet callback exports.
@@ -902,9 +1518,145 @@ export interface SignedCancellationsInput {
 }
 
 /**
+ * Stepwise quote amounts and cost components across the quote lifecycle.
+ */
+export interface QuoteAmountsAndCostsDto {
+    /**
+     * Whether the source quote was sell-sided.
+     */
+    isSell: boolean;
+    /**
+     * Cost breakdown for the quote.
+     */
+    costs: CostsDto;
+    /**
+     * Amounts before all fees.
+     */
+    beforeAllFees: AmountsDto;
+    /**
+     * Amounts before network costs.
+     */
+    beforeNetworkCosts: AmountsDto;
+    /**
+     * Amounts after protocol fees.
+     */
+    afterProtocolFees: AmountsDto;
+    /**
+     * Amounts after network costs.
+     */
+    afterNetworkCosts: AmountsDto;
+    /**
+     * Amounts after partner fees.
+     */
+    afterPartnerFees: AmountsDto;
+    /**
+     * Amounts after slippage.
+     */
+    afterSlippage: AmountsDto;
+    /**
+     * Amounts that should be signed.
+     */
+    amountsToSign: AmountsDto;
+}
+
+/**
+ * Stored quote metadata for quote-linked orders, mirroring
+ * `cow_sdk_orderbook::StoredOrderQuote`.
+ */
+export interface StoredOrderQuoteDto {
+    /**
+     * Estimated gas units required to execute the quoted trade.
+     */
+    gasAmount: string;
+    /**
+     * Estimated gas price at quote time, in wei per gas unit.
+     */
+    gasPrice: string;
+    /**
+     * Sell-token price in native-token atoms per sell-token atom.
+     */
+    sellTokenPrice: string;
+    /**
+     * Quoted sell amount.
+     */
+    sellAmount: string;
+    /**
+     * Quoted buy amount.
+     */
+    buyAmount: string;
+    /**
+     * Estimated network fee in sell-token atoms.
+     */
+    feeAmount: string;
+    /**
+     * Solver address that provided the quote.
+     */
+    solver: string;
+    /**
+     * Whether the quote was verified through simulation.
+     */
+    verified: boolean;
+    /**
+     * Additional services-provided quote metadata, when present.
+     */
+    metadata?: Value;
+}
+
+/**
  * Token-balance mode accepted by wasm order inputs.
  */
 export type TokenBalanceDto = "erc20" | "external" | "internal";
+
+/**
+ * Trade returned by the orderbook trades endpoint, mirroring
+ * `cow_sdk_orderbook::Trade`.
+ */
+export interface TradeDto {
+    /**
+     * Block number containing the trade event.
+     */
+    blockNumber: number;
+    /**
+     * Log index within the block.
+     */
+    logIndex: number;
+    /**
+     * Order UID associated with the trade.
+     */
+    orderUid: string;
+    /**
+     * Owner address.
+     */
+    owner: string;
+    /**
+     * Sell-token address.
+     */
+    sellToken: string;
+    /**
+     * Buy-token address.
+     */
+    buyToken: string;
+    /**
+     * Executed sell amount in the upstream decimal-string wire shape.
+     */
+    sellAmount: string;
+    /**
+     * Executed sell amount before fees.
+     */
+    sellAmountBeforeFees?: string;
+    /**
+     * Executed buy amount in the upstream decimal-string wire shape.
+     */
+    buyAmount: string;
+    /**
+     * Protocol fees executed as part of the trade, when services returns them.
+     */
+    executedProtocolFees?: ExecutedProtocolFeeDto[];
+    /**
+     * Settlement transaction hash.
+     */
+    txHash: string | undefined;
+}
 
 /**
  * Trades query accepted by `OrderBookClient.getTrades`.
@@ -1104,6 +1856,65 @@ export interface TypedDataFieldDto {
 }
 
 /**
+ * Unsigned order payload (`cow_sdk_core::OrderData`) returned by managed
+ * trading flows.
+ *
+ * Mirrors the signed-order field set. Unlike [`OrderInput`], the `receiver`
+ * is always a concrete address because managed flows resolve it before
+ * signing, so every field is present on the wire.
+ */
+export interface OrderDataDto {
+    /**
+     * Sell-token address.
+     */
+    sellToken: string;
+    /**
+     * Buy-token address.
+     */
+    buyToken: string;
+    /**
+     * Receiver of the bought tokens.
+     */
+    receiver: string;
+    /**
+     * Sell amount.
+     */
+    sellAmount: string;
+    /**
+     * Buy amount.
+     */
+    buyAmount: string;
+    /**
+     * Valid-to timestamp.
+     */
+    validTo: number;
+    /**
+     * App-data hash.
+     */
+    appData: string;
+    /**
+     * Fee amount.
+     */
+    feeAmount: string;
+    /**
+     * Order side.
+     */
+    kind: OrderKindDto;
+    /**
+     * Partial-fill flag.
+     */
+    partiallyFillable: boolean;
+    /**
+     * Sell balance source.
+     */
+    sellTokenBalance: TokenBalanceDto;
+    /**
+     * Buy balance destination.
+     */
+    buyTokenBalance: TokenBalanceDto;
+}
+
+/**
  * Validated 32-byte app-data hash.
  *
  * The wire form is the protocol-canonical `0x`-prefixed 66-character
@@ -1198,6 +2009,26 @@ export interface WasmEnvelope<T> {
     value: T;
 }
 
+/**
+ * `CoW` Protocol environment, mirroring `cow_sdk_core::CowEnv`.
+ */
+export type CowEnvDto = "prod" | "staging";
+
+/**
+ * `EthFlow`-specific order metadata, mirroring
+ * `cow_sdk_orderbook::EthflowData`.
+ */
+export interface EthflowDataDto {
+    /**
+     * Transaction in which the order was refunded, when present.
+     */
+    refundTxHash?: string;
+    /**
+     * User-facing validity timestamp for the `EthFlow` order.
+     */
+    userValidTo: number;
+}
+
 
 /**
  * IPFS app-data client backed by an explicitly configured HTTP transport.
@@ -1271,6 +2102,19 @@ export class OrderBookClient {
      */
     cancelOrders(signed: SignedCancellationsInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<{ cancelled: true }>>;
     /**
+     * Fetches the full app-data document registered for an app-data hash.
+     *
+     * Use this to retrieve the canonical app-data payload the orderbook holds
+     * for a given hash, for example to display or re-verify a document
+     * referenced by an order.
+     *
+     * @param appDataHash App-data hash as a `0x`-prefixed 32-byte hex string.
+     * @param options Optional per-call cancellation and timeout settings.
+     * @returns A versioned envelope containing the app-data document.
+     * @throws SdkError for an invalid hash, transport failure, or timeout.
+     */
+    getAppData(appDataHash: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<AppDataObjectDto>>;
+    /**
      * Fetches a token's native price from the orderbook API.
      *
      * The token must be an EVM address. The returned value follows the
@@ -1281,7 +2125,7 @@ export class OrderBookClient {
      * @returns A versioned envelope containing native price data.
      * @throws SdkError for invalid token address, transport failure, or timeout.
      */
-    getNativePrice(token: string, options?: SdkClientOptions | null): Promise<any>;
+    getNativePrice(token: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<NativePriceResponseDto>>;
     /**
      * Fetches one order by its canonical order UID.
      *
@@ -1293,7 +2137,7 @@ export class OrderBookClient {
      * @returns A versioned envelope containing the order response.
      * @throws SdkError for invalid UID, not-found responses, transport failure, or timeout.
      */
-    getOrder(orderUid: string, options?: SdkClientOptions | null): Promise<any>;
+    getOrder(orderUid: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<OrderDto>>;
     /**
      * Fetches orders owned by an address with optional pagination.
      *
@@ -1306,7 +2150,7 @@ export class OrderBookClient {
      * @returns A versioned envelope containing matching orders.
      * @throws SdkError for invalid owner, transport failure, timeout, or cancellation.
      */
-    getOrders(owner: string, pagination?: PaginationOptions | null, options?: SdkClientOptions | null): Promise<any>;
+    getOrders(owner: string, pagination?: PaginationOptions | null, options?: SdkClientOptions | null): Promise<WasmEnvelope<OrderDto[]>>;
     /**
      * Fetches orders owned by an address.
      *
@@ -1319,7 +2163,7 @@ export class OrderBookClient {
      * @returns A versioned envelope containing matching orders.
      * @throws SdkError for invalid owner, transport failure, timeout, or cancellation.
      */
-    getOrdersByOwner(owner: string, pagination?: PaginationOptions | null, options?: SdkClientOptions | null): Promise<any>;
+    getOrdersByOwner(owner: string, pagination?: PaginationOptions | null, options?: SdkClientOptions | null): Promise<WasmEnvelope<OrderDto[]>>;
     /**
      * Fetches a price quote from the orderbook API.
      *
@@ -1332,7 +2176,7 @@ export class OrderBookClient {
      * @returns A versioned envelope containing the quote response.
      * @throws SdkError for invalid input, transport failure, timeout, or cancellation.
      */
-    getQuote(request: OrderQuoteRequestInput, options?: SdkClientOptions | null): Promise<any>;
+    getQuote(request: OrderQuoteRequestInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<OrderQuoteResponseDto>>;
     /**
      * Fetches trades for exactly one owner address or order UID.
      *
@@ -1344,7 +2188,7 @@ export class OrderBookClient {
      * @returns A versioned envelope containing matching trades.
      * @throws SdkError when the query is ambiguous or transport fails.
      */
-    getTrades(query: TradesQueryInput, options?: SdkClientOptions | null): Promise<any>;
+    getTrades(query: TradesQueryInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<TradeDto[]>>;
     /**
      * Creates an orderbook client from a single config object.
      *
@@ -1382,6 +2226,21 @@ export class OrderBookClient {
      * @throws SdkError for malformed input, transport failure, timeout, or rejection.
      */
     sendOrderCreation(input: OrderCreationInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>;
+    /**
+     * Uploads the full app-data JSON for a content-addressed app-data hash.
+     *
+     * The SDK enforces the content-addressed-write invariant: the keccak-256
+     * digest of `fullAppData` must equal `appDataHash`, or the call rejects
+     * before any network request. Serialize `fullAppData` with the canonical
+     * app-data writer so the digest matches.
+     *
+     * @param appDataHash App-data hash as a `0x`-prefixed 32-byte hex string.
+     * @param fullAppData Canonically serialized app-data JSON payload.
+     * @param options Optional per-call cancellation and timeout settings.
+     * @returns A versioned envelope containing `{ uploaded: true }` on success.
+     * @throws SdkError for a hash mismatch, invalid hash, transport failure, or timeout.
+     */
+    uploadAppData(appDataHash: string, fullAppData: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<{ uploaded: true }>>;
 }
 
 /**
@@ -1478,7 +2337,7 @@ export class TradingClient {
      * @returns A versioned envelope containing order UID and transaction request.
      * @throws SdkError when the order, chain, deployment, or sender is invalid.
      */
-    buildSellNativeCurrencyTx(order: OrderInput, quoteId: bigint, from: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<BuiltSellNativeCurrencyTxDto>>;
+    buildSellNativeCurrencyTx(order: OrderInput, quoteId: number, from: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<BuiltSellNativeCurrencyTxDto>>;
     /**
      * Reads CoW Protocol allowance through a read-only contract callback.
      *
@@ -1504,7 +2363,7 @@ export class TradingClient {
      * @returns A versioned envelope containing quote results.
      * @throws SdkError for invalid parameters, transport failure, timeout, or cancellation.
      */
-    getQuote(params: SwapParametersInput, options?: SdkClientOptions | null): Promise<any>;
+    getQuote(params: SwapParametersInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<QuoteResultsDto>>;
     /**
      * Creates a trading client from a single config object.
      *
@@ -1529,7 +2388,7 @@ export class TradingClient {
      * @returns A versioned envelope containing order posting output.
      * @throws SdkError for invalid input, wallet failure, timeout, or rejection.
      */
-    postLimitOrder(params: LimitTradeParametersInput, owner: string, signerCallback: TypedDataSignerCallback, options?: SigningOptions | null): Promise<any>;
+    postLimitOrder(params: LimitTradeParametersInput, owner: string, signerCallback: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<OrderPostingResultDto>>;
     /**
      * Quotes, signs, and posts a swap order through a typed-data callback.
      *
@@ -1544,7 +2403,7 @@ export class TradingClient {
      * @returns A versioned envelope containing order posting output.
      * @throws SdkError for invalid input, quote failure, wallet failure, timeout, or rejection.
      */
-    postSwapOrder(params: SwapParametersInput, owner: string, signerCallback: TypedDataSignerCallback, options?: SigningOptions | null): Promise<any>;
+    postSwapOrder(params: SwapParametersInput, owner: string, signerCallback: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<OrderPostingResultDto>>;
     /**
      * Signs and posts a previously quoted swap order.
      *
@@ -1558,7 +2417,7 @@ export class TradingClient {
      * @returns A versioned envelope containing order posting output.
      * @throws SdkError for invalid quote data, wallet failure, timeout, or rejection.
      */
-    postSwapOrderFromQuote(quoteResults: QuoteResultsInput, owner: string, signerCallback: TypedDataSignerCallback, options?: SigningOptions | null): Promise<any>;
+    postSwapOrderFromQuote(quoteResults: QuoteResultsDto, owner: string, signerCallback: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<OrderPostingResultDto>>;
     /**
      * Quotes and posts a swap order with a custom EIP-1271 signature callback.
      *
@@ -1573,7 +2432,7 @@ export class TradingClient {
      * @returns A versioned envelope containing order posting output.
      * @throws SdkError for invalid input, quote failure, callback failure, timeout, or rejection.
      */
-    postSwapOrderWithEip1271(params: SwapParametersInput, owner: string, customCallback: CustomEip1271Callback, options?: SigningOptions | null): Promise<any>;
+    postSwapOrderWithEip1271(params: SwapParametersInput, owner: string, customCallback: CustomEip1271Callback, options?: SigningOptions | null): Promise<WasmEnvelope<OrderPostingResultDto>>;
 }
 
 /**

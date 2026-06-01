@@ -4,8 +4,8 @@ mod common;
 
 use cow_sdk_pure_helpers as pure;
 use cow_sdk_wasm::exports::{
-    ResolvedEip1271Provider, compute_order_uid, eip1271_signature_payload_export,
-    sign_order_with_custom_eip1271, sign_order_with_eip1271,
+    compute_order_uid, eip1271_signature_payload_export, sign_order_with_custom_eip1271,
+    sign_order_with_eip1271,
 };
 use js_sys::Function;
 use serde::Deserialize;
@@ -231,13 +231,6 @@ async fn custom_callback_non_string_is_rejected() {
     let value = json(error);
 
     assert_eq!(value["kind"], "walletRequest");
-}
-
-#[wasm_bindgen_test]
-fn resolved_eip1271_provider_is_send_sync_without_jsvalue() {
-    fn assert_send_sync<T: Send + Sync>() {}
-
-    assert_send_sync::<ResolvedEip1271Provider>();
 }
 
 #[wasm_bindgen_test]

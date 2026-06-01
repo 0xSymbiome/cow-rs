@@ -1,6 +1,11 @@
 import { cancelledError, invalidInput, normalizeError, type SdkError } from "./errors.js";
 import type { CowFetchCallback, CowFetchRequest, CowFetchResponse } from "./callbacks.js";
-import type { CommonClientConfig, HttpTransportConfig, SdkClientOptions } from "./options.js";
+import type {
+  CommonClientConfig,
+  HttpTransportConfig,
+  SdkClientOptions,
+  SigningOptions
+} from "./options.js";
 
 export interface ClientDefaults {
   signal: AbortSignal | undefined;
@@ -64,6 +69,25 @@ export function mergeOptions(
     return merged;
   }
   return undefined;
+}
+
+/**
+ * Applies the client-level `signal`/`timeoutMs` defaults to a signing call
+ * while preserving the per-call `walletConfig`, and performs the same
+ * already-aborted short-circuit as {@link mergeOptions}. Signing methods take
+ * {@link SigningOptions} (a superset of {@link SdkClientOptions}), so the
+ * shared default propagation must not drop the wallet timeout.
+ */
+export function mergeSigningOptions(
+  defaults: ClientDefaults,
+  options?: SigningOptions | null
+): SigningOptions | undefined {
+  const merged = mergeOptions(defaults, options);
+  const walletConfig = options?.walletConfig;
+  if (walletConfig === undefined) {
+    return merged;
+  }
+  return { ...merged, walletConfig };
 }
 
 export function assertActive(disposed: boolean): void {

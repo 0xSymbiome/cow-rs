@@ -12,8 +12,6 @@ use std::{cell::RefCell, rc::Rc};
 use cow_sdk_core::{Address, DigestSigner, Eip1193};
 #[cfg(feature = "cancellation")]
 use cow_sdk_core::{Amount, Hash32, HexData, OrderUid, TransactionRequest};
-#[cfg(feature = "trading")]
-use cow_sdk_core::{Owner, TypedDataDomain, TypedDataField, TypedDataPayload, TypedDataSigner};
 use cow_sdk_pure_helpers as pure;
 use cow_sdk_signing::GeneratedOrderId;
 #[cfg(feature = "cancellation")]
@@ -40,70 +38,6 @@ use crate::exports::dto::{
 
 #[cfg(feature = "cancellation")]
 const GAS_LIMIT_DEFAULT: u32 = 150_000;
-
-/// Asynchronous typed-data signer backed by a JavaScript callback.
-#[cfg(feature = "trading")]
-pub(crate) struct JsTypedDataSigner {
-    owner: Address,
-    callback: Function,
-    wallet_timeout_ms: Option<u32>,
-}
-
-#[cfg(feature = "trading")]
-impl JsTypedDataSigner {
-    pub(crate) const fn new(
-        owner: Address,
-        callback: Function,
-        wallet_timeout_ms: Option<u32>,
-    ) -> Self {
-        Self {
-            owner,
-            callback,
-            wallet_timeout_ms,
-        }
-    }
-}
-
-#[cfg(feature = "trading")]
-impl Owner for JsTypedDataSigner {
-    type Error = String;
-
-    async fn get_address(&self) -> Result<Address, Self::Error> {
-        Ok(self.owner.clone())
-    }
-}
-
-#[cfg(feature = "trading")]
-impl TypedDataSigner for JsTypedDataSigner {
-    type Error = String;
-
-    async fn sign_typed_data_payload(
-        &self,
-        payload: &TypedDataPayload,
-    ) -> Result<String, Self::Error> {
-        let envelope = TypedDataEnvelopeDto::from_payload(payload)
-            .map_err(|error| js_error_to_string(error.into_js()))?;
-        let value = envelope.callback_value().map_err(js_error_to_string)?;
-        let signature = await_callback_string(
-            &self.callback,
-            value,
-            "signTypedData",
-            self.wallet_timeout_ms,
-        )
-        .await
-        .map_err(js_error_to_string)?;
-        normalize_signature(&signature).map_err(js_error_to_string)
-    }
-
-    async fn sign_typed_data(
-        &self,
-        _domain: &TypedDataDomain,
-        _fields: &[TypedDataField],
-        _value_json: &str,
-    ) -> Result<String, Self::Error> {
-        Err("field-based typed-data signing is not available through this callback".to_owned())
-    }
-}
 
 pub(crate) struct JsDigestSigner {
     callback: Function,
@@ -558,22 +492,15 @@ pub(crate) fn js_error_to_string(value: JsValue) -> String {
 }
 
 pub(crate) fn wallet_js_error(method: &'static str, error: JsValue) -> JsValue {
-    let message = js_message(&error);
+    // Per the redaction policy (ADR 0053), the provider-authored `message` and
+    // `data` payloads can echo caller secrets or RPC tokens, so neither crosses
+    // the boundary. Only the structured EIP-1193 / JSON-RPC `code` — a safe
+    // machine signal — survives; the human message is SDK-authored guidance.
     let code = Reflect::get(&error, &JsValue::from_str("code"))
         .ok()
         .and_then(|code| code.as_f64())
         .map(|code| code as i64);
-    let data = Reflect::get(&error, &JsValue::from_str("data"))
-        .ok()
-        .and_then(|data| serde_wasm_bindgen::from_value(data).ok());
-    WasmError::WalletRequest {
-        schema_version: crate::exports::SchemaVersion::V1,
-        method: method.to_owned(),
-        code,
-        message,
-        data,
-    }
-    .into_js()
+    WasmError::wallet_from_code(method, code).into_js()
 }
 
 pub(crate) fn js_message(value: &JsValue) -> String {

@@ -40,7 +40,6 @@ export interface TypedDataDomainDto {
   version?: string;
   chainId?: number;
   verifyingContract?: string;
-  salt?: string;
 }
 
 export interface TypedDataFieldDto {

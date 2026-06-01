@@ -1,3 +1,5 @@
+#[cfg(feature = "trading")]
+use async_trait::async_trait;
 use cow_sdk_pure_helpers as pure;
 use js_sys::Function;
 use wasm_bindgen::prelude::*;
@@ -13,9 +15,47 @@ use crate::exports::{
     signing::{await_callback_string, signed_order_from_parts},
 };
 
-/// Rust-only marker for the resolved EIP-1271 signing path.
-#[derive(Debug, Clone, Copy, Default)]
-pub struct ResolvedEip1271Provider;
+/// Pure `Send + Sync` EIP-1271 signature provider over a host-resolved signature.
+///
+/// The JavaScript wallet adapter resolves the final contract signature at the
+/// facade boundary; this provider hands that resolved value to the managed
+/// submission path without retaining any JavaScript object, so the trading
+/// workflow keeps a pure provider behind its `Arc<dyn …>` seam.
+#[cfg(feature = "trading")]
+pub(crate) struct ResolvedEip1271Provider {
+    signature: String,
+}
+
+#[cfg(feature = "trading")]
+impl ResolvedEip1271Provider {
+    /// Wraps an already-resolved EIP-1271 contract signature.
+    pub(crate) const fn new(signature: String) -> Self {
+        Self { signature }
+    }
+}
+
+#[cfg(feature = "trading")]
+#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
+#[cfg_attr(not(target_arch = "wasm32"), async_trait)]
+impl cow_sdk_signing::eip1271::Eip1271SignatureProvider for ResolvedEip1271Provider {
+    async fn sign(
+        &self,
+        _order_to_sign: &cow_sdk_core::OrderData,
+    ) -> Result<String, cow_sdk_signing::eip1271::Eip1271SignatureError> {
+        Ok(self.signature.clone())
+    }
+}
+
+/// Compile-time guarantee that the resolved provider never captures a
+/// non-`Send` JavaScript handle. It must stay `Send + Sync` (it holds only a
+/// resolved signature string) so the trading workflow can keep it behind an
+/// `Arc<dyn Eip1271SignatureProvider>`; this bound is enforced on every target
+/// build, including `wasm32`, where `JsValue` would otherwise be `!Send`.
+#[cfg(feature = "trading")]
+const _: fn() = || {
+    const fn assert_send_sync<T: Send + Sync>() {}
+    assert_send_sync::<ResolvedEip1271Provider>();
+};
 
 /// Encodes a CoW EIP-1271 payload from an ECDSA order signature.
 ///

@@ -452,10 +452,46 @@ enums:
     reason: Wasm jitter config is a closed JavaScript override surface for the currently supported SDK retry strategies.
   - name: PartnerFeeInput
     file: crates/wasm/src/exports/dto/trading.rs
-    line: 81
+    line: 116
     category: sdk-local-state
     expected_marker: exhaustive
     reason: Wasm partner-fee input accepts the SDK-owned single-or-multiple shapes currently supported by trading helpers.
+  - name: SigningSchemeDto
+    file: crates/wasm/src/exports/dto/orderbook.rs
+    line: 22
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Wasm mirror of the orderbook SigningScheme; non_exhaustive matches the native enum that future protocol signing schemes can grow.
+  - name: OrderClassDto
+    file: crates/wasm/src/exports/dto/order.rs
+    line: 22
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Wasm mirror of the orderbook OrderClass read enum; non_exhaustive matches the native enum that future order classes can grow.
+  - name: OrderStatusDto
+    file: crates/wasm/src/exports/dto/order.rs
+    line: 37
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Wasm mirror of the orderbook OrderStatus read enum; non_exhaustive matches the native enum that future lifecycle states can grow.
+  - name: CowEnvDto
+    file: crates/wasm/src/exports/dto/quote.rs
+    line: 96
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Wasm mirror of the CoW environment enum embedded in quote results; non_exhaustive matches the native CowEnv that future deployment environments can grow.
+  - name: PartnerFeePolicyDto
+    file: crates/wasm/src/exports/dto/quote.rs
+    line: 109
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Wasm mirror of the partner-fee policy enum embedded in quote results; non_exhaustive matches the native PartnerFeePolicy that future fee-policy shapes can grow.
+  - name: PartnerFeeDto
+    file: crates/wasm/src/exports/dto/quote.rs
+    line: 147
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Wasm mirror of the single-or-multiple partner-fee enum embedded in quote results; non_exhaustive matches the native PartnerFee that future fee shapes can grow.
   - name: SchemaVersion
     file: crates/wasm/src/exports/envelope.rs
     line: 10
@@ -464,10 +500,16 @@ enums:
     reason: Wasm envelope schema versions can grow additively as export contracts evolve.
   - name: WasmError
     file: crates/wasm/src/exports/errors.rs
-    line: 30
+    line: 32
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: Wasm export diagnostics can grow as additional fallible helper paths are exposed.
+  - name: OrderbookRejectionCategoryDto
+    file: crates/wasm/src/exports/errors.rs
+    line: 191
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Wasm mirror of the SDK-owned OrderbookRejectionCategory partition; non_exhaustive keeps new categories additive on the JavaScript error surface.
   - name: SettlementEventDto
     file: crates/wasm/src/exports/dto/events.rs
     line: 100

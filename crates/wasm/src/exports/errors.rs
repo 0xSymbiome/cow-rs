@@ -3,15 +3,17 @@ use cow_sdk_app_data::AppDataError;
 use cow_sdk_core::{
     Cancelled, REDACTED_PLACEHOLDER, Redacted, TransportError, redact_response_body,
 };
+#[cfg(any(feature = "orderbook", feature = "trading"))]
+use cow_sdk_core::ErrorClass;
 #[cfg(feature = "orderbook")]
-use cow_sdk_orderbook::OrderbookError;
+use cow_sdk_orderbook::{OrderbookError, OrderbookRejectionCategory};
 use cow_sdk_pure_helpers::errors::PureError;
 #[cfg(feature = "signing")]
 use cow_sdk_signing::SigningError;
 #[cfg(feature = "subgraph")]
 use cow_sdk_subgraph::SubgraphError;
 #[cfg(feature = "trading")]
-use cow_sdk_trading::TradingError;
+use cow_sdk_trading::{AmountSide, ClientRejection, TradingError};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tsify::Tsify;
@@ -104,9 +106,13 @@ pub enum WasmError {
     Orderbook {
         /// Error schema version.
         schema_version: SchemaVersion,
-        /// Optional orderbook rejection code.
+        /// Optional orderbook rejection code (the HTTP status when known).
         #[serde(skip_serializing_if = "Option::is_none")]
         code: Option<String>,
+        /// Coarse, switchable rejection category when the response carried a
+        /// recognised rejection envelope.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        category: Option<OrderbookRejectionCategoryDto>,
         /// Redacted message.
         message: String,
     },
@@ -171,6 +177,55 @@ pub enum WasmError {
     },
 }
 
+/// Coarse, switchable classification of an orderbook rejection, mirrored for
+/// the JS error surface.
+///
+/// A consumer can branch on the action a rejection calls for — fix the
+/// request, fund the wallet, re-quote, wait, or escalate — without matching
+/// every wire tag. The category carries no message or code, so it never
+/// re-exposes redacted rejection text.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+#[non_exhaustive]
+pub enum OrderbookRejectionCategoryDto {
+    /// Refused on policy or permission grounds; not fixable by editing the order.
+    Authorization,
+    /// Sell-side balance or allowance is insufficient; fund or approve, then resubmit unchanged.
+    InsufficientFunds,
+    /// The request is malformed or violates a validation rule; fix the parameters and rebuild.
+    InvalidOrder,
+    /// The referenced quote or order does not exist.
+    NotFound,
+    /// The order's lifecycle state conflicts with the request and it cannot be retried as is.
+    Conflict,
+    /// No solver, route, or liquidity can currently fill the trade; the condition may clear later.
+    Unfulfillable,
+    /// An upstream server-side fault.
+    Server,
+    /// A wire tag the SDK does not yet model, preserved for forward compatibility.
+    #[serde(rename = "__unknown")]
+    Unknown,
+}
+
+#[cfg(feature = "orderbook")]
+impl From<OrderbookRejectionCategory> for OrderbookRejectionCategoryDto {
+    fn from(value: OrderbookRejectionCategory) -> Self {
+        match value {
+            OrderbookRejectionCategory::Authorization => Self::Authorization,
+            OrderbookRejectionCategory::InsufficientFunds => Self::InsufficientFunds,
+            OrderbookRejectionCategory::InvalidOrder => Self::InvalidOrder,
+            OrderbookRejectionCategory::NotFound => Self::NotFound,
+            OrderbookRejectionCategory::Conflict => Self::Conflict,
+            OrderbookRejectionCategory::Unfulfillable => Self::Unfulfillable,
+            OrderbookRejectionCategory::Server => Self::Server,
+            // The native `Unknown` category and any future `#[non_exhaustive]`
+            // category both surface as the forward-compatible unknown sentinel.
+            _ => Self::Unknown,
+        }
+    }
+}
+
 impl WasmError {
     /// Converts this typed error into a `JsValue` without panicking.
     #[must_use]
@@ -197,6 +252,26 @@ impl WasmError {
             schema_version: SchemaVersion::V1,
             method,
             code: None,
+            message,
+            data: None,
+        }
+    }
+
+    /// Builds a wallet error from an EIP-1193 / JSON-RPC provider error `code`.
+    ///
+    /// Per the redaction policy (ADR 0053), the provider-authored error
+    /// `message` and `data` payload can echo caller secrets or RPC endpoint
+    /// tokens, so neither crosses the boundary. The structured `code` is the
+    /// safe, machine-actionable signal, and the human message is SDK-authored
+    /// guidance keyed off the standard provider code (for example the `-32601`
+    /// method-not-found hint).
+    pub(crate) fn wallet_from_code(method: impl Into<String>, code: Option<i64>) -> Self {
+        let method = method.into();
+        let message = wallet_request_message(&method, wallet_code_hint(code).to_owned());
+        Self::WalletRequest {
+            schema_version: SchemaVersion::V1,
+            method,
+            code,
             message,
             data: None,
         }
@@ -342,23 +417,66 @@ impl From<OrderbookError> for WasmError {
                 headers: None,
                 body: None,
             },
-            OrderbookError::Cancelled => Self::Cancelled {
-                schema_version: SchemaVersion::V1,
-                message: cancelled_message(),
-            },
+            OrderbookError::Cancelled => Self::cancelled(),
             OrderbookError::Rejected {
                 status, rejection, ..
             } => Self::Orderbook {
                 schema_version: SchemaVersion::V1,
                 code: Some(status.as_u16().to_string()),
+                category: Some(rejection.category().into()),
                 message: orderbook_rejection_message(status.as_u16(), rejection.to_string()),
             },
-            error => Self::Orderbook {
-                schema_version: SchemaVersion::V1,
-                code: None,
-                message: orderbook_message(error.to_string()),
+            // A content-addressed hash mismatch is a bad-request / caller-input
+            // fault (the orderbook service rejects it with HTTP 400), so it
+            // surfaces as `invalidInput` even though the native `class()` is
+            // the stricter `Internal`.
+            error @ OrderbookError::AppDataHashMismatch { .. } => {
+                Self::invalid("appData.appDataHash", error.to_string())
+            }
+            OrderbookError::InvalidTradesQuery { field, reason }
+            | OrderbookError::InvalidQuoteRequest { field, reason } => {
+                Self::invalid(field, reason.to_string())
+            }
+            // Base `kind` follows the shared `ErrorClass`; the structured
+            // orderbook `code` carries the HTTP status (including a 429
+            // throttle) when the variant knows it.
+            error => match error.class() {
+                ErrorClass::Validation => Self::invalid("input", error.to_string()),
+                ErrorClass::Signing => Self::Signing {
+                    schema_version: SchemaVersion::V1,
+                    message: signing_message(error.to_string()),
+                },
+                ErrorClass::Transport => Self::Transport {
+                    schema_version: SchemaVersion::V1,
+                    class: "other".to_owned(),
+                    message: transport_message("other", error.to_string()),
+                    status: None,
+                    headers: None,
+                    body: None,
+                },
+                ErrorClass::Cancelled => Self::cancelled(),
+                ErrorClass::Internal => Self::internal(error.to_string()),
+                // Remote and rate-limited faults (a 429 throttle keeps its
+                // status in `code` rather than gaining a distinct kind), plus
+                // future additive classes, surface as the orderbook kind.
+                _ => Self::Orderbook {
+                    schema_version: SchemaVersion::V1,
+                    code: orderbook_status_code(&error),
+                    category: None,
+                    message: orderbook_message(error.to_string()),
+                },
             },
         }
+    }
+}
+
+/// Lifts the HTTP status from an orderbook API error into a structured `code`,
+/// keeping the redacted body and headers off the JS surface.
+#[cfg(feature = "orderbook")]
+fn orderbook_status_code(error: &OrderbookError) -> Option<String> {
+    match error {
+        OrderbookError::Api(api) => Some(api.status.to_string()),
+        _ => None,
     }
 }
 
@@ -382,19 +500,83 @@ impl From<SubgraphError> for WasmError {
 impl From<TradingError> for WasmError {
     fn from(value: TradingError) -> Self {
         match value {
-            TradingError::Cancelled => Self::Cancelled {
-                schema_version: SchemaVersion::V1,
-                message: cancelled_message(),
-            },
+            TradingError::Cancelled => Self::cancelled(),
             TradingError::Orderbook(error) => Self::from(error),
             TradingError::AppData(error) => Self::from(error),
             TradingError::Signing(error) => Self::from(error),
-            error => Self::Orderbook {
-                schema_version: SchemaVersion::V1,
-                code: None,
-                message: orderbook_message(error.to_string()),
+            // The client-side bounds validator (which every managed submission
+            // path runs) rejects locally with a typed `ClientRejection`;
+            // surface it as `invalidInput` with the offending field rather than
+            // the orderbook catch-all.
+            TradingError::ClientRejected(rejection) => Self::from(rejection),
+            // Base `kind` follows the shared `ErrorClass`: caller-side
+            // validation faults are `invalidInput`, signer/provider faults are
+            // `signing`, invariant failures are `internal`, and remote faults
+            // fold into the orderbook kind.
+            error => match error.class() {
+                ErrorClass::Validation => Self::invalid("input", error.to_string()),
+                ErrorClass::Signing => Self::Signing {
+                    schema_version: SchemaVersion::V1,
+                    message: signing_message(error.to_string()),
+                },
+                ErrorClass::Transport => Self::Transport {
+                    schema_version: SchemaVersion::V1,
+                    class: "other".to_owned(),
+                    message: transport_message("other", error.to_string()),
+                    status: None,
+                    headers: None,
+                    body: None,
+                },
+                ErrorClass::Cancelled => Self::cancelled(),
+                ErrorClass::Internal => Self::internal(error.to_string()),
+                // Remote, RateLimited, and future additive classes → orderbook.
+                _ => Self::Orderbook {
+                    schema_version: SchemaVersion::V1,
+                    code: None,
+                    category: None,
+                    message: orderbook_message(error.to_string()),
+                },
             },
         }
+    }
+}
+
+/// Maps a typed client-side [`ClientRejection`] to a JS-visible `invalidInput`
+/// error, tagging the offending field so consumers can guide the caller. The
+/// native `class()` is already `Validation`; this adds the structured `field`.
+#[cfg(feature = "trading")]
+impl From<ClientRejection> for WasmError {
+    fn from(value: ClientRejection) -> Self {
+        Self::invalid(client_rejection_field(&value), value.to_string())
+    }
+}
+
+/// Resolves the public field name a [`ClientRejection`] should point the caller
+/// at. Returns the order-level sentinel for forward-compatible variants the
+/// crate does not yet map.
+#[cfg(feature = "trading")]
+const fn client_rejection_field(rejection: &ClientRejection) -> &'static str {
+    match rejection {
+        ClientRejection::ValidToInsufficient { .. } | ClientRejection::ValidToExcessive { .. } => {
+            "validTo"
+        }
+        ClientRejection::MissingFrom | ClientRejection::OwnerMismatch { .. } => "from",
+        ClientRejection::AppdataFromMismatch { .. } => "appData.signer",
+        ClientRejection::SameBuyAndSellToken { .. } => "buyToken",
+        ClientRejection::InvalidNativeSellToken => "sellToken",
+        ClientRejection::ZeroAmount { side } => match side {
+            AmountSide::Sell => "sellAmount",
+            AmountSide::Buy => "buyAmount",
+            // `AmountSide` is `#[non_exhaustive]`.
+            _ => "amount",
+        },
+        // The specific partner-fee sub-field is carried in the rendered
+        // message; the structured tag stays at the coarse top-level field.
+        ClientRejection::InvalidPartnerFee { .. } => "partnerFee",
+        // `ClientRejection` is `#[non_exhaustive]`; a future client-side
+        // rejection still surfaces as `invalidInput`, defaulting to the
+        // order-level field until mapped to a specific one here.
+        _ => "order",
     }
 }
 
@@ -474,6 +656,22 @@ fn wallet_request_message(method: &str, detail: String) -> String {
     format!(
         "Wallet request `{method}` failed: {detail}. Verify the wallet is connected, on the requested chain, and allowed to sign this request."
     )
+}
+
+/// SDK-authored guidance for a standard EIP-1193 / JSON-RPC provider error
+/// code, used in place of the redacted provider message.
+const fn wallet_code_hint(code: Option<i64>) -> &'static str {
+    match code {
+        // EIP-1193 user rejection (4001).
+        Some(4001) => "the user rejected the request",
+        // EIP-1193 unauthorized (4100).
+        Some(4100) => "the requested account or method is not authorized by the wallet",
+        // EIP-1193 unsupported method (4200) or JSON-RPC method-not-found (-32601).
+        Some(4200 | -32601) => "the wallet does not support the requested method",
+        // EIP-1193 disconnected (4900) or chain-disconnected (4901).
+        Some(4900 | 4901) => "the wallet is disconnected from the requested chain",
+        _ => "the wallet could not complete the request",
+    }
 }
 
 fn wallet_timeout_message(timeout_ms: u32) -> String {

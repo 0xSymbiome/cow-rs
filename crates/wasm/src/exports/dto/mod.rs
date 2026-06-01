@@ -14,7 +14,11 @@ mod contracts;
 mod core;
 #[cfg(feature = "signing")]
 mod events;
+#[cfg(feature = "orderbook")]
+mod order;
 mod orderbook;
+#[cfg(feature = "trading")]
+mod quote;
 mod signing;
 mod subgraph;
 mod trading;
@@ -29,7 +33,12 @@ pub use self::core::{OrderInput, OrderKindDto, TokenBalanceDto};
 #[cfg(feature = "signing")]
 pub use self::events::{EthFlowEventDto, EventLogInput, SettlementEventDto};
 #[cfg(feature = "orderbook")]
-pub use self::orderbook::{OrderCreationInput, OrderQuoteRequestInput};
+pub use self::order::OrderDto;
+#[cfg(feature = "orderbook")]
+pub use self::orderbook::{
+    AppDataObjectDto, ExecutedProtocolFeeDto, NativePriceResponseDto, OrderCreationInput,
+    OrderQuoteRequestInput, OrderQuoteResponseDto, SigningSchemeDto, TradeDto,
+};
 pub use self::orderbook::{PaginationOptions, TradesQueryInput};
 pub use self::signing::{
     CowEip1271SignRequest, Eip1193Request, GeneratedOrderUidDto, SignedCancellationsInput,
@@ -38,9 +47,11 @@ pub use self::signing::{
 pub use self::subgraph::SubgraphQueryInput;
 pub use self::trading::OrderTraderParametersInput;
 #[cfg(feature = "trading")]
+pub use self::quote::QuoteResultsDto;
+#[cfg(feature = "trading")]
 pub use self::trading::{
-    AllowanceParametersInput, LimitTradeParametersInput, PartnerFeeInput, PartnerFeePolicyInput,
-    QuoteResponseRefInput, QuoteResultsInput, SwapParametersInput,
+    AllowanceParametersInput, LimitTradeParametersInput, OrderDataDto, OrderPostingResultDto,
+    PartnerFeeInput, PartnerFeePolicyInput, SwapParametersInput,
 };
 pub use self::transport::{CowFetchRequest, CowFetchResponse};
 #[cfg(feature = "transport-policy")]

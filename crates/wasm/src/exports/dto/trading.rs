@@ -7,47 +7,66 @@ use tsify::Tsify;
 use wasm_bindgen::prelude::*;
 
 #[cfg(feature = "trading")]
-use super::{OrderInput, OrderKindDto, TokenBalanceDto};
+use super::{OrderKindDto, SigningSchemeDto, TokenBalanceDto};
 #[cfg(feature = "trading")]
 use crate::exports::errors::WasmError;
 
-/// Quote-response reference accepted by quote-derived posting helpers.
+/// Unsigned order payload (`cow_sdk_core::OrderData`) returned by managed
+/// trading flows.
+///
+/// Mirrors the signed-order field set. Unlike [`OrderInput`], the `receiver`
+/// is always a concrete address because managed flows resolve it before
+/// signing, so every field is present on the wire.
 #[cfg(feature = "trading")]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
-pub struct QuoteResponseRefInput {
-    /// Upstream quote id.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub id: Option<i64>,
+pub struct OrderDataDto {
+    /// Sell-token address.
+    pub sell_token: String,
+    /// Buy-token address.
+    pub buy_token: String,
+    /// Receiver of the bought tokens.
+    pub receiver: String,
+    /// Sell amount.
+    pub sell_amount: String,
+    /// Buy amount.
+    pub buy_amount: String,
+    /// Valid-to timestamp.
+    pub valid_to: u32,
+    /// App-data hash.
+    pub app_data: String,
+    /// Fee amount.
+    pub fee_amount: String,
+    /// Order side.
+    pub kind: OrderKindDto,
+    /// Partial-fill flag.
+    pub partially_fillable: bool,
+    /// Sell balance source.
+    pub sell_token_balance: TokenBalanceDto,
+    /// Buy balance destination.
+    pub buy_token_balance: TokenBalanceDto,
 }
 
-/// Minimal quote-results payload accepted by `TradingClient.postSwapOrderFromQuote`.
+/// Result returned by a managed trading submission
+/// (`cow_sdk_trading::OrderPostingResult`).
 #[cfg(feature = "trading")]
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Tsify)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
-pub struct QuoteResultsInput {
-    /// Order returned by a previous quote response.
-    pub order_to_sign: OrderInput,
-    /// Upstream quote response reference.
+pub struct OrderPostingResultDto {
+    /// Final order UID.
+    pub order_id: String,
+    /// Transaction hash when the flow submitted an on-chain transaction directly.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub quote_response: Option<QuoteResponseRefInput>,
-    /// Direct quote id fallback.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub quote_id: Option<i64>,
-}
-
-#[cfg(feature = "trading")]
-impl QuoteResultsInput {
-    /// Returns the quote id supplied by either supported input shape.
-    #[must_use]
-    pub fn quote_id(&self) -> Option<i64> {
-        self.quote_response
-            .as_ref()
-            .and_then(|response| response.id)
-            .or(self.quote_id)
-    }
+    pub tx_hash: Option<String>,
+    /// Signature scheme used for the posted order.
+    pub signing_scheme: SigningSchemeDto,
+    /// Signature payload sent to the orderbook, or an empty string for
+    /// transaction-only flows.
+    pub signature: String,
+    /// Unsigned order payload used for signing or transaction generation.
+    pub order_to_sign: OrderDataDto,
 }
 
 /// Partner-fee policy input for trading swap parameters.

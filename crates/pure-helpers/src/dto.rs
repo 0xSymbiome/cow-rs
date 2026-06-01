@@ -333,3 +333,59 @@ fn convert_types(types: &TypedDataTypes) -> BTreeMap<String, Vec<TypedDataFieldD
         })
         .collect()
 }
+
+#[cfg(test)]
+mod tests {
+    use cow_sdk_core::OrderData;
+
+    use super::{OrderInput, OrderKindDto, TokenBalanceDto};
+
+    const SELL_TOKEN: &str = "0x1111111111111111111111111111111111111111";
+    const BUY_TOKEN: &str = "0x2222222222222222222222222222222222222222";
+    const ZERO_RECEIVER: &str = "0x0000000000000000000000000000000000000000";
+    const CONCRETE_RECEIVER: &str = "0x3333333333333333333333333333333333333333";
+    const APP_DATA: &str = "0x337aa6e6c2a7a0d1eb79a35ebd88b08fc963d5f7a3fc953b7ffb2b7f5898a1df";
+
+    fn order_with_receiver(receiver: Option<&str>) -> OrderData {
+        OrderInput {
+            sell_token: SELL_TOKEN.to_owned(),
+            buy_token: BUY_TOKEN.to_owned(),
+            receiver: receiver.map(str::to_owned),
+            sell_amount: "1000000000000000000".to_owned(),
+            buy_amount: "2000000000000000000".to_owned(),
+            valid_to: 1_735_689_600,
+            app_data: APP_DATA.to_owned(),
+            fee_amount: "0".to_owned(),
+            kind: OrderKindDto::Sell,
+            partially_fillable: false,
+            sell_token_balance: TokenBalanceDto::Erc20,
+            buy_token_balance: TokenBalanceDto::Erc20,
+        }
+        .to_unsigned_order()
+        .expect("order input should parse into an unsigned order")
+    }
+
+    /// ADR 0061: an omitted receiver and an explicit zero receiver resolve to
+    /// the same pay-to-owner sentinel, so they build byte-identical `OrderData`
+    /// (and therefore the same EIP-712 struct hash, order UID, and signature).
+    #[test]
+    fn omitted_receiver_matches_explicit_zero_receiver() {
+        assert_eq!(
+            order_with_receiver(None),
+            order_with_receiver(Some(ZERO_RECEIVER)),
+            "omitted and explicit-zero receiver must build identical OrderData"
+        );
+    }
+
+    /// Guards against a vacuous pass and against a boundary that collapses a
+    /// concrete receiver into the owner: a real receiver stays distinct from
+    /// the pay-to-owner sentinel.
+    #[test]
+    fn concrete_receiver_differs_from_pay_to_owner_sentinel() {
+        assert_ne!(
+            order_with_receiver(None),
+            order_with_receiver(Some(CONCRETE_RECEIVER)),
+            "a concrete receiver must not collapse to the pay-to-owner sentinel"
+        );
+    }
+}

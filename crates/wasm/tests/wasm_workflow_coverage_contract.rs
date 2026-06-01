@@ -4,9 +4,9 @@ mod common;
 
 use cow_sdk_wasm::exports::{
     AllowanceParametersInput, LimitTradeParametersInput, OrderBookClient, OrderBookClientConfig,
-    OrderKindDto, OrderTraderParametersInput, PaginationOptions, QuoteResponseRefInput,
-    QuoteResultsInput, TokenBalanceDto, TradesQueryInput, TradingClient, build_cancel_order_tx,
-    build_presign_tx, compute_order_uid,
+    OrderKindDto, OrderTraderParametersInput, PaginationOptions, SwapParametersInput,
+    TokenBalanceDto, TradesQueryInput, TradingClient, build_cancel_order_tx, build_presign_tx,
+    compute_order_uid,
 };
 use js_sys::{Function, Object, Reflect};
 use serde_json::Value;
@@ -70,7 +70,36 @@ fn future_valid_to() -> u32 {
     (js_sys::Date::now() / 1000.0) as u32 + 3_600
 }
 
-fn post_fetch_callback(uid: &str) -> Function {
+/// Builds a `/api/v1/quote` response body that deserializes into the native
+/// `OrderQuoteResponse`, carrying `id` so the posted order's `quoteId` is
+/// asserted end-to-end through a real `getQuote` round-trip.
+fn quote_response_json(id: i64, valid_to: u32) -> String {
+    serde_json::json!({
+        "quote": {
+            "sellToken": ADDR_SELL,
+            "buyToken": ADDR_BUY,
+            "receiver": ADDR_RECEIVER,
+            "sellAmount": "98646335338956442",
+            "buyAmount": "30000000000000000000",
+            "validTo": valid_to,
+            "appData": HASH_APP_DATA,
+            "feeAmount": "1353664661043558",
+            "kind": "sell",
+            "partiallyFillable": false,
+            "sellTokenBalance": "erc20",
+            "buyTokenBalance": "erc20"
+        },
+        "from": ADDR_OWNER,
+        "expiration": "2099-01-01T00:00:00.000Z",
+        "id": id,
+        "verified": true
+    })
+    .to_string()
+}
+
+/// Fetch callback that serves a quote for `POST /api/v1/quote`, echoes
+/// uploaded app-data, and returns `uid` for every order creation.
+fn swap_quote_fetch_callback(uid: &str, quote_body: &str) -> Function {
     callback(
         "request",
         &format!(
@@ -81,11 +110,30 @@ fn post_fetch_callback(uid: &str) -> Function {
               const body = JSON.parse(request.body);
               return {{ status: 200, headers: {{}}, body: JSON.stringify({{ fullAppData: body.fullAppData }}) }};
             }}
-            return {{ status: 200, headers: {{}}, body: JSON.stringify("{}") }};
+            if (request.method === "POST" && request.url.includes("/api/v1/quote")) {{
+              return {{ status: 200, headers: {{}}, body: {quote_body:?} }};
+            }}
+            return {{ status: 200, headers: {{}}, body: JSON.stringify("{uid}") }};
             "#,
-            uid
         ),
     )
+}
+
+/// Parsed bodies of every recorded `POST /api/v1/orders` request, in order.
+fn recorded_order_creation_bodies() -> Vec<Value> {
+    recorded_requests()
+        .into_iter()
+        .filter(|request| {
+            request["method"].as_str() == Some("POST")
+                && request["url"]
+                    .as_str()
+                    .is_some_and(|url| url.contains("/api/v1/orders"))
+        })
+        .map(|request| {
+            serde_json::from_str(request["body"].as_str().expect("order request body"))
+                .expect("order creation body should be JSON")
+        })
+        .collect()
 }
 
 fn signer_callback() -> Function {
@@ -199,7 +247,8 @@ async fn orderbook_lists_support_api_key_routing_and_owner_trade_pagination() {
 async fn trading_posts_swap_from_quote_and_limit_orders_through_typed_signers() {
     js_sys::eval("globalThis.__cowCoverageRequests = []").unwrap();
     let uid = generated_order_uid();
-    let fetch = post_fetch_callback(&uid);
+    let valid_to = future_valid_to();
+    let fetch = swap_quote_fetch_callback(&uid, &quote_response_json(91, valid_to));
     let client = TradingClient::new(crate::common::trading_config(
         CHAIN_MAINNET,
         None,
@@ -207,16 +256,39 @@ async fn trading_posts_swap_from_quote_and_limit_orders_through_typed_signers() 
         &fetch,
     ))
     .unwrap();
-    let valid_to = future_valid_to();
+
+    // Fetch a quote, then post it back unchanged: this exercises the real
+    // `QuoteResults` serialization round-trip between `getQuote` and
+    // `postSwapOrderFromQuote`, the documented host workflow.
+    let quote_envelope = client
+        .get_quote(
+            SwapParametersInput {
+                kind: OrderKindDto::Sell,
+                owner: None,
+                sell_token: ADDR_SELL.to_owned(),
+                buy_token: ADDR_BUY.to_owned(),
+                amount: "98646335338956442".to_owned(),
+                env: None,
+                partially_fillable: false,
+                sell_token_balance: Some(TokenBalanceDto::Erc20),
+                buy_token_balance: Some(TokenBalanceDto::Erc20),
+                slippage_bps: Some(50),
+                receiver: Some(ADDR_RECEIVER.to_owned()),
+                valid_for: None,
+                valid_to: Some(valid_to),
+                partner_fee: None,
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    let quote_results = Reflect::get(&quote_envelope, &JsValue::from_str("value"))
+        .expect("getQuote envelope should expose the QuoteResults value");
 
     let swap = json(
         client
             .post_swap_order_from_quote(
-                QuoteResultsInput {
-                    order_to_sign: wasm_order_input(),
-                    quote_response: Some(QuoteResponseRefInput { id: Some(91) }),
-                    quote_id: None,
-                },
+                quote_results,
                 ADDR_OWNER.to_owned(),
                 signer_callback(),
                 None,
@@ -235,11 +307,9 @@ async fn trading_posts_swap_from_quote_and_limit_orders_through_typed_signers() 
             .await
             .unwrap(),
     );
-    let requests = recorded_requests();
-    let swap_body: Value =
-        serde_json::from_str(requests[0]["body"].as_str().unwrap()).expect("order body");
-    let limit_body: Value =
-        serde_json::from_str(requests[2]["body"].as_str().unwrap()).expect("order body");
+    let order_bodies = recorded_order_creation_bodies();
+    let swap_body = &order_bodies[0];
+    let limit_body = &order_bodies[1];
     let signer_envelope = json(js_sys::eval("globalThis.__cowCoverageSignerEnvelope").unwrap());
 
     assert_eq!(swap["value"]["orderId"], uid);
@@ -293,7 +363,7 @@ async fn trading_exposes_allowance_and_transaction_builders() {
     native_order.app_data = HASH_APP_DATA.to_owned();
     let ethflow = json(
         client
-            .build_sell_native_currency_tx(native_order, 77, ADDR_OWNER.to_owned(), None)
+            .build_sell_native_currency_tx(native_order, 77.0, ADDR_OWNER.to_owned(), None)
             .await
             .unwrap(),
     );
