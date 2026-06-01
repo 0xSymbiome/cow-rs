@@ -7,9 +7,14 @@ CID conversion, and IPFS transport seams.
 This crate produces deterministic app-data documents, validates them
 against the versioned app-data schema, and converts between the 32-byte
 hex hash form and the supported CID encoding (CIDv1 + raw + keccak-256).
-It also defines the fetch and upload transport seams so consumers can
-provide their own IPFS client without coupling the SDK to a specific
-HTTP stack.
+It also defines the IPFS read transport seam so consumers can provide
+their own fetch client without coupling the SDK to a specific HTTP stack.
+
+Registering a document you create is an orderbook concern: hash the
+document locally with this crate, then submit the full document through
+`OrderbookApi::upload_app_data`, which stores it under its hash in the
+orderbook. The IPFS read seam is for resolving a document by hash directly
+from a gateway when it is not available through the orderbook.
 
 ## Install
 

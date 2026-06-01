@@ -1,7 +1,7 @@
 # Credential Surface Contract Hygiene Audit
 
 Status: Current
-Last reviewed: 2026-05-31
+Last reviewed: 2026-06-01
 Owning surface: Cross-cutting credential redaction and typed partner-fee public boundary across core, app-data, orderbook, subgraph, and trading
 Refresh trigger: Changes to public credential-bearing configs, URL-bearing public configuration fields, subgraph route identity or request-failure context, the `Redacted<T>` newtype contract, external host-policy validation, the transport `From<reqwest::Error>` conversion classifiers, the `redact_response_body` token-detection layers, or typed partner-fee request boundaries
 Related docs:
@@ -61,9 +61,8 @@ marker instead of echoing a credential-bearing URL.
 `ApiContext`, `ApiContextOverride`, and `IpfsConfig` continue to accept
 explicit credential input, but their default `Debug` and serialized forms now
 redact secret material. This keeps routine diagnostics and generic
-serialization from turning partner API keys or Pinata credentials into
-ordinary log output. `IpfsConfig` display output follows the same redaction
-rule.
+serialization from turning partner API keys into ordinary log output.
+`IpfsConfig` read-URI display output follows the same redaction rule.
 
 ### URL-Bearing Configuration
 
@@ -144,7 +143,7 @@ Primary regression coverage:
 - `crates/subgraph/tests/builder_contract.rs::builder_debug_redacts_userinfo_in_custom_endpoint_url`
 - `crates/subgraph/tests/host_policy_contract.rs`
 - `crates/browser-wallet/tests/wallet_contract.rs`
-- `crates/app-data/tests/pinning_contract.rs::pinning_config_display_redacts_secret_bytes`
+- `crates/app-data/tests/ipfs_config_redaction_contract.rs`
 - `crates/trading/tests/quote_contract.rs`
 - `crates/trading/tests/post_contract.rs`
 - `crates/trading/tests/property_contract.rs`

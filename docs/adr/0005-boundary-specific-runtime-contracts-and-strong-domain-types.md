@@ -28,8 +28,8 @@ actual runtime seams.
 - Runtime and support: active signer and provider traits remain real runtime
   contracts. The HTTP transport seam has crossed into a production trait in
   `cow-sdk-core` (`HttpTransport`) adopted by the native `ReqwestTransport`
-  default and the browser `FetchTransport` adapter; GraphQL and pinning
-  traits stay adapter seams until concrete crates truly adopt them.
+  default and the browser `FetchTransport` adapter; the GraphQL transport
+  trait stays an adapter seam until concrete crates truly adopt it.
 - Validation and review: conversions between user-domain, normalized, wire,
   and ABI forms stay explicit, test-backed, and documented. Order-like DTOs do
   not get merged just because they look similar.

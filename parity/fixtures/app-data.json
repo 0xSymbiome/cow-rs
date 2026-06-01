@@ -145,14 +145,6 @@
     {
       "repo": "cow-sdk",
       "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
-      "path": "packages/app-data/src/api/uploadMetadataDocToIpfsLegacy.ts",
-      "anchors": [
-        "_pinJsonInPinataIpfs"
-      ]
-    },
-    {
-      "repo": "cow-sdk",
-      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
       "path": "packages/app-data/src/types.ts",
       "anchors": [
         "AppDataParams",
@@ -167,7 +159,6 @@
       "path": "packages/app-data/src/consts.ts",
       "anchors": [
         "DEFAULT_IPFS_READ_URI",
-        "DEFAULT_IPFS_WRITE_URI",
         "MetaDataError"
       ]
     },
@@ -370,15 +361,6 @@
           "fetchDocFromAppDataHex"
         ],
         "transport_injection": "explicit-uri-parameter"
-      }
-    },
-    {
-      "id": "app-data-upload-transport-boundary",
-      "kind": "behavior-contract",
-      "description": "The IPFS upload helper requires explicit credentials and fails closed before dispatching the transport when either key or secret is missing.",
-      "expected": {
-        "helper": "pinJsonInPinataIpfs",
-        "requires_credentials": true
       }
     },
     {

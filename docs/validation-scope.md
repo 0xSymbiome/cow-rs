@@ -26,7 +26,7 @@ committed in the repository.
 | --- | --- | --- | --- |
 | Order creation, signing, and submission | `cow-sdk-signing`, `cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk` | Crate contract tests for signing, DTO conversion, post flows, feature-scoped facade snapshots, curated prelude checks, and deterministic example execution | Optional live API calls remain outside the routine blocking contract |
 | Contracts parity | `cow-sdk-contracts`, `cow-sdk-signing` | Hashing, settlement, signature, reader, and EIP-1271 tests | Live chain-backed spot checks are optional |
-| App-data parity | `cow-sdk-app-data`, `cow-sdk-trading` | CID conversion, schema handling, fetch, pinning seams, and fail-closed encoding tests | Live IPFS or pinning services remain optional integration checks |
+| App-data parity | `cow-sdk-app-data`, `cow-sdk-trading` | CID conversion, schema handling, the IPFS read seam, and fail-closed encoding tests | Live IPFS read access remains an optional integration check |
 | Subgraph support | `cow-sdk-subgraph` | Typed query construction, decode, and deterministic native scenarios | Live subgraph access depends on external endpoint configuration |
 | HTTP transport policy | `cow-sdk-transport-policy` | Default policy stability, retryable status completeness, jitter bounds, per-host limiter keying, and optional reqwest classifier coverage | Live endpoint timing remains environment-sensitive |
 | Orderbook transport | `cow-sdk-orderbook` | Mocked request-shape, retry, decode, and conversion tests | Live orderbook behavior depends on remote endpoints |

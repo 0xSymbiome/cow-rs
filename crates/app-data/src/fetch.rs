@@ -160,19 +160,12 @@ fn policy_from_optional_uri(ipfs_uri: Option<&str>) -> Result<IpfsFetchPolicy, A
 }
 
 fn normalize_read_base_uri(read_base_uri: &str) -> Result<String, AppDataError> {
-    normalize_ipfs_base_uri("read", read_base_uri)
-}
-
-pub(crate) fn normalize_ipfs_base_uri(
-    field: &'static str,
-    value: &str,
-) -> Result<String, AppDataError> {
-    let normalized = value.trim().trim_end_matches('/').to_owned();
+    let normalized = read_base_uri.trim().trim_end_matches('/').to_owned();
 
     if normalized.is_empty() {
         return Err(AppDataError::Transport {
             class: cow_sdk_core::TransportErrorClass::Builder,
-            detail: format!("ipfs {field} base uri must not be empty").into(),
+            detail: "ipfs read base uri must not be empty".to_owned().into(),
         });
     }
 

@@ -12,10 +12,6 @@ pub const APP_DATA_HEX_2: &str =
     "0x8af4e8c9973577b08ac21d17d331aade86c11ebcc5124744d621ca8365ec9424";
 pub const CID_2: &str = "f01551b208af4e8c9973577b08ac21d17d331aade86c11ebcc5124744d621ca8365ec9424";
 
-pub const PINATA_IPFS_HASH: &str = "QmU4j5Y6JM9DqQ6yxB6nMHq4GChWg1zPehs1U7nGPHABRu";
-pub const PINATA_APP_DATA_HEX: &str =
-    "0x5511c4eac66ab272d9a6ab90e07977d00ff7375fc4dc1038a3c05b2c16ca0b74";
-
 pub const APP_DATA_STRING: &str =
     "{\"appCode\":\"CoW Swap\",\"metadata\":{},\"version\":\"0.7.0\"}";
 pub const APP_DATA_STRING_2: &str = "{\"appCode\":\"CoW Swap\",\"environment\":\"production\",\"metadata\":{\"quote\":{\"slippageBips\":\"50\",\"version\":\"0.2.0\"},\"orderClass\":{\"orderClass\":\"market\",\"version\":\"0.1.0\"}},\"version\":\"0.6.0\"}";

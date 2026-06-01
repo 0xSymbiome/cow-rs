@@ -435,6 +435,17 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Removed
 
+- Removed the client-side IPFS upload seam from `cow-sdk-app-data`: the
+  `pin_json_in_pinata_ipfs` helper, the `IpfsUploadTransport` trait, the
+  `TransportResponse` type, the `DEFAULT_IPFS_WRITE_URI` constant, the
+  `write_uri`, `pinata_api_key`, and `pinata_api_secret` fields on `IpfsConfig`,
+  and the `AppDataError::Pinning` and `AppDataError::MissingIpfsCredentials`
+  variants. Registering an app-data document is orderbook-mediated: hash the
+  document locally with `get_app_data_info`, then submit the full document
+  through the orderbook crate's `upload_app_data` content-addressed-write path,
+  which stores it under its hash in the orderbook. The IPFS read seam
+  (`IpfsFetchTransport`, `fetch_doc_from_cid`, `fetch_doc_from_app_data_hex`) is
+  unchanged.
 - Removed the unused `cow_sdk_core::TradeModel` alias for `Trade`; it had no
   consumers, so use `cow_sdk_core::Trade` directly.
 - Removed the deprecated `availableBalance` field from the
@@ -446,8 +457,7 @@ The first functional crate-family release begins at `0.1.0`.
   constructed, and its documented contract — an app-data digest derived from the
   Pinata upload CID — is not satisfiable: Pinata returns a sha2-256 CIDv0, which
   is not the keccak-256 CIDv1 app-data identifier and is rejected by
-  `cid_to_app_data_hex`. The `pin_json_in_pinata_ipfs` helper returns the
-  backend's raw response; the canonical app-data hash comes from
+  `cid_to_app_data_hex`. The canonical app-data hash comes from
   `get_app_data_info`.
 - Removed the unused `cow_sdk_core::Order` envelope (the
   `{ unsigned, owner, uid }` wrapper around `OrderData`); it had no
@@ -1935,8 +1945,7 @@ The first functional crate-family release begins at `0.1.0`.
   `Serialize` emitting the literal `[redacted]` marker and an
   `into_inner` escape for deliberate access. Secret-bearing configuration
   fields migrated to `Redacted<T>`: `ApiContext::api_key`,
-  `ApiContextOverride::api_key`, `IpfsConfig::pinata_api_key`,
-  `IpfsConfig::pinata_api_secret`, and the internal `SubgraphApi` API key.
+  `ApiContextOverride::api_key`, and the internal `SubgraphApi` API key.
 
 - Shared `reqwest::Client` pooling for multi-chain consumers.
   `OrderBookApi::builder()` and `SubgraphApi::builder()` both expose a
@@ -2935,8 +2944,7 @@ The first functional crate-family release begins at `0.1.0`.
   variant; `{ operation, message }` for `ContractsError::Provider`;
   `{ message }` for `ContractsError::Decode`, `AppDataError::Schema`,
   and `AppDataError::Calculation`; `{ class, detail }` for the REST
-  transport variants on `AppDataError` and `OrderbookError`;
-  `{ status, message }` for `AppDataError::Pinning`). A new
+  transport variants on `AppDataError` and `OrderbookError`). A new
   `cow_sdk::ValidationReason` enum describes the canonical validation
   failure modes (`Missing`, `OutOfRange`, `BadShape`, `Precondition`)
   and surfaces through `cow_sdk::prelude::*`; a new
@@ -3115,13 +3123,8 @@ The first functional crate-family release begins at `0.1.0`.
   from the cancel-path not-found case.
 
 - Partner API keys on `OrderBookApiBuilder` and
-  `SubgraphApiBuilder`, plus IPFS pinning header values at the
-  `IpfsUploadTransport::post_json` boundary, now flow through
-  `Redacted<String>` wrappers. Builder debug output and Pinata
-  upload-header debug formatting no longer expose secret bytes.
-  `IpfsUploadTransport::post_json` now receives header values as
-  `&[(String, Redacted<String>)]`; transport implementations call
-  `.into_inner()` when they need the raw header bytes.
+  `SubgraphApiBuilder` now flow through `Redacted<String>` wrappers,
+  so builder debug output no longer exposes secret bytes.
 
 - Public wallet session, event, error payload, discovery, and
   chain-management types in `cow-sdk-browser-wallet` are now

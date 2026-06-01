@@ -122,17 +122,6 @@ pub enum AppDataError {
     /// A long-running app-data operation was cancelled through a cooperative cancellation token.
     #[error("app-data operation was cancelled")]
     Cancelled,
-    /// Upload helpers were called without the required credentials.
-    #[error("You need to pass IPFS api credentials.")]
-    MissingIpfsCredentials,
-    /// Pinning or upload failed.
-    #[error("pinning error (status {status:?}): {message}")]
-    Pinning {
-        /// HTTP status code returned by the pinning service, when known.
-        status: Option<u16>,
-        /// Redacted and bounded detail message sourced from the pinning response.
-        message: Redacted<String>,
-    },
     /// The stringified app-data document exceeded the configured size ceiling.
     #[error("app-data document is {actual_bytes} bytes which exceeds the {max_bytes}-byte limit")]
     TooLarge {
@@ -160,9 +149,8 @@ impl AppDataError {
             | Self::UnknownSchemaVersion(_)
             | Self::MissingSchemaVersion
             | Self::InvalidAppDataProvided { .. }
-            | Self::MissingIpfsCredentials
             | Self::TooLarge { .. } => ErrorClass::Validation,
-            Self::Transport { .. } | Self::Pinning { .. } => ErrorClass::Transport,
+            Self::Transport { .. } => ErrorClass::Transport,
             Self::Cancelled => ErrorClass::Cancelled,
             // Json, Schema, Calculation, and partner-fee / flashloan validation
             // failures plus any future additive variants classify as internal.
@@ -230,14 +218,6 @@ impl Serialize for AppDataError {
             }
             Self::Cancelled => {
                 map.serialize_entry("type", "Cancelled")?;
-            }
-            Self::MissingIpfsCredentials => {
-                map.serialize_entry("type", "MissingIpfsCredentials")?;
-            }
-            Self::Pinning { status, message } => {
-                map.serialize_entry("type", "Pinning")?;
-                map.serialize_entry("status", status)?;
-                map.serialize_entry("message", message)?;
             }
             Self::TooLarge {
                 actual_bytes,

@@ -26,7 +26,7 @@ requires raw URL access to happen through explicit accessors at dispatch seams.
 - Public surface: public `Debug`, `Display`, and `Serialize` output for
   credential-bearing URL fields emits `[redacted]` for configured URL values
   while preserving map keys and unsupported-chain `None` markers.
-- Runtime and support: request dispatch, IPFS fetch/upload, and
+- Runtime and support: request dispatch, IPFS fetch, and
   `wallet_addEthereumChain` payload construction continue to use the exact raw
   URL bytes supplied by the caller through explicit accessors.
 - Validation and review: regression tests cover compact debug, pretty debug,

@@ -300,11 +300,6 @@ fn app_data_errors_redact_public_serialized_payloads() {
             detail: secret_payload().into(),
         },
         AppDataError::Cancelled,
-        AppDataError::MissingIpfsCredentials,
-        AppDataError::Pinning {
-            status: Some(401),
-            message: secret_payload().into(),
-        },
         AppDataError::TooLarge {
             actual_bytes: 4_097,
             max_bytes: 4_096,
@@ -663,9 +658,9 @@ fn sdk_error_facade_redacts_nested_public_errors() {
             operation: "sign_order",
             message: secret_payload().into(),
         }),
-        SdkError::AppData(AppDataError::Pinning {
-            status: Some(401),
-            message: secret_payload().into(),
+        SdkError::AppData(AppDataError::Transport {
+            class: TransportErrorClass::Request,
+            detail: secret_payload().into(),
         }),
         SdkError::Contracts(ContractsError::Provider {
             operation: "eth_call",

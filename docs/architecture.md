@@ -302,8 +302,8 @@ surface through `Debug` or `Display`. The full transport story lives in
 
 ### Transport Ownership
 
-Retry behavior, rate limits, GraphQL request shape, API-key handling, and
-pinning semantics stay with the transport crates that own those behaviors.
+Retry behavior, rate limits, GraphQL request shape, and API-key handling
+stay with the transport crates that own those behaviors.
 For subgraph access, stable production metadata and typed request failures
 expose only redacted or non-secret route identity while keeping explicit
 override support.

@@ -25,15 +25,12 @@
 mod common;
 
 use cow_sdk_app_data::{
-    AppDataDoc, AppDataError, IpfsConfig, IpfsFetchPolicy, IpfsUploadTransport, SchemaVersion,
-    TransportResponse, app_data_hex_to_cid, cid_to_app_data_hex, get_app_data_info,
-    get_app_data_schema, pin_json_in_pinata_ipfs, stringify_deterministic,
+    AppDataDoc, AppDataError, IpfsFetchPolicy, SchemaVersion, app_data_hex_to_cid,
+    cid_to_app_data_hex, get_app_data_info, get_app_data_schema, stringify_deterministic,
 };
 use proptest::prelude::*;
 use proptest::test_runner::FileFailurePersistence;
 use serde_json::{Map, Number, Value};
-
-use common::app_data_doc;
 
 /// Path for committed regression seeds; proptest writes new shrink
 /// outcomes here so every contributor re-runs prior counter-examples
@@ -42,22 +39,6 @@ const REGRESSION_FILE: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/tests/proptest-regressions/property_contract.txt"
 );
-
-/// Upload transport that panics on every call so the missing-credential
-/// preflight can prove the helper rejects before the transport boundary
-/// is reached.
-struct PanicUploadTransport;
-
-impl IpfsUploadTransport for PanicUploadTransport {
-    fn post_json(
-        &self,
-        _uri: &str,
-        _body: &str,
-        _headers: &[(String, cow_sdk_core::Redacted<String>)],
-    ) -> Result<TransportResponse, AppDataError> {
-        panic!("invalid credential inputs must fail before transport is called");
-    }
-}
 
 /// Produces the reviewed canonical JSON form for `value` using the same
 /// algorithm the original enumerator hand-rolled: lexicographic object
@@ -213,34 +194,6 @@ fn valid_document_strategy() -> impl Strategy<Value = Value> {
         })
 }
 
-/// Strategy that emits an [`IpfsConfig`] with at least one missing or
-/// empty credential so the upload preflight must fail closed before the
-/// transport is called.
-fn missing_credential_config_strategy() -> impl Strategy<Value = IpfsConfig> {
-    prop_oneof![
-        Just(IpfsConfig {
-            pinata_api_key: None,
-            pinata_api_secret: Some("secret".to_owned().into()),
-            ..IpfsConfig::default()
-        }),
-        Just(IpfsConfig {
-            pinata_api_key: Some(String::new().into()),
-            pinata_api_secret: Some("secret".to_owned().into()),
-            ..IpfsConfig::default()
-        }),
-        Just(IpfsConfig {
-            pinata_api_key: Some("key".to_owned().into()),
-            pinata_api_secret: None,
-            ..IpfsConfig::default()
-        }),
-        Just(IpfsConfig {
-            pinata_api_key: Some("key".to_owned().into()),
-            pinata_api_secret: Some(String::new().into()),
-            ..IpfsConfig::default()
-        }),
-    ]
-}
-
 proptest! {
     #![proptest_config(ProptestConfig {
         failure_persistence: Some(Box::new(FileFailurePersistence::Direct(REGRESSION_FILE))),
@@ -289,14 +242,11 @@ proptest! {
     }
 
     /// [`IpfsFetchPolicy::new`] fails closed on every whitespace-only
-    /// base URI, and [`pin_json_in_pinata_ipfs`] fails closed with
-    /// [`AppDataError::MissingIpfsCredentials`] before the upload
-    /// transport is reached whenever the supplied [`IpfsConfig`]
-    /// exposes a missing or empty pinata key or secret.
+    /// base URI, surfacing the typed builder error before any read
+    /// transport is reached.
     #[test]
-    fn ipfs_preflight_rejections_fail_before_transport(
+    fn ipfs_read_policy_rejects_blank_base_uri(
         whitespace_len in 1usize..=16usize,
-        config in missing_credential_config_strategy(),
     ) {
         let whitespace = " ".repeat(whitespace_len);
         let policy_err = IpfsFetchPolicy::new(whitespace).unwrap_err();
@@ -306,10 +256,6 @@ proptest! {
             }
             other => prop_assert!(false, "expected Transport, got {:?}", other),
         }
-
-        let pinning_err =
-            pin_json_in_pinata_ipfs(&app_data_doc(), &PanicUploadTransport, &config).unwrap_err();
-        prop_assert!(matches!(pinning_err, AppDataError::MissingIpfsCredentials));
     }
 
     /// [`stringify_deterministic`] produces output byte-identical to the

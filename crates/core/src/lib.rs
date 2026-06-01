@@ -48,7 +48,7 @@ pub use redaction::{
 pub use tokio_util::sync::CancellationToken;
 pub use traits::{
     BlockInfo, ContractCall, ContractHandle, DigestSigner, Eip1193, GraphTransport, LogProvider,
-    Owner, PinningTransport, Provider, Signer, SignerError, SigningProvider, TransactionBroadcast,
+    Owner, Provider, Signer, SignerError, SigningProvider, TransactionBroadcast,
     TransactionReceipt, TransactionRequest, TransactionStatus, TypedDataDomain, TypedDataEnvelope,
     TypedDataField, TypedDataPayload, TypedDataSigner, TypedDataTypes,
 };

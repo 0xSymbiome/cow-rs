@@ -1,8 +1,8 @@
 use cow_sdk_core::{
     Address, Amount, BlockInfo, ContractCall, ContractHandle, DigestSigner, GraphTransport, Hash32,
-    HexData, Owner, PinningTransport, Provider, Signer, SigningProvider, TransactionBroadcast,
-    TransactionReceipt, TransactionRequest, TransactionStatus, TypedDataDomain, TypedDataField,
-    TypedDataPayload, TypedDataSigner, TypedDataTypes,
+    HexData, Owner, Provider, Signer, SigningProvider, TransactionBroadcast, TransactionReceipt,
+    TransactionRequest, TransactionStatus, TypedDataDomain, TypedDataField, TypedDataPayload,
+    TypedDataSigner, TypedDataTypes,
 };
 
 const HASH_1: &str = "0x1111111111111111111111111111111111111111111111111111111111111111";
@@ -139,16 +139,6 @@ impl GraphTransport for MockGraph {
             "{endpoint}|{query}|{}",
             variables_json.unwrap_or("{}")
         ))
-    }
-}
-
-struct MockPinning;
-
-impl PinningTransport for MockPinning {
-    type Error = String;
-
-    fn pin_json(&self, payload: &str) -> Result<String, Self::Error> {
-        Ok(format!("cid:{payload}"))
     }
 }
 
@@ -493,9 +483,8 @@ async fn signer_and_provider_contracts_are_runtime_agnostic_and_callable() {
 }
 
 #[test]
-fn graph_and_pinning_transports_cover_shared_io_boundaries() {
+fn graph_transport_covers_shared_io_boundary() {
     let graph = MockGraph;
-    let pinning = MockPinning;
 
     assert_eq!(
         graph
@@ -506,10 +495,6 @@ fn graph_and_pinning_transports_cover_shared_io_boundaries() {
             )
             .unwrap(),
         "https://api.thegraph.com|query Totals {}|{\"days\":7}"
-    );
-    assert_eq!(
-        pinning.pin_json("{\"appCode\":\"CoW Swap\"}").unwrap(),
-        "cid:{\"appCode\":\"CoW Swap\"}"
     );
 }
 

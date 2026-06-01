@@ -240,8 +240,9 @@ No traced span or event must ever carry a secret. Concretely:
   `Redacted<String>`; its `Debug` implementation emits `[redacted]` so
   accidental `?` formatting cannot leak the value, and no instrumented
   call site records the field regardless.
-- `IpfsConfig` credentials (`pinata_api_key`, `pinata_api_secret`) follow
-  the same redaction contract and are never captured in traces.
+- `IpfsConfig` read URIs (`uri`, `read_uri`) are stored as `Redacted<String>`
+  and follow the same redaction contract, so a configured gateway endpoint
+  is never captured in traces.
 - Wallet signatures, recovered public keys, and private-key material are
   never logged by the SDK. Downstream instrumentation that wants to record
   a signature should do so explicitly in host code.

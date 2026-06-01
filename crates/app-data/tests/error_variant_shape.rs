@@ -7,10 +7,9 @@
 //! message paired with a typed [`jsonschema::ValidationError`] source;
 //! `InvalidAppDataProvided` carries `{ field, reason: ValidationReason }`;
 //! `Calculation` carries a typed `Box<dyn Error>` source so the underlying
-//! cid or multihash failure stays addressable; `Transport` carries
-//! `{ class: TransportErrorClass, detail }`; and `Pinning` carries
-//! `{ status: Option<u16>, message }`. Any future variant whose shape drifts
-//! from this contract fails the corresponding test at compile time.
+//! cid or multihash failure stays addressable; and `Transport` carries
+//! `{ class: TransportErrorClass, detail }`. Any future variant whose shape
+//! drifts from this contract fails the corresponding test at compile time.
 
 use cow_sdk_app_data::AppDataError;
 use cow_sdk_core::{TransportErrorClass, ValidationReason};
@@ -100,27 +99,4 @@ fn transport_variant_carries_typed_class_and_detail() {
         error.to_string().contains("timeout"),
         "transport Display must include the typed class label",
     );
-}
-
-#[test]
-fn pinning_variant_carries_optional_status_and_message() {
-    let error = AppDataError::Pinning {
-        status: Some(401),
-        message: "unauthorized".to_owned().into(),
-    };
-
-    let AppDataError::Pinning { status, message } = &error else {
-        panic!("expected Pinning variant, got {error:?}");
-    };
-    assert_eq!(*status, Some(401));
-    assert_eq!(message.as_inner(), "unauthorized");
-
-    let error_without_status = AppDataError::Pinning {
-        status: None,
-        message: "pinning backend unreachable".to_owned().into(),
-    };
-    let AppDataError::Pinning { status, .. } = &error_without_status else {
-        panic!("expected Pinning variant, got {error_without_status:?}");
-    };
-    assert!(status.is_none());
 }

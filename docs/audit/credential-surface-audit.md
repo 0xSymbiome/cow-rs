@@ -1,9 +1,9 @@
 # Credential Surface Audit
 
 Status: Current
-Last reviewed: 2026-05-31
-Owning surface: Credential-bearing builder storage, URL configuration, host-policy errors, public error diagnostics, wallet add-chain payloads, Pinata upload-trait headers, wasm error envelopes, and the SDK facade
-Refresh trigger: Changes to orderbook or subgraph builder API-key storage, URL-bearing public configuration fields, external host-policy validation, public error message/detail/body/data fields, browser wallet add-chain URL payload construction, `IpfsUploadTransport::post_json` header typing or Pinata header assembly, the `redact_response_body` token-detection layers, the `cow_sdk_app_data::AppDataError::Schema` rendering pipeline or the matching `ValidationResult::errors` field's safe-by-construction masking surface, the `cow_sdk_orderbook::OrderbookError::Serialization` structural-diagnostic shape or its `From<serde_json::Error>` construction, the `cow_sdk_app_data::AppDataError::Calculation` render, the `cow_sdk_app_data::AppDataParams` sub-metadata deserializer, or any new credential-bearing surface that lands without a redacting storage type or an equivalent safe-by-construction render
+Last reviewed: 2026-06-01
+Owning surface: Credential-bearing builder storage, URL configuration, host-policy errors, public error diagnostics, wallet add-chain payloads, wasm error envelopes, and the SDK facade
+Refresh trigger: Changes to orderbook or subgraph builder API-key storage, URL-bearing public configuration fields, external host-policy validation, public error message/detail/body/data fields, browser wallet add-chain URL payload construction, the `redact_response_body` token-detection layers, the `cow_sdk_app_data::AppDataError::Schema` rendering pipeline or the matching `ValidationResult::errors` field's safe-by-construction masking surface, the `cow_sdk_orderbook::OrderbookError::Serialization` structural-diagnostic shape or its `From<serde_json::Error>` construction, the `cow_sdk_app_data::AppDataError::Calculation` render, the `cow_sdk_app_data::AppDataParams` sub-metadata deserializer, or any new credential-bearing surface that lands without a redacting storage type or an equivalent safe-by-construction render
 Related docs:
 - [ADR 0025](../adr/0025-workspace-url-redaction-convention.md)
 - [URL Credential Redaction Audit](url-credential-redaction-audit.md)
@@ -22,7 +22,6 @@ This audit covers:
 - credential-bearing URL fields in core, orderbook, subgraph, browser-wallet, and app-data
 - sanitized host-policy failures for orderbook and subgraph endpoint overrides
 - public error diagnostics that carry provider, signer, RPC, transport, response-body, orderbook-rejection, or caller-input message payloads
-- `cow-sdk-app-data::IpfsUploadTransport::post_json` header typing and the Pinata header assembly path
 
 It does not cover unrelated transport error redaction or credential handling outside these named boundaries.
 
@@ -38,7 +37,6 @@ It does not cover unrelated transport error redaction or credential handling out
 | Public error diagnostics | Provider, signer, RPC, transport, response-body, subgraph context, orderbook API, orderbook rejection, and facade error payloads wrap secret-bearing messages in `Redacted<T>`, render through a safe-by-construction sanitization pipeline, or sanitize protocol identifiers before rendering, and redact credential-bearing diagnostics across `Debug`, `Display`, and existing `Serialize` surfaces | Conforms |
 | App-data schema validator output | `AppDataError::Schema.message` and `ValidationResult::errors` carry a path-prefixed validator render produced through `jsonschema::ValidationError::masked()` with surgical paths for the variant kinds that embed caller content in the kind itself (rejected-property-name lists are rendered as counts rather than names), so the rendered text never embeds caller-supplied instance values or property names and is safe to interpolate into `Display`, `Debug`, and `Serialize` without a `Redacted<T>` wrapper | Conforms |
 | JSON decode-failure and digest-calculation diagnostics | The orderbook response-decode failure surfaces only the serde failure category and the 1-based line/column position, the app-data document sub-metadata deserializer maps malformed caller values to fixed field-tagged messages, and `AppDataError::Calculation` surfaces only a stable label, so none of these paths renders the raw serde error or boxed source that could echo decoded or caller-supplied bytes | Conforms |
-| Pinata upload trait | `IpfsUploadTransport::post_json` carries `Redacted<String>` header values and the Pinata header vector stays redacted under `Debug` | Conforms |
 | WASM error envelope | `WasmError` maps transport, app-data, signing, orderbook, subgraph, and trading errors through display-safe messages and redacted response-body handling | Conforms |
 | Response-body credential scanner | `redact_response_body` enforces a defense-in-depth detector pipeline (JWT, Bearer, strict URL, bare userinfo, credential-keyed value with recursive key-prefix scanning) and the credential-key matcher recognizes `apikey`, `token`, `secret`, `password`, `authorization`, and `bearer` substrings so a partial or mangled credential key does not bypass redaction | Conforms |
 
@@ -65,10 +63,10 @@ contract while keeping the key available for deliberate downstream use.
 `SubgraphApiBuilder`, `WalletChainParameters`, and `IpfsConfig` store
 credential-bearing URL values in redacting wrappers. Public debug and
 serialized output emits `[redacted]` for configured URL values while routing,
-wallet payload construction, and IPFS read/write policies use explicit raw
-access at the dispatch boundary. Orderbook and subgraph custom endpoint debug
-output redacts userinfo-bearing URLs, and `IpfsConfig` display output follows
-the same redaction rule.
+wallet payload construction, and IPFS read policies use explicit raw access at
+the dispatch boundary. Orderbook and subgraph custom endpoint debug output
+redacts userinfo-bearing URLs, and `IpfsConfig` display output follows the same
+redaction rule.
 
 ### Host-Policy Failures
 
@@ -156,15 +154,6 @@ transport details, HTTP status response bodies, app-data transport detail,
 wallet errors, and internal diagnostics. The mapping does not unwrap
 `Redacted<T>` into a JS-visible field.
 
-### Pinata Upload Boundary
-
-`crates/app-data/src/pinning.rs` widens
-`IpfsUploadTransport::post_json` to
-`headers: &[(String, Redacted<String>)]`. The Pinata upload helper constructs
-the header vector with wrapped values, so any transport implementation that
-needs the raw bytes must opt in to unwrap them and the boundary's default
-`Debug` surface cannot print the secret bytes.
-
 ## Evidence
 
 Primary implementation points:
@@ -188,7 +177,6 @@ Primary implementation points:
 - `crates/app-data/src/types/ipfs.rs`
 - `crates/app-data/src/errors.rs`
 - `crates/app-data/src/types/params.rs`
-- `crates/app-data/src/pinning.rs`
 - `crates/sdk/src/lib.rs`
 - `crates/wasm/src/exports/errors.rs`
 
@@ -201,8 +189,6 @@ Primary regression coverage:
 - `crates/subgraph/tests/builder_contract.rs::builder_debug_redacts_userinfo_in_custom_endpoint_url`
 - `crates/browser-wallet/tests/wallet_contract.rs::chain_parameters_public_debug_and_serialize_redact_url_credentials`
 - `crates/app-data/tests/ipfs_config_redaction_contract.rs`
-- `crates/app-data/tests/pinning_contract.rs::pinning_headers_debug_redacts_secret_bytes`
-- `crates/app-data/tests/pinning_contract.rs::pinning_config_display_redacts_secret_bytes`
 - `crates/sdk/tests/error_redaction_contract.rs`
 - `crates/sdk/tests/error_redaction_contract.rs::orderbook_serialization_error_drops_decoded_response_bytes`
 - `crates/sdk/tests/error_redaction_contract.rs::app_data_metadata_parse_failures_do_not_echo_caller_input`
@@ -229,7 +215,6 @@ cargo test -p cow-sdk-orderbook --test host_policy_contract
 cargo test -p cow-sdk-subgraph --test host_policy_contract
 cargo test -p cow-sdk-browser-wallet --test wallet_contract
 cargo test -p cow-sdk-app-data --test ipfs_config_redaction_contract
-cargo test -p cow-sdk-app-data --test pinning_contract
 cargo test -p cow-sdk --test error_redaction_contract
 cargo test -p cow-sdk --test error_redaction_contract --all-features
 cargo test --workspace --all-features

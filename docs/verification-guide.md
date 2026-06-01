@@ -55,8 +55,8 @@ HTTP dispatch for the orderbook and subgraph surfaces flows through the
 `reqwest::Error::without_url` (native) or explicit omission (browser)
 before wrapping, so credential-bearing query strings never surface
 through the typed `TransportError` enum. Retry behavior, rate limits,
-GraphQL request shape, API-key handling, and pinning semantics sit above
-the transport and remain owned by the orderbook and subgraph crates. For
+GraphQL request shape, and API-key handling sit above the transport and
+remain owned by the orderbook and subgraph crates. For
 `cow-sdk-subgraph`, that includes keeping stable route identity and typed
 request failures free of raw Graph API credentials.
 

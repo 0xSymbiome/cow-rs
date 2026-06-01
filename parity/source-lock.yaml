@@ -104,8 +104,6 @@ repositories:
   - packages/app-data/src/api/fetchDocFromCid.spec.ts
   - packages/app-data/src/api/fetchDocFromAppData.ts
   - packages/app-data/src/api/fetchDocFromAppData.spec.ts
-  - packages/app-data/src/api/uploadMetadataDocToIpfsLegacy.ts
-  - packages/app-data/src/api/uploadMetadataDocToIpfsLegacy.spec.ts
   - packages/app-data/src/types.ts
   - packages/app-data/src/consts.ts
   - packages/app-data/src/importSchema.ts
@@ -546,10 +544,6 @@ fixtures:
     path: packages/app-data/src/api/fetchDocFromAppData.ts
   - repo: cow-sdk
     path: packages/app-data/src/api/fetchDocFromAppData.spec.ts
-  - repo: cow-sdk
-    path: packages/app-data/src/api/uploadMetadataDocToIpfsLegacy.ts
-  - repo: cow-sdk
-    path: packages/app-data/src/api/uploadMetadataDocToIpfsLegacy.spec.ts
   - repo: cow-sdk
     path: packages/app-data/src/types.ts
   - repo: cow-sdk

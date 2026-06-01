@@ -4,21 +4,14 @@ use cow_sdk_core::REDACTED_PLACEHOLDER;
 const CREDENTIAL_URL: &str = "https://user:pass@example.test/ipfs?apiKey=secret-token";
 
 #[test]
-fn ipfs_config_public_debug_and_serialize_redact_url_and_pinata_credentials() {
+fn ipfs_config_public_debug_and_serialize_redact_configured_uris() {
     let config = IpfsConfig {
         uri: Some(CREDENTIAL_URL.to_owned().into()),
-        write_uri: Some(
-            "https://pinata.example.test/write?jwt=secret"
-                .to_owned()
-                .into(),
-        ),
         read_uri: Some(
             "https://read.example.test/ipfs?token=secret"
                 .to_owned()
                 .into(),
         ),
-        pinata_api_key: Some("pinata-key".to_owned().into()),
-        pinata_api_secret: Some("pinata-secret".to_owned().into()),
     };
 
     let debug = format!("{config:#?}");
@@ -26,18 +19,12 @@ fn ipfs_config_public_debug_and_serialize_redact_url_and_pinata_credentials() {
 
     assert!(debug.contains(REDACTED_PLACEHOLDER));
     assert_eq!(json["uri"], REDACTED_PLACEHOLDER);
-    assert_eq!(json["writeUri"], REDACTED_PLACEHOLDER);
     assert_eq!(json["readUri"], REDACTED_PLACEHOLDER);
-    assert_eq!(json["pinataApiKey"], REDACTED_PLACEHOLDER);
-    assert_eq!(json["pinataApiSecret"], REDACTED_PLACEHOLDER);
 
     for rendered in [debug, json.to_string()] {
         assert!(!rendered.contains("user:pass"));
         assert!(!rendered.contains("apiKey=secret-token"));
-        assert!(!rendered.contains("jwt=secret"));
         assert!(!rendered.contains("token=secret"));
-        assert!(!rendered.contains("pinata-key"));
-        assert!(!rendered.contains("pinata-secret"));
         assert!(!rendered.contains("example.test"));
     }
 }

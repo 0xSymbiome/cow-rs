@@ -132,13 +132,10 @@ fn fetch_policy_rejects_empty_base_uri() {
 }
 
 #[test]
-fn fetch_policy_can_be_derived_without_leaking_pinning_credentials() {
+fn fetch_policy_can_be_derived_from_read_config() {
     let config = IpfsConfig {
         uri: Some("https://fallback.example.test/ipfs".to_owned().into()),
         read_uri: Some("https://read.example.test/ipfs/".to_owned().into()),
-        write_uri: Some("https://write.example.test".to_owned().into()),
-        pinata_api_key: Some("pinata-key".to_owned().into()),
-        pinata_api_secret: Some("pinata-secret".to_owned().into()),
     };
     let policy = IpfsFetchPolicy::from_config(&config).expect("read config should be valid");
 

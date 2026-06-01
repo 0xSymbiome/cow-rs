@@ -13,16 +13,14 @@
 //! * [`validate_app_data_doc`] — schema validation with a typed result.
 //! * [`fetch_doc_from_cid`] / [`fetch_doc_from_app_data_hex`] —
 //!   configurable-URI fetch helpers.
-//! * [`pin_json_in_pinata_ipfs`] — credential-gated upload transport.
 //!
 //! Failure messages carry the fixture case id so a reviewer looking at a
 //! broken CI run sees the exact upstream vector that diverged.
 
 use async_trait::async_trait;
 use cow_sdk_app_data::{
-    AppDataError, AppDataParams, IpfsConfig, LATEST_APP_DATA_VERSION, app_data_hex_to_cid,
-    cid_to_app_data_hex, generate_app_data_doc, get_app_data_info, get_app_data_schema,
-    pin_json_in_pinata_ipfs, validate_app_data_doc,
+    AppDataError, AppDataParams, LATEST_APP_DATA_VERSION, app_data_hex_to_cid, cid_to_app_data_hex,
+    generate_app_data_doc, get_app_data_info, get_app_data_schema, validate_app_data_doc,
 };
 use serde_json::{Value, json};
 
@@ -65,9 +63,6 @@ async fn parity_fixture_cases_hold() {
             "app-data-validation-contract" => assert_validation_contract(id, expected),
             "app-data-fetch-transport-boundary" => {
                 assert_fetch_transport_boundary(id, expected).await;
-            }
-            "app-data-upload-transport-boundary" => {
-                assert_upload_transport_boundary(id, expected);
             }
             "app-data-schema-regression-families" => {
                 assert_schema_regression_families(id, expected);
@@ -391,31 +386,6 @@ async fn assert_fetch_transport_boundary(id: &str, expected: &Value) {
     );
 }
 
-fn assert_upload_transport_boundary(id: &str, expected: &Value) {
-    let helper = expected["helper"]
-        .as_str()
-        .unwrap_or_else(|| panic!("case {id}: expected.helper must be a string"));
-    assert_eq!(
-        helper, "pinJsonInPinataIpfs",
-        "case {id}: helper name must stay verbatim",
-    );
-    assert!(
-        expected["requires_credentials"].as_bool().unwrap_or(false),
-        "case {id}: fixture must declare requires_credentials=true",
-    );
-
-    // Without credentials the helper must fail-closed through a typed
-    // MissingIpfsCredentials error before the transport is invoked. We prove
-    // the transport is not invoked by wiring a panic-on-call transport.
-    let doc = generate_app_data_doc(AppDataParams::default());
-    let error = pin_json_in_pinata_ipfs(&doc, &PanicUploadTransport, &IpfsConfig::default())
-        .expect_err("missing credentials must reject before the transport runs");
-    assert!(
-        matches!(error, AppDataError::MissingIpfsCredentials),
-        "case {id}: missing credentials must surface MissingIpfsCredentials, got {error:?}",
-    );
-}
-
 fn assert_schema_regression_families(id: &str, expected: &Value) {
     let families: Vec<&str> = expected["families"]
         .as_array()
@@ -452,18 +422,5 @@ impl cow_sdk_app_data::IpfsFetchTransport for PanicFetchTransport {
         panic!(
             "PanicFetchTransport must never be invoked; malformed inputs must fail-closed earlier"
         )
-    }
-}
-
-struct PanicUploadTransport;
-
-impl cow_sdk_app_data::IpfsUploadTransport for PanicUploadTransport {
-    fn post_json(
-        &self,
-        _uri: &str,
-        _body: &str,
-        _headers: &[(String, cow_sdk_core::Redacted<String>)],
-    ) -> Result<cow_sdk_app_data::TransportResponse, AppDataError> {
-        panic!("PanicUploadTransport must never be invoked; credentials must fail-closed earlier")
     }
 }

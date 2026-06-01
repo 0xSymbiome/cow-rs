@@ -18,19 +18,3 @@ pub trait GraphTransport {
         variables_json: Option<&str>,
     ) -> Result<String, Self::Error>;
 }
-
-/// Extension seam for downstream JSON pinning adapters.
-///
-/// App-data pinning currently uses its own fetch and pinning contracts because
-/// it needs app-data-specific request and credential semantics.
-pub trait PinningTransport {
-    /// Error type returned by transport operations.
-    type Error;
-
-    /// Pins a JSON payload and returns an implementation-defined identifier.
-    ///
-    /// # Errors
-    ///
-    /// Returns the implementation-defined transport error when pinning fails.
-    fn pin_json(&self, payload: &str) -> Result<String, Self::Error>;
-}

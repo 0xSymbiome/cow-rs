@@ -1,7 +1,7 @@
 # URL Credential Redaction Audit
 
 Status: Current
-Last reviewed: 2026-05-31
+Last reviewed: 2026-06-01
 Owning surface: Credential-bearing URL storage and dispatch boundaries across core, orderbook, subgraph, browser-wallet, app-data, and wasm error conversion
 Refresh trigger: Changes to URL-bearing public configuration fields, browser wallet add-chain URL payload construction, IPFS URI dispatch, wasm transport-error mapping, the `RedactedUrlMap` and `RedactedOptionalUrlMap` contracts, or the `redact_response_body` token-detection layers
 Related docs:
@@ -69,10 +69,9 @@ only governs SDK service endpoints.
 
 ### App-Data IPFS URIs
 
-`IpfsConfig` stores `uri`, `write_uri`, and `read_uri` as
-`Option<Redacted<String>>`. Public diagnostics and JSON serialization redact
-the configured URI values. `IpfsFetchPolicy::from_config` and
-`pin_json_in_pinata_ipfs` unwrap only at the read/write dispatch seams.
+`IpfsConfig` stores `uri` and `read_uri` as `Option<Redacted<String>>`.
+Public diagnostics and JSON serialization redact the configured URI values.
+`IpfsFetchPolicy::from_config` unwraps only at the read dispatch seam.
 `Display` follows the same redaction contract as `Debug`.
 
 ### WASM Error Envelope
@@ -127,7 +126,6 @@ Primary implementation points:
 - `crates/browser-wallet/src/wallet/chain.rs`
 - `crates/app-data/src/types/ipfs.rs`
 - `crates/app-data/src/fetch.rs`
-- `crates/app-data/src/pinning.rs`
 - `crates/wasm/src/exports/errors.rs`
 
 Primary regression coverage:
@@ -143,7 +141,6 @@ Primary regression coverage:
 - `crates/browser-wallet/tests/provider_contract.rs::wallet_add_chain_payload_urls_are_not_subject_to_external_host_policy`
 - `crates/browser-wallet/tests/wallet_contract.rs::chain_parameters_public_debug_and_serialize_redact_url_credentials`
 - `crates/app-data/tests/ipfs_config_redaction_contract.rs`
-- `crates/app-data/tests/pinning_contract.rs::pinning_config_display_redacts_secret_bytes`
 - `crates/wasm/tests/wasm_redaction_contract.rs::http_status_error_redacts_headers_and_body`
 - `crates/wasm/tests/wasm_redaction_contract.rs::display_format_of_redacted_transport_error_does_not_expose_secret`
 - `crates/wasm/tests/wasm_redaction_contract.rs::errors_module_does_not_unwrap_redacted_values`
