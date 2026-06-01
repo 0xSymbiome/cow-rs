@@ -22,9 +22,10 @@ Two complementary example lanes live in this repository:
 
 Use this order when you want the shortest deterministic path:
 
-1. `signing_roundtrip`
-2. `limit_order_simulation`
-3. `trading_sdk_simulation`
+1. `simplest_swap_quickstart`
+2. `signing_roundtrip`
+3. `limit_order_simulation`
+4. `trading_sdk_simulation`
 
 After that, branch by goal through the full scenario table below.
 
@@ -39,10 +40,13 @@ After that, branch by goal through the full scenario table below.
 | `cancellation_combinator` | Cancel an in-flight quote with `Cancellable::cancel_with(&token)` |
 | `limit_order_simulation` | Build and simulate signed limit-order submission |
 | `order_lifecycle_simulation` | Inspect order lookup and off-chain cancellation |
+| `simplest_swap_quickstart` | Make your first swap end to end (quote, sign, post) against a mock |
 | `trading_sdk_simulation` | Inspect high-level `Trading` quote, allowance, and approval flow |
+| `error_classification_simulation` | Classify failures with `SdkError::class()` and decide retry versus abort |
 | `ethflow_transaction_simulation` | Build native-sell / EthFlow transaction data |
 | `onchain_order_actions_simulation` | Build pre-sign and on-chain cancellation transactions |
 | `orderbook_transport_roundtrip` | Inspect typed orderbook transport behavior |
+| `order_list_history_simulation` | List an account's orders and trade history through `OrderbookApi` |
 | `orderbook_live_probe` | Run an opt-in live orderbook version probe |
 | `subgraph_query_roundtrip` | Inspect canonical subgraph helper usage |
 | `subgraph_custom_query_roundtrip` | Inspect explicit `SubgraphQueryRequest` usage |
@@ -76,10 +80,13 @@ cargo run --manifest-path examples/native/Cargo.toml --example quote_only_simula
 cargo run --manifest-path examples/native/Cargo.toml --example cancellation_combinator
 cargo run --manifest-path examples/native/Cargo.toml --example limit_order_simulation
 cargo run --manifest-path examples/native/Cargo.toml --example order_lifecycle_simulation
+cargo run --manifest-path examples/native/Cargo.toml --example simplest_swap_quickstart
 cargo run --manifest-path examples/native/Cargo.toml --example trading_sdk_simulation
+cargo run --manifest-path examples/native/Cargo.toml --example error_classification_simulation
 cargo run --manifest-path examples/native/Cargo.toml --example ethflow_transaction_simulation
 cargo run --manifest-path examples/native/Cargo.toml --example onchain_order_actions_simulation
 cargo run --manifest-path examples/native/Cargo.toml --example orderbook_transport_roundtrip
+cargo run --manifest-path examples/native/Cargo.toml --example order_list_history_simulation
 cargo run --manifest-path examples/native/Cargo.toml --example orderbook_live_probe
 cargo run --manifest-path examples/native/Cargo.toml --example subgraph_query_roundtrip
 cargo run --manifest-path examples/native/Cargo.toml --example subgraph_custom_query_roundtrip

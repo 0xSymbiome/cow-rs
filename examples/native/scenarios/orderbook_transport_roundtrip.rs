@@ -7,7 +7,7 @@ use wiremock::{
 };
 
 use cow_sdk::orderbook::{
-    ApiContext, ExternalHostPolicy, OrderCreation, OrderQuoteRequest, PriceQuality, QuoteSide,
+    ApiContext, ExternalHostPolicy, OrderCreation, OrderQuoteRequest, OrderQuoteSide, PriceQuality,
     SigningScheme as OrderbookSigningScheme,
 };
 use cow_sdk::prelude::{Amount, CowEnv, OrderbookApi, SupportedChainId};
@@ -63,7 +63,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         sample_sell_token(),
         sample_buy_token(),
         sample_owner(),
-        QuoteSide::sell(
+        OrderQuoteSide::sell(
             Amount::new("100000000000000000").expect("example quote amount must remain valid"),
         ),
     )

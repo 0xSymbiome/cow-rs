@@ -288,7 +288,10 @@ orderbook. The `swap_params_to_limit_order_params` bridge produces a
 `LimitTradeParametersFromQuote` value that guarantees the quote identifier
 is present by construction, and the EthFlow native-currency submission
 helper and transaction helper accept only that newtype on their public
-entries:
+entries. In the snippet below, `sdk`, `orderbook`, `trader`, and `signer` are
+the values built in the ready-state steps above, and `params` describes the
+native-sell trade. The `ethflow_transaction_simulation` scenario runs this
+flow end to end:
 
 ```rust,ignore
 use cow_sdk::trading::{
@@ -605,6 +608,11 @@ Use these examples when you want local or transport-mocked Rust flows:
 - exercises allowance, approval, and pre-sign helper paths through the composed
   Alloy client
 
+The `alloy_*` scenarios and `transaction_lifecycle` need a native Alloy
+feature: run them with `--features alloy` (or the narrower
+`--features alloy-provider` / `--features alloy-signer` for the provider-only or
+signer-only scenarios).
+
 ### Read-Only Follow-Ons
 
 When your goal is read-only analytics instead of trading orchestration, switch
@@ -633,6 +641,7 @@ These are opt-in and no longer deterministic:
 
 - `orderbook_live_probe`
 - `subgraph_live_query`
+- `live_order_sepolia` (needs `--features live-services`)
 
 Use them only when you specifically need live service confirmation.
 

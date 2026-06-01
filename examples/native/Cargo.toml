@@ -129,3 +129,15 @@ required-features = ["alloy"]
 name = "live_order_sepolia"
 path = "scenarios/live_order_sepolia.rs"
 required-features = ["live-services"]
+
+[[example]]
+name = "simplest_swap_quickstart"
+path = "scenarios/simplest_swap_quickstart.rs"
+
+[[example]]
+name = "error_classification_simulation"
+path = "scenarios/error_classification_simulation.rs"
+
+[[example]]
+name = "order_list_history_simulation"
+path = "scenarios/order_list_history_simulation.rs"

@@ -101,6 +101,18 @@ pub const DETERMINISTIC_EXAMPLES: &[DeterministicExample] = &[
         manifest_path: "examples/native/Cargo.toml",
         example: "subgraph_custom_query_roundtrip",
     },
+    DeterministicExample::Manifest {
+        manifest_path: "examples/native/Cargo.toml",
+        example: "simplest_swap_quickstart",
+    },
+    DeterministicExample::Manifest {
+        manifest_path: "examples/native/Cargo.toml",
+        example: "error_classification_simulation",
+    },
+    DeterministicExample::Manifest {
+        manifest_path: "examples/native/Cargo.toml",
+        example: "order_list_history_simulation",
+    },
 ];
 
 pub fn run(args: Args, output_mode: OutputMode) -> anyhow::Result<()> {
