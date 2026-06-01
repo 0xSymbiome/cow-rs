@@ -46,7 +46,7 @@ Every primitive in this table uses the alloy symbol directly. No cow-owned re-im
 
 | Surface | Alloy crate + symbol | cow-rs consumer crate(s) | ADR authority | Notes |
 |---|---|---|---|---|
-| Inner-layer address type | `alloy_primitives::Address` | `cow-sdk-core` (via `Address` newtype), `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk-alloy*`, `cow-sdk-cow-shed`, `cow-sdk-browser-wallet` | ADR 0052 | `repr(transparent)` newtype, bit-for-bit layout, zero-cost conversion at `.0` / `From::from`. |
+| Inner-layer address type | `alloy_primitives::Address` | `cow-sdk-core` (via `Address` newtype), `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk-alloy*`, `cow-sdk-cow-shed`, `cow-sdk-browser-wallet` | ADR 0052 | `repr(transparent)` newtype, bit-for-bit layout, zero-cost conversion via `From::from` and the `as_alloy` / `into_alloy` accessors. |
 | 32-byte hash | `alloy_primitives::B256` | `cow-sdk-core` (via `Hash32`, `AppDataHash`) | ADR 0052 | Two cow newtypes around `B256` preserve type-system distinction. |
 | Variable bytes | `alloy_primitives::Bytes` | `cow-sdk-core` (via `HexData`) | ADR 0052 | Display/Serialize/Deserialize forward to alloy defaults. |
 | Fixed-width 56-byte UID | `alloy_primitives::FixedBytes<56>` | `cow-sdk-core` (via `OrderUid`) | ADR 0052 | UID packing payload byte width is fixed by GPv2; cow owns only the 56-byte packing function (Bucket 2 below). |

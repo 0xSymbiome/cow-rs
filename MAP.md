@@ -1,7 +1,7 @@
 # Repository File Map
 
-> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `ebffe55` &nbsp;&middot;&nbsp; **Generated:** 2026-05-25  
-> **Total tracked files:** **1365**
+> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `5be3d6b` &nbsp;&middot;&nbsp; **Generated:** 2026-06-02  
+> **Total tracked files:** **1420**
 
 A navigable inventory of every file tracked by Git on this branch, grouped by the role each directory plays in the workspace. Use the table of contents to jump straight to a section; full file listings are collapsed by default so the high-level shape stays scannable.
 
@@ -26,12 +26,12 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 ## At a glance
 
-- **776 files** live under `crates/` — 18 workspace member crates make up roughly 57% of the repo.
-- **134 files** under `docs/` are mostly architecture decision records and audit notes.
-- **71 files** under `parity/` are golden fixtures captured from upstream services to keep the Rust SDK byte-compatible.
-- **95 files** under `fuzz/` cover cargo-fuzz targets and their seed corpora.
-- **134 files** under `examples/` + `e2e/` are runnable demos and integration harnesses.
-- **88 files** under `scripts/` are maintenance tool crates (parity refresh, policy refresh, validation runners).
+- **794 files** live under `crates/` — 18 workspace member crates make up roughly 56% of the repo.
+- **153 files** under `docs/` are mostly architecture decision records and audit notes.
+- **73 files** under `parity/` are golden fixtures captured from upstream services to keep the Rust SDK byte-compatible.
+- **107 files** under `fuzz/` cover cargo-fuzz targets and their seed corpora.
+- **137 files** under `examples/` + `e2e/` are runnable demos and integration harnesses.
+- **86 files** under `scripts/` are maintenance tool crates (parity refresh, policy refresh, validation runners).
 
 ---
 
@@ -39,31 +39,32 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 | Path | Files | Purpose |
 |------|------:|---------|
-| `crates/` | 776 | Workspace member crates (the SDK itself) |
-| `docs/` | 134 | Architecture decision records, audit notes, provider notes |
-| `fuzz/` | 95 | cargo-fuzz targets, corpora, and failure artifacts |
-| `scripts/` | 88 | Internal maintenance tool crates |
-| `examples/` | 86 | Runnable usage examples (Rust + TypeScript) |
-| `parity/` | 71 | Golden fixtures + pinned specs from upstream services |
+| `crates/` | 794 | Workspace member crates (the SDK itself) |
+| `docs/` | 153 | Architecture decision records, audit notes, provider notes |
+| `fuzz/` | 107 | cargo-fuzz targets, corpora, and failure artifacts |
+| `examples/` | 89 | Runnable usage examples (Rust + TypeScript) |
+| `scripts/` | 86 | Internal maintenance tool crates |
+| `parity/` | 73 | Golden fixtures + pinned specs from upstream services |
 | `e2e/` | 48 | End-to-end integration harnesses |
-| `.github/` | 35 | GitHub Actions workflows and repo config |
+| `.github/` | 37 | GitHub Actions workflows and repo config |
 | `tests/` | 15 | Workspace-level integration tests |
 | `.cargo/` | 2 | Cargo configuration |
-| `CONTRIBUTING.md` | 1 | Contribution guide |
-| `Cargo.toml` | 1 | Workspace manifest |
-| `Cargo.lock` | 1 | Workspace lockfile |
-| `SECURITY.md` | 1 | Security policy |
-| `.yamllint` | 1 | YAML lint configuration |
-| `.gitignore` | 1 | Top-level git ignore rules |
-| `LICENSE` | 1 | License text |
-| `llvm-cov-summary.txt` | 1 | Coverage summary snapshot |
-| `.githooks/` | 1 | Tracked git hook scripts |
-| `PROPERTIES.md` | 1 | Property-based testing index |
-| `README.md` | 1 | Top-level README |
-| `ROADMAP.md` | 1 | Roadmap document |
-| `rust-toolchain.toml` | 1 | Pinned Rust toolchain |
 | `.gitattributes` | 1 | Git attributes |
+| `rust-toolchain.toml` | 1 | Pinned Rust toolchain |
+| `ROADMAP.md` | 1 | Roadmap document |
+| `README.md` | 1 | Top-level README |
+| `PROPERTIES.md` | 1 | Property-based testing index |
+| `.githooks/` | 1 | Tracked git hook scripts |
 | `CHANGELOG.md` | 1 | Release changelog |
+| `MAP.md` | 1 |  |
+| `LICENSE` | 1 | License text |
+| `.gitignore` | 1 | Top-level git ignore rules |
+| `.yamllint` | 1 | YAML lint configuration |
+| `SECURITY.md` | 1 | Security policy |
+| `Cargo.lock` | 1 | Workspace lockfile |
+| `Cargo.toml` | 1 | Workspace manifest |
+| `llvm-cov-summary.txt` | 1 | Coverage summary snapshot |
+| `CONTRIBUTING.md` | 1 | Contribution guide |
 
 ---
 
@@ -71,16 +72,16 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 | Extension | Files | Typical role |
 |-----------|------:|--------------|
-| `.rs` | 676 | Rust source and tests |
-| `.md` | 223 | Markdown docs (ADRs, audit notes, READMEs) |
-| `.json` | 155 | JSON schemas, ABIs, parity fixtures |
-| `.ts` | 77 | TypeScript (examples, e2e, wasm bindings) |
-| `.toml` | 53 | Cargo manifests and tool configs |
-| `.sol` | 35 | Solidity sources / vendored contract code |
+| `.rs` | 703 | Rust source and tests |
+| `.md` | 250 | Markdown docs (ADRs, audit notes, READMEs) |
+| `.json` | 156 | JSON schemas, ABIs, parity fixtures |
+| `.ts` | 74 | TypeScript (examples, e2e, wasm bindings) |
+| `.toml` | 52 | Cargo manifests and tool configs |
+| `.sol` | 40 | Solidity sources / vendored contract code |
 | `.yaml` | 35 | CI workflows, OpenAPI specs, config |
-| `.yml` | 25 | CI workflows and config |
-| `.stderr` | 21 | trybuild compile-fail snapshots |
-| `.lock` | 11 | Cargo / package lockfiles |
+| `.yml` | 27 | CI workflows and config |
+| `.stderr` | 19 | trybuild compile-fail snapshots |
+| `.lock` | 10 | Cargo / package lockfiles |
 | `.sh` | 8 | Shell scripts |
 | `.txt` | 8 | Plain text fixtures / summaries |
 | `.mjs` | 6 | JavaScript modules |
@@ -106,24 +107,24 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 | Crate | Files | Purpose |
 |-------|------:|---------|
-| [`contracts`](crates/contracts) | 146 | CoW Protocol low-level contracts helpers for hashing, settlement encoding, and on-chain interaction plumbing |
-| [`wasm`](crates/wasm) | 103 | TypeScript-callable wasm-bindgen leaf for the CoW Protocol Rust SDK |
-| [`app-data`](crates/app-data) | 101 | CoW Protocol app-data encoding, schema validation, and CID compatibility |
-| [`trading`](crates/trading) | 82 | High-level CoW Protocol trading orchestration surface |
-| [`core`](crates/core) | 52 | Shared CoW Protocol core types and validation primitives |
-| [`orderbook`](crates/orderbook) | 38 | Typed CoW Protocol orderbook client models and decoding helpers |
+| [`contracts`](crates/contracts) | 160 | CoW Protocol low-level contracts helpers for hashing, settlement encoding, and on-chain interaction plumbing |
+| [`wasm`](crates/wasm) | 105 | TypeScript-callable wasm-bindgen leaf for the CoW Protocol Rust SDK |
+| [`app-data`](crates/app-data) | 99 | CoW Protocol app-data encoding, schema validation, and CID compatibility |
+| [`trading`](crates/trading) | 81 | High-level CoW Protocol trading orchestration surface |
+| [`core`](crates/core) | 59 | Shared CoW Protocol core types and validation primitives |
+| [`orderbook`](crates/orderbook) | 40 | Typed CoW Protocol orderbook client models and decoding helpers |
 | [`cow-shed`](crates/cow-shed) | 32 | CoW Protocol COW Shed proxy address, EIP-712, and calldata helpers |
-| [`alloy`](crates/alloy) | 30 | Composed Alloy provider and signer adapter for the CoW Protocol Rust SDK |
 | [`browser-wallet`](crates/browser-wallet) | 29 | Browser wallet integration for the CoW Protocol Rust SDK |
 | [`signing`](crates/signing) | 27 | Deterministic CoW Protocol order hashing, EIP-712 signing, and UID helpers |
 | [`subgraph`](crates/subgraph) | 27 | Typed CoW Protocol subgraph query primitives |
-| [`alloy-provider`](crates/alloy-provider) | 27 | Alloy-backed read-only AsyncProvider adapter for the CoW Protocol Rust SDK |
-| [`alloy-signer`](crates/alloy-signer) | 24 | Alloy-backed local-keystore AsyncSigner adapter for the CoW Protocol Rust SDK |
-| [`sdk`](crates/sdk) | 17 | Facade crate for CoW Protocol Rust SDK surfaces |
-| [`transport-policy`](crates/transport-policy) | 16 | Retry, rate-limit, and transport classification policy for CoW Protocol SDK HTTP clients |
+| [`alloy`](crates/alloy) | 27 | Composed Alloy provider and signer adapter for the CoW Protocol Rust SDK |
+| [`alloy-provider`](crates/alloy-provider) | 25 | Alloy-backed read-only Provider adapter for the CoW Protocol Rust SDK |
+| [`alloy-signer`](crates/alloy-signer) | 22 | Alloy-backed local-keystore Signer adapter for the CoW Protocol Rust SDK |
+| [`sdk`](crates/sdk) | 18 | Facade crate for CoW Protocol Rust SDK surfaces |
+| [`transport-policy`](crates/transport-policy) | 17 | Retry, rate-limit, and transport classification policy for CoW Protocol SDK HTTP clients |
 | [`pure-helpers`](crates/pure-helpers) | 10 | Runtime-neutral helper functions for the CoW Protocol Rust SDK wasm surface |
 | [`transport-wasm`](crates/transport-wasm) | 8 | Browser fetch-based HTTP transport for the CoW Protocol Rust SDK |
-| [`composable`](crates/composable) | 7 | Reserved crate manifest for future CoW Protocol composable order helpers |
+| [`composable`](crates/composable) | 8 | Reserved crate manifest for future CoW Protocol composable order helpers |
 
 ---
 
@@ -131,7 +132,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 | Example | Files | Purpose |
 |---------|------:|---------|
-| [`native`](examples/native) | 29 | Native Rust scenario walkthroughs |
+| [`native`](examples/native) | 32 | Native Rust scenario walkthroughs |
 | [`wasm`](examples/wasm) | 26 | Browser console scenarios (raw wasm) |
 | [`wasm-typescript-browser-mm`](examples/wasm-typescript-browser-mm) | 9 | TypeScript browser market-maker demo |
 | [`wasm-typescript-cloudflare-proxy`](examples/wasm-typescript-cloudflare-proxy) | 14 | TypeScript Cloudflare Worker proxy example |
@@ -155,7 +156,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 | Script crate | Files | Purpose |
 |---------|------:|---------|
-| [`parity-maintainer`](scripts/parity-maintainer) | 29 | Upstream parity fixture refresh + drift detection |
+| [`parity-maintainer`](scripts/parity-maintainer) | 30 | Upstream parity fixture refresh + drift detection |
 | [`policy-maintainer`](scripts/policy-maintainer) | 38 | Transport policy config maintenance |
 | [`validation-depth`](scripts/validation-depth) | 4 | Deep validation runner |
 | [`validation-smoke`](scripts/validation-smoke) | 11 | Smoke validation runner |
@@ -167,7 +168,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | Subtree | Files | Purpose |
 |---------|------:|---------|
 | [`dependency-audit`](parity/dependency-audit) | 1 | Dependency audit reports |
-| [`fixtures`](parity/fixtures) | 50 | Golden fixtures captured from upstream services |
+| [`fixtures`](parity/fixtures) | 52 | Golden fixtures captured from upstream services |
 | [`openapi`](parity/openapi) | 10 | OpenAPI specs pinned for parity |
 | [`source-lock`](parity/source-lock) | 1 | Upstream source lockfiles |
 
@@ -177,8 +178,8 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 | Subtree | Files | Purpose |
 |---------|------:|---------|
-| [`adr`](docs/adr) | 55 | Architecture Decision Records |
-| [`audit`](docs/audit) | 55 | Audit notes and review artifacts |
+| [`adr`](docs/adr) | 63 | Architecture Decision Records |
+| [`audit`](docs/audit) | 65 | Audit notes and review artifacts |
 | [`providers`](docs/providers) | 2 | Provider integration notes |
 
 ---
@@ -187,8 +188,8 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 | Subtree | Files | Purpose |
 |---------|------:|---------|
-| [`corpus`](fuzz/corpus) | 46 | Seed corpora per target |
-| [`fuzz_targets`](fuzz/fuzz_targets) | 46 | cargo-fuzz target sources |
+| [`corpus`](fuzz/corpus) | 52 | Seed corpora per target |
+| [`fuzz_targets`](fuzz/fuzz_targets) | 52 | cargo-fuzz target sources |
 
 ---
 
@@ -196,7 +197,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 | Path | Files | Purpose |
 |------|------:|---------|
-| `.github/workflows/` | 20 | GitHub Actions pipelines |
+| `.github/workflows/` | 22 | GitHub Actions pipelines |
 | `.github/config/`    | 9 | Shared CI config |
 | `.githooks/`         | 1 | Tracked git hooks |
 | `.cargo/`            | 2 | Cargo config (e.g. rustflags) |
@@ -209,7 +210,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 Every tracked file, grouped by the directory it lives in. Each section is collapsed by default — click to expand.
 
 <details>
-<summary><code>(repo root)</code> &mdash; 14 file(s)</summary>
+<summary><code>(repo root)</code> &mdash; 15 file(s)</summary>
 
 - [`.gitattributes`](.gitattributes)
 - [`.gitignore`](.gitignore)
@@ -220,6 +221,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`CONTRIBUTING.md`](CONTRIBUTING.md)
 - [`LICENSE`](LICENSE)
 - [`llvm-cov-summary.txt`](llvm-cov-summary.txt)
+- [`MAP.md`](MAP.md)
 - [`PROPERTIES.md`](PROPERTIES.md)
 - [`README.md`](README.md)
 - [`ROADMAP.md`](ROADMAP.md)
@@ -289,7 +291,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>.github/workflows/</code> &mdash; 20 file(s)</summary>
+<summary><code>.github/workflows/</code> &mdash; 22 file(s)</summary>
 
 - [`_quality-gate.yml`](.github/workflows/_quality-gate.yml)
 - [`alloy-release-candidate.yml`](.github/workflows/alloy-release-candidate.yml)
@@ -300,7 +302,9 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`commit-format.yml`](.github/workflows/commit-format.yml)
 - [`crate-checks.yml`](.github/workflows/crate-checks.yml)
 - [`docs-quality.yml`](.github/workflows/docs-quality.yml)
+- [`encode-prefixed-grep-gate.yml`](.github/workflows/encode-prefixed-grep-gate.yml)
 - [`fuzz.yml`](.github/workflows/fuzz.yml)
+- [`never-swap-gates.yml`](.github/workflows/never-swap-gates.yml)
 - [`policy-maintainer.yml`](.github/workflows/policy-maintainer.yml)
 - [`release-readiness.yml`](.github/workflows/release-readiness.yml)
 - [`release-version-coherence.yml`](.github/workflows/release-version-coherence.yml)
@@ -418,7 +422,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>crates/alloy/src/</code> &mdash; 7 file(s)</summary>
+<summary><code>crates/alloy/src/</code> &mdash; 6 file(s)</summary>
 
 - [`builder.rs`](crates/alloy/src/builder.rs)
 - [`client.rs`](crates/alloy/src/client.rs)
@@ -426,7 +430,6 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`error.rs`](crates/alloy/src/error.rs)
 - [`handle.rs`](crates/alloy/src/handle.rs)
 - [`lib.rs`](crates/alloy/src/lib.rs)
-- [`read_contract.rs`](crates/alloy/src/read_contract.rs)
 
 </details>
 
@@ -626,14 +629,13 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>crates/app-data/src/</code> &mdash; 7 file(s)</summary>
+<summary><code>crates/app-data/src/</code> &mdash; 6 file(s)</summary>
 
 - [`cid.rs`](crates/app-data/src/cid.rs)
 - [`errors.rs`](crates/app-data/src/errors.rs)
 - [`fetch.rs`](crates/app-data/src/fetch.rs)
 - [`info.rs`](crates/app-data/src/info.rs)
 - [`lib.rs`](crates/app-data/src/lib.rs)
-- [`pinning.rs`](crates/app-data/src/pinning.rs)
 - [`schema.rs`](crates/app-data/src/schema.rs)
 
 </details>
@@ -660,22 +662,21 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>crates/app-data/tests/</code> &mdash; 19 file(s)</summary>
+<summary><code>crates/app-data/tests/</code> &mdash; 18 file(s)</summary>
 
 - [`app_data_info_contract.rs`](crates/app-data/tests/app_data_info_contract.rs)
 - [`canonical_json_contract.rs`](crates/app-data/tests/canonical_json_contract.rs)
 - [`cid_contract.rs`](crates/app-data/tests/cid_contract.rs)
 - [`error_contract.rs`](crates/app-data/tests/error_contract.rs)
-- [`error_redaction_contract.rs`](crates/app-data/tests/error_redaction_contract.rs)
 - [`error_variant_shape.rs`](crates/app-data/tests/error_variant_shape.rs)
 - [`fetch_contract.rs`](crates/app-data/tests/fetch_contract.rs)
 - [`flashloan_contract.rs`](crates/app-data/tests/flashloan_contract.rs)
 - [`hooks_contract.rs`](crates/app-data/tests/hooks_contract.rs)
 - [`ipfs_config_redaction_contract.rs`](crates/app-data/tests/ipfs_config_redaction_contract.rs)
+- [`json_recursion_contract.rs`](crates/app-data/tests/json_recursion_contract.rs)
 - [`metadata_signer_contract.rs`](crates/app-data/tests/metadata_signer_contract.rs)
 - [`parity_contract.rs`](crates/app-data/tests/parity_contract.rs)
 - [`partner_fee_contract.rs`](crates/app-data/tests/partner_fee_contract.rs)
-- [`pinning_contract.rs`](crates/app-data/tests/pinning_contract.rs)
 - [`property_contract.rs`](crates/app-data/tests/property_contract.rs)
 - [`schema_contract.rs`](crates/app-data/tests/schema_contract.rs)
 - [`schema_regression_matrix.rs`](crates/app-data/tests/schema_regression_matrix.rs)
@@ -752,12 +753,12 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <details>
 <summary><code>crates/browser-wallet/tests/</code> &mdash; 10 file(s)</summary>
 
-- [`async_signing_provider_contract.rs`](crates/browser-wallet/tests/async_signing_provider_contract.rs)
 - [`non_exhaustive_type_contract.rs`](crates/browser-wallet/tests/non_exhaustive_type_contract.rs)
 - [`origin_contract.rs`](crates/browser-wallet/tests/origin_contract.rs)
 - [`provider_contract.rs`](crates/browser-wallet/tests/provider_contract.rs)
 - [`signer_contract.rs`](crates/browser-wallet/tests/signer_contract.rs)
 - [`signer_error_trait_contract.rs`](crates/browser-wallet/tests/signer_error_trait_contract.rs)
+- [`signing_provider_contract.rs`](crates/browser-wallet/tests/signing_provider_contract.rs)
 - [`state_machine_contract.rs`](crates/browser-wallet/tests/state_machine_contract.rs)
 - [`transaction_receipt_parsing.rs`](crates/browser-wallet/tests/transaction_receipt_parsing.rs)
 - [`wallet_contract.rs`](crates/browser-wallet/tests/wallet_contract.rs)
@@ -766,9 +767,10 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>crates/composable/</code> &mdash; 1 file(s)</summary>
+<summary><code>crates/composable/</code> &mdash; 2 file(s)</summary>
 
 - [`Cargo.toml`](crates/composable/Cargo.toml)
+- [`README.md`](crates/composable/README.md)
 
 </details>
 
@@ -912,10 +914,12 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>crates/contracts/abi/eth-flow/</code> &mdash; 2 file(s)</summary>
+<summary><code>crates/contracts/abi/eth-flow/</code> &mdash; 4 file(s)</summary>
 
 - [`CoWSwapEthFlow.sol`](crates/contracts/abi/eth-flow/CoWSwapEthFlow.sol)
+- [`CoWSwapOnchainOrders.sol`](crates/contracts/abi/eth-flow/CoWSwapOnchainOrders.sol)
 - [`EthFlowOrder.sol`](crates/contracts/abi/eth-flow/EthFlowOrder.sol)
+- [`ICoWSwapOnchainOrders.sol`](crates/contracts/abi/eth-flow/ICoWSwapOnchainOrders.sol)
 
 </details>
 
@@ -936,6 +940,13 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
+<summary><code>crates/contracts/abi/weth/</code> &mdash; 1 file(s)</summary>
+
+- [`IWrappedNativeToken.sol`](crates/contracts/abi/weth/IWrappedNativeToken.sol)
+
+</details>
+
+<details>
 <summary><code>crates/contracts/benches/</code> &mdash; 2 file(s)</summary>
 
 - [`order_hashing.rs`](crates/contracts/benches/order_hashing.rs)
@@ -944,15 +955,18 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>crates/contracts/src/</code> &mdash; 14 file(s)</summary>
+<summary><code>crates/contracts/src/</code> &mdash; 18 file(s)</summary>
 
 - [`chain_ids.rs`](crates/contracts/src/chain_ids.rs)
 - [`deploy.rs`](crates/contracts/src/deploy.rs)
+- [`eip1271.rs`](crates/contracts/src/eip1271.rs)
 - [`erc20.rs`](crates/contracts/src/erc20.rs)
 - [`errors.rs`](crates/contracts/src/errors.rs)
 - [`eth_flow.rs`](crates/contracts/src/eth_flow.rs)
+- [`hex_field.rs`](crates/contracts/src/hex_field.rs)
 - [`interaction.rs`](crates/contracts/src/interaction.rs)
 - [`lib.rs`](crates/contracts/src/lib.rs)
+- [`onchain_orders.rs`](crates/contracts/src/onchain_orders.rs)
 - [`primitives.rs`](crates/contracts/src/primitives.rs)
 - [`proxy.rs`](crates/contracts/src/proxy.rs)
 - [`reader.rs`](crates/contracts/src/reader.rs)
@@ -960,6 +974,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`swap.rs`](crates/contracts/src/swap.rs)
 - [`vault.rs`](crates/contracts/src/vault.rs)
 - [`verify.rs`](crates/contracts/src/verify.rs)
+- [`weth.rs`](crates/contracts/src/weth.rs)
 
 </details>
 
@@ -989,16 +1004,17 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>crates/contracts/src/settlement/</code> &mdash; 3 file(s)</summary>
+<summary><code>crates/contracts/src/settlement/</code> &mdash; 4 file(s)</summary>
 
 - [`codec.rs`](crates/contracts/src/settlement/codec.rs)
 - [`encoder.rs`](crates/contracts/src/settlement/encoder.rs)
+- [`events.rs`](crates/contracts/src/settlement/events.rs)
 - [`mod.rs`](crates/contracts/src/settlement/mod.rs)
 
 </details>
 
 <details>
-<summary><code>crates/contracts/tests/</code> &mdash; 34 file(s)</summary>
+<summary><code>crates/contracts/tests/</code> &mdash; 39 file(s)</summary>
 
 - [`build_rs_compile_fail.rs`](crates/contracts/tests/build_rs_compile_fail.rs)
 - [`composable_chain_coverage_contract.rs`](crates/contracts/tests/composable_chain_coverage_contract.rs)
@@ -1010,8 +1026,10 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`erc20.rs`](crates/contracts/tests/erc20.rs)
 - [`error_contract.rs`](crates/contracts/tests/error_contract.rs)
 - [`error_variant_shape.rs`](crates/contracts/tests/error_variant_shape.rs)
+- [`eth_flow_events_contract.rs`](crates/contracts/tests/eth_flow_events_contract.rs)
 - [`interaction_contract.rs`](crates/contracts/tests/interaction_contract.rs)
 - [`non_exhaustive_dto_contract.rs`](crates/contracts/tests/non_exhaustive_dto_contract.rs)
+- [`onchain_orders.rs`](crates/contracts/tests/onchain_orders.rs)
 - [`order_contract.rs`](crates/contracts/tests/order_contract.rs)
 - [`order_digest_parity_contract.rs`](crates/contracts/tests/order_digest_parity_contract.rs)
 - [`parity_contract.rs`](crates/contracts/tests/parity_contract.rs)
@@ -1019,6 +1037,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`proxy_contract.rs`](crates/contracts/tests/proxy_contract.rs)
 - [`proxy_creation_code_sha256_contract.rs`](crates/contracts/tests/proxy_creation_code_sha256_contract.rs)
 - [`reader_contract.rs`](crates/contracts/tests/reader_contract.rs)
+- [`recoverable_signature_contract.rs`](crates/contracts/tests/recoverable_signature_contract.rs)
 - [`registry_capability_rows_contract.rs`](crates/contracts/tests/registry_capability_rows_contract.rs)
 - [`registry_environment_scope_contract.rs`](crates/contracts/tests/registry_environment_scope_contract.rs)
 - [`registry.rs`](crates/contracts/tests/registry.rs)
@@ -1027,6 +1046,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`selector_parity_composable_contract.rs`](crates/contracts/tests/selector_parity_composable_contract.rs)
 - [`selector_parity_cow_shed_contract.rs`](crates/contracts/tests/selector_parity_cow_shed_contract.rs)
 - [`settlement_contract.rs`](crates/contracts/tests/settlement_contract.rs)
+- [`settlement_events_contract.rs`](crates/contracts/tests/settlement_events_contract.rs)
 - [`signature_contract.rs`](crates/contracts/tests/signature_contract.rs)
 - [`swap_contract.rs`](crates/contracts/tests/swap_contract.rs)
 - [`trybuild_schema_v2.rs`](crates/contracts/tests/trybuild_schema_v2.rs)
@@ -1034,6 +1054,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`v_normalization_contract.rs`](crates/contracts/tests/v_normalization_contract.rs)
 - [`vault_contract.rs`](crates/contracts/tests/vault_contract.rs)
 - [`verify_telemetry_contract.rs`](crates/contracts/tests/verify_telemetry_contract.rs)
+- [`weth.rs`](crates/contracts/tests/weth.rs)
 
 </details>
 
@@ -1146,9 +1167,10 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>crates/core/src/traits/</code> &mdash; 7 file(s)</summary>
+<summary><code>crates/core/src/traits/</code> &mdash; 8 file(s)</summary>
 
 - [`contract.rs`](crates/core/src/traits/contract.rs)
+- [`log_provider.rs`](crates/core/src/traits/log_provider.rs)
 - [`mod.rs`](crates/core/src/traits/mod.rs)
 - [`provider.rs`](crates/core/src/traits/provider.rs)
 - [`signer.rs`](crates/core/src/traits/signer.rs)
@@ -1169,10 +1191,12 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>crates/core/src/types/</code> &mdash; 6 file(s)</summary>
+<summary><code>crates/core/src/types/</code> &mdash; 8 file(s)</summary>
 
 - [`amount.rs`](crates/core/src/types/amount.rs)
+- [`app_code.rs`](crates/core/src/types/app_code.rs)
 - [`identity.rs`](crates/core/src/types/identity.rs)
+- [`logs.rs`](crates/core/src/types/logs.rs)
 - [`mod.rs`](crates/core/src/types/mod.rs)
 - [`order.rs`](crates/core/src/types/order.rs)
 - [`quote.rs`](crates/core/src/types/quote.rs)
@@ -1181,13 +1205,15 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>crates/core/tests/</code> &mdash; 13 file(s)</summary>
+<summary><code>crates/core/tests/</code> &mdash; 15 file(s)</summary>
 
+- [`amount_arithmetic_ui.rs`](crates/core/tests/amount_arithmetic_ui.rs)
 - [`cancellation_contract.rs`](crates/core/tests/cancellation_contract.rs)
 - [`cancellation_coverage_validator.rs`](crates/core/tests/cancellation_coverage_validator.rs)
+- [`cid_parity_contract.rs`](crates/core/tests/cid_parity_contract.rs)
 - [`config_contract.rs`](crates/core/tests/config_contract.rs)
-- [`provider_capability_split_contract.rs`](crates/core/tests/provider_capability_split_contract.rs)
 - [`property_contract.rs`](crates/core/tests/property_contract.rs)
+- [`provider_capability_split_contract.rs`](crates/core/tests/provider_capability_split_contract.rs)
 - [`redaction_contract.rs`](crates/core/tests/redaction_contract.rs)
 - [`token_balance_parity.rs`](crates/core/tests/token_balance_parity.rs)
 - [`token_balance_ui.rs`](crates/core/tests/token_balance_ui.rs)
@@ -1216,8 +1242,10 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>crates/core/tests/ui/</code> &mdash; 2 file(s)</summary>
+<summary><code>crates/core/tests/ui/</code> &mdash; 4 file(s)</summary>
 
+- [`amount_arithmetic_operators_removed.rs`](crates/core/tests/ui/amount_arithmetic_operators_removed.rs)
+- [`amount_arithmetic_operators_removed.stderr`](crates/core/tests/ui/amount_arithmetic_operators_removed.stderr)
 - [`token_balance_split_cross_side.rs`](crates/core/tests/ui/token_balance_split_cross_side.rs)
 - [`token_balance_split_cross_side.stderr`](crates/core/tests/ui/token_balance_split_cross_side.stderr)
 
@@ -1339,8 +1367,9 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>crates/orderbook/src/types/</code> &mdash; 7 file(s)</summary>
+<summary><code>crates/orderbook/src/types/</code> &mdash; 8 file(s)</summary>
 
+- [`app_data.rs`](crates/orderbook/src/types/app_data.rs)
 - [`auction.rs`](crates/orderbook/src/types/auction.rs)
 - [`enums.rs`](crates/orderbook/src/types/enums.rs)
 - [`lists.rs`](crates/orderbook/src/types/lists.rs)
@@ -1352,7 +1381,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>crates/orderbook/tests/</code> &mdash; 18 file(s)</summary>
+<summary><code>crates/orderbook/tests/</code> &mdash; 19 file(s)</summary>
 
 - [`api_contract.rs`](crates/orderbook/tests/api_contract.rs)
 - [`builder_contract.rs`](crates/orderbook/tests/builder_contract.rs)
@@ -1365,6 +1394,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`openapi_dto_coverage.rs`](crates/orderbook/tests/openapi_dto_coverage.rs)
 - [`order_creation_fee_deserialize.rs`](crates/orderbook/tests/order_creation_fee_deserialize.rs)
 - [`parity_contract.rs`](crates/orderbook/tests/parity_contract.rs)
+- [`rejection_category_contract.rs`](crates/orderbook/tests/rejection_category_contract.rs)
 - [`rejection_contract.rs`](crates/orderbook/tests/rejection_contract.rs)
 - [`request_contract.rs`](crates/orderbook/tests/request_contract.rs)
 - [`schema_source_contract.rs`](crates/orderbook/tests/schema_source_contract.rs)
@@ -1449,9 +1479,10 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>crates/sdk/tests/</code> &mdash; 7 file(s)</summary>
+<summary><code>crates/sdk/tests/</code> &mdash; 8 file(s)</summary>
 
 - [`cross_fixture_amount_roundtrip.rs`](crates/sdk/tests/cross_fixture_amount_roundtrip.rs)
+- [`error_class_contract.rs`](crates/sdk/tests/error_class_contract.rs)
 - [`error_redaction_contract.rs`](crates/sdk/tests/error_redaction_contract.rs)
 - [`parity_fixture_sort.rs`](crates/sdk/tests/parity_fixture_sort.rs)
 - [`public_api_default_features_only.rs`](crates/sdk/tests/public_api_default_features_only.rs)
@@ -1650,11 +1681,10 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>crates/trading/src/</code> &mdash; 12 file(s)</summary>
+<summary><code>crates/trading/src/</code> &mdash; 11 file(s)</summary>
 
 - [`allowance.rs`](crates/trading/src/allowance.rs)
 - [`app_data.rs`](crates/trading/src/app_data.rs)
-- [`cache.rs`](crates/trading/src/cache.rs)
 - [`cancel.rs`](crates/trading/src/cancel.rs)
 - [`error.rs`](crates/trading/src/error.rs)
 - [`lib.rs`](crates/trading/src/lib.rs)
@@ -1707,11 +1737,10 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>crates/trading/src/types/</code> &mdash; 13 file(s)</summary>
+<summary><code>crates/trading/src/types/</code> &mdash; 12 file(s)</summary>
 
 - [`advanced.rs`](crates/trading/src/types/advanced.rs)
 - [`allowance.rs`](crates/trading/src/types/allowance.rs)
-- [`app_code.rs`](crates/trading/src/types/app_code.rs)
 - [`context.rs`](crates/trading/src/types/context.rs)
 - [`eip1271.rs`](crates/trading/src/types/eip1271.rs)
 - [`mod.rs`](crates/trading/src/types/mod.rs)
@@ -1726,16 +1755,16 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>crates/trading/tests/</code> &mdash; 21 file(s)</summary>
+<summary><code>crates/trading/tests/</code> &mdash; 22 file(s)</summary>
 
 - [`allowance_contract.rs`](crates/trading/tests/allowance_contract.rs)
 - [`app_code_contract.rs`](crates/trading/tests/app_code_contract.rs)
 - [`app_data_merge_contract.rs`](crates/trading/tests/app_data_merge_contract.rs)
-- [`cache_contract.rs`](crates/trading/tests/cache_contract.rs)
 - [`cancel_contract.rs`](crates/trading/tests/cancel_contract.rs)
 - [`cancellation_composition_contract.rs`](crates/trading/tests/cancellation_composition_contract.rs)
 - [`error_variant_shape.rs`](crates/trading/tests/error_variant_shape.rs)
 - [`invariant_contract.rs`](crates/trading/tests/invariant_contract.rs)
+- [`limit_from_quote_contract.rs`](crates/trading/tests/limit_from_quote_contract.rs)
 - [`onchain_contract.rs`](crates/trading/tests/onchain_contract.rs)
 - [`order_contract.rs`](crates/trading/tests/order_contract.rs)
 - [`parameters_contract.rs`](crates/trading/tests/parameters_contract.rs)
@@ -1743,6 +1772,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`post_contract.rs`](crates/trading/tests/post_contract.rs)
 - [`property_contract.rs`](crates/trading/tests/property_contract.rs)
 - [`quote_contract.rs`](crates/trading/tests/quote_contract.rs)
+- [`quote_projection_parity.rs`](crates/trading/tests/quote_projection_parity.rs)
 - [`sdk_contract.rs`](crates/trading/tests/sdk_contract.rs)
 - [`slippage_contract.rs`](crates/trading/tests/slippage_contract.rs)
 - [`types_contract.rs`](crates/trading/tests/types_contract.rs)
@@ -1789,7 +1819,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>crates/transport-policy/src/</code> &mdash; 9 file(s)</summary>
+<summary><code>crates/transport-policy/src/</code> &mdash; 10 file(s)</summary>
 
 - [`classify.rs`](crates/transport-policy/src/classify.rs)
 - [`jitter.rs`](crates/transport-policy/src/jitter.rs)
@@ -1798,6 +1828,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`rate_limit.rs`](crates/transport-policy/src/rate_limit.rs)
 - [`retry_after.rs`](crates/transport-policy/src/retry_after.rs)
 - [`retry.rs`](crates/transport-policy/src/retry.rs)
+- [`runner.rs`](crates/transport-policy/src/runner.rs)
 - [`status.rs`](crates/transport-policy/src/status.rs)
 - [`time.rs`](crates/transport-policy/src/time.rs)
 
@@ -1938,19 +1969,16 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>crates/wasm/snapshots/raw/</code> &mdash; 11 file(s)</summary>
+<summary><code>crates/wasm/snapshots/raw/</code> &mdash; 8 file(s)</summary>
 
 - [`.keep`](crates/wasm/snapshots/raw/.keep)
 - [`cloudflare-web.d.ts`](crates/wasm/snapshots/raw/cloudflare-web.d.ts)
 - [`default-bundler.d.ts`](crates/wasm/snapshots/raw/default-bundler.d.ts)
 - [`default-nodejs.d.ts`](crates/wasm/snapshots/raw/default-nodejs.d.ts)
-- [`default-web.d.ts`](crates/wasm/snapshots/raw/default-web.d.ts)
 - [`orderbook-bundler.d.ts`](crates/wasm/snapshots/raw/orderbook-bundler.d.ts)
 - [`orderbook-nodejs.d.ts`](crates/wasm/snapshots/raw/orderbook-nodejs.d.ts)
-- [`orderbook-web.d.ts`](crates/wasm/snapshots/raw/orderbook-web.d.ts)
 - [`signing-bundler.d.ts`](crates/wasm/snapshots/raw/signing-bundler.d.ts)
 - [`signing-nodejs.d.ts`](crates/wasm/snapshots/raw/signing-nodejs.d.ts)
-- [`signing-web.d.ts`](crates/wasm/snapshots/raw/signing-web.d.ts)
 
 </details>
 
@@ -1962,7 +1990,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>crates/wasm/src/exports/</code> &mdash; 14 file(s)</summary>
+<summary><code>crates/wasm/src/exports/</code> &mdash; 15 file(s)</summary>
 
 - [`callbacks.rs`](crates/wasm/src/exports/callbacks.rs)
 - [`cancel.rs`](crates/wasm/src/exports/cancel.rs)
@@ -1970,6 +1998,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`eip1271.rs`](crates/wasm/src/exports/eip1271.rs)
 - [`envelope.rs`](crates/wasm/src/exports/envelope.rs)
 - [`errors.rs`](crates/wasm/src/exports/errors.rs)
+- [`events.rs`](crates/wasm/src/exports/events.rs)
 - [`ipfs.rs`](crates/wasm/src/exports/ipfs.rs)
 - [`mod.rs`](crates/wasm/src/exports/mod.rs)
 - [`orderbook.rs`](crates/wasm/src/exports/orderbook.rs)
@@ -1982,13 +2011,16 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>crates/wasm/src/exports/dto/</code> &mdash; 9 file(s)</summary>
+<summary><code>crates/wasm/src/exports/dto/</code> &mdash; 12 file(s)</summary>
 
 - [`app_data.rs`](crates/wasm/src/exports/dto/app_data.rs)
 - [`contracts.rs`](crates/wasm/src/exports/dto/contracts.rs)
 - [`core.rs`](crates/wasm/src/exports/dto/core.rs)
+- [`events.rs`](crates/wasm/src/exports/dto/events.rs)
 - [`mod.rs`](crates/wasm/src/exports/dto/mod.rs)
+- [`order.rs`](crates/wasm/src/exports/dto/order.rs)
 - [`orderbook.rs`](crates/wasm/src/exports/dto/orderbook.rs)
+- [`quote.rs`](crates/wasm/src/exports/dto/quote.rs)
 - [`signing.rs`](crates/wasm/src/exports/dto/signing.rs)
 - [`subgraph.rs`](crates/wasm/src/exports/dto/subgraph.rs)
 - [`trading.rs`](crates/wasm/src/exports/dto/trading.rs)
@@ -1997,7 +2029,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>crates/wasm/tests/</code> &mdash; 17 file(s)</summary>
+<summary><code>crates/wasm/tests/</code> &mdash; 18 file(s)</summary>
 
 - [`host_pure_helpers.rs`](crates/wasm/tests/host_pure_helpers.rs)
 - [`wasm_callback_contract.rs`](crates/wasm/tests/wasm_callback_contract.rs)
@@ -2011,6 +2043,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`wasm_fail_closed_contract.rs`](crates/wasm/tests/wasm_fail_closed_contract.rs)
 - [`wasm_ipfs_contract.rs`](crates/wasm/tests/wasm_ipfs_contract.rs)
 - [`wasm_redaction_contract.rs`](crates/wasm/tests/wasm_redaction_contract.rs)
+- [`wasm_retry_runner_contract.rs`](crates/wasm/tests/wasm_retry_runner_contract.rs)
 - [`wasm_send_sync_contract.rs`](crates/wasm/tests/wasm_send_sync_contract.rs)
 - [`wasm_snapshot_surface_contract.rs`](crates/wasm/tests/wasm_snapshot_surface_contract.rs)
 - [`wasm_surface_contract.rs`](crates/wasm/tests/wasm_surface_contract.rs)
@@ -2034,8 +2067,9 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>docs/</code> &mdash; 22 file(s)</summary>
+<summary><code>docs/</code> &mdash; 23 file(s)</summary>
 
+- [`alloy-doctrine.md`](docs/alloy-doctrine.md)
 - [`alloy-major-release-runbook.md`](docs/alloy-major-release-runbook.md)
 - [`architecture.md`](docs/architecture.md)
 - [`browser-runtime-proof-posture.md`](docs/browser-runtime-proof-posture.md)
@@ -2062,7 +2096,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>docs/adr/</code> &mdash; 55 file(s)</summary>
+<summary><code>docs/adr/</code> &mdash; 63 file(s)</summary>
 
 - [`0000-template.md`](docs/adr/0000-template.md)
 - [`0001-multi-crate-sdk-family-with-thin-facade.md`](docs/adr/0001-multi-crate-sdk-family-with-thin-facade.md)
@@ -2118,16 +2152,25 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`0051-signing-owned-eip1271-signature-provider-trait.md`](docs/adr/0051-signing-owned-eip1271-signature-provider-trait.md)
 - [`0052-alloy-primitives-canonical-primitive-layer.md`](docs/adr/0052-alloy-primitives-canonical-primitive-layer.md)
 - [`0053-typed-signer-rejection-classification.md`](docs/adr/0053-typed-signer-rejection-classification.md)
+- [`0054-onchain-order-event-decoding-is-fail-closed.md`](docs/adr/0054-onchain-order-event-decoding-is-fail-closed.md)
+- [`0055-bounded-response-reads.md`](docs/adr/0055-bounded-response-reads.md)
+- [`0056-settlement-event-decoding-is-fail-closed.md`](docs/adr/0056-settlement-event-decoding-is-fail-closed.md)
+- [`0057-log-provider-capability-trait.md`](docs/adr/0057-log-provider-capability-trait.md)
+- [`0058-typed-quote-request-response-surface.md`](docs/adr/0058-typed-quote-request-response-surface.md)
+- [`0059-hash-concrete-orderdata-directly.md`](docs/adr/0059-hash-concrete-orderdata-directly.md)
+- [`0060-uniform-error-classification.md`](docs/adr/0060-uniform-error-classification.md)
+- [`0061-wasm-abi-receiver-pay-to-owner.md`](docs/adr/0061-wasm-abi-receiver-pay-to-owner.md)
 - [`README.md`](docs/adr/README.md)
 
 </details>
 
 <details>
-<summary><code>docs/audit/</code> &mdash; 55 file(s)</summary>
+<summary><code>docs/audit/</code> &mdash; 65 file(s)</summary>
 
 - [`alloy-provider-adapter-audit.md`](docs/audit/alloy-provider-adapter-audit.md)
 - [`alloy-signer-adapter-audit.md`](docs/audit/alloy-signer-adapter-audit.md)
 - [`alloy-umbrella-adapter-audit.md`](docs/audit/alloy-umbrella-adapter-audit.md)
+- [`bounded-response-reads-audit.md`](docs/audit/bounded-response-reads-audit.md)
 - [`browser-wallet-alloy-dependency-audit.md`](docs/audit/browser-wallet-alloy-dependency-audit.md)
 - [`browser-wallet-chain-coherence-audit.md`](docs/audit/browser-wallet-chain-coherence-audit.md)
 - [`browser-wallet-trust-posture-audit.md`](docs/audit/browser-wallet-trust-posture-audit.md)
@@ -2145,15 +2188,23 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`deployment-registry-audit.md`](docs/audit/deployment-registry-audit.md)
 - [`ecdsa-signature-normalization-audit.md`](docs/audit/ecdsa-signature-normalization-audit.md)
 - [`eip1271-verification-cache-audit.md`](docs/audit/eip1271-verification-cache-audit.md)
+- [`error-classification-audit.md`](docs/audit/error-classification-audit.md)
 - [`fuzz-coverage-audit.md`](docs/audit/fuzz-coverage-audit.md)
 - [`http-transport-contract-audit.md`](docs/audit/http-transport-contract-audit.md)
 - [`lens-chain-evidence-audit.md`](docs/audit/lens-chain-evidence-audit.md)
+- [`log-provider-capability-audit.md`](docs/audit/log-provider-capability-audit.md)
+- [`onchain-order-log-decoding-audit.md`](docs/audit/onchain-order-log-decoding-audit.md)
 - [`panic-free-public-surface-audit.md`](docs/audit/panic-free-public-surface-audit.md)
 - [`partner-api-routing-audit.md`](docs/audit/partner-api-routing-audit.md)
+- [`quote-request-app-data-fix-review.md`](docs/audit/quote-request-app-data-fix-review.md)
+- [`quote-response-surface-audit.md`](docs/audit/quote-response-surface-audit.md)
 - [`README.md`](docs/audit/README.md)
+- [`settlement-event-log-decoding-audit.md`](docs/audit/settlement-event-log-decoding-audit.md)
 - [`shared-logic-reviewability-audit.md`](docs/audit/shared-logic-reviewability-audit.md)
 - [`signer-error-classification-audit.md`](docs/audit/signer-error-classification-audit.md)
 - [`source-lock-provenance-audit.md`](docs/audit/source-lock-provenance-audit.md)
+- [`subgraph-error-display-audit.md`](docs/audit/subgraph-error-display-audit.md)
+- [`trade-parameter-lifecycle-audit.md`](docs/audit/trade-parameter-lifecycle-audit.md)
 - [`trading-app-data-merge-audit.md`](docs/audit/trading-app-data-merge-audit.md)
 - [`trading-ethflow-owner-identity-audit.md`](docs/audit/trading-ethflow-owner-identity-audit.md)
 - [`trading-order-bounds-validator-audit.md`](docs/audit/trading-order-bounds-validator-audit.md)
@@ -2168,6 +2219,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`url-credential-redaction-audit.md`](docs/audit/url-credential-redaction-audit.md)
 - [`wasm-browser-runner-determinism-audit.md`](docs/audit/wasm-browser-runner-determinism-audit.md)
 - [`wasm-callback-shape-design-audit.md`](docs/audit/wasm-callback-shape-design-audit.md)
+- [`wasm-capability-coverage-audit.md`](docs/audit/wasm-capability-coverage-audit.md)
 - [`wasm-component-model-future-prep-audit.md`](docs/audit/wasm-component-model-future-prep-audit.md)
 - [`wasm-eip1271-parity-audit.md`](docs/audit/wasm-eip1271-parity-audit.md)
 - [`wasm-example-proof-posture-audit.md`](docs/audit/wasm-example-proof-posture-audit.md)
@@ -2371,7 +2423,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>examples/native/scenarios/</code> &mdash; 23 file(s)</summary>
+<summary><code>examples/native/scenarios/</code> &mdash; 26 file(s)</summary>
 
 - [`alloy_provider_only.rs`](examples/native/scenarios/alloy_provider_only.rs)
 - [`alloy_provider_with_custom_signer.rs`](examples/native/scenarios/alloy_provider_with_custom_signer.rs)
@@ -2381,16 +2433,19 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`alloy_trading_full_flow.rs`](examples/native/scenarios/alloy_trading_full_flow.rs)
 - [`app_data_roundtrip.rs`](examples/native/scenarios/app_data_roundtrip.rs)
 - [`cancellation_combinator.rs`](examples/native/scenarios/cancellation_combinator.rs)
+- [`error_classification_simulation.rs`](examples/native/scenarios/error_classification_simulation.rs)
 - [`ethflow_transaction_simulation.rs`](examples/native/scenarios/ethflow_transaction_simulation.rs)
 - [`limit_order_simulation.rs`](examples/native/scenarios/limit_order_simulation.rs)
 - [`live_order_sepolia.rs`](examples/native/scenarios/live_order_sepolia.rs)
 - [`onchain_order_actions_simulation.rs`](examples/native/scenarios/onchain_order_actions_simulation.rs)
 - [`order_lifecycle_simulation.rs`](examples/native/scenarios/order_lifecycle_simulation.rs)
+- [`order_list_history_simulation.rs`](examples/native/scenarios/order_list_history_simulation.rs)
 - [`orderbook_live_probe.rs`](examples/native/scenarios/orderbook_live_probe.rs)
 - [`orderbook_transport_roundtrip.rs`](examples/native/scenarios/orderbook_transport_roundtrip.rs)
 - [`quote_only_simulation.rs`](examples/native/scenarios/quote_only_simulation.rs)
 - [`sdk_surface_report.rs`](examples/native/scenarios/sdk_surface_report.rs)
 - [`signing_roundtrip.rs`](examples/native/scenarios/signing_roundtrip.rs)
+- [`simplest_swap_quickstart.rs`](examples/native/scenarios/simplest_swap_quickstart.rs)
 - [`subgraph_custom_query_roundtrip.rs`](examples/native/scenarios/subgraph_custom_query_roundtrip.rs)
 - [`subgraph_live_query.rs`](examples/native/scenarios/subgraph_live_query.rs)
 - [`subgraph_query_roundtrip.rs`](examples/native/scenarios/subgraph_query_roundtrip.rs)
@@ -2575,9 +2630,23 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
+<summary><code>fuzz/corpus/fuzz_amount_from_units/</code> &mdash; 1 file(s)</summary>
+
+- [`README.md`](fuzz/corpus/fuzz_amount_from_units/README.md)
+
+</details>
+
+<details>
 <summary><code>fuzz/corpus/fuzz_amount_parse/</code> &mdash; 1 file(s)</summary>
 
 - [`README.md`](fuzz/corpus/fuzz_amount_parse/README.md)
+
+</details>
+
+<details>
+<summary><code>fuzz/corpus/fuzz_amount_parse_units/</code> &mdash; 1 file(s)</summary>
+
+- [`README.md`](fuzz/corpus/fuzz_amount_parse_units/README.md)
 
 </details>
 
@@ -2645,13 +2714,6 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>fuzz/corpus/fuzz_decimal_amount_from_whole_approx/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_decimal_amount_from_whole_approx/README.md)
-
-</details>
-
-<details>
 <summary><code>fuzz/corpus/fuzz_decode_magic_value_response/</code> &mdash; 1 file(s)</summary>
 
 - [`README.md`](fuzz/corpus/fuzz_decode_magic_value_response/README.md)
@@ -2673,9 +2735,23 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
+<summary><code>fuzz/corpus/fuzz_eip1271_signature_data_codec/</code> &mdash; 1 file(s)</summary>
+
+- [`README.md`](fuzz/corpus/fuzz_eip1271_signature_data_codec/README.md)
+
+</details>
+
+<details>
 <summary><code>fuzz/corpus/fuzz_erc20_permit_typed_data_hash/</code> &mdash; 1 file(s)</summary>
 
 - [`README.md`](fuzz/corpus/fuzz_erc20_permit_typed_data_hash/README.md)
+
+</details>
+
+<details>
+<summary><code>fuzz/corpus/fuzz_eth_flow_event_log_decode/</code> &mdash; 1 file(s)</summary>
+
+- [`README.md`](fuzz/corpus/fuzz_eth_flow_event_log_decode/README.md)
 
 </details>
 
@@ -2715,9 +2791,9 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>fuzz/corpus/fuzz_normalize_ecdsa_signature_str/</code> &mdash; 1 file(s)</summary>
+<summary><code>fuzz/corpus/fuzz_onchain_order_log_decode/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_normalize_ecdsa_signature_str/README.md)
+- [`README.md`](fuzz/corpus/fuzz_onchain_order_log_decode/README.md)
 
 </details>
 
@@ -2778,6 +2854,20 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
+<summary><code>fuzz/corpus/fuzz_recoverable_signature_differential/</code> &mdash; 1 file(s)</summary>
+
+- [`README.md`](fuzz/corpus/fuzz_recoverable_signature_differential/README.md)
+
+</details>
+
+<details>
+<summary><code>fuzz/corpus/fuzz_recoverable_signature_parse_hex/</code> &mdash; 1 file(s)</summary>
+
+- [`README.md`](fuzz/corpus/fuzz_recoverable_signature_parse_hex/README.md)
+
+</details>
+
+<details>
 <summary><code>fuzz/corpus/fuzz_redact_response_body/</code> &mdash; 1 file(s)</summary>
 
 - [`README.md`](fuzz/corpus/fuzz_redact_response_body/README.md)
@@ -2802,6 +2892,13 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <summary><code>fuzz/corpus/fuzz_schema_version_is_semver/</code> &mdash; 1 file(s)</summary>
 
 - [`README.md`](fuzz/corpus/fuzz_schema_version_is_semver/README.md)
+
+</details>
+
+<details>
+<summary><code>fuzz/corpus/fuzz_settlement_event_log_decode/</code> &mdash; 1 file(s)</summary>
+
+- [`README.md`](fuzz/corpus/fuzz_settlement_event_log_decode/README.md)
 
 </details>
 
@@ -2897,8 +2994,10 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>fuzz/fuzz_targets/</code> &mdash; 46 file(s)</summary>
+<summary><code>fuzz/fuzz_targets/</code> &mdash; 52 file(s)</summary>
 
+- [`fuzz_amount_from_units.rs`](fuzz/fuzz_targets/fuzz_amount_from_units.rs)
+- [`fuzz_amount_parse_units.rs`](fuzz/fuzz_targets/fuzz_amount_parse_units.rs)
 - [`fuzz_amount_parse.rs`](fuzz/fuzz_targets/fuzz_amount_parse.rs)
 - [`fuzz_app_data_cid_roundtrip.rs`](fuzz/fuzz_targets/fuzz_app_data_cid_roundtrip.rs)
 - [`fuzz_app_data_merge.rs`](fuzz/fuzz_targets/fuzz_app_data_merge.rs)
@@ -2909,17 +3008,18 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`fuzz_cid_to_app_data_hex.rs`](fuzz/fuzz_targets/fuzz_cid_to_app_data_hex.rs)
 - [`fuzz_contract_call_serde.rs`](fuzz/fuzz_targets/fuzz_contract_call_serde.rs)
 - [`fuzz_core_identity_validators.rs`](fuzz/fuzz_targets/fuzz_core_identity_validators.rs)
-- [`fuzz_decimal_amount_from_whole_approx.rs`](fuzz/fuzz_targets/fuzz_decimal_amount_from_whole_approx.rs)
 - [`fuzz_decode_magic_value_response.rs`](fuzz/fuzz_targets/fuzz_decode_magic_value_response.rs)
 - [`fuzz_decoded_body_canonical_status_text.rs`](fuzz/fuzz_targets/fuzz_decoded_body_canonical_status_text.rs)
 - [`fuzz_ecdsa_v_normalization.rs`](fuzz/fuzz_targets/fuzz_ecdsa_v_normalization.rs)
+- [`fuzz_eip1271_signature_data_codec.rs`](fuzz/fuzz_targets/fuzz_eip1271_signature_data_codec.rs)
 - [`fuzz_erc20_permit_typed_data_hash.rs`](fuzz/fuzz_targets/fuzz_erc20_permit_typed_data_hash.rs)
+- [`fuzz_eth_flow_event_log_decode.rs`](fuzz/fuzz_targets/fuzz_eth_flow_event_log_decode.rs)
 - [`fuzz_ethflow_create_order_encode.rs`](fuzz/fuzz_targets/fuzz_ethflow_create_order_encode.rs)
 - [`fuzz_flashloan_hints.rs`](fuzz/fuzz_targets/fuzz_flashloan_hints.rs)
 - [`fuzz_hash_order_cancellations.rs`](fuzz/fuzz_targets/fuzz_hash_order_cancellations.rs)
 - [`fuzz_hook_list_deserialize.rs`](fuzz/fuzz_targets/fuzz_hook_list_deserialize.rs)
 - [`fuzz_jitter_delay_for_attempt.rs`](fuzz/fuzz_targets/fuzz_jitter_delay_for_attempt.rs)
-- [`fuzz_normalize_ecdsa_signature_str.rs`](fuzz/fuzz_targets/fuzz_normalize_ecdsa_signature_str.rs)
+- [`fuzz_onchain_order_log_decode.rs`](fuzz/fuzz_targets/fuzz_onchain_order_log_decode.rs)
 - [`fuzz_order_bounds_validator.rs`](fuzz/fuzz_targets/fuzz_order_bounds_validator.rs)
 - [`fuzz_order_signature_classify.rs`](fuzz/fuzz_targets/fuzz_order_signature_classify.rs)
 - [`fuzz_order_uid_pack_unpack.rs`](fuzz/fuzz_targets/fuzz_order_uid_pack_unpack.rs)
@@ -2928,10 +3028,13 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`fuzz_parse_retry_after.rs`](fuzz/fuzz_targets/fuzz_parse_retry_after.rs)
 - [`fuzz_partner_fee_from_value.rs`](fuzz/fuzz_targets/fuzz_partner_fee_from_value.rs)
 - [`fuzz_recover_ecdsa_address.rs`](fuzz/fuzz_targets/fuzz_recover_ecdsa_address.rs)
+- [`fuzz_recoverable_signature_differential.rs`](fuzz/fuzz_targets/fuzz_recoverable_signature_differential.rs)
+- [`fuzz_recoverable_signature_parse_hex.rs`](fuzz/fuzz_targets/fuzz_recoverable_signature_parse_hex.rs)
 - [`fuzz_redact_response_body.rs`](fuzz/fuzz_targets/fuzz_redact_response_body.rs)
 - [`fuzz_retry_policy_delay.rs`](fuzz/fuzz_targets/fuzz_retry_policy_delay.rs)
 - [`fuzz_rpc_error_payload_serde.rs`](fuzz/fuzz_targets/fuzz_rpc_error_payload_serde.rs)
 - [`fuzz_schema_version_is_semver.rs`](fuzz/fuzz_targets/fuzz_schema_version_is_semver.rs)
+- [`fuzz_settlement_event_log_decode.rs`](fuzz/fuzz_targets/fuzz_settlement_event_log_decode.rs)
 - [`fuzz_settlement_invalidate_order_encode.rs`](fuzz/fuzz_targets/fuzz_settlement_invalidate_order_encode.rs)
 - [`fuzz_settlement_settle_encode.rs`](fuzz/fuzz_targets/fuzz_settlement_settle_encode.rs)
 - [`fuzz_signed_amount_parse.rs`](fuzz/fuzz_targets/fuzz_signed_amount_parse.rs)
@@ -3041,12 +3144,14 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>parity/fixtures/orderbook/</code> &mdash; 8 file(s)</summary>
+<summary><code>parity/fixtures/orderbook/</code> &mdash; 10 file(s)</summary>
 
-- [`auction_order_with_protocol_fees.json`](parity/fixtures/orderbook/auction_order_with_protocol_fees.json)
+- [`app_data_upload_response.json`](parity/fixtures/orderbook/app_data_upload_response.json)
 - [`onchain_order_data.json`](parity/fixtures/orderbook/onchain_order_data.json)
+- [`order_parameters.json`](parity/fixtures/orderbook/order_parameters.json)
 - [`order_quote_response.json`](parity/fixtures/orderbook/order_quote_response.json)
 - [`order_with_full_metadata.json`](parity/fixtures/orderbook/order_with_full_metadata.json)
+- [`solver_competition_response.json`](parity/fixtures/orderbook/solver_competition_response.json)
 - [`solver_execution.json`](parity/fixtures/orderbook/solver_execution.json)
 - [`stored_order_quote.json`](parity/fixtures/orderbook/stored_order_quote.json)
 - [`total_surplus.json`](parity/fixtures/orderbook/total_surplus.json)
@@ -3083,10 +3188,10 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <details>
 <summary><code>parity/openapi/</code> &mdash; 10 file(s)</summary>
 
-- [`auction-order-inventory.yaml`](parity/openapi/auction-order-inventory.yaml)
 - [`coverage.yaml`](parity/openapi/coverage.yaml)
 - [`onchain-order-data-inventory.yaml`](parity/openapi/onchain-order-data-inventory.yaml)
 - [`order-inventory.yaml`](parity/openapi/order-inventory.yaml)
+- [`order-parameters-inventory.yaml`](parity/openapi/order-parameters-inventory.yaml)
 - [`order-quote-response-inventory.yaml`](parity/openapi/order-quote-response-inventory.yaml)
 - [`services-orderbook.yml`](parity/openapi/services-orderbook.yml)
 - [`solver-execution-inventory.yaml`](parity/openapi/solver-execution-inventory.yaml)
@@ -3113,21 +3218,6 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>scripts/fuzz-corpus-audit/</code> &mdash; 2 file(s)</summary>
-
-- [`Cargo.lock`](scripts/fuzz-corpus-audit/Cargo.lock)
-- [`Cargo.toml`](scripts/fuzz-corpus-audit/Cargo.toml)
-
-</details>
-
-<details>
-<summary><code>scripts/fuzz-corpus-audit/src/</code> &mdash; 1 file(s)</summary>
-
-- [`main.rs`](scripts/fuzz-corpus-audit/src/main.rs)
-
-</details>
-
-<details>
 <summary><code>scripts/parity-maintainer/</code> &mdash; 2 file(s)</summary>
 
 - [`Cargo.lock`](scripts/parity-maintainer/Cargo.lock)
@@ -3136,7 +3226,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>scripts/parity-maintainer/src/</code> &mdash; 12 file(s)</summary>
+<summary><code>scripts/parity-maintainer/src/</code> &mdash; 13 file(s)</summary>
 
 - [`audit_refresh.rs`](scripts/parity-maintainer/src/audit_refresh.rs)
 - [`audit_self_pinning.rs`](scripts/parity-maintainer/src/audit_self_pinning.rs)
@@ -3150,6 +3240,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`stale_phrase_lint.rs`](scripts/parity-maintainer/src/stale_phrase_lint.rs)
 - [`url_provenance.rs`](scripts/parity-maintainer/src/url_provenance.rs)
 - [`vendor_openapi.rs`](scripts/parity-maintainer/src/vendor_openapi.rs)
+- [`verify_sol_provenance.rs`](scripts/parity-maintainer/src/verify_sol_provenance.rs)
 
 </details>
 

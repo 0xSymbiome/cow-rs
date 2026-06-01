@@ -176,9 +176,10 @@ impls where the cow wire contract diverges from alloy defaults
 `0b`-prefixed input).
 
 Contributors extending the public surface should preserve the
-`#[repr(transparent)]` layout so cow values remain zero-cost convertible
-to the underlying alloy primitive via `From::from(value).into()` or `.0`
-access, and route accessor methods onto the newtype as inherent methods
+`#[repr(transparent)]` layout (keeping the inner field private) so cow
+values remain zero-cost convertible to the underlying alloy primitive via
+`From::from(value).into()` or the typed `as_*` / `into_*` accessors, and
+route accessor methods onto the newtype as inherent methods
 rather than adding extension traits. The canonical owned String
 accessor on the byte-typed identity newtypes is `to_hex_string()`,
 following the Rust stdlib convention that `to_*` returns owned and

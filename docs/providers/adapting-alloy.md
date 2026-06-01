@@ -167,7 +167,7 @@ Under [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md),
 the cow-named identity and numeric public types resolve to cow-owned
 `#[repr(transparent)]` newtypes around the corresponding `alloy_primitives`
 types; the adapter bridges cow types into alloy types at zero runtime cost
-via `From::from(addr).into()` or `.0` access. The signer leaf's typed-data
+via `From::from(addr).into()` or the `as_alloy` / `into_alloy` accessors. The signer leaf's typed-data
 signing path consumes the cow `TypedDataDomain` struct directly; the cow
 struct emits the canonical EIP-1193 `eth_signTypedData_v4` wire shape
 through its own `Serialize` impl and bridges to

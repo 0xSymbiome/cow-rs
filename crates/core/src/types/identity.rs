@@ -49,16 +49,10 @@ pub type ChainId = u64;
     tsify(into_wasm_abi, from_wasm_abi, type = "string")
 )]
 pub struct Address(
-    /// Escape hatch only: prefer [`Address::as_alloy`] (borrowed) or
-    /// [`Address::into_alloy`] (owned) for forward compatibility per
-    /// ADR 0052. The `.0` field is `pub` to match the canonical
-    /// [`alloy_primitives::wrap_fixed_bytes!`] pattern and to keep the
-    /// `#[repr(transparent)]` bit-for-bit layout contract visible at the
-    /// type system, but it is not part of the long-term API contract. A
-    /// future cascade may seal this field through a documented deprecation
-    /// cycle if a runtime validation invariant requires it; consumers who
-    /// rely on `.0` accept the forward-compatibility risk.
-    pub AlloyAddress,
+    // Private inner: the constructors (`new` / `from_*` / `From`) and the
+    // `as_alloy` / `into_alloy` accessors are the entire contract, so a future
+    // runtime invariant can land without breaking consumers (ADR 0052).
+    AlloyAddress,
 );
 
 impl Address {
@@ -262,16 +256,10 @@ impl TryFrom<&str> for Address {
     tsify(into_wasm_abi, from_wasm_abi, type = "string")
 )]
 pub struct HexData(
-    /// Escape hatch only: prefer [`HexData::as_alloy`] (borrowed) or
-    /// [`HexData::into_alloy`] (owned) for forward compatibility per
-    /// ADR 0052. The `.0` field is `pub` to match the canonical
-    /// [`alloy_primitives`] pattern and to keep the
-    /// `#[repr(transparent)]` bit-for-bit layout contract visible at the
-    /// type system, but it is not part of the long-term API contract. A
-    /// future cascade may seal this field through a documented deprecation
-    /// cycle if a runtime validation invariant requires it; consumers who
-    /// rely on `.0` accept the forward-compatibility risk.
-    pub Bytes,
+    // Private inner: the constructors (`new` / `from_*` / `From`) and the
+    // `as_alloy` / `into_alloy` accessors are the entire contract, so a future
+    // runtime invariant can land without breaking consumers (ADR 0052).
+    Bytes,
 );
 
 impl HexData {
@@ -456,16 +444,10 @@ impl TryFrom<&str> for HexData {
     tsify(into_wasm_abi, from_wasm_abi, type = "string")
 )]
 pub struct AppDataHash(
-    /// Escape hatch only: prefer [`AppDataHash::as_alloy`] (borrowed) or
-    /// [`AppDataHash::into_alloy`] (owned) for forward compatibility per
-    /// ADR 0052. The `.0` field is `pub` to match the canonical
-    /// [`alloy_primitives::wrap_fixed_bytes!`] pattern and to keep the
-    /// `#[repr(transparent)]` bit-for-bit layout contract visible at the
-    /// type system, but it is not part of the long-term API contract. A
-    /// future cascade may seal this field through a documented
-    /// deprecation cycle if a runtime validation invariant requires it;
-    /// consumers who rely on `.0` accept the forward-compatibility risk.
-    pub B256,
+    // Private inner: the constructors (`new` / `from_*` / `From`) and the
+    // `as_alloy` / `into_alloy` accessors are the entire contract, so a future
+    // runtime invariant can land without breaking consumers (ADR 0052).
+    B256,
 );
 
 impl AppDataHash {
@@ -745,16 +727,10 @@ pub type AppDataHex = AppDataHash;
     tsify(into_wasm_abi, from_wasm_abi, type = "string")
 )]
 pub struct Hash32(
-    /// Escape hatch only: prefer [`Hash32::as_alloy`] (borrowed) or
-    /// [`Hash32::into_alloy`] (owned) for forward compatibility per
-    /// ADR 0052. The `.0` field is `pub` to match the canonical
-    /// [`alloy_primitives::wrap_fixed_bytes!`] pattern and to keep the
-    /// `#[repr(transparent)]` bit-for-bit layout contract visible at the
-    /// type system, but it is not part of the long-term API contract. A
-    /// future cascade may seal this field through a documented deprecation
-    /// cycle if a runtime validation invariant requires it; consumers who
-    /// rely on `.0` accept the forward-compatibility risk.
-    pub B256,
+    // Private inner: the constructors (`new` / `from_*` / `From`) and the
+    // `as_alloy` / `into_alloy` accessors are the entire contract, so a future
+    // runtime invariant can land without breaking consumers (ADR 0052).
+    B256,
 );
 
 impl Hash32 {
@@ -920,16 +896,10 @@ pub type OrderDigest = Hash32;
     tsify(into_wasm_abi, from_wasm_abi, type = "string")
 )]
 pub struct OrderUid(
-    /// Escape hatch only: prefer [`OrderUid::as_alloy`] (borrowed) or
-    /// [`OrderUid::into_alloy`] (owned) for forward compatibility per
-    /// ADR 0052. The `.0` field is `pub` to match the canonical
-    /// [`alloy_primitives::wrap_fixed_bytes!`] pattern and to keep the
-    /// `#[repr(transparent)]` bit-for-bit layout contract visible at the
-    /// type system, but it is not part of the long-term API contract. A
-    /// future cascade may seal this field through a documented deprecation
-    /// cycle if a runtime validation invariant requires it; consumers who
-    /// rely on `.0` accept the forward-compatibility risk.
-    pub FixedBytes<56>,
+    // Private inner: the constructors (`new` / `from_*` / `From`) and the
+    // `as_alloy` / `into_alloy` accessors are the entire contract, so a future
+    // runtime invariant can land without breaking consumers (ADR 0052).
+    FixedBytes<56>,
 );
 
 impl OrderUid {

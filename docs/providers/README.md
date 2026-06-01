@@ -70,6 +70,6 @@ exposes them and should keep receipt polling out of `send_transaction`.
 The trait contract is identity-type-agnostic: under
 [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md), the
 cow identity and numeric types interoperate with alloy types at zero runtime
-cost through `From::from(...)` and `.0` access, so adapter authors bridge
+cost through `From::from(...)` and the `as_alloy` / `into_alloy` accessors, so adapter authors bridge
 cow domain types at the adapter boundary without distorting the trait
 surface.

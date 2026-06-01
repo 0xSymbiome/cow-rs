@@ -96,17 +96,11 @@ use crate::errors::{CoreError, ValidationError};
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct Amount(
-    /// Escape hatch only: prefer [`Amount::as_u256`] (borrowed) or
-    /// [`Amount::into_u256`] (owned) for forward compatibility per
-    /// ADR 0052. The `.0` field is `pub` to match the canonical
-    /// [`alloy_primitives`] pattern and to keep the
-    /// `#[repr(transparent)]` bit-for-bit layout contract visible at
-    /// the type system, but it is not part of the long-term API
-    /// contract. A future cascade may seal this field through a
-    /// documented deprecation cycle if a runtime validation invariant
-    /// requires it; consumers who rely on `.0` accept the
-    /// forward-compatibility risk.
-    pub U256,
+    // Private inner: the constructors (`new` / `parse_units` / `from_units` /
+    // `from_u256` / `From`) and the `as_u256` / `into_u256` accessors are the
+    // entire contract, so a future runtime invariant can land without breaking
+    // consumers (ADR 0052).
+    U256,
 );
 
 impl Amount {
@@ -620,16 +614,10 @@ impl<'de> Deserialize<'de> for Amount {
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct SignedAmount(
-    /// Escape hatch only: prefer [`SignedAmount::as_i256`] (borrowed) or
-    /// [`SignedAmount::into_i256`] (owned) for forward compatibility per
-    /// ADR 0052. The `.0` field is `pub` to match the canonical
-    /// [`alloy_primitives`] pattern and to keep the
-    /// `#[repr(transparent)]` bit-for-bit layout contract visible at the
-    /// type system, but it is not part of the long-term API contract. A
-    /// future cascade may seal this field through a documented
-    /// deprecation cycle if a runtime validation invariant requires it;
-    /// consumers who rely on `.0` accept the forward-compatibility risk.
-    pub I256,
+    // Private inner: the constructors (`new` / `from_i256` / `From`) and the
+    // `as_i256` / `into_i256` accessors are the entire contract, so a future
+    // runtime invariant can land without breaking consumers (ADR 0052).
+    I256,
 );
 
 impl SignedAmount {

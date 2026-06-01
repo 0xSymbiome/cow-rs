@@ -115,23 +115,6 @@ impl TokenInfo {
     }
 }
 
-/// Compares two addresses using case-insensitive normalization.
-///
-/// Equivalent to `left == right`; kept as a named helper for call sites that
-/// want to make the case-insensitive intent explicit.
-#[inline]
-#[must_use]
-pub fn addresses_equal(left: &Address, right: &Address) -> bool {
-    left == right
-}
-
-/// Builds the canonical `<chain_id>:<lowercase-address>` token identifier.
-#[inline]
-#[must_use]
-pub fn token_id(chain_id: ChainId, address: &Address) -> String {
-    format!("{chain_id}:{}", address.to_hex_string())
-}
-
 /// User-domain order shape prepared for signing and trading workflows.
 ///
 /// It is the canonical signed-order payload and mirrors the upstream services

@@ -484,6 +484,17 @@ The first functional crate-family release begins at `0.1.0`.
   through the retained `ValidationError::DecimalsOutOfRange` variant.
   Governed by
   [ADR 0011](docs/adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md).
+- Removed the `cow_sdk_core::addresses_equal` and `cow_sdk_core::token_id` free
+  functions. They mirrored the JavaScript `areAddressesEqual` / `getTokenId`
+  helpers, which exist to normalize and compare *untyped string* addresses; the
+  typed `Address` newtype makes them redundant in Rust. `addresses_equal` was
+  literally `left == right` (the canonical bytes already compare
+  case-insensitively), and a token map keys idiomatically on
+  `(ChainId, Address)` rather than a formatted string. Consumers compare with
+  `==` and key by the typed tuple. `token_id` carried no protocol wire role (the
+  orderbook keys by raw address), so no interoperability contract depends on it;
+  a cross-system token-identity string, if ever needed, should return through a
+  typed `Display`-able key rather than a free function.
 - Removed the client-side IPFS upload seam from `cow-sdk-app-data`: the
   `pin_json_in_pinata_ipfs` helper, the `IpfsUploadTransport` trait, the
   `TransportResponse` type, the `DEFAULT_IPFS_WRITE_URI` constant, the
@@ -3342,7 +3353,7 @@ The first functional crate-family release begins at `0.1.0`.
   `hex_data_from_bytes`, `decode_0x_hex`, `parse_u256_quantity`) — the
   cow newtypes are bit-for-bit layout-compatible with their alloy
   primitive, so adapters consume cow values directly via
-  `From::from(value).into()` or `.0` access.
+  `From::from(value).into()` or the typed `as_*` / `into_*` accessors.
 
 - Redundant `serde_json` dev-dependency declarations across the workspace
   crates that already carry `serde_json` in `[dependencies]`.

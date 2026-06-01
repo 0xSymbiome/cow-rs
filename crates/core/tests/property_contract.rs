@@ -25,7 +25,6 @@ use alloy_primitives::{I256, U256};
 use cow_sdk_core::{
     Address, Amount, AppDataHex, ChainId, Hash32, HexData, OrderUid, SignedAmount,
     SupportedChainId, VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS, ValidTo,
-    addresses_equal, token_id,
 };
 use num_bigint::BigUint;
 use proptest::prelude::*;
@@ -202,7 +201,7 @@ proptest! {
 
     /// Any 20-byte payload rendered as lowercase, uppercase, or mixed-case
     /// hex parses into an [`Address`] whose [`PartialEq`],
-    /// [`addresses_equal`], `to_hex_string`, and [`std::hash::Hash`]
+    /// `to_hex_string`, and [`std::hash::Hash`]
     /// implementations all treat the three renderings as the same address.
     /// `HashMap` and `HashSet` lookups must agree with the equality rule
     /// across every casing variant. The cow `Address` canonicalises every
@@ -232,8 +231,6 @@ proptest! {
         prop_assert_eq!(&uppercase_address, &lowercase_address);
         prop_assert_eq!(mixed_address.to_hex_string(), lowercase.clone());
         prop_assert_eq!(lowercase_address.to_hex_string(), uppercase_address.to_hex_string());
-        prop_assert!(addresses_equal(&mixed_address, &lowercase_address));
-        prop_assert!(addresses_equal(&uppercase_address, &lowercase_address));
 
         let mut map = HashMap::new();
         map.insert(mixed_address, "value");
@@ -383,28 +380,6 @@ proptest! {
         let data = HexData::new(&canonical).unwrap();
         prop_assert_eq!(data.to_hex_string(), canonical.clone());
         prop_assert_eq!(HexData::new(data.to_hex_string()).unwrap(), data);
-    }
-
-    /// [`token_id`] is deterministic for identical `(chain, address)`
-    /// inputs and changes when either the chain or the address changes.
-    #[test]
-    fn token_id_is_chain_and_address_sensitive(
-        first_bytes in address_bytes(),
-        second_bytes in address_bytes(),
-        chain_a in supported_chain_strategy(),
-        chain_b in supported_chain_strategy(),
-    ) {
-        prop_assume!(first_bytes != second_bytes);
-        prop_assume!(chain_a != chain_b);
-
-        let address_a = Address::new(format!("0x{}", alloy_primitives::hex::encode(first_bytes))).unwrap();
-        let address_b = Address::new(format!("0x{}", alloy_primitives::hex::encode(second_bytes))).unwrap();
-        let chain_a: ChainId = chain_a.into();
-        let chain_b: ChainId = chain_b.into();
-
-        prop_assert_eq!(token_id(chain_a, &address_a), token_id(chain_a, &address_a));
-        prop_assert_ne!(token_id(chain_a, &address_a), token_id(chain_a, &address_b));
-        prop_assert_ne!(token_id(chain_a, &address_a), token_id(chain_b, &address_a));
     }
 
     /// [`Amount::from_u256`] preserves the originating [`U256`] input,

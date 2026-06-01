@@ -43,8 +43,8 @@ Consumers integrating with `cow-sdk-*` use cow-named identity and numeric
 types directly from `cow_sdk_core::types::*`. The types are cow-owned
 `#[repr(transparent)]` newtypes around `alloy_primitives` primitives per
 [ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md), so
-bridging to alloy types is zero-cost via `From::from(addr).into()` or `.0`
-access. Constructors validate input; the cow public surface preserves the
+bridging to alloy types is zero-cost via `From::from(addr).into()` or the
+`as_alloy` / `into_alloy` accessors. Constructors validate input; the cow public surface preserves the
 lowercase wire form for byte-typed identities (`Address`, `Hash32`,
 `AppDataHash`, `HexData`, `OrderUid`) and the strict-decimal-only wire form
 for the numeric types (`Amount`, `SignedAmount`).

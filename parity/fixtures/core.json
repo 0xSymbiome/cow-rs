@@ -165,19 +165,6 @@
       }
     },
     {
-      "id": "core-token-identity-contract",
-      "kind": "behavior-scenario",
-      "description": "Shared token identity combines chain id with normalized EVM address and treats EVM address equality as case-insensitive.",
-      "input": {
-        "chain_id": 1,
-        "address": "0x742D35CC6634C0532925A3B844BC9E7595F0BEBD"
-      },
-      "expected": {
-        "token_id": "1:0x742d35cc6634c0532925a3b844bc9e7595f0bebd",
-        "evm_address_equality_case_insensitive": true
-      }
-    },
-    {
       "id": "core-environment-defaults",
       "kind": "contract-shape",
       "description": "Core configuration must expose the production and staging environments and default API context to production mainnet.",

@@ -4,7 +4,6 @@ use cow_sdk_core::{
     Hash32, HexData, NetworkFee, ORDER_TYPE_FIELD_NAMES, OrderData, OrderKind, OrderUid,
     QUOTE_AMOUNT_STAGE_NAMES, QuoteAmountsAndCosts, SellTokenSource, SignedAmount,
     VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS, ValidTo, ValidationError,
-    addresses_equal, token_id,
 };
 
 fn core_fixture() -> serde_json::Value {
@@ -36,10 +35,9 @@ fn shared_type_contract_matches_core_fixture() {
         checksummed.to_hex_string(),
         "0x742d35cc6634c0532925a3b844bc9e7595f0bebd"
     );
-    assert!(addresses_equal(&checksummed, &lowercase));
     assert_eq!(
         checksummed, lowercase,
-        "PartialEq must agree with addresses_equal on case variants"
+        "Address PartialEq is case-insensitive across checksum casing"
     );
     assert_eq!(
         checksummed.byte_length(),
@@ -55,17 +53,6 @@ fn shared_type_contract_matches_core_fixture() {
         checksummed.as_slice().len(),
         20,
         "as_slice exposes the raw 20-byte representation"
-    );
-
-    let token_case = fixture["cases"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .find(|case| case["id"] == "core-token-identity-contract")
-        .unwrap();
-    assert_eq!(
-        token_id(1, &checksummed),
-        token_case["expected"]["token_id"].as_str().unwrap()
     );
 }
 

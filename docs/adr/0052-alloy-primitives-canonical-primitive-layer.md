@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-05-19
-- Last reviewed: 2026-06-01
+- Last reviewed: 2026-06-02
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: alloy-primitives, alloy-sol-types, eip-712, abi, canonical-types
 - Related: [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md), [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md), [ADR 0014](0014-eip1271-verification-cache.md), [ADR 0022](0022-ecdsa-signature-v-normalization.md), [ADR 0026](0026-alloy-major-release-absorption-plan.md), [ADR 0028](0028-account-abstraction-integration-plan.md), [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), [ADR 0048](0048-composable-conditional-order-framework.md), [ADR 0049](0049-cow-shed-account-abstraction-proxy.md), [ADR 0050](0050-eip1271-signature-blob-encoding.md)
@@ -37,7 +37,8 @@ strict-decimal-only fail-closed wire-form contract for `Amount` and
 lenient — accepting both decimal and `0x`-prefixed hex — to preserve
 the existing observed behavior), while keeping bit-for-bit layout
 compatibility with the underlying alloy primitive (zero-cost
-conversion at the adapter boundary via `.0` or `From::from(...)`).
+conversion at the adapter boundary via `From::from(...)` and the typed
+`as_*` / `into_*` accessors).
 
 Hand-rolled `keccak256`, `domain_separator`, `typed_data_digest`,
 EIP-712 type strings, EIP-191 message wrappers, CREATE2 derivation,
@@ -123,8 +124,8 @@ non-ASCII keys. ASCII-only documents remain byte-identical.
   Bit-for-bit layout compatibility with the underlying alloy
   primitive is preserved through the `repr(transparent)`
   representation; conversion at the alloy seam is free at runtime
-  through `From::from(addr).into()` (canonical) or `.0` access
-  (escape hatch). `TransactionHash`, `BlockHash`, and `OrderDigest`
+  through `From::from(addr).into()` (canonical) or the `as_alloy` /
+  `into_alloy` accessors. `TransactionHash`, `BlockHash`, and `OrderDigest`
   are `pub type` aliases over `Hash32`. `TypedDataDomain` is the cow
   struct that already ships in the working tree (`name: String`,
   `version: String`, `chain_id: ChainId`, `verifying_contract:
@@ -197,7 +198,7 @@ non-ASCII keys. ASCII-only documents remain byte-identical.
   verbatim. The `repr(transparent)` representation keeps the layout
   bit-for-bit identical to the underlying alloy primitive, so
   conversion at the alloy boundary is free at runtime through
-  `From::from(...).into()` (canonical) or `.0` access (escape hatch).
+  `From::from(...).into()` (canonical) or the `as_*` / `into_*` accessors.
   The trait + inherent surface costs roughly 70-100 lines per newtype
   on the cow-owned-trait family (`Address`, `Amount`, `SignedAmount`)
   and roughly 30-40 lines per newtype on the alloy-forwarding family
@@ -383,3 +384,25 @@ None of these methods store a scale on
 `alloy_primitives::U256`. See
 [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md)
 for the typed-amount-boundary decision these wrappers serve.
+
+## Amendment 2026-06-02: sealed primitive-newtype inner fields
+
+The `#[repr(transparent)]` inner field of every cow primitive newtype
+(`Address`, `HexData`, `AppDataHash`, `Hash32`, `OrderUid`, `Amount`,
+`SignedAmount`) is now **private**. The escape-hatch framing earlier in this
+ADR — `.0` access alongside `From::from` — is withdrawn: `.0` is no longer
+reachable from outside the defining module.
+
+The zero-cost alloy bridge is unchanged and stays available through the
+canonical `From::from(...).into()` conversion and the typed inherent
+accessors — `as_alloy` / `into_alloy` for the byte-typed identities,
+`as_u256` / `into_u256` for `Amount`, and `as_i256` / `into_i256` for
+`SignedAmount`. No wire form, serde shape, validation rule, or accessor
+signature changes; the seal removes only the off-contract field access.
+
+Rationale: sealing makes the validated newtype boundary enforceable — a value
+can only be built through a validating constructor — and lets a future runtime
+invariant land without a breaking change. The bit-for-bit layout contract is
+governed by `#[repr(transparent)]`, which is unaffected by field visibility.
+Sealing pre-1.0 is free; sealing once a published consumer relied on `.0` would
+be a breaking change, so it is done now.
