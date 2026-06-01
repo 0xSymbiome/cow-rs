@@ -1,10 +1,10 @@
 #[cfg(feature = "app-data")]
 use cow_sdk_app_data::AppDataError;
+#[cfg(any(feature = "orderbook", feature = "trading"))]
+use cow_sdk_core::ErrorClass;
 use cow_sdk_core::{
     Cancelled, REDACTED_PLACEHOLDER, Redacted, TransportError, redact_response_body,
 };
-#[cfg(any(feature = "orderbook", feature = "trading"))]
-use cow_sdk_core::ErrorClass;
 #[cfg(feature = "orderbook")]
 use cow_sdk_orderbook::{OrderbookError, OrderbookRejectionCategory};
 use cow_sdk_pure_helpers::errors::PureError;

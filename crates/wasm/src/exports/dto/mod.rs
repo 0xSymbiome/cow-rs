@@ -40,14 +40,14 @@ pub use self::orderbook::{
     OrderQuoteRequestInput, OrderQuoteResponseDto, SigningSchemeDto, TradeDto,
 };
 pub use self::orderbook::{PaginationOptions, TradesQueryInput};
+#[cfg(feature = "trading")]
+pub use self::quote::QuoteResultsDto;
 pub use self::signing::{
     CowEip1271SignRequest, Eip1193Request, GeneratedOrderUidDto, SignedCancellationsInput,
     SignedOrderDto, TypedDataDomainDto, TypedDataEnvelopeDto, TypedDataFieldDto,
 };
 pub use self::subgraph::SubgraphQueryInput;
 pub use self::trading::OrderTraderParametersInput;
-#[cfg(feature = "trading")]
-pub use self::quote::QuoteResultsDto;
 #[cfg(feature = "trading")]
 pub use self::trading::{
     AllowanceParametersInput, LimitTradeParametersInput, OrderDataDto, OrderPostingResultDto,

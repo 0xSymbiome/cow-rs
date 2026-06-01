@@ -12,10 +12,10 @@ use crate::exports::{
         ClientCallScope, SdkClientOptions, run_with_client_options, transport_policy_with_timeout,
     },
     dto::{
-        AppDataObjectDto, OrderCreationInput, OrderInput, OrderQuoteRequestInput, PaginationOptions,
-        SignedCancellationsInput, SignedOrderDto, TradesQueryInput, ecdsa_signing_scheme,
-        from_json_value, orderbook_signing_scheme, parse_chain, parse_order, to_js_value,
-        transport_policy_from_config,
+        AppDataObjectDto, OrderCreationInput, OrderInput, OrderQuoteRequestInput,
+        PaginationOptions, SignedCancellationsInput, SignedOrderDto, TradesQueryInput,
+        ecdsa_signing_scheme, from_json_value, orderbook_signing_scheme, parse_chain, parse_order,
+        to_js_value, transport_policy_from_config,
     },
     envelope::WasmEnvelope,
     errors::WasmError,
@@ -180,10 +180,7 @@ impl OrderBookClient {
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.get_order"))
     )]
-    #[wasm_bindgen(
-        js_name = "getOrder",
-        unchecked_return_type = "WasmEnvelope<OrderDto>"
-    )]
+    #[wasm_bindgen(js_name = "getOrder", unchecked_return_type = "WasmEnvelope<OrderDto>")]
     pub async fn get_order(
         &self,
         #[wasm_bindgen(js_name = orderUid)] order_uid: String,
