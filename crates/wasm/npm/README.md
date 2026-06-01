@@ -42,66 +42,71 @@ in `cow-rs`:
 ### Node.js 22 or 24 with viem
 
 ```ts
-import {
-  OrderBookClient,
-  signOrderWithTypedDataSigner
-} from "<published-cow-sdk-wasm-package>";
+import { TradingClient } from "<published-cow-sdk-wasm-package>";
 
-const client = new OrderBookClient({
+const trading = new TradingClient({
   chainId: 1,
   env: "prod",
+  appCode: "my-node-service",
   transport: { kind: "fetch" },
   transportPolicy: {
-    retryPolicy: { maxAttempts: 3, initialDelayMs: 200 },
+    retryPolicy: { maxAttempts: 3, baseDelayMs: 200 },
     userAgent: "my-node-service/1.0"
   }
 });
 
-const quote = await client.getQuote({
-  sellToken: "0x0000000000000000000000000000000000000000",
+// `getQuote` returns a fully resolved `QuoteResultsDto` envelope.
+const quote = await trading.getQuote({
+  kind: "sell",
+  sellToken: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
   buyToken: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-  from: "0x1111111111111111111111111111111111111111",
-  receiver: "0x1111111111111111111111111111111111111111",
-  sellAmountBeforeFee: "1000000000000000000",
-  kind: "sell"
+  amount: "1000000000000000000"
 });
 
-const signed = await signOrderWithTypedDataSigner(
-  quote.data.orderToSign,
-  1,
+// Reuse the quote to sign and post in one call; `quote.value` is the
+// `QuoteResultsDto` and the callback receives the EIP-712 envelope.
+const result = await trading.postSwapOrderFromQuote(
+  quote.value,
   "0x1111111111111111111111111111111111111111",
   async (envelope) => walletClient.signTypedData(envelope),
   { walletConfig: { timeoutMs: 15_000 } }
 );
+// `result.value.orderId` is the posted order UID.
 ```
 
 ### Browser with `window.ethereum`
 
 ```ts
-import { OrderBookClient, signOrderWithEip1193 } from "<published-cow-sdk-wasm-package>";
+import { signOrderWithEip1193 } from "<published-cow-sdk-wasm-package>";
 
 const ethereum = window.ethereum;
 const [owner] = await ethereum.request({ method: "eth_requestAccounts" });
+const abortController = new AbortController();
 
-const client = new OrderBookClient({
-  chainId: 1,
-  env: "prod",
-  transport: { kind: "fetch" },
-  timeoutMs: 10_000
-});
-
-const quote = await client.getQuote(request, {
-  signal: abortController.signal,
-  timeoutMs: 10_000
-});
+// The order to sign: build it yourself or map it from a fetched quote.
+const order = {
+  sellToken: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+  buyToken: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+  receiver: owner,
+  sellAmount: "1000000000000000000",
+  buyAmount: "3500000000",
+  validTo: Math.floor(Date.now() / 1000) + 3_600,
+  appData: "0x0000000000000000000000000000000000000000000000000000000000000000",
+  feeAmount: "0",
+  kind: "sell",
+  partiallyFillable: false,
+  sellTokenBalance: "erc20",
+  buyTokenBalance: "erc20"
+};
 
 const signed = await signOrderWithEip1193(
-  quote.data.orderToSign,
+  order,
   1,
   owner,
   (rpc) => ethereum.request(rpc),
   { signal: abortController.signal, walletConfig: { timeoutMs: 20_000 } }
 );
+// `signed.value` is the SignedOrderDto.
 ```
 
 ### Browser with MetaMask `eth_signTypedData_v4`

@@ -68,6 +68,7 @@ public and runtime shape of `cow-rs`.
 | [0058](0058-typed-quote-request-response-surface.md) | Accepted | Mirror the orderbook `OrderParameters` quote payload in `QuoteData` with its own OpenAPI coverage target, default `priceQuality` to `optimal`, keep the quote network-cost fields read-only, and lock the quote-amounts projection with a parity test. |
 | [0059](0059-hash-concrete-orderdata-directly.md) | Accepted | Hash the concrete `cow_sdk_core::OrderData` directly and remove the contracts-layer `Order` / `NormalizedOrder` types and the `GPv2Order` re-export, collapsing the order-type topology to one concrete type. |
 | [0060](0060-uniform-error-classification.md) | Accepted | Relocate the shared `ErrorClass` to `cow-sdk-core` and give every facade-family error type a `class()` accessor (facade `SdkError::class()` delegates), while the native Alloy adapters keep their own per-type class enums per ADR 0053. |
+| [0061](0061-wasm-abi-receiver-pay-to-owner.md) | Accepted | Treat an omitted and an explicit zero-address `receiver` identically at the WASM order-input boundary (both resolve to the zero-address pay-to-owner sentinel), with no receiver-to-owner reinterpretation. |
 
 ## When To Write An ADR
 

@@ -233,8 +233,8 @@ const client = new OrderBookClient({
   env: "prod",
   transport: { kind: "fetch" },
   transportPolicy: {
-    retryPolicy: { maxAttempts: 3, initialDelayMs: 200, maxDelayMs: 2_000 },
-    requestRateLimiter: { enabled: true, burst: 10, refillPerSecond: 5 },
+    retryPolicy: { maxAttempts: 3, baseDelayMs: 200, maxDelayMs: 2_000 },
+    requestRateLimiter: { tokensPerInterval: 5, intervalMs: 1_000, scope: "perHost" },
     jitterStrategy: "full",
     tracingEnabled: true,
     userAgent: "my-app/1.0"

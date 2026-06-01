@@ -71,10 +71,34 @@ to the shared enum.
   credential-bearing content, consistent with ADR 0025.
 - Retry policies treat `Transport` and `Remote` (and `RateLimited` only after
   the transport retry budget is honored) as the retryable classes.
+- Cost: seven small `class()` accessors plus the relocation of one public enum
+  from the facade to core (re-exported for source compatibility). The facade's
+  private `classify_*` functions are removed; the public surface
+  (`cow_sdk::ErrorClass`, `SdkError::class()`) is unchanged.
 
-## Cost
+## Alternatives Rejected
 
-Seven small `class()` accessors plus the relocation of one public enum from the
-facade to core (re-exported for source compatibility). The facade's private
-`classify_*` functions are removed; the public surface (`cow_sdk::ErrorClass`,
-`SdkError::class()`) is unchanged.
+- Seven per-type class enums for the facade error family (`OrderbookErrorClass`,
+  `TradingErrorClass`, and so on): rejected. The family classifies into a single
+  shared taxonomy, so per-type enums would reproduce that one taxonomy seven
+  times, `TradingErrorClass` would be a verbatim copy of `ErrorClass`, and the
+  composite `TradingError` could not delegate to its inner accessors without a
+  mapping cascade.
+- Keep the classification private inside the facade crate (the prior state):
+  rejected. A consumer holding a bare `OrderbookError` or `TradingError` would
+  then have no way to obtain the coarse class without re-implementing the
+  per-variant match locally.
+- Migrate the native Alloy adapter crates to the shared enum: rejected. Their
+  taxonomies genuinely differ from the facade family and from each other (for
+  example the signer's six signing-specific classes), so they keep their own
+  per-type class enums under the [ADR 0053](0053-typed-signer-rejection-classification.md)
+  convention.
+
+## Links
+
+- [Principles](../principles.md)
+- [Shared `ErrorClass` definition](../../crates/core/src/errors.rs)
+- [Facade error aggregation and re-export](../../crates/sdk/src/lib.rs)
+- [ADR 0053](0053-typed-signer-rejection-classification.md)
+- [ADR 0017](0017-typed-orderbook-rejection-parser.md)
+- [ADR 0025](0025-workspace-url-redaction-convention.md)

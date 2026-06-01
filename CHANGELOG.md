@@ -14,6 +14,50 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Added
 
+- `cow-sdk-wasm` resolves its read and quote methods to typed DTOs across the
+  JavaScript surface. `OrderBookClient.getOrder` returns `OrderDto`,
+  `getOrders` / `getOrdersByOwner` return `OrderDto[]`, `getTrades` returns
+  `TradeDto[]`, `getNativePrice` returns `NativePriceResponseDto`, and
+  `getQuote` returns `OrderQuoteResponseDto`; `TradingClient.getQuote` returns
+  the fully resolved `QuoteResultsDto`, which `postSwapOrderFromQuote` accepts
+  back unchanged (the SDK round-trips the native `cow_sdk_trading::QuoteResults`
+  shape), and the swap- and limit-order posting methods resolve to
+  `OrderPostingResultDto`. The `OrderDto`, `TradeDto`, `QuoteResultsDto`, and
+  `OrderPostingResultDto` DTOs and their nested trees (`OrderDataDto`,
+  `TradeParametersDto`, `QuoteAmountsAndCostsDto`, `OrderQuoteResponseDto`,
+  `TradingAppDataInfoDto`, and the rest) are emitted into the generated
+  TypeScript declarations and re-exported from the facade entry points that
+  expose the corresponding orderbook or trading capability, so a consumer can
+  name each read, quote, and posting shape instead of an opaque value. The
+  declaration snapshots under `crates/wasm/snapshots/` are refreshed in the same
+  change set.
+- `cow-sdk-wasm` `OrderBookClient` adds `getAppData(appDataHash)` and
+  `uploadAppData(appDataHash, fullAppData)`. `getAppData` returns the typed
+  `AppDataObjectDto`; `uploadAppData` routes through the native
+  `cow_sdk_orderbook` content-addressed-write path (which re-derives and
+  verifies `keccak256(fullAppData)` against the supplied hash before dispatch)
+  and resolves to `{ uploaded: true }`. Both ship in every package flavour that
+  bundles the orderbook capability.
+- `cow-sdk-wasm` `TradingClient.buildSellNativeCurrencyTx` accepts its `quoteId`
+  as a `number`, aligning the native quote identifier's `i64` boundary with the
+  JavaScript number surface used across the client.
+- `cow-sdk-wasm` carries the coarse `OrderbookRejectionCategoryDto` as the
+  optional `category` field on the JavaScript `WasmError` `orderbook` variant,
+  mirroring the native `cow_sdk_orderbook::OrderbookRejection::category()`, and
+  maps every `cow_sdk_orderbook::OrderbookError` and
+  `cow_sdk_trading::TradingError` into a typed `WasmError` through the shared
+  `cow_sdk_core::ErrorClass`. The category carries no message, preserving the
+  workspace redaction posture, so a JavaScript host can branch on the action a
+  rejection calls for without parsing a message. Governed by
+  [ADR 0017](docs/adr/0017-typed-orderbook-rejection-parser.md) and
+  [ADR 0060](docs/adr/0060-uniform-error-classification.md).
+- At the `cow-sdk-wasm` order-input boundary an omitted `receiver` and an
+  explicit zero-address `receiver` resolve to the same pay-to-owner sentinel and
+  construct byte-identical `cow_sdk_core::OrderData` — and therefore the same
+  EIP-712 struct hash and order UID — while a concrete receiver is never
+  rewritten to the owner. Recorded in
+  [ADR 0061](docs/adr/0061-wasm-abi-receiver-pay-to-owner.md) and pinned as
+  `PROP-WB-022` in `PROPERTIES.md`.
 - Every public error type the `cow-sdk` facade aggregates now exposes a
   `class() -> ErrorClass` accessor (`CoreError`, `AppDataError`, `SigningError`,
   `ContractsError`, `OrderbookError`, `TradingError`, and `BrowserWalletError`),
