@@ -128,7 +128,9 @@ fn crate_docs_and_manifest_keep_the_facade_trading_first() {
         .next()
         .expect("manifest must contain production dependency section");
 
-    assert!(lib_rs.contains("Top-level docs are trading-first"));
+    assert!(lib_rs.contains(
+        "The facade is trading-first: the high-level trading flow is the primary surface."
+    ));
     assert!(
         lib_rs.contains(
             "Optional browser-runtime support does not change the default facade identity."

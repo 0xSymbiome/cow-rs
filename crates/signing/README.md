@@ -34,8 +34,8 @@ let order = OrderData::new(
     Address::new("0x1111111111111111111111111111111111111111")?,
     Address::new("0x2222222222222222222222222222222222222222")?,
     owner,
-    Amount::from(1_000_000_000_000_000_000u128),
-    Amount::from(2_000_000_000u128),
+    Amount::from_units(1, 18)?,
+    Amount::from_units(2000, 6)?,
     1_700_000_000,
     AppDataHash::new(
         "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",

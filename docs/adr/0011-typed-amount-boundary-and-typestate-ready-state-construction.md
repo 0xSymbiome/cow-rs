@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-17
-- Last reviewed: 2026-05-28
+- Last reviewed: 2026-06-01
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: types, trading, builders, semver
 - Related: [ADR 0002](0002-dedicated-trading-orchestration-crate.md), [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
@@ -269,3 +269,53 @@ typestate-builder terminals recorded in the Decision are preserved
 verbatim. A committed compile-fail witness pins the removal so a
 wrapping (or debug-only panicking) operator cannot silently return to
 the typed amount surface.
+
+## Amendment 2026-06-01: decimal I/O on the atomic `Amount`; `DecimalAmount` removed
+
+`DecimalAmount` is removed from the public surface. The
+atomic-vs-decimal split recorded in the original Decision named a
+second amount-carrying newtype that paired an atomic value with a
+`decimals` scale; that type was load-bearing for no shipped flow —
+zero type-position uses across every public crate, and no analogue in
+the upstream `@cowprotocol/cow-sdk` it ports. The removal is exactly
+parallel to the 2026-05-28 `with_owner` removal above: dead public
+surface that no observing helper depended on, narrowed without
+changing observable behaviour.
+
+Exact human-decimal construction and display now live directly on the
+atomic `Amount`. `Amount::parse_units(value, decimals) -> Result<Amount,
+CoreError>` builds an atomic amount from a human-readable decimal
+string and the token's `decimals` scale, and `Amount::format_units(&self,
+decimals) -> String` renders an atomic amount back to its scaled decimal
+string. These are the typed analogues of the viem/ethers
+`parseUnits`/`formatUnits` helpers, scaling by `10^decimals` through
+integer arithmetic so the result is exact. `parse_units` fails closed on
+empty/whitespace input, on a leading `+`/`-` sign (`Amount` is
+unsigned), and on `decimals` above `77`, surfacing
+`ValidationError::DecimalsOutOfRange` for the last case per
+[ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md).
+
+`Amount::from_units(whole, decimals) -> Result<Amount, CoreError>` is the
+numeric companion to `parse_units` for the common case where the amount is a
+whole number already held as an integer (for example
+`Amount::from_units(1000, 6)` for 1000 USDC): it scales a `u128` whole-unit
+count by `10^decimals` with the same checked integer arithmetic and the same
+`decimals <= 77` bound, so a caller never has to render a number as a string
+or hand-count zeros. A decimal string is therefore required only for
+genuinely fractional or untrusted-text input, never for a whole-token
+literal.
+
+`Amount` stays atomic: none of these methods store a scale on the value, so
+the single canonical `Amount(U256)` newtype remains the one atomic
+amount type across every public crate. `decimals` is supplied per call
+at the decimal-I/O boundary and is never carried on the wire. The wire
+form is unchanged — every amount still serialises to the canonical
+base-10 string defined by the orderbook contract, and the strict-decimal
+fail-closed `Deserialize` boundary recorded in the 2026-05-22 amendment
+is preserved. `TradeParameters::new` and `LimitTradeParameters::new`
+still take no token-decimal arguments; the 2026-05-26 trade-parameter
+decimals-scope amendment is preserved verbatim, with the decimal-I/O
+home now the atomic `Amount` rather than the retired `DecimalAmount`.
+The typed atomic-vs-decimal boundary, the typestate-builder terminals,
+and every prior amendment recorded above are otherwise preserved
+verbatim.

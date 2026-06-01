@@ -161,6 +161,20 @@ doc = false
 bench = false
 
 [[bin]]
+name = "fuzz_amount_parse_units"
+path = "fuzz_targets/fuzz_amount_parse_units.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_amount_from_units"
+path = "fuzz_targets/fuzz_amount_from_units.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "fuzz_signed_amount_parse"
 path = "fuzz_targets/fuzz_signed_amount_parse.rs"
 test = false
@@ -177,13 +191,6 @@ bench = false
 [[bin]]
 name = "fuzz_valid_to_relative"
 path = "fuzz_targets/fuzz_valid_to_relative.rs"
-test = false
-doc = false
-bench = false
-
-[[bin]]
-name = "fuzz_decimal_amount_from_whole_approx"
-path = "fuzz_targets/fuzz_decimal_amount_from_whole_approx.rs"
 test = false
 doc = false
 bench = false

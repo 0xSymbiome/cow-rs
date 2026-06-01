@@ -43,7 +43,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             &signer,
             &ApprovalParameters::new(
                 sample_sell_token(),
-                Amount::new("1000000000000000000")
+                Amount::from_units(1, 18)
                     .expect("example approval amount must remain valid"),
             ),
         )

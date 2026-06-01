@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-05-19
-- Last reviewed: 2026-05-22
+- Last reviewed: 2026-06-01
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: alloy-primitives, alloy-sol-types, eip-712, abi, canonical-types
 - Related: [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md), [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md), [ADR 0014](0014-eip1271-verification-cache.md), [ADR 0022](0022-ecdsa-signature-v-normalization.md), [ADR 0026](0026-alloy-major-release-absorption-plan.md), [ADR 0028](0028-account-abstraction-integration-plan.md), [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), [ADR 0048](0048-composable-conditional-order-framework.md), [ADR 0049](0049-cow-shed-account-abstraction-proxy.md), [ADR 0050](0050-eip1271-signature-blob-encoding.md)
@@ -343,3 +343,43 @@ fixture parsing only and does not extend to production code.
 **Proven by:**
 
 - [Dependency Gate Audit](../audit/dependency-gate-audit.md)
+
+## Amendment 2026-06-01: cow-owned decimal-units wrappers on `Amount`
+
+`Amount::format_units` is a cow-owned, error-mapped wrapper over
+`alloy_primitives::utils::format_units` (through
+`ParseUnits::format_units`), with the `decimals == 0` short-circuit
+preserved and a `decimals` above `Unit::MAX` clamped to `Unit::MAX`
+rather than panicking.
+
+`Amount::parse_units` deliberately does **not** delegate to
+`alloy_primitives::utils::parse_units`: it performs the `10^decimals`
+scaling itself with checked integer arithmetic. The raw alloy helper is
+unsafe for untrusted input — it is fail-open on an empty string
+(`parse_units("", d) == Ok(0)`) and on a leading sign (which routes
+through the signed `I256` arm and widens the two's-complement bit
+pattern into a huge positive), it panics on a non-ASCII input whose
+fractional-truncation byte offset lands inside a multi-byte UTF-8 char,
+and its final scaling multiply silently wraps an over-`uint256`
+magnitude. To honour the fail-closed `Result<Amount, CoreError>`
+contract, `parse_units` pre-rejects empty/whitespace and a leading
+`+`/`-`, restricts the grammar to ASCII decimal digits with a single
+`.` separator, truncates fractional digits beyond `decimals`, and
+rejects an over-`uint256` result through `checked_mul`
+(`ValidationError::NumericOverflow`); it uses alloy only for the
+`Unit::new(decimals)` bound check
+(`ValidationError::DecimalsOutOfRange` above `Unit::MAX`). This is the
+same fail-closed discipline the cow-owned `Deserialize` impl applies to
+the strict-decimal wire boundary.
+
+`Amount::from_units(whole, decimals)` shares the same checked-scaling
+discipline for numeric input: it performs the identical checked
+`10^decimals` scaling (`ValidationError::NumericOverflow` on an
+over-`uint256` product) and uses alloy only for the `Unit::new(decimals)`
+bound check, so it likewise never routes through a fail-open alloy helper.
+
+None of these methods store a scale on
+`Amount`; it stays the atomic `#[repr(transparent)]` newtype over
+`alloy_primitives::U256`. See
+[ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md)
+for the typed-amount-boundary decision these wrappers serve.

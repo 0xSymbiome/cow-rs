@@ -23,7 +23,7 @@ use std::collections::{HashMap, HashSet};
 
 use alloy_primitives::{I256, U256};
 use cow_sdk_core::{
-    Address, Amount, AppDataHex, ChainId, DecimalAmount, Hash32, HexData, OrderUid, SignedAmount,
+    Address, Amount, AppDataHex, ChainId, Hash32, HexData, OrderUid, SignedAmount,
     SupportedChainId, VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS, ValidTo,
     addresses_equal, token_id,
 };
@@ -464,115 +464,185 @@ proptest! {
         prop_assert_eq!(rebuilt, amount);
     }
 
-    /// [`DecimalAmount::new`] preserves atoms and decimals across any
-    /// representable scale and round-trips through its accessors.
+    /// [`Amount::format_units`] composed with [`Amount::parse_units`]
+    /// is an exact identity for every representable `(atoms, decimals)`
+    /// pair: `format_units` preserves the full `decimals`-wide
+    /// fractional substring (no trimming), so re-parsing the rendered
+    /// string recovers the originating atoms byte-for-byte across the
+    /// whole 0..=77 decimals range and the whole `uint256` value range.
     #[test]
-    fn decimal_amount_preserves_atoms_and_scale(
+    fn amount_format_units_then_parse_units_round_trips_exactly(
         bytes in atom_amount_bytes(),
-        decimals in 0u8..=30u8,
+        decimals in 0u8..=77u8,
     ) {
-        let atoms = U256::from_be_bytes(bytes);
-        let amount = DecimalAmount::new(atoms, decimals)
-            .expect("the proptest range 0..=30 is within DecimalAmount::MAX_DECIMALS");
-
-        prop_assert_eq!(amount.atoms(), &atoms);
-        prop_assert_eq!(amount.decimals(), decimals);
-
-        let rebuilt = DecimalAmount::new(*amount.atoms(), amount.decimals())
-            .expect("rebuilding from a previously accepted amount cannot exceed MAX_DECIMALS");
-        prop_assert_eq!(&rebuilt, &amount);
-
-        let extracted = amount.into_atoms();
-        prop_assert_eq!(extracted, atoms);
+        let atoms = Amount::from_u256(U256::from_be_bytes(bytes));
+        let rendered = atoms.format_units(decimals);
+        let reparsed = Amount::parse_units(&rendered, decimals)
+            .expect("format_units output must always re-parse through parse_units");
+        prop_assert_eq!(
+            reparsed,
+            atoms,
+            "parse_units(format_units(x, d), d) must equal x; rendered = {}",
+            rendered,
+        );
     }
 
-    /// [`DecimalAmount::from_whole_approx`] clamps negatives, NaN, and
-    /// infinity to safe atoms values and recovers one-token inputs
-    /// byte-exactly at 18 decimals.
+    /// [`Amount::parse_units`] is integer-exact with no `f64` drift for
+    /// arbitrary whole and fractional digit inputs whose fractional
+    /// width does not exceed `decimals`. The expected atoms are
+    /// computed with an independent `U256` integer oracle
+    /// (`whole * 10^decimals + frac * 10^(decimals - frac_len)`)
+    /// evaluated with checked arithmetic, so a future body that routes
+    /// through floating point would surface as a shrunken
+    /// counter-example. When the oracle overflows `uint256`,
+    /// `parse_units` must fail closed instead.
     #[test]
-    fn decimal_amount_from_whole_approx_handles_boundary_inputs(decimals in 0u8..=30u8) {
-        let zero = DecimalAmount::from_whole_approx(0.0, decimals)
-            .expect("the proptest range 0..=30 is within DecimalAmount::MAX_DECIMALS");
-        prop_assert_eq!(zero.atoms(), &U256::ZERO);
-        prop_assert_eq!(zero.decimals(), decimals);
-
-        let negative = DecimalAmount::from_whole_approx(-1.5, decimals)
-            .expect("the proptest range 0..=30 is within DecimalAmount::MAX_DECIMALS");
-        prop_assert_eq!(negative.atoms(), &U256::ZERO);
-
-        let nan = DecimalAmount::from_whole_approx(f64::NAN, decimals)
-            .expect("the proptest range 0..=30 is within DecimalAmount::MAX_DECIMALS");
-        prop_assert_eq!(nan.atoms(), &U256::ZERO);
-
-        let infinity = DecimalAmount::from_whole_approx(f64::INFINITY, decimals)
-            .expect("the proptest range 0..=30 is within DecimalAmount::MAX_DECIMALS");
-        prop_assert!(infinity.atoms() <= &U256::from(u128::MAX));
-
-        let one_token = DecimalAmount::from_whole_approx(1.0, 18)
-            .expect("decimals 18 is within DecimalAmount::MAX_DECIMALS");
-        let expected = U256::from(10u128.pow(18));
-        prop_assert_eq!(one_token.atoms(), &expected);
-        prop_assert!((one_token.to_f64_approx() - 1.0).abs() < 1e-12);
-    }
-
-    /// [`DecimalAmount::to_decimal_string`] pins the four invariants
-    /// of its canonical formatted output: (1) no decimal point when
-    /// `decimals == 0`; (2) exactly one decimal point when
-    /// `decimals > 0`; (3) the fractional substring length always
-    /// equals `decimals` (the trailing-zero preservation contract);
-    /// (4) the integer part is the canonical decimal expansion of
-    /// `atoms / 10.pow(decimals)`, with no leading zero unless the
-    /// integer part is itself the literal `"0"`.
-    #[test]
-    fn decimal_amount_to_decimal_string_pins_fractional_length_invariants(
-        bytes in atom_amount_bytes(),
-        decimals in 0u8..=DecimalAmount::MAX_DECIMALS,
+    fn amount_parse_units_is_integer_exact(
+        whole in any::<u128>(),
+        frac_digits in prop::collection::vec(0u8..=9u8, 0usize..=20usize),
+        extra_decimals in 0u8..=40u8,
     ) {
-        let atoms = U256::from_be_bytes(bytes);
-        let amount = DecimalAmount::new(atoms, decimals)
-            .expect("the proptest range 0..=MAX_DECIMALS is within bounds by construction");
-        let rendered = amount.to_decimal_string();
+        // Pick a decimals scale that is at least the fractional width so
+        // no truncation occurs, and cap it at the documented 77 maximum.
+        let frac_len = u8::try_from(frac_digits.len()).expect("frac width <= 20 fits in u8");
+        let decimals = (frac_len.saturating_add(extra_decimals)).min(77);
 
-        if decimals == 0 {
-            // Invariant 1: no decimal point when decimals == 0.
-            prop_assert!(
-                !rendered.contains('.'),
-                "decimals == 0 must produce no decimal point; got {}",
-                rendered,
-            );
-            prop_assert_eq!(&rendered, &atoms.to_string());
+        // Build the canonical decimal input string. An empty fractional
+        // vector yields a bare integer (no decimal point).
+        let frac_string: String = frac_digits
+            .iter()
+            .map(|digit| char::from(b'0' + digit))
+            .collect();
+        let input = if frac_string.is_empty() {
+            whole.to_string()
         } else {
-            // Invariant 2: exactly one decimal point when decimals > 0.
-            let dot_count = rendered.matches('.').count();
-            prop_assert_eq!(
-                dot_count,
-                1,
-                "decimals > 0 must produce exactly one decimal point; got {}",
-                rendered,
-            );
+            format!("{whole}.{frac_string}")
+        };
 
-            let mut parts = rendered.splitn(2, '.');
-            let integer = parts.next().expect("split always yields at least one part");
-            let fractional = parts.next().expect("dot_count == 1 guarantees a fractional half");
+        // Independent integer oracle, evaluated with checked arithmetic so
+        // the oracle itself never overflows: scale the whole part by
+        // 10^decimals, then add the fractional digits left-aligned into
+        // the fractional field (padded on the right to `decimals`).
+        // `10^decimals` for `decimals <= 77` is always below `U256::MAX`,
+        // so the `pow` calls cannot overflow; only the whole-part scaling
+        // and the final addition can, which `checked_*` detects.
+        let scale = U256::from(10u8).pow(U256::from(decimals));
+        let oracle = U256::from(whole).checked_mul(scale).and_then(|scaled| {
+            if frac_string.is_empty() {
+                Some(scaled)
+            } else {
+                let frac_value = frac_string
+                    .parse::<U256>()
+                    .expect("a digit-only fractional string parses as U256");
+                let pad = U256::from(10u8).pow(U256::from(decimals - frac_len));
+                // `frac_value < 10^frac_len` and `pad == 10^(decimals - frac_len)`,
+                // so `frac_value * pad < 10^decimals <= scale`; this product
+                // never overflows on its own and only the final add can.
+                scaled.checked_add(frac_value * pad)
+            }
+        });
 
-            // Invariant 3: fractional length always equals decimals.
-            prop_assert_eq!(
-                fractional.len(),
-                usize::from(decimals),
-                "fractional substring length must equal decimals; got {}",
-                rendered,
-            );
-
-            // Invariant 4: integer part has no leading zero unless it
-            // is literally "0".
-            if integer != "0" {
-                let first_byte = integer.as_bytes()[0];
-                prop_assert!(
-                    first_byte != b'0',
-                    "non-zero integer part must not have a leading zero; got {}",
-                    rendered,
+        let parsed = Amount::parse_units(&input, decimals);
+        match oracle {
+            Some(expected) => {
+                let parsed = parsed
+                    .expect("an in-range digit-only decimal within decimals must parse")
+                    .into_u256();
+                prop_assert_eq!(
+                    parsed,
+                    expected,
+                    "parse_units must equal the integer oracle; input = {}, decimals = {}",
+                    input,
+                    decimals,
                 );
             }
+            None => {
+                prop_assert!(
+                    parsed.is_err(),
+                    "parse_units must fail closed when the value overflows uint256; \
+                     input = {}, decimals = {}",
+                    input,
+                    decimals,
+                );
+            }
+        }
+    }
+
+    /// [`Amount::from_units`] is integer-exact and fail-closed for every
+    /// `(whole, decimals)` pair in the supported range: it must equal the
+    /// independent `whole * 10^decimals` `U256` oracle when that fits
+    /// `uint256`, and must return an error (never panic, never wrap) when
+    /// it does not. It must also agree exactly with [`Amount::parse_units`]
+    /// applied to the same whole number rendered as a decimal string — the
+    /// numeric and textual constructors are two doors to one value.
+    #[test]
+    fn amount_from_units_matches_integer_oracle_and_parse_units(
+        whole in any::<u128>(),
+        decimals in 0u8..=77u8,
+    ) {
+        // Independent integer oracle: `10^decimals` for `decimals <= 77`
+        // never overflows uint256, so only the final multiply by `whole`
+        // can, which `checked_mul` detects.
+        let scale = U256::from(10u8).pow(U256::from(decimals));
+        let oracle = U256::from(whole).checked_mul(scale);
+
+        let built = Amount::from_units(whole, decimals);
+        match oracle {
+            Some(expected) => {
+                let built = built
+                    .expect("an in-range whole-unit count within uint256 must build")
+                    .into_u256();
+                prop_assert_eq!(
+                    built,
+                    expected,
+                    "from_units must equal the integer oracle; whole = {}, decimals = {}",
+                    whole,
+                    decimals,
+                );
+                // The numeric door agrees with the textual door.
+                let parsed = Amount::parse_units(whole.to_string(), decimals)
+                    .expect("parse_units of a bare whole number within range must parse")
+                    .into_u256();
+                prop_assert_eq!(
+                    built,
+                    parsed,
+                    "from_units must equal parse_units of the same whole number; whole = {}",
+                    whole,
+                );
+            }
+            None => {
+                prop_assert!(
+                    built.is_err(),
+                    "from_units must fail closed when whole * 10^decimals overflows uint256; \
+                     whole = {}, decimals = {}",
+                    whole,
+                    decimals,
+                );
+            }
+        }
+    }
+
+    /// [`Amount::parse_units`] never panics for any `decimals` in the
+    /// documented `0..=77` range paired with arbitrary input bytes: the
+    /// constructor is fail-closed by `Result`, so every input either
+    /// parses to a typed [`Amount`] or returns an error, and an `Ok`
+    /// result always round-trips through [`Amount::format_units`].
+    #[test]
+    fn amount_parse_units_never_panics_within_decimals_range(
+        raw in any::<Vec<u8>>(),
+        decimals in 0u8..=77u8,
+    ) {
+        let input = String::from_utf8_lossy(&raw).into_owned();
+        if let Ok(amount) = Amount::parse_units(&input, decimals) {
+            let rendered = amount.format_units(decimals);
+            let reparsed = Amount::parse_units(&rendered, decimals)
+                .expect("format_units output of an accepted Amount must re-parse");
+            prop_assert_eq!(
+                reparsed,
+                amount,
+                "an accepted parse_units value must round-trip through format_units; input = {}",
+                input,
+            );
         }
     }
 

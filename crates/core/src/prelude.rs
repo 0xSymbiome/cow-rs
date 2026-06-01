@@ -14,16 +14,11 @@
 //!   `new`, `from_bytes`, `to_hex_string`, `write_into`, `as_slice`,
 //!   `as_alloy`, `into_alloy`, `zero`, `is_zero`, and `byte_length`.
 //! - [`Amount`] wraps [`alloy_primitives::U256`] and exposes `new`,
-//!   `from_u256`, `as_u256`, `into_u256`, `zero`, `is_zero`,
-//!   `checked_*`, and `saturating_*`.
+//!   `from_units` / `parse_units` / `format_units` (exact numeric and
+//!   decimal token-amount I/O), `from_u256`, `as_u256`, `into_u256`,
+//!   `zero`, `is_zero`, `checked_*`, and `saturating_*`.
 //! - [`SignedAmount`] wraps [`alloy_primitives::I256`] and adds
 //!   `is_negative`, `checked_neg`, `checked_abs`, and `checked_unsigned_abs`
 //!   on top of the `Amount` surface.
-//! - [`DecimalAmount`] pairs the cow uint256 atomic amount with a
-//!   `decimals` scale and exposes `to_decimal_string`, which emits the
-//!   canonical decimal-point form with the trailing-zero preservation
-//!   contract per ADR 0052.
 
-pub use crate::types::{
-    Address, Amount, AppDataHash, DecimalAmount, Hash32, HexData, OrderUid, SignedAmount,
-};
+pub use crate::types::{Address, Amount, AppDataHash, Hash32, HexData, OrderUid, SignedAmount};

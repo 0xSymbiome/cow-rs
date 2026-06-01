@@ -193,9 +193,10 @@ use cow_sdk::{Address, OrderKind, TradeParameters};
 fn quote_request(owner: Address) -> Result<TradeParameters, Box<dyn std::error::Error>> {
     let params = TradeParameters::new(
         OrderKind::Sell,
+        // USDC (6 decimals) sold for DAI.
         Address::new("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48")?,
         Address::new("0x6B175474E89094C44Da98b954EedeAC495271d0F")?,
-        Amount::new("100000000000000000")?,
+        Amount::from_units(100, 6)?,
     )
     .with_owner(owner)
     .with_slippage_bps(50);

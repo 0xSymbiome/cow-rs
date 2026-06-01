@@ -37,7 +37,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         OrderKind::Sell,
         sample_sell_token(),
         sample_buy_token(),
-        Amount::from(100_000_000_000_000_000u128),
+        Amount::parse_units("0.1", 18)?,
     )
     .with_owner(sample_owner())
     .with_slippage_bps(50);

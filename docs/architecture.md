@@ -259,12 +259,17 @@ provider-specific timing assumptions.
 
 ### Typed Amounts
 
-`cow-sdk-core` keeps three distinct amount roles at the typed boundary.
+`cow-sdk-core` keeps two distinct amount roles at the typed boundary.
 `Amount` and `SignedAmount` are cow-owned `#[repr(transparent)]` newtypes
 over `alloy_primitives::U256` and `alloy_primitives::I256` respectively per
 [ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md),
-preserving the decimal-string wire form; `DecimalAmount` pairs atoms with a
-decimals scale for display and user-input flows. Both numeric newtypes
+preserving the decimal-string wire form. `Amount` carries the atomic
+(base-unit) quantity that crosses the wire; human-readable token amounts
+convert in and out through `Amount::from_units(whole, decimals)` for whole
+amounts, `Amount::parse_units(value, decimals)` for fractional or textual
+input, and `Amount::format_units(decimals)`, which scale by `10^decimals`
+with integer arithmetic (never floating point) so the round trip stays exact. Both numeric
+newtypes
 expose a fallible-by-return arithmetic surface — `checked_*` (returning
 `Option`) and explicit `saturating_*` clamps — and intentionally ship no
 bare `Add` / `Sub` / `Mul` operators, so an overflow or underflow can

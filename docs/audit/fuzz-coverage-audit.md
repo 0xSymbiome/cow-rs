@@ -1,7 +1,7 @@
 # Fuzz Coverage Audit
 
 Status: Current
-Last reviewed: 2026-05-22
+Last reviewed: 2026-06-01
 Owning surface: the standalone `cow-sdk-fuzz` crate (`fuzz/`) and every
 `cargo-fuzz` target it ships against the published SDK crates
 Refresh trigger: any new public untrusted-input surface, retired fuzz
@@ -46,9 +46,9 @@ the scheduled-fuzz workflow rather than by this static review.
 
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
-| Target inventory | 46 fuzz targets cover every reviewed public untrusted-input boundary across `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-signing`, `cow-sdk-trading`, `cow-sdk-transport-policy`, and `cow-sdk-browser-wallet` | Conforms |
+| Target inventory | 52 fuzz targets cover every reviewed public untrusted-input boundary across `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-signing`, `cow-sdk-trading`, `cow-sdk-transport-policy`, and `cow-sdk-browser-wallet` | Conforms |
 | Stable-toolchain compile | The fuzz crate compiles under `cargo +stable check --manifest-path fuzz/Cargo.toml` and is gated on every pull request through the shared workspace quality-gate workflow | Conforms |
-| Nightly-toolchain enumerate | `cargo +nightly fuzz list --fuzz-dir fuzz` enumerates all 46 targets | Conforms |
+| Nightly-toolchain enumerate | `cargo +nightly fuzz list --fuzz-dir fuzz` enumerates all 52 targets | Conforms |
 | Per-target seed contract | Every target ships a corpus directory with a tracked `README.md` enumerating the canonical / boundary / adversarial seed classes the maintainer keeps in local working copies; the seed binaries themselves are local-only (excluded from the repository through `.gitignore`) and reach CI through the workflow's `upload-artifact` step on failure | Conforms |
 | Property traceability | Every target carries a `**Property:**` doc-comment row citing one `PROP-*` invariant identifier from `PROPERTIES.md`; every cited identifier has its evidence column updated to reference the fuzz target source and corpus directory | Conforms |
 | Public-surface boundary | Every target imports only published SDK surface; crate-private helpers are exercised through the nearest public wrapper, with the routing documented in the target doc-comment header | Conforms |
@@ -59,7 +59,7 @@ the scheduled-fuzz workflow rather than by this static review.
 
 ### Target Inventory
 
-The `cow-sdk-fuzz` crate ships 46 `cargo-fuzz` targets. Each target is
+The `cow-sdk-fuzz` crate ships 52 `cargo-fuzz` targets. Each target is
 declared as a `[[bin]]` entry in `fuzz/Cargo.toml`, has a matching
 `fuzz/fuzz_targets/<name>.rs` source file, and has a populated
 `fuzz/corpus/<name>/` seed directory.
@@ -67,12 +67,12 @@ declared as a `[[bin]]` entry in `fuzz/Cargo.toml`, has a matching
 | Domain | Target count | Surfaces exercised |
 | --- | --- | --- |
 | Encoder | 5 | `GPv2Settlement.settle`, `GPv2Settlement.invalidateOrder`, `CoWSwapEthFlow.createOrder`, `GPv2VaultRelayer.transferFromAccounts`, EIP-2612 permit envelope |
-| Signing | 5 | EIP-712 typed-data digest, ECDSA `v` normalization (byte array), ECDSA `v` normalization (string), ECDSA address recovery, EIP-712 domain separator |
+| Signing | 6 | EIP-712 typed-data digest, ECDSA `v` normalization, ECDSA address recovery, recoverable-signature hex parse, recoverable-signature differential, EIP-712 domain separator |
 | Validator and bounds | 2 | Order bounds validator, `ValidTo::relative` window |
-| Parser and decoder | 12 | Orderbook rejection envelope, orderbook rejection code allowlist, decoded body and canonical status text, append query string, subgraph GraphQL error decoder, transport-error classifier, retry-after header parser, retry policy delay, jitter strategy delay, partner-fee `from_value`, flashloan-hints deserializer, hook-list deserializer |
-| Crypto envelope and hash | 4 | EIP-712 order hash, EIP-712 order-cancellations hash, EIP-1271 signature data decoder, EIP-1271 magic-value response decoder |
+| Parser and decoder | 15 | Orderbook rejection envelope, orderbook rejection code allowlist, decoded body and canonical status text, append query string, subgraph GraphQL error decoder, transport-error classifier, retry-after header parser, retry policy delay, jitter strategy delay, partner-fee `from_value`, flashloan-hints deserializer, hook-list deserializer, on-chain order log decoder, settlement event log decoder, eth-flow event log decoder |
+| Crypto envelope and hash | 3 | EIP-712 order-cancellations hash, EIP-1271 signature data decoder, EIP-1271 magic-value response decoder |
 | Order UID and signature classifier | 2 | Order UID pack and unpack, signature classifier and signing-scheme discriminant |
-| Core types and identities | 5 | `Amount` parser, `SignedAmount` parser, hex identity validators (`Address`, `Hash32`, `AppDataHash`, `OrderUid`, `HexData`), `DecimalAmount::from_whole_approx`, redaction body scanner |
+| Core types and identities | 6 | `Amount` parser, `SignedAmount` parser, hex identity validators (`Address`, `Hash32`, `AppDataHash`, `OrderUid`, `HexData`), `Amount::parse_units`, `Amount::from_units`, redaction body scanner |
 | App-data | 6 | CID round-trip, CID-to-hex decoder, schema version `is_semver`, `stringify_deterministic`, app-data size limit, `params_from_doc` |
 | Trading and slippage | 3 | App-data merge, slippage amounts, slippage policy helpers |
 | Orderbook wire totals | 1 | `calculate_total_fee` |
@@ -92,7 +92,7 @@ onto nightly.
 
 ### Nightly-toolchain Enumerate
 
-Running `cargo +nightly fuzz list --fuzz-dir fuzz` enumerates all 46
+Running `cargo +nightly fuzz list --fuzz-dir fuzz` enumerates all 52
 targets by their `[[bin]]` names. The same nightly toolchain is the
 one the scheduled fuzz workflow runs on `ubuntu-latest`, where the
 LLVM AddressSanitizer runtime ships with the system clang/llvm package.
@@ -135,7 +135,7 @@ cited identifier has its evidence column updated to reference the
 target source file (`fuzz/fuzz_targets/<name>.rs`) and the matching
 corpus directory (`fuzz/corpus/<name>/`). The cross-link is the
 reviewer's path from a `PROPERTIES.md` row to the fuzz coverage that
-strengthens it. The 22 `PROP-*` identifiers cited across the 46 targets
+strengthens it. The 33 `PROP-*` identifiers cited across the 52 targets
 span `PROP-CORE-*`, `PROP-CON-*`, `PROP-SIG-*`, `PROP-AD-*`,
 `PROP-APP-*`, `PROP-OBK-*`, `PROP-ORD-*`, `PROP-SBG-*`, `PROP-TPP-*`,
 `PROP-TRD-*`, and `PROP-BWL-*` families.
@@ -216,7 +216,7 @@ disturbing these three targets.
 
 A scheduled-equivalent sweep run on a Linux x86-64 host (8-way parallel,
 10-minute budget per target, `timeout=10` per input) covered every one
-of the 46 targets without producing a panic. Earlier iterations of the
+of the 52 targets without producing a panic. Earlier iterations of the
 same sweep surfaced three real SDK defects on attacker-controlled
 surfaces and three over-strict fuzz-target assertions, all of which
 were corrected before the clean run:
@@ -255,8 +255,8 @@ unit tests on realistic inputs.
 Primary implementation points:
 
 - `fuzz/Cargo.toml`
-- `fuzz/fuzz_targets/` (46 fuzz target source files)
-- `fuzz/corpus/<target>/README.md` (46 per-target READMEs that
+- `fuzz/fuzz_targets/` (52 fuzz target source files)
+- `fuzz/corpus/<target>/README.md` (52 per-target READMEs that
   enumerate the seed class taxonomy and parity-fixture provenance;
   binary seeds are local-only and excluded from the repository)
 - `fuzz/README.md` (per-target seed contract and harness conventions)

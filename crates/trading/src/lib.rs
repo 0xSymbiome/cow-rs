@@ -25,7 +25,7 @@
 
 pub use cow_sdk_app_data::{PartnerFee, PartnerFeePolicy};
 pub use cow_sdk_contracts::eth_flow;
-pub use cow_sdk_core::{DecimalAmount, SupportedChainId};
+pub use cow_sdk_core::SupportedChainId;
 pub use cow_sdk_orderbook::{OrderbookClient, OrderbookRuntimeBinding};
 
 /// Allowance reads, approval transactions, and approval submission helpers.

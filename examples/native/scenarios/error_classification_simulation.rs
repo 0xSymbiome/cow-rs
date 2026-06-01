@@ -160,8 +160,8 @@ async fn classify_a_real_rejection() -> Result<serde_json::Value, Box<dyn Error>
     let order = OrderCreation::new(
         sample_sell_token(),
         sample_buy_token(),
-        Amount::from(100_000_000_000_000_000u128),
-        Amount::from(250_000_000_000_000_000u128),
+        Amount::parse_units("0.1", 18)?,
+        Amount::parse_units("0.25", 18)?,
         1_700_000_000,
         cow_sdk::core::OrderKind::Sell,
         OrderbookSigningScheme::Eip712,

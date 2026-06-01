@@ -247,7 +247,7 @@ jobs:
           fi
 
   gate-do-not-swap-census:
-    name: DO NOT SWAP comment census (10 expected)
+    name: DO NOT SWAP comment census (11 expected)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -255,7 +255,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Count and lock DO NOT SWAP comments at 10
+      - name: Count and lock DO NOT SWAP comments at 11
         shell: bash
         run: |
           set -euo pipefail
@@ -264,13 +264,18 @@ jobs:
             echo "::error::No crate sources found; refusing to silently pass."
             exit 1
           fi
-          # Ten anchor blocks land at eight never-swap surfaces; the
+          # Eleven anchor blocks land at nine never-swap surfaces; the
           # `Amount::new` / `SignedAmount::new` surface carries two blocks
           # (one per constructor) and the `SupportedChainId` enum /
-          # `api_path()` surface carries two blocks (one per anchor).
+          # `api_path()` surface carries two blocks (one per anchor). The
+          # eleventh block anchors `Amount::parse_units`, which reimplements
+          # decimal scaling with checked arithmetic instead of
+          # `alloy_primitives::utils::parse_units` — whose raw form is
+          # fail-OPEN on empty/signed input, panics on non-ASCII, and
+          # silently wraps over uint256.
           count="$(grep -RIc 'DO NOT SWAP' "${sources[@]}" | awk -F: '{s+=$2} END {print s+0}')"
-          if [ "$count" -ne 10 ]; then
-            echo "::error::Never-swap fence: expected exactly 10 DO NOT SWAP comment blocks across crates/ (one per anchor; two anchors carry paired blocks). Found ${count}. Either restore the missing comment or update this gate's expected count and amend docs/alloy-doctrine.md."
+          if [ "$count" -ne 11 ]; then
+            echo "::error::Never-swap fence: expected exactly 11 DO NOT SWAP comment blocks across crates/ (one per anchor; two anchors carry paired blocks). Found ${count}. Either restore the missing comment or update this gate's expected count and amend docs/alloy-doctrine.md."
             exit 1
           fi
           echo "Found ${count} DO NOT SWAP comment blocks — census matches."

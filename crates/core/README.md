@@ -31,10 +31,19 @@ cow-sdk-core = "0.1"
 ```rust
 use cow_sdk_core::{Amount, SupportedChainId, wrapped_native_token};
 
-// `Amount` is the typed atomic-quantity boundary. `From<u128>` is the
-// ergonomic numeric constructor; the display form is canonical decimal.
-let one_weth = Amount::from(1_000_000_000_000_000_000u128);
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+// `Amount` is the typed atomic-quantity boundary. `from_units` builds a
+// whole token amount from a number (no string, no zero-counting); reach for
+// `parse_units` when the amount is fractional or arrives as text. Both scale
+// by `10^decimals` with exact integer arithmetic, and `format_units` is the
+// inverse for display.
+let one_weth = Amount::from_units(1, 18)?;
 assert_eq!(one_weth.to_string(), "1000000000000000000");
+assert_eq!(one_weth.format_units(18), "1.000000000000000000");
+
+// Fractional or user-supplied amounts arrive as a decimal string.
+let one_and_a_half_weth = Amount::parse_units("1.5", 18)?;
+assert_eq!(one_and_a_half_weth.to_string(), "1500000000000000000");
 
 // A chain id drives real configuration: the API path segment used in
 // orderbook base URLs, and the wrapped-native token metadata.
@@ -44,6 +53,8 @@ assert_eq!(chain.api_path(), "mainnet");
 let weth = wrapped_native_token(chain);
 assert_eq!(weth.symbol, "WETH");
 assert_eq!(weth.decimals, 18);
+# Ok(())
+# }
 ```
 
 ## Where to next

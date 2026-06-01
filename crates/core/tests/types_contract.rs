@@ -1,8 +1,8 @@
 use alloy_primitives::{I256, U256};
 use cow_sdk_core::{
-    Address, Amount, Amounts, AppDataHash, AppDataHex, BuyTokenDestination, Costs, DecimalAmount,
-    FeeComponent, Hash32, HexData, NetworkFee, ORDER_TYPE_FIELD_NAMES, OrderData, OrderKind,
-    OrderUid, QUOTE_AMOUNT_STAGE_NAMES, QuoteAmountsAndCosts, SellTokenSource, SignedAmount,
+    Address, Amount, Amounts, AppDataHash, AppDataHex, BuyTokenDestination, Costs, FeeComponent,
+    Hash32, HexData, NetworkFee, ORDER_TYPE_FIELD_NAMES, OrderData, OrderKind, OrderUid,
+    QUOTE_AMOUNT_STAGE_NAMES, QuoteAmountsAndCosts, SellTokenSource, SignedAmount,
     VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS, ValidTo, ValidationError,
     addresses_equal, token_id,
 };
@@ -198,23 +198,13 @@ fn from_bytes_constructors_match_string_based_equivalents_byte_for_byte() {
 }
 
 #[test]
-fn typed_amount_and_decimal_amount_expose_semantic_accessors() {
+fn typed_amount_exposes_semantic_accessors() {
     let amount = Amount::from_u256(U256::from(1_000_000_000_000_000_000u128));
     assert_eq!(amount.to_string(), "1000000000000000000");
     assert_eq!(amount.as_u256(), &U256::from(1_000_000_000_000_000_000u128));
 
     let parsed: Amount = "1000000000000000000".try_into().unwrap();
     assert_eq!(parsed, amount);
-
-    let decimal = DecimalAmount::new(U256::from(1_000_000_000_000_000_000u128), 18)
-        .expect("decimals 18 is within DecimalAmount::MAX_DECIMALS");
-    assert_eq!(decimal.decimals(), 18);
-    assert_eq!(decimal.atoms(), &U256::from(1_000_000_000_000_000_000u128));
-    assert!((decimal.to_f64_approx() - 1.0).abs() < 1e-12);
-
-    let clamped = DecimalAmount::from_whole_approx(-0.5, 18)
-        .expect("decimals 18 is within DecimalAmount::MAX_DECIMALS");
-    assert_eq!(clamped.atoms(), &U256::ZERO);
 }
 
 #[test]
@@ -633,70 +623,100 @@ fn signed_amount_bits_returns_twos_complement_minimum_width_across_boundaries() 
 }
 
 #[test]
-fn decimal_amount_construction_rejects_decimals_above_max_decimals() {
-    use cow_sdk_core::{CoreError, DecimalAmount};
+fn amount_parse_units_is_exact_and_rejects_bad_input() {
+    use cow_sdk_core::CoreError;
 
-    // MAX_DECIMALS == 77 because 10^77 < U256::MAX < 10^78; every
-    // ERC-20 token ships decimals <= 18 so the bound is structurally
-    // satisfied in practice. The constant is the public accessor for
-    // boundary-aware callers.
-    assert_eq!(DecimalAmount::MAX_DECIMALS, 77);
+    // Exact integer scaling: the decimal string is multiplied by
+    // 10^decimals using integer arithmetic, never floating point, so
+    // every digit is preserved byte-for-byte.
+    assert_eq!(
+        Amount::parse_units("1", 18).unwrap(),
+        Amount::from(1_000_000_000_000_000_000u128),
+        "parse_units(\"1\", 18) must scale by 10^18 exactly",
+    );
+    assert_eq!(
+        Amount::parse_units("1000", 6).unwrap(),
+        Amount::from(1_000_000_000u128),
+        "parse_units(\"1000\", 6) must scale by 10^6 exactly",
+    );
+    assert_eq!(
+        Amount::parse_units("1.5", 18).unwrap(),
+        Amount::from(1_500_000_000_000_000_000u128),
+        "parse_units must scale the fractional part exactly with no f64 drift",
+    );
 
-    // Canonical 18-decimals path (the everyday ERC-20 case).
-    let amount =
-        DecimalAmount::from_atoms(Amount::new("1500000000000000000").unwrap().into_u256(), 18)
-            .expect("decimals 18 is within MAX_DECIMALS");
-    assert_eq!(amount.to_decimal_string(), "1.500000000000000000");
+    // Fractional digits beyond `decimals` are truncated, matching the
+    // orderbook atomic-unit contract: ".1234" at 3 decimals keeps the
+    // first three fractional digits ("123") and drops the "4".
+    assert_eq!(
+        Amount::parse_units(".1234", 3).unwrap(),
+        Amount::from(123u128),
+        "parse_units must truncate fractional digits beyond `decimals`",
+    );
 
-    // Integer-form shortcut (decimals == 0).
-    let integer = DecimalAmount::from_atoms(Amount::new("42").unwrap().into_u256(), 0)
-        .expect("decimals 0 is within MAX_DECIMALS");
-    assert_eq!(integer.to_decimal_string(), "42");
+    // Surrounding whitespace is trimmed before parsing, so a
+    // whitespace-padded integer at zero decimals parses to the bare
+    // integer.
+    assert_eq!(
+        Amount::parse_units("  2  ", 0).unwrap(),
+        Amount::from(2u128),
+        "parse_units must trim surrounding whitespace before parsing",
+    );
 
-    // Boundary: decimals == 77 is the documented maximum and is
-    // accepted; the resulting to_decimal_string starts with "0.0"
-    // and has fractional length exactly 77.
-    let near_max = DecimalAmount::from_atoms(Amount::new("1").unwrap().into_u256(), 77)
-        .expect("decimals 77 is the documented maximum");
-    let near_max_str = near_max.to_decimal_string();
-    assert!(near_max_str.starts_with("0.0"));
-    assert_eq!(near_max_str.len(), "0.".len() + 77);
-
-    // Boundary: decimals == 78 is rejected at construction time with
-    // a documented validation error — the same surface for new(),
-    // from_atoms(), and from_whole_approx().
-    let from_atoms_rejected = DecimalAmount::from_atoms(U256::from(1u64), 78);
+    // Fail-closed rejections. Empty and whitespace-only inputs surface
+    // `EmptyField` (NOT alloy's fail-open `Ok(0)`).
     assert!(matches!(
-        from_atoms_rejected,
+        Amount::parse_units("", 18),
+        Err(CoreError::Validation(ValidationError::EmptyField {
+            field: "amount"
+        })),
+    ));
+    assert!(matches!(
+        Amount::parse_units("   ", 18),
+        Err(CoreError::Validation(ValidationError::EmptyField {
+            field: "amount"
+        })),
+    ));
+
+    // A leading sign is rejected as `InvalidNumeric` (a leading `-`
+    // must NOT route to alloy's signed arm and silently widen into a
+    // huge positive via two's-complement).
+    assert!(matches!(
+        Amount::parse_units("-1", 18),
+        Err(CoreError::Validation(ValidationError::InvalidNumeric {
+            field: "amount"
+        })),
+    ));
+    assert!(matches!(
+        Amount::parse_units("+1", 18),
+        Err(CoreError::Validation(ValidationError::InvalidNumeric {
+            field: "amount"
+        })),
+    ));
+
+    // Non-numeric input is rejected as `InvalidNumeric`.
+    assert!(matches!(
+        Amount::parse_units("abc", 18),
+        Err(CoreError::Validation(ValidationError::InvalidNumeric {
+            field: "amount"
+        })),
+    ));
+
+    // `decimals` above 77 (the `alloy_primitives::utils::Unit::MAX`
+    // bound) is rejected at construction time with the kept
+    // `DecimalsOutOfRange` error carrying the rejected scale and the
+    // documented maximum.
+    assert!(matches!(
+        Amount::parse_units("1", 78),
         Err(CoreError::Validation(ValidationError::DecimalsOutOfRange {
             actual: 78,
             max: 77,
         })),
     ));
-
-    let new_rejected = DecimalAmount::new(U256::ZERO, 78);
+    // The gate scales beyond the immediate 78 case: u8::MAX is also
+    // rejected with its own actual value.
     assert!(matches!(
-        new_rejected,
-        Err(CoreError::Validation(ValidationError::DecimalsOutOfRange {
-            actual: 78,
-            max: 77,
-        })),
-    ));
-
-    let approx_rejected = DecimalAmount::from_whole_approx(1.0, 78);
-    assert!(matches!(
-        approx_rejected,
-        Err(CoreError::Validation(ValidationError::DecimalsOutOfRange {
-            actual: 78,
-            max: 77,
-        })),
-    ));
-
-    // Extreme value (decimals == u8::MAX) is also rejected, proving
-    // the gate scales beyond the immediate 78 case.
-    let extreme = DecimalAmount::new(U256::ZERO, u8::MAX);
-    assert!(matches!(
-        extreme,
+        Amount::parse_units("1", u8::MAX),
         Err(CoreError::Validation(ValidationError::DecimalsOutOfRange {
             actual: 255,
             max: 77,
@@ -705,7 +725,7 @@ fn decimal_amount_construction_rejects_decimals_above_max_decimals() {
 }
 
 #[test]
-fn decimal_amount_to_decimal_string_preserves_trailing_zeros_byte_identically() {
+fn amount_format_units_preserves_trailing_zeros() {
     // Pins the trailing-zero preservation contract across canonical
     // and edge-case `(atoms, decimals)` shapes. The load-bearing
     // contrast is the canonical 1-ether row (atoms = 10^18, decimals
@@ -715,56 +735,52 @@ fn decimal_amount_to_decimal_string_preserves_trailing_zeros_byte_identically() 
     // public-contract reason for the cow surface, so the row is
     // required for any future refactor that touches the formatter.
 
-    // Row 1: zero atoms, zero decimals → integer "0" form.
-    let r1 = DecimalAmount::from_atoms(U256::ZERO, 0).expect("decimals 0 is within MAX_DECIMALS");
-    assert_eq!(r1.to_decimal_string(), "0");
+    // Row 1: zero atoms, zero decimals → bare integer "0" form.
+    assert_eq!(Amount::from_u256(U256::ZERO).format_units(0), "0");
 
-    // Row 2: small atoms, zero decimals → integer form, no padding.
-    let r2 =
-        DecimalAmount::from_atoms(U256::from(42u8), 0).expect("decimals 0 is within MAX_DECIMALS");
-    assert_eq!(r2.to_decimal_string(), "42");
+    // Row 2: small atoms, zero decimals → bare integer, no padding.
+    assert_eq!(Amount::from_u256(U256::from(42u8)).format_units(0), "42");
 
     // Row 3: zero atoms, canonical 18 decimals → "0" plus 18 zeros.
-    let r3 = DecimalAmount::from_atoms(U256::ZERO, 18).expect("decimals 18 is within MAX_DECIMALS");
-    assert_eq!(r3.to_decimal_string(), "0.000000000000000000");
+    assert_eq!(
+        Amount::from_u256(U256::ZERO).format_units(18),
+        "0.000000000000000000",
+    );
 
     // Row 4: smallest non-zero atoms, 18 decimals → zero integer
     // part with the documented zero-padded fractional substring.
-    let r4 =
-        DecimalAmount::from_atoms(U256::from(1u8), 18).expect("decimals 18 is within MAX_DECIMALS");
-    assert_eq!(r4.to_decimal_string(), "0.000000000000000001");
+    assert_eq!(
+        Amount::from_u256(U256::from(1u8)).format_units(18),
+        "0.000000000000000001",
+    );
 
     // Row 5: (atoms=10, decimals=1) is the boundary case where the
     // cow output coincidentally matches `formatUnits` (both produce
     // "1.0"). This case pins that the cow format does not over-trim.
-    let r5 =
-        DecimalAmount::from_atoms(U256::from(10u8), 1).expect("decimals 1 is within MAX_DECIMALS");
-    assert_eq!(r5.to_decimal_string(), "1.0");
+    assert_eq!(Amount::from_u256(U256::from(10u8)).format_units(1), "1.0");
 
     // Row 6: canonical 1-ether case — the load-bearing trim contrast.
     // cow preserves the full 18-digit fractional expansion; the
     // ethers/viem/services `formatUnits` helper would trim to "1.0".
-    let r6 = DecimalAmount::from_atoms(U256::from(1_000_000_000_000_000_000u128), 18)
-        .expect("decimals 18 is within MAX_DECIMALS");
-    assert_eq!(r6.to_decimal_string(), "1.000000000000000000");
+    assert_eq!(
+        Amount::from_u256(U256::from(1_000_000_000_000_000_000u128)).format_units(18),
+        "1.000000000000000000",
+    );
 
     // Row 7: rounded value (atoms=100, decimals=2) → preserved
     // trailing zeros (cow: "1.00", JavaScript `formatUnits` would
     // produce "1.0").
-    let r7 =
-        DecimalAmount::from_atoms(U256::from(100u8), 2).expect("decimals 2 is within MAX_DECIMALS");
-    assert_eq!(r7.to_decimal_string(), "1.00");
+    assert_eq!(Amount::from_u256(U256::from(100u8)).format_units(2), "1.00");
 
     // Row 8: maximum representable decimals (77). One atom at 77
     // decimals → integer "0" plus 76 zeros plus a trailing "1".
-    let r8 = DecimalAmount::from_atoms(U256::from(1u8), 77)
-        .expect("decimals 77 is the documented maximum");
+    let r8 = Amount::from_u256(U256::from(1u8)).format_units(77);
     let expected_r8 = format!("0.{}{}", "0".repeat(76), "1");
-    assert_eq!(r8.to_decimal_string(), expected_r8);
+    assert_eq!(r8, expected_r8);
     assert_eq!(
-        r8.to_decimal_string().len(),
+        r8.len(),
         "0.".len() + 77,
-        "decimals == MAX_DECIMALS must yield a 77-character fractional substring",
+        "decimals == 77 must yield a 77-character fractional substring",
     );
 
     // Row 9: `(U256::MAX, 18)` sentinel — pins the wire-byte contract
@@ -772,9 +788,8 @@ fn decimal_amount_to_decimal_string_preserves_trailing_zeros_byte_identically() 
     // canonical 18-decimal token scale. The integer part is the full
     // 60-digit `2^256 - 1 / 10^18` quotient and the fractional part
     // is the remaining 18 atoms-of-the-quotient padded to length 18.
-    let r9 = DecimalAmount::from_atoms(U256::MAX, 18).expect("decimals 18 is within MAX_DECIMALS");
     assert_eq!(
-        r9.to_decimal_string(),
+        Amount::from_u256(U256::MAX).format_units(18),
         "115792089237316195423570985008687907853269984665640564039457.584007913129639935",
     );
 
@@ -783,15 +798,94 @@ fn decimal_amount_to_decimal_string_preserves_trailing_zeros_byte_identically() 
     // maximum supported decimals scale. The integer part is the
     // single digit `1` and the fractional part is the remaining 77
     // digits of `U256::MAX` with no padding.
-    let r10 =
-        DecimalAmount::from_atoms(U256::MAX, 77).expect("decimals 77 is the documented maximum");
+    let r10 = Amount::from_u256(U256::MAX).format_units(77);
     assert_eq!(
-        r10.to_decimal_string(),
+        r10,
         "1.15792089237316195423570985008687907853269984665640564039457584007913129639935",
     );
     assert_eq!(
-        r10.to_decimal_string().len(),
+        r10.len(),
         "1.".len() + 77,
-        "decimals == MAX_DECIMALS must yield a 77-character fractional substring",
+        "decimals == 77 must yield a 77-character fractional substring",
     );
+
+    // parse ∘ format round-trip: format_units preserves the full
+    // fractional width precisely so the output re-parses back to the
+    // originating atoms for a representative non-trivial value.
+    let representative = Amount::from_u256(U256::from(1_500_000_000_000_000_000u128));
+    assert_eq!(
+        Amount::parse_units(representative.format_units(18), 18).unwrap(),
+        representative,
+        "parse_units(format_units(x, 18), 18) must round-trip back to x",
+    );
+}
+
+#[test]
+fn amount_from_units_is_exact_and_agrees_with_parse_units() {
+    use cow_sdk_core::CoreError;
+
+    // Exact integer scaling: the whole-unit count is multiplied by
+    // 10^decimals with checked integer arithmetic (no string round-trip,
+    // no floating point), so every digit is preserved.
+    assert_eq!(
+        Amount::from_units(1, 18).unwrap(),
+        Amount::from(1_000_000_000_000_000_000u128),
+        "from_units(1, 18) must scale by 10^18 exactly",
+    );
+    assert_eq!(
+        Amount::from_units(1000, 6).unwrap(),
+        Amount::from(1_000_000_000u128),
+        "from_units(1000, 6) must scale by 10^6 exactly",
+    );
+
+    // `from_units` is the numeric door to the same atomic value
+    // `parse_units` produces for the equivalent whole number: the two
+    // must agree for every whole-number input.
+    for (whole, decimals) in [(0u128, 18), (1, 18), (1000, 6), (7, 8), (123_456, 0)] {
+        assert_eq!(
+            Amount::from_units(whole, decimals).unwrap(),
+            Amount::parse_units(whole.to_string(), decimals).unwrap(),
+            "from_units({whole}, {decimals}) must equal parse_units of the same whole number",
+        );
+    }
+
+    // Zero whole units is the zero amount; `decimals == 0` does not scale.
+    assert_eq!(
+        Amount::from_units(0, 18).unwrap(),
+        Amount::from(0u128),
+        "from_units(0, _) must be the zero amount",
+    );
+    assert_eq!(
+        Amount::from_units(42, 0).unwrap(),
+        Amount::from(42u128),
+        "from_units(_, 0) must not scale",
+    );
+
+    // `decimals` above 77 (the `alloy_primitives::utils::Unit::MAX` bound)
+    // is rejected with the same `DecimalsOutOfRange` error `parse_units`
+    // uses, carrying the rejected scale and the documented maximum.
+    assert!(matches!(
+        Amount::from_units(1, 78),
+        Err(CoreError::Validation(ValidationError::DecimalsOutOfRange {
+            actual: 78,
+            max: 77,
+        })),
+    ));
+    assert!(matches!(
+        Amount::from_units(1, u8::MAX),
+        Err(CoreError::Validation(ValidationError::DecimalsOutOfRange {
+            actual: 255,
+            max: 77,
+        })),
+    ));
+
+    // A whole-unit count whose scaled magnitude exceeds `uint256` fails
+    // closed with `NumericOverflow` instead of wrapping: `u128::MAX` whole
+    // units at 77 decimals is far beyond `U256::MAX`.
+    assert!(matches!(
+        Amount::from_units(u128::MAX, 77),
+        Err(CoreError::Validation(ValidationError::NumericOverflow {
+            field: "amount"
+        })),
+    ));
 }

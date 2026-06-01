@@ -72,8 +72,8 @@ pub fn sample_unsigned_order() -> OrderData {
         sample_sell_token(),
         sample_buy_token(),
         address(ALT_RECEIVER),
-        Amount::new("100000000000000000").expect("example sell amount must remain valid"),
-        Amount::new("250000000000000000").expect("example buy amount must remain valid"),
+        Amount::parse_units("0.1", 18).expect("example sell amount must remain valid"),
+        Amount::parse_units("0.25", 18).expect("example buy amount must remain valid"),
         1_700_000_000,
         AppDataHex::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
             .expect("example app-data hex must remain valid"),
@@ -90,7 +90,7 @@ pub fn sample_trade_parameters() -> TradeParameters {
         OrderKind::Sell,
         sample_sell_token(),
         sample_buy_token(),
-        Amount::new("100000000000000000").expect("example trade amount must remain valid"),
+        Amount::parse_units("0.1", 18).expect("example trade amount must remain valid"),
     )
     .with_owner(sample_owner())
     .with_slippage_bps(50)

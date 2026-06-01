@@ -46,7 +46,7 @@ let request = OrderQuoteRequest::new(
     weth,
     usdc,
     from,
-    OrderQuoteSide::sell(Amount::from(1_000_000_000_000_000_000u128)),
+    OrderQuoteSide::sell(Amount::from_units(1, 18)?),
 );
 
 let quote = api.get_quote(&request).await?;

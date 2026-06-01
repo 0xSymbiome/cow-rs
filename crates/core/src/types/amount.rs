@@ -25,8 +25,25 @@ use crate::errors::{CoreError, ValidationError};
 /// cow JSON-decimal-only wire contract holds even when the value is fed
 /// through serde rather than [`Amount::new`].
 ///
-/// For decimal-aware values that also carry a scale, see
-/// [`DecimalAmount`]. For signed quantities, see [`SignedAmount`].
+/// For signed quantities, see [`SignedAmount`].
+///
+/// # Construction
+///
+/// Pick the constructor that matches the value you already hold; every
+/// path lands on the same atomic `uint256`:
+///
+/// - Raw atomic units from an integer — [`Amount::from`] (`u32` / `u64` /
+///   `u128` / `usize`) or [`Amount::from_u256`].
+/// - Whole display units from a number — [`Amount::from_units`], for
+///   example `Amount::from_units(1000, 6)` for 1000 USDC (no string and no
+///   hand-counted zeros).
+/// - Fractional or untrusted-text display units — [`Amount::parse_units`],
+///   for example `Amount::parse_units("1.5", 18)` for 1.5 WETH.
+/// - A decimal or `0x`-hex string of atomic units from a CLI flag,
+///   environment variable, or config file — [`Amount::new`].
+///
+/// [`Amount::format_units`] is the inverse of the unit-scaled constructors
+/// for human-readable display.
 ///
 /// # Surface boundary
 ///
@@ -295,6 +312,171 @@ impl Amount {
     pub const fn bit_len(&self) -> u64 {
         self.0.bit_len() as u64
     }
+
+    /// Parses an exact token amount from a human-readable decimal string and
+    /// the token's `decimals` scale (for example `Amount::parse_units("1.5", 18)`
+    /// builds 1.5 WETH in atomic units).
+    ///
+    /// This is the typed, exact analogue of the `parseUnits` helper from
+    /// viem/ethers: the decimal string is scaled by `10^decimals` using
+    /// integer arithmetic (never floating point), so the result is exact.
+    /// Fractional digits beyond `decimals` are truncated, matching the
+    /// orderbook's atomic-unit contract. For a whole-number amount you
+    /// already hold as an integer, [`Amount::from_units`] avoids the string
+    /// entirely; the companion [`Amount::format_units`] is the inverse.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CoreError`] when `value` is empty or whitespace, carries a
+    /// leading sign (`+` / `-`, since [`Amount`] is unsigned), is not a valid
+    /// decimal, or when `decimals` exceeds `77`
+    /// ([`alloy_primitives::utils::Unit::MAX`]).
+    // DO NOT SWAP for a bare `alloy_primitives::utils::parse_units` call.
+    //
+    // alloy's `parse_units` is fail-OPEN on several inputs (the relevant
+    // body is `crates/primitives/src/utils/units.rs`):
+    //   - `parse_units("", d)` returns `Ok(0)`, so an empty field silently
+    //     becomes a zero amount instead of an error.
+    //   - a leading `-` routes to the signed `I256` arm, and the subsequent
+    //     `Into<U256>` returns the two's-complement bit pattern (a huge
+    //     positive) with no error.
+    //   - the fractional-truncation step slices the input by *byte* offset
+    //     (`&amount[..(amount.len() - (dec_len - exponent))]`, units.rs:258),
+    //     so a non-ASCII input whose boundary lands inside a multi-byte
+    //     UTF-8 char PANICS with "byte index N is not a char boundary".
+    //   - the final scaling multiply (`a_uint *= 10.pow(exp - dec_len)`,
+    //     units.rs:285) is a *wrapping* `*=` (only the `pow` is checked), so
+    //     a value whose true magnitude exceeds `uint256` silently WRAPS to a
+    //     wrong number with no error.
+    // To honour the documented fail-closed `# Errors` contract (and never
+    // panic or silently wrap on untrusted input), this constructor does the
+    // exact integer scaling itself with checked arithmetic rather than
+    // delegating to the alloy helper: it pre-rejects empty/whitespace and a
+    // leading `+` / `-` (the same guards as `Amount::new`), restricts the
+    // grammar to ASCII decimal digits and a single `.` separator, truncates
+    // the fractional digits beyond `decimals`, and rejects an over-`uint256`
+    // result through `checked_mul`. Do not collapse onto the raw alloy call.
+    pub fn parse_units(value: impl AsRef<str>, decimals: u8) -> Result<Self, CoreError> {
+        let value = value.as_ref().trim();
+        if value.is_empty() {
+            return Err(ValidationError::EmptyField { field: "amount" }.into());
+        }
+        if value.starts_with('-') || value.starts_with('+') {
+            return Err(ValidationError::InvalidNumeric { field: "amount" }.into());
+        }
+        if alloy_primitives::utils::Unit::new(decimals).is_none() {
+            return Err(ValidationError::DecimalsOutOfRange {
+                actual: decimals,
+                max: alloy_primitives::utils::Unit::MAX.get(),
+            }
+            .into());
+        }
+        // Split into the integer and fractional halves on the single decimal
+        // separator. More than one `.` is malformed.
+        let mut halves = value.split('.');
+        let integer_part = halves.next().unwrap_or("");
+        let fractional_part = halves.next().unwrap_or("");
+        if halves.next().is_some() {
+            return Err(ValidationError::InvalidNumeric { field: "amount" }.into());
+        }
+        // Restrict the grammar to ASCII decimal digits in each half. This
+        // rejects every non-decimal byte (sign, radix prefix, exponent, unit
+        // suffix, non-ASCII) before any arithmetic runs.
+        let is_ascii_digits = |s: &str| s.bytes().all(|b| b.is_ascii_digit());
+        if !is_ascii_digits(integer_part) || !is_ascii_digits(fractional_part) {
+            return Err(ValidationError::InvalidNumeric { field: "amount" }.into());
+        }
+        // Truncate fractional digits beyond `decimals` (the orderbook
+        // atomic-unit contract). `decimals <= 77` here, so the slice index
+        // is in bounds and ASCII-aligned.
+        let decimals_usize = usize::from(decimals);
+        let used_fractional = if fractional_part.len() > decimals_usize {
+            &fractional_part[..decimals_usize]
+        } else {
+            fractional_part
+        };
+        // Build the mantissa (integer digits followed by the kept fractional
+        // digits) and parse it as a `uint256`. An empty mantissa (for
+        // example the bare separator ".") is rejected as non-numeric.
+        let mantissa: String = format!("{integer_part}{used_fractional}");
+        if mantissa.is_empty() {
+            return Err(ValidationError::InvalidNumeric { field: "amount" }.into());
+        }
+        let mantissa_value = U256::from_str_radix(&mantissa, 10)
+            .map_err(|_| ValidationError::InvalidNumeric { field: "amount" })?;
+        // Left-shift the mantissa back to atomic units by the number of
+        // fractional positions that were NOT supplied, using a checked
+        // multiply so an over-`uint256` magnitude fails closed instead of
+        // silently wrapping.
+        let scale_exponent = decimals_usize - used_fractional.len();
+        let scale = U256::from(10u8)
+            .checked_pow(U256::from(scale_exponent))
+            .ok_or(ValidationError::NumericOverflow { field: "amount" })?;
+        let scaled = mantissa_value
+            .checked_mul(scale)
+            .ok_or(ValidationError::NumericOverflow { field: "amount" })?;
+        Ok(Self(scaled))
+    }
+
+    /// Builds an exact token amount from a whole number of display units and
+    /// the token's `decimals` scale (for example `Amount::from_units(1000, 6)`
+    /// builds 1000 USDC in atomic units).
+    ///
+    /// This is the numeric, no-string companion to [`Amount::parse_units`]: the
+    /// whole-unit count is scaled by `10^decimals` with checked integer
+    /// arithmetic (never a string round-trip, never floating point), so the
+    /// result is exact. Reach for this when the amount is a whole number you
+    /// already hold as an integer; use [`Amount::parse_units`] when the amount
+    /// is fractional or arrives as untrusted text, and [`Amount::from`] /
+    /// [`Amount::from_u256`] when you already have raw atomic units.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`CoreError`] when `decimals` exceeds `77`
+    /// ([`alloy_primitives::utils::Unit::MAX`]) or when `whole * 10^decimals`
+    /// would exceed [`alloy_primitives::U256::MAX`].
+    pub fn from_units(whole: u128, decimals: u8) -> Result<Self, CoreError> {
+        if alloy_primitives::utils::Unit::new(decimals).is_none() {
+            return Err(ValidationError::DecimalsOutOfRange {
+                actual: decimals,
+                max: alloy_primitives::utils::Unit::MAX.get(),
+            }
+            .into());
+        }
+        // Scale the whole-unit count up to atomic units by `10^decimals` using
+        // checked arithmetic so an over-`uint256` magnitude fails closed
+        // instead of silently wrapping. `decimals <= 77` here, so the `pow`
+        // itself cannot overflow, but the final multiply by a large `whole`
+        // still can.
+        let scale = U256::from(10u8)
+            .checked_pow(U256::from(decimals))
+            .ok_or(ValidationError::NumericOverflow { field: "amount" })?;
+        let scaled = U256::from(whole)
+            .checked_mul(scale)
+            .ok_or(ValidationError::NumericOverflow { field: "amount" })?;
+        Ok(Self(scaled))
+    }
+
+    /// Formats this atomic amount as a human-readable decimal string scaled by
+    /// `decimals` (for example `format_units(18)` on
+    /// `1_000_000_000_000_000_000` atoms returns `"1.000000000000000000"`).
+    ///
+    /// The inverse of [`Amount::parse_units`] for a given `decimals`: trailing
+    /// zeroes in the fractional part are preserved (the fractional substring
+    /// length always equals `decimals`), so the output round-trips back through
+    /// `parse_units`. This intentionally differs from viem/ethers `formatUnits`,
+    /// which trims to `"1.0"`. A `decimals` of `0` returns the bare integer;
+    /// values above `77` are clamped to `77`
+    /// ([`alloy_primitives::utils::Unit::MAX`]).
+    #[must_use]
+    pub fn format_units(&self, decimals: u8) -> String {
+        if decimals == 0 {
+            return self.0.to_string();
+        }
+        let unit = alloy_primitives::utils::Unit::new(decimals)
+            .unwrap_or(alloy_primitives::utils::Unit::MAX);
+        alloy_primitives::utils::ParseUnits::U256(self.0).format_units(unit)
+    }
 }
 
 impl From<U256> for Amount {
@@ -386,235 +568,6 @@ impl<'de> Deserialize<'de> for Amount {
         validate_strict_decimal_unsigned("amount", value.as_ref())
             .map_err(serde::de::Error::custom)?;
         Self::new(value.as_ref()).map_err(serde::de::Error::custom)
-    }
-}
-
-/// Decimal-aware token amount pairing an atomic quantity with a decimals scale.
-///
-/// `DecimalAmount` keeps the authoritative storage in atoms so settlement
-/// arithmetic stays exact, while exposing the decimals scale for display
-/// and human-oriented conversion paths. Wire formats continue to carry the
-/// atomic value as a base-10 string; this type is intended for in-process
-/// typing and ergonomic conversions rather than transport.
-#[non_exhaustive]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct DecimalAmount {
-    atoms: U256,
-    decimals: u8,
-}
-
-impl DecimalAmount {
-    /// Maximum representable decimals scale.
-    ///
-    /// `77` is the largest exponent for which `10^decimals` fits in the
-    /// inner `uint256` storage that [`DecimalAmount::to_decimal_string`]
-    /// uses to derive the integer/fractional split: `10^77 < 2^256 - 1`
-    /// while `10^78` overflows. Every ERC-20 token across the
-    /// supported chains ships `decimals <= 18`, so the bound is
-    /// structurally satisfied in practice; the constant is the
-    /// canonical accessor for boundary-aware callers and the public
-    /// contract that `DecimalAmount::new`,
-    /// [`DecimalAmount::from_atoms`], and
-    /// [`DecimalAmount::from_whole_approx`] all enforce at
-    /// construction.
-    pub const MAX_DECIMALS: u8 = 77;
-
-    /// Creates a decimal-aware amount from an atomic quantity and decimals scale.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`CoreError`] (via
-    /// [`ValidationError::DecimalsOutOfRange`]) when `decimals` exceeds
-    /// [`DecimalAmount::MAX_DECIMALS`].
-    #[inline]
-    pub const fn new(atoms: U256, decimals: u8) -> Result<Self, CoreError> {
-        if decimals > Self::MAX_DECIMALS {
-            return Err(CoreError::Validation(ValidationError::DecimalsOutOfRange {
-                actual: decimals,
-                max: Self::MAX_DECIMALS,
-            }));
-        }
-        Ok(Self { atoms, decimals })
-    }
-
-    /// Creates a decimal-aware amount from a raw [`alloy_primitives::U256`]
-    /// atomic quantity and a decimals scale.
-    ///
-    /// Equivalent to [`DecimalAmount::new`]; preserved as the named
-    /// constructor for callsites that prefer the explicit
-    /// "atoms + decimals" shape.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`CoreError`] when `decimals` exceeds
-    /// [`DecimalAmount::MAX_DECIMALS`].
-    #[inline]
-    pub const fn from_atoms(atoms: U256, decimals: u8) -> Result<Self, CoreError> {
-        Self::new(atoms, decimals)
-    }
-
-    /// Creates an approximate decimal-aware amount from a whole-unit
-    /// floating-point value.
-    ///
-    /// Non-finite or negative whole-unit inputs clamp to zero atoms (with
-    /// the requested decimals scale preserved). The conversion is lossy
-    /// beyond `f64` precision and is intended for display or user-input
-    /// flows rather than settlement arithmetic.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`CoreError`] when `decimals` exceeds
-    /// [`DecimalAmount::MAX_DECIMALS`]. The whole-unit value itself is
-    /// always accepted (non-finite and negative inputs clamp to zero
-    /// atoms rather than failing).
-    pub fn from_whole_approx(whole_units: f64, decimals: u8) -> Result<Self, CoreError> {
-        if decimals > Self::MAX_DECIMALS {
-            return Err(CoreError::Validation(ValidationError::DecimalsOutOfRange {
-                actual: decimals,
-                max: Self::MAX_DECIMALS,
-            }));
-        }
-        if !whole_units.is_finite() || whole_units < 0.0 {
-            return Ok(Self {
-                atoms: U256::ZERO,
-                decimals,
-            });
-        }
-        let scale = 10f64.powi(i32::from(decimals));
-        let atoms_f = whole_units * scale;
-        #[allow(
-            clippy::cast_precision_loss,
-            reason = "the clamp bounds the value by u128::MAX as f64 before the lossy truncation"
-        )]
-        let upper_bound = u128::MAX as f64;
-        let bounded = atoms_f.clamp(0.0, upper_bound);
-        #[allow(
-            clippy::cast_possible_truncation,
-            clippy::cast_sign_loss,
-            reason = "the clamp restricts the input to the non-negative u128 range before truncation"
-        )]
-        let atoms_u128 = bounded as u128;
-        Ok(Self {
-            atoms: U256::from(atoms_u128),
-            decimals,
-        })
-    }
-
-    /// Returns a borrow of the raw atomic quantity.
-    #[inline]
-    #[must_use]
-    pub const fn atoms(&self) -> &U256 {
-        &self.atoms
-    }
-
-    /// Consumes the decimal amount and returns the raw atomic quantity.
-    #[inline]
-    #[must_use]
-    pub const fn into_atoms(self) -> U256 {
-        self.atoms
-    }
-
-    /// Returns the configured decimals scale.
-    #[inline]
-    #[must_use]
-    pub const fn decimals(&self) -> u8 {
-        self.decimals
-    }
-
-    /// Returns an approximate floating-point whole-unit value for display.
-    ///
-    /// The conversion is lossy beyond `f64` precision and should not be used
-    /// for settlement arithmetic.
-    #[must_use]
-    pub fn to_f64_approx(&self) -> f64 {
-        let atoms_str = self.atoms.to_string();
-        let atoms_f: f64 = atoms_str.parse().unwrap_or(f64::NAN);
-        let scale = 10f64.powi(i32::from(self.decimals));
-        atoms_f / scale
-    }
-
-    /// Returns the canonical decimal-string form of this amount with the
-    /// decimal point inserted at the configured `decimals` position.
-    ///
-    /// The `decimals > 0` arm renders the canonical decimal-point form
-    /// through [`alloy_primitives::utils::format_units`], which splits
-    /// `self.atoms` against `10^self.decimals` and pads the fractional
-    /// substring to length `self.decimals`. The output is exact up to
-    /// the full `uint256` storage range.
-    ///
-    /// **Trailing zeroes in the fractional portion are preserved**: the
-    /// fractional substring length always equals `self.decimals`, so the
-    /// emitted string can be parsed back into the original
-    /// `(atoms, decimals)` pair by any external lossless decimal parser
-    /// without ambiguity. When `self.decimals == 0` the integer form is
-    /// returned unchanged (no decimal point).
-    ///
-    /// This format intentionally differs from the JavaScript ecosystem's
-    /// `formatUnits` helper (ethers, viem, and the cow-protocol services
-    /// utility chain), which trims trailing zeros: `formatUnits(1e18, 18)`
-    /// returns `"1.0"`, while [`DecimalAmount::to_decimal_string`] on the
-    /// same value returns `"1.000000000000000000"`. The cow format
-    /// preserves the full fractional precision so the
-    /// `(integer, fractional)` digit pair is byte-identical to the
-    /// underlying `(atoms, decimals)`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use alloy_primitives::U256;
-    /// use cow_sdk_core::DecimalAmount;
-    ///
-    /// // Integer form (zero decimals) — no decimal point.
-    /// let answer = DecimalAmount::from_atoms(U256::from(42u8), 0).unwrap();
-    /// assert_eq!(answer.to_decimal_string(), "42");
-    ///
-    /// // Canonical 1 ether — trailing zeros preserved (ethers/viem
-    /// // `formatUnits(1e18, 18)` would return `"1.0"`).
-    /// let one_ether = DecimalAmount::from_atoms(
-    ///     U256::from(1_000_000_000_000_000_000u128),
-    ///     18,
-    /// )
-    /// .unwrap();
-    /// assert_eq!(one_ether.to_decimal_string(), "1.000000000000000000");
-    ///
-    /// // Small atoms, large decimals — fractional length always equals decimals.
-    /// let smallest = DecimalAmount::from_atoms(U256::from(1u8), 18).unwrap();
-    /// assert_eq!(smallest.to_decimal_string(), "0.000000000000000001");
-    /// ```
-    ///
-    /// # Panics
-    ///
-    /// Cannot panic in practice. [`DecimalAmount::new`],
-    /// [`DecimalAmount::from_atoms`], and
-    /// [`DecimalAmount::from_whole_approx`] all reject `decimals` values
-    /// above [`DecimalAmount::MAX_DECIMALS`] at construction time, and
-    /// [`DecimalAmount::MAX_DECIMALS`] equals
-    /// `alloy_primitives::utils::Unit::MAX`, so every
-    /// `(self.atoms, self.decimals)` pair this method observes is
-    /// inside the range
-    /// [`alloy_primitives::utils::format_units`] accepts. The `expect`
-    /// call is belt-and-braces: it preserves an explicit panic
-    /// location should a future constructor surface bypass the
-    /// boundary without re-validating.
-    #[must_use]
-    #[track_caller]
-    pub fn to_decimal_string(&self) -> String {
-        if self.decimals == 0 {
-            return self.atoms.to_string();
-        }
-        // SAFETY: `DecimalAmount::new`, `from_atoms`, and
-        // `from_whole_approx` all reject `decimals > MAX_DECIMALS == 77`
-        // at construction time, and `MAX_DECIMALS == 77` matches the
-        // `alloy_primitives::utils::Unit::MAX` ceiling, so the
-        // `format_units` call is structurally infallible. The `expect`
-        // retains an explicit panic location should a future
-        // constructor surface bypass the boundary without re-validating.
-        // The trailing-zero preservation contract (fractional substring
-        // length always equals `self.decimals`) is pinned by
-        // `crates/core/tests/types_contract.rs` and the four invariants
-        // in `crates/core/tests/property_contract.rs`.
-        alloy_primitives::utils::format_units(self.atoms, self.decimals)
-            .expect("decimals <= MAX_DECIMALS == Unit::MAX == 77; format_units cannot fail")
     }
 }
 

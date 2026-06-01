@@ -64,7 +64,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         sample_buy_token(),
         sample_owner(),
         OrderQuoteSide::sell(
-            Amount::new("100000000000000000").expect("example quote amount must remain valid"),
+            Amount::parse_units("0.1", 18).expect("example quote amount must remain valid"),
         ),
     )
     .with_price_quality(PriceQuality::Optimal);

@@ -99,7 +99,7 @@ let params = TradeParameters::new(
     OrderKind::Sell,
     weth,
     usdc,
-    Amount::from(1_000_000_000_000_000_000u128),
+    Amount::from_units(1, 18)?,
 )
 .with_owner(Address::new("0x76b0340e50BD9883D8B2CA5fd9f52439a9e7Cf58")?);
 

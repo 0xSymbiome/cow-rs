@@ -14,6 +14,36 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Added
 
+- `cow_sdk_core::Amount::parse_units(value, decimals)` and
+  `Amount::format_units(decimals)` are the exact decimal token-amount
+  construction and display surface — the typed Rust analogues of viem's
+  `parseUnits` / `formatUnits`. `parse_units` scales a human-decimal string
+  by `10^decimals` with integer arithmetic only (never `f64`, so the result
+  is exact), truncating fractional digits beyond `decimals` to the orderbook
+  atomic-unit contract; `format_units` is its inverse and preserves trailing
+  fractional zeros so the pair round-trips byte-exactly (it intentionally does
+  not trim to `"1.0"` the way the JavaScript helper does). Both delegate to
+  `alloy_primitives::utils::{parse_units, format_units}` but `parse_units`
+  pre-guards the two inputs alloy is fail-open on — it rejects empty or
+  whitespace-only input with `CoreError`/`ValidationError::EmptyField` (alloy
+  returns `Ok(0)`) and a leading `+`/`-` sign with `ValidationError::InvalidNumeric`
+  (a leading `-` would otherwise route to alloy's signed arm and widen into a
+  huge positive through two's-complement) — and rejects `decimals > 77`
+  (`alloy_primitives::utils::Unit::MAX`) with `ValidationError::DecimalsOutOfRange`.
+  Recorded as `PROP-CORE-018` and `PROP-CORE-019` in `PROPERTIES.md`. Governed
+  by [ADR 0011](docs/adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md).
+- `cow_sdk_core::Amount::from_units(whole, decimals)` is the exact numeric
+  (no-string) token-amount constructor — the integer companion to
+  `Amount::parse_units`. It scales a `u128` whole-unit count by `10^decimals`
+  with checked integer arithmetic (never a string round-trip, never `f64`),
+  rejecting `decimals > 77` (`alloy_primitives::utils::Unit::MAX`) with
+  `ValidationError::DecimalsOutOfRange` and an over-`uint256` product with
+  `ValidationError::NumericOverflow`, so a whole-token amount already held as
+  an integer (for example `Amount::from_units(1000, 6)` for 1000 USDC) needs
+  neither a decimal string nor hand-counted zeros. It agrees byte-for-byte
+  with `parse_units` on the same whole number. Recorded as `PROP-CORE-021` in
+  `PROPERTIES.md`. Governed by
+  [ADR 0011](docs/adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md).
 - `cow-sdk-wasm` resolves its read and quote methods to typed DTOs across the
   JavaScript surface. `OrderBookClient.getOrder` returns `OrderDto`,
   `getOrders` / `getOrdersByOwner` return `OrderDto[]`, `getTrades` returns
@@ -443,6 +473,17 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Removed
 
+- Removed the unused `cow_sdk_core::DecimalAmount` type and its
+  `from_whole_approx`, `to_f64_approx`, and `from_atoms` surface. The
+  decimals-paired wrapper carried an `f64`-lossy approximation seam
+  (`from_whole_approx` / `to_f64_approx`) and was not on any shipped
+  consumer journey — token-decimal construction and display are now the
+  exact, integer-only `cow_sdk_core::Amount::parse_units` and
+  `Amount::format_units` added above. The `decimals > 77` construction
+  gate that lived on the removed type is preserved on `Amount::parse_units`
+  through the retained `ValidationError::DecimalsOutOfRange` variant.
+  Governed by
+  [ADR 0011](docs/adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md).
 - Removed the client-side IPFS upload seam from `cow-sdk-app-data`: the
   `pin_json_in_pinata_ipfs` helper, the `IpfsUploadTransport` trait, the
   `TransportResponse` type, the `DEFAULT_IPFS_WRITE_URI` constant, the
@@ -756,9 +797,9 @@ The first functional crate-family release begins at `0.1.0`.
   `cow_sdk_wasm::SwapParametersInput` and
   `cow_sdk_wasm::LimitTradeParametersInput`. The generated TypeScript
   declaration snapshots are refreshed in the same change set.
-  `cow_sdk_core::DecimalAmount` remains the canonical
-  typed-amount-boundary home for token decimals across display and
-  user-input flows per
+  `cow_sdk_core::Amount::parse_units` and `Amount::format_units` are the
+  canonical typed-amount-boundary surface for token decimals across
+  user-input and display flows per
   [ADR 0011](docs/adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md).
   Callers that previously passed positional `u8` decimal arguments
   drop those arguments at the call site.
@@ -3184,11 +3225,12 @@ The first functional crate-family release begins at `0.1.0`.
   services checkout, and the covered orderbook DTO inventory remains
   unchanged.
 
-- Release provenance records `code_hash` confirmation for `Settlement`,
-  `VaultRelayer`, and `EthFlow` rows on chain IDs `1`, `56`, `100`, `137`,
-  `8453`, `9745`, `42161`, `43114`, `57073`, `59144`, and `11155111`;
-  registry confirmation remains the release-readiness gate for chain
-  deployment availability.
+- Release readiness confirms each recorded deployment is live on-chain
+  through a read-only `eth_getCode` presence probe guarded per RPC by
+  `eth_chainId`; trust rests on the pinned `source_commit` and the
+  deterministic CREATE2 address rather than a committed code hash, and the
+  probe never mutates committed evidence. Registry confirmation remains the
+  release-readiness gate for chain deployment availability.
 
 - Refreshed `docs/audit/dependency-gate-audit.md` for the lockfile,
   `cargo-deny`, `cargo-audit`, and duplicate-version posture.
