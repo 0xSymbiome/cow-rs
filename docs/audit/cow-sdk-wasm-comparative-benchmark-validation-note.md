@@ -119,7 +119,7 @@ triggers above.
 | Flavor | cow-sdk-wasm brotli (total package) | Upstream TS SDK brotli (esbuild-bundled subset) | Ratio |
 | --- | --- | --- | --- |
 | default | ~886 KiB | ~57 KB | ~15.6× |
-| orderbook | ~371 KiB | ~52 KB | ~7.1× |
+| orderbook | ~372 KiB | ~52 KB | ~7.1× |
 | signing | ~173 KiB | ~54 KB | ~3.2× |
 
 The dominant term is the wasm payload (the brotli sizes the size gate enforces,
@@ -138,7 +138,7 @@ Workers compatibility.
 ### Cloudflare Workers script-size tier
 
 The `cloudflare` flavor's gzip-compressed wasm artifact at the time of
-measurement is approximately **1,236,448 bytes** (about 1.18 MB).
+measurement is approximately **1,237,070 bytes** (about 1.18 MB).
 
 Per Cloudflare's published Workers limits at
 `https://developers.cloudflare.com/workers/platform/limits/` (verified at the

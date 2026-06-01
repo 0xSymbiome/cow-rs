@@ -2695,10 +2695,10 @@ export interface InitOutput {
     readonly tradingclient_postSwapOrderWithEip1271: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
     readonly validateAppDataDoc: (a: number, b: number) => void;
     readonly wasmVersion: (a: number) => void;
-    readonly __wasm_bindgen_func_elem_12534: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_12542: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_12529: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_12537: (a: number, b: number, c: number, d: number) => void;
     readonly __wasm_bindgen_func_elem_1380: (a: number, b: number, c: number) => number;
-    readonly __wasm_bindgen_func_elem_11761: (a: number, b: number) => void;
+    readonly __wasm_bindgen_func_elem_11757: (a: number, b: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;

@@ -162,7 +162,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
       - name: Install wasm-pack
-        run: cargo install wasm-pack --version 0.14.0 --locked
+        run: cargo install wasm-pack --version 0.15.0 --locked
       - name: Build wasm flavour target
         env:
           WASM_FLAVOUR: ${{ matrix.flavour }}
@@ -367,7 +367,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
       - name: Install wasm-pack
-        run: cargo install wasm-pack --version 0.14.0 --locked
+        run: cargo install wasm-pack --version 0.15.0 --locked
       # Source ref: browser-actions/setup-firefox@v1.7.2
       - name: Set up Firefox
         # The earlier `--release` plus disk-reclaim plus 12 GB swap plus
