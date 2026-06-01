@@ -26,7 +26,7 @@ fragments, ADR replacement, or generic cleanup diaries.
 | Fix review | `<surface>-fix-review.md` | Focused public follow-up when previously reviewed findings are remediated |
 | Validation note | `<surface>-validation-note.md` | Narrow public confirmation record for an assurance point smaller than a full audit |
 
-The current public set is 56 standing audits, 1 fix review, and 1 validation note.
+The current public set is 62 standing audits, 1 fix review, and 1 validation note.
 
 ## Status Model
 
@@ -113,6 +113,7 @@ If the reviewed surface did not change, leave the audit alone.
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
 | [WASM Surface Audit](wasm-surface-audit.md) | Standing audit | `cow-sdk-wasm` TypeScript-callable crate, npm package layout, and callback runtime boundary | Pure-helper layering, runtime support matrix, JavaScript callback HTTP transport, facade package exports, and error posture | Current | 2026-05-29 |
+| [WASM Capability Coverage Audit](wasm-capability-coverage-audit.md) | Standing audit | `cow-sdk-wasm` capability coverage relative to the native `cow-rs` SDK crates | Per-crate mapping of native `orderbook`, `trading`, `signing`, `contracts`, `app-data`, and `subgraph` operations to `cow-sdk-wasm` exports, workflow-scope coverage, the classification of every non-surfaced native capability, and the native-Rust-to-TypeScript shape correspondence | Current | 2026-06-01 |
 | [WASM Type Generation Audit](wasm-type-generation-audit.md) | Standing audit | `cow-sdk-wasm` DTO exports and TypeScript declarations | tsify policy, host-gating rule, raw and facade declaration snapshots, map-typed DTO field alignment, and package export verification | Current | 2026-05-29 |
 | [WASM EIP-1271 Parity Audit](wasm-eip1271-parity-audit.md) | Standing audit | `cow-sdk-wasm` EIP-1271 payload helpers and smart-account signing callbacks | Native Rust and upstream TypeScript SDK vector parity, facade-resolves-callback contract, callback capability split, and UID/digest string reuse | Current | 2026-05-11 |
 | [WASM Component Model Future Prep Audit](wasm-component-model-future-prep-audit.md) | Standing audit | `cow-sdk-pure-helpers` host-safe helper crate and deterministic helper boundary | Pure-helper crate extraction, JavaScript FFI exclusion, host parity tests, and future adapter readiness without claiming component packaging | Current | 2026-05-13 |
