@@ -119,9 +119,10 @@ startup limit. Cloudflare's published platform limits are at
 ## TypeScript Declarations
 
 All DTOs that cross the wasm ABI are represented in TypeScript declarations.
-The committed declaration snapshots for the web, bundler, and nodejs targets
-live under `crates/wasm/snapshots/raw/` and are compared during validation so
-export drift is visible. The package export verification script also checks
+The committed declaration snapshots for the bundler and nodejs targets, plus
+the web target for the Cloudflare flavor, live under
+`crates/wasm/snapshots/raw/` and are compared during validation so export drift
+is visible. The package export verification script also checks
 that every exported target exists and that declaration files carry the required
 TypeScript library references.
 

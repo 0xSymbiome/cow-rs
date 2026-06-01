@@ -1,7 +1,7 @@
 # cow-sdk-wasm Comparative Benchmark Validation Note
 
 Status: Current
-Last reviewed: 2026-05-22
+Last reviewed: 2026-06-01
 Owning surface: `cow-sdk-wasm` crate and npm package
 Refresh trigger:
 - `cow-sdk-wasm` flavor feature change (added, removed, re-scoped)
@@ -105,7 +105,10 @@ It does not cover:
 `cow-sdk-wasm` ships four feature-scoped flavor builds (default, orderbook,
 signing, cloudflare) from a single npm package. The total package size
 (wasm + JavaScript glue + compiled TypeScript facade) at brotli quality 11 is
-documented below for each flavor's `web` target subpath.
+documented below for each flavor's package subpath. The wasm payload is
+identical across the `bundler`, `web`, and `nodejs` targets, so these sizes are
+target-independent; the `default`, `orderbook`, and `signing` facades are backed
+by the `bundler` build and the Cloudflare facade by the `web` build.
 
 For comparison, the upstream `@cowprotocol/cow-sdk` packages were built (via
 tsup) and bundled (via esbuild in production mode, browser target with Node
@@ -113,11 +116,17 @@ built-ins externalized) for the equivalent feature subsets. The comparison
 is documented at the time of measurement and is subject to the refresh
 triggers above.
 
-| Flavor (web target) | cow-sdk-wasm brotli (total package) | Upstream TS SDK brotli (esbuild-bundled subset) | Ratio |
+| Flavor | cow-sdk-wasm brotli (total package) | Upstream TS SDK brotli (esbuild-bundled subset) | Ratio |
 | --- | --- | --- | --- |
-| default | ~826 KiB | ~57 KB | ~14.5× |
-| orderbook | ~353 KiB | ~52 KB | ~6.8× |
-| signing | ~178 KiB | ~54 KB | ~3.3× |
+| default | ~886 KiB | ~57 KB | ~15.6× |
+| orderbook | ~371 KiB | ~52 KB | ~7.1× |
+| signing | ~173 KiB | ~54 KB | ~3.2× |
+
+The dominant term is the wasm payload (the brotli sizes the size gate enforces,
+reproducible with `measure-wasm-size.mjs`); the wasm-bindgen glue and compiled
+TypeScript facade add roughly 10-15 KiB brotli per flavor. The wasm payload grew
+across all flavors as the typed DTO and client surface expanded, which is the
+primary driver of the totals above.
 
 Compiling the Rust SDK to wasm32 produces a binary larger than the upstream
 TypeScript SDK at equivalent feature subsets. The bundle-size delta is the
@@ -129,7 +138,7 @@ Workers compatibility.
 ### Cloudflare Workers script-size tier
 
 The `cloudflare` flavor's gzip-compressed wasm artifact at the time of
-measurement is approximately **1,096,488 bytes** (about 1.05 MB).
+measurement is approximately **1,236,448 bytes** (about 1.18 MB).
 
 Per Cloudflare's published Workers limits at
 `https://developers.cloudflare.com/workers/platform/limits/` (verified at the

@@ -1,7 +1,7 @@
 # WASM EIP-1271 Parity Audit
 
 Status: Current
-Last reviewed: 2026-05-11
+Last reviewed: 2026-06-01
 Owning surface: `cow-sdk-wasm` EIP-1271 payload helpers and smart-account signing callbacks
 Refresh trigger: Changes to EIP-1271 payload construction, smart-account callback shapes, UID/digest string handling, signature normalization, or upstream parity fixtures
 Related docs:
@@ -77,7 +77,7 @@ Primary regression coverage:
 - `crates/wasm/tests/wasm_eip1271_contract.rs::eip1271_payload_matches_recorded_typescript_sdk_vector`
 - `crates/wasm/tests/wasm_eip1271_contract.rs::sign_order_with_eip1271_uid_equals_generated_order_id_as_str`
 - `crates/wasm/tests/wasm_eip1271_contract.rs::custom_eip1271_callback_signature_is_used_verbatim`
-- `crates/wasm/tests/wasm_eip1271_contract.rs::resolved_eip1271_provider_is_send_sync_without_jsvalue`
+- `crates/wasm/src/exports/eip1271.rs` (compile-time `Send + Sync` assertion on `ResolvedEip1271Provider`)
 - `e2e/wasm-typescript/tests/eip1271.spec.ts`
 
 Validation surface:

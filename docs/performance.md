@@ -74,11 +74,10 @@ surface that covers their workflow.
 
 | Flavor | Public import | Raw wasm | Brotli | Gzip | Release gate |
 | --- | --- | ---: | ---: | ---: | --- |
-| default | `<published-cow-sdk-wasm-package>` | 2.97 MiB | 790 KiB | 1129 KiB | 3.0 MiB raw / 800 KiB brotli |
-| orderbook | `<published-cow-sdk-wasm-package>/orderbook` | 0.98 MiB | 321 KiB | 426 KiB | 1.5 MiB raw / 500 KiB brotli |
-| signing | `<published-cow-sdk-wasm-package>/signing` | 0.43 MiB | 150 KiB | 183 KiB | 0.9 MiB raw / 300 KiB brotli |
-| full | `<published-cow-sdk-wasm-package>/full` | 2.97 MiB | 790 KiB | 1129 KiB | 3.0 MiB raw / 1000 KiB brotli |
-| cloudflare | `<published-cow-sdk-wasm-package>/cloudflare` | 2.88 MiB | 768 KiB | 1095 KiB | 3.0 MiB raw / 800 KiB brotli / 3,000,000 B gzip (warn at 2,700,000 B) |
+| default | `<published-cow-sdk-wasm-package>` | 3.23 MiB | 872 KiB | 1243 KiB | 3.3 MiB raw / 900 KiB brotli |
+| orderbook | `<published-cow-sdk-wasm-package>/orderbook` | 1.13 MiB | 360 KiB | 481 KiB | 1.5 MiB raw / 500 KiB brotli |
+| signing | `<published-cow-sdk-wasm-package>/signing` | 0.50 MiB | 165 KiB | 203 KiB | 0.9 MiB raw / 300 KiB brotli |
+| cloudflare | `<published-cow-sdk-wasm-package>/cloudflare` | 3.14 MiB | 849 KiB | 1208 KiB | 3.2 MiB raw / 850 KiB brotli / 3,000,000 B gzip (warn at 2,700,000 B) |
 
 The raw and compressed measurements above come from the current package build
 pipeline after optimization. The gate values are enforced per flavor so the

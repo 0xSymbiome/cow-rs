@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-05-11
-- Last reviewed: 2026-05-22
+- Last reviewed: 2026-06-01
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: wasm, npm, bundle-size, package-flavors
 - Related: [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), [ADR 0047](0047-typescript-facade-architecture.md)
@@ -39,6 +39,14 @@ recommended choice.
 - Flavor subpaths are public package exports, not deep `dist/raw` paths.
 - Cloudflare Workers use a web-target facade plus a precompiled wasm module
   subpath.
+- The standalone `web` target is built only for the Cloudflare flavor. The
+  `default`, `orderbook`, and `signing` flavors ship the `bundler` and `nodejs`
+  targets only: their facade ESM and CommonJS entries consume the `bundler` and
+  `nodejs` raw builds respectively, so a standalone `web` build for those flavors
+  is unreferenced by any package export and is not produced. Browser consumers
+  resolve the ESM facade entry through a bundler; a bundler-free browser entry
+  for those flavors would come from the wasm-bindgen source-phase `module`
+  target, tracked as a future addition rather than shipped today.
 - Package verification proves every exported JavaScript and declaration target
   exists.
 - Size measurement is tied to the generated package artifacts and can fail the

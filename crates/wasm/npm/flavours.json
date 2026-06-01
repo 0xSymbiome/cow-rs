@@ -12,7 +12,7 @@
         "trading",
         "subgraph"
       ],
-      "targets": ["web", "bundler", "nodejs"],
+      "targets": ["bundler", "nodejs"],
       "rawBudgetMiB": 3.3,
       "brotliBudgetKiB": 900,
       "gzipFailBytes": 1300000,
@@ -27,7 +27,7 @@
         "cancellation",
         "transport-policy"
       ],
-      "targets": ["web", "bundler", "nodejs"],
+      "targets": ["bundler", "nodejs"],
       "rawBudgetMiB": 1.5,
       "brotliBudgetKiB": 500,
       "gzipFailBytes": 610000,
@@ -37,7 +37,7 @@
     {
       "name": "signing",
       "features": ["signing"],
-      "targets": ["web", "bundler", "nodejs"],
+      "targets": ["bundler", "nodejs"],
       "rawBudgetMiB": 0.9,
       "brotliBudgetKiB": 300,
       "gzipFailBytes": 370000,

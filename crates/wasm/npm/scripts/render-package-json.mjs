@@ -69,7 +69,11 @@ function flavourExport(flavour) {
     };
   }
 
-  if (flavour.targets.includes("web")) {
+  // The browser condition points at the facade ESM entry (`index.mjs`), which is
+  // independent of which raw wasm-bindgen target produced it. Emit it for any flavour
+  // that has a browser-capable ESM build (`bundler` or `web`) so the published exports
+  // map is unchanged when a flavour ships only `bundler`+`nodejs` (no standalone `web`).
+  if (flavour.targets.includes("web") || flavour.targets.includes("bundler")) {
     entry.browser = {
       types: facadeDeclarationPath(flavour),
       import: facadeModulePath(flavour)

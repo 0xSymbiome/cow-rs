@@ -1,7 +1,7 @@
 # WASM Performance Budget Audit
 
 Status: Current
-Last reviewed: 2026-05-22
+Last reviewed: 2026-06-01
 Owning surface: `cow-sdk-wasm` release profile, wasm optimization pass, flavor build outputs, and size-budget gate
 Refresh trigger: Changes to wasm feature flavors, package build scripts, release profile size settings, wasm optimization flags, package export targets, or measured size budgets; Cloudflare Workers compressed-size limit changes
 Related docs:
@@ -40,7 +40,11 @@ application bundler behavior.
 The package keeps one installable package while exposing flavor-specific public
 subpaths. Default, orderbook, signing, and Cloudflare outputs have their
 own declarations and raw wasm snapshots. Public imports use those subpaths
-instead of generated `dist/raw` paths.
+instead of generated `dist/raw` paths. The `bundler` and `nodejs` raw builds
+back every flavor's facade ESM and CommonJS entries; the standalone `web` raw
+build is produced and snapshotted only for the Cloudflare flavor, since the
+`default`, `orderbook`, and `signing` web builds were referenced by no package
+export and are no longer built.
 
 ### Size Gate
 

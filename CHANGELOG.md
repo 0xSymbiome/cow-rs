@@ -246,6 +246,14 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- `cow-sdk-wasm` no longer builds the standalone `web` target for the `default`,
+  `orderbook`, and `signing` flavors. Those flavors' facade ESM and CommonJS
+  entries are backed by the `bundler` and `nodejs` raw builds, so their
+  standalone `web` builds were referenced by no package export; the `web` target
+  is retained for the Cloudflare flavor, which needs it for the Worker
+  precompiled-module initialization. The published package export map is
+  unchanged. Governed by
+  [ADR 0044](docs/adr/0044-bundle-size-profile-and-flavor-builds.md).
 - `cow_sdk::prelude` no longer re-exports `AppCodeError`; reach it through
   `cow_sdk::core::AppCodeError`. The prelude keeps the `AppCode` value type and
   stays focused on the common quote, sign, post, and error-handling workflow
