@@ -77,6 +77,38 @@ Owner attribution lives on the per-trade `TradeParameters` (or
 signer-backed flows the signer's address fills the slot when
 `TradeParameters.owner` is `None`.
 
+## Quoting a swap
+
+Quoting is the lowest-friction action and needs no signer — the owner comes
+from `TradeParameters`:
+
+```rust,no_run
+use cow_sdk_core::{Address, Amount, OrderKind, SupportedChainId};
+use cow_sdk_trading::{TradeParameters, TradingBuilder, TradingOptions};
+
+# async fn run() -> Result<(), Box<dyn std::error::Error>> {
+let sdk = TradingBuilder::ready(
+    cow_sdk_trading::TraderParameters::new(SupportedChainId::Mainnet, "your-app-code")?,
+    TradingOptions::default(),
+)?;
+
+// Sell 1 WETH for USDC.
+let weth = Address::new("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2")?;
+let usdc = Address::new("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48")?;
+let params = TradeParameters::new(
+    OrderKind::Sell,
+    weth,
+    usdc,
+    Amount::from(1_000_000_000_000_000_000u128),
+)
+.with_owner(Address::new("0x76b0340e50BD9883D8B2CA5fd9f52439a9e7Cf58")?);
+
+let quote = sdk.get_quote_only(params, None).await?;
+println!("suggested slippage (bps): {}", quote.suggested_slippage_bps);
+# Ok(())
+# }
+```
+
 ## Waiting for mined receipts
 
 For workflows that need to observe mined success or revert status before

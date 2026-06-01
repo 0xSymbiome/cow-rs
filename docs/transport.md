@@ -251,11 +251,24 @@ each request can still set its own cancellation and latency boundary.
 Every transport adapter funnels failures into the same typed enum:
 
 ```rust,ignore
+#[non_exhaustive]
 pub enum TransportError {
-    Transport { class: TransportErrorClass, detail: String },
-    Configuration { message: String },
+    Transport { class: TransportErrorClass, detail: Redacted<String> },
+    Configuration { message: Redacted<String> },
+    HttpStatus {
+        status: u16,
+        headers: Vec<(String, Redacted<String>)>,
+        body: Redacted<String>,
+    },
 }
 ```
+
+The detail, message, and body strings are `Redacted<String>`, so any URL or
+secret is stripped before the error is constructed. The `HttpStatus` variant
+carries the numeric status, response headers, and body together, letting the
+orderbook and subgraph layers classify a non-2xx response without re-parsing
+rendered error text. The enum is `#[non_exhaustive]`, so downstream `match`
+arms include a wildcard to stay forward-compatible.
 
 `TransportErrorClass` is an exhaustive partition:
 

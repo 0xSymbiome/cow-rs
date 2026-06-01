@@ -11,7 +11,7 @@
 //! - app-data helpers
 //! - trading orchestration
 //!
-//! Top-level docs are trading-first and keep the facade aligned with its package role.
+//! The facade is trading-first: the high-level trading flow is the primary surface.
 //! Optional browser-runtime support does not change the default facade identity.
 //! Browser-wallet support is additive behind the `browser-wallet` feature,
 //! and the full browser-runtime contract stays in `cow-sdk-browser-wallet`.
@@ -30,6 +30,41 @@
 //!     .with_app_code("your-app-code")
 //!     .build_ready()
 //!     .unwrap();
+//! ```
+//!
+//! Once constructed, a single call quotes, signs, and posts a swap. The order
+//! owner defaults to the signer's address:
+//!
+//! ```rust,no_run
+//! # use std::error::Error;
+//! use cow_sdk::prelude::{Address, SupportedChainId, TradeParameters, Trading};
+//! use cow_sdk::core::{Amount, OrderKind};
+//! #
+//! # async fn run<S>(signer: &S) -> Result<(), Box<dyn Error>>
+//! # where
+//! #     S: cow_sdk::core::Signer,
+//! #     S::Error: std::fmt::Display + cow_sdk::core::SignerError,
+//! # {
+//! let sdk = Trading::builder()
+//!     .with_chain_id(SupportedChainId::Sepolia)
+//!     .with_app_code("your-app-code")
+//!     .build_ready()?;
+//!
+//! // Sell 0.1 WETH for COW on Sepolia.
+//! let weth = Address::new("0xfff9976782d46cc05630d1f6ebab18b2324d6b14")?;
+//! let cow = Address::new("0x0625afb445c3b6b7b929342a04a22599fd5dbb59")?;
+//! let params = TradeParameters::new(
+//!     OrderKind::Sell,
+//!     weth,
+//!     cow,
+//!     Amount::from(100_000_000_000_000_000u128),
+//! );
+//!
+//! // One call quotes, signs with `signer`, and posts to the orderbook.
+//! let posted = sdk.post_swap_order(params, signer, None).await?;
+//! println!("posted order: {}", posted.order_id.to_hex_string());
+//! # Ok(())
+//! # }
 //! ```
 //!
 //! For allowance, approval, pre-sign, or on-chain cancellation helpers that do

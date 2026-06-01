@@ -22,14 +22,37 @@ cow-sdk-orderbook = "0.1"
 
 ## Minimal example
 
-```rust
-use cow_sdk_orderbook::{CowEnv, OrderbookApi, SupportedChainId};
+Build the client with the typestate builder, then request a sell-side quote.
+On native targets `build()` uses the default `reqwest` transport; on `wasm32`
+inject a browser transport with `.transport(...)` before `.build()`.
 
-let _api = OrderbookApi::builder()
-    .chain(SupportedChainId::Sepolia)
+```rust,no_run
+use cow_sdk_orderbook::{
+    Address, Amount, CowEnv, OrderQuoteRequest, OrderQuoteSide, OrderbookApi,
+    SupportedChainId,
+};
+
+# async fn run() -> Result<(), Box<dyn std::error::Error>> {
+let api = OrderbookApi::builder()
+    .chain(SupportedChainId::Mainnet)
     .environment(CowEnv::Prod)
-    .build()
-    .expect("orderbook client builds with canonical defaults");
+    .build()?;
+
+// Sell-side quote for 1 WETH -> USDC.
+let weth = Address::new("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2")?;
+let usdc = Address::new("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48")?;
+let from = Address::new("0x76b0340e50BD9883D8B2CA5fd9f52439a9e7Cf58")?;
+let request = OrderQuoteRequest::new(
+    weth,
+    usdc,
+    from,
+    OrderQuoteSide::sell(Amount::from(1_000_000_000_000_000_000u128)),
+);
+
+let quote = api.get_quote(&request).await?;
+println!("quoted buy amount: {}", quote.quote.buy_amount);
+# Ok(())
+# }
 ```
 
 ## Where to next

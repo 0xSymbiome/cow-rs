@@ -3,6 +3,14 @@
 //! Typed `CoW` Protocol orderbook transport models, request policy, and response
 //! transforms.
 //!
+//! Construct an [`OrderbookApi`] with its typestate builder — `chain` then
+//! `environment` then `build` — and call typed methods such as `get_quote`,
+//! `send_order`, and `get_order`. Failures surface as [`OrderbookError`];
+//! rejected submissions carry a categorized [`OrderbookRejection`]. On native
+//! targets `build` uses the default `reqwest` transport; on `wasm32` inject a
+//! browser transport with `transport(...)` before `build`. A runnable request
+//! example is in the crate README.
+//!
 //! # Parity-scope invariant: quote fee/gas fields are not public builder setters
 //!
 //! The cow-protocol services backend rejects orders that carry a non-zero

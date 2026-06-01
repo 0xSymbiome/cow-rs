@@ -29,15 +29,21 @@ cow-sdk-core = "0.1"
 ## Minimal example
 
 ```rust
-use cow_sdk_core::{Address, SupportedChainId, addresses_equal};
+use cow_sdk_core::{Amount, SupportedChainId, wrapped_native_token};
 
-let address = Address::new("0x1111111111111111111111111111111111111111").unwrap();
-assert_eq!(
-    address.to_hex_string(),
-    "0x1111111111111111111111111111111111111111"
-);
-assert!(addresses_equal(&address, &address));
-let _chain = SupportedChainId::Sepolia;
+// `Amount` is the typed atomic-quantity boundary. `From<u128>` is the
+// ergonomic numeric constructor; the display form is canonical decimal.
+let one_weth = Amount::from(1_000_000_000_000_000_000u128);
+assert_eq!(one_weth.to_string(), "1000000000000000000");
+
+// A chain id drives real configuration: the API path segment used in
+// orderbook base URLs, and the wrapped-native token metadata.
+let chain = SupportedChainId::Mainnet;
+assert_eq!(chain.api_path(), "mainnet");
+
+let weth = wrapped_native_token(chain);
+assert_eq!(weth.symbol, "WETH");
+assert_eq!(weth.decimals, 18);
 ```
 
 ## Where to next

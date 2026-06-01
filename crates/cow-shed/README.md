@@ -12,6 +12,30 @@ CREATE2 init-code hashing routes through `alloy_primitives::keccak256`,
 and EIP-712 typed-data structs (`Call`, `ExecuteHooks`) are macro-emitted
 by `alloy_sol_types::sol!`.
 
+## Example
+
+Derive the deterministic CREATE2 proxy address for a `(version, factory, user)`
+triple. The same inputs always produce the same proxy address:
+
+```rust
+use cow_sdk_cow_shed::{CowShedVersion, ProxyAddress, proxy_of};
+
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let factory: ProxyAddress = "0x312f92fe5f1710408B20D52A374fa29e099cFA86".parse()?;
+let user: ProxyAddress = "0x76b0340e50BD9883D8B2CA5fd9f52439a9e7Cf58".parse()?;
+
+let proxy = proxy_of(CowShedVersion::V1_0_1, factory, user);
+assert_eq!(
+    proxy,
+    "0x66545B93A314e5BdEC9E5Ff9c4D2C7054e6afb04".parse::<ProxyAddress>()?,
+);
+# Ok(())
+# }
+```
+
+Most consumers reach these helpers through the trading facade; depend on this
+crate directly only when building hook or proxy orchestration.
+
 The crate keeps four authorities separated:
 
 - the deployed factory ABI defines factory calldata, including

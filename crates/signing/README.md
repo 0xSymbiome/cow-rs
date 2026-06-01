@@ -22,11 +22,40 @@ cow-sdk-signing = "0.1"
 ## Minimal example
 
 ```rust
-use cow_sdk_core::{CowEnv, ProtocolOptions, SupportedChainId};
-use cow_sdk_signing::domain_separator;
+use cow_sdk_core::{
+    Address, Amount, AppDataHash, BuyTokenDestination, OrderData, OrderKind,
+    SellTokenSource, SupportedChainId,
+};
+use cow_sdk_signing::{generate_order_id, order_typed_data_payload};
 
-let options = ProtocolOptions::new().with_env(CowEnv::Prod);
-let _domain = domain_separator(SupportedChainId::Sepolia, Some(&options)).unwrap();
+# fn main() -> Result<(), Box<dyn std::error::Error>> {
+let owner = Address::new("0x3333333333333333333333333333333333333333")?;
+let order = OrderData::new(
+    Address::new("0x1111111111111111111111111111111111111111")?,
+    Address::new("0x2222222222222222222222222222222222222222")?,
+    owner,
+    Amount::from(1_000_000_000_000_000_000u128),
+    Amount::from(2_000_000_000u128),
+    1_700_000_000,
+    AppDataHash::new(
+        "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    )?,
+    Amount::ZERO,
+    OrderKind::Sell,
+    false,
+    SellTokenSource::Erc20,
+    BuyTokenDestination::Erc20,
+);
+
+// Deterministic order identity — no signing key required.
+let generated = generate_order_id(SupportedChainId::Mainnet, &order, &owner, None)?;
+println!("order uid: {}", generated.order_id.to_hex_string());
+
+// Signer-facing EIP-712 payload, ready to hand to a wallet for signing.
+let payload = order_typed_data_payload(SupportedChainId::Mainnet, &order, None)?;
+assert_eq!(payload.primary_type, "Order");
+# Ok(())
+# }
 ```
 
 ## EIP-712 and EIP-191

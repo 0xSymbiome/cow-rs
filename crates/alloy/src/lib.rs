@@ -17,7 +17,7 @@
 //!     .http("https://example.invalid/rpc")?
 //!     .private_key("0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d")?
 //!     .chain_id(SupportedChainId::Sepolia)
-//!     .build()
+//!     .build_checked()
 //!     .await?;
 //! # let _ = client;
 //! # Ok(())

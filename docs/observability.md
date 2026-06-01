@@ -80,7 +80,7 @@ downstream dashboards can pivot on the same names across every SDK call.
 | `chain_id` | debug | Active chain id on caller spans that wrap lower-level contract helpers |
 | `env` | string | Environment label (`prod` / `staging`) |
 | `endpoint` | string | Stable route identity, GraphQL operation name, or path-only transport endpoint with scheme, authority, query, and fragment stripped |
-| `method` | string | HTTP method (`GET`, `POST`, `DELETE`) for transport calls, or JSON-RPC-like operation name for wallet-mediated calls |
+| `method` | string | HTTP method (`GET`, `POST`, `PUT`, `DELETE`) for transport calls, or JSON-RPC-like operation name for wallet-mediated calls |
 | `bytes_sent` | numeric | Request body byte length on transport-layer spans |
 | `bytes_received` | numeric | Response body byte length on transport-layer spans after a response body is read |
 | `status` | numeric | HTTP status code once a response is received |
@@ -286,8 +286,11 @@ and the retry-event contract is covered by
 ## Error Classification
 
 `cow_sdk::SdkError::class()` returns an `ErrorClass` so telemetry layers
-can partition failures into `Validation`, `Transport`, `Remote`, `Signing`,
-`Cancelled`, and `Internal` buckets without pattern-matching every nested
-variant by hand. Retry policies typically only retry the `Transport` and
-`Remote` classes; the other classes surface caller-side or protocol-level
-conditions that benefit from different recovery paths.
+can partition failures into `Validation`, `Transport`, `Remote`, `RateLimited`,
+`Signing`, `Cancelled`, and `Internal` buckets without pattern-matching every
+nested variant by hand. Retry policies typically only retry the `Transport` and
+`Remote` classes; `RateLimited` means the remote throttled the client past the
+transport's retry budget, and the remaining classes surface caller-side or
+protocol-level conditions that benefit from different recovery paths. The enum
+is `#[non_exhaustive]`, so consumer `match` arms keep a wildcard for future
+classes.
