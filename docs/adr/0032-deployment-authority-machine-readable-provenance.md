@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-29
-- Last reviewed: 2026-05-22
+- Last reviewed: 2026-06-01
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: deployments, provenance, contracts, release
 - Anchors: Principle 1 (supporting); Principle 10 (supporting)
@@ -14,51 +14,61 @@
 `crates/contracts/deployment-provenance.yaml` keeps structured source
 provenance keyed by `(contract_id, chain_id, env)`.
 
-Each provenance entry records the address, authority class, source
-repository, source commit, source path and symbol, and a structured
-`live_confirmation` object. Release-facing live confirmation uses
-`kind: code_hash`, records `code_hash = keccak256(eth_getCode)`, stores
-the RPC chain id, and may include selector probes where the ABI permits.
+Each provenance entry records the address, the `verification` status and
+source, and the source repository, commit, path, and symbol the address was
+taken from. Deployment trust rests on three layers: (1) the pinned
+`source_commit` to an upstream machine-readable manifest (where deployments are
+explorer/Sourcify-verified), (2) the deterministic CREATE2 address, and (3) a
+read-only live presence probe.
 
-`validation-smoke registry-confirm` has two independent axes:
-`--mode local|release` and `--write|--check`. `--write` is the
-maintainer refresh path. `--check` is the read-only CI path. Release mode
-fails when a supported production chain lacks its required RPC endpoint.
+`validation-smoke registry-confirm --mode {local|release}` guards each RPC with
+`eth_chainId` and asserts `eth_getCode` returns non-empty bytecode at every
+recorded address. Release mode fails closed on a missing production-chain RPC or
+an absent deployment. The probe never mutates a file.
+
+Committed per-row code-hash confirmation is **not** used for the current
+contract set: every deployed contract is a non-upgradeable CREATE2 singleton
+whose bytecode at a fixed address cannot change, so a presence probe is the
+appropriate live check. Committed code-hash confirmation is reserved for any
+future upgradeable deployment.
 
 ## Why
 
-A wrong settlement address is a wallet-draining bug. TOML comments and
-free-form release notes are not enough evidence for a deployment registry
-that callers trust. Structured provenance makes every row traceable to a
-source repository and commit, while code-hash confirmation proves the
-committed address resolves to the reviewed bytecode on the expected
-chain.
+A wrong settlement address is a wallet-draining bug. Structured provenance makes
+every row traceable to an upstream repository and pinned commit; the
+deterministic CREATE2 address plus one-time upstream explorer verification
+establish initial correctness; and the live presence probe proves the claimed
+deployment actually exists on-chain. This matches what every upstream CoW
+repository relies on (address + source, no committed code hashes) while adding a
+matrix-driven live check the upstreams lack.
 
-The write/check split keeps evidence authored by maintainers and verified
-by CI. A CI job must never silently rewrite the evidence it is supposed
-to verify.
+A committed per-row code hash would only catch bytecode *substitution* at a fixed
+address — impossible for non-upgradeable CREATE2 singletons — at far higher
+committed-evidence and review cost than any upstream carries, so it is declined
+here.
 
 ## Must Remain True
 
 - Every registry row has one matching provenance entry.
 - Every provenance entry is keyed by `(contract_id, chain_id, env)` with
   no duplicates.
-- `--mode release --check` fails on missing production-chain RPC
-  configuration.
-- `--mode release --check` fails if live recomputation diverges from the
-  committed `code_hash` evidence.
-- `--write` is a maintainer action; release-readiness CI uses `--check`.
-- Live RPC confirms bytecode identity; it never becomes the source of
-  truth for which address should be used.
+- Each row pins a 40-hex `source_commit` to the upstream manifest it came from.
+- `registry-confirm --mode release` fails on a missing production-chain RPC and
+  on a registry row whose `eth_getCode` is empty on the expected chain.
+- The probe is read-only; it never mutates committed evidence.
+- Live RPC confirms a deployment exists; it never becomes the source of truth
+  for which address should be used.
 
 ## Alternatives Rejected
 
-- Keep source provenance in comments beside TOML rows: human-readable,
-  but not parseable or enforceable.
-- Treat `eth_getCode != 0x` as sufficient: proves code exists, not that
-  the reviewed contract is deployed there.
-- Let CI update provenance in release mode: convenient, but erases the
-  review boundary around release evidence.
+- Keep source provenance in comments beside TOML rows: human-readable, but not
+  parseable or enforceable.
+- Commit a per-row `keccak256(eth_getCode)` digest and fail-closed-compare it:
+  strongest in principle, but it guards only bytecode substitution (impossible
+  for this non-upgradeable set) at far higher review/maintenance cost than any
+  upstream carries. Reserved for a future upgradeable deployment.
+- Let CI mutate the manifest in release mode: convenient, but erases the review
+  boundary around release evidence — the probe is read-only.
 
 ## Anchors
 
@@ -85,8 +95,17 @@ The deployed-contract addresses in `crates/contracts/registry.toml` and
 `crates/contracts/deployment-provenance.yaml` deserialize through the
 cow-owned `#[repr(transparent)]` newtype around
 `alloy_primitives::Address` per
-[ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md). The
-`code_hash = keccak256(eth_getCode)` invariant for live confirmation
-routes through `alloy_primitives::keccak256`; the live-RPC bytecode
-comparison preserves bit-for-bit identity against the committed
-evidence.
+[ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md).
+
+## Amendment 2026-06-01: presence probe replaces committed code-hash confirmation
+
+The original decision committed a per-row `live_confirmation` code-hash object
+and fail-closed-compared it in CI. Analysis (threat model, ecosystem baseline,
+and a review-LOC / sync-churn measurement) showed that for this non-upgradeable
+CREATE2 contract set the committed code hash guards a threat that cannot occur,
+is heavier than any upstream (none commit code hashes), and produced per-sync
+review churn. The decision now relies on the pinned `source_commit` plus a
+read-only `eth_getCode` presence probe; committed code-hash confirmation is
+reserved for upgradeable deployments. The `code_hash_verified`
+`verification.status` denotes upstream explorer/manifest verification, not a
+locally committed digest.

@@ -133,7 +133,9 @@ Contract deployment verification is split into addressable registry evidence
 and non-addressable coverage evidence. Registry rows carry one of four
 verification statuses:
 
-- `CodeHashVerified`: an endpoint probe matched committed code-hash evidence
+- `CodeHashVerified`: the deployed bytecode is code-hash-verified at the pinned
+  upstream manifest (upstream deployments are explorer/Sourcify-verified); cow-rs
+  does not commit a local code-hash digest
 - `ExternalVerified`: a third-party verifier or explorer attested the bytecode
 - `ReadmeTableUnverified`: the row is sourced from an upstream README table and
   has not yet been independently probed
@@ -145,13 +147,14 @@ not resolve through `Registry::address`. The review procedure is:
 
 1. Confirm `registry.toml` and `deployment-provenance.yaml` have identical
    `(contract, chain, environment, address, verification)` rows.
-2. For code-hash rows, probe bytecode with `eth_getCode`, hash the returned
-   code, and compare it to the committed evidence.
+2. For code-hash rows, confirm the upstream manifest at the pinned `source_commit`
+   lists the address, and that the live presence probe (`registry-confirm`)
+   reports non-empty `eth_getCode` bytecode on the expected chain.
 3. For external rows, inspect the named explorer or attestation source and
    confirm the address, chain, and contract family match.
 4. For canonical-unverified rows, confirm the address comes from the pinned
-   source-lock commit and leave the status unchanged until probe evidence is
-   committed.
+   source-lock commit; these carry no upstream-manifest entry or external
+   attestation.
 5. For not-deployed coverage, confirm the probe returned empty bytecode.
 6. For unsupported coverage, confirm the chain is outside the Rust runtime
    support set and is not present in the registry.
