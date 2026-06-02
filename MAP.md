@@ -1,7 +1,7 @@
 # Repository File Map
 
-> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `8f16b79` &nbsp;&middot;&nbsp; **Generated:** 2026-06-02  
-> **Total tracked files:** **1425** &nbsp;&middot;&nbsp; **Code analysis:** tokei 14.0.0 (1368/1425 files) &nbsp;&middot;&nbsp; _4 tracked file(s) deleted in the working tree — excluded_
+> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `546c608` &nbsp;&middot;&nbsp; **Generated:** 2026-06-02  
+> **Total tracked files:** **1425** &nbsp;&middot;&nbsp; **Code analysis:** tokei 14.0.0 (1368/1425 files)
 
 A navigable inventory of every file tracked by Git on this branch, grouped by the role each directory plays in the workspace. Use the table of contents to jump straight to a section; full file listings are collapsed by default so the high-level shape stays scannable.
 

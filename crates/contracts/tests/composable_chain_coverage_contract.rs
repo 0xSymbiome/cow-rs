@@ -1,9 +1,10 @@
 //! Composable chain-coverage contract test: assert that every
 //! `SupportedChainId` chain plus `DeploymentChainId::Lens` has
-//! `Some(addr)` for `ContractId::ComposableCow`. This is the
-//! per-chain coverage invariant from the composable capability landing risk register
-//! (R4): every `SupportedChainId` chain must have a composable
-//! deployment row.
+//! `Some(addr)` for `ContractId::ComposableCow`, and that Ink carries no
+//! composable or cow-shed registry row (it is a `not_deployed` coverage
+//! record instead). This is the per-chain coverage invariant from the
+//! composable capability landing risk register (R4): every
+//! `SupportedChainId` chain must have a composable deployment row.
 
 use cow_sdk_contracts::{ContractId, DeploymentChainId, DeploymentEnv, Registry};
 use cow_sdk_core::SupportedChainId;
@@ -89,6 +90,26 @@ fn cow_shed_for_composable_cow_is_only_on_gnosis_chain() {
         assert!(
             address.is_none(),
             "CowShedForComposableCow must NOT have an address on {chain:?}; got Some"
+        );
+    }
+}
+
+#[test]
+fn ink_has_no_cow_shed_factory_or_implementation() {
+    let registry = Registry::default();
+    for contract in [
+        ContractId::CowShedFactory,
+        ContractId::CowShedImplementation,
+    ] {
+        assert!(
+            registry
+                .address(
+                    contract,
+                    DeploymentChainId::Ink,
+                    DeploymentEnv::EnvironmentAgnostic,
+                )
+                .is_none(),
+            "Ink (chain_id 57073) must be a not_deployed coverage record for {contract:?}, not an addressable registry row; got Some"
         );
     }
 }
