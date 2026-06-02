@@ -6,10 +6,12 @@
 //!
 //! Modules: `consts` (canonical test constants), `eip712` (an independent
 //! keccak/ABI-word oracle), `fixtures` (parity-fixture loaders), `builders`
-//! (order/domain/signature fixtures), and `mocks` (recording `Signer`).
+//! (order/domain/signature fixtures), `mocks` (recording `Signer`), and
+//! `trace` (a span/event capturing subscriber).
 
 pub mod builders;
 pub mod consts;
 pub mod eip712;
 pub mod fixtures;
 pub mod mocks;
+pub mod trace;

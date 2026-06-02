@@ -16,6 +16,8 @@ cow-sdk-core = { path = "../core" }
 alloy-primitives = { workspace = true }
 sha3 = { workspace = true }
 serde_json = { workspace = true }
+tracing = { workspace = true }
+tracing-core = "0.1.36"
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt"] }
