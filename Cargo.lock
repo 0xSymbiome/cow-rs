@@ -1629,6 +1629,7 @@ dependencies = [
  "async-trait",
  "cow-sdk-contracts",
  "cow-sdk-core",
+ "cow-sdk-test-utils",
  "criterion",
  "parking_lot",
  "proptest",

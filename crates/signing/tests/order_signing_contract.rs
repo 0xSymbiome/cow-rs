@@ -25,15 +25,17 @@ use cow_sdk_signing::{
 };
 use sha3::{Digest, Keccak256};
 
-use common::{MockSigner, fixture_case, sample_order};
+use cow_sdk_test_utils::fixtures;
+
+use common::{MockSigner, sample_order};
 
 #[test]
 fn order_typed_data_matches_fixture_contract_and_consumer_shape() {
     let order = sample_order();
     let typed = order_typed_data(SupportedChainId::Mainnet, &order, None).unwrap();
     let payload = order_typed_data_payload(SupportedChainId::Mainnet, &order, None).unwrap();
-    let fields_case = fixture_case("signing-eip712-order-fields");
-    let typed_data_case = fixture_case("signing-typed-data-envelope");
+    let fields_case = fixtures::case("signing", "signing-eip712-order-fields");
+    let typed_data_case = fixtures::case("signing", "signing-typed-data-envelope");
 
     assert_eq!(typed.primary_type, ORDER_PRIMARY_TYPE);
     assert_eq!(payload.primary_type, ORDER_PRIMARY_TYPE);

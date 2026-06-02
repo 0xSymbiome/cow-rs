@@ -20,7 +20,9 @@ use cow_sdk_signing::SigningError;
 use cow_sdk_signing::eip1271_signature_payload;
 use sha3::{Digest, Keccak256};
 
-use common::{fixture_case, sample_order, sample_signature};
+use cow_sdk_test_utils::fixtures;
+
+use common::{sample_order, sample_signature};
 
 #[test]
 fn eip1271_payload_hashes_string_fields_before_tuple_encoding() {
@@ -28,7 +30,7 @@ fn eip1271_payload_hashes_string_fields_before_tuple_encoding() {
     let signature = sample_signature("12");
     let payload = eip1271_signature_payload(&order, &signature).unwrap();
     let expected = independent_payload(&order, &signature);
-    let case = fixture_case("signing-eip1271-encoding");
+    let case = fixtures::case("signing", "signing-eip1271-encoding");
 
     assert_eq!(
         case["expected"]["string_fields_hashed"]

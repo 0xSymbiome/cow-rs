@@ -9,7 +9,6 @@ use cow_sdk_core::{
     Address, Amount, Hash32, OrderData, Signer, TransactionBroadcast, TransactionRequest,
     TypedDataDomain, TypedDataField,
 };
-use serde_json::Value;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TypedDataCall {
@@ -102,21 +101,6 @@ impl Signer for MockSigner {
     async fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {
         Ok(Amount::from(21_000u32))
     }
-}
-
-pub fn signing_fixture() -> Value {
-    serde_json::from_str(include_str!("../../../../parity/fixtures/signing.json"))
-        .expect("signing fixture must remain valid JSON")
-}
-
-pub fn fixture_case(id: &str) -> Value {
-    signing_fixture()["cases"]
-        .as_array()
-        .expect("fixture cases must be an array")
-        .iter()
-        .find(|case| case["id"] == id)
-        .cloned()
-        .unwrap_or_else(|| panic!("missing fixture case {id}"))
 }
 
 pub fn sample_order() -> OrderData {

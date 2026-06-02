@@ -17,7 +17,9 @@ use cow_sdk_core::{Address, CowEnv, ProtocolOptions, SupportedChainId};
 use cow_sdk_signing::{domain_separator, get_domain, order_typed_data};
 use sha3::{Digest, Keccak256};
 
-use common::{fixture_case, sample_order};
+use cow_sdk_test_utils::fixtures;
+
+use common::sample_order;
 
 #[test]
 fn domain_resolution_honors_default_env_staging_and_override_precedence() {
@@ -55,7 +57,7 @@ fn domain_resolution_honors_default_env_staging_and_override_precedence() {
 
 #[test]
 fn typed_data_domain_and_separator_match_fixture_contract() {
-    let fields_case = fixture_case("signing-domain-separator-fields");
+    let fields_case = fixtures::case("signing", "signing-domain-separator-fields");
     let order = sample_order();
     let typed = order_typed_data(SupportedChainId::Mainnet, &order, None).unwrap();
     let separator = domain_separator(SupportedChainId::Mainnet, None).unwrap();
