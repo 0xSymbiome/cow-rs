@@ -41,11 +41,11 @@ url.workspace = true
 reqwest = { workspace = true, features = ["rustls", "gzip"] }
 
 [dev-dependencies]
+cow-sdk-test-utils = { path = "../test-utils" }
 criterion.workspace = true
 proptest.workspace = true
 serde_yaml.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread", "test-util", "time"] }
-tracing-core = "0.1.36"
 trybuild.workspace = true
 wiremock.workspace = true
 
