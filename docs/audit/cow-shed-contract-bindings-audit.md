@@ -225,7 +225,6 @@ Primary regression coverage:
 
 - `crates/contracts/tests/schema_v2_success.rs`
 - `crates/contracts/tests/schema_v2_rejection.rs`
-- `crates/contracts/tests/trybuild_schema_v2.rs`
 
 Validation surface:
 

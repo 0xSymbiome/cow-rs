@@ -24,9 +24,6 @@ impl fmt::Display for MockProviderError {
     }
 }
 
-#[derive(Debug, Clone, Default)]
-pub struct DummySigner;
-
 #[derive(Debug, Clone)]
 pub struct MockProvider {
     pub storage: Rc<RefCell<BTreeMap<(String, String), String>>>,
