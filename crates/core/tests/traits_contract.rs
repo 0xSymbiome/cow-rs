@@ -4,6 +4,7 @@ use cow_sdk_core::{
     TransactionRequest, TransactionStatus, TypedDataDomain, TypedDataField, TypedDataPayload,
     TypedDataSigner, TypedDataTypes,
 };
+use cow_sdk_test_utils::mocks::canned_tx_hash;
 
 const HASH_1: &str = "0x1111111111111111111111111111111111111111111111111111111111111111";
 const BLOCK_HASH_1: &str = "0x2222222222222222222222222222222222222222222222222222222222222222";
@@ -48,9 +49,7 @@ impl Signer for MockSigner {
         &self,
         _tx: &TransactionRequest,
     ) -> Result<TransactionBroadcast, Self::Error> {
-        Ok(TransactionBroadcast::new(
-            Hash32::new(format!("0x{}", "fa".repeat(32))).unwrap(),
-        ))
+        Ok(TransactionBroadcast::new(canned_tx_hash()))
     }
 
     async fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {
@@ -277,7 +276,7 @@ async fn assert_signer_contracts(
             .await
             .unwrap()
             .transaction_hash,
-        Hash32::new(format!("0x{}", "fa".repeat(32))).unwrap()
+        canned_tx_hash()
     );
 }
 
@@ -359,10 +358,7 @@ async fn signer_returns_transaction_broadcast() {
 
     let broadcast = Signer::send_transaction(&signer, &tx).await.unwrap();
 
-    assert_eq!(
-        broadcast,
-        TransactionBroadcast::new(Hash32::new(format!("0x{}", "fa".repeat(32))).unwrap())
-    );
+    assert_eq!(broadcast, TransactionBroadcast::new(canned_tx_hash()));
 }
 
 #[tokio::test]
@@ -559,7 +555,7 @@ async fn signer_satisfies_owner_typed_data_and_digest_capabilities() {
             .await
             .unwrap()
             .transaction_hash,
-        Hash32::new(format!("0x{}", "fa".repeat(32))).unwrap()
+        canned_tx_hash()
     );
     assert_eq!(Provider::get_chain_id(&provider).await.unwrap(), 1);
     assert_eq!(
