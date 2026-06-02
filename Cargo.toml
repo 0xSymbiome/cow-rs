@@ -17,6 +17,7 @@ members = [
   "crates/alloy-signer",
   "crates/alloy",
   "crates/sdk",
+  "crates/test-utils",
   "tests",
 ]
 resolver = "3"

@@ -1661,6 +1661,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "cow-sdk-test-utils"
+version = "0.1.0"
+dependencies = [
+ "alloy-primitives",
+ "cow-sdk-core",
+ "serde_json",
+ "sha3 0.11.0",
+ "tokio",
+]
+
+[[package]]
 name = "cow-sdk-trading"
 version = "0.1.0"
 dependencies = [

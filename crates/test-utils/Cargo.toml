@@ -1,0 +1,21 @@
+[package]
+name = "cow-sdk-test-utils"
+publish = false
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+description = "Internal, unpublished shared test helpers for the cow-rs workspace."
+
+[lints]
+workspace = true
+
+[dependencies]
+cow-sdk-core = { path = "../core" }
+alloy-primitives = { workspace = true }
+sha3 = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt"] }
