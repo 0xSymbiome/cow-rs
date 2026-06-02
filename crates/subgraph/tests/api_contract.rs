@@ -1145,152 +1145,20 @@ async fn shared_client_fans_queries_across_multiple_subgraph_instances() {
 }
 
 mod recording_transport {
-    use std::collections::VecDeque;
-    use std::sync::{Arc, Mutex};
+    use std::sync::Arc;
     use std::time::Duration;
 
-    use async_trait::async_trait;
-    use cow_sdk_core::{HttpTransport, SupportedChainId, TransportError};
+    use cow_sdk_core::{HttpTransport, SupportedChainId};
     use cow_sdk_subgraph::{
         ExternalHostPolicy, SubgraphApi, SubgraphApiBaseUrls, SubgraphError, SubgraphQueryRequest,
     };
+    use cow_sdk_test_utils::mocks::{Canned, RecordingHttpTransport};
     use cow_sdk_transport_policy::{RetryPolicy, TransportPolicy};
     use serde_json::{Value, json};
 
-    #[derive(Debug, Clone)]
-    struct RecordedRequest {
-        method: &'static str,
-        url: String,
-        body: String,
-    }
-
-    #[derive(Debug, Clone)]
-    enum Canned {
-        Ok(String),
-        HttpStatus {
-            status: u16,
-            headers: Vec<(String, String)>,
-            body: String,
-        },
-    }
-
-    #[derive(Debug)]
-    struct RecordingTransport {
-        calls: Mutex<Vec<RecordedRequest>>,
-        responses: Mutex<VecDeque<Canned>>,
-    }
-
-    impl RecordingTransport {
-        fn new(responses: impl IntoIterator<Item = Canned>) -> Arc<Self> {
-            Arc::new(Self {
-                calls: Mutex::new(Vec::new()),
-                responses: Mutex::new(responses.into_iter().collect()),
-            })
-        }
-
-        fn observed(&self) -> Vec<RecordedRequest> {
-            self.calls
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .clone()
-        }
-
-        fn record(&self, request: RecordedRequest) -> Canned {
-            self.calls
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .push(request);
-            self.responses
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .pop_front()
-                .expect("recording transport must have a canned response for every call")
-        }
-    }
-
-    #[async_trait]
-    impl HttpTransport for RecordingTransport {
-        async fn get(
-            &self,
-            path: &str,
-            _headers: &[(String, String)],
-            _timeout: Option<Duration>,
-        ) -> Result<String, TransportError> {
-            let canned = self.record(RecordedRequest {
-                method: "GET",
-                url: path.to_owned(),
-                body: String::new(),
-            });
-            transport_result(canned)
-        }
-
-        async fn post(
-            &self,
-            path: &str,
-            body: &str,
-            _headers: &[(String, String)],
-            _timeout: Option<Duration>,
-        ) -> Result<String, TransportError> {
-            let canned = self.record(RecordedRequest {
-                method: "POST",
-                url: path.to_owned(),
-                body: body.to_owned(),
-            });
-            transport_result(canned)
-        }
-
-        async fn put(
-            &self,
-            path: &str,
-            body: &str,
-            _headers: &[(String, String)],
-            _timeout: Option<Duration>,
-        ) -> Result<String, TransportError> {
-            let canned = self.record(RecordedRequest {
-                method: "PUT",
-                url: path.to_owned(),
-                body: body.to_owned(),
-            });
-            transport_result(canned)
-        }
-
-        async fn delete(
-            &self,
-            path: &str,
-            body: &str,
-            _headers: &[(String, String)],
-            _timeout: Option<Duration>,
-        ) -> Result<String, TransportError> {
-            let canned = self.record(RecordedRequest {
-                method: "DELETE",
-                url: path.to_owned(),
-                body: body.to_owned(),
-            });
-            transport_result(canned)
-        }
-    }
-
-    fn transport_result(canned: Canned) -> Result<String, TransportError> {
-        match canned {
-            Canned::Ok(body) => Ok(body),
-            Canned::HttpStatus {
-                status,
-                headers,
-                body,
-            } => Err(TransportError::HttpStatus {
-                status,
-                headers: headers
-                    .into_iter()
-                    .map(|(name, value)| (name, value.into()))
-                    .collect(),
-                body: body.into(),
-            }),
-        }
-    }
-
     const RECORDING_BASE_URL: &str = "https://subgraph-recording.example";
 
-    fn api_with_recorder(recorder: Arc<RecordingTransport>) -> SubgraphApi {
+    fn api_with_recorder(recorder: Arc<RecordingHttpTransport>) -> SubgraphApi {
         api_with_recorder_and_policy(
             recorder,
             TransportPolicy::default_subgraph().with_retry(RetryPolicy::no_retry()),
@@ -1298,7 +1166,7 @@ mod recording_transport {
     }
 
     fn api_with_recorder_and_policy(
-        recorder: Arc<RecordingTransport>,
+        recorder: Arc<RecordingHttpTransport>,
         transport_policy: TransportPolicy,
     ) -> SubgraphApi {
         let base_urls: SubgraphApiBaseUrls = [
@@ -1334,7 +1202,7 @@ mod recording_transport {
 
     #[tokio::test]
     async fn subgraph_run_query_dispatches_through_injected_transport() {
-        let recorder = RecordingTransport::new([Canned::Ok(
+        let recorder = RecordingHttpTransport::new([Canned::Ok(
             json!({
                 "data": {
                     "tokens": [
@@ -1370,7 +1238,7 @@ mod recording_transport {
 
     #[tokio::test]
     async fn subgraph_errors_field_surfaces_as_graphql_error_through_injected_transport() {
-        let recorder = RecordingTransport::new([Canned::Ok(
+        let recorder = RecordingHttpTransport::new([Canned::Ok(
             json!({
                 "errors": [
                     { "message": "Type `Query` has no field `tokens`" }
@@ -1402,7 +1270,8 @@ mod recording_transport {
 
     #[tokio::test]
     async fn subgraph_missing_data_surfaces_as_missing_data_error_through_injected_transport() {
-        let recorder = RecordingTransport::new([Canned::Ok(json!({ "data": null }).to_string())]);
+        let recorder =
+            RecordingHttpTransport::new([Canned::Ok(json!({ "data": null }).to_string())]);
         let api = api_with_recorder(recorder.clone());
         let query = "query TokensByVolume { tokens(first: 1) { symbol } }";
 
@@ -1421,7 +1290,7 @@ mod recording_transport {
 
     #[tokio::test]
     async fn subgraph_http_status_error_propagates_through_injected_transport() {
-        let recorder = RecordingTransport::new([Canned::HttpStatus {
+        let recorder = RecordingHttpTransport::new([Canned::HttpStatus {
             status: 502,
             headers: Vec::new(),
             body: "upstream unavailable".to_owned(),
@@ -1447,7 +1316,7 @@ mod recording_transport {
 
     #[tokio::test]
     async fn subgraph_retries_transient_status_through_injected_transport() {
-        let recorder = RecordingTransport::new([
+        let recorder = RecordingHttpTransport::new([
             Canned::HttpStatus {
                 status: 503,
                 headers: Vec::new(),

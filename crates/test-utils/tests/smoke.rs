@@ -128,3 +128,33 @@ async fn stub_http_transport_succeeds_with_empty_body() {
     assert_eq!(transport.get("/x", &[], None).await.unwrap(), "");
     assert_eq!(transport.post("/x", "body", &[], None).await.unwrap(), "");
 }
+
+#[tokio::test]
+async fn recording_http_transport_records_requests_and_replays_responses() {
+    use cow_sdk_core::HttpTransport;
+    use cow_sdk_test_utils::mocks::{Canned, RecordingHttpTransport};
+
+    let transport = RecordingHttpTransport::new([
+        Canned::Ok("first".to_owned()),
+        Canned::Ok("second".to_owned()),
+    ]);
+    assert_eq!(
+        transport
+            .get("/a", &[], Some(std::time::Duration::from_secs(1)))
+            .await
+            .unwrap(),
+        "first"
+    );
+    assert_eq!(
+        transport.post("/b", "body", &[], None).await.unwrap(),
+        "second"
+    );
+
+    let observed = transport.observed();
+    assert_eq!(observed.len(), 2);
+    assert_eq!(observed[0].method, "GET");
+    assert!(observed[0].has_timeout);
+    assert_eq!(observed[1].method, "POST");
+    assert_eq!(observed[1].body, "body");
+    assert!(!observed[1].has_timeout);
+}

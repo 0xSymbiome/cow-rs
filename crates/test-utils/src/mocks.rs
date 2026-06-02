@@ -3,12 +3,15 @@
 //! `RecordingSigner` is an `Rc<RefCell<_>>`-backed (single-threaded /
 //! wasm-friendly) recorder that returns canned values and logs the calls it
 //! received. `StubHttpTransport` is a no-op `HttpTransport` whose every method
-//! succeeds with an empty body, for tests that must satisfy a transport
-//! precondition without performing I/O.
+//! succeeds with an empty body. `RecordingHttpTransport` records every request
+//! and replays caller-supplied canned responses in order, for asserting on the
+//! requests a client makes without performing I/O.
 
 use std::cell::RefCell;
+use std::collections::VecDeque;
 use std::fmt;
 use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use cow_sdk_core::{
@@ -180,5 +183,161 @@ impl HttpTransport for StubHttpTransport {
         _timeout: Option<Duration>,
     ) -> Result<String, TransportError> {
         Ok(String::new())
+    }
+}
+
+/// A request captured by [`RecordingHttpTransport`].
+#[derive(Debug, Clone)]
+pub struct RecordedRequest {
+    /// The HTTP method (`"GET"`, `"POST"`, `"PUT"`, or `"DELETE"`).
+    pub method: &'static str,
+    /// The request path or URL.
+    pub url: String,
+    /// The request body (empty for `GET`).
+    pub body: String,
+    /// Whether the caller supplied a per-request timeout.
+    pub has_timeout: bool,
+}
+
+/// A canned response for [`RecordingHttpTransport`] to replay, one per call.
+#[derive(Debug, Clone)]
+pub enum Canned {
+    /// A success body returned through `Ok`.
+    Ok(String),
+    /// A non-success HTTP status surfaced as [`TransportError::HttpStatus`].
+    HttpStatus {
+        /// The HTTP status code.
+        status: u16,
+        /// The response headers.
+        headers: Vec<(String, String)>,
+        /// The response body.
+        body: String,
+    },
+}
+
+impl Canned {
+    fn into_result(self) -> Result<String, TransportError> {
+        match self {
+            Self::Ok(body) => Ok(body),
+            Self::HttpStatus {
+                status,
+                headers,
+                body,
+            } => Err(TransportError::HttpStatus {
+                status,
+                headers: headers
+                    .into_iter()
+                    .map(|(name, value)| (name, value.into()))
+                    .collect(),
+                body: body.into(),
+            }),
+        }
+    }
+}
+
+/// An [`HttpTransport`] that records every request and replays a queue of
+/// caller-supplied canned responses, one per call.
+#[derive(Debug)]
+pub struct RecordingHttpTransport {
+    calls: Mutex<Vec<RecordedRequest>>,
+    responses: Mutex<VecDeque<Canned>>,
+}
+
+impl RecordingHttpTransport {
+    /// Builds a recorder behind an `Arc` with one canned response per expected call.
+    #[must_use]
+    pub fn new(responses: impl IntoIterator<Item = Canned>) -> Arc<Self> {
+        Arc::new(Self {
+            calls: Mutex::new(Vec::new()),
+            responses: Mutex::new(responses.into_iter().collect()),
+        })
+    }
+
+    /// Returns the requests captured so far, in order.
+    #[must_use]
+    pub fn observed(&self) -> Vec<RecordedRequest> {
+        self.calls
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clone()
+    }
+
+    fn record(&self, request: RecordedRequest) -> Canned {
+        self.calls
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .push(request);
+        self.responses
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .pop_front()
+            .expect("recording transport must have a canned response for every call")
+    }
+}
+
+#[cfg_attr(not(target_arch = "wasm32"), async_trait::async_trait)]
+#[cfg_attr(target_arch = "wasm32", async_trait::async_trait(?Send))]
+impl HttpTransport for RecordingHttpTransport {
+    async fn get(
+        &self,
+        path: &str,
+        _headers: &[(String, String)],
+        timeout: Option<Duration>,
+    ) -> Result<String, TransportError> {
+        self.record(RecordedRequest {
+            method: "GET",
+            url: path.to_owned(),
+            body: String::new(),
+            has_timeout: timeout.is_some(),
+        })
+        .into_result()
+    }
+
+    async fn post(
+        &self,
+        path: &str,
+        body: &str,
+        _headers: &[(String, String)],
+        timeout: Option<Duration>,
+    ) -> Result<String, TransportError> {
+        self.record(RecordedRequest {
+            method: "POST",
+            url: path.to_owned(),
+            body: body.to_owned(),
+            has_timeout: timeout.is_some(),
+        })
+        .into_result()
+    }
+
+    async fn put(
+        &self,
+        path: &str,
+        body: &str,
+        _headers: &[(String, String)],
+        timeout: Option<Duration>,
+    ) -> Result<String, TransportError> {
+        self.record(RecordedRequest {
+            method: "PUT",
+            url: path.to_owned(),
+            body: body.to_owned(),
+            has_timeout: timeout.is_some(),
+        })
+        .into_result()
+    }
+
+    async fn delete(
+        &self,
+        path: &str,
+        body: &str,
+        _headers: &[(String, String)],
+        timeout: Option<Duration>,
+    ) -> Result<String, TransportError> {
+        self.record(RecordedRequest {
+            method: "DELETE",
+            url: path.to_owned(),
+            body: body.to_owned(),
+            has_timeout: timeout.is_some(),
+        })
+        .into_result()
     }
 }
