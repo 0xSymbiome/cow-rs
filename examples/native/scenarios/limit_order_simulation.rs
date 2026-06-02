@@ -13,9 +13,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let orderbook = MockOrderbook::new(SupportedChainId::Sepolia, sample_quote_response());
     let signer = MockSigner::default();
     let sdk = Trading::builder()
-        .with_chain_id(SupportedChainId::Sepolia)
-        .with_app_code("cow-rs-limit-order")
-        .with_orderbook_client(Arc::new(orderbook.clone()))
+        .chain_id(SupportedChainId::Sepolia)
+        .app_code("cow-rs-limit-order")
+        .orderbook_client(Arc::new(orderbook.clone()))
         .build()?;
 
     let posted = sdk

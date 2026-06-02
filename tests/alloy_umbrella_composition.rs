@@ -33,9 +33,9 @@ async fn alloy_client_satisfies_trading_sdk_boundaries() {
         .unwrap();
     let signer = client.create_signer("local-key").await.unwrap();
     let sdk = Trading::builder()
-        .with_chain_id(SupportedChainId::Mainnet)
-        .with_env(CowEnv::Prod)
-        .with_app_code("cow-rs/umbrella-composition-test")
+        .chain_id(SupportedChainId::Mainnet)
+        .env(CowEnv::Prod)
+        .app_code("cow-rs/umbrella-composition-test")
         .build()
         .unwrap();
 

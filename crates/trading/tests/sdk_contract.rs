@@ -109,9 +109,9 @@ async fn sdk_builder_validates_injected_orderbook_context_and_client_context_can
         sell_quote_response(),
     ));
     let error = Trading::builder()
-        .with_chain_id(SupportedChainId::Mainnet)
-        .with_app_code("0x007")
-        .with_orderbook_client(orderbook.clone())
+        .chain_id(SupportedChainId::Mainnet)
+        .app_code("0x007")
+        .orderbook_client(orderbook.clone())
         .build()
         .expect_err("mismatched injected orderbook chain must fail validation");
     assert!(matches!(
@@ -123,9 +123,9 @@ async fn sdk_builder_validates_injected_orderbook_context_and_client_context_can
     ));
 
     let sdk = Trading::builder()
-        .with_chain_id(SupportedChainId::Sepolia)
-        .with_app_code("0x007")
-        .with_orderbook_client(orderbook)
+        .chain_id(SupportedChainId::Sepolia)
+        .app_code("0x007")
+        .orderbook_client(orderbook)
         .build()
         .expect("builder should accept injected client when defaults do not conflict");
     let mut trade = sample_trade_parameters(cow_sdk_core::OrderKind::Sell);
@@ -182,9 +182,9 @@ async fn sdk_orderbook_bound_calls_reject_env_conflicts_with_injected_client_con
         sell_quote_response(),
     ));
     let sdk = Trading::builder()
-        .with_chain_id(SupportedChainId::Sepolia)
-        .with_app_code("0x007")
-        .with_orderbook_client(orderbook)
+        .chain_id(SupportedChainId::Sepolia)
+        .app_code("0x007")
+        .orderbook_client(orderbook)
         .build()
         .expect("builder should accept compatible config");
     let mut trade = sample_trade_parameters(cow_sdk_core::OrderKind::Sell);
@@ -206,9 +206,9 @@ async fn sdk_allowance_and_approval_use_call_level_chain_resolution() {
     let provider = MockProvider::default();
     let signer = MockSigner::default();
     let sdk = Trading::builder()
-        .with_chain_id(SupportedChainId::Sepolia)
-        .with_env(CowEnv::Prod)
-        .with_app_code("test-app")
+        .chain_id(SupportedChainId::Sepolia)
+        .env(CowEnv::Prod)
+        .app_code("test-app")
         .build()
         .expect("sdk construction should succeed");
 
@@ -268,9 +268,9 @@ async fn sdk_async_allowance_and_approval_accept_async_runtime_contracts() {
     let provider = MockProvider::default();
     let signer = MockSigner::default();
     let sdk = Trading::builder()
-        .with_chain_id(SupportedChainId::Sepolia)
-        .with_env(CowEnv::Prod)
-        .with_app_code("test-app")
+        .chain_id(SupportedChainId::Sepolia)
+        .env(CowEnv::Prod)
+        .app_code("test-app")
         .build()
         .expect("sdk construction should succeed");
 
@@ -314,18 +314,18 @@ async fn sdk_call_level_overrides_beat_trader_level_overrides_for_settlement_and
     orderbook.push_order(ethflow_order());
     let signer = MockSigner::default();
     let sdk = Trading::builder()
-        .with_chain_id(SupportedChainId::Sepolia)
-        .with_env(CowEnv::Staging)
-        .with_settlement_contract_override(AddressPerChain::from([(
+        .chain_id(SupportedChainId::Sepolia)
+        .env(CowEnv::Staging)
+        .settlement_contract_override(AddressPerChain::from([(
             u64::from(SupportedChainId::Sepolia),
             address("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"),
         )]))
-        .with_eth_flow_contract_override(AddressPerChain::from([(
+        .eth_flow_contract_override(AddressPerChain::from([(
             u64::from(SupportedChainId::Sepolia),
             address("0xcccccccccccccccccccccccccccccccccccccccc"),
         )]))
-        .with_options(TradingOptions::new().with_orderbook_client(orderbook.clone()))
-        .with_app_code("test-app")
+        .options(TradingOptions::new().with_orderbook_client(orderbook.clone()))
+        .app_code("test-app")
         .build()
         .expect("sdk construction should succeed");
 
@@ -483,8 +483,8 @@ async fn sdk_onchain_cancel_order_preserves_full_uint256_range_for_ethflow_order
 #[wasm_bindgen_test]
 fn build_rejects_missing_injected_orderbook_client_on_wasm32() {
     let error = TradingBuilder::new()
-        .with_chain_id(SupportedChainId::Mainnet)
-        .with_app_code("test-app")
+        .chain_id(SupportedChainId::Mainnet)
+        .app_code("test-app")
         .build()
         .expect_err("wasm32 build must reject a missing injected orderbook client");
 
@@ -506,9 +506,9 @@ fn build_succeeds_on_wasm32_with_injected_orderbook_client() {
         .expect("wasm32 injected orderbook client must build with explicit transport");
 
     let sdk = TradingBuilder::new()
-        .with_chain_id(SupportedChainId::Mainnet)
-        .with_app_code("test-app")
-        .with_orderbook_client(Arc::new(client))
+        .chain_id(SupportedChainId::Mainnet)
+        .app_code("test-app")
+        .orderbook_client(Arc::new(client))
         .build()
         .expect("wasm32 build must accept an injected orderbook client");
 }
@@ -517,8 +517,8 @@ fn build_succeeds_on_wasm32_with_injected_orderbook_client() {
 #[tokio::test]
 async fn build_succeeds_on_native_without_injected_orderbook_client() {
     let sdk = TradingBuilder::new()
-        .with_chain_id(SupportedChainId::Mainnet)
-        .with_app_code("test-app")
+        .chain_id(SupportedChainId::Mainnet)
+        .app_code("test-app")
         .build()
         .expect("native build must succeed when the typestate prerequisites are set");
 
@@ -538,10 +538,10 @@ async fn get_quote_only_returns_cancelled_when_combinator_token_fires_before_cal
         sell_quote_response(),
     ));
     let sdk = Trading::builder()
-        .with_chain_id(SupportedChainId::Sepolia)
-        .with_app_code("cancellation-test")
-        .with_env(CowEnv::Prod)
-        .with_options(TradingOptions::new().with_orderbook_client(orderbook))
+        .chain_id(SupportedChainId::Sepolia)
+        .app_code("cancellation-test")
+        .env(CowEnv::Prod)
+        .options(TradingOptions::new().with_orderbook_client(orderbook))
         .build()
         .expect("trading sdk must construct for the cancellation test");
 
@@ -574,10 +574,10 @@ async fn get_quote_only_combinator_aborts_an_in_flight_quote() {
             .with_quote_delay(std::time::Duration::from_secs(30)),
     );
     let sdk = Trading::builder()
-        .with_chain_id(SupportedChainId::Sepolia)
-        .with_app_code("cancellation-test")
-        .with_env(CowEnv::Prod)
-        .with_options(TradingOptions::new().with_orderbook_client(orderbook))
+        .chain_id(SupportedChainId::Sepolia)
+        .app_code("cancellation-test")
+        .env(CowEnv::Prod)
+        .options(TradingOptions::new().with_orderbook_client(orderbook))
         .build()
         .expect("trading sdk must construct for the cancellation test");
 

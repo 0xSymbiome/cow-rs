@@ -326,6 +326,16 @@ The first functional crate-family release begins at `0.1.0`.
   set — and the `TradingBuilder::ready(...)` one-call shortcut is retained.
   Governed by
   [ADR 0011](docs/adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md).
+- Renamed the `TradingBuilder` configuration setters to drop the `with_` prefix:
+  `with_chain_id`, `with_app_code`, `with_env`, `with_settlement_contract_override`,
+  `with_eth_flow_contract_override`, `with_options`, and `with_orderbook_client`
+  are now `chain_id`, `app_code`, `env`, `settlement_contract_override`,
+  `eth_flow_contract_override`, `options`, and `orderbook_client`. This aligns the
+  trading construction builder with the bare-setter convention already used by the
+  `OrderbookApi`, `SubgraphApi`, and `AlloyClient` builders. The `with_*` convention
+  is retained on the owned-value parameter and option types (`TraderParameters`,
+  `TradingOptions`, and the quote and override builders). Governed by
+  [ADR 0011](docs/adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md).
 - `cow_sdk_orderbook::OrderbookError::Serialization` now carries a structured
   `{ category, line, column }` triple instead of wrapping the raw
   `serde_json::Error`. The orderbook client surfaces only the serde failure

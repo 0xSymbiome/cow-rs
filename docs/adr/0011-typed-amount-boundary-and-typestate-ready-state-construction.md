@@ -371,3 +371,20 @@ could never satisfy the terminal on its own and only duplicated the individual
 setters (`with_chain_id`, `with_app_code`, `with_env`, and the contract-override
 setters) or, for callers holding a total `TraderParameters`, through
 `TradingBuilder::ready(...)`.
+
+## Amendment 2026-06-02: builder setters dropped the `with_` prefix
+
+The `TradingBuilder` configuration setters are renamed to drop the `with_`
+prefix: `chain_id`, `app_code`, `env`, `settlement_contract_override`,
+`eth_flow_contract_override`, `options`, and `orderbook_client`. The
+`with_`-prefixed names used in the amendment above are superseded.
+
+This aligns `TradingBuilder` with every other client construction builder in the
+workspace — `OrderbookApi`, `SubgraphApi`, `AlloyClient`, and the alloy provider
+and signer builders all use bare setters on their typestate construction chains.
+The `with_` prefix is retained for the owned-value setters on the parameter and
+option types: `TraderParameters`, `TradingOptions`, and the quote and override
+builders keep their `with_*` setters. The construction builder and the value
+structs are deliberately distinct surfaces. The typestate guarantee is unchanged:
+`chain_id` and `app_code` still transition the `ChainIdSet` and `AppCodeSet`
+markers, and `build()` is reachable only once both are set.

@@ -5,8 +5,8 @@
 //!
 //! - [`cow_sdk_trading::TradingBuilder::build`] is only callable once the
 //!   builder has reached the `<ChainIdSet, AppCodeSet>` typestate through the
-//!   explicit [`cow_sdk_trading::TradingBuilder::with_chain_id`] and
-//!   [`cow_sdk_trading::TradingBuilder::with_app_code`] setters. Calling it
+//!   explicit [`cow_sdk_trading::TradingBuilder::chain_id`] and
+//!   [`cow_sdk_trading::TradingBuilder::app_code`] setters. Calling it
 //!   before both prerequisites are supplied is a compile error.
 //!
 //! Chain-bound helper flows that need no app code — allowance reads, approval
@@ -31,8 +31,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // prerequisites for `build`, which only runs the injected
     // orderbook-binding validator at runtime.
     let ready_sdk = TradingBuilder::new()
-        .with_chain_id(SupportedChainId::Mainnet)
-        .with_app_code("cow-rs/typestate-example")
+        .chain_id(SupportedChainId::Mainnet)
+        .app_code("cow-rs/typestate-example")
         .build()?;
     println!(
         "ready sdk built through the typestate path for chain {:?}",

@@ -65,10 +65,10 @@ pub fn capability_report_json(chain_id: u32, env: &str) -> Result<String, JsValu
     let env = parse_env(env)?;
     let orderbook_client = orderbook_api(chain_id, env);
     let sdk = Trading::builder()
-        .with_chain_id(chain_id)
-        .with_app_code("cow-rs/wasm-console")
-        .with_env(env)
-        .with_orderbook_client(Arc::new(orderbook_client))
+        .chain_id(chain_id)
+        .app_code("cow-rs/wasm-console")
+        .env(env)
+        .orderbook_client(Arc::new(orderbook_client))
         .build()
     .map_err(js_string_error)?;
     let api_context = api_context(chain_id, env);
@@ -343,10 +343,10 @@ pub async fn trading_quote_preview_json(
 
     let orderbook_client = orderbook_api(chain_id, env);
     let sdk = Trading::builder()
-        .with_chain_id(chain_id)
-        .with_app_code(app_code.trim())
-        .with_env(env)
-        .with_orderbook_client(Arc::new(orderbook_client))
+        .chain_id(chain_id)
+        .app_code(app_code.trim())
+        .env(env)
+        .orderbook_client(Arc::new(orderbook_client))
         .build()
     .map_err(js_string_error)?;
     let results = sdk

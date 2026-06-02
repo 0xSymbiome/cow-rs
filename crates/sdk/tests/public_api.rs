@@ -15,8 +15,8 @@ fn public_api_reexports_cover_primary_root_surface() {
     )
     .expect("ready trading sdk construction should succeed");
     let _builder = TradingBuilder::new()
-        .with_chain_id(SupportedChainId::Sepolia)
-        .with_app_code("cow-rs/public-api")
+        .chain_id(SupportedChainId::Sepolia)
+        .app_code("cow-rs/public-api")
         .build()
         .expect("ready builder construction should succeed");
     assert_eq!(ORDER_PRIMARY_TYPE, "Order");

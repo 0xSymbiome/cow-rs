@@ -44,10 +44,10 @@ use cow_sdk_core::{CowEnv, SupportedChainId};
 use cow_sdk_trading::{Trading, TradingOptions};
 
 let _sdk = Trading::builder()
-    .with_chain_id(SupportedChainId::Sepolia)
-    .with_app_code("your-app-code")
-    .with_env(CowEnv::Prod)
-    .with_options(TradingOptions::new())
+    .chain_id(SupportedChainId::Sepolia)
+    .app_code("your-app-code")
+    .env(CowEnv::Prod)
+    .options(TradingOptions::new())
     .build()
     .expect("ready-state construction");
 ```

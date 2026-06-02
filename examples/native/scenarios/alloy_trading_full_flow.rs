@@ -34,9 +34,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .await?;
     let signer = client.create_signer("local-key").await?;
     let sdk = Trading::builder()
-        .with_chain_id(SupportedChainId::Mainnet)
-        .with_env(CowEnv::Prod)
-        .with_app_code("cow-rs/alloy-trading-example")
+        .chain_id(SupportedChainId::Mainnet)
+        .env(CowEnv::Prod)
+        .app_code("cow-rs/alloy-trading-example")
         .build()?;
 
     let allowance = sdk

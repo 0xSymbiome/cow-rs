@@ -26,8 +26,8 @@
 //!
 //! let _address = Address::new("0x1111111111111111111111111111111111111111").unwrap();
 //! let _sdk = Trading::builder()
-//!     .with_chain_id(SupportedChainId::Sepolia)
-//!     .with_app_code("your-app-code")
+//!     .chain_id(SupportedChainId::Sepolia)
+//!     .app_code("your-app-code")
 //!     .build()
 //!     .unwrap();
 //! ```
@@ -46,8 +46,8 @@
 //! #     S::Error: std::fmt::Display + cow_sdk::core::SignerError,
 //! # {
 //! let sdk = Trading::builder()
-//!     .with_chain_id(SupportedChainId::Sepolia)
-//!     .with_app_code("your-app-code")
+//!     .chain_id(SupportedChainId::Sepolia)
+//!     .app_code("your-app-code")
 //!     .build()?;
 //!
 //! // Sell 0.1 WETH for COW on Sepolia.

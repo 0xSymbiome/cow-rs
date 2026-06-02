@@ -81,8 +81,8 @@ Ready-state facade setup on the native/default transport path:
 use cow_sdk::{SupportedChainId, Trading};
 
 let _sdk = Trading::builder()
-    .with_chain_id(SupportedChainId::Sepolia)
-    .with_app_code("your-app-code")
+    .chain_id(SupportedChainId::Sepolia)
+    .app_code("your-app-code")
     .build()
     .unwrap();
 ```

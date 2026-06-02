@@ -25,9 +25,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // `Arc<MockOrderbook>` coerces into the `Arc<dyn OrderbookClient>` the
     // option expects — no explicit cast needed.
     let sdk = Trading::builder()
-        .with_chain_id(SupportedChainId::Sepolia)
-        .with_app_code("cow-rs-quickstart")
-        .with_orderbook_client(Arc::new(orderbook))
+        .chain_id(SupportedChainId::Sepolia)
+        .app_code("cow-rs-quickstart")
+        .orderbook_client(Arc::new(orderbook))
         .build()?;
 
     // Sell 0.1 WETH for COW. The owner is set explicitly here; with a real

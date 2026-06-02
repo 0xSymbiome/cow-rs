@@ -21,9 +21,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     provider.signer = Some(signer.clone());
 
     let sdk = Trading::builder()
-        .with_chain_id(SupportedChainId::Sepolia)
-        .with_app_code("cow-rs-native-examples")
-        .with_orderbook_client(Arc::new(orderbook.clone()))
+        .chain_id(SupportedChainId::Sepolia)
+        .app_code("cow-rs-native-examples")
+        .orderbook_client(Arc::new(orderbook.clone()))
         .build()?;
 
     let quote = sdk

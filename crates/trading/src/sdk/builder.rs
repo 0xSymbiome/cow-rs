@@ -12,16 +12,16 @@ use crate::{
 /// Builder for [`Trading`].
 ///
 /// The builder carries two typestate markers that track whether the required
-/// [`chain_id`](TradingBuilder::with_chain_id) and
-/// [`app_code`](TradingBuilder::with_app_code) prerequisites have been
+/// [`chain_id`](TradingBuilder::chain_id) and
+/// [`app_code`](TradingBuilder::app_code) prerequisites have been
 /// supplied. When both are set, [`TradingBuilder::build`] is
 /// available and returns a fully-configured [`Trading`] with only a
 /// runtime orderbook-binding check remaining.
 ///
 /// On `wasm32`, the SDK keeps a documented runtime terminal for ready-state
 /// orderbook injection: [`TradingBuilder::build`] requires
-/// [`TradingBuilder::with_orderbook_client`] or
-/// [`TradingBuilder::with_options`] with an injected orderbook client, and
+/// [`TradingBuilder::orderbook_client`] or
+/// [`TradingBuilder::options`] with an injected orderbook client, and
 /// returns [`TradingError::MissingInjectedOrderbookClient`] when that runtime
 /// requirement is not satisfied.
 #[derive(Debug, Clone)]
@@ -48,8 +48,8 @@ impl TradingBuilder<ChainIdUnset, AppCodeUnset> {
     ///
     /// The returned builder is in the typestate `<ChainIdUnset, AppCodeUnset>`
     /// so the compile-time-checked [`TradingBuilder::build`] terminal is
-    /// only unlocked after the [`TradingBuilder::with_chain_id`] and
-    /// [`TradingBuilder::with_app_code`] prerequisites are supplied.
+    /// only unlocked after the [`TradingBuilder::chain_id`] and
+    /// [`TradingBuilder::app_code`] prerequisites are supplied.
     #[must_use]
     pub fn new() -> Self {
         Self::default()
@@ -81,18 +81,18 @@ impl TradingBuilder<ChainIdUnset, AppCodeUnset> {
         } = params;
 
         let mut builder = Self::new()
-            .with_options(options)
-            .with_chain_id(chain_id)
-            .with_app_code(app_code);
+            .options(options)
+            .chain_id(chain_id)
+            .app_code(app_code);
 
         if let Some(env) = env {
-            builder = builder.with_env(env);
+            builder = builder.env(env);
         }
         if let Some(overrides) = settlement_contract_override {
-            builder = builder.with_settlement_contract_override(overrides);
+            builder = builder.settlement_contract_override(overrides);
         }
         if let Some(overrides) = eth_flow_contract_override {
-            builder = builder.with_eth_flow_contract_override(overrides);
+            builder = builder.eth_flow_contract_override(overrides);
         }
 
         builder.build()
@@ -105,7 +105,7 @@ impl<C, A> TradingBuilder<C, A> {
     /// Transitions the builder's chain-id typestate to [`ChainIdSet`];
     /// [`TradingBuilder::build`] unlocks once app code is also set.
     #[must_use]
-    pub fn with_chain_id(self, chain_id: SupportedChainId) -> TradingBuilder<ChainIdSet, A> {
+    pub fn chain_id(self, chain_id: SupportedChainId) -> TradingBuilder<ChainIdSet, A> {
         TradingBuilder {
             trader_defaults: PartialTraderParameters {
                 chain_id: Some(chain_id),
@@ -127,7 +127,7 @@ impl<C, A> TradingBuilder<C, A> {
     /// [`TradingError::AppCode`]. Deferring the error to the terminal keeps the
     /// fluent construction chain ergonomic while preserving typed validation.
     #[must_use]
-    pub fn with_app_code<T>(self, app_code: T) -> TradingBuilder<C, AppCodeSet>
+    pub fn app_code<T>(self, app_code: T) -> TradingBuilder<C, AppCodeSet>
     where
         T: TryInto<AppCode>,
         T::Error: Into<AppCodeError>,
@@ -150,14 +150,14 @@ impl<C, A> TradingBuilder<C, A> {
 
     /// Returns a copy of this builder with a default environment.
     #[must_use]
-    pub const fn with_env(mut self, env: CowEnv) -> Self {
+    pub const fn env(mut self, env: CowEnv) -> Self {
         self.trader_defaults.env = Some(env);
         self
     }
 
     /// Returns a copy of this builder with settlement contract overrides.
     #[must_use]
-    pub fn with_settlement_contract_override(
+    pub fn settlement_contract_override(
         mut self,
         settlement_contract_override: cow_sdk_core::AddressPerChain,
     ) -> Self {
@@ -167,7 +167,7 @@ impl<C, A> TradingBuilder<C, A> {
 
     /// Returns a copy of this builder with `EthFlow` contract overrides.
     #[must_use]
-    pub fn with_eth_flow_contract_override(
+    pub fn eth_flow_contract_override(
         mut self,
         eth_flow_contract_override: cow_sdk_core::AddressPerChain,
     ) -> Self {
@@ -177,7 +177,7 @@ impl<C, A> TradingBuilder<C, A> {
 
     /// Returns a copy of this builder with explicit SDK options.
     #[must_use]
-    pub fn with_options(mut self, options: TradingOptions) -> Self {
+    pub fn options(mut self, options: TradingOptions) -> Self {
         self.options = options;
         self
     }
@@ -187,7 +187,7 @@ impl<C, A> TradingBuilder<C, A> {
     /// The injected client fixes the effective orderbook chain and environment
     /// for orderbook-bound flows.
     #[must_use]
-    pub fn with_orderbook_client(mut self, orderbook_client: Arc<dyn OrderbookClient>) -> Self {
+    pub fn orderbook_client(mut self, orderbook_client: Arc<dyn OrderbookClient>) -> Self {
         self.options = self.options.with_orderbook_client(orderbook_client);
         self
     }
@@ -233,7 +233,7 @@ impl TradingBuilder<ChainIdSet, AppCodeSet> {
     /// ```compile_fail
     /// use cow_sdk_trading::TradingBuilder;
     /// let _ = TradingBuilder::new()
-    ///     .with_app_code("test")
+    ///     .app_code("test")
     ///     .build();
     /// ```
     ///
@@ -241,7 +241,7 @@ impl TradingBuilder<ChainIdSet, AppCodeSet> {
     /// use cow_sdk_core::SupportedChainId;
     /// use cow_sdk_trading::TradingBuilder;
     /// let _ = TradingBuilder::new()
-    ///     .with_chain_id(SupportedChainId::Mainnet)
+    ///     .chain_id(SupportedChainId::Mainnet)
     ///     .build();
     /// ```
     pub fn build(self) -> Result<Trading, TradingError> {

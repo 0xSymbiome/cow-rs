@@ -139,8 +139,8 @@ let client = AlloyClient::builder()
     .await?;
 
 let sdk = Trading::builder()
-    .with_chain_id(SupportedChainId::Sepolia)
-    .with_app_code("cow-rs/alloy-adapter")
+    .chain_id(SupportedChainId::Sepolia)
+    .app_code("cow-rs/alloy-adapter")
     .build()?;
 
 let signer = client.create_signer("local").await?;

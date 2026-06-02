@@ -16,9 +16,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     orderbook.push_order(sample_open_order());
     let signer = MockSigner::default();
     let sdk = Trading::builder()
-        .with_chain_id(SupportedChainId::Sepolia)
-        .with_app_code("cow-rs-order-lifecycle")
-        .with_orderbook_client(Arc::new(orderbook.clone()))
+        .chain_id(SupportedChainId::Sepolia)
+        .app_code("cow-rs-order-lifecycle")
+        .orderbook_client(Arc::new(orderbook.clone()))
         .build()?;
 
     let params = OrderTraderParameters::new(sample_order_uid());

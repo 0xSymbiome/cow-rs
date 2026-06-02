@@ -73,9 +73,9 @@ mod native {
         // are set, then validates that the injected orderbook runtime agrees
         // with the trader defaults.
         let sdk: Trading = Trading::builder()
-            .with_chain_id(SupportedChainId::Sepolia)
-            .with_app_code("cow-rs-signed-order-example")
-            .with_orderbook_client(orderbook)
+            .chain_id(SupportedChainId::Sepolia)
+            .app_code("cow-rs-signed-order-example")
+            .orderbook_client(orderbook)
             .build()
             .map_err(TradingErrorReport::from)?;
 

@@ -34,8 +34,8 @@ fn app_code_rejects_only_empty_nul_and_ascii_control_characters() {
 #[test]
 fn builder_surfaces_app_code_validation_as_typed_trading_error() {
     let error = TradingBuilder::new()
-        .with_chain_id(SupportedChainId::Sepolia)
-        .with_app_code("")
+        .chain_id(SupportedChainId::Sepolia)
+        .app_code("")
         .build()
         .expect_err("empty appCode must fail at the ready terminal");
 

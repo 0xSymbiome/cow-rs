@@ -33,8 +33,8 @@ guide for that wiring.
 use cow_sdk::prelude::{SupportedChainId, Trading};
 
 let _sdk = Trading::builder()
-    .with_chain_id(SupportedChainId::Sepolia)
-    .with_app_code("your-app-code")
+    .chain_id(SupportedChainId::Sepolia)
+    .app_code("your-app-code")
     .build()
     .unwrap();
 ```
@@ -53,8 +53,8 @@ use cow_sdk::core::{Amount, OrderKind};
 #     S::Error: std::fmt::Display + cow_sdk::core::SignerError,
 # {
 let sdk = Trading::builder()
-    .with_chain_id(SupportedChainId::Sepolia)
-    .with_app_code("your-app-code")
+    .chain_id(SupportedChainId::Sepolia)
+    .app_code("your-app-code")
     .build()?;
 
 // Sell 0.1 WETH for COW on Sepolia.

@@ -170,8 +170,8 @@ use cow_sdk::{SupportedChainId, Trading};
 
 fn build_sdk() -> Result<Trading, Box<dyn std::error::Error>> {
     let sdk = Trading::builder()
-        .with_chain_id(SupportedChainId::Sepolia)
-        .with_app_code("your-app-code")
+        .chain_id(SupportedChainId::Sepolia)
+        .app_code("your-app-code")
         .build()?;
 
     Ok(sdk)
@@ -232,9 +232,9 @@ fn build_browser_ready_sdk() -> Result<Trading, Box<dyn std::error::Error>> {
 
     let options = TradingOptions::new().with_orderbook_client(Arc::new(orderbook));
     let sdk = Trading::builder()
-        .with_chain_id(SupportedChainId::Sepolia)
-        .with_app_code("your-browser-app-code")
-        .with_options(options)
+        .chain_id(SupportedChainId::Sepolia)
+        .app_code("your-browser-app-code")
+        .options(options)
         .build()?;
 
     Ok(sdk)

@@ -416,10 +416,10 @@ fn build_trading_with_orderbook(
     let env_value = pure::chains::env_from_str(env.as_deref())
         .map_err(|error| WasmError::from(error).into_js())?;
     Trading::builder()
-        .with_chain_id(chain)
-        .with_app_code(app_code)
-        .with_env(env_value)
-        .with_orderbook_client(orderbook)
+        .chain_id(chain)
+        .app_code(app_code)
+        .env(env_value)
+        .orderbook_client(orderbook)
         .build()
         .map_err(|error| WasmError::from(error).into_js())
 }

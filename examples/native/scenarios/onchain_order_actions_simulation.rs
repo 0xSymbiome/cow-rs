@@ -27,14 +27,14 @@ fn sample_ethflow_order() -> cow_sdk::orderbook::Order {
 fn trading_sdk(orderbook: MockOrderbook) -> Trading {
     let trader = sample_trader_parameters();
     let mut builder = Trading::builder()
-        .with_chain_id(trader.chain_id)
-        .with_app_code(trader.app_code);
+        .chain_id(trader.chain_id)
+        .app_code(trader.app_code);
     if let Some(env) = trader.env {
-        builder = builder.with_env(env);
+        builder = builder.env(env);
     }
 
     builder
-        .with_orderbook_client(Arc::new(orderbook))
+        .orderbook_client(Arc::new(orderbook))
         .build()
         .expect("example trading sdk construction should succeed")
 }

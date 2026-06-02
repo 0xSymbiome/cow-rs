@@ -172,10 +172,10 @@ impl TradingHarness {
         let quote_results = quote_results_fixture().await;
         let orderbook = Arc::new(DelayedOrderbook::new(delay));
         let sdk = Trading::builder()
-            .with_chain_id(SupportedChainId::Sepolia)
-            .with_app_code("cancellation-composition")
-            .with_env(CowEnv::Prod)
-            .with_options(TradingOptions::new().with_orderbook_client(orderbook))
+            .chain_id(SupportedChainId::Sepolia)
+            .app_code("cancellation-composition")
+            .env(CowEnv::Prod)
+            .options(TradingOptions::new().with_orderbook_client(orderbook))
             .build()
             .expect("trading sdk must construct for cancellation composition tests");
 
@@ -191,10 +191,10 @@ impl TradingHarness {
 async fn quote_results_fixture() -> QuoteResults {
     let orderbook = Arc::new(DelayedOrderbook::new(Duration::ZERO));
     let sdk = Trading::builder()
-        .with_chain_id(SupportedChainId::Sepolia)
-        .with_app_code("cancellation-composition")
-        .with_env(CowEnv::Prod)
-        .with_options(TradingOptions::new().with_orderbook_client(orderbook))
+        .chain_id(SupportedChainId::Sepolia)
+        .app_code("cancellation-composition")
+        .env(CowEnv::Prod)
+        .options(TradingOptions::new().with_orderbook_client(orderbook))
         .build()
         .expect("fixture sdk must construct");
 
