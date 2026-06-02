@@ -5,7 +5,7 @@ use serde_json::json;
 use cow_sdk::core::Amount;
 use cow_sdk::prelude::{SupportedChainId, Trading};
 use cow_sdk::trading::{
-    AllowanceParameters, ApprovalParameters, OrderTraderParameters, TradingOptions,
+    AllowanceParameters, ApprovalParameters, OrderTraderParameters,
 };
 
 use cow_sdk_examples_native::support::{
@@ -23,8 +23,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let sdk = Trading::builder()
         .with_chain_id(SupportedChainId::Sepolia)
         .with_app_code("cow-rs-native-examples")
-        .with_options(TradingOptions::new().with_orderbook_client(Arc::new(orderbook.clone())))
-        .build_ready()?;
+        .with_orderbook_client(Arc::new(orderbook.clone()))
+        .build()?;
 
     let quote = sdk
         .get_quote_results(sample_trade_parameters(), &signer, None)

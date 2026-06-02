@@ -9,7 +9,6 @@ use std::{error::Error, sync::Arc};
 
 use cow_sdk::core::{Amount, OrderKind};
 use cow_sdk::prelude::{SupportedChainId, TradeParameters, Trading};
-use cow_sdk::trading::TradingOptions;
 
 use cow_sdk_examples_native::support::{
     MockOrderbook, MockSigner, sample_buy_token, sample_owner, sample_quote_response,
@@ -28,8 +27,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let sdk = Trading::builder()
         .with_chain_id(SupportedChainId::Sepolia)
         .with_app_code("cow-rs-quickstart")
-        .with_options(TradingOptions::new().with_orderbook_client(Arc::new(orderbook)))
-        .build_ready()?;
+        .with_orderbook_client(Arc::new(orderbook))
+        .build()?;
 
     // Sell 0.1 WETH for COW. The owner is set explicitly here; with a real
     // signer it defaults to the signer's address.

@@ -346,3 +346,28 @@ only through the typestate builder with `appCode` as a compile-time marker on
 app-code-less path is simply not a `Trading` construction. The upstream
 TypeScript SDK and the CoW Swap frontend likewise use one trading client plus
 standalone functions / direct calls for the app-code-less operations.
+
+## Amendment 2026-06-02: builder terminal renamed to `build`
+
+The ready-state terminal `TradingBuilder::build_ready()` is renamed to
+`TradingBuilder::build()`. The `_ready` suffix existed only to keep the two
+former terminals (`build_ready` and `build_helper_only`) from collapsing into a
+single overloaded `build` that could silently produce a helper-only instance —
+the exact concern recorded in the original decision above. The helper-only
+terminal was removed in the preceding amendment, so there is now one terminal
+and one product type (`Trading`); the suffix names a distinction that no longer
+exists, and every sibling client builder (`OrderbookApi`, `SubgraphApi`,
+`AlloyClient`, and the alloy provider and signer builders) already terminates
+with `build()`. Renaming restores that consistency. The compile-time typestate
+guarantee is unchanged: `build()` is still implemented only on
+`TradingBuilder<ChainIdSet, AppCodeSet>`, the `TradingBuilder::ready(...)`
+total-input shortcut still calls it, and the `wasm32` injected-orderbook runtime
+check is unchanged.
+
+The builder also drops `with_trader_defaults`. It accepted a
+`PartialTraderParameters` bag without transitioning the typestate markers, so it
+could never satisfy the terminal on its own and only duplicated the individual
+`with_*` setters. Trader defaults reach the builder through the explicit typed
+setters (`with_chain_id`, `with_app_code`, `with_env`, and the contract-override
+setters) or, for callers holding a total `TraderParameters`, through
+`TradingBuilder::ready(...)`.

@@ -69,14 +69,14 @@ mod native {
         let signer = ExampleSigner::new(owner);
 
         // Builder path: every builder method shown below is public. Calling
-        // `.build_ready()` is only possible after `appCode` and chain authority
+        // `.build()` is only possible after `appCode` and chain authority
         // are set, then validates that the injected orderbook runtime agrees
         // with the trader defaults.
         let sdk: Trading = Trading::builder()
             .with_chain_id(SupportedChainId::Sepolia)
             .with_app_code("cow-rs-signed-order-example")
             .with_orderbook_client(orderbook)
-            .build_ready()
+            .build()
             .map_err(TradingErrorReport::from)?;
 
         // Full journey: quote fetch, order signing, and order submission all run

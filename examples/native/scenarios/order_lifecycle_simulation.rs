@@ -3,7 +3,7 @@ use std::{error::Error, sync::Arc};
 use serde_json::json;
 
 use cow_sdk::prelude::{SupportedChainId, Trading};
-use cow_sdk::trading::{OrderTraderParameters, TradingOptions};
+use cow_sdk::trading::OrderTraderParameters;
 
 use cow_sdk_examples_native::support::{
     MockOrderbook, MockSigner, sample_open_order, sample_order_uid, sample_owner,
@@ -18,8 +18,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let sdk = Trading::builder()
         .with_chain_id(SupportedChainId::Sepolia)
         .with_app_code("cow-rs-order-lifecycle")
-        .with_options(TradingOptions::new().with_orderbook_client(Arc::new(orderbook.clone())))
-        .build_ready()?;
+        .with_orderbook_client(Arc::new(orderbook.clone()))
+        .build()?;
 
     let params = OrderTraderParameters::new(sample_order_uid());
 

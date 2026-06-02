@@ -176,7 +176,7 @@ impl TradingHarness {
             .with_app_code("cancellation-composition")
             .with_env(CowEnv::Prod)
             .with_options(TradingOptions::new().with_orderbook_client(orderbook))
-            .build_ready()
+            .build()
             .expect("trading sdk must construct for cancellation composition tests");
 
         Self {
@@ -195,7 +195,7 @@ async fn quote_results_fixture() -> QuoteResults {
         .with_app_code("cancellation-composition")
         .with_env(CowEnv::Prod)
         .with_options(TradingOptions::new().with_orderbook_client(orderbook))
-        .build_ready()
+        .build()
         .expect("fixture sdk must construct");
 
     sdk.get_quote_only(sample_trade_parameters(OrderKind::Sell), None)

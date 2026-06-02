@@ -36,7 +36,7 @@ async fn alloy_client_satisfies_trading_sdk_boundaries() {
         .with_chain_id(SupportedChainId::Mainnet)
         .with_env(CowEnv::Prod)
         .with_app_code("cow-rs/umbrella-composition-test")
-        .build_ready()
+        .build()
         .unwrap();
 
     let allowance = sdk

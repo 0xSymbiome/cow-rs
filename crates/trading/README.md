@@ -48,7 +48,7 @@ let _sdk = Trading::builder()
     .with_app_code("your-app-code")
     .with_env(CowEnv::Prod)
     .with_options(TradingOptions::new())
-    .build_ready()
+    .build()
     .expect("ready-state construction");
 ```
 

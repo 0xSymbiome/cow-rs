@@ -313,8 +313,19 @@ The first functional crate-family release begins at `0.1.0`.
   `TradingSdk` is now `Trading`, `TradingSdkBuilder` is now `TradingBuilder`,
   and `TradingSdkOptions` is now `TradingOptions`. Construction remains
   exclusively through the typestate-builder ready terminals
-  (`TradingBuilder::ready(...)` and `build_ready()`); the `cow-sdk` facade
+  (`TradingBuilder::ready(...)` and `build()`); the `cow-sdk` facade
   prelude re-exports are updated to the new names.
+- Renamed the trading builder terminal `TradingBuilder::build_ready()` to
+  `TradingBuilder::build()` for consistency with every sibling client builder
+  (`OrderbookApi`, `SubgraphApi`, `AlloyClient`, and the alloy provider and
+  signer builders all terminate with `build()`). The `_ready` suffix only
+  distinguished the former `build_ready` terminal from the removed
+  `build_helper_only`; with a single terminal and a single product type the
+  distinction no longer exists. The compile-time typestate guarantee is
+  unchanged — `build()` is implemented only once chain id and `appCode` are
+  set — and the `TradingBuilder::ready(...)` one-call shortcut is retained.
+  Governed by
+  [ADR 0011](docs/adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md).
 - `cow_sdk_orderbook::OrderbookError::Serialization` now carries a structured
   `{ category, line, column }` triple instead of wrapping the raw
   `serde_json::Error`. The orderbook client surfaces only the serde failure
@@ -483,7 +494,14 @@ The first functional crate-family release begins at `0.1.0`.
   cancellation — are the crate's free functions (`get_cow_protocol_allowance`,
   `approval_transaction`, `get_pre_sign_transaction`, `cancel_order_onchain`),
   which need no `appCode` and no trading client; `Trading` (built through
-  `build_ready`) still exposes them as conveniences. Governed by
+  `build`) still exposes them as conveniences. Governed by
+  [ADR 0011](docs/adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md).
+- Removed the `TradingBuilder::with_trader_defaults` setter. It accepted a
+  `PartialTraderParameters` bag without transitioning the typestate markers, so
+  it could never satisfy the `build()` terminal on its own and only duplicated
+  the individual `with_*` setters. Trader defaults reach the builder through the
+  explicit typed setters or, for callers holding a total `TraderParameters`,
+  through `TradingBuilder::ready(...)`. Governed by
   [ADR 0011](docs/adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md).
 - Removed the unused `cow_sdk_core::DecimalAmount` type and its
   `from_whole_approx`, `to_f64_approx`, and `from_atoms` surface. The

@@ -3,7 +3,7 @@
 //! This example shows the compile-time-checked ready-state terminal on
 //! [`cow_sdk_trading::TradingBuilder`]:
 //!
-//! - [`cow_sdk_trading::TradingBuilder::build_ready`] is only callable once the
+//! - [`cow_sdk_trading::TradingBuilder::build`] is only callable once the
 //!   builder has reached the `<ChainIdSet, AppCodeSet>` typestate through the
 //!   explicit [`cow_sdk_trading::TradingBuilder::with_chain_id`] and
 //!   [`cow_sdk_trading::TradingBuilder::with_app_code`] setters. Calling it
@@ -28,12 +28,12 @@ use cow_sdk_trading::TradingBuilder;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Ready-state path: chain id and app code satisfy the compile-time
-    // prerequisites for `build_ready`, which only runs the injected
+    // prerequisites for `build`, which only runs the injected
     // orderbook-binding validator at runtime.
     let ready_sdk = TradingBuilder::new()
         .with_chain_id(SupportedChainId::Mainnet)
         .with_app_code("cow-rs/typestate-example")
-        .build_ready()?;
+        .build()?;
     println!(
         "ready sdk built through the typestate path for chain {:?}",
         ready_sdk.trader_defaults().chain_id

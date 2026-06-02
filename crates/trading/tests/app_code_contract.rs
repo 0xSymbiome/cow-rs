@@ -36,7 +36,7 @@ fn builder_surfaces_app_code_validation_as_typed_trading_error() {
     let error = TradingBuilder::new()
         .with_chain_id(SupportedChainId::Sepolia)
         .with_app_code("")
-        .build_ready()
+        .build()
         .expect_err("empty appCode must fail at the ready terminal");
 
     assert!(matches!(error, TradingError::AppCode(AppCodeError::Empty)));

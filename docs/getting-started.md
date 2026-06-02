@@ -143,7 +143,7 @@ custom EIP-1271 signatures, and HTTP fetch dispatch.
 
 The ready-state builder contract is intentionally small.
 
-`Trading::builder().build_ready()` is only reachable after:
+`Trading::builder().build()` is only reachable after:
 
 - a default `chainId`
 - a stable `appCode`
@@ -168,11 +168,11 @@ Minimal ready-state builder:
 ```rust
 use cow_sdk::{SupportedChainId, Trading};
 
-fn build_ready_sdk() -> Result<Trading, Box<dyn std::error::Error>> {
+fn build_sdk() -> Result<Trading, Box<dyn std::error::Error>> {
     let sdk = Trading::builder()
         .with_chain_id(SupportedChainId::Sepolia)
         .with_app_code("your-app-code")
-        .build_ready()?;
+        .build()?;
 
     Ok(sdk)
 }
@@ -235,7 +235,7 @@ fn build_browser_ready_sdk() -> Result<Trading, Box<dyn std::error::Error>> {
         .with_chain_id(SupportedChainId::Sepolia)
         .with_app_code("your-browser-app-code")
         .with_options(options)
-        .build_ready()?;
+        .build()?;
 
     Ok(sdk)
 }
@@ -249,7 +249,7 @@ free functions directly — `get_cow_protocol_allowance`, `approval_transaction`
 `get_pre_sign_transaction`, and `cancel_order_onchain` — so an integration such
 as an allowance/approval screen or a pre-sign tool needs no trading client at
 all. Quote, post, order lookup, and off-chain cancellation flows use the ready
-`Trading` client built with `build_ready()`.
+`Trading` client built with `build()`.
 
 ### What This Step Proves
 
@@ -259,7 +259,7 @@ This builder step proves the top-level SDK contract:
 - `SupportedChainId` is the public chain selector type
 - `appCode` is a required ready-state default and a stable integration
   identifier
-- `build_ready()` returns the ready `Trading` client; chain-bound helpers that
+- `build()` returns the ready `Trading` client; chain-bound helpers that
   need no app code are the crate's free functions
 - `Address::new(...)` is the public validated address constructor
 - `CoreError` is the canonical shared validation and configuration error type

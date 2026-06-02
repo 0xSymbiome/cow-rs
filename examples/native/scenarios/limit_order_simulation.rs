@@ -3,7 +3,6 @@ use std::{error::Error, sync::Arc};
 use serde_json::json;
 
 use cow_sdk::prelude::{SupportedChainId, Trading};
-use cow_sdk::trading::TradingOptions;
 
 use cow_sdk_examples_native::support::{
     MockOrderbook, MockSigner, sample_limit_parameters, sample_owner, sample_quote_response,
@@ -16,8 +15,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let sdk = Trading::builder()
         .with_chain_id(SupportedChainId::Sepolia)
         .with_app_code("cow-rs-limit-order")
-        .with_options(TradingOptions::new().with_orderbook_client(Arc::new(orderbook.clone())))
-        .build_ready()?;
+        .with_orderbook_client(Arc::new(orderbook.clone()))
+        .build()?;
 
     let posted = sdk
         .post_limit_order(sample_limit_parameters(), &signer, None)

@@ -23,7 +23,7 @@ use cow_sdk::signing::{
 };
 use cow_sdk::trading::{
     ApprovalParameters, DEFAULT_QUOTE_VALIDITY, DEFAULT_SLIPPAGE_BPS, GAS_LIMIT_DEFAULT,
-    GAS_MARGIN_PERCENT, MAX_SLIPPAGE_BPS, PartnerFee, PartnerFeePolicy, TradingOptions,
+    GAS_MARGIN_PERCENT, MAX_SLIPPAGE_BPS, PartnerFee, PartnerFeePolicy,
     approval_transaction, default_slippage_bps, is_ethflow_order, partner_fee_bps,
     sanitize_protocol_fee_bps, suggest_slippage_from_fee, suggest_slippage_from_volume,
     swap_params_to_limit_order_params,
@@ -68,10 +68,8 @@ pub fn capability_report_json(chain_id: u32, env: &str) -> Result<String, JsValu
         .with_chain_id(chain_id)
         .with_app_code("cow-rs/wasm-console")
         .with_env(env)
-        .with_options(TradingOptions::default().with_orderbook_client(Arc::new(
-            orderbook_client,
-        )))
-        .build_ready()
+        .with_orderbook_client(Arc::new(orderbook_client))
+        .build()
     .map_err(js_string_error)?;
     let api_context = api_context(chain_id, env);
     let deployment = deployment_for_chain(u64::from(chain_id))
@@ -348,10 +346,8 @@ pub async fn trading_quote_preview_json(
         .with_chain_id(chain_id)
         .with_app_code(app_code.trim())
         .with_env(env)
-        .with_options(TradingOptions::default().with_orderbook_client(Arc::new(
-            orderbook_client,
-        )))
-        .build_ready()
+        .with_orderbook_client(Arc::new(orderbook_client))
+        .build()
     .map_err(js_string_error)?;
     let results = sdk
         .get_quote_only(params, None)

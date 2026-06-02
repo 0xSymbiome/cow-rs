@@ -56,8 +56,8 @@ the trading-sdk runtime prerequisites audit.
 | Panic-free terminals | Build terminals read each input from the data-carrying marker and return typed errors; no typestate-guard `expect`/`panic!` remains | Conforms |
 | Host policy | Explicit orderbook and subgraph endpoint overrides are validated at build time and fail through typed host-policy errors | Conforms |
 | wasm32 invariant | `trybuild` compile-fail coverage asserts `.build()` without `.transport(...)` does not compile on `wasm32` | Conforms |
-| Trading SDK construction | `build_ready` requires chain id plus validated `AppCode` and returns the ready `Trading` client | Conforms |
-| Trading wasm32 posture | `build_ready` documents and enforces the injected orderbook-client requirement at the runtime terminal on `wasm32` | Conforms |
+| Trading SDK construction | `build` requires chain id plus validated `AppCode` and returns the ready `Trading` client | Conforms |
+| Trading wasm32 posture | `build` documents and enforces the injected orderbook-client requirement at the runtime terminal on `wasm32` | Conforms |
 | Native Alloy builders | Provider, signer, and umbrella construction terminals are reachable only after required transport, key-source, and chain marker axes are set | Conforms |
 
 ## Current Contract
@@ -129,7 +129,7 @@ the expected compile error and its stderr fixture.
 
 `TradingBuilder<ChainIdState, AppCodeState>` lives at
 `crates/trading/src/sdk/builder.rs`. The fluent chain-id and app-code setters move
-the builder from unset to set marker states. `build_ready()` is implemented
+the builder from unset to set marker states. `build()` is implemented
 only on `(ChainIdSet, AppCodeSet)` and returns `Trading`. App-code-less helper
 flows (allowance, approval, pre-sign, on-chain cancellation) are the crate's
 free functions and need no trading client.
@@ -139,7 +139,7 @@ returned. The validation deliberately rejects only empty strings, NUL bytes,
 and ASCII control characters so source-backed examples such as `CoW Swap`,
 `cow-rs/wasm-console`, and `COW_BRIDGING_REACT_EXAMPLE` remain accepted.
 
-On `wasm32`, `build_ready()` keeps the documented runtime terminal posture:
+On `wasm32`, `build()` keeps the documented runtime terminal posture:
 callers must inject an orderbook client with
 `TradingOptions::with_orderbook_client(...)`, otherwise the terminal returns
 `TradingError::MissingInjectedOrderbookClient`. That avoids adding a third

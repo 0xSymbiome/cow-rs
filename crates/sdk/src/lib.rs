@@ -28,7 +28,7 @@
 //! let _sdk = Trading::builder()
 //!     .with_chain_id(SupportedChainId::Sepolia)
 //!     .with_app_code("your-app-code")
-//!     .build_ready()
+//!     .build()
 //!     .unwrap();
 //! ```
 //!
@@ -48,7 +48,7 @@
 //! let sdk = Trading::builder()
 //!     .with_chain_id(SupportedChainId::Sepolia)
 //!     .with_app_code("your-app-code")
-//!     .build_ready()?;
+//!     .build()?;
 //!
 //! // Sell 0.1 WETH for COW on Sepolia.
 //! let weth = Address::new("0xfff9976782d46cc05630d1f6ebab18b2324d6b14")?;

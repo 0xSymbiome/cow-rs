@@ -121,7 +121,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let sdk = Trading::builder()
         .with_chain_id(SupportedChainId::Sepolia)
         .with_app_code(app_code.as_str())
-        .build_ready()?;
+        .build()?;
     let context = ApiContext::new(SupportedChainId::Sepolia, CowEnv::Prod);
     let orderbook = OrderbookApi::builder_from_context(context).build()?;
 

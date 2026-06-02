@@ -37,7 +37,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .with_chain_id(SupportedChainId::Mainnet)
         .with_env(CowEnv::Prod)
         .with_app_code("cow-rs/alloy-trading-example")
-        .build_ready()?;
+        .build()?;
 
     let allowance = sdk
         .get_cow_protocol_allowance(

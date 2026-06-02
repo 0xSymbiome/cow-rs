@@ -4,7 +4,7 @@ use cow_sdk::prelude::{
     TradingOptions,
 };
 use cow_sdk::signing::{ORDER_PRIMARY_TYPE, generate_order_id, order_typed_data};
-use cow_sdk::trading::{PartialTraderParameters, PartnerFee, PartnerFeePolicy};
+use cow_sdk::trading::{PartnerFee, PartnerFeePolicy};
 
 #[test]
 fn public_api_reexports_cover_primary_root_surface() {
@@ -15,10 +15,9 @@ fn public_api_reexports_cover_primary_root_surface() {
     )
     .expect("ready trading sdk construction should succeed");
     let _builder = TradingBuilder::new()
-        .with_trader_defaults(PartialTraderParameters::default())
         .with_chain_id(SupportedChainId::Sepolia)
         .with_app_code("cow-rs/public-api")
-        .build_ready()
+        .build()
         .expect("ready builder construction should succeed");
     assert_eq!(ORDER_PRIMARY_TYPE, "Order");
 

@@ -3,7 +3,7 @@
 Status: Current
 Last reviewed: 2026-06-02
 Owning surface: `cow-sdk-trading` ready-state `Trading` construction, the chain-bound helper free functions, helper-specific prerequisite contract, and per-trade owner attribution
-Refresh trigger: Changes to ready-state `Trading` builder terminals, the chain-bound helper free functions, method-specific prerequisite enforcement, the per-trade owner-attribution placement, or any change that weakens the wasm32 orderbook-client requirement inside `build_ready()`
+Refresh trigger: Changes to ready-state `Trading` builder terminals, the chain-bound helper free functions, method-specific prerequisite enforcement, the per-trade owner-attribution placement, or any change that weakens the wasm32 orderbook-client requirement inside `build()`
 Related docs:
 - [ADR 0002](../adr/0002-dedicated-trading-orchestration-crate.md)
 - [ADR 0006](../adr/0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
@@ -31,8 +31,8 @@ or unrelated credential-hygiene questions.
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
 | AppCode attribution | Trading attribution uses the `AppCode` newtype, rejecting empty strings, NUL bytes, and ASCII control characters before ready-state construction | Conforms |
-| Typestate ready construction | `TradingBuilder::build_ready` and `TradingBuilder::ready` require total chain id plus validated `appCode` inputs before ready-state construction | Conforms |
-| wasm32 build_ready() requires injected orderbook client | `build_ready()` returns `TradingError::MissingInjectedOrderbookClient` when `options.orderbook_client().is_none()` on `wasm32` | Conforms |
+| Typestate ready construction | `TradingBuilder::build` and `TradingBuilder::ready` require total chain id plus validated `appCode` inputs before ready-state construction | Conforms |
+| wasm32 build() requires injected orderbook client | `build()` returns `TradingError::MissingInjectedOrderbookClient` when `options.orderbook_client().is_none()` on `wasm32` | Conforms |
 | Chain-bound helper free functions | `get_cow_protocol_allowance`, `approval_transaction`, `get_pre_sign_transaction`, and `cancel_order_onchain` need chain authority but no `appCode`, and run without a trading client | Conforms |
 | Chain-bound helper prerequisites | Allowance, approval, pre-sign, and on-chain cancellation no longer require `appCode` when only chain and protocol context are needed | Conforms |
 | Per-trade owner attribution | `TradeParameters.owner`, `LimitTradeParameters.owner`, and `OrderTraderParameters` carry the per-trade owner. The SDK does not store a default owner; for signer-backed flows the signer address resolved through `Signer::get_address` is the implicit fallback, and for quote-only flows the owner must come from `TradeParameters.owner` or `advanced_settings.quote_request.from`. | Conforms |
@@ -41,7 +41,7 @@ or unrelated credential-hygiene questions.
 
 ### Ready-State Construction
 
-`TradingBuilder::build_ready` is available only after the builder has both
+`TradingBuilder::build` is available only after the builder has both
 chain id and `AppCode` typestate markers set, so missing ready-state
 prerequisites are rejected at compile time for fluent builder callers and
 invalid attribution strings are rejected before the SDK handle is returned.
@@ -50,7 +50,7 @@ that already hold total `TraderParameters`; it does not accept partial defaults.
 
 ### wasm32 Typestate Ready Terminal
 
-`TradingBuilder::build_ready()` is the stronger typestate terminal. On
+`TradingBuilder::build()` is the stronger typestate terminal. On
 native targets it remains compatible with the default orderbook factory. On
 `wasm32`, the terminal additionally requires an injected orderbook client
 because the browser runtime does not ship a default HTTP transport; the
@@ -118,9 +118,9 @@ Primary implementation points:
 
 Primary regression coverage:
 
-- `crates/trading/tests/sdk_contract.rs::build_ready_rejects_missing_injected_orderbook_client_on_wasm32`
-- `crates/trading/tests/sdk_contract.rs::build_ready_succeeds_on_wasm32_with_injected_orderbook_client`
-- `crates/trading/tests/sdk_contract.rs::build_ready_succeeds_on_native_without_injected_orderbook_client`
+- `crates/trading/tests/sdk_contract.rs::build_rejects_missing_injected_orderbook_client_on_wasm32`
+- `crates/trading/tests/sdk_contract.rs::build_succeeds_on_wasm32_with_injected_orderbook_client`
+- `crates/trading/tests/sdk_contract.rs::build_succeeds_on_native_without_injected_orderbook_client`
 - `crates/trading/tests/sdk_contract.rs::sdk_ready_shortcut_accepts_total_trader_parameters`
 - `crates/trading/tests/app_code_contract.rs`
 - `crates/trading/tests/types_contract.rs`

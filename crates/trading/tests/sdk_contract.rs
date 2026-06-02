@@ -112,7 +112,7 @@ async fn sdk_builder_validates_injected_orderbook_context_and_client_context_can
         .with_chain_id(SupportedChainId::Mainnet)
         .with_app_code("0x007")
         .with_orderbook_client(orderbook.clone())
-        .build_ready()
+        .build()
         .expect_err("mismatched injected orderbook chain must fail validation");
     assert!(matches!(
         error,
@@ -126,7 +126,7 @@ async fn sdk_builder_validates_injected_orderbook_context_and_client_context_can
         .with_chain_id(SupportedChainId::Sepolia)
         .with_app_code("0x007")
         .with_orderbook_client(orderbook)
-        .build_ready()
+        .build()
         .expect("builder should accept injected client when defaults do not conflict");
     let mut trade = sample_trade_parameters(cow_sdk_core::OrderKind::Sell);
     trade.env = Some(CowEnv::Staging);
@@ -185,7 +185,7 @@ async fn sdk_orderbook_bound_calls_reject_env_conflicts_with_injected_client_con
         .with_chain_id(SupportedChainId::Sepolia)
         .with_app_code("0x007")
         .with_orderbook_client(orderbook)
-        .build_ready()
+        .build()
         .expect("builder should accept compatible config");
     let mut trade = sample_trade_parameters(cow_sdk_core::OrderKind::Sell);
     trade.env = Some(CowEnv::Staging);
@@ -209,7 +209,7 @@ async fn sdk_allowance_and_approval_use_call_level_chain_resolution() {
         .with_chain_id(SupportedChainId::Sepolia)
         .with_env(CowEnv::Prod)
         .with_app_code("test-app")
-        .build_ready()
+        .build()
         .expect("sdk construction should succeed");
 
     let allowance = sdk
@@ -271,7 +271,7 @@ async fn sdk_async_allowance_and_approval_accept_async_runtime_contracts() {
         .with_chain_id(SupportedChainId::Sepolia)
         .with_env(CowEnv::Prod)
         .with_app_code("test-app")
-        .build_ready()
+        .build()
         .expect("sdk construction should succeed");
 
     let allowance = sdk
@@ -326,7 +326,7 @@ async fn sdk_call_level_overrides_beat_trader_level_overrides_for_settlement_and
         )]))
         .with_options(TradingOptions::new().with_orderbook_client(orderbook.clone()))
         .with_app_code("test-app")
-        .build_ready()
+        .build()
         .expect("sdk construction should succeed");
 
     let pre_sign_tx = sdk
@@ -481,12 +481,12 @@ async fn sdk_onchain_cancel_order_preserves_full_uint256_range_for_ethflow_order
 
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen_test]
-fn build_ready_rejects_missing_injected_orderbook_client_on_wasm32() {
+fn build_rejects_missing_injected_orderbook_client_on_wasm32() {
     let error = TradingBuilder::new()
         .with_chain_id(SupportedChainId::Mainnet)
         .with_app_code("test-app")
-        .build_ready()
-        .expect_err("wasm32 build_ready must reject a missing injected orderbook client");
+        .build()
+        .expect_err("wasm32 build must reject a missing injected orderbook client");
 
     assert!(matches!(
         error,
@@ -496,7 +496,7 @@ fn build_ready_rejects_missing_injected_orderbook_client_on_wasm32() {
 
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen_test]
-fn build_ready_succeeds_on_wasm32_with_injected_orderbook_client() {
+fn build_succeeds_on_wasm32_with_injected_orderbook_client() {
     let transport = FetchTransport::new(&FetchTransportConfig::new("https://api.cow.fi"));
     let client = OrderbookApi::builder()
         .chain(SupportedChainId::Mainnet)
@@ -509,18 +509,18 @@ fn build_ready_succeeds_on_wasm32_with_injected_orderbook_client() {
         .with_chain_id(SupportedChainId::Mainnet)
         .with_app_code("test-app")
         .with_orderbook_client(Arc::new(client))
-        .build_ready()
-        .expect("wasm32 build_ready must accept an injected orderbook client");
+        .build()
+        .expect("wasm32 build must accept an injected orderbook client");
 }
 
 #[cfg(not(target_arch = "wasm32"))]
 #[tokio::test]
-async fn build_ready_succeeds_on_native_without_injected_orderbook_client() {
+async fn build_succeeds_on_native_without_injected_orderbook_client() {
     let sdk = TradingBuilder::new()
         .with_chain_id(SupportedChainId::Mainnet)
         .with_app_code("test-app")
-        .build_ready()
-        .expect("native build_ready must succeed when the typestate prerequisites are set");
+        .build()
+        .expect("native build must succeed when the typestate prerequisites are set");
 
     assert_eq!(
         sdk.trader_defaults().chain_id,
@@ -542,7 +542,7 @@ async fn get_quote_only_returns_cancelled_when_combinator_token_fires_before_cal
         .with_app_code("cancellation-test")
         .with_env(CowEnv::Prod)
         .with_options(TradingOptions::new().with_orderbook_client(orderbook))
-        .build_ready()
+        .build()
         .expect("trading sdk must construct for the cancellation test");
 
     let trade = sample_trade_parameters(cow_sdk_core::OrderKind::Sell);
@@ -578,7 +578,7 @@ async fn get_quote_only_combinator_aborts_an_in_flight_quote() {
         .with_app_code("cancellation-test")
         .with_env(CowEnv::Prod)
         .with_options(TradingOptions::new().with_orderbook_client(orderbook))
-        .build_ready()
+        .build()
         .expect("trading sdk must construct for the cancellation test");
 
     let trade = sample_trade_parameters(cow_sdk_core::OrderKind::Sell);

@@ -420,7 +420,7 @@ fn build_trading_with_orderbook(
         .with_app_code(app_code)
         .with_env(env_value)
         .with_orderbook_client(orderbook)
-        .build_ready()
+        .build()
         .map_err(|error| WasmError::from(error).into_js())
 }
 

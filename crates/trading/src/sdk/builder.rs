@@ -14,12 +14,12 @@ use crate::{
 /// The builder carries two typestate markers that track whether the required
 /// [`chain_id`](TradingBuilder::with_chain_id) and
 /// [`app_code`](TradingBuilder::with_app_code) prerequisites have been
-/// supplied. When both are set, [`TradingBuilder::build_ready`] is
+/// supplied. When both are set, [`TradingBuilder::build`] is
 /// available and returns a fully-configured [`Trading`] with only a
 /// runtime orderbook-binding check remaining.
 ///
 /// On `wasm32`, the SDK keeps a documented runtime terminal for ready-state
-/// orderbook injection: [`TradingBuilder::build_ready`] requires
+/// orderbook injection: [`TradingBuilder::build`] requires
 /// [`TradingBuilder::with_orderbook_client`] or
 /// [`TradingBuilder::with_options`] with an injected orderbook client, and
 /// returns [`TradingError::MissingInjectedOrderbookClient`] when that runtime
@@ -47,7 +47,7 @@ impl TradingBuilder<ChainIdUnset, AppCodeUnset> {
     /// Creates a new builder with empty defaults.
     ///
     /// The returned builder is in the typestate `<ChainIdUnset, AppCodeUnset>`
-    /// so the compile-time-checked [`TradingBuilder::build_ready`] terminal is
+    /// so the compile-time-checked [`TradingBuilder::build`] terminal is
     /// only unlocked after the [`TradingBuilder::with_chain_id`] and
     /// [`TradingBuilder::with_app_code`] prerequisites are supplied.
     #[must_use]
@@ -95,28 +95,15 @@ impl TradingBuilder<ChainIdUnset, AppCodeUnset> {
             builder = builder.with_eth_flow_contract_override(overrides);
         }
 
-        builder.build_ready()
+        builder.build()
     }
 }
 
 impl<C, A> TradingBuilder<C, A> {
-    /// Returns a copy of this builder with trader defaults replaced.
-    ///
-    /// Replacing the defaults does not transition the typestate markers;
-    /// callers that want the compile-time-checked terminals must still reach
-    /// the chain-id and app-code states through the explicit
-    /// [`TradingBuilder::with_chain_id`] and
-    /// [`TradingBuilder::with_app_code`] setters.
-    #[must_use]
-    pub fn with_trader_defaults(mut self, trader_defaults: PartialTraderParameters) -> Self {
-        self.trader_defaults = trader_defaults;
-        self
-    }
-
     /// Returns a copy of this builder with a default chain id.
     ///
     /// Transitions the builder's chain-id typestate to [`ChainIdSet`];
-    /// [`TradingBuilder::build_ready`] unlocks once app code is also set.
+    /// [`TradingBuilder::build`] unlocks once app code is also set.
     #[must_use]
     pub fn with_chain_id(self, chain_id: SupportedChainId) -> TradingBuilder<ChainIdSet, A> {
         TradingBuilder {
@@ -133,7 +120,7 @@ impl<C, A> TradingBuilder<C, A> {
     /// Returns a copy of this builder with a validated default app code.
     ///
     /// Transitions the builder's app-code typestate to [`AppCodeSet`], which
-    /// completes the typestate for [`TradingBuilder::build_ready`] once
+    /// completes the typestate for [`TradingBuilder::build`] once
     /// chain id is also set.
     ///
     /// Invalid input is recorded and surfaced by the builder terminal as
@@ -232,7 +219,7 @@ impl TradingBuilder<ChainIdSet, AppCodeSet> {
     /// requirement remains a documented runtime terminal check rather than a
     /// third typestate axis, keeping the public builder state readable while
     /// still failing before any quote or post method can run.
-    /// Attempting to call `build_ready` on a builder that does not own the
+    /// Attempting to call `build` on a builder that does not own the
     /// typestate prerequisites is a compile error.
     ///
     /// # Errors
@@ -247,7 +234,7 @@ impl TradingBuilder<ChainIdSet, AppCodeSet> {
     /// use cow_sdk_trading::TradingBuilder;
     /// let _ = TradingBuilder::new()
     ///     .with_app_code("test")
-    ///     .build_ready();
+    ///     .build();
     /// ```
     ///
     /// ```compile_fail
@@ -255,9 +242,9 @@ impl TradingBuilder<ChainIdSet, AppCodeSet> {
     /// use cow_sdk_trading::TradingBuilder;
     /// let _ = TradingBuilder::new()
     ///     .with_chain_id(SupportedChainId::Mainnet)
-    ///     .build_ready();
+    ///     .build();
     /// ```
-    pub fn build_ready(self) -> Result<Trading, TradingError> {
+    pub fn build(self) -> Result<Trading, TradingError> {
         if let Some(error) = self.app_code_error {
             return Err(error.into());
         }

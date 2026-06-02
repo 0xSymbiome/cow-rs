@@ -5,7 +5,7 @@ use serde_json::json;
 use cow_sdk::core::HexData;
 use cow_sdk::prelude::{SupportedChainId, Trading};
 use cow_sdk::trading::{
-    OrderTraderParameters, TradingOptions, get_pre_sign_transaction,
+    OrderTraderParameters, get_pre_sign_transaction,
     onchain_cancellation_transaction,
 };
 
@@ -34,8 +34,8 @@ fn trading_sdk(orderbook: MockOrderbook) -> Trading {
     }
 
     builder
-        .with_options(TradingOptions::new().with_orderbook_client(Arc::new(orderbook)))
-        .build_ready()
+        .with_orderbook_client(Arc::new(orderbook))
+        .build()
         .expect("example trading sdk construction should succeed")
 }
 
