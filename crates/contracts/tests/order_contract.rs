@@ -25,8 +25,8 @@ fn gpv2_order_type_hash_hex() -> String {
     order_eip712_type_hash().to_hex_string()
 }
 use cow_sdk_core::{
-    Address, Amount, AppDataHex, BuyTokenDestination, CowEnv, OrderData, OrderKind,
-    SellTokenSource, SupportedChainId, TypedDataDomain,
+    Address, BuyTokenDestination, CowEnv, OrderData, OrderKind, SellTokenSource, SupportedChainId,
+    TypedDataDomain,
 };
 
 use common::fixture_case;
@@ -41,21 +41,9 @@ fn sample_domain() -> TypedDataDomain {
 }
 
 fn sample_order() -> OrderData {
-    OrderData::new(
-        Address::new("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2").unwrap(),
-        Address::new("0x6b175474e89094c44da98b954eedeac495271d0f").unwrap(),
-        Address::ZERO,
-        Amount::new("1000000000000000000").unwrap(),
-        Amount::new("2000000000000000000000").unwrap(),
-        1_709_990_000,
-        AppDataHex::new("0x0000000000000000000000000000000000000000000000000000000000000000")
-            .unwrap(),
-        Amount::new("5000000000000000").unwrap(),
-        OrderKind::Sell,
-        false,
-        SellTokenSource::Erc20,
-        BuyTokenDestination::Internal,
-    )
+    cow_sdk_test_utils::builders::OrderBuilder::weth_dai()
+        .buy_balance(BuyTokenDestination::Internal)
+        .build()
 }
 
 fn signing_fixture_case(id: &str) -> serde_json::Value {

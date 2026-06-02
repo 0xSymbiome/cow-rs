@@ -51,6 +51,29 @@ impl OrderBuilder {
         }
     }
 
+    /// The WETH/DAI order preset used by the contracts swap, settlement, and
+    /// order tests; the receiver is the zero address and the balances default
+    /// to `erc20`.
+    #[must_use]
+    pub fn weth_dai() -> Self {
+        Self {
+            value: json!({
+                "sellToken": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+                "buyToken": "0x6b175474e89094c44da98b954eedeac495271d0f",
+                "receiver": "0x0000000000000000000000000000000000000000",
+                "sellAmount": "1000000000000000000",
+                "buyAmount": "2000000000000000000000",
+                "validTo": 1_709_990_000,
+                "appData": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                "feeAmount": "5000000000000000",
+                "kind": "sell",
+                "partiallyFillable": false,
+                "sellTokenBalance": "erc20",
+                "buyTokenBalance": "erc20"
+            }),
+        }
+    }
+
     /// Override the receiver address (0x-prefixed hex).
     #[must_use]
     pub fn receiver(mut self, receiver: &str) -> Self {

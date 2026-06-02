@@ -93,6 +93,20 @@ fn order_builder_overrides_apply() {
 }
 
 #[test]
+fn order_builder_weth_dai_preset_uses_weth_and_dai() {
+    let order = OrderBuilder::weth_dai().build();
+    assert_eq!(
+        order.sell_token.to_hex_string(),
+        "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+    );
+    assert_eq!(
+        order.buy_token.to_hex_string(),
+        "0x6b175474e89094c44da98b954eedeac495271d0f"
+    );
+    assert_eq!(order.kind, OrderKind::Sell);
+}
+
+#[test]
 fn sample_domain_and_signature_construct() {
     let _domain = builders::sample_domain();
     let sig = builders::sample_signature_hex(0xaa);
