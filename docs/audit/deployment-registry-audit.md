@@ -129,7 +129,7 @@ Primary regression coverage:
 
 - `crates/contracts/tests/registry.rs`
 - `crates/contracts/tests/registry.rs::registry_address_lookup_matrix_is_exhaustive`
-- `crates/contracts/tests/build_rs_compile_fail.rs`
+- `crates/contracts/tests/schema_v2_rejection.rs`
 - `crates/contracts/tests/deployment_provenance_contract.rs`
 - `tests/supported_chains_doc_table.rs::supported_networks_doc_table_matches_enum`
 - `scripts/validation-smoke/tests/registry_confirm.rs`
