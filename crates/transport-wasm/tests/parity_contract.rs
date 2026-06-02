@@ -488,9 +488,9 @@ export function restore_fetch(previous) {
             } => {
                 assert_eq!(status, 500);
                 assert!(headers.iter().any(|(name, value)| {
-                    name.eq_ignore_ascii_case("retry-after") && value == "5"
+                    name.eq_ignore_ascii_case("retry-after") && value.as_inner() == "5"
                 }));
-                assert_eq!(body, "upstream exploded");
+                assert_eq!(body.as_inner(), "upstream exploded");
             }
             other => panic!("expected HttpStatus variant, got {other:?}"),
         }

@@ -1,7 +1,7 @@
 # HTTP Transport Contract Audit
 
 Status: Current
-Last reviewed: 2026-05-31
+Last reviewed: 2026-06-02
 Owning surface: `cow-sdk-core::HttpTransport` trait and the `ReqwestTransport` (native) and `FetchTransport` (browser) default adapters, including the sole-dispatch contract that binds every live REST or GraphQL call from `cow-sdk-orderbook` and `cow-sdk-subgraph` to the injected transport
 Refresh trigger: Trait signature, method set, or dyn-compatibility posture changes on `HttpTransport`; changes to `TransportError` or `TransportErrorClass`; changes to the `TransportError::HttpStatus` shape; changes to the URL-stripping contract on either default adapter; any change to the shared `run_with_retry` driver's backoff schedule, jitter policy, retry tracing events, `Retry-After` honor contract, the `Retry-After` IMF-fixdate civil-day arithmetic, or the `system_now` wall clock; a new shipped adapter crate that adopts the trait; any change that lets a live REST or GraphQL call from `OrderbookApi` or `SubgraphApi` bypass `self.transport`
 Related docs:
@@ -247,4 +247,5 @@ cargo test -p cow-sdk-orderbook --test request_contract
 cargo test -p cow-sdk-orderbook --features tracing --test request_contract
 cargo test -p cow-sdk-subgraph --test api_contract
 cargo check --workspace --all-features --target wasm32-unknown-unknown
+wasm-pack test --headless --firefox crates/transport-wasm --all-features
 ```
