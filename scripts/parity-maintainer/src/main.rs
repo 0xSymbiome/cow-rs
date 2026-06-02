@@ -447,8 +447,6 @@ enum Commands {
     CheckFreshness(check_freshness::CheckFreshnessArgs),
     /// Validate producer paths declared by the source lock.
     ValidateProducerPaths(ValidateArgs),
-    /// Validate pinned npm package evidence.
-    ValidateNpmEvidence(NpmEvidenceArgs),
     /// Validate enum policy entries required by the public API.
     ValidateEnumPolicy(EnumPolicyArgs),
     /// Validate principle-to-ADR mapping.
@@ -526,12 +524,6 @@ struct VendorAppDataSchemasArgs {
     source: SourceLockArg,
     #[arg(long)]
     cow_sdk_root: PathBuf,
-}
-
-#[derive(Debug, Args)]
-struct NpmEvidenceArgs {
-    #[arg(long, alias = "artifact", default_value = "parity/npm-evidence.yaml")]
-    evidence: PathBuf,
 }
 
 #[derive(Debug, Args)]
@@ -638,7 +630,6 @@ fn main() -> Result<()> {
             contracts_root: args.contracts_root,
             services_root: args.services_root,
         }),
-        Commands::ValidateNpmEvidence(args) => validate_npm_evidence(&args.evidence),
         Commands::ValidateEnumPolicy(args) => validate_enum_policy(&args.policy),
         Commands::ValidatePrincipleAdrMap(args) => {
             validate_principle_adr_map(&args.map, args.version, args.principle, args.required)
@@ -660,64 +651,6 @@ fn main() -> Result<()> {
         Commands::AuditSelfPinning(args) => audit_self_pinning::run(&args),
         Commands::VerifySolProvenance(args) => verify_sol_provenance::run(&args),
     }
-}
-
-fn validate_npm_evidence(path: &Path) -> Result<()> {
-    let raw = fs::read_to_string(path)
-        .with_context(|| format!("failed to read npm evidence {}", path.display()))?;
-    let manifest: NpmEvidenceManifest =
-        serde_yaml::from_str(&raw).context("failed to parse npm evidence")?;
-    if manifest.schema_version != 1 {
-        bail!("expected npm evidence schema_version 1");
-    }
-
-    let expected = BTreeMap::from([
-        (
-            "@cowprotocol/sdk-config@2.0.0",
-            (
-                "sha512-ZeND/fzuzQShpVqOoJ3LbU0DoeKIb2SH2iANumX5LN7R/H495jIfExsb67JANqnrpupJtbUUw1FxfBchN5MVoQ==",
-                "6b8682ee494f0c731c84d1f62a8c75d6a8d9a9cc",
-            ),
-        ),
-        (
-            "@cowprotocol/sdk-composable@1.0.1",
-            (
-                "sha512-L70RJNStoSmmma2+lIjSf5hdePqql+jTs497P9CmW5YaErcSwDXTPqgKEsfknYU8g9n5dpVmKPn7BIbLuFXJ+w==",
-                "87f08e7c9da385e918a0a771bf6250390fb083dc",
-            ),
-        ),
-        (
-            "@cowprotocol/sdk-cow-shed@0.3.8",
-            (
-                "sha512-2tZ8a+vueZP4WArETUmxv4Jq5uivNOlx8X/VAtO4Uxhtit4UjhRpDMAxNuDhWyLyNb+t2BoVXWLZVybHJ6M35g==",
-                "0d7dfa28c262fbf67445ca010db7bb3ed2a637b0",
-            ),
-        ),
-    ]);
-    let actual = manifest
-        .packages
-        .iter()
-        .map(|row| {
-            (
-                format!("{}@{}", row.name, row.version),
-                (row.integrity.as_str(), row.shasum.as_str()),
-            )
-        })
-        .collect::<BTreeMap<_, _>>();
-
-    if actual.len() != expected.len() {
-        bail!("npm evidence must contain exactly {} rows", expected.len());
-    }
-    for (key, (integrity, shasum)) in expected {
-        let Some(actual_row) = actual.get(key) else {
-            bail!("missing npm evidence row {key}");
-        };
-        if actual_row != &(integrity, shasum) {
-            bail!("npm evidence row {key} does not match the pinned integrity and shasum");
-        }
-    }
-    println!("validated npm package evidence");
-    Ok(())
 }
 
 fn validate_enum_policy(path: &Path) -> Result<()> {
@@ -803,20 +736,6 @@ fn check_dependency_edges(negative_edges: &[String]) -> Result<()> {
     }
     println!("validated dependency edge policy");
     Ok(())
-}
-
-#[derive(Debug, Deserialize)]
-struct NpmEvidenceManifest {
-    schema_version: u32,
-    packages: Vec<NpmEvidenceRow>,
-}
-
-#[derive(Debug, Deserialize)]
-struct NpmEvidenceRow {
-    name: String,
-    version: String,
-    integrity: String,
-    shasum: String,
 }
 
 #[derive(Debug, Deserialize)]
