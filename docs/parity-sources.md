@@ -151,7 +151,6 @@ crates. None of the repositories above are publish-time git dependencies.
 | orderbook | orderbook API, request, transform, and type sources plus selected `services` references | `parity/fixtures/orderbook.json` |
 | trading | trading quote, order, post, cancellation, slippage, settlement, pre-sign, and EthFlow sources | `parity/fixtures/trading.json` |
 | subgraph | subgraph API, GraphQL, query, and selected test scenarios | `parity/fixtures/subgraph.json` |
-| sdk | SDK root exports, typedoc entrypoint, package metadata, and README surface | `parity/fixtures/sdk.json` |
 | native Alloy adapters | Alloy runtime and Alloy Core producer paths pinned in `parity/source-lock.yaml` | Adapter crate tests, transaction broadcast / receipt shape invariants, and native examples |
 
 ## Provenance Rule

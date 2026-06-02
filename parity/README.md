@@ -14,7 +14,6 @@ It is not a runtime dependency of any published crate.
 - `fixtures/orderbook.json`
 - `fixtures/trading.json`
 - `fixtures/subgraph.json`
-- `fixtures/sdk.json`
 
 ## Repo contract
 
@@ -143,11 +142,6 @@ API-key-derived production URL resolution, totals/day/hour query helpers, generi
 custom-query execution, generated GraphQL response shapes, explicit override
 behavior, and typed unsupported-network / empty-result / query-failure paths to
 upstream `packages/subgraph` sources.
-
-`fixtures/sdk.json` is the pinned SDK facade contract. It anchors
-the root export surface, explicit non-export of subgraph from the facade root,
-typedoc-facing trading-first docs scope, and top-level package metadata to
-upstream `packages/sdk` sources.
 
 External reference implementations are not part of this parity contract. They may
 be consulted as secondary implementation references, but they must never be used

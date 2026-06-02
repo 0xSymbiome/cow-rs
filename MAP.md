@@ -1,7 +1,7 @@
 # Repository File Map
 
-> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `dadb066` &nbsp;&middot;&nbsp; **Generated:** 2026-06-03  
-> **Total tracked files:** **1418** &nbsp;&middot;&nbsp; **Code analysis:** tokei 14.0.0 (1361/1418 files)
+> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `49eebf4` &nbsp;&middot;&nbsp; **Generated:** 2026-06-03  
+> **Total tracked files:** **1417** &nbsp;&middot;&nbsp; **Code analysis:** tokei 14.0.0 (1360/1417 files) &nbsp;&middot;&nbsp; _1 tracked file(s) deleted in the working tree — excluded_
 
 A navigable inventory of every file tracked by Git on this branch, grouped by the role each directory plays in the workspace. Use the table of contents to jump straight to a section; full file listings are collapsed by default so the high-level shape stays scannable.
 
@@ -34,14 +34,14 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 - **38,043 lines of Rust** across the 19 SDK crates, covered by **47,767 lines of tests** — a **1.3× test-to-code ratio** — plus **220 lines of benchmarks**.
 - **12,127 doc-comment lines** documenting the public API (~31.9% of crate code), plus **901 inline comment lines**.
 - **8,475 lines of TypeScript** across examples, e2e harnesses, and wasm bindings.
-- **27,080 lines of Markdown prose** — ADRs, audit notes, and READMEs.
-- **36,036 lines of data & config** (JSON schemas, parity fixtures, vendored ABIs, YAML, TOML) — tracked, but excluded from code metrics by design.
+- **27,074 lines of Markdown prose** — ADRs, audit notes, and READMEs.
+- **35,907 lines of data & config** (JSON schemas, parity fixtures, vendored ABIs, YAML, TOML) — tracked, but excluded from code metrics by design.
 
 **Footprint** (tracked files)
 
 - **793 files** live under `crates/` — 19 workspace member crates make up roughly 56% of the repo.
 - **155 files** under `docs/` are mostly architecture decision records and audit notes.
-- **71 files** under `parity/` are golden fixtures captured from upstream services to keep the Rust SDK byte-compatible.
+- **70 files** under `parity/` are golden fixtures captured from upstream services to keep the Rust SDK byte-compatible.
 - **107 files** under `fuzz/` cover cargo-fuzz targets and their seed corpora.
 - **137 files** under `examples/` + `e2e/` are runnable demos and integration harnesses.
 - **86 files** under `scripts/` are maintenance tool crates (parity refresh, policy refresh, validation runners).
@@ -53,11 +53,11 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | Path | Files | Lines | Code | Purpose |
 |------|------:|------:|-----:|---------|
 | `crates/` | 793 | 145,489 | 104,111 | Workspace member crates (the SDK itself) |
-| `docs/` | 155 | 23,508 | 0 | Architecture decision records, audit notes, provider notes |
+| `docs/` | 155 | 23,507 | 0 | Architecture decision records, audit notes, provider notes |
 | `fuzz/` | 107 | 12,477 | 4,600 | cargo-fuzz targets, corpora, and failure artifacts |
 | `examples/` | 89 | 26,251 | 9,768 | Runnable usage examples (Rust + TypeScript) |
 | `scripts/` | 86 | 25,911 | 16,635 | Internal maintenance tool crates |
-| `parity/` | 71 | 11,064 | 10,730 | Golden fixtures + pinned specs from upstream services |
+| `parity/` | 70 | 10,929 | 10,601 | Golden fixtures + pinned specs from upstream services |
 | `e2e/` | 48 | 6,853 | 5,366 | End-to-end integration harnesses |
 | `.github/` | 37 | 6,036 | 4,978 | GitHub Actions workflows and repo config |
 | `tests/` | 15 | 1,898 | 1,697 | Workspace-level integration tests |
@@ -77,7 +77,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `rust-toolchain.toml` | 1 | 6 | 4 | Pinned Rust toolchain |
 | `.gitattributes` | 1 | 40 | 0 | Git attributes |
 | `CHANGELOG.md` | 1 | 3,746 | 0 | Release changelog |
-| **Total** | **1418** | **271,278** | **158,064** | |
+| **Total** | **1417** | **271,142** | **157,935** | |
 
 ---
 
@@ -86,12 +86,12 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | Extension | Files | Lines | Code | Comments | Blank | Typical role |
 |-----------|------:|------:|-----:|---------:|------:|--------------|
 | `.rs` | 703 | 144,488 | 113,553 | 17,813 | 13,122 | Rust source and tests |
-| `.md` | 251 | 32,788 | 0 | 27,080 | 5,708 | Markdown docs (ADRs, audit notes, READMEs) |
-| `.json` | 153 | 10,260 | 10,146 | 111 | 3 | JSON schemas, ABIs, parity fixtures |
+| `.md` | 251 | 32,781 | 0 | 27,074 | 5,707 | Markdown docs (ADRs, audit notes, READMEs) |
+| `.json` | 152 | 10,142 | 10,028 | 111 | 3 | JSON schemas, ABIs, parity fixtures |
 | `.ts` | 74 | 19,678 | 8,475 | 9,788 | 1,415 | TypeScript (examples, e2e, wasm bindings) |
 | `.toml` | 53 | 4,068 | 3,504 | 54 | 510 | Cargo manifests and tool configs |
 | `.sol` | 40 | 3,577 | 2,007 | 1,140 | 430 | Solidity sources / vendored contract code |
-| `.yaml` | 31 | 13,045 | 11,437 | 52 | 1,556 | CI workflows, OpenAPI specs, config |
+| `.yaml` | 31 | 13,034 | 11,426 | 52 | 1,556 | CI workflows, OpenAPI specs, config |
 | `.yml` | 27 | 7,273 | 6,421 | 553 | 299 | CI workflows and config |
 | `.stderr` | 22 | 526 | 0 | 505 | 21 | trybuild compile-fail snapshots |
 | `.lock` | 10 | 26,218 | 0 | 23,469 | 2,749 | Cargo / package lockfiles |
@@ -111,7 +111,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `.gitattributes` | 1 | 40 | 0 | 35 | 5 |  |
 | `.yamllint` | 1 | 7 | 0 | 6 | 1 |  |
 | `.proptest-regressions` | 1 | 7 | 0 | 7 | 0 | proptest regression seeds |
-| **Total** | **1418** | **271,278** | **158,064** | **86,270** | **26,944** | |
+| **Total** | **1417** | **271,142** | **157,935** | **86,264** | **26,943** | |
 
 > **Code + Comments + Blank = Lines** for every row. ``Comments`` is all non-code, non-blank content: inline + doc-comments in source, prose in Markdown/text, and raw content in formats tokei does not parse as code (lockfiles, ``.stderr``, snapshots). Rust doc-comments are isolated in the per-crate ``Doc`` column above.
 
@@ -223,9 +223,9 @@ The 25 largest hand-written source files by code lines (Rust + TypeScript; vendo
 | Subtree | Files | Lines | Code | Purpose |
 |---------|------:|------:|-----:|---------|
 | [`dependency-audit`](parity/dependency-audit) | 1 | 44 | 0 | Dependency audit reports |
-| [`fixtures`](parity/fixtures) | 52 | 6,169 | 6,169 | Golden fixtures captured from upstream services |
+| [`fixtures`](parity/fixtures) | 51 | 6,051 | 6,051 | Golden fixtures captured from upstream services |
 | [`openapi`](parity/openapi) | 10 | 3,584 | 3,548 | OpenAPI specs pinned for parity |
-| **Total (listed)** | **63** | **9,797** | **9,717** | |
+| **Total (listed)** | **62** | **9,679** | **9,599** | |
 
 ---
 
@@ -2149,7 +2149,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`observability.md`](docs/observability.md) &mdash; 296 lines
 - [`parity-matrix.md`](docs/parity-matrix.md) &mdash; 117 lines
 - [`parity-scope.md`](docs/parity-scope.md) &mdash; 344 lines
-- [`parity-sources.md`](docs/parity-sources.md) &mdash; 207 lines
+- [`parity-sources.md`](docs/parity-sources.md) &mdash; 206 lines
 - [`performance.md`](docs/performance.md) &mdash; 271 lines
 - [`principles.md`](docs/principles.md) &mdash; 235 lines
 - [`publication-handoff.md`](docs/publication-handoff.md) &mdash; 118 lines
@@ -3128,9 +3128,9 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`ink-probe-results.json`](parity/ink-probe-results.json) &mdash; 55 lines
 - [`lens-probe-results.json`](parity/lens-probe-results.json) &mdash; 24 lines
 - [`optimism-probe-results.json`](parity/optimism-probe-results.json) &mdash; 48 lines
-- [`README.md`](parity/README.md) &mdash; 154 lines
+- [`README.md`](parity/README.md) &mdash; 148 lines
 - [`self-pinning-allowlist.yaml`](parity/self-pinning-allowlist.yaml) &mdash; 133 lines
-- [`source-lock.yaml`](parity/source-lock.yaml) &mdash; 747 lines
+- [`source-lock.yaml`](parity/source-lock.yaml) &mdash; 736 lines
 
 </details>
 
@@ -3142,13 +3142,12 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>parity/fixtures/</code> &mdash; 8 file(s)</summary>
+<summary><code>parity/fixtures/</code> &mdash; 7 file(s)</summary>
 
 - [`app-data.json`](parity/fixtures/app-data.json) &mdash; 379 lines
 - [`contracts.json`](parity/fixtures/contracts.json) &mdash; 636 lines
 - [`core.json`](parity/fixtures/core.json) &mdash; 256 lines
 - [`orderbook.json`](parity/fixtures/orderbook.json) &mdash; 359 lines
-- [`sdk.json`](parity/fixtures/sdk.json) &mdash; 118 lines
 - [`signing.json`](parity/fixtures/signing.json) &mdash; 305 lines
 - [`subgraph.json`](parity/fixtures/subgraph.json) &mdash; 201 lines
 - [`trading.json`](parity/fixtures/trading.json) &mdash; 447 lines

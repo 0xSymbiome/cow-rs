@@ -703,17 +703,6 @@ fixtures:
     path: packages/subgraph/src/graphql.ts
   - repo: cow-sdk
     path: packages/subgraph/src/api.spec.ts
-- surface: sdk
-  file: parity/fixtures/sdk.json
-  source_refs:
-  - repo: cow-sdk
-    path: packages/sdk/src/index.ts
-  - repo: cow-sdk
-    path: packages/sdk/src/typedoc-entry.ts
-  - repo: cow-sdk
-    path: packages/sdk/package.json
-  - repo: cow-sdk
-    path: packages/sdk/README.md
 validation:
   standalone_repo_contract:
   - cargo build --workspace
