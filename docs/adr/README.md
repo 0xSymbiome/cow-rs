@@ -69,6 +69,8 @@ public and runtime shape of `cow-rs`.
 | [0059](0059-hash-concrete-orderdata-directly.md) | Accepted | Hash the concrete `cow_sdk_core::OrderData` directly and remove the contracts-layer `Order` / `NormalizedOrder` types and the `GPv2Order` re-export, collapsing the order-type topology to one concrete type. |
 | [0060](0060-uniform-error-classification.md) | Accepted | Relocate the shared `ErrorClass` to `cow-sdk-core` and give every facade-family error type a `class()` accessor (facade `SdkError::class()` delegates), while the native Alloy adapters keep their own per-type class enums per ADR 0053. |
 | [0061](0061-wasm-abi-receiver-pay-to-owner.md) | Accepted | Treat an omitted and an explicit zero-address `receiver` identically at the WASM order-input boundary (both resolve to the zero-address pay-to-owner sentinel), with no receiver-to-owner reinterpretation. |
+| [0062](0062-internal-shared-test-support-crate.md) | Accepted | Keep shared cross-crate test support in one unpublished `cow-sdk-test-utils` crate consumed only as a dev-dependency. |
+| [0063](0063-published-consumer-test-doubles-crate.md) | Accepted | Ship consumer-facing in-memory test doubles for the public trait seams as the published `cow-sdk-test` crate, re-exported behind the facade `testing` feature. |
 
 ## When To Write An ADR
 

@@ -219,3 +219,17 @@ belongs to applications and services built on top of the SDK primitives.
 **Required**: yes.
 
 **Anchored by**: [ADR 0048](adr/0048-composable-conditional-order-framework.md) (primary). Supporting: [ADR 0010](adr/0010-runtime-neutral-async-and-transport-posture.md), [ADR 0024](adr/0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0050](adr/0050-eip1271-signature-blob-encoding.md).
+
+## First-Class, Bounded Test Support
+
+Test support is designed, not improvised. Shared internal test helpers live in a
+single unpublished, dev-only crate (`cow-sdk-test-utils`, `publish = false`)
+consumed only through `[dev-dependencies]`, so they never enter a published
+dependency graph. Consumer-facing test doubles for the public trait seams ship as
+a published crate (`cow-sdk-test`) built only on the public API and held to the
+same panic-free bar as production code, re-exported behind the facade `testing`
+feature. A published crate never depends on an unpublished one, and building the
+consumer doubles on the public surface alone continuously proves those seams are
+implementable from outside the workspace.
+
+**Anchored by**: [ADR 0063](adr/0063-published-consumer-test-doubles-crate.md) (primary). Supporting: [ADR 0062](adr/0062-internal-shared-test-support-crate.md), [ADR 0008](adr/0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md), [ADR 0033](adr/0033-minimum-viable-panic-surface.md).
