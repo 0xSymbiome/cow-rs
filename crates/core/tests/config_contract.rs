@@ -8,8 +8,7 @@ use cow_sdk_core::{
 };
 
 fn core_fixture() -> serde_json::Value {
-    serde_json::from_str(include_str!("../../../parity/fixtures/core.json"))
-        .expect("core fixture must remain valid json")
+    cow_sdk_test_utils::fixtures::fixture("core")
 }
 
 #[test]

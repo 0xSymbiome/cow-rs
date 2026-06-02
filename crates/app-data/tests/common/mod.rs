@@ -17,7 +17,7 @@ pub const APP_DATA_STRING: &str =
 pub const APP_DATA_STRING_2: &str = "{\"appCode\":\"CoW Swap\",\"environment\":\"production\",\"metadata\":{\"quote\":{\"slippageBips\":\"50\",\"version\":\"0.2.0\"},\"orderClass\":{\"orderClass\":\"market\",\"version\":\"0.1.0\"}},\"version\":\"0.6.0\"}";
 
 pub fn parity_fixture() -> Value {
-    serde_json::from_str(include_str!("../../../../parity/fixtures/app-data.json")).unwrap()
+    cow_sdk_test_utils::fixtures::fixture("app-data")
 }
 
 pub fn app_data_doc() -> Value {

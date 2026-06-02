@@ -45,8 +45,7 @@ pub const TYPED_SIGNATURE: &str = "0x1111111111111111111111111111111111111111111
 pub const MESSAGE_SIGNATURE: &str = "0x222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222221c";
 
 pub fn trading_fixture() -> serde_json::Value {
-    serde_json::from_str(include_str!("../../../../parity/fixtures/trading.json"))
-        .expect("trading parity fixture must remain valid json")
+    cow_sdk_test_utils::fixtures::fixture("trading")
 }
 
 pub fn address(value: &str) -> Address {
