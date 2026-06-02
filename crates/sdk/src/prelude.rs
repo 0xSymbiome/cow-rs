@@ -33,6 +33,5 @@ pub use cow_sdk_core::{
 pub use cow_sdk_orderbook::{OrderbookApi, OrderbookApiBuilder, OrderbookError};
 // trading
 pub use cow_sdk_trading::{
-    TradeParameters, TraderParameters, Trading, TradingBuilder, TradingError, TradingHelpers,
-    TradingOptions,
+    TradeParameters, TraderParameters, Trading, TradingBuilder, TradingError, TradingOptions,
 };

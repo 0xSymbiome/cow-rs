@@ -311,10 +311,10 @@ The first functional crate-family release begins at `0.1.0`.
   name to match the JavaScript SDK naming convention at the browser boundary.
 - Renamed the trading entry types to drop the `Sdk` suffix stutter:
   `TradingSdk` is now `Trading`, `TradingSdkBuilder` is now `TradingBuilder`,
-  `TradingSdkOptions` is now `TradingOptions`, and `HelperOnlySdk` is now
-  `TradingHelpers`. Construction remains exclusively through the typestate-builder
-  terminals (`TradingBuilder::ready(...)` and `TradingBuilder::helper_only(...)`);
-  the `cow-sdk` facade prelude re-exports are updated to the new names.
+  and `TradingSdkOptions` is now `TradingOptions`. Construction remains
+  exclusively through the typestate-builder ready terminals
+  (`TradingBuilder::ready(...)` and `build_ready()`); the `cow-sdk` facade
+  prelude re-exports are updated to the new names.
 - `cow_sdk_orderbook::OrderbookError::Serialization` now carries a structured
   `{ category, line, column }` triple instead of wrapping the raw
   `serde_json::Error`. The orderbook client surfaces only the serde failure
@@ -473,6 +473,18 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Removed
 
+- Removed the helper-only trading client: the `TradingHelpers` type, the
+  `TradingBuilder::build_helper_only` terminal, and the
+  `TradingBuilder::helper_only(...)` shortcut. `TradingHelpers` duplicated four
+  methods already on `Trading` (`get_pre_sign_transaction`,
+  `on_chain_cancel_order`, `get_cow_protocol_allowance`, `approve_cow_protocol`)
+  and added no capability the crate free functions did not already provide.
+  App-code-less helper flows — allowance, approval, pre-sign, and on-chain
+  cancellation — are the crate's free functions (`get_cow_protocol_allowance`,
+  `approval_transaction`, `get_pre_sign_transaction`, `cancel_order_onchain`),
+  which need no `appCode` and no trading client; `Trading` (built through
+  `build_ready`) still exposes them as conveniences. Governed by
+  [ADR 0011](docs/adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md).
 - Removed the unused `cow_sdk_core::DecimalAmount` type and its
   `from_whole_approx`, `to_f64_approx`, and `from_atoms` surface. The
   decimals-paired wrapper carried an `f64`-lossy approximation seam

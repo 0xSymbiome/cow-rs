@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-17
-- Last reviewed: 2026-06-01
+- Last reviewed: 2026-06-02
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: types, trading, builders, semver
 - Related: [ADR 0002](0002-dedicated-trading-orchestration-crate.md), [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
@@ -319,3 +319,30 @@ home now the atomic `Amount` rather than the retired `DecimalAmount`.
 The typed atomic-vs-decimal boundary, the typestate-builder terminals,
 and every prior amendment recorded above are otherwise preserved
 verbatim.
+
+## Amendment 2026-06-02: helper-only trading terminal removed
+
+The `build_helper_only` builder terminal, the `TradingBuilder::helper_only(...)`
+shortcut, and the distinct `TradingHelpers` type are removed. The "Must Remain
+True" text above describing two builder terminals and a separate helper-only
+type is superseded: `TradingBuilder` exposes a single ready-state terminal pair —
+`build_ready` (requires the `ChainIdSet` and `AppCodeSet` markers) and the
+`TradingBuilder::ready(...)` total-input shortcut — and `Trading` is the only
+trading client.
+
+`TradingHelpers` duplicated four methods already on `Trading`
+(`get_pre_sign_transaction`, `on_chain_cancel_order`,
+`get_cow_protocol_allowance`, `approve_cow_protocol`) plus their chain-binding
+resolvers, and added no capability that `Trading` or the crate's free functions
+did not already provide. App-code-less helper flows — allowance, approval,
+pre-sign, and on-chain cancellation, none of which need an `appCode` — are the
+crate's free functions (`get_cow_protocol_allowance`, `approval_transaction`,
+`get_pre_sign_transaction`, `cancel_order_onchain`), which take chain and
+protocol context directly and require no trading client.
+
+The "Sole Construction Seam" principle is unchanged: `Trading` still constructs
+only through the typestate builder with `appCode` as a compile-time marker on
+`build_ready`. Removing the helper-only terminal does not relax that — the
+app-code-less path is simply not a `Trading` construction. The upstream
+TypeScript SDK and the CoW Swap frontend likewise use one trading client plus
+standalone functions / direct calls for the app-code-less operations.

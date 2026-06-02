@@ -1415,12 +1415,6 @@ async fn assert_sdk_quote_only_owner_mode(case_id: &str, expected: &Value) {
             .unwrap_or(false),
         "case {case_id}: expected.ready_shortcut_uses_total_trader_parameters must be true",
     );
-    assert!(
-        expected["helper_only_refuses_quote_only"]
-            .as_bool()
-            .unwrap_or(false),
-        "case {case_id}: expected.helper_only_refuses_quote_only must be true",
-    );
 
     // Quote-only path: owner explicit, no signer required.
     let orderbook = Arc::new(MockOrderbook::new(
@@ -1458,18 +1452,6 @@ async fn assert_sdk_quote_only_owner_mode(case_id: &str, expected: &Value) {
         Some(575_401),
         "case {case_id}: quote-only must return the mocked upstream quote id",
     );
-
-    let helper_only =
-        TradingBuilder::helper_only(SupportedChainId::Sepolia, TradingOptions::default())
-            .unwrap_or_else(|error| {
-                panic!("case {case_id}: helper-only construction must succeed, got {error:?}")
-            });
-    assert_eq!(
-        helper_only.trader_defaults().chain_id,
-        Some(SupportedChainId::Sepolia),
-        "case {case_id}: helper-only construction must preserve chain authority",
-    );
-    assert!(helper_only.trader_defaults().app_code.is_none());
 }
 
 fn assert_sdk_allowance_approval_boundaries(case_id: &str, expected: &Value) {

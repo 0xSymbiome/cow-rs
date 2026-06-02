@@ -241,29 +241,15 @@ fn build_browser_ready_sdk() -> Result<Trading, Box<dyn std::error::Error>> {
 }
 ```
 
-### Helper-Only Builder
+### Chain-Bound Helpers Without an App Code
 
-Use the helper-only terminal when an integration needs chain-bound helpers but
-does not need to quote, post, or submit off-chain cancellations through the
-SDK. Common examples are allowance and approval screens, pre-sign transaction
-tools, and on-chain cancellation tools.
-
-```rust
-use cow_sdk::{TradingHelpers, SupportedChainId, Trading};
-
-fn build_helper_only_sdk() -> Result<TradingHelpers, Box<dyn std::error::Error>> {
-    let sdk = Trading::builder()
-        .with_chain_id(SupportedChainId::Sepolia)
-        .build_helper_only()?;
-
-    Ok(sdk)
-}
-```
-
-A helper-only SDK can drive allowance reads, approval submission, pre-sign
-transaction construction, and on-chain cancellation. Quote, post, order lookup,
-and off-chain cancellation methods are only available on `Trading`; choose
-`build_ready()` when those flows are needed.
+Allowance reads, approval submission, pre-sign transaction construction, and
+on-chain cancellation need chain authority but no app code. Call the crate's
+free functions directly — `get_cow_protocol_allowance`, `approval_transaction`,
+`get_pre_sign_transaction`, and `cancel_order_onchain` — so an integration such
+as an allowance/approval screen or a pre-sign tool needs no trading client at
+all. Quote, post, order lookup, and off-chain cancellation flows use the ready
+`Trading` client built with `build_ready()`.
 
 ### What This Step Proves
 
@@ -273,8 +259,8 @@ This builder step proves the top-level SDK contract:
 - `SupportedChainId` is the public chain selector type
 - `appCode` is a required ready-state default and a stable integration
   identifier
-- `build_ready()` returns `Trading`, while `build_helper_only()` returns
-  `TradingHelpers` for chain-bound helper flows
+- `build_ready()` returns the ready `Trading` client; chain-bound helpers that
+  need no app code are the crate's free functions
 - `Address::new(...)` is the public validated address constructor
 - `CoreError` is the canonical shared validation and configuration error type
 

@@ -374,9 +374,9 @@ to a different orderbook endpoint, chain, or environment. Reviewed
 workflow contract through quote, order, sign, and post seams. The typestate
 builder and its total-input shortcuts share the same injected-orderbook
 validation boundary. Ready-state `Trading` construction requires a validated
-`AppCode` plus explicit or injected chain authority, while `TradingHelpers`
-construction remains available for chain-bound helper flows such as allowance,
-approval, pre-sign, and on-chain cancellation. Recoverable-signature posting
+`AppCode` plus explicit or injected chain authority; chain-bound helpers that
+need no app code — allowance, approval, pre-sign, and on-chain cancellation —
+are the crate's free functions. Recoverable-signature posting
 rejects explicit owner or signer mismatch before submission, and user-facing
 partner-fee policy remains typed on trading request surfaces and only crosses
 into raw metadata at the explicit app-data translation seam.

@@ -202,26 +202,15 @@ async fn sdk_orderbook_bound_calls_reject_env_conflicts_with_injected_client_con
 }
 
 #[tokio::test]
-async fn sdk_helper_only_shortcut_builds_helper_only_type() {
-    let helper_only =
-        TradingBuilder::helper_only(SupportedChainId::Sepolia, TradingOptions::default())
-            .expect("helper-only shortcut with chainId should succeed");
-    assert_eq!(
-        helper_only.trader_defaults().chain_id,
-        Some(SupportedChainId::Sepolia)
-    );
-    assert!(helper_only.trader_defaults().app_code.is_none());
-}
-
-#[tokio::test]
 async fn sdk_allowance_and_approval_use_call_level_chain_resolution() {
     let provider = MockProvider::default();
     let signer = MockSigner::default();
     let sdk = Trading::builder()
         .with_chain_id(SupportedChainId::Sepolia)
         .with_env(CowEnv::Prod)
-        .build_helper_only()
-        .expect("helper-only sdk construction should succeed");
+        .with_app_code("test-app")
+        .build_ready()
+        .expect("sdk construction should succeed");
 
     let allowance = sdk
         .get_cow_protocol_allowance(
@@ -281,8 +270,9 @@ async fn sdk_async_allowance_and_approval_accept_async_runtime_contracts() {
     let sdk = Trading::builder()
         .with_chain_id(SupportedChainId::Sepolia)
         .with_env(CowEnv::Prod)
-        .build_helper_only()
-        .expect("helper-only sdk construction should succeed");
+        .with_app_code("test-app")
+        .build_ready()
+        .expect("sdk construction should succeed");
 
     let allowance = sdk
         .get_cow_protocol_allowance(
@@ -335,8 +325,9 @@ async fn sdk_call_level_overrides_beat_trader_level_overrides_for_settlement_and
             address("0xcccccccccccccccccccccccccccccccccccccccc"),
         )]))
         .with_options(TradingOptions::new().with_orderbook_client(orderbook.clone()))
-        .build_helper_only()
-        .expect("helper-only sdk construction should succeed");
+        .with_app_code("test-app")
+        .build_ready()
+        .expect("sdk construction should succeed");
 
     let pre_sign_tx = sdk
         .get_pre_sign_transaction(
@@ -538,35 +529,6 @@ async fn build_ready_succeeds_on_native_without_injected_orderbook_client() {
     assert_eq!(sdk.trader_defaults().app_code.as_deref(), Some("test-app"));
 }
 
-#[test]
-fn typestate_build_helper_only_produces_a_helper_only_sdk_from_a_chain_only_state() {
-    let sdk = cow_sdk_trading::TradingBuilder::new()
-        .with_chain_id(SupportedChainId::Sepolia)
-        .build_helper_only()
-        .expect("typestate build_helper_only must succeed when chain id is set");
-
-    assert_eq!(
-        sdk.trader_defaults().chain_id,
-        Some(SupportedChainId::Sepolia)
-    );
-    assert!(sdk.trader_defaults().app_code.is_none());
-}
-
-#[cfg(target_arch = "wasm32")]
-#[wasm_bindgen_test]
-fn build_helper_only_succeeds_on_wasm32_without_injected_orderbook_client() {
-    let sdk = TradingBuilder::new()
-        .with_chain_id(SupportedChainId::Mainnet)
-        .build_helper_only()
-        .expect("wasm32 helper-only construction must not require an injected orderbook client");
-
-    assert_eq!(
-        sdk.trader_defaults().chain_id,
-        Some(SupportedChainId::Mainnet)
-    );
-    assert!(sdk.trader_defaults().app_code.is_none());
-}
-
 #[tokio::test]
 async fn get_quote_only_returns_cancelled_when_combinator_token_fires_before_call() {
     use cow_sdk_core::Cancellable;
@@ -653,18 +615,4 @@ async fn get_quote_only_combinator_aborts_an_in_flight_quote() {
         dropped.load(Ordering::SeqCst),
         "the inner quote future must be dropped when the cancellation token fires"
     );
-}
-
-#[tokio::test]
-async fn helper_only_sdk_exposes_chain_bound_helper_defaults() {
-    let sdk = cow_sdk_trading::TradingBuilder::new()
-        .with_chain_id(SupportedChainId::Sepolia)
-        .build_helper_only()
-        .expect("helper-only builder must succeed when chain id is set");
-
-    assert_eq!(
-        sdk.trader_defaults().chain_id,
-        Some(SupportedChainId::Sepolia)
-    );
-    assert!(sdk.trader_defaults().app_code.is_none());
 }

@@ -12,7 +12,6 @@ root exports:
 - Amount
 - AppCode
 - ErrorClass
-- TradingHelpers
 - HttpTransport
 - NoopEip1271VerificationCache
 - OrderbookApi

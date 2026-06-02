@@ -1,19 +1,21 @@
 //! Typestate `TradingBuilder` walkthrough.
 //!
-//! This example shows the two compile-time-checked terminals on
+//! This example shows the compile-time-checked ready-state terminal on
 //! [`cow_sdk_trading::TradingBuilder`]:
 //!
-//! - [`cow_sdk_trading::TradingBuilder::build_ready`] is only callable once
-//!   the builder has reached the `<ChainIdSet, AppCodeSet>` typestate through
+//! - [`cow_sdk_trading::TradingBuilder::build_ready`] is only callable once the
+//!   builder has reached the `<ChainIdSet, AppCodeSet>` typestate through the
 //!   explicit [`cow_sdk_trading::TradingBuilder::with_chain_id`] and
-//!   [`cow_sdk_trading::TradingBuilder::with_app_code`] setters.
-//! - [`cow_sdk_trading::TradingBuilder::build_helper_only`] unlocks once a
-//!   chain id is set and returns [`cow_sdk_trading::TradingHelpers`], a
-//!   narrower type that exposes only chain-bound helpers.
+//!   [`cow_sdk_trading::TradingBuilder::with_app_code`] setters. Calling it
+//!   before both prerequisites are supplied is a compile error.
 //!
-//! The example compiles without RPC credentials because every terminal used
-//! here operates entirely on the builder state that the example itself
-//! constructs.
+//! Chain-bound helper flows that need no app code — allowance reads, approval
+//! submission, pre-sign transaction construction, and on-chain cancellation —
+//! use the crate's free functions directly (for example `get_cow_protocol_allowance`
+//! and `approval_transaction`), so they require no trading client at all.
+//!
+//! The example compiles without RPC credentials because the terminal used here
+//! operates entirely on the builder state that the example itself constructs.
 //!
 //! Run with:
 //!
@@ -36,20 +38,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "ready sdk built through the typestate path for chain {:?}",
         ready_sdk.trader_defaults().chain_id
     );
-
-    // Helper-only path: only chain id is required. The returned SDK can drive
-    // allowance reads, approval submission, pre-sign transaction
-    // construction, and on-chain cancellation without ever exposing quote,
-    // post, order-lookup, or off-chain cancellation methods.
-    let helper_sdk = TradingBuilder::new()
-        .with_chain_id(SupportedChainId::Mainnet)
-        .build_helper_only()?;
-    assert_eq!(
-        helper_sdk.trader_defaults().chain_id,
-        Some(SupportedChainId::Mainnet)
-    );
-    assert!(helper_sdk.trader_defaults().app_code.is_none());
-    println!("helper-only sdk exposes only chain-bound helpers");
 
     Ok(())
 }

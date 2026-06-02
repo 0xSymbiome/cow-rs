@@ -1,7 +1,7 @@
 # WASM Capability Coverage Audit
 
 Status: Current
-Last reviewed: 2026-06-01
+Last reviewed: 2026-06-02
 Owning surface: `cow-sdk-wasm` capability coverage relative to the native `cow-rs` SDK crates
 Refresh trigger: changes to `crates/wasm/src/exports/**`; additions or removals of public operations on the `orderbook`, `trading`, `signing`, `contracts`, `app-data`, or `subgraph` crates; or revisions to the workflow scope in `docs/parity-scope.md`
 Related docs:
@@ -96,7 +96,7 @@ wallet; **Surfaced (composed)** — covered by combining exported operations;
 | `get_solver_competition_by_tx_hash` | — | Not surfaced (Class 2) |
 | `get_latest_solver_competition` | — | Not surfaced (Class 2) |
 
-#### trading — `Trading` / `TradingHelpers` → `TradingClient`
+#### trading — `Trading` → `TradingClient`
 
 | Native operation | WASM export | Coverage |
 | --- | --- | --- |

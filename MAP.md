@@ -1,9 +1,11 @@
 # Repository File Map
 
-> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `5be3d6b` &nbsp;&middot;&nbsp; **Generated:** 2026-06-02  
-> **Total tracked files:** **1420**
+> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `80e29c1` &nbsp;&middot;&nbsp; **Generated:** 2026-06-02  
+> **Total tracked files:** **1415** &nbsp;&middot;&nbsp; **Code analysis:** tokei 14.0.0 (1363/1415 files) &nbsp;&middot;&nbsp; _5 tracked file(s) deleted in the working tree — excluded_
 
 A navigable inventory of every file tracked by Git on this branch, grouped by the role each directory plays in the workspace. Use the table of contents to jump straight to a section; full file listings are collapsed by default so the high-level shape stays scannable.
+
+`Lines` are physical line counts measured directly from each file, so they match `wc -l` exactly. `Code` comes from `tokei 14.0.0`, which separates executable code from blanks, comments, and documentation; `Comments` is the remainder (`Lines − Code − Blanks`) and therefore includes Rust doc-comments. Data and generated files (JSON fixtures, schemas, vendored ABIs) are tracked but kept out of the code totals so they don't distort the picture.
 
 ---
 
@@ -13,20 +15,31 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 2. [Top-level layout](#top-level-layout)
 3. [File composition by extension](#file-composition-by-extension)
 4. [Workspace crates (`crates/`)](#workspace-crates-crates)
-5. [Examples (`examples/`)](#examples-examples)
-6. [End-to-end harnesses (`e2e/`)](#end-to-end-harnesses-e2e)
-7. [Maintenance scripts (`scripts/`)](#maintenance-scripts-scripts)
-8. [Upstream parity (`parity/`)](#upstream-parity-parity)
-9. [Documentation (`docs/`)](#documentation-docs)
-10. [Fuzzing (`fuzz/`)](#fuzzing-fuzz)
-11. [CI & repo-level configuration](#ci--repo-level-configuration)
-12. [Full file index](#full-file-index)
+5. [Source hotspots](#source-hotspots)
+6. [Examples (`examples/`)](#examples-examples)
+7. [End-to-end harnesses (`e2e/`)](#end-to-end-harnesses-e2e)
+8. [Maintenance scripts (`scripts/`)](#maintenance-scripts-scripts)
+9. [Upstream parity (`parity/`)](#upstream-parity-parity)
+10. [Documentation (`docs/`)](#documentation-docs)
+11. [Fuzzing (`fuzz/`)](#fuzzing-fuzz)
+12. [CI & repo-level configuration](#ci--repo-level-configuration)
+13. [Full file index](#full-file-index)
 
 ---
 
 ## At a glance
 
-- **794 files** live under `crates/` — 18 workspace member crates make up roughly 56% of the repo.
+**Lines of code** (tracked files only)
+
+- **37,794 lines of Rust** across the 18 SDK crates, backed by **49,840 lines of tests & benches** — a **1.3× test-to-code ratio**.
+- **12,888 comment & doc lines** in crate source (~34.1% of code) — inline comments plus Rust doc-comments.
+- **8,475 lines of TypeScript** across examples, e2e harnesses, and wasm bindings.
+- **29,400 lines of Markdown prose** — ADRs, audit notes, and READMEs.
+- **36,560 lines of data & config** (JSON schemas, parity fixtures, vendored ABIs, YAML, TOML) — tracked, but excluded from code metrics by design.
+
+**Footprint** (tracked files)
+
+- **789 files** live under `crates/` — 18 workspace member crates make up roughly 56% of the repo.
 - **153 files** under `docs/` are mostly architecture decision records and audit notes.
 - **73 files** under `parity/` are golden fixtures captured from upstream services to keep the Rust SDK byte-compatible.
 - **107 files** under `fuzz/` cover cargo-fuzz targets and their seed corpora.
@@ -37,159 +50,193 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 ## Top-level layout
 
-| Path | Files | Purpose |
-|------|------:|---------|
-| `crates/` | 794 | Workspace member crates (the SDK itself) |
-| `docs/` | 153 | Architecture decision records, audit notes, provider notes |
-| `fuzz/` | 107 | cargo-fuzz targets, corpora, and failure artifacts |
-| `examples/` | 89 | Runnable usage examples (Rust + TypeScript) |
-| `scripts/` | 86 | Internal maintenance tool crates |
-| `parity/` | 73 | Golden fixtures + pinned specs from upstream services |
-| `e2e/` | 48 | End-to-end integration harnesses |
-| `.github/` | 37 | GitHub Actions workflows and repo config |
-| `tests/` | 15 | Workspace-level integration tests |
-| `.cargo/` | 2 | Cargo configuration |
-| `.gitattributes` | 1 | Git attributes |
-| `rust-toolchain.toml` | 1 | Pinned Rust toolchain |
-| `ROADMAP.md` | 1 | Roadmap document |
-| `README.md` | 1 | Top-level README |
-| `PROPERTIES.md` | 1 | Property-based testing index |
-| `.githooks/` | 1 | Tracked git hook scripts |
-| `CHANGELOG.md` | 1 | Release changelog |
-| `MAP.md` | 1 |  |
-| `LICENSE` | 1 | License text |
-| `.gitignore` | 1 | Top-level git ignore rules |
-| `.yamllint` | 1 | YAML lint configuration |
-| `SECURITY.md` | 1 | Security policy |
-| `Cargo.lock` | 1 | Workspace lockfile |
-| `Cargo.toml` | 1 | Workspace manifest |
-| `llvm-cov-summary.txt` | 1 | Coverage summary snapshot |
-| `CONTRIBUTING.md` | 1 | Contribution guide |
+| Path | Files | Lines | Code | Purpose |
+|------|------:|------:|-----:|---------|
+| `crates/` | 789 | 147,004 | 105,663 | Workspace member crates (the SDK itself) |
+| `docs/` | 153 | 23,303 | 0 | Architecture decision records, audit notes, provider notes |
+| `fuzz/` | 107 | 12,477 | 4,600 | cargo-fuzz targets, corpora, and failure artifacts |
+| `examples/` | 89 | 26,260 | 9,774 | Runnable usage examples (Rust + TypeScript) |
+| `scripts/` | 86 | 25,992 | 16,709 | Internal maintenance tool crates |
+| `parity/` | 73 | 11,114 | 10,780 | Golden fixtures + pinned specs from upstream services |
+| `e2e/` | 48 | 6,853 | 5,366 | End-to-end integration harnesses |
+| `.github/` | 37 | 6,021 | 4,969 | GitHub Actions workflows and repo config |
+| `tests/` | 15 | 1,898 | 1,697 | Workspace-level integration tests |
+| `.cargo/` | 2 | 46 | 39 | Cargo configuration |
+| `.gitattributes` | 1 | 40 | 0 | Git attributes |
+| `rust-toolchain.toml` | 1 | 6 | 4 | Pinned Rust toolchain |
+| `ROADMAP.md` | 1 | 64 | 0 | Roadmap document |
+| `README.md` | 1 | 206 | 0 | Top-level README |
+| `PROPERTIES.md` | 1 | 252 | 0 | Property-based testing index |
+| `.githooks/` | 1 | 35 | 28 | Tracked git hook scripts |
+| `CHANGELOG.md` | 1 | 3,718 | 0 | Release changelog |
+| `MAP.md` | 1 | 3,467 | 0 | Generated repository file map (this document) |
+| `LICENSE` | 1 | 674 | 0 | License text |
+| `.gitignore` | 1 | 20 | 0 | Top-level git ignore rules |
+| `.yamllint` | 1 | 7 | 0 | YAML lint configuration |
+| `SECURITY.md` | 1 | 182 | 0 | Security policy |
+| `Cargo.lock` | 1 | 5,893 | 0 | Workspace lockfile |
+| `Cargo.toml` | 1 | 123 | 108 | Workspace manifest |
+| `llvm-cov-summary.txt` | 1 | 176 | 0 | Coverage summary snapshot |
+| `CONTRIBUTING.md` | 1 | 276 | 0 | Contribution guide |
 
 ---
 
 ## File composition by extension
 
-| Extension | Files | Typical role |
-|-----------|------:|--------------|
-| `.rs` | 703 | Rust source and tests |
-| `.md` | 250 | Markdown docs (ADRs, audit notes, READMEs) |
-| `.json` | 156 | JSON schemas, ABIs, parity fixtures |
-| `.ts` | 74 | TypeScript (examples, e2e, wasm bindings) |
-| `.toml` | 52 | Cargo manifests and tool configs |
-| `.sol` | 40 | Solidity sources / vendored contract code |
-| `.yaml` | 35 | CI workflows, OpenAPI specs, config |
-| `.yml` | 27 | CI workflows and config |
-| `.stderr` | 19 | trybuild compile-fail snapshots |
-| `.lock` | 10 | Cargo / package lockfiles |
-| `.sh` | 8 | Shell scripts |
-| `.txt` | 8 | Plain text fixtures / summaries |
-| `.mjs` | 6 | JavaScript modules |
-| `(none)` | 6 |  |
-| `.html` | 5 | Static HTML for browser examples |
-| `.graphql` | 4 | GraphQL queries (subgraph) |
-| `.gitignore` | 4 |  |
-| `.bin` | 2 | Binary fixtures |
-| `.sha256` | 2 | Checksum files |
-| `.keep` | 2 |  |
-| `.snap` | 2 | Snapshot test outputs |
-| `.npmignore` | 1 |  |
-| `.jsonc` | 1 |  |
-| `.gitattributes` | 1 |  |
-| `.yamllint` | 1 |  |
-| `.proptest-regressions` | 1 | proptest regression seeds |
+| Extension | Files | Lines | Code | Comments | Typical role |
+|-----------|------:|------:|-----:|---------:|--------------|
+| `.rs` | 700 | 145,668 | 114,702 | 17,695 | Rust source and tests |
+| `.md` | 250 | 36,022 | 0 | 29,400 | Markdown docs (ADRs, audit notes, READMEs) |
+| `.json` | 156 | 10,605 | 10,491 | 0 | JSON schemas, ABIs, parity fixtures |
+| `.ts` | 74 | 19,678 | 8,475 | 9,788 | TypeScript (examples, e2e, wasm bindings) |
+| `.toml` | 52 | 4,027 | 3,471 | 52 | Cargo manifests and tool configs |
+| `.sol` | 40 | 3,577 | 2,007 | 1,140 | Solidity sources / vendored contract code |
+| `.yaml` | 35 | 13,266 | 11,658 | 52 | CI workflows, OpenAPI specs, config |
+| `.yml` | 27 | 7,258 | 6,412 | 547 | CI workflows and config |
+| `.stderr` | 17 | 473 | 0 | 0 | trybuild compile-fail snapshots |
+| `.lock` | 10 | 26,197 | 0 | 0 | Cargo / package lockfiles |
+| `.sh` | 8 | 1,563 | 1,301 | 68 | Shell scripts |
+| `.txt` | 8 | 216 | 0 | 216 | Plain text fixtures / summaries |
+| `.mjs` | 6 | 576 | 485 | 18 | JavaScript modules |
+| `(none)` | 6 | 2,732 | 28 | 1 |  |
+| `.html` | 5 | 4,005 | 637 | 3,009 | Static HTML for browser examples |
+| `.graphql` | 4 | 77 | 70 | 0 | GraphQL queries (subgraph) |
+| `.gitignore` | 4 | 29 | 0 | 0 |  |
+| `.bin` | 2 | 0 | 0 | 0 | Binary fixtures |
+| `.sha256` | 2 | 2 | 0 | 0 | Checksum files |
+| `.keep` | 2 | 2 | 0 | 0 |  |
+| `.snap` | 2 | 65 | 0 | 0 | Snapshot test outputs |
+| `.npmignore` | 1 | 6 | 0 | 0 |  |
+| `.jsonc` | 1 | 9 | 0 | 0 |  |
+| `.gitattributes` | 1 | 40 | 0 | 0 |  |
+| `.yamllint` | 1 | 7 | 0 | 0 |  |
+| `.proptest-regressions` | 1 | 7 | 0 | 0 | proptest regression seeds |
 
 ---
 
 ## Workspace crates (`crates/`)
 
-18 member crates compose the SDK. Sizes are file counts, not lines of code. Descriptions are pulled live from each crate's `Cargo.toml`.
+18 member crates compose the SDK. `Code` and `Tests` are Rust lines (`src/` vs `tests/` + `benches/`); `T:C` is the test-to-code ratio. Descriptions are pulled live from each crate's `Cargo.toml`.
 
-| Crate | Files | Purpose |
-|-------|------:|---------|
-| [`contracts`](crates/contracts) | 160 | CoW Protocol low-level contracts helpers for hashing, settlement encoding, and on-chain interaction plumbing |
-| [`wasm`](crates/wasm) | 105 | TypeScript-callable wasm-bindgen leaf for the CoW Protocol Rust SDK |
-| [`app-data`](crates/app-data) | 99 | CoW Protocol app-data encoding, schema validation, and CID compatibility |
-| [`trading`](crates/trading) | 81 | High-level CoW Protocol trading orchestration surface |
-| [`core`](crates/core) | 59 | Shared CoW Protocol core types and validation primitives |
-| [`orderbook`](crates/orderbook) | 40 | Typed CoW Protocol orderbook client models and decoding helpers |
-| [`cow-shed`](crates/cow-shed) | 32 | CoW Protocol COW Shed proxy address, EIP-712, and calldata helpers |
-| [`browser-wallet`](crates/browser-wallet) | 29 | Browser wallet integration for the CoW Protocol Rust SDK |
-| [`signing`](crates/signing) | 27 | Deterministic CoW Protocol order hashing, EIP-712 signing, and UID helpers |
-| [`subgraph`](crates/subgraph) | 27 | Typed CoW Protocol subgraph query primitives |
-| [`alloy`](crates/alloy) | 27 | Composed Alloy provider and signer adapter for the CoW Protocol Rust SDK |
-| [`alloy-provider`](crates/alloy-provider) | 25 | Alloy-backed read-only Provider adapter for the CoW Protocol Rust SDK |
-| [`alloy-signer`](crates/alloy-signer) | 22 | Alloy-backed local-keystore Signer adapter for the CoW Protocol Rust SDK |
-| [`sdk`](crates/sdk) | 18 | Facade crate for CoW Protocol Rust SDK surfaces |
-| [`transport-policy`](crates/transport-policy) | 17 | Retry, rate-limit, and transport classification policy for CoW Protocol SDK HTTP clients |
-| [`pure-helpers`](crates/pure-helpers) | 10 | Runtime-neutral helper functions for the CoW Protocol Rust SDK wasm surface |
-| [`transport-wasm`](crates/transport-wasm) | 8 | Browser fetch-based HTTP transport for the CoW Protocol Rust SDK |
-| [`composable`](crates/composable) | 8 | Reserved crate manifest for future CoW Protocol composable order helpers |
+| Crate | Files | Code | Tests | T:C | Purpose |
+|-------|------:|-----:|------:|----:|---------|
+| [`wasm`](crates/wasm) | 105 | 5,641 | 3,399 | 0.6× | TypeScript-callable wasm-bindgen leaf for the CoW Protocol Rust SDK |
+| [`trading`](crates/trading) | 76 | 5,511 | 8,442 | 1.5× | High-level CoW Protocol trading orchestration surface |
+| [`contracts`](crates/contracts) | 160 | 5,002 | 7,766 | 1.6× | CoW Protocol low-level contracts helpers for hashing, settlement encoding, and on-chain interaction plumbing |
+| [`core`](crates/core) | 59 | 4,271 | 4,067 | 1.0× | Shared CoW Protocol core types and validation primitives |
+| [`orderbook`](crates/orderbook) | 40 | 4,271 | 6,678 | 1.6× | Typed CoW Protocol orderbook client models and decoding helpers |
+| [`browser-wallet`](crates/browser-wallet) | 29 | 3,703 | 2,742 | 0.7× | Browser wallet integration for the CoW Protocol Rust SDK |
+| [`app-data`](crates/app-data) | 99 | 1,516 | 2,638 | 1.7× | CoW Protocol app-data encoding, schema validation, and CID compatibility |
+| [`subgraph`](crates/subgraph) | 27 | 1,423 | 3,611 | 2.5× | Typed CoW Protocol subgraph query primitives |
+| [`transport-policy`](crates/transport-policy) | 17 | 1,315 | 962 | 0.7× | Retry, rate-limit, and transport classification policy for CoW Protocol SDK HTTP clients |
+| [`alloy-provider`](crates/alloy-provider) | 25 | 1,235 | 1,489 | 1.2× | Alloy-backed read-only Provider adapter for the CoW Protocol Rust SDK |
+| [`signing`](crates/signing) | 27 | 944 | 2,480 | 2.6× | Deterministic CoW Protocol order hashing, EIP-712 signing, and UID helpers |
+| [`alloy`](crates/alloy) | 27 | 805 | 1,804 | 2.2× | Composed Alloy provider and signer adapter for the CoW Protocol Rust SDK |
+| [`alloy-signer`](crates/alloy-signer) | 22 | 730 | 600 | 0.8× | Alloy-backed local-keystore Signer adapter for the CoW Protocol Rust SDK |
+| [`pure-helpers`](crates/pure-helpers) | 10 | 429 | 53 | 0.1× | Runtime-neutral helper functions for the CoW Protocol Rust SDK wasm surface |
+| [`transport-wasm`](crates/transport-wasm) | 8 | 423 | 961 | 2.3× | Browser fetch-based HTTP transport for the CoW Protocol Rust SDK |
+| [`cow-shed`](crates/cow-shed) | 32 | 410 | 679 | 1.7× | CoW Protocol COW Shed proxy address, EIP-712, and calldata helpers |
+| [`sdk`](crates/sdk) | 18 | 165 | 1,369 | 8.3× | Facade crate for CoW Protocol Rust SDK surfaces |
+| [`composable`](crates/composable) | 8 | 0 | 100 | — | Reserved crate manifest for future CoW Protocol composable order helpers |
+
+---
+
+## Source hotspots
+
+The 25 largest hand-written source files by code lines (Rust + TypeScript; vendored ABIs excluded). This is where complexity — and review attention — concentrates.
+
+| File | Lang | Kind | Code | Comments |
+|------|------|------|-----:|---------:|
+| [`scripts/parity-maintainer/src/main.rs`](scripts/parity-maintainer/src/main.rs) | Rust | src | 2,532 | 38 |
+| [`crates/trading/tests/parity_contract.rs`](crates/trading/tests/parity_contract.rs) | Rust | test | 1,394 | 74 |
+| [`crates/subgraph/tests/api_contract.rs`](crates/subgraph/tests/api_contract.rs) | Rust | test | 1,344 | 0 |
+| [`examples/wasm/browser-wallet-console/src/lib.rs`](examples/wasm/browser-wallet-console/src/lib.rs) | Rust | example | 1,306 | 4 |
+| [`crates/orderbook/tests/api_contract.rs`](crates/orderbook/tests/api_contract.rs) | Rust | test | 1,228 | 12 |
+| [`crates/orderbook/tests/request_contract.rs`](crates/orderbook/tests/request_contract.rs) | Rust | test | 1,180 | 16 |
+| [`scripts/parity-maintainer/src/verify_sol_provenance.rs`](scripts/parity-maintainer/src/verify_sol_provenance.rs) | Rust | src | 1,093 | 146 |
+| [`crates/contracts/tests/parity_contract.rs`](crates/contracts/tests/parity_contract.rs) | Rust | test | 1,000 | 74 |
+| [`scripts/validation-depth/src/main.rs`](scripts/validation-depth/src/main.rs) | Rust | src | 880 | 0 |
+| [`crates/sdk/tests/error_redaction_contract.rs`](crates/sdk/tests/error_redaction_contract.rs) | Rust | test | 868 | 52 |
+| [`crates/trading/tests/common/mod.rs`](crates/trading/tests/common/mod.rs) | Rust | test | 855 | 2 |
+| [`scripts/parity-maintainer/src/audit_self_pinning.rs`](scripts/parity-maintainer/src/audit_self_pinning.rs) | Rust | src | 796 | 106 |
+| [`scripts/parity-maintainer/src/openapi_coverage.rs`](scripts/parity-maintainer/src/openapi_coverage.rs) | Rust | src | 759 | 0 |
+| [`crates/trading/tests/quote_contract.rs`](crates/trading/tests/quote_contract.rs) | Rust | test | 729 | 0 |
+| [`crates/browser-wallet/src/provider/provider_impl.rs`](crates/browser-wallet/src/provider/provider_impl.rs) | Rust | src | 722 | 18 |
+| [`crates/browser-wallet/tests/wasm_bridge_contract.rs`](crates/browser-wallet/tests/wasm_bridge_contract.rs) | Rust | test | 708 | 0 |
+| [`crates/trading/tests/post_contract.rs`](crates/trading/tests/post_contract.rs) | Rust | test | 683 | 18 |
+| [`crates/core/tests/transport_contract.rs`](crates/core/tests/transport_contract.rs) | Rust | test | 683 | 21 |
+| [`crates/browser-wallet/tests/wallet_contract.rs`](crates/browser-wallet/tests/wallet_contract.rs) | Rust | test | 679 | 0 |
+| [`scripts/validation-smoke/src/wasm_runner.rs`](scripts/validation-smoke/src/wasm_runner.rs) | Rust | src | 663 | 20 |
+| [`examples/wasm/sdk-verification-console/src/lib.rs`](examples/wasm/sdk-verification-console/src/lib.rs) | Rust | example | 662 | 5 |
+| [`crates/core/tests/types_contract.rs`](crates/core/tests/types_contract.rs) | Rust | test | 660 | 128 |
+| [`crates/wasm/snapshots/raw/cloudflare-web.d.ts`](crates/wasm/snapshots/raw/cloudflare-web.d.ts) | TypeScript | src | 648 | 1,945 |
+| [`crates/trading/tests/validation_contract.rs`](crates/trading/tests/validation_contract.rs) | Rust | test | 644 | 9 |
+| [`crates/contracts/tests/signature_contract.rs`](crates/contracts/tests/signature_contract.rs) | Rust | test | 633 | 6 |
 
 ---
 
 ## Examples (`examples/`)
 
-| Example | Files | Purpose |
-|---------|------:|---------|
-| [`native`](examples/native) | 32 | Native Rust scenario walkthroughs |
-| [`wasm`](examples/wasm) | 26 | Browser console scenarios (raw wasm) |
-| [`wasm-typescript-browser-mm`](examples/wasm-typescript-browser-mm) | 9 | TypeScript browser market-maker demo |
-| [`wasm-typescript-cloudflare-proxy`](examples/wasm-typescript-cloudflare-proxy) | 14 | TypeScript Cloudflare Worker proxy example |
-| [`wasm-typescript-node-viem`](examples/wasm-typescript-node-viem) | 6 | Node + viem TypeScript example |
+| Example | Files | Lines | Code | Purpose |
+|---------|------:|------:|-----:|---------|
+| [`native`](examples/native) | 32 | 8,811 | 2,802 | Native Rust scenario walkthroughs |
+| [`wasm`](examples/wasm) | 26 | 12,602 | 3,688 | Browser console scenarios (raw wasm) |
+| [`wasm-typescript-browser-mm`](examples/wasm-typescript-browser-mm) | 9 | 798 | 645 | TypeScript browser market-maker demo |
+| [`wasm-typescript-cloudflare-proxy`](examples/wasm-typescript-cloudflare-proxy) | 14 | 2,258 | 1,792 | TypeScript Cloudflare Worker proxy example |
+| [`wasm-typescript-node-viem`](examples/wasm-typescript-node-viem) | 6 | 1,069 | 847 | Node + viem TypeScript example |
 
 ---
 
 ## End-to-end harnesses (`e2e/`)
 
-| Harness | Files | Purpose |
-|---------|------:|---------|
-| [`browser-wallet`](e2e/browser-wallet) | 10 | Browser-wallet end-to-end harness |
-| [`sdk-verification`](e2e/sdk-verification) | 9 | SDK facade verification harness |
-| [`wasm-typescript`](e2e/wasm-typescript) | 14 | Wasm + TypeScript integration harness |
-| [`wasm-typescript-cf`](e2e/wasm-typescript-cf) | 11 | Wasm + TypeScript Cloudflare harness |
-| [`wasm-typescript-deno`](e2e/wasm-typescript-deno) | 3 | Wasm + TypeScript Deno harness |
+| Harness | Files | Lines | Code | Purpose |
+|---------|------:|------:|-----:|---------|
+| [`browser-wallet`](e2e/browser-wallet) | 10 | 1,296 | 945 | Browser-wallet end-to-end harness |
+| [`sdk-verification`](e2e/sdk-verification) | 9 | 1,553 | 1,187 | SDK facade verification harness |
+| [`wasm-typescript`](e2e/wasm-typescript) | 14 | 2,032 | 1,641 | Wasm + TypeScript integration harness |
+| [`wasm-typescript-cf`](e2e/wasm-typescript-cf) | 11 | 1,839 | 1,478 | Wasm + TypeScript Cloudflare harness |
+| [`wasm-typescript-deno`](e2e/wasm-typescript-deno) | 3 | 116 | 98 | Wasm + TypeScript Deno harness |
 
 ---
 
 ## Maintenance scripts (`scripts/`)
 
-| Script crate | Files | Purpose |
-|---------|------:|---------|
-| [`parity-maintainer`](scripts/parity-maintainer) | 30 | Upstream parity fixture refresh + drift detection |
-| [`policy-maintainer`](scripts/policy-maintainer) | 38 | Transport policy config maintenance |
-| [`validation-depth`](scripts/validation-depth) | 4 | Deep validation runner |
-| [`validation-smoke`](scripts/validation-smoke) | 11 | Smoke validation runner |
+| Script crate | Files | Lines | Code | Purpose |
+|---------|------:|------:|-----:|---------|
+| [`parity-maintainer`](scripts/parity-maintainer) | 30 | 10,879 | 7,706 | Upstream parity fixture refresh + drift detection |
+| [`policy-maintainer`](scripts/policy-maintainer) | 38 | 6,295 | 5,059 | Transport policy config maintenance |
+| [`validation-depth`](scripts/validation-depth) | 4 | 2,946 | 894 | Deep validation runner |
+| [`validation-smoke`](scripts/validation-smoke) | 11 | 4,739 | 2,112 | Smoke validation runner |
 
 ---
 
 ## Upstream parity (`parity/`)
 
-| Subtree | Files | Purpose |
-|---------|------:|---------|
-| [`dependency-audit`](parity/dependency-audit) | 1 | Dependency audit reports |
-| [`fixtures`](parity/fixtures) | 52 | Golden fixtures captured from upstream services |
-| [`openapi`](parity/openapi) | 10 | OpenAPI specs pinned for parity |
-| [`source-lock`](parity/source-lock) | 1 | Upstream source lockfiles |
+| Subtree | Files | Lines | Code | Purpose |
+|---------|------:|------:|-----:|---------|
+| [`dependency-audit`](parity/dependency-audit) | 1 | 44 | 0 | Dependency audit reports |
+| [`fixtures`](parity/fixtures) | 52 | 6,169 | 6,169 | Golden fixtures captured from upstream services |
+| [`openapi`](parity/openapi) | 10 | 3,584 | 3,548 | OpenAPI specs pinned for parity |
+| [`source-lock`](parity/source-lock) | 1 | 35 | 35 | Upstream source lockfiles |
 
 ---
 
 ## Documentation (`docs/`)
 
-| Subtree | Files | Purpose |
-|---------|------:|---------|
-| [`adr`](docs/adr) | 63 | Architecture Decision Records |
-| [`audit`](docs/audit) | 65 | Audit notes and review artifacts |
-| [`providers`](docs/providers) | 2 | Provider integration notes |
+| Subtree | Files | Lines | Code | Purpose |
+|---------|------:|------:|-----:|---------|
+| [`adr`](docs/adr) | 63 | 6,912 | 0 | Architecture Decision Records |
+| [`audit`](docs/audit) | 65 | 10,489 | 0 | Audit notes and review artifacts |
+| [`providers`](docs/providers) | 2 | 251 | 0 | Provider integration notes |
 
 ---
 
 ## Fuzzing (`fuzz/`)
 
-| Subtree | Files | Purpose |
-|---------|------:|---------|
-| [`corpus`](fuzz/corpus) | 52 | Seed corpora per target |
-| [`fuzz_targets`](fuzz/fuzz_targets) | 52 | cargo-fuzz target sources |
+| Subtree | Files | Lines | Code | Purpose |
+|---------|------:|------:|-----:|---------|
+| [`corpus`](fuzz/corpus) | 52 | 1,469 | 0 | Seed corpora per target |
+| [`fuzz_targets`](fuzz/fuzz_targets) | 52 | 6,207 | 4,261 | cargo-fuzz target sources |
 
 ---
 
@@ -207,685 +254,685 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 ## Full file index
 
-Every tracked file, grouped by the directory it lives in. Each section is collapsed by default — click to expand.
+Every tracked file, grouped by the directory it lives in. Each section is collapsed by default — click to expand. The number after each file is its total line count.
 
 <details>
 <summary><code>(repo root)</code> &mdash; 15 file(s)</summary>
 
-- [`.gitattributes`](.gitattributes)
-- [`.gitignore`](.gitignore)
-- [`.yamllint`](.yamllint)
-- [`Cargo.lock`](Cargo.lock)
-- [`Cargo.toml`](Cargo.toml)
-- [`CHANGELOG.md`](CHANGELOG.md)
-- [`CONTRIBUTING.md`](CONTRIBUTING.md)
-- [`LICENSE`](LICENSE)
-- [`llvm-cov-summary.txt`](llvm-cov-summary.txt)
-- [`MAP.md`](MAP.md)
-- [`PROPERTIES.md`](PROPERTIES.md)
-- [`README.md`](README.md)
-- [`ROADMAP.md`](ROADMAP.md)
-- [`rust-toolchain.toml`](rust-toolchain.toml)
-- [`SECURITY.md`](SECURITY.md)
+- [`.gitattributes`](.gitattributes) &mdash; 40 lines
+- [`.gitignore`](.gitignore) &mdash; 20 lines
+- [`.yamllint`](.yamllint) &mdash; 7 lines
+- [`Cargo.lock`](Cargo.lock) &mdash; 5,893 lines
+- [`Cargo.toml`](Cargo.toml) &mdash; 123 lines
+- [`CHANGELOG.md`](CHANGELOG.md) &mdash; 3,718 lines
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) &mdash; 276 lines
+- [`LICENSE`](LICENSE) &mdash; 674 lines
+- [`llvm-cov-summary.txt`](llvm-cov-summary.txt) &mdash; 176 lines
+- [`MAP.md`](MAP.md) &mdash; 3,467 lines
+- [`PROPERTIES.md`](PROPERTIES.md) &mdash; 252 lines
+- [`README.md`](README.md) &mdash; 206 lines
+- [`ROADMAP.md`](ROADMAP.md) &mdash; 64 lines
+- [`rust-toolchain.toml`](rust-toolchain.toml) &mdash; 6 lines
+- [`SECURITY.md`](SECURITY.md) &mdash; 182 lines
 
 </details>
 
 <details>
 <summary><code>.cargo/</code> &mdash; 2 file(s)</summary>
 
-- [`config.toml`](.cargo/config.toml)
-- [`mutants.toml`](.cargo/mutants.toml)
+- [`config.toml`](.cargo/config.toml) &mdash; 43 lines
+- [`mutants.toml`](.cargo/mutants.toml) &mdash; 3 lines
 
 </details>
 
 <details>
 <summary><code>.githooks/</code> &mdash; 1 file(s)</summary>
 
-- [`commit-msg`](.githooks/commit-msg)
+- [`commit-msg`](.githooks/commit-msg) &mdash; 35 lines
 
 </details>
 
 <details>
 <summary><code>.github/</code> &mdash; 2 file(s)</summary>
 
-- [`commit-template.md`](.github/commit-template.md)
-- [`dependabot.yml`](.github/dependabot.yml)
+- [`commit-template.md`](.github/commit-template.md) &mdash; 12 lines
+- [`dependabot.yml`](.github/dependabot.yml) &mdash; 102 lines
 
 </details>
 
 <details>
 <summary><code>.github/codeql/</code> &mdash; 1 file(s)</summary>
 
-- [`codeql-config.yml`](.github/codeql/codeql-config.yml)
+- [`codeql-config.yml`](.github/codeql/codeql-config.yml) &mdash; 11 lines
 
 </details>
 
 <details>
 <summary><code>.github/config/</code> &mdash; 9 file(s)</summary>
 
-- [`audit-refresh-map.yml`](.github/config/audit-refresh-map.yml)
-- [`deny-unknown-fields-allowlist.yaml`](.github/config/deny-unknown-fields-allowlist.yaml)
-- [`deny.toml`](.github/config/deny.toml)
-- [`enum-policy.yaml`](.github/config/enum-policy.yaml)
-- [`nextest.toml`](.github/config/nextest.toml)
-- [`panic-allowlist.yaml`](.github/config/panic-allowlist.yaml)
-- [`principle-adr-map.yaml`](.github/config/principle-adr-map.yaml)
-- [`typos.toml`](.github/config/typos.toml)
-- [`wasm-test-versions.yaml`](.github/config/wasm-test-versions.yaml)
+- [`audit-refresh-map.yml`](.github/config/audit-refresh-map.yml) &mdash; 48 lines
+- [`deny-unknown-fields-allowlist.yaml`](.github/config/deny-unknown-fields-allowlist.yaml) &mdash; 35 lines
+- [`deny.toml`](.github/config/deny.toml) &mdash; 168 lines
+- [`enum-policy.yaml`](.github/config/enum-policy.yaml) &mdash; 644 lines
+- [`nextest.toml`](.github/config/nextest.toml) &mdash; 31 lines
+- [`panic-allowlist.yaml`](.github/config/panic-allowlist.yaml) &mdash; 134 lines
+- [`principle-adr-map.yaml`](.github/config/principle-adr-map.yaml) &mdash; 112 lines
+- [`typos.toml`](.github/config/typos.toml) &mdash; 32 lines
+- [`wasm-test-versions.yaml`](.github/config/wasm-test-versions.yaml) &mdash; 30 lines
 
 </details>
 
 <details>
 <summary><code>.github/ISSUE_TEMPLATE/</code> &mdash; 1 file(s)</summary>
 
-- [`services-drift-report.yml`](.github/ISSUE_TEMPLATE/services-drift-report.yml)
+- [`services-drift-report.yml`](.github/ISSUE_TEMPLATE/services-drift-report.yml) &mdash; 32 lines
 
 </details>
 
 <details>
 <summary><code>.github/release-evidence/</code> &mdash; 2 file(s)</summary>
 
-- [`release-readiness-status-0.1.0.yaml`](.github/release-evidence/release-readiness-status-0.1.0.yaml)
-- [`validation-evidence-0.1.0.md`](.github/release-evidence/validation-evidence-0.1.0.md)
+- [`release-readiness-status-0.1.0.yaml`](.github/release-evidence/release-readiness-status-0.1.0.yaml) &mdash; 148 lines
+- [`validation-evidence-0.1.0.md`](.github/release-evidence/validation-evidence-0.1.0.md) &mdash; 147 lines
 
 </details>
 
 <details>
 <summary><code>.github/workflows/</code> &mdash; 22 file(s)</summary>
 
-- [`_quality-gate.yml`](.github/workflows/_quality-gate.yml)
-- [`alloy-release-candidate.yml`](.github/workflows/alloy-release-candidate.yml)
-- [`benchmarks.yml`](.github/workflows/benchmarks.yml)
-- [`browser-wallet-e2e.yml`](.github/workflows/browser-wallet-e2e.yml)
-- [`ci.yml`](.github/workflows/ci.yml)
-- [`codeql.yml`](.github/workflows/codeql.yml)
-- [`commit-format.yml`](.github/workflows/commit-format.yml)
-- [`crate-checks.yml`](.github/workflows/crate-checks.yml)
-- [`docs-quality.yml`](.github/workflows/docs-quality.yml)
-- [`encode-prefixed-grep-gate.yml`](.github/workflows/encode-prefixed-grep-gate.yml)
-- [`fuzz.yml`](.github/workflows/fuzz.yml)
-- [`never-swap-gates.yml`](.github/workflows/never-swap-gates.yml)
-- [`policy-maintainer.yml`](.github/workflows/policy-maintainer.yml)
-- [`release-readiness.yml`](.github/workflows/release-readiness.yml)
-- [`release-version-coherence.yml`](.github/workflows/release-version-coherence.yml)
-- [`retry-soak.yml`](.github/workflows/retry-soak.yml)
-- [`sdk-verification-e2e.yml`](.github/workflows/sdk-verification-e2e.yml)
-- [`services-drift.yml`](.github/workflows/services-drift.yml)
-- [`test-depth.yml`](.github/workflows/test-depth.yml)
-- [`wasm-imports-grep-gate.yml`](.github/workflows/wasm-imports-grep-gate.yml)
-- [`wasm-pages.yml`](.github/workflows/wasm-pages.yml)
-- [`wasm.yml`](.github/workflows/wasm.yml)
+- [`_quality-gate.yml`](.github/workflows/_quality-gate.yml) &mdash; 893 lines
+- [`alloy-release-candidate.yml`](.github/workflows/alloy-release-candidate.yml) &mdash; 134 lines
+- [`benchmarks.yml`](.github/workflows/benchmarks.yml) &mdash; 68 lines
+- [`browser-wallet-e2e.yml`](.github/workflows/browser-wallet-e2e.yml) &mdash; 199 lines
+- [`ci.yml`](.github/workflows/ci.yml) &mdash; 390 lines
+- [`codeql.yml`](.github/workflows/codeql.yml) &mdash; 55 lines
+- [`commit-format.yml`](.github/workflows/commit-format.yml) &mdash; 98 lines
+- [`crate-checks.yml`](.github/workflows/crate-checks.yml) &mdash; 99 lines
+- [`docs-quality.yml`](.github/workflows/docs-quality.yml) &mdash; 176 lines
+- [`encode-prefixed-grep-gate.yml`](.github/workflows/encode-prefixed-grep-gate.yml) &mdash; 83 lines
+- [`fuzz.yml`](.github/workflows/fuzz.yml) &mdash; 103 lines
+- [`never-swap-gates.yml`](.github/workflows/never-swap-gates.yml) &mdash; 281 lines
+- [`policy-maintainer.yml`](.github/workflows/policy-maintainer.yml) &mdash; 51 lines
+- [`release-readiness.yml`](.github/workflows/release-readiness.yml) &mdash; 397 lines
+- [`release-version-coherence.yml`](.github/workflows/release-version-coherence.yml) &mdash; 68 lines
+- [`retry-soak.yml`](.github/workflows/retry-soak.yml) &mdash; 35 lines
+- [`sdk-verification-e2e.yml`](.github/workflows/sdk-verification-e2e.yml) &mdash; 106 lines
+- [`services-drift.yml`](.github/workflows/services-drift.yml) &mdash; 70 lines
+- [`test-depth.yml`](.github/workflows/test-depth.yml) &mdash; 225 lines
+- [`wasm-imports-grep-gate.yml`](.github/workflows/wasm-imports-grep-gate.yml) &mdash; 64 lines
+- [`wasm-pages.yml`](.github/workflows/wasm-pages.yml) &mdash; 82 lines
+- [`wasm.yml`](.github/workflows/wasm.yml) &mdash; 658 lines
 
 </details>
 
 <details>
 <summary><code>crates/alloy/</code> &mdash; 2 file(s)</summary>
 
-- [`Cargo.toml`](crates/alloy/Cargo.toml)
-- [`README.md`](crates/alloy/README.md)
+- [`Cargo.toml`](crates/alloy/Cargo.toml) &mdash; 70 lines
+- [`README.md`](crates/alloy/README.md) &mdash; 133 lines
 
 </details>
 
 <details>
 <summary><code>crates/alloy-provider/</code> &mdash; 2 file(s)</summary>
 
-- [`Cargo.toml`](crates/alloy-provider/Cargo.toml)
-- [`README.md`](crates/alloy-provider/README.md)
+- [`Cargo.toml`](crates/alloy-provider/Cargo.toml) &mdash; 54 lines
+- [`README.md`](crates/alloy-provider/README.md) &mdash; 97 lines
 
 </details>
 
 <details>
 <summary><code>crates/alloy-provider/src/</code> &mdash; 7 file(s)</summary>
 
-- [`builder.rs`](crates/alloy-provider/src/builder.rs)
-- [`client.rs`](crates/alloy-provider/src/client.rs)
-- [`conversion.rs`](crates/alloy-provider/src/conversion.rs)
-- [`error.rs`](crates/alloy-provider/src/error.rs)
-- [`lib.rs`](crates/alloy-provider/src/lib.rs)
-- [`provider.rs`](crates/alloy-provider/src/provider.rs)
-- [`read_contract.rs`](crates/alloy-provider/src/read_contract.rs)
+- [`builder.rs`](crates/alloy-provider/src/builder.rs) &mdash; 184 lines
+- [`client.rs`](crates/alloy-provider/src/client.rs) &mdash; 14 lines
+- [`conversion.rs`](crates/alloy-provider/src/conversion.rs) &mdash; 271 lines
+- [`error.rs`](crates/alloy-provider/src/error.rs) &mdash; 258 lines
+- [`lib.rs`](crates/alloy-provider/src/lib.rs) &mdash; 156 lines
+- [`provider.rs`](crates/alloy-provider/src/provider.rs) &mdash; 178 lines
+- [`read_contract.rs`](crates/alloy-provider/src/read_contract.rs) &mdash; 460 lines
 
 </details>
 
 <details>
 <summary><code>crates/alloy-provider/tests/</code> &mdash; 10 file(s)</summary>
 
-- [`builder_contract.rs`](crates/alloy-provider/tests/builder_contract.rs)
-- [`cancellation_contract.rs`](crates/alloy-provider/tests/cancellation_contract.rs)
-- [`compile_fail.rs`](crates/alloy-provider/tests/compile_fail.rs)
-- [`dependency_boundary_contract.rs`](crates/alloy-provider/tests/dependency_boundary_contract.rs)
-- [`error_class_contract.rs`](crates/alloy-provider/tests/error_class_contract.rs)
-- [`provider_contract.rs`](crates/alloy-provider/tests/provider_contract.rs)
-- [`read_contract_no_panic.rs`](crates/alloy-provider/tests/read_contract_no_panic.rs)
-- [`read_contract_parity.rs`](crates/alloy-provider/tests/read_contract_parity.rs)
-- [`redaction_contract.rs`](crates/alloy-provider/tests/redaction_contract.rs)
-- [`seam_contract.rs`](crates/alloy-provider/tests/seam_contract.rs)
+- [`builder_contract.rs`](crates/alloy-provider/tests/builder_contract.rs) &mdash; 136 lines
+- [`cancellation_contract.rs`](crates/alloy-provider/tests/cancellation_contract.rs) &mdash; 18 lines
+- [`compile_fail.rs`](crates/alloy-provider/tests/compile_fail.rs) &mdash; 7 lines
+- [`dependency_boundary_contract.rs`](crates/alloy-provider/tests/dependency_boundary_contract.rs) &mdash; 50 lines
+- [`error_class_contract.rs`](crates/alloy-provider/tests/error_class_contract.rs) &mdash; 225 lines
+- [`provider_contract.rs`](crates/alloy-provider/tests/provider_contract.rs) &mdash; 328 lines
+- [`read_contract_no_panic.rs`](crates/alloy-provider/tests/read_contract_no_panic.rs) &mdash; 76 lines
+- [`read_contract_parity.rs`](crates/alloy-provider/tests/read_contract_parity.rs) &mdash; 637 lines
+- [`redaction_contract.rs`](crates/alloy-provider/tests/redaction_contract.rs) &mdash; 124 lines
+- [`seam_contract.rs`](crates/alloy-provider/tests/seam_contract.rs) &mdash; 239 lines
 
 </details>
 
 <details>
 <summary><code>crates/alloy-provider/tests/trybuild/</code> &mdash; 6 file(s)</summary>
 
-- [`external_marker_construction_fails.rs`](crates/alloy-provider/tests/trybuild/external_marker_construction_fails.rs)
-- [`external_marker_construction_fails.stderr`](crates/alloy-provider/tests/trybuild/external_marker_construction_fails.stderr)
-- [`no_signer.rs`](crates/alloy-provider/tests/trybuild/no_signer.rs)
-- [`no_signer.stderr`](crates/alloy-provider/tests/trybuild/no_signer.stderr)
-- [`no_signing_provider.rs`](crates/alloy-provider/tests/trybuild/no_signing_provider.rs)
-- [`no_signing_provider.stderr`](crates/alloy-provider/tests/trybuild/no_signing_provider.stderr)
+- [`external_marker_construction_fails.rs`](crates/alloy-provider/tests/trybuild/external_marker_construction_fails.rs) &mdash; 9 lines
+- [`external_marker_construction_fails.stderr`](crates/alloy-provider/tests/trybuild/external_marker_construction_fails.stderr) &mdash; 13 lines
+- [`no_signer.rs`](crates/alloy-provider/tests/trybuild/no_signer.rs) &mdash; 7 lines
+- [`no_signer.stderr`](crates/alloy-provider/tests/trybuild/no_signer.stderr) &mdash; 11 lines
+- [`no_signing_provider.rs`](crates/alloy-provider/tests/trybuild/no_signing_provider.rs) &mdash; 7 lines
+- [`no_signing_provider.stderr`](crates/alloy-provider/tests/trybuild/no_signing_provider.stderr) &mdash; 11 lines
 
 </details>
 
 <details>
 <summary><code>crates/alloy-signer/</code> &mdash; 2 file(s)</summary>
 
-- [`Cargo.toml`](crates/alloy-signer/Cargo.toml)
-- [`README.md`](crates/alloy-signer/README.md)
+- [`Cargo.toml`](crates/alloy-signer/Cargo.toml) &mdash; 52 lines
+- [`README.md`](crates/alloy-signer/README.md) &mdash; 128 lines
 
 </details>
 
 <details>
 <summary><code>crates/alloy-signer/src/</code> &mdash; 5 file(s)</summary>
 
-- [`builder.rs`](crates/alloy-signer/src/builder.rs)
-- [`conversion.rs`](crates/alloy-signer/src/conversion.rs)
-- [`error.rs`](crates/alloy-signer/src/error.rs)
-- [`lib.rs`](crates/alloy-signer/src/lib.rs)
-- [`signer.rs`](crates/alloy-signer/src/signer.rs)
+- [`builder.rs`](crates/alloy-signer/src/builder.rs) &mdash; 275 lines
+- [`conversion.rs`](crates/alloy-signer/src/conversion.rs) &mdash; 207 lines
+- [`error.rs`](crates/alloy-signer/src/error.rs) &mdash; 242 lines
+- [`lib.rs`](crates/alloy-signer/src/lib.rs) &mdash; 66 lines
+- [`signer.rs`](crates/alloy-signer/src/signer.rs) &mdash; 197 lines
 
 </details>
 
 <details>
 <summary><code>crates/alloy-signer/tests/</code> &mdash; 9 file(s)</summary>
 
-- [`cancellation_contract.rs`](crates/alloy-signer/tests/cancellation_contract.rs)
-- [`compile_fail.rs`](crates/alloy-signer/tests/compile_fail.rs)
-- [`dependency_boundary_contract.rs`](crates/alloy-signer/tests/dependency_boundary_contract.rs)
-- [`eip191_reference_vectors.rs`](crates/alloy-signer/tests/eip191_reference_vectors.rs)
-- [`eip712_reference_vectors.rs`](crates/alloy-signer/tests/eip712_reference_vectors.rs)
-- [`proptests.rs`](crates/alloy-signer/tests/proptests.rs)
-- [`redaction_contract.rs`](crates/alloy-signer/tests/redaction_contract.rs)
-- [`signer_contract.rs`](crates/alloy-signer/tests/signer_contract.rs)
-- [`signer_error_trait_contract.rs`](crates/alloy-signer/tests/signer_error_trait_contract.rs)
+- [`cancellation_contract.rs`](crates/alloy-signer/tests/cancellation_contract.rs) &mdash; 28 lines
+- [`compile_fail.rs`](crates/alloy-signer/tests/compile_fail.rs) &mdash; 9 lines
+- [`dependency_boundary_contract.rs`](crates/alloy-signer/tests/dependency_boundary_contract.rs) &mdash; 55 lines
+- [`eip191_reference_vectors.rs`](crates/alloy-signer/tests/eip191_reference_vectors.rs) &mdash; 42 lines
+- [`eip712_reference_vectors.rs`](crates/alloy-signer/tests/eip712_reference_vectors.rs) &mdash; 64 lines
+- [`proptests.rs`](crates/alloy-signer/tests/proptests.rs) &mdash; 124 lines
+- [`redaction_contract.rs`](crates/alloy-signer/tests/redaction_contract.rs) &mdash; 133 lines
+- [`signer_contract.rs`](crates/alloy-signer/tests/signer_contract.rs) &mdash; 156 lines
+- [`signer_error_trait_contract.rs`](crates/alloy-signer/tests/signer_error_trait_contract.rs) &mdash; 33 lines
 
 </details>
 
 <details>
 <summary><code>crates/alloy-signer/tests/trybuild/</code> &mdash; 6 file(s)</summary>
 
-- [`external_marker_construction_fails.rs`](crates/alloy-signer/tests/trybuild/external_marker_construction_fails.rs)
-- [`external_marker_construction_fails.stderr`](crates/alloy-signer/tests/trybuild/external_marker_construction_fails.stderr)
-- [`no_provider.rs`](crates/alloy-signer/tests/trybuild/no_provider.rs)
-- [`no_provider.stderr`](crates/alloy-signer/tests/trybuild/no_provider.stderr)
-- [`no_signing_provider.rs`](crates/alloy-signer/tests/trybuild/no_signing_provider.rs)
-- [`no_signing_provider.stderr`](crates/alloy-signer/tests/trybuild/no_signing_provider.stderr)
+- [`external_marker_construction_fails.rs`](crates/alloy-signer/tests/trybuild/external_marker_construction_fails.rs) &mdash; 32 lines
+- [`external_marker_construction_fails.stderr`](crates/alloy-signer/tests/trybuild/external_marker_construction_fails.stderr) &mdash; 25 lines
+- [`no_provider.rs`](crates/alloy-signer/tests/trybuild/no_provider.rs) &mdash; 15 lines
+- [`no_provider.stderr`](crates/alloy-signer/tests/trybuild/no_provider.stderr) &mdash; 13 lines
+- [`no_signing_provider.rs`](crates/alloy-signer/tests/trybuild/no_signing_provider.rs) &mdash; 15 lines
+- [`no_signing_provider.stderr`](crates/alloy-signer/tests/trybuild/no_signing_provider.stderr) &mdash; 13 lines
 
 </details>
 
 <details>
 <summary><code>crates/alloy/src/</code> &mdash; 6 file(s)</summary>
 
-- [`builder.rs`](crates/alloy/src/builder.rs)
-- [`client.rs`](crates/alloy/src/client.rs)
-- [`conversion.rs`](crates/alloy/src/conversion.rs)
-- [`error.rs`](crates/alloy/src/error.rs)
-- [`handle.rs`](crates/alloy/src/handle.rs)
-- [`lib.rs`](crates/alloy/src/lib.rs)
+- [`builder.rs`](crates/alloy/src/builder.rs) &mdash; 360 lines
+- [`client.rs`](crates/alloy/src/client.rs) &mdash; 221 lines
+- [`conversion.rs`](crates/alloy/src/conversion.rs) &mdash; 17 lines
+- [`error.rs`](crates/alloy/src/error.rs) &mdash; 279 lines
+- [`handle.rs`](crates/alloy/src/handle.rs) &mdash; 159 lines
+- [`lib.rs`](crates/alloy/src/lib.rs) &mdash; 70 lines
 
 </details>
 
 <details>
 <summary><code>crates/alloy/tests/</code> &mdash; 15 file(s)</summary>
 
-- [`builder_contract.rs`](crates/alloy/tests/builder_contract.rs)
-- [`cancellation_contract.rs`](crates/alloy/tests/cancellation_contract.rs)
-- [`chain_coherence_mismatch.rs`](crates/alloy/tests/chain_coherence_mismatch.rs)
-- [`chain_coherence.rs`](crates/alloy/tests/chain_coherence.rs)
-- [`compile_fail.rs`](crates/alloy/tests/compile_fail.rs)
-- [`eip712_reference_vectors.rs`](crates/alloy/tests/eip712_reference_vectors.rs)
-- [`error_contract.rs`](crates/alloy/tests/error_contract.rs)
-- [`handle_survives_drop.rs`](crates/alloy/tests/handle_survives_drop.rs)
-- [`no_broadcast_for_sign_transaction.rs`](crates/alloy/tests/no_broadcast_for_sign_transaction.rs)
-- [`provider_contract.rs`](crates/alloy/tests/provider_contract.rs)
-- [`read_contract_contract.rs`](crates/alloy/tests/read_contract_contract.rs)
-- [`redaction_contract.rs`](crates/alloy/tests/redaction_contract.rs)
-- [`send_transaction_does_not_wait_for_confirmation.rs`](crates/alloy/tests/send_transaction_does_not_wait_for_confirmation.rs)
-- [`signer_error_trait_contract.rs`](crates/alloy/tests/signer_error_trait_contract.rs)
-- [`signing_provider_contract.rs`](crates/alloy/tests/signing_provider_contract.rs)
+- [`builder_contract.rs`](crates/alloy/tests/builder_contract.rs) &mdash; 282 lines
+- [`cancellation_contract.rs`](crates/alloy/tests/cancellation_contract.rs) &mdash; 28 lines
+- [`chain_coherence_mismatch.rs`](crates/alloy/tests/chain_coherence_mismatch.rs) &mdash; 93 lines
+- [`chain_coherence.rs`](crates/alloy/tests/chain_coherence.rs) &mdash; 35 lines
+- [`compile_fail.rs`](crates/alloy/tests/compile_fail.rs) &mdash; 8 lines
+- [`eip712_reference_vectors.rs`](crates/alloy/tests/eip712_reference_vectors.rs) &mdash; 97 lines
+- [`error_contract.rs`](crates/alloy/tests/error_contract.rs) &mdash; 215 lines
+- [`handle_survives_drop.rs`](crates/alloy/tests/handle_survives_drop.rs) &mdash; 32 lines
+- [`no_broadcast_for_sign_transaction.rs`](crates/alloy/tests/no_broadcast_for_sign_transaction.rs) &mdash; 41 lines
+- [`provider_contract.rs`](crates/alloy/tests/provider_contract.rs) &mdash; 224 lines
+- [`read_contract_contract.rs`](crates/alloy/tests/read_contract_contract.rs) &mdash; 653 lines
+- [`redaction_contract.rs`](crates/alloy/tests/redaction_contract.rs) &mdash; 208 lines
+- [`send_transaction_does_not_wait_for_confirmation.rs`](crates/alloy/tests/send_transaction_does_not_wait_for_confirmation.rs) &mdash; 151 lines
+- [`signer_error_trait_contract.rs`](crates/alloy/tests/signer_error_trait_contract.rs) &mdash; 43 lines
+- [`signing_provider_contract.rs`](crates/alloy/tests/signing_provider_contract.rs) &mdash; 37 lines
 
 </details>
 
 <details>
 <summary><code>crates/alloy/tests/trybuild/</code> &mdash; 4 file(s)</summary>
 
-- [`no_provider_on_handle.rs`](crates/alloy/tests/trybuild/no_provider_on_handle.rs)
-- [`no_provider_on_handle.stderr`](crates/alloy/tests/trybuild/no_provider_on_handle.stderr)
-- [`no_signer_on_client.rs`](crates/alloy/tests/trybuild/no_signer_on_client.rs)
-- [`no_signer_on_client.stderr`](crates/alloy/tests/trybuild/no_signer_on_client.stderr)
+- [`no_provider_on_handle.rs`](crates/alloy/tests/trybuild/no_provider_on_handle.rs) &mdash; 8 lines
+- [`no_provider_on_handle.stderr`](crates/alloy/tests/trybuild/no_provider_on_handle.stderr) &mdash; 21 lines
+- [`no_signer_on_client.rs`](crates/alloy/tests/trybuild/no_signer_on_client.rs) &mdash; 8 lines
+- [`no_signer_on_client.stderr`](crates/alloy/tests/trybuild/no_signer_on_client.stderr) &mdash; 21 lines
 
 </details>
 
 <details>
 <summary><code>crates/app-data/</code> &mdash; 2 file(s)</summary>
 
-- [`Cargo.toml`](crates/app-data/Cargo.toml)
-- [`README.md`](crates/app-data/README.md)
+- [`Cargo.toml`](crates/app-data/Cargo.toml) &mdash; 51 lines
+- [`README.md`](crates/app-data/README.md) &mdash; 96 lines
 
 </details>
 
 <details>
 <summary><code>crates/app-data/benches/</code> &mdash; 1 file(s)</summary>
 
-- [`stringify.rs`](crates/app-data/benches/stringify.rs)
+- [`stringify.rs`](crates/app-data/benches/stringify.rs) &mdash; 38 lines
 
 </details>
 
 <details>
 <summary><code>crates/app-data/schemas/</code> &mdash; 27 file(s)</summary>
 
-- [`definitions.json`](crates/app-data/schemas/definitions.json)
-- [`v0.1.0.json`](crates/app-data/schemas/v0.1.0.json)
-- [`v0.10.0.json`](crates/app-data/schemas/v0.10.0.json)
-- [`v0.11.0.json`](crates/app-data/schemas/v0.11.0.json)
-- [`v0.2.0.json`](crates/app-data/schemas/v0.2.0.json)
-- [`v0.3.0.json`](crates/app-data/schemas/v0.3.0.json)
-- [`v0.4.0.json`](crates/app-data/schemas/v0.4.0.json)
-- [`v0.5.0.json`](crates/app-data/schemas/v0.5.0.json)
-- [`v0.6.0.json`](crates/app-data/schemas/v0.6.0.json)
-- [`v0.7.0.json`](crates/app-data/schemas/v0.7.0.json)
-- [`v0.8.0.json`](crates/app-data/schemas/v0.8.0.json)
-- [`v0.9.0.json`](crates/app-data/schemas/v0.9.0.json)
-- [`v1.0.0.json`](crates/app-data/schemas/v1.0.0.json)
-- [`v1.1.0.json`](crates/app-data/schemas/v1.1.0.json)
-- [`v1.10.0.json`](crates/app-data/schemas/v1.10.0.json)
-- [`v1.11.0.json`](crates/app-data/schemas/v1.11.0.json)
-- [`v1.12.0.json`](crates/app-data/schemas/v1.12.0.json)
-- [`v1.13.0.json`](crates/app-data/schemas/v1.13.0.json)
-- [`v1.14.0.json`](crates/app-data/schemas/v1.14.0.json)
-- [`v1.2.0.json`](crates/app-data/schemas/v1.2.0.json)
-- [`v1.3.0.json`](crates/app-data/schemas/v1.3.0.json)
-- [`v1.4.0.json`](crates/app-data/schemas/v1.4.0.json)
-- [`v1.5.0.json`](crates/app-data/schemas/v1.5.0.json)
-- [`v1.6.0.json`](crates/app-data/schemas/v1.6.0.json)
-- [`v1.7.0.json`](crates/app-data/schemas/v1.7.0.json)
-- [`v1.8.0.json`](crates/app-data/schemas/v1.8.0.json)
-- [`v1.9.0.json`](crates/app-data/schemas/v1.9.0.json)
+- [`definitions.json`](crates/app-data/schemas/definitions.json) &mdash; 77 lines
+- [`v0.1.0.json`](crates/app-data/schemas/v0.1.0.json) &mdash; 40 lines
+- [`v0.10.0.json`](crates/app-data/schemas/v0.10.0.json) &mdash; 69 lines
+- [`v0.11.0.json`](crates/app-data/schemas/v0.11.0.json) &mdash; 62 lines
+- [`v0.2.0.json`](crates/app-data/schemas/v0.2.0.json) &mdash; 43 lines
+- [`v0.3.0.json`](crates/app-data/schemas/v0.3.0.json) &mdash; 55 lines
+- [`v0.4.0.json`](crates/app-data/schemas/v0.4.0.json) &mdash; 55 lines
+- [`v0.5.0.json`](crates/app-data/schemas/v0.5.0.json) &mdash; 58 lines
+- [`v0.6.0.json`](crates/app-data/schemas/v0.6.0.json) &mdash; 61 lines
+- [`v0.7.0.json`](crates/app-data/schemas/v0.7.0.json) &mdash; 61 lines
+- [`v0.8.0.json`](crates/app-data/schemas/v0.8.0.json) &mdash; 63 lines
+- [`v0.9.0.json`](crates/app-data/schemas/v0.9.0.json) &mdash; 66 lines
+- [`v1.0.0.json`](crates/app-data/schemas/v1.0.0.json) &mdash; 65 lines
+- [`v1.1.0.json`](crates/app-data/schemas/v1.1.0.json) &mdash; 68 lines
+- [`v1.10.0.json`](crates/app-data/schemas/v1.10.0.json) &mdash; 74 lines
+- [`v1.11.0.json`](crates/app-data/schemas/v1.11.0.json) &mdash; 77 lines
+- [`v1.12.0.json`](crates/app-data/schemas/v1.12.0.json) &mdash; 81 lines
+- [`v1.13.0.json`](crates/app-data/schemas/v1.13.0.json) &mdash; 81 lines
+- [`v1.14.0.json`](crates/app-data/schemas/v1.14.0.json) &mdash; 80 lines
+- [`v1.2.0.json`](crates/app-data/schemas/v1.2.0.json) &mdash; 78 lines
+- [`v1.3.0.json`](crates/app-data/schemas/v1.3.0.json) &mdash; 78 lines
+- [`v1.4.0.json`](crates/app-data/schemas/v1.4.0.json) &mdash; 78 lines
+- [`v1.5.0.json`](crates/app-data/schemas/v1.5.0.json) &mdash; 81 lines
+- [`v1.6.0.json`](crates/app-data/schemas/v1.6.0.json) &mdash; 84 lines
+- [`v1.7.0.json`](crates/app-data/schemas/v1.7.0.json) &mdash; 84 lines
+- [`v1.8.0.json`](crates/app-data/schemas/v1.8.0.json) &mdash; 84 lines
+- [`v1.9.0.json`](crates/app-data/schemas/v1.9.0.json) &mdash; 84 lines
 
 </details>
 
 <details>
 <summary><code>crates/app-data/schemas/bridging/</code> &mdash; 4 file(s)</summary>
 
-- [`v0.1.0.json`](crates/app-data/schemas/bridging/v0.1.0.json)
-- [`v0.2.0.json`](crates/app-data/schemas/bridging/v0.2.0.json)
-- [`v0.3.0.json`](crates/app-data/schemas/bridging/v0.3.0.json)
-- [`v0.4.0.json`](crates/app-data/schemas/bridging/v0.4.0.json)
+- [`v0.1.0.json`](crates/app-data/schemas/bridging/v0.1.0.json) &mdash; 30 lines
+- [`v0.2.0.json`](crates/app-data/schemas/bridging/v0.2.0.json) &mdash; 36 lines
+- [`v0.3.0.json`](crates/app-data/schemas/bridging/v0.3.0.json) &mdash; 39 lines
+- [`v0.4.0.json`](crates/app-data/schemas/bridging/v0.4.0.json) &mdash; 51 lines
 
 </details>
 
 <details>
 <summary><code>crates/app-data/schemas/flashloan/</code> &mdash; 2 file(s)</summary>
 
-- [`v0.1.0.json`](crates/app-data/schemas/flashloan/v0.1.0.json)
-- [`v0.2.0.json`](crates/app-data/schemas/flashloan/v0.2.0.json)
+- [`v0.1.0.json`](crates/app-data/schemas/flashloan/v0.1.0.json) &mdash; 36 lines
+- [`v0.2.0.json`](crates/app-data/schemas/flashloan/v0.2.0.json) &mdash; 42 lines
 
 </details>
 
 <details>
 <summary><code>crates/app-data/schemas/hook/</code> &mdash; 2 file(s)</summary>
 
-- [`v0.1.0.json`](crates/app-data/schemas/hook/v0.1.0.json)
-- [`v0.2.0.json`](crates/app-data/schemas/hook/v0.2.0.json)
+- [`v0.1.0.json`](crates/app-data/schemas/hook/v0.1.0.json) &mdash; 35 lines
+- [`v0.2.0.json`](crates/app-data/schemas/hook/v0.2.0.json) &mdash; 40 lines
 
 </details>
 
 <details>
 <summary><code>crates/app-data/schemas/hooks/</code> &mdash; 2 file(s)</summary>
 
-- [`v0.1.0.json`](crates/app-data/schemas/hooks/v0.1.0.json)
-- [`v0.2.0.json`](crates/app-data/schemas/hooks/v0.2.0.json)
+- [`v0.1.0.json`](crates/app-data/schemas/hooks/v0.1.0.json) &mdash; 35 lines
+- [`v0.2.0.json`](crates/app-data/schemas/hooks/v0.2.0.json) &mdash; 35 lines
 
 </details>
 
 <details>
 <summary><code>crates/app-data/schemas/orderClass/</code> &mdash; 3 file(s)</summary>
 
-- [`v0.1.0.json`](crates/app-data/schemas/orderClass/v0.1.0.json)
-- [`v0.2.0.json`](crates/app-data/schemas/orderClass/v0.2.0.json)
-- [`v0.3.0.json`](crates/app-data/schemas/orderClass/v0.3.0.json)
+- [`v0.1.0.json`](crates/app-data/schemas/orderClass/v0.1.0.json) &mdash; 33 lines
+- [`v0.2.0.json`](crates/app-data/schemas/orderClass/v0.2.0.json) &mdash; 35 lines
+- [`v0.3.0.json`](crates/app-data/schemas/orderClass/v0.3.0.json) &mdash; 30 lines
 
 </details>
 
 <details>
 <summary><code>crates/app-data/schemas/partnerFee/</code> &mdash; 2 file(s)</summary>
 
-- [`v0.1.0.json`](crates/app-data/schemas/partnerFee/v0.1.0.json)
-- [`v1.0.0.json`](crates/app-data/schemas/partnerFee/v1.0.0.json)
+- [`v0.1.0.json`](crates/app-data/schemas/partnerFee/v0.1.0.json) &mdash; 20 lines
+- [`v1.0.0.json`](crates/app-data/schemas/partnerFee/v1.0.0.json) &mdash; 100 lines
 
 </details>
 
 <details>
 <summary><code>crates/app-data/schemas/quote/</code> &mdash; 5 file(s)</summary>
 
-- [`v0.1.0.json`](crates/app-data/schemas/quote/v0.1.0.json)
-- [`v0.2.0.json`](crates/app-data/schemas/quote/v0.2.0.json)
-- [`v0.3.0.json`](crates/app-data/schemas/quote/v0.3.0.json)
-- [`v1.0.0.json`](crates/app-data/schemas/quote/v1.0.0.json)
-- [`v1.1.0.json`](crates/app-data/schemas/quote/v1.1.0.json)
+- [`v0.1.0.json`](crates/app-data/schemas/quote/v0.1.0.json) &mdash; 34 lines
+- [`v0.2.0.json`](crates/app-data/schemas/quote/v0.2.0.json) &mdash; 22 lines
+- [`v0.3.0.json`](crates/app-data/schemas/quote/v0.3.0.json) &mdash; 18 lines
+- [`v1.0.0.json`](crates/app-data/schemas/quote/v1.0.0.json) &mdash; 15 lines
+- [`v1.1.0.json`](crates/app-data/schemas/quote/v1.1.0.json) &mdash; 23 lines
 
 </details>
 
 <details>
 <summary><code>crates/app-data/schemas/referrer/</code> &mdash; 3 file(s)</summary>
 
-- [`v0.1.0.json`](crates/app-data/schemas/referrer/v0.1.0.json)
-- [`v0.2.0.json`](crates/app-data/schemas/referrer/v0.2.0.json)
-- [`v1.0.0.json`](crates/app-data/schemas/referrer/v1.0.0.json)
+- [`v0.1.0.json`](crates/app-data/schemas/referrer/v0.1.0.json) &mdash; 21 lines
+- [`v0.2.0.json`](crates/app-data/schemas/referrer/v0.2.0.json) &mdash; 16 lines
+- [`v1.0.0.json`](crates/app-data/schemas/referrer/v1.0.0.json) &mdash; 16 lines
 
 </details>
 
 <details>
 <summary><code>crates/app-data/schemas/replacedOrder/</code> &mdash; 1 file(s)</summary>
 
-- [`v0.1.0.json`](crates/app-data/schemas/replacedOrder/v0.1.0.json)
+- [`v0.1.0.json`](crates/app-data/schemas/replacedOrder/v0.1.0.json) &mdash; 15 lines
 
 </details>
 
 <details>
 <summary><code>crates/app-data/schemas/signer/</code> &mdash; 1 file(s)</summary>
 
-- [`v0.1.0.json`](crates/app-data/schemas/signer/v0.1.0.json)
+- [`v0.1.0.json`](crates/app-data/schemas/signer/v0.1.0.json) &mdash; 7 lines
 
 </details>
 
 <details>
 <summary><code>crates/app-data/schemas/userConsents/</code> &mdash; 1 file(s)</summary>
 
-- [`v0.1.0.json`](crates/app-data/schemas/userConsents/v0.1.0.json)
+- [`v0.1.0.json`](crates/app-data/schemas/userConsents/v0.1.0.json) &mdash; 27 lines
 
 </details>
 
 <details>
 <summary><code>crates/app-data/schemas/utm/</code> &mdash; 3 file(s)</summary>
 
-- [`v0.1.0.json`](crates/app-data/schemas/utm/v0.1.0.json)
-- [`v0.2.0.json`](crates/app-data/schemas/utm/v0.2.0.json)
-- [`v0.3.0.json`](crates/app-data/schemas/utm/v0.3.0.json)
+- [`v0.1.0.json`](crates/app-data/schemas/utm/v0.1.0.json) &mdash; 54 lines
+- [`v0.2.0.json`](crates/app-data/schemas/utm/v0.2.0.json) &mdash; 55 lines
+- [`v0.3.0.json`](crates/app-data/schemas/utm/v0.3.0.json) &mdash; 55 lines
 
 </details>
 
 <details>
 <summary><code>crates/app-data/schemas/widget/</code> &mdash; 1 file(s)</summary>
 
-- [`v0.1.0.json`](crates/app-data/schemas/widget/v0.1.0.json)
+- [`v0.1.0.json`](crates/app-data/schemas/widget/v0.1.0.json) &mdash; 24 lines
 
 </details>
 
 <details>
 <summary><code>crates/app-data/schemas/wrappers/</code> &mdash; 2 file(s)</summary>
 
-- [`v0.1.0.json`](crates/app-data/schemas/wrappers/v0.1.0.json)
-- [`v0.2.0.json`](crates/app-data/schemas/wrappers/v0.2.0.json)
+- [`v0.1.0.json`](crates/app-data/schemas/wrappers/v0.1.0.json) &mdash; 33 lines
+- [`v0.2.0.json`](crates/app-data/schemas/wrappers/v0.2.0.json) &mdash; 33 lines
 
 </details>
 
 <details>
 <summary><code>crates/app-data/src/</code> &mdash; 6 file(s)</summary>
 
-- [`cid.rs`](crates/app-data/src/cid.rs)
-- [`errors.rs`](crates/app-data/src/errors.rs)
-- [`fetch.rs`](crates/app-data/src/fetch.rs)
-- [`info.rs`](crates/app-data/src/info.rs)
-- [`lib.rs`](crates/app-data/src/lib.rs)
-- [`schema.rs`](crates/app-data/src/schema.rs)
+- [`cid.rs`](crates/app-data/src/cid.rs) &mdash; 143 lines
+- [`errors.rs`](crates/app-data/src/errors.rs) &mdash; 234 lines
+- [`fetch.rs`](crates/app-data/src/fetch.rs) &mdash; 173 lines
+- [`info.rs`](crates/app-data/src/info.rs) &mdash; 362 lines
+- [`lib.rs`](crates/app-data/src/lib.rs) &mdash; 70 lines
+- [`schema.rs`](crates/app-data/src/schema.rs) &mdash; 312 lines
 
 </details>
 
 <details>
 <summary><code>crates/app-data/src/metadata/</code> &mdash; 3 file(s)</summary>
 
-- [`flashloan.rs`](crates/app-data/src/metadata/flashloan.rs)
-- [`hooks.rs`](crates/app-data/src/metadata/hooks.rs)
-- [`mod.rs`](crates/app-data/src/metadata/mod.rs)
+- [`flashloan.rs`](crates/app-data/src/metadata/flashloan.rs) &mdash; 108 lines
+- [`hooks.rs`](crates/app-data/src/metadata/hooks.rs) &mdash; 82 lines
+- [`mod.rs`](crates/app-data/src/metadata/mod.rs) &mdash; 15 lines
 
 </details>
 
 <details>
 <summary><code>crates/app-data/src/types/</code> &mdash; 6 file(s)</summary>
 
-- [`doc.rs`](crates/app-data/src/types/doc.rs)
-- [`ipfs.rs`](crates/app-data/src/types/ipfs.rs)
-- [`mod.rs`](crates/app-data/src/types/mod.rs)
-- [`params.rs`](crates/app-data/src/types/params.rs)
-- [`partner_fee.rs`](crates/app-data/src/types/partner_fee.rs)
-- [`validation.rs`](crates/app-data/src/types/validation.rs)
+- [`doc.rs`](crates/app-data/src/types/doc.rs) &mdash; 126 lines
+- [`ipfs.rs`](crates/app-data/src/types/ipfs.rs) &mdash; 53 lines
+- [`mod.rs`](crates/app-data/src/types/mod.rs) &mdash; 43 lines
+- [`params.rs`](crates/app-data/src/types/params.rs) &mdash; 330 lines
+- [`partner_fee.rs`](crates/app-data/src/types/partner_fee.rs) &mdash; 386 lines
+- [`validation.rs`](crates/app-data/src/types/validation.rs) &mdash; 59 lines
 
 </details>
 
 <details>
 <summary><code>crates/app-data/tests/</code> &mdash; 18 file(s)</summary>
 
-- [`app_data_info_contract.rs`](crates/app-data/tests/app_data_info_contract.rs)
-- [`canonical_json_contract.rs`](crates/app-data/tests/canonical_json_contract.rs)
-- [`cid_contract.rs`](crates/app-data/tests/cid_contract.rs)
-- [`error_contract.rs`](crates/app-data/tests/error_contract.rs)
-- [`error_variant_shape.rs`](crates/app-data/tests/error_variant_shape.rs)
-- [`fetch_contract.rs`](crates/app-data/tests/fetch_contract.rs)
-- [`flashloan_contract.rs`](crates/app-data/tests/flashloan_contract.rs)
-- [`hooks_contract.rs`](crates/app-data/tests/hooks_contract.rs)
-- [`ipfs_config_redaction_contract.rs`](crates/app-data/tests/ipfs_config_redaction_contract.rs)
-- [`json_recursion_contract.rs`](crates/app-data/tests/json_recursion_contract.rs)
-- [`metadata_signer_contract.rs`](crates/app-data/tests/metadata_signer_contract.rs)
-- [`parity_contract.rs`](crates/app-data/tests/parity_contract.rs)
-- [`partner_fee_contract.rs`](crates/app-data/tests/partner_fee_contract.rs)
-- [`property_contract.rs`](crates/app-data/tests/property_contract.rs)
-- [`schema_contract.rs`](crates/app-data/tests/schema_contract.rs)
-- [`schema_regression_matrix.rs`](crates/app-data/tests/schema_regression_matrix.rs)
-- [`v0_cid_is_out_of_scope.rs`](crates/app-data/tests/v0_cid_is_out_of_scope.rs)
-- [`validated_shape_contract.rs`](crates/app-data/tests/validated_shape_contract.rs)
+- [`app_data_info_contract.rs`](crates/app-data/tests/app_data_info_contract.rs) &mdash; 109 lines
+- [`canonical_json_contract.rs`](crates/app-data/tests/canonical_json_contract.rs) &mdash; 44 lines
+- [`cid_contract.rs`](crates/app-data/tests/cid_contract.rs) &mdash; 110 lines
+- [`error_contract.rs`](crates/app-data/tests/error_contract.rs) &mdash; 13 lines
+- [`error_variant_shape.rs`](crates/app-data/tests/error_variant_shape.rs) &mdash; 102 lines
+- [`fetch_contract.rs`](crates/app-data/tests/fetch_contract.rs) &mdash; 245 lines
+- [`flashloan_contract.rs`](crates/app-data/tests/flashloan_contract.rs) &mdash; 323 lines
+- [`hooks_contract.rs`](crates/app-data/tests/hooks_contract.rs) &mdash; 160 lines
+- [`ipfs_config_redaction_contract.rs`](crates/app-data/tests/ipfs_config_redaction_contract.rs) &mdash; 47 lines
+- [`json_recursion_contract.rs`](crates/app-data/tests/json_recursion_contract.rs) &mdash; 24 lines
+- [`metadata_signer_contract.rs`](crates/app-data/tests/metadata_signer_contract.rs) &mdash; 174 lines
+- [`parity_contract.rs`](crates/app-data/tests/parity_contract.rs) &mdash; 426 lines
+- [`partner_fee_contract.rs`](crates/app-data/tests/partner_fee_contract.rs) &mdash; 429 lines
+- [`property_contract.rs`](crates/app-data/tests/property_contract.rs) &mdash; 327 lines
+- [`schema_contract.rs`](crates/app-data/tests/schema_contract.rs) &mdash; 244 lines
+- [`schema_regression_matrix.rs`](crates/app-data/tests/schema_regression_matrix.rs) &mdash; 65 lines
+- [`v0_cid_is_out_of_scope.rs`](crates/app-data/tests/v0_cid_is_out_of_scope.rs) &mdash; 40 lines
+- [`validated_shape_contract.rs`](crates/app-data/tests/validated_shape_contract.rs) &mdash; 138 lines
 
 </details>
 
 <details>
 <summary><code>crates/app-data/tests/common/</code> &mdash; 1 file(s)</summary>
 
-- [`mod.rs`](crates/app-data/tests/common/mod.rs)
+- [`mod.rs`](crates/app-data/tests/common/mod.rs) &mdash; 57 lines
 
 </details>
 
 <details>
 <summary><code>crates/app-data/tests/proptest-regressions/</code> &mdash; 1 file(s)</summary>
 
-- [`property_contract.txt`](crates/app-data/tests/proptest-regressions/property_contract.txt)
+- [`property_contract.txt`](crates/app-data/tests/proptest-regressions/property_contract.txt) &mdash; 6 lines
 
 </details>
 
 <details>
 <summary><code>crates/app-data/tests/ui/</code> &mdash; 2 file(s)</summary>
 
-- [`partner_fee_bps_width_witness.rs`](crates/app-data/tests/ui/partner_fee_bps_width_witness.rs)
-- [`partner_fee_bps_width_witness.stderr`](crates/app-data/tests/ui/partner_fee_bps_width_witness.stderr)
+- [`partner_fee_bps_width_witness.rs`](crates/app-data/tests/ui/partner_fee_bps_width_witness.rs) &mdash; 27 lines
+- [`partner_fee_bps_width_witness.stderr`](crates/app-data/tests/ui/partner_fee_bps_width_witness.stderr) &mdash; 5 lines
 
 </details>
 
 <details>
 <summary><code>crates/browser-wallet/</code> &mdash; 2 file(s)</summary>
 
-- [`Cargo.toml`](crates/browser-wallet/Cargo.toml)
-- [`README.md`](crates/browser-wallet/README.md)
+- [`Cargo.toml`](crates/browser-wallet/Cargo.toml) &mdash; 52 lines
+- [`README.md`](crates/browser-wallet/README.md) &mdash; 73 lines
 
 </details>
 
 <details>
 <summary><code>crates/browser-wallet/src/</code> &mdash; 6 file(s)</summary>
 
-- [`error.rs`](crates/browser-wallet/src/error.rs)
-- [`events.rs`](crates/browser-wallet/src/events.rs)
-- [`js.rs`](crates/browser-wallet/src/js.rs)
-- [`lib.rs`](crates/browser-wallet/src/lib.rs)
-- [`mock.rs`](crates/browser-wallet/src/mock.rs)
-- [`signer.rs`](crates/browser-wallet/src/signer.rs)
+- [`error.rs`](crates/browser-wallet/src/error.rs) &mdash; 412 lines
+- [`events.rs`](crates/browser-wallet/src/events.rs) &mdash; 220 lines
+- [`js.rs`](crates/browser-wallet/src/js.rs) &mdash; 571 lines
+- [`lib.rs`](crates/browser-wallet/src/lib.rs) &mdash; 66 lines
+- [`mock.rs`](crates/browser-wallet/src/mock.rs) &mdash; 521 lines
+- [`signer.rs`](crates/browser-wallet/src/signer.rs) &mdash; 328 lines
 
 </details>
 
 <details>
 <summary><code>crates/browser-wallet/src/provider/</code> &mdash; 6 file(s)</summary>
 
-- [`builder.rs`](crates/browser-wallet/src/provider/builder.rs)
-- [`mod.rs`](crates/browser-wallet/src/provider/mod.rs)
-- [`origin.rs`](crates/browser-wallet/src/provider/origin.rs)
-- [`provider_impl.rs`](crates/browser-wallet/src/provider/provider_impl.rs)
-- [`signing_provider_impl.rs`](crates/browser-wallet/src/provider/signing_provider_impl.rs)
-- [`transport.rs`](crates/browser-wallet/src/provider/transport.rs)
+- [`builder.rs`](crates/browser-wallet/src/provider/builder.rs) &mdash; 140 lines
+- [`mod.rs`](crates/browser-wallet/src/provider/mod.rs) &mdash; 175 lines
+- [`origin.rs`](crates/browser-wallet/src/provider/origin.rs) &mdash; 75 lines
+- [`provider_impl.rs`](crates/browser-wallet/src/provider/provider_impl.rs) &mdash; 784 lines
+- [`signing_provider_impl.rs`](crates/browser-wallet/src/provider/signing_provider_impl.rs) &mdash; 37 lines
+- [`transport.rs`](crates/browser-wallet/src/provider/transport.rs) &mdash; 38 lines
 
 </details>
 
 <details>
 <summary><code>crates/browser-wallet/src/wallet/</code> &mdash; 5 file(s)</summary>
 
-- [`chain_mgmt.rs`](crates/browser-wallet/src/wallet/chain_mgmt.rs)
-- [`chain.rs`](crates/browser-wallet/src/wallet/chain.rs)
-- [`detect.rs`](crates/browser-wallet/src/wallet/detect.rs)
-- [`discovery.rs`](crates/browser-wallet/src/wallet/discovery.rs)
-- [`mod.rs`](crates/browser-wallet/src/wallet/mod.rs)
+- [`chain_mgmt.rs`](crates/browser-wallet/src/wallet/chain_mgmt.rs) &mdash; 164 lines
+- [`chain.rs`](crates/browser-wallet/src/wallet/chain.rs) &mdash; 364 lines
+- [`detect.rs`](crates/browser-wallet/src/wallet/detect.rs) &mdash; 134 lines
+- [`discovery.rs`](crates/browser-wallet/src/wallet/discovery.rs) &mdash; 400 lines
+- [`mod.rs`](crates/browser-wallet/src/wallet/mod.rs) &mdash; 246 lines
 
 </details>
 
 <details>
 <summary><code>crates/browser-wallet/tests/</code> &mdash; 10 file(s)</summary>
 
-- [`non_exhaustive_type_contract.rs`](crates/browser-wallet/tests/non_exhaustive_type_contract.rs)
-- [`origin_contract.rs`](crates/browser-wallet/tests/origin_contract.rs)
-- [`provider_contract.rs`](crates/browser-wallet/tests/provider_contract.rs)
-- [`signer_contract.rs`](crates/browser-wallet/tests/signer_contract.rs)
-- [`signer_error_trait_contract.rs`](crates/browser-wallet/tests/signer_error_trait_contract.rs)
-- [`signing_provider_contract.rs`](crates/browser-wallet/tests/signing_provider_contract.rs)
-- [`state_machine_contract.rs`](crates/browser-wallet/tests/state_machine_contract.rs)
-- [`transaction_receipt_parsing.rs`](crates/browser-wallet/tests/transaction_receipt_parsing.rs)
-- [`wallet_contract.rs`](crates/browser-wallet/tests/wallet_contract.rs)
-- [`wasm_bridge_contract.rs`](crates/browser-wallet/tests/wasm_bridge_contract.rs)
+- [`non_exhaustive_type_contract.rs`](crates/browser-wallet/tests/non_exhaustive_type_contract.rs) &mdash; 174 lines
+- [`origin_contract.rs`](crates/browser-wallet/tests/origin_contract.rs) &mdash; 135 lines
+- [`provider_contract.rs`](crates/browser-wallet/tests/provider_contract.rs) &mdash; 135 lines
+- [`signer_contract.rs`](crates/browser-wallet/tests/signer_contract.rs) &mdash; 513 lines
+- [`signer_error_trait_contract.rs`](crates/browser-wallet/tests/signer_error_trait_contract.rs) &mdash; 133 lines
+- [`signing_provider_contract.rs`](crates/browser-wallet/tests/signing_provider_contract.rs) &mdash; 161 lines
+- [`state_machine_contract.rs`](crates/browser-wallet/tests/state_machine_contract.rs) &mdash; 162 lines
+- [`transaction_receipt_parsing.rs`](crates/browser-wallet/tests/transaction_receipt_parsing.rs) &mdash; 251 lines
+- [`wallet_contract.rs`](crates/browser-wallet/tests/wallet_contract.rs) &mdash; 769 lines
+- [`wasm_bridge_contract.rs`](crates/browser-wallet/tests/wasm_bridge_contract.rs) &mdash; 765 lines
 
 </details>
 
 <details>
 <summary><code>crates/composable/</code> &mdash; 2 file(s)</summary>
 
-- [`Cargo.toml`](crates/composable/Cargo.toml)
-- [`README.md`](crates/composable/README.md)
+- [`Cargo.toml`](crates/composable/Cargo.toml) &mdash; 22 lines
+- [`README.md`](crates/composable/README.md) &mdash; 21 lines
 
 </details>
 
 <details>
 <summary><code>crates/composable/tests/</code> &mdash; 4 file(s)</summary>
 
-- [`good_after_time_contract.rs`](crates/composable/tests/good_after_time_contract.rs)
-- [`perpetual_stable_swap_contract.rs`](crates/composable/tests/perpetual_stable_swap_contract.rs)
-- [`stop_loss_contract.rs`](crates/composable/tests/stop_loss_contract.rs)
-- [`trade_above_threshold_contract.rs`](crates/composable/tests/trade_above_threshold_contract.rs)
+- [`good_after_time_contract.rs`](crates/composable/tests/good_after_time_contract.rs) &mdash; 45 lines
+- [`perpetual_stable_swap_contract.rs`](crates/composable/tests/perpetual_stable_swap_contract.rs) &mdash; 46 lines
+- [`stop_loss_contract.rs`](crates/composable/tests/stop_loss_contract.rs) &mdash; 45 lines
+- [`trade_above_threshold_contract.rs`](crates/composable/tests/trade_above_threshold_contract.rs) &mdash; 45 lines
 
 </details>
 
 <details>
 <summary><code>crates/composable/tests/fixtures/</code> &mdash; 2 file(s)</summary>
 
-- [`eip1271_blob_shape_a.json`](crates/composable/tests/fixtures/eip1271_blob_shape_a.json)
-- [`eip1271_blob_shape_b.json`](crates/composable/tests/fixtures/eip1271_blob_shape_b.json)
+- [`eip1271_blob_shape_a.json`](crates/composable/tests/fixtures/eip1271_blob_shape_a.json) &mdash; 160 lines
+- [`eip1271_blob_shape_b.json`](crates/composable/tests/fixtures/eip1271_blob_shape_b.json) &mdash; 150 lines
 
 </details>
 
 <details>
 <summary><code>crates/contracts/</code> &mdash; 6 file(s)</summary>
 
-- [`build.rs`](crates/contracts/build.rs)
-- [`Cargo.toml`](crates/contracts/Cargo.toml)
-- [`deployment-coverage.yaml`](crates/contracts/deployment-coverage.yaml)
-- [`deployment-provenance.yaml`](crates/contracts/deployment-provenance.yaml)
-- [`README.md`](crates/contracts/README.md)
-- [`registry.toml`](crates/contracts/registry.toml)
+- [`build.rs`](crates/contracts/build.rs) &mdash; 444 lines
+- [`Cargo.toml`](crates/contracts/Cargo.toml) &mdash; 66 lines
+- [`deployment-coverage.yaml`](crates/contracts/deployment-coverage.yaml) &mdash; 149 lines
+- [`deployment-provenance.yaml`](crates/contracts/deployment-provenance.yaml) &mdash; 2,484 lines
+- [`README.md`](crates/contracts/README.md) &mdash; 85 lines
+- [`registry.toml`](crates/contracts/registry.toml) &mdash; 1,595 lines
 
 </details>
 
 <details>
 <summary><code>crates/contracts/abi/composable-cow/</code> &mdash; 3 file(s)</summary>
 
-- [`BaseConditionalOrder.sol`](crates/contracts/abi/composable-cow/BaseConditionalOrder.sol)
-- [`ComposableCoW.sol`](crates/contracts/abi/composable-cow/ComposableCoW.sol)
-- [`ERC1271Forwarder.sol`](crates/contracts/abi/composable-cow/ERC1271Forwarder.sol)
+- [`BaseConditionalOrder.sol`](crates/contracts/abi/composable-cow/BaseConditionalOrder.sol) &mdash; 60 lines
+- [`ComposableCoW.sol`](crates/contracts/abi/composable-cow/ComposableCoW.sol) &mdash; 333 lines
+- [`ERC1271Forwarder.sol`](crates/contracts/abi/composable-cow/ERC1271Forwarder.sol) &mdash; 47 lines
 
 </details>
 
 <details>
 <summary><code>crates/contracts/abi/composable-cow/extensible/</code> &mdash; 1 file(s)</summary>
 
-- [`ExtensibleFallbackHandler.sol`](crates/contracts/abi/composable-cow/extensible/ExtensibleFallbackHandler.sol)
+- [`ExtensibleFallbackHandler.sol`](crates/contracts/abi/composable-cow/extensible/ExtensibleFallbackHandler.sol) &mdash; 28 lines
 
 </details>
 
 <details>
 <summary><code>crates/contracts/abi/composable-cow/interfaces/</code> &mdash; 3 file(s)</summary>
 
-- [`IConditionalOrder.sol`](crates/contracts/abi/composable-cow/interfaces/IConditionalOrder.sol)
-- [`ISwapGuard.sol`](crates/contracts/abi/composable-cow/interfaces/ISwapGuard.sol)
-- [`IValueFactory.sol`](crates/contracts/abi/composable-cow/interfaces/IValueFactory.sol)
+- [`IConditionalOrder.sol`](crates/contracts/abi/composable-cow/interfaces/IConditionalOrder.sol) &mdash; 95 lines
+- [`ISwapGuard.sol`](crates/contracts/abi/composable-cow/interfaces/ISwapGuard.sol) &mdash; 27 lines
+- [`IValueFactory.sol`](crates/contracts/abi/composable-cow/interfaces/IValueFactory.sol) &mdash; 16 lines
 
 </details>
 
 <details>
 <summary><code>crates/contracts/abi/composable-cow/out/</code> &mdash; 7 file(s)</summary>
 
-- [`ComposableCoW.json`](crates/contracts/abi/composable-cow/out/ComposableCoW.json)
-- [`ExtensibleFallbackHandler.json`](crates/contracts/abi/composable-cow/out/ExtensibleFallbackHandler.json)
-- [`GoodAfterTime.json`](crates/contracts/abi/composable-cow/out/GoodAfterTime.json)
-- [`PerpetualStableSwap.json`](crates/contracts/abi/composable-cow/out/PerpetualStableSwap.json)
-- [`StopLoss.json`](crates/contracts/abi/composable-cow/out/StopLoss.json)
-- [`TradeAboveThreshold.json`](crates/contracts/abi/composable-cow/out/TradeAboveThreshold.json)
-- [`TWAP.json`](crates/contracts/abi/composable-cow/out/TWAP.json)
+- [`ComposableCoW.json`](crates/contracts/abi/composable-cow/out/ComposableCoW.json) &mdash; 27 lines
+- [`ExtensibleFallbackHandler.json`](crates/contracts/abi/composable-cow/out/ExtensibleFallbackHandler.json) &mdash; 14 lines
+- [`GoodAfterTime.json`](crates/contracts/abi/composable-cow/out/GoodAfterTime.json) &mdash; 12 lines
+- [`PerpetualStableSwap.json`](crates/contracts/abi/composable-cow/out/PerpetualStableSwap.json) &mdash; 12 lines
+- [`StopLoss.json`](crates/contracts/abi/composable-cow/out/StopLoss.json) &mdash; 12 lines
+- [`TradeAboveThreshold.json`](crates/contracts/abi/composable-cow/out/TradeAboveThreshold.json) &mdash; 12 lines
+- [`TWAP.json`](crates/contracts/abi/composable-cow/out/TWAP.json) &mdash; 12 lines
 
 </details>
 
 <details>
 <summary><code>crates/contracts/abi/composable-cow/types/</code> &mdash; 7 file(s)</summary>
 
-- [`GoodAfterTime.sol`](crates/contracts/abi/composable-cow/types/GoodAfterTime.sol)
-- [`PerpetualStableSwap.sol`](crates/contracts/abi/composable-cow/types/PerpetualStableSwap.sol)
-- [`StopLoss.sol`](crates/contracts/abi/composable-cow/types/StopLoss.sol)
-- [`TradeAboveThreshold.sol`](crates/contracts/abi/composable-cow/types/TradeAboveThreshold.sol)
-- [`TWAP.sol`](crates/contracts/abi/composable-cow/types/TWAP.sol)
-- [`TWAPOrder.sol`](crates/contracts/abi/composable-cow/types/TWAPOrder.sol)
-- [`TWAPOrderMathLib.sol`](crates/contracts/abi/composable-cow/types/TWAPOrderMathLib.sol)
+- [`GoodAfterTime.sol`](crates/contracts/abi/composable-cow/types/GoodAfterTime.sol) &mdash; 104 lines
+- [`PerpetualStableSwap.sol`](crates/contracts/abi/composable-cow/types/PerpetualStableSwap.sol) &mdash; 127 lines
+- [`StopLoss.sol`](crates/contracts/abi/composable-cow/types/StopLoss.sol) &mdash; 119 lines
+- [`TradeAboveThreshold.sol`](crates/contracts/abi/composable-cow/types/TradeAboveThreshold.sol) &mdash; 66 lines
+- [`TWAP.sol`](crates/contracts/abi/composable-cow/types/TWAP.sol) &mdash; 67 lines
+- [`TWAPOrder.sol`](crates/contracts/abi/composable-cow/types/TWAPOrder.sol) &mdash; 91 lines
+- [`TWAPOrderMathLib.sol`](crates/contracts/abi/composable-cow/types/TWAPOrderMathLib.sol) &mdash; 105 lines
 
 </details>
 
 <details>
 <summary><code>crates/contracts/abi/composable-cow/value_factories/</code> &mdash; 1 file(s)</summary>
 
-- [`CurrentBlockTimestampFactory.sol`](crates/contracts/abi/composable-cow/value_factories/CurrentBlockTimestampFactory.sol)
+- [`CurrentBlockTimestampFactory.sol`](crates/contracts/abi/composable-cow/value_factories/CurrentBlockTimestampFactory.sol) &mdash; 15 lines
 
 </details>
 
 <details>
 <summary><code>crates/contracts/abi/composable-cow/vendored/</code> &mdash; 1 file(s)</summary>
 
-- [`CoWSettlement.sol`](crates/contracts/abi/composable-cow/vendored/CoWSettlement.sol)
+- [`CoWSettlement.sol`](crates/contracts/abi/composable-cow/vendored/CoWSettlement.sol) &mdash; 6 lines
 
 </details>
 
 <details>
 <summary><code>crates/contracts/abi/cow-shed/</code> &mdash; 14 file(s)</summary>
 
-- [`COWShed.sol`](crates/contracts/abi/cow-shed/COWShed.sol)
-- [`COWShedFactory.sol`](crates/contracts/abi/cow-shed/COWShedFactory.sol)
-- [`COWShedForComposableCoW.sol`](crates/contracts/abi/cow-shed/COWShedForComposableCoW.sol)
-- [`COWShedProxy.sol`](crates/contracts/abi/cow-shed/COWShedProxy.sol)
-- [`COWShedStorage.sol`](crates/contracts/abi/cow-shed/COWShedStorage.sol)
-- [`ERC1271Forwarder.sol`](crates/contracts/abi/cow-shed/ERC1271Forwarder.sol)
-- [`IComposableCow.sol`](crates/contracts/abi/cow-shed/IComposableCow.sol)
-- [`ICOWAuthHook.sol`](crates/contracts/abi/cow-shed/ICOWAuthHook.sol)
-- [`IERC1271.sol`](crates/contracts/abi/cow-shed/IERC1271.sol)
-- [`IPreSignStorage.sol`](crates/contracts/abi/cow-shed/IPreSignStorage.sol)
-- [`LibAuthenticatedHooks.sol`](crates/contracts/abi/cow-shed/LibAuthenticatedHooks.sol)
-- [`LibCowOrder.sol`](crates/contracts/abi/cow-shed/LibCowOrder.sol)
-- [`PreSignStateStorage.sol`](crates/contracts/abi/cow-shed/PreSignStateStorage.sol)
-- [`version-call-results.json`](crates/contracts/abi/cow-shed/version-call-results.json)
+- [`COWShed.sol`](crates/contracts/abi/cow-shed/COWShed.sol) &mdash; 176 lines
+- [`COWShedFactory.sol`](crates/contracts/abi/cow-shed/COWShedFactory.sol) &mdash; 86 lines
+- [`COWShedForComposableCoW.sol`](crates/contracts/abi/cow-shed/COWShedForComposableCoW.sol) &mdash; 10 lines
+- [`COWShedProxy.sol`](crates/contracts/abi/cow-shed/COWShedProxy.sol) &mdash; 71 lines
+- [`COWShedStorage.sol`](crates/contracts/abi/cow-shed/COWShedStorage.sol) &mdash; 48 lines
+- [`ERC1271Forwarder.sol`](crates/contracts/abi/cow-shed/ERC1271Forwarder.sol) &mdash; 48 lines
+- [`IComposableCow.sol`](crates/contracts/abi/cow-shed/IComposableCow.sol) &mdash; 47 lines
+- [`ICOWAuthHook.sol`](crates/contracts/abi/cow-shed/ICOWAuthHook.sol) &mdash; 50 lines
+- [`IERC1271.sol`](crates/contracts/abi/cow-shed/IERC1271.sol) &mdash; 6 lines
+- [`IPreSignStorage.sol`](crates/contracts/abi/cow-shed/IPreSignStorage.sol) &mdash; 14 lines
+- [`LibAuthenticatedHooks.sol`](crates/contracts/abi/cow-shed/LibAuthenticatedHooks.sol) &mdash; 197 lines
+- [`LibCowOrder.sol`](crates/contracts/abi/cow-shed/LibCowOrder.sol) &mdash; 81 lines
+- [`PreSignStateStorage.sol`](crates/contracts/abi/cow-shed/PreSignStateStorage.sol) &mdash; 38 lines
+- [`version-call-results.json`](crates/contracts/abi/cow-shed/version-call-results.json) &mdash; 109 lines
 
 </details>
 
@@ -893,2527 +940,2522 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <summary><code>crates/contracts/abi/cow-shed/proxy-creation-code/</code> &mdash; 4 file(s)</summary>
 
 - [`v1.0.0.bin`](crates/contracts/abi/cow-shed/proxy-creation-code/v1.0.0.bin)
-- [`v1.0.0.bin.sha256`](crates/contracts/abi/cow-shed/proxy-creation-code/v1.0.0.bin.sha256)
+- [`v1.0.0.bin.sha256`](crates/contracts/abi/cow-shed/proxy-creation-code/v1.0.0.bin.sha256) &mdash; 1 lines
 - [`v1.0.1.bin`](crates/contracts/abi/cow-shed/proxy-creation-code/v1.0.1.bin)
-- [`v1.0.1.bin.sha256`](crates/contracts/abi/cow-shed/proxy-creation-code/v1.0.1.bin.sha256)
+- [`v1.0.1.bin.sha256`](crates/contracts/abi/cow-shed/proxy-creation-code/v1.0.1.bin.sha256) &mdash; 1 lines
 
 </details>
 
 <details>
 <summary><code>crates/contracts/abi/eip1967/</code> &mdash; 1 file(s)</summary>
 
-- [`GPv2EIP1967.sol`](crates/contracts/abi/eip1967/GPv2EIP1967.sol)
+- [`GPv2EIP1967.sol`](crates/contracts/abi/eip1967/GPv2EIP1967.sol) &mdash; 33 lines
 
 </details>
 
 <details>
 <summary><code>crates/contracts/abi/erc20/</code> &mdash; 1 file(s)</summary>
 
-- [`IERC20.sol`](crates/contracts/abi/erc20/IERC20.sol)
+- [`IERC20.sol`](crates/contracts/abi/erc20/IERC20.sol) &mdash; 112 lines
 
 </details>
 
 <details>
 <summary><code>crates/contracts/abi/eth-flow/</code> &mdash; 4 file(s)</summary>
 
-- [`CoWSwapEthFlow.sol`](crates/contracts/abi/eth-flow/CoWSwapEthFlow.sol)
-- [`CoWSwapOnchainOrders.sol`](crates/contracts/abi/eth-flow/CoWSwapOnchainOrders.sol)
-- [`EthFlowOrder.sol`](crates/contracts/abi/eth-flow/EthFlowOrder.sol)
-- [`ICoWSwapOnchainOrders.sol`](crates/contracts/abi/eth-flow/ICoWSwapOnchainOrders.sol)
+- [`CoWSwapEthFlow.sol`](crates/contracts/abi/eth-flow/CoWSwapEthFlow.sol) &mdash; 270 lines
+- [`CoWSwapOnchainOrders.sol`](crates/contracts/abi/eth-flow/CoWSwapOnchainOrders.sol) &mdash; 39 lines
+- [`EthFlowOrder.sol`](crates/contracts/abi/eth-flow/EthFlowOrder.sol) &mdash; 102 lines
+- [`ICoWSwapOnchainOrders.sol`](crates/contracts/abi/eth-flow/ICoWSwapOnchainOrders.sol) &mdash; 50 lines
 
 </details>
 
 <details>
 <summary><code>crates/contracts/abi/settlement/</code> &mdash; 3 file(s)</summary>
 
-- [`GPv2Interaction.sol`](crates/contracts/abi/settlement/GPv2Interaction.sol)
-- [`GPv2Settlement.sol`](crates/contracts/abi/settlement/GPv2Settlement.sol)
-- [`GPv2Trade.sol`](crates/contracts/abi/settlement/GPv2Trade.sol)
+- [`GPv2Interaction.sol`](crates/contracts/abi/settlement/GPv2Interaction.sol) &mdash; 73 lines
+- [`GPv2Settlement.sol`](crates/contracts/abi/settlement/GPv2Settlement.sol) &mdash; 488 lines
+- [`GPv2Trade.sol`](crates/contracts/abi/settlement/GPv2Trade.sol) &mdash; 132 lines
 
 </details>
 
 <details>
 <summary><code>crates/contracts/abi/vault-relayer/</code> &mdash; 1 file(s)</summary>
 
-- [`GPv2VaultRelayer.sol`](crates/contracts/abi/vault-relayer/GPv2VaultRelayer.sol)
+- [`GPv2VaultRelayer.sol`](crates/contracts/abi/vault-relayer/GPv2VaultRelayer.sol) &mdash; 85 lines
 
 </details>
 
 <details>
 <summary><code>crates/contracts/abi/weth/</code> &mdash; 1 file(s)</summary>
 
-- [`IWrappedNativeToken.sol`](crates/contracts/abi/weth/IWrappedNativeToken.sol)
+- [`IWrappedNativeToken.sol`](crates/contracts/abi/weth/IWrappedNativeToken.sol) &mdash; 15 lines
 
 </details>
 
 <details>
 <summary><code>crates/contracts/benches/</code> &mdash; 2 file(s)</summary>
 
-- [`order_hashing.rs`](crates/contracts/benches/order_hashing.rs)
-- [`uid_packing.rs`](crates/contracts/benches/uid_packing.rs)
+- [`order_hashing.rs`](crates/contracts/benches/order_hashing.rs) &mdash; 55 lines
+- [`uid_packing.rs`](crates/contracts/benches/uid_packing.rs) &mdash; 43 lines
 
 </details>
 
 <details>
 <summary><code>crates/contracts/src/</code> &mdash; 18 file(s)</summary>
 
-- [`chain_ids.rs`](crates/contracts/src/chain_ids.rs)
-- [`deploy.rs`](crates/contracts/src/deploy.rs)
-- [`eip1271.rs`](crates/contracts/src/eip1271.rs)
-- [`erc20.rs`](crates/contracts/src/erc20.rs)
-- [`errors.rs`](crates/contracts/src/errors.rs)
-- [`eth_flow.rs`](crates/contracts/src/eth_flow.rs)
-- [`hex_field.rs`](crates/contracts/src/hex_field.rs)
-- [`interaction.rs`](crates/contracts/src/interaction.rs)
-- [`lib.rs`](crates/contracts/src/lib.rs)
-- [`onchain_orders.rs`](crates/contracts/src/onchain_orders.rs)
-- [`primitives.rs`](crates/contracts/src/primitives.rs)
-- [`proxy.rs`](crates/contracts/src/proxy.rs)
-- [`reader.rs`](crates/contracts/src/reader.rs)
-- [`signature.rs`](crates/contracts/src/signature.rs)
-- [`swap.rs`](crates/contracts/src/swap.rs)
-- [`vault.rs`](crates/contracts/src/vault.rs)
-- [`verify.rs`](crates/contracts/src/verify.rs)
-- [`weth.rs`](crates/contracts/src/weth.rs)
+- [`chain_ids.rs`](crates/contracts/src/chain_ids.rs) &mdash; 48 lines
+- [`deploy.rs`](crates/contracts/src/deploy.rs) &mdash; 232 lines
+- [`eip1271.rs`](crates/contracts/src/eip1271.rs) &mdash; 40 lines
+- [`erc20.rs`](crates/contracts/src/erc20.rs) &mdash; 164 lines
+- [`errors.rs`](crates/contracts/src/errors.rs) &mdash; 212 lines
+- [`eth_flow.rs`](crates/contracts/src/eth_flow.rs) &mdash; 631 lines
+- [`hex_field.rs`](crates/contracts/src/hex_field.rs) &mdash; 234 lines
+- [`interaction.rs`](crates/contracts/src/interaction.rs) &mdash; 83 lines
+- [`lib.rs`](crates/contracts/src/lib.rs) &mdash; 120 lines
+- [`onchain_orders.rs`](crates/contracts/src/onchain_orders.rs) &mdash; 320 lines
+- [`primitives.rs`](crates/contracts/src/primitives.rs) &mdash; 250 lines
+- [`proxy.rs`](crates/contracts/src/proxy.rs) &mdash; 160 lines
+- [`reader.rs`](crates/contracts/src/reader.rs) &mdash; 315 lines
+- [`signature.rs`](crates/contracts/src/signature.rs) &mdash; 599 lines
+- [`swap.rs`](crates/contracts/src/swap.rs) &mdash; 218 lines
+- [`vault.rs`](crates/contracts/src/vault.rs) &mdash; 251 lines
+- [`verify.rs`](crates/contracts/src/verify.rs) &mdash; 233 lines
+- [`weth.rs`](crates/contracts/src/weth.rs) &mdash; 69 lines
 
 </details>
 
 <details>
 <summary><code>crates/contracts/src/deployments/</code> &mdash; 7 file(s)</summary>
 
-- [`chain_id.rs`](crates/contracts/src/deployments/chain_id.rs)
-- [`contract_id.rs`](crates/contracts/src/deployments/contract_id.rs)
-- [`coverage.rs`](crates/contracts/src/deployments/coverage.rs)
-- [`env.rs`](crates/contracts/src/deployments/env.rs)
-- [`mod.rs`](crates/contracts/src/deployments/mod.rs)
-- [`registry.rs`](crates/contracts/src/deployments/registry.rs)
-- [`verification.rs`](crates/contracts/src/deployments/verification.rs)
+- [`chain_id.rs`](crates/contracts/src/deployments/chain_id.rs) &mdash; 158 lines
+- [`contract_id.rs`](crates/contracts/src/deployments/contract_id.rs) &mdash; 159 lines
+- [`coverage.rs`](crates/contracts/src/deployments/coverage.rs) &mdash; 197 lines
+- [`env.rs`](crates/contracts/src/deployments/env.rs) &mdash; 64 lines
+- [`mod.rs`](crates/contracts/src/deployments/mod.rs) &mdash; 27 lines
+- [`registry.rs`](crates/contracts/src/deployments/registry.rs) &mdash; 376 lines
+- [`verification.rs`](crates/contracts/src/deployments/verification.rs) &mdash; 37 lines
 
 </details>
 
 <details>
 <summary><code>crates/contracts/src/order/</code> &mdash; 6 file(s)</summary>
 
-- [`hash.rs`](crates/contracts/src/order/hash.rs)
-- [`mod.rs`](crates/contracts/src/order/mod.rs)
-- [`sol_cancellations.rs`](crates/contracts/src/order/sol_cancellations.rs)
-- [`sol_types.rs`](crates/contracts/src/order/sol_types.rs)
-- [`types.rs`](crates/contracts/src/order/types.rs)
-- [`uid.rs`](crates/contracts/src/order/uid.rs)
+- [`hash.rs`](crates/contracts/src/order/hash.rs) &mdash; 294 lines
+- [`mod.rs`](crates/contracts/src/order/mod.rs) &mdash; 64 lines
+- [`sol_cancellations.rs`](crates/contracts/src/order/sol_cancellations.rs) &mdash; 18 lines
+- [`sol_types.rs`](crates/contracts/src/order/sol_types.rs) &mdash; 50 lines
+- [`types.rs`](crates/contracts/src/order/types.rs) &mdash; 45 lines
+- [`uid.rs`](crates/contracts/src/order/uid.rs) &mdash; 87 lines
 
 </details>
 
 <details>
 <summary><code>crates/contracts/src/settlement/</code> &mdash; 4 file(s)</summary>
 
-- [`codec.rs`](crates/contracts/src/settlement/codec.rs)
-- [`encoder.rs`](crates/contracts/src/settlement/encoder.rs)
-- [`events.rs`](crates/contracts/src/settlement/events.rs)
-- [`mod.rs`](crates/contracts/src/settlement/mod.rs)
+- [`codec.rs`](crates/contracts/src/settlement/codec.rs) &mdash; 477 lines
+- [`encoder.rs`](crates/contracts/src/settlement/encoder.rs) &mdash; 345 lines
+- [`events.rs`](crates/contracts/src/settlement/events.rs) &mdash; 239 lines
+- [`mod.rs`](crates/contracts/src/settlement/mod.rs) &mdash; 299 lines
 
 </details>
 
 <details>
 <summary><code>crates/contracts/tests/</code> &mdash; 39 file(s)</summary>
 
-- [`build_rs_compile_fail.rs`](crates/contracts/tests/build_rs_compile_fail.rs)
-- [`composable_chain_coverage_contract.rs`](crates/contracts/tests/composable_chain_coverage_contract.rs)
-- [`contract_id_variants_contract.rs`](crates/contracts/tests/contract_id_variants_contract.rs)
-- [`custom_error_selector_table_contract.rs`](crates/contracts/tests/custom_error_selector_table_contract.rs)
-- [`deployment_contract.rs`](crates/contracts/tests/deployment_contract.rs)
-- [`deployment_coverage_contract.rs`](crates/contracts/tests/deployment_coverage_contract.rs)
-- [`deployment_provenance_contract.rs`](crates/contracts/tests/deployment_provenance_contract.rs)
-- [`erc20.rs`](crates/contracts/tests/erc20.rs)
-- [`error_contract.rs`](crates/contracts/tests/error_contract.rs)
-- [`error_variant_shape.rs`](crates/contracts/tests/error_variant_shape.rs)
-- [`eth_flow_events_contract.rs`](crates/contracts/tests/eth_flow_events_contract.rs)
-- [`interaction_contract.rs`](crates/contracts/tests/interaction_contract.rs)
-- [`non_exhaustive_dto_contract.rs`](crates/contracts/tests/non_exhaustive_dto_contract.rs)
-- [`onchain_orders.rs`](crates/contracts/tests/onchain_orders.rs)
-- [`order_contract.rs`](crates/contracts/tests/order_contract.rs)
-- [`order_digest_parity_contract.rs`](crates/contracts/tests/order_digest_parity_contract.rs)
-- [`parity_contract.rs`](crates/contracts/tests/parity_contract.rs)
-- [`property_contract.rs`](crates/contracts/tests/property_contract.rs)
-- [`proxy_contract.rs`](crates/contracts/tests/proxy_contract.rs)
-- [`proxy_creation_code_sha256_contract.rs`](crates/contracts/tests/proxy_creation_code_sha256_contract.rs)
-- [`reader_contract.rs`](crates/contracts/tests/reader_contract.rs)
-- [`recoverable_signature_contract.rs`](crates/contracts/tests/recoverable_signature_contract.rs)
-- [`registry_capability_rows_contract.rs`](crates/contracts/tests/registry_capability_rows_contract.rs)
-- [`registry_environment_scope_contract.rs`](crates/contracts/tests/registry_environment_scope_contract.rs)
-- [`registry.rs`](crates/contracts/tests/registry.rs)
-- [`schema_v2_rejection.rs`](crates/contracts/tests/schema_v2_rejection.rs)
-- [`schema_v2_success.rs`](crates/contracts/tests/schema_v2_success.rs)
-- [`selector_parity_composable_contract.rs`](crates/contracts/tests/selector_parity_composable_contract.rs)
-- [`selector_parity_cow_shed_contract.rs`](crates/contracts/tests/selector_parity_cow_shed_contract.rs)
-- [`settlement_contract.rs`](crates/contracts/tests/settlement_contract.rs)
-- [`settlement_events_contract.rs`](crates/contracts/tests/settlement_events_contract.rs)
-- [`signature_contract.rs`](crates/contracts/tests/signature_contract.rs)
-- [`swap_contract.rs`](crates/contracts/tests/swap_contract.rs)
-- [`trybuild_schema_v2.rs`](crates/contracts/tests/trybuild_schema_v2.rs)
-- [`ui.rs`](crates/contracts/tests/ui.rs)
-- [`v_normalization_contract.rs`](crates/contracts/tests/v_normalization_contract.rs)
-- [`vault_contract.rs`](crates/contracts/tests/vault_contract.rs)
-- [`verify_telemetry_contract.rs`](crates/contracts/tests/verify_telemetry_contract.rs)
-- [`weth.rs`](crates/contracts/tests/weth.rs)
+- [`build_rs_compile_fail.rs`](crates/contracts/tests/build_rs_compile_fail.rs) &mdash; 94 lines
+- [`composable_chain_coverage_contract.rs`](crates/contracts/tests/composable_chain_coverage_contract.rs) &mdash; 94 lines
+- [`contract_id_variants_contract.rs`](crates/contracts/tests/contract_id_variants_contract.rs) &mdash; 60 lines
+- [`custom_error_selector_table_contract.rs`](crates/contracts/tests/custom_error_selector_table_contract.rs) &mdash; 74 lines
+- [`deployment_contract.rs`](crates/contracts/tests/deployment_contract.rs) &mdash; 158 lines
+- [`deployment_coverage_contract.rs`](crates/contracts/tests/deployment_coverage_contract.rs) &mdash; 98 lines
+- [`deployment_provenance_contract.rs`](crates/contracts/tests/deployment_provenance_contract.rs) &mdash; 170 lines
+- [`erc20.rs`](crates/contracts/tests/erc20.rs) &mdash; 290 lines
+- [`error_contract.rs`](crates/contracts/tests/error_contract.rs) &mdash; 21 lines
+- [`error_variant_shape.rs`](crates/contracts/tests/error_variant_shape.rs) &mdash; 168 lines
+- [`eth_flow_events_contract.rs`](crates/contracts/tests/eth_flow_events_contract.rs) &mdash; 143 lines
+- [`interaction_contract.rs`](crates/contracts/tests/interaction_contract.rs) &mdash; 247 lines
+- [`non_exhaustive_dto_contract.rs`](crates/contracts/tests/non_exhaustive_dto_contract.rs) &mdash; 503 lines
+- [`onchain_orders.rs`](crates/contracts/tests/onchain_orders.rs) &mdash; 296 lines
+- [`order_contract.rs`](crates/contracts/tests/order_contract.rs) &mdash; 265 lines
+- [`order_digest_parity_contract.rs`](crates/contracts/tests/order_digest_parity_contract.rs) &mdash; 158 lines
+- [`parity_contract.rs`](crates/contracts/tests/parity_contract.rs) &mdash; 1,195 lines
+- [`property_contract.rs`](crates/contracts/tests/property_contract.rs) &mdash; 640 lines
+- [`proxy_contract.rs`](crates/contracts/tests/proxy_contract.rs) &mdash; 136 lines
+- [`proxy_creation_code_sha256_contract.rs`](crates/contracts/tests/proxy_creation_code_sha256_contract.rs) &mdash; 55 lines
+- [`reader_contract.rs`](crates/contracts/tests/reader_contract.rs) &mdash; 235 lines
+- [`recoverable_signature_contract.rs`](crates/contracts/tests/recoverable_signature_contract.rs) &mdash; 319 lines
+- [`registry_capability_rows_contract.rs`](crates/contracts/tests/registry_capability_rows_contract.rs) &mdash; 117 lines
+- [`registry_environment_scope_contract.rs`](crates/contracts/tests/registry_environment_scope_contract.rs) &mdash; 82 lines
+- [`registry.rs`](crates/contracts/tests/registry.rs) &mdash; 469 lines
+- [`schema_v2_rejection.rs`](crates/contracts/tests/schema_v2_rejection.rs) &mdash; 67 lines
+- [`schema_v2_success.rs`](crates/contracts/tests/schema_v2_success.rs) &mdash; 67 lines
+- [`selector_parity_composable_contract.rs`](crates/contracts/tests/selector_parity_composable_contract.rs) &mdash; 98 lines
+- [`selector_parity_cow_shed_contract.rs`](crates/contracts/tests/selector_parity_cow_shed_contract.rs) &mdash; 91 lines
+- [`settlement_contract.rs`](crates/contracts/tests/settlement_contract.rs) &mdash; 500 lines
+- [`settlement_events_contract.rs`](crates/contracts/tests/settlement_events_contract.rs) &mdash; 199 lines
+- [`signature_contract.rs`](crates/contracts/tests/signature_contract.rs) &mdash; 722 lines
+- [`swap_contract.rs`](crates/contracts/tests/swap_contract.rs) &mdash; 166 lines
+- [`trybuild_schema_v2.rs`](crates/contracts/tests/trybuild_schema_v2.rs) &mdash; 28 lines
+- [`ui.rs`](crates/contracts/tests/ui.rs) &mdash; 11 lines
+- [`v_normalization_contract.rs`](crates/contracts/tests/v_normalization_contract.rs) &mdash; 107 lines
+- [`vault_contract.rs`](crates/contracts/tests/vault_contract.rs) &mdash; 152 lines
+- [`verify_telemetry_contract.rs`](crates/contracts/tests/verify_telemetry_contract.rs) &mdash; 407 lines
+- [`weth.rs`](crates/contracts/tests/weth.rs) &mdash; 90 lines
 
 </details>
 
 <details>
 <summary><code>crates/contracts/tests/build_rs_compile_fail/</code> &mdash; 6 file(s)</summary>
 
-- [`bad_schema_version.toml`](crates/contracts/tests/build_rs_compile_fail/bad_schema_version.toml)
-- [`duplicate_entry.toml`](crates/contracts/tests/build_rs_compile_fail/duplicate_entry.toml)
-- [`invalid_address.toml`](crates/contracts/tests/build_rs_compile_fail/invalid_address.toml)
-- [`malformed_syntax.toml`](crates/contracts/tests/build_rs_compile_fail/malformed_syntax.toml)
-- [`unknown_contract_id.toml`](crates/contracts/tests/build_rs_compile_fail/unknown_contract_id.toml)
-- [`unsupported_chain.toml`](crates/contracts/tests/build_rs_compile_fail/unsupported_chain.toml)
+- [`bad_schema_version.toml`](crates/contracts/tests/build_rs_compile_fail/bad_schema_version.toml) &mdash; 10 lines
+- [`duplicate_entry.toml`](crates/contracts/tests/build_rs_compile_fail/duplicate_entry.toml) &mdash; 19 lines
+- [`invalid_address.toml`](crates/contracts/tests/build_rs_compile_fail/invalid_address.toml) &mdash; 10 lines
+- [`malformed_syntax.toml`](crates/contracts/tests/build_rs_compile_fail/malformed_syntax.toml) &mdash; 10 lines
+- [`unknown_contract_id.toml`](crates/contracts/tests/build_rs_compile_fail/unknown_contract_id.toml) &mdash; 10 lines
+- [`unsupported_chain.toml`](crates/contracts/tests/build_rs_compile_fail/unsupported_chain.toml) &mdash; 10 lines
 
 </details>
 
 <details>
 <summary><code>crates/contracts/tests/common/</code> &mdash; 1 file(s)</summary>
 
-- [`mod.rs`](crates/contracts/tests/common/mod.rs)
+- [`mod.rs`](crates/contracts/tests/common/mod.rs) &mdash; 150 lines
 
 </details>
 
 <details>
 <summary><code>crates/contracts/tests/fixtures/</code> &mdash; 6 file(s)</summary>
 
-- [`composable_canonical_selectors.json`](crates/contracts/tests/fixtures/composable_canonical_selectors.json)
-- [`cow_shed_canonical_selectors.json`](crates/contracts/tests/fixtures/cow_shed_canonical_selectors.json)
-- [`deployment-provenance-happy.yaml`](crates/contracts/tests/fixtures/deployment-provenance-happy.yaml)
-- [`deployment-provenance-missing-row.yaml`](crates/contracts/tests/fixtures/deployment-provenance-missing-row.yaml)
-- [`deployment-provenance-skipped.yaml`](crates/contracts/tests/fixtures/deployment-provenance-skipped.yaml)
-- [`domain_separator_parity.json`](crates/contracts/tests/fixtures/domain_separator_parity.json)
+- [`composable_canonical_selectors.json`](crates/contracts/tests/fixtures/composable_canonical_selectors.json) &mdash; 86 lines
+- [`cow_shed_canonical_selectors.json`](crates/contracts/tests/fixtures/cow_shed_canonical_selectors.json) &mdash; 66 lines
+- [`deployment-provenance-happy.yaml`](crates/contracts/tests/fixtures/deployment-provenance-happy.yaml) &mdash; 69 lines
+- [`deployment-provenance-missing-row.yaml`](crates/contracts/tests/fixtures/deployment-provenance-missing-row.yaml) &mdash; 68 lines
+- [`deployment-provenance-skipped.yaml`](crates/contracts/tests/fixtures/deployment-provenance-skipped.yaml) &mdash; 69 lines
+- [`domain_separator_parity.json`](crates/contracts/tests/fixtures/domain_separator_parity.json) &mdash; 10 lines
 
 </details>
 
 <details>
 <summary><code>crates/contracts/tests/fixtures/schema_v2_rejection/</code> &mdash; 5 file(s)</summary>
 
-- [`capability_under_prod.toml`](crates/contracts/tests/fixtures/schema_v2_rejection/capability_under_prod.toml)
-- [`duplicate_registry_key.toml`](crates/contracts/tests/fixtures/schema_v2_rejection/duplicate_registry_key.toml)
-- [`gpv2_environment_agnostic.toml`](crates/contracts/tests/fixtures/schema_v2_rejection/gpv2_environment_agnostic.toml)
-- [`unsupported_deployment_chain.toml`](crates/contracts/tests/fixtures/schema_v2_rejection/unsupported_deployment_chain.toml)
-- [`unsupported_schema_version.toml`](crates/contracts/tests/fixtures/schema_v2_rejection/unsupported_schema_version.toml)
+- [`capability_under_prod.toml`](crates/contracts/tests/fixtures/schema_v2_rejection/capability_under_prod.toml) &mdash; 11 lines
+- [`duplicate_registry_key.toml`](crates/contracts/tests/fixtures/schema_v2_rejection/duplicate_registry_key.toml) &mdash; 21 lines
+- [`gpv2_environment_agnostic.toml`](crates/contracts/tests/fixtures/schema_v2_rejection/gpv2_environment_agnostic.toml) &mdash; 11 lines
+- [`unsupported_deployment_chain.toml`](crates/contracts/tests/fixtures/schema_v2_rejection/unsupported_deployment_chain.toml) &mdash; 11 lines
+- [`unsupported_schema_version.toml`](crates/contracts/tests/fixtures/schema_v2_rejection/unsupported_schema_version.toml) &mdash; 11 lines
 
 </details>
 
 <details>
 <summary><code>crates/contracts/tests/fixtures/schema_v2_success/</code> &mdash; 3 file(s)</summary>
 
-- [`env_specific_gpv2.toml`](crates/contracts/tests/fixtures/schema_v2_success/env_specific_gpv2.toml)
-- [`environment_agnostic_composable.toml`](crates/contracts/tests/fixtures/schema_v2_success/environment_agnostic_composable.toml)
-- [`mixed_contract_families.toml`](crates/contracts/tests/fixtures/schema_v2_success/mixed_contract_families.toml)
+- [`env_specific_gpv2.toml`](crates/contracts/tests/fixtures/schema_v2_success/env_specific_gpv2.toml) &mdash; 21 lines
+- [`environment_agnostic_composable.toml`](crates/contracts/tests/fixtures/schema_v2_success/environment_agnostic_composable.toml) &mdash; 11 lines
+- [`mixed_contract_families.toml`](crates/contracts/tests/fixtures/schema_v2_success/mixed_contract_families.toml) &mdash; 31 lines
 
 </details>
 
 <details>
 <summary><code>crates/contracts/tests/proptest-regressions/</code> &mdash; 1 file(s)</summary>
 
-- [`property_contract.txt`](crates/contracts/tests/proptest-regressions/property_contract.txt)
+- [`property_contract.txt`](crates/contracts/tests/proptest-regressions/property_contract.txt) &mdash; 6 lines
 
 </details>
 
 <details>
 <summary><code>crates/contracts/tests/ui/</code> &mdash; 4 file(s)</summary>
 
-- [`non_exhaustive_external_match.rs`](crates/contracts/tests/ui/non_exhaustive_external_match.rs)
-- [`non_exhaustive_external_match.stderr`](crates/contracts/tests/ui/non_exhaustive_external_match.stderr)
-- [`typestate_marker_sealing.rs`](crates/contracts/tests/ui/typestate_marker_sealing.rs)
-- [`typestate_marker_sealing.stderr`](crates/contracts/tests/ui/typestate_marker_sealing.stderr)
+- [`non_exhaustive_external_match.rs`](crates/contracts/tests/ui/non_exhaustive_external_match.rs) &mdash; 30 lines
+- [`non_exhaustive_external_match.stderr`](crates/contracts/tests/ui/non_exhaustive_external_match.stderr) &mdash; 56 lines
+- [`typestate_marker_sealing.rs`](crates/contracts/tests/ui/typestate_marker_sealing.rs) &mdash; 26 lines
+- [`typestate_marker_sealing.stderr`](crates/contracts/tests/ui/typestate_marker_sealing.stderr) &mdash; 143 lines
 
 </details>
 
 <details>
 <summary><code>crates/core/</code> &mdash; 2 file(s)</summary>
 
-- [`Cargo.toml`](crates/core/Cargo.toml)
-- [`README.md`](crates/core/README.md)
+- [`Cargo.toml`](crates/core/Cargo.toml) &mdash; 65 lines
+- [`README.md`](crates/core/README.md) &mdash; 70 lines
 
 </details>
 
 <details>
 <summary><code>crates/core/src/</code> &mdash; 5 file(s)</summary>
 
-- [`cancellation.rs`](crates/core/src/cancellation.rs)
-- [`errors.rs`](crates/core/src/errors.rs)
-- [`lib.rs`](crates/core/src/lib.rs)
-- [`prelude.rs`](crates/core/src/prelude.rs)
-- [`validation.rs`](crates/core/src/validation.rs)
+- [`cancellation.rs`](crates/core/src/cancellation.rs) &mdash; 122 lines
+- [`errors.rs`](crates/core/src/errors.rs) &mdash; 177 lines
+- [`lib.rs`](crates/core/src/lib.rs) &mdash; 66 lines
+- [`prelude.rs`](crates/core/src/prelude.rs) &mdash; 24 lines
+- [`validation.rs`](crates/core/src/validation.rs) &mdash; 116 lines
 
 </details>
 
 <details>
 <summary><code>crates/core/src/config/</code> &mdash; 6 file(s)</summary>
 
-- [`chains.rs`](crates/core/src/config/chains.rs)
-- [`env.rs`](crates/core/src/config/env.rs)
-- [`hosts.rs`](crates/core/src/config/hosts.rs)
-- [`http.rs`](crates/core/src/config/http.rs)
-- [`mod.rs`](crates/core/src/config/mod.rs)
-- [`protocol.rs`](crates/core/src/config/protocol.rs)
+- [`chains.rs`](crates/core/src/config/chains.rs) &mdash; 263 lines
+- [`env.rs`](crates/core/src/config/env.rs) &mdash; 68 lines
+- [`hosts.rs`](crates/core/src/config/hosts.rs) &mdash; 236 lines
+- [`http.rs`](crates/core/src/config/http.rs) &mdash; 122 lines
+- [`mod.rs`](crates/core/src/config/mod.rs) &mdash; 35 lines
+- [`protocol.rs`](crates/core/src/config/protocol.rs) &mdash; 163 lines
 
 </details>
 
 <details>
 <summary><code>crates/core/src/redaction/</code> &mdash; 3 file(s)</summary>
 
-- [`body.rs`](crates/core/src/redaction/body.rs)
-- [`mod.rs`](crates/core/src/redaction/mod.rs)
-- [`wrappers.rs`](crates/core/src/redaction/wrappers.rs)
+- [`body.rs`](crates/core/src/redaction/body.rs) &mdash; 397 lines
+- [`mod.rs`](crates/core/src/redaction/mod.rs) &mdash; 21 lines
+- [`wrappers.rs`](crates/core/src/redaction/wrappers.rs) &mdash; 369 lines
 
 </details>
 
 <details>
 <summary><code>crates/core/src/traits/</code> &mdash; 8 file(s)</summary>
 
-- [`contract.rs`](crates/core/src/traits/contract.rs)
-- [`log_provider.rs`](crates/core/src/traits/log_provider.rs)
-- [`mod.rs`](crates/core/src/traits/mod.rs)
-- [`provider.rs`](crates/core/src/traits/provider.rs)
-- [`signer.rs`](crates/core/src/traits/signer.rs)
-- [`transaction.rs`](crates/core/src/traits/transaction.rs)
-- [`transport.rs`](crates/core/src/traits/transport.rs)
-- [`typed_data.rs`](crates/core/src/traits/typed_data.rs)
+- [`contract.rs`](crates/core/src/traits/contract.rs) &mdash; 56 lines
+- [`log_provider.rs`](crates/core/src/traits/log_provider.rs) &mdash; 48 lines
+- [`mod.rs`](crates/core/src/traits/mod.rs) &mdash; 14 lines
+- [`provider.rs`](crates/core/src/traits/provider.rs) &mdash; 306 lines
+- [`signer.rs`](crates/core/src/traits/signer.rs) &mdash; 278 lines
+- [`transaction.rs`](crates/core/src/traits/transaction.rs) &mdash; 210 lines
+- [`transport.rs`](crates/core/src/traits/transport.rs) &mdash; 20 lines
+- [`typed_data.rs`](crates/core/src/traits/typed_data.rs) &mdash; 200 lines
 
 </details>
 
 <details>
 <summary><code>crates/core/src/transport/</code> &mdash; 4 file(s)</summary>
 
-- [`error.rs`](crates/core/src/transport/error.rs)
-- [`http.rs`](crates/core/src/transport/http.rs)
-- [`mod.rs`](crates/core/src/transport/mod.rs)
-- [`reqwest.rs`](crates/core/src/transport/reqwest.rs)
+- [`error.rs`](crates/core/src/transport/error.rs) &mdash; 77 lines
+- [`http.rs`](crates/core/src/transport/http.rs) &mdash; 118 lines
+- [`mod.rs`](crates/core/src/transport/mod.rs) &mdash; 181 lines
+- [`reqwest.rs`](crates/core/src/transport/reqwest.rs) &mdash; 529 lines
 
 </details>
 
 <details>
 <summary><code>crates/core/src/types/</code> &mdash; 8 file(s)</summary>
 
-- [`amount.rs`](crates/core/src/types/amount.rs)
-- [`app_code.rs`](crates/core/src/types/app_code.rs)
-- [`identity.rs`](crates/core/src/types/identity.rs)
-- [`logs.rs`](crates/core/src/types/logs.rs)
-- [`mod.rs`](crates/core/src/types/mod.rs)
-- [`order.rs`](crates/core/src/types/order.rs)
-- [`quote.rs`](crates/core/src/types/quote.rs)
-- [`validity.rs`](crates/core/src/types/validity.rs)
+- [`amount.rs`](crates/core/src/types/amount.rs) &mdash; 932 lines
+- [`app_code.rs`](crates/core/src/types/app_code.rs) &mdash; 164 lines
+- [`identity.rs`](crates/core/src/types/identity.rs) &mdash; 1,064 lines
+- [`logs.rs`](crates/core/src/types/logs.rs) &mdash; 116 lines
+- [`mod.rs`](crates/core/src/types/mod.rs) &mdash; 72 lines
+- [`order.rs`](crates/core/src/types/order.rs) &mdash; 303 lines
+- [`quote.rs`](crates/core/src/types/quote.rs) &mdash; 311 lines
+- [`validity.rs`](crates/core/src/types/validity.rs) &mdash; 101 lines
 
 </details>
 
 <details>
 <summary><code>crates/core/tests/</code> &mdash; 15 file(s)</summary>
 
-- [`amount_arithmetic_ui.rs`](crates/core/tests/amount_arithmetic_ui.rs)
-- [`cancellation_contract.rs`](crates/core/tests/cancellation_contract.rs)
-- [`cancellation_coverage_validator.rs`](crates/core/tests/cancellation_coverage_validator.rs)
-- [`cid_parity_contract.rs`](crates/core/tests/cid_parity_contract.rs)
-- [`config_contract.rs`](crates/core/tests/config_contract.rs)
-- [`property_contract.rs`](crates/core/tests/property_contract.rs)
-- [`provider_capability_split_contract.rs`](crates/core/tests/provider_capability_split_contract.rs)
-- [`redaction_contract.rs`](crates/core/tests/redaction_contract.rs)
-- [`token_balance_parity.rs`](crates/core/tests/token_balance_parity.rs)
-- [`token_balance_ui.rs`](crates/core/tests/token_balance_ui.rs)
-- [`trait_evolution_contract.rs`](crates/core/tests/trait_evolution_contract.rs)
-- [`traits_contract.rs`](crates/core/tests/traits_contract.rs)
-- [`transport_contract.rs`](crates/core/tests/transport_contract.rs)
-- [`types_contract.rs`](crates/core/tests/types_contract.rs)
-- [`wire_format_preservation_contract.rs`](crates/core/tests/wire_format_preservation_contract.rs)
+- [`amount_arithmetic_ui.rs`](crates/core/tests/amount_arithmetic_ui.rs) &mdash; 19 lines
+- [`cancellation_contract.rs`](crates/core/tests/cancellation_contract.rs) &mdash; 256 lines
+- [`cancellation_coverage_validator.rs`](crates/core/tests/cancellation_coverage_validator.rs) &mdash; 231 lines
+- [`cid_parity_contract.rs`](crates/core/tests/cid_parity_contract.rs) &mdash; 79 lines
+- [`config_contract.rs`](crates/core/tests/config_contract.rs) &mdash; 264 lines
+- [`property_contract.rs`](crates/core/tests/property_contract.rs) &mdash; 744 lines
+- [`provider_capability_split_contract.rs`](crates/core/tests/provider_capability_split_contract.rs) &mdash; 299 lines
+- [`redaction_contract.rs`](crates/core/tests/redaction_contract.rs) &mdash; 209 lines
+- [`token_balance_parity.rs`](crates/core/tests/token_balance_parity.rs) &mdash; 89 lines
+- [`token_balance_ui.rs`](crates/core/tests/token_balance_ui.rs) &mdash; 20 lines
+- [`trait_evolution_contract.rs`](crates/core/tests/trait_evolution_contract.rs) &mdash; 209 lines
+- [`traits_contract.rs`](crates/core/tests/traits_contract.rs) &mdash; 569 lines
+- [`transport_contract.rs`](crates/core/tests/transport_contract.rs) &mdash; 807 lines
+- [`types_contract.rs`](crates/core/tests/types_contract.rs) &mdash; 878 lines
+- [`wire_format_preservation_contract.rs`](crates/core/tests/wire_format_preservation_contract.rs) &mdash; 415 lines
 
 </details>
 
 <details>
 <summary><code>crates/core/tests/fixtures/transport/</code> &mdash; 3 file(s)</summary>
 
-- [`delete_order_ok.txt`](crates/core/tests/fixtures/transport/delete_order_ok.txt)
-- [`get_orders_ok.json`](crates/core/tests/fixtures/transport/get_orders_ok.json)
-- [`post_quote_ok.json`](crates/core/tests/fixtures/transport/post_quote_ok.json)
+- [`delete_order_ok.txt`](crates/core/tests/fixtures/transport/delete_order_ok.txt) &mdash; 1 lines
+- [`get_orders_ok.json`](crates/core/tests/fixtures/transport/get_orders_ok.json) &mdash; 1 lines
+- [`post_quote_ok.json`](crates/core/tests/fixtures/transport/post_quote_ok.json) &mdash; 1 lines
 
 </details>
 
 <details>
 <summary><code>crates/core/tests/proptest-regressions/</code> &mdash; 1 file(s)</summary>
 
-- [`property_contract.txt`](crates/core/tests/proptest-regressions/property_contract.txt)
+- [`property_contract.txt`](crates/core/tests/proptest-regressions/property_contract.txt) &mdash; 9 lines
 
 </details>
 
 <details>
 <summary><code>crates/core/tests/ui/</code> &mdash; 4 file(s)</summary>
 
-- [`amount_arithmetic_operators_removed.rs`](crates/core/tests/ui/amount_arithmetic_operators_removed.rs)
-- [`amount_arithmetic_operators_removed.stderr`](crates/core/tests/ui/amount_arithmetic_operators_removed.stderr)
-- [`token_balance_split_cross_side.rs`](crates/core/tests/ui/token_balance_split_cross_side.rs)
-- [`token_balance_split_cross_side.stderr`](crates/core/tests/ui/token_balance_split_cross_side.stderr)
+- [`amount_arithmetic_operators_removed.rs`](crates/core/tests/ui/amount_arithmetic_operators_removed.rs) &mdash; 24 lines
+- [`amount_arithmetic_operators_removed.stderr`](crates/core/tests/ui/amount_arithmetic_operators_removed.stderr) &mdash; 67 lines
+- [`token_balance_split_cross_side.rs`](crates/core/tests/ui/token_balance_split_cross_side.rs) &mdash; 43 lines
+- [`token_balance_split_cross_side.stderr`](crates/core/tests/ui/token_balance_split_cross_side.stderr) &mdash; 22 lines
 
 </details>
 
 <details>
 <summary><code>crates/cow-shed/</code> &mdash; 2 file(s)</summary>
 
-- [`Cargo.toml`](crates/cow-shed/Cargo.toml)
-- [`README.md`](crates/cow-shed/README.md)
+- [`Cargo.toml`](crates/cow-shed/Cargo.toml) &mdash; 47 lines
+- [`README.md`](crates/cow-shed/README.md) &mdash; 55 lines
 
 </details>
 
 <details>
 <summary><code>crates/cow-shed/src/</code> &mdash; 3 file(s)</summary>
 
-- [`errors.rs`](crates/cow-shed/src/errors.rs)
-- [`lib.rs`](crates/cow-shed/src/lib.rs)
-- [`version.rs`](crates/cow-shed/src/version.rs)
+- [`errors.rs`](crates/cow-shed/src/errors.rs) &mdash; 88 lines
+- [`lib.rs`](crates/cow-shed/src/lib.rs) &mdash; 37 lines
+- [`version.rs`](crates/cow-shed/src/version.rs) &mdash; 29 lines
 
 </details>
 
 <details>
 <summary><code>crates/cow-shed/src/address/</code> &mdash; 2 file(s)</summary>
 
-- [`mod.rs`](crates/cow-shed/src/address/mod.rs)
-- [`proxy_code.rs`](crates/cow-shed/src/address/proxy_code.rs)
+- [`mod.rs`](crates/cow-shed/src/address/mod.rs) &mdash; 66 lines
+- [`proxy_code.rs`](crates/cow-shed/src/address/proxy_code.rs) &mdash; 20 lines
 
 </details>
 
 <details>
 <summary><code>crates/cow-shed/src/bindings/</code> &mdash; 4 file(s)</summary>
 
-- [`factory.rs`](crates/cow-shed/src/bindings/factory.rs)
-- [`mod.rs`](crates/cow-shed/src/bindings/mod.rs)
-- [`shed_for_composable.rs`](crates/cow-shed/src/bindings/shed_for_composable.rs)
-- [`shed.rs`](crates/cow-shed/src/bindings/shed.rs)
+- [`factory.rs`](crates/cow-shed/src/bindings/factory.rs) &mdash; 35 lines
+- [`mod.rs`](crates/cow-shed/src/bindings/mod.rs) &mdash; 13 lines
+- [`shed_for_composable.rs`](crates/cow-shed/src/bindings/shed_for_composable.rs) &mdash; 11 lines
+- [`shed.rs`](crates/cow-shed/src/bindings/shed.rs) &mdash; 9 lines
 
 </details>
 
 <details>
 <summary><code>crates/cow-shed/src/calls/</code> &mdash; 3 file(s)</summary>
 
-- [`execute_hooks.rs`](crates/cow-shed/src/calls/execute_hooks.rs)
-- [`mod.rs`](crates/cow-shed/src/calls/mod.rs)
-- [`pre_sign.rs`](crates/cow-shed/src/calls/pre_sign.rs)
+- [`execute_hooks.rs`](crates/cow-shed/src/calls/execute_hooks.rs) &mdash; 44 lines
+- [`mod.rs`](crates/cow-shed/src/calls/mod.rs) &mdash; 7 lines
+- [`pre_sign.rs`](crates/cow-shed/src/calls/pre_sign.rs) &mdash; 20 lines
 
 </details>
 
 <details>
 <summary><code>crates/cow-shed/src/eip712/</code> &mdash; 4 file(s)</summary>
 
-- [`domain.rs`](crates/cow-shed/src/eip712/domain.rs)
-- [`hash.rs`](crates/cow-shed/src/eip712/hash.rs)
-- [`mod.rs`](crates/cow-shed/src/eip712/mod.rs)
-- [`sol_types.rs`](crates/cow-shed/src/eip712/sol_types.rs)
+- [`domain.rs`](crates/cow-shed/src/eip712/domain.rs) &mdash; 51 lines
+- [`hash.rs`](crates/cow-shed/src/eip712/hash.rs) &mdash; 34 lines
+- [`mod.rs`](crates/cow-shed/src/eip712/mod.rs) &mdash; 9 lines
+- [`sol_types.rs`](crates/cow-shed/src/eip712/sol_types.rs) &mdash; 155 lines
 
 </details>
 
 <details>
 <summary><code>crates/cow-shed/src/types/</code> &mdash; 4 file(s)</summary>
 
-- [`call.rs`](crates/cow-shed/src/types/call.rs)
-- [`deadline.rs`](crates/cow-shed/src/types/deadline.rs)
-- [`mod.rs`](crates/cow-shed/src/types/mod.rs)
-- [`nonce.rs`](crates/cow-shed/src/types/nonce.rs)
+- [`call.rs`](crates/cow-shed/src/types/call.rs) &mdash; 59 lines
+- [`deadline.rs`](crates/cow-shed/src/types/deadline.rs) &mdash; 27 lines
+- [`mod.rs`](crates/cow-shed/src/types/mod.rs) &mdash; 13 lines
+- [`nonce.rs`](crates/cow-shed/src/types/nonce.rs) &mdash; 13 lines
 
 </details>
 
 <details>
 <summary><code>crates/cow-shed/tests/</code> &mdash; 10 file(s)</summary>
 
-- [`calldata_parity_contract.rs`](crates/cow-shed/tests/calldata_parity_contract.rs)
-- [`domain_separator_parity_contract.rs`](crates/cow-shed/tests/domain_separator_parity_contract.rs)
-- [`eip712_message_hash_parity_contract.rs`](crates/cow-shed/tests/eip712_message_hash_parity_contract.rs)
-- [`eip712_type_hash_parity_contract.rs`](crates/cow-shed/tests/eip712_type_hash_parity_contract.rs)
-- [`eoa_signature_byte_order_contract.rs`](crates/cow-shed/tests/eoa_signature_byte_order_contract.rs)
-- [`init_code_derivation_contract.rs`](crates/cow-shed/tests/init_code_derivation_contract.rs)
-- [`non_exhaustive_surface_contract.rs`](crates/cow-shed/tests/non_exhaustive_surface_contract.rs)
-- [`panic_surface_contract.rs`](crates/cow-shed/tests/panic_surface_contract.rs)
-- [`proxy_address_parity_contract.rs`](crates/cow-shed/tests/proxy_address_parity_contract.rs)
-- [`selector_parity_contract.rs`](crates/cow-shed/tests/selector_parity_contract.rs)
+- [`calldata_parity_contract.rs`](crates/cow-shed/tests/calldata_parity_contract.rs) &mdash; 167 lines
+- [`domain_separator_parity_contract.rs`](crates/cow-shed/tests/domain_separator_parity_contract.rs) &mdash; 51 lines
+- [`eip712_message_hash_parity_contract.rs`](crates/cow-shed/tests/eip712_message_hash_parity_contract.rs) &mdash; 127 lines
+- [`eip712_type_hash_parity_contract.rs`](crates/cow-shed/tests/eip712_type_hash_parity_contract.rs) &mdash; 64 lines
+- [`eoa_signature_byte_order_contract.rs`](crates/cow-shed/tests/eoa_signature_byte_order_contract.rs) &mdash; 101 lines
+- [`init_code_derivation_contract.rs`](crates/cow-shed/tests/init_code_derivation_contract.rs) &mdash; 60 lines
+- [`non_exhaustive_surface_contract.rs`](crates/cow-shed/tests/non_exhaustive_surface_contract.rs) &mdash; 66 lines
+- [`panic_surface_contract.rs`](crates/cow-shed/tests/panic_surface_contract.rs) &mdash; 55 lines
+- [`proxy_address_parity_contract.rs`](crates/cow-shed/tests/proxy_address_parity_contract.rs) &mdash; 62 lines
+- [`selector_parity_contract.rs`](crates/cow-shed/tests/selector_parity_contract.rs) &mdash; 37 lines
 
 </details>
 
 <details>
 <summary><code>crates/orderbook/</code> &mdash; 2 file(s)</summary>
 
-- [`Cargo.toml`](crates/orderbook/Cargo.toml)
-- [`README.md`](crates/orderbook/README.md)
+- [`Cargo.toml`](crates/orderbook/Cargo.toml) &mdash; 53 lines
+- [`README.md`](crates/orderbook/README.md) &mdash; 67 lines
 
 </details>
 
 <details>
 <summary><code>crates/orderbook/benches/</code> &mdash; 1 file(s)</summary>
 
-- [`quote_cost.rs`](crates/orderbook/benches/quote_cost.rs)
+- [`quote_cost.rs`](crates/orderbook/benches/quote_cost.rs) &mdash; 17 lines
 
 </details>
 
 <details>
 <summary><code>crates/orderbook/examples/</code> &mdash; 1 file(s)</summary>
 
-- [`paginated_orders_fetch.rs`](crates/orderbook/examples/paginated_orders_fetch.rs)
+- [`paginated_orders_fetch.rs`](crates/orderbook/examples/paginated_orders_fetch.rs) &mdash; 159 lines
 
 </details>
 
 <details>
 <summary><code>crates/orderbook/src/</code> &mdash; 7 file(s)</summary>
 
-- [`api.rs`](crates/orderbook/src/api.rs)
-- [`builder.rs`](crates/orderbook/src/builder.rs)
-- [`error.rs`](crates/orderbook/src/error.rs)
-- [`lib.rs`](crates/orderbook/src/lib.rs)
-- [`rejection.rs`](crates/orderbook/src/rejection.rs)
-- [`request.rs`](crates/orderbook/src/request.rs)
-- [`transform.rs`](crates/orderbook/src/transform.rs)
+- [`api.rs`](crates/orderbook/src/api.rs) &mdash; 911 lines
+- [`builder.rs`](crates/orderbook/src/builder.rs) &mdash; 455 lines
+- [`error.rs`](crates/orderbook/src/error.rs) &mdash; 325 lines
+- [`lib.rs`](crates/orderbook/src/lib.rs) &mdash; 307 lines
+- [`rejection.rs`](crates/orderbook/src/rejection.rs) &mdash; 569 lines
+- [`request.rs`](crates/orderbook/src/request.rs) &mdash; 751 lines
+- [`transform.rs`](crates/orderbook/src/transform.rs) &mdash; 102 lines
 
 </details>
 
 <details>
 <summary><code>crates/orderbook/src/types/</code> &mdash; 8 file(s)</summary>
 
-- [`app_data.rs`](crates/orderbook/src/types/app_data.rs)
-- [`auction.rs`](crates/orderbook/src/types/auction.rs)
-- [`enums.rs`](crates/orderbook/src/types/enums.rs)
-- [`lists.rs`](crates/orderbook/src/types/lists.rs)
-- [`mod.rs`](crates/orderbook/src/types/mod.rs)
-- [`order.rs`](crates/orderbook/src/types/order.rs)
-- [`prices.rs`](crates/orderbook/src/types/prices.rs)
-- [`quote.rs`](crates/orderbook/src/types/quote.rs)
+- [`app_data.rs`](crates/orderbook/src/types/app_data.rs) &mdash; 159 lines
+- [`auction.rs`](crates/orderbook/src/types/auction.rs) &mdash; 345 lines
+- [`enums.rs`](crates/orderbook/src/types/enums.rs) &mdash; 171 lines
+- [`lists.rs`](crates/orderbook/src/types/lists.rs) &mdash; 194 lines
+- [`mod.rs`](crates/orderbook/src/types/mod.rs) &mdash; 111 lines
+- [`order.rs`](crates/orderbook/src/types/order.rs) &mdash; 889 lines
+- [`prices.rs`](crates/orderbook/src/types/prices.rs) &mdash; 59 lines
+- [`quote.rs`](crates/orderbook/src/types/quote.rs) &mdash; 938 lines
 
 </details>
 
 <details>
 <summary><code>crates/orderbook/tests/</code> &mdash; 19 file(s)</summary>
 
-- [`api_contract.rs`](crates/orderbook/tests/api_contract.rs)
-- [`builder_contract.rs`](crates/orderbook/tests/builder_contract.rs)
-- [`cancellation_composition_contract.rs`](crates/orderbook/tests/cancellation_composition_contract.rs)
-- [`delay_for_zero_contract.rs`](crates/orderbook/tests/delay_for_zero_contract.rs)
-- [`error_variant_shape.rs`](crates/orderbook/tests/error_variant_shape.rs)
-- [`fee_amount_is_not_a_public_builder_setter.rs`](crates/orderbook/tests/fee_amount_is_not_a_public_builder_setter.rs)
-- [`host_policy_contract.rs`](crates/orderbook/tests/host_policy_contract.rs)
-- [`invariant_contract.rs`](crates/orderbook/tests/invariant_contract.rs)
-- [`openapi_dto_coverage.rs`](crates/orderbook/tests/openapi_dto_coverage.rs)
-- [`order_creation_fee_deserialize.rs`](crates/orderbook/tests/order_creation_fee_deserialize.rs)
-- [`parity_contract.rs`](crates/orderbook/tests/parity_contract.rs)
-- [`rejection_category_contract.rs`](crates/orderbook/tests/rejection_category_contract.rs)
-- [`rejection_contract.rs`](crates/orderbook/tests/rejection_contract.rs)
-- [`request_contract.rs`](crates/orderbook/tests/request_contract.rs)
-- [`schema_source_contract.rs`](crates/orderbook/tests/schema_source_contract.rs)
-- [`signing_scheme_bridge_contract.rs`](crates/orderbook/tests/signing_scheme_bridge_contract.rs)
-- [`transform_contract.rs`](crates/orderbook/tests/transform_contract.rs)
-- [`types_contract.rs`](crates/orderbook/tests/types_contract.rs)
-- [`wire_contract.rs`](crates/orderbook/tests/wire_contract.rs)
+- [`api_contract.rs`](crates/orderbook/tests/api_contract.rs) &mdash; 1,393 lines
+- [`builder_contract.rs`](crates/orderbook/tests/builder_contract.rs) &mdash; 411 lines
+- [`cancellation_composition_contract.rs`](crates/orderbook/tests/cancellation_composition_contract.rs) &mdash; 478 lines
+- [`delay_for_zero_contract.rs`](crates/orderbook/tests/delay_for_zero_contract.rs) &mdash; 21 lines
+- [`error_variant_shape.rs`](crates/orderbook/tests/error_variant_shape.rs) &mdash; 160 lines
+- [`fee_amount_is_not_a_public_builder_setter.rs`](crates/orderbook/tests/fee_amount_is_not_a_public_builder_setter.rs) &mdash; 198 lines
+- [`host_policy_contract.rs`](crates/orderbook/tests/host_policy_contract.rs) &mdash; 112 lines
+- [`invariant_contract.rs`](crates/orderbook/tests/invariant_contract.rs) &mdash; 357 lines
+- [`openapi_dto_coverage.rs`](crates/orderbook/tests/openapi_dto_coverage.rs) &mdash; 141 lines
+- [`order_creation_fee_deserialize.rs`](crates/orderbook/tests/order_creation_fee_deserialize.rs) &mdash; 157 lines
+- [`parity_contract.rs`](crates/orderbook/tests/parity_contract.rs) &mdash; 710 lines
+- [`rejection_category_contract.rs`](crates/orderbook/tests/rejection_category_contract.rs) &mdash; 79 lines
+- [`rejection_contract.rs`](crates/orderbook/tests/rejection_contract.rs) &mdash; 545 lines
+- [`request_contract.rs`](crates/orderbook/tests/request_contract.rs) &mdash; 1,325 lines
+- [`schema_source_contract.rs`](crates/orderbook/tests/schema_source_contract.rs) &mdash; 22 lines
+- [`signing_scheme_bridge_contract.rs`](crates/orderbook/tests/signing_scheme_bridge_contract.rs) &mdash; 172 lines
+- [`transform_contract.rs`](crates/orderbook/tests/transform_contract.rs) &mdash; 508 lines
+- [`types_contract.rs`](crates/orderbook/tests/types_contract.rs) &mdash; 550 lines
+- [`wire_contract.rs`](crates/orderbook/tests/wire_contract.rs) &mdash; 159 lines
 
 </details>
 
 <details>
 <summary><code>crates/orderbook/tests/common/</code> &mdash; 1 file(s)</summary>
 
-- [`mod.rs`](crates/orderbook/tests/common/mod.rs)
+- [`mod.rs`](crates/orderbook/tests/common/mod.rs) &mdash; 223 lines
 
 </details>
 
 <details>
 <summary><code>crates/orderbook/tests/proptest-regressions/</code> &mdash; 1 file(s)</summary>
 
-- [`order_creation_fee_deserialize.txt`](crates/orderbook/tests/proptest-regressions/order_creation_fee_deserialize.txt)
+- [`order_creation_fee_deserialize.txt`](crates/orderbook/tests/proptest-regressions/order_creation_fee_deserialize.txt) &mdash; 6 lines
 
 </details>
 
 <details>
 <summary><code>crates/pure-helpers/</code> &mdash; 2 file(s)</summary>
 
-- [`Cargo.toml`](crates/pure-helpers/Cargo.toml)
-- [`README.md`](crates/pure-helpers/README.md)
+- [`Cargo.toml`](crates/pure-helpers/Cargo.toml) &mdash; 34 lines
+- [`README.md`](crates/pure-helpers/README.md) &mdash; 19 lines
 
 </details>
 
 <details>
 <summary><code>crates/pure-helpers/src/</code> &mdash; 7 file(s)</summary>
 
-- [`app_data.rs`](crates/pure-helpers/src/app_data.rs)
-- [`chains.rs`](crates/pure-helpers/src/chains.rs)
-- [`dto.rs`](crates/pure-helpers/src/dto.rs)
-- [`errors.rs`](crates/pure-helpers/src/errors.rs)
-- [`lib.rs`](crates/pure-helpers/src/lib.rs)
-- [`signing.rs`](crates/pure-helpers/src/signing.rs)
-- [`uid.rs`](crates/pure-helpers/src/uid.rs)
+- [`app_data.rs`](crates/pure-helpers/src/app_data.rs) &mdash; 65 lines
+- [`chains.rs`](crates/pure-helpers/src/chains.rs) &mdash; 82 lines
+- [`dto.rs`](crates/pure-helpers/src/dto.rs) &mdash; 391 lines
+- [`errors.rs`](crates/pure-helpers/src/errors.rs) &mdash; 51 lines
+- [`lib.rs`](crates/pure-helpers/src/lib.rs) &mdash; 15 lines
+- [`signing.rs`](crates/pure-helpers/src/signing.rs) &mdash; 41 lines
+- [`uid.rs`](crates/pure-helpers/src/uid.rs) &mdash; 14 lines
 
 </details>
 
 <details>
 <summary><code>crates/pure-helpers/tests/</code> &mdash; 1 file(s)</summary>
 
-- [`no_ffi_imports.rs`](crates/pure-helpers/tests/no_ffi_imports.rs)
+- [`no_ffi_imports.rs`](crates/pure-helpers/tests/no_ffi_imports.rs) &mdash; 59 lines
 
 </details>
 
 <details>
 <summary><code>crates/sdk/</code> &mdash; 2 file(s)</summary>
 
-- [`Cargo.toml`](crates/sdk/Cargo.toml)
-- [`README.md`](crates/sdk/README.md)
+- [`Cargo.toml`](crates/sdk/Cargo.toml) &mdash; 88 lines
+- [`README.md`](crates/sdk/README.md) &mdash; 92 lines
 
 </details>
 
 <details>
 <summary><code>crates/sdk/examples/</code> &mdash; 2 file(s)</summary>
 
-- [`README.md`](crates/sdk/examples/README.md)
-- [`wasm_smoke.rs`](crates/sdk/examples/wasm_smoke.rs)
+- [`README.md`](crates/sdk/examples/README.md) &mdash; 9 lines
+- [`wasm_smoke.rs`](crates/sdk/examples/wasm_smoke.rs) &mdash; 6 lines
 
 </details>
 
 <details>
 <summary><code>crates/sdk/examples/support/</code> &mdash; 1 file(s)</summary>
 
-- [`order_sign_submit_smoke.rs`](crates/sdk/examples/support/order_sign_submit_smoke.rs)
+- [`order_sign_submit_smoke.rs`](crates/sdk/examples/support/order_sign_submit_smoke.rs) &mdash; 27 lines
 
 </details>
 
 <details>
 <summary><code>crates/sdk/src/</code> &mdash; 2 file(s)</summary>
 
-- [`lib.rs`](crates/sdk/src/lib.rs)
-- [`prelude.rs`](crates/sdk/src/prelude.rs)
+- [`lib.rs`](crates/sdk/src/lib.rs) &mdash; 268 lines
+- [`prelude.rs`](crates/sdk/src/prelude.rs) &mdash; 37 lines
 
 </details>
 
 <details>
 <summary><code>crates/sdk/tests/</code> &mdash; 8 file(s)</summary>
 
-- [`cross_fixture_amount_roundtrip.rs`](crates/sdk/tests/cross_fixture_amount_roundtrip.rs)
-- [`error_class_contract.rs`](crates/sdk/tests/error_class_contract.rs)
-- [`error_redaction_contract.rs`](crates/sdk/tests/error_redaction_contract.rs)
-- [`parity_fixture_sort.rs`](crates/sdk/tests/parity_fixture_sort.rs)
-- [`public_api_default_features_only.rs`](crates/sdk/tests/public_api_default_features_only.rs)
-- [`public_api_with_all_features.rs`](crates/sdk/tests/public_api_with_all_features.rs)
-- [`public_api.rs`](crates/sdk/tests/public_api.rs)
-- [`ui.rs`](crates/sdk/tests/ui.rs)
+- [`cross_fixture_amount_roundtrip.rs`](crates/sdk/tests/cross_fixture_amount_roundtrip.rs) &mdash; 96 lines
+- [`error_class_contract.rs`](crates/sdk/tests/error_class_contract.rs) &mdash; 132 lines
+- [`error_redaction_contract.rs`](crates/sdk/tests/error_redaction_contract.rs) &mdash; 989 lines
+- [`parity_fixture_sort.rs`](crates/sdk/tests/parity_fixture_sort.rs) &mdash; 27 lines
+- [`public_api_default_features_only.rs`](crates/sdk/tests/public_api_default_features_only.rs) &mdash; 73 lines
+- [`public_api_with_all_features.rs`](crates/sdk/tests/public_api_with_all_features.rs) &mdash; 74 lines
+- [`public_api.rs`](crates/sdk/tests/public_api.rs) &mdash; 167 lines
+- [`ui.rs`](crates/sdk/tests/ui.rs) &mdash; 5 lines
 
 </details>
 
 <details>
 <summary><code>crates/sdk/tests/fixtures/</code> &mdash; 2 file(s)</summary>
 
-- [`public_api_default_features_only.snap`](crates/sdk/tests/fixtures/public_api_default_features_only.snap)
-- [`public_api_with_all_features.snap`](crates/sdk/tests/fixtures/public_api_with_all_features.snap)
+- [`public_api_default_features_only.snap`](crates/sdk/tests/fixtures/public_api_default_features_only.snap) &mdash; 33 lines
+- [`public_api_with_all_features.snap`](crates/sdk/tests/fixtures/public_api_with_all_features.snap) &mdash; 32 lines
 
 </details>
 
 <details>
 <summary><code>crates/sdk/tests/ui/</code> &mdash; 1 file(s)</summary>
 
-- [`orderbook_client_reachable_through_trading_re_export.rs`](crates/sdk/tests/ui/orderbook_client_reachable_through_trading_re_export.rs)
+- [`orderbook_client_reachable_through_trading_re_export.rs`](crates/sdk/tests/ui/orderbook_client_reachable_through_trading_re_export.rs) &mdash; 5 lines
 
 </details>
 
 <details>
 <summary><code>crates/signing/</code> &mdash; 2 file(s)</summary>
 
-- [`Cargo.toml`](crates/signing/Cargo.toml)
-- [`README.md`](crates/signing/README.md)
+- [`Cargo.toml`](crates/signing/Cargo.toml) &mdash; 62 lines
+- [`README.md`](crates/signing/README.md) &mdash; 97 lines
 
 </details>
 
 <details>
 <summary><code>crates/signing/benches/</code> &mdash; 1 file(s)</summary>
 
-- [`typed_data.rs`](crates/signing/benches/typed_data.rs)
+- [`typed_data.rs`](crates/signing/benches/typed_data.rs) &mdash; 43 lines
 
 </details>
 
 <details>
 <summary><code>crates/signing/src/</code> &mdash; 6 file(s)</summary>
 
-- [`cache.rs`](crates/signing/src/cache.rs)
-- [`cancellation.rs`](crates/signing/src/cancellation.rs)
-- [`domain.rs`](crates/signing/src/domain.rs)
-- [`errors.rs`](crates/signing/src/errors.rs)
-- [`lib.rs`](crates/signing/src/lib.rs)
-- [`order_signing.rs`](crates/signing/src/order_signing.rs)
+- [`cache.rs`](crates/signing/src/cache.rs) &mdash; 267 lines
+- [`cancellation.rs`](crates/signing/src/cancellation.rs) &mdash; 195 lines
+- [`domain.rs`](crates/signing/src/domain.rs) &mdash; 210 lines
+- [`errors.rs`](crates/signing/src/errors.rs) &mdash; 74 lines
+- [`lib.rs`](crates/signing/src/lib.rs) &mdash; 53 lines
+- [`order_signing.rs`](crates/signing/src/order_signing.rs) &mdash; 475 lines
 
 </details>
 
 <details>
 <summary><code>crates/signing/src/eip1271/</code> &mdash; 4 file(s)</summary>
 
-- [`error.rs`](crates/signing/src/eip1271/error.rs)
-- [`mod.rs`](crates/signing/src/eip1271/mod.rs)
-- [`provider.rs`](crates/signing/src/eip1271/provider.rs)
-- [`sol_types.rs`](crates/signing/src/eip1271/sol_types.rs)
+- [`error.rs`](crates/signing/src/eip1271/error.rs) &mdash; 27 lines
+- [`mod.rs`](crates/signing/src/eip1271/mod.rs) &mdash; 9 lines
+- [`provider.rs`](crates/signing/src/eip1271/provider.rs) &mdash; 16 lines
+- [`sol_types.rs`](crates/signing/src/eip1271/sol_types.rs) &mdash; 75 lines
 
 </details>
 
 <details>
 <summary><code>crates/signing/tests/</code> &mdash; 9 file(s)</summary>
 
-- [`cancellation_contract.rs`](crates/signing/tests/cancellation_contract.rs)
-- [`domain_contract.rs`](crates/signing/tests/domain_contract.rs)
-- [`eip1271_cache_contract.rs`](crates/signing/tests/eip1271_cache_contract.rs)
-- [`eip1271_contract.rs`](crates/signing/tests/eip1271_contract.rs)
-- [`order_signing_contract.rs`](crates/signing/tests/order_signing_contract.rs)
-- [`parity_contract.rs`](crates/signing/tests/parity_contract.rs)
-- [`property_contract.rs`](crates/signing/tests/property_contract.rs)
-- [`ui.rs`](crates/signing/tests/ui.rs)
-- [`wasm_cache_contract.rs`](crates/signing/tests/wasm_cache_contract.rs)
+- [`cancellation_contract.rs`](crates/signing/tests/cancellation_contract.rs) &mdash; 317 lines
+- [`domain_contract.rs`](crates/signing/tests/domain_contract.rs) &mdash; 122 lines
+- [`eip1271_cache_contract.rs`](crates/signing/tests/eip1271_cache_contract.rs) &mdash; 611 lines
+- [`eip1271_contract.rs`](crates/signing/tests/eip1271_contract.rs) &mdash; 165 lines
+- [`order_signing_contract.rs`](crates/signing/tests/order_signing_contract.rs) &mdash; 357 lines
+- [`parity_contract.rs`](crates/signing/tests/parity_contract.rs) &mdash; 591 lines
+- [`property_contract.rs`](crates/signing/tests/property_contract.rs) &mdash; 483 lines
+- [`ui.rs`](crates/signing/tests/ui.rs) &mdash; 5 lines
+- [`wasm_cache_contract.rs`](crates/signing/tests/wasm_cache_contract.rs) &mdash; 69 lines
 
 </details>
 
 <details>
 <summary><code>crates/signing/tests/common/</code> &mdash; 1 file(s)</summary>
 
-- [`mod.rs`](crates/signing/tests/common/mod.rs)
+- [`mod.rs`](crates/signing/tests/common/mod.rs) &mdash; 149 lines
 
 </details>
 
 <details>
 <summary><code>crates/signing/tests/fixtures/</code> &mdash; 1 file(s)</summary>
 
-- [`domain_separator_parity.json`](crates/signing/tests/fixtures/domain_separator_parity.json)
+- [`domain_separator_parity.json`](crates/signing/tests/fixtures/domain_separator_parity.json) &mdash; 10 lines
 
 </details>
 
 <details>
 <summary><code>crates/signing/tests/proptest-regressions/</code> &mdash; 1 file(s)</summary>
 
-- [`property_contract.txt`](crates/signing/tests/proptest-regressions/property_contract.txt)
+- [`property_contract.txt`](crates/signing/tests/proptest-regressions/property_contract.txt) &mdash; 6 lines
 
 </details>
 
 <details>
 <summary><code>crates/signing/tests/ui/</code> &mdash; 2 file(s)</summary>
 
-- [`eip1271_error_match_requires_wildcard.rs`](crates/signing/tests/ui/eip1271_error_match_requires_wildcard.rs)
-- [`eip1271_error_match_requires_wildcard.stderr`](crates/signing/tests/ui/eip1271_error_match_requires_wildcard.stderr)
+- [`eip1271_error_match_requires_wildcard.rs`](crates/signing/tests/ui/eip1271_error_match_requires_wildcard.rs) &mdash; 39 lines
+- [`eip1271_error_match_requires_wildcard.stderr`](crates/signing/tests/ui/eip1271_error_match_requires_wildcard.stderr) &mdash; 18 lines
 
 </details>
 
 <details>
 <summary><code>crates/subgraph/</code> &mdash; 2 file(s)</summary>
 
-- [`Cargo.toml`](crates/subgraph/Cargo.toml)
-- [`README.md`](crates/subgraph/README.md)
+- [`Cargo.toml`](crates/subgraph/Cargo.toml) &mdash; 43 lines
+- [`README.md`](crates/subgraph/README.md) &mdash; 42 lines
 
 </details>
 
 <details>
 <summary><code>crates/subgraph/examples/</code> &mdash; 1 file(s)</summary>
 
-- [`typed_query_with_escape_hatch.rs`](crates/subgraph/examples/typed_query_with_escape_hatch.rs)
+- [`typed_query_with_escape_hatch.rs`](crates/subgraph/examples/typed_query_with_escape_hatch.rs) &mdash; 135 lines
 
 </details>
 
 <details>
 <summary><code>crates/subgraph/src/</code> &mdash; 6 file(s)</summary>
 
-- [`api.rs`](crates/subgraph/src/api.rs)
-- [`builder.rs`](crates/subgraph/src/builder.rs)
-- [`error.rs`](crates/subgraph/src/error.rs)
-- [`lib.rs`](crates/subgraph/src/lib.rs)
-- [`queries.rs`](crates/subgraph/src/queries.rs)
-- [`types.rs`](crates/subgraph/src/types.rs)
+- [`api.rs`](crates/subgraph/src/api.rs) &mdash; 802 lines
+- [`builder.rs`](crates/subgraph/src/builder.rs) &mdash; 383 lines
+- [`error.rs`](crates/subgraph/src/error.rs) &mdash; 375 lines
+- [`lib.rs`](crates/subgraph/src/lib.rs) &mdash; 36 lines
+- [`queries.rs`](crates/subgraph/src/queries.rs) &mdash; 12 lines
+- [`types.rs`](crates/subgraph/src/types.rs) &mdash; 328 lines
 
 </details>
 
 <details>
 <summary><code>crates/subgraph/src/query_documents/</code> &mdash; 3 file(s)</summary>
 
-- [`last_days_volume.graphql`](crates/subgraph/src/query_documents/last_days_volume.graphql)
-- [`last_hours_volume.graphql`](crates/subgraph/src/query_documents/last_hours_volume.graphql)
-- [`totals.graphql`](crates/subgraph/src/query_documents/totals.graphql)
+- [`last_days_volume.graphql`](crates/subgraph/src/query_documents/last_days_volume.graphql) &mdash; 6 lines
+- [`last_hours_volume.graphql`](crates/subgraph/src/query_documents/last_hours_volume.graphql) &mdash; 6 lines
+- [`totals.graphql`](crates/subgraph/src/query_documents/totals.graphql) &mdash; 12 lines
 
 </details>
 
 <details>
 <summary><code>crates/subgraph/tests/</code> &mdash; 12 file(s)</summary>
 
-- [`api_contract.rs`](crates/subgraph/tests/api_contract.rs)
-- [`builder_contract.rs`](crates/subgraph/tests/builder_contract.rs)
-- [`builder_ui.rs`](crates/subgraph/tests/builder_ui.rs)
-- [`cancellation_composition_contract.rs`](crates/subgraph/tests/cancellation_composition_contract.rs)
-- [`error_contract.rs`](crates/subgraph/tests/error_contract.rs)
-- [`error_redaction_contract.rs`](crates/subgraph/tests/error_redaction_contract.rs)
-- [`host_policy_contract.rs`](crates/subgraph/tests/host_policy_contract.rs)
-- [`invariant_contract.rs`](crates/subgraph/tests/invariant_contract.rs)
-- [`parity_contract.rs`](crates/subgraph/tests/parity_contract.rs)
-- [`query_contract.rs`](crates/subgraph/tests/query_contract.rs)
-- [`schema_source_contract.rs`](crates/subgraph/tests/schema_source_contract.rs)
-- [`types_contract.rs`](crates/subgraph/tests/types_contract.rs)
+- [`api_contract.rs`](crates/subgraph/tests/api_contract.rs) &mdash; 1,485 lines
+- [`builder_contract.rs`](crates/subgraph/tests/builder_contract.rs) &mdash; 392 lines
+- [`builder_ui.rs`](crates/subgraph/tests/builder_ui.rs) &mdash; 76 lines
+- [`cancellation_composition_contract.rs`](crates/subgraph/tests/cancellation_composition_contract.rs) &mdash; 282 lines
+- [`error_contract.rs`](crates/subgraph/tests/error_contract.rs) &mdash; 252 lines
+- [`error_redaction_contract.rs`](crates/subgraph/tests/error_redaction_contract.rs) &mdash; 117 lines
+- [`host_policy_contract.rs`](crates/subgraph/tests/host_policy_contract.rs) &mdash; 94 lines
+- [`invariant_contract.rs`](crates/subgraph/tests/invariant_contract.rs) &mdash; 466 lines
+- [`parity_contract.rs`](crates/subgraph/tests/parity_contract.rs) &mdash; 465 lines
+- [`query_contract.rs`](crates/subgraph/tests/query_contract.rs) &mdash; 234 lines
+- [`schema_source_contract.rs`](crates/subgraph/tests/schema_source_contract.rs) &mdash; 40 lines
+- [`types_contract.rs`](crates/subgraph/tests/types_contract.rs) &mdash; 184 lines
 
 </details>
 
 <details>
 <summary><code>crates/subgraph/tests/schema_evidence/</code> &mdash; 1 file(s)</summary>
 
-- [`schema.graphql`](crates/subgraph/tests/schema_evidence/schema.graphql)
+- [`schema.graphql`](crates/subgraph/tests/schema_evidence/schema.graphql) &mdash; 53 lines
 
 </details>
 
 <details>
 <summary><code>crates/subgraph/tests/ui/</code> &mdash; 2 file(s)</summary>
 
-- [`builder_wasm32_missing_transport.rs`](crates/subgraph/tests/ui/builder_wasm32_missing_transport.rs)
-- [`builder_wasm32_missing_transport.stderr`](crates/subgraph/tests/ui/builder_wasm32_missing_transport.stderr)
+- [`builder_wasm32_missing_transport.rs`](crates/subgraph/tests/ui/builder_wasm32_missing_transport.rs) &mdash; 33 lines
+- [`builder_wasm32_missing_transport.stderr`](crates/subgraph/tests/ui/builder_wasm32_missing_transport.stderr) &mdash; 11 lines
 
 </details>
 
 <details>
 <summary><code>crates/trading/</code> &mdash; 2 file(s)</summary>
 
-- [`Cargo.toml`](crates/trading/Cargo.toml)
-- [`README.md`](crates/trading/README.md)
+- [`Cargo.toml`](crates/trading/Cargo.toml) &mdash; 69 lines
+- [`README.md`](crates/trading/README.md) &mdash; 175 lines
 
 </details>
 
 <details>
 <summary><code>crates/trading/benches/</code> &mdash; 1 file(s)</summary>
 
-- [`order_build.rs`](crates/trading/benches/order_build.rs)
+- [`order_build.rs`](crates/trading/benches/order_build.rs) &mdash; 51 lines
 
 </details>
 
 <details>
 <summary><code>crates/trading/examples/</code> &mdash; 2 file(s)</summary>
 
-- [`signed_order_end_to_end.rs`](crates/trading/examples/signed_order_end_to_end.rs)
-- [`typestate_builder_example.rs`](crates/trading/examples/typestate_builder_example.rs)
+- [`signed_order_end_to_end.rs`](crates/trading/examples/signed_order_end_to_end.rs) &mdash; 364 lines
+- [`typestate_builder_example.rs`](crates/trading/examples/typestate_builder_example.rs) &mdash; 43 lines
 
 </details>
 
 <details>
 <summary><code>crates/trading/src/</code> &mdash; 11 file(s)</summary>
 
-- [`allowance.rs`](crates/trading/src/allowance.rs)
-- [`app_data.rs`](crates/trading/src/app_data.rs)
-- [`cancel.rs`](crates/trading/src/cancel.rs)
-- [`error.rs`](crates/trading/src/error.rs)
-- [`lib.rs`](crates/trading/src/lib.rs)
-- [`onchain.rs`](crates/trading/src/onchain.rs)
-- [`order.rs`](crates/trading/src/order.rs)
-- [`parameters.rs`](crates/trading/src/parameters.rs)
-- [`quote.rs`](crates/trading/src/quote.rs)
-- [`validation.rs`](crates/trading/src/validation.rs)
-- [`wait.rs`](crates/trading/src/wait.rs)
+- [`allowance.rs`](crates/trading/src/allowance.rs) &mdash; 147 lines
+- [`app_data.rs`](crates/trading/src/app_data.rs) &mdash; 239 lines
+- [`cancel.rs`](crates/trading/src/cancel.rs) &mdash; 73 lines
+- [`error.rs`](crates/trading/src/error.rs) &mdash; 206 lines
+- [`lib.rs`](crates/trading/src/lib.rs) &mdash; 97 lines
+- [`onchain.rs`](crates/trading/src/onchain.rs) &mdash; 452 lines
+- [`order.rs`](crates/trading/src/order.rs) &mdash; 368 lines
+- [`parameters.rs`](crates/trading/src/parameters.rs) &mdash; 122 lines
+- [`quote.rs`](crates/trading/src/quote.rs) &mdash; 458 lines
+- [`validation.rs`](crates/trading/src/validation.rs) &mdash; 545 lines
+- [`wait.rs`](crates/trading/src/wait.rs) &mdash; 290 lines
 
 </details>
 
 <details>
 <summary><code>crates/trading/src/post/</code> &mdash; 7 file(s)</summary>
 
-- [`from_quote.rs`](crates/trading/src/post/from_quote.rs)
-- [`generic.rs`](crates/trading/src/post/generic.rs)
-- [`limit.rs`](crates/trading/src/post/limit.rs)
-- [`mod.rs`](crates/trading/src/post/mod.rs)
-- [`native.rs`](crates/trading/src/post/native.rs)
-- [`swap.rs`](crates/trading/src/post/swap.rs)
-- [`verify.rs`](crates/trading/src/post/verify.rs)
+- [`from_quote.rs`](crates/trading/src/post/from_quote.rs) &mdash; 93 lines
+- [`generic.rs`](crates/trading/src/post/generic.rs) &mdash; 328 lines
+- [`limit.rs`](crates/trading/src/post/limit.rs) &mdash; 70 lines
+- [`mod.rs`](crates/trading/src/post/mod.rs) &mdash; 10 lines
+- [`native.rs`](crates/trading/src/post/native.rs) &mdash; 108 lines
+- [`swap.rs`](crates/trading/src/post/swap.rs) &mdash; 39 lines
+- [`verify.rs`](crates/trading/src/post/verify.rs) &mdash; 63 lines
 
 </details>
 
 <details>
-<summary><code>crates/trading/src/sdk/</code> &mdash; 10 file(s)</summary>
+<summary><code>crates/trading/src/sdk/</code> &mdash; 9 file(s)</summary>
 
-- [`allowance.rs`](crates/trading/src/sdk/allowance.rs)
-- [`builder.rs`](crates/trading/src/sdk/builder.rs)
-- [`cancel.rs`](crates/trading/src/sdk/cancel.rs)
-- [`helper_only.rs`](crates/trading/src/sdk/helper_only.rs)
-- [`helpers.rs`](crates/trading/src/sdk/helpers.rs)
-- [`mod.rs`](crates/trading/src/sdk/mod.rs)
-- [`post.rs`](crates/trading/src/sdk/post.rs)
-- [`presign.rs`](crates/trading/src/sdk/presign.rs)
-- [`query.rs`](crates/trading/src/sdk/query.rs)
-- [`quote.rs`](crates/trading/src/sdk/quote.rs)
+- [`allowance.rs`](crates/trading/src/sdk/allowance.rs) &mdash; 92 lines
+- [`builder.rs`](crates/trading/src/sdk/builder.rs) &mdash; 280 lines
+- [`cancel.rs`](crates/trading/src/sdk/cancel.rs) &mdash; 102 lines
+- [`helpers.rs`](crates/trading/src/sdk/helpers.rs) &mdash; 164 lines
+- [`mod.rs`](crates/trading/src/sdk/mod.rs) &mdash; 70 lines
+- [`post.rs`](crates/trading/src/sdk/post.rs) &mdash; 175 lines
+- [`presign.rs`](crates/trading/src/sdk/presign.rs) &mdash; 48 lines
+- [`query.rs`](crates/trading/src/sdk/query.rs) &mdash; 38 lines
+- [`quote.rs`](crates/trading/src/sdk/quote.rs) &mdash; 98 lines
 
 </details>
 
 <details>
 <summary><code>crates/trading/src/slippage/</code> &mdash; 4 file(s)</summary>
 
-- [`amounts.rs`](crates/trading/src/slippage/amounts.rs)
-- [`breakdown.rs`](crates/trading/src/slippage/breakdown.rs)
-- [`mod.rs`](crates/trading/src/slippage/mod.rs)
-- [`policy.rs`](crates/trading/src/slippage/policy.rs)
+- [`amounts.rs`](crates/trading/src/slippage/amounts.rs) &mdash; 324 lines
+- [`breakdown.rs`](crates/trading/src/slippage/breakdown.rs) &mdash; 248 lines
+- [`mod.rs`](crates/trading/src/slippage/mod.rs) &mdash; 34 lines
+- [`policy.rs`](crates/trading/src/slippage/policy.rs) &mdash; 235 lines
 
 </details>
 
 <details>
 <summary><code>crates/trading/src/types/</code> &mdash; 12 file(s)</summary>
 
-- [`advanced.rs`](crates/trading/src/types/advanced.rs)
-- [`allowance.rs`](crates/trading/src/types/allowance.rs)
-- [`context.rs`](crates/trading/src/types/context.rs)
-- [`eip1271.rs`](crates/trading/src/types/eip1271.rs)
-- [`mod.rs`](crates/trading/src/types/mod.rs)
-- [`options.rs`](crates/trading/src/types/options.rs)
-- [`overrides.rs`](crates/trading/src/types/overrides.rs)
-- [`result.rs`](crates/trading/src/types/result.rs)
-- [`seams.rs`](crates/trading/src/types/seams.rs)
-- [`slippage.rs`](crates/trading/src/types/slippage.rs)
-- [`trade.rs`](crates/trading/src/types/trade.rs)
-- [`trader.rs`](crates/trading/src/types/trader.rs)
+- [`advanced.rs`](crates/trading/src/types/advanced.rs) &mdash; 168 lines
+- [`allowance.rs`](crates/trading/src/types/allowance.rs) &mdash; 113 lines
+- [`context.rs`](crates/trading/src/types/context.rs) &mdash; 106 lines
+- [`eip1271.rs`](crates/trading/src/types/eip1271.rs) &mdash; 25 lines
+- [`mod.rs`](crates/trading/src/types/mod.rs) &mdash; 28 lines
+- [`options.rs`](crates/trading/src/types/options.rs) &mdash; 64 lines
+- [`overrides.rs`](crates/trading/src/types/overrides.rs) &mdash; 254 lines
+- [`result.rs`](crates/trading/src/types/result.rs) &mdash; 141 lines
+- [`seams.rs`](crates/trading/src/types/seams.rs) &mdash; 37 lines
+- [`slippage.rs`](crates/trading/src/types/slippage.rs) &mdash; 75 lines
+- [`trade.rs`](crates/trading/src/types/trade.rs) &mdash; 346 lines
+- [`trader.rs`](crates/trading/src/types/trader.rs) &mdash; 283 lines
 
 </details>
 
 <details>
 <summary><code>crates/trading/tests/</code> &mdash; 22 file(s)</summary>
 
-- [`allowance_contract.rs`](crates/trading/tests/allowance_contract.rs)
-- [`app_code_contract.rs`](crates/trading/tests/app_code_contract.rs)
-- [`app_data_merge_contract.rs`](crates/trading/tests/app_data_merge_contract.rs)
-- [`cancel_contract.rs`](crates/trading/tests/cancel_contract.rs)
-- [`cancellation_composition_contract.rs`](crates/trading/tests/cancellation_composition_contract.rs)
-- [`error_variant_shape.rs`](crates/trading/tests/error_variant_shape.rs)
-- [`invariant_contract.rs`](crates/trading/tests/invariant_contract.rs)
-- [`limit_from_quote_contract.rs`](crates/trading/tests/limit_from_quote_contract.rs)
-- [`onchain_contract.rs`](crates/trading/tests/onchain_contract.rs)
-- [`order_contract.rs`](crates/trading/tests/order_contract.rs)
-- [`parameters_contract.rs`](crates/trading/tests/parameters_contract.rs)
-- [`parity_contract.rs`](crates/trading/tests/parity_contract.rs)
-- [`post_contract.rs`](crates/trading/tests/post_contract.rs)
-- [`property_contract.rs`](crates/trading/tests/property_contract.rs)
-- [`quote_contract.rs`](crates/trading/tests/quote_contract.rs)
-- [`quote_projection_parity.rs`](crates/trading/tests/quote_projection_parity.rs)
-- [`sdk_contract.rs`](crates/trading/tests/sdk_contract.rs)
-- [`slippage_contract.rs`](crates/trading/tests/slippage_contract.rs)
-- [`types_contract.rs`](crates/trading/tests/types_contract.rs)
-- [`ui.rs`](crates/trading/tests/ui.rs)
-- [`validation_contract.rs`](crates/trading/tests/validation_contract.rs)
-- [`wait_helper_contract.rs`](crates/trading/tests/wait_helper_contract.rs)
+- [`allowance_contract.rs`](crates/trading/tests/allowance_contract.rs) &mdash; 145 lines
+- [`app_code_contract.rs`](crates/trading/tests/app_code_contract.rs) &mdash; 43 lines
+- [`app_data_merge_contract.rs`](crates/trading/tests/app_data_merge_contract.rs) &mdash; 651 lines
+- [`cancel_contract.rs`](crates/trading/tests/cancel_contract.rs) &mdash; 89 lines
+- [`cancellation_composition_contract.rs`](crates/trading/tests/cancellation_composition_contract.rs) &mdash; 565 lines
+- [`error_variant_shape.rs`](crates/trading/tests/error_variant_shape.rs) &mdash; 113 lines
+- [`invariant_contract.rs`](crates/trading/tests/invariant_contract.rs) &mdash; 433 lines
+- [`limit_from_quote_contract.rs`](crates/trading/tests/limit_from_quote_contract.rs) &mdash; 112 lines
+- [`onchain_contract.rs`](crates/trading/tests/onchain_contract.rs) &mdash; 328 lines
+- [`order_contract.rs`](crates/trading/tests/order_contract.rs) &mdash; 187 lines
+- [`parameters_contract.rs`](crates/trading/tests/parameters_contract.rs) &mdash; 141 lines
+- [`parity_contract.rs`](crates/trading/tests/parity_contract.rs) &mdash; 1,556 lines
+- [`post_contract.rs`](crates/trading/tests/post_contract.rs) &mdash; 778 lines
+- [`property_contract.rs`](crates/trading/tests/property_contract.rs) &mdash; 290 lines
+- [`quote_contract.rs`](crates/trading/tests/quote_contract.rs) &mdash; 792 lines
+- [`quote_projection_parity.rs`](crates/trading/tests/quote_projection_parity.rs) &mdash; 77 lines
+- [`sdk_contract.rs`](crates/trading/tests/sdk_contract.rs) &mdash; 618 lines
+- [`slippage_contract.rs`](crates/trading/tests/slippage_contract.rs) &mdash; 317 lines
+- [`types_contract.rs`](crates/trading/tests/types_contract.rs) &mdash; 436 lines
+- [`ui.rs`](crates/trading/tests/ui.rs) &mdash; 11 lines
+- [`validation_contract.rs`](crates/trading/tests/validation_contract.rs) &mdash; 694 lines
+- [`wait_helper_contract.rs`](crates/trading/tests/wait_helper_contract.rs) &mdash; 158 lines
 
 </details>
 
 <details>
 <summary><code>crates/trading/tests/common/</code> &mdash; 1 file(s)</summary>
 
-- [`mod.rs`](crates/trading/tests/common/mod.rs)
+- [`mod.rs`](crates/trading/tests/common/mod.rs) &mdash; 978 lines
 
 </details>
 
 <details>
 <summary><code>crates/trading/tests/proptest-regressions/</code> &mdash; 1 file(s)</summary>
 
-- [`property_contract.txt`](crates/trading/tests/proptest-regressions/property_contract.txt)
+- [`property_contract.txt`](crates/trading/tests/proptest-regressions/property_contract.txt) &mdash; 6 lines
 
 </details>
 
 <details>
-<summary><code>crates/trading/tests/ui/</code> &mdash; 8 file(s)</summary>
+<summary><code>crates/trading/tests/ui/</code> &mdash; 4 file(s)</summary>
 
-- [`client_rejection_external_match_requires_wildcard.rs`](crates/trading/tests/ui/client_rejection_external_match_requires_wildcard.rs)
-- [`client_rejection_external_match_requires_wildcard.stderr`](crates/trading/tests/ui/client_rejection_external_match_requires_wildcard.stderr)
-- [`helper_only_sdk_no_offchain_cancel.rs`](crates/trading/tests/ui/helper_only_sdk_no_offchain_cancel.rs)
-- [`helper_only_sdk_no_offchain_cancel.stderr`](crates/trading/tests/ui/helper_only_sdk_no_offchain_cancel.stderr)
-- [`helper_only_sdk_no_quote_methods.rs`](crates/trading/tests/ui/helper_only_sdk_no_quote_methods.rs)
-- [`helper_only_sdk_no_quote_methods.stderr`](crates/trading/tests/ui/helper_only_sdk_no_quote_methods.stderr)
-- [`trading_sdk_no_free_constructors.rs`](crates/trading/tests/ui/trading_sdk_no_free_constructors.rs)
-- [`trading_sdk_no_free_constructors.stderr`](crates/trading/tests/ui/trading_sdk_no_free_constructors.stderr)
+- [`client_rejection_external_match_requires_wildcard.rs`](crates/trading/tests/ui/client_rejection_external_match_requires_wildcard.rs) &mdash; 19 lines
+- [`client_rejection_external_match_requires_wildcard.stderr`](crates/trading/tests/ui/client_rejection_external_match_requires_wildcard.stderr) &mdash; 18 lines
+- [`trading_sdk_no_free_constructors.rs`](crates/trading/tests/ui/trading_sdk_no_free_constructors.rs) &mdash; 9 lines
+- [`trading_sdk_no_free_constructors.stderr`](crates/trading/tests/ui/trading_sdk_no_free_constructors.stderr) &mdash; 5 lines
 
 </details>
 
 <details>
 <summary><code>crates/transport-policy/</code> &mdash; 2 file(s)</summary>
 
-- [`Cargo.toml`](crates/transport-policy/Cargo.toml)
-- [`README.md`](crates/transport-policy/README.md)
+- [`Cargo.toml`](crates/transport-policy/Cargo.toml) &mdash; 51 lines
+- [`README.md`](crates/transport-policy/README.md) &mdash; 39 lines
 
 </details>
 
 <details>
 <summary><code>crates/transport-policy/src/</code> &mdash; 10 file(s)</summary>
 
-- [`classify.rs`](crates/transport-policy/src/classify.rs)
-- [`jitter.rs`](crates/transport-policy/src/jitter.rs)
-- [`lib.rs`](crates/transport-policy/src/lib.rs)
-- [`policy.rs`](crates/transport-policy/src/policy.rs)
-- [`rate_limit.rs`](crates/transport-policy/src/rate_limit.rs)
-- [`retry_after.rs`](crates/transport-policy/src/retry_after.rs)
-- [`retry.rs`](crates/transport-policy/src/retry.rs)
-- [`runner.rs`](crates/transport-policy/src/runner.rs)
-- [`status.rs`](crates/transport-policy/src/status.rs)
-- [`time.rs`](crates/transport-policy/src/time.rs)
+- [`classify.rs`](crates/transport-policy/src/classify.rs) &mdash; 95 lines
+- [`jitter.rs`](crates/transport-policy/src/jitter.rs) &mdash; 136 lines
+- [`lib.rs`](crates/transport-policy/src/lib.rs) &mdash; 48 lines
+- [`policy.rs`](crates/transport-policy/src/policy.rs) &mdash; 357 lines
+- [`rate_limit.rs`](crates/transport-policy/src/rate_limit.rs) &mdash; 295 lines
+- [`retry_after.rs`](crates/transport-policy/src/retry_after.rs) &mdash; 95 lines
+- [`retry.rs`](crates/transport-policy/src/retry.rs) &mdash; 221 lines
+- [`runner.rs`](crates/transport-policy/src/runner.rs) &mdash; 528 lines
+- [`status.rs`](crates/transport-policy/src/status.rs) &mdash; 42 lines
+- [`time.rs`](crates/transport-policy/src/time.rs) &mdash; 66 lines
 
 </details>
 
 <details>
 <summary><code>crates/transport-policy/tests/</code> &mdash; 5 file(s)</summary>
 
-- [`classify_contract.rs`](crates/transport-policy/tests/classify_contract.rs)
-- [`policy_contract.rs`](crates/transport-policy/tests/policy_contract.rs)
-- [`retry_after_contract.proptest-regressions`](crates/transport-policy/tests/retry_after_contract.proptest-regressions)
-- [`retry_after_contract.rs`](crates/transport-policy/tests/retry_after_contract.rs)
-- [`retry_after_fixture_contract.rs`](crates/transport-policy/tests/retry_after_fixture_contract.rs)
+- [`classify_contract.rs`](crates/transport-policy/tests/classify_contract.rs) &mdash; 147 lines
+- [`policy_contract.rs`](crates/transport-policy/tests/policy_contract.rs) &mdash; 699 lines
+- [`retry_after_contract.proptest-regressions`](crates/transport-policy/tests/retry_after_contract.proptest-regressions) &mdash; 7 lines
+- [`retry_after_contract.rs`](crates/transport-policy/tests/retry_after_contract.rs) &mdash; 293 lines
+- [`retry_after_fixture_contract.rs`](crates/transport-policy/tests/retry_after_fixture_contract.rs) &mdash; 116 lines
 
 </details>
 
 <details>
 <summary><code>crates/transport-wasm/</code> &mdash; 2 file(s)</summary>
 
-- [`Cargo.toml`](crates/transport-wasm/Cargo.toml)
-- [`README.md`](crates/transport-wasm/README.md)
+- [`Cargo.toml`](crates/transport-wasm/Cargo.toml) &mdash; 54 lines
+- [`README.md`](crates/transport-wasm/README.md) &mdash; 34 lines
 
 </details>
 
 <details>
 <summary><code>crates/transport-wasm/src/</code> &mdash; 2 file(s)</summary>
 
-- [`fetch.rs`](crates/transport-wasm/src/fetch.rs)
-- [`lib.rs`](crates/transport-wasm/src/lib.rs)
+- [`fetch.rs`](crates/transport-wasm/src/fetch.rs) &mdash; 567 lines
+- [`lib.rs`](crates/transport-wasm/src/lib.rs) &mdash; 60 lines
 
 </details>
 
 <details>
 <summary><code>crates/transport-wasm/tests/</code> &mdash; 3 file(s)</summary>
 
-- [`fetch_contract.rs`](crates/transport-wasm/tests/fetch_contract.rs)
-- [`parity_contract.rs`](crates/transport-wasm/tests/parity_contract.rs)
-- [`wasm.rs`](crates/transport-wasm/tests/wasm.rs)
+- [`fetch_contract.rs`](crates/transport-wasm/tests/fetch_contract.rs) &mdash; 546 lines
+- [`parity_contract.rs`](crates/transport-wasm/tests/parity_contract.rs) &mdash; 531 lines
+- [`wasm.rs`](crates/transport-wasm/tests/wasm.rs) &mdash; 9 lines
 
 </details>
 
 <details>
 <summary><code>crates/transport-wasm/tests/wasm/</code> &mdash; 1 file(s)</summary>
 
-- [`fetch_smoke.rs`](crates/transport-wasm/tests/wasm/fetch_smoke.rs)
+- [`fetch_smoke.rs`](crates/transport-wasm/tests/wasm/fetch_smoke.rs) &mdash; 20 lines
 
 </details>
 
 <details>
 <summary><code>crates/wasm/</code> &mdash; 2 file(s)</summary>
 
-- [`Cargo.toml`](crates/wasm/Cargo.toml)
-- [`README.md`](crates/wasm/README.md)
+- [`Cargo.toml`](crates/wasm/Cargo.toml) &mdash; 103 lines
+- [`README.md`](crates/wasm/README.md) &mdash; 149 lines
 
 </details>
 
 <details>
 <summary><code>crates/wasm/npm/</code> &mdash; 11 file(s)</summary>
 
-- [`.gitignore`](crates/wasm/npm/.gitignore)
-- [`.npmignore`](crates/wasm/npm/.npmignore)
-- [`flavours.json`](crates/wasm/npm/flavours.json)
-- [`LICENSE`](crates/wasm/npm/LICENSE)
-- [`package.json`](crates/wasm/npm/package.json)
-- [`package.template.json`](crates/wasm/npm/package.template.json)
-- [`pnpm-lock.yaml`](crates/wasm/npm/pnpm-lock.yaml)
-- [`README.md`](crates/wasm/npm/README.md)
-- [`tsconfig.facade.json`](crates/wasm/npm/tsconfig.facade.json)
-- [`tsconfig.json`](crates/wasm/npm/tsconfig.json)
-- [`vitest.config.ts`](crates/wasm/npm/vitest.config.ts)
+- [`.gitignore`](crates/wasm/npm/.gitignore) &mdash; 3 lines
+- [`.npmignore`](crates/wasm/npm/.npmignore) &mdash; 6 lines
+- [`flavours.json`](crates/wasm/npm/flavours.json) &mdash; 66 lines
+- [`LICENSE`](crates/wasm/npm/LICENSE) &mdash; 1 lines
+- [`package.json`](crates/wasm/npm/package.json) &mdash; 103 lines
+- [`package.template.json`](crates/wasm/npm/package.template.json) &mdash; 46 lines
+- [`pnpm-lock.yaml`](crates/wasm/npm/pnpm-lock.yaml) &mdash; 771 lines
+- [`README.md`](crates/wasm/npm/README.md) &mdash; 269 lines
+- [`tsconfig.facade.json`](crates/wasm/npm/tsconfig.facade.json) &mdash; 5 lines
+- [`tsconfig.json`](crates/wasm/npm/tsconfig.json) &mdash; 24 lines
+- [`vitest.config.ts`](crates/wasm/npm/vitest.config.ts) &mdash; 9 lines
 
 </details>
 
 <details>
 <summary><code>crates/wasm/npm/scripts/</code> &mdash; 10 file(s)</summary>
 
-- [`build.sh`](crates/wasm/npm/scripts/build.sh)
-- [`compile-facade.sh`](crates/wasm/npm/scripts/compile-facade.sh)
-- [`measure-wasm-size.mjs`](crates/wasm/npm/scripts/measure-wasm-size.mjs)
-- [`pack-and-resolve-tarball.sh`](crates/wasm/npm/scripts/pack-and-resolve-tarball.sh)
-- [`prepublish-guard.sh`](crates/wasm/npm/scripts/prepublish-guard.sh)
-- [`render-package-json.mjs`](crates/wasm/npm/scripts/render-package-json.mjs)
-- [`verify-exports.mjs`](crates/wasm/npm/scripts/verify-exports.mjs)
-- [`verify-facade-denylist.mjs`](crates/wasm/npm/scripts/verify-facade-denylist.mjs)
-- [`verify-no-raw-exports.mjs`](crates/wasm/npm/scripts/verify-no-raw-exports.mjs)
-- [`verify-package-resolution.sh`](crates/wasm/npm/scripts/verify-package-resolution.sh)
+- [`build.sh`](crates/wasm/npm/scripts/build.sh) &mdash; 157 lines
+- [`compile-facade.sh`](crates/wasm/npm/scripts/compile-facade.sh) &mdash; 157 lines
+- [`measure-wasm-size.mjs`](crates/wasm/npm/scripts/measure-wasm-size.mjs) &mdash; 159 lines
+- [`pack-and-resolve-tarball.sh`](crates/wasm/npm/scripts/pack-and-resolve-tarball.sh) &mdash; 22 lines
+- [`prepublish-guard.sh`](crates/wasm/npm/scripts/prepublish-guard.sh) &mdash; 25 lines
+- [`render-package-json.mjs`](crates/wasm/npm/scripts/render-package-json.mjs) &mdash; 111 lines
+- [`verify-exports.mjs`](crates/wasm/npm/scripts/verify-exports.mjs) &mdash; 114 lines
+- [`verify-facade-denylist.mjs`](crates/wasm/npm/scripts/verify-facade-denylist.mjs) &mdash; 79 lines
+- [`verify-no-raw-exports.mjs`](crates/wasm/npm/scripts/verify-no-raw-exports.mjs) &mdash; 47 lines
+- [`verify-package-resolution.sh`](crates/wasm/npm/scripts/verify-package-resolution.sh) &mdash; 69 lines
 
 </details>
 
 <details>
 <summary><code>crates/wasm/npm/src/</code> &mdash; 10 file(s)</summary>
 
-- [`callbacks.ts`](crates/wasm/npm/src/callbacks.ts)
-- [`cloudflare.ts`](crates/wasm/npm/src/cloudflare.ts)
-- [`default.ts`](crates/wasm/npm/src/default.ts)
-- [`envelope.ts`](crates/wasm/npm/src/envelope.ts)
-- [`errors.ts`](crates/wasm/npm/src/errors.ts)
-- [`index.ts`](crates/wasm/npm/src/index.ts)
-- [`internal.ts`](crates/wasm/npm/src/internal.ts)
-- [`options.ts`](crates/wasm/npm/src/options.ts)
-- [`orderbook.ts`](crates/wasm/npm/src/orderbook.ts)
-- [`signing.ts`](crates/wasm/npm/src/signing.ts)
+- [`callbacks.ts`](crates/wasm/npm/src/callbacks.ts) &mdash; 90 lines
+- [`cloudflare.ts`](crates/wasm/npm/src/cloudflare.ts) &mdash; 548 lines
+- [`default.ts`](crates/wasm/npm/src/default.ts) &mdash; 657 lines
+- [`envelope.ts`](crates/wasm/npm/src/envelope.ts) &mdash; 6 lines
+- [`errors.ts`](crates/wasm/npm/src/errors.ts) &mdash; 202 lines
+- [`index.ts`](crates/wasm/npm/src/index.ts) &mdash; 1 lines
+- [`internal.ts`](crates/wasm/npm/src/internal.ts) &mdash; 156 lines
+- [`options.ts`](crates/wasm/npm/src/options.ts) &mdash; 80 lines
+- [`orderbook.ts`](crates/wasm/npm/src/orderbook.ts) &mdash; 350 lines
+- [`signing.ts`](crates/wasm/npm/src/signing.ts) &mdash; 150 lines
 
 </details>
 
 <details>
 <summary><code>crates/wasm/npm/src/raw/</code> &mdash; 4 file(s)</summary>
 
-- [`cloudflare.ts`](crates/wasm/npm/src/raw/cloudflare.ts)
-- [`default.ts`](crates/wasm/npm/src/raw/default.ts)
-- [`orderbook.ts`](crates/wasm/npm/src/raw/orderbook.ts)
-- [`signing.ts`](crates/wasm/npm/src/raw/signing.ts)
+- [`cloudflare.ts`](crates/wasm/npm/src/raw/cloudflare.ts) &mdash; 33 lines
+- [`default.ts`](crates/wasm/npm/src/raw/default.ts) &mdash; 34 lines
+- [`orderbook.ts`](crates/wasm/npm/src/raw/orderbook.ts) &mdash; 26 lines
+- [`signing.ts`](crates/wasm/npm/src/raw/signing.ts) &mdash; 19 lines
 
 </details>
 
 <details>
 <summary><code>crates/wasm/npm/tests/</code> &mdash; 7 file(s)</summary>
 
-- [`facade-cancellation.test.ts`](crates/wasm/npm/tests/facade-cancellation.test.ts)
-- [`facade-default.test.ts`](crates/wasm/npm/tests/facade-default.test.ts)
-- [`facade-error-normalization.test.ts`](crates/wasm/npm/tests/facade-error-normalization.test.ts)
-- [`facade-orderbook.test.ts`](crates/wasm/npm/tests/facade-orderbook.test.ts)
-- [`facade-resource-cleanup.test.ts`](crates/wasm/npm/tests/facade-resource-cleanup.test.ts)
-- [`facade-signing.test.ts`](crates/wasm/npm/tests/facade-signing.test.ts)
-- [`fixtures.ts`](crates/wasm/npm/tests/fixtures.ts)
+- [`facade-cancellation.test.ts`](crates/wasm/npm/tests/facade-cancellation.test.ts) &mdash; 29 lines
+- [`facade-default.test.ts`](crates/wasm/npm/tests/facade-default.test.ts) &mdash; 34 lines
+- [`facade-error-normalization.test.ts`](crates/wasm/npm/tests/facade-error-normalization.test.ts) &mdash; 51 lines
+- [`facade-orderbook.test.ts`](crates/wasm/npm/tests/facade-orderbook.test.ts) &mdash; 20 lines
+- [`facade-resource-cleanup.test.ts`](crates/wasm/npm/tests/facade-resource-cleanup.test.ts) &mdash; 24 lines
+- [`facade-signing.test.ts`](crates/wasm/npm/tests/facade-signing.test.ts) &mdash; 19 lines
+- [`fixtures.ts`](crates/wasm/npm/tests/fixtures.ts) &mdash; 34 lines
 
 </details>
 
 <details>
 <summary><code>crates/wasm/snapshots/facade/</code> &mdash; 5 file(s)</summary>
 
-- [`.keep`](crates/wasm/snapshots/facade/.keep)
-- [`cloudflare.d.ts`](crates/wasm/snapshots/facade/cloudflare.d.ts)
-- [`default.d.ts`](crates/wasm/snapshots/facade/default.d.ts)
-- [`orderbook.d.ts`](crates/wasm/snapshots/facade/orderbook.d.ts)
-- [`signing.d.ts`](crates/wasm/snapshots/facade/signing.d.ts)
+- [`.keep`](crates/wasm/snapshots/facade/.keep) &mdash; 1 lines
+- [`cloudflare.d.ts`](crates/wasm/snapshots/facade/cloudflare.d.ts) &mdash; 69 lines
+- [`default.d.ts`](crates/wasm/snapshots/facade/default.d.ts) &mdash; 83 lines
+- [`orderbook.d.ts`](crates/wasm/snapshots/facade/orderbook.d.ts) &mdash; 50 lines
+- [`signing.d.ts`](crates/wasm/snapshots/facade/signing.d.ts) &mdash; 23 lines
 
 </details>
 
 <details>
 <summary><code>crates/wasm/snapshots/raw/</code> &mdash; 8 file(s)</summary>
 
-- [`.keep`](crates/wasm/snapshots/raw/.keep)
-- [`cloudflare-web.d.ts`](crates/wasm/snapshots/raw/cloudflare-web.d.ts)
-- [`default-bundler.d.ts`](crates/wasm/snapshots/raw/default-bundler.d.ts)
-- [`default-nodejs.d.ts`](crates/wasm/snapshots/raw/default-nodejs.d.ts)
-- [`orderbook-bundler.d.ts`](crates/wasm/snapshots/raw/orderbook-bundler.d.ts)
-- [`orderbook-nodejs.d.ts`](crates/wasm/snapshots/raw/orderbook-nodejs.d.ts)
-- [`signing-bundler.d.ts`](crates/wasm/snapshots/raw/signing-bundler.d.ts)
-- [`signing-nodejs.d.ts`](crates/wasm/snapshots/raw/signing-nodejs.d.ts)
+- [`.keep`](crates/wasm/snapshots/raw/.keep) &mdash; 1 lines
+- [`cloudflare-web.d.ts`](crates/wasm/snapshots/raw/cloudflare-web.d.ts) &mdash; 2,730 lines
+- [`default-bundler.d.ts`](crates/wasm/snapshots/raw/default-bundler.d.ts) &mdash; 2,781 lines
+- [`default-nodejs.d.ts`](crates/wasm/snapshots/raw/default-nodejs.d.ts) &mdash; 2,781 lines
+- [`orderbook-bundler.d.ts`](crates/wasm/snapshots/raw/orderbook-bundler.d.ts) &mdash; 1,776 lines
+- [`orderbook-nodejs.d.ts`](crates/wasm/snapshots/raw/orderbook-nodejs.d.ts) &mdash; 1,776 lines
+- [`signing-bundler.d.ts`](crates/wasm/snapshots/raw/signing-bundler.d.ts) &mdash; 774 lines
+- [`signing-nodejs.d.ts`](crates/wasm/snapshots/raw/signing-nodejs.d.ts) &mdash; 774 lines
 
 </details>
 
 <details>
 <summary><code>crates/wasm/src/</code> &mdash; 1 file(s)</summary>
 
-- [`lib.rs`](crates/wasm/src/lib.rs)
+- [`lib.rs`](crates/wasm/src/lib.rs) &mdash; 37 lines
 
 </details>
 
 <details>
 <summary><code>crates/wasm/src/exports/</code> &mdash; 15 file(s)</summary>
 
-- [`callbacks.rs`](crates/wasm/src/exports/callbacks.rs)
-- [`cancel.rs`](crates/wasm/src/exports/cancel.rs)
-- [`chains.rs`](crates/wasm/src/exports/chains.rs)
-- [`eip1271.rs`](crates/wasm/src/exports/eip1271.rs)
-- [`envelope.rs`](crates/wasm/src/exports/envelope.rs)
-- [`errors.rs`](crates/wasm/src/exports/errors.rs)
-- [`events.rs`](crates/wasm/src/exports/events.rs)
-- [`ipfs.rs`](crates/wasm/src/exports/ipfs.rs)
-- [`mod.rs`](crates/wasm/src/exports/mod.rs)
-- [`orderbook.rs`](crates/wasm/src/exports/orderbook.rs)
-- [`registry.rs`](crates/wasm/src/exports/registry.rs)
-- [`signing.rs`](crates/wasm/src/exports/signing.rs)
-- [`subgraph.rs`](crates/wasm/src/exports/subgraph.rs)
-- [`trading.rs`](crates/wasm/src/exports/trading.rs)
-- [`transport.rs`](crates/wasm/src/exports/transport.rs)
+- [`callbacks.rs`](crates/wasm/src/exports/callbacks.rs) &mdash; 135 lines
+- [`cancel.rs`](crates/wasm/src/exports/cancel.rs) &mdash; 243 lines
+- [`chains.rs`](crates/wasm/src/exports/chains.rs) &mdash; 243 lines
+- [`eip1271.rs`](crates/wasm/src/exports/eip1271.rs) &mdash; 198 lines
+- [`envelope.rs`](crates/wasm/src/exports/envelope.rs) &mdash; 37 lines
+- [`errors.rs`](crates/wasm/src/exports/errors.rs) &mdash; 750 lines
+- [`events.rs`](crates/wasm/src/exports/events.rs) &mdash; 64 lines
+- [`ipfs.rs`](crates/wasm/src/exports/ipfs.rs) &mdash; 249 lines
+- [`mod.rs`](crates/wasm/src/exports/mod.rs) &mdash; 63 lines
+- [`orderbook.rs`](crates/wasm/src/exports/orderbook.rs) &mdash; 653 lines
+- [`registry.rs`](crates/wasm/src/exports/registry.rs) &mdash; 112 lines
+- [`signing.rs`](crates/wasm/src/exports/signing.rs) &mdash; 708 lines
+- [`subgraph.rs`](crates/wasm/src/exports/subgraph.rs) &mdash; 229 lines
+- [`trading.rs`](crates/wasm/src/exports/trading.rs) &mdash; 776 lines
+- [`transport.rs`](crates/wasm/src/exports/transport.rs) &mdash; 594 lines
 
 </details>
 
 <details>
 <summary><code>crates/wasm/src/exports/dto/</code> &mdash; 12 file(s)</summary>
 
-- [`app_data.rs`](crates/wasm/src/exports/dto/app_data.rs)
-- [`contracts.rs`](crates/wasm/src/exports/dto/contracts.rs)
-- [`core.rs`](crates/wasm/src/exports/dto/core.rs)
-- [`events.rs`](crates/wasm/src/exports/dto/events.rs)
-- [`mod.rs`](crates/wasm/src/exports/dto/mod.rs)
-- [`order.rs`](crates/wasm/src/exports/dto/order.rs)
-- [`orderbook.rs`](crates/wasm/src/exports/dto/orderbook.rs)
-- [`quote.rs`](crates/wasm/src/exports/dto/quote.rs)
-- [`signing.rs`](crates/wasm/src/exports/dto/signing.rs)
-- [`subgraph.rs`](crates/wasm/src/exports/dto/subgraph.rs)
-- [`trading.rs`](crates/wasm/src/exports/dto/trading.rs)
-- [`transport.rs`](crates/wasm/src/exports/dto/transport.rs)
+- [`app_data.rs`](crates/wasm/src/exports/dto/app_data.rs) &mdash; 104 lines
+- [`contracts.rs`](crates/wasm/src/exports/dto/contracts.rs) &mdash; 105 lines
+- [`core.rs`](crates/wasm/src/exports/dto/core.rs) &mdash; 144 lines
+- [`events.rs`](crates/wasm/src/exports/dto/events.rs) &mdash; 298 lines
+- [`mod.rs`](crates/wasm/src/exports/dto/mod.rs) &mdash; 91 lines
+- [`order.rs`](crates/wasm/src/exports/dto/order.rs) &mdash; 239 lines
+- [`orderbook.rs`](crates/wasm/src/exports/dto/orderbook.rs) &mdash; 376 lines
+- [`quote.rs`](crates/wasm/src/exports/dto/quote.rs) &mdash; 267 lines
+- [`signing.rs`](crates/wasm/src/exports/dto/signing.rs) &mdash; 205 lines
+- [`subgraph.rs`](crates/wasm/src/exports/dto/subgraph.rs) &mdash; 19 lines
+- [`trading.rs`](crates/wasm/src/exports/dto/trading.rs) &mdash; 289 lines
+- [`transport.rs`](crates/wasm/src/exports/dto/transport.rs) &mdash; 317 lines
 
 </details>
 
 <details>
 <summary><code>crates/wasm/tests/</code> &mdash; 18 file(s)</summary>
 
-- [`host_pure_helpers.rs`](crates/wasm/tests/host_pure_helpers.rs)
-- [`wasm_callback_contract.rs`](crates/wasm/tests/wasm_callback_contract.rs)
-- [`wasm_callback_lifetime_contract.rs`](crates/wasm/tests/wasm_callback_lifetime_contract.rs)
-- [`wasm_callback_transport_contract.rs`](crates/wasm/tests/wasm_callback_transport_contract.rs)
-- [`wasm_cancellation_contract.rs`](crates/wasm/tests/wasm_cancellation_contract.rs)
-- [`wasm_eip1271_contract.rs`](crates/wasm/tests/wasm_eip1271_contract.rs)
-- [`wasm_envelope_contract.rs`](crates/wasm/tests/wasm_envelope_contract.rs)
-- [`wasm_error_abi_contract.rs`](crates/wasm/tests/wasm_error_abi_contract.rs)
-- [`wasm_facade_snapshot_contract.rs`](crates/wasm/tests/wasm_facade_snapshot_contract.rs)
-- [`wasm_fail_closed_contract.rs`](crates/wasm/tests/wasm_fail_closed_contract.rs)
-- [`wasm_ipfs_contract.rs`](crates/wasm/tests/wasm_ipfs_contract.rs)
-- [`wasm_redaction_contract.rs`](crates/wasm/tests/wasm_redaction_contract.rs)
-- [`wasm_retry_runner_contract.rs`](crates/wasm/tests/wasm_retry_runner_contract.rs)
-- [`wasm_send_sync_contract.rs`](crates/wasm/tests/wasm_send_sync_contract.rs)
-- [`wasm_snapshot_surface_contract.rs`](crates/wasm/tests/wasm_snapshot_surface_contract.rs)
-- [`wasm_surface_contract.rs`](crates/wasm/tests/wasm_surface_contract.rs)
-- [`wasm_transport_policy_contract.rs`](crates/wasm/tests/wasm_transport_policy_contract.rs)
-- [`wasm_workflow_coverage_contract.rs`](crates/wasm/tests/wasm_workflow_coverage_contract.rs)
+- [`host_pure_helpers.rs`](crates/wasm/tests/host_pure_helpers.rs) &mdash; 270 lines
+- [`wasm_callback_contract.rs`](crates/wasm/tests/wasm_callback_contract.rs) &mdash; 349 lines
+- [`wasm_callback_lifetime_contract.rs`](crates/wasm/tests/wasm_callback_lifetime_contract.rs) &mdash; 55 lines
+- [`wasm_callback_transport_contract.rs`](crates/wasm/tests/wasm_callback_transport_contract.rs) &mdash; 135 lines
+- [`wasm_cancellation_contract.rs`](crates/wasm/tests/wasm_cancellation_contract.rs) &mdash; 239 lines
+- [`wasm_eip1271_contract.rs`](crates/wasm/tests/wasm_eip1271_contract.rs) &mdash; 243 lines
+- [`wasm_envelope_contract.rs`](crates/wasm/tests/wasm_envelope_contract.rs) &mdash; 33 lines
+- [`wasm_error_abi_contract.rs`](crates/wasm/tests/wasm_error_abi_contract.rs) &mdash; 250 lines
+- [`wasm_facade_snapshot_contract.rs`](crates/wasm/tests/wasm_facade_snapshot_contract.rs) &mdash; 154 lines
+- [`wasm_fail_closed_contract.rs`](crates/wasm/tests/wasm_fail_closed_contract.rs) &mdash; 194 lines
+- [`wasm_ipfs_contract.rs`](crates/wasm/tests/wasm_ipfs_contract.rs) &mdash; 181 lines
+- [`wasm_redaction_contract.rs`](crates/wasm/tests/wasm_redaction_contract.rs) &mdash; 127 lines
+- [`wasm_retry_runner_contract.rs`](crates/wasm/tests/wasm_retry_runner_contract.rs) &mdash; 69 lines
+- [`wasm_send_sync_contract.rs`](crates/wasm/tests/wasm_send_sync_contract.rs) &mdash; 13 lines
+- [`wasm_snapshot_surface_contract.rs`](crates/wasm/tests/wasm_snapshot_surface_contract.rs) &mdash; 381 lines
+- [`wasm_surface_contract.rs`](crates/wasm/tests/wasm_surface_contract.rs) &mdash; 229 lines
+- [`wasm_transport_policy_contract.rs`](crates/wasm/tests/wasm_transport_policy_contract.rs) &mdash; 320 lines
+- [`wasm_workflow_coverage_contract.rs`](crates/wasm/tests/wasm_workflow_coverage_contract.rs) &mdash; 410 lines
 
 </details>
 
 <details>
 <summary><code>crates/wasm/tests/common/</code> &mdash; 1 file(s)</summary>
 
-- [`mod.rs`](crates/wasm/tests/common/mod.rs)
+- [`mod.rs`](crates/wasm/tests/common/mod.rs) &mdash; 195 lines
 
 </details>
 
 <details>
 <summary><code>crates/wasm/tests/fixtures/</code> &mdash; 1 file(s)</summary>
 
-- [`eip1271_upstream_vector.json`](crates/wasm/tests/fixtures/eip1271_upstream_vector.json)
+- [`eip1271_upstream_vector.json`](crates/wasm/tests/fixtures/eip1271_upstream_vector.json) &mdash; 20 lines
 
 </details>
 
 <details>
 <summary><code>docs/</code> &mdash; 23 file(s)</summary>
 
-- [`alloy-doctrine.md`](docs/alloy-doctrine.md)
-- [`alloy-major-release-runbook.md`](docs/alloy-major-release-runbook.md)
-- [`architecture.md`](docs/architecture.md)
-- [`browser-runtime-proof-posture.md`](docs/browser-runtime-proof-posture.md)
-- [`code-of-conduct.md`](docs/code-of-conduct.md)
-- [`deployments.md`](docs/deployments.md)
-- [`examples.md`](docs/examples.md)
-- [`getting-started.md`](docs/getting-started.md)
-- [`integrations.md`](docs/integrations.md)
-- [`msrv-policy.md`](docs/msrv-policy.md)
-- [`observability.md`](docs/observability.md)
-- [`parity-matrix.md`](docs/parity-matrix.md)
-- [`parity-scope.md`](docs/parity-scope.md)
-- [`parity-sources.md`](docs/parity-sources.md)
-- [`performance.md`](docs/performance.md)
-- [`principles.md`](docs/principles.md)
-- [`publication-handoff.md`](docs/publication-handoff.md)
-- [`README.md`](docs/README.md)
-- [`release-checklist.md`](docs/release-checklist.md)
-- [`transport.md`](docs/transport.md)
-- [`validation-scope.md`](docs/validation-scope.md)
-- [`verification-guide.md`](docs/verification-guide.md)
-- [`verification-matrix.md`](docs/verification-matrix.md)
+- [`alloy-doctrine.md`](docs/alloy-doctrine.md) &mdash; 319 lines
+- [`alloy-major-release-runbook.md`](docs/alloy-major-release-runbook.md) &mdash; 63 lines
+- [`architecture.md`](docs/architecture.md) &mdash; 444 lines
+- [`browser-runtime-proof-posture.md`](docs/browser-runtime-proof-posture.md) &mdash; 133 lines
+- [`code-of-conduct.md`](docs/code-of-conduct.md) &mdash; 71 lines
+- [`deployments.md`](docs/deployments.md) &mdash; 199 lines
+- [`examples.md`](docs/examples.md) &mdash; 149 lines
+- [`getting-started.md`](docs/getting-started.md) &mdash; 727 lines
+- [`integrations.md`](docs/integrations.md) &mdash; 414 lines
+- [`msrv-policy.md`](docs/msrv-policy.md) &mdash; 39 lines
+- [`observability.md`](docs/observability.md) &mdash; 296 lines
+- [`parity-matrix.md`](docs/parity-matrix.md) &mdash; 117 lines
+- [`parity-scope.md`](docs/parity-scope.md) &mdash; 344 lines
+- [`parity-sources.md`](docs/parity-sources.md) &mdash; 207 lines
+- [`performance.md`](docs/performance.md) &mdash; 271 lines
+- [`principles.md`](docs/principles.md) &mdash; 221 lines
+- [`publication-handoff.md`](docs/publication-handoff.md) &mdash; 118 lines
+- [`README.md`](docs/README.md) &mdash; 133 lines
+- [`release-checklist.md`](docs/release-checklist.md) &mdash; 546 lines
+- [`transport.md`](docs/transport.md) &mdash; 443 lines
+- [`validation-scope.md`](docs/validation-scope.md) &mdash; 73 lines
+- [`verification-guide.md`](docs/verification-guide.md) &mdash; 205 lines
+- [`verification-matrix.md`](docs/verification-matrix.md) &mdash; 119 lines
 
 </details>
 
 <details>
 <summary><code>docs/adr/</code> &mdash; 63 file(s)</summary>
 
-- [`0000-template.md`](docs/adr/0000-template.md)
-- [`0001-multi-crate-sdk-family-with-thin-facade.md`](docs/adr/0001-multi-crate-sdk-family-with-thin-facade.md)
-- [`0002-dedicated-trading-orchestration-crate.md`](docs/adr/0002-dedicated-trading-orchestration-crate.md)
-- [`0003-separate-read-only-subgraph-crate.md`](docs/adr/0003-separate-read-only-subgraph-crate.md)
-- [`0004-feature-gated-browser-wallet-sidecar.md`](docs/adr/0004-feature-gated-browser-wallet-sidecar.md)
-- [`0005-boundary-specific-runtime-contracts-and-strong-domain-types.md`](docs/adr/0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
-- [`0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md`](docs/adr/0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
-- [`0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md`](docs/adr/0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md)
-- [`0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md`](docs/adr/0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md)
-- [`0009-wasm-verification-consoles-hybrid-extensibility-and-two-tier-proof.md`](docs/adr/0009-wasm-verification-consoles-hybrid-extensibility-and-two-tier-proof.md)
-- [`0010-runtime-neutral-async-and-transport-posture.md`](docs/adr/0010-runtime-neutral-async-and-transport-posture.md)
-- [`0011-typed-amount-boundary-and-typestate-ready-state-construction.md`](docs/adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md)
-- [`0012-alloy-sol-bindings-and-registry-authority.md`](docs/adr/0012-alloy-sol-bindings-and-registry-authority.md)
-- [`0013-http-transport-injection-and-typestate-builders.md`](docs/adr/0013-http-transport-injection-and-typestate-builders.md)
-- [`0014-eip1271-verification-cache.md`](docs/adr/0014-eip1271-verification-cache.md)
-- [`0015-client-side-order-bounds-validator.md`](docs/adr/0015-client-side-order-bounds-validator.md)
-- [`0016-split-sell-and-buy-token-balance-enums.md`](docs/adr/0016-split-sell-and-buy-token-balance-enums.md)
-- [`0017-typed-orderbook-rejection-parser.md`](docs/adr/0017-typed-orderbook-rejection-parser.md)
-- [`0018-typed-app-data-merge.md`](docs/adr/0018-typed-app-data-merge.md)
-- [`0019-http-transport-sole-dispatch.md`](docs/adr/0019-http-transport-sole-dispatch.md)
-- [`0020-ethflow-owner-threading.md`](docs/adr/0020-ethflow-owner-threading.md)
-- [`0021-orderbook-total-fee-policy.md`](docs/adr/0021-orderbook-total-fee-policy.md)
-- [`0022-ecdsa-signature-v-normalization.md`](docs/adr/0022-ecdsa-signature-v-normalization.md)
-- [`0023-legacy-compatibility-shim-removal.md`](docs/adr/0023-legacy-compatibility-shim-removal.md)
-- [`0024-asyncprovider-asyncsigningprovider-capability-split.md`](docs/adr/0024-asyncprovider-asyncsigningprovider-capability-split.md)
-- [`0025-workspace-url-redaction-convention.md`](docs/adr/0025-workspace-url-redaction-convention.md)
-- [`0026-alloy-major-release-absorption-plan.md`](docs/adr/0026-alloy-major-release-absorption-plan.md)
-- [`0027-post-quantum-signing-absorption-plan.md`](docs/adr/0027-post-quantum-signing-absorption-plan.md)
-- [`0028-account-abstraction-integration-plan.md`](docs/adr/0028-account-abstraction-integration-plan.md)
-- [`0029-trait-evolution-extension-traits.md`](docs/adr/0029-trait-evolution-extension-traits.md)
-- [`0030-workspace-locked-versioning-tag-baseline.md`](docs/adr/0030-workspace-locked-versioning-tag-baseline.md)
-- [`0031-wire-dto-openapi-driven-with-order-auction-order-split.md`](docs/adr/0031-wire-dto-openapi-driven-with-order-auction-order-split.md)
-- [`0032-deployment-authority-machine-readable-provenance.md`](docs/adr/0032-deployment-authority-machine-readable-provenance.md)
-- [`0033-minimum-viable-panic-surface.md`](docs/adr/0033-minimum-viable-panic-surface.md)
-- [`0034-interaction-encoder-target-policy.md`](docs/adr/0034-interaction-encoder-target-policy.md)
-- [`0035-alloy-provider-adapter.md`](docs/adr/0035-alloy-provider-adapter.md)
-- [`0036-alloy-signer-adapter.md`](docs/adr/0036-alloy-signer-adapter.md)
-- [`0037-alloy-umbrella-adapter.md`](docs/adr/0037-alloy-umbrella-adapter.md)
-- [`0038-transaction-lifecycle-types.md`](docs/adr/0038-transaction-lifecycle-types.md)
-- [`0039-typescript-callable-wasm-sdk-surface.md`](docs/adr/0039-typescript-callable-wasm-sdk-surface.md)
-- [`0040-wallet-provider-callback-boundary-for-js-consumers.md`](docs/adr/0040-wallet-provider-callback-boundary-for-js-consumers.md)
-- [`0041-transport-policy-l3-layering.md`](docs/adr/0041-transport-policy-l3-layering.md)
-- [`0042-pure-helpers-extraction.md`](docs/adr/0042-pure-helpers-extraction.md)
-- [`0043-callback-registry-internalization.md`](docs/adr/0043-callback-registry-internalization.md)
-- [`0044-bundle-size-profile-and-flavor-builds.md`](docs/adr/0044-bundle-size-profile-and-flavor-builds.md)
-- [`0045-async-signer-trait-narrowing.md`](docs/adr/0045-async-signer-trait-narrowing.md)
-- [`0046-transport-policy-js-exposure.md`](docs/adr/0046-transport-policy-js-exposure.md)
-- [`0047-typescript-facade-architecture.md`](docs/adr/0047-typescript-facade-architecture.md)
-- [`0048-composable-conditional-order-framework.md`](docs/adr/0048-composable-conditional-order-framework.md)
-- [`0049-cow-shed-account-abstraction-proxy.md`](docs/adr/0049-cow-shed-account-abstraction-proxy.md)
-- [`0050-eip1271-signature-blob-encoding.md`](docs/adr/0050-eip1271-signature-blob-encoding.md)
-- [`0051-signing-owned-eip1271-signature-provider-trait.md`](docs/adr/0051-signing-owned-eip1271-signature-provider-trait.md)
-- [`0052-alloy-primitives-canonical-primitive-layer.md`](docs/adr/0052-alloy-primitives-canonical-primitive-layer.md)
-- [`0053-typed-signer-rejection-classification.md`](docs/adr/0053-typed-signer-rejection-classification.md)
-- [`0054-onchain-order-event-decoding-is-fail-closed.md`](docs/adr/0054-onchain-order-event-decoding-is-fail-closed.md)
-- [`0055-bounded-response-reads.md`](docs/adr/0055-bounded-response-reads.md)
-- [`0056-settlement-event-decoding-is-fail-closed.md`](docs/adr/0056-settlement-event-decoding-is-fail-closed.md)
-- [`0057-log-provider-capability-trait.md`](docs/adr/0057-log-provider-capability-trait.md)
-- [`0058-typed-quote-request-response-surface.md`](docs/adr/0058-typed-quote-request-response-surface.md)
-- [`0059-hash-concrete-orderdata-directly.md`](docs/adr/0059-hash-concrete-orderdata-directly.md)
-- [`0060-uniform-error-classification.md`](docs/adr/0060-uniform-error-classification.md)
-- [`0061-wasm-abi-receiver-pay-to-owner.md`](docs/adr/0061-wasm-abi-receiver-pay-to-owner.md)
-- [`README.md`](docs/adr/README.md)
+- [`0000-template.md`](docs/adr/0000-template.md) &mdash; 44 lines
+- [`0001-multi-crate-sdk-family-with-thin-facade.md`](docs/adr/0001-multi-crate-sdk-family-with-thin-facade.md) &mdash; 49 lines
+- [`0002-dedicated-trading-orchestration-crate.md`](docs/adr/0002-dedicated-trading-orchestration-crate.md) &mdash; 47 lines
+- [`0003-separate-read-only-subgraph-crate.md`](docs/adr/0003-separate-read-only-subgraph-crate.md) &mdash; 41 lines
+- [`0004-feature-gated-browser-wallet-sidecar.md`](docs/adr/0004-feature-gated-browser-wallet-sidecar.md) &mdash; 47 lines
+- [`0005-boundary-specific-runtime-contracts-and-strong-domain-types.md`](docs/adr/0005-boundary-specific-runtime-contracts-and-strong-domain-types.md) &mdash; 72 lines
+- [`0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md`](docs/adr/0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md) &mdash; 55 lines
+- [`0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md`](docs/adr/0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md) &mdash; 68 lines
+- [`0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md`](docs/adr/0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md) &mdash; 48 lines
+- [`0009-wasm-verification-consoles-hybrid-extensibility-and-two-tier-proof.md`](docs/adr/0009-wasm-verification-consoles-hybrid-extensibility-and-two-tier-proof.md) &mdash; 79 lines
+- [`0010-runtime-neutral-async-and-transport-posture.md`](docs/adr/0010-runtime-neutral-async-and-transport-posture.md) &mdash; 83 lines
+- [`0011-typed-amount-boundary-and-typestate-ready-state-construction.md`](docs/adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md) &mdash; 348 lines
+- [`0012-alloy-sol-bindings-and-registry-authority.md`](docs/adr/0012-alloy-sol-bindings-and-registry-authority.md) &mdash; 144 lines
+- [`0013-http-transport-injection-and-typestate-builders.md`](docs/adr/0013-http-transport-injection-and-typestate-builders.md) &mdash; 83 lines
+- [`0014-eip1271-verification-cache.md`](docs/adr/0014-eip1271-verification-cache.md) &mdash; 219 lines
+- [`0015-client-side-order-bounds-validator.md`](docs/adr/0015-client-side-order-bounds-validator.md) &mdash; 155 lines
+- [`0016-split-sell-and-buy-token-balance-enums.md`](docs/adr/0016-split-sell-and-buy-token-balance-enums.md) &mdash; 91 lines
+- [`0017-typed-orderbook-rejection-parser.md`](docs/adr/0017-typed-orderbook-rejection-parser.md) &mdash; 141 lines
+- [`0018-typed-app-data-merge.md`](docs/adr/0018-typed-app-data-merge.md) &mdash; 142 lines
+- [`0019-http-transport-sole-dispatch.md`](docs/adr/0019-http-transport-sole-dispatch.md) &mdash; 71 lines
+- [`0020-ethflow-owner-threading.md`](docs/adr/0020-ethflow-owner-threading.md) &mdash; 174 lines
+- [`0021-orderbook-total-fee-policy.md`](docs/adr/0021-orderbook-total-fee-policy.md) &mdash; 121 lines
+- [`0022-ecdsa-signature-v-normalization.md`](docs/adr/0022-ecdsa-signature-v-normalization.md) &mdash; 182 lines
+- [`0023-legacy-compatibility-shim-removal.md`](docs/adr/0023-legacy-compatibility-shim-removal.md) &mdash; 101 lines
+- [`0024-asyncprovider-asyncsigningprovider-capability-split.md`](docs/adr/0024-asyncprovider-asyncsigningprovider-capability-split.md) &mdash; 59 lines
+- [`0025-workspace-url-redaction-convention.md`](docs/adr/0025-workspace-url-redaction-convention.md) &mdash; 56 lines
+- [`0026-alloy-major-release-absorption-plan.md`](docs/adr/0026-alloy-major-release-absorption-plan.md) &mdash; 113 lines
+- [`0027-post-quantum-signing-absorption-plan.md`](docs/adr/0027-post-quantum-signing-absorption-plan.md) &mdash; 89 lines
+- [`0028-account-abstraction-integration-plan.md`](docs/adr/0028-account-abstraction-integration-plan.md) &mdash; 93 lines
+- [`0029-trait-evolution-extension-traits.md`](docs/adr/0029-trait-evolution-extension-traits.md) &mdash; 96 lines
+- [`0030-workspace-locked-versioning-tag-baseline.md`](docs/adr/0030-workspace-locked-versioning-tag-baseline.md) &mdash; 74 lines
+- [`0031-wire-dto-openapi-driven-with-order-auction-order-split.md`](docs/adr/0031-wire-dto-openapi-driven-with-order-auction-order-split.md) &mdash; 116 lines
+- [`0032-deployment-authority-machine-readable-provenance.md`](docs/adr/0032-deployment-authority-machine-readable-provenance.md) &mdash; 111 lines
+- [`0033-minimum-viable-panic-surface.md`](docs/adr/0033-minimum-viable-panic-surface.md) &mdash; 71 lines
+- [`0034-interaction-encoder-target-policy.md`](docs/adr/0034-interaction-encoder-target-policy.md) &mdash; 80 lines
+- [`0035-alloy-provider-adapter.md`](docs/adr/0035-alloy-provider-adapter.md) &mdash; 90 lines
+- [`0036-alloy-signer-adapter.md`](docs/adr/0036-alloy-signer-adapter.md) &mdash; 95 lines
+- [`0037-alloy-umbrella-adapter.md`](docs/adr/0037-alloy-umbrella-adapter.md) &mdash; 148 lines
+- [`0038-transaction-lifecycle-types.md`](docs/adr/0038-transaction-lifecycle-types.md) &mdash; 82 lines
+- [`0039-typescript-callable-wasm-sdk-surface.md`](docs/adr/0039-typescript-callable-wasm-sdk-surface.md) &mdash; 155 lines
+- [`0040-wallet-provider-callback-boundary-for-js-consumers.md`](docs/adr/0040-wallet-provider-callback-boundary-for-js-consumers.md) &mdash; 72 lines
+- [`0041-transport-policy-l3-layering.md`](docs/adr/0041-transport-policy-l3-layering.md) &mdash; 82 lines
+- [`0042-pure-helpers-extraction.md`](docs/adr/0042-pure-helpers-extraction.md) &mdash; 54 lines
+- [`0043-callback-registry-internalization.md`](docs/adr/0043-callback-registry-internalization.md) &mdash; 55 lines
+- [`0044-bundle-size-profile-and-flavor-builds.md`](docs/adr/0044-bundle-size-profile-and-flavor-builds.md) &mdash; 98 lines
+- [`0045-async-signer-trait-narrowing.md`](docs/adr/0045-async-signer-trait-narrowing.md) &mdash; 54 lines
+- [`0046-transport-policy-js-exposure.md`](docs/adr/0046-transport-policy-js-exposure.md) &mdash; 53 lines
+- [`0047-typescript-facade-architecture.md`](docs/adr/0047-typescript-facade-architecture.md) &mdash; 58 lines
+- [`0048-composable-conditional-order-framework.md`](docs/adr/0048-composable-conditional-order-framework.md) &mdash; 208 lines
+- [`0049-cow-shed-account-abstraction-proxy.md`](docs/adr/0049-cow-shed-account-abstraction-proxy.md) &mdash; 225 lines
+- [`0050-eip1271-signature-blob-encoding.md`](docs/adr/0050-eip1271-signature-blob-encoding.md) &mdash; 179 lines
+- [`0051-signing-owned-eip1271-signature-provider-trait.md`](docs/adr/0051-signing-owned-eip1271-signature-provider-trait.md) &mdash; 136 lines
+- [`0052-alloy-primitives-canonical-primitive-layer.md`](docs/adr/0052-alloy-primitives-canonical-primitive-layer.md) &mdash; 408 lines
+- [`0053-typed-signer-rejection-classification.md`](docs/adr/0053-typed-signer-rejection-classification.md) &mdash; 156 lines
+- [`0054-onchain-order-event-decoding-is-fail-closed.md`](docs/adr/0054-onchain-order-event-decoding-is-fail-closed.md) &mdash; 83 lines
+- [`0055-bounded-response-reads.md`](docs/adr/0055-bounded-response-reads.md) &mdash; 95 lines
+- [`0056-settlement-event-decoding-is-fail-closed.md`](docs/adr/0056-settlement-event-decoding-is-fail-closed.md) &mdash; 75 lines
+- [`0057-log-provider-capability-trait.md`](docs/adr/0057-log-provider-capability-trait.md) &mdash; 102 lines
+- [`0058-typed-quote-request-response-surface.md`](docs/adr/0058-typed-quote-request-response-surface.md) &mdash; 147 lines
+- [`0059-hash-concrete-orderdata-directly.md`](docs/adr/0059-hash-concrete-orderdata-directly.md) &mdash; 66 lines
+- [`0060-uniform-error-classification.md`](docs/adr/0060-uniform-error-classification.md) &mdash; 104 lines
+- [`0061-wasm-abi-receiver-pay-to-owner.md`](docs/adr/0061-wasm-abi-receiver-pay-to-owner.md) &mdash; 79 lines
+- [`README.md`](docs/adr/README.md) &mdash; 190 lines
 
 </details>
 
 <details>
 <summary><code>docs/audit/</code> &mdash; 65 file(s)</summary>
 
-- [`alloy-provider-adapter-audit.md`](docs/audit/alloy-provider-adapter-audit.md)
-- [`alloy-signer-adapter-audit.md`](docs/audit/alloy-signer-adapter-audit.md)
-- [`alloy-umbrella-adapter-audit.md`](docs/audit/alloy-umbrella-adapter-audit.md)
-- [`bounded-response-reads-audit.md`](docs/audit/bounded-response-reads-audit.md)
-- [`browser-wallet-alloy-dependency-audit.md`](docs/audit/browser-wallet-alloy-dependency-audit.md)
-- [`browser-wallet-chain-coherence-audit.md`](docs/audit/browser-wallet-chain-coherence-audit.md)
-- [`browser-wallet-trust-posture-audit.md`](docs/audit/browser-wallet-trust-posture-audit.md)
-- [`cid-dependency-audit.md`](docs/audit/cid-dependency-audit.md)
-- [`composable-contract-bindings-audit.md`](docs/audit/composable-contract-bindings-audit.md)
-- [`composable-watch-tower-boundary-audit.md`](docs/audit/composable-watch-tower-boundary-audit.md)
-- [`contract-bindings-parity-audit.md`](docs/audit/contract-bindings-parity-audit.md)
-- [`cooperative-cancellation-contract-audit.md`](docs/audit/cooperative-cancellation-contract-audit.md)
-- [`cow-sdk-wasm-comparative-benchmark-validation-note.md`](docs/audit/cow-sdk-wasm-comparative-benchmark-validation-note.md)
-- [`cow-shed-app-data-integration-audit.md`](docs/audit/cow-shed-app-data-integration-audit.md)
-- [`cow-shed-contract-bindings-audit.md`](docs/audit/cow-shed-contract-bindings-audit.md)
-- [`credential-surface-audit.md`](docs/audit/credential-surface-audit.md)
-- [`credential-surface-contract-hygiene-audit.md`](docs/audit/credential-surface-contract-hygiene-audit.md)
-- [`dependency-gate-audit.md`](docs/audit/dependency-gate-audit.md)
-- [`deployment-registry-audit.md`](docs/audit/deployment-registry-audit.md)
-- [`ecdsa-signature-normalization-audit.md`](docs/audit/ecdsa-signature-normalization-audit.md)
-- [`eip1271-verification-cache-audit.md`](docs/audit/eip1271-verification-cache-audit.md)
-- [`error-classification-audit.md`](docs/audit/error-classification-audit.md)
-- [`fuzz-coverage-audit.md`](docs/audit/fuzz-coverage-audit.md)
-- [`http-transport-contract-audit.md`](docs/audit/http-transport-contract-audit.md)
-- [`lens-chain-evidence-audit.md`](docs/audit/lens-chain-evidence-audit.md)
-- [`log-provider-capability-audit.md`](docs/audit/log-provider-capability-audit.md)
-- [`onchain-order-log-decoding-audit.md`](docs/audit/onchain-order-log-decoding-audit.md)
-- [`panic-free-public-surface-audit.md`](docs/audit/panic-free-public-surface-audit.md)
-- [`partner-api-routing-audit.md`](docs/audit/partner-api-routing-audit.md)
-- [`quote-request-app-data-fix-review.md`](docs/audit/quote-request-app-data-fix-review.md)
-- [`quote-response-surface-audit.md`](docs/audit/quote-response-surface-audit.md)
-- [`README.md`](docs/audit/README.md)
-- [`settlement-event-log-decoding-audit.md`](docs/audit/settlement-event-log-decoding-audit.md)
-- [`shared-logic-reviewability-audit.md`](docs/audit/shared-logic-reviewability-audit.md)
-- [`signer-error-classification-audit.md`](docs/audit/signer-error-classification-audit.md)
-- [`source-lock-provenance-audit.md`](docs/audit/source-lock-provenance-audit.md)
-- [`subgraph-error-display-audit.md`](docs/audit/subgraph-error-display-audit.md)
-- [`trade-parameter-lifecycle-audit.md`](docs/audit/trade-parameter-lifecycle-audit.md)
-- [`trading-app-data-merge-audit.md`](docs/audit/trading-app-data-merge-audit.md)
-- [`trading-ethflow-owner-identity-audit.md`](docs/audit/trading-ethflow-owner-identity-audit.md)
-- [`trading-order-bounds-validator-audit.md`](docs/audit/trading-order-bounds-validator-audit.md)
-- [`trading-order-construction-integrity-audit.md`](docs/audit/trading-order-construction-integrity-audit.md)
-- [`trading-orderbook-context-audit.md`](docs/audit/trading-orderbook-context-audit.md)
-- [`trading-quote-orderbook-binding-audit.md`](docs/audit/trading-quote-orderbook-binding-audit.md)
-- [`trading-sdk-runtime-prerequisites-audit.md`](docs/audit/trading-sdk-runtime-prerequisites-audit.md)
-- [`transaction-receipt-shape-audit.md`](docs/audit/transaction-receipt-shape-audit.md)
-- [`transport-policy-coverage-audit.md`](docs/audit/transport-policy-coverage-audit.md)
-- [`typestate-builder-contract-audit.md`](docs/audit/typestate-builder-contract-audit.md)
-- [`unsafe-code-policy-audit.md`](docs/audit/unsafe-code-policy-audit.md)
-- [`url-credential-redaction-audit.md`](docs/audit/url-credential-redaction-audit.md)
-- [`wasm-browser-runner-determinism-audit.md`](docs/audit/wasm-browser-runner-determinism-audit.md)
-- [`wasm-callback-shape-design-audit.md`](docs/audit/wasm-callback-shape-design-audit.md)
-- [`wasm-capability-coverage-audit.md`](docs/audit/wasm-capability-coverage-audit.md)
-- [`wasm-component-model-future-prep-audit.md`](docs/audit/wasm-component-model-future-prep-audit.md)
-- [`wasm-eip1271-parity-audit.md`](docs/audit/wasm-eip1271-parity-audit.md)
-- [`wasm-example-proof-posture-audit.md`](docs/audit/wasm-example-proof-posture-audit.md)
-- [`wasm-facade-architecture-audit.md`](docs/audit/wasm-facade-architecture-audit.md)
-- [`wasm-performance-budget-audit.md`](docs/audit/wasm-performance-budget-audit.md)
-- [`wasm-public-api-stability-audit.md`](docs/audit/wasm-public-api-stability-audit.md)
-- [`wasm-schema-versioning-policy-audit.md`](docs/audit/wasm-schema-versioning-policy-audit.md)
-- [`wasm-surface-audit.md`](docs/audit/wasm-surface-audit.md)
-- [`wasm-type-generation-audit.md`](docs/audit/wasm-type-generation-audit.md)
-- [`wasm-unsupported-target-audit.md`](docs/audit/wasm-unsupported-target-audit.md)
-- [`wire-dto-coverage-audit.md`](docs/audit/wire-dto-coverage-audit.md)
-- [`workflow-security-audit.md`](docs/audit/workflow-security-audit.md)
+- [`alloy-provider-adapter-audit.md`](docs/audit/alloy-provider-adapter-audit.md) &mdash; 154 lines
+- [`alloy-signer-adapter-audit.md`](docs/audit/alloy-signer-adapter-audit.md) &mdash; 141 lines
+- [`alloy-umbrella-adapter-audit.md`](docs/audit/alloy-umbrella-adapter-audit.md) &mdash; 95 lines
+- [`bounded-response-reads-audit.md`](docs/audit/bounded-response-reads-audit.md) &mdash; 126 lines
+- [`browser-wallet-alloy-dependency-audit.md`](docs/audit/browser-wallet-alloy-dependency-audit.md) &mdash; 137 lines
+- [`browser-wallet-chain-coherence-audit.md`](docs/audit/browser-wallet-chain-coherence-audit.md) &mdash; 106 lines
+- [`browser-wallet-trust-posture-audit.md`](docs/audit/browser-wallet-trust-posture-audit.md) &mdash; 106 lines
+- [`cid-dependency-audit.md`](docs/audit/cid-dependency-audit.md) &mdash; 149 lines
+- [`composable-contract-bindings-audit.md`](docs/audit/composable-contract-bindings-audit.md) &mdash; 136 lines
+- [`composable-watch-tower-boundary-audit.md`](docs/audit/composable-watch-tower-boundary-audit.md) &mdash; 97 lines
+- [`contract-bindings-parity-audit.md`](docs/audit/contract-bindings-parity-audit.md) &mdash; 685 lines
+- [`cooperative-cancellation-contract-audit.md`](docs/audit/cooperative-cancellation-contract-audit.md) &mdash; 187 lines
+- [`cow-sdk-wasm-comparative-benchmark-validation-note.md`](docs/audit/cow-sdk-wasm-comparative-benchmark-validation-note.md) &mdash; 574 lines
+- [`cow-shed-app-data-integration-audit.md`](docs/audit/cow-shed-app-data-integration-audit.md) &mdash; 108 lines
+- [`cow-shed-contract-bindings-audit.md`](docs/audit/cow-shed-contract-bindings-audit.md) &mdash; 236 lines
+- [`credential-surface-audit.md`](docs/audit/credential-surface-audit.md) &mdash; 221 lines
+- [`credential-surface-contract-hygiene-audit.md`](docs/audit/credential-surface-contract-hygiene-audit.md) &mdash; 169 lines
+- [`dependency-gate-audit.md`](docs/audit/dependency-gate-audit.md) &mdash; 355 lines
+- [`deployment-registry-audit.md`](docs/audit/deployment-registry-audit.md) &mdash; 145 lines
+- [`ecdsa-signature-normalization-audit.md`](docs/audit/ecdsa-signature-normalization-audit.md) &mdash; 228 lines
+- [`eip1271-verification-cache-audit.md`](docs/audit/eip1271-verification-cache-audit.md) &mdash; 199 lines
+- [`error-classification-audit.md`](docs/audit/error-classification-audit.md) &mdash; 81 lines
+- [`fuzz-coverage-audit.md`](docs/audit/fuzz-coverage-audit.md) &mdash; 292 lines
+- [`http-transport-contract-audit.md`](docs/audit/http-transport-contract-audit.md) &mdash; 250 lines
+- [`lens-chain-evidence-audit.md`](docs/audit/lens-chain-evidence-audit.md) &mdash; 27 lines
+- [`log-provider-capability-audit.md`](docs/audit/log-provider-capability-audit.md) &mdash; 94 lines
+- [`onchain-order-log-decoding-audit.md`](docs/audit/onchain-order-log-decoding-audit.md) &mdash; 79 lines
+- [`panic-free-public-surface-audit.md`](docs/audit/panic-free-public-surface-audit.md) &mdash; 147 lines
+- [`partner-api-routing-audit.md`](docs/audit/partner-api-routing-audit.md) &mdash; 81 lines
+- [`quote-request-app-data-fix-review.md`](docs/audit/quote-request-app-data-fix-review.md) &mdash; 70 lines
+- [`quote-response-surface-audit.md`](docs/audit/quote-response-surface-audit.md) &mdash; 147 lines
+- [`README.md`](docs/audit/README.md) &mdash; 192 lines
+- [`settlement-event-log-decoding-audit.md`](docs/audit/settlement-event-log-decoding-audit.md) &mdash; 77 lines
+- [`shared-logic-reviewability-audit.md`](docs/audit/shared-logic-reviewability-audit.md) &mdash; 169 lines
+- [`signer-error-classification-audit.md`](docs/audit/signer-error-classification-audit.md) &mdash; 118 lines
+- [`source-lock-provenance-audit.md`](docs/audit/source-lock-provenance-audit.md) &mdash; 238 lines
+- [`subgraph-error-display-audit.md`](docs/audit/subgraph-error-display-audit.md) &mdash; 162 lines
+- [`trade-parameter-lifecycle-audit.md`](docs/audit/trade-parameter-lifecycle-audit.md) &mdash; 146 lines
+- [`trading-app-data-merge-audit.md`](docs/audit/trading-app-data-merge-audit.md) &mdash; 189 lines
+- [`trading-ethflow-owner-identity-audit.md`](docs/audit/trading-ethflow-owner-identity-audit.md) &mdash; 151 lines
+- [`trading-order-bounds-validator-audit.md`](docs/audit/trading-order-bounds-validator-audit.md) &mdash; 247 lines
+- [`trading-order-construction-integrity-audit.md`](docs/audit/trading-order-construction-integrity-audit.md) &mdash; 130 lines
+- [`trading-orderbook-context-audit.md`](docs/audit/trading-orderbook-context-audit.md) &mdash; 85 lines
+- [`trading-quote-orderbook-binding-audit.md`](docs/audit/trading-quote-orderbook-binding-audit.md) &mdash; 78 lines
+- [`trading-sdk-runtime-prerequisites-audit.md`](docs/audit/trading-sdk-runtime-prerequisites-audit.md) &mdash; 139 lines
+- [`transaction-receipt-shape-audit.md`](docs/audit/transaction-receipt-shape-audit.md) &mdash; 99 lines
+- [`transport-policy-coverage-audit.md`](docs/audit/transport-policy-coverage-audit.md) &mdash; 243 lines
+- [`typestate-builder-contract-audit.md`](docs/audit/typestate-builder-contract-audit.md) &mdash; 209 lines
+- [`unsafe-code-policy-audit.md`](docs/audit/unsafe-code-policy-audit.md) &mdash; 83 lines
+- [`url-credential-redaction-audit.md`](docs/audit/url-credential-redaction-audit.md) &mdash; 159 lines
+- [`wasm-browser-runner-determinism-audit.md`](docs/audit/wasm-browser-runner-determinism-audit.md) &mdash; 141 lines
+- [`wasm-callback-shape-design-audit.md`](docs/audit/wasm-callback-shape-design-audit.md) &mdash; 106 lines
+- [`wasm-capability-coverage-audit.md`](docs/audit/wasm-capability-coverage-audit.md) &mdash; 345 lines
+- [`wasm-component-model-future-prep-audit.md`](docs/audit/wasm-component-model-future-prep-audit.md) &mdash; 85 lines
+- [`wasm-eip1271-parity-audit.md`](docs/audit/wasm-eip1271-parity-audit.md) &mdash; 89 lines
+- [`wasm-example-proof-posture-audit.md`](docs/audit/wasm-example-proof-posture-audit.md) &mdash; 128 lines
+- [`wasm-facade-architecture-audit.md`](docs/audit/wasm-facade-architecture-audit.md) &mdash; 94 lines
+- [`wasm-performance-budget-audit.md`](docs/audit/wasm-performance-budget-audit.md) &mdash; 118 lines
+- [`wasm-public-api-stability-audit.md`](docs/audit/wasm-public-api-stability-audit.md) &mdash; 102 lines
+- [`wasm-schema-versioning-policy-audit.md`](docs/audit/wasm-schema-versioning-policy-audit.md) &mdash; 78 lines
+- [`wasm-surface-audit.md`](docs/audit/wasm-surface-audit.md) &mdash; 133 lines
+- [`wasm-type-generation-audit.md`](docs/audit/wasm-type-generation-audit.md) &mdash; 126 lines
+- [`wasm-unsupported-target-audit.md`](docs/audit/wasm-unsupported-target-audit.md) &mdash; 58 lines
+- [`wire-dto-coverage-audit.md`](docs/audit/wire-dto-coverage-audit.md) &mdash; 188 lines
+- [`workflow-security-audit.md`](docs/audit/workflow-security-audit.md) &mdash; 162 lines
 
 </details>
 
 <details>
 <summary><code>docs/providers/</code> &mdash; 2 file(s)</summary>
 
-- [`adapting-alloy.md`](docs/providers/adapting-alloy.md)
-- [`README.md`](docs/providers/README.md)
+- [`adapting-alloy.md`](docs/providers/adapting-alloy.md) &mdash; 176 lines
+- [`README.md`](docs/providers/README.md) &mdash; 75 lines
 
 </details>
 
 <details>
 <summary><code>e2e/</code> &mdash; 1 file(s)</summary>
 
-- [`tsconfig.base.json`](e2e/tsconfig.base.json)
+- [`tsconfig.base.json`](e2e/tsconfig.base.json) &mdash; 17 lines
 
 </details>
 
 <details>
 <summary><code>e2e/browser-wallet/</code> &mdash; 5 file(s)</summary>
 
-- [`bun.lock`](e2e/browser-wallet/bun.lock)
-- [`globals.d.ts`](e2e/browser-wallet/globals.d.ts)
-- [`package.json`](e2e/browser-wallet/package.json)
-- [`playwright.config.ts`](e2e/browser-wallet/playwright.config.ts)
-- [`tsconfig.json`](e2e/browser-wallet/tsconfig.json)
+- [`bun.lock`](e2e/browser-wallet/bun.lock) &mdash; 200 lines
+- [`globals.d.ts`](e2e/browser-wallet/globals.d.ts) &mdash; 7 lines
+- [`package.json`](e2e/browser-wallet/package.json) &mdash; 16 lines
+- [`playwright.config.ts`](e2e/browser-wallet/playwright.config.ts) &mdash; 42 lines
+- [`tsconfig.json`](e2e/browser-wallet/tsconfig.json) &mdash; 4 lines
 
 </details>
 
 <details>
 <summary><code>e2e/browser-wallet/fixtures/</code> &mdash; 2 file(s)</summary>
 
-- [`cow-api.ts`](e2e/browser-wallet/fixtures/cow-api.ts)
-- [`injected-wallet.ts`](e2e/browser-wallet/fixtures/injected-wallet.ts)
+- [`cow-api.ts`](e2e/browser-wallet/fixtures/cow-api.ts) &mdash; 284 lines
+- [`injected-wallet.ts`](e2e/browser-wallet/fixtures/injected-wallet.ts) &mdash; 202 lines
 
 </details>
 
 <details>
 <summary><code>e2e/browser-wallet/test-results/</code> &mdash; 1 file(s)</summary>
 
-- [`.last-run.json`](e2e/browser-wallet/test-results/.last-run.json)
+- [`.last-run.json`](e2e/browser-wallet/test-results/.last-run.json) &mdash; 4 lines
 
 </details>
 
 <details>
 <summary><code>e2e/browser-wallet/tests/</code> &mdash; 2 file(s)</summary>
 
-- [`browser-wallet-console.spec.ts`](e2e/browser-wallet/tests/browser-wallet-console.spec.ts)
-- [`injected-chain-coherence.spec.ts`](e2e/browser-wallet/tests/injected-chain-coherence.spec.ts)
+- [`browser-wallet-console.spec.ts`](e2e/browser-wallet/tests/browser-wallet-console.spec.ts) &mdash; 308 lines
+- [`injected-chain-coherence.spec.ts`](e2e/browser-wallet/tests/injected-chain-coherence.spec.ts) &mdash; 229 lines
 
 </details>
 
 <details>
 <summary><code>e2e/sdk-verification/</code> &mdash; 4 file(s)</summary>
 
-- [`bun.lock`](e2e/sdk-verification/bun.lock)
-- [`package.json`](e2e/sdk-verification/package.json)
-- [`playwright.config.ts`](e2e/sdk-verification/playwright.config.ts)
-- [`tsconfig.json`](e2e/sdk-verification/tsconfig.json)
+- [`bun.lock`](e2e/sdk-verification/bun.lock) &mdash; 200 lines
+- [`package.json`](e2e/sdk-verification/package.json) &mdash; 16 lines
+- [`playwright.config.ts`](e2e/sdk-verification/playwright.config.ts) &mdash; 36 lines
+- [`tsconfig.json`](e2e/sdk-verification/tsconfig.json) &mdash; 4 lines
 
 </details>
 
 <details>
 <summary><code>e2e/sdk-verification/fixtures/</code> &mdash; 1 file(s)</summary>
 
-- [`cow-api.ts`](e2e/sdk-verification/fixtures/cow-api.ts)
+- [`cow-api.ts`](e2e/sdk-verification/fixtures/cow-api.ts) &mdash; 481 lines
 
 </details>
 
 <details>
 <summary><code>e2e/sdk-verification/test-results/</code> &mdash; 1 file(s)</summary>
 
-- [`.last-run.json`](e2e/sdk-verification/test-results/.last-run.json)
+- [`.last-run.json`](e2e/sdk-verification/test-results/.last-run.json) &mdash; 4 lines
 
 </details>
 
 <details>
 <summary><code>e2e/sdk-verification/tests/</code> &mdash; 3 file(s)</summary>
 
-- [`live-orderbook-readiness.spec.ts`](e2e/sdk-verification/tests/live-orderbook-readiness.spec.ts)
-- [`manual-network-panels.spec.ts`](e2e/sdk-verification/tests/manual-network-panels.spec.ts)
-- [`sdk-verification-console.spec.ts`](e2e/sdk-verification/tests/sdk-verification-console.spec.ts)
+- [`live-orderbook-readiness.spec.ts`](e2e/sdk-verification/tests/live-orderbook-readiness.spec.ts) &mdash; 217 lines
+- [`manual-network-panels.spec.ts`](e2e/sdk-verification/tests/manual-network-panels.spec.ts) &mdash; 213 lines
+- [`sdk-verification-console.spec.ts`](e2e/sdk-verification/tests/sdk-verification-console.spec.ts) &mdash; 382 lines
 
 </details>
 
 <details>
 <summary><code>e2e/wasm-typescript/</code> &mdash; 8 file(s)</summary>
 
-- [`index.html`](e2e/wasm-typescript/index.html)
-- [`package.json`](e2e/wasm-typescript/package.json)
-- [`playwright.config.ts`](e2e/wasm-typescript/playwright.config.ts)
-- [`pnpm-lock.yaml`](e2e/wasm-typescript/pnpm-lock.yaml)
-- [`pnpm-workspace.yaml`](e2e/wasm-typescript/pnpm-workspace.yaml)
-- [`tsconfig.json`](e2e/wasm-typescript/tsconfig.json)
-- [`vite.config.ts`](e2e/wasm-typescript/vite.config.ts)
-- [`vitest.config.ts`](e2e/wasm-typescript/vitest.config.ts)
+- [`index.html`](e2e/wasm-typescript/index.html) &mdash; 12 lines
+- [`package.json`](e2e/wasm-typescript/package.json) &mdash; 30 lines
+- [`playwright.config.ts`](e2e/wasm-typescript/playwright.config.ts) &mdash; 16 lines
+- [`pnpm-lock.yaml`](e2e/wasm-typescript/pnpm-lock.yaml) &mdash; 1,570 lines
+- [`pnpm-workspace.yaml`](e2e/wasm-typescript/pnpm-workspace.yaml) &mdash; 3 lines
+- [`tsconfig.json`](e2e/wasm-typescript/tsconfig.json) &mdash; 14 lines
+- [`vite.config.ts`](e2e/wasm-typescript/vite.config.ts) &mdash; 32 lines
+- [`vitest.config.ts`](e2e/wasm-typescript/vitest.config.ts) &mdash; 11 lines
 
 </details>
 
 <details>
 <summary><code>e2e/wasm-typescript-cf/</code> &mdash; 6 file(s)</summary>
 
-- [`package.json`](e2e/wasm-typescript-cf/package.json)
-- [`pnpm-lock.yaml`](e2e/wasm-typescript-cf/pnpm-lock.yaml)
-- [`pnpm-workspace.yaml`](e2e/wasm-typescript-cf/pnpm-workspace.yaml)
-- [`tsconfig.json`](e2e/wasm-typescript-cf/tsconfig.json)
-- [`vitest.config.ts`](e2e/wasm-typescript-cf/vitest.config.ts)
-- [`wrangler.toml`](e2e/wasm-typescript-cf/wrangler.toml)
+- [`package.json`](e2e/wasm-typescript-cf/package.json) &mdash; 27 lines
+- [`pnpm-lock.yaml`](e2e/wasm-typescript-cf/pnpm-lock.yaml) &mdash; 1,637 lines
+- [`pnpm-workspace.yaml`](e2e/wasm-typescript-cf/pnpm-workspace.yaml) &mdash; 4 lines
+- [`tsconfig.json`](e2e/wasm-typescript-cf/tsconfig.json) &mdash; 14 lines
+- [`vitest.config.ts`](e2e/wasm-typescript-cf/vitest.config.ts) &mdash; 15 lines
+- [`wrangler.toml`](e2e/wasm-typescript-cf/wrangler.toml) &mdash; 8 lines
 
 </details>
 
 <details>
 <summary><code>e2e/wasm-typescript-cf/src/</code> &mdash; 2 file(s)</summary>
 
-- [`wasm.d.ts`](e2e/wasm-typescript-cf/src/wasm.d.ts)
-- [`worker.ts`](e2e/wasm-typescript-cf/src/worker.ts)
+- [`wasm.d.ts`](e2e/wasm-typescript-cf/src/wasm.d.ts) &mdash; 9 lines
+- [`worker.ts`](e2e/wasm-typescript-cf/src/worker.ts) &mdash; 61 lines
 
 </details>
 
 <details>
 <summary><code>e2e/wasm-typescript-cf/tests/</code> &mdash; 3 file(s)</summary>
 
-- [`forbidden-instantiation.spec.ts`](e2e/wasm-typescript-cf/tests/forbidden-instantiation.spec.ts)
-- [`init-once.spec.ts`](e2e/wasm-typescript-cf/tests/init-once.spec.ts)
-- [`orderbook.spec.ts`](e2e/wasm-typescript-cf/tests/orderbook.spec.ts)
+- [`forbidden-instantiation.spec.ts`](e2e/wasm-typescript-cf/tests/forbidden-instantiation.spec.ts) &mdash; 17 lines
+- [`init-once.spec.ts`](e2e/wasm-typescript-cf/tests/init-once.spec.ts) &mdash; 13 lines
+- [`orderbook.spec.ts`](e2e/wasm-typescript-cf/tests/orderbook.spec.ts) &mdash; 34 lines
 
 </details>
 
 <details>
 <summary><code>e2e/wasm-typescript-deno/</code> &mdash; 1 file(s)</summary>
 
-- [`deno.jsonc`](e2e/wasm-typescript-deno/deno.jsonc)
+- [`deno.jsonc`](e2e/wasm-typescript-deno/deno.jsonc) &mdash; 9 lines
 
 </details>
 
 <details>
 <summary><code>e2e/wasm-typescript-deno/src/</code> &mdash; 1 file(s)</summary>
 
-- [`index.ts`](e2e/wasm-typescript-deno/src/index.ts)
+- [`index.ts`](e2e/wasm-typescript-deno/src/index.ts) &mdash; 8 lines
 
 </details>
 
 <details>
 <summary><code>e2e/wasm-typescript-deno/tests/</code> &mdash; 1 file(s)</summary>
 
-- [`signing_test.ts`](e2e/wasm-typescript-deno/tests/signing_test.ts)
+- [`signing_test.ts`](e2e/wasm-typescript-deno/tests/signing_test.ts) &mdash; 99 lines
 
 </details>
 
 <details>
 <summary><code>e2e/wasm-typescript/src/</code> &mdash; 1 file(s)</summary>
 
-- [`index.ts`](e2e/wasm-typescript/src/index.ts)
+- [`index.ts`](e2e/wasm-typescript/src/index.ts) &mdash; 53 lines
 
 </details>
 
 <details>
 <summary><code>e2e/wasm-typescript/tests/</code> &mdash; 4 file(s)</summary>
 
-- [`eip1271.spec.ts`](e2e/wasm-typescript/tests/eip1271.spec.ts)
-- [`orderbook.spec.ts`](e2e/wasm-typescript/tests/orderbook.spec.ts)
-- [`signing.spec.ts`](e2e/wasm-typescript/tests/signing.spec.ts)
-- [`transport.spec.ts`](e2e/wasm-typescript/tests/transport.spec.ts)
+- [`eip1271.spec.ts`](e2e/wasm-typescript/tests/eip1271.spec.ts) &mdash; 40 lines
+- [`orderbook.spec.ts`](e2e/wasm-typescript/tests/orderbook.spec.ts) &mdash; 93 lines
+- [`signing.spec.ts`](e2e/wasm-typescript/tests/signing.spec.ts) &mdash; 81 lines
+- [`transport.spec.ts`](e2e/wasm-typescript/tests/transport.spec.ts) &mdash; 64 lines
 
 </details>
 
 <details>
 <summary><code>e2e/wasm-typescript/tests/browser/</code> &mdash; 1 file(s)</summary>
 
-- [`browser.spec.ts`](e2e/wasm-typescript/tests/browser/browser.spec.ts)
+- [`browser.spec.ts`](e2e/wasm-typescript/tests/browser/browser.spec.ts) &mdash; 13 lines
 
 </details>
 
 <details>
 <summary><code>examples/</code> &mdash; 2 file(s)</summary>
 
-- [`LICENSE`](examples/LICENSE)
-- [`README.md`](examples/README.md)
+- [`LICENSE`](examples/LICENSE) &mdash; 674 lines
+- [`README.md`](examples/README.md) &mdash; 48 lines
 
 </details>
 
 <details>
 <summary><code>examples/native/</code> &mdash; 3 file(s)</summary>
 
-- [`Cargo.lock`](examples/native/Cargo.lock)
-- [`Cargo.toml`](examples/native/Cargo.toml)
-- [`README.md`](examples/native/README.md)
+- [`Cargo.lock`](examples/native/Cargo.lock) &mdash; 5,357 lines
+- [`Cargo.toml`](examples/native/Cargo.toml) &mdash; 143 lines
+- [`README.md`](examples/native/README.md) &mdash; 162 lines
 
 </details>
 
 <details>
 <summary><code>examples/native/scenarios/</code> &mdash; 26 file(s)</summary>
 
-- [`alloy_provider_only.rs`](examples/native/scenarios/alloy_provider_only.rs)
-- [`alloy_provider_with_custom_signer.rs`](examples/native/scenarios/alloy_provider_with_custom_signer.rs)
-- [`alloy_quickstart.rs`](examples/native/scenarios/alloy_quickstart.rs)
-- [`alloy_signer_only.rs`](examples/native/scenarios/alloy_signer_only.rs)
-- [`alloy_signer_with_custom_provider.rs`](examples/native/scenarios/alloy_signer_with_custom_provider.rs)
-- [`alloy_trading_full_flow.rs`](examples/native/scenarios/alloy_trading_full_flow.rs)
-- [`app_data_roundtrip.rs`](examples/native/scenarios/app_data_roundtrip.rs)
-- [`cancellation_combinator.rs`](examples/native/scenarios/cancellation_combinator.rs)
-- [`error_classification_simulation.rs`](examples/native/scenarios/error_classification_simulation.rs)
-- [`ethflow_transaction_simulation.rs`](examples/native/scenarios/ethflow_transaction_simulation.rs)
-- [`limit_order_simulation.rs`](examples/native/scenarios/limit_order_simulation.rs)
-- [`live_order_sepolia.rs`](examples/native/scenarios/live_order_sepolia.rs)
-- [`onchain_order_actions_simulation.rs`](examples/native/scenarios/onchain_order_actions_simulation.rs)
-- [`order_lifecycle_simulation.rs`](examples/native/scenarios/order_lifecycle_simulation.rs)
-- [`order_list_history_simulation.rs`](examples/native/scenarios/order_list_history_simulation.rs)
-- [`orderbook_live_probe.rs`](examples/native/scenarios/orderbook_live_probe.rs)
-- [`orderbook_transport_roundtrip.rs`](examples/native/scenarios/orderbook_transport_roundtrip.rs)
-- [`quote_only_simulation.rs`](examples/native/scenarios/quote_only_simulation.rs)
-- [`sdk_surface_report.rs`](examples/native/scenarios/sdk_surface_report.rs)
-- [`signing_roundtrip.rs`](examples/native/scenarios/signing_roundtrip.rs)
-- [`simplest_swap_quickstart.rs`](examples/native/scenarios/simplest_swap_quickstart.rs)
-- [`subgraph_custom_query_roundtrip.rs`](examples/native/scenarios/subgraph_custom_query_roundtrip.rs)
-- [`subgraph_live_query.rs`](examples/native/scenarios/subgraph_live_query.rs)
-- [`subgraph_query_roundtrip.rs`](examples/native/scenarios/subgraph_query_roundtrip.rs)
-- [`trading_sdk_simulation.rs`](examples/native/scenarios/trading_sdk_simulation.rs)
-- [`transaction_lifecycle.rs`](examples/native/scenarios/transaction_lifecycle.rs)
+- [`alloy_provider_only.rs`](examples/native/scenarios/alloy_provider_only.rs) &mdash; 35 lines
+- [`alloy_provider_with_custom_signer.rs`](examples/native/scenarios/alloy_provider_with_custom_signer.rs) &mdash; 78 lines
+- [`alloy_quickstart.rs`](examples/native/scenarios/alloy_quickstart.rs) &mdash; 41 lines
+- [`alloy_signer_only.rs`](examples/native/scenarios/alloy_signer_only.rs) &mdash; 56 lines
+- [`alloy_signer_with_custom_provider.rs`](examples/native/scenarios/alloy_signer_with_custom_provider.rs) &mdash; 101 lines
+- [`alloy_trading_full_flow.rs`](examples/native/scenarios/alloy_trading_full_flow.rs) &mdash; 201 lines
+- [`app_data_roundtrip.rs`](examples/native/scenarios/app_data_roundtrip.rs) &mdash; 36 lines
+- [`cancellation_combinator.rs`](examples/native/scenarios/cancellation_combinator.rs) &mdash; 76 lines
+- [`error_classification_simulation.rs`](examples/native/scenarios/error_classification_simulation.rs) &mdash; 232 lines
+- [`ethflow_transaction_simulation.rs`](examples/native/scenarios/ethflow_transaction_simulation.rs) &mdash; 102 lines
+- [`limit_order_simulation.rs`](examples/native/scenarios/limit_order_simulation.rs) &mdash; 49 lines
+- [`live_order_sepolia.rs`](examples/native/scenarios/live_order_sepolia.rs) &mdash; 218 lines
+- [`onchain_order_actions_simulation.rs`](examples/native/scenarios/onchain_order_actions_simulation.rs) &mdash; 152 lines
+- [`order_lifecycle_simulation.rs`](examples/native/scenarios/order_lifecycle_simulation.rs) &mdash; 47 lines
+- [`order_list_history_simulation.rs`](examples/native/scenarios/order_list_history_simulation.rs) &mdash; 103 lines
+- [`orderbook_live_probe.rs`](examples/native/scenarios/orderbook_live_probe.rs) &mdash; 77 lines
+- [`orderbook_transport_roundtrip.rs`](examples/native/scenarios/orderbook_transport_roundtrip.rs) &mdash; 104 lines
+- [`quote_only_simulation.rs`](examples/native/scenarios/quote_only_simulation.rs) &mdash; 47 lines
+- [`sdk_surface_report.rs`](examples/native/scenarios/sdk_surface_report.rs) &mdash; 67 lines
+- [`signing_roundtrip.rs`](examples/native/scenarios/signing_roundtrip.rs) &mdash; 47 lines
+- [`simplest_swap_quickstart.rs`](examples/native/scenarios/simplest_swap_quickstart.rs) &mdash; 50 lines
+- [`subgraph_custom_query_roundtrip.rs`](examples/native/scenarios/subgraph_custom_query_roundtrip.rs) &mdash; 95 lines
+- [`subgraph_live_query.rs`](examples/native/scenarios/subgraph_live_query.rs) &mdash; 58 lines
+- [`subgraph_query_roundtrip.rs`](examples/native/scenarios/subgraph_query_roundtrip.rs) &mdash; 115 lines
+- [`trading_sdk_simulation.rs`](examples/native/scenarios/trading_sdk_simulation.rs) &mdash; 96 lines
+- [`transaction_lifecycle.rs`](examples/native/scenarios/transaction_lifecycle.rs) &mdash; 191 lines
 
 </details>
 
 <details>
 <summary><code>examples/native/src/</code> &mdash; 2 file(s)</summary>
 
-- [`lib.rs`](examples/native/src/lib.rs)
-- [`support.rs`](examples/native/src/support.rs)
+- [`lib.rs`](examples/native/src/lib.rs) &mdash; 1 lines
+- [`support.rs`](examples/native/src/support.rs) &mdash; 497 lines
 
 </details>
 
 <details>
 <summary><code>examples/native/tests/</code> &mdash; 1 file(s)</summary>
 
-- [`scenario_contract.rs`](examples/native/tests/scenario_contract.rs)
+- [`scenario_contract.rs`](examples/native/tests/scenario_contract.rs) &mdash; 177 lines
 
 </details>
 
 <details>
 <summary><code>examples/wasm/</code> &mdash; 4 file(s)</summary>
 
-- [`Cargo.lock`](examples/wasm/Cargo.lock)
-- [`Cargo.toml`](examples/wasm/Cargo.toml)
-- [`index.html`](examples/wasm/index.html)
-- [`README.md`](examples/wasm/README.md)
+- [`Cargo.lock`](examples/wasm/Cargo.lock) &mdash; 3,513 lines
+- [`Cargo.toml`](examples/wasm/Cargo.toml) &mdash; 9 lines
+- [`index.html`](examples/wasm/index.html) &mdash; 101 lines
+- [`README.md`](examples/wasm/README.md) &mdash; 104 lines
 
 </details>
 
 <details>
 <summary><code>examples/wasm-typescript-browser-mm/</code> &mdash; 7 file(s)</summary>
 
-- [`index.html`](examples/wasm-typescript-browser-mm/index.html)
-- [`package.json`](examples/wasm-typescript-browser-mm/package.json)
-- [`playwright.config.ts`](examples/wasm-typescript-browser-mm/playwright.config.ts)
-- [`pnpm-lock.yaml`](examples/wasm-typescript-browser-mm/pnpm-lock.yaml)
-- [`README.md`](examples/wasm-typescript-browser-mm/README.md)
-- [`tsconfig.json`](examples/wasm-typescript-browser-mm/tsconfig.json)
-- [`vite.config.ts`](examples/wasm-typescript-browser-mm/vite.config.ts)
+- [`index.html`](examples/wasm-typescript-browser-mm/index.html) &mdash; 16 lines
+- [`package.json`](examples/wasm-typescript-browser-mm/package.json) &mdash; 23 lines
+- [`playwright.config.ts`](examples/wasm-typescript-browser-mm/playwright.config.ts) &mdash; 16 lines
+- [`pnpm-lock.yaml`](examples/wasm-typescript-browser-mm/pnpm-lock.yaml) &mdash; 571 lines
+- [`README.md`](examples/wasm-typescript-browser-mm/README.md) &mdash; 22 lines
+- [`tsconfig.json`](examples/wasm-typescript-browser-mm/tsconfig.json) &mdash; 14 lines
+- [`vite.config.ts`](examples/wasm-typescript-browser-mm/vite.config.ts) &mdash; 11 lines
 
 </details>
 
 <details>
 <summary><code>examples/wasm-typescript-browser-mm/src/</code> &mdash; 1 file(s)</summary>
 
-- [`main.ts`](examples/wasm-typescript-browser-mm/src/main.ts)
+- [`main.ts`](examples/wasm-typescript-browser-mm/src/main.ts) &mdash; 88 lines
 
 </details>
 
 <details>
 <summary><code>examples/wasm-typescript-browser-mm/tests/</code> &mdash; 1 file(s)</summary>
 
-- [`browser.spec.ts`](examples/wasm-typescript-browser-mm/tests/browser.spec.ts)
+- [`browser.spec.ts`](examples/wasm-typescript-browser-mm/tests/browser.spec.ts) &mdash; 37 lines
 
 </details>
 
 <details>
 <summary><code>examples/wasm-typescript-cloudflare-proxy/</code> &mdash; 7 file(s)</summary>
 
-- [`package.json`](examples/wasm-typescript-cloudflare-proxy/package.json)
-- [`pnpm-lock.yaml`](examples/wasm-typescript-cloudflare-proxy/pnpm-lock.yaml)
-- [`pnpm-workspace.yaml`](examples/wasm-typescript-cloudflare-proxy/pnpm-workspace.yaml)
-- [`README.md`](examples/wasm-typescript-cloudflare-proxy/README.md)
-- [`tsconfig.json`](examples/wasm-typescript-cloudflare-proxy/tsconfig.json)
-- [`vitest.config.ts`](examples/wasm-typescript-cloudflare-proxy/vitest.config.ts)
-- [`wrangler.toml`](examples/wasm-typescript-cloudflare-proxy/wrangler.toml)
+- [`package.json`](examples/wasm-typescript-cloudflare-proxy/package.json) &mdash; 26 lines
+- [`pnpm-lock.yaml`](examples/wasm-typescript-cloudflare-proxy/pnpm-lock.yaml) &mdash; 1,908 lines
+- [`pnpm-workspace.yaml`](examples/wasm-typescript-cloudflare-proxy/pnpm-workspace.yaml) &mdash; 4 lines
+- [`README.md`](examples/wasm-typescript-cloudflare-proxy/README.md) &mdash; 42 lines
+- [`tsconfig.json`](examples/wasm-typescript-cloudflare-proxy/tsconfig.json) &mdash; 14 lines
+- [`vitest.config.ts`](examples/wasm-typescript-cloudflare-proxy/vitest.config.ts) &mdash; 15 lines
+- [`wrangler.toml`](examples/wasm-typescript-cloudflare-proxy/wrangler.toml) &mdash; 10 lines
 
 </details>
 
 <details>
 <summary><code>examples/wasm-typescript-cloudflare-proxy/scripts/</code> &mdash; 1 file(s)</summary>
 
-- [`build.mjs`](examples/wasm-typescript-cloudflare-proxy/scripts/build.mjs)
+- [`build.mjs`](examples/wasm-typescript-cloudflare-proxy/scripts/build.mjs) &mdash; 66 lines
 
 </details>
 
 <details>
 <summary><code>examples/wasm-typescript-cloudflare-proxy/src/</code> &mdash; 3 file(s)</summary>
 
-- [`vite-env.d.ts`](examples/wasm-typescript-cloudflare-proxy/src/vite-env.d.ts)
-- [`wasm.d.ts`](examples/wasm-typescript-cloudflare-proxy/src/wasm.d.ts)
-- [`worker.ts`](examples/wasm-typescript-cloudflare-proxy/src/worker.ts)
+- [`vite-env.d.ts`](examples/wasm-typescript-cloudflare-proxy/src/vite-env.d.ts) &mdash; 4 lines
+- [`wasm.d.ts`](examples/wasm-typescript-cloudflare-proxy/src/wasm.d.ts) &mdash; 4 lines
+- [`worker.ts`](examples/wasm-typescript-cloudflare-proxy/src/worker.ts) &mdash; 104 lines
 
 </details>
 
 <details>
 <summary><code>examples/wasm-typescript-cloudflare-proxy/tests/</code> &mdash; 3 file(s)</summary>
 
-- [`forbidden-instantiation.spec.ts`](examples/wasm-typescript-cloudflare-proxy/tests/forbidden-instantiation.spec.ts)
-- [`proxy.spec.ts`](examples/wasm-typescript-cloudflare-proxy/tests/proxy.spec.ts)
-- [`worker.spec.ts`](examples/wasm-typescript-cloudflare-proxy/tests/worker.spec.ts)
+- [`forbidden-instantiation.spec.ts`](examples/wasm-typescript-cloudflare-proxy/tests/forbidden-instantiation.spec.ts) &mdash; 17 lines
+- [`proxy.spec.ts`](examples/wasm-typescript-cloudflare-proxy/tests/proxy.spec.ts) &mdash; 32 lines
+- [`worker.spec.ts`](examples/wasm-typescript-cloudflare-proxy/tests/worker.spec.ts) &mdash; 12 lines
 
 </details>
 
 <details>
 <summary><code>examples/wasm-typescript-node-viem/</code> &mdash; 4 file(s)</summary>
 
-- [`package.json`](examples/wasm-typescript-node-viem/package.json)
-- [`pnpm-lock.yaml`](examples/wasm-typescript-node-viem/pnpm-lock.yaml)
-- [`README.md`](examples/wasm-typescript-node-viem/README.md)
-- [`tsconfig.json`](examples/wasm-typescript-node-viem/tsconfig.json)
+- [`package.json`](examples/wasm-typescript-node-viem/package.json) &mdash; 22 lines
+- [`pnpm-lock.yaml`](examples/wasm-typescript-node-viem/pnpm-lock.yaml) &mdash; 922 lines
+- [`README.md`](examples/wasm-typescript-node-viem/README.md) &mdash; 22 lines
+- [`tsconfig.json`](examples/wasm-typescript-node-viem/tsconfig.json) &mdash; 14 lines
 
 </details>
 
 <details>
 <summary><code>examples/wasm-typescript-node-viem/src/</code> &mdash; 2 file(s)</summary>
 
-- [`index.test.ts`](examples/wasm-typescript-node-viem/src/index.test.ts)
-- [`index.ts`](examples/wasm-typescript-node-viem/src/index.ts)
+- [`index.test.ts`](examples/wasm-typescript-node-viem/src/index.test.ts) &mdash; 13 lines
+- [`index.ts`](examples/wasm-typescript-node-viem/src/index.ts) &mdash; 76 lines
 
 </details>
 
 <details>
 <summary><code>examples/wasm/browser-wallet-console/</code> &mdash; 5 file(s)</summary>
 
-- [`.gitignore`](examples/wasm/browser-wallet-console/.gitignore)
-- [`Cargo.toml`](examples/wasm/browser-wallet-console/Cargo.toml)
-- [`index.html`](examples/wasm/browser-wallet-console/index.html)
-- [`LICENSE`](examples/wasm/browser-wallet-console/LICENSE)
-- [`README.md`](examples/wasm/browser-wallet-console/README.md)
+- [`.gitignore`](examples/wasm/browser-wallet-console/.gitignore) &mdash; 3 lines
+- [`Cargo.toml`](examples/wasm/browser-wallet-console/Cargo.toml) &mdash; 25 lines
+- [`index.html`](examples/wasm/browser-wallet-console/index.html) &mdash; 2,024 lines
+- [`LICENSE`](examples/wasm/browser-wallet-console/LICENSE) &mdash; 674 lines
+- [`README.md`](examples/wasm/browser-wallet-console/README.md) &mdash; 81 lines
 
 </details>
 
 <details>
 <summary><code>examples/wasm/browser-wallet-console/src/</code> &mdash; 1 file(s)</summary>
 
-- [`lib.rs`](examples/wasm/browser-wallet-console/src/lib.rs)
+- [`lib.rs`](examples/wasm/browser-wallet-console/src/lib.rs) &mdash; 1,445 lines
 
 </details>
 
 <details>
 <summary><code>examples/wasm/browser-wallet-console/tests/</code> &mdash; 6 file(s)</summary>
 
-- [`selection_confirmation_contract.rs`](examples/wasm/browser-wallet-console/tests/selection_confirmation_contract.rs)
-- [`selection_reconnect_contract.rs`](examples/wasm/browser-wallet-console/tests/selection_reconnect_contract.rs)
-- [`session_actions_contract.rs`](examples/wasm/browser-wallet-console/tests/session_actions_contract.rs)
-- [`transport_symbol_smoke.rs`](examples/wasm/browser-wallet-console/tests/transport_symbol_smoke.rs)
-- [`walkthrough_contract.rs`](examples/wasm/browser-wallet-console/tests/walkthrough_contract.rs)
-- [`wasm_deterministic.rs`](examples/wasm/browser-wallet-console/tests/wasm_deterministic.rs)
+- [`selection_confirmation_contract.rs`](examples/wasm/browser-wallet-console/tests/selection_confirmation_contract.rs) &mdash; 215 lines
+- [`selection_reconnect_contract.rs`](examples/wasm/browser-wallet-console/tests/selection_reconnect_contract.rs) &mdash; 190 lines
+- [`session_actions_contract.rs`](examples/wasm/browser-wallet-console/tests/session_actions_contract.rs) &mdash; 122 lines
+- [`transport_symbol_smoke.rs`](examples/wasm/browser-wallet-console/tests/transport_symbol_smoke.rs) &mdash; 20 lines
+- [`walkthrough_contract.rs`](examples/wasm/browser-wallet-console/tests/walkthrough_contract.rs) &mdash; 86 lines
+- [`wasm_deterministic.rs`](examples/wasm/browser-wallet-console/tests/wasm_deterministic.rs) &mdash; 167 lines
 
 </details>
 
 <details>
 <summary><code>examples/wasm/sdk-verification-console/</code> &mdash; 5 file(s)</summary>
 
-- [`.gitignore`](examples/wasm/sdk-verification-console/.gitignore)
-- [`Cargo.toml`](examples/wasm/sdk-verification-console/Cargo.toml)
-- [`index.html`](examples/wasm/sdk-verification-console/index.html)
-- [`LICENSE`](examples/wasm/sdk-verification-console/LICENSE)
-- [`README.md`](examples/wasm/sdk-verification-console/README.md)
+- [`.gitignore`](examples/wasm/sdk-verification-console/.gitignore) &mdash; 3 lines
+- [`Cargo.toml`](examples/wasm/sdk-verification-console/Cargo.toml) &mdash; 25 lines
+- [`index.html`](examples/wasm/sdk-verification-console/index.html) &mdash; 1,852 lines
+- [`LICENSE`](examples/wasm/sdk-verification-console/LICENSE) &mdash; 674 lines
+- [`README.md`](examples/wasm/sdk-verification-console/README.md) &mdash; 68 lines
 
 </details>
 
 <details>
 <summary><code>examples/wasm/sdk-verification-console/src/</code> &mdash; 1 file(s)</summary>
 
-- [`lib.rs`](examples/wasm/sdk-verification-console/src/lib.rs)
+- [`lib.rs`](examples/wasm/sdk-verification-console/src/lib.rs) &mdash; 753 lines
 
 </details>
 
 <details>
 <summary><code>examples/wasm/sdk-verification-console/tests/</code> &mdash; 4 file(s)</summary>
 
-- [`defaults_smoke.rs`](examples/wasm/sdk-verification-console/tests/defaults_smoke.rs)
-- [`deterministic_exports.rs`](examples/wasm/sdk-verification-console/tests/deterministic_exports.rs)
-- [`transport_symbol_smoke.rs`](examples/wasm/sdk-verification-console/tests/transport_symbol_smoke.rs)
-- [`walkthrough_contract.rs`](examples/wasm/sdk-verification-console/tests/walkthrough_contract.rs)
+- [`defaults_smoke.rs`](examples/wasm/sdk-verification-console/tests/defaults_smoke.rs) &mdash; 14 lines
+- [`deterministic_exports.rs`](examples/wasm/sdk-verification-console/tests/deterministic_exports.rs) &mdash; 351 lines
+- [`transport_symbol_smoke.rs`](examples/wasm/sdk-verification-console/tests/transport_symbol_smoke.rs) &mdash; 20 lines
+- [`walkthrough_contract.rs`](examples/wasm/sdk-verification-console/tests/walkthrough_contract.rs) &mdash; 63 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/</code> &mdash; 3 file(s)</summary>
 
-- [`Cargo.lock`](fuzz/Cargo.lock)
-- [`Cargo.toml`](fuzz/Cargo.toml)
-- [`README.md`](fuzz/README.md)
+- [`Cargo.lock`](fuzz/Cargo.lock) &mdash; 4,214 lines
+- [`Cargo.toml`](fuzz/Cargo.toml) &mdash; 397 lines
+- [`README.md`](fuzz/README.md) &mdash; 190 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_amount_from_units/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_amount_from_units/README.md)
+- [`README.md`](fuzz/corpus/fuzz_amount_from_units/README.md) &mdash; 28 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_amount_parse/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_amount_parse/README.md)
+- [`README.md`](fuzz/corpus/fuzz_amount_parse/README.md) &mdash; 30 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_amount_parse_units/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_amount_parse_units/README.md)
+- [`README.md`](fuzz/corpus/fuzz_amount_parse_units/README.md) &mdash; 28 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_app_data_cid_roundtrip/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_app_data_cid_roundtrip/README.md)
+- [`README.md`](fuzz/corpus/fuzz_app_data_cid_roundtrip/README.md) &mdash; 51 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_app_data_merge/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_app_data_merge/README.md)
+- [`README.md`](fuzz/corpus/fuzz_app_data_merge/README.md) &mdash; 21 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_app_data_params_from_doc/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_app_data_params_from_doc/README.md)
+- [`README.md`](fuzz/corpus/fuzz_app_data_params_from_doc/README.md) &mdash; 18 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_app_data_size_limit/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_app_data_size_limit/README.md)
+- [`README.md`](fuzz/corpus/fuzz_app_data_size_limit/README.md) &mdash; 18 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_append_query_string/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_append_query_string/README.md)
+- [`README.md`](fuzz/corpus/fuzz_append_query_string/README.md) &mdash; 28 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_calculate_total_fee/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_calculate_total_fee/README.md)
+- [`README.md`](fuzz/corpus/fuzz_calculate_total_fee/README.md) &mdash; 19 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_cid_to_app_data_hex/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_cid_to_app_data_hex/README.md)
+- [`README.md`](fuzz/corpus/fuzz_cid_to_app_data_hex/README.md) &mdash; 19 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_contract_call_serde/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_contract_call_serde/README.md)
+- [`README.md`](fuzz/corpus/fuzz_contract_call_serde/README.md) &mdash; 28 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_core_identity_validators/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_core_identity_validators/README.md)
+- [`README.md`](fuzz/corpus/fuzz_core_identity_validators/README.md) &mdash; 27 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_decode_magic_value_response/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_decode_magic_value_response/README.md)
+- [`README.md`](fuzz/corpus/fuzz_decode_magic_value_response/README.md) &mdash; 22 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_decoded_body_canonical_status_text/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_decoded_body_canonical_status_text/README.md)
+- [`README.md`](fuzz/corpus/fuzz_decoded_body_canonical_status_text/README.md) &mdash; 21 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_ecdsa_v_normalization/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_ecdsa_v_normalization/README.md)
+- [`README.md`](fuzz/corpus/fuzz_ecdsa_v_normalization/README.md) &mdash; 79 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_eip1271_signature_data_codec/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_eip1271_signature_data_codec/README.md)
+- [`README.md`](fuzz/corpus/fuzz_eip1271_signature_data_codec/README.md) &mdash; 24 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_erc20_permit_typed_data_hash/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_erc20_permit_typed_data_hash/README.md)
+- [`README.md`](fuzz/corpus/fuzz_erc20_permit_typed_data_hash/README.md) &mdash; 21 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_eth_flow_event_log_decode/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_eth_flow_event_log_decode/README.md)
+- [`README.md`](fuzz/corpus/fuzz_eth_flow_event_log_decode/README.md) &mdash; 21 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_ethflow_create_order_encode/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_ethflow_create_order_encode/README.md)
+- [`README.md`](fuzz/corpus/fuzz_ethflow_create_order_encode/README.md) &mdash; 22 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_flashloan_hints/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_flashloan_hints/README.md)
+- [`README.md`](fuzz/corpus/fuzz_flashloan_hints/README.md) &mdash; 19 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_hash_order_cancellations/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_hash_order_cancellations/README.md)
+- [`README.md`](fuzz/corpus/fuzz_hash_order_cancellations/README.md) &mdash; 42 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_hook_list_deserialize/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_hook_list_deserialize/README.md)
+- [`README.md`](fuzz/corpus/fuzz_hook_list_deserialize/README.md) &mdash; 20 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_jitter_delay_for_attempt/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_jitter_delay_for_attempt/README.md)
+- [`README.md`](fuzz/corpus/fuzz_jitter_delay_for_attempt/README.md) &mdash; 29 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_onchain_order_log_decode/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_onchain_order_log_decode/README.md)
+- [`README.md`](fuzz/corpus/fuzz_onchain_order_log_decode/README.md) &mdash; 20 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_order_bounds_validator/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_order_bounds_validator/README.md)
+- [`README.md`](fuzz/corpus/fuzz_order_bounds_validator/README.md) &mdash; 30 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_order_signature_classify/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_order_signature_classify/README.md)
+- [`README.md`](fuzz/corpus/fuzz_order_signature_classify/README.md) &mdash; 56 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_order_uid_pack_unpack/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_order_uid_pack_unpack/README.md)
+- [`README.md`](fuzz/corpus/fuzz_order_uid_pack_unpack/README.md) &mdash; 32 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_orderbook_rejection_code/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_orderbook_rejection_code/README.md)
+- [`README.md`](fuzz/corpus/fuzz_orderbook_rejection_code/README.md) &mdash; 21 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_orderbook_rejection_decode/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_orderbook_rejection_decode/README.md)
+- [`README.md`](fuzz/corpus/fuzz_orderbook_rejection_decode/README.md) &mdash; 23 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_parse_retry_after/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_parse_retry_after/README.md)
+- [`README.md`](fuzz/corpus/fuzz_parse_retry_after/README.md) &mdash; 31 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_partner_fee_from_value/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_partner_fee_from_value/README.md)
+- [`README.md`](fuzz/corpus/fuzz_partner_fee_from_value/README.md) &mdash; 19 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_recover_ecdsa_address/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_recover_ecdsa_address/README.md)
+- [`README.md`](fuzz/corpus/fuzz_recover_ecdsa_address/README.md) &mdash; 23 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_recoverable_signature_differential/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_recoverable_signature_differential/README.md)
+- [`README.md`](fuzz/corpus/fuzz_recoverable_signature_differential/README.md) &mdash; 30 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_recoverable_signature_parse_hex/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_recoverable_signature_parse_hex/README.md)
+- [`README.md`](fuzz/corpus/fuzz_recoverable_signature_parse_hex/README.md) &mdash; 30 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_redact_response_body/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_redact_response_body/README.md)
+- [`README.md`](fuzz/corpus/fuzz_redact_response_body/README.md) &mdash; 29 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_retry_policy_delay/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_retry_policy_delay/README.md)
+- [`README.md`](fuzz/corpus/fuzz_retry_policy_delay/README.md) &mdash; 27 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_rpc_error_payload_serde/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_rpc_error_payload_serde/README.md)
+- [`README.md`](fuzz/corpus/fuzz_rpc_error_payload_serde/README.md) &mdash; 29 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_schema_version_is_semver/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_schema_version_is_semver/README.md)
+- [`README.md`](fuzz/corpus/fuzz_schema_version_is_semver/README.md) &mdash; 20 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_settlement_event_log_decode/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_settlement_event_log_decode/README.md)
+- [`README.md`](fuzz/corpus/fuzz_settlement_event_log_decode/README.md) &mdash; 21 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_settlement_invalidate_order_encode/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_settlement_invalidate_order_encode/README.md)
+- [`README.md`](fuzz/corpus/fuzz_settlement_invalidate_order_encode/README.md) &mdash; 20 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_settlement_settle_encode/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_settlement_settle_encode/README.md)
+- [`README.md`](fuzz/corpus/fuzz_settlement_settle_encode/README.md) &mdash; 23 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_signed_amount_parse/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_signed_amount_parse/README.md)
+- [`README.md`](fuzz/corpus/fuzz_signed_amount_parse/README.md) &mdash; 24 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_signing_domain_separator/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_signing_domain_separator/README.md)
+- [`README.md`](fuzz/corpus/fuzz_signing_domain_separator/README.md) &mdash; 34 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_slippage_amounts/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_slippage_amounts/README.md)
+- [`README.md`](fuzz/corpus/fuzz_slippage_amounts/README.md) &mdash; 28 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_slippage_policy_helpers/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_slippage_policy_helpers/README.md)
+- [`README.md`](fuzz/corpus/fuzz_slippage_policy_helpers/README.md) &mdash; 26 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_stringify_deterministic/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_stringify_deterministic/README.md)
+- [`README.md`](fuzz/corpus/fuzz_stringify_deterministic/README.md) &mdash; 20 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_subgraph_graphql_error_decode/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_subgraph_graphql_error_decode/README.md)
+- [`README.md`](fuzz/corpus/fuzz_subgraph_graphql_error_decode/README.md) &mdash; 79 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_transaction_request_serde/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_transaction_request_serde/README.md)
+- [`README.md`](fuzz/corpus/fuzz_transaction_request_serde/README.md) &mdash; 28 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_transport_error_classify/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_transport_error_classify/README.md)
+- [`README.md`](fuzz/corpus/fuzz_transport_error_classify/README.md) &mdash; 22 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_typed_data_digest/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_typed_data_digest/README.md)
+- [`README.md`](fuzz/corpus/fuzz_typed_data_digest/README.md) &mdash; 34 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_valid_to_relative/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_valid_to_relative/README.md)
+- [`README.md`](fuzz/corpus/fuzz_valid_to_relative/README.md) &mdash; 32 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/corpus/fuzz_vault_relayer_transfer_from_accounts_encode/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_vault_relayer_transfer_from_accounts_encode/README.md)
+- [`README.md`](fuzz/corpus/fuzz_vault_relayer_transfer_from_accounts_encode/README.md) &mdash; 23 lines
 
 </details>
 
 <details>
 <summary><code>fuzz/fuzz_targets/</code> &mdash; 52 file(s)</summary>
 
-- [`fuzz_amount_from_units.rs`](fuzz/fuzz_targets/fuzz_amount_from_units.rs)
-- [`fuzz_amount_parse_units.rs`](fuzz/fuzz_targets/fuzz_amount_parse_units.rs)
-- [`fuzz_amount_parse.rs`](fuzz/fuzz_targets/fuzz_amount_parse.rs)
-- [`fuzz_app_data_cid_roundtrip.rs`](fuzz/fuzz_targets/fuzz_app_data_cid_roundtrip.rs)
-- [`fuzz_app_data_merge.rs`](fuzz/fuzz_targets/fuzz_app_data_merge.rs)
-- [`fuzz_app_data_params_from_doc.rs`](fuzz/fuzz_targets/fuzz_app_data_params_from_doc.rs)
-- [`fuzz_app_data_size_limit.rs`](fuzz/fuzz_targets/fuzz_app_data_size_limit.rs)
-- [`fuzz_append_query_string.rs`](fuzz/fuzz_targets/fuzz_append_query_string.rs)
-- [`fuzz_calculate_total_fee.rs`](fuzz/fuzz_targets/fuzz_calculate_total_fee.rs)
-- [`fuzz_cid_to_app_data_hex.rs`](fuzz/fuzz_targets/fuzz_cid_to_app_data_hex.rs)
-- [`fuzz_contract_call_serde.rs`](fuzz/fuzz_targets/fuzz_contract_call_serde.rs)
-- [`fuzz_core_identity_validators.rs`](fuzz/fuzz_targets/fuzz_core_identity_validators.rs)
-- [`fuzz_decode_magic_value_response.rs`](fuzz/fuzz_targets/fuzz_decode_magic_value_response.rs)
-- [`fuzz_decoded_body_canonical_status_text.rs`](fuzz/fuzz_targets/fuzz_decoded_body_canonical_status_text.rs)
-- [`fuzz_ecdsa_v_normalization.rs`](fuzz/fuzz_targets/fuzz_ecdsa_v_normalization.rs)
-- [`fuzz_eip1271_signature_data_codec.rs`](fuzz/fuzz_targets/fuzz_eip1271_signature_data_codec.rs)
-- [`fuzz_erc20_permit_typed_data_hash.rs`](fuzz/fuzz_targets/fuzz_erc20_permit_typed_data_hash.rs)
-- [`fuzz_eth_flow_event_log_decode.rs`](fuzz/fuzz_targets/fuzz_eth_flow_event_log_decode.rs)
-- [`fuzz_ethflow_create_order_encode.rs`](fuzz/fuzz_targets/fuzz_ethflow_create_order_encode.rs)
-- [`fuzz_flashloan_hints.rs`](fuzz/fuzz_targets/fuzz_flashloan_hints.rs)
-- [`fuzz_hash_order_cancellations.rs`](fuzz/fuzz_targets/fuzz_hash_order_cancellations.rs)
-- [`fuzz_hook_list_deserialize.rs`](fuzz/fuzz_targets/fuzz_hook_list_deserialize.rs)
-- [`fuzz_jitter_delay_for_attempt.rs`](fuzz/fuzz_targets/fuzz_jitter_delay_for_attempt.rs)
-- [`fuzz_onchain_order_log_decode.rs`](fuzz/fuzz_targets/fuzz_onchain_order_log_decode.rs)
-- [`fuzz_order_bounds_validator.rs`](fuzz/fuzz_targets/fuzz_order_bounds_validator.rs)
-- [`fuzz_order_signature_classify.rs`](fuzz/fuzz_targets/fuzz_order_signature_classify.rs)
-- [`fuzz_order_uid_pack_unpack.rs`](fuzz/fuzz_targets/fuzz_order_uid_pack_unpack.rs)
-- [`fuzz_orderbook_rejection_code.rs`](fuzz/fuzz_targets/fuzz_orderbook_rejection_code.rs)
-- [`fuzz_orderbook_rejection_decode.rs`](fuzz/fuzz_targets/fuzz_orderbook_rejection_decode.rs)
-- [`fuzz_parse_retry_after.rs`](fuzz/fuzz_targets/fuzz_parse_retry_after.rs)
-- [`fuzz_partner_fee_from_value.rs`](fuzz/fuzz_targets/fuzz_partner_fee_from_value.rs)
-- [`fuzz_recover_ecdsa_address.rs`](fuzz/fuzz_targets/fuzz_recover_ecdsa_address.rs)
-- [`fuzz_recoverable_signature_differential.rs`](fuzz/fuzz_targets/fuzz_recoverable_signature_differential.rs)
-- [`fuzz_recoverable_signature_parse_hex.rs`](fuzz/fuzz_targets/fuzz_recoverable_signature_parse_hex.rs)
-- [`fuzz_redact_response_body.rs`](fuzz/fuzz_targets/fuzz_redact_response_body.rs)
-- [`fuzz_retry_policy_delay.rs`](fuzz/fuzz_targets/fuzz_retry_policy_delay.rs)
-- [`fuzz_rpc_error_payload_serde.rs`](fuzz/fuzz_targets/fuzz_rpc_error_payload_serde.rs)
-- [`fuzz_schema_version_is_semver.rs`](fuzz/fuzz_targets/fuzz_schema_version_is_semver.rs)
-- [`fuzz_settlement_event_log_decode.rs`](fuzz/fuzz_targets/fuzz_settlement_event_log_decode.rs)
-- [`fuzz_settlement_invalidate_order_encode.rs`](fuzz/fuzz_targets/fuzz_settlement_invalidate_order_encode.rs)
-- [`fuzz_settlement_settle_encode.rs`](fuzz/fuzz_targets/fuzz_settlement_settle_encode.rs)
-- [`fuzz_signed_amount_parse.rs`](fuzz/fuzz_targets/fuzz_signed_amount_parse.rs)
-- [`fuzz_signing_domain_separator.rs`](fuzz/fuzz_targets/fuzz_signing_domain_separator.rs)
-- [`fuzz_slippage_amounts.rs`](fuzz/fuzz_targets/fuzz_slippage_amounts.rs)
-- [`fuzz_slippage_policy_helpers.rs`](fuzz/fuzz_targets/fuzz_slippage_policy_helpers.rs)
-- [`fuzz_stringify_deterministic.rs`](fuzz/fuzz_targets/fuzz_stringify_deterministic.rs)
-- [`fuzz_subgraph_graphql_error_decode.rs`](fuzz/fuzz_targets/fuzz_subgraph_graphql_error_decode.rs)
-- [`fuzz_transaction_request_serde.rs`](fuzz/fuzz_targets/fuzz_transaction_request_serde.rs)
-- [`fuzz_transport_error_classify.rs`](fuzz/fuzz_targets/fuzz_transport_error_classify.rs)
-- [`fuzz_typed_data_digest.rs`](fuzz/fuzz_targets/fuzz_typed_data_digest.rs)
-- [`fuzz_valid_to_relative.rs`](fuzz/fuzz_targets/fuzz_valid_to_relative.rs)
-- [`fuzz_vault_relayer_transfer_from_accounts_encode.rs`](fuzz/fuzz_targets/fuzz_vault_relayer_transfer_from_accounts_encode.rs)
+- [`fuzz_amount_from_units.rs`](fuzz/fuzz_targets/fuzz_amount_from_units.rs) &mdash; 82 lines
+- [`fuzz_amount_parse_units.rs`](fuzz/fuzz_targets/fuzz_amount_parse_units.rs) &mdash; 63 lines
+- [`fuzz_amount_parse.rs`](fuzz/fuzz_targets/fuzz_amount_parse.rs) &mdash; 76 lines
+- [`fuzz_app_data_cid_roundtrip.rs`](fuzz/fuzz_targets/fuzz_app_data_cid_roundtrip.rs) &mdash; 91 lines
+- [`fuzz_app_data_merge.rs`](fuzz/fuzz_targets/fuzz_app_data_merge.rs) &mdash; 310 lines
+- [`fuzz_app_data_params_from_doc.rs`](fuzz/fuzz_targets/fuzz_app_data_params_from_doc.rs) &mdash; 363 lines
+- [`fuzz_app_data_size_limit.rs`](fuzz/fuzz_targets/fuzz_app_data_size_limit.rs) &mdash; 159 lines
+- [`fuzz_append_query_string.rs`](fuzz/fuzz_targets/fuzz_append_query_string.rs) &mdash; 179 lines
+- [`fuzz_calculate_total_fee.rs`](fuzz/fuzz_targets/fuzz_calculate_total_fee.rs) &mdash; 97 lines
+- [`fuzz_cid_to_app_data_hex.rs`](fuzz/fuzz_targets/fuzz_cid_to_app_data_hex.rs) &mdash; 91 lines
+- [`fuzz_contract_call_serde.rs`](fuzz/fuzz_targets/fuzz_contract_call_serde.rs) &mdash; 64 lines
+- [`fuzz_core_identity_validators.rs`](fuzz/fuzz_targets/fuzz_core_identity_validators.rs) &mdash; 196 lines
+- [`fuzz_decode_magic_value_response.rs`](fuzz/fuzz_targets/fuzz_decode_magic_value_response.rs) &mdash; 233 lines
+- [`fuzz_decoded_body_canonical_status_text.rs`](fuzz/fuzz_targets/fuzz_decoded_body_canonical_status_text.rs) &mdash; 244 lines
+- [`fuzz_ecdsa_v_normalization.rs`](fuzz/fuzz_targets/fuzz_ecdsa_v_normalization.rs) &mdash; 54 lines
+- [`fuzz_eip1271_signature_data_codec.rs`](fuzz/fuzz_targets/fuzz_eip1271_signature_data_codec.rs) &mdash; 57 lines
+- [`fuzz_erc20_permit_typed_data_hash.rs`](fuzz/fuzz_targets/fuzz_erc20_permit_typed_data_hash.rs) &mdash; 100 lines
+- [`fuzz_eth_flow_event_log_decode.rs`](fuzz/fuzz_targets/fuzz_eth_flow_event_log_decode.rs) &mdash; 52 lines
+- [`fuzz_ethflow_create_order_encode.rs`](fuzz/fuzz_targets/fuzz_ethflow_create_order_encode.rs) &mdash; 115 lines
+- [`fuzz_flashloan_hints.rs`](fuzz/fuzz_targets/fuzz_flashloan_hints.rs) &mdash; 112 lines
+- [`fuzz_hash_order_cancellations.rs`](fuzz/fuzz_targets/fuzz_hash_order_cancellations.rs) &mdash; 163 lines
+- [`fuzz_hook_list_deserialize.rs`](fuzz/fuzz_targets/fuzz_hook_list_deserialize.rs) &mdash; 97 lines
+- [`fuzz_jitter_delay_for_attempt.rs`](fuzz/fuzz_targets/fuzz_jitter_delay_for_attempt.rs) &mdash; 116 lines
+- [`fuzz_onchain_order_log_decode.rs`](fuzz/fuzz_targets/fuzz_onchain_order_log_decode.rs) &mdash; 61 lines
+- [`fuzz_order_bounds_validator.rs`](fuzz/fuzz_targets/fuzz_order_bounds_validator.rs) &mdash; 290 lines
+- [`fuzz_order_signature_classify.rs`](fuzz/fuzz_targets/fuzz_order_signature_classify.rs) &mdash; 83 lines
+- [`fuzz_order_uid_pack_unpack.rs`](fuzz/fuzz_targets/fuzz_order_uid_pack_unpack.rs) &mdash; 57 lines
+- [`fuzz_orderbook_rejection_code.rs`](fuzz/fuzz_targets/fuzz_orderbook_rejection_code.rs) &mdash; 88 lines
+- [`fuzz_orderbook_rejection_decode.rs`](fuzz/fuzz_targets/fuzz_orderbook_rejection_decode.rs) &mdash; 53 lines
+- [`fuzz_parse_retry_after.rs`](fuzz/fuzz_targets/fuzz_parse_retry_after.rs) &mdash; 52 lines
+- [`fuzz_partner_fee_from_value.rs`](fuzz/fuzz_targets/fuzz_partner_fee_from_value.rs) &mdash; 79 lines
+- [`fuzz_recover_ecdsa_address.rs`](fuzz/fuzz_targets/fuzz_recover_ecdsa_address.rs) &mdash; 88 lines
+- [`fuzz_recoverable_signature_differential.rs`](fuzz/fuzz_targets/fuzz_recoverable_signature_differential.rs) &mdash; 92 lines
+- [`fuzz_recoverable_signature_parse_hex.rs`](fuzz/fuzz_targets/fuzz_recoverable_signature_parse_hex.rs) &mdash; 62 lines
+- [`fuzz_redact_response_body.rs`](fuzz/fuzz_targets/fuzz_redact_response_body.rs) &mdash; 85 lines
+- [`fuzz_retry_policy_delay.rs`](fuzz/fuzz_targets/fuzz_retry_policy_delay.rs) &mdash; 154 lines
+- [`fuzz_rpc_error_payload_serde.rs`](fuzz/fuzz_targets/fuzz_rpc_error_payload_serde.rs) &mdash; 72 lines
+- [`fuzz_schema_version_is_semver.rs`](fuzz/fuzz_targets/fuzz_schema_version_is_semver.rs) &mdash; 93 lines
+- [`fuzz_settlement_event_log_decode.rs`](fuzz/fuzz_targets/fuzz_settlement_event_log_decode.rs) &mdash; 54 lines
+- [`fuzz_settlement_invalidate_order_encode.rs`](fuzz/fuzz_targets/fuzz_settlement_invalidate_order_encode.rs) &mdash; 60 lines
+- [`fuzz_settlement_settle_encode.rs`](fuzz/fuzz_targets/fuzz_settlement_settle_encode.rs) &mdash; 209 lines
+- [`fuzz_signed_amount_parse.rs`](fuzz/fuzz_targets/fuzz_signed_amount_parse.rs) &mdash; 48 lines
+- [`fuzz_signing_domain_separator.rs`](fuzz/fuzz_targets/fuzz_signing_domain_separator.rs) &mdash; 127 lines
+- [`fuzz_slippage_amounts.rs`](fuzz/fuzz_targets/fuzz_slippage_amounts.rs) &mdash; 161 lines
+- [`fuzz_slippage_policy_helpers.rs`](fuzz/fuzz_targets/fuzz_slippage_policy_helpers.rs) &mdash; 183 lines
+- [`fuzz_stringify_deterministic.rs`](fuzz/fuzz_targets/fuzz_stringify_deterministic.rs) &mdash; 74 lines
+- [`fuzz_subgraph_graphql_error_decode.rs`](fuzz/fuzz_targets/fuzz_subgraph_graphql_error_decode.rs) &mdash; 93 lines
+- [`fuzz_transaction_request_serde.rs`](fuzz/fuzz_targets/fuzz_transaction_request_serde.rs) &mdash; 63 lines
+- [`fuzz_transport_error_classify.rs`](fuzz/fuzz_targets/fuzz_transport_error_classify.rs) &mdash; 283 lines
+- [`fuzz_typed_data_digest.rs`](fuzz/fuzz_targets/fuzz_typed_data_digest.rs) &mdash; 143 lines
+- [`fuzz_valid_to_relative.rs`](fuzz/fuzz_targets/fuzz_valid_to_relative.rs) &mdash; 90 lines
+- [`fuzz_vault_relayer_transfer_from_accounts_encode.rs`](fuzz/fuzz_targets/fuzz_vault_relayer_transfer_from_accounts_encode.rs) &mdash; 96 lines
 
 </details>
 
 <details>
 <summary><code>parity/</code> &mdash; 9 file(s)</summary>
 
-- [`cow-shed-invariants.md`](parity/cow-shed-invariants.md)
-- [`ink-composable-rows.json`](parity/ink-composable-rows.json)
-- [`ink-probe-results.json`](parity/ink-probe-results.json)
-- [`lens-probe-results.json`](parity/lens-probe-results.json)
-- [`npm-evidence.yaml`](parity/npm-evidence.yaml)
-- [`optimism-probe-results.json`](parity/optimism-probe-results.json)
-- [`README.md`](parity/README.md)
-- [`self-pinning-allowlist.yaml`](parity/self-pinning-allowlist.yaml)
-- [`source-lock.yaml`](parity/source-lock.yaml)
+- [`cow-shed-invariants.md`](parity/cow-shed-invariants.md) &mdash; 51 lines
+- [`ink-composable-rows.json`](parity/ink-composable-rows.json) &mdash; 55 lines
+- [`ink-probe-results.json`](parity/ink-probe-results.json) &mdash; 55 lines
+- [`lens-probe-results.json`](parity/lens-probe-results.json) &mdash; 24 lines
+- [`npm-evidence.yaml`](parity/npm-evidence.yaml) &mdash; 14 lines
+- [`optimism-probe-results.json`](parity/optimism-probe-results.json) &mdash; 48 lines
+- [`README.md`](parity/README.md) &mdash; 154 lines
+- [`self-pinning-allowlist.yaml`](parity/self-pinning-allowlist.yaml) &mdash; 133 lines
+- [`source-lock.yaml`](parity/source-lock.yaml) &mdash; 748 lines
 
 </details>
 
 <details>
 <summary><code>parity/dependency-audit/</code> &mdash; 1 file(s)</summary>
 
-- [`alloy-runtime-baseline.md`](parity/dependency-audit/alloy-runtime-baseline.md)
+- [`alloy-runtime-baseline.md`](parity/dependency-audit/alloy-runtime-baseline.md) &mdash; 44 lines
 
 </details>
 
 <details>
 <summary><code>parity/fixtures/</code> &mdash; 8 file(s)</summary>
 
-- [`app-data.json`](parity/fixtures/app-data.json)
-- [`contracts.json`](parity/fixtures/contracts.json)
-- [`core.json`](parity/fixtures/core.json)
-- [`orderbook.json`](parity/fixtures/orderbook.json)
-- [`sdk.json`](parity/fixtures/sdk.json)
-- [`signing.json`](parity/fixtures/signing.json)
-- [`subgraph.json`](parity/fixtures/subgraph.json)
-- [`trading.json`](parity/fixtures/trading.json)
+- [`app-data.json`](parity/fixtures/app-data.json) &mdash; 379 lines
+- [`contracts.json`](parity/fixtures/contracts.json) &mdash; 636 lines
+- [`core.json`](parity/fixtures/core.json) &mdash; 256 lines
+- [`orderbook.json`](parity/fixtures/orderbook.json) &mdash; 359 lines
+- [`sdk.json`](parity/fixtures/sdk.json) &mdash; 118 lines
+- [`signing.json`](parity/fixtures/signing.json) &mdash; 305 lines
+- [`subgraph.json`](parity/fixtures/subgraph.json) &mdash; 201 lines
+- [`trading.json`](parity/fixtures/trading.json) &mdash; 447 lines
 
 </details>
 
 <details>
 <summary><code>parity/fixtures/app_data/</code> &mdash; 3 file(s)</summary>
 
-- [`canonical_json_utf16.json`](parity/fixtures/app_data/canonical_json_utf16.json)
-- [`flashloan_v1.7.0.json`](parity/fixtures/app_data/flashloan_v1.7.0.json)
-- [`hooks_v1.14.0.json`](parity/fixtures/app_data/hooks_v1.14.0.json)
+- [`canonical_json_utf16.json`](parity/fixtures/app_data/canonical_json_utf16.json) &mdash; 20 lines
+- [`flashloan_v1.7.0.json`](parity/fixtures/app_data/flashloan_v1.7.0.json) &mdash; 7 lines
+- [`hooks_v1.14.0.json`](parity/fixtures/app_data/hooks_v1.14.0.json) &mdash; 24 lines
 
 </details>
 
 <details>
 <summary><code>parity/fixtures/composable/</code> &mdash; 16 file(s)</summary>
 
-- [`conditional_order_params_decode.json`](parity/fixtures/composable/conditional_order_params_decode.json)
-- [`forwarder_signature_blob.json`](parity/fixtures/composable/forwarder_signature_blob.json)
-- [`good_after_time_revert_sites.json`](parity/fixtures/composable/good_after_time_revert_sites.json)
-- [`multiplexer_leaf.json`](parity/fixtures/composable/multiplexer_leaf.json)
-- [`params_hash.json`](parity/fixtures/composable/params_hash.json)
-- [`perpetual_stable_swap_overflow.json`](parity/fixtures/composable/perpetual_stable_swap_overflow.json)
-- [`perpetual_stable_swap_revert_sites.json`](parity/fixtures/composable/perpetual_stable_swap_revert_sites.json)
-- [`poll_result_classification.json`](parity/fixtures/composable/poll_result_classification.json)
-- [`poll_result_selectors.json`](parity/fixtures/composable/poll_result_selectors.json)
-- [`safe_muxer_signature_blob.json`](parity/fixtures/composable/safe_muxer_signature_blob.json)
-- [`selectors.json`](parity/fixtures/composable/selectors.json)
-- [`stop_loss_revert_sites.json`](parity/fixtures/composable/stop_loss_revert_sites.json)
-- [`trade_above_threshold_revert_sites.json`](parity/fixtures/composable/trade_above_threshold_revert_sites.json)
-- [`twap_merkle_leaf.json`](parity/fixtures/composable/twap_merkle_leaf.json)
-- [`twap_order_id.json`](parity/fixtures/composable/twap_order_id.json)
-- [`twap_static_input.json`](parity/fixtures/composable/twap_static_input.json)
+- [`conditional_order_params_decode.json`](parity/fixtures/composable/conditional_order_params_decode.json) &mdash; 33 lines
+- [`forwarder_signature_blob.json`](parity/fixtures/composable/forwarder_signature_blob.json) &mdash; 150 lines
+- [`good_after_time_revert_sites.json`](parity/fixtures/composable/good_after_time_revert_sites.json) &mdash; 42 lines
+- [`multiplexer_leaf.json`](parity/fixtures/composable/multiplexer_leaf.json) &mdash; 31 lines
+- [`params_hash.json`](parity/fixtures/composable/params_hash.json) &mdash; 56 lines
+- [`perpetual_stable_swap_overflow.json`](parity/fixtures/composable/perpetual_stable_swap_overflow.json) &mdash; 27 lines
+- [`perpetual_stable_swap_revert_sites.json`](parity/fixtures/composable/perpetual_stable_swap_revert_sites.json) &mdash; 30 lines
+- [`poll_result_classification.json`](parity/fixtures/composable/poll_result_classification.json) &mdash; 35 lines
+- [`poll_result_selectors.json`](parity/fixtures/composable/poll_result_selectors.json) &mdash; 31 lines
+- [`safe_muxer_signature_blob.json`](parity/fixtures/composable/safe_muxer_signature_blob.json) &mdash; 160 lines
+- [`selectors.json`](parity/fixtures/composable/selectors.json) &mdash; 110 lines
+- [`stop_loss_revert_sites.json`](parity/fixtures/composable/stop_loss_revert_sites.json) &mdash; 48 lines
+- [`trade_above_threshold_revert_sites.json`](parity/fixtures/composable/trade_above_threshold_revert_sites.json) &mdash; 30 lines
+- [`twap_merkle_leaf.json`](parity/fixtures/composable/twap_merkle_leaf.json) &mdash; 20 lines
+- [`twap_order_id.json`](parity/fixtures/composable/twap_order_id.json) &mdash; 25 lines
+- [`twap_static_input.json`](parity/fixtures/composable/twap_static_input.json) &mdash; 32 lines
 
 </details>
 
 <details>
 <summary><code>parity/fixtures/cow_shed/</code> &mdash; 5 file(s)</summary>
 
-- [`domain_separator.json`](parity/fixtures/cow_shed/domain_separator.json)
-- [`eoa_signature_byte_order.json`](parity/fixtures/cow_shed/eoa_signature_byte_order.json)
-- [`execute_hooks_calldata.json`](parity/fixtures/cow_shed/execute_hooks_calldata.json)
-- [`execute_hooks_digest.json`](parity/fixtures/cow_shed/execute_hooks_digest.json)
-- [`proxy_addresses.json`](parity/fixtures/cow_shed/proxy_addresses.json)
+- [`domain_separator.json`](parity/fixtures/cow_shed/domain_separator.json) &mdash; 41 lines
+- [`eoa_signature_byte_order.json`](parity/fixtures/cow_shed/eoa_signature_byte_order.json) &mdash; 54 lines
+- [`execute_hooks_calldata.json`](parity/fixtures/cow_shed/execute_hooks_calldata.json) &mdash; 119 lines
+- [`execute_hooks_digest.json`](parity/fixtures/cow_shed/execute_hooks_digest.json) &mdash; 92 lines
+- [`proxy_addresses.json`](parity/fixtures/cow_shed/proxy_addresses.json) &mdash; 314 lines
 
 </details>
 
 <details>
 <summary><code>parity/fixtures/ecdsa/</code> &mdash; 1 file(s)</summary>
 
-- [`v_normalization.json`](parity/fixtures/ecdsa/v_normalization.json)
+- [`v_normalization.json`](parity/fixtures/ecdsa/v_normalization.json) &mdash; 152 lines
 
 </details>
 
 <details>
 <summary><code>parity/fixtures/eip712/</code> &mdash; 1 file(s)</summary>
 
-- [`order_digests.json`](parity/fixtures/eip712/order_digests.json)
+- [`order_digests.json`](parity/fixtures/eip712/order_digests.json) &mdash; 231 lines
 
 </details>
 
 <details>
 <summary><code>parity/fixtures/orderbook/</code> &mdash; 10 file(s)</summary>
 
-- [`app_data_upload_response.json`](parity/fixtures/orderbook/app_data_upload_response.json)
-- [`onchain_order_data.json`](parity/fixtures/orderbook/onchain_order_data.json)
-- [`order_parameters.json`](parity/fixtures/orderbook/order_parameters.json)
-- [`order_quote_response.json`](parity/fixtures/orderbook/order_quote_response.json)
-- [`order_with_full_metadata.json`](parity/fixtures/orderbook/order_with_full_metadata.json)
-- [`solver_competition_response.json`](parity/fixtures/orderbook/solver_competition_response.json)
-- [`solver_execution.json`](parity/fixtures/orderbook/solver_execution.json)
-- [`stored_order_quote.json`](parity/fixtures/orderbook/stored_order_quote.json)
-- [`total_surplus.json`](parity/fixtures/orderbook/total_surplus.json)
-- [`trade.json`](parity/fixtures/orderbook/trade.json)
+- [`app_data_upload_response.json`](parity/fixtures/orderbook/app_data_upload_response.json) &mdash; 1 lines
+- [`onchain_order_data.json`](parity/fixtures/orderbook/onchain_order_data.json) &mdash; 4 lines
+- [`order_parameters.json`](parity/fixtures/orderbook/order_parameters.json) &mdash; 18 lines
+- [`order_quote_response.json`](parity/fixtures/orderbook/order_quote_response.json) &mdash; 25 lines
+- [`order_with_full_metadata.json`](parity/fixtures/orderbook/order_with_full_metadata.json) &mdash; 74 lines
+- [`solver_competition_response.json`](parity/fixtures/orderbook/solver_competition_response.json) &mdash; 42 lines
+- [`solver_execution.json`](parity/fixtures/orderbook/solver_execution.json) &mdash; 7 lines
+- [`stored_order_quote.json`](parity/fixtures/orderbook/stored_order_quote.json) &mdash; 13 lines
+- [`total_surplus.json`](parity/fixtures/orderbook/total_surplus.json) &mdash; 3 lines
+- [`trade.json`](parity/fixtures/orderbook/trade.json) &mdash; 21 lines
 
 </details>
 
 <details>
 <summary><code>parity/fixtures/orderbook-requests/</code> &mdash; 4 file(s)</summary>
 
-- [`app_data_put.json`](parity/fixtures/orderbook-requests/app_data_put.json)
-- [`order_cancellations.json`](parity/fixtures/orderbook-requests/order_cancellations.json)
-- [`order_creation.json`](parity/fixtures/orderbook-requests/order_creation.json)
-- [`order_quote_request.json`](parity/fixtures/orderbook-requests/order_quote_request.json)
+- [`app_data_put.json`](parity/fixtures/orderbook-requests/app_data_put.json) &mdash; 38 lines
+- [`order_cancellations.json`](parity/fixtures/orderbook-requests/order_cancellations.json) &mdash; 28 lines
+- [`order_creation.json`](parity/fixtures/orderbook-requests/order_creation.json) &mdash; 94 lines
+- [`order_quote_request.json`](parity/fixtures/orderbook-requests/order_quote_request.json) &mdash; 55 lines
 
 </details>
 
 <details>
 <summary><code>parity/fixtures/retry_after/</code> &mdash; 3 file(s)</summary>
 
-- [`imf_fixdate_accept.json`](parity/fixtures/retry_after/imf_fixdate_accept.json)
-- [`imf_fixdate_reject.json`](parity/fixtures/retry_after/imf_fixdate_reject.json)
-- [`legacy_rfc850.json`](parity/fixtures/retry_after/legacy_rfc850.json)
+- [`imf_fixdate_accept.json`](parity/fixtures/retry_after/imf_fixdate_accept.json) &mdash; 107 lines
+- [`imf_fixdate_reject.json`](parity/fixtures/retry_after/imf_fixdate_reject.json) &mdash; 77 lines
+- [`legacy_rfc850.json`](parity/fixtures/retry_after/legacy_rfc850.json) &mdash; 57 lines
 
 </details>
 
 <details>
 <summary><code>parity/fixtures/signing/</code> &mdash; 1 file(s)</summary>
 
-- [`eth_sign_typed_data_request.json`](parity/fixtures/signing/eth_sign_typed_data_request.json)
+- [`eth_sign_typed_data_request.json`](parity/fixtures/signing/eth_sign_typed_data_request.json) &mdash; 890 lines
 
 </details>
 
 <details>
 <summary><code>parity/openapi/</code> &mdash; 10 file(s)</summary>
 
-- [`coverage.yaml`](parity/openapi/coverage.yaml)
-- [`onchain-order-data-inventory.yaml`](parity/openapi/onchain-order-data-inventory.yaml)
-- [`order-inventory.yaml`](parity/openapi/order-inventory.yaml)
-- [`order-parameters-inventory.yaml`](parity/openapi/order-parameters-inventory.yaml)
-- [`order-quote-response-inventory.yaml`](parity/openapi/order-quote-response-inventory.yaml)
-- [`services-orderbook.yml`](parity/openapi/services-orderbook.yml)
-- [`solver-execution-inventory.yaml`](parity/openapi/solver-execution-inventory.yaml)
-- [`stored-order-quote-inventory.yaml`](parity/openapi/stored-order-quote-inventory.yaml)
-- [`total-surplus-inventory.yaml`](parity/openapi/total-surplus-inventory.yaml)
-- [`trade-inventory.yaml`](parity/openapi/trade-inventory.yaml)
+- [`coverage.yaml`](parity/openapi/coverage.yaml) &mdash; 114 lines
+- [`onchain-order-data-inventory.yaml`](parity/openapi/onchain-order-data-inventory.yaml) &mdash; 21 lines
+- [`order-inventory.yaml`](parity/openapi/order-inventory.yaml) &mdash; 313 lines
+- [`order-parameters-inventory.yaml`](parity/openapi/order-parameters-inventory.yaml) &mdash; 141 lines
+- [`order-quote-response-inventory.yaml`](parity/openapi/order-quote-response-inventory.yaml) &mdash; 54 lines
+- [`services-orderbook.yml`](parity/openapi/services-orderbook.yml) &mdash; 2,730 lines
+- [`solver-execution-inventory.yaml`](parity/openapi/solver-execution-inventory.yaml) &mdash; 22 lines
+- [`stored-order-quote-inventory.yaml`](parity/openapi/stored-order-quote-inventory.yaml) &mdash; 80 lines
+- [`total-surplus-inventory.yaml`](parity/openapi/total-surplus-inventory.yaml) &mdash; 13 lines
+- [`trade-inventory.yaml`](parity/openapi/trade-inventory.yaml) &mdash; 96 lines
 
 </details>
 
 <details>
 <summary><code>parity/source-lock/</code> &mdash; 1 file(s)</summary>
 
-- [`npm-package-evidence.json`](parity/source-lock/npm-package-evidence.json)
+- [`npm-package-evidence.json`](parity/source-lock/npm-package-evidence.json) &mdash; 35 lines
 
 </details>
 
 <details>
 <summary><code>scripts/</code> &mdash; 3 file(s)</summary>
 
-- [`check-audit-index-agreement.sh`](scripts/check-audit-index-agreement.sh)
-- [`check-release-docs-agree.sh`](scripts/check-release-docs-agree.sh)
-- [`check-services-drift.sh`](scripts/check-services-drift.sh)
+- [`check-audit-index-agreement.sh`](scripts/check-audit-index-agreement.sh) &mdash; 96 lines
+- [`check-release-docs-agree.sh`](scripts/check-release-docs-agree.sh) &mdash; 287 lines
+- [`check-services-drift.sh`](scripts/check-services-drift.sh) &mdash; 750 lines
 
 </details>
 
 <details>
 <summary><code>scripts/parity-maintainer/</code> &mdash; 2 file(s)</summary>
 
-- [`Cargo.lock`](scripts/parity-maintainer/Cargo.lock)
-- [`Cargo.toml`](scripts/parity-maintainer/Cargo.toml)
+- [`Cargo.lock`](scripts/parity-maintainer/Cargo.lock) &mdash; 2,037 lines
+- [`Cargo.toml`](scripts/parity-maintainer/Cargo.toml) &mdash; 23 lines
 
 </details>
 
 <details>
 <summary><code>scripts/parity-maintainer/src/</code> &mdash; 13 file(s)</summary>
 
-- [`audit_refresh.rs`](scripts/parity-maintainer/src/audit_refresh.rs)
-- [`audit_self_pinning.rs`](scripts/parity-maintainer/src/audit_self_pinning.rs)
-- [`check_freshness.rs`](scripts/parity-maintainer/src/check_freshness.rs)
-- [`composable_fixtures.rs`](scripts/parity-maintainer/src/composable_fixtures.rs)
-- [`cow_shed_fixtures.rs`](scripts/parity-maintainer/src/cow_shed_fixtures.rs)
-- [`diff_upstreams.rs`](scripts/parity-maintainer/src/diff_upstreams.rs)
-- [`main.rs`](scripts/parity-maintainer/src/main.rs)
-- [`openapi_coverage.rs`](scripts/parity-maintainer/src/openapi_coverage.rs)
-- [`stale_phrase_catalog.rs`](scripts/parity-maintainer/src/stale_phrase_catalog.rs)
-- [`stale_phrase_lint.rs`](scripts/parity-maintainer/src/stale_phrase_lint.rs)
-- [`url_provenance.rs`](scripts/parity-maintainer/src/url_provenance.rs)
-- [`vendor_openapi.rs`](scripts/parity-maintainer/src/vendor_openapi.rs)
-- [`verify_sol_provenance.rs`](scripts/parity-maintainer/src/verify_sol_provenance.rs)
+- [`audit_refresh.rs`](scripts/parity-maintainer/src/audit_refresh.rs) &mdash; 72 lines
+- [`audit_self_pinning.rs`](scripts/parity-maintainer/src/audit_self_pinning.rs) &mdash; 972 lines
+- [`check_freshness.rs`](scripts/parity-maintainer/src/check_freshness.rs) &mdash; 211 lines
+- [`composable_fixtures.rs`](scripts/parity-maintainer/src/composable_fixtures.rs) &mdash; 193 lines
+- [`cow_shed_fixtures.rs`](scripts/parity-maintainer/src/cow_shed_fixtures.rs) &mdash; 119 lines
+- [`diff_upstreams.rs`](scripts/parity-maintainer/src/diff_upstreams.rs) &mdash; 255 lines
+- [`main.rs`](scripts/parity-maintainer/src/main.rs) &mdash; 2,781 lines
+- [`openapi_coverage.rs`](scripts/parity-maintainer/src/openapi_coverage.rs) &mdash; 826 lines
+- [`stale_phrase_catalog.rs`](scripts/parity-maintainer/src/stale_phrase_catalog.rs) &mdash; 123 lines
+- [`stale_phrase_lint.rs`](scripts/parity-maintainer/src/stale_phrase_lint.rs) &mdash; 245 lines
+- [`url_provenance.rs`](scripts/parity-maintainer/src/url_provenance.rs) &mdash; 56 lines
+- [`vendor_openapi.rs`](scripts/parity-maintainer/src/vendor_openapi.rs) &mdash; 57 lines
+- [`verify_sol_provenance.rs`](scripts/parity-maintainer/src/verify_sol_provenance.rs) &mdash; 1,348 lines
 
 </details>
 
 <details>
 <summary><code>scripts/parity-maintainer/tests/</code> &mdash; 11 file(s)</summary>
 
-- [`audit_self_pinning.rs`](scripts/parity-maintainer/tests/audit_self_pinning.rs)
-- [`check_freshness.rs`](scripts/parity-maintainer/tests/check_freshness.rs)
-- [`diff_upstreams.rs`](scripts/parity-maintainer/tests/diff_upstreams.rs)
-- [`enum_policy.rs`](scripts/parity-maintainer/tests/enum_policy.rs)
-- [`openapi_coverage.rs`](scripts/parity-maintainer/tests/openapi_coverage.rs)
-- [`producer_path_existence.rs`](scripts/parity-maintainer/tests/producer_path_existence.rs)
-- [`README.md`](scripts/parity-maintainer/tests/README.md)
-- [`source_lock_schema_version.rs`](scripts/parity-maintainer/tests/source_lock_schema_version.rs)
-- [`stale_phrase_lint.rs`](scripts/parity-maintainer/tests/stale_phrase_lint.rs)
-- [`url_provenance.rs`](scripts/parity-maintainer/tests/url_provenance.rs)
-- [`vendor_openapi.rs`](scripts/parity-maintainer/tests/vendor_openapi.rs)
+- [`audit_self_pinning.rs`](scripts/parity-maintainer/tests/audit_self_pinning.rs) &mdash; 375 lines
+- [`check_freshness.rs`](scripts/parity-maintainer/tests/check_freshness.rs) &mdash; 112 lines
+- [`diff_upstreams.rs`](scripts/parity-maintainer/tests/diff_upstreams.rs) &mdash; 85 lines
+- [`enum_policy.rs`](scripts/parity-maintainer/tests/enum_policy.rs) &mdash; 63 lines
+- [`openapi_coverage.rs`](scripts/parity-maintainer/tests/openapi_coverage.rs) &mdash; 212 lines
+- [`producer_path_existence.rs`](scripts/parity-maintainer/tests/producer_path_existence.rs) &mdash; 56 lines
+- [`README.md`](scripts/parity-maintainer/tests/README.md) &mdash; 5 lines
+- [`source_lock_schema_version.rs`](scripts/parity-maintainer/tests/source_lock_schema_version.rs) &mdash; 64 lines
+- [`stale_phrase_lint.rs`](scripts/parity-maintainer/tests/stale_phrase_lint.rs) &mdash; 118 lines
+- [`url_provenance.rs`](scripts/parity-maintainer/tests/url_provenance.rs) &mdash; 62 lines
+- [`vendor_openapi.rs`](scripts/parity-maintainer/tests/vendor_openapi.rs) &mdash; 99 lines
 
 </details>
 
 <details>
 <summary><code>scripts/parity-maintainer/tests/common/</code> &mdash; 1 file(s)</summary>
 
-- [`mod.rs`](scripts/parity-maintainer/tests/common/mod.rs)
+- [`mod.rs`](scripts/parity-maintainer/tests/common/mod.rs) &mdash; 125 lines
 
 </details>
 
 <details>
 <summary><code>scripts/parity-maintainer/tests/fixtures/</code> &mdash; 3 file(s)</summary>
 
-- [`source-lock-v2.yaml`](scripts/parity-maintainer/tests/fixtures/source-lock-v2.yaml)
-- [`source-lock-v3.yaml`](scripts/parity-maintainer/tests/fixtures/source-lock-v3.yaml)
-- [`source-lock-v4.yaml`](scripts/parity-maintainer/tests/fixtures/source-lock-v4.yaml)
+- [`source-lock-v2.yaml`](scripts/parity-maintainer/tests/fixtures/source-lock-v2.yaml) &mdash; 11 lines
+- [`source-lock-v3.yaml`](scripts/parity-maintainer/tests/fixtures/source-lock-v3.yaml) &mdash; 163 lines
+- [`source-lock-v4.yaml`](scripts/parity-maintainer/tests/fixtures/source-lock-v4.yaml) &mdash; 11 lines
 
 </details>
 
 <details>
 <summary><code>scripts/policy-maintainer/</code> &mdash; 2 file(s)</summary>
 
-- [`Cargo.lock`](scripts/policy-maintainer/Cargo.lock)
-- [`Cargo.toml`](scripts/policy-maintainer/Cargo.toml)
+- [`Cargo.lock`](scripts/policy-maintainer/Cargo.lock) &mdash; 604 lines
+- [`Cargo.toml`](scripts/policy-maintainer/Cargo.toml) &mdash; 28 lines
 
 </details>
 
 <details>
 <summary><code>scripts/policy-maintainer/src/</code> &mdash; 22 file(s)</summary>
 
-- [`check_adr_coverage.rs`](scripts/policy-maintainer/src/check_adr_coverage.rs)
-- [`check_alloy_provider_invariant.rs`](scripts/policy-maintainer/src/check_alloy_provider_invariant.rs)
-- [`check_alloy_signer_invariant.rs`](scripts/policy-maintainer/src/check_alloy_signer_invariant.rs)
-- [`check_chain_patch_eligibility.rs`](scripts/policy-maintainer/src/check_chain_patch_eligibility.rs)
-- [`check_deny_unknown_fields.rs`](scripts/policy-maintainer/src/check_deny_unknown_fields.rs)
-- [`check_enum_policy.rs`](scripts/policy-maintainer/src/check_enum_policy.rs)
-- [`check_msrv_notice.rs`](scripts/policy-maintainer/src/check_msrv_notice.rs)
-- [`check_panic_allowlist.rs`](scripts/policy-maintainer/src/check_panic_allowlist.rs)
-- [`check_property_citations.rs`](scripts/policy-maintainer/src/check_property_citations.rs)
-- [`check_source_lock_roots.rs`](scripts/policy-maintainer/src/check_source_lock_roots.rs)
-- [`check_stub.rs`](scripts/policy-maintainer/src/check_stub.rs)
-- [`check_wasm_invariant.rs`](scripts/policy-maintainer/src/check_wasm_invariant.rs)
-- [`check_wasm_runner_freshness.rs`](scripts/policy-maintainer/src/check_wasm_runner_freshness.rs)
-- [`check_workspace_versions.rs`](scripts/policy-maintainer/src/check_workspace_versions.rs)
-- [`classify_release.rs`](scripts/policy-maintainer/src/classify_release.rs)
-- [`diagnostics.rs`](scripts/policy-maintainer/src/diagnostics.rs)
-- [`fixtures.rs`](scripts/policy-maintainer/src/fixtures.rs)
-- [`generate_validation_evidence.rs`](scripts/policy-maintainer/src/generate_validation_evidence.rs)
-- [`lib.rs`](scripts/policy-maintainer/src/lib.rs)
-- [`main.rs`](scripts/policy-maintainer/src/main.rs)
-- [`run_deterministic_examples.rs`](scripts/policy-maintainer/src/run_deterministic_examples.rs)
-- [`workspace.rs`](scripts/policy-maintainer/src/workspace.rs)
+- [`check_adr_coverage.rs`](scripts/policy-maintainer/src/check_adr_coverage.rs) &mdash; 227 lines
+- [`check_alloy_provider_invariant.rs`](scripts/policy-maintainer/src/check_alloy_provider_invariant.rs) &mdash; 127 lines
+- [`check_alloy_signer_invariant.rs`](scripts/policy-maintainer/src/check_alloy_signer_invariant.rs) &mdash; 127 lines
+- [`check_chain_patch_eligibility.rs`](scripts/policy-maintainer/src/check_chain_patch_eligibility.rs) &mdash; 224 lines
+- [`check_deny_unknown_fields.rs`](scripts/policy-maintainer/src/check_deny_unknown_fields.rs) &mdash; 135 lines
+- [`check_enum_policy.rs`](scripts/policy-maintainer/src/check_enum_policy.rs) &mdash; 152 lines
+- [`check_msrv_notice.rs`](scripts/policy-maintainer/src/check_msrv_notice.rs) &mdash; 189 lines
+- [`check_panic_allowlist.rs`](scripts/policy-maintainer/src/check_panic_allowlist.rs) &mdash; 554 lines
+- [`check_property_citations.rs`](scripts/policy-maintainer/src/check_property_citations.rs) &mdash; 170 lines
+- [`check_source_lock_roots.rs`](scripts/policy-maintainer/src/check_source_lock_roots.rs) &mdash; 272 lines
+- [`check_stub.rs`](scripts/policy-maintainer/src/check_stub.rs) &mdash; 64 lines
+- [`check_wasm_invariant.rs`](scripts/policy-maintainer/src/check_wasm_invariant.rs) &mdash; 280 lines
+- [`check_wasm_runner_freshness.rs`](scripts/policy-maintainer/src/check_wasm_runner_freshness.rs) &mdash; 146 lines
+- [`check_workspace_versions.rs`](scripts/policy-maintainer/src/check_workspace_versions.rs) &mdash; 189 lines
+- [`classify_release.rs`](scripts/policy-maintainer/src/classify_release.rs) &mdash; 299 lines
+- [`diagnostics.rs`](scripts/policy-maintainer/src/diagnostics.rs) &mdash; 142 lines
+- [`fixtures.rs`](scripts/policy-maintainer/src/fixtures.rs) &mdash; 190 lines
+- [`generate_validation_evidence.rs`](scripts/policy-maintainer/src/generate_validation_evidence.rs) &mdash; 490 lines
+- [`lib.rs`](scripts/policy-maintainer/src/lib.rs) &mdash; 22 lines
+- [`main.rs`](scripts/policy-maintainer/src/main.rs) &mdash; 115 lines
+- [`run_deterministic_examples.rs`](scripts/policy-maintainer/src/run_deterministic_examples.rs) &mdash; 217 lines
+- [`workspace.rs`](scripts/policy-maintainer/src/workspace.rs) &mdash; 448 lines
 
 </details>
 
 <details>
 <summary><code>scripts/policy-maintainer/tests/</code> &mdash; 13 file(s)</summary>
 
-- [`check_adr_coverage.rs`](scripts/policy-maintainer/tests/check_adr_coverage.rs)
-- [`check_alloy_provider_invariant.rs`](scripts/policy-maintainer/tests/check_alloy_provider_invariant.rs)
-- [`check_alloy_signer_invariant.rs`](scripts/policy-maintainer/tests/check_alloy_signer_invariant.rs)
-- [`check_chain_patch_eligibility.rs`](scripts/policy-maintainer/tests/check_chain_patch_eligibility.rs)
-- [`check_deny_unknown_fields.rs`](scripts/policy-maintainer/tests/check_deny_unknown_fields.rs)
-- [`check_enum_policy.rs`](scripts/policy-maintainer/tests/check_enum_policy.rs)
-- [`check_msrv_notice.rs`](scripts/policy-maintainer/tests/check_msrv_notice.rs)
-- [`check_panic_allowlist.rs`](scripts/policy-maintainer/tests/check_panic_allowlist.rs)
-- [`check_property_citations.rs`](scripts/policy-maintainer/tests/check_property_citations.rs)
-- [`check_wasm_runner_freshness.rs`](scripts/policy-maintainer/tests/check_wasm_runner_freshness.rs)
-- [`check_workspace_versions.rs`](scripts/policy-maintainer/tests/check_workspace_versions.rs)
-- [`classify_release.rs`](scripts/policy-maintainer/tests/classify_release.rs)
-- [`generate_validation_evidence.rs`](scripts/policy-maintainer/tests/generate_validation_evidence.rs)
+- [`check_adr_coverage.rs`](scripts/policy-maintainer/tests/check_adr_coverage.rs) &mdash; 51 lines
+- [`check_alloy_provider_invariant.rs`](scripts/policy-maintainer/tests/check_alloy_provider_invariant.rs) &mdash; 39 lines
+- [`check_alloy_signer_invariant.rs`](scripts/policy-maintainer/tests/check_alloy_signer_invariant.rs) &mdash; 39 lines
+- [`check_chain_patch_eligibility.rs`](scripts/policy-maintainer/tests/check_chain_patch_eligibility.rs) &mdash; 45 lines
+- [`check_deny_unknown_fields.rs`](scripts/policy-maintainer/tests/check_deny_unknown_fields.rs) &mdash; 46 lines
+- [`check_enum_policy.rs`](scripts/policy-maintainer/tests/check_enum_policy.rs) &mdash; 51 lines
+- [`check_msrv_notice.rs`](scripts/policy-maintainer/tests/check_msrv_notice.rs) &mdash; 37 lines
+- [`check_panic_allowlist.rs`](scripts/policy-maintainer/tests/check_panic_allowlist.rs) &mdash; 192 lines
+- [`check_property_citations.rs`](scripts/policy-maintainer/tests/check_property_citations.rs) &mdash; 84 lines
+- [`check_wasm_runner_freshness.rs`](scripts/policy-maintainer/tests/check_wasm_runner_freshness.rs) &mdash; 28 lines
+- [`check_workspace_versions.rs`](scripts/policy-maintainer/tests/check_workspace_versions.rs) &mdash; 26 lines
+- [`classify_release.rs`](scripts/policy-maintainer/tests/classify_release.rs) &mdash; 103 lines
+- [`generate_validation_evidence.rs`](scripts/policy-maintainer/tests/generate_validation_evidence.rs) &mdash; 101 lines
 
 </details>
 
 <details>
 <summary><code>scripts/policy-maintainer/tests/common/</code> &mdash; 1 file(s)</summary>
 
-- [`mod.rs`](scripts/policy-maintainer/tests/common/mod.rs)
+- [`mod.rs`](scripts/policy-maintainer/tests/common/mod.rs) &mdash; 42 lines
 
 </details>
 
 <details>
 <summary><code>scripts/validation-depth/</code> &mdash; 3 file(s)</summary>
 
-- [`Cargo.lock`](scripts/validation-depth/Cargo.lock)
-- [`Cargo.toml`](scripts/validation-depth/Cargo.toml)
-- [`README.md`](scripts/validation-depth/README.md)
+- [`Cargo.lock`](scripts/validation-depth/Cargo.lock) &mdash; 1,919 lines
+- [`Cargo.toml`](scripts/validation-depth/Cargo.toml) &mdash; 16 lines
+- [`README.md`](scripts/validation-depth/README.md) &mdash; 46 lines
 
 </details>
 
 <details>
 <summary><code>scripts/validation-depth/src/</code> &mdash; 1 file(s)</summary>
 
-- [`main.rs`](scripts/validation-depth/src/main.rs)
+- [`main.rs`](scripts/validation-depth/src/main.rs) &mdash; 965 lines
 
 </details>
 
 <details>
 <summary><code>scripts/validation-smoke/</code> &mdash; 3 file(s)</summary>
 
-- [`Cargo.lock`](scripts/validation-smoke/Cargo.lock)
-- [`Cargo.toml`](scripts/validation-smoke/Cargo.toml)
-- [`README.md`](scripts/validation-smoke/README.md)
+- [`Cargo.lock`](scripts/validation-smoke/Cargo.lock) &mdash; 2,260 lines
+- [`Cargo.toml`](scripts/validation-smoke/Cargo.toml) &mdash; 31 lines
+- [`README.md`](scripts/validation-smoke/README.md) &mdash; 94 lines
 
 </details>
 
 <details>
 <summary><code>scripts/validation-smoke/browser-wallet-live/</code> &mdash; 1 file(s)</summary>
 
-- [`README.md`](scripts/validation-smoke/browser-wallet-live/README.md)
+- [`README.md`](scripts/validation-smoke/browser-wallet-live/README.md) &mdash; 43 lines
 
 </details>
 
 <details>
 <summary><code>scripts/validation-smoke/data/</code> &mdash; 1 file(s)</summary>
 
-- [`cft-fallback.json`](scripts/validation-smoke/data/cft-fallback.json)
+- [`cft-fallback.json`](scripts/validation-smoke/data/cft-fallback.json) &mdash; 46 lines
 
 </details>
 
 <details>
 <summary><code>scripts/validation-smoke/src/</code> &mdash; 4 file(s)</summary>
 
-- [`lib.rs`](scripts/validation-smoke/src/lib.rs)
-- [`main.rs`](scripts/validation-smoke/src/main.rs)
-- [`registry_confirm.rs`](scripts/validation-smoke/src/registry_confirm.rs)
-- [`wasm_runner.rs`](scripts/validation-smoke/src/wasm_runner.rs)
+- [`lib.rs`](scripts/validation-smoke/src/lib.rs) &mdash; 4 lines
+- [`main.rs`](scripts/validation-smoke/src/main.rs) &mdash; 627 lines
+- [`registry_confirm.rs`](scripts/validation-smoke/src/registry_confirm.rs) &mdash; 370 lines
+- [`wasm_runner.rs`](scripts/validation-smoke/src/wasm_runner.rs) &mdash; 739 lines
 
 </details>
 
 <details>
 <summary><code>scripts/validation-smoke/tests/</code> &mdash; 2 file(s)</summary>
 
-- [`registry_confirm.rs`](scripts/validation-smoke/tests/registry_confirm.rs)
-- [`wasm_runner.rs`](scripts/validation-smoke/tests/wasm_runner.rs)
+- [`registry_confirm.rs`](scripts/validation-smoke/tests/registry_confirm.rs) &mdash; 190 lines
+- [`wasm_runner.rs`](scripts/validation-smoke/tests/wasm_runner.rs) &mdash; 335 lines
 
 </details>
 
 <details>
 <summary><code>tests/</code> &mdash; 15 file(s)</summary>
 
-- [`alloy_provider_invariant_covers_every_published_crate.rs`](tests/alloy_provider_invariant_covers_every_published_crate.rs)
-- [`alloy_read_contract_parity_invariant.rs`](tests/alloy_read_contract_parity_invariant.rs)
-- [`alloy_signer_invariant_covers_every_published_crate.rs`](tests/alloy_signer_invariant_covers_every_published_crate.rs)
-- [`alloy_two_family_lockfile_invariant.rs`](tests/alloy_two_family_lockfile_invariant.rs)
-- [`alloy_two_family_pin_lockstep.rs`](tests/alloy_two_family_pin_lockstep.rs)
-- [`alloy_umbrella_composition.rs`](tests/alloy_umbrella_composition.rs)
-- [`Cargo.toml`](tests/Cargo.toml)
-- [`dependency_default_features_audit.rs`](tests/dependency_default_features_audit.rs)
-- [`msrv_consistency.rs`](tests/msrv_consistency.rs)
-- [`services_drift_report_schema.rs`](tests/services_drift_report_schema.rs)
-- [`signer_rejection_propagation_invariant.rs`](tests/signer_rejection_propagation_invariant.rs)
-- [`supported_chains_doc_table.rs`](tests/supported_chains_doc_table.rs)
-- [`transaction_lifecycle_cross_adapter_invariant.rs`](tests/transaction_lifecycle_cross_adapter_invariant.rs)
-- [`wasm_dependency_invariant.rs`](tests/wasm_dependency_invariant.rs)
-- [`workspace_alloy_pin_lockstep.rs`](tests/workspace_alloy_pin_lockstep.rs)
+- [`alloy_provider_invariant_covers_every_published_crate.rs`](tests/alloy_provider_invariant_covers_every_published_crate.rs) &mdash; 95 lines
+- [`alloy_read_contract_parity_invariant.rs`](tests/alloy_read_contract_parity_invariant.rs) &mdash; 105 lines
+- [`alloy_signer_invariant_covers_every_published_crate.rs`](tests/alloy_signer_invariant_covers_every_published_crate.rs) &mdash; 95 lines
+- [`alloy_two_family_lockfile_invariant.rs`](tests/alloy_two_family_lockfile_invariant.rs) &mdash; 112 lines
+- [`alloy_two_family_pin_lockstep.rs`](tests/alloy_two_family_pin_lockstep.rs) &mdash; 93 lines
+- [`alloy_umbrella_composition.rs`](tests/alloy_umbrella_composition.rs) &mdash; 206 lines
+- [`Cargo.toml`](tests/Cargo.toml) &mdash; 78 lines
+- [`dependency_default_features_audit.rs`](tests/dependency_default_features_audit.rs) &mdash; 82 lines
+- [`msrv_consistency.rs`](tests/msrv_consistency.rs) &mdash; 37 lines
+- [`services_drift_report_schema.rs`](tests/services_drift_report_schema.rs) &mdash; 289 lines
+- [`signer_rejection_propagation_invariant.rs`](tests/signer_rejection_propagation_invariant.rs) &mdash; 142 lines
+- [`supported_chains_doc_table.rs`](tests/supported_chains_doc_table.rs) &mdash; 103 lines
+- [`transaction_lifecycle_cross_adapter_invariant.rs`](tests/transaction_lifecycle_cross_adapter_invariant.rs) &mdash; 264 lines
+- [`wasm_dependency_invariant.rs`](tests/wasm_dependency_invariant.rs) &mdash; 71 lines
+- [`workspace_alloy_pin_lockstep.rs`](tests/workspace_alloy_pin_lockstep.rs) &mdash; 126 lines
 
 </details>
 

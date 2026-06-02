@@ -14,14 +14,12 @@ fn public_api_reexports_cover_primary_root_surface() {
         TradingOptions::default(),
     )
     .expect("ready trading sdk construction should succeed");
-    let _helper_only_sdk =
-        TradingBuilder::helper_only(SupportedChainId::Sepolia, TradingOptions::default())
-            .expect("helper-only trading sdk construction should succeed");
     let _builder = TradingBuilder::new()
         .with_trader_defaults(PartialTraderParameters::default())
         .with_chain_id(SupportedChainId::Sepolia)
-        .build_helper_only()
-        .expect("helper-only builder construction should succeed");
+        .with_app_code("cow-rs/public-api")
+        .build_ready()
+        .expect("ready builder construction should succeed");
     assert_eq!(ORDER_PRIMARY_TYPE, "Order");
 
     let owner = Address::new("0x4444444444444444444444444444444444444444").unwrap();
@@ -101,11 +99,15 @@ fn module_reexports_cover_expected_leaf_crates() {
     )
     .build()
     .expect("default facade orderbook client must build");
-    let _sdk = cow_sdk::trading::TradingBuilder::helper_only(
-        cow_sdk::core::SupportedChainId::Sepolia,
+    let _sdk = cow_sdk::trading::TradingBuilder::ready(
+        cow_sdk::trading::TraderParameters::new(
+            cow_sdk::core::SupportedChainId::Sepolia,
+            "cow-rs/public-api",
+        )
+        .expect("app code should validate"),
         cow_sdk::trading::TradingOptions::default(),
     )
-    .expect("default facade helper-only trading sdk construction should succeed");
+    .expect("default facade ready trading sdk construction should succeed");
 
     assert!(validation.success);
     assert!(schema.is_object());

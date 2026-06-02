@@ -14,7 +14,6 @@ root exports:
 - AppCode
 - BrowserWalletSigner (prelude)
 - ErrorClass
-- TradingHelpers
 - HttpTransport
 - InMemoryEip1271VerificationCache
 - NoopEip1271VerificationCache

@@ -1,5 +1,0 @@
-error[E0599]: no method named `get_quote_only` found for struct `TradingHelpers` in the current scope
-  --> tests/ui/helper_only_sdk_no_quote_methods.rs:14:17
-   |
-14 |     let _ = sdk.get_quote_only(trade_parameters(), None);
-   |                 ^^^^^^^^^^^^^^ method not found in `TradingHelpers`

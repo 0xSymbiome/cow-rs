@@ -1,7 +1,7 @@
 # Typestate Builder Contract Audit
 
 Status: Current
-Last reviewed: 2026-05-31
+Last reviewed: 2026-06-02
 Owning surface: `cow-sdk-orderbook::OrderbookApiBuilder`, `cow-sdk-subgraph::SubgraphApiBuilder`, and `cow-sdk-trading::TradingBuilder` construction seams
 Refresh trigger: ADR 0038 review confirmed no builder-shape change; future type-parameter or marker visibility changes on any covered builder, a change to the set of required inputs (chain, environment, API key, appCode, or transport), a change to host-policy validation, a change to the native default-transport convenience impl, a change to the wasm32 transport-required or injected-orderbook invariant, or a new `trybuild` witness replacing the current compile-fail coverage
 Related docs:
@@ -27,7 +27,7 @@ This audit covers:
 - external host-policy validation for explicit endpoint overrides
 - the two-marker `TradingBuilder` typestate
   (`ChainIdState`, `AppCodeState`), validated `AppCode` attribution,
-  the distinct `Trading`/`TradingHelpers` terminal types, and the
+  the `Trading` ready terminal type, and the
   documented `wasm32` injected-orderbook runtime terminal
 - the native Alloy provider, signer, and umbrella builders that expose
   terminal construction only after their sealed transport, key-source, and
@@ -56,7 +56,7 @@ the trading-sdk runtime prerequisites audit.
 | Panic-free terminals | Build terminals read each input from the data-carrying marker and return typed errors; no typestate-guard `expect`/`panic!` remains | Conforms |
 | Host policy | Explicit orderbook and subgraph endpoint overrides are validated at build time and fail through typed host-policy errors | Conforms |
 | wasm32 invariant | `trybuild` compile-fail coverage asserts `.build()` without `.transport(...)` does not compile on `wasm32` | Conforms |
-| Trading SDK construction | `build_ready` requires chain id plus validated `AppCode`, `build_helper_only` requires chain id only, and the terminals return distinct SDK types | Conforms |
+| Trading SDK construction | `build_ready` requires chain id plus validated `AppCode` and returns the ready `Trading` client | Conforms |
 | Trading wasm32 posture | `build_ready` documents and enforces the injected orderbook-client requirement at the runtime terminal on `wasm32` | Conforms |
 | Native Alloy builders | Provider, signer, and umbrella construction terminals are reachable only after required transport, key-source, and chain marker axes are set | Conforms |
 
@@ -130,9 +130,9 @@ the expected compile error and its stderr fixture.
 `TradingBuilder<ChainIdState, AppCodeState>` lives at
 `crates/trading/src/sdk/builder.rs`. The fluent chain-id and app-code setters move
 the builder from unset to set marker states. `build_ready()` is implemented
-only on `(ChainIdSet, AppCodeSet)` and returns `Trading`; `build_helper_only()`
-is implemented once `ChainIdSet` is present and returns `TradingHelpers`, which
-does not expose quote, post, order lookup, or off-chain cancellation methods.
+only on `(ChainIdSet, AppCodeSet)` and returns `Trading`. App-code-less helper
+flows (allowance, approval, pre-sign, on-chain cancellation) are the crate's
+free functions and need no trading client.
 
 Trading attribution is validated through `AppCode` before a ready SDK is
 returned. The validation deliberately rejects only empty strings, NUL bytes,

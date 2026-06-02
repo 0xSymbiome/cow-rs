@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use cow_sdk_core::{AppCode, AppCodeError, CowEnv, SupportedChainId};
 
-use super::{AppCodeSet, AppCodeUnset, ChainIdSet, ChainIdUnset, Trading, TradingHelpers};
+use super::{AppCodeSet, AppCodeUnset, ChainIdSet, ChainIdUnset, Trading};
 use crate::{
     OrderbookClient, PartialTraderParameters, TraderParameters, TradingError, TradingOptions,
     types::validate_orderbook_context,
@@ -16,9 +16,7 @@ use crate::{
 /// [`app_code`](TradingBuilder::with_app_code) prerequisites have been
 /// supplied. When both are set, [`TradingBuilder::build_ready`] is
 /// available and returns a fully-configured [`Trading`] with only a
-/// runtime orderbook-binding check remaining. When only a chain id is set,
-/// [`TradingBuilder::build_helper_only`] returns a [`TradingHelpers`] with
-/// no quote, post, order-lookup, or off-chain cancellation methods.
+/// runtime orderbook-binding check remaining.
 ///
 /// On `wasm32`, the SDK keeps a documented runtime terminal for ready-state
 /// orderbook injection: [`TradingBuilder::build_ready`] requires
@@ -49,9 +47,8 @@ impl TradingBuilder<ChainIdUnset, AppCodeUnset> {
     /// Creates a new builder with empty defaults.
     ///
     /// The returned builder is in the typestate `<ChainIdUnset, AppCodeUnset>`
-    /// so the compile-time-checked [`TradingBuilder::build_ready`] and
-    /// [`TradingBuilder::build_helper_only`] terminals are only unlocked
-    /// after the corresponding [`TradingBuilder::with_chain_id`] and
+    /// so the compile-time-checked [`TradingBuilder::build_ready`] terminal is
+    /// only unlocked after the [`TradingBuilder::with_chain_id`] and
     /// [`TradingBuilder::with_app_code`] prerequisites are supplied.
     #[must_use]
     pub fn new() -> Self {
@@ -100,26 +97,6 @@ impl TradingBuilder<ChainIdUnset, AppCodeUnset> {
 
         builder.build_ready()
     }
-
-    /// Builds a [`TradingHelpers`] from total chain authority.
-    ///
-    /// This one-call terminal is for chain-bound helper workflows that need no
-    /// quote or submission attribution. The returned type does not expose
-    /// quote, post, order-lookup, or off-chain cancellation methods.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`TradingError::InjectedOrderbookContextConflict`] when the
-    /// chain id conflicts with an injected orderbook client.
-    pub fn helper_only(
-        chain_id: SupportedChainId,
-        options: TradingOptions,
-    ) -> Result<TradingHelpers, TradingError> {
-        Self::new()
-            .with_options(options)
-            .with_chain_id(chain_id)
-            .build_helper_only()
-    }
 }
 
 impl<C, A> TradingBuilder<C, A> {
@@ -138,10 +115,8 @@ impl<C, A> TradingBuilder<C, A> {
 
     /// Returns a copy of this builder with a default chain id.
     ///
-    /// Transitions the builder's chain-id typestate to
-    /// [`ChainIdSet`], which unlocks
-    /// [`TradingBuilder::build_helper_only`] for any app-code state and
-    /// [`TradingBuilder::build_ready`] once app code is also set.
+    /// Transitions the builder's chain-id typestate to [`ChainIdSet`];
+    /// [`TradingBuilder::build_ready`] unlocks once app code is also set.
     #[must_use]
     pub fn with_chain_id(self, chain_id: SupportedChainId) -> TradingBuilder<ChainIdSet, A> {
         TradingBuilder {
@@ -240,36 +215,6 @@ impl<C, A> TradingBuilder<C, A> {
         }
 
         Ok(())
-    }
-}
-
-impl<A> TradingBuilder<ChainIdSet, A> {
-    /// Builds a [`TradingHelpers`].
-    ///
-    /// The returned SDK exposes only chain-bound helpers: pre-sign
-    /// transaction construction, allowance reads, approval submission, and
-    /// on-chain cancellation. Quote, post, order-lookup, and off-chain
-    /// cancellation methods are not part of this type.
-    ///
-    /// The compile-time typestate guarantees that a chain id has been
-    /// supplied before this terminal runs, so the only remaining runtime
-    /// validation is the injected orderbook binding.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`TradingError::InjectedOrderbookContextConflict`] when the
-    /// builder's default chain or environment conflicts with an injected
-    /// orderbook client.
-    pub fn build_helper_only(self) -> Result<TradingHelpers, TradingError> {
-        if let Some(error) = self.app_code_error {
-            return Err(error.into());
-        }
-        self.validate_injected_orderbook_binding()?;
-
-        Ok(TradingHelpers {
-            trader_defaults: self.trader_defaults,
-            options: self.options,
-        })
     }
 }
 

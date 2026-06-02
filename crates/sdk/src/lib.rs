@@ -67,17 +67,11 @@
 //! # }
 //! ```
 //!
-//! For allowance, approval, pre-sign, or on-chain cancellation helpers that do
-//! not need quote or submission flows, construct a helper-only SDK:
-//!
-//! ```rust
-//! use cow_sdk::{SupportedChainId, Trading};
-//!
-//! let _sdk = Trading::builder()
-//!     .with_chain_id(SupportedChainId::Sepolia)
-//!     .build_helper_only()
-//!     .unwrap();
-//! ```
+//! For allowance, approval, pre-sign, or on-chain cancellation that does not
+//! need an app code, call the crate's free functions directly
+//! (`get_cow_protocol_allowance`, `approval_transaction`,
+//! `get_pre_sign_transaction`, `cancel_order_onchain`) without constructing a
+//! trading client.
 //!
 //! The subgraph module is intentionally not re-exported, so attempting to
 //! reach it through the root facade fails to compile:

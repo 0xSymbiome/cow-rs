@@ -52,25 +52,12 @@ let _sdk = Trading::builder()
     .expect("ready-state construction");
 ```
 
-Use `TradingBuilder::helper_only` (or `build_helper_only()` on the
-full builder) for chain-bound helper workflows that do not need quote,
-post, order lookup, or off-chain cancellation submission through the
-SDK:
-
-```rust
-use cow_sdk_core::SupportedChainId;
-use cow_sdk_trading::{TradingBuilder, TradingOptions};
-
-let _sdk = TradingBuilder::helper_only(
-    SupportedChainId::Sepolia,
-    TradingOptions::default(),
-)
-.expect("helper-only construction");
-```
-
-Helper-only SDKs support allowance reads, approval submission, pre-sign
-transaction construction, and on-chain cancellation. Quote, post, order lookup,
-and off-chain cancellation methods are available only on `Trading`.
+Allowance reads, approval submission, pre-sign transaction construction, and
+on-chain cancellation need chain authority but no app code, so they are the
+crate's free functions — `get_cow_protocol_allowance`, `approval_transaction`,
+`get_pre_sign_transaction`, and `cancel_order_onchain` — and need no trading
+client. Quote, post, order lookup, and off-chain cancellation flows use the
+ready `Trading` client.
 
 Owner attribution lives on the per-trade `TradeParameters` (or
 `LimitTradeParameters`); the SDK does not store a default owner. For

@@ -74,17 +74,10 @@ println!("posted order: {}", posted.order_id.to_hex_string());
 # }
 ```
 
-For allowance, approval, pre-sign, or on-chain cancellation helpers that do
-not need quote, order lookup, or submission flows, build a `TradingHelpers`:
-
-```rust
-use cow_sdk::prelude::{SupportedChainId, Trading};
-
-let _sdk = Trading::builder()
-    .with_chain_id(SupportedChainId::Sepolia)
-    .build_helper_only()
-    .unwrap();
-```
+For allowance, approval, pre-sign, or on-chain cancellation that does not need
+an app code, call the crate's free functions directly —
+`get_cow_protocol_allowance`, `approval_transaction`, `get_pre_sign_transaction`,
+and `cancel_order_onchain` — without constructing a trading client.
 
 ## Where to next
 

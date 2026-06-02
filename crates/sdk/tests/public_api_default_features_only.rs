@@ -4,14 +4,13 @@ fn public_api_default_features_only_snapshot_matches() {
     use cow_sdk::{
         Address, Amount, AppCode, ErrorClass, HttpTransport, OrderUid, OrderbookApi, SdkError,
         Signature, SupportedChainId, TradeParameters, TraderParameters, Trading, TradingBuilder,
-        TradingHelpers, TradingOptions,
+        TradingOptions,
     };
 
     let _ = core::any::type_name::<Address>();
     let _ = core::any::type_name::<Amount>();
     let _ = core::any::type_name::<AppCode>();
     let _ = core::any::type_name::<ErrorClass>();
-    let _ = core::any::type_name::<TradingHelpers>();
     let _ = core::any::type_name::<dyn HttpTransport>();
     let _ = core::any::type_name::<OrderbookApi>();
     let _ = core::any::type_name::<OrderUid>();
@@ -47,7 +46,6 @@ root exports:
 - Amount
 - AppCode
 - ErrorClass
-- TradingHelpers
 - HttpTransport
 - NoopEip1271VerificationCache
 - OrderbookApi

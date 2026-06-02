@@ -1,10 +1,8 @@
 use cow_sdk::core::{AppDataHex, BuyTokenDestination, OrderData, OrderKind, SellTokenSource};
-use cow_sdk::prelude::{Address, Amount, SupportedChainId, TradingBuilder};
+use cow_sdk::prelude::{Address, Amount, SupportedChainId};
 use cow_sdk::signing::{ORDER_PRIMARY_TYPE, generate_order_id, order_typed_data};
-use cow_sdk::trading::TradingOptions;
 
 pub fn smoke_hash_and_uid() -> Result<String, Box<dyn std::error::Error>> {
-    let _sdk = TradingBuilder::helper_only(SupportedChainId::Sepolia, TradingOptions::default())?;
     let owner = Address::new("0x4444444444444444444444444444444444444444")?;
     let order = OrderData::new(
         Address::new("0x1111111111111111111111111111111111111111")?,

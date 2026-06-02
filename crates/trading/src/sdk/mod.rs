@@ -4,7 +4,6 @@ use crate::{PartialTraderParameters, TradingOptions};
 mod allowance;
 mod builder;
 mod cancel;
-mod helper_only;
 mod helpers;
 mod post;
 mod presign;
@@ -31,17 +30,6 @@ pub struct AppCodeSet(());
 /// High-level trading facade that stores trader defaults plus optional injected services.
 #[derive(Debug, Clone)]
 pub struct Trading {
-    trader_defaults: PartialTraderParameters,
-    options: TradingOptions,
-}
-
-/// Helper-only trading facade for chain-bound helper workflows.
-///
-/// `TradingHelpers` intentionally exposes only allowance, approval, pre-sign,
-/// and on-chain cancellation helpers. Quote, post, order lookup, and off-chain
-/// cancellation methods exist only on [`Trading`].
-#[derive(Debug, Clone)]
-pub struct TradingHelpers {
     trader_defaults: PartialTraderParameters,
     options: TradingOptions,
 }

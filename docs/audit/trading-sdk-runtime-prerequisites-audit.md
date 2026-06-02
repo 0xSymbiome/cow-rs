@@ -1,9 +1,9 @@
 # Trading SDK Runtime Prerequisites Audit
 
 Status: Current
-Last reviewed: 2026-05-31
-Owning surface: `cow-sdk-trading` ready-state `Trading` construction, helper-only `TradingHelpers` construction, helper-specific prerequisite contract, and per-trade owner attribution
-Refresh trigger: Changes to ready-state `Trading` builder terminals, helper-only setup entry points, method-specific prerequisite enforcement, the per-trade owner-attribution placement, or any change that weakens the wasm32 orderbook-client requirement inside `build_ready()`
+Last reviewed: 2026-06-02
+Owning surface: `cow-sdk-trading` ready-state `Trading` construction, the chain-bound helper free functions, helper-specific prerequisite contract, and per-trade owner attribution
+Refresh trigger: Changes to ready-state `Trading` builder terminals, the chain-bound helper free functions, method-specific prerequisite enforcement, the per-trade owner-attribution placement, or any change that weakens the wasm32 orderbook-client requirement inside `build_ready()`
 Related docs:
 - [ADR 0002](../adr/0002-dedicated-trading-orchestration-crate.md)
 - [ADR 0006](../adr/0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
@@ -17,7 +17,7 @@ Related docs:
 
 This audit covers:
 
-- ready-state `Trading` and helper-only `TradingHelpers` construction
+- ready-state `Trading` construction and the chain-bound helper free functions
 - method-specific prerequisites across quote, post, cancellation, allowance,
   approval, and pre-sign helper flows
 - the boundary between trading attribution requirements and chain-bound helper
@@ -33,7 +33,7 @@ or unrelated credential-hygiene questions.
 | AppCode attribution | Trading attribution uses the `AppCode` newtype, rejecting empty strings, NUL bytes, and ASCII control characters before ready-state construction | Conforms |
 | Typestate ready construction | `TradingBuilder::build_ready` and `TradingBuilder::ready` require total chain id plus validated `appCode` inputs before ready-state construction | Conforms |
 | wasm32 build_ready() requires injected orderbook client | `build_ready()` returns `TradingError::MissingInjectedOrderbookClient` when `options.orderbook_client().is_none()` on `wasm32` | Conforms |
-| Helper-only construction | `TradingBuilder::build_helper_only` and `TradingBuilder::helper_only` return the distinct `TradingHelpers` type on native and wasm32 without weakening the ready-state contract | Conforms |
+| Chain-bound helper free functions | `get_cow_protocol_allowance`, `approval_transaction`, `get_pre_sign_transaction`, and `cancel_order_onchain` need chain authority but no `appCode`, and run without a trading client | Conforms |
 | Chain-bound helper prerequisites | Allowance, approval, pre-sign, and on-chain cancellation no longer require `appCode` when only chain and protocol context are needed | Conforms |
 | Per-trade owner attribution | `TradeParameters.owner`, `LimitTradeParameters.owner`, and `OrderTraderParameters` carry the per-trade owner. The SDK does not store a default owner; for signer-backed flows the signer address resolved through `Signer::get_address` is the implicit fallback, and for quote-only flows the owner must come from `TradeParameters.owner` or `advanced_settings.quote_request.from`. | Conforms |
 
@@ -62,16 +62,16 @@ The root `cow-sdk` facade re-exports `TradingOptions` so consumers can
 inject the browser orderbook client from the same first-touch import surface
 used by native ready-state construction.
 
-### Helper-Only Construction
+### Chain-Bound Helper Free Functions
 
-`TradingBuilder::build_helper_only` and `TradingBuilder::helper_only`
-keep the narrower helper-only contract explicit. They are intended for
-workflows such as allowance reads, approval submission, pre-sign transaction
-construction, and on-chain cancellation, where chain and protocol context
-matter but quote or submission attribution does not. Both construction paths
-require a chain id and produce `TradingHelpers`. On `wasm32`, helper-only
-construction does not require an injected orderbook client because the
-resulting type does not expose quote, post, or off-chain cancellation methods.
+Allowance reads, approval submission, pre-sign transaction construction, and
+on-chain cancellation are the crate's free functions —
+`get_cow_protocol_allowance`, `approval_transaction`, `get_pre_sign_transaction`,
+and `cancel_order_onchain`. They take chain and protocol context directly,
+need no `appCode`, and require no trading client, so an appCode-less integration
+(an allowance/approval screen, a pre-sign tool) calls them without constructing
+`Trading`. The full `Trading` client also exposes these as conveniences for
+callers that already hold one.
 
 ### Helper-Specific Prerequisites
 
@@ -120,14 +120,10 @@ Primary regression coverage:
 
 - `crates/trading/tests/sdk_contract.rs::build_ready_rejects_missing_injected_orderbook_client_on_wasm32`
 - `crates/trading/tests/sdk_contract.rs::build_ready_succeeds_on_wasm32_with_injected_orderbook_client`
-- `crates/trading/tests/sdk_contract.rs::build_helper_only_succeeds_on_wasm32_without_injected_orderbook_client`
 - `crates/trading/tests/sdk_contract.rs::build_ready_succeeds_on_native_without_injected_orderbook_client`
 - `crates/trading/tests/sdk_contract.rs::sdk_ready_shortcut_accepts_total_trader_parameters`
-- `crates/trading/tests/sdk_contract.rs::sdk_helper_only_shortcut_builds_helper_only_type`
 - `crates/trading/tests/app_code_contract.rs`
 - `crates/trading/tests/types_contract.rs`
-- `crates/trading/tests/ui/helper_only_sdk_no_quote_methods.rs`
-- `crates/trading/tests/ui/helper_only_sdk_no_offchain_cancel.rs`
 - `crates/sdk/tests/public_api.rs`
 
 Validation surface:

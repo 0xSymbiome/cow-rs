@@ -127,7 +127,7 @@ examples compile under the pinned MSRV and require no RPC credentials.
 | Crate | Example | Primary user journey |
 | --- | --- | --- |
 | `cow-sdk-trading` | `signed_order_end_to_end` | full quote → sign → post flow through `Trading::builder()` against an injected in-process orderbook and signer |
-| `cow-sdk-trading` | `typestate_builder_example` | ready versus helper-only builder terminals and their fail-closed mode boundary |
+| `cow-sdk-trading` | `typestate_builder_example` | the ready-state builder terminal and its compile-time chain-and-app-code prerequisites |
 | `cow-sdk-orderbook` | `paginated_orders_fetch` | paginated `GetOrdersRequest` loop through `OrderbookApi::builder_from_context(...).base_url(...).build()` against a `wiremock::MockServer` |
 | `cow-sdk-subgraph` | `typed_query_with_escape_hatch` | canonical `TOTALS_QUERY` typed path plus the explicit `run_query` raw-document escape hatch, both against a `wiremock::MockServer` |
 
