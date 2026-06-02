@@ -1540,6 +1540,7 @@ dependencies = [
  "alloy-sol-types",
  "async-trait",
  "cid",
+ "cow-sdk-test-utils",
  "flate2",
  "http",
  "multibase",

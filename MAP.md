@@ -1,7 +1,7 @@
 # Repository File Map
 
-> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `44ecd47` &nbsp;&middot;&nbsp; **Generated:** 2026-06-02  
-> **Total tracked files:** **1427** &nbsp;&middot;&nbsp; **Code analysis:** tokei 14.0.0 (1370/1427 files)
+> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `e2dee6e` &nbsp;&middot;&nbsp; **Generated:** 2026-06-02  
+> **Total tracked files:** **1428** &nbsp;&middot;&nbsp; **Code analysis:** tokei 14.0.0 (1371/1428 files)
 
 A navigable inventory of every file tracked by Git on this branch, grouped by the role each directory plays in the workspace. Use the table of contents to jump straight to a section; full file listings are collapsed by default so the high-level shape stays scannable.
 
@@ -31,15 +31,15 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 **Lines of code** (tracked files only)
 
-- **37,548 lines of Rust** across the 19 SDK crates, covered by **49,577 lines of tests** — a **1.3× test-to-code ratio** — plus **220 lines of benchmarks**.
-- **12,036 doc-comment lines** documenting the public API (~32.1% of crate code), plus **901 inline comment lines**.
+- **37,819 lines of Rust** across the 19 SDK crates, covered by **49,142 lines of tests** — a **1.3× test-to-code ratio** — plus **220 lines of benchmarks**.
+- **12,080 doc-comment lines** documenting the public API (~31.9% of crate code), plus **901 inline comment lines**.
 - **8,475 lines of TypeScript** across examples, e2e harnesses, and wasm bindings.
 - **27,082 lines of Markdown prose** — ADRs, audit notes, and READMEs.
-- **36,282 lines of data & config** (JSON schemas, parity fixtures, vendored ABIs, YAML, TOML) — tracked, but excluded from code metrics by design.
+- **36,283 lines of data & config** (JSON schemas, parity fixtures, vendored ABIs, YAML, TOML) — tracked, but excluded from code metrics by design.
 
 **Footprint** (tracked files)
 
-- **800 files** live under `crates/` — 19 workspace member crates make up roughly 56% of the repo.
+- **801 files** live under `crates/` — 19 workspace member crates make up roughly 56% of the repo.
 - **155 files** under `docs/` are mostly architecture decision records and audit notes.
 - **73 files** under `parity/` are golden fixtures captured from upstream services to keep the Rust SDK byte-compatible.
 - **107 files** under `fuzz/` cover cargo-fuzz targets and their seed corpora.
@@ -52,7 +52,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 | Path | Files | Lines | Code | Purpose |
 |------|------:|------:|-----:|---------|
-| `crates/` | 800 | 147,118 | 105,621 | Workspace member crates (the SDK itself) |
+| `crates/` | 801 | 146,971 | 105,458 | Workspace member crates (the SDK itself) |
 | `docs/` | 155 | 23,510 | 0 | Architecture decision records, audit notes, provider notes |
 | `fuzz/` | 107 | 12,477 | 4,600 | cargo-fuzz targets, corpora, and failure artifacts |
 | `examples/` | 89 | 26,251 | 9,768 | Runnable usage examples (Rust + TypeScript) |
@@ -64,7 +64,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `.cargo/` | 2 | 46 | 39 | Cargo configuration |
 | `CONTRIBUTING.md` | 1 | 276 | 0 | Contribution guide |
 | `Cargo.toml` | 1 | 124 | 109 | Workspace manifest |
-| `Cargo.lock` | 1 | 5,909 | 0 | Workspace lockfile |
+| `Cargo.lock` | 1 | 5,910 | 0 | Workspace lockfile |
 | `SECURITY.md` | 1 | 182 | 0 | Security policy |
 | `.yamllint` | 1 | 7 | 0 | YAML lint configuration |
 | `.gitignore` | 1 | 20 | 0 | Top-level git ignore rules |
@@ -77,7 +77,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `rust-toolchain.toml` | 1 | 6 | 4 | Pinned Rust toolchain |
 | `.gitattributes` | 1 | 40 | 0 | Git attributes |
 | `CHANGELOG.md` | 1 | 3,746 | 0 | Release changelog |
-| **Total** | **1427** | **273,033** | **159,699** | |
+| **Total** | **1428** | **272,887** | **159,536** | |
 
 ---
 
@@ -85,16 +85,16 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 | Extension | Files | Lines | Code | Comments | Blank | Typical role |
 |-----------|------:|------:|-----:|---------:|------:|--------------|
-| `.rs` | 707 | 146,007 | 114,942 | 17,749 | 13,316 | Rust source and tests |
+| `.rs` | 708 | 145,859 | 114,778 | 17,793 | 13,288 | Rust source and tests |
 | `.md` | 251 | 32,790 | 0 | 27,082 | 5,708 | Markdown docs (ADRs, audit notes, READMEs) |
 | `.json` | 154 | 10,295 | 10,181 | 111 | 3 | JSON schemas, ABIs, parity fixtures |
 | `.ts` | 74 | 19,678 | 8,475 | 9,788 | 1,415 | TypeScript (examples, e2e, wasm bindings) |
-| `.toml` | 53 | 4,054 | 3,494 | 52 | 508 | Cargo manifests and tool configs |
+| `.toml` | 53 | 4,055 | 3,495 | 52 | 508 | Cargo manifests and tool configs |
 | `.sol` | 40 | 3,577 | 2,007 | 1,140 | 430 | Solidity sources / vendored contract code |
 | `.yaml` | 35 | 13,266 | 11,658 | 52 | 1,556 | CI workflows, OpenAPI specs, config |
 | `.yml` | 27 | 7,273 | 6,421 | 553 | 299 | CI workflows and config |
 | `.stderr` | 22 | 526 | 0 | 505 | 21 | trybuild compile-fail snapshots |
-| `.lock` | 10 | 26,210 | 0 | 23,461 | 2,749 | Cargo / package lockfiles |
+| `.lock` | 10 | 26,211 | 0 | 23,462 | 2,749 | Cargo / package lockfiles |
 | `.sh` | 8 | 1,563 | 1,301 | 68 | 194 | Shell scripts |
 | `.txt` | 8 | 237 | 0 | 237 | 0 | Plain text fixtures / summaries |
 | `.mjs` | 6 | 576 | 485 | 18 | 73 | JavaScript modules |
@@ -111,7 +111,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `.gitattributes` | 1 | 40 | 0 | 35 | 5 |  |
 | `.yamllint` | 1 | 7 | 0 | 6 | 1 |  |
 | `.proptest-regressions` | 1 | 7 | 0 | 7 | 0 | proptest regression seeds |
-| **Total** | **1427** | **273,033** | **159,699** | **86,198** | **27,136** | |
+| **Total** | **1428** | **272,887** | **159,536** | **86,243** | **27,108** | |
 
 > **Code + Comments + Blank = Lines** for every row. ``Comments`` is all non-code, non-blank content: inline + doc-comments in source, prose in Markdown/text, and raw content in formats tokei does not parse as code (lockfiles, ``.stderr``, snapshots). Rust doc-comments are isolated in the per-crate ``Doc`` column above.
 
@@ -126,8 +126,8 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | [`wasm`](crates/wasm) | 105 | 5,641 | 3,399 | 0 | 1,357 | 0.6× | TypeScript-callable wasm-bindgen leaf for the CoW Protocol Rust SDK |
 | [`trading`](crates/trading) | 76 | 5,214 | 8,396 | 46 | 1,407 | 1.6× | High-level CoW Protocol trading orchestration surface |
 | [`contracts`](crates/contracts) | 160 | 5,002 | 7,678 | 88 | 1,760 | 1.5× | CoW Protocol low-level contracts helpers for hashing, settlement encoding, and on-chain interaction plumbing |
-| [`core`](crates/core) | 59 | 4,271 | 4,067 | 0 | 2,176 | 1.0× | Shared CoW Protocol core types and validation primitives |
-| [`orderbook`](crates/orderbook) | 46 | 4,155 | 6,681 | 14 | 1,625 | 1.6× | Typed CoW Protocol orderbook client models and decoding helpers |
+| [`core`](crates/core) | 59 | 4,271 | 3,827 | 0 | 2,176 | 0.9× | Shared CoW Protocol core types and validation primitives |
+| [`orderbook`](crates/orderbook) | 46 | 4,155 | 6,486 | 14 | 1,625 | 1.6× | Typed CoW Protocol orderbook client models and decoding helpers |
 | [`browser-wallet`](crates/browser-wallet) | 29 | 3,703 | 2,742 | 0 | 549 | 0.7× | Browser wallet integration for the CoW Protocol Rust SDK |
 | [`app-data`](crates/app-data) | 99 | 1,516 | 2,604 | 33 | 744 | 1.7× | CoW Protocol app-data encoding, schema validation, and CID compatibility |
 | [`subgraph`](crates/subgraph) | 30 | 1,325 | 3,567 | 0 | 458 | 2.7× | Typed CoW Protocol subgraph query primitives |
@@ -136,13 +136,13 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | [`signing`](crates/signing) | 27 | 944 | 2,430 | 39 | 301 | 2.6× | Deterministic CoW Protocol order hashing, EIP-712 signing, and UID helpers |
 | [`alloy`](crates/alloy) | 27 | 805 | 1,804 | 0 | 197 | 2.2× | Composed Alloy provider and signer adapter for the CoW Protocol Rust SDK |
 | [`alloy-signer`](crates/alloy-signer) | 22 | 730 | 600 | 0 | 147 | 0.8× | Alloy-backed local-keystore Signer adapter for the CoW Protocol Rust SDK |
+| [`test-utils`](crates/test-utils) | 9 | 565 | 97 | 0 | 201 | 0.2× | Internal, unpublished shared test helpers for the cow-rs workspace. |
 | [`pure-helpers`](crates/pure-helpers) | 10 | 429 | 53 | 0 | 165 | 0.1× | Runtime-neutral helper functions for the CoW Protocol Rust SDK wasm surface |
 | [`transport-wasm`](crates/transport-wasm) | 8 | 423 | 961 | 0 | 126 | 2.3× | Browser fetch-based HTTP transport for the CoW Protocol Rust SDK |
 | [`cow-shed`](crates/cow-shed) | 32 | 410 | 679 | 0 | 258 | 1.7× | CoW Protocol COW Shed proxy address, EIP-712, and calldata helpers |
-| [`test-utils`](crates/test-utils) | 8 | 294 | 97 | 0 | 157 | 0.3× | Internal, unpublished shared test helpers for the cow-rs workspace. |
 | [`sdk`](crates/sdk) | 18 | 136 | 1,368 | 0 | 141 | 10.1× | Facade crate for CoW Protocol Rust SDK surfaces |
 | [`composable`](crates/composable) | 2 | 0 | 0 | 0 | 0 | — | Reserved crate manifest for future CoW Protocol composable order helpers |
-| **Total** | **800** | **37,548** | **49,577** | **220** | **12,036** | **1.3×** | |
+| **Total** | **801** | **37,819** | **49,142** | **220** | **12,080** | **1.3×** | |
 
 ---
 
@@ -157,9 +157,9 @@ The 25 largest hand-written source files by code lines (Rust + TypeScript; vendo
 | [`crates/subgraph/tests/api_contract.rs`](crates/subgraph/tests/api_contract.rs) | Rust | test | 1,344 | 0 |
 | [`examples/wasm/browser-wallet-console/src/lib.rs`](examples/wasm/browser-wallet-console/src/lib.rs) | Rust | example | 1,306 | 4 |
 | [`crates/orderbook/tests/api_contract.rs`](crates/orderbook/tests/api_contract.rs) | Rust | test | 1,228 | 12 |
-| [`crates/orderbook/tests/request_contract.rs`](crates/orderbook/tests/request_contract.rs) | Rust | test | 1,180 | 16 |
 | [`scripts/parity-maintainer/src/verify_sol_provenance.rs`](scripts/parity-maintainer/src/verify_sol_provenance.rs) | Rust | src | 1,093 | 146 |
 | [`crates/contracts/tests/parity_contract.rs`](crates/contracts/tests/parity_contract.rs) | Rust | test | 1,000 | 74 |
+| [`crates/orderbook/tests/request_contract.rs`](crates/orderbook/tests/request_contract.rs) | Rust | test | 985 | 16 |
 | [`scripts/validation-depth/src/main.rs`](scripts/validation-depth/src/main.rs) | Rust | src | 880 | 0 |
 | [`crates/sdk/tests/error_redaction_contract.rs`](crates/sdk/tests/error_redaction_contract.rs) | Rust | test | 868 | 52 |
 | [`crates/trading/tests/common/mod.rs`](crates/trading/tests/common/mod.rs) | Rust | test | 855 | 2 |
@@ -168,7 +168,6 @@ The 25 largest hand-written source files by code lines (Rust + TypeScript; vendo
 | [`crates/trading/tests/quote_contract.rs`](crates/trading/tests/quote_contract.rs) | Rust | test | 729 | 0 |
 | [`crates/browser-wallet/src/provider/provider_impl.rs`](crates/browser-wallet/src/provider/provider_impl.rs) | Rust | src | 722 | 18 |
 | [`crates/browser-wallet/tests/wasm_bridge_contract.rs`](crates/browser-wallet/tests/wasm_bridge_contract.rs) | Rust | test | 708 | 0 |
-| [`crates/core/tests/transport_contract.rs`](crates/core/tests/transport_contract.rs) | Rust | test | 683 | 21 |
 | [`crates/trading/tests/post_contract.rs`](crates/trading/tests/post_contract.rs) | Rust | test | 683 | 18 |
 | [`crates/browser-wallet/tests/wallet_contract.rs`](crates/browser-wallet/tests/wallet_contract.rs) | Rust | test | 679 | 0 |
 | [`scripts/validation-smoke/src/wasm_runner.rs`](scripts/validation-smoke/src/wasm_runner.rs) | Rust | src | 663 | 20 |
@@ -177,6 +176,7 @@ The 25 largest hand-written source files by code lines (Rust + TypeScript; vendo
 | [`crates/wasm/snapshots/raw/cloudflare-web.d.ts`](crates/wasm/snapshots/raw/cloudflare-web.d.ts) | TypeScript | src | 648 | 1,945 |
 | [`crates/trading/tests/validation_contract.rs`](crates/trading/tests/validation_contract.rs) | Rust | test | 644 | 9 |
 | [`crates/contracts/tests/signature_contract.rs`](crates/contracts/tests/signature_contract.rs) | Rust | test | 633 | 6 |
+| [`crates/wasm/src/exports/trading.rs`](crates/wasm/src/exports/trading.rs) | Rust | src | 626 | 105 |
 
 ---
 
@@ -273,7 +273,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`.gitattributes`](.gitattributes) &mdash; 40 lines
 - [`.gitignore`](.gitignore) &mdash; 20 lines
 - [`.yamllint`](.yamllint) &mdash; 7 lines
-- [`Cargo.lock`](Cargo.lock) &mdash; 5,909 lines
+- [`Cargo.lock`](Cargo.lock) &mdash; 5,910 lines
 - [`Cargo.toml`](Cargo.toml) &mdash; 124 lines
 - [`CHANGELOG.md`](CHANGELOG.md) &mdash; 3,746 lines
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) &mdash; 276 lines
@@ -1168,7 +1168,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <details>
 <summary><code>crates/core/</code> &mdash; 2 file(s)</summary>
 
-- [`Cargo.toml`](crates/core/Cargo.toml) &mdash; 65 lines
+- [`Cargo.toml`](crates/core/Cargo.toml) &mdash; 66 lines
 - [`README.md`](crates/core/README.md) &mdash; 70 lines
 
 </details>
@@ -1247,7 +1247,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <summary><code>crates/core/tests/</code> &mdash; 15 file(s)</summary>
 
 - [`amount_arithmetic_ui.rs`](crates/core/tests/amount_arithmetic_ui.rs) &mdash; 19 lines
-- [`cancellation_contract.rs`](crates/core/tests/cancellation_contract.rs) &mdash; 256 lines
+- [`cancellation_contract.rs`](crates/core/tests/cancellation_contract.rs) &mdash; 127 lines
 - [`cancellation_coverage_validator.rs`](crates/core/tests/cancellation_coverage_validator.rs) &mdash; 231 lines
 - [`cid_parity_contract.rs`](crates/core/tests/cid_parity_contract.rs) &mdash; 79 lines
 - [`config_contract.rs`](crates/core/tests/config_contract.rs) &mdash; 264 lines
@@ -1258,7 +1258,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`token_balance_ui.rs`](crates/core/tests/token_balance_ui.rs) &mdash; 20 lines
 - [`trait_evolution_contract.rs`](crates/core/tests/trait_evolution_contract.rs) &mdash; 209 lines
 - [`traits_contract.rs`](crates/core/tests/traits_contract.rs) &mdash; 569 lines
-- [`transport_contract.rs`](crates/core/tests/transport_contract.rs) &mdash; 807 lines
+- [`transport_contract.rs`](crates/core/tests/transport_contract.rs) &mdash; 652 lines
 - [`types_contract.rs`](crates/core/tests/types_contract.rs) &mdash; 878 lines
 - [`wire_format_preservation_contract.rs`](crates/core/tests/wire_format_preservation_contract.rs) &mdash; 415 lines
 
@@ -1435,7 +1435,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`parity_contract.rs`](crates/orderbook/tests/parity_contract.rs) &mdash; 710 lines
 - [`rejection_category_contract.rs`](crates/orderbook/tests/rejection_category_contract.rs) &mdash; 79 lines
 - [`rejection_contract.rs`](crates/orderbook/tests/rejection_contract.rs) &mdash; 545 lines
-- [`request_contract.rs`](crates/orderbook/tests/request_contract.rs) &mdash; 1,325 lines
+- [`request_contract.rs`](crates/orderbook/tests/request_contract.rs) &mdash; 1,106 lines
 - [`schema_source_contract.rs`](crates/orderbook/tests/schema_source_contract.rs) &mdash; 22 lines
 - [`signing_scheme_bridge_contract.rs`](crates/orderbook/tests/signing_scheme_bridge_contract.rs) &mdash; 172 lines
 - [`transform_contract.rs`](crates/orderbook/tests/transform_contract.rs) &mdash; 508 lines
@@ -1719,7 +1719,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>crates/test-utils/src/</code> &mdash; 6 file(s)</summary>
+<summary><code>crates/test-utils/src/</code> &mdash; 7 file(s)</summary>
 
 - [`builders.rs`](crates/test-utils/src/builders.rs) &mdash; 132 lines
 - [`consts.rs`](crates/test-utils/src/consts.rs) &mdash; 64 lines
@@ -1727,6 +1727,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`fixtures.rs`](crates/test-utils/src/fixtures.rs) &mdash; 83 lines
 - [`lib.rs`](crates/test-utils/src/lib.rs) &mdash; 17 lines
 - [`mocks.rs`](crates/test-utils/src/mocks.rs) &mdash; 134 lines
+- [`trace.rs`](crates/test-utils/src/trace.rs) &mdash; 355 lines
 
 </details>
 

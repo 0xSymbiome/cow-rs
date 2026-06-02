@@ -582,22 +582,13 @@ async fn gzip_bomb_is_rejected_on_decompressed_size() {
 
 #[cfg(feature = "tracing")]
 mod tracing_contract {
-    use std::{
-        collections::BTreeMap,
-        sync::{Arc, Mutex},
-    };
-
     use super::*;
-    use tracing::{
-        Event, Id, Metadata, Subscriber,
-        field::{Field, Visit},
-        span::{Attributes, Record},
-        subscriber::Interest,
-    };
+
+    use cow_sdk_test_utils::trace::TraceCapture;
 
     #[tokio::test(flavor = "current_thread")]
     async fn reqwest_dispatch_emits_one_path_only_transport_span_with_body_sizes() {
-        let capture = TraceCapture::install();
+        let capture = TraceCapture::install_global();
         let server = MockServer::start().await;
         Mock::given(method("POST"))
             .and(path("/quote"))
@@ -628,7 +619,7 @@ mod tracing_contract {
         let transport_spans: Vec<_> = spans
             .iter()
             .filter(|span| {
-                span.name == "transport.dispatch"
+                span.name() == "transport.dispatch"
                     && span.field("method") == Some("POST")
                     && span.field("endpoint") == Some("/quote")
                     && span.field("bytes_sent") == Some(expected_bytes_sent.as_str())
@@ -658,150 +649,4 @@ mod tracing_contract {
         assert!(!endpoint.contains(server_authority));
     }
 
-    struct TraceCapture {
-        state: Arc<CaptureState>,
-    }
-
-    impl TraceCapture {
-        fn install() -> Self {
-            let state = Arc::new(CaptureState::default());
-            let subscriber = CapturingSubscriber {
-                state: state.clone(),
-            };
-            let dispatch = tracing::Dispatch::new(subscriber);
-            tracing::dispatcher::set_global_default(dispatch)
-                .expect("transport tracing contract installs one subscriber per test binary");
-            Self { state }
-        }
-
-        fn spans(&self) -> Vec<CapturedSpan> {
-            self.state
-                .spans
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .values()
-                .cloned()
-                .collect()
-        }
-    }
-
-    struct CaptureState {
-        next_id: Mutex<u64>,
-        spans: Mutex<BTreeMap<u64, CapturedSpan>>,
-    }
-
-    impl Default for CaptureState {
-        fn default() -> Self {
-            Self {
-                next_id: Mutex::new(1),
-                spans: Mutex::default(),
-            }
-        }
-    }
-
-    struct CapturingSubscriber {
-        state: Arc<CaptureState>,
-    }
-
-    impl Subscriber for CapturingSubscriber {
-        fn enabled(&self, _metadata: &Metadata<'_>) -> bool {
-            true
-        }
-
-        fn register_callsite(&self, _metadata: &'static Metadata<'static>) -> Interest {
-            Interest::always()
-        }
-
-        fn new_span(&self, attributes: &Attributes<'_>) -> Id {
-            let id = next_span_id(&self.state);
-            let mut fields = FieldMap::default();
-            attributes.record(&mut fields);
-            self.state
-                .spans
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .insert(
-                    id,
-                    CapturedSpan {
-                        name: attributes.metadata().name().to_owned(),
-                        fields: fields.0,
-                    },
-                );
-            Id::from_u64(id)
-        }
-
-        fn record(&self, span: &Id, values: &Record<'_>) {
-            let mut fields = FieldMap::default();
-            values.record(&mut fields);
-            let mut spans = self
-                .state
-                .spans
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner);
-            if let Some(span) = spans.get_mut(&span.clone().into_u64()) {
-                span.fields.extend(fields.0);
-            }
-        }
-
-        fn record_follows_from(&self, _span: &Id, _follows: &Id) {}
-
-        fn event(&self, _event: &Event<'_>) {}
-
-        fn enter(&self, _span: &Id) {}
-
-        fn exit(&self, _span: &Id) {}
-    }
-
-    fn next_span_id(state: &CaptureState) -> u64 {
-        let mut next_id = state
-            .next_id
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let id = *next_id;
-        *next_id += 1;
-        id
-    }
-
-    #[derive(Clone, Debug)]
-    struct CapturedSpan {
-        name: String,
-        fields: BTreeMap<String, String>,
-    }
-
-    impl CapturedSpan {
-        fn field(&self, name: &str) -> Option<&str> {
-            self.fields.get(name).map(String::as_str)
-        }
-    }
-
-    #[derive(Default)]
-    struct FieldMap(BTreeMap<String, String>);
-
-    impl FieldMap {
-        fn record_value(&mut self, field: &Field, value: String) {
-            self.0.insert(field.name().to_owned(), value);
-        }
-    }
-
-    impl Visit for FieldMap {
-        fn record_i64(&mut self, field: &Field, value: i64) {
-            self.record_value(field, value.to_string());
-        }
-
-        fn record_u64(&mut self, field: &Field, value: u64) {
-            self.record_value(field, value.to_string());
-        }
-
-        fn record_bool(&mut self, field: &Field, value: bool) {
-            self.record_value(field, value.to_string());
-        }
-
-        fn record_str(&mut self, field: &Field, value: &str) {
-            self.record_value(field, value.to_owned());
-        }
-
-        fn record_debug(&mut self, field: &Field, value: &dyn std::fmt::Debug) {
-            self.record_value(field, format!("{value:?}"));
-        }
-    }
 }

@@ -24,46 +24,68 @@ use tracing_core::span::Current;
 pub struct TraceCapture {
     state: Arc<CaptureState>,
     #[cfg(not(target_arch = "wasm32"))]
-    _guard: tracing::dispatcher::DefaultGuard,
+    _guard: Option<tracing::dispatcher::DefaultGuard>,
 }
 
 impl TraceCapture {
-    /// Installs the capturing subscriber as the current thread's default and
-    /// returns a handle that restores the previous subscriber when dropped.
+    fn new_state_dispatch() -> (Arc<CaptureState>, tracing::Dispatch) {
+        let state = Arc::new(CaptureState::default());
+        let subscriber = CapturingSubscriber {
+            state: state.clone(),
+            next_id: AtomicU64::new(1),
+        };
+        (state, tracing::Dispatch::new(subscriber))
+    }
+
+    /// Installs the capturing subscriber as the current thread's scoped default
+    /// and returns a handle that restores the previous subscriber when dropped.
     ///
-    /// Scoped thread-local subscribers require `std`, which is unavailable on
-    /// `wasm32`; the `wasm32` build installs a global subscriber instead.
+    /// Use this when the spans and events under test are emitted on the calling
+    /// thread; separate instances can coexist across tests in one binary. For
+    /// output emitted from another thread (for example deep inside an async
+    /// transport), use [`TraceCapture::install_global`]. Scoped thread-local
+    /// subscribers require `std`, which is unavailable on `wasm32`, so the
+    /// `wasm32` build installs globally instead.
     #[cfg(not(target_arch = "wasm32"))]
     #[must_use]
     pub fn install() -> Self {
-        let state = Arc::new(CaptureState::default());
-        let subscriber = CapturingSubscriber {
-            state: state.clone(),
-            next_id: AtomicU64::new(1),
-        };
-        let dispatch = tracing::Dispatch::new(subscriber);
+        let (state, dispatch) = Self::new_state_dispatch();
         let guard = tracing::dispatcher::set_default(&dispatch);
         Self {
             state,
-            _guard: guard,
+            _guard: Some(guard),
         }
     }
 
-    /// Installs the capturing subscriber as the global default on `wasm32`,
-    /// where scoped thread-local subscribers are unavailable. Call it at most
-    /// once per test binary.
+    /// On `wasm32`, scoped thread-local subscribers are unavailable, so
+    /// installation is always global; see [`TraceCapture::install_global`].
+    ///
+    /// # Panics
+    /// Panics if a global default subscriber has already been installed for the
+    /// test binary.
     #[cfg(target_arch = "wasm32")]
     #[must_use]
     pub fn install() -> Self {
-        let state = Arc::new(CaptureState::default());
-        let subscriber = CapturingSubscriber {
-            state: state.clone(),
-            next_id: AtomicU64::new(1),
-        };
-        let dispatch = tracing::Dispatch::new(subscriber);
+        Self::install_global()
+    }
+
+    /// Installs the capturing subscriber as the global default. Use this when
+    /// the spans or events under test are emitted from a thread other than the
+    /// installing one (a scoped thread-local subscriber would miss them).
+    ///
+    /// # Panics
+    /// Panics if a global default subscriber has already been installed for the
+    /// test binary; the global default can be set only once.
+    #[must_use]
+    pub fn install_global() -> Self {
+        let (state, dispatch) = Self::new_state_dispatch();
         tracing::dispatcher::set_global_default(dispatch)
-            .expect("a single global tracing subscriber is installed per wasm test binary");
-        Self { state }
+            .expect("a single global tracing subscriber is installed per test binary");
+        Self {
+            state,
+            #[cfg(not(target_arch = "wasm32"))]
+            _guard: None,
+        }
     }
 
     /// Returns every captured event, in emission order.
