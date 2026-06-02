@@ -15,7 +15,3 @@ pub fn sample_order_uid() -> cow_sdk_core::OrderUid {
     )
     .unwrap()
 }
-
-pub fn sample_signature(byte: &str) -> String {
-    format!("0x{}1b", byte.repeat(64))
-}

@@ -38,17 +38,17 @@ use alloy_sol_types::{
     sol,
 };
 use cow_sdk_contracts::{
-    AllowListReader, CANCELLATIONS_TYPE_FIELDS, ContractId, DEPLOYER_CONTRACT, Eip1967Slot,
-    EthFlowOrderData, IERC20, IERC20Permit, IERC1271, InteractionLike, ORDER_TYPE_FIELDS,
-    ORDER_UID_LENGTH, OrderFlags, Registry, SALT, SettlementEncoder, SettlementReader, Signature,
-    SigningScheme, Swap, TokenRegistry, TradeExecution, TradeFlags, TradeSimulator,
-    VAULT_INTERFACE, encode_create_order_calldata, encode_invalidate_order_calldata,
-    encode_order_flags, encode_swap_step, encode_trade_flags, normalize_interaction,
-    permit_typed_data_hash, required_vault_roles,
+    AllowListReader, CANCELLATIONS_TYPE_FIELDS, DEPLOYER_CONTRACT, Eip1967Slot, EthFlowOrderData,
+    IERC20, IERC20Permit, IERC1271, InteractionLike, ORDER_TYPE_FIELDS, ORDER_UID_LENGTH,
+    OrderFlags, SALT, SettlementEncoder, SettlementReader, Signature, SigningScheme, Swap,
+    TokenRegistry, TradeExecution, TradeFlags, TradeSimulator, VAULT_INTERFACE,
+    encode_create_order_calldata, encode_invalidate_order_calldata, encode_order_flags,
+    encode_swap_step, encode_trade_flags, normalize_interaction, permit_typed_data_hash,
+    required_vault_roles,
 };
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, AppDataHex, BuyTokenDestination, CowEnv, OrderData, OrderDigest,
-    OrderKind, OrderUid, SellTokenSource, SupportedChainId, TypedDataDomain,
+    Address, Amount, AppDataHash, AppDataHex, BuyTokenDestination, OrderData, OrderDigest,
+    OrderKind, OrderUid, SellTokenSource, TypedDataDomain,
 };
 use serde_json::Value;
 
@@ -714,18 +714,7 @@ fn assert_reader_helper_surface(id: &str, expected: &Value) {
 }
 
 fn sample_domain() -> TypedDataDomain {
-    TypedDataDomain::new(
-        "Gnosis Protocol".to_owned(),
-        "v2".to_owned(),
-        u64::from(SupportedChainId::Mainnet),
-        Registry::default()
-            .address(
-                ContractId::Settlement,
-                SupportedChainId::Mainnet,
-                CowEnv::Prod,
-            )
-            .expect("canonical settlement address is registered on mainnet"),
-    )
+    cow_sdk_test_utils::builders::sample_domain()
 }
 
 fn sample_order_uid() -> OrderUid {

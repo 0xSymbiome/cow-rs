@@ -175,10 +175,7 @@ fn sample_to_address() -> Address {
 }
 
 fn sample_typed_data_domain() -> TypedDataDomain {
-    TypedDataDomain::new(
-        "Gnosis Protocol".to_owned(),
-        "v2".to_owned(),
-        1,
+    cow_sdk_test_utils::builders::sample_domain_with(
         Address::new("0x3333333333333333333333333333333333333333").unwrap(),
     )
 }
