@@ -353,40 +353,18 @@ fn shared_client_override_reuses_caller_built_reqwest_client() {
         .expect("second shared-client subgraph handle must build");
 }
 
-/// Compile-time assertion: `.build()` is unreachable when the chain id is
-/// missing.
+/// Compile-fail proof that `SubgraphApiBuilder::build` is unreachable until the
+/// chain id and API-key typestates are both satisfied.
 ///
-/// ```compile_fail
-/// use cow_sdk_subgraph::SubgraphApi;
-///
-/// let _ = SubgraphApi::builder()
-///     .api_key("partner-key")
-///     .build();
-/// ```
+/// Each fixture under `tests/ui/` attempts `.build()` on an incomplete builder;
+/// `trybuild` compiles every one and asserts it fails with the pinned
+/// "no method named `build`" diagnostic. This actually exercises the compiler
+/// on each case, unlike a doc-comment block, which Rust does not run from an
+/// integration-test file.
 #[test]
-fn typestate_compile_fail_no_chain_documented() {}
-
-/// Compile-time assertion: `.build()` is unreachable when the API key is
-/// missing.
-///
-/// ```compile_fail
-/// use cow_sdk_core::SupportedChainId;
-/// use cow_sdk_subgraph::SubgraphApi;
-///
-/// let _ = SubgraphApi::builder()
-///     .chain(SupportedChainId::Mainnet)
-///     .build();
-/// ```
-#[test]
-fn typestate_compile_fail_no_api_key_documented() {}
-
-/// Compile-time assertion: `.build()` is unreachable when neither the
-/// required chain id nor API key have been supplied.
-///
-/// ```compile_fail
-/// use cow_sdk_subgraph::SubgraphApi;
-///
-/// let _ = SubgraphApi::builder().build();
-/// ```
-#[test]
-fn typestate_compile_fail_empty_builder_documented() {}
+fn typestate_rejects_incomplete_builders() {
+    let cases = trybuild::TestCases::new();
+    cases.compile_fail("tests/ui/build_without_chain.rs");
+    cases.compile_fail("tests/ui/build_without_api_key.rs");
+    cases.compile_fail("tests/ui/build_on_empty_builder.rs");
+}

@@ -371,41 +371,18 @@ fn shared_client_override_reuses_caller_built_reqwest_client() {
         .expect("second shared-client orderbook handle must build");
 }
 
-/// Compile-time assertion: `.build()` is unreachable when the chain id is
-/// missing.
+/// Compile-fail proof that `OrderbookApiBuilder::build` is unreachable until
+/// the chain id and environment typestates are both satisfied.
 ///
-/// ```compile_fail
-/// use cow_sdk_orderbook::OrderbookApi;
-/// use cow_sdk_core::CowEnv;
-///
-/// let _ = OrderbookApi::builder()
-///     .environment(CowEnv::Prod)
-///     .build();
-/// ```
+/// Each fixture under `tests/ui/` attempts `.build()` on an incomplete builder;
+/// `trybuild` compiles every one and asserts it fails with the pinned
+/// "no method named `build`" diagnostic. This actually exercises the compiler
+/// on each case, unlike a doc-comment block, which Rust does not run from an
+/// integration-test file.
 #[test]
-fn typestate_compile_fail_no_chain_documented() {}
-
-/// Compile-time assertion: `.build()` is unreachable when the environment
-/// is missing.
-///
-/// ```compile_fail
-/// use cow_sdk_orderbook::OrderbookApi;
-/// use cow_sdk_core::SupportedChainId;
-///
-/// let _ = OrderbookApi::builder()
-///     .chain(SupportedChainId::Mainnet)
-///     .build();
-/// ```
-#[test]
-fn typestate_compile_fail_no_environment_documented() {}
-
-/// Compile-time assertion: `.build()` is unreachable when neither the
-/// required chain id nor environment have been supplied.
-///
-/// ```compile_fail
-/// use cow_sdk_orderbook::OrderbookApi;
-///
-/// let _ = OrderbookApi::builder().build();
-/// ```
-#[test]
-fn typestate_compile_fail_empty_builder_documented() {}
+fn typestate_rejects_incomplete_builders() {
+    let cases = trybuild::TestCases::new();
+    cases.compile_fail("tests/ui/build_without_chain.rs");
+    cases.compile_fail("tests/ui/build_without_environment.rs");
+    cases.compile_fail("tests/ui/build_on_empty_builder.rs");
+}

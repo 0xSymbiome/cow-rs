@@ -1,0 +1,14 @@
+error[E0599]: no method named `build` found for struct `OrderbookApiBuilder<ChainIdSet>` in the current scope
+  --> tests/ui/build_without_environment.rs:11:10
+   |
+ 9 |       let _ = OrderbookApi::builder()
+   |  _____________-
+10 | |         .chain(SupportedChainId::Mainnet)
+11 | |         .build();
+   | |         -^^^^^ method not found in `OrderbookApiBuilder<ChainIdSet>`
+   | |_________|
+   |
+   |
+   = note: the method was found for
+           - `OrderbookApiBuilder<ChainIdSet, EnvSet, TransportSet>`
+           - `OrderbookApiBuilder<ChainIdSet, EnvSet>`

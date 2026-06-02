@@ -40,4 +40,5 @@ reqwest = { workspace = true, features = ["rustls", "gzip"] }
 async-trait.workspace = true
 graphql_client = "0.16.0"
 tokio = { workspace = true, features = ["macros", "rt-multi-thread", "test-util", "time"] }
+trybuild.workspace = true
 wiremock.workspace = true

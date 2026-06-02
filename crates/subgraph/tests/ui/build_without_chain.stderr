@@ -1,0 +1,9 @@
+error[E0599]: no method named `build` found for struct `SubgraphApiBuilder<ChainIdUnset, ApiKeySet>` in the current scope
+ --> tests/ui/build_without_chain.rs:8:59
+  |
+8 |     let _ = SubgraphApi::builder().api_key("partner-key").build();
+  |                                                           ^^^^^ method not found in `SubgraphApiBuilder<ChainIdUnset, ApiKeySet>`
+  |
+  = note: the method was found for
+          - `SubgraphApiBuilder<ChainIdSet, ApiKeySet, TransportSet>`
+          - `SubgraphApiBuilder<ChainIdSet, ApiKeySet>`

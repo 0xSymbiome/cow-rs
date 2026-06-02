@@ -69,7 +69,10 @@ lives at `crates/orderbook/src/builder.rs`. Each marker transitions
 from `…Unset` to `…Set` through the corresponding fluent setter
 (`.chain(...)`, `.environment(...)`, `.transport(...)`). The `.build()`
 method is implemented only on the fully-set state; attempting to
-call it before every marker is set is a compile error. The fluent
+call it before every marker is set is a compile error. Three `trybuild`
+compile-fail witnesses under `crates/orderbook/tests/ui/` pin this rejection:
+reaching `.build()` without a chain id, without an environment, and on an
+empty builder each fail with the `no method named build` diagnostic. The fluent
 layer additionally exposes optional setters for transport policy,
 external host policy, shared `reqwest::Client` reuse on native targets,
 and per-chain base-URL overrides. The `.base_url(...)` convenience —
@@ -101,6 +104,10 @@ raw key.
 The subgraph markers use the same private-field tuple shape, keeping
 external construction closed while preserving the public type names used
 by the builder state machine.
+
+Three `trybuild` compile-fail witnesses under `crates/subgraph/tests/ui/` pin
+the build rejection: reaching `.build()` without a chain id, without an API key,
+and on an empty builder each fail to compile.
 
 ### Host-Policy Validation
 
@@ -185,8 +192,14 @@ Primary implementation points:
 Primary regression coverage:
 
 - `crates/orderbook/tests/builder_contract.rs`
+- `crates/orderbook/tests/ui/build_without_chain.rs`
+- `crates/orderbook/tests/ui/build_without_environment.rs`
+- `crates/orderbook/tests/ui/build_on_empty_builder.rs`
 - `crates/orderbook/tests/host_policy_contract.rs`
 - `crates/subgraph/tests/builder_contract.rs`
+- `crates/subgraph/tests/ui/build_without_chain.rs`
+- `crates/subgraph/tests/ui/build_without_api_key.rs`
+- `crates/subgraph/tests/ui/build_on_empty_builder.rs`
 - `crates/subgraph/tests/host_policy_contract.rs`
 - `crates/subgraph/tests/ui/builder_wasm32_missing_transport.rs`
 - `crates/contracts/tests/ui/typestate_marker_sealing.rs`
