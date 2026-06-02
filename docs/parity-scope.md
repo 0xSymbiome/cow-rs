@@ -300,10 +300,10 @@ entry for anyone who later considers reintroducing the surface.
   `from_shared_client`, `new_with_transport_policy`, `new_with_base_url`
   on the orderbook client and the matching set on the subgraph client)
   is absent from the workspace; the Rust compiler itself enforces the
-  exclusion at every call site, and the `trybuild` UI harness at
-  `crates/subgraph/tests/ui/builder_wasm32_missing_transport.rs`
-  captures the compile error a browser consumer sees when `.build()`
-  is attempted without `.transport(...)`.
+  exclusion at every call site. Separately, on `wasm32` the
+  default-transport `.build()` is `cfg`-gated off, so a browser consumer
+  must inject a `FetchTransport` before `.build()` is reachable; compiling
+  the crate for `wasm32` in CI guards that gate.
 - **Auction-retrieval method (`get_auction`), the `Auction` response wrapper,
   and the `AuctionOrder` mirror** — `/api/v1/auction` is not reachable for
   public clients and is treated upstream as a liveness probe rather than a

@@ -88,6 +88,14 @@ jobs:
         run: cargo check -p cow-sdk-wasm --no-default-features
       - name: Check cow-sdk-wasm wasm32
         run: cargo check -p cow-sdk-wasm --target wasm32-unknown-unknown --no-default-features
+      - name: Check native-default builder crates compile for wasm32
+        # The orderbook and subgraph builders gate their default-transport
+        # `.build()` impl on `#[cfg(not(target_arch = "wasm32"))]`, so a
+        # browser caller must inject a transport explicitly. Compiling both
+        # crates for wasm32 guards that gate: if it were removed, the
+        # `.build()` body's native-only `ReqwestTransport` reference would
+        # fail to compile here.
+        run: cargo check -p cow-sdk-orderbook -p cow-sdk-subgraph --target wasm32-unknown-unknown
       - name: Test host pure helpers
         run: cargo test -p cow-sdk-wasm --test host_pure_helpers
       - name: Test app-data fetch contract

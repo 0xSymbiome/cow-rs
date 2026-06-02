@@ -55,7 +55,7 @@ the trading-sdk runtime prerequisites audit.
 | Native convenience | Both builders carry a default-transport `.build()` impl gated on `#[cfg(not(target_arch = "wasm32"))]` that installs a `ReqwestTransport` | Conforms |
 | Panic-free terminals | Build terminals read each input from the data-carrying marker and return typed errors; no typestate-guard `expect`/`panic!` remains | Conforms |
 | Host policy | Explicit orderbook and subgraph endpoint overrides are validated at build time and fail through typed host-policy errors | Conforms |
-| wasm32 invariant | `trybuild` compile-fail coverage asserts `.build()` without `.transport(...)` does not compile on `wasm32` | Conforms |
+| wasm32 invariant | the default-transport `.build()` is `cfg`-gated off on `wasm32`, so a transportless build does not compile; both builder crates are compiled for `wasm32` in CI to guard the gate | Conforms |
 | Trading SDK construction | `build` requires chain id plus validated `AppCode` and returns the ready `Trading` client | Conforms |
 | Trading wasm32 posture | `build` documents and enforces the injected orderbook-client requirement at the runtime terminal on `wasm32` | Conforms |
 | Native Alloy builders | Provider, signer, and umbrella construction terminals are reachable only after required transport, key-source, and chain marker axes are set | Conforms |
@@ -128,9 +128,10 @@ header value returns a typed error (`OrderbookError::Transport` for the
 orderbook builder, `SubgraphError::TransportConfiguration` for the
 subgraph builder) rather than panicking. On `wasm32` this convenience impl
 is absent, so a caller must invoke `.transport(...)` explicitly to
-reach `.build()`. The `trybuild` UI harness at
-`crates/subgraph/tests/ui/builder_wasm32_missing_transport.rs` captures
-the expected compile error and its stderr fixture.
+reach `.build()`. Because that convenience impl is the only `wasm32` path to
+`.build()` and its body relies on the native-only `ReqwestTransport`, the
+requirement is compiler-enforced; compiling `cow-sdk-orderbook` and
+`cow-sdk-subgraph` for `wasm32` in CI guards the gate against regression.
 
 ### Trading SDK Construction
 
@@ -201,7 +202,6 @@ Primary regression coverage:
 - `crates/subgraph/tests/ui/build_without_api_key.rs`
 - `crates/subgraph/tests/ui/build_on_empty_builder.rs`
 - `crates/subgraph/tests/host_policy_contract.rs`
-- `crates/subgraph/tests/ui/builder_wasm32_missing_transport.rs`
 - `crates/contracts/tests/ui/typestate_marker_sealing.rs`
 - `crates/trading/tests/sdk_contract.rs`
 - `crates/trading/tests/app_code_contract.rs`
