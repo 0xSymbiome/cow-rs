@@ -1,16 +1,19 @@
-//! Generic recording mocks against the `cow_sdk_core` traits.
+//! Generic recording mocks and stubs against the `cow_sdk_core` traits.
 //!
 //! `RecordingSigner` is an `Rc<RefCell<_>>`-backed (single-threaded /
 //! wasm-friendly) recorder that returns canned values and logs the calls it
-//! received.
+//! received. `StubHttpTransport` is a no-op `HttpTransport` whose every method
+//! succeeds with an empty body, for tests that must satisfy a transport
+//! precondition without performing I/O.
 
 use std::cell::RefCell;
 use std::fmt;
 use std::rc::Rc;
+use std::time::Duration;
 
 use cow_sdk_core::{
-    Address, Amount, Hash32, Signer, TransactionBroadcast, TransactionRequest, TypedDataDomain,
-    TypedDataField,
+    Address, Amount, Hash32, HttpTransport, Signer, TransactionBroadcast, TransactionRequest,
+    TransportError, TypedDataDomain, TypedDataField,
 };
 
 /// The canonical canned broadcast hash returned by the recording mocks.
@@ -130,5 +133,52 @@ impl Signer for RecordingSigner {
 
     async fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {
         Ok(Amount::from(21_000u32))
+    }
+}
+
+/// A no-op [`HttpTransport`] whose every method succeeds with an empty body.
+///
+/// Builder-typestate tests inject this to satisfy the transport precondition
+/// without performing real I/O.
+#[derive(Debug, Default)]
+pub struct StubHttpTransport;
+
+#[cfg_attr(not(target_arch = "wasm32"), async_trait::async_trait)]
+#[cfg_attr(target_arch = "wasm32", async_trait::async_trait(?Send))]
+impl HttpTransport for StubHttpTransport {
+    async fn get(
+        &self,
+        _path: &str,
+        _headers: &[(String, String)],
+        _timeout: Option<Duration>,
+    ) -> Result<String, TransportError> {
+        Ok(String::new())
+    }
+    async fn post(
+        &self,
+        _path: &str,
+        _body: &str,
+        _headers: &[(String, String)],
+        _timeout: Option<Duration>,
+    ) -> Result<String, TransportError> {
+        Ok(String::new())
+    }
+    async fn put(
+        &self,
+        _path: &str,
+        _body: &str,
+        _headers: &[(String, String)],
+        _timeout: Option<Duration>,
+    ) -> Result<String, TransportError> {
+        Ok(String::new())
+    }
+    async fn delete(
+        &self,
+        _path: &str,
+        _body: &str,
+        _headers: &[(String, String)],
+        _timeout: Option<Duration>,
+    ) -> Result<String, TransportError> {
+        Ok(String::new())
     }
 }

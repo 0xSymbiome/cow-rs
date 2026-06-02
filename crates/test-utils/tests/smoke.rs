@@ -118,3 +118,13 @@ async fn recording_signer_logs_calls_and_returns_canned() {
     // The canned broadcast hash has one stable definition.
     assert_eq!(canned_tx_hash(), canned_tx_hash());
 }
+
+#[tokio::test]
+async fn stub_http_transport_succeeds_with_empty_body() {
+    use cow_sdk_core::HttpTransport;
+    use cow_sdk_test_utils::mocks::StubHttpTransport;
+
+    let transport = StubHttpTransport;
+    assert_eq!(transport.get("/x", &[], None).await.unwrap(), "");
+    assert_eq!(transport.post("/x", "body", &[], None).await.unwrap(), "");
+}

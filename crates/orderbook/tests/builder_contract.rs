@@ -17,56 +17,15 @@ use cow_sdk_core::{
     ReqwestTransportConfig, SupportedChainId, TransportError,
 };
 use cow_sdk_orderbook::{EnvBaseUrlOverrides, ExternalHostPolicy, OrderbookApi};
+use cow_sdk_test_utils::mocks::StubHttpTransport;
 use cow_sdk_transport_policy::{RetryPolicy, TransportPolicy};
-
-#[derive(Debug, Default)]
-struct StubTransport;
-
-#[async_trait::async_trait]
-impl HttpTransport for StubTransport {
-    async fn get(
-        &self,
-        _path: &str,
-        _headers: &[(String, String)],
-        _timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
-        Ok(String::new())
-    }
-    async fn post(
-        &self,
-        _path: &str,
-        _body: &str,
-        _headers: &[(String, String)],
-        _timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
-        Ok(String::new())
-    }
-    async fn put(
-        &self,
-        _path: &str,
-        _body: &str,
-        _headers: &[(String, String)],
-        _timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
-        Ok(String::new())
-    }
-    async fn delete(
-        &self,
-        _path: &str,
-        _body: &str,
-        _headers: &[(String, String)],
-        _timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
-        Ok(String::new())
-    }
-}
 
 #[test]
 fn build_with_required_inputs_yields_a_typed_api() {
     let api = OrderbookApi::builder()
         .chain(SupportedChainId::Mainnet)
         .environment(CowEnv::Prod)
-        .transport(Arc::new(StubTransport))
+        .transport(Arc::new(StubHttpTransport))
         .build()
         .expect("orderbook client with explicit transport must build");
 
@@ -191,7 +150,7 @@ fn policy_override_replaces_default_request_policy() {
         .chain(SupportedChainId::Mainnet)
         .environment(CowEnv::Prod)
         .transport_policy(policy)
-        .transport(Arc::new(StubTransport))
+        .transport(Arc::new(StubHttpTransport))
         .build()
         .expect("orderbook client with policy override must build");
 

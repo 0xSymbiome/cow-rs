@@ -17,55 +17,14 @@ use cow_sdk_core::{
     SupportedChainId, TransportError,
 };
 use cow_sdk_subgraph::{ExternalHostPolicy, SubgraphApi, SubgraphApiBaseUrls};
-
-#[derive(Debug, Default)]
-struct StubTransport;
-
-#[async_trait::async_trait]
-impl HttpTransport for StubTransport {
-    async fn get(
-        &self,
-        _path: &str,
-        _headers: &[(String, String)],
-        _timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
-        Ok(String::new())
-    }
-    async fn post(
-        &self,
-        _path: &str,
-        _body: &str,
-        _headers: &[(String, String)],
-        _timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
-        Ok(String::new())
-    }
-    async fn put(
-        &self,
-        _path: &str,
-        _body: &str,
-        _headers: &[(String, String)],
-        _timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
-        Ok(String::new())
-    }
-    async fn delete(
-        &self,
-        _path: &str,
-        _body: &str,
-        _headers: &[(String, String)],
-        _timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
-        Ok(String::new())
-    }
-}
+use cow_sdk_test_utils::mocks::StubHttpTransport;
 
 #[test]
 fn build_with_required_inputs_yields_a_typed_api() {
     let api = SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("partner-key")
-        .transport(Arc::new(StubTransport))
+        .transport(Arc::new(StubHttpTransport))
         .build()
         .expect("subgraph client with explicit transport must build");
 
