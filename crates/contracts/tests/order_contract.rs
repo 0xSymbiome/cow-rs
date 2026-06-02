@@ -68,21 +68,7 @@ fn signing_fixture_case(id: &str) -> serde_json::Value {
 }
 
 fn upstream_signing_sample_order() -> OrderData {
-    OrderData::new(
-        Address::new("0xd057b63f5e69cf1b929b356b579cba08d7688048").unwrap(),
-        Address::new("0x7b878668cd1a3adf89764d3a331e0a7bb832192d").unwrap(),
-        Address::new("0xa6ddbd0de6b310819b49f680f65871bee85f517e").unwrap(),
-        Amount::new("500000000000000").unwrap(),
-        Amount::new("23000020000").unwrap(),
-        5_000_222,
-        AppDataHex::new("0x0000000000000000000000000000000000000000000000000000000000000000")
-            .unwrap(),
-        Amount::new("2300000").unwrap(),
-        OrderKind::Sell,
-        true,
-        SellTokenSource::Erc20,
-        BuyTokenDestination::Erc20,
-    )
+    cow_sdk_test_utils::builders::OrderBuilder::default().build()
 }
 
 fn upstream_signing_domain() -> TypedDataDomain {

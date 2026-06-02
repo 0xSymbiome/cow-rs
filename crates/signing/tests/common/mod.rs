@@ -6,21 +6,7 @@
 use cow_sdk_core::OrderData;
 
 pub fn sample_order() -> OrderData {
-    serde_json::from_value(serde_json::json!({
-        "sellToken": "0xd057b63f5e69cf1b929b356b579cba08d7688048",
-        "buyToken": "0x7b878668cd1a3adf89764d3a331e0a7bb832192d",
-        "receiver": "0xa6ddbd0de6b310819b49f680f65871bee85f517e",
-        "sellAmount": "500000000000000",
-        "buyAmount": "23000020000",
-        "validTo": 5_000_222,
-        "appData": "0x0000000000000000000000000000000000000000000000000000000000000000",
-        "feeAmount": "2300000",
-        "kind": "sell",
-        "partiallyFillable": true,
-        "sellTokenBalance": "erc20",
-        "buyTokenBalance": "erc20"
-    }))
-    .unwrap()
+    cow_sdk_test_utils::builders::OrderBuilder::default().build()
 }
 
 pub fn sample_order_uid() -> cow_sdk_core::OrderUid {

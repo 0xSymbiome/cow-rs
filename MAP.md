@@ -1,6 +1,6 @@
 # Repository File Map
 
-> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `367bd85` &nbsp;&middot;&nbsp; **Generated:** 2026-06-02  
+> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `0a63ac3` &nbsp;&middot;&nbsp; **Generated:** 2026-06-02  
 > **Total tracked files:** **1428** &nbsp;&middot;&nbsp; **Code analysis:** tokei 14.0.0 (1371/1428 files)
 
 A navigable inventory of every file tracked by Git on this branch, grouped by the role each directory plays in the workspace. Use the table of contents to jump straight to a section; full file listings are collapsed by default so the high-level shape stays scannable.
@@ -31,7 +31,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 **Lines of code** (tracked files only)
 
-- **37,993 lines of Rust** across the 19 SDK crates, covered by **48,311 lines of tests** — a **1.3× test-to-code ratio** — plus **220 lines of benchmarks**.
+- **37,993 lines of Rust** across the 19 SDK crates, covered by **48,283 lines of tests** — a **1.3× test-to-code ratio** — plus **220 lines of benchmarks**.
 - **12,102 doc-comment lines** documenting the public API (~31.9% of crate code), plus **901 inline comment lines**.
 - **8,475 lines of TypeScript** across examples, e2e harnesses, and wasm bindings.
 - **27,082 lines of Markdown prose** — ADRs, audit notes, and READMEs.
@@ -52,7 +52,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 | Path | Files | Lines | Code | Purpose |
 |------|------:|------:|-----:|---------|
-| `crates/` | 801 | 146,233 | 104,808 | Workspace member crates (the SDK itself) |
+| `crates/` | 801 | 146,205 | 104,780 | Workspace member crates (the SDK itself) |
 | `docs/` | 155 | 23,510 | 0 | Architecture decision records, audit notes, provider notes |
 | `fuzz/` | 107 | 12,477 | 4,600 | cargo-fuzz targets, corpora, and failure artifacts |
 | `examples/` | 89 | 26,251 | 9,768 | Runnable usage examples (Rust + TypeScript) |
@@ -77,7 +77,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `rust-toolchain.toml` | 1 | 6 | 4 | Pinned Rust toolchain |
 | `.gitattributes` | 1 | 40 | 0 | Git attributes |
 | `CHANGELOG.md` | 1 | 3,746 | 0 | Release changelog |
-| **Total** | **1428** | **272,155** | **158,886** | |
+| **Total** | **1428** | **272,127** | **158,858** | |
 
 ---
 
@@ -85,7 +85,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 | Extension | Files | Lines | Code | Comments | Blank | Typical role |
 |-----------|------:|------:|-----:|---------:|------:|--------------|
-| `.rs` | 708 | 145,113 | 114,121 | 17,815 | 13,177 | Rust source and tests |
+| `.rs` | 708 | 145,085 | 114,093 | 17,815 | 13,177 | Rust source and tests |
 | `.md` | 251 | 32,790 | 0 | 27,082 | 5,708 | Markdown docs (ADRs, audit notes, READMEs) |
 | `.json` | 154 | 10,295 | 10,181 | 111 | 3 | JSON schemas, ABIs, parity fixtures |
 | `.ts` | 74 | 19,678 | 8,475 | 9,788 | 1,415 | TypeScript (examples, e2e, wasm bindings) |
@@ -111,7 +111,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `.gitattributes` | 1 | 40 | 0 | 35 | 5 |  |
 | `.yamllint` | 1 | 7 | 0 | 6 | 1 |  |
 | `.proptest-regressions` | 1 | 7 | 0 | 7 | 0 | proptest regression seeds |
-| **Total** | **1428** | **272,155** | **158,886** | **86,271** | **26,998** | |
+| **Total** | **1428** | **272,127** | **158,858** | **86,271** | **26,998** | |
 
 > **Code + Comments + Blank = Lines** for every row. ``Comments`` is all non-code, non-blank content: inline + doc-comments in source, prose in Markdown/text, and raw content in formats tokei does not parse as code (lockfiles, ``.stderr``, snapshots). Rust doc-comments are isolated in the per-crate ``Doc`` column above.
 
@@ -125,7 +125,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 |-------|------:|-----:|------:|--------:|----:|----:|---------|
 | [`wasm`](crates/wasm) | 105 | 5,641 | 3,399 | 0 | 1,357 | 0.6× | TypeScript-callable wasm-bindgen leaf for the CoW Protocol Rust SDK |
 | [`trading`](crates/trading) | 76 | 5,214 | 8,395 | 46 | 1,407 | 1.6× | High-level CoW Protocol trading orchestration surface |
-| [`contracts`](crates/contracts) | 160 | 5,002 | 7,471 | 88 | 1,760 | 1.5× | CoW Protocol low-level contracts helpers for hashing, settlement encoding, and on-chain interaction plumbing |
+| [`contracts`](crates/contracts) | 160 | 5,002 | 7,457 | 88 | 1,760 | 1.5× | CoW Protocol low-level contracts helpers for hashing, settlement encoding, and on-chain interaction plumbing |
 | [`core`](crates/core) | 59 | 4,271 | 3,821 | 0 | 2,176 | 0.9× | Shared CoW Protocol core types and validation primitives |
 | [`orderbook`](crates/orderbook) | 46 | 4,155 | 6,318 | 14 | 1,625 | 1.5× | Typed CoW Protocol orderbook client models and decoding helpers |
 | [`browser-wallet`](crates/browser-wallet) | 29 | 3,703 | 2,742 | 0 | 549 | 0.7× | Browser wallet integration for the CoW Protocol Rust SDK |
@@ -133,7 +133,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | [`subgraph`](crates/subgraph) | 30 | 1,325 | 3,408 | 0 | 458 | 2.6× | Typed CoW Protocol subgraph query primitives |
 | [`transport-policy`](crates/transport-policy) | 17 | 1,315 | 962 | 0 | 331 | 0.7× | Retry, rate-limit, and transport classification policy for CoW Protocol SDK HTTP clients |
 | [`alloy-provider`](crates/alloy-provider) | 25 | 1,235 | 1,489 | 0 | 137 | 1.2× | Alloy-backed read-only Provider adapter for the CoW Protocol Rust SDK |
-| [`signing`](crates/signing) | 27 | 944 | 2,247 | 39 | 301 | 2.4× | Deterministic CoW Protocol order hashing, EIP-712 signing, and UID helpers |
+| [`signing`](crates/signing) | 27 | 944 | 2,233 | 39 | 301 | 2.4× | Deterministic CoW Protocol order hashing, EIP-712 signing, and UID helpers |
 | [`alloy`](crates/alloy) | 27 | 805 | 1,804 | 0 | 197 | 2.2× | Composed Alloy provider and signer adapter for the CoW Protocol Rust SDK |
 | [`test-utils`](crates/test-utils) | 9 | 739 | 132 | 0 | 223 | 0.2× | Internal, unpublished shared test helpers for the cow-rs workspace. |
 | [`alloy-signer`](crates/alloy-signer) | 22 | 730 | 600 | 0 | 147 | 0.8× | Alloy-backed local-keystore Signer adapter for the CoW Protocol Rust SDK |
@@ -142,7 +142,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | [`cow-shed`](crates/cow-shed) | 32 | 410 | 679 | 0 | 258 | 1.7× | CoW Protocol COW Shed proxy address, EIP-712, and calldata helpers |
 | [`sdk`](crates/sdk) | 18 | 136 | 1,368 | 0 | 141 | 10.1× | Facade crate for CoW Protocol Rust SDK surfaces |
 | [`composable`](crates/composable) | 2 | 0 | 0 | 0 | 0 | — | Reserved crate manifest for future CoW Protocol composable order helpers |
-| **Total** | **801** | **37,993** | **48,311** | **220** | **12,102** | **1.3×** | |
+| **Total** | **801** | **37,993** | **48,283** | **220** | **12,102** | **1.3×** | |
 
 ---
 
@@ -1069,7 +1069,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`interaction_contract.rs`](crates/contracts/tests/interaction_contract.rs) &mdash; 247 lines
 - [`non_exhaustive_dto_contract.rs`](crates/contracts/tests/non_exhaustive_dto_contract.rs) &mdash; 503 lines
 - [`onchain_orders.rs`](crates/contracts/tests/onchain_orders.rs) &mdash; 296 lines
-- [`order_contract.rs`](crates/contracts/tests/order_contract.rs) &mdash; 258 lines
+- [`order_contract.rs`](crates/contracts/tests/order_contract.rs) &mdash; 244 lines
 - [`order_digest_parity_contract.rs`](crates/contracts/tests/order_digest_parity_contract.rs) &mdash; 158 lines
 - [`parity_contract.rs`](crates/contracts/tests/parity_contract.rs) &mdash; 1,195 lines
 - [`property_contract.rs`](crates/contracts/tests/property_contract.rs) &mdash; 640 lines
@@ -1613,7 +1613,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <details>
 <summary><code>crates/signing/tests/common/</code> &mdash; 1 file(s)</summary>
 
-- [`mod.rs`](crates/signing/tests/common/mod.rs) &mdash; 35 lines
+- [`mod.rs`](crates/signing/tests/common/mod.rs) &mdash; 21 lines
 
 </details>
 
