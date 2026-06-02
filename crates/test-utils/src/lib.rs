@@ -6,9 +6,12 @@
 //!
 //! Modules: `consts` (canonical test constants), `eip712` (an independent
 //! keccak/ABI-word oracle), `fixtures` (parity-fixture loaders), `builders`
-//! (order/domain/signature fixtures), `mocks` (recording `Signer`), and
-//! `trace` (a span/event capturing subscriber).
+//! (order/domain/signature fixtures), `mocks` (recording `Signer`),
+//! `trace` (a span/event capturing subscriber), and `arb` (shared `proptest`
+//! strategies, behind the `proptest` feature).
 
+#[cfg(feature = "proptest")]
+pub mod arb;
 pub mod builders;
 pub mod consts;
 pub mod eip712;

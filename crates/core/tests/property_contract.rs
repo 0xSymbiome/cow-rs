@@ -64,7 +64,7 @@ fn nibble_char(value: u8, uppercase: bool) -> char {
 
 /// Strategy that emits every supported chain id.
 fn supported_chain_strategy() -> impl Strategy<Value = SupportedChainId> {
-    prop::sample::select(SupportedChainId::ALL.to_vec())
+    cow_sdk_test_utils::arb::arb_supported_chain_id()
 }
 
 /// Strategy that emits an arbitrary 20-byte address payload.

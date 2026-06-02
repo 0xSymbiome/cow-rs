@@ -52,34 +52,22 @@ const REGRESSION_FILE: &str = concat!(
 /// exercised at every 32-byte transition.
 /// Strategy that emits an address with a non-zero low byte.
 fn address_strategy() -> impl Strategy<Value = Address> {
-    any::<[u8; 20]>().prop_map(|mut bytes| {
-        if bytes.iter().all(|byte| *byte == 0) {
-            bytes[19] = 1;
-        }
-        Address::new(format!("0x{}", alloy_primitives::hex::encode(bytes))).unwrap()
-    })
+    cow_sdk_test_utils::arb::arb_address()
 }
 
 /// Strategy that emits an [`AppDataHex`] payload.
 fn app_data_strategy() -> impl Strategy<Value = AppDataHex> {
-    any::<[u8; 32]>().prop_map(|bytes| {
-        AppDataHex::new(format!("0x{}", alloy_primitives::hex::encode(bytes))).unwrap()
-    })
+    cow_sdk_test_utils::arb::arb_app_data_hex()
 }
 
 /// Strategy that emits an [`Amount`] with at least one non-zero byte.
 fn amount_strategy() -> impl Strategy<Value = Amount> {
-    any::<[u8; 32]>().prop_map(|mut bytes| {
-        if bytes.iter().all(|byte| *byte == 0) {
-            bytes[31] = 1;
-        }
-        Amount::new(format!("0x{}", alloy_primitives::hex::encode(bytes))).unwrap()
-    })
+    cow_sdk_test_utils::arb::arb_amount()
 }
 
 /// Strategy that emits every supported chain id.
 fn chain_id_strategy() -> impl Strategy<Value = SupportedChainId> {
-    prop::sample::select(SupportedChainId::ALL.to_vec())
+    cow_sdk_test_utils::arb::arb_supported_chain_id()
 }
 
 /// Strategy that emits a 56-byte order UID.

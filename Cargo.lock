@@ -1674,6 +1674,7 @@ dependencies = [
  "alloy-primitives",
  "async-trait",
  "cow-sdk-core",
+ "proptest",
  "serde_json",
  "sha3 0.11.0",
  "tokio",
