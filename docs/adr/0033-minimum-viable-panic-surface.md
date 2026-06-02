@@ -5,7 +5,7 @@
 - Last reviewed: 2026-04-29
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: panic, safety, public-api, audit
-- Anchors: Principle 14 (primary)
+- Anchors: Minimum-Viable Panic Surface (primary)
 - Related: none
 
 ## Decision
@@ -45,10 +45,10 @@ accidental convenience.
 
 ## Alternatives Rejected
 
-- Anchor Principle 14 to ADR 0006: ADR 0006 is about instance-scoped
+- Anchor Minimum-Viable Panic Surface to ADR 0006: ADR 0006 is about instance-scoped
   configuration, not panic policy. Mapping panic policy there would
   dilute both ADRs.
-- Make Principle 14 audit-only: insufficient, because release gates need
+- Make Minimum-Viable Panic Surface audit-only: insufficient, because release gates need
   a workspace-wide invariant decision that survives individual audit
   refreshes.
 - Track panic exceptions by line number: easy to produce, but noisy under
@@ -56,8 +56,8 @@ accidental convenience.
 
 ## Anchors
 
-This ADR is the primary and sole anchor for Principle 14,
-Minimum-Viable Panic Surface.
+This ADR is the primary and sole anchor for the
+Minimum-Viable Panic Surface principle.
 
 ## Links
 

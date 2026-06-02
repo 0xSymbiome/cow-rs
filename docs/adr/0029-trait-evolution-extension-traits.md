@@ -5,7 +5,7 @@
 - Last reviewed: 2026-04-29
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: traits, semver, compatibility, providers
-- Anchors: Principle 11 (supporting)
+- Anchors: Forward-Compatible Public Surfaces (supporting)
 - Related: [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md)
 
 ## Decision
@@ -57,7 +57,7 @@ helpers available through explicit imports.
 
 ## Anchors
 
-This ADR supports Principle 11, Forward-Compatible Public Surfaces.
+This ADR supports the Forward-Compatible Public Surfaces principle.
 
 ## Links
 

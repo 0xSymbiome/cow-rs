@@ -5,7 +5,7 @@
 - Last reviewed: 2026-05-29
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: traits, providers, events, capability-split, semver
-- Anchors: Principle 8 (supporting)
+- Anchors: Chain-RPC Runtime Neutrality (supporting)
 - Related: [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0029](0029-trait-evolution-extension-traits.md), [ADR 0048](0048-composable-conditional-order-framework.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md)
 
 ## Decision

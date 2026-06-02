@@ -5,7 +5,7 @@
 - Last reviewed: 2026-04-29
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: versioning, semver, release, compatibility
-- Anchors: Principle 10 (supporting)
+- Anchors: Evidence-Backed Public Claims (supporting)
 - Related: [ADR 0026](0026-alloy-major-release-absorption-plan.md)
 
 ## Decision
@@ -58,7 +58,7 @@ patch contract reproducible for reviewers.
 
 ## Anchors
 
-This ADR supports Principle 10, Evidence-Backed Public Claims.
+This ADR supports the Evidence-Backed Public Claims principle.
 
 ## Links
 

@@ -5,7 +5,7 @@
 - Last reviewed: 2026-05-29
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: orderbook, trading, quote, dto, openapi, compatibility
-- Anchors: Principle 11 (primary)
+- Anchors: Forward-Compatible Public Surfaces (primary)
 - Related: [ADR 0031](0031-wire-dto-openapi-driven-with-order-auction-order-split.md), [ADR 0021](0021-orderbook-total-fee-policy.md), [ADR 0015](0015-client-side-order-bounds-validator.md), [ADR 0017](0017-typed-orderbook-rejection-parser.md), [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md)
 
 ## Decision
@@ -126,7 +126,7 @@ not a per-field equality check against the request.
 
 ## Anchors
 
-This ADR is an anchor for Principle 11, Forward-Compatible Public Surfaces, on
+This ADR is an anchor for the Forward-Compatible Public Surfaces principle, on
 the quote surface.
 
 ## Links

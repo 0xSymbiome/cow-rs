@@ -5,7 +5,7 @@
 - Last reviewed: 2026-05-31
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: error-surface, classification, telemetry, ergonomics
-- Anchors: Principle 5 (primary)
+- Anchors: Strong Typed Public Surfaces (supporting)
 - Related: [ADR 0053](0053-typed-signer-rejection-classification.md), [ADR 0017](0017-typed-orderbook-rejection-parser.md), [ADR 0025](0025-workspace-url-redaction-convention.md)
 
 ## Decision

@@ -5,7 +5,7 @@
 - Last reviewed: 2026-05-30
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: orderbook, dto, openapi, compatibility
-- Anchors: Principle 11 (primary)
+- Anchors: Forward-Compatible Public Surfaces (primary)
 - Related: [ADR 0017](0017-typed-orderbook-rejection-parser.md), [ADR 0027](0027-post-quantum-signing-absorption-plan.md), [ADR 0058](0058-typed-quote-request-response-surface.md)
 
 ## Decision
@@ -64,8 +64,8 @@ keeps each Rust type faithful to its upstream schema.
 
 ## Anchors
 
-This ADR is the primary anchor for Principle 11,
-Forward-Compatible Public Surfaces.
+This ADR is the primary anchor for the
+Forward-Compatible Public Surfaces principle.
 
 ## Amendment (2026-05-29)
 

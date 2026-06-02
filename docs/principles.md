@@ -98,7 +98,7 @@ on a concrete provider library, so native Alloy, the browser-wallet leaf, and a
 custom simulator or fork-test adapter can all satisfy the same helper calls
 without widening the default facade.
 
-**Anchored by**: [ADR 0024](adr/0024-asyncprovider-asyncsigningprovider-capability-split.md) (primary). Supporting: [ADR 0010](adr/0010-runtime-neutral-async-and-transport-posture.md), [ADR 0014](adr/0014-eip1271-verification-cache.md), [ADR 0028](adr/0028-account-abstraction-integration-plan.md).
+**Anchored by**: [ADR 0024](adr/0024-asyncprovider-asyncsigningprovider-capability-split.md) (primary). Supporting: [ADR 0010](adr/0010-runtime-neutral-async-and-transport-posture.md), [ADR 0014](adr/0014-eip1271-verification-cache.md), [ADR 0028](adr/0028-account-abstraction-integration-plan.md), [ADR 0057](adr/0057-log-provider-capability-trait.md).
 
 **Operational doctrine**: [Alloy Doctrine](alloy-doctrine.md) — the
 three-bucket classification (ALWAYS-ALLOY, COW-OWNED, BOUNDARY-ADAPTER)

@@ -5,7 +5,7 @@
 - Last reviewed: 2026-06-01
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: deployments, provenance, contracts, release
-- Anchors: Principle 1 (supporting); Principle 10 (supporting)
+- Anchors: Deterministic Protocol Transforms (supporting); Evidence-Backed Public Claims (supporting)
 - Related: [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md), [ADR 0026](0026-alloy-major-release-absorption-plan.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
 
 ## Decision
@@ -72,8 +72,8 @@ here.
 
 ## Anchors
 
-This ADR supports Principle 1, Deterministic Protocol Transforms, and
-Principle 10, Evidence-Backed Public Claims.
+This ADR supports the Deterministic Protocol Transforms and
+Evidence-Backed Public Claims principles.
 
 ## Links
 
