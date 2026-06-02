@@ -20,7 +20,6 @@ use std::{
     cell::RefCell,
     fmt,
     sync::{Arc, Mutex},
-    thread::sleep,
     time::{Duration, Instant},
 };
 
@@ -112,12 +111,18 @@ fn in_memory_cache_keys_on_signature_so_distinct_signatures_do_not_alias() {
 
 #[test]
 fn in_memory_cache_respects_ttl_expiry() {
-    let cache = InMemoryEip1271VerificationCache::new(Duration::from_millis(40), 16);
+    let start = Instant::now();
+    let clock = ManualClock::new(start);
+    let cache = InMemoryEip1271VerificationCache::with_clock(
+        Duration::from_millis(40),
+        16,
+        clock.clone(),
+    );
     let verifier = sample_address(3);
 
     cache.record_valid(verifier, digest(3), sig_hash(3));
     assert!(cache.contains_valid(verifier, digest(3), sig_hash(3)));
-    sleep(Duration::from_millis(80));
+    clock.set(start + Duration::from_millis(80));
     assert!(!cache.contains_valid(verifier, digest(3), sig_hash(3)));
 }
 
@@ -148,13 +153,19 @@ fn cache_ttl_boundary_holds_at_minus_one_and_misses_at_plus_one() {
 
 #[test]
 fn in_memory_cache_evicts_oldest_entry_when_capacity_is_exceeded() {
-    let cache = InMemoryEip1271VerificationCache::new(Duration::from_secs(60), 2);
+    let start = Instant::now();
+    let clock = ManualClock::new(start);
+    let cache = InMemoryEip1271VerificationCache::with_clock(
+        Duration::from_secs(60),
+        2,
+        clock.clone(),
+    );
     let verifier = sample_address(3);
 
     cache.record_valid(verifier, digest(1), sig_hash(1));
-    sleep(Duration::from_millis(2));
+    clock.set(start + Duration::from_millis(1));
     cache.record_valid(verifier, digest(2), sig_hash(2));
-    sleep(Duration::from_millis(2));
+    clock.set(start + Duration::from_millis(2));
     cache.record_valid(verifier, digest(3), sig_hash(3));
 
     assert_eq!(cache.len(), 2);
