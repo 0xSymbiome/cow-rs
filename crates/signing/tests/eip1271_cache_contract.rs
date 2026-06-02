@@ -113,11 +113,8 @@ fn in_memory_cache_keys_on_signature_so_distinct_signatures_do_not_alias() {
 fn in_memory_cache_respects_ttl_expiry() {
     let start = Instant::now();
     let clock = ManualClock::new(start);
-    let cache = InMemoryEip1271VerificationCache::with_clock(
-        Duration::from_millis(40),
-        16,
-        clock.clone(),
-    );
+    let cache =
+        InMemoryEip1271VerificationCache::with_clock(Duration::from_millis(40), 16, clock.clone());
     let verifier = sample_address(3);
 
     cache.record_valid(verifier, digest(3), sig_hash(3));
@@ -155,11 +152,8 @@ fn cache_ttl_boundary_holds_at_minus_one_and_misses_at_plus_one() {
 fn in_memory_cache_evicts_oldest_entry_when_capacity_is_exceeded() {
     let start = Instant::now();
     let clock = ManualClock::new(start);
-    let cache = InMemoryEip1271VerificationCache::with_clock(
-        Duration::from_secs(60),
-        2,
-        clock.clone(),
-    );
+    let cache =
+        InMemoryEip1271VerificationCache::with_clock(Duration::from_secs(60), 2, clock.clone());
     let verifier = sample_address(3);
 
     cache.record_valid(verifier, digest(1), sig_hash(1));

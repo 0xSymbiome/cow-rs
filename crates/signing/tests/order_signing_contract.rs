@@ -25,9 +25,9 @@ use cow_sdk_signing::{
 };
 use sha3::{Digest, Keccak256};
 
-use cow_sdk_test_utils::fixtures;
+use cow_sdk_test_utils::{fixtures, mocks::RecordingSigner};
 
-use common::{MockSigner, sample_order};
+use common::sample_order;
 
 #[test]
 fn order_typed_data_matches_fixture_contract_and_consumer_shape() {
@@ -69,7 +69,7 @@ fn order_typed_data_matches_fixture_contract_and_consumer_shape() {
 #[tokio::test]
 async fn sign_order_uses_typed_data_for_eip712_and_digest_for_ethsign() {
     let order = sample_order();
-    let signer = MockSigner::new();
+    let signer = RecordingSigner::new();
 
     let typed_result = sign_order(&order, SupportedChainId::Sepolia, &signer, None)
         .await
@@ -109,7 +109,7 @@ async fn sign_order_uses_typed_data_for_eip712_and_digest_for_ethsign() {
 #[tokio::test]
 async fn eth_sign_routes_raw_32_byte_digest_to_sign_message() {
     let order = sample_order();
-    let signer = MockSigner::new();
+    let signer = RecordingSigner::new();
     let expected_digest = hash_order(
         &get_domain(SupportedChainId::Sepolia, None).unwrap(),
         &order,
@@ -139,7 +139,7 @@ async fn eth_sign_routes_raw_32_byte_digest_to_sign_message() {
 #[tokio::test]
 async fn sign_order_routes_typed_data_fields_to_signer() {
     let order = sample_order();
-    let signer = MockSigner::new();
+    let signer = RecordingSigner::new();
 
     let typed_result = sign_order(&order, SupportedChainId::Sepolia, &signer, None)
         .await
@@ -182,7 +182,7 @@ async fn sign_order_routes_typed_data_fields_to_signer() {
 #[tokio::test]
 async fn unsupported_local_signer_modes_fail_with_typed_errors() {
     let order = sample_order();
-    let signer = MockSigner::new();
+    let signer = RecordingSigner::new();
 
     for scheme in [SigningScheme::Eip1271, SigningScheme::PreSign] {
         let error =

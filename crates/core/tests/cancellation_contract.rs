@@ -123,5 +123,4 @@ mod tracing_contract {
             "cancellation must emit a debug event with target and cancelled field: {events:#?}",
         );
     }
-
 }

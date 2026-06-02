@@ -22,8 +22,6 @@
 //! Failure messages carry the fixture case id so a reviewer looking at a
 //! broken CI run sees the exact upstream vector that diverged.
 
-mod common;
-
 use std::collections::BTreeMap;
 
 use cow_sdk_contracts::{ContractsError, RecoverableSignature, SigningScheme};
@@ -38,7 +36,7 @@ use cow_sdk_signing::{
 };
 use serde_json::Value;
 
-use common::MockSigner;
+use cow_sdk_test_utils::mocks::RecordingSigner;
 
 const FIXTURE: &str = include_str!("../../../parity/fixtures/signing.json");
 
@@ -292,7 +290,7 @@ async fn assert_signer_supported_schemes(id: &str, expected: &Value) {
         .collect();
 
     let order = sample_order();
-    let signer = MockSigner::new();
+    let signer = RecordingSigner::new();
 
     // Signer-generated schemes must sign successfully.
     for scheme_label in &signer_generated {
@@ -347,7 +345,7 @@ async fn assert_unsupported_mode_errors(id: &str, expected: &Value) {
     );
 
     let order = sample_order();
-    let signer = MockSigner::new();
+    let signer = RecordingSigner::new();
     for scheme_label in unsupported {
         let scheme = scheme_label_to_rust(id, scheme_label);
         let error =

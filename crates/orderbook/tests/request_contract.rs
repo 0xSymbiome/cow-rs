@@ -1102,5 +1102,4 @@ mod tracing_contract {
             "quote span must carry populated quote_id, attempts, and status fields: {spans:#?}"
         );
     }
-
 }

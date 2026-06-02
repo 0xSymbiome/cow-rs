@@ -21,8 +21,6 @@
     reason = "pedantic, nursery, and style lints acceptable in test helper code"
 )]
 
-mod common;
-
 use std::collections::BTreeMap;
 
 use cow_sdk_contracts::{OrderCancellations, SigningScheme, hash_order, hash_order_cancellations};
@@ -39,7 +37,7 @@ use cow_sdk_signing::{
 use proptest::prelude::*;
 use proptest::test_runner::FileFailurePersistence;
 
-use common::MockSigner;
+use cow_sdk_test_utils::mocks::RecordingSigner;
 
 /// Path for committed regression seeds; proptest writes new shrink
 /// outcomes here so every contributor re-runs prior counter-examples
@@ -285,7 +283,7 @@ proptest! {
     /// deterministic for a fixed `(chain, order, owner)` triple; the
     /// generated digest matches [`hash_order`] under the resolved
     /// domain; and [`sign_order_with_scheme`] routes typed-data and
-    /// ethSign schemes through the correct [`MockSigner`] channel with
+    /// ethSign schemes through the correct [`RecordingSigner`] channel with
     /// the expected digest bytes for the message-signing path.
     #[test]
     fn order_payloads_and_generated_ids_are_deterministic_and_scheme_explicit(
@@ -305,7 +303,7 @@ proptest! {
 
         let rt = tokio::runtime::Builder::new_current_thread().build().unwrap();
 
-        let typed_signer = MockSigner::new();
+        let typed_signer = RecordingSigner::new();
         let typed_result = rt
             .block_on(sign_order_with_scheme(
                 &order,
@@ -320,7 +318,7 @@ proptest! {
         prop_assert_eq!(typed_calls.typed_data.len(), 1);
         prop_assert!(typed_calls.messages.is_empty());
 
-        let message_signer = MockSigner::new();
+        let message_signer = RecordingSigner::new();
         let message_result = rt
             .block_on(sign_order_with_scheme(
                 &order,
@@ -343,7 +341,7 @@ proptest! {
     /// [`order_cancellations_typed_data_payload`] is deterministic, its
     /// digest matches [`hash_order_cancellations`], and
     /// [`sign_order_cancellations_with_scheme`] routes typed-data and
-    /// ethSign schemes through the correct [`MockSigner`] channel.
+    /// ethSign schemes through the correct [`RecordingSigner`] channel.
     #[test]
     fn cancellation_payloads_are_deterministic_and_preserve_scheme_boundaries(
         chain in chain_id_strategy(),
@@ -362,7 +360,7 @@ proptest! {
 
         let rt = tokio::runtime::Builder::new_current_thread().build().unwrap();
 
-        let typed_signer = MockSigner::new();
+        let typed_signer = RecordingSigner::new();
         let typed_result = rt
             .block_on(sign_order_cancellations_with_scheme(
                 &order_uids,
@@ -377,7 +375,7 @@ proptest! {
         prop_assert_eq!(typed_calls.typed_data.len(), 1);
         prop_assert!(typed_calls.messages.is_empty());
 
-        let message_signer = MockSigner::new();
+        let message_signer = RecordingSigner::new();
         let message_result = rt
             .block_on(sign_order_cancellations_with_scheme(
                 &order_uids,

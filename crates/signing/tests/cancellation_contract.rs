@@ -21,12 +21,13 @@ use cow_sdk_signing::{
     sign_order_cancellation_with_scheme, sign_order_cancellations,
     sign_order_cancellations_with_scheme,
 };
+use cow_sdk_test_utils::mocks::RecordingSigner;
 
-use common::{MockSigner, sample_order_uid};
+use common::sample_order_uid;
 
 #[tokio::test]
 async fn single_and_batch_cancellation_signing_are_first_class() {
-    let signer = MockSigner::new();
+    let signer = RecordingSigner::new();
     let order_uid = sample_order_uid();
     let batch_uids = vec![
         order_uid,
@@ -55,7 +56,7 @@ async fn single_and_batch_cancellation_signing_are_first_class() {
 
 #[tokio::test]
 async fn cancellation_signing_uses_typed_data_and_ethsign_digest_paths() {
-    let signer = MockSigner::new();
+    let signer = RecordingSigner::new();
     let order_uid = sample_order_uid();
     let payload = order_cancellations_typed_data_payload(
         std::slice::from_ref(&order_uid),
@@ -110,7 +111,7 @@ async fn cancellation_signing_uses_typed_data_and_ethsign_digest_paths() {
 
 #[tokio::test]
 async fn unsupported_cancellation_modes_fail_with_typed_error() {
-    let signer = MockSigner::new();
+    let signer = RecordingSigner::new();
     let order_uid = sample_order_uid();
 
     let error = sign_order_cancellation_with_scheme(
@@ -133,7 +134,7 @@ async fn unsupported_cancellation_modes_fail_with_typed_error() {
 
 #[tokio::test]
 async fn batch_cancellation_signing_routes_to_typed_data_for_default_scheme() {
-    let signer = MockSigner::new();
+    let signer = RecordingSigner::new();
     let order_uid = sample_order_uid();
 
     let single = sign_order_cancellation(&order_uid, SupportedChainId::Sepolia, &signer, None)
@@ -162,7 +163,7 @@ mod tracing_contract {
     #[tokio::test]
     async fn cancellation_emits_debug_event_with_uid_field() {
         let capture = TraceCapture::install_global();
-        let signer = MockSigner::new();
+        let signer = RecordingSigner::new();
         let order_uid = sample_order_uid();
 
         sign_order_cancellation_with_scheme(
@@ -187,5 +188,4 @@ mod tracing_contract {
             "cancellation signing must emit a debug event with the UID field: {events:#?}"
         );
     }
-
 }

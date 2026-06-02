@@ -648,5 +648,4 @@ mod tracing_contract {
         assert!(!endpoint.contains("api_key"));
         assert!(!endpoint.contains(server_authority));
     }
-
 }
