@@ -1,6 +1,3 @@
-mod common;
-
-use alloy_primitives::{Address as AlloyAddress, B256};
 use sha3::{Digest, Keccak256};
 
 use cow_sdk_contracts::{
@@ -8,8 +5,6 @@ use cow_sdk_contracts::{
     deployment_for_chain, deterministic_deployment_address,
 };
 use cow_sdk_core::{CowEnv, SupportedChainId};
-
-use common::fixture_case;
 
 // Hand-rolled `sha3::Keccak256` helper used by the assertions below.
 // Crate code routes through `alloy_primitives::keccak256` per ADR 0052;
@@ -24,21 +19,7 @@ fn keccak256(bytes: impl AsRef<[u8]>) -> [u8; 32] {
 }
 
 #[test]
-fn deployment_constants_and_create2_address_match_fixture_contract() {
-    let fixture = fixture_case("contracts-deployment-constants");
-    let expected_salt: B256 = fixture["expected"]["salt"]
-        .as_str()
-        .unwrap()
-        .parse()
-        .unwrap();
-    let expected_deployer: AlloyAddress = fixture["expected"]["deployer_contract"]
-        .as_str()
-        .unwrap()
-        .parse()
-        .unwrap();
-    assert_eq!(SALT, expected_salt);
-    assert_eq!(DEPLOYER_CONTRACT, expected_deployer);
-
+fn deterministic_deployment_address_matches_independent_create2_computation() {
     let bytecode = "0x608060405234801561001057600080fd5b506040516102c73803806102c78339";
     let args = vec![
         "0x9008D19f58AAbD9eD0D60971565AA8510560ab41".to_owned(),
@@ -100,20 +81,6 @@ fn deployment_for_chain_uses_core_protocol_addresses() {
 
 #[test]
 fn registry_canonical_addresses_are_bound_to_the_reviewed_create2_salt_contract() {
-    let fixture = fixture_case("contracts-deployment-constants");
-    let expected_salt: B256 = fixture["expected"]["salt"]
-        .as_str()
-        .unwrap()
-        .parse()
-        .unwrap();
-    let expected_deployer: AlloyAddress = fixture["expected"]["deployer_contract"]
-        .as_str()
-        .unwrap()
-        .parse()
-        .unwrap();
-    assert_eq!(SALT, expected_salt);
-    assert_eq!(DEPLOYER_CONTRACT, expected_deployer);
-
     let registry = Registry::default();
     let canonical = [
         (

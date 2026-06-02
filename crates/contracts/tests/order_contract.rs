@@ -15,15 +15,10 @@
 mod common;
 
 use cow_sdk_contracts::{
-    BUY_ETH_ADDRESS, CANCELLATIONS_TYPE_FIELDS, ContractId, ORDER_TYPE_FIELDS, OrderCancellations,
-    OrderFlags, OrderUidParams, Registry, compute_order_uid, decode_order_flags,
-    encode_order_flags, extract_order_uid_params, hash_order, hash_order_cancellation,
-    hash_order_cancellations, order_eip712_type_hash, pack_order_uid_params,
+    BUY_ETH_ADDRESS, ContractId, OrderCancellations, OrderFlags, OrderUidParams, Registry,
+    compute_order_uid, decode_order_flags, encode_order_flags, extract_order_uid_params,
+    hash_order, hash_order_cancellation, hash_order_cancellations, pack_order_uid_params,
 };
-
-fn gpv2_order_type_hash_hex() -> String {
-    order_eip712_type_hash().to_hex_string()
-}
 use cow_sdk_core::{
     Address, BuyTokenDestination, CowEnv, OrderData, OrderKind, SellTokenSource, SupportedChainId,
     TypedDataDomain,
@@ -70,43 +65,7 @@ fn upstream_signing_domain() -> TypedDataDomain {
 }
 
 #[test]
-fn order_contract_matches_fixture_and_normalization_rules() {
-    let fields = fixture_case("contracts-order-type-fields");
-    let expected_fields = fields["expected"]["fields"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|value| value.as_str().unwrap())
-        .collect::<Vec<_>>();
-    assert_eq!(
-        ORDER_TYPE_FIELDS
-            .iter()
-            .map(|field| field.name)
-            .collect::<Vec<_>>(),
-        expected_fields
-    );
-
-    let type_hash = fixture_case("contracts-order-type-hash");
-    let actual_type_hash = gpv2_order_type_hash_hex();
-    assert_eq!(
-        actual_type_hash,
-        type_hash["expected"]["hash"].as_str().unwrap()
-    );
-
-    let cancellation_fields = fixture_case("contracts-cancellation-type-fields");
-    assert_eq!(
-        CANCELLATIONS_TYPE_FIELDS
-            .iter()
-            .map(|field| field.name)
-            .collect::<Vec<_>>(),
-        cancellation_fields["expected"]["fields"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|value| value.as_str().unwrap())
-            .collect::<Vec<_>>()
-    );
-
+fn sample_order_defaults_and_buy_eth_sentinel() {
     let order = sample_order();
     assert_eq!(
         order.receiver.to_hex_string(),

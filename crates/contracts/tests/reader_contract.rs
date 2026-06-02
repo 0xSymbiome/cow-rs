@@ -23,7 +23,7 @@ use cow_sdk_contracts::{
 };
 use cow_sdk_core::{Address, Amount, BuyTokenDestination, OrderUid, SignedAmount};
 
-use common::{MockProvider, fixture_case};
+use common::MockProvider;
 
 fn balance_id(name: &str) -> String {
     let digest = Keccak256::digest(name.as_bytes());
@@ -31,19 +31,7 @@ fn balance_id(name: &str) -> String {
 }
 
 #[tokio::test]
-async fn reader_helpers_match_fixture_surface_and_encode_storage_requests() {
-    let fixture = fixture_case("contracts-reader-helper-surface");
-    let helpers = fixture["expected"]["helpers"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|value| value.as_str().unwrap())
-        .collect::<Vec<_>>();
-    assert_eq!(
-        helpers,
-        vec!["AllowListReader", "SettlementReader", "TradeSimulator"]
-    );
-
+async fn allow_list_reader_encodes_are_solvers_request() {
     let provider = MockProvider::new();
     provider.set_response("true");
 

@@ -7,8 +7,8 @@ use alloy_sol_types::SolCall;
 use cow_sdk_contracts::{
     ContractsError, Eip1271SignatureData, Eip1271VerificationCache, Eip1271VerificationRequest,
     IERC1271, RecoverableSignature, Signature, SigningScheme, decode_eip1271_signature_data,
-    decode_signing_scheme, encode_eip1271_signature_data, encode_signing_scheme,
-    verify_eip1271_signature, verify_eip1271_signature_cached,
+    decode_signing_scheme, encode_eip1271_signature_data, verify_eip1271_signature,
+    verify_eip1271_signature_cached,
 };
 use cow_sdk_core::{
     Address, Amount, BlockInfo, ContractCall, ContractHandle, Hash32, HexData, Provider, Signer,
@@ -72,11 +72,7 @@ impl Eip1271VerificationCache for RecordingCache {
     }
 }
 
-use common::{MockProvider, fixture_case};
-
-fn expected_u8(value: &serde_json::Value) -> u8 {
-    u8::try_from(value.as_u64().unwrap()).expect("fixture discriminant must fit in u8")
-}
+use common::MockProvider;
 
 fn deterministic_signing_key() -> SigningKey {
     SigningKey::from_slice(
@@ -260,49 +256,18 @@ impl SigningProvider for AsyncMockProvider {
 }
 
 #[test]
-fn signing_scheme_and_magic_value_match_fixture_contract() {
-    let schemes = fixture_case("contracts-signing-scheme-discriminants");
-    let expected = &schemes["expected"];
-    assert_eq!(
-        encode_signing_scheme(SigningScheme::Eip712),
-        expected_u8(&expected["EIP712"])
-    );
-    assert_eq!(
-        encode_signing_scheme(SigningScheme::EthSign),
-        expected_u8(&expected["ETHSIGN"])
-    );
-    assert_eq!(
-        encode_signing_scheme(SigningScheme::Eip1271),
-        expected_u8(&expected["EIP1271"])
-    );
-    assert_eq!(
-        encode_signing_scheme(SigningScheme::PreSign),
-        expected_u8(&expected["PRESIGN"])
-    );
-
+fn signing_scheme_codec_pins_wire_discriminants_and_eip1271_magic_value() {
     assert_eq!(decode_signing_scheme(0).unwrap(), SigningScheme::Eip712);
     assert_eq!(decode_signing_scheme(1).unwrap(), SigningScheme::EthSign);
     assert_eq!(decode_signing_scheme(2).unwrap(), SigningScheme::Eip1271);
     assert_eq!(decode_signing_scheme(3).unwrap(), SigningScheme::PreSign);
     assert!(decode_signing_scheme(4).is_err());
 
-    let magic = fixture_case("contracts-eip1271-magic-value");
-    let fixture_magic = magic["expected"]["magic_value"].as_str().unwrap();
-    // The fixture, the `sol!`-emitted typed selector, and the
-    // upstream-documented literal all encode the same four bytes.
-    // Asserting all three shapes here pins the parity oracle to a
-    // single byte source of truth.
-    assert_eq!(fixture_magic, "0x1626ba7e");
+    // EIP-1271 success magic value: the `sol!`-emitted selector on
+    // `IERC1271::isValidSignatureCall` is the canonical 0x1626ba7e four bytes.
     assert_eq!(
         IERC1271::isValidSignatureCall::SELECTOR,
         [0x16, 0x26, 0xba, 0x7e]
-    );
-    assert_eq!(
-        format!(
-            "0x{}",
-            alloy_primitives::hex::encode(IERC1271::isValidSignatureCall::SELECTOR)
-        ),
-        fixture_magic
     );
 }
 

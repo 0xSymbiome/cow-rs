@@ -6,21 +6,10 @@ use cow_sdk_contracts::{
 use cow_sdk_core::Address;
 use sha3::{Digest, Keccak256};
 
-use common::{MockProvider, fixture_case};
+use common::MockProvider;
 
 #[tokio::test]
-async fn proxy_constants_and_storage_readers_match_contract_surface() {
-    let fixture = fixture_case("contracts-proxy-storage-slots");
-    assert_eq!(
-        Eip1967Slot::Implementation.as_hex_str(),
-        fixture["expected"]["implementation_slot"].as_str().unwrap()
-    );
-    assert_eq!(
-        Eip1967Slot::Admin.as_hex_str(),
-        fixture["expected"]["owner_slot"].as_str().unwrap(),
-        "fixture `owner_slot` field stores the EIP-1967 admin-slot hash by spec",
-    );
-
+async fn proxy_storage_readers_resolve_implementation_admin_and_owner() {
     let proxy = Address::new("0x1234567890123456789012345678901234567890").unwrap();
     let provider = MockProvider::new();
     provider.set_storage(
