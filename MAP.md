@@ -1,7 +1,7 @@
 # Repository File Map
 
-> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `5df15df` &nbsp;&middot;&nbsp; **Generated:** 2026-06-02  
-> **Total tracked files:** **1423** &nbsp;&middot;&nbsp; **Code analysis:** tokei 14.0.0 (1366/1423 files)
+> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `a299107` &nbsp;&middot;&nbsp; **Generated:** 2026-06-02  
+> **Total tracked files:** **1420** &nbsp;&middot;&nbsp; **Code analysis:** tokei 14.0.0 (1363/1420 files)
 
 A navigable inventory of every file tracked by Git on this branch, grouped by the role each directory plays in the workspace. Use the table of contents to jump straight to a section; full file listings are collapsed by default so the high-level shape stays scannable.
 
@@ -31,7 +31,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 **Lines of code** (tracked files only)
 
-- **38,043 lines of Rust** across the 19 SDK crates, covered by **48,029 lines of tests** — a **1.3× test-to-code ratio** — plus **220 lines of benchmarks**.
+- **38,043 lines of Rust** across the 19 SDK crates, covered by **47,978 lines of tests** — a **1.3× test-to-code ratio** — plus **220 lines of benchmarks**.
 - **12,127 doc-comment lines** documenting the public API (~31.9% of crate code), plus **901 inline comment lines**.
 - **8,475 lines of TypeScript** across examples, e2e harnesses, and wasm bindings.
 - **27,080 lines of Markdown prose** — ADRs, audit notes, and READMEs.
@@ -39,7 +39,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 **Footprint** (tracked files)
 
-- **796 files** live under `crates/` — 19 workspace member crates make up roughly 56% of the repo.
+- **793 files** live under `crates/` — 19 workspace member crates make up roughly 56% of the repo.
 - **155 files** under `docs/` are mostly architecture decision records and audit notes.
 - **73 files** under `parity/` are golden fixtures captured from upstream services to keep the Rust SDK byte-compatible.
 - **107 files** under `fuzz/` cover cargo-fuzz targets and their seed corpora.
@@ -52,7 +52,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 | Path | Files | Lines | Code | Purpose |
 |------|------:|------:|-----:|---------|
-| `crates/` | 796 | 145,799 | 104,373 | Workspace member crates (the SDK itself) |
+| `crates/` | 793 | 145,731 | 104,322 | Workspace member crates (the SDK itself) |
 | `docs/` | 155 | 23,508 | 0 | Architecture decision records, audit notes, provider notes |
 | `fuzz/` | 107 | 12,477 | 4,600 | cargo-fuzz targets, corpora, and failure artifacts |
 | `examples/` | 89 | 26,251 | 9,768 | Runnable usage examples (Rust + TypeScript) |
@@ -77,7 +77,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `rust-toolchain.toml` | 1 | 6 | 4 | Pinned Rust toolchain |
 | `.gitattributes` | 1 | 40 | 0 | Git attributes |
 | `CHANGELOG.md` | 1 | 3,746 | 0 | Release changelog |
-| **Total** | **1423** | **271,720** | **158,451** | |
+| **Total** | **1420** | **271,652** | **158,400** | |
 
 ---
 
@@ -85,7 +85,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 | Extension | Files | Lines | Code | Comments | Blank | Typical role |
 |-----------|------:|------:|-----:|---------:|------:|--------------|
-| `.rs` | 706 | 144,879 | 113,889 | 17,827 | 13,163 | Rust source and tests |
+| `.rs` | 703 | 144,811 | 113,838 | 17,816 | 13,157 | Rust source and tests |
 | `.md` | 251 | 32,788 | 0 | 27,080 | 5,708 | Markdown docs (ADRs, audit notes, READMEs) |
 | `.json` | 154 | 10,295 | 10,181 | 111 | 3 | JSON schemas, ABIs, parity fixtures |
 | `.ts` | 74 | 19,678 | 8,475 | 9,788 | 1,415 | TypeScript (examples, e2e, wasm bindings) |
@@ -111,7 +111,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `.gitattributes` | 1 | 40 | 0 | 35 | 5 |  |
 | `.yamllint` | 1 | 7 | 0 | 6 | 1 |  |
 | `.proptest-regressions` | 1 | 7 | 0 | 7 | 0 | proptest regression seeds |
-| **Total** | **1423** | **271,720** | **158,451** | **86,284** | **26,985** | |
+| **Total** | **1420** | **271,652** | **158,400** | **86,273** | **26,979** | |
 
 > **Code + Comments + Blank = Lines** for every row. ``Comments`` is all non-code, non-blank content: inline + doc-comments in source, prose in Markdown/text, and raw content in formats tokei does not parse as code (lockfiles, ``.stderr``, snapshots). Rust doc-comments are isolated in the per-crate ``Doc`` column above.
 
@@ -125,7 +125,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 |-------|------:|-----:|------:|--------:|----:|----:|---------|
 | [`wasm`](crates/wasm) | 105 | 5,641 | 3,399 | 0 | 1,357 | 0.6× | TypeScript-callable wasm-bindgen leaf for the CoW Protocol Rust SDK |
 | [`trading`](crates/trading) | 76 | 5,214 | 8,395 | 46 | 1,407 | 1.6× | High-level CoW Protocol trading orchestration surface |
-| [`contracts`](crates/contracts) | 154 | 5,002 | 7,207 | 88 | 1,760 | 1.4× | CoW Protocol low-level contracts helpers for hashing, settlement encoding, and on-chain interaction plumbing |
+| [`contracts`](crates/contracts) | 151 | 5,002 | 7,156 | 88 | 1,760 | 1.4× | CoW Protocol low-level contracts helpers for hashing, settlement encoding, and on-chain interaction plumbing |
 | [`core`](crates/core) | 59 | 4,271 | 3,818 | 0 | 2,176 | 0.9× | Shared CoW Protocol core types and validation primitives |
 | [`orderbook`](crates/orderbook) | 46 | 4,155 | 6,318 | 14 | 1,625 | 1.5× | Typed CoW Protocol orderbook client models and decoding helpers |
 | [`browser-wallet`](crates/browser-wallet) | 29 | 3,703 | 2,742 | 0 | 549 | 0.7× | Browser wallet integration for the CoW Protocol Rust SDK |
@@ -142,7 +142,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | [`cow-shed`](crates/cow-shed) | 32 | 410 | 679 | 0 | 258 | 1.7× | CoW Protocol COW Shed proxy address, EIP-712, and calldata helpers |
 | [`sdk`](crates/sdk) | 18 | 136 | 1,368 | 0 | 141 | 10.1× | Facade crate for CoW Protocol Rust SDK surfaces |
 | [`composable`](crates/composable) | 2 | 0 | 0 | 0 | 0 | — | Reserved crate manifest for future CoW Protocol composable order helpers |
-| **Total** | **796** | **38,043** | **48,029** | **220** | **12,127** | **1.3×** | |
+| **Total** | **793** | **38,043** | **47,978** | **220** | **12,127** | **1.3×** | |
 
 ---
 
@@ -1053,18 +1053,15 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>crates/contracts/tests/</code> &mdash; 36 file(s)</summary>
+<summary><code>crates/contracts/tests/</code> &mdash; 33 file(s)</summary>
 
-- [`build_rs_compile_fail.rs`](crates/contracts/tests/build_rs_compile_fail.rs) &mdash; 94 lines
 - [`composable_chain_coverage_contract.rs`](crates/contracts/tests/composable_chain_coverage_contract.rs) &mdash; 115 lines
 - [`contract_id_variants_contract.rs`](crates/contracts/tests/contract_id_variants_contract.rs) &mdash; 60 lines
-- [`custom_error_selector_table_contract.rs`](crates/contracts/tests/custom_error_selector_table_contract.rs) &mdash; 64 lines
 - [`deployment_contract.rs`](crates/contracts/tests/deployment_contract.rs) &mdash; 158 lines
 - [`deployment_coverage_contract.rs`](crates/contracts/tests/deployment_coverage_contract.rs) &mdash; 98 lines
 - [`deployment_provenance_contract.rs`](crates/contracts/tests/deployment_provenance_contract.rs) &mdash; 170 lines
 - [`erc20.rs`](crates/contracts/tests/erc20.rs) &mdash; 290 lines
-- [`error_contract.rs`](crates/contracts/tests/error_contract.rs) &mdash; 21 lines
-- [`error_variant_shape.rs`](crates/contracts/tests/error_variant_shape.rs) &mdash; 168 lines
+- [`error_contract.rs`](crates/contracts/tests/error_contract.rs) &mdash; 187 lines
 - [`eth_flow_events_contract.rs`](crates/contracts/tests/eth_flow_events_contract.rs) &mdash; 143 lines
 - [`interaction_contract.rs`](crates/contracts/tests/interaction_contract.rs) &mdash; 247 lines
 - [`non_exhaustive_dto_contract.rs`](crates/contracts/tests/non_exhaustive_dto_contract.rs) &mdash; 503 lines
@@ -1078,9 +1075,9 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`reader_contract.rs`](crates/contracts/tests/reader_contract.rs) &mdash; 235 lines
 - [`recoverable_signature_contract.rs`](crates/contracts/tests/recoverable_signature_contract.rs) &mdash; 319 lines
 - [`registry.rs`](crates/contracts/tests/registry.rs) &mdash; 469 lines
-- [`schema_v2_rejection.rs`](crates/contracts/tests/schema_v2_rejection.rs) &mdash; 67 lines
+- [`schema_v2_rejection.rs`](crates/contracts/tests/schema_v2_rejection.rs) &mdash; 107 lines
 - [`schema_v2_success.rs`](crates/contracts/tests/schema_v2_success.rs) &mdash; 67 lines
-- [`selector_parity_composable_contract.rs`](crates/contracts/tests/selector_parity_composable_contract.rs) &mdash; 96 lines
+- [`selector_parity_composable_contract.rs`](crates/contracts/tests/selector_parity_composable_contract.rs) &mdash; 148 lines
 - [`selector_parity_cow_shed_contract.rs`](crates/contracts/tests/selector_parity_cow_shed_contract.rs) &mdash; 81 lines
 - [`settlement_contract.rs`](crates/contracts/tests/settlement_contract.rs) &mdash; 486 lines
 - [`settlement_events_contract.rs`](crates/contracts/tests/settlement_events_contract.rs) &mdash; 199 lines

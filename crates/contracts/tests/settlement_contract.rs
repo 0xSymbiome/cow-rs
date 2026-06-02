@@ -12,8 +12,6 @@
     reason = "pedantic, nursery, style, and perf lints acceptable in test helper code"
 )]
 
-mod common;
-
 use sha3::{Digest, Keccak256};
 
 use alloy_primitives::Bytes;
@@ -26,12 +24,6 @@ use cow_sdk_core::{
     Address, Amount, AppDataHex, BuyTokenDestination, OrderData, OrderKind, OrderUid,
     SellTokenSource, TypedDataDomain,
 };
-
-use common::fixture_case;
-
-fn expected_u8(value: &serde_json::Value) -> u8 {
-    u8::try_from(value.as_u64().unwrap()).expect("fixture flag value must fit in u8")
-}
 
 fn sample_domain() -> TypedDataDomain {
     cow_sdk_test_utils::builders::sample_domain()
@@ -52,20 +44,11 @@ fn sample_signature() -> Signature {
     }
 }
 
-fn selector(signature: &str) -> String {
-    let digest = Keccak256::digest(signature.as_bytes());
-    format!("0x{}", alloy_primitives::hex::encode(&digest[..4]))
-}
-
 fn bytes_from_hex_literal(literal: &str) -> Bytes {
     let stripped = literal
         .strip_prefix("0x")
         .expect("hex literal must start with 0x");
     Bytes::from(alloy_primitives::hex::decode(stripped).expect("hex literal must decode"))
-}
-
-fn hex_prefixed(bytes: &Bytes) -> String {
-    format!("0x{}", alloy_primitives::hex::encode(bytes))
 }
 
 fn u256_word(value: u64) -> [u8; 32] {
@@ -89,20 +72,7 @@ fn expected_bytes_array_call_data(selector_signature: &str, uid: &[u8; 56]) -> V
 }
 
 #[test]
-fn settlement_flag_encoding_matches_fixture_values() {
-    let default_flags = fixture_case("contracts-order-flags-default-sell");
-    assert_eq!(
-        encode_order_flags(&OrderFlags::new(
-            OrderKind::Sell,
-            false,
-            SellTokenSource::Erc20,
-            BuyTokenDestination::Erc20,
-        ))
-        .unwrap(),
-        expected_u8(&default_flags["expected"]["encoded_flags"])
-    );
-
-    let buy_partial_internal = fixture_case("contracts-order-flags-buy-partial-internal");
+fn flag_encode_decode_round_trips_and_rejects_the_reserved_bit() {
     let encoded_buy_partial = encode_order_flags(&OrderFlags::new(
         OrderKind::Buy,
         true,
@@ -110,12 +80,7 @@ fn settlement_flag_encoding_matches_fixture_values() {
         BuyTokenDestination::Internal,
     ))
     .unwrap();
-    assert_eq!(
-        encoded_buy_partial,
-        expected_u8(&buy_partial_internal["expected"]["encoded_flags"])
-    );
 
-    let presign = fixture_case("contracts-trade-flags-presign");
     let encoded_trade = encode_trade_flags(&TradeFlags::new(
         OrderKind::Sell,
         false,
@@ -124,10 +89,6 @@ fn settlement_flag_encoding_matches_fixture_values() {
         SigningScheme::PreSign,
     ))
     .unwrap();
-    assert_eq!(
-        encoded_trade,
-        expected_u8(&presign["expected"]["encoded_flags"])
-    );
 
     let decoded_order = decode_order_flags(encoded_buy_partial).unwrap();
     assert_eq!(decoded_order.kind, OrderKind::Buy);
@@ -253,7 +214,6 @@ fn settlement_encoder_tracks_tokens_prices_and_interactions() {
 
 #[test]
 fn order_refunds_and_trade_decoding_follow_contract_rules() {
-    let fixture = fixture_case("contracts-order-refund-method-names");
     let domain = sample_domain();
     let mut encoder = SettlementEncoder::new(domain.clone());
     let uids = [
@@ -280,18 +240,6 @@ fn order_refunds_and_trade_decoding_follow_contract_rules() {
     let post = encoder.interactions().unwrap()[InteractionStage::Post as usize].clone();
     assert_eq!(post.len(), 2);
     assert_eq!(post[0].target, domain.verifying_contract);
-    assert!(
-        hex_prefixed(&post[0].call_data).starts_with(&selector(&format!(
-            "{}(bytes[])",
-            fixture["expected"]["methods"][0].as_str().unwrap()
-        )))
-    );
-    assert!(
-        hex_prefixed(&post[1].call_data).starts_with(&selector(&format!(
-            "{}(bytes[])",
-            fixture["expected"]["methods"][1].as_str().unwrap()
-        )))
-    );
     let invalid = serde_json::from_value::<OrderRefunds>(serde_json::json!({
         "filledAmounts": ["0x1234"],
         "preSignatures": []

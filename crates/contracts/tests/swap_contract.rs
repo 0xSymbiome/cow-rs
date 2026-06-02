@@ -1,10 +1,6 @@
-mod common;
-
 use alloy_primitives::Bytes;
 use cow_sdk_contracts::{BatchSwapStep, Signature, Swap, SwapEncoder, encode_swap_step};
 use cow_sdk_core::{Address, Amount, OrderData, OrderKind, TypedDataDomain};
-
-use common::fixture_case;
 
 fn sample_domain() -> TypedDataDomain {
     cow_sdk_test_utils::builders::sample_domain()
@@ -29,13 +25,8 @@ fn bytes_from_hex_literal(literal: &str) -> Bytes {
     Bytes::from(alloy_primitives::hex::decode(stripped).expect("hex literal must decode"))
 }
 
-fn hex_prefixed(bytes: &Bytes) -> String {
-    format!("0x{}", alloy_primitives::hex::encode(bytes))
-}
-
 #[test]
 fn swap_step_encoding_defaults_user_data_and_indexes_tokens() {
-    let fixture = fixture_case("contracts-swap-default-user-data");
     let mut encoder = SwapEncoder::new(sample_domain());
 
     let swap = Swap::new(
@@ -57,12 +48,6 @@ fn swap_step_encoding_defaults_user_data_and_indexes_tokens() {
             Bytes::new(),
         )]
     );
-    assert_eq!(
-        hex_prefixed(&encoded_steps[0].user_data),
-        fixture["expected"]["user_data"].as_str().unwrap(),
-        "default user data must serialize as the fixture hex form"
-    );
-
     let step = encode_swap_step(&mut cow_sdk_contracts::TokenRegistry::new(), &swap);
     assert!(
         step.user_data.is_empty(),

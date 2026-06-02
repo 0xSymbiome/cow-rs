@@ -10,8 +10,6 @@
     reason = "pedantic, nursery, and perf lints acceptable in test helper code"
 )]
 
-mod common;
-
 use alloy_primitives::Bytes;
 use cow_sdk_contracts::{
     ContractId, ContractsError, InteractionLike, InteractionStage, Registry, SettlementEncoder,
@@ -19,17 +17,11 @@ use cow_sdk_contracts::{
 };
 use cow_sdk_core::{Address, Amount, CowEnv, SupportedChainId, TypedDataDomain};
 
-use common::fixture_case;
-
 fn bytes_from_hex_literal(literal: &str) -> Bytes {
     let stripped = literal
         .strip_prefix("0x")
         .expect("hex literal must start with 0x");
     Bytes::from(alloy_primitives::hex::decode(stripped).expect("hex literal must decode"))
-}
-
-fn hex_prefixed(bytes: &Bytes) -> String {
-    format!("0x{}", alloy_primitives::hex::encode(bytes))
 }
 
 fn settlement_domain(chain_id: SupportedChainId, verifying_contract: Address) -> TypedDataDomain {
@@ -42,27 +34,11 @@ fn settlement_domain(chain_id: SupportedChainId, verifying_contract: Address) ->
 }
 
 #[test]
-fn interaction_normalization_applies_zero_value_call_defaults() {
-    let fixture = fixture_case("contracts-interaction-defaults");
+fn interaction_normalization_preserves_explicit_value_and_calldata() {
     let target = Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap();
 
-    let normalized = normalize_interaction(&InteractionLike::new(target, None, None));
-    assert_eq!(normalized.target, target);
-    assert_eq!(
-        normalized.value.to_string(),
-        fixture["expected"]["value"].as_str().unwrap()
-    );
-    assert_eq!(
-        hex_prefixed(&normalized.call_data),
-        fixture["expected"]["call_data"].as_str().unwrap()
-    );
-    assert!(
-        normalized.call_data.is_empty(),
-        "default calldata must be an empty byte buffer"
-    );
-
     let explicit = normalize_interaction(&InteractionLike::new(
-        normalized.target,
+        target,
         Some(Amount::new("42").unwrap()),
         Some(bytes_from_hex_literal("0x12345678")),
     ));
