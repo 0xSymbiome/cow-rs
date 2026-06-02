@@ -11,19 +11,8 @@ use cow_sdk_core::{
 };
 use serde_json::Value;
 
-pub fn contracts_fixture() -> Value {
-    serde_json::from_str(include_str!("../../../../parity/fixtures/contracts.json"))
-        .expect("contracts fixture must remain valid JSON")
-}
-
 pub fn fixture_case(id: &str) -> Value {
-    contracts_fixture()["cases"]
-        .as_array()
-        .expect("fixture cases must be an array")
-        .iter()
-        .find(|case| case["id"] == id)
-        .cloned()
-        .unwrap_or_else(|| panic!("missing fixture case {id}"))
+    cow_sdk_test_utils::fixtures::case("contracts", id)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

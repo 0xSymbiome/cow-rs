@@ -17,13 +17,10 @@ fn out_artifact(name: &str) -> serde_json::Value {
 }
 
 fn canonical_fixture() -> serde_json::Value {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests")
-        .join("fixtures")
-        .join("composable_canonical_selectors.json");
-    let text = std::fs::read_to_string(&path)
-        .unwrap_or_else(|error| panic!("failed to read {}: {error}", path.display()));
-    serde_json::from_str(&text).expect("valid json")
+    cow_sdk_test_utils::fixtures::manifest_fixture(
+        env!("CARGO_MANIFEST_DIR"),
+        "tests/fixtures/composable_canonical_selectors.json",
+    )
 }
 
 fn out_selector(artifact: &serde_json::Value, key: &str) -> Option<String> {
@@ -52,12 +49,13 @@ fn composable_cow_custom_error_selectors_match_foundry_artifact() {
         let from_out = out_selector(&artifact, name).unwrap_or_else(|| {
             panic!("ComposableCoW.json missing custom_error_selector for {name}")
         });
-        let from_fixture = fixture["custom_errors"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .find(|row| row["name"].as_str() == Some(signature.as_str()))
-            .and_then(|row| row["selector"].as_str())
+        let canonical = cow_sdk_test_utils::fixtures::row_by_name(
+            &fixture,
+            "custom_errors",
+            signature.as_str(),
+        );
+        let from_fixture = canonical["selector"]
+            .as_str()
             .unwrap_or_else(|| panic!("canonical fixture missing selector for {signature}"))
             .to_string();
         assert_eq!(

@@ -4,25 +4,15 @@
 //! cow-sdk TypeScript ABI L1 (pinned cow-sdk SHA
 //! `74393ee2923a2932584998169daca6ce3c2da60c`).
 
-use std::path::PathBuf;
-
 fn canonical_fixture() -> serde_json::Value {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests")
-        .join("fixtures")
-        .join("cow_shed_canonical_selectors.json");
-    let text = std::fs::read_to_string(&path)
-        .unwrap_or_else(|error| panic!("failed to read {}: {error}", path.display()));
-    serde_json::from_str(&text).expect("valid json")
+    cow_sdk_test_utils::fixtures::manifest_fixture(
+        env!("CARGO_MANIFEST_DIR"),
+        "tests/fixtures/cow_shed_canonical_selectors.json",
+    )
 }
 
 fn lookup_factory_selector(fixture: &serde_json::Value, name: &str) -> String {
-    fixture["factory_methods"]
-        .as_array()
-        .expect("factory_methods must be a json array")
-        .iter()
-        .find(|row| row["name"].as_str() == Some(name))
-        .unwrap_or_else(|| panic!("factory method `{name}` missing from fixture"))["selector"]
+    cow_sdk_test_utils::fixtures::row_by_name(fixture, "factory_methods", name)["selector"]
         .as_str()
         .expect("selector must be a string")
         .to_string()

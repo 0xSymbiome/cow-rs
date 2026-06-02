@@ -6,25 +6,15 @@
 //! `alloy::sol`! macro semantics across alloy major releases is
 //! caught here first.
 
-use std::path::PathBuf;
-
 fn canonical_selectors_fixture() -> serde_json::Value {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests")
-        .join("fixtures")
-        .join("composable_canonical_selectors.json");
-    let text = std::fs::read_to_string(&path)
-        .unwrap_or_else(|error| panic!("failed to read {}: {error}", path.display()));
-    serde_json::from_str(&text).expect("valid json")
+    cow_sdk_test_utils::fixtures::manifest_fixture(
+        env!("CARGO_MANIFEST_DIR"),
+        "tests/fixtures/composable_canonical_selectors.json",
+    )
 }
 
 fn lookup_selector(fixture: &serde_json::Value, name: &str) -> String {
-    fixture["custom_errors"]
-        .as_array()
-        .expect("custom_errors must be a json array")
-        .iter()
-        .find(|row| row["name"].as_str() == Some(name))
-        .unwrap_or_else(|| panic!("custom error `{name}` missing from canonical fixture"))["selector"]
+    cow_sdk_test_utils::fixtures::row_by_name(fixture, "custom_errors", name)["selector"]
         .as_str()
         .expect("selector must be a string")
         .to_string()

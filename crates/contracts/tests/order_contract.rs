@@ -64,14 +64,7 @@ fn sample_order() -> OrderData {
 }
 
 fn signing_fixture_case(id: &str) -> serde_json::Value {
-    serde_json::from_str::<serde_json::Value>(include_str!("../../../parity/fixtures/signing.json"))
-        .expect("signing fixture must remain valid json")["cases"]
-        .as_array()
-        .expect("signing fixture cases must be an array")
-        .iter()
-        .find(|case| case["id"] == id)
-        .cloned()
-        .unwrap_or_else(|| panic!("missing signing fixture case {id}"))
+    cow_sdk_test_utils::fixtures::case("signing", id)
 }
 
 fn upstream_signing_sample_order() -> OrderData {

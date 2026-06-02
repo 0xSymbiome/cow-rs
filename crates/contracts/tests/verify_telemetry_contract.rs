@@ -206,4 +206,3 @@ impl Eip1271VerificationCache for TestCache {
             .unwrap_or_else(std::sync::PoisonError::into_inner) += 1;
     }
 }
-
