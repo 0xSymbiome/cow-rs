@@ -9,14 +9,14 @@ use cow_sdk_core::{
 };
 use serde_json::{Value, json};
 
-/// The GPv2 Settlement contract (Ethereum mainnet). Tests should obtain the
+/// The `GPv2` Settlement contract (Ethereum mainnet). Tests should obtain the
 /// domain via [`sample_domain`] or source the address from
 /// `cow_sdk_contracts::Registry` rather than re-typing this literal.
 fn mainnet_settlement() -> Address {
     Address::new("0x9008d19f58aabd9ed0d60971565aa8510560ab41").expect("valid settlement address")
 }
 
-/// Builder for the canonical CoW `OrderData` test vector.
+/// Builder for the canonical `OrderData` test vector.
 #[derive(Clone, Debug)]
 pub struct OrderBuilder {
     value: Value,
@@ -59,6 +59,9 @@ impl OrderBuilder {
     }
 
     /// Override the order kind.
+    ///
+    /// # Panics
+    /// Panics if `kind` fails to serialize, which the enum never does.
     #[must_use]
     pub fn kind(mut self, kind: OrderKind) -> Self {
         self.value["kind"] = serde_json::to_value(kind).expect("OrderKind serializes");
@@ -73,6 +76,9 @@ impl OrderBuilder {
     }
 
     /// Override the sell-token balance source.
+    ///
+    /// # Panics
+    /// Panics if `source` fails to serialize, which the enum never does.
     #[must_use]
     pub fn sell_balance(mut self, source: SellTokenSource) -> Self {
         self.value["sellTokenBalance"] =
@@ -81,6 +87,9 @@ impl OrderBuilder {
     }
 
     /// Override the buy-token balance destination.
+    ///
+    /// # Panics
+    /// Panics if `destination` fails to serialize, which the enum never does.
     #[must_use]
     pub fn buy_balance(mut self, destination: BuyTokenDestination) -> Self {
         self.value["buyTokenBalance"] =
@@ -98,13 +107,13 @@ impl OrderBuilder {
     }
 }
 
-/// The canonical GPv2 EIP-712 domain (mainnet settlement).
+/// The canonical `GPv2` EIP-712 domain (mainnet settlement).
 #[must_use]
 pub fn sample_domain() -> TypedDataDomain {
     sample_domain_with(mainnet_settlement())
 }
 
-/// The canonical GPv2 EIP-712 domain with an explicit verifying contract.
+/// The canonical `GPv2` EIP-712 domain with an explicit verifying contract.
 #[must_use]
 pub fn sample_domain_with(verifying_contract: Address) -> TypedDataDomain {
     TypedDataDomain::new(

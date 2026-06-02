@@ -48,12 +48,12 @@ pub const ANVIL_ADDR_1: Address = address!("70997970c51812dc3a010c7d01b50e0d17dc
 /// Upstream app-data hash vector #1.
 pub const APP_DATA_HEX_1: &str =
     "0x337aa6e6c2a7a0d1eb79a35ebd88b08fc963d5f7a3fc953b7ffb2b7f5898a1df";
-/// Upstream CIDv1 for [`APP_DATA_HEX_1`].
+/// Upstream `CIDv1` for [`APP_DATA_HEX_1`].
 pub const CID_1: &str = "f01551b20337aa6e6c2a7a0d1eb79a35ebd88b08fc963d5f7a3fc953b7ffb2b7f5898a1df";
 /// Upstream app-data hash vector #2.
 pub const APP_DATA_HEX_2: &str =
     "0x8af4e8c9973577b08ac21d17d331aade86c11ebcc5124744d621ca8365ec9424";
-/// Upstream CIDv1 for [`APP_DATA_HEX_2`].
+/// Upstream `CIDv1` for [`APP_DATA_HEX_2`].
 pub const CID_2: &str = "f01551b208af4e8c9973577b08ac21d17d331aade86c11ebcc5124744d621ca8365ec9424";
 
 /// A relative `validTo` fixture value used across order tests.
