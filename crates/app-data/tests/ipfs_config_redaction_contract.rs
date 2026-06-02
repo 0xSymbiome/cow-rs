@@ -34,7 +34,6 @@ fn ipfs_config_raw_uri_access_remains_explicit_for_dispatch_policies() {
     let config = IpfsConfig {
         uri: Some(CREDENTIAL_URL.to_owned().into()),
         read_uri: Some("https://read.example.test/ipfs/".to_owned().into()),
-        ..IpfsConfig::default()
     };
 
     let policy = IpfsFetchPolicy::from_config(&config).expect("read URI is valid");
