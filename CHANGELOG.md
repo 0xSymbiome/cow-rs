@@ -2507,13 +2507,7 @@ The first functional crate-family release begins at `0.1.0`.
   and a 60-second TCP keepalive aligned with the upstream services defaults.
 
 - Continuous integration now enforces an `alloy-*` workspace-pin same-minor
-  invariant on every PR, and an inner-workspace WASM pin diff against the
-  workspace pins so the example consoles cannot drift away from the workspace
-  lock-step.
-
-- The `cow-sdk-browser-wallet-console` crate name no longer carries the
-  redundant `-wasm` suffix, matching the `cow-sdk-<capability>-console`
-  naming convention.
+  invariant on every PR.
 
 - Partner-fee policies now reject the zero address as the recipient through
   app-data validation and trading quote construction before quote transport.
@@ -2592,12 +2586,10 @@ The first functional crate-family release begins at `0.1.0`.
   the enforced commands.
 
 - The release checklist deterministic browser-wallet lane now
-  mirrors the maintained workflow exactly: a Chromium and Firefox
-  Playwright install, host-side and direct-bridge wasm tests, the
-  WASM build of `cow-sdk` with the `browser-wallet` feature, the
-  browser-wallet console WASM build and host-side tests, the
-  console wasm-bindgen tests under headless Chrome, and the
-  Playwright DOM lane under both engines.
+  mirrors the maintained workflow exactly: host-side and
+  direct-bridge wasm tests, the WASM build of `cow-sdk` with the
+  `browser-wallet` feature, and the canonical browser-wallet
+  example build.
 
 - A new `scripts/check-release-docs-agree.sh` lint guards against
   release-doc and CI drift by extracting the cargo-tree
@@ -2980,25 +2972,6 @@ The first functional crate-family release begins at `0.1.0`.
   one-minute local-run command, and the reproduce-from-corpus
   invocation.
 
-- A Firefox Playwright project on `e2e/browser-wallet/` that runs
-  alongside the existing Chromium project, so the browser-wallet
-  deterministic-lane DOM contract is validated under both widely
-  deployed browser engines. `e2e/browser-wallet/playwright.config.ts`
-  declares the additional project with `{ ...devices["Desktop Firefox"] }`
-  and inherits every root-level setting (`baseURL`, `viewport`, `trace`,
-  `webServer`, `fullyParallel`, `forbidOnly`, `retries`, `timeout`,
-  `expect.timeout`, `reporter`). `.github/workflows/browser-wallet-e2e.yml`
-  installs both browsers via
-  `bunx playwright install --with-deps chromium firefox` while keeping
-  the existing SHA-pinned actions, `permissions: contents: read`,
-  `concurrency`, `persist-credentials: false`, and `timeout-minutes: 45`
-  hygiene intact. The EIP-6963 `announceProvider` fixture at
-  `e2e/browser-wallet/fixtures/injected-wallet.ts` is unchanged; the
-  fixture uses standard DOM surfaces that resolve identically under
-  Chromium and Firefox. `docs/browser-runtime-proof-posture.md`
-  acknowledges the two-browser deterministic matrix under the existing
-  Deterministic Lane. ADR 0007 is unchanged.
-
 - The canonical atomic amount type is now `cow_sdk_core::Amount(BigUint)`.
   A single typed newtype carries every atomic quantity across
   `cow-sdk-core`, `cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk-signing`,
@@ -3258,8 +3231,6 @@ The first functional crate-family release begins at `0.1.0`.
 
 - The release-gate docs-agreement check now guards the `cargo tree` and `cargo audit` invariants across every source-of-truth document and ships with a self-test harness that catches extraction drift in the check itself.
 
-- Shipped WASM consoles now carry a clear acknowledgement of their current dual-authority posture - the publication authority named in the workspace crate metadata and the hosted-build authority named in the footer links - so reviewers can read the two surfaces consistently until the hosted-build rotation completes.
-
 - Upstream-diff triage compared the source-lock-pinned commits against
   current upstream `services`, `contracts`, and `cow-sdk` HEADs on
   2026-04-29. `cow-sdk` had seven producer-path updates requiring a parity
@@ -3412,10 +3383,6 @@ The first functional crate-family release begins at `0.1.0`.
   `build_ready` and `build_helper_only` terminals are now the only
   construction paths. Pre-release surface; zero migration cost.
 
-- Stale WASM build artifacts have been removed from the verification console
-  package directory; the per-package gitignore now tracks only the canonical
-  wasm-pack outputs.
-
 - Retired the hand-rolled ABI encoder helpers previously maintained inside
   `cow-sdk-contracts`. Every encoded call-data payload the SDK emits now
   flows through the `alloy::sol!`-generated typed bindings for
@@ -3544,24 +3511,6 @@ The first functional crate-family release begins at `0.1.0`.
   `OrderValidityBounds::SERVICES_DEFAULT` indefinitely without
   a hard-coded timestamp drift.
 
-- Browser wallet console and SDK verification console examples
-  now compose the fetch-backed transport inside a wasm32 build
-  branch and fall back to the default reqwest transport on the
-  host target, so both examples build as the `rlib` targets
-  declared in their manifests without referencing the wasm-only
-  transport crate root from host code. A narrow compile-time
-  symbol smoke in each example's test directory names the
-  transport types under a wasm32 gate so later export drift
-  surfaces at build time.
-
-- SDK verification console now unwraps the validated
-  `PartnerFeePolicy::volume` constructor at the typed-defaults
-  composition site so the demo payload always carries a
-  `PartnerFee` value produced through the typed partner-fee
-  bounds. A narrow regression in the example's test directory
-  locks the typed-defaults round-trip so the validator contract
-  cannot silently drift.
-
 - `scripts/check-release-docs-agree.sh` and
   `scripts/fetch-upstream-pins.sh` carry executable file mode in
   the tracked index so the release-gate docs-agreement check and
@@ -3613,42 +3562,10 @@ The first functional crate-family release begins at `0.1.0`.
 - Example crates now construct every `#[non_exhaustive]` public DTO
   through the published ergonomic constructors (`::new(required_args)`
   plus chained `with_*` setters) rather than struct-literal syntax, so
-  the `examples/native`, `examples/wasm/sdk-verification-console`, and
-  `examples/wasm/browser-wallet-console` build surfaces stay green
-  under the broadened `#[non_exhaustive]` coverage shipped in the same
-  `0.1.0` cycle. The `cow-sdk-core::cancellation` rustdoc also
-  corrects a spelling drift in the `Cancelled` marker's documentation.
-
-- Example-crate browser-hosted tests now align with the current public
-  contract. The `sdk-verification-console` deterministic-export suite
-  compares wrapped-native and sample-order addresses through a
-  case-insensitive helper so the byte-array-sourced lowercase hex output
-  no longer breaks the assertion, and the EIP-1271 payload preview
-  assertion now matches the `0x`-prefixed hex shape that
-  `eip1271_signature_payload` actually returns. The
-  `browser-wallet-console` test-only helper surface is also reachable
-  under `wasm32-unknown-unknown`, so headless wasm-pack runs exercise
-  the injected-wallet, session, and cached-detection paths alongside
-  their native counterparts. The helpers remain marked `#[doc(hidden)]`
-  and stay excluded from the public API surface.
-
-- Playwright deterministic-lane suites for both example consoles now
-  track the current SDK contract end-to-end. Quote, order, and
-  order-trades assertions compare addresses through a case-insensitive
-  helper; the order-trades fixture routes the current `/api/v2/trades`
-  endpoint; the solver-competition assertions describe the reviewed
-  `SolverSettlement` contract (ranking, solver address, score, and
-  clearing-prices map) rather than fields that are not part of the
-  typed boundary; the orderbook network-failure assertion matches the
-  classified `reqwest` error text; and the chain-mismatch fail-closed
-  contract is verified by asserting the disabled `#sign-order` button
-  and its chain-mismatch title rather than attempting to click a button
-  the console deliberately disables. The `browser-wallet-console`
-  diagnostic labeller also classifies EIP-1193 provider codes that
-  arrive through the `Display`-formatted Rust error shape
-  (`… rejected by the user (4001): …`) in addition to the JSON
-  `"code": 4001` shape, so rejected typed-data signing now renders the
-  `EIP-1193 4001` label consistently across Chromium and Firefox.
+  the `examples/native` build surface stays green under the broadened
+  `#[non_exhaustive]` coverage shipped in the same `0.1.0` cycle. The
+  `cow-sdk-core::cancellation` rustdoc also corrects a spelling drift in
+  the `Cancelled` marker's documentation.
 
 - `cow_sdk_core::Amount::checked_mul` returns `None` on overflow instead of
   panicking, so callers that branch on checked multiplication receive the
@@ -3701,9 +3618,6 @@ The first functional crate-family release begins at `0.1.0`.
   longer surface in diagnostic output. A new `sanitize_public_base_url` helper
   in `cow-sdk-core` strips path, query, and fragment from URLs before they
   cross any logging or tracing boundary.
-
-- Both shipped WASM consoles now declare a `Content-Security-Policy` meta tag
-  with explicit `script-src` and `connect-src` allowlists.
 
 - Operator-side base-URL override and browser-wallet trust threat surfaces are
   now documented in `SECURITY.md` with explicit consumer-side mitigations.

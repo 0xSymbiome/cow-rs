@@ -30,10 +30,11 @@ cargo run-deterministic-examples
 
 ## WASM
 
-`examples/wasm/` contains browser-facing verification surfaces for the SDK
-facade and browser-wallet support.
+`examples/wasm/cow-trader-dioxus/` is a runnable browser-wallet trade example
+(Dioxus, wasm): it discovers an injected wallet (EIP-6963), connects, signs, and
+swaps a CoW order end to end using only `cow-sdk` public types.
 
-See [WASM examples](wasm/README.md) for the WASM example index.
+See [the example README](wasm/cow-trader-dioxus/README.md) to build and run it.
 
 ## TypeScript WASM Package
 

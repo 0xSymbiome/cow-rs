@@ -192,8 +192,7 @@ parity, audit, and ADR map.
 
 - [Getting Started](docs/getting-started.md)
 - [Native examples](examples/native/README.md)
-- [SDK verification console](examples/wasm/sdk-verification-console/README.md)
-- [Browser wallet console](examples/wasm/browser-wallet-console/README.md)
+- [Browser-wallet trade example (Dioxus, wasm)](examples/wasm/cow-trader-dioxus/README.md)
 
 ## Compatibility
 

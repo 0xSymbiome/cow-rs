@@ -613,14 +613,14 @@ root `cow-sdk` facade.
 
 ### WASM Follow-Ons
 
-When you need browser-facing proof surfaces, use the maintained WASM consoles:
+When you want a runnable browser-wallet flow, use the canonical WASM example:
 
-- `examples/wasm/sdk-verification-console`
-- `examples/wasm/browser-wallet-console`
+- `examples/wasm/cow-trader-dioxus`
 
-The SDK verification console stays on browser-hosted deterministic inspection.
-
-The browser-wallet console moves into explicit injected-wallet flow handling.
+It discovers an injected wallet (EIP-6963), connects, signs, and swaps a CoW
+order end to end in the browser using only `cow-sdk` public types. Deterministic
+browser-runtime proof lives in the crate test lanes (`cow-sdk-browser-wallet`,
+`cow-sdk-transport-wasm`), not in the example.
 
 ### Environment-Sensitive Follow-Ons
 

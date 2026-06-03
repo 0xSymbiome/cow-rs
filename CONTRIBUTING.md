@@ -99,8 +99,7 @@ cargo build --target wasm32-unknown-unknown -p cow-sdk --features browser-wallet
 cargo build --target wasm32-unknown-unknown -p cow-sdk-browser-wallet
 cargo build --target wasm32-unknown-unknown -p cow-sdk-app-data
 cargo build --target wasm32-unknown-unknown -p cow-sdk-transport-wasm
-cd examples/wasm/sdk-verification-console && wasm-pack build --target web
-cd examples/wasm/browser-wallet-console && wasm-pack build --target web
+cargo check --target wasm32-unknown-unknown --manifest-path examples/wasm/cow-trader-dioxus/Cargo.toml
 ```
 
 ## Running Fuzz Targets Locally
@@ -226,8 +225,7 @@ maintained by repository administrators.
 | Lane | Workflow | Blocks PRs that touch |
 | --- | --- | --- |
 | Core CI aggregate | `.github/workflows/ci.yml` (`ci-success`) | every pull request |
-| Browser wallet end-to-end | `.github/workflows/browser-wallet-e2e.yml` | `crates/browser-wallet/**`, `examples/wasm/browser-wallet-console/**`, `e2e/browser-wallet/**`, and any workspace change that pulls the browser-wallet path (`crates/core/**`, `crates/sdk/**`, `Cargo.lock`, `Cargo.toml`, `rust-toolchain.toml`) |
-| SDK verification end-to-end | `.github/workflows/sdk-verification-e2e.yml` | `examples/wasm/sdk-verification-console/**`, `e2e/sdk-verification/**`, and every workspace crate that the verification console exercises (`crates/app-data/**`, `crates/contracts/**`, `crates/core/**`, `crates/orderbook/**`, `crates/sdk/**`, `crates/signing/**`, `crates/trading/**`, `Cargo.lock`, `Cargo.toml`, `rust-toolchain.toml`) |
+| Browser wallet WASM | `.github/workflows/browser-wallet-wasm.yml` | `crates/browser-wallet/**`, `crates/transport-wasm/**`, `examples/wasm/cow-trader-dioxus/**`, and any workspace change that pulls the browser-wallet path (`crates/core/**`, `crates/sdk/**`, `Cargo.lock`, `Cargo.toml`, `rust-toolchain.toml`) |
 
 The path filters on each workflow keep the end-to-end lanes off PRs
 that cannot plausibly regress the covered surface, so workflows only
@@ -235,11 +233,10 @@ run (and only block) when the change touches code that the lane
 exercises.
 
 Repository administrators maintain the required-status-check set on
-the protected branches so the browser-wallet-e2e and
-sdk-verification-e2e lanes block merge whenever a PR matches the
-paths listed above. Contributors do not need to configure this; the
-path filters keep the lanes deterministic, and the branch-protection
-list enforces the merge gate.
+the protected branches so the browser-wallet-wasm lane blocks merge
+whenever a PR matches the paths listed above. Contributors do not need
+to configure this; the path filters keep the lane deterministic, and
+the branch-protection list enforces the merge gate.
 
 ## Merge Policy
 

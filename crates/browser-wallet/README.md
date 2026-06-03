@@ -61,7 +61,7 @@ let _wallet = BrowserWallet::from_trusted_transport(transport, origin)
 
 ## Where to next
 
-- [Browser-Wallet Example](https://github.com/cowdao-grants/cow-rs/tree/main/examples/wasm/browser-wallet-console)
+- [Browser-Wallet Example](https://github.com/cowdao-grants/cow-rs/tree/main/examples/wasm/cow-trader-dioxus)
 - [cow-sdk-wasm README](https://github.com/cowdao-grants/cow-rs/blob/main/crates/wasm/README.md)
 - [Architecture](https://github.com/cowdao-grants/cow-rs/blob/main/docs/architecture.md)
 - [Workspace README](https://github.com/cowdao-grants/cow-rs/blob/main/README.md)

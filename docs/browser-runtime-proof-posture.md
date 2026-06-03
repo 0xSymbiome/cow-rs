@@ -2,41 +2,30 @@
 
 `cow-rs` ships browser-runtime support behind a two-tier proof posture that
 separates deterministic contract proof from environment-sensitive
-confirmation. Both tiers are required. Neither substitutes for the other.
-The separation is visible in the UI, the README, and the test lanes of the
-shipped WASM consoles.
+confirmation. Both tiers are required. Neither substitutes for the other. The
+proof lives in the `cow-sdk-browser-wallet` and `cow-sdk-transport-wasm` crate
+test lanes, not in an example surface.
 
 ## Deterministic Lane
 
 The deterministic lane holds the reviewable contract for every browser-runtime
 claim and runs on every commit.
 
-- Host-side `cargo test` drives the Rust-native state machines inside the
-  browser-wallet console and the SDK verification console. Under the
-  host-side lane the consoles run against `MockEip1193Transport`, so
-  discovery, selection, confirmation, connect, signing, quote, submit, and
-  cancel compose deterministically without a browser.
+- Host-side `cargo test` drives the Rust-native state machines inside
+  `cow-sdk-browser-wallet`, including the mock EIP-1193 transport
+  (`MockEip1193Transport`), so discovery, selection, confirmation, connect,
+  signing, and chain-management compose deterministically without a browser.
 - Browser-wallet receipt parsing is also covered in the deterministic lane:
   missing or null optional receipt fields remain tolerated, while present
   malformed `status`, `blockNumber`, `blockHash`, `gasUsed`, `from`, and `to`
   fields fail closed before reaching callers.
-- In-browser `wasm-bindgen-test` runs the same surface through a real
-  headless Chrome so the WebAssembly boundary and the `wasm-bindgen` interop
-  idioms see continuous proof. The sdk-verification console exercises
-  capability, app-data, CID, order-envelope, EIP-1271, approval, and
-  trading-default outputs. The browser-wallet console exercises sample-JSON
-  generators and the selection-confirmation sequence under the mock EIP-1193
-  transport.
-- Playwright with mocked fixtures covers end-to-end DOM behavior without a
-  live wallet extension or live orderbook endpoint. The browser-wallet
-  Playwright suite runs under both Chromium and Firefox projects so the
-  DOM-behavior contract is validated under the two most widely deployed
-  browser engines. The `e2e/browser-wallet/fixtures/injected-wallet.ts`
-  fixture mocks EIP-6963 discovery, injected provider requests, and
-  chain-switch events. The `e2e/sdk-verification/fixtures/cow-api.ts`
-  fixture mocks the CoW orderbook and subgraph endpoints with
-  deterministic payloads so the reviewer-facing panel flows reproduce
-  reliably.
+- In-browser `wasm-bindgen-test` runs the owned EIP-1193 bridge through a real
+  headless browser so the WebAssembly boundary and the `wasm-bindgen` interop
+  idioms see continuous proof. These cases include the deterministic mock-wallet
+  state machine and EIP-6963 discovery-event serialization round trips.
+- The fetch-backed browser transport (`cow-sdk-transport-wasm`) is exercised
+  directly through a headless browser, covering its browser dispatch shape,
+  redacted endpoint telemetry, and native-versus-browser error-class parity.
 
 ## Environment-Sensitive Lane
 
@@ -45,12 +34,13 @@ public endpoints. It cannot be deterministic and is never asserted as
 contract proof.
 
 - Manual QA against real EIP-1193 wallet extensions covering the supported
-  browser-extension wallet families confirms that the console behaves honestly
-  with real user prompts, chain availability, and vendor-specific UX. The QA
-  matrix records the latest covered set.
-- Optional static browser-live smoke checks that the served console page is
-  reachable and still exposes the stable DOM markers before extension-backed
-  actions run. Smoke results are readiness signals, not behavior proof.
+  browser-extension wallet families confirms honest behavior with real user
+  prompts, chain availability, and vendor-specific UX. The manual runbook under
+  `scripts/validation-smoke/browser-wallet-live/` records the acceptance window
+  and operator steps.
+- The canonical browser-wallet example (`examples/wasm/cow-trader-dioxus/`) is
+  the runnable demonstration of the end-to-end flow against the live orderbook.
+  It is a consumer demonstration, not a deterministic proof surface.
 
 ## Why Both Are Required
 
@@ -63,24 +53,19 @@ acknowledged.
 
 ## How To Read Both Lanes
 
-A reviewer reading the consoles should treat the mock pane and the injected
-pane as different genres.
+Diagnose from the deterministic tier first.
 
-- The mock pane is the deterministic contract. If something fails here, the
-  Rust SDK has a bug or the contract drifted.
-- The injected pane is the environment-sensitive tier. A failure may reflect
-  an SDK bug, a vendor-specific behavior, a chain availability problem, or a
-  user-interaction mistake. Diagnose from the deterministic tier first.
+- The crate test lanes are the deterministic contract. If something fails
+  there, the Rust SDK has a bug or the contract drifted.
+- An extension-backed failure may reflect an SDK bug, a vendor-specific
+  behavior, a chain availability problem, or a user-interaction mistake.
 
-## Staging And Production Posture
+## Production Posture
 
-Static browser-live orderbook actions default to `staging`. Production
-browser-live actions are disabled on the shipped static page. Running the
-production orderbook surface from a browser requires a proxy-enabled
-deployment that adds the permitted CORS headers, not the default local or
-Pages-style serving path. The consoles surface this boundary directly so a
-reviewer cannot accidentally submit a real order from the shipped static
-build.
+The example talks to the production CoW API (`api.cow.fi`), where CoW's Sepolia
+liquidity is served. A production browser deployment should set a
+Content-Security-Policy `connect-src` scoped to the host it calls
+(`connect-src 'self' https://api.cow.fi;`).
 
 ## TypeScript-Callable WASM Runtime Matrix
 
@@ -123,11 +108,10 @@ artifacts.
 ## Related
 
 - [ADR 0007: Bounded Browser Wallet Support And Current Browser Runtime Contract](adr/0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md)
-- [ADR 0009: WASM Verification Consoles — Hybrid Extensibility And Two-Tier Proof](adr/0009-wasm-verification-consoles-hybrid-extensibility-and-two-tier-proof.md)
+- [ADR 0065: Single Canonical Browser-Wallet Example](adr/0065-canonical-browser-wallet-example.md)
 - [ADR 0039: Keep The TypeScript-Callable WASM SDK Surface As An Additive Leaf Crate](adr/0039-typescript-callable-wasm-sdk-surface.md)
 - [Browser Wallet Chain Coherence Audit](audit/browser-wallet-chain-coherence-audit.md)
-- [WASM Example Proof-Posture Audit](audit/wasm-example-proof-posture-audit.md)
+- [Browser Wallet Trust Posture Audit](audit/browser-wallet-trust-posture-audit.md)
 - [WASM Surface Audit](audit/wasm-surface-audit.md)
 - [Examples catalogue](examples.md)
-- [Browser Wallet Console](../examples/wasm/browser-wallet-console/README.md)
-- [SDK Verification Console](../examples/wasm/sdk-verification-console/README.md)
+- [Browser-wallet trade example](../examples/wasm/cow-trader-dioxus/README.md)

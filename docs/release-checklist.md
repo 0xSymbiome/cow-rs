@@ -388,7 +388,6 @@ cargo build --target wasm32-unknown-unknown -p cow-sdk --features browser-wallet
 cargo build --target wasm32-unknown-unknown -p cow-sdk-app-data
 cargo build --target wasm32-unknown-unknown -p cow-sdk-transport-wasm
 cargo build --target wasm32-unknown-unknown -p cow-sdk-wasm
-cargo build --target wasm32-unknown-unknown --manifest-path examples/wasm/browser-wallet-console/Cargo.toml
 ```
 
 Set up the pinned browser runner before every `wasm-pack` browser lane:
@@ -406,20 +405,7 @@ PY
 )"
 ```
 
-Deterministic SDK verification console checks:
-
-```text
-cd examples/wasm/sdk-verification-console
-wasm-pack test --headless --chrome --chromedriver "$WASM_BINDGEN_TEST_CHROMEDRIVER"
-```
-
-```text
-bun install --cwd e2e/sdk-verification
-bun run --cwd e2e/sdk-verification playwright install --with-deps chromium
-bun run --cwd e2e/sdk-verification test
-```
-
-Deterministic browser-wallet console checks:
+Deterministic browser-wallet checks:
 
 ```text
 # 1. Host-side crate
@@ -431,21 +417,11 @@ cd crates/browser-wallet && wasm-pack test --headless --chrome --chromedriver "$
 # 3. WASM build of the published SDK with the browser-wallet feature
 cargo build --target wasm32-unknown-unknown -p cow-sdk --features browser-wallet
 
-# 4. Browser-wallet console WASM build
-cargo build --target wasm32-unknown-unknown --manifest-path examples/wasm/browser-wallet-console/Cargo.toml
-
-# 5. Browser-wallet console host-side tests
-cargo test --manifest-path examples/wasm/browser-wallet-console/Cargo.toml
-
-# 6. Browser-wallet console wasm-bindgen tests
-cd examples/wasm/browser-wallet-console \
-  && wasm-pack build --target web \
-  && wasm-pack test --headless --chrome --chromedriver "$WASM_BINDGEN_TEST_CHROMEDRIVER"
-
-# 7. Playwright DOM lane under Chromium and Firefox
-bun install --cwd e2e/browser-wallet --frozen-lockfile
-bun run --cwd e2e/browser-wallet playwright install --with-deps chromium firefox
-bun run --cwd e2e/browser-wallet test
+# 4. Canonical browser-wallet example (build, lint, format)
+cd examples/wasm/cow-trader-dioxus \
+  && cargo fmt --check \
+  && cargo clippy --target wasm32-unknown-unknown -- -D warnings \
+  && cargo check --target wasm32-unknown-unknown
 ```
 
 TypeScript-callable wasm package checks:
@@ -469,31 +445,28 @@ exports map, declaration snapshots, Cloudflare `./cloudflare` and
 `./cloudflare/wasm` subpaths, and generated `dist` metadata cleanup are part of
 the release check.
 
-The deterministic browser-wallet Playwright lane excludes live extension specs.
 Use `scripts/validation-smoke/browser-wallet-live/README.md` for the manual
 extension-backed canary when a release needs installed-wallet confirmation.
 
 ## 9. Optional Validation Smoke
 
-Use the smoke kit when a change needs live service confirmation, live
-extension-backed wallet confirmation, or deployed-page inspection in addition
-to the deterministic proof surfaces above.
+Use the smoke kit when a change needs live service confirmation or live
+extension-backed wallet confirmation in addition to the deterministic proof
+surfaces above.
 
 ```text
 cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- orderbook-live
 cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- subgraph-live
-cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- browser-wallet-live --url http://127.0.0.1:8081
-cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- wasm-pages --sdk-verification-url https://<owner>.github.io/<repo>/sdk-verification-console/ --browser-wallet-url https://<owner>.github.io/<repo>/browser-wallet-console/
+cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- browser-wallet-live --url http://127.0.0.1:8080
 cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- all
 ```
 
 ## 10. Manual Confirmation Before Publish
 
-- serve the WASM examples over HTTP and confirm that the built artifacts load
-- if the browser-wallet console changed, run an extension-backed spot check on
-  a supported chain
-- if GitHub Pages content changed, inspect the deployed console pages after the
-  Pages workflow completes
+- serve the browser-wallet example (`dx serve` in `examples/wasm/cow-trader-dioxus`)
+  and confirm it loads and renders
+- if the browser-wallet example or `cow-sdk-browser-wallet` changed, run an
+  extension-backed spot check on a supported chain
 - if parity inputs changed, confirm that the pinned SHAs and fixture provenance
   still align
 
@@ -533,8 +506,8 @@ produces a build whose dependency tree matches the release-readiness build
 byte-for-byte.
 
 **Tier two: binary reproducibility (planned).** The WebAssembly artifacts
-produced by `wasm-pack build` in `examples/wasm/*/pkg/` are not currently
-asserted to be byte-reproducible. A future extension to the
+produced for the `cow-sdk-wasm` npm package and the browser-wallet example
+build are not currently asserted to be byte-reproducible. A future extension to the
 release-readiness automation will pin the `wasm-pack` toolchain version,
 capture the build environment provenance through the existing attestation
 lane, and add a binary-reproducibility check that compares two independent
