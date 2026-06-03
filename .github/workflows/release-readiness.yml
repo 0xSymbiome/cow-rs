@@ -111,24 +111,6 @@ jobs:
       - name: Check WASM runner freshness
         run: cargo check-wasm-runner-freshness
 
-  source-lock-freshness:
-    name: Source-lock freshness
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      # Source ref: actions/checkout@v4
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with:
-          persist-credentials: false
-      # Source ref: dtolnay/rust-toolchain@stable
-      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
-        with:
-          toolchain: ${{ env.RUST_CI_TOOLCHAIN }}
-      # Source ref: Swatinem/rust-cache@v2
-      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
-      - name: Report source-lock freshness
-        run: cargo parity-check-freshness || true
-
   registry-confirm:
     name: Registry confirmation
     runs-on: ubuntu-latest

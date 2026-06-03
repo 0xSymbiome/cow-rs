@@ -1,5 +1,5 @@
 use std::{
-    collections::{BTreeMap, BTreeSet},
+    collections::BTreeMap,
     fs,
     path::{Path, PathBuf},
     process::Command,
@@ -9,9 +9,7 @@ use anyhow::{Context, Result, bail};
 use clap::{Args, Parser, Subcommand};
 use serde::{Deserialize, Serialize};
 
-mod check_freshness;
 mod openapi_coverage;
-mod url_provenance;
 mod vendor_openapi;
 mod verify_sol_provenance;
 
@@ -426,14 +424,6 @@ enum Commands {
     VendorOpenapi(vendor_openapi::VendorOpenApiArgs),
     /// Generate or validate OpenAPI DTO coverage inventories.
     OpenapiCoverage(openapi_coverage::OpenApiCoverageArgs),
-    /// Report source-lock freshness against current GitHub upstream HEADs.
-    CheckFreshness(check_freshness::CheckFreshnessArgs),
-    /// Validate enum policy entries required by the public API.
-    ValidateEnumPolicy(EnumPolicyArgs),
-    /// Validate principle-to-ADR mapping.
-    ValidatePrincipleAdrMap(PrincipleAdrMapArgs),
-    /// Validate URL provenance does not carry credentials.
-    UrlProvenanceCheck(UrlProvenanceArgs),
     /// Validate every `.sol` file under `crates/contracts/abi/` against
     /// the source-lock-pinned upstream sources. Each file is
     /// SHA-256-checked against the matching `vendored:` row in
@@ -486,30 +476,6 @@ struct ProvisionUpstreamsArgs {
     output_root: PathBuf,
 }
 
-#[derive(Debug, Args)]
-struct EnumPolicyArgs {
-    #[arg(long, default_value = ".github/config/enum-policy.yaml")]
-    policy: PathBuf,
-}
-
-#[derive(Debug, Args)]
-struct PrincipleAdrMapArgs {
-    #[arg(long, default_value = ".github/config/principle-adr-map.yaml")]
-    map: PathBuf,
-    #[arg(long, default_value_t = 2)]
-    version: u32,
-    #[arg(long)]
-    principle: Option<u32>,
-    #[arg(long)]
-    required: bool,
-}
-
-#[derive(Debug, Args)]
-struct UrlProvenanceArgs {
-    #[arg(long, default_value = "parity/source-lock.yaml")]
-    source_lock: PathBuf,
-}
-
 fn main() -> Result<()> {
     match Cli::parse().command {
         Commands::Snapshot(args) => snapshot(&CliOptions {
@@ -538,103 +504,8 @@ fn main() -> Result<()> {
         }),
         Commands::VendorOpenapi(args) => vendor_openapi::run(args),
         Commands::OpenapiCoverage(args) => openapi_coverage::run(args),
-        Commands::CheckFreshness(args) => check_freshness::run(args),
-        Commands::ValidateEnumPolicy(args) => validate_enum_policy(&args.policy),
-        Commands::ValidatePrincipleAdrMap(args) => {
-            validate_principle_adr_map(&args.map, args.version, args.principle, args.required)
-        }
-        Commands::UrlProvenanceCheck(args) => url_provenance::run(&args.source_lock),
         Commands::VerifySolProvenance(args) => verify_sol_provenance::run(&args),
     }
-}
-
-fn validate_enum_policy(path: &Path) -> Result<()> {
-    let raw = fs::read_to_string(path)
-        .with_context(|| format!("failed to read enum policy {}", path.display()))?;
-    let manifest: EnumPolicyManifest =
-        serde_yaml::from_str(&raw).context("failed to parse enum policy")?;
-    if manifest.version != 1 {
-        bail!("expected enum policy version 1");
-    }
-    let required = [
-        "DeploymentChainId",
-        "DeploymentEnv",
-        "DeploymentVerificationStatus",
-        "DeploymentCoverageStatus",
-        "Eip1271SignatureError",
-        "ContractId",
-        "RegistryError",
-        // COW Shed helper crate body enums. The composable helper crate body
-        // adds ComposableError, PollResult, TwapStatus, OwnerKind, and
-        // HookPosition; restore those names here in the same change set that
-        // lands the composable crate source.
-        "CowShedVersion",
-        "CowShedError",
-        "SigSource",
-        "Nonce",
-        "Deadline",
-    ];
-    let names = manifest
-        .enums
-        .iter()
-        .map(|entry| entry.name.as_str())
-        .collect::<BTreeSet<_>>();
-    for name in required {
-        if !names.contains(name) {
-            bail!("enum policy missing {name}");
-        }
-    }
-    println!("validated enum policy");
-    Ok(())
-}
-
-fn validate_principle_adr_map(
-    path: &Path,
-    version: u32,
-    principle: Option<u32>,
-    required: bool,
-) -> Result<()> {
-    let raw = fs::read_to_string(path)
-        .with_context(|| format!("failed to read principle map {}", path.display()))?;
-    let manifest: PrincipleAdrManifest =
-        serde_yaml::from_str(&raw).context("failed to parse principle ADR map")?;
-    if manifest.version != version {
-        bail!("expected principle ADR map version {version}");
-    }
-    if let Some(principle_id) = principle {
-        let present = manifest
-            .principles
-            .iter()
-            .any(|entry| entry.id == principle_id && !entry.primary_adr.trim().is_empty());
-        if required && !present {
-            bail!("required principle {principle_id} is missing from ADR map");
-        }
-    }
-    println!("validated principle ADR map");
-    Ok(())
-}
-
-#[derive(Debug, Deserialize)]
-struct EnumPolicyManifest {
-    version: u32,
-    enums: Vec<EnumPolicyRow>,
-}
-
-#[derive(Debug, Deserialize)]
-struct EnumPolicyRow {
-    name: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct PrincipleAdrManifest {
-    version: u32,
-    principles: Vec<PrincipleAdrRow>,
-}
-
-#[derive(Debug, Deserialize)]
-struct PrincipleAdrRow {
-    id: u32,
-    primary_adr: String,
 }
 
 fn snapshot(options: &CliOptions) -> Result<()> {

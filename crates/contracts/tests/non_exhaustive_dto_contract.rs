@@ -438,9 +438,8 @@ fn enum_policy_manifest_entries_match_expected_markers() {
     for entry in policy.enums {
         if entry.planned {
             // Reserved entry: the source-of-truth Rust definition lands in a
-            // later capability landing. Skip the file/line check; the
-            // parity-maintainer `validate-enum-policy` subcommand checks the
-            // catalog presence separately.
+            // later capability landing, so skip the file/line marker check
+            // until the enum exists.
             continue;
         }
         let source_path = repo_root.join(&entry.file);

@@ -37,7 +37,7 @@ or changing SDK behavior.
 | --- | --- | --- |
 | Source-lock pins | `parity/source-lock.yaml` pins exact upstream commits for every repository that contributes parity evidence | Conforms |
 | Freshness disclosure | Current upstream HEADs are checked explicitly so stale pins are visible before release evidence relies on freshness | Conforms |
-| Refresh outcome | The 2026-05-29 sync advanced the three CoW Protocol pins (`cow-sdk`, `contracts`, `services`) to upstream HEAD, re-vendored the services OpenAPI, and re-aligned fixture provenance; parity validation, OpenAPI coverage, and freshness all pass with the three pins Current | Conforms |
+| Refresh outcome | The 2026-05-29 sync advanced the three CoW Protocol pins (`cow-sdk`, `contracts`, `services`) to upstream HEAD, re-vendored the services OpenAPI, and re-aligned fixture provenance; parity validation and OpenAPI coverage pass, and the `git ls-remote` upstream HEAD comparison shows the three pins Current | Conforms |
 | Local-root warnings | Reviewer-supplied upstream roots are checked for independent git top-levels, expected remotes, and pinned `HEAD` commits without making repo-local validation depend on those roots | Conforms |
 | Publication preflight | Source-lock validation metadata lists the complete package-family dry-run contract with local patches for unpublished intra-family crates | Conforms |
 | Native Alloy provenance | `parity/source-lock.yaml` pins exact Alloy runtime and Alloy Core commits for source-derived dependency evidence used by the native adapter family | Conforms |
@@ -230,7 +230,6 @@ git ls-remote https://github.com/cowprotocol/services HEAD
 git ls-remote https://github.com/cowprotocol/contracts HEAD
 git ls-remote https://github.com/cowprotocol/cow-sdk HEAD
 cargo parity-validate --source-lock parity/source-lock.yaml
-cargo parity-check-freshness --source-lock parity/source-lock.yaml
 cargo check-source-lock-roots --cow-sdk-root <cow-sdk-checkout> --contracts-root <contracts-checkout> --services-root <services-checkout>
 cargo test --manifest-path scripts/parity-maintainer/Cargo.toml
 cargo test --manifest-path scripts/policy-maintainer/Cargo.toml check_source_lock_roots

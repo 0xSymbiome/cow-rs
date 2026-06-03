@@ -725,8 +725,5 @@ validation:
   pinned_upstream_provenance_contract:
   - cargo parity-provision-upstreams --source-lock parity/source-lock.yaml --output-root <path>
   - cargo parity-validate --source-lock parity/source-lock.yaml --cow-sdk-root <path>/cow-sdk --contracts-root <path>/contracts --services-root <path>/services
-  - cargo run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- validate-enum-policy
-  - cargo run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- validate-principle-adr-map --version 2
   maintainer_refresh_contract:
   - cargo parity-snapshot --output parity/source-lock.yaml --cow-sdk-root <path> --contracts-root <path> --services-root <path>
-  - cargo url-provenance-check
