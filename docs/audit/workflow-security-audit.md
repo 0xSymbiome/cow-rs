@@ -1,7 +1,7 @@
 # Workflow Security Audit
 
 Status: Current
-Last reviewed: 2026-05-08
+Last reviewed: 2026-06-03
 Owning surface: every `.github/workflows/*.yml` file
 Refresh trigger: any new workflow file; any unpinned action; any addition of `pull_request_target`; any third-party action new to the workspace; any permission widening or issue-creation behavior in scheduled workflows
 Related docs:
@@ -41,7 +41,7 @@ Workflow snapshot:
 | `_quality-gate.yml` | `contents: read` | SHA-pinned; includes pinning guard | Absent |
 | `alloy-release-candidate.yml` | `contents: read`, `issues: write` | SHA-pinned | Absent |
 | `benchmarks.yml` | `contents: read` | SHA-pinned | Absent |
-| `browser-wallet-e2e.yml` | `contents: read` | SHA-pinned | Absent |
+| `browser-wallet-wasm.yml` | `contents: read` | SHA-pinned | Absent |
 | `ci.yml` | `contents: read`; aggregate job uses `{}` | SHA-pinned or same-repo reusable workflow | Absent |
 | `codeql.yml` | workflow `{}`; analyze job grants `actions: read`, `contents: read`, `security-events: write` | SHA-pinned | Absent |
 | `commit-format.yml` | `contents: read` | SHA-pinned | Absent |
@@ -50,11 +50,9 @@ Workflow snapshot:
 | `fuzz.yml` | `contents: read` | SHA-pinned | Absent |
 | `release-readiness.yml` | `contents: read` | SHA-pinned or same-repo reusable workflow | Absent |
 | `retry-soak.yml` | `contents: read` | SHA-pinned | Absent |
-| `sdk-verification-e2e.yml` | `contents: read` | SHA-pinned | Absent |
 | `services-drift.yml` | `contents: read`, `issues: write` | SHA-pinned | Absent |
 | `test-depth.yml` | `actions: read`, `contents: read` | SHA-pinned | Absent |
 | `wasm-imports-grep-gate.yml` | `contents: read` | SHA-pinned | Absent |
-| `wasm-pages.yml` | `contents: read`; deploy job grants `pages: write`, `id-token: write` | SHA-pinned | Absent |
 | `wasm.yml` | `contents: read` | SHA-pinned | Absent |
 
 ## Current Contract
@@ -81,9 +79,8 @@ used by both routine CI and release-readiness validation.
 
 Every workflow declares explicit `permissions:`. Most workflows use
 `contents: read`; workflows that need narrower or elevated rights declare them
-at job scope. The Pages deployment job is the only workflow lane that grants
-`pages: write` and `id-token: write`, the CodeQL analyze job is the only lane
-that grants `security-events: write`, and scheduled drift/canary lanes grant
+at job scope. The CodeQL analyze job is the only lane that grants
+`security-events: write`, and scheduled drift/canary lanes grant
 `issues: write` only when they create or reuse tracking issues.
 
 ### `pull_request_target` Review Guard
@@ -133,7 +130,7 @@ Primary implementation points:
 - `.github/workflows/_quality-gate.yml`
 - `.github/workflows/alloy-release-candidate.yml`
 - `.github/workflows/benchmarks.yml`
-- `.github/workflows/browser-wallet-e2e.yml`
+- `.github/workflows/browser-wallet-wasm.yml`
 - `.github/workflows/ci.yml`
 - `.github/workflows/codeql.yml`
 - `.github/workflows/commit-format.yml`
@@ -142,11 +139,9 @@ Primary implementation points:
 - `.github/workflows/fuzz.yml`
 - `.github/workflows/release-readiness.yml`
 - `.github/workflows/retry-soak.yml`
-- `.github/workflows/sdk-verification-e2e.yml`
 - `.github/workflows/services-drift.yml`
 - `.github/workflows/test-depth.yml`
 - `.github/workflows/wasm-imports-grep-gate.yml`
-- `.github/workflows/wasm-pages.yml`
 - `.github/workflows/wasm.yml`
 
 Primary regression coverage:

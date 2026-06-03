@@ -1,7 +1,7 @@
 # Browser-Wallet Alloy Dependency Audit
 
 Status: Current
-Last reviewed: 2026-05-13
+Last reviewed: 2026-06-03
 Owning surface: `cow-sdk-browser-wallet` typed EIP-1193 contract-call bridge and its `alloy-primitives` / `alloy-dyn-abi` / `alloy-json-abi` ABI helpers
 Refresh trigger: Upstream movement in the alloy family (new major, dropped transitive dependency), a new reviewed warning surfacing through the alloy toolchain, or a new maintained successor to the affected proc-macro deps
 Related docs:
@@ -123,7 +123,6 @@ Primary regression coverage:
 - `crates/browser-wallet/tests/provider_contract.rs`
 - `crates/browser-wallet/tests/wallet_contract.rs`
 - `crates/browser-wallet/tests/state_machine_contract.rs`
-- `e2e/browser-wallet/tests/browser-wallet-console.spec.ts`
 
 Validation surface:
 

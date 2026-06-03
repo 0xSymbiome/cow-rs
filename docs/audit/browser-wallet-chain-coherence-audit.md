@@ -1,18 +1,16 @@
 # Browser Wallet Chain Coherence Audit
 
 Status: Current  
-Last reviewed: 2026-05-13
+Last reviewed: 2026-06-03
 Owning surface: `cow-sdk-browser-wallet` chain-bound signer and typed chain-management contract  
 Refresh trigger: Changes to `BrowserWallet::signer_for_chain`, typed-data chain validation, chain-switch helpers, or shipped browser-wallet proof surfaces  
 Related docs:
 - [ADR 0004](../adr/0004-feature-gated-browser-wallet-sidecar.md)
 - [ADR 0007](../adr/0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md)
-- [ADR 0009](../adr/0009-wasm-verification-consoles-hybrid-extensibility-and-two-tier-proof.md)
 - [Architecture](../architecture.md)
 - [Verification Guide](../verification-guide.md)
 - [Verification Matrix](../verification-matrix.md)
 - [Browser-Runtime Proof Posture](../browser-runtime-proof-posture.md)
-- [WASM Example Proof-Posture Audit](wasm-example-proof-posture-audit.md)
 
 ## Scope
 
@@ -23,7 +21,7 @@ This audit covers:
 - typed browser-wallet chain-management helpers that switch the connected
   wallet session
 - the contract between the active wallet session chain and the workflow chain
-- reviewer-facing browser-wallet console behavior as consumer proof of that
+- the canonical browser-wallet example as a consumer demonstration of that
   contract
 
 It does not cover injected-wallet discovery, multi-wallet selection, or
@@ -37,7 +35,7 @@ environment-sensitive extension prompts beyond the chain-coherence boundary.
 | Runtime validation | Address, signature, gas, and transaction operations revalidate the active session chain before they proceed | Conforms |
 | Chain management | Typed switch helpers treat wallet RPC acknowledgement as provisional until the refreshed session confirms the requested chain | Conforms |
 | Typed-data signing | Typed-data payloads fail when the domain chain does not match the expected workflow chain | Conforms |
-| Example behavior | Console gating, partial-state revalidation, and connect/disconnect flaps remain user-facing affordances backed by crate-level protections | Conforms |
+| Example behavior | The canonical browser-wallet example switches to and validates the target chain through `signer_for_chain` before any signed action, backed by the crate-level protections above | Conforms |
 
 ## Current Contract
 
@@ -65,10 +63,11 @@ that the requested chain is now active.
 
 This keeps browser-wallet-backed quote, signing, and submission flows aligned
 with one reviewed chain authority without widening `cow-sdk-trading` into a
-browser-specific crate or relying on example-only guards.
-The browser e2e suite also revalidates partial-state console behavior and
-connect/disconnect flaps so stale session state does not become the proof
-source for live actions.
+browser-specific crate or relying on example-only guards. The canonical
+browser-wallet example (`examples/wasm/cow-trader-dioxus/`) demonstrates the
+contract end to end — it calls `switch_chain` when the wallet is on another
+network and then signs only through `signer_for_chain` — while the crate tests,
+not the example, remain the proof source for live actions.
 
 ## Evidence
 
@@ -80,7 +79,7 @@ Primary implementation points:
 - `crates/browser-wallet/src/signer.rs`
 - `crates/browser-wallet/src/wallet/chain_mgmt.rs`
 - `crates/browser-wallet/src/wallet/chain.rs`
-- `examples/wasm/browser-wallet-console/src/lib.rs`
+- `examples/wasm/cow-trader-dioxus/src/main.rs`
 
 Primary regression coverage:
 
@@ -90,8 +89,6 @@ Primary regression coverage:
 - `crates/browser-wallet/tests/wallet_contract.rs::switch_chain_rejects_success_when_the_refreshed_session_stays_on_a_different_chain`
 - `crates/browser-wallet/tests/wallet_contract.rs::switch_or_add_chain_rejects_success_when_the_refreshed_session_stays_on_a_different_chain`
 - `crates/browser-wallet/tests/wasm_bridge_contract.rs::successful_switch_requests_fail_when_the_refreshed_session_stays_on_a_different_chain`
-- `e2e/browser-wallet/tests/injected-chain-coherence.spec.ts`
-- `e2e/browser-wallet/tests/browser-wallet-console.spec.ts` (includes `connect disconnect flap does not leak session state`)
 
 Validation surface:
 
@@ -102,5 +99,4 @@ cargo test --workspace --all-features
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo build --target wasm32-unknown-unknown -p cow-sdk-browser-wallet
 cd crates/browser-wallet && wasm-pack test --headless --chrome
-bun run --cwd e2e/browser-wallet test
 ```

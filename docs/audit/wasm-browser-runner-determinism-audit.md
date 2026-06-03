@@ -1,13 +1,11 @@
 # WASM Browser Runner Determinism Audit
 
 Status: Current
-Last reviewed: 2026-05-01
+Last reviewed: 2026-06-03
 Owning surface: Pinned Chrome-for-Testing runner used by browser-targeted WASM validation lanes
 Refresh trigger: Changes to the pinned WASM browser runner config, Chrome-for-Testing refresh cadence, wasm-runner setup or freshness commands, wasm-pack workflow lanes, or browser-targeted WASM evidence requirements
 Related docs:
 - [ADR 0007](../adr/0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md)
-- [ADR 0009](../adr/0009-wasm-verification-consoles-hybrid-extensibility-and-two-tier-proof.md)
-- [WASM Example Proof-Posture Audit](wasm-example-proof-posture-audit.md)
 - [Browser-Runtime Proof Posture](../browser-runtime-proof-posture.md)
 - [Validation Scope](../validation-scope.md)
 - [Verification Matrix](../verification-matrix.md)
@@ -38,9 +36,8 @@ lane, or the application-specific assertions owned by each WASM console.
 | Runner setup | Workflow lanes invoke `cargo wasm-runner-setup` before browser-targeted `wasm-pack test` steps and pass the generated webdriver configuration through `WEBDRIVER_JSON` | Conforms |
 | Freshness gate | Release-readiness runs `cargo check-wasm-runner-freshness` and blocks release when the pin falls outside the accepted age window | Conforms |
 | Browser-test determinism | WASM compatibility lanes no longer rely on the hosted runner image's ambient Chrome or chromedriver installation | Conforms |
-| Browser-wallet bridge proof | Browser-wallet WASM bridge tests run through the pinned runner and include deterministic mock-console state plus EIP-6963 event serialization coverage | Conforms |
-| Browser-wallet live boundary | Live extension checks are excluded from deterministic Playwright runs and documented as a manual canary with an explicit runbook | Conforms |
-| SDK console CSP proof | The SDK verification Playwright lane asserts runtime CSP blocking for off-allowlist script and connect probes | Conforms |
+| Browser-wallet bridge proof | Browser-wallet WASM bridge tests run in a headless browser and include deterministic mock-wallet state plus EIP-6963 event serialization coverage | Conforms |
+| Browser-wallet live boundary | Live extension checks are excluded from the deterministic lanes and documented as a manual canary with an explicit runbook | Conforms |
 | Refresh path | The public refresh command can regenerate the pin from Chrome-for-Testing metadata while preserving the checksum-bearing config shape | Conforms |
 
 ## Current Contract
@@ -66,27 +63,19 @@ webdriver JSON report. Browser-targeted workflow steps pass the same report
 path through `WEBDRIVER_JSON`, which lets `wasm-bindgen-test` discover the
 pinned runner consistently.
 
-The WASM compatibility workflow runs setup immediately before every
-browser-targeted `wasm-pack test` step for browser-wallet, transport-wasm,
-trading, signing, and both WASM verification consoles. The browser-wallet E2E
-workflow uses the same setup command before its direct bridge and console
-browser tests.
+The WASM compatibility workflow runs setup immediately before its
+browser-targeted `wasm-pack test` steps for the WASM-facing SDK crates.
 
-The browser-wallet bridge proof includes deterministic mock-wallet console
-session transitions and EIP-6963 discovery-event serialization round trips.
-Those tests are browser-targeted `wasm_bindgen_test` cases and rely on the
-pinned runner setup to avoid ambient Chrome/chromedriver drift.
+The browser-wallet bridge proof includes deterministic mock-wallet session
+transitions and EIP-6963 discovery-event serialization round trips. Those
+tests are browser-targeted `wasm_bindgen_test` cases that run against a pinned
+browser runner to avoid ambient driver drift.
 
-The browser-wallet Playwright configuration explicitly ignores
-live-extension specs. Extension-backed checks depend on installed wallet
-state, authorization prompts, chain inventory, and vendor-specific behavior,
-so they remain manual canary evidence rather than deterministic CI. The
-manual runbook under `scripts/validation-smoke/browser-wallet-live/` records
-the acceptance window and operator steps for that live confirmation.
-
-The SDK verification console E2E lane includes a CSP runtime probe that
-attempts an off-allowlist script and connection. The expected result is a
-browser-enforced block before either route reaches the test server.
+Extension-backed checks depend on installed wallet state, authorization
+prompts, chain inventory, and vendor-specific behavior, so they remain manual
+canary evidence rather than deterministic CI. The manual runbook under
+`scripts/validation-smoke/browser-wallet-live/` records the acceptance window
+and operator steps for that live confirmation.
 
 ### Freshness Gate
 
@@ -108,10 +97,8 @@ Primary implementation points:
 
 - `.github/config/wasm-test-versions.yaml`
 - `.github/workflows/wasm.yml`
-- `.github/workflows/browser-wallet-e2e.yml`
+- `.github/workflows/browser-wallet-wasm.yml`
 - `.github/workflows/release-readiness.yml`
-- `e2e/browser-wallet/playwright.config.ts`
-- `e2e/sdk-verification/tests/sdk-verification-console.spec.ts`
 - `scripts/validation-smoke/browser-wallet-live/README.md`
 - `scripts/validation-smoke/src/wasm_runner.rs`
 - `scripts/policy-maintainer/src/check_wasm_runner_freshness.rs`
@@ -124,9 +111,6 @@ Primary regression coverage:
 - `crates/browser-wallet/tests/wasm_bridge_contract.rs::mock_wallet_console_state_machine_is_deterministic`
 - `crates/browser-wallet/tests/wasm_bridge_contract.rs::eip6963_discovery_event_serde_roundtrip`
 - `crates/transport-wasm/tests/wasm.rs`
-- `examples/wasm/browser-wallet-console/tests/wasm_deterministic.rs`
-- `examples/wasm/sdk-verification-console/tests/deterministic_exports.rs`
-- `e2e/sdk-verification/tests/sdk-verification-console.spec.ts::csp blocks off-allowlist scripts and connections`
 
 Validation surface:
 
@@ -135,7 +119,4 @@ cargo wasm-runner-refresh --source online --output .github/config/wasm-test-vers
 cargo wasm-runner-setup --webdriver-json target/wasm-runner/webdriver.json
 cargo check-wasm-runner-freshness
 cd crates/browser-wallet && wasm-pack test --headless --chrome --chromedriver <path from target/wasm-runner/webdriver.json>
-cd examples/wasm/sdk-verification-console && wasm-pack test --headless --chrome
-bun install --cwd e2e/browser-wallet --frozen-lockfile
-bun run --cwd e2e/sdk-verification test
 ```

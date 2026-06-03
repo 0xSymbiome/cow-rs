@@ -8,7 +8,6 @@ Related docs:
 - [ADR 0035](../adr/0035-alloy-provider-adapter.md)
 - [ADR 0036](../adr/0036-alloy-signer-adapter.md)
 - [ADR 0037](../adr/0037-alloy-umbrella-adapter.md)
-- [WASM Example Proof-Posture Audit](wasm-example-proof-posture-audit.md)
 - [Browser Wallet Trust Posture Audit](browser-wallet-trust-posture-audit.md)
 
 ## Scope

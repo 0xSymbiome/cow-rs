@@ -102,5 +102,4 @@ Validation surface:
 cargo test -p cow-sdk-browser-wallet --test provider_contract
 cargo test -p cow-sdk-browser-wallet --test wallet_contract
 cargo test --workspace --all-features
-bun run --cwd e2e/browser-wallet test
 ```
