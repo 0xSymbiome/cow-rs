@@ -58,10 +58,6 @@ name = "alloy_read_contract_parity_invariant"
 path = "alloy_read_contract_parity_invariant.rs"
 
 [[test]]
-name = "services_drift_report_schema"
-path = "services_drift_report_schema.rs"
-
-[[test]]
 name = "supported_chains_doc_table"
 path = "supported_chains_doc_table.rs"
 

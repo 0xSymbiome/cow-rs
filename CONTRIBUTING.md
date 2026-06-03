@@ -77,7 +77,6 @@ Common examples:
 ```text
 cargo parity-validate --source-lock parity/source-lock.yaml
 cargo check-property-citations
-cargo wasm-runner-setup --webdriver-json target/wasm-runner/webdriver.json
 ```
 
 The clippy gate runs under the workspace lint posture declared in the root

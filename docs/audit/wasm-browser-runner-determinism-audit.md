@@ -33,12 +33,12 @@ lane, or the application-specific assertions owned by each WASM console.
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
 | Runner pin | The committed WASM browser runner config records one Chrome-for-Testing stable version, release timestamp, platform URLs, and platform checksums | Conforms |
-| Runner setup | Workflow lanes invoke `cargo wasm-runner-setup` before browser-targeted `wasm-pack test` steps and pass the generated webdriver configuration through `WEBDRIVER_JSON` | Conforms |
+| Runner setup | The browser runner is provisioned directly by the wasm-pack browser lanes, which pin Chrome-for-Testing to the committed config before browser-targeted `wasm-pack test` steps | Conforms |
 | Freshness gate | Release-readiness runs `cargo check-wasm-runner-freshness` and blocks release when the pin falls outside the accepted age window | Conforms |
 | Browser-test determinism | WASM compatibility lanes no longer rely on the hosted runner image's ambient Chrome or chromedriver installation | Conforms |
 | Browser-wallet bridge proof | Browser-wallet WASM bridge tests run in a headless browser and include deterministic mock-wallet state plus EIP-6963 event serialization coverage | Conforms |
 | Browser-wallet live boundary | Live extension checks are excluded from the deterministic lanes and documented as a manual canary with an explicit runbook | Conforms |
-| Refresh path | The public refresh command can regenerate the pin from Chrome-for-Testing metadata while preserving the checksum-bearing config shape | Conforms |
+| Refresh path | The pin is refreshed by hand from current Chrome-for-Testing metadata while preserving the checksum-bearing config shape | Conforms |
 
 ## Current Contract
 
@@ -54,16 +54,15 @@ The config is intended to move deliberately: it is refreshed at every `0.x.0`
 release candidate and any time release-readiness would otherwise see a pin
 older than the accepted freshness window.
 
-### Setup Command
+### Runner Provisioning
 
-`cargo wasm-runner-setup --webdriver-json <path>` reads the committed pin,
-downloads the platform-specific Chrome and chromedriver archives, verifies the
-checksums, extracts the binaries under the build target directory, and writes a
-webdriver JSON report. Browser-targeted workflow steps pass the same report
-path through `WEBDRIVER_JSON`, which lets `wasm-bindgen-test` discover the
-pinned runner consistently.
+The browser runner is provisioned directly by the wasm-pack browser lanes.
+Each lane reads the committed pin, installs the platform-specific
+Chrome-for-Testing Chrome and chromedriver at the recorded version with verified
+checksums, and points `wasm-bindgen-test` at the pinned chromedriver so the
+runner stays consistent across runs.
 
-The WASM compatibility workflow runs setup immediately before its
+The WASM compatibility workflow provisions the runner immediately before its
 browser-targeted `wasm-pack test` steps for the WASM-facing SDK crates.
 
 The browser-wallet bridge proof includes deterministic mock-wallet session
@@ -73,9 +72,8 @@ browser runner to avoid ambient driver drift.
 
 Extension-backed checks depend on installed wallet state, authorization
 prompts, chain inventory, and vendor-specific behavior, so they remain manual
-canary evidence rather than deterministic CI. The manual runbook under
-`scripts/validation-smoke/browser-wallet-live/` records the acceptance window
-and operator steps for that live confirmation.
+canary evidence rather than deterministic CI. That acceptance window and its
+operator steps are exercised manually and are environment-sensitive.
 
 ### Freshness Gate
 
@@ -86,10 +84,10 @@ the pinned browser fall silently behind current Chrome-for-Testing releases.
 
 ### Refresh Path
 
-`cargo wasm-runner-refresh --source online --output .github/config/wasm-test-versions.yaml`
-is the public refresh path. It reads the current Chrome-for-Testing Stable
-metadata, resolves platform downloads, hashes archives when needed, and writes
-the checksum-bearing YAML used by setup and freshness validation.
+`.github/config/wasm-test-versions.yaml` is refreshed by hand from the current
+Chrome-for-Testing Stable metadata: resolve the platform downloads, hash the
+archives, and update the checksum-bearing YAML used by runner provisioning and
+freshness validation.
 
 ## Evidence
 
@@ -99,7 +97,6 @@ Primary implementation points:
 - `.github/workflows/wasm.yml`
 - `.github/workflows/browser-wallet-wasm.yml`
 - `.github/workflows/release-readiness.yml`
-- `scripts/validation-smoke/browser-wallet-live/README.md`
 - `scripts/validation-smoke/src/wasm_runner.rs`
 - `scripts/policy-maintainer/src/check_wasm_runner_freshness.rs`
 
@@ -115,8 +112,6 @@ Primary regression coverage:
 Validation surface:
 
 ```text
-cargo wasm-runner-refresh --source online --output .github/config/wasm-test-versions.yaml
-cargo wasm-runner-setup --webdriver-json target/wasm-runner/webdriver.json
 cargo check-wasm-runner-freshness
-cd crates/browser-wallet && wasm-pack test --headless --chrome --chromedriver <path from target/wasm-runner/webdriver.json>
+cd crates/browser-wallet && wasm-pack test --headless --chrome --chromedriver <chromedriver matching .github/config/wasm-test-versions.yaml>
 ```

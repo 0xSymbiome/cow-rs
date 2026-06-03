@@ -50,8 +50,6 @@ Workflow snapshot:
 | `fuzz.yml` | `contents: read` | SHA-pinned | Absent |
 | `release-readiness.yml` | `contents: read` | SHA-pinned or same-repo reusable workflow | Absent |
 | `retry-soak.yml` | `contents: read` | SHA-pinned | Absent |
-| `services-drift.yml` | `contents: read`, `issues: write` | SHA-pinned | Absent |
-| `test-depth.yml` | `actions: read`, `contents: read` | SHA-pinned | Absent |
 | `wasm-imports-grep-gate.yml` | `contents: read` | SHA-pinned | Absent |
 | `wasm.yml` | `contents: read` | SHA-pinned | Absent |
 
@@ -105,14 +103,11 @@ browser leaf crate source tree. It uses read-only repository permissions and a
 SHA-pinned checkout action, and its enforcement logic runs inline in the hosted
 shell without introducing a new third-party action.
 
-### Scheduled Depth And Retry Lanes
+### Scheduled Retry Lane
 
-The `test-depth.yml` mutation job now runs on the existing weekly schedule as
-well as explicit manual dispatch, publishes structured mutation artifacts, and
-keeps the same read-only permission posture. The `retry-soak.yml` workflow is a
-separate nightly lane that runs one ignored deterministic orderbook retry and
-timeout soak test. It uses only pinned third-party actions, `contents: read`,
-and no pull-request trigger.
+The `retry-soak.yml` workflow is a nightly lane that runs one ignored
+deterministic orderbook retry and timeout soak test. It uses only pinned
+third-party actions, `contents: read`, and no pull-request trigger.
 
 ### Alloy Canary Issue Creation
 
@@ -139,8 +134,6 @@ Primary implementation points:
 - `.github/workflows/fuzz.yml`
 - `.github/workflows/release-readiness.yml`
 - `.github/workflows/retry-soak.yml`
-- `.github/workflows/services-drift.yml`
-- `.github/workflows/test-depth.yml`
 - `.github/workflows/wasm-imports-grep-gate.yml`
 - `.github/workflows/wasm.yml`
 

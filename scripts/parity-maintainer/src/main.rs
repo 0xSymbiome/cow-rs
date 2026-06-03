@@ -9,15 +9,8 @@ use anyhow::{Context, Result, bail};
 use clap::{Args, Parser, Subcommand};
 use serde::{Deserialize, Serialize};
 
-mod audit_refresh;
-mod audit_self_pinning;
 mod check_freshness;
-mod composable_fixtures;
-mod cow_shed_fixtures;
-mod diff_upstreams;
 mod openapi_coverage;
-mod stale_phrase_catalog;
-mod stale_phrase_lint;
 mod url_provenance;
 mod vendor_openapi;
 mod verify_sol_provenance;
@@ -433,31 +426,14 @@ enum Commands {
     VendorOpenapi(vendor_openapi::VendorOpenApiArgs),
     /// Generate or validate OpenAPI DTO coverage inventories.
     OpenapiCoverage(openapi_coverage::OpenApiCoverageArgs),
-    /// Diff source-lock-pinned producer paths against upstream HEAD.
-    DiffUpstreams(diff_upstreams::DiffUpstreamsArgs),
     /// Report source-lock freshness against current GitHub upstream HEADs.
     CheckFreshness(check_freshness::CheckFreshnessArgs),
-    /// Validate producer paths declared by the source lock.
-    ValidateProducerPaths(ValidateArgs),
     /// Validate enum policy entries required by the public API.
     ValidateEnumPolicy(EnumPolicyArgs),
     /// Validate principle-to-ADR mapping.
     ValidatePrincipleAdrMap(PrincipleAdrMapArgs),
-    /// Validate dependency boundary constraints.
-    CheckDeps(CheckDepsArgs),
-    /// Lint strategy-facing public documents.
-    StrategyDocLint(StrategyDocLintArgs),
     /// Validate URL provenance does not carry credentials.
     UrlProvenanceCheck(UrlProvenanceArgs),
-    /// Validate audit refresh metadata.
-    AuditRefresh(AuditRefreshArgs),
-    /// Validate that every catalogued composable and COW Shed parity fixture
-    /// file is present on disk under the supplied repository root.
-    ValidateFixtureCatalog(ValidateFixtureCatalogArgs),
-    /// Audit every JSON fixture under `parity/fixtures/` for a structured
-    /// authority annotation and report fixtures that fall into a rejected
-    /// class without coverage by `parity/self-pinning-allowlist.yaml`.
-    AuditSelfPinning(audit_self_pinning::AuditSelfPinningArgs),
     /// Validate every `.sol` file under `crates/contracts/abi/` against
     /// the source-lock-pinned upstream sources. Each file is
     /// SHA-256-checked against the matching `vendored:` row in
@@ -529,43 +505,9 @@ struct PrincipleAdrMapArgs {
 }
 
 #[derive(Debug, Args)]
-struct CheckDepsArgs {
-    #[arg(long = "negative-edge")]
-    negative_edges: Vec<String>,
-}
-
-#[derive(Debug, Args)]
-struct StrategyDocLintArgs {
-    #[arg(long, default_value = "docs")]
-    root: PathBuf,
-}
-
-#[derive(Debug, Args)]
 struct UrlProvenanceArgs {
     #[arg(long, default_value = "parity/source-lock.yaml")]
     source_lock: PathBuf,
-}
-
-#[derive(Debug, Args)]
-struct AuditRefreshArgs {
-    #[command(subcommand)]
-    command: AuditRefreshCommand,
-}
-
-#[derive(Debug, Args)]
-struct ValidateFixtureCatalogArgs {
-    /// Repository root that contains `parity/fixtures/...` on disk.
-    #[arg(long, default_value = ".")]
-    root: PathBuf,
-}
-
-#[derive(Debug, Subcommand)]
-enum AuditRefreshCommand {
-    /// Validate audit refresh map metadata.
-    Check {
-        #[arg(long, default_value = ".github/config/audit-refresh-map.yml")]
-        map: PathBuf,
-    },
 }
 
 fn main() -> Result<()> {
@@ -596,35 +538,12 @@ fn main() -> Result<()> {
         }),
         Commands::VendorOpenapi(args) => vendor_openapi::run(args),
         Commands::OpenapiCoverage(args) => openapi_coverage::run(args),
-        Commands::DiffUpstreams(args) => diff_upstreams::run(args),
         Commands::CheckFreshness(args) => check_freshness::run(args),
-        Commands::ValidateProducerPaths(args) => validate(&CliOptions {
-            source_lock: args.source.source_lock,
-            output: PathBuf::from(DEFAULT_SOURCE_LOCK),
-            output_root: None,
-            cow_sdk_root: args.cow_sdk_root,
-            contracts_root: args.contracts_root,
-            services_root: args.services_root,
-        }),
         Commands::ValidateEnumPolicy(args) => validate_enum_policy(&args.policy),
         Commands::ValidatePrincipleAdrMap(args) => {
             validate_principle_adr_map(&args.map, args.version, args.principle, args.required)
         }
-        Commands::CheckDeps(args) => check_dependency_edges(&args.negative_edges),
-        Commands::StrategyDocLint(args) => stale_phrase_lint::run(&args.root),
         Commands::UrlProvenanceCheck(args) => url_provenance::run(&args.source_lock),
-        Commands::AuditRefresh(args) => match args.command {
-            AuditRefreshCommand::Check { map } => audit_refresh::run(&map),
-        },
-        Commands::ValidateFixtureCatalog(args) => {
-            let cow_shed_count = cow_shed_fixtures::validate_catalog_files_exist(&args.root)?;
-            let composable_count = composable_fixtures::validate_catalog_files_exist(&args.root)?;
-            println!(
-                "validated {cow_shed_count} COW Shed fixtures and {composable_count} composable fixtures"
-            );
-            Ok(())
-        }
-        Commands::AuditSelfPinning(args) => audit_self_pinning::run(&args),
         Commands::VerifySolProvenance(args) => verify_sol_provenance::run(&args),
     }
 }
@@ -692,25 +611,6 @@ fn validate_principle_adr_map(
         }
     }
     println!("validated principle ADR map");
-    Ok(())
-}
-
-fn check_dependency_edges(negative_edges: &[String]) -> Result<()> {
-    for edge in negative_edges {
-        let Some((from, to)) = edge.split_once(':') else {
-            bail!("negative edge `{edge}` must use from:to format");
-        };
-        let manifest = Path::new("crates").join(from).join("Cargo.toml");
-        if !manifest.exists() {
-            continue;
-        }
-        let raw = fs::read_to_string(&manifest)
-            .with_context(|| format!("failed to read {}", manifest.display()))?;
-        if raw.contains(&format!("cow-sdk-{to}")) || raw.contains(&format!("../{to}")) {
-            bail!("forbidden dependency edge {from}:{to} is present");
-        }
-    }
-    println!("validated dependency edge policy");
     Ok(())
 }
 
@@ -1161,43 +1061,6 @@ fn normalize_repository_remote(remote: &str) -> String {
         .strip_suffix(".git")
         .unwrap_or(&normalized)
         .to_string()
-}
-
-pub(crate) fn collect_relative_files(root: &Path) -> Result<BTreeMap<String, PathBuf>> {
-    let canonical_root = fs::canonicalize(root)
-        .with_context(|| format!("failed to canonicalize {}", root.display()))?;
-    let mut files = BTreeMap::new();
-    collect_relative_files_inner(&canonical_root, &canonical_root, &mut files)?;
-    Ok(files)
-}
-
-fn collect_relative_files_inner(
-    root: &Path,
-    current: &Path,
-    files: &mut BTreeMap<String, PathBuf>,
-) -> Result<()> {
-    for entry in fs::read_dir(current)
-        .with_context(|| format!("failed to read directory {}", current.display()))?
-    {
-        let entry =
-            entry.with_context(|| format!("failed to inspect entry in {}", current.display()))?;
-        let path = entry.path();
-        let metadata = entry
-            .metadata()
-            .with_context(|| format!("failed to read metadata for {}", path.display()))?;
-        if metadata.is_dir() {
-            collect_relative_files_inner(root, &path, files)?;
-        } else if metadata.is_file() {
-            let relative = path
-                .strip_prefix(root)
-                .with_context(|| format!("failed to relativize {}", path.display()))?
-                .to_string_lossy()
-                .replace('\\', "/");
-            files.insert(relative, path);
-        }
-    }
-
-    Ok(())
 }
 
 fn build_repository_entry(template: RepoTemplate, root: &Path) -> Result<RepositoryEntry> {

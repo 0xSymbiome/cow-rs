@@ -10,9 +10,8 @@ Refresh trigger: Changes to the `validate` signature, the
 constants, the `OrderBoundsValidator::services_default_for_chain`
 constructor, the eth-flow `is_eth_flow` skip rule, upstream services
 `crates/shared/src/order_validation.rs` same-token semantics, the
-WETH-paired-with-native-buy guard, the offline `TradeParameters::validate`
-/ `LimitTradeParameters::validate` builder-level subset, or the
-`scripts/check-services-drift.sh` Semantic Surfaces section.
+WETH-paired-with-native-buy guard, or the offline `TradeParameters::validate`
+/ `LimitTradeParameters::validate` builder-level subset.
 Related docs:
 - [ADR 0015](../adr/0015-client-side-order-bounds-validator.md)
 - [Architecture](../architecture.md)
@@ -243,5 +242,4 @@ cargo clippy -p cow-sdk-trading --all-targets --all-features -- -D warnings
 cargo +nightly fuzz build --fuzz-dir fuzz fuzz_order_bounds_validator
 cargo +nightly fuzz run fuzz_order_bounds_validator --fuzz-dir fuzz -- -runs=1024
 cargo run --manifest-path scripts/policy-maintainer/Cargo.toml -- check-property-citations
-bash scripts/check-services-drift.sh --upstream /tmp/services --cow-rs-root .
 ```

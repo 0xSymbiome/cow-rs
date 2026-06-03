@@ -35,9 +35,8 @@ contract proof.
 
 - Manual QA against real EIP-1193 wallet extensions covering the supported
   browser-extension wallet families confirms honest behavior with real user
-  prompts, chain availability, and vendor-specific UX. The manual runbook under
-  `scripts/validation-smoke/browser-wallet-live/` records the acceptance window
-  and operator steps.
+  prompts, chain availability, and vendor-specific UX. This acceptance window
+  and its operator steps are exercised manually and are environment-sensitive.
 - The canonical browser-wallet example (`examples/wasm/cow-trader-dioxus/`) is
   the runnable demonstration of the end-to-end flow against the live orderbook.
   It is a consumer demonstration, not a deterministic proof surface.

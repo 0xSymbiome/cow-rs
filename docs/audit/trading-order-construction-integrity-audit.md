@@ -3,7 +3,7 @@
 Status: Current
 Last reviewed: 2026-05-31
 Owning surface: `cow-sdk-trading` order assembly, injected-orderbook builder terminal parity, and recoverable-signature posting boundary
-Refresh trigger: Changes to quote-derived or direct order construction, `Trading` builder terminals with injected orderbooks, recoverable-signature posting validation, upstream services `crates/shared/src/order_validation.rs` same-token semantics, the `TradeParameters::validate` / `LimitTradeParameters::validate` same-token predicate, the `LimitTradeParametersFromQuote` newtype invariant or its `EthFlow` entry binding, or the `scripts/check-services-drift.sh` Semantic Surfaces section
+Refresh trigger: Changes to quote-derived or direct order construction, `Trading` builder terminals with injected orderbooks, recoverable-signature posting validation, upstream services `crates/shared/src/order_validation.rs` same-token semantics, the `TradeParameters::validate` / `LimitTradeParameters::validate` same-token predicate, the `LimitTradeParametersFromQuote` newtype invariant or its `EthFlow` entry binding
 Related docs:
 - [ADR 0002](../adr/0002-dedicated-trading-orchestration-crate.md)
 - [Architecture](../architecture.md)

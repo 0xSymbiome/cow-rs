@@ -103,8 +103,8 @@ The parity-maintainer binary owns a catalog of every shipped composable
 parity fixture file under
 `scripts/parity-maintainer/src/composable_fixtures.rs`. Each catalog row
 pairs a shipped fixture path with one or more upstream provenance entries.
-The `validate-fixture-catalog` subcommand of the parity-maintainer binary
-walks the catalog and fails if any shipped fixture file is missing on disk.
+`cargo parity-validate` walks the catalog and fails if any shipped fixture
+file is missing on disk.
 
 ## Evidence
 
@@ -130,6 +130,5 @@ Validation surface:
 
 ```text
 cargo test -p cow-sdk-contracts --all-features
-cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate-fixture-catalog --root .
 cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml
 ```

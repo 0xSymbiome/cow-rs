@@ -2,7 +2,7 @@ name: fuzz
 
 # Scheduled weekly cadence on Fridays at 05:00 UTC. Spreads load across the
 # week alongside the Monday benchmarks slot, the Tuesday crate-checks slot,
-# the Wednesday codeql slot, and the Thursday test-depth slot. The lane is
+# and the Wednesday codeql slot. The lane is
 # report-only: a crash surfaces through workflow status and the uploaded
 # corpus and artifacts directories, but the lane does not gate PRs or
 # releases. If a real defect is found, the fix lands through its own change

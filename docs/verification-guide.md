@@ -88,8 +88,8 @@ here until the explicit app-data metadata translation boundary.
 Browser wallet support is explicit, bounded, and feature-gated. Deterministic
 proof comes from crate tests, direct browser-bridge coverage, mock-wallet
 flows, and fixture-backed browser automation. The deterministic Playwright lane
-excludes installed-wallet live-extension specs; those checks remain manual
-canary evidence under `scripts/validation-smoke/browser-wallet-live/`. When a
+excludes installed-wallet live-extension specs; those checks remain a manual,
+environment-sensitive canary. When a
 browser workflow already owns a chain authority,
 `BrowserWallet::signer_for_chain` keeps address,
 signature, gas, and transaction operations bound to that chain. Typed
@@ -190,10 +190,7 @@ Use deeper evidence only when the change warrants it:
 
 The canonical command set lives in [Release Checklist](release-checklist.md).
 Every shipped `README.md` is wired into crate rustdoc with a `cfg_attr(doctest, doc = include_str!("../README.md"))` shim, so `cargo test --workspace --doc` covers every fenced example.
-The `services-drift.yml` workflow compares the upstream services repository's error tags and request or response shapes against the typed orderbook surface each week and records drift as a tracked report.
-`retry-soak.yml` runs the deterministic long-run retry and timeout soak nightly,
-while `test-depth.yml` publishes scheduled mutation reports without turning
-mutation score into a branch-protection threshold.
+`retry-soak.yml` runs the deterministic long-run retry and timeout soak nightly.
 
 ## Review Rules
 

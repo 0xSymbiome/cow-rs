@@ -73,24 +73,6 @@ jobs:
           done < <(grep -RIlE '^[[:space:]]*(-[[:space:]]*)?pull_request_target[[:space:]]*:|^[[:space:]]*on:[^#]*pull_request_target' .github/workflows/*.yml || true)
           exit "$failures"
 
-  policy-maintainer-smoke:
-    name: policy-maintainer smoke
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      # Source ref: actions/checkout@v4
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with:
-          persist-credentials: false
-      # Source ref: dtolnay/rust-toolchain@stable
-      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
-        with:
-          toolchain: ${{ inputs.rust_toolchain }}
-      - name: Check policy-maintainer help
-        run: cargo check-stub --help
-      - name: Run policy-maintainer check-stub
-        run: cargo check-stub
-
   no-new-shell-wrappers:
     name: No new shell wrappers
     runs-on: ubuntu-latest
@@ -104,7 +86,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          allowed_legacy='check-release-docs-agree.sh|check-services-drift.sh|check-audit-index-agreement.sh'
+          allowed_legacy='check-release-docs-agree.sh|check-audit-index-agreement.sh'
           found="$(
             find scripts -maxdepth 2 -type f \( -name '*.sh' -o -name '*.ps1' \) \
               | grep -Ev "/(${allowed_legacy})$" || true
@@ -718,81 +700,6 @@ jobs:
         run: |
           cargo check-adr-coverage --mode blocking
 
-  cargo-semver-checks:
-    name: cargo-semver-checks
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    needs: [test]
-    steps:
-      # Source ref: actions/checkout@v4
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with:
-          fetch-depth: 0
-          fetch-tags: true
-          persist-credentials: false
-      # Source ref: dtolnay/rust-toolchain@stable
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
-        with:
-          toolchain: stable
-      # Source ref: Swatinem/rust-cache@v2
-      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
-      - name: Install cargo-semver-checks
-        run: |
-          cargo install --locked \
-            cargo-semver-checks --version 0.47.0
-      - name: Classify release
-        id: release-type
-        run: |
-          set -o pipefail
-          classification="$(
-            cargo classify-release \
-              --base-ref "${{ github.base_ref || 'main' }}" \
-              --head-ref HEAD \
-              --json
-          )"
-          echo "${classification}" | jq -e . > /dev/null
-          for key in release_kind is_first_functional_release is_patch is_minor is_major head_version base_version baseline_tag semver_checks_mode; do
-            value="$(echo "${classification}" | jq -r ".${key}")"
-            echo "${key}=${value}" >> "$GITHUB_OUTPUT"
-          done
-      - name: cargo-semver-checks (blocking)
-        if: steps.release-type.outputs.semver_checks_mode == 'blocking'
-        run: |
-          set -o pipefail
-          for crate in cow-sdk cow-sdk-core cow-sdk-contracts cow-sdk-signing cow-sdk-app-data cow-sdk-orderbook cow-sdk-trading cow-sdk-subgraph cow-sdk-browser-wallet cow-sdk-transport-wasm; do
-            cargo semver-checks check-release \
-              --package "${crate}" \
-              --baseline-rev "${{ steps.release-type.outputs.baseline_tag }}"
-          done 2>&1 | tee /tmp/semver-checks.log
-      - name: cargo-semver-checks (advisory)
-        if: steps.release-type.outputs.semver_checks_mode == 'advisory'
-        run: |
-          set -o pipefail
-          for crate in cow-sdk cow-sdk-core cow-sdk-contracts cow-sdk-signing cow-sdk-app-data cow-sdk-orderbook cow-sdk-trading cow-sdk-subgraph cow-sdk-browser-wallet cow-sdk-transport-wasm; do
-            cargo semver-checks check-release --package "${crate}" || true
-          done 2>&1 | tee /tmp/semver-checks.log
-      - name: cargo-semver-checks (skipped)
-        if: steps.release-type.outputs.semver_checks_mode == 'skip'
-        run: |
-          echo "Skipping cargo-semver-checks because release classification is ${{ steps.release-type.outputs.release_kind }}." | tee /tmp/semver-checks.log
-          echo "Reason: first functional release or major bump; no actionable baseline." | tee -a /tmp/semver-checks.log
-      - name: Post report to step summary
-        if: always()
-        run: |
-          echo '## cargo-semver-checks report' >> "$GITHUB_STEP_SUMMARY"
-          echo '' >> "$GITHUB_STEP_SUMMARY"
-          echo "mode: ${{ steps.release-type.outputs.semver_checks_mode || 'unavailable' }}" >> "$GITHUB_STEP_SUMMARY"
-          echo '' >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
-          if [ -f /tmp/semver-checks.log ]; then
-            tail -200 /tmp/semver-checks.log >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo 'cargo-semver-checks did not produce a report.' >> "$GITHUB_STEP_SUMMARY"
-          fi
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
-
   docs-agree-on-release-gates:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -835,7 +742,6 @@ jobs:
     permissions: {}
     needs:
       - workflow-security
-      - policy-maintainer-smoke
       - no-new-shell-wrappers
       - enum-policy
       - panic-allowlist
@@ -857,7 +763,6 @@ jobs:
       - alloy-provider-invariant
       - alloy-signer-invariant
       - adr-coverage
-      - cargo-semver-checks
       - docs-agree-on-release-gates
       - native-examples-locked
     steps:

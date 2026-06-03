@@ -2,9 +2,9 @@ use clap::{Parser, Subcommand};
 use policy_maintainer::{
     check_adr_coverage, check_alloy_provider_invariant, check_alloy_signer_invariant,
     check_chain_patch_eligibility, check_deny_unknown_fields, check_enum_policy, check_msrv_notice,
-    check_panic_allowlist, check_property_citations, check_source_lock_roots, check_stub,
-    check_wasm_invariant, check_wasm_runner_freshness, check_workspace_versions, classify_release,
-    diagnostics::OutputMode, generate_validation_evidence, run_deterministic_examples,
+    check_panic_allowlist, check_property_citations, check_source_lock_roots, check_wasm_invariant,
+    check_wasm_runner_freshness, check_workspace_versions, diagnostics::OutputMode,
+    run_deterministic_examples,
 };
 
 #[derive(Debug, Parser)]
@@ -24,9 +24,6 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Command {
-    /// Classify a release transition and emit the semver-checks dispatch contract.
-    #[command(name = "classify-release")]
-    ClassifyRelease(classify_release::Args),
     /// Verify every public enum is classified in the enum policy manifest.
     #[command(name = "check-enum-policy")]
     CheckEnumPolicy(check_enum_policy::Args),
@@ -66,15 +63,9 @@ enum Command {
     /// Verify wasm package boundary invariants.
     #[command(name = "check-wasm-invariant")]
     CheckWasmInvariant(check_wasm_invariant::Args),
-    /// Generate or check the release validation evidence artefact.
-    #[command(name = "generate-validation-evidence")]
-    GenerateValidationEvidence(generate_validation_evidence::Args),
     /// Execute every deterministic non-live example binary.
     #[command(name = "run-deterministic-examples")]
     RunDeterministicExamples(run_deterministic_examples::Args),
-    /// Run the policy-maintainer skeleton smoke check.
-    #[command(name = "check-stub")]
-    CheckStub(check_stub::Args),
 }
 
 fn main() -> anyhow::Result<()> {
@@ -82,7 +73,6 @@ fn main() -> anyhow::Result<()> {
     let output_mode = OutputMode::from_json(cli.json);
 
     match cli.command {
-        Command::ClassifyRelease(args) => classify_release::run(args, output_mode),
         Command::CheckEnumPolicy(args) => check_enum_policy::run(args, output_mode),
         Command::CheckPanicAllowlist(args) => check_panic_allowlist::run(args, output_mode),
         Command::CheckDenyUnknownFields(args) => check_deny_unknown_fields::run(args, output_mode),
@@ -104,12 +94,8 @@ fn main() -> anyhow::Result<()> {
         Command::CheckPropertyCitations(args) => check_property_citations::run(args, output_mode),
         Command::CheckSourceLockRoots(args) => check_source_lock_roots::run(args, output_mode),
         Command::CheckWasmInvariant(args) => check_wasm_invariant::run(args, output_mode),
-        Command::GenerateValidationEvidence(args) => {
-            generate_validation_evidence::run(args, output_mode)
-        }
         Command::RunDeterministicExamples(args) => {
             run_deterministic_examples::run(args, output_mode)
         }
-        Command::CheckStub(args) => check_stub::run(args, output_mode),
     }
 }

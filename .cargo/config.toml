@@ -1,6 +1,5 @@
 [alias]
 # Policy-maintainer subcommands.
-check-stub = "run --quiet --manifest-path scripts/policy-maintainer/Cargo.toml -- check-stub"
 check-enum-policy = "run --quiet --manifest-path scripts/policy-maintainer/Cargo.toml -- check-enum-policy"
 check-panic-allowlist = "run --quiet --manifest-path scripts/policy-maintainer/Cargo.toml -- check-panic-allowlist"
 check-deny-unknown-fields = "run --quiet --manifest-path scripts/policy-maintainer/Cargo.toml -- check-deny-unknown-fields"
@@ -14,7 +13,6 @@ check-wasm-runner-freshness = "run --quiet --manifest-path scripts/policy-mainta
 check-property-citations = "run --quiet --manifest-path scripts/policy-maintainer/Cargo.toml -- check-property-citations"
 check-source-lock-roots = "run --quiet --manifest-path scripts/policy-maintainer/Cargo.toml -- check-source-lock-roots"
 check-wasm-invariant = "run --quiet --manifest-path scripts/policy-maintainer/Cargo.toml -- check-wasm-invariant"
-classify-release = "run --quiet --manifest-path scripts/policy-maintainer/Cargo.toml -- classify-release"
 run-deterministic-examples = "run --quiet --manifest-path scripts/policy-maintainer/Cargo.toml -- run-deterministic-examples"
 
 # Parity-maintainer subcommands.
@@ -22,20 +20,12 @@ parity-snapshot = "run --quiet --manifest-path scripts/parity-maintainer/Cargo.t
 parity-validate = "run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- validate"
 parity-vendor-openapi = "run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- vendor-openapi"
 parity-openapi-coverage = "run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- openapi-coverage"
-parity-diff-upstreams = "run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- diff-upstreams"
 parity-check-freshness = "run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- check-freshness"
 parity-provision-upstreams = "run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- provision-upstreams"
-validate-producer-paths = "run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- validate-producer-paths"
 validate-enum-policy = "run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- validate-enum-policy"
 validate-principle-adr-map = "run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- validate-principle-adr-map"
-check-deps = "run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- check-deps"
-strategy-doc-lint = "run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- strategy-doc-lint"
 url-provenance-check = "run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- url-provenance-check"
-audit-refresh = "run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- audit-refresh"
-parity-audit-self-pinning = "run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- audit-self-pinning"
 parity-verify-sol-provenance = "run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- verify-sol-provenance"
 
 # Validation-smoke subcommands.
 registry-confirm = "run --quiet --manifest-path scripts/validation-smoke/Cargo.toml -- registry-confirm"
-wasm-runner-setup = "run --quiet --manifest-path scripts/validation-smoke/Cargo.toml -- wasm-runner-setup"
-wasm-runner-refresh = "run --quiet --manifest-path scripts/validation-smoke/Cargo.toml -- wasm-runner-refresh"

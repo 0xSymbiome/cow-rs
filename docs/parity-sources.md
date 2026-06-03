@@ -178,17 +178,6 @@ Refresh the source lock from explicit upstream roots:
 cargo parity-snapshot --output parity/source-lock.yaml --cow-sdk-root <cow-sdk-checkout> --contracts-root <contracts-checkout> --services-root <services-checkout>
 ```
 
-Generate the report-only services drift summary for a pinned services checkout:
-
-```text
-scripts/check-services-drift.sh --upstream <services-checkout> --cow-rs-root . --summary-output <summary.md>
-```
-
-The Markdown report schema has three stable sections: `errorType Drift`, `DTO
-Field Drift`, and `Summary Count`. CI also emits a `drift_detected` output so
-scheduled drift runs can open or update tracking issues without making routine
-builds depend on the upstream services repository.
-
 ## Maintenance Rules
 
 - do not point parity evidence at floating upstream `main`

@@ -80,7 +80,6 @@ Use it with:
 | `docs-quality.yml` | Nightly docs.rs-style rustdoc lane with `DOCS_RS=1`, `--cfg docsrs`, nightly rustdoc presentation flags, and rendered README heading smoke coverage |
 | `fuzz.yml` | Weekly report-only fuzz canary across every active `cargo +nightly fuzz list --fuzz-dir fuzz` target with crash corpus artifact upload |
 | `retry-soak.yml` | Nightly deterministic orderbook retry and timeout soak through an explicitly ignored long-run test |
-| `test-depth.yml` mutation job | Weekly and manually-dispatched structured mutation report lane; report-only and not a branch-protection threshold |
 | `RUSTFLAGS="-Dmissing-docs -Dmissing-debug-implementations -Dunreachable-pub -Dunnameable-types" cargo check --workspace --all-features` | Blocking public API rustc lint gate for the published crate family |
 | `codeql.yml` | Dedicated semantic security-analysis gate for Rust and GitHub Actions |
 | `cargo parity-validate --source-lock parity/source-lock.yaml` | Repo-local parity fixture and source-lock gate for committed publication evidence |

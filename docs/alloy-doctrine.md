@@ -288,7 +288,7 @@ In addition to the never-swap CI gates above, the following gates exist or are s
 - **Workspace resolution invariant test** — `Cargo.lock` resolves each alloy crate to exactly one version per ADR 0026.
 - **Source-lock provenance gate** — the upstream commit hash is reproducible from the pinned reference; release validation rejects mutable upstream branches (ADR 0026, ADR 0032).
 - **Panic-allowlist gate** — `.github/config/panic-allowlist.yaml` entry count strictly decreases by exactly 1 after the chain hex literal migration lands. The exact pre-migration baseline is recorded in the corresponding migration audit; the doctrine binds the *delta*, not the absolute count.
-- **`cargo-semver-checks` lane** — runs against unpublished baseline as drift detection against `main` until the first published release (ADR 0052). Pre-1.0 semver-checks is *drift detection, not a release gate*; breaking changes remain the goal until 1.0 is on the runway.
+- **semver checking** — no `cargo-semver-checks` CI lane runs pre-1.0: against an unpublished baseline it would be *drift detection, not a release gate*, so it was removed and breaking changes remain the goal until 1.0 is on the runway (ADR 0052). Reintroduce it as a gate at the first published release.
 
 The lint-and-CI layer is the mechanical enforcement of the doctrine; the doctrine is the human-readable form that explains *why* each gate exists.
 

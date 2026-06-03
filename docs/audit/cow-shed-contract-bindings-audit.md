@@ -230,6 +230,5 @@ Validation surface:
 
 ```text
 cargo test -p cow-sdk-contracts --all-features
-cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate-fixture-catalog --root .
 cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml
 ```

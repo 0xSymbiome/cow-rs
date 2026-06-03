@@ -114,11 +114,10 @@ Expected workflow coverage:
 
 ## 4. Depth Reporting
 
-`test-depth.yml` is the maintained depth-reporting lane. It publishes coverage
-and mutation reports for follow-up work without defining threshold-based branch
-protection.
-The mutation report runs on the weekly schedule and can also be requested
-manually with a narrower scope.
+Coverage and mutation reports are produced on demand for follow-up work and
+do not define threshold-based branch protection. Run them locally with the
+commands below; mutation runs can be scoped narrowly to the surfaces under
+review.
 
 Coverage:
 
@@ -353,30 +352,18 @@ Rules:
 - same-checkout directory copies are not valid provenance evidence
 - `release-readiness.yml` owns the routine automated provenance-sensitive lane
 
-The `services-drift.yml` workflow runs weekly against the pinned upstream
-services, contracts, and cow-sdk repositories. It records OpenAPI drift,
-newly-added services error tags, request or response shape changes, generated
-settlement chain-table drift, and supported-chain README drift as a
-`parity-drift` tracking report before those changes reach the release window.
-It never mutates `parity/source-lock.yaml`; source-lock movement remains a
-reviewed pull request.
-
 The `alloy-release-candidate.yml` workflow owns the alloy forward-compat
 canary on scheduled and manually-dispatched runs. Set the `ALLOY_CANARY_REF`
 repository variable to test a specific upstream ref; otherwise the workflow
 uses its pinned SHA fallback. The workflow has no pull-request trigger, so
 candidate drift is reported without changing routine PR gates.
 
-Continuous integration runs `cargo-semver-checks` on every pull request that
-touches a published crate's `src/` tree. The lane is informational through
-the pre-1.0 cycle; the workflow summary reports each crate's compatibility
-status against the most-recently-published version on the public registry,
-but a non-zero report does not block the merge. At the 1.0 release boundary,
-remove `continue-on-error: true` from the `cargo-semver-checks` step in
-`.github/workflows/_quality-gate.yml` to promote the lane from informational
-to gating; from that point a breaking change against the prior published
-version requires a deliberate major version bump in the workspace
-`Cargo.toml`.
+There is no `cargo-semver-checks` CI lane through the pre-1.0 cycle: a pre-1.0
+semver report against an unpublished baseline is non-blocking, so the lane was
+removed and breaking changes remain the goal until 1.0 is on the runway. When
+1.0 is on the runway, reintroduce semver checking as a gate so that a breaking
+change against the prior published version requires a deliberate major version
+bump in the workspace `Cargo.toml`.
 
 ## 8. WASM And Browser Surfaces
 
@@ -390,19 +377,12 @@ cargo build --target wasm32-unknown-unknown -p cow-sdk-transport-wasm
 cargo build --target wasm32-unknown-unknown -p cow-sdk-wasm
 ```
 
-Set up the pinned browser runner before every `wasm-pack` browser lane:
+Point the wasm-pack browser lanes at a Chrome-for-Testing chromedriver that
+matches the version pinned in `.github/config/wasm-test-versions.yaml`. The
+browser runner is provisioned directly by the wasm-pack browser lanes:
 
 ```text
-mkdir -p target/wasm-runner
-cargo wasm-runner-setup --webdriver-json target/wasm-runner/webdriver.json
-export WASM_BINDGEN_TEST_WEBDRIVER_JSON="$(pwd)/target/wasm-runner/webdriver.json"
-export WASM_BINDGEN_TEST_CHROMEDRIVER="$(python - <<'PY'
-import json
-import os
-with open(os.environ["WASM_BINDGEN_TEST_WEBDRIVER_JSON"], encoding="utf-8") as handle:
-    print(json.load(handle)["cow:wasmRunner"]["chromedriver"])
-PY
-)"
+export WASM_BINDGEN_TEST_CHROMEDRIVER="/path/to/chromedriver"
 ```
 
 Deterministic browser-wallet checks:
@@ -445,20 +425,13 @@ exports map, declaration snapshots, Cloudflare `./cloudflare` and
 `./cloudflare/wasm` subpaths, and generated `dist` metadata cleanup are part of
 the release check.
 
-Use `scripts/validation-smoke/browser-wallet-live/README.md` for the manual
-extension-backed canary when a release needs installed-wallet confirmation.
-
 ## 9. Optional Validation Smoke
 
-Use the smoke kit when a change needs live service confirmation or live
-extension-backed wallet confirmation in addition to the deterministic proof
-surfaces above.
+Use the smoke kit when a release needs a live deployment-registry presence
+confirmation in addition to the deterministic proof surfaces above.
 
 ```text
-cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- orderbook-live
-cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- subgraph-live
-cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- browser-wallet-live --url http://127.0.0.1:8080
-cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- all
+cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- registry-confirm --mode release
 ```
 
 ## 10. Manual Confirmation Before Publish
