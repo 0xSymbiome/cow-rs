@@ -3,15 +3,6 @@ allowed:
   - file: crates/app-data/src/schema.rs
     item: generate_app_data_doc
     reason: Typed metadata serialization is guaranteed by the public constructors feeding this path.
-  - file: crates/app-data/src/schema.rs
-    item: root_schemas
-    reason: Embedded schema resource URIs are constructed from the static SCHEMA_BASE_URI prefix.
-  - file: crates/app-data/src/schema.rs
-    item: collect_files
-    reason: include_dir! embedded directories always have file names.
-  - file: crates/app-data/src/schema.rs
-    item: collect_file
-    reason: include_dir! embedded files have names and committed schema JSON is validated at build and test time.
   - file: crates/app-data/src/types/partner_fee.rs
     item: PartnerFee::to_value
     reason: Partner fee schema enums serialize through derived serde for SDK-owned values.

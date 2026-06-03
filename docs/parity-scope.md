@@ -252,7 +252,7 @@ entry for anyone who later considers reintroducing the surface.
   CIDv0 (dag-pb + sha2-256) paths carry no pre-release user value.
   Consumers that need to resolve historical `Qm`-prefixed values use a
   general-purpose `cid` crate directly. Negative test:
-  `crates/app-data/tests/v0_cid_is_out_of_scope.rs`.
+  `crates/app-data/tests/cid_contract.rs::unsupported_and_malformed_cids_are_rejected`.
 - **Order-level `fee_amount` as a public builder setter or DTO field**
   — the cow-protocol services backend rejects orders that carry a
   non-zero order-level fee, so the submission path always wires

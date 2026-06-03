@@ -1,7 +1,7 @@
 # CID Dependency Audit
 
 Status: Current
-Last reviewed: 2026-05-26
+Last reviewed: 2026-06-03
 Owning surface: `cow-sdk-app-data` and `cow-sdk-core` CID encoding, canonical-JSON serialisation, and published dependency boundary
 Refresh trigger: Changes to CID dependencies, the canonical-JSON dependency, the supported CID encoding, or the published dependency posture for the app-data and core stacks
 Related docs:
@@ -126,7 +126,6 @@ Primary regression coverage:
 - `crates/app-data/tests/cid_contract.rs::invalid_app_data_hex_inputs_fail_closed`
 - `crates/app-data/tests/cid_contract.rs::unsupported_and_malformed_cids_are_rejected`
 - `crates/app-data/tests/cid_contract.rs::cid_rejects_non_keccak256_multihash_codecs`
-- `crates/app-data/tests/v0_cid_is_out_of_scope.rs::v0_cid_is_rejected_by_cid_to_app_data_hex`
 - `crates/app-data/tests/canonical_json_contract.rs::canonical_json_utf16_corpus_serialises_to_expected_canonical_bytes`
 - `crates/core/tests/cid_parity_contract.rs::to_cid_matches_upstream_byte_vector_one`
 - `crates/core/tests/cid_parity_contract.rs::to_cid_matches_upstream_byte_vector_two`
