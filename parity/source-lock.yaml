@@ -730,7 +730,6 @@ validation:
   - cargo run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- validate-principle-adr-map --version 2
   maintainer_refresh_contract:
   - cargo parity-snapshot --output parity/source-lock.yaml --cow-sdk-root <path> --contracts-root <path> --services-root <path>
-  - cargo parity-vendor-app-data-schemas --source-lock parity/source-lock.yaml --cow-sdk-root <path>
   - cargo strategy-doc-lint
   - cargo url-provenance-check
   - cargo audit-refresh check

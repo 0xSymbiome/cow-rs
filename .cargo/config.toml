@@ -21,7 +21,6 @@ run-deterministic-examples = "run --quiet --manifest-path scripts/policy-maintai
 parity-snapshot = "run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- snapshot"
 parity-validate = "run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- validate"
 parity-vendor-openapi = "run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- vendor-openapi"
-parity-vendor-app-data-schemas = "run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- vendor-app-data-schemas"
 parity-openapi-coverage = "run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- openapi-coverage"
 parity-diff-upstreams = "run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- diff-upstreams"
 parity-check-freshness = "run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- check-freshness"

@@ -172,13 +172,6 @@ The command reads `parity/source-lock.yaml`, writes each repository to
 `<dir>/<id>` (e.g., `<dir>/services`, `<dir>/contracts`,
 `<dir>/cow-sdk`), and reports the resolved paths.
 
-Refresh the vendored app-data schema bundle from an explicit upstream
-`cow-sdk` checkout:
-
-```text
-cargo parity-vendor-app-data-schemas --source-lock parity/source-lock.yaml --cow-sdk-root <cow-sdk-checkout>
-```
-
 Refresh the source lock from explicit upstream roots:
 
 ```text

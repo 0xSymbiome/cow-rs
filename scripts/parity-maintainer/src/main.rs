@@ -24,8 +24,6 @@ mod verify_sol_provenance;
 
 const GENERATED_AT_UTC: &str = "2026-04-29T00:00:00Z";
 const DEFAULT_SOURCE_LOCK: &str = "parity/source-lock.yaml";
-const APP_DATA_SCHEMA_SOURCE_DIR: &str = "packages/app-data/src/schemas";
-const APP_DATA_SCHEMA_VENDOR_DIR: &str = "crates/app-data/schemas";
 
 #[derive(Clone, Copy)]
 struct RepoTemplate {
@@ -212,9 +210,7 @@ const COMPOSABLE_COW_PATHS: &[&str] = &[
     "src/interfaces/ISwapGuard.sol",
     "src/interfaces/IValueFactory.sol",
 ];
-const COMPOSABLE_COW_LIB_SAFE_PATHS: &[&str] = &[
-    "contracts/handler/ExtensibleFallbackHandler.sol",
-];
+const COMPOSABLE_COW_LIB_SAFE_PATHS: &[&str] = &["contracts/handler/ExtensibleFallbackHandler.sol"];
 const COW_SHED_PATHS: &[&str] = &[
     "networks.json",
     "src/COWShed.sol",
@@ -433,8 +429,6 @@ enum Commands {
     Validate(ValidateArgs),
     /// Provision source-lock-pinned upstream checkouts.
     ProvisionUpstreams(ProvisionUpstreamsArgs),
-    /// Vendor app-data schemas from a pinned cow-sdk checkout.
-    VendorAppDataSchemas(VendorAppDataSchemasArgs),
     /// Vendor the source-lock-pinned services orderbook OpenAPI document.
     VendorOpenapi(vendor_openapi::VendorOpenApiArgs),
     /// Generate or validate OpenAPI DTO coverage inventories.
@@ -514,14 +508,6 @@ struct ProvisionUpstreamsArgs {
     source: SourceLockArg,
     #[arg(long)]
     output_root: PathBuf,
-}
-
-#[derive(Debug, Args)]
-struct VendorAppDataSchemasArgs {
-    #[command(flatten)]
-    source: SourceLockArg,
-    #[arg(long)]
-    cow_sdk_root: PathBuf,
 }
 
 #[derive(Debug, Args)]
@@ -605,14 +591,6 @@ fn main() -> Result<()> {
             output: PathBuf::from(DEFAULT_SOURCE_LOCK),
             output_root: Some(args.output_root),
             cow_sdk_root: None,
-            contracts_root: None,
-            services_root: None,
-        }),
-        Commands::VendorAppDataSchemas(args) => vendor_app_data_schemas(&CliOptions {
-            source_lock: args.source.source_lock,
-            output: PathBuf::from(DEFAULT_SOURCE_LOCK),
-            output_root: None,
-            cow_sdk_root: Some(args.cow_sdk_root),
             contracts_root: None,
             services_root: None,
         }),
@@ -791,7 +769,6 @@ fn snapshot(options: &CliOptions) -> Result<()> {
             ],
             maintainer_refresh_contract: vec![
                 "cargo parity-snapshot --output parity/source-lock.yaml --cow-sdk-root <path> --contracts-root <path> --services-root <path>".to_string(),
-                "cargo parity-vendor-app-data-schemas --source-lock parity/source-lock.yaml --cow-sdk-root <path>".to_string(),
             ],
         },
     };
@@ -836,48 +813,6 @@ fn provision_upstreams(options: &CliOptions) -> Result<()> {
         lock.repositories.len(),
         output_root.display()
     );
-    Ok(())
-}
-
-fn vendor_app_data_schemas(options: &CliOptions) -> Result<()> {
-    let lock = load_source_lock(&options.source_lock)?;
-    let cow_sdk_repo = repository_entry(&lock, "cow-sdk")?;
-    let cow_sdk_root = options
-        .cow_sdk_root
-        .as_deref()
-        .context("vendor-app-data-schemas requires --cow-sdk-root")?;
-
-    validate_repository_root(cow_sdk_repo, cow_sdk_root)?;
-
-    let source = cow_sdk_root.join(APP_DATA_SCHEMA_SOURCE_DIR);
-    let dest = PathBuf::from(APP_DATA_SCHEMA_VENDOR_DIR);
-    let source_count =
-        validate_schema_bundle_dir(&source, "upstream cow-sdk app-data schema bundle")?;
-
-    sync_directory_tree(&source, &dest)?;
-    let copied_count = ensure_matching_file_trees(
-        &source,
-        &dest,
-        "upstream cow-sdk app-data schema bundle",
-        "vendored cow-rs app-data schema bundle",
-    )?;
-
-    println!(
-        "vendored {} app-data schema files from {} at commit {} into {}",
-        copied_count,
-        source.display(),
-        cow_sdk_repo.commit,
-        dest.display()
-    );
-
-    if copied_count != source_count {
-        bail!(
-            "schema vendor count mismatch after sync: source={}, copied={}",
-            source_count,
-            copied_count
-        );
-    }
-
     Ok(())
 }
 
@@ -1032,26 +967,10 @@ fn validate(options: &CliOptions) -> Result<()> {
         }
     }
 
-    let vendored_schema_count = validate_schema_bundle_dir(
-        Path::new(APP_DATA_SCHEMA_VENDOR_DIR),
-        "vendored cow-rs app-data schema bundle",
-    )?;
-
-    if let Some(cow_sdk_root) = roots.get("cow-sdk") {
-        let source = cow_sdk_root.join(APP_DATA_SCHEMA_SOURCE_DIR);
-        ensure_matching_file_trees(
-            &source,
-            Path::new(APP_DATA_SCHEMA_VENDOR_DIR),
-            "upstream cow-sdk app-data schema bundle",
-            "vendored cow-rs app-data schema bundle",
-        )?;
-    }
-
     println!(
-        "validated {} repositories, {} fixture contracts, and {} vendored app-data schema files",
+        "validated {} repositories and {} fixture contracts",
         lock.repositories.len(),
-        lock.fixtures.len(),
-        vendored_schema_count
+        lock.fixtures.len()
     );
     Ok(())
 }
@@ -1242,141 +1161,6 @@ fn normalize_repository_remote(remote: &str) -> String {
         .strip_suffix(".git")
         .unwrap_or(&normalized)
         .to_string()
-}
-
-fn validate_schema_bundle_dir(dir: &Path, label: &str) -> Result<usize> {
-    if !dir.exists() {
-        bail!("{label} missing: {}", dir.display());
-    }
-    if !dir.is_dir() {
-        bail!("{label} is not a directory: {}", dir.display());
-    }
-
-    let files = collect_relative_files(dir)?;
-    if files.is_empty() {
-        bail!("{label} is empty: {}", dir.display());
-    }
-
-    for relative in files.keys() {
-        if !relative.ends_with(".json") {
-            bail!(
-                "{label} contains non-json file {}. crate app-data embeds every file in this tree as schema json",
-                relative
-            );
-        }
-    }
-
-    Ok(files.len())
-}
-
-fn sync_directory_tree(source: &Path, dest: &Path) -> Result<()> {
-    let source_files = collect_relative_files(source)?;
-    let staging = dest.with_extension("tmp");
-
-    if staging.exists() {
-        fs::remove_dir_all(&staging)
-            .with_context(|| format!("failed to clear staging dir {}", staging.display()))?;
-    }
-    fs::create_dir_all(&staging)
-        .with_context(|| format!("failed to create staging dir {}", staging.display()))?;
-
-    for (relative, source_path) in &source_files {
-        let target = staging.join(relative);
-        let parent = target
-            .parent()
-            .with_context(|| format!("missing parent for {}", target.display()))?;
-        fs::create_dir_all(parent)
-            .with_context(|| format!("failed to create {}", parent.display()))?;
-        fs::copy(source_path, &target).with_context(|| {
-            format!(
-                "failed to copy {} -> {}",
-                source_path.display(),
-                target.display()
-            )
-        })?;
-    }
-
-    if dest.exists() {
-        fs::remove_dir_all(dest).with_context(|| format!("failed to clear {}", dest.display()))?;
-    }
-
-    if let Some(parent) = dest.parent() {
-        fs::create_dir_all(parent)
-            .with_context(|| format!("failed to create {}", parent.display()))?;
-    }
-
-    fs::rename(&staging, dest).with_context(|| {
-        format!(
-            "failed to rename {} -> {}",
-            staging.display(),
-            dest.display()
-        )
-    })
-}
-
-fn ensure_matching_file_trees(
-    source: &Path,
-    dest: &Path,
-    source_label: &str,
-    dest_label: &str,
-) -> Result<usize> {
-    let source_count = validate_schema_bundle_dir(source, source_label)?;
-    let dest_files = collect_relative_files(dest)?;
-    let source_files = collect_relative_files(source)?;
-
-    let mut missing = Vec::new();
-    let mut extra = Vec::new();
-    let mut mismatched = Vec::new();
-
-    for (relative, source_path) in &source_files {
-        let Some(dest_path) = dest_files.get(relative) else {
-            missing.push(relative.clone());
-            continue;
-        };
-
-        let source_bytes = fs::read(source_path)
-            .with_context(|| format!("failed to read {}", source_path.display()))?;
-        let dest_bytes = fs::read(dest_path)
-            .with_context(|| format!("failed to read {}", dest_path.display()))?;
-        if source_bytes != dest_bytes {
-            mismatched.push(relative.clone());
-        }
-    }
-
-    for relative in dest_files.keys() {
-        if !source_files.contains_key(relative) {
-            extra.push(relative.clone());
-        }
-    }
-
-    if !(missing.is_empty() && extra.is_empty() && mismatched.is_empty()) {
-        let mut message = format!("{} does not match {}", dest_label, source_label);
-        if !missing.is_empty() {
-            message.push_str(&format!(
-                "\nmissing files in {}: {}",
-                dest_label,
-                missing.join(", ")
-            ));
-        }
-        if !extra.is_empty() {
-            message.push_str(&format!(
-                "\nextra files in {}: {}",
-                dest_label,
-                extra.join(", ")
-            ));
-        }
-        if !mismatched.is_empty() {
-            message.push_str(&format!(
-                "\ncontent mismatches between {} and {}: {}",
-                source_label,
-                dest_label,
-                mismatched.join(", ")
-            ));
-        }
-        bail!(message);
-    }
-
-    Ok(source_count)
 }
 
 pub(crate) fn collect_relative_files(root: &Path) -> Result<BTreeMap<String, PathBuf>> {
@@ -2221,46 +2005,6 @@ mod tests {
         Ok(())
     }
 
-    fn write_app_data_schema_fixtures(workspace_root: &Path, cow_sdk_root: &Path) -> Result<()> {
-        let source = cow_sdk_root.join(APP_DATA_SCHEMA_SOURCE_DIR);
-        let vendored = workspace_root.join(APP_DATA_SCHEMA_VENDOR_DIR);
-
-        for path in [&source, &vendored] {
-            fs::create_dir_all(path)
-                .with_context(|| format!("failed to create {}", path.display()))?;
-        }
-
-        let files = [
-            (
-                "definitions.json",
-                "{\"$id\":\"https://example.invalid/definitions.json\",\"type\":\"object\"}\n",
-            ),
-            (
-                "v1.14.0.json",
-                "{\"$id\":\"https://example.invalid/v1.14.0.json\",\"type\":\"object\"}\n",
-            ),
-            (
-                "quote/v1.1.0.json",
-                "{\"$id\":\"https://example.invalid/quote/v1.1.0.json\",\"type\":\"object\"}\n",
-            ),
-        ];
-
-        for (relative, contents) in files {
-            for root in [&source, &vendored] {
-                let path = root.join(relative);
-                let parent = path
-                    .parent()
-                    .with_context(|| format!("missing parent for {}", path.display()))?;
-                fs::create_dir_all(parent)
-                    .with_context(|| format!("failed to create {}", parent.display()))?;
-                fs::write(&path, contents)
-                    .with_context(|| format!("failed to write {}", path.display()))?;
-            }
-        }
-
-        Ok(())
-    }
-
     struct TestWorkspace {
         root: PathBuf,
         cow_sdk_root: PathBuf,
@@ -2290,7 +2034,6 @@ mod tests {
                 ("services".to_string(), services_commit),
             ]);
             write_fixture_files(&root, &repo_commits)?;
-            write_app_data_schema_fixtures(&root, &cow_sdk_root)?;
 
             Ok(Self {
                 root,
@@ -2309,14 +2052,6 @@ mod tests {
                 contracts_root: Some(self.contracts_root.clone()),
                 services_root: Some(self.services_root.clone()),
             }
-        }
-
-        fn vendored_schema_dir(&self) -> PathBuf {
-            self.root.join(APP_DATA_SCHEMA_VENDOR_DIR)
-        }
-
-        fn upstream_schema_dir(&self) -> PathBuf {
-            self.cow_sdk_root.join(APP_DATA_SCHEMA_SOURCE_DIR)
         }
     }
 
@@ -2499,62 +2234,6 @@ mod tests {
         assert!(
             format!("{error:#}").contains("repository contracts commit mismatch"),
             "unexpected error: {error:#}"
-        );
-
-        Ok(())
-    }
-
-    #[test]
-    fn validate_with_roots_rejects_vendored_schema_drift() -> Result<()> {
-        let _lock = cwd_lock().lock().expect("cwd lock poisoned");
-        let workspace = TestWorkspace::new("schema-drift")?;
-        let _guard = CwdGuard::change_to(&workspace.root)?;
-        let options = workspace.cli_options();
-
-        snapshot(&options)?;
-
-        let drifted = workspace.vendored_schema_dir().join("v1.14.0.json");
-        fs::write(&drifted, "{\"drifted\":true}\n")
-            .with_context(|| format!("failed to write {}", drifted.display()))?;
-
-        let error = validate(&options).expect_err("validate should fail on vendored schema drift");
-        assert!(
-            format!("{error:#}").contains("vendored cow-rs app-data schema bundle does not match"),
-            "unexpected error: {error:#}"
-        );
-
-        Ok(())
-    }
-
-    #[test]
-    fn vendor_app_data_schemas_restores_vendored_tree() -> Result<()> {
-        let _lock = cwd_lock().lock().expect("cwd lock poisoned");
-        let workspace = TestWorkspace::new("vendor-schemas")?;
-        let _guard = CwdGuard::change_to(&workspace.root)?;
-        let options = workspace.cli_options();
-
-        snapshot(&options)?;
-
-        let vendored = workspace.vendored_schema_dir();
-        fs::write(vendored.join("v1.14.0.json"), "{\"drifted\":true}\n")
-            .with_context(|| format!("failed to drift {}", vendored.display()))?;
-        let stale = vendored.join("stale.json");
-        fs::write(&stale, "{\"stale\":true}\n")
-            .with_context(|| format!("failed to write {}", stale.display()))?;
-
-        vendor_app_data_schemas(&options)?;
-
-        let upstream = workspace.upstream_schema_dir();
-        ensure_matching_file_trees(
-            &upstream,
-            &vendored,
-            "upstream cow-sdk app-data schema bundle",
-            "vendored cow-rs app-data schema bundle",
-        )?;
-
-        assert!(
-            !stale.exists(),
-            "stale vendored file should be removed during vendor sync"
         );
 
         Ok(())

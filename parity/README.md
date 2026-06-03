@@ -70,20 +70,12 @@ Running `validate` without upstream roots only proves that the committed lockfil
 internally consistent. It does not prove that the pinned commits still match real upstream
 checkouts.
 
-Refresh the vendored app-data schema bundle from a pinned `cow-sdk` checkout:
-
-```sh
-cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- vendor-app-data-schemas \
-  --source-lock parity/source-lock.yaml \
-  --cow-sdk-root <real-cow-sdk-clone>
-```
-
-This command is intentionally explicit:
-
-- it does not fetch from GitHub on its own
-- it requires the provided `cow-sdk` root to match the pinned commit from `source-lock.yaml`
-- it replaces `crates/app-data/schemas/` with the exact upstream tree from
-  `packages/app-data/src/schemas/`
+The app-data metadata is validated by typed Rust construction, not a vendored
+JSON-Schema bundle. `crates/app-data/schemas/` retains the latest-version schema
+closure as test-only drift fixtures: the `schema_drift_contract` test asserts the
+typed metadata structs still match the upstream field names, so an upstream
+rename or addition surfaces at review time. Refresh those fixtures by hand from a
+pinned `cow-sdk` checkout when the drift test flags a change.
 
 Refresh the source lock from pinned working roots:
 

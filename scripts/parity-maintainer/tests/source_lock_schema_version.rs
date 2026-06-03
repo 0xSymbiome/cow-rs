@@ -1,7 +1,5 @@
 mod common;
 
-use std::path::{Path, PathBuf};
-
 use anyhow::Result;
 use tempfile::tempdir;
 
@@ -22,7 +20,6 @@ fn source_lock_with_schema_v2_is_rejected_with_stable_diagnostic() -> Result<()>
 fn source_lock_with_schema_v3_is_accepted() -> Result<()> {
     let temp = tempdir()?;
     write_file(temp.path().join("source-lock.yaml"), FIXTURE_V3)?;
-    write_schema_bundle_fixture(temp.path())?;
 
     let output = command()
         .current_dir(temp.path())
@@ -54,11 +51,4 @@ fn assert_unsupported_schema_is_rejected(fixture: &str) -> Result<()> {
         "output did not contain stable diagnostic: {text}"
     );
     Ok(())
-}
-
-fn write_schema_bundle_fixture(root: &Path) -> Result<()> {
-    write_file(
-        PathBuf::from(root).join("crates/app-data/schemas/definitions.json"),
-        "{\"type\":\"object\"}\n",
-    )
 }
