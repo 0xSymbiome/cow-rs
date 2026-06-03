@@ -1,0 +1,5 @@
+[application]
+name = "cow-trader-dioxus"
+
+[web.app]
+title = "CoW · Browser-Wallet Trade (Dioxus)"
