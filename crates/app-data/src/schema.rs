@@ -1,21 +1,11 @@
-use std::{collections::BTreeMap, sync::OnceLock};
-
-use include_dir::{Dir, DirEntry, File, include_dir};
-use jsonschema::{Draft, Resource, error::ValidationErrorKind};
 use serde_json::Value;
 
-use cow_sdk_core::AppCode;
+use cow_sdk_core::{AppCode, ValidationReason};
 
 use crate::{
-    AppDataDoc, AppDataError, AppDataParams, DEFAULT_APP_CODE, LATEST_APP_DATA_VERSION,
-    SchemaVersion, ValidationResult,
+    AppDataDoc, AppDataError, AppDataParams, DEFAULT_APP_CODE, LATEST_APP_DATA_VERSION, PartnerFee,
+    QuoteMetadata, SchemaVersion, ValidationResult, metadata::FlashloanHints,
 };
-
-static SCHEMAS_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/schemas");
-static SCHEMA_RESOURCES: OnceLock<BTreeMap<String, Value>> = OnceLock::new();
-static ROOT_SCHEMAS: OnceLock<BTreeMap<String, Value>> = OnceLock::new();
-
-const SCHEMA_BASE_URI: &str = "https://cowswap.exchange/schemas/app-data/";
 
 /// Builds a canonical app-data document from typed parameters.
 ///
@@ -78,38 +68,19 @@ pub fn generate_app_data_doc(params: AppDataParams) -> AppDataDoc {
     Value::Object(doc)
 }
 
-/// Returns the bundled app-data schema for `version`.
+/// Validates an app-data document against the typed metadata contract.
 ///
-/// # Errors
+/// The document must carry a string `version` field in
+/// `<major>.<minor>.<patch>` form. Every metadata family the SDK models —
+/// `flashloan`, `partnerFee`, and `quote` — is bound-checked when present in
+/// its current wire shape. Metadata the SDK does not model, and values carried
+/// in an earlier wire shape that no longer parses into the current typed form,
+/// are left untouched so the result is never stricter than the orderbook's own
+/// acceptance contract.
 ///
-/// Returns [`AppDataError::InvalidSchemaVersion`] when `version` is not
-/// `<major>.<minor>.<patch>`, or [`AppDataError::UnknownSchemaVersion`] when
-/// the version is valid but no bundled schema exists for it.
-///
-/// # Panics
-///
-/// Panics only if the embedded schema bundle stops following the committed
-/// URI, file-name, and JSON-validity invariants validated with the crate.
-pub fn get_app_data_schema(version: &str) -> Result<AppDataDoc, AppDataError> {
-    let version = SchemaVersion::new(version)?;
-    root_schemas()
-        .get(version.as_str())
-        .cloned()
-        .map_or_else(|| Err(AppDataError::UnknownSchemaVersion(version)), Ok)
-}
-
-/// Validates an app-data document against the bundled JSON schema set.
-///
-/// The returned [`ValidationResult::errors`] string is safe-by-construction:
-/// instance values are masked through the underlying validator's masking API
-/// and rejected-property-name lists are rendered as counts rather than names,
-/// so the rendered text can be logged or surfaced to end users without
-/// crossing the redaction boundary.
-///
-/// # Panics
-///
-/// Panics only if the embedded schema bundle stops following the committed
-/// URI, file-name, and JSON-validity invariants validated with the crate.
+/// On failure [`ValidationResult::errors`] carries the typed error rendering,
+/// which names only the offending public field and never the caller-supplied
+/// value.
 #[must_use]
 pub fn validate_app_data_doc(app_data_doc: &AppDataDoc) -> ValidationResult {
     match validate_app_data_doc_inner(app_data_doc) {
@@ -117,16 +88,10 @@ pub fn validate_app_data_doc(app_data_doc: &AppDataDoc) -> ValidationResult {
             success: true,
             errors: None,
         },
-        Err(err) => {
-            let errors = match &err {
-                AppDataError::Schema { message, .. } => message.clone(),
-                _ => err.to_string(),
-            };
-            ValidationResult {
-                success: false,
-                errors: Some(errors),
-            }
-        }
+        Err(err) => ValidationResult {
+            success: false,
+            errors: Some(err.to_string()),
+        },
     }
 }
 
@@ -145,168 +110,44 @@ pub fn extract_schema_version(app_data_doc: &AppDataDoc) -> Result<&str, AppData
 
 pub(crate) fn validate_app_data_doc_inner(app_data_doc: &AppDataDoc) -> Result<(), AppDataError> {
     let version = extract_schema_version(app_data_doc)?;
-    let schema = get_app_data_schema(version)?;
+    SchemaVersion::new(version)?;
 
-    let mut options = jsonschema::options().with_draft(Draft::Draft7);
-    for (uri, resource) in schema_resources() {
-        options = options.with_resource(uri.clone(), Resource::from_contents(resource.clone()));
+    let Some(metadata) = app_data_doc.get("metadata").and_then(Value::as_object) else {
+        return Ok(());
+    };
+
+    // Families the reviewed services parser also models are validated
+    // strictly: a present-but-malformed value is rejected with a safe,
+    // family-named error rather than the caller-supplied bytes.
+    if let Some(value) = metadata.get("flashloan") {
+        serde_json::from_value::<FlashloanHints>(value.clone())
+            .map_err(|_| AppDataError::InvalidAppDataProvided {
+                field: "metadata.flashloan",
+                reason: ValidationReason::BadShape {
+                    details: "value does not match the typed flash-loan hint shape",
+                },
+            })?
+            .validate()?;
+    }
+    if let Some(value) = metadata.get("partnerFee") {
+        PartnerFee::from_value(value.clone())
+            .map_err(|_| AppDataError::InvalidAppDataProvided {
+                field: "metadata.partnerFee",
+                reason: ValidationReason::BadShape {
+                    details: "value does not match a supported partner-fee policy shape",
+                },
+            })?
+            .validate()?;
     }
 
-    let validator = options.build(&schema).map_err(|err| {
-        let message = render_validation_error(&err);
-        AppDataError::Schema {
-            message,
-            source: Box::new(err.to_owned()),
-        }
-    })?;
-
-    let mut errors = validator.iter_errors(app_data_doc);
-    if let Some(first) = errors.next() {
-        let mut rendered = render_validation_error(&first);
-        for error in errors {
-            rendered.push_str("; ");
-            rendered.push_str(&render_validation_error(&error));
-        }
-        return Err(AppDataError::Schema {
-            message: rendered,
-            source: Box::new(first.to_owned()),
-        });
+    // `quote` is bound-checked opportunistically: earlier wire shapes carried
+    // by historical documents no longer parse into the current typed quote and
+    // are passed through unchanged so they continue to hash.
+    if let Some(value) = metadata.get("quote")
+        && let Ok(quote) = QuoteMetadata::from_value(value.clone())
+    {
+        quote.validate()?;
     }
 
     Ok(())
-}
-
-/// Renders one schema-validator error with its instance-path prefix and a
-/// safe-by-construction body.
-///
-/// Instance values flow through the validator's masking surface so failing
-/// values cannot leak into the rendered text. Three kinds carry caller
-/// content in the kind itself rather than in the masked instance slot and
-/// are handled surgically:
-///
-/// - [`ValidationErrorKind::AdditionalProperties`] and
-///   [`ValidationErrorKind::UnevaluatedProperties`] expose the rejected
-///   property names, which on a `additionalProperties: false` schema are
-///   caller-supplied keys. We render the count instead of the names.
-/// - [`ValidationErrorKind::Custom`] passes a user-defined message string.
-///   The bundled app-data schemas use Draft-7 standard keywords only and
-///   never declare custom keywords, so this match arm is a defensive guard.
-fn render_validation_error(error: &jsonschema::ValidationError<'_>) -> String {
-    let path = error.instance_path().to_string();
-    let prefix = if path.is_empty() {
-        String::from("data")
-    } else {
-        format!("data{path}")
-    };
-
-    let body = match error.kind() {
-        ValidationErrorKind::AdditionalProperties { unexpected } => format!(
-            "additional propert{} not allowed ({} unexpected)",
-            if unexpected.len() == 1 { "y" } else { "ies" },
-            unexpected.len(),
-        ),
-        ValidationErrorKind::UnevaluatedProperties { unexpected } => format!(
-            "unevaluated propert{} not allowed ({} unexpected)",
-            if unexpected.len() == 1 { "y" } else { "ies" },
-            unexpected.len(),
-        ),
-        ValidationErrorKind::Custom { keyword, .. } => {
-            format!("custom keyword `{keyword}` rejected the value")
-        }
-        _ => error.masked().to_string(),
-    };
-
-    format!("{prefix} {body}")
-}
-
-fn schema_resources() -> &'static BTreeMap<String, Value> {
-    SCHEMA_RESOURCES.get_or_init(|| {
-        let mut resources = BTreeMap::new();
-        collect_files(&SCHEMAS_DIR, "", &mut resources);
-        resources
-    })
-}
-
-/// Returns the embedded root app-data schemas keyed by version.
-///
-/// # Panics
-///
-/// Panics only if an embedded schema resource URI was not assembled under the
-/// crate-owned schema base URI.
-fn root_schemas() -> &'static BTreeMap<String, Value> {
-    ROOT_SCHEMAS.get_or_init(|| {
-        let mut schemas = BTreeMap::new();
-        for (uri, resource) in schema_resources() {
-            let relative = uri
-                .strip_prefix(SCHEMA_BASE_URI)
-                // SAFETY: every schema resource URI is assembled from
-                // SCHEMA_BASE_URI inside collect_file.
-                .expect("schema URIs are always rooted under SCHEMA_BASE_URI");
-            if let Some(version) = relative
-                .strip_prefix('v')
-                .and_then(|rest| rest.strip_suffix(".json"))
-            {
-                schemas.insert(version.to_string(), resource.clone());
-            }
-        }
-        schemas
-    })
-}
-
-/// Recursively collects embedded app-data schema resources.
-///
-/// # Panics
-///
-/// Panics only if `include_dir!` yields an embedded directory entry without a
-/// stable file name.
-fn collect_files(dir: &Dir<'_>, prefix: &str, resources: &mut BTreeMap<String, Value>) {
-    for entry in dir.entries() {
-        match entry {
-            DirEntry::Dir(child) => {
-                let child_prefix = if prefix.is_empty() {
-                    child.path().to_string_lossy().replace('\\', "/")
-                } else {
-                    format!(
-                        "{prefix}/{}",
-                        child
-                            .path()
-                            .file_name()
-                            // SAFETY: include_dir! only yields directory entries
-                            // with stable embedded names from the crate bundle.
-                            .expect("embedded dir has file name")
-                            .to_string_lossy()
-                    )
-                };
-                collect_files(child, &child_prefix, resources);
-            }
-            DirEntry::File(file) => collect_file(file, prefix, resources),
-        }
-    }
-}
-
-/// Collects one embedded app-data schema resource.
-///
-/// # Panics
-///
-/// Panics only if `include_dir!` yields a file without a name, or if a committed
-/// embedded schema file stops being valid JSON.
-fn collect_file(file: &File<'_>, prefix: &str, resources: &mut BTreeMap<String, Value>) {
-    let file_name = file
-        .path()
-        .file_name()
-        // SAFETY: include_dir! only yields file entries with stable embedded
-        // names from the crate bundle.
-        .expect("embedded file has file name")
-        .to_string_lossy();
-    let relative = if prefix.is_empty() {
-        file_name.to_string()
-    } else {
-        format!("{prefix}/{file_name}")
-    };
-    let uri = format!("{SCHEMA_BASE_URI}{relative}");
-    // SAFETY: committed schema files are validated as JSON by tests and by the
-    // policy-maintainer panic allowlist gate.
-    let resource: Value =
-        serde_json::from_slice(file.contents()).expect("embedded schema json is valid");
-    resources.insert(uri, resource);
 }

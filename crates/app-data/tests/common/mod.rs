@@ -43,15 +43,3 @@ pub fn app_data_doc_custom() -> Value {
         }
     })
 }
-
-pub fn invalid_referrer_doc() -> Value {
-    json!({
-        "version": "0.4.0",
-        "metadata": {
-            "referrer": {
-                "version": "312313",
-                "address": "0xssss"
-            }
-        }
-    })
-}

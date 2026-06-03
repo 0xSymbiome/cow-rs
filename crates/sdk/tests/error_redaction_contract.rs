@@ -2,7 +2,7 @@ use std::fmt::{Debug, Display};
 
 use cow_sdk::{
     SdkError,
-    app_data::{AppDataError, AppDataParams, SchemaVersion},
+    app_data::{AppDataError, AppDataParams},
     contracts::ContractsError,
     core::{
         Address, Amount, AppCodeError, CoreError, CowEnv, HostPolicyError, TransportError,
@@ -269,15 +269,12 @@ fn app_data_errors_redact_public_serialized_payloads() {
         AppDataError::InvalidAppDataHex,
         AppDataError::InvalidCid,
         AppDataError::InvalidSchemaVersion(secret_payload().into()),
-        AppDataError::UnknownSchemaVersion(
-            SchemaVersion::new("99.99.99").expect("fixture is a valid semver"),
-        ),
         AppDataError::MissingSchemaVersion,
         AppDataError::Json(json_error()),
         AppDataError::InvalidAppDataProvided {
             field: "document",
             reason: ValidationReason::BadShape {
-                details: "schema validation failed",
+                details: "typed metadata validation failed",
             },
         },
         AppDataError::InvalidPartnerFee {

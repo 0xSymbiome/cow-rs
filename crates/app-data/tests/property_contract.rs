@@ -26,7 +26,7 @@ mod common;
 
 use cow_sdk_app_data::{
     AppDataDoc, AppDataError, IpfsFetchPolicy, SchemaVersion, app_data_hex_to_cid,
-    cid_to_app_data_hex, get_app_data_info, get_app_data_schema, stringify_deterministic,
+    cid_to_app_data_hex, get_app_data_info, stringify_deterministic,
 };
 use proptest::prelude::*;
 use proptest::test_runner::FileFailurePersistence;
@@ -221,8 +221,7 @@ proptest! {
     /// [`SchemaVersion::new`] and [`str::parse::<SchemaVersion>`] are
     /// strict inverses on well-formed SemVer triplets; every malformed
     /// shape the reviewed parser rejects surfaces
-    /// [`AppDataError::InvalidSchemaVersion`] through
-    /// [`get_app_data_schema`] and fails [`SchemaVersion::new`].
+    /// [`AppDataError::InvalidSchemaVersion`] through [`SchemaVersion::new`].
     #[test]
     fn schema_versions_roundtrip_and_reject_malformed(
         valid in schema_version_strategy(),
@@ -234,7 +233,7 @@ proptest! {
         prop_assert_eq!(valid.parse::<SchemaVersion>().unwrap(), schema);
 
         prop_assert!(matches!(
-            get_app_data_schema(&malformed).unwrap_err(),
+            SchemaVersion::new(malformed.as_str()).unwrap_err(),
             AppDataError::InvalidSchemaVersion(ref message) if message.as_inner() == &malformed
         ));
         prop_assert!(SchemaVersion::new(malformed.clone()).is_err());

@@ -3,7 +3,7 @@
 //! The fixture input mirrors the reviewed `metadata.hooks` wire shape with
 //! decimal-string gas limits. These tests pin typed serde, the
 //! [`AppDataParams`] lift, compatibility access through `metadata["hooks"]`,
-//! and bundled-schema validation for generated hook-bearing documents.
+//! and typed validation for generated hook-bearing documents.
 
 #![allow(
     clippy::doc_markdown,
@@ -121,7 +121,7 @@ fn app_data_params_lifts_hooks_and_preserves_open_ended_access() {
 }
 
 #[test]
-fn generated_document_with_typed_hooks_validates_against_bundled_schema() {
+fn generated_document_with_typed_hooks_validates() {
     let doc = generate_app_data_doc(
         AppDataParams::new(AppCode::new("hooks-contract").expect("fixture appCode must validate"))
             .with_hooks(sample_hooks()),

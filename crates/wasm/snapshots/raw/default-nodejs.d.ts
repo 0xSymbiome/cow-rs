@@ -2759,7 +2759,7 @@ export function signOrderWithTypedDataSigner(input: OrderInput, chainId: number,
 export function supportedChainIds(): Uint32Array;
 
 /**
- * Validates an app-data document against the embedded schema set.
+ * Validates an app-data document against the typed metadata contract.
  *
  * Validation is local and deterministic. The result reports whether the
  * document conforms and includes validation details without uploading data.

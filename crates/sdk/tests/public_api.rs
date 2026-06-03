@@ -89,9 +89,7 @@ fn module_reexports_cover_expected_leaf_crates() {
         cow_sdk::AppCode::new("cow-rs").expect("fixture appCode must validate"),
     ));
     let validation = cow_sdk::app_data::validate_app_data_doc(&doc);
-    let schema =
-        cow_sdk::app_data::get_app_data_schema(cow_sdk::app_data::SchemaVersion::latest().as_str())
-            .unwrap();
+    let latest_version = cow_sdk::app_data::SchemaVersion::latest();
     let deployment = cow_sdk::contracts::deployment_for_chain(11_155_111).unwrap();
     let api = cow_sdk::orderbook::OrderbookApi::builder_from_context(
         cow_sdk::core::ApiContext::default(),
@@ -109,7 +107,10 @@ fn module_reexports_cover_expected_leaf_crates() {
     .expect("default facade ready trading sdk construction should succeed");
 
     assert!(validation.success);
-    assert!(schema.is_object());
+    assert_eq!(
+        latest_version.as_str(),
+        cow_sdk::app_data::LATEST_APP_DATA_VERSION
+    );
     assert_eq!(
         cow_sdk::contracts::BUY_ETH_ADDRESS,
         "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"

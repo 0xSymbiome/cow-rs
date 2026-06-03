@@ -36,20 +36,16 @@ fn get_app_data_info_matches_pinned_upstream_samples() {
 #[test]
 fn invalid_documents_fail_through_typed_error_surface() {
     let invalid = json!({
-        "version": "0.4.0",
+        "version": "1.14.0",
         "metadata": {
-            "referrer": {
-                "version": "312313",
-                "address": "0xssss"
+            "quote": {
+                "slippageBips": 20_000
             }
         }
     });
 
     let error = get_app_data_info(invalid).unwrap_err();
-    assert!(matches!(
-        error,
-        AppDataError::InvalidAppDataProvided { .. } | AppDataError::Schema { .. }
-    ));
+    assert!(matches!(error, AppDataError::InvalidAppDataProvided { .. }));
 }
 
 #[test]

@@ -50,7 +50,7 @@ buckets:
 5. **Subgraph reads**: protocol totals, recent daily and hourly volume, and
    arbitrary GraphQL query execution.
 6. **App-data tools**: app-data document generation, CID and hash derivation,
-   schema validation, CID-to-hex conversion, and hex-to-CID conversion.
+   metadata validation, CID-to-hex conversion, and hex-to-CID conversion.
 7. **IPFS app-data fetch**: fetch by CID and fetch by app-data hash through an
    injected HTTP transport.
 8. **Deployment registry**: chain and environment addresses for GPv2,
@@ -79,7 +79,7 @@ packages until their dedicated `cow-rs` leaf crates land.
 | Core config and runtime contracts | `cow-sdk-core` | Common adapter, address, token, config, and selected shared type sources from `cowprotocol/cow-sdk` |
 | Contracts | `cow-sdk-contracts` | `cowprotocol/contracts`, `cowprotocol/ethflowcontract`, `cowprotocol/composable-cow`, and `cowdao-grants/cow-shed` Solidity sources mirrored byte-identically under `crates/contracts/abi/**/*.sol` and gated by `cargo parity-verify-sol-provenance` against SHA-256 rows in `parity/source-lock.yaml`, `alloy::sol!`-generated bindings, the typed `Registry` deployment authority, and selected upstream test fixtures |
 | Signing | `cow-sdk-signing` | Order-signing utilities, typed-data helpers, and contract-signing sources |
-| App-data | `cow-sdk-app-data` | App-data helpers, schema imports, generated schema references, and schema regression tests |
+| App-data | `cow-sdk-app-data` | App-data helpers and the retained upstream schema drift fixtures |
 | Orderbook | `cow-sdk-orderbook` | TypeScript orderbook sources plus selected `cowprotocol/services` OpenAPI and validation references |
 | Trading | `cow-sdk-trading` | TypeScript trading workflows and tests |
 | Subgraph | `cow-sdk-subgraph` | TypeScript subgraph API, GraphQL, query, and test sources |
@@ -153,7 +153,7 @@ The Rust SDK ships in scope:
 - `alloy::sol!`-generated contract bindings and Registry
   (`cow-sdk-contracts`)
 - order signing and EIP-1271 verification (`cow-sdk-signing`)
-- app-data encoding and schema (`cow-sdk-app-data`)
+- app-data encoding and validation (`cow-sdk-app-data`)
 - typed orderbook transport (`cow-sdk-orderbook`)
   - `Order` covers the orderbook OpenAPI `Order` schema
     (`OrderCreation` + `OrderMetaData` + `interactions`)

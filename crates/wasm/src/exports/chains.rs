@@ -147,7 +147,7 @@ pub fn app_data_info(doc: AppDataDocInput) -> Result<JsValue, JsValue> {
     )))
 }
 
-/// Validates an app-data document against the embedded schema set.
+/// Validates an app-data document against the typed metadata contract.
 ///
 /// Validation is local and deterministic. The result reports whether the
 /// document conforms and includes validation details without uploading data.

@@ -24,7 +24,7 @@ pub fn app_data_info(document: &AppDataDoc) -> Result<AppDataInfo, AppDataError>
     cow_sdk_app_data::get_app_data_info(document).map(|validated| validated.info)
 }
 
-/// Validates an app-data document against the embedded schemas.
+/// Validates an app-data document against the typed metadata contract.
 #[must_use]
 pub fn validate_app_data_doc(document: &AppDataDoc) -> ValidationResult {
     cow_sdk_app_data::validate_app_data_doc(document)

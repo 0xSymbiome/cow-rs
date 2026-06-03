@@ -1,11 +1,11 @@
 # cow-sdk-app-data
 
-[CoW Protocol](https://cow.fi) app-data document generation, schema
+[CoW Protocol](https://cow.fi) app-data document generation, typed
 validation, CID conversion, and the IPFS read transport seam.
 
 `appData` is the canonical metadata attached to every CoW Protocol order.
-This crate builds deterministic app-data documents, validates them against
-the versioned app-data JSON schema, computes their keccak256 digest, and
+This crate builds deterministic app-data documents, validates them through
+typed metadata construction, computes their keccak256 digest, and
 converts between the 32-byte hex hash and the supported CID encoding
 (CIDv1 + raw codec + keccak-256 multihash).
 
@@ -24,9 +24,9 @@ cow-sdk-app-data = "0.1"
 
 ## Minimal example
 
-Tag a document with a validated `AppCode`, validate it against the bundled
-JSON schema, and compute the canonical content and keccak256 digest in a
-single call. Chain `with_*` setters for environment, signer, hooks, flashloan
+Tag a document with a validated `AppCode`, validate its modelled metadata,
+and compute the canonical content and keccak256 digest in a single call. Chain
+`with_*` setters for environment, signer, hooks, flashloan
 hints, or open-ended metadata before the terminal `into_validated`:
 
 ```rust

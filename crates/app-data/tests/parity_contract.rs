@@ -8,9 +8,9 @@
 //! * [`app_data_hex_to_cid`] / [`cid_to_app_data_hex`] — supported CID
 //!   form round-trip.
 //! * [`get_app_data_info`] — deterministic document processing.
-//! * [`get_app_data_schema`] / [`LATEST_APP_DATA_VERSION`] — semver-only
-//!   schema lookup and latest-version surface.
-//! * [`validate_app_data_doc`] — schema validation with a typed result.
+//! * [`SchemaVersion`] / [`LATEST_APP_DATA_VERSION`] — semver version
+//!   validation and the latest-version surface.
+//! * [`validate_app_data_doc`] — typed metadata validation with a typed result.
 //! * [`fetch_doc_from_cid`] / [`fetch_doc_from_app_data_hex`] —
 //!   configurable-URI fetch helpers.
 //!
@@ -19,8 +19,8 @@
 
 use async_trait::async_trait;
 use cow_sdk_app_data::{
-    AppDataError, AppDataParams, LATEST_APP_DATA_VERSION, app_data_hex_to_cid, cid_to_app_data_hex,
-    generate_app_data_doc, get_app_data_info, get_app_data_schema, validate_app_data_doc,
+    AppDataError, AppDataParams, LATEST_APP_DATA_VERSION, SchemaVersion, app_data_hex_to_cid,
+    cid_to_app_data_hex, generate_app_data_doc, get_app_data_info, validate_app_data_doc,
 };
 use serde_json::{Value, json};
 
@@ -237,16 +237,14 @@ fn assert_get_app_data_info_deterministic(id: &str, expected: &Value) {
 
     // Invalid documents (e.g. unknown version) reject through a typed error.
     let mut bad_doc = doc;
-    bad_doc["version"] = Value::String("99.99.99".to_string());
+    bad_doc["version"] = Value::String("not-a-semver".to_string());
     let error = get_app_data_info(bad_doc).expect_err(
-        "case app-data-get-app-data-info-deterministic must reject unknown schema versions",
+        "case app-data-get-app-data-info-deterministic must reject malformed schema versions",
     );
     assert!(
         matches!(
             error,
-            AppDataError::UnknownSchemaVersion(_)
-                | AppDataError::InvalidAppDataProvided { .. }
-                | AppDataError::Schema { .. }
+            AppDataError::InvalidSchemaVersion(_) | AppDataError::InvalidAppDataProvided { .. }
         ),
         "case {id}: invalid doc must surface a typed AppDataError",
     );
@@ -278,19 +276,17 @@ fn assert_schema_lookup_contract(id: &str, expected: &Value) {
         "case {id}: latest-version constant must match the fixture",
     );
 
-    // Semver lookup succeeds.
-    get_app_data_schema(LATEST_APP_DATA_VERSION)
-        .unwrap_or_else(|error| panic!("case {id}: latest schema must resolve, got {error:?}"));
+    // Valid semver versions parse.
+    SchemaVersion::new(LATEST_APP_DATA_VERSION)
+        .unwrap_or_else(|error| panic!("case {id}: latest version must parse, got {error:?}"));
 
     // Non-semver shapes reject through InvalidSchemaVersion.
     for invalid in ["v1.14.0", "1.14", "1.14.0.0", "not-a-version", ""] {
-        let error = get_app_data_schema(invalid)
-            .expect_err(&format!("case {id}: schema lookup must reject {invalid:?}"));
+        let error = SchemaVersion::new(invalid).expect_err(&format!(
+            "case {id}: version parsing must reject {invalid:?}"
+        ));
         assert!(
-            matches!(
-                error,
-                AppDataError::InvalidSchemaVersion(_) | AppDataError::UnknownSchemaVersion(_)
-            ),
+            matches!(error, AppDataError::InvalidSchemaVersion(_)),
             "case {id}: {invalid:?} must reject through a typed AppDataError",
         );
     }
@@ -398,18 +394,16 @@ fn assert_schema_regression_families(id: &str, expected: &Value) {
         })
         .collect();
 
-    // Every named late-version metadata family must remain loadable through
-    // the bundled schema lookup, proving the upstream schema-regression family
-    // is represented on the Rust side.
+    // Every named late-version metadata family must carry a well-formed semver
+    // version suffix, proving the upstream schema-regression family set stays
+    // represented on the Rust side.
     for family in families {
         let version = family
             .rsplit('@')
             .next()
             .unwrap_or_else(|| panic!("case {id}: family {family} must carry @version suffix"));
-        get_app_data_schema(version).unwrap_or_else(|error| {
-            panic!(
-                "case {id}: family {family} must resolve through get_app_data_schema, got {error:?}"
-            )
+        SchemaVersion::new(version).unwrap_or_else(|error| {
+            panic!("case {id}: family {family} version must parse, got {error:?}")
         });
     }
 }

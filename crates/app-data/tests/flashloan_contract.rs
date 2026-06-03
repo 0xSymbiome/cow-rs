@@ -201,7 +201,7 @@ fn flashloan_hint_appears_inside_metadata_of_generated_document() {
 }
 
 #[test]
-fn bundled_schema_accepts_documents_carrying_the_typed_flashloan_hint() {
+fn validation_accepts_documents_carrying_the_typed_flashloan_hint() {
     let params = AppDataParams::new(test_app_code()).with_flashloan(sample_hints());
 
     let mut doc = generate_app_data_doc(params);
@@ -212,7 +212,7 @@ fn bundled_schema_accepts_documents_carrying_the_typed_flashloan_hint() {
     let validation = validate_app_data_doc(&doc);
     assert!(
         validation.success,
-        "generated document carrying typed FlashloanHints must validate against the bundled schema, got {:?}",
+        "generated document carrying typed FlashloanHints must validate, got {:?}",
         validation.errors,
     );
 }
@@ -277,8 +277,8 @@ fn flashloan_v1_7_0_rejects_invalid_address() {
         validation
             .errors
             .as_deref()
-            .is_some_and(|errors| errors.contains("liquidityProvider")),
-        "schema error must identify the invalid address field, got {:?}",
+            .is_some_and(|errors| errors.contains("flashloan")),
+        "validation error must identify the flashloan family, got {:?}",
         validation.errors,
     );
 }
@@ -316,8 +316,8 @@ fn flashloan_v1_7_0_rejects_missing_field() {
         validation
             .errors
             .as_deref()
-            .is_some_and(|errors| errors.contains("receiver") || errors.contains("required")),
-        "schema error must identify the missing field, got {:?}",
+            .is_some_and(|errors| errors.contains("flashloan")),
+        "validation error must identify the flashloan family, got {:?}",
         validation.errors,
     );
 }

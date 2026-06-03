@@ -1,9 +1,9 @@
 # Credential Surface Audit
 
 Status: Current
-Last reviewed: 2026-06-01
+Last reviewed: 2026-06-03
 Owning surface: Credential-bearing builder storage, URL configuration, host-policy errors, public error diagnostics, wallet add-chain payloads, wasm error envelopes, and the SDK facade
-Refresh trigger: Changes to orderbook or subgraph builder API-key storage, URL-bearing public configuration fields, external host-policy validation, public error message/detail/body/data fields, browser wallet add-chain URL payload construction, the `redact_response_body` token-detection layers, the `cow_sdk_app_data::AppDataError::Schema` rendering pipeline or the matching `ValidationResult::errors` field's safe-by-construction masking surface, the `cow_sdk_orderbook::OrderbookError::Serialization` structural-diagnostic shape or its `From<serde_json::Error>` construction, the `cow_sdk_app_data::AppDataError::Calculation` render, the `cow_sdk_app_data::AppDataParams` sub-metadata deserializer, or any new credential-bearing surface that lands without a redacting storage type or an equivalent safe-by-construction render
+Refresh trigger: Changes to orderbook or subgraph builder API-key storage, URL-bearing public configuration fields, external host-policy validation, public error message/detail/body/data fields, browser wallet add-chain URL payload construction, the `redact_response_body` token-detection layers, the `cow_sdk_app_data` typed metadata validation and the matching `ValidationResult::errors` rendering, the `cow_sdk_orderbook::OrderbookError::Serialization` structural-diagnostic shape or its `From<serde_json::Error>` construction, the `cow_sdk_app_data::AppDataError::Calculation` render, the `cow_sdk_app_data::AppDataParams` sub-metadata deserializer, or any new credential-bearing surface that lands without a redacting storage type or an equivalent safe-by-construction render
 Related docs:
 - [ADR 0025](../adr/0025-workspace-url-redaction-convention.md)
 - [URL Credential Redaction Audit](url-credential-redaction-audit.md)
@@ -35,7 +35,7 @@ It does not cover unrelated transport error redaction or credential handling out
 | URL configuration | Credential-bearing URL values use redacting storage types for debug, display, and serialization, and unwrap only at dispatch seams | Conforms |
 | Host-policy errors | Orderbook and subgraph host-policy failures retain only a redacted host component and never serialize raw URL credentials, paths, queries, or fragments | Conforms |
 | Public error diagnostics | Provider, signer, RPC, transport, response-body, subgraph context, orderbook API, orderbook rejection, and facade error payloads wrap secret-bearing messages in `Redacted<T>`, render through a safe-by-construction sanitization pipeline, or sanitize protocol identifiers before rendering, and redact credential-bearing diagnostics across `Debug`, `Display`, and existing `Serialize` surfaces | Conforms |
-| App-data schema validator output | `AppDataError::Schema.message` and `ValidationResult::errors` carry a path-prefixed validator render produced through `jsonschema::ValidationError::masked()` with surgical paths for the variant kinds that embed caller content in the kind itself (rejected-property-name lists are rendered as counts rather than names), so the rendered text never embeds caller-supplied instance values or property names and is safe to interpolate into `Display`, `Debug`, and `Serialize` without a `Redacted<T>` wrapper | Conforms |
+| App-data validation output | App-data validation surfaces failures as typed `AppDataError` values whose `Display` and the matching `ValidationResult::errors` field name only the offending public field and the canonical `ValidationReason`, never the caller-supplied value, so they are safe to interpolate into `Display`, `Debug`, and `Serialize` without a `Redacted<T>` wrapper | Conforms |
 | JSON decode-failure and digest-calculation diagnostics | The orderbook response-decode failure surfaces only the serde failure category and the 1-based line/column position, the app-data document sub-metadata deserializer maps malformed caller values to fixed field-tagged messages, and `AppDataError::Calculation` surfaces only a stable label, so none of these paths renders the raw serde error or boxed source that could echo decoded or caller-supplied bytes | Conforms |
 | WASM error envelope | `WasmError` maps transport, app-data, signing, orderbook, subgraph, and trading errors through display-safe messages and redacted response-body handling | Conforms |
 | Response-body credential scanner | `redact_response_body` enforces a defense-in-depth detector pipeline (JWT, Bearer, strict URL, bare userinfo, credential-keyed value with recursive key-prefix scanning) and the credential-key matcher recognizes `apikey`, `token`, `secret`, `password`, `authorization`, and `bearer` substrings so a partial or mangled credential key does not bypass redaction | Conforms |
@@ -119,34 +119,22 @@ deliberately cross the redaction boundary. The label-only render keeps the
 digest-calculation surface safe even if a future hashing or CID backend embeds
 caller-derived bytes in its own message.
 
-### App-Data Schema Validator Output
+### App-Data Validation Output
 
-`cow_sdk_app_data::AppDataError::Schema.message` and the matching
-`cow_sdk_app_data::ValidationResult::errors` field carry a path-prefixed
-validator render that is safe-by-construction. The render pipeline at
-`crates/app-data/src/schema.rs::render_validation_error` flows each
-`jsonschema::ValidationError` through the validator's masking surface
-(`ValidationError::masked()`), which substitutes the configured placeholder
-for instance values across every standard Draft-7 keyword. Three variant
-kinds carry caller content inside the kind itself rather than in the
-masked instance slot and are handled surgically: `AdditionalProperties`
-and `UnevaluatedProperties` render the count of rejected property names
-rather than the names, and `Custom` renders the schema-defined keyword
-name without the user-defined message. The owning `Schema` variant
-therefore stores the rendered message as plaintext `String` instead of
-`Redacted<String>` because the produced text never embeds caller-supplied
-instance values or property names. The typed `jsonschema::ValidationError`
-source remains behind the `#[source]` chain so callers that need the
-unmasked rendering walk `std::error::Error::source` and explicitly cross
-the redaction boundary by calling `to_string()` on the typed value.
-`ValidationResult::errors` tightens symmetrically from
-`Option<Redacted<String>>` to `Option<String>` because it carries the same
-render. Two regression tests at
-`crates/app-data/tests/schema_contract.rs` pin the contract: a
-type-mismatch case with a Bearer-token-shaped instance value confirms the
-masked path does not echo the value, and an `additionalProperties: false`
-case with a caller-supplied property name confirms the surgical path
-renders only the count.
+`cow_sdk_app_data` validates documents through typed construction
+([ADR 0064](../adr/0064-app-data-typed-validation.md)), not a JSON-Schema
+validator. A failed validation surfaces a typed `AppDataError` —
+`InvalidAppDataProvided`, `InvalidPartnerFee`, `InvalidFlashloanHints`,
+`InvalidSchemaVersion`, or `MissingSchemaVersion` — whose `Display` names only
+the offending public wire field and the canonical `ValidationReason`, never the
+caller-supplied value. `InvalidSchemaVersion` wraps the rejected version string
+in `Redacted<String>` so even the version token stays masked. A
+present-but-malformed `metadata.flashloan` or `metadata.partnerFee` is rejected
+with a fixed, family-named message rather than the raw serde error, matching the
+sub-metadata deserializer's redaction pattern. `ValidationResult::errors` is an
+`Option<String>` carrying that same typed rendering. A regression test at
+`crates/app-data/tests/schema_contract.rs::non_semver_version_is_rejected_without_leaking_the_value`
+pins that a non-semver version value is rejected without echoing the value.
 
 The wasm surface extends that contract to JavaScript. `WasmError` exposes
 typed discriminants and low-cardinality fields while preserving redaction for
@@ -193,8 +181,7 @@ Primary regression coverage:
 - `crates/sdk/tests/error_redaction_contract.rs::orderbook_serialization_error_drops_decoded_response_bytes`
 - `crates/sdk/tests/error_redaction_contract.rs::app_data_metadata_parse_failures_do_not_echo_caller_input`
 - `crates/sdk/tests/error_redaction_contract.rs::app_data_calculation_error_does_not_render_boxed_source`
-- `crates/app-data/tests/schema_contract.rs::schema_error_message_masks_failing_instance_values`
-- `crates/app-data/tests/schema_contract.rs::schema_error_message_does_not_leak_unexpected_property_names`
+- `crates/app-data/tests/schema_contract.rs::non_semver_version_is_rejected_without_leaking_the_value`
 - `crates/core/tests/config_contract.rs::external_host_policy_accepts_canonical_and_explicit_hosts_only`
 - `crates/orderbook/tests/host_policy_contract.rs`
 - `crates/subgraph/tests/host_policy_contract.rs`

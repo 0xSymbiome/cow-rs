@@ -12,7 +12,7 @@ pub type AppDataDoc = Value;
 /// Mutable JSON object used for nested `metadata` sections.
 pub type MetadataMap = Map<String, Value>;
 
-/// Semantic version for bundled app-data schemas.
+/// Semantic version string for an app-data document.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct SchemaVersion(String);
@@ -33,7 +33,7 @@ impl SchemaVersion {
         }
     }
 
-    /// Returns the latest bundled schema version.
+    /// Returns the latest app-data schema version the SDK emits.
     #[must_use]
     pub fn latest() -> Self {
         Self(LATEST_APP_DATA_VERSION.to_string())

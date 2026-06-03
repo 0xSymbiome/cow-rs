@@ -243,9 +243,8 @@ impl AppDataParams {
     ///
     /// Fluent terminal equivalent of
     /// [`generate_app_data_doc(self)`](crate::generate_app_data_doc). Does
-    /// **not** validate the doc against the embedded JSON schema or compute
-    /// its keccak digest — use [`AppDataParams::into_validated`] for the
-    /// full upload-ready tuple.
+    /// **not** validate the doc or compute its keccak digest — use
+    /// [`AppDataParams::into_validated`] for the full upload-ready tuple.
     ///
     /// # Examples
     ///
@@ -265,7 +264,7 @@ impl AppDataParams {
         generate_app_data_doc(self)
     }
 
-    /// Generates the doc, validates it against the bundled JSON schema, and
+    /// Generates the doc, validates its modelled metadata families, and
     /// computes the [`AppDataValidated`] tuple (CID, canonical JSON content,
     /// keccak256 hex digest, and size warnings) in a single call.
     ///
@@ -275,9 +274,9 @@ impl AppDataParams {
     ///
     /// # Errors
     ///
-    /// Returns [`AppDataError`] when the generated document fails the
-    /// embedded JSON schema validation, exceeds
-    /// [`crate::APP_DATA_MAX_BYTES`], or fails CID derivation.
+    /// Returns [`AppDataError`] when the generated document fails typed
+    /// metadata validation, exceeds [`crate::APP_DATA_MAX_BYTES`], or fails
+    /// CID derivation.
     ///
     /// # Examples
     ///

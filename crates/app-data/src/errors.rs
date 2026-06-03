@@ -3,8 +3,6 @@ use serde::ser::SerializeMap;
 use serde::{Serialize, Serializer};
 use thiserror::Error;
 
-use crate::types::SchemaVersion;
-
 /// Errors returned by app-data generation, validation, transport, and CID helpers.
 #[non_exhaustive]
 #[derive(Debug, Error)]
@@ -18,52 +16,12 @@ pub enum AppDataError {
     /// The supplied schema version did not match the expected `major.minor.patch` format.
     #[error("AppData version {0} is not a valid version")]
     InvalidSchemaVersion(Redacted<String>),
-    /// The requested schema version was not embedded in the crate.
-    #[error("AppData version {0} doesn't exist")]
-    UnknownSchemaVersion(SchemaVersion),
     /// The app-data document did not contain a string `version` field.
     #[error("AppData document is missing string field `version`")]
     MissingSchemaVersion,
     /// JSON serialization or parsing failed.
     #[error("json error: {0}")]
     Json(#[from] serde_json::Error),
-    /// JSON schema validation or schema construction failed.
-    ///
-    /// The path-prefixed validator message is safe-by-construction: instance
-    /// values are masked through the underlying validator's masking surface
-    /// and rejected-property-name lists are rendered as counts rather than
-    /// names, so the rendered text can be logged or surfaced to end users
-    /// without crossing the redaction boundary. Callers that need the
-    /// unmasked validator output walk the [`std::error::Error::source`] chain
-    /// and call `to_string()` on the typed [`jsonschema::ValidationError`]
-    /// explicitly.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use std::error::Error;
-    ///
-    /// use cow_sdk_app_data::AppDataError;
-    ///
-    /// fn report(error: &AppDataError) {
-    ///     if let AppDataError::Schema { message, .. } = error {
-    ///         // `message` is plaintext and safe to log:
-    ///         eprintln!("app-data schema validation failed: {message}");
-    ///     }
-    /// }
-    /// ```
-    #[error("schema error: {message}")]
-    Schema {
-        /// Path-prefixed validator message with instance values masked and
-        /// rejected-property-name lists rendered as counts. Safe-by-construction
-        /// for inclusion in logs and end-user-visible error messages.
-        message: String,
-        /// Owned schema-validator error returned by the underlying
-        /// [`jsonschema`] crate. Carries the unmasked rendering; callers that
-        /// surface it through `Display` cross the redaction boundary on purpose.
-        #[source]
-        source: Box<jsonschema::ValidationError<'static>>,
-    },
     /// The supplied app-data document failed semantic validation.
     #[error("invalid appData field `{field}`: {reason}")]
     InvalidAppDataProvided {
@@ -146,14 +104,13 @@ impl AppDataError {
             Self::InvalidAppDataHex
             | Self::InvalidCid
             | Self::InvalidSchemaVersion(_)
-            | Self::UnknownSchemaVersion(_)
             | Self::MissingSchemaVersion
             | Self::InvalidAppDataProvided { .. }
             | Self::TooLarge { .. } => ErrorClass::Validation,
             Self::Transport { .. } => ErrorClass::Transport,
             Self::Cancelled => ErrorClass::Cancelled,
-            // Json, Schema, Calculation, and partner-fee / flashloan validation
-            // failures plus any future additive variants classify as internal.
+            // Json, Calculation, and partner-fee / flashloan validation failures
+            // plus any future additive variants classify as internal.
             _ => ErrorClass::Internal,
         }
     }
@@ -174,20 +131,12 @@ impl Serialize for AppDataError {
                 map.serialize_entry("type", "InvalidSchemaVersion")?;
                 map.serialize_entry("version", version)?;
             }
-            Self::UnknownSchemaVersion(version) => {
-                map.serialize_entry("type", "UnknownSchemaVersion")?;
-                map.serialize_entry("version", version)?;
-            }
             Self::MissingSchemaVersion => {
                 map.serialize_entry("type", "MissingSchemaVersion")?;
             }
             Self::Json(error) => {
                 map.serialize_entry("type", "Json")?;
                 map.serialize_entry("message", &error.to_string())?;
-            }
-            Self::Schema { message, .. } => {
-                map.serialize_entry("type", "Schema")?;
-                map.serialize_entry("message", message)?;
             }
             Self::InvalidAppDataProvided { field, reason } => {
                 map.serialize_entry("type", "InvalidAppDataProvided")?;

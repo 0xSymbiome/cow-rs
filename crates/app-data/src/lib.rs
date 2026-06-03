@@ -1,13 +1,13 @@
 #![cfg_attr(any(doctest, docsrs), doc = include_str!("../README.md"))]
 
-//! `CoW` Protocol app-data generation, schema validation, CID conversion, and
+//! `CoW` Protocol app-data generation, validation, CID conversion, and
 //! the IPFS read transport seam.
 //!
 //! # Quick start
 //!
 //! Build a minimal SDK-attribution document tagged with a validated
-//! [`AppCode`](cow_sdk_core::AppCode), validate it against the bundled
-//! JSON schema, and produce a payload ready for `PUT /api/v1/app_data/{hash}`:
+//! [`AppCode`](cow_sdk_core::AppCode), validate its modelled metadata, and
+//! produce a payload ready for `PUT /api/v1/app_data/{hash}`:
 //!
 //! ```
 //! use cow_sdk_core::AppCode;
@@ -56,15 +56,9 @@ pub use info::{
     get_app_data_info, get_app_data_info_hex, stringify_deterministic,
 };
 pub use metadata::{FlashloanHints, Hook, HookList, QuoteMetadata};
-pub use schema::{
-    extract_schema_version, generate_app_data_doc, get_app_data_schema, validate_app_data_doc,
-};
+pub use schema::{extract_schema_version, generate_app_data_doc, validate_app_data_doc};
 pub use types::{
     AppDataDoc, AppDataInfo, AppDataParams, DEFAULT_APP_CODE, DEFAULT_IPFS_READ_URI, IpfsConfig,
-    LATEST_APP_DATA_VERSION, LATEST_HOOKS_METADATA_VERSION, LATEST_ORDER_CLASS_METADATA_VERSION,
-    LATEST_PARTNER_FEE_METADATA_VERSION, LATEST_QUOTE_METADATA_VERSION,
-    LATEST_REFERRER_METADATA_VERSION, LATEST_REPLACED_ORDER_METADATA_VERSION,
-    LATEST_SCHEMA_VERSION, LATEST_SIGNER_METADATA_VERSION, LATEST_USER_CONSENTS_METADATA_VERSION,
-    LATEST_UTM_METADATA_VERSION, LATEST_WIDGET_METADATA_VERSION, LATEST_WRAPPERS_METADATA_VERSION,
-    MetadataMap, PartnerFee, PartnerFeePolicy, SchemaVersion, ValidationResult,
+    LATEST_APP_DATA_VERSION, LATEST_SCHEMA_VERSION, MetadataMap, PartnerFee, PartnerFeePolicy,
+    SchemaVersion, ValidationResult,
 };
