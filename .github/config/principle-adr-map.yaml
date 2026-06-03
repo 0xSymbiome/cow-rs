@@ -44,7 +44,7 @@ principles:
   - id: 6
     name: Additive Optional Ecosystems
     primary_adr: "0008"
-    supporting_adrs: ["0004", "0007", "0009"]
+    supporting_adrs: ["0004", "0007", "0065"]
 
   - id: 7
     name: Sole Construction Seam

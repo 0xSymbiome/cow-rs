@@ -1,10 +1,16 @@
 # ADR 0009: WASM Verification Consoles — Hybrid Extensibility And Two-Tier Proof
 
-- Status: Accepted
+- Status: Superseded
 - Date: 2026-04-17
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: examples, wasm, browser-wallet, proof-posture, extensibility
 - Related: [ADR 0004](0004-feature-gated-browser-wallet-sidecar.md), [ADR 0007](0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md), [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md)
+- Superseded by: [ADR 0065](0065-canonical-browser-wallet-example.md)
+
+> Superseded by [ADR 0065](0065-canonical-browser-wallet-example.md): the
+> verification-console genre is retired in favour of a single canonical
+> browser-wallet trade example. The decision below is retained as design
+> history.
 
 ## Decision
 
@@ -71,9 +77,4 @@ grows.
 - [ADR 0004](0004-feature-gated-browser-wallet-sidecar.md)
 - [ADR 0007](0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md)
 - [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md)
-
-**Proven by:**
-
-- [WASM Example Proof-Posture Audit](../audit/wasm-example-proof-posture-audit.md)
-- [WASM Browser Runner Determinism Audit](../audit/wasm-browser-runner-determinism-audit.md)
-- [Browser Wallet Chain Coherence Audit](../audit/browser-wallet-chain-coherence-audit.md)
+- [ADR 0065](0065-canonical-browser-wallet-example.md) (supersedes this ADR)

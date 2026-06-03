@@ -16,7 +16,7 @@ public and runtime shape of `cow-rs`.
 | [0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md) | Accepted | Keep policy contracts explicit, review-visible, and instance-scoped. |
 | [0007](0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md) | Accepted (amended) | Keep browser wallet support explicit, bounded, and aligned to the current browser-runtime seam. |
 | [0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md) | Accepted | Grow new capability surfaces through additive leaf crates and owned sidecars. |
-| [0009](0009-wasm-verification-consoles-hybrid-extensibility-and-two-tier-proof.md) | Accepted | Keep WASM examples as named verification consoles with one naming shape, one ship checklist, a two-tier proof posture, and a hybrid extensibility rule. |
+| [0009](0009-wasm-verification-consoles-hybrid-extensibility-and-two-tier-proof.md) | Superseded by [0065](0065-canonical-browser-wallet-example.md) | Keep WASM examples as named verification consoles with one naming shape, one ship checklist, a two-tier proof posture, and a hybrid extensibility rule. |
 | [0010](0010-runtime-neutral-async-and-transport-posture.md) | Accepted (amended); superseded in part by [0013](0013-http-transport-injection-and-typestate-builders.md) | Keep the async surface runtime-neutral with a `CancellationToken` contract, typed transport-error classification that strips the URL, and opt-in `tracing` instrumentation. |
 | [0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md) | Accepted (amended) | Distinguish atomic and decimal-scaled amounts through dedicated newtypes and advertise `TradingBuilder` prerequisites through typestate terminals. |
 | [0012](0012-alloy-sol-bindings-and-registry-authority.md) | Accepted (amended) | Generate every ABI binding through `alloy::sol!` and resolve every deployed address through a single typed `Registry` authority. |
@@ -71,6 +71,7 @@ public and runtime shape of `cow-rs`.
 | [0061](0061-wasm-abi-receiver-pay-to-owner.md) | Accepted | Treat an omitted and an explicit zero-address `receiver` identically at the WASM order-input boundary (both resolve to the zero-address pay-to-owner sentinel), with no receiver-to-owner reinterpretation. |
 | [0062](0062-internal-shared-test-support-crate.md) | Accepted | Keep shared cross-crate test support in one unpublished `cow-sdk-test-utils` crate consumed only as a dev-dependency. |
 | [0063](0063-published-consumer-test-doubles-crate.md) | Accepted | Ship consumer-facing in-memory test doubles for the public trait seams as the published `cow-sdk-test` crate, re-exported behind the facade `testing` feature. |
+| [0065](0065-canonical-browser-wallet-example.md) | Accepted | Ship one canonical, runnable browser-wallet trade example in place of the WASM verification-console genre. |
 
 ## When To Write An ADR
 

@@ -69,7 +69,7 @@ Optional capabilities grow through leaf crates and feature-gated additions.
 Browser-runtime behavior, provider-specific behavior, and future capability
 families do not silently widen the default facade contract.
 
-**Anchored by**: [ADR 0008](adr/0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md) (primary). Supporting: [ADR 0004](adr/0004-feature-gated-browser-wallet-sidecar.md), [ADR 0007](adr/0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md), [ADR 0009](adr/0009-wasm-verification-consoles-hybrid-extensibility-and-two-tier-proof.md).
+**Anchored by**: [ADR 0008](adr/0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md) (primary). Supporting: [ADR 0004](adr/0004-feature-gated-browser-wallet-sidecar.md), [ADR 0007](adr/0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md), [ADR 0065](adr/0065-canonical-browser-wallet-example.md).
 
 ## Sole Construction Seam
 
