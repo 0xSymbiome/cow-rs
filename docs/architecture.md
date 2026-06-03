@@ -82,7 +82,7 @@ flowchart TD
 | `cow-sdk-browser-wallet` | Browser-runtime wallet integration | You need EIP-1193 wallet flows in WASM. |
 | `cow-sdk-alloy-provider` | Native Alloy-backed `Provider` adapter | You need read-only chain RPC through Alloy without a signer dependency. |
 | `cow-sdk-alloy-signer` | Native Alloy-backed local private-key `Signer` adapter | You need local message or EIP-712 signing without provider-backed transaction submission. |
-| `cow-sdk-alloy` | Composed native Alloy provider plus signer adapter | You need one native client for `Provider`, `SigningProvider`, and `Signer` helper flows. |
+| `cow-sdk-alloy` | Composed native Alloy provider plus signer adapter | You need one native client for `Provider`, `LogProvider`, `SigningProvider`, and `Signer` helper flows. |
 | `cow-sdk-composable` | Reserved manifest for composable-order helpers, with current readiness evidence owned by contracts, signing, docs, and parity fixtures | You need to track the planned composable leaf without pulling an unfinished helper API. |
 | `cow-sdk-cow-shed` | COW Shed account-abstraction proxy address derivation, EIP-712 hook envelopes, and signed-hook payload encoding | You need the COW Shed account-abstraction surface. |
 
@@ -212,7 +212,9 @@ Wallet-capable adapters implement `SigningProvider`, which extends `Provider`
 with signer creation. Adapters that can fetch event logs additionally implement
 `LogProvider`, the opt-in log-fetch capability supertrait
 ([ADR 0057](adr/0057-log-provider-capability-trait.md)); its `get_logs` performs
-a single bounded query that feeds the fail-closed event decoders.
+a single bounded query — over an address set and the four EVM topic slots, so
+indexed arguments such as an event's `owner` filter server-side — that feeds the
+fail-closed event decoders.
 Native Alloy support is already shipped as
 `cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, and `cow-sdk-alloy`;
 browser-wallet support implements the same traits directly without widening
@@ -221,7 +223,9 @@ the native facade.
 The native Alloy adapter family ships as three crates so a consumer can pull
 only the capabilities they exercise: `cow-sdk-alloy-provider` for read-only
 RPC, `cow-sdk-alloy-signer` for local private-key signing, and `cow-sdk-alloy`
-for the composed read-plus-sign flow that most trading applications need. The
+for the composed read, log-fetch, and sign flow that most trading applications
+need. The composed client implements `LogProvider` over the same provider it
+already holds, so a consumer fetches event logs without a second provider. The
 split keeps the provider leaf free of signing-crypto features and lets the
 signer leaf stay free of transport plumbing.
 

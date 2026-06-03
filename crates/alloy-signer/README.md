@@ -22,6 +22,8 @@ The package boundary is intentionally narrow:
 - `LocalAlloyKeystoreSigner` implements `cow_sdk_core::Signer`.
 - It signs EIP-191 messages and EIP-712 typed-data payloads.
 - Canonical typed-data signing preserves the payload primary type.
+- Canonical typed-data signing accepts nested multi-type payloads whose fields
+  reference other structs declared in the type map, directly or as arrays.
 - The legacy flat typed-data compatibility path uses `Message` as its
   placeholder primary type.
 - ECDSA signatures are normalized through the shared `cow-sdk-contracts`

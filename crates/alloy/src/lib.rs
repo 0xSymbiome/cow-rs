@@ -4,7 +4,7 @@
 //!
 //! [`AlloyClient`] combines an Alloy HTTP provider with an Alloy local private
 //! key signer through Alloy's wallet-filler stack. It implements
-//! [`cow_sdk_core::Provider`] and
+//! [`cow_sdk_core::Provider`], [`cow_sdk_core::LogProvider`], and
 //! [`cow_sdk_core::SigningProvider`], while the handle returned by
 //! `create_signer` implements [`cow_sdk_core::Signer`].
 //!

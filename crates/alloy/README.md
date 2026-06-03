@@ -29,8 +29,9 @@ support is owned by
 [`cow-sdk-alloy-provider`](https://docs.rs/cow-sdk-alloy-provider), signing
 support is owned by [`cow-sdk-alloy-signer`](https://docs.rs/cow-sdk-alloy-signer),
 and this package is the composed namespace for consumers that want both.
-`AlloyClient` implements `Provider` and `SigningProvider`; the owned signer
-handle returned by `create_signer` implements `Signer`, signs CoW EIP-712
+`AlloyClient` implements `Provider`, `LogProvider`, and `SigningProvider`; the
+owned signer handle returned by `create_signer` implements `Signer`, signs CoW
+EIP-712
 typed-data payloads directly, submits transactions through Alloy's
 wallet-filler provider, and reports `TransactionBroadcast` with the broadcast
 transaction hash.

@@ -198,6 +198,12 @@ enums:
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: Token balance destinations are protocol-facing and may grow with upstream settlement semantics.
+  - name: LogBlockSelector
+    file: crates/core/src/types/logs.rs
+    line: 22
+    category: protocol-fixed-exhaustive
+    expected_marker: exhaustive
+    reason: The two eth_getLogs block selections (number range and block hash) are fixed by the JSON-RPC method.
   - name: SubgraphError
     file: crates/subgraph/src/error.rs
     line: 92

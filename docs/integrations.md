@@ -55,8 +55,9 @@ The native Alloy family is opt-in:
 
 - `cow-sdk-alloy-provider` implements read-only `Provider`.
 - `cow-sdk-alloy-signer` implements local private-key `Signer`.
-- `cow-sdk-alloy` composes provider and signer support and implements
-  `SigningProvider` for `Trading` helper flows.
+- `cow-sdk-alloy` composes provider and signer support, implements
+  `SigningProvider` for `Trading` helper flows, and implements `LogProvider`
+  for single-call event-log fetching.
 
 The root facade exposes matching features named `alloy-provider`,
 `alloy-signer`, and `alloy`. These features are native-only and hard-fail on

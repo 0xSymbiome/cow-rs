@@ -2,13 +2,13 @@
 
 use alloy_consensus::{BlockHeader as _, TxReceipt as _};
 use alloy_network::TransactionBuilder;
-use alloy_primitives::{B256, U256};
+use alloy_primitives::{Address as AlloyAddress, B256, U256};
 use alloy_rpc_types_eth::{
     BlockId, BlockNumberOrTag, Filter, Log as AlloyLog, TransactionRequest as AlloyTransaction,
 };
 use cow_sdk_core::{
-    Address, Amount, BlockHash, BlockInfo, LogMeta, LogQuery, RawLog, TransactionHash,
-    TransactionReceipt, TransactionRequest, TransactionStatus,
+    Address, Amount, BlockHash, BlockInfo, Hash32, LogBlockSelector, LogMeta, LogQuery, RawLog,
+    TransactionHash, TransactionReceipt, TransactionRequest, TransactionStatus,
 };
 
 /// Converts a core transaction request into an Alloy transaction request.
@@ -114,38 +114,64 @@ pub(crate) fn alloy_to_cow_block_info(block: &alloy_rpc_types_eth::Block) -> Blo
 
 /// Converts a core [`LogQuery`] into an Alloy `eth_getLogs` filter.
 ///
-/// Maps the caller-bounded `[from_block, to_block]` range, the optional contract
-/// address, and the topic-0 (event-signature) candidates. An empty topic list
-/// leaves topic-0 unconstrained.
+/// Maps the block selector (number range or block hash), the optional address
+/// set, and all four topic slots. An empty address set or topic slot leaves
+/// that dimension unconstrained (match-any).
 pub(crate) fn cow_log_query_to_alloy_filter(query: &LogQuery) -> Filter {
-    let mut filter = Filter::new()
-        .from_block(query.from_block)
-        .to_block(query.to_block);
-    if let Some(address) = &query.address {
-        filter = filter.address(*address.as_alloy());
+    let mut filter = match &query.block {
+        LogBlockSelector::Range { from, to } => Filter::new().from_block(*from).to_block(*to),
+        LogBlockSelector::Hash(hash) => Filter::new().at_block_hash(*hash.as_alloy()),
+    };
+    if !query.addresses.is_empty() {
+        let addresses: Vec<AlloyAddress> = query
+            .addresses
+            .iter()
+            .map(|address| *address.as_alloy())
+            .collect();
+        filter = filter.address(addresses);
     }
-    if !query.topics.is_empty() {
-        let topic0: Vec<B256> = query.topics.iter().map(|topic| *topic.as_alloy()).collect();
-        filter = filter.event_signature(topic0);
+    if !query.topics[0].is_empty() {
+        filter = filter.event_signature(topic_filter_set(&query.topics[0]));
+    }
+    if !query.topics[1].is_empty() {
+        filter = filter.topic1(topic_filter_set(&query.topics[1]));
+    }
+    if !query.topics[2].is_empty() {
+        filter = filter.topic2(topic_filter_set(&query.topics[2]));
+    }
+    if !query.topics[3].is_empty() {
+        filter = filter.topic3(topic_filter_set(&query.topics[3]));
     }
     filter
 }
 
+/// Maps a core topic slot (an any-of set of [`Hash32`]) into the Alloy `B256`
+/// values its `Topic` filter accepts.
+fn topic_filter_set(values: &[Hash32]) -> Vec<B256> {
+    values.iter().map(|value| *value.as_alloy()).collect()
+}
+
 /// Converts an Alloy log into the core [`RawLog`] contract.
 ///
-/// Positional metadata (`block_number`, `transaction_hash`, `log_index`) is read
-/// from the mined log; a bounded historical scan always carries it.
+/// Carries the full mined-log metadata — block number and hash, optional block
+/// timestamp, transaction hash and index, and log index — plus the reorg
+/// `removed` flag. A bounded historical scan only returns mined logs, so the
+/// always-present fields fall back to zero only on a malformed response.
 pub(crate) fn alloy_log_to_cow_raw_log(log: &AlloyLog) -> RawLog {
     let meta = LogMeta::new(
         log.block_number.unwrap_or_default(),
+        log.block_hash.map_or(BlockHash::ZERO, BlockHash::from),
+        log.block_timestamp,
         log.transaction_hash
             .map_or(TransactionHash::ZERO, TransactionHash::from),
+        log.transaction_index.unwrap_or_default(),
         log.log_index.unwrap_or_default(),
     );
     RawLog::new(
         Address::from(log.inner.address),
         log.inner.data.clone(),
         meta,
+        log.removed,
     )
 }
 
@@ -214,6 +240,32 @@ mod tests {
     }
 
     #[test]
+    fn cow_log_query_to_alloy_filter_maps_topics_addresses_and_block_hash() {
+        // Range query: address list + topic0 + an indexed-owner topic1.
+        let owner = Address::new("0x000000000000000000000000000000000000dead").unwrap();
+        let first = Address::new("0x1111111111111111111111111111111111111111").unwrap();
+        let second = Address::new("0x2222222222222222222222222222222222222222").unwrap();
+        let query = LogQuery::new(10, 20)
+            .with_addresses([first, second])
+            .with_topic0(Hash32::from_bytes([0xaa; 32]))
+            .with_topic1(Hash32::from_indexed_address(&owner));
+        let filter = cow_log_query_to_alloy_filter(&query);
+
+        assert_eq!(filter.address.len(), 2);
+        assert!(!filter.topics[0].is_empty());
+        assert!(!filter.topics[1].is_empty(), "indexed owner maps to topic1");
+        assert!(filter.topics[2].is_empty());
+        assert!(filter.topics[3].is_empty());
+        assert_eq!(filter.get_from_block(), Some(10));
+        assert_eq!(filter.get_to_block(), Some(20));
+
+        // Block-hash query maps to at_block_hash.
+        let by_hash =
+            cow_log_query_to_alloy_filter(&LogQuery::at_block_hash(Hash32::from_bytes([0x33; 32])));
+        assert!(by_hash.get_block_hash().is_some());
+    }
+
+    #[test]
     fn alloy_log_to_cow_raw_log_maps_address_meta_and_payload() {
         let log: AlloyLog = serde_json::from_value(json!({
             "address": FROM_ADDR,
@@ -232,8 +284,11 @@ mod tests {
 
         assert_eq!(raw.address.to_hex_string(), FROM_ADDR);
         assert_eq!(raw.meta.block_number, 1234);
+        assert_eq!(raw.meta.block_hash.to_hex_string(), BLOCK_HASH);
         assert_eq!(raw.meta.transaction_hash.to_hex_string(), HASH_1);
+        assert_eq!(raw.meta.transaction_index, 0);
         assert_eq!(raw.meta.log_index, 2);
+        assert!(!raw.removed);
         assert_eq!(raw.data.topics().len(), 1);
     }
 

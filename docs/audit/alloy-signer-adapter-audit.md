@@ -1,7 +1,7 @@
 # Alloy Signer Adapter Audit
 
 Status: Current
-Last reviewed: 2026-05-26
+Last reviewed: 2026-06-03
 Owning surface: `cow-sdk-alloy-signer` `LocalAlloyKeystoreSigner`, its builder, and its `Signer` implementation
 Refresh trigger: ADR 0038 - `send_transaction` return type clarification, or changes to the signer public API, the `Signer` trait, typed-data conversion, signature normalization, the inter-crate seam entries consumed by sibling Alloy adapters, cancellation propagation, the workspace Alloy signer pin, or the crate dependency boundary
 Related docs:
@@ -39,7 +39,7 @@ or submission, browser-wallet behavior, or smart-account signing.
 | Trait coverage | `LocalAlloyKeystoreSigner` implements `Signer` and compile-fail tests assert it is not a `Provider` or `SigningProvider` | Conforms |
 | Builder typestate | `build()` is callable only after private-key source and chain id are selected; externally constructed marker states cannot bypass the builder | Conforms |
 | EIP-191 signing | Message signatures match the committed reference vector and recover to the local signer address | Conforms |
-| EIP-712 signing | Canonical order typed-data signatures preserve `Order` as the primary type, match the committed reference vector, and recover through the contracts crate | Conforms |
+| EIP-712 signing | Canonical order typed-data signatures preserve `Order` as the primary type, match the committed reference vector, and recover through the contracts crate; nested multi-type payloads with struct-typed fields convert and produce digests byte-identical to the macro-emitted `SolStruct` envelope, while undeclared struct references stay fail-closed | Conforms |
 | Legacy typed-data fallback | The flat-fields compatibility method uses `Message` as its placeholder primary type and is distinct from canonical payload signing | Conforms |
 | Error and cancellation | Public error classes cover validation, signing, provider-required, unsupported, cancelled, and internal failures with redacted formatting where detail may be sensitive | Conforms |
 | Dependency boundary | The crate declares no provider or transport dependency and the resolved normal graph excludes `alloy-provider` | Conforms |
@@ -78,9 +78,12 @@ broadcast hash without a provider. The composed Alloy umbrella owns the
 provider-backed path and returns the broadcast hash through `*pending.tx_hash()`.
 
 `sign_typed_data_payload` converts the explicit SDK payload into Alloy dynamic
-typed data without dropping the payload primary type. The legacy flat path has
-no primary-type input, so it synthesizes a typed-data payload with `Message` as
-the compatibility placeholder.
+typed data without dropping the payload primary type. A field may reference
+another struct declared in the type map, directly or as an array (for example a
+`Call[]` over a `Call` struct), so nested multi-type EIP-712 payloads convert
+end to end; a field naming a struct that is not declared in the type map stays
+fail-closed. The legacy flat path has no primary-type input, so it synthesizes a
+typed-data payload with `Message` as the compatibility placeholder.
 
 ### Signature Normalization
 
@@ -124,6 +127,8 @@ Primary regression coverage:
 - `crates/alloy-signer/tests/cancellation_contract.rs`
 - `crates/alloy-signer/tests/dependency_boundary_contract.rs`
 - `crates/alloy-signer/tests/proptests.rs`
+- `crates/alloy-signer/src/conversion.rs::tests::nested_struct_payload_matches_macro_digest`
+- `crates/alloy-signer/src/conversion.rs::tests::undeclared_struct_reference_is_rejected`
 - `crates/alloy-signer/tests/compile_fail.rs`
 - `crates/alloy-signer/tests/trybuild/no_provider.rs`
 - `crates/alloy-signer/tests/trybuild/no_signing_provider.rs`

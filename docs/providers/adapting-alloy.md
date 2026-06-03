@@ -28,8 +28,8 @@ browser runtime.
 ## Umbrella Client
 
 `cow-sdk-alloy::AlloyClient` combines an Alloy HTTP provider with an Alloy
-local private-key signer. The client implements `Provider` and
-`SigningProvider`; the owned signer handle returned by `create_signer`
+local private-key signer. The client implements `Provider`, `LogProvider`,
+and `SigningProvider`; the owned signer handle returned by `create_signer`
 implements `Signer` and remains usable after the parent client is
 dropped.
 

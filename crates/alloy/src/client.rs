@@ -7,12 +7,16 @@ use alloy_provider::{DynProvider, Provider as _, ProviderBuilder};
 use alloy_signer::Signer as AlloySigner;
 use alloy_signer_local::PrivateKeySigner;
 use cow_sdk_core::{
-    Address, BlockInfo, ChainId, ContractCall, ContractHandle, HexData, Provider, SigningProvider,
-    TransactionHash, TransactionReceipt, TransactionRequest,
+    Address, BlockInfo, ChainId, ContractCall, ContractHandle, HexData, LogProvider, LogQuery,
+    Provider, RawLog, SigningProvider, TransactionHash, TransactionReceipt, TransactionRequest,
 };
 
 use alloy_primitives::{B256, U256};
-use cow_sdk_alloy_provider::__seam::execute_read_contract as execute_read_contract_seam;
+use cow_sdk_alloy_provider::__seam::{
+    alloy_log_to_cow_raw_log as alloy_log_to_cow_raw_log_seam,
+    cow_log_query_to_alloy_filter as cow_log_query_to_alloy_filter_seam,
+    execute_read_contract as execute_read_contract_seam,
+};
 
 use crate::{
     builder::AlloyClientBuilder,
@@ -33,7 +37,8 @@ pub(crate) struct AlloyClientInner {
 /// Native composed Alloy provider and signer client.
 ///
 /// `AlloyClient` owns a wallet-filler Alloy provider and a concrete local
-/// signer. It implements [`Provider`] for read-only RPC calls and
+/// signer. It implements [`Provider`] for read-only RPC calls,
+/// [`LogProvider`] for bounded `eth_getLogs` event-log fetching, and
 /// [`SigningProvider`] for creating an owned [`AlloyClientSignerHandle`].
 #[derive(Clone)]
 pub struct AlloyClient {
@@ -217,5 +222,25 @@ impl SigningProvider for AlloyClient {
 
     async fn create_signer(&self, _signer_hint: &str) -> Result<Self::Signer, Self::Error> {
         Ok(AlloyClientSignerHandle::new(Arc::clone(&self.inner)))
+    }
+}
+
+impl LogProvider for AlloyClient {
+    /// Fetches event logs in a single bounded `eth_getLogs` call, delegating to
+    /// the same composed Alloy provider the umbrella already holds.
+    ///
+    /// The `LogQuery` → filter and Alloy-log → [`RawLog`] mappings are reused
+    /// from the provider leaf's inter-crate seam so the umbrella does not fork
+    /// the reviewed conversions. The call issues exactly one query over the
+    /// caller-bounded block range and never loops, polls, or watches.
+    async fn get_logs(&self, query: &LogQuery) -> Result<Vec<RawLog>, Self::Error> {
+        let filter = cow_log_query_to_alloy_filter_seam(query);
+        let logs = self
+            .inner
+            .provider
+            .get_logs(&filter)
+            .await
+            .map_err(AlloyClientError::from_alloy_transport)?;
+        Ok(logs.iter().map(alloy_log_to_cow_raw_log_seam).collect())
     }
 }

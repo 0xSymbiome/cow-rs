@@ -153,4 +153,27 @@ pub mod __seam {
     ) -> Result<String, crate::ProviderError> {
         crate::read_contract::execute_read_contract(provider, request).await
     }
+
+    /// Converts a core [`cow_sdk_core::LogQuery`] into an Alloy `eth_getLogs`
+    /// filter.
+    ///
+    /// Inter-crate seam entry; not part of the semver-stable consumer API. The
+    /// sibling umbrella adapter consumes this so its `LogProvider` implementation
+    /// reuses the reviewed `LogQuery` → filter mapping without copying it.
+    #[must_use]
+    pub fn cow_log_query_to_alloy_filter(
+        query: &cow_sdk_core::LogQuery,
+    ) -> alloy_rpc_types_eth::Filter {
+        crate::conversion::cow_log_query_to_alloy_filter(query)
+    }
+
+    /// Converts an Alloy log into the core [`cow_sdk_core::RawLog`] contract.
+    ///
+    /// Inter-crate seam entry; not part of the semver-stable consumer API. The
+    /// sibling umbrella adapter consumes this so its `LogProvider` implementation
+    /// reuses the reviewed Alloy-log → `RawLog` mapping without copying it.
+    #[must_use]
+    pub fn alloy_log_to_cow_raw_log(log: &alloy_rpc_types_eth::Log) -> cow_sdk_core::RawLog {
+        crate::conversion::alloy_log_to_cow_raw_log(log)
+    }
 }

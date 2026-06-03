@@ -237,3 +237,26 @@ async fn read_contract_path_propagates_validation_for_malformed_args_json() {
         "expected Validation variant, got {err:?}",
     );
 }
+
+// -------------------------------------------------------------------------
+// Log-conversion seam entries — pin that the `LogQuery` -> filter and
+// Alloy-log -> `RawLog` conversions the umbrella's `LogProvider`
+// implementation depends on stay reachable through the inter-crate seam.
+// The conversion behaviour itself is covered by the crate's own
+// `cow_log_query_to_alloy_filter_sets_caller_bounded_range` and
+// `alloy_log_to_cow_raw_log_maps_address_meta_and_payload` unit tests.
+// -------------------------------------------------------------------------
+
+#[test]
+fn seam_exposes_log_conversions_for_the_umbrella() {
+    // Compile-time pin: reference the seam entries so the test crate fails to
+    // build if the inter-adapter seam ever loses either log-conversion export.
+    #[allow(
+        path_statements,
+        reason = "compile-time reference proves the seam symbols exist"
+    )]
+    {
+        __seam::cow_log_query_to_alloy_filter;
+        __seam::alloy_log_to_cow_raw_log;
+    }
+}

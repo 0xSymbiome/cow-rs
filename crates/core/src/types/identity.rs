@@ -766,6 +766,19 @@ impl Hash32 {
         Self(B256::new(bytes))
     }
 
+    /// Creates the 32-byte topic form of an indexed `address` event argument.
+    ///
+    /// An EVM indexed address is encoded as a 32-byte topic with the 20 address
+    /// bytes right-aligned and the high 12 bytes zeroed. Use it to filter an
+    /// indexed-address argument server-side — for example the `owner` of a `CoW`
+    /// settlement `Trade` event:
+    /// `LogQuery::new(from, to).with_topic1(Hash32::from_indexed_address(&owner))`.
+    #[inline]
+    #[must_use]
+    pub fn from_indexed_address(address: &Address) -> Self {
+        Self(B256::left_padding_from(address.as_alloy().as_slice()))
+    }
+
     /// Returns the canonical lowercase 0x-prefixed hex form as an owned
     /// [`String`].
     #[inline]

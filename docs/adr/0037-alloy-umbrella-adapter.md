@@ -10,8 +10,14 @@
 
 The workspace ships `cow-sdk-alloy` as the native composed Alloy adapter.
 `AlloyClient` owns an Alloy HTTP provider configured with a local wallet
-filler and implements both `cow_sdk_core::Provider` and
-`cow_sdk_core::SigningProvider`.
+filler and implements `cow_sdk_core::Provider`,
+`cow_sdk_core::LogProvider`, and `cow_sdk_core::SigningProvider`.
+`LogProvider::get_logs` issues a single bounded `eth_getLogs` over the composed
+provider and reuses the provider leaf's `LogQuery` → filter and Alloy-log →
+`RawLog` conversions through the doc-hidden inter-crate seam, so the umbrella
+does not fork the reviewed mappings. A consumer therefore fetches event logs
+from the same client it trades through, without constructing a second provider
+for the same RPC endpoint.
 
 `create_signer` returns an owned `AlloyClientSignerHandle`. The handle keeps an
 `Arc` to the client inner state, so it remains usable after the parent client
@@ -63,7 +69,7 @@ to success through Alloy's higher-level `status()` helper.
 - Builder state: construction requires HTTP transport, private-key source, and
   chain id before `build()` is callable; external callers cannot construct the
   marker states directly.
-- Trait coverage: `AlloyClient` implements `Provider` and
+- Trait coverage: `AlloyClient` implements `Provider`, `LogProvider`, and
   `SigningProvider`; `AlloyClientSignerHandle` implements `Signer`
   and does not implement `Provider`.
 - Runtime behavior: `send_transaction` uses the Alloy wallet-filler provider,
@@ -126,9 +132,9 @@ provider and signer re-exports of the leaf adapter public surfaces.
 The umbrella consumes the read-contract and typed-data conversion modules
 from the leaf adapters through their `#[doc(hidden)] __seam` entries. The
 provider leaf owns the `execute_read_contract` entry point and the
-JSON-RPC request, block-tag, receipt, and block-info conversions; the
-signer leaf owns the EIP-712 typed-data conversion and signature
-normalization. The workspace `alloy_read_contract_parity_invariant`
+JSON-RPC request, block-tag, receipt, block-info, and log-query/raw-log
+conversions; the signer leaf owns the EIP-712 typed-data conversion and
+signature normalization. The workspace `alloy_read_contract_parity_invariant`
 integration test continues to assert byte-for-byte equality between the
 umbrella's `AlloyClient::read_contract` output and the leaf provider's
 `RpcAlloyProvider::read_contract` output for pinned ABI fixtures, even
