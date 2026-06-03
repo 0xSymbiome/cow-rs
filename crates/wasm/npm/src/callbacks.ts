@@ -35,11 +35,16 @@ export type CowFetchCallback = (
   request: CowFetchRequest
 ) => Promise<CowFetchResponse> | CowFetchResponse;
 
+// Fields are required to match the Rust `TypedDataDomainDto` (`dto/signing.rs`):
+// the SDK always emits a fully-populated EIP-712 domain across the ABI, so the
+// envelope a host callback receives carries every field. The public
+// `TypedDataDomainDto` is re-exported from the per-flavor raw module; this
+// flavor-agnostic mirror is the callback-parameter shape only.
 export interface TypedDataDomainDto {
-  name?: string;
-  version?: string;
-  chainId?: number;
-  verifyingContract?: string;
+  name: string;
+  version: string;
+  chainId: number;
+  verifyingContract: string;
 }
 
 export interface TypedDataFieldDto {

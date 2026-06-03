@@ -227,6 +227,44 @@ async fn wallet_config_timeout_rejects_pending_signer_callback() {
 }
 
 #[wasm_bindgen_test]
+async fn eth_sign_digest_timeout_preserves_wallet_timeout_kind() {
+    let digest_signer = callback("digest", "return new Promise(() => {});");
+    let error = sign_order_eth_sign_digest(
+        wasm_order_input(),
+        CHAIN_MAINNET,
+        ADDR_OWNER.to_owned(),
+        digest_signer,
+        Some(signing_options_with_wallet_timeout(1)),
+    )
+    .await
+    .expect_err("eth_sign digest wallet timeout must reject a pending callback");
+    let value = json(error);
+
+    // The digest path routes through the `DigestSigner` adapter; a wallet
+    // timeout must keep the `walletTimeout` kind (and `timeoutMs`) rather than
+    // collapsing into `walletRequest`, matching the typed-data path above.
+    assert_eq!(value["kind"], "walletTimeout");
+    assert_eq!(value["timeoutMs"], 1);
+}
+
+#[wasm_bindgen_test]
+async fn eth_sign_cancellation_timeout_preserves_wallet_timeout_kind() {
+    let digest_signer = callback("digest", "return new Promise(() => {});");
+    let error = sign_cancellation_eth_sign_digest(
+        vec![generated_order_uid()],
+        CHAIN_MAINNET,
+        digest_signer,
+        Some(signing_options_with_wallet_timeout(1)),
+    )
+    .await
+    .expect_err("eth_sign cancellation wallet timeout must reject a pending callback");
+    let value = json(error);
+
+    assert_eq!(value["kind"], "walletTimeout");
+    assert_eq!(value["timeoutMs"], 1);
+}
+
+#[wasm_bindgen_test]
 async fn eth_sign_digest_callback_receives_digest() {
     let signer = callback(
         "digest",

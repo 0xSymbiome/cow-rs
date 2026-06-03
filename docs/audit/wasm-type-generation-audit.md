@@ -92,9 +92,13 @@ Primary implementation points:
 - `crates/wasm/src/exports/dto/` (domain DTO modules)
 - `crates/wasm/src/exports/callbacks.rs`
 - `crates/wasm/src/exports/envelope.rs`
-- `crates/wasm/snapshots/raw/cow_sdk_wasm_web.d.ts`
-- `crates/wasm/snapshots/raw/cow_sdk_wasm_bundler.d.ts`
-- `crates/wasm/snapshots/raw/cow_sdk_wasm_nodejs.d.ts`
+- `crates/wasm/snapshots/raw/default-bundler.d.ts`
+- `crates/wasm/snapshots/raw/default-nodejs.d.ts`
+- `crates/wasm/snapshots/raw/orderbook-bundler.d.ts`
+- `crates/wasm/snapshots/raw/orderbook-nodejs.d.ts`
+- `crates/wasm/snapshots/raw/signing-bundler.d.ts`
+- `crates/wasm/snapshots/raw/signing-nodejs.d.ts`
+- `crates/wasm/snapshots/raw/cloudflare-web.d.ts`
 - `crates/wasm/snapshots/facade/`
 - `crates/wasm/npm/scripts/build.sh`
 - `crates/wasm/npm/scripts/verify-exports.mjs`

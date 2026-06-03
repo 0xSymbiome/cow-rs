@@ -36,6 +36,10 @@ use crate::exports::dto::{
     OrderTraderParametersInput, SignedCancellationsInput, TransactionRequestDto,
 };
 
+// The `cancellation` feature does not depend on `cow-sdk-trading`, so this
+// settlement-tx gas fallback is kept local and in step with
+// `cow_sdk_trading::GAS_LIMIT_DEFAULT` (mirrors upstream `@cowprotocol/cow-sdk`,
+// which likewise keeps a separate cancellation gas default).
 #[cfg(feature = "cancellation")]
 const GAS_LIMIT_DEFAULT: u32 = 150_000;
 
@@ -54,7 +58,13 @@ impl JsDigestSigner {
 }
 
 impl DigestSigner for JsDigestSigner {
-    type Error = String;
+    // Carry the typed `JsValue` rather than flattening to `String`: a
+    // `walletTimeout` raised inside `await_callback_string` must propagate with
+    // its `kind` and `timeoutMs` intact instead of being collapsed to a message
+    // and re-wrapped as a `walletRequest` at the call site. `DigestSigner::Error`
+    // is an unconstrained associated type, so the adapter keeps the already-typed
+    // JS error.
+    type Error = JsValue;
 
     async fn sign_digest(&self, digest: &[u8]) -> Result<String, Self::Error> {
         let digest = alloy_primitives::hex::encode_prefixed(digest);
@@ -64,9 +74,8 @@ impl DigestSigner for JsDigestSigner {
             "eth_sign",
             self.wallet_timeout_ms,
         )
-        .await
-        .map_err(js_error_to_string)?;
-        normalize_signature(&signature).map_err(js_error_to_string)
+        .await?;
+        normalize_signature(&signature)
     }
 }
 
@@ -244,11 +253,10 @@ pub async fn sign_order_eth_sign_digest(
         )
         .map_err(|error| WasmError::invalid("digest", error.to_string()).into_js())?;
         let signer = JsDigestSigner::new(digest_signer, wallet_timeout_ms);
-        let signature = signer
-            .sign_digest(&digest)
-            .await
-            .map_err(|error| WasmError::wallet("eth_sign", error).into_js())?;
-        let signature = normalize_signature(&signature)?;
+        // `sign_digest` already normalizes the signature and surfaces a typed
+        // `walletTimeout` / `walletRequest` error, so the result propagates with
+        // `?` without a lossy re-wrap or a redundant second normalization.
+        let signature = signer.sign_digest(&digest).await?;
         let signed = signed_order_from_parts(
             generated,
             owner_address,
@@ -432,11 +440,7 @@ pub async fn sign_cancellation_eth_sign_digest(
             alloy_primitives::hex::decode(digest.to_hex_string().trim_start_matches("0x"))
                 .map_err(|error| WasmError::invalid("digest", error.to_string()).into_js())?;
         let signer = JsDigestSigner::new(digest_signer, wallet_timeout_ms);
-        let signature = signer
-            .sign_digest(&digest_bytes)
-            .await
-            .map_err(|error| WasmError::wallet("eth_sign", error).into_js())?;
-        let signature = normalize_signature(&signature)?;
+        let signature = signer.sign_digest(&digest_bytes).await?;
         to_js_value(&WasmEnvelope::v1(SignedCancellationsInput {
             order_uids: uid_strings(&uids),
             signature,
