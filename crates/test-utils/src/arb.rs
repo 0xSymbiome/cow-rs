@@ -18,7 +18,7 @@ pub fn arb_address() -> impl Strategy<Value = Address> {
         if bytes.iter().all(|byte| *byte == 0) {
             bytes[19] = 1;
         }
-        Address::new(format!("0x{}", alloy_primitives::hex::encode(bytes)))
+        Address::new(alloy_primitives::hex::encode_prefixed(bytes))
             .expect("byte-derived address is valid")
     })
 }
@@ -33,7 +33,7 @@ pub fn arb_amount() -> impl Strategy<Value = Amount> {
         if bytes.iter().all(|byte| *byte == 0) {
             bytes[31] = 1;
         }
-        Amount::new(format!("0x{}", alloy_primitives::hex::encode(bytes)))
+        Amount::new(alloy_primitives::hex::encode_prefixed(bytes))
             .expect("byte-derived amount is valid")
     })
 }
@@ -44,7 +44,7 @@ pub fn arb_amount() -> impl Strategy<Value = Amount> {
 /// Never panics — every sampled value is a valid 32-byte hex digest.
 pub fn arb_app_data_hex() -> impl Strategy<Value = AppDataHex> {
     any::<[u8; 32]>().prop_map(|bytes| {
-        AppDataHex::new(format!("0x{}", alloy_primitives::hex::encode(bytes)))
+        AppDataHex::new(alloy_primitives::hex::encode_prefixed(bytes))
             .expect("byte-derived app-data hex is valid")
     })
 }
