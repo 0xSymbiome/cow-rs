@@ -130,8 +130,6 @@ const COW_SDK_PATHS: &[&str] = &[
     "packages/app-data/src/api/fetchDocFromCid.spec.ts",
     "packages/app-data/src/api/fetchDocFromAppData.ts",
     "packages/app-data/src/api/fetchDocFromAppData.spec.ts",
-    "packages/app-data/src/api/uploadMetadataDocToIpfsLegacy.ts",
-    "packages/app-data/src/api/uploadMetadataDocToIpfsLegacy.spec.ts",
     "packages/app-data/src/types.ts",
     "packages/app-data/src/consts.ts",
     "packages/app-data/src/importSchema.ts",
@@ -1815,15 +1813,6 @@ fn fixture_contracts() -> Vec<FixtureEntry> {
                 },
                 FixtureSourceRef {
                     repo: "cow-sdk".to_string(),
-                    path: "packages/app-data/src/api/uploadMetadataDocToIpfsLegacy.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/app-data/src/api/uploadMetadataDocToIpfsLegacy.spec.ts"
-                        .to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
                     path: "packages/app-data/src/types.ts".to_string(),
                 },
                 FixtureSourceRef {
@@ -2087,28 +2076,6 @@ fn fixture_contracts() -> Vec<FixtureEntry> {
                 FixtureSourceRef {
                     repo: "cow-sdk".to_string(),
                     path: "packages/subgraph/src/api.spec.ts".to_string(),
-                },
-            ],
-        },
-        FixtureEntry {
-            surface: "sdk".to_string(),
-            file: "parity/fixtures/sdk.json".to_string(),
-            source_refs: vec![
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/sdk/src/index.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/sdk/src/typedoc-entry.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/sdk/package.json".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/sdk/README.md".to_string(),
                 },
             ],
         },
@@ -2665,7 +2632,7 @@ mod tests {
 
         snapshot(&options)?;
 
-        let fixture_path = workspace.root.join("parity/fixtures/sdk.json");
+        let fixture_path = workspace.root.join("parity/fixtures/trading.json");
         let mut fixture_json: serde_json::Value = serde_json::from_str(
             &fs::read_to_string(&fixture_path)
                 .with_context(|| format!("failed to read {}", fixture_path.display()))?,

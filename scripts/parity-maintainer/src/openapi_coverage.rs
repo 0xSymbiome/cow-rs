@@ -315,6 +315,11 @@ fn expand_schema(
     let required = required_fields(schema);
     if let Some(properties) = value_mapping(schema, "properties") {
         for (name, property) in properties {
+            // Deprecated wire fields are excluded from the coverage surface: the
+            // SDK does not mirror fields the upstream spec marks for removal.
+            if bool_value(property, "deprecated") {
+                continue;
+            }
             let required = !force_optional && required.contains(name.as_str());
             let field = InventoryField {
                 name: name.clone(),

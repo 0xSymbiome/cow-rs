@@ -102,8 +102,6 @@ repositories:
   - packages/app-data/src/api/fetchDocFromCid.spec.ts
   - packages/app-data/src/api/fetchDocFromAppData.ts
   - packages/app-data/src/api/fetchDocFromAppData.spec.ts
-  - packages/app-data/src/api/uploadMetadataDocToIpfsLegacy.ts
-  - packages/app-data/src/api/uploadMetadataDocToIpfsLegacy.spec.ts
   - packages/app-data/src/types.ts
   - packages/app-data/src/consts.ts
   - packages/app-data/src/importSchema.ts

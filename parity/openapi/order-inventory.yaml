@@ -42,13 +42,6 @@ expanded_fields:
   nullable: true
   default: null
   source: components.schemas.OrderCreation
-- name: availableBalance
-  rust_name: available_balance
-  type: object
-  required: false
-  nullable: true
-  default: null
-  source: components.schemas.OrderMetaData
 - name: buyAmount
   rust_name: buy_amount
   type: object
