@@ -10,16 +10,16 @@ use cow_sdk::browser_wallet::{
     MockEip1193Transport, WalletEvent, WalletSession,
 };
 use cow_sdk::core::{
-    AppDataHash, AppDataHex, BuyTokenDestination, OrderKind, SellTokenSource, OrderData,
+    AppDataHash, AppDataHex, BuyTokenDestination, OrderData, OrderKind, SellTokenSource,
     wrapped_native_token,
 };
 use cow_sdk::orderbook::{
-    ApiContext, AppDataObject, OrderCancellations, OrderCreation, OrderQuoteRequest,
-    OrderQuoteResponse,
+    ApiContext, OrderCancellations, OrderCreation, OrderQuoteRequest, OrderQuoteResponse,
+    OrderQuoteSide, QuoteValidity,
 };
 use cow_sdk::prelude::{
-    Address, Amount, Signer, CowEnv, OrderbookApi, OrderUid, SupportedChainId,
-    TradeParameters, Trading,
+    Address, Amount, CowEnv, OrderUid, OrderbookApi, Signer, SupportedChainId, TradeParameters,
+    Trading,
 };
 use cow_sdk::signing::{generate_order_id, sign_order};
 use cow_sdk::trading::OrderbookClient;
@@ -202,11 +202,11 @@ impl BrowserWalletConsole {
         let trade = parse_trade_parameters(&trade_json)?;
         let mock_orderbook = Arc::new(MockBrowserOrderbook::new(chain_id, env));
         let sdk = Trading::builder()
-            .with_chain_id(chain_id)
-            .with_app_code(app_code)
-            .with_env(env)
-            .with_options(TradingOptions::new().with_orderbook_client(mock_orderbook.clone()))
-            .build_ready()
+            .chain_id(chain_id)
+            .app_code(app_code)
+            .env(env)
+            .options(TradingOptions::new().with_orderbook_client(mock_orderbook.clone()))
+            .build()
             .map_err(js_string_error)?;
         let posting = sdk
             .post_swap_order(trade, &signer, None)
@@ -312,11 +312,11 @@ impl BrowserWalletConsole {
         let trade = parse_trade_parameters(trade_json)?;
         let mock_orderbook = Arc::new(MockBrowserOrderbook::new(chain_id, env));
         let sdk = Trading::builder()
-            .with_chain_id(chain_id)
-            .with_app_code(app_code.trim())
-            .with_env(env)
-            .with_options(TradingOptions::new().with_orderbook_client(mock_orderbook.clone()))
-            .build_ready()
+            .chain_id(chain_id)
+            .app_code(app_code.trim())
+            .env(env)
+            .options(TradingOptions::new().with_orderbook_client(mock_orderbook.clone()))
+            .build()
             .map_err(js_string_error)?;
         let signer = self.mock_wallet.signer();
         let posting = sdk
@@ -726,13 +726,13 @@ impl OrderbookClient for MockBrowserOrderbook {
         &self,
         app_data_hash: &AppDataHash,
         full_app_data: &str,
-    ) -> Result<AppDataObject, cow_sdk::OrderbookError> {
+    ) -> Result<(), cow_sdk::OrderbookError> {
         self.state
             .lock()
             .unwrap()
             .uploads
             .push((app_data_hash.to_hex_string(), full_app_data.to_owned()));
-        Ok(AppDataObject::new(full_app_data))
+        Ok(())
     }
 }
 
@@ -759,35 +759,29 @@ fn live_sdk(chain_id: SupportedChainId, env: CowEnv, app_code: &str) -> Trading 
         .expect("browser wallet console orderbook client must build");
 
     Trading::builder()
-        .with_chain_id(chain_id)
-        .with_app_code(app_code)
-        .with_env(env)
-        .with_options(TradingOptions::new().with_orderbook_client(Arc::new(orderbook_client)))
-        .build_ready()
+        .chain_id(chain_id)
+        .app_code(app_code)
+        .env(env)
+        .options(TradingOptions::new().with_orderbook_client(Arc::new(orderbook_client)))
+        .build()
         .expect("browser wallet console sdk construction should succeed")
 }
 
 fn mock_quote_response(request: &OrderQuoteRequest) -> OrderQuoteResponse {
-    let (sell_amount, buy_amount, kind) = if request.side.is_sell() {
-        (
-            request
-                .side
-                .sell_amount_before_fee
-                .clone()
-                .unwrap_or_else(|| Amount::new("10000000000000000").unwrap()),
-            Amount::new("2500000000000000000").unwrap(),
-            OrderKind::Sell,
-        )
-    } else {
-        (
-            Amount::new("10000000000000000").unwrap(),
-            request
-                .side
-                .buy_amount_after_fee
-                .clone()
-                .unwrap_or_else(|| Amount::new("2500000000000000000").unwrap()),
-            OrderKind::Buy,
-        )
+    let default_sell = Amount::new("10000000000000000").unwrap();
+    let default_buy = Amount::new("2500000000000000000").unwrap();
+    let (sell_amount, buy_amount, kind) = match &request.side {
+        OrderQuoteSide::Sell { sell_amount } => {
+            (sell_amount.amount().clone(), default_buy, OrderKind::Sell)
+        }
+        OrderQuoteSide::Buy {
+            buy_amount_after_fee,
+        } => (default_sell, buy_amount_after_fee.clone(), OrderKind::Buy),
+        _ => (default_sell, default_buy, OrderKind::Sell),
+    };
+    let valid_to = match request.validity {
+        QuoteValidity::ValidTo(valid_to) => valid_to,
+        _ => 1900000000u32,
     };
 
     serde_json::from_value(json!({
@@ -797,8 +791,8 @@ fn mock_quote_response(request: &OrderQuoteRequest) -> OrderQuoteResponse {
             "receiver": request.receiver.clone().unwrap_or_else(|| request.from.clone()),
             "sellAmount": sell_amount,
             "buyAmount": buy_amount,
-            "validTo": request.valid_to.unwrap_or(1900000000u32),
-            "appData": request.app_data_hash.clone().unwrap_or_else(|| AppDataHash::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa").unwrap()),
+            "validTo": valid_to,
+            "appData": AppDataHash::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa").unwrap(),
             "feeAmount": "1000000000000000",
             "kind": kind,
             "partiallyFillable": request.partially_fillable,

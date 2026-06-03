@@ -61,7 +61,7 @@ impl fmt::Display for RecordingSignerError {
 impl cow_sdk_core::SignerError for RecordingSignerError {}
 
 /// An `Rc<RefCell<_>>`-backed recording signer (single-threaded / wasm-friendly).
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct RecordingSigner {
     /// The address returned by `get_address`.
     pub address: Address,

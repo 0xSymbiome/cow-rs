@@ -27,6 +27,12 @@ pub struct TraceCapture {
     _guard: Option<tracing::dispatcher::DefaultGuard>,
 }
 
+impl std::fmt::Debug for TraceCapture {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("TraceCapture").finish_non_exhaustive()
+    }
+}
+
 impl TraceCapture {
     fn new_state_dispatch() -> (Arc<CaptureState>, tracing::Dispatch) {
         let state = Arc::new(CaptureState::default());
