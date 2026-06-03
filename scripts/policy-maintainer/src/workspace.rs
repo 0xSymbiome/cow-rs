@@ -55,10 +55,30 @@ pub fn rust_source_files(repo_root: &Path) -> anyhow::Result<Vec<PathBuf>> {
         if !entry.file_type()?.is_dir() {
             continue;
         }
-        collect_rs_files(&entry.path().join("src"), &mut files)?;
+        let crate_dir = entry.path();
+        if is_unpublished_crate(&crate_dir) {
+            continue;
+        }
+        collect_rs_files(&crate_dir.join("src"), &mut files)?;
     }
     files.sort();
     Ok(files)
+}
+
+/// Returns `true` when a crate manifest opts out of publication with
+/// `publish = false`. The published-surface policy gates (public enums,
+/// wire-type field policy, and the panic-free surface) govern only crates
+/// that ship to consumers, so an unpublished dev-only crate such as the
+/// shared test-support crate stays outside their scope (see ADR 0062).
+fn is_unpublished_crate(crate_dir: &Path) -> bool {
+    let manifest = crate_dir.join("Cargo.toml");
+    let Ok(contents) = fs::read_to_string(&manifest) else {
+        return false;
+    };
+    contents.lines().any(|line| {
+        let normalized: String = line.chars().filter(|value| !value.is_whitespace()).collect();
+        normalized == "publish=false"
+    })
 }
 
 pub fn parse_rust_file(path: &Path) -> anyhow::Result<syn::File> {

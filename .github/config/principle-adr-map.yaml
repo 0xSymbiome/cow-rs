@@ -29,7 +29,7 @@ principles:
   - id: 3
     name: Thin Facade, Real Crate Boundaries
     primary_adr: "0001"
-    supporting_adrs: ["0002", "0003", "0008"]
+    supporting_adrs: ["0002", "0003", "0008", "0062", "0063"]
 
   - id: 4
     name: Instance-Scoped Configuration

@@ -222,7 +222,7 @@ fn require_wasm_opt_after_every_wasm_pack(source: &str, failures: &mut Vec<Strin
         let end = invocations
             .get(slot + 1)
             .copied()
-            .unwrap_or_else(|| source.len());
+            .unwrap_or(source.len());
         let block = &source[start..end];
         if !block.contains("wasm-opt") && !block.contains("optimize_wasm_output") {
             failures.push(
