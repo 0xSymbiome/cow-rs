@@ -164,7 +164,7 @@ test("malformed orderbook responses surface as classified diagnostic labels", as
   await loadConsole(page);
   await page.locator("#btn-ob-quote").click();
 
-  await expect(page.locator("#orderbook-output")).toContainText("missing field");
+  await expect(page.locator("#orderbook-output")).toContainText("serialization error");
   const errorLabel = page.locator("#orderbook-output [data-testid='error-label']");
   await expect(errorLabel).toBeVisible();
   await expect(errorLabel).toHaveAttribute("data-code", "MALFORMED-JSON");

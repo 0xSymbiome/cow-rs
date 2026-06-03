@@ -1164,7 +1164,7 @@
         label: "Malformed JSON payload",
         hint: "The response did not parse as JSON. The endpoint may have drifted; compare against the fixture shape.",
         test: (text) =>
-          /invalid .*json|unexpected token|expected .*value.*at|missing field|eof while parsing/i.test(
+          /invalid .*json|unexpected token|expected .*value.*at|missing field|eof while parsing|serialization error \(/i.test(
             text,
           ),
       },
