@@ -63,7 +63,7 @@ enum OutputFormat {
 
 #[derive(Debug, Parser)]
 #[command(
-    about = "Run the optional validation smoke checks for environment-sensitive orderbook, subgraph, browser-wallet, and deployed WASM confirmation."
+    about = "Run the optional validation smoke checks for environment-sensitive orderbook, subgraph, and browser-wallet confirmation."
 )]
 struct Cli {
     #[arg(long, value_enum, default_value_t = OutputFormat::Text)]
@@ -79,19 +79,10 @@ enum SmokeCommand {
     OrderbookLive,
     #[command(about = "Run the live subgraph totals probe through the native example")]
     SubgraphLive,
-    #[command(about = "Check browser-wallet console readiness for injected-wallet confirmation")]
+    #[command(about = "Check browser-wallet example readiness for injected-wallet confirmation")]
     BrowserWalletLive {
         #[arg(long)]
         url: Option<String>,
-    },
-    #[command(
-        about = "Inspect deployed WASM pages for the browser-wallet and SDK verification consoles"
-    )]
-    WasmPages {
-        #[arg(long)]
-        browser_wallet_url: Option<String>,
-        #[arg(long)]
-        sdk_verification_url: Option<String>,
     },
     #[command(about = "Run every smoke surface in sequence")]
     All,
@@ -376,76 +367,18 @@ fn run_browser_wallet_live(client: &Client, url: &str) -> SmokeResult {
         "browser-wallet-live",
         url,
         &[
-            r#"data-testid="injected-contract-state""#,
-            r#"data-testid="injected-session-connected""#,
-            "Connect / Reconnect",
-            "Forget Wallet",
+            "CoW · Browser-Wallet Trade",
+            "Discover wallets",
+            "Sign & submit swap",
         ],
         &[
-            "Open the injected-wallet pane in a real browser session.",
-            "Run Detect and confirm the wallet explicitly if more than one candidate is present.",
-            "Run Connect / Reconnect and confirm the session fields update for account and chain.",
-            "Run Status, Sign Message, and Sign Order to confirm the typed wallet flow on the installed extension.",
-            "Run live quote, submit, and cancel only when the selected chain and service environment are intentionally available.",
+            "Open the served example in a real browser session with the target wallet extension installed.",
+            "Run Discover wallets and confirm exactly the intended provider appears (none is auto-selected).",
+            "Connect the intended wallet and confirm the session line shows the expected account and chain.",
+            "Run Sign message to confirm a personal_sign round-trip on the installed extension.",
+            "Run Sign & submit swap only when the selected chain and a funded account are intentionally available; confirm the chain-switch prompt to Sepolia.",
         ],
     )
-}
-
-fn run_wasm_pages(
-    client: &Client,
-    browser_wallet_url: Option<&str>,
-    sdk_verification_url: Option<&str>,
-) -> Vec<SmokeResult> {
-    if browser_wallet_url.is_none() && sdk_verification_url.is_none() {
-        return vec![
-            SmokeResult::new(
-                "wasm-pages",
-                SmokeStatus::Unavailable,
-                "wasm-pages requires at least one deployed page URL",
-            )
-            .with_detail(
-                "required_args",
-                Value::Array(vec![
-                    Value::String(
-                        "--browser-wallet-url or COW_SMOKE_BROWSER_WALLET_PAGES_URL".to_owned(),
-                    ),
-                    Value::String(
-                        "--sdk-verification-url or COW_SMOKE_SDK_VERIFICATION_PAGES_URL".to_owned(),
-                    ),
-                ]),
-            ),
-        ];
-    }
-
-    let mut results = Vec::new();
-    if let Some(browser_wallet_url) = browser_wallet_url {
-        results.push(http_probe(
-            client,
-            "browser-wallet-pages",
-            browser_wallet_url,
-            &[
-                r#"data-testid="injected-contract-state""#,
-                "Mock Wallet",
-                "Injected Wallet",
-            ],
-            &[],
-        ));
-    }
-    if let Some(sdk_verification_url) = sdk_verification_url {
-        results.push(http_probe(
-            client,
-            "sdk-verification-pages",
-            sdk_verification_url,
-            &[
-                r#"id="runtime-output""#,
-                r#"id="orderbook-output""#,
-                r#"id="subgraph-output""#,
-            ],
-            &[],
-        ));
-    }
-
-    results
 }
 
 fn render_text(results: &[SmokeResult]) {
@@ -566,13 +499,7 @@ fn main() {
     let browser_wallet_url = env::var("COW_SMOKE_BROWSER_WALLET_URL")
         .ok()
         .filter(|value| !value.is_empty())
-        .unwrap_or_else(|| "http://127.0.0.1:8081".to_owned());
-    let browser_wallet_pages_url = env::var("COW_SMOKE_BROWSER_WALLET_PAGES_URL")
-        .ok()
-        .filter(|value| !value.is_empty());
-    let sdk_verification_pages_url = env::var("COW_SMOKE_SDK_VERIFICATION_PAGES_URL")
-        .ok()
-        .filter(|value| !value.is_empty());
+        .unwrap_or_else(|| "http://127.0.0.1:8080".to_owned());
 
     let results = match cli.command {
         SmokeCommand::OrderbookLive => vec![run_orderbook_live()],
@@ -581,31 +508,11 @@ fn main() {
             let url = url.unwrap_or(browser_wallet_url);
             vec![run_browser_wallet_live(&client, &url)]
         }
-        SmokeCommand::WasmPages {
-            browser_wallet_url,
-            sdk_verification_url,
-        } => run_wasm_pages(
-            &client,
-            browser_wallet_url
-                .as_deref()
-                .or(browser_wallet_pages_url.as_deref()),
-            sdk_verification_url
-                .as_deref()
-                .or(sdk_verification_pages_url.as_deref()),
-        ),
-        SmokeCommand::All => {
-            let mut results = vec![
-                run_orderbook_live(),
-                run_subgraph_live(),
-                run_browser_wallet_live(&client, &browser_wallet_url),
-            ];
-            results.extend(run_wasm_pages(
-                &client,
-                browser_wallet_pages_url.as_deref(),
-                sdk_verification_pages_url.as_deref(),
-            ));
-            results
-        }
+        SmokeCommand::All => vec![
+            run_orderbook_live(),
+            run_subgraph_live(),
+            run_browser_wallet_live(&client, &browser_wallet_url),
+        ],
         SmokeCommand::RegistryConfirm(_)
         | SmokeCommand::WasmRunnerSetup(_)
         | SmokeCommand::WasmRunnerRefresh(_) => {

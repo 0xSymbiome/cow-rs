@@ -6,8 +6,7 @@ Use it when you want a disciplined manual confirmation pass for:
 
 - live orderbook reachability through the SDK surface
 - live subgraph reachability through the SDK surface
-- injected-wallet confirmation in the browser-wallet console
-- deployed WASM page inspection for the browser-wallet and SDK verification consoles
+- injected-wallet confirmation through the browser-wallet example
 - deployment-registry on-chain presence confirmation against configured RPC endpoints
 - pinned Chrome-for-Testing setup for WASM browser tests
 
@@ -18,8 +17,7 @@ This kit is intentionally separate from routine deterministic validation. It doe
 ```text
 cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- orderbook-live
 cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- subgraph-live
-cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- browser-wallet-live --url http://127.0.0.1:8081
-cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- wasm-pages --sdk-verification-url https://<owner>.github.io/<repo>/sdk-verification-console/ --browser-wallet-url https://<owner>.github.io/<repo>/browser-wallet-console/
+cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- browser-wallet-live --url http://127.0.0.1:8080
 cargo registry-confirm --mode local --chain-ids 1,100
 cargo wasm-runner-refresh --source fallback --fallback-path scripts/validation-smoke/data/cft-fallback.json
 cargo wasm-runner-setup --webdriver-json target/wasm-runner/webdriver.json
@@ -30,7 +28,7 @@ cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- all
 
 - `0`: every selected check passed
 - `1`: at least one selected check failed in a way that indicates a likely regression or broken contract
-- `2`: at least one selected check was unavailable or incomplete because required local hosts, credentials, or deployed pages were not reachable
+- `2`: at least one selected check was unavailable or incomplete because required local hosts or credentials were not reachable
 
 ## Environment
 
@@ -60,15 +58,11 @@ cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- all
   - optional
   - default: mainnet
 
-### Browser And Deployed Pages
+### Browser
 
 - `COW_SMOKE_BROWSER_WALLET_URL`
-  - local browser-wallet console URL for injected-wallet confirmation readiness
-  - default: `http://127.0.0.1:8081`
-- `COW_SMOKE_BROWSER_WALLET_PAGES_URL`
-  - optional deployed browser-wallet console URL
-- `COW_SMOKE_SDK_VERIFICATION_PAGES_URL`
-  - optional deployed SDK verification console URL
+  - local browser-wallet example URL for injected-wallet confirmation readiness
+  - default: `http://127.0.0.1:8080`
 
 ### Deployment Registry Confirmation
 
@@ -91,4 +85,4 @@ cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- all
 
 - unavailable local hosts, missing credentials, and offline services are reported as `unavailable`, not as deterministic regressions
 - unexpected successful responses with broken payload shape, missing expected page markers, or failing live example logic are reported as `fail`
-- the browser-wallet step checks that the console page is reachable and exposes the expected stable markers before handing off to operator-driven injected-wallet actions
+- the browser-wallet step checks that the example page is reachable and exposes the expected stable markers before handing off to operator-driven injected-wallet actions

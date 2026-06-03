@@ -23,12 +23,7 @@
 #        - docs/release-checklist.md
 #        - docs/verification-matrix.md
 #
-#   3. The Playwright install browser arguments for the browser-wallet
-#      lane must be identical across:
-#        - docs/release-checklist.md
-#        - .github/workflows/browser-wallet-e2e.yml
-#
-#   4. The audit index Last reviewed cells must match the per-audit
+#   3. The audit index Last reviewed cells must match the per-audit
 #      Last reviewed banners in docs/audit/*.md.
 #
 # Exit 0 on agreement; exit 1 with a unified diff or inline error
@@ -58,14 +53,13 @@ release_checklist="$repo_root/docs/release-checklist.md"
 verification_matrix="$repo_root/docs/verification-matrix.md"
 quality_gate="$repo_root/.github/workflows/_quality-gate.yml"
 deny_config="$repo_root/.github/config/deny.toml"
-browser_wallet_workflow="$repo_root/.github/workflows/browser-wallet-e2e.yml"
 contributing_md="$repo_root/CONTRIBUTING.md"
 properties_md="$repo_root/PROPERTIES.md"
 dependency_gate_audit="$repo_root/docs/audit/dependency-gate-audit.md"
 audit_index_agreement="$repo_root/scripts/check-audit-index-agreement.sh"
 
 for file in "$release_checklist" "$verification_matrix" \
-            "$quality_gate" "$deny_config" "$browser_wallet_workflow" \
+            "$quality_gate" "$deny_config" \
             "$contributing_md" "$properties_md" "$dependency_gate_audit" \
             "$audit_index_agreement"; do
   if [ ! -f "$file" ]; then
@@ -232,49 +226,6 @@ while IFS= read -r advisory_id; do
     exit 1
   fi
 done < <(printf '%s\n' "$audit_canonical_tokens")
-
-extract_browser_wallet_playwright_browsers() {
-  # Capture the trailing browser-set arguments from the playwright install
-  # line that targets the browser-wallet lane (matched on the e2e/browser-wallet
-  # working directory). Strips through `playwright install` and any
-  # leading/trailing whitespace.
-  grep -E 'playwright install' "$1" \
-    | grep -E 'e2e/browser-wallet' \
-    | sed -E 's/^.*playwright install[[:space:]]+//' \
-    | sed -E 's/[[:space:]]+$//' \
-    | head -n 1 \
-    || true
-}
-
-release_checklist_playwright="$(extract_browser_wallet_playwright_browsers "$release_checklist")"
-workflow_playwright="$(extract_browser_wallet_playwright_browsers "$browser_wallet_workflow")"
-
-if [ -z "$release_checklist_playwright" ]; then
-  echo "error: docs/release-checklist.md does not declare a playwright install line for the browser-wallet lane" >&2
-  exit 1
-fi
-
-if [ -z "$workflow_playwright" ]; then
-  echo "error: .github/workflows/browser-wallet-e2e.yml does not declare a playwright install line for the browser-wallet lane" >&2
-  exit 1
-fi
-
-if [ "$release_checklist_playwright" != "$workflow_playwright" ]; then
-  echo "error: docs/release-checklist.md and .github/workflows/browser-wallet-e2e.yml disagree on the browser-wallet playwright install browser set" >&2
-  printf '  release-checklist.md: %s\n' "$release_checklist_playwright" >&2
-  printf '  browser-wallet-e2e.yml: %s\n' "$workflow_playwright" >&2
-  exit 1
-fi
-
-# ---- WASM console dual-authority acknowledgement ----
-for html in "$repo_root/examples/wasm"/*/index.html; do
-  if [ -f "$html" ]; then
-    if ! head -n 40 "$html" | grep -qF "dual-authority acknowledgement"; then
-      echo "error: $html is missing the dual-authority acknowledgement sentinel in its first 40 lines" >&2
-      exit 1
-    fi
-  fi
-done
 
 if [ -f "$repo_root/scripts/policy-maintainer/Cargo.toml" ]; then
   cargo run --quiet --manifest-path "$repo_root/scripts/policy-maintainer/Cargo.toml" -- \
