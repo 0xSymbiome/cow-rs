@@ -2,7 +2,6 @@
 extend-exclude = [
   ".git",
   "target",
-  "examples/wasm/**/pkg",
   "Cargo.toml",
   "Cargo.lock",
   "*.json",

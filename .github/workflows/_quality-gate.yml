@@ -592,32 +592,6 @@ jobs:
           fi
 
           exit "$failures"
-      - name: Verify WASM inner workspace pins match root
-        shell: bash
-        run: |
-          set -euo pipefail
-          extract_version() {
-            local manifest="$1"
-            local dependency="$2"
-            { grep -E "^${dependency}[[:space:]]*=" "$manifest" || true; } \
-              | sed -nE 's/^'"${dependency}"'[[:space:]]*=[[:space:]]*(\{[[:space:]]*version[[:space:]]*=[[:space:]]*)?"([^"]+)".*/\2/p' \
-              | head -n 1
-          }
-          failures=0
-          for dependency in wasm-bindgen wasm-bindgen-futures wasm-bindgen-test web-sys; do
-            root_version="$(extract_version Cargo.toml "$dependency")"
-            inner_version="$(extract_version examples/wasm/Cargo.toml "$dependency")"
-            if [ -z "$root_version" ] || [ -z "$inner_version" ]; then
-              echo "::error::could not parse ${dependency} version from Cargo.toml and examples/wasm/Cargo.toml" >&2
-              failures=1
-              continue
-            fi
-            if [ "$root_version" != "$inner_version" ]; then
-              echo "::error::${dependency} pin drift: root=${root_version}, examples/wasm=${inner_version}" >&2
-              failures=1
-            fi
-          done
-          exit "$failures"
       - name: Check dependency policy
         run: cargo deny check --config .github/config/deny.toml
       - name: Check RustSec advisories

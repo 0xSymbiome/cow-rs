@@ -1,4 +1,4 @@
-name: browser-wallet-e2e
+name: browser-wallet-wasm
 
 on:
   workflow_dispatch:
@@ -7,28 +7,28 @@ on:
       - main
       - develop
     paths:
-      - '.github/workflows/browser-wallet-e2e.yml'
+      - '.github/workflows/browser-wallet-wasm.yml'
       - 'Cargo.lock'
       - 'Cargo.toml'
       - 'crates/browser-wallet/**'
       - 'crates/core/**'
       - 'crates/sdk/**'
-      - 'e2e/browser-wallet/**'
-      - 'examples/wasm/browser-wallet-console/**'
+      - 'crates/transport-wasm/**'
+      - 'examples/wasm/cow-trader-dioxus/**'
       - 'rust-toolchain.toml'
   push:
     branches:
       - main
       - develop
     paths:
-      - '.github/workflows/browser-wallet-e2e.yml'
+      - '.github/workflows/browser-wallet-wasm.yml'
       - 'Cargo.lock'
       - 'Cargo.toml'
       - 'crates/browser-wallet/**'
       - 'crates/core/**'
       - 'crates/sdk/**'
-      - 'e2e/browser-wallet/**'
-      - 'examples/wasm/browser-wallet-console/**'
+      - 'crates/transport-wasm/**'
+      - 'examples/wasm/cow-trader-dioxus/**'
       - 'rust-toolchain.toml'
 
 permissions:
@@ -48,7 +48,7 @@ jobs:
     env:
       # Compile-profile knobs that keep the wasm32 browser-wallet test
       # binaries small enough for the ubuntu-latest runner to keep
-      # headless Chrome and ChromeDriver resident at the same time.
+      # headless Firefox and geckodriver resident at the same time.
       # The disk-reclaim and swap-expansion steps below free or page
       # bytes; these knobs shrink the actual test binaries that get
       # loaded into memory:
@@ -64,7 +64,7 @@ jobs:
       #     peak resident memory across the host-target plus wasm32
       #     compile combination;
       #   * `CARGO_BUILD_JOBS=2` caps the parallel rustc fan-out so
-      #     several heavy codegen units do not race headless Chrome
+      #     several heavy codegen units do not race headless Firefox
       #     for the same memory budget.
       # All four knobs are CI-only; nothing else runs a debugger
       # against the produced binaries, so the lost symbols are free.
@@ -88,8 +88,8 @@ jobs:
           # Microsoft pre-installs ~30 GB of toolchains we do not use
           # for this Rust workspace. Removing them gives the
           # host-target test compile, the wasm32 test compile, and the
-          # headless Chrome session enough headroom that the kernel
-          # OOM killer stops sending SIGKILL to ChromeDriver during
+          # headless browser session enough headroom that the kernel
+          # OOM killer stops sending SIGKILL to the webdriver during
           # wasm-pack test runs.
           sudo rm -rf /usr/share/dotnet || true
           sudo rm -rf /usr/local/lib/android || true
@@ -107,9 +107,9 @@ jobs:
           free -h
           # The default ubuntu-latest swapfile is small relative to the
           # peak host-target plus wasm32 test compile plus headless
-          # Chrome footprint. Replace it with a larger backing file so
+          # browser footprint. Replace it with a larger backing file so
           # the kernel pages cold compile state out instead of sending
-          # SIGKILL to ChromeDriver when the working set spikes.
+          # SIGKILL to the webdriver when the working set spikes.
           sudo swapoff -a
           sudo rm -f /mnt/swapfile
           sudo fallocate -l 12G /mnt/swapfile
@@ -124,8 +124,6 @@ jobs:
           targets: wasm32-unknown-unknown
       # Source ref: Swatinem/rust-cache@v2
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
-      # Source ref: oven-sh/setup-bun@v2
-      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
       - name: Install wasm target
         run: rustup target add wasm32-unknown-unknown
 
@@ -134,7 +132,7 @@ jobs:
 
       # Source ref: browser-actions/setup-firefox@v1.7.2
       - name: Set up Firefox
-        # The earlier `--release` plus disk-reclaim plus 12 GB swap plus
+        # The `--release` plus disk-reclaim plus 12 GB swap plus
         # `opt-level = 1` mitigations all left the headless Chrome path
         # SIGKILL-ing ChromeDriver mid-handshake on the ubuntu-latest
         # runner even after the wasm32 test binary shrank to its
@@ -173,27 +171,35 @@ jobs:
       - name: Build SDK for wasm with browser wallet
         run: cargo build --target wasm32-unknown-unknown -p cow-sdk --features browser-wallet
 
-      - name: Build browser wallet console
-        run: cargo build --target wasm32-unknown-unknown --manifest-path examples/wasm/browser-wallet-console/Cargo.toml
-
-      - name: Test browser wallet console host-side
-        run: cargo test --manifest-path examples/wasm/browser-wallet-console/Cargo.toml
-
-      - name: Build browser wallet console web package
-        working-directory: examples/wasm/browser-wallet-console
-        run: wasm-pack build --target web
-
-      - name: Run browser wallet console wasm-bindgen tests in headless Firefox
-        working-directory: examples/wasm/browser-wallet-console
-        # Release-profile wasm32 test binary routed through the same
-        # PATH-resolved geckodriver as the direct-bridge test above.
-        run: wasm-pack test --release --headless --firefox
-
-      - name: Install browser wallet e2e dependencies
-        run: bun install --cwd e2e/browser-wallet --frozen-lockfile
-
-      - name: Install Playwright browsers
-        run: bun run --cwd e2e/browser-wallet playwright install --with-deps chromium firefox
-
-      - name: Run browser wallet e2e
-        run: bun run --cwd e2e/browser-wallet test
+  dioxus-example:
+    # Compile gate for the public browser-wallet example. It is a
+    # standalone workspace (path-depending into the SDK crates), so it
+    # is checked on its own manifest and held to the same zero-warning
+    # bar as the crates it demonstrates.
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: examples/wasm/cow-trader-dioxus
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          targets: wasm32-unknown-unknown
+          components: clippy, rustfmt
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+        with:
+          workspaces: examples/wasm/cow-trader-dioxus
+      - name: Install wasm target
+        run: rustup target add wasm32-unknown-unknown
+      - name: Format check
+        run: cargo fmt --check
+      - name: Clippy (wasm32, deny warnings)
+        run: cargo clippy --target wasm32-unknown-unknown -- -D warnings
+      - name: Check (wasm32)
+        run: cargo check --target wasm32-unknown-unknown
