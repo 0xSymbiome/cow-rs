@@ -299,6 +299,39 @@ impl AppDataParams {
         get_app_data_info(self.into_doc())
     }
 
+    /// Validates every SDK-modelled metadata family against its published
+    /// bounds.
+    ///
+    /// The lifted typed `flashloan` field is bound-checked, and the
+    /// `partnerFee` and `quote` families carried in the open-ended metadata
+    /// map are parsed into their typed shapes and bound-checked when present
+    /// in their current wire form. Metadata the SDK does not model — and
+    /// values carried in an older wire shape that no longer parses into the
+    /// current typed form — are intentionally left untouched, so
+    /// forward-compatible and attribution-only families pass through unchanged
+    /// just as the reviewed services parser ignores fields it does not model.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AppDataError`] when a modelled family is present in its
+    /// current typed shape but carries an out-of-range value.
+    pub fn validate(&self) -> Result<(), AppDataError> {
+        if let Some(flashloan) = &self.flashloan {
+            flashloan.validate()?;
+        }
+        if let Some(value) = self.metadata.get("partnerFee")
+            && let Ok(partner_fee) = crate::PartnerFee::from_value(value.clone())
+        {
+            partner_fee.validate()?;
+        }
+        if let Some(value) = self.metadata.get("quote")
+            && let Ok(quote) = crate::QuoteMetadata::from_value(value.clone())
+        {
+            quote.validate()?;
+        }
+        Ok(())
+    }
+
     /// Returns the canonical metadata [`Value`] merged from the typed
     /// sub-fields and the open-ended [`MetadataMap`] slot.
     ///

@@ -55,7 +55,7 @@ pub use info::{
     AppDataValidation, AppDataWarning, digest_from_cid, get_app_data_cid, get_app_data_content,
     get_app_data_info, get_app_data_info_hex, stringify_deterministic,
 };
-pub use metadata::{FlashloanHints, Hook, HookList};
+pub use metadata::{FlashloanHints, Hook, HookList, QuoteMetadata};
 pub use schema::{
     extract_schema_version, generate_app_data_doc, get_app_data_schema, validate_app_data_doc,
 };

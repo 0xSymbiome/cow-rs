@@ -10,6 +10,9 @@
 pub mod flashloan;
 /// Pre- and post-interaction hooks consumed by the app-data metadata envelope.
 pub mod hooks;
+/// Quote slippage hint consumed by the app-data metadata envelope.
+pub mod quote;
 
 pub use flashloan::FlashloanHints;
 pub use hooks::{Hook, HookList};
+pub use quote::QuoteMetadata;
