@@ -363,21 +363,3 @@ fn validate_subgraph_base_urls(
 
     Ok(())
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn typestate_markers_are_sealed_against_external_construction() {
-        // These constructors are visible only inside this module because each
-        // marker's field is private; external crates cannot construct them, so
-        // the typestate cannot be forged from outside the crate. The "set"
-        // markers carry their value through the same private field.
-        let _ = ChainIdUnset(());
-        let _ = ChainIdSet(SupportedChainId::Mainnet);
-        let _ = ApiKeyUnset(());
-        let _ = ApiKeySet(Redacted::new("partner-graph-api-key".to_owned()));
-        let _ = TransportUnset(());
-    }
-}

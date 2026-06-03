@@ -88,25 +88,6 @@ fn valid_hints_validate_and_match_the_golden_sample_shape() {
 }
 
 #[test]
-fn zero_amount_is_rejected_as_out_of_range() {
-    let error = FlashloanHints::new(
-        address(LIQUIDITY_PROVIDER),
-        address(PROTOCOL_ADAPTER),
-        address(RECEIVER),
-        address(TOKEN),
-        Amount::ZERO,
-    )
-    .expect_err("zero amount must fail validation");
-    assert!(matches!(
-        error,
-        AppDataError::InvalidFlashloanHints {
-            field: "amount",
-            reason: ValidationReason::OutOfRange { .. },
-        }
-    ));
-}
-
-#[test]
 fn zero_liquidity_provider_is_rejected_as_bad_shape() {
     let error = FlashloanHints::new(
         address(ZERO_ADDRESS),

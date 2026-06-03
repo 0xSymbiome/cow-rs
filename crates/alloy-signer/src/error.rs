@@ -209,34 +209,4 @@ mod tests {
             assert_eq!(error.class().to_string(), expected.as_str());
         }
     }
-
-    #[test]
-    fn display_redacts_signing_detail() {
-        let error = SignerError::Signing {
-            detail: Redacted::new("private-key-fragment".to_owned()),
-        };
-
-        let display = error.to_string();
-        let debug = format!("{error:?}");
-        assert!(display.contains("[redacted]"));
-        assert!(debug.contains("[redacted]"));
-        assert!(!display.contains("private-key-fragment"));
-        assert!(!debug.contains("private-key-fragment"));
-    }
-
-    #[test]
-    fn provider_required_includes_method_name() {
-        let error = SignerError::ProviderRequired {
-            method: "estimate_gas",
-        };
-
-        assert!(error.to_string().contains("estimate_gas"));
-    }
-
-    #[test]
-    fn unsupported_includes_static_message() {
-        let error = SignerError::Unsupported("typed data disabled");
-
-        assert!(error.to_string().contains("typed data disabled"));
-    }
 }

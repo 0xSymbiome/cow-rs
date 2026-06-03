@@ -22,32 +22,3 @@ impl fmt::Display for IpfsConfig {
             .finish()
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn ipfs_config_debug_and_serialize_redact_configured_uris() {
-        let config = IpfsConfig {
-            uri: Some("https://ipfs.example".to_owned().into()),
-            read_uri: Some("https://read.example".to_owned().into()),
-        };
-
-        let debug = format!("{config:?}");
-        let json = serde_json::to_value(&config).expect("ipfs config serializes");
-
-        assert!(debug.contains("IpfsConfig"));
-        assert!(debug.contains(cow_sdk_core::REDACTED_PLACEHOLDER));
-        assert!(!debug.contains("ipfs.example"));
-        assert!(!debug.contains("read.example"));
-        assert_eq!(
-            json["uri"],
-            serde_json::json!(cow_sdk_core::REDACTED_PLACEHOLDER)
-        );
-        assert_eq!(
-            json["readUri"],
-            serde_json::json!(cow_sdk_core::REDACTED_PLACEHOLDER)
-        );
-    }
-}

@@ -79,6 +79,14 @@ fn unsupported_and_malformed_cids_are_rejected() {
             )
             .to_string(),
         ),
+        // Legacy CIDv0 (`Qm...`, dag-pb + sha2-256) is out of scope: the
+        // services backend only emits CIDv1 raw/keccak-256. Driving a real v0
+        // string through the public API exercises the `cid`-crate parser plus
+        // the boundary guard end to end, so this case must surface InvalidCid.
+        (
+            "legacy CIDv0",
+            "QmYwAPJzv5CZsnA625s3Xf2nemtYgPpHdWEz79ojWnPbdG".to_owned(),
+        ),
     ];
 
     for (label, cid) in invalid_cases {

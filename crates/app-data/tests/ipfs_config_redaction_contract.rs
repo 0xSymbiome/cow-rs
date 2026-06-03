@@ -15,13 +15,19 @@ fn ipfs_config_public_debug_and_serialize_redact_configured_uris() {
     };
 
     let debug = format!("{config:#?}");
+    // Non-alternate `{:?}` coverage folded in from the former
+    // crates/app-data/src/types/ipfs.rs inline test: the compact Debug form
+    // must also render the struct name and redact every configured URI.
+    let debug_compact = format!("{config:?}");
     let json = serde_json::to_value(&config).expect("ipfs config serializes");
 
     assert!(debug.contains(REDACTED_PLACEHOLDER));
+    assert!(debug_compact.contains("IpfsConfig"));
+    assert!(debug_compact.contains(REDACTED_PLACEHOLDER));
     assert_eq!(json["uri"], REDACTED_PLACEHOLDER);
     assert_eq!(json["readUri"], REDACTED_PLACEHOLDER);
 
-    for rendered in [debug, json.to_string()] {
+    for rendered in [debug, debug_compact, json.to_string()] {
         assert!(!rendered.contains("user:pass"));
         assert!(!rendered.contains("apiKey=secret-token"));
         assert!(!rendered.contains("token=secret"));
