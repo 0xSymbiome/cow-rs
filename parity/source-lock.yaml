@@ -457,29 +457,6 @@ fixtures:
     path: packages/contracts-ts/tests/vault.test.ts
   - repo: cow-sdk
     path: packages/contracts-ts/tests/reader.test.ts
-- surface: orderbook
-  file: parity/fixtures/orderbook.json
-  source_refs:
-  - repo: cow-sdk
-    path: packages/order-book/src/api.ts
-  - repo: cow-sdk
-    path: packages/order-book/src/api.spec.ts
-  - repo: cow-sdk
-    path: packages/order-book/src/request.ts
-  - repo: cow-sdk
-    path: packages/order-book/src/request.test.ts
-  - repo: cow-sdk
-    path: packages/order-book/src/transformOrder.ts
-  - repo: cow-sdk
-    path: packages/order-book/src/transformOrder.test.ts
-  - repo: cow-sdk
-    path: packages/order-book/src/types.ts
-  - repo: services
-    path: crates/orderbook/openapi.yml
-  - repo: services
-    path: crates/shared/src/order_validation.rs
-  - repo: services
-    path: crates/orderbook/src/app_data.rs
 - surface: orderbook-request-order-creation
   file: parity/fixtures/orderbook-requests/order_creation.json
   source_refs:

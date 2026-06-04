@@ -1116,52 +1116,6 @@ fn fixture_contracts() -> Vec<FixtureEntry> {
             ],
         },
         FixtureEntry {
-            surface: "orderbook".to_string(),
-            file: "parity/fixtures/orderbook.json".to_string(),
-            source_refs: vec![
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/order-book/src/api.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/order-book/src/api.spec.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/order-book/src/request.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/order-book/src/request.test.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/order-book/src/transformOrder.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/order-book/src/transformOrder.test.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/order-book/src/types.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "services".to_string(),
-                    path: "crates/orderbook/openapi.yml".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "services".to_string(),
-                    path: "crates/shared/src/order_validation.rs".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "services".to_string(),
-                    path: "crates/orderbook/src/app_data.rs".to_string(),
-                },
-            ],
-        },
-        FixtureEntry {
             surface: "trading".to_string(),
             file: "parity/fixtures/trading.json".to_string(),
             source_refs: vec![
@@ -1674,29 +1628,29 @@ mod tests {
                 .with_context(|| format!("failed to read {}", options.source_lock.display()))?,
         )
         .context("failed to parse generated source lock")?;
-        let services_entry = lock
+        let contracts_entry = lock
             .repositories
             .iter_mut()
-            .find(|repo| repo.id == "services")
-            .context("missing services entry in generated source lock")?;
-        services_entry.commit = "1111111111111111111111111111111111111111".to_string();
+            .find(|repo| repo.id == "contracts")
+            .context("missing contracts entry in generated source lock")?;
+        contracts_entry.commit = "1111111111111111111111111111111111111111".to_string();
         fs::write(
             &options.source_lock,
             serde_yaml::to_string(&lock).context("failed to serialize mutated source lock")?,
         )
         .with_context(|| format!("failed to write {}", options.source_lock.display()))?;
 
-        let fixture_path = workspace.root.join("parity/fixtures/orderbook.json");
+        let fixture_path = workspace.root.join("parity/fixtures/contracts.json");
         let mut fixture_json: serde_json::Value = serde_json::from_str(
             &fs::read_to_string(&fixture_path)
                 .with_context(|| format!("failed to read {}", fixture_path.display()))?,
         )
-        .context("failed to parse orderbook fixture json")?;
+        .context("failed to parse contracts fixture json")?;
         let source_refs = fixture_json["source_refs"]
             .as_array_mut()
-            .context("missing orderbook source_refs array")?;
+            .context("missing contracts source_refs array")?;
         for source_ref in source_refs {
-            if source_ref["repo"].as_str() == Some("services") {
+            if source_ref["repo"].as_str() == Some("contracts") {
                 source_ref["commit"] = serde_json::Value::String(
                     "1111111111111111111111111111111111111111".to_string(),
                 );
