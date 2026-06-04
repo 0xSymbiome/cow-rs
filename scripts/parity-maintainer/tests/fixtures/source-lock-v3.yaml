@@ -146,7 +146,7 @@ repositories:
 - id: services
   remote: https://github.com/cowprotocol/services.git
   commit: 0720b9bc15138ecc362078f505d0e3ba1c7b9883
-  role: reference-only
+  role: wire-authority
   optional_local_path: <services-checkout>
   producer_paths:
   - crates/orderbook/openapi.yml
@@ -154,8 +154,3 @@ repositories:
   - crates/orderbook/src/app_data.rs
   - crates/model/src/order.rs
 fixtures: []
-validation:
-  standalone_repo_contract: []
-  repo_local_publication_contract: []
-  pinned_upstream_provenance_contract: []
-  maintainer_refresh_contract: []

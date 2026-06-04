@@ -160,6 +160,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:
           toolchain: ${{ inputs.rust_toolchain }}
+      - name: Regenerate OpenAPI inventories from the vendored services spec
+        run: cargo parity-openapi-coverage
+      - name: Assert inventories match the vendored spec (no upstream drift)
+        run: git diff --exit-code -- 'parity/openapi/*-inventory.yaml'
       - name: Validate OpenAPI DTO coverage
         run: cargo parity-openapi-coverage --validate
 

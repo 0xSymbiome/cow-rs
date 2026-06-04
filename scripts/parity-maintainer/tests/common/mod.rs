@@ -42,9 +42,7 @@ pub fn write_source_lock(
             yaml.push_str(&format!("  - {}\n", quote(path)));
         }
     }
-    yaml.push_str(
-        "fixtures: []\nvalidation:\n  standalone_repo_contract: []\n  repo_local_publication_contract: []\n  pinned_upstream_provenance_contract: []\n  maintainer_refresh_contract: []\n",
-    );
+    yaml.push_str("fixtures: []\n");
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)
             .with_context(|| format!("failed to create {}", parent.display()))?;

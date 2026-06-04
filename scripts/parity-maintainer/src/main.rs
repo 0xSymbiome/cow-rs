@@ -244,7 +244,7 @@ const HELPER_REPO_TEMPLATES: &[RepoTemplate] = &[
     RepoTemplate {
         id: "services",
         remote: "https://github.com/cowprotocol/services.git",
-        role: "reference-only",
+        role: "wire-authority",
         local_hint: "<services-checkout>",
         producer_paths: SERVICES_PATHS,
     },
@@ -285,25 +285,6 @@ const HELPER_REPO_TEMPLATES: &[RepoTemplate] = &[
     },
 ];
 
-fn repo_local_publication_contract() -> Vec<String> {
-    vec![
-        "cargo parity-validate --source-lock parity/source-lock.yaml".to_string(),
-        "cargo package -p cow-sdk-core --allow-dirty".to_string(),
-        "cargo package -p cow-sdk-contracts --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\" --config \"patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'\" --config \"patch.crates-io.cow-sdk-subgraph.path='crates/subgraph'\"".to_string(),
-        "cargo package -p cow-sdk-app-data --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\"".to_string(),
-        "cargo package -p cow-sdk-orderbook --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\"".to_string(),
-        "cargo package -p cow-sdk-signing --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\" --config \"patch.crates-io.cow-sdk-contracts.path='crates/contracts'\"".to_string(),
-        "cargo package -p cow-sdk-subgraph --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\"".to_string(),
-        "cargo package -p cow-sdk-transport-wasm --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\"".to_string(),
-        "cargo package -p cow-sdk-trading --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\" --config \"patch.crates-io.cow-sdk-contracts.path='crates/contracts'\" --config \"patch.crates-io.cow-sdk-signing.path='crates/signing'\" --config \"patch.crates-io.cow-sdk-app-data.path='crates/app-data'\" --config \"patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'\" --config \"patch.crates-io.cow-sdk-transport-wasm.path='crates/transport-wasm'\"".to_string(),
-        "cargo package -p cow-sdk-alloy-provider --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\"".to_string(),
-        "cargo package -p cow-sdk-alloy-signer --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\" --config \"patch.crates-io.cow-sdk-contracts.path='crates/contracts'\"".to_string(),
-        "cargo package -p cow-sdk-alloy --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\" --config \"patch.crates-io.cow-sdk-contracts.path='crates/contracts'\" --config \"patch.crates-io.cow-sdk-alloy-provider.path='crates/alloy-provider'\" --config \"patch.crates-io.cow-sdk-alloy-signer.path='crates/alloy-signer'\"".to_string(),
-        "cargo package -p cow-sdk-browser-wallet --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\"".to_string(),
-        "cargo package -p cow-sdk --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\" --config \"patch.crates-io.cow-sdk-contracts.path='crates/contracts'\" --config \"patch.crates-io.cow-sdk-signing.path='crates/signing'\" --config \"patch.crates-io.cow-sdk-app-data.path='crates/app-data'\" --config \"patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'\" --config \"patch.crates-io.cow-sdk-trading.path='crates/trading'\" --config \"patch.crates-io.cow-sdk-browser-wallet.path='crates/browser-wallet'\" --config \"patch.crates-io.cow-sdk-alloy.path='crates/alloy'\" --config \"patch.crates-io.cow-sdk-alloy-provider.path='crates/alloy-provider'\" --config \"patch.crates-io.cow-sdk-alloy-signer.path='crates/alloy-signer'\"".to_string(),
-    ]
-}
-
 const REPO_TEMPLATES: &[RepoTemplate] = &[
     RepoTemplate {
         id: "cow-sdk",
@@ -322,7 +303,7 @@ const REPO_TEMPLATES: &[RepoTemplate] = &[
     RepoTemplate {
         id: "services",
         remote: "https://github.com/cowprotocol/services.git",
-        role: "reference-only",
+        role: "wire-authority",
         local_hint: "<services-checkout>",
         producer_paths: SERVICES_PATHS,
     },
@@ -350,7 +331,6 @@ struct SourceLock {
     meta: LockMeta,
     repositories: Vec<RepositoryEntry>,
     fixtures: Vec<FixtureEntry>,
-    validation: ValidationEntry,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -385,14 +365,6 @@ struct FixtureEntry {
 struct FixtureSourceRef {
     repo: String,
     path: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct ValidationEntry {
-    standalone_repo_contract: Vec<String>,
-    repo_local_publication_contract: Vec<String>,
-    pinned_upstream_provenance_contract: Vec<String>,
-    maintainer_refresh_contract: Vec<String>,
 }
 
 struct CliOptions {
@@ -528,20 +500,6 @@ fn snapshot(options: &CliOptions) -> Result<()> {
         },
         repositories,
         fixtures: fixture_contracts(),
-        validation: ValidationEntry {
-            standalone_repo_contract: vec![
-                "cargo build --workspace".to_string(),
-                "cargo test --workspace".to_string(),
-            ],
-            repo_local_publication_contract: repo_local_publication_contract(),
-            pinned_upstream_provenance_contract: vec![
-                "cargo parity-provision-upstreams --source-lock parity/source-lock.yaml --output-root <path>".to_string(),
-                "cargo parity-validate --source-lock parity/source-lock.yaml --cow-sdk-root <path>/cow-sdk --contracts-root <path>/contracts --services-root <path>/services".to_string(),
-            ],
-            maintainer_refresh_contract: vec![
-                "cargo parity-snapshot --output parity/source-lock.yaml --cow-sdk-root <path> --contracts-root <path> --services-root <path>".to_string(),
-            ],
-        },
     };
 
     let yaml = serde_yaml::to_string(&source_lock).context("failed to serialize source lock")?;
@@ -1806,33 +1764,6 @@ mod tests {
         validate(&options)?;
 
         Ok(())
-    }
-
-    #[test]
-    fn publication_contract_covers_all_publishable_crates_and_local_patches() {
-        let contract = repo_local_publication_contract();
-
-        assert!(
-            contract.iter().any(|command| command.contains(
-                "cargo package -p cow-sdk-contracts --allow-dirty --config \"patch.crates-io.cow-sdk-core.path='crates/core'\" --config \"patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'\" --config \"patch.crates-io.cow-sdk-subgraph.path='crates/subgraph'\""
-            )),
-            "contracts package command must patch unpublished local dev-dependencies"
-        );
-        assert!(
-            contract
-                .iter()
-                .any(|command| command.starts_with("cargo package -p cow-sdk-transport-wasm ")),
-            "transport-wasm must remain in source-lock publication evidence"
-        );
-        assert!(
-            contract.iter().any(|command| {
-                command.starts_with("cargo package -p cow-sdk-trading ")
-                    && command.contains(
-                        "patch.crates-io.cow-sdk-transport-wasm.path='crates/transport-wasm'",
-                    )
-            }),
-            "trading package command must patch transport-wasm until the family is published"
-        );
     }
 
     #[test]

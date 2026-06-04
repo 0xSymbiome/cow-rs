@@ -4,8 +4,3 @@ meta:
   purpose: schema-version rejection fixture
 repositories: []
 fixtures: []
-validation:
-  standalone_repo_contract: []
-  repo_local_publication_contract: []
-  pinned_upstream_provenance_contract: []
-  maintainer_refresh_contract: []

@@ -26,7 +26,7 @@ fn vendor_openapi_stamps_synthetic_services_openapi() -> Result<()> {
             id: "services",
             remote: services_root.display().to_string(),
             commit: commit.clone(),
-            role: "reference-only",
+            role: "wire-authority",
             producer_paths: vec!["crates/orderbook/openapi.yml"],
         }],
     )?;
@@ -78,7 +78,7 @@ fn vendor_openapi_rejects_services_checkout_at_wrong_commit() -> Result<()> {
             id: "services",
             remote: services_root.display().to_string(),
             commit: pinned,
-            role: "reference-only",
+            role: "wire-authority",
             producer_paths: vec!["crates/orderbook/openapi.yml"],
         }],
     )?;
