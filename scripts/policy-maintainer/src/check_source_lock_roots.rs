@@ -21,9 +21,6 @@ pub struct Args {
     /// Override source-lock path.
     #[arg(long)]
     pub source_lock: Option<PathBuf>,
-    /// Local cow-sdk checkout to compare against the source-lock pin.
-    #[arg(long)]
-    pub cow_sdk_root: Option<PathBuf>,
     /// Local contracts checkout to compare against the source-lock pin.
     #[arg(long)]
     pub contracts_root: Option<PathBuf>,
@@ -74,7 +71,6 @@ pub fn run_with_writer(
         .collect::<BTreeMap<_, _>>();
 
     let roots = [
-        ("cow-sdk", args.cow_sdk_root),
         ("contracts", args.contracts_root),
         ("services", args.services_root),
     ];

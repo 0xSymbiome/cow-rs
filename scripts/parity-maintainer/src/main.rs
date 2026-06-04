@@ -25,124 +25,6 @@ struct RepoTemplate {
     producer_paths: &'static [&'static str],
 }
 
-const COW_SDK_PATHS: &[&str] = &[
-    "packages/common/src/adapters/AbstractSigner.ts",
-    "packages/common/src/adapters/AbstractProviderAdapter.ts",
-    "packages/common/src/utils/address.ts",
-    "packages/common/src/utils/address.test.ts",
-    "packages/common/src/utils/token.ts",
-    "packages/common/src/utils/token.test.ts",
-    "packages/config/src/types/configs.ts",
-    "packages/config/src/chains/types.ts",
-    "packages/config/src/constants/addresses.ts",
-    "packages/config/src/constants/wrappedTokens.ts",
-    "packages/trading/src/index.ts",
-    "packages/trading/src/types.ts",
-    "packages/trading/src/appDataUtils.ts",
-    "packages/trading/src/appDataUtils.test.ts",
-    "packages/trading/src/getQuote.ts",
-    "packages/trading/src/getQuote.test.ts",
-    "packages/trading/src/getOrderToSign.ts",
-    "packages/trading/src/getOrderToSign.test.ts",
-    "packages/trading/src/getOrderTypedData.ts",
-    "packages/trading/src/getOrderTypedData.test.ts",
-    "packages/trading/src/calculateUniqueOrderId.ts",
-    "packages/trading/src/calculateUniqueOrderId.test.ts",
-    "packages/trading/src/getSettlementContract.ts",
-    "packages/trading/src/getSettlementContract.test.ts",
-    "packages/trading/src/getPreSignTransaction.ts",
-    "packages/trading/src/getPreSignTransaction.test.ts",
-    "packages/trading/src/getEthFlowTransaction.ts",
-    "packages/trading/src/getEthFlowTransaction.test.ts",
-    "packages/trading/src/onChainCancellation.ts",
-    "packages/trading/src/onChainCancellation.test.ts",
-    "packages/trading/src/postCoWProtocolTrade.ts",
-    "packages/trading/src/postCoWProtocolTrade.test.ts",
-    "packages/trading/src/postLimitOrder.ts",
-    "packages/trading/src/postLimitOrder.test.ts",
-    "packages/trading/src/postSellNativeCurrencyOrder.ts",
-    "packages/trading/src/postSellNativeCurrencyOrder.test.ts",
-    "packages/trading/src/postSwapOrder.ts",
-    "packages/trading/src/postSwapOrder.test.ts",
-    "packages/trading/src/resolveSlippageSuggestion.ts",
-    "packages/trading/src/resolveSlippageSuggestion.test.ts",
-    "packages/trading/src/suggestSlippageBps.ts",
-    "packages/trading/src/suggestSlippageBps.test.ts",
-    "packages/trading/src/suggestSlippageFromFee.ts",
-    "packages/trading/src/suggestSlippageFromFee.test.ts",
-    "packages/trading/src/suggestSlippageFromVolume.ts",
-    "packages/trading/src/suggestSlippageFromVolume.test.ts",
-    "packages/trading/src/tradingSdk.ts",
-    "packages/trading/src/tradingSdk.test.ts",
-    "packages/order-signing/src/orderSigningUtils.ts",
-    "packages/order-signing/src/utils.ts",
-    "packages/order-signing/src/types.ts",
-    "packages/order-signing/tests/orderSigningUtils.test.ts",
-    "packages/order-book/src/api.ts",
-    "packages/order-book/src/api.spec.ts",
-    "packages/order-book/src/request.ts",
-    "packages/order-book/src/request.test.ts",
-    "packages/order-book/src/transformOrder.ts",
-    "packages/order-book/src/transformOrder.test.ts",
-    "packages/order-book/src/types.ts",
-    "packages/contracts-ts/src/ContractsTs.ts",
-    "packages/contracts-ts/src/types.ts",
-    "packages/contracts-ts/src/order.ts",
-    "packages/contracts-ts/src/sign.ts",
-    "packages/contracts-ts/src/settlement.ts",
-    "packages/contracts-ts/src/swap.ts",
-    "packages/contracts-ts/src/interaction.ts",
-    "packages/contracts-ts/src/proxy.ts",
-    "packages/contracts-ts/src/vault.ts",
-    "packages/contracts-ts/src/reader.ts",
-    "packages/contracts-ts/tests/order.test.ts",
-    "packages/contracts-ts/tests/order-processing.test.ts",
-    "packages/contracts-ts/tests/settlement.test.ts",
-    "packages/contracts-ts/tests/signature.test.ts",
-    "packages/contracts-ts/tests/deployment.test.ts",
-    "packages/contracts-ts/tests/vault.test.ts",
-    "packages/contracts-ts/tests/reader.test.ts",
-    "packages/app-data/src/api/appDataHexToCid.ts",
-    "packages/app-data/src/mocks.ts",
-    "packages/app-data/src/api/appDataHexToCid.spec.ts",
-    "packages/app-data/src/api/cidToAppDataHex.ts",
-    "packages/app-data/src/api/cidToAppDataHex.test.ts",
-    "packages/app-data/src/api/generateAppDataDoc.ts",
-    "packages/app-data/src/api/generateAppDataDoc.spec.ts",
-    "packages/app-data/src/api/getAppDataInfo.ts",
-    "packages/app-data/src/api/getAppDataInfo.spec.ts",
-    "packages/app-data/src/api/getAppDataSchema.ts",
-    "packages/app-data/src/api/getAppDataSchema.spec.ts",
-    "packages/app-data/src/api/validateAppDataDoc.ts",
-    "packages/app-data/src/api/validateAppDataDoc.spec.ts",
-    "packages/app-data/src/api/fetchDocFromCid.ts",
-    "packages/app-data/src/api/fetchDocFromCid.spec.ts",
-    "packages/app-data/src/api/fetchDocFromAppData.ts",
-    "packages/app-data/src/api/fetchDocFromAppData.spec.ts",
-    "packages/app-data/src/types.ts",
-    "packages/app-data/src/consts.ts",
-    "packages/app-data/src/importSchema.ts",
-    "packages/app-data/src/utils/ipfs.ts",
-    "packages/app-data/src/utils/stringify.ts",
-    "packages/app-data/src/generatedTypes/index.ts",
-    "packages/app-data/src/generatedTypes/latest.ts",
-    "packages/app-data/test/schema.spec.ts",
-    "packages/app-data/test/schema-1.5.0.spec.ts",
-    "packages/app-data/test/flashloan-v1.7.0.spec.ts",
-    "packages/app-data/test/wrappers.v1.13.0.spec.ts",
-    "packages/subgraph/src/api.ts",
-    "packages/subgraph/src/api.spec.ts",
-    "packages/subgraph/src/graphql.ts",
-    "packages/subgraph/src/queries.ts",
-    "packages/sdk/src/index.ts",
-    "packages/sdk/src/typedoc-entry.ts",
-    "packages/sdk/package.json",
-    "packages/sdk/README.md",
-    "packages/cow-shed/src/const.ts",
-    "packages/cow-shed/src/CowShedSdk.ts",
-    "packages/config/src/chains/const/contracts.ts",
-];
-
 const CONTRACTS_PATHS: &[&str] = &[
     "src/ts/order.ts",
     "src/ts/sign.ts",
@@ -164,6 +46,7 @@ const SERVICES_PATHS: &[&str] = &[
     "crates/shared/src/order_validation.rs",
     "crates/orderbook/src/app_data.rs",
     "crates/model/src/order.rs",
+    "crates/orderbook/src/quoter.rs",
 ];
 
 const ALLOY_PATHS: &[&str] = &[
@@ -228,13 +111,6 @@ const ETHFLOWCONTRACT_PATHS: &[&str] = &[
 ];
 const HELPER_REPO_TEMPLATES: &[RepoTemplate] = &[
     RepoTemplate {
-        id: "cow-sdk",
-        remote: "https://github.com/cowprotocol/cow-sdk.git",
-        role: "primary",
-        local_hint: "<cow-sdk-checkout>",
-        producer_paths: COW_SDK_PATHS,
-    },
-    RepoTemplate {
         id: "contracts",
         remote: "https://github.com/cowprotocol/contracts.git",
         role: "primary",
@@ -286,13 +162,6 @@ const HELPER_REPO_TEMPLATES: &[RepoTemplate] = &[
 ];
 
 const REPO_TEMPLATES: &[RepoTemplate] = &[
-    RepoTemplate {
-        id: "cow-sdk",
-        remote: "https://github.com/cowprotocol/cow-sdk.git",
-        role: "primary",
-        local_hint: "<cow-sdk-checkout>",
-        producer_paths: COW_SDK_PATHS,
-    },
     RepoTemplate {
         id: "contracts",
         remote: "https://github.com/cowprotocol/contracts.git",
@@ -371,7 +240,6 @@ struct CliOptions {
     source_lock: PathBuf,
     output: PathBuf,
     output_root: Option<PathBuf>,
-    cow_sdk_root: Option<PathBuf>,
     contracts_root: Option<PathBuf>,
     services_root: Option<PathBuf>,
 }
@@ -421,8 +289,6 @@ struct UpstreamRootsArgs {
     #[arg(long, default_value = DEFAULT_SOURCE_LOCK)]
     output: PathBuf,
     #[arg(long)]
-    cow_sdk_root: PathBuf,
-    #[arg(long)]
     contracts_root: PathBuf,
     #[arg(long)]
     services_root: PathBuf,
@@ -432,8 +298,6 @@ struct UpstreamRootsArgs {
 struct ValidateArgs {
     #[command(flatten)]
     source: SourceLockArg,
-    #[arg(long)]
-    cow_sdk_root: Option<PathBuf>,
     #[arg(long)]
     contracts_root: Option<PathBuf>,
     #[arg(long)]
@@ -454,7 +318,6 @@ fn main() -> Result<()> {
             source_lock: args.output.clone(),
             output: args.output,
             output_root: None,
-            cow_sdk_root: Some(args.cow_sdk_root),
             contracts_root: Some(args.contracts_root),
             services_root: Some(args.services_root),
         }),
@@ -462,7 +325,6 @@ fn main() -> Result<()> {
             source_lock: args.source.source_lock,
             output: PathBuf::from(DEFAULT_SOURCE_LOCK),
             output_root: None,
-            cow_sdk_root: args.cow_sdk_root,
             contracts_root: args.contracts_root,
             services_root: args.services_root,
         }),
@@ -470,7 +332,6 @@ fn main() -> Result<()> {
             source_lock: args.source.source_lock,
             output: PathBuf::from(DEFAULT_SOURCE_LOCK),
             output_root: Some(args.output_root),
-            cow_sdk_root: None,
             contracts_root: None,
             services_root: None,
         }),
@@ -707,13 +568,6 @@ fn validate(options: &CliOptions) -> Result<()> {
 fn resolve_required_roots(options: &CliOptions) -> Result<BTreeMap<String, PathBuf>> {
     let mut roots = BTreeMap::new();
     roots.insert(
-        "cow-sdk".to_string(),
-        options
-            .cow_sdk_root
-            .clone()
-            .context("snapshot requires --cow-sdk-root")?,
-    );
-    roots.insert(
         "contracts".to_string(),
         options
             .contracts_root
@@ -732,9 +586,6 @@ fn resolve_required_roots(options: &CliOptions) -> Result<BTreeMap<String, PathB
 
 fn resolve_optional_roots(options: &CliOptions) -> BTreeMap<String, PathBuf> {
     let mut roots = BTreeMap::new();
-    if let Some(path) = &options.cow_sdk_root {
-        roots.insert("cow-sdk".to_string(), path.clone());
-    }
     if let Some(path) = &options.contracts_root {
         roots.insert("contracts".to_string(), path.clone());
     }
@@ -1053,66 +904,6 @@ fn fixture_contracts() -> Vec<FixtureEntry> {
                     repo: "contracts".to_string(),
                     path: "test/GPv2Settlement/Swap/Swap.t.sol".to_string(),
                 },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/contracts-ts/src/order.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/contracts-ts/src/sign.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/contracts-ts/src/settlement.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/contracts-ts/src/swap.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/contracts-ts/src/interaction.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/contracts-ts/src/proxy.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/contracts-ts/src/vault.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/contracts-ts/src/reader.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/contracts-ts/tests/order.test.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/contracts-ts/tests/order-processing.test.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/contracts-ts/tests/settlement.test.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/contracts-ts/tests/signature.test.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/contracts-ts/tests/deployment.test.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/contracts-ts/tests/vault.test.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/contracts-ts/tests/reader.test.ts".to_string(),
-                },
             ],
         },
         FixtureEntry {
@@ -1120,148 +911,16 @@ fn fixture_contracts() -> Vec<FixtureEntry> {
             file: "parity/fixtures/trading.json".to_string(),
             source_refs: vec![
                 FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/index.ts".to_string(),
+                    repo: "services".to_string(),
+                    path: "crates/orderbook/openapi.yml".to_string(),
                 },
                 FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/types.ts".to_string(),
+                    repo: "services".to_string(),
+                    path: "crates/orderbook/src/quoter.rs".to_string(),
                 },
                 FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/appDataUtils.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/appDataUtils.test.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/getQuote.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/getQuote.test.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/getOrderToSign.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/getOrderToSign.test.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/postSwapOrder.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/postSwapOrder.test.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/postCoWProtocolTrade.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/postCoWProtocolTrade.test.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/postLimitOrder.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/postLimitOrder.test.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/postSellNativeCurrencyOrder.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/postSellNativeCurrencyOrder.test.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/getOrderTypedData.test.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/getPreSignTransaction.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/getPreSignTransaction.test.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/getEthFlowTransaction.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/getEthFlowTransaction.test.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/getSettlementContract.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/getSettlementContract.test.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/onChainCancellation.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/onChainCancellation.test.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/resolveSlippageSuggestion.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/resolveSlippageSuggestion.test.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/suggestSlippageBps.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/suggestSlippageBps.test.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/suggestSlippageFromFee.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/suggestSlippageFromFee.test.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/suggestSlippageFromVolume.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/suggestSlippageFromVolume.test.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/tradingSdk.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/tradingSdk.test.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/calculateUniqueOrderId.test.ts".to_string(),
+                    repo: "services".to_string(),
+                    path: "crates/shared/src/order_validation.rs".to_string(),
                 },
             ],
         },
@@ -1409,7 +1068,6 @@ mod tests {
 
     struct TestWorkspace {
         root: PathBuf,
-        cow_sdk_root: PathBuf,
         contracts_root: PathBuf,
         services_root: PathBuf,
     }
@@ -1420,18 +1078,15 @@ mod tests {
             fs::create_dir_all(&root)
                 .with_context(|| format!("failed to create {}", root.display()))?;
 
-            let cow_sdk_root = root.join("cow-sdk");
             let contracts_root = root.join("contracts");
             let services_root = root.join("services");
 
-            let cow_sdk_commit = init_repo(&cow_sdk_root, COW_SDK_PATHS, REPO_TEMPLATES[0].remote)?;
             let contracts_commit =
-                init_repo(&contracts_root, CONTRACTS_PATHS, REPO_TEMPLATES[1].remote)?;
+                init_repo(&contracts_root, CONTRACTS_PATHS, REPO_TEMPLATES[0].remote)?;
             let services_commit =
-                init_repo(&services_root, SERVICES_PATHS, REPO_TEMPLATES[2].remote)?;
+                init_repo(&services_root, SERVICES_PATHS, REPO_TEMPLATES[1].remote)?;
 
             let repo_commits = BTreeMap::from([
-                ("cow-sdk".to_string(), cow_sdk_commit),
                 ("contracts".to_string(), contracts_commit),
                 ("services".to_string(), services_commit),
             ]);
@@ -1439,7 +1094,6 @@ mod tests {
 
             Ok(Self {
                 root,
-                cow_sdk_root,
                 contracts_root,
                 services_root,
             })
@@ -1450,7 +1104,6 @@ mod tests {
                 source_lock: self.root.join("parity/source-lock.yaml"),
                 output: self.root.join("parity/source-lock.yaml"),
                 output_root: None,
-                cow_sdk_root: Some(self.cow_sdk_root.clone()),
                 contracts_root: Some(self.contracts_root.clone()),
                 services_root: Some(self.services_root.clone()),
             }
@@ -1488,7 +1141,7 @@ mod tests {
         let nested_contracts = parent.join("copied-upstream/contracts");
         write_producer_paths(&nested_contracts, CONTRACTS_PATHS)?;
 
-        let contracts_repo = repository_entry_for(REPO_TEMPLATES[1], &parent_commit);
+        let contracts_repo = repository_entry_for(REPO_TEMPLATES[0], &parent_commit);
         let error = validate_repository_root(&contracts_repo, &nested_contracts)
             .expect_err("validate should fail when the supplied root resolves to a parent repo");
 
@@ -1667,7 +1320,6 @@ mod tests {
             source_lock: options.source_lock.clone(),
             output: options.output.clone(),
             output_root: None,
-            cow_sdk_root: None,
             contracts_root: None,
             services_root: None,
         };
@@ -1692,7 +1344,14 @@ mod tests {
                 .with_context(|| format!("failed to read {}", fixture_path.display()))?,
         )
         .context("failed to parse fixture json")?;
-        fixture_json["source_refs"][0]["commit"] =
+        let trading_source_refs = fixture_json["source_refs"]
+            .as_array_mut()
+            .context("missing trading source_refs array")?;
+        let services_ref = trading_source_refs
+            .iter_mut()
+            .find(|source_ref| source_ref["repo"].as_str() == Some("services"))
+            .context("missing services source_ref in trading fixture")?;
+        services_ref["commit"] =
             serde_json::Value::String("2222222222222222222222222222222222222222".to_string());
         fs::write(
             &fixture_path,
@@ -1704,7 +1363,6 @@ mod tests {
             source_lock: options.source_lock.clone(),
             output: options.output.clone(),
             output_root: None,
-            cow_sdk_root: None,
             contracts_root: None,
             services_root: None,
         };
@@ -1712,7 +1370,7 @@ mod tests {
         let error =
             validate(&standalone).expect_err("validate should fail on fixture commit drift");
         assert!(
-            format!("{error:#}").contains("embeds stale commit for repo cow-sdk"),
+            format!("{error:#}").contains("embeds stale commit for repo services"),
             "unexpected error: {error:#}"
         );
 

@@ -5,215 +5,31 @@
   "generator": "curated-from-pinned-upstream-tests",
   "source_refs": [
     {
-      "repo": "cow-sdk",
-      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
-      "path": "packages/trading/src/index.ts",
+      "repo": "services",
+      "commit": "1f80d54bc3521b3fa81cd8ad66d9f749c5450591",
+      "path": "crates/orderbook/openapi.yml",
       "anchors": [
-        "trading public surface",
-        "TradingSdk export"
+        "OrderCreation",
+        "OrderQuoteResponse",
+        "AppData"
       ]
     },
     {
-      "repo": "cow-sdk",
-      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
-      "path": "packages/trading/src/types.ts",
+      "repo": "services",
+      "commit": "1f80d54bc3521b3fa81cd8ad66d9f749c5450591",
+      "path": "crates/orderbook/src/quoter.rs",
       "anchors": [
-        "TradeBaseParameters",
-        "QuoteResults",
-        "OrderPostingResult",
-        "PostTradeAdditionalParams"
+        "get_vol_fee_adjusted_quote_data",
+        "fee-adjusted directly-signable amounts"
       ]
     },
     {
-      "repo": "cow-sdk",
-      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
-      "path": "packages/trading/src/appDataUtils.test.ts",
+      "repo": "services",
+      "commit": "1f80d54bc3521b3fa81cd8ad66d9f749c5450591",
+      "path": "crates/shared/src/order_validation.rs",
       "anchors": [
-        "build app data",
-        "partner fee metadata"
-      ]
-    },
-    {
-      "repo": "cow-sdk",
-      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
-      "path": "packages/trading/src/getQuote.ts",
-      "anchors": [
-        "ETH_FLOW_AUX_QUOTE_PARAMS",
-        "validFor and validTo validation",
-        "PriceQuality.OPTIMAL"
-      ]
-    },
-    {
-      "repo": "cow-sdk",
-      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
-      "path": "packages/trading/src/getQuote.test.ts",
-      "anchors": [
-        "Should add slippageBps and appCode from parameters",
-        "Should use DEFAULT_QUOTE_VALIDITY when neither validFor nor validTo are provided",
-        "Should use exact validTo when provided",
-        "Should throw error when both validFor and validTo are provided",
-        "Then should override sell token with wrapped one",
-        "Default slippage should be 2%",
-        "Should use suggested slippage when AUTO slippage is used and suggestion is provided"
-      ]
-    },
-    {
-      "repo": "cow-sdk",
-      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
-      "path": "packages/trading/src/getOrderToSign.test.ts",
-      "anchors": [
-        "When validTo is not set, then should use validFor parameter instead",
-        "When sell order and cost/slippage adjustments disabled, then buy amount should remain unchanged",
-        "When buy order and cost/slippage adjustments disabled, then sell amount should remain unchanged"
-      ]
-    },
-    {
-      "repo": "cow-sdk",
-      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
-      "path": "packages/trading/src/postSwapOrder.test.ts",
-      "anchors": [
-        "Sell order amounts should take fees and slippage into account",
-        "Buy order amounts should take fees and slippage into account",
-        "When partner fee is specified, then it must be reflected in appData",
-        "When receiver/validTo is present in advancedSettings quoteRequest, then it should end up in the order"
-      ]
-    },
-    {
-      "repo": "cow-sdk",
-      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
-      "path": "packages/trading/src/postCoWProtocolTrade.test.ts",
-      "anchors": [
-        "should use owner address as from parameter in sendOrder",
-        "should call uploadAppData with appDataKeccak256 and fullAppData",
-        "should pass settlementContractOverride to signOrder",
-        "should pass env to signOrder options"
-      ]
-    },
-    {
-      "repo": "cow-sdk",
-      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
-      "path": "packages/trading/src/postLimitOrder.test.ts",
-      "anchors": [
-        "Should call order posting with all specified parameters",
-        "applyCostsSlippageAndFees false"
-      ]
-    },
-    {
-      "repo": "cow-sdk",
-      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
-      "path": "packages/trading/src/postSellNativeCurrencyOrder.test.ts",
-      "anchors": [
-        "Should call checkEthFlowOrderExists if it is set",
-        "Should upload appData",
-        "When transaction gas estimation is failed, then should use fallback value + 20%"
-      ]
-    },
-    {
-      "repo": "cow-sdk",
-      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
-      "path": "packages/trading/src/getOrderTypedData.test.ts",
-      "anchors": [
-        "should return domain with default production settlement contract address",
-        "should use settlementContractOverride when provided"
-      ]
-    },
-    {
-      "repo": "cow-sdk",
-      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
-      "path": "packages/trading/src/getPreSignTransaction.test.ts",
-      "anchors": [
-        "Should call gas estimation and return estimated value + 20%",
-        "Tx value should always be zero",
-        "should prioritize settlementContractOverride over staging env"
-      ]
-    },
-    {
-      "repo": "cow-sdk",
-      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
-      "path": "packages/trading/src/getEthFlowTransaction.test.ts",
-      "anchors": [
-        "Should always override sell token with wrapped native token",
-        "Transaction value should be equal to sell amount",
-        "should prioritize ethFlowContractOverride over staging env"
-      ]
-    },
-    {
-      "repo": "cow-sdk",
-      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
-      "path": "packages/trading/src/getSettlementContract.test.ts",
-      "anchors": [
-        "should use default production address when no options provided",
-        "should prioritize settlementContractOverride over staging env"
-      ]
-    },
-    {
-      "repo": "cow-sdk",
-      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
-      "path": "packages/trading/src/onChainCancellation.test.ts",
-      "anchors": [
-        "should return cancellation with estimated gas when estimation succeeds",
-        "should return fallback gas when estimation fails",
-        "should use owner as receiver when receiver is not set"
-      ]
-    },
-    {
-      "repo": "cow-sdk",
-      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
-      "path": "packages/trading/src/resolveSlippageSuggestion.test.ts",
-      "anchors": [
-        "When priceQuality defaults to OPTIMAL",
-        "When priceQuality is FAST",
-        "Should pass isEthFlow flag to suggestSlippageBps"
-      ]
-    },
-    {
-      "repo": "cow-sdk",
-      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
-      "path": "packages/trading/src/suggestSlippageBps.test.ts",
-      "anchors": [
-        "Lower bound clamping",
-        "Upper bound clamping"
-      ]
-    },
-    {
-      "repo": "cow-sdk",
-      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
-      "path": "packages/trading/src/suggestSlippageFromFee.test.ts",
-      "anchors": [
-        "handle different factors",
-        "Handle fee edge cases"
-      ]
-    },
-    {
-      "repo": "cow-sdk",
-      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
-      "path": "packages/trading/src/suggestSlippageFromVolume.test.ts",
-      "anchors": [
-        "Sell orders",
-        "Buy orders",
-        "Handle edge case with sellAmount"
-      ]
-    },
-    {
-      "repo": "cow-sdk",
-      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
-      "path": "packages/trading/src/tradingSdk.test.ts",
-      "anchors": [
-        "getQuoteOnly",
-        "offChainCancelOrder",
-        "getCowProtocolAllowance",
-        "approveCowProtocol",
-        "onChainCancelOrder",
-        "settlementContractOverride and ethFlowContractOverride"
-      ]
-    },
-    {
-      "repo": "cow-sdk",
-      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
-      "path": "packages/trading/src/calculateUniqueOrderId.test.ts",
-      "anchors": [
-        "Should always set validTo to the maximum value",
-        "Should always set sellToken to wrapped native token"
+        "is_order_outside_market_price",
+        "market-price invariant; slippage transform follows the CoW SDK convention (ADR 0066)"
       ]
     }
   ],
