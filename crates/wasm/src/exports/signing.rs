@@ -491,6 +491,10 @@ pub(crate) fn normalize_signature(raw_hex: &str) -> Result<String, JsValue> {
         .map_err(|error| WasmError::from(error).into_js())
 }
 
+// Only the `trading` module consumes this (and the `js_message` helper it
+// wraps), so gate both to that feature — otherwise the orderbook/signing
+// flavours, which compile `signing` without `trading`, warn dead-code.
+#[cfg(feature = "trading")]
 pub(crate) fn js_error_to_string(value: JsValue) -> String {
     js_message(&value)
 }
@@ -507,6 +511,7 @@ pub(crate) fn wallet_js_error(method: &'static str, error: JsValue) -> JsValue {
     WasmError::wallet_from_code(method, code).into_js()
 }
 
+#[cfg(feature = "trading")]
 pub(crate) fn js_message(value: &JsValue) -> String {
     Reflect::get(value, &JsValue::from_str("message"))
         .ok()
