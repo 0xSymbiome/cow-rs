@@ -49,28 +49,6 @@ const SERVICES_PATHS: &[&str] = &[
     "crates/orderbook/src/quoter.rs",
 ];
 
-const ALLOY_PATHS: &[&str] = &[
-    "Cargo.toml",
-    "crates/consensus/src/lib.rs",
-    "crates/json-rpc/src/lib.rs",
-    "crates/network/src/lib.rs",
-    "crates/provider/src/lib.rs",
-    "crates/rpc-types-eth/src/lib.rs",
-    "crates/signer/src/lib.rs",
-    "crates/signer-local/src/lib.rs",
-    "crates/transport/src/lib.rs",
-    "crates/transport-http/src/lib.rs",
-];
-
-const ALLOY_CORE_PATHS: &[&str] = &[
-    "Cargo.toml",
-    "crates/dyn-abi/src/lib.rs",
-    "crates/json-abi/src/lib.rs",
-    "crates/primitives/src/lib.rs",
-    "crates/sol-macro/src/lib.rs",
-    "crates/sol-types/src/lib.rs",
-];
-
 const COMPOSABLE_COW_PATHS: &[&str] = &[
     "networks.json",
     "src/ComposableCoW.sol",
@@ -175,23 +153,6 @@ const REPO_TEMPLATES: &[RepoTemplate] = &[
         role: "wire-authority",
         local_hint: "<services-checkout>",
         producer_paths: SERVICES_PATHS,
-    },
-];
-
-const DEPENDENCY_REPO_TEMPLATES: &[RepoTemplate] = &[
-    RepoTemplate {
-        id: "alloy",
-        remote: "https://github.com/alloy-rs/alloy.git",
-        role: "dependency",
-        local_hint: "<alloy-checkout>",
-        producer_paths: ALLOY_PATHS,
-    },
-    RepoTemplate {
-        id: "alloy-core",
-        remote: "https://github.com/alloy-rs/core.git",
-        role: "dependency",
-        local_hint: "<alloy-core-checkout>",
-        producer_paths: ALLOY_CORE_PATHS,
     },
 ];
 
@@ -428,10 +389,6 @@ fn validate(options: &CliOptions) -> Result<()> {
         .iter()
         .map(|template| (template.id, *template))
         .collect();
-    let dependency_templates: BTreeMap<&str, RepoTemplate> = DEPENDENCY_REPO_TEMPLATES
-        .iter()
-        .map(|template| (template.id, *template))
-        .collect();
     let actual_repos: BTreeMap<&str, &RepositoryEntry> = lock
         .repositories
         .iter()
@@ -453,14 +410,10 @@ fn validate(options: &CliOptions) -> Result<()> {
         }
     }
 
-    for (id, repo) in &actual_repos {
-        if expected_templates.contains_key(id) {
-            continue;
+    for id in actual_repos.keys() {
+        if !expected_templates.contains_key(id) {
+            bail!("unexpected repository entry in source lock: {id}");
         }
-        let template = dependency_templates
-            .get(id)
-            .with_context(|| format!("unexpected repository entry in source lock: {id}"))?;
-        validate_repository_entry_template(id, repo, template)?;
     }
 
     let roots = resolve_optional_roots(options);
