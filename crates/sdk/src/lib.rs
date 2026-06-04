@@ -178,6 +178,13 @@ pub use cow_sdk_signing::InMemoryEip1271VerificationCache;
 /// when the opt-in `in-memory-cache` feature is enabled.
 pub use cow_sdk_signing::{Eip1271VerificationCache, NoopEip1271VerificationCache};
 pub use cow_sdk_trading as trading;
+/// In-memory test doubles for the SDK public trait seams, for use from a
+/// consumer's `[dev-dependencies]`. Enabled by the opt-in `testing` feature and
+/// off by default, so the doubles never enter a production dependency graph
+/// (ADR 0063).
+#[cfg(feature = "testing")]
+#[cfg_attr(docsrs, doc(cfg(feature = "testing")))]
+pub use cow_sdk_test as testing;
 /// Browser-native HTTP transport surface — the `wasm32` sibling of the native
 /// `ReqwestTransport` default. [`FetchTransport`] is the browser default
 /// implementation of [`HttpTransport`]; compose it into typed clients as

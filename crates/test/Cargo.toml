@@ -1,0 +1,23 @@
+[package]
+name = "cow-sdk-test"
+publish = true
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+description = "In-memory test doubles for the cow-rs SDK public traits (OrderbookClient, Signer, Provider) so downstream applications can test their CoW Protocol integration without a live orderbook, RPC endpoint, or wallet."
+readme = "README.md"
+
+[lints]
+workspace = true
+
+[dependencies]
+cow-sdk-core = { path = "../core" }
+cow-sdk-orderbook = { path = "../orderbook" }
+cow-sdk-trading = { path = "../trading" }
+async-trait = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt"] }

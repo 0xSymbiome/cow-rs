@@ -85,6 +85,7 @@ flowchart TD
 | `cow-sdk-alloy` | Composed native Alloy provider plus signer adapter | You need one native client for `Provider`, `LogProvider`, `SigningProvider`, and `Signer` helper flows. |
 | `cow-sdk-composable` | Reserved manifest for composable-order helpers, with current readiness evidence owned by contracts, signing, docs, and parity fixtures | You need to track the planned composable leaf without pulling an unfinished helper API. |
 | `cow-sdk-cow-shed` | COW Shed account-abstraction proxy derivation, EIP-712 hook signing, and `executeHooks` calldata encoding for EOA and EIP-1271 owners, with the `CowShedHooks` orchestrator | You need the COW Shed account-abstraction surface. |
+| `cow-sdk-test` | Published in-memory test doubles for the public trait seams (`OrderbookClient`, `Signer`, `Provider`/`SigningProvider`), surfaced through the facade `testing` feature as `cow_sdk::testing` | You want to test your integration with no live orderbook, RPC, or wallet (a dev-dependency). |
 
 The `cow-sdk-composable` reserved manifest is not a workspace member yet and
 does not expose a crate body. It keeps package identity, MSRV, and evidence
@@ -103,6 +104,7 @@ surfaces remain reviewable.
 | Runtime adapter | `cow-sdk-browser-wallet`, `cow-sdk-transport-wasm`, `cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, `cow-sdk-alloy` | Browser-wallet session integration, browser-target HTTP transport, and opt-in native Alloy provider/signer adapters |
 | TypeScript WASM leaf | `cow-sdk-wasm` | Typed wasm-bindgen exports and JavaScript callbacks over the same protocol helpers and HTTP seams |
 | Facade | `cow-sdk` | Curated public entrypoint |
+| Test support | `cow-sdk-test` | Published in-memory trait doubles for downstream integration tests, off the default dependency graph |
 
 ## TypeScript-Callable WASM Surface
 
@@ -137,23 +139,10 @@ flowchart TD
   js_host -.-> clients;
 ```
 
-<!-- runtime-routing:start -->
 ## Choose the crate or package by runtime
 
-| You're building... | Use | Why |
-| --- | --- | --- |
-| Native Rust services, bots, solvers, analytics | `cow-sdk` | Native HTTP transport, signing, trading, orderbook, and subgraph surfaces. |
-| Native Rust apps using Alloy | `cow-sdk` plus `cow-sdk-alloy-*` | Opt-in Alloy provider and signer adapters without widening the default facade. |
-| Rust apps that compile to browser WASM | `cow-sdk-browser-wallet` plus `cow-sdk-transport-wasm` | Rust-on-wasm wallet and fetch plumbing; not the JavaScript-callable package. |
-| Standard browser dapp or CowSwap-style UI in TypeScript | Upstream [`@cowprotocol/cow-sdk`](https://www.npmjs.com/package/@cowprotocol/cow-sdk) | Substantially smaller bundle at equivalent feature subsets; mature web ecosystem fit. |
-| TypeScript apps that need byte-for-byte Rust signing parity (viem, ethers, wagmi, or EIP-1193 wallets) | `<published-cow-sdk-wasm-package>` | Wallet stack-agnostic callbacks and the full facade surface. |
-| Browser dapps with a smaller bundle target | `<published-cow-sdk-wasm-package>/orderbook` | Orderbook and signing subset with a smaller raw wasm budget. |
-| Signer services or HSM proxies | `<published-cow-sdk-wasm-package>/signing` | Signing, UID, EIP-1271, and deployment helpers without HTTP clients. |
-| Node.js 22 or 24 LTS backends | `<published-cow-sdk-wasm-package>` | Node target works without browser polyfills when transport is configured. |
-| Cloudflare Workers | `<published-cow-sdk-wasm-package>/cloudflare` plus `<published-cow-sdk-wasm-package>/cloudflare/wasm` | Worker-compatible web target with explicit module initialization. Size-compatible with current Workers Free compressed-size limit at the time of measurement; full Workers support pending release-bundle and startup validation. |
-| Deno | `<published-cow-sdk-wasm-package>` | Experimental build-only support; validate in your own runtime before production use. |
-| Non-JS wasm consumers, WASI, WebAssembly components, TinyGo, Blazor, AssemblyScript guests, or no_std | Out of scope for 0.1.0 | Use native Rust crates where possible; the npm package targets JavaScript hosts. |
-<!-- runtime-routing:end -->
+The canonical runtime-to-package routing table lives in the root README:
+[When to use cow-rs](../README.md#when-to-use-cow-rs).
 
 ## TypeScript facade architecture
 
@@ -443,6 +432,6 @@ switch success.
 - [Principles](principles.md)
 - [Transport](transport.md)
 - [Deployments](deployments.md)
-- [Verification Guide](verification-guide.md)
-- [Parity Matrix](parity-matrix.md)
+- [Verification Guide](verification.md)
+- [Parity Matrix](parity.md)
 - [ADRs](adr/README.md)

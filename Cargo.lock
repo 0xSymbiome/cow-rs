@@ -1344,6 +1344,7 @@ dependencies = [
  "cow-sdk-pure-helpers",
  "cow-sdk-signing",
  "cow-sdk-subgraph",
+ "cow-sdk-test",
  "cow-sdk-trading",
  "cow-sdk-transport-policy",
  "cow-sdk-transport-wasm",
@@ -1642,6 +1643,17 @@ dependencies = [
  "trybuild",
  "url",
  "wiremock",
+]
+
+[[package]]
+name = "cow-sdk-test"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "cow-sdk-core",
+ "cow-sdk-orderbook",
+ "cow-sdk-trading",
+ "tokio",
 ]
 
 [[package]]

@@ -14,7 +14,7 @@ keywords = ["cow-protocol", "sdk", "trading", "defi", "ethereum"]
 categories = ["api-bindings", "cryptography::cryptocurrencies"]
 
 [package.metadata.docs.rs]
-features = ["browser-wallet", "cow-shed"]
+features = ["browser-wallet", "cow-shed", "testing"]
 default-target = "x86_64-unknown-linux-gnu"
 targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 
@@ -49,6 +49,10 @@ http-classifier = ["cow-sdk-transport-policy/reqwest-classifier"]
 # Re-exports the opt-in `InMemoryEip1271VerificationCache`. Off by default;
 # the trait and `NoopEip1271VerificationCache` are always available.
 in-memory-cache = ["cow-sdk-signing/in-memory-cache"]
+# Opt-in in-memory test doubles, re-exported as `cow_sdk::testing`, for
+# downstream apps to test their integration. Dev-dependency only; off by
+# default so the doubles never enter a production dependency graph (ADR 0063).
+testing = ["dep:cow-sdk-test"]
 wasm = ["dep:cow-sdk-pure-helpers", "dep:cow-sdk-wasm"]
 tracing = [
     "cow-sdk-alloy?/tracing",
@@ -77,6 +81,7 @@ cow-sdk-orderbook = { path = "../orderbook", version = "0.1.0" }
 cow-sdk-signing = { path = "../signing", version = "0.1.0" }
 cow-sdk-transport-policy = { path = "../transport-policy", version = "0.1.0" }
 cow-sdk-trading = { path = "../trading", version = "0.1.0" }
+cow-sdk-test = { path = "../test", version = "0.1.0", optional = true, default-features = false }
 cow-sdk-pure-helpers = { path = "../pure-helpers", version = "0.1.0", optional = true }
 cow-sdk-wasm = { path = "../wasm", version = "0.1.0", optional = true }
 cow-sdk-core = { path = "../core", version = "0.1.0" }
