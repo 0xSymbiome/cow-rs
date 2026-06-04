@@ -40,15 +40,16 @@ pub fn partner_fee_bps(partner_fee: Option<&PartnerFee>) -> Option<u32> {
 
 /// Lifts `percent` (a non-negative finite f64) into the
 /// `PERCENT_SCALE`-scaled signed-512-bit integer the cow slippage math
-/// expects, applying the upstream TypeScript SDK's
-/// `Math.floor(p * 1e6)` truncation semantics byte-identically.
+/// expects, applying the `Math.floor(p * 1e6)` fixed-point truncation the
+/// upstream `@cowprotocol/cow-sdk` uses (ADR 0066), consistent with the
+/// services fee accounting in `crates/orderbook/src/quoter.rs`.
 ///
 /// The prior `format!("{p:.6}")`-based path applied round-half-to-even
-/// at the 6th decimal place, which diverged from `Math.floor` for
+/// at the 6th decimal place, which diverged from `floor` for
 /// high-precision floats. Cow protocol-fee strings on the wire are
 /// always clean decimals (`"0.5"`, `"1.5"`) that survive either
-/// rounding mode, but the cascade aligns the cow surface with the TS
-/// upstream for parity-by-construction.
+/// rounding mode; the explicit floor keeps the cow surface deterministic
+/// across float precisions.
 #[allow(
     clippy::cast_precision_loss,
     clippy::cast_possible_truncation,
@@ -86,16 +87,17 @@ pub(super) fn apply_percentage(amount: &I512, scaled_percent: I512) -> I512 {
 
 /// Lifts `protocol_fee_bps` (e.g., `1.5` for 1.5 bps) into the
 /// `PROTOCOL_FEE_BPS_SCALE`-scaled signed-512-bit integer the cow
-/// settlement math expects, applying the same round-half-away-from-zero
-/// step the upstream TypeScript SDK uses (`Math.round(p * 1e5)`). The
-/// previous cow path went through `parse_percent_scaled(p) / 10`, which
-/// composed round-half-to-even at the 6th decimal place with truncation
-/// by 10; that diverged from the TS rounding mode for sub-permille
-/// protocol fees with non-zero precision beyond the 5th decimal. Wire
-/// `protocol_fee_bps` strings from the cow orderbook API are always
-/// clean decimals that survive either rounding mode, but the cascade
-/// aligns the cow Rust surface with the TS upstream for
-/// parity-by-construction.
+/// settlement math expects, applying the `Math.round(p * 1e5)`
+/// round-half-away-from-zero step the upstream `@cowprotocol/cow-sdk`
+/// uses (ADR 0066), consistent with the services protocol-fee accounting
+/// in `crates/orderbook/src/quoter.rs`. The previous cow path went through
+/// `parse_percent_scaled(p) / 10`, which composed round-half-to-even at
+/// the 6th decimal place with truncation by 10; that diverged for
+/// sub-permille protocol fees with non-zero precision beyond the 5th
+/// decimal. Wire `protocol_fee_bps` strings from the cow orderbook API
+/// are always clean decimals that survive either rounding mode; the
+/// explicit round keeps the cow surface deterministic across float
+/// precisions.
 #[allow(
     clippy::cast_precision_loss,
     clippy::cast_possible_truncation,
