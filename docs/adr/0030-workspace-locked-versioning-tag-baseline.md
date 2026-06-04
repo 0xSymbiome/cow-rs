@@ -63,7 +63,7 @@ This ADR supports the Evidence-Backed Public Claims principle.
 ## Links
 
 - [Principles](../principles.md)
-- [Verification Matrix](../verification-matrix.md)
+- [Verification Matrix](../verification.md)
 - [Release Checklist](../release-checklist.md)
 - [Source-Lock Provenance Audit](../audit/source-lock-provenance-audit.md)
 - [ADR 0026](0026-alloy-major-release-absorption-plan.md)

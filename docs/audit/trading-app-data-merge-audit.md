@@ -21,7 +21,7 @@ Related docs:
 - [ADR 0018](../adr/0018-typed-app-data-merge.md)
 - [ADR 0015](../adr/0015-client-side-order-bounds-validator.md)
 - [Architecture](../architecture.md)
-- [Parity Matrix](../parity-matrix.md)
+- [Parity Matrix](../parity.md)
 
 ## Scope
 

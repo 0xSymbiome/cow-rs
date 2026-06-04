@@ -12,8 +12,8 @@ Related docs:
 - [Credential Surface Audit](credential-surface-audit.md)
 - [URL Credential Redaction Audit](url-credential-redaction-audit.md)
 - [Architecture](../architecture.md)
-- [Verification Guide](../verification-guide.md)
-- [Verification Matrix](../verification-matrix.md)
+- [Verification Guide](../verification.md)
+- [Verification Matrix](../verification.md)
 - [Alloy Umbrella Adapter Audit](alloy-umbrella-adapter-audit.md)
 
 ## Scope

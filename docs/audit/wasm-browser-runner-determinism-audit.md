@@ -7,8 +7,8 @@ Refresh trigger: Changes to the pinned WASM browser runner config, Chrome-for-Te
 Related docs:
 - [ADR 0007](../adr/0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md)
 - [Browser-Runtime Proof Posture](../browser-runtime-proof-posture.md)
-- [Validation Scope](../validation-scope.md)
-- [Verification Matrix](../verification-matrix.md)
+- [Validation Scope](../verification.md)
+- [Verification Matrix](../verification.md)
 
 ## Scope
 

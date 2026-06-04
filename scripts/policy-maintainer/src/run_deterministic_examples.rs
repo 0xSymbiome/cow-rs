@@ -99,10 +99,6 @@ pub const DETERMINISTIC_EXAMPLES: &[DeterministicExample] = &[
     },
     DeterministicExample::Manifest {
         manifest_path: "examples/native/Cargo.toml",
-        example: "subgraph_custom_query_roundtrip",
-    },
-    DeterministicExample::Manifest {
-        manifest_path: "examples/native/Cargo.toml",
         example: "simplest_swap_quickstart",
     },
     DeterministicExample::Manifest {

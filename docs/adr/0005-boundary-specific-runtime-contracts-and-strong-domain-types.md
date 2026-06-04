@@ -47,7 +47,7 @@ actual runtime seams.
 
 - [Architecture](../architecture.md)
 - [Transport](../transport.md)
-- [Verification Guide](../verification-guide.md)
+- [Verification Guide](../verification.md)
 - [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md)
 - [ADR 0013](0013-http-transport-injection-and-typestate-builders.md)
 

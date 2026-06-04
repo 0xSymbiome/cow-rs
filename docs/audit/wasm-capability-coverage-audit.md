@@ -3,12 +3,12 @@
 Status: Current
 Last reviewed: 2026-06-02
 Owning surface: `cow-sdk-wasm` capability coverage relative to the native `cow-rs` SDK crates
-Refresh trigger: changes to `crates/wasm/src/exports/**`; additions or removals of public operations on the `orderbook`, `trading`, `signing`, `contracts`, `app-data`, or `subgraph` crates; or revisions to the workflow scope in `docs/parity-scope.md`
+Refresh trigger: changes to `crates/wasm/src/exports/**`; additions or removals of public operations on the `orderbook`, `trading`, `signing`, `contracts`, `app-data`, or `subgraph` crates; or revisions to the workflow scope in `docs/parity.md`
 Related docs:
 - [ADR 0039](../adr/0039-typescript-callable-wasm-sdk-surface.md)
 - [WASM Surface Audit](wasm-surface-audit.md)
-- [Parity Scope](../parity-scope.md)
-- [Parity Matrix](../parity-matrix.md)
+- [Parity Scope](../parity.md)
+- [Parity Matrix](../parity.md)
 
 ## Scope
 
@@ -17,7 +17,7 @@ This audit covers:
 - the mapping between the public capability surface of the native `cow-rs`
   crates (`orderbook`, `trading`, `signing`, `contracts`, `app-data`,
   `subgraph`) and the TypeScript-callable exports of `cow-sdk-wasm`
-- the coverage of the workflow scope defined in `docs/parity-scope.md`
+- the coverage of the workflow scope defined in `docs/parity.md`
 - the classification of every native capability that `cow-sdk-wasm` does not
   surface, with the rationale for each boundary
 - the shape correspondence between the native Rust signatures and types and the
@@ -36,7 +36,7 @@ and the [WASM Type Generation Audit](wasm-type-generation-audit.md).
 
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
-| Workflow scope | The deterministic-helper, signing, service-client, and trading workflows defined for `cow-sdk-wasm` in ADR 0039 and `docs/parity-scope.md` are exposed and contract-tested | Conforms |
+| Workflow scope | The deterministic-helper, signing, service-client, and trading workflows defined for `cow-sdk-wasm` in ADR 0039 and `docs/parity.md` are exposed and contract-tested | Conforms |
 | Surface layering | The four documented layers — deterministic helpers, wallet callbacks, service clients, trading — are present and contract-tested | Conforms |
 | Runtime-model boundary | The wasm32 dependency tree excludes the native Alloy adapters and browser-wallet, and exposes no Rust signer that broadcasts or provider that polls (ADR 0039) | Conforms |
 | Non-surfaced capabilities | Every native capability without a `cow-sdk-wasm` export is classified, and each class has a stated rationale | Documented |
@@ -153,7 +153,7 @@ cancellation, and approval; and `poll_for_receipt` /
 operations the native crates carry because the orderbook and signing crates
 mirror the full upstream service and protocol surface. They are omitted from
 `cow-sdk-wasm` because the crate is scoped to the workflow set in
-`docs/parity-scope.md`, which routes full-feature consumers to the upstream
+`docs/parity.md`, which routes full-feature consumers to the upstream
 TypeScript SDK (ADR 0039). They use the same transport, DTO, and envelope
 machinery as the surfaced reads, so each is an additive item rather than a
 runtime-model boundary. Members:
@@ -175,7 +175,7 @@ it is not exposed as a consumer API on any target and has no upstream consumer
 analogue.
 
 **Class 4 — Reserved capability families.** `cow-sdk-composable` ships as a
-reserved readiness surface per `docs/parity-scope.md`; its helper body is
+reserved readiness surface per `docs/parity.md`; its helper body is
 additive on every target, so its absence from `cow-sdk-wasm` is not a
 WASM-specific boundary. `cow-sdk-cow-shed` has shipped its helper body and
 compiles for both native and `wasm32`, so it is the most direct candidate for a

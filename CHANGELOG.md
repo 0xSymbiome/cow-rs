@@ -725,7 +725,7 @@ The first functional crate-family release begins at `0.1.0`.
   pins the typed shape of the new variant. `AppDataObject`
   remains the GET response wrapper for `get_app_data`. The
   content-addressed-write invariant is recorded as `PROP-ORD-011`
-  in `PROPERTIES.md` and `docs/verification-matrix.md` carries
+  in `PROPERTIES.md` and `docs/verification.md` carries
   the matching evidence row, governed by
   [ADR 0017](docs/adr/0017-typed-orderbook-rejection-parser.md)
   and
@@ -1526,8 +1526,8 @@ The first functional crate-family release begins at `0.1.0`.
   producer paths `src/CoWSwapEthFlow.sol` and
   `src/libraries/EthFlowOrder.sol`. The pin anchors the upstream Solidity
   authority for the EthFlow construction-time invariants recorded in
-  ADR 0020. The `docs/parity-scope.md` Source Lock table and the
-  `docs/parity-sources.md` Pinned Revisions and Primary sources lists
+  ADR 0020. The `docs/parity.md` Source Lock table and the
+  `docs/parity.md` Pinned Revisions and Primary sources lists
   reflect the new entry, and the `cow-sdk-contracts` ABI bindings under
   `crates/contracts/abi/eth-flow/` now trace to a fixed upstream SHA
   rather than the unpinned upstream repository.
@@ -1834,7 +1834,7 @@ The first functional crate-family release begins at `0.1.0`.
   worktrees outside the cow-rs tree. Pass `--into <dir>` to
   override the default sibling-directory layout; the script is
   idempotent and leaves existing destinations untouched. The
-  `docs/parity-sources.md` provenance guide now describes the
+  `docs/parity.md` provenance guide now describes the
   three-layer contract — the committed source-lock as
   authoritative provenance, the independently-materialized
   upstream worktrees as the verification target, and the
@@ -1852,7 +1852,7 @@ The first functional crate-family release begins at `0.1.0`.
   the canonical sum. Consumers that need the legacy summation
   read both fields and add them at the call site. The
   `docs/adr/README.md` index lists the entry in numerical
-  order after `0020`, and `docs/parity-matrix.md` records the
+  order after `0020`, and `docs/parity.md` records the
   `Order.total_fee` divergence under the `Orderbook DTO
   defaults` section.
 
@@ -2607,7 +2607,7 @@ The first functional crate-family release begins at `0.1.0`.
 - The previously published narrow `Order.total_fee` policy
   decision record is available under its final public number
   ADR 0021; the `docs/adr/README.md` index and
-  `docs/parity-matrix.md` cross-links cite that number.
+  `docs/parity.md` cross-links cite that number.
 
 - The release checklist, the verification matrix, and the
   quality-gate workflow now enforce the
@@ -3027,7 +3027,7 @@ The first functional crate-family release begins at `0.1.0`.
   single name for the pre-signature order state exported through the public
   signing surface and the `cow-sdk` prelude.
 
-- `docs/parity-scope.md` now carries an explicit `Intentionally Out-of-Scope`
+- `docs/parity.md` now carries an explicit `Intentionally Out-of-Scope`
   section enumerating the upstream TypeScript-SDK surfaces that `cow-rs`
   intentionally declines to mirror, each entry paired with its rationale
   and the negative parity test that enforces the exclusion at the code
@@ -3341,7 +3341,7 @@ The first functional crate-family release begins at `0.1.0`.
   and `signOrderWithCustomEip1271` smart-account entry point.
 
 - Documentation coherence pass: workspace crate count corrected across
-  shipped-surface locations; `docs/parity-matrix.md` publish-order rewritten
+  shipped-surface locations; `docs/parity.md` publish-order rewritten
   to match `docs/release-checklist.md` with 13 dependency-aware steps;
   `docs/transport.md` `FixtureTransport` pedagogy example completed with
   all four trait methods; minor header arithmetic fix in

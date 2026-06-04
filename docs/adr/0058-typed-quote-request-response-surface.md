@@ -132,7 +132,7 @@ the quote surface.
 ## Links
 
 - [Principles](../principles.md)
-- [Parity Matrix](../parity-matrix.md)
+- [Parity Matrix](../parity.md)
 - [Quote Response Surface Audit](../audit/quote-response-surface-audit.md)
 - [Wire DTO Coverage Audit](../audit/wire-dto-coverage-audit.md)
 - `parity/openapi/coverage.yaml`

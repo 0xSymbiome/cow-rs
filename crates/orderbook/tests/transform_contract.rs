@@ -205,7 +205,7 @@ fn onchain_order_data_fixture_matches_openapi_inventory() {
 // optionality (identity and collection fields non-optional; only `txHash` and
 // `referenceScore` optional) is the authoritative contract this fixture pins.
 // The type is therefore covered here by a producer-pinned round-trip rather than
-// the OpenAPI-optionality manifest (see ADR 0031 and docs/parity-scope.md).
+// the OpenAPI-optionality manifest (see ADR 0031 and docs/parity.md).
 #[test]
 fn solver_competition_response_fixture_roundtrips_upstream_producer_vector() {
     let (response, _, _) = assert_fixture_fields_roundtrip::<SolverCompetitionResponse>(

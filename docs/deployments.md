@@ -194,6 +194,6 @@ to on-chain contract address authority.
 ## Related Docs
 
 - [Architecture](architecture.md)
-- [Parity Matrix](parity-matrix.md)
-- [Verification Guide](verification-guide.md)
+- [Parity Matrix](parity.md)
+- [Verification Guide](verification.md)
 - [ADR 0012](adr/0012-alloy-sol-bindings-and-registry-authority.md)

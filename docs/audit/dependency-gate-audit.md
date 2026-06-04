@@ -12,7 +12,7 @@ Related docs:
 - [Alloy Umbrella Adapter Audit](alloy-umbrella-adapter-audit.md)
 - [WASM Component Model Future Prep Audit](wasm-component-model-future-prep-audit.md)
 - [Release Checklist](../release-checklist.md)
-- [Verification Guide](../verification-guide.md)
+- [Verification Guide](../verification.md)
 
 ## Scope
 
@@ -321,8 +321,8 @@ Primary implementation points:
 - `scripts/policy-maintainer/src/check_alloy_provider_invariant.rs`
 - `scripts/policy-maintainer/src/check_alloy_signer_invariant.rs`
 - `docs/release-checklist.md`
-- `docs/verification-guide.md`
-- `docs/verification-matrix.md`
+- `docs/verification.md`
+- `docs/verification.md`
 - `docs/audit/cid-dependency-audit.md`
 - `docs/audit/browser-wallet-alloy-dependency-audit.md`
 - `crates/wasm/Cargo.toml`

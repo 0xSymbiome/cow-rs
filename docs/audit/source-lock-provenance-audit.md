@@ -40,7 +40,7 @@ or changing SDK behavior.
 | Refresh outcome | The 2026-05-29 sync advanced the two CoW Protocol pins (`contracts`, `services`) to upstream HEAD, re-vendored the services OpenAPI, and re-aligned fixture provenance; parity validation and OpenAPI coverage pass, and the `git ls-remote` upstream HEAD comparison shows both pins Current | Conforms |
 | Local-root warnings | Reviewer-supplied upstream roots are checked for independent git top-levels, expected remotes, and pinned `HEAD` commits without making repo-local validation depend on those roots | Conforms |
 | Publication preflight | Source-lock validation metadata lists the complete package-family dry-run contract with local patches for unpublished intra-family crates | Conforms |
-| Native Alloy provenance | `parity/source-lock.yaml` pins exact Alloy runtime and Alloy Core commits for source-derived dependency evidence used by the native adapter family | Conforms |
+| Native Alloy provenance | The native adapter family pins Alloy by crates.io version (`alloy-* = 2.0.4`, `alloy-core-* = 1.5.7`), enforced by `Cargo.lock` and the two-family lockfile invariant, rather than a source-lock git commit | Conforms |
 | App-data schema drift fixtures | `crates/app-data/schemas/` retains the v1.14.0 schema closure as test-only drift fixtures for the typed metadata structs and is no longer vendored as a byte-for-byte parity asset | Conforms |
 | Schema enforcement | Unsupported source-lock schema versions fail closed with a stable diagnostic, while schema version 3 is accepted | Conforms |
 | Amount fixture roundtrip | Amount-shaped fixture strings parse through the shared `Amount` codec and round-trip byte-identically | Conforms |
@@ -57,8 +57,6 @@ fixtures and source-derived evidence. It currently pins:
 
 - `contracts` at `c6b61ce75841ce4c25ab126def9cc981c568e6c6`
 - `services` at `1f80d54bc3521b3fa81cd8ad66d9f749c5450591`
-- `alloy` at `f3fe4cfff0553e9e234a53208bb69b7c222c66e5`
-- `alloy-core` at `e6b30e4c2407cd1d2ea93e79f2768e5a4f21d266`
 
 The lock is intentionally commit-based rather than branch-based. A release
 claim that depends on upstream freshness has to compare these pins against the
@@ -77,11 +75,12 @@ The source lock remains intentionally commit-based. In this review the two
 CoW Protocol pins (contracts and services) were advanced to upstream HEAD, so no freshness drift remains
 for parity evidence to triage.
 
-The Alloy runtime and Alloy Core pins are tag-aligned dependency evidence for
-the native adapter family rather than CoW Protocol upstream parity evidence.
-They are kept in the same source-lock contract so dependency provenance,
-producer paths, package dry-run metadata, and the ADR 0026 compatibility matrix
-and upgrade rehearsal stay reviewable through the existing validation gate.
+The native Alloy adapter family is not pinned in `parity/source-lock.yaml`. Alloy
+is a consumed crates.io dependency, so its contract is the workspace version pins
+(`alloy-* = 2.0.4`, `alloy-core-* = 1.5.7`), the `Cargo.lock` checksums, and the
+two-family lockfile invariant — the dependency provenance that the ADR 0026
+compatibility matrix and upgrade rehearsal review, rather than a hand-maintained
+source-lock git commit.
 
 ### App-Data Schema Bundle
 

@@ -120,8 +120,8 @@ the three defects unreachable without reintroducing an opaque
 ## Links
 
 - [Architecture](../architecture.md)
-- [Parity Matrix](../parity-matrix.md)
-- [Verification Guide](../verification-guide.md)
+- [Parity Matrix](../parity.md)
+- [Verification Guide](../verification.md)
 - [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
 - [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md)
 - [ADR 0015](0015-client-side-order-bounds-validator.md)

@@ -9,8 +9,8 @@ Related docs:
 - [ADR 0006](../adr/0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
 - [ADR 0011](../adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md)
 - [README](../../README.md)
-- [Verification Guide](../verification-guide.md)
-- [Verification Matrix](../verification-matrix.md)
+- [Verification Guide](../verification.md)
+- [Verification Matrix](../verification.md)
 - [Trade-Parameter Lifecycle Audit](trade-parameter-lifecycle-audit.md)
 
 ## Scope

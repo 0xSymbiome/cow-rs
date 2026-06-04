@@ -104,7 +104,7 @@ order-level fees on submission.
 ## Links
 
 - [Architecture](../architecture.md)
-- [Parity Matrix](../parity-matrix.md)
+- [Parity Matrix](../parity.md)
 - [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
 - [ADR 0013](0013-http-transport-injection-and-typestate-builders.md)
 - [ADR 0017](0017-typed-orderbook-rejection-parser.md)

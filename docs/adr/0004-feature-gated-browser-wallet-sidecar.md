@@ -39,7 +39,7 @@ its own dependency and runtime boundary.
 ## Links
 
 - [Architecture](../architecture.md)
-- [Verification Guide](../verification-guide.md)
+- [Verification Guide](../verification.md)
 - [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md)
 
 **Proven by:**

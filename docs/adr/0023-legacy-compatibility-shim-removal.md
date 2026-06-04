@@ -66,7 +66,7 @@ for protocol-correct hashing.
 ## Links
 
 - [Architecture](../architecture.md)
-- [Verification Guide](../verification-guide.md)
+- [Verification Guide](../verification.md)
 - [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
 - [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md)
 - `PROP-CON-006` in [PROPERTIES.md](../../PROPERTIES.md)

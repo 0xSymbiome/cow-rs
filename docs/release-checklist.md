@@ -33,7 +33,7 @@ output via `cargo check-alloy-provider-invariant` and
 rather than reading raw Cargo tree output directly.
 
 This command is guarded for drift by `scripts/check-release-docs-agree.sh`;
-any mismatch against `docs/verification-matrix.md`,
+any mismatch against `docs/verification.md`,
 `.github/workflows/_quality-gate.yml`, `CONTRIBUTING.md`, or
 `PROPERTIES.md` fails the `docs-agree-on-release-gates` CI job.
 
@@ -66,7 +66,7 @@ published-upstream cases must stay explicit in the public audit evidence until
 a published replacement exists.
 
 This command is guarded for drift by `scripts/check-release-docs-agree.sh`;
-any mismatch against `docs/verification-matrix.md` or the advisory tolerance
+any mismatch against `docs/verification.md` or the advisory tolerance
 register in `.github/config/deny.toml` fails the
 `docs-agree-on-release-gates` CI job.
 

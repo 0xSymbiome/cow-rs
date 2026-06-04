@@ -9,7 +9,7 @@ Related docs:
 - [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md)
 - [ADR 0059](../adr/0059-hash-concrete-orderdata-directly.md)
 - [Architecture](../architecture.md)
-- [Verification Guide](../verification-guide.md)
+- [Verification Guide](../verification.md)
 
 ## Scope
 

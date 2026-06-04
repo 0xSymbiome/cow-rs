@@ -70,7 +70,7 @@ set before a live client exists.
 - [Architecture](../architecture.md)
 - [Transport](../transport.md)
 - [Performance](../performance.md)
-- [Verification Guide](../verification-guide.md)
+- [Verification Guide](../verification.md)
 - [ADR 0019](0019-http-transport-sole-dispatch.md)
 - See also: ADR 0023, ADR 0030, ADR 0039, and ADR 0041.
 

@@ -10,7 +10,7 @@ Related docs:
 - [ADR 0032](../adr/0032-deployment-authority-machine-readable-provenance.md)
 - [Deployments](../deployments.md)
 - [Architecture](../architecture.md)
-- [Parity Matrix](../parity-matrix.md)
+- [Parity Matrix](../parity.md)
 
 ## Scope
 

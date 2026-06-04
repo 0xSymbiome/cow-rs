@@ -7,8 +7,8 @@ Refresh trigger: Changes to `QuoteResults` binding capture, `post_swap_order_fro
 Related docs:
 - [ADR 0002](../adr/0002-dedicated-trading-orchestration-crate.md)
 - [Architecture](../architecture.md)
-- [Verification Guide](../verification-guide.md)
-- [Verification Matrix](../verification-matrix.md)
+- [Verification Guide](../verification.md)
+- [Verification Matrix](../verification.md)
 
 ## Scope
 

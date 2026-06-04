@@ -80,7 +80,7 @@ producer's own canonical serialization vector and exercised by
 `crates/orderbook/tests/transform_contract.rs::solver_competition_response_fixture_roundtrips_upstream_producer_vector`,
 rather than by the OpenAPI-optionality manifest. This divergence is recorded in
 [ADR 0031](../adr/0031-wire-dto-openapi-driven-with-order-auction-order-split.md)
-and [Parity Scope](../parity-scope.md).
+and [Parity Scope](../parity.md).
 
 ### Field Provenance
 

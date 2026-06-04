@@ -117,7 +117,7 @@ produced the signature.
 ## Links
 
 - [Architecture](../architecture.md)
-- [Verification Guide](../verification-guide.md)
+- [Verification Guide](../verification.md)
 - [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
 - [ADR 0015](0015-client-side-order-bounds-validator.md)
 - [ADR 0017](0017-typed-orderbook-rejection-parser.md)

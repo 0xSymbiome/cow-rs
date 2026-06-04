@@ -9,7 +9,7 @@ Related docs:
 - [URL Credential Redaction Audit](url-credential-redaction-audit.md)
 - [Credential Surface Contract Hygiene Audit](credential-surface-contract-hygiene-audit.md)
 - [Typestate Builder Contract Audit](typestate-builder-contract-audit.md)
-- [Verification Matrix](../verification-matrix.md)
+- [Verification Matrix](../verification.md)
 - [Alloy Umbrella Adapter Audit](alloy-umbrella-adapter-audit.md)
 - [WASM Public API Stability Audit](wasm-public-api-stability-audit.md)
 

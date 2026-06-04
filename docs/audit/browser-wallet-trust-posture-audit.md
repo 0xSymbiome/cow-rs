@@ -11,7 +11,7 @@ Related docs:
 - [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md)
 - [Browser Wallet Chain Coherence Audit](browser-wallet-chain-coherence-audit.md)
 - [URL Credential Redaction Audit](url-credential-redaction-audit.md)
-- [Verification Matrix](../verification-matrix.md)
+- [Verification Matrix](../verification.md)
 
 ## Scope
 

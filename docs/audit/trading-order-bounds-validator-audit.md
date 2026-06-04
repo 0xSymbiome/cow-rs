@@ -15,7 +15,7 @@ WETH-paired-with-native-buy guard, or the offline `TradeParameters::validate`
 Related docs:
 - [ADR 0015](../adr/0015-client-side-order-bounds-validator.md)
 - [Architecture](../architecture.md)
-- [Verification Guide](../verification-guide.md)
+- [Verification Guide](../verification.md)
 
 ## Scope
 

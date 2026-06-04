@@ -1,6 +1,6 @@
 [workspace]
 members = []
-resolver = "3"
+resolver = "2"
 
 [workspace.dependencies]
 alloy-primitives = { version = "1.5", default-features = false }

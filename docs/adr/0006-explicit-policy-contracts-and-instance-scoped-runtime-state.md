@@ -43,7 +43,7 @@ work will copy accidental behavior instead of intentional design.
 
 - [Architecture](../architecture.md)
 - [Release Checklist](../release-checklist.md)
-- [Verification Guide](../verification-guide.md)
+- [Verification Guide](../verification.md)
 
 **Proven by:**
 

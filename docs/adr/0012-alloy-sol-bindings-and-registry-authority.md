@@ -113,8 +113,8 @@ the compile-time gate.
 
 - [Architecture](../architecture.md)
 - [Deployments](../deployments.md)
-- [Parity Matrix](../parity-matrix.md)
-- [Parity Scope](../parity-scope.md)
+- [Parity Matrix](../parity.md)
+- [Parity Scope](../parity.md)
 - [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
 - [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md)
 

@@ -9,8 +9,8 @@ Related docs:
 - [ADR 0034](../adr/0034-interaction-encoder-target-policy.md)
 - [ADR 0026](../adr/0026-alloy-major-release-absorption-plan.md)
 - [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md)
-- [Parity Matrix](../parity-matrix.md)
-- [Parity Scope](../parity-scope.md)
+- [Parity Matrix](../parity.md)
+- [Parity Scope](../parity.md)
 - [Architecture](../architecture.md)
 
 ## Scope

@@ -129,7 +129,7 @@ does not attempt to mirror every historical upstream surface. The
 authoritative list of TypeScript-SDK surfaces that `cow-rs` intentionally
 declines to mirror — including the retired wire-string `Amount` wrapper
 and the related parity-scope exclusions from the same release cycle —
-lives in [Parity Scope](../parity-scope.md). Reviewers and contributors
+lives in [Parity Scope](../parity.md). Reviewers and contributors
 should consult that document before filing any issue claiming a missing
 positive fixture implies a parity gap; the parity-scope discipline is
 recorded alongside the typed-amount decision in the shipped
@@ -137,9 +137,9 @@ architecture record.
 
 ## Links
 
-- [Parity Scope](../parity-scope.md)
+- [Parity Scope](../parity.md)
 - [Architecture](../architecture.md)
-- [Verification Guide](../verification-guide.md)
+- [Verification Guide](../verification.md)
 - [Properties](../../PROPERTIES.md)
 - [ADR 0002](0002-dedicated-trading-orchestration-crate.md)
 - [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)

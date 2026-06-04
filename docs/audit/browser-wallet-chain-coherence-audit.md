@@ -8,8 +8,8 @@ Related docs:
 - [ADR 0004](../adr/0004-feature-gated-browser-wallet-sidecar.md)
 - [ADR 0007](../adr/0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md)
 - [Architecture](../architecture.md)
-- [Verification Guide](../verification-guide.md)
-- [Verification Matrix](../verification-matrix.md)
+- [Verification Guide](../verification.md)
+- [Verification Matrix](../verification.md)
 - [Browser-Runtime Proof Posture](../browser-runtime-proof-posture.md)
 
 ## Scope

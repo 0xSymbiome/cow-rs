@@ -6,8 +6,8 @@ Owning surface: `cow-sdk-core` route selection and `cow-sdk-orderbook` partner h
 Refresh trigger: Changes to `ApiContext` partner-route selection, API-key validation, `X-API-Key` header construction, partner endpoint family activation, or orderbook host-policy composition
 Related docs:
 - [ADR 0006](../adr/0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
-- [Verification Guide](../verification-guide.md)
-- [Verification Matrix](../verification-matrix.md)
+- [Verification Guide](../verification.md)
+- [Verification Matrix](../verification.md)
 
 ## Scope
 

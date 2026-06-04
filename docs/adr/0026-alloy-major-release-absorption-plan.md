@@ -45,8 +45,9 @@ protocol semantics change.
 - Runtime and support: alloy-powered adapters live at leaf or consumer-owned
   boundaries; the facade does not choose a chain-RPC runtime for consumers.
 - Validation and review: runtime and ABI/core crates stay on the reviewed
-  two-family policy, invariant gates stay blocking, source-lock records the
-  reviewed pins, and the canary stays configurable by ref.
+  two-family policy, invariant gates stay blocking, the workspace version pins
+  and `Cargo.lock` record the reviewed versions, and the canary stays
+  configurable by ref.
 - Cost: canary failures require triage before dependency promotion, but do not
   block routine PR CI while informational.
 
@@ -81,8 +82,8 @@ Future rows record exact resolved versions, not caret ranges.
 - [Alloy Major-Release Absorption Runbook](../alloy-major-release-runbook.md)
 - [Architecture](../architecture.md)
 - [Adapting alloy providers](../providers/adapting-alloy.md)
-- [Parity scope source lock](../parity-scope.md#source-lock)
-- [Verification matrix workspace gates](../verification-matrix.md#workspace-gates)
+- [Parity scope source lock](../parity.md#source-lock)
+- [Verification matrix workspace gates](../verification.md#workspace-gates)
 - [Alloy release-candidate workflow](../../.github/workflows/alloy-release-candidate.yml)
 - [Alloy Umbrella Adapter ADR](0037-alloy-umbrella-adapter.md)
 

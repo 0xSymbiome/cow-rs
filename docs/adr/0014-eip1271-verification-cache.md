@@ -101,7 +101,7 @@ crates away.
 ## Links
 
 - [Architecture](../architecture.md)
-- [Verification Guide](../verification-guide.md)
+- [Verification Guide](../verification.md)
 - [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
 - [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
 

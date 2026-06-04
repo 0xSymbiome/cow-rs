@@ -7,8 +7,8 @@ Refresh trigger: Changes to CID dependencies, the canonical-JSON dependency, the
 Related docs:
 - [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md)
 - [Dependency Gate Audit](dependency-gate-audit.md)
-- [Verification Guide](../verification-guide.md)
-- [Verification Matrix](../verification-matrix.md)
+- [Verification Guide](../verification.md)
+- [Verification Matrix](../verification.md)
 
 ## Scope
 

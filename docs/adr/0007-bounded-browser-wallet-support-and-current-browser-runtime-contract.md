@@ -52,9 +52,9 @@ carrying compatibility-era behavior indefinitely.
 ## Links
 
 - [Architecture](../architecture.md)
-- [Verification Matrix](../verification-matrix.md)
-- [Validation Scope](../validation-scope.md)
-- [Verification Guide](../verification-guide.md)
+- [Verification Matrix](../verification.md)
+- [Validation Scope](../verification.md)
+- [Verification Guide](../verification.md)
 - [Browser-Runtime Proof Posture](../browser-runtime-proof-posture.md)
 - [ADR 0065](0065-canonical-browser-wallet-example.md)
 - See also: ADR 0039 and ADR 0040.

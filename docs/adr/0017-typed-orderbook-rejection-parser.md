@@ -109,7 +109,7 @@ on the happy diagnostic path.
 ## Links
 
 - [Architecture](../architecture.md)
-- [Verification Guide](../verification-guide.md)
+- [Verification Guide](../verification.md)
 - [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
 - [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md)
 - [ADR 0013](0013-http-transport-injection-and-typestate-builders.md)

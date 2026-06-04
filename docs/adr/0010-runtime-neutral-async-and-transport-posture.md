@@ -73,7 +73,7 @@ to compose and review.
 - [Transport](../transport.md)
 - [Observability](../observability.md)
 - [Performance](../performance.md)
-- [Verification Guide](../verification-guide.md)
+- [Verification Guide](../verification.md)
 - [ADR 0013](0013-http-transport-injection-and-typestate-builders.md)
 - See also: ADR 0024, ADR 0029, ADR 0030, ADR 0039, ADR 0040, and ADR 0041.
 

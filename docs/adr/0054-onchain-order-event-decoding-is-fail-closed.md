@@ -63,7 +63,7 @@ settlement contract derives.
 - [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md)
 - [ADR 0020](0020-ethflow-owner-threading.md)
 - [Architecture](../architecture.md)
-- [Parity Matrix](../parity-matrix.md)
+- [Parity Matrix](../parity.md)
 
 **Proven by:**
 

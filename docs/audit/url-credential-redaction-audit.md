@@ -7,7 +7,7 @@ Refresh trigger: Changes to URL-bearing public configuration fields, browser wal
 Related docs:
 - [ADR 0025](../adr/0025-workspace-url-redaction-convention.md)
 - [Credential Surface Audit](credential-surface-audit.md)
-- [Verification Matrix](../verification-matrix.md)
+- [Verification Matrix](../verification.md)
 - [Alloy Umbrella Adapter Audit](alloy-umbrella-adapter-audit.md)
 - [WASM Public API Stability Audit](wasm-public-api-stability-audit.md)
 

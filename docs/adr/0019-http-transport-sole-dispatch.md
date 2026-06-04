@@ -62,7 +62,7 @@ browser, and callback transports under one rule.
 
 - [Architecture](../architecture.md)
 - [Transport](../transport.md)
-- [Verification Guide](../verification-guide.md)
+- [Verification Guide](../verification.md)
 - [ADR 0013](0013-http-transport-injection-and-typestate-builders.md)
 - See also: ADR 0039.
 

@@ -57,9 +57,9 @@ creating a breaking match exhaustiveness change for downstream code.
 
 ## Links
 
-- [Parity scope source lock](../parity-scope.md#source-lock)
-- [Parity scope surface boundaries](../parity-scope.md#surface-boundaries)
-- [Parity matrix signing and contract rows](../parity-matrix.md#workspace-parity-map)
+- [Parity scope source lock](../parity.md#source-lock)
+- [Parity scope surface boundaries](../parity.md#surface-matrix)
+- [Parity matrix signing and contract rows](../parity.md#surface-matrix)
 - [Contracts signature boundary](../../crates/contracts/src/signature.rs)
 - [Orderbook signing scheme boundary](../../crates/orderbook/src/types/enums.rs)
 - [Trading EIP-1271 signature provider](../../crates/trading/src/types/seams.rs)

@@ -143,7 +143,7 @@ the signer.
 ## Links
 
 - [Architecture](../architecture.md)
-- [Verification Guide](../verification-guide.md)
+- [Verification Guide](../verification.md)
 - [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
 - [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md)
 - [ADR 0015](0015-client-side-order-bounds-validator.md)

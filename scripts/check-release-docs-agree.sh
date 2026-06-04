@@ -10,7 +10,7 @@
 #   1. The cargo tree alloy-provider invariant `-p` package list must be
 #      identical across:
 #        - docs/release-checklist.md
-#        - docs/verification-matrix.md
+#        - docs/verification.md
 #        - .github/workflows/_quality-gate.yml
 #        - CONTRIBUTING.md
 #        - PROPERTIES.md
@@ -21,7 +21,7 @@
 #
 #      Documentation sites checked:
 #        - docs/release-checklist.md
-#        - docs/verification-matrix.md
+#        - docs/verification.md
 #
 #   3. The audit index Last reviewed cells must match the per-audit
 #      Last reviewed banners in docs/audit/*.md.
@@ -50,7 +50,7 @@ while [ "$#" -gt 0 ]; do
 done
 
 release_checklist="$repo_root/docs/release-checklist.md"
-verification_matrix="$repo_root/docs/verification-matrix.md"
+verification_matrix="$repo_root/docs/verification.md"
 quality_gate="$repo_root/.github/workflows/_quality-gate.yml"
 deny_config="$repo_root/.github/config/deny.toml"
 contributing_md="$repo_root/CONTRIBUTING.md"
@@ -104,7 +104,7 @@ if [ -z "$release_checklist_pkgs" ]; then
   exit 1
 fi
 if [ -z "$verification_matrix_pkgs" ]; then
-  echo "error: docs/verification-matrix.md does not declare the cargo tree alloy-provider package list" >&2
+  echo "error: docs/verification.md does not declare the cargo tree alloy-provider package list" >&2
   exit 1
 fi
 if [ -z "$quality_gate_pkgs" ]; then
@@ -133,13 +133,13 @@ diff_or_fail() {
   exit 1
 }
 
-diff_or_fail "docs/release-checklist.md" "docs/verification-matrix.md" \
+diff_or_fail "docs/release-checklist.md" "docs/verification.md" \
   "$release_checklist_pkgs" "$verification_matrix_pkgs"
 
 diff_or_fail "docs/release-checklist.md" ".github/workflows/_quality-gate.yml" \
   "$release_checklist_pkgs" "$quality_gate_pkgs"
 
-diff_or_fail "docs/verification-matrix.md" ".github/workflows/_quality-gate.yml" \
+diff_or_fail "docs/verification.md" ".github/workflows/_quality-gate.yml" \
   "$verification_matrix_pkgs" "$quality_gate_pkgs"
 
 diff_or_fail "docs/release-checklist.md" "CONTRIBUTING.md" \
@@ -190,7 +190,7 @@ if [ -z "$audit_checklist_tokens" ]; then
   exit 1
 fi
 if [ -z "$audit_matrix_tokens" ]; then
-  echo "error: docs/verification-matrix.md does not declare the cargo audit ignore-token list" >&2
+  echo "error: docs/verification.md does not declare the cargo audit ignore-token list" >&2
   exit 1
 fi
 if [ -z "$audit_canonical_tokens" ]; then
@@ -211,13 +211,13 @@ diff_audit_or_fail() {
   exit 1
 }
 
-diff_audit_or_fail "docs/release-checklist.md" "docs/verification-matrix.md" \
+diff_audit_or_fail "docs/release-checklist.md" "docs/verification.md" \
   "$audit_checklist_tokens" "$audit_matrix_tokens"
 
 diff_audit_or_fail "docs/release-checklist.md" ".github/config/deny.toml" \
   "$audit_checklist_tokens" "$audit_canonical_tokens"
 
-diff_audit_or_fail "docs/verification-matrix.md" ".github/config/deny.toml" \
+diff_audit_or_fail "docs/verification.md" ".github/config/deny.toml" \
   "$audit_matrix_tokens" "$audit_canonical_tokens"
 
 while IFS= read -r advisory_id; do

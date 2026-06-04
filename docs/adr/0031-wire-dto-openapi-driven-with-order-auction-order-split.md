@@ -103,7 +103,7 @@ verified producer.
 ## Links
 
 - [Principles](../principles.md)
-- [Parity Matrix](../parity-matrix.md)
+- [Parity Matrix](../parity.md)
 - [Wire DTO Coverage Audit](../audit/wire-dto-coverage-audit.md)
 - `parity/openapi/coverage.yaml`
 

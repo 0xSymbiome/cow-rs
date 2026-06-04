@@ -7,7 +7,7 @@ Refresh trigger: a change to the `OrderPlacement` / `OrderInvalidation` / `Order
 Related docs:
 - [ADR 0054](../adr/0054-onchain-order-event-decoding-is-fail-closed.md)
 - [ADR 0012](../adr/0012-alloy-sol-bindings-and-registry-authority.md)
-- [Parity Matrix](../parity-matrix.md)
+- [Parity Matrix](../parity.md)
 
 ## Scope
 

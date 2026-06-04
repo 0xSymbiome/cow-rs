@@ -8,7 +8,7 @@ Related docs:
 - [ADR 0014](../adr/0014-eip1271-verification-cache.md)
 - [ADR 0027](../adr/0027-post-quantum-signing-absorption-plan.md)
 - [ADR 0028](../adr/0028-account-abstraction-integration-plan.md)
-- [Verification Guide](../verification-guide.md)
+- [Verification Guide](../verification.md)
 - [Architecture](../architecture.md)
 
 ## Scope

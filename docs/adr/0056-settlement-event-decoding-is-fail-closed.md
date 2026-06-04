@@ -68,7 +68,7 @@ decode boundary rather than left to the caller.
 - [ADR 0054](0054-onchain-order-event-decoding-is-fail-closed.md)
 - [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md)
 - [Architecture](../architecture.md)
-- [Parity Matrix](../parity-matrix.md)
+- [Parity Matrix](../parity.md)
 
 **Proven by:**
 
