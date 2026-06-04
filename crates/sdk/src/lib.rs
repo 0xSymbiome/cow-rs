@@ -25,7 +25,7 @@
 //! use cow_sdk::{Address, SupportedChainId, Trading};
 //!
 //! let _address = Address::new("0x1111111111111111111111111111111111111111").unwrap();
-//! let _sdk = Trading::builder()
+//! let _trading = Trading::builder()
 //!     .chain_id(SupportedChainId::Sepolia)
 //!     .app_code("your-app-code")
 //!     .build()
@@ -45,7 +45,7 @@
 //! #     S: cow_sdk::core::Signer,
 //! #     S::Error: std::fmt::Display + cow_sdk::core::SignerError,
 //! # {
-//! let sdk = Trading::builder()
+//! let trading = Trading::builder()
 //!     .chain_id(SupportedChainId::Sepolia)
 //!     .app_code("your-app-code")
 //!     .build()?;
@@ -61,7 +61,7 @@
 //! );
 //!
 //! // One call quotes, signs with `signer`, and posts to the orderbook.
-//! let posted = sdk.post_swap_order(params, signer, None).await?;
+//! let posted = trading.post_swap_order(params, signer, None).await?;
 //! println!("posted order: {}", posted.order_id.to_hex_string());
 //! # Ok(())
 //! # }

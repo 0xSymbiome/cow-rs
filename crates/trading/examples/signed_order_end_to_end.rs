@@ -72,7 +72,7 @@ mod native {
         // `.build()` is only possible after `appCode` and chain authority
         // are set, then validates that the injected orderbook runtime agrees
         // with the trader defaults.
-        let sdk: Trading = Trading::builder()
+        let trading: Trading = Trading::builder()
             .chain_id(SupportedChainId::Sepolia)
             .app_code("cow-rs-signed-order-example")
             .orderbook_client(orderbook)
@@ -81,7 +81,7 @@ mod native {
 
         // Full journey: quote fetch, order signing, and order submission all run
         // inside `post_swap_order` against the injected orderbook and signer.
-        let posting = sdk
+        let posting = trading
             .post_swap_order(
                 sample_trade_parameters(OrderKind::Sell, &owner),
                 &signer,

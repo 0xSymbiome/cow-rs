@@ -1,6 +1,6 @@
 //! Smallest deterministic end-to-end swap.
 //!
-//! Construct a ready-state SDK, then quote, sign, and post a swap in one call
+//! Construct a ready-state trading client, then quote, sign, and post a swap in one call
 //! against a transport-mocked orderbook. No network and no private key, so it
 //! runs the same way on every machine — the shortest path from the facade to a
 //! posted order.
@@ -21,10 +21,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let orderbook = MockOrderbook::new(SupportedChainId::Sepolia, sample_quote_response());
     let signer = MockSigner::default();
 
-    // Construct a ready-state SDK with the mock orderbook injected. A concrete
+    // Construct a ready-state trading client with the mock orderbook injected. A concrete
     // `Arc<MockOrderbook>` coerces into the `Arc<dyn OrderbookClient>` the
     // option expects — no explicit cast needed.
-    let sdk = Trading::builder()
+    let trading = Trading::builder()
         .chain_id(SupportedChainId::Sepolia)
         .app_code("cow-rs-quickstart")
         .orderbook_client(Arc::new(orderbook))
@@ -42,7 +42,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     .with_slippage_bps(50);
 
     // One call quotes, signs, and posts.
-    let posted = sdk.post_swap_order(params, &signer, None).await?;
+    let posted = trading.post_swap_order(params, &signer, None).await?;
 
     println!("posted order: {}", posted.order_id.to_hex_string());
     Ok(())

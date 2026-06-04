@@ -15,7 +15,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let orderbook = MockOrderbook::new(SupportedChainId::Sepolia, sample_quote_response());
     orderbook.push_order(sample_open_order());
     let signer = MockSigner::default();
-    let sdk = Trading::builder()
+    let trading = Trading::builder()
         .chain_id(SupportedChainId::Sepolia)
         .app_code("cow-rs-order-lifecycle")
         .orderbook_client(Arc::new(orderbook.clone()))
@@ -23,8 +23,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let params = OrderTraderParameters::new(sample_order_uid());
 
-    let order = sdk.get_order(&params).await?;
-    let cancelled = sdk.off_chain_cancel_order(&params, &signer).await?;
+    let order = trading.get_order(&params).await?;
+    let cancelled = trading.off_chain_cancel_order(&params, &signer).await?;
     let state = orderbook.state();
 
     let report = json!({

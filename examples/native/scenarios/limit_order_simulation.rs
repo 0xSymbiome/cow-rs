@@ -12,13 +12,13 @@ use cow_sdk_examples_native::support::{
 async fn main() -> Result<(), Box<dyn Error>> {
     let orderbook = MockOrderbook::new(SupportedChainId::Sepolia, sample_quote_response());
     let signer = MockSigner::default();
-    let sdk = Trading::builder()
+    let trading = Trading::builder()
         .chain_id(SupportedChainId::Sepolia)
         .app_code("cow-rs-limit-order")
         .orderbook_client(Arc::new(orderbook.clone()))
         .build()?;
 
-    let posted = sdk
+    let posted = trading
         .post_limit_order(sample_limit_parameters(), &signer, None)
         .await?;
     let state = orderbook.state();

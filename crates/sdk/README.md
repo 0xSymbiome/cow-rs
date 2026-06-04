@@ -32,7 +32,7 @@ guide for that wiring.
 ```rust
 use cow_sdk::prelude::{SupportedChainId, Trading};
 
-let _sdk = Trading::builder()
+let _trading = Trading::builder()
     .chain_id(SupportedChainId::Sepolia)
     .app_code("your-app-code")
     .build()
@@ -52,7 +52,7 @@ use cow_sdk::core::{Amount, OrderKind};
 #     S: cow_sdk::core::Signer,
 #     S::Error: std::fmt::Display + cow_sdk::core::SignerError,
 # {
-let sdk = Trading::builder()
+let trading = Trading::builder()
     .chain_id(SupportedChainId::Sepolia)
     .app_code("your-app-code")
     .build()?;
@@ -68,7 +68,7 @@ let params = TradeParameters::new(
 );
 
 // One call quotes, signs with `signer`, and posts to the orderbook.
-let posted = sdk.post_swap_order(params, signer, None).await?;
+let posted = trading.post_swap_order(params, signer, None).await?;
 println!("posted order: {}", posted.order_id.to_hex_string());
 # Ok(())
 # }

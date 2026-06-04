@@ -33,13 +33,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .build_checked()
         .await?;
     let signer = client.create_signer("local-key").await?;
-    let sdk = Trading::builder()
+    let trading = Trading::builder()
         .chain_id(SupportedChainId::Mainnet)
         .env(CowEnv::Prod)
         .app_code("cow-rs/alloy-trading-example")
         .build()?;
 
-    let allowance = sdk
+    let allowance = trading
         .get_cow_protocol_allowance(
             &client,
             &AllowanceParameters::new(address(COW), address(OWNER)),
@@ -63,7 +63,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     );
     assert_eq!(approval_receipt.status, Some(TransactionStatus::Success));
 
-    let pre_sign = sdk
+    let pre_sign = trading
         .get_pre_sign_transaction(&OrderTraderParameters::new(order_uid()), &signer)
         .await?;
     assert_eq!(pre_sign.gas_limit, Some(Amount::from(25_200u32)));

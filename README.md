@@ -81,7 +81,7 @@ Ready-state facade setup on the native/default transport path:
 ```rust
 use cow_sdk::{SupportedChainId, Trading};
 
-let _sdk = Trading::builder()
+let _trading = Trading::builder()
     .chain_id(SupportedChainId::Sepolia)
     .app_code("your-app-code")
     .build()

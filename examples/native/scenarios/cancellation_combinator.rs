@@ -36,7 +36,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     .base_url(server.uri())
     .build()?;
 
-    let sdk = TradingBuilder::ready(
+    let trading = TradingBuilder::ready(
         TraderParameters::new(SupportedChainId::Sepolia, "cow-rs-cancellation-example")
             .expect("app code should validate"),
         TradingOptions::new().with_orderbook_client(Arc::new(orderbook)),
@@ -50,7 +50,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         token_for_timer.cancel();
     });
 
-    let quote_result = sdk
+    let quote_result = trading
         .get_quote_only(sample_trade_parameters(), None)
         .cancel_with(&token_for_quote)
         .await;

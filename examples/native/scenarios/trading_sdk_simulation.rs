@@ -20,25 +20,25 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut provider = MockProvider::default();
     provider.signer = Some(signer.clone());
 
-    let sdk = Trading::builder()
+    let trading = Trading::builder()
         .chain_id(SupportedChainId::Sepolia)
         .app_code("cow-rs-native-examples")
         .orderbook_client(Arc::new(orderbook.clone()))
         .build()?;
 
-    let quote = sdk
+    let quote = trading
         .get_quote_results(sample_trade_parameters(), &signer, None)
         .await?;
-    let post_result = sdk
+    let post_result = trading
         .post_swap_order(sample_trade_parameters(), &signer, None)
         .await?;
-    let allowance = sdk
+    let allowance = trading
         .get_cow_protocol_allowance(
             &provider,
             &AllowanceParameters::new(sample_sell_token(), sample_owner()),
         )
         .await?;
-    let approval_tx_hash = sdk
+    let approval_tx_hash = trading
         .approve_cow_protocol(
             &signer,
             &ApprovalParameters::new(
@@ -48,7 +48,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             ),
         )
         .await?;
-    let cancelled = sdk
+    let cancelled = trading
         .off_chain_cancel_order(
             &OrderTraderParameters::new(post_result.order_id.clone()),
             &signer,

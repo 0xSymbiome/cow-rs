@@ -28,7 +28,7 @@ The `TradingBuilder::ready` one-call shortcut accepts a complete
 use cow_sdk_core::SupportedChainId;
 use cow_sdk_trading::{TraderParameters, TradingBuilder, TradingOptions};
 
-let _sdk = TradingBuilder::ready(
+let _trading = TradingBuilder::ready(
     TraderParameters::new(SupportedChainId::Sepolia, "your-app-code")
         .expect("app code validates"),
     TradingOptions::default(),
@@ -43,7 +43,7 @@ injection, use the full builder:
 use cow_sdk_core::{CowEnv, SupportedChainId};
 use cow_sdk_trading::{Trading, TradingOptions};
 
-let _sdk = Trading::builder()
+let _trading = Trading::builder()
     .chain_id(SupportedChainId::Sepolia)
     .app_code("your-app-code")
     .env(CowEnv::Prod)
@@ -60,7 +60,7 @@ client. Quote, post, order lookup, and off-chain cancellation flows use the
 ready `Trading` client.
 
 Owner attribution lives on the per-trade `TradeParameters` (or
-`LimitTradeParameters`); the SDK does not store a default owner. For
+`LimitTradeParameters`); the `Trading` client does not store a default owner. For
 signer-backed flows the signer's address fills the slot when
 `TradeParameters.owner` is `None`.
 
@@ -74,7 +74,7 @@ use cow_sdk_core::{Address, Amount, OrderKind, SupportedChainId};
 use cow_sdk_trading::{TradeParameters, TradingBuilder, TradingOptions};
 
 # async fn run() -> Result<(), Box<dyn std::error::Error>> {
-let sdk = TradingBuilder::ready(
+let trading = TradingBuilder::ready(
     cow_sdk_trading::TraderParameters::new(SupportedChainId::Mainnet, "your-app-code")?,
     TradingOptions::default(),
 )?;
@@ -90,7 +90,7 @@ let params = TradeParameters::new(
 )
 .with_owner(Address::new("0x76b0340e50BD9883D8B2CA5fd9f52439a9e7Cf58")?);
 
-let quote = sdk.get_quote_only(params, None).await?;
+let quote = trading.get_quote_only(params, None).await?;
 println!("suggested slippage (bps): {}", quote.suggested_slippage_bps);
 # Ok(())
 # }

@@ -168,19 +168,19 @@ Minimal ready-state builder:
 ```rust
 use cow_sdk::{SupportedChainId, Trading};
 
-fn build_sdk() -> Result<Trading, Box<dyn std::error::Error>> {
-    let sdk = Trading::builder()
+fn build_trading() -> Result<Trading, Box<dyn std::error::Error>> {
+    let trading = Trading::builder()
         .chain_id(SupportedChainId::Sepolia)
         .app_code("your-app-code")
         .build()?;
 
-    Ok(sdk)
+    Ok(trading)
 }
 ```
 
 The owner field belongs on the per-trade `TradeParameters` or
-`LimitTradeParameters`, not on the SDK. The SDK does not store a default
-owner. For signer-backed flows (`post_swap_order`, `post_limit_order`,
+`LimitTradeParameters`, not on the `Trading` client. The `Trading` client
+does not store a default owner. For signer-backed flows (`post_swap_order`, `post_limit_order`,
 `get_quote_results`), the signer's address fills the slot when
 `TradeParameters.owner` is `None`. For quote-only flows
 (`get_quote_only`), the owner must come from `TradeParameters.owner` or
@@ -220,7 +220,7 @@ use cow_sdk::{
 };
 use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
 
-fn build_browser_ready_sdk() -> Result<Trading, Box<dyn std::error::Error>> {
+fn build_browser_ready_trading() -> Result<Trading, Box<dyn std::error::Error>> {
     let transport: Arc<dyn HttpTransport + Send + Sync> = Arc::new(FetchTransport::new(
         &FetchTransportConfig::new("https://api.cow.fi"),
     ));
@@ -231,13 +231,13 @@ fn build_browser_ready_sdk() -> Result<Trading, Box<dyn std::error::Error>> {
         .build()?;
 
     let options = TradingOptions::new().with_orderbook_client(Arc::new(orderbook));
-    let sdk = Trading::builder()
+    let trading = Trading::builder()
         .chain_id(SupportedChainId::Sepolia)
         .app_code("your-browser-app-code")
         .options(options)
         .build()?;
 
-    Ok(sdk)
+    Ok(trading)
 }
 ```
 
@@ -275,7 +275,7 @@ orderbook. The `swap_params_to_limit_order_params` bridge produces a
 `LimitTradeParametersFromQuote` value that guarantees the quote identifier
 is present by construction, and the EthFlow native-currency submission
 helper and transaction helper accept only that newtype on their public
-entries. In the snippet below, `sdk`, `orderbook`, `trader`, and `signer` are
+entries. In the snippet below, `trading`, `orderbook`, `trader`, and `signer` are
 the values built in the ready-state steps above, and `params` describes the
 native-sell trade. The `ethflow_transaction_simulation` scenario runs this
 flow end to end:
@@ -286,7 +286,7 @@ use cow_sdk::trading::{
     swap_params_to_limit_order_params, PostTradeAdditionalParams,
 };
 
-let quote = sdk.get_quote_results(params.clone(), signer, None).await?;
+let quote = trading.get_quote_results(params.clone(), signer, None).await?;
 let limit_from_quote = swap_params_to_limit_order_params(
     &quote.trade_parameters,
     &quote.quote_response,

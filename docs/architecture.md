@@ -350,7 +350,7 @@ cancellation token:
 use cow_sdk_core::Cancellable;
 
 let token = cow_sdk_core::CancellationToken::new();
-let result = sdk
+let result = trading
     .post_swap_order(params, &signer, None)
     .cancel_with(&token)
     .await?;

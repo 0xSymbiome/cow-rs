@@ -138,13 +138,13 @@ let client = AlloyClient::builder()
     .build_checked()
     .await?;
 
-let sdk = Trading::builder()
+let trading = Trading::builder()
     .chain_id(SupportedChainId::Sepolia)
     .app_code("cow-rs/alloy-adapter")
     .build()?;
 
 let signer = client.create_signer("local").await?;
-# let _ = (sdk, signer);
+# let _ = (trading, signer);
 # Ok(())
 # }
 ```

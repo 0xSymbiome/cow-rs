@@ -12,13 +12,13 @@ use cow_sdk_examples_native::support::{
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let orderbook = MockOrderbook::new(SupportedChainId::Sepolia, sample_quote_response());
-    let sdk = TradingBuilder::ready(
+    let trading = TradingBuilder::ready(
         TraderParameters::new(SupportedChainId::Sepolia, "cow-rs-quote-only")
             .expect("app code should validate"),
         TradingOptions::new().with_orderbook_client(Arc::new(orderbook.clone())),
     )?;
 
-    let quote = sdk.get_quote_only(sample_trade_parameters(), None).await?;
+    let quote = trading.get_quote_only(sample_trade_parameters(), None).await?;
     let request = orderbook
         .state()
         .quote_requests

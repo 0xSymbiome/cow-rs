@@ -8,7 +8,7 @@ use cow_sdk::trading::{PartnerFee, PartnerFeePolicy};
 
 #[test]
 fn public_api_reexports_cover_primary_root_surface() {
-    let _ready_sdk = TradingBuilder::ready(
+    let _ready_trading = TradingBuilder::ready(
         TraderParameters::new(SupportedChainId::Sepolia, "cow-rs/public-api")
             .expect("app code should validate"),
         TradingOptions::default(),
@@ -96,7 +96,7 @@ fn module_reexports_cover_expected_leaf_crates() {
     )
     .build()
     .expect("default facade orderbook client must build");
-    let _sdk = cow_sdk::trading::TradingBuilder::ready(
+    let _trading = cow_sdk::trading::TradingBuilder::ready(
         cow_sdk::trading::TraderParameters::new(
             cow_sdk::core::SupportedChainId::Sepolia,
             "cow-rs/public-api",

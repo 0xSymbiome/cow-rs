@@ -161,7 +161,7 @@ impl Drop for DropSpy {
 }
 
 struct TradingHarness {
-    sdk: Trading,
+    trading: Trading,
     quote_results: QuoteResults,
     signer: SlowSigner,
     provider: SlowProvider,
@@ -171,7 +171,7 @@ impl TradingHarness {
     async fn new(delay: Duration) -> Self {
         let quote_results = quote_results_fixture().await;
         let orderbook = Arc::new(DelayedOrderbook::new(delay));
-        let sdk = Trading::builder()
+        let trading = Trading::builder()
             .chain_id(SupportedChainId::Sepolia)
             .app_code("cancellation-composition")
             .env(CowEnv::Prod)
@@ -180,7 +180,7 @@ impl TradingHarness {
             .expect("trading sdk must construct for cancellation composition tests");
 
         Self {
-            sdk,
+            trading,
             quote_results,
             signer: SlowSigner::new(delay),
             provider: SlowProvider::new(delay),
@@ -190,7 +190,7 @@ impl TradingHarness {
 
 async fn quote_results_fixture() -> QuoteResults {
     let orderbook = Arc::new(DelayedOrderbook::new(Duration::ZERO));
-    let sdk = Trading::builder()
+    let trading = Trading::builder()
         .chain_id(SupportedChainId::Sepolia)
         .app_code("cancellation-composition")
         .env(CowEnv::Prod)
@@ -198,7 +198,7 @@ async fn quote_results_fixture() -> QuoteResults {
         .build()
         .expect("fixture sdk must construct");
 
-    sdk.get_quote_only(sample_trade_parameters(OrderKind::Sell), None)
+    trading.get_quote_only(sample_trade_parameters(OrderKind::Sell), None)
         .await
         .expect("quote fixture must build")
 }
@@ -410,7 +410,7 @@ impl Provider for SlowProvider {
 fn invoke_get_quote_results(harness: &TradingHarness) -> CaseFuture<'_> {
     Box::pin(async move {
         harness
-            .sdk
+            .trading
             .get_quote_results(
                 sample_trade_parameters(OrderKind::Sell),
                 &harness.signer,
@@ -424,7 +424,7 @@ fn invoke_get_quote_results(harness: &TradingHarness) -> CaseFuture<'_> {
 fn invoke_post_swap_order(harness: &TradingHarness) -> CaseFuture<'_> {
     Box::pin(async move {
         harness
-            .sdk
+            .trading
             .post_swap_order(
                 sample_trade_parameters(OrderKind::Sell),
                 &harness.signer,
@@ -438,7 +438,7 @@ fn invoke_post_swap_order(harness: &TradingHarness) -> CaseFuture<'_> {
 fn invoke_post_swap_order_from_quote(harness: &TradingHarness) -> CaseFuture<'_> {
     Box::pin(async move {
         harness
-            .sdk
+            .trading
             .post_swap_order_from_quote(&harness.quote_results, &harness.signer, None)
             .await
             .map(|_: OrderPostingResult| ())
@@ -448,7 +448,7 @@ fn invoke_post_swap_order_from_quote(harness: &TradingHarness) -> CaseFuture<'_>
 fn invoke_post_limit_order(harness: &TradingHarness) -> CaseFuture<'_> {
     Box::pin(async move {
         harness
-            .sdk
+            .trading
             .post_limit_order(
                 sample_limit_parameters(OrderKind::Sell),
                 &harness.signer,
@@ -462,7 +462,7 @@ fn invoke_post_limit_order(harness: &TradingHarness) -> CaseFuture<'_> {
 fn invoke_get_pre_sign_transaction(harness: &TradingHarness) -> CaseFuture<'_> {
     Box::pin(async move {
         harness
-            .sdk
+            .trading
             .get_pre_sign_transaction(&order_params(), &harness.signer)
             .await
             .map(|_: TransactionRequest| ())
@@ -472,7 +472,7 @@ fn invoke_get_pre_sign_transaction(harness: &TradingHarness) -> CaseFuture<'_> {
 fn invoke_get_order(harness: &TradingHarness) -> CaseFuture<'_> {
     Box::pin(async move {
         harness
-            .sdk
+            .trading
             .get_order(&order_params())
             .await
             .map(|_: Order| ())
@@ -482,7 +482,7 @@ fn invoke_get_order(harness: &TradingHarness) -> CaseFuture<'_> {
 fn invoke_off_chain_cancel_order(harness: &TradingHarness) -> CaseFuture<'_> {
     Box::pin(async move {
         harness
-            .sdk
+            .trading
             .off_chain_cancel_order(&order_params(), &harness.signer)
             .await
             .map(|_: bool| ())
@@ -492,7 +492,7 @@ fn invoke_off_chain_cancel_order(harness: &TradingHarness) -> CaseFuture<'_> {
 fn invoke_on_chain_cancel_order(harness: &TradingHarness) -> CaseFuture<'_> {
     Box::pin(async move {
         harness
-            .sdk
+            .trading
             .on_chain_cancel_order(&order_params(), &harness.signer)
             .await
             .map(|_: TransactionHash| ())
@@ -502,7 +502,7 @@ fn invoke_on_chain_cancel_order(harness: &TradingHarness) -> CaseFuture<'_> {
 fn invoke_get_cow_protocol_allowance(harness: &TradingHarness) -> CaseFuture<'_> {
     Box::pin(async move {
         harness
-            .sdk
+            .trading
             .get_cow_protocol_allowance(&harness.provider, &allowance_params())
             .await
             .map(|_: Amount| ())
@@ -512,7 +512,7 @@ fn invoke_get_cow_protocol_allowance(harness: &TradingHarness) -> CaseFuture<'_>
 fn invoke_approve_cow_protocol(harness: &TradingHarness) -> CaseFuture<'_> {
     Box::pin(async move {
         harness
-            .sdk
+            .trading
             .approve_cow_protocol(&harness.signer, &approval_params())
             .await
             .map(|_: TransactionHash| ())

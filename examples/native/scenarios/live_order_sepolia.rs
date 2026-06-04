@@ -118,7 +118,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let signer = client.create_signer("live-order-sepolia").await?;
     let owner = signer.get_address().await?;
 
-    let sdk = Trading::builder()
+    let trading = Trading::builder()
         .chain_id(SupportedChainId::Sepolia)
         .app_code(app_code.as_str())
         .build()?;
@@ -126,7 +126,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let orderbook = OrderbookApi::builder_from_context(context).build()?;
 
     let allowance_params = AllowanceParameters::new(sell_token, owner);
-    let current_allowance = sdk
+    let current_allowance = trading
         .get_cow_protocol_allowance(&client, &allowance_params)
         .await?;
 
@@ -144,7 +144,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let trade = TradeParameters::new(OrderKind::Sell, sell_token, buy_token, sell_amount)
         .with_slippage_bps(slippage_bps);
-    let result = sdk.post_swap_order(trade, &signer, None).await?;
+    let result = trading.post_swap_order(trade, &signer, None).await?;
 
     let initial_report = json!({
         "mode": "live",

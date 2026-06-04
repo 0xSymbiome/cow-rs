@@ -17,7 +17,7 @@ use cow_sdk_examples_native::support::{sample_owner, sample_unsigned_order};
 fn main() -> Result<(), Box<dyn Error>> {
     let chain_id = SupportedChainId::Sepolia;
     let app_code = AppCode::new("cow-rs/native-capability-report")?;
-    let sdk = TradingBuilder::ready(
+    let trading = TradingBuilder::ready(
         TraderParameters::new(chain_id, app_code.clone())
             .expect("app code should validate"),
         TradingOptions::default(),
@@ -36,7 +36,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let report = json!({
         "surface": "cow-sdk",
         "mode": "deterministic",
-        "sdkConstructed": sdk.trader_defaults().chain_id == Some(chain_id),
+        "sdkConstructed": trading.trader_defaults().chain_id == Some(chain_id),
         "chainId": u64::from(chain_id),
         "deployment": {
             "settlement": deployment.settlement.to_hex_string(),
