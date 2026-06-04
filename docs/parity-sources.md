@@ -5,7 +5,6 @@
 `cow-rs` is a standalone Rust repository. Normal build, test, and publish
 flows must not require local checkouts of:
 
-- `cowprotocol/cow-sdk`
 - `cowprotocol/contracts`
 - `cowprotocol/services`
 - `alloy-rs/alloy`
@@ -29,7 +28,6 @@ caller-local copy.
 1. Authoritative provenance is `parity/source-lock.yaml`. The source-lock
    pins each upstream producer repository to a specific commit:
 
-   - `https://github.com/cowprotocol/cow-sdk`
    - `https://github.com/cowprotocol/contracts`
    - `https://github.com/cowprotocol/services`
    - `https://github.com/alloy-rs/alloy`
@@ -69,7 +67,7 @@ paths are independent git checkouts or worktrees of the pinned producer
 repositories:
 
 ```text
-cargo parity-validate --source-lock parity/source-lock.yaml --cow-sdk-root <cow-sdk-checkout> --contracts-root <contracts-checkout> --services-root <services-checkout>
+cargo parity-validate --source-lock parity/source-lock.yaml --contracts-root <contracts-checkout> --services-root <services-checkout>
 ```
 
 For each supplied root, the validator requires:
@@ -84,7 +82,7 @@ Before relying on manually supplied upstream roots, reviewers can run the
 report-only root check:
 
 ```text
-cargo check-source-lock-roots --cow-sdk-root <cow-sdk-checkout> --contracts-root <contracts-checkout> --services-root <services-checkout>
+cargo check-source-lock-roots --contracts-root <contracts-checkout> --services-root <services-checkout>
 ```
 
 The command warns when a supplied path resolves to a parent checkout, has a
@@ -93,7 +91,6 @@ at a different commit than the source-lock pin.
 
 ## Pinned Revisions
 
-- `cow-sdk`: `74393ee2923a2932584998169daca6ce3c2da60c`
 - `contracts`: `c6b61ce75841ce4c25ab126def9cc981c568e6c6`
 - `ethflowcontract`: `762d182674f8f890bd27917872ee62125171b54d`
 - `services`: `1f80d54bc3521b3fa81cd8ad66d9f749c5450591`
@@ -122,15 +119,16 @@ Primary protocol authorities:
 - `https://github.com/cowprotocol/ethflowcontract.git` — the on-chain authority
   for the EthFlow order surface.
 
-Cross-language reference:
+Prior art (not a pinned parity source):
 
-- `https://github.com/cowprotocol/cow-sdk.git` — the upstream TypeScript SDK. It
-  is the reference for which consumer workflows a CoW Protocol SDK should offer
-  and for the app-data and subgraph query shapes, but it is a different language
-  with different idioms. It is not the authority for the Rust public API shape
-  (Rust idiom governs that) nor for the wire format (services governs that).
-  Where the TypeScript SDK and services differ on a name or shape, services is
-  authoritative.
+- `https://github.com/cowprotocol/cow-sdk.git` — the upstream TypeScript SDK is
+  prior art for the trading consumer-workflow shape (the quote-to-sign-to-post
+  orchestration); the slippage convention cow-rs implements faithfully is
+  documented in [ADR 0066](adr/0066-trading-slippage-and-suggestion-policy.md). It is
+  **not** a pinned parity source and is not listed in `parity/source-lock.yaml`:
+  it does not define the Rust public API shape (Rust idiom governs that), the
+  wire format (services), on-chain shapes (contracts), the app-data schemas
+  (`cowprotocol/app-data`), or the subgraph schema (the deployed Graph).
 
 Dependency provenance:
 
@@ -145,8 +143,8 @@ crates. None of the repositories above are publish-time git dependencies.
 | Surface | Primary upstream paths | Committed fixture |
 | --- | --- | --- |
 | contracts | `contracts` order, sign, settlement, swap, interaction, vault, proxy, and selected test paths | `parity/fixtures/contracts.json` |
-| orderbook | orderbook API, request, transform, and type sources plus selected `services` references | `parity/fixtures/orderbook.json` |
-| trading | trading quote, order, post, cancellation, slippage, settlement, pre-sign, and EthFlow sources | `parity/fixtures/trading.json` |
+| orderbook | `services` orderbook OpenAPI and wire DTOs | `parity/fixtures/orderbook-requests/` |
+| trading | `services` quote/order DTOs, fee accounting, and order validation; slippage follows the CoW SDK convention (ADR 0066) | `parity/fixtures/trading.json` |
 | native Alloy adapters | Alloy runtime and Alloy Core producer paths pinned in `parity/source-lock.yaml` | Adapter crate tests, transaction broadcast / receipt shape invariants, and native examples |
 
 ## Provenance Rule
@@ -165,13 +163,13 @@ cargo parity-provision-upstreams --output-root <dir>
 ```
 
 The command reads `parity/source-lock.yaml`, writes each repository to
-`<dir>/<id>` (e.g., `<dir>/services`, `<dir>/contracts`,
-`<dir>/cow-sdk`), and reports the resolved paths.
+`<dir>/<id>` (e.g., `<dir>/services`, `<dir>/contracts`), and reports
+the resolved paths.
 
 Refresh the source lock from explicit upstream roots:
 
 ```text
-cargo parity-snapshot --output parity/source-lock.yaml --cow-sdk-root <cow-sdk-checkout> --contracts-root <contracts-checkout> --services-root <services-checkout>
+cargo parity-snapshot --output parity/source-lock.yaml --contracts-root <contracts-checkout> --services-root <services-checkout>
 ```
 
 ## Maintenance Rules
@@ -180,5 +178,5 @@ cargo parity-snapshot --output parity/source-lock.yaml --cow-sdk-root <cow-sdk-c
 - update pinned SHAs only in dedicated parity refresh changes
 - keep fixture provenance explicit in every `parity/fixtures/*.json` file
 - keep embedded fixture commits aligned with `parity/source-lock.yaml`
-- keep `crates/app-data/schemas/` synchronized from a real `cow-sdk` checkout
+- keep `crates/app-data/schemas/` synchronized from a real `cowprotocol/app-data` checkout
 - keep local upstream roots out of the normal repository contract

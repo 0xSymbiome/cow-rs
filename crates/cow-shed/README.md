@@ -181,11 +181,14 @@ return `CowShedError::COWShedForComposableCoWGnosisOnly`.
 - **Gas**: the app-data hook's `gas_limit` is caller-chosen; the SDK does not
   estimate gas (it owns no provider).
 
-## Parity with `@cowprotocol/cow-sdk`
+## Compatibility with `@cowprotocol/cow-sdk`
 
-The crate mirrors the upstream `CowShedSdk` / `CoWShedHooks` surface: proxy
-derivation, the EIP-712 `ExecuteHooks` types and domain, factory calldata
-encoding, and the `signCalls`-style sign-and-encode flow via `CowShedHooks`.
+The on-chain authority is the `cowdao-grants/cow-shed` Solidity contracts; the
+TypeScript `@cowprotocol/cow-sdk` is prior art, not a correctness source. For
+TypeScript developers migrating, this crate offers an API-compatible
+`CowShedSdk` / `CoWShedHooks` surface: proxy derivation, the EIP-712
+`ExecuteHooks` types and domain, factory calldata encoding, and the
+`signCalls`-style sign-and-encode flow via `CowShedHooks`.
 The caller-selected `CowShedVersion` is threaded through proxy derivation and
 signing, and the Gnosis Chain factory/implementation deployment is resolved by
 the chain-keyed lookups. The crate additionally exposes

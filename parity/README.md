@@ -57,7 +57,6 @@ Validate pinned upstream roots:
 ```sh
 cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate \
   --source-lock parity/source-lock.yaml \
-  --cow-sdk-root <path-to-cow-sdk> \
   --contracts-root <path-to-contracts> \
   --services-root <path-to-services>
 ```
@@ -71,14 +70,13 @@ JSON-Schema bundle. `crates/app-data/schemas/` retains the latest-version schema
 closure as test-only drift fixtures: the `schema_drift_contract` test asserts the
 typed metadata structs still match the upstream field names, so an upstream
 rename or addition surfaces at review time. Refresh those fixtures by hand from a
-pinned `cow-sdk` checkout when the drift test flags a change.
+pinned `cowprotocol/app-data` checkout when the drift test flags a change.
 
 Refresh the source lock from pinned working roots:
 
 ```sh
 cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- snapshot \
   --output parity/source-lock.yaml \
-  --cow-sdk-root <path-to-cow-sdk> \
   --contracts-root <path-to-contracts> \
   --services-root <path-to-services>
 ```
@@ -88,9 +86,6 @@ normal CI do not depend on those upstream roots.
 
 Embedded `source_refs[].commit` metadata inside `parity/fixtures/*.json` must stay aligned with
 `parity/source-lock.yaml`. `validate` treats commit drift there as a real failure.
-
-When `validate` is given `--cow-sdk-root`, it also proves that `crates/app-data/schemas/`
-matches `packages/app-data/src/schemas/` byte-for-byte.
 
 `fixtures/contracts.json` is the pinned low-level contracts contract.
 It anchors order, signature-encoding, deployment, settlement, swap, proxy, vault,

@@ -321,7 +321,6 @@ repositories instead of only the committed fixture contract.
 Quick setup:
 
 ```text
-git clone https://github.com/cowprotocol/cow-sdk.git <path>/cow-sdk
 git clone https://github.com/cowprotocol/contracts.git <path>/contracts
 git clone https://github.com/cowprotocol/services.git <path>/services
 ```
@@ -337,13 +336,13 @@ Before relying on manually supplied upstream roots, run the report-only root
 check so parent-checkout, remote, or commit mismatches are visible:
 
 ```text
-cargo check-source-lock-roots --cow-sdk-root <path>/cow-sdk --contracts-root <path>/contracts --services-root <path>/services
+cargo check-source-lock-roots --contracts-root <path>/contracts --services-root <path>/services
 ```
 
 Then validate against those independent roots:
 
 ```text
-cargo parity-validate --source-lock parity/source-lock.yaml --cow-sdk-root <path>/cow-sdk --contracts-root <path>/contracts --services-root <path>/services
+cargo parity-validate --source-lock parity/source-lock.yaml --contracts-root <path>/contracts --services-root <path>/services
 ```
 
 Rules:

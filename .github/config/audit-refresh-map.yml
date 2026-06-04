@@ -6,7 +6,6 @@ entries:
       paths:
         - parity/source-lock.yaml
       upstreams:
-        - https://github.com/cowprotocol/cow-sdk
         - https://github.com/cowprotocol/composable-cow
         - https://github.com/cowdao-grants/cow-shed
         - https://github.com/cowprotocol/watch-tower

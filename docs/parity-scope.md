@@ -13,7 +13,6 @@ Pinned sources live in `parity/source-lock.yaml`.
 | --- | --- | --- |
 | `cowprotocol/services` | Primary protocol authority | Orderbook HTTP API, OpenAPI schemas, wire DTOs, and order-validation and rejection semantics |
 | `cowprotocol/contracts` | Primary protocol authority | EIP-712 order hashing, settlement ABI, and deployment addresses |
-| `cowprotocol/cow-sdk` | Cross-language reference | Consumer-workflow and ergonomic reference (a different language with different idioms); SDK package configuration, COW Shed TypeScript constants, and shared package-level deployment evidence |
 | `cowprotocol/composable-cow` | Primary capability evidence | Byte-identical composable-order Solidity mirrors (gated by `cargo parity-verify-sol-provenance` against `parity/source-lock.yaml`), deployment rows, selector fixtures, EIP-1271 payload shapes, and watch-tower boundary evidence |
 | `cowprotocol/ethflowcontract` | Primary capability evidence | Byte-identical EthFlow Solidity mirrors (`CoWSwapEthFlow.sol`, `EthFlowOrder.sol`, `ICoWSwapOnchainOrders.sol`, `CoWSwapOnchainOrders.sol`, `IWrappedNativeToken.sol`) and the `ReceiverMustBeSet()` revert-selector provenance |
 | `cowdao-grants/cow-shed` | Primary capability evidence | Byte-identical COW Shed Solidity mirrors, proxy creation-code bytes, factory address derivation, hook signature shape, and version-call evidence |
@@ -78,14 +77,14 @@ packages until their dedicated `cow-rs` leaf crates land.
 
 | Surface | Rust crate | Pinned evidence |
 | --- | --- | --- |
-| Core config and runtime contracts | `cow-sdk-core` | Common adapter, address, token, config, and selected shared type sources from `cowprotocol/cow-sdk` |
+| Core config and runtime contracts | `cow-sdk-core` | The cow-rs shared domain model and runtime contracts; deployment addresses from `cowprotocol/contracts` plus `composable-cow`/`cow-shed` networks.json |
 | Contracts | `cow-sdk-contracts` | `cowprotocol/contracts`, `cowprotocol/ethflowcontract`, `cowprotocol/composable-cow`, and `cowdao-grants/cow-shed` Solidity sources mirrored byte-identically under `crates/contracts/abi/**/*.sol` and gated by `cargo parity-verify-sol-provenance` against SHA-256 rows in `parity/source-lock.yaml`, `alloy::sol!`-generated bindings, the typed `Registry` deployment authority, and selected upstream test fixtures |
-| Signing | `cow-sdk-signing` | Order-signing utilities, typed-data helpers, and contract-signing sources |
+| Signing | `cow-sdk-signing` | `cowprotocol/contracts` EIP-712 signing — `GPv2Signing` domain and schemes, `GPv2Order` typed data |
 | App-data | `cow-sdk-app-data` | App-data helpers and the retained upstream schema drift fixtures |
-| Orderbook | `cow-sdk-orderbook` | TypeScript orderbook sources plus selected `cowprotocol/services` OpenAPI and validation references |
+| Orderbook | `cow-sdk-orderbook` | `cowprotocol/services` orderbook OpenAPI and validation references |
 | Trading | `cow-sdk-trading` | TypeScript trading workflows and tests |
-| Subgraph | `cow-sdk-subgraph` | TypeScript subgraph API, GraphQL, query, and test sources |
-| SDK facade | `cow-sdk` | TypeScript SDK root package exports and typedoc entrypoint |
+| Subgraph | `cow-sdk-subgraph` | The deployed CoW Protocol subgraph GraphQL schema; cow-rs-owned query documents |
+| SDK facade | `cow-sdk` | The cow-rs facade composition over the protocol-anchored leaf crates |
 | HTTP transport policy | `cow-sdk-transport-policy` | Retry, rate-limit, cooldown, jitter, and transport-classification behavior shared by typed HTTP clients |
 | Native Alloy adapters | `cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, `cow-sdk-alloy` | Alloy runtime and Alloy Core source-lock pins, adapter contract tests, transaction broadcast / receipt shape invariants, and native examples |
 | TypeScript-callable WASM | `cow-sdk-wasm` | Native Rust helper parity for typed-data, UID, digest, app-data, EIP-1271 payloads, orderbook/subgraph/IPFS/trading DTO shape, npm declaration snapshots, and upstream TypeScript SDK EIP-1271 vector coverage |
@@ -130,8 +129,8 @@ Schema-derived evidence is a review aid, not a public API shortcut.
 
 - orderbook schema evidence is tied to `cowprotocol/services`, including
   `crates/orderbook/openapi.yml`
-- subgraph evidence is tied to `cowprotocol/cow-sdk`, including
-  `packages/subgraph/src/queries.ts`
+- subgraph schema evidence is tied to the deployed CoW Protocol subgraph
+  GraphQL schema; the query documents are cow-rs-owned
 - canonical subgraph query documents live in
   `crates/subgraph/src/query_documents/`
 - test-only subgraph schema and codegen evidence lives in
