@@ -83,12 +83,16 @@ and
 `ExecuteHooks(Call[] calls,bytes32 nonce,uint256 deadline)Call(address target,uint256 value,bytes callData,bool allowFailure,bool isDelegateCall)`.
 
 EOA signature byte order is `r || s || v` (not the standard `v || r || s`).
-The `SignedCowShedHook::signature` field is a fixed-length 65-byte array in
-that order; a trybuild fixture enforces it at the type level.
+The canonical 65-byte `r || s || v` layout is produced and validated by
+`cow_sdk_contracts::RecoverableSignature`, whose `parse_bytes` rejects any
+non-65-byte input and any recovery byte outside `{0, 1, 27, 28}` (ADR 0022). A
+smart-contract (EIP-1271) owner instead supplies a variable-length signature
+blob; `encode_execute_hooks_calldata_with_signature` carries either shape
+through to the factory's `bytes` argument unchanged.
 
-`isDelegateCall = true` is opt-in only via an explicit builder method that
-requires a `// SAFETY:` comment in the immediately preceding three lines of
-the call site. A compile-fail fixture rejects use without the safety comment.
+`isDelegateCall = true` is opt-in only via the explicit `Call::delegate_call`
+builder, and each call site must carry a `// SAFETY:` comment in the
+immediately preceding three lines justifying the delegatecall.
 
 `executePreSignedHooks` indexes by struct hash without domain prefix because
 the proxy deduplicates pre-signed batches inside the implementation, not at
@@ -223,3 +227,23 @@ macro-emitted `SolStruct` impl, which composes the standard
 through `alloy_primitives::keccak256`. The
 `parity/fixtures/cow_shed/execute_hooks_digest.json` rows confirm
 byte-identical output across every supported chain and version row.
+
+## Amendment 2026-06-04: realized public surface
+
+The `cow-sdk-cow-shed` body ships with the building blocks plus a high-level
+`CowShedHooks` orchestrator: `CowShedHooks::new(chain)` (accepting a
+`SupportedChainId` or `DeploymentChainId`) → `sign(&signer, &calls, nonce,
+deadline)` resolves the owner from the owned `Signer`, derives the proxy via
+`proxy_for`, signs the `ExecuteHooks` payload through `sign_typed_data_payload`,
+and returns a `SignedCowShedCall { shed_account, factory, factory_calldata }`
+that submits directly or becomes an app-data hook via `to_app_data_hook`. The
+`executeHooks` encoder is owner-agnostic: `encode_execute_hooks_calldata_with_signature`
+accepts a 65-byte EOA signature or an EIP-1271 contract-signature blob, and
+`encode_execute_hooks_calldata_signed` is the typed EOA convenience. The chain
+keyed `cow_shed_factory` / `cow_shed_implementation` / `proxy_for` lookups and
+`CowShedVersion::ALL` (current generation first) support multi-version proxy
+discovery. The `Call` hook-call builders (`new`, `allow_failure`,
+`delegate_call`) are inherent `const fn` methods on `Call`. The version
+forwarding regression asserting distinct `CowShedVersion` variants derive
+distinct proxies ships as `distinct_versions_derive_distinct_proxies` in
+`crates/cow-shed/src/address/mod.rs`.

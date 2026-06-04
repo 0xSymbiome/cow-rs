@@ -174,14 +174,15 @@ encoding and inspection surface is building-block code shared by native tooling;
 it is not exposed as a consumer API on any target and has no upstream consumer
 analogue.
 
-**Class 4 — Reserved capability families.** `cow-sdk-cow-shed` and
-`cow-sdk-composable` ship as reserved readiness surfaces per `docs/parity-scope.md`;
-their helper bodies are additive on every target, so their absence from
-`cow-sdk-wasm` is not a WASM-specific boundary. `cow-sdk-cow-shed` already
-targets both native and `wasm32` and is the most direct candidate for a
-future deterministic-helper addition once its helper surface lands. Bridging,
-the flashloan helper surface, and hook-trampoline chaining are likewise
-deferred on every target.
+**Class 4 — Reserved capability families.** `cow-sdk-composable` ships as a
+reserved readiness surface per `docs/parity-scope.md`; its helper body is
+additive on every target, so its absence from `cow-sdk-wasm` is not a
+WASM-specific boundary. `cow-sdk-cow-shed` has shipped its helper body and
+compiles for both native and `wasm32`, so it is the most direct candidate for a
+future deterministic-helper addition to the `cow-sdk-wasm` JavaScript surface;
+its absence from `cow-sdk-wasm` today is a binding-surface choice, not a target
+limitation. Bridging, the flashloan helper surface, and hook-trampoline chaining
+are likewise deferred on every target.
 
 **Class 5 — Separate WASM leaf.** `cow-sdk-browser-wallet` compiles for
 `wasm32` and carries its own wallet integration, but it is a distinct leaf and

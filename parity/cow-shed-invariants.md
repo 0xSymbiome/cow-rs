@@ -26,13 +26,15 @@ Refresh trigger: Refresh when COW Shed proxy bytecode, factory addresses, or EIP
   and
   `ExecuteHooks(Call[] calls,bytes32 nonce,uint256 deadline)Call(address target,uint256 value,bytes callData,bool allowFailure,bool isDelegateCall)`.
 - EOA signature byte order is `r || s || v` (not the standard
-  `v || r || s`). The signed-hook signature field is a fixed-length 65-byte
-  array in that order; the byte order is enforced at the type level in
-  future executable helpers via a trybuild compile-fail fixture.
-- Delegate calls (`isDelegateCall = true`) are opt-in only via an explicit
-  builder method that requires a `// SAFETY:` comment in the immediately
-  preceding three lines of the call site. A compile-fail fixture rejects
-  use without the safety comment.
+  `v || r || s`). The canonical 65-byte `r || s || v` layout is produced and
+  validated by `cow_sdk_contracts::RecoverableSignature`, whose `parse_bytes`
+  rejects any non-65-byte input and any recovery byte outside `{0, 1, 27, 28}`
+  (ADR 0022). A smart-contract (EIP-1271) owner supplies a variable-length
+  signature blob, which `encode_execute_hooks_calldata_with_signature` carries
+  through to the factory's `bytes` argument unchanged.
+- Delegate calls (`isDelegateCall = true`) are opt-in only via the explicit
+  `Call::delegate_call` builder, and each call site must carry a `// SAFETY:`
+  comment in the immediately preceding three lines justifying the delegatecall.
 - The `COWShedForComposableCoW` forwarder is deployed on Gnosis Chain
   (chain id 100) only. Helpers that construct or interact with the
   forwarder on any other chain id must return the typed

@@ -64,11 +64,13 @@ The root facade exposes matching features named `alloy-provider`,
 `wasm32-unknown-unknown`; browser integrations should use
 `cow-sdk-browser-wallet`.
 
-## Composable And COW Shed Readiness
+## Composable Readiness And COW Shed
 
-The composable-order and COW Shed surfaces are prepared as typed Rust evidence
-before their full helper crate bodies are exposed. The readiness layer improves
-on directly copying TypeScript package behavior in seven concrete ways:
+COW Shed ships as the `cow-sdk-cow-shed` leaf crate behind the opt-in `cow-shed`
+facade feature; the composable-order surface is still prepared as typed Rust
+evidence ahead of its full helper crate body. Both rest on the same provenance
+and registry foundations, which improve on directly copying TypeScript package
+behavior in seven concrete ways:
 
 - deployment addresses resolve through one typed schema v2 registry rather than
   package-local constants

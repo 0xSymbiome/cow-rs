@@ -14,6 +14,28 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Added
 
+- COW Shed account-abstraction hooks ship behind the off-by-default `cow-shed`
+  facade feature (re-exported as `cow_sdk::cow_shed`), or directly as the
+  `cow-sdk-cow-shed` leaf crate; the surface stays off the default `cow-sdk`
+  dependency closure and is never a dependency of the trading or orderbook
+  crates (ADR 0049). The high-level `CowShedHooks` orchestrator resolves the
+  owner from an owned `cow_sdk_core::Signer`, derives the deterministic CREATE2
+  proxy, signs the `ExecuteHooks` EIP-712 payload through
+  `sign_typed_data_payload`, and encodes `factory.executeHooks` calldata in one
+  `sign` call, returning a `SignedCowShedCall` that submits directly or becomes
+  a CoW order pre/post hook through `to_app_data_hook`. The deterministic
+  building blocks are public: `proxy_of` / `proxy_for` / `cow_shed_factory` /
+  `cow_shed_implementation` derive per-chain addresses from a `SupportedChainId`
+  or `DeploymentChainId` (handling the Gnosis Chain factory/implementation
+  divergence), `CowShedVersion::ALL` enumerates the supported generations
+  (current first) for multi-version proxy discovery, and `cow_shed_eip712_domain`
+  / `execute_hooks_signing_hash` / `execute_hooks_typed_data_payload` cover the
+  signing surface. `encode_execute_hooks_calldata_with_signature` encodes any
+  owner signature — a 65-byte EOA signature or an EIP-1271 contract-signature
+  blob — `encode_execute_hooks_calldata_signed` is the typed EOA convenience,
+  and `encode_execute_pre_signed_hooks_calldata` covers the pre-signed path. The
+  `Call` hook-call builders (`new`, `allow_failure`, `delegate_call`) are
+  inherent `const fn` methods that resolve without an extension-trait import.
 - `cow_sdk_core::Amount::parse_units(value, decimals)` and
   `Amount::format_units(decimals)` are the exact decimal token-amount
   construction and display surface — the typed Rust analogues of viem's
@@ -71,7 +93,7 @@ The first functional crate-family release begins at `0.1.0`.
 - `cow-sdk-wasm` `TradingClient.buildSellNativeCurrencyTx` accepts its `quoteId`
   as a `number`, aligning the native quote identifier's `i64` boundary with the
   JavaScript number surface used across the client.
-- `cow-sdk-wasm` carries the coarse `OrderbookRejectionCategoryDto` as the
+- `cow-sdk-wasm` carries the coarse `OrderBookRejectionCategoryDto` as the
   optional `category` field on the JavaScript `WasmError` `orderbook` variant,
   mirroring the native `cow_sdk_orderbook::OrderbookRejection::category()`, and
   maps every `cow_sdk_orderbook::OrderbookError` and
@@ -273,6 +295,15 @@ The first functional crate-family release begins at `0.1.0`.
   orderbook's own app-data parsing, so a hash-only quote request round-trips
   and its `app_data_hash` and `full_app_data` accessors stay accurate for a
   decoded request.
+- `cow-sdk-wasm` normalizes an input-DTO deserialization failure passed from
+  JavaScript — an unknown enum variant, a missing required field, or a wrong
+  field type — to the `invalidInput` `SdkError` kind instead of `internal`.
+  Such a value is a caller mistake, so it now carries the same input-error
+  class as the validators that already reject a malformed address or amount,
+  with the offending field name surfaced from missing- and unknown-field
+  messages; the `internal` kind stays reserved for genuine SDK-side faults.
+  `validateAppDataDoc` reports a document missing a required field the same
+  way — `invalidInput` rather than `internal`.
 
 ### Changed
 

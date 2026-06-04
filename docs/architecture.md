@@ -84,7 +84,7 @@ flowchart TD
 | `cow-sdk-alloy-signer` | Native Alloy-backed local private-key `Signer` adapter | You need local message or EIP-712 signing without provider-backed transaction submission. |
 | `cow-sdk-alloy` | Composed native Alloy provider plus signer adapter | You need one native client for `Provider`, `LogProvider`, `SigningProvider`, and `Signer` helper flows. |
 | `cow-sdk-composable` | Reserved manifest for composable-order helpers, with current readiness evidence owned by contracts, signing, docs, and parity fixtures | You need to track the planned composable leaf without pulling an unfinished helper API. |
-| `cow-sdk-cow-shed` | COW Shed account-abstraction proxy address derivation, EIP-712 hook envelopes, and signed-hook payload encoding | You need the COW Shed account-abstraction surface. |
+| `cow-sdk-cow-shed` | COW Shed account-abstraction proxy derivation, EIP-712 hook signing, and `executeHooks` calldata encoding for EOA and EIP-1271 owners, with the `CowShedHooks` orchestrator | You need the COW Shed account-abstraction surface. |
 
 The `cow-sdk-composable` reserved manifest is not a workspace member yet and
 does not expose a crate body. It keeps package identity, MSRV, and evidence

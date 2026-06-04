@@ -1,7 +1,7 @@
 # COW Shed Contract Bindings Audit
 
 Status: Current
-Last reviewed: 2026-05-26
+Last reviewed: 2026-06-04
 Owning surface: byte-identical COW Shed Solidity mirrors, proxy creation-code artifacts, version-call evidence, and deployment registry rows
 Refresh trigger: Refresh when COW Shed deployments, proxy creation code, factory ABIs, hook type strings, or the deployed `VERSION()` return value change upstream.
 Related docs:
@@ -105,11 +105,14 @@ The canonical EIP-712 type strings are
 and
 `ExecuteHooks(Call[] calls,bytes32 nonce,uint256 deadline)Call(address target,uint256 value,bytes callData,bool allowFailure,bool isDelegateCall)`.
 The EOA signature byte order is `r || s || v` (not the standard
-`v || r || s`); the signature field is a fixed-length 65-byte array in
-that order, enforced by a compile-fail fixture in a later capability
-landing. The `isDelegateCall = true` setting is opt-in only via an
-explicit builder method that requires a `// SAFETY:` comment in the
-preceding three lines of the call site.
+`v || r || s`); the canonical 65-byte layout is produced and validated by
+`cow_sdk_contracts::RecoverableSignature`, whose `parse_bytes` rejects any
+non-65-byte input and any recovery byte outside `{0, 1, 27, 28}` (ADR 0022). A
+smart-contract (EIP-1271) owner instead supplies a variable-length signature
+blob; `encode_execute_hooks_calldata_with_signature` carries either shape
+through to the factory's `bytes` argument. The `isDelegateCall = true` setting
+is opt-in only via the `Call::delegate_call` builder, which requires a
+`// SAFETY:` comment in the preceding three lines of the call site.
 
 ### EIP-712 hashing
 
@@ -157,9 +160,9 @@ canonical interfaces under
 `crates/cow-shed/src/types/call.rs` re-exports the canonical struct as
 the crate-level `cow_sdk_cow_shed::Call` alias. The ergonomic builder
 helpers (`Call::new(target, value, call_data)`, `Call::allow_failure()`,
-`Call::delegate_call()`) live on the `cow_sdk_cow_shed::CallExt`
-extension trait so call-site code reads in snake-case while the
-sol-generated struct keeps its camelCase Solidity field names. The four
+`Call::delegate_call()`) are inherent `const fn` methods on `Call`, so
+call-site code reads in snake-case while the sol-generated struct keeps its
+camelCase Solidity field names. The four
 representative rows in
 `parity/fixtures/cow_shed/execute_hooks_calldata.json` (single-call,
 three-call medium fan-out, five-call max fan-out, and empty-`callData`

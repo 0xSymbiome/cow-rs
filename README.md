@@ -31,7 +31,8 @@ contracts.
 | Signer service or HSM proxy | `<published-cow-sdk-wasm-package>/signing` | Signing, UID, EIP-1271, deployment, and version helpers without HTTP clients |
 | Native Rust app using Alloy | `cow-sdk` plus `cow-sdk-alloy-*` | Opt-in provider and signer adapters without widening the default facade |
 | Rust app compiled to browser WASM | `cow-sdk-browser-wallet` plus `cow-sdk-transport-wasm` | Rust-on-wasm path; not the JavaScript-callable npm package |
-| TWAP, composable, bridging, Cow Shed, flash-loan, weiroll, or hardware-wallet flows | Upstream TypeScript packages until `cow-rs` ships those capabilities | These capability families are intentionally outside the 0.1.0 package scope |
+| Account-abstraction hooks via Cow Shed | `cow-sdk` with the `cow-shed` feature, or `cow-sdk-cow-shed` directly | Deterministic proxy derivation, EIP-712 hook signing, factory calldata, and the `CowShedHooks` orchestrator; opt-in and off the default closure |
+| TWAP, composable, bridging, flash-loan, weiroll, or hardware-wallet flows | Upstream TypeScript packages until `cow-rs` ships those capabilities | These capability families are intentionally outside the 0.1.0 package scope |
 
 <!-- runtime-routing:start -->
 ## Choose the crate or package by runtime

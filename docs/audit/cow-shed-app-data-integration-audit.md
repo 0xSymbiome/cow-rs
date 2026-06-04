@@ -1,7 +1,7 @@
 # COW Shed App-Data Integration Audit
 
 Status: Current
-Last reviewed: 2026-05-15
+Last reviewed: 2026-06-04
 Owning surface: COW Shed hook metadata emission and app-data schema integration
 Refresh trigger: Refresh when COW Shed hook metadata, app-data hook schemas, or the EIP-1271 signing trait boundary change.
 Related docs:
@@ -29,10 +29,10 @@ artifacts; those are governed by the
 
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
-| Hook schema reuse | COW Shed hook metadata emits through the existing `crates/app-data/src/metadata/hooks.rs::Hook` schema with no parallel metadata format | Conforms (contract; emitter body lands in a later capability landing) |
+| Hook schema reuse | COW Shed hook metadata emits through the existing `crates/app-data/src/metadata/hooks.rs::Hook` schema via `SignedCowShedCall::to_app_data_hook`, with no parallel metadata format | Conforms |
 | EIP-1271 trait boundary | Custom COW Shed signers consume the signing-owned `Eip1271SignatureProvider` trait from `cow_sdk_signing::eip1271`; no parallel trait definition exists in the COW Shed helper crate | Conforms |
 | Crate-graph posture | `cow-sdk-cow-shed ⇏ cow-sdk-trading`, `cow-sdk-cow-shed ⇏ cow-sdk-orderbook`, `cow-sdk-cow-shed ⇏ cow-sdk-subgraph`, `cow-sdk-cow-shed ⇏ alloy-provider` all hold under `cargo metadata` | Conforms |
-| Version forwarding discipline | The caller-selected `CowShedVersion` is threaded through every internal builder; a regression test in a later capability landing asserts distinct versions produce distinct CREATE2 proxy addresses | Conforms (contract; regression test lands in a later capability landing) |
+| Version forwarding discipline | The caller-selected `CowShedVersion` is threaded through every internal builder; `distinct_versions_derive_distinct_proxies` asserts distinct versions produce distinct CREATE2 proxy addresses | Conforms |
 
 ## Current Contract
 
@@ -40,11 +40,13 @@ artifacts; those are governed by the
 
 COW Shed hook metadata reuses the existing app-data hook schema at
 `crates/app-data/src/metadata/hooks.rs::Hook` and `HookList`. The COW Shed
-helper crate does not define a parallel metadata format. Hook entries emit
-into the app-data document as ordinary hook entries; the COW Shed-specific
-fields (proxy address, version, signed digest, signature bytes) live
-inside the hook's `callData` payload rather than as new schema columns,
-preserving the app-data schema's stability.
+helper crate does not define a parallel metadata format:
+`SignedCowShedCall::to_app_data_hook(gas_limit)` produces the `Hook` whose
+`target` is the COW Shed factory and whose `callData` is the encoded
+`executeHooks` calldata. Hook entries emit into the app-data document as
+ordinary hook entries; the COW Shed-specific fields (proxy address, version,
+signed digest, signature bytes) live inside the hook's `callData` payload
+rather than as new schema columns, preserving the app-data schema's stability.
 
 ### EIP-1271 trait boundary
 
@@ -72,12 +74,11 @@ COW Shed types.
 ### Version forwarding discipline
 
 The caller-selected `CowShedVersion` is threaded through every internal
-builder. The SDK signs and derives proxy addresses against deployed
-reality (`V1_0_1`) by default; a regression test in a later capability
-landing asserts that distinct `CowShedVersion` variants produce distinct
-CREATE2 proxy addresses for the same user. The upstream TypeScript SDK
-bug where `new CoWShedHooks(chainId, customOptions)` silently drops the
-caller-selected version is not mirrored in the Rust helper crate.
+builder. The SDK signs and derives proxy addresses against deployed reality
+(`V1_0_1`) by default; `distinct_versions_derive_distinct_proxies`
+(`crates/cow-shed/src/address/mod.rs`) asserts that distinct `CowShedVersion`
+variants produce distinct CREATE2 proxy addresses for the same user, so the
+version selected at construction is never dropped before signing.
 
 ## Evidence
 
@@ -88,7 +89,8 @@ Primary implementation points:
 - `docs/adr/0051-signing-owned-eip1271-signature-provider-trait.md`
 - `crates/app-data/src/metadata/hooks.rs` (existing hook schema)
 - `crates/signing/src/eip1271/` (signing-owned trait home)
-- `crates/cow-shed/` (reserved leaf crate)
+- `crates/cow-shed/` (leaf crate)
+- `crates/cow-shed/src/hooks.rs` (`SignedCowShedCall::to_app_data_hook`)
 
 Primary regression coverage:
 
@@ -96,7 +98,8 @@ Primary regression coverage:
   invariants
 - `crates/trading/tests/eip1271_signature_provider_no_reexport.rs`
   (compile-fail regression for the trading re-export contract)
-- per-version proxy address regression in a later capability landing
+- `crates/cow-shed/src/address/mod.rs::distinct_versions_derive_distinct_proxies`
+  (per-version distinct-proxy regression)
 
 Validation surface:
 

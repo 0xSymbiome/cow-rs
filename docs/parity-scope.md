@@ -62,11 +62,13 @@ buckets:
     wallet callback `walletConfig.timeoutMs`.
 
 The 0.1.0 scope does not claim total method-for-method parity with the
-upstream TypeScript SDK. Composable conditional-order helpers and the COW
-Shed account-abstraction proxy ship as first-release readiness: reserved
-leaf manifests, deployment evidence, byte-identical ABI mirrors, parity fixtures, and
-governing ADRs are in scope, with full ergonomic helper bodies arriving in
-the additive landings that follow. Capability families that are explicitly
+upstream TypeScript SDK. The COW Shed account-abstraction proxy ships its full
+helper body in 0.1.0 — the `cow-sdk-cow-shed` leaf crate behind the opt-in
+`cow-shed` facade feature. Composable conditional-order helpers ship as
+first-release readiness: a reserved leaf manifest, deployment evidence,
+byte-identical ABI mirrors, parity fixtures, and governing ADRs are in scope,
+with full ergonomic helper bodies arriving in the additive landings that
+follow. Capability families that are explicitly
 deferred for 0.1.0 (cross-chain bridging order construction, hook-trampoline
 bytecode chaining, ecosystem provider adapters outside Alloy, and other
 items listed under Out-Of-Scope below) should continue to use the upstream
@@ -88,7 +90,7 @@ packages until their dedicated `cow-rs` leaf crates land.
 | Native Alloy adapters | `cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, `cow-sdk-alloy` | Alloy runtime and Alloy Core source-lock pins, adapter contract tests, transaction broadcast / receipt shape invariants, and native examples |
 | TypeScript-callable WASM | `cow-sdk-wasm` | Native Rust helper parity for typed-data, UID, digest, app-data, EIP-1271 payloads, orderbook/subgraph/IPFS/trading DTO shape, npm declaration snapshots, and upstream TypeScript SDK EIP-1271 vector coverage |
 | Composable orders | `cow-sdk-composable` reserved manifest | Composable-CoW source locks, byte-identical Solidity mirrors, selector and EIP-1271 blob fixtures, handler revert fixtures, and watch-tower boundary documentation |
-| COW Shed | `cow-sdk-cow-shed` reserved manifest | COW Shed source locks, byte-identical Solidity mirrors, proxy creation-code bytes, CREATE2 address fixtures, EIP-712 hook fixtures, and version-call evidence |
+| COW Shed | `cow-sdk-cow-shed` shipped leaf crate (opt-in `cow-shed` facade feature) | COW Shed source locks, byte-identical Solidity mirrors, proxy creation-code bytes, CREATE2 address fixtures, EIP-712 hook + typed-data digest fixtures, version-call evidence, and the `CowShedHooks` sign-and-encode orchestrator |
 
 ## Wire-Format Invariants
 
@@ -168,9 +170,10 @@ The Rust SDK ships in scope:
   `cow-sdk-alloy`)
 - TypeScript-callable wasm-bindgen bindings (`cow-sdk-wasm`) with typed
   JavaScript callbacks for wallet, signer, EIP-1271, and HTTP dispatch
-- composable-order and COW Shed readiness evidence, including reserved crate
-  manifests, byte-identical contract mirrors, deployment taxonomy rows, fixture artifacts, and
-  audit records
+- the shipped COW Shed account-abstraction helper crate (`cow-sdk-cow-shed`)
+  and composable-order readiness evidence (a reserved crate manifest), both
+  backed by byte-identical contract mirrors, deployment taxonomy rows, fixture
+  artifacts, and audit records
 
 Native Alloy transaction parity is scoped to the SDK trait contract, not to
 re-exporting Alloy's full transaction surface. The composed signer returns
@@ -198,10 +201,16 @@ order-construction helpers remain additive.
 
 ### Cow-shed
 
-COW Shed readiness is in scope through the reserved `cow-sdk-cow-shed`
-manifest, deployment evidence, proxy creation-code hash validation,
-CREATE2 address fixtures, hook digest fixtures, and version-call evidence.
-Full delegated proxy account helpers remain additive.
+COW Shed ships in 0.1.0 as the `cow-sdk-cow-shed` leaf crate, opt-in through
+the off-by-default `cow-shed` facade feature (re-exported as
+`cow_sdk::cow_shed`) and never on the default `cow-sdk` closure. The crate
+covers deterministic proxy derivation (`proxy_of` / `proxy_for`, including the
+Gnosis factory/implementation divergence), EIP-712 domain + signing hash, the
+`ExecuteHooks` typed-data payload, factory calldata encoding for both
+externally-owned and EIP-1271 smart-contract owners, and the `CowShedHooks`
+sign-and-encode orchestrator, all backed by proxy creation-code hash
+validation, CREATE2 address fixtures, hook digest fixtures, and
+version-call evidence. ENS-record helpers (`cow-shed-ens`) remain additive.
 
 ### Flash loans
 
