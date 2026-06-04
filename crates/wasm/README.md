@@ -101,7 +101,7 @@ malformed response, or abort.
 | Browser bundlers (Vite, webpack, Next.js, Rollup, Parcel, esbuild) | `default-http-supported` | Default browser fetch |
 | Node.js 24 LTS | `callback-http-tested` | `CowFetchCallback` |
 | Cloudflare Workers (workerd) | `callback-http-tested` | `CowFetchCallback` through `./cloudflare` and `./cloudflare/wasm` |
-| Deno | `optional-experimental` | `CowFetchCallback`, built only when the Deno target is enabled |
+| Deno | `optional-experimental` | `CowFetchCallback`; self-built target only, no shipped build |
 | Bun, Vercel Edge, Fly.io | `best-effort` | No CI support claim |
 
 Cloudflare Workers use the web-target package output through the package export

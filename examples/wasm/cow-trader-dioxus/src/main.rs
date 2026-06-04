@@ -353,6 +353,11 @@ fn parse_amount(amount: &str) -> Result<Amount> {
 }
 
 /// Sells `amount` of the chosen sell token for the other one.
+///
+/// `with_slippage_bps(50)` is an explicit 0.5% tolerance the SDK signs verbatim;
+/// omit it for AUTO slippage, where the SDK applies the quote's
+/// `suggested_slippage_bps` instead (fee/volume-aware — well above 50 bps on
+/// small, fee-heavy trades). A tighter bound prices better but can expire unfilled.
 fn trade(amount: &str, sell_is_weth: bool) -> Result<TradeParameters> {
     let (sell, buy) = token_pair(sell_is_weth)?;
     Ok(

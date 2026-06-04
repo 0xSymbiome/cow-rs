@@ -1,7 +1,7 @@
 # WASM Surface Audit
 
 Status: Current
-Last reviewed: 2026-05-29
+Last reviewed: 2026-06-04
 Owning surface: `cow-sdk-wasm` TypeScript-callable wasm-bindgen crate, npm package layout, and JavaScript callback runtime boundary
 Refresh trigger: Changes to `crates/wasm/src/**`, wasm-pack package exports, runtime support claims, wallet callback shapes, or the `JsCallbackHttpTransport` contract
 Related docs:
@@ -26,8 +26,7 @@ This audit covers:
 - the four-layer `cow-sdk-wasm` public surface: pure helpers, wallet callbacks,
   orderbook/subgraph/IPFS clients, and trading clients
 - the JavaScript callback HTTP transport and fetch-callback registry
-- npm export-map support for browser, bundler, Node.js, Cloudflare Workers,
-  and optional Deno outputs
+- npm export-map support for browser, bundler, Node.js, and Cloudflare Workers
 - the runtime support matrix and evidence claims attached to each runtime
 
 It does not cover npm publication, package-name ownership, or live wallet
@@ -40,7 +39,7 @@ vendor compatibility outside the callback contract.
 | Browser bundlers | `default-http-supported` | Playwright e2e against the browser fixture and wasm-bindgen tests |
 | Node.js 22 and 24 LTS | `callback-http-tested` | Vitest coverage through the callback transport and nodejs package subpath |
 | Cloudflare Workers | `callback-http-tested` | workerd fixture, `./cloudflare` plus `./cloudflare/wasm` subpaths, and forbidden dynamic-instantiation tests |
-| Deno | `optional-experimental` | opt-in Deno fixture using the deno wasm-pack target |
+| Deno | `optional-experimental` | Runtime-neutral `CowFetchCallback`; self-built target only, no shipped build or CI fixture |
 | Bun, Vercel Edge, Fly.io | `best-effort` | documented as unclaimed for CI support |
 
 ## Outcome Summary
@@ -118,7 +117,6 @@ Primary regression coverage:
 - `tests/wasm_dependency_invariant.rs`
 - `e2e/wasm-typescript/tests/browser/browser.spec.ts`
 - `e2e/wasm-typescript-cf/tests/forbidden-instantiation.spec.ts`
-- `e2e/wasm-typescript-deno/tests/signing_test.ts`
 
 Validation surface:
 

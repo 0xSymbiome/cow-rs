@@ -19,7 +19,7 @@ const wasmSource = join(
 
 await access(wasmSource).catch(() => {
   throw new Error(
-    "Missing Cloudflare WASM artifact. Run `pnpm install --frozen-lockfile` and build the local package before building this example."
+    "Missing Cloudflare WASM artifact. Run `pnpm install` and build the local package before building this example."
   );
 });
 

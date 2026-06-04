@@ -73,9 +73,10 @@ leaf. Browser bundlers are default-http-supported through the fetch-backed
 package path and Playwright coverage. Node.js 24 LTS and Cloudflare Workers are
 callback-http-tested through `CowFetchCallback`; Cloudflare also verifies that
 worker source does not use dynamic WebAssembly compilation or streaming
-instantiation entry points. Deno is optional experimental and runs only through
-the opt-in Deno package target. Bun, Vercel Edge, and Fly.io are documented as
-best-effort without a CI support claim.
+instantiation entry points. Deno is optional experimental: the runtime-neutral
+callback transport supports a self-built Deno target on a best-effort basis, with
+no shipped build or CI support claim. Bun, Vercel Edge, and Fly.io are documented
+as best-effort without a CI support claim.
 
 The runtime evidence boundary that this proof posture covers is intentionally
 narrow:

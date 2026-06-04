@@ -15,6 +15,12 @@ browser-wallet and trading contract end to end (discover, connect, sign, wrap,
 approve, quote, swap) using only SDK public types. It replaces the former
 multi-console "verification console" genre defined by ADR 0009.
 
+This decision governs the browser-wallet trade example. The TypeScript-callable
+`cow-sdk-wasm` package ships its own specialized consumer examples, governed
+separately by [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md) and the
+[examples guide](../examples.md); they are not part of this single-example
+surface.
+
 ## Why
 
 The verification consoles were heavy proof scaffolding: a fixed console
@@ -28,10 +34,10 @@ than a console dashboard and carries far less surface to keep current.
 
 ## Must Remain True
 
-- Public surface: exactly one shipped WASM example. It is a consumer
-  demonstration of the public browser-wallet and trading contract, not a proof
-  dashboard, and it uses only `cow-sdk` public types — no raw JavaScript and no
-  raw RPC.
+- Public surface: exactly one shipped browser-wallet trade example. It is a
+  consumer demonstration of the public browser-wallet and trading contract, not a
+  proof dashboard, and it uses only `cow-sdk` public types — no raw JavaScript and
+  no raw RPC.
 - Runtime and support: the example is a standalone workspace that path-depends
   into the SDK crates; it never widens the default facade or the crate contracts
   it demonstrates.

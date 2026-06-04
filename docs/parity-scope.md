@@ -56,7 +56,7 @@ buckets:
    composable-order, and COW Shed contract families, with deployment coverage
    records for not-deployed and unsupported chain evidence.
 9. **Runtime support**: browser bundlers, Node.js 22 and 24 LTS, Cloudflare
-   Workers, and experimental Deno builds.
+   Workers, and best-effort self-built Deno targets.
 10. **Cancellation and timeouts**: per-call `signal`, per-call `timeoutMs`, and
     wallet callback `walletConfig.timeoutMs`.
 

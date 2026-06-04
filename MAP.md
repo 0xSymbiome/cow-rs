@@ -1,7 +1,7 @@
 # Repository File Map
 
-> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `6691398` &nbsp;&middot;&nbsp; **Generated:** 2026-06-04  
-> **Total tracked files:** **1,295** &nbsp;&middot;&nbsp; **Lines of code:** tokei 14.0.0
+> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `b328624` &nbsp;&middot;&nbsp; **Generated:** 2026-06-04  
+> **Total tracked files:** **1,260** &nbsp;&middot;&nbsp; **Lines of code:** tokei 14.0.0
 
 A navigable inventory of every file tracked by Git on this branch, grouped by the role each directory plays in the workspace. Use the table of contents to jump straight to a section; full file listings are collapsed by default so the high-level shape stays scannable.
 
@@ -33,17 +33,17 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 - **38,491 lines of Rust** across the 19 SDK crates, covered by **44,538 lines of tests** — a **1.2× test-to-code ratio** — plus **220 lines of benchmarks**.
 - **12,396 doc-comment lines** documenting the public API (~32.2% of crate code), plus **917 inline comment lines**.
-- **6,449 lines of TypeScript** across examples, e2e harnesses, and wasm bindings.
-- **26,797 lines of Markdown prose** — ADRs, audit notes, and READMEs.
-- **28,845 lines of data & config** (JSON schemas, parity fixtures, vendored ABIs, YAML, TOML) — tracked, but excluded from code metrics by design.
+- **5,971 lines of TypeScript** across examples, e2e harnesses, and wasm bindings.
+- **26,736 lines of Markdown prose** — ADRs, audit notes, and READMEs.
+- **25,889 lines of data & config** (JSON schemas, parity fixtures, vendored ABIs, YAML, TOML) — tracked, but excluded from code metrics by design.
 
 **Footprint** (tracked files)
 
-- **747 files** live under `crates/` — 19 workspace member crates make up roughly 58% of the repo.
+- **747 files** live under `crates/` — 19 workspace member crates make up roughly 59% of the repo.
 - **157 files** under `docs/` are mostly architecture decision records and audit notes.
 - **64 files** under `parity/` are golden fixtures captured from upstream services to keep the Rust SDK byte-compatible.
 - **107 files** under `fuzz/` cover cargo-fuzz targets and their seed corpora.
-- **99 files** under `examples/` + `e2e/` are runnable demos and integration harnesses.
+- **64 files** under `examples/` + `e2e/` are runnable demos and integration harnesses.
 - **58 files** under `scripts/` are maintenance tool crates (parity refresh, policy refresh, validation runners).
 
 ---
@@ -53,13 +53,13 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | Path | Files | Lines | Code | Purpose |
 |------|------:|------:|-----:|---------|
 | `crates/` | 747 | 140,668 | 99,102 | Workspace member crates (the SDK itself) |
-| `docs/` | 157 | 23,482 | 0 | Architecture decision records, audit notes, provider notes |
+| `docs/` | 157 | 23,486 | 0 | Architecture decision records, audit notes, provider notes |
 | `fuzz/` | 107 | 12,480 | 4,600 | cargo-fuzz targets, corpora, and failure artifacts |
-| `examples/` | 70 | 19,590 | 6,452 | Runnable usage examples (Rust + TypeScript) |
 | `parity/` | 64 | 8,403 | 8,150 | Golden fixtures + pinned specs from upstream services |
 | `scripts/` | 58 | 14,807 | 8,934 | Internal maintenance tool crates |
-| `.github/` | 30 | 5,072 | 4,237 | GitHub Actions workflows and repo config |
-| `e2e/` | 29 | 4,004 | 3,234 | End-to-end integration harnesses |
+| `examples/` | 39 | 14,122 | 3,168 | Runnable usage examples (Rust + TypeScript) |
+| `.github/` | 30 | 5,037 | 4,202 | GitHub Actions workflows and repo config |
+| `e2e/` | 25 | 3,871 | 3,119 | End-to-end integration harnesses |
 | `tests/` | 16 | 1,641 | 1,430 | Workspace-level integration tests |
 | `.cargo/` | 2 | 30 | 23 | Cargo configuration |
 | `CONTRIBUTING.md` | 1 | 272 | 0 | Contribution guide |
@@ -77,7 +77,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `rust-toolchain.toml` | 1 | 6 | 4 | Pinned Rust toolchain |
 | `.gitattributes` | 1 | 40 | 0 | Git attributes |
 | `CHANGELOG.md` | 1 | 3,691 | 0 | Release changelog |
-| **Total** | **1295** | **241,663** | **136,302** | |
+| **Total** | **1260** | **236,031** | **132,868** | |
 
 ---
 
@@ -85,33 +85,32 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 | Extension | Files | Lines | Code | Comments | Blank | Typical role |
 |-----------|------:|------:|-----:|---------:|------:|--------------|
-| `.rs` | 668 | 130,706 | 101,008 | 17,705 | 11,993 | Rust source and tests |
-| `.md` | 248 | 32,422 | 0 | 26,797 | 5,625 | Markdown docs (ADRs, audit notes, READMEs) |
-| `.json` | 97 | 5,796 | 5,692 | 103 | 1 | JSON schemas, ABIs, parity fixtures |
-| `.ts` | 63 | 17,360 | 6,449 | 9,775 | 1,136 | TypeScript (examples, e2e, wasm bindings) |
-| `.toml` | 51 | 4,011 | 3,445 | 61 | 505 | Cargo manifests and tool configs |
+| `.rs` | 668 | 130,711 | 101,008 | 17,710 | 11,993 | Rust source and tests |
+| `.md` | 245 | 32,340 | 0 | 26,736 | 5,604 | Markdown docs (ADRs, audit notes, READMEs) |
+| `.json` | 90 | 5,666 | 5,562 | 103 | 1 | JSON schemas, ABIs, parity fixtures |
+| `.toml` | 50 | 4,001 | 3,437 | 61 | 503 | Cargo manifests and tool configs |
+| `.ts` | 48 | 16,824 | 5,971 | 9,775 | 1,078 | TypeScript (examples, e2e, wasm bindings) |
 | `.sol` | 40 | 3,577 | 2,007 | 1,140 | 430 | Solidity sources / vendored contract code |
-| `.yaml` | 29 | 12,209 | 10,639 | 30 | 1,540 | CI workflows, OpenAPI specs, config |
+| `.yaml` | 25 | 8,804 | 7,931 | 30 | 843 | CI workflows, OpenAPI specs, config |
 | `.stderr` | 22 | 526 | 0 | 505 | 21 | trybuild compile-fail snapshots |
-| `.yml` | 22 | 6,611 | 5,835 | 528 | 248 | CI workflows and config |
+| `.yml` | 22 | 6,576 | 5,800 | 529 | 247 | CI workflows and config |
 | `.txt` | 8 | 237 | 0 | 237 | 0 | Plain text fixtures / summaries |
 | `.lock` | 7 | 24,542 | 0 | 22,145 | 2,397 | Cargo / package lockfiles |
 | `.sh` | 7 | 764 | 616 | 43 | 105 | Shell scripts |
-| `.mjs` | 6 | 576 | 485 | 18 | 73 | JavaScript modules |
-| `(none)` | 5 | 2,058 | 28 | 1,661 | 369 |  |
+| `.mjs` | 5 | 510 | 426 | 18 | 66 | JavaScript modules |
 | `.graphql` | 4 | 77 | 70 | 0 | 7 | GraphQL queries (subgraph) |
+| `(none)` | 3 | 710 | 28 | 555 | 127 |  |
 | `.gitignore` | 3 | 25 | 0 | 25 | 0 |  |
-| `.bin` | 2 | 0 | 0 | 0 | 0 | Binary fixtures |
-| `.sha256` | 2 | 2 | 0 | 2 | 0 | Checksum files |
-| `.keep` | 2 | 2 | 0 | 0 | 2 |  |
-| `.html` | 2 | 28 | 28 | 0 | 0 | Static HTML for browser examples |
 | `.snap` | 2 | 65 | 0 | 65 | 0 | Snapshot test outputs |
+| `.keep` | 2 | 2 | 0 | 0 | 2 |  |
+| `.sha256` | 2 | 2 | 0 | 2 | 0 | Checksum files |
+| `.bin` | 2 | 0 | 0 | 0 | 0 | Binary fixtures |
+| `.proptest-regressions` | 1 | 7 | 0 | 7 | 0 | proptest regression seeds |
 | `.npmignore` | 1 | 6 | 0 | 6 | 0 |  |
-| `.jsonc` | 1 | 9 | 0 | 9 | 0 |  |
+| `.html` | 1 | 12 | 12 | 0 | 0 | Static HTML for browser examples |
 | `.gitattributes` | 1 | 40 | 0 | 35 | 5 |  |
 | `.yamllint` | 1 | 7 | 0 | 6 | 1 |  |
-| `.proptest-regressions` | 1 | 7 | 0 | 7 | 0 | proptest regression seeds |
-| **Total** | **1295** | **241,663** | **136,302** | **80,903** | **24,458** | |
+| **Total** | **1260** | **236,031** | **132,868** | **79,733** | **23,430** | |
 
 > **Code + Comments + Blank = Lines** for every row. ``Comments`` is all non-code, non-blank content: inline + doc-comments in source, prose in Markdown/text, and raw content in formats tokei does not parse as code (lockfiles, ``.stderr``, snapshots). Rust doc-comments are isolated in the per-crate ``Doc`` column above.
 
@@ -185,11 +184,8 @@ The 25 largest hand-written source files by code lines (Rust + TypeScript; vendo
 | Example | Files | Lines | Code | Purpose |
 |---------|------:|------:|-----:|---------|
 | [`native`](examples/native) | 32 | 8,602 | 2,802 | Native Rust scenario walkthroughs |
-| [`wasm`](examples/wasm) | 7 | 6,140 | 366 | Browser console scenarios (raw wasm) |
-| [`wasm-typescript-browser-mm`](examples/wasm-typescript-browser-mm) | 9 | 798 | 645 | TypeScript browser market-maker demo |
-| [`wasm-typescript-cloudflare-proxy`](examples/wasm-typescript-cloudflare-proxy) | 14 | 2,258 | 1,792 | TypeScript Cloudflare Worker proxy example |
-| [`wasm-typescript-node-viem`](examples/wasm-typescript-node-viem) | 6 | 1,069 | 847 | Node + viem TypeScript example |
-| **Total (listed)** | **68** | **18,867** | **6,452** | |
+| [`wasm`](examples/wasm) | 6 | 5,471 | 366 | Browser console scenarios (raw wasm) |
+| **Total (listed)** | **38** | **14,073** | **3,168** | |
 
 ---
 
@@ -199,8 +195,7 @@ The 25 largest hand-written source files by code lines (Rust + TypeScript; vendo
 |---------|------:|------:|-----:|---------|
 | [`wasm-typescript`](e2e/wasm-typescript) | 14 | 2,032 | 1,641 | Wasm + TypeScript integration harness |
 | [`wasm-typescript-cf`](e2e/wasm-typescript-cf) | 11 | 1,839 | 1,478 | Wasm + TypeScript Cloudflare harness |
-| [`wasm-typescript-deno`](e2e/wasm-typescript-deno) | 3 | 116 | 98 | Wasm + TypeScript Deno harness |
-| **Total (listed)** | **28** | **3,987** | **3,217** | |
+| **Total (listed)** | **25** | **3,871** | **3,119** | |
 
 ---
 
@@ -230,10 +225,10 @@ The 25 largest hand-written source files by code lines (Rust + TypeScript; vendo
 
 | Subtree | Files | Lines | Code | Purpose |
 |---------|------:|------:|-----:|---------|
-| [`adr`](docs/adr) | 68 | 7,345 | 0 | Architecture Decision Records |
-| [`audit`](docs/audit) | 64 | 10,357 | 0 | Audit notes and review artifacts |
+| [`adr`](docs/adr) | 68 | 7,351 | 0 | Architecture Decision Records |
+| [`audit`](docs/audit) | 64 | 10,355 | 0 | Audit notes and review artifacts |
 | [`providers`](docs/providers) | 2 | 251 | 0 | Provider integration notes |
-| **Total (listed)** | **134** | **17,953** | **0** | |
+| **Total (listed)** | **134** | **17,957** | **0** | |
 
 ---
 
@@ -348,7 +343,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`release-version-coherence.yml`](.github/workflows/release-version-coherence.yml) &mdash; 68 lines
 - [`retry-soak.yml`](.github/workflows/retry-soak.yml) &mdash; 35 lines
 - [`wasm-imports-grep-gate.yml`](.github/workflows/wasm-imports-grep-gate.yml) &mdash; 64 lines
-- [`wasm.yml`](.github/workflows/wasm.yml) &mdash; 673 lines
+- [`wasm.yml`](.github/workflows/wasm.yml) &mdash; 638 lines
 
 </details>
 
@@ -2071,10 +2066,10 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`alloy-doctrine.md`](docs/alloy-doctrine.md) &mdash; 319 lines
 - [`alloy-major-release-runbook.md`](docs/alloy-major-release-runbook.md) &mdash; 63 lines
 - [`architecture.md`](docs/architecture.md) &mdash; 448 lines
-- [`browser-runtime-proof-posture.md`](docs/browser-runtime-proof-posture.md) &mdash; 116 lines
+- [`browser-runtime-proof-posture.md`](docs/browser-runtime-proof-posture.md) &mdash; 117 lines
 - [`code-of-conduct.md`](docs/code-of-conduct.md) &mdash; 71 lines
 - [`deployments.md`](docs/deployments.md) &mdash; 199 lines
-- [`examples.md`](docs/examples.md) &mdash; 100 lines
+- [`examples.md`](docs/examples.md) &mdash; 99 lines
 - [`getting-started.md`](docs/getting-started.md) &mdash; 727 lines
 - [`integrations.md`](docs/integrations.md) &mdash; 417 lines
 - [`msrv-policy.md`](docs/msrv-policy.md) &mdash; 39 lines
@@ -2162,7 +2157,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`0062-internal-shared-test-support-crate.md`](docs/adr/0062-internal-shared-test-support-crate.md) &mdash; 61 lines
 - [`0063-published-consumer-test-doubles-crate.md`](docs/adr/0063-published-consumer-test-doubles-crate.md) &mdash; 74 lines
 - [`0064-app-data-typed-validation.md`](docs/adr/0064-app-data-typed-validation.md) &mdash; 75 lines
-- [`0065-canonical-browser-wallet-example.md`](docs/adr/0065-canonical-browser-wallet-example.md) &mdash; 60 lines
+- [`0065-canonical-browser-wallet-example.md`](docs/adr/0065-canonical-browser-wallet-example.md) &mdash; 66 lines
 - [`0066-trading-slippage-and-suggestion-policy.md`](docs/adr/0066-trading-slippage-and-suggestion-policy.md) &mdash; 59 lines
 - [`README.md`](docs/adr/README.md) &mdash; 193 lines
 
@@ -2230,7 +2225,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`wasm-performance-budget-audit.md`](docs/audit/wasm-performance-budget-audit.md) &mdash; 118 lines
 - [`wasm-public-api-stability-audit.md`](docs/audit/wasm-public-api-stability-audit.md) &mdash; 102 lines
 - [`wasm-schema-versioning-policy-audit.md`](docs/audit/wasm-schema-versioning-policy-audit.md) &mdash; 78 lines
-- [`wasm-surface-audit.md`](docs/audit/wasm-surface-audit.md) &mdash; 133 lines
+- [`wasm-surface-audit.md`](docs/audit/wasm-surface-audit.md) &mdash; 131 lines
 - [`wasm-type-generation-audit.md`](docs/audit/wasm-type-generation-audit.md) &mdash; 130 lines
 - [`wasm-unsupported-target-audit.md`](docs/audit/wasm-unsupported-target-audit.md) &mdash; 57 lines
 - [`wire-dto-coverage-audit.md`](docs/audit/wire-dto-coverage-audit.md) &mdash; 188 lines
@@ -2243,13 +2238,6 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 
 - [`adapting-alloy.md`](docs/providers/adapting-alloy.md) &mdash; 176 lines
 - [`README.md`](docs/providers/README.md) &mdash; 75 lines
-
-</details>
-
-<details>
-<summary><code>e2e/</code> &mdash; 1 file(s)</summary>
-
-- [`tsconfig.base.json`](e2e/tsconfig.base.json) &mdash; 17 lines
 
 </details>
 
@@ -2297,27 +2285,6 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>e2e/wasm-typescript-deno/</code> &mdash; 1 file(s)</summary>
-
-- [`deno.jsonc`](e2e/wasm-typescript-deno/deno.jsonc) &mdash; 9 lines
-
-</details>
-
-<details>
-<summary><code>e2e/wasm-typescript-deno/src/</code> &mdash; 1 file(s)</summary>
-
-- [`index.ts`](e2e/wasm-typescript-deno/src/index.ts) &mdash; 8 lines
-
-</details>
-
-<details>
-<summary><code>e2e/wasm-typescript-deno/tests/</code> &mdash; 1 file(s)</summary>
-
-- [`signing_test.ts`](e2e/wasm-typescript-deno/tests/signing_test.ts) &mdash; 99 lines
-
-</details>
-
-<details>
 <summary><code>e2e/wasm-typescript/src/</code> &mdash; 1 file(s)</summary>
 
 - [`index.ts`](e2e/wasm-typescript/src/index.ts) &mdash; 53 lines
@@ -2342,9 +2309,8 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>examples/</code> &mdash; 2 file(s)</summary>
+<summary><code>examples/</code> &mdash; 1 file(s)</summary>
 
-- [`LICENSE`](examples/LICENSE) &mdash; 674 lines
 - [`README.md`](examples/README.md) &mdash; 49 lines
 
 </details>
@@ -2406,96 +2372,12 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>examples/wasm-typescript-browser-mm/</code> &mdash; 7 file(s)</summary>
-
-- [`index.html`](examples/wasm-typescript-browser-mm/index.html) &mdash; 16 lines
-- [`package.json`](examples/wasm-typescript-browser-mm/package.json) &mdash; 23 lines
-- [`playwright.config.ts`](examples/wasm-typescript-browser-mm/playwright.config.ts) &mdash; 16 lines
-- [`pnpm-lock.yaml`](examples/wasm-typescript-browser-mm/pnpm-lock.yaml) &mdash; 571 lines
-- [`README.md`](examples/wasm-typescript-browser-mm/README.md) &mdash; 22 lines
-- [`tsconfig.json`](examples/wasm-typescript-browser-mm/tsconfig.json) &mdash; 14 lines
-- [`vite.config.ts`](examples/wasm-typescript-browser-mm/vite.config.ts) &mdash; 11 lines
-
-</details>
-
-<details>
-<summary><code>examples/wasm-typescript-browser-mm/src/</code> &mdash; 1 file(s)</summary>
-
-- [`main.ts`](examples/wasm-typescript-browser-mm/src/main.ts) &mdash; 88 lines
-
-</details>
-
-<details>
-<summary><code>examples/wasm-typescript-browser-mm/tests/</code> &mdash; 1 file(s)</summary>
-
-- [`browser.spec.ts`](examples/wasm-typescript-browser-mm/tests/browser.spec.ts) &mdash; 37 lines
-
-</details>
-
-<details>
-<summary><code>examples/wasm-typescript-cloudflare-proxy/</code> &mdash; 7 file(s)</summary>
-
-- [`package.json`](examples/wasm-typescript-cloudflare-proxy/package.json) &mdash; 26 lines
-- [`pnpm-lock.yaml`](examples/wasm-typescript-cloudflare-proxy/pnpm-lock.yaml) &mdash; 1,908 lines
-- [`pnpm-workspace.yaml`](examples/wasm-typescript-cloudflare-proxy/pnpm-workspace.yaml) &mdash; 4 lines
-- [`README.md`](examples/wasm-typescript-cloudflare-proxy/README.md) &mdash; 42 lines
-- [`tsconfig.json`](examples/wasm-typescript-cloudflare-proxy/tsconfig.json) &mdash; 14 lines
-- [`vitest.config.ts`](examples/wasm-typescript-cloudflare-proxy/vitest.config.ts) &mdash; 15 lines
-- [`wrangler.toml`](examples/wasm-typescript-cloudflare-proxy/wrangler.toml) &mdash; 10 lines
-
-</details>
-
-<details>
-<summary><code>examples/wasm-typescript-cloudflare-proxy/scripts/</code> &mdash; 1 file(s)</summary>
-
-- [`build.mjs`](examples/wasm-typescript-cloudflare-proxy/scripts/build.mjs) &mdash; 66 lines
-
-</details>
-
-<details>
-<summary><code>examples/wasm-typescript-cloudflare-proxy/src/</code> &mdash; 3 file(s)</summary>
-
-- [`vite-env.d.ts`](examples/wasm-typescript-cloudflare-proxy/src/vite-env.d.ts) &mdash; 4 lines
-- [`wasm.d.ts`](examples/wasm-typescript-cloudflare-proxy/src/wasm.d.ts) &mdash; 4 lines
-- [`worker.ts`](examples/wasm-typescript-cloudflare-proxy/src/worker.ts) &mdash; 104 lines
-
-</details>
-
-<details>
-<summary><code>examples/wasm-typescript-cloudflare-proxy/tests/</code> &mdash; 3 file(s)</summary>
-
-- [`forbidden-instantiation.spec.ts`](examples/wasm-typescript-cloudflare-proxy/tests/forbidden-instantiation.spec.ts) &mdash; 17 lines
-- [`proxy.spec.ts`](examples/wasm-typescript-cloudflare-proxy/tests/proxy.spec.ts) &mdash; 32 lines
-- [`worker.spec.ts`](examples/wasm-typescript-cloudflare-proxy/tests/worker.spec.ts) &mdash; 12 lines
-
-</details>
-
-<details>
-<summary><code>examples/wasm-typescript-node-viem/</code> &mdash; 4 file(s)</summary>
-
-- [`package.json`](examples/wasm-typescript-node-viem/package.json) &mdash; 22 lines
-- [`pnpm-lock.yaml`](examples/wasm-typescript-node-viem/pnpm-lock.yaml) &mdash; 922 lines
-- [`README.md`](examples/wasm-typescript-node-viem/README.md) &mdash; 22 lines
-- [`tsconfig.json`](examples/wasm-typescript-node-viem/tsconfig.json) &mdash; 14 lines
-
-</details>
-
-<details>
-<summary><code>examples/wasm-typescript-node-viem/src/</code> &mdash; 2 file(s)</summary>
-
-- [`index.test.ts`](examples/wasm-typescript-node-viem/src/index.test.ts) &mdash; 13 lines
-- [`index.ts`](examples/wasm-typescript-node-viem/src/index.ts) &mdash; 76 lines
-
-</details>
-
-<details>
-<summary><code>examples/wasm/cow-trader-dioxus/</code> &mdash; 6 file(s)</summary>
+<summary><code>examples/wasm/cow-trader-dioxus/</code> &mdash; 5 file(s)</summary>
 
 - [`.gitignore`](examples/wasm/cow-trader-dioxus/.gitignore) &mdash; 2 lines
 - [`Cargo.lock`](examples/wasm/cow-trader-dioxus/Cargo.lock) &mdash; 4,905 lines
 - [`Cargo.toml`](examples/wasm/cow-trader-dioxus/Cargo.toml) &mdash; 25 lines
 - [`Dioxus.toml`](examples/wasm/cow-trader-dioxus/Dioxus.toml) &mdash; 5 lines
-- [`LICENSE`](examples/wasm/cow-trader-dioxus/LICENSE) &mdash; 674 lines
 - [`README.md`](examples/wasm/cow-trader-dioxus/README.md) &mdash; 101 lines
 
 </details>
@@ -2503,7 +2385,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <details>
 <summary><code>examples/wasm/cow-trader-dioxus/src/</code> &mdash; 1 file(s)</summary>
 
-- [`main.rs`](examples/wasm/cow-trader-dioxus/src/main.rs) &mdash; 428 lines
+- [`main.rs`](examples/wasm/cow-trader-dioxus/src/main.rs) &mdash; 433 lines
 
 </details>
 

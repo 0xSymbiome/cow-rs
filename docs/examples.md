@@ -67,9 +67,8 @@ application code should replace it with the final
 
 | Runtime | Example | Purpose |
 | --- | --- | --- |
-| Node.js 22 or 24 with viem | [`wasm-typescript-node-viem`](../examples/wasm-typescript-node-viem/README.md) | Sign an order through viem's EIP-1193 request path |
-| Browser with MetaMask injection | [`wasm-typescript-browser-mm`](../examples/wasm-typescript-browser-mm/README.md) | Sign an order with `window.ethereum` and `eth_signTypedData_v4` |
-| Cloudflare Workers | [`wasm-typescript-cloudflare-proxy`](../examples/wasm-typescript-cloudflare-proxy/README.md) | Initialize the Cloudflare flavor and proxy orderbook requests |
+| Node.js 22 or 24 | [`cow-signer-node`](../examples/wasm/cow-signer-node/README.md) | Sign an order offline with EIP-712 and EIP-1271 using the `signing` flavor |
+| Cloudflare Workers | [`cow-gateway-cloudflare`](../examples/wasm/cow-gateway-cloudflare/README.md) | Run an orderbook quote gateway on the `cloudflare` flavor |
 
 ## Integration Notes
 
@@ -93,8 +92,8 @@ application code should replace it with the final
   the facade crate to deterministic signed-order output.
 - Continue with native examples for trading, signing, app-data, and transport
   workflows.
-- Use the TypeScript WASM package examples for Node.js, browser-wallet, or
-  Cloudflare Worker integration.
+- Use the TypeScript WASM package examples for Node.js signing or Cloudflare
+  Worker integration.
 - Use `cow-sdk-subgraph` examples when you need read-only subgraph access.
 - Use the `cow-trader-dioxus` WASM example when you want a runnable
   browser-wallet trade flow in Rust.

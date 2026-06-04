@@ -1,9 +1,0 @@
-{
-  "tasks": {
-    "test": "deno test --allow-env --allow-read"
-  },
-  "compilerOptions": {
-    "lib": ["deno.ns", "dom", "es2022"],
-    "strict": true
-  }
-}

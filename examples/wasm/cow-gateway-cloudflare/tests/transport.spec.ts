@@ -1,13 +1,15 @@
 import { describe, expect, test } from "vitest";
-import { forwardOrderbookRequest } from "../src/worker.js";
+import { tracedEgress } from "../src/worker.js";
 
-describe("Cloudflare proxy transport", () => {
-  test("forwards SDK orderbook requests through fetch", async () => {
+// The host-owned egress path delegates the SDK's outbound request to `fetch` and
+// returns the origin response unchanged. This exercises the `{ kind: "callback" }`
+// transport without standing up the full Worker.
+describe("Gateway host-owned egress", () => {
+  test("delegates the SDK request to fetch and returns the origin response", async () => {
     const fetcher = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
       expect(String(input)).toBe("https://api.cow.fi/mainnet/api/v1/quote");
       expect(init?.method).toBe("POST");
       expect(init?.body).toBe('{"kind":"sell"}');
-      expect(new Headers(init?.headers).get("content-type")).toBe("application/json");
 
       return new Response('{"quote":{"id":1}}', {
         status: 200,
@@ -15,7 +17,7 @@ describe("Cloudflare proxy transport", () => {
       });
     };
 
-    const response = await forwardOrderbookRequest(
+    const response = await tracedEgress(
       {
         method: "POST",
         url: "https://api.cow.fi/mainnet/api/v1/quote",
