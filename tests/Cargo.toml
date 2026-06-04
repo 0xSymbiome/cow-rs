@@ -9,11 +9,15 @@ publish = false
 workspace = true
 
 [dev-dependencies]
+alloy-primitives.workspace = true
 cow-sdk = { path = "../crates/sdk", version = "0.1.0", features = ["alloy"] }
 cow-sdk-alloy = { path = "../crates/alloy", version = "0.1.0" }
 cow-sdk-alloy-provider = { path = "../crates/alloy-provider", version = "0.1.0" }
+cow-sdk-alloy-signer = { path = "../crates/alloy-signer", version = "0.1.0" }
 cow-sdk-browser-wallet = { path = "../crates/browser-wallet", version = "0.1.0" }
+cow-sdk-contracts = { path = "../crates/contracts", version = "0.1.0" }
 cow-sdk-core = { path = "../crates/core", version = "0.1.0" }
+cow-sdk-cow-shed = { path = "../crates/cow-shed", version = "0.1.0" }
 cow-sdk-signing = { path = "../crates/signing", version = "0.1.0" }
 cow-sdk-trading = { path = "../crates/trading", version = "0.1.0" }
 serde_json.workspace = true
@@ -72,3 +76,7 @@ path = "wasm_dependency_invariant.rs"
 [[test]]
 name = "signer_rejection_propagation_invariant"
 path = "signer_rejection_propagation_invariant.rs"
+
+[[test]]
+name = "cow_shed_typed_data_digest"
+path = "cow_shed_typed_data_digest.rs"

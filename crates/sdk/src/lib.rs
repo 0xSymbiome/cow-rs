@@ -126,6 +126,14 @@ pub use cow_sdk_contracts as contracts;
 /// directly.
 pub use cow_sdk_contracts::RegistryError;
 pub use cow_sdk_core as core;
+/// Opt-in COW Shed account-abstraction hook helpers (proxy derivation,
+/// EIP-712 signing, factory calldata, and the [`cow_shed::CowShedHooks`]
+/// orchestrator). Behind the off-by-default `cow-shed` feature, so the default
+/// `cow-sdk` surface stays trading-first; enable it with
+/// `cow-sdk = { features = ["cow-shed"] }`.
+#[cfg(feature = "cow-shed")]
+#[cfg_attr(docsrs, doc(cfg(feature = "cow-shed")))]
+pub use cow_sdk_cow_shed as cow_shed;
 /// Shared HTTP retry, rate-limit, and classification policy.
 pub mod http {
     pub use cow_sdk_transport_policy::{

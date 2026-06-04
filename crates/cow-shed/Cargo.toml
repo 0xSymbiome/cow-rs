@@ -35,6 +35,7 @@ cow-sdk-contracts = { path = "../contracts", version = "0.1.0" }
 cow-sdk-core = { path = "../core", version = "0.1.0" }
 cow-sdk-pure-helpers = { path = "../pure-helpers", version = "0.1.0" }
 cow-sdk-signing = { path = "../signing", version = "0.1.0" }
+serde_json.workspace = true
 thiserror.workspace = true
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
@@ -42,6 +43,5 @@ getrandom = { workspace = true }
 
 [dev-dependencies]
 serde.workspace = true
-serde_json.workspace = true
 sha3.workspace = true
 syn.workspace = true

@@ -2,7 +2,7 @@ use alloy_primitives::{Address, B256, Bytes, U256};
 use alloy_sol_types::SolCall;
 use cow_sdk_cow_shed::bindings::{COWShed, COWShedFactory};
 use cow_sdk_cow_shed::{
-    Call, CallExt, encode_execute_hooks_calldata, encode_execute_pre_signed_hooks_calldata,
+    Call, encode_execute_hooks_calldata, encode_execute_pre_signed_hooks_calldata,
 };
 use serde::Deserialize;
 

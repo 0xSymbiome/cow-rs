@@ -1309,11 +1309,15 @@ checksum = "773648b94d0e5d620f64f280777445740e61fe701025087ec8b57f45c791888b"
 name = "cow-rs-workspace-tests"
 version = "0.1.0"
 dependencies = [
+ "alloy-primitives",
  "cow-sdk",
  "cow-sdk-alloy",
  "cow-sdk-alloy-provider",
+ "cow-sdk-alloy-signer",
  "cow-sdk-browser-wallet",
+ "cow-sdk-contracts",
  "cow-sdk-core",
+ "cow-sdk-cow-shed",
  "cow-sdk-signing",
  "cow-sdk-trading",
  "serde_json",
@@ -1335,6 +1339,7 @@ dependencies = [
  "cow-sdk-browser-wallet",
  "cow-sdk-contracts",
  "cow-sdk-core",
+ "cow-sdk-cow-shed",
  "cow-sdk-orderbook",
  "cow-sdk-pure-helpers",
  "cow-sdk-signing",
