@@ -486,29 +486,6 @@ fixtures:
     path: packages/contracts-ts/tests/vault.test.ts
   - repo: cow-sdk
     path: packages/contracts-ts/tests/reader.test.ts
-- surface: signing
-  file: parity/fixtures/signing.json
-  source_refs:
-  - repo: cow-sdk
-    path: packages/order-signing/src/orderSigningUtils.ts
-  - repo: cow-sdk
-    path: packages/order-signing/src/utils.ts
-  - repo: cow-sdk
-    path: packages/order-signing/src/types.ts
-  - repo: cow-sdk
-    path: packages/order-signing/tests/orderSigningUtils.test.ts
-  - repo: cow-sdk
-    path: packages/trading/src/getOrderTypedData.ts
-  - repo: cow-sdk
-    path: packages/trading/src/getOrderTypedData.test.ts
-  - repo: cow-sdk
-    path: packages/trading/src/calculateUniqueOrderId.ts
-  - repo: cow-sdk
-    path: packages/trading/src/calculateUniqueOrderId.test.ts
-  - repo: contracts
-    path: src/ts/order.ts
-  - repo: contracts
-    path: src/ts/sign.ts
 - surface: orderbook
   file: parity/fixtures/orderbook.json
   source_refs:

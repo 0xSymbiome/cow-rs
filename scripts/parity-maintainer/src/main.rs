@@ -1174,52 +1174,6 @@ fn fixture_contracts() -> Vec<FixtureEntry> {
             ],
         },
         FixtureEntry {
-            surface: "signing".to_string(),
-            file: "parity/fixtures/signing.json".to_string(),
-            source_refs: vec![
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/order-signing/src/orderSigningUtils.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/order-signing/src/utils.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/order-signing/src/types.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/order-signing/tests/orderSigningUtils.test.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/getOrderTypedData.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/getOrderTypedData.test.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/calculateUniqueOrderId.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/trading/src/calculateUniqueOrderId.test.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "contracts".to_string(),
-                    path: "src/ts/order.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "contracts".to_string(),
-                    path: "src/ts/sign.ts".to_string(),
-                },
-            ],
-        },
-        FixtureEntry {
             surface: "orderbook".to_string(),
             file: "parity/fixtures/orderbook.json".to_string(),
             source_refs: vec![

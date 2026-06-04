@@ -66,10 +66,10 @@ fn consts_are_canonical() {
 fn fixture_runtime_read_resolves_and_loads() {
     // Proves workspace_root() resolution + the runtime read end-to-end against
     // a real committed fixture.
-    let signing = fixtures::fixture("signing");
+    let fixture = fixtures::fixture("contracts");
     assert!(
-        signing.is_object(),
-        "parity/fixtures/signing.json must load as an object"
+        fixture.is_object(),
+        "parity/fixtures/contracts.json must load as an object"
     );
 }
 
