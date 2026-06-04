@@ -44,7 +44,7 @@ pub const ANVIL_KEY_1: &str = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8
 /// The address derived from [`ANVIL_KEY_1`].
 pub const ANVIL_ADDR_1: Address = address!("70997970c51812dc3a010c7d01b50e0d17dc79c8");
 
-// --- Upstream app-data CID vectors. source: cow-sdk packages/app-data/src/mocks.ts ---
+// --- App-data CID vectors. source: cowprotocol/app-data schemas + cowprotocol/services app-data hashing (keccak256 + CIDv1) ---
 /// Upstream app-data hash vector #1.
 pub const APP_DATA_HEX_1: &str =
     "0x337aa6e6c2a7a0d1eb79a35ebd88b08fc963d5f7a3fc953b7ffb2b7f5898a1df";

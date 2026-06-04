@@ -55,7 +55,7 @@
       "source_symbol": "ComposableCow",
       "verification": {
         "status": "canonical_unverified",
-        "source": "cowprotocol/cow-sdk deployment constants"
+        "source": "composable-cow canonical deterministic CREATE2 address (networks.json; identical across enumerated chains)"
       }
     },
     {
@@ -83,7 +83,7 @@
       "source_symbol": "ComposableCow",
       "verification": {
         "status": "canonical_unverified",
-        "source": "cowprotocol/cow-sdk deployment constants"
+        "source": "composable-cow canonical deterministic CREATE2 address (networks.json; identical across enumerated chains)"
       }
     },
     {
@@ -531,7 +531,7 @@
       "source_symbol": "CurrentBlockTimestampFactory",
       "verification": {
         "status": "canonical_unverified",
-        "source": "cowprotocol/cow-sdk deployment constants"
+        "source": "composable-cow canonical deterministic CREATE2 address (networks.json; identical across enumerated chains)"
       }
     },
     {
@@ -559,7 +559,7 @@
       "source_symbol": "CurrentBlockTimestampFactory",
       "verification": {
         "status": "canonical_unverified",
-        "source": "cowprotocol/cow-sdk deployment constants"
+        "source": "composable-cow canonical deterministic CREATE2 address (networks.json; identical across enumerated chains)"
       }
     },
     {
@@ -993,7 +993,7 @@
       "source_symbol": "ExtensibleFallbackHandler",
       "verification": {
         "status": "canonical_unverified",
-        "source": "cowprotocol/cow-sdk deployment constants"
+        "source": "composable-cow canonical deterministic CREATE2 address (networks.json; identical across enumerated chains)"
       }
     },
     {
@@ -1021,7 +1021,7 @@
       "source_symbol": "ExtensibleFallbackHandler",
       "verification": {
         "status": "canonical_unverified",
-        "source": "cowprotocol/cow-sdk deployment constants"
+        "source": "composable-cow canonical deterministic CREATE2 address (networks.json; identical across enumerated chains)"
       }
     },
     {
@@ -2071,7 +2071,7 @@
       "source_symbol": "TwapHandler",
       "verification": {
         "status": "canonical_unverified",
-        "source": "cowprotocol/cow-sdk deployment constants"
+        "source": "composable-cow canonical deterministic CREATE2 address (networks.json; identical across enumerated chains)"
       }
     },
     {
@@ -2099,7 +2099,7 @@
       "source_symbol": "TwapHandler",
       "verification": {
         "status": "canonical_unverified",
-        "source": "cowprotocol/cow-sdk deployment constants"
+        "source": "composable-cow canonical deterministic CREATE2 address (networks.json; identical across enumerated chains)"
       }
     },
     {

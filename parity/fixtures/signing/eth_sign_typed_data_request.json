@@ -865,20 +865,6 @@
   "schema_version": 1,
   "source_refs": [
     {
-      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
-      "line_end": 23,
-      "line_start": 17,
-      "path": "packages/common/src/adapters/types/index.ts",
-      "repo": "cow-sdk"
-    },
-    {
-      "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
-      "line_end": 116,
-      "line_start": 109,
-      "path": "packages/contracts-ts/src/ContractsTs.ts",
-      "repo": "cow-sdk"
-    },
-    {
       "commit": "main",
       "line_end": 36,
       "line_start": 33,

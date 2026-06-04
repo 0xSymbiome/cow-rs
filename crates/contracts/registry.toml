@@ -34,7 +34,7 @@ env = "environment_agnostic"
 address = "0xfdaFc9d1902f4e0b84f65F49f244b32b31013b74"
 [entries.verification]
 status = "canonical_unverified"
-source = "cowprotocol/cow-sdk deployment constants"
+source = "composable-cow canonical deterministic CREATE2 address (networks.json; identical across enumerated chains)"
 
 [[entries]]
 contract_id = "ComposableCow"
@@ -52,7 +52,7 @@ env = "environment_agnostic"
 address = "0xfdaFc9d1902f4e0b84f65F49f244b32b31013b74"
 [entries.verification]
 status = "canonical_unverified"
-source = "cowprotocol/cow-sdk deployment constants"
+source = "composable-cow canonical deterministic CREATE2 address (networks.json; identical across enumerated chains)"
 
 [[entries]]
 contract_id = "ComposableCow"
@@ -340,7 +340,7 @@ env = "environment_agnostic"
 address = "0x52eD56Da04309Aca4c3FECC595298d80C2f16BAc"
 [entries.verification]
 status = "canonical_unverified"
-source = "cowprotocol/cow-sdk deployment constants"
+source = "composable-cow canonical deterministic CREATE2 address (networks.json; identical across enumerated chains)"
 
 [[entries]]
 contract_id = "CurrentBlockTimestampFactory"
@@ -358,7 +358,7 @@ env = "environment_agnostic"
 address = "0x52eD56Da04309Aca4c3FECC595298d80C2f16BAc"
 [entries.verification]
 status = "canonical_unverified"
-source = "cowprotocol/cow-sdk deployment constants"
+source = "composable-cow canonical deterministic CREATE2 address (networks.json; identical across enumerated chains)"
 
 [[entries]]
 contract_id = "CurrentBlockTimestampFactory"
@@ -637,7 +637,7 @@ env = "environment_agnostic"
 address = "0x2f55e8b20D0B9FEFA187AA7d00B6Cbe563605bF5"
 [entries.verification]
 status = "canonical_unverified"
-source = "cowprotocol/cow-sdk deployment constants"
+source = "composable-cow canonical deterministic CREATE2 address (networks.json; identical across enumerated chains)"
 
 [[entries]]
 contract_id = "ExtensibleFallbackHandler"
@@ -655,7 +655,7 @@ env = "environment_agnostic"
 address = "0x2f55e8b20D0B9FEFA187AA7d00B6Cbe563605bF5"
 [entries.verification]
 status = "canonical_unverified"
-source = "cowprotocol/cow-sdk deployment constants"
+source = "composable-cow canonical deterministic CREATE2 address (networks.json; identical across enumerated chains)"
 
 [[entries]]
 contract_id = "ExtensibleFallbackHandler"
@@ -1330,7 +1330,7 @@ env = "environment_agnostic"
 address = "0x6cF1e9cA41f7611dEf408122793c358a3d11E5a5"
 [entries.verification]
 status = "canonical_unverified"
-source = "cowprotocol/cow-sdk deployment constants"
+source = "composable-cow canonical deterministic CREATE2 address (networks.json; identical across enumerated chains)"
 
 [[entries]]
 contract_id = "TwapHandler"
@@ -1348,7 +1348,7 @@ env = "environment_agnostic"
 address = "0x6cF1e9cA41f7611dEf408122793c358a3d11E5a5"
 [entries.verification]
 status = "canonical_unverified"
-source = "cowprotocol/cow-sdk deployment constants"
+source = "composable-cow canonical deterministic CREATE2 address (networks.json; identical across enumerated chains)"
 
 [[entries]]
 contract_id = "TwapHandler"

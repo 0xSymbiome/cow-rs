@@ -1,6 +1,6 @@
 {
-  "sourcePackage": "@cowprotocol/cow-sdk",
-  "sourceVersion": "9.1.0",
+  "sourcePackage": "cowprotocol/contracts",
+  "sourceVersion": "c6b61ce75841ce4c25ab126def9cc981c568e6c6",
   "order": {
     "sellToken": "0x1111111111111111111111111111111111111111",
     "buyToken": "0x2222222222222222222222222222222222222222",

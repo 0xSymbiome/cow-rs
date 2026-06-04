@@ -351,20 +351,6 @@ async fn regen_eth_sign_typed_data_request_fixture() {
         "reviewed_at": "2026-05-21",
         "source_refs": [
             {
-                "repo": "cow-sdk",
-                "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
-                "path": "packages/common/src/adapters/types/index.ts",
-                "line_start": 17,
-                "line_end": 23
-            },
-            {
-                "repo": "cow-sdk",
-                "commit": "74393ee2923a2932584998169daca6ce3c2da60c",
-                "path": "packages/contracts-ts/src/ContractsTs.ts",
-                "line_start": 109,
-                "line_end": 116
-            },
-            {
                 "repo": "contracts",
                 "commit": "main",
                 "path": "src/contracts/mixins/GPv2Signing.sol",

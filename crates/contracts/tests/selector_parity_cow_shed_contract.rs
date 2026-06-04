@@ -1,8 +1,11 @@
 //! COW Shed selector parity contract test: assert the canonical
 //! cow-shed selectors fixture pins the deployed-runtime entry-point
-//! selectors and EIP-712 type hashes. Source authority is the
-//! cow-sdk TypeScript ABI L1 (pinned cow-sdk SHA
-//! `74393ee2923a2932584998169daca6ce3c2da60c`).
+//! selectors and EIP-712 type hashes. The authority is the deployed
+//! COWShedFactory v1.0.1 runtime interface (verifiable on-chain; each
+//! selector is keccak256 of the deployed signature). The deployed
+//! 2-arg `initializeProxy(address,bool)` diverges from the cow-shed
+//! source-HEAD 1-arg form, so the record is anchored to the deployed
+//! runtime rather than any source checkout.
 
 fn canonical_fixture() -> serde_json::Value {
     cow_sdk_test_utils::fixtures::manifest_fixture(
@@ -29,7 +32,7 @@ fn initialize_proxy_is_two_arg_form() {
         .find(|row| row["name"].as_str() == Some("initializeProxy(address,bool)"));
     assert!(
         two_arg_form.is_some(),
-        "COWShedFactory must declare the 2-arg initializeProxy(address,bool) form sourced from cow-sdk TS ABI L1 authority"
+        "COWShedFactory must declare the 2-arg initializeProxy(address,bool) form per the deployed v1.0.1 runtime (it diverges from the source-HEAD 1-arg form)"
     );
     let one_arg_form = methods
         .iter()

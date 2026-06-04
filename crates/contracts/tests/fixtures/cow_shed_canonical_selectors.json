@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "source_authority": {
-    "factory_abi": "cow-sdk/packages/cow-shed/src/abi/CowShedFactoryAbi.ts (pinned cow-sdk SHA 74393ee2923a2932584998169daca6ce3c2da60c)",
+    "deployed_interface": "the deployed COWShedFactory v1.0.1 runtime; each selector is keccak256 of the deployed signature (verifiable on-chain). The deployed 2-arg initializeProxy(address,bool) diverges from the cow-shed source-HEAD 1-arg form.",
     "solidity_reference": "cow-shed/src/*.sol (pinned cow-shed SHA 9e01a88e0010314ee1e4c1a822105897a87d3bda)",
     "deployment_runtime": "crates/contracts/abi/cow-shed/version-call-results.json"
   },
@@ -10,7 +10,7 @@
       "name": "initializeProxy(address,bool)",
       "selector": "0x66c87a2c",
       "owning_contract": "COWShedFactory",
-      "rationale": "Canonical 2-arg initializeProxy form sourced from cow-sdk TS ABI (L1 authority). The 1-arg source-HEAD form is NOT vendored because the deployed bytecode targets the 2-arg selector."
+      "rationale": "Canonical 2-arg initializeProxy form per the deployed COWShedFactory v1.0.1 runtime (selector = keccak256 of the deployed signature). The 1-arg source-HEAD form is NOT vendored because the deployed bytecode targets the 2-arg selector."
     },
     {
       "name": "executeHooks((address,uint256,bytes,bool,bool)[],bytes32,uint256,address,bytes)",
