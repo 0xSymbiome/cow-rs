@@ -6,10 +6,10 @@ It is not a runtime dependency of any published crate.
 
 ## What lives here
 
-- `source-lock.yaml`
-- `fixtures/contracts.json`
-- `fixtures/orderbook.json`
-- `fixtures/trading.json`
+- `source-lock.yaml` — pinned upstream producer repositories and commits
+- `fixtures/` — committed parity fixtures with in-file `source_refs` provenance,
+  covering the contracts, trading, app-data, composable, cow-shed, signing, and
+  orderbook surfaces
 
 ## Repo contract
 
@@ -87,23 +87,15 @@ normal CI do not depend on those upstream roots.
 Embedded `source_refs[].commit` metadata inside `parity/fixtures/*.json` must stay aligned with
 `parity/source-lock.yaml`. `validate` treats commit drift there as a real failure.
 
-`fixtures/contracts.json` is the pinned low-level contracts contract.
-It anchors order, signature-encoding, deployment, settlement, swap, proxy, vault,
-and storage-reader expectations to upstream `contracts` sources and selected
-`cow-sdk/packages/contracts-ts` public tests.
+Each `fixtures/*.json` file carries its own `source_refs` provenance pinning it
+to the CoW Protocol producer repositories recorded in `source-lock.yaml`:
+`cowprotocol/services` for the orderbook and trading wire surfaces, and
+`cowprotocol/contracts` — with `cowprotocol/ethflowcontract`, `composable-cow`,
+and `cow-shed` — for the on-chain surfaces. See
+[docs/parity.md](../docs/parity.md) for the full authority and
+ownership split.
 
-`fixtures/orderbook.json` is the pinned orderbook contract. It anchors
-endpoint breadth, request-helper behavior, typed API errors, chain/env URL
-resolution, multi-env fallback, app-data GET and PUT transport semantics, and
-deterministic order transforms to upstream `packages/order-book` sources plus
-selected `services` schemas.
-
-`fixtures/trading.json` is the pinned trading contract. It anchors
-quote-only flows, quote-to-order conversion, post-from-quote orchestration, limit
-orders, native-sell / EthFlow transactions, pre-sign and cancellation routing,
-allowance and approval boundaries, slippage suggestion helpers, and `TradingSdk`
-parameter precedence to upstream `packages/trading` sources.
-
-External reference implementations are not part of this parity contract. They may
-be consulted as secondary implementation references, but they must never be used
-as provenance sources for committed fixtures, placeholder values, or copied defaults.
+External reference implementations are not part of this parity contract. They
+may be consulted as secondary implementation references, but they must never be
+used as provenance sources for committed fixtures, placeholder values, or copied
+defaults.

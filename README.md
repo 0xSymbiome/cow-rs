@@ -17,46 +17,32 @@ Ethereum applications without trading helpers should depend on Alloy directly;
 the adapter exists to wire native Alloy into the SDK's signing and transaction
 contracts.
 
+<!-- runtime-routing:start -->
 ## When to use cow-rs
 
-| You are building... | Choose | Why |
+| You are building... | Use | Why |
 | --- | --- | --- |
-| MEV bot, market maker, solver, analytics job, or treasury automation in Rust | `cow-sdk` | Native Rust facade over typed transport, signing, orderbook, and trading crates |
+| MEV bot, market maker, solver, analytics job, or treasury automation in Rust | `cow-sdk` | Native Rust facade over typed transport, signing, orderbook, trading, and subgraph surfaces |
+| Native Rust app using Alloy | `cow-sdk` plus `cow-sdk-alloy-*` | Opt-in Alloy provider and signer adapters without widening the default facade |
+| Rust app compiled to browser WASM | `cow-sdk-browser-wallet` plus `cow-sdk-transport-wasm` | Rust-on-wasm wallet and fetch plumbing; not the JavaScript-callable npm package |
 | Standard browser dapp or CowSwap-style UI in TypeScript | Upstream [`@cowprotocol/cow-sdk`](https://www.npmjs.com/package/@cowprotocol/cow-sdk) | Substantially smaller bundle at equivalent feature subsets; mature web ecosystem fit |
-| TypeScript service that needs deterministic Rust signing parity | `<published-cow-sdk-wasm-package>` | TypeScript facade over deterministic Rust helpers with wallet callbacks; byte-for-byte parity with the Rust signing path |
+| TypeScript service that needs byte-for-byte Rust signing parity (viem, ethers, wagmi, or EIP-1193 wallets) | `<published-cow-sdk-wasm-package>` | TypeScript facade over deterministic Rust helpers with wallet-stack-agnostic callbacks |
 | Single-source-of-truth Rust + TypeScript embedding | `<published-cow-sdk-wasm-package>` | One implementation across Rust and JavaScript runtimes |
-| Browser dapp that only needs orderbook plus signing (smaller WASM bundle preferred over the upstream TS SDK) | `<published-cow-sdk-wasm-package>/orderbook` | Smaller wasm flavor for quote, post, lookup, trade, and cancellation flows |
-| Node.js 22 or 24 LTS backend service that needs Rust signing parity | `<published-cow-sdk-wasm-package>` | Node target works with explicit fetch or callback transport |
-| Cloudflare Worker proxying orderbook calls | `<published-cow-sdk-wasm-package>/cloudflare` | Size-compatible with current Workers Free compressed-size limit at the time of measurement; full Workers support pending release-bundle and startup validation |
+| Browser dapp that only needs orderbook plus signing (smaller bundle) | `<published-cow-sdk-wasm-package>/orderbook` | Smaller wasm flavor for quote, post, lookup, trade, and cancellation flows |
 | Signer service or HSM proxy | `<published-cow-sdk-wasm-package>/signing` | Signing, UID, EIP-1271, deployment, and version helpers without HTTP clients |
-| Native Rust app using Alloy | `cow-sdk` plus `cow-sdk-alloy-*` | Opt-in provider and signer adapters without widening the default facade |
-| Rust app compiled to browser WASM | `cow-sdk-browser-wallet` plus `cow-sdk-transport-wasm` | Rust-on-wasm path; not the JavaScript-callable npm package |
+| Node.js 22 or 24 LTS backend service | `<published-cow-sdk-wasm-package>` | Node target works with explicit fetch or callback transport |
+| Cloudflare Worker proxying orderbook calls | `<published-cow-sdk-wasm-package>/cloudflare` | Size-compatible with the current Workers Free compressed-size limit at the time of measurement; full Workers support pending release-bundle and startup validation |
+| Deno | `<published-cow-sdk-wasm-package>` | Experimental build-only support; validate in your own runtime before production use |
 | Account-abstraction hooks via Cow Shed | `cow-sdk` with the `cow-shed` feature, or `cow-sdk-cow-shed` directly | Deterministic proxy derivation, EIP-712 hook signing, factory calldata, and the `CowShedHooks` orchestrator; opt-in and off the default closure |
 | TWAP, composable, bridging, flash-loan, weiroll, or hardware-wallet flows | Upstream TypeScript packages until `cow-rs` ships those capabilities | These capability families are intentionally outside the 0.1.0 package scope |
-
-<!-- runtime-routing:start -->
-## Choose the crate or package by runtime
-
-| You're building... | Use | Why |
-| --- | --- | --- |
-| Native Rust services, bots, solvers, analytics | `cow-sdk` | Native HTTP transport, signing, trading, orderbook, and subgraph surfaces. |
-| Native Rust apps using Alloy | `cow-sdk` plus `cow-sdk-alloy-*` | Opt-in Alloy provider and signer adapters without widening the default facade. |
-| Rust apps that compile to browser WASM | `cow-sdk-browser-wallet` plus `cow-sdk-transport-wasm` | Rust-on-wasm wallet and fetch plumbing; not the JavaScript-callable package. |
-| Standard browser dapp or CowSwap-style UI in TypeScript | Upstream [`@cowprotocol/cow-sdk`](https://www.npmjs.com/package/@cowprotocol/cow-sdk) | Substantially smaller bundle at equivalent feature subsets; mature web ecosystem fit. |
-| TypeScript apps that need byte-for-byte Rust signing parity (viem, ethers, wagmi, or EIP-1193 wallets) | `<published-cow-sdk-wasm-package>` | Wallet stack-agnostic callbacks and the full facade surface. |
-| Browser dapps with a smaller bundle target | `<published-cow-sdk-wasm-package>/orderbook` | Orderbook and signing subset with a smaller raw wasm budget. |
-| Signer services or HSM proxies | `<published-cow-sdk-wasm-package>/signing` | Signing, UID, EIP-1271, and deployment helpers without HTTP clients. |
-| Node.js 22 or 24 LTS backends | `<published-cow-sdk-wasm-package>` | Node target works without browser polyfills when transport is configured. |
-| Cloudflare Workers | `<published-cow-sdk-wasm-package>/cloudflare` plus `<published-cow-sdk-wasm-package>/cloudflare/wasm` | Worker-compatible web target with explicit module initialization. Size-compatible with current Workers Free compressed-size limit at the time of measurement; full Workers support pending release-bundle and startup validation. |
-| Deno | `<published-cow-sdk-wasm-package>` | Experimental build-only support; validate in your own runtime before production use. |
-| Non-JS wasm consumers, WASI, WebAssembly components, TinyGo, Blazor, AssemblyScript guests, or no_std | Out of scope for 0.1.0 | Use native Rust crates where possible; the npm package targets JavaScript hosts. |
+| Non-JS wasm consumers, WASI, WebAssembly components, TinyGo, Blazor, AssemblyScript guests, or no_std | Out of scope for 0.1.0 | Use native Rust crates where possible; the npm package targets JavaScript hosts |
 <!-- runtime-routing:end -->
 
 ## Start Here
 
 The canonical first-touch path is [Getting Started](docs/getting-started.md).
 The shipped crate family and deferred capability boundaries are listed in the
-[First-Release Scope](docs/parity-scope.md#first-release-scope).
+[First-Release Scope](docs/parity.md#first-release-scope).
 
 The functional published install surface will be:
 
@@ -150,43 +136,21 @@ configure transport explicitly through `transport: { kind: "fetch" }` or
 
 | Signal | Current state |
 | --- | --- |
-| Verification and release posture | [Verification Guide](docs/verification-guide.md) and [Release Checklist](docs/release-checklist.md) define the maintained proof and publication contract. |
+| Verification and release posture | [Verification](docs/verification.md) and [Release Checklist](docs/release-checklist.md) define the maintained proof and publication contract. |
 | Change history | [CHANGELOG.md](CHANGELOG.md) tracks the current unreleased public contract and future release notes. |
 | Security disclosure | [SECURITY.md](SECURITY.md) defines the private repository reporting path and protocol-level escalation route. |
 | Chain-RPC runtime neutrality | The default facade remains provider-neutral. Native Alloy runtime dependencies are limited to the opt-in Alloy adapter crates and facade features, and CI gates the allow-list. |
 | Publication state | Reserved-placeholder `0.0.1-reserved.0` crates.io and docs.rs entries are live for the published crate family, but the functional `0.1.0` release is still pending; [Getting Started](docs/getting-started.md) and [Release Checklist](docs/release-checklist.md) describe the current repo-local and release-ready contract truthfully. |
 | Compatibility and license | Public MSRV is Rust `1.94.0`; the current workspace license is `GPL-3.0-only`. |
 
-## Documentation Paths
+## Documentation
 
-### For SDK Consumers
+The full public map — consumer guides, verification, parity, audits, and ADRs —
+lives in the [Documentation Index](docs/README.md). Quick starts:
 
-- [Getting Started](docs/getting-started.md)
-- [Integrations](docs/integrations.md)
-- [Documentation Index](docs/README.md)
-- [Principles](docs/principles.md)
-- [Architecture](docs/architecture.md)
-- [Transport](docs/transport.md)
-- [Deployments](docs/deployments.md)
-- [Examples](docs/examples.md)
-- [Bring Your Own Provider](docs/providers/README.md)
-- [Native Alloy adapters](docs/providers/adapting-alloy.md)
-
-Start with [Getting Started](docs/getting-started.md) for the shortest path
-from the facade crate to deterministic signed-order output.
-
-### For Verification And Review
-
-- [Verification Guide](docs/verification-guide.md)
-- [Validation Scope](docs/validation-scope.md)
-- [Release Checklist](docs/release-checklist.md)
-- [Properties Registry](PROPERTIES.md)
-
-Use the [Documentation Index](docs/README.md) for the full public assurance,
-parity, audit, and ADR map.
-
-### For Contributors
-
+- [Getting Started](docs/getting-started.md) — facade-first path to a signed order
+- [Architecture](docs/architecture.md) — crate ownership and public boundaries
+- [Verification](docs/verification.md) and [Parity And Provenance](docs/parity.md) — proof classes and upstream authorities
 - [Contributing](CONTRIBUTING.md)
 
 ## Examples
@@ -199,7 +163,7 @@ parity, audit, and ADR map.
 
 - Public MSRV: Rust `1.94.0`
 - Contributor toolchain pin: Rust `1.94.1`
-- Surface-to-proof mapping lives in [Validation Scope](docs/validation-scope.md)
+- Surface-to-proof mapping lives in [Verification](docs/verification.md)
 
 The [MSRV policy](docs/msrv-policy.md) defines when the workspace may raise
 the public Rust floor, including the minor-release cadence, 30-day notice
