@@ -5,7 +5,7 @@ use serde_json::json;
 use cow_sdk::prelude::{SupportedChainId, Trading};
 
 use cow_sdk_examples_native::support::{
-    MockOrderbook, MockSigner, sample_limit_parameters, sample_owner, sample_quote_response,
+    MockOrderbook, MockSigner, sample_limit_parameters, sample_quote_response,
 };
 
 #[tokio::main]

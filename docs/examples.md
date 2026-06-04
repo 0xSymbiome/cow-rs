@@ -20,7 +20,7 @@ the main SDK surfaces.
 | Quote, build, cancel, and simulate trading flows | `quote_only_simulation`, `cancellation_combinator`, `limit_order_simulation`, `trading_sdk_simulation` |
 | Inspect order lifecycle and on-chain actions | `order_lifecycle_simulation`, `ethflow_transaction_simulation`, `onchain_order_actions_simulation` |
 | Inspect typed orderbook transport | `orderbook_transport_roundtrip`, `order_list_history_simulation` |
-| Work with read-only subgraph access | `subgraph_query_roundtrip`, `subgraph_custom_query_roundtrip` |
+| Work with read-only subgraph access | `subgraph_query_roundtrip` |
 | Work with native Alloy adapters | `alloy_quickstart`, `alloy_provider_only`, `alloy_signer_only`, `transaction_lifecycle`, `alloy_provider_with_custom_signer`, `alloy_signer_with_custom_provider`, `alloy_trading_full_flow` |
 | Run an opt-in live service check | `orderbook_live_probe`, `subgraph_live_query`, `live_order_sepolia` |
 

@@ -48,8 +48,7 @@ After that, branch by goal through the full scenario table below.
 | `orderbook_transport_roundtrip` | Inspect typed orderbook transport behavior |
 | `order_list_history_simulation` | List an account's orders and trade history through `OrderbookApi` |
 | `orderbook_live_probe` | Run an opt-in live orderbook version probe |
-| `subgraph_query_roundtrip` | Inspect canonical subgraph helper usage |
-| `subgraph_custom_query_roundtrip` | Inspect explicit `SubgraphQueryRequest` usage |
+| `subgraph_query_roundtrip` | Inspect canonical subgraph helpers and the explicit `SubgraphQueryRequest` escape hatch |
 | `subgraph_live_query` | Run an opt-in live subgraph query |
 | `alloy_quickstart` | Build the composed native Alloy client against a mock RPC |
 | `alloy_provider_only` | Use the read-only Alloy provider leaf against a mock RPC |
@@ -89,7 +88,6 @@ cargo run --manifest-path examples/native/Cargo.toml --example orderbook_transpo
 cargo run --manifest-path examples/native/Cargo.toml --example order_list_history_simulation
 cargo run --manifest-path examples/native/Cargo.toml --example orderbook_live_probe
 cargo run --manifest-path examples/native/Cargo.toml --example subgraph_query_roundtrip
-cargo run --manifest-path examples/native/Cargo.toml --example subgraph_custom_query_roundtrip
 cargo run --manifest-path examples/native/Cargo.toml --example subgraph_live_query
 cargo run --manifest-path examples/native/Cargo.toml --example alloy_quickstart --features alloy
 cargo run --manifest-path examples/native/Cargo.toml --example alloy_provider_only --features alloy-provider

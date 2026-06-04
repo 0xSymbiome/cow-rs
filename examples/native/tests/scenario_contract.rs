@@ -100,7 +100,6 @@ fn subgraph_examples_are_declared_and_documented() {
 
     for example_name in [
         "subgraph_query_roundtrip",
-        "subgraph_custom_query_roundtrip",
         "subgraph_live_query",
     ] {
         assert!(

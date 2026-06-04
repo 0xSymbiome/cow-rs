@@ -6,7 +6,7 @@ use cow_sdk::prelude::{SupportedChainId, Trading};
 use cow_sdk::trading::OrderTraderParameters;
 
 use cow_sdk_examples_native::support::{
-    MockOrderbook, MockSigner, sample_open_order, sample_order_uid, sample_owner,
+    MockOrderbook, MockSigner, sample_open_order, sample_order_uid,
     sample_quote_response,
 };
 

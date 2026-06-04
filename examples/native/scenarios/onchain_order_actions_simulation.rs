@@ -10,7 +10,7 @@ use cow_sdk::trading::{
 };
 
 use cow_sdk_examples_native::support::{
-    MockOrderbook, MockSigner, sample_open_order, sample_order_uid, sample_owner,
+    MockOrderbook, MockSigner, sample_open_order, sample_order_uid,
     sample_quote_response, sample_trader_parameters, text_preview,
 };
 

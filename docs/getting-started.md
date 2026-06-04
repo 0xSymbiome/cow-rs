@@ -606,7 +606,6 @@ When your goal is read-only analytics instead of trading orchestration, switch
 to the explicit subgraph crate path:
 
 - `subgraph_query_roundtrip`
-- `subgraph_custom_query_roundtrip`
 
 These scenarios deliberately use `cow-sdk-subgraph` directly rather than the
 root `cow-sdk` facade.
