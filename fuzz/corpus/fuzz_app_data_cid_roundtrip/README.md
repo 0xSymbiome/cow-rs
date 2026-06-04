@@ -11,8 +11,8 @@ through `MAX_FUZZ_INPUT = 4096`.
 
 | File | Class | Derivation |
 | --- | --- | --- |
-| `seed-00-canonical-hex-digest.bin` | canonical | Discriminant `0x00` plus a 32-byte incrementing digest; exercises the hex-to-CID encoder and its inverse against the digest layout pinned by `parity/fixtures/app-data.json::app-data-cid-v1-conversion`. |
-| `seed-01-canonical-cid-string.bin` | canonical | Discriminant `0x01` plus a representative base32-multibase CIDv1 string; exercises the inverse `cid_to_app_data_hex` decoder against the codec and multihash gates pinned by `parity/fixtures/app-data.json::app-data-cid-digest-extraction`. |
+| `seed-00-canonical-hex-digest.bin` | canonical | Discriminant `0x00` plus a 32-byte incrementing digest; exercises the hex-to-CID encoder and its inverse against the digest layout pinned by `crates/app-data/tests/cid_contract.rs`. |
+| `seed-01-canonical-cid-string.bin` | canonical | Discriminant `0x01` plus a representative base32-multibase CIDv1 string; exercises the inverse `cid_to_app_data_hex` decoder against the codec and multihash gates pinned by `crates/app-data/tests/cid_contract.rs`. |
 | `seed-02-boundary-empty-payload.bin` | boundary | Discriminant only (`0x00`), zero-byte payload; exercises the empty-input early-return path. |
 | `seed-03-boundary-truncated-hex.bin` | boundary | Discriminant `0x00` plus 1 trailing byte; below the 32-byte digest length and exercises the malformed-hex candidate path. |
 | `seed-04-adversarial-non-utf8-cid.bin` | adversarial | Discriminant `0x01` plus non-UTF-8 bytes (`0xff..0xf8`); exercises the `cid_to_app_data_hex` decoder against bytes that fail the `from_utf8` gate. |

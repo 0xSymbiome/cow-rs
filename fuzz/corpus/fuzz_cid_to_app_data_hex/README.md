@@ -10,7 +10,7 @@ Seed classes:
 
 | File | Class | Derivation |
 | --- | --- | --- |
-| `seed-00-canonical-cidv1-keccak256.txt` | canonical | A representative CIDv1 string over the raw-codec / keccak-256 multihash pair derived from the digest layout pinned by `parity/fixtures/app-data.json::app-data-cid-v1-conversion`. Round-trips through `app_data_hex_to_cid` and back. |
+| `seed-00-canonical-cidv1-keccak256.txt` | canonical | A representative CIDv1 string over the raw-codec / keccak-256 multihash pair derived from the digest layout pinned by `crates/app-data/tests/cid_contract.rs`. Round-trips through `app_data_hex_to_cid` and back. |
 | `seed-01-canonical-cidv1-base32.txt` | canonical | A second representative CIDv1 multibase-base32 string for the same digest layout, covering the alternative multibase prefix the inverse decoder accepts. |
 | `seed-02-boundary-empty.bin` | boundary | Zero-byte payload; exercises the empty-string early-return path. |
 | `seed-03-boundary-single-byte.bin` | boundary | One-byte payload (`0x66`); exercises the truncated-multibase rejection path. |

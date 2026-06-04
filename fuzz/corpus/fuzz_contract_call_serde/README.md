@@ -9,8 +9,9 @@ crate-private dyn-value coercion path.
 Seed sources:
 
 - canonical: `seed-canonical-00-erc20-balance.bin` carries an ERC20
-  `balanceOf` shape that mirrors the documented contract-read parity
-  case (`parity/fixtures/core.json` id `core-runtime-trait-surfaces`).
+  `balanceOf` shape that mirrors the documented contract-read
+  `ContractCall` contract pinned by
+  `crates/core/tests/traits_contract.rs`.
 - canonical: `seed-canonical-01-fixed-bytes32.bin` carries a
   `bytes32`-returning call, exercising the documented fixed-bytes
   branch the downstream `json_to_dyn_value` coercion would select.

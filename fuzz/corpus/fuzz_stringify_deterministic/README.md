@@ -10,7 +10,7 @@ Seed classes:
 
 | File | Class | Derivation |
 | --- | --- | --- |
-| `seed-00-canonical-app-data-doc.json` | canonical | A representative app-data document with multiple top-level keys derived from the canonical-info fixture pinned by `parity/fixtures/app-data.json::app-data-get-app-data-info-deterministic`. Exercises object key ordering. |
+| `seed-00-canonical-app-data-doc.json` | canonical | A representative app-data document with multiple top-level keys derived from the canonical-JSON contract pinned by `crates/app-data/tests/canonical_json_contract.rs` and `parity/fixtures/app_data/canonical_json_utf16.json`. Exercises object key ordering. |
 | `seed-01-canonical-nested.json` | canonical | A nested-object value with both keys and arrays; covers the recursive canonical renderer. |
 | `seed-02-boundary-null.json` | boundary | The literal `null`; exercises the scalar path. |
 | `seed-03-boundary-empty-object.json` | boundary | The empty `{}` value; exercises the zero-key object branch. |

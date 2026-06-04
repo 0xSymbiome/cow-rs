@@ -10,7 +10,7 @@ Seed classes:
 
 | File | Class | Derivation |
 | --- | --- | --- |
-| `seed-00-canonical-1.14.0.txt` | canonical | The latest bundled app-data schema version derived from the deterministic-info fixture pinned by `parity/fixtures/app-data.json::app-data-get-app-data-info-deterministic`. |
+| `seed-00-canonical-1.14.0.txt` | canonical | The latest bundled app-data schema version derived from the deterministic-info contract pinned by `crates/app-data/tests/app_data_info_contract.rs`. |
 | `seed-01-canonical-0.1.0.txt` | canonical | The minimal three-part decimal-semver value. |
 | `seed-02-canonical-large.txt` | canonical | A three-part value with multi-digit segments (`999.0.42`); covers the `is_non_empty_digits` branch. |
 | `seed-03-boundary-empty.bin` | boundary | A near-empty payload; must reject through the documented `^\d+\.\d+\.\d+$` regex. |

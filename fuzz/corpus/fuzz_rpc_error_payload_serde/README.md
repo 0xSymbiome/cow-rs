@@ -10,8 +10,8 @@ Seed sources:
 
 - canonical: `seed-canonical-00-rpc-error-rejected.bin` carries the
   EIP-1193 user-rejected JSON-RPC error payload referenced by the
-  browser-wallet RPC normalization parity (`parity/fixtures/core.json`
-  id `core-runtime-trait-surfaces`).
+  browser-wallet `RpcErrorPayload` serde/redaction contract pinned by
+  `crates/browser-wallet/tests/non_exhaustive_type_contract.rs`.
 - canonical: `seed-canonical-01-rpc-error-disconnected.bin` carries a
   documented disconnection error payload.
 - boundary: `seed-boundary-02-empty.bin` is an empty body that must be

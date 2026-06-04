@@ -11,9 +11,9 @@ Seed classes:
   `seed-canonical-hash32-zero.bin`,
   `seed-canonical-appdata-zero.bin`,
   `seed-canonical-orderuid-zero.bin`, and
-  `seed-canonical-hexdata-empty.bin` are derived from the
-  `core-evm-address-contract` fixture id in
-  `parity/fixtures/core.json` as the
+  `seed-canonical-hexdata-empty.bin` are derived from the typed
+  identity construction/round-trip contract pinned by
+  `crates/core/tests/types_contract.rs` as the
   canonical all-zero string form of each typed identity.
 - boundary: `seed-boundary-address-uppercase.bin` covers a checksummed
   mixed-case address that the equality and round-trip contract must

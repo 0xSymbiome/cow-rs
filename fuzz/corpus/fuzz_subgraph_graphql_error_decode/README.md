@@ -14,8 +14,8 @@ typed construction in the target.
 
 | File | Class | Derivation |
 | --- | --- | --- |
-| `seed-00-canonical-single-error.bin` | canonical | A single GraphQL error object with `message` and one `locations` entry; pins the decoder against the GraphQL error envelope shape exercised by `parity/fixtures/subgraph.json::subgraph-invalid-query-error`. |
-| `seed-01-canonical-array.bin` | canonical | A two-element `errors` array shape; pins the sequence-decoder branch through the same fixture surface. |
+| `seed-00-canonical-single-error.bin` | canonical | A single GraphQL error object with `message` and one `locations` entry; pins the decoder against the GraphQL error envelope shape exercised by `crates/subgraph/tests/query_contract.rs` and `crates/subgraph/tests/schema_evidence/schema.graphql`. |
+| `seed-01-canonical-array.bin` | canonical | A two-element `errors` array shape; pins the sequence-decoder branch through the same contract surface. |
 | `seed-02-boundary-empty.bin` | boundary | Zero-byte input; exercises the decoder's empty-input rejection without panicking. |
 | `seed-03-boundary-deeply-nested.bin` | boundary | Ten levels of nested empty arrays (`[[[[[[[[[[]]]]]]]]]]`); exercises the serde nesting boundary without exceeding the default recursion limit. |
 | `seed-04-adversarial-non-utf8.bin` | adversarial | Non-UTF-8 byte sequence (`0xff..0xfb`); exercises the decoder's non-UTF-8 rejection path. |

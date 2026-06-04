@@ -998,64 +998,6 @@ fn git_stdout(root: &Path, args: &[&str]) -> Result<String> {
 fn fixture_contracts() -> Vec<FixtureEntry> {
     vec![
         FixtureEntry {
-            surface: "core".to_string(),
-            file: "parity/fixtures/core.json".to_string(),
-            source_refs: vec![
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/common/src/adapters/AbstractSigner.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/common/src/adapters/AbstractProviderAdapter.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/common/src/utils/address.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/common/src/utils/address.test.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/common/src/utils/token.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/common/src/utils/token.test.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/config/src/types/configs.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/config/src/chains/types.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/config/src/constants/addresses.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/config/src/constants/wrappedTokens.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/order-signing/src/types.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/order-book/src/types.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "contracts".to_string(),
-                    path: "src/ts/order.ts".to_string(),
-                },
-            ],
-        },
-        FixtureEntry {
             surface: "contracts".to_string(),
             file: "parity/fixtures/contracts.json".to_string(),
             source_refs: vec![
@@ -1366,28 +1308,6 @@ fn fixture_contracts() -> Vec<FixtureEntry> {
                 FixtureSourceRef {
                     repo: "cow-sdk".to_string(),
                     path: "packages/trading/src/calculateUniqueOrderId.test.ts".to_string(),
-                },
-            ],
-        },
-        FixtureEntry {
-            surface: "subgraph".to_string(),
-            file: "parity/fixtures/subgraph.json".to_string(),
-            source_refs: vec![
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/subgraph/src/api.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/subgraph/src/queries.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/subgraph/src/graphql.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "cow-sdk".to_string(),
-                    path: "packages/subgraph/src/api.spec.ts".to_string(),
                 },
             ],
         },

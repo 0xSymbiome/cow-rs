@@ -10,7 +10,7 @@ Seed classes:
 
 | File | Class | Derivation |
 | --- | --- | --- |
-| `seed-00-canonical-pre-post.json` | canonical | A representative pre/post envelope carrying one hook on each side, derived from the hooks schema validation fixture pinned by `parity/fixtures/app-data.json::app-data-validation-contract`. |
+| `seed-00-canonical-pre-post.json` | canonical | A representative pre/post envelope carrying one hook on each side, derived from the hooks schema validation contract pinned by `crates/app-data/tests/hooks_contract.rs`. |
 | `seed-01-canonical-versioned.json` | canonical | A pre/post envelope with an explicit `version` string at the documented `0.2.0` release. |
 | `seed-02-canonical-empty.json` | canonical | The empty `{}` shape; both `pre` and `post` default to empty vectors per the deserializer. |
 | `seed-03-boundary-zero-gas.json` | boundary | A canonical envelope with `gasLimit = "0"`; exercises the lower end of the documented decimal-string `u64` range. |

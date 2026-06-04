@@ -13,7 +13,8 @@ with the original `v` byte preserved.
 256 seeds named `seed-v-XX.bin` (lowercase two-digit hex) exhaustively
 cover every possible recovery byte against the same zero-filled
 `r||s` prefix. The fixture surface is anchored by
-`parity/fixtures/signing.json::signing-ecdsa-v-normalization`. Each
+`parity/fixtures/ecdsa/v_normalization.json` (exercised by
+`crates/contracts/tests/v_normalization_contract.rs`). Each
 file is 65 bytes — 64 zero bytes for `r||s` followed by the single
 recovery byte indicated by the file suffix.
 

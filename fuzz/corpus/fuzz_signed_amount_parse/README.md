@@ -9,9 +9,9 @@ decimal-string form deterministically.
 Seed classes:
 
 - canonical: `seed-canonical-zero.bin` and
-  `seed-canonical-positive.bin` are derived from the
-  `core-shared-order-and-quote-surfaces` fixture id in
-  `parity/fixtures/core.json` as the canonical
+  `seed-canonical-positive.bin` are derived from the `SignedAmount`
+  parse/round-trip contract pinned by
+  `crates/core/tests/types_contract.rs` as the canonical
   zero and a representative positive signed magnitude.
   `seed-canonical-negative.bin` covers the negative-decimal path.
 - boundary: `seed-boundary-large-magnitude.bin` carries a magnitude well

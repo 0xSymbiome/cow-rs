@@ -4,8 +4,8 @@ This corpus seeds `fuzz/fuzz_targets/fuzz_signing_domain_separator.rs`.
 Each seed is a deterministic `Arbitrary` payload that drives
 `cow_sdk_signing::domain_separator_for(&TypedDataDomain)` and the
 target's adjacent mutation-resistance check. The domain field shape is
-pinned by `parity/fixtures/signing.json::signing-domain-separator-fields`
-(`name`, `version`, `chainId`, `verifyingContract`).
+pinned by the focused `crates/signing/tests/domain_contract.rs` contract
+test (`name`, `version`, `chainId`, `verifyingContract`).
 
 ## Seed contract
 
@@ -26,7 +26,7 @@ Total size: 33 bytes.
 
 | File | Class | Derivation |
 | --- | --- | --- |
-| `seed-00-canonical-mainnet.bin` | canonical | Mainnet `Gnosis Protocol v2` shape with the canonical settlement verifying contract; the field set matches `signing-domain-separator-fields`. |
+| `seed-00-canonical-mainnet.bin` | canonical | Mainnet `Gnosis Protocol v2` shape with the canonical settlement verifying contract; the field set matches `crates/signing/tests/domain_contract.rs`. |
 | `seed-01-boundary-empty-name.bin` | boundary | Zero-length name and version with a zero verifying contract, exercising the minimum-input typed-domain shape. |
 | `seed-02-boundary-max-name.bin` | boundary | Maximum-length ASCII name and version (`len = 32`), exercising the upper input window for the bounded-ASCII generator. |
 | `seed-03-boundary-chain-id-max.bin` | boundary | `chain_id = u64::MAX`, exercising the saturated 256-bit chain-id word in the EIP-712 domain encoding. |

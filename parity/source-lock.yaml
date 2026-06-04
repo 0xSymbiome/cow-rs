@@ -398,35 +398,6 @@ repositories:
   - src/utils/orderBookApi.ts
   - src/types/index.ts
 fixtures:
-- surface: core
-  file: parity/fixtures/core.json
-  source_refs:
-  - repo: cow-sdk
-    path: packages/common/src/adapters/AbstractSigner.ts
-  - repo: cow-sdk
-    path: packages/common/src/adapters/AbstractProviderAdapter.ts
-  - repo: cow-sdk
-    path: packages/common/src/utils/address.ts
-  - repo: cow-sdk
-    path: packages/common/src/utils/address.test.ts
-  - repo: cow-sdk
-    path: packages/common/src/utils/token.ts
-  - repo: cow-sdk
-    path: packages/common/src/utils/token.test.ts
-  - repo: cow-sdk
-    path: packages/config/src/types/configs.ts
-  - repo: cow-sdk
-    path: packages/config/src/chains/types.ts
-  - repo: cow-sdk
-    path: packages/config/src/constants/addresses.ts
-  - repo: cow-sdk
-    path: packages/config/src/constants/wrappedTokens.ts
-  - repo: cow-sdk
-    path: packages/order-signing/src/types.ts
-  - repo: cow-sdk
-    path: packages/order-book/src/types.ts
-  - repo: contracts
-    path: src/ts/order.ts
 - surface: contracts
   file: parity/fixtures/contracts.json
   source_refs:
@@ -610,14 +581,3 @@ fixtures:
     path: packages/trading/src/tradingSdk.test.ts
   - repo: cow-sdk
     path: packages/trading/src/calculateUniqueOrderId.test.ts
-- surface: subgraph
-  file: parity/fixtures/subgraph.json
-  source_refs:
-  - repo: cow-sdk
-    path: packages/subgraph/src/api.ts
-  - repo: cow-sdk
-    path: packages/subgraph/src/queries.ts
-  - repo: cow-sdk
-    path: packages/subgraph/src/graphql.ts
-  - repo: cow-sdk
-    path: packages/subgraph/src/api.spec.ts

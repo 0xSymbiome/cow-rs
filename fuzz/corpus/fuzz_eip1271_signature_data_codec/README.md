@@ -5,8 +5,8 @@ Each seed is interpreted as a 20-byte verifier prefix followed by up
 to 256 bytes of signature payload, then round-tripped through
 `cow_sdk_contracts::encode_eip1271_signature_data` and
 `cow_sdk_contracts::decode_eip1271_signature_data`. The canonical seeds
-mirror the EIP-1271 payload shapes documented alongside
-`signing-eip1271-encode-payload` in `parity/fixtures/signing.json`.
+mirror the EIP-1271 payload shapes pinned by the focused
+`crates/signing/tests/eip1271_contract.rs` contract test.
 
 ## Seeds
 

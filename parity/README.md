@@ -7,13 +7,9 @@ It is not a runtime dependency of any published crate.
 ## What lives here
 
 - `source-lock.yaml`
-- `fixtures/core.json`
 - `fixtures/contracts.json`
-- `fixtures/signing.json`
-- `fixtures/app-data.json`
 - `fixtures/orderbook.json`
 - `fixtures/trading.json`
-- `fixtures/subgraph.json`
 
 ## Repo contract
 
@@ -96,26 +92,10 @@ Embedded `source_refs[].commit` metadata inside `parity/fixtures/*.json` must st
 When `validate` is given `--cow-sdk-root`, it also proves that `crates/app-data/schemas/`
 matches `packages/app-data/src/schemas/` byte-for-byte.
 
-`fixtures/core.json` is the pinned internal-foundation contract. It
-anchors shared type, config, and trait expectations to upstream `common`, `config`,
-selected `order-book` / `order-signing`, and `contracts` sources.
-
 `fixtures/contracts.json` is the pinned low-level contracts contract.
 It anchors order, signature-encoding, deployment, settlement, swap, proxy, vault,
 and storage-reader expectations to upstream `contracts` sources and selected
 `cow-sdk/packages/contracts-ts` public tests.
-
-`fixtures/signing.json` is the pinned signing contract. It anchors
-typed-data field layout, domain precedence, domain separator helpers, deterministic
-order ID generation, cancellation signing, and EIP-1271 payload encoding to
-upstream `packages/order-signing`, direct `packages/trading` typed-data consumers,
-and the canonical `contracts` order and signing sources.
-
-`fixtures/app-data.json` is the pinned app-data contract. It anchors
-deterministic document generation, schema lookup and validation, latest and legacy
-CID conversion, deterministic app-data info derivation, explicit fetch and upload
-transport seams, and selected package-level schema regression tests to upstream
-`packages/app-data` sources.
 
 `fixtures/orderbook.json` is the pinned orderbook contract. It anchors
 endpoint breadth, request-helper behavior, typed API errors, chain/env URL
@@ -128,12 +108,6 @@ quote-only flows, quote-to-order conversion, post-from-quote orchestration, limi
 orders, native-sell / EthFlow transactions, pre-sign and cancellation routing,
 allowance and approval boundaries, slippage suggestion helpers, and `TradingSdk`
 parameter precedence to upstream `packages/trading` sources.
-
-`fixtures/subgraph.json` is the pinned subgraph contract. It anchors
-API-key-derived production URL resolution, totals/day/hour query helpers, generic
-custom-query execution, generated GraphQL response shapes, explicit override
-behavior, and typed unsupported-network / empty-result / query-failure paths to
-upstream `packages/subgraph` sources.
 
 External reference implementations are not part of this parity contract. They may
 be consulted as secondary implementation references, but they must never be used

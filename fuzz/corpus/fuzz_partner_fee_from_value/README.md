@@ -10,7 +10,7 @@ Seed classes:
 
 | File | Class | Derivation |
 | --- | --- | --- |
-| `seed-00-canonical-volume.json` | canonical | A representative single-policy `{volumeBps, recipient}` value derived from the partner-fee fixture pinned by `parity/fixtures/app-data.json::app-data-validation-contract`. |
+| `seed-00-canonical-volume.json` | canonical | A representative single-policy `{volumeBps, recipient}` value derived from the partner-fee contract pinned by `crates/app-data/tests/partner_fee_contract.rs`. |
 | `seed-01-canonical-multiple.json` | canonical | A representative array shape `[Volume, Surplus]` exercising the `Multiple` variant on the typed deserializer. |
 | `seed-02-canonical-legacy-bps.json` | canonical | A legacy `{bps, recipient}` value the deserializer promotes into a `Volume` policy on success. |
 | `seed-03-boundary-zero-volume.json` | boundary | Zero `volumeBps`; the deserializer accepts the u16 (documented as lenient on bounds), and `validate()` returns the expected `Err`. Exercises the parse-then-validate split. |

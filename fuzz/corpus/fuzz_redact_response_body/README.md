@@ -10,8 +10,8 @@ credential-shaped substrings (URL userinfo, JWT-shaped tokens, and
 Seed classes:
 
 - canonical: `seed-canonical-empty.bin` (anchored to the
-  `core-evm-address-contract` fixture id in
-  `parity/fixtures/core.json` as the canonical
+  `redact_response_body` contract pinned by
+  `crates/core/tests/redaction_contract.rs` as the canonical
   empty-body baseline) and
   `seed-canonical-short-json.bin` cover the empty and short typed
   diagnostic bodies that the redactor is expected to pass through

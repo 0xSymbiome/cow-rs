@@ -11,7 +11,7 @@ internal `FuzzInput` struct.
 
 | File | Class | Derivation |
 | --- | --- | --- |
-| `p2_canonical_cancellation_uid` | canonical | EIP-712 order field shape derived from `parity/fixtures/signing.json::signing-typed-data-envelope` paired with a representative cancellation UID. |
+| `p2_canonical_cancellation_uid` | canonical | EIP-712 order field shape derived from `parity/fixtures/eip712/order_digests.json` (exercised by `crates/contracts/tests/order_digest_parity_contract.rs`) paired with a representative cancellation UID. |
 | `p2_boundary_zero_domain` | boundary | All-zero domain name, version, chain id, and verifying contract bytes. |
 | `p2_boundary_ff_values` | boundary | All-`0xff` byte fill across the typed-data input budget. |
 | `p2_boundary_alternating_aa55` | boundary | Alternating `0xaa` / `0x55` byte pattern across the input budget. |
@@ -24,10 +24,10 @@ internal `FuzzInput` struct.
 | `8d0da01949ca937fe72102d511382e10828dd39eefdf8c2601cc5f909cbeb969` | adversarial | Discovered-corpus entry retained from prior libFuzzer smoke runs. |
 | `d0f9b20e11b4dee02da0e8da52ebeda2c6f00792f241238819f2b280ad10ba33` | adversarial | Discovered-corpus entry retained from prior libFuzzer smoke runs. |
 
-The canonical seed pins the typed-data domain shape against
-`parity/fixtures/signing.json::signing-typed-data-envelope` and the
+The canonical seed pins the typed-data domain shape and the
 order field shape against
-`parity/fixtures/signing.json::signing-eip712-order-fields`. The
+`parity/fixtures/eip712/order_digests.json` (exercised by
+`crates/contracts/tests/order_digest_parity_contract.rs`). The
 boundary seeds cover the input-budget edges that exercise the
 `bounded_ascii` length and seed parameters. The discovered-corpus
 adversarial entries are kept so coverage observed during prior

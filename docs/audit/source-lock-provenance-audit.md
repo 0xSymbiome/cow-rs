@@ -167,8 +167,8 @@ checks are CI-enforced with the rest of the maintainer suite.
 ### Cross-Fixture Amount Roundtrip
 
 The workspace-level SDK integration test at
-`crates/sdk/tests/cross_fixture_amount_roundtrip.rs` loads
-`parity/fixtures/core.json`, `parity/fixtures/orderbook.json`, and
+`crates/sdk/tests/amount_roundtrip.rs` loads
+`parity/fixtures/orderbook.json` and
 `parity/fixtures/trading.json`, collects amount-shaped strings, and asserts
 they parse through `cow_sdk_core::Amount::new` with byte-identical display
 roundtrips. When an identical hex string appears across fixture files, the

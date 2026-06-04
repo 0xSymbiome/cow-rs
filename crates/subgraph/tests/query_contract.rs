@@ -43,36 +43,6 @@ struct LastDaysVolume;
 struct LastHoursVolume;
 
 #[test]
-fn parity_fixture_surface_and_cases_are_present() {
-    let fixture: serde_json::Value =
-        serde_json::from_str(include_str!("../../../parity/fixtures/subgraph.json")).unwrap();
-
-    assert_eq!(fixture["surface"].as_str(), Some("subgraph"));
-    assert_eq!(fixture["schema_version"].as_u64(), Some(1));
-    assert!(
-        fixture["cases"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .any(|case| case["id"] == "subgraph-last-hours-volume-query-contract")
-    );
-    assert!(
-        fixture["cases"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .any(|case| case["id"] == "subgraph-custom-query-support")
-    );
-    assert!(
-        fixture["cases"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .any(|case| case["id"] == "subgraph-empty-totals-error")
-    );
-}
-
-#[test]
 fn totals_query_matches_required_operation_and_fields() {
     assert_eq!(
         TOTALS_QUERY,

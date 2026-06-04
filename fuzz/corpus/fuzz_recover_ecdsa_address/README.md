@@ -7,7 +7,8 @@ Each binary seed follows the target's `arbitrary` layout:
 Seed classes:
 
 - canonical: `seed-00-canonical-v27.bin` is derived from
-  `parity/fixtures/signing.json::signing-ecdsa-v-normalization` by taking
+  `parity/fixtures/ecdsa/v_normalization.json` (exercised by
+  `crates/contracts/tests/v_normalization_contract.rs`) by taking
   the canonical `v = 27` signature shape and pairing it with a fixed
   digest.
 - boundary: `seed-01-all-zero.bin` and `seed-02-all-ff.bin` exercise

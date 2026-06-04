@@ -144,13 +144,9 @@ crates. None of the repositories above are publish-time git dependencies.
 
 | Surface | Primary upstream paths | Committed fixture |
 | --- | --- | --- |
-| core | common adapters, address/token helpers, config types, selected shared type files, and `contracts` order helpers | `parity/fixtures/core.json` |
 | contracts | `contracts` order, sign, settlement, swap, interaction, vault, proxy, and selected test paths | `parity/fixtures/contracts.json` |
-| signing | order-signing utilities, typed-data helpers, selected trading consumers, and contract signing sources | `parity/fixtures/signing.json` |
-| app-data | app-data helpers, constants, schema imports, utilities, and generated schema references | `parity/fixtures/app-data.json` |
 | orderbook | orderbook API, request, transform, and type sources plus selected `services` references | `parity/fixtures/orderbook.json` |
 | trading | trading quote, order, post, cancellation, slippage, settlement, pre-sign, and EthFlow sources | `parity/fixtures/trading.json` |
-| subgraph | subgraph API, GraphQL, query, and selected test scenarios | `parity/fixtures/subgraph.json` |
 | native Alloy adapters | Alloy runtime and Alloy Core producer paths pinned in `parity/source-lock.yaml` | Adapter crate tests, transaction broadcast / receipt shape invariants, and native examples |
 
 ## Provenance Rule

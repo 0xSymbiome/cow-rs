@@ -15,8 +15,8 @@ Each seed file is the little-endian byte layout consumed by
 Seed classes:
 
 - canonical: `seed-canonical-happy.bin` is derived from the
-  `core-environment-defaults` fixture id in
-  `parity/fixtures/core.json` as the canonical
+  `ValidTo::relative` window contract pinned by
+  `crates/core/tests/types_contract.rs` as the canonical
   one-hour window anchored at a representative mainnet timestamp.
 - boundary: `seed-boundary-min-duration.bin` and
   `seed-boundary-max-duration.bin` cover the inclusive

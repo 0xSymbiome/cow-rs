@@ -10,7 +10,7 @@ Seed classes:
 
 | File | Class | Derivation |
 | --- | --- | --- |
-| `seed-00-canonical-full.json` | canonical | A representative five-field flash-loan hint with non-zero addresses and a positive amount, derived from the schema validation case pinned by `parity/fixtures/app-data.json::app-data-validation-contract`. |
+| `seed-00-canonical-full.json` | canonical | A representative five-field flash-loan hint with non-zero addresses and a positive amount, derived from the schema validation contract pinned by `crates/app-data/tests/flashloan_contract.rs`. |
 | `seed-01-canonical-large-amount.json` | canonical | A second representative value covering a large decimal amount string (`10**18`) that still parses through the typed `Amount` constructor. |
 | `seed-02-boundary-zero-amount.json` | boundary | A payload with `amount = "0"`; the derived shape-only deserializer accepts the value, and `validate()` returns the expected zero-amount `Err`. Exercises the parse-then-validate split. |
 | `seed-03-boundary-zero-address.json` | boundary | A payload with `liquidityProvider = 0x00..00`; the shape-only deserializer accepts the value, and `validate()` returns the expected zero-address `Err`. Exercises the parse-then-validate split. |

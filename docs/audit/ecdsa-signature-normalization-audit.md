@@ -171,11 +171,9 @@ rejection through `SignatureSchemeNotEcdsa`, ERC-2098 round-trip, and
 the opt-in low-s canonicalisation. The shared property test at
 `crates/contracts/tests/property_contract.rs` keeps the EIP-1271
 payload codec green under the stricter 65-byte ECDSA contract. The
-signing parity harness reads the dedicated normalization and EIP-155
-rejection cases from `parity/fixtures/signing.json`, and the
 `crates/contracts/tests/v_normalization_contract.rs` parity contract
-reads both the accept rows and the rejection rows from
-`parity/fixtures/ecdsa/v_normalization.json`. The fuzz target
+reads the dedicated normalization accept rows and the EIP-155 rejection
+rows from `parity/fixtures/ecdsa/v_normalization.json`. The fuzz target
 `fuzz/fuzz_targets/fuzz_ecdsa_v_normalization.rs` asserts the canonical
 mapping on arbitrary 65-byte inputs; the fuzz target
 `fuzz/fuzz_targets/fuzz_recoverable_signature_differential.rs`
@@ -198,9 +196,7 @@ Primary regression coverage:
 - `crates/contracts/tests/recoverable_signature_contract.rs`
 - `crates/contracts/tests/v_normalization_contract.rs`
 - `crates/contracts/tests/property_contract.rs::signature_codecs_preserve_verifier_and_payload_bytes`
-- `crates/signing/tests/parity_contract.rs::parity_fixture_cases_hold`
 - `parity/fixtures/ecdsa/v_normalization.json`
-- `parity/fixtures/signing.json`
 - `fuzz/fuzz_targets/fuzz_ecdsa_v_normalization.rs`
 - `fuzz/fuzz_targets/fuzz_recoverable_signature_parse_hex.rs`
 - `fuzz/fuzz_targets/fuzz_recoverable_signature_differential.rs`

@@ -8,9 +8,9 @@ normalization pipeline.
 Seed sources:
 
 - canonical: `seed-canonical-00-transfer.bin` carries a minimal native
-  transfer transaction shape that mirrors the documented provider
-  parity for transaction submission (`parity/fixtures/core.json` id
-  `core-runtime-trait-surfaces`).
+  transfer transaction shape that mirrors the documented
+  `TransactionRequest` contract pinned by
+  `crates/core/tests/traits_contract.rs`.
 - canonical: `seed-canonical-01-call-with-data.bin` carries a contract
   call shape with `to`, `data`, and `gasLimit` populated.
 - boundary: `seed-boundary-02-empty.bin` is an empty body that must be

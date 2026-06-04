@@ -10,10 +10,10 @@ determinism on identical input.
 Seed classes:
 
 - canonical: `seed-canonical-zero.bin` and
-  `seed-canonical-one-eth.bin` are derived from the
-  `core-evm-address-contract` and
-  `core-shared-order-and-quote-surfaces` fixture ids in
-  `parity/fixtures/core.json` as canonical
+  `seed-canonical-one-eth.bin` are derived from the `Amount`
+  parse/round-trip contract pinned by
+  `crates/core/tests/types_contract.rs` and
+  `crates/sdk/tests/amount_roundtrip.rs` as canonical
   zero and `1e18` (one ether in atoms) representative amounts.
   `seed-canonical-hex.bin` carries the `0x`-hex literal form of the same
   one-ether amount.

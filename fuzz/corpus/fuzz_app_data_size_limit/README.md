@@ -10,7 +10,7 @@ Seed classes:
 
 | File | Class | Derivation |
 | --- | --- | --- |
-| `seed-00-canonical-zero-pad.bin` | canonical | A short input feeding the zero-byte / single-byte early-return branches; produces the minimal app-data document well below the warning floor, derived from the validation contract pinned by `parity/fixtures/app-data.json::app-data-validation-contract`. |
+| `seed-00-canonical-zero-pad.bin` | canonical | A short input feeding the zero-byte / single-byte early-return branches; produces the minimal app-data document well below the warning floor, derived from the size/`TooLarge` validation contract pinned by `crates/app-data/tests/validated_shape_contract.rs`. |
 | `seed-01-canonical-sub-warning.bin` | canonical | A short text payload whose decoded padding length lands well below the documented 75%-of-max warning threshold. |
 | `seed-02-boundary-at-warning.bin` | boundary | A text payload whose decoded padding length lands inside the band approaching the warning threshold; libFuzzer mutates from here across the exact boundary. |
 | `seed-03-boundary-at-ceiling.bin` | boundary | A text payload whose decoded padding length lands near the hard ceiling without overshooting. |

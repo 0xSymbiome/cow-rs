@@ -58,11 +58,9 @@ sites.
 - Validation and review: curated regression coverage in
   `crates/contracts/tests/signature_contract.rs` and
   `crates/contracts/tests/recoverable_signature_contract.rs` pins the
-  accepted and rejected boundary cases; the parity contracts at
-  `crates/contracts/tests/v_normalization_contract.rs` and
-  `crates/signing/tests/parity_contract.rs` drive the accept and
-  rejection rows in `parity/fixtures/ecdsa/v_normalization.json` and
-  `parity/fixtures/signing.json`; the fuzz target
+  accepted and rejected boundary cases; the parity contract at
+  `crates/contracts/tests/v_normalization_contract.rs` drives the accept
+  and rejection rows in `parity/fixtures/ecdsa/v_normalization.json`; the fuzz target
   `fuzz/fuzz_targets/fuzz_ecdsa_v_normalization.rs` asserts that
   arbitrary 65-byte inputs either preserve `r || s` with a canonical
   `27` / `28` output or fail through the typed recovery-byte rejection;
