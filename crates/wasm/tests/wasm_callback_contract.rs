@@ -182,7 +182,11 @@ async fn eip1193_rejection_maps_to_wallet_error() {
     let value = json(error);
 
     assert_eq!(value["kind"], "walletRequest");
-    assert!(value["message"].as_str().unwrap().contains("async denial"));
+    // The structured provider code survives as the safe machine signal, while
+    // the provider-authored message is redacted to SDK-authored guidance
+    // (ADR 0053), so the raw "async denial" reason never crosses the boundary.
+    assert_eq!(value["code"], 4900);
+    assert!(!value["message"].as_str().unwrap().contains("async denial"));
 }
 
 #[wasm_bindgen_test]
