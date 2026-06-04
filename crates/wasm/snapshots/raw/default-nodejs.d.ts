@@ -275,7 +275,7 @@ export interface ValidationResultDto {
  * every wire tag. The category carries no message or code, so it never
  * re-exposes redacted rejection text.
  */
-export type OrderbookRejectionCategoryDto = "authorization" | "insufficientFunds" | "invalidOrder" | "notFound" | "conflict" | "unfulfillable" | "server" | "__unknown";
+export type OrderBookRejectionCategoryDto = "authorization" | "insufficientFunds" | "invalidOrder" | "notFound" | "conflict" | "unfulfillable" | "server" | "__unknown";
 
 /**
  * Contract-read callback request.
@@ -540,7 +540,7 @@ export interface QuoteResultsDto {
     /**
      * Originating orderbook runtime binding captured by the quote flow.
      */
-    orderbookBinding?: OrderbookRuntimeBindingDto;
+    orderbookBinding?: OrderBookRuntimeBindingDto;
     /**
      * Typed order-facing EIP-712 envelope kept for consumers.
      */
@@ -575,7 +575,7 @@ export type Hash32 = string;
 /**
  * JS-visible typed error envelope for every wasm export.
  */
-export type WasmError = { kind: "invalidInput"; schemaVersion: SchemaVersion; message: string; field?: string } | { kind: "unknownEnumValue"; schemaVersion: SchemaVersion; message: string; field: string; value: string } | { kind: "unsupportedChain"; schemaVersion: SchemaVersion; message: string; chainId: number } | { kind: "walletRequest"; schemaVersion: SchemaVersion; method: string; code?: number; message: string; data?: Value } | { kind: "walletTimeout"; schemaVersion: SchemaVersion; message: string; timeoutMs: number } | { kind: "transport"; schemaVersion: SchemaVersion; class: string; message: string; status?: number; headers?: [string, string][]; body?: string } | { kind: "orderbook"; schemaVersion: SchemaVersion; code?: string; category?: OrderbookRejectionCategoryDto; message: string } | { kind: "subgraph"; schemaVersion: SchemaVersion; message: string } | { kind: "signing"; schemaVersion: SchemaVersion; message: string } | { kind: "appData"; schemaVersion: SchemaVersion; class?: string; message: string } | { kind: "forbiddenInteraction"; schemaVersion: SchemaVersion; message: string; target: string; reason: string } | { kind: "cancelled"; schemaVersion: SchemaVersion; message: string } | { kind: "internal"; schemaVersion: SchemaVersion; message: string } | { kind: "__unknown"; schemaVersion: SchemaVersion; message: string; raw: Value };
+export type WasmError = { kind: "invalidInput"; schemaVersion: SchemaVersion; message: string; field?: string } | { kind: "unknownEnumValue"; schemaVersion: SchemaVersion; message: string; field: string; value: string } | { kind: "unsupportedChain"; schemaVersion: SchemaVersion; message: string; chainId: number } | { kind: "walletRequest"; schemaVersion: SchemaVersion; method: string; code?: number; message: string; data?: Value } | { kind: "walletTimeout"; schemaVersion: SchemaVersion; message: string; timeoutMs: number } | { kind: "transport"; schemaVersion: SchemaVersion; class: string; message: string; status?: number; headers?: [string, string][]; body?: string } | { kind: "orderbook"; schemaVersion: SchemaVersion; code?: string; category?: OrderBookRejectionCategoryDto; message: string } | { kind: "subgraph"; schemaVersion: SchemaVersion; message: string } | { kind: "signing"; schemaVersion: SchemaVersion; message: string } | { kind: "appData"; schemaVersion: SchemaVersion; class?: string; message: string } | { kind: "forbiddenInteraction"; schemaVersion: SchemaVersion; message: string; target: string; reason: string } | { kind: "cancelled"; schemaVersion: SchemaVersion; message: string } | { kind: "internal"; schemaVersion: SchemaVersion; message: string } | { kind: "__unknown"; schemaVersion: SchemaVersion; message: string; raw: Value };
 
 /**
  * Jitter strategy accepted by JS client constructors.
@@ -1169,7 +1169,7 @@ export interface OrderQuoteRequestInput {
  * Originating orderbook runtime binding captured by the quote flow, mirroring
  * `cow_sdk_orderbook::OrderbookRuntimeBinding`.
  */
-export interface OrderbookRuntimeBindingDto {
+export interface OrderBookRuntimeBindingDto {
     /**
      * Chain id fixed by the orderbook client.
      */

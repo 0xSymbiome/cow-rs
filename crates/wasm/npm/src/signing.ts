@@ -145,6 +145,6 @@ export type {
   Eip1193RequestCallback,
   TypedDataSignerCallback
 } from "./callbacks.js";
-export type { OrderbookRejectionCategory, SdkError } from "./errors.js";
+export type { OrderBookRejectionCategory, SdkError } from "./errors.js";
 export type { SchemaVersion, WasmEnvelope } from "./envelope.js";
 export type { SdkClientOptions, SigningOptions, WalletConfig } from "./options.js";

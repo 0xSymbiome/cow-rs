@@ -215,7 +215,7 @@ pub struct TradeParametersDto {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
-pub struct OrderbookRuntimeBindingDto {
+pub struct OrderBookRuntimeBindingDto {
     /// Chain id fixed by the orderbook client.
     pub chain_id: u64,
     /// Environment fixed by the orderbook client.
@@ -261,7 +261,7 @@ pub struct QuoteResultsDto {
     pub app_data_info: TradingAppDataInfoDto,
     /// Originating orderbook runtime binding captured by the quote flow.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub orderbook_binding: Option<OrderbookRuntimeBindingDto>,
+    pub orderbook_binding: Option<OrderBookRuntimeBindingDto>,
     /// Typed order-facing EIP-712 envelope kept for consumers.
     pub order_typed_data: TypedDataEnvelopeDto,
 }

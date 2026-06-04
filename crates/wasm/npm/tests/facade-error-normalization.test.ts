@@ -35,6 +35,40 @@ describe("facade error normalization", () => {
     });
   });
 
+  // Input-DTO deserialization failures cross the wasm boundary as a plain
+  // `Error` (the generated `from_wasm_abi` glue throws the serde message),
+  // so they carry no structured `kind`. They are caller input errors and
+  // must normalize to `invalidInput`, not `internal`.
+  test("classifies serde deserialization failures as invalidInput", () => {
+    expect(normalizeError(new Error("unknown variant `teleport`, expected `sell` or `buy`")))
+      .toMatchObject({
+        schemaVersion: "v1",
+        kind: "invalidInput",
+        message: expect.stringContaining("unknown variant `teleport`, expected `sell` or `buy`")
+      });
+
+    expect(normalizeError(new Error("invalid type: integer `1`, expected a string")))
+      .toMatchObject({ schemaVersion: "v1", kind: "invalidInput" });
+  });
+
+  test("extracts the field name from missing/unknown field failures", () => {
+    expect(normalizeError(new Error("missing field `appCode`"))).toMatchObject({
+      schemaVersion: "v1",
+      kind: "invalidInput",
+      field: "appCode"
+    });
+
+    expect(normalizeError(new Error("unknown field `frobnicate`, expected one of `appCode`")))
+      .toMatchObject({ kind: "invalidInput", field: "frobnicate" });
+  });
+
+  test("does not misclassify unrelated exceptions as invalidInput", () => {
+    // No serde-failure phrasing → stays internal.
+    expect(normalizeError(new Error("connection reset"))).toMatchObject({
+      kind: "internal"
+    });
+  });
+
   test("adds actionable guidance to timeout and cancellation errors", () => {
     expect(normalizeError({ schemaVersion: "v1", kind: "walletTimeout", timeout_ms: 250 }))
       .toMatchObject({

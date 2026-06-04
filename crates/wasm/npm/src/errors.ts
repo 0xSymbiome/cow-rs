@@ -7,7 +7,7 @@ import type { SchemaVersion } from "./envelope.js";
  * `__unknown` member is the forward-compatible sentinel for a category a newer
  * SDK may introduce.
  */
-export type OrderbookRejectionCategory =
+export type OrderBookRejectionCategory =
   | "authorization"
   | "insufficientFunds"
   | "invalidOrder"
@@ -43,7 +43,7 @@ export type SdkError =
       schemaVersion: "v1";
       kind: "orderbook";
       code?: string;
-      category?: OrderbookRejectionCategory;
+      category?: OrderBookRejectionCategory;
       message: string;
     }
   | { schemaVersion: "v1"; kind: "subgraph"; message: string }
@@ -105,10 +105,54 @@ export function normalizeError(raw: unknown): SdkError {
   }
 
   if (raw instanceof Error) {
-    return { schemaVersion: "v1", kind: "internal", message: internalMessage(raw.message) };
+    return (
+      classifyDeserializationFailure(raw.message) ?? {
+        schemaVersion: "v1",
+        kind: "internal",
+        message: internalMessage(raw.message)
+      }
+    );
   }
 
-  return { schemaVersion: "v1", kind: "internal", message: internalMessage(String(raw)) };
+  return (
+    classifyDeserializationFailure(String(raw)) ?? {
+      schemaVersion: "v1",
+      kind: "internal",
+      message: internalMessage(String(raw))
+    }
+  );
+}
+
+// Input-DTO deserialization failures cross the wasm boundary as a plain
+// `Error`: the generated wasm-bindgen glue throws the serde message, so it
+// never carries a structured `kind`. These are CALLER input errors — a value
+// that does not match the documented input type (unknown enum variant,
+// missing/unknown field, wrong type) — not SDK-internal faults, so they must
+// normalize to `invalidInput` rather than `internal` (whose contract implies
+// an SDK bug). The verbatim detail is preserved because it already names the
+// offending field/variant and the expected set, e.g.
+// "unknown variant `teleport`, expected `sell` or `buy`".
+const DESERIALIZATION_FAILURE_PATTERNS: readonly RegExp[] = [
+  /unknown variant `/,
+  /missing field `/,
+  /unknown field `/,
+  /duplicate field `/,
+  /invalid type:/,
+  /invalid length\b/,
+  /invalid value:/,
+  /data did not match any variant/
+];
+
+function classifyDeserializationFailure(message: string): SdkError | undefined {
+  if (!DESERIALIZATION_FAILURE_PATTERNS.some((pattern) => pattern.test(message))) {
+    return undefined;
+  }
+  const detail = message.replace(/^Error:\s*/, "");
+  const field = detail.match(/(?:missing|unknown|duplicate) field `([^`]+)`/)?.[1];
+  const reason = `Invalid SDK input: ${detail}. Check the value against the documented input type and retry.`;
+  return field !== undefined
+    ? { schemaVersion: "v1", kind: "invalidInput", field, message: reason }
+    : { schemaVersion: "v1", kind: "invalidInput", message: reason };
 }
 
 export function cancelledError(): SdkError {

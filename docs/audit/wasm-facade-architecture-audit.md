@@ -1,7 +1,7 @@
 # WASM Facade Architecture Audit
 
 Status: Current
-Last reviewed: 2026-05-22
+Last reviewed: 2026-06-04
 Owning surface: TypeScript facade modules under `crates/wasm/npm/src/**` and their adaptation boundary over raw wasm-bindgen output
 Refresh trigger: Changes to facade source, raw binding adapters, disposal behavior, facade declaration snapshots, raw export denylist, or package resolution tests
 Related docs:
@@ -52,7 +52,11 @@ declarations.
 
 Facade clients own callback retention and expose explicit `dispose` behavior.
 Errors crossing the facade are converted into `SdkError` values with
-schema-versioned envelopes and redacted details.
+schema-versioned envelopes and redacted details. Input-DTO deserialization
+failures raised at the wasm boundary (an unknown enum variant, a missing
+required field, or a wrong field type) normalize to the `invalidInput` kind
+rather than `internal`, so a caller mistake carries an input-error class; the
+`internal` kind stays reserved for genuine SDK-side faults.
 
 ## Evidence
 

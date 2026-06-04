@@ -45,6 +45,6 @@ export declare function supportedChainIds(): Uint32Array;
 export declare function wasmVersion(): string;
 export type { AppDataObjectDto, CowEip1271SignRequest, DeploymentAddressesDto, Eip1193Request, EthFlowEventDto, EthflowDataDto, EventLogInput, ExecutedProtocolFeeDto, GeneratedOrderUidDto, InteractionDataDto, NativePriceResponseDto, OnchainOrderDataDto, OrderClassDto, OrderCreationInput, OrderDto, OrderInput, OrderInteractionsDto, OrderKindDto, OrderQuoteRequestInput, OrderQuoteResponseDto, OrderStatusDto, OrderTraderParametersInput, PaginationOptions, QuoteDataDto, SettlementEventDto, SignedCancellationsInput, SignedOrderDto, SigningSchemeDto, StoredOrderQuoteDto, TokenBalanceDto, TradeDto, TradesQueryInput, TransactionRequestDto, TypedDataDomainDto, TypedDataEnvelopeDto, TypedDataFieldDto } from "./raw/orderbook.js";
 export type { CowEip1271SignCallback, CustomEip1271Callback, DigestSignerCallback, Eip1193RequestCallback, TypedDataSignerCallback } from "./callbacks.js";
-export type { OrderbookRejectionCategory, SdkError } from "./errors.js";
+export type { OrderBookRejectionCategory, SdkError } from "./errors.js";
 export type { SchemaVersion, WasmEnvelope } from "./envelope.js";
 export type { SdkClientOptions, SigningOptions, WalletConfig } from "./options.js";

@@ -112,7 +112,7 @@ pub enum WasmError {
         /// Coarse, switchable rejection category when the response carried a
         /// recognised rejection envelope.
         #[serde(skip_serializing_if = "Option::is_none")]
-        category: Option<OrderbookRejectionCategoryDto>,
+        category: Option<OrderBookRejectionCategoryDto>,
         /// Redacted message.
         message: String,
     },
@@ -188,7 +188,7 @@ pub enum WasmError {
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
-pub enum OrderbookRejectionCategoryDto {
+pub enum OrderBookRejectionCategoryDto {
     /// Refused on policy or permission grounds; not fixable by editing the order.
     Authorization,
     /// Sell-side balance or allowance is insufficient; fund or approve, then resubmit unchanged.
@@ -209,7 +209,7 @@ pub enum OrderbookRejectionCategoryDto {
 }
 
 #[cfg(feature = "orderbook")]
-impl From<OrderbookRejectionCategory> for OrderbookRejectionCategoryDto {
+impl From<OrderbookRejectionCategory> for OrderBookRejectionCategoryDto {
     fn from(value: OrderbookRejectionCategory) -> Self {
         match value {
             OrderbookRejectionCategory::Authorization => Self::Authorization,
