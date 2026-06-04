@@ -4,14 +4,17 @@ use serde_json::json;
 
 use cow_sdk::prelude::{SupportedChainId, Trading};
 
+use cow_sdk::testing::{MockOrderbook, MockSigner};
 use cow_sdk_examples_native::support::{
-    MockOrderbook, MockSigner, sample_limit_parameters, sample_quote_response,
+    sample_limit_parameters, sample_owner, sample_quote_response,
 };
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let orderbook = MockOrderbook::new(SupportedChainId::Sepolia, sample_quote_response());
-    let signer = MockSigner::default();
+    let orderbook = MockOrderbook::builder(SupportedChainId::Sepolia)
+        .quote(sample_quote_response())
+        .build();
+    let signer = MockSigner::builder().address(sample_owner()).build();
     let trading = Trading::builder()
         .chain_id(SupportedChainId::Sepolia)
         .app_code("cow-rs-limit-order")
@@ -21,7 +24,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let posted = trading
         .post_limit_order(sample_limit_parameters(), &signer, None)
         .await?;
-    let state = orderbook.state();
+    let state = orderbook.recorded();
     let sent_order = state
         .sent_orders
         .first()

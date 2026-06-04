@@ -8,17 +8,18 @@ use cow_sdk::trading::{
     AllowanceParameters, ApprovalParameters, OrderTraderParameters,
 };
 
+use cow_sdk::testing::{MockOrderbook, MockProvider, MockSigner};
 use cow_sdk_examples_native::support::{
-    MockOrderbook, MockProvider, MockSigner, sample_owner, sample_quote_response,
-    sample_sell_token, sample_trade_parameters,
+    sample_owner, sample_quote_response, sample_sell_token, sample_trade_parameters,
 };
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let orderbook = MockOrderbook::new(SupportedChainId::Sepolia, sample_quote_response());
-    let signer = MockSigner::default();
-    let mut provider = MockProvider::default();
-    provider.signer = Some(signer.clone());
+    let orderbook = MockOrderbook::builder(SupportedChainId::Sepolia)
+        .quote(sample_quote_response())
+        .build();
+    let signer = MockSigner::builder().address(sample_owner()).build();
+    let provider = MockProvider::builder().signer(signer.clone()).build();
 
     let trading = Trading::builder()
         .chain_id(SupportedChainId::Sepolia)
@@ -50,14 +51,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .await?;
     let cancelled = trading
         .off_chain_cancel_order(
-            &OrderTraderParameters::new(post_result.order_id.clone()),
+            &OrderTraderParameters::new(post_result.order_id),
             &signer,
         )
         .await?;
 
-    let orderbook_state = orderbook.state();
-    let signer_state = signer.state();
-    let provider_state = provider.state();
+    let orderbook_state = orderbook.recorded();
+    let signer_state = signer.recorded();
+    let provider_state = provider.recorded();
 
     let report = json!({
         "surface": "cow-sdk::Trading",
@@ -75,7 +76,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         "allowanceAndApproval": {
             "allowance": allowance,
             "approvalTxHash": approval_tx_hash,
-            "approvalContractRead": provider_state.last_contract_call.as_ref().map(|call| {
+            "approvalContractRead": provider_state.contract_reads.last().map(|call| {
                 json!({
                     "address": call.address.to_hex_string(),
                     "method": call.method

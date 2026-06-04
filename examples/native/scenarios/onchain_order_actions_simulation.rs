@@ -9,9 +9,10 @@ use cow_sdk::trading::{
     onchain_cancellation_transaction,
 };
 
+use cow_sdk::testing::{MockOrderbook, MockSigner};
 use cow_sdk_examples_native::support::{
-    MockOrderbook, MockSigner, sample_open_order, sample_order_uid,
-    sample_quote_response, sample_trader_parameters, text_preview,
+    sample_open_order, sample_order_uid, sample_owner, sample_quote_response,
+    sample_trader_parameters, text_preview,
 };
 
 fn call_data_prefix(data: &HexData) -> String {
@@ -42,9 +43,9 @@ fn trading_sdk(orderbook: MockOrderbook) -> Trading {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let chain_id = SupportedChainId::Sepolia;
-    let preview_signer = MockSigner::default();
+    let preview_signer = MockSigner::builder().address(sample_owner()).build();
     let order_uid = sample_order_uid();
-    let params = OrderTraderParameters::new(order_uid.clone()).with_chain_id(chain_id);
+    let params = OrderTraderParameters::new(order_uid).with_chain_id(chain_id);
 
     let pre_sign = get_pre_sign_transaction(&preview_signer, chain_id, &order_uid, None).await?;
     let regular_preview =
@@ -54,29 +55,33 @@ async fn main() -> Result<(), Box<dyn Error>> {
         onchain_cancellation_transaction(&preview_signer, chain_id, &sample_ethflow_order(), None)
             .await?;
 
-    let regular_orderbook = MockOrderbook::new(chain_id, sample_quote_response());
+    let regular_orderbook = MockOrderbook::builder(chain_id)
+        .quote(sample_quote_response())
+        .build();
     regular_orderbook.push_order(sample_open_order());
-    let regular_signer = MockSigner::default();
+    let regular_signer = MockSigner::builder().address(sample_owner()).build();
     let regular_sdk = trading_sdk(regular_orderbook);
     let regular_hash = regular_sdk
         .on_chain_cancel_order(&params, &regular_signer)
         .await?;
     let regular_sent = regular_signer
-        .state()
+        .recorded()
         .sent_transactions
         .last()
         .cloned()
         .expect("regular cancellation should send a transaction");
 
-    let ethflow_orderbook = MockOrderbook::new(chain_id, sample_quote_response());
+    let ethflow_orderbook = MockOrderbook::builder(chain_id)
+        .quote(sample_quote_response())
+        .build();
     ethflow_orderbook.push_order(sample_ethflow_order());
-    let ethflow_signer = MockSigner::default();
+    let ethflow_signer = MockSigner::builder().address(sample_owner()).build();
     let ethflow_sdk = trading_sdk(ethflow_orderbook);
     let ethflow_hash = ethflow_sdk
         .on_chain_cancel_order(&params, &ethflow_signer)
         .await?;
     let ethflow_sent = ethflow_signer
-        .state()
+        .recorded()
         .sent_transactions
         .last()
         .cloned()

@@ -5,13 +5,14 @@ use serde_json::json;
 use cow_sdk::prelude::{SupportedChainId, TraderParameters, TradingBuilder};
 use cow_sdk::trading::TradingOptions;
 
-use cow_sdk_examples_native::support::{
-    MockOrderbook, sample_quote_response, sample_trade_parameters,
-};
+use cow_sdk::testing::MockOrderbook;
+use cow_sdk_examples_native::support::{sample_quote_response, sample_trade_parameters};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let orderbook = MockOrderbook::new(SupportedChainId::Sepolia, sample_quote_response());
+    let orderbook = MockOrderbook::builder(SupportedChainId::Sepolia)
+        .quote(sample_quote_response())
+        .build();
     let trading = TradingBuilder::ready(
         TraderParameters::new(SupportedChainId::Sepolia, "cow-rs-quote-only")
             .expect("app code should validate"),
@@ -20,7 +21,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let quote = trading.get_quote_only(sample_trade_parameters(), None).await?;
     let request = orderbook
-        .state()
+        .recorded()
         .quote_requests
         .last()
         .cloned()

@@ -10,9 +10,10 @@ use cow_sdk::trading::{
     get_eth_flow_transaction, post_sell_native_currency_order,
 };
 
+use cow_sdk::testing::{MockOrderbook, MockSigner};
 use cow_sdk_examples_native::support::{
-    MockOrderbook, MockSigner, sample_limit_parameters, sample_quote_response,
-    sample_trader_parameters, text_preview,
+    sample_limit_parameters, sample_owner, sample_quote_response, sample_trader_parameters,
+    text_preview,
 };
 
 fn call_data_prefix(data: &HexData) -> String {
@@ -21,8 +22,10 @@ fn call_data_prefix(data: &HexData) -> String {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let orderbook = MockOrderbook::new(SupportedChainId::Sepolia, sample_quote_response());
-    let signer = MockSigner::default();
+    let orderbook = MockOrderbook::builder(SupportedChainId::Sepolia)
+        .quote(sample_quote_response())
+        .build();
+    let signer = MockSigner::builder().address(sample_owner()).build();
     let trader = sample_trader_parameters();
     let mut params = sample_limit_parameters();
     params.sell_token = Address::new(EVM_NATIVE_CURRENCY_ADDRESS)?;
@@ -60,7 +63,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         None,
     )
     .await?;
-    let state = orderbook.state();
+    let state = orderbook.recorded();
     let upload = state
         .uploads
         .first()

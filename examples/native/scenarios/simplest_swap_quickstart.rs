@@ -10,16 +10,18 @@ use std::{error::Error, sync::Arc};
 use cow_sdk::core::{Amount, OrderKind};
 use cow_sdk::prelude::{SupportedChainId, TradeParameters, Trading};
 
+use cow_sdk::testing::{MockOrderbook, MockSigner};
 use cow_sdk_examples_native::support::{
-    MockOrderbook, MockSigner, sample_buy_token, sample_owner, sample_quote_response,
-    sample_sell_token,
+    sample_buy_token, sample_owner, sample_quote_response, sample_sell_token,
 };
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     // Deterministic, transport-mocked orderbook and signer.
-    let orderbook = MockOrderbook::new(SupportedChainId::Sepolia, sample_quote_response());
-    let signer = MockSigner::default();
+    let orderbook = MockOrderbook::builder(SupportedChainId::Sepolia)
+        .quote(sample_quote_response())
+        .build();
+    let signer = MockSigner::builder().address(sample_owner()).build();
 
     // Construct a ready-state trading client with the mock orderbook injected. A concrete
     // `Arc<MockOrderbook>` coerces into the `Arc<dyn OrderbookClient>` the

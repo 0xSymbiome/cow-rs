@@ -8,14 +8,15 @@ use cow_sdk::signing::{
     sign_order_cancellation,
 };
 
+use cow_sdk::testing::MockSigner;
 use cow_sdk_examples_native::support::{
-    MockSigner, sample_order_uid, sample_owner, sample_unsigned_order, text_preview,
+    sample_order_uid, sample_owner, sample_unsigned_order, text_preview,
 };
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let chain_id = SupportedChainId::Sepolia;
-    let signer = MockSigner::default();
+    let signer = MockSigner::new();
     let order = sample_unsigned_order();
     let signed_order = sign_order(&order, chain_id, &signer, None).await?;
     let typed_order = order_typed_data(chain_id, &order, None)?;

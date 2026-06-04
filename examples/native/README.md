@@ -33,7 +33,7 @@ After that, branch by goal through the full scenario table below.
 
 | Scenario | Purpose |
 | --- | --- |
-| `sdk_surface_report` | Report the root facade surface |
+| `sdk_surface_report` | Report facade construction and the resolved on-chain deployment |
 | `app_data_roundtrip` | Generate and inspect app-data output |
 | `signing_roundtrip` | Sign orders and cancellations and inspect typed payloads |
 | `quote_only_simulation` | Build a quote flow without submission |

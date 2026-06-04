@@ -1216,6 +1216,7 @@ dependencies = [
  "cow-sdk-core",
  "cow-sdk-orderbook",
  "cow-sdk-signing",
+ "cow-sdk-test",
  "cow-sdk-trading",
  "cow-sdk-transport-policy",
  "cow-sdk-transport-wasm",
@@ -1349,7 +1350,6 @@ name = "cow-sdk-examples-native"
 version = "0.1.0"
 dependencies = [
  "alloy-primitives",
- "async-trait",
  "cow-sdk",
  "cow-sdk-subgraph",
  "serde",
@@ -1400,6 +1400,16 @@ dependencies = [
  "serde_json",
  "thiserror",
  "url",
+]
+
+[[package]]
+name = "cow-sdk-test"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "cow-sdk-core",
+ "cow-sdk-orderbook",
+ "cow-sdk-trading",
 ]
 
 [[package]]

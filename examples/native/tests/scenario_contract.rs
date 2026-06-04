@@ -1,9 +1,10 @@
-use cow_sdk::orderbook::{ApiContext, ExternalHostPolicy, OrderbookError};
+use cow_sdk::orderbook::{ApiContext, ExternalHostPolicy};
 use cow_sdk::prelude::{CowEnv, OrderbookApi, OrderUid, SupportedChainId};
+use cow_sdk::testing::MockOrderbook;
 use cow_sdk::trading::OrderbookClient;
 use cow_sdk_examples_native::support::{
-    MESSAGE_SIGNATURE, MockOrderbook, TYPED_SIGNATURE, orderbook_version_response,
-    sample_open_order, sample_order_uid, sample_quote_response, text_preview,
+    MESSAGE_SIGNATURE, TYPED_SIGNATURE, orderbook_version_response, sample_open_order,
+    sample_order_uid, sample_quote_response, text_preview,
 };
 use wiremock::{
     Mock, MockServer,
@@ -68,7 +69,9 @@ async fn version_fixture_is_plain_text() {
 
 #[tokio::test]
 async fn mock_order_lookup_is_uid_keyed() {
-    let orderbook = MockOrderbook::new(SupportedChainId::Sepolia, sample_quote_response());
+    let orderbook = MockOrderbook::builder(SupportedChainId::Sepolia)
+        .quote(sample_quote_response())
+        .build();
     orderbook.push_order(sample_open_order());
 
     let order = orderbook
@@ -80,17 +83,10 @@ async fn mock_order_lookup_is_uid_keyed() {
 
     let unknown_uid = OrderUid::new(format!("0x{}", "0".repeat(112)))
         .expect("zero order uid fixture should be valid");
-    let error = orderbook
+    orderbook
         .get_order(&unknown_uid)
         .await
-        .expect_err("mock lookup must reject a mismatched order uid");
-
-    match error {
-        OrderbookError::InvalidTransform { field, reason: _ } => {
-            assert_eq!(field, "orderUid");
-        }
-        other => panic!("expected InvalidTransform for unknown mock order uid, got {other:?}"),
-    }
+        .expect_err("an unregistered order uid must not resolve");
 }
 
 #[test]
@@ -113,7 +109,9 @@ fn subgraph_examples_are_declared_and_documented() {
     }
 
     assert!(readme.contains("`cow-sdk-subgraph`"));
-    assert!(readme.contains("root facade"));
+    // Whitespace-normalized so the assertion survives README line-wrapping.
+    let readme_normalized = readme.split_whitespace().collect::<Vec<_>>().join(" ");
+    assert!(readme_normalized.contains("root facade"));
     assert!(readme.contains("THE_GRAPH_API_KEY"));
 }
 
