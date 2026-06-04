@@ -14,7 +14,7 @@ fn public_api_reexports_cover_primary_root_surface() {
         TradingOptions::default(),
     )
     .expect("ready trading sdk construction should succeed");
-    let _builder = TradingBuilder::new()
+    let _trading = TradingBuilder::new()
         .chain_id(SupportedChainId::Sepolia)
         .app_code("cow-rs/public-api")
         .build()

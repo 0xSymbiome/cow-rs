@@ -30,12 +30,12 @@
 //!
 //! # #[cfg(not(target_arch = "wasm32"))]
 //! # {
-//! let api = OrderbookApi::builder()
+//! let orderbook = OrderbookApi::builder()
 //!     .chain(SupportedChainId::Mainnet)
 //!     .environment(CowEnv::Prod)
 //!     .build()
 //!     .expect("orderbook client builds with canonical defaults");
-//! let _ = api;
+//! let _ = orderbook;
 //! # }
 //! ```
 

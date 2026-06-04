@@ -149,7 +149,7 @@ async fn classify_a_real_rejection() -> Result<serde_json::Value, Box<dyn Error>
         .mount(&server)
         .await;
 
-    let api = OrderbookApi::builder_from_context(ApiContext::new(
+    let orderbook = OrderbookApi::builder_from_context(ApiContext::new(
         SupportedChainId::Sepolia,
         CowEnv::Prod,
     ))
@@ -169,7 +169,7 @@ async fn classify_a_real_rejection() -> Result<serde_json::Value, Box<dyn Error>
         sample_owner(),
     );
 
-    let error = api
+    let error = orderbook
         .send_order(&order)
         .await
         .expect_err("mock orderbook rejects this order with InsufficientBalance");

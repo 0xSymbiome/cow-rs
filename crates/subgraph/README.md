@@ -23,7 +23,7 @@ cow-sdk-subgraph = "0.1"
 use cow_sdk_core::SupportedChainId;
 use cow_sdk_subgraph::SubgraphApi;
 
-let _api = SubgraphApi::builder()
+let _subgraph = SubgraphApi::builder()
     .chain(SupportedChainId::Mainnet)
     .api_key("your-subgraph-api-key")
     .build()

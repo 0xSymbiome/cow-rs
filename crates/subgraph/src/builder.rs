@@ -24,12 +24,12 @@
 //!
 //! # #[cfg(not(target_arch = "wasm32"))]
 //! # {
-//! let api = SubgraphApi::builder()
+//! let subgraph = SubgraphApi::builder()
 //!     .chain(SupportedChainId::Mainnet)
 //!     .api_key("partner-graph-api-key")
 //!     .build()
 //!     .expect("subgraph client builds with canonical defaults");
-//! let _ = api;
+//! let _ = subgraph;
 //! # }
 //! ```
 

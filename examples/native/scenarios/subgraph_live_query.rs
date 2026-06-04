@@ -9,17 +9,17 @@ use cow_sdk_subgraph::SubgraphApi;
 async fn main() -> Result<(), Box<dyn Error>> {
     let api_key = required_env("THE_GRAPH_API_KEY")?;
     let chain_id = optional_supported_chain_id("COW_SUBGRAPH_CHAIN_ID")?;
-    let api = SubgraphApi::builder()
+    let subgraph = SubgraphApi::builder()
         .chain(chain_id)
         .api_key(api_key)
         .build()?;
 
-    let totals = api.get_totals().await?;
+    let totals = subgraph.get_totals().await?;
 
     let report = json!({
         "surface": "cow-sdk-subgraph",
         "mode": "live",
-        "apiName": api.api_name(),
+        "apiName": subgraph.api_name(),
         "chainId": u64::from(chain_id),
         "totals": {
             "tokens": totals.tokens,

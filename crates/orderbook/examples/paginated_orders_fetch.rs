@@ -65,7 +65,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Page 2: empty, ending the iteration.
     mount_page(&server, &owner, PAGE_SIZE * 2, PAGE_SIZE, vec![]).await;
 
-    let api = OrderbookApi::builder_from_context(ApiContext::new(
+    let orderbook = OrderbookApi::builder_from_context(ApiContext::new(
         SupportedChainId::GnosisChain,
         CowEnv::Prod,
     ))
@@ -81,7 +81,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         request.offset = offset;
         request.limit = PAGE_SIZE;
 
-        let page = api.get_orders(&request).await?;
+        let page = orderbook.get_orders(&request).await?;
         println!(
             "offset={offset:>3} limit={limit:>3} returned={count}",
             limit = PAGE_SIZE,

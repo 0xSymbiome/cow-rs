@@ -61,7 +61,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .mount(&server)
         .await;
 
-    let api = OrderbookApi::builder_from_context(ApiContext::new(
+    let orderbook = OrderbookApi::builder_from_context(ApiContext::new(
         SupportedChainId::Sepolia,
         CowEnv::Prod,
     ))
@@ -70,10 +70,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
     .build()?;
 
     // LIST an account's orders (default pagination: offset 0, limit 1000).
-    let orders = api.get_orders(&GetOrdersRequest::new(owner)).await?;
+    let orders = orderbook.get_orders(&GetOrdersRequest::new(owner)).await?;
 
     // HISTORY: trades for the same owner (owner XOR order-uid; default limit 10).
-    let trades = api.get_trades(&GetTradesRequest::by_owner(owner)).await?;
+    let trades = orderbook
+        .get_trades(&GetTradesRequest::by_owner(owner))
+        .await?;
 
     let report = json!({
         "surface": "cow-sdk::orderbook list/history (OrderbookApi)",

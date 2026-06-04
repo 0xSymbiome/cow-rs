@@ -71,10 +71,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .mount(&server)
         .await;
 
-    let api = api_pointed_at(&server);
+    let subgraph = api_pointed_at(&server);
 
     // 1. Canonical typed path.
-    let totals: Total = api.get_totals().await?;
+    let totals: Total = subgraph.get_totals().await?;
     println!(
         "typed TOTALS_QUERY: tokens={} orders={} traders={} settlements={}",
         totals.tokens, totals.orders, totals.traders, totals.settlements,
@@ -92,7 +92,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let request = SubgraphQueryRequest::new(document)
         .with_operation_name("TokensByVolume")
         .with_variables(json!({ "limit": 5 }));
-    let escape_hatch: Value = api.run_query(request).await?;
+    let escape_hatch: Value = subgraph.run_query(request).await?;
 
     if let Some(first) = escape_hatch["tokens"].as_array().and_then(|a| a.first()) {
         println!(

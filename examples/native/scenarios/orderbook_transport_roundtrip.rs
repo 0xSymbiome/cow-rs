@@ -50,7 +50,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .mount(&server)
         .await;
 
-    let api = OrderbookApi::builder_from_context(ApiContext::new(
+    let orderbook = OrderbookApi::builder_from_context(ApiContext::new(
         SupportedChainId::Sepolia,
         CowEnv::Prod,
     ))
@@ -58,7 +58,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     .base_url(server.uri())
     .build()?;
 
-    let version = api.get_version().await?;
+    let version = orderbook.get_version().await?;
     let quote_request = OrderQuoteRequest::new(
         sample_sell_token(),
         sample_buy_token(),
@@ -68,7 +68,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         ),
     )
     .with_price_quality(PriceQuality::Optimal);
-    let quote = api.get_quote(&quote_request).await?;
+    let quote = orderbook.get_quote(&quote_request).await?;
     let order = OrderCreation::from_quote(
         &quote.quote,
         sample_owner(),
@@ -77,8 +77,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
         sample_signature(),
     )
     .with_quote_id(quote.id.expect("example quote id remains present"));
-    let created_order_uid = api.send_order(&order).await?;
-    let status = api.get_order_competition_status(&created_order_uid).await?;
+    let created_order_uid = orderbook.send_order(&order).await?;
+    let status = orderbook
+        .get_order_competition_status(&created_order_uid)
+        .await?;
 
     let report = json!({
         "surface": "cow-sdk::orderbook",

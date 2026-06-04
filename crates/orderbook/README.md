@@ -33,7 +33,7 @@ use cow_sdk_orderbook::{
 };
 
 # async fn run() -> Result<(), Box<dyn std::error::Error>> {
-let api = OrderbookApi::builder()
+let orderbook = OrderbookApi::builder()
     .chain(SupportedChainId::Mainnet)
     .environment(CowEnv::Prod)
     .build()?;
@@ -49,7 +49,7 @@ let request = OrderQuoteRequest::new(
     OrderQuoteSide::sell(Amount::from_units(1, 18)?),
 );
 
-let quote = api.get_quote(&request).await?;
+let quote = orderbook.get_quote(&request).await?;
 println!("quoted buy amount: {}", quote.quote.buy_amount);
 # Ok(())
 # }

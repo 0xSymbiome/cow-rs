@@ -498,7 +498,7 @@ fn build_rejects_missing_injected_orderbook_client_on_wasm32() {
 #[wasm_bindgen_test]
 fn build_succeeds_on_wasm32_with_injected_orderbook_client() {
     let transport = FetchTransport::new(&FetchTransportConfig::new("https://api.cow.fi"));
-    let client = OrderbookApi::builder()
+    let orderbook = OrderbookApi::builder()
         .chain(SupportedChainId::Mainnet)
         .environment(CowEnv::Prod)
         .transport(Arc::new(transport))
@@ -508,7 +508,7 @@ fn build_succeeds_on_wasm32_with_injected_orderbook_client() {
     let trading = TradingBuilder::new()
         .chain_id(SupportedChainId::Mainnet)
         .app_code("test-app")
-        .orderbook_client(Arc::new(client))
+        .orderbook_client(Arc::new(orderbook))
         .build()
         .expect("wasm32 build must accept an injected orderbook client");
 }

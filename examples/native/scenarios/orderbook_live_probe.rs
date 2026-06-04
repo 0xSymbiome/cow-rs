@@ -20,7 +20,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let resolved_base_url = base_url_override
         .clone()
         .unwrap_or(context.resolved_base_url()?);
-    let api = if let Some(base_url) = base_url_override {
+    let orderbook = if let Some(base_url) = base_url_override {
         OrderbookApi::builder_from_context(context)
             .with_external_host_policy(ExternalHostPolicy::AllowAny)
             .base_url(base_url)
@@ -29,13 +29,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
         OrderbookApi::builder_from_context(context).build()?
     };
 
-    let version = api.get_version().await?;
+    let version = orderbook.get_version().await?;
     let report = json!({
         "surface": "cow-sdk-orderbook",
         "mode": "live",
         "env": env.as_str(),
         "chainId": u64::from(chain_id),
-        "partnerApi": api.context().api_key.is_some(),
+        "partnerApi": orderbook.context().api_key.is_some(),
         "baseUrl": resolved_base_url,
         "version": version,
     });

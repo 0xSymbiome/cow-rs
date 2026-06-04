@@ -66,16 +66,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .mount(&server)
         .await;
 
-    let api = SubgraphApi::builder()
+    let subgraph = SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("review-key")
         .with_external_host_policy(ExternalHostPolicy::Test)
         .base_urls(base_urls)
         .build()?;
 
-    let totals = api.get_totals().await?;
-    let last_days = api.get_last_days_volume(7).await?;
-    let last_hours = api.get_last_hours_volume(24).await?;
+    let totals = subgraph.get_totals().await?;
+    let last_days = subgraph.get_last_days_volume(7).await?;
+    let last_hours = subgraph.get_last_hours_volume(24).await?;
 
     let report = json!({
         "surface": "cow-sdk-subgraph",
@@ -84,7 +84,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             "documentType": "canonical-helper",
             "operations": ["Totals", "LastDaysVolume", "LastHoursVolume"]
         },
-        "apiName": api.api_name(),
+        "apiName": subgraph.api_name(),
         "totals": {
             "tokens": totals.tokens,
             "orders": totals.orders,
