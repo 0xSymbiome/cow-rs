@@ -21,9 +21,7 @@
 
 use wasm_bindgen_test::*;
 
-use cow_sdk_wasm::exports::{
-    NativePriceResponseDto, OrderDto, OrderQuoteResponseDto, TradeDto,
-};
+use cow_sdk_wasm::exports::{NativePriceResponseDto, OrderDto, OrderQuoteResponseDto, TradeDto};
 
 wasm_bindgen_test_configure!(run_in_browser);
 

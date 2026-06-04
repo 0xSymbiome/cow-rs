@@ -198,7 +198,8 @@ async fn quote_results_fixture() -> QuoteResults {
         .build()
         .expect("fixture sdk must construct");
 
-    trading.get_quote_only(sample_trade_parameters(OrderKind::Sell), None)
+    trading
+        .get_quote_only(sample_trade_parameters(OrderKind::Sell), None)
         .await
         .expect("quote fixture must build")
 }

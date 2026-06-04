@@ -510,7 +510,7 @@ enums:
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: Wasm export diagnostics can grow as additional fallible helper paths are exposed.
-  - name: OrderbookRejectionCategoryDto
+  - name: OrderBookRejectionCategoryDto
     file: crates/wasm/src/exports/errors.rs
     line: 191
     category: sdk-local-state

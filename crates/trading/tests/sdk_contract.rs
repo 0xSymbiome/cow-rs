@@ -96,8 +96,18 @@ fn sdk_ready_shortcut_accepts_total_trader_parameters() {
     );
     assert_eq!(trading.trader_defaults().app_code.as_deref(), Some("0x007"));
     assert_eq!(trading.trader_defaults().env, Some(CowEnv::Prod));
-    assert!(trading.trader_defaults().settlement_contract_override.is_some());
-    assert!(trading.trader_defaults().eth_flow_contract_override.is_some());
+    assert!(
+        trading
+            .trader_defaults()
+            .settlement_contract_override
+            .is_some()
+    );
+    assert!(
+        trading
+            .trader_defaults()
+            .eth_flow_contract_override
+            .is_some()
+    );
 }
 
 #[tokio::test]
@@ -392,14 +402,15 @@ async fn sdk_onchain_cancel_order_routes_regular_orders_through_settlement_when_
     )
     .expect("sdk construction should succeed");
 
-    trading.on_chain_cancel_order(
-        &OrderTraderParameters::new(order_uid())
-            .with_chain_id(SupportedChainId::Sepolia)
-            .with_env(CowEnv::Prod),
-        &signer,
-    )
-    .await
-    .expect("regular cancellation should succeed");
+    trading
+        .on_chain_cancel_order(
+            &OrderTraderParameters::new(order_uid())
+                .with_chain_id(SupportedChainId::Sepolia)
+                .with_env(CowEnv::Prod),
+            &signer,
+        )
+        .await
+        .expect("regular cancellation should succeed");
 
     let sent = signer
         .state()
@@ -440,14 +451,15 @@ async fn sdk_onchain_cancel_order_preserves_full_uint256_range_for_ethflow_order
     )
     .expect("sdk construction should succeed");
 
-    trading.on_chain_cancel_order(
-        &OrderTraderParameters::new(order_uid())
-            .with_chain_id(SupportedChainId::Sepolia)
-            .with_env(CowEnv::Prod),
-        &signer,
-    )
-    .await
-    .expect("ethflow cancellation should encode large uint256 values");
+    trading
+        .on_chain_cancel_order(
+            &OrderTraderParameters::new(order_uid())
+                .with_chain_id(SupportedChainId::Sepolia)
+                .with_env(CowEnv::Prod),
+            &signer,
+        )
+        .await
+        .expect("ethflow cancellation should encode large uint256 values");
 
     let sent = signer
         .state()
@@ -526,7 +538,10 @@ async fn build_succeeds_on_native_without_injected_orderbook_client() {
         trading.trader_defaults().chain_id,
         Some(SupportedChainId::Mainnet)
     );
-    assert_eq!(trading.trader_defaults().app_code.as_deref(), Some("test-app"));
+    assert_eq!(
+        trading.trader_defaults().app_code.as_deref(),
+        Some("test-app")
+    );
 }
 
 #[tokio::test]
@@ -594,7 +609,8 @@ async fn get_quote_only_combinator_aborts_an_in_flight_quote() {
 
     let quote_call = async {
         let _spy = spy;
-        trading.get_quote_only(trade, None)
+        trading
+            .get_quote_only(trade, None)
             .cancel_with(&token_for_call)
             .await
     };
