@@ -1,6 +1,7 @@
 //! [`MockProvider`]: an in-memory [`Provider`] + [`SigningProvider`] double that
 //! returns canned chain-RPC values and records contract reads and calls.
 
+use std::collections::VecDeque;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use cow_sdk_core::{
@@ -25,6 +26,7 @@ struct Inner {
     allowance: Amount,
     code: Option<HexData>,
     receipt: Option<TransactionReceipt>,
+    receipt_sequence: VecDeque<Option<TransactionReceipt>>,
     signer: MockSigner,
     fail_call: Option<String>,
     calls: ProviderCalls,
@@ -77,6 +79,7 @@ pub struct MockProviderBuilder {
     allowance: Amount,
     code: Option<HexData>,
     receipt: Option<TransactionReceipt>,
+    receipt_sequence: VecDeque<Option<TransactionReceipt>>,
     signer: MockSigner,
     fail_call: Option<String>,
 }
@@ -88,6 +91,7 @@ impl Default for MockProviderBuilder {
             allowance: Amount::from(1_000_000_000_000_000_000_u64),
             code: None,
             receipt: None,
+            receipt_sequence: VecDeque::new(),
             signer: MockSigner::new(),
             fail_call: None,
         }
@@ -117,10 +121,29 @@ impl MockProviderBuilder {
         self
     }
 
-    /// Sets the receipt [`Provider::get_transaction_receipt`] returns.
+    /// Sets the single receipt [`Provider::get_transaction_receipt`] returns once
+    /// any [`MockProviderBuilder::receipt_sequence`] script is exhausted.
     #[must_use]
     pub const fn transaction_receipt(mut self, receipt: TransactionReceipt) -> Self {
         self.receipt = Some(receipt);
+        self
+    }
+
+    /// Scripts successive [`Provider::get_transaction_receipt`] outcomes, one entry
+    /// consumed per call: `None` models a transaction that is not mined yet, and
+    /// `Some(receipt)` a mined result. Once the script is exhausted the provider
+    /// falls back to [`MockProviderBuilder::transaction_receipt`] (absent by
+    /// default, modelling a transaction that never appears).
+    ///
+    /// This lets a consumer drive a receipt-polling wait — a receipt that arrives
+    /// after a number of polls, a reverted receipt, or a timeout — without a live
+    /// endpoint.
+    #[must_use]
+    pub fn receipt_sequence(
+        mut self,
+        receipts: impl IntoIterator<Item = Option<TransactionReceipt>>,
+    ) -> Self {
+        self.receipt_sequence = receipts.into_iter().collect();
         self
     }
 
@@ -147,6 +170,7 @@ impl MockProviderBuilder {
                 allowance: self.allowance,
                 code: self.code,
                 receipt: self.receipt,
+                receipt_sequence: self.receipt_sequence,
                 signer: self.signer,
                 fail_call: self.fail_call,
                 calls: ProviderCalls::default(),
@@ -170,7 +194,11 @@ impl Provider for MockProvider {
         &self,
         _transaction_hash: &TransactionHash,
     ) -> Result<Option<TransactionReceipt>, Self::Error> {
-        Ok(self.lock().receipt.clone())
+        let mut guard = self.lock();
+        if let Some(scripted) = guard.receipt_sequence.pop_front() {
+            return Ok(scripted);
+        }
+        Ok(guard.receipt.clone())
     }
 
     async fn get_storage_at(

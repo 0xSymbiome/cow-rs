@@ -3,7 +3,7 @@
 
 use cow_sdk_core::{
     Address, Amount, AppDataHash, ContractCall, OrderUid, Provider, Signer, SigningProvider,
-    SupportedChainId, TransactionRequest,
+    SupportedChainId, TransactionReceipt, TransactionRequest, TransactionStatus,
 };
 use cow_sdk_orderbook::{
     OrderCancellations, OrderCreation, OrderKind, OrderQuoteRequest, OrderQuoteSide,
@@ -155,6 +155,52 @@ async fn provider_reports_chain_and_records_reads() {
 
     let signer = provider.create_signer("hint").await.expect("signer");
     assert_eq!(signer.address(), defaults::address());
+}
+
+#[tokio::test]
+async fn provider_receipt_sequence_scripts_each_poll() {
+    let mined = TransactionReceipt::new(defaults::transaction_hash())
+        .with_status(TransactionStatus::Success)
+        .with_block_number(100);
+    let provider = MockProvider::builder()
+        .receipt_sequence([None, None, Some(mined.clone())])
+        .build();
+    let hash = defaults::transaction_hash();
+
+    // Not mined for the first two polls, then the scripted receipt.
+    assert_eq!(
+        provider.get_transaction_receipt(&hash).await.expect("poll"),
+        None
+    );
+    assert_eq!(
+        provider.get_transaction_receipt(&hash).await.expect("poll"),
+        None
+    );
+    assert_eq!(
+        provider.get_transaction_receipt(&hash).await.expect("poll"),
+        Some(mined)
+    );
+    // Script exhausted: falls back to the absent static receipt, i.e. a timeout.
+    assert_eq!(
+        provider.get_transaction_receipt(&hash).await.expect("poll"),
+        None
+    );
+}
+
+#[tokio::test]
+async fn provider_receipt_sequence_can_script_a_revert() {
+    let reverted = TransactionReceipt::new(defaults::transaction_hash())
+        .with_status(TransactionStatus::Reverted);
+    let provider = MockProvider::builder()
+        .receipt_sequence([Some(reverted)])
+        .build();
+
+    let receipt = provider
+        .get_transaction_receipt(&defaults::transaction_hash())
+        .await
+        .expect("poll")
+        .expect("a receipt is scripted for the first poll");
+    assert_eq!(receipt.status, Some(TransactionStatus::Reverted));
 }
 
 #[test]

@@ -13,7 +13,9 @@ wallet — the `tokio-test` / `tower-test` pattern, built only on the public API
   gas, with recorded sent transactions and signed messages, plus failure
   injection.
 - **`MockProvider`** — a `Provider` + `SigningProvider` double: canned chain id,
-  allowance, code, and receipt, with recorded contract reads and calls.
+  allowance, code, and receipt — plus a scriptable receipt sequence for driving a
+  receipt-polling wait (a receipt that arrives after a number of polls, a revert,
+  or a timeout) — with recorded contract reads and calls.
 - **`trading(chain, app_code)`** — one call returning a real `Trading` client
   wired to the doubles, plus the handles (`orderbook`, `signer`, `provider`) to
   assert against.
