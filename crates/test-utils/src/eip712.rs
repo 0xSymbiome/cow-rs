@@ -92,3 +92,19 @@ pub fn keccak256(bytes: impl AsRef<[u8]>) -> [u8; 32] {
     out.copy_from_slice(&Keccak256::digest(bytes.as_ref()));
     out
 }
+
+/// Asserts a `0x`-hex ECDSA signature is 65 bytes with a legacy recovery byte
+/// (`27` or `28`).
+///
+/// # Panics
+/// Panics if `signature` is not valid hex, is not 65 bytes, or its recovery byte
+/// is not `27`/`28`.
+pub fn assert_recovery_byte_is_legacy(signature: &str) {
+    let bytes = alloy_primitives::hex::decode(signature.trim_start_matches("0x"))
+        .expect("signature must decode as hex");
+    assert_eq!(bytes.len(), 65, "signature must be 65 bytes");
+    assert!(
+        matches!(bytes[64], 27 | 28),
+        "signature recovery byte must be normalized to legacy form"
+    );
+}

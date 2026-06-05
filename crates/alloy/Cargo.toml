@@ -65,6 +65,7 @@ tracing = { workspace = true, optional = true }
 
 [dev-dependencies]
 cow-sdk-signing = { path = "../signing", version = "0.1.0" }
+cow-sdk-test-utils = { path = "../test-utils" }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 trybuild.workspace = true
 wiremock.workspace = true

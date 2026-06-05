@@ -1,15 +1,15 @@
 #![cfg(not(target_arch = "wasm32"))]
 
+mod common;
+
 use std::str::FromStr;
 
 use alloy_primitives::Signature as AlloySignature;
+use common::{order_digest, sample_order};
 use cow_sdk_alloy_signer::LocalAlloyKeystoreSigner;
-use cow_sdk_contracts::{SigningScheme, hash_order};
-use cow_sdk_core::{
-    Address, Amount, AppDataHash, BuyTokenDestination, Hash32, OrderData, OrderKind,
-    SellTokenSource, Signer, SupportedChainId,
-};
-use cow_sdk_signing::{get_domain, order_typed_data_payload};
+use cow_sdk_contracts::SigningScheme;
+use cow_sdk_core::{Address, Signer, SupportedChainId};
+use cow_sdk_signing::order_typed_data_payload;
 use proptest::prelude::*;
 
 proptest! {
@@ -90,28 +90,6 @@ fn runtime() -> tokio::runtime::Runtime {
         .enable_all()
         .build()
         .unwrap()
-}
-
-fn order_digest(order: &OrderData) -> Hash32 {
-    hash_order(&get_domain(SupportedChainId::Mainnet, None).unwrap(), order).unwrap()
-}
-
-fn sample_order() -> OrderData {
-    OrderData::new(
-        Address::new("0xd057b63f5e69cf1b929b356b579cba08d7688048").unwrap(),
-        Address::new("0x7b878668cd1a3adf89764d3a331e0a7bb832192d").unwrap(),
-        Address::new("0xa6ddbd0de6b310819b49f680f65871bee85f517e").unwrap(),
-        Amount::new("500000000000000").unwrap(),
-        Amount::new("23000020000").unwrap(),
-        5_000_222,
-        AppDataHash::new("0x0000000000000000000000000000000000000000000000000000000000000000")
-            .unwrap(),
-        Amount::new("2300000").unwrap(),
-        OrderKind::Sell,
-        true,
-        SellTokenSource::Erc20,
-        BuyTokenDestination::Erc20,
-    )
 }
 
 fn prop_assert_legacy_recovery_byte(

@@ -44,6 +44,14 @@ pub const ANVIL_KEY_1: &str = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8
 /// The address derived from [`ANVIL_KEY_1`].
 pub const ANVIL_ADDR_1: Address = address!("70997970c51812dc3a010c7d01b50e0d17dc79c8");
 
+/// Canonical EIP-712 order signature for the `upstream_signing` order vector
+/// signed by [`ANVIL_KEY_1`] through the typed-data payload path.
+pub const EXPECTED_ORDER_SIGNATURE: &str = "0x34bc8d9249f7f9399d1db57b96bfc3a2f935a25965fe265292142c305284c7241daf1b3049bc75da81012cf33aeac1de09ec5684bccf03afe7274262703780d01c";
+
+/// Legacy flat-fields EIP-712 signature for the same vector — the
+/// `sign_typed_data` fallback path, distinct from the canonical payload form.
+pub const EXPECTED_LEGACY_FLAT_SIGNATURE: &str = "0x474712d3145a910482c333721c46cb800d7985628701af5954134a92e5fb60263233eb36ba80ae8f77600b1d820df4101c4bfca86ea89f6b7a774c31a47ec28a1c";
+
 // --- App-data CID vectors. source: cowprotocol/app-data schemas + cowprotocol/services app-data hashing (keccak256 + CIDv1) ---
 /// Upstream app-data hash vector #1.
 pub const APP_DATA_HEX_1: &str =
