@@ -15,9 +15,9 @@
 use sha3::{Digest, Keccak256};
 
 use cow_sdk_contracts::{
-    InteractionLike, InteractionStage, OrderFlags, OrderRefunds, SettlementEncoder, Signature,
-    SigningScheme, TokenRegistry, Trade, TradeExecution, TradeFlags, decode_order,
-    decode_order_flags, decode_trade_flags, encode_order_flags, encode_trade_flags,
+    InteractionLike, InteractionStage, OrderFlags, OrderRefunds, SettlementEncoder, SigningScheme,
+    TokenRegistry, Trade, TradeExecution, TradeFlags, decode_order, decode_order_flags,
+    decode_trade_flags, encode_order_flags, encode_trade_flags,
 };
 use cow_sdk_core::{
     Address, Amount, AppDataHex, BuyTokenDestination, OrderData, OrderKind, OrderUid,
@@ -25,7 +25,7 @@ use cow_sdk_core::{
 };
 
 mod common;
-use common::bytes_from_hex_literal;
+use common::{bytes_from_hex_literal, sample_presign};
 
 fn sample_domain() -> TypedDataDomain {
     cow_sdk_test_utils::builders::sample_domain()
@@ -38,12 +38,6 @@ fn sample_order(kind: OrderKind, partially_fillable: bool) -> OrderData {
         .sell_balance(SellTokenSource::Internal)
         .buy_balance(BuyTokenDestination::Internal)
         .build()
-}
-
-fn sample_signature() -> Signature {
-    Signature::PreSign {
-        owner: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
-    }
 }
 
 fn u256_word(value: u64) -> [u8; 32] {
@@ -153,7 +147,7 @@ fn settlement_encoder_tracks_tokens_prices_and_interactions() {
     encoder
         .encode_trade(
             &order,
-            &sample_signature(),
+            &sample_presign(),
             Some(TradeExecution::new(
                 Amount::new("1000000000000000000").unwrap(),
             )),
@@ -244,7 +238,7 @@ fn order_refunds_and_trade_decoding_follow_contract_rules() {
     let partially_fillable = sample_order(OrderKind::Buy, true);
     assert!(
         SettlementEncoder::new(sample_domain())
-            .encode_trade(&partially_fillable, &sample_signature(), None)
+            .encode_trade(&partially_fillable, &sample_presign(), None)
             .is_err()
     );
 
@@ -346,7 +340,7 @@ fn encoded_settlement_calldata_starts_with_the_settle_selector() {
     encoder
         .encode_trade(
             &sample_order(OrderKind::Sell, false),
-            &sample_signature(),
+            &sample_presign(),
             Some(TradeExecution::new(
                 Amount::new("1000000000000000000").unwrap(),
             )),

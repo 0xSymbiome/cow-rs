@@ -16,14 +16,11 @@ use std::sync::{Arc, Mutex};
 
 use serde_json::json;
 
+use common::test_app_code;
 use cow_sdk_core::{
-    Amount, AppCode, BuyTokenDestination, EVM_NATIVE_CURRENCY_ADDRESS, HexData, OrderKind,
-    ProtocolOptions, SellTokenSource,
+    Amount, BuyTokenDestination, EVM_NATIVE_CURRENCY_ADDRESS, HexData, OrderKind, ProtocolOptions,
+    SellTokenSource,
 };
-
-fn test_app_code() -> AppCode {
-    AppCode::new("0x007").expect("fixture appCode must validate")
-}
 
 fn protocol_options_from_trader(trader: &cow_sdk_trading::TraderParameters) -> ProtocolOptions {
     let mut options = ProtocolOptions::new();

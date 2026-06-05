@@ -15,8 +15,8 @@ use async_trait::async_trait;
 use serde_json::json;
 
 use cow_sdk_core::{
-    Address, Amount, ApiBaseUrls, ApiContext, AppDataHash, BlockHash, BlockInfo, ContractCall,
-    ContractHandle, CowEnv, Hash32, HexData, OrderKind, OrderUid, Provider, Signer,
+    Address, Amount, ApiBaseUrls, ApiContext, AppCode, AppDataHash, BlockHash, BlockInfo,
+    ContractCall, ContractHandle, CowEnv, Hash32, HexData, OrderKind, OrderUid, Provider, Signer,
     SupportedChainId, TransactionBroadcast, TransactionHash, TransactionReceipt,
     TransactionRequest, TransactionStatus, TypedDataDomain, TypedDataField, TypedDataPayload,
 };
@@ -56,6 +56,10 @@ pub fn order_uid() -> OrderUid {
 
 pub fn app_data_hash() -> AppDataHash {
     AppDataHash::new(APP_DATA_HASH).expect("test app-data hash literal must be valid")
+}
+
+pub fn test_app_code() -> AppCode {
+    AppCode::new("0x007").expect("fixture appCode must validate")
 }
 
 pub fn sell_quote_response() -> OrderQuoteResponse {

@@ -2,14 +2,11 @@ mod common;
 
 use std::sync::{Arc, Mutex};
 
+use common::test_app_code;
 use cow_sdk_core::{
-    Amount, AppCode, BuyTokenDestination, CowEnv, MAX_VALID_TO_EPOCH, OrderData, ProtocolOptions,
+    Amount, BuyTokenDestination, CowEnv, MAX_VALID_TO_EPOCH, OrderData, ProtocolOptions,
     SellTokenSource, SupportedChainId, ValidationReason, wrapped_native_token,
 };
-
-fn test_app_code() -> AppCode {
-    AppCode::new("0x007").expect("fixture appCode must validate")
-}
 use cow_sdk_orderbook::{OrderKind, SigningScheme};
 use cow_sdk_signing::ORDER_PRIMARY_TYPE;
 use cow_sdk_trading::{

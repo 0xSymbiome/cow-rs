@@ -6,6 +6,7 @@
 use std::{cell::RefCell, collections::BTreeMap, fmt, rc::Rc};
 
 use alloy_primitives::{Address as AlloyAddress, Bytes};
+use cow_sdk_contracts::Signature;
 use cow_sdk_core::{
     Address, BlockInfo, ContractCall, ContractHandle, Hash32, HexData, Provider,
     TransactionReceipt, TransactionRequest,
@@ -39,6 +40,13 @@ pub fn deterministic_signing_key() -> SigningKey {
 /// The checksummed address that recovers from [`deterministic_signing_key`].
 pub fn expected_address_for_key(signing_key: &SigningKey) -> Address {
     Address::new(AlloyAddress::from_private_key(signing_key).to_string()).unwrap()
+}
+
+/// A `PreSign` signature fixture owned by the canonical `0x1111…` test address.
+pub fn sample_presign() -> Signature {
+    Signature::PreSign {
+        owner: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -1,9 +1,9 @@
 use alloy_primitives::Bytes;
-use cow_sdk_contracts::{BatchSwapStep, Signature, Swap, SwapEncoder, encode_swap_step};
+use cow_sdk_contracts::{BatchSwapStep, Swap, SwapEncoder, encode_swap_step};
 use cow_sdk_core::{Address, Amount, OrderData, OrderKind, TypedDataDomain};
 
 mod common;
-use common::bytes_from_hex_literal;
+use common::{bytes_from_hex_literal, sample_presign};
 
 fn sample_domain() -> TypedDataDomain {
     cow_sdk_test_utils::builders::sample_domain()
@@ -13,12 +13,6 @@ fn sample_order(kind: OrderKind) -> OrderData {
     cow_sdk_test_utils::builders::OrderBuilder::weth_dai()
         .kind(kind)
         .build()
-}
-
-fn sample_signature() -> Signature {
-    Signature::PreSign {
-        owner: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
-    }
 }
 
 #[test]
@@ -55,7 +49,7 @@ fn swap_step_encoding_defaults_user_data_and_indexes_tokens() {
 fn swap_encoder_uses_contract_default_limit_amounts() {
     let mut sell_encoder = SwapEncoder::new(sample_domain());
     sell_encoder
-        .encode_trade(&sample_order(OrderKind::Sell), &sample_signature(), None)
+        .encode_trade(&sample_order(OrderKind::Sell), &sample_presign(), None)
         .unwrap();
     assert_eq!(
         sell_encoder.trade().unwrap().executed_amount,
@@ -64,7 +58,7 @@ fn swap_encoder_uses_contract_default_limit_amounts() {
 
     let mut buy_encoder = SwapEncoder::new(sample_domain());
     buy_encoder
-        .encode_trade(&sample_order(OrderKind::Buy), &sample_signature(), None)
+        .encode_trade(&sample_order(OrderKind::Buy), &sample_presign(), None)
         .unwrap();
     assert_eq!(
         buy_encoder.trade().unwrap().executed_amount,
