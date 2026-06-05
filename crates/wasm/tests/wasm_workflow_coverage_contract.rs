@@ -97,8 +97,10 @@ fn quote_response_json(id: i64, valid_to: u32) -> String {
     .to_string()
 }
 
-/// Fetch callback that serves a quote for `POST /api/v1/quote`, echoes
-/// uploaded app-data, and returns `uid` for every order creation.
+/// Fetch callback that serves a quote for `POST /api/v1/quote`, echoes the
+/// app-data hash for the `PUT /api/v1/app_data/:hash` upload (the orderbook
+/// verifies the server echo against the URL hash), and returns `uid` for every
+/// order creation.
 fn swap_quote_fetch_callback(uid: &str, quote_body: &str) -> Function {
     callback(
         "request",
@@ -107,8 +109,8 @@ fn swap_quote_fetch_callback(uid: &str, quote_body: &str) -> Function {
             globalThis.__cowCoverageRequests = globalThis.__cowCoverageRequests || [];
             globalThis.__cowCoverageRequests.push(request);
             if (request.method === "PUT" && request.url.includes("/api/v1/app_data/")) {{
-              const body = JSON.parse(request.body);
-              return {{ status: 200, headers: {{}}, body: JSON.stringify({{ fullAppData: body.fullAppData }}) }};
+              const appDataHash = request.url.split("/api/v1/app_data/")[1].split(/[?#]/)[0];
+              return {{ status: 200, headers: {{}}, body: JSON.stringify(appDataHash) }};
             }}
             if (request.method === "POST" && request.url.includes("/api/v1/quote")) {{
               return {{ status: 200, headers: {{}}, body: {quote_body:?} }};
