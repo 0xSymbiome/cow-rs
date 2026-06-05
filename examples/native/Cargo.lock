@@ -1350,6 +1350,7 @@ name = "cow-sdk-examples-native"
 version = "0.1.0"
 dependencies = [
  "alloy-primitives",
+ "async-trait",
  "cow-sdk",
  "cow-sdk-subgraph",
  "serde",

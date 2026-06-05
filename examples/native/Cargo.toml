@@ -21,6 +21,7 @@ alloy = ["cow-sdk/alloy"]
 
 [dependencies]
 alloy-primitives = { workspace = true }
+async-trait = "0.1.89"
 cow-sdk = { path = "../../crates/sdk", features = ["testing"] }
 cow-sdk-subgraph = { path = "../../crates/subgraph" }
 serde = { version = "1.0.228", features = ["derive"] }
@@ -129,3 +130,15 @@ path = "scenarios/order_history.rs"
 [[example]]
 name = "receipt_lifecycle"
 path = "scenarios/receipt_lifecycle.rs"
+
+[[example]]
+name = "slippage_suggester"
+path = "scenarios/slippage_suggester.rs"
+
+[[example]]
+name = "eip1271_signer"
+path = "scenarios/eip1271_signer.rs"
+
+[[example]]
+name = "ethflow_checker"
+path = "scenarios/ethflow_checker.rs"

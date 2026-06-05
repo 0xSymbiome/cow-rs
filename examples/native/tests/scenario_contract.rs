@@ -186,3 +186,30 @@ fn receipt_lifecycle_example_is_declared_and_documented() {
     assert!(scenario.contains("WaitError::Reverted"));
     assert!(scenario.contains("WaitError::Timeout"));
 }
+
+#[test]
+fn seam_examples_are_declared_and_documented() {
+    let manifest = include_str!("../Cargo.toml");
+    let native_readme = include_str!("../README.md");
+
+    for example_name in ["slippage_suggester", "eip1271_signer", "ethflow_checker"] {
+        assert!(
+            manifest.contains(example_name),
+            "missing example declaration for {example_name}"
+        );
+        assert!(
+            native_readme.contains(example_name),
+            "missing native README entry for {example_name}"
+        );
+    }
+
+    let slippage = include_str!("../scenarios/slippage_suggester.rs");
+    let eip1271 = include_str!("../scenarios/eip1271_signer.rs");
+    let ethflow_checker = include_str!("../scenarios/ethflow_checker.rs");
+    assert!(slippage.contains("SlippageSuggestionProvider"));
+    assert!(slippage.contains("with_slippage_suggester"));
+    assert!(eip1271.contains("Eip1271SignatureProvider"));
+    assert!(eip1271.contains("with_custom_eip1271_signature"));
+    assert!(ethflow_checker.contains("EthFlowOrderExistsChecker"));
+    assert!(ethflow_checker.contains("with_check_eth_flow_order_exists"));
+}

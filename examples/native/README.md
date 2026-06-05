@@ -37,14 +37,17 @@ After that, branch by goal through the full scenario table below.
 | `app_data` | Generate and inspect app-data output |
 | `sign_order` | Sign orders and cancellations and inspect typed payloads |
 | `quote` | Build a quote flow without submission |
+| `slippage_suggester` | Quote with a consumer-supplied `SlippageSuggestionProvider` |
 | `cancel_in_flight` | Cancel an in-flight quote with `Cancellable::cancel_with(&token)` |
 | `limit_order` | Build and simulate signed limit-order submission |
+| `eip1271_signer` | Post a limit order signed by a custom `Eip1271SignatureProvider` (smart account) |
 | `order_lifecycle` | Inspect order lookup and off-chain cancellation |
 | `receipt_lifecycle` | Drive `submit_and_wait_for_receipt` through the testing doubles for mined, reverted, and timeout outcomes |
 | `swap_quickstart` | Make your first swap end to end (quote, sign, post) against a mock |
 | `trading_full_cycle` | Inspect high-level `Trading` quote, allowance, and approval flow |
 | `error_classification` | Classify failures with `SdkError::class()` and decide retry versus abort |
 | `ethflow` | Build native-sell / EthFlow transaction data |
+| `ethflow_checker` | Avoid EthFlow order-id collisions with a custom `EthFlowOrderExistsChecker` |
 | `onchain_actions` | Build pre-sign and on-chain cancellation transactions |
 | `orderbook_transport` | Inspect typed orderbook transport behavior |
 | `order_history` | List an account's orders and trade history through `OrderbookApi` |
@@ -107,6 +110,9 @@ cargo run --manifest-path examples/native/Cargo.toml --example ethflow
 cargo run --manifest-path examples/native/Cargo.toml --example onchain_actions
 cargo run --manifest-path examples/native/Cargo.toml --example orderbook_transport
 cargo run --manifest-path examples/native/Cargo.toml --example order_history
+cargo run --manifest-path examples/native/Cargo.toml --example slippage_suggester
+cargo run --manifest-path examples/native/Cargo.toml --example eip1271_signer
+cargo run --manifest-path examples/native/Cargo.toml --example ethflow_checker
 cargo run --manifest-path examples/native/Cargo.toml --example orderbook_live
 cargo run --manifest-path examples/native/Cargo.toml --example subgraph_query
 cargo run --manifest-path examples/native/Cargo.toml --example subgraph_live
