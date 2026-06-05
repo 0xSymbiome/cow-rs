@@ -13,25 +13,13 @@
 //! the EIP-155 chain-encoded range `35..=255` that
 //! [`alloy_primitives::Signature::from_raw`] would otherwise admit.
 
-use alloy_primitives::Address as AlloyAddress;
 use cow_sdk_contracts::{ContractsError, RecoverableSignature, SigningScheme};
-use cow_sdk_core::{Address, Hash32};
+use cow_sdk_core::Hash32;
 use k256::ecdsa::SigningKey;
 use sha3::{Digest, Keccak256};
 
-fn deterministic_signing_key() -> SigningKey {
-    SigningKey::from_slice(
-        &alloy_primitives::hex::decode(
-            "4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318",
-        )
-        .unwrap(),
-    )
-    .unwrap()
-}
-
-fn expected_address_for_key(signing_key: &SigningKey) -> Address {
-    Address::new(AlloyAddress::from_private_key(signing_key).to_string()).unwrap()
-}
+mod common;
+use common::{deterministic_signing_key, expected_address_for_key};
 
 fn ecdsa_signature_for_prehash(signing_key: &SigningKey, prehash: &[u8; 32]) -> Vec<u8> {
     let (signature, recovery_id) = signing_key.sign_prehash_recoverable(prehash).unwrap();

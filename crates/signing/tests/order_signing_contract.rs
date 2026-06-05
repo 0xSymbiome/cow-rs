@@ -15,16 +15,17 @@ mod common;
 
 use cow_sdk_contracts::{OrderUidParams, SigningScheme, hash_order};
 use cow_sdk_core::{Address, Amount, SupportedChainId};
-use std::str::FromStr;
 
-use alloy_primitives::U256;
 use cow_sdk_signing::{
     GeneratedOrderId, ORDER_PRIMARY_TYPE, SigningError, eip1271_signature_payload,
     generate_order_id, get_domain, order_typed_data, order_typed_data_payload, sign_order,
     sign_order_with_scheme,
 };
-use sha3::{Digest, Keccak256};
 
+use cow_sdk_test_utils::eip712::{
+    encode_address_word, encode_bool_word, encode_bytes32_word, encode_u32_word, encode_u256_word,
+    encode_usize_word, keccak_word,
+};
 use cow_sdk_test_utils::mocks::RecordingSigner;
 
 use common::sample_order;
@@ -302,53 +303,6 @@ fn parse_hex_word(value: &str, expected_len: usize) -> Vec<u8> {
     let bytes = alloy_primitives::hex::decode(value.trim_start_matches("0x")).unwrap();
     assert_eq!(bytes.len(), expected_len);
     bytes
-}
-
-fn encode_address_word(value: &str) -> [u8; 32] {
-    let mut out = [0u8; 32];
-    out[12..].copy_from_slice(&parse_hex_word(value, 20));
-    out
-}
-
-fn encode_bytes32_word(value: &str) -> [u8; 32] {
-    let mut out = [0u8; 32];
-    out.copy_from_slice(&parse_hex_word(value, 32));
-    out
-}
-
-fn encode_u32_word(value: u32) -> [u8; 32] {
-    let mut out = [0u8; 32];
-    out[28..].copy_from_slice(&value.to_be_bytes());
-    out
-}
-
-fn encode_u256_word(value: &str) -> [u8; 32] {
-    // Test oracle helper: `U256::from_str` recognises both the decimal
-    // and `0x`-prefixed hex forms used by the parity fixtures. The cow
-    // newtype migration drops the historical BigUint dependency in
-    // favour of the alloy primitive surface per ADR 0052.
-    U256::from_str(value)
-        .expect("test fixture value must parse to U256")
-        .to_be_bytes::<32>()
-}
-
-fn encode_usize_word(value: usize) -> [u8; 32] {
-    let mut out = [0u8; 32];
-    out[24..].copy_from_slice(&(value as u64).to_be_bytes());
-    out
-}
-
-fn encode_bool_word(value: bool) -> [u8; 32] {
-    let mut out = [0u8; 32];
-    out[31] = u8::from(value);
-    out
-}
-
-fn keccak_word(value: &str) -> [u8; 32] {
-    let digest = Keccak256::digest(value.as_bytes());
-    let mut out = [0u8; 32];
-    out.copy_from_slice(&digest);
-    out
 }
 
 fn padded_len_manual(len: usize) -> usize {

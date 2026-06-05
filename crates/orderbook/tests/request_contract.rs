@@ -1,4 +1,5 @@
 mod common;
+use common::{limiter, retry_policy};
 
 use std::sync::{
     Arc, Mutex,
@@ -38,10 +39,6 @@ fn build_shared_transport() -> Arc<dyn HttpTransport + Send + Sync> {
     )
 }
 
-const fn retry_policy(max_attempts: usize) -> RetryPolicy {
-    RetryPolicy::builder().max_attempts(max_attempts).build()
-}
-
 const fn retry_policy_no_jitter(max_attempts: usize) -> RetryPolicy {
     RetryPolicy::builder()
         .max_attempts(max_attempts)
@@ -53,17 +50,6 @@ fn default_limiter() -> RequestRateLimiter {
     RequestRateLimiter::default_orderbook()
 }
 
-fn limiter(
-    tokens_per_interval: u32,
-    interval: Duration,
-    interval_label: &'static str,
-) -> RequestRateLimiter {
-    RequestRateLimiter::builder()
-        .tokens_per_interval(tokens_per_interval)
-        .interval(interval)
-        .interval_label(interval_label)
-        .build()
-}
 use serde_json::json;
 use tokio::sync::Notify;
 use tokio::time::{sleep, timeout};

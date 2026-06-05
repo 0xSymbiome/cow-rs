@@ -14,13 +14,15 @@
     reason = "pedantic, nursery, and perf lints acceptable in test helper code"
 )]
 
+use std::time::Duration;
+
 use serde_json::{Value, json};
 
 use cow_sdk_orderbook::{
     Address, ApiContext, AppDataHash, CowEnv, ExternalHostPolicy, OrderUid, OrderbookApi,
     SupportedChainId,
 };
-use cow_sdk_transport_policy::TransportPolicy;
+use cow_sdk_transport_policy::{RequestRateLimiter, RetryPolicy, TransportPolicy};
 
 pub fn address(value: &str) -> Address {
     Address::new(value).expect("test address literal must be valid")
@@ -220,4 +222,20 @@ pub fn sample_trade_json() -> Value {
         "buyAmount": "900",
         "txHash": sample_tx_hash()
     })
+}
+
+pub const fn retry_policy(max_attempts: usize) -> RetryPolicy {
+    RetryPolicy::builder().max_attempts(max_attempts).build()
+}
+
+pub fn limiter(
+    tokens_per_interval: u32,
+    interval: Duration,
+    interval_label: &'static str,
+) -> RequestRateLimiter {
+    RequestRateLimiter::builder()
+        .tokens_per_interval(tokens_per_interval)
+        .interval(interval)
+        .interval_label(interval_label)
+        .build()
 }

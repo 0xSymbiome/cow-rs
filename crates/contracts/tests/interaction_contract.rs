@@ -10,19 +10,14 @@
     reason = "pedantic, nursery, and perf lints acceptable in test helper code"
 )]
 
-use alloy_primitives::Bytes;
 use cow_sdk_contracts::{
     ContractId, ContractsError, InteractionLike, InteractionStage, Registry, SettlementEncoder,
     normalize_interaction, normalize_interactions,
 };
 use cow_sdk_core::{Address, Amount, CowEnv, SupportedChainId, TypedDataDomain};
 
-fn bytes_from_hex_literal(literal: &str) -> Bytes {
-    let stripped = literal
-        .strip_prefix("0x")
-        .expect("hex literal must start with 0x");
-    Bytes::from(alloy_primitives::hex::decode(stripped).expect("hex literal must decode"))
-}
+mod common;
+use common::bytes_from_hex_literal;
 
 fn settlement_domain(chain_id: SupportedChainId, verifying_contract: Address) -> TypedDataDomain {
     TypedDataDomain::new(

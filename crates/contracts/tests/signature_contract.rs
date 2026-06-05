@@ -2,7 +2,6 @@ mod common;
 
 use std::{cell::RefCell, fmt, rc::Rc, sync::Mutex};
 
-use alloy_primitives::Address as AlloyAddress;
 use alloy_sol_types::SolCall;
 use cow_sdk_contracts::{
     ContractsError, Eip1271SignatureData, Eip1271VerificationCache, Eip1271VerificationRequest,
@@ -72,21 +71,7 @@ impl Eip1271VerificationCache for RecordingCache {
     }
 }
 
-use common::MockProvider;
-
-fn deterministic_signing_key() -> SigningKey {
-    SigningKey::from_slice(
-        &alloy_primitives::hex::decode(
-            "4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318",
-        )
-        .unwrap(),
-    )
-    .unwrap()
-}
-
-fn expected_address_for_key(signing_key: &SigningKey) -> Address {
-    Address::new(AlloyAddress::from_private_key(signing_key).to_string()).unwrap()
-}
+use common::{MockProvider, deterministic_signing_key, expected_address_for_key};
 
 fn ecdsa_signature_for_prehash(signing_key: &SigningKey, prehash: &[u8; 32]) -> String {
     let (signature, recovery_id) = signing_key.sign_prehash_recoverable(prehash).unwrap();

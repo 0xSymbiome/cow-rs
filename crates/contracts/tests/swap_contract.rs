@@ -2,6 +2,9 @@ use alloy_primitives::Bytes;
 use cow_sdk_contracts::{BatchSwapStep, Signature, Swap, SwapEncoder, encode_swap_step};
 use cow_sdk_core::{Address, Amount, OrderData, OrderKind, TypedDataDomain};
 
+mod common;
+use common::bytes_from_hex_literal;
+
 fn sample_domain() -> TypedDataDomain {
     cow_sdk_test_utils::builders::sample_domain()
 }
@@ -16,13 +19,6 @@ fn sample_signature() -> Signature {
     Signature::PreSign {
         owner: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
     }
-}
-
-fn bytes_from_hex_literal(literal: &str) -> Bytes {
-    let stripped = literal
-        .strip_prefix("0x")
-        .expect("hex literal must start with 0x");
-    Bytes::from(alloy_primitives::hex::decode(stripped).expect("hex literal must decode"))
 }
 
 #[test]

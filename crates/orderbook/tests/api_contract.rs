@@ -13,8 +13,7 @@ use cow_sdk_orderbook::{
     OrderbookError, SigningScheme, SolverCompetitionResponse, SupportedChainId,
 };
 use cow_sdk_transport_policy::{
-    DEFAULT_MAX_ATTEMPTS, DEFAULT_ORDERBOOK_USER_AGENT, RequestRateLimiter, RetryPolicy,
-    TransportPolicy,
+    DEFAULT_MAX_ATTEMPTS, DEFAULT_ORDERBOOK_USER_AGENT, TransportPolicy,
 };
 use serde_json::json;
 use wiremock::{
@@ -25,26 +24,10 @@ use wiremock::{
 use crate::common::{
     SAMPLE_UPLOAD_BODY, build_orderbook_api, build_orderbook_api_with_base_url,
     build_orderbook_api_with_policy, build_orderbook_api_with_shared_client, default_context,
-    sample_app_data_hash, sample_order_json, sample_order_uid, sample_owner,
+    limiter, retry_policy, sample_app_data_hash, sample_order_json, sample_order_uid, sample_owner,
     sample_quote_response_json, sample_signature, sample_trade_json, sample_tx_hash,
     sample_upload_body_hash,
 };
-
-const fn retry_policy(max_attempts: usize) -> RetryPolicy {
-    RetryPolicy::builder().max_attempts(max_attempts).build()
-}
-
-fn limiter(
-    tokens_per_interval: u32,
-    interval: Duration,
-    interval_label: &'static str,
-) -> RequestRateLimiter {
-    RequestRateLimiter::builder()
-        .tokens_per_interval(tokens_per_interval)
-        .interval(interval)
-        .interval_label(interval_label)
-        .build()
-}
 
 #[tokio::test]
 async fn version_endpoint_matches_transport_contract() {

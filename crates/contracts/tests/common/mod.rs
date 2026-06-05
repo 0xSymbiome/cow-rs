@@ -5,14 +5,40 @@
 
 use std::{cell::RefCell, collections::BTreeMap, fmt, rc::Rc};
 
+use alloy_primitives::{Address as AlloyAddress, Bytes};
 use cow_sdk_core::{
     Address, BlockInfo, ContractCall, ContractHandle, Hash32, HexData, Provider,
     TransactionReceipt, TransactionRequest,
 };
+use k256::ecdsa::SigningKey;
 use serde_json::Value;
 
 pub fn fixture_case(id: &str) -> Value {
     cow_sdk_test_utils::fixtures::case("contracts", id)
+}
+
+/// Decodes a `0x`-prefixed hex literal into `Bytes` (calldata fixtures).
+pub fn bytes_from_hex_literal(literal: &str) -> Bytes {
+    let stripped = literal
+        .strip_prefix("0x")
+        .expect("hex literal must start with 0x");
+    Bytes::from(alloy_primitives::hex::decode(stripped).expect("hex literal must decode"))
+}
+
+/// The deterministic go-ethereum test signing key used by the signature suites.
+pub fn deterministic_signing_key() -> SigningKey {
+    SigningKey::from_slice(
+        &alloy_primitives::hex::decode(
+            "4c0883a69102937d6231471b5dbb6204fe5129617082792ae468d01a3f362318",
+        )
+        .unwrap(),
+    )
+    .unwrap()
+}
+
+/// The checksummed address that recovers from [`deterministic_signing_key`].
+pub fn expected_address_for_key(signing_key: &SigningKey) -> Address {
+    Address::new(AlloyAddress::from_private_key(signing_key).to_string()).unwrap()
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
