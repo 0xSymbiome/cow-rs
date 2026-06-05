@@ -1,3 +1,9 @@
+//! Quote without submission.
+//!
+//! Requests a price through `Trading::get_quote_only` against a transport-mocked
+//! orderbook — the shortest read-only path for a consumer that wants a quote
+//! without building, signing, or posting an order.
+
 use std::{error::Error, sync::Arc};
 
 use serde_json::json;

@@ -264,7 +264,7 @@ is present by construction, and the EthFlow native-currency submission
 helper and transaction helper accept only that newtype on their public
 entries. In the snippet below, `trading`, `orderbook`, `trader`, and `signer` are
 the values built in the ready-state steps above, and `params` describes the
-native-sell trade. The `ethflow_transaction_simulation` scenario runs this
+native-sell trade. The `ethflow` scenario runs this
 flow end to end:
 
 ```rust,ignore
@@ -303,7 +303,7 @@ EthFlow entries.
 Run the maintained signing scenario:
 
 ```text
-cargo run --manifest-path examples/native/Cargo.toml --example signing_roundtrip
+cargo run --manifest-path examples/native/Cargo.toml --example sign_order
 ```
 
 This scenario is the shortest deterministic proof that the SDK can:
@@ -410,7 +410,7 @@ It is the fastest way to answer:
 Run the maintained simulated submission scenario:
 
 ```text
-cargo run --manifest-path examples/native/Cargo.toml --example limit_order_simulation
+cargo run --manifest-path examples/native/Cargo.toml --example limit_order
 ```
 
 This scenario uses:
@@ -527,36 +527,36 @@ example families by user goal.
 
 Use these examples when you want local or transport-mocked Rust flows:
 
-`sdk_surface_report`
+`facade_surface`
 
 - reports facade construction and the resolved on-chain deployment for a quick
   crate-orientation pass
 
-`app_data_roundtrip`
+`app_data`
 
 - shows how app-data generation and validation surfaces behave
 
-`quote_only_simulation`
+`quote`
 
 - builds a quote flow without posting
 
-`trading_sdk_simulation`
+`trading_full_cycle`
 
 - exercises a broader quote, allowance, approval, and submission shape
 
-`order_lifecycle_simulation`
+`order_lifecycle`
 
 - shows order lookup and off-chain cancellation
 
-`ethflow_transaction_simulation`
+`ethflow`
 
 - builds native-sell / EthFlow transaction data
 
-`onchain_order_actions_simulation`
+`onchain_actions`
 
 - builds pre-sign and on-chain cancellation transactions
 
-`orderbook_transport_roundtrip`
+`orderbook_transport`
 
 - focuses on typed orderbook transport behavior rather than high-level trading
 
@@ -564,11 +564,11 @@ Use these examples when you want local or transport-mocked Rust flows:
 
 - shows the composed native Alloy client setup
 
-`alloy_provider_only`
+`alloy_provider`
 
 - shows read-only Alloy RPC through `Provider`
 
-`alloy_signer_only`
+`alloy_signer`
 
 - signs a real CoW order typed-data payload through the Alloy signer leaf
 
@@ -592,7 +592,7 @@ signer-only scenarios).
 When your goal is read-only analytics instead of trading orchestration, switch
 to the explicit subgraph crate path:
 
-- `subgraph_query_roundtrip`
+- `subgraph_query`
 
 These scenarios deliberately use `cow-sdk-subgraph` directly rather than the
 root `cow-sdk` facade.
@@ -612,8 +612,8 @@ browser-runtime proof lives in the crate test lanes (`cow-sdk-browser-wallet`,
 
 These are opt-in and no longer deterministic:
 
-- `orderbook_live_probe`
-- `subgraph_live_query`
+- `orderbook_live`
+- `subgraph_live`
 
 Use them only when you specifically need live service confirmation.
 
@@ -623,8 +623,8 @@ If you want one recommended first session from a fresh checkout, use:
 
 ```text
 cargo check -p cow-sdk --examples
-cargo run --manifest-path examples/native/Cargo.toml --example signing_roundtrip
-cargo run --manifest-path examples/native/Cargo.toml --example limit_order_simulation
+cargo run --manifest-path examples/native/Cargo.toml --example sign_order
+cargo run --manifest-path examples/native/Cargo.toml --example limit_order
 ```
 
 That sequence proves:
@@ -676,14 +676,14 @@ contracts.
 
 ## Troubleshooting
 
-If `cargo run --manifest-path examples/native/Cargo.toml --example signing_roundtrip`
+If `cargo run --manifest-path examples/native/Cargo.toml --example sign_order`
 fails:
 
 - verify that the workspace builds on your local Rust toolchain
 - rerun `cargo fmt --all --check` if you are working from a modified checkout
 - confirm that you are running from the repository root
 
-If `cargo run --manifest-path examples/native/Cargo.toml --example limit_order_simulation`
+If `cargo run --manifest-path examples/native/Cargo.toml --example limit_order`
 fails:
 
 - confirm the native example package still resolves from the checkout

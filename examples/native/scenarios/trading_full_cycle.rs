@@ -1,3 +1,12 @@
+//! The full high-level `Trading` cycle.
+//!
+//! Walks the complete facade surface against transport-mocked doubles: fetch a
+//! quote (`get_quote_results`), post a swap (`post_swap_order`), read the
+//! protocol allowance (`get_cow_protocol_allowance`), send an approval
+//! (`approve_cow_protocol`), and cancel off-chain (`off_chain_cancel_order`).
+//! The only scenario that also exercises `MockProvider`, for the allowance and
+//! approval reads.
+
 use std::{error::Error, sync::Arc};
 
 use serde_json::json;

@@ -10,7 +10,7 @@
 //! directly, as shown here.
 //!
 //! Deterministic: the `OrderbookApi` is pointed at a wiremock server (the same
-//! pattern as `orderbook_transport_roundtrip`); no live services are contacted.
+//! pattern as `orderbook_transport`); no live services are contacted.
 
 use std::error::Error;
 

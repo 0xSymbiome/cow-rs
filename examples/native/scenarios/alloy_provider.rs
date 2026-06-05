@@ -1,3 +1,9 @@
+//! Read-only Alloy provider leaf in isolation.
+//!
+//! Uses `RpcAlloyProvider` (the provider leaf, no signer) against a wiremock
+//! JSON-RPC server to read contract code (`Provider::get_code`) — the smallest
+//! Alloy surface for read-only, analytics, or query-only integrations.
+
 use std::error::Error;
 
 use cow_sdk::alloy_provider::RpcAlloyProvider;

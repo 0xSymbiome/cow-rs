@@ -17,7 +17,7 @@ The repository includes native and WASM example galleries for the public
 - native Alloy transaction lifecycle timing
 
 The native gallery includes dedicated scenarios for
-`ethflow_transaction_simulation`, `onchain_order_actions_simulation`, and
+`ethflow`, `onchain_actions`, and
 `transaction_lifecycle`.
 
 See [Native examples](native/README.md) for the full scenario list.

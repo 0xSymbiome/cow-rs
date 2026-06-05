@@ -1,3 +1,11 @@
+//! Cooperative cancellation of an in-flight request.
+//!
+//! Wraps a `Trading::get_quote_only` call with `Cancellable::cancel_with(&token)`
+//! and fires the `CancellationToken` mid-flight, so the call resolves to
+//! `TradingError::Cancelled` instead of completing. Uses a wiremock server with
+//! a delayed response — aborting an in-flight request cannot be shown against an
+//! instant in-memory double.
+
 use std::{error::Error, sync::Arc, time::Duration};
 
 use serde_json::json;

@@ -1,3 +1,11 @@
+//! On-chain order actions: pre-sign and on-chain cancellation.
+//!
+//! Builds a pre-sign transaction (`get_pre_sign_transaction`) and on-chain
+//! cancellation call data (`onchain_cancellation_transaction`), then dispatches
+//! an on-chain cancel (`Trading::on_chain_cancel_order`) for both a regular and
+//! an EthFlow order, against a transport-mocked orderbook and signer. These are
+//! the smart-contract paths, distinct from the off-chain signed cancellation.
+
 use std::{error::Error, sync::Arc};
 
 use serde_json::json;

@@ -1,3 +1,9 @@
+//! Composed native Alloy client, first touch.
+//!
+//! Builds the umbrella `AlloyClient` (`builder().build_checked()`) against a
+//! wiremock JSON-RPC server, derives a `Signer` (`create_signer`), and signs a
+//! message — the shortest path into the native Alloy adapter without a live RPC.
+
 use std::error::Error;
 
 use cow_sdk::alloy::AlloyClient;

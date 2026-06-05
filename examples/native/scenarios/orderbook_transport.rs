@@ -1,3 +1,10 @@
+//! Typed orderbook transport against a mock HTTP server.
+//!
+//! Drives the concrete `OrderbookApi` over a wiremock server through its core
+//! verbs — `get_version`, `get_quote`, `send_order`, and
+//! `get_order_competition_status` — so the typed request and response wire
+//! shapes are exercised against real HTTP rather than an in-memory double.
+
 use std::error::Error;
 
 use serde_json::json;

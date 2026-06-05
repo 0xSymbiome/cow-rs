@@ -1,3 +1,9 @@
+//! Signed limit-order submission.
+//!
+//! Builds and posts a limit order through `Trading::post_limit_order` against a
+//! transport-mocked orderbook and signer, then inspects the recorded submission.
+//! The limit path takes an explicit price rather than a fetched quote.
+
 use std::{error::Error, sync::Arc};
 
 use serde_json::json;

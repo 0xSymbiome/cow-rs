@@ -95,8 +95,8 @@ fn subgraph_examples_are_declared_and_documented() {
     let readme = include_str!("../README.md");
 
     for example_name in [
-        "subgraph_query_roundtrip",
-        "subgraph_live_query",
+        "subgraph_query",
+        "subgraph_live",
     ] {
         assert!(
             manifest.contains(example_name),
@@ -122,8 +122,8 @@ fn mandatory_trading_examples_are_declared_and_documented() {
     let examples_readme = include_str!("../../README.md");
 
     for example_name in [
-        "ethflow_transaction_simulation",
-        "onchain_order_actions_simulation",
+        "ethflow",
+        "onchain_actions",
     ] {
         assert!(
             manifest.contains(example_name),
@@ -146,8 +146,8 @@ fn mandatory_trading_examples_are_declared_and_documented() {
 
 #[test]
 fn mandatory_trading_examples_reference_reviewed_sdk_surfaces() {
-    let ethflow = include_str!("../scenarios/ethflow_transaction_simulation.rs");
-    let onchain = include_str!("../scenarios/onchain_order_actions_simulation.rs");
+    let ethflow = include_str!("../scenarios/ethflow.rs");
+    let onchain = include_str!("../scenarios/onchain_actions.rs");
 
     assert!(ethflow.contains("get_eth_flow_transaction"));
     assert!(ethflow.contains("post_sell_native_currency_order"));

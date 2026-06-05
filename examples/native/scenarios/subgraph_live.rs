@@ -1,3 +1,10 @@
+//! Opt-in live subgraph query.
+//!
+//! Calls `SubgraphApi::get_totals` against the real CoW subgraph, requiring a
+//! `THE_GRAPH_API_KEY` and an optional chain override from the environment. Like
+//! `orderbook_live`, it contacts a live service and is excluded from the
+//! deterministic runner.
+
 use std::{env, error::Error, io};
 
 use serde_json::json;

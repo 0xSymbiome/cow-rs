@@ -1,3 +1,10 @@
+//! Native-sell / EthFlow order construction and posting.
+//!
+//! Builds the on-chain EthFlow transaction (`get_eth_flow_transaction`) and
+//! posts a native-currency sell order (`post_sell_native_currency_order`) with
+//! merged app data (`build_app_data`), against a transport-mocked orderbook and
+//! signer. EthFlow lets a user sell the native token (for example ETH) directly.
+
 use std::error::Error;
 use std::time::{SystemTime, UNIX_EPOCH};
 

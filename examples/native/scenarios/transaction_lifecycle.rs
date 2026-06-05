@@ -183,7 +183,7 @@ fn receipt_response() -> Value {
 
 fn self_transfer(address: &Address) -> TransactionRequest {
     TransactionRequest::new(
-        Some(address.clone()),
+        Some(*address),
         None,
         Some(Amount::ZERO),
         Some(Amount::from(21_000u32)),

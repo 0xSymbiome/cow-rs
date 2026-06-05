@@ -55,59 +55,59 @@ pub const DETERMINISTIC_EXAMPLES: &[DeterministicExample] = &[
     },
     DeterministicExample::Manifest {
         manifest_path: "examples/native/Cargo.toml",
-        example: "sdk_surface_report",
+        example: "facade_surface",
     },
     DeterministicExample::Manifest {
         manifest_path: "examples/native/Cargo.toml",
-        example: "app_data_roundtrip",
+        example: "app_data",
     },
     DeterministicExample::Manifest {
         manifest_path: "examples/native/Cargo.toml",
-        example: "signing_roundtrip",
+        example: "sign_order",
     },
     DeterministicExample::Manifest {
         manifest_path: "examples/native/Cargo.toml",
-        example: "quote_only_simulation",
+        example: "quote",
     },
     DeterministicExample::Manifest {
         manifest_path: "examples/native/Cargo.toml",
-        example: "limit_order_simulation",
+        example: "limit_order",
     },
     DeterministicExample::Manifest {
         manifest_path: "examples/native/Cargo.toml",
-        example: "order_lifecycle_simulation",
+        example: "order_lifecycle",
     },
     DeterministicExample::Manifest {
         manifest_path: "examples/native/Cargo.toml",
-        example: "trading_sdk_simulation",
+        example: "trading_full_cycle",
     },
     DeterministicExample::Manifest {
         manifest_path: "examples/native/Cargo.toml",
-        example: "ethflow_transaction_simulation",
+        example: "ethflow",
     },
     DeterministicExample::Manifest {
         manifest_path: "examples/native/Cargo.toml",
-        example: "onchain_order_actions_simulation",
+        example: "onchain_actions",
     },
     DeterministicExample::Manifest {
         manifest_path: "examples/native/Cargo.toml",
-        example: "orderbook_transport_roundtrip",
+        example: "orderbook_transport",
     },
     DeterministicExample::Manifest {
         manifest_path: "examples/native/Cargo.toml",
-        example: "subgraph_query_roundtrip",
+        example: "subgraph_query",
     },
     DeterministicExample::Manifest {
         manifest_path: "examples/native/Cargo.toml",
-        example: "simplest_swap_quickstart",
+        example: "swap_quickstart",
     },
     DeterministicExample::Manifest {
         manifest_path: "examples/native/Cargo.toml",
-        example: "error_classification_simulation",
+        example: "error_classification",
     },
     DeterministicExample::Manifest {
         manifest_path: "examples/native/Cargo.toml",
-        example: "order_list_history_simulation",
+        example: "order_history",
     },
 ];
 
@@ -195,8 +195,8 @@ mod tests {
             .map(DeterministicExample::label)
             .collect();
 
-        assert!(!labels.contains(&"orderbook_live_probe"));
-        assert!(!labels.contains(&"subgraph_live_query"));
+        assert!(!labels.contains(&"orderbook_live"));
+        assert!(!labels.contains(&"subgraph_live"));
     }
 
     #[test]
@@ -208,6 +208,6 @@ mod tests {
             .collect();
 
         assert!(labels.contains(&"signed_order_end_to_end"));
-        assert!(labels.contains(&"trading_sdk_simulation"));
+        assert!(labels.contains(&"trading_full_cycle"));
     }
 }

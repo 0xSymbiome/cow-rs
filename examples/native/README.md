@@ -22,10 +22,10 @@ Two complementary example lanes live in this repository:
 
 Use this order when you want the shortest deterministic path:
 
-1. `simplest_swap_quickstart`
-2. `signing_roundtrip`
-3. `limit_order_simulation`
-4. `trading_sdk_simulation`
+1. `swap_quickstart`
+2. `sign_order`
+3. `limit_order`
+4. `trading_full_cycle`
 
 After that, branch by goal through the full scenario table below.
 
@@ -33,33 +33,50 @@ After that, branch by goal through the full scenario table below.
 
 | Scenario | Purpose |
 | --- | --- |
-| `sdk_surface_report` | Report facade construction and the resolved on-chain deployment |
-| `app_data_roundtrip` | Generate and inspect app-data output |
-| `signing_roundtrip` | Sign orders and cancellations and inspect typed payloads |
-| `quote_only_simulation` | Build a quote flow without submission |
-| `cancellation_combinator` | Cancel an in-flight quote with `Cancellable::cancel_with(&token)` |
-| `limit_order_simulation` | Build and simulate signed limit-order submission |
-| `order_lifecycle_simulation` | Inspect order lookup and off-chain cancellation |
-| `simplest_swap_quickstart` | Make your first swap end to end (quote, sign, post) against a mock |
-| `trading_sdk_simulation` | Inspect high-level `Trading` quote, allowance, and approval flow |
-| `error_classification_simulation` | Classify failures with `SdkError::class()` and decide retry versus abort |
-| `ethflow_transaction_simulation` | Build native-sell / EthFlow transaction data |
-| `onchain_order_actions_simulation` | Build pre-sign and on-chain cancellation transactions |
-| `orderbook_transport_roundtrip` | Inspect typed orderbook transport behavior |
-| `order_list_history_simulation` | List an account's orders and trade history through `OrderbookApi` |
-| `orderbook_live_probe` | Run an opt-in live orderbook version probe |
-| `subgraph_query_roundtrip` | Inspect canonical subgraph helpers and the explicit `SubgraphQueryRequest` escape hatch |
-| `subgraph_live_query` | Run an opt-in live subgraph query |
+| `facade_surface` | Report facade construction and the resolved on-chain deployment |
+| `app_data` | Generate and inspect app-data output |
+| `sign_order` | Sign orders and cancellations and inspect typed payloads |
+| `quote` | Build a quote flow without submission |
+| `cancel_in_flight` | Cancel an in-flight quote with `Cancellable::cancel_with(&token)` |
+| `limit_order` | Build and simulate signed limit-order submission |
+| `order_lifecycle` | Inspect order lookup and off-chain cancellation |
+| `swap_quickstart` | Make your first swap end to end (quote, sign, post) against a mock |
+| `trading_full_cycle` | Inspect high-level `Trading` quote, allowance, and approval flow |
+| `error_classification` | Classify failures with `SdkError::class()` and decide retry versus abort |
+| `ethflow` | Build native-sell / EthFlow transaction data |
+| `onchain_actions` | Build pre-sign and on-chain cancellation transactions |
+| `orderbook_transport` | Inspect typed orderbook transport behavior |
+| `order_history` | List an account's orders and trade history through `OrderbookApi` |
+| `orderbook_live` | Run an opt-in live orderbook version probe |
+| `subgraph_query` | Inspect canonical subgraph helpers and the explicit `SubgraphQueryRequest` escape hatch |
+| `subgraph_live` | Run an opt-in live subgraph query |
 | `alloy_quickstart` | Build the composed native Alloy client against a mock RPC |
-| `alloy_provider_only` | Use the read-only Alloy provider leaf against a mock RPC |
-| `alloy_signer_only` | Sign a real CoW order typed-data payload with the Alloy signer leaf |
+| `alloy_provider` | Use the read-only Alloy provider leaf against a mock RPC |
+| `alloy_signer` | Sign a real CoW order typed-data payload with the Alloy signer leaf |
 | `transaction_lifecycle` | Compare helper-based receipt waiting with broadcast-only submission through the composed Alloy signer |
-| `alloy_provider_with_custom_signer` | Pair the Alloy provider leaf with a consumer-supplied async signer |
-| `alloy_signer_with_custom_provider` | Pair the Alloy signer leaf with a consumer-supplied async provider |
+| `alloy_custom_traits` | Compose an Alloy leaf with a consumer-supplied trait impl in both directions (SDK provider + your signer, SDK signer + your provider) |
 | `alloy_trading_full_flow` | Invoke allowance, approval receipt waiting, and pre-sign Trading async boundaries through `AlloyClient` |
 
 Subgraph scenarios use `cow-sdk-subgraph` directly rather than the root
 facade.
+
+### Test Doubles
+
+Scenarios use one of two deterministic doubles, by intent:
+
+- **`cow_sdk::testing` mocks** (`MockOrderbook`, `MockSigner`, `MockProvider`)
+  for flow scenarios where the point is the SDK call sequence, not the wire.
+- **`wiremock`** for transport and wire-shape scenarios
+  (`orderbook_transport`, `order_history`,
+  `error_classification`, `subgraph_query`) and for
+  `cancel_in_flight`, where aborting an in-flight request cannot be
+  shown against an instant in-memory double.
+
+### Scenario Conventions
+
+Every scenario opens with a `//!` module header — a one-line summary plus a
+short body naming the key SDK symbols, the transport or double, and the one
+design point worth knowing — kept in sync with its catalog row above.
 
 ## Validation
 
@@ -72,29 +89,28 @@ cargo run-deterministic-examples
 ## Running Examples
 
 ```text
-cargo run --manifest-path examples/native/Cargo.toml --example sdk_surface_report
-cargo run --manifest-path examples/native/Cargo.toml --example app_data_roundtrip
-cargo run --manifest-path examples/native/Cargo.toml --example signing_roundtrip
-cargo run --manifest-path examples/native/Cargo.toml --example quote_only_simulation
-cargo run --manifest-path examples/native/Cargo.toml --example cancellation_combinator
-cargo run --manifest-path examples/native/Cargo.toml --example limit_order_simulation
-cargo run --manifest-path examples/native/Cargo.toml --example order_lifecycle_simulation
-cargo run --manifest-path examples/native/Cargo.toml --example simplest_swap_quickstart
-cargo run --manifest-path examples/native/Cargo.toml --example trading_sdk_simulation
-cargo run --manifest-path examples/native/Cargo.toml --example error_classification_simulation
-cargo run --manifest-path examples/native/Cargo.toml --example ethflow_transaction_simulation
-cargo run --manifest-path examples/native/Cargo.toml --example onchain_order_actions_simulation
-cargo run --manifest-path examples/native/Cargo.toml --example orderbook_transport_roundtrip
-cargo run --manifest-path examples/native/Cargo.toml --example order_list_history_simulation
-cargo run --manifest-path examples/native/Cargo.toml --example orderbook_live_probe
-cargo run --manifest-path examples/native/Cargo.toml --example subgraph_query_roundtrip
-cargo run --manifest-path examples/native/Cargo.toml --example subgraph_live_query
+cargo run --manifest-path examples/native/Cargo.toml --example facade_surface
+cargo run --manifest-path examples/native/Cargo.toml --example app_data
+cargo run --manifest-path examples/native/Cargo.toml --example sign_order
+cargo run --manifest-path examples/native/Cargo.toml --example quote
+cargo run --manifest-path examples/native/Cargo.toml --example cancel_in_flight
+cargo run --manifest-path examples/native/Cargo.toml --example limit_order
+cargo run --manifest-path examples/native/Cargo.toml --example order_lifecycle
+cargo run --manifest-path examples/native/Cargo.toml --example swap_quickstart
+cargo run --manifest-path examples/native/Cargo.toml --example trading_full_cycle
+cargo run --manifest-path examples/native/Cargo.toml --example error_classification
+cargo run --manifest-path examples/native/Cargo.toml --example ethflow
+cargo run --manifest-path examples/native/Cargo.toml --example onchain_actions
+cargo run --manifest-path examples/native/Cargo.toml --example orderbook_transport
+cargo run --manifest-path examples/native/Cargo.toml --example order_history
+cargo run --manifest-path examples/native/Cargo.toml --example orderbook_live
+cargo run --manifest-path examples/native/Cargo.toml --example subgraph_query
+cargo run --manifest-path examples/native/Cargo.toml --example subgraph_live
 cargo run --manifest-path examples/native/Cargo.toml --example alloy_quickstart --features alloy
-cargo run --manifest-path examples/native/Cargo.toml --example alloy_provider_only --features alloy-provider
-cargo run --manifest-path examples/native/Cargo.toml --example alloy_signer_only --features alloy-signer
+cargo run --manifest-path examples/native/Cargo.toml --example alloy_provider --features alloy-provider
+cargo run --manifest-path examples/native/Cargo.toml --example alloy_signer --features alloy-signer
 cargo run --manifest-path examples/native/Cargo.toml --example transaction_lifecycle --features alloy
-cargo run --manifest-path examples/native/Cargo.toml --example alloy_provider_with_custom_signer --features alloy-provider
-cargo run --manifest-path examples/native/Cargo.toml --example alloy_signer_with_custom_provider --features alloy-signer
+cargo run --manifest-path examples/native/Cargo.toml --example alloy_custom_traits --features alloy
 cargo run --manifest-path examples/native/Cargo.toml --example alloy_trading_full_flow --features alloy
 ```
 
@@ -103,14 +119,14 @@ path; they do not replace it.
 
 ## Optional Environment Variables
 
-Before running `orderbook_live_probe`, you can set:
+Before running `orderbook_live`, you can set:
 
 - `COW_SMOKE_ORDERBOOK_ENV`
 - `COW_SMOKE_ORDERBOOK_CHAIN_ID`
 - `COW_SMOKE_ORDERBOOK_BASE_URL`
 - `COW_SMOKE_ORDERBOOK_API_KEY`
 
-Before running `subgraph_live_query`, set:
+Before running `subgraph_live`, set:
 
 - `THE_GRAPH_API_KEY`
 - optionally `COW_SUBGRAPH_CHAIN_ID`

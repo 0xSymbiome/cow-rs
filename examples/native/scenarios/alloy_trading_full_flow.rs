@@ -1,3 +1,11 @@
+//! End-to-end Alloy-backed trading boundaries.
+//!
+//! Drives the async `Trading` boundaries through a real `AlloyClient`
+//! (a `SigningProvider`) against a wiremock JSON-RPC server: read the protocol
+//! allowance (`get_cow_protocol_allowance`), broadcast an approval and wait for
+//! its receipt (`approval_transaction` + `submit_and_wait_for_receipt`), and
+//! build a pre-sign transaction (`get_pre_sign_transaction`).
+
 use std::{
     error::Error,
     sync::{Arc, Mutex},

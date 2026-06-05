@@ -29,60 +29,60 @@ tokio = { version = "1.51.1", features = ["macros", "rt-multi-thread", "time"] }
 wiremock = "0.6.5"
 
 [[example]]
-name = "sdk_surface_report"
-path = "scenarios/sdk_surface_report.rs"
+name = "facade_surface"
+path = "scenarios/facade_surface.rs"
 
 [[example]]
-name = "app_data_roundtrip"
-path = "scenarios/app_data_roundtrip.rs"
+name = "app_data"
+path = "scenarios/app_data.rs"
 
 [[example]]
-name = "signing_roundtrip"
-path = "scenarios/signing_roundtrip.rs"
+name = "sign_order"
+path = "scenarios/sign_order.rs"
 
 [[example]]
-name = "quote_only_simulation"
-path = "scenarios/quote_only_simulation.rs"
+name = "quote"
+path = "scenarios/quote.rs"
 
 [[example]]
-name = "cancellation_combinator"
-path = "scenarios/cancellation_combinator.rs"
+name = "cancel_in_flight"
+path = "scenarios/cancel_in_flight.rs"
 
 [[example]]
-name = "limit_order_simulation"
-path = "scenarios/limit_order_simulation.rs"
+name = "limit_order"
+path = "scenarios/limit_order.rs"
 
 [[example]]
-name = "order_lifecycle_simulation"
-path = "scenarios/order_lifecycle_simulation.rs"
+name = "order_lifecycle"
+path = "scenarios/order_lifecycle.rs"
 
 [[example]]
-name = "orderbook_transport_roundtrip"
-path = "scenarios/orderbook_transport_roundtrip.rs"
+name = "orderbook_transport"
+path = "scenarios/orderbook_transport.rs"
 
 [[example]]
-name = "orderbook_live_probe"
-path = "scenarios/orderbook_live_probe.rs"
+name = "orderbook_live"
+path = "scenarios/orderbook_live.rs"
 
 [[example]]
-name = "trading_sdk_simulation"
-path = "scenarios/trading_sdk_simulation.rs"
+name = "trading_full_cycle"
+path = "scenarios/trading_full_cycle.rs"
 
 [[example]]
-name = "ethflow_transaction_simulation"
-path = "scenarios/ethflow_transaction_simulation.rs"
+name = "ethflow"
+path = "scenarios/ethflow.rs"
 
 [[example]]
-name = "onchain_order_actions_simulation"
-path = "scenarios/onchain_order_actions_simulation.rs"
+name = "onchain_actions"
+path = "scenarios/onchain_actions.rs"
 
 [[example]]
-name = "subgraph_query_roundtrip"
-path = "scenarios/subgraph_query_roundtrip.rs"
+name = "subgraph_query"
+path = "scenarios/subgraph_query.rs"
 
 [[example]]
-name = "subgraph_live_query"
-path = "scenarios/subgraph_live_query.rs"
+name = "subgraph_live"
+path = "scenarios/subgraph_live.rs"
 
 [[example]]
 name = "alloy_quickstart"
@@ -90,24 +90,19 @@ path = "scenarios/alloy_quickstart.rs"
 required-features = ["alloy"]
 
 [[example]]
-name = "alloy_provider_only"
-path = "scenarios/alloy_provider_only.rs"
+name = "alloy_provider"
+path = "scenarios/alloy_provider.rs"
 required-features = ["alloy-provider"]
 
 [[example]]
-name = "alloy_signer_only"
-path = "scenarios/alloy_signer_only.rs"
+name = "alloy_signer"
+path = "scenarios/alloy_signer.rs"
 required-features = ["alloy-signer"]
 
 [[example]]
-name = "alloy_provider_with_custom_signer"
-path = "scenarios/alloy_provider_with_custom_signer.rs"
-required-features = ["alloy-provider"]
-
-[[example]]
-name = "alloy_signer_with_custom_provider"
-path = "scenarios/alloy_signer_with_custom_provider.rs"
-required-features = ["alloy-signer"]
+name = "alloy_custom_traits"
+path = "scenarios/alloy_custom_traits.rs"
+required-features = ["alloy"]
 
 [[example]]
 name = "alloy_trading_full_flow"
@@ -120,13 +115,13 @@ path = "scenarios/transaction_lifecycle.rs"
 required-features = ["alloy"]
 
 [[example]]
-name = "simplest_swap_quickstart"
-path = "scenarios/simplest_swap_quickstart.rs"
+name = "swap_quickstart"
+path = "scenarios/swap_quickstart.rs"
 
 [[example]]
-name = "error_classification_simulation"
-path = "scenarios/error_classification_simulation.rs"
+name = "error_classification"
+path = "scenarios/error_classification.rs"
 
 [[example]]
-name = "order_list_history_simulation"
-path = "scenarios/order_list_history_simulation.rs"
+name = "order_history"
+path = "scenarios/order_history.rs"

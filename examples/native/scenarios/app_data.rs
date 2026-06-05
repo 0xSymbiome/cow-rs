@@ -1,3 +1,10 @@
+//! App-data document generation, validation, and CID round-trip.
+//!
+//! Generates an app-data document (`generate_app_data_doc`), validates it
+//! (`validate_app_data_doc`), inspects it (`get_app_data_info`), and round-trips
+//! the content hash through its IPFS CID (`app_data_hex_to_cid` /
+//! `cid_to_app_data_hex`). Pure codec — no transport.
+
 use std::error::Error;
 
 use serde_json::json;

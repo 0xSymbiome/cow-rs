@@ -1,3 +1,10 @@
+//! Facade construction and chain resolution.
+//!
+//! Builds a ready-state `Trading` client through `TradingBuilder::ready`, then
+//! resolves the on-chain deployment (`deployment_for_chain`) and the
+//! wrapped-native token (`wrapped_native_token`) for the selected chain. Pure
+//! construction — no transport and no network.
+
 use std::error::Error;
 
 use serde_json::json;

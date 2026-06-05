@@ -1,3 +1,10 @@
+//! Single-order lookup and off-chain cancellation.
+//!
+//! Looks up an order by uid (`Trading::get_order`) and cancels it off-chain
+//! (`Trading::off_chain_cancel_order`) through a transport-mocked orderbook and
+//! signer, inspecting the signed cancellation the SDK records. Off-chain
+//! cancellation is a signed API call, not an on-chain transaction.
+
 use std::{error::Error, sync::Arc};
 
 use serde_json::json;
