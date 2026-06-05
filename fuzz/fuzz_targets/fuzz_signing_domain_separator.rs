@@ -9,7 +9,6 @@
 //! ASCII name, a saturated `chain_id = u64::MAX` boundary, an all-`0xff`
 //! verifying-contract boundary, and an adversarial mutation seed whose
 //! version byte differs by a single bit from the canonical domain.
-//! **Corpus README:** `../corpus/fuzz_signing_domain_separator/README.md`.
 //!
 //! The target asserts the public `domain_separator_for` helper:
 //!

@@ -7,13 +7,12 @@
 //! **Property:** `PROP-TRD-008`.
 //! **Seed contract:** corpus inputs cover the happy path, every validator
 //! rejection class, timestamp extremes, and WETH/native sentinel pairing.
-//! **Corpus README:** `../corpus/fuzz_order_bounds_validator/README.md`.
 //!
 //! The fuzzer maps arbitrary bytes into an
 //! `(OrderData, Address, SigningScheme, Option<Address>, u64, bool)` tuple
 //! — the signing order plus its submission owner (`from`) — and runs the tuple
 //! through the services-default validator. A small seed-class byte keeps
-//! committed corpus files reproducible while the remaining bytes still perturb
+//! local seed corpus files reproducible while the remaining bytes still perturb
 //! addresses, amounts, scheme, time, and path flags.
 
 use cow_sdk_core::{

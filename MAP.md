@@ -1,7 +1,7 @@
 # Repository File Map
 
-> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `7378f07` &nbsp;&middot;&nbsp; **Generated:** 2026-06-05  
-> **Total tracked files:** **1,292** &nbsp;&middot;&nbsp; **Lines of code:** tokei 14.0.0
+> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `976a902` &nbsp;&middot;&nbsp; **Generated:** 2026-06-05  
+> **Total tracked files:** **1,237** &nbsp;&middot;&nbsp; **Lines of code:** tokei 14.0.0
 
 A navigable inventory of every file tracked by Git on this branch, grouped by the role each directory plays in the workspace. Use the table of contents to jump straight to a section; full file listings are collapsed by default so the high-level shape stays scannable.
 
@@ -34,15 +34,15 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 - **39,176 lines of Rust** across the 20 SDK crates, covered by **43,986 lines of tests** — a **1.1× test-to-code ratio** — plus **180 lines of benchmarks**.
 - **12,579 doc-comment lines** documenting the public API (~32.1% of crate code), plus **921 inline comment lines**.
 - **6,267 lines of TypeScript** across examples, e2e harnesses, and wasm bindings.
-- **26,679 lines of Markdown prose** — ADRs, audit notes, and READMEs.
-- **28,365 lines of data & config** (JSON schemas, parity fixtures, vendored ABIs, YAML, TOML) — tracked, but excluded from code metrics by design.
+- **25,403 lines of Markdown prose** — ADRs, audit notes, and READMEs.
+- **28,280 lines of data & config** (JSON schemas, parity fixtures, vendored ABIs, YAML, TOML) — tracked, but excluded from code metrics by design.
 
 **Footprint** (tracked files)
 
-- **757 files** live under `crates/` — 20 workspace member crates make up roughly 59% of the repo.
+- **757 files** live under `crates/` — 20 workspace member crates make up roughly 61% of the repo.
 - **153 files** under `docs/` are mostly architecture decision records and audit notes.
 - **64 files** under `parity/` are golden fixtures captured from upstream services to keep the Rust SDK byte-compatible.
-- **107 files** under `fuzz/` cover cargo-fuzz targets and their seed corpora.
+- **53 files** under `fuzz/` cover cargo-fuzz targets and their seed corpora.
 - **89 files** under `examples/` + `e2e/` are runnable demos and integration harnesses.
 - **58 files** under `scripts/` are maintenance tool crates (parity refresh, policy refresh, validation runners).
 
@@ -53,12 +53,12 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | Path | Files | Lines | Code | Purpose |
 |------|------:|------:|-----:|---------|
 | `crates/` | 757 | 141,122 | 99,218 | Workspace member crates (the SDK itself) |
-| `docs/` | 153 | 23,194 | 0 | Architecture decision records, audit notes, provider notes |
-| `fuzz/` | 107 | 12,158 | 4,600 | cargo-fuzz targets, corpora, and failure artifacts |
+| `docs/` | 153 | 23,191 | 0 | Architecture decision records, audit notes, provider notes |
 | `parity/` | 64 | 8,363 | 8,118 | Golden fixtures + pinned specs from upstream services |
 | `examples/` | 63 | 17,704 | 5,561 | Runnable usage examples (Rust + TypeScript) |
 | `scripts/` | 58 | 14,772 | 8,902 | Internal maintenance tool crates |
-| `.github/` | 30 | 5,045 | 4,210 | GitHub Actions workflows and repo config |
+| `fuzz/` | 53 | 10,384 | 4,401 | cargo-fuzz targets, corpora, and failure artifacts |
+| `.github/` | 29 | 4,942 | 4,137 | GitHub Actions workflows and repo config |
 | `e2e/` | 26 | 3,928 | 3,170 | End-to-end integration harnesses |
 | `tests/` | 17 | 1,582 | 1,352 | Workspace-level integration tests |
 | `.cargo/` | 2 | 30 | 23 | Cargo configuration |
@@ -67,7 +67,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `Cargo.lock` | 1 | 5,727 | 0 | Workspace lockfile |
 | `SECURITY.md` | 1 | 182 | 0 | Security policy |
 | `.yamllint` | 1 | 7 | 0 | YAML lint configuration |
-| `.gitignore` | 1 | 20 | 0 | Top-level git ignore rules |
+| `.gitignore` | 1 | 19 | 0 | Top-level git ignore rules |
 | `LICENSE` | 1 | 674 | 0 | License text |
 | `llvm-cov-summary.txt` | 1 | 197 | 0 | Coverage summary snapshot |
 | `.githooks/` | 1 | 35 | 28 | Tracked git hook scripts |
@@ -76,8 +76,8 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `ROADMAP.md` | 1 | 64 | 0 | Roadmap document |
 | `rust-toolchain.toml` | 1 | 6 | 4 | Pinned Rust toolchain |
 | `.gitattributes` | 1 | 40 | 0 | Git attributes |
-| `CHANGELOG.md` | 1 | 3,723 | 0 | Release changelog |
-| **Total** | **1292** | **239,395** | **135,295** | |
+| `CHANGELOG.md` | 1 | 3,706 | 0 | Release changelog |
+| **Total** | **1237** | **237,497** | **135,023** | |
 
 ---
 
@@ -85,20 +85,20 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 | Extension | Files | Lines | Code | Comments | Blank | Typical role |
 |-----------|------:|------:|-----:|---------:|------:|--------------|
-| `.rs` | 678 | 130,909 | 100,663 | 18,206 | 12,040 | Rust source and tests |
-| `.md` | 244 | 32,280 | 0 | 26,679 | 5,601 | Markdown docs (ADRs, audit notes, READMEs) |
+| `.rs` | 676 | 130,614 | 100,476 | 18,120 | 12,018 | Rust source and tests |
+| `.md` | 192 | 30,795 | 0 | 25,403 | 5,392 | Markdown docs (ADRs, audit notes, READMEs) |
 | `.json` | 94 | 5,741 | 5,637 | 103 | 1 | JSON schemas, ABIs, parity fixtures |
 | `.ts` | 59 | 17,240 | 6,267 | 9,849 | 1,124 | TypeScript (examples, e2e, wasm bindings) |
-| `.toml` | 52 | 4,042 | 3,469 | 64 | 509 | Cargo manifests and tool configs |
+| `.toml` | 52 | 4,028 | 3,457 | 64 | 507 | Cargo manifests and tool configs |
 | `.sol` | 40 | 3,577 | 2,007 | 1,140 | 430 | Solidity sources / vendored contract code |
 | `.yaml` | 28 | 11,702 | 10,239 | 30 | 1,433 | CI workflows, OpenAPI specs, config |
 | `.stderr` | 22 | 526 | 0 | 505 | 21 | trybuild compile-fail snapshots |
-| `.yml` | 22 | 6,578 | 5,802 | 529 | 247 | CI workflows and config |
+| `.yml` | 21 | 6,475 | 5,729 | 504 | 242 | CI workflows and config |
 | `.txt` | 8 | 237 | 0 | 237 | 0 | Plain text fixtures / summaries |
 | `.lock` | 7 | 24,245 | 0 | 21,878 | 2,367 | Cargo / package lockfiles |
 | `.sh` | 7 | 764 | 616 | 43 | 105 | Shell scripts |
 | `.mjs` | 6 | 594 | 485 | 35 | 74 | JavaScript modules |
-| `.gitignore` | 5 | 32 | 0 | 32 | 0 |  |
+| `.gitignore` | 5 | 31 | 0 | 31 | 0 |  |
 | `.graphql` | 4 | 77 | 70 | 0 | 7 | GraphQL queries (subgraph) |
 | `(none)` | 3 | 710 | 28 | 555 | 127 |  |
 | `.sha256` | 2 | 2 | 0 | 2 | 0 | Checksum files |
@@ -110,7 +110,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `.html` | 1 | 12 | 12 | 0 | 0 | Static HTML for browser examples |
 | `.gitattributes` | 1 | 40 | 0 | 35 | 5 |  |
 | `.yamllint` | 1 | 7 | 0 | 6 | 1 |  |
-| **Total** | **1292** | **239,395** | **135,295** | **80,006** | **24,094** | |
+| **Total** | **1237** | **237,497** | **135,023** | **78,618** | **23,856** | |
 
 > **Code + Comments + Blank = Lines** for every row. ``Comments`` is all non-code, non-blank content: inline + doc-comments in source, prose in Markdown/text, and raw content in formats tokei does not parse as code (lockfiles, ``.stderr``, snapshots). Rust doc-comments are isolated in the per-crate ``Doc`` column above.
 
@@ -172,11 +172,11 @@ The 25 largest hand-written source files by code lines (Rust + TypeScript; vendo
 | [`crates/orderbook/src/types/quote.rs`](crates/orderbook/src/types/quote.rs) | Rust | src | 625 | 245 |
 | [`crates/orderbook/src/types/order.rs`](crates/orderbook/src/types/order.rs) | Rust | src | 623 | 219 |
 | [`crates/trading/tests/validation_contract.rs`](crates/trading/tests/validation_contract.rs) | Rust | test | 620 | 9 |
-| [`crates/wasm/snapshots/raw/default-bundler.d.ts`](crates/wasm/snapshots/raw/default-bundler.d.ts) | TypeScript | src | 613 | 2,028 |
 | [`crates/wasm/snapshots/raw/default-nodejs.d.ts`](crates/wasm/snapshots/raw/default-nodejs.d.ts) | TypeScript | src | 613 | 2,028 |
+| [`crates/wasm/snapshots/raw/default-bundler.d.ts`](crates/wasm/snapshots/raw/default-bundler.d.ts) | TypeScript | src | 613 | 2,028 |
 | [`crates/core/src/types/identity.rs`](crates/core/src/types/identity.rs) | Rust | src | 610 | 341 |
 | [`crates/subgraph/src/api.rs`](crates/subgraph/src/api.rs) | Rust | src | 599 | 145 |
-| [`crates/orderbook/src/request.rs`](crates/orderbook/src/request.rs) | Rust | src | 597 | 104 |
+| [`crates/orderbook/src/api.rs`](crates/orderbook/src/api.rs) | Rust | src | 597 | 250 |
 
 ---
 
@@ -227,9 +227,9 @@ The 25 largest hand-written source files by code lines (Rust + TypeScript; vendo
 | Subtree | Files | Lines | Code | Purpose |
 |---------|------:|------:|-----:|---------|
 | [`adr`](docs/adr) | 68 | 7,352 | 0 | Architecture Decision Records |
-| [`audit`](docs/audit) | 64 | 10,347 | 0 | Audit notes and review artifacts |
+| [`audit`](docs/audit) | 64 | 10,345 | 0 | Audit notes and review artifacts |
 | [`providers`](docs/providers) | 2 | 251 | 0 | Provider integration notes |
-| **Total (listed)** | **134** | **17,950** | **0** | |
+| **Total (listed)** | **134** | **17,948** | **0** | |
 
 ---
 
@@ -237,9 +237,8 @@ The 25 largest hand-written source files by code lines (Rust + TypeScript; vendo
 
 | Subtree | Files | Lines | Code | Purpose |
 |---------|------:|------:|-----:|---------|
-| [`corpus`](fuzz/corpus) | 52 | 1,472 | 0 | Seed corpora per target |
-| [`fuzz_targets`](fuzz/fuzz_targets) | 52 | 6,207 | 4,261 | cargo-fuzz target sources |
-| **Total (listed)** | **104** | **7,679** | **4,261** | |
+| [`fuzz_targets`](fuzz/fuzz_targets) | 50 | 5,912 | 4,074 | cargo-fuzz target sources |
+| **Total (listed)** | **50** | **5,912** | **4,074** | |
 
 ---
 
@@ -247,7 +246,7 @@ The 25 largest hand-written source files by code lines (Rust + TypeScript; vendo
 
 | Path | Files | Purpose |
 |------|------:|---------|
-| `.github/workflows/` | 18 | GitHub Actions pipelines |
+| `.github/workflows/` | 17 | GitHub Actions pipelines |
 | `.github/config/`    | 9 | Shared CI config |
 | `.githooks/`         | 1 | Tracked git hooks |
 | `.cargo/`            | 2 | Cargo config (e.g. rustflags) |
@@ -263,11 +262,11 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <summary><code>(repo root)</code> &mdash; 14 file(s)</summary>
 
 - [`.gitattributes`](.gitattributes) &mdash; 40 lines
-- [`.gitignore`](.gitignore) &mdash; 20 lines
+- [`.gitignore`](.gitignore) &mdash; 19 lines
 - [`.yamllint`](.yamllint) &mdash; 7 lines
 - [`Cargo.lock`](Cargo.lock) &mdash; 5,727 lines
 - [`Cargo.toml`](Cargo.toml) &mdash; 124 lines
-- [`CHANGELOG.md`](CHANGELOG.md) &mdash; 3,723 lines
+- [`CHANGELOG.md`](CHANGELOG.md) &mdash; 3,706 lines
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) &mdash; 272 lines
 - [`LICENSE`](LICENSE) &mdash; 674 lines
 - [`llvm-cov-summary.txt`](llvm-cov-summary.txt) &mdash; 197 lines
@@ -325,7 +324,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>.github/workflows/</code> &mdash; 18 file(s)</summary>
+<summary><code>.github/workflows/</code> &mdash; 17 file(s)</summary>
 
 - [`_quality-gate.yml`](.github/workflows/_quality-gate.yml) &mdash; 776 lines
 - [`alloy-release-candidate.yml`](.github/workflows/alloy-release-candidate.yml) &mdash; 134 lines
@@ -337,7 +336,6 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`crate-checks.yml`](.github/workflows/crate-checks.yml) &mdash; 99 lines
 - [`docs-quality.yml`](.github/workflows/docs-quality.yml) &mdash; 176 lines
 - [`encode-prefixed-grep-gate.yml`](.github/workflows/encode-prefixed-grep-gate.yml) &mdash; 83 lines
-- [`fuzz.yml`](.github/workflows/fuzz.yml) &mdash; 103 lines
 - [`never-swap-gates.yml`](.github/workflows/never-swap-gates.yml) &mdash; 281 lines
 - [`policy-maintainer.yml`](.github/workflows/policy-maintainer.yml) &mdash; 51 lines
 - [`release-readiness.yml`](.github/workflows/release-readiness.yml) &mdash; 348 lines
@@ -2122,7 +2120,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`README.md`](docs/README.md) &mdash; 123 lines
 - [`release-checklist.md`](docs/release-checklist.md) &mdash; 491 lines
 - [`transport.md`](docs/transport.md) &mdash; 443 lines
-- [`verification.md`](docs/verification.md) &mdash; 343 lines
+- [`verification.md`](docs/verification.md) &mdash; 342 lines
 
 </details>
 
@@ -2266,7 +2264,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`wasm-type-generation-audit.md`](docs/audit/wasm-type-generation-audit.md) &mdash; 130 lines
 - [`wasm-unsupported-target-audit.md`](docs/audit/wasm-unsupported-target-audit.md) &mdash; 57 lines
 - [`wire-dto-coverage-audit.md`](docs/audit/wire-dto-coverage-audit.md) &mdash; 188 lines
-- [`workflow-security-audit.md`](docs/audit/workflow-security-audit.md) &mdash; 150 lines
+- [`workflow-security-audit.md`](docs/audit/workflow-security-audit.md) &mdash; 148 lines
 
 </details>
 
@@ -2491,429 +2489,63 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <summary><code>fuzz/</code> &mdash; 3 file(s)</summary>
 
 - [`Cargo.lock`](fuzz/Cargo.lock) &mdash; 3,892 lines
-- [`Cargo.toml`](fuzz/Cargo.toml) &mdash; 397 lines
-- [`README.md`](fuzz/README.md) &mdash; 190 lines
+- [`Cargo.toml`](fuzz/Cargo.toml) &mdash; 383 lines
+- [`README.md`](fuzz/README.md) &mdash; 197 lines
 
 </details>
 
 <details>
-<summary><code>fuzz/corpus/fuzz_amount_from_units/</code> &mdash; 1 file(s)</summary>
+<summary><code>fuzz/fuzz_targets/</code> &mdash; 50 file(s)</summary>
 
-- [`README.md`](fuzz/corpus/fuzz_amount_from_units/README.md) &mdash; 28 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_amount_parse/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_amount_parse/README.md) &mdash; 30 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_amount_parse_units/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_amount_parse_units/README.md) &mdash; 28 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_app_data_cid_roundtrip/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_app_data_cid_roundtrip/README.md) &mdash; 51 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_app_data_merge/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_app_data_merge/README.md) &mdash; 21 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_app_data_params_from_doc/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_app_data_params_from_doc/README.md) &mdash; 18 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_app_data_size_limit/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_app_data_size_limit/README.md) &mdash; 18 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_append_query_string/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_append_query_string/README.md) &mdash; 28 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_calculate_total_fee/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_calculate_total_fee/README.md) &mdash; 19 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_cid_to_app_data_hex/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_cid_to_app_data_hex/README.md) &mdash; 19 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_contract_call_serde/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_contract_call_serde/README.md) &mdash; 29 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_core_identity_validators/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_core_identity_validators/README.md) &mdash; 27 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_decode_magic_value_response/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_decode_magic_value_response/README.md) &mdash; 22 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_decoded_body_canonical_status_text/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_decoded_body_canonical_status_text/README.md) &mdash; 21 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_ecdsa_v_normalization/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_ecdsa_v_normalization/README.md) &mdash; 80 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_eip1271_signature_data_codec/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_eip1271_signature_data_codec/README.md) &mdash; 24 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_erc20_permit_typed_data_hash/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_erc20_permit_typed_data_hash/README.md) &mdash; 21 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_eth_flow_event_log_decode/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_eth_flow_event_log_decode/README.md) &mdash; 21 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_ethflow_create_order_encode/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_ethflow_create_order_encode/README.md) &mdash; 22 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_flashloan_hints/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_flashloan_hints/README.md) &mdash; 19 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_hash_order_cancellations/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_hash_order_cancellations/README.md) &mdash; 42 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_hook_list_deserialize/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_hook_list_deserialize/README.md) &mdash; 20 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_jitter_delay_for_attempt/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_jitter_delay_for_attempt/README.md) &mdash; 29 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_onchain_order_log_decode/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_onchain_order_log_decode/README.md) &mdash; 20 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_order_bounds_validator/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_order_bounds_validator/README.md) &mdash; 30 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_order_signature_classify/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_order_signature_classify/README.md) &mdash; 56 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_order_uid_pack_unpack/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_order_uid_pack_unpack/README.md) &mdash; 32 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_orderbook_rejection_code/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_orderbook_rejection_code/README.md) &mdash; 21 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_orderbook_rejection_decode/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_orderbook_rejection_decode/README.md) &mdash; 23 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_parse_retry_after/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_parse_retry_after/README.md) &mdash; 31 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_partner_fee_from_value/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_partner_fee_from_value/README.md) &mdash; 19 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_recover_ecdsa_address/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_recover_ecdsa_address/README.md) &mdash; 24 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_recoverable_signature_differential/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_recoverable_signature_differential/README.md) &mdash; 30 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_recoverable_signature_parse_hex/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_recoverable_signature_parse_hex/README.md) &mdash; 30 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_redact_response_body/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_redact_response_body/README.md) &mdash; 29 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_retry_policy_delay/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_retry_policy_delay/README.md) &mdash; 27 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_rpc_error_payload_serde/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_rpc_error_payload_serde/README.md) &mdash; 29 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_schema_version_is_semver/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_schema_version_is_semver/README.md) &mdash; 20 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_settlement_event_log_decode/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_settlement_event_log_decode/README.md) &mdash; 21 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_settlement_invalidate_order_encode/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_settlement_invalidate_order_encode/README.md) &mdash; 20 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_settlement_settle_encode/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_settlement_settle_encode/README.md) &mdash; 23 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_signed_amount_parse/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_signed_amount_parse/README.md) &mdash; 24 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_signing_domain_separator/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_signing_domain_separator/README.md) &mdash; 34 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_slippage_amounts/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_slippage_amounts/README.md) &mdash; 28 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_slippage_policy_helpers/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_slippage_policy_helpers/README.md) &mdash; 26 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_stringify_deterministic/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_stringify_deterministic/README.md) &mdash; 20 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_subgraph_graphql_error_decode/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_subgraph_graphql_error_decode/README.md) &mdash; 79 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_transaction_request_serde/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_transaction_request_serde/README.md) &mdash; 28 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_transport_error_classify/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_transport_error_classify/README.md) &mdash; 22 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_typed_data_digest/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_typed_data_digest/README.md) &mdash; 34 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_valid_to_relative/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_valid_to_relative/README.md) &mdash; 32 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/corpus/fuzz_vault_relayer_transfer_from_accounts_encode/</code> &mdash; 1 file(s)</summary>
-
-- [`README.md`](fuzz/corpus/fuzz_vault_relayer_transfer_from_accounts_encode/README.md) &mdash; 23 lines
-
-</details>
-
-<details>
-<summary><code>fuzz/fuzz_targets/</code> &mdash; 52 file(s)</summary>
-
-- [`fuzz_amount_from_units.rs`](fuzz/fuzz_targets/fuzz_amount_from_units.rs) &mdash; 82 lines
-- [`fuzz_amount_parse_units.rs`](fuzz/fuzz_targets/fuzz_amount_parse_units.rs) &mdash; 63 lines
-- [`fuzz_amount_parse.rs`](fuzz/fuzz_targets/fuzz_amount_parse.rs) &mdash; 76 lines
+- [`fuzz_amount_parse_units.rs`](fuzz/fuzz_targets/fuzz_amount_parse_units.rs) &mdash; 62 lines
+- [`fuzz_amount_parse.rs`](fuzz/fuzz_targets/fuzz_amount_parse.rs) &mdash; 75 lines
 - [`fuzz_app_data_cid_roundtrip.rs`](fuzz/fuzz_targets/fuzz_app_data_cid_roundtrip.rs) &mdash; 91 lines
-- [`fuzz_app_data_merge.rs`](fuzz/fuzz_targets/fuzz_app_data_merge.rs) &mdash; 310 lines
-- [`fuzz_app_data_params_from_doc.rs`](fuzz/fuzz_targets/fuzz_app_data_params_from_doc.rs) &mdash; 363 lines
-- [`fuzz_app_data_size_limit.rs`](fuzz/fuzz_targets/fuzz_app_data_size_limit.rs) &mdash; 159 lines
-- [`fuzz_append_query_string.rs`](fuzz/fuzz_targets/fuzz_append_query_string.rs) &mdash; 179 lines
-- [`fuzz_calculate_total_fee.rs`](fuzz/fuzz_targets/fuzz_calculate_total_fee.rs) &mdash; 97 lines
-- [`fuzz_cid_to_app_data_hex.rs`](fuzz/fuzz_targets/fuzz_cid_to_app_data_hex.rs) &mdash; 91 lines
-- [`fuzz_contract_call_serde.rs`](fuzz/fuzz_targets/fuzz_contract_call_serde.rs) &mdash; 64 lines
-- [`fuzz_core_identity_validators.rs`](fuzz/fuzz_targets/fuzz_core_identity_validators.rs) &mdash; 196 lines
-- [`fuzz_decode_magic_value_response.rs`](fuzz/fuzz_targets/fuzz_decode_magic_value_response.rs) &mdash; 233 lines
-- [`fuzz_decoded_body_canonical_status_text.rs`](fuzz/fuzz_targets/fuzz_decoded_body_canonical_status_text.rs) &mdash; 244 lines
+- [`fuzz_app_data_merge.rs`](fuzz/fuzz_targets/fuzz_app_data_merge.rs) &mdash; 309 lines
+- [`fuzz_app_data_params_from_doc.rs`](fuzz/fuzz_targets/fuzz_app_data_params_from_doc.rs) &mdash; 362 lines
+- [`fuzz_app_data_size_limit.rs`](fuzz/fuzz_targets/fuzz_app_data_size_limit.rs) &mdash; 158 lines
+- [`fuzz_calculate_total_fee.rs`](fuzz/fuzz_targets/fuzz_calculate_total_fee.rs) &mdash; 96 lines
+- [`fuzz_cid_to_app_data_hex.rs`](fuzz/fuzz_targets/fuzz_cid_to_app_data_hex.rs) &mdash; 90 lines
+- [`fuzz_contract_call_serde.rs`](fuzz/fuzz_targets/fuzz_contract_call_serde.rs) &mdash; 63 lines
+- [`fuzz_core_identity_validators.rs`](fuzz/fuzz_targets/fuzz_core_identity_validators.rs) &mdash; 195 lines
+- [`fuzz_decode_magic_value_response.rs`](fuzz/fuzz_targets/fuzz_decode_magic_value_response.rs) &mdash; 232 lines
+- [`fuzz_decoded_body_canonical_status_text.rs`](fuzz/fuzz_targets/fuzz_decoded_body_canonical_status_text.rs) &mdash; 243 lines
 - [`fuzz_ecdsa_v_normalization.rs`](fuzz/fuzz_targets/fuzz_ecdsa_v_normalization.rs) &mdash; 54 lines
-- [`fuzz_eip1271_signature_data_codec.rs`](fuzz/fuzz_targets/fuzz_eip1271_signature_data_codec.rs) &mdash; 57 lines
+- [`fuzz_eip1271_signature_data_codec.rs`](fuzz/fuzz_targets/fuzz_eip1271_signature_data_codec.rs) &mdash; 56 lines
 - [`fuzz_erc20_permit_typed_data_hash.rs`](fuzz/fuzz_targets/fuzz_erc20_permit_typed_data_hash.rs) &mdash; 100 lines
 - [`fuzz_eth_flow_event_log_decode.rs`](fuzz/fuzz_targets/fuzz_eth_flow_event_log_decode.rs) &mdash; 52 lines
 - [`fuzz_ethflow_create_order_encode.rs`](fuzz/fuzz_targets/fuzz_ethflow_create_order_encode.rs) &mdash; 115 lines
-- [`fuzz_flashloan_hints.rs`](fuzz/fuzz_targets/fuzz_flashloan_hints.rs) &mdash; 112 lines
-- [`fuzz_hash_order_cancellations.rs`](fuzz/fuzz_targets/fuzz_hash_order_cancellations.rs) &mdash; 163 lines
-- [`fuzz_hook_list_deserialize.rs`](fuzz/fuzz_targets/fuzz_hook_list_deserialize.rs) &mdash; 97 lines
-- [`fuzz_jitter_delay_for_attempt.rs`](fuzz/fuzz_targets/fuzz_jitter_delay_for_attempt.rs) &mdash; 116 lines
+- [`fuzz_flashloan_hints.rs`](fuzz/fuzz_targets/fuzz_flashloan_hints.rs) &mdash; 111 lines
+- [`fuzz_hash_order_cancellations.rs`](fuzz/fuzz_targets/fuzz_hash_order_cancellations.rs) &mdash; 162 lines
+- [`fuzz_hook_list_deserialize.rs`](fuzz/fuzz_targets/fuzz_hook_list_deserialize.rs) &mdash; 96 lines
+- [`fuzz_jitter_delay_for_attempt.rs`](fuzz/fuzz_targets/fuzz_jitter_delay_for_attempt.rs) &mdash; 115 lines
 - [`fuzz_onchain_order_log_decode.rs`](fuzz/fuzz_targets/fuzz_onchain_order_log_decode.rs) &mdash; 61 lines
-- [`fuzz_order_bounds_validator.rs`](fuzz/fuzz_targets/fuzz_order_bounds_validator.rs) &mdash; 290 lines
+- [`fuzz_order_bounds_validator.rs`](fuzz/fuzz_targets/fuzz_order_bounds_validator.rs) &mdash; 289 lines
 - [`fuzz_order_signature_classify.rs`](fuzz/fuzz_targets/fuzz_order_signature_classify.rs) &mdash; 83 lines
 - [`fuzz_order_uid_pack_unpack.rs`](fuzz/fuzz_targets/fuzz_order_uid_pack_unpack.rs) &mdash; 57 lines
-- [`fuzz_orderbook_rejection_code.rs`](fuzz/fuzz_targets/fuzz_orderbook_rejection_code.rs) &mdash; 88 lines
-- [`fuzz_orderbook_rejection_decode.rs`](fuzz/fuzz_targets/fuzz_orderbook_rejection_decode.rs) &mdash; 53 lines
-- [`fuzz_parse_retry_after.rs`](fuzz/fuzz_targets/fuzz_parse_retry_after.rs) &mdash; 52 lines
-- [`fuzz_partner_fee_from_value.rs`](fuzz/fuzz_targets/fuzz_partner_fee_from_value.rs) &mdash; 79 lines
+- [`fuzz_orderbook_rejection_code.rs`](fuzz/fuzz_targets/fuzz_orderbook_rejection_code.rs) &mdash; 87 lines
+- [`fuzz_orderbook_rejection_decode.rs`](fuzz/fuzz_targets/fuzz_orderbook_rejection_decode.rs) &mdash; 52 lines
+- [`fuzz_parse_retry_after.rs`](fuzz/fuzz_targets/fuzz_parse_retry_after.rs) &mdash; 51 lines
+- [`fuzz_partner_fee_from_value.rs`](fuzz/fuzz_targets/fuzz_partner_fee_from_value.rs) &mdash; 78 lines
 - [`fuzz_recover_ecdsa_address.rs`](fuzz/fuzz_targets/fuzz_recover_ecdsa_address.rs) &mdash; 88 lines
 - [`fuzz_recoverable_signature_differential.rs`](fuzz/fuzz_targets/fuzz_recoverable_signature_differential.rs) &mdash; 92 lines
-- [`fuzz_recoverable_signature_parse_hex.rs`](fuzz/fuzz_targets/fuzz_recoverable_signature_parse_hex.rs) &mdash; 62 lines
-- [`fuzz_redact_response_body.rs`](fuzz/fuzz_targets/fuzz_redact_response_body.rs) &mdash; 85 lines
-- [`fuzz_retry_policy_delay.rs`](fuzz/fuzz_targets/fuzz_retry_policy_delay.rs) &mdash; 154 lines
-- [`fuzz_rpc_error_payload_serde.rs`](fuzz/fuzz_targets/fuzz_rpc_error_payload_serde.rs) &mdash; 72 lines
-- [`fuzz_schema_version_is_semver.rs`](fuzz/fuzz_targets/fuzz_schema_version_is_semver.rs) &mdash; 93 lines
+- [`fuzz_recoverable_signature_parse_hex.rs`](fuzz/fuzz_targets/fuzz_recoverable_signature_parse_hex.rs) &mdash; 61 lines
+- [`fuzz_redact_response_body.rs`](fuzz/fuzz_targets/fuzz_redact_response_body.rs) &mdash; 84 lines
+- [`fuzz_retry_policy_delay.rs`](fuzz/fuzz_targets/fuzz_retry_policy_delay.rs) &mdash; 153 lines
+- [`fuzz_rpc_error_payload_serde.rs`](fuzz/fuzz_targets/fuzz_rpc_error_payload_serde.rs) &mdash; 71 lines
+- [`fuzz_schema_version_is_semver.rs`](fuzz/fuzz_targets/fuzz_schema_version_is_semver.rs) &mdash; 92 lines
 - [`fuzz_settlement_event_log_decode.rs`](fuzz/fuzz_targets/fuzz_settlement_event_log_decode.rs) &mdash; 54 lines
 - [`fuzz_settlement_invalidate_order_encode.rs`](fuzz/fuzz_targets/fuzz_settlement_invalidate_order_encode.rs) &mdash; 60 lines
 - [`fuzz_settlement_settle_encode.rs`](fuzz/fuzz_targets/fuzz_settlement_settle_encode.rs) &mdash; 209 lines
-- [`fuzz_signed_amount_parse.rs`](fuzz/fuzz_targets/fuzz_signed_amount_parse.rs) &mdash; 48 lines
-- [`fuzz_signing_domain_separator.rs`](fuzz/fuzz_targets/fuzz_signing_domain_separator.rs) &mdash; 127 lines
-- [`fuzz_slippage_amounts.rs`](fuzz/fuzz_targets/fuzz_slippage_amounts.rs) &mdash; 161 lines
-- [`fuzz_slippage_policy_helpers.rs`](fuzz/fuzz_targets/fuzz_slippage_policy_helpers.rs) &mdash; 183 lines
-- [`fuzz_stringify_deterministic.rs`](fuzz/fuzz_targets/fuzz_stringify_deterministic.rs) &mdash; 74 lines
+- [`fuzz_signed_amount_parse.rs`](fuzz/fuzz_targets/fuzz_signed_amount_parse.rs) &mdash; 47 lines
+- [`fuzz_signing_domain_separator.rs`](fuzz/fuzz_targets/fuzz_signing_domain_separator.rs) &mdash; 126 lines
+- [`fuzz_slippage_amounts.rs`](fuzz/fuzz_targets/fuzz_slippage_amounts.rs) &mdash; 160 lines
+- [`fuzz_slippage_policy_helpers.rs`](fuzz/fuzz_targets/fuzz_slippage_policy_helpers.rs) &mdash; 182 lines
+- [`fuzz_stringify_deterministic.rs`](fuzz/fuzz_targets/fuzz_stringify_deterministic.rs) &mdash; 73 lines
 - [`fuzz_subgraph_graphql_error_decode.rs`](fuzz/fuzz_targets/fuzz_subgraph_graphql_error_decode.rs) &mdash; 93 lines
-- [`fuzz_transaction_request_serde.rs`](fuzz/fuzz_targets/fuzz_transaction_request_serde.rs) &mdash; 63 lines
-- [`fuzz_transport_error_classify.rs`](fuzz/fuzz_targets/fuzz_transport_error_classify.rs) &mdash; 283 lines
+- [`fuzz_transaction_request_serde.rs`](fuzz/fuzz_targets/fuzz_transaction_request_serde.rs) &mdash; 62 lines
+- [`fuzz_transport_error_classify.rs`](fuzz/fuzz_targets/fuzz_transport_error_classify.rs) &mdash; 282 lines
 - [`fuzz_typed_data_digest.rs`](fuzz/fuzz_targets/fuzz_typed_data_digest.rs) &mdash; 143 lines
-- [`fuzz_valid_to_relative.rs`](fuzz/fuzz_targets/fuzz_valid_to_relative.rs) &mdash; 90 lines
+- [`fuzz_valid_to_relative.rs`](fuzz/fuzz_targets/fuzz_valid_to_relative.rs) &mdash; 89 lines
 - [`fuzz_vault_relayer_transfer_from_accounts_encode.rs`](fuzz/fuzz_targets/fuzz_vault_relayer_transfer_from_accounts_encode.rs) &mdash; 96 lines
 
 </details>

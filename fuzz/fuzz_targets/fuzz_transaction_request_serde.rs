@@ -11,7 +11,6 @@
 //! and contract-call transaction shapes, empty and all-fields-none
 //! boundaries, and adversarial payloads including malformed address
 //! fields, non-JSON noise, and oversized value fields.
-//! **Corpus README:** `../corpus/fuzz_transaction_request_serde/README.md`.
 //!
 //! The target maps arbitrary bytes through `serde_json::from_slice`
 //! into `TransactionRequest`, asserts no panic on any input, asserts

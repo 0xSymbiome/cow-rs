@@ -9,7 +9,6 @@
 //! `parity/fixtures/orderbook.json::orderbook-total-fee-transform`,
 //! empty-input and leading-zero boundaries, and adversarial non-digit
 //! and uint256-overflow inputs.
-//! **Corpus README:** `../corpus/fuzz_calculate_total_fee/README.md`.
 //!
 //! The target feeds arbitrary bytes through `std::str::from_utf8` into
 //! `Option<&str>` and asserts the function's documented invariants:

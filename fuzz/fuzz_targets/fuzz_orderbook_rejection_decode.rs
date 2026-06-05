@@ -6,7 +6,6 @@
 //! **Property:** `PROP-ORD-008`.
 //! **Seed contract:** corpus inputs cover every known services tag plus
 //! malformed-envelope and non-UTF-8 body boundaries.
-//! **Corpus README:** `../corpus/fuzz_orderbook_rejection_decode/README.md`.
 //!
 //! The target feeds arbitrary bytes to the parser under both `400 Bad Request`
 //! and `500 Internal Server Error`, matching the two statuses that carry most

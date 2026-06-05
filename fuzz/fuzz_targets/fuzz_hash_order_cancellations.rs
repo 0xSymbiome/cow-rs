@@ -10,7 +10,6 @@
 //! UID, a saturated `valid_to = u32::MAX` UID, the maximum-length
 //! cancellation batch, and a duplicate-UID adversarial set that exercises
 //! the bytes[] concatenation path documented for the contract.
-//! **Corpus README:** `../corpus/fuzz_hash_order_cancellations/README.md`.
 //!
 //! The target maps an `Arbitrary`-derived input into an explicit
 //! `TypedDataDomain` plus an `OrderCancellations` payload whose UID

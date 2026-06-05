@@ -13,7 +13,6 @@
 //! the canonical magic value with an uppercase hex body, a boundary
 //! payload that is JSON-typed but not a string, a 4-byte hex blob with
 //! flipped trailing bits, an empty body, and a non-hex adversarial blob.
-//! **Corpus README:** `../corpus/fuzz_decode_magic_value_response/README.md`.
 //!
 //! The fuzzer fixture provider returns the raw `&[u8]` from the fuzzer
 //! as the `read_contract` response, with `0xfe` deployed code so the

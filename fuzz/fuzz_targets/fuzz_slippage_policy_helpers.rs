@@ -9,7 +9,6 @@
 //! quantity strings, boundary zero / one / `u128::MAX` amounts, and
 //! adversarial NaN / Inf / negative / oversized values that exercise the
 //! documented sanitization and integer-math fast paths.
-//! **Corpus README:** `../corpus/fuzz_slippage_policy_helpers/README.md`.
 //!
 //! The target maps arbitrary bytes through `Arbitrary` into a typed
 //! `PolicyInput`, exercises `sanitize_protocol_fee_bps` on the candidate

@@ -9,7 +9,6 @@
 //! values (null, empty object, empty array, single-character strings,
 //! large integers), and adversarial inputs (Unicode escapes, deeply
 //! nested arrays, non-JSON bytes that exercise the early-return path).
-//! **Corpus README:** `../corpus/fuzz_stringify_deterministic/README.md`.
 //!
 //! The target invariants are:
 //!

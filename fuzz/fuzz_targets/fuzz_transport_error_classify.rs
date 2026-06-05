@@ -7,7 +7,6 @@
 //! **Seed contract:** corpus inputs cover every `TransportErrorClass`,
 //! malformed `Retry-After` headers, credential-bearing body snippets, and
 //! JSON-RPC error bodies.
-//! **Corpus README:** `../corpus/fuzz_transport_error_classify/README.md`.
 //!
 //! The target maps arbitrary bytes into `(status, body, headers)`, classifies
 //! the input through the typed `TransportError` variants, and asserts that any

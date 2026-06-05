@@ -1,7 +1,7 @@
 # Transport Policy Coverage Audit
 
 Status: Current
-Last reviewed: 2026-05-29
+Last reviewed: 2026-06-05
 Owning surface: `cow-sdk-transport-policy` public retry, jitter, rate-limit, classification, and `Retry-After` parser surfaces, the shared `run_with_retry` driver and its `AttemptOutcome`, `RetrySignal`, and `LimiterKey` types, and the target-neutral `system_now` wall clock, including the HTTP-date delegation to `httpdate::parse_http_date` on `retry_after.rs` and the bounded-jitter contract on `jitter.rs`
 Refresh trigger: Changes to any public function on `cow-sdk-transport-policy`; changes to `RetryPolicy`, `JitterStrategy`, `RequestRateLimiter`, `RetryAfter`, `NetworkErrorKind`, or `ErrorClassifier`; changes to `run_with_retry`, `AttemptOutcome`, `RetrySignal`, `LimiterKey`, or `system_now`; changes to the `Retry-After` HTTP-date delegation or its expected accept/reject contract; changes to the workspace `Retry-After` cooldown honor rule documented in `http-transport-contract-audit.md`
 Related docs:
@@ -228,9 +228,9 @@ Primary regression coverage:
 - `crates/transport-policy/tests/policy_contract.rs::prop_tpp_030_base_backoff_clamps_to_max_delay_across_attempt_range`
 - `crates/transport-policy/tests/policy_contract.rs::prop_tpp_031_retry_after_helper_is_case_insensitive`
 - `crates/transport-policy/tests/policy_contract.rs::prop_tpp_032_retry_builder_round_trip_and_zero_attempts_clamps_to_one`
-- `fuzz/fuzz_targets/fuzz_parse_retry_after.rs`, `fuzz/corpus/fuzz_parse_retry_after/`
-- `fuzz/fuzz_targets/fuzz_retry_policy_delay.rs`, `fuzz/corpus/fuzz_retry_policy_delay/`
-- `fuzz/fuzz_targets/fuzz_jitter_delay_for_attempt.rs`, `fuzz/corpus/fuzz_jitter_delay_for_attempt/`
+- `fuzz/fuzz_targets/fuzz_parse_retry_after.rs`
+- `fuzz/fuzz_targets/fuzz_retry_policy_delay.rs`
+- `fuzz/fuzz_targets/fuzz_jitter_delay_for_attempt.rs`
 
 Validation surface:
 

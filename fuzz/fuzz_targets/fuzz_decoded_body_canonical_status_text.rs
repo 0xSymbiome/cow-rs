@@ -15,7 +15,6 @@
 //! variations (absent, `application/json`, plain text), and adversarial
 //! bodies containing non-UTF-8 sequences plus over-long content-type
 //! header material.
-//! **Corpus README:** `../corpus/fuzz_decoded_body_canonical_status_text/README.md`.
 //!
 //! Invariants asserted by the target:
 //!

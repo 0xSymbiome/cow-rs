@@ -10,7 +10,6 @@
 //! from a 32-byte digest, multibase boundaries (empty, single byte, all-`0xff`
 //! bytes, non-UTF-8 bytes), and adversarial shapes including CIDv0
 //! (dag-pb + sha2-256), mismatched codecs, and non-32-byte digests.
-//! **Corpus README:** `../corpus/fuzz_cid_to_app_data_hex/README.md`.
 //!
 //! The target invariants are:
 //!

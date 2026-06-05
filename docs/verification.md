@@ -125,7 +125,6 @@ cross-cutting properties whose evidence spans more than one crate.
 | IpfsFetch await static gate | `_quality-gate.yml` rejects `fetch_doc_from_*` calls without `.await` and rejects any `IpfsFetchTransport` implementation that defines a synchronous `fn get`. |
 | `cargo doc --workspace --all-features --no-deps` | Public rustdoc build gate |
 | `docs-quality.yml` | Nightly docs.rs-style rustdoc lane with `DOCS_RS=1`, `--cfg docsrs`, nightly rustdoc presentation flags, and rendered README heading smoke coverage |
-| `fuzz.yml` | Weekly report-only fuzz canary across every active `cargo +nightly fuzz list --fuzz-dir fuzz` target with crash corpus artifact upload |
 | `retry-soak.yml` | Nightly deterministic orderbook retry and timeout soak through an explicitly ignored long-run test |
 | `RUSTFLAGS="-Dmissing-docs -Dmissing-debug-implementations -Dunreachable-pub -Dunnameable-types" cargo check --workspace --all-features` | Blocking public API rustc lint gate for the published crate family |
 | `codeql.yml` | Dedicated semantic security-analysis gate for Rust and GitHub Actions |

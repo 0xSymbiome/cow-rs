@@ -13,7 +13,6 @@
 //! `1.0.0.1`, leading-`v` prefix `v1.0.0`, empty middle segment `1..3`),
 //! and adversarial inputs (alpha middle segment, leading whitespace, very
 //! large digit strings, non-UTF-8 bytes).
-//! **Corpus README:** `../corpus/fuzz_schema_version_is_semver/README.md`.
 //!
 //! The target invariants are:
 //!

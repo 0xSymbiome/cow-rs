@@ -8,7 +8,6 @@
 //! quote shapes, boundary zero / one / `u128::MAX` inputs, and adversarial
 //! oversized fee, partner-fee, and slippage shapes that exercise the
 //! documented `parse_integer` and protocol-fee math boundaries.
-//! **Corpus README:** `../corpus/fuzz_slippage_amounts/README.md`.
 //!
 //! The target maps arbitrary bytes through `Arbitrary` into a typed
 //! `SlippageInput`, builds a `QuoteData` from the canonical public builder,

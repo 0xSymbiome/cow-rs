@@ -5,7 +5,6 @@
 //! **Surface:** `cow_sdk_contracts::encode_eip1271_signature_data`
 //! paired with `cow_sdk_contracts::decode_eip1271_signature_data`.
 //! **Property:** `PROP-CON-005`.
-//! **Corpus README:** `../corpus/fuzz_eip1271_signature_data_codec/README.md`.
 //!
 //! Constructs an `Eip1271SignatureData` from a 20-byte verifier and an
 //! arbitrary-length signature payload (capped at 256 bytes), then asserts

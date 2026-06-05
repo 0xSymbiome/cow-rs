@@ -14,7 +14,6 @@
 //! exactly the hard ceiling, and adversarial documents that overshoot the
 //! ceiling (must reject with `TooLarge`) and one that is well below the
 //! threshold (must surface zero warnings).
-//! **Corpus README:** `../corpus/fuzz_app_data_size_limit/README.md`.
 //!
 //! The target invariants are:
 //!

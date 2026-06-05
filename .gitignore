@@ -1,10 +1,9 @@
 target/
-# Fuzz corpus: only README.md files are tracked. Binary seeds and any
-# libFuzzer mutation accumulators stay in local working copies; CI
-# preserves crash-time corpora through the workflow's upload-artifact
-# step instead of through the repository.
-fuzz/corpus/*/*
-!fuzz/corpus/*/README.md
+# Fuzz corpora are not committed. Binary seeds and libFuzzer mutation
+# accumulators stay in local working copies and are regenerated on
+# demand; the harnesses under fuzz/fuzz_targets/ and PROPERTIES.md are
+# the tracked record. See fuzz/README.md.
+fuzz/corpus/
 fuzz/artifacts/
 fuzz/target/
 playwright-report/

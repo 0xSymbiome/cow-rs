@@ -1,7 +1,7 @@
 # Workflow Security Audit
 
 Status: Current
-Last reviewed: 2026-06-03
+Last reviewed: 2026-06-05
 Owning surface: every `.github/workflows/*.yml` file
 Refresh trigger: any new workflow file; any unpinned action; any addition of `pull_request_target`; any third-party action new to the workspace; any permission widening or issue-creation behavior in scheduled workflows
 Related docs:
@@ -47,7 +47,6 @@ Workflow snapshot:
 | `commit-format.yml` | `contents: read` | SHA-pinned | Absent |
 | `crate-checks.yml` | workflow `{}`; job grants `contents: read` | SHA-pinned | Absent |
 | `docs-quality.yml` | workflow `{}`; jobs grant `contents: read` | SHA-pinned | Absent |
-| `fuzz.yml` | `contents: read` | SHA-pinned | Absent |
 | `release-readiness.yml` | `contents: read` | SHA-pinned or same-repo reusable workflow | Absent |
 | `retry-soak.yml` | `contents: read` | SHA-pinned | Absent |
 | `wasm-imports-grep-gate.yml` | `contents: read` | SHA-pinned | Absent |
@@ -131,7 +130,6 @@ Primary implementation points:
 - `.github/workflows/commit-format.yml`
 - `.github/workflows/crate-checks.yml`
 - `.github/workflows/docs-quality.yml`
-- `.github/workflows/fuzz.yml`
 - `.github/workflows/release-readiness.yml`
 - `.github/workflows/retry-soak.yml`
 - `.github/workflows/wasm-imports-grep-gate.yml`

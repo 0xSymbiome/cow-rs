@@ -8,7 +8,6 @@
 //! credential-key/value combinations, URL userinfo material, JWT-shaped
 //! tokens, and length-boundary inputs at and beyond
 //! `REDACTED_RESPONSE_BODY_MAX_BYTES`.
-//! **Corpus README:** `../corpus/fuzz_redact_response_body/README.md`.
 //!
 //! The target maps arbitrary bytes through `String::from_utf8_lossy` into the
 //! redaction helper, then asserts that the sanitized output is bounded in

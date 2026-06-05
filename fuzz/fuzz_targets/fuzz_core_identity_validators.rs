@@ -8,7 +8,6 @@
 //! **Seed contract:** corpus inputs cover the canonical zero-form of every
 //! identity type plus boundary lengths and adversarial mixed-case / wrong
 //! prefix / non-hex inputs.
-//! **Corpus README:** `../corpus/fuzz_core_identity_validators/README.md`.
 //!
 //! The first byte of the input picks one of the five typed constructors and
 //! the remaining bytes pass through `String::from_utf8_lossy` into the

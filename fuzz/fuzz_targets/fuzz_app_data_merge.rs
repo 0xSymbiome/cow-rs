@@ -7,7 +7,6 @@
 //! **Seed contract:** corpus inputs cover empty and nested bases, populated
 //! metadata, signer conflicts, partner-fee single/multiple shapes, hooks
 //! replacement, flash-loan metadata, and key collisions.
-//! **Corpus README:** `../corpus/fuzz_app_data_merge/README.md`.
 //!
 //! The target maps arbitrary bytes into a bounded `(serde_json::Value,
 //! AppDataParams)` pair, attempts the typed merge, and asserts that any

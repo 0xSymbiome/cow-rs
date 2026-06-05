@@ -8,7 +8,6 @@
 //! **Seed contract:** corpus inputs cover canonical decimal and `0x`-hex
 //! literals, zero, the `u256` boundary, and adversarial inputs that include
 //! whitespace, sign characters, and oversized digit strings.
-//! **Corpus README:** `../corpus/fuzz_amount_parse/README.md`.
 //!
 //! The target feeds raw bytes through `String::from_utf8_lossy` into both
 //! `Amount::new` and the serde JSON deserialization path, asserting that

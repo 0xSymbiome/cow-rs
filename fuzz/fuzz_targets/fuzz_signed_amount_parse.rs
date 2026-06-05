@@ -9,7 +9,6 @@
 //! magnitude beyond `i256` bounds, and adversarial inputs containing
 //! whitespace, a `0x`-hex literal (signed amount is decimal-only), and the
 //! empty payload.
-//! **Corpus README:** `../corpus/fuzz_signed_amount_parse/README.md`.
 //!
 //! The target maps raw bytes through `String::from_utf8_lossy` into
 //! `SignedAmount::new`, asserts no panic on any input, and asserts that

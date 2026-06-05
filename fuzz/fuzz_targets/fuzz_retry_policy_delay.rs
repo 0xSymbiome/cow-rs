@@ -10,7 +10,6 @@
 //! shapes, `no_retry` policy boundaries, and adversarial extreme attempt
 //! counts, oversized delays, and malformed `Retry-After` headers fed through
 //! `delay_for_status`.
-//! **Corpus README:** `../corpus/fuzz_retry_policy_delay/README.md`.
 //!
 //! The target maps arbitrary bytes into a typed `(attempt, base_ms, max_ms,
 //! status, headers_seed)` tuple, builds a `RetryPolicy` through the public

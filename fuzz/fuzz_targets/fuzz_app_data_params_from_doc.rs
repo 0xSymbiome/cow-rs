@@ -12,7 +12,6 @@
 //! metadata bases, boundary signer-only and hooks-only overrides, and
 //! adversarial shapes including hooks-in-override (must replace base hooks
 //! fully) and hooks-in-base-with-empty-override (must preserve base hooks).
-//! **Corpus README:** `../corpus/fuzz_app_data_params_from_doc/README.md`.
 //!
 //! The target invariants are:
 //!

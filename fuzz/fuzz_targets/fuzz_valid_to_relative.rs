@@ -10,7 +10,6 @@
 //! `[VALID_TO_MIN_RELATIVE_SECONDS, VALID_TO_MAX_RELATIVE_SECONDS]`
 //! endpoints, and adversarial inputs that exercise overflow saturation,
 //! zero duration, and the documented out-of-range rejection path.
-//! **Corpus README:** `../corpus/fuzz_valid_to_relative/README.md`.
 //!
 //! The target derives a structured `(now, duration)` pair through
 //! `Arbitrary`, runs `ValidTo::relative` twice for determinism, and asserts

@@ -10,7 +10,6 @@
 //! shape, boundary `gasLimit` values (zero, decimal max u64, leading
 //! whitespace), and adversarial payloads including unknown top-level keys,
 //! oversized gas limits (greater than `u64::MAX`), and non-JSON bytes.
-//! **Corpus README:** `../corpus/fuzz_hook_list_deserialize/README.md`.
 //!
 //! The target invariants are:
 //!

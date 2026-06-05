@@ -9,7 +9,6 @@
 //! camelCase shape, boundary values for the zero-amount and zero-address
 //! guards, and adversarial payloads including unknown top-level keys,
 //! missing required fields, and non-JSON bytes.
-//! **Corpus README:** `../corpus/fuzz_flashloan_hints/README.md`.
 //!
 //! The target invariants are:
 //!

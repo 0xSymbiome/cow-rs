@@ -11,8 +11,7 @@ is never forced onto nightly.
 
 `libfuzzer-sys` and `cargo-fuzz` rely on the LLVM sanitizer runtime the
 Rust compiler ships on Unix-like x86-64 and AArch64 targets. The
-supported platforms for running fuzz targets are Linux and macOS; the
-scheduled workflow under `.github/workflows/` targets `ubuntu-latest`.
+supported platforms for running fuzz targets are Linux and macOS.
 Building the fuzz crate under `cargo +nightly fuzz build` works on any
 platform the Rust nightly toolchain supports, but running a target
 locally on Windows requires the LLVM AddressSanitizer runtime
@@ -40,19 +39,34 @@ cargo +nightly fuzz build --fuzz-dir fuzz
 cargo +nightly fuzz run <target> --fuzz-dir fuzz -- -max_total_time=60
 ```
 
+### Working corpus and seeds
+
+`fuzz/corpus/` is gitignored — no corpus or seed file is committed (the
+cargo-fuzz convention). libFuzzer's accumulated corpus can grow to
+hundreds of MB, so keep it out of the tree: point each run at an
+out-of-tree write-back directory, with any local seeds you maintain as a
+read-only second directory.
+
+```sh
+cargo +nightly fuzz run <target> --fuzz-dir fuzz \
+  "$HOME/cow-fuzz-corpus/<target>" "$HOME/cow-fuzz-seeds/<target>" -- -max_total_time=60
+```
+
+libFuzzer writes new inputs only to the first directory and reads the
+rest read-only, so the accumulated corpus, local seeds, and crash
+artifacts all stay outside the repository — the tracked tree never
+bloats and a clone or cross-tree copy stays fast.
+
 ## Layout and naming
 
 - `fuzz_targets/` — one `.rs` file per target. The file stem matches the
   `[[bin]]` name declared in `Cargo.toml`.
-- `corpus/<target>/README.md` — the only tracked file in each corpus
-  directory. Enumerates the canonical / boundary / adversarial seed
-  classes the maintainer keeps in local working copies and names the
-  parity-fixture provenance for the canonical class.
-- `corpus/<target>/seed-*.bin` (local-only) — baseline seed inputs for
-  the matching target. Filenames describe the boundary case they
-  exercise. Not tracked in version control (excluded through the
-  global `fuzz/corpus/*/*` `.gitignore` rule). Local fuzzing may add
-  additional out-of-band corpus entries which also stay local-only.
+- `corpus/<target>/` — local-only working corpus and seeds for the
+  matching target. The whole `fuzz/corpus/` tree is gitignored; nothing
+  in it is committed. Baseline `seed-*` inputs and the libFuzzer mutation
+  accumulator both stay in maintainer-local working copies and are
+  regenerated on demand from the seed classes recorded in the
+  [fuzz coverage audit](../../docs/audit/fuzz-coverage-audit.md).
 - `artifacts/<target>/` — crash reproducers written by libFuzzer on
   failure. Also not tracked in version control.
 - `dictionaries/<target>.dict` — optional libFuzzer token dictionary for
@@ -69,32 +83,24 @@ is the codec boundary under test (`order_uid`, `typed_data`,
 `digest`, `roundtrip`, `classify`, `decode`, `encode`, `hash`,
 `merge`).
 
-## Per-target seed contract
+## Seed classes
 
-Every target that is part of scheduled fuzzing must ship a tracked
-`fuzz/corpus/<target>/README.md` that enumerates the local seed
-inventory the maintainer keeps for the target. The README documents
-at least the following seed classes, each of which the maintainer
-materializes as one or more local-only files under
-`fuzz/corpus/<target>/`:
+Seeds are not committed (`fuzz/corpus/` is gitignored). Each target is
+seeded locally from three classes, regenerated on demand:
 
 - `canonical` — at least one seed derived from `parity/fixtures/*.json`
-  or a pinned upstream test fixture. The README names the fixture id
-  and the derivation step.
-- `boundary` — at least one seed at an input-domain edge such as an
-  empty payload, all-zero or all-`0xff` bytes, a single-element list,
-  a capped maximum-length list, or a numeric extreme.
-- `adversarial` — at least one seed derived from a documented edge
-  case, upstream regression, named audit risk, or known historical
-  bug.
+  or a pinned upstream test fixture.
+- `boundary` — at least one input-domain edge: an empty payload,
+  all-zero or all-`0xff` bytes, a single-element list, a capped
+  maximum-length list, or a numeric extreme.
+- `adversarial` — at least one seed from a documented edge case,
+  upstream regression, named audit risk, or known historical bug.
 
-The recommended local-disk seed count is at least five files per
-target, but the binary seeds themselves stay in maintainer-local
-working copies — the workspace `.gitignore` excludes
-`fuzz/corpus/*/*` except `README.md`, so seed binaries never enter
-the public repository. The README is the canonical record of what
-each maintainer-local working copy must contain; update it whenever
-the local seed inventory is added to, removed from, or rederived.
+The recommended local-disk count is at least five files per target. The
+per-target seed-class coverage and its parity-fixture provenance are
+recorded in the [fuzz coverage audit](../../docs/audit/fuzz-coverage-audit.md)
+and the `PROPERTIES.md` rows each target strengthens; the binary seeds
+stay in maintainer-local working copies.
 
 ## Encoder Fuzz Targets
 
@@ -158,7 +164,7 @@ deeply nested shapes.
 
 ## Reproducing a crash
 
-When a scheduled run surfaces a crash, libFuzzer writes the reproducer
+When a local run surfaces a crash, libFuzzer writes the reproducer
 under `fuzz/artifacts/<target>/` and the offending corpus entry under
 `fuzz/corpus/<target>/`. Reproduce locally by pointing the target at
 the saved input directly:
@@ -178,9 +184,10 @@ cargo +nightly fuzz run <target> --fuzz-dir fuzz fuzz/corpus/<target>/<seed>
    arbitrary input), call the helper under test, and assert the
    documented invariant. Keep the assertion messages specific so a
    crash in CI names the diverging field.
-3. Add `corpus/<target>/README.md` (tracked) and at least 5
-   deterministic seed files (local-only, excluded by `.gitignore`)
-   covering the canonical, boundary, and adversarial classes.
+3. Create at least 5 deterministic local seed files (under
+   `fuzz/corpus/<target>/`, gitignored) covering the canonical,
+   boundary, and adversarial classes, and record the new target's
+   seed-class coverage in the fuzz coverage audit.
 4. Smoke-run locally: `cargo +nightly fuzz run <target> --fuzz-dir fuzz
    -- -runs=1000`.
 

@@ -11,7 +11,6 @@
 //! boundaries, and adversarial payloads including non-JSON noise,
 //! credential-bearing message material, and numerically oversized
 //! error codes.
-//! **Corpus README:** `../corpus/fuzz_rpc_error_payload_serde/README.md`.
 //!
 //! The target maps arbitrary bytes through `serde_json::from_slice`
 //! into `RpcErrorPayload`, asserts no panic on any input, and asserts

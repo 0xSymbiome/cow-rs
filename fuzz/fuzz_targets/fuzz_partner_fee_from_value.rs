@@ -10,7 +10,6 @@
 //! values for the `[1..=100]` and `[1..=9999]` basis-point ranges and the
 //! zero-address recipient guard, and adversarial mixed-field combinations
 //! and non-JSON payloads.
-//! **Corpus README:** `../corpus/fuzz_partner_fee_from_value/README.md`.
 //!
 //! The target invariants are:
 //!

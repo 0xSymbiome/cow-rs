@@ -1828,8 +1828,7 @@ The first functional crate-family release begins at `0.1.0`.
   `fuzz_vault_relayer_transfer_from_accounts_encode`) drive
   arbitrary input through the same encoders and assert selector
   identity, call-data length-consistency, round-trip identity,
-  and the EIP-712 envelope composition invariant, with the
-  scheduled fuzz lane matrix now enumerating ten targets; and
+  and the EIP-712 envelope composition invariant; and
   the `PROPERTIES.md` registry gains five new invariant rows
   (`PROP-CORE-008` for the split `SellTokenSource` and
   `BuyTokenDestination` enums governed by ADR 0016,
@@ -2595,8 +2594,8 @@ The first functional crate-family release begins at `0.1.0`.
   signed amounts use arbitrary-precision storage behind the existing
   wire shape, reviewed orderbook rejection tags and retry cooldowns
   have typed handling, browser EIP-1271 cache timing is wasm-safe,
-  legacy digest shims are removed, codec fuzz targets start from
-  committed corpora, and read-only async providers are separated from
+  legacy digest shims are removed, codec fuzz targets carry documented
+  seed-class contracts, and read-only async providers are separated from
   signer-capable providers.
 
 - The async provider surface now separates read-only chain RPC from signer
@@ -2604,11 +2603,6 @@ The first functional crate-family release begins at `0.1.0`.
   `AsyncSigningProvider: AsyncProvider` extension owns `type Signer` and
   `create_signer`; wallet-capable providers implement both traits and read-only
   adapters implement only the read-only half.
-
-- Two critical codec fuzz targets — covering the canonical order-uid
-  pack-unpack pipeline and the EIP-712 typed-data digest pipeline — now
-  ship with non-empty corpora seeded from the parity fixture set, so
-  weekly fuzz runs no longer start from libFuzzer random initial inputs.
 
 - Public protocol DTOs in the contracts crate are now marked non-exhaustive and ship with explicit constructors so later protocol field additions land additively.
 
@@ -2999,8 +2993,8 @@ The first functional crate-family release begins at `0.1.0`.
   that name the fixture case id and the diverging field at once.
 
 - A cargo-fuzz harness under a standalone `fuzz/` crate that pins
-  `libfuzzer-sys` to an exact version and carries five fuzz targets
-  covering the deterministic codec boundaries: `fuzz_order_uid_pack_unpack`
+  `libfuzzer-sys` to an exact version and introduces the first fuzz
+  targets covering the deterministic codec boundaries: `fuzz_order_uid_pack_unpack`
   asserts the pack-and-extract round-trip for `OrderUid` components;
   `fuzz_typed_data_digest` asserts `hash_order` stays deterministic under
   Arbitrary-derived `OrderData` shapes and exercises
@@ -3019,21 +3013,10 @@ The first functional crate-family release begins at `0.1.0`.
   shared-harness conventions, supported-platform boundary, and the
   reproduce-from-corpus workflow.
 
-- A scheduled weekly `.github/workflows/fuzz.yml` report-only lane
-  (Friday 05:00 UTC plus `workflow_dispatch`) that matrix-runs each of
-  the five fuzz targets on `ubuntu-latest` for five minutes under a
-  sixty-minute job timeout. The workflow uses SHA-pinned third-party
-  actions with `# Source ref:` comments, `permissions: contents: read`,
-  a `concurrency` group scoped to workflow and ref with
-  `cancel-in-progress: false`, the pinned nightly toolchain exposed
-  through the `RUST_FUZZ_TOOLCHAIN` env variable, and uploads
-  `fuzz/corpus/<target>/` and `fuzz/artifacts/<target>/` as a
-  `fuzz-<target>-corpus-and-artifacts` workflow artifact on
-  `if: failure()`. `CONTRIBUTING.md` gained a "Running Fuzz Targets
-  Locally" section covering the nightly prerequisite,
-  `cargo install cargo-fuzz --locked`, `cargo fuzz list`, the per-target
-  one-minute local-run command, and the reproduce-from-corpus
-  invocation.
+- `CONTRIBUTING.md` gained a "Running Fuzz Targets Locally" section
+  covering the nightly prerequisite, `cargo install cargo-fuzz --locked`,
+  `cargo fuzz list`, the per-target one-minute local-run command, and the
+  reproduce-from-corpus invocation.
 
 - The canonical atomic amount type is now `cow_sdk_core::Amount(BigUint)`.
   A single typed newtype carries every atomic quantity across

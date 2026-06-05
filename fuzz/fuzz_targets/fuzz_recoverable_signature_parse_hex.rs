@@ -4,7 +4,6 @@
 //!
 //! **Surface:** `cow_sdk_contracts::RecoverableSignature::parse_hex(&str)`.
 //! **Property:** `PROP-CON-005`.
-//! **Corpus README:** `../corpus/fuzz_recoverable_signature_parse_hex/README.md`.
 //!
 //! Drives arbitrary bytes as a UTF-8 lossy string into the typestate
 //! constructor. Asserts:

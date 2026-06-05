@@ -9,7 +9,6 @@
 //! values, a fractional literal, and adversarial inputs containing an
 //! empty payload, a leading sign, and the smallest-representable
 //! `1e-18` fractional magnitude.
-//! **Corpus README:** `../corpus/fuzz_amount_parse_units/README.md`.
 //!
 //! The first input byte selects the `decimals` scale (any `u8`, including
 //! the out-of-range values above 77 the constructor must reject); the

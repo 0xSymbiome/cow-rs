@@ -1,14 +1,14 @@
 # Fuzz Coverage Audit
 
 Status: Current
-Last reviewed: 2026-06-01
+Last reviewed: 2026-06-05
 Owning surface: the standalone `cow-sdk-fuzz` crate (`fuzz/`) and every
 `cargo-fuzz` target it ships against the published SDK crates
 Refresh trigger: any new public untrusted-input surface, retired fuzz
 target, changed seed contract, change to the fuzz dependency set,
 change to the workspace quality-gate step that compiles the fuzz crate,
-or refreshed empirical-run evidence after a scheduled sweep finds and
-fixes a new panic class
+or refreshed empirical-run evidence after a fuzz sweep finds and fixes a
+new panic class
 Related docs:
 - [PROPERTIES.md](../../PROPERTIES.md)
 - [ADR 0011](../adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md)
@@ -30,27 +30,28 @@ This audit covers:
   and its dependency surface against the published SDK crates
 - every `fuzz/fuzz_targets/*.rs` source file and the public-API surface
   each target exercises
-- every `fuzz/corpus/<target>/` directory, its README, its seed class
-  coverage, and its compliance with the per-target seed contract
+- the documented seed-class taxonomy (canonical / boundary /
+  adversarial) each target is seeded from in local working copies
 - the workspace quality-gate step that type-checks the fuzz crate
   against the stable toolchain on every pull request
 - the cross-link between each fuzz target and the `PROPERTIES.md`
   invariant it strengthens through its asserted contract
 
-It does not cover scheduled fuzz EXECUTION (the workflow that runs
-`cargo +nightly fuzz run`), Linux-only sanitizer runtime requirements,
-or libFuzzer-internal mutation strategy; those concerns are owned by
-the scheduled-fuzz workflow rather than by this static review.
+It does not cover fuzz EXECUTION mechanics. `cargo +nightly fuzz run` is
+run locally and on demand — there is no scheduled CI fuzz lane at present
+(one can be reinstated when the suite warrants it). Linux-only sanitizer
+runtime requirements and libFuzzer-internal mutation strategy are
+likewise out of scope for this static review.
 
 ## Outcome Summary
 
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
-| Target inventory | 52 fuzz targets cover every reviewed public untrusted-input boundary across `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-signing`, `cow-sdk-trading`, `cow-sdk-transport-policy`, and `cow-sdk-browser-wallet` | Conforms |
+| Target inventory | 50 fuzz targets (authoritative list: `cargo +nightly fuzz list --fuzz-dir fuzz`) cover every reviewed public untrusted-input boundary across `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-signing`, `cow-sdk-trading`, `cow-sdk-transport-policy`, and `cow-sdk-browser-wallet` | Conforms |
 | Stable-toolchain compile | The fuzz crate compiles under `cargo +stable check --manifest-path fuzz/Cargo.toml` and is gated on every pull request through the shared workspace quality-gate workflow | Conforms |
-| Nightly-toolchain enumerate | `cargo +nightly fuzz list --fuzz-dir fuzz` enumerates all 52 targets | Conforms |
-| Per-target seed contract | Every target ships a corpus directory with a tracked `README.md` enumerating the canonical / boundary / adversarial seed classes the maintainer keeps in local working copies; the seed binaries themselves are local-only (excluded from the repository through `.gitignore`) and reach CI through the workflow's `upload-artifact` step on failure | Conforms |
-| Property traceability | Every target carries a `**Property:**` doc-comment row citing one `PROP-*` invariant identifier from `PROPERTIES.md`; every cited identifier has its evidence column updated to reference the fuzz target source and corpus directory | Conforms |
+| Nightly-toolchain enumerate | `cargo +nightly fuzz list --fuzz-dir fuzz` enumerates the full target set by `[[bin]]` name | Conforms |
+| Seed-class contract | Every target is seeded locally from the canonical / boundary / adversarial classes documented in this audit and the harness doc-comment header; the entire `fuzz/corpus/` tree (baseline seeds and the libFuzzer accumulator alike) is gitignored per the cargo-fuzz convention of keeping the working corpus out of version control, and is regenerated locally from the documented classes | Conforms |
+| Property traceability | Every target carries a `**Property:**` doc-comment row citing one `PROP-*` invariant identifier from `PROPERTIES.md`; every cited identifier has its evidence column updated to reference the fuzz target source file | Conforms |
 | Public-surface boundary | Every target imports only published SDK surface; crate-private helpers are exercised through the nearest public wrapper, with the routing documented in the target doc-comment header | Conforms |
 | Invariant strength | Existing targets carry semantic assertions beyond bare panic-freedom: encoder targets check selector and decoder round-trip, classifier targets check determinism and class boundaries, redaction targets check credential-shape absence including URL userinfo, JWT prefixes, Bearer prefixes, and credential key/value forms | Conforms |
 | Boundary on `pub(crate)` surfaces | Eight browser-wallet helpers (`hex_quantity`, `parse_chain_id_value`, `parse_quantity_to_decimal`, `json_to_dyn_value`, `parse_u256`, `parse_i256`, `bytes_from_json`, `decode_hex`, `transaction_to_rpc`) are crate-private and reachable only through `async fn` wrappers. The fuzz crate carries no async executor, so the three fuzz targets named after the adjacent public DTOs (`fuzz_rpc_error_payload_serde`, `fuzz_contract_call_serde`, `fuzz_transaction_request_serde`) fuzz the serde boundaries that feed those helpers; the helpers themselves stay covered by `crates/browser-wallet/tests/` until async-runtime support is added to the fuzz crate | Conforms (documented gap) |
@@ -59,24 +60,26 @@ the scheduled-fuzz workflow rather than by this static review.
 
 ### Target Inventory
 
-The `cow-sdk-fuzz` crate ships 52 `cargo-fuzz` targets. Each target is
-declared as a `[[bin]]` entry in `fuzz/Cargo.toml`, has a matching
-`fuzz/fuzz_targets/<name>.rs` source file, and has a populated
-`fuzz/corpus/<name>/` seed directory.
+The `cow-sdk-fuzz` crate ships its targets as `[[bin]]` entries in
+`fuzz/Cargo.toml`, each with a matching `fuzz/fuzz_targets/<name>.rs`
+source file. The authoritative inventory is
+`cargo +nightly fuzz list --fuzz-dir fuzz` — this audit describes
+coverage by boundary class rather than re-listing a count that would rot
+on every add or cut.
 
-| Domain | Target count | Surfaces exercised |
-| --- | --- | --- |
-| Encoder | 5 | `GPv2Settlement.settle`, `GPv2Settlement.invalidateOrder`, `CoWSwapEthFlow.createOrder`, `GPv2VaultRelayer.transferFromAccounts`, EIP-2612 permit envelope |
-| Signing | 6 | EIP-712 typed-data digest, ECDSA `v` normalization, ECDSA address recovery, recoverable-signature hex parse, recoverable-signature differential, EIP-712 domain separator |
-| Validator and bounds | 2 | Order bounds validator, `ValidTo::relative` window |
-| Parser and decoder | 15 | Orderbook rejection envelope, orderbook rejection code allowlist, decoded body and canonical status text, append query string, subgraph GraphQL error decoder, transport-error classifier, retry-after header parser, retry policy delay, jitter strategy delay, partner-fee `from_value`, flashloan-hints deserializer, hook-list deserializer, on-chain order log decoder, settlement event log decoder, eth-flow event log decoder |
-| Crypto envelope and hash | 3 | EIP-712 order-cancellations hash, EIP-1271 signature data decoder, EIP-1271 magic-value response decoder |
-| Order UID and signature classifier | 2 | Order UID pack and unpack, signature classifier and signing-scheme discriminant |
-| Core types and identities | 6 | `Amount` parser, `SignedAmount` parser, hex identity validators (`Address`, `Hash32`, `AppDataHash`, `OrderUid`, `HexData`), `Amount::parse_units`, `Amount::from_units`, redaction body scanner |
-| App-data | 6 | CID round-trip, CID-to-hex decoder, schema version `is_semver`, `stringify_deterministic`, app-data size limit, `params_from_doc` |
-| Trading and slippage | 3 | App-data merge, slippage amounts, slippage policy helpers |
-| Orderbook wire totals | 1 | `calculate_total_fee` |
-| Browser-wallet DTO serde | 3 | `RpcErrorPayload` serde + `Debug` redaction, `ContractCall` serde, `TransactionRequest` serde |
+| Boundary class | Surfaces exercised |
+| --- | --- |
+| Encoder | `GPv2Settlement.settle`, `GPv2Settlement.invalidateOrder`, `CoWSwapEthFlow.createOrder`, `GPv2VaultRelayer.transferFromAccounts`, EIP-2612 permit envelope |
+| Signing | EIP-712 typed-data digest, ECDSA `v` normalization, ECDSA address recovery, recoverable-signature hex parse, recoverable-signature differential, EIP-712 domain separator |
+| Validator and bounds | Order bounds validator, `ValidTo::relative` window |
+| Parser and decoder | Orderbook rejection envelope, orderbook rejection code allowlist, decoded body and canonical status text, subgraph GraphQL error decoder, transport-error classifier, retry-after header parser, retry policy delay, jitter strategy delay, partner-fee `from_value`, flashloan-hints deserializer, hook-list deserializer, on-chain order log decoder, settlement event log decoder, eth-flow event log decoder |
+| Crypto envelope and hash | EIP-712 order-cancellations hash, EIP-1271 signature data decoder, EIP-1271 magic-value response decoder |
+| Order UID and signature classifier | Order UID pack and unpack, signature classifier and signing-scheme discriminant |
+| Core types and identities | `Amount` parser, `SignedAmount` parser, hex identity validators (`Address`, `Hash32`, `AppDataHash`, `OrderUid`, `HexData`), `Amount::parse_units`, redaction body scanner |
+| App-data | CID round-trip, CID-to-hex decoder, schema version `is_semver`, `stringify_deterministic`, app-data size limit, `params_from_doc` |
+| Trading and slippage | App-data merge, slippage amounts, slippage policy helpers |
+| Orderbook wire totals | `calculate_total_fee` |
+| Browser-wallet DTO serde | `RpcErrorPayload` serde + `Debug` redaction, `ContractCall` serde, `TransactionRequest` serde |
 
 ### Stable-toolchain Compile Gate
 
@@ -92,53 +95,56 @@ onto nightly.
 
 ### Nightly-toolchain Enumerate
 
-Running `cargo +nightly fuzz list --fuzz-dir fuzz` enumerates all 52
-targets by their `[[bin]]` names. The same nightly toolchain is the
-one the scheduled fuzz workflow runs on `ubuntu-latest`, where the
-LLVM AddressSanitizer runtime ships with the system clang/llvm package.
+Running `cargo +nightly fuzz list --fuzz-dir fuzz` enumerates every
+target by its `[[bin]]` name. The same nightly toolchain runs the
+targets locally on Linux and macOS, where the LLVM AddressSanitizer
+runtime ships with the system clang/llvm package.
 
-### Per-target Seed Contract
+### Seed-class Contract
 
-Every target ships a corpus directory under `fuzz/corpus/<target>/`
-that satisfies the contract documented in `fuzz/README.md`:
+The entire `fuzz/corpus/` tree is gitignored — no corpus directory,
+seed file, or README is committed. This is the standard cargo-fuzz
+posture: the working corpus (baseline seeds plus the libFuzzer mutation
+accumulator) churns constantly and can grow to hundreds of MB, so it
+stays in maintainer-local working copies rather than version control.
 
-- a tracked `README.md` that names the parity fixture id (or pinned
-  upstream test fixture) the canonical class is anchored to and
-  enumerates every seed by class and derivation
-- explicit canonical / boundary / adversarial class coverage
-  documented in that `README.md`
+Each target is seeded locally from three classes:
 
-Seed binaries themselves are **not tracked** in the repository. The
-workspace `.gitignore` excludes `fuzz/corpus/*/*` except `README.md`,
-so binary seeds stay in maintainer-local working copies. CI runs
-generate their own corpus by mutation; on failure, the scheduled fuzz
-workflow's `upload-artifact` step preserves the run-time corpus and
-any crash inputs as a workflow artifact for post-mortem analysis.
-Maintainers regenerate the per-target seed inventory locally from the
-classes documented in each `README.md` when bootstrapping a new
-working copy or expanding coverage for a target.
+- **canonical** — at least one seed anchored to a
+  `parity/fixtures/*.json` id or a pinned upstream test fixture, so the
+  corpus starts from a real, parity-verified input shape.
+- **boundary** — at least one input-domain edge: an empty payload,
+  all-zero or all-`0xff` bytes, a single-element or capped-maximum list,
+  or a numeric extreme.
+- **adversarial** — at least one seed from a documented edge case,
+  upstream regression, named audit risk, or known historical bug.
 
-This posture keeps the public repository footprint small (one
-`README.md` per target plus the target source under
-`fuzz/fuzz_targets/`) while preserving the parity-fixture cross-link
-and the documented seed-class taxonomy. New corpus directories
-require only a `fuzz/Cargo.toml` `[[bin]]` entry and a populated
-`fuzz/corpus/<target>/README.md`; the global `.gitignore` pattern
-covers binary-seed exclusion without needing per-target allow-list
-edits.
+The recommended local-disk floor is five files per target. The
+per-target class coverage and its parity-fixture provenance are recorded
+in this audit and in each harness's doc-comment header, not in a
+committed corpus README; the binary seeds themselves are regenerated
+locally from those documented classes. A local run that finds a crash
+writes the reproducer under the gitignored `fuzz/artifacts/<target>/`.
+
+This posture keeps the public repository footprint to the harness source
+under `fuzz/fuzz_targets/` plus this audit, while preserving the
+parity-fixture cross-link and the documented seed-class taxonomy. Adding
+a target requires only a `fuzz/Cargo.toml` `[[bin]]` entry, the harness
+source, and a new coverage row in this audit; the global `.gitignore`
+rule covers corpus exclusion without per-target edits.
 
 ### Property Traceability
 
 Every target's doc-comment header carries a `**Property:**` row citing
 exactly one `PROP-*` invariant identifier from `PROPERTIES.md`. Every
 cited identifier has its evidence column updated to reference the
-target source file (`fuzz/fuzz_targets/<name>.rs`) and the matching
-corpus directory (`fuzz/corpus/<name>/`). The cross-link is the
+target source file (`fuzz/fuzz_targets/<name>.rs`). The cross-link is the
 reviewer's path from a `PROPERTIES.md` row to the fuzz coverage that
-strengthens it. The 33 `PROP-*` identifiers cited across the 52 targets
-span `PROP-CORE-*`, `PROP-CON-*`, `PROP-SIG-*`, `PROP-AD-*`,
-`PROP-APP-*`, `PROP-OBK-*`, `PROP-ORD-*`, `PROP-SBG-*`, `PROP-TPP-*`,
-`PROP-TRD-*`, and `PROP-BWL-*` families.
+strengthens it. The cited identifiers span the `PROP-CORE-*`,
+`PROP-CON-*`, `PROP-SIG-*`, `PROP-AD-*`, `PROP-APP-*`, `PROP-OBK-*`,
+`PROP-ORD-*`, `PROP-SBG-*`, `PROP-TPP-*`, `PROP-TRD-*`, and `PROP-BWL-*`
+families; 33 `PROP-*` rows in `PROPERTIES.md` carry fuzz-target
+evidence.
 
 ### Public-surface Boundary
 
@@ -190,7 +196,7 @@ panic-freedom. The asserted properties include:
   the contract.
 - **Validator targets**: explicit enumeration of every documented
   rejection variant, with new variants triggering an explicit panic so
-  scheduled fuzz runs surface them rather than silently accepting them.
+  fuzz runs surface them rather than silently accepting them.
 
 ### Boundary On `pub(crate)` Browser-wallet Helpers
 
@@ -214,12 +220,12 @@ disturbing these three targets.
 
 ### Empirical Run Evidence
 
-A scheduled-equivalent sweep run on a Linux x86-64 host (8-way parallel,
-10-minute budget per target, `timeout=10` per input) covered every one
-of the 52 targets without producing a panic. Earlier iterations of the
-same sweep surfaced three real SDK defects on attacker-controlled
-surfaces and three over-strict fuzz-target assertions, all of which
-were corrected before the clean run:
+A local sweep on a Linux x86-64 host (8-way parallel, 10-minute budget
+per target, `timeout=10` per input) covered every target without
+producing a panic. Earlier iterations of the same sweep surfaced three
+real SDK defects on attacker-controlled surfaces and three over-strict
+fuzz-target assertions, all of which were corrected before the clean
+run:
 
 - `redact_response_body` was strengthened against URL userinfo with
   mangled or non-ASCII scheme prefixes, bare `Bearer <token>` strings
@@ -255,26 +261,20 @@ unit tests on realistic inputs.
 Primary implementation points:
 
 - `fuzz/Cargo.toml`
-- `fuzz/fuzz_targets/` (52 fuzz target source files)
-- `fuzz/corpus/<target>/README.md` (52 per-target READMEs that
-  enumerate the seed class taxonomy and parity-fixture provenance;
-  binary seeds are local-only and excluded from the repository)
-- `fuzz/README.md` (per-target seed contract and harness conventions)
-- `.gitignore` (global rule that excludes `fuzz/corpus/*/*` except
-  `README.md`, so binary seeds stay in maintainer-local working
-  copies)
+- `fuzz/fuzz_targets/` (one source file per target; enumerate with
+  `cargo +nightly fuzz list --fuzz-dir fuzz`; each header documents the
+  target's seed-class coverage and parity-fixture provenance)
+- `fuzz/README.md` (seed-class contract and harness conventions)
+- `.gitignore` (global rule that excludes the entire `fuzz/corpus/`
+  tree, so the working corpus stays in maintainer-local working copies)
 - `.github/workflows/_quality-gate.yml` (stable-toolchain compile gate
   step `Check fuzz crate against the stable toolchain`)
-- `.github/workflows/fuzz.yml` (scheduled-fuzz workflow with
-  `upload-artifact` step that preserves run-time corpora and crash
-  inputs on failure)
-- `PROPERTIES.md` (22 `PROP-*` rows with fuzz target evidence)
+- `PROPERTIES.md` (33 `PROP-*` rows with fuzz target evidence)
 
 Primary regression coverage:
 
 - Per-target invariant assertion inside each `fuzz_target!` body
 - Workspace quality gate step running `cargo check --manifest-path fuzz/Cargo.toml`
-- Scheduled `cargo +nightly fuzz` workflow under `.github/workflows/`
 
 Validation surface:
 
@@ -284,9 +284,9 @@ cargo +nightly fuzz list --fuzz-dir fuzz
 cargo +nightly fuzz build --fuzz-dir fuzz
 ```
 
-Local scheduled-fuzz execution is supported on Linux and macOS targets
-where the LLVM AddressSanitizer runtime ships with the system clang or
-LLVM package. Local execution on Windows requires the
+Local fuzz execution is supported on Linux and macOS targets where the
+LLVM AddressSanitizer runtime ships with the system clang or LLVM
+package. Local execution on Windows requires the
 `clang_rt.asan_dynamic-x86_64.dll` runtime that ships with the MSVC
 toolset rather than `rustup`; the build and enumerate steps work on
 every nightly-supported host.

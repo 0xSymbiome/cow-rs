@@ -1,7 +1,7 @@
 # Trading Order-Bounds Validator Audit
 
 Status: Current
-Last reviewed: 2026-05-30
+Last reviewed: 2026-06-05
 Owning surface: `cow-sdk-trading` `OrderBoundsValidator`,
 `OrderValidityBounds`, `SubmissionClass`, `ClientRejection`,
 `AmountSide`, and the `TradingError::ClientRejected` lifting variant.
@@ -62,7 +62,7 @@ encoder.
 | Timestamp extremes | `valid_to = u32::MAX` resolves to typed validation outcomes at `u32::MAX` and `u64::MAX` timestamp boundaries without panicking | Conforms |
 | Gas overhead | EthFlow and pre-sign transaction helpers apply the documented 20% gas overhead with floor integer rounding | Conforms |
 | Cancellation gas fallback | On-chain cancellation transaction construction falls back to `GAS_LIMIT_DEFAULT` when signer gas estimation is unavailable | Conforms |
-| Fuzz corpus | `fuzz_order_bounds_validator` ships with a documented, non-empty corpus covering validator rejection classes and timestamp/token sentinels | Conforms |
+| Fuzz harness | `fuzz_order_bounds_validator` carries a documented seed-class contract covering validator rejection classes and timestamp/token sentinels; the working corpus stays local-only (gitignored) | Conforms |
 | Scope framing | The public validator documentation frames the local checks as defence-in-depth and names services-side rejection classes outside SDK pre-check coverage | Conforms |
 
 ## Current Contract
@@ -181,8 +181,9 @@ implicit non-panic test.
 
 `fuzz/fuzz_targets/fuzz_order_bounds_validator.rs` maps arbitrary bytes into
 the validator tuple shape and checks that every outcome remains a typed
-`Result`. Its corpus README documents happy-path, rejection-class,
-timestamp-extreme, and WETH/native sentinel seeds.
+`Result`. Its harness header documents the seed-class contract —
+happy-path, rejection-class, timestamp-extreme, and WETH/native sentinel
+seeds — while the working corpus stays local-only (gitignored).
 
 ### Gas Overhead Evidence
 
@@ -228,7 +229,6 @@ Primary regression coverage:
 - `crates/trading/tests/post_contract.rs::post_swap_order_sell_side_same_buy_sell_token_uploads_signs_and_submits`
 - `crates/trading/tests/post_contract.rs::post_swap_order_zero_amount_does_not_upload_or_sign`
 - `crates/trading/tests/parity_contract.rs`
-- `fuzz/corpus/fuzz_order_bounds_validator/`
 
 Validation surface:
 

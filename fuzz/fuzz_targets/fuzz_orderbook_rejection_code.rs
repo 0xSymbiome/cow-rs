@@ -10,7 +10,6 @@
 //! length and first-byte boundaries, and adversarial bodies containing
 //! UTF-8 escapes, control bytes, or services-style description prose
 //! that must collapse to the public redaction placeholder.
-//! **Corpus README:** `../corpus/fuzz_orderbook_rejection_code/README.md`.
 //!
 //! The internal `is_safe_rejection_code` allowlist is crate-private; the
 //! target reaches it through the public constructor and asserts the

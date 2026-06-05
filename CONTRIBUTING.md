@@ -104,14 +104,14 @@ cargo check --target wasm32-unknown-unknown --manifest-path examples/wasm/cow-tr
 ## Running Fuzz Targets Locally
 
 The `fuzz/` crate ships cargo-fuzz harnesses for the deterministic codec
-boundaries in `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`, and
-`cow-sdk-subgraph`. Ten targets are shipped in total: five legacy harnesses
-cover the hand-rolled encoder and decoder paths (order UID pack/unpack,
-typed-data digest, app-data CID round-trip, signature classifier, subgraph
-GraphQL error decode) and five encoder-surface harnesses cover the
-`alloy::sol!` binding families inside `cow-sdk-contracts` (settlement,
-EthFlow, ERC-20 Permit, vault relayer). The fuzz crate is a standalone
-package outside the root workspace and requires the Rust nightly channel.
+and validation boundaries across the `cow-sdk-*` crate family — contract
+encoders, signing digests, app-data documents, orderbook and transport
+error parsing, and the order-bounds validator among them. The
+authoritative target list is `cargo fuzz list --fuzz-dir fuzz`, and the
+[fuzz coverage audit](docs/audit/fuzz-coverage-audit.md) records the
+boundary classes and per-target seed contracts. The fuzz crate is a
+standalone package outside the root workspace and requires the Rust
+nightly channel.
 
 Install the nightly toolchain and cargo-fuzz once:
 
@@ -139,8 +139,8 @@ seed file directly:
 cargo +nightly fuzz run <target> --fuzz-dir fuzz fuzz/corpus/<target>/<seed>
 ```
 
-Fuzz targets are exercised on schedule through the `fuzz` workflow; the
-local commands above are sufficient for day-to-day contributor verification.
+Fuzz targets are run locally and on demand (see `fuzz/README.md`); the local
+commands above are sufficient for day-to-day contributor verification.
 
 ## Documentation
 

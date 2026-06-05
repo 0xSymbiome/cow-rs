@@ -8,7 +8,6 @@
 //! equal jitter shapes; boundary zero / equal base+max windows; and
 //! adversarial extreme attempt counts and noise inputs that perturb the
 //! deterministic offset generator.
-//! **Corpus README:** `../corpus/fuzz_jitter_delay_for_attempt/README.md`.
 //!
 //! The target maps arbitrary bytes through `Arbitrary` into a typed
 //! `JitterInput`, walks every `JitterStrategy` variant against the supplied

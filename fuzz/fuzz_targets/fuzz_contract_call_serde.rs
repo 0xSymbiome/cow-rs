@@ -11,7 +11,6 @@
 //! and `bytes32`-returning calls, empty and empty-string boundaries,
 //! and adversarial payloads including malformed `args_json`, non-JSON
 //! noise, and oversized integer arguments.
-//! **Corpus README:** `../corpus/fuzz_contract_call_serde/README.md`.
 //!
 //! The target maps arbitrary bytes through `serde_json::from_slice`
 //! into `ContractCall`, asserts no panic on any input, asserts the

@@ -7,7 +7,6 @@
 //! **Seed contract:** corpus inputs cover canonical delta-seconds values,
 //! canonical IMF-fixdate values, boundary empty / whitespace / zero inputs,
 //! and adversarial NaN, negative, oversized, and malformed date shapes.
-//! **Corpus README:** `../corpus/fuzz_parse_retry_after/README.md`.
 //!
 //! The target feeds raw bytes through `String::from_utf8_lossy` into
 //! `parse_retry_after` together with a fixed `SystemTime` anchor, and asserts
