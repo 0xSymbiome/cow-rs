@@ -39,7 +39,7 @@ thiserror.workspace = true
 tracing = { workspace = true, optional = true }
 
 [dev-dependencies]
-cow-sdk-test-utils = { path = "../test-utils", version = "0.1.0" }
+cow-sdk-test-utils = { path = "../test-utils" }
 criterion.workspace = true
 proptest.workspace = true
 tokio = { workspace = true, features = ["macros", "rt"] }

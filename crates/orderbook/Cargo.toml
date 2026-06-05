@@ -41,7 +41,7 @@ url.workspace = true
 reqwest = { workspace = true, features = ["rustls", "gzip"] }
 
 [dev-dependencies]
-cow-sdk-test-utils = { path = "../test-utils", version = "0.1.0" }
+cow-sdk-test-utils = { path = "../test-utils" }
 criterion.workspace = true
 proptest.workspace = true
 serde_yaml.workspace = true

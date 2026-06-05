@@ -48,7 +48,7 @@ toml.workspace = true
 [dev-dependencies]
 cow-sdk-orderbook = { path = "../orderbook", version = "0.1.0" }
 cow-sdk-subgraph = { path = "../subgraph", version = "0.1.0" }
-cow-sdk-test-utils = { path = "../test-utils", version = "0.1.0", features = ["proptest"] }
+cow-sdk-test-utils = { path = "../test-utils", features = ["proptest"] }
 criterion.workspace = true
 k256 = { version = "0.13.4", default-features = false, features = ["ecdsa"] }
 proptest.workspace = true

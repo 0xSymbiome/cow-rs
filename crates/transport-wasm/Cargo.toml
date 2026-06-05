@@ -44,7 +44,7 @@ web-sys = { workspace = true, features = [
 ] }
 
 [dev-dependencies]
-cow-sdk-test-utils = { path = "../test-utils", version = "0.1.0" }
+cow-sdk-test-utils = { path = "../test-utils" }
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test.workspace = true
