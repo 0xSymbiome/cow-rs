@@ -92,6 +92,13 @@ impl OrderBuilder {
         self
     }
 
+    /// Override the app-data hash (`0x`-prefixed 32-byte hex).
+    #[must_use]
+    pub fn app_data(mut self, app_data: &str) -> Self {
+        self.value["appData"] = json!(app_data);
+        self
+    }
+
     /// Override the order kind.
     ///
     /// # Panics

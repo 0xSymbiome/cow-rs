@@ -150,30 +150,14 @@ fn decode_order_uid_bytes(uid: &OrderUid) -> AlloyBytes {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::deployments::{ContractId, Registry};
     use crate::encode_address_word;
     use alloy_primitives::U256;
     use cow_sdk_core::{
-        Amount, AppDataHash, BuyTokenDestination, CowEnv, OrderData, OrderKind, SellTokenSource,
-        SupportedChainId,
+        Amount, AppDataHash, BuyTokenDestination, OrderData, OrderKind, SellTokenSource,
     };
+    use cow_sdk_test_utils::builders::sample_domain;
     use sha3::{Digest, Keccak256};
     use std::str::FromStr;
-
-    fn sample_domain() -> TypedDataDomain {
-        TypedDataDomain::new(
-            "Gnosis Protocol".to_owned(),
-            "v2".to_owned(),
-            1,
-            Registry::default()
-                .address(
-                    ContractId::Settlement,
-                    SupportedChainId::Mainnet,
-                    CowEnv::Prod,
-                )
-                .expect("canonical settlement address is registered for every supported chain"),
-        )
-    }
 
     fn sample_order() -> OrderData {
         OrderData::new(
