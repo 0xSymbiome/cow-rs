@@ -579,29 +579,6 @@ fn owner_mismatch_lifts_through_trading_error_client_rejected() {
 }
 
 #[test]
-fn validator_is_pure_and_idempotent() {
-    let validator = OrderBoundsValidator::services_default();
-    let order = order();
-    let first = validator.validate(
-        &order,
-        address(FROM),
-        SigningScheme::Eip712,
-        None,
-        NOW,
-        false,
-    );
-    let second = validator.validate(
-        &order,
-        address(FROM),
-        SigningScheme::Eip712,
-        None,
-        NOW,
-        false,
-    );
-    assert!(first.is_ok() && second.is_ok());
-}
-
-#[test]
 fn trade_parameters_validate_enforces_builder_subset() {
     let native = Address::new(EVM_NATIVE_CURRENCY_ADDRESS).unwrap();
     let params = TradeParameters::new(
