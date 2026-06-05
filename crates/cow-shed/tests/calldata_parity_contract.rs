@@ -1,10 +1,13 @@
-use alloy_primitives::{Address, B256, Bytes, U256};
+use alloy_primitives::Bytes;
 use alloy_sol_types::SolCall;
 use cow_sdk_cow_shed::bindings::{COWShed, COWShedFactory};
 use cow_sdk_cow_shed::{
     Call, encode_execute_hooks_calldata, encode_execute_pre_signed_hooks_calldata,
 };
 use serde::Deserialize;
+
+mod common;
+use common::{address, b256, bytes, decimal_u256};
 
 const FIXTURE: &str = include_str!("../../../parity/fixtures/cow_shed/execute_hooks_calldata.json");
 
@@ -142,26 +145,4 @@ fn compact_signature(signature: &Bytes) -> ([u8; 32], [u8; 32]) {
         vs[0] |= 0x80;
     }
     (r, vs)
-}
-
-fn decimal_u256(value: &str) -> U256 {
-    U256::from(value.parse::<u64>().expect("fixture integer fits u64"))
-}
-
-fn bytes(value: &str) -> Bytes {
-    Bytes::from(
-        alloy_primitives::hex::decode(value.trim_start_matches("0x")).expect("fixture hex parses"),
-    )
-}
-
-fn address(value: &str) -> Address {
-    value.parse().expect("fixture address parses")
-}
-
-fn b256(value: &str) -> B256 {
-    let bytes =
-        alloy_primitives::hex::decode(value.trim_start_matches("0x")).expect("fixture hash parses");
-    let mut out = [0_u8; 32];
-    out.copy_from_slice(&bytes);
-    B256::from(out)
 }

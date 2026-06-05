@@ -1,6 +1,8 @@
-use alloy_primitives::Address;
-use cow_sdk_cow_shed::{CowShedVersion, proxy_of};
+use cow_sdk_cow_shed::proxy_of;
 use serde::Deserialize;
+
+mod common;
+use common::{address, parse_version};
 
 const FIXTURE: &str = include_str!("../../../parity/fixtures/cow_shed/proxy_addresses.json");
 const ANCHOR_USER: &str = "0x76b0340e50BD9883D8B2CA5fd9f52439a9e7Cf58";
@@ -47,16 +49,4 @@ fn proxy_addresses_match_reference_vectors() {
     }
 
     assert!(anchor_seen, "canonical mainnet v1.0.1 proxy anchor missing");
-}
-
-fn parse_version(value: &str) -> CowShedVersion {
-    match value {
-        "1.0.0" => CowShedVersion::V1_0_0,
-        "1.0.1" => CowShedVersion::V1_0_1,
-        other => panic!("unsupported fixture version {other}"),
-    }
-}
-
-fn address(value: &str) -> Address {
-    value.parse().expect("address literal parses")
 }

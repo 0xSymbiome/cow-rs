@@ -1,9 +1,12 @@
 use alloy_primitives::{Address, B256, Bytes, U256};
 use alloy_sol_types::SolStruct;
 use cow_sdk_cow_shed::{
-    Call, CowShedVersion, ExecuteHooks, SolCall, cow_shed_eip712_domain, execute_hooks_signing_hash,
+    Call, ExecuteHooks, SolCall, cow_shed_eip712_domain, execute_hooks_signing_hash,
 };
 use serde::Deserialize;
+
+mod common;
+use common::{address, b256, bytes, decimal_u256, parse_version};
 
 const FIXTURE: &str = include_str!("../../../parity/fixtures/cow_shed/execute_hooks_digest.json");
 
@@ -93,34 +96,4 @@ fn to_call(call: &FixtureCall) -> Call {
         out = out.delegate_call();
     }
     out
-}
-
-fn parse_version(value: &str) -> CowShedVersion {
-    match value {
-        "1.0.0" => CowShedVersion::V1_0_0,
-        "1.0.1" => CowShedVersion::V1_0_1,
-        other => panic!("unsupported fixture version {other}"),
-    }
-}
-
-fn decimal_u256(value: &str) -> U256 {
-    U256::from(value.parse::<u64>().expect("fixture integer fits u64"))
-}
-
-fn bytes(value: &str) -> Bytes {
-    Bytes::from(
-        alloy_primitives::hex::decode(value.trim_start_matches("0x")).expect("fixture hex parses"),
-    )
-}
-
-fn address(value: &str) -> Address {
-    value.parse().expect("fixture address parses")
-}
-
-fn b256(value: &str) -> B256 {
-    let bytes =
-        alloy_primitives::hex::decode(value.trim_start_matches("0x")).expect("fixture hash parses");
-    let mut out = [0_u8; 32];
-    out.copy_from_slice(&bytes);
-    B256::from(out)
 }

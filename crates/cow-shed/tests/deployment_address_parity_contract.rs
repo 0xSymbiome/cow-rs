@@ -4,10 +4,12 @@
 //! (`proxy_addresses.json`). This locks the per-chain address table against
 //! drift, including the Gnosis Chain factory/implementation divergence.
 
-use alloy_primitives::Address;
 use cow_sdk_contracts::DeploymentChainId;
 use cow_sdk_cow_shed::{CowShedVersion, cow_shed_factory, cow_shed_implementation, proxy_for};
 use serde::Deserialize;
+
+mod common;
+use common::{address, parse_version};
 
 const VERSION_CALLS: &str = include_str!("../../contracts/abi/cow-shed/version-call-results.json");
 const PROXY_ADDRESSES: &str =
@@ -56,13 +58,13 @@ fn factory_and_implementation_match_the_deployed_probe() {
         let version = parse_version(&row.decoded_version);
         assert_eq!(
             cow_shed_factory(chain, version),
-            addr(&row.factory),
+            address(&row.factory),
             "factory lookup diverges from probe for chain {}",
             row.chain_id
         );
         assert_eq!(
             cow_shed_implementation(chain, version),
-            addr(&row.implementation),
+            address(&row.implementation),
             "implementation lookup diverges from probe for chain {}",
             row.chain_id
         );
@@ -82,14 +84,14 @@ fn proxy_for_matches_reference_vectors() {
         let version = parse_version(&row.version);
         assert_eq!(
             cow_shed_factory(chain, version),
-            addr(&row.factory),
+            address(&row.factory),
             "factory mismatch for chain {} version {}",
             row.chain_id,
             row.version
         );
         assert_eq!(
-            proxy_for(chain, version, addr(&row.user)),
-            addr(&row.proxy),
+            proxy_for(chain, version, address(&row.user)),
+            address(&row.proxy),
             "proxy_for mismatch for chain {} version {} user {}",
             row.chain_id,
             row.version,
@@ -106,7 +108,7 @@ fn proxy_for_matches_reference_vectors() {
 fn supported_chain_id_bridges_to_the_same_addresses() {
     use cow_sdk_core::SupportedChainId;
 
-    let user = addr("0x76b0340e50BD9883D8B2CA5fd9f52439a9e7Cf58");
+    let user = address("0x76b0340e50BD9883D8B2CA5fd9f52439a9e7Cf58");
     for version in [CowShedVersion::V1_0_0, CowShedVersion::V1_0_1] {
         for (supported, deployment) in [
             (SupportedChainId::Mainnet, DeploymentChainId::Mainnet),
@@ -144,16 +146,4 @@ fn supported_chain_id_bridges_to_the_same_addresses() {
         cow_shed_factory(SupportedChainId::Mainnet, CowShedVersion::V1_0_1),
         "Gnosis v1.0.1 factory must differ from the canonical factory"
     );
-}
-
-fn parse_version(value: &str) -> CowShedVersion {
-    match value {
-        "1.0.0" => CowShedVersion::V1_0_0,
-        "1.0.1" => CowShedVersion::V1_0_1,
-        other => panic!("unexpected COW Shed version `{other}`"),
-    }
-}
-
-fn addr(value: &str) -> Address {
-    value.parse().expect("fixture address parses")
 }

@@ -1,7 +1,9 @@
-use alloy_primitives::{Address, B256};
-use cow_sdk_cow_shed::CowShedVersion;
+use alloy_primitives::B256;
 use cow_sdk_cow_shed::address::{implementation_for, init_code_hash, proxy_of};
 use serde::Deserialize;
+
+mod common;
+use common::{address, b256, parse_version};
 
 const FIXTURE: &str = include_str!("../../../parity/fixtures/cow_shed/proxy_addresses.json");
 
@@ -37,24 +39,4 @@ fn init_code_is_derived_per_implementation_and_user() {
         );
         assert_eq!(proxy_of(version, factory, user), address(&row.proxy));
     }
-}
-
-fn parse_version(value: &str) -> CowShedVersion {
-    match value {
-        "1.0.0" => CowShedVersion::V1_0_0,
-        "1.0.1" => CowShedVersion::V1_0_1,
-        other => panic!("unsupported fixture version {other}"),
-    }
-}
-
-fn b256(value: &str) -> B256 {
-    let bytes =
-        alloy_primitives::hex::decode(value.trim_start_matches("0x")).expect("fixture hash parses");
-    let mut out = [0_u8; 32];
-    out.copy_from_slice(&bytes);
-    B256::from(out)
-}
-
-fn address(value: &str) -> Address {
-    value.parse().expect("fixture address parses")
 }
