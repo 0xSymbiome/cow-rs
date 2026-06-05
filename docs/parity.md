@@ -40,14 +40,6 @@ Prior art (not a pinned parity source):
   (services), on-chain shapes (contracts), the app-data schemas
   (`cowprotocol/app-data`), or the subgraph schema (the deployed Graph).
 
-Consumed dependencies (not parity sources):
-
-- `alloy` and `alloy-core` back the native adapter crates. They are consumed as
-  published crates.io libraries, so their contract is the workspace version pins
-  (`alloy-* = 2.0.4`, `alloy-core-* = 1.5.7`), the `Cargo.lock` checksums, and the
-  two-family lockfile invariant — not a `parity/source-lock.yaml` git pin. None of
-  the protocol repositories above are publish-time git dependencies.
-
 ## Source Lock
 
 Pinned sources live in `parity/source-lock.yaml`, the portable authority for
@@ -67,12 +59,6 @@ Pinned revisions (the full set is authoritative in `parity/source-lock.yaml`):
 - `contracts`: `c6b61ce75841ce4c25ab126def9cc981c568e6c6`
 - `ethflowcontract`: `762d182674f8f890bd27917872ee62125171b54d`
 - `services`: `1f80d54bc3521b3fa81cd8ad66d9f749c5450591`
-
-The native Alloy adapter family is pinned by crates.io version rather than by a
-source-lock git commit: Alloy runtime crates at `2.0.4` and Alloy Core ABI crates
-at `1.5.7`, with `Cargo.lock` and the two-family lockfile invariant enforcing
-single-version resolution across both. The families ship on independent release
-cadences.
 
 Normal `cow-rs` builds, tests, and publishes never require local checkouts of
 the upstream repositories. Local upstream checkout paths are optional validation
@@ -288,10 +274,9 @@ while full ergonomic helper APIs remain additive under ADR 0008.
 
 ### Bridging
 
-Cross-chain order construction equivalent to the upstream TypeScript `bridging`
-capability. Deferred; not in scope for the first release. A future leaf crate
-`cow-sdk-bridging` is a candidate when the upstream contract and API surface
-stabilises.
+Cross-chain order construction equivalent to the upstream `bridging` capability.
+Deferred; not in scope for the first release. The planned home is a future
+`cow-sdk-bridging` leaf crate.
 
 ### Composable orders
 
@@ -454,21 +439,8 @@ typed API context.
 
 ## Publish Order
 
-The published crate-family dry-run order follows the release checklist:
-
-1. `cow-sdk-core`
-2. `cow-sdk-contracts`
-3. `cow-sdk-app-data`
-4. `cow-sdk-orderbook`
-5. `cow-sdk-signing`
-6. `cow-sdk-subgraph`
-7. `cow-sdk-transport-wasm`
-8. `cow-sdk-trading`
-9. `cow-sdk-browser-wallet`
-10. `cow-sdk-alloy-provider`
-11. `cow-sdk-alloy-signer`
-12. `cow-sdk-alloy`
-13. `cow-sdk`
+The published crate-family dry-run and publish order is maintained in the
+[Release Checklist](release-checklist.md).
 
 ## Provenance Rule
 
