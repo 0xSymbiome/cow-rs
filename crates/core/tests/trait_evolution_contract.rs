@@ -10,8 +10,6 @@ const CORE_TRAITS_SOURCE: &str = concat!(
     include_str!("../src/traits/provider.rs"),
     "\n",
     include_str!("../src/traits/log_provider.rs"),
-    "\n",
-    include_str!("../src/traits/transport.rs"),
 );
 const HTTP_TRANSPORT_SOURCE: &str = include_str!("../src/transport/http.rs");
 

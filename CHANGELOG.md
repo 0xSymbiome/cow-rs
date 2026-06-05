@@ -551,6 +551,12 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Removed
 
+- Removed the unused `GraphTransport` extension trait (and its tautological
+  `MockGraph` test double) from `cow-sdk-core`. It carried no implementation and
+  no consumer — the subgraph client's transport seam is the already-shipped
+  `HttpTransport` — so the speculative GraphQL-adapter contract is dropped rather
+  than published as an unfulfilled public seam. Pre-`0.1.0`, no consumer is
+  affected.
 - Removed the helper-only trading client: the `TradingHelpers` type, the
   `TradingBuilder::build_helper_only` terminal, and the
   `TradingBuilder::helper_only(...)` shortcut. `TradingHelpers` duplicated four

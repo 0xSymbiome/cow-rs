@@ -1,6 +1,6 @@
 use cow_sdk_core::{
-    Address, Amount, BlockInfo, ContractCall, ContractHandle, DigestSigner, GraphTransport, Hash32,
-    HexData, Owner, Provider, Signer, SigningProvider, TransactionBroadcast, TransactionReceipt,
+    Address, Amount, BlockInfo, ContractCall, ContractHandle, DigestSigner, Hash32, HexData, Owner,
+    Provider, Signer, SigningProvider, TransactionBroadcast, TransactionReceipt,
     TransactionRequest, TransactionStatus, TypedDataDomain, TypedDataField, TypedDataPayload,
     TypedDataSigner, TypedDataTypes,
 };
@@ -120,24 +120,6 @@ impl SigningProvider for MockProvider {
 
     async fn create_signer(&self, _signer_hint: &str) -> Result<Self::Signer, Self::Error> {
         Ok(self.signer.clone().unwrap())
-    }
-}
-
-struct MockGraph;
-
-impl GraphTransport for MockGraph {
-    type Error = String;
-
-    fn execute(
-        &self,
-        endpoint: &str,
-        query: &str,
-        variables_json: Option<&str>,
-    ) -> Result<String, Self::Error> {
-        Ok(format!(
-            "{endpoint}|{query}|{}",
-            variables_json.unwrap_or("{}")
-        ))
     }
 }
 
@@ -473,22 +455,6 @@ async fn signer_and_provider_contracts_are_runtime_agnostic_and_callable() {
 
     assert_signer_contracts(&active_signer, &tx, &domain).await;
     assert_provider_contracts(&provider, &tx).await;
-}
-
-#[test]
-fn graph_transport_covers_shared_io_boundary() {
-    let graph = MockGraph;
-
-    assert_eq!(
-        graph
-            .execute(
-                "https://api.thegraph.com",
-                "query Totals {}",
-                Some("{\"days\":7}")
-            )
-            .unwrap(),
-        "https://api.thegraph.com|query Totals {}|{\"days\":7}"
-    );
 }
 
 #[tokio::test]

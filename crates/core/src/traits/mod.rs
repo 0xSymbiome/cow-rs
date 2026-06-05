@@ -1,8 +1,7 @@
 //! Runtime-neutral signer, provider, and typed-data trait contracts.
 
 pub use self::{
-    contract::*, log_provider::*, provider::*, signer::*, transaction::*, transport::*,
-    typed_data::*,
+    contract::*, log_provider::*, provider::*, signer::*, transaction::*, typed_data::*,
 };
 
 mod contract;
@@ -10,5 +9,4 @@ mod log_provider;
 mod provider;
 mod signer;
 mod transaction;
-mod transport;
 mod typed_data;
