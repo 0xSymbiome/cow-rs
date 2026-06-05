@@ -1,14 +1,20 @@
-use cow_sdk_browser_wallet::{
-    InjectedWalletDetectionOptions, InjectedWalletDiscoverySource, InjectedWalletInfo,
-    RpcErrorPayload, WalletChainChange, WalletChainChangeKind, WalletChainParameters, WalletEvent,
-    WalletNativeCurrency, WalletSession,
-};
-use cow_sdk_core::{Address, SupportedChainId};
+//! Contract suite for the browser-wallet types that genuinely cross a boundary.
+//!
+//! Most browser-wallet types are returned to callers as plain Rust values and
+//! are never serialized through their `serde` derive (the crate is not wired to
+//! the wasm-bindgen JS boundary — that lives in `cow-sdk-wasm`), so that derived
+//! JSON is not a consumer contract and is not pinned here. This suite pins the
+//! cases that are real:
+//!
+//! - `WalletNativeCurrency` — embedded in the `wallet_addEthereumChain`
+//!   (EIP-3085) RPC body, so its serialized wire shape is a real contract.
+//! - `RpcErrorPayload` and `WalletChainParameters` — redaction contracts: their
+//!   public serialization must collapse secret-bearing fields to `[redacted]`.
+
+use cow_sdk_browser_wallet::{RpcErrorPayload, WalletChainParameters, WalletNativeCurrency};
+use cow_sdk_core::SupportedChainId;
 use serde::Serialize;
 use serde_json::json;
-
-const ADDR1: &str = "0x1111111111111111111111111111111111111111";
-const ADDR2: &str = "0x2222222222222222222222222222222222222222";
 
 fn assert_json_bytes<T>(value: &T, expected: &str)
 where
@@ -16,40 +22,6 @@ where
 {
     let actual = serde_json::to_string(value).expect("browser-wallet type must serialize");
     assert_eq!(actual, expected);
-}
-
-fn address(value: &str) -> Address {
-    Address::new(value).expect("address literal must stay valid")
-}
-
-#[test]
-fn wallet_session_new_preserves_wire_shape() {
-    let session = WalletSession::new(
-        true,
-        Some(u64::from(SupportedChainId::Sepolia)),
-        vec![address(ADDR1), address(ADDR2)],
-        Some(address(ADDR1)),
-        "Rabby",
-    );
-    let expected = format!(
-        "{{\"connected\":true,\"chainId\":11155111,\"accounts\":[\"{ADDR1}\",\"{ADDR2}\"],\
-         \"selectedAccount\":\"{ADDR1}\",\"walletLabel\":\"Rabby\"}}"
-    );
-
-    assert_json_bytes(&session, &expected);
-}
-
-#[test]
-fn wallet_event_preserves_wire_shape() {
-    let event = WalletEvent::RequestFailed {
-        method: "eth_requestAccounts".to_owned(),
-        message: "rejected".to_owned(),
-    };
-
-    assert_json_bytes(
-        &event,
-        r#"{"kind":"requestFailed","method":"eth_requestAccounts","message":"rejected"}"#,
-    );
 }
 
 #[test]
@@ -68,40 +40,6 @@ fn rpc_error_payload_new_preserves_wire_shape() {
     assert_json_bytes(
         &payload,
         r#"{"code":4902,"message":"[redacted]","data":"[redacted]"}"#,
-    );
-}
-
-#[test]
-fn injected_wallet_discovery_source_preserves_wire_shape() {
-    assert_json_bytes(
-        &InjectedWalletDiscoverySource::LegacyWindowEthereum,
-        r#""legacyWindowEthereum""#,
-    );
-}
-
-#[test]
-fn injected_wallet_detection_options_new_preserves_wire_shape() {
-    let options = InjectedWalletDetectionOptions::new(750);
-
-    assert_json_bytes(&options, r#"{"timeoutMs":750}"#);
-}
-
-#[test]
-fn injected_wallet_info_new_preserves_wire_shape() {
-    let info = InjectedWalletInfo::new(
-        "MetaMask",
-        InjectedWalletDiscoverySource::Eip6963,
-        Some("uuid-metamask".to_owned()),
-        Some("io.metamask".to_owned()),
-        Some("data:image/svg+xml,<svg/>".to_owned()),
-        true,
-        false,
-        false,
-    );
-
-    assert_json_bytes(
-        &info,
-        r#"{"providerLabel":"MetaMask","discoverySource":"eip6963","providerUuid":"uuid-metamask","providerRdns":"io.metamask","providerIcon":"data:image/svg+xml,<svg/>","isMetaMask":true,"isCoinbaseWallet":false,"isRabby":false}"#,
     );
 }
 
@@ -140,35 +78,4 @@ fn wallet_chain_parameters_public_serialize_redacts_url_values() {
     assert!(!debug.contains("rpc.sepolia.example"));
     assert!(!debug.contains("explorer.sepolia.example"));
     assert!(!debug.contains("cdn.example"));
-}
-
-#[test]
-fn wallet_chain_change_kind_preserves_wire_shape() {
-    assert_json_bytes(
-        &WalletChainChangeKind::AddedThenSwitched,
-        r#""addedThenSwitched""#,
-    );
-}
-
-#[test]
-fn wallet_chain_change_new_preserves_wire_shape() {
-    let session = WalletSession::new(
-        true,
-        Some(u64::from(SupportedChainId::Mainnet)),
-        vec![address(ADDR1)],
-        Some(address(ADDR1)),
-        "MetaMask",
-    );
-    let change = WalletChainChange::new(
-        SupportedChainId::Mainnet,
-        WalletChainChangeKind::Switched,
-        session,
-    );
-    let expected = format!(
-        "{{\"requestedChainId\":1,\"kind\":\"switched\",\"session\":{{\"connected\":true,\
-         \"chainId\":1,\"accounts\":[\"{ADDR1}\"],\"selectedAccount\":\"{ADDR1}\",\
-         \"walletLabel\":\"MetaMask\"}}}}"
-    );
-
-    assert_json_bytes(&change, &expected);
 }
