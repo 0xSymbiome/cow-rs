@@ -264,7 +264,7 @@ async fn trading_posts_swap_from_quote_and_limit_orders_through_typed_signers() 
         .get_quote(
             SwapParametersInput {
                 kind: OrderKindDto::Sell,
-                owner: None,
+                owner: Some(ADDR_OWNER.to_owned()),
                 sell_token: ADDR_SELL.to_owned(),
                 buy_token: ADDR_BUY.to_owned(),
                 amount: "98646335338956442".to_owned(),
