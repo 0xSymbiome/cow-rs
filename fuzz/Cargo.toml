@@ -168,13 +168,6 @@ doc = false
 bench = false
 
 [[bin]]
-name = "fuzz_amount_from_units"
-path = "fuzz_targets/fuzz_amount_from_units.rs"
-test = false
-doc = false
-bench = false
-
-[[bin]]
 name = "fuzz_signed_amount_parse"
 path = "fuzz_targets/fuzz_signed_amount_parse.rs"
 test = false
@@ -240,13 +233,6 @@ bench = false
 [[bin]]
 name = "fuzz_decoded_body_canonical_status_text"
 path = "fuzz_targets/fuzz_decoded_body_canonical_status_text.rs"
-test = false
-doc = false
-bench = false
-
-[[bin]]
-name = "fuzz_append_query_string"
-path = "fuzz_targets/fuzz_append_query_string.rs"
 test = false
 doc = false
 bench = false
