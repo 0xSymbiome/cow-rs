@@ -6,27 +6,8 @@ use cow_sdk_core::{
     VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS, ValidTo, ValidationError,
 };
 
-fn core_fixture() -> serde_json::Value {
-    cow_sdk_test_utils::fixtures::fixture("core")
-}
-
 #[test]
 fn shared_type_contract_matches_core_fixture() {
-    let fixture = core_fixture();
-    assert_eq!(fixture["surface"].as_str().unwrap(), "core");
-
-    let address_case = fixture["cases"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .find(|case| case["id"] == "core-evm-address-contract")
-        .unwrap();
-    assert_eq!(
-        address_case["expected"]["address_prefix"].as_str().unwrap(),
-        "0x"
-    );
-    assert_eq!(address_case["expected"]["hex_chars"].as_u64().unwrap(), 40);
-
     let checksummed = Address::new("0x742D35CC6634C0532925A3B844BC9E7595F0BEBD").unwrap();
     let lowercase = Address::new("0x742d35cc6634c0532925a3b844bc9e7595f0bebd").unwrap();
 
@@ -57,26 +38,31 @@ fn shared_type_contract_matches_core_fixture() {
 
 #[test]
 fn canonical_order_and_quote_shapes_are_pinned() {
-    let fixture = core_fixture();
-    let shared_case = fixture["cases"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .find(|case| case["id"] == "core-shared-order-and-quote-surfaces")
-        .unwrap();
-
-    let expected_fields: Vec<&str> = shared_case["expected"]["order_fields"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|value| value.as_str().unwrap())
-        .collect();
-    let expected_stages: Vec<&str> = shared_case["expected"]["quote_amount_stages"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|value| value.as_str().unwrap())
-        .collect();
+    // Canonical order field names and quote amount stages (formerly pinned in
+    // the retired core fixture).
+    let expected_fields = [
+        "sellToken",
+        "buyToken",
+        "receiver",
+        "sellAmount",
+        "buyAmount",
+        "validTo",
+        "appData",
+        "feeAmount",
+        "kind",
+        "partiallyFillable",
+        "sellTokenBalance",
+        "buyTokenBalance",
+    ];
+    let expected_stages = [
+        "beforeAllFees",
+        "beforeNetworkCosts",
+        "afterProtocolFees",
+        "afterNetworkCosts",
+        "afterPartnerFees",
+        "afterSlippage",
+        "amountsToSign",
+    ];
 
     assert_eq!(ORDER_TYPE_FIELD_NAMES.to_vec(), expected_fields);
     assert_eq!(QUOTE_AMOUNT_STAGE_NAMES.to_vec(), expected_stages);

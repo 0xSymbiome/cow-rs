@@ -7,28 +7,11 @@ use cow_sdk_core::{
     wrapped_native_token,
 };
 
-fn core_fixture() -> serde_json::Value {
-    cow_sdk_test_utils::fixtures::fixture("core")
-}
-
 #[test]
 fn environment_defaults_match_core_fixture() {
-    let fixture = core_fixture();
-    let env_case = fixture["cases"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .find(|case| case["id"] == "core-environment-defaults")
-        .unwrap();
-
-    let expected_envs: Vec<&str> = env_case["expected"]["envs"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|value| value.as_str().unwrap())
-        .collect();
     let actual_envs: Vec<&str> = ENVS_LIST.iter().map(|env| env.as_str()).collect();
-    assert_eq!(actual_envs, expected_envs);
+    // Canonical environment list (formerly pinned in the retired core fixture).
+    assert_eq!(actual_envs, ["prod", "staging"]);
 
     let ctx = ApiContext::default();
     assert_eq!(u64::from(ctx.chain_id), 1);
@@ -41,19 +24,13 @@ fn environment_defaults_match_core_fixture() {
 
 #[test]
 fn protocol_options_and_base_url_resolution_are_chain_aware() {
-    let fixture = core_fixture();
-    let protocol_case = fixture["cases"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .find(|case| case["id"] == "core-protocol-options-shape")
-        .unwrap();
-    let expected_fields: Vec<&str> = protocol_case["expected"]["fields"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|value| value.as_str().unwrap())
-        .collect();
+    // Canonical ProtocolOptions serialized field names (formerly pinned in the
+    // retired core fixture).
+    let expected_fields = [
+        "env",
+        "settlementContractOverride",
+        "ethFlowContractOverride",
+    ];
 
     let mut settlement_override = BTreeMap::new();
     settlement_override.insert(
