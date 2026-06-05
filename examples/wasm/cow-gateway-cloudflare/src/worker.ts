@@ -104,11 +104,24 @@ export default {
     }
 
     if (request.method === "POST" && url.pathname === "/quote") {
+      let quoteRequest: OrderQuoteRequestInput;
+      try {
+        quoteRequest = (await request.json()) as OrderQuoteRequestInput;
+      } catch {
+        // Malformed/empty body: a client error, so return a structured 400 rather
+        // than letting the JSON parse throw surface as Cloudflare's 1101 page.
+        return Response.json({ error: "request body must be valid JSON" }, { status: 400 });
+      }
+
       const client = createOrderBookClient(env);
       try {
-        const quoteRequest = (await request.json()) as OrderQuoteRequestInput;
         const quote = await client.getQuote(quoteRequest, { timeoutMs: 8_000 });
         return Response.json(quote);
+      } catch (error) {
+        // The orderbook rejected the request, timed out, or the transport failed.
+        // A gateway answers with a structured upstream error, not an opaque 500.
+        const message = error instanceof Error ? error.message : "upstream quote request failed";
+        return Response.json({ error: message }, { status: 502 });
       } finally {
         // Release the wasm-held client resources for this request.
         client.dispose();

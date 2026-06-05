@@ -113,9 +113,9 @@ const signed = await signOrderWithEip1193(
 
 When the wallet exposes the typed-data JSON-RPC method directly, callers can
 pass the envelope to `eth_signTypedData_v4` from inside the typed-data signer
-callback. The helper hands the callback a typed-data envelope; the callback is
-responsible for serializing the envelope's `types` map and returning the
-signature string.
+callback. The helper hands the callback a typed-data envelope — plain `domain`,
+`types`, `primaryType`, and `message` objects — that the callback serializes and
+returns the signature string for.
 
 ```ts
 import { signOrderWithTypedDataSigner } from "<published-cow-sdk-wasm-package>";
@@ -123,12 +123,9 @@ import { signOrderWithTypedDataSigner } from "<published-cow-sdk-wasm-package>";
 const [owner] = await window.ethereum.request({ method: "eth_requestAccounts" });
 
 const signed = await signOrderWithTypedDataSigner(order, 1, owner, async (envelope) => {
-  const types = envelope.types instanceof Map
-    ? Object.fromEntries(envelope.types)
-    : envelope.types;
   const signature = await window.ethereum.request({
     method: "eth_signTypedData_v4",
-    params: [owner, JSON.stringify({ ...envelope, types })]
+    params: [owner, JSON.stringify(envelope)]
   });
   if (typeof signature !== "string") {
     throw new Error("wallet did not return a signature");

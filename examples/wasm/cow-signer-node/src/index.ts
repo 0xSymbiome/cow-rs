@@ -51,14 +51,16 @@ export const ORDER: OrderInput = {
   buyTokenBalance: "erc20"
 };
 
-// The signer the consumer owns. The SDK passes its EIP-712 envelope; viem's local
-// account signs it. The envelope's `types` can cross the wasm boundary as a `Map`,
-// so we normalize it to a plain object before handing it to viem (a documented
-// caller responsibility in the package README).
+// The signer the consumer owns. The SDK hands its EIP-712 envelope — `domain`,
+// `types`, `primaryType`, and `message`, all serialized across the wasm boundary
+// as plain JSON objects — to this callback, and viem's local account signs it. The
+// envelope already carries viem's runtime shape, but the SDK's generated types are
+// wider than viem's abitype-derived `TypedDataDefinition` (e.g. `verifyingContract`
+// is a plain `string` and `message` is `unknown`), so the boundary takes the
+// explicit `as unknown as` cast TypeScript itself recommends for non-overlapping
+// types.
 async function signEnvelope(envelope: TypedDataEnvelopeDto): Promise<string> {
-  const types =
-    envelope.types instanceof Map ? Object.fromEntries(envelope.types) : envelope.types;
-  return account.signTypedData({ ...envelope, types } as unknown as TypedDataDefinition);
+  return account.signTypedData(envelope as unknown as TypedDataDefinition);
 }
 
 export interface PureArtifacts {

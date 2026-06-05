@@ -33,9 +33,9 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 - **39,169 lines of Rust** across the 20 SDK crates, covered by **44,585 lines of tests** — a **1.1× test-to-code ratio** — plus **220 lines of benchmarks**.
 - **12,562 doc-comment lines** documenting the public API (~32.1% of crate code), plus **919 inline comment lines**.
-- **6,243 lines of TypeScript** across examples, e2e harnesses, and wasm bindings.
-- **26,665 lines of Markdown prose** — ADRs, audit notes, and READMEs.
-- **28,414 lines of data & config** (JSON schemas, parity fixtures, vendored ABIs, YAML, TOML) — tracked, but excluded from code metrics by design.
+- **6,249 lines of TypeScript** across examples, e2e harnesses, and wasm bindings.
+- **26,663 lines of Markdown prose** — ADRs, audit notes, and READMEs.
+- **28,348 lines of data & config** (JSON schemas, parity fixtures, vendored ABIs, YAML, TOML) — tracked, but excluded from code metrics by design.
 
 **Footprint** (tracked files)
 
@@ -52,14 +52,14 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 | Path | Files | Lines | Code | Purpose |
 |------|------:|------:|-----:|---------|
-| `crates/` | 756 | 141,781 | 99,848 | Workspace member crates (the SDK itself) |
+| `crates/` | 756 | 141,778 | 99,848 | Workspace member crates (the SDK itself) |
 | `docs/` | 153 | 23,194 | 0 | Architecture decision records, audit notes, provider notes |
 | `fuzz/` | 107 | 12,480 | 4,600 | cargo-fuzz targets, corpora, and failure artifacts |
 | `parity/` | 64 | 8,363 | 8,118 | Golden fixtures + pinned specs from upstream services |
 | `scripts/` | 58 | 14,756 | 8,886 | Internal maintenance tool crates |
-| `examples/` | 58 | 17,470 | 5,463 | Runnable usage examples (Rust + TypeScript) |
+| `examples/` | 58 | 17,382 | 5,365 | Runnable usage examples (Rust + TypeScript) |
 | `.github/` | 30 | 5,043 | 4,208 | GitHub Actions workflows and repo config |
-| `e2e/` | 25 | 3,871 | 3,119 | End-to-end integration harnesses |
+| `e2e/` | 25 | 3,913 | 3,157 | End-to-end integration harnesses |
 | `tests/` | 16 | 1,641 | 1,430 | Workspace-level integration tests |
 | `.cargo/` | 2 | 30 | 23 | Cargo configuration |
 | `CONTRIBUTING.md` | 1 | 272 | 0 | Contribution guide |
@@ -77,7 +77,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `rust-toolchain.toml` | 1 | 6 | 4 | Pinned Rust toolchain |
 | `.gitattributes` | 1 | 40 | 0 | Git attributes |
 | `CHANGELOG.md` | 1 | 3,717 | 0 | Release changelog |
-| **Total** | **1284** | **240,118** | **135,836** | |
+| **Total** | **1284** | **240,069** | **135,776** | |
 
 ---
 
@@ -86,19 +86,19 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | Extension | Files | Lines | Code | Comments | Blank | Typical role |
 |-----------|------:|------:|-----:|---------:|------:|--------------|
 | `.rs` | 672 | 131,332 | 101,179 | 18,062 | 12,091 | Rust source and tests |
-| `.md` | 244 | 32,266 | 0 | 26,665 | 5,601 | Markdown docs (ADRs, audit notes, READMEs) |
-| `.json` | 94 | 5,742 | 5,638 | 103 | 1 | JSON schemas, ABIs, parity fixtures |
-| `.ts` | 57 | 17,194 | 6,243 | 9,828 | 1,123 | TypeScript (examples, e2e, wasm bindings) |
+| `.md` | 244 | 32,264 | 0 | 26,663 | 5,601 | Markdown docs (ADRs, audit notes, READMEs) |
+| `.json` | 94 | 5,741 | 5,637 | 103 | 1 | JSON schemas, ABIs, parity fixtures |
+| `.ts` | 57 | 17,209 | 6,249 | 9,836 | 1,124 | TypeScript (examples, e2e, wasm bindings) |
 | `.toml` | 52 | 4,023 | 3,454 | 64 | 505 | Cargo manifests and tool configs |
 | `.sol` | 40 | 3,577 | 2,007 | 1,140 | 430 | Solidity sources / vendored contract code |
-| `.yaml` | 28 | 11,782 | 10,304 | 30 | 1,448 | CI workflows, OpenAPI specs, config |
+| `.yaml` | 28 | 11,702 | 10,239 | 30 | 1,433 | CI workflows, OpenAPI specs, config |
 | `.stderr` | 22 | 526 | 0 | 505 | 21 | trybuild compile-fail snapshots |
 | `.yml` | 22 | 6,576 | 5,800 | 529 | 247 | CI workflows and config |
 | `.txt` | 8 | 237 | 0 | 237 | 0 | Plain text fixtures / summaries |
 | `.lock` | 7 | 24,564 | 0 | 22,165 | 2,399 | Cargo / package lockfiles |
 | `.sh` | 7 | 764 | 616 | 43 | 105 | Shell scripts |
-| `.mjs` | 6 | 576 | 485 | 18 | 73 | JavaScript modules |
-| `.gitignore` | 5 | 31 | 0 | 31 | 0 |  |
+| `.mjs` | 6 | 594 | 485 | 35 | 74 | JavaScript modules |
+| `.gitignore` | 5 | 32 | 0 | 32 | 0 |  |
 | `.graphql` | 4 | 77 | 70 | 0 | 7 | GraphQL queries (subgraph) |
 | `(none)` | 3 | 710 | 28 | 555 | 127 |  |
 | `.sha256` | 2 | 2 | 0 | 2 | 0 | Checksum files |
@@ -110,7 +110,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `.html` | 1 | 12 | 12 | 0 | 0 | Static HTML for browser examples |
 | `.gitattributes` | 1 | 40 | 0 | 35 | 5 |  |
 | `.yamllint` | 1 | 7 | 0 | 6 | 1 |  |
-| **Total** | **1284** | **240,118** | **135,836** | **80,096** | **24,186** | |
+| **Total** | **1284** | **240,069** | **135,776** | **80,120** | **24,173** | |
 
 > **Code + Comments + Blank = Lines** for every row. ``Comments`` is all non-code, non-blank content: inline + doc-comments in source, prose in Markdown/text, and raw content in formats tokei does not parse as code (lockfiles, ``.stderr``, snapshots). Rust doc-comments are isolated in the per-crate ``Doc`` column above.
 
@@ -185,8 +185,8 @@ The 25 largest hand-written source files by code lines (Rust + TypeScript; vendo
 | Example | Files | Lines | Code | Purpose |
 |---------|------:|------:|-----:|---------|
 | [`native`](examples/native) | 29 | 8,256 | 2,283 | Native Rust scenario walkthroughs |
-| [`wasm`](examples/wasm) | 28 | 9,165 | 3,180 | Browser console scenarios (raw wasm) |
-| **Total (listed)** | **57** | **17,421** | **5,463** | |
+| [`wasm`](examples/wasm) | 28 | 9,077 | 3,082 | Browser console scenarios (raw wasm) |
+| **Total (listed)** | **57** | **17,333** | **5,365** | |
 
 ---
 
@@ -194,9 +194,9 @@ The 25 largest hand-written source files by code lines (Rust + TypeScript; vendo
 
 | Harness | Files | Lines | Code | Purpose |
 |---------|------:|------:|-----:|---------|
-| [`wasm-typescript`](e2e/wasm-typescript) | 14 | 2,032 | 1,641 | Wasm + TypeScript integration harness |
-| [`wasm-typescript-cf`](e2e/wasm-typescript-cf) | 11 | 1,839 | 1,478 | Wasm + TypeScript Cloudflare harness |
-| **Total (listed)** | **25** | **3,871** | **3,119** | |
+| [`wasm-typescript`](e2e/wasm-typescript) | 14 | 2,036 | 1,645 | Wasm + TypeScript integration harness |
+| [`wasm-typescript-cf`](e2e/wasm-typescript-cf) | 11 | 1,877 | 1,512 | Wasm + TypeScript Cloudflare harness |
+| **Total (listed)** | **25** | **3,913** | **3,157** | |
 
 ---
 
@@ -1917,7 +1917,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`package.json`](crates/wasm/npm/package.json) &mdash; 103 lines
 - [`package.template.json`](crates/wasm/npm/package.template.json) &mdash; 46 lines
 - [`pnpm-lock.yaml`](crates/wasm/npm/pnpm-lock.yaml) &mdash; 771 lines
-- [`README.md`](crates/wasm/npm/README.md) &mdash; 269 lines
+- [`README.md`](crates/wasm/npm/README.md) &mdash; 266 lines
 - [`tsconfig.facade.json`](crates/wasm/npm/tsconfig.facade.json) &mdash; 5 lines
 - [`tsconfig.json`](crates/wasm/npm/tsconfig.json) &mdash; 24 lines
 - [`vitest.config.ts`](crates/wasm/npm/vitest.config.ts) &mdash; 9 lines
@@ -2271,7 +2271,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`index.html`](e2e/wasm-typescript/index.html) &mdash; 12 lines
 - [`package.json`](e2e/wasm-typescript/package.json) &mdash; 30 lines
 - [`playwright.config.ts`](e2e/wasm-typescript/playwright.config.ts) &mdash; 16 lines
-- [`pnpm-lock.yaml`](e2e/wasm-typescript/pnpm-lock.yaml) &mdash; 1,570 lines
+- [`pnpm-lock.yaml`](e2e/wasm-typescript/pnpm-lock.yaml) &mdash; 1,574 lines
 - [`pnpm-workspace.yaml`](e2e/wasm-typescript/pnpm-workspace.yaml) &mdash; 3 lines
 - [`tsconfig.json`](e2e/wasm-typescript/tsconfig.json) &mdash; 14 lines
 - [`vite.config.ts`](e2e/wasm-typescript/vite.config.ts) &mdash; 32 lines
@@ -2283,7 +2283,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <summary><code>e2e/wasm-typescript-cf/</code> &mdash; 6 file(s)</summary>
 
 - [`package.json`](e2e/wasm-typescript-cf/package.json) &mdash; 27 lines
-- [`pnpm-lock.yaml`](e2e/wasm-typescript-cf/pnpm-lock.yaml) &mdash; 1,637 lines
+- [`pnpm-lock.yaml`](e2e/wasm-typescript-cf/pnpm-lock.yaml) &mdash; 1,675 lines
 - [`pnpm-workspace.yaml`](e2e/wasm-typescript-cf/pnpm-workspace.yaml) &mdash; 4 lines
 - [`tsconfig.json`](e2e/wasm-typescript-cf/tsconfig.json) &mdash; 14 lines
 - [`vitest.config.ts`](e2e/wasm-typescript-cf/vitest.config.ts) &mdash; 15 lines
@@ -2395,9 +2395,9 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <details>
 <summary><code>examples/wasm/cow-gateway-cloudflare/</code> &mdash; 8 file(s)</summary>
 
-- [`.gitignore`](examples/wasm/cow-gateway-cloudflare/.gitignore) &mdash; 4 lines
+- [`.gitignore`](examples/wasm/cow-gateway-cloudflare/.gitignore) &mdash; 5 lines
 - [`package.json`](examples/wasm/cow-gateway-cloudflare/package.json) &mdash; 26 lines
-- [`pnpm-lock.yaml`](examples/wasm/cow-gateway-cloudflare/pnpm-lock.yaml) &mdash; 2,068 lines
+- [`pnpm-lock.yaml`](examples/wasm/cow-gateway-cloudflare/pnpm-lock.yaml) &mdash; 1,946 lines
 - [`pnpm-workspace.yaml`](examples/wasm/cow-gateway-cloudflare/pnpm-workspace.yaml) &mdash; 4 lines
 - [`README.md`](examples/wasm/cow-gateway-cloudflare/README.md) &mdash; 83 lines
 - [`tsconfig.json`](examples/wasm/cow-gateway-cloudflare/tsconfig.json) &mdash; 14 lines
@@ -2409,7 +2409,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <details>
 <summary><code>examples/wasm/cow-gateway-cloudflare/scripts/</code> &mdash; 1 file(s)</summary>
 
-- [`build.mjs`](examples/wasm/cow-gateway-cloudflare/scripts/build.mjs) &mdash; 66 lines
+- [`build.mjs`](examples/wasm/cow-gateway-cloudflare/scripts/build.mjs) &mdash; 84 lines
 
 </details>
 
@@ -2418,7 +2418,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 
 - [`vite-env.d.ts`](examples/wasm/cow-gateway-cloudflare/src/vite-env.d.ts) &mdash; 4 lines
 - [`wasm.d.ts`](examples/wasm/cow-gateway-cloudflare/src/wasm.d.ts) &mdash; 4 lines
-- [`worker.ts`](examples/wasm/cow-gateway-cloudflare/src/worker.ts) &mdash; 120 lines
+- [`worker.ts`](examples/wasm/cow-gateway-cloudflare/src/worker.ts) &mdash; 133 lines
 
 </details>
 
@@ -2437,8 +2437,8 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`.gitignore`](examples/wasm/cow-signer-node/.gitignore) &mdash; 2 lines
 - [`package.json`](examples/wasm/cow-signer-node/package.json) &mdash; 22 lines
 - [`pnpm-lock.yaml`](examples/wasm/cow-signer-node/pnpm-lock.yaml) &mdash; 932 lines
-- [`README.md`](examples/wasm/cow-signer-node/README.md) &mdash; 80 lines
-- [`tsconfig.json`](examples/wasm/cow-signer-node/tsconfig.json) &mdash; 14 lines
+- [`README.md`](examples/wasm/cow-signer-node/README.md) &mdash; 81 lines
+- [`tsconfig.json`](examples/wasm/cow-signer-node/tsconfig.json) &mdash; 13 lines
 
 </details>
 
@@ -2446,7 +2446,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <summary><code>examples/wasm/cow-signer-node/src/</code> &mdash; 2 file(s)</summary>
 
 - [`index.test.ts`](examples/wasm/cow-signer-node/src/index.test.ts) &mdash; 48 lines
-- [`index.ts`](examples/wasm/cow-signer-node/src/index.ts) &mdash; 116 lines
+- [`index.ts`](examples/wasm/cow-signer-node/src/index.ts) &mdash; 118 lines
 
 </details>
 

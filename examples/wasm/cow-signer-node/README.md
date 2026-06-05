@@ -41,16 +41,17 @@ runtimes and across runs.
 The smallest surface for a signer service is the `/signing` subpath:
 
 ```ts
+import type { TypedDataDefinition } from "viem";
 import {
   orderTypedData,
   signOrderWithTypedDataSigner
 } from "<published-cow-sdk-wasm-package>/signing";
 
-// The SDK hands your callback the EIP-712 envelope; you return the signature.
-const signed = await signOrderWithTypedDataSigner(order, chainId, owner, async (envelope) => {
-  const types = envelope.types instanceof Map ? Object.fromEntries(envelope.types) : envelope.types;
-  return account.signTypedData({ ...envelope, types });
-});
+// The SDK hands your callback the EIP-712 envelope (plain `domain`, `types`,
+// `primaryType`, and `message`); you return the signature.
+const signed = await signOrderWithTypedDataSigner(order, chainId, owner, (envelope) =>
+  account.signTypedData(envelope as unknown as TypedDataDefinition)
+);
 ```
 
 A real backend would then hand `signed.value` to an orderbook client (the

@@ -67,17 +67,17 @@ logs one structured line per outbound request and **still delegates to the platf
 
 ## Bundle size
 
-The cloudflare flavor's gzip-compressed size is gated against the Cloudflare
-Workers Free compressed-size limit (3,000,000 bytes) on every package release
-build. `wrangler deploy --dry-run` reports the deployable bundle size for this
-Worker; full Workers support also requires Worker startup measurement against
-Cloudflare's 1-second startup limit.
+The cloudflare flavor's gzip-compressed size is gated on every package release
+build against a conservative 3,000,000-byte budget that stays under Cloudflare's
+published 3 MB Free-plan compressed-size limit. `wrangler deploy --dry-run`
+reports the deployable bundle size for this Worker; full Workers support also
+requires Worker startup measurement against Cloudflare's 1-second startup limit.
 
 ## Quality
 
 The example is held to the same bar as the crates:
 
 ```text
-pnpm run build   # tsc clean + esbuild bundle + wrangler dry-run
-pnpm test        # Cloudflare runtime-pool tests pass
+pnpm run build   # esbuild bundle (localizes the wasm as a CompiledWasm module) + wrangler deploy dry-run
+pnpm test        # tsc clean + build + Cloudflare runtime-pool tests pass
 ```
