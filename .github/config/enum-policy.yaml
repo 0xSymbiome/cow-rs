@@ -516,6 +516,12 @@ enums:
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: Wasm mirror of the SDK-owned OrderbookRejectionCategory partition; non_exhaustive keeps new categories additive on the JavaScript error surface.
+  - name: OrderbookFailure
+    file: crates/test/src/error.rs
+    line: 48
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: Published test-double orderbook failure kinds; non_exhaustive keeps new injectable failures additive for downstream consumers.
   - name: SettlementEventDto
     file: crates/wasm/src/exports/dto/events.rs
     line: 100

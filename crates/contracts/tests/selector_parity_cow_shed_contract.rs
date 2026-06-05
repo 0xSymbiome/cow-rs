@@ -1,7 +1,7 @@
 //! COW Shed selector parity contract test: assert the canonical
 //! cow-shed selectors fixture pins the deployed-runtime entry-point
 //! selectors and EIP-712 type hashes. The authority is the deployed
-//! COWShedFactory v1.0.1 runtime interface (verifiable on-chain; each
+//! `COWShedFactory` v1.0.1 runtime interface (verifiable on-chain; each
 //! selector is keccak256 of the deployed signature). The deployed
 //! 2-arg `initializeProxy(address,bool)` diverges from the cow-shed
 //! source-HEAD 1-arg form, so the record is anchored to the deployed

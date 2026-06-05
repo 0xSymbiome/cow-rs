@@ -16,10 +16,6 @@ pub const APP_DATA_STRING: &str =
     "{\"appCode\":\"CoW Swap\",\"metadata\":{},\"version\":\"0.7.0\"}";
 pub const APP_DATA_STRING_2: &str = "{\"appCode\":\"CoW Swap\",\"environment\":\"production\",\"metadata\":{\"quote\":{\"slippageBips\":\"50\",\"version\":\"0.2.0\"},\"orderClass\":{\"orderClass\":\"market\",\"version\":\"0.1.0\"}},\"version\":\"0.6.0\"}";
 
-pub fn parity_fixture() -> Value {
-    cow_sdk_test_utils::fixtures::fixture("app-data")
-}
-
 pub fn app_data_doc() -> Value {
     json!({
         "version": "0.7.0",

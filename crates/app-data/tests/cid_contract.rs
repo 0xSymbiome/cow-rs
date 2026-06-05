@@ -4,7 +4,7 @@ use cid::Cid;
 use cow_sdk_app_data::{app_data_hex_to_cid, cid_to_app_data_hex};
 use multihash::Multihash;
 
-use crate::common::{APP_DATA_HEX, APP_DATA_HEX_2, CID, CID_2, parity_fixture};
+use crate::common::{APP_DATA_HEX, APP_DATA_HEX_2, CID, CID_2};
 
 const RAW_CODEC: u64 = 0x55;
 const DAG_PB_CODEC: u64 = 0x70;
@@ -12,19 +12,6 @@ const KECCAK_256_CODE: u64 = 0x1b;
 const SHA2_256_CODE: u64 = 0x12;
 const SHA3_512_CODE: u64 = 0x14;
 const BLAKE2B_256_CODE: u64 = 0xb220;
-
-#[test]
-fn cid_surface_matches_fixture_contract() {
-    let fixture = parity_fixture();
-    assert_eq!(fixture["surface"].as_str().unwrap(), "app-data");
-    assert!(
-        fixture["cases"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .any(|case| case["id"] == "app-data-cid-v1-conversion")
-    );
-}
 
 #[test]
 fn latest_cid_conversion_matches_upstream_samples() {

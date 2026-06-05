@@ -64,7 +64,7 @@ principles:
   - id: 10
     name: Evidence-Backed Public Claims
     primary_adr: "0026"
-    supporting_adrs: ["0025", "0030", "0032", "0052"]
+    supporting_adrs: ["0025", "0030", "0032", "0052", "0066"]
 
   - id: 11
     name: Forward-Compatible Public Surfaces

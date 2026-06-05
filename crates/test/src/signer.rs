@@ -14,11 +14,12 @@ use crate::{defaults, error::MockError};
 ///
 /// Cloning shares one backing store, so a clone handed to the SDK and a clone
 /// kept for assertions observe the same recorded calls.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct MockSigner {
     inner: Arc<Mutex<Inner>>,
 }
 
+#[derive(Debug)]
 struct Inner {
     address: Address,
     message_signature: String,
@@ -80,7 +81,7 @@ impl Default for MockSigner {
 }
 
 /// Consuming builder for [`MockSigner`].
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct MockSignerBuilder {
     address: Address,
     message_signature: String,

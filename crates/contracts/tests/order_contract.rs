@@ -41,10 +41,6 @@ fn sample_order() -> OrderData {
         .build()
 }
 
-fn signing_fixture_case(id: &str) -> serde_json::Value {
-    cow_sdk_test_utils::fixtures::case("signing", id)
-}
-
 fn upstream_signing_sample_order() -> OrderData {
     cow_sdk_test_utils::builders::OrderBuilder::default().build()
 }
@@ -117,22 +113,6 @@ fn order_hash_and_uid_helpers_are_consistent() {
 
 #[test]
 fn canonical_unsigned_order_path_matches_upstream_signing_fixture_digest_and_uid() {
-    let fixture = signing_fixture_case("signing-generate-order-id");
-    assert_eq!(
-        fixture["expected"]["returns"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|value| value.as_str().unwrap())
-            .collect::<Vec<_>>(),
-        vec!["orderId", "orderDigest"]
-    );
-    assert!(fixture["expected"]["owner_required"].as_bool().unwrap());
-    assert_eq!(
-        fixture["expected"]["uid_valid_to_source"].as_str().unwrap(),
-        "order.validTo"
-    );
-
     let unsigned = upstream_signing_sample_order();
     let domain = upstream_signing_domain();
     let owner = Address::new(UPSTREAM_SEPOLIA_ORDER_OWNER).unwrap();

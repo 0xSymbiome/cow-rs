@@ -5,20 +5,10 @@ use serde_json::json;
 
 use crate::common::{
     APP_DATA_HEX, APP_DATA_HEX_2, APP_DATA_STRING, APP_DATA_STRING_2, CID, CID_2, app_data_doc,
-    parity_fixture,
 };
 
 #[test]
 fn get_app_data_info_matches_pinned_upstream_samples() {
-    let fixture = parity_fixture();
-    assert!(
-        fixture["cases"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .any(|case| case["id"] == "app-data-get-app-data-info-deterministic")
-    );
-
     let from_string = get_app_data_info(APP_DATA_STRING).unwrap();
     assert_eq!(from_string.cid, CID);
     assert_eq!(from_string.app_data_hex, APP_DATA_HEX);

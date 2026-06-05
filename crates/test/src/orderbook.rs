@@ -17,12 +17,13 @@ use crate::{defaults, error::OrderbookFailure};
 ///
 /// Cloning shares one backing store, so a clone injected into a `Trading`
 /// client and a clone kept for assertions observe the same recorded calls.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct MockOrderbook {
     context: ApiContext,
     inner: Arc<Mutex<Inner>>,
 }
 
+#[derive(Debug)]
 struct Inner {
     quote: OrderQuoteResponse,
     order_uid: OrderUid,
@@ -76,6 +77,7 @@ impl MockOrderbook {
 }
 
 /// Consuming builder for [`MockOrderbook`].
+#[derive(Debug)]
 pub struct MockOrderbookBuilder {
     chain: SupportedChainId,
     env: CowEnv,

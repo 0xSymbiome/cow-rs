@@ -14,11 +14,12 @@ use crate::{error::MockError, signer::MockSigner};
 ///
 /// Its `Error` is [`MockError`], matching [`MockSigner`] so the
 /// `SigningProvider::Signer: Signer<Error = Self::Error>` bound holds.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct MockProvider {
     inner: Arc<Mutex<Inner>>,
 }
 
+#[derive(Debug)]
 struct Inner {
     chain_id: SupportedChainId,
     allowance: Amount,
@@ -70,7 +71,7 @@ impl Default for MockProvider {
 }
 
 /// Consuming builder for [`MockProvider`].
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct MockProviderBuilder {
     chain_id: SupportedChainId,
     allowance: Amount,

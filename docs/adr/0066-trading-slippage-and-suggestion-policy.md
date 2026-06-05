@@ -5,7 +5,7 @@
 - Last reviewed: 2026-06-04
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: trading, slippage, quote, fee, parity
-- Anchors: Off-Chain Orchestration Boundary (primary)
+- Anchors: Evidence-Backed Public Claims (primary)
 - Related: [ADR 0058](0058-typed-quote-request-response-surface.md), [ADR 0021](0021-orderbook-total-fee-policy.md), [ADR 0015](0015-client-side-order-bounds-validator.md)
 
 ## Decision

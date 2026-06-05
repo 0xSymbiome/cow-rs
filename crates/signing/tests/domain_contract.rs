@@ -17,8 +17,6 @@ use cow_sdk_core::{Address, CowEnv, ProtocolOptions, SupportedChainId};
 use cow_sdk_signing::{domain_separator, get_domain, order_typed_data};
 use sha3::{Digest, Keccak256};
 
-use cow_sdk_test_utils::fixtures;
-
 use common::sample_order;
 
 #[test]
@@ -57,7 +55,6 @@ fn domain_resolution_honors_default_env_staging_and_override_precedence() {
 
 #[test]
 fn typed_data_domain_and_separator_match_fixture_contract() {
-    let fields_case = fixtures::case("signing", "signing-domain-separator-fields");
     let order = sample_order();
     let typed = order_typed_data(SupportedChainId::Mainnet, &order, None).unwrap();
     let separator = domain_separator(SupportedChainId::Mainnet, None).unwrap();
@@ -68,17 +65,14 @@ fn typed_data_domain_and_separator_match_fixture_contract() {
         &typed.domain.verifying_contract.to_hex_string(),
     );
 
+    // Canonical EIP-712 domain field order (formerly pinned in the retired
+    // signing parity fixture).
     assert_eq!(
         typed.types["EIP712Domain"]
             .iter()
             .map(|field| field.name.as_str())
             .collect::<Vec<_>>(),
-        fields_case["expected"]["domain_fields"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|field| field.as_str().unwrap())
-            .collect::<Vec<_>>()
+        ["name", "version", "chainId", "verifyingContract"]
     );
     assert_eq!(separator, expected);
     assert_eq!(separator.len(), 66);

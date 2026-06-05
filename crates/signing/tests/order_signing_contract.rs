@@ -25,7 +25,7 @@ use cow_sdk_signing::{
 };
 use sha3::{Digest, Keccak256};
 
-use cow_sdk_test_utils::{fixtures, mocks::RecordingSigner};
+use cow_sdk_test_utils::mocks::RecordingSigner;
 
 use common::sample_order;
 
@@ -34,33 +34,34 @@ fn order_typed_data_matches_fixture_contract_and_consumer_shape() {
     let order = sample_order();
     let typed = order_typed_data(SupportedChainId::Mainnet, &order, None).unwrap();
     let payload = order_typed_data_payload(SupportedChainId::Mainnet, &order, None).unwrap();
-    let fields_case = fixtures::case("signing", "signing-eip712-order-fields");
-    let typed_data_case = fixtures::case("signing", "signing-typed-data-envelope");
-
     assert_eq!(typed.primary_type, ORDER_PRIMARY_TYPE);
     assert_eq!(payload.primary_type, ORDER_PRIMARY_TYPE);
     assert_eq!(payload.types, typed.types);
     assert_eq!(payload.message, serde_json::to_string(&order).unwrap());
+    // Canonical CoW `Order` EIP-712 field order (formerly pinned in the retired
+    // signing parity fixture).
     assert_eq!(
         typed.types["Order"]
             .iter()
             .map(|field| field.name.as_str())
             .collect::<Vec<_>>(),
-        fields_case["expected"]["fields"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|field| field.as_str().unwrap())
-            .collect::<Vec<_>>()
+        [
+            "sellToken",
+            "buyToken",
+            "receiver",
+            "sellAmount",
+            "buyAmount",
+            "validTo",
+            "appData",
+            "feeAmount",
+            "kind",
+            "partiallyFillable",
+            "sellTokenBalance",
+            "buyTokenBalance",
+        ]
     );
     let actual_type_names = typed.types.keys().map(String::as_str).collect::<Vec<_>>();
-    let expected_type_names = typed_data_case["expected"]["includes_types"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|value| value.as_str().unwrap())
-        .collect::<Vec<_>>();
-    for type_name in expected_type_names {
+    for type_name in ["Order", "EIP712Domain"] {
         assert!(actual_type_names.contains(&type_name));
     }
     assert_eq!(typed.message, order);
