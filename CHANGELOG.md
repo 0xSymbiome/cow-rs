@@ -14,6 +14,32 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Added
 
+- `cow-sdk-test` is a new published crate of in-memory test doubles for the
+  SDK's public trait seams, so a downstream application can test its CoW
+  Protocol integration without a live orderbook, RPC endpoint, or wallet — the
+  `tokio-test` / `tower-test` pattern, built only on the public API.
+  `MockOrderbook` (a `cow_sdk_orderbook::OrderbookClient`), `MockSigner` (a
+  `cow_sdk_core::Signer`), and `MockProvider` (a `cow_sdk_core::Provider` +
+  `SigningProvider`) are recording, canned-response doubles, each paired with a
+  builder (`MockOrderbookBuilder` / `MockSignerBuilder` / `MockProviderBuilder`)
+  and a recorded-call view (`OrderbookCalls` / `SignerCalls` / `ProviderCalls`)
+  to assert against. The `trading(chain, app_code)` helper returns a
+  `MockTrading` carrying a real `cow_sdk_trading::Trading` client pre-wired to
+  the doubles plus the `orderbook` / `signer` / `provider` handles, so a test
+  can drive a full post or cancel flow and then assert exactly what the
+  consumer's code sent. Failure injection
+  (`OrderbookFailure::{NotFound, RateLimited, Rejected}` and the ready-made
+  `order_not_found()` / `rate_limited()` / `rejected(message)` errors) exercises
+  a consumer's error handling, and the `defaults` module exposes the same canned
+  values the doubles return so a hand-built fixture and a mock response never
+  drift. The doubles are native `Send` (`Arc<Mutex<_>>`) so they drive a
+  multi-threaded `tokio::test`, and every canned value is built through
+  infallible constructors with no `unwrap` / `expect` / `panic` (ADR 0033). The
+  crate is meant for a consumer's `[dev-dependencies]`: depend on `cow-sdk-test`
+  directly, or enable the `cow-sdk` facade's opt-in, off-by-default `testing`
+  feature and reach the doubles through `cow_sdk::testing`, so the test surface
+  never enters a production dependency graph. Governed by
+  [ADR 0063](docs/adr/0063-published-consumer-test-doubles-crate.md).
 - COW Shed account-abstraction hooks ship behind the off-by-default `cow-shed`
   facade feature (re-exported as `cow_sdk::cow_shed`), or directly as the
   `cow-sdk-cow-shed` leaf crate; the surface stays off the default `cow-sdk`
