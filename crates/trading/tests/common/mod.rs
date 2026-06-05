@@ -48,9 +48,7 @@ pub fn trading_fixture() -> serde_json::Value {
     cow_sdk_test_utils::fixtures::fixture("trading")
 }
 
-pub fn address(value: &str) -> Address {
-    Address::new(value).expect("test address literal must be valid")
-}
+pub use cow_sdk_test_utils::builders::address;
 
 pub fn order_uid() -> OrderUid {
     OrderUid::new(ORDER_UID).expect("test order uid literal must be valid")

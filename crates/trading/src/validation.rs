@@ -432,19 +432,16 @@ pub fn assert_owner_matches_signer(
 mod tests {
     use super::{ClientRejection, OrderBoundsValidator, OrderValidityBounds, SubmissionClass};
     use cow_sdk_core::{
-        Address, Amount, AppDataHash, BuyTokenDestination, OrderData, OrderKind, SellTokenSource,
+        Amount, AppDataHash, BuyTokenDestination, OrderData, OrderKind, SellTokenSource,
     };
     use cow_sdk_orderbook::SigningScheme;
+    use cow_sdk_test_utils::builders::address;
 
     const FROM: &str = "0x1111111111111111111111111111111111111111";
     const SELL_TOKEN: &str = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     const BUY_TOKEN: &str = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
     const NOW: u64 = 1_700_000_000;
     const VALID_TO: u32 = 1_700_003_600;
-
-    fn address(hex: &str) -> Address {
-        Address::new(hex).expect("fixture address must be valid")
-    }
 
     fn order() -> OrderData {
         OrderData::new(

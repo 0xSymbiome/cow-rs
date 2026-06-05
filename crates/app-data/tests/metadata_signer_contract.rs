@@ -14,15 +14,12 @@
 
 use cow_sdk_app_data::{AppDataParams, generate_app_data_doc};
 use cow_sdk_core::Address;
+use cow_sdk_test_utils::builders::address;
 use serde_json::{Value, json};
 
 const SIGNER_ADDRESS: &str = "0x1111111111111111111111111111111111111111";
 const SIGNER_KEY: &str = "signer";
 const QUOTE_KEY: &str = "quote";
-
-fn address(hex: &str) -> Address {
-    Address::new(hex).expect("fixture address must be valid")
-}
 
 #[test]
 fn typed_signer_field_emits_into_metadata_of_generated_document() {

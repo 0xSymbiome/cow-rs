@@ -19,6 +19,7 @@ use cow_sdk_core::{
     Address, Amount, AppDataHash, BuyTokenDestination, OrderData, OrderKind, SellTokenSource,
 };
 use cow_sdk_orderbook::SigningScheme;
+use cow_sdk_test_utils::builders::address;
 use cow_sdk_trading::{AmountSide, ClientRejection, OrderBoundsValidator};
 use proptest::prelude::*;
 use proptest::test_runner::FileFailurePersistence;
@@ -29,10 +30,6 @@ const REGRESSION_FILE: &str = concat!(
 );
 const MAX_DELTA_SECONDS: u64 = 3_600;
 const MIN_VALIDITY_MARGIN_SECONDS: u64 = 61;
-
-fn address(hex: &str) -> Address {
-    Address::new(hex).expect("fixture address must be valid")
-}
 
 fn address_strategy() -> impl Strategy<Value = Address> {
     any::<[u8; 20]>().prop_map(Address::from_bytes)

@@ -16,6 +16,17 @@ fn mainnet_settlement() -> Address {
     Address::new("0x9008d19f58aabd9ed0d60971565aa8510560ab41").expect("valid settlement address")
 }
 
+/// Constructs an [`Address`] from a `0x`-hex string literal, canonicalising the
+/// casing per ADR 0052. The shared home for the per-test address constructor the
+/// suites would otherwise each re-declare.
+///
+/// # Panics
+/// Panics if `value` is not a valid address literal.
+#[must_use]
+pub fn address(value: &str) -> Address {
+    Address::new(value).expect("test address literal must be valid")
+}
+
 /// Builder for the canonical `OrderData` test vector.
 #[derive(Clone, Debug)]
 pub struct OrderBuilder {

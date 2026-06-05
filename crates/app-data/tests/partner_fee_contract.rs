@@ -16,16 +16,13 @@
 )]
 
 use cow_sdk_app_data::{AppDataError, PartnerFee, PartnerFeePolicy};
-use cow_sdk_core::{Address, ValidationReason};
+use cow_sdk_core::ValidationReason;
+use cow_sdk_test_utils::builders::address;
 use serde_json::{Value, json};
 
 const RECIPIENT_A: &str = "0x0101010101010101010101010101010101010101";
 const RECIPIENT_B: &str = "0x0202020202020202020202020202020202020202";
 const ZERO_ADDRESS: &str = "0x0000000000000000000000000000000000000000";
-
-fn address(hex: &str) -> Address {
-    Address::new(hex).expect("fixture address must be valid")
-}
 
 #[test]
 fn volume_single_shape_roundtrips_against_the_reviewed_wire_fixture() {

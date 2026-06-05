@@ -13,9 +13,10 @@ use cow_sdk_contracts::{
     encode_create_order_calldata,
 };
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, BuyTokenDestination, Hash32, HexData, OrderDigest, OrderKind,
-    OrderUid, SellTokenSource, SignedAmount,
+    Amount, AppDataHash, BuyTokenDestination, Hash32, HexData, OrderDigest, OrderKind, OrderUid,
+    SellTokenSource, SignedAmount,
 };
+use cow_sdk_test_utils::builders::address;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -72,10 +73,6 @@ where
 {
     let actual = serde_json::to_string(value).expect("DTO serialization must succeed");
     assert_eq!(actual, expected);
-}
-
-fn address(value: &str) -> Address {
-    Address::new(value).expect("address literal must stay valid")
 }
 
 fn amount(value: &str) -> Amount {

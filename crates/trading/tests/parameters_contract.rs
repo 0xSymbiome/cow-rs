@@ -10,16 +10,13 @@
     reason = "pedantic lint group acceptable inside integration test code"
 )]
 
-use cow_sdk_core::{Address, Amount, EVM_NATIVE_CURRENCY_ADDRESS, OrderKind};
+use cow_sdk_core::{Amount, EVM_NATIVE_CURRENCY_ADDRESS, OrderKind};
+use cow_sdk_test_utils::builders::address;
 use cow_sdk_trading::{ClientRejection, LimitTradeParameters, TradeParameters};
 
 const SELL_TOKEN: &str = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 // Canonical lowercase 0x-prefixed wire form (PROP-WB-004 / ADR 0052).
 const WETH: &str = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
-
-fn address(hex: &str) -> Address {
-    Address::new(hex).expect("fixture address must be valid")
-}
 
 fn amount(value: &str) -> Amount {
     Amount::new(value).expect("fixture amount must be valid")

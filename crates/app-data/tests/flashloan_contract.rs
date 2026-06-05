@@ -15,12 +15,13 @@
 use cow_sdk_app_data::{
     AppDataError, AppDataParams, FlashloanHints, generate_app_data_doc, validate_app_data_doc,
 };
-use cow_sdk_core::{Address, Amount, AppCode, ValidationReason};
+use cow_sdk_core::{Amount, AppCode, ValidationReason};
+use cow_sdk_test_utils::builders::address;
+use serde_json::{Value, json};
 
 fn test_app_code() -> AppCode {
     AppCode::new("aave-v3-flashloan").expect("fixture appCode must validate")
 }
-use serde_json::{Value, json};
 
 const FIXTURE_PATH: &str = "../../parity/fixtures/app_data/flashloan_v1.7.0.json";
 // The reviewed golden sample is now stored in the canonical lowercase
@@ -33,10 +34,6 @@ const RECEIVER: &str = "0x1186b5ad42e3e6d6c6901fc53b4a367540e6ecfe";
 const TOKEN: &str = "0xe91d153e0b41518a2ce8dd3d7944fa863463a97d";
 const AMOUNT: &str = "2000000000000000000";
 const ZERO_ADDRESS: &str = "0x0000000000000000000000000000000000000000";
-
-fn address(hex: &str) -> Address {
-    Address::new(hex).expect("fixture address must be valid")
-}
 
 fn amount(value: &str) -> Amount {
     Amount::new(value).expect("fixture amount must be valid")

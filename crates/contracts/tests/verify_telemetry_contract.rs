@@ -10,6 +10,7 @@ use cow_sdk_contracts::{
     verify_eip1271_signature_cached,
 };
 use cow_sdk_core::{Address, Hash32, HexData};
+use cow_sdk_test_utils::builders::address;
 use cow_sdk_test_utils::trace::{CapturedEvent, CapturedSpan, TraceCapture};
 use tracing::Level;
 
@@ -107,10 +108,6 @@ fn verification_request(verifier: Address, digest_byte: &str) -> Eip1271Verifica
         Hash32::new(format!("0x{}", digest_byte.repeat(32))).expect("digest fixture must be valid"),
         HexData::new("0x1234").expect("signature fixture must be valid hex"),
     )
-}
-
-fn address(value: &str) -> Address {
-    Address::new(value).expect("address fixture must be valid")
 }
 
 fn assert_cache_event(

@@ -24,9 +24,7 @@ use cow_sdk_orderbook::{
 };
 use cow_sdk_transport_policy::{RequestRateLimiter, RetryPolicy, TransportPolicy};
 
-pub fn address(value: &str) -> Address {
-    Address::new(value).expect("test address literal must be valid")
-}
+pub use cow_sdk_test_utils::builders::address;
 
 pub fn app_data_hash(value: &str) -> AppDataHash {
     AppDataHash::new(value).expect("test app-data hash literal must be valid")

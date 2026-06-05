@@ -19,6 +19,7 @@ use cow_sdk_core::{
     OrderKind, SellTokenSource,
 };
 use cow_sdk_orderbook::SigningScheme;
+use cow_sdk_test_utils::builders::address;
 use cow_sdk_trading::{
     AmountSide, ClientRejection, LimitTradeParameters, OrderBoundsValidator, TradeParameters,
     TradingError,
@@ -33,10 +34,6 @@ const WETH: &str = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
 const OTHER_OWNER: &str = "0x2222222222222222222222222222222222222222";
 const NOW: u64 = 1_700_000_000;
 const VALID_TO: u32 = 1_700_003_600;
-
-fn address(hex: &str) -> Address {
-    Address::new(hex).expect("fixture address must be valid")
-}
 
 fn order() -> OrderData {
     OrderData::new(

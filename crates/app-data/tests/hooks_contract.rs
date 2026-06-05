@@ -15,7 +15,8 @@
 use cow_sdk_app_data::{
     AppDataParams, Hook, HookList, generate_app_data_doc, validate_app_data_doc,
 };
-use cow_sdk_core::{Address, AppCode, HexData};
+use cow_sdk_core::{AppCode, HexData};
+use cow_sdk_test_utils::builders::address;
 use serde_json::{Value, json};
 
 const FIXTURE: &str = include_str!("../../../parity/fixtures/app_data/hooks_v1.14.0.json");
@@ -27,10 +28,6 @@ const POST_CALL_DATA: &str = "0x05060708";
 const PRE_GAS_LIMIT: u64 = 100_000;
 const POST_GAS_LIMIT: u64 = 125_000;
 const DAPP_ID: &str = "cow-rs-hooks";
-
-fn address(value: &str) -> Address {
-    Address::new(value).expect("fixture address must be valid")
-}
 
 fn call_data(value: &str) -> HexData {
     HexData::new(value).expect("fixture call data must be valid")
