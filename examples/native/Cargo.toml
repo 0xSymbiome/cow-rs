@@ -125,3 +125,7 @@ path = "scenarios/error_classification.rs"
 [[example]]
 name = "order_history"
 path = "scenarios/order_history.rs"
+
+[[example]]
+name = "receipt_lifecycle"
+path = "scenarios/receipt_lifecycle.rs"

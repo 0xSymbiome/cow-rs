@@ -172,3 +172,17 @@ fn transaction_lifecycle_example_is_declared_and_documented() {
     assert!(scenario.contains("Shape A"));
     assert!(scenario.contains("Shape B"));
 }
+
+#[test]
+fn receipt_lifecycle_example_is_declared_and_documented() {
+    let manifest = include_str!("../Cargo.toml");
+    let native_readme = include_str!("../README.md");
+    let scenario = include_str!("../scenarios/receipt_lifecycle.rs");
+
+    assert!(manifest.contains("receipt_lifecycle"));
+    assert!(native_readme.contains("receipt_lifecycle"));
+    assert!(scenario.contains("receipt_sequence"));
+    assert!(scenario.contains("submit_and_wait_for_receipt"));
+    assert!(scenario.contains("WaitError::Reverted"));
+    assert!(scenario.contains("WaitError::Timeout"));
+}

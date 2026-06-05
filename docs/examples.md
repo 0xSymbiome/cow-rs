@@ -18,7 +18,7 @@ the main SDK surfaces.
 | Classify and handle SDK errors | `error_classification` |
 | Work with app-data and signing | `app_data`, `sign_order` |
 | Quote, build, cancel, and simulate trading flows | `quote`, `cancel_in_flight`, `limit_order`, `trading_full_cycle` |
-| Inspect order lifecycle and on-chain actions | `order_lifecycle`, `ethflow`, `onchain_actions` |
+| Inspect order lifecycle and on-chain actions | `order_lifecycle`, `receipt_lifecycle`, `ethflow`, `onchain_actions` |
 | Inspect typed orderbook transport | `orderbook_transport`, `order_history` |
 | Work with read-only subgraph access | `subgraph_query` |
 | Work with native Alloy adapters | `alloy_quickstart`, `alloy_provider`, `alloy_signer`, `transaction_lifecycle`, `alloy_custom_traits`, `alloy_trading_full_flow` |

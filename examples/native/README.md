@@ -40,6 +40,7 @@ After that, branch by goal through the full scenario table below.
 | `cancel_in_flight` | Cancel an in-flight quote with `Cancellable::cancel_with(&token)` |
 | `limit_order` | Build and simulate signed limit-order submission |
 | `order_lifecycle` | Inspect order lookup and off-chain cancellation |
+| `receipt_lifecycle` | Drive `submit_and_wait_for_receipt` through the testing doubles for mined, reverted, and timeout outcomes |
 | `swap_quickstart` | Make your first swap end to end (quote, sign, post) against a mock |
 | `trading_full_cycle` | Inspect high-level `Trading` quote, allowance, and approval flow |
 | `error_classification` | Classify failures with `SdkError::class()` and decide retry versus abort |
@@ -98,6 +99,7 @@ cargo run --manifest-path examples/native/Cargo.toml --example quote
 cargo run --manifest-path examples/native/Cargo.toml --example cancel_in_flight
 cargo run --manifest-path examples/native/Cargo.toml --example limit_order
 cargo run --manifest-path examples/native/Cargo.toml --example order_lifecycle
+cargo run --manifest-path examples/native/Cargo.toml --example receipt_lifecycle
 cargo run --manifest-path examples/native/Cargo.toml --example swap_quickstart
 cargo run --manifest-path examples/native/Cargo.toml --example trading_full_cycle
 cargo run --manifest-path examples/native/Cargo.toml --example error_classification

@@ -109,6 +109,10 @@ pub const DETERMINISTIC_EXAMPLES: &[DeterministicExample] = &[
         manifest_path: "examples/native/Cargo.toml",
         example: "order_history",
     },
+    DeterministicExample::Manifest {
+        manifest_path: "examples/native/Cargo.toml",
+        example: "receipt_lifecycle",
+    },
 ];
 
 pub fn run(args: Args, output_mode: OutputMode) -> anyhow::Result<()> {
