@@ -22,6 +22,8 @@ const ADDRESS: &str = "0x1111111111111111111111111111111111111111";
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    // Wiremock JSON-RPC server; `mount_rpc` records each method so the report can
+    // count how many receipt lookups each shape triggers.
     let server = MockServer::start().await;
     let methods = mount_rpc(&server).await;
     let client = AlloyClient::builder()
@@ -31,6 +33,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .build()
         .await?;
     let signer = client.create_signer("local-key").await?;
+
+    // A simple self-transfer to broadcast in both shapes below.
     let tx = self_transfer(&signer.get_address().await?);
 
     // Shape A: one helper call broadcasts once and returns the mined receipt.

@@ -19,6 +19,7 @@ use cow_sdk_examples_native::support::{
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    // Transport-mocked orderbook seeded with one open order to look up.
     let orderbook = MockOrderbook::builder(SupportedChainId::Sepolia)
         .quote(sample_quote_response())
         .build();
@@ -30,8 +31,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .orderbook_client(Arc::new(orderbook.clone()))
         .build()?;
 
+    // Both calls key off the order uid.
     let params = OrderTraderParameters::new(sample_order_uid());
 
+    // Fetch the order, then cancel it off-chain — a signed API call, not a transaction.
     let order = trading.get_order(&params).await?;
     let cancelled = trading.off_chain_cancel_order(&params, &signer).await?;
     let state = orderbook.recorded();

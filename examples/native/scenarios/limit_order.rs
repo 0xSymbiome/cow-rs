@@ -17,6 +17,7 @@ use cow_sdk_examples_native::support::{
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    // Transport-mocked orderbook and signer; the signer address becomes the owner.
     let orderbook = MockOrderbook::builder(SupportedChainId::Sepolia)
         .quote(sample_quote_response())
         .build();
@@ -27,9 +28,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .orderbook_client(Arc::new(orderbook.clone()))
         .build()?;
 
+    // Post a limit order: the price comes from the parameters, not a fetched quote.
     let posted = trading
         .post_limit_order(sample_limit_parameters(), &signer, None)
         .await?;
+
+    // Inspect what the orderbook recorded for the submission.
     let state = orderbook.recorded();
     let sent_order = state
         .sent_orders

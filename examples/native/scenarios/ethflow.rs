@@ -34,6 +34,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .build();
     let signer = MockSigner::builder().address(sample_owner()).build();
     let trader = sample_trader_parameters();
+    // Sell the native token: set the sell token to the native sentinel and give the
+    // order a one-hour validity window from now.
     let mut params = sample_limit_parameters();
     params.sell_token = Address::new(EVM_NATIVE_CURRENCY_ADDRESS)?;
     let now = SystemTime::now()
@@ -43,6 +45,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     params.valid_to =
         Some(u32::try_from(now + 3600).expect("valid_to fits in u32 for the next century"));
 
+    // Build the app data, then finalize the limit parameters into from-quote form.
     let app_data = build_app_data(&trader.app_code, 0, "market", None, None).await?;
     let additional = PostTradeAdditionalParams::default();
 
@@ -50,6 +53,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let requested_quote_id = params.quote_id;
     let from_quote = LimitTradeParametersFromQuote::try_from_limit(params)?;
 
+    // Build the on-chain EthFlow transaction (the contract call that creates the
+    // order) without posting anything.
     let ethflow = get_eth_flow_transaction(
         &app_data.app_data_keccak256,
         &from_quote,
@@ -60,6 +65,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     )
     .await?;
 
+    // Post the native-sell order to the orderbook; this uploads the app data.
     let submitted = post_sell_native_currency_order(
         &orderbook,
         &app_data,

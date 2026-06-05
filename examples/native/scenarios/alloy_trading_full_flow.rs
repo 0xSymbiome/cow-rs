@@ -31,6 +31,8 @@ const ORDER_UID: &str = "0xd64389693b6cf89ad6c140a113b10df08073e5ef3063d05a02f3f
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    // Wiremock JSON-RPC server; `mount_rpc` records each method it sees so the
+    // report can show the exact RPC calls the SDK made.
     let server = MockServer::start().await;
     let methods = mount_rpc(&server).await;
     // build_checked() verifies the configured chain id against the RPC endpoint.
@@ -47,6 +49,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .app_code("cow-rs/alloy-trading-example")
         .build()?;
 
+    // 1. Read the protocol allowance for COW held by the owner (an eth_call).
     let allowance = trading
         .get_cow_protocol_allowance(
             &client,
@@ -55,6 +58,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .await?;
     assert_eq!(allowance, Amount::from(42u32));
 
+    // 2. Build an approval transaction, broadcast it, and wait for the receipt.
     let approval_params = ApprovalParameters::new(address(COW), Amount::new("1000")?);
     let approval_tx =
         approval_transaction(&approval_params, SupportedChainId::Mainnet, CowEnv::Prod)?;
@@ -71,6 +75,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     );
     assert_eq!(approval_receipt.status, Some(TransactionStatus::Success));
 
+    // 3. Build a pre-sign transaction; gas is estimated through the client.
     let pre_sign = trading
         .get_pre_sign_transaction(&OrderTraderParameters::new(order_uid()), &signer)
         .await?;

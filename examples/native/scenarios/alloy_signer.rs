@@ -19,12 +19,18 @@ const TEST_KEY: &str = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f460
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    // Build the signer leaf from a private key — entirely in memory, no provider.
     let signer = LocalAlloyKeystoreSigner::builder()
         .private_key(TEST_KEY)?
         .chain_id(SupportedChainId::Mainnet)
         .build()?;
+
+    // Build the EIP-712 typed-data payload for a CoW order and confirm its
+    // primary type matches the protocol constant.
     let payload = order_typed_data_payload(SupportedChainId::Mainnet, &sample_order(), None)?;
     assert_eq!(payload.primary_type, ORDER_PRIMARY_TYPE);
+
+    // Sign it; the SDK normalizes the recovery byte to the legacy 27/28 range.
     let signature = signer.sign_typed_data_payload(&payload).await?;
     assert_recovery_byte_is_legacy(&signature);
 

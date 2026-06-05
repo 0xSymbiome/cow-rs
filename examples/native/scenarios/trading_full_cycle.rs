@@ -24,6 +24,8 @@ use cow_sdk_examples_native::support::{
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    // Three doubles for the full cycle: the orderbook (quotes + posts), the signer,
+    // and a provider for the allowance/approval reads. The provider shares the signer.
     let orderbook = MockOrderbook::builder(SupportedChainId::Sepolia)
         .quote(sample_quote_response())
         .build();
@@ -36,18 +38,25 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .orderbook_client(Arc::new(orderbook.clone()))
         .build()?;
 
+    // 1. Quote — signed quote results carry the merged app data.
     let quote = trading
         .get_quote_results(sample_trade_parameters(), &signer, None)
         .await?;
+
+    // 2. Post the swap order.
     let post_result = trading
         .post_swap_order(sample_trade_parameters(), &signer, None)
         .await?;
+
+    // 3. Read the protocol allowance for the sell token (through the provider).
     let allowance = trading
         .get_cow_protocol_allowance(
             &provider,
             &AllowanceParameters::new(sample_sell_token(), sample_owner()),
         )
         .await?;
+
+    // 4. Approve the protocol to spend the sell token (sends a transaction).
     let approval_tx_hash = trading
         .approve_cow_protocol(
             &signer,
@@ -58,6 +67,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
             ),
         )
         .await?;
+
+    // 5. Cancel the posted order off-chain.
     let cancelled = trading
         .off_chain_cancel_order(
             &OrderTraderParameters::new(post_result.order_id),

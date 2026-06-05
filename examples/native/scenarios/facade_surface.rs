@@ -18,11 +18,18 @@ use cow_sdk::trading::TradingOptions;
 fn main() -> Result<(), Box<dyn Error>> {
     let chain_id = SupportedChainId::Sepolia;
     let app_code = AppCode::new("cow-rs/native-capability-report")?;
+
+    // Construct a ready-state trading client — the minimal facade entry point.
     let trading = TradingBuilder::ready(
         TraderParameters::new(chain_id, app_code).expect("app code should validate"),
         TradingOptions::default(),
     )?;
+
+    // Resolve the protocol deployment (settlement, vault relayer, eth-flow) for
+    // this chain from the bundled contract metadata — no RPC needed.
     let deployment = deployment_for_chain(u64::from(chain_id))?;
+
+    // Resolve the wrapped-native token (the WETH-equivalent) for this chain.
     let wrapped_native = wrapped_native_token(chain_id);
 
     let report = json!({

@@ -55,6 +55,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let order_uid = sample_order_uid();
     let params = OrderTraderParameters::new(order_uid).with_chain_id(chain_id);
 
+    // Build call data only (no dispatch): a pre-sign transaction, plus cancellation
+    // call data for a regular order and an EthFlow order — these take different routes.
     let pre_sign = get_pre_sign_transaction(&preview_signer, chain_id, &order_uid, None).await?;
     let regular_preview =
         onchain_cancellation_transaction(&preview_signer, chain_id, &sample_open_order(), None)
@@ -63,6 +65,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         onchain_cancellation_transaction(&preview_signer, chain_id, &sample_ethflow_order(), None)
             .await?;
 
+    // Dispatch a real on-chain cancel for a regular order; the SDK routes it through
+    // the settlement contract and the signer records the sent transaction.
     let regular_orderbook = MockOrderbook::builder(chain_id)
         .quote(sample_quote_response())
         .build();
@@ -79,6 +83,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .cloned()
         .expect("regular cancellation should send a transaction");
 
+    // Same for an EthFlow order — the SDK routes this through the eth-flow contract.
     let ethflow_orderbook = MockOrderbook::builder(chain_id)
         .quote(sample_quote_response())
         .build();

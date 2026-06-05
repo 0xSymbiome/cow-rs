@@ -16,16 +16,23 @@ use cow_sdk_examples_native::support::{sample_quote_response, sample_trade_param
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    // Transport-mocked orderbook seeded with a canned quote response.
     let orderbook = MockOrderbook::builder(SupportedChainId::Sepolia)
         .quote(sample_quote_response())
         .build();
+
+    // Ready-state client with the mock injected. `orderbook.clone()` keeps a
+    // handle so we can read what the client sent after the call.
     let trading = TradingBuilder::ready(
         TraderParameters::new(SupportedChainId::Sepolia, "cow-rs-quote-only")
             .expect("app code should validate"),
         TradingOptions::new().with_orderbook_client(Arc::new(orderbook.clone())),
     )?;
 
+    // Quote only — no order is built, signed, or posted.
     let quote = trading.get_quote_only(sample_trade_parameters(), None).await?;
+
+    // Inspect the request the client actually sent to the orderbook.
     let request = orderbook
         .recorded()
         .quote_requests

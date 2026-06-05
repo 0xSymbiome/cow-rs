@@ -15,6 +15,7 @@ const ADDRESS: &str = "0x1111111111111111111111111111111111111111";
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    // Stand up a wiremock JSON-RPC server; every POST returns this canned result.
     let server = MockServer::start().await;
     Mock::given(method("POST"))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
@@ -25,10 +26,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .mount(&server)
         .await;
 
+    // Build the provider leaf (no signer) pointed at the mock RPC.
     let provider = RpcAlloyProvider::builder()
         .http(server.uri())?
         .build()
         .await?;
+
+    // Read the on-chain bytecode at an address through the `Provider` trait.
     let code = provider.get_code(&Address::new(ADDRESS)?).await?;
 
     let report = json!({

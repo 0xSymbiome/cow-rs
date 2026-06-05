@@ -76,7 +76,9 @@ Scenarios use one of two deterministic doubles, by intent:
 
 Every scenario opens with a `//!` module header — a one-line summary plus a
 short body naming the key SDK symbols, the transport or double, and the one
-design point worth knowing — kept in sync with its catalog row above.
+design point worth knowing — kept in sync with its catalog row above. The body
+then walks the `main` flow with step comments that mark each stage and call out
+anything non-obvious, without narrating line by line.
 
 ## Validation
 

@@ -25,6 +25,8 @@ use cow_sdk_examples_native::support::{sample_quote_response_json, sample_trade_
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    // Quote endpoint that stalls for 30s, so the request is genuinely in-flight
+    // when we cancel it.
     let server = MockServer::start().await;
     Mock::given(method("POST"))
         .and(path("/api/v1/quote"))
@@ -50,6 +52,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         TradingOptions::new().with_orderbook_client(Arc::new(orderbook)),
     )?;
 
+    // One token, cloned: clones share the same cancellation state. A background
+    // task fires it after 100ms, long before the 30s response would arrive.
     let token = CancellationToken::new();
     let token_for_quote = token.clone();
     let token_for_timer = token.clone();
@@ -58,12 +62,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
         token_for_timer.cancel();
     });
 
+    // `cancel_with` races the call against the token; here the token wins.
     let quote_result = trading
         .get_quote_only(sample_trade_parameters(), None)
         .cancel_with(&token_for_quote)
         .await;
     cancel_after_delay.await?;
 
+    // The aborted call surfaces as a typed `TradingError::Cancelled`.
     let error = quote_result.expect_err("the delayed quote must be cancelled");
     assert!(
         matches!(error, TradingError::Cancelled),

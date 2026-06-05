@@ -26,6 +26,8 @@ use cow_sdk_examples_native::support::{
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    // Stand up a wiremock server and mount the four endpoints this example hits:
+    // GET version, POST quote, POST orders, and GET order status.
     let server = MockServer::start().await;
     let order_uid = sample_order_uid();
 
@@ -57,6 +59,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .mount(&server)
         .await;
 
+    // Build the OrderbookApi over the mock; the Test host policy allows localhost.
     let orderbook = OrderbookApi::builder_from_context(ApiContext::new(
         SupportedChainId::Sepolia,
         CowEnv::Prod,
@@ -65,7 +68,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     .base_url(server.uri())
     .build()?;
 
+    // 1. Protocol version.
     let version = orderbook.get_version().await?;
+
+    // 2. Request a sell-side quote.
     let quote_request = OrderQuoteRequest::new(
         sample_sell_token(),
         sample_buy_token(),
@@ -76,6 +82,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     )
     .with_price_quality(PriceQuality::Optimal);
     let quote = orderbook.get_quote(&quote_request).await?;
+
+    // 3. Turn the quote into a signed order and submit it.
     let order = OrderCreation::from_quote(
         &quote.quote,
         sample_owner(),
@@ -85,6 +93,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     )
     .with_quote_id(quote.id.expect("example quote id remains present"));
     let created_order_uid = orderbook.send_order(&order).await?;
+
+    // 4. Read the order's competition status.
     let status = orderbook
         .get_order_competition_status(&created_order_uid)
         .await?;

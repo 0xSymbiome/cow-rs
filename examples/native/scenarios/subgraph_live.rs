@@ -14,13 +14,17 @@ use cow_sdk_subgraph::SubgraphApi;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    // The Graph API key is required for this live call; the chain defaults to mainnet.
     let api_key = required_env("THE_GRAPH_API_KEY")?;
     let chain_id = optional_supported_chain_id("COW_SUBGRAPH_CHAIN_ID")?;
+
+    // Build the read-only subgraph client (used directly, not through the facade).
     let subgraph = SubgraphApi::builder()
         .chain(chain_id)
         .api_key(api_key)
         .build()?;
 
+    // The one live call: protocol-wide totals.
     let totals = subgraph.get_totals().await?;
 
     let report = json!({

@@ -25,11 +25,20 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let chain_id = SupportedChainId::Sepolia;
     let signer = MockSigner::new();
     let order = sample_unsigned_order();
+
+    // Sign the order (EIP-712 by default through the signer).
     let signed_order = sign_order(&order, chain_id, &signer, None).await?;
+
+    // Derive the typed data and the order id without signing — both are pure
+    // functions of the order, chain, and owner.
     let typed_order = order_typed_data(chain_id, &order, None)?;
     let generated = generate_order_id(chain_id, &order, &sample_owner(), None)?;
+
+    // Sign an order cancellation: a separate signed message keyed by the order uid.
     let cancellation =
         sign_order_cancellation(&sample_order_uid(), chain_id, &signer, None).await?;
+
+    // Build the EIP-1271 payload a smart-contract wallet would verify on-chain.
     let eip1271_payload = eip1271_signature_payload(&order, &signed_order.signature)?;
 
     let report = json!({
