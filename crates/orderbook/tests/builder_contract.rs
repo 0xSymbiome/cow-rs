@@ -9,15 +9,13 @@
 //! `reqwest::Client` reuse all flow through the resulting `OrderbookApi`.
 
 use std::sync::Arc;
-use std::sync::Mutex;
-use std::time::Duration;
 
 use cow_sdk_core::{
     ApiContext, CowEnv, HttpTransport, REDACTED_PLACEHOLDER, RedactedUrlMap, ReqwestTransport,
-    ReqwestTransportConfig, SupportedChainId, TransportError,
+    ReqwestTransportConfig, SupportedChainId,
 };
 use cow_sdk_orderbook::{EnvBaseUrlOverrides, ExternalHostPolicy, OrderbookApi};
-use cow_sdk_test_utils::mocks::StubHttpTransport;
+use cow_sdk_test_utils::mocks::{Canned, RecordingHttpTransport, StubHttpTransport};
 use cow_sdk_transport_policy::{RetryPolicy, TransportPolicy};
 
 #[test]
@@ -177,102 +175,9 @@ fn explicit_transport_overrides_default_native_handle() {
     assert!(Arc::ptr_eq(api.transport(), &transport));
 }
 
-#[derive(Debug, Default)]
-struct BuilderRecordingTransport {
-    calls: Mutex<Vec<String>>,
-    response: Mutex<String>,
-}
-
-impl BuilderRecordingTransport {
-    fn with_response(response: &str) -> Self {
-        Self {
-            calls: Mutex::new(Vec::new()),
-            response: Mutex::new(response.to_owned()),
-        }
-    }
-
-    fn calls(&self) -> Vec<String> {
-        self.calls
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .clone()
-    }
-}
-
-#[async_trait::async_trait]
-impl HttpTransport for BuilderRecordingTransport {
-    async fn get(
-        &self,
-        path: &str,
-        _headers: &[(String, String)],
-        _timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
-        self.calls
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .push(format!("GET {path}"));
-        Ok(self
-            .response
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .clone())
-    }
-    async fn post(
-        &self,
-        path: &str,
-        _body: &str,
-        _headers: &[(String, String)],
-        _timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
-        self.calls
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .push(format!("POST {path}"));
-        Ok(self
-            .response
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .clone())
-    }
-    async fn put(
-        &self,
-        path: &str,
-        _body: &str,
-        _headers: &[(String, String)],
-        _timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
-        self.calls
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .push(format!("PUT {path}"));
-        Ok(self
-            .response
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .clone())
-    }
-    async fn delete(
-        &self,
-        path: &str,
-        _body: &str,
-        _headers: &[(String, String)],
-        _timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
-        self.calls
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .push(format!("DELETE {path}"));
-        Ok(self
-            .response
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .clone())
-    }
-}
-
 #[tokio::test]
 async fn injected_transport_observes_every_live_request_from_the_built_client() {
-    let recorder = Arc::new(BuilderRecordingTransport::with_response("v1.2.3"));
+    let recorder = RecordingHttpTransport::new([Canned::Ok("v1.2.3".to_owned())]);
     let transport: Arc<dyn HttpTransport + Send + Sync> = recorder.clone();
     let api = OrderbookApi::builder()
         .chain(SupportedChainId::Mainnet)
@@ -289,21 +194,20 @@ async fn injected_transport_observes_every_live_request_from_the_built_client() 
         .expect("the injected transport should deliver the canned version response");
     assert_eq!(version, "v1.2.3");
 
-    let calls = recorder.calls();
+    let calls = recorder.observed();
     assert_eq!(
         calls.len(),
         1,
         "exactly one live request should flow through the injected transport"
     );
-    assert!(
-        calls[0].starts_with("GET "),
-        "the version endpoint must dispatch through the GET path: {}",
-        calls[0]
+    assert_eq!(
+        calls[0].method, "GET",
+        "the version endpoint must dispatch through the GET path"
     );
     assert!(
-        calls[0].contains("/api/v1/version"),
+        calls[0].url.contains("/api/v1/version"),
         "the dispatched URL must reach the version endpoint: {}",
-        calls[0]
+        calls[0].url
     );
 }
 
