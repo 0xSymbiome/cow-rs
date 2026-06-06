@@ -122,8 +122,8 @@ review.
 Coverage:
 
 ```text
-cargo +nightly llvm-cov --workspace --all-features --doctests --json --summary-only --output-path target/coverage-summary.json --ignore-filename-regex "(^|/)(tests|examples|e2e)(/|$)|crates/subgraph/src/query_documents/|crates/subgraph/tests/schema_evidence/"
-cargo +nightly llvm-cov --workspace --all-features --doctests --lcov --output-path target/coverage-lcov.info --ignore-filename-regex "(^|/)(tests|examples|e2e)(/|$)|crates/subgraph/src/query_documents/|crates/subgraph/tests/schema_evidence/"
+cargo +nightly llvm-cov --workspace --all-features --doctests --json --summary-only --output-path target/coverage-summary.json --ignore-filename-regex "(^|/)(tests|examples|e2e)(/|$)|crates/subgraph/src/query_documents/"
+cargo +nightly llvm-cov --workspace --all-features --doctests --lcov --output-path target/coverage-lcov.info --ignore-filename-regex "(^|/)(tests|examples|e2e)(/|$)|crates/subgraph/src/query_documents/"
 ```
 
 Mutation:

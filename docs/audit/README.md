@@ -128,7 +128,7 @@ If the reviewed surface did not change, leave the audit alone.
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
 | [CID Dependency Audit](cid-dependency-audit.md) | Standing audit | `cow-sdk-app-data` and `cow-sdk-core` CID encoding and published dependency boundary | Supported CID paths, fail-closed encoding, and clean published-upstream posture | Current | 2026-06-03 |
-| [Dependency Gate Audit](dependency-gate-audit.md) | Standing audit | Release-facing dependency-audit gate for current published surfaces | Blocking transport advisory policy, clean CID posture, direct WASM randomness alignment, canonical advisory tolerance, source whitelist, native Alloy provider/signer dependency allow-lists, `cow-sdk-wasm` wasm32 dependency exclusions, and pure-helper FFI exclusion | Current | 2026-05-26 |
+| [Dependency Gate Audit](dependency-gate-audit.md) | Standing audit | Release-facing dependency-audit gate for current published surfaces | Blocking transport advisory policy, clean CID posture, direct WASM randomness alignment, canonical advisory tolerance, source whitelist, native Alloy provider/signer dependency allow-lists, `cow-sdk-wasm` wasm32 dependency exclusions, and pure-helper FFI exclusion | Current | 2026-06-06 |
 
 ## Source Provenance
 

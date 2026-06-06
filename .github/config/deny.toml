@@ -38,25 +38,6 @@ docs/audit/dependency-gate-audit.md.
 """
 
 [[bans.skip-tree]]
-name = "graphql_client"
-version = "=0.16.0"
-reason = """
-Subgraph schema/codegen evidence is test-only and still depends on
-the graphql-parser stack, which pulls thiserror 1.0.69.
-
-Root cause:
-  cow-sdk-subgraph dev-dependencies
-    -> graphql_client 0.16.0
-      -> graphql-parser 0.4.1
-        -> thiserror 1.0.69
-
-Re-review: when graphql_client upgrades away from graphql-parser 0.4
-or graphql-parser migrates to thiserror 2, drop this skip-tree entry.
-
-Tracked in docs/audit/dependency-gate-audit.md.
-"""
-
-[[bans.skip-tree]]
 name = "rustls-platform-verifier"
 version = "=0.6.2"
 reason = """

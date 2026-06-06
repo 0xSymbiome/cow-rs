@@ -1,7 +1,7 @@
 # Dependency Gate Audit
 
 Status: Current
-Last reviewed: 2026-05-26
+Last reviewed: 2026-06-06
 Owning surface: Release-facing dependency-audit gate for current published `cow-rs` surfaces
 Refresh trigger: Changes to blocking dependency policy, Cargo.lock advisory posture, release or verification dependency commands, published CID dependency posture, shared transport-policy dependencies, transport crate advisory posture, native Alloy two-family lockfile posture, ADR 0026 Alloy absorption rehearsal, the canonical primitive layer dependency closure per ADR 0052, or browser-wallet alloy advisory posture
 Related docs:
@@ -55,8 +55,8 @@ architecture reviews.
 | Direct WASM randomness | Direct crate use of `getrandom` for wasm32 is centralized on the workspace `0.4.2` pin with the `wasm_js` feature | Conforms |
 | Shared transport policy | Retry timers and browser timer dependencies are centralized in `cow-sdk-transport-policy` instead of duplicated in orderbook or subgraph | Conforms |
 | Workspace dependency inheritance | Shared helper pins for timers, browser panic hooks, and test HTTP fixtures are centralized in the workspace table | Conforms |
-| Duplicate-version exceptions | Residual duplicate roots are documented as explicit skip-tree entries; stale `tiny-keccak` and `getrandom 0.2` exceptions were removed because they are no longer in the workspace graph | Conforms |
-| Legacy `thiserror` reachability | The remaining `thiserror 1.0.69` path is limited to the `graphql_client` codegen chain used by dev/test coverage | Conforms |
+| Duplicate-version exceptions | Residual duplicate roots are documented as explicit skip-tree entries; stale `tiny-keccak`, `getrandom 0.2`, and `graphql_client` exceptions were removed because they are no longer in the workspace graph | Conforms |
+| Legacy `thiserror` reachability | The remaining `thiserror 1.0.69` line is reached only through the Android-target `jni -> rustls-platform-verifier -> reqwest` path; the former `graphql_client` dev/test chain was removed | Conforms |
 | Native Alloy allow-lists | Shipped crates that depend on `alloy-provider` or `alloy-signer-local` are limited to the reviewed adapter crates and fail the policy-maintainer gate if the dependency escapes | Conforms |
 | Native Alloy two-family lockfile | The workspace lockfile keeps reviewed Alloy runtime crates on `2.0.4` and Alloy Core ABI crates on `1.5.7`, with exactly one resolved version per listed crate | Conforms |
 | Alloy canary failures | Scheduled canary failures are triaged as upstream-compatibility reports, with local pins changed only after ordinary quality gates pass and without dependency-policy waivers | Conforms |
@@ -250,11 +250,12 @@ prints no dependency path and no first-party crate aliases that package.
 
 `thiserror 1.0.69` is no longer reachable through the native examples lockfile
 after the examples-native lock regeneration. In the workspace lockfile, the
-remaining old line is reached through `graphql-parser -> graphql_client_codegen
--> graphql_query_derive -> graphql_client`, which is used by dev/test
-coverage for the subgraph and contracts crates. The release-facing gate keeps
-the path visible as duplicate-version debt rather than hiding it behind an
-advisory tolerance.
+remaining old line is reached only through the Android-target
+`jni -> rustls-platform-verifier -> reqwest` path; it does not appear on the
+host build graph. The earlier `graphql_client` schema-codegen chain that also
+carried `thiserror 1.0.69` was removed together with the subgraph test-only
+schema evidence. The release-facing gate keeps the path visible as
+duplicate-version debt rather than hiding it behind an advisory tolerance.
 
 ### Native Alloy Dependency Allow-Lists
 

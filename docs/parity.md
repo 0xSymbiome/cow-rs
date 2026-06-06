@@ -116,7 +116,7 @@ maintainer workflow for refreshing the lock lives in
 | ERC-20 and ERC-20 Permit bindings | `cowprotocol/contracts` `IERC20` interface (carrying its own OpenZeppelin v3.4.0 lineage in the upstream header) plus the EIP-2612 `permit` extension inline-declared in `cow-sdk-contracts::erc20` | `cow-sdk-contracts::erc20` via `alloy::sol!` | Byte-identical Solidity mirror of `IERC20` under `crates/contracts/abi/erc20/` gated by `cargo parity-verify-sol-provenance`; the `IERC20Permit` interface is declared inline in `crates/contracts/src/erc20.rs` since EIP-2612 has no canonical upstream pinned in `parity/source-lock.yaml` | `crates/contracts/tests/parity_contract.rs::erc20_and_permit_calldata_match_upstream_fixtures` |
 | Deployment registry authority | `cowprotocol/contracts` deployments record | `cow-sdk-contracts::Registry` via embedded `registry.toml` | `crates/contracts/registry.toml` | `crates/contracts/tests/registry.rs`, `crates/contracts/tests/schema_v2_rejection.rs` |
 | App-data parity | `cowprotocol/app-data` JSON schemas and `cowprotocol/services` app-data hashing | `cow-sdk-app-data`, `cow-sdk-trading` | `parity/fixtures/app_data/` | `crates/app-data/tests/cid_contract.rs`, `crates/app-data/tests/schema_contract.rs`, `crates/app-data/tests/fetch_contract.rs`, `crates/trading/tests/quote_contract.rs` |
-| Subgraph support | the deployed CoW Protocol subgraph GraphQL schema, with cow-rs-owned query documents | `cow-sdk-subgraph` | `crates/subgraph/tests/schema_evidence/schema.graphql` | `crates/subgraph/tests/api_contract.rs`, `crates/subgraph/tests/query_contract.rs`, `crates/subgraph/tests/types_contract.rs` |
+| Subgraph support | the deployed CoW Protocol subgraph GraphQL schema, with cow-rs-owned query documents | `cow-sdk-subgraph` | `crates/subgraph/src/query_documents/` | `crates/subgraph/tests/api_contract.rs`, `crates/subgraph/tests/query_contract.rs`, `crates/subgraph/tests/types_contract.rs` |
 | Orderbook transport | `cowprotocol/services` orderbook OpenAPI and wire DTOs | `cow-sdk-orderbook` | `parity/fixtures/orderbook-requests/`, `parity/openapi/coverage.yaml` | `crates/orderbook/tests/api_contract.rs`, `crates/orderbook/tests/request_contract.rs`, `crates/orderbook/tests/transform_contract.rs`, `crates/orderbook/tests/types_contract.rs`, `crates/orderbook/tests/openapi_dto_coverage.rs` |
 | WASM target | the cow-rs SDK helper surface compiled to WASM | `cow-sdk`, `cow-sdk-app-data`, the WASM example | committed workflow definitions, example READMEs | `crates/transport-wasm/tests/wasm.rs`, `wasm-pack test --headless --firefox`, and the `wasm.yml` compatibility workflow |
 | WASM event-log decoders | `cowprotocol/contracts` settlement surface and `cowprotocol/ethflowcontract` mixin | `cow-sdk-wasm` `decodeSettlementLog` / `decodeEthFlowLog` over the `cow-sdk-contracts` decoders | Facade and raw TypeScript declaration snapshots under `crates/wasm/snapshots/` | `crates/wasm/tests/wasm_facade_snapshot_contract.rs::facade_declarations_match_flavour_matrix` |
@@ -189,8 +189,8 @@ or schema-derived Rust mirror is part of the public SDK API.
   fixtures, contract tests, and source-lock references
 - subgraph schema evidence is tied to the deployed CoW Protocol subgraph GraphQL
   schema; the query documents are cow-rs-owned and live in
-  `crates/subgraph/src/query_documents/`, with test-only schema and codegen
-  evidence in `crates/subgraph/tests/schema_evidence/`
+  `crates/subgraph/src/query_documents/`, with response-shape parity exercised by
+  the subgraph contract tests
 - generated or schema-derived Rust mirrors stay non-public or test-only
 
 ## 0.1.0 Scope

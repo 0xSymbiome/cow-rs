@@ -15,32 +15,7 @@
 use cow_sdk_subgraph::{
     LAST_DAYS_VOLUME_QUERY, LAST_HOURS_VOLUME_QUERY, SubgraphQueryRequest, TOTALS_QUERY,
 };
-use graphql_client::GraphQLQuery;
 use serde_json::json;
-
-#[derive(GraphQLQuery)]
-#[graphql(
-    schema_path = "tests/schema_evidence/schema.graphql",
-    query_path = "src/query_documents/totals.graphql",
-    response_derives = "Debug, PartialEq"
-)]
-struct Totals;
-
-#[derive(GraphQLQuery)]
-#[graphql(
-    schema_path = "tests/schema_evidence/schema.graphql",
-    query_path = "src/query_documents/last_days_volume.graphql",
-    response_derives = "Debug, PartialEq"
-)]
-struct LastDaysVolume;
-
-#[derive(GraphQLQuery)]
-#[graphql(
-    schema_path = "tests/schema_evidence/schema.graphql",
-    query_path = "src/query_documents/last_hours_volume.graphql",
-    response_derives = "Debug, PartialEq"
-)]
-struct LastHoursVolume;
 
 #[test]
 fn totals_query_matches_required_operation_and_fields() {
@@ -210,30 +185,4 @@ fn query_documents_open_response_dto_tolerates_unknown_extra_fields() {
     }))
     .expect("last-days response must ignore unknown extra fields");
     assert_eq!(days.daily_totals[0].timestamp, 1_651_104_000);
-}
-
-#[test]
-fn totals_saved_query_document_builds_typed_test_only_request_body() {
-    let request_body = Totals::build_query(totals::Variables);
-
-    assert_eq!(request_body.query, TOTALS_QUERY);
-    assert_eq!(request_body.operation_name, "Totals");
-}
-
-#[test]
-fn last_days_saved_query_document_builds_typed_test_only_request_body() {
-    let request_body = LastDaysVolume::build_query(last_days_volume::Variables { days: 7 });
-
-    assert_eq!(request_body.query, LAST_DAYS_VOLUME_QUERY);
-    assert_eq!(request_body.operation_name, "LastDaysVolume");
-    assert_eq!(request_body.variables.days, 7);
-}
-
-#[test]
-fn last_hours_saved_query_document_builds_typed_test_only_request_body() {
-    let request_body = LastHoursVolume::build_query(last_hours_volume::Variables { hours: 24 });
-
-    assert_eq!(request_body.query, LAST_HOURS_VOLUME_QUERY);
-    assert_eq!(request_body.operation_name, "LastHoursVolume");
-    assert_eq!(request_body.variables.hours, 24);
 }
