@@ -423,7 +423,10 @@ mod retry_classification_tests {
             TransportErrorClass::Request,
             TransportErrorClass::Other,
         ] {
-            assert!(transport(class).is_retryable(), "{class:?} must be retryable");
+            assert!(
+                transport(class).is_retryable(),
+                "{class:?} must be retryable"
+            );
         }
     }
 

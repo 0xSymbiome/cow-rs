@@ -219,7 +219,7 @@ Primary regression coverage:
 - `crates/transport-policy/tests/policy_contract.rs::prop_tpp_031_retry_after_helper_is_case_insensitive`
 - `crates/transport-policy/src/runner.rs` (`tests::non_retryable_transport_returns_without_redispatch`, `tests::http_date_retry_after_uses_the_injected_clock`, `tests::persistent_transport_error_exhausts_attempts`)
 - `crates/wasm/tests/wasm_retry_runner_contract.rs::retryable_status_drives_backoff_without_panicking`
-- `crates/orderbook/tests/request_contract.rs::seeded_jitter_decorrelates_parallel_retry_waits`
+- `crates/transport-policy/tests/policy_contract.rs::prop_tpp_004_decorrelated_jitter_is_bounded_by_max_delay`
 - `crates/orderbook/tests/request_contract.rs::tracing_contract::execute_with_emits_retry_events_with_status_and_transport_error_fields`
 - `crates/orderbook/tests/request_contract.rs::tracing_contract::send_order_span_records_quote_id_attempts_and_status`
 - `crates/orderbook/tests/api_contract.rs::service_unavailable_retry_after_header_delays_retry_for_at_least_server_cooldown`

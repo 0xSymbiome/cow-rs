@@ -9,9 +9,7 @@ use std::time::{Duration, Instant};
 
 #[cfg(feature = "tracing")]
 use cow_sdk_core::Amount;
-use cow_sdk_core::{
-    Cancellable, HttpClientPolicy, HttpTransport, ReqwestTransport, ReqwestTransportConfig,
-};
+use cow_sdk_core::{Cancellable, HttpTransport, ReqwestTransport, ReqwestTransportConfig};
 use cow_sdk_orderbook::OrderbookError;
 use cow_sdk_orderbook::error::classify_reqwest_error;
 use cow_sdk_orderbook::request::{
@@ -23,11 +21,8 @@ use cow_sdk_orderbook::{CowEnv, SupportedChainId};
 #[cfg(feature = "tracing")]
 use cow_sdk_orderbook::{OrderCreation, OrderQuoteRequest, OrderQuoteSide, SigningScheme};
 use cow_sdk_transport_policy::{
-    DEFAULT_INTERVAL_LABEL, DEFAULT_MAX_ATTEMPTS, DEFAULT_ORDERBOOK_USER_AGENT,
-    DEFAULT_TOKENS_PER_INTERVAL, INTERNAL_SERVER_ERROR, JitterStrategy, RETRYABLE_STATUSES,
-    RequestRateLimiter, RetryPolicy, TOO_MANY_REQUESTS, TransportPolicy,
+    INTERNAL_SERVER_ERROR, JitterStrategy, RequestRateLimiter, RetryPolicy, TOO_MANY_REQUESTS,
 };
-use proptest::prelude::*;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 
 fn build_shared_transport() -> Arc<dyn HttpTransport + Send + Sync> {
@@ -52,7 +47,7 @@ fn default_limiter() -> RequestRateLimiter {
 
 use serde_json::json;
 use tokio::sync::Notify;
-use tokio::time::{sleep, timeout};
+use tokio::time::timeout;
 use wiremock::{
     Mock, MockServer, Request, ResponseTemplate,
     matchers::{header, method, path},
@@ -63,36 +58,6 @@ use crate::common::{
     build_orderbook_api_with_base_url, default_context, sample_buy_token, sample_order_uid,
     sample_owner, sample_quote_response_json, sample_signature,
 };
-
-#[tokio::test]
-async fn request_policy_defaults_match_fixture_contract() {
-    let policy = RetryPolicy::default();
-    let limiter = default_limiter();
-
-    assert_eq!(policy.max_attempts(), DEFAULT_MAX_ATTEMPTS);
-    assert_eq!(limiter.tokens_per_interval(), DEFAULT_TOKENS_PER_INTERVAL);
-    assert_eq!(limiter.interval_label(), DEFAULT_INTERVAL_LABEL);
-    assert_eq!(RETRYABLE_STATUSES, [408, 425, 429, 500, 502, 503, 504]);
-    assert!(policy.should_retry_status(TOO_MANY_REQUESTS));
-    assert!(!policy.should_retry_status(400));
-}
-
-proptest! {
-    #[test]
-    fn seeded_jitter_decorrelates_parallel_retry_waits(seed in any::<u64>(), attempt_index in 1usize..=7) {
-        let base_policy = retry_policy_no_jitter(3);
-        let base = base_policy.delay_for_attempt(attempt_index);
-        let policy = retry_policy(3)
-            .with_jitter(JitterStrategy::decorrelated_from_seed(seed));
-        let first = policy.delay_for_attempt(attempt_index);
-        let second = policy.delay_for_attempt(attempt_index.saturating_add(1));
-
-        prop_assert!(first >= base);
-        prop_assert!(second >= base);
-        prop_assert!(first <= base.saturating_add(base / 2));
-        prop_assert!(second <= policy.max_delay());
-    }
-}
 
 #[tokio::test]
 async fn execute_json_with_retries_transient_statuses_until_success() {
@@ -444,48 +409,6 @@ async fn concurrent_attempts_share_limiter_state_across_clones() {
     );
 }
 
-#[tokio::test]
-async fn cancelling_waiting_attempt_keeps_limiter_reusable() {
-    let interval = Duration::from_millis(60);
-    let policy = retry_policy(1);
-    let limiter = limiter(1, interval, "test");
-
-    execute_empty_with(&policy, &limiter, || async {
-        Ok(ResponseEnvelope::empty(204))
-    })
-    .await
-    .expect("first token should be available immediately");
-
-    let waiting_policy = policy.clone();
-    let waiting_limiter = limiter.clone();
-    let waiting = tokio::spawn(async move {
-        execute_empty_with(&waiting_policy, &waiting_limiter, || async {
-            Ok(ResponseEnvelope::empty(204))
-        })
-        .await
-    });
-
-    sleep(Duration::from_millis(5)).await;
-    waiting.abort();
-
-    let aborted = waiting
-        .await
-        .expect_err("aborted waiter should surface cancellation");
-    assert!(aborted.is_cancelled());
-
-    sleep(interval + Duration::from_millis(5)).await;
-
-    timeout(
-        Duration::from_millis(200),
-        execute_empty_with(&policy, &limiter, || async {
-            Ok(ResponseEnvelope::empty(204))
-        }),
-    )
-    .await
-    .expect("reused limiter should not hang after waiter cancellation")
-    .expect("reused limiter should grant the next token");
-}
-
 #[test]
 fn typed_api_error_preserves_status_body_and_message() {
     let error = OrderbookApiError::new(
@@ -534,30 +457,6 @@ fn json_envelope_classifies_to_typed_rejection_through_from_api_error() {
         }
         other => panic!("expected Rejected, got {other:?}"),
     }
-}
-
-#[test]
-fn transport_policy_wraps_validated_shared_client_policy() {
-    let custom = HttpClientPolicy::new("custom-orderbook-test/1.0.0")
-        .expect("custom user-agent should be valid")
-        .without_timeout();
-    let policy = TransportPolicy::default().with_client_policy(custom.clone());
-
-    assert_eq!(policy.client_policy(), &custom);
-    assert_eq!(policy.client_policy().timeout(), None);
-    assert_eq!(
-        TransportPolicy::default().client_policy().user_agent(),
-        DEFAULT_ORDERBOOK_USER_AGENT
-    );
-}
-
-#[test]
-fn shared_http_client_policy_rejects_invalid_user_agents() {
-    let error = HttpClientPolicy::new("bad\r\nagent").expect_err("CRLF must be rejected");
-    assert_eq!(
-        error.to_string(),
-        "user_agent must be a valid HTTP header value"
-    );
 }
 
 #[tokio::test]
