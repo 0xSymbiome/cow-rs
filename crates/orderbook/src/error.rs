@@ -1,9 +1,11 @@
 use std::fmt;
+use std::time::Duration;
 
 use cow_sdk_core::{
     AppDataHash, Cancelled, CoreError, ErrorClass, HostPolicyError, Redacted, TransportError,
     TransportErrorClass, ValidationReason,
 };
+use cow_sdk_transport_policy::{NetworkErrorKind, RetryPolicy, is_retryable_status};
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -237,6 +239,53 @@ impl OrderbookError {
             _ => ErrorClass::Internal,
         }
     }
+
+    /// Returns `true` when retrying the same request may succeed.
+    ///
+    /// A structured non-2xx response is retryable when its HTTP status is one
+    /// the default transport policy retries (`408`, `425`, `429`, and the
+    /// `500`/`502`/`503`/`504` server-fault range). A transport failure is
+    /// retryable when its class is a transient network fault (a timeout,
+    /// connection failure, request-layer failure, or unclassified transport
+    /// error) rather than a deterministic decode, body, builder, status, or
+    /// oversize-response failure. Validation, serialization,
+    /// signing-scheme, transform, hash-mismatch, host-policy, core, and
+    /// cancellation faults are never retryable.
+    ///
+    /// This is the same verdict the SDK's own transport retry loop reaches, so
+    /// a consumer that drives its own retry loop over a returned error does not
+    /// re-derive the retryable-status set. Pair it with
+    /// [`OrderbookError::backoff_hint`] for the suggested wait before the next
+    /// attempt.
+    #[must_use]
+    pub const fn is_retryable(&self) -> bool {
+        match self {
+            Self::Rejected { status, .. } => is_retryable_status(status.as_u16()),
+            Self::Api(error) => is_retryable_status(error.status),
+            Self::Transport { class, .. } => RetryPolicy::builder()
+                .build()
+                .should_retry_network(NetworkErrorKind::from_transport_error_class(*class)),
+            _ => false,
+        }
+    }
+
+    /// Returns the server-suggested backoff before the next attempt, when the
+    /// failing response carried a `Retry-After` header.
+    ///
+    /// The delay is parsed once, when the error is constructed, from the
+    /// response `Retry-After` header per RFC 7231 (delta-seconds or HTTP-date);
+    /// an HTTP-date in the past resolves to [`Duration::ZERO`]. Returns [`None`]
+    /// for transport failures and for responses that carried no `Retry-After`
+    /// header. A retryable error with a [`None`] hint means retry under your
+    /// own backoff policy rather than a server-pinned delay.
+    #[must_use]
+    pub fn backoff_hint(&self) -> Option<Duration> {
+        match self {
+            Self::Rejected { source, .. } => source.retry_after(),
+            Self::Api(error) => error.retry_after(),
+            _ => None,
+        }
+    }
 }
 
 impl From<serde_json::Error> for OrderbookError {
@@ -321,5 +370,94 @@ fn reqwest_error_class(error: &reqwest::Error) -> TransportErrorClass {
         TransportErrorClass::Status
     } else {
         TransportErrorClass::Other
+    }
+}
+
+#[cfg(test)]
+mod retry_classification_tests {
+    use std::time::Duration;
+
+    use cow_sdk_core::{Redacted, TransportErrorClass};
+
+    use super::OrderbookError;
+    use crate::request::{OrderbookApiError, ResponseBody};
+
+    fn api_error(status: u16, retry_after: Option<Duration>) -> OrderbookError {
+        OrderbookError::Api(Box::new(
+            OrderbookApiError::new(status, "", ResponseBody::Empty).with_retry_after(retry_after),
+        ))
+    }
+
+    fn transport(class: TransportErrorClass) -> OrderbookError {
+        OrderbookError::Transport {
+            class,
+            detail: Redacted::new(String::new()),
+        }
+    }
+
+    #[test]
+    fn retryable_statuses_classify_as_retryable() {
+        for status in [408, 425, 429, 500, 502, 503, 504] {
+            assert!(
+                api_error(status, None).is_retryable(),
+                "status {status} must be retryable"
+            );
+        }
+    }
+
+    #[test]
+    fn client_error_statuses_are_not_retryable() {
+        for status in [400, 401, 403, 404, 409, 422] {
+            assert!(
+                !api_error(status, None).is_retryable(),
+                "status {status} must not be retryable"
+            );
+        }
+    }
+
+    #[test]
+    fn transient_transport_classes_are_retryable() {
+        for class in [
+            TransportErrorClass::Timeout,
+            TransportErrorClass::Connect,
+            TransportErrorClass::Request,
+            TransportErrorClass::Other,
+        ] {
+            assert!(transport(class).is_retryable(), "{class:?} must be retryable");
+        }
+    }
+
+    #[test]
+    fn deterministic_transport_classes_are_not_retryable() {
+        for class in [
+            TransportErrorClass::Decode,
+            TransportErrorClass::Body,
+            TransportErrorClass::Builder,
+            TransportErrorClass::Status,
+        ] {
+            assert!(
+                !transport(class).is_retryable(),
+                "{class:?} must not be retryable"
+            );
+        }
+    }
+
+    #[test]
+    fn non_transport_faults_are_not_retryable() {
+        assert!(!OrderbookError::Cancelled.is_retryable());
+    }
+
+    #[test]
+    fn backoff_hint_surfaces_parsed_retry_after() {
+        assert_eq!(
+            api_error(429, Some(Duration::from_secs(120))).backoff_hint(),
+            Some(Duration::from_secs(120))
+        );
+    }
+
+    #[test]
+    fn backoff_hint_is_absent_without_a_header() {
+        assert_eq!(api_error(503, None).backoff_hint(), None);
+        assert_eq!(transport(TransportErrorClass::Timeout).backoff_hint(), None);
     }
 }

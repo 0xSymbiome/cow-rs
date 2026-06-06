@@ -248,3 +248,36 @@ fn optional_fields_are_omitted_when_absent() {
     assert_eq!(value["kind"], "invalidInput");
     assert!(value.get("field").is_none());
 }
+
+#[wasm_bindgen_test]
+fn orderbook_variant_carries_retry_hints() {
+    let value = round_trip(json!({
+        "schemaVersion": "v1",
+        "kind": "orderbook",
+        "code": "429",
+        "message": "rate limited",
+        "retryable": true,
+        "retryAfterMs": 30000
+    }));
+
+    assert_eq!(value["kind"], "orderbook");
+    assert_eq!(value["retryable"], true);
+    assert_eq!(value["retryAfterMs"], 30000);
+}
+
+#[wasm_bindgen_test]
+fn orderbook_variant_defaults_retryable_and_omits_absent_backoff() {
+    // A legacy payload without the retry fields decodes through `#[serde(default)]`:
+    // `retryable` falls back to `false` (and always serializes), while the optional
+    // `retryAfterMs` stays omitted.
+    let value = round_trip(json!({
+        "schemaVersion": "v1",
+        "kind": "orderbook",
+        "code": "400",
+        "message": "bad request"
+    }));
+
+    assert_eq!(value["kind"], "orderbook");
+    assert_eq!(value["retryable"], false);
+    assert!(value.get("retryAfterMs").is_none());
+}

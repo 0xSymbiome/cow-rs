@@ -1,7 +1,7 @@
 # WASM Surface Audit
 
 Status: Current
-Last reviewed: 2026-06-04
+Last reviewed: 2026-06-06
 Owning surface: `cow-sdk-wasm` TypeScript-callable wasm-bindgen crate, npm package layout, and JavaScript callback runtime boundary
 Refresh trigger: Changes to `crates/wasm/src/**`, wasm-pack package exports, runtime support claims, wallet callback shapes, or the `JsCallbackHttpTransport` contract
 Related docs:
@@ -52,6 +52,7 @@ vendor compatibility outside the callback contract.
 | Event decoding | `decodeSettlementLog` and `decodeEthFlowLog` turn raw settlement and eth-flow logs into typed events with no network access and fail closed on malformed input | Conforms |
 | Runtime packaging | Public imports use facade package exports; Cloudflare uses the web-target package subpaths | Conforms |
 | Error posture | `WasmError` preserves typed redaction before diagnostics reach JavaScript | Conforms |
+| Retry hint | The `orderbook` variant carries `retryable` plus an optional `retryAfterMs`, projecting the native retry verdict to JavaScript | Conforms |
 
 ## Current Contract
 

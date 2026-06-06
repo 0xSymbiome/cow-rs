@@ -3,7 +3,7 @@ use std::{future::Future, sync::Arc, time::Duration};
 use cow_sdk_core::{HttpTransport, Redacted, TransportError};
 use cow_sdk_transport_policy::{
     AttemptOutcome as RetryOutcome, LimiterKey, RequestRateLimiter, RetryPolicy, RetrySignal,
-    run_with_retry,
+    retry_after_from_headers, run_with_retry,
 };
 use http::header::{ACCEPT, CONTENT_TYPE, HeaderMap};
 use serde::de::DeserializeOwned;
@@ -61,10 +61,16 @@ pub struct OrderbookApiError {
     /// Decoded response body captured from the error response.
     pub body: Redacted<ResponseBody>,
     message: Redacted<String>,
+    /// Server-suggested backoff parsed from the `Retry-After` response header,
+    /// when one was present on the failing response.
+    retry_after: Option<Duration>,
 }
 
 impl OrderbookApiError {
     /// Creates a typed API error from status metadata and a decoded body.
+    ///
+    /// The resulting error carries no `Retry-After` hint; attach one parsed
+    /// from the response headers with [`OrderbookApiError::with_retry_after`].
     #[must_use]
     pub fn new(status: u16, status_text: impl Into<String>, body: ResponseBody) -> Self {
         let status_text = status_text.into();
@@ -84,7 +90,27 @@ impl OrderbookApiError {
             status_text: Redacted::new(status_text),
             body: Redacted::new(body),
             message: Redacted::new(message),
+            retry_after: None,
         }
+    }
+
+    /// Returns this error annotated with a parsed `Retry-After` backoff hint.
+    ///
+    /// `retry_after` is the resolved delay from the failing response's
+    /// `Retry-After` header (see
+    /// [`cow_sdk_transport_policy::retry_after_from_headers`]), or [`None`]
+    /// when the server sent no hint.
+    #[must_use]
+    pub const fn with_retry_after(mut self, retry_after: Option<Duration>) -> Self {
+        self.retry_after = retry_after;
+        self
+    }
+
+    /// Returns the server-suggested backoff parsed from the `Retry-After`
+    /// response header, when one was present on the failing response.
+    #[must_use]
+    pub const fn retry_after(&self) -> Option<Duration> {
+        self.retry_after
     }
 }
 
@@ -696,7 +722,15 @@ where
                         record_span_status(response.status);
                         let status = response.status;
                         let body = response.decoded_body();
-                        let error = OrderbookApiError::new(status, response.status_text, body);
+                        // Resolve the server `Retry-After` hint while the
+                        // response headers are still in scope, then attach it to
+                        // the terminal error so a caller can read the suggested
+                        // backoff after the retry budget is exhausted. The retry
+                        // driver computes its own clock-injected backoff and does
+                        // not depend on this value.
+                        let retry_after = retry_after_from_headers(&headers);
+                        let error = OrderbookApiError::new(status, response.status_text, body)
+                            .with_retry_after(retry_after);
                         RetryOutcome::Failure {
                             error: error.into(),
                             signal: RetrySignal::HttpStatus { status, headers },

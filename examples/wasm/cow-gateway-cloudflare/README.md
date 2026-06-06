@@ -31,7 +31,11 @@ and executes the tests in the Cloudflare runtime pool.
 - `GET /health` — initializes the wasm module once per isolate and reports the
   supported chain IDs.
 - `POST /quote` — reads an `OrderQuoteRequestInput`, calls
-  `OrderBookClient.getQuote`, and returns the quote.
+  `OrderBookClient.getQuote`, and returns the quote. On an upstream failure it
+  returns a structured error: a retryable orderbook failure (one the SDK retried
+  and exhausted, such as a rate limit or a server-fault status) becomes a `503`
+  with a `Retry-After` header derived from the SDK's `retryAfterMs` hint, and
+  every other failure becomes a `502`.
 
 ## How it maps to the SDK
 
@@ -57,6 +61,21 @@ does not model — observability, caching, rate-limiting, or a gateway-level aut
 header. Setting `COW_TRACE=1` turns on the example's callback transport, which
 logs one structured line per outbound request and **still delegates to the platform
 `fetch`** (it does not re-implement HTTP).
+
+### Relaying upstream backoff
+
+The SDK retries transient orderbook failures internally; when it exhausts that
+budget it surfaces a typed `WasmError`. The `orderbook` variant carries
+`retryable` and an optional `retryAfterMs` (parsed from the orderbook's
+`Retry-After` header), so the gateway can relay a retryable failure as a `503`
+with a `Retry-After` header instead of hiding it behind a generic `502`:
+
+```ts
+catch (error) {
+  // 503 + Retry-After when error.kind === "orderbook" && error.retryable
+  return upstreamErrorResponse(error);
+}
+```
 
 ## Configuration
 

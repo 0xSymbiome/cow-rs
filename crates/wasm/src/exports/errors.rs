@@ -2,6 +2,8 @@
 use cow_sdk_app_data::AppDataError;
 #[cfg(any(feature = "orderbook", feature = "trading"))]
 use cow_sdk_core::ErrorClass;
+#[cfg(any(feature = "orderbook", feature = "trading"))]
+use std::time::Duration;
 use cow_sdk_core::{
     Cancelled, REDACTED_PLACEHOLDER, Redacted, TransportError, redact_response_body,
 };
@@ -115,6 +117,17 @@ pub enum WasmError {
         category: Option<OrderBookRejectionCategoryDto>,
         /// Redacted message.
         message: String,
+        /// Whether retrying the same request may succeed. The SDK retried
+        /// internally and exhausted its budget, so `true` means the failure is
+        /// transient (a rate limit or server-fault status) and a later retry
+        /// under your own backoff may succeed; `false` means the request was
+        /// rejected on its merits and resubmitting it unchanged will not.
+        #[serde(default)]
+        retryable: bool,
+        /// Server-suggested wait before the next attempt, in milliseconds,
+        /// parsed from the response `Retry-After` header when one was present.
+        #[serde(skip_serializing_if = "Option::is_none")]
+        retry_after_ms: Option<u32>,
     },
     /// Subgraph failure.
     Subgraph {
@@ -408,6 +421,10 @@ impl From<SigningError> for WasmError {
 #[cfg(feature = "orderbook")]
 impl From<OrderbookError> for WasmError {
     fn from(value: OrderbookError) -> Self {
+        // Resolve the retry verdict and backoff hint once, before the match
+        // consumes the error, so both `Orderbook` construction sites carry them.
+        let retryable = value.is_retryable();
+        let retry_after_ms = backoff_hint_ms(value.backoff_hint());
         match value {
             OrderbookError::Transport { class, detail } => Self::Transport {
                 schema_version: SchemaVersion::V1,
@@ -425,6 +442,8 @@ impl From<OrderbookError> for WasmError {
                 code: Some(status.as_u16().to_string()),
                 category: Some(rejection.category().into()),
                 message: orderbook_rejection_message(status.as_u16(), rejection.to_string()),
+                retryable,
+                retry_after_ms,
             },
             // A content-addressed hash mismatch is a bad-request / caller-input
             // fault (the orderbook service rejects it with HTTP 400), so it
@@ -464,10 +483,19 @@ impl From<OrderbookError> for WasmError {
                     code: orderbook_status_code(&error),
                     category: None,
                     message: orderbook_message(error.to_string()),
+                    retryable,
+                    retry_after_ms,
                 },
             },
         }
     }
+}
+
+/// Converts a parsed `Retry-After` backoff to whole milliseconds for the JS
+/// surface, dropping a value that exceeds the `u32` millisecond range.
+#[cfg(any(feature = "orderbook", feature = "trading"))]
+fn backoff_hint_ms(backoff: Option<Duration>) -> Option<u32> {
+    backoff.and_then(|delay| u32::try_from(delay.as_millis()).ok())
 }
 
 /// Lifts the HTTP status from an orderbook API error into a structured `code`,
@@ -535,6 +563,8 @@ impl From<TradingError> for WasmError {
                     code: None,
                     category: None,
                     message: orderbook_message(error.to_string()),
+                    retryable: error.is_retryable(),
+                    retry_after_ms: backoff_hint_ms(error.backoff_hint()),
                 },
             },
         }

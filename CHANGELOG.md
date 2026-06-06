@@ -14,6 +14,24 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Added
 
+- `OrderbookError` exposes two retry-decision accessors next to `class()`:
+  `is_retryable() -> bool` reports whether retrying the same request may succeed
+  (a structured non-2xx response keys off the retained HTTP status — the
+  `408`/`425`/`429`/`500`/`502`/`503`/`504` set — and a transport failure keys
+  off its transient-versus-deterministic class), and
+  `backoff_hint() -> Option<Duration>` returns the server-suggested wait parsed
+  from the failing response's `Retry-After` header (RFC 7231 delta-seconds or
+  HTTP-date). The verdict matches the SDK's own transport retry loop, so a
+  consumer that drives its own retry loop over a returned error need not
+  re-derive the retryable-status set. `TradingError` and the facade `SdkError`
+  delegate both accessors to the wrapped orderbook error, mirroring the existing
+  `class()` delegation. `cow-sdk-transport-policy` adds the supporting
+  `retry_after_from_headers` helper, which resolves a `Retry-After` header
+  against the wasm-safe wall clock. The TypeScript-callable `WasmError`'s
+  `orderbook` variant projects the same verdict to JavaScript as `retryable`
+  plus an optional `retryAfterMs`, and the Cloudflare Worker gateway example
+  relays a retryable upstream failure as a `503` with a `Retry-After` header.
+  Governed by [ADR 0060](docs/adr/0060-uniform-error-classification.md).
 - `cow-sdk-test` is a new published crate of in-memory test doubles for the
   SDK's public trait seams, so a downstream application can test its CoW
   Protocol integration without a live orderbook, RPC endpoint, or wallet — the

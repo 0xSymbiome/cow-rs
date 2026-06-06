@@ -556,7 +556,7 @@ export type Hash32 = string;
 /**
  * JS-visible typed error envelope for every wasm export.
  */
-export type WasmError = { kind: "invalidInput"; schemaVersion: SchemaVersion; message: string; field?: string } | { kind: "unknownEnumValue"; schemaVersion: SchemaVersion; message: string; field: string; value: string } | { kind: "unsupportedChain"; schemaVersion: SchemaVersion; message: string; chainId: number } | { kind: "walletRequest"; schemaVersion: SchemaVersion; method: string; code?: number; message: string; data?: Value } | { kind: "walletTimeout"; schemaVersion: SchemaVersion; message: string; timeoutMs: number } | { kind: "transport"; schemaVersion: SchemaVersion; class: string; message: string; status?: number; headers?: [string, string][]; body?: string } | { kind: "orderbook"; schemaVersion: SchemaVersion; code?: string; category?: OrderBookRejectionCategoryDto; message: string } | { kind: "subgraph"; schemaVersion: SchemaVersion; message: string } | { kind: "signing"; schemaVersion: SchemaVersion; message: string } | { kind: "appData"; schemaVersion: SchemaVersion; class?: string; message: string } | { kind: "forbiddenInteraction"; schemaVersion: SchemaVersion; message: string; target: string; reason: string } | { kind: "cancelled"; schemaVersion: SchemaVersion; message: string } | { kind: "internal"; schemaVersion: SchemaVersion; message: string } | { kind: "__unknown"; schemaVersion: SchemaVersion; message: string; raw: Value };
+export type WasmError = { kind: "invalidInput"; schemaVersion: SchemaVersion; message: string; field?: string } | { kind: "unknownEnumValue"; schemaVersion: SchemaVersion; message: string; field: string; value: string } | { kind: "unsupportedChain"; schemaVersion: SchemaVersion; message: string; chainId: number } | { kind: "walletRequest"; schemaVersion: SchemaVersion; method: string; code?: number; message: string; data?: Value } | { kind: "walletTimeout"; schemaVersion: SchemaVersion; message: string; timeoutMs: number } | { kind: "transport"; schemaVersion: SchemaVersion; class: string; message: string; status?: number; headers?: [string, string][]; body?: string } | { kind: "orderbook"; schemaVersion: SchemaVersion; code?: string; category?: OrderBookRejectionCategoryDto; message: string; retryable?: boolean; retryAfterMs?: number } | { kind: "subgraph"; schemaVersion: SchemaVersion; message: string } | { kind: "signing"; schemaVersion: SchemaVersion; message: string } | { kind: "appData"; schemaVersion: SchemaVersion; class?: string; message: string } | { kind: "forbiddenInteraction"; schemaVersion: SchemaVersion; message: string; target: string; reason: string } | { kind: "cancelled"; schemaVersion: SchemaVersion; message: string } | { kind: "internal"; schemaVersion: SchemaVersion; message: string } | { kind: "__unknown"; schemaVersion: SchemaVersion; message: string; raw: Value };
 
 /**
  * Jitter strategy accepted by JS client constructors.
@@ -2695,10 +2695,10 @@ export interface InitOutput {
     readonly tradingclient_postSwapOrderWithEip1271: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
     readonly validateAppDataDoc: (a: number, b: number) => void;
     readonly wasmVersion: (a: number) => void;
-    readonly __wasm_bindgen_func_elem_6560: (a: number, b: number, c: number, d: number) => void;
     readonly __wasm_bindgen_func_elem_6568: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1373: (a: number, b: number, c: number) => number;
-    readonly __wasm_bindgen_func_elem_5794: (a: number, b: number) => void;
+    readonly __wasm_bindgen_func_elem_6576: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_1375: (a: number, b: number, c: number) => number;
+    readonly __wasm_bindgen_func_elem_5802: (a: number, b: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;

@@ -16,6 +16,7 @@ use cow_sdk::{
     trading::TradingError,
 };
 use serde_json::json;
+use std::time::Duration;
 
 /// Builds the promoted `Rejected` error for a recognised rejection envelope at
 /// the given HTTP status (the `From` path derives the `StatusCode` from the
@@ -129,4 +130,60 @@ fn error_class_delegates_through_trading_and_facade() {
         SdkError::from(TradingError::Cancelled).class(),
         ErrorClass::Cancelled
     );
+}
+
+/// Builds an untyped `Api` envelope error carrying an optional parsed
+/// `Retry-After` backoff hint.
+fn api_retry_after(status: u16, retry_after: Option<Duration>) -> OrderbookError {
+    OrderbookError::Api(Box::new(
+        OrderbookApiError::new(status, "diagnostic", ResponseBody::Text("opaque".to_owned()))
+            .with_retry_after(retry_after),
+    ))
+}
+
+#[test]
+fn is_retryable_delegates_through_trading_and_facade() {
+    // Orderbook leaf: a server-fault status is retryable, a client-fault status
+    // is not, and a transient transport class is retryable.
+    assert!(api(503).is_retryable());
+    assert!(!api(400).is_retryable());
+    assert!(
+        OrderbookError::Transport {
+            class: TransportErrorClass::Timeout,
+            detail: "timed out".to_owned().into(),
+        }
+        .is_retryable()
+    );
+
+    // The facade and the composite trading error delegate to the leaf verdict.
+    assert!(SdkError::Orderbook(api(503)).is_retryable());
+    assert!(SdkError::Trading(TradingError::Orderbook(api(503))).is_retryable());
+    assert!(TradingError::Orderbook(api(429)).is_retryable());
+
+    // Non-orderbook faults are never retryable through any layer.
+    assert!(!SdkError::from(TradingError::MissingOwner).is_retryable());
+    assert!(!TradingError::Cancelled.is_retryable());
+    assert!(!SdkError::Orderbook(OrderbookError::Cancelled).is_retryable());
+}
+
+#[test]
+fn backoff_hint_delegates_through_trading_and_facade() {
+    // A parsed `Retry-After` surfaces through the leaf, the composite trading
+    // error, and the facade unchanged.
+    assert_eq!(
+        api_retry_after(429, Some(Duration::from_secs(30))).backoff_hint(),
+        Some(Duration::from_secs(30))
+    );
+    assert_eq!(
+        SdkError::Orderbook(api_retry_after(429, Some(Duration::from_secs(30)))).backoff_hint(),
+        Some(Duration::from_secs(30))
+    );
+    assert_eq!(
+        TradingError::Orderbook(api_retry_after(503, Some(Duration::from_secs(5)))).backoff_hint(),
+        Some(Duration::from_secs(5))
+    );
+
+    // No `Retry-After` header, and non-orderbook faults, carry no hint.
+    assert_eq!(SdkError::Orderbook(api_retry_after(503, None)).backoff_hint(), None);
+    assert_eq!(SdkError::from(TradingError::MissingOwner).backoff_hint(), None);
 }

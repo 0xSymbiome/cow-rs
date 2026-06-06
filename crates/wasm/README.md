@@ -133,6 +133,11 @@ app-data, signing, orderbook, subgraph, trading, wallet, cancellation, and
 internal failures keep low-cardinality fields visible while preserving the SDK's
 redaction posture for URLs, headers, response bodies, and secret-shaped details.
 
+The `orderbook` variant additionally carries a `retryable` boolean and an optional
+`retryAfterMs` backoff hint parsed from the response `Retry-After` header, mirroring
+the native `OrderbookError::is_retryable` and `backoff_hint` accessors so a
+JavaScript consumer driving its own retry loop reaches the same verdict.
+
 ## Where To Next
 
 - [Getting Started](https://github.com/cowdao-grants/cow-rs/blob/main/docs/getting-started.md)

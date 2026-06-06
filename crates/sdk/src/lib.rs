@@ -271,6 +271,37 @@ impl SdkError {
             Self::BrowserWallet(error) => error.class(),
         }
     }
+
+    /// Returns `true` when retrying the same request may succeed.
+    ///
+    /// The orderbook and trading errors carry the HTTP retry classification, so
+    /// the verdict delegates to their `is_retryable()` accessors; every other
+    /// facade variant is never retryable. Pair it with
+    /// [`SdkError::backoff_hint`] for the suggested wait before the next
+    /// attempt.
+    #[must_use]
+    pub const fn is_retryable(&self) -> bool {
+        match self {
+            Self::Orderbook(error) => error.is_retryable(),
+            Self::Trading(error) => error.is_retryable(),
+            _ => false,
+        }
+    }
+
+    /// Returns the server-suggested backoff before the next attempt, when the
+    /// failing orderbook response carried a `Retry-After` header.
+    ///
+    /// Delegates to the orderbook and trading errors; returns [`None`] for
+    /// every other facade variant and for responses without a `Retry-After`
+    /// header.
+    #[must_use]
+    pub fn backoff_hint(&self) -> Option<std::time::Duration> {
+        match self {
+            Self::Orderbook(error) => error.backoff_hint(),
+            Self::Trading(error) => error.backoff_hint(),
+            _ => None,
+        }
+    }
 }
 
 impl From<cow_sdk_core::Cancelled> for SdkError {

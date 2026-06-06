@@ -102,3 +102,52 @@ to the shared enum.
 - [ADR 0053](0053-typed-signer-rejection-classification.md)
 - [ADR 0017](0017-typed-orderbook-rejection-parser.md)
 - [ADR 0025](0025-workspace-url-redaction-convention.md)
+
+## Amendment 2026-06-06: orderbook retry-decision accessors
+
+`OrderbookError` exposes two retry-decision accessors alongside `class()`:
+
+- `is_retryable(&self) -> bool` returns whether retrying the same request may
+  succeed. A structured non-2xx response keys off the retained HTTP status
+  through `cow_sdk_transport_policy::is_retryable_status` (the `408`, `425`,
+  `429`, `500`, `502`, `503`, `504` set); a transport failure keys off its
+  `TransportErrorClass` through the shared `RetryPolicy::should_retry_network`
+  mapping. This is the same verdict the SDK transport retry loop applies, so a
+  consumer that drives its own retry loop over a returned error does not
+  re-derive the retryable-status set.
+- `backoff_hint(&self) -> Option<Duration>` returns the server-suggested wait
+  parsed from the failing response's `Retry-After` header (RFC 7231
+  delta-seconds or HTTP-date), resolved against the wasm-safe wall clock when
+  the error is constructed; an HTTP-date in the past resolves to
+  `Duration::ZERO`. It is `None` for transport failures and for responses
+  without a `Retry-After` header.
+
+`is_retryable` keys off the retained status rather than `class()` because the
+coarse partition collapses every non-429 remote response into
+`ErrorClass::Remote`, so a retryable `503` and a non-retryable `400` are
+indistinguishable at the class level; the status-precise accessor separates
+them. `class()` stays the coarse telemetry bucket and is unchanged.
+
+`OrderbookApiError` carries the parsed `Retry-After` so both the `Rejected` and
+`Api` promotion paths expose it. The value is resolved through
+`cow_sdk_transport_policy::retry_after_from_headers` while the response headers
+are in scope, then attached to the error; the transport retry loop computes its
+own clock-injected backoff and does not depend on the stored value.
+
+`TradingError` and the facade `SdkError` delegate both accessors to the wrapped
+orderbook error and return `false` / `None` for every non-orderbook variant,
+mirroring the `class()` delegation so the verdict is identical whether a caller
+holds the facade error or a bare leaf error.
+
+The accessor names follow the established Rust transport-error convention — an
+`is_retryable` predicate plus a backoff hint, as on `alloy`'s transport error —
+rather than a bespoke name. Anchored additionally by
+[ADR 0041](0041-transport-policy-l3-layering.md) (transport-policy layering) and
+[ADR 0010](0010-runtime-neutral-async-and-transport-posture.md) (runtime-neutral
+transport).
+
+The TypeScript-callable `cow-sdk-wasm` surface projects the same verdict to
+JavaScript: the `WasmError` `orderbook` variant carries a `retryable` boolean
+(always serialised) and an optional `retryAfterMs`, populated from these
+accessors so a JavaScript consumer reaches the identical decision without
+re-deriving the retryable-status set.

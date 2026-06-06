@@ -84,6 +84,58 @@ function gatewayTransport(env: WorkerEnv): HttpTransportConfig {
   return { kind: "fetch" };
 }
 
+// The SDK throws a typed `WasmError` discriminated union, which crosses the wasm
+// boundary as a plain object (not an `Error` instance). The package facade does
+// not re-export that type — errors are thrown, not constructed — so a consumer
+// narrows structurally on the variant it cares about. Here that is the
+// `orderbook` variant's retry surface.
+interface RetryableOrderbookError {
+  kind: "orderbook";
+  message: string;
+  retryable: boolean;
+  retryAfterMs?: number;
+}
+
+function isRetryableOrderbookError(value: unknown): value is RetryableOrderbookError {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    (value as { kind?: unknown }).kind === "orderbook" &&
+    (value as { retryable?: unknown }).retryable === true
+  );
+}
+
+function errorMessage(value: unknown): string {
+  if (value instanceof Error) {
+    return value.message;
+  }
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as { message?: unknown }).message === "string"
+  ) {
+    return (value as { message: string }).message;
+  }
+  return "upstream quote request failed";
+}
+
+// Maps an SDK failure to a gateway response. The SDK already retried the request
+// internally and exhausted its budget, so an orderbook error it reports as
+// `retryable` is transient (a rate limit or a server-fault status): the gateway
+// relays it as a 503 with a `Retry-After` header derived from the upstream
+// `retryAfterMs` hint when present, and lets the caller back off. Everything
+// else is a failure that resubmitting unchanged will not fix, so it stays a 502.
+export function upstreamErrorResponse(error: unknown): Response {
+  if (isRetryableOrderbookError(error)) {
+    const headers: Record<string, string> = {};
+    if (typeof error.retryAfterMs === "number") {
+      headers["retry-after"] = String(Math.ceil(error.retryAfterMs / 1000));
+    }
+    return Response.json({ error: error.message, retryable: true }, { status: 503, headers });
+  }
+  return Response.json({ error: errorMessage(error) }, { status: 502 });
+}
+
 export function createOrderBookClient(env: WorkerEnv): OrderBookClient {
   return new OrderBookClient({
     chainId: Number.parseInt(env.COW_CHAIN_ID ?? "1", 10),
@@ -119,9 +171,9 @@ export default {
         return Response.json(quote);
       } catch (error) {
         // The orderbook rejected the request, timed out, or the transport failed.
-        // A gateway answers with a structured upstream error, not an opaque 500.
-        const message = error instanceof Error ? error.message : "upstream quote request failed";
-        return Response.json({ error: message }, { status: 502 });
+        // A gateway answers with a structured upstream error, not an opaque 500,
+        // and relays a retryable failure as a 503 with `Retry-After`.
+        return upstreamErrorResponse(error);
       } finally {
         // Release the wasm-held client resources for this request.
         client.dispose();

@@ -39,7 +39,7 @@ pub use policy::{
 pub use rate_limit::{DEFAULT_INTERVAL_LABEL, DEFAULT_TOKENS_PER_INTERVAL};
 pub use rate_limit::{LimiterScope, RequestRateLimiter, RequestRateLimiterBuilder};
 pub use retry::{DEFAULT_MAX_ATTEMPTS, RetryPolicy, RetryPolicyBuilder};
-pub use retry_after::{RetryAfter, parse_retry_after};
+pub use retry_after::{RetryAfter, parse_retry_after, retry_after_from_headers};
 pub use runner::{AttemptOutcome, LimiterKey, RetrySignal, run_with_retry};
 pub use status::{
     BAD_GATEWAY, GATEWAY_TIMEOUT, INTERNAL_SERVER_ERROR, REQUEST_TIMEOUT, RETRYABLE_STATUSES,

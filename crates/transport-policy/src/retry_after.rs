@@ -93,3 +93,61 @@ fn unix_timestamp(time: SystemTime) -> Option<i64> {
         .try_into()
         .ok()
 }
+
+/// Resolves the `Retry-After` delay carried by a set of response headers.
+///
+/// Scans `headers` for a `Retry-After` field name (ASCII case-insensitive) and
+/// parses its value with [`parse_retry_after`] against the wasm-safe wall clock
+/// ([`crate::system_now`]). Returns [`None`] when no `Retry-After` header is
+/// present or its value does not parse; an HTTP-date in the past resolves to
+/// [`Duration::ZERO`].
+///
+/// This is the consumer-facing accessor for surfacing a server backoff hint on
+/// a returned error. The retry driver computes its own clock-injected backoff
+/// internally and does not use this helper.
+#[must_use]
+pub fn retry_after_from_headers(headers: &[(String, String)]) -> Option<Duration> {
+    headers
+        .iter()
+        .find(|(name, _)| name.eq_ignore_ascii_case("retry-after"))
+        .and_then(|(_, value)| parse_retry_after(value, crate::system_now()))
+        .map(RetryAfter::delay)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::time::Duration;
+
+    use super::retry_after_from_headers;
+
+    #[test]
+    fn absent_header_resolves_to_none() {
+        assert_eq!(retry_after_from_headers(&[]), None);
+        let headers = [("content-type".to_owned(), "application/json".to_owned())];
+        assert_eq!(retry_after_from_headers(&headers), None);
+    }
+
+    #[test]
+    fn delta_seconds_resolves_without_a_clock_dependency() {
+        let headers = [("Retry-After".to_owned(), "120".to_owned())];
+        assert_eq!(
+            retry_after_from_headers(&headers),
+            Some(Duration::from_secs(120))
+        );
+    }
+
+    #[test]
+    fn header_name_match_is_case_insensitive() {
+        let headers = [("retry-after".to_owned(), "5".to_owned())];
+        assert_eq!(
+            retry_after_from_headers(&headers),
+            Some(Duration::from_secs(5))
+        );
+    }
+
+    #[test]
+    fn unparseable_value_resolves_to_none() {
+        let headers = [("retry-after".to_owned(), "soon".to_owned())];
+        assert_eq!(retry_after_from_headers(&headers), None);
+    }
+}

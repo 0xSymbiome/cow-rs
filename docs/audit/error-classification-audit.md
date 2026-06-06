@@ -1,13 +1,14 @@
 # Error Classification Audit
 
 Status: Current
-Last reviewed: 2026-05-31
-Owning surface: the `class()` accessors on the `cow-sdk` error family and the shared `cow_sdk_core::ErrorClass`
-Refresh trigger: a new `ErrorClass` bucket; a new error type aggregated by `cow_sdk::SdkError`; a change to any type's `class()` mapping; or a new error variant whose class differs from its type's existing default arm
+Last reviewed: 2026-06-06
+Owning surface: the `class()`, `is_retryable()`, and `backoff_hint()` accessors on the `cow-sdk` error family and the shared `cow_sdk_core::ErrorClass`
+Refresh trigger: a new `ErrorClass` bucket; a new error type aggregated by `cow_sdk::SdkError`; a change to any type's `class()` mapping; a change to the `is_retryable()` / `backoff_hint()` mapping or the retained `Retry-After` capture; or a new error variant whose class or retry verdict differs from its type's existing default arm
 Related docs:
 - [ADR 0060](../adr/0060-uniform-error-classification.md)
 - [ADR 0053](../adr/0053-typed-signer-rejection-classification.md)
 - [ADR 0017](../adr/0017-typed-orderbook-rejection-parser.md)
+- [ADR 0041](../adr/0041-transport-policy-l3-layering.md)
 
 ## Scope
 
@@ -18,7 +19,11 @@ This audit covers:
 - the `const fn class(&self) -> ErrorClass` accessor on each facade-family
   error type (`CoreError`, `AppDataError`, `SigningError`, `ContractsError`,
   `OrderbookError`, `TradingError`, `BrowserWalletError`)
-- the facade delegation performed by `SdkError::class()`
+- the `OrderbookError::is_retryable()` and `OrderbookError::backoff_hint()`
+  retry-decision accessors, the `Retry-After` value retained on
+  `OrderbookApiError`, and the facade and trading delegation of both accessors
+- the facade delegation performed by `SdkError::class()`,
+  `SdkError::is_retryable()`, and `SdkError::backoff_hint()`
 
 It does not cover the native Alloy adapter error classes
 (`ProviderErrorClass`, `SignerErrorClass`, `AlloyClientErrorClass`), which keep
@@ -33,7 +38,10 @@ convention because their taxonomies differ from the facade family.
 | Per-type accessors | Every facade-family error type exposes `const fn class(&self) -> ErrorClass` | Conforms |
 | Facade delegation | `SdkError::class()` delegates to each leaf accessor and holds no classification logic of its own | Conforms |
 | Composite granularity | `TradingError::class()` delegates to the wrapped error, so a wrapped 429 orderbook rejection stays `RateLimited` | Conforms |
-| Redaction posture | Classification reads only typed discriminants; it renders no credential-bearing content (ADR 0025) | Conforms |
+| Retry verdict | `OrderbookError::is_retryable()` keys off the retained HTTP status (the retryable set) for structured responses and the transient transport-class mapping for transport failures | Conforms |
+| Backoff hint | `OrderbookError::backoff_hint()` surfaces the `Retry-After` parsed from the failing response, and is `None` for transport failures and headerless responses | Conforms |
+| Retry delegation | `TradingError` and `SdkError` delegate `is_retryable()` / `backoff_hint()` to the wrapped orderbook error and return `false` / `None` for non-orderbook variants | Conforms |
+| Redaction posture | Classification and retry accessors read only typed discriminants and a parsed delay; they render no credential-bearing content (ADR 0025) | Conforms |
 
 ## Current Contract
 
@@ -56,15 +64,39 @@ accessors. `SdkError::class()` is a pure delegation over the seven leaf
 accessors, so the class is identical whether a caller holds the facade error or
 a bare leaf error.
 
+### Retry-decision accessors
+
+`OrderbookError::is_retryable()` returns the same verdict the SDK transport
+retry loop applies: a structured non-2xx response keys off the retained HTTP
+status through `cow_sdk_transport_policy::is_retryable_status`, and a transport
+failure keys off its `TransportErrorClass` through
+`RetryPolicy::should_retry_network`. It keys off the status rather than
+`class()` because the coarse partition collapses every non-429 remote response
+into `Remote`, so the status-precise accessor separates a retryable `503` from
+a non-retryable `400`. `OrderbookError::backoff_hint()` returns the
+`Retry-After` parsed from the failing response (delta-seconds or HTTP-date,
+resolved against the wasm-safe wall clock at error construction), retained on
+`OrderbookApiError` and exposed through both the `Rejected` and `Api` promotion
+paths; it is `None` for transport failures and headerless responses.
+`TradingError` and `SdkError` delegate both accessors to the wrapped orderbook
+error and return `false` / `None` for every non-orderbook variant. The
+TypeScript-callable `cow-sdk-wasm` surface projects the same verdict to
+JavaScript: the `WasmError` `orderbook` variant carries a `retryable` boolean
+and an optional `retryAfterMs` populated from these accessors.
+
 ## Evidence
 
 Primary implementation points:
 
 - `crates/core/src/errors.rs` (`ErrorClass`, `CoreError::class`)
 - `crates/app-data/src/errors.rs`, `crates/signing/src/errors.rs`,
-  `crates/contracts/src/errors.rs`, `crates/orderbook/src/error.rs`,
+  `crates/contracts/src/errors.rs`, `crates/orderbook/src/error.rs`
+  (`class`, `is_retryable`, `backoff_hint`),
   `crates/browser-wallet/src/error.rs`, `crates/trading/src/error.rs`
-- `crates/sdk/src/lib.rs` (`SdkError::class` delegation)
+- `crates/orderbook/src/request.rs` (`OrderbookApiError` `Retry-After` capture)
+- `crates/transport-policy/src/retry_after.rs` (`retry_after_from_headers`)
+- `crates/sdk/src/lib.rs` (`SdkError` `class` / `is_retryable` / `backoff_hint`
+  delegation)
 
 Primary regression coverage:
 
@@ -72,10 +104,17 @@ Primary regression coverage:
 - `crates/sdk/tests/error_class_contract.rs::error_class_delegates_through_trading_and_facade`
 - `crates/sdk/tests/error_class_contract.rs::exhausted_retry_429_classifies_as_rate_limited`
 - `crates/sdk/tests/error_class_contract.rs::non_429_remote_responses_stay_remote`
+- `crates/sdk/tests/error_class_contract.rs::is_retryable_delegates_through_trading_and_facade`
+- `crates/sdk/tests/error_class_contract.rs::backoff_hint_delegates_through_trading_and_facade`
+- `crates/orderbook/src/error.rs` retry-classification unit tests
+- `crates/transport-policy/src/retry_after.rs` `Retry-After` header tests
+- `crates/wasm/tests/wasm_error_abi_contract.rs::orderbook_variant_carries_retry_hints`
 
 Validation surface:
 
 ```text
 cargo test -p cow-sdk --test error_class_contract --all-features
+cargo test -p cow-sdk-orderbook --lib
+cargo test -p cow-sdk-transport-policy --lib
 cargo check-enum-policy
 ```

@@ -1,6 +1,7 @@
 use cow_sdk_app_data::AppDataError;
 use cow_sdk_contracts::{ContractsError, SigningScheme};
 use std::fmt;
+use std::time::Duration;
 
 use cow_sdk_core::{
     AppCodeError, Cancelled, ChainId, CoreError, CowEnv, ErrorClass, Redacted, ValidationReason,
@@ -195,6 +196,34 @@ impl TradingError {
             // client-rejection, numeric, and input failures plus future
             // additive variants are caller-side validation failures.
             _ => ErrorClass::Validation,
+        }
+    }
+
+    /// Returns `true` when retrying the same request may succeed.
+    ///
+    /// Only a wrapped orderbook error carries HTTP retry classification, so the
+    /// verdict delegates to [`OrderbookError::is_retryable`]; every other
+    /// trading fault (caller-side validation, signing, configuration, and
+    /// cancellation) is never retryable. Pair it with
+    /// [`TradingError::backoff_hint`] for the suggested wait.
+    #[must_use]
+    pub const fn is_retryable(&self) -> bool {
+        match self {
+            Self::Orderbook(error) => error.is_retryable(),
+            _ => false,
+        }
+    }
+
+    /// Returns the server-suggested backoff before the next attempt, when a
+    /// wrapped orderbook response carried a `Retry-After` header.
+    ///
+    /// Delegates to [`OrderbookError::backoff_hint`]; returns [`None`] for every
+    /// non-orderbook trading fault.
+    #[must_use]
+    pub fn backoff_hint(&self) -> Option<Duration> {
+        match self {
+            Self::Orderbook(error) => error.backoff_hint(),
+            _ => None,
         }
     }
 }
