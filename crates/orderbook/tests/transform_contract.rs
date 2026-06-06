@@ -40,51 +40,15 @@ where
 }
 
 #[test]
-fn order_fixture_matches_openapi_inventory() {
-    let (order, _, _) = assert_fixture_fields_roundtrip::<Order>(
-        "order_with_full_metadata.json",
-        include_str!("../../../parity/fixtures/orderbook/order_with_full_metadata.json"),
-        &[
-            "appData",
-            "appDataHash",
-            "buyAmount",
-            "buyToken",
-            "buyTokenBalance",
-            "class",
-            "creationDate",
-            "ethflowData",
-            "executedBuyAmount",
-            "executedFee",
-            "executedFeeAmount",
-            "executedFeeToken",
-            "executedSellAmount",
-            "executedSellAmountBeforeFees",
-            "feeAmount",
-            "from",
-            "fullAppData",
-            "fullBalanceCheck",
-            "interactions",
-            "invalidated",
-            "isLiquidityOrder",
-            "kind",
-            "onchainOrderData",
-            "onchainUser",
-            "owner",
-            "partiallyFillable",
-            "quote",
-            "quoteId",
-            "receiver",
-            "sellAmount",
-            "sellToken",
-            "sellTokenBalance",
-            "settlementContract",
-            "signature",
-            "signingScheme",
-            "status",
-            "uid",
-            "validTo",
-        ],
-    );
+fn order_fixture_deserializes_nested_typed_accessors() {
+    // The OpenAPI coverage manifest round-trips this same fixture field for
+    // field (openapi_dto_coverage.rs), so this test pins only the typed
+    // accessors and nested deserialization the manifest comparison does not
+    // exercise.
+    let order: Order = serde_json::from_str(include_str!(
+        "../../../parity/fixtures/orderbook/order_with_full_metadata.json"
+    ))
+    .expect("order_with_full_metadata.json must deserialize");
 
     assert_eq!(
         order.settlement_contract.to_hex_string(),
@@ -107,19 +71,11 @@ fn order_fixture_matches_openapi_inventory() {
 }
 
 #[test]
-fn order_quote_response_fixture_matches_openapi_inventory() {
-    let (response, _, _) = assert_fixture_fields_roundtrip::<OrderQuoteResponse>(
-        "order_quote_response.json",
-        include_str!("../../../parity/fixtures/orderbook/order_quote_response.json"),
-        &[
-            "expiration",
-            "from",
-            "id",
-            "protocolFeeBps",
-            "quote",
-            "verified",
-        ],
-    );
+fn order_quote_response_fixture_deserializes_typed_accessors() {
+    let response: OrderQuoteResponse = serde_json::from_str(include_str!(
+        "../../../parity/fixtures/orderbook/order_quote_response.json"
+    ))
+    .expect("order_quote_response.json must deserialize");
 
     assert_eq!(response.id, Some(42));
     assert_eq!(response.protocol_fee_bps.as_deref(), Some("2"));
@@ -130,24 +86,11 @@ fn order_quote_response_fixture_matches_openapi_inventory() {
 }
 
 #[test]
-fn trade_fixture_matches_openapi_inventory() {
-    let (trade, _, _) = assert_fixture_fields_roundtrip::<Trade>(
-        "trade.json",
-        include_str!("../../../parity/fixtures/orderbook/trade.json"),
-        &[
-            "blockNumber",
-            "buyAmount",
-            "buyToken",
-            "executedProtocolFees",
-            "logIndex",
-            "orderUid",
-            "owner",
-            "sellAmount",
-            "sellAmountBeforeFees",
-            "sellToken",
-            "txHash",
-        ],
-    );
+fn trade_fixture_deserializes_typed_accessors() {
+    let trade: Trade = serde_json::from_str(include_str!(
+        "../../../parity/fixtures/orderbook/trade.json"
+    ))
+    .expect("trade.json must deserialize");
 
     assert_eq!(trade.sell_amount_before_fees, amount("90000000000000000"));
     assert_eq!(trade.executed_protocol_fees.as_ref().map(Vec::len), Some(1));
@@ -158,22 +101,11 @@ fn trade_fixture_matches_openapi_inventory() {
 }
 
 #[test]
-fn stored_order_quote_fixture_matches_openapi_inventory() {
-    let (quote, _, _) = assert_fixture_fields_roundtrip::<StoredOrderQuote>(
-        "stored_order_quote.json",
-        include_str!("../../../parity/fixtures/orderbook/stored_order_quote.json"),
-        &[
-            "buyAmount",
-            "feeAmount",
-            "gasAmount",
-            "gasPrice",
-            "metadata",
-            "sellAmount",
-            "sellTokenPrice",
-            "solver",
-            "verified",
-        ],
-    );
+fn stored_order_quote_fixture_deserializes_typed_accessors() {
+    let quote: StoredOrderQuote = serde_json::from_str(include_str!(
+        "../../../parity/fixtures/orderbook/stored_order_quote.json"
+    ))
+    .expect("stored_order_quote.json must deserialize");
 
     assert_eq!(quote.gas_amount, "150000");
     assert_eq!(quote.fee_amount, amount("3000000000000000"));
@@ -184,12 +116,11 @@ fn stored_order_quote_fixture_matches_openapi_inventory() {
 }
 
 #[test]
-fn onchain_order_data_fixture_matches_openapi_inventory() {
-    let (data, _, _) = assert_fixture_fields_roundtrip::<OnchainOrderData>(
-        "onchain_order_data.json",
-        include_str!("../../../parity/fixtures/orderbook/onchain_order_data.json"),
-        &["placementError", "sender"],
-    );
+fn onchain_order_data_fixture_deserializes_typed_accessors() {
+    let data: OnchainOrderData = serde_json::from_str(include_str!(
+        "../../../parity/fixtures/orderbook/onchain_order_data.json"
+    ))
+    .expect("onchain_order_data.json must deserialize");
 
     assert_eq!(
         data.sender.to_hex_string(),

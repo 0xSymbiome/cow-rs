@@ -1,7 +1,7 @@
 # Wire DTO Coverage Audit
 
 Status: Current
-Last reviewed: 2026-05-30
+Last reviewed: 2026-06-06
 Owning surface: cow-sdk-orderbook DTO coverage
 Refresh trigger: changes to `parity/openapi/services-orderbook.yml`, changes to `parity/openapi/coverage.yaml`, source-lock refreshes for the services OpenAPI, or public field changes on covered orderbook request or response DTOs
 Related docs:
@@ -166,11 +166,11 @@ Primary regression coverage:
 - `crates/orderbook/tests/order_creation_fee_deserialize.rs::order_creation_deserialize_keeps_malformed_fee_amount_parser_error`
 - `crates/orderbook/tests/order_creation_fee_deserialize.rs::quote_data_deserialize_keeps_non_zero_network_cost_fee_amount`
 - `crates/orderbook/tests/order_creation_fee_deserialize.rs::order_creation_deserialize_fee_amount_boundary_is_zero_only`
-- `crates/orderbook/tests/transform_contract.rs::order_fixture_matches_openapi_inventory`
-- `crates/orderbook/tests/transform_contract.rs::order_quote_response_fixture_matches_openapi_inventory`
-- `crates/orderbook/tests/transform_contract.rs::trade_fixture_matches_openapi_inventory`
-- `crates/orderbook/tests/transform_contract.rs::stored_order_quote_fixture_matches_openapi_inventory`
-- `crates/orderbook/tests/transform_contract.rs::onchain_order_data_fixture_matches_openapi_inventory`
+- `crates/orderbook/tests/transform_contract.rs::order_fixture_deserializes_nested_typed_accessors`
+- `crates/orderbook/tests/transform_contract.rs::order_quote_response_fixture_deserializes_typed_accessors`
+- `crates/orderbook/tests/transform_contract.rs::trade_fixture_deserializes_typed_accessors`
+- `crates/orderbook/tests/transform_contract.rs::stored_order_quote_fixture_deserializes_typed_accessors`
+- `crates/orderbook/tests/transform_contract.rs::onchain_order_data_fixture_deserializes_typed_accessors`
 - `crates/orderbook/tests/openapi_dto_coverage.rs::openapi_coverage_manifest_roundtrips_required_orderbook_dtos`
 - `scripts/parity-maintainer/tests/openapi_coverage.rs::openapi_coverage_validate_reports_structured_field_mismatches`
 - `scripts/parity-maintainer/tests/openapi_coverage.rs::openapi_coverage_validate_reports_required_field_drift`
