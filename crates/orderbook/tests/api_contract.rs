@@ -1046,7 +1046,7 @@ async fn shared_client_fans_requests_across_multiple_orderbook_instances() {
 mod recording_transport {
     use std::sync::Arc;
 
-    use cow_sdk_core::{Amount, ApiContext, HttpTransport, SupportedChainId, TransportErrorClass};
+    use cow_sdk_core::{Amount, ApiContext, HttpTransport, SupportedChainId};
     use cow_sdk_orderbook::{
         CowEnv, OrderCancellations, OrderCreation, OrderQuoteSide, OrderbookApi, OrderbookError,
         OrderbookRejection, SigningScheme,
@@ -1227,7 +1227,5 @@ mod recording_transport {
             }
             other => panic!("expected Rejected or Api error, got {other:?}"),
         }
-
-        let _ = TransportErrorClass::Status;
     }
 }

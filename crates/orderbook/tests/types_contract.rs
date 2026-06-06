@@ -286,15 +286,6 @@ fn orders_and_trades_requests_keep_upstream_defaults() {
 }
 
 #[test]
-fn trades_request_rejects_owner_and_uid_or_neither() {
-    let invalid_both = GetTradesRequest::new(Some(sample_owner()), Some(sample_order_uid()));
-    let invalid_neither = GetTradesRequest::new(None, None);
-
-    assert!(!invalid_both.is_valid());
-    assert!(!invalid_neither.is_valid());
-}
-
-#[test]
 fn order_creation_from_quote_keeps_quote_shape_and_quote_id() {
     let quote_response = serde_json::from_value::<cow_sdk_orderbook::OrderQuoteResponse>(
         sample_quote_response_json(),

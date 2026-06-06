@@ -164,9 +164,3 @@ fn try_from_signing_scheme_errors_on_pre_sign() {
         .expect_err("PreSign must not narrow to ECDSA");
     assert_eq!(err, SigningSchemeNotEcdsa(SigningScheme::PreSign));
 }
-
-#[test]
-fn signing_scheme_not_ecdsa_carries_offending_variant() {
-    let err = SigningSchemeNotEcdsa(SigningScheme::Eip1271);
-    assert_eq!(err.0, SigningScheme::Eip1271);
-}

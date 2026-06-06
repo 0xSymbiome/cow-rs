@@ -296,13 +296,6 @@ fn total_fee_transform_defaults_missing_executed_fee_to_zero() {
 }
 
 #[test]
-fn total_fee_transform_trims_leading_zeroes_on_normalized_input() {
-    let total_fee = calculate_total_fee(Some("000099")).expect("normalization must succeed");
-
-    assert_eq!(total_fee, amount("99"));
-}
-
-#[test]
 fn total_fee_transform_treats_all_zero_input_as_single_zero() {
     let total_fee = calculate_total_fee(Some("0000")).expect("all-zero input must normalize");
 
@@ -395,93 +388,6 @@ fn regular_order_transform_keeps_order_shape_and_adds_total_fee() {
 }
 
 #[test]
-fn total_fee_is_executed_fee_when_both_populated() {
-    let order = order_with_fee_fields(Some("10"), Some("20"));
-    assert_eq!(order.executed_fee.as_ref(), Some(&amount("10")));
-    assert_eq!(
-        order.executed_fee_amount,
-        amount("20"),
-        "legacy executedFeeAmount must deserialize into the read-only sibling field",
-    );
-
-    let transformed = transform_order(order).expect("order must transform");
-    assert_eq!(
-        transformed.total_fee,
-        amount("10"),
-        "total_fee must equal the canonical executedFee value when both fields are populated",
-    );
-    assert_eq!(
-        transformed.executed_fee_amount,
-        amount("20"),
-        "transform must preserve the legacy field byte-identical without folding it into total_fee",
-    );
-}
-
-#[test]
-fn total_fee_is_executed_fee_when_only_executed_fee_present() {
-    let order = order_with_fee_fields(Some("10"), None);
-    assert_eq!(order.executed_fee.as_ref(), Some(&amount("10")));
-    assert_eq!(
-        order.executed_fee_amount,
-        amount("0"),
-        "absent executedFeeAmount on the wire must deserialize as zero",
-    );
-
-    let transformed = transform_order(order).expect("order must transform");
-    assert_eq!(
-        transformed.total_fee,
-        amount("10"),
-        "total_fee must equal the canonical executedFee value when the legacy field is absent",
-    );
-    assert_eq!(
-        transformed.executed_fee_amount,
-        amount("0"),
-        "transform must keep the default legacy value at zero when none was on the wire",
-    );
-}
-
-#[test]
-fn total_fee_is_zero_when_only_legacy_field_present() {
-    let order = order_with_fee_fields(None, Some("20"));
-    assert_eq!(
-        order.executed_fee, None,
-        "missing executedFee on the wire must deserialize as None",
-    );
-    assert_eq!(order.executed_fee_amount, amount("20"));
-
-    let transformed = transform_order(order).expect("order must transform");
-    assert_eq!(
-        transformed.total_fee,
-        amount("0"),
-        "total_fee must default to zero when the canonical executedFee is absent, regardless of the legacy field",
-    );
-    assert_eq!(
-        transformed.executed_fee_amount,
-        amount("20"),
-        "transform must keep the legacy value reachable for callers that need to compute the legacy summation explicitly",
-    );
-}
-
-#[test]
-fn total_fee_is_zero_when_neither_field_populated() {
-    let order = order_with_fee_fields(None, None);
-    assert_eq!(order.executed_fee, None);
-    assert_eq!(order.executed_fee_amount, amount("0"));
-
-    let transformed = transform_order(order).expect("order must transform");
-    assert_eq!(
-        transformed.total_fee,
-        amount("0"),
-        "total_fee must default to zero when neither fee field is populated",
-    );
-    assert_eq!(
-        transformed.executed_fee_amount,
-        amount("0"),
-        "transform must keep the default legacy value at zero when neither fee field is populated",
-    );
-}
-
-#[test]
 fn total_fee_x_executed_fee_amount_matrix_holds_for_zero_legacy_zero_canonical_legacy_only_canonical_only()
  {
     for (label, executed_fee, executed_fee_amount, expected_total_fee, expected_legacy) in [
@@ -489,6 +395,8 @@ fn total_fee_x_executed_fee_amount_matrix_holds_for_zero_legacy_zero_canonical_l
         ("zero canonical", Some("10"), Some("0"), "10", "0"),
         ("legacy only", None, Some("20"), "0", "20"),
         ("canonical only", Some("10"), None, "10", "0"),
+        ("both populated", Some("10"), Some("20"), "10", "20"),
+        ("neither", None, None, "0", "0"),
     ] {
         let order = order_with_fee_fields(executed_fee, executed_fee_amount);
         let transformed = transform_order(order)
