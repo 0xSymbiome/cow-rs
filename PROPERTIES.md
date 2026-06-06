@@ -5,10 +5,8 @@ for `cow-rs`.
 
 Use it with:
 
-- [Verification Guide](docs/verification.md) for how the evidence is
-  interpreted
-- [Verification Matrix](docs/verification.md) for the crate and
-  workflow lanes that exercise each surface
+- [Verification](docs/verification.md) for how the evidence is interpreted and
+  the crate and workflow lanes that exercise each surface
 
 Executable coverage stays with the crate or browser surface that owns the
 behavior. This registry records what must remain true, who owns it, and where
