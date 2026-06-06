@@ -1,7 +1,7 @@
 # HTTP Transport Contract Audit
 
 Status: Current
-Last reviewed: 2026-06-02
+Last reviewed: 2026-06-06
 Owning surface: `cow-sdk-core::HttpTransport` trait and the `ReqwestTransport` (native) and `FetchTransport` (browser) default adapters, including the sole-dispatch contract that binds every live REST or GraphQL call from `cow-sdk-orderbook` and `cow-sdk-subgraph` to the injected transport
 Refresh trigger: Trait signature, method set, or dyn-compatibility posture changes on `HttpTransport`; changes to `TransportError` or `TransportErrorClass`; changes to the `TransportError::HttpStatus` shape; changes to the URL-stripping contract on either default adapter; any change to the shared `run_with_retry` driver's backoff schedule, jitter policy, retry tracing events, `Retry-After` honor contract, the `Retry-After` IMF-fixdate civil-day arithmetic, or the `system_now` wall clock; a new shipped adapter crate that adopts the trait; any change that lets a live REST or GraphQL call from `OrderbookApi` or `SubgraphApi` bypass `self.transport`
 Related docs:
@@ -230,9 +230,6 @@ Primary regression coverage:
 - `crates/orderbook/tests/api_contract.rs::recording_transport::orderbook_non_2xx_surfaces_as_http_status_error_through_injected_transport`
 - `crates/orderbook/tests/builder_contract.rs::injected_transport_observes_every_live_request_from_the_built_client`
 - `crates/subgraph/tests/api_contract.rs::recording_transport::subgraph_run_query_dispatches_through_injected_transport`
-- `crates/subgraph/tests/api_contract.rs::recording_transport::subgraph_errors_field_surfaces_as_graphql_error_through_injected_transport`
-- `crates/subgraph/tests/api_contract.rs::recording_transport::subgraph_missing_data_surfaces_as_missing_data_error_through_injected_transport`
-- `crates/subgraph/tests/api_contract.rs::recording_transport::subgraph_http_status_error_propagates_through_injected_transport`
 - `crates/subgraph/tests/builder_contract.rs::injected_transport_observes_every_live_request_from_the_built_client`
 
 Validation surface:

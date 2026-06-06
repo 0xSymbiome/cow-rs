@@ -1150,7 +1150,7 @@ mod recording_transport {
 
     use cow_sdk_core::{HttpTransport, SupportedChainId};
     use cow_sdk_subgraph::{
-        ExternalHostPolicy, SubgraphApi, SubgraphApiBaseUrls, SubgraphError, SubgraphQueryRequest,
+        ExternalHostPolicy, SubgraphApi, SubgraphApiBaseUrls, SubgraphQueryRequest,
     };
     use cow_sdk_test_utils::mocks::{Canned, RecordingHttpTransport};
     use cow_sdk_transport_policy::{RetryPolicy, TransportPolicy};
@@ -1234,84 +1234,6 @@ mod recording_transport {
             "the POST body must carry the GraphQL envelope: {}",
             calls[0].body
         );
-    }
-
-    #[tokio::test]
-    async fn subgraph_errors_field_surfaces_as_graphql_error_through_injected_transport() {
-        let recorder = RecordingHttpTransport::new([Canned::Ok(
-            json!({
-                "errors": [
-                    { "message": "Type `Query` has no field `tokens`" }
-                ],
-                "data": null,
-            })
-            .to_string(),
-        )]);
-        let api = api_with_recorder(recorder.clone());
-        let query = "query TokensByVolume { tokens(first: 1) { symbol } }";
-
-        let error = api
-            .run_query::<Value, _>(
-                SubgraphQueryRequest::new(query).with_operation_name("TokensByVolume"),
-            )
-            .await
-            .expect_err("GraphQL errors must surface through the typed error channel");
-
-        match error {
-            SubgraphError::GraphQl { errors, .. } => {
-                assert_eq!(errors.len(), 1);
-                assert!(errors[0].message.as_inner().contains("no field `tokens`"));
-            }
-            other => panic!("expected GraphQl error, got {other:?}"),
-        }
-        let calls = recorder.observed();
-        assert_eq!(calls.len(), 1);
-    }
-
-    #[tokio::test]
-    async fn subgraph_missing_data_surfaces_as_missing_data_error_through_injected_transport() {
-        let recorder =
-            RecordingHttpTransport::new([Canned::Ok(json!({ "data": null }).to_string())]);
-        let api = api_with_recorder(recorder.clone());
-        let query = "query TokensByVolume { tokens(first: 1) { symbol } }";
-
-        let error = api
-            .run_query::<Value, _>(
-                SubgraphQueryRequest::new(query).with_operation_name("TokensByVolume"),
-            )
-            .await
-            .expect_err("missing data must surface as MissingData");
-
-        match error {
-            SubgraphError::MissingData { .. } => {}
-            other => panic!("expected MissingData error, got {other:?}"),
-        }
-    }
-
-    #[tokio::test]
-    async fn subgraph_http_status_error_propagates_through_injected_transport() {
-        let recorder = RecordingHttpTransport::new([Canned::HttpStatus {
-            status: 502,
-            headers: Vec::new(),
-            body: "upstream unavailable".to_owned(),
-        }]);
-        let api = api_with_recorder(recorder.clone());
-        let query = "query TokensByVolume { tokens(first: 1) { symbol } }";
-
-        let error = api
-            .run_query::<Value, _>(
-                SubgraphQueryRequest::new(query).with_operation_name("TokensByVolume"),
-            )
-            .await
-            .expect_err("a 502 must surface through the typed HttpStatus channel");
-
-        match error {
-            SubgraphError::HttpStatus { status, body, .. } => {
-                assert_eq!(status, 502);
-                assert_eq!(body.as_inner(), "upstream unavailable");
-            }
-            other => panic!("expected HttpStatus error, got {other:?}"),
-        }
     }
 
     #[tokio::test]

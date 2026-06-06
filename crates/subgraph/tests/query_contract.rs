@@ -135,6 +135,41 @@ fn subgraph_query_request_can_clear_variables_without_changing_the_document() {
 }
 
 #[test]
+fn query_request_preserves_nested_variable_objects_and_arrays() {
+    // Nested variable objects and arrays survive request serialization and the
+    // round-trip back without normalization, key reordering, or field loss.
+    let variables = json!({
+        "limit": 25,
+        "offset": 100,
+        "filters": {
+            "owners": [
+                "0x1111111111111111111111111111111111111111",
+                "0x2222222222222222222222222222222222222222"
+            ],
+            "minVolume": 1000,
+            "includeInactive": false
+        },
+        "windows": [
+            { "kind": "daily", "size": 30 },
+            { "kind": "hourly", "size": 48 }
+        ]
+    });
+    let request = SubgraphQueryRequest::new(
+        "query WindowedTotals($limit: Int!, $offset: Int!, $filters: TotalsFilter!, $windows: [WindowInput!]!) { totals { orders } }",
+    )
+    .with_variables(variables.clone())
+    .with_operation_name("WindowedTotals");
+
+    let value = serde_json::to_value(&request).expect("request serialization must succeed");
+    assert_eq!(value["variables"], variables);
+
+    let roundtrip: SubgraphQueryRequest =
+        serde_json::from_value(value).expect("request roundtrip must remain stable");
+    assert_eq!(roundtrip, request);
+    assert_eq!(roundtrip.variables(), Some(&variables));
+}
+
+#[test]
 fn multi_operation_document_requires_explicit_operation_name() {
     let document = "query TokensByVolume { tokens(first: 1) { symbol } }\n\nquery TotalsForAudit { totals { orders } }";
 

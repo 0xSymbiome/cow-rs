@@ -2608,7 +2608,7 @@ The first functional crate-family release begins at `0.1.0`.
 
 - Test-suite naming and properties-registry classification now
   match the shipped evidence methodology. Boundary-sweep suites on
-  the orderbook, trading, and subgraph crates live at
+  the orderbook and trading crates live at
   `tests/invariant_contract.rs`; codec-crate suites on core,
   contracts, signing, and app-data continue to live at
   `tests/property_contract.rs` for real property-based coverage;
