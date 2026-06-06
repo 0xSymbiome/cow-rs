@@ -210,8 +210,9 @@ regression contract fails on uncommented additions.
 
 ## Off-Chain Orchestration Boundary
 
-Composable order helpers expose deterministic encoders, decoders, selectors,
-event payloads, and single-call provider operations. They do not embed
+The composable order surface is a planned additive leaf, deferred per ADR 0048.
+When it lands, its helpers stay bounded to deterministic encoders, decoders,
+selectors, event payloads, and single-call provider operations, and never embed
 production watcher loops, persistence adapters, notification integrations,
 automatic order posting, or hidden retry schedulers. Long-running orchestration
 belongs to applications and services built on top of the SDK primitives.
