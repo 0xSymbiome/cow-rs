@@ -78,19 +78,15 @@ fn order_creation_deserialize_accepts_zero_or_omitted_fee_amount() {
 
 #[test]
 fn order_creation_deserialize_rejects_non_zero_fee_amount() {
-    for fee_amount in [
-        "1",
-        "100",
-        "0001",
-        "340282366920938463463374607431768211455",
-    ] {
-        let error = deserialize_order_creation(Some(fee_amount))
-            .expect_err("non-zero feeAmount must reject during deserialization");
-        assert!(
-            error.to_string().contains(NON_ZERO_FEE_ERROR),
-            "error must carry stable substring for {fee_amount}: {error}"
-        );
-    }
+    // The all-u128 boundary proptest below covers canonical non-zero values;
+    // this pins the leading-zero string form, which the proptest cannot
+    // generate and which must reject through the guard rather than parse to zero.
+    let error = deserialize_order_creation(Some("0001"))
+        .expect_err("non-zero feeAmount must reject during deserialization");
+    assert!(
+        error.to_string().contains(NON_ZERO_FEE_ERROR),
+        "leading-zero non-zero feeAmount must carry the stable substring: {error}"
+    );
 }
 
 #[test]

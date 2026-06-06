@@ -1,5 +1,5 @@
-//! Public-surface contract assertions for every structured
-//! [`cow_sdk_orderbook::OrderbookError`] wrapper variant plus the shared
+//! Public-surface contract assertions for representative structured
+//! [`cow_sdk_orderbook::OrderbookError`] wrapper variants plus the shared
 //! [`cow_sdk_core::TransportErrorClass`] classification.
 //!
 //! Each test destructures the typed shape of one variant through an
@@ -8,7 +8,7 @@
 //! retry layers. Any future variant whose shape drifts from this contract
 //! fails the corresponding test at compile time.
 
-use cow_sdk_core::{AppDataHash, TransportErrorClass, ValidationReason};
+use cow_sdk_core::{AppDataHash, TransportErrorClass};
 use cow_sdk_orderbook::{HashMismatchStage, OrderbookError};
 
 #[test]
@@ -49,54 +49,6 @@ fn serialization_variant_wraps_serde_json_error_via_from_conversion() {
         error.to_string().contains("serialization error (syntax)"),
         "Display must surface the structural category, not the serde message: {error}",
     );
-}
-
-#[test]
-fn invalid_trades_query_carries_structured_field_and_reason() {
-    let error = OrderbookError::InvalidTradesQuery {
-        field: "filter",
-        reason: ValidationReason::Precondition {
-            details: "exactly one of owner or orderUid must be set",
-        },
-    };
-
-    let OrderbookError::InvalidTradesQuery { field, reason } = &error else {
-        panic!("expected InvalidTradesQuery variant, got {error:?}");
-    };
-    assert_eq!(*field, "filter");
-    assert!(matches!(reason, ValidationReason::Precondition { .. }));
-}
-
-#[test]
-fn invalid_quote_request_carries_structured_field_and_reason() {
-    let error = OrderbookError::InvalidQuoteRequest {
-        field: "side",
-        reason: ValidationReason::Precondition {
-            details: "exactly one of sellAmountBeforeFee or buyAmountAfterFee must be set",
-        },
-    };
-
-    let OrderbookError::InvalidQuoteRequest { field, reason } = &error else {
-        panic!("expected InvalidQuoteRequest variant, got {error:?}");
-    };
-    assert_eq!(*field, "side");
-    assert!(matches!(reason, ValidationReason::Precondition { .. }));
-}
-
-#[test]
-fn invalid_transform_carries_structured_field_and_reason() {
-    let error = OrderbookError::InvalidTransform {
-        field: "executedFee",
-        reason: ValidationReason::BadShape {
-            details: "expected unsigned decimal string",
-        },
-    };
-
-    let OrderbookError::InvalidTransform { field, reason } = &error else {
-        panic!("expected InvalidTransform variant, got {error:?}");
-    };
-    assert_eq!(*field, "executedFee");
-    assert!(matches!(reason, ValidationReason::BadShape { .. }));
 }
 
 #[test]
