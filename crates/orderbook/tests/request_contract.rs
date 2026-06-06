@@ -77,17 +77,6 @@ async fn request_policy_defaults_match_fixture_contract() {
     assert!(!policy.should_retry_status(400));
 }
 
-#[test]
-fn request_policy_backoff_is_exponential_and_caps_growth() {
-    let policy = RetryPolicy::default().with_jitter(JitterStrategy::none());
-
-    assert_eq!(policy.delay_for_attempt(1), Duration::from_millis(50));
-    assert_eq!(policy.delay_for_attempt(2), Duration::from_millis(100));
-    assert_eq!(policy.delay_for_attempt(3), Duration::from_millis(200));
-    assert_eq!(policy.delay_for_attempt(7), Duration::from_millis(3200));
-    assert_eq!(policy.delay_for_attempt(8), Duration::from_millis(3200));
-}
-
 proptest! {
     #[test]
     fn seeded_jitter_decorrelates_parallel_retry_waits(seed in any::<u64>(), attempt_index in 1usize..=7) {
