@@ -14,7 +14,7 @@ pub trait SlippageSuggestionProvider: Send + Sync {
     /// # Errors
     ///
     /// Returns [`TradingError`] when the provider cannot compute a suggestion.
-    async fn get_slippage_suggestion(
+    async fn slippage_suggestion(
         &self,
         request: SlippageToleranceRequest,
     ) -> Result<SlippageToleranceResponse, TradingError>;

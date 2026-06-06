@@ -7,7 +7,7 @@ wallet — the `tokio-test` / `tower-test` pattern, built only on the public API
 ## What it provides
 
 - **`MockOrderbook`** — an `OrderbookClient` double: a canned quote and order-uid,
-  orders registered for `get_order`, recorded requests, and injectable failures
+  orders registered for `order`, recorded requests, and injectable failures
   (`OrderbookFailure::{NotFound, RateLimited, Rejected}`).
 - **`MockSigner`** — a `Signer` double: canned signatures, transaction hash, and
   gas, with recorded sent transactions and signed messages, plus failure

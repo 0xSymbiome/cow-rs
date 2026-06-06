@@ -1,7 +1,7 @@
 //! App-data document generation, validation, and CID round-trip.
 //!
 //! Generates an app-data document (`generate_app_data_doc`), validates it
-//! (`validate_app_data_doc`), inspects it (`get_app_data_info`), and round-trips
+//! (`validate_app_data_doc`), inspects it (`app_data_info`), and round-trips
 //! the content hash through its IPFS CID (`app_data_hex_to_cid` /
 //! `cid_to_app_data_hex`). Pure codec — no transport.
 
@@ -12,7 +12,7 @@ use serde_json::json;
 use cow_sdk::AppCode;
 use cow_sdk::app_data::{
     AppDataParams, SchemaVersion, app_data_hex_to_cid, cid_to_app_data_hex, generate_app_data_doc,
-    get_app_data_info, validate_app_data_doc,
+    app_data_info, validate_app_data_doc,
 };
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let validation = validate_app_data_doc(&document);
 
     // Inspect the document: its canonical content hash and the IPFS CID it pins to.
-    let info = get_app_data_info(&document)?;
+    let info = app_data_info(&document)?;
 
     // Re-derive the CID from the hash; the report below maps it back with
     // `cid_to_app_data_hex` to show the conversion is lossless.

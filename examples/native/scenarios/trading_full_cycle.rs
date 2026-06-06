@@ -1,8 +1,8 @@
 //! The full high-level `Trading` cycle.
 //!
 //! Walks the complete facade surface against transport-mocked doubles: fetch a
-//! quote (`get_quote_results`), post a swap (`post_swap_order`), read the
-//! protocol allowance (`get_cow_protocol_allowance`), send an approval
+//! quote (`quote_results`), post a swap (`post_swap_order`), read the
+//! protocol allowance (`cow_protocol_allowance`), send an approval
 //! (`approve_cow_protocol`), and cancel off-chain (`off_chain_cancel_order`).
 //! The only scenario that also exercises `MockProvider`, for the allowance and
 //! approval reads.
@@ -40,7 +40,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // 1. Quote — signed quote results carry the merged app data.
     let quote = trading
-        .get_quote_results(sample_trade_parameters(), &signer, None)
+        .quote_results(sample_trade_parameters(), &signer, None)
         .await?;
 
     // 2. Post the swap order.
@@ -50,7 +50,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // 3. Read the protocol allowance for the sell token (through the provider).
     let allowance = trading
-        .get_cow_protocol_allowance(
+        .cow_protocol_allowance(
             &provider,
             &AllowanceParameters::new(sample_sell_token(), sample_owner()),
         )

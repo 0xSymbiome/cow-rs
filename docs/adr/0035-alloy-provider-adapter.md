@@ -88,3 +88,14 @@ constructor, not as a stable consumer API.
 **Proven by:**
 
 - [Alloy Provider Adapter Audit](../audit/alloy-provider-adapter-audit.md)
+
+## Amendment 2026-06-06: Accessor Naming Retention
+
+The `Provider` and `LogProvider` trait methods retain the `get_` prefix
+(`get_chain_id`, `get_code`, `get_transaction_receipt`, `get_storage_at`, `get_block`,
+`get_contract`, `get_logs`). This is deliberate and is the single exception to the
+accessor-naming rule in [ADR 0067](0067-idiomatic-accessor-naming.md): these methods are
+fallible keyed lookups that mirror the canonical Ethereum JSON-RPC names and the upstream
+`alloy` provider surface this adapter implements, so the prefix denotes the keyed-lookup
+`get` family rather than a field getter. Non-fetch operations on the seam stay bare
+(`call`, `read_contract`).

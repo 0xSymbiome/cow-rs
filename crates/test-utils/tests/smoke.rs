@@ -121,7 +121,7 @@ async fn recording_signer_logs_calls_and_returns_canned() {
 
     let signer = RecordingSigner::new();
     assert_eq!(
-        signer.get_address().await.unwrap().to_hex_string(),
+        signer.address().await.unwrap().to_hex_string(),
         "0x4444444444444444444444444444444444444444"
     );
 

@@ -1,5 +1,5 @@
 //! Contract suite pinning the typed `AppDataValidated` return shape for
-//! `get_app_data_info`, including the `Deref<Target = AppDataInfo>`
+//! `app_data_info`, including the `Deref<Target = AppDataInfo>`
 //! ergonomics, the near-limit `ApproachingSizeLimit` warning, the
 //! unchanged hard `AppDataError::TooLarge` path, and the property that
 //! `bytes_used` matches the stringified deterministic payload length.
@@ -13,7 +13,7 @@
 
 use cow_sdk_app_data::{
     APP_DATA_APPROACHING_LIMIT_RATIO, APP_DATA_MAX_BYTES, AppDataError, AppDataWarning,
-    get_app_data_info,
+    app_data_info,
 };
 
 const DOC_OVERHEAD: &str =
@@ -46,7 +46,7 @@ fn approaching_threshold() -> usize {
 fn payload_just_below_threshold_emits_no_warning() {
     let threshold = approaching_threshold();
     let doc = document_of_size(threshold - 1);
-    let validated = get_app_data_info(doc).expect("sub-threshold payload must succeed");
+    let validated = app_data_info(doc).expect("sub-threshold payload must succeed");
     assert_eq!(validated.validation.bytes_used, threshold - 1);
     assert!(
         validated.validation.warnings.is_empty(),
@@ -59,7 +59,7 @@ fn payload_just_below_threshold_emits_no_warning() {
 fn payload_at_threshold_emits_approaching_size_limit_warning() {
     let threshold = approaching_threshold();
     let doc = document_of_size(threshold);
-    let validated = get_app_data_info(doc).expect("at-threshold payload must succeed");
+    let validated = app_data_info(doc).expect("at-threshold payload must succeed");
     assert_eq!(validated.validation.bytes_used, threshold);
     assert_eq!(
         validated.validation.warnings.len(),
@@ -78,7 +78,7 @@ fn payload_at_threshold_emits_approaching_size_limit_warning() {
 #[test]
 fn payload_at_ceiling_still_emits_approaching_size_limit_warning() {
     let doc = document_of_size(APP_DATA_MAX_BYTES);
-    let validated = get_app_data_info(doc).expect("at-ceiling payload must still succeed");
+    let validated = app_data_info(doc).expect("at-ceiling payload must still succeed");
     assert_eq!(validated.validation.bytes_used, APP_DATA_MAX_BYTES);
     assert!(matches!(
         validated.validation.warnings.first(),
@@ -92,7 +92,7 @@ fn payload_at_ceiling_still_emits_approaching_size_limit_warning() {
 #[test]
 fn payload_above_ceiling_fails_with_too_large_and_never_constructs_the_validated_wrapper() {
     let doc = document_of_size(APP_DATA_MAX_BYTES + 1);
-    let error = get_app_data_info(doc).expect_err("oversized payload must fail");
+    let error = app_data_info(doc).expect_err("oversized payload must fail");
     match error {
         AppDataError::TooLarge {
             actual_bytes,
@@ -108,7 +108,7 @@ fn payload_above_ceiling_fails_with_too_large_and_never_constructs_the_validated
 #[test]
 fn deref_preserves_field_access_for_existing_callers() {
     let doc = document_of_size(256);
-    let validated = get_app_data_info(doc).expect("small payload must succeed");
+    let validated = app_data_info(doc).expect("small payload must succeed");
     // Field read through Deref auto-deref must match the explicit inner access.
     assert_eq!(validated.app_data_hex, validated.info.app_data_hex);
     assert_eq!(validated.cid, validated.info.cid);
@@ -123,7 +123,7 @@ fn bytes_used_equals_the_stringified_deterministic_payload_length() {
     for size in [256usize, 1024, 2048, approaching_threshold() - 1] {
         let doc = document_of_size(size);
         let expected_bytes = doc.len();
-        let validated = get_app_data_info(doc)
+        let validated = app_data_info(doc)
             .unwrap_or_else(|error| panic!("payload of {size} bytes must succeed, got {error:?}"));
         assert_eq!(
             validated.validation.bytes_used, expected_bytes,

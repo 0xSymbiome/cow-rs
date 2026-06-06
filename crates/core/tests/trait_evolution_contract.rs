@@ -18,7 +18,7 @@ fn signer_trait_shape_unchanged() {
     assert_eq!(
         trait_method_signatures(CORE_TRAITS_SOURCE, "Signer"),
         [
-            "async fn get_address(&self) -> Result<Address, Self::Error>;",
+            "async fn address(&self) -> Result<Address, Self::Error>;",
             "async fn sign_message(&self, message: &[u8]) -> Result<String, Self::Error>;",
             "async fn sign_transaction(&self, tx: &TransactionRequest) -> Result<String, Self::Error>;",
             "async fn sign_typed_data(&self, domain: &TypedDataDomain, fields: &[TypedDataField], value_json: &str) -> Result<String, Self::Error>;",
@@ -32,7 +32,7 @@ fn signer_trait_shape_unchanged() {
 fn narrow_signer_capability_traits_are_stable() {
     assert_eq!(
         trait_method_signatures(CORE_TRAITS_SOURCE, "Owner"),
-        ["async fn get_address(&self) -> Result<Address, Self::Error>;"],
+        ["async fn address(&self) -> Result<Address, Self::Error>;"],
     );
     assert_eq!(
         trait_method_signatures(CORE_TRAITS_SOURCE, "TypedDataSigner"),

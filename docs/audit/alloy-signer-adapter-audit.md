@@ -68,7 +68,7 @@ error that does not echo the input.
 
 ### Signer Methods
 
-The adapter implements `get_address`, `sign_message`,
+The adapter implements `address`, `sign_message`,
 `sign_typed_data_payload`, and the legacy flat `sign_typed_data` path.
 `sign_transaction`, `send_transaction`, and `estimate_gas` return
 `ProviderRequired` because the local signer does not own provider context.

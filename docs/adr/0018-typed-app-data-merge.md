@@ -16,7 +16,7 @@ into `cow_sdk_app_data::AppDataParams` through the crate's
 `merge_app_data_params(base, override) -> AppDataParams`, and the
 merged typed value is re-emitted as the wire document through the
 existing `cow_sdk_app_data::generate_app_data_doc` plus
-`cow_sdk_app_data::get_app_data_info` pipeline. The public helper
+`cow_sdk_app_data::app_data_info` pipeline. The public helper
 `cow_sdk_trading::merge_and_seal_app_data(base_doc,
 override_params)` returns both the `TradingAppDataInfo` and the
 typed merged `AppDataParams` so downstream validators read the

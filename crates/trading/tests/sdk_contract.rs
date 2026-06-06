@@ -58,7 +58,7 @@ async fn sdk_quote_only_works_without_signer_and_uses_owner_as_from() {
     trade.owner = Some(address(OWNER));
 
     let result = trading
-        .get_quote_only(trade, None)
+        .quote_only(trade, None)
         .await
         .expect("quote-only should succeed without signer");
     let request = orderbook
@@ -142,7 +142,7 @@ async fn sdk_builder_validates_injected_orderbook_context_and_client_context_can
     trade.env = Some(CowEnv::Staging);
 
     let result = trading
-        .get_quote_only(trade, None)
+        .quote_only(trade, None)
         .await
         .expect("injected client context should supply chain and env");
 
@@ -201,7 +201,7 @@ async fn sdk_orderbook_bound_calls_reject_env_conflicts_with_injected_client_con
     trade.env = Some(CowEnv::Staging);
 
     let error = trading
-        .get_quote_only(trade, None)
+        .quote_only(trade, None)
         .await
         .expect_err("conflicting env must fail before quoting");
 
@@ -223,7 +223,7 @@ async fn sdk_allowance_and_approval_use_call_level_chain_resolution() {
         .expect("sdk construction should succeed");
 
     let allowance = trading
-        .get_cow_protocol_allowance(
+        .cow_protocol_allowance(
             &provider,
             &cow_sdk_trading::AllowanceParameters::new(address(COW), address(OWNER))
                 .with_chain_id(SupportedChainId::Mainnet)
@@ -285,7 +285,7 @@ async fn sdk_async_allowance_and_approval_accept_async_runtime_contracts() {
         .expect("sdk construction should succeed");
 
     let allowance = trading
-        .get_cow_protocol_allowance(
+        .cow_protocol_allowance(
             &provider,
             &cow_sdk_trading::AllowanceParameters::new(address(COW), address(OWNER))
                 .with_chain_id(SupportedChainId::Mainnet)
@@ -340,7 +340,7 @@ async fn sdk_call_level_overrides_beat_trader_level_overrides_for_settlement_and
         .expect("sdk construction should succeed");
 
     let pre_sign_tx = trading
-        .get_pre_sign_transaction(
+        .pre_sign_transaction(
             &OrderTraderParameters::new(order_uid())
                 .with_chain_id(SupportedChainId::Sepolia)
                 .with_env(CowEnv::Staging)
@@ -565,7 +565,7 @@ async fn get_quote_only_returns_cancelled_when_combinator_token_fires_before_cal
     token.cancel();
 
     let error = trading
-        .get_quote_only(trade, None)
+        .quote_only(trade, None)
         .cancel_with(&token)
         .await
         .expect_err("pre-cancelled token must produce a Cancelled error");
@@ -610,7 +610,7 @@ async fn get_quote_only_combinator_aborts_an_in_flight_quote() {
     let quote_call = async {
         let _spy = spy;
         trading
-            .get_quote_only(trade, None)
+            .quote_only(trade, None)
             .cancel_with(&token_for_call)
             .await
     };

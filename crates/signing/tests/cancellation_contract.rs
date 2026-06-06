@@ -16,7 +16,7 @@ mod common;
 use cow_sdk_contracts::{OrderCancellations, SigningScheme, hash_order_cancellations};
 use cow_sdk_core::SupportedChainId;
 use cow_sdk_signing::{
-    ORDER_CANCELLATIONS_PRIMARY_TYPE, SigningError, get_domain,
+    ORDER_CANCELLATIONS_PRIMARY_TYPE, SigningError, domain,
     order_cancellations_typed_data_payload, sign_order_cancellation,
     sign_order_cancellation_with_scheme, sign_order_cancellations,
     sign_order_cancellations_with_scheme,
@@ -96,7 +96,7 @@ async fn cancellation_signing_uses_typed_data_and_ethsign_digest_paths() {
     .unwrap();
 
     let expected_digest = hash_order_cancellations(
-        &get_domain(SupportedChainId::Sepolia, None).unwrap(),
+        &domain(SupportedChainId::Sepolia, None).unwrap(),
         &OrderCancellations::new(batch_uids),
     )
     .unwrap();

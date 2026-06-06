@@ -18,7 +18,7 @@ async fn create_signer_returns_owned_handle() {
         .expect("signer handle creation should succeed");
 
     assert_eq!(
-        handle.get_address().await.unwrap().to_hex_string(),
+        handle.address().await.unwrap().to_hex_string(),
         EXPECTED_ADDRESS
     );
     assert_eq!(handle.chain_id(), u64::from(SupportedChainId::Mainnet));

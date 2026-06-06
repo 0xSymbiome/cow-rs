@@ -7,7 +7,7 @@
 
 use cow_sdk_contracts::hash_order;
 use cow_sdk_core::{Hash32, OrderData, SupportedChainId};
-use cow_sdk_signing::get_domain;
+use cow_sdk_signing::domain;
 
 /// The canonical `CoW` order signing vector shared across the signer suites.
 pub fn sample_order() -> OrderData {
@@ -16,5 +16,5 @@ pub fn sample_order() -> OrderData {
 
 /// The order digest for `order` under the mainnet `GPv2` domain.
 pub fn order_digest(order: &OrderData) -> Hash32 {
-    hash_order(&get_domain(SupportedChainId::Mainnet, None).unwrap(), order).unwrap()
+    hash_order(&domain(SupportedChainId::Mainnet, None).unwrap(), order).unwrap()
 }

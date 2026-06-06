@@ -4,8 +4,8 @@
 //! transforms.
 //!
 //! Construct an [`OrderbookApi`] with its typestate builder — `chain` then
-//! `environment` then `build` — and call typed methods such as `get_quote`,
-//! `send_order`, and `get_order`. Failures surface as [`OrderbookError`];
+//! `environment` then `build` — and call typed methods such as `quote`,
+//! `send_order`, and `order`. Failures surface as [`OrderbookError`];
 //! rejected submissions carry a categorized [`OrderbookRejection`]. On native
 //! targets `build` uses the default `reqwest` transport; on `wasm32` inject a
 //! browser transport with `transport(...)` before `build`. A runnable request
@@ -184,7 +184,7 @@ pub trait OrderbookClient: Send + Sync {
     /// # Errors
     ///
     /// Returns the underlying orderbook error from the implementation.
-    async fn get_quote(
+    async fn quote(
         &self,
         request: &types::OrderQuoteRequest,
     ) -> Result<types::OrderQuoteResponse, error::OrderbookError>;
@@ -214,7 +214,7 @@ pub trait OrderbookClient: Send + Sync {
     /// # Errors
     ///
     /// Returns the underlying orderbook error from the implementation.
-    async fn get_order(
+    async fn order(
         &self,
         order_uid: &CoreOrderUid,
     ) -> Result<types::Order, error::OrderbookError>;
@@ -246,11 +246,11 @@ impl OrderbookClient for api::OrderbookApi {
         }
     }
 
-    async fn get_quote(
+    async fn quote(
         &self,
         request: &types::OrderQuoteRequest,
     ) -> Result<types::OrderQuoteResponse, error::OrderbookError> {
-        Self::get_quote(self, request).await
+        Self::quote(self, request).await
     }
 
     async fn send_order(
@@ -267,11 +267,11 @@ impl OrderbookClient for api::OrderbookApi {
         Self::send_signed_order_cancellations(self, request).await
     }
 
-    async fn get_order(
+    async fn order(
         &self,
         order_uid: &CoreOrderUid,
     ) -> Result<types::Order, error::OrderbookError> {
-        Self::get_order(self, order_uid).await
+        Self::order(self, order_uid).await
     }
 
     async fn upload_app_data(

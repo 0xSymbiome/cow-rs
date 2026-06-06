@@ -21,7 +21,7 @@ pub const APP_DATA_MAX_BYTES: usize = 8192;
 /// callers can react before the hard [`AppDataError::TooLarge`] path fires.
 pub const APP_DATA_APPROACHING_LIMIT_RATIO: f64 = 0.75;
 
-/// Successful outcome of [`get_app_data_info`], pairing the canonical
+/// Successful outcome of [`app_data_info`], pairing the canonical
 /// [`AppDataInfo`] result with typed validation metadata.
 ///
 /// `AppDataValidated` implements [`Deref`] with
@@ -177,7 +177,7 @@ impl AppDataSource for String {
 /// Returns [`AppDataError`] if the source cannot be parsed, validation
 /// fails, the stringified payload exceeds [`APP_DATA_MAX_BYTES`], or CID
 /// conversion fails.
-pub fn get_app_data_info(source: impl AppDataSource) -> Result<AppDataValidated, AppDataError> {
+pub fn app_data_info(source: impl AppDataSource) -> Result<AppDataValidated, AppDataError> {
     let (document, app_data_content) = source.into_document_and_content(true)?;
     ensure_document_under_size_limit(&app_data_content, APP_DATA_MAX_BYTES)?;
     ensure_valid_document(&document)?;
@@ -262,27 +262,27 @@ fn ensure_valid_document(document: &AppDataDoc) -> Result<(), AppDataError> {
 ///
 /// # Errors
 ///
-/// Returns any error from [`get_app_data_info`].
-pub fn get_app_data_info_hex(source: impl AppDataSource) -> Result<String, AppDataError> {
-    Ok(get_app_data_info(source)?.info.app_data_hex)
+/// Returns any error from [`app_data_info`].
+pub fn app_data_info_hex(source: impl AppDataSource) -> Result<String, AppDataError> {
+    Ok(app_data_info(source)?.info.app_data_hex)
 }
 
 /// Returns only the CID derived from the app-data content.
 ///
 /// # Errors
 ///
-/// Returns any error from [`get_app_data_info`].
-pub fn get_app_data_cid(source: impl AppDataSource) -> Result<String, AppDataError> {
-    Ok(get_app_data_info(source)?.info.cid)
+/// Returns any error from [`app_data_info`].
+pub fn app_data_cid(source: impl AppDataSource) -> Result<String, AppDataError> {
+    Ok(app_data_info(source)?.info.cid)
 }
 
 /// Returns only the serialized app-data content.
 ///
 /// # Errors
 ///
-/// Returns any error from [`get_app_data_info`].
-pub fn get_app_data_content(source: impl AppDataSource) -> Result<String, AppDataError> {
-    Ok(get_app_data_info(source)?.info.app_data_content)
+/// Returns any error from [`app_data_info`].
+pub fn app_data_content(source: impl AppDataSource) -> Result<String, AppDataError> {
+    Ok(app_data_info(source)?.info.app_data_content)
 }
 
 /// Extracts the app-data hex digest from a supported CID.
@@ -349,12 +349,12 @@ mod tests {
             "version": "0.7.0"
         });
 
-        let info = get_app_data_info(&document).unwrap();
+        let info = app_data_info(&document).unwrap();
 
-        assert_eq!(get_app_data_info_hex(&document).unwrap(), info.app_data_hex);
-        assert_eq!(get_app_data_cid(&document).unwrap(), info.cid);
+        assert_eq!(app_data_info_hex(&document).unwrap(), info.app_data_hex);
+        assert_eq!(app_data_cid(&document).unwrap(), info.cid);
         assert_eq!(
-            get_app_data_content(&document).unwrap(),
+            app_data_content(&document).unwrap(),
             info.app_data_content
         );
         assert_eq!(digest_from_cid(&info.cid).unwrap(), info.app_data_hex);

@@ -4,12 +4,12 @@ Status: Current
 Last reviewed: 2026-05-30
 Owning surface: `cow-sdk-trading` EthFlow submission seam,
 including the `EthFlowTransaction` bundle shape, the
-`get_eth_flow_transaction` owner resolution, and the
+`eth_flow_transaction` owner resolution, and the
 `post_sell_native_currency_order` pre-HTTP call to
 `OrderBoundsValidator::validate` on the signing order.
 Refresh trigger: Changes to the `EthFlowTransaction` public
 field set or constructor signature; changes to the
-`get_eth_flow_transaction` owner resolution; any change
+`eth_flow_transaction` owner resolution; any change
 that lets the owner passed to the validator diverge from
 `tx.from` on the submission seam; any extension to
 `OrderBoundsValidator::validate` that reads a different
@@ -34,7 +34,7 @@ This audit covers:
   public `from: cow_sdk_core::Address` field
 - the `EthFlowTransaction::new` constructor and the owner
   parameter it accepts
-- the `get_eth_flow_transaction` helper and the owner
+- the `eth_flow_transaction` helper and the owner
   resolution that populates `EthFlowTransaction.from`
 - the `post_sell_native_currency_order` submission seam and its
   `OrderBoundsValidator::validate(&tx.order_to_sign, tx.from, …)` call,
@@ -54,7 +54,7 @@ or the orderbook authoritative server-side validation.
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
 | Bundle shape | `EthFlowTransaction` carries a public typed `from: Address` field populated at construction | Conforms |
-| Owner resolution | `get_eth_flow_transaction` resolves the owner through `Signer::get_address` exactly once and stores the value on the returned bundle | Conforms |
+| Owner resolution | `eth_flow_transaction` resolves the owner through `Signer::address` exactly once and stores the value on the returned bundle | Conforms |
 | Submission validation | `post_sell_native_currency_order` passes `tx.from` (the resolved owner) directly to `validate(&tx.order_to_sign, tx.from, …)`; no intermediate `OrderCreation` is built and no receiver-as-owner fallback remains | Conforms |
 | Identity on rejections | `ClientRejection::AppdataFromMismatch { appdata_signer, from }` reports the owner in `from`, not the payout receiver | Conforms |
 | EthFlow-aware invariants | The validator still fires for zero amount, same token, owner mismatch, and lifetime bounds on the EthFlow path; only the native-currency-sentinel sell-token check is skipped | Conforms |
@@ -76,8 +76,8 @@ field explicitly.
 
 ### Owner Resolution
 
-`get_eth_flow_transaction` resolves the owner through a
-single `signer.get_address().await` call near the top of the
+`eth_flow_transaction` resolves the owner through a
+single `signer.address().await` call near the top of the
 helper. The resolved value is threaded into `OrderToSignParams`
 for order-body derivation and forwarded onto the returned
 `EthFlowTransaction` bundle via the typed `from` field. No

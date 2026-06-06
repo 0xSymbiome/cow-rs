@@ -29,7 +29,7 @@ struct StaticSigner;
 impl Signer for StaticSigner {
     type Error = Infallible;
 
-    async fn get_address(&self) -> Result<Address, Self::Error> {
+    async fn address(&self) -> Result<Address, Self::Error> {
         Ok(Address::new(ADDRESS).unwrap())
     }
 
@@ -156,12 +156,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
         "surface": "cow-sdk::core::{Provider, Signer} seams accept consumer trait impls",
         "sdkProviderWithConsumerSigner": {
             "chainId": sdk_provider.get_chain_id().await?,
-            "signer": consumer_signer.get_address().await?.to_hex_string(),
+            "signer": consumer_signer.address().await?.to_hex_string(),
             "messageSignatureBytes": (consumer_signer.sign_message(b"hello").await?.len() - 2) / 2
         },
         "sdkSignerWithConsumerProvider": {
             "chainId": consumer_provider.get_chain_id().await?,
-            "signer": sdk_signer.get_address().await?.to_hex_string(),
+            "signer": sdk_signer.address().await?.to_hex_string(),
             "code": code.map(|data| data.to_hex_string()),
             "receipt": {
                 "status": receipt.status.map(|status| format!("{status:?}")),

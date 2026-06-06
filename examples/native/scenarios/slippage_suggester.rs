@@ -2,7 +2,7 @@
 //!
 //! Implements `SlippageSuggestionProvider` and wires it through
 //! `TradeAdvancedSettings::with_slippage_suggester`, then quotes with
-//! `Trading::get_quote_results` against the `cow_sdk::testing` doubles. The report
+//! `Trading::quote_results` against the `cow_sdk::testing` doubles. The report
 //! contrasts the SDK's default suggestion with the consumer-supplied one to show
 //! the seam takes effect; leaving the price quality at its default keeps the
 //! suggester in the quote path (an explicit `Fast` quality would bypass it).
@@ -32,7 +32,7 @@ struct StaticSlippageProvider {
 #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 #[cfg_attr(not(target_arch = "wasm32"), async_trait)]
 impl SlippageSuggestionProvider for StaticSlippageProvider {
-    async fn get_slippage_suggestion(
+    async fn slippage_suggestion(
         &self,
         _request: SlippageToleranceRequest,
     ) -> Result<SlippageToleranceResponse, TradingError> {
@@ -54,14 +54,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // Baseline: no suggester, so the SDK derives its own default suggestion.
     let baseline = trading
-        .get_quote_results(sample_trade_parameters(), &signer, None)
+        .quote_results(sample_trade_parameters(), &signer, None)
         .await?;
 
     // With a consumer-supplied suggester wired through the advanced settings.
     let advanced = TradeAdvancedSettings::new()
         .with_slippage_suggester(Arc::new(StaticSlippageProvider { bps: 200 }));
     let suggested = trading
-        .get_quote_results(sample_trade_parameters(), &signer, Some(&advanced))
+        .quote_results(sample_trade_parameters(), &signer, Some(&advanced))
         .await?;
 
     let report = json!({

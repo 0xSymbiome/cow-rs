@@ -34,7 +34,7 @@ transaction-building helpers that do not reuse quote-derived posting state.
 
 ### Captured Binding
 
-`get_quote_results` stores the originating orderbook runtime binding inside
+`quote_results` stores the originating orderbook runtime binding inside
 the returned `QuoteResults`. That binding captures:
 
 - `chain_id`

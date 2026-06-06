@@ -14,7 +14,7 @@ pub fn eip1271_order_verification_request(
     verification: &crate::types::Eip1271VerificationParameters,
     options: Option<&ProtocolOptions>,
 ) -> Result<cow_sdk_contracts::Eip1271VerificationRequest, TradingError> {
-    let domain = cow_sdk_signing::get_domain(chain_id, options)?;
+    let domain = cow_sdk_signing::domain(chain_id, options)?;
     let digest = cow_sdk_contracts::hash_order(&domain, order_to_sign)?;
 
     Ok(cow_sdk_contracts::Eip1271VerificationRequest::new(

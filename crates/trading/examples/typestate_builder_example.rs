@@ -11,7 +11,7 @@
 //!
 //! Chain-bound helper flows that need no app code — allowance reads, approval
 //! submission, pre-sign transaction construction, and on-chain cancellation —
-//! use the crate's free functions directly (for example `get_cow_protocol_allowance`
+//! use the crate's free functions directly (for example `cow_protocol_allowance`
 //! and `approval_transaction`), so they require no trading client at all.
 //!
 //! The example compiles without RPC credentials because the terminal used here

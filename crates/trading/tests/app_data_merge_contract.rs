@@ -7,7 +7,7 @@
 //! [`cow_sdk_trading::merge_and_seal_app_data`], and re-emits the
 //! canonical wire document through the existing
 //! [`cow_sdk_app_data::generate_app_data_doc`] /
-//! [`cow_sdk_app_data::get_app_data_info`] helpers. The pinned
+//! [`cow_sdk_app_data::app_data_info`] helpers. The pinned
 //! invariants below lock that typed pipeline to the reviewed upstream
 //! merge semantics so drift in either the typed seam or the downstream
 //! submission validator surfaces through a failing test before it
@@ -25,11 +25,11 @@ mod common;
 
 use cow_sdk_app_data::{
     AppDataParams, FlashloanHints, Hook, HookList, MetadataMap, PartnerFee, PartnerFeePolicy,
-    generate_app_data_doc, get_app_data_info,
+    generate_app_data_doc, app_data_info,
 };
 use cow_sdk_core::{Amount, AppCode, HexData, OrderKind};
 use cow_sdk_trading::{
-    ClientRejection, TradeAdvancedSettings, TradingError, get_quote_results,
+    ClientRejection, TradeAdvancedSettings, TradingError, quote_results,
     merge_and_seal_app_data, params_from_doc, post_swap_order_from_quote,
 };
 use serde_json::{Value, json};
@@ -111,7 +111,7 @@ fn sealed_base_doc(params: AppDataParams) -> Value {
     let doc = generate_app_data_doc(params);
     // Exercise the full seal pipeline so test inputs mirror the
     // quote-produced wire document byte-identically.
-    let _ = get_app_data_info(doc.clone()).expect("sealed base doc must pass app-data validation");
+    let _ = app_data_info(doc.clone()).expect("sealed base doc must pass app-data validation");
     doc
 }
 
@@ -371,7 +371,7 @@ async fn base_doc_signer_triggers_appdata_from_mismatch_when_from_differs() {
     let advanced_at_quote = TradeAdvancedSettings::new()
         .with_app_data(AppDataParams::default().with_signer(base_signer));
 
-    let quote_results = get_quote_results(
+    let quote_results = quote_results(
         &trade,
         &trader,
         &signer,
@@ -427,7 +427,7 @@ async fn partner_fee_in_advanced_settings_appdata_merges_through_to_post() {
         ),
     );
 
-    let quote_results = get_quote_results(&trade, &trader, &signer, Some(&advanced), &orderbook)
+    let quote_results = quote_results(&trade, &trader, &signer, Some(&advanced), &orderbook)
         .await
         .expect("quote with partner-fee app-data override must succeed");
     post_swap_order_from_quote(
@@ -471,7 +471,7 @@ async fn base_doc_signer_matches_from_passes_validation() {
     let advanced_at_quote = TradeAdvancedSettings::new()
         .with_app_data(AppDataParams::default().with_signer(base_signer));
 
-    let quote_results = get_quote_results(
+    let quote_results = quote_results(
         &trade,
         &trader,
         &signer,
@@ -504,7 +504,7 @@ async fn override_signer_supersedes_base_signer() {
     let advanced_at_post = TradeAdvancedSettings::new()
         .with_app_data(AppDataParams::default().with_signer(override_signer));
 
-    let quote_results_c = get_quote_results(
+    let quote_results_c = quote_results(
         &trade_c,
         &trader,
         &signer_c,
@@ -531,7 +531,7 @@ async fn override_signer_supersedes_base_signer() {
     let mut trade_a = sample_trade_parameters(OrderKind::Sell);
     trade_a.owner = Some(base_signer);
 
-    let quote_results_a = get_quote_results(
+    let quote_results_a = quote_results(
         &trade_a,
         &trader,
         &signer_a,

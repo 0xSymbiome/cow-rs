@@ -184,7 +184,7 @@ async fn orderbook_lists_support_api_key_routing_and_owner_trade_pagination() {
 
     let orders = json(
         client
-            .get_orders(
+            .orders(
                 ADDR_OWNER.to_owned(),
                 Some(PaginationOptions {
                     offset: Some(7),
@@ -197,7 +197,7 @@ async fn orderbook_lists_support_api_key_routing_and_owner_trade_pagination() {
     );
     let trades = json(
         client
-            .get_trades(
+            .trades(
                 TradesQueryInput {
                     owner: Some(ADDR_OWNER.to_owned()),
                     order_uid: None,
@@ -263,7 +263,7 @@ async fn trading_posts_swap_from_quote_and_limit_orders_through_typed_signers() 
     // `QuoteResults` serialization round-trip between `getQuote` and
     // `postSwapOrderFromQuote`, the documented host workflow.
     let quote_envelope = client
-        .get_quote(
+        .quote(
             SwapParametersInput {
                 kind: OrderKindDto::Sell,
                 owner: Some(ADDR_OWNER.to_owned()),
@@ -343,7 +343,7 @@ async fn trading_exposes_allowance_and_transaction_builders() {
 
     let allowance = json(
         client
-            .get_cow_protocol_allowance(
+            .cow_protocol_allowance(
                 AllowanceParametersInput {
                     token_address: ADDR_SELL.to_owned(),
                     owner: ADDR_OWNER.to_owned(),

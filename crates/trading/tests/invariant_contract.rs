@@ -18,7 +18,7 @@ use cow_sdk_orderbook::PriceQuality;
 use cow_sdk_trading::{
     LimitTradeParametersFromQuote, MAX_SLIPPAGE_BPS, PartnerFee, PartnerFeePolicy,
     PostTradeAdditionalParams, QuoteRequestOverride, QuoterParameters, TradeAdvancedSettings,
-    get_eth_flow_transaction, get_quote_results, suggest_slippage_bps,
+    eth_flow_transaction, quote_results, suggest_slippage_bps,
     swap_params_to_limit_order_params,
 };
 
@@ -266,7 +266,7 @@ async fn ethflow_calldata_preserves_uint256_boundary_values() {
 
         let from_quote = LimitTradeParametersFromQuote::try_from_limit(params)
             .expect("test params carry a quote id");
-        let transaction = get_eth_flow_transaction(
+        let transaction = eth_flow_transaction(
             &app_data_hash(),
             &from_quote,
             SupportedChainId::Sepolia,
@@ -357,7 +357,7 @@ async fn quote_results_preserve_generated_override_shape_across_request_and_orde
         }
         let advanced = TradeAdvancedSettings::new().with_quote_request(quote_request.clone());
 
-        let result = get_quote_results(&trade, &trader, &signer, Some(&advanced), &orderbook)
+        let result = quote_results(&trade, &trader, &signer, Some(&advanced), &orderbook)
             .await
             .expect("generated quote flow should remain deterministic");
         let request = orderbook

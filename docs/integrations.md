@@ -164,7 +164,7 @@ The traits are intentionally narrow.
 
 An async signer owns:
 
-- address resolution via `get_address`
+- address resolution via `address`
 - message signing via `sign_message`
 - transaction signing via `sign_transaction`
 - typed-data signing via `sign_typed_data` or `sign_typed_data_payload`
@@ -225,7 +225,7 @@ struct StaticSigner {
 impl Signer for StaticSigner {
     type Error = CoreError;
 
-    async fn get_address(&self) -> Result<Address, Self::Error> {
+    async fn address(&self) -> Result<Address, Self::Error> {
         Ok(self.address.clone())
     }
 
@@ -349,7 +349,7 @@ For example, the trading crate exposes allowance helpers over the provider seam:
 
 ```rust
 use cow_sdk_core::{Address, CowEnv, SupportedChainId};
-use cow_sdk_trading::get_cow_protocol_allowance;
+use cow_sdk_trading::cow_protocol_allowance;
 
 async fn read_allowance(
     provider: &StaticProvider,
@@ -357,7 +357,7 @@ async fn read_allowance(
     let token = Address::new("0xfff9976782d46cc05630d1f6ebab18b2324d6b14")?;
     let owner = Address::new("0x1111111111111111111111111111111111111111")?;
 
-    let allowance = get_cow_protocol_allowance(
+    let allowance = cow_protocol_allowance(
         provider,
         &token,
         &owner,

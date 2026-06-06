@@ -26,7 +26,7 @@ mod common;
 
 use cow_sdk_app_data::{
     AppDataDoc, AppDataError, IpfsFetchPolicy, SchemaVersion, app_data_hex_to_cid,
-    cid_to_app_data_hex, get_app_data_info, stringify_deterministic,
+    cid_to_app_data_hex, app_data_info, stringify_deterministic,
 };
 use proptest::prelude::*;
 use proptest::test_runner::FileFailurePersistence;
@@ -79,7 +79,7 @@ fn manual_canonical_json(value: &Value) -> String {
 }
 
 /// Returns a JSON value with every object field reordered recursively.
-/// The reviewed canonical-JSON algorithm and [`get_app_data_info`] must
+/// The reviewed canonical-JSON algorithm and [`app_data_info`] must
 /// produce byte-identical output on `value` and
 /// `reordered_document(value)`.
 fn reordered_document(value: &Value) -> Value {
@@ -306,7 +306,7 @@ proptest! {
         prop_assert!(rendered.contains("\\t"));
     }
 
-    /// [`get_app_data_info`] is invariant under equivalent top-level
+    /// [`app_data_info`] is invariant under equivalent top-level
     /// key orderings: permuting the root object preserves the CID, the
     /// app-data content string, and the app-data hex digest.
     #[test]
@@ -314,8 +314,8 @@ proptest! {
         document in valid_document_strategy(),
     ) {
         let reordered = reordered_document(&document);
-        let first = get_app_data_info(document).unwrap();
-        let second = get_app_data_info(reordered).unwrap();
+        let first = app_data_info(document).unwrap();
+        let second = app_data_info(reordered).unwrap();
         prop_assert_eq!(first.cid.clone(), second.cid.clone());
         prop_assert_eq!(
             first.app_data_content.clone(),

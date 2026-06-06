@@ -49,7 +49,7 @@ pub fn transaction_signature() -> String {
     ecdsa_shaped(0x33, 0x1b)
 }
 
-/// The canned quote `get_quote` returns by default: one unit sold for two,
+/// The canned quote `quote` returns by default: one unit sold for two,
 /// valid into 2100, verified.
 #[must_use]
 pub fn quote() -> OrderQuoteResponse {

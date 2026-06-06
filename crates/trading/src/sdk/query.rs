@@ -18,12 +18,12 @@ impl Trading {
             fields(
                 chain = ?params.chain_id,
                 env = ?params.env,
-                endpoint = "trading.get_order",
+                endpoint = "trading.order",
                 order_uid = %params.order_uid,
             ),
         ),
     )]
-    pub async fn get_order(
+    pub async fn order(
         &self,
         params: &OrderTraderParameters,
     ) -> Result<cow_sdk_orderbook::Order, TradingError> {
@@ -31,7 +31,7 @@ impl Trading {
 
         orderbook
             .client
-            .get_order(&params.order_uid)
+            .order(&params.order_uid)
             .await
             .map_err(Into::into)
     }

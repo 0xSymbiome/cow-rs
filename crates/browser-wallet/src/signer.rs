@@ -125,7 +125,7 @@ impl Eip1193Signer {
 impl Signer for Eip1193Signer {
     type Error = BrowserWalletError;
 
-    async fn get_address(&self) -> Result<Address, Self::Error> {
+    async fn address(&self) -> Result<Address, Self::Error> {
         self.account().await
     }
 

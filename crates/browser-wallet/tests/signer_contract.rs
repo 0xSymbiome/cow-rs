@@ -188,7 +188,7 @@ async fn ensure_expected_chain_rejects_session_chain_mismatch_on_get_address() {
         .with_expected_chain(SupportedChainId::Mainnet);
 
     let error = signer
-        .get_address()
+        .address()
         .await
         .expect_err("chain mismatch must reject before the call dispatches");
 
@@ -210,9 +210,9 @@ async fn ensure_expected_chain_accepts_matching_session_chain_id() {
         .await
         .with_expected_chain(SupportedChainId::Sepolia);
 
-    // Matching chain ids must not block the call; get_address succeeds.
+    // Matching chain ids must not block the call; address succeeds.
     let address = signer
-        .get_address()
+        .address()
         .await
         .expect("matching chain id must pass through to the wallet");
     assert_eq!(
@@ -277,7 +277,7 @@ async fn account_returns_malformed_response_when_wallet_exposes_no_account() {
         .expect("signer constructs even when wallet is disconnected");
 
     let error = signer
-        .get_address()
+        .address()
         .await
         .expect_err("disconnected wallet must surface a MalformedResponse on account()");
 
@@ -310,7 +310,7 @@ async fn account_returns_hint_when_signer_was_constructed_with_explicit_account(
 
     // The hint short-circuits any selected_account/query_accounts dispatch.
     let address = signer
-        .get_address()
+        .address()
         .await
         .expect("hint resolves through the account() fast path");
     assert_eq!(address.to_hex_string(), primary.to_hex_string());

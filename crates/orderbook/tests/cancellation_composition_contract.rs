@@ -47,7 +47,7 @@ struct CancellationCase {
 
 const TESTED_METHODS: &[CancellationCase] = &[
     CancellationCase {
-        method_name: "get_quote",
+        method_name: "quote",
         http_method: "POST",
         path: path_quote,
         invoke: invoke_get_quote,
@@ -65,55 +65,55 @@ const TESTED_METHODS: &[CancellationCase] = &[
         invoke: invoke_send_signed_order_cancellations,
     },
     CancellationCase {
-        method_name: "get_order",
+        method_name: "order",
         http_method: "GET",
         path: path_order,
         invoke: invoke_get_order,
     },
     CancellationCase {
-        method_name: "get_order_multi_env",
+        method_name: "order_multi_env",
         http_method: "GET",
         path: path_order,
         invoke: invoke_get_order_multi_env,
     },
     CancellationCase {
-        method_name: "get_orders",
+        method_name: "orders",
         http_method: "GET",
         path: path_account_orders,
         invoke: invoke_get_orders,
     },
     CancellationCase {
-        method_name: "get_tx_orders",
+        method_name: "tx_orders",
         http_method: "GET",
         path: path_tx_orders,
         invoke: invoke_get_tx_orders,
     },
     CancellationCase {
-        method_name: "get_trades",
+        method_name: "trades",
         http_method: "GET",
         path: path_trades,
         invoke: invoke_get_trades,
     },
     CancellationCase {
-        method_name: "get_order_competition_status",
+        method_name: "order_competition_status",
         http_method: "GET",
         path: path_order_status,
         invoke: invoke_get_order_competition_status,
     },
     CancellationCase {
-        method_name: "get_native_price",
+        method_name: "native_price",
         http_method: "GET",
         path: path_native_price,
         invoke: invoke_get_native_price,
     },
     CancellationCase {
-        method_name: "get_total_surplus",
+        method_name: "total_surplus",
         http_method: "GET",
         path: path_total_surplus,
         invoke: invoke_get_total_surplus,
     },
     CancellationCase {
-        method_name: "get_app_data",
+        method_name: "app_data",
         http_method: "GET",
         path: path_app_data,
         invoke: invoke_get_app_data,
@@ -125,19 +125,19 @@ const TESTED_METHODS: &[CancellationCase] = &[
         invoke: invoke_upload_app_data,
     },
     CancellationCase {
-        method_name: "get_solver_competition_by_auction_id",
+        method_name: "solver_competition_by_auction_id",
         http_method: "GET",
         path: path_solver_competition_by_auction_id,
         invoke: invoke_get_solver_competition_by_auction_id,
     },
     CancellationCase {
-        method_name: "get_solver_competition_by_tx_hash",
+        method_name: "solver_competition_by_tx_hash",
         http_method: "GET",
         path: path_solver_competition_by_tx_hash,
         invoke: invoke_get_solver_competition_by_tx_hash,
     },
     CancellationCase {
-        method_name: "get_latest_solver_competition",
+        method_name: "latest_solver_competition",
         http_method: "GET",
         path: path_latest_solver_competition,
         invoke: invoke_get_latest_solver_competition,
@@ -337,7 +337,7 @@ fn path_latest_solver_competition() -> String {
 fn invoke_get_quote(api: &OrderbookApi) -> CaseFuture<'_> {
     Box::pin(async move {
         let request = quote_request();
-        api.get_quote(&request)
+        api.quote(&request)
             .await
             .map(|_: OrderQuoteResponse| ())
     })
@@ -359,12 +359,12 @@ fn invoke_send_signed_order_cancellations(api: &OrderbookApi) -> CaseFuture<'_> 
 }
 
 fn invoke_get_order(api: &OrderbookApi) -> CaseFuture<'_> {
-    Box::pin(async move { api.get_order(&sample_order_uid()).await.map(|_: Order| ()) })
+    Box::pin(async move { api.order(&sample_order_uid()).await.map(|_: Order| ()) })
 }
 
 fn invoke_get_order_multi_env(api: &OrderbookApi) -> CaseFuture<'_> {
     Box::pin(async move {
-        api.get_order_multi_env(&sample_order_uid())
+        api.order_multi_env(&sample_order_uid())
             .await
             .map(|_: Order| ())
     })
@@ -373,13 +373,13 @@ fn invoke_get_order_multi_env(api: &OrderbookApi) -> CaseFuture<'_> {
 fn invoke_get_orders(api: &OrderbookApi) -> CaseFuture<'_> {
     Box::pin(async move {
         let request = GetOrdersRequest::new(sample_owner());
-        api.get_orders(&request).await.map(|_: Vec<Order>| ())
+        api.orders(&request).await.map(|_: Vec<Order>| ())
     })
 }
 
 fn invoke_get_tx_orders(api: &OrderbookApi) -> CaseFuture<'_> {
     Box::pin(async move {
-        api.get_tx_orders(sample_tx_hash())
+        api.tx_orders(sample_tx_hash())
             .await
             .map(|_: Vec<Order>| ())
     })
@@ -388,13 +388,13 @@ fn invoke_get_tx_orders(api: &OrderbookApi) -> CaseFuture<'_> {
 fn invoke_get_trades(api: &OrderbookApi) -> CaseFuture<'_> {
     Box::pin(async move {
         let request = GetTradesRequest::by_owner(sample_owner());
-        api.get_trades(&request).await.map(|_: Vec<Trade>| ())
+        api.trades(&request).await.map(|_: Vec<Trade>| ())
     })
 }
 
 fn invoke_get_order_competition_status(api: &OrderbookApi) -> CaseFuture<'_> {
     Box::pin(async move {
-        api.get_order_competition_status(&sample_order_uid())
+        api.order_competition_status(&sample_order_uid())
             .await
             .map(|_: CompetitionOrderStatus| ())
     })
@@ -402,7 +402,7 @@ fn invoke_get_order_competition_status(api: &OrderbookApi) -> CaseFuture<'_> {
 
 fn invoke_get_native_price(api: &OrderbookApi) -> CaseFuture<'_> {
     Box::pin(async move {
-        api.get_native_price(&sample_owner())
+        api.native_price(&sample_owner())
             .await
             .map(|_: NativePriceResponse| ())
     })
@@ -410,7 +410,7 @@ fn invoke_get_native_price(api: &OrderbookApi) -> CaseFuture<'_> {
 
 fn invoke_get_total_surplus(api: &OrderbookApi) -> CaseFuture<'_> {
     Box::pin(async move {
-        api.get_total_surplus(&sample_owner())
+        api.total_surplus(&sample_owner())
             .await
             .map(|_: TotalSurplus| ())
     })
@@ -418,7 +418,7 @@ fn invoke_get_total_surplus(api: &OrderbookApi) -> CaseFuture<'_> {
 
 fn invoke_get_app_data(api: &OrderbookApi) -> CaseFuture<'_> {
     Box::pin(async move {
-        api.get_app_data(&sample_app_data_hash())
+        api.app_data(&sample_app_data_hash())
             .await
             .map(|_: AppDataObject| ())
     })
@@ -433,7 +433,7 @@ fn invoke_upload_app_data(api: &OrderbookApi) -> CaseFuture<'_> {
 
 fn invoke_get_solver_competition_by_auction_id(api: &OrderbookApi) -> CaseFuture<'_> {
     Box::pin(async move {
-        api.get_solver_competition_by_auction_id(7)
+        api.solver_competition_by_auction_id(7)
             .await
             .map(|_: SolverCompetitionResponse| ())
     })
@@ -441,7 +441,7 @@ fn invoke_get_solver_competition_by_auction_id(api: &OrderbookApi) -> CaseFuture
 
 fn invoke_get_solver_competition_by_tx_hash(api: &OrderbookApi) -> CaseFuture<'_> {
     Box::pin(async move {
-        api.get_solver_competition_by_tx_hash(sample_tx_hash())
+        api.solver_competition_by_tx_hash(sample_tx_hash())
             .await
             .map(|_: SolverCompetitionResponse| ())
     })
@@ -449,7 +449,7 @@ fn invoke_get_solver_competition_by_tx_hash(api: &OrderbookApi) -> CaseFuture<'_
 
 fn invoke_get_latest_solver_competition(api: &OrderbookApi) -> CaseFuture<'_> {
     Box::pin(async move {
-        api.get_latest_solver_competition()
+        api.latest_solver_competition()
             .await
             .map(|_: SolverCompetitionResponse| ())
     })

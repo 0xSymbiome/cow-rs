@@ -24,7 +24,7 @@ pub type OrderTypedData = TypedDataEnvelope<OrderData>;
 /// settlement-contract entry for the resolved chain and environment. The
 /// shipped registry manifest is validated at compile time, so this panic
 /// cannot be reached from an unmodified binary.
-pub fn get_domain(
+pub fn domain(
     chain_id: SupportedChainId,
     options: Option<&ProtocolOptions>,
 ) -> Result<TypedDataDomain, SigningError> {
@@ -59,7 +59,7 @@ pub fn domain_separator(
     chain_id: SupportedChainId,
     options: Option<&ProtocolOptions>,
 ) -> Result<String, SigningError> {
-    let domain = get_domain(chain_id, options)?;
+    let domain = domain(chain_id, options)?;
     domain_separator_for(&domain)
 }
 
@@ -108,7 +108,7 @@ pub fn order_typed_data_payload(
     options: Option<&ProtocolOptions>,
 ) -> Result<TypedDataPayload, SigningError> {
     Ok(TypedDataPayload::new(
-        get_domain(chain_id, options)?,
+        domain(chain_id, options)?,
         ORDER_PRIMARY_TYPE.to_owned(),
         typed_data_types(ORDER_PRIMARY_TYPE, order_fields()),
         serialize_message(order)?,

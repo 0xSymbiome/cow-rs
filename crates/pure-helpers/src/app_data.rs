@@ -21,7 +21,7 @@ pub fn document_from_input(input: AppDataDocInput) -> Result<AppDataDoc, PureErr
 ///
 /// Returns [`AppDataError`] when validation, serialization, or CID conversion fails.
 pub fn app_data_info(document: &AppDataDoc) -> Result<AppDataInfo, AppDataError> {
-    cow_sdk_app_data::get_app_data_info(document).map(|validated| validated.info)
+    cow_sdk_app_data::app_data_info(document).map(|validated| validated.info)
 }
 
 /// Validates an app-data document against the typed metadata contract.

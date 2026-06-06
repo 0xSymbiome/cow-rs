@@ -25,7 +25,7 @@ use web_time::{SystemTime, UNIX_EPOCH};
 /// Every field is `Copy`-bounded (`SupportedChainId`, `Address`, the cow
 /// `Amount` newtype, `bool`, `f64`, and the `Option` wrappers thereof),
 /// so the struct is `Copy` itself. The public helper
-/// [`get_order_to_sign`] therefore takes the typed bag by value without
+/// [`order_to_sign`] therefore takes the typed bag by value without
 /// the usual pass-by-reference dance — calling code composes the struct
 /// literal at the call site and the by-value move is bit-for-bit free.
 #[derive(Debug, Clone, Copy)]
@@ -201,7 +201,7 @@ pub fn swap_params_to_limit_order_params(
 ///
 /// Panics only if the internally clamped validity timestamp no longer fits into `u32`.
 /// The implementation clamps it to the supported `u32` range before conversion.
-pub fn get_order_to_sign(
+pub fn order_to_sign(
     params: OrderToSignParams,
     limit_parameters: &LimitTradeParameters,
     app_data_keccak256: &AppDataHash,

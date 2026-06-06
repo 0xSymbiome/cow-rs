@@ -168,7 +168,7 @@ async fn get_totals_posts_totals_operation_and_returns_first_row() {
         .mount(&server)
         .await;
 
-    let totals = api.get_totals().await.unwrap();
+    let totals = api.totals().await.unwrap();
     let request = only_request(&server).await;
 
     assert_graphql_request(&request, TOTALS_QUERY, Some("Totals"), None);
@@ -206,7 +206,7 @@ async fn get_last_days_volume_posts_variableized_query() {
         .mount(&server)
         .await;
 
-    let response = api.get_last_days_volume(7).await.unwrap();
+    let response = api.last_days_volume(7).await.unwrap();
     let request = only_request(&server).await;
 
     assert_graphql_request(
@@ -248,7 +248,7 @@ async fn get_last_hours_volume_posts_variableized_query() {
         .mount(&server)
         .await;
 
-    let response = api.get_last_hours_volume(24).await.unwrap();
+    let response = api.last_hours_volume(24).await.unwrap();
     let request = only_request(&server).await;
 
     assert_graphql_request(
@@ -499,7 +499,7 @@ async fn run_query_uses_custom_base_url_overrides() {
         .mount(&server)
         .await;
 
-    let _ = api.get_totals().await.unwrap();
+    let _ = api.totals().await.unwrap();
     let request = only_request(&server).await;
 
     assert_graphql_request(&request, TOTALS_QUERY, Some("Totals"), None);
@@ -543,7 +543,7 @@ async fn transport_policy_override_rebuilds_client_with_custom_user_agent() {
         .build()
         .expect("subgraph test client with loopback override must build");
 
-    let totals = api.get_totals().await.expect("custom policy should work");
+    let totals = api.totals().await.expect("custom policy should work");
 
     assert_eq!(totals.tokens, "1");
     assert_eq!(api.client_policy().timeout(), None);
@@ -557,7 +557,7 @@ async fn unsupported_network_rejects_before_transport() {
         .build()
         .expect("default subgraph client must build");
 
-    let error = api.get_totals().await.unwrap_err();
+    let error = api.totals().await.unwrap_err();
 
     assert_eq!(error, SubgraphError::UnsupportedNetwork { chain_id: 137 });
     assert!(
@@ -582,7 +582,7 @@ async fn empty_totals_rejects_instead_of_returning_default() {
         .mount(&server)
         .await;
 
-    let error = api.get_totals().await.unwrap_err();
+    let error = api.totals().await.unwrap_err();
 
     assert_eq!(error, SubgraphError::NoTotalsFound);
 }
@@ -712,7 +712,7 @@ async fn malformed_success_response_surfaces_serialization_error() {
         .await;
 
     let error = api
-        .get_totals()
+        .totals()
         .await
         .expect_err("invalid json should fail");
 
@@ -925,7 +925,7 @@ async fn get_totals_returns_cancelled_when_combinator_token_fires_before_send() 
     token.cancel();
 
     let error = api
-        .get_totals()
+        .totals()
         .cancel_with(&token)
         .await
         .expect_err("pre-cancelled token must produce a Cancelled error");
@@ -964,7 +964,7 @@ async fn get_totals_combinator_aborts_an_in_flight_request() {
     let started = std::time::Instant::now();
     let task = tokio::spawn(async move {
         let _spy = spy;
-        api.get_totals().cancel_with(&token_for_task).await
+        api.totals().cancel_with(&token_for_task).await
     });
 
     tokio::time::sleep(std::time::Duration::from_millis(50)).await;
@@ -1060,11 +1060,11 @@ async fn shared_client_fans_queries_across_multiple_subgraph_instances() {
         .expect("second subgraph client with loopback override must build");
 
     let first_totals = first_api
-        .get_totals()
+        .totals()
         .await
         .expect("first shared-client query must succeed");
     let second_totals = second_api
-        .get_totals()
+        .totals()
         .await
         .expect("second shared-client query must succeed");
 

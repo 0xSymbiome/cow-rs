@@ -189,7 +189,7 @@ async fn injected_transport_observes_every_live_request_from_the_built_client() 
     assert!(Arc::ptr_eq(api.transport(), &transport));
 
     let version = api
-        .get_version()
+        .version()
         .await
         .expect("the injected transport should deliver the canned version response");
     assert_eq!(version, "v1.2.3");

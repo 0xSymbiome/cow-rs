@@ -22,7 +22,7 @@ async fn signer_handle_remains_usable_after_parent_client_drop() {
     drop(client);
 
     assert_eq!(
-        handle.get_address().await.unwrap().to_hex_string(),
+        handle.address().await.unwrap().to_hex_string(),
         EXPECTED_ADDRESS
     );
     assert_eq!(

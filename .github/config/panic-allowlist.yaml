@@ -67,7 +67,7 @@ allowed:
     item: SigningScheme::from
     reason: The variant-by-variant SigningScheme bridge parity test prevents drift; any new cow-sdk-contracts SigningScheme variant must land in the same patch.
   - file: crates/signing/src/domain.rs
-    item: get_domain
+    item: domain
     reason: Canonical settlement address is guaranteed by the validated deployment registry.
   - file: crates/trading/src/allowance.rs
     item: resolve_vault_relayer
@@ -82,7 +82,7 @@ allowed:
     item: default_gas_limit
     reason: Static gas limit literal is within the validated amount range.
   - file: crates/trading/src/order.rs
-    item: get_order_to_sign
+    item: order_to_sign
     reason: Validity timestamp is clamped to the supported u32 range before conversion.
   - file: crates/trading/src/order.rs
     item: calculate_unique_order_id

@@ -247,8 +247,8 @@ impl SubgraphApi {
             ),
         ),
     )]
-    pub async fn get_totals(&self) -> Result<Total, SubgraphError> {
-        self.get_totals_with_config(SubgraphConfigOverride::default())
+    pub async fn totals(&self) -> Result<Total, SubgraphError> {
+        self.totals_with_config(SubgraphConfigOverride::default())
             .await
     }
 
@@ -262,7 +262,7 @@ impl SubgraphApi {
     /// Returns [`SubgraphError::NoTotalsFound`] when the response contains no
     /// totals rows, or any transport, HTTP, GraphQL, serialization, missing
     /// data, or unsupported-network error surfaced by the underlying query.
-    pub async fn get_totals_with_config(
+    pub async fn totals_with_config(
         &self,
         config_override: SubgraphConfigOverride,
     ) -> Result<Total, SubgraphError> {
@@ -300,11 +300,11 @@ impl SubgraphApi {
             ),
         ),
     )]
-    pub async fn get_last_days_volume(
+    pub async fn last_days_volume(
         &self,
         days: u32,
     ) -> Result<LastDaysVolumeResponse, SubgraphError> {
-        self.get_last_days_volume_with_config(days, SubgraphConfigOverride::default())
+        self.last_days_volume_with_config(days, SubgraphConfigOverride::default())
             .await
     }
 
@@ -317,7 +317,7 @@ impl SubgraphApi {
     ///
     /// Returns any transport, HTTP, GraphQL, serialization, missing-data, or
     /// unsupported-network error surfaced by the underlying query.
-    pub async fn get_last_days_volume_with_config(
+    pub async fn last_days_volume_with_config(
         &self,
         days: u32,
         config_override: SubgraphConfigOverride,
@@ -351,11 +351,11 @@ impl SubgraphApi {
             ),
         ),
     )]
-    pub async fn get_last_hours_volume(
+    pub async fn last_hours_volume(
         &self,
         hours: u32,
     ) -> Result<LastHoursVolumeResponse, SubgraphError> {
-        self.get_last_hours_volume_with_config(hours, SubgraphConfigOverride::default())
+        self.last_hours_volume_with_config(hours, SubgraphConfigOverride::default())
             .await
     }
 
@@ -368,7 +368,7 @@ impl SubgraphApi {
     ///
     /// Returns any transport, HTTP, GraphQL, serialization, missing-data, or
     /// unsupported-network error surfaced by the underlying query.
-    pub async fn get_last_hours_volume_with_config(
+    pub async fn last_hours_volume_with_config(
         &self,
         hours: u32,
         config_override: SubgraphConfigOverride,

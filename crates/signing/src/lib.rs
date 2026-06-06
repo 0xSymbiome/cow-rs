@@ -41,7 +41,7 @@ pub use cow_sdk_contracts::{
 };
 pub use domain::{
     ORDER_PRIMARY_TYPE, OrderTypedData, cancellation_fields, domain_fields, domain_separator,
-    domain_separator_for, get_domain, order_fields, order_typed_data, order_typed_data_payload,
+    domain_separator_for, domain, order_fields, order_typed_data, order_typed_data_payload,
 };
 pub use eip1271::{
     Eip1271SignatureError, Eip1271SignatureProvider, OnchainOrder, OrderAndSignature,

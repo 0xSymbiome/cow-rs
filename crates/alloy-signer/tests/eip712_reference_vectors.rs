@@ -34,7 +34,7 @@ async fn sign_typed_data_payload_matches_canonical_cow_order_vector() {
     assert_eq!(signature, EXPECTED_ORDER_SIGNATURE);
     assert_eq!(
         recovered,
-        signer.get_address().await.unwrap(),
+        signer.address().await.unwrap(),
         "canonical EIP-712 signature must recover to the local signer"
     );
 }

@@ -559,7 +559,7 @@ async fn chain_bound_signer_rejects_chain_drift_before_address_and_transaction_c
         .unwrap();
     transport.emit_chain_changed(u64::from(SupportedChainId::Mainnet));
 
-    let address_error = signer.get_address().await.unwrap_err();
+    let address_error = signer.address().await.unwrap_err();
     assert_eq!(
         address_error,
         BrowserWalletError::SessionChainMismatch {

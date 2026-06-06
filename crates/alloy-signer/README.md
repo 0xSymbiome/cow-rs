@@ -87,7 +87,7 @@ let signer = LocalAlloyKeystoreSigner::builder()
     .chain_id(SupportedChainId::Mainnet)
     .build()?;
 
-let owner = signer.get_address().await?;
+let owner = signer.address().await?;
 let signature = signer.sign_message(b"hello cow").await?;
 # let _ = (owner, signature);
 # Ok(())

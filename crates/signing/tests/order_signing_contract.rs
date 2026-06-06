@@ -18,7 +18,7 @@ use cow_sdk_core::{Address, Amount, SupportedChainId};
 
 use cow_sdk_signing::{
     GeneratedOrderId, ORDER_PRIMARY_TYPE, SigningError, eip1271_signature_payload,
-    generate_order_id, get_domain, order_typed_data, order_typed_data_payload, sign_order,
+    generate_order_id, domain, order_typed_data, order_typed_data_payload, sign_order,
     sign_order_with_scheme,
 };
 
@@ -94,7 +94,7 @@ async fn sign_order_uses_typed_data_for_eip712_and_digest_for_ethsign() {
     assert_eq!(ethsign_result.signature, signer.message_signature);
 
     let expected_digest = hash_order(
-        &get_domain(SupportedChainId::Sepolia, None).unwrap(),
+        &domain(SupportedChainId::Sepolia, None).unwrap(),
         &order,
     )
     .unwrap();
@@ -113,7 +113,7 @@ async fn eth_sign_routes_raw_32_byte_digest_to_sign_message() {
     let order = sample_order();
     let signer = RecordingSigner::new();
     let expected_digest = hash_order(
-        &get_domain(SupportedChainId::Sepolia, None).unwrap(),
+        &domain(SupportedChainId::Sepolia, None).unwrap(),
         &order,
     )
     .unwrap();
@@ -210,7 +210,7 @@ fn generate_order_id_reuses_contract_hashing_and_uid_packing() {
 
     let generated = generate_order_id(SupportedChainId::Sepolia, &order, &owner, None).unwrap();
     let expected_digest = hash_order(
-        &get_domain(SupportedChainId::Sepolia, None).unwrap(),
+        &domain(SupportedChainId::Sepolia, None).unwrap(),
         &order,
     )
     .unwrap();

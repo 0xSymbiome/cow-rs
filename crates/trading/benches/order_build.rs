@@ -3,7 +3,7 @@ use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use cow_sdk_core::{
     Address, Amount, AppDataHash, BuyTokenDestination, OrderKind, SellTokenSource, SupportedChainId,
 };
-use cow_sdk_trading::{LimitTradeParameters, OrderToSignParams, get_order_to_sign};
+use cow_sdk_trading::{LimitTradeParameters, OrderToSignParams, order_to_sign};
 
 fn sample_limit_parameters() -> LimitTradeParameters {
     LimitTradeParameters::new(
@@ -34,9 +34,9 @@ fn bench_get_order_to_sign(c: &mut Criterion) {
     let app_data_hash =
         AppDataHash::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
             .unwrap();
-    c.bench_function("get_order_to_sign", |b| {
+    c.bench_function("order_to_sign", |b| {
         b.iter(|| {
-            let order = get_order_to_sign(
+            let order = order_to_sign(
                 black_box(params),
                 black_box(&parameters),
                 black_box(&app_data_hash),

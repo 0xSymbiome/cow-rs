@@ -1,6 +1,6 @@
 //! Opt-in live orderbook version probe.
 //!
-//! Calls `OrderbookApi::get_version` against the real orderbook, configured from
+//! Calls `OrderbookApi::version` against the real orderbook, configured from
 //! optional environment variables (chain, environment, base URL, and a
 //! `Redacted` API key). The one native scenario that contacts a live service; it
 //! is excluded from the deterministic runner.
@@ -44,7 +44,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     };
 
     // The one live call: fetch the deployed orderbook version.
-    let version = orderbook.get_version().await?;
+    let version = orderbook.version().await?;
     let report = json!({
         "surface": "cow-sdk-orderbook",
         "mode": "live",

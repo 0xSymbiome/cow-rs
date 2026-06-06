@@ -61,7 +61,7 @@ impl fmt::Debug for LocalAlloyKeystoreSigner {
 impl Signer for LocalAlloyKeystoreSigner {
     type Error = SignerError;
 
-    async fn get_address(&self) -> Result<Address, Self::Error> {
+    async fn address(&self) -> Result<Address, Self::Error> {
         let alloy_address = AlloySigner::address(self.upstream_signer());
         Ok(Address::from_bytes(alloy_address.into_array()))
     }

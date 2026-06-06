@@ -88,7 +88,7 @@ impl Trading {
     {
         let (trader, orderbook) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
 
-        let order = orderbook.client.get_order(&params.order_uid).await?;
+        let order = orderbook.client.order(&params.order_uid).await?;
 
         let effective_params = OrderTraderParameters {
             chain_id: Some(orderbook.chain_id),

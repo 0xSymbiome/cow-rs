@@ -198,7 +198,7 @@ pub trait Provider {
 /// impl Signer for WalletSigner {
 ///     type Error = String;
 ///
-///     async fn get_address(&self) -> Result<Address, Self::Error> {
+///     async fn address(&self) -> Result<Address, Self::Error> {
 ///         Address::new("0x1111111111111111111111111111111111111111")
 ///             .map_err(|error| error.to_string())
 ///     }
@@ -284,7 +284,7 @@ pub trait Provider {
 /// let provider = WalletProvider;
 /// let signer = provider.create_signer("primary").await.unwrap();
 /// assert_eq!(
-///     signer.get_address().await.unwrap().to_hex_string(),
+///     signer.address().await.unwrap().to_hex_string(),
 ///     "0x1111111111111111111111111111111111111111"
 /// );
 /// # }

@@ -8,7 +8,7 @@
 //! - empty and whitespace-only hints produce a signer that resolves to the
 //!   wallet's currently selected account through the documented fallback
 //! - a valid hint that matches the wallet's exposed accounts produces a
-//!   signer whose `get_address` returns that hint directly
+//!   signer whose `address` returns that hint directly
 //! - a valid hint that the wallet does not expose returns a typed
 //!   `MalformedResponse` error from `create_signer` whose method label is
 //!   `"create_signer"` and whose message references the documented reason
@@ -19,7 +19,7 @@
 //!   before validating the hint
 //!
 //! Internal state is intentionally not inspected; behavioural assertions
-//! go through the public `Signer::get_address` boundary, the typed
+//! go through the public `Signer::address` boundary, the typed
 //! `BrowserWalletError` shape, and the `Redacted<String>` contents on
 //! the error variants.
 //!
@@ -54,12 +54,12 @@ async fn create_signer_with_empty_hint_falls_back_to_wallet_selected_account() {
         .create_signer("")
         .await
         .expect("empty hint must succeed");
-    // With no explicit hint, `get_address` resolves through the wallet's
+    // With no explicit hint, `address` resolves through the wallet's
     // selected account, which the mock reports as the first connected one.
     let address = signer
-        .get_address()
+        .address()
         .await
-        .expect("get_address resolves through the selected-account fallback");
+        .expect("address resolves through the selected-account fallback");
     assert_eq!(address.to_hex_string(), primary.to_hex_string());
 }
 
@@ -72,7 +72,7 @@ async fn create_signer_with_whitespace_hint_trims_to_empty_and_falls_back() {
         .create_signer("   \t \n  ")
         .await
         .expect("whitespace-only hint must trim to empty and succeed");
-    let address = signer.get_address().await.expect("fallback resolves");
+    let address = signer.address().await.expect("fallback resolves");
     assert_eq!(address.to_hex_string(), primary.to_hex_string());
 }
 
@@ -87,11 +87,11 @@ async fn create_signer_with_valid_hint_in_wallet_accounts_returns_signer_bound_t
         .await
         .expect("hint in account list must succeed");
 
-    // The signer is bound to the requested account; `get_address` returns it.
+    // The signer is bound to the requested account; `address` returns it.
     let address = signer
-        .get_address()
+        .address()
         .await
-        .expect("get_address returns the explicit hint");
+        .expect("address returns the explicit hint");
     assert_eq!(address.to_hex_string(), other.to_hex_string());
 }
 
@@ -138,7 +138,7 @@ async fn create_signer_queries_wallet_when_session_accounts_are_empty() {
         .create_signer(PRIMARY_ACCOUNT)
         .await
         .expect("query-accounts path resolves a matching account");
-    let address = signer.get_address().await.expect("get_address resolves");
+    let address = signer.address().await.expect("address resolves");
     assert_eq!(address.to_hex_string(), primary.to_hex_string());
 }
 

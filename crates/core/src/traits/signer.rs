@@ -20,7 +20,7 @@ pub trait Owner {
     /// # Errors
     ///
     /// Returns the implementation-defined signer error when address resolution fails.
-    async fn get_address(&self) -> Result<Address, Self::Error>;
+    async fn address(&self) -> Result<Address, Self::Error>;
 }
 
 /// EIP-712 typed-data signing capability.
@@ -114,7 +114,7 @@ pub trait Signer {
     /// # Errors
     ///
     /// Returns the implementation-defined signer error when address resolution fails.
-    async fn get_address(&self) -> Result<Address, Self::Error>;
+    async fn address(&self) -> Result<Address, Self::Error>;
     /// Signs arbitrary bytes according to the backend's message-signing rules.
     ///
     /// # Errors
@@ -182,8 +182,8 @@ where
 {
     type Error = T::Error;
 
-    async fn get_address(&self) -> Result<Address, Self::Error> {
-        Signer::get_address(self).await
+    async fn address(&self) -> Result<Address, Self::Error> {
+        Signer::address(self).await
     }
 }
 

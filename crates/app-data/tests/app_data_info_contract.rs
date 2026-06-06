@@ -1,6 +1,6 @@
 mod common;
 
-use cow_sdk_app_data::{APP_DATA_MAX_BYTES, AppDataError, get_app_data_info};
+use cow_sdk_app_data::{APP_DATA_MAX_BYTES, AppDataError, app_data_info};
 use serde_json::json;
 
 use crate::common::{
@@ -9,15 +9,15 @@ use crate::common::{
 
 #[test]
 fn get_app_data_info_matches_pinned_upstream_samples() {
-    let from_string = get_app_data_info(APP_DATA_STRING).unwrap();
+    let from_string = app_data_info(APP_DATA_STRING).unwrap();
     assert_eq!(from_string.cid, CID);
     assert_eq!(from_string.app_data_hex, APP_DATA_HEX);
     assert_eq!(from_string.app_data_content, APP_DATA_STRING);
 
-    let from_doc = get_app_data_info(app_data_doc()).unwrap();
+    let from_doc = app_data_info(app_data_doc()).unwrap();
     assert_eq!(from_doc, from_string);
 
-    let secondary = get_app_data_info(APP_DATA_STRING_2).unwrap();
+    let secondary = app_data_info(APP_DATA_STRING_2).unwrap();
     assert_eq!(secondary.cid, CID_2);
     assert_eq!(secondary.app_data_hex, APP_DATA_HEX_2);
     assert_eq!(secondary.app_data_content, APP_DATA_STRING_2);
@@ -34,7 +34,7 @@ fn invalid_documents_fail_through_typed_error_surface() {
         }
     });
 
-    let error = get_app_data_info(invalid).unwrap_err();
+    let error = app_data_info(invalid).unwrap_err();
     assert!(matches!(error, AppDataError::InvalidAppDataProvided { .. }));
 }
 
@@ -55,7 +55,7 @@ fn app_data_size_guard_accepts_exactly_the_configured_maximum() {
         "constructed document must match the configured ceiling exactly"
     );
 
-    let accepted = get_app_data_info(at_limit_doc);
+    let accepted = app_data_info(at_limit_doc);
     assert!(
         accepted.is_ok(),
         "documents at exactly the configured ceiling must pass the size guard: {accepted:?}"
@@ -77,7 +77,7 @@ fn app_data_size_guard_rejects_documents_above_the_configured_maximum() {
         "constructed document must sit one byte past the configured ceiling"
     );
 
-    let rejected = get_app_data_info(oversized_doc).unwrap_err();
+    let rejected = app_data_info(oversized_doc).unwrap_err();
     match rejected {
         AppDataError::TooLarge {
             actual_bytes,

@@ -4,7 +4,7 @@ use cow_sdk_contracts::{ContractId, Registry};
 use cow_sdk_core::{Amount, CowEnv, SupportedChainId};
 use cow_sdk_trading::{
     AllowanceParameters, ApprovalParameters, approval_transaction, approve_cow_protocol,
-    get_cow_protocol_allowance,
+    cow_protocol_allowance,
 };
 
 use crate::common::{ALT_RECEIVER, COW, MockProvider, MockSigner, OWNER, address};
@@ -12,7 +12,7 @@ use crate::common::{ALT_RECEIVER, COW, MockProvider, MockSigner, OWNER, address}
 #[tokio::test]
 async fn allowance_reads_use_runtime_chain_resolution_and_explicit_overrides() {
     let provider = MockProvider::default();
-    let result = get_cow_protocol_allowance(
+    let result = cow_protocol_allowance(
         &provider,
         &address(COW),
         &address(OWNER),

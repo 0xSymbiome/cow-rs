@@ -2,8 +2,8 @@ use cow_sdk_core::Signer;
 
 use super::Trading;
 use crate::{
-    QuoteResults, TradeAdvancedSettings, TradeParameters, TradingError, get_quote_only,
-    get_quote_results,
+    QuoteResults, TradeAdvancedSettings, TradeParameters, TradingError, quote_only,
+    quote_results,
 };
 
 impl Trading {
@@ -32,7 +32,7 @@ impl Trading {
             ),
         ),
     )]
-    pub async fn get_quote_only(
+    pub async fn quote_only(
         &self,
         params: TradeParameters,
         advanced_settings: Option<&TradeAdvancedSettings>,
@@ -40,7 +40,7 @@ impl Trading {
         let owner = Self::resolve_quote_owner(&params, advanced_settings)?;
         let (quoter, orderbook) = self.resolve_quoter(owner, params.env)?;
 
-        get_quote_only(
+        quote_only(
             &params,
             &quoter,
             advanced_settings,
@@ -53,7 +53,7 @@ impl Trading {
     ///
     /// Owner precedence: call-level [`TradeParameters::owner`], then the
     /// signer address resolved through
-    /// [`cow_sdk_core::Signer::get_address`]. The SDK does not store a
+    /// [`cow_sdk_core::Signer::address`]. The SDK does not store a
     /// default owner.
     ///
     /// Callers that need cooperative cancellation wrap this future
@@ -74,7 +74,7 @@ impl Trading {
             ),
         ),
     )]
-    pub async fn get_quote_results<S>(
+    pub async fn quote_results<S>(
         &self,
         params: TradeParameters,
         signer: &S,
@@ -86,7 +86,7 @@ impl Trading {
     {
         let (trader, orderbook) = self.resolve_orderbook_trader(None, params.env)?;
 
-        get_quote_results(
+        quote_results(
             &params,
             &trader,
             signer,

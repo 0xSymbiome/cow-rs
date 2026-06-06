@@ -45,7 +45,7 @@ This audit covers:
   preserved through the quote-to-post merge
 - the re-emission pipeline through
   `cow_sdk_app_data::generate_app_data_doc` and
-  `cow_sdk_app_data::get_app_data_info` that produces the final
+  `cow_sdk_app_data::app_data_info` that produces the final
   `TradingAppDataInfo`
 - the submission-seam derivation of `app_data_signer` consumed by
   `OrderBoundsValidator::validate` on the quote-to-post path at
@@ -82,7 +82,7 @@ and into the typed sub-fields. The helper then calls
 `merge_app_data_params(&base_params, override_params)` to produce
 the merged typed value, re-emits the wire document through
 `generate_app_data_doc(merged.clone())`, and derives the canonical
-digest via `get_app_data_info(doc.clone())`. The return tuple
+digest via `app_data_info(doc.clone())`. The return tuple
 carries both the `TradingAppDataInfo` and the merged
 `AppDataParams` so the submission seam reads the signer from the
 same typed value that produced the uploaded document. The opaque

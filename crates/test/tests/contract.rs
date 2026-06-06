@@ -47,7 +47,7 @@ async fn orderbook_returns_canned_and_records() {
     let orderbook = MockOrderbook::new(SupportedChainId::Sepolia);
 
     let quote = orderbook
-        .get_quote(&quote_request())
+        .quote(&quote_request())
         .await
         .expect("canned quote");
     assert_eq!(quote.id, Some(1));
@@ -84,12 +84,12 @@ async fn orderbook_get_order_resolves_registered_and_rejects_unknown() {
         .build();
 
     let found = orderbook
-        .get_order(&defaults::order_uid())
+        .order(&defaults::order_uid())
         .await
         .expect("registered order resolves");
     assert_eq!(found.uid, defaults::order_uid());
 
-    assert!(orderbook.get_order(&OrderUid::ZERO).await.is_err());
+    assert!(orderbook.order(&OrderUid::ZERO).await.is_err());
 }
 
 #[tokio::test]
@@ -97,7 +97,7 @@ async fn orderbook_injected_failure_surfaces() {
     let orderbook = MockOrderbook::builder(SupportedChainId::Sepolia)
         .fail_quote(OrderbookFailure::RateLimited)
         .build();
-    assert!(orderbook.get_quote(&quote_request()).await.is_err());
+    assert!(orderbook.quote(&quote_request()).await.is_err());
 }
 
 #[tokio::test]

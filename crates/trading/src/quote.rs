@@ -12,7 +12,7 @@ use crate::{
     DEFAULT_QUOTE_VALIDITY, OrderbookClient, OrderbookRuntimeBinding, QuoteRequestOverride,
     QuoteResults, QuoterParameters, TradeAdvancedSettings, TradeParameters, TraderParameters,
     TradingAppDataInfo, TradingError, adjust_ethflow_trade_parameters,
-    calculate_quote_amounts_and_costs, default_slippage_bps, get_order_to_sign, is_ethflow_order,
+    calculate_quote_amounts_and_costs, default_slippage_bps, order_to_sign, is_ethflow_order,
     partner_fee_bps, resolve_slippage_suggestion, sanitize_protocol_fee_bps,
 };
 
@@ -26,7 +26,7 @@ use crate::{
 ///
 /// Returns an error when quote validity inputs conflict, when app-data generation fails, when the
 /// orderbook quote request fails, or when the derived signing payload cannot be constructed.
-pub async fn get_quote_only<O>(
+pub async fn quote_only<O>(
     trade_parameters: &TradeParameters,
     trader: &QuoterParameters,
     advanced_settings: Option<&TradeAdvancedSettings>,
@@ -71,7 +71,7 @@ where
 /// Returns an error when signer address resolution fails, when quote validity inputs conflict,
 /// when app-data generation fails, when the orderbook quote request fails, or when the derived
 /// signing payload cannot be constructed.
-pub async fn get_quote_results<O, S>(
+pub async fn quote_results<O, S>(
     trade_parameters: &TradeParameters,
     trader: &TraderParameters,
     signer: &S,
@@ -88,10 +88,10 @@ where
     let account = match effective_trade_parameters.owner {
         Some(owner) => owner,
         None => signer
-            .get_address()
+            .address()
             .await
             .map_err(|error| TradingError::Signer {
-                operation: "get_address",
+                operation: "address",
                 message: error.to_string().into(),
             })?,
     };
@@ -163,7 +163,7 @@ where
         &initial_app_data,
         advanced_settings.and_then(|settings| settings.quote_request.as_ref()),
     )?;
-    let quote_response = orderbook.get_quote(&request).await?;
+    let quote_response = orderbook.quote(&request).await?;
     let suggested_slippage = resolve_slippage_suggestion(
         canonical_chain_id,
         &trade_parameters_for_quote,
@@ -246,7 +246,7 @@ fn build_quote_results(inputs: QuoteResultInputs<'_>) -> Result<QuoteResults, Tr
     {
         options = options.with_eth_flow_contract_override(overrides);
     }
-    let order_to_sign = get_order_to_sign(
+    let order_to_sign = order_to_sign(
         crate::order::OrderToSignParams {
             chain_id: inputs.trader.chain_id,
             from: inputs.trader.account,

@@ -1,6 +1,6 @@
 //! Quote without submission.
 //!
-//! Requests a price through `Trading::get_quote_only` against a transport-mocked
+//! Requests a price through `Trading::quote_only` against a transport-mocked
 //! orderbook — the shortest read-only path for a consumer that wants a quote
 //! without building, signing, or posting an order.
 
@@ -30,7 +30,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     )?;
 
     // Quote only — no order is built, signed, or posted.
-    let quote = trading.get_quote_only(sample_trade_parameters(), None).await?;
+    let quote = trading.quote_only(sample_trade_parameters(), None).await?;
 
     // Inspect the request the client actually sent to the orderbook.
     let request = orderbook
@@ -41,7 +41,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .expect("example quote request must be captured");
 
     let report = json!({
-        "surface": "cow-sdk::Trading::get_quote_only",
+        "surface": "cow-sdk::Trading::quote_only",
         "mode": "simulated-transport",
         "quote": {
             "id": quote.quote_response.id,

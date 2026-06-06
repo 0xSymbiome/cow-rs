@@ -37,23 +37,23 @@ struct CancellationCase {
 
 const TESTED_METHODS: &[CancellationCase] = &[
     CancellationCase {
-        method_name: "get_totals_with_config",
+        method_name: "totals_with_config",
         invoke: invoke_get_totals_with_config,
     },
     CancellationCase {
-        method_name: "get_last_days_volume",
+        method_name: "last_days_volume",
         invoke: invoke_get_last_days_volume,
     },
     CancellationCase {
-        method_name: "get_last_days_volume_with_config",
+        method_name: "last_days_volume_with_config",
         invoke: invoke_get_last_days_volume_with_config,
     },
     CancellationCase {
-        method_name: "get_last_hours_volume",
+        method_name: "last_hours_volume",
         invoke: invoke_get_last_hours_volume,
     },
     CancellationCase {
-        method_name: "get_last_hours_volume_with_config",
+        method_name: "last_hours_volume_with_config",
         invoke: invoke_get_last_hours_volume_with_config,
     },
     CancellationCase {
@@ -188,7 +188,7 @@ async fn wait_until_request_is_in_flight(server: &MockServer) {
 
 fn invoke_get_totals_with_config(api: &SubgraphApi) -> CaseFuture<'_> {
     Box::pin(async move {
-        api.get_totals_with_config(SubgraphConfigOverride::default())
+        api.totals_with_config(SubgraphConfigOverride::default())
             .await
             .map(|_: Total| ())
     })
@@ -196,7 +196,7 @@ fn invoke_get_totals_with_config(api: &SubgraphApi) -> CaseFuture<'_> {
 
 fn invoke_get_last_days_volume(api: &SubgraphApi) -> CaseFuture<'_> {
     Box::pin(async move {
-        api.get_last_days_volume(7)
+        api.last_days_volume(7)
             .await
             .map(|_: LastDaysVolumeResponse| ())
     })
@@ -204,7 +204,7 @@ fn invoke_get_last_days_volume(api: &SubgraphApi) -> CaseFuture<'_> {
 
 fn invoke_get_last_days_volume_with_config(api: &SubgraphApi) -> CaseFuture<'_> {
     Box::pin(async move {
-        api.get_last_days_volume_with_config(7, SubgraphConfigOverride::default())
+        api.last_days_volume_with_config(7, SubgraphConfigOverride::default())
             .await
             .map(|_: LastDaysVolumeResponse| ())
     })
@@ -212,7 +212,7 @@ fn invoke_get_last_days_volume_with_config(api: &SubgraphApi) -> CaseFuture<'_> 
 
 fn invoke_get_last_hours_volume(api: &SubgraphApi) -> CaseFuture<'_> {
     Box::pin(async move {
-        api.get_last_hours_volume(24)
+        api.last_hours_volume(24)
             .await
             .map(|_: LastHoursVolumeResponse| ())
     })
@@ -220,7 +220,7 @@ fn invoke_get_last_hours_volume(api: &SubgraphApi) -> CaseFuture<'_> {
 
 fn invoke_get_last_hours_volume_with_config(api: &SubgraphApi) -> CaseFuture<'_> {
     Box::pin(async move {
-        api.get_last_hours_volume_with_config(24, SubgraphConfigOverride::default())
+        api.last_hours_volume_with_config(24, SubgraphConfigOverride::default())
             .await
             .map(|_: LastHoursVolumeResponse| ())
     })

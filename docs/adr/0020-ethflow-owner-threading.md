@@ -10,10 +10,10 @@
 ## Decision
 
 The EthFlow transaction bundle returned by
-`cow_sdk_trading::get_eth_flow_transaction` exposes a typed
+`cow_sdk_trading::eth_flow_transaction` exposes a typed
 `from: cow_sdk_core::Address` field carrying the signer-derived
 owner resolved during transaction construction via
-`Signer::get_address`. The submission seam
+`Signer::address`. The submission seam
 `post_sell_native_currency_order` passes `tx.from` (the
 signer-derived owner) as the validation owner to
 `OrderBoundsValidator::validate(&tx.order_to_sign, tx.from, …)`,
@@ -38,8 +38,8 @@ receiver and a matching app-data signer raises a false
 `AppdataFromMismatch`, and a tampered flow whose crafted app-data
 signer equals the receiver slips past the check entirely. The
 owner is already resolved inside
-`get_eth_flow_transaction` through
-`signer.get_address().await`; threading it onto the returned
+`eth_flow_transaction` through
+`signer.address().await`; threading it onto the returned
 bundle closes both directions without a second signer round-trip.
 Surfacing the field as a public, typed member of
 `EthFlowTransaction` keeps the identity explicit for reviewers and
@@ -54,7 +54,7 @@ the signer.
   struct remains `#[non_exhaustive]`, and the
   `EthFlowTransaction::new` constructor accepts the owner as a
   required parameter so every construction path populates the
-  field explicitly. `get_eth_flow_transaction` populates `from`
+  field explicitly. `eth_flow_transaction` populates `from`
   with the resolved signer address before returning the bundle.
   No second signer round-trip is performed on the submission
   seam. Receiver semantics are unchanged: `tx.order_to_sign.receiver`
@@ -66,9 +66,9 @@ the signer.
   no intermediate `OrderCreation` is built for validation, and no
   receiver-as-owner fallback remains on the submission path.
   The owner is resolved exactly once inside
-  `get_eth_flow_transaction` and forwarded onto the
+  `eth_flow_transaction` and forwarded onto the
   bundle; the submission seam does not call
-  `signer.get_address()` a second time. The validator continues
+  `signer.address()` a second time. The validator continues
   to compare `app_data_signer` against `order.from`, so the
   typed `AppdataFromMismatch { appdata_signer, from }` payload
   carries the owner identity in both the success and the failure
@@ -89,7 +89,7 @@ the signer.
 - Cost: one new typed field on `EthFlowTransaction`, one
   parameter added to the public `EthFlowTransaction::new`
   constructor, one reuse of the existing local `from` inside
-  `get_eth_flow_transaction` at the return site, and one
+  `eth_flow_transaction` at the return site, and one
   change inside `post_sell_native_currency_order` that passes
   `tx.from` (the owner) as the validation owner. No change to the
   payout semantics or the EthFlow transaction encoding.
@@ -119,7 +119,7 @@ the signer.
 
 ## Alternatives Rejected
 
-- Call `signer.get_address()` a second time inside the
+- Call `signer.address()` a second time inside the
   submission seam: duplicates the signer round-trip that the
   transaction-construction path already performed, pays the
   cost twice on HSM-backed signers, and leaves the submission
@@ -167,8 +167,8 @@ through the cow-owned `Display`/`Serialize`/`Deserialize` impls on
 
 ## Amendment 2026-05-26: single-async-entry EthFlow submission surface
 
-`get_eth_flow_transaction` and `post_sell_native_currency_order` are
+`eth_flow_transaction` and `post_sell_native_currency_order` are
 single async entry points bounded on `cow_sdk_core::Signer`.
-The previous sync-bounded `get_eth_flow_transaction` companion is
+The previous sync-bounded `eth_flow_transaction` companion is
 removed. The `EthFlowTransaction` bundle shape and the
 owner-threading invariant are unchanged.

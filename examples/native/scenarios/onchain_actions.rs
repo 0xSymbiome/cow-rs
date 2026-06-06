@@ -1,6 +1,6 @@
 //! On-chain order actions: pre-sign and on-chain cancellation.
 //!
-//! Builds a pre-sign transaction (`get_pre_sign_transaction`) and on-chain
+//! Builds a pre-sign transaction (`pre_sign_transaction`) and on-chain
 //! cancellation call data (`onchain_cancellation_transaction`), then dispatches
 //! an on-chain cancel (`Trading::on_chain_cancel_order`) for both a regular and
 //! an EthFlow order, against a transport-mocked orderbook and signer. These are
@@ -13,7 +13,7 @@ use serde_json::json;
 use cow_sdk::core::HexData;
 use cow_sdk::prelude::{SupportedChainId, Trading};
 use cow_sdk::trading::{
-    OrderTraderParameters, get_pre_sign_transaction,
+    OrderTraderParameters, pre_sign_transaction,
     onchain_cancellation_transaction,
 };
 
@@ -57,7 +57,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // Build call data only (no dispatch): a pre-sign transaction, plus cancellation
     // call data for a regular order and an EthFlow order — these take different routes.
-    let pre_sign = get_pre_sign_transaction(&preview_signer, chain_id, &order_uid, None).await?;
+    let pre_sign = pre_sign_transaction(&preview_signer, chain_id, &order_uid, None).await?;
     let regular_preview =
         onchain_cancellation_transaction(&preview_signer, chain_id, &sample_open_order(), None)
             .await?;
@@ -101,7 +101,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .expect("ethflow cancellation should send a transaction");
 
     let report = json!({
-        "surface": "cow-sdk::trading::get_pre_sign_transaction + cow-sdk::Trading::on_chain_cancel_order",
+        "surface": "cow-sdk::trading::pre_sign_transaction + cow-sdk::Trading::on_chain_cancel_order",
         "mode": "simulated-transport",
         "preSignTransaction": {
             "orderUid": order_uid.to_hex_string(),

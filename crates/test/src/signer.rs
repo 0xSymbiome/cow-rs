@@ -187,7 +187,7 @@ impl MockSignerBuilder {
 impl Signer for MockSigner {
     type Error = MockError;
 
-    async fn get_address(&self) -> Result<Address, Self::Error> {
+    async fn address(&self) -> Result<Address, Self::Error> {
         Ok(self.lock().address)
     }
 

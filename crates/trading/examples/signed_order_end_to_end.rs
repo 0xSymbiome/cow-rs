@@ -173,7 +173,7 @@ mod native {
             &self.context
         }
 
-        async fn get_quote(
+        async fn quote(
             &self,
             request: &OrderQuoteRequest,
         ) -> Result<OrderQuoteResponse, OrderbookError> {
@@ -201,7 +201,7 @@ mod native {
             Ok(())
         }
 
-        async fn get_order(&self, _order_uid: &OrderUid) -> Result<Order, OrderbookError> {
+        async fn order(&self, _order_uid: &OrderUid) -> Result<Order, OrderbookError> {
             Err(OrderbookError::InvalidTransform {
                 field: "orderUid",
                 reason: ValidationReason::Precondition {
@@ -241,7 +241,7 @@ mod native {
     impl Signer for ExampleSigner {
         type Error = ExampleSignerError;
 
-        async fn get_address(&self) -> Result<Address, Self::Error> {
+        async fn address(&self) -> Result<Address, Self::Error> {
             Ok(self.address)
         }
 

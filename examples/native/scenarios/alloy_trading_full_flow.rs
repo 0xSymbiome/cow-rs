@@ -2,9 +2,9 @@
 //!
 //! Drives the async `Trading` boundaries through a real `AlloyClient`
 //! (a `SigningProvider`) against a wiremock JSON-RPC server: read the protocol
-//! allowance (`get_cow_protocol_allowance`), broadcast an approval and wait for
+//! allowance (`cow_protocol_allowance`), broadcast an approval and wait for
 //! its receipt (`approval_transaction` + `submit_and_wait_for_receipt`), and
-//! build a pre-sign transaction (`get_pre_sign_transaction`).
+//! build a pre-sign transaction (`pre_sign_transaction`).
 
 use std::error::Error;
 
@@ -44,7 +44,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // 1. Read the protocol allowance for COW held by the owner (an eth_call).
     let allowance = trading
-        .get_cow_protocol_allowance(
+        .cow_protocol_allowance(
             &client,
             &AllowanceParameters::new(address(COW), address(OWNER)),
         )
@@ -70,7 +70,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // 3. Build a pre-sign transaction; gas is estimated through the client.
     let pre_sign = trading
-        .get_pre_sign_transaction(&OrderTraderParameters::new(sample_order_uid()), &signer)
+        .pre_sign_transaction(&OrderTraderParameters::new(sample_order_uid()), &signer)
         .await?;
     assert_eq!(pre_sign.gas_limit, Some(Amount::from(25_200u32)));
 

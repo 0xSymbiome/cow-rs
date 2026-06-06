@@ -49,7 +49,7 @@ let request = OrderQuoteRequest::new(
     OrderQuoteSide::sell(Amount::from_units(1, 18)?),
 );
 
-let quote = orderbook.get_quote(&request).await?;
+let quote = orderbook.quote(&request).await?;
 println!("quoted buy amount: {}", quote.quote.buy_amount);
 # Ok(())
 # }

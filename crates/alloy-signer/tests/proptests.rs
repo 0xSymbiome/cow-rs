@@ -25,7 +25,7 @@ proptest! {
         };
         let runtime = runtime();
 
-        let address = runtime.block_on(signer.get_address()).unwrap();
+        let address = runtime.block_on(signer.address()).unwrap();
         let signature = runtime.block_on(signer.sign_message(&message)).unwrap();
         let recovered = AlloySignature::from_str(&signature)
             .unwrap()
@@ -46,7 +46,7 @@ proptest! {
         let payload = order_typed_data_payload(SupportedChainId::Mainnet, &order, None).unwrap();
         let digest = order_digest(&order);
 
-        let address = runtime.block_on(signer.get_address()).unwrap();
+        let address = runtime.block_on(signer.address()).unwrap();
         let signature = runtime.block_on(signer.sign_typed_data_payload(&payload)).unwrap();
         let recovered = cow_sdk_contracts::Signature::Ecdsa {
             scheme: SigningScheme::Eip712,
@@ -70,8 +70,8 @@ proptest! {
         let runtime = runtime();
 
         prop_assert_eq!(
-            runtime.block_on(first.get_address()).unwrap(),
-            runtime.block_on(second.get_address()).unwrap(),
+            runtime.block_on(first.address()).unwrap(),
+            runtime.block_on(second.address()).unwrap(),
         );
     }
 }

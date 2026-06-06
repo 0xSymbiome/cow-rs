@@ -63,7 +63,7 @@ impl cow_sdk_core::SignerError for RecordingSignerError {}
 /// An `Rc<RefCell<_>>`-backed recording signer (single-threaded / wasm-friendly).
 #[derive(Clone, Debug)]
 pub struct RecordingSigner {
-    /// The address returned by `get_address`.
+    /// The address returned by `address`.
     pub address: Address,
     /// The signature returned by `sign_typed_data`.
     pub typed_data_signature: String,
@@ -100,7 +100,7 @@ impl Default for RecordingSigner {
 impl Signer for RecordingSigner {
     type Error = RecordingSignerError;
 
-    async fn get_address(&self) -> Result<Address, Self::Error> {
+    async fn address(&self) -> Result<Address, Self::Error> {
         Ok(self.address)
     }
 

@@ -30,7 +30,7 @@ use cow_sdk_core::{
 };
 use cow_sdk_signing::{
     ORDER_PRIMARY_TYPE, domain_fields, domain_separator_for, eip1271_signature_payload,
-    generate_order_id, get_domain, order_cancellations_typed_data_payload, order_fields,
+    generate_order_id, domain, order_cancellations_typed_data_payload, order_fields,
     order_typed_data, order_typed_data_payload, sign_order_cancellations_with_scheme,
     sign_order_with_scheme,
 };
@@ -283,7 +283,7 @@ proptest! {
         let repeated_payload = order_typed_data_payload(chain, &order, None).unwrap();
         let generated = generate_order_id(chain, &order, &owner, None).unwrap();
         let repeated_generated = generate_order_id(chain, &order, &owner, None).unwrap();
-        let expected_digest = hash_order(&get_domain(chain, None).unwrap(), &order).unwrap();
+        let expected_digest = hash_order(&domain(chain, None).unwrap(), &order).unwrap();
 
         prop_assert_eq!(&payload, &repeated_payload);
         prop_assert_eq!(&generated, &repeated_generated);
@@ -339,7 +339,7 @@ proptest! {
         let repeated_payload =
             order_cancellations_typed_data_payload(&order_uids, chain, None).unwrap();
         let expected_digest = hash_order_cancellations(
-            &get_domain(chain, None).unwrap(),
+            &domain(chain, None).unwrap(),
             &OrderCancellations::new(order_uids.clone()),
         )
         .unwrap();
@@ -386,7 +386,7 @@ proptest! {
     /// [`order_typed_data`] preserves the reviewed field shape: the
     /// primary type is [`ORDER_PRIMARY_TYPE`], the types map holds the
     /// shipped [`order_fields`] and [`domain_fields`] values, the
-    /// resolved domain matches [`get_domain`], and a
+    /// resolved domain matches [`domain`], and a
     /// [`ProtocolOptions::settlement_contract_override`] is honoured on
     /// the verifying contract field of the emitted domain.
     #[test]
@@ -394,7 +394,7 @@ proptest! {
         (chain, options) in chain_with_protocol_options_strategy(),
         order in unsigned_order_strategy(),
     ) {
-        let expected_domain = get_domain(chain, options.as_ref()).unwrap();
+        let expected_domain = domain(chain, options.as_ref()).unwrap();
 
         let payload = order_typed_data_payload(chain, &order, options.as_ref()).unwrap();
         let repeated_payload = order_typed_data_payload(chain, &order, options.as_ref()).unwrap();

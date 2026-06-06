@@ -1033,7 +1033,7 @@ mod tracing_contract {
             server.uri(),
         );
         let quote = api
-            .get_quote(&OrderQuoteRequest::new(
+            .quote(&OrderQuoteRequest::new(
                 sample_owner(),
                 sample_buy_token(),
                 sample_owner(),
@@ -1069,7 +1069,7 @@ mod tracing_contract {
         );
         assert!(
             spans.iter().any(|span| {
-                span.name() == "get_quote"
+                span.name() == "quote"
                     && span.field("quote_id") == Some("42")
                     && span.field("attempts") == Some("1")
                     && span.field("status") == Some("200")

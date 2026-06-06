@@ -48,7 +48,7 @@ struct CancellationCase {
 
 const TESTED_METHODS: &[CancellationCase] = &[
     CancellationCase {
-        method_name: "get_quote_results",
+        method_name: "quote_results",
         invoke: invoke_get_quote_results,
     },
     CancellationCase {
@@ -64,11 +64,11 @@ const TESTED_METHODS: &[CancellationCase] = &[
         invoke: invoke_post_limit_order,
     },
     CancellationCase {
-        method_name: "get_pre_sign_transaction",
+        method_name: "pre_sign_transaction",
         invoke: invoke_get_pre_sign_transaction,
     },
     CancellationCase {
-        method_name: "get_order",
+        method_name: "order",
         invoke: invoke_get_order,
     },
     CancellationCase {
@@ -80,7 +80,7 @@ const TESTED_METHODS: &[CancellationCase] = &[
         invoke: invoke_on_chain_cancel_order,
     },
     CancellationCase {
-        method_name: "get_cow_protocol_allowance",
+        method_name: "cow_protocol_allowance",
         invoke: invoke_get_cow_protocol_allowance,
     },
     CancellationCase {
@@ -199,7 +199,7 @@ async fn quote_results_fixture() -> QuoteResults {
         .expect("fixture sdk must construct");
 
     trading
-        .get_quote_only(sample_trade_parameters(OrderKind::Sell), None)
+        .quote_only(sample_trade_parameters(OrderKind::Sell), None)
         .await
         .expect("quote fixture must build")
 }
@@ -233,12 +233,12 @@ impl OrderbookClient for DelayedOrderbook {
         OrderbookClient::runtime_binding(&self.inner)
     }
 
-    async fn get_quote(
+    async fn quote(
         &self,
         request: &OrderQuoteRequest,
     ) -> Result<OrderQuoteResponse, OrderbookError> {
         self.wait().await;
-        OrderbookClient::get_quote(&self.inner, request).await
+        OrderbookClient::quote(&self.inner, request).await
     }
 
     async fn send_order(&self, request: &OrderCreation) -> Result<OrderUid, OrderbookError> {
@@ -254,9 +254,9 @@ impl OrderbookClient for DelayedOrderbook {
         OrderbookClient::send_signed_order_cancellations(&self.inner, request).await
     }
 
-    async fn get_order(&self, order_uid: &OrderUid) -> Result<Order, OrderbookError> {
+    async fn order(&self, order_uid: &OrderUid) -> Result<Order, OrderbookError> {
         self.wait().await;
-        OrderbookClient::get_order(&self.inner, order_uid).await
+        OrderbookClient::order(&self.inner, order_uid).await
     }
 
     async fn upload_app_data(
@@ -286,7 +286,7 @@ impl SlowSigner {
 impl Signer for SlowSigner {
     type Error = String;
 
-    async fn get_address(&self) -> Result<Address, Self::Error> {
+    async fn address(&self) -> Result<Address, Self::Error> {
         self.wait().await;
         Ok(address(OWNER))
     }
@@ -412,7 +412,7 @@ fn invoke_get_quote_results(harness: &TradingHarness) -> CaseFuture<'_> {
     Box::pin(async move {
         harness
             .trading
-            .get_quote_results(
+            .quote_results(
                 sample_trade_parameters(OrderKind::Sell),
                 &harness.signer,
                 None,
@@ -464,7 +464,7 @@ fn invoke_get_pre_sign_transaction(harness: &TradingHarness) -> CaseFuture<'_> {
     Box::pin(async move {
         harness
             .trading
-            .get_pre_sign_transaction(&order_params(), &harness.signer)
+            .pre_sign_transaction(&order_params(), &harness.signer)
             .await
             .map(|_: TransactionRequest| ())
     })
@@ -474,7 +474,7 @@ fn invoke_get_order(harness: &TradingHarness) -> CaseFuture<'_> {
     Box::pin(async move {
         harness
             .trading
-            .get_order(&order_params())
+            .order(&order_params())
             .await
             .map(|_: Order| ())
     })
@@ -504,7 +504,7 @@ fn invoke_get_cow_protocol_allowance(harness: &TradingHarness) -> CaseFuture<'_>
     Box::pin(async move {
         harness
             .trading
-            .get_cow_protocol_allowance(&harness.provider, &allowance_params())
+            .cow_protocol_allowance(&harness.provider, &allowance_params())
             .await
             .map(|_: Amount| ())
     })
@@ -551,15 +551,15 @@ fn tested_method_table_documents_expected_surface() {
     assert_eq!(
         names,
         [
-            "get_quote_results",
+            "quote_results",
             "post_swap_order",
             "post_swap_order_from_quote",
             "post_limit_order",
-            "get_pre_sign_transaction",
-            "get_order",
+            "pre_sign_transaction",
+            "order",
             "off_chain_cancel_order",
             "on_chain_cancel_order",
-            "get_cow_protocol_allowance",
+            "cow_protocol_allowance",
             "approve_cow_protocol",
         ]
     );

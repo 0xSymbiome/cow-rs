@@ -33,9 +33,9 @@ or unrelated credential-hygiene questions.
 | AppCode attribution | Trading attribution uses the `AppCode` newtype, rejecting empty strings, NUL bytes, and ASCII control characters before ready-state construction | Conforms |
 | Typestate ready construction | `TradingBuilder::build` and `TradingBuilder::ready` require total chain id plus validated `appCode` inputs before ready-state construction | Conforms |
 | wasm32 build() requires injected orderbook client | `build()` returns `TradingError::MissingInjectedOrderbookClient` when `options.orderbook_client().is_none()` on `wasm32` | Conforms |
-| Chain-bound helper free functions | `get_cow_protocol_allowance`, `approval_transaction`, `get_pre_sign_transaction`, and `cancel_order_onchain` need chain authority but no `appCode`, and run without a trading client | Conforms |
+| Chain-bound helper free functions | `cow_protocol_allowance`, `approval_transaction`, `pre_sign_transaction`, and `cancel_order_onchain` need chain authority but no `appCode`, and run without a trading client | Conforms |
 | Chain-bound helper prerequisites | Allowance, approval, pre-sign, and on-chain cancellation no longer require `appCode` when only chain and protocol context are needed | Conforms |
-| Per-trade owner attribution | `TradeParameters.owner`, `LimitTradeParameters.owner`, and `OrderTraderParameters` carry the per-trade owner. The SDK does not store a default owner; for signer-backed flows the signer address resolved through `Signer::get_address` is the implicit fallback, and for quote-only flows the owner must come from `TradeParameters.owner` or `advanced_settings.quote_request.from`. | Conforms |
+| Per-trade owner attribution | `TradeParameters.owner`, `LimitTradeParameters.owner`, and `OrderTraderParameters` carry the per-trade owner. The SDK does not store a default owner; for signer-backed flows the signer address resolved through `Signer::address` is the implicit fallback, and for quote-only flows the owner must come from `TradeParameters.owner` or `advanced_settings.quote_request.from`. | Conforms |
 
 ## Current Contract
 
@@ -66,7 +66,7 @@ used by native ready-state construction.
 
 Allowance reads, approval submission, pre-sign transaction construction, and
 on-chain cancellation are the crate's free functions —
-`get_cow_protocol_allowance`, `approval_transaction`, `get_pre_sign_transaction`,
+`cow_protocol_allowance`, `approval_transaction`, `pre_sign_transaction`,
 and `cancel_order_onchain`. They take chain and protocol context directly,
 need no `appCode`, and require no trading client, so an appCode-less integration
 (an allowance/approval screen, a pre-sign tool) calls them without constructing
@@ -91,13 +91,13 @@ and on `OrderTraderParameters` for order-context flows. The
 
 Resolved owner precedence is:
 
-- Quote-only flows (`get_quote_only`):
+- Quote-only flows (`quote_only`):
   `advanced_settings.quote_request.from` → `TradeParameters.owner` →
   `TradingError::MissingOwner`.
 - Signer-backed flows (`post_swap_order`,
   `post_swap_order_from_quote`, `post_limit_order`,
-  `get_quote_results`): `TradeParameters.owner` → signer address
-  resolved through `Signer::get_address`.
+  `quote_results`): `TradeParameters.owner` → signer address
+  resolved through `Signer::address`.
 
 Documented owner precedence is the only owner contract observed by the
 SDK; no SDK-level fallback fires.

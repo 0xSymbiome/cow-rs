@@ -44,7 +44,7 @@ async fn version_endpoint_matches_transport_contract() {
     );
 
     let version = api
-        .get_version()
+        .version()
         .await
         .expect("version request should succeed");
 
@@ -87,7 +87,7 @@ async fn context_override_applies_base_urls_and_api_key_to_requests() {
         );
 
     let version = api
-        .get_version()
+        .version()
         .await
         .expect("context override request should succeed");
 
@@ -109,7 +109,7 @@ async fn invalid_partner_api_key_fails_before_transport() {
         );
 
     let error = api
-        .get_version()
+        .version()
         .await
         .expect_err("invalid API key must fail before request transport");
 
@@ -134,7 +134,7 @@ fn explicit_env_base_url_override_precedes_context_base_urls() {
         .with_env_base_url(CowEnv::Prod, "https://override.example/xdai/");
 
     assert_eq!(
-        api.get_order_link(&uid)
+        api.order_link(&uid)
             .expect("explicit env override should win"),
         format!(
             "https://override.example/xdai/api/v1/orders/{}",
@@ -187,7 +187,7 @@ async fn transport_policy_override_rebuilds_client_with_custom_user_agent() {
     .with_env_base_url(CowEnv::Prod, server.uri());
 
     let version = api
-        .get_version()
+        .version()
         .await
         .expect("custom client policy should succeed");
 
@@ -227,7 +227,7 @@ async fn cloned_clients_share_the_same_instance_scoped_rate_limiter() {
     .with_env_base_url(CowEnv::Prod, server.uri());
 
     let sibling = api.clone();
-    let (first, second) = tokio::join!(api.get_version(), sibling.get_version());
+    let (first, second) = tokio::join!(api.version(), sibling.version());
 
     assert_eq!(
         first.expect("first version request should succeed"),
@@ -289,7 +289,7 @@ async fn service_unavailable_retry_after_header_delays_retry_for_at_least_server
     .with_env_base_url(CowEnv::Prod, server.uri());
 
     let version = api
-        .get_version()
+        .version()
         .await
         .expect("retry-after response should be retried after the server cooldown");
 
@@ -315,7 +315,7 @@ fn order_link_uses_chain_aware_urls_for_gnosis_and_mainnet() {
 
     assert_eq!(
         gnosis
-            .get_order_link(&uid)
+            .order_link(&uid)
             .expect("gnosis order link should resolve"),
         format!(
             "https://api.cow.fi/xdai/api/v1/orders/{}",
@@ -324,7 +324,7 @@ fn order_link_uses_chain_aware_urls_for_gnosis_and_mainnet() {
     );
     assert_eq!(
         mainnet
-            .get_order_link(&uid)
+            .order_link(&uid)
             .expect("mainnet order link should resolve"),
         format!(
             "https://api.cow.fi/mainnet/api/v1/orders/{}",
@@ -354,7 +354,7 @@ async fn get_orders_uses_default_pagination_and_transforms_orders() {
     );
 
     let orders = api
-        .get_orders(&GetOrdersRequest::new(sample_owner()))
+        .orders(&GetOrdersRequest::new(sample_owner()))
         .await
         .expect("orders request should succeed");
 
@@ -391,7 +391,7 @@ async fn account_orders_pagination_boundary_table() {
             .with_limit(limit);
 
         let orders = api
-            .get_orders(&request)
+            .orders(&request)
             .await
             .unwrap_or_else(|error| panic!("pagination case {offset}/{limit} failed: {error}"));
 
@@ -417,7 +417,7 @@ async fn get_trades_requires_owner_xor_order_uid_and_keeps_default_pagination() 
         server.uri(),
     );
     let trades = api
-        .get_trades(&GetTradesRequest::by_owner(sample_owner()))
+        .trades(&GetTradesRequest::by_owner(sample_owner()))
         .await
         .expect("trade request should succeed");
 
@@ -432,7 +432,7 @@ async fn get_trades_requires_owner_xor_order_uid_and_keeps_default_pagination() 
     );
 
     let invalid = api
-        .get_trades(&GetTradesRequest::new(
+        .trades(&GetTradesRequest::new(
             Some(sample_owner()),
             Some(sample_order_uid()),
         ))
@@ -469,7 +469,7 @@ async fn get_quote_and_send_order_cover_quote_and_duplicate_order_paths() {
         server.uri(),
     );
     let quote = api
-        .get_quote(&cow_sdk_orderbook::OrderQuoteRequest::new(
+        .quote(&cow_sdk_orderbook::OrderQuoteRequest::new(
             sample_owner(),
             crate::common::sample_buy_token(),
             sample_owner(),
@@ -557,7 +557,7 @@ async fn order_lookup_falls_back_to_staging_only_on_404() {
         .with_env_base_url(CowEnv::Staging, staging.uri());
 
     let order = api
-        .get_order_multi_env(&uid)
+        .order_multi_env(&uid)
         .await
         .expect("staging fallback should succeed");
 
@@ -602,7 +602,7 @@ async fn app_data_transport_helpers_use_get_and_put_hash_routes() {
     );
 
     let downloaded: AppDataObject = api
-        .get_app_data(&get_hash)
+        .app_data(&get_hash)
         .await
         .expect("app-data fetch should succeed");
     api.upload_app_data(&upload_hash, SAMPLE_UPLOAD_BODY)
@@ -785,19 +785,19 @@ async fn native_price_surplus_and_solver_competition_routes_are_covered() {
     );
 
     let native_price = api
-        .get_native_price(&sample_owner())
+        .native_price(&sample_owner())
         .await
         .expect("native price request should succeed");
     let surplus = api
-        .get_total_surplus(&sample_owner())
+        .total_surplus(&sample_owner())
         .await
         .expect("surplus request should succeed");
     let by_auction = api
-        .get_solver_competition_by_auction_id(7)
+        .solver_competition_by_auction_id(7)
         .await
         .expect("competition by auction id should succeed");
     let by_tx = api
-        .get_solver_competition_by_tx_hash(sample_tx_hash())
+        .solver_competition_by_tx_hash(sample_tx_hash())
         .await
         .expect("competition by tx hash should succeed");
 
@@ -903,7 +903,7 @@ async fn get_order_status_route_is_typed() {
         server.uri(),
     );
     let status = api
-        .get_order_competition_status(&uid)
+        .order_competition_status(&uid)
         .await
         .expect("status request should succeed");
 
@@ -922,7 +922,7 @@ async fn get_version_returns_cancelled_when_combinator_token_fires_before_send()
     token.cancel();
 
     let error = api
-        .get_version()
+        .version()
         .cancel_with(&token)
         .await
         .expect_err("pre-cancelled token must produce a Cancelled error");
@@ -967,7 +967,7 @@ async fn get_version_combinator_aborts_an_in_flight_request() {
     let started = Instant::now();
     let task = tokio::spawn(async move {
         let _spy = spy;
-        api.get_version().cancel_with(&token_for_task).await
+        api.version().cancel_with(&token_for_task).await
     });
 
     tokio::time::sleep(Duration::from_millis(50)).await;
@@ -1034,11 +1034,11 @@ async fn shared_client_fans_requests_across_multiple_orderbook_instances() {
     );
 
     let first_version = first_api
-        .get_version()
+        .version()
         .await
         .expect("first shared-client request must succeed");
     let second_version = second_api
-        .get_version()
+        .version()
         .await
         .expect("second shared-client request must succeed");
 
@@ -1087,7 +1087,7 @@ mod recording_transport {
         let api = api_with_recorder(recorder.clone());
 
         let order = api
-            .get_order(&uid)
+            .order(&uid)
             .await
             .expect("order lookup must succeed through the injected transport");
 
@@ -1109,7 +1109,7 @@ mod recording_transport {
         let api = api_with_recorder(recorder.clone());
 
         let quote = api
-            .get_quote(&cow_sdk_orderbook::OrderQuoteRequest::new(
+            .quote(&cow_sdk_orderbook::OrderQuoteRequest::new(
                 sample_owner(),
                 sample_buy_token(),
                 sample_owner(),
@@ -1190,7 +1190,7 @@ mod recording_transport {
         let api = api_with_recorder_and_policy(recorder.clone(), policy);
 
         let version = api
-            .get_version()
+            .version()
             .await
             .expect("the third attempt must succeed after the retry loop");
         assert_eq!(version, "v1.2.3");
@@ -1215,7 +1215,7 @@ mod recording_transport {
         let api = api_with_recorder_and_policy(recorder.clone(), policy);
 
         let error = api
-            .get_version()
+            .version()
             .await
             .expect_err("non-2xx response must surface through the typed error channel");
         match error {

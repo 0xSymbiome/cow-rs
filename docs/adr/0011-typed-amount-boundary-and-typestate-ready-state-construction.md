@@ -192,7 +192,7 @@ as a real newtype around `LimitTradeParameters` that guarantees a
 non-`None` `quote_id` by construction; the prior transparent type
 alias is removed. The `EthFlow` native-currency submission seam
 (`post_sell_native_currency_order`) and the `EthFlow` transaction
-helper (`get_eth_flow_transaction`) accept only
+helper (`eth_flow_transaction`) accept only
 `LimitTradeParametersFromQuote` on their public entries, lifting
 the prior `MissingQuoteId` runtime check on the `EthFlow` path to
 a compile-time guarantee at the public boundary while preserving
@@ -222,10 +222,10 @@ owner; the call-level owner is the only owner the SDK observes.
 
 For signer-backed flows (`post_swap_order`,
 `post_swap_order_from_quote`, `post_limit_order`,
-`get_quote_results`) the signer address resolved through
-`Signer::get_address` is the implicit fallback when
+`quote_results`) the signer address resolved through
+`Signer::address` is the implicit fallback when
 `TradeParameters.owner` is `None`. For quote-only flows
-(`get_quote_only`) the owner must be supplied through
+(`quote_only`) the owner must be supplied through
 `TradeParameters.owner` or through
 `advanced_settings.quote_request.from`; missing owner surfaces as
 `TradingError::MissingOwner` at the call boundary.
@@ -331,13 +331,13 @@ type is superseded: `TradingBuilder` exposes a single ready-state terminal pair 
 trading client.
 
 `TradingHelpers` duplicated four methods already on `Trading`
-(`get_pre_sign_transaction`, `on_chain_cancel_order`,
-`get_cow_protocol_allowance`, `approve_cow_protocol`) plus their chain-binding
+(`pre_sign_transaction`, `on_chain_cancel_order`,
+`cow_protocol_allowance`, `approve_cow_protocol`) plus their chain-binding
 resolvers, and added no capability that `Trading` or the crate's free functions
 did not already provide. App-code-less helper flows — allowance, approval,
 pre-sign, and on-chain cancellation, none of which need an `appCode` — are the
-crate's free functions (`get_cow_protocol_allowance`, `approval_transaction`,
-`get_pre_sign_transaction`, `cancel_order_onchain`), which take chain and
+crate's free functions (`cow_protocol_allowance`, `approval_transaction`,
+`pre_sign_transaction`, `cancel_order_onchain`), which take chain and
 protocol context directly and require no trading client.
 
 The "Sole Construction Seam" principle is unchanged: `Trading` still constructs

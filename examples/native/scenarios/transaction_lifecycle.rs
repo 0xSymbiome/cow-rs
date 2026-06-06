@@ -29,7 +29,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let signer = client.create_signer("local-key").await?;
 
     // A simple self-transfer to broadcast in both shapes below.
-    let tx = self_transfer(&signer.get_address().await?);
+    let tx = self_transfer(&signer.address().await?);
 
     // Shape A: one helper call broadcasts once and returns the mined receipt.
     let helper_receipt =

@@ -1,7 +1,7 @@
 use cow_sdk_core::{Amount, CowEnv, Provider, Signer, TransactionHash};
 
 use super::Trading;
-use crate::{AllowanceParameters, ApprovalParameters, TradingError, get_cow_protocol_allowance};
+use crate::{AllowanceParameters, ApprovalParameters, TradingError, cow_protocol_allowance};
 
 impl Trading {
     /// Reads the `CoW` Protocol allowance.
@@ -20,11 +20,11 @@ impl Trading {
             fields(
                 chain = ?params.chain_id,
                 env = ?params.env,
-                endpoint = "trading.get_cow_protocol_allowance",
+                endpoint = "trading.cow_protocol_allowance",
             ),
         ),
     )]
-    pub async fn get_cow_protocol_allowance<P>(
+    pub async fn cow_protocol_allowance<P>(
         &self,
         provider: &P,
         params: &AllowanceParameters,
@@ -39,7 +39,7 @@ impl Trading {
             .ok_or(TradingError::MissingTraderParameters("chainId"))?;
         let env = trader.env.unwrap_or(CowEnv::Prod);
 
-        get_cow_protocol_allowance(
+        cow_protocol_allowance(
             provider,
             &params.token_address,
             &params.owner,

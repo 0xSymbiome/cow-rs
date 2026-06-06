@@ -31,7 +31,7 @@ It does not cover the order-bounds validator (covered by the [Trading Order-Boun
 | Post-quote shape | `LimitTradeParameters` carries `sell_amount`, `buy_amount`, and `quote_id: Option<i64>` plus the optional override fields shared with the pre-quote shape and is accepted by the limit-order submission entry | Conforms |
 | From-quote refinement | `LimitTradeParametersFromQuote` wraps `LimitTradeParameters` and guarantees `quote_id` is `Some` by construction; `quote_id()` returns the inner value without an `Option` | Conforms |
 | Bridge | `swap_params_to_limit_order_params` is the only public path that produces a `LimitTradeParametersFromQuote` value from a `TradeParameters` plus an orderbook quote response | Conforms |
-| EthFlow entry binding | `post_sell_native_currency_order` and `get_eth_flow_transaction` accept only `LimitTradeParametersFromQuote` on their public entries | Conforms |
+| EthFlow entry binding | `post_sell_native_currency_order` and `eth_flow_transaction` accept only `LimitTradeParametersFromQuote` on their public entries | Conforms |
 | Diagnostic preservation | Attempting to construct `LimitTradeParametersFromQuote` from a value with `quote_id = None` returns `TradingError::MissingQuoteId("EthFlow order posting")` with the same diagnostic shape callers observed before the newtype was introduced | Conforms |
 | Setter dedup | Shared `with_*` setter bodies live in one internal definition and emit identical inherent methods on both public types; the public surface shape is preserved exactly | Conforms |
 
@@ -73,7 +73,7 @@ APIs that take the underlying type by reference.
 
 The `EthFlow` native-currency submission entry
 `post_sell_native_currency_order` and the `EthFlow` transaction helper
-`get_eth_flow_transaction` accept only `LimitTradeParametersFromQuote`
+`eth_flow_transaction` accept only `LimitTradeParametersFromQuote`
 on their public entries. The quote-id requirement is enforced at the
 type system at the public boundary. Internal orchestration through
 `post_cow_protocol_trade` continues to support both shapes; the

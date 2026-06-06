@@ -64,7 +64,7 @@ where
     inner.env = Some(canonical_env);
     let params = LimitTradeParametersFromQuote::try_from_limit(inner)?;
 
-    let tx = crate::get_eth_flow_transaction(
+    let tx = crate::eth_flow_transaction(
         &app_data.app_data_keccak256,
         &params,
         canonical_chain_id,

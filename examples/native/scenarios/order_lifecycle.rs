@@ -1,6 +1,6 @@
 //! Single-order lookup and off-chain cancellation.
 //!
-//! Looks up an order by uid (`Trading::get_order`) and cancels it off-chain
+//! Looks up an order by uid (`Trading::order`) and cancels it off-chain
 //! (`Trading::off_chain_cancel_order`) through a transport-mocked orderbook and
 //! signer, inspecting the signed cancellation the SDK records. Off-chain
 //! cancellation is a signed API call, not an on-chain transaction.
@@ -35,7 +35,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let params = OrderTraderParameters::new(sample_order_uid());
 
     // Fetch the order, then cancel it off-chain — a signed API call, not a transaction.
-    let order = trading.get_order(&params).await?;
+    let order = trading.order(&params).await?;
     let cancelled = trading.off_chain_cancel_order(&params, &signer).await?;
     let state = orderbook.recorded();
 

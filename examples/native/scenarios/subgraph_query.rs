@@ -123,9 +123,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .build()?;
 
     // Canonical typed helpers.
-    let totals = subgraph.get_totals().await?;
-    let last_days = subgraph.get_last_days_volume(7).await?;
-    let last_hours = subgraph.get_last_hours_volume(24).await?;
+    let totals = subgraph.totals().await?;
+    let last_days = subgraph.last_days_volume(7).await?;
+    let last_hours = subgraph.last_hours_volume(24).await?;
 
     // Custom GraphQL deserialized into a caller-owned type.
     let custom: TokensByVolumeResponse = subgraph.run_query(custom_request).await?;

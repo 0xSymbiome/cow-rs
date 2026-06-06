@@ -2,7 +2,7 @@ use cow_sdk_core::Signer;
 
 use super::Trading;
 use crate::{
-    OrderTraderParameters, TradingError, get_pre_sign_transaction,
+    OrderTraderParameters, TradingError, pre_sign_transaction,
     onchain::protocol_options_for_partial_order,
 };
 
@@ -23,12 +23,12 @@ impl Trading {
             fields(
                 chain = ?params.chain_id,
                 env = ?params.env,
-                endpoint = "trading.get_pre_sign_transaction",
+                endpoint = "trading.pre_sign_transaction",
                 order_uid = %params.order_uid,
             ),
         ),
     )]
-    pub async fn get_pre_sign_transaction<S>(
+    pub async fn pre_sign_transaction<S>(
         &self,
         params: &OrderTraderParameters,
         signer: &S,
@@ -43,6 +43,6 @@ impl Trading {
             .ok_or(TradingError::MissingTraderParameters("chainId"))?;
         let options = protocol_options_for_partial_order(params, &trader);
 
-        get_pre_sign_transaction(signer, chain_id, &params.order_uid, Some(&options)).await
+        pre_sign_transaction(signer, chain_id, &params.order_uid, Some(&options)).await
     }
 }

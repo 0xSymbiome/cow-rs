@@ -73,7 +73,7 @@ impl SubgraphClient {
     /// @returns A versioned envelope containing aggregate totals.
     /// @throws SdkError for transport, cancellation, timeout, or subgraph errors.
     #[wasm_bindgen(js_name = "getTotals")]
-    pub async fn get_totals(
+    pub async fn totals(
         &self,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
     ) -> Result<JsValue, JsValue> {
@@ -92,7 +92,7 @@ impl SubgraphClient {
     /// @returns A versioned envelope containing daily volume rows.
     /// @throws SdkError for invalid query shape, transport failure, or timeout.
     #[wasm_bindgen(js_name = "getLastDaysVolume")]
-    pub async fn get_last_days_volume(
+    pub async fn last_days_volume(
         &self,
         days: u32,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
@@ -115,7 +115,7 @@ impl SubgraphClient {
     /// @returns A versioned envelope containing hourly volume rows.
     /// @throws SdkError for invalid query shape, transport failure, or timeout.
     #[wasm_bindgen(js_name = "getLastHoursVolume")]
-    pub async fn get_last_hours_volume(
+    pub async fn last_hours_volume(
         &self,
         hours: u32,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
@@ -180,7 +180,7 @@ fn subgraph_for_scope(inner: &SubgraphApi, scope: &ClientCallScope) -> SubgraphA
 
 async fn subgraph_get_totals(inner: &SubgraphApi) -> Result<JsValue, JsValue> {
     let totals = inner
-        .get_totals()
+        .totals()
         .await
         .map_err(|error| WasmError::from(error).into_js())?;
     to_js_value(&WasmEnvelope::v1(totals))
@@ -188,7 +188,7 @@ async fn subgraph_get_totals(inner: &SubgraphApi) -> Result<JsValue, JsValue> {
 
 async fn subgraph_get_last_days_volume(inner: &SubgraphApi, days: u32) -> Result<JsValue, JsValue> {
     let volume = inner
-        .get_last_days_volume(days)
+        .last_days_volume(days)
         .await
         .map_err(|error| WasmError::from(error).into_js())?;
     to_js_value(&WasmEnvelope::v1(volume))
@@ -199,7 +199,7 @@ async fn subgraph_get_last_hours_volume(
     hours: u32,
 ) -> Result<JsValue, JsValue> {
     let volume = inner
-        .get_last_hours_volume(hours)
+        .last_hours_volume(hours)
         .await
         .map_err(|error| WasmError::from(error).into_js())?;
     to_js_value(&WasmEnvelope::v1(volume))

@@ -14,21 +14,21 @@
 mod common;
 
 use cow_sdk_core::{Address, CowEnv, ProtocolOptions, SupportedChainId};
-use cow_sdk_signing::{domain_separator, get_domain, order_typed_data};
+use cow_sdk_signing::{domain_separator, domain, order_typed_data};
 use sha3::{Digest, Keccak256};
 
 use common::sample_order;
 
 #[test]
 fn domain_resolution_honors_default_env_staging_and_override_precedence() {
-    let default_domain = get_domain(SupportedChainId::Mainnet, None).unwrap();
-    let staging_domain = get_domain(
+    let default_domain = domain(SupportedChainId::Mainnet, None).unwrap();
+    let staging_domain = domain(
         SupportedChainId::Mainnet,
         Some(&ProtocolOptions::new().with_env(CowEnv::Staging)),
     )
     .unwrap();
     let override_address = Address::new("0x1111111111111111111111111111111111111111").unwrap();
-    let override_domain = get_domain(
+    let override_domain = domain(
         SupportedChainId::Mainnet,
         Some(
             &ProtocolOptions::new()

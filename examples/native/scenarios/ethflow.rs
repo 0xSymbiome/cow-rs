@@ -1,6 +1,6 @@
 //! Native-sell / EthFlow order construction and posting.
 //!
-//! Builds the on-chain EthFlow transaction (`get_eth_flow_transaction`) and
+//! Builds the on-chain EthFlow transaction (`eth_flow_transaction`) and
 //! posts a native-currency sell order (`post_sell_native_currency_order`) with
 //! merged app data (`build_app_data`), against a transport-mocked orderbook and
 //! signer. EthFlow lets a user sell the native token (for example ETH) directly.
@@ -14,7 +14,7 @@ use cow_sdk::core::{Address, EVM_NATIVE_CURRENCY_ADDRESS, HexData};
 use cow_sdk::prelude::SupportedChainId;
 use cow_sdk::trading::{
     LimitTradeParametersFromQuote, PostTradeAdditionalParams, build_app_data,
-    get_eth_flow_transaction, post_sell_native_currency_order,
+    eth_flow_transaction, post_sell_native_currency_order,
 };
 
 use cow_sdk::testing::{MockOrderbook, MockSigner};
@@ -55,7 +55,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // Build the on-chain EthFlow transaction (the contract call that creates the
     // order) without posting anything.
-    let ethflow = get_eth_flow_transaction(
+    let ethflow = eth_flow_transaction(
         &app_data.app_data_keccak256,
         &from_quote,
         trader.chain_id,
@@ -83,7 +83,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .expect("native-sell simulation should upload app data");
 
     let report = json!({
-        "surface": "cow-sdk::trading::get_eth_flow_transaction + post_sell_native_currency_order",
+        "surface": "cow-sdk::trading::eth_flow_transaction + post_sell_native_currency_order",
         "mode": "simulated-transport",
         "ethFlowTransaction": {
             "orderId": ethflow.order_id.to_hex_string(),

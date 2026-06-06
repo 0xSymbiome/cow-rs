@@ -15,7 +15,7 @@ use crate::validation::OrderBoundsValidator;
 use crate::{
     LimitTradeParameters, LimitTradeParametersFromQuote, OrderPostingResult, OrderbookClient,
     TradeAdvancedSettings, TraderParameters, TradingAppDataInfo, TradingError,
-    adjust_ethflow_limit_parameters, get_order_to_sign, is_ethflow_order,
+    adjust_ethflow_limit_parameters, order_to_sign, is_ethflow_order,
 };
 
 fn build_order_body(
@@ -103,10 +103,10 @@ where
         ) {
         Some(
             signer
-                .get_address()
+                .address()
                 .await
                 .map_err(|error| TradingError::Signer {
-                    operation: "get_address",
+                    operation: "address",
                     message: error.to_string().into(),
                 })?,
         )
@@ -143,7 +143,7 @@ where
     {
         options = options.with_eth_flow_contract_override(overrides);
     }
-    let order_to_sign = get_order_to_sign(
+    let order_to_sign = order_to_sign(
         crate::order::OrderToSignParams {
             chain_id,
             from,

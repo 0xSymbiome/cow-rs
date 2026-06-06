@@ -2,7 +2,7 @@
 //!
 //! Implements `EthFlowOrderExistsChecker` and wires it through
 //! `PostTradeAdditionalParams::with_check_eth_flow_order_exists`, then builds the
-//! on-chain EthFlow transaction with `get_eth_flow_transaction`. Each reported
+//! on-chain EthFlow transaction with `eth_flow_transaction`. Each reported
 //! collision forces a fresh order id, so a run with scripted collisions resolves
 //! to a different id than a collision-free run; both runs drain their checker
 //! queue. Uses the `cow_sdk::testing` signer and no live transport.
@@ -17,7 +17,7 @@ use serde_json::json;
 use cow_sdk::core::{Address, EVM_NATIVE_CURRENCY_ADDRESS, OrderDigest, OrderUid};
 use cow_sdk::trading::{
     EthFlowOrderExistsChecker, LimitTradeParametersFromQuote, PostTradeAdditionalParams,
-    TradingError, build_app_data, get_eth_flow_transaction,
+    TradingError, build_app_data, eth_flow_transaction,
 };
 
 use cow_sdk::testing::MockSigner;
@@ -77,7 +77,7 @@ async fn build_order_id(collisions: Vec<bool>) -> Result<(OrderUid, usize), Box<
         },
     ));
 
-    let ethflow = get_eth_flow_transaction(
+    let ethflow = eth_flow_transaction(
         &app_data.app_data_keccak256,
         &native_sell_params()?,
         trader.chain_id,

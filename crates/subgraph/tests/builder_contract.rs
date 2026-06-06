@@ -173,7 +173,7 @@ async fn injected_transport_observes_every_live_request_from_the_built_client() 
     assert!(Arc::ptr_eq(api.transport(), &transport));
 
     let totals = api
-        .get_totals()
+        .totals()
         .await
         .expect("the injected transport should deliver the canned totals response");
     assert_eq!(totals.tokens, "1");

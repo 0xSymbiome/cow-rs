@@ -59,7 +59,7 @@ async fn version_fixture_is_plain_text() {
     .expect("test orderbook client with local mock endpoint must build");
 
     let version = api
-        .get_version()
+        .version()
         .await
         .expect("version fixture should load");
 
@@ -75,7 +75,7 @@ async fn mock_order_lookup_is_uid_keyed() {
     orderbook.push_order(sample_open_order());
 
     let order = orderbook
-        .get_order(&sample_order_uid())
+        .order(&sample_order_uid())
         .await
         .expect("sample order should be found by its uid");
 
@@ -84,7 +84,7 @@ async fn mock_order_lookup_is_uid_keyed() {
     let unknown_uid = OrderUid::new(format!("0x{}", "0".repeat(112)))
         .expect("zero order uid fixture should be valid");
     orderbook
-        .get_order(&unknown_uid)
+        .order(&unknown_uid)
         .await
         .expect_err("an unregistered order uid must not resolve");
 }
@@ -149,9 +149,9 @@ fn mandatory_trading_examples_reference_reviewed_sdk_surfaces() {
     let ethflow = include_str!("../scenarios/ethflow.rs");
     let onchain = include_str!("../scenarios/onchain_actions.rs");
 
-    assert!(ethflow.contains("get_eth_flow_transaction"));
+    assert!(ethflow.contains("eth_flow_transaction"));
     assert!(ethflow.contains("post_sell_native_currency_order"));
-    assert!(onchain.contains("get_pre_sign_transaction"));
+    assert!(onchain.contains("pre_sign_transaction"));
     assert!(onchain.contains("on_chain_cancel_order"));
     assert!(onchain.contains("onchain_cancellation_transaction"));
 }

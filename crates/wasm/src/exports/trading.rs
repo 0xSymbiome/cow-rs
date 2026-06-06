@@ -122,13 +122,13 @@ impl TradingClient {
     /// @throws SdkError for invalid parameters, transport failure, timeout, or cancellation.
     #[cfg_attr(
         feature = "tracing",
-        tracing::instrument(skip_all, fields(endpoint = "wasm.trading.get_quote"))
+        tracing::instrument(skip_all, fields(endpoint = "wasm.trading.quote"))
     )]
     #[wasm_bindgen(
         js_name = "getQuote",
         unchecked_return_type = "WasmEnvelope<QuoteResultsDto>"
     )]
-    pub async fn get_quote(
+    pub async fn quote(
         &self,
         params: SwapParametersInput,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
@@ -321,14 +321,14 @@ impl TradingClient {
         feature = "tracing",
         tracing::instrument(
             skip_all,
-            fields(endpoint = "wasm.trading.get_cow_protocol_allowance")
+            fields(endpoint = "wasm.trading.cow_protocol_allowance")
         )
     )]
     #[wasm_bindgen(
         js_name = "getCowProtocolAllowance",
         unchecked_return_type = "WasmEnvelope<string>"
     )]
-    pub async fn get_cow_protocol_allowance(
+    pub async fn cow_protocol_allowance(
         &self,
         params: AllowanceParametersInput,
         #[wasm_bindgen(js_name = readContractCallback, unchecked_param_type = "ContractReadCallback")]
@@ -430,7 +430,7 @@ async fn trading_get_quote(
 ) -> Result<JsValue, JsValue> {
     let params: TradeParameters = from_json_value("params", params.into_value()?)?;
     let quote = inner
-        .get_quote_only(params, None)
+        .quote_only(params, None)
         .await
         .map_err(|error| WasmError::from(error).into_js())?;
     to_js_value(&WasmEnvelope::v1(quote))
@@ -578,7 +578,7 @@ async fn trading_get_cow_protocol_allowance(
     let params: AllowanceParameters = from_json_value("params", params.into_value()?)?;
     let provider = JsContractReadProvider::new(read_contract_callback);
     let allowance = inner
-        .get_cow_protocol_allowance(&provider, &params)
+        .cow_protocol_allowance(&provider, &params)
         .await
         .map_err(|error| WasmError::from(error).into_js())?;
     to_js_value(&WasmEnvelope::v1(allowance))
@@ -601,7 +601,7 @@ async fn trading_post_swap_order_with_eip1271(
             .with_signing_scheme(SigningScheme::Eip1271),
     );
     let quote = inner
-        .get_quote_only(params, Some(&quote_settings))
+        .quote_only(params, Some(&quote_settings))
         .await
         .map_err(|error| WasmError::from(error).into_js())?;
     // Resolve the contract signature at the wallet boundary, then hand the managed
@@ -664,7 +664,7 @@ impl JsTradingSigner {
 impl Signer for JsTradingSigner {
     type Error = String;
 
-    async fn get_address(&self) -> Result<Address, Self::Error> {
+    async fn address(&self) -> Result<Address, Self::Error> {
         Ok(self.owner.clone())
     }
 

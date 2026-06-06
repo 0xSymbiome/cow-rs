@@ -37,7 +37,7 @@ struct Inner {
 #[derive(Clone, Debug, Default)]
 #[non_exhaustive]
 pub struct OrderbookCalls {
-    /// Requests passed to [`OrderbookClient::get_quote`].
+    /// Requests passed to [`OrderbookClient::quote`].
     pub quote_requests: Vec<OrderQuoteRequest>,
     /// Orders passed to [`OrderbookClient::send_order`].
     pub sent_orders: Vec<OrderCreation>,
@@ -66,7 +66,7 @@ impl MockOrderbook {
         self.lock().calls.clone()
     }
 
-    /// Registers `order` so [`OrderbookClient::get_order`] resolves its UID.
+    /// Registers `order` so [`OrderbookClient::order`] resolves its UID.
     pub fn push_order(&self, order: Order) {
         self.lock().orders.push(order);
     }
@@ -108,7 +108,7 @@ impl MockOrderbookBuilder {
         self
     }
 
-    /// Sets the response [`OrderbookClient::get_quote`] returns.
+    /// Sets the response [`OrderbookClient::quote`] returns.
     #[must_use]
     pub fn quote(mut self, quote: OrderQuoteResponse) -> Self {
         self.quote = quote;
@@ -122,14 +122,14 @@ impl MockOrderbookBuilder {
         self
     }
 
-    /// Registers `order` for [`OrderbookClient::get_order`] lookup.
+    /// Registers `order` for [`OrderbookClient::order`] lookup.
     #[must_use]
     pub fn order(mut self, order: Order) -> Self {
         self.orders.push(order);
         self
     }
 
-    /// Makes [`OrderbookClient::get_quote`] fail with `failure`.
+    /// Makes [`OrderbookClient::quote`] fail with `failure`.
     #[must_use]
     pub fn fail_quote(mut self, failure: OrderbookFailure) -> Self {
         self.fail_quote = Some(failure);
@@ -167,7 +167,7 @@ impl OrderbookClient for MockOrderbook {
         &self.context
     }
 
-    async fn get_quote(
+    async fn quote(
         &self,
         request: &OrderQuoteRequest,
     ) -> Result<OrderQuoteResponse, OrderbookError> {
@@ -196,7 +196,7 @@ impl OrderbookClient for MockOrderbook {
         Ok(())
     }
 
-    async fn get_order(&self, order_uid: &OrderUid) -> Result<Order, OrderbookError> {
+    async fn order(&self, order_uid: &OrderUid) -> Result<Order, OrderbookError> {
         self.lock()
             .orders
             .iter()

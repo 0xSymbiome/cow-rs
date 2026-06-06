@@ -105,7 +105,7 @@ struct DummySigner;
 impl Signer for DummySigner {
     type Error = AsyncMockProviderError;
 
-    async fn get_address(&self) -> Result<Address, Self::Error> {
+    async fn address(&self) -> Result<Address, Self::Error> {
         Ok(Address::new("0x1111111111111111111111111111111111111111").unwrap())
     }
 

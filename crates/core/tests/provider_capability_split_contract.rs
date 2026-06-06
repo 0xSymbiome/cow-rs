@@ -73,7 +73,7 @@ struct DirectSigner {
 impl Signer for DirectSigner {
     type Error = TestError;
 
-    async fn get_address(&self) -> Result<Address, Self::Error> {
+    async fn address(&self) -> Result<Address, Self::Error> {
         Ok(self.address)
     }
 
@@ -263,7 +263,7 @@ async fn signing_extension_preserves_signer_creation() {
     let signer = SigningProvider::create_signer(&provider, "primary")
         .await
         .unwrap();
-    assert_eq!(signer.get_address().await.unwrap(), sample_address());
+    assert_eq!(signer.address().await.unwrap(), sample_address());
     assert_eq!(
         signer.estimate_gas(&sample_transaction()).await.unwrap(),
         Amount::from(21_000u32)
@@ -289,7 +289,7 @@ async fn provider_and_signing_provider_split_cleanly_so_read_only_adapters_skip_
         .await
         .unwrap();
     assert_eq!(
-        Signer::get_address(&signer).await.unwrap(),
+        Signer::address(&signer).await.unwrap(),
         sample_address()
     );
     assert_eq!(

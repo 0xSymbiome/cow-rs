@@ -12,7 +12,7 @@ use cow_sdk_core::{
 };
 use cow_sdk_trading::{
     GAS_LIMIT_DEFAULT, LimitTradeParametersFromQuote, PostTradeAdditionalParams,
-    cancel_order_onchain, get_eth_flow_transaction, get_pre_sign_transaction,
+    cancel_order_onchain, eth_flow_transaction, pre_sign_transaction,
     onchain_cancellation_transaction,
 };
 
@@ -66,7 +66,7 @@ async fn presign_transaction_uses_zero_value_margin_and_settlement_override() {
             address(CUSTOM_SETTLEMENT),
         )]));
 
-    let tx = get_pre_sign_transaction(
+    let tx = pre_sign_transaction(
         &signer,
         SupportedChainId::Sepolia,
         &order_uid(),
@@ -89,7 +89,7 @@ async fn pre_sign_gas_estimate_applies_documented_floor_overhead() {
         let signer = MockSigner::default();
         set_estimated_gas(&signer, estimate);
 
-        let tx = get_pre_sign_transaction(&signer, SupportedChainId::Sepolia, &order_uid(), None)
+        let tx = pre_sign_transaction(&signer, SupportedChainId::Sepolia, &order_uid(), None)
             .await
             .expect("pre-sign transaction should build");
 
@@ -120,7 +120,7 @@ async fn ethflow_transaction_uses_wrapped_native_value_margin_and_ethflow_overri
 
     let from_quote = LimitTradeParametersFromQuote::try_from_limit(params)
         .expect("test params carry a quote id");
-    let transaction = get_eth_flow_transaction(
+    let transaction = eth_flow_transaction(
         &app_data_hash(),
         &from_quote,
         SupportedChainId::Sepolia,
@@ -158,7 +158,7 @@ async fn eth_flow_gas_estimate_applies_documented_floor_overhead() {
 
         let from_quote = LimitTradeParametersFromQuote::try_from_limit(params)
             .expect("test params carry a quote id");
-        let transaction = get_eth_flow_transaction(
+        let transaction = eth_flow_transaction(
             &app_data_hash(),
             &from_quote,
             SupportedChainId::Sepolia,
@@ -192,7 +192,7 @@ async fn ethflow_transaction_encodes_high_bit_uint256_amounts_as_unsigned_words(
 
     let from_quote = LimitTradeParametersFromQuote::try_from_limit(params)
         .expect("test params carry a quote id");
-    let transaction = get_eth_flow_transaction(
+    let transaction = eth_flow_transaction(
         &app_data_hash(),
         &from_quote,
         SupportedChainId::Sepolia,
@@ -233,7 +233,7 @@ async fn ethflow_transaction_sign_extends_negative_quote_id_in_the_encoded_tuple
 
     let from_quote = LimitTradeParametersFromQuote::try_from_limit(params)
         .expect("test params carry a quote id");
-    let transaction = get_eth_flow_transaction(
+    let transaction = eth_flow_transaction(
         &app_data_hash(),
         &from_quote,
         SupportedChainId::Sepolia,

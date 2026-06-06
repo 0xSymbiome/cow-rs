@@ -81,7 +81,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         request.offset = offset;
         request.limit = PAGE_SIZE;
 
-        let page = orderbook.get_orders(&request).await?;
+        let page = orderbook.orders(&request).await?;
         println!(
             "offset={offset:>3} limit={limit:>3} returned={count}",
             limit = PAGE_SIZE,

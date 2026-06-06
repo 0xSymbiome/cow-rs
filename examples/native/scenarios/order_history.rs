@@ -1,12 +1,12 @@
 //! Order list / trade-history beat.
 //!
-//! Demonstrates `OrderbookApi::get_orders` and `OrderbookApi::get_trades` — the
+//! Demonstrates `OrderbookApi::orders` and `OrderbookApi::trades` — the
 //! list and history endpoints a consumer uses to show an account's open orders
 //! and settled trades.
 //!
 //! These methods live on the concrete `OrderbookApi`: the `OrderbookClient`
 //! trait and the high-level `Trading` facade expose only the single-order read
-//! `get_order`, so code that needs order history reaches for `OrderbookApi`
+//! `order`, so code that needs order history reaches for `OrderbookApi`
 //! directly, as shown here.
 //!
 //! Deterministic: the `OrderbookApi` is pointed at a wiremock server (the same
@@ -70,17 +70,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
     .build()?;
 
     // LIST an account's orders (default pagination: offset 0, limit 1000).
-    let orders = orderbook.get_orders(&GetOrdersRequest::new(owner)).await?;
+    let orders = orderbook.orders(&GetOrdersRequest::new(owner)).await?;
 
     // HISTORY: trades for the same owner (owner XOR order-uid; default limit 10).
     let trades = orderbook
-        .get_trades(&GetTradesRequest::by_owner(owner))
+        .trades(&GetTradesRequest::by_owner(owner))
         .await?;
 
     let report = json!({
         "surface": "cow-sdk::orderbook list/history (OrderbookApi)",
         "mode": "simulated-transport",
-        "note": "get_orders/get_trades live on OrderbookApi; the Trading facade forwards only get_order",
+        "note": "orders/trades live on OrderbookApi; the Trading facade forwards only order",
         "owner": owner_hex,
         "orders": orders.iter().map(|o| json!({
             "uid": o.uid.to_hex_string(),

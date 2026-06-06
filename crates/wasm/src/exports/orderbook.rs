@@ -87,13 +87,13 @@ impl OrderBookClient {
     /// @throws SdkError for invalid input, transport failure, timeout, or cancellation.
     #[cfg_attr(
         feature = "tracing",
-        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.get_quote"))
+        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.quote"))
     )]
     #[wasm_bindgen(
         js_name = "getQuote",
         unchecked_return_type = "WasmEnvelope<OrderQuoteResponseDto>"
     )]
-    pub async fn get_quote(
+    pub async fn quote(
         &self,
         request: OrderQuoteRequestInput,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
@@ -178,10 +178,10 @@ impl OrderBookClient {
     /// @throws SdkError for invalid UID, not-found responses, transport failure, or timeout.
     #[cfg_attr(
         feature = "tracing",
-        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.get_order"))
+        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.order"))
     )]
     #[wasm_bindgen(js_name = "getOrder", unchecked_return_type = "WasmEnvelope<OrderDto>")]
-    pub async fn get_order(
+    pub async fn order(
         &self,
         #[wasm_bindgen(js_name = orderUid)] order_uid: String,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
@@ -205,13 +205,13 @@ impl OrderBookClient {
     /// @throws SdkError when the query is ambiguous or transport fails.
     #[cfg_attr(
         feature = "tracing",
-        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.get_trades"))
+        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.trades"))
     )]
     #[wasm_bindgen(
         js_name = "getTrades",
         unchecked_return_type = "WasmEnvelope<TradeDto[]>"
     )]
-    pub async fn get_trades(
+    pub async fn trades(
         &self,
         query: TradesQueryInput,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
@@ -237,13 +237,13 @@ impl OrderBookClient {
     /// @throws SdkError for invalid owner, transport failure, timeout, or cancellation.
     #[cfg_attr(
         feature = "tracing",
-        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.get_orders_by_owner"))
+        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.orders_by_owner"))
     )]
     #[wasm_bindgen(
         js_name = "getOrdersByOwner",
         unchecked_return_type = "WasmEnvelope<OrderDto[]>"
     )]
-    pub async fn get_orders_by_owner(
+    pub async fn orders_by_owner(
         &self,
         owner: String,
         #[wasm_bindgen(js_name = pagination)] pagination: Option<PaginationOptions>,
@@ -269,13 +269,13 @@ impl OrderBookClient {
     /// @throws SdkError for invalid owner, transport failure, timeout, or cancellation.
     #[cfg_attr(
         feature = "tracing",
-        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.get_orders"))
+        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.orders"))
     )]
     #[wasm_bindgen(
         js_name = "getOrders",
         unchecked_return_type = "WasmEnvelope<OrderDto[]>"
     )]
-    pub async fn get_orders(
+    pub async fn orders(
         &self,
         owner: String,
         #[wasm_bindgen(js_name = pagination)] pagination: Option<PaginationOptions>,
@@ -300,13 +300,13 @@ impl OrderBookClient {
     /// @throws SdkError for invalid token address, transport failure, or timeout.
     #[cfg_attr(
         feature = "tracing",
-        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.get_native_price"))
+        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.native_price"))
     )]
     #[wasm_bindgen(
         js_name = "getNativePrice",
         unchecked_return_type = "WasmEnvelope<NativePriceResponseDto>"
     )]
-    pub async fn get_native_price(
+    pub async fn native_price(
         &self,
         token: String,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
@@ -362,13 +362,13 @@ impl OrderBookClient {
     /// @throws SdkError for an invalid hash, transport failure, or timeout.
     #[cfg_attr(
         feature = "tracing",
-        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.get_app_data"))
+        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.app_data"))
     )]
     #[wasm_bindgen(
         js_name = "getAppData",
         unchecked_return_type = "WasmEnvelope<AppDataObjectDto>"
     )]
-    pub async fn get_app_data(
+    pub async fn app_data(
         &self,
         #[wasm_bindgen(js_name = appDataHash)] app_data_hash: String,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
@@ -454,7 +454,7 @@ async fn orderbook_get_app_data(
 ) -> Result<JsValue, JsValue> {
     let hash = parse_app_data_hash(&app_data_hash)?;
     let object = inner
-        .get_app_data(&hash)
+        .app_data(&hash)
         .await
         .map_err(|error| WasmError::from(error).into_js())?;
     to_js_value(&WasmEnvelope::v1(AppDataObjectDto::from(object)))
@@ -484,7 +484,7 @@ async fn orderbook_get_quote(
 ) -> Result<JsValue, JsValue> {
     let request = from_json_value("quote", request.into_value()?)?;
     let response = inner
-        .get_quote(&request)
+        .quote(&request)
         .await
         .map_err(|error| WasmError::from(error).into_js())?;
     to_js_value(&WasmEnvelope::v1(response))
@@ -519,7 +519,7 @@ async fn orderbook_send_order_creation(
 async fn orderbook_get_order(inner: &OrderbookApi, order_uid: String) -> Result<JsValue, JsValue> {
     let order_uid = parse_order_uid(order_uid)?;
     let order = inner
-        .get_order(&order_uid)
+        .order(&order_uid)
         .await
         .map_err(|error| WasmError::from(error).into_js())?;
     to_js_value(&WasmEnvelope::v1(order))
@@ -547,7 +547,7 @@ async fn orderbook_get_trades(
         request = request.with_limit(limit);
     }
     let trades = inner
-        .get_trades(&request)
+        .trades(&request)
         .await
         .map_err(|error| WasmError::from(error).into_js())?;
     to_js_value(&WasmEnvelope::v1(trades))
@@ -569,7 +569,7 @@ async fn orderbook_get_orders_by_owner(
         }
     }
     let orders = inner
-        .get_orders(&request)
+        .orders(&request)
         .await
         .map_err(|error| WasmError::from(error).into_js())?;
     to_js_value(&WasmEnvelope::v1(orders))
@@ -581,7 +581,7 @@ async fn orderbook_get_native_price(
 ) -> Result<JsValue, JsValue> {
     let token = parse_address("token", token)?;
     let price = inner
-        .get_native_price(&token)
+        .native_price(&token)
         .await
         .map_err(|error| WasmError::from(error).into_js())?;
     to_js_value(&WasmEnvelope::v1(price))

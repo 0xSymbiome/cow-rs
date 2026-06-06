@@ -2,7 +2,7 @@
 
 //! Fuzz target for the app-data size-limit warning and rejection thresholds.
 //!
-//! **Surface:** `cow_sdk_app_data::get_app_data_info` with public constants
+//! **Surface:** `cow_sdk_app_data::app_data_info` with public constants
 //! `cow_sdk_app_data::{APP_DATA_APPROACHING_LIMIT_RATIO, APP_DATA_MAX_BYTES}`.
 //! The private `approaching_size_limit(bytes_used, max_bytes)` helper is
 //! exercised through this public wrapper, which is the documented surface
@@ -17,7 +17,7 @@
 //!
 //! The target invariants are:
 //!
-//! * `get_app_data_info` never panics for any padding length, including
+//! * `app_data_info` never panics for any padding length, including
 //!   padding that pushes the rendered document past the configured ceiling
 //!   (the path must surface a typed `TooLarge` error).
 //! * The `ApproachingSizeLimit` warning fires iff the rendered byte size
@@ -28,7 +28,7 @@
 
 use cow_sdk_app_data::{
     APP_DATA_APPROACHING_LIMIT_RATIO, APP_DATA_MAX_BYTES, AppDataError, AppDataWarning,
-    get_app_data_info,
+    app_data_info,
 };
 use libfuzzer_sys::fuzz_target;
 use serde_json::{Value, json};
@@ -68,14 +68,14 @@ fuzz_target!(|data: &[u8]| {
         "metadata": {},
     });
 
-    let first = get_app_data_info(&document);
-    let second = get_app_data_info(&document);
+    let first = app_data_info(&document);
+    let second = app_data_info(&document);
 
     // Determinism: same input must classify the same way.
     assert_eq!(
         first.is_ok(),
         second.is_ok(),
-        "get_app_data_info must be deterministic on identical input",
+        "app_data_info must be deterministic on identical input",
     );
 
     let expected_threshold = expected_threshold(APP_DATA_MAX_BYTES);
@@ -116,7 +116,7 @@ fuzz_target!(|data: &[u8]| {
             assert_eq!(
                 std::mem::discriminant(&left),
                 std::mem::discriminant(&right),
-                "get_app_data_info error variant must be deterministic on identical input",
+                "app_data_info error variant must be deterministic on identical input",
             );
 
             // If the error is TooLarge, its declared actual_bytes must exceed
@@ -138,7 +138,7 @@ fuzz_target!(|data: &[u8]| {
         }
         _ => {
             panic!(
-                "get_app_data_info Ok/Err classification must be deterministic on identical input"
+                "app_data_info Ok/Err classification must be deterministic on identical input"
             );
         }
     }

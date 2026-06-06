@@ -52,7 +52,7 @@ contract rather than being normalized during helper composition.
 
 ### Receiver Fallback
 
-`get_order_to_sign` treats both an absent receiver and the zero address as
+`order_to_sign` treats both an absent receiver and the zero address as
 unset and emits the effective `from` address as the receiver in the signing
 payload. This matches the reviewed upstream helper behavior and avoids signing
 an order with a placeholder receiver when caller intent is to receive proceeds

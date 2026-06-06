@@ -30,7 +30,7 @@ const ERC20_ALLOWANCE_ABI_JSON: &str = r#"[{"type":"function","name":"allowance"
 /// Returns [`TradingError`] when the contract call cannot be encoded, the
 /// provider read fails, or the returned allowance cannot be decoded into an
 /// [`Amount`].
-pub async fn get_cow_protocol_allowance<P>(
+pub async fn cow_protocol_allowance<P>(
     provider: &P,
     token_address: &Address,
     owner: &Address,

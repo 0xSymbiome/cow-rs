@@ -333,6 +333,14 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- Public accessors and domain fetch methods drop the non-idiomatic `get_` prefix. For
+  example `OrderbookApi::get_quote` is now `quote`, `get_order` is now `order`,
+  `Trading::get_quote_only` is now `quote_only`, `app_data::get_app_data_info` is now
+  `app_data_info`, `signing::get_domain` is now `domain`, and the signer address accessor
+  is `address()`. The chain-RPC `Provider` and `LogProvider` methods keep `get_` because
+  they mirror the Ethereum JSON-RPC method names, so they read as keyed lookups rather than
+  field getters. The TypeScript and npm export names are unchanged. Governed by
+  [ADR 0067](docs/adr/0067-idiomatic-accessor-naming.md).
 - `cow-sdk-wasm` no longer builds the standalone `web` target for the `default`,
   `orderbook`, and `signing` flavors. Those flavors' facade ESM and CommonJS
   entries are backed by the `bundler` and `nodejs` raw builds, so their

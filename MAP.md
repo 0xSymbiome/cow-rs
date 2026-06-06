@@ -1,6 +1,6 @@
 # Repository File Map
 
-> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `e003151` &nbsp;&middot;&nbsp; **Generated:** 2026-06-06  
+> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `2fa83de` &nbsp;&middot;&nbsp; **Generated:** 2026-06-06  
 > **Total tracked files:** **1,236** &nbsp;&middot;&nbsp; **Lines of code:** tokei 14.0.0
 
 A navigable inventory of every file tracked by Git on this branch, grouped by the role each directory plays in the workspace. Use the table of contents to jump straight to a section; full file listings are collapsed by default so the high-level shape stays scannable.
@@ -34,7 +34,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 - **39,176 lines of Rust** across the 20 SDK crates, covered by **43,160 lines of tests** — a **1.1× test-to-code ratio** — plus **180 lines of benchmarks**.
 - **12,579 doc-comment lines** documenting the public API (~32.1% of crate code), plus **921 inline comment lines**.
 - **6,267 lines of TypeScript** across examples, e2e harnesses, and wasm bindings.
-- **25,399 lines of Markdown prose** — ADRs, audit notes, and READMEs.
+- **25,416 lines of Markdown prose** — ADRs, audit notes, and READMEs.
 - **28,214 lines of data & config** (JSON schemas, parity fixtures, vendored ABIs, YAML, TOML) — tracked, but excluded from code metrics by design.
 
 **Footprint** (tracked files)
@@ -53,7 +53,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | Path | Files | Lines | Code | Purpose |
 |------|------:|------:|-----:|---------|
 | `crates/` | 756 | 140,198 | 98,344 | Workspace member crates (the SDK itself) |
-| `docs/` | 153 | 23,189 | 0 | Architecture decision records, audit notes, provider notes |
+| `docs/` | 153 | 23,200 | 0 | Architecture decision records, audit notes, provider notes |
 | `parity/` | 64 | 8,363 | 8,118 | Golden fixtures + pinned specs from upstream services |
 | `examples/` | 63 | 17,704 | 5,561 | Runnable usage examples (Rust + TypeScript) |
 | `scripts/` | 58 | 14,772 | 8,902 | Internal maintenance tool crates |
@@ -76,8 +76,8 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `ROADMAP.md` | 1 | 64 | 0 | Roadmap document |
 | `rust-toolchain.toml` | 1 | 6 | 4 | Pinned Rust toolchain |
 | `.gitattributes` | 1 | 40 | 0 | Git attributes |
-| `CHANGELOG.md` | 1 | 3,706 | 0 | Release changelog |
-| **Total** | **1236** | **236,491** | **134,131** | |
+| `CHANGELOG.md` | 1 | 3,714 | 0 | Release changelog |
+| **Total** | **1236** | **236,510** | **134,131** | |
 
 ---
 
@@ -86,7 +86,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | Extension | Files | Lines | Code | Comments | Blank | Typical role |
 |-----------|------:|------:|-----:|---------:|------:|--------------|
 | `.rs` | 676 | 129,745 | 99,650 | 18,143 | 11,952 | Rust source and tests |
-| `.md` | 192 | 30,791 | 0 | 25,399 | 5,392 | Markdown docs (ADRs, audit notes, READMEs) |
+| `.md` | 192 | 30,810 | 0 | 25,416 | 5,394 | Markdown docs (ADRs, audit notes, READMEs) |
 | `.json` | 94 | 5,741 | 5,637 | 103 | 1 | JSON schemas, ABIs, parity fixtures |
 | `.ts` | 59 | 17,240 | 6,267 | 9,849 | 1,124 | TypeScript (examples, e2e, wasm bindings) |
 | `.toml` | 52 | 4,007 | 3,437 | 64 | 506 | Cargo manifests and tool configs |
@@ -110,7 +110,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `.html` | 1 | 12 | 12 | 0 | 0 | Static HTML for browser examples |
 | `.gitattributes` | 1 | 40 | 0 | 35 | 5 |  |
 | `.yamllint` | 1 | 7 | 0 | 6 | 1 |  |
-| **Total** | **1236** | **236,491** | **134,131** | **78,583** | **23,777** | |
+| **Total** | **1236** | **236,510** | **134,131** | **78,600** | **23,779** | |
 
 > **Code + Comments + Blank = Lines** for every row. ``Comments`` is all non-code, non-blank content: inline + doc-comments in source, prose in Markdown/text, and raw content in formats tokei does not parse as code (lockfiles, ``.stderr``, snapshots). Rust doc-comments are isolated in the per-crate ``Doc`` column above.
 
@@ -226,10 +226,10 @@ The 25 largest hand-written source files by code lines (Rust + TypeScript; vendo
 
 | Subtree | Files | Lines | Code | Purpose |
 |---------|------:|------:|-----:|---------|
-| [`adr`](docs/adr) | 68 | 7,352 | 0 | Architecture Decision Records |
+| [`adr`](docs/adr) | 68 | 7,363 | 0 | Architecture Decision Records |
 | [`audit`](docs/audit) | 64 | 10,343 | 0 | Audit notes and review artifacts |
 | [`providers`](docs/providers) | 2 | 251 | 0 | Provider integration notes |
-| **Total (listed)** | **134** | **17,946** | **0** | |
+| **Total (listed)** | **134** | **17,957** | **0** | |
 
 ---
 
@@ -266,7 +266,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`.yamllint`](.yamllint) &mdash; 7 lines
 - [`Cargo.lock`](Cargo.lock) &mdash; 5,668 lines
 - [`Cargo.toml`](Cargo.toml) &mdash; 124 lines
-- [`CHANGELOG.md`](CHANGELOG.md) &mdash; 3,706 lines
+- [`CHANGELOG.md`](CHANGELOG.md) &mdash; 3,714 lines
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) &mdash; 272 lines
 - [`LICENSE`](LICENSE) &mdash; 674 lines
 - [`llvm-cov-summary.txt`](llvm-cov-summary.txt) &mdash; 197 lines
@@ -2161,7 +2161,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`0032-deployment-authority-machine-readable-provenance.md`](docs/adr/0032-deployment-authority-machine-readable-provenance.md) &mdash; 111 lines
 - [`0033-minimum-viable-panic-surface.md`](docs/adr/0033-minimum-viable-panic-surface.md) &mdash; 71 lines
 - [`0034-interaction-encoder-target-policy.md`](docs/adr/0034-interaction-encoder-target-policy.md) &mdash; 80 lines
-- [`0035-alloy-provider-adapter.md`](docs/adr/0035-alloy-provider-adapter.md) &mdash; 90 lines
+- [`0035-alloy-provider-adapter.md`](docs/adr/0035-alloy-provider-adapter.md) &mdash; 101 lines
 - [`0036-alloy-signer-adapter.md`](docs/adr/0036-alloy-signer-adapter.md) &mdash; 95 lines
 - [`0037-alloy-umbrella-adapter.md`](docs/adr/0037-alloy-umbrella-adapter.md) &mdash; 154 lines
 - [`0038-transaction-lifecycle-types.md`](docs/adr/0038-transaction-lifecycle-types.md) &mdash; 82 lines

@@ -32,7 +32,7 @@ and JSON reports as non-blocking build artifacts.
 | Signing typed-data envelope | `typed_data::order_typed_data_payload` | `cow-sdk-signing` |
 | App-data deterministic stringify | `stringify::stringify_deterministic` | `cow-sdk-app-data` |
 | Orderbook quote fee aggregation | `quote_cost::calculate_total_fee` | `cow-sdk-orderbook` |
-| Trading limit-order construction | `order_build::get_order_to_sign` | `cow-sdk-trading` |
+| Trading limit-order construction | `order_build::order_to_sign` | `cow-sdk-trading` |
 
 ## Reported Ranges
 
@@ -50,7 +50,7 @@ window, not a single absolute number.
 | `order_typed_data_payload` | single-digit microseconds |
 | `stringify_deterministic` | single-digit microseconds |
 | `calculate_total_fee` | sub-microsecond |
-| `get_order_to_sign` | low-single-digit microseconds |
+| `order_to_sign` | low-single-digit microseconds |
 
 Refresh the table when the next scheduled run reports a shift that crosses one
 of these order-of-magnitude boundaries.

@@ -26,7 +26,7 @@ struct CountingProvider {
 #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 #[cfg_attr(not(target_arch = "wasm32"), async_trait)]
 impl SlippageSuggestionProvider for CountingProvider {
-    async fn get_slippage_suggestion(
+    async fn slippage_suggestion(
         &self,
         _request: SlippageToleranceRequest,
     ) -> Result<SlippageToleranceResponse, cow_sdk_trading::TradingError> {

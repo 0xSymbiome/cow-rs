@@ -1,6 +1,6 @@
 //! Cooperative cancellation of an in-flight request.
 //!
-//! Wraps a `Trading::get_quote_only` call with `Cancellable::cancel_with(&token)`
+//! Wraps a `Trading::quote_only` call with `Cancellable::cancel_with(&token)`
 //! and fires the `CancellationToken` mid-flight, so the call resolves to
 //! `TradingError::Cancelled` instead of completing. Uses a wiremock server with
 //! a delayed response — aborting an in-flight request cannot be shown against an
@@ -64,7 +64,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // `cancel_with` races the call against the token; here the token wins.
     let quote_result = trading
-        .get_quote_only(sample_trade_parameters(), None)
+        .quote_only(sample_trade_parameters(), None)
         .cancel_with(&token_for_quote)
         .await;
     cancel_after_delay.await?;
@@ -77,7 +77,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     );
 
     let report = json!({
-        "surface": "cow-sdk::Trading::get_quote_only",
+        "surface": "cow-sdk::Trading::quote_only",
         "mode": "simulated-transport",
         "cancellation": {
             "delayMs": 100,

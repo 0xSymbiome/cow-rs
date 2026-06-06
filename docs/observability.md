@@ -130,23 +130,23 @@ where the request or response exposes them. When the `tracing` feature is
 enabled, retry decisions also emit events with `attempt_index`, `backoff_ms`,
 and either `status` or `transport_error_class`.
 
-- `get_version`
-- `get_quote`
+- `version`
+- `quote`
 - `send_order`
 - `send_signed_order_cancellations`
-- `get_order`
-- `get_order_multi_env`
-- `get_orders`
-- `get_tx_orders`
-- `get_trades`
-- `get_order_competition_status`
-- `get_native_price`
-- `get_total_surplus`
-- `get_app_data`
+- `order`
+- `order_multi_env`
+- `orders`
+- `tx_orders`
+- `trades`
+- `order_competition_status`
+- `native_price`
+- `total_surplus`
+- `app_data`
 - `upload_app_data`
-- `get_solver_competition_by_auction_id`
-- `get_solver_competition_by_tx_hash`
-- `get_latest_solver_competition`
+- `solver_competition_by_auction_id`
+- `solver_competition_by_tx_hash`
+- `latest_solver_competition`
 
 ### `cow-sdk-subgraph`
 
@@ -154,9 +154,9 @@ Every top-level public async method on `SubgraphApi` emits one span.
 Spans carry `chain`, `endpoint`, and `method`; subgraph does not have a
 protocol `env` axis.
 
-- `get_totals`
-- `get_last_days_volume`
-- `get_last_hours_volume`
+- `totals`
+- `last_days_volume`
+- `last_hours_volume`
 - `run_query`
 
 ### `cow-sdk-trading`
@@ -167,16 +167,16 @@ helpers emit one span each. Spans carry `chain`, `env`, and `endpoint`;
 also wraps its lower-level contract call in a
 `trading.verify_eip1271_caller` span carrying `chain_id` and `verifier`.
 
-- `get_quote_only`
-- `get_quote_results`
+- `quote_only`
+- `quote_results`
 - `post_swap_order`
 - `post_swap_order_from_quote`
 - `post_limit_order`
-- `get_pre_sign_transaction`
-- `get_order`
+- `pre_sign_transaction`
+- `order`
 - `off_chain_cancel_order`
 - `on_chain_cancel_order`
-- `get_cow_protocol_allowance`
+- `cow_protocol_allowance`
 - `approve_cow_protocol`
 - `post_sell_native_currency_order` (module-level)
 

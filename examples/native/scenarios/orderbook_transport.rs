@@ -1,8 +1,8 @@
 //! Typed orderbook transport against a mock HTTP server.
 //!
 //! Drives the concrete `OrderbookApi` over a wiremock server through its core
-//! verbs — `get_version`, `get_quote`, `send_order`, and
-//! `get_order_competition_status` — so the typed request and response wire
+//! verbs — `version`, `quote`, `send_order`, and
+//! `order_competition_status` — so the typed request and response wire
 //! shapes are exercised against real HTTP rather than an in-memory double.
 
 use std::error::Error;
@@ -69,7 +69,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     .build()?;
 
     // 1. Protocol version.
-    let version = orderbook.get_version().await?;
+    let version = orderbook.version().await?;
 
     // 2. Request a sell-side quote.
     let quote_request = OrderQuoteRequest::new(
@@ -81,7 +81,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         ),
     )
     .with_price_quality(PriceQuality::Optimal);
-    let quote = orderbook.get_quote(&quote_request).await?;
+    let quote = orderbook.quote(&quote_request).await?;
 
     // 3. Turn the quote into a signed order and submit it.
     let order = OrderCreation::from_quote(
@@ -96,7 +96,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // 4. Read the order's competition status.
     let status = orderbook
-        .get_order_competition_status(&created_order_uid)
+        .order_competition_status(&created_order_uid)
         .await?;
 
     let report = json!({

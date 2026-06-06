@@ -8,7 +8,7 @@ use cow_sdk_core::{
 
 use crate::{
     SigningError,
-    domain::{cancellation_fields, get_domain, serialize_message, typed_data_types},
+    domain::{cancellation_fields, domain, serialize_message, typed_data_types},
     order_signing::{sign_with_scheme, signer_error},
 };
 
@@ -172,7 +172,7 @@ pub fn order_cancellations_typed_data_payload(
     let cancellations = OrderCancellations::new(order_uids.to_vec());
 
     Ok(TypedDataPayload::new(
-        get_domain(chain_id, options)?,
+        domain(chain_id, options)?,
         ORDER_CANCELLATIONS_PRIMARY_TYPE.to_owned(),
         typed_data_types(ORDER_CANCELLATIONS_PRIMARY_TYPE, cancellation_fields()),
         serialize_message(&cancellations)?,

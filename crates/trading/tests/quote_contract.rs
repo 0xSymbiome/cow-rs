@@ -12,7 +12,7 @@ use cow_sdk_signing::ORDER_PRIMARY_TYPE;
 use cow_sdk_trading::{
     ClientRejection, PartnerFeePolicy, QuoteRequestOverride, QuoterParameters,
     TradeAdvancedSettings, TradeParameters, build_app_data, calculate_unique_order_id,
-    get_quote_only, get_quote_results,
+    quote_only, quote_results,
 };
 
 use crate::common::{
@@ -43,7 +43,7 @@ async fn quote_app_data_and_request_shape_follow_pinned_contract() {
     let mut trade = sample_trade_parameters(OrderKind::Sell);
     trade.slippage_bps = Some(76);
 
-    let result = get_quote_results(&trade, &trader, &signer, None, &orderbook)
+    let result = quote_results(&trade, &trader, &signer, None, &orderbook)
         .await
         .expect("quote with signer should succeed");
     let state = orderbook.state();
@@ -77,7 +77,7 @@ async fn quote_validity_uses_valid_for_by_default_and_exact_valid_to_when_reques
             .expect("app code should validate");
 
     let default_trade = sample_trade_parameters(OrderKind::Sell);
-    let _ = get_quote_results(&default_trade, &trader, &signer, None, &orderbook)
+    let _ = quote_results(&default_trade, &trader, &signer, None, &orderbook)
         .await
         .expect("default quote should succeed");
     let default_request = orderbook
@@ -98,7 +98,7 @@ async fn quote_validity_uses_valid_for_by_default_and_exact_valid_to_when_reques
         cow_sdk_core::SupportedChainId::Sepolia,
         sell_quote_response(),
     );
-    let _ = get_quote_results(&exact_trade, &trader, &signer, None, &orderbook)
+    let _ = quote_results(&exact_trade, &trader, &signer, None, &orderbook)
         .await
         .expect("exact validTo quote should succeed");
     let exact_request = orderbook
@@ -115,7 +115,7 @@ async fn quote_validity_uses_valid_for_by_default_and_exact_valid_to_when_reques
     let mut invalid_trade = sample_trade_parameters(OrderKind::Sell);
     invalid_trade.valid_for = Some(600);
     invalid_trade.valid_to = Some(2_524_608_000);
-    let error = get_quote_results(&invalid_trade, &trader, &signer, None, &orderbook)
+    let error = quote_results(&invalid_trade, &trader, &signer, None, &orderbook)
         .await
         .expect_err("simultaneous validFor and validTo must fail");
     assert!(
@@ -139,7 +139,7 @@ async fn native_sell_quote_uses_wrapped_native_and_onchain_defaults() {
     trade.sell_token = address(cow_sdk_core::EVM_NATIVE_CURRENCY_ADDRESS);
     trade.slippage_bps = None;
 
-    let _ = get_quote_results(&trade, &trader, &signer, None, &orderbook)
+    let _ = quote_results(&trade, &trader, &signer, None, &orderbook)
         .await
         .expect("native sell quote should succeed");
     let request = orderbook
@@ -182,7 +182,7 @@ async fn auto_slippage_uses_provider_suggestion_and_quote_only_uses_owner_withou
             response: Some(200),
         }));
 
-    let result = get_quote_only(&trade, &quoter, Some(&advanced), &orderbook)
+    let result = quote_only(&trade, &quoter, Some(&advanced), &orderbook)
         .await
         .expect("quote-only should succeed");
     let request = orderbook
@@ -219,7 +219,7 @@ async fn quote_request_override_can_change_receiver_and_price_quality() {
             .with_price_quality(cow_sdk_orderbook::PriceQuality::Fast),
     );
 
-    let result = get_quote_results(&trade, &trader, &signer, Some(&advanced), &orderbook)
+    let result = quote_results(&trade, &trader, &signer, Some(&advanced), &orderbook)
         .await
         .expect("quote with override should succeed");
     let request = orderbook
@@ -258,7 +258,7 @@ async fn quote_results_preserve_non_default_balance_semantics_from_quote_and_ove
             .with_buy_token_balance(BuyTokenDestination::Internal),
     );
 
-    let result = get_quote_results(&trade, &trader, &signer, Some(&advanced), &orderbook)
+    let result = quote_results(&trade, &trader, &signer, Some(&advanced), &orderbook)
         .await
         .expect("quote with balance overrides should succeed");
     let request = orderbook
@@ -309,7 +309,7 @@ async fn quote_request_keeps_trade_partial_fill_flag_without_direct_override() {
     let mut trade: TradeParameters = sample_trade_parameters(OrderKind::Sell);
     trade.partially_fillable = true;
 
-    let result = get_quote_results(&trade, &trader, &signer, None, &orderbook)
+    let result = quote_results(&trade, &trader, &signer, None, &orderbook)
         .await
         .expect("quote with trade-level partial-fill flag should succeed");
     let request = orderbook
@@ -339,7 +339,7 @@ async fn quote_helpers_reject_injected_orderbook_chain_conflicts() {
     .with_env(CowEnv::Prod);
     let trade = sample_trade_parameters(OrderKind::Sell);
 
-    let error = get_quote_only(&trade, &quoter, None, &orderbook)
+    let error = quote_only(&trade, &quoter, None, &orderbook)
         .await
         .expect_err("mismatched quoter chain must fail before quoting");
 
@@ -368,7 +368,7 @@ async fn quote_results_capture_originating_orderbook_runtime_binding() {
             .with_env(CowEnv::Prod);
     let trade = sample_trade_parameters(OrderKind::Sell);
 
-    let result = get_quote_results(&trade, &trader, &signer, None, &orderbook)
+    let result = quote_results(&trade, &trader, &signer, None, &orderbook)
         .await
         .expect("quote with explicit base url should succeed");
     let binding = result
@@ -472,7 +472,7 @@ async fn quote_results_apply_advanced_owner_validity_slippage_and_partner_fee_pr
             ),
         );
 
-    let result = get_quote_results(&trade, &trader, &signer, Some(&advanced), &orderbook)
+    let result = quote_results(&trade, &trader, &signer, Some(&advanced), &orderbook)
         .await
         .expect("quote with advanced precedence should succeed");
     let request = orderbook
@@ -543,7 +543,7 @@ async fn quote_results_reject_invalid_partner_fee_metadata_before_quoting() {
         ),
     );
 
-    let error = get_quote_results(&trade, &trader, &signer, Some(&advanced), &orderbook)
+    let error = quote_results(&trade, &trader, &signer, Some(&advanced), &orderbook)
         .await
         .expect_err("invalid partner-fee metadata must fail before quote transport");
 
@@ -577,7 +577,7 @@ async fn quote_request_validation_runs_before_orderbook_transport() {
             .with_onchain_order(true),
     );
 
-    let error = get_quote_results(&trade, &trader, &signer, Some(&advanced), &orderbook)
+    let error = quote_results(&trade, &trader, &signer, Some(&advanced), &orderbook)
         .await
         .expect_err("incompatible quote signing pair must fail before transport");
 
@@ -635,7 +635,7 @@ async fn quote_results_reject_zero_address_partner_fee_before_quoting() {
         .into(),
     );
 
-    let error = get_quote_results(&trade, &trader, &signer, None, &orderbook)
+    let error = quote_results(&trade, &trader, &signer, None, &orderbook)
         .await
         .expect_err("zero-address partner fee recipient must fail before quote transport");
 

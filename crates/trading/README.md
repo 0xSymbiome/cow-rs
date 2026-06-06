@@ -54,8 +54,8 @@ let _trading = Trading::builder()
 
 Allowance reads, approval submission, pre-sign transaction construction, and
 on-chain cancellation need chain authority but no app code, so they are the
-crate's free functions — `get_cow_protocol_allowance`, `approval_transaction`,
-`get_pre_sign_transaction`, and `cancel_order_onchain` — and need no trading
+crate's free functions — `cow_protocol_allowance`, `approval_transaction`,
+`pre_sign_transaction`, and `cancel_order_onchain` — and need no trading
 client. Quote, post, order lookup, and off-chain cancellation flows use the
 ready `Trading` client.
 
@@ -90,7 +90,7 @@ let params = TradeParameters::new(
 )
 .with_owner(Address::new("0x76b0340e50BD9883D8B2CA5fd9f52439a9e7Cf58")?);
 
-let quote = trading.get_quote_only(params, None).await?;
+let quote = trading.quote_only(params, None).await?;
 println!("suggested slippage (bps): {}", quote.suggested_slippage_bps);
 # Ok(())
 # }

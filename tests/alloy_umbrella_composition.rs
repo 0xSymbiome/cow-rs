@@ -39,7 +39,7 @@ async fn alloy_client_satisfies_trading_sdk_boundaries() {
         .unwrap();
 
     let allowance = trading
-        .get_cow_protocol_allowance(
+        .cow_protocol_allowance(
             &client,
             &AllowanceParameters::new(address(COW), address(OWNER)),
         )
@@ -57,7 +57,7 @@ async fn alloy_client_satisfies_trading_sdk_boundaries() {
     assert_eq!(approval_hash, TransactionHash::new(HASH).unwrap());
 
     let pre_sign = trading
-        .get_pre_sign_transaction(&OrderTraderParameters::new(order_uid()), &signer)
+        .pre_sign_transaction(&OrderTraderParameters::new(order_uid()), &signer)
         .await
         .unwrap();
     assert!(pre_sign.to.is_some());

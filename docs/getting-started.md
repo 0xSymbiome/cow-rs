@@ -168,9 +168,9 @@ fn build_trading() -> Result<Trading, Box<dyn std::error::Error>> {
 The owner field belongs on the per-trade `TradeParameters` or
 `LimitTradeParameters`, not on the `Trading` client. The `Trading` client
 does not store a default owner. For signer-backed flows (`post_swap_order`, `post_limit_order`,
-`get_quote_results`), the signer's address fills the slot when
+`quote_results`), the signer's address fills the slot when
 `TradeParameters.owner` is `None`. For quote-only flows
-(`get_quote_only`), the owner must come from `TradeParameters.owner` or
+(`quote_only`), the owner must come from `TradeParameters.owner` or
 from `TradeAdvancedSettings::quote_request.from`.
 
 ```rust
@@ -232,8 +232,8 @@ fn build_browser_ready_trading() -> Result<Trading, Box<dyn std::error::Error>> 
 
 Allowance reads, approval submission, pre-sign transaction construction, and
 on-chain cancellation need chain authority but no app code. Call the crate's
-free functions directly — `get_cow_protocol_allowance`, `approval_transaction`,
-`get_pre_sign_transaction`, and `cancel_order_onchain` — so an integration such
+free functions directly — `cow_protocol_allowance`, `approval_transaction`,
+`pre_sign_transaction`, and `cancel_order_onchain` — so an integration such
 as an allowance/approval screen or a pre-sign tool needs no trading client at
 all. Quote, post, order lookup, and off-chain cancellation flows use the ready
 `Trading` client built with `build()`.
@@ -269,11 +269,11 @@ flow end to end:
 
 ```rust,ignore
 use cow_sdk::trading::{
-    get_eth_flow_transaction, post_sell_native_currency_order,
+    eth_flow_transaction, post_sell_native_currency_order,
     swap_params_to_limit_order_params, PostTradeAdditionalParams,
 };
 
-let quote = trading.get_quote_results(params.clone(), signer, None).await?;
+let quote = trading.quote_results(params.clone(), signer, None).await?;
 let limit_from_quote = swap_params_to_limit_order_params(
     &quote.trade_parameters,
     &quote.quote_response,

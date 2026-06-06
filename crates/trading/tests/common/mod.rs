@@ -233,7 +233,7 @@ impl OrderbookClient for MockOrderbook {
         &self.context
     }
 
-    async fn get_quote(
+    async fn quote(
         &self,
         request: &OrderQuoteRequest,
     ) -> Result<OrderQuoteResponse, OrderbookError> {
@@ -269,7 +269,7 @@ impl OrderbookClient for MockOrderbook {
         Ok(())
     }
 
-    async fn get_order(&self, _order_uid: &OrderUid) -> Result<Order, OrderbookError> {
+    async fn order(&self, _order_uid: &OrderUid) -> Result<Order, OrderbookError> {
         self.state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -323,7 +323,7 @@ impl CountingSigner {
 impl Signer for CountingSigner {
     type Error = String;
 
-    async fn get_address(&self) -> Result<Address, Self::Error> {
+    async fn address(&self) -> Result<Address, Self::Error> {
         Ok(self.address)
     }
 
@@ -434,7 +434,7 @@ impl MockSigner {
 impl Signer for MockSigner {
     type Error = String;
 
-    async fn get_address(&self) -> Result<Address, Self::Error> {
+    async fn address(&self) -> Result<Address, Self::Error> {
         Ok(self.address)
     }
 
@@ -639,7 +639,7 @@ pub struct MockSlippageProvider {
 #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 #[cfg_attr(not(target_arch = "wasm32"), async_trait)]
 impl SlippageSuggestionProvider for MockSlippageProvider {
-    async fn get_slippage_suggestion(
+    async fn slippage_suggestion(
         &self,
         _request: SlippageToleranceRequest,
     ) -> Result<SlippageToleranceResponse, TradingError> {
@@ -797,7 +797,7 @@ impl FakeSigner {
 impl Signer for FakeSigner {
     type Error = FakeSignerError;
 
-    async fn get_address(&self) -> Result<Address, Self::Error> {
+    async fn address(&self) -> Result<Address, Self::Error> {
         Ok(test_from_address())
     }
 

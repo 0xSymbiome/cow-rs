@@ -28,7 +28,7 @@ ETH or COW.
 | Sign | `Eip1193Signer::sign_message` | `personal_sign` |
 | Wrap | `wrap_interaction` + `send_transaction` | `eth_sendTransaction` |
 | Approve | `approval_transaction` + `send_transaction` | `eth_sendTransaction` |
-| Quote | `Trading::get_quote_results` | orderbook `GET` |
+| Quote | `Trading::quote_results` | orderbook `GET` |
 | Swap | `Trading::post_swap_order` | `eth_signTypedData_v4` + orderbook `POST` |
 
 ## Using it

@@ -216,7 +216,7 @@ pub async fn resolve_slippage_suggestion(
         }),
     };
 
-    match provider.get_slippage_suggestion(request).await {
+    match provider.slippage_suggestion(request).await {
         Ok(crate::SlippageToleranceResponse {
             slippage_bps: Some(suggested),
         }) => Ok(crate::SlippageToleranceResponse {

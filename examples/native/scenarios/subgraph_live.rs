@@ -1,6 +1,6 @@
 //! Opt-in live subgraph query.
 //!
-//! Calls `SubgraphApi::get_totals` against the real CoW subgraph, requiring a
+//! Calls `SubgraphApi::totals` against the real CoW subgraph, requiring a
 //! `THE_GRAPH_API_KEY` and an optional chain override from the environment. Like
 //! `orderbook_live`, it contacts a live service and is excluded from the
 //! deterministic runner.
@@ -25,7 +25,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .build()?;
 
     // The one live call: protocol-wide totals.
-    let totals = subgraph.get_totals().await?;
+    let totals = subgraph.totals().await?;
 
     let report = json!({
         "surface": "cow-sdk-subgraph",

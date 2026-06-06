@@ -140,7 +140,7 @@ impl CowShedHooks {
         S: Signer,
         S::Error: core::fmt::Display,
     {
-        let owner = signer.get_address().await.map_err(|error| {
+        let owner = signer.address().await.map_err(|error| {
             CowShedError::Other(format!("cow-shed: resolve owner address: {error}").into())
         })?;
         let owner_alloy = owner.into_alloy();

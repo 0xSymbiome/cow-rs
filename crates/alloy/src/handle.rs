@@ -52,7 +52,7 @@ impl fmt::Debug for AlloyClientSignerHandle {
 impl Signer for AlloyClientSignerHandle {
     type Error = AlloyClientError;
 
-    async fn get_address(&self) -> Result<Address, Self::Error> {
+    async fn address(&self) -> Result<Address, Self::Error> {
         Ok(self.inner.signer_address)
     }
 

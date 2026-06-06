@@ -36,7 +36,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let report = json!({
         "surface": "cow-sdk::alloy_signer::LocalAlloyKeystoreSigner",
-        "signer": signer.get_address().await?.to_hex_string(),
+        "signer": signer.address().await?.to_hex_string(),
         "primaryType": payload.primary_type,
         "signatureBytes": (signature.len() - 2) / 2
     });

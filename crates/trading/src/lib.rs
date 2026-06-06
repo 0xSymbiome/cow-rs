@@ -58,24 +58,24 @@ pub mod validation;
 /// Broadcast-then-poll helpers for mined transaction receipts.
 pub mod wait;
 
-pub use allowance::{approval_transaction, approve_cow_protocol, get_cow_protocol_allowance};
+pub use allowance::{approval_transaction, approve_cow_protocol, cow_protocol_allowance};
 pub use app_data::{build_app_data, merge_and_seal_app_data, params_from_doc};
 pub use cancel::off_chain_cancel_order;
 pub use error::{OrderbookContextValue, TradingError};
 pub use onchain::{
-    EthFlowTransaction, cancel_order_onchain, get_eth_flow_transaction, get_pre_sign_transaction,
+    EthFlowTransaction, cancel_order_onchain, eth_flow_transaction, pre_sign_transaction,
     onchain_cancellation_transaction, protocol_options_for_order,
 };
 pub use order::{
     OrderToSignParams, adjust_ethflow_limit_parameters, adjust_ethflow_trade_parameters,
-    calculate_unique_order_id, get_order_to_sign, is_ethflow_order,
+    calculate_unique_order_id, order_to_sign, is_ethflow_order,
     swap_params_to_limit_order_params,
 };
 pub use post::{
     post_cow_protocol_trade, post_limit_order, post_sell_native_currency_order, post_swap_order,
     post_swap_order_from_quote,
 };
-pub use quote::{get_quote_only, get_quote_results};
+pub use quote::{quote_only, quote_results};
 pub use sdk::{AppCodeSet, AppCodeUnset, ChainIdSet, ChainIdUnset, Trading, TradingBuilder};
 pub use slippage::{
     DEFAULT_QUOTE_VALIDITY, DEFAULT_SLIPPAGE_BPS, GAS_LIMIT_DEFAULT, GAS_MARGIN_PERCENT,

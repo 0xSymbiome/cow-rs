@@ -38,7 +38,7 @@ fn protocol_options_from_trader(trader: &cow_sdk_trading::TraderParameters) -> P
 use cow_sdk_trading::{
     LimitTradeParameters, LimitTradeParametersFromQuote, PartnerFeePolicy,
     PostTradeAdditionalParams, QuoteRequestOverride, TradeAdvancedSettings, TradingError,
-    build_app_data, get_quote_results, post_limit_order, post_sell_native_currency_order,
+    build_app_data, quote_results, post_limit_order, post_sell_native_currency_order,
     post_swap_order, post_swap_order_from_quote,
 };
 
@@ -498,7 +498,7 @@ async fn post_from_quote_reuses_matching_orderbook_binding_and_submits_order() {
     );
     let trade = sample_trade_parameters(OrderKind::Sell);
 
-    let quote_results = get_quote_results(&trade, &trader, &signer, None, &orderbook)
+    let quote_results = quote_results(&trade, &trader, &signer, None, &orderbook)
         .await
         .expect("quote flow should succeed");
     let result = post_swap_order_from_quote(&quote_results, &trader, &signer, None, &orderbook)
@@ -527,7 +527,7 @@ async fn post_from_quote_rejects_orderbook_binding_mismatch_before_signing_or_su
     );
     let trade = sample_trade_parameters(OrderKind::Sell);
 
-    let quote_results = get_quote_results(&trade, &trader, &signer, None, &quoting_orderbook)
+    let quote_results = quote_results(&trade, &trader, &signer, None, &quoting_orderbook)
         .await
         .expect("quote flow should succeed");
     let error =
@@ -553,7 +553,7 @@ async fn async_order_level_eip1271_verification_is_explicit_and_reuses_contract_
     let app_data = build_app_data(&test_app_code(), 50, "limit", None, None)
         .await
         .expect("app data should build");
-    let order_to_sign = cow_sdk_trading::get_order_to_sign(
+    let order_to_sign = cow_sdk_trading::order_to_sign(
         cow_sdk_trading::OrderToSignParams::new(trader.chain_id, address(OWNER), false)
             .with_apply_costs_slippage_and_fees(false),
         &params,
@@ -593,7 +593,7 @@ async fn order_level_eip1271_verification_surfaces_contract_failures_explicitly(
     let app_data = build_app_data(&test_app_code(), 50, "limit", None, None)
         .await
         .expect("app data should build");
-    let order_to_sign = cow_sdk_trading::get_order_to_sign(
+    let order_to_sign = cow_sdk_trading::order_to_sign(
         cow_sdk_trading::OrderToSignParams::new(trader.chain_id, address(OWNER), false)
             .with_apply_costs_slippage_and_fees(false),
         &params,
@@ -744,7 +744,7 @@ async fn ethflow_validation_rejects_mismatched_signer() {
 async fn ethflow_validation_accepts_matched_signer_with_default_receiver() {
     let trader = sample_trader_parameters();
     let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
-    // No explicit receiver: `get_order_to_sign` defaults it to the signer
+    // No explicit receiver: `order_to_sign` defaults it to the signer
     // owner so owner and receiver converge. A matching app-data signer must
     // pass validation through the same code path the custom-receiver test
     // exercises.

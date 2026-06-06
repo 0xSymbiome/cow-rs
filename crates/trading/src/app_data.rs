@@ -1,6 +1,6 @@
 use serde_json::{Map, Value, json};
 
-use cow_sdk_app_data::{AppDataParams, PartnerFee, generate_app_data_doc, get_app_data_info};
+use cow_sdk_app_data::{AppDataParams, PartnerFee, generate_app_data_doc, app_data_info};
 use cow_sdk_core::AppCode;
 
 use crate::{TradingAppDataInfo, TradingError};
@@ -84,7 +84,7 @@ pub async fn build_app_data(
     }
 
     let doc = generate_app_data_doc(params);
-    let info = get_app_data_info(doc.clone())?.info;
+    let info = app_data_info(doc.clone())?.info;
 
     Ok(TradingAppDataInfo {
         doc,
@@ -121,7 +121,7 @@ pub fn params_from_doc(base_doc: &Value) -> Result<AppDataParams, TradingError> 
 /// [`AppDataParams`] deserializer so the typed `signer` and `flashloan`
 /// fields on the base side participate in the merge on equal footing with
 /// the override, and the resulting typed value drives
-/// [`generate_app_data_doc`] and [`get_app_data_info`] to re-derive the
+/// [`generate_app_data_doc`] and [`app_data_info`] to re-derive the
 /// wire document and its digest from one authoritative typed shape.
 ///
 /// The returned tuple carries both the [`TradingAppDataInfo`] (the
@@ -146,7 +146,7 @@ pub fn merge_and_seal_app_data(
     let base_params = params_from_doc(base_doc)?;
     let merged_params = merge_app_data_params(&base_params, override_params);
     let doc = generate_app_data_doc(merged_params.clone());
-    let info = get_app_data_info(doc.clone())?.info;
+    let info = app_data_info(doc.clone())?.info;
 
     Ok((
         TradingAppDataInfo {

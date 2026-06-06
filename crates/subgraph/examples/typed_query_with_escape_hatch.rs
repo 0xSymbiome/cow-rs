@@ -3,7 +3,7 @@
 //! This example shows two public paths through `cow-sdk-subgraph` against a
 //! local `wiremock::MockServer` (no live API key required):
 //!
-//! 1. The canonical typed query `TOTALS_QUERY` → `get_totals()` →
+//! 1. The canonical typed query `TOTALS_QUERY` → `totals()` →
 //!    `Total`, which covers the common "give me one well-known result"
 //!    use-case.
 //! 2. The explicit `run_query` escape hatch that builds a
@@ -74,7 +74,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let subgraph = api_pointed_at(&server);
 
     // 1. Canonical typed path.
-    let totals: Total = subgraph.get_totals().await?;
+    let totals: Total = subgraph.totals().await?;
     println!(
         "typed TOTALS_QUERY: tokens={} orders={} traders={} settlements={}",
         totals.tokens, totals.orders, totals.traders, totals.settlements,

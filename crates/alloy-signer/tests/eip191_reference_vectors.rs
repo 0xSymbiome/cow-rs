@@ -26,7 +26,7 @@ async fn eip191_message_signature_matches_reference_vector_and_recovers_address(
 
 #[tokio::test]
 async fn address_matches_lowercase_and_eip55_checksum_forms() {
-    let address = signer().get_address().await.unwrap();
+    let address = signer().address().await.unwrap();
 
     assert_eq!(address, Address::new(EXPECTED_LOWERCASE_ADDRESS).unwrap());
     assert_eq!(address, Address::new(EXPECTED_CHECKSUM_ADDRESS).unwrap());

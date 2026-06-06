@@ -26,7 +26,7 @@ where
     S: Signer,
     S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
-    let quote_results = crate::get_quote_results(
+    let quote_results = crate::quote_results(
         trade_parameters,
         trader,
         signer,

@@ -19,7 +19,7 @@ struct MockSigner {
 impl Signer for MockSigner {
     type Error = String;
 
-    async fn get_address(&self) -> Result<Address, Self::Error> {
+    async fn address(&self) -> Result<Address, Self::Error> {
         Ok(self.address)
     }
 
@@ -212,7 +212,7 @@ async fn assert_signer_contracts(
     domain: &TypedDataDomain,
 ) {
     assert_eq!(
-        Signer::get_address(active_signer)
+        Signer::address(active_signer)
             .await
             .unwrap()
             .to_hex_string(),
@@ -477,14 +477,14 @@ async fn signer_satisfies_owner_typed_data_and_digest_capabilities() {
         .await
         .unwrap();
     assert_eq!(
-        Signer::get_address(&active_signer)
+        Signer::address(&active_signer)
             .await
             .unwrap()
             .to_hex_string(),
         "0x9999999999999999999999999999999999999999"
     );
     assert_eq!(
-        Owner::get_address(&active_signer)
+        Owner::address(&active_signer)
             .await
             .unwrap()
             .to_hex_string(),

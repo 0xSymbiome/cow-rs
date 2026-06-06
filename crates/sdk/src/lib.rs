@@ -69,8 +69,8 @@
 //!
 //! For allowance, approval, pre-sign, or on-chain cancellation that does not
 //! need an app code, call the crate's free functions directly
-//! (`get_cow_protocol_allowance`, `approval_transaction`,
-//! `get_pre_sign_transaction`, `cancel_order_onchain`) without constructing a
+//! (`cow_protocol_allowance`, `approval_transaction`,
+//! `pre_sign_transaction`, `cancel_order_onchain`) without constructing a
 //! trading client.
 //!
 //! The subgraph module is intentionally not re-exported, so attempting to

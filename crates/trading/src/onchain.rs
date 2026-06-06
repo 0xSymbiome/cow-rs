@@ -14,7 +14,7 @@ use cow_sdk_orderbook::Order;
 use crate::slippage::{gas_with_margin, parse_integer};
 use crate::{
     GAS_LIMIT_DEFAULT, OrderTraderParameters, PartialTraderParameters, TraderParameters,
-    TradingError, calculate_unique_order_id, get_order_to_sign,
+    TradingError, calculate_unique_order_id, order_to_sign,
 };
 
 /// `EthFlow` transaction bundle returned by native-sell helper flows.
@@ -28,7 +28,7 @@ pub struct EthFlowTransaction {
     /// Unsigned order payload used to derive `order_id` and the transaction body.
     pub order_to_sign: cow_sdk_core::OrderData,
     /// Signer-derived owner resolved at transaction construction via
-    /// [`Signer::get_address`].
+    /// [`Signer::address`].
     ///
     /// Downstream submission uses this value as `OrderCreation.from` for
     /// pre-HTTP validation — not `order_to_sign.receiver`, which is the
@@ -72,7 +72,7 @@ impl EthFlowTransaction {
 /// # Errors
 ///
 /// Returns [`TradingError`] when ABI encoding or gas-margin conversion fails.
-pub async fn get_pre_sign_transaction<S>(
+pub async fn pre_sign_transaction<S>(
     signer: &S,
     chain_id: SupportedChainId,
     order_uid: &cow_sdk_core::OrderUid,
@@ -120,7 +120,7 @@ where
 ///
 /// Returns [`TradingError`] when signer address resolution, transaction
 /// encoding, unique-order-id generation, or gas-margin conversion fails.
-pub async fn get_eth_flow_transaction<S>(
+pub async fn eth_flow_transaction<S>(
     app_data_keccak256: &cow_sdk_core::AppDataHash,
     params: &crate::LimitTradeParametersFromQuote,
     chain_id: SupportedChainId,
@@ -133,10 +133,10 @@ where
     S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     let from = signer
-        .get_address()
+        .address()
         .await
         .map_err(|error| TradingError::Signer {
-            operation: "get_address",
+            operation: "address",
             message: error.to_string().into(),
         })?;
     let owner = from;
@@ -164,7 +164,7 @@ where
     {
         options = options.with_eth_flow_contract_override(overrides);
     }
-    let order_to_sign = get_order_to_sign(
+    let order_to_sign = order_to_sign(
         crate::order::OrderToSignParams {
             chain_id,
             from,

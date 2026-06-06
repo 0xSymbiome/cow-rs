@@ -278,7 +278,7 @@ async fn sign_message(wallet: &BrowserWallet) -> Result<String> {
 async fn quote(wallet: &BrowserWallet, sell_is_weth: bool, amount: &str) -> Result<String> {
     let signer = wallet.signer();
     let results = build_trading()?
-        .get_quote_results(trade(amount, sell_is_weth)?, &signer, None)
+        .quote_results(trade(amount, sell_is_weth)?, &signer, None)
         .await?;
     Ok(serde_json::to_string_pretty(&results)?)
 }

@@ -22,19 +22,19 @@ const SURFACES: &[Surface] = &[
         type_name: "OrderbookApi",
         source_paths: &["crates/orderbook/src/api.rs"],
         table_path: "crates/orderbook/tests/cancellation_composition_contract.rs",
-        seed_methods: &["get_version"],
+        seed_methods: &["version"],
     },
     Surface {
         type_name: "SubgraphApi",
         source_paths: &["crates/subgraph/src/api.rs"],
         table_path: "crates/subgraph/tests/cancellation_composition_contract.rs",
-        seed_methods: &["get_totals"],
+        seed_methods: &["totals"],
     },
     Surface {
         type_name: "Trading",
         source_paths: &["crates/trading/src/sdk"],
         table_path: "crates/trading/tests/cancellation_composition_contract.rs",
-        seed_methods: &["get_quote_only"],
+        seed_methods: &["quote_only"],
     },
 ];
 
@@ -84,11 +84,11 @@ fn trading_sdk_source_directory_aggregates_public_async_methods() {
     let public_async = public_async_methods(&root, &["crates/trading/src/sdk"], "Trading");
     let expected = [
         "approve_cow_protocol",
-        "get_cow_protocol_allowance",
-        "get_order",
-        "get_pre_sign_transaction",
-        "get_quote_only",
-        "get_quote_results",
+        "cow_protocol_allowance",
+        "order",
+        "pre_sign_transaction",
+        "quote_only",
+        "quote_results",
         "off_chain_cancel_order",
         "on_chain_cancel_order",
         "post_limit_order",

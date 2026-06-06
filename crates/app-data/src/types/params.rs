@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::{
-    AppDataDoc, AppDataError, AppDataValidated, info::get_app_data_info,
+    AppDataDoc, AppDataError, AppDataValidated, info::app_data_info,
     schema::generate_app_data_doc,
 };
 
@@ -295,7 +295,7 @@ impl AppDataParams {
     /// # }
     /// ```
     pub fn into_validated(self) -> Result<AppDataValidated, AppDataError> {
-        get_app_data_info(self.into_doc())
+        app_data_info(self.into_doc())
     }
 
     /// Validates every SDK-modelled metadata family against its published

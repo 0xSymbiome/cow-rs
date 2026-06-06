@@ -183,7 +183,7 @@ impl OrderbookApi {
     /// # Errors
     ///
     /// Returns any base-URL resolution error from [`ApiContext::resolved_base_url`].
-    pub fn get_order_link(&self, order_uid: &OrderUid) -> Result<String, OrderbookError> {
+    pub fn order_link(&self, order_uid: &OrderUid) -> Result<String, OrderbookError> {
         Ok(format!(
             "{}/api/v1/orders/{}",
             self.effective_base_url()?,
@@ -212,7 +212,7 @@ impl OrderbookApi {
             ),
         ),
     )]
-    pub async fn get_version(&self) -> Result<String, OrderbookError> {
+    pub async fn version(&self) -> Result<String, OrderbookError> {
         self.fetch_text(FetchParams::new("/api/v1/version", HttpMethod::Get))
             .await
     }
@@ -243,7 +243,7 @@ impl OrderbookApi {
             ),
         ),
     )]
-    pub async fn get_quote(
+    pub async fn quote(
         &self,
         request: &OrderQuoteRequest,
     ) -> Result<OrderQuoteResponse, OrderbookError> {
@@ -349,7 +349,7 @@ impl OrderbookApi {
             ),
         ),
     )]
-    pub async fn get_order(&self, order_uid: &OrderUid) -> Result<Order, OrderbookError> {
+    pub async fn order(&self, order_uid: &OrderUid) -> Result<Order, OrderbookError> {
         let params = FetchParams::new(
             format!("/api/v1/orders/{}", order_uid.to_hex_string()),
             HttpMethod::Get,
@@ -383,8 +383,8 @@ impl OrderbookApi {
             ),
         ),
     )]
-    pub async fn get_order_multi_env(&self, order_uid: &OrderUid) -> Result<Order, OrderbookError> {
-        match self.get_order(order_uid).await {
+    pub async fn order_multi_env(&self, order_uid: &OrderUid) -> Result<Order, OrderbookError> {
+        match self.order(order_uid).await {
             Ok(order) => Ok(order),
             Err(error) if is_not_found(&error) => {
                 let current_env = self.context.env;
@@ -394,7 +394,7 @@ impl OrderbookApi {
                             env: Some(fallback_env),
                             ..ApiContextOverride::default()
                         })
-                        .get_order(order_uid)
+                        .order(order_uid)
                         .await
                 } else {
                     Err(error)
@@ -427,7 +427,7 @@ impl OrderbookApi {
             ),
         ),
     )]
-    pub async fn get_orders(
+    pub async fn orders(
         &self,
         request: &GetOrdersRequest,
     ) -> Result<Vec<Order>, OrderbookError> {
@@ -464,7 +464,7 @@ impl OrderbookApi {
             ),
         ),
     )]
-    pub async fn get_tx_orders(&self, tx_hash: &str) -> Result<Vec<Order>, OrderbookError> {
+    pub async fn tx_orders(&self, tx_hash: &str) -> Result<Vec<Order>, OrderbookError> {
         let params = FetchParams::new(
             format!("/api/v1/transactions/{tx_hash}/orders"),
             HttpMethod::Get,
@@ -496,7 +496,7 @@ impl OrderbookApi {
             ),
         ),
     )]
-    pub async fn get_trades(
+    pub async fn trades(
         &self,
         request: &GetTradesRequest,
     ) -> Result<Vec<Trade>, OrderbookError> {
@@ -547,7 +547,7 @@ impl OrderbookApi {
             ),
         ),
     )]
-    pub async fn get_order_competition_status(
+    pub async fn order_competition_status(
         &self,
         order_uid: &OrderUid,
     ) -> Result<CompetitionOrderStatus, OrderbookError> {
@@ -579,7 +579,7 @@ impl OrderbookApi {
             ),
         ),
     )]
-    pub async fn get_native_price(
+    pub async fn native_price(
         &self,
         token: &crate::types::Address,
     ) -> Result<NativePriceResponse, OrderbookError> {
@@ -612,7 +612,7 @@ impl OrderbookApi {
             ),
         ),
     )]
-    pub async fn get_total_surplus(
+    pub async fn total_surplus(
         &self,
         owner: &crate::types::Address,
     ) -> Result<TotalSurplus, OrderbookError> {
@@ -644,7 +644,7 @@ impl OrderbookApi {
             ),
         ),
     )]
-    pub async fn get_app_data(
+    pub async fn app_data(
         &self,
         app_data_hash: &AppDataHash,
     ) -> Result<AppDataObject, OrderbookError> {
@@ -759,7 +759,7 @@ impl OrderbookApi {
             ),
         ),
     )]
-    pub async fn get_solver_competition_by_auction_id(
+    pub async fn solver_competition_by_auction_id(
         &self,
         auction_id: i64,
     ) -> Result<SolverCompetitionResponse, OrderbookError> {
@@ -791,7 +791,7 @@ impl OrderbookApi {
             ),
         ),
     )]
-    pub async fn get_solver_competition_by_tx_hash(
+    pub async fn solver_competition_by_tx_hash(
         &self,
         tx_hash: &str,
     ) -> Result<SolverCompetitionResponse, OrderbookError> {
@@ -823,7 +823,7 @@ impl OrderbookApi {
             ),
         ),
     )]
-    pub async fn get_latest_solver_competition(
+    pub async fn latest_solver_competition(
         &self,
     ) -> Result<SolverCompetitionResponse, OrderbookError> {
         let params = FetchParams::new("/api/v2/solver_competition/latest", HttpMethod::Get);

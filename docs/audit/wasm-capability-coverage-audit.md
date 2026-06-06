@@ -77,38 +77,38 @@ wallet; **Surfaced (composed)** — covered by combining exported operations;
 
 | Native operation | WASM export | Coverage |
 | --- | --- | --- |
-| `get_quote` | `getQuote` | Surfaced |
+| `quote` | `getQuote` | Surfaced |
 | `send_order` | `sendOrder` / `sendOrderCreation` | Surfaced |
 | `send_signed_order_cancellations` | `cancelOrders` | Surfaced |
-| `get_order` | `getOrder` | Surfaced |
-| `get_orders` | `getOrders` / `getOrdersByOwner` | Surfaced |
-| `get_trades` | `getTrades` | Surfaced |
-| `get_native_price` | `getNativePrice` | Surfaced |
-| `get_app_data` | `getAppData` | Surfaced |
+| `order` | `getOrder` | Surfaced |
+| `orders` | `getOrders` / `getOrdersByOwner` | Surfaced |
+| `trades` | `getTrades` | Surfaced |
+| `native_price` | `getNativePrice` | Surfaced |
+| `app_data` | `getAppData` | Surfaced |
 | `upload_app_data` | `uploadAppData` | Surfaced |
-| `get_version` | — | Not surfaced (Class 2) |
-| `get_order_link` | — | Not surfaced (Class 2) |
-| `get_order_multi_env` | — | Not surfaced (Class 2) |
-| `get_tx_orders` | — | Not surfaced (Class 2) |
-| `get_order_competition_status` | — | Not surfaced (Class 2) |
-| `get_total_surplus` | — | Not surfaced (Class 2) |
-| `get_solver_competition_by_auction_id` | — | Not surfaced (Class 2) |
-| `get_solver_competition_by_tx_hash` | — | Not surfaced (Class 2) |
-| `get_latest_solver_competition` | — | Not surfaced (Class 2) |
+| `version` | — | Not surfaced (Class 2) |
+| `order_link` | — | Not surfaced (Class 2) |
+| `order_multi_env` | — | Not surfaced (Class 2) |
+| `tx_orders` | — | Not surfaced (Class 2) |
+| `order_competition_status` | — | Not surfaced (Class 2) |
+| `total_surplus` | — | Not surfaced (Class 2) |
+| `solver_competition_by_auction_id` | — | Not surfaced (Class 2) |
+| `solver_competition_by_tx_hash` | — | Not surfaced (Class 2) |
+| `latest_solver_competition` | — | Not surfaced (Class 2) |
 
 #### trading — `Trading` → `TradingClient`
 
 | Native operation | WASM export | Coverage |
 | --- | --- | --- |
-| `get_quote_only` | `getQuote` | Surfaced |
+| `quote_only` | `getQuote` | Surfaced |
 | `post_swap_order` | `postSwapOrder` | Surfaced |
 | `post_swap_order_from_quote` | `postSwapOrderFromQuote` | Surfaced |
 | `post_limit_order` | `postLimitOrder` | Surfaced |
-| `get_cow_protocol_allowance` | `getCowProtocolAllowance` | Surfaced |
+| `cow_protocol_allowance` | `getCowProtocolAllowance` | Surfaced |
 | `post_sell_native_currency_order` | `buildSellNativeCurrencyTx` | Surfaced (builder form) |
-| `get_quote_results` | `getQuote` (owner supplied explicitly) | Surfaced (alternate shape) |
-| `get_order` | `OrderBookClient.getOrder` | Surfaced (via orderbook client) |
-| `get_pre_sign_transaction` | `buildPresignTx` | Surfaced (builder form) |
+| `quote_results` | `getQuote` (owner supplied explicitly) | Surfaced (alternate shape) |
+| `order` | `OrderBookClient.getOrder` | Surfaced (via orderbook client) |
+| `pre_sign_transaction` | `buildPresignTx` | Surfaced (builder form) |
 | `on_chain_cancel_order` | `buildCancelOrderTx` | Surfaced (builder form) |
 | `off_chain_cancel_order` | `signCancellation*` + `cancelOrders` | Surfaced (composed) |
 | `approval_transaction` / `approve_cow_protocol` | — | Not surfaced (recorded observation) |
@@ -160,10 +160,10 @@ runtime-model boundary. Members:
 
 - Orderbook reads, eight of which are public methods on the upstream
   `cowprotocol/cow-sdk` `OrderBookApi` (`packages/order-book/src/api.ts`):
-  `get_version`, `get_order_link`, `get_order_multi_env`, `get_tx_orders`,
-  `get_order_competition_status`, `get_total_surplus`,
-  `get_solver_competition_by_auction_id`, and
-  `get_solver_competition_by_tx_hash`. `get_latest_solver_competition` is a
+  `version`, `order_link`, `order_multi_env`, `tx_orders`,
+  `order_competition_status`, `total_surplus`,
+  `solver_competition_by_auction_id`, and
+  `solver_competition_by_tx_hash`. `latest_solver_competition` is a
   native convenience read with no direct upstream `OrderBookApi` method.
 - On-chain EIP-1271 signature verification (`verify_eip1271_signature` /
   `verify_eip1271_signature_cached`) and its verification caches, which require
@@ -204,7 +204,7 @@ boundary rather than a Rust-side wallet.
   submission. This item is recorded for tracking and is not a conformance
   defect against the current defined scope.
 - **Consumer-relevant Class 2 reads.** Among the Class 2 reads,
-  `get_order_competition_status` and `get_total_surplus` are the operations a
+  `order_competition_status` and `total_surplus` are the operations a
   host building order-status or surplus presentation would most likely require.
   They remain out of the defined scope; any future decision to support such a
   host on `cow-sdk-wasm` should treat them as the first additions.
@@ -281,8 +281,8 @@ the correspondence, not every field.
 
 | Operation | Native Rust | WASM / TypeScript |
 | --- | --- | --- |
-| Orderbook quote | `OrderbookApi::get_quote(&OrderQuoteRequest) -> Result<OrderQuoteResponse, OrderbookError>` | `OrderBookClient.getQuote(request: OrderQuoteRequestInput, options?): Promise<WasmEnvelope<OrderQuoteResponseDto>>` |
-| Owner orders | `get_orders(&GetOrdersRequest) -> Result<Vec<Order>, _>` (request struct carries owner and pagination) | `getOrders(owner: string, pagination?: PaginationOptions, options?): Promise<WasmEnvelope<OrderDto[]>>` (decomposed arguments) |
+| Orderbook quote | `OrderbookApi::quote(&OrderQuoteRequest) -> Result<OrderQuoteResponse, OrderbookError>` | `OrderBookClient.getQuote(request: OrderQuoteRequestInput, options?): Promise<WasmEnvelope<OrderQuoteResponseDto>>` |
+| Owner orders | `orders(&GetOrdersRequest) -> Result<Vec<Order>, _>` (request struct carries owner and pagination) | `getOrders(owner: string, pagination?: PaginationOptions, options?): Promise<WasmEnvelope<OrderDto[]>>` (decomposed arguments) |
 | Submit order | `send_order(&OrderCreation) -> Result<OrderUid, _>` | `sendOrder(signed: SignedOrderDto, options?): Promise<WasmEnvelope<string>>` (UID as `string`) |
 | Sign order | `sign_order(&OrderData, chain, &S: TypedDataSigner, opts) -> Result<SigningResult, _>` | `signOrderWithTypedDataSigner(input: OrderInput, chainId: number, owner: string, typedDataSigner: TypedDataSignerCallback, options?): Promise<WasmEnvelope<SignedOrderDto>>` |
 | Managed swap | `Trading::post_swap_order(TradeParameters, &S: Signer, opts) -> Result<OrderPostingResult, _>` | `TradingClient.postSwapOrder(params: SwapParametersInput, owner: string, signerCallback: TypedDataSignerCallback, options?): Promise<WasmEnvelope<OrderPostingResultDto>>` |
@@ -306,7 +306,7 @@ Beyond the uniform transforms, these specific differences are worth tracking:
   constraint is a runtime check rather than a type.
 - **Owner is an explicit parameter.** Signing and managed-post exports take
   `owner: string` positionally because no Rust `Signer` is present to resolve
-  it; the native signer-resolved `get_quote_results` path has no TS counterpart.
+  it; the native signer-resolved `quote_results` path has no TS counterpart.
 - **Error cardinality is reduced.** Native error enums collapse into the
   `WasmError` union's `kind` set with redacted fields, so a consumer matching
   native variants does not get a one-to-one TS counterpart.
