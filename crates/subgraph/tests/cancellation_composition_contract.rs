@@ -15,17 +15,18 @@ use std::{
     time::{Duration, Instant},
 };
 
-use cow_sdk_core::{Cancellable, CancellationToken, HttpClientPolicy, SupportedChainId};
+use cow_sdk_core::{Cancellable, CancellationToken, SupportedChainId};
 use cow_sdk_subgraph::{
-    ExternalHostPolicy, LastDaysVolumeResponse, LastHoursVolumeResponse, SubgraphApi,
-    SubgraphApiBaseUrls, SubgraphConfigOverride, SubgraphError, SubgraphQueryRequest, Total,
+    LastDaysVolumeResponse, LastHoursVolumeResponse, SubgraphApi, SubgraphConfigOverride,
+    SubgraphError, SubgraphQueryRequest, Total,
 };
-use cow_sdk_transport_policy::{DEFAULT_SUBGRAPH_USER_AGENT, TransportPolicy};
 use serde_json::Value;
 use wiremock::{
     Mock, MockServer, ResponseTemplate,
     matchers::{method, path},
 };
+
+mod common;
 
 type CaseFuture<'a> = Pin<Box<dyn Future<Output = Result<(), SubgraphError>> + 'a>>;
 
@@ -97,7 +98,7 @@ async fn every_remaining_subgraph_method_aborts_an_in_flight_request() {
     for case in TESTED_METHODS {
         let server = MockServer::start().await;
         mount_slow_subgraph_response(&server).await;
-        let api = api_with_override(&server);
+        let api = common::loopback_client_no_timeout(server.uri());
         let token = CancellationToken::new();
         let token_for_call = token.clone();
         let dropped = Arc::new(AtomicBool::new(false));
@@ -183,39 +184,6 @@ async fn wait_until_request_is_in_flight(server: &MockServer) {
         );
         tokio::task::yield_now().await;
     }
-}
-
-fn api_with_override(server: &MockServer) -> SubgraphApi {
-    let base_urls: SubgraphApiBaseUrls = [
-        (SupportedChainId::Mainnet, Some(server.uri())),
-        (SupportedChainId::GnosisChain, None),
-        (SupportedChainId::ArbitrumOne, None),
-        (SupportedChainId::Base, None),
-        (SupportedChainId::Sepolia, None),
-        (SupportedChainId::Polygon, None),
-        (SupportedChainId::Avalanche, None),
-        (SupportedChainId::Bnb, None),
-        (SupportedChainId::Linea, None),
-        (SupportedChainId::Plasma, None),
-        (SupportedChainId::Ink, None),
-    ]
-    .into_iter()
-    .collect();
-
-    SubgraphApi::builder()
-        .chain(SupportedChainId::Mainnet)
-        .api_key("FakeApiKey")
-        .with_external_host_policy(ExternalHostPolicy::Test)
-        .transport_policy(
-            TransportPolicy::default_subgraph().with_client_policy(
-                HttpClientPolicy::new(DEFAULT_SUBGRAPH_USER_AGENT)
-                    .expect("default subgraph user-agent must remain valid")
-                    .without_timeout(),
-            ),
-        )
-        .base_urls(base_urls)
-        .build()
-        .expect("subgraph test client with loopback override must build")
 }
 
 fn invoke_get_totals_with_config(api: &SubgraphApi) -> CaseFuture<'_> {

@@ -1,12 +1,11 @@
 use cow_sdk_core::{
     REDACTED_PLACEHOLDER, REDACTED_RESPONSE_BODY_MAX_BYTES, RESPONSE_BODY_TRUNCATION_MARKER,
-    SupportedChainId,
 };
-use cow_sdk_subgraph::{
-    ExternalHostPolicy, SubgraphApi, SubgraphApiBaseUrls, SubgraphError, SubgraphQueryRequest,
-};
+use cow_sdk_subgraph::{SubgraphError, SubgraphQueryRequest};
 use serde_json::json;
 use wiremock::{Mock, MockServer, ResponseTemplate, matchers::method};
+
+mod common;
 
 const RAW_AUTH_TOKEN: &str = "subgraph-bearer-secret";
 const RAW_API_KEY: &str = "subgraph-api-key-secret";
@@ -15,7 +14,7 @@ const RAW_JWT: &str = "eyJhbGciOiJIUzI1NiJ9.eyJzdWJncmFwaCI6ImNvdyJ9.signature";
 #[tokio::test]
 async fn http_status_body_is_redacted_at_storage_and_public_representations() {
     let server = MockServer::start().await;
-    let api = api_with_override(&server);
+    let api = common::loopback_client(server.uri());
     let body = json!({
         "errors": [
             {
@@ -50,7 +49,7 @@ async fn http_status_body_is_redacted_at_storage_and_public_representations() {
 #[tokio::test]
 async fn serialization_body_is_redacted_at_storage_and_public_representations() {
     let server = MockServer::start().await;
-    let api = api_with_override(&server);
+    let api = common::loopback_client(server.uri());
     let body = format!(
         "not-json Authorization: Bearer {RAW_AUTH_TOKEN}; token={RAW_API_KEY}; jwt={RAW_JWT}"
     );
@@ -73,18 +72,6 @@ async fn serialization_body_is_redacted_at_storage_and_public_representations() 
     };
     assert_sanitized_storage(body.as_inner());
     assert_public_representations_are_redacted(&error);
-}
-
-fn api_with_override(server: &MockServer) -> SubgraphApi {
-    let base_urls: SubgraphApiBaseUrls =
-        std::iter::once((SupportedChainId::Mainnet, Some(server.uri()))).collect();
-    SubgraphApi::builder()
-        .chain(SupportedChainId::Mainnet)
-        .api_key("FakeApiKey")
-        .with_external_host_policy(ExternalHostPolicy::Test)
-        .base_urls(base_urls)
-        .build()
-        .expect("subgraph test client with loopback override must build")
 }
 
 fn assert_sanitized_storage(stored: &str) {

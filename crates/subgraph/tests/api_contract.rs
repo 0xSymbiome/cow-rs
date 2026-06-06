@@ -19,6 +19,8 @@ use wiremock::{
     matchers::{header, method, path},
 };
 
+mod common;
+
 #[tokio::test]
 async fn prod_url_map_matches_pinned_supported_and_unsupported_chains() {
     let api = SubgraphApi::builder()
@@ -142,7 +144,7 @@ fn config_debug_and_serialize_redact_custom_base_url_credentials() {
 #[tokio::test]
 async fn get_totals_posts_totals_operation_and_returns_first_row() {
     let server = MockServer::start().await;
-    let api = api_with_override(&server);
+    let api = common::loopback_client(server.uri());
 
     Mock::given(method("POST"))
         .and(path("/"))
@@ -183,7 +185,7 @@ async fn get_totals_posts_totals_operation_and_returns_first_row() {
 #[tokio::test]
 async fn get_last_days_volume_posts_variableized_query() {
     let server = MockServer::start().await;
-    let api = api_with_override(&server);
+    let api = common::loopback_client(server.uri());
 
     Mock::given(method("POST"))
         .and(path("/"))
@@ -225,7 +227,7 @@ async fn get_last_days_volume_posts_variableized_query() {
 #[tokio::test]
 async fn get_last_hours_volume_posts_variableized_query() {
     let server = MockServer::start().await;
-    let api = api_with_override(&server);
+    let api = common::loopback_client(server.uri());
 
     Mock::given(method("POST"))
         .and(path("/"))
@@ -267,7 +269,7 @@ async fn get_last_hours_volume_posts_variableized_query() {
 #[tokio::test]
 async fn run_query_supports_variableized_custom_queries() {
     let server = MockServer::start().await;
-    let api = api_with_override(&server);
+    let api = common::loopback_client(server.uri());
     let query = "query TokensByVolume($limit: Int!) {\n  tokens(first: $limit, orderBy: totalVolumeUsd, orderDirection: desc) {\n    address\n    symbol\n    totalVolumeUsd\n    priceUsd\n  }\n}";
     let request = SubgraphQueryRequest::new(query)
         .with_variables(json!({ "limit": 5 }))
@@ -306,7 +308,7 @@ async fn run_query_supports_variableized_custom_queries() {
 #[tokio::test]
 async fn run_query_supports_explicit_operation_name_for_multi_operation_documents() {
     let server = MockServer::start().await;
-    let api = api_with_override(&server);
+    let api = common::loopback_client(server.uri());
     let document = "query TokensByVolume {\n  tokens(first: 1) {\n    symbol\n  }\n}\n\nquery TotalsForAudit {\n  totals {\n    orders\n  }\n}";
     let request = SubgraphQueryRequest::new(document).with_operation_name("TokensByVolume");
 
@@ -335,7 +337,7 @@ async fn run_query_supports_explicit_operation_name_for_multi_operation_document
 #[tokio::test]
 async fn multi_operation_document_without_operation_name_surfaces_typed_graphql_context() {
     let server = MockServer::start().await;
-    let api = api_with_override(&server);
+    let api = common::loopback_client(server.uri());
     let document = "query TokensByVolume {\n  tokens(first: 1) {\n    symbol\n  }\n}\n\nquery TotalsForAudit {\n  totals {\n    orders\n  }\n}";
 
     Mock::given(method("POST"))
@@ -384,7 +386,7 @@ async fn multi_operation_document_without_operation_name_surfaces_typed_graphql_
 #[tokio::test]
 async fn run_query_accepts_anonymous_documents_without_operation_name() {
     let server = MockServer::start().await;
-    let api = api_with_override(&server);
+    let api = common::loopback_client(server.uri());
     let query = "{\n  totals {\n    tokens\n    orders\n    traders\n    settlements\n  }\n}";
 
     Mock::given(method("POST"))
@@ -415,21 +417,8 @@ async fn run_query_accepts_anonymous_documents_without_operation_name() {
 #[tokio::test]
 async fn run_query_with_config_honors_chain_override_for_generic_queries() {
     let server = MockServer::start().await;
-    let base_urls: SubgraphApiBaseUrls = [
-        (SupportedChainId::Mainnet, None),
-        (SupportedChainId::GnosisChain, Some(server.uri())),
-        (SupportedChainId::ArbitrumOne, None),
-        (SupportedChainId::Base, None),
-        (SupportedChainId::Sepolia, None),
-        (SupportedChainId::Polygon, None),
-        (SupportedChainId::Avalanche, None),
-        (SupportedChainId::Bnb, None),
-        (SupportedChainId::Linea, None),
-        (SupportedChainId::Plasma, None),
-        (SupportedChainId::Ink, None),
-    ]
-    .into_iter()
-    .collect();
+    let base_urls: SubgraphApiBaseUrls =
+        std::iter::once((SupportedChainId::GnosisChain, Some(server.uri()))).collect();
     let api = SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("FakeApiKey")
@@ -478,15 +467,6 @@ async fn run_query_uses_custom_base_url_overrides() {
             SupportedChainId::GnosisChain,
             Some("https://example.com/xdai".to_owned()),
         ),
-        (SupportedChainId::Base, None),
-        (SupportedChainId::ArbitrumOne, None),
-        (SupportedChainId::Sepolia, None),
-        (SupportedChainId::Polygon, None),
-        (SupportedChainId::Avalanche, None),
-        (SupportedChainId::Bnb, None),
-        (SupportedChainId::Linea, None),
-        (SupportedChainId::Plasma, None),
-        (SupportedChainId::Ink, None),
     ]
     .into_iter()
     .collect();
@@ -547,21 +527,8 @@ async fn transport_policy_override_rebuilds_client_with_custom_user_agent() {
         .mount(&server)
         .await;
 
-    let base_urls: SubgraphApiBaseUrls = [
-        (SupportedChainId::Mainnet, Some(server.uri())),
-        (SupportedChainId::GnosisChain, None),
-        (SupportedChainId::ArbitrumOne, None),
-        (SupportedChainId::Base, None),
-        (SupportedChainId::Sepolia, None),
-        (SupportedChainId::Polygon, None),
-        (SupportedChainId::Avalanche, None),
-        (SupportedChainId::Bnb, None),
-        (SupportedChainId::Linea, None),
-        (SupportedChainId::Plasma, None),
-        (SupportedChainId::Ink, None),
-    ]
-    .into_iter()
-    .collect();
+    let base_urls: SubgraphApiBaseUrls =
+        std::iter::once((SupportedChainId::Mainnet, Some(server.uri()))).collect();
     let transport_policy = TransportPolicy::default_subgraph().with_client_policy(
         HttpClientPolicy::new("custom-subgraph-client/9.9.9")
             .expect("custom user-agent must be valid")
@@ -603,7 +570,7 @@ async fn unsupported_network_rejects_before_transport() {
 #[tokio::test]
 async fn empty_totals_rejects_instead_of_returning_default() {
     let server = MockServer::start().await;
-    let api = api_with_override(&server);
+    let api = common::loopback_client(server.uri());
 
     Mock::given(method("POST"))
         .and(path("/"))
@@ -623,7 +590,7 @@ async fn empty_totals_rejects_instead_of_returning_default() {
 #[tokio::test]
 async fn invalid_graphql_query_surfaces_typed_context() {
     let server = MockServer::start().await;
-    let api = api_with_override(&server);
+    let api = common::loopback_client(server.uri());
     let query = "query InvalidQuery {\n  invalidQuery {\n    field1\n    field2\n  }\n}";
 
     Mock::given(method("POST"))
@@ -678,7 +645,7 @@ async fn invalid_graphql_query_surfaces_typed_context() {
 #[tokio::test]
 async fn graphql_error_preserves_variables_in_typed_context() {
     let server = MockServer::start().await;
-    let api = api_with_override(&server);
+    let api = common::loopback_client(server.uri());
     let query =
         "query TokensByVolume($limit: Int!) {\n  tokens(first: $limit) {\n    symbol\n  }\n}";
     let request = SubgraphQueryRequest::new(query)
@@ -736,7 +703,7 @@ async fn graphql_error_preserves_variables_in_typed_context() {
 #[tokio::test]
 async fn malformed_success_response_surfaces_serialization_error() {
     let server = MockServer::start().await;
-    let api = api_with_override(&server);
+    let api = common::loopback_client(server.uri());
 
     Mock::given(method("POST"))
         .and(path("/"))
@@ -775,7 +742,7 @@ async fn malformed_success_response_surfaces_serialization_error() {
 #[tokio::test]
 async fn non_success_status_surfaces_http_status_error() {
     let server = MockServer::start().await;
-    let api = api_with_override(&server);
+    let api = common::loopback_client(server.uri());
     let query = "query TokensByVolume { tokens(first: 1) { symbol } }";
 
     Mock::given(method("POST"))
@@ -817,7 +784,7 @@ async fn non_success_status_surfaces_http_status_error() {
 #[tokio::test]
 async fn missing_data_surfaces_typed_missing_data_error_for_generic_queries() {
     let server = MockServer::start().await;
-    let api = api_with_override(&server);
+    let api = common::loopback_client(server.uri());
     let query = "query TokensByVolume($limit: Int!) { tokens(first: $limit) { symbol } }";
     let request = SubgraphQueryRequest::new(query)
         .with_variables(json!({ "limit": 5 }))
@@ -864,21 +831,8 @@ async fn transport_failures_surface_typed_context() {
     let endpoint = format!("{endpoint_origin}/private/path?token=secret");
     drop(listener);
 
-    let base_urls: SubgraphApiBaseUrls = [
-        (SupportedChainId::Mainnet, Some(endpoint.clone())),
-        (SupportedChainId::GnosisChain, None),
-        (SupportedChainId::ArbitrumOne, None),
-        (SupportedChainId::Base, None),
-        (SupportedChainId::Sepolia, None),
-        (SupportedChainId::Polygon, None),
-        (SupportedChainId::Avalanche, None),
-        (SupportedChainId::Bnb, None),
-        (SupportedChainId::Linea, None),
-        (SupportedChainId::Plasma, None),
-        (SupportedChainId::Ink, None),
-    ]
-    .into_iter()
-    .collect();
+    let base_urls: SubgraphApiBaseUrls =
+        std::iter::once((SupportedChainId::Mainnet, Some(endpoint.clone()))).collect();
     let api = SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("FakeApiKey")
@@ -916,32 +870,6 @@ async fn transport_failures_surface_typed_context() {
         }
         other => panic!("expected Transport error, got {other:?}"),
     }
-}
-
-fn api_with_override(server: &MockServer) -> SubgraphApi {
-    let base_urls: SubgraphApiBaseUrls = [
-        (SupportedChainId::Mainnet, Some(server.uri())),
-        (SupportedChainId::GnosisChain, None),
-        (SupportedChainId::ArbitrumOne, None),
-        (SupportedChainId::Base, None),
-        (SupportedChainId::Sepolia, None),
-        (SupportedChainId::Polygon, None),
-        (SupportedChainId::Avalanche, None),
-        (SupportedChainId::Bnb, None),
-        (SupportedChainId::Linea, None),
-        (SupportedChainId::Plasma, None),
-        (SupportedChainId::Ink, None),
-    ]
-    .into_iter()
-    .collect();
-
-    SubgraphApi::builder()
-        .chain(SupportedChainId::Mainnet)
-        .api_key("FakeApiKey")
-        .with_external_host_policy(ExternalHostPolicy::Test)
-        .base_urls(base_urls)
-        .build()
-        .expect("subgraph test client with loopback override must build")
 }
 
 async fn only_request(server: &MockServer) -> Request {
@@ -1027,7 +955,7 @@ async fn get_totals_combinator_aborts_an_in_flight_request() {
         .mount(&server)
         .await;
 
-    let api = api_with_override(&server);
+    let api = common::loopback_client(server.uri());
     let token = cow_sdk_core::CancellationToken::new();
     let token_for_task = token.clone();
     let dropped = Arc::new(AtomicBool::new(false));
@@ -1169,23 +1097,10 @@ mod recording_transport {
         recorder: Arc<RecordingHttpTransport>,
         transport_policy: TransportPolicy,
     ) -> SubgraphApi {
-        let base_urls: SubgraphApiBaseUrls = [
-            (
-                SupportedChainId::Mainnet,
-                Some(RECORDING_BASE_URL.to_owned()),
-            ),
-            (SupportedChainId::GnosisChain, None),
-            (SupportedChainId::ArbitrumOne, None),
-            (SupportedChainId::Base, None),
-            (SupportedChainId::Sepolia, None),
-            (SupportedChainId::Polygon, None),
-            (SupportedChainId::Avalanche, None),
-            (SupportedChainId::Bnb, None),
-            (SupportedChainId::Linea, None),
-            (SupportedChainId::Plasma, None),
-            (SupportedChainId::Ink, None),
-        ]
-        .into_iter()
+        let base_urls: SubgraphApiBaseUrls = std::iter::once((
+            SupportedChainId::Mainnet,
+            Some(RECORDING_BASE_URL.to_owned()),
+        ))
         .collect();
         SubgraphApi::builder()
             .chain(SupportedChainId::Mainnet)

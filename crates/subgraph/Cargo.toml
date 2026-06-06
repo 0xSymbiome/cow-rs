@@ -37,7 +37,6 @@ url.workspace = true
 reqwest = { workspace = true, features = ["rustls", "gzip"] }
 
 [dev-dependencies]
-async-trait.workspace = true
 cow-sdk-test-utils = { path = "../test-utils" }
 graphql_client = "0.16.0"
 tokio = { workspace = true, features = ["macros", "rt-multi-thread", "test-util", "time"] }

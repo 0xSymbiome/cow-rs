@@ -9,15 +9,12 @@
 //! `reqwest::Client` reuse all flow through the resulting `SubgraphApi`.
 
 use std::sync::Arc;
-use std::sync::Mutex;
-use std::time::Duration;
 
 use cow_sdk_core::{
-    HttpTransport, REDACTED_PLACEHOLDER, ReqwestTransport, ReqwestTransportConfig,
-    SupportedChainId, TransportError,
+    HttpTransport, REDACTED_PLACEHOLDER, ReqwestTransport, ReqwestTransportConfig, SupportedChainId,
 };
 use cow_sdk_subgraph::{ExternalHostPolicy, SubgraphApi, SubgraphApiBaseUrls};
-use cow_sdk_test_utils::mocks::StubHttpTransport;
+use cow_sdk_test_utils::mocks::{Canned, RecordingHttpTransport, StubHttpTransport};
 
 #[test]
 fn build_with_required_inputs_yields_a_typed_api() {
@@ -150,104 +147,12 @@ fn explicit_transport_overrides_default_native_handle() {
     assert!(Arc::ptr_eq(api.transport(), &transport));
 }
 
-#[derive(Debug, Default)]
-struct BuilderRecordingTransport {
-    calls: Mutex<Vec<String>>,
-    response: Mutex<String>,
-}
-
-impl BuilderRecordingTransport {
-    fn with_response(response: &str) -> Self {
-        Self {
-            calls: Mutex::new(Vec::new()),
-            response: Mutex::new(response.to_owned()),
-        }
-    }
-
-    fn calls(&self) -> Vec<String> {
-        self.calls
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .clone()
-    }
-}
-
-#[async_trait::async_trait]
-impl HttpTransport for BuilderRecordingTransport {
-    async fn get(
-        &self,
-        path: &str,
-        _headers: &[(String, String)],
-        _timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
-        self.calls
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .push(format!("GET {path}"));
-        Ok(self
-            .response
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .clone())
-    }
-    async fn post(
-        &self,
-        path: &str,
-        _body: &str,
-        _headers: &[(String, String)],
-        _timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
-        self.calls
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .push(format!("POST {path}"));
-        Ok(self
-            .response
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .clone())
-    }
-    async fn put(
-        &self,
-        path: &str,
-        _body: &str,
-        _headers: &[(String, String)],
-        _timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
-        self.calls
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .push(format!("PUT {path}"));
-        Ok(self
-            .response
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .clone())
-    }
-    async fn delete(
-        &self,
-        path: &str,
-        _body: &str,
-        _headers: &[(String, String)],
-        _timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
-        self.calls
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .push(format!("DELETE {path}"));
-        Ok(self
-            .response
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .clone())
-    }
-}
-
 #[tokio::test]
 async fn injected_transport_observes_every_live_request_from_the_built_client() {
-    let recorder = Arc::new(BuilderRecordingTransport::with_response(
-        "{\"data\":{\"totals\":[{\"tokens\":\"1\",\"orders\":\"2\",\"traders\":\"3\",\"settlements\":\"4\"}]}}",
-    ));
+    let recorder = RecordingHttpTransport::new([Canned::Ok(
+        "{\"data\":{\"totals\":[{\"tokens\":\"1\",\"orders\":\"2\",\"traders\":\"3\",\"settlements\":\"4\"}]}}"
+            .to_owned(),
+    )]);
     let transport: Arc<dyn HttpTransport + Send + Sync> = recorder.clone();
     let overrides: SubgraphApiBaseUrls = std::iter::once((
         SupportedChainId::Mainnet,
@@ -273,21 +178,20 @@ async fn injected_transport_observes_every_live_request_from_the_built_client() 
         .expect("the injected transport should deliver the canned totals response");
     assert_eq!(totals.tokens, "1");
 
-    let calls = recorder.calls();
+    let calls = recorder.observed();
     assert_eq!(
         calls.len(),
         1,
         "exactly one live request should flow through the injected transport"
     );
-    assert!(
-        calls[0].starts_with("POST "),
-        "the totals query must dispatch through the POST path: {}",
-        calls[0]
+    assert_eq!(
+        calls[0].method, "POST",
+        "the totals query must dispatch through the POST path"
     );
     assert!(
-        calls[0].contains("builder-recording.example"),
+        calls[0].url.contains("builder-recording.example"),
         "the dispatched URL must reach the injected base URL: {}",
-        calls[0]
+        calls[0].url
     );
 }
 
