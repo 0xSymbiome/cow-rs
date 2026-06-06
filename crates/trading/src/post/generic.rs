@@ -15,7 +15,7 @@ use crate::validation::OrderBoundsValidator;
 use crate::{
     LimitTradeParameters, LimitTradeParametersFromQuote, OrderPostingResult, OrderbookClient,
     TradeAdvancedSettings, TraderParameters, TradingAppDataInfo, TradingError,
-    adjust_ethflow_limit_parameters, order_to_sign, is_ethflow_order,
+    adjust_ethflow_limit_parameters, is_ethflow_order, order_to_sign,
 };
 
 fn build_order_body(

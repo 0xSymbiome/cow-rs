@@ -319,10 +319,7 @@ impl TradingClient {
     /// @throws SdkError for invalid parameters, callback failure, timeout, or cancellation.
     #[cfg_attr(
         feature = "tracing",
-        tracing::instrument(
-            skip_all,
-            fields(endpoint = "wasm.trading.cow_protocol_allowance")
-        )
+        tracing::instrument(skip_all, fields(endpoint = "wasm.trading.cow_protocol_allowance"))
     )]
     #[wasm_bindgen(
         js_name = "getCowProtocolAllowance",

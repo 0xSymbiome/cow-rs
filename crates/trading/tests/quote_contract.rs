@@ -11,8 +11,8 @@ use cow_sdk_orderbook::{OrderKind, SigningScheme};
 use cow_sdk_signing::ORDER_PRIMARY_TYPE;
 use cow_sdk_trading::{
     ClientRejection, PartnerFeePolicy, QuoteRequestOverride, QuoterParameters,
-    TradeAdvancedSettings, TradeParameters, build_app_data, calculate_unique_order_id,
-    quote_only, quote_results,
+    TradeAdvancedSettings, TradeParameters, build_app_data, calculate_unique_order_id, quote_only,
+    quote_results,
 };
 
 use crate::common::{

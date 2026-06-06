@@ -2,8 +2,7 @@ use cow_sdk_core::Signer;
 
 use super::Trading;
 use crate::{
-    QuoteResults, TradeAdvancedSettings, TradeParameters, TradingError, quote_only,
-    quote_results,
+    QuoteResults, TradeAdvancedSettings, TradeParameters, TradingError, quote_only, quote_results,
 };
 
 impl Trading {

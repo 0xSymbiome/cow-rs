@@ -12,7 +12,7 @@ use crate::{
     DEFAULT_QUOTE_VALIDITY, OrderbookClient, OrderbookRuntimeBinding, QuoteRequestOverride,
     QuoteResults, QuoterParameters, TradeAdvancedSettings, TradeParameters, TraderParameters,
     TradingAppDataInfo, TradingError, adjust_ethflow_trade_parameters,
-    calculate_quote_amounts_and_costs, default_slippage_bps, order_to_sign, is_ethflow_order,
+    calculate_quote_amounts_and_costs, default_slippage_bps, is_ethflow_order, order_to_sign,
     partner_fee_bps, resolve_slippage_suggestion, sanitize_protocol_fee_bps,
 };
 

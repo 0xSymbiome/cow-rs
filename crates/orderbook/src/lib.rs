@@ -214,10 +214,7 @@ pub trait OrderbookClient: Send + Sync {
     /// # Errors
     ///
     /// Returns the underlying orderbook error from the implementation.
-    async fn order(
-        &self,
-        order_uid: &CoreOrderUid,
-    ) -> Result<types::Order, error::OrderbookError>;
+    async fn order(&self, order_uid: &CoreOrderUid) -> Result<types::Order, error::OrderbookError>;
 
     /// Uploads full app-data for a specific app-data hash.
     ///
@@ -267,10 +264,7 @@ impl OrderbookClient for api::OrderbookApi {
         Self::send_signed_order_cancellations(self, request).await
     }
 
-    async fn order(
-        &self,
-        order_uid: &CoreOrderUid,
-    ) -> Result<types::Order, error::OrderbookError> {
+    async fn order(&self, order_uid: &CoreOrderUid) -> Result<types::Order, error::OrderbookError> {
         Self::order(self, order_uid).await
     }
 

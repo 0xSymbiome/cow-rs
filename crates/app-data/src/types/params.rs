@@ -4,8 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::{
-    AppDataDoc, AppDataError, AppDataValidated, info::app_data_info,
-    schema::generate_app_data_doc,
+    AppDataDoc, AppDataError, AppDataValidated, info::app_data_info, schema::generate_app_data_doc,
 };
 
 use super::MetadataMap;

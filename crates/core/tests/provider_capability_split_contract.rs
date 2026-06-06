@@ -288,10 +288,7 @@ async fn provider_and_signing_provider_split_cleanly_so_read_only_adapters_skip_
     let signer = SigningProvider::create_signer(&wallet, "primary")
         .await
         .unwrap();
-    assert_eq!(
-        Signer::address(&signer).await.unwrap(),
-        sample_address()
-    );
+    assert_eq!(Signer::address(&signer).await.unwrap(), sample_address());
     assert_eq!(
         Signer::sign_message(&signer, b"cow").await.unwrap(),
         "message:3"

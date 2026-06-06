@@ -9,9 +9,7 @@ use cow_sdk_core::{
     SellTokenSource, SupportedChainId, wrapped_native_token,
 };
 use cow_sdk_signing::generate_order_id;
-use cow_sdk_trading::{
-    OrderToSignParams, TradingError, calculate_unique_order_id, order_to_sign,
-};
+use cow_sdk_trading::{OrderToSignParams, TradingError, calculate_unique_order_id, order_to_sign};
 use tokio::time::timeout;
 
 use crate::common::{MockEthFlowChecker, OWNER, address, app_data_hash, sample_limit_parameters};

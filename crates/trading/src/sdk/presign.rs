@@ -2,8 +2,8 @@ use cow_sdk_core::Signer;
 
 use super::Trading;
 use crate::{
-    OrderTraderParameters, TradingError, pre_sign_transaction,
-    onchain::protocol_options_for_partial_order,
+    OrderTraderParameters, TradingError, onchain::protocol_options_for_partial_order,
+    pre_sign_transaction,
 };
 
 impl Trading {

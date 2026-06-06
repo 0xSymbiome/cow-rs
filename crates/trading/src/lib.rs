@@ -63,13 +63,12 @@ pub use app_data::{build_app_data, merge_and_seal_app_data, params_from_doc};
 pub use cancel::off_chain_cancel_order;
 pub use error::{OrderbookContextValue, TradingError};
 pub use onchain::{
-    EthFlowTransaction, cancel_order_onchain, eth_flow_transaction, pre_sign_transaction,
-    onchain_cancellation_transaction, protocol_options_for_order,
+    EthFlowTransaction, cancel_order_onchain, eth_flow_transaction,
+    onchain_cancellation_transaction, pre_sign_transaction, protocol_options_for_order,
 };
 pub use order::{
     OrderToSignParams, adjust_ethflow_limit_parameters, adjust_ethflow_trade_parameters,
-    calculate_unique_order_id, order_to_sign, is_ethflow_order,
-    swap_params_to_limit_order_params,
+    calculate_unique_order_id, is_ethflow_order, order_to_sign, swap_params_to_limit_order_params,
 };
 pub use post::{
     post_cow_protocol_trade, post_limit_order, post_sell_native_currency_order, post_swap_order,

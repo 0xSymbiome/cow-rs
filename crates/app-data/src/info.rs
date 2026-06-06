@@ -353,10 +353,7 @@ mod tests {
 
         assert_eq!(app_data_info_hex(&document).unwrap(), info.app_data_hex);
         assert_eq!(app_data_cid(&document).unwrap(), info.cid);
-        assert_eq!(
-            app_data_content(&document).unwrap(),
-            info.app_data_content
-        );
+        assert_eq!(app_data_content(&document).unwrap(), info.app_data_content);
         assert_eq!(digest_from_cid(&info.cid).unwrap(), info.app_data_hex);
     }
 }

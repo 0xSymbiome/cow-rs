@@ -17,8 +17,8 @@ use cow_sdk_contracts::{OrderUidParams, SigningScheme, hash_order};
 use cow_sdk_core::{Address, Amount, SupportedChainId};
 
 use cow_sdk_signing::{
-    GeneratedOrderId, ORDER_PRIMARY_TYPE, SigningError, eip1271_signature_payload,
-    generate_order_id, domain, order_typed_data, order_typed_data_payload, sign_order,
+    GeneratedOrderId, ORDER_PRIMARY_TYPE, SigningError, domain, eip1271_signature_payload,
+    generate_order_id, order_typed_data, order_typed_data_payload, sign_order,
     sign_order_with_scheme,
 };
 
@@ -93,11 +93,8 @@ async fn sign_order_uses_typed_data_for_eip712_and_digest_for_ethsign() {
     assert_eq!(ethsign_result.signing_scheme, SigningScheme::EthSign);
     assert_eq!(ethsign_result.signature, signer.message_signature);
 
-    let expected_digest = hash_order(
-        &domain(SupportedChainId::Sepolia, None).unwrap(),
-        &order,
-    )
-    .unwrap();
+    let expected_digest =
+        hash_order(&domain(SupportedChainId::Sepolia, None).unwrap(), &order).unwrap();
 
     assert_eq!(
         format!(
@@ -112,11 +109,8 @@ async fn sign_order_uses_typed_data_for_eip712_and_digest_for_ethsign() {
 async fn eth_sign_routes_raw_32_byte_digest_to_sign_message() {
     let order = sample_order();
     let signer = RecordingSigner::new();
-    let expected_digest = hash_order(
-        &domain(SupportedChainId::Sepolia, None).unwrap(),
-        &order,
-    )
-    .unwrap();
+    let expected_digest =
+        hash_order(&domain(SupportedChainId::Sepolia, None).unwrap(), &order).unwrap();
 
     let result = sign_order_with_scheme(
         &order,
@@ -209,11 +203,8 @@ fn generate_order_id_reuses_contract_hashing_and_uid_packing() {
     let owner = Address::new("0x1111111111111111111111111111111111111111").unwrap();
 
     let generated = generate_order_id(SupportedChainId::Sepolia, &order, &owner, None).unwrap();
-    let expected_digest = hash_order(
-        &domain(SupportedChainId::Sepolia, None).unwrap(),
-        &order,
-    )
-    .unwrap();
+    let expected_digest =
+        hash_order(&domain(SupportedChainId::Sepolia, None).unwrap(), &order).unwrap();
     let expected_uid = cow_sdk_contracts::pack_order_uid_params(&OrderUidParams::new(
         expected_digest,
         owner,

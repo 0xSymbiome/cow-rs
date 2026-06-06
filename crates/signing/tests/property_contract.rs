@@ -29,10 +29,9 @@ use cow_sdk_core::{
     ProtocolOptions, SellTokenSource, SupportedChainId, TypedDataDomain,
 };
 use cow_sdk_signing::{
-    ORDER_PRIMARY_TYPE, domain_fields, domain_separator_for, eip1271_signature_payload,
-    generate_order_id, domain, order_cancellations_typed_data_payload, order_fields,
-    order_typed_data, order_typed_data_payload, sign_order_cancellations_with_scheme,
-    sign_order_with_scheme,
+    ORDER_PRIMARY_TYPE, domain, domain_fields, domain_separator_for, eip1271_signature_payload,
+    generate_order_id, order_cancellations_typed_data_payload, order_fields, order_typed_data,
+    order_typed_data_payload, sign_order_cancellations_with_scheme, sign_order_with_scheme,
 };
 use proptest::prelude::*;
 use proptest::test_runner::FileFailurePersistence;

@@ -337,9 +337,7 @@ fn path_latest_solver_competition() -> String {
 fn invoke_get_quote(api: &OrderbookApi) -> CaseFuture<'_> {
     Box::pin(async move {
         let request = quote_request();
-        api.quote(&request)
-            .await
-            .map(|_: OrderQuoteResponse| ())
+        api.quote(&request).await.map(|_: OrderQuoteResponse| ())
     })
 }
 

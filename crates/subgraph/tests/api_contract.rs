@@ -711,10 +711,7 @@ async fn malformed_success_response_surfaces_serialization_error() {
         .mount(&server)
         .await;
 
-    let error = api
-        .totals()
-        .await
-        .expect_err("invalid json should fail");
+    let error = api.totals().await.expect_err("invalid json should fail");
 
     match error {
         SubgraphError::Serialization {

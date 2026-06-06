@@ -427,10 +427,7 @@ impl OrderbookApi {
             ),
         ),
     )]
-    pub async fn orders(
-        &self,
-        request: &GetOrdersRequest,
-    ) -> Result<Vec<Order>, OrderbookError> {
+    pub async fn orders(&self, request: &GetOrdersRequest) -> Result<Vec<Order>, OrderbookError> {
         let params = FetchParams::new(
             format!("/api/v1/account/{}/orders", request.owner.to_hex_string()),
             HttpMethod::Get,
@@ -496,10 +493,7 @@ impl OrderbookApi {
             ),
         ),
     )]
-    pub async fn trades(
-        &self,
-        request: &GetTradesRequest,
-    ) -> Result<Vec<Trade>, OrderbookError> {
+    pub async fn trades(&self, request: &GetTradesRequest) -> Result<Vec<Trade>, OrderbookError> {
         if !request.is_valid() {
             return Err(OrderbookError::InvalidTradesQuery {
                 field: "filter",

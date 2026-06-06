@@ -43,10 +43,7 @@ async fn version_endpoint_matches_transport_contract() {
         server.uri(),
     );
 
-    let version = api
-        .version()
-        .await
-        .expect("version request should succeed");
+    let version = api.version().await.expect("version request should succeed");
 
     assert_eq!(version, "v1.2.3");
 }

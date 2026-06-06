@@ -14,7 +14,7 @@
 mod common;
 
 use cow_sdk_core::{Address, CowEnv, ProtocolOptions, SupportedChainId};
-use cow_sdk_signing::{domain_separator, domain, order_typed_data};
+use cow_sdk_signing::{domain, domain_separator, order_typed_data};
 use sha3::{Digest, Keccak256};
 
 use common::sample_order;

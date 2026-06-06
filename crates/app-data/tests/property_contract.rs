@@ -25,8 +25,8 @@
 mod common;
 
 use cow_sdk_app_data::{
-    AppDataDoc, AppDataError, IpfsFetchPolicy, SchemaVersion, app_data_hex_to_cid,
-    cid_to_app_data_hex, app_data_info, stringify_deterministic,
+    AppDataDoc, AppDataError, IpfsFetchPolicy, SchemaVersion, app_data_hex_to_cid, app_data_info,
+    cid_to_app_data_hex, stringify_deterministic,
 };
 use proptest::prelude::*;
 use proptest::test_runner::FileFailurePersistence;

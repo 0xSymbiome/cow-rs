@@ -1,6 +1,6 @@
 use serde_json::{Map, Value, json};
 
-use cow_sdk_app_data::{AppDataParams, PartnerFee, generate_app_data_doc, app_data_info};
+use cow_sdk_app_data::{AppDataParams, PartnerFee, app_data_info, generate_app_data_doc};
 use cow_sdk_core::AppCode;
 
 use crate::{TradingAppDataInfo, TradingError};
