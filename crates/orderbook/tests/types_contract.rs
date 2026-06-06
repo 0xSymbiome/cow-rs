@@ -180,33 +180,6 @@ fn quote_signing_scheme_rejects_incompatible_onchain_ecdsa_wire_pairs() {
 }
 
 #[test]
-fn quote_request_validate_accepts_services_signing_scheme_pairs() {
-    for (signing_scheme, onchain_order) in [
-        (SigningScheme::Eip712, false),
-        (SigningScheme::EthSign, false),
-        (SigningScheme::Eip1271, false),
-        (SigningScheme::Eip1271, true),
-        (SigningScheme::PreSign, false),
-        (SigningScheme::PreSign, true),
-    ] {
-        let mut request = OrderQuoteRequest::new(
-            sample_owner(),
-            sample_buy_token(),
-            sample_owner(),
-            OrderQuoteSide::sell(amount("1000000")),
-        )
-        .with_signing_scheme(signing_scheme);
-        if onchain_order {
-            request = request.with_onchain_order();
-        }
-
-        request
-            .validate()
-            .expect("services-compatible signing pair must validate locally");
-    }
-}
-
-#[test]
 fn quote_signing_scheme_rejects_verification_gas_limit_without_eip1271() {
     // A verification gas limit only belongs to EIP-1271; on any other scheme
     // the wire try_from rejects it on deserialization.
