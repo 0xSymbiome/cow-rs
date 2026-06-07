@@ -7,8 +7,8 @@
 
 use std::{error::Error, sync::Arc};
 
-use cow_sdk::core::{Amount, OrderKind};
-use cow_sdk::prelude::{SupportedChainId, TradeParameters, Trading};
+use cow_sdk::core::OrderKind;
+use cow_sdk::prelude::{Amount, SupportedChainId, TradeParameters, Trading};
 
 use cow_sdk::testing::{MockOrderbook, MockSigner};
 use cow_sdk_examples_native::support::{

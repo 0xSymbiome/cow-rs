@@ -9,10 +9,9 @@ use std::error::Error;
 
 use serde_json::json;
 
-use cow_sdk::AppCode;
 use cow_sdk::contracts::deployment_for_chain;
 use cow_sdk::core::wrapped_native_token;
-use cow_sdk::prelude::{SupportedChainId, TraderParameters, TradingBuilder};
+use cow_sdk::prelude::{AppCode, SupportedChainId, TraderParameters, TradingBuilder};
 use cow_sdk::trading::TradingOptions;
 
 fn main() -> Result<(), Box<dyn Error>> {

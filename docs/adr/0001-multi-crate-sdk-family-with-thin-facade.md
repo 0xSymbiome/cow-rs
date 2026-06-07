@@ -24,6 +24,15 @@ would blur product identity, crate ownership, and runtime boundaries.
   `cow-sdk` and `cow-sdk-*`. Leaf crates are first-class entry points, while
   `cow-sdk` stays a narrow facade instead of the only meaningful integration
   surface.
+- Public root surface: the `cow-sdk` crate root is an **explicit, curated**
+  surface — leaf crates re-exported as named modules (`cow_sdk::trading`,
+  `cow_sdk::orderbook`, `cow_sdk::core`, …) plus a hand-picked set of primary
+  workflow types. The broader convenience set lives in an **opt-in**
+  `cow_sdk::prelude` that is **never** glob-re-exported to the crate root
+  (`pub use prelude::*` is disallowed), so the root stays pinnable in the
+  public-API snapshot and does not silently grow when the prelude grows. This
+  matches `cow-sdk-core` (whose prelude is opt-in) and the wider ecosystem
+  (`sqlx`, `diesel`).
 - Runtime and support: runtime-specific dependencies can stay isolated instead
   of forcing one dependency and runtime model across the whole workspace.
 - Validation and review: targeted crate-level tests, docs, and review can stay

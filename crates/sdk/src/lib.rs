@@ -91,7 +91,21 @@ compile_error!(
 /// Curated re-exports for the default `cow-sdk` facade.
 pub mod prelude;
 
-pub use prelude::*;
+// The primary-workflow types are hoisted to the crate root by **explicit**
+// re-export — never `pub use prelude::*` — so the crate-root public surface stays
+// curated and pinnable rather than glob-defined (a glob would silently grow the
+// root API whenever the prelude grows). The full workflow set, including
+// convenience items such as `CowEnv`, `Provider`, `Signer`, `Cancellable`, and the
+// leaf error/builder types, is reachable through the opt-in `cow_sdk::prelude`,
+// matching `cow-sdk-core` and the wider ecosystem (sqlx, diesel). `ErrorClass`,
+// `SdkError`, and `HttpTransport` are already re-exported individually below.
+pub use prelude::{
+    Address, Amount, AppCode, OrderUid, OrderbookApi, Signature, SupportedChainId, TradeParameters,
+    TraderParameters, Trading, TradingBuilder, TradingOptions,
+};
+#[cfg(feature = "browser-wallet")]
+#[cfg_attr(docsrs, doc(cfg(feature = "browser-wallet")))]
+pub use prelude::BrowserWalletSigner;
 
 #[cfg(all(feature = "alloy", not(target_arch = "wasm32")))]
 #[cfg_attr(docsrs, doc(cfg(feature = "alloy")))]

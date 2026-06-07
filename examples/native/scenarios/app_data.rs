@@ -9,11 +9,11 @@ use std::error::Error;
 
 use serde_json::json;
 
-use cow_sdk::AppCode;
 use cow_sdk::app_data::{
     AppDataParams, SchemaVersion, app_data_hex_to_cid, cid_to_app_data_hex, generate_app_data_doc,
     app_data_info, validate_app_data_doc,
 };
+use cow_sdk::prelude::AppCode;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Generate an app-data document from typed params (generation is infallible).

@@ -9,9 +9,8 @@
 use std::error::Error;
 
 use cow_sdk::alloy::AlloyClient;
-use cow_sdk::core::{
-    Amount, CowEnv, SigningProvider, SupportedChainId, TransactionHash, TransactionStatus,
-};
+use cow_sdk::core::{SigningProvider, TransactionHash, TransactionStatus};
+use cow_sdk::prelude::{Amount, CowEnv, SupportedChainId};
 use cow_sdk::trading::{
     AllowanceParameters, ApprovalParameters, OrderTraderParameters, Trading, WaitOptions,
     approval_transaction, submit_and_wait_for_receipt,

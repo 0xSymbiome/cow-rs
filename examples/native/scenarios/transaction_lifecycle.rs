@@ -6,9 +6,9 @@ use std::error::Error;
 
 use cow_sdk::alloy::AlloyClient;
 use cow_sdk::core::{
-    Address, Amount, Signer, SigningProvider, SupportedChainId, TransactionBroadcast,
-    TransactionRequest, TransactionStatus,
+    Signer, SigningProvider, TransactionBroadcast, TransactionRequest, TransactionStatus,
 };
+use cow_sdk::prelude::{Address, Amount, SupportedChainId};
 use cow_sdk::trading::{WaitOptions, submit_and_wait_for_receipt};
 use cow_sdk_examples_native::support::{TEST_KEY, mount_rpc};
 use serde_json::json;

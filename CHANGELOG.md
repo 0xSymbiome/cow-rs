@@ -367,6 +367,20 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- The `cow-sdk` facade crate root is now an explicit, curated re-export surface:
+  the workflow `cow_sdk::prelude` is no longer glob-re-exported to the crate root.
+  The primary entry types (`Trading`, `TradeParameters`, `TraderParameters`,
+  `TradingBuilder`, `TradingOptions`, `Address`, `Amount`, `AppCode`, `OrderUid`,
+  `SupportedChainId`, `OrderbookApi`, `Signature`, `SdkError`, `ErrorClass`, and the
+  transport and EIP-1271 cache types) remain at the crate root, while the broader
+  convenience set — `CowEnv`, `Provider`, `Signer`, `Cancellable`, `AppDataParams`,
+  `AppDataValidated`, `ContractsError`, `OrderbookApiBuilder`, `OrderbookError`, and
+  `TradingError` — is now reached through the opt-in `cow_sdk::prelude` or each
+  type's named module (for example `cow_sdk::core::CowEnv` and
+  `cow_sdk::orderbook::OrderbookError`). This keeps the crate-root public surface
+  explicit and pinnable instead of glob-defined, so it no longer grows implicitly
+  when the prelude grows, matching the opt-in `cow_sdk_core::prelude`. Governed by
+  [ADR 0001](docs/adr/0001-multi-crate-sdk-family-with-thin-facade.md).
 - `cow_sdk_app_data::AppDataError::Json` and
   `cow_sdk_contracts::ContractsError::Serialization` now carry a structured
   `{ category, line, column }` diagnostic instead of wrapping the raw

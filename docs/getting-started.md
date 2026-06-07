@@ -178,7 +178,7 @@ from `TradeAdvancedSettings::quote_request.from`.
 
 ```rust
 use cow_sdk::core::Amount;
-use cow_sdk::{Address, OrderKind, TradeParameters};
+use cow_sdk::{Address, TradeParameters, core::OrderKind};
 
 fn quote_request(owner: Address) -> Result<TradeParameters, Box<dyn std::error::Error>> {
     let params = TradeParameters::new(
@@ -206,7 +206,7 @@ through `TradingOptions`:
 use std::sync::Arc;
 
 use cow_sdk::{
-    CowEnv, HttpTransport, OrderbookApi, SupportedChainId, Trading, TradingOptions,
+    core::CowEnv, HttpTransport, OrderbookApi, SupportedChainId, Trading, TradingOptions,
 };
 use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
 

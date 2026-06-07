@@ -11,8 +11,7 @@ use std::{error::Error, sync::Arc};
 
 use serde_json::json;
 
-use cow_sdk::core::Amount;
-use cow_sdk::prelude::{SupportedChainId, Trading};
+use cow_sdk::prelude::{Amount, SupportedChainId, Trading};
 use cow_sdk::trading::{
     AllowanceParameters, ApprovalParameters, OrderTraderParameters,
 };
