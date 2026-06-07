@@ -1,7 +1,7 @@
 # Trading Order-Bounds Validator Audit
 
 Status: Current
-Last reviewed: 2026-06-05
+Last reviewed: 2026-06-07
 Owning surface: `cow-sdk-trading` `OrderBoundsValidator`,
 `OrderValidityBounds`, `SubmissionClass`, `ClientRejection`,
 `AmountSide`, and the `TradingError::ClientRejected` lifting variant.
@@ -214,12 +214,10 @@ Primary regression coverage:
 
 - `crates/trading/tests/validation_contract.rs`
 - `crates/trading/tests/validation_contract.rs::validate_same_token_matches_services_allow_sell_policy`
-- `crates/trading/tests/validation_contract.rs::validate_mirrors_services_order_validation_regression`
 - `crates/trading/tests/parameters_contract.rs::tradeparameters_validate_mirrors_services_allow_sell`
 - `crates/trading/tests/parameters_contract.rs::limittradeparameters_validate_mirrors_services_allow_sell`
 - `crates/trading/tests/property_contract.rs::validator_is_monotonic_within_window_via_proptest`
 - `crates/trading/tests/property_contract.rs::validator_handles_u32_max_validto_without_overflow`
-- `crates/trading/tests/property_contract.rs::same_token_validation_class_is_buy_side_only`
 - `crates/trading/tests/onchain_contract.rs::eth_flow_gas_estimate_applies_documented_floor_overhead`
 - `crates/trading/tests/onchain_contract.rs::pre_sign_gas_estimate_applies_documented_floor_overhead`
 - `crates/trading/tests/cancel_contract.rs::cancellation_gas_estimation_fallback_uses_documented_constant`

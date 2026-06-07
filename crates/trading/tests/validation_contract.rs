@@ -241,96 +241,11 @@ fn eth_flow_path_accepts_native_sell_token_but_still_enforces_zero_amount() {
 }
 
 #[test]
-fn buy_side_identical_sell_and_buy_tokens_reject_as_same_token() {
-    let validator = OrderBoundsValidator::services_default();
-    let mut order = order();
-    order.buy_token = address(SELL_TOKEN);
-    order.kind = OrderKind::Buy;
-    let error = validator
-        .validate(
-            &order,
-            address(FROM),
-            SigningScheme::Eip712,
-            None,
-            NOW,
-            false,
-        )
-        .expect_err("buy-side identical sell and buy tokens must reject");
-    assert!(matches!(error, ClientRejection::SameBuyAndSellToken { .. }));
-}
-
-#[test]
-fn sell_side_identical_sell_and_buy_tokens_are_accepted() {
-    let validator = OrderBoundsValidator::services_default();
-    let mut order = order();
-    order.buy_token = address(SELL_TOKEN);
-    order.kind = OrderKind::Sell;
-    validator
-        .validate(
-            &order,
-            address(FROM),
-            SigningScheme::Eip712,
-            None,
-            NOW,
-            false,
-        )
-        .expect("sell-side identical sell and buy tokens must validate");
-}
-
-#[test]
-fn buy_side_paired_weth_sell_and_native_buy_rejects_through_weth_configured_validator() {
-    let validator = OrderBoundsValidator::services_default().with_weth_address(address(WETH));
-    let mut order = order();
-    order.sell_token = address(WETH);
-    order.buy_token = address(EVM_NATIVE_CURRENCY_ADDRESS);
-    order.kind = OrderKind::Buy;
-    let error = validator
-        .validate(
-            &order,
-            address(FROM),
-            SigningScheme::Eip712,
-            None,
-            NOW,
-            false,
-        )
-        .expect_err("buy-side WETH sell paired with the native-buy sentinel must reject");
-    match error {
-        ClientRejection::SameBuyAndSellToken { token } => {
-            assert_eq!(
-                token.to_hex_string(),
-                WETH,
-                "rejection must surface the WETH address"
-            );
-        }
-        other => panic!("expected SameBuyAndSellToken, got {other:?}"),
-    }
-}
-
-#[test]
-fn sell_side_paired_weth_sell_and_native_buy_is_accepted() {
-    let validator = OrderBoundsValidator::services_default().with_weth_address(address(WETH));
-    let mut order = order();
-    order.sell_token = address(WETH);
-    order.buy_token = address(EVM_NATIVE_CURRENCY_ADDRESS);
-    order.kind = OrderKind::Sell;
-    validator
-        .validate(
-            &order,
-            address(FROM),
-            SigningScheme::Eip712,
-            None,
-            NOW,
-            false,
-        )
-        .expect("sell-side WETH sell paired with the native-buy sentinel must validate");
-}
-
-#[test]
 fn validate_same_token_matches_services_allow_sell_policy() {
     #[derive(Clone, Copy)]
     enum Outcome {
         Accept,
-        Reject,
+        Reject(&'static str),
     }
 
     let validator = OrderBoundsValidator::services_default().with_weth_address(address(WETH));
@@ -347,7 +262,7 @@ fn validate_same_token_matches_services_allow_sell_policy() {
             SELL_TOKEN,
             SELL_TOKEN,
             OrderKind::Buy,
-            Outcome::Reject,
+            Outcome::Reject(SELL_TOKEN),
         ),
         (
             "WETH-native sell",
@@ -361,7 +276,7 @@ fn validate_same_token_matches_services_allow_sell_policy() {
             WETH,
             EVM_NATIVE_CURRENCY_ADDRESS,
             OrderKind::Buy,
-            Outcome::Reject,
+            Outcome::Reject(WETH),
         ),
     ];
 
@@ -379,71 +294,20 @@ fn validate_same_token_matches_services_allow_sell_policy() {
             false,
         );
         match (expected, result) {
-            (Outcome::Accept, Ok(()))
-            | (Outcome::Reject, Err(ClientRejection::SameBuyAndSellToken { .. })) => {}
+            (Outcome::Accept, Ok(())) => {}
+            (
+                Outcome::Reject(expected_token),
+                Err(ClientRejection::SameBuyAndSellToken { token }),
+            ) => {
+                assert_eq!(
+                    token.to_hex_string(),
+                    expected_token,
+                    "{label}: rejection must surface the offending token"
+                );
+            }
             (_, actual) => panic!("{label}: unexpected outcome: {actual:?}"),
         }
     }
-}
-
-#[test]
-fn validate_mirrors_services_order_validation_regression() {
-    let validator = OrderBoundsValidator::services_default().with_weth_address(address(WETH));
-
-    let mut order = order();
-    order.sell_token = address(SELL_TOKEN);
-    order.buy_token = address(SELL_TOKEN);
-    order.kind = OrderKind::Buy;
-    let error = validator
-        .validate(
-            &order,
-            address(FROM),
-            SigningScheme::Eip712,
-            None,
-            NOW,
-            false,
-        )
-        .expect_err("buy-side same-token must reject");
-    assert!(matches!(error, ClientRejection::SameBuyAndSellToken { .. }));
-
-    order.kind = OrderKind::Sell;
-    validator
-        .validate(
-            &order,
-            address(FROM),
-            SigningScheme::Eip712,
-            None,
-            NOW,
-            false,
-        )
-        .expect("sell-side same-token must validate");
-
-    order.sell_token = address(WETH);
-    order.buy_token = address(EVM_NATIVE_CURRENCY_ADDRESS);
-    order.kind = OrderKind::Sell;
-    validator
-        .validate(
-            &order,
-            address(FROM),
-            SigningScheme::Eip712,
-            None,
-            NOW,
-            false,
-        )
-        .expect("sell-side WETH-native pair must validate");
-
-    order.kind = OrderKind::Buy;
-    let error = validator
-        .validate(
-            &order,
-            address(FROM),
-            SigningScheme::Eip712,
-            None,
-            NOW,
-            false,
-        )
-        .expect_err("buy-side WETH-native pair must reject");
-    assert!(matches!(error, ClientRejection::SameBuyAndSellToken { .. }));
 }
 
 #[test]
