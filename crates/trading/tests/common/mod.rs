@@ -492,14 +492,12 @@ pub struct MockProviderState {
 
 #[derive(Clone)]
 pub struct MockProvider {
-    pub signer: Option<MockSigner>,
     pub state: Arc<Mutex<MockProviderState>>,
 }
 
 impl Default for MockProvider {
     fn default() -> Self {
         Self {
-            signer: None,
             state: Arc::new(Mutex::new(MockProviderState {
                 allowance: "1000000000000000000".to_owned(),
                 contract_responses: BTreeMap::new(),
@@ -621,14 +619,6 @@ impl Provider for MockProvider {
         abi_json: &str,
     ) -> Result<ContractHandle, Self::Error> {
         Ok(ContractHandle::new(*address, abi_json.to_owned()))
-    }
-}
-
-impl cow_sdk_core::SigningProvider for MockProvider {
-    type Signer = MockSigner;
-
-    async fn create_signer(&self, _signer_hint: &str) -> Result<Self::Signer, Self::Error> {
-        Ok(self.signer.clone().unwrap_or_default())
     }
 }
 
