@@ -139,11 +139,18 @@ fn crate_docs_and_manifest_keep_the_facade_trading_first() {
         )
     );
     assert!(lib_rs.contains("the full browser-runtime contract stays in `cow-sdk-browser-wallet`"));
-    assert!(lib_rs.contains("is a separate crate surface"));
+    assert!(
+        lib_rs.contains("Read-only subgraph analytics are available behind the off-by-default")
+    );
     assert!(manifest.contains("default = []"));
     assert!(manifest.contains("browser-wallet = [\"dep:cow-sdk-browser-wallet\"]"));
     assert!(production_manifest.contains("cow-sdk-trading"));
-    assert!(!production_manifest.contains("cow-sdk-subgraph"));
+    // Subgraph stays off the default surface: it is an opt-in feature wiring an
+    // optional dependency, never a default member of the trading-first closure.
+    assert!(manifest.contains("subgraph = [\"dep:cow-sdk-subgraph\"]"));
+    assert!(production_manifest.contains(
+        "cow-sdk-subgraph = { path = \"../subgraph\", version = \"0.1.0\", optional = true"
+    ));
 }
 
 #[test]

@@ -16,8 +16,9 @@
 //! Browser-wallet support is additive behind the `browser-wallet` feature,
 //! and the full browser-runtime contract stays in `cow-sdk-browser-wallet`.
 //!
-//! Read-only subgraph access is a separate crate surface that lives in
-//! `cow-sdk-subgraph` and is not re-exported from this root package.
+//! Read-only subgraph analytics are available behind the off-by-default
+//! `subgraph` feature as `cow_sdk::subgraph`; the full subgraph contract stays
+//! in `cow-sdk-subgraph`.
 //!
 //! Native/default ready-state setup:
 //!
@@ -72,20 +73,6 @@
 //! (`cow_protocol_allowance`, `approval_transaction`,
 //! `pre_sign_transaction`, `cancel_order_onchain`) without constructing a
 //! trading client.
-//!
-//! The subgraph module is intentionally not re-exported, so attempting to
-//! reach it through the root facade fails to compile:
-//!
-//! ```compile_fail
-//! use cow_sdk::subgraph;
-//! ```
-//!
-//! The typed `SubgraphApi` entry point is likewise not reachable from the
-//! facade and must be imported from `cow-sdk-subgraph` directly:
-//!
-//! ```compile_fail
-//! use cow_sdk::SubgraphApi;
-//! ```
 #![warn(missing_docs)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
@@ -177,6 +164,28 @@ pub use cow_sdk_signing::InMemoryEip1271VerificationCache;
 /// capacity-bounded `InMemoryEip1271VerificationCache` is re-exported only
 /// when the opt-in `in-memory-cache` feature is enabled.
 pub use cow_sdk_signing::{Eip1271VerificationCache, NoopEip1271VerificationCache};
+/// Optional read-only subgraph analytics (protocol totals, daily and hourly
+/// volume, and a typed raw-GraphQL escape hatch). Behind the off-by-default
+/// `subgraph` feature so the default facade stays trading-first; enable it with
+/// `cow-sdk = { features = ["subgraph"] }`. The full subgraph contract stays in
+/// `cow-sdk-subgraph`.
+///
+/// ```
+/// # #[cfg(not(target_arch = "wasm32"))]
+/// # {
+/// use cow_sdk::core::SupportedChainId;
+/// use cow_sdk::subgraph::SubgraphApi;
+///
+/// let _subgraph = SubgraphApi::builder()
+///     .chain(SupportedChainId::Mainnet)
+///     .api_key("your-subgraph-api-key")
+///     .build()
+///     .expect("subgraph client builds with canonical defaults");
+/// # }
+/// ```
+#[cfg(feature = "subgraph")]
+#[cfg_attr(docsrs, doc(cfg(feature = "subgraph")))]
+pub use cow_sdk_subgraph as subgraph;
 /// In-memory test doubles for the SDK public trait seams, for use from a
 /// consumer's `[dev-dependencies]`. Enabled by the opt-in `testing` feature and
 /// off by default, so the doubles never enter a production dependency graph
@@ -242,6 +251,10 @@ pub enum SdkError {
     /// Browser-wallet transport or session error.
     #[error("browser wallet error: {0}")]
     BrowserWallet(#[from] cow_sdk_browser_wallet::BrowserWalletError),
+    #[cfg(feature = "subgraph")]
+    /// Subgraph transport, GraphQL, or decoding error.
+    #[error("subgraph error: {0}")]
+    Subgraph(#[from] cow_sdk_subgraph::SubgraphError),
 }
 
 /// Coarse-grained failure classification, re-exported from `cow-sdk-core`.
@@ -269,6 +282,8 @@ impl SdkError {
             Self::Trading(error) => error.class(),
             #[cfg(feature = "browser-wallet")]
             Self::BrowserWallet(error) => error.class(),
+            #[cfg(feature = "subgraph")]
+            Self::Subgraph(error) => error.class(),
         }
     }
 

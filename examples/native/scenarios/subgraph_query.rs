@@ -1,8 +1,9 @@
 //! Read-only subgraph access: the canonical typed helpers and the explicit
 //! `SubgraphQueryRequest` escape hatch, both against a local mock transport.
 //!
-//! Subgraph access deliberately uses `cow-sdk-subgraph` directly rather than the
-//! root `cow-sdk` facade, which stays trading-first.
+//! This reaches the subgraph surface through the `cow-sdk` `subgraph` feature
+//! (`cow_sdk::subgraph`); the same types are also available from the standalone
+//! `cow-sdk-subgraph` crate.
 
 use std::{collections::BTreeMap, error::Error};
 
@@ -14,7 +15,7 @@ use wiremock::{
 };
 
 use cow_sdk::prelude::SupportedChainId;
-use cow_sdk_subgraph::{ExternalHostPolicy, SubgraphApi, SubgraphQueryRequest};
+use cow_sdk::subgraph::{ExternalHostPolicy, SubgraphApi, SubgraphQueryRequest};
 
 /// A caller-owned response shape, deserialized straight out of `run_query`.
 #[derive(Debug, Deserialize)]
@@ -131,7 +132,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let custom: TokensByVolumeResponse = subgraph.run_query(custom_request).await?;
 
     let report = json!({
-        "surface": "cow-sdk-subgraph",
+        "surface": "cow_sdk::subgraph",
         "mode": "simulated-transport",
         "apiName": subgraph.api_name(),
         "canonicalHelpers": {

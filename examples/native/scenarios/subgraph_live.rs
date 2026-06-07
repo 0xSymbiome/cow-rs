@@ -10,7 +10,7 @@ use std::{env, error::Error, io};
 use serde_json::json;
 
 use cow_sdk::prelude::SupportedChainId;
-use cow_sdk_subgraph::SubgraphApi;
+use cow_sdk::subgraph::SubgraphApi;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -18,7 +18,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let api_key = required_env("THE_GRAPH_API_KEY")?;
     let chain_id = optional_supported_chain_id("COW_SUBGRAPH_CHAIN_ID")?;
 
-    // Build the read-only subgraph client (used directly, not through the facade).
+    // Build the read-only subgraph client through the cow-sdk `subgraph` feature.
     let subgraph = SubgraphApi::builder()
         .chain(chain_id)
         .api_key(api_key)
@@ -28,7 +28,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let totals = subgraph.totals().await?;
 
     let report = json!({
-        "surface": "cow-sdk-subgraph",
+        "surface": "cow_sdk::subgraph",
         "mode": "live",
         "apiName": subgraph.api_name(),
         "chainId": u64::from(chain_id),

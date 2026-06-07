@@ -14,6 +14,14 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Added
 
+- `cow-sdk` gains an off-by-default `subgraph` feature that re-exports the
+  read-only `cow-sdk-subgraph` surface as `cow_sdk::subgraph` and lifts
+  `SubgraphError` into the facade through a feature-gated `SdkError::Subgraph`
+  variant. `SubgraphError` now exposes `class() -> ErrorClass`, so an enabled
+  subgraph surface participates in the uniform error-classification family. The
+  feature is off by default, so the default `cow-sdk` dependency closure and
+  public surface stay trading-first; subgraph access also remains usable as the
+  standalone `cow-sdk-subgraph` crate.
 - `OrderbookError` exposes two retry-decision accessors next to `class()`:
   `is_retryable() -> bool` reports whether retrying the same request may succeed
   (a structured non-2xx response keys off the retained HTTP status — the

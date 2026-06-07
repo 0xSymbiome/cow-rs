@@ -5,64 +5,69 @@ ergonomics; the leaf crates own behavior.
 
 ```mermaid
 flowchart TD
-  sdk["cow-sdk"];
-  core["cow-sdk-core"];
-  contracts["cow-sdk-contracts"];
-  signing["cow-sdk-signing"];
-  appdata["cow-sdk-app-data"];
-  orderbook["cow-sdk-orderbook"];
-  transport_policy["cow-sdk-transport-policy"];
-  trading["cow-sdk-trading"];
-  subgraph_crate["cow-sdk-subgraph"];
-  wallet["cow-sdk-browser-wallet"];
-  transport_wasm["cow-sdk-transport-wasm"];
-  wasm["cow-sdk-wasm"];
-  alloy_provider["cow-sdk-alloy-provider"];
-  alloy_signer["cow-sdk-alloy-signer"];
-  alloy["cow-sdk-alloy"];
+  subgraph cl_facade["Facade (trading-first)"]
+    sdk["cow-sdk"]
+  end
+  subgraph cl_workflow["Workflow"]
+    trading["cow-sdk-trading"]
+  end
+  subgraph cl_clients["Clients"]
+    orderbook["cow-sdk-orderbook"]
+    subgraph_crate["cow-sdk-subgraph"]
+  end
+  subgraph cl_policy["Client policy"]
+    transport_policy["cow-sdk-transport-policy"]
+  end
+  subgraph cl_transforms["Deterministic transforms"]
+    contracts["cow-sdk-contracts"]
+    signing["cow-sdk-signing"]
+    appdata["cow-sdk-app-data"]
+  end
+  subgraph cl_features["Opt-in features (off by default)"]
+    wallet["cow-sdk-browser-wallet"]
+    cow_shed["cow-sdk-cow-shed"]
+    alloy["cow-sdk-alloy"]
+    alloy_provider["cow-sdk-alloy-provider"]
+    alloy_signer["cow-sdk-alloy-signer"]
+  end
+  subgraph cl_foundation["Foundation — every crate builds on this"]
+    core["cow-sdk-core"]
+  end
 
-  sdk --> core;
-  sdk --> contracts;
-  sdk --> signing;
-  sdk --> appdata;
-  sdk --> orderbook;
-  sdk --> transport_policy;
-  sdk --> trading;
-  sdk -.->|feature: browser-wallet| wallet;
-  sdk -.->|feature: alloy-provider| alloy_provider;
-  sdk -.->|feature: alloy-signer| alloy_signer;
-  sdk -.->|feature: alloy| alloy;
-  contracts --> core;
-  signing --> core;
-  signing --> contracts;
-  appdata --> core;
-  orderbook --> core;
-  orderbook --> transport_policy;
-  trading --> core;
-  trading --> contracts;
-  trading --> signing;
-  trading --> appdata;
-  trading --> orderbook;
-  subgraph_crate --> core;
-  subgraph_crate --> transport_policy;
-  wallet --> core;
-  transport_wasm --> core;
-  wasm --> core;
-  wasm --> contracts;
-  wasm --> signing;
-  wasm --> appdata;
-  wasm --> orderbook;
-  wasm --> trading;
-  wasm --> subgraph_crate;
-  wasm --> transport_wasm;
-  alloy_provider --> core;
-  alloy_signer --> core;
-  alloy_signer --> contracts;
-  alloy --> core;
-  alloy --> contracts;
-  alloy --> alloy_provider;
-  alloy --> alloy_signer;
+  sdk --> trading
+  sdk --> orderbook
+  sdk --> contracts
+  sdk --> signing
+  sdk --> appdata
+  sdk --> transport_policy
+  sdk -.->|feature: subgraph| subgraph_crate
+  sdk -.->|feature: browser-wallet| wallet
+  sdk -.->|feature: cow-shed| cow_shed
+  sdk -.->|feature: alloy| alloy
+  sdk -.->|feature: alloy-provider| alloy_provider
+  sdk -.->|feature: alloy-signer| alloy_signer
+  trading --> orderbook
+  trading --> signing
+  trading --> appdata
+  trading --> contracts
+  orderbook --> transport_policy
+  subgraph_crate --> transport_policy
+  signing --> contracts
+  alloy --> alloy_provider
+  alloy --> alloy_signer
+  contracts --> core
+  signing --> core
+  appdata --> core
 ```
+
+This diagram is an overview, not a build graph. Every crate depends on
+`cow-sdk-core`, so only the transform-layer edges to the foundation are drawn,
+and optional capabilities appear as dashed `feature:` edges that are off by
+default. The `wasm32`-target leaves — `cow-sdk-wasm` and the
+`cow-sdk-transport-wasm` HTTP transport — compose and serve the same crates and
+are shown in
+[TypeScript-Callable WASM Surface](#typescript-callable-wasm-surface); the
+complete crate inventory is the [Crate Roles](#crate-roles) table below.
 
 ## Crate Roles
 
@@ -76,7 +81,7 @@ flowchart TD
 | `cow-sdk-app-data` | App-data encoding, schema handling, and CID behavior | You need app-data generation or validation. |
 | `cow-sdk-orderbook` | Typed orderbook transport over the `HttpTransport` seam, with the `OrderbookApiBuilder` typestate | You need explicit request and response control. |
 | `cow-sdk-trading` | Quote-to-order workflows plus the quote, submit, cancel, and approve orchestration surface | You need the main trading orchestration layer. |
-| `cow-sdk-subgraph` | Read-only subgraph access over the `HttpTransport` seam, with the `SubgraphApiBuilder` typestate | You need GraphQL reads or custom subgraph queries. |
+| `cow-sdk-subgraph` | Read-only subgraph access over the `HttpTransport` seam, with the `SubgraphApiBuilder` typestate | You need GraphQL reads or custom subgraph queries (via the `cow-sdk` `subgraph` feature or this crate directly). |
 | `cow-sdk-transport-wasm` | Browser-target `HttpTransport` implementation (`FetchTransport`) | You build for `wasm32-unknown-unknown` and need the shipped browser default. |
 | `cow-sdk-wasm` | TypeScript-callable wasm-bindgen bindings over deterministic SDK helpers, typed callbacks, orderbook/subgraph/IPFS clients, and trading flows | JavaScript or TypeScript should call the Rust SDK through wasm exports. |
 | `cow-sdk-browser-wallet` | Browser-runtime wallet integration | You need EIP-1193 wallet flows in WASM. |
@@ -158,13 +163,15 @@ shape.
 
 ## Facade And Adapter FAQ
 
-### Why `cow-sdk-subgraph` is not part of the default facade
+### Why `cow-sdk-subgraph` is opt-in rather than a default facade surface
 
-`cow-sdk` stays narrow on purpose. The default facade is the trading-first SDK
-entrypoint, while `cow-sdk-subgraph` remains an explicit read-only analytics
-crate. Keeping subgraph access separate avoids widening the default dependency
-graph for consumers that only need order creation, signing, quoting, and
-submission. This matches [ADR 0001](adr/0001-multi-crate-sdk-family-with-thin-facade.md)
+`cow-sdk` stays narrow by default. The default facade is the trading-first SDK
+entrypoint; read-only subgraph analytics are an explicit opt-in. Enable the
+`subgraph` feature (`cow-sdk = { features = ["subgraph"] }`) to reach the
+subgraph surface as `cow_sdk::subgraph`, or depend on the standalone
+`cow-sdk-subgraph` crate directly. The feature is off by default, so consumers
+that only need order creation, signing, quoting, and submission pay no subgraph
+dependency. This matches [ADR 0001](adr/0001-multi-crate-sdk-family-with-thin-facade.md)
 and [ADR 0003](adr/0003-separate-read-only-subgraph-crate.md): the facade
 optimizes for the main transactional path, and analytics stay opt-in.
 
@@ -399,7 +406,8 @@ switch success.
 
 - `cow-sdk` stays thin.
 - Pure transform crates do not perform hidden network I/O.
-- `cow-sdk-subgraph` remains a separate read-only crate.
+- `cow-sdk-subgraph` stays a separate read-only crate, re-exported through
+  `cow-sdk` only behind the off-by-default `subgraph` feature.
 - Browser-wallet method growth stays leaf-owned and typed.
 - Orderbook wire DTOs remain string-heavy only at the explicit HTTP boundary.
 - Public configs, endpoint discovery, and typed request failures expose only

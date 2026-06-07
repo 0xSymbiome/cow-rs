@@ -14,6 +14,7 @@ use cow_sdk::{
     signing::SigningError,
     trading::{ClientRejection, OrderbookContextValue, TradingError},
 };
+#[cfg(feature = "subgraph")]
 use cow_sdk_subgraph::{SubgraphError, SubgraphGraphQlError, SubgraphRequestErrorContext};
 use serde::Serialize;
 use serde_json::{Value, json};
@@ -522,6 +523,7 @@ fn trading_errors_redact_workflow_message_and_conflict_payloads() {
     assert_all_render("TradingError", &errors);
 }
 
+#[cfg(feature = "subgraph")]
 #[test]
 fn subgraph_errors_and_contexts_redact_serialized_request_payloads() {
     let graph_error: SubgraphGraphQlError = serde_json::from_value(json!({
@@ -593,6 +595,7 @@ fn subgraph_errors_and_contexts_redact_serialized_request_payloads() {
 /// request context, and `NoTotalsFound` is excluded because the typed
 /// variant tag is the entire diagnostic. Both are exhaustively documented
 /// rather than left to inference.
+#[cfg(feature = "subgraph")]
 #[test]
 fn subgraph_display_carries_plaintext_structural_diagnostic() {
     let graph_error: SubgraphGraphQlError = serde_json::from_value(json!({
@@ -953,6 +956,7 @@ fn address(value: &str) -> Address {
     Address::new(value).expect("address fixture must parse")
 }
 
+#[cfg(feature = "subgraph")]
 fn subgraph_context() -> SubgraphRequestErrorContext {
     SubgraphRequestErrorContext::new(
         1,

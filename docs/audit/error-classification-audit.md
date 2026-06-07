@@ -1,7 +1,7 @@
 # Error Classification Audit
 
 Status: Current
-Last reviewed: 2026-06-06
+Last reviewed: 2026-06-07
 Owning surface: the `class()`, `is_retryable()`, and `backoff_hint()` accessors on the `cow-sdk` error family and the shared `cow_sdk_core::ErrorClass`
 Refresh trigger: a new `ErrorClass` bucket; a new error type aggregated by `cow_sdk::SdkError`; a change to any type's `class()` mapping; a change to the `is_retryable()` / `backoff_hint()` mapping or the retained `Retry-After` capture; or a new error variant whose class or retry verdict differs from its type's existing default arm
 Related docs:
@@ -18,7 +18,8 @@ This audit covers:
   `cow-sdk` facade
 - the `const fn class(&self) -> ErrorClass` accessor on each facade-family
   error type (`CoreError`, `AppDataError`, `SigningError`, `ContractsError`,
-  `OrderbookError`, `TradingError`, `BrowserWalletError`)
+  `OrderbookError`, `TradingError`, `BrowserWalletError`, and — behind the
+  off-by-default `subgraph` feature — `SubgraphError`)
 - the `OrderbookError::is_retryable()` and `OrderbookError::backoff_hint()`
   retry-decision accessors, the `Retry-After` value retained on
   `OrderbookApiError`, and the facade and trading delegation of both accessors
@@ -41,6 +42,7 @@ convention because their taxonomies differ from the facade family.
 | Retry verdict | `OrderbookError::is_retryable()` keys off the retained HTTP status (the retryable set) for structured responses and the transient transport-class mapping for transport failures | Conforms |
 | Backoff hint | `OrderbookError::backoff_hint()` surfaces the `Retry-After` parsed from the failing response, and is `None` for transport failures and headerless responses | Conforms |
 | Retry delegation | `TradingError` and `SdkError` delegate `is_retryable()` / `backoff_hint()` to the wrapped orderbook error and return `false` / `None` for non-orderbook variants | Conforms |
+| Subgraph (feature-gated) | With the `subgraph` feature enabled, `SubgraphError::class()` joins the family and `SdkError::Subgraph` delegates to it; off by default, so the default family is unchanged | Conforms |
 | Redaction posture | Classification and retry accessors read only typed discriminants and a parsed delay; they render no credential-bearing content (ADR 0025) | Conforms |
 
 ## Current Contract
@@ -62,7 +64,12 @@ through `CoreError::class()`; `TradingError::class()` resolves wrapped
 `Core`/`AppData`/`Orderbook`/`Signing`/`Contracts` errors through their
 accessors. `SdkError::class()` is a pure delegation over the seven leaf
 accessors, so the class is identical whether a caller holds the facade error or
-a bare leaf error.
+a bare leaf error. When the off-by-default `subgraph` feature is enabled,
+`SubgraphError::class()` is the eighth accessor and the feature-gated
+`SdkError::Subgraph` variant delegates to it the same way
+([ADR 0003](../adr/0003-separate-read-only-subgraph-crate.md)); the
+retry-decision accessors stay orderbook-and-trading-scoped, so a subgraph error
+reports as non-retryable with no backoff hint.
 
 ### Retry-decision accessors
 
@@ -92,7 +99,8 @@ Primary implementation points:
 - `crates/app-data/src/errors.rs`, `crates/signing/src/errors.rs`,
   `crates/contracts/src/errors.rs`, `crates/orderbook/src/error.rs`
   (`class`, `is_retryable`, `backoff_hint`),
-  `crates/browser-wallet/src/error.rs`, `crates/trading/src/error.rs`
+  `crates/browser-wallet/src/error.rs`, `crates/trading/src/error.rs`,
+  `crates/subgraph/src/error.rs` (`class`, behind the `subgraph` feature)
 - `crates/orderbook/src/request.rs` (`OrderbookApiError` `Retry-After` capture)
 - `crates/transport-policy/src/retry_after.rs` (`retry_after_from_headers`)
 - `crates/sdk/src/lib.rs` (`SdkError` `class` / `is_retryable` / `backoff_hint`
@@ -106,6 +114,8 @@ Primary regression coverage:
 - `crates/sdk/tests/error_class_contract.rs::non_429_remote_responses_stay_remote`
 - `crates/sdk/tests/error_class_contract.rs::is_retryable_delegates_through_trading_and_facade`
 - `crates/sdk/tests/error_class_contract.rs::backoff_hint_delegates_through_trading_and_facade`
+- `crates/sdk/tests/error_class_contract.rs::subgraph::subgraph_error_class_partitions_every_bucket` (with `--features subgraph`)
+- `crates/sdk/tests/error_class_contract.rs::subgraph::subgraph_error_class_delegates_through_facade` (with `--features subgraph`)
 - `crates/orderbook/src/error.rs` retry-classification unit tests
 - `crates/transport-policy/src/retry_after.rs` `Retry-After` header tests
 - `crates/wasm/tests/wasm_error_abi_contract.rs::orderbook_variant_carries_retry_hints`

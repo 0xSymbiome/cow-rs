@@ -63,9 +63,12 @@ It re-exports the main public surface for:
 - typed orderbook client types
 - trading orchestration
 
-The root facade does **not** re-export `cow-sdk-subgraph`.
+The root facade re-exports `cow-sdk-subgraph` only behind the off-by-default
+`subgraph` feature (`cow-sdk = { features = ["subgraph"] }`, surfaced as
+`cow_sdk::subgraph`).
 
-Read-only subgraph access stays in the separate `cow-sdk-subgraph` crate.
+Read-only subgraph access otherwise stays in the separate `cow-sdk-subgraph`
+crate.
 
 Browser wallet support also stays additive.
 
@@ -84,7 +87,7 @@ Shared validation and configuration failures surface under the canonical
 That split matters when you choose where to start:
 
 - use `cow-sdk` for the main trading-first path
-- use `cow-sdk-subgraph` when you need explicit GraphQL reads
+- use `cow-sdk-subgraph` (directly, or through the `cow-sdk` `subgraph` feature) when you need explicit GraphQL reads
 - use `cow-sdk-browser-wallet` when you need injected-wallet flows in WASM
 - use `cow-sdk-wasm` when TypeScript or JavaScript code should call the Rust
   SDK through wasm-bindgen exports
@@ -594,8 +597,8 @@ to the explicit subgraph crate path:
 
 - `subgraph_query`
 
-These scenarios deliberately use `cow-sdk-subgraph` directly rather than the
-root `cow-sdk` facade.
+These scenarios use `cow-sdk-subgraph` directly; the same surface is also
+available through the `cow-sdk` `subgraph` feature.
 
 ### WASM Follow-Ons
 

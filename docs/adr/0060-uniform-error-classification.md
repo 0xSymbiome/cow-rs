@@ -151,3 +151,26 @@ JavaScript: the `WasmError` `orderbook` variant carries a `retryable` boolean
 (always serialised) and an optional `retryAfterMs`, populated from these
 accessors so a JavaScript consumer reaches the identical decision without
 re-deriving the retryable-status set.
+
+## Amendment 2026-06-07: subgraph joins the family behind the `subgraph` feature
+
+When the `cow-sdk` `subgraph` feature is enabled, the read-only subgraph surface
+is lifted into the facade ([ADR 0003](0003-separate-read-only-subgraph-crate.md)).
+`cow_sdk_subgraph::SubgraphError` then joins the shared classification family as
+an eighth member: it exposes `const fn class(&self) -> ErrorClass`, and
+`SdkError` gains a feature-gated `Subgraph` variant whose `class()` delegates to
+it, exactly like the other facade-aggregated leaf errors.
+
+The mapping follows the established convention: an HTTP `429` that outlived the
+transport retry budget is `RateLimited`; other non-success statuses and GraphQL
+error payloads are `Remote`; transport failures are `Transport`; an
+unsupported-network selection is caller-side `Validation`; cancellation is
+`Cancelled`; and transport-construction, host-policy, serialization,
+empty-totals, and missing-data faults are `Internal`.
+
+The `subgraph` feature is off by default, so the default facade family is
+unchanged; the eighth member appears only when a consumer opts into subgraph.
+The retry-decision accessors (`is_retryable` / `backoff_hint`) stay
+orderbook-and-trading-scoped: `SdkError` reports a subgraph error as
+non-retryable with no backoff hint until those accessors are extended to the
+subgraph surface.

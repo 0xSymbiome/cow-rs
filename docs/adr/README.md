@@ -10,7 +10,7 @@ public and runtime shape of `cow-rs`.
 | [0000](0000-template.md) | Template | Canonical ADR structure and writing contract. |
 | [0001](0001-multi-crate-sdk-family-with-thin-facade.md) | Accepted | Keep a multi-crate workspace, an SDK-named crate family, and a thin root facade. |
 | [0002](0002-dedicated-trading-orchestration-crate.md) | Accepted | Keep quote-to-order workflows in `cow-sdk-trading`. |
-| [0003](0003-separate-read-only-subgraph-crate.md) | Accepted | Keep subgraph access in a separate read-only crate. |
+| [0003](0003-separate-read-only-subgraph-crate.md) | Accepted | Keep subgraph access in a separate read-only crate, re-exported behind the off-by-default `subgraph` facade feature. |
 | [0004](0004-feature-gated-browser-wallet-sidecar.md) | Accepted | Keep browser wallet support in a feature-gated sidecar crate. |
 | [0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md) | Accepted (amended) | Keep runtime contracts boundary-specific and public Rust types strongly typed. |
 | [0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md) | Accepted | Keep policy contracts explicit, review-visible, and instance-scoped. |

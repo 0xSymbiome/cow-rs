@@ -22,8 +22,7 @@ alloy = ["cow-sdk/alloy"]
 [dependencies]
 alloy-primitives = { workspace = true }
 async-trait = "0.1.89"
-cow-sdk = { path = "../../crates/sdk", features = ["testing"] }
-cow-sdk-subgraph = { path = "../../crates/subgraph" }
+cow-sdk = { path = "../../crates/sdk", features = ["testing", "subgraph"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 tokio = { version = "1.51.1", features = ["macros", "rt-multi-thread", "time"] }

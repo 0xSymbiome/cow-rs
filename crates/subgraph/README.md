@@ -4,11 +4,13 @@ Typed [CoW Protocol](https://cow.fi) subgraph query primitives with
 saved query documents, explicit raw-GraphQL request contracts, and a
 typed error boundary.
 
-This is a read-only analytics crate. It is kept deliberately separate
-from the default [`cow-sdk`](https://crates.io/crates/cow-sdk) facade so
-trading-first consumers do not pay a GraphQL transport dependency they
-do not use. Depend on this crate directly when building analytics,
-reporting, or dashboards over CoW Protocol subgraph data.
+This is a read-only analytics crate. It stays separate from the **default**
+[`cow-sdk`](https://crates.io/crates/cow-sdk) facade so trading-first consumers
+do not pay a GraphQL transport dependency they do not use. Reach it either by
+enabling the `subgraph` feature on `cow-sdk` (`cow-sdk = { features =
+["subgraph"] }`, surfaced as `cow_sdk::subgraph`) or by depending on this crate
+directly when building analytics, reporting, or dashboards over CoW Protocol
+subgraph data.
 
 ## Install
 

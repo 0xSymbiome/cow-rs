@@ -136,8 +136,12 @@ fn error_class_delegates_through_trading_and_facade() {
 /// `Retry-After` backoff hint.
 fn api_retry_after(status: u16, retry_after: Option<Duration>) -> OrderbookError {
     OrderbookError::Api(Box::new(
-        OrderbookApiError::new(status, "diagnostic", ResponseBody::Text("opaque".to_owned()))
-            .with_retry_after(retry_after),
+        OrderbookApiError::new(
+            status,
+            "diagnostic",
+            ResponseBody::Text("opaque".to_owned()),
+        )
+        .with_retry_after(retry_after),
     ))
 }
 
@@ -184,6 +188,98 @@ fn backoff_hint_delegates_through_trading_and_facade() {
     );
 
     // No `Retry-After` header, and non-orderbook faults, carry no hint.
-    assert_eq!(SdkError::Orderbook(api_retry_after(503, None)).backoff_hint(), None);
-    assert_eq!(SdkError::from(TradingError::MissingOwner).backoff_hint(), None);
+    assert_eq!(
+        SdkError::Orderbook(api_retry_after(503, None)).backoff_hint(),
+        None
+    );
+    assert_eq!(
+        SdkError::from(TradingError::MissingOwner).backoff_hint(),
+        None
+    );
+}
+
+/// The read-only subgraph surface joins the shared classification family when
+/// the `subgraph` feature lifts it into the facade.
+#[cfg(feature = "subgraph")]
+mod subgraph {
+    use super::{ErrorClass, SdkError};
+    use cow_sdk::core::TransportErrorClass;
+    use cow_sdk::subgraph::{SubgraphError, SubgraphRequestErrorContext};
+
+    /// Minimal request context for the context-carrying variants.
+    fn ctx() -> Box<SubgraphRequestErrorContext> {
+        Box::new(SubgraphRequestErrorContext::new(
+            1,
+            "https://gateway.thegraph.com/api/<redacted>/subgraphs/id/x",
+            "query Totals { totals { orders } }",
+            Some("Totals".to_owned()),
+            None,
+        ))
+    }
+
+    #[test]
+    fn subgraph_error_class_partitions_every_bucket() {
+        // Caller-side unsupported-chain selection is validation.
+        assert_eq!(
+            SubgraphError::UnsupportedNetwork { chain_id: 999_999 }.class(),
+            ErrorClass::Validation
+        );
+        // A throttled 429 that outlived the retry budget is rate-limited; other
+        // non-success statuses and GraphQL error payloads are remote.
+        assert_eq!(
+            SubgraphError::HttpStatus {
+                context: ctx(),
+                status: 429,
+                body: "throttled".to_owned().into()
+            }
+            .class(),
+            ErrorClass::RateLimited
+        );
+        assert_eq!(
+            SubgraphError::HttpStatus {
+                context: ctx(),
+                status: 500,
+                body: "boom".to_owned().into()
+            }
+            .class(),
+            ErrorClass::Remote
+        );
+        assert_eq!(
+            SubgraphError::GraphQl {
+                context: ctx(),
+                errors: Vec::new()
+            }
+            .class(),
+            ErrorClass::Remote
+        );
+        // Transport failures stay transport; cancellation stays cancelled.
+        assert_eq!(
+            SubgraphError::Transport {
+                context: ctx(),
+                class: TransportErrorClass::Connect,
+                details: "connect failed".to_owned().into(),
+            }
+            .class(),
+            ErrorClass::Transport
+        );
+        assert_eq!(SubgraphError::Cancelled.class(), ErrorClass::Cancelled);
+        // Empty totals and missing data are internal contract faults.
+        assert_eq!(SubgraphError::NoTotalsFound.class(), ErrorClass::Internal);
+        assert_eq!(
+            SubgraphError::MissingData { context: ctx() }.class(),
+            ErrorClass::Internal
+        );
+    }
+
+    #[test]
+    fn subgraph_error_class_delegates_through_facade() {
+        // The facade resolves to the same class as the bare leaf error.
+        let leaf = SubgraphError::UnsupportedNetwork { chain_id: 999_999 };
+        let leaf_class = leaf.class();
+        assert_eq!(SdkError::Subgraph(leaf).class(), leaf_class);
+        assert_eq!(
+            SdkError::from(SubgraphError::Cancelled).class(),
+            ErrorClass::Cancelled
+        );
+    }
 }

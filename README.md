@@ -98,7 +98,7 @@ let _wallet = BrowserWallet::from_trusted_transport(transport, origin)
 | Shared HTTP retry, rate-limit, jitter, `Retry-After`, and error-classification policy | `cow-sdk-transport-policy` |
 | Browser-target HTTP transport (`FetchTransport`) for `wasm32-unknown-unknown` | `cow-sdk-transport-wasm` |
 | TypeScript-callable wasm-bindgen SDK bindings for browser, Node.js, Workers, and optional Deno consumers | `cow-sdk-wasm` |
-| Read-only subgraph queries | `cow-sdk-subgraph` |
+| Read-only subgraph queries | `cow-sdk-subgraph` or `cow-sdk` with `subgraph` |
 | Browser wallet integration for WASM | `cow-sdk-browser-wallet` or `cow-sdk` with `browser-wallet` |
 | Native Alloy provider, signer, or composed provider-plus-signer support | `cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, `cow-sdk-alloy`, or `cow-sdk` with `alloy-provider`, `alloy-signer`, or `alloy` |
 | Deterministic protocol helpers, `alloy::sol!` bindings, the `Registry` authority, and EIP-1271 verification | `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data` |
@@ -118,7 +118,7 @@ configure transport explicitly through `transport: { kind: "fetch" }` or
 
 - `cow-sdk` is a thin facade.
 - `cow-sdk-trading` owns quote-to-order workflows.
-- `cow-sdk-subgraph` is a separate read-only crate.
+- `cow-sdk-subgraph` is a separate read-only crate, re-exported through `cow-sdk` behind the off-by-default `subgraph` feature.
 - Browser wallet support is additive and feature-gated.
 - TypeScript-callable WASM support is an additive leaf crate with explicit
   JavaScript callbacks rather than bundled wallet-library dependencies.

@@ -24,6 +24,8 @@ fn public_api_with_all_features_snapshot_matches() {
     let _ = core::any::type_name::<TradingOptions>();
     let _ = core::any::type_name::<cow_sdk::browser_wallet::Eip1193Signer>();
     let _ = core::any::type_name::<cow_sdk::prelude::BrowserWalletSigner>();
+    #[cfg(feature = "subgraph")]
+    let _ = core::any::type_name::<cow_sdk::subgraph::SubgraphApi>();
 
     assert_eq!(
         include_str!("fixtures/public_api_with_all_features.snap"),
@@ -43,6 +45,7 @@ modules:
 - orderbook
 - prelude
 - signing
+- subgraph
 - trading
 root exports:
 - Address

@@ -61,8 +61,8 @@ After that, branch by goal through the full scenario table below.
 | `alloy_custom_traits` | Compose an Alloy leaf with a consumer-supplied trait impl in both directions (SDK provider + your signer, SDK signer + your provider) |
 | `alloy_trading_full_flow` | Invoke allowance, approval receipt waiting, and pre-sign Trading async boundaries through `AlloyClient` |
 
-Subgraph scenarios use `cow-sdk-subgraph` directly rather than the root
-facade.
+Subgraph scenarios reach the subgraph surface through the `cow-sdk` `subgraph`
+feature, the same way the other scenarios use the root facade.
 
 ### Test Doubles
 

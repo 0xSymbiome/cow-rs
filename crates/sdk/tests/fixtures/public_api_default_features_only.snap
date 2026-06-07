@@ -29,5 +29,6 @@ root exports:
 - TransportErrorClass
 feature-gated exports absent:
 - browser_wallet
+- subgraph
 - BrowserWalletSigner
 - InMemoryEip1271VerificationCache

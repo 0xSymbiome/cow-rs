@@ -72,9 +72,10 @@ application code should replace it with the final
 
 ## Integration Notes
 
-- The default `cow-sdk` facade stays trading-first. If you need read-only
-  analytics or custom GraphQL access, add `cow-sdk-subgraph` directly instead
-  of expecting it from the facade.
+- The default `cow-sdk` facade stays trading-first. Read-only analytics and
+  custom GraphQL access are opt-in: enable the `cow-sdk` `subgraph` feature
+  (surfaced as `cow_sdk::subgraph`) or depend on the standalone
+  `cow-sdk-subgraph` crate.
 - The native examples include both provider-agnostic deterministic flows and
   explicit Alloy adapter flows. Alloy scenarios run with `--features
   alloy-provider`, `--features alloy-signer`, or `--features alloy` depending

@@ -1,6 +1,6 @@
 //! Typed error surface for subgraph requests.
 
-use cow_sdk_core::{Cancelled, HostPolicyError, Redacted, TransportErrorClass};
+use cow_sdk_core::{Cancelled, ErrorClass, HostPolicyError, Redacted, TransportErrorClass};
 use serde::ser::SerializeMap;
 use serde::{Deserialize, Serialize, Serializer};
 use serde_json::Value;
@@ -257,6 +257,34 @@ fn first_graphql_location_suffix(errors: &[SubgraphGraphQlError]) -> String {
 impl From<Cancelled> for SubgraphError {
     fn from(_: Cancelled) -> Self {
         Self::Cancelled
+    }
+}
+
+impl SubgraphError {
+    /// Returns the coarse-grained [`ErrorClass`] for this error.
+    ///
+    /// The mapping follows the same convention as the workspace's other
+    /// transport-backed clients: an HTTP `429` that outlived the transport
+    /// retry budget is [`ErrorClass::RateLimited`]; other non-success statuses
+    /// and GraphQL error payloads are [`ErrorClass::Remote`]; transport
+    /// failures are [`ErrorClass::Transport`]; an unsupported-network selection
+    /// is caller-side [`ErrorClass::Validation`]; cancellation is
+    /// [`ErrorClass::Cancelled`]; and transport-construction, host-policy,
+    /// serialization, empty-totals, and missing-data faults are
+    /// [`ErrorClass::Internal`].
+    #[must_use]
+    pub const fn class(&self) -> ErrorClass {
+        match self {
+            Self::UnsupportedNetwork { .. } => ErrorClass::Validation,
+            Self::HttpStatus { status, .. } if *status == 429 => ErrorClass::RateLimited,
+            Self::HttpStatus { .. } | Self::GraphQl { .. } => ErrorClass::Remote,
+            Self::Transport { .. } => ErrorClass::Transport,
+            Self::Cancelled => ErrorClass::Cancelled,
+            // `NoTotalsFound`, `TransportConfiguration`, `HostPolicy`,
+            // `Serialization`, `MissingData`, and future additive variants
+            // classify as internal invariant or contract faults.
+            _ => ErrorClass::Internal,
+        }
     }
 }
 
