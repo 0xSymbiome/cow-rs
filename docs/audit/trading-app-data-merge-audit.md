@@ -1,7 +1,7 @@
 # Trading App-Data Merge Audit
 
 Status: Current
-Last reviewed: 2026-05-13
+Last reviewed: 2026-06-07
 Owning surface: `cow-sdk-trading` quote-to-post app-data edit path,
 including the public `merge_and_seal_app_data` and
 `params_from_doc` helpers, the private typed merge with its
@@ -169,9 +169,9 @@ Primary implementation points:
 Primary regression coverage:
 
 - `crates/trading/tests/app_data_merge_contract.rs`
-- `crates/trading/tests/app_data_merge_contract.rs::merge_preserves_override_signer_byte_identical`
+- `crates/trading/tests/app_data_merge_contract.rs::override_with_only_signer_survives_into_wire_doc`
 - `crates/trading/tests/app_data_merge_contract.rs::merge_replaces_hooks_per_adr_0018`
-- `crates/trading/tests/app_data_merge_contract.rs::merge_lifts_flashloan_metadata_through_quote_to_post`
+- `crates/trading/tests/app_data_merge_contract.rs::override_with_only_flashloan_survives_into_wire_doc`
 - `crates/trading/tests/app_data_merge_contract.rs::partner_fee_in_advanced_settings_appdata_merges_through_to_post`
 - `crates/trading/tests/post_contract.rs`
 - `crates/trading/tests/parity_contract.rs`

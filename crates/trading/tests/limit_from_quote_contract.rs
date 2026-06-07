@@ -53,15 +53,6 @@ fn try_from_limit_accepts_present_quote_id_and_preserves_fields() {
 }
 
 #[test]
-fn quote_id_accessor_returns_the_inner_value_without_option() {
-    let limit = sample_limit(Some(7));
-    let from_quote = LimitTradeParametersFromQuote::try_from_limit(limit)
-        .expect("present quote id must build the newtype");
-    let id: i64 = from_quote.quote_id();
-    assert_eq!(id, 7);
-}
-
-#[test]
 fn quote_id_accessor_supports_negative_and_boundary_values() {
     for boundary in [i64::MIN, -1, 0, 1, i64::MAX] {
         let limit = sample_limit(Some(boundary));

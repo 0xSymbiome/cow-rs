@@ -155,24 +155,6 @@ fn override_with_only_signer_survives_into_wire_doc() {
 }
 
 #[test]
-fn merge_preserves_override_signer_byte_identical() {
-    let base_doc = sealed_base_doc(base_params_with_quote_metadata());
-    let signer = address(OWNER);
-    let override_params = AppDataParams::default().with_signer(signer);
-
-    let (info, merged_params) = merge_and_seal_app_data(&base_doc, &override_params)
-        .expect("typed merge with signer override must succeed");
-
-    assert_eq!(merged_params.signer, Some(signer));
-    let signer_hex = signer.to_hex_string();
-    assert_eq!(
-        info.doc["metadata"]["signer"].as_str(),
-        Some(signer_hex.as_str()),
-        "override signer must be carried to the wire byte-identical",
-    );
-}
-
-#[test]
 fn merge_replaces_hooks_per_adr_0018() {
     let mut base_metadata = base_params_with_quote_metadata().metadata;
     base_metadata.insert("hooks".to_owned(), hooks_pre_value());
@@ -190,23 +172,6 @@ fn merge_replaces_hooks_per_adr_0018() {
         info.doc["metadata"]["hooks"]["post"],
         hooks_post_value()["post"],
         "override post hooks must become the final wire hook set",
-    );
-}
-
-#[test]
-fn merge_lifts_flashloan_metadata_through_quote_to_post() {
-    let base_doc = sealed_base_doc(base_params_with_quote_metadata());
-    let hints = sample_flashloan();
-    let override_params = AppDataParams::default().with_flashloan(hints.clone());
-
-    let (info, merged_params) = merge_and_seal_app_data(&base_doc, &override_params)
-        .expect("typed flashloan override must succeed");
-    let expected = serde_json::to_value(&hints).expect("flashloan hints must serialize");
-
-    assert_eq!(merged_params.flashloan, Some(hints));
-    assert_eq!(
-        info.doc["metadata"]["flashloan"], expected,
-        "typed flashloan metadata must be lifted into the final wire document",
     );
 }
 

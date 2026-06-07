@@ -316,13 +316,6 @@ fn swap_advanced_settings_builders_round_trip_and_debug_renders() {
     assert!(debug.contains("false"));
 }
 
-#[test]
-fn limit_order_advanced_settings_builders_round_trip_and_debug_renders() {
-    let settings = TradeAdvancedSettings::new();
-    let debug = format!("{settings:?}");
-    assert!(debug.contains("TradeAdvancedSettings"));
-}
-
 // -------------------------------------------------------------------------
 // TradingOptions
 // -------------------------------------------------------------------------

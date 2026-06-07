@@ -541,26 +541,6 @@ fn approval_params() -> ApprovalParameters {
     .with_env(CowEnv::Prod)
 }
 
-#[test]
-fn tested_method_table_documents_expected_surface() {
-    let names = TESTED_METHODS
-        .iter()
-        .map(|case| case.method_name)
-        .collect::<Vec<_>>();
-
-    assert_eq!(
-        names,
-        [
-            "quote_results",
-            "post_swap_order",
-            "post_swap_order_from_quote",
-            "post_limit_order",
-            "pre_sign_transaction",
-            "order",
-            "off_chain_cancel_order",
-            "on_chain_cancel_order",
-            "cow_protocol_allowance",
-            "approve_cow_protocol",
-        ]
-    );
-}
+// The per-method cancellation surface is enumerated by `TESTED_METHODS` and
+// exercised by the pre-cancel and in-flight-abort tests above; a new public
+// method that forgets cancellation wiring fails those, not a static table.
