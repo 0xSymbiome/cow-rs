@@ -483,6 +483,28 @@ fn secret_shaped_unknown_rejection_code_is_sanitized_before_public_rendering() {
             other,
         ),
     }
+
+    // A tag that begins with an uppercase letter still redacts when it falls
+    // outside the reviewed short-identifier shape: either by exceeding the
+    // length bound or by carrying a byte beyond `[A-Za-z0-9_]`. This keeps the
+    // unknown-code fallback from leaking server- or caller-controlled text that
+    // clears the leading-character check but violates the remaining bounds.
+    let over_length_tag = "A".repeat(49);
+    for unsafe_tag in ["Future!Code", over_length_tag.as_str()] {
+        let body = envelope_bytes(unsafe_tag, "services description");
+        match parse_rejection(StatusCode::BAD_REQUEST, &body)
+            .expect("well-formed envelope must classify even when the tag is unsafe")
+        {
+            OrderbookRejection::Unknown { code, .. } => assert_eq!(
+                code.as_str(),
+                REDACTED_PLACEHOLDER,
+                "unsafe rejection tag `{unsafe_tag}` must redact before public rendering",
+            ),
+            other => {
+                panic!("unsafe unknown services tag must surface as Unknown, not {other:?}")
+            }
+        }
+    }
 }
 
 #[test]
