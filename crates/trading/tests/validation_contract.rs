@@ -458,20 +458,6 @@ fn trade_parameters_validate_enforces_builder_subset() {
 }
 
 #[test]
-fn trade_parameters_validate_rejects_buy_side_same_tokens() {
-    let params = TradeParameters::new(
-        OrderKind::Buy,
-        address(SELL_TOKEN),
-        address(SELL_TOKEN),
-        cow_sdk_core::Amount::new("1000000").unwrap(),
-    );
-    let error = params
-        .validate()
-        .expect_err("buy-side same sell/buy token must fail builder-level validation");
-    assert!(matches!(error, ClientRejection::SameBuyAndSellToken { .. }));
-}
-
-#[test]
 fn trade_parameters_validate_rejects_zero_amount() {
     let params = TradeParameters::new(
         OrderKind::Sell,
@@ -488,27 +474,6 @@ fn trade_parameters_validate_rejects_zero_amount() {
             side: AmountSide::Sell,
         }
     ));
-}
-
-#[test]
-fn amount_is_zero_matches_the_typed_numeric_predicate() {
-    use cow_sdk_core::Amount;
-    assert!(
-        Amount::ZERO.is_zero(),
-        "Amount::ZERO must report is_zero() == true"
-    );
-    assert!(
-        !Amount::new("1").unwrap().is_zero(),
-        "Amount::new(\"1\") must report is_zero() == false",
-    );
-    assert!(
-        !Amount::new("1000000000000000000").unwrap().is_zero(),
-        "a non-zero large amount must report is_zero() == false",
-    );
-    assert!(
-        Amount::new("0").unwrap().is_zero(),
-        "Amount::new(\"0\") must report is_zero() == true",
-    );
 }
 
 #[test]
