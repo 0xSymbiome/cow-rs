@@ -216,7 +216,7 @@ async fn fetch_doc_from_cid_with_policy_rejects_malformed_json() {
         .await
         .expect_err("malformed json must fail");
 
-    assert!(matches!(error, AppDataError::Json(_)));
+    assert!(matches!(error, AppDataError::Json { .. }));
 }
 
 #[tokio::test]

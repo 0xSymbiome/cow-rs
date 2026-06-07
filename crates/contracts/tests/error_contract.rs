@@ -174,14 +174,71 @@ fn invalid_hex_prefix_variant_carries_field_context() {
 }
 
 #[test]
-fn serialization_variant_wraps_serde_json_error_via_from_conversion() {
+fn serialization_variant_drops_raw_serde_error_for_structured_position() {
     let source = serde_json::from_str::<serde_json::Value>("{ malformed").unwrap_err();
     let error: ContractsError = source.into();
 
-    match &error {
-        ContractsError::Serialization(inner) => {
-            let _ = inner;
+    let ContractsError::Serialization {
+        category,
+        line,
+        column,
+    } = &error
+    else {
+        panic!("expected Serialization {{ category, line, column }}, got {error:?}");
+    };
+    assert_eq!(*category, "syntax");
+    assert!(*line >= 1 && *column >= 1);
+    // The structured diagnostic renders the category and position, never the
+    // raw serde error text that could echo decoded bytes (ADR 0025).
+    assert_eq!(
+        error.to_string(),
+        format!("serialization error ({category}) at line {line} column {column}"),
+    );
+}
+
+#[test]
+fn class_partitions_validation_internal_and_signing() {
+    use cow_sdk_core::ErrorClass;
+
+    // Caller-supplied input that failed a shape or range check is validation.
+    assert_eq!(
+        ContractsError::UnsupportedChain(999_999).class(),
+        ErrorClass::Validation,
+    );
+    assert_eq!(
+        ContractsError::InvalidOrderUidLength { actual: 4 }.class(),
+        ErrorClass::Validation,
+    );
+    assert_eq!(
+        ContractsError::InvalidNumeric {
+            field: "sellAmount",
+            value: "1".to_owned().into(),
         }
-        other => panic!("expected Serialization(#[from] serde_json::Error), got {other:?}"),
-    }
+        .class(),
+        ErrorClass::Validation,
+    );
+
+    // Serialization, ABI, and decode invariants are internal.
+    assert_eq!(
+        ContractsError::Abi(alloy_sol_types::Error::Overrun).class(),
+        ErrorClass::Internal,
+    );
+    let serde_error: ContractsError = serde_json::from_str::<serde_json::Value>("{ malformed")
+        .unwrap_err()
+        .into();
+    assert_eq!(serde_error.class(), ErrorClass::Internal);
+
+    // EIP-1271, provider, and ECDSA-recovery operations are signing-edge.
+    assert_eq!(
+        ContractsError::SignatureSchemeNotEcdsa.class(),
+        ErrorClass::Signing,
+    );
+    assert_eq!(
+        ContractsError::Provider {
+            operation: "eth_call",
+            message: "boom".to_owned().into(),
+        }
+        .class(),
+        ErrorClass::Signing,
+    );
 }

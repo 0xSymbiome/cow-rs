@@ -47,7 +47,7 @@ where
         .unwrap_or_else(|| resolve_vault_relayer(chain_id, env));
     let args_json = serde_json::to_string(&(owner.to_hex_string(), spender.to_hex_string()))
         .map_err(|error| {
-            TradingError::Contracts(cow_sdk_contracts::ContractsError::Serialization(error))
+            TradingError::Contracts(cow_sdk_contracts::ContractsError::from(error))
         })?;
     let raw = provider
         .read_contract(&ContractCall::new(

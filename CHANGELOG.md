@@ -328,6 +328,14 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Fixed
 
+- The hand-written `cow-sdk-wasm` TypeScript facade `SdkError` `orderbook`
+  member now declares the `retryable` and `retryAfterMs` fields the Rust
+  `WasmError` already emits, so a TypeScript consumer reads the retry verdict
+  type-safely instead of relying on runtime-only fields. A package test compares
+  the facade union against the generated declaration snapshot so the two shapes
+  cannot drift again. Governed by
+  [ADR 0047](docs/adr/0047-typescript-facade-architecture.md) and
+  [ADR 0060](docs/adr/0060-uniform-error-classification.md).
 - `cow_sdk_trading::Trading::off_chain_cancel_order` and `on_chain_cancel_order`
   tracing spans now record the effective chain and environment resolved from the
   SDK's trader defaults instead of `None` when the caller supplies an
@@ -359,6 +367,20 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- `cow_sdk_app_data::AppDataError::Json` and
+  `cow_sdk_contracts::ContractsError::Serialization` now carry a structured
+  `{ category, line, column }` diagnostic instead of wrapping the raw
+  `serde_json::Error`, matching `cow_sdk_orderbook::OrderbookError::Serialization`
+  so a malformed decoded document or payload can no longer echo its bytes through
+  the error's `Display`, `Debug`, or `Serialize` surface (ADR 0025). The
+  `From<serde_json::Error>` conversion is preserved, so `?` keeps working.
+- `cow_sdk_contracts::ContractsError::class()` now partitions its variants rather
+  than mapping every non-core variant to `ErrorClass::Signing`: caller-supplied
+  shape and range failures (unsupported chain, invalid UID length, numeric, and
+  hex-field checks) report `ErrorClass::Validation`, serialization/ABI/decode
+  invariants report `ErrorClass::Internal`, and the EIP-1271, provider, and
+  ECDSA-recovery operations remain `ErrorClass::Signing`. Governed by
+  [ADR 0060](docs/adr/0060-uniform-error-classification.md).
 - Public accessors and domain fetch methods drop the non-idiomatic `get_` prefix. For
   example `OrderbookApi::get_quote` is now `quote`, `get_order` is now `order`,
   `Trading::get_quote_only` is now `quote_only`, `app_data::get_app_data_info` is now

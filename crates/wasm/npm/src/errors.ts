@@ -45,6 +45,12 @@ export type SdkError =
       code?: string;
       category?: OrderBookRejectionCategory;
       message: string;
+      // Mirrors the native `OrderbookError::is_retryable` / `backoff_hint`
+      // verdict the Rust core emits (always serialized / parsed `Retry-After`),
+      // so a JavaScript consumer driving its own retry loop reaches the same
+      // decision without re-deriving the retryable-status set.
+      retryable: boolean;
+      retryAfterMs?: number;
     }
   | { schemaVersion: "v1"; kind: "subgraph"; message: string }
   | { schemaVersion: "v1"; kind: "signing"; message: string }

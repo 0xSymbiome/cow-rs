@@ -8,10 +8,15 @@
 //! then uses the *same* `class()` accessor — refined by
 //! `OrderbookRejection::category()` — to decide whether to retry or abort.
 //!
-//! Both beats route every class through one `retry_disposition` helper, so the
-//! tour and the realistic flow cannot disagree about what is retryable.
+//! Beat 3 reports the status-precise retry verdict: `is_retryable()` separates a
+//! retryable `503` from a non-retryable `400` (both `ErrorClass::Remote`), and
+//! `backoff_hint()` surfaces the server's `Retry-After` cooldown when present.
+//!
+//! The class beats route every class through one `retry_disposition` helper, so
+//! the tour and the realistic flow cannot disagree about what is retryable.
 
 use std::error::Error;
+use std::time::Duration;
 
 use serde_json::json;
 use wiremock::{
@@ -217,6 +222,44 @@ async fn classify_a_real_rejection() -> Result<serde_json::Value, Box<dyn Error>
     }))
 }
 
+/// Beat 3 — the status-precise retry verdict and server backoff hint.
+///
+/// `class()` is the coarse telemetry bucket; `is_retryable()` is the retry
+/// decision. They intentionally diverge: a retryable `503` and a non-retryable
+/// `400` are both `ErrorClass::Remote`, but only the former is retryable. The
+/// realistic consumer loop is `while attempts_left && error.is_retryable() {
+/// sleep(error.backoff_hint().unwrap_or(default)); retry; }`.
+fn retry_verdict_tour() -> Vec<serde_json::Value> {
+    // A 503 with a server-pinned two-second cooldown.
+    let transient: OrderbookError =
+        OrderbookApiError::new(503, "Service Unavailable", ResponseBody::Empty)
+            .with_retry_after(Some(Duration::from_secs(2)))
+            .into();
+    // A 429 throttle with no Retry-After header: retryable, but back off under
+    // your own policy.
+    let throttled: OrderbookError =
+        OrderbookApiError::new(429, "Too Many Requests", ResponseBody::Empty).into();
+    // A 400 permanent rejection: resubmitting it unchanged will not succeed.
+    let permanent: OrderbookError =
+        OrderbookApiError::new(400, "Bad Request", ResponseBody::Empty).into();
+
+    [
+        ("503 + Retry-After", transient),
+        ("429", throttled),
+        ("400", permanent),
+    ]
+    .into_iter()
+    .map(|(case, error)| {
+        json!({
+            "case": case,
+            "class": format!("{:?}", error.class()),
+            "isRetryable": error.is_retryable(),
+            "backoffHintMs": error.backoff_hint().map(|delay| delay.as_millis()),
+        })
+    })
+    .collect()
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let report = json!({
@@ -224,6 +267,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         "mode": "simulated-transport",
         "retryRule": "retry only Transport and Remote; back off on RateLimited; surface the rest",
         "partitionTour": partition_tour(),
+        "retryVerdict": retry_verdict_tour(),
         "realisticDecision": classify_a_real_rejection().await?,
     });
 

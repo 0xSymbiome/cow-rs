@@ -26,7 +26,7 @@ fn classify(error: ContractsError) -> bool {
         ContractsError::DecodeHex { .. } => false,
         ContractsError::InvalidHexPrefix { .. } => false,
         ContractsError::InvalidDecodedLength { .. } => false,
-        ContractsError::Serialization(_) => false,
+        ContractsError::Serialization { .. } => false,
         ContractsError::InvalidSignatureLength { .. } => false,
         ContractsError::InvalidSignatureRecoveryByte { .. } => false,
         ContractsError::SignatureSchemeNotEcdsa => false,

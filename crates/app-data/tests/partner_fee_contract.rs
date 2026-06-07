@@ -166,7 +166,7 @@ fn ambiguous_mixed_keys_fail_with_bad_shape() {
     });
     let error = PartnerFee::from_value(ambiguous).expect_err("mixed-key shape must be rejected");
     assert!(
-        matches!(error, AppDataError::Json(_)),
+        matches!(error, AppDataError::Json { .. }),
         "ambiguous mixed-key shape must surface as a parse-level error, got {error:?}",
     );
 }
@@ -410,7 +410,7 @@ fn from_value_returns_typed_appdata_error_on_bad_input() {
     let bad: Value = json!({ "volumeBps": "not-a-number", "recipient": RECIPIENT_A });
     let error = PartnerFee::from_value(bad).expect_err("bad shape must fail closed");
     assert!(
-        matches!(error, AppDataError::Json(_)),
+        matches!(error, AppDataError::Json { .. }),
         "bad input must surface as the typed AppDataError::Json variant, got {error:?}",
     );
 }

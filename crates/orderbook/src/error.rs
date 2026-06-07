@@ -257,6 +257,31 @@ impl OrderbookError {
     /// re-derive the retryable-status set. Pair it with
     /// [`OrderbookError::backoff_hint`] for the suggested wait before the next
     /// attempt.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use cow_sdk_orderbook::{OrderbookApiError, OrderbookError, ResponseBody};
+    /// use std::time::Duration;
+    ///
+    /// // A `503` the orderbook asked us to retry after two seconds.
+    /// let transient: OrderbookError =
+    ///     OrderbookApiError::new(503, "Service Unavailable", ResponseBody::Empty)
+    ///         .with_retry_after(Some(Duration::from_secs(2)))
+    ///         .into();
+    /// if transient.is_retryable() {
+    ///     // Re-dispatch the same request after the server-suggested wait,
+    ///     // falling back to your own backoff when no hint was sent.
+    ///     let wait = transient.backoff_hint().unwrap_or(Duration::from_millis(500));
+    ///     assert_eq!(wait, Duration::from_secs(2));
+    /// }
+    ///
+    /// // A `400` is a permanent rejection: never retried, no backoff hint.
+    /// let permanent: OrderbookError =
+    ///     OrderbookApiError::new(400, "Bad Request", ResponseBody::Empty).into();
+    /// assert!(!permanent.is_retryable());
+    /// assert_eq!(permanent.backoff_hint(), None);
+    /// ```
     #[must_use]
     pub const fn is_retryable(&self) -> bool {
         match self {

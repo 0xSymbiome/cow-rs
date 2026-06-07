@@ -64,7 +64,11 @@ through `CoreError::class()`; `TradingError::class()` resolves wrapped
 `Core`/`AppData`/`Orderbook`/`Signing`/`Contracts` errors through their
 accessors. `SdkError::class()` is a pure delegation over the seven leaf
 accessors, so the class is identical whether a caller holds the facade error or
-a bare leaf error. When the off-by-default `subgraph` feature is enabled,
+a bare leaf error. `ContractsError::class()` partitions its variants by meaning
+rather than to a single bucket: caller-supplied shape and range failures map to
+`Validation`, serialization/ABI/decode invariants map to `Internal` (matching
+`CoreError`), and the EIP-1271, provider, and ECDSA-recovery operations map to
+`Signing`. When the off-by-default `subgraph` feature is enabled,
 `SubgraphError::class()` is the eighth accessor and the feature-gated
 `SdkError::Subgraph` variant delegates to it the same way
 ([ADR 0003](../adr/0003-separate-read-only-subgraph-crate.md)); the
@@ -116,6 +120,7 @@ Primary regression coverage:
 - `crates/sdk/tests/error_class_contract.rs::backoff_hint_delegates_through_trading_and_facade`
 - `crates/sdk/tests/error_class_contract.rs::subgraph::subgraph_error_class_partitions_every_bucket` (with `--features subgraph`)
 - `crates/sdk/tests/error_class_contract.rs::subgraph::subgraph_error_class_delegates_through_facade` (with `--features subgraph`)
+- `crates/contracts/tests/error_contract.rs::class_partitions_validation_internal_and_signing`
 - `crates/orderbook/src/error.rs` retry-classification unit tests
 - `crates/transport-policy/src/retry_after.rs` `Retry-After` header tests
 - `crates/wasm/tests/wasm_error_abi_contract.rs::orderbook_variant_carries_retry_hints`

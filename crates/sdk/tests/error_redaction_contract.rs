@@ -271,7 +271,7 @@ fn app_data_errors_redact_public_serialized_payloads() {
         AppDataError::InvalidCid,
         AppDataError::InvalidSchemaVersion(secret_payload().into()),
         AppDataError::MissingSchemaVersion,
-        AppDataError::Json(json_error()),
+        AppDataError::from(json_error()),
         AppDataError::InvalidAppDataProvided {
             field: "document",
             reason: ValidationReason::BadShape {
@@ -320,6 +320,28 @@ fn orderbook_serialization_error_drops_decoded_response_bytes() {
         OrderbookError::from(serde_type_mismatch_error()),
     ];
     assert_all_render("OrderbookError::Serialization", &errors);
+}
+
+/// The app-data and contracts JSON decode-failure variants follow the same rule
+/// as the orderbook one: a `serde_json::Error` rendering can echo decoded
+/// document or caller bytes — an unknown field name under `deny_unknown_fields`,
+/// or a type-mismatched value — so the `From<serde_json::Error>` construction
+/// path drops them and keeps only the structural `{ category, line, column }`
+/// triple (ADR 0025).
+#[test]
+fn app_data_and_contracts_serialization_errors_drop_decoded_bytes() {
+    let app_data_errors = [
+        AppDataError::from(serde_unknown_field_error()),
+        AppDataError::from(serde_type_mismatch_error()),
+    ];
+    assert_all_render("AppDataError::Json", &app_data_errors);
+    assert_all_serialize("AppDataError::Json", &app_data_errors);
+
+    let contracts_errors = [
+        ContractsError::from(serde_unknown_field_error()),
+        ContractsError::from(serde_type_mismatch_error()),
+    ];
+    assert_all_render("ContractsError::Serialization", &contracts_errors);
 }
 
 /// The typed sub-metadata deserializer lifts caller-supplied `metadata.signer`,
@@ -417,7 +439,7 @@ fn contracts_and_signing_errors_redact_secret_bearing_messages() {
             expected: 65,
             actual: 64,
         },
-        ContractsError::Serialization(json_error()),
+        ContractsError::from(json_error()),
         ContractsError::InvalidSignatureLength { actual: 64 },
         ContractsError::InvalidSignatureRecoveryByte { value: 3 },
         ContractsError::SignatureSchemeNotEcdsa,

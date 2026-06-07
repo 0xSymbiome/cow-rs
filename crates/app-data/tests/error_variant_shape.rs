@@ -2,8 +2,10 @@
 //! [`cow_sdk_app_data::AppDataError`] wrapper variant.
 //!
 //! Each test destructures the typed shape of one variant through an
-//! exhaustive pattern match. The `Json` variant wraps [`serde_json::Error`]
-//! through a `#[from]` converter; `InvalidAppDataProvided` carries
+//! exhaustive pattern match. The `Json` variant captures only the serde
+//! failure `{ category, line, column }` through a manual `From` converter that
+//! drops the raw `serde_json::Error` text (ADR 0025); `InvalidAppDataProvided`
+//! carries
 //! `{ field, reason: ValidationReason }`; `Calculation` carries a typed
 //! `Box<dyn Error>` source so the underlying cid or multihash failure stays
 //! addressable; and `Transport` carries `{ class: TransportErrorClass, detail }`.
@@ -14,16 +16,26 @@ use cow_sdk_app_data::AppDataError;
 use cow_sdk_core::{TransportErrorClass, ValidationReason};
 
 #[test]
-fn json_variant_wraps_serde_json_error_via_from_conversion() {
+fn json_variant_drops_raw_serde_error_for_structured_position() {
     let source = serde_json::from_str::<serde_json::Value>("{ malformed").unwrap_err();
     let error: AppDataError = source.into();
 
-    match &error {
-        AppDataError::Json(inner) => {
-            let _ = inner;
-        }
-        other => panic!("expected Json(#[from] serde_json::Error), got {other:?}"),
-    }
+    let AppDataError::Json {
+        category,
+        line,
+        column,
+    } = &error
+    else {
+        panic!("expected Json {{ category, line, column }}, got {error:?}");
+    };
+    assert_eq!(*category, "syntax");
+    assert!(*line >= 1 && *column >= 1);
+    // The structured diagnostic never renders the raw serde error text that
+    // could echo decoded document bytes (ADR 0025).
+    assert_eq!(
+        error.to_string(),
+        format!("json error ({category}) at line {line} column {column}"),
+    );
 }
 
 #[test]

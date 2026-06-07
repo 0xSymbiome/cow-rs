@@ -521,6 +521,47 @@ The examples above still do **not** claim:
 Those surfaces remain documented and maintained, but they are separate from the
 deterministic onboarding path.
 
+## Handling Errors
+
+Every fallible call returns a typed error rather than a string. The `cow-sdk`
+facade aggregates the per-crate errors into `SdkError`, and every error type —
+facade or leaf — exposes a coarse `ErrorClass` (`Validation`, `Transport`,
+`Remote`, `RateLimited`, `Signing`, `Cancelled`, `Internal`) for telemetry and
+retry decisions.
+
+Orderbook failures additionally carry a status-precise retry verdict:
+`is_retryable()` returns the same decision the SDK's own transport retry loop
+reaches, and `backoff_hint()` surfaces the server's `Retry-After` cooldown when
+present. A consumer can drive a bounded retry loop without re-deriving the
+retryable-status set:
+
+```rust,ignore
+use std::time::Duration;
+
+let mut attempts = 0;
+let posted = loop {
+    match trading.post_swap_order(params.clone(), signer, None).await {
+        Ok(posted) => break posted,
+        Err(error) if attempts < 3 && error.is_retryable() => {
+            // Wait the server-suggested `Retry-After`, else your own backoff.
+            let wait = error.backoff_hint().unwrap_or(Duration::from_millis(500));
+            tokio::time::sleep(wait).await;
+            attempts += 1;
+        }
+        // `error.class()` is the coarse telemetry bucket; the typed variant — for
+        // example `OrderbookRejection::category()` — names the consumer action.
+        Err(error) => return Err(error.into()),
+    }
+};
+```
+
+Run the maintained walkthrough for a full tour of every class and the
+action-oriented rejection categories:
+
+```text
+cargo run --manifest-path examples/native/Cargo.toml --example error_classification
+```
+
 ## Step 5: Branch By Goal
 
 After the two deterministic checkpoints above, branch into the maintained

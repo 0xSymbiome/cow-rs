@@ -1,7 +1,7 @@
 # Panic-Free Public Surface Audit
 
 Status: Current
-Last reviewed: 2026-06-01
+Last reviewed: 2026-06-07
 Owning surface: every `crates/*/src/**/*.rs` file accessible from the published public API
 Refresh trigger: any ADR 0033 panic-policy change, panic-allowlist addition, or new `expect`, `unwrap`, or `panic!` site on a path reachable from the published public API
 Related docs:
@@ -30,7 +30,7 @@ benchmarks, or private review tooling. Those surfaces may use `unwrap` or
 | Typestate builders | Builder terminals read each required input from a data-carrying marker and return typed errors; no `expect` site remains on the construction path | Conforms |
 | Numeric clamps | Conversion `expect` sites follow saturating or bounded arithmetic immediately before the conversion | Conforms |
 | Amount decimal I/O | `Amount::parse_units` and `Amount::from_units` are `Result`-returning constructors carrying no `unwrap`, `expect`, or `panic!` (`parse_units` pre-guards the alloy `parse_units` footguns; `from_units` does checked integer scaling and rejects an over-`uint256` product with `NumericOverflow`); `Amount::format_units` is infallible and clamps `decimals > 77` to `Unit::MAX` rather than panicking | Conforms |
-| Panic allowlist | `.github/config/panic-allowlist.yaml` carries 44 reviewed item-path entries covering 52 accepted static-invariant panic-bearing calls | Conforms |
+| Panic allowlist | `.github/config/panic-allowlist.yaml` carries 40 reviewed item-path entries, each covering an accepted static-invariant panic-bearing call enumerated below | Conforms |
 | Native Alloy adapters | Provider, signer, and umbrella public methods return typed errors for validation, transport, signing, pending transaction, and unsupported capability failures rather than panicking | Conforms |
 | Trading wait helper | `WaitOptions` constructors/builders, `submit_and_wait_for_receipt`, `poll_for_receipt`, and `WaitError` formatting/error implementations return typed results and retain only a clamped wasm timer conversion behind the allowlist | Conforms |
 | Transport classification growth | `TransportErrorClass::Upgrade` is an additive non-exhaustive enum variant and introduces no new panic path | Conforms |
@@ -73,9 +73,10 @@ surface signer, provider, timeout, revert, and cancellation outcomes through
 sources without unchecked assumptions.
 
 The canonical panic allowlist is `.github/config/panic-allowlist.yaml`.
-It currently contains 44 reviewed item-path entries covering 52
-panic-bearing calls. Each accepted production panic site remains tied to a
-documented static invariant rather than to caller-controlled input.
+It currently contains 40 reviewed item-path entries. Each accepted production
+panic site is enumerated in the documented public runtime sites table above and
+remains tied to a documented static invariant rather than to caller-controlled
+input.
 
 `TransportErrorClass::Upgrade` is a reserved classification slot on an
 already non-exhaustive enum. It adds no conversion, allocation, parsing, or
@@ -129,9 +130,9 @@ Primary regression coverage:
 - `scripts/policy-maintainer/tests/check_panic_allowlist.rs::rejects_allowlisted_item_missing_safety_comment`
 - `scripts/policy-maintainer/tests/check_panic_allowlist.rs::accepts_item_with_both_artifacts`
 - `scripts/policy-maintainer/tests/check_panic_allowlist.rs::accepts_item_with_documented_false_opt_out`
-- `.github/workflows/_quality-gate.yml` clippy job with warnings denied;
-  this is the enforcement point for `panic_in_result_fn` and related
-  panic-surface lints as they are enabled in the workspace lint set
+- `.github/workflows/_quality-gate.yml` clippy job with warnings denied, which
+  enforces the workspace `missing_panics_doc` lint so every retained
+  static-invariant panic site carries a `# Panics` rustdoc section
 - public rustdoc `# Panics` sections on exposed functions that retain a
   static-invariant panic site
 - `crates/wasm/tests/wasm_error_abi_contract.rs`

@@ -165,9 +165,24 @@ pub enum ContractsError {
         /// Maximum decoded byte length permitted for the field.
         max_bytes: usize,
     },
-    /// Serialization to JSON or ABI-adjacent payloads failed.
-    #[error("serialization error: {0}")]
-    Serialization(#[from] serde_json::Error),
+    /// JSON serialization or decoding failed.
+    ///
+    /// Only the serde failure category and the structural position are
+    /// surfaced. The raw `serde_json::Error` rendering can echo bytes from a
+    /// decoded payload, so the conversion drops it (ADR 0025); the
+    /// `category`/`line`/`column` triple is the safe structural diagnostic,
+    /// mirroring [`cow_sdk_orderbook::OrderbookError::Serialization`].
+    ///
+    /// [`cow_sdk_orderbook::OrderbookError::Serialization`]: https://docs.rs/cow-sdk-orderbook
+    #[error("serialization error ({category}) at line {line} column {column}")]
+    Serialization {
+        /// serde failure category: `"syntax"`, `"data"`, `"eof"`, or `"io"`.
+        category: &'static str,
+        /// 1-based line where decoding failed, or `0` when the position is unknown.
+        line: usize,
+        /// 1-based column where decoding failed, or `0` when the position is unknown.
+        column: usize,
+    },
     /// Signature byte length is not the required 65.
     #[error("invalid signature length: expected 65 bytes, got {actual}")]
     InvalidSignatureLength {
@@ -204,9 +219,58 @@ impl ContractsError {
         match self {
             Self::Core(error) => error.class(),
             Self::Cancelled => ErrorClass::Cancelled,
-            // Contract encoding, ABI, provider, signature, and EIP-1271
-            // failures classify as signing-edge failures.
+            // Caller-supplied input that failed a client-side shape or range
+            // check classifies as validation.
+            Self::UnsupportedChain(_)
+            | Self::InvalidOrderUidLength { .. }
+            | Self::InvalidNumeric { .. }
+            | Self::NumericOverflow { .. }
+            | Self::InvalidHexPrefix { .. }
+            | Self::InvalidDecodedLength { .. }
+            | Self::FieldTooLarge { .. }
+            | Self::InvalidSignatureLength { .. }
+            | Self::InvalidSignatureRecoveryByte { .. }
+            | Self::ZeroReceiver
+            | Self::InvalidTokenIndex { .. } => ErrorClass::Validation,
+            // Serialization, ABI, hex-decode, and on-chain event/marker decode
+            // failures are data round-trip invariants, matching the
+            // `CoreError` serialization classification.
+            Self::Serialization { .. }
+            | Self::Abi(_)
+            | Self::DecodeHex { .. }
+            | Self::InvalidFlags(_)
+            | Self::UnknownOrderMarker(_)
+            | Self::UnexpectedEventTopics { .. } => ErrorClass::Internal,
+            // EIP-1271 verification, provider interaction, ECDSA recovery,
+            // signing-scheme classification, settlement-construction
+            // invariants, and any future additive variant classify as the
+            // contracts crate's signing-edge bucket.
             _ => ErrorClass::Signing,
         }
+    }
+}
+
+impl From<serde_json::Error> for ContractsError {
+    /// Captures only the serde failure category and structural position.
+    ///
+    /// The raw `serde_json::Error` rendering can echo bytes from a decoded
+    /// payload, so it is intentionally dropped here (ADR 0025); only the
+    /// `category`/`line`/`column` triple is retained.
+    fn from(error: serde_json::Error) -> Self {
+        Self::Serialization {
+            category: serialization_error_category(&error),
+            line: error.line(),
+            column: error.column(),
+        }
+    }
+}
+
+/// Maps a `serde_json` failure to its stable category tag.
+fn serialization_error_category(error: &serde_json::Error) -> &'static str {
+    match error.classify() {
+        serde_json::error::Category::Io => "io",
+        serde_json::error::Category::Syntax => "syntax",
+        serde_json::error::Category::Data => "data",
+        serde_json::error::Category::Eof => "eof",
     }
 }

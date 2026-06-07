@@ -19,9 +19,22 @@ pub enum AppDataError {
     /// The app-data document did not contain a string `version` field.
     #[error("AppData document is missing string field `version`")]
     MissingSchemaVersion,
-    /// JSON serialization or parsing failed.
-    #[error("json error: {0}")]
-    Json(#[from] serde_json::Error),
+    /// JSON serialization or decoding failed.
+    ///
+    /// Only the serde failure category and the structural position are
+    /// surfaced. The raw `serde_json::Error` rendering can echo bytes from a
+    /// decoded document or response body, so the conversion drops it
+    /// (ADR 0025); the `category`/`line`/`column` triple is the safe structural
+    /// diagnostic, mirroring `cow_sdk_orderbook::OrderbookError::Serialization`.
+    #[error("json error ({category}) at line {line} column {column}")]
+    Json {
+        /// serde failure category: `"syntax"`, `"data"`, `"eof"`, or `"io"`.
+        category: &'static str,
+        /// 1-based line where decoding failed, or `0` when the position is unknown.
+        line: usize,
+        /// 1-based column where decoding failed, or `0` when the position is unknown.
+        column: usize,
+    },
     /// The supplied app-data document failed semantic validation.
     #[error("invalid appData field `{field}`: {reason}")]
     InvalidAppDataProvided {
@@ -96,6 +109,31 @@ impl From<Cancelled> for AppDataError {
     }
 }
 
+impl From<serde_json::Error> for AppDataError {
+    /// Captures only the serde failure category and structural position.
+    ///
+    /// The raw `serde_json::Error` rendering can echo bytes from a decoded
+    /// document or response body, so it is intentionally dropped here
+    /// (ADR 0025); only the `category`/`line`/`column` triple is retained.
+    fn from(error: serde_json::Error) -> Self {
+        Self::Json {
+            category: serialization_error_category(&error),
+            line: error.line(),
+            column: error.column(),
+        }
+    }
+}
+
+/// Maps a `serde_json` failure to its stable category tag.
+fn serialization_error_category(error: &serde_json::Error) -> &'static str {
+    match error.classify() {
+        serde_json::error::Category::Io => "io",
+        serde_json::error::Category::Syntax => "syntax",
+        serde_json::error::Category::Data => "data",
+        serde_json::error::Category::Eof => "eof",
+    }
+}
+
 impl AppDataError {
     /// Returns the coarse-grained [`ErrorClass`] for this error.
     #[must_use]
@@ -134,9 +172,15 @@ impl Serialize for AppDataError {
             Self::MissingSchemaVersion => {
                 map.serialize_entry("type", "MissingSchemaVersion")?;
             }
-            Self::Json(error) => {
+            Self::Json {
+                category,
+                line,
+                column,
+            } => {
                 map.serialize_entry("type", "Json")?;
-                map.serialize_entry("message", &error.to_string())?;
+                map.serialize_entry("category", category)?;
+                map.serialize_entry("line", line)?;
+                map.serialize_entry("column", column)?;
             }
             Self::InvalidAppDataProvided { field, reason } => {
                 map.serialize_entry("type", "InvalidAppDataProvided")?;

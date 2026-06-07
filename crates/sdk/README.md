@@ -79,6 +79,35 @@ an app code, call the crate's free functions directly —
 `cow_protocol_allowance`, `approval_transaction`, `pre_sign_transaction`,
 and `cancel_order_onchain` — without constructing a trading client.
 
+## Handling errors
+
+Every fallible call returns a typed error. The facade aggregates the per-crate
+errors into `SdkError`, and every error type — facade or leaf — exposes a coarse
+`ErrorClass` (`Validation`, `Transport`, `Remote`, `RateLimited`, `Signing`,
+`Cancelled`, `Internal`) for telemetry. Orderbook failures add a status-precise
+retry verdict: `is_retryable()` returns the same decision the SDK's own transport
+retry loop reaches, and `backoff_hint()` surfaces the server's `Retry-After`
+cooldown when present.
+
+```rust
+use std::time::Duration;
+use cow_sdk::prelude::{ErrorClass, SdkError};
+
+/// Decide whether a failed SDK call should be retried, and how long to wait.
+fn retry_delay(error: &SdkError) -> Option<Duration> {
+    // `class()` is the coarse telemetry bucket; `is_retryable()` is the
+    // status-precise retry decision — a retryable `503` and a non-retryable
+    // `400` are both `ErrorClass::Remote`, so class alone cannot tell them apart.
+    let _telemetry_bucket: ErrorClass = error.class();
+    error
+        .is_retryable()
+        .then(|| error.backoff_hint().unwrap_or(Duration::from_millis(500)))
+}
+```
+
+The native `error_classification` example walks every `ErrorClass` bucket and the
+action-oriented `OrderbookRejection::category()` refinement end to end.
+
 ## Where to next
 
 - [Getting Started](https://github.com/cowdao-grants/cow-rs/blob/main/docs/getting-started.md)
