@@ -1,7 +1,7 @@
 # Source-Lock Provenance Audit
 
 Status: Current
-Last reviewed: 2026-06-04
+Last reviewed: 2026-06-07
 Owning surface: source-lock provenance and release preflight authority
 Refresh trigger: Changes to `parity/source-lock.yaml`, vendored parity OpenAPI or fixture provenance, any change to the maintained exclusion-list policy for historical progress snapshots, or any newly archived progress snapshot that should stay outside active preflight authority
 Related docs:
@@ -206,7 +206,7 @@ Primary regression coverage:
 - `scripts/parity-maintainer/tests/source_lock_schema_version.rs::source_lock_with_schema_v2_is_rejected_with_stable_diagnostic`
 - `scripts/parity-maintainer/tests/source_lock_schema_version.rs::source_lock_with_schema_v3_is_accepted`
 - `scripts/parity-maintainer/tests/source_lock_schema_version.rs::source_lock_with_schema_v4_is_rejected_with_stable_diagnostic`
-- `crates/orderbook/tests/openapi_dto_coverage.rs::openapi_coverage_manifest_roundtrips_required_orderbook_dtos`
+- `crates/orderbook/tests/wire_contract.rs::openapi_response_dtos_roundtrip_required_fixture_fields`
 - `crates/orderbook/tests/wire_contract.rs::promoted_amount_dtos_roundtrip_byte_identical`
 - `crates/sdk/tests/cross_fixture_amount_roundtrip.rs::cross_fixture_amount_roundtrip`
 

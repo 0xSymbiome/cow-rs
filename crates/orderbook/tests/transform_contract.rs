@@ -41,10 +41,9 @@ where
 
 #[test]
 fn order_fixture_deserializes_nested_typed_accessors() {
-    // The OpenAPI coverage manifest round-trips this same fixture field for
-    // field (openapi_dto_coverage.rs), so this test pins only the typed
-    // accessors and nested deserialization the manifest comparison does not
-    // exercise.
+    // The `Order` wire shape round-trips byte-for-byte in `wire_contract.rs`, so
+    // this test pins only the typed accessors and nested deserialization a
+    // round-trip comparison does not surface.
     let order: Order = serde_json::from_str(include_str!(
         "../../../parity/fixtures/orderbook/order_with_full_metadata.json"
     ))

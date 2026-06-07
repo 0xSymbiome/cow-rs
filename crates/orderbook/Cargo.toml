@@ -44,7 +44,6 @@ reqwest = { workspace = true, features = ["rustls", "gzip"] }
 cow-sdk-test-utils = { path = "../test-utils" }
 criterion.workspace = true
 proptest.workspace = true
-serde_yaml.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread", "test-util", "time"] }
 trybuild.workspace = true
 wiremock.workspace = true

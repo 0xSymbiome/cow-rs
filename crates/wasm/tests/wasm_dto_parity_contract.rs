@@ -13,7 +13,7 @@
 //!
 //! These tests close that gap: they round-trip the **same upstream golden
 //! fixtures** the native types are validated against in
-//! `crates/orderbook/tests/openapi_dto_coverage.rs` through the DTO mirrors, so
+//! `crates/orderbook/tests/wire_contract.rs` through the DTO mirrors, so
 //! a field rename, retype, or drop on either side fails closed. The fixtures are
 //! embedded with `include_str!` because `wasm32` has no filesystem at test time.
 //! `QuoteDataDto` is exercised transitively through `OrderQuoteResponseDto`,
@@ -33,7 +33,8 @@ const TRADE_FIXTURE: &str = include_str!("../../../parity/fixtures/orderbook/tra
 
 /// Asserts every field present in `fixture` survives a `fixture → DTO → JSON`
 /// round-trip with an identical value — the same field-preservation contract
-/// `openapi_dto_coverage.rs::roundtrip_fixture` enforces on the native type,
+/// `wire_contract.rs::assert_fixture_roundtrips_field_for_field` enforces on the
+/// native type,
 /// applied here to the DTO mirror. SDK-computed fields the DTO adds on output
 /// (for example `totalFee`) are permitted; a dropped or changed *fixture* field
 /// is not.

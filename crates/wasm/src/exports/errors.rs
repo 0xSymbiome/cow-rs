@@ -2,8 +2,6 @@
 use cow_sdk_app_data::AppDataError;
 #[cfg(any(feature = "orderbook", feature = "trading"))]
 use cow_sdk_core::ErrorClass;
-#[cfg(any(feature = "orderbook", feature = "trading"))]
-use std::time::Duration;
 use cow_sdk_core::{
     Cancelled, REDACTED_PLACEHOLDER, Redacted, TransportError, redact_response_body,
 };
@@ -18,6 +16,8 @@ use cow_sdk_subgraph::SubgraphError;
 use cow_sdk_trading::{AmountSide, ClientRejection, TradingError};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+#[cfg(any(feature = "orderbook", feature = "trading"))]
+use std::time::Duration;
 use tsify::Tsify;
 use wasm_bindgen::prelude::*;
 

@@ -7,8 +7,9 @@
 use serde::{Serialize, de::DeserializeOwned};
 
 use cow_sdk_orderbook::{
-    Amount, CompetitionOrderStatus, Order, OrderCreation, OrderKind, OrderQuoteResponse,
-    OrderQuoteSide, QuoteData, SigningScheme, TotalSurplus, Trade,
+    Amount, CompetitionOrderStatus, OnchainOrderData, Order, OrderCreation, OrderKind,
+    OrderQuoteResponse, OrderQuoteSide, QuoteData, SigningScheme, SolverExecution,
+    StoredOrderQuote, TotalSurplus, Trade,
 };
 
 mod common;
@@ -30,6 +31,28 @@ where
     let serialized = serde_json::to_string(&typed).expect("typed DTO must serialize");
 
     assert_eq!(serialized, wire);
+}
+
+fn assert_fixture_roundtrips_field_for_field<T>(label: &str, raw: &str)
+where
+    T: DeserializeOwned + Serialize,
+{
+    let expected: serde_json::Value =
+        serde_json::from_str(raw).expect("response DTO fixture must be valid JSON");
+    let typed: T = serde_json::from_value(expected.clone())
+        .unwrap_or_else(|error| panic!("{label} fixture must deserialize: {error}"));
+    let actual = serde_json::to_value(&typed)
+        .unwrap_or_else(|error| panic!("{label} must serialize: {error}"));
+    let fields = expected
+        .as_object()
+        .expect("response DTO fixture root must be a JSON object");
+    for (field, value) in fields {
+        assert_eq!(
+            actual.get(field),
+            Some(value),
+            "{label}: wire field `{field}` must round-trip",
+        );
+    }
 }
 
 fn amount(value: &str) -> Amount {
@@ -156,4 +179,28 @@ fn order_quote_response_amount_fields_deserialize_through_typed_amount() {
     assert_eq!(value["quote"]["sellAmount"], "1000000000000000000");
     assert_eq!(value["quote"]["buyAmount"], "2000000000000000000");
     assert_eq!(value["quote"]["feeAmount"], "3000000000000000");
+}
+
+#[test]
+fn openapi_response_dtos_roundtrip_required_fixture_fields() {
+    // The inline fixtures above pin the request and order DTOs byte-for-byte.
+    // The response DTOs below resolve typed amount, address, and nested shapes
+    // from their committed OpenAPI fixtures and must re-serialize every fixture
+    // field unchanged, so a renamed, retyped, or dropped field fails closed.
+    assert_fixture_roundtrips_field_for_field::<OrderQuoteResponse>(
+        "OrderQuoteResponse",
+        include_str!("../../../parity/fixtures/orderbook/order_quote_response.json"),
+    );
+    assert_fixture_roundtrips_field_for_field::<StoredOrderQuote>(
+        "StoredOrderQuote",
+        include_str!("../../../parity/fixtures/orderbook/stored_order_quote.json"),
+    );
+    assert_fixture_roundtrips_field_for_field::<OnchainOrderData>(
+        "OnchainOrderData",
+        include_str!("../../../parity/fixtures/orderbook/onchain_order_data.json"),
+    );
+    assert_fixture_roundtrips_field_for_field::<SolverExecution>(
+        "SolverExecution",
+        include_str!("../../../parity/fixtures/orderbook/solver_execution.json"),
+    );
 }

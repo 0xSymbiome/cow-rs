@@ -1,7 +1,7 @@
 # Quote Response Surface Audit
 
 Status: Current
-Last reviewed: 2026-05-29
+Last reviewed: 2026-06-07
 Owning surface: cow-sdk-orderbook quote request/response DTOs and cow-sdk-trading quote projection
 Refresh trigger: changes to the quote DTOs (`OrderQuoteRequest`, `OrderQuoteResponse`, `QuoteData`), the orderbook quote OpenAPI schemas, the quote-amounts projection, or the `priceQuality` default
 Related docs:
@@ -128,7 +128,7 @@ Primary implementation points:
 
 Primary regression coverage:
 
-- `crates/orderbook/tests/openapi_dto_coverage.rs::openapi_coverage_manifest_roundtrips_required_orderbook_dtos`
+- `crates/orderbook/tests/wire_contract.rs::openapi_response_dtos_roundtrip_required_fixture_fields`
 - `crates/orderbook/tests/fee_amount_is_not_a_public_builder_setter.rs::quote_data_surfaces_gas_estimates_through_read_only_accessors`
 - `crates/orderbook/tests/wire_contract.rs::promoted_amount_dtos_roundtrip_byte_identical`
 - `crates/orderbook/tests/types_contract.rs`
@@ -139,7 +139,6 @@ Validation surface:
 
 ```text
 cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- openapi-coverage --validate
-cargo test -p cow-sdk-orderbook --test openapi_dto_coverage
 cargo test -p cow-sdk-orderbook --test fee_amount_is_not_a_public_builder_setter
 cargo test -p cow-sdk-orderbook --test wire_contract
 cargo test -p cow-sdk-orderbook --doc

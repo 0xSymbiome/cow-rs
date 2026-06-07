@@ -142,6 +142,6 @@ the quote surface.
 
 - [Quote Response Surface Audit](../audit/quote-response-surface-audit.md)
 - `scripts/parity-maintainer/src/openapi_coverage.rs`
-- `crates/orderbook/tests/openapi_dto_coverage.rs`
+- `crates/orderbook/tests/wire_contract.rs`
 - `crates/orderbook/tests/fee_amount_is_not_a_public_builder_setter.rs`
 - `crates/trading/tests/quote_projection_parity.rs`

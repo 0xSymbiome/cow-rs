@@ -113,4 +113,4 @@ verified producer.
 - [Quote Response Surface Audit](../audit/quote-response-surface-audit.md)
 - `scripts/parity-maintainer/src/openapi_coverage.rs`
 - `crates/orderbook/tests/transform_contract.rs`
-- `crates/orderbook/tests/openapi_dto_coverage.rs`
+- `crates/orderbook/tests/wire_contract.rs`

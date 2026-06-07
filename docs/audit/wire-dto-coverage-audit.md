@@ -1,7 +1,7 @@
 # Wire DTO Coverage Audit
 
 Status: Current
-Last reviewed: 2026-06-06
+Last reviewed: 2026-06-07
 Owning surface: cow-sdk-orderbook DTO coverage
 Refresh trigger: changes to `parity/openapi/services-orderbook.yml`, changes to `parity/openapi/coverage.yaml`, source-lock refreshes for the services OpenAPI, or public field changes on covered orderbook request or response DTOs
 Related docs:
@@ -171,7 +171,8 @@ Primary regression coverage:
 - `crates/orderbook/tests/transform_contract.rs::trade_fixture_deserializes_typed_accessors`
 - `crates/orderbook/tests/transform_contract.rs::stored_order_quote_fixture_deserializes_typed_accessors`
 - `crates/orderbook/tests/transform_contract.rs::onchain_order_data_fixture_deserializes_typed_accessors`
-- `crates/orderbook/tests/openapi_dto_coverage.rs::openapi_coverage_manifest_roundtrips_required_orderbook_dtos`
+- `crates/orderbook/tests/wire_contract.rs::promoted_amount_dtos_roundtrip_byte_identical`
+- `crates/orderbook/tests/wire_contract.rs::openapi_response_dtos_roundtrip_required_fixture_fields`
 - `scripts/parity-maintainer/tests/openapi_coverage.rs::openapi_coverage_validate_reports_structured_field_mismatches`
 - `scripts/parity-maintainer/tests/openapi_coverage.rs::openapi_coverage_validate_reports_required_field_drift`
 
@@ -182,7 +183,7 @@ cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- openapi-covera
 cargo parity-validate --source-lock parity/source-lock.yaml
 cargo test --manifest-path scripts/parity-maintainer/Cargo.toml
 cargo test -p cow-sdk-orderbook --test order_creation_fee_deserialize
-cargo test -p cow-sdk-orderbook --test openapi_dto_coverage
+cargo test -p cow-sdk-orderbook --test wire_contract
 cargo test -p cow-sdk-orderbook --test transform_contract
 cargo run --manifest-path scripts/policy-maintainer/Cargo.toml -- check-deny-unknown-fields
 ```
