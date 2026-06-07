@@ -162,3 +162,54 @@ impl<'de> Deserialize<'de> for AppCode {
         Self::new(value).map_err(serde::de::Error::custom)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{AppCode, AppCodeError};
+
+    #[test]
+    fn accessors_return_the_inner_string() {
+        let code = AppCode::new("cow-rs").expect("valid app code is accepted");
+        assert_eq!(code.as_str(), "cow-rs");
+        assert_eq!(<AppCode as AsRef<str>>::as_ref(&code), "cow-rs");
+        assert_eq!(&*code, "cow-rs"); // Deref<Target = str>
+        assert_eq!(format!("{code}"), "cow-rs"); // Display
+        assert_eq!(code.into_inner(), "cow-rs");
+    }
+
+    #[test]
+    fn from_str_and_try_from_round_trip() {
+        let code: AppCode = "cow-rs".parse().expect("FromStr accepts a valid app code");
+        assert_eq!(code.as_str(), "cow-rs");
+
+        let invalid: Result<AppCode, _> = "".parse();
+        assert_eq!(invalid, Err(AppCodeError::Empty));
+
+        let from_ref: AppCode = "cow-rs"
+            .try_into()
+            .expect("TryFrom<&str> accepts a valid app code");
+        assert_eq!(from_ref.as_str(), "cow-rs");
+
+        let from_owned: AppCode = String::from("cow-rs")
+            .try_into()
+            .expect("TryFrom<String> accepts a valid app code");
+        assert_eq!(from_owned.as_str(), "cow-rs");
+    }
+
+    #[test]
+    fn serde_round_trips_through_json() {
+        let code = AppCode::new("cow-rs/wasm").expect("valid app code is accepted");
+        let serialized = serde_json::to_string(&code).expect("app code serializes");
+        assert_eq!(serialized, r#""cow-rs/wasm""#);
+
+        let deserialized: AppCode =
+            serde_json::from_str(&serialized).expect("app code deserializes");
+        assert_eq!(deserialized, code);
+
+        // Deserialization runs the same validation as construction.
+        let empty: Result<AppCode, _> = serde_json::from_str(r#""""#);
+        assert!(empty.is_err());
+        let control: Result<AppCode, _> = serde_json::from_str(r#""cow\nrs""#);
+        assert!(control.is_err());
+    }
+}

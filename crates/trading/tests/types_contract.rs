@@ -1,10 +1,11 @@
 //! Behaviour tests for the trading-crate typed parameter and result bundles.
 //!
 //! These tests pin every documented constructor, `with_*` builder, accessor,
-//! trait impl, and serde round-trip across `types/app_code`, `types/slippage`,
-//! `types/trader`, `types/advanced`, and `types/options`. The helpers under
-//! test are pure builders — no provider, signer, or orderbook fixture is
-//! required.
+//! trait impl, and serde round-trip across `types/slippage`, `types/trader`,
+//! `types/advanced`, and `types/options`, plus the trader-parameter builders'
+//! forwarding of `AppCode` validation (the `AppCode` type itself is owned and
+//! unit-tested in `cow-sdk-core`). The helpers under test are pure builders —
+//! no provider, signer, or orderbook fixture is required.
 //!
 //! Larger result and quote bundles (`QuoteResults`, `OrderPostingResult`,
 //! `TradingAppDataInfo`) are exercised end-to-end by the SDK and post
@@ -45,88 +46,6 @@ fn other_address() -> Address {
 
 fn order_uid() -> OrderUid {
     OrderUid::new(VALID_ORDER_UID).expect("static valid order uid parses")
-}
-
-// -------------------------------------------------------------------------
-// AppCode
-// -------------------------------------------------------------------------
-
-#[test]
-fn app_code_accepts_documented_shapes() {
-    for value in [
-        "CoW Swap",
-        "cow-rs/wasm-console",
-        "COW_BRIDGING_REACT_EXAMPLE",
-        "x", // single character
-        "CoW Swap (mainnet)",
-    ] {
-        let code = AppCode::new(value).expect("valid app code is accepted");
-        assert_eq!(code.as_str(), value);
-    }
-}
-
-#[test]
-fn app_code_rejects_empty_input() {
-    assert_eq!(AppCode::new(""), Err(AppCodeError::Empty));
-}
-
-#[test]
-fn app_code_rejects_nul_byte() {
-    assert_eq!(AppCode::new("cow\0rs"), Err(AppCodeError::NulByte));
-}
-
-#[test]
-fn app_code_rejects_control_characters() {
-    for value in ["cow\nrs", "cow\trs", "cow\x01rs", "cow\x7frs"] {
-        assert_eq!(
-            AppCode::new(value),
-            Err(AppCodeError::ControlCharacter),
-            "control character in {value:?} must be rejected",
-        );
-    }
-}
-
-#[test]
-fn app_code_accessors_return_inner_string() {
-    let code = AppCode::new("cow-rs").unwrap();
-    assert_eq!(code.as_str(), "cow-rs");
-    assert_eq!(<AppCode as AsRef<str>>::as_ref(&code), "cow-rs");
-    assert_eq!(&*code, "cow-rs"); // Deref<Target=str>
-    assert_eq!(format!("{code}"), "cow-rs"); // Display
-    assert_eq!(code.into_inner(), "cow-rs");
-}
-
-#[test]
-fn app_code_from_str_and_try_from_round_trip() {
-    let code: AppCode = "cow-rs".parse().expect("FromStr accepts valid app code");
-    assert_eq!(code.as_str(), "cow-rs");
-
-    let invalid: Result<AppCode, _> = "".parse();
-    assert_eq!(invalid, Err(AppCodeError::Empty));
-
-    let from_ref: AppCode = "cow-rs".try_into().unwrap();
-    assert_eq!(from_ref.as_str(), "cow-rs");
-
-    let from_owned: AppCode = String::from("cow-rs").try_into().unwrap();
-    assert_eq!(from_owned.as_str(), "cow-rs");
-}
-
-#[test]
-fn app_code_serde_round_trips_through_json() {
-    let code = AppCode::new("cow-rs/wasm").unwrap();
-    let serialized = serde_json::to_string(&code).unwrap();
-    assert_eq!(serialized, r#""cow-rs/wasm""#);
-
-    let deserialized: AppCode = serde_json::from_str(&serialized).unwrap();
-    assert_eq!(deserialized, code);
-
-    // Deserializing an empty string surfaces the validation error.
-    let invalid: Result<AppCode, _> = serde_json::from_str(r#""""#);
-    assert!(invalid.is_err());
-
-    // Deserializing a control character also surfaces validation.
-    let invalid: Result<AppCode, _> = serde_json::from_str(r#""cow\nrs""#);
-    assert!(invalid.is_err());
 }
 
 // -------------------------------------------------------------------------
