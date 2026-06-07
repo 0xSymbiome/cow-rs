@@ -1,6 +1,6 @@
 # Repository File Map
 
-> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `60dc5af` &nbsp;&middot;&nbsp; **Generated:** 2026-06-07  
+> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `d90e245` &nbsp;&middot;&nbsp; **Generated:** 2026-06-07  
 > **Total tracked files:** **1,238** &nbsp;&middot;&nbsp; **Lines of code:** tokei 14.0.0
 
 A navigable inventory of every file tracked by Git on this branch, grouped by the role each directory plays in the workspace. Use the table of contents to jump straight to a section; full file listings are collapsed by default so the high-level shape stays scannable.
@@ -31,10 +31,10 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 **Lines of code** (tracked files only)
 
-- **39,337 lines of Rust** across the 20 SDK crates, covered by **42,472 lines of tests** — a **1.1× test-to-code ratio** — plus **180 lines of benchmarks**.
+- **39,335 lines of Rust** across the 20 SDK crates, covered by **42,472 lines of tests** — a **1.1× test-to-code ratio** — plus **180 lines of benchmarks**.
 - **12,704 doc-comment lines** documenting the public API (~32.3% of crate code), plus **949 inline comment lines**.
 - **6,381 lines of TypeScript** across examples, e2e harnesses, and wasm bindings.
-- **25,826 lines of Markdown prose** — ADRs, audit notes, and READMEs.
+- **25,825 lines of Markdown prose** — ADRs, audit notes, and READMEs.
 - **28,100 lines of data & config** (JSON schemas, parity fixtures, vendored ABIs, YAML, TOML) — tracked, but excluded from code metrics by design.
 
 **Footprint** (tracked files)
@@ -52,10 +52,10 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 | Path | Files | Lines | Code | Purpose |
 |------|------:|------:|-----:|---------|
-| `crates/` | 756 | 139,935 | 97,854 | Workspace member crates (the SDK itself) |
-| `docs/` | 155 | 23,561 | 0 | Architecture decision records, audit notes, provider notes |
+| `crates/` | 756 | 139,933 | 97,852 | Workspace member crates (the SDK itself) |
+| `docs/` | 155 | 23,560 | 0 | Architecture decision records, audit notes, provider notes |
 | `parity/` | 64 | 8,363 | 8,118 | Golden fixtures + pinned specs from upstream services |
-| `examples/` | 63 | 17,869 | 5,666 | Runnable usage examples (Rust + TypeScript) |
+| `examples/` | 63 | 17,859 | 5,656 | Runnable usage examples (Rust + TypeScript) |
 | `scripts/` | 58 | 14,772 | 8,902 | Internal maintenance tool crates |
 | `fuzz/` | 53 | 10,368 | 4,386 | cargo-fuzz targets, corpora, and failure artifacts |
 | `.github/` | 29 | 4,809 | 4,005 | GitHub Actions workflows and repo config |
@@ -77,7 +77,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `rust-toolchain.toml` | 1 | 6 | 4 | Pinned Rust toolchain |
 | `.gitattributes` | 1 | 40 | 0 | Git attributes |
 | `CHANGELOG.md` | 1 | 3,776 | 0 | Release changelog |
-| **Total** | **1238** | **236,706** | **133,617** | |
+| **Total** | **1238** | **236,693** | **133,605** | |
 
 ---
 
@@ -85,8 +85,8 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 | Extension | Files | Lines | Code | Comments | Blank | Typical role |
 |-----------|------:|------:|-----:|---------:|------:|--------------|
-| `.rs` | 675 | 129,417 | 99,136 | 18,369 | 11,912 | Rust source and tests |
-| `.md` | 194 | 31,290 | 0 | 25,826 | 5,464 | Markdown docs (ADRs, audit notes, READMEs) |
+| `.rs` | 675 | 129,405 | 99,124 | 18,369 | 11,912 | Rust source and tests |
+| `.md` | 194 | 31,289 | 0 | 25,825 | 5,464 | Markdown docs (ADRs, audit notes, READMEs) |
 | `.json` | 94 | 5,741 | 5,637 | 103 | 1 | JSON schemas, ABIs, parity fixtures |
 | `.ts` | 60 | 17,394 | 6,381 | 9,874 | 1,139 | TypeScript (examples, e2e, wasm bindings) |
 | `.toml` | 52 | 4,010 | 3,437 | 67 | 506 | Cargo manifests and tool configs |
@@ -110,7 +110,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `.html` | 1 | 12 | 12 | 0 | 0 | Static HTML for browser examples |
 | `.gitattributes` | 1 | 40 | 0 | 35 | 5 |  |
 | `.yamllint` | 1 | 7 | 0 | 6 | 1 |  |
-| **Total** | **1238** | **236,706** | **133,617** | **79,265** | **23,824** | |
+| **Total** | **1238** | **236,693** | **133,605** | **79,264** | **23,824** | |
 
 > **Code + Comments + Blank = Lines** for every row. ``Comments`` is all non-code, non-blank content: inline + doc-comments in source, prose in Markdown/text, and raw content in formats tokei does not parse as code (lockfiles, ``.stderr``, snapshots). Rust doc-comments are isolated in the per-crate ``Doc`` column above.
 
@@ -123,7 +123,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | Crate | Files | Code | Tests | Benches | Doc | T:C | Purpose |
 |-------|------:|-----:|------:|--------:|----:|----:|---------|
 | [`wasm`](crates/wasm) | 106 | 5,647 | 3,505 | 0 | 1,366 | 0.6× | TypeScript-callable wasm-bindgen leaf for the CoW Protocol Rust SDK |
-| [`trading`](crates/trading) | 75 | 5,073 | 6,418 | 46 | 1,387 | 1.3× | High-level CoW Protocol trading orchestration surface |
+| [`trading`](crates/trading) | 75 | 5,071 | 6,418 | 46 | 1,387 | 1.3× | High-level CoW Protocol trading orchestration surface |
 | [`contracts`](crates/contracts) | 151 | 5,025 | 6,700 | 61 | 1,777 | 1.3× | CoW Protocol low-level contracts helpers for hashing, settlement encoding, and on-chain interaction plumbing |
 | [`core`](crates/core) | 58 | 4,399 | 3,748 | 0 | 2,232 | 0.9× | Shared CoW Protocol core types and validation primitives |
 | [`orderbook`](crates/orderbook) | 42 | 4,257 | 5,113 | 14 | 1,689 | 1.2× | Typed CoW Protocol orderbook client models and decoding helpers |
@@ -142,7 +142,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | [`transport-wasm`](crates/transport-wasm) | 8 | 423 | 819 | 0 | 126 | 1.9× | Browser fetch-based HTTP transport for the CoW Protocol Rust SDK |
 | [`sdk`](crates/sdk) | 17 | 171 | 1,445 | 0 | 170 | 8.5× | Facade crate for CoW Protocol Rust SDK surfaces |
 | [`composable`](crates/composable) | 2 | 0 | 0 | 0 | 0 | — | Reserved crate manifest for future CoW Protocol composable order helpers |
-| **Total** | **756** | **39,337** | **42,472** | **180** | **12,704** | **1.1×** | |
+| **Total** | **756** | **39,335** | **42,472** | **180** | **12,704** | **1.1×** | |
 
 ---
 
@@ -184,9 +184,9 @@ The 25 largest hand-written source files by code lines (Rust + TypeScript; vendo
 
 | Example | Files | Lines | Code | Purpose |
 |---------|------:|------:|-----:|---------|
-| [`native`](examples/native) | 33 | 8,607 | 2,501 | Native Rust scenario walkthroughs |
+| [`native`](examples/native) | 33 | 8,597 | 2,491 | Native Rust scenario walkthroughs |
 | [`wasm`](examples/wasm) | 29 | 9,213 | 3,165 | Browser console scenarios (raw wasm) |
-| **Total (listed)** | **62** | **17,820** | **5,666** | |
+| **Total (listed)** | **62** | **17,810** | **5,656** | |
 
 ---
 
@@ -1713,7 +1713,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <details>
 <summary><code>crates/trading/src/</code> &mdash; 11 file(s)</summary>
 
-- [`allowance.rs`](crates/trading/src/allowance.rs) &mdash; 147 lines
+- [`allowance.rs`](crates/trading/src/allowance.rs) &mdash; 145 lines
 - [`app_data.rs`](crates/trading/src/app_data.rs) &mdash; 239 lines
 - [`cancel.rs`](crates/trading/src/cancel.rs) &mdash; 73 lines
 - [`error.rs`](crates/trading/src/error.rs) &mdash; 235 lines
@@ -2102,7 +2102,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`code-of-conduct.md`](docs/code-of-conduct.md) &mdash; 71 lines
 - [`deployments.md`](docs/deployments.md) &mdash; 199 lines
 - [`examples.md`](docs/examples.md) &mdash; 100 lines
-- [`getting-started.md`](docs/getting-started.md) &mdash; 756 lines
+- [`getting-started.md`](docs/getting-started.md) &mdash; 755 lines
 - [`integrations.md`](docs/integrations.md) &mdash; 404 lines
 - [`msrv-policy.md`](docs/msrv-policy.md) &mdash; 39 lines
 - [`observability.md`](docs/observability.md) &mdash; 296 lines
@@ -2358,20 +2358,20 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <details>
 <summary><code>examples/native/scenarios/</code> &mdash; 27 file(s)</summary>
 
-- [`alloy_custom_traits.rs`](examples/native/scenarios/alloy_custom_traits.rs) &mdash; 176 lines
+- [`alloy_custom_traits.rs`](examples/native/scenarios/alloy_custom_traits.rs) &mdash; 179 lines
 - [`alloy_provider.rs`](examples/native/scenarios/alloy_provider.rs) &mdash; 46 lines
 - [`alloy_quickstart.rs`](examples/native/scenarios/alloy_quickstart.rs) &mdash; 49 lines
 - [`alloy_signer.rs`](examples/native/scenarios/alloy_signer.rs) &mdash; 69 lines
 - [`alloy_trading_full_flow.rs`](examples/native/scenarios/alloy_trading_full_flow.rs) &mdash; 92 lines
-- [`app_data.rs`](examples/native/scenarios/app_data.rs) &mdash; 49 lines
+- [`app_data.rs`](examples/native/scenarios/app_data.rs) &mdash; 47 lines
 - [`cancel_in_flight.rs`](examples/native/scenarios/cancel_in_flight.rs) &mdash; 90 lines
-- [`eip1271_signer.rs`](examples/native/scenarios/eip1271_signer.rs) &mdash; 74 lines
-- [`error_classification.rs`](examples/native/scenarios/error_classification.rs) &mdash; 276 lines
+- [`eip1271_signer.rs`](examples/native/scenarios/eip1271_signer.rs) &mdash; 76 lines
+- [`error_classification.rs`](examples/native/scenarios/error_classification.rs) &mdash; 279 lines
 - [`ethflow_checker.rs`](examples/native/scenarios/ethflow_checker.rs) &mdash; 117 lines
 - [`ethflow.rs`](examples/native/scenarios/ethflow.rs) &mdash; 118 lines
 - [`facade_surface.rs`](examples/native/scenarios/facade_surface.rs) &mdash; 53 lines
 - [`limit_order.rs`](examples/native/scenarios/limit_order.rs) &mdash; 61 lines
-- [`onchain_actions.rs`](examples/native/scenarios/onchain_actions.rs) &mdash; 170 lines
+- [`onchain_actions.rs`](examples/native/scenarios/onchain_actions.rs) &mdash; 169 lines
 - [`order_history.rs`](examples/native/scenarios/order_history.rs) &mdash; 105 lines
 - [`order_lifecycle.rs`](examples/native/scenarios/order_lifecycle.rs) &mdash; 59 lines
 - [`orderbook_live.rs`](examples/native/scenarios/orderbook_live.rs) &mdash; 92 lines
@@ -2383,7 +2383,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`subgraph_live.rs`](examples/native/scenarios/subgraph_live.rs) &mdash; 69 lines
 - [`subgraph_query.rs`](examples/native/scenarios/subgraph_query.rs) &mdash; 172 lines
 - [`swap_quickstart.rs`](examples/native/scenarios/swap_quickstart.rs) &mdash; 51 lines
-- [`trading_full_cycle.rs`](examples/native/scenarios/trading_full_cycle.rs) &mdash; 116 lines
+- [`trading_full_cycle.rs`](examples/native/scenarios/trading_full_cycle.rs) &mdash; 110 lines
 - [`transaction_lifecycle.rs`](examples/native/scenarios/transaction_lifecycle.rs) &mdash; 84 lines
 
 </details>
@@ -2399,7 +2399,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <details>
 <summary><code>examples/native/tests/</code> &mdash; 1 file(s)</summary>
 
-- [`scenario_contract.rs`](examples/native/tests/scenario_contract.rs) &mdash; 215 lines
+- [`scenario_contract.rs`](examples/native/tests/scenario_contract.rs) &mdash; 206 lines
 
 </details>
 

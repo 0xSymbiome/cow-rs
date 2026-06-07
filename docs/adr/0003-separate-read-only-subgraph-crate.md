@@ -24,7 +24,7 @@ crate rather than inside a trading-path crate.
 Subgraph access is still a first-class SDK capability, so the facade makes it
 reachable as an explicit opt-in. The feature is off by default, so the default
 `cow-sdk` surface and dependency closure stay trading-first; enabling it lifts
-both the `cow_sdk::subgraph` module and the feature-gated `SdkError::Subgraph`
+both the `cow_sdk::subgraph` module and the feature-gated `CowError::Subgraph`
 classification variant. This is the same additive-feature pattern the facade
 already uses for its other optional leaves, so subgraph is consistent with them
 rather than a special case.
@@ -39,7 +39,7 @@ rather than a special case.
 - Runtime and support: GraphQL analytics concerns stay separate from trading,
   orderbook transport, and browser-wallet runtime behavior.
 - Error family: when the feature is enabled, `SubgraphError` joins the uniform
-  classification family through `SdkError::Subgraph` and
+  classification family through `CowError::Subgraph` and
   `SubgraphError::class()` ([ADR 0060](0060-uniform-error-classification.md)).
 - Validation and review: query documents, typed results, and read-only
   guarantees can be proven without coupling analytics behavior to order

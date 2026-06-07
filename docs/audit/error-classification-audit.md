@@ -3,7 +3,7 @@
 Status: Current
 Last reviewed: 2026-06-07
 Owning surface: the `class()`, `is_retryable()`, and `backoff_hint()` accessors on the `cow-sdk` error family and the shared `cow_sdk_core::ErrorClass`
-Refresh trigger: a new `ErrorClass` bucket; a new error type aggregated by `cow_sdk::SdkError`; a change to any type's `class()` mapping; a change to the `is_retryable()` / `backoff_hint()` mapping or the retained `Retry-After` capture; or a new error variant whose class or retry verdict differs from its type's existing default arm
+Refresh trigger: a new `ErrorClass` bucket; a new error type aggregated by `cow_sdk::CowError`; a change to any type's `class()` mapping; a change to the `is_retryable()` / `backoff_hint()` mapping or the retained `Retry-After` capture; or a new error variant whose class or retry verdict differs from its type's existing default arm
 Related docs:
 - [ADR 0060](../adr/0060-uniform-error-classification.md)
 - [ADR 0053](../adr/0053-typed-signer-rejection-classification.md)
@@ -23,8 +23,8 @@ This audit covers:
 - the `OrderbookError::is_retryable()` and `OrderbookError::backoff_hint()`
   retry-decision accessors, the `Retry-After` value retained on
   `OrderbookApiError`, and the facade and trading delegation of both accessors
-- the facade delegation performed by `SdkError::class()`,
-  `SdkError::is_retryable()`, and `SdkError::backoff_hint()`
+- the facade delegation performed by `CowError::class()`,
+  `CowError::is_retryable()`, and `CowError::backoff_hint()`
 
 It does not cover the native Alloy adapter error classes
 (`ProviderErrorClass`, `SignerErrorClass`, `AlloyClientErrorClass`), which keep
@@ -37,12 +37,12 @@ convention because their taxonomies differ from the facade family.
 | --- | --- | --- |
 | Shared partition | `ErrorClass` lives in `cow-sdk-core`, is `#[non_exhaustive]`, and is re-exported as `cow_sdk::ErrorClass` | Conforms |
 | Per-type accessors | Every facade-family error type exposes `const fn class(&self) -> ErrorClass` | Conforms |
-| Facade delegation | `SdkError::class()` delegates to each leaf accessor and holds no classification logic of its own | Conforms |
+| Facade delegation | `CowError::class()` delegates to each leaf accessor and holds no classification logic of its own | Conforms |
 | Composite granularity | `TradingError::class()` delegates to the wrapped error, so a wrapped 429 orderbook rejection stays `RateLimited` | Conforms |
 | Retry verdict | `OrderbookError::is_retryable()` keys off the retained HTTP status (the retryable set) for structured responses and the transient transport-class mapping for transport failures | Conforms |
 | Backoff hint | `OrderbookError::backoff_hint()` surfaces the `Retry-After` parsed from the failing response, and is `None` for transport failures and headerless responses | Conforms |
-| Retry delegation | `TradingError` and `SdkError` delegate `is_retryable()` / `backoff_hint()` to the wrapped orderbook error and return `false` / `None` for non-orderbook variants | Conforms |
-| Subgraph (feature-gated) | With the `subgraph` feature enabled, `SubgraphError::class()` joins the family and `SdkError::Subgraph` delegates to it; off by default, so the default family is unchanged | Conforms |
+| Retry delegation | `TradingError` and `CowError` delegate `is_retryable()` / `backoff_hint()` to the wrapped orderbook error and return `false` / `None` for non-orderbook variants | Conforms |
+| Subgraph (feature-gated) | With the `subgraph` feature enabled, `SubgraphError::class()` joins the family and `CowError::Subgraph` delegates to it; off by default, so the default family is unchanged | Conforms |
 | Redaction posture | Classification and retry accessors read only typed discriminants and a parsed delay; they render no credential-bearing content (ADR 0025) | Conforms |
 
 ## Current Contract
@@ -62,7 +62,7 @@ Each facade-family error type owns its mapping in its own crate. Composite
 types delegate: `OrderbookError::class()` resolves a wrapped `CoreError`
 through `CoreError::class()`; `TradingError::class()` resolves wrapped
 `Core`/`AppData`/`Orderbook`/`Signing`/`Contracts` errors through their
-accessors. `SdkError::class()` is a pure delegation over the seven leaf
+accessors. `CowError::class()` is a pure delegation over the seven leaf
 accessors, so the class is identical whether a caller holds the facade error or
 a bare leaf error. `ContractsError::class()` partitions its variants by meaning
 rather than to a single bucket: caller-supplied shape and range failures map to
@@ -70,7 +70,7 @@ rather than to a single bucket: caller-supplied shape and range failures map to
 `CoreError`), and the EIP-1271, provider, and ECDSA-recovery operations map to
 `Signing`. When the off-by-default `subgraph` feature is enabled,
 `SubgraphError::class()` is the eighth accessor and the feature-gated
-`SdkError::Subgraph` variant delegates to it the same way
+`CowError::Subgraph` variant delegates to it the same way
 ([ADR 0003](../adr/0003-separate-read-only-subgraph-crate.md)); the
 retry-decision accessors stay orderbook-and-trading-scoped, so a subgraph error
 reports as non-retryable with no backoff hint.
@@ -89,7 +89,7 @@ a non-retryable `400`. `OrderbookError::backoff_hint()` returns the
 resolved against the wasm-safe wall clock at error construction), retained on
 `OrderbookApiError` and exposed through both the `Rejected` and `Api` promotion
 paths; it is `None` for transport failures and headerless responses.
-`TradingError` and `SdkError` delegate both accessors to the wrapped orderbook
+`TradingError` and `CowError` delegate both accessors to the wrapped orderbook
 error and return `false` / `None` for every non-orderbook variant. The
 TypeScript-callable `cow-sdk-wasm` surface projects the same verdict to
 JavaScript: the `WasmError` `orderbook` variant carries a `retryable` boolean
@@ -107,7 +107,7 @@ Primary implementation points:
   `crates/subgraph/src/error.rs` (`class`, behind the `subgraph` feature)
 - `crates/orderbook/src/request.rs` (`OrderbookApiError` `Retry-After` capture)
 - `crates/transport-policy/src/retry_after.rs` (`retry_after_from_headers`)
-- `crates/sdk/src/lib.rs` (`SdkError` `class` / `is_retryable` / `backoff_hint`
+- `crates/sdk/src/lib.rs` (`CowError` `class` / `is_retryable` / `backoff_hint`
   delegation)
 
 Primary regression coverage:

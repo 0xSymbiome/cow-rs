@@ -31,7 +31,7 @@ configuration outside the repository fixtures.
 | Raw boundary | Raw binding imports remain package-internal and are excluded from public export paths | Conforms |
 | Resource cleanup | Facade clients expose explicit disposal and hide raw resource-management members | Conforms |
 | Runtime flavors | Default, orderbook, signing, and Cloudflare declarations match the flavor matrix | Conforms |
-| Error normalization | Facade errors normalize raw wasm errors into `SdkError` envelopes | Conforms |
+| Error normalization | Facade errors normalize raw wasm errors into `CowError` envelopes | Conforms |
 
 ## Current Contract
 
@@ -51,7 +51,7 @@ declarations.
 ### Cleanup And Errors
 
 Facade clients own callback retention and expose explicit `dispose` behavior.
-Errors crossing the facade are converted into `SdkError` values with
+Errors crossing the facade are converted into `CowError` values with
 schema-versioned envelopes and redacted details. Input-DTO deserialization
 failures raised at the wasm boundary (an unknown enum variant, a missing
 required field, or a wrong field type) normalize to the `invalidInput` kind

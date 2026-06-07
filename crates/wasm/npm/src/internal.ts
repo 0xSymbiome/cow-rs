@@ -1,4 +1,4 @@
-import { cancelledError, invalidInput, normalizeError, type SdkError } from "./errors.js";
+import { cancelledError, invalidInput, normalizeError, type CowError } from "./errors.js";
 import type { CowFetchCallback, CowFetchRequest, CowFetchResponse } from "./callbacks.js";
 import type {
   CommonClientConfig,
@@ -100,7 +100,7 @@ export function disposeRaw(raw: DisposableRawClient | undefined): void {
   raw?.free?.();
 }
 
-export function normalizeThrown(error: unknown): SdkError {
+export function normalizeThrown(error: unknown): CowError {
   return normalizeError(error);
 }
 

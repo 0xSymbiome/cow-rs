@@ -17,7 +17,7 @@ export type OrderBookRejectionCategory =
   | "server"
   | "__unknown";
 
-export type SdkError =
+export type CowError =
   | { schemaVersion: "v1"; kind: "invalidInput"; message: string; field?: string }
   | { schemaVersion: "v1"; kind: "unknownEnumValue"; message: string; field: string; value: string }
   | { schemaVersion: "v1"; kind: "unsupportedChain"; message: string; chainId: number }
@@ -77,7 +77,7 @@ const knownKinds = new Set([
   "__unknown"
 ]);
 
-export function normalizeError(raw: unknown): SdkError {
+export function normalizeError(raw: unknown): CowError {
   if (isRecord(raw)) {
     const normalized = camelizeKnownFields(raw);
     const kind = typeof normalized.kind === "string" ? normalized.kind : undefined;
@@ -97,7 +97,7 @@ export function normalizeError(raw: unknown): SdkError {
         ...normalized,
         schemaVersion,
         kind
-      } as SdkError);
+      } as CowError);
     }
 
     if (kind) {
@@ -149,7 +149,7 @@ const DESERIALIZATION_FAILURE_PATTERNS: readonly RegExp[] = [
   /data did not match any variant/
 ];
 
-function classifyDeserializationFailure(message: string): SdkError | undefined {
+function classifyDeserializationFailure(message: string): CowError | undefined {
   if (!DESERIALIZATION_FAILURE_PATTERNS.some((pattern) => pattern.test(message))) {
     return undefined;
   }
@@ -161,7 +161,7 @@ function classifyDeserializationFailure(message: string): SdkError | undefined {
     : { schemaVersion: "v1", kind: "invalidInput", message: reason };
 }
 
-export function cancelledError(): SdkError {
+export function cancelledError(): CowError {
   return {
     schemaVersion: "v1",
     kind: "cancelled",
@@ -169,7 +169,7 @@ export function cancelledError(): SdkError {
   };
 }
 
-export function invalidInput(field: string, reason: string): SdkError {
+export function invalidInput(field: string, reason: string): CowError {
   return {
     schemaVersion: "v1",
     kind: "invalidInput",
@@ -205,7 +205,7 @@ function copyField(
   delete target[from];
 }
 
-function withActionableMessage(error: SdkError): SdkError {
+function withActionableMessage(error: CowError): CowError {
   if ("message" in error && typeof error.message === "string" && error.message.length > 0) {
     return error;
   }

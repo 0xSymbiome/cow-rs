@@ -82,7 +82,7 @@ and `cancel_order_onchain` — without constructing a trading client.
 ## Handling errors
 
 Every fallible call returns a typed error. The facade aggregates the per-crate
-errors into `SdkError`, and every error type — facade or leaf — exposes a coarse
+errors into `CowError`, and every error type — facade or leaf — exposes a coarse
 `ErrorClass` (`Validation`, `Transport`, `Remote`, `RateLimited`, `Signing`,
 `Cancelled`, `Internal`) for telemetry. Orderbook failures add a status-precise
 retry verdict: `is_retryable()` returns the same decision the SDK's own transport
@@ -91,10 +91,10 @@ cooldown when present.
 
 ```rust
 use std::time::Duration;
-use cow_sdk::prelude::{ErrorClass, SdkError};
+use cow_sdk::prelude::{ErrorClass, CowError};
 
 /// Decide whether a failed SDK call should be retried, and how long to wait.
-fn retry_delay(error: &SdkError) -> Option<Duration> {
+fn retry_delay(error: &CowError) -> Option<Duration> {
     // `class()` is the coarse telemetry bucket; `is_retryable()` is the
     // status-precise retry decision — a retryable `503` and a non-retryable
     // `400` are both `ErrorClass::Remote`, so class alone cannot tell them apart.

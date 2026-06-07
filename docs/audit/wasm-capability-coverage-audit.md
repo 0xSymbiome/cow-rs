@@ -237,7 +237,7 @@ facade's.
 | Enumerations | Rust enums | string-literal unions (`OrderKindDto = "sell" \| "buy"`; `SigningSchemeDto = "eip712" \| "ethsign" \| "eip1271" \| "presign"`; …) |
 | Per-chain maps | `BTreeMap<_, Address>` (`AddressPerChain`) | `Record<string, string>` |
 | Cancellation and timeout | `Option<&ProtocolOptions>` plus a `CancellationToken` | `options?: SdkClientOptions = { signal?: AbortSignal; timeoutMs?: number }`; signing adds `SigningOptions extends SdkClientOptions { walletConfig?: { timeoutMs?: number } }` |
-| Errors | Typed `Result<T, OrderbookError \| TradingError \| SigningError \| …>` | Rejected `Promise` carrying `WasmError` (aliased `SdkError`): a `kind`-tagged discriminated union, each variant carrying `schemaVersion`, with redacted, lower-cardinality fields |
+| Errors | Typed `Result<T, OrderbookError \| TradingError \| SigningError \| …>` | Rejected `Promise` carrying `WasmError` (aliased `CowError`): a `kind`-tagged discriminated union, each variant carrying `schemaVersion`, with redacted, lower-cardinality fields |
 | Async | `async fn(..) -> Result<T, E>` | `(..) => Promise<WasmEnvelope<T>>`; a native sync helper becomes a sync `(..) => WasmEnvelope<T>` |
 | Instance lifetime | released by Rust ownership | the raw class carries `free()`; the public facade class exposes `dispose()`; the host must release it |
 

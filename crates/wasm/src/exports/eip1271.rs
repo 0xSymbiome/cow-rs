@@ -66,7 +66,7 @@ const _: fn() = || {
 /// @param input Unsigned order used to derive the EIP-1271 payload.
 /// @param ecdsaSignature Wrapped ECDSA signature as a `0x`-prefixed string.
 /// @returns A versioned envelope containing the encoded EIP-1271 payload.
-/// @throws SdkError when the order or signature is invalid.
+/// @throws CowError when the order or signature is invalid.
 #[wasm_bindgen(
     js_name = "eip1271SignaturePayload",
     unchecked_return_type = "WasmEnvelope<string>"
@@ -93,7 +93,7 @@ pub fn eip1271_signature_payload_export(
 /// @param typedDataSigner Callback that signs the typed-data envelope.
 /// @param options Optional cancellation, timeout, and wallet timeout settings.
 /// @returns A versioned envelope containing the signed-order DTO.
-/// @throws SdkError for invalid input, callback failure, timeout, or cancellation.
+/// @throws CowError for invalid input, callback failure, timeout, or cancellation.
 #[wasm_bindgen(
     js_name = "signOrderWithEip1271",
     unchecked_return_type = "WasmEnvelope<SignedOrderDto>"
@@ -146,7 +146,7 @@ pub async fn sign_order_with_eip1271(
 /// @param customCallback Callback that returns the final EIP-1271 signature.
 /// @param options Optional cancellation, timeout, and wallet timeout settings.
 /// @returns A versioned envelope containing the signed-order DTO.
-/// @throws SdkError for invalid input, callback failure, timeout, or cancellation.
+/// @throws CowError for invalid input, callback failure, timeout, or cancellation.
 #[wasm_bindgen(
     js_name = "signOrderWithCustomEip1271",
     unchecked_return_type = "WasmEnvelope<SignedOrderDto>"

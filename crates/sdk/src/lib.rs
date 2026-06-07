@@ -23,7 +23,7 @@
 //! Native/default ready-state setup:
 //!
 //! ```rust
-//! use cow_sdk::{Address, SupportedChainId, Trading};
+//! use cow_sdk::prelude::{Address, SupportedChainId, Trading};
 //!
 //! let _address = Address::new("0x1111111111111111111111111111111111111111").unwrap();
 //! let _trading = Trading::builder()
@@ -98,14 +98,14 @@ pub mod prelude;
 // convenience items such as `CowEnv`, `Provider`, `Signer`, `Cancellable`, and the
 // leaf error/builder types, is reachable through the opt-in `cow_sdk::prelude`,
 // matching `cow-sdk-core` and the wider ecosystem (sqlx, diesel). `ErrorClass`,
-// `SdkError`, and `HttpTransport` are already re-exported individually below.
+// `CowError`, and `HttpTransport` are already re-exported individually below.
+#[cfg(feature = "browser-wallet")]
+#[cfg_attr(docsrs, doc(cfg(feature = "browser-wallet")))]
+pub use prelude::BrowserWalletSigner;
 pub use prelude::{
     Address, Amount, AppCode, OrderUid, OrderbookApi, Signature, SupportedChainId, TradeParameters,
     TraderParameters, Trading, TradingBuilder, TradingOptions,
 };
-#[cfg(feature = "browser-wallet")]
-#[cfg_attr(docsrs, doc(cfg(feature = "browser-wallet")))]
-pub use prelude::BrowserWalletSigner;
 
 #[cfg(all(feature = "alloy", not(target_arch = "wasm32")))]
 #[cfg_attr(docsrs, doc(cfg(feature = "alloy")))]
@@ -242,7 +242,7 @@ use thiserror::Error;
 /// Aggregate error type for the root facade crate.
 #[non_exhaustive]
 #[derive(Debug, Error)]
-pub enum SdkError {
+pub enum CowError {
     /// Shared types, validation, or configuration error.
     #[error("types error: {0}")]
     Types(#[from] cow_sdk_core::CoreError),
@@ -275,10 +275,10 @@ pub enum SdkError {
 ///
 /// Every public error type the facade aggregates exposes a matching
 /// `class()` accessor, so the classification is consistent whether a caller
-/// holds the facade [`SdkError`] or a bare leaf error.
+/// holds the facade [`CowError`] or a bare leaf error.
 pub use cow_sdk_core::ErrorClass;
 
-impl SdkError {
+impl CowError {
     /// Returns the coarse-grained class for this error.
     ///
     /// The classification is exhaustive: every supported variant resolves to
@@ -306,7 +306,7 @@ impl SdkError {
     /// The orderbook and trading errors carry the HTTP retry classification, so
     /// the verdict delegates to their `is_retryable()` accessors; every other
     /// facade variant is never retryable. Pair it with
-    /// [`SdkError::backoff_hint`] for the suggested wait before the next
+    /// [`CowError::backoff_hint`] for the suggested wait before the next
     /// attempt.
     #[must_use]
     pub const fn is_retryable(&self) -> bool {
@@ -333,11 +333,11 @@ impl SdkError {
     }
 }
 
-impl From<cow_sdk_core::Cancelled> for SdkError {
+impl From<cow_sdk_core::Cancelled> for CowError {
     fn from(cancelled: cow_sdk_core::Cancelled) -> Self {
         Self::Types(cow_sdk_core::CoreError::from(cancelled))
     }
 }
 
 // The per-variant classification now lives on each leaf error type's
-// `class()` accessor; `SdkError::class()` above delegates to them.
+// `class()` accessor; `CowError::class()` above delegates to them.

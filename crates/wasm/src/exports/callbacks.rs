@@ -3,7 +3,7 @@ use wasm_bindgen::prelude::*;
 #[wasm_bindgen(typescript_custom_section)]
 const COMMON_TYPES: &str = r#"
 export type Value = unknown;
-export type SdkError = WasmError;
+export type CowError = WasmError;
 
 export interface SdkClientOptions {
   timeoutMs?: number;

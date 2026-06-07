@@ -73,7 +73,7 @@ impl TradingClient {
     /// defaults for all trading methods.
     ///
     /// @param config Trading client configuration.
-    /// @throws SdkError when chain, app-code, environment, transport, or policy validation fails.
+    /// @throws CowError when chain, app-code, environment, transport, or policy validation fails.
     #[wasm_bindgen(constructor)]
     pub fn new(config: TradingClientConfig) -> Result<TradingClient, JsValue> {
         let config = config.as_ref();
@@ -119,7 +119,7 @@ impl TradingClient {
     /// @param params Swap parameters DTO.
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing quote results.
-    /// @throws SdkError for invalid parameters, transport failure, timeout, or cancellation.
+    /// @throws CowError for invalid parameters, transport failure, timeout, or cancellation.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.trading.quote"))
@@ -153,7 +153,7 @@ impl TradingClient {
     /// @param signerCallback Callback that signs the typed-data envelope.
     /// @param options Optional cancellation, timeout, and wallet timeout settings.
     /// @returns A versioned envelope containing order posting output.
-    /// @throws SdkError for invalid input, quote failure, wallet failure, timeout, or rejection.
+    /// @throws CowError for invalid input, quote failure, wallet failure, timeout, or rejection.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.trading.post_swap_order"))
@@ -190,7 +190,7 @@ impl TradingClient {
     /// @param signerCallback Callback that signs the typed-data envelope.
     /// @param options Optional cancellation, timeout, and wallet timeout settings.
     /// @returns A versioned envelope containing order posting output.
-    /// @throws SdkError for invalid quote data, wallet failure, timeout, or rejection.
+    /// @throws CowError for invalid quote data, wallet failure, timeout, or rejection.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(
@@ -238,7 +238,7 @@ impl TradingClient {
     /// @param signerCallback Callback that signs the typed-data envelope.
     /// @param options Optional cancellation, timeout, and wallet timeout settings.
     /// @returns A versioned envelope containing order posting output.
-    /// @throws SdkError for invalid input, wallet failure, timeout, or rejection.
+    /// @throws CowError for invalid input, wallet failure, timeout, or rejection.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.trading.post_limit_order"))
@@ -277,7 +277,7 @@ impl TradingClient {
     /// @param from Transaction sender address.
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing order UID and transaction request.
-    /// @throws SdkError when the order, chain, deployment, or sender is invalid.
+    /// @throws CowError when the order, chain, deployment, or sender is invalid.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(
@@ -316,7 +316,7 @@ impl TradingClient {
     /// @param readContractCallback Callback that executes the read-only call.
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing the allowance amount string.
-    /// @throws SdkError for invalid parameters, callback failure, timeout, or cancellation.
+    /// @throws CowError for invalid parameters, callback failure, timeout, or cancellation.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.trading.cow_protocol_allowance"))
@@ -351,7 +351,7 @@ impl TradingClient {
     /// @param customCallback Callback that returns the final EIP-1271 signature.
     /// @param options Optional cancellation, timeout, and wallet timeout settings.
     /// @returns A versioned envelope containing order posting output.
-    /// @throws SdkError for invalid input, quote failure, callback failure, timeout, or rejection.
+    /// @throws CowError for invalid input, quote failure, callback failure, timeout, or rejection.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(

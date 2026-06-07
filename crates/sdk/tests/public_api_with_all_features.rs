@@ -2,7 +2,7 @@
 #[test]
 fn public_api_with_all_features_snapshot_matches() {
     use cow_sdk::{
-        Address, Amount, AppCode, ErrorClass, HttpTransport, OrderUid, OrderbookApi, SdkError,
+        Address, Amount, AppCode, CowError, ErrorClass, HttpTransport, OrderUid, OrderbookApi,
         Signature, SupportedChainId, TradeParameters, TraderParameters, Trading, TradingBuilder,
         TradingOptions,
     };
@@ -14,7 +14,7 @@ fn public_api_with_all_features_snapshot_matches() {
     let _ = core::any::type_name::<dyn HttpTransport>();
     let _ = core::any::type_name::<OrderbookApi>();
     let _ = core::any::type_name::<OrderUid>();
-    let _ = core::any::type_name::<SdkError>();
+    let _ = core::any::type_name::<CowError>();
     let _ = core::any::type_name::<Signature>();
     let _ = core::any::type_name::<SupportedChainId>();
     let _ = core::any::type_name::<TradeParameters>();
@@ -59,7 +59,7 @@ root exports:
 - OrderbookApi
 - OrderUid
 - RegistryError
-- SdkError
+- CowError
 - Signature
 - SupportedChainId
 - TradeParameters

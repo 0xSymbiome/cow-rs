@@ -27,7 +27,7 @@ details.
 - Public imports use package exports and facade modules, never deep raw
   wasm-bindgen paths.
 - Facade declarations expose named callbacks, typed config objects,
-  `TransportPolicyConfig`, `SdkError`, and explicit `dispose` behavior.
+  `TransportPolicyConfig`, `CowError`, and explicit `dispose` behavior.
 - Raw callback registry handles and generated wasm-bindgen classes remain
   hidden from public declarations.
 - Error envelopes carry `schemaVersion` and preserve an unknown-variant escape

@@ -133,7 +133,7 @@ impl IpfsClient {
     /// defaults for method calls.
     ///
     /// @param config IPFS client configuration.
-    /// @throws SdkError when transport, policy, timeout, or gateway config is invalid.
+    /// @throws CowError when transport, policy, timeout, or gateway config is invalid.
     #[wasm_bindgen(constructor)]
     pub fn new(config: IpfsClientConfig) -> Result<IpfsClient, JsValue> {
         let config = config.as_ref();
@@ -161,7 +161,7 @@ impl IpfsClient {
     /// @param cid Canonical IPFS CID for the app-data document.
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing the app-data document.
-    /// @throws SdkError for invalid CID, transport failure, timeout, or parse failure.
+    /// @throws CowError for invalid CID, transport failure, timeout, or parse failure.
     #[wasm_bindgen(
         js_name = "fetchAppDataFromCid",
         unchecked_return_type = "WasmEnvelope<AppDataDocDto>"
@@ -188,7 +188,7 @@ impl IpfsClient {
     /// @param appDataHex App-data hash as a `0x`-prefixed hex string.
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing the app-data document.
-    /// @throws SdkError for invalid hash, transport failure, timeout, or parse failure.
+    /// @throws CowError for invalid hash, transport failure, timeout, or parse failure.
     #[wasm_bindgen(
         js_name = "fetchAppDataFromHex",
         unchecked_return_type = "WasmEnvelope<AppDataDocDto>"

@@ -88,7 +88,7 @@ export type HttpTransportConfig =
 
 
 export type Value = unknown;
-export type SdkError = WasmError;
+export type CowError = WasmError;
 
 export interface SdkClientOptions {
     timeoutMs?: number;
@@ -2032,7 +2032,7 @@ export class OrderBookClient {
      * @param signed Signed cancellation payload.
      * @param options Optional per-call cancellation and timeout settings.
      * @returns A versioned envelope containing `{ cancelled: true }` on success.
-     * @throws SdkError for invalid UID, signature, transport failure, or timeout.
+     * @throws CowError for invalid UID, signature, transport failure, or timeout.
      */
     cancelOrders(signed: SignedCancellationsInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<{ cancelled: true }>>;
     /**
@@ -2045,7 +2045,7 @@ export class OrderBookClient {
      * @param appDataHash App-data hash as a `0x`-prefixed 32-byte hex string.
      * @param options Optional per-call cancellation and timeout settings.
      * @returns A versioned envelope containing the app-data document.
-     * @throws SdkError for an invalid hash, transport failure, or timeout.
+     * @throws CowError for an invalid hash, transport failure, or timeout.
      */
     getAppData(appDataHash: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<AppDataObjectDto>>;
     /**
@@ -2057,7 +2057,7 @@ export class OrderBookClient {
      * @param token Token address to price.
      * @param options Optional per-call cancellation and timeout settings.
      * @returns A versioned envelope containing native price data.
-     * @throws SdkError for invalid token address, transport failure, or timeout.
+     * @throws CowError for invalid token address, transport failure, or timeout.
      */
     getNativePrice(token: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<NativePriceResponseDto>>;
     /**
@@ -2069,7 +2069,7 @@ export class OrderBookClient {
      * @param orderUid Full order UID to look up.
      * @param options Optional per-call cancellation and timeout settings.
      * @returns A versioned envelope containing the order response.
-     * @throws SdkError for invalid UID, not-found responses, transport failure, or timeout.
+     * @throws CowError for invalid UID, not-found responses, transport failure, or timeout.
      */
     getOrder(orderUid: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<OrderDto>>;
     /**
@@ -2082,7 +2082,7 @@ export class OrderBookClient {
      * @param pagination Optional offset and limit.
      * @param options Optional per-call cancellation and timeout settings.
      * @returns A versioned envelope containing matching orders.
-     * @throws SdkError for invalid owner, transport failure, timeout, or cancellation.
+     * @throws CowError for invalid owner, transport failure, timeout, or cancellation.
      */
     getOrders(owner: string, pagination?: PaginationOptions | null, options?: SdkClientOptions | null): Promise<WasmEnvelope<OrderDto[]>>;
     /**
@@ -2095,7 +2095,7 @@ export class OrderBookClient {
      * @param pagination Optional offset and limit.
      * @param options Optional per-call cancellation and timeout settings.
      * @returns A versioned envelope containing matching orders.
-     * @throws SdkError for invalid owner, transport failure, timeout, or cancellation.
+     * @throws CowError for invalid owner, transport failure, timeout, or cancellation.
      */
     getOrdersByOwner(owner: string, pagination?: PaginationOptions | null, options?: SdkClientOptions | null): Promise<WasmEnvelope<OrderDto[]>>;
     /**
@@ -2108,7 +2108,7 @@ export class OrderBookClient {
      * @param request Quote request DTO.
      * @param options Optional per-call cancellation and timeout settings.
      * @returns A versioned envelope containing the quote response.
-     * @throws SdkError for invalid input, transport failure, timeout, or cancellation.
+     * @throws CowError for invalid input, transport failure, timeout, or cancellation.
      */
     getQuote(request: OrderQuoteRequestInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<OrderQuoteResponseDto>>;
     /**
@@ -2120,7 +2120,7 @@ export class OrderBookClient {
      * @param query Trade query DTO.
      * @param options Optional per-call cancellation and timeout settings.
      * @returns A versioned envelope containing matching trades.
-     * @throws SdkError when the query is ambiguous or transport fails.
+     * @throws CowError when the query is ambiguous or transport fails.
      */
     getTrades(query: TradesQueryInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<TradeDto[]>>;
     /**
@@ -2131,7 +2131,7 @@ export class OrderBookClient {
      * calls made through this client unless a method call overrides them.
      *
      * @param config Orderbook client configuration.
-     * @throws SdkError when the chain, environment, transport, or policy is invalid.
+     * @throws CowError when the chain, environment, transport, or policy is invalid.
      */
     constructor(config: OrderBookClientConfig);
     /**
@@ -2144,7 +2144,7 @@ export class OrderBookClient {
      * @param signed Signed order DTO including typed data, signature, owner, and scheme.
      * @param options Optional per-call cancellation and timeout settings.
      * @returns A versioned envelope containing the submitted order UID.
-     * @throws SdkError for invalid signatures, transport failure, timeout, or rejection.
+     * @throws CowError for invalid signatures, transport failure, timeout, or rejection.
      */
     sendOrder(signed: SignedOrderDto, options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>;
     /**
@@ -2157,7 +2157,7 @@ export class OrderBookClient {
      * @param input Raw order-creation DTO.
      * @param options Optional per-call cancellation and timeout settings.
      * @returns A versioned envelope containing the submitted order UID.
-     * @throws SdkError for malformed input, transport failure, timeout, or rejection.
+     * @throws CowError for malformed input, transport failure, timeout, or rejection.
      */
     sendOrderCreation(input: OrderCreationInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>;
     /**
@@ -2172,7 +2172,7 @@ export class OrderBookClient {
      * @param fullAppData Canonically serialized app-data JSON payload.
      * @param options Optional per-call cancellation and timeout settings.
      * @returns A versioned envelope containing `{ uploaded: true }` on success.
-     * @throws SdkError for a hash mismatch, invalid hash, transport failure, or timeout.
+     * @throws CowError for a hash mismatch, invalid hash, transport failure, or timeout.
      */
     uploadAppData(appDataHash: string, fullAppData: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<{ uploaded: true }>>;
 }
@@ -2199,7 +2199,7 @@ export class TradingClient {
      * @param from Transaction sender address.
      * @param options Optional per-call cancellation and timeout settings.
      * @returns A versioned envelope containing order UID and transaction request.
-     * @throws SdkError when the order, chain, deployment, or sender is invalid.
+     * @throws CowError when the order, chain, deployment, or sender is invalid.
      */
     buildSellNativeCurrencyTx(order: OrderInput, quoteId: number, from: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<BuiltSellNativeCurrencyTxDto>>;
     /**
@@ -2213,7 +2213,7 @@ export class TradingClient {
      * @param readContractCallback Callback that executes the read-only call.
      * @param options Optional per-call cancellation and timeout settings.
      * @returns A versioned envelope containing the allowance amount string.
-     * @throws SdkError for invalid parameters, callback failure, timeout, or cancellation.
+     * @throws CowError for invalid parameters, callback failure, timeout, or cancellation.
      */
     getCowProtocolAllowance(params: AllowanceParametersInput, readContractCallback: ContractReadCallback, options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>;
     /**
@@ -2225,7 +2225,7 @@ export class TradingClient {
      * @param params Swap parameters DTO.
      * @param options Optional per-call cancellation and timeout settings.
      * @returns A versioned envelope containing quote results.
-     * @throws SdkError for invalid parameters, transport failure, timeout, or cancellation.
+     * @throws CowError for invalid parameters, transport failure, timeout, or cancellation.
      */
     getQuote(params: SwapParametersInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<QuoteResultsDto>>;
     /**
@@ -2236,7 +2236,7 @@ export class TradingClient {
      * defaults for all trading methods.
      *
      * @param config Trading client configuration.
-     * @throws SdkError when chain, app-code, environment, transport, or policy validation fails.
+     * @throws CowError when chain, app-code, environment, transport, or policy validation fails.
      */
     constructor(config: TradingClientConfig);
     /**
@@ -2250,7 +2250,7 @@ export class TradingClient {
      * @param signerCallback Callback that signs the typed-data envelope.
      * @param options Optional cancellation, timeout, and wallet timeout settings.
      * @returns A versioned envelope containing order posting output.
-     * @throws SdkError for invalid input, wallet failure, timeout, or rejection.
+     * @throws CowError for invalid input, wallet failure, timeout, or rejection.
      */
     postLimitOrder(params: LimitTradeParametersInput, owner: string, signerCallback: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<OrderPostingResultDto>>;
     /**
@@ -2265,7 +2265,7 @@ export class TradingClient {
      * @param signerCallback Callback that signs the typed-data envelope.
      * @param options Optional cancellation, timeout, and wallet timeout settings.
      * @returns A versioned envelope containing order posting output.
-     * @throws SdkError for invalid input, quote failure, wallet failure, timeout, or rejection.
+     * @throws CowError for invalid input, quote failure, wallet failure, timeout, or rejection.
      */
     postSwapOrder(params: SwapParametersInput, owner: string, signerCallback: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<OrderPostingResultDto>>;
     /**
@@ -2279,7 +2279,7 @@ export class TradingClient {
      * @param signerCallback Callback that signs the typed-data envelope.
      * @param options Optional cancellation, timeout, and wallet timeout settings.
      * @returns A versioned envelope containing order posting output.
-     * @throws SdkError for invalid quote data, wallet failure, timeout, or rejection.
+     * @throws CowError for invalid quote data, wallet failure, timeout, or rejection.
      */
     postSwapOrderFromQuote(quoteResults: QuoteResultsDto, owner: string, signerCallback: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<OrderPostingResultDto>>;
     /**
@@ -2294,7 +2294,7 @@ export class TradingClient {
      * @param customCallback Callback that returns the final EIP-1271 signature.
      * @param options Optional cancellation, timeout, and wallet timeout settings.
      * @returns A versioned envelope containing order posting output.
-     * @throws SdkError for invalid input, quote failure, callback failure, timeout, or rejection.
+     * @throws CowError for invalid input, quote failure, callback failure, timeout, or rejection.
      */
     postSwapOrderWithEip1271(params: SwapParametersInput, owner: string, customCallback: CustomEip1271Callback, options?: SigningOptions | null): Promise<WasmEnvelope<OrderPostingResultDto>>;
 }
@@ -2312,7 +2312,7 @@ export function __cow_sdk_wasm_init(): void;
  *
  * @param doc App-data document input accepted by the SDK schema.
  * @returns A versioned envelope containing the normalized document.
- * @throws SdkError when the input cannot be normalized.
+ * @throws CowError when the input cannot be normalized.
  */
 export function appDataDoc(doc: AppDataDocInput): WasmEnvelope<AppDataDocDto>;
 
@@ -2324,7 +2324,7 @@ export function appDataDoc(doc: AppDataDocInput): WasmEnvelope<AppDataDocDto>;
  *
  * @param appDataHex App-data hash as a `0x`-prefixed hex string.
  * @returns A versioned envelope containing the CID string.
- * @throws SdkError when the hash is malformed.
+ * @throws CowError when the hash is malformed.
  */
 export function appDataHexToCid(appDataHex: string): WasmEnvelope<string>;
 
@@ -2336,7 +2336,7 @@ export function appDataHexToCid(appDataHex: string): WasmEnvelope<string>;
  *
  * @param doc App-data document input accepted by the SDK schema.
  * @returns A versioned envelope containing document, hash, CID, and hex data.
- * @throws SdkError when the document cannot be normalized or hashed.
+ * @throws CowError when the document cannot be normalized or hashed.
  */
 export function appDataInfo(doc: AppDataDocInput): WasmEnvelope<AppDataInfoDto>;
 
@@ -2349,7 +2349,7 @@ export function appDataInfo(doc: AppDataDocInput): WasmEnvelope<AppDataInfoDto>;
  *
  * @param params Order UID, chain, environment, and optional deployment override.
  * @returns A versioned envelope containing the transaction request DTO.
- * @throws SdkError when the chain, deployment, or order UID is invalid.
+ * @throws CowError when the chain, deployment, or order UID is invalid.
  */
 export function buildCancelOrderTx(params: OrderTraderParametersInput): WasmEnvelope<TransactionRequestDto>;
 
@@ -2362,7 +2362,7 @@ export function buildCancelOrderTx(params: OrderTraderParametersInput): WasmEnve
  *
  * @param params Order UID, chain, environment, and optional deployment override.
  * @returns A versioned envelope containing the transaction request DTO.
- * @throws SdkError when the chain, deployment, or order UID is invalid.
+ * @throws CowError when the chain, deployment, or order UID is invalid.
  */
 export function buildPresignTx(params: OrderTraderParametersInput): WasmEnvelope<TransactionRequestDto>;
 
@@ -2374,7 +2374,7 @@ export function buildPresignTx(params: OrderTraderParametersInput): WasmEnvelope
  *
  * @param cid Canonical CID string for an app-data document.
  * @returns A versioned envelope containing the `0x`-prefixed hash.
- * @throws SdkError when the CID does not match the supported app-data shape.
+ * @throws CowError when the CID does not match the supported app-data shape.
  */
 export function cidToAppDataHex(cid: string): WasmEnvelope<string>;
 
@@ -2388,7 +2388,7 @@ export function cidToAppDataHex(cid: string): WasmEnvelope<string>;
  * @param chainId EVM chain id used for the EIP-712 domain.
  * @param owner Order owner address included in the UID suffix.
  * @returns A versioned envelope with `orderUid` and `orderDigest`.
- * @throws SdkError when the order, owner, or chain id is invalid.
+ * @throws CowError when the order, owner, or chain id is invalid.
  */
 export function computeOrderUid(input: OrderInput, chainId: number, owner: string): WasmEnvelope<GeneratedOrderUidDto>;
 
@@ -2404,7 +2404,7 @@ export function computeOrderUid(input: OrderInput, chainId: number, owner: strin
  * @param log Raw log with `topics` (0x-prefixed 32-byte hex, topic-0 first)
  * and `data` (0x-prefixed hex, `"0x"` when empty).
  * @returns A versioned envelope containing the decoded eth-flow event.
- * @throws SdkError when the log is malformed or its topic set matches no known
+ * @throws CowError when the log is malformed or its topic set matches no known
  * eth-flow lifecycle event.
  */
 export function decodeEthFlowLog(log: EventLogInput): WasmEnvelope<EthFlowEventDto>;
@@ -2420,7 +2420,7 @@ export function decodeEthFlowLog(log: EventLogInput): WasmEnvelope<EthFlowEventD
  * @param log Raw log with `topics` (0x-prefixed 32-byte hex, topic-0 first)
  * and `data` (0x-prefixed hex, `"0x"` when empty).
  * @returns A versioned envelope containing the decoded settlement event.
- * @throws SdkError when the log is malformed or its topic set matches no known
+ * @throws CowError when the log is malformed or its topic set matches no known
  * settlement event.
  */
 export function decodeSettlementLog(log: EventLogInput): WasmEnvelope<SettlementEventDto>;
@@ -2434,7 +2434,7 @@ export function decodeSettlementLog(log: EventLogInput): WasmEnvelope<Settlement
  * @param chainId EVM chain id to resolve.
  * @param env Optional CoW environment name, such as `prod` or `staging`.
  * @returns Settlement, VaultRelayer, EthFlow, and AllowListAuth addresses.
- * @throws SdkError when the chain or environment is unsupported.
+ * @throws CowError when the chain or environment is unsupported.
  */
 export function deploymentAddresses(chainId: number, env?: string | null): WasmEnvelope<DeploymentAddressesDto>;
 
@@ -2447,7 +2447,7 @@ export function deploymentAddresses(chainId: number, env?: string | null): WasmE
  *
  * @param chainId EVM chain id supported by the deployment registry.
  * @returns The `0x`-prefixed 32-byte domain separator.
- * @throws SdkError when the chain is not supported.
+ * @throws CowError when the chain is not supported.
  */
 export function domainSeparator(chainId: number): string;
 
@@ -2461,7 +2461,7 @@ export function domainSeparator(chainId: number): string;
  * @param input Unsigned order used to derive the EIP-1271 payload.
  * @param ecdsaSignature Wrapped ECDSA signature as a `0x`-prefixed string.
  * @returns A versioned envelope containing the encoded EIP-1271 payload.
- * @throws SdkError when the order or signature is invalid.
+ * @throws CowError when the order or signature is invalid.
  */
 export function eip1271SignaturePayload(input: OrderInput, ecdsaSignature: string): WasmEnvelope<string>;
 
@@ -2475,7 +2475,7 @@ export function eip1271SignaturePayload(input: OrderInput, ecdsaSignature: strin
  * @param input Unsigned order fields using the facade order DTO shape.
  * @param chainId EVM chain id used for the EIP-712 domain.
  * @returns A versioned envelope containing typed-data DTO fields.
- * @throws SdkError when order parsing or chain validation fails.
+ * @throws CowError when order parsing or chain validation fails.
  */
 export function orderTypedData(input: OrderInput, chainId: number): WasmEnvelope<TypedDataEnvelopeDto>;
 
@@ -2490,7 +2490,7 @@ export function orderTypedData(input: OrderInput, chainId: number): WasmEnvelope
  * @param digestSigner Callback that signs the digest string.
  * @param options Optional cancellation, timeout, and wallet timeout settings.
  * @returns A versioned envelope containing signed cancellations.
- * @throws SdkError for empty input, invalid UID, callback failure, or timeout.
+ * @throws CowError for empty input, invalid UID, callback failure, or timeout.
  */
 export function signCancellationEthSignDigest(orderUids: string[], chainId: number, digestSigner: DigestSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedCancellationsInput>>;
 
@@ -2506,7 +2506,7 @@ export function signCancellationEthSignDigest(orderUids: string[], chainId: numb
  * @param requestCallback Callback that executes the EIP-1193 request.
  * @param options Optional cancellation, timeout, and wallet timeout settings.
  * @returns A versioned envelope containing signed cancellations.
- * @throws SdkError for invalid input, wallet failure, timeout, or cancellation.
+ * @throws CowError for invalid input, wallet failure, timeout, or cancellation.
  */
 export function signCancellationWithEip1193(orderUids: string[], chainId: number, owner: string, requestCallback: Eip1193RequestCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedCancellationsInput>>;
 
@@ -2522,7 +2522,7 @@ export function signCancellationWithEip1193(orderUids: string[], chainId: number
  * @param typedDataSigner Callback that signs the typed-data envelope.
  * @param options Optional cancellation, timeout, and wallet timeout settings.
  * @returns A versioned envelope containing signed cancellations.
- * @throws SdkError for empty input, invalid UID, callback failure, or timeout.
+ * @throws CowError for empty input, invalid UID, callback failure, or timeout.
  */
 export function signCancellationWithTypedDataSigner(orderUids: string[], chainId: number, typedDataSigner: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedCancellationsInput>>;
 
@@ -2539,7 +2539,7 @@ export function signCancellationWithTypedDataSigner(orderUids: string[], chainId
  * @param digestSigner Callback that signs the digest string.
  * @param options Optional cancellation, timeout, and wallet timeout settings.
  * @returns A versioned envelope containing the signed order.
- * @throws SdkError for invalid input, callback failure, timeout, or cancellation.
+ * @throws CowError for invalid input, callback failure, timeout, or cancellation.
  */
 export function signOrderEthSignDigest(input: OrderInput, chainId: number, owner: string, digestSigner: DigestSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrderDto>>;
 
@@ -2556,7 +2556,7 @@ export function signOrderEthSignDigest(input: OrderInput, chainId: number, owner
  * @param customCallback Callback that returns the final EIP-1271 signature.
  * @param options Optional cancellation, timeout, and wallet timeout settings.
  * @returns A versioned envelope containing the signed-order DTO.
- * @throws SdkError for invalid input, callback failure, timeout, or cancellation.
+ * @throws CowError for invalid input, callback failure, timeout, or cancellation.
  */
 export function signOrderWithCustomEip1271(input: OrderInput, chainId: number, owner: string, customCallback: CustomEip1271Callback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrderDto>>;
 
@@ -2573,7 +2573,7 @@ export function signOrderWithCustomEip1271(input: OrderInput, chainId: number, o
  * @param requestCallback Callback that executes the EIP-1193 request.
  * @param options Optional cancellation, timeout, and wallet timeout settings.
  * @returns A versioned envelope containing the signed order.
- * @throws SdkError for invalid input, wallet failure, timeout, or cancellation.
+ * @throws CowError for invalid input, wallet failure, timeout, or cancellation.
  */
 export function signOrderWithEip1193(input: OrderInput, chainId: number, owner: string, requestCallback: Eip1193RequestCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrderDto>>;
 
@@ -2590,7 +2590,7 @@ export function signOrderWithEip1193(input: OrderInput, chainId: number, owner: 
  * @param typedDataSigner Callback that signs the typed-data envelope.
  * @param options Optional cancellation, timeout, and wallet timeout settings.
  * @returns A versioned envelope containing the signed-order DTO.
- * @throws SdkError for invalid input, callback failure, timeout, or cancellation.
+ * @throws CowError for invalid input, callback failure, timeout, or cancellation.
  */
 export function signOrderWithEip1271(input: OrderInput, chainId: number, owner: string, typedDataSigner: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrderDto>>;
 
@@ -2607,7 +2607,7 @@ export function signOrderWithEip1271(input: OrderInput, chainId: number, owner: 
  * @param typedDataSigner Callback that signs the typed-data envelope.
  * @param options Optional cancellation, timeout, and wallet timeout settings.
  * @returns A versioned envelope containing the signed order.
- * @throws SdkError for invalid input, callback failure, timeout, or cancellation.
+ * @throws CowError for invalid input, callback failure, timeout, or cancellation.
  */
 export function signOrderWithTypedDataSigner(input: OrderInput, chainId: number, owner: string, typedDataSigner: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrderDto>>;
 
@@ -2630,7 +2630,7 @@ export function supportedChainIds(): Uint32Array;
  *
  * @param doc App-data document input to validate.
  * @returns A versioned envelope containing the validation result.
- * @throws SdkError when the input cannot be converted into a document.
+ * @throws CowError when the input cannot be converted into a document.
  */
 export function validateAppDataDoc(doc: AppDataDocInput): WasmEnvelope<ValidationResultDto>;
 

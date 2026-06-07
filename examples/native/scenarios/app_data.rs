@@ -10,17 +10,15 @@ use std::error::Error;
 use serde_json::json;
 
 use cow_sdk::app_data::{
-    AppDataParams, SchemaVersion, app_data_hex_to_cid, cid_to_app_data_hex, generate_app_data_doc,
-    app_data_info, validate_app_data_doc,
+    AppDataParams, SchemaVersion, app_data_hex_to_cid, app_data_info, cid_to_app_data_hex,
+    generate_app_data_doc, validate_app_data_doc,
 };
 use cow_sdk::prelude::AppCode;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Generate an app-data document from typed params (generation is infallible).
     let app_code = AppCode::new("cow-rs/app-data-roundtrip")?;
-    let document = generate_app_data_doc(
-        AppDataParams::new(app_code).with_environment("example"),
-    );
+    let document = generate_app_data_doc(AppDataParams::new(app_code).with_environment("example"));
 
     // Validate the generated JSON against the app-data schema.
     let validation = validate_app_data_doc(&document);

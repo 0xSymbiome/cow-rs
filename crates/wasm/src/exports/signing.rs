@@ -124,7 +124,7 @@ impl Eip1193 for JsEip1193Requester {
 /// @param typedDataSigner Callback that signs the typed-data envelope.
 /// @param options Optional cancellation, timeout, and wallet timeout settings.
 /// @returns A versioned envelope containing the signed order.
-/// @throws SdkError for invalid input, callback failure, timeout, or cancellation.
+/// @throws CowError for invalid input, callback failure, timeout, or cancellation.
 #[wasm_bindgen(
     js_name = "signOrderWithTypedDataSigner",
     unchecked_return_type = "WasmEnvelope<SignedOrderDto>"
@@ -167,7 +167,7 @@ pub async fn sign_order_with_typed_data_signer(
 /// @param requestCallback Callback that executes the EIP-1193 request.
 /// @param options Optional cancellation, timeout, and wallet timeout settings.
 /// @returns A versioned envelope containing the signed order.
-/// @throws SdkError for invalid input, wallet failure, timeout, or cancellation.
+/// @throws CowError for invalid input, wallet failure, timeout, or cancellation.
 #[wasm_bindgen(
     js_name = "signOrderWithEip1193",
     unchecked_return_type = "WasmEnvelope<SignedOrderDto>"
@@ -219,7 +219,7 @@ pub async fn sign_order_with_eip1193(
 /// @param digestSigner Callback that signs the digest string.
 /// @param options Optional cancellation, timeout, and wallet timeout settings.
 /// @returns A versioned envelope containing the signed order.
-/// @throws SdkError for invalid input, callback failure, timeout, or cancellation.
+/// @throws CowError for invalid input, callback failure, timeout, or cancellation.
 #[wasm_bindgen(
     js_name = "signOrderEthSignDigest",
     unchecked_return_type = "WasmEnvelope<SignedOrderDto>"
@@ -278,7 +278,7 @@ pub async fn sign_order_eth_sign_digest(
 ///
 /// @param params Order UID, chain, environment, and optional deployment override.
 /// @returns A versioned envelope containing the transaction request DTO.
-/// @throws SdkError when the chain, deployment, or order UID is invalid.
+/// @throws CowError when the chain, deployment, or order UID is invalid.
 #[cfg(feature = "cancellation")]
 #[wasm_bindgen(
     js_name = "buildPresignTx",
@@ -298,7 +298,7 @@ pub fn build_presign_tx(params: OrderTraderParametersInput) -> Result<JsValue, J
 ///
 /// @param params Order UID, chain, environment, and optional deployment override.
 /// @returns A versioned envelope containing the transaction request DTO.
-/// @throws SdkError when the chain, deployment, or order UID is invalid.
+/// @throws CowError when the chain, deployment, or order UID is invalid.
 #[cfg(feature = "cancellation")]
 #[wasm_bindgen(
     js_name = "buildCancelOrderTx",
@@ -321,7 +321,7 @@ pub fn build_cancel_order_tx(params: OrderTraderParametersInput) -> Result<JsVal
 /// @param typedDataSigner Callback that signs the typed-data envelope.
 /// @param options Optional cancellation, timeout, and wallet timeout settings.
 /// @returns A versioned envelope containing signed cancellations.
-/// @throws SdkError for empty input, invalid UID, callback failure, or timeout.
+/// @throws CowError for empty input, invalid UID, callback failure, or timeout.
 #[cfg(feature = "cancellation")]
 #[wasm_bindgen(
     js_name = "signCancellationWithTypedDataSigner",
@@ -368,7 +368,7 @@ pub async fn sign_cancellation_with_typed_data_signer(
 /// @param requestCallback Callback that executes the EIP-1193 request.
 /// @param options Optional cancellation, timeout, and wallet timeout settings.
 /// @returns A versioned envelope containing signed cancellations.
-/// @throws SdkError for invalid input, wallet failure, timeout, or cancellation.
+/// @throws CowError for invalid input, wallet failure, timeout, or cancellation.
 #[cfg(feature = "cancellation")]
 #[wasm_bindgen(
     js_name = "signCancellationWithEip1193",
@@ -418,7 +418,7 @@ pub async fn sign_cancellation_with_eip1193(
 /// @param digestSigner Callback that signs the digest string.
 /// @param options Optional cancellation, timeout, and wallet timeout settings.
 /// @returns A versioned envelope containing signed cancellations.
-/// @throws SdkError for empty input, invalid UID, callback failure, or timeout.
+/// @throws CowError for empty input, invalid UID, callback failure, or timeout.
 #[cfg(feature = "cancellation")]
 #[wasm_bindgen(
     js_name = "signCancellationEthSignDigest",

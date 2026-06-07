@@ -44,7 +44,7 @@ impl SubgraphClient {
     /// method calls.
     ///
     /// @param config Subgraph client configuration.
-    /// @throws SdkError when the chain, API key, transport, or policy is invalid.
+    /// @throws CowError when the chain, API key, transport, or policy is invalid.
     #[wasm_bindgen(constructor)]
     pub fn new(config: SubgraphClientConfig) -> Result<SubgraphClient, JsValue> {
         let config = config.as_ref();
@@ -71,7 +71,7 @@ impl SubgraphClient {
     ///
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing aggregate totals.
-    /// @throws SdkError for transport, cancellation, timeout, or subgraph errors.
+    /// @throws CowError for transport, cancellation, timeout, or subgraph errors.
     #[wasm_bindgen(js_name = "getTotals")]
     pub async fn totals(
         &self,
@@ -90,7 +90,7 @@ impl SubgraphClient {
     /// @param days Number of daily buckets to fetch.
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing daily volume rows.
-    /// @throws SdkError for invalid query shape, transport failure, or timeout.
+    /// @throws CowError for invalid query shape, transport failure, or timeout.
     #[wasm_bindgen(js_name = "getLastDaysVolume")]
     pub async fn last_days_volume(
         &self,
@@ -113,7 +113,7 @@ impl SubgraphClient {
     /// @param hours Number of hourly buckets to fetch.
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing hourly volume rows.
-    /// @throws SdkError for invalid query shape, transport failure, or timeout.
+    /// @throws CowError for invalid query shape, transport failure, or timeout.
     #[wasm_bindgen(js_name = "getLastHoursVolume")]
     pub async fn last_hours_volume(
         &self,
@@ -136,7 +136,7 @@ impl SubgraphClient {
     /// @param request GraphQL query, variables, and optional operation name.
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing the JSON GraphQL response.
-    /// @throws SdkError for transport, timeout, cancellation, or GraphQL errors.
+    /// @throws CowError for transport, timeout, cancellation, or GraphQL errors.
     #[wasm_bindgen(js_name = "runQuery")]
     pub async fn run_query(
         &self,

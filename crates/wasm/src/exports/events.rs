@@ -24,7 +24,7 @@ use crate::exports::{
 /// @param log Raw log with `topics` (0x-prefixed 32-byte hex, topic-0 first)
 /// and `data` (0x-prefixed hex, `"0x"` when empty).
 /// @returns A versioned envelope containing the decoded settlement event.
-/// @throws SdkError when the log is malformed or its topic set matches no known
+/// @throws CowError when the log is malformed or its topic set matches no known
 /// settlement event.
 #[wasm_bindgen(
     js_name = "decodeSettlementLog",
@@ -49,7 +49,7 @@ pub fn decode_settlement_log(log: EventLogInput) -> Result<JsValue, JsValue> {
 /// @param log Raw log with `topics` (0x-prefixed 32-byte hex, topic-0 first)
 /// and `data` (0x-prefixed hex, `"0x"` when empty).
 /// @returns A versioned envelope containing the decoded eth-flow event.
-/// @throws SdkError when the log is malformed or its topic set matches no known
+/// @throws CowError when the log is malformed or its topic set matches no known
 /// eth-flow lifecycle event.
 #[wasm_bindgen(
     js_name = "decodeEthFlowLog",

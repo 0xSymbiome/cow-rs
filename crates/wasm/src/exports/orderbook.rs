@@ -54,7 +54,7 @@ impl OrderBookClient {
     /// calls made through this client unless a method call overrides them.
     ///
     /// @param config Orderbook client configuration.
-    /// @throws SdkError when the chain, environment, transport, or policy is invalid.
+    /// @throws CowError when the chain, environment, transport, or policy is invalid.
     #[wasm_bindgen(constructor)]
     pub fn new(config: OrderBookClientConfig) -> Result<OrderBookClient, JsValue> {
         let config = config.as_ref();
@@ -84,7 +84,7 @@ impl OrderBookClient {
     /// @param request Quote request DTO.
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing the quote response.
-    /// @throws SdkError for invalid input, transport failure, timeout, or cancellation.
+    /// @throws CowError for invalid input, transport failure, timeout, or cancellation.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.quote"))
@@ -116,7 +116,7 @@ impl OrderBookClient {
     /// @param signed Signed order DTO including typed data, signature, owner, and scheme.
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing the submitted order UID.
-    /// @throws SdkError for invalid signatures, transport failure, timeout, or rejection.
+    /// @throws CowError for invalid signatures, transport failure, timeout, or rejection.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.send_order"))
@@ -145,7 +145,7 @@ impl OrderBookClient {
     /// @param input Raw order-creation DTO.
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing the submitted order UID.
-    /// @throws SdkError for malformed input, transport failure, timeout, or rejection.
+    /// @throws CowError for malformed input, transport failure, timeout, or rejection.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.send_order_creation"))
@@ -175,7 +175,7 @@ impl OrderBookClient {
     /// @param orderUid Full order UID to look up.
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing the order response.
-    /// @throws SdkError for invalid UID, not-found responses, transport failure, or timeout.
+    /// @throws CowError for invalid UID, not-found responses, transport failure, or timeout.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.order"))
@@ -202,7 +202,7 @@ impl OrderBookClient {
     /// @param query Trade query DTO.
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing matching trades.
-    /// @throws SdkError when the query is ambiguous or transport fails.
+    /// @throws CowError when the query is ambiguous or transport fails.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.trades"))
@@ -234,7 +234,7 @@ impl OrderBookClient {
     /// @param pagination Optional offset and limit.
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing matching orders.
-    /// @throws SdkError for invalid owner, transport failure, timeout, or cancellation.
+    /// @throws CowError for invalid owner, transport failure, timeout, or cancellation.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.orders_by_owner"))
@@ -266,7 +266,7 @@ impl OrderBookClient {
     /// @param pagination Optional offset and limit.
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing matching orders.
-    /// @throws SdkError for invalid owner, transport failure, timeout, or cancellation.
+    /// @throws CowError for invalid owner, transport failure, timeout, or cancellation.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.orders"))
@@ -297,7 +297,7 @@ impl OrderBookClient {
     /// @param token Token address to price.
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing native price data.
-    /// @throws SdkError for invalid token address, transport failure, or timeout.
+    /// @throws CowError for invalid token address, transport failure, or timeout.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.native_price"))
@@ -328,7 +328,7 @@ impl OrderBookClient {
     /// @param signed Signed cancellation payload.
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing `{ cancelled: true }` on success.
-    /// @throws SdkError for invalid UID, signature, transport failure, or timeout.
+    /// @throws CowError for invalid UID, signature, transport failure, or timeout.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.cancel_orders"))
@@ -359,7 +359,7 @@ impl OrderBookClient {
     /// @param appDataHash App-data hash as a `0x`-prefixed 32-byte hex string.
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing the app-data document.
-    /// @throws SdkError for an invalid hash, transport failure, or timeout.
+    /// @throws CowError for an invalid hash, transport failure, or timeout.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.app_data"))
@@ -392,7 +392,7 @@ impl OrderBookClient {
     /// @param fullAppData Canonically serialized app-data JSON payload.
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing `{ uploaded: true }` on success.
-    /// @throws SdkError for a hash mismatch, invalid hash, transport failure, or timeout.
+    /// @throws CowError for a hash mismatch, invalid hash, transport failure, or timeout.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.upload_app_data"))

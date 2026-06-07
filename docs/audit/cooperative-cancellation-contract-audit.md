@@ -25,7 +25,7 @@ This audit covers:
   the call site
 - typed `Cancelled` variants on `CoreError`, `OrderbookError`,
   `SubgraphError`, `TradingError`, `SigningError`, `BrowserWalletError`,
-  and the facade `SdkError`, plus the `From<Cancelled>` bridges that lift
+  and the facade `CowError`, plus the `From<Cancelled>` bridges that lift
   the marker across every public error boundary
 - typed `Cancelled` variants and `From<Cancelled>` bridges on the native
   Alloy provider, signer, and umbrella adapter error aggregates
@@ -81,13 +81,13 @@ through the combinator at the call site.
 
 `CoreError`, `OrderbookError`, `SubgraphError`, `TradingError`,
 `SigningError`, `BrowserWalletError`, `AlloyProviderError`,
-`AlloySignerError`, `AlloyClientError`, and the facade `SdkError` each
+`AlloySignerError`, `AlloyClientError`, and the facade `CowError` each
 expose a typed `Cancelled` variant and an
 `impl From<cow_sdk_core::Cancelled>` that lifts the marker into that
 variant. Operation code therefore propagates cancellation with `?` across
 every public error boundary without pulling the raw `tokio-util` future
 type into downstream signatures. Facade classification through
-`SdkError::class()` routes every reachable `Cancelled` variant to
+`CowError::class()` routes every reachable `Cancelled` variant to
 `ErrorClass::Cancelled`.
 
 The native Alloy adapter family uses the same boundary posture. Provider

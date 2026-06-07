@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, test } from "vitest";
 
 /**
- * Drift gate: the hand-written facade `SdkError` `orderbook` member must stay in
+ * Drift gate: the hand-written facade `CowError` `orderbook` member must stay in
  * sync with the generated wasm-bindgen error shape. The Rust `WasmError`
  * `Orderbook` variant emits `retryable` (always serialized) and `retryAfterMs`
  * (the parsed `Retry-After`, optional). The facade type and the committed

@@ -95,7 +95,7 @@ default. `OrderbookApi::builder()` and `SubgraphApi::builder()` install
 it automatically when the caller does not supply `.transport(...)`.
 
 ```rust,ignore
-use cow_sdk::{core::CowEnv, OrderbookApi, SupportedChainId};
+use cow_sdk::prelude::{CowEnv, OrderbookApi, SupportedChainId};
 
 let orderbook = OrderbookApi::builder()
     .chain(SupportedChainId::Mainnet)
@@ -131,7 +131,7 @@ browser consumers supply the transport explicitly:
 
 ```rust,ignore
 use std::sync::Arc;
-use cow_sdk::{core::CowEnv, HttpTransport, OrderbookApi, SupportedChainId};
+use cow_sdk::prelude::{CowEnv, HttpTransport, OrderbookApi, SupportedChainId};
 use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
 
 let transport: Arc<dyn HttpTransport + Send + Sync> = Arc::new(FetchTransport::new(

@@ -156,7 +156,7 @@ Good examples include values such as `acme-trader-web`,
 Minimal ready-state builder:
 
 ```rust
-use cow_sdk::{SupportedChainId, Trading};
+use cow_sdk::prelude::{SupportedChainId, Trading};
 
 fn build_trading() -> Result<Trading, Box<dyn std::error::Error>> {
     let trading = Trading::builder()
@@ -177,8 +177,8 @@ does not store a default owner. For signer-backed flows (`post_swap_order`, `pos
 from `TradeAdvancedSettings::quote_request.from`.
 
 ```rust
-use cow_sdk::core::Amount;
-use cow_sdk::{Address, TradeParameters, core::OrderKind};
+use cow_sdk::core::OrderKind;
+use cow_sdk::prelude::{Address, Amount, TradeParameters};
 
 fn quote_request(owner: Address) -> Result<TradeParameters, Box<dyn std::error::Error>> {
     let params = TradeParameters::new(
@@ -205,9 +205,8 @@ through `TradingOptions`:
 ```rust,ignore
 use std::sync::Arc;
 
-use cow_sdk::{
-    core::CowEnv, HttpTransport, OrderbookApi, SupportedChainId, Trading, TradingOptions,
-};
+use cow_sdk::prelude::{CowEnv, HttpTransport, OrderbookApi, SupportedChainId, Trading};
+use cow_sdk::trading::TradingOptions;
 use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
 
 fn build_browser_ready_trading() -> Result<Trading, Box<dyn std::error::Error>> {
@@ -524,7 +523,7 @@ deterministic onboarding path.
 ## Handling Errors
 
 Every fallible call returns a typed error rather than a string. The `cow-sdk`
-facade aggregates the per-crate errors into `SdkError`, and every error type —
+facade aggregates the per-crate errors into `CowError`, and every error type —
 facade or leaf — exposes a coarse `ErrorClass` (`Validation`, `Transport`,
 `Remote`, `RateLimited`, `Signing`, `Cancelled`, `Internal`) for telemetry and
 retry decisions.

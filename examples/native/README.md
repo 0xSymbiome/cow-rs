@@ -45,7 +45,7 @@ After that, branch by goal through the full scenario table below.
 | `receipt_lifecycle` | Drive `submit_and_wait_for_receipt` through the testing doubles for mined, reverted, and timeout outcomes |
 | `swap_quickstart` | Make your first swap end to end (quote, sign, post) against a mock |
 | `trading_full_cycle` | Inspect high-level `Trading` quote, allowance, and approval flow |
-| `error_classification` | Classify failures with `SdkError::class()` and decide retry versus abort |
+| `error_classification` | Classify failures with `CowError::class()` and decide retry versus abort |
 | `ethflow` | Build native-sell / EthFlow transaction data |
 | `ethflow_checker` | Avoid EthFlow order-id collisions with a custom `EthFlowOrderExistsChecker` |
 | `onchain_actions` | Build pre-sign and on-chain cancellation transactions |

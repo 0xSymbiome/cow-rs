@@ -1,6 +1,6 @@
 version: 1
 enums:
-  - name: SdkError
+  - name: CowError
     file: crates/sdk/src/lib.rs
     category: sdk-local-state
     expected_marker: non_exhaustive

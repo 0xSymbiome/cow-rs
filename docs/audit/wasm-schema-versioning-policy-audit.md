@@ -3,7 +3,7 @@
 Status: Current
 Last reviewed: 2026-05-11
 Owning surface: `cow-sdk-wasm` JavaScript-visible success and error envelopes, schema-version fields, and unknown-variant escape hatches
-Refresh trigger: Changes to `WasmError`, `SdkError`, envelope serialization, schema-version constants, unknown variant handling, or TypeScript facade error normalization
+Refresh trigger: Changes to `WasmError`, `CowError`, envelope serialization, schema-version constants, unknown variant handling, or TypeScript facade error normalization
 Related docs:
 - [ADR 0047](../adr/0047-typescript-facade-architecture.md)
 - [WASM Public API Stability Audit](wasm-public-api-stability-audit.md)
@@ -14,7 +14,7 @@ Related docs:
 This audit covers:
 
 - JavaScript-visible success envelopes that carry `schemaVersion`
-- error envelopes normalized into `SdkError`
+- error envelopes normalized into `CowError`
 - the `__unknown` sentinel used for forward-compatible variant handling
 - TypeScript facade handling of known and unknown envelope shapes
 
@@ -26,7 +26,7 @@ It does not cover service API schema versioning or upstream OpenAPI evolution.
 | --- | --- | --- |
 | Success envelopes | JavaScript-visible helper outputs include a stable `schemaVersion` field beside the payload | Conforms |
 | Unknown variants | Unknown enum variants preserve raw payload data behind a scoped `__unknown` sentinel | Conforms |
-| Error normalization | Facade errors normalize raw wasm failures into schema-versioned `SdkError` values | Conforms |
+| Error normalization | Facade errors normalize raw wasm failures into schema-versioned `CowError` values | Conforms |
 | Type declarations | Public declarations expose versioned error and output shapes without raw wasm-bindgen internals | Conforms |
 
 ## Current Contract
@@ -45,7 +45,7 @@ misclassified as known SDK states.
 
 ### Facade Error Normalization
 
-The TypeScript facade maps raw wasm errors into `SdkError` values that preserve
+The TypeScript facade maps raw wasm errors into `CowError` values that preserve
 the schema version, known discriminants, redacted fields, and unknown-variant
 fallback behavior.
 

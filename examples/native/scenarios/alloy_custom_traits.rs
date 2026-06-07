@@ -136,7 +136,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
         })))
         .mount(&server)
         .await;
-    let sdk_provider = RpcAlloyProvider::builder().http(server.uri())?.build().await?;
+    let sdk_provider = RpcAlloyProvider::builder()
+        .http(server.uri())?
+        .build()
+        .await?;
     let consumer_signer = StaticSigner;
 
     // Direction 2: SDK signer leaf (`LocalAlloyKeystoreSigner`) + consumer `Provider`.

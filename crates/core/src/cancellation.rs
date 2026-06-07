@@ -10,7 +10,7 @@
 //! The marker is deliberately minimal: every crate-level error aggregate
 //! (`CoreError`, `ContractsError`, `SigningError`, `AppDataError`,
 //! `OrderbookError`, `TradingError`, `SubgraphError`, `BrowserWalletError`) and
-//! the facade `SdkError` implement `From<Cancelled>` into their typed
+//! the facade `CowError` implement `From<Cancelled>` into their typed
 //! `Cancelled` variant. Operation code
 //! therefore propagates cancellation with `?` across every public error
 //! boundary without pulling the raw `tokio-util` future type into downstream

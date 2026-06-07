@@ -14,7 +14,7 @@ input is `cow_sdk::core::OrderData`. Reach each by its module path so the
 meaning is explicit at the use site.
 "]
 
-pub use crate::{ErrorClass, SdkError};
+pub use crate::{CowError, ErrorClass};
 
 // app_data
 pub use cow_sdk_app_data::{AppDataParams, AppDataValidated};

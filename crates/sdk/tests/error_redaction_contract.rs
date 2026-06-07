@@ -1,7 +1,7 @@
 use std::fmt::{Debug, Display};
 
 use cow_sdk::{
-    SdkError,
+    CowError,
     app_data::{AppDataError, AppDataParams},
     contracts::ContractsError,
     core::{
@@ -675,30 +675,30 @@ fn subgraph_display_carries_plaintext_structural_diagnostic() {
 #[test]
 fn sdk_error_facade_redacts_nested_public_errors() {
     let errors = [
-        SdkError::Types(CoreError::Serialization(secret_payload().into())),
-        SdkError::Signing(SigningError::Signer {
+        CowError::Types(CoreError::Serialization(secret_payload().into())),
+        CowError::Signing(SigningError::Signer {
             operation: "sign_order",
             message: secret_payload().into(),
         }),
-        SdkError::AppData(AppDataError::Transport {
+        CowError::AppData(AppDataError::Transport {
             class: TransportErrorClass::Request,
             detail: secret_payload().into(),
         }),
-        SdkError::Contracts(ContractsError::Provider {
+        CowError::Contracts(ContractsError::Provider {
             operation: "eth_call",
             message: secret_payload().into(),
         }),
-        SdkError::Orderbook(OrderbookError::Transport {
+        CowError::Orderbook(OrderbookError::Transport {
             class: TransportErrorClass::Other,
             detail: secret_payload().into(),
         }),
-        SdkError::Trading(TradingError::Signer {
+        CowError::Trading(TradingError::Signer {
             operation: "sign_order",
             message: secret_payload().into(),
         }),
     ];
 
-    assert_all_render("SdkError", &errors);
+    assert_all_render("CowError", &errors);
 }
 
 #[cfg(feature = "alloy")]

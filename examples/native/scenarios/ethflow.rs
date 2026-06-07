@@ -13,8 +13,8 @@ use serde_json::json;
 use cow_sdk::core::{EVM_NATIVE_CURRENCY_ADDRESS, HexData};
 use cow_sdk::prelude::{Address, SupportedChainId};
 use cow_sdk::trading::{
-    LimitTradeParametersFromQuote, PostTradeAdditionalParams, build_app_data,
-    eth_flow_transaction, post_sell_native_currency_order,
+    LimitTradeParametersFromQuote, PostTradeAdditionalParams, build_app_data, eth_flow_transaction,
+    post_sell_native_currency_order,
 };
 
 use cow_sdk::testing::{MockOrderbook, MockSigner};

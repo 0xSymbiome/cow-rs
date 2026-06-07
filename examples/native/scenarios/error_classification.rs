@@ -2,7 +2,7 @@
 //!
 //! Beat 1 constructs one representative error for each `ErrorClass` bucket and
 //! prints the class, proving the partition is total and consistent across the
-//! facade `SdkError` and the leaf `OrderbookError`.
+//! facade `CowError` and the leaf `OrderbookError`.
 //!
 //! Beat 2 posts an order against a transport-mocked orderbook that rejects it,
 //! then uses the *same* `class()` accessor — refined by
@@ -30,7 +30,7 @@ use cow_sdk::orderbook::{
     OrderbookRejection, OrderbookRejectionCategory, ResponseBody,
     SigningScheme as OrderbookSigningScheme,
 };
-use cow_sdk::prelude::{Amount, CowEnv, ErrorClass, OrderbookApi, SdkError, SupportedChainId};
+use cow_sdk::prelude::{Amount, CowEnv, CowError, ErrorClass, OrderbookApi, SupportedChainId};
 use cow_sdk::signing::SigningError;
 
 use cow_sdk_examples_native::support::{
@@ -69,15 +69,18 @@ const fn retry_disposition(class: ErrorClass) -> Disposition {
 
 /// Beat 1 — build one representative error per `ErrorClass` and report it.
 ///
-/// The representatives are deliberately a mix of facade `SdkError` and leaf
+/// The representatives are deliberately a mix of facade `CowError` and leaf
 /// `OrderbookError` values to show the accessor is uniform across both.
 fn partition_tour() -> Vec<serde_json::Value> {
     // A non-rejection 4xx body classifies as `Remote`; a 429 body classifies as
     // `RateLimited`. Both arrive through the `OrderbookApiError -> OrderbookError`
     // conversion the transport layer uses in production.
-    let remote: OrderbookError =
-        OrderbookApiError::new(400, "Bad Request", ResponseBody::Text("bad request".to_owned()))
-            .into();
+    let remote: OrderbookError = OrderbookApiError::new(
+        400,
+        "Bad Request",
+        ResponseBody::Text("bad request".to_owned()),
+    )
+    .into();
     let rate_limited: OrderbookError = OrderbookApiError::new(
         429,
         "Too Many Requests",
@@ -91,7 +94,7 @@ fn partition_tour() -> Vec<serde_json::Value> {
         .expect_err("malformed JSON must fail to parse")
         .into();
 
-    let representatives: Vec<(&str, SdkError)> = vec![
+    let representatives: Vec<(&str, CowError)> = vec![
         (
             "Validation",
             OrderbookError::InvalidQuoteRequest {

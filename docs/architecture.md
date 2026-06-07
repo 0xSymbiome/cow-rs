@@ -156,7 +156,7 @@ TypeScript facade. Public consumers import from the resolved package name or a
 flavor subpath, while generated wasm-bindgen modules remain package-internal.
 
 The facade exposes camelCase TypeScript APIs, named callback types, explicit
-`dispose()` methods on client classes, and normalized `SdkError` values. It
+`dispose()` methods on client classes, and normalized `CowError` values. It
 also adapts `transport: { kind: "fetch" }` into the callback transport ABI so
 browser, Node.js, and Worker consumers can use the same public constructor
 shape.
@@ -356,7 +356,7 @@ Cancellation is cooperative: the caller owns the token, and every SDK
 instance that needs to propagate shutdown through a shared token simply
 clones it. `From<Cancelled>` bridges on `CoreError`, `OrderbookError`,
 `SubgraphError`, `TradingError`, `SigningError`, `BrowserWalletError`, the
-native Alloy adapter errors, and the facade `SdkError` lift the marker through
+native Alloy adapter errors, and the facade `CowError` lift the marker through
 `?` across every public error boundary.
 
 ### Workflow Ownership

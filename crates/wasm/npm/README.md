@@ -224,7 +224,7 @@ The TypeScript facade is the public package contract. It:
 
 - exposes camelCase TypeScript APIs;
 - hides raw wasm-bindgen resource-management members;
-- maps raw wasm errors into `SdkError`;
+- maps raw wasm errors into `CowError`;
 - adapts `transport: { kind: "fetch" }` into the callback HTTP ABI;
 - keeps wallet libraries outside the package behind named callback types.
 

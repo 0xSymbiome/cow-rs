@@ -285,7 +285,7 @@ and the retry-event contract is covered by
 
 ## Error Classification
 
-`cow_sdk::SdkError::class()` returns an `ErrorClass` so telemetry layers
+`cow_sdk::CowError::class()` returns an `ErrorClass` so telemetry layers
 can partition failures into `Validation`, `Transport`, `Remote`, `RateLimited`,
 `Signing`, `Cancelled`, and `Internal` buckets without pattern-matching every
 nested variant by hand. Retry policies typically only retry the `Transport` and

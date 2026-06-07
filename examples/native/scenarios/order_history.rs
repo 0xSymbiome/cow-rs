@@ -25,7 +25,9 @@ use cow_sdk::orderbook::{
 };
 use cow_sdk::prelude::{CowEnv, SupportedChainId};
 
-use cow_sdk_examples_native::support::{ORDER_UID, OWNER, TX_HASH, sample_open_order, sample_owner};
+use cow_sdk_examples_native::support::{
+    ORDER_UID, OWNER, TX_HASH, sample_open_order, sample_owner,
+};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -73,9 +75,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let orders = orderbook.orders(&GetOrdersRequest::new(owner)).await?;
 
     // HISTORY: trades for the same owner (owner XOR order-uid; default limit 10).
-    let trades = orderbook
-        .trades(&GetTradesRequest::by_owner(owner))
-        .await?;
+    let trades = orderbook.trades(&GetTradesRequest::by_owner(owner)).await?;
 
     let report = json!({
         "surface": "cow-sdk::orderbook list/history (OrderbookApi)",

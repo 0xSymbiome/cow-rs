@@ -1,7 +1,7 @@
 //! Contract for the coarse-grained [`ErrorClass`] partition.
 //!
 //! Every public error type exposes a `class()` accessor and the facade
-//! [`SdkError::class()`] delegates to them, so the classification is identical
+//! [`CowError::class()`] delegates to them, so the classification is identical
 //! whether a caller holds the facade error or a bare leaf error. A throttled
 //! orderbook response is retried with `Retry-After` honoring by the transport
 //! layer, so a 429 that survives is an exhausted-retry throttle and reports as
@@ -9,7 +9,7 @@
 //! and unparsed-envelope (`Api`) paths.
 
 use cow_sdk::{
-    ErrorClass, SdkError,
+    CowError, ErrorClass,
     core::{CoreError, TransportErrorClass, ValidationError},
     orderbook::{OrderbookApiError, OrderbookError, ResponseBody},
     signing::SigningError,
@@ -44,22 +44,22 @@ fn api(status: u16) -> OrderbookError {
 fn exhausted_retry_429_classifies_as_rate_limited() {
     // A 429 whose body carries no recognisable rejection envelope lands in `Api`.
     assert_eq!(
-        SdkError::Orderbook(api(429)).class(),
+        CowError::Orderbook(api(429)).class(),
         ErrorClass::RateLimited,
     );
 
     // A 429 with a recognised rejection envelope lands in `Rejected`.
     assert_eq!(
-        SdkError::Orderbook(rejected(429, "Forbidden")).class(),
+        CowError::Orderbook(rejected(429, "Forbidden")).class(),
         ErrorClass::RateLimited,
     );
 }
 
 #[test]
 fn non_429_remote_responses_stay_remote() {
-    assert_eq!(SdkError::Orderbook(api(500)).class(), ErrorClass::Remote);
+    assert_eq!(CowError::Orderbook(api(500)).class(), ErrorClass::Remote);
     assert_eq!(
-        SdkError::Orderbook(rejected(400, "ZeroAmount")).class(),
+        CowError::Orderbook(rejected(400, "ZeroAmount")).class(),
         ErrorClass::Remote,
     );
 }
@@ -118,16 +118,16 @@ fn error_class_delegates_through_trading_and_facade() {
         ErrorClass::RateLimited
     );
 
-    // SdkError delegates to each leaf accessor: the class is identical whether
+    // CowError delegates to each leaf accessor: the class is identical whether
     // a caller holds the facade error or the bare leaf error.
     let transport = OrderbookError::Transport {
         class: TransportErrorClass::Connect,
         detail: "connect failed".to_owned().into(),
     };
     let leaf_class = transport.class();
-    assert_eq!(SdkError::from(transport).class(), leaf_class);
+    assert_eq!(CowError::from(transport).class(), leaf_class);
     assert_eq!(
-        SdkError::from(TradingError::Cancelled).class(),
+        CowError::from(TradingError::Cancelled).class(),
         ErrorClass::Cancelled
     );
 }
@@ -160,14 +160,14 @@ fn is_retryable_delegates_through_trading_and_facade() {
     );
 
     // The facade and the composite trading error delegate to the leaf verdict.
-    assert!(SdkError::Orderbook(api(503)).is_retryable());
-    assert!(SdkError::Trading(TradingError::Orderbook(api(503))).is_retryable());
+    assert!(CowError::Orderbook(api(503)).is_retryable());
+    assert!(CowError::Trading(TradingError::Orderbook(api(503))).is_retryable());
     assert!(TradingError::Orderbook(api(429)).is_retryable());
 
     // Non-orderbook faults are never retryable through any layer.
-    assert!(!SdkError::from(TradingError::MissingOwner).is_retryable());
+    assert!(!CowError::from(TradingError::MissingOwner).is_retryable());
     assert!(!TradingError::Cancelled.is_retryable());
-    assert!(!SdkError::Orderbook(OrderbookError::Cancelled).is_retryable());
+    assert!(!CowError::Orderbook(OrderbookError::Cancelled).is_retryable());
 }
 
 #[test]
@@ -179,7 +179,7 @@ fn backoff_hint_delegates_through_trading_and_facade() {
         Some(Duration::from_secs(30))
     );
     assert_eq!(
-        SdkError::Orderbook(api_retry_after(429, Some(Duration::from_secs(30)))).backoff_hint(),
+        CowError::Orderbook(api_retry_after(429, Some(Duration::from_secs(30)))).backoff_hint(),
         Some(Duration::from_secs(30))
     );
     assert_eq!(
@@ -189,11 +189,11 @@ fn backoff_hint_delegates_through_trading_and_facade() {
 
     // No `Retry-After` header, and non-orderbook faults, carry no hint.
     assert_eq!(
-        SdkError::Orderbook(api_retry_after(503, None)).backoff_hint(),
+        CowError::Orderbook(api_retry_after(503, None)).backoff_hint(),
         None
     );
     assert_eq!(
-        SdkError::from(TradingError::MissingOwner).backoff_hint(),
+        CowError::from(TradingError::MissingOwner).backoff_hint(),
         None
     );
 }
@@ -202,7 +202,7 @@ fn backoff_hint_delegates_through_trading_and_facade() {
 /// the `subgraph` feature lifts it into the facade.
 #[cfg(feature = "subgraph")]
 mod subgraph {
-    use super::{ErrorClass, SdkError};
+    use super::{CowError, ErrorClass};
     use cow_sdk::core::TransportErrorClass;
     use cow_sdk::subgraph::{SubgraphError, SubgraphRequestErrorContext};
 
@@ -276,9 +276,9 @@ mod subgraph {
         // The facade resolves to the same class as the bare leaf error.
         let leaf = SubgraphError::UnsupportedNetwork { chain_id: 999_999 };
         let leaf_class = leaf.class();
-        assert_eq!(SdkError::Subgraph(leaf).class(), leaf_class);
+        assert_eq!(CowError::Subgraph(leaf).class(), leaf_class);
         assert_eq!(
-            SdkError::from(SubgraphError::Cancelled).class(),
+            CowError::from(SubgraphError::Cancelled).class(),
             ErrorClass::Cancelled
         );
     }

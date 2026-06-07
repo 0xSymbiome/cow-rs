@@ -12,9 +12,7 @@ use std::{error::Error, sync::Arc};
 use serde_json::json;
 
 use cow_sdk::prelude::{Amount, SupportedChainId, Trading};
-use cow_sdk::trading::{
-    AllowanceParameters, ApprovalParameters, OrderTraderParameters,
-};
+use cow_sdk::trading::{AllowanceParameters, ApprovalParameters, OrderTraderParameters};
 
 use cow_sdk::testing::{MockOrderbook, MockProvider, MockSigner};
 use cow_sdk_examples_native::support::{
@@ -61,18 +59,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
             &signer,
             &ApprovalParameters::new(
                 sample_sell_token(),
-                Amount::from_units(1, 18)
-                    .expect("example approval amount must remain valid"),
+                Amount::from_units(1, 18).expect("example approval amount must remain valid"),
             ),
         )
         .await?;
 
     // 5. Cancel the posted order off-chain.
     let cancelled = trading
-        .off_chain_cancel_order(
-            &OrderTraderParameters::new(post_result.order_id),
-            &signer,
-        )
+        .off_chain_cancel_order(&OrderTraderParameters::new(post_result.order_id), &signer)
         .await?;
 
     let orderbook_state = orderbook.recorded();

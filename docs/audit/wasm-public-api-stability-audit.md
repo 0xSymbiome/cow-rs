@@ -20,7 +20,7 @@ This audit covers:
 - package exports and raw-export denylist behavior
 - single-object client constructor config shapes
 - `TransportPolicyConfig` translation for HTTP-capable clients
-- `SdkError` and wasm envelope schema-version compatibility
+- `CowError` and wasm envelope schema-version compatibility
 
 It does not cover final npm package naming, npm publication, or application
 code outside the repository fixtures.
@@ -41,7 +41,7 @@ code outside the repository fixtures.
 
 The facade snapshots under `crates/wasm/snapshots/facade/` are the reviewed
 TypeScript contract for each package flavor. They expose camelCase methods,
-named callback types, typed config objects, `dispose`, `SdkError`, and
+named callback types, typed config objects, `dispose`, `CowError`, and
 runtime-specific initialization helpers. Every flavor that bundles the signing
 capability also exposes the deterministic `decodeSettlementLog` and
 `decodeEthFlowLog` helpers and their `EventLogInput` / `SettlementEventDto` /

@@ -13,8 +13,7 @@ use serde_json::json;
 use cow_sdk::core::HexData;
 use cow_sdk::prelude::{SupportedChainId, Trading};
 use cow_sdk::trading::{
-    OrderTraderParameters, pre_sign_transaction,
-    onchain_cancellation_transaction,
+    OrderTraderParameters, onchain_cancellation_transaction, pre_sign_transaction,
 };
 
 use cow_sdk::testing::{MockOrderbook, MockSigner};

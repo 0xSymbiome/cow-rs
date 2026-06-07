@@ -16,7 +16,7 @@ The first functional crate-family release begins at `0.1.0`.
 
 - `cow-sdk` gains an off-by-default `subgraph` feature that re-exports the
   read-only `cow-sdk-subgraph` surface as `cow_sdk::subgraph` and lifts
-  `SubgraphError` into the facade through a feature-gated `SdkError::Subgraph`
+  `SubgraphError` into the facade through a feature-gated `CowError::Subgraph`
   variant. `SubgraphError` now exposes `class() -> ErrorClass`, so an enabled
   subgraph surface participates in the uniform error-classification family. The
   feature is off by default, so the default `cow-sdk` dependency closure and
@@ -31,7 +31,7 @@ The first functional crate-family release begins at `0.1.0`.
   from the failing response's `Retry-After` header (RFC 7231 delta-seconds or
   HTTP-date). The verdict matches the SDK's own transport retry loop, so a
   consumer that drives its own retry loop over a returned error need not
-  re-derive the retryable-status set. `TradingError` and the facade `SdkError`
+  re-derive the retryable-status set. `TradingError` and the facade `CowError`
   delegate both accessors to the wrapped orderbook error, mirroring the existing
   `class()` delegation. `cow-sdk-transport-policy` adds the supporting
   `retry_after_from_headers` helper, which resolves a `Retry-After` header
@@ -168,7 +168,7 @@ The first functional crate-family release begins at `0.1.0`.
   so a caller holding a bare leaf error can obtain the coarse failure class
   without re-implementing the per-variant match. `ErrorClass` now lives in
   `cow-sdk-core` (re-exported from `cow-sdk`, so `cow_sdk::ErrorClass` is
-  unchanged), and `SdkError::class()` delegates to the per-type accessors;
+  unchanged), and `CowError::class()` delegates to the per-type accessors;
   composite errors delegate to the wrapped error so a wrapped 429 stays
   `ErrorClass::RateLimited`. Governed by
   [ADR 0060](docs/adr/0060-uniform-error-classification.md).
@@ -328,7 +328,7 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Fixed
 
-- The hand-written `cow-sdk-wasm` TypeScript facade `SdkError` `orderbook`
+- The hand-written `cow-sdk-wasm` TypeScript facade `CowError` `orderbook`
   member now declares the `retryable` and `retryAfterMs` fields the Rust
   `WasmError` already emits, so a TypeScript consumer reads the retry verdict
   type-safely instead of relying on runtime-only fields. A package test compares
@@ -357,7 +357,7 @@ The first functional crate-family release begins at `0.1.0`.
   decoded request.
 - `cow-sdk-wasm` normalizes an input-DTO deserialization failure passed from
   JavaScript — an unknown enum variant, a missing required field, or a wrong
-  field type — to the `invalidInput` `SdkError` kind instead of `internal`.
+  field type — to the `invalidInput` `CowError` kind instead of `internal`.
   Such a value is a caller mistake, so it now carries the same input-error
   class as the validators that already reject a malformed address or amount,
   with the offending field name surfaced from missing- and unknown-field
@@ -371,7 +371,7 @@ The first functional crate-family release begins at `0.1.0`.
   the workflow `cow_sdk::prelude` is no longer glob-re-exported to the crate root.
   The primary entry types (`Trading`, `TradeParameters`, `TraderParameters`,
   `TradingBuilder`, `TradingOptions`, `Address`, `Amount`, `AppCode`, `OrderUid`,
-  `SupportedChainId`, `OrderbookApi`, `Signature`, `SdkError`, `ErrorClass`, and the
+  `SupportedChainId`, `OrderbookApi`, `Signature`, `CowError`, `ErrorClass`, and the
   transport and EIP-1271 cache types) remain at the crate root, while the broader
   convenience set — `CowEnv`, `Provider`, `Signer`, `Cancellable`, `AppDataParams`,
   `AppDataValidated`, `ContractsError`, `OrderbookApiBuilder`, `OrderbookError`, and
@@ -2301,7 +2301,7 @@ The first functional crate-family release begins at `0.1.0`.
   subscriber. With the feature off the SDK emits zero spans and
   incurs no dependency or runtime cost.
 
-- `SdkError::class() -> ErrorClass` classification helper on the facade
+- `CowError::class() -> ErrorClass` classification helper on the facade
   aggregate. Every variant of the facade error family resolves to one of
   `Validation`, `Transport`, `Remote`, `Signing`, `Cancelled`, or
   `Internal` so downstream telemetry layers can partition failures
@@ -2331,7 +2331,7 @@ The first functional crate-family release begins at `0.1.0`.
   `TradingError`, `SubgraphError`, `SigningError`, and
   `BrowserWalletError` each carry a typed `Cancelled` variant and
   implement `From<cow_sdk_core::Cancelled>` so the combinator yields
-  the crate-level error directly; `SdkError::class()` routes every
+  the crate-level error directly; `CowError::class()` routes every
   such variant to `ErrorClass::Cancelled` exhaustively.
   `docs/architecture.md` records the cancellation contract under a
   dedicated Cancellation subsection.

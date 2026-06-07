@@ -83,7 +83,7 @@ fn facade_declarations_expose_dispose_and_named_callback_types() {
             snapshot.name
         );
         assert!(
-            content.contains("SdkError"),
+            content.contains("CowError"),
             "{} must expose normalized SDK errors",
             snapshot.name
         );

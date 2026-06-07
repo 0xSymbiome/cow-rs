@@ -23,13 +23,13 @@ Every public error type the facade aggregates exposes a
 `cow_sdk_browser_wallet::BrowserWalletError`. Composite error types delegate to
 the wrapped error's `class()` so granularity is preserved (a wrapped 429
 orderbook rejection stays `RateLimited` rather than collapsing to a coarse
-bucket). The facade `SdkError::class()` delegates to the per-type accessors and
+bucket). The facade `CowError::class()` delegates to the per-type accessors and
 holds no classification logic of its own.
 
 ## Why
 
 A consuming application that handles a bare `OrderbookError` or `TradingError`
-(rather than the facade `SdkError`) previously had no way to obtain the
+(rather than the facade `CowError`) previously had no way to obtain the
 coarse class without re-implementing the per-variant match locally, because the
 classification lived only in private functions inside the facade crate. Moving
 it onto each error type removes that duplication and lets retry and telemetry
@@ -45,7 +45,7 @@ per-type enums:
 - The facade family (`CoreError`, `AppDataError`, `SigningError`,
   `ContractsError`, `OrderbookError`, `TradingError`, `BrowserWalletError`)
   classifies into a **single shared taxonomy** — the same seven buckets the
-  facade already unified through `SdkError::class()`. A per-type enum per crate
+  facade already unified through `CowError::class()`. A per-type enum per crate
   would reproduce that one taxonomy seven times, and `TradingErrorClass` would
   be a verbatim copy of `ErrorClass`.
 - `TradingError` is a **composite** over the rest of the family; a shared return
@@ -64,7 +64,7 @@ to the shared enum.
 
 - `ErrorClass` stays `#[non_exhaustive]`; new buckets are additive.
 - Every facade-family error type exposes `class(&self) -> ErrorClass`, and
-  `SdkError::class()` delegates rather than re-deriving.
+  `CowError::class()` delegates rather than re-deriving.
 - Composite error types delegate to inner `class()` so wrapped granularity
   (notably the 429 → `RateLimited` orderbook path) is preserved.
 - The classification reads only typed discriminants; it never renders
@@ -74,7 +74,7 @@ to the shared enum.
 - Cost: seven small `class()` accessors plus the relocation of one public enum
   from the facade to core (re-exported for source compatibility). The facade's
   private `classify_*` functions are removed; the public surface
-  (`cow_sdk::ErrorClass`, `SdkError::class()`) is unchanged.
+  (`cow_sdk::ErrorClass`, `CowError::class()`) is unchanged.
 
 ## Alternatives Rejected
 
@@ -134,7 +134,7 @@ them. `class()` stays the coarse telemetry bucket and is unchanged.
 are in scope, then attached to the error; the transport retry loop computes its
 own clock-injected backoff and does not depend on the stored value.
 
-`TradingError` and the facade `SdkError` delegate both accessors to the wrapped
+`TradingError` and the facade `CowError` delegate both accessors to the wrapped
 orderbook error and return `false` / `None` for every non-orderbook variant,
 mirroring the `class()` delegation so the verdict is identical whether a caller
 holds the facade error or a bare leaf error.
@@ -158,7 +158,7 @@ When the `cow-sdk` `subgraph` feature is enabled, the read-only subgraph surface
 is lifted into the facade ([ADR 0003](0003-separate-read-only-subgraph-crate.md)).
 `cow_sdk_subgraph::SubgraphError` then joins the shared classification family as
 an eighth member: it exposes `const fn class(&self) -> ErrorClass`, and
-`SdkError` gains a feature-gated `Subgraph` variant whose `class()` delegates to
+`CowError` gains a feature-gated `Subgraph` variant whose `class()` delegates to
 it, exactly like the other facade-aggregated leaf errors.
 
 The mapping follows the established convention: an HTTP `429` that outlived the
@@ -171,6 +171,6 @@ empty-totals, and missing-data faults are `Internal`.
 The `subgraph` feature is off by default, so the default facade family is
 unchanged; the eighth member appears only when a consumer opts into subgraph.
 The retry-decision accessors (`is_retryable` / `backoff_hint`) stay
-orderbook-and-trading-scoped: `SdkError` reports a subgraph error as
+orderbook-and-trading-scoped: `CowError` reports a subgraph error as
 non-retryable with no backoff hint until those accessors are extended to the
 subgraph surface.

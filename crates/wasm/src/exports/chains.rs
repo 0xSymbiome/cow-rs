@@ -24,7 +24,7 @@ use crate::exports::dto::{AppDataDocDto, AppDataDocInput, AppDataInfoDto, Valida
 ///
 /// @param chainId EVM chain id supported by the deployment registry.
 /// @returns The `0x`-prefixed 32-byte domain separator.
-/// @throws SdkError when the chain is not supported.
+/// @throws CowError when the chain is not supported.
 #[wasm_bindgen(js_name = "domainSeparator")]
 pub fn domain_separator(
     #[wasm_bindgen(js_name = chainId)] chain_id: u32,
@@ -41,7 +41,7 @@ pub fn domain_separator(
 /// @param input Unsigned order fields using the facade order DTO shape.
 /// @param chainId EVM chain id used for the EIP-712 domain.
 /// @returns A versioned envelope containing typed-data DTO fields.
-/// @throws SdkError when order parsing or chain validation fails.
+/// @throws CowError when order parsing or chain validation fails.
 #[cfg(feature = "signing")]
 #[wasm_bindgen(
     js_name = "orderTypedData",
@@ -69,7 +69,7 @@ pub fn order_typed_data(
 /// @param chainId EVM chain id used for the EIP-712 domain.
 /// @param owner Order owner address included in the UID suffix.
 /// @returns A versioned envelope with `orderUid` and `orderDigest`.
-/// @throws SdkError when the order, owner, or chain id is invalid.
+/// @throws CowError when the order, owner, or chain id is invalid.
 #[cfg(feature = "signing")]
 #[wasm_bindgen(
     js_name = "computeOrderUid",
@@ -110,7 +110,7 @@ pub fn supported_chain_ids() -> Vec<u32> {
 /// @param chainId EVM chain id to resolve.
 /// @param env Optional CoW environment name, such as `prod` or `staging`.
 /// @returns Settlement, VaultRelayer, EthFlow, and AllowListAuth addresses.
-/// @throws SdkError when the chain or environment is unsupported.
+/// @throws CowError when the chain or environment is unsupported.
 #[wasm_bindgen(
     js_name = "deploymentAddresses",
     unchecked_return_type = "WasmEnvelope<DeploymentAddressesDto>"
@@ -131,7 +131,7 @@ pub fn deployment_addresses(
 ///
 /// @param doc App-data document input accepted by the SDK schema.
 /// @returns A versioned envelope containing document, hash, CID, and hex data.
-/// @throws SdkError when the document cannot be normalized or hashed.
+/// @throws CowError when the document cannot be normalized or hashed.
 #[cfg(feature = "app-data")]
 #[wasm_bindgen(
     js_name = "appDataInfo",
@@ -154,7 +154,7 @@ pub fn app_data_info(doc: AppDataDocInput) -> Result<JsValue, JsValue> {
 ///
 /// @param doc App-data document input to validate.
 /// @returns A versioned envelope containing the validation result.
-/// @throws SdkError when the input cannot be converted into a document.
+/// @throws CowError when the input cannot be converted into a document.
 #[cfg(feature = "app-data")]
 #[wasm_bindgen(
     js_name = "validateAppDataDoc",
@@ -176,7 +176,7 @@ pub fn validate_app_data_doc(doc: AppDataDocInput) -> Result<JsValue, JsValue> {
 ///
 /// @param doc App-data document input accepted by the SDK schema.
 /// @returns A versioned envelope containing the normalized document.
-/// @throws SdkError when the input cannot be normalized.
+/// @throws CowError when the input cannot be normalized.
 #[cfg(feature = "app-data")]
 #[wasm_bindgen(
     js_name = "appDataDoc",
@@ -195,7 +195,7 @@ pub fn app_data_doc(doc: AppDataDocInput) -> Result<JsValue, JsValue> {
 ///
 /// @param appDataHex App-data hash as a `0x`-prefixed hex string.
 /// @returns A versioned envelope containing the CID string.
-/// @throws SdkError when the hash is malformed.
+/// @throws CowError when the hash is malformed.
 #[cfg(feature = "app-data")]
 #[wasm_bindgen(
     js_name = "appDataHexToCid",
@@ -216,7 +216,7 @@ pub fn app_data_hex_to_cid(
 ///
 /// @param cid Canonical CID string for an app-data document.
 /// @returns A versioned envelope containing the `0x`-prefixed hash.
-/// @throws SdkError when the CID does not match the supported app-data shape.
+/// @throws CowError when the CID does not match the supported app-data shape.
 #[cfg(feature = "app-data")]
 #[wasm_bindgen(
     js_name = "cidToAppDataHex",

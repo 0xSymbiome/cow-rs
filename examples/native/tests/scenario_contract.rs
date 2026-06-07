@@ -1,5 +1,5 @@
 use cow_sdk::orderbook::{ApiContext, ExternalHostPolicy};
-use cow_sdk::prelude::{CowEnv, OrderbookApi, OrderUid, SupportedChainId};
+use cow_sdk::prelude::{CowEnv, OrderUid, OrderbookApi, SupportedChainId};
 use cow_sdk::testing::MockOrderbook;
 use cow_sdk::trading::OrderbookClient;
 use cow_sdk_examples_native::support::{
@@ -58,10 +58,7 @@ async fn version_fixture_is_plain_text() {
     .build()
     .expect("test orderbook client with local mock endpoint must build");
 
-    let version = api
-        .version()
-        .await
-        .expect("version fixture should load");
+    let version = api.version().await.expect("version fixture should load");
 
     assert_eq!(version, "v1.2.3");
     assert!(!version.contains('"'));
@@ -94,10 +91,7 @@ fn subgraph_examples_are_declared_and_documented() {
     let manifest = include_str!("../Cargo.toml");
     let readme = include_str!("../README.md");
 
-    for example_name in [
-        "subgraph_query",
-        "subgraph_live",
-    ] {
+    for example_name in ["subgraph_query", "subgraph_live"] {
         assert!(
             manifest.contains(example_name),
             "missing example declaration for {example_name}"
@@ -121,10 +115,7 @@ fn mandatory_trading_examples_are_declared_and_documented() {
     let native_readme = include_str!("../README.md");
     let examples_readme = include_str!("../../README.md");
 
-    for example_name in [
-        "ethflow",
-        "onchain_actions",
-    ] {
+    for example_name in ["ethflow", "onchain_actions"] {
         assert!(
             manifest.contains(example_name),
             "missing example declaration for {example_name}"

@@ -21,7 +21,9 @@ use cow_sdk::signing::eip1271::{Eip1271SignatureError, Eip1271SignatureProvider}
 use cow_sdk::trading::{PostTradeAdditionalParams, TradeAdvancedSettings};
 
 use cow_sdk::testing::{MockOrderbook, MockSigner};
-use cow_sdk_examples_native::support::{sample_limit_parameters, sample_owner, sample_quote_response};
+use cow_sdk_examples_native::support::{
+    sample_limit_parameters, sample_owner, sample_quote_response,
+};
 
 /// A smart-account signer that returns a pre-built EIP-1271 signature blob.
 struct SmartAccountSigner;

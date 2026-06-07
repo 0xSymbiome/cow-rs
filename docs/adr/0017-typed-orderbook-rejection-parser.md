@@ -80,7 +80,7 @@ on the happy diagnostic path.
   `DuplicateOrder` historical typo regression that now classifies
   through `Unknown`, the `None`-on-malformed-body path, and the
   `From<OrderbookApiError>` promotion. The
-  `cow_sdk::SdkError::class` classification still lifts a
+  `cow_sdk::CowError::class` classification still lifts a
   `Rejected` response onto `ErrorClass::Remote` so downstream
   telemetry partitions remain stable.
 - Cost: one new module (`crates/orderbook/src/rejection.rs`), one

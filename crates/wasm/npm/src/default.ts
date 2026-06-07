@@ -643,7 +643,7 @@ export type {
   Eip1193RequestCallback,
   TypedDataSignerCallback
 } from "./callbacks.js";
-export type { OrderBookRejectionCategory, SdkError } from "./errors.js";
+export type { OrderBookRejectionCategory, CowError } from "./errors.js";
 export type { SchemaVersion, WasmEnvelope } from "./envelope.js";
 export type {
   HttpTransportConfig,

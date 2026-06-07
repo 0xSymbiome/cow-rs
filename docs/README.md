@@ -103,7 +103,7 @@ the production-bot HTTP/2 keep-alive recipe.
 
 The observability page documents the opt-in `tracing` feature family, the
 subscriber setup, the complete structured-field registry, and the
-`SdkError::class` classification surface used by downstream telemetry.
+`CowError::class` classification surface used by downstream telemetry.
 
 ## For Focused Reviews And Design History
 
