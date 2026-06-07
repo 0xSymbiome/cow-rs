@@ -3,11 +3,11 @@
 Status: Current
 Last reviewed: 2026-06-07
 Owning surface: `cow-sdk-trading` `OrderBoundsValidator`,
-`OrderValidityBounds`, `SubmissionClass`, `ClientRejection`,
-`AmountSide`, and the `TradingError::ClientRejected` lifting variant.
+`ClientRejection`, `AmountSide`, and the `TradingError::ClientRejected`
+lifting variant.
 Refresh trigger: Changes to the `validate` signature, the
-`ClientRejection` variant set, the `OrderValidityBounds::SERVICES_DEFAULT`
-constants, the `OrderBoundsValidator::services_default_for_chain`
+`ClientRejection` variant set, the not-expired (`ValidToInPast`) check, the
+`OrderBoundsValidator::services_default_for_chain`
 constructor, the eth-flow `is_eth_flow` skip rule, upstream services
 `crates/shared/src/order_validation.rs` same-token semantics, the
 WETH-paired-with-native-buy guard, or the offline `TradeParameters::validate`
@@ -23,8 +23,7 @@ This audit covers:
 
 - the typed `OrderBoundsValidator` and the public `validate` entry
   point on `cow-sdk-trading`
-- the `OrderValidityBounds` policy struct, its `SERVICES_DEFAULT`
-  constant, and the `SubmissionClass` discriminator
+- the not-expired validity invariant (`ClientRejection::ValidToInPast`)
 - the `ClientRejection` enum and the `TradingError::ClientRejected`
   lifting variant
 - the validator wiring on every public submission seam:
@@ -50,15 +49,15 @@ encoder.
 
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
-| Validator signature | `validate(order: &OrderData, from: Address, scheme, app_data_signer: Option<Address>, now: u64, is_eth_flow: bool) -> Result<(), ClientRejection>` is the canonical entry point | Conforms |
-| Variant coverage | Every reviewed services protocol-invariant rejection has a typed `ClientRejection` variant; the enum is `#[non_exhaustive]` | Conforms |
-| Default policy | `OrderValidityBounds::SERVICES_DEFAULT` matches the published 60 s minimum, 3 h market maximum, and 1 y limit-class ceiling | Conforms |
+| Validator signature | `validate(order: &OrderData, from: Address, app_data_signer: Option<Address>, now: u64, is_eth_flow: bool) -> Result<(), ClientRejection>` is the canonical entry point | Conforms |
+| Variant coverage | Every stable invariant the validator enforces has a typed `ClientRejection` variant; the enum is `#[non_exhaustive]` | Conforms |
+| Validity invariant | The validator rejects an order whose `valid_to` is at or before `now` (`ValidToInPast`) and leaves the exact, operator-tunable validity window to services | Conforms |
 | Submission-seam policy | Every public submission seam constructs the validator via `OrderBoundsValidator::services_default_for_chain` and runs `validate` between order construction and HTTP upload | Conforms |
 | EthFlow skip rule | `is_eth_flow: true` skips the native-currency-sentinel sell-token check and runs every other invariant | Conforms |
 | Same-token policy | Mirrors the reviewed services `AllowSell` policy: exact same-token and WETH-paired-with-native-sentinel orders accept on sell-side and reject on buy-side with `SameBuyAndSellToken` | Conforms |
 | WETH-paired guard | A WETH-bound validator rejects buy-side `sell_token = WETH` paired with `buy_token = native sentinel` as `SameBuyAndSellToken { token: weth }` and accepts the sell-side pair | Conforms |
 | Purity | The validator reads no system clock or environment, performs no I/O, and is idempotent for a given input tuple | Conforms |
-| Time-source determinism | Property coverage compares validation classifications at `now` and `now + delta` while both observations remain inside the same validity window | Conforms |
+| Time-source determinism | Property coverage compares validation classifications at `now` and `now + delta` while the order is not expired at either observation | Conforms |
 | Timestamp extremes | `valid_to = u32::MAX` resolves to typed validation outcomes at `u32::MAX` and `u64::MAX` timestamp boundaries without panicking | Conforms |
 | Gas overhead | EthFlow and pre-sign transaction helpers apply the documented 20% gas overhead with floor integer rounding | Conforms |
 | Cancellation gas fallback | On-chain cancellation transaction construction falls back to `GAS_LIMIT_DEFAULT` when signer gas estimation is unavailable | Conforms |
@@ -73,10 +72,9 @@ encoder.
 `crates/trading/src/validation.rs`. The entry point accepts the
 signing order (`cow_sdk_core::OrderData`), the submission owner
 (`from: Address`, threaded separately because the signing order
-carries no owner field), the `SigningScheme`, the typed
-`Option<Address>` declared signer carried inside the app-data
-metadata envelope, the caller-supplied UNIX-seconds `now`, and the
-`is_eth_flow` flag. Returning `Result<(), ClientRejection>` keeps
+carries no owner field), the typed `Option<Address>` declared signer
+carried inside the app-data metadata envelope, the caller-supplied
+UNIX-seconds `now`, and the `is_eth_flow` flag. Returning `Result<(), ClientRejection>` keeps
 the typed error channel observable for pattern matching.
 
 ### Scope Framing
@@ -89,23 +87,22 @@ deny-list, transferability, gas budget, banned-users, market-class
 classification, signing-scheme/onchain pairings, and other services-side
 rejection classes to the authoritative orderbook services surface.
 
-### Default Policy And Submission Class
+### Validity Invariant
 
-`OrderValidityBounds::SERVICES_DEFAULT` carries `min = 60 s`,
-`max_market = 10_800 s`, and `max_limit = 31_536_000 s` matching
-the reviewed services production configuration. The
-`SubmissionClass` discriminator selects between `Market`, `Limit`,
-and `Liquidity`. `PreSign` scheme and `Liquidity` class bypass the
-maximum-lifetime check so reviewed corner cases stay valid.
+The validator checks only the stable, provider-independent validity
+invariant: an order whose `valid_to` is at or before the caller-supplied
+`now` is already expired and rejects as
+`ClientRejection::ValidToInPast { valid_to, now }`. The exact minimum and
+maximum order lifetimes are orderbook-operator configuration, so the SDK
+leaves them to the authoritative services surface rather than pinning a
+window that would drift when an operator retunes the deployment.
 
 ### Variant Set
 
-`ClientRejection` is `#[non_exhaustive]` and ships every
-protocol-invariant rejection the reviewed services validator
-surfaces:
+`ClientRejection` is `#[non_exhaustive]` and ships a typed variant for
+every stable invariant the validator enforces:
 
-- `ValidToInsufficient { valid_to, now, min_seconds }`
-- `ValidToExcessive { valid_to, now, max_seconds }`
+- `ValidToInPast { valid_to, now }`
 - `MissingFrom`
 - `AppdataFromMismatch { appdata_signer, from }`
 - `SameBuyAndSellToken { token }`
@@ -129,9 +126,7 @@ construction and the HTTP upload, and surfaces failures through
 eth-flow native-currency seam routes through
 `post_sell_native_currency_order` with `is_eth_flow: true`. No
 caller-side configuration of the validator policy is exposed on the
-public surface; the policy is the reviewed services-default policy,
-which `OrderValidityBounds::SERVICES_DEFAULT` records as a public
-constant for documentation reference.
+public surface.
 
 ### Same-Token And Native-Sentinel Parity
 
@@ -156,7 +151,7 @@ selected chain.
 `post_sell_native_currency_order` invokes the validator with
 `is_eth_flow: true` so the native-currency-sentinel sell-token
 check is skipped while every other invariant (zero amount, same
-token buy-side rejection, owner mismatch, lifetime bounds) still fires. When
+token buy-side rejection, owner mismatch, expired validTo) still fires. When
 the validator is configured with the chain's wrapped-native address through
 `with_weth_address`, the paired sell-WETH / buy-native-sentinel case rejects
 locally for buy-side orders as `SameBuyAndSellToken { token: weth_address }`,
@@ -174,8 +169,8 @@ machines and replays.
 
 `crates/trading/tests/property_contract.rs` pins deterministic validation
 under caller-supplied time by comparing the typed result classification at
-`now` and `now + delta` while both timestamps remain inside the same validity
-window. The same file covers `valid_to = u32::MAX` with `now` values around
+`now` and `now + delta` while the order is not expired at either timestamp.
+The same file covers `valid_to = u32::MAX` with `now` values around
 `u32::MAX` and `u64::MAX`, asserting typed results rather than relying on an
 implicit non-panic test.
 
@@ -216,7 +211,7 @@ Primary regression coverage:
 - `crates/trading/tests/validation_contract.rs::validate_same_token_matches_services_allow_sell_policy`
 - `crates/trading/tests/parameters_contract.rs::tradeparameters_validate_mirrors_services_allow_sell`
 - `crates/trading/tests/parameters_contract.rs::limittradeparameters_validate_mirrors_services_allow_sell`
-- `crates/trading/tests/property_contract.rs::validator_is_monotonic_within_window_via_proptest`
+- `crates/trading/tests/property_contract.rs::validator_classification_is_stable_while_order_stays_in_the_future`
 - `crates/trading/tests/property_contract.rs::validator_handles_u32_max_validto_without_overflow`
 - `crates/trading/tests/onchain_contract.rs::eth_flow_gas_estimate_applies_documented_floor_overhead`
 - `crates/trading/tests/onchain_contract.rs::pre_sign_gas_estimate_applies_documented_floor_overhead`

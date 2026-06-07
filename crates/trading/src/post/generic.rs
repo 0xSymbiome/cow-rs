@@ -163,7 +163,6 @@ where
         .validate(
             &order_to_sign,
             from,
-            requested_scheme,
             app_data_signer,
             current_unix_seconds(),
             false,

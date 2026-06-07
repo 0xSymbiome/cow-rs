@@ -18,7 +18,6 @@ use cow_sdk_core::{
     Address, Amount, AppDataHash, BuyTokenDestination, EVM_NATIVE_CURRENCY_ADDRESS, OrderData,
     OrderKind, SellTokenSource,
 };
-use cow_sdk_orderbook::SigningScheme;
 use cow_sdk_test_utils::builders::address;
 use cow_sdk_trading::{
     AmountSide, ClientRejection, LimitTradeParameters, OrderBoundsValidator, TradeParameters,
@@ -61,14 +60,7 @@ fn app_data_hash() -> AppDataHash {
 fn happy_path_reaches_successful_validation() {
     let validator = OrderBoundsValidator::services_default();
     validator
-        .validate(
-            &order(),
-            address(FROM),
-            SigningScheme::Eip712,
-            None,
-            NOW,
-            false,
-        )
+        .validate(&order(), address(FROM), None, NOW, false)
         .expect("happy-path order must validate");
 }
 
@@ -76,115 +68,33 @@ fn happy_path_reaches_successful_validation() {
 fn zero_from_rejects_as_missing_from() {
     let validator = OrderBoundsValidator::services_default();
     let error = validator
-        .validate(
-            &order(),
-            address(ZERO_ADDRESS),
-            SigningScheme::Eip712,
-            None,
-            NOW,
-            false,
-        )
+        .validate(&order(), address(ZERO_ADDRESS), None, NOW, false)
         .expect_err("zero from must reject");
     assert!(matches!(error, ClientRejection::MissingFrom));
 }
 
 #[test]
-fn valid_to_below_minimum_rejects_as_insufficient() {
+fn valid_to_at_or_before_now_rejects_as_in_past() {
     let validator = OrderBoundsValidator::services_default();
     let mut order = order();
-    order.valid_to = u32::try_from(NOW + 59).expect("valid_to must fit in u32");
+    order.valid_to = u32::try_from(NOW).expect("now must fit in u32");
     let error = validator
-        .validate(
-            &order,
-            address(FROM),
-            SigningScheme::Eip712,
-            None,
-            NOW,
-            false,
-        )
-        .expect_err("sub-minimum validTo must reject");
+        .validate(&order, address(FROM), None, NOW, false)
+        .expect_err("a validTo at or before now must reject");
     assert!(matches!(
         error,
-        ClientRejection::ValidToInsufficient {
-            min_seconds: 60,
-            ..
-        }
+        ClientRejection::ValidToInPast { valid_to, now } if valid_to == NOW && now == NOW
     ));
 }
 
 #[test]
-fn valid_to_at_the_minimum_is_accepted() {
+fn valid_to_one_second_in_the_future_is_accepted() {
     let validator = OrderBoundsValidator::services_default();
     let mut order = order();
-    order.valid_to = u32::try_from(NOW + 60).expect("valid_to must fit in u32");
+    order.valid_to = u32::try_from(NOW + 1).expect("valid_to must fit in u32");
     validator
-        .validate(
-            &order,
-            address(FROM),
-            SigningScheme::Eip712,
-            None,
-            NOW,
-            false,
-        )
-        .expect("at-minimum validTo must validate");
-}
-
-#[test]
-fn valid_to_above_limit_rejects_as_excessive() {
-    let validator = OrderBoundsValidator::services_default();
-    let mut order = order();
-    order.valid_to = u32::try_from(NOW + 31_536_001).expect("valid_to must fit in u32");
-    let error = validator
-        .validate(
-            &order,
-            address(FROM),
-            SigningScheme::Eip712,
-            None,
-            NOW,
-            false,
-        )
-        .expect_err("over-maximum validTo must reject");
-    assert!(matches!(
-        error,
-        ClientRejection::ValidToExcessive {
-            max_seconds: 31_536_000,
-            ..
-        }
-    ));
-}
-
-#[test]
-fn pre_sign_scheme_bypasses_the_lifetime_ceiling() {
-    let validator = OrderBoundsValidator::services_default();
-    let mut order = order();
-    order.valid_to = u32::try_from(NOW + 31_536_001).expect("valid_to must fit in u32");
-    validator
-        .validate(
-            &order,
-            address(FROM),
-            SigningScheme::PreSign,
-            None,
-            NOW,
-            false,
-        )
-        .expect("PreSign scheme must bypass the lifetime ceiling");
-}
-
-#[test]
-fn limit_class_accepts_valid_to_above_three_hours() {
-    let validator = OrderBoundsValidator::services_default();
-    let mut order = order();
-    order.valid_to = u32::try_from(NOW + 10_801).expect("valid_to must fit in u32");
-    validator
-        .validate(
-            &order,
-            address(FROM),
-            SigningScheme::Eip712,
-            None,
-            NOW,
-            false,
-        )
-        .expect("limit class must admit beyond the 3h ceiling");
+        .validate(&order, address(FROM), None, NOW, false)
+        .expect("a validTo strictly in the future must validate");
 }
 
 #[test]
@@ -193,14 +103,7 @@ fn native_sell_token_rejects_on_non_ethflow_path() {
     let mut order = order();
     order.sell_token = address(EVM_NATIVE_CURRENCY_ADDRESS);
     let error = validator
-        .validate(
-            &order,
-            address(FROM),
-            SigningScheme::Eip712,
-            None,
-            NOW,
-            false,
-        )
+        .validate(&order, address(FROM), None, NOW, false)
         .expect_err("native sell token must reject");
     assert!(matches!(error, ClientRejection::InvalidNativeSellToken));
 }
@@ -211,26 +114,12 @@ fn eth_flow_path_accepts_native_sell_token_but_still_enforces_zero_amount() {
     let mut order = order();
     order.sell_token = address(EVM_NATIVE_CURRENCY_ADDRESS);
     validator
-        .validate(
-            &order,
-            address(FROM),
-            SigningScheme::Eip1271,
-            None,
-            NOW,
-            true,
-        )
+        .validate(&order, address(FROM), None, NOW, true)
         .expect("eth-flow path must admit the native sentinel as sell token");
 
     order.sell_amount = Amount::ZERO;
     let error = validator
-        .validate(
-            &order,
-            address(FROM),
-            SigningScheme::Eip1271,
-            None,
-            NOW,
-            true,
-        )
+        .validate(&order, address(FROM), None, NOW, true)
         .expect_err("eth-flow path must still reject zero amounts");
     assert!(matches!(
         error,
@@ -285,14 +174,7 @@ fn validate_same_token_matches_services_allow_sell_policy() {
         order.sell_token = address(sell);
         order.buy_token = address(buy);
         order.kind = kind;
-        let result = validator.validate(
-            &order,
-            address(FROM),
-            SigningScheme::Eip712,
-            None,
-            NOW,
-            false,
-        );
+        let result = validator.validate(&order, address(FROM), None, NOW, false);
         match (expected, result) {
             (Outcome::Accept, Ok(())) => {}
             (
@@ -317,14 +199,7 @@ fn paired_weth_native_guard_requires_configured_weth_to_engage() {
     order.sell_token = address(WETH);
     order.buy_token = address(EVM_NATIVE_CURRENCY_ADDRESS);
     validator
-        .validate(
-            &order,
-            address(FROM),
-            SigningScheme::Eip712,
-            None,
-            NOW,
-            false,
-        )
+        .validate(&order, address(FROM), None, NOW, false)
         .expect("without configured WETH the native-buy pair is admitted by the exact-match guard");
 }
 
@@ -334,14 +209,7 @@ fn zero_sell_amount_rejects_as_zero_sell_side() {
     let mut order = order();
     order.sell_amount = Amount::ZERO;
     let error = validator
-        .validate(
-            &order,
-            address(FROM),
-            SigningScheme::Eip712,
-            None,
-            NOW,
-            false,
-        )
+        .validate(&order, address(FROM), None, NOW, false)
         .expect_err("zero sell amount must reject");
     assert!(matches!(
         error,
@@ -357,14 +225,7 @@ fn zero_buy_amount_rejects_as_zero_buy_side() {
     let mut order = order();
     order.buy_amount = Amount::ZERO;
     let error = validator
-        .validate(
-            &order,
-            address(FROM),
-            SigningScheme::Eip712,
-            None,
-            NOW,
-            false,
-        )
+        .validate(&order, address(FROM), None, NOW, false)
         .expect_err("zero buy amount must reject");
     assert!(matches!(
         error,
@@ -379,14 +240,7 @@ fn app_data_signer_mismatch_rejects_as_appdata_from_mismatch() {
     let validator = OrderBoundsValidator::services_default();
     let declared = address(OTHER_OWNER);
     let error = validator
-        .validate(
-            &order(),
-            address(FROM),
-            SigningScheme::Eip712,
-            Some(declared),
-            NOW,
-            false,
-        )
+        .validate(&order(), address(FROM), Some(declared), NOW, false)
         .expect_err("app-data signer mismatch must reject");
     assert!(matches!(error, ClientRejection::AppdataFromMismatch { .. }));
 }
@@ -399,14 +253,7 @@ fn app_data_signer_match_passes_case_insensitively() {
     let declared = Address::new("0xabcdef0000000000000000000000000000000001")
         .expect("lower-case address must parse");
     validator
-        .validate(
-            &order(),
-            from,
-            SigningScheme::Eip712,
-            Some(declared),
-            NOW,
-            false,
-        )
+        .validate(&order(), from, Some(declared), NOW, false)
         .expect("matching signer must validate case-insensitively");
 }
 

@@ -9,17 +9,16 @@
 //! rejection class, timestamp extremes, and WETH/native sentinel pairing.
 //!
 //! The fuzzer maps arbitrary bytes into an
-//! `(OrderData, Address, SigningScheme, Option<Address>, u64, bool)` tuple
-//! — the signing order plus its submission owner (`from`) — and runs the tuple
-//! through the services-default validator. A small seed-class byte keeps
-//! local seed corpus files reproducible while the remaining bytes still perturb
-//! addresses, amounts, scheme, time, and path flags.
+//! `(OrderData, Address, Option<Address>, u64, bool)` tuple — the signing order
+//! plus its submission owner (`from`) — and runs the tuple through the
+//! services-default validator. A small seed-class byte keeps local seed corpus
+//! files reproducible while the remaining bytes still perturb addresses,
+//! amounts, time, and path flags.
 
 use cow_sdk_core::{
     Address, Amount, AppDataHash, BuyTokenDestination, EVM_NATIVE_CURRENCY_ADDRESS, OrderKind,
     SellTokenSource, OrderData, ValidationReason,
 };
-use cow_sdk_orderbook::SigningScheme;
 use cow_sdk_trading::{
     ClientRejection, OrderBoundsValidator, validation::assert_owner_matches_signer,
 };
@@ -36,7 +35,6 @@ const WETH: &str = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 struct ValidatorInput {
     order: OrderData,
     from: Address,
-    scheme: SigningScheme,
     app_data_signer: Option<Address>,
     now: u64,
     is_eth_flow: bool,
@@ -44,11 +42,10 @@ struct ValidatorInput {
 }
 
 impl ValidatorInput {
-    fn into_tuple(self) -> (OrderData, Address, SigningScheme, Option<Address>, u64, bool) {
+    fn into_tuple(self) -> (OrderData, Address, Option<Address>, u64, bool) {
         (
             self.order,
             self.from,
-            self.scheme,
             self.app_data_signer,
             self.now,
             self.is_eth_flow,
@@ -60,7 +57,6 @@ impl<'a> Arbitrary<'a> for ValidatorInput {
     fn arbitrary(bytes: &mut Unstructured<'a>) -> libfuzzer_sys::arbitrary::Result<Self> {
         let seed_class = seed_class(read_u8(bytes, 0));
         let mut now = bounded_now(read_u64(bytes, DEFAULT_NOW));
-        let mut scheme = signing_scheme(read_u8(bytes, 0));
         let mut is_eth_flow = read_bool(bytes, false);
         let mut order = base_order(now);
         let mut from = address_from_bytes(read_address_bytes(bytes, 0x11));
@@ -91,10 +87,9 @@ impl<'a> Arbitrary<'a> for ValidatorInput {
                 is_eth_flow = false;
             }
             1 => from = zero_address(),
-            2 => order.valid_to = valid_to_after(now, 59),
+            2 => order.valid_to = 0,
             3 => {
                 now = 0;
-                scheme = SigningScheme::Eip712;
                 order.valid_to = u32::MAX;
             }
             4 => {
@@ -129,7 +124,6 @@ impl<'a> Arbitrary<'a> for ValidatorInput {
         Ok(Self {
             order,
             from,
-            scheme,
             app_data_signer,
             now,
             is_eth_flow,
@@ -140,10 +134,10 @@ impl<'a> Arbitrary<'a> for ValidatorInput {
 
 fuzz_target!(|input: ValidatorInput| {
     let partner_fee_probe = input.partner_fee_probe;
-    let (order, from, scheme, app_data_signer, now, is_eth_flow) = input.into_tuple();
+    let (order, from, app_data_signer, now, is_eth_flow) = input.into_tuple();
     let validator = OrderBoundsValidator::services_default().with_weth_address(weth_address());
 
-    let validation = validator.validate(&order, from, scheme, app_data_signer.clone(), now, is_eth_flow);
+    let validation = validator.validate(&order, from, app_data_signer.clone(), now, is_eth_flow);
     assert_well_defined(&validation);
 
     if let Some(recovered) = app_data_signer.as_ref() {
@@ -165,8 +159,7 @@ fuzz_target!(|input: ValidatorInput| {
 fn assert_well_defined(outcome: &Result<(), ClientRejection>) {
     match outcome {
         Ok(()) => {}
-        Err(ClientRejection::ValidToInsufficient { .. })
-        | Err(ClientRejection::ValidToExcessive { .. })
+        Err(ClientRejection::ValidToInPast { .. })
         | Err(ClientRejection::MissingFrom)
         | Err(ClientRejection::AppdataFromMismatch { .. })
         | Err(ClientRejection::SameBuyAndSellToken { .. })
@@ -247,15 +240,6 @@ fn base_order(now: u64) -> OrderData {
         SellTokenSource::Erc20,
         BuyTokenDestination::Erc20,
     )
-}
-
-fn signing_scheme(value: u8) -> SigningScheme {
-    match value % 4 {
-        0 => SigningScheme::Eip712,
-        1 => SigningScheme::EthSign,
-        2 => SigningScheme::Eip1271,
-        _ => SigningScheme::PreSign,
-    }
 }
 
 fn amount_from_u128(value: u128) -> Amount {

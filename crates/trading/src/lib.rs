@@ -90,7 +90,5 @@ pub use types::{
     SlippageToleranceResponse, TradeAdvancedSettings, TradeParameters, TraderParameters,
     TradingAppDataInfo, TradingOptions, TradingTransactionParams,
 };
-pub use validation::{
-    AmountSide, ClientRejection, OrderBoundsValidator, OrderValidityBounds, SubmissionClass,
-};
+pub use validation::{AmountSide, ClientRejection, OrderBoundsValidator};
 pub use wait::{WaitError, WaitOptions, poll_for_receipt, submit_and_wait_for_receipt};

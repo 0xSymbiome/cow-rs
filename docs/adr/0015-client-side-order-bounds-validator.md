@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-21
-- Last reviewed: 2026-05-30
+- Last reviewed: 2026-06-07
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: trading, validation, client-side, defense-in-depth, error-typing
 - Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md), [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
@@ -12,13 +12,12 @@
 Every public trading submission seam in `cow-sdk-trading` runs the
 typed `OrderBoundsValidator` as a mandatory pre-transport step. The
 validator is pure — `now` is a caller-supplied UNIX-seconds timestamp
-and no `SystemTime::now` is read inside it — and pairs the typed
-`OrderValidityBounds` policy with a `SubmissionClass` discriminator.
-Failures raise `TradingError::ClientRejected(ClientRejection)` so the
+and no `SystemTime::now` is read inside it. Failures raise `TradingError::ClientRejected(ClientRejection)` so the
 typed reason is observable without parsing free-form strings. The
-validator runs at `OrderValidityBounds::SERVICES_DEFAULT` (60 s
-minimum, 3 h market maximum, 1 y limit-class ceiling), which mirrors
-the reviewed services production configuration. The chain-aware
+validator enforces only stable, provider-independent invariants —
+including that an order's `valid_to` is still in the future — and leaves
+the exact, operator-tunable order-validity window to services (see the
+2026-06-07 amendment). The chain-aware
 default constructor `OrderBoundsValidator::services_default_for_chain`
 attaches the chain-specific wrapped-native-token address for the
 same-token paired guard so the validator's behavior matches services
@@ -33,16 +32,13 @@ violation costs a full HTTP round trip and surfaces as an opaque
 validator at the submission seam catches the violation locally,
 returns a structured payload the caller can pattern-match on, and
 preserves the orderbook's authoritative posture as the second
-defense line. Pairing the policy with a `SubmissionClass` and a
-configurable bounds struct lets caller-side policy be tightened
-beyond the published defaults without monkey-patching internal code,
-and the explicit `now` parameter keeps the validator deterministic
-under replay.
+defense line. The explicit `now` parameter keeps the validator
+deterministic under replay.
 
 ## Must Remain True
 
 - Public surface: `OrderBoundsValidator::validate(order: &OrderData,
-  from: Address, scheme, app_data_signer: Option<Address>, now: u64,
+  from: Address, app_data_signer: Option<Address>, now: u64,
   is_eth_flow: bool) -> Result<(), ClientRejection>` is the canonical entry
   point. It validates the signing order plus its submission owner (`from`),
   which is threaded separately because the canonical signing order carries no
@@ -51,36 +47,30 @@ under replay.
   `OrderBoundsValidator::services_default_for_chain(chain_id)` are
   the public constructors; the latter attaches the chain's
   wrapped-native-token address for the same-token paired guard. The
-  `ClientRejection` enum is `#[non_exhaustive]` and ships every
-  variant the reviewed services validator surfaces:
-  `ValidToInsufficient`, `ValidToExcessive`, `MissingFrom`,
-  `AppdataFromMismatch`, `SameBuyAndSellToken`,
-  `InvalidNativeSellToken`, `ZeroAmount` (discriminated by
-  `AmountSide`), and `OwnerMismatch`. `OrderValidityBounds` exposes
-  a `SERVICES_DEFAULT` constant tracking the published production
-  config; the validator runs at that policy on every public
-  submission seam: `post_swap_order`, `post_limit_order`,
-  `post_swap_order_from_quote`, and `post_sell_native_currency_order`
-  for the eth-flow path. Each public seam is a single async entry
-  point bounded on `cow_sdk_core::Signer`.
+  `ClientRejection` enum is `#[non_exhaustive]` and ships a typed
+  variant for every stable invariant the validator enforces:
+  `ValidToInPast`, `MissingFrom`, `AppdataFromMismatch`,
+  `SameBuyAndSellToken`, `InvalidNativeSellToken`, `ZeroAmount`
+  (discriminated by `AmountSide`), and `OwnerMismatch`. The validator
+  runs on every public submission seam: `post_swap_order`,
+  `post_limit_order`, `post_swap_order_from_quote`, and
+  `post_sell_native_currency_order` for the eth-flow path. Each public
+  seam is a single async entry point bounded on `cow_sdk_core::Signer`.
 - Runtime and support: the validator is pure. It performs no network
   I/O, reads no environment variables, and no system clock. Callers
   supply the `now` parameter so deterministic regression tests and
   replay tooling stay reproducible. The eth-flow submission path
   invokes the validator with `is_eth_flow: true` so zero-amount,
-  same-token, owner-mismatch, and lifetime checks still fire while
+  same-token, owner-mismatch, and not-expired checks still fire while
   the native-currency-sentinel sell-token check is skipped (the
-  sentinel is expected on that path). `PreSign` scheme and
-  `Liquidity` class bypass the maximum-lifetime check, matching the
-  reviewed services authority.
+  sentinel is expected on that path).
 - Validation and review: dedicated fixture coverage exists for every
   `ClientRejection` variant in
   `crates/trading/tests/validation_contract.rs`. The paired
   sell-WETH / buy-native-sentinel fixture proves the WETH-bound
   validator rejects locally on buy-side orders and accepts on
   sell-side orders (matching the reviewed production `AllowSell`
-  same-token policy), and the `Amount::is_zero` predicate is covered
-  in the same suite. The chain-aware default validator constructed
+  same-token policy). The chain-aware default validator constructed
   by `OrderBoundsValidator::services_default_for_chain` is exercised
   on the submission seam by `crates/trading/tests/post_contract.rs`.
 - Cost: one new module (`crates/trading/src/validation.rs`) and one
@@ -153,3 +143,44 @@ guard. The validator's `validate` entry point and the
 `SERVICES_DEFAULT` constant, `EthFlow` skip rule, `PreSign` and
 `Liquidity` exemptions, and `Amount::is_zero` predicate all remain
 in force.
+
+## Amendment 2026-06-07: stable, provider-independent invariants only
+
+The validator no longer mirrors the orderbook's configurable order-validity
+window. The reviewed services minimum (60 s), market maximum (3 h), and
+limit-class ceiling (1 y) are operator-tunable deployment configuration, not
+protocol constants: a client that pins them drifts whenever an operator retunes
+the deployment, and it is additionally sensitive to clock skew between the
+caller-supplied `now` and the server's wall clock. On the public submission
+seams every order also routes through the limit class, so the maximum-lifetime
+ceilings were effectively unreachable in normal use.
+
+The validator now enforces only the stable, provider-independent validity
+invariant: an order whose `valid_to` is at or before `now` is already expired
+and is rejected as `ClientRejection::ValidToInPast { valid_to, now }`. Services
+remains authoritative for the exact minimum and maximum lifetimes.
+
+The validator's public surface changes accordingly:
+
+- `OrderValidityBounds` and `SubmissionClass` are removed.
+- `ClientRejection::ValidToInsufficient` and `ClientRejection::ValidToExcessive`
+  are removed and replaced by `ClientRejection::ValidToInPast { valid_to, now }`.
+- `OrderBoundsValidator::validate` drops its `scheme` parameter, which existed
+  only to bypass the maximum-lifetime ceiling for `PreSign`; its signature is now
+  `validate(order: &OrderData, from: Address, app_data_signer: Option<Address>,
+  now: u64, is_eth_flow: bool)`.
+- `OrderBoundsValidator::bounds`, `OrderBoundsValidator::class`, and the
+  `PreSign` / `Liquidity` maximum-lifetime exemptions are removed.
+
+The same-token guard is unchanged in behavior and is now documented as mirroring
+the services `AllowSell` policy specifically (buy-side same-token rejected,
+sell-side accepted, including the wrapped-native / native-sentinel pair) — the
+production deployment's policy — rather than the services same-token policy in
+general, which would also cover the `Disallow` and `Allow` configurations the SDK
+does not attempt to track.
+
+The remaining invariants — present owner, non-native sell token outside eth-flow,
+buy-side same-token, non-zero amounts, app-data-signer agreement, and the
+recoverable-owner check via `assert_owner_matches_signer` — are unchanged, as are
+the pure caller-supplied-`now` posture and the `TradingError::ClientRejected`
+typed channel.

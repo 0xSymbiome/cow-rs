@@ -1,8 +1,8 @@
 //! Property-based coverage for the deterministic trading validator boundary.
 //!
 //! The validator takes `now` from its caller, so these tests pin both the
-//! ordinary monotonic-within-window contract and the integer-edge behavior near
-//! `u32::MAX` / `u64::MAX`.
+//! stability of the classification while an order stays in the future and the
+//! integer-edge behavior of the not-expired check near `u32::MAX` / `u64::MAX`.
 
 #![allow(
     clippy::doc_markdown,
@@ -18,7 +18,6 @@ use std::panic::{AssertUnwindSafe, catch_unwind};
 use cow_sdk_core::{
     Address, Amount, AppDataHash, BuyTokenDestination, OrderData, OrderKind, SellTokenSource,
 };
-use cow_sdk_orderbook::SigningScheme;
 use cow_sdk_test_utils::builders::address;
 use cow_sdk_trading::{AmountSide, ClientRejection, OrderBoundsValidator};
 use proptest::prelude::*;
@@ -48,15 +47,6 @@ fn order_kind_strategy() -> impl Strategy<Value = OrderKind> {
         } else {
             OrderKind::Sell
         }
-    })
-}
-
-fn signing_scheme_strategy() -> impl Strategy<Value = SigningScheme> {
-    (0u8..4).prop_map(|value| match value {
-        0 => SigningScheme::Eip712,
-        1 => SigningScheme::EthSign,
-        2 => SigningScheme::Eip1271,
-        _ => SigningScheme::PreSign,
     })
 }
 
@@ -132,8 +122,7 @@ fn app_data_hash() -> AppDataHash {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ValidationClass {
     Accepted,
-    ValidToInsufficient,
-    ValidToExcessive,
+    ValidToInPast,
     MissingFrom,
     AppdataFromMismatch,
     SameBuyAndSellToken,
@@ -147,8 +136,7 @@ enum ValidationClass {
 fn validation_class(outcome: &Result<(), ClientRejection>) -> ValidationClass {
     match outcome {
         Ok(()) => ValidationClass::Accepted,
-        Err(ClientRejection::ValidToInsufficient { .. }) => ValidationClass::ValidToInsufficient,
-        Err(ClientRejection::ValidToExcessive { .. }) => ValidationClass::ValidToExcessive,
+        Err(ClientRejection::ValidToInPast { .. }) => ValidationClass::ValidToInPast,
         Err(ClientRejection::MissingFrom) => ValidationClass::MissingFrom,
         Err(ClientRejection::AppdataFromMismatch { .. }) => ValidationClass::AppdataFromMismatch,
         Err(ClientRejection::SameBuyAndSellToken { .. }) => ValidationClass::SameBuyAndSellToken,
@@ -172,9 +160,8 @@ proptest! {
     })]
 
     #[test]
-    fn validator_is_monotonic_within_window_via_proptest(
+    fn validator_classification_is_stable_while_order_stays_in_the_future(
         (mut order, from) in arbitrary_order(),
-        scheme in signing_scheme_strategy(),
         app_data_signer in prop::option::of(address_strategy()),
         now_seconds in any::<u64>(),
         delta_seconds in 0u64..MAX_DELTA_SECONDS,
@@ -186,27 +173,13 @@ proptest! {
             .expect("normalized validity window must fit in u32");
 
         let validator = OrderBoundsValidator::services_default();
-        let outcome_now = validator.validate(
-            &order,
-            from,
-            scheme,
-            app_data_signer,
-            now,
-            is_eth_flow,
-        );
-        let outcome_then = validator.validate(
-            &order,
-            from,
-            scheme,
-            app_data_signer,
-            then,
-            is_eth_flow,
-        );
+        let outcome_now = validator.validate(&order, from, app_data_signer, now, is_eth_flow);
+        let outcome_then = validator.validate(&order, from, app_data_signer, then, is_eth_flow);
 
         prop_assert_eq!(
             validation_class(&outcome_now),
             validation_class(&outcome_then),
-            "classification must remain stable while both observations are inside the validity window"
+            "classification must stay stable while the order is not expired at either observation"
         );
     }
 }
@@ -218,28 +191,15 @@ fn validator_handles_u32_max_validto_without_overflow() {
     order.valid_to = u32::MAX;
 
     for (now, expected) in [
-        (0u64, ValidationClass::ValidToExcessive),
-        (
-            u64::from(u32::MAX) - 1,
-            ValidationClass::ValidToInsufficient,
-        ),
-        (u64::from(u32::MAX), ValidationClass::ValidToInsufficient),
-        (
-            u64::from(u32::MAX) + 1,
-            ValidationClass::ValidToInsufficient,
-        ),
-        (u64::MAX - 1, ValidationClass::ValidToInsufficient),
-        (u64::MAX, ValidationClass::ValidToInsufficient),
+        (0u64, ValidationClass::Accepted),
+        (u64::from(u32::MAX) - 1, ValidationClass::Accepted),
+        (u64::from(u32::MAX), ValidationClass::ValidToInPast),
+        (u64::from(u32::MAX) + 1, ValidationClass::ValidToInPast),
+        (u64::MAX - 1, ValidationClass::ValidToInPast),
+        (u64::MAX, ValidationClass::ValidToInPast),
     ] {
         let outcome = catch_unwind(AssertUnwindSafe(|| {
-            validator.validate(
-                &order,
-                template_from(),
-                SigningScheme::Eip712,
-                None,
-                now,
-                false,
-            )
+            validator.validate(&order, template_from(), None, now, false)
         }))
         .expect("validator must not panic at timestamp extremes");
 

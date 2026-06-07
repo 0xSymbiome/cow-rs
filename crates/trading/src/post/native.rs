@@ -79,7 +79,6 @@ where
         .validate(
             &tx.order_to_sign,
             tx.from,
-            SigningScheme::Eip1271,
             app_data_signer,
             current_unix_seconds(),
             true,

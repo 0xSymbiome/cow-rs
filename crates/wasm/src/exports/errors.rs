@@ -587,9 +587,7 @@ impl From<ClientRejection> for WasmError {
 #[cfg(feature = "trading")]
 const fn client_rejection_field(rejection: &ClientRejection) -> &'static str {
     match rejection {
-        ClientRejection::ValidToInsufficient { .. } | ClientRejection::ValidToExcessive { .. } => {
-            "validTo"
-        }
+        ClientRejection::ValidToInPast { .. } => "validTo",
         ClientRejection::MissingFrom | ClientRejection::OwnerMismatch { .. } => "from",
         ClientRejection::AppdataFromMismatch { .. } => "appData.signer",
         ClientRejection::SameBuyAndSellToken { .. } => "buyToken",
