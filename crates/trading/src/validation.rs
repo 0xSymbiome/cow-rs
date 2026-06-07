@@ -384,25 +384,6 @@ const fn zero_address() -> Address {
     Address::from_bytes([0u8; 20])
 }
 
-/// Asserts `sell_token` is not the native-currency sentinel.
-///
-/// Runs the equivalent of [`OrderBoundsValidator::validate`] for the
-/// post-routing assertion that a pre-HTTP order does not carry the native
-/// sentinel as `sell_token` unless it is routed through the reviewed
-/// eth-flow submission path. Returns
-/// [`ClientRejection::InvalidNativeSellToken`] when the submission path
-/// carries the native sentinel outside eth-flow routing.
-///
-/// # Errors
-///
-/// See [`ClientRejection::InvalidNativeSellToken`].
-pub fn assert_non_native_sell_token(sell_token: &Address) -> Result<(), ClientRejection> {
-    if sell_token == &native_sentinel() {
-        return Err(ClientRejection::InvalidNativeSellToken);
-    }
-    Ok(())
-}
-
 /// Asserts the recovered signer matches the expected owner.
 ///
 /// Compares an owner and a recovered signer for the reviewed
