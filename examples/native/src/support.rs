@@ -9,11 +9,11 @@ use std::sync::{Arc, Mutex};
 use serde_json::{Value, json};
 
 use cow_sdk::core::{
-    Amount, AppDataHex, BuyTokenDestination, OrderData, OrderKind, SellTokenSource,
+    Address, Amount, AppDataHex, BuyTokenDestination, CowEnv, OrderData, OrderKind, OrderUid,
+    SellTokenSource, SupportedChainId,
 };
 use cow_sdk::orderbook::{AppDataHash, Order, OrderQuoteResponse};
-use cow_sdk::prelude::{Address, CowEnv, OrderUid, SupportedChainId, TradeParameters};
-use cow_sdk::trading::{LimitTradeParameters, TraderParameters};
+use cow_sdk::trading::{LimitTradeParameters, TradeParameters, TraderParameters};
 use wiremock::{Mock, MockServer, ResponseTemplate, matchers::method};
 
 pub const WETH: &str = "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14";

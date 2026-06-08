@@ -1,13 +1,14 @@
-use cow_sdk::core::{AppDataHex, BuyTokenDestination, OrderData, OrderKind, SellTokenSource};
-use cow_sdk::prelude::{
-    Address, Amount, SupportedChainId, TradeParameters, TraderParameters, TradingBuilder,
-    TradingOptions,
+use cow_sdk::core::{
+    Address, Amount, AppDataHex, BuyTokenDestination, OrderData, OrderKind, SellTokenSource,
+    SupportedChainId,
 };
 use cow_sdk::signing::{ORDER_PRIMARY_TYPE, generate_order_id, order_typed_data};
-use cow_sdk::trading::{PartnerFee, PartnerFeePolicy};
+use cow_sdk::trading::{
+    PartnerFee, PartnerFeePolicy, TradeParameters, TraderParameters, TradingBuilder, TradingOptions,
+};
 
 #[test]
-fn public_api_reexports_cover_primary_root_surface() {
+fn module_paths_cover_primary_workflow_surface() {
     let _ready_trading = TradingBuilder::ready(
         TraderParameters::new(SupportedChainId::Sepolia, "cow-rs/public-api")
             .expect("app code should validate"),
@@ -86,7 +87,7 @@ fn cancelled_errors_project_to_the_facade_cancelled_class() {
 #[test]
 fn module_reexports_cover_expected_leaf_crates() {
     let doc = cow_sdk::app_data::generate_app_data_doc(cow_sdk::app_data::AppDataParams::new(
-        cow_sdk::AppCode::new("cow-rs").expect("fixture appCode must validate"),
+        cow_sdk::core::AppCode::new("cow-rs").expect("fixture appCode must validate"),
     ));
     let validation = cow_sdk::app_data::validate_app_data_doc(&doc);
     let latest_version = cow_sdk::app_data::SchemaVersion::latest();
@@ -151,24 +152,4 @@ fn crate_docs_and_manifest_keep_the_facade_trading_first() {
     assert!(production_manifest.contains(
         "cow-sdk-subgraph = { path = \"../subgraph\", version = \"0.1.0\", optional = true"
     ));
-}
-
-#[test]
-fn prelude_does_not_export_low_level_encoders() {
-    let prelude = include_str!("../src/prelude.rs");
-    let forbidden = [
-        "encode_create_order_calldata",
-        "encode_invalidate_order_calldata",
-        "function_magic_value",
-        "calculate_total_fee",
-        "transform_order",
-        "parse_rejection",
-    ];
-
-    for symbol in forbidden {
-        assert!(
-            !prelude.contains(symbol),
-            "prelude must not export low-level helper `{symbol}`",
-        );
-    }
 }

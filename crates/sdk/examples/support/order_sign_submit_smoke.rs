@@ -1,5 +1,7 @@
-use cow_sdk::core::{AppDataHex, BuyTokenDestination, OrderData, OrderKind, SellTokenSource};
-use cow_sdk::prelude::{Address, Amount, SupportedChainId};
+use cow_sdk::core::{
+    Address, Amount, AppDataHex, BuyTokenDestination, OrderData, OrderKind, SellTokenSource,
+    SupportedChainId,
+};
 use cow_sdk::signing::{ORDER_PRIMARY_TYPE, generate_order_id, order_typed_data};
 
 pub fn smoke_hash_and_uid() -> Result<String, Box<dyn std::error::Error>> {

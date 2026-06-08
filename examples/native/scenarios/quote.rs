@@ -8,8 +8,8 @@ use std::{error::Error, sync::Arc};
 
 use serde_json::json;
 
-use cow_sdk::prelude::{SupportedChainId, TraderParameters, TradingBuilder};
-use cow_sdk::trading::TradingOptions;
+use cow_sdk::core::SupportedChainId;
+use cow_sdk::trading::{TraderParameters, TradingBuilder, TradingOptions};
 
 use cow_sdk::testing::MockOrderbook;
 use cow_sdk_examples_native::support::{sample_quote_response, sample_trade_parameters};

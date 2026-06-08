@@ -1,5 +1,5 @@
-use cow_sdk::orderbook::{ApiContext, ExternalHostPolicy};
-use cow_sdk::prelude::{CowEnv, OrderUid, OrderbookApi, SupportedChainId};
+use cow_sdk::core::{CowEnv, OrderUid, SupportedChainId};
+use cow_sdk::orderbook::{ApiContext, ExternalHostPolicy, OrderbookApi};
 use cow_sdk::testing::MockOrderbook;
 use cow_sdk::trading::OrderbookClient;
 use cow_sdk_examples_native::support::{

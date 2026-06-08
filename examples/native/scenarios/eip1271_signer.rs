@@ -14,11 +14,10 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use serde_json::json;
 
-use cow_sdk::core::OrderData;
+use cow_sdk::core::{OrderData, SupportedChainId};
 use cow_sdk::orderbook::SigningScheme;
-use cow_sdk::prelude::{SupportedChainId, Trading};
 use cow_sdk::signing::eip1271::{Eip1271SignatureError, Eip1271SignatureProvider};
-use cow_sdk::trading::{PostTradeAdditionalParams, TradeAdvancedSettings};
+use cow_sdk::trading::{PostTradeAdditionalParams, TradeAdvancedSettings, Trading};
 
 use cow_sdk::testing::{MockOrderbook, MockSigner};
 use cow_sdk_examples_native::support::{

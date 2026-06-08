@@ -11,7 +11,7 @@ registry:
 
 ```rust
 use cow_sdk::contracts::{ContractId, Registry};
-use cow_sdk::prelude::{CowEnv, SupportedChainId};
+use cow_sdk::core::{CowEnv, SupportedChainId};
 
 let registry = Registry::default();
 let settlement = registry
@@ -119,7 +119,7 @@ string into `Registry::from_toml_str`:
 
 ```rust
 use cow_sdk::contracts::{ContractId, Registry};
-use cow_sdk::prelude::{CowEnv, SupportedChainId};
+use cow_sdk::core::{CowEnv, SupportedChainId};
 
 let raw = r#"
 schema_version = 2
@@ -155,7 +155,7 @@ on top of `Registry::default()`:
 
 ```rust
 use cow_sdk::contracts::{ContractId, Registry};
-use cow_sdk::prelude::{Address, CowEnv, SupportedChainId};
+use cow_sdk::core::{Address, CowEnv, SupportedChainId};
 
 let local = "0x1111111111111111111111111111111111111111"
     .parse::<Address>()

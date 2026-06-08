@@ -381,9 +381,9 @@ The first functional crate-family release begins at `0.1.0`.
   canonical home for the validated application-identifier newtype.
   `AppCode` joins `cow_sdk_core::Address`, `cow_sdk_core::AppDataHash`,
   `cow_sdk_core::HexData`, and `cow_sdk_core::OrderUid` as cow-owned
-  identity primitives in `cow-sdk-core`. The `cow_sdk` root facade
-  prelude exposes both types so the canonical user-facing import is
-  `use cow_sdk::AppCode;`. The workspace enum-policy manifest
+  identity primitives in `cow-sdk-core`. The `cow-sdk` facade re-exports
+  both types through its `core` module, so the canonical user-facing import
+  is `use cow_sdk::core::AppCode;`. The workspace enum-policy manifest
   records the source-of-truth file in `cow-sdk-core`.
 
 ### Fixed
@@ -475,19 +475,16 @@ The first functional crate-family release begins at `0.1.0`.
   (re-quote, wait, or resize). The category set and the
   exhaustive-with-no-wildcard mapping are otherwise unchanged. Governed by
   [ADR 0017](docs/adr/0017-typed-orderbook-rejection-parser.md).
-- The `cow-sdk` facade crate root is now an explicit, curated re-export surface:
-  the workflow `cow_sdk::prelude` is no longer glob-re-exported to the crate root.
-  The primary entry types (`Trading`, `TradeParameters`, `TraderParameters`,
-  `TradingBuilder`, `TradingOptions`, `Address`, `Amount`, `AppCode`, `OrderUid`,
-  `SupportedChainId`, `OrderbookApi`, `Signature`, `CowError`, `ErrorClass`, and the
-  transport and EIP-1271 cache types) remain at the crate root, while the broader
-  convenience set — `CowEnv`, `Provider`, `Signer`, `Cancellable`, `AppDataParams`,
-  `AppDataValidated`, `ContractsError`, `OrderbookApiBuilder`, `OrderbookError`, and
-  `TradingError` — is now reached through the opt-in `cow_sdk::prelude` or each
-  type's named module (for example `cow_sdk::core::CowEnv` and
-  `cow_sdk::orderbook::OrderbookError`). This keeps the crate-root public surface
-  explicit and pinnable instead of glob-defined, so it no longer grows implicitly
-  when the prelude grows, matching the opt-in `cow_sdk_core::prelude`. Governed by
+- The `cow-sdk` facade ships no prelude. The `cow_sdk::prelude` module is removed
+  and the crate root no longer hoists workflow or identity types. Each leaf crate
+  is re-exported as a named module, and every workflow and identity type is reached
+  on its module path — for example
+  `cow_sdk::core::{Address, Amount, OrderKind, OrderUid, SupportedChainId, CowEnv}`,
+  `cow_sdk::trading::{Trading, TradeParameters}`, and `cow_sdk::orderbook::OrderbookApi`
+  — matching `alloy`, `reqwest`, and `tower`. The crate root retains only the
+  cross-cutting aggregate error (`CowError`, `ErrorClass`) and the typed transport,
+  registry, and EIP-1271 cache leaf surfaces. The workspace's only prelude is the
+  opt-in `cow_sdk::core::prelude` (the cow primitive newtypes). Governed by
   [ADR 0001](docs/adr/0001-multi-crate-sdk-family-with-thin-facade.md).
 - `cow_sdk_app_data::AppDataError::Json` and
   `cow_sdk_contracts::ContractsError::Serialization` now carry a structured
@@ -531,10 +528,6 @@ The first functional crate-family release begins at `0.1.0`.
   precompiled-module initialization. The published package export map is
   unchanged. Governed by
   [ADR 0044](docs/adr/0044-bundle-size-profile-and-flavor-builds.md).
-- `cow_sdk::prelude` no longer re-exports `AppCodeError`; reach it through
-  `cow_sdk::core::AppCodeError`. The prelude keeps the `AppCode` value type and
-  stays focused on the common quote, sign, post, and error-handling workflow
-  rather than carrying leaf validation errors.
 - The `cow_sdk_orderbook::OrderbookApiBuilder` and
   `cow_sdk_subgraph::SubgraphApiBuilder` typestate markers now carry the value
   they prove is present (chain id, environment or API key, and transport), so
@@ -553,7 +546,7 @@ The first functional crate-family release begins at `0.1.0`.
   `OrderbookClient`, and `OrderbookRejection` types: `OrderBookApi` is now
   `OrderbookApi`, `OrderBookApiBuilder` is now `OrderbookApiBuilder`, and the
   public transport-error type `OrderBookApiError` is now `OrderbookApiError`.
-  The `cow-sdk` facade prelude and module re-exports are updated. The
+  The `cow-sdk` facade module re-exports are updated. The
   TypeScript-callable WASM client class intentionally keeps its `OrderBookClient`
   name to match the JavaScript SDK naming convention at the browser boundary.
 - Renamed the trading entry types to drop the `Sdk` suffix stutter:
@@ -561,7 +554,7 @@ The first functional crate-family release begins at `0.1.0`.
   and `TradingSdkOptions` is now `TradingOptions`. Construction remains
   exclusively through the typestate-builder ready terminals
   (`TradingBuilder::ready(...)` and `build()`); the `cow-sdk` facade
-  prelude re-exports are updated to the new names.
+  module re-exports are updated to the new names.
 - Renamed the trading builder terminal `TradingBuilder::build_ready()` to
   `TradingBuilder::build()` for consistency with every sibling client builder
   (`OrderbookApi`, `SubgraphApi`, `AlloyClient`, and the alloy provider and
@@ -827,7 +820,7 @@ The first functional crate-family release begins at `0.1.0`.
 - Removed the unused `cow_sdk_core::Order` envelope (the
   `{ unsigned, owner, uid }` wrapper around `OrderData`); it had no
   constructor caller, reader, or conversion, and no upstream analog. The bare
-  `Order` re-export was also dropped from the `cow-sdk` prelude. Reach the
+  `Order` name is not re-exported at the `cow-sdk` facade root. Reach the
   order types by module path instead: `cow_sdk::core::OrderData` (the EIP-712
   signing and hashing input) and `cow_sdk::orderbook::Order` (the response
   record).
@@ -2182,7 +2175,7 @@ The first functional crate-family release begins at `0.1.0`.
   same classification at the byte-slice level for consumers that
   hold a raw HTTP response instead of an `OrderBookApiError`.
   `OrderbookRejection` and `parse_rejection` re-export through the
-  `cow-sdk` facade and `cow_sdk::prelude`.
+  `cow-sdk` facade's `orderbook` module.
 
 - A trading-first Rust SDK workspace covering `cow-sdk`, `cow-sdk-core`,
   `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`,
@@ -2205,9 +2198,8 @@ The first functional crate-family release begins at `0.1.0`.
   contract code, serialization, or hex-decode failures so transient
   errors always re-hit the chain. `Eip1271VerificationCache`,
   `NoopEip1271VerificationCache`, and `InMemoryEip1271VerificationCache`
-  re-export through the `cow-sdk` facade, and the trait surfaces
-  through `cow_sdk::prelude::*` for compositions that hold the cache
-  generically.
+  re-export through the `cow-sdk` facade root, where the trait is
+  available for compositions that hold the cache generically.
 
 - New browser-side transport leaf crate `cow-sdk-transport-wasm`.
   The crate ships `FetchTransport`, a `wasm32`-only implementation of
@@ -2241,10 +2233,9 @@ The first functional crate-family release begins at `0.1.0`.
   runtime `Registry::from_toml_str` loader surfaces the same taxonomy of
   failures through a typed `RegistryError` enum so downstream consumers
   who pipe their own TOML into the loader see the same actionable
-  errors. `Registry`, `ContractId`, and `RegistryError` are re-exported
-  from the facade, and `Registry` plus `ContractId` surface through
-  `cow_sdk::prelude::*` so the typed address lookup is a single import
-  away for trading and bridging consumers.
+  errors. `Registry` and `ContractId` re-export through `cow_sdk::contracts`
+  and `RegistryError` through the crate root, so the typed address lookup is
+  a single module import away for trading and bridging consumers.
 
 - Typed ERC-20 and EIP-2612 Permit bindings under a new
   `cow_sdk_contracts::erc20` module, generated from the canonical Solidity
@@ -2447,8 +2438,8 @@ The first functional crate-family release begins at `0.1.0`.
   `cow_sdk_core::Cancellable::cancel_with(&token)` extension-trait
   combinator. `cow-sdk-core` defines the `Cancellable` trait, the
   `WithCancellation<'t, F>` async wrapper, and the `Cancelled`
-  marker error; the `cow-sdk` prelude re-exports `Cancellable` and
-  `Cancelled` so `use cow_sdk::prelude::*` reaches the combinator.
+  marker error; the `cow-sdk` facade surfaces `Cancellable` and
+  `Cancelled` through `cow_sdk::core`, a single import from the combinator.
   `cow-sdk-core` also re-exports
   `tokio_util::sync::CancellationToken` as
   `cow_sdk_core::CancellationToken` so every public crate routes
@@ -2761,11 +2752,12 @@ The first functional crate-family release begins at `0.1.0`.
   non-exhaustive so later protocol-driven field additions ship as additive
   minor changes.
 
-- The `cow-sdk` prelude now exposes a curated first-touch surface for common
-  quote, sign, post, app-data validation, transport/provider wiring, and
-  primary error-handling workflows; reach specialized APIs through the
-  named-module re-exports. Workspace MSRV bump policy is now documented with
-  explicit cadence and notice window.
+- The `cow-sdk` facade is a thin, module-organised surface: each leaf crate is
+  re-exported as a named module and every workflow and identity type is reached
+  on its module path (for example `cow_sdk::core`, `cow_sdk::trading`,
+  `cow_sdk::orderbook`), with the cross-cutting aggregate error and the typed
+  transport surfaces at the crate root. Workspace MSRV bump policy is now
+  documented with explicit cadence and notice window.
 
 - Default-constructed transports now apply a `cow-sdk/<version>` user-agent
   and a 60-second TCP keepalive aligned with the upstream services defaults.
@@ -3062,7 +3054,7 @@ The first functional crate-family release begins at `0.1.0`.
   regression. Both new enums are `#[non_exhaustive]` with
   `Default = Erc20`, derive the full
   `Debug + Clone + Copy + PartialEq + Eq + Hash + Serialize + Deserialize`
-  set, re-export through the root `cow-sdk` facade and `cow_sdk::prelude`,
+  set, re-export through the `cow-sdk` facade's `core` module,
   and surface from the `cow-sdk-orderbook` crate for downstream consumers
   that construct orderbook DTOs directly.
 
@@ -3107,7 +3099,7 @@ The first functional crate-family release begins at `0.1.0`.
   `with_transport_policy`, `with_env_base_url`, and
   `with_context_override` modifiers remain available for adjusting an
   existing instance. `OrderBookApiBuilder` is re-exported through the
-  facade and prelude.
+  facade's `orderbook` module.
 
 - `cow_sdk_core::HttpTransport` is dyn-compatible through `async-trait`,
   so downstream clients compose transports as `Arc<dyn HttpTransport>`
@@ -3147,8 +3139,8 @@ The first functional crate-family release begins at `0.1.0`.
   `reqwest::Error::without_url` before wrapping so endpoint URLs never leak
   through the error surface. URL-bearing configuration rides the existing
   `Redacted` newtype so the base URL stays redacted in debug, display, and
-  serialized output. The facade and prelude re-export `HttpTransport`,
-  `TransportError`, `ReqwestTransport`, and `ReqwestTransportConfig` so
+  serialized output. The facade re-exports `HttpTransport`, `TransportError`,
+  `ReqwestTransport`, and `ReqwestTransportConfig` at its crate root so
   downstream consumers reach the new transport seam through a single import.
 
 - `cow_sdk_core::Address` compares and hashes case-insensitively through the
@@ -3242,7 +3234,7 @@ The first functional crate-family release begins at `0.1.0`.
   backward-compatibility `TypedOrder = OrderData` alias in
   `cow-sdk-signing` is retired; the canonical `OrderData` type is the
   single name for the pre-signature order state exported through the public
-  signing surface and the `cow-sdk` prelude.
+  signing surface and the `cow-sdk` facade's `core` module.
 
 - `docs/parity.md` now carries an explicit `Intentionally Out-of-Scope`
   section enumerating the upstream TypeScript-SDK surfaces that `cow-rs`
@@ -3266,9 +3258,9 @@ The first functional crate-family release begins at `0.1.0`.
   `{ message }` for `ContractsError::Decode`, `AppDataError::Schema`,
   and `AppDataError::Calculation`; `{ class, detail }` for the REST
   transport variants on `AppDataError` and `OrderbookError`). A new
-  `cow_sdk::ValidationReason` enum describes the canonical validation
+  `cow_sdk::core::ValidationReason` enum describes the canonical validation
   failure modes (`Missing`, `OutOfRange`, `BadShape`, `Precondition`)
-  and surfaces through `cow_sdk::prelude::*`; a new
+  and surfaces through `cow_sdk::core`; a new
   `cow_sdk::TransportErrorClass` enum classifies REST-transport failure
   categories (`Timeout`, `Connect`, `Redirect`, `Decode`, `Body`,
   `Builder`, `Request`, `Status`, `Other`) and is re-exported from the

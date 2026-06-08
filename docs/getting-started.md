@@ -156,7 +156,8 @@ Good examples include values such as `acme-trader-web`,
 Minimal ready-state builder:
 
 ```rust
-use cow_sdk::prelude::{SupportedChainId, Trading};
+use cow_sdk::core::SupportedChainId;
+use cow_sdk::trading::Trading;
 
 fn build_trading() -> Result<Trading, Box<dyn std::error::Error>> {
     let trading = Trading::builder()
@@ -177,8 +178,8 @@ does not store a default owner. For signer-backed flows (`post_swap_order`, `pos
 from `TradeAdvancedSettings::quote_request.from`.
 
 ```rust
-use cow_sdk::core::OrderKind;
-use cow_sdk::prelude::{Address, Amount, TradeParameters};
+use cow_sdk::core::{Address, Amount, OrderKind};
+use cow_sdk::trading::TradeParameters;
 
 fn quote_request(owner: Address) -> Result<TradeParameters, Box<dyn std::error::Error>> {
     let params = TradeParameters::new(
@@ -205,8 +206,10 @@ through `TradingOptions`:
 ```rust,ignore
 use std::sync::Arc;
 
-use cow_sdk::prelude::{CowEnv, HttpTransport, OrderbookApi, SupportedChainId, Trading};
-use cow_sdk::trading::TradingOptions;
+use cow_sdk::core::{CowEnv, SupportedChainId};
+use cow_sdk::orderbook::OrderbookApi;
+use cow_sdk::trading::{Trading, TradingOptions};
+use cow_sdk::HttpTransport;
 use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
 
 fn build_browser_ready_trading() -> Result<Trading, Box<dyn std::error::Error>> {

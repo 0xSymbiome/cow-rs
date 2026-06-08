@@ -9,7 +9,7 @@ use std::{env, error::Error, io};
 
 use serde_json::json;
 
-use cow_sdk::prelude::SupportedChainId;
+use cow_sdk::core::SupportedChainId;
 use cow_sdk::subgraph::SubgraphApi;
 
 #[tokio::main]

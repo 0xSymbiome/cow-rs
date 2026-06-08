@@ -9,9 +9,8 @@ use std::{env, error::Error, io};
 
 use serde_json::json;
 
-use cow_sdk::core::Redacted;
-use cow_sdk::orderbook::{ApiContext, ExternalHostPolicy};
-use cow_sdk::prelude::{CowEnv, OrderbookApi, SupportedChainId};
+use cow_sdk::core::{CowEnv, Redacted, SupportedChainId};
+use cow_sdk::orderbook::{ApiContext, ExternalHostPolicy, OrderbookApi};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {

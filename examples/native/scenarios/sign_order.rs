@@ -9,7 +9,7 @@ use std::error::Error;
 
 use serde_json::json;
 
-use cow_sdk::prelude::SupportedChainId;
+use cow_sdk::core::SupportedChainId;
 use cow_sdk::signing::{
     eip1271_signature_payload, generate_order_id, order_typed_data, sign_order,
     sign_order_cancellation,

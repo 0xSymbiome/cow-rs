@@ -73,7 +73,9 @@ async fn poll_for_receipt_emits_only_the_receipt_span() {
 
     let spans = capture.spans();
     assert!(
-        spans.iter().any(|span| span.name() == "transaction.receipt"),
+        spans
+            .iter()
+            .any(|span| span.name() == "transaction.receipt"),
         "poll_for_receipt must emit the receipt span: {spans:#?}"
     );
     assert!(

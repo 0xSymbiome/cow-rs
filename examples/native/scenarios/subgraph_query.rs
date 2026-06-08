@@ -14,7 +14,7 @@ use wiremock::{
     matchers::{body_partial_json, method, path},
 };
 
-use cow_sdk::prelude::SupportedChainId;
+use cow_sdk::core::SupportedChainId;
 use cow_sdk::subgraph::{ExternalHostPolicy, SubgraphApi, SubgraphQueryRequest};
 
 /// A caller-owned response shape, deserialized straight out of `run_query`.

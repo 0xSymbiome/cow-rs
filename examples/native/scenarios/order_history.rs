@@ -20,10 +20,10 @@ use wiremock::{
     matchers::{method, path},
 };
 
+use cow_sdk::core::{CowEnv, SupportedChainId};
 use cow_sdk::orderbook::{
     ApiContext, ExternalHostPolicy, GetOrdersRequest, GetTradesRequest, OrderbookApi,
 };
-use cow_sdk::prelude::{CowEnv, SupportedChainId};
 
 use cow_sdk_examples_native::support::{
     ORDER_UID, OWNER, TX_HASH, sample_open_order, sample_owner,

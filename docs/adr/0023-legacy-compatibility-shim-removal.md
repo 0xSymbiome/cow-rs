@@ -35,7 +35,7 @@ for protocol-correct hashing.
 - Public surface: contracts-boundary digest and UID computation flows
   only through the concrete `OrderData`, with no compatibility model or
   shim helper re-exported from `cow-sdk-core`, `cow-sdk-contracts`, or
-  the `cow-sdk` prelude.
+  the `cow-sdk` facade.
 - Runtime and support: every surviving caller constructs the canonical
   typed order shape before hashing, so the digest always includes the
   real amount, fee, and expiry fields reviewed by the protocol.

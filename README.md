@@ -65,7 +65,8 @@ facade and trading flow end to end.
 Ready-state facade setup on the native/default transport path:
 
 ```rust
-use cow_sdk::prelude::{SupportedChainId, Trading};
+use cow_sdk::core::SupportedChainId;
+use cow_sdk::trading::Trading;
 
 let _trading = Trading::builder()
     .chain_id(SupportedChainId::Sepolia)

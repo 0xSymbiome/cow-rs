@@ -48,7 +48,14 @@ async fn fetch_doc_from_cid_emits_one_span_with_cid_and_endpoint() {
     let span = fetch_spans[0];
     assert_eq!(span.field("cid"), Some(CID));
     // The gateway read base URI is never recorded.
-    for forbidden in ["uri", "read_base_uri", "read_uri", "url", "transport", "policy"] {
+    for forbidden in [
+        "uri",
+        "read_base_uri",
+        "read_uri",
+        "url",
+        "transport",
+        "policy",
+    ] {
         assert!(
             span.field(forbidden).is_none(),
             "fetch span must not record {forbidden}: {span:#?}"

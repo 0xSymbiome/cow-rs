@@ -18,12 +18,14 @@ use dioxus::prelude::*;
 
 use cow_sdk::browser_wallet::{BrowserWallet, Eip1193Signer};
 use cow_sdk::contracts::wrap_interaction;
-use cow_sdk::core::{HexData, OrderKind, TransactionRequest, wrapped_native_token};
-use cow_sdk::orderbook::ApiContext;
-use cow_sdk::prelude::{
-    Address, Amount, CowEnv, OrderbookApi, Signer, SupportedChainId, TradeParameters, Trading,
+use cow_sdk::core::{
+    Address, Amount, CowEnv, HexData, OrderKind, Signer, SupportedChainId, TransactionRequest,
+    wrapped_native_token,
 };
-use cow_sdk::trading::{ApprovalParameters, TradingOptions, approval_transaction};
+use cow_sdk::orderbook::{ApiContext, OrderbookApi};
+use cow_sdk::trading::{
+    ApprovalParameters, TradeParameters, Trading, TradingOptions, approval_transaction,
+};
 
 const CHAIN: SupportedChainId = SupportedChainId::Sepolia;
 // CoW's Sepolia liquidity lives on the production API (`api.cow.fi/sepolia`);

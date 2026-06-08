@@ -10,8 +10,7 @@
 use std::error::Error;
 use std::time::Duration;
 
-use cow_sdk::core::{TransactionReceipt, TransactionRequest, TransactionStatus};
-use cow_sdk::prelude::{Address, Amount};
+use cow_sdk::core::{Address, Amount, TransactionReceipt, TransactionRequest, TransactionStatus};
 use cow_sdk::testing::{MockProvider, MockSigner, defaults};
 use cow_sdk::trading::{WaitError, WaitOptions, submit_and_wait_for_receipt};
 use serde_json::json;

@@ -713,7 +713,6 @@ dependencies = [
  "alloy-serde",
  "async-trait",
  "cow-sdk-core",
- "getrandom 0.4.2",
  "gloo-timers 0.4.0",
  "js-sys",
  "serde",

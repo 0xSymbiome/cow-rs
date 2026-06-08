@@ -32,7 +32,9 @@ async fn connect_request_accounts_and_refresh_emit_method_labelled_spans() {
         "browser_wallet.refresh_session",
     ] {
         assert!(
-            spans.iter().any(|span| span.field("method") == Some(method)),
+            spans
+                .iter()
+                .any(|span| span.field("method") == Some(method)),
             "expected exactly one span carrying method = {method}: {spans:#?}"
         );
     }

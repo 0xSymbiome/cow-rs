@@ -10,9 +10,8 @@ use std::error::Error;
 use serde_json::json;
 
 use cow_sdk::contracts::deployment_for_chain;
-use cow_sdk::core::wrapped_native_token;
-use cow_sdk::prelude::{AppCode, SupportedChainId, TraderParameters, TradingBuilder};
-use cow_sdk::trading::TradingOptions;
+use cow_sdk::core::{AppCode, SupportedChainId, wrapped_native_token};
+use cow_sdk::trading::{TraderParameters, TradingBuilder, TradingOptions};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let chain_id = SupportedChainId::Sepolia;

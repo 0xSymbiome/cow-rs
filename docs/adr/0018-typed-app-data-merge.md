@@ -57,7 +57,7 @@ the three defects unreachable without reintroducing an opaque
   Result<AppDataParams, TradingError>` exposes the typed
   re-parse step as a separate reviewable unit for downstream
   composition. Both helpers re-export through the `cow-sdk`
-  facade and `cow_sdk::prelude`. No `serde_json::Value`-taking
+  facade's `trading` module. No `serde_json::Value`-taking
   merge helper is exposed from the trading crate.
 - Runtime and support: `merge_app_data_params` preserves the full
   typed `AppDataParams` contract (`app_code`, `environment`,
@@ -115,7 +115,7 @@ the three defects unreachable without reintroducing an opaque
 - Hide the typed pipeline behind a private free function only:
   workable today but closes the reviewable extension point
   consumers already rely on for composition through
-  `cow_sdk::prelude`.
+  `cow_sdk::trading`.
 
 ## Links
 

@@ -153,7 +153,10 @@ pub async fn sign_order_with_eip1271(
 /// @throws CowError for invalid input, callback failure, timeout, or cancellation.
 #[cfg_attr(
     feature = "tracing",
-    tracing::instrument(skip_all, fields(endpoint = "wasm.eip1271.sign_order_with_custom_eip1271"))
+    tracing::instrument(
+        skip_all,
+        fields(endpoint = "wasm.eip1271.sign_order_with_custom_eip1271")
+    )
 )]
 #[wasm_bindgen(
     js_name = "signOrderWithCustomEip1271",

@@ -127,7 +127,10 @@ impl Eip1193 for JsEip1193Requester {
 /// @throws CowError for invalid input, callback failure, timeout, or cancellation.
 #[cfg_attr(
     feature = "tracing",
-    tracing::instrument(skip_all, fields(endpoint = "wasm.signing.sign_order_with_typed_data_signer"))
+    tracing::instrument(
+        skip_all,
+        fields(endpoint = "wasm.signing.sign_order_with_typed_data_signer")
+    )
 )]
 #[wasm_bindgen(
     js_name = "signOrderWithTypedDataSigner",
@@ -337,7 +340,10 @@ pub fn build_cancel_order_tx(params: OrderTraderParametersInput) -> Result<JsVal
 #[cfg(feature = "cancellation")]
 #[cfg_attr(
     feature = "tracing",
-    tracing::instrument(skip_all, fields(endpoint = "wasm.signing.sign_cancellation_with_typed_data_signer"))
+    tracing::instrument(
+        skip_all,
+        fields(endpoint = "wasm.signing.sign_cancellation_with_typed_data_signer")
+    )
 )]
 #[wasm_bindgen(
     js_name = "signCancellationWithTypedDataSigner",
@@ -388,7 +394,10 @@ pub async fn sign_cancellation_with_typed_data_signer(
 #[cfg(feature = "cancellation")]
 #[cfg_attr(
     feature = "tracing",
-    tracing::instrument(skip_all, fields(endpoint = "wasm.signing.sign_cancellation_with_eip1193"))
+    tracing::instrument(
+        skip_all,
+        fields(endpoint = "wasm.signing.sign_cancellation_with_eip1193")
+    )
 )]
 #[wasm_bindgen(
     js_name = "signCancellationWithEip1193",
@@ -442,7 +451,10 @@ pub async fn sign_cancellation_with_eip1193(
 #[cfg(feature = "cancellation")]
 #[cfg_attr(
     feature = "tracing",
-    tracing::instrument(skip_all, fields(endpoint = "wasm.signing.sign_cancellation_eth_sign_digest"))
+    tracing::instrument(
+        skip_all,
+        fields(endpoint = "wasm.signing.sign_cancellation_eth_sign_digest")
+    )
 )]
 #[wasm_bindgen(
     js_name = "signCancellationEthSignDigest",

@@ -10,10 +10,9 @@ use std::{error::Error, sync::Arc};
 
 use serde_json::json;
 
-use cow_sdk::core::HexData;
-use cow_sdk::prelude::{SupportedChainId, Trading};
+use cow_sdk::core::{HexData, SupportedChainId};
 use cow_sdk::trading::{
-    OrderTraderParameters, onchain_cancellation_transaction, pre_sign_transaction,
+    OrderTraderParameters, Trading, onchain_cancellation_transaction, pre_sign_transaction,
 };
 
 use cow_sdk::testing::{MockOrderbook, MockSigner};

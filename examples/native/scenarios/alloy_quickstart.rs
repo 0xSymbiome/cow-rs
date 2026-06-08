@@ -7,8 +7,7 @@
 use std::error::Error;
 
 use cow_sdk::alloy::AlloyClient;
-use cow_sdk::core::{Provider, Signer, SigningProvider};
-use cow_sdk::prelude::SupportedChainId;
+use cow_sdk::core::{Provider, Signer, SigningProvider, SupportedChainId};
 use serde_json::json;
 use wiremock::{Mock, MockServer, ResponseTemplate, matchers::method};
 

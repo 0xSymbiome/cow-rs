@@ -24,15 +24,19 @@ would blur product identity, crate ownership, and runtime boundaries.
   `cow-sdk` and `cow-sdk-*`. Leaf crates are first-class entry points, while
   `cow-sdk` stays a narrow facade instead of the only meaningful integration
   surface.
-- Public root surface: the `cow-sdk` crate root is an **explicit, curated**
-  surface — leaf crates re-exported as named modules (`cow_sdk::trading`,
-  `cow_sdk::orderbook`, `cow_sdk::core`, …) plus a hand-picked set of primary
-  workflow types. The broader convenience set lives in an **opt-in**
-  `cow_sdk::prelude` that is **never** glob-re-exported to the crate root
-  (`pub use prelude::*` is disallowed), so the root stays pinnable in the
-  public-API snapshot and does not silently grow when the prelude grows. This
-  matches `cow-sdk-core` (whose prelude is opt-in) and the wider ecosystem
-  (`sqlx`, `diesel`).
+- Public root surface: the `cow-sdk` crate root is an **explicit, curated,
+  module-organised** surface — each leaf crate is re-exported as a named module
+  (`cow_sdk::core`, `cow_sdk::trading`, `cow_sdk::orderbook`, …), and every
+  workflow and identity type is reached on its module path
+  (`cow_sdk::core::Address`, `cow_sdk::trading::Trading`), matching `alloy`,
+  `reqwest`, and `tower`. The crate root itself carries only the cross-cutting
+  aggregate error (`CowError` / `ErrorClass`) and the typed transport, registry,
+  and EIP-1271 cache leaf surfaces consumers match against. The facade ships
+  **no prelude** — there is no `cow_sdk::prelude` — and the root is never grown
+  by a glob (`pub use <module>::*` is disallowed), so it stays explicit and
+  pinnable in the public-API snapshot. The workspace's only prelude is the
+  opt-in `cow_sdk::core::prelude` (the cow primitive newtypes, ADR 0052), the
+  way `cow-sdk-core` already scopes it.
 - Runtime and support: runtime-specific dependencies can stay isolated instead
   of forcing one dependency and runtime model across the whole workspace.
 - Validation and review: targeted crate-level tests, docs, and review can stay

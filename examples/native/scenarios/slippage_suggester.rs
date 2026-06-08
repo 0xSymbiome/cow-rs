@@ -13,10 +13,10 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use serde_json::json;
 
-use cow_sdk::prelude::{SupportedChainId, Trading};
+use cow_sdk::core::SupportedChainId;
 use cow_sdk::trading::{
     SlippageSuggestionProvider, SlippageToleranceRequest, SlippageToleranceResponse,
-    TradeAdvancedSettings, TradingError,
+    TradeAdvancedSettings, Trading, TradingError,
 };
 
 use cow_sdk::testing::{MockOrderbook, MockSigner};

@@ -23,7 +23,8 @@
 //! Native/default ready-state setup:
 //!
 //! ```rust
-//! use cow_sdk::prelude::{Address, SupportedChainId, Trading};
+//! use cow_sdk::core::{Address, SupportedChainId};
+//! use cow_sdk::trading::Trading;
 //!
 //! let _address = Address::new("0x1111111111111111111111111111111111111111").unwrap();
 //! let _trading = Trading::builder()
@@ -38,8 +39,8 @@
 //!
 //! ```rust,no_run
 //! # use std::error::Error;
-//! use cow_sdk::prelude::{Address, SupportedChainId, TradeParameters, Trading};
-//! use cow_sdk::core::{Amount, OrderKind};
+//! use cow_sdk::core::{Address, Amount, OrderKind, SupportedChainId};
+//! use cow_sdk::trading::{TradeParameters, Trading};
 //! #
 //! # async fn run<S>(signer: &S) -> Result<(), Box<dyn Error>>
 //! # where
@@ -88,24 +89,15 @@ compile_error!(
     "the alloy / alloy-provider / alloy-signer features on cow-sdk are for native targets only"
 );
 
-/// Curated re-exports for the default `cow-sdk` facade.
-pub mod prelude;
-
-// The primary-workflow types are hoisted to the crate root by **explicit**
-// re-export — never `pub use prelude::*` — so the crate-root public surface stays
-// curated and pinnable rather than glob-defined (a glob would silently grow the
-// root API whenever the prelude grows). The full workflow set, including
-// convenience items such as `CowEnv`, `Provider`, `Signer`, `Cancellable`, and the
-// leaf error/builder types, is reachable through the opt-in `cow_sdk::prelude`,
-// matching `cow-sdk-core` and the wider ecosystem (sqlx, diesel). `ErrorClass`,
-// `CowError`, and `HttpTransport` are already re-exported individually below.
-#[cfg(feature = "browser-wallet")]
-#[cfg_attr(docsrs, doc(cfg(feature = "browser-wallet")))]
-pub use prelude::BrowserWalletSigner;
-pub use prelude::{
-    Address, Amount, AppCode, OrderUid, OrderbookApi, Signature, SupportedChainId, TradeParameters,
-    TraderParameters, Trading, TradingBuilder, TradingOptions,
-};
+// The `cow-sdk` crate root is a thin, module-organised facade: each leaf crate
+// is re-exported as a named module (`core`, `trading`, `orderbook`, `signing`,
+// `contracts`, `app_data`, …), and every workflow and identity type is reached
+// on its module path (`cow_sdk::core::Address`, `cow_sdk::trading::Trading`),
+// matching `alloy`, `reqwest`, and `tower`. The crate root itself carries only
+// the cross-cutting aggregate error (`CowError` / `ErrorClass`, below) and the
+// typed transport, registry, and EIP-1271 cache leaf surfaces consumers match
+// against. There is no facade prelude; the workspace's identity prelude is the
+// opt-in `cow_sdk::core::prelude` (the cow primitive newtypes, ADR 0052).
 
 #[cfg(all(feature = "alloy", not(target_arch = "wasm32")))]
 #[cfg_attr(docsrs, doc(cfg(feature = "alloy")))]

@@ -15,10 +15,9 @@ use wiremock::{
 };
 
 use cow_sdk::{
-    core::{Cancellable, CancellationToken},
-    orderbook::{ApiContext, ExternalHostPolicy},
-    prelude::{CowEnv, OrderbookApi, SupportedChainId, TraderParameters, TradingError},
-    trading::{TradingBuilder, TradingOptions},
+    core::{Cancellable, CancellationToken, CowEnv, SupportedChainId},
+    orderbook::{ApiContext, ExternalHostPolicy, OrderbookApi},
+    trading::{TraderParameters, TradingBuilder, TradingError, TradingOptions},
 };
 
 use cow_sdk_examples_native::support::{sample_quote_response_json, sample_trade_parameters};

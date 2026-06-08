@@ -14,8 +14,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use async_trait::async_trait;
 use serde_json::json;
 
-use cow_sdk::core::{EVM_NATIVE_CURRENCY_ADDRESS, OrderDigest};
-use cow_sdk::prelude::{Address, OrderUid};
+use cow_sdk::core::{Address, EVM_NATIVE_CURRENCY_ADDRESS, OrderDigest, OrderUid};
 use cow_sdk::trading::{
     EthFlowOrderExistsChecker, LimitTradeParametersFromQuote, PostTradeAdditionalParams,
     TradingError, build_app_data, eth_flow_transaction,

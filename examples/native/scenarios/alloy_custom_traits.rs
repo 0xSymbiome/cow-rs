@@ -11,11 +11,10 @@ use std::{convert::Infallible, error::Error};
 use cow_sdk::alloy_provider::RpcAlloyProvider;
 use cow_sdk::alloy_signer::LocalAlloyKeystoreSigner;
 use cow_sdk::core::{
-    BlockHash, BlockInfo, ChainId, ContractCall, ContractHandle, HexData, Provider, Signer,
-    TransactionBroadcast, TransactionHash, TransactionReceipt, TransactionRequest,
-    TransactionStatus, TypedDataDomain, TypedDataField,
+    Address, Amount, BlockHash, BlockInfo, ChainId, ContractCall, ContractHandle, HexData,
+    Provider, Signer, SupportedChainId, TransactionBroadcast, TransactionHash, TransactionReceipt,
+    TransactionRequest, TransactionStatus, TypedDataDomain, TypedDataField,
 };
-use cow_sdk::prelude::{Address, Amount, SupportedChainId};
 use serde_json::json;
 use wiremock::{Mock, MockServer, ResponseTemplate, matchers::method};
 

@@ -25,10 +25,7 @@ async fn sign_emits_one_span_with_chain_version_and_endpoint() {
         .expect("the recording signer yields a parseable recoverable signature");
 
     let spans = capture.spans();
-    let sign_spans: Vec<_> = spans
-        .iter()
-        .filter(|span| span.name() == "sign")
-        .collect();
+    let sign_spans: Vec<_> = spans.iter().filter(|span| span.name() == "sign").collect();
     assert_eq!(
         sign_spans.len(),
         1,
@@ -44,7 +41,14 @@ async fn sign_emits_one_span_with_chain_version_and_endpoint() {
     );
     // No signer, signature, owner, nonce, deadline, or payload material is
     // recorded; the owner is resolved inside the call and never surfaced.
-    for forbidden in ["signer", "signature", "owner", "nonce", "deadline", "payload"] {
+    for forbidden in [
+        "signer",
+        "signature",
+        "owner",
+        "nonce",
+        "deadline",
+        "payload",
+    ] {
         assert!(
             span.field(forbidden).is_none(),
             "sign span must not record {forbidden}: {span:#?}"

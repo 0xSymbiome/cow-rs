@@ -30,7 +30,8 @@ see the workspace
 guide for that wiring.
 
 ```rust
-use cow_sdk::prelude::{SupportedChainId, Trading};
+use cow_sdk::core::SupportedChainId;
+use cow_sdk::trading::Trading;
 
 let _trading = Trading::builder()
     .chain_id(SupportedChainId::Sepolia)
@@ -44,8 +45,8 @@ owner defaults to the signer's address:
 
 ```rust,no_run
 # use std::error::Error;
-use cow_sdk::prelude::{Address, SupportedChainId, TradeParameters, Trading};
-use cow_sdk::core::{Amount, OrderKind};
+use cow_sdk::core::{Address, Amount, OrderKind, SupportedChainId};
+use cow_sdk::trading::{TradeParameters, Trading};
 #
 # async fn run<S>(signer: &S) -> Result<(), Box<dyn Error>>
 # where
@@ -91,7 +92,7 @@ cooldown when present.
 
 ```rust
 use std::time::Duration;
-use cow_sdk::prelude::{ErrorClass, CowError};
+use cow_sdk::{CowError, ErrorClass};
 
 /// Decide whether a failed SDK call should be retried, and how long to wait.
 fn retry_delay(error: &CowError) -> Option<Duration> {

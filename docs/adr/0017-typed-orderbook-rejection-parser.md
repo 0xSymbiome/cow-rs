@@ -85,7 +85,7 @@ on the happy diagnostic path.
   telemetry partitions remain stable.
 - Cost: one new module (`crates/orderbook/src/rejection.rs`), one
   typed variant on `OrderbookError`, one byte-slice-level public
-  function, and one re-export from the `cow-sdk` facade prelude.
+  function, and one re-export through the `cow-sdk` facade `orderbook` module.
   The retired stringly-typed accessor is the only contract removal.
 
 ## Alternatives Rejected

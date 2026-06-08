@@ -5,11 +5,13 @@
 ))]
 #[test]
 fn public_api_default_features_only_snapshot_matches() {
-    use cow_sdk::{
-        Address, Amount, AppCode, CowError, ErrorClass, HttpTransport, OrderUid, OrderbookApi,
-        Signature, SupportedChainId, TradeParameters, TraderParameters, Trading, TradingBuilder,
-        TradingOptions,
+    use cow_sdk::contracts::Signature;
+    use cow_sdk::core::{Address, Amount, AppCode, OrderUid, SupportedChainId};
+    use cow_sdk::orderbook::OrderbookApi;
+    use cow_sdk::trading::{
+        TradeParameters, TraderParameters, Trading, TradingBuilder, TradingOptions,
     };
+    use cow_sdk::{CowError, ErrorClass, HttpTransport};
 
     let _ = core::any::type_name::<Address>();
     let _ = core::any::type_name::<Amount>();
@@ -46,33 +48,19 @@ modules:
 - contracts
 - core
 - orderbook
-- prelude
 - signing
 - trading
 root exports:
-- Address
-- Amount
-- AppCode
 - ErrorClass
 - HttpTransport
 - NoopEip1271VerificationCache
-- OrderbookApi
-- OrderUid
 - RegistryError
 - CowError
-- Signature
-- SupportedChainId
-- TradeParameters
-- TraderParameters
-- Trading
-- TradingBuilder
-- TradingOptions
 - TransportError
 - TransportErrorClass
 feature-gated exports absent:
 - browser_wallet
 - subgraph
-- BrowserWalletSigner
 - InMemoryEip1271VerificationCache
 "
 }
