@@ -14,6 +14,12 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Added
 
+- The `cow-sdk-browser-wallet` connection and session operations
+  (`BrowserWallet::connect`, `request_accounts`, and `refresh_session`) emit a
+  span carrying an explicit `method` label when the `tracing` feature is
+  enabled, matching the chain-management operations already covered. These
+  wallet-mediated RPC calls — including the `connect` authorization prompt —
+  were previously untraced.
 - The `cow-sdk-app-data` IPFS document-read helpers emit a fetch span when the
   `tracing` feature is enabled, closing a previously inert feature. Every
   `fetch_doc_*` entry path funnels through the shared

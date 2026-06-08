@@ -264,6 +264,15 @@ label identifying the operation.
 - `BrowserWallet::switch_chain`
 - `BrowserWallet::switch_or_add_chain`
 
+Connection and session operations drive `eth_requestAccounts`, `eth_accounts`,
+and `eth_chainId`. They carry the same explicit `method` label but no `chain`
+field, because they take no chain argument; the wallet's own chain is whatever
+the session already reflects.
+
+- `BrowserWallet::connect`
+- `BrowserWallet::request_accounts`
+- `BrowserWallet::refresh_session`
+
 ### Native Alloy Adapters
 
 Native Alloy adapter telemetry follows the same redaction posture as the rest

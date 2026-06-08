@@ -49,4 +49,5 @@ web-sys = { workspace = true, features = ["CustomEvent", "Event", "EventTarget",
 wasm-bindgen-test.workspace = true
 
 [dev-dependencies]
+cow-sdk-test-utils = { path = "../test-utils" }
 tokio = { workspace = true, features = ["macros", "rt"] }

@@ -189,6 +189,10 @@ impl BrowserWallet {
     ///
     /// Returns an error when the wallet rejects account or chain requests or returns malformed
     /// responses.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(skip_all, fields(method = "browser_wallet.connect")),
+    )]
     pub async fn connect(&self) -> Result<WalletSession, BrowserWalletError> {
         self.provider.query_accounts(true).await?;
         self.provider.query_chain_id().await?;
@@ -200,6 +204,10 @@ impl BrowserWallet {
     /// # Errors
     ///
     /// Returns an error when the wallet rejects the request or returns malformed accounts.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(skip_all, fields(method = "browser_wallet.request_accounts")),
+    )]
     pub async fn request_accounts(&self) -> Result<Vec<Address>, BrowserWalletError> {
         self.provider.query_accounts(true).await
     }
@@ -210,6 +218,10 @@ impl BrowserWallet {
     ///
     /// Returns an error when the wallet rejects `eth_accounts` or `eth_chainId`, or when either
     /// response is malformed.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(skip_all, fields(method = "browser_wallet.refresh_session")),
+    )]
     pub async fn refresh_session(&self) -> Result<WalletSession, BrowserWalletError> {
         let _ = self.provider.query_accounts(false).await?;
         let _ = self.provider.query_chain_id().await?;
