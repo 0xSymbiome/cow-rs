@@ -1385,7 +1385,6 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.18",
  "tokio",
- "tracing",
  "trybuild",
  "wiremock",
 ]
@@ -1411,7 +1410,6 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.18",
  "tokio",
- "tracing",
  "trybuild",
  "url",
  "wiremock",
@@ -1437,7 +1435,6 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.18",
  "tokio",
- "tracing",
  "trybuild",
 ]
 

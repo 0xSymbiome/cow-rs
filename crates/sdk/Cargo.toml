@@ -59,9 +59,6 @@ in-memory-cache = ["cow-sdk-signing/in-memory-cache"]
 testing = ["dep:cow-sdk-test"]
 wasm = ["dep:cow-sdk-pure-helpers", "dep:cow-sdk-wasm"]
 tracing = [
-    "cow-sdk-alloy?/tracing",
-    "cow-sdk-alloy-provider?/tracing",
-    "cow-sdk-alloy-signer?/tracing",
     "cow-sdk-app-data/tracing",
     "cow-sdk-contracts/tracing",
     "cow-sdk-core/tracing",

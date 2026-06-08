@@ -735,6 +735,13 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Removed
 
+- Removed the inert `tracing` feature and its optional `tracing` dependency
+  from `cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, and `cow-sdk-alloy`.
+  The feature emitted no spans or events — the native Alloy adapters are
+  provider-neutral by design and leave provider/signer telemetry to the host —
+  so the flag was dead surface and dead dependency weight. The facade `tracing`
+  feature no longer references the adapter crates, and the observability guide
+  states the adapters emit no telemetry of their own.
 - Removed the unused `GraphTransport` extension trait (and its tautological
   `MockGraph` test double) from `cow-sdk-core`. It carried no implementation and
   no consumer — the subgraph client's transport seam is the already-shipped

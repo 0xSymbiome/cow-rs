@@ -24,9 +24,6 @@ cow-sdk-browser-wallet = { version = "0.1", features = ["tracing"] }
 cow-sdk-cow-shed = { version = "0.1", features = ["tracing"] }
 cow-sdk-wasm = { version = "0.1", features = ["tracing"] }
 cow-sdk-transport-wasm = { version = "0.1", features = ["tracing"] }
-cow-sdk-alloy-provider = { version = "0.1", features = ["tracing"] }
-cow-sdk-alloy-signer = { version = "0.1", features = ["tracing"] }
-cow-sdk-alloy = { version = "0.1", features = ["tracing"] }
 ```
 
 With the feature off the SDK emits zero spans and zero events, and none of
@@ -117,8 +114,8 @@ its opt-in `cow-shed` facade feature, `cow-sdk-cow-shed`. Each canonical public 
 method carries `#[tracing::instrument]` and emits exactly one span per call.
 The `cow-sdk-wasm` JavaScript export surface emits one span per export call
 under the same redaction posture; see its subsection below.
-The native Alloy adapter crates participate in the facade `tracing` feature
-family and follow the same redaction posture for any adapter diagnostics.
+The native Alloy adapter crates emit no telemetry of their own by design; see
+the Native Alloy Adapters section below.
 Callers that need cooperative cancellation wrap the returned future through
 [`cow_sdk_core::Cancellable::cancel_with`] at the call site; the span is
 emitted through the wrapped future without additional instrumentation.
@@ -299,12 +296,15 @@ The covered export areas are:
 
 ### Native Alloy Adapters
 
-Native Alloy adapter telemetry follows the same redaction posture as the rest
-of the SDK. Provider URLs, private-key material, typed-data payload contents,
-signature bytes, raw transaction payloads, and response bodies are not trace
-fields. Downstream applications that need provider-specific telemetry can add
-their own spans around the `Provider`, `SigningProvider`, or
-`Signer` calls.
+The native Alloy adapter crates (`cow-sdk-alloy-provider`,
+`cow-sdk-alloy-signer`, `cow-sdk-alloy`) emit no spans or events of their own
+by design. Keeping the chain-RPC runtime provider-neutral means the host owns
+its provider and signer telemetry: downstream applications that want
+provider-specific telemetry add their own spans around the `Provider`,
+`SigningProvider`, or `Signer` calls. The adapters expose no `tracing` feature,
+so there is no adapter telemetry surface to redact; their credential redaction
+posture applies to `Debug`, `Display`, and `Error::source` rendering and is
+documented with the adapter crates, not here.
 
 Transaction lifecycle telemetry stays separated. The `cow-sdk-trading`
 receipt-wait helpers realize this contract directly through the
@@ -330,7 +330,9 @@ No traced span or event must ever carry a secret. Concretely:
   never logged by the SDK. Downstream instrumentation that wants to record
   a signature should do so explicitly in host code.
 - Native Alloy adapter diagnostics redact configured RPC URLs and signing
-  secrets before public formatting or telemetry.
+  secrets before public formatting; the adapters emit no telemetry of their
+  own, so the redaction posture covers only `Debug`, `Display`, and
+  `Error::source` rendering.
 - `cow-sdk-wasm` maps transport, app-data, signing, orderbook, subgraph, and
   trading failures into `WasmError` with display-safe messages and redacted
   response bodies before those values cross into JavaScript.
