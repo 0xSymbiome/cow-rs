@@ -125,6 +125,10 @@ impl Eip1193 for JsEip1193Requester {
 /// @param options Optional cancellation, timeout, and wallet timeout settings.
 /// @returns A versioned envelope containing the signed order.
 /// @throws CowError for invalid input, callback failure, timeout, or cancellation.
+#[cfg_attr(
+    feature = "tracing",
+    tracing::instrument(skip_all, fields(endpoint = "wasm.signing.sign_order_with_typed_data_signer"))
+)]
 #[wasm_bindgen(
     js_name = "signOrderWithTypedDataSigner",
     unchecked_return_type = "WasmEnvelope<SignedOrderDto>"
@@ -168,6 +172,10 @@ pub async fn sign_order_with_typed_data_signer(
 /// @param options Optional cancellation, timeout, and wallet timeout settings.
 /// @returns A versioned envelope containing the signed order.
 /// @throws CowError for invalid input, wallet failure, timeout, or cancellation.
+#[cfg_attr(
+    feature = "tracing",
+    tracing::instrument(skip_all, fields(endpoint = "wasm.signing.sign_order_with_eip1193"))
+)]
 #[wasm_bindgen(
     js_name = "signOrderWithEip1193",
     unchecked_return_type = "WasmEnvelope<SignedOrderDto>"
@@ -220,6 +228,10 @@ pub async fn sign_order_with_eip1193(
 /// @param options Optional cancellation, timeout, and wallet timeout settings.
 /// @returns A versioned envelope containing the signed order.
 /// @throws CowError for invalid input, callback failure, timeout, or cancellation.
+#[cfg_attr(
+    feature = "tracing",
+    tracing::instrument(skip_all, fields(endpoint = "wasm.signing.sign_order_eth_sign_digest"))
+)]
 #[wasm_bindgen(
     js_name = "signOrderEthSignDigest",
     unchecked_return_type = "WasmEnvelope<SignedOrderDto>"
@@ -323,6 +335,10 @@ pub fn build_cancel_order_tx(params: OrderTraderParametersInput) -> Result<JsVal
 /// @returns A versioned envelope containing signed cancellations.
 /// @throws CowError for empty input, invalid UID, callback failure, or timeout.
 #[cfg(feature = "cancellation")]
+#[cfg_attr(
+    feature = "tracing",
+    tracing::instrument(skip_all, fields(endpoint = "wasm.signing.sign_cancellation_with_typed_data_signer"))
+)]
 #[wasm_bindgen(
     js_name = "signCancellationWithTypedDataSigner",
     unchecked_return_type = "WasmEnvelope<SignedCancellationsInput>"
@@ -370,6 +386,10 @@ pub async fn sign_cancellation_with_typed_data_signer(
 /// @returns A versioned envelope containing signed cancellations.
 /// @throws CowError for invalid input, wallet failure, timeout, or cancellation.
 #[cfg(feature = "cancellation")]
+#[cfg_attr(
+    feature = "tracing",
+    tracing::instrument(skip_all, fields(endpoint = "wasm.signing.sign_cancellation_with_eip1193"))
+)]
 #[wasm_bindgen(
     js_name = "signCancellationWithEip1193",
     unchecked_return_type = "WasmEnvelope<SignedCancellationsInput>"
@@ -420,6 +440,10 @@ pub async fn sign_cancellation_with_eip1193(
 /// @returns A versioned envelope containing signed cancellations.
 /// @throws CowError for empty input, invalid UID, callback failure, or timeout.
 #[cfg(feature = "cancellation")]
+#[cfg_attr(
+    feature = "tracing",
+    tracing::instrument(skip_all, fields(endpoint = "wasm.signing.sign_cancellation_eth_sign_digest"))
+)]
 #[wasm_bindgen(
     js_name = "signCancellationEthSignDigest",
     unchecked_return_type = "WasmEnvelope<SignedCancellationsInput>"

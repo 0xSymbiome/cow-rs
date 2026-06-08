@@ -1762,6 +1762,7 @@ dependencies = [
  "cow-sdk-pure-helpers",
  "cow-sdk-signing",
  "cow-sdk-subgraph",
+ "cow-sdk-test-utils",
  "cow-sdk-trading",
  "cow-sdk-transport-policy",
  "getrandom 0.4.2",

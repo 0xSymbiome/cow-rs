@@ -14,6 +14,12 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Added
 
+- The `cow-sdk-wasm` JavaScript signing, EIP-1271, subgraph, and IPFS export
+  modules emit a span carrying a stable `wasm.<area>.<method>` endpoint label
+  when the `tracing` feature is enabled, matching the trading and orderbook
+  exports already instrumented. Spans use `skip_all`, so no JavaScript
+  callback, signer, payload, or wallet input is captured, and synchronous
+  transaction-building exports stay span-free.
 - The `cow-sdk-browser-wallet` connection and session operations
   (`BrowserWallet::connect`, `request_accounts`, and `refresh_session`) emit a
   span carrying an explicit `method` label when the `tracing` feature is

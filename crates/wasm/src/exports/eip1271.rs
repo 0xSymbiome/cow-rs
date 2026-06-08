@@ -94,6 +94,10 @@ pub fn eip1271_signature_payload_export(
 /// @param options Optional cancellation, timeout, and wallet timeout settings.
 /// @returns A versioned envelope containing the signed-order DTO.
 /// @throws CowError for invalid input, callback failure, timeout, or cancellation.
+#[cfg_attr(
+    feature = "tracing",
+    tracing::instrument(skip_all, fields(endpoint = "wasm.eip1271.sign_order_with_eip1271"))
+)]
 #[wasm_bindgen(
     js_name = "signOrderWithEip1271",
     unchecked_return_type = "WasmEnvelope<SignedOrderDto>"
@@ -147,6 +151,10 @@ pub async fn sign_order_with_eip1271(
 /// @param options Optional cancellation, timeout, and wallet timeout settings.
 /// @returns A versioned envelope containing the signed-order DTO.
 /// @throws CowError for invalid input, callback failure, timeout, or cancellation.
+#[cfg_attr(
+    feature = "tracing",
+    tracing::instrument(skip_all, fields(endpoint = "wasm.eip1271.sign_order_with_custom_eip1271"))
+)]
 #[wasm_bindgen(
     js_name = "signOrderWithCustomEip1271",
     unchecked_return_type = "WasmEnvelope<SignedOrderDto>"

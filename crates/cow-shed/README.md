@@ -201,6 +201,7 @@ the chain-keyed lookups. The crate additionally exposes
 | --- | --- |
 | `cow-shed-gnosis` | Exposes the Gnosis-only `COWShedForComposableCoW` forwarder surface. |
 | `cow-shed-ens` (alias `with_ens`) | Reserved for ENS-oriented factory getters. |
+| `tracing` | Emits a span from `CowShedHooks::sign`; see the workspace observability guide. |
 
 Default builds pull in no provider or signer adapters. The MSRV is Rust 1.94.0.
 This crate runs no service loops, persistence, polling, or submission; consumers

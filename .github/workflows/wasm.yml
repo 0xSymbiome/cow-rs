@@ -403,6 +403,12 @@ jobs:
         # `--firefox` switch routes wasm-pack through geckodriver,
         # which the setup-geckodriver step placed on `PATH`.
         run: wasm-pack test --release --headless --firefox crates/wasm
+      - name: Test cow-sdk-wasm tracing spans in headless Firefox
+        # The export-surface tracing-span tests are wasm32-only and gated on the
+        # crate's `tracing` feature, so the default run above never builds them.
+        # The `tracing` feature keeps the default flavor and adds span emission so
+        # the telemetry contract tests run.
+        run: wasm-pack test --release --headless --firefox crates/wasm --features tracing
       - name: Test cow-sdk-transport-wasm in headless Firefox
         # The browser FetchTransport parity, error-class, timeout, and
         # tracing-span tests are wasm32-only, so the native `cargo test`

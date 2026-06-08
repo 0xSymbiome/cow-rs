@@ -162,6 +162,10 @@ impl IpfsClient {
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing the app-data document.
     /// @throws CowError for invalid CID, transport failure, timeout, or parse failure.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(skip_all, fields(endpoint = "wasm.ipfs.fetch_app_data_from_cid"))
+    )]
     #[wasm_bindgen(
         js_name = "fetchAppDataFromCid",
         unchecked_return_type = "WasmEnvelope<AppDataDocDto>"
@@ -189,6 +193,10 @@ impl IpfsClient {
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing the app-data document.
     /// @throws CowError for invalid hash, transport failure, timeout, or parse failure.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(skip_all, fields(endpoint = "wasm.ipfs.fetch_app_data_from_hex"))
+    )]
     #[wasm_bindgen(
         js_name = "fetchAppDataFromHex",
         unchecked_return_type = "WasmEnvelope<AppDataDocDto>"

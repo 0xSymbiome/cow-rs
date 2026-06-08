@@ -22,6 +22,7 @@ cow-sdk-subgraph = { version = "0.1", features = ["tracing"] }
 cow-sdk-signing = { version = "0.1", features = ["tracing"] }
 cow-sdk-browser-wallet = { version = "0.1", features = ["tracing"] }
 cow-sdk-cow-shed = { version = "0.1", features = ["tracing"] }
+cow-sdk-wasm = { version = "0.1", features = ["tracing"] }
 cow-sdk-transport-wasm = { version = "0.1", features = ["tracing"] }
 cow-sdk-alloy-provider = { version = "0.1", features = ["tracing"] }
 cow-sdk-alloy-signer = { version = "0.1", features = ["tracing"] }
@@ -114,6 +115,8 @@ Tracing spans are emitted by every long-running public async method on
 `cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-browser-wallet`, and, behind
 its opt-in `cow-shed` facade feature, `cow-sdk-cow-shed`. Each canonical public async
 method carries `#[tracing::instrument]` and emits exactly one span per call.
+The `cow-sdk-wasm` JavaScript export surface emits one span per export call
+under the same redaction posture; see its subsection below.
 The native Alloy adapter crates participate in the facade `tracing` feature
 family and follow the same redaction posture for any adapter diagnostics.
 Callers that need cooperative cancellation wrap the returned future through
@@ -272,6 +275,27 @@ the session already reflects.
 - `BrowserWallet::connect`
 - `BrowserWallet::request_accounts`
 - `BrowserWallet::refresh_session`
+
+### `cow-sdk-wasm`
+
+The JavaScript export surface emits one span per export call, each carrying a
+stable `endpoint` label of the form `wasm.<area>.<method>` where `<area>` is the
+export module and `<method>` is the Rust export name. The spans use `skip_all`,
+so no JavaScript callback, signer, payload, or wallet input is captured. The
+underlying Rust crate's own spans are gated by that crate's `tracing` feature
+and are not enabled by `cow-sdk-wasm`'s feature alone, so each export call
+surfaces exactly one `wasm.*` span. Synchronous transaction-building exports
+(`buildPresignTx`, `buildCancelOrderTx`, `eip1271SignaturePayload`) are
+deterministic and carry no spans.
+
+The covered export areas are:
+
+- `wasm.trading.*` (`TradingClient` quote, post, and allowance exports)
+- `wasm.orderbook.*` (`OrderBookClient` quote, order, trade, and app-data exports)
+- `wasm.signing.*` (order and cancellation signing exports)
+- `wasm.eip1271.*` (`signOrderWithEip1271`, `signOrderWithCustomEip1271`)
+- `wasm.subgraph.*` (`SubgraphClient` totals, volume, and query exports)
+- `wasm.ipfs.*` (`IpfsClient` app-data read exports)
 
 ### Native Alloy Adapters
 

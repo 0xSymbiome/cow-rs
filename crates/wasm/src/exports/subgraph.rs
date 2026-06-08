@@ -72,6 +72,10 @@ impl SubgraphClient {
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing aggregate totals.
     /// @throws CowError for transport, cancellation, timeout, or subgraph errors.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(skip_all, fields(endpoint = "wasm.subgraph.totals"))
+    )]
     #[wasm_bindgen(js_name = "getTotals")]
     pub async fn totals(
         &self,
@@ -91,6 +95,10 @@ impl SubgraphClient {
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing daily volume rows.
     /// @throws CowError for invalid query shape, transport failure, or timeout.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(skip_all, fields(endpoint = "wasm.subgraph.last_days_volume"))
+    )]
     #[wasm_bindgen(js_name = "getLastDaysVolume")]
     pub async fn last_days_volume(
         &self,
@@ -114,6 +122,10 @@ impl SubgraphClient {
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing hourly volume rows.
     /// @throws CowError for invalid query shape, transport failure, or timeout.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(skip_all, fields(endpoint = "wasm.subgraph.last_hours_volume"))
+    )]
     #[wasm_bindgen(js_name = "getLastHoursVolume")]
     pub async fn last_hours_volume(
         &self,
@@ -137,6 +149,10 @@ impl SubgraphClient {
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing the JSON GraphQL response.
     /// @throws CowError for transport, timeout, cancellation, or GraphQL errors.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(skip_all, fields(endpoint = "wasm.subgraph.run_query"))
+    )]
     #[wasm_bindgen(js_name = "runQuery")]
     pub async fn run_query(
         &self,
