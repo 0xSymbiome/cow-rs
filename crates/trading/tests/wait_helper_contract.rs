@@ -156,3 +156,35 @@ async fn cancellation_through_cancellable_propagates_through_helper() {
 
     assert!(matches!(result, Err(WaitError::Cancelled(_))));
 }
+
+#[tokio::test]
+async fn reverted_accessor_reports_the_on_chain_revert_verdict() {
+    // A reverted outcome exposes the receipt through `reverted()`.
+    let signer = common::FakeSigner::with_broadcast(common::test_hash());
+    let reverted = common::rich_receipt_fixture().with_status(TransactionStatus::Reverted);
+    let provider = common::FakeProvider::with_receipt_after_polls(1, reverted);
+    let tx = TransactionRequest::default();
+
+    let error =
+        submit_and_wait_for_receipt(&signer, &provider, &tx, WaitOptions::approve_default())
+            .await
+            .expect_err("require_success with reverted status yields WaitError::Reverted");
+    let receipt = error
+        .reverted()
+        .expect("reverted() exposes the reverted receipt");
+    assert_eq!(receipt.status, Some(TransactionStatus::Reverted));
+
+    // A timeout is transient, not an on-chain revert, so `reverted()` is `None`.
+    let signer = common::FakeSigner::with_broadcast(common::test_hash());
+    let provider = common::FakeProvider::never_yields_receipt();
+    let tx = TransactionRequest::default();
+    let options = WaitOptions::new(Duration::from_millis(25), Duration::from_millis(100));
+
+    let error = submit_and_wait_for_receipt(&signer, &provider, &tx, options)
+        .await
+        .expect_err("no receipt before timeout yields WaitError::Timeout");
+    assert!(
+        error.reverted().is_none(),
+        "a timeout is not an on-chain revert"
+    );
+}

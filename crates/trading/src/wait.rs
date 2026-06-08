@@ -102,6 +102,41 @@ pub enum WaitError<S, P> {
     Cancelled(Cancelled),
 }
 
+impl<S, P> WaitError<S, P> {
+    /// Returns the reverted receipt when the wait failed because the mined
+    /// transaction reverted on-chain, and `None` otherwise.
+    ///
+    /// Only [`WaitError::Reverted`] is a genuine on-chain failure; the other
+    /// variants are transient or environmental — [`WaitError::Broadcast`] and
+    /// [`WaitError::Lookup`] (signer and provider transport, carrying the
+    /// caller's own error types), [`WaitError::Timeout`], and
+    /// [`WaitError::Cancelled`]. This accessor never inspects the caller's
+    /// signer or provider error, so its verdict is always sound.
+    ///
+    /// A reverted receipt surfaces through this variant only when
+    /// [`WaitOptions::require_success`] is set; an inclusion-only wait returns
+    /// `Ok(receipt)` and the caller reads the receipt's `status`.
+    ///
+    /// ```
+    /// use cow_sdk_trading::WaitError;
+    ///
+    /// fn on_submit_failure<S, P>(error: &WaitError<S, P>) {
+    ///     if error.reverted().is_some() {
+    ///         // the mined transaction reverted on-chain — a real failure
+    ///     } else {
+    ///         // transient or environmental — retry the submit or surface it
+    ///     }
+    /// }
+    /// ```
+    #[must_use]
+    pub const fn reverted(&self) -> Option<&TransactionReceipt> {
+        match self {
+            Self::Reverted { receipt } => Some(receipt),
+            _ => None,
+        }
+    }
+}
+
 impl<S, P> std::fmt::Debug for WaitError<S, P>
 where
     S: std::fmt::Debug,

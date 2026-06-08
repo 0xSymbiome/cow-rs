@@ -162,6 +162,11 @@ over `Signer` and `Provider`, so they work with the native Alloy
 client, separate Alloy provider and signer adapters, browser-wallet adapters,
 and custom integrations.
 
+When only the revert verdict matters, `WaitError::reverted()` returns the
+reverted receipt for a mined on-chain failure and `None` for the transient
+broadcast, lookup, timeout, and cancellation variants — a coarse alternative to
+matching each variant.
+
 ## Where to next
 
 - [Getting Started](https://github.com/cowdao-grants/cow-rs/blob/main/docs/getting-started.md)

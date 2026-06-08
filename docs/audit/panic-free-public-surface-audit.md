@@ -1,7 +1,7 @@
 # Panic-Free Public Surface Audit
 
 Status: Current
-Last reviewed: 2026-06-07
+Last reviewed: 2026-06-08
 Owning surface: every `crates/*/src/**/*.rs` file accessible from the published public API
 Refresh trigger: any ADR 0033 panic-policy change, panic-allowlist addition, or new `expect`, `unwrap`, or `panic!` site on a path reachable from the published public API
 Related docs:
@@ -70,7 +70,8 @@ return a typed error instead of panicking.
 value constructors; `submit_and_wait_for_receipt` and `poll_for_receipt`
 surface signer, provider, timeout, revert, and cancellation outcomes through
 `WaitError`; the `Display` and `Error` implementations format or expose
-sources without unchecked assumptions.
+sources without unchecked assumptions; and the `WaitError::reverted()` accessor
+reads the reverted receipt through a total `const fn` match with no panic path.
 
 The canonical panic allowlist is `.github/config/panic-allowlist.yaml`.
 It currently contains 40 reviewed item-path entries. Each accepted production

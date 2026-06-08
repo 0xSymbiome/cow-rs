@@ -1,7 +1,7 @@
 # Error Classification Audit
 
 Status: Current
-Last reviewed: 2026-06-07
+Last reviewed: 2026-06-08
 Owning surface: the `class()`, `is_retryable()`, and `backoff_hint()` accessors on the `cow-sdk` error family and the shared `cow_sdk_core::ErrorClass`
 Refresh trigger: a new `ErrorClass` bucket; a new error type aggregated by `cow_sdk::CowError`; a change to any type's `class()` mapping; a change to the `is_retryable()` / `backoff_hint()` mapping or the retained `Retry-After` capture; or a new error variant whose class or retry verdict differs from its type's existing default arm
 Related docs:
@@ -30,6 +30,14 @@ It does not cover the native Alloy adapter error classes
 (`ProviderErrorClass`, `SignerErrorClass`, `AlloyClientErrorClass`), which keep
 their own per-type enums under the [ADR 0053](../adr/0053-typed-signer-rejection-classification.md)
 convention because their taxonomies differ from the facade family.
+
+It also does not cover `cow_sdk_trading::WaitError`, the receipt-wait outcome
+type. `WaitError` is generic over the caller's signer and provider error types
+(runtime neutrality, [ADR 0024](../adr/0024-asyncprovider-asyncsigningprovider-capability-split.md)),
+so it stays outside the `ErrorClass` family and is not a `CowError` variant. Its
+on-chain verdict is the purpose-built `WaitError::reverted()` accessor — which
+distinguishes a mined revert from the transient broadcast, lookup, timeout, and
+cancellation variants — rather than a `class()` mapping.
 
 ## Outcome Summary
 

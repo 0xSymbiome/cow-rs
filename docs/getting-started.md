@@ -561,6 +561,14 @@ action-oriented rejection categories:
 cargo run --manifest-path examples/native/Cargo.toml --example error_classification
 ```
 
+`CowError` is the convenience aggregate for `?`-propagating consumers; a consumer
+with its own error type matches the leaf directly, since each leaf carries the
+same `class()` / `is_retryable()` plus the finer `OrderbookRejection::category()`.
+On-chain submission has its own verdict: the receipt-wait helpers return
+`WaitError` — generic over the caller's signer and provider error types, so it
+stays out of `CowError` — and `WaitError::reverted()` distinguishes a real
+on-chain revert from a transient broadcast, lookup, timeout, or cancellation.
+
 ## Step 5: Branch By Goal
 
 After the two deterministic checkpoints above, branch into the maintained

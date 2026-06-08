@@ -80,3 +80,18 @@ post-EIP-658 success-or-reverted bit is read through the alloy
 `receipt.inner.status_or_post_state().as_eip658()` accessor in the
 adapter conversion; the optional-field tolerance contract on
 receipt-capable providers is preserved.
+
+## Amendment 2026-06-08: reverted-receipt verdict on the wait helper
+
+`WaitError::reverted(&self) -> Option<&TransactionReceipt>` returns the reverted
+receipt when a receipt wait failed because the mined transaction reverted
+on-chain, and `None` for the transient or environmental variants (`Broadcast`,
+`Lookup`, `Timeout`, `Cancelled`). `WaitError` is generic over the caller's
+signer and provider error types per the runtime-neutral posture
+([ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md)), so it
+stays outside the `ErrorClass` family and is not a `CowError` variant; the
+purpose-built `reverted()` accessor reads only the SDK-owned `Reverted` variant,
+so its verdict never depends on the caller's runtime error type. A reverted
+receipt reaches `WaitError::Reverted` only when `WaitOptions::require_success` is
+set; an inclusion-only wait returns `Ok(receipt)` and the caller reads the
+receipt's `status`.

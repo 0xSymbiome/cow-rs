@@ -212,7 +212,7 @@ pub enum OrderBookRejectionCategoryDto {
     NotFound,
     /// The order's lifecycle state conflicts with the request and it cannot be retried as is.
     Conflict,
-    /// No solver, route, or liquidity can currently fill the trade; the condition may clear later.
+    /// No solver, route, liquidity, or fee economics can currently fill the trade as sized; the condition may clear later — re-quote, wait, or resize.
     Unfulfillable,
     /// An upstream server-side fault.
     Server,

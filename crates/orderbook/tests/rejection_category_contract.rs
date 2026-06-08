@@ -34,10 +34,18 @@ fn category_maps_representative_and_borderline_variants() {
         (R::DuplicatedOrder, C::Conflict),
         (R::AlreadyCancelled, C::Conflict),
         (R::OnChainOrder, C::Conflict),
-        // Unfulfillable — market/liquidity, may clear later.
+        // Unfulfillable — market/liquidity/fee economics, may clear later.
         (R::NoLiquidity, C::Unfulfillable),
         (R::InsufficientLiquidity, C::Unfulfillable),
         (R::TokenTemporarilySuspended, C::Unfulfillable),
+        // Fee-coverage shortfall is economic/quote-time (upstream groups it with
+        // `NoLiquidity`), not a malformed request.
+        (
+            R::SellAmountDoesNotCoverFee {
+                fee_amount: Amount::new("1").expect("fee amount fixture parses"),
+            },
+            C::Unfulfillable,
+        ),
         // Server — server-side fault.
         (R::InternalServerError, C::Server),
         (R::MetadataSerializationFailed, C::Server),
@@ -50,12 +58,6 @@ fn category_maps_representative_and_borderline_variants() {
         (
             R::AppDataInvalid {
                 message: "x".to_owned().into(),
-            },
-            C::InvalidOrder,
-        ),
-        (
-            R::SellAmountDoesNotCoverFee {
-                fee_amount: Amount::new("1").expect("fee amount fixture parses"),
             },
             C::InvalidOrder,
         ),

@@ -105,6 +105,15 @@ on the happy diagnostic path.
   route: matches the orderbook OpenAPI grouping more closely,
   but forces every consumer to maintain N parallel enums when one
   taxonomy already partitions the wire surface cleanly.
+- Add a dedicated recovery-action classification — an
+  `Action { Skip, Retry, Abort, Fix }` axis on rejections — on top of the
+  coarse `category()`: rejected. The recovery action is consumer policy, not a
+  property of the rejection: the same rejection is a skip for an automated
+  strategy loop and an abort for a one-shot call, so the SDK cannot name it
+  without mis-serving one of them. The coarse `category()` (the action class)
+  and the orderbook retry verdict (`is_retryable()` / `backoff_hint()`) already
+  let a consumer derive its own action; a further classification axis would add
+  public surface without removing that consumer-side decision.
 
 ## Links
 
@@ -139,3 +148,17 @@ wildcard arm, so a newly added wire tag must be assigned a category at the
 source rather than being silently misclassified. The category carries no `code`
 or `message`, so it never re-exposes a redacted rejection payload and is safe to
 log or partition telemetry on directly.
+
+## Amendment 2026-06-08: economic rejections categorize as `Unfulfillable`
+
+`SellAmountDoesNotCoverFee` categorizes as `Unfulfillable`, alongside
+`NoLiquidity` and the other economic conditions, rather than `InvalidOrder`. The
+fee-coverage shortfall is an economic, quote-time condition — the network fee
+floor moved relative to the order's sell amount — that clears when the fee drops
+or the order is resized; it is not a malformed request to fix in code. This
+matches the upstream taxonomy, which surfaces the shortfall on the quote path
+and groups it with `NoLiquidity` rather than with the order-parameter
+validation errors. The `OrderbookRejectionCategory` set, the additive-accessor
+contract, and the exhaustive-with-no-wildcard mapping are all unchanged; only
+this one variant's assignment moves to the bucket that names the correct
+consumer action (re-quote, wait, or resize).

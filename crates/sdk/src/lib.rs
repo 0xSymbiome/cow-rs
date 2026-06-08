@@ -240,6 +240,14 @@ pub mod wasm {
 use thiserror::Error;
 
 /// Aggregate error type for the root facade crate.
+///
+/// `CowError` is the convenience aggregate for consumers that `?`-propagate
+/// every SDK call into one type; each leaf error converts in through `#[from]`.
+/// A consumer with its own error type, or that needs rejection-specific
+/// handling, can match the leaf error directly — every leaf exposes the same
+/// [`ErrorClass`] through `class()` (and the orderbook and trading errors also
+/// expose `is_retryable()` / `backoff_hint()`), so the verdict is identical
+/// whether a caller holds the facade error or a bare leaf.
 #[non_exhaustive]
 #[derive(Debug, Error)]
 pub enum CowError {

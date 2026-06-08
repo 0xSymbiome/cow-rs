@@ -146,7 +146,7 @@ mod tests {
     }
 
     #[test]
-    fn unparseable_value_resolves_to_none() {
+    fn unparsable_value_resolves_to_none() {
         let headers = [("retry-after".to_owned(), "soon".to_owned())];
         assert_eq!(retry_after_from_headers(&headers), None);
     }

@@ -14,6 +14,16 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Added
 
+- `cow_sdk_trading::WaitError` exposes
+  `reverted(&self) -> Option<&TransactionReceipt>`, which returns the reverted
+  receipt when a receipt wait failed because the mined transaction reverted
+  on-chain and `None` for the transient or environmental variants (broadcast,
+  lookup, timeout, cancellation). The accessor reads only the SDK-owned
+  `Reverted` variant, so its verdict never depends on the caller's signer or
+  provider error type; `WaitError` stays generic over those types and outside the
+  `ErrorClass` family, exposing its on-chain verdict through `reverted()` rather
+  than a `class()` mapping. Governed by
+  [ADR 0038](docs/adr/0038-transaction-lifecycle-types.md).
 - `cow-sdk` gains an off-by-default `subgraph` feature that re-exports the
   read-only `cow-sdk-subgraph` surface as `cow_sdk::subgraph` and lifts
   `SubgraphError` into the facade through a feature-gated `CowError::Subgraph`
@@ -367,6 +377,15 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- `cow_sdk_orderbook::OrderbookRejection::category()` now classifies
+  `SellAmountDoesNotCoverFee` as `OrderbookRejectionCategory::Unfulfillable`
+  instead of `InvalidOrder`. The fee-coverage shortfall is an economic,
+  quote-time condition that clears when the network fee drops or the order is
+  resized — grouped with `NoLiquidity` upstream — rather than a malformed request
+  to fix in code, so the coarse category now names the correct consumer action
+  (re-quote, wait, or resize). The category set and the
+  exhaustive-with-no-wildcard mapping are otherwise unchanged. Governed by
+  [ADR 0017](docs/adr/0017-typed-orderbook-rejection-parser.md).
 - The `cow-sdk` facade crate root is now an explicit, curated re-export surface:
   the workflow `cow_sdk::prelude` is no longer glob-re-exported to the crate root.
   The primary entry types (`Trading`, `TradeParameters`, `TraderParameters`,

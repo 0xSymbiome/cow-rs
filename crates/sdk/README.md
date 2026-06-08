@@ -105,8 +105,18 @@ fn retry_delay(error: &CowError) -> Option<Duration> {
 }
 ```
 
-The native `error_classification` example walks every `ErrorClass` bucket and the
-action-oriented `OrderbookRejection::category()` refinement end to end.
+`CowError` is the convenience aggregate for consumers that `?`-propagate every
+SDK call into one type. A consumer with its own error type — or that needs
+rejection-specific handling — matches the **leaf** error directly instead: each
+leaf carries the same `class()` and `is_retryable()`, plus the finer-grained
+`OrderbookRejection::category()` that names the action a rejection calls for. The
+native `error_classification` example walks every `ErrorClass` bucket and the
+`category()` refinement end to end.
+
+On-chain submission has its own verdict. The receipt-wait helpers return
+`WaitError`, which is generic over the caller's signer and provider error types,
+so it stays out of `CowError`; use `WaitError::reverted()` to tell a real
+on-chain revert from a transient broadcast, lookup, timeout, or cancellation.
 
 ## Where to next
 

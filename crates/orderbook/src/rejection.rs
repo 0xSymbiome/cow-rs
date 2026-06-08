@@ -351,7 +351,7 @@ pub enum OrderbookRejectionCategory {
     NotFound,
     /// The order's lifecycle state conflicts with the request and it cannot be retried as is.
     Conflict,
-    /// No solver, route, or liquidity can currently fill the trade; the condition may clear later.
+    /// No solver, route, liquidity, or fee economics can currently fill the trade as sized; the condition may clear later — re-quote, wait, or resize.
     Unfulfillable,
     /// An upstream server-side fault.
     Server,
@@ -387,7 +387,8 @@ impl OrderbookRejection {
             | Self::InsufficientLiquidity
             | Self::TradingOutsideAllowedWindow
             | Self::TokenTemporarilySuspended
-            | Self::CustomSolverError => OrderbookRejectionCategory::Unfulfillable,
+            | Self::CustomSolverError
+            | Self::SellAmountDoesNotCoverFee { .. } => OrderbookRejectionCategory::Unfulfillable,
             Self::InternalServerError | Self::MetadataSerializationFailed => {
                 OrderbookRejectionCategory::Server
             }
@@ -419,8 +420,7 @@ impl OrderbookRejection {
             | Self::AppdataFromMismatch
             | Self::InvalidTradeFilter
             | Self::InvalidLimit
-            | Self::LimitOutOfBounds
-            | Self::SellAmountDoesNotCoverFee { .. } => OrderbookRejectionCategory::InvalidOrder,
+            | Self::LimitOutOfBounds => OrderbookRejectionCategory::InvalidOrder,
         }
     }
 }
