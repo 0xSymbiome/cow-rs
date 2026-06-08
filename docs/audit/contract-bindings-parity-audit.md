@@ -1,9 +1,9 @@
 # Contract Bindings Parity Audit
 
 Status: Current
-Last reviewed: 2026-05-30
+Last reviewed: 2026-06-08
 Owning surface: `cow-sdk-contracts` `alloy::sol!`-generated bindings for `GPv2Settlement`, `GPv2VaultRelayer`, `CoWSwapEthFlow`, `CoWSwapOnchainOrders` events, the wrapped-native token, EIP-1967 proxy slots, and `IERC20` / `IERC20Permit`
-Refresh trigger: A new binding family landing in `cow-sdk-contracts`; a signature change in any existing binding; a drift in the byte-identical Solidity mirror under `crates/contracts/abi/**/*.sol`; a change to a `vendored:` SHA-256 row under any repository in `parity/source-lock.yaml`; a change to the TypeScript-SDK-derived parity fixtures that back the regression suite; a change to the EIP-712 domain-separator fixture shared with the signing crate; a change to the wasm target feature contract for the alloy/k256 dependency path
+Refresh trigger: A new binding family landing in `cow-sdk-contracts`; a signature change in any existing binding; a change to the upstream commit pin for any binding's source repository under `parity/source-lock.yaml`; a change to the TypeScript-SDK-derived parity fixtures that back the regression suite; a change to the EIP-712 domain-separator fixture shared with the signing crate; a change to the wasm target feature contract for the alloy/k256 dependency path
 Related docs:
 - [ADR 0012](../adr/0012-alloy-sol-bindings-and-registry-authority.md)
 - [ADR 0034](../adr/0034-interaction-encoder-target-policy.md)
@@ -19,7 +19,6 @@ This audit covers:
 
 - the `alloy::sol!`-generated binding surfaces shipped in
   `cow-sdk-contracts`
-- the byte-identical Solidity mirrors used to author those bindings
 - the byte-identity parity contract between the bindings and the
   TypeScript-SDK-derived fixtures for the encoded call-data and the
   hashed data (order digest, order UID, EIP-712 type hashes)
@@ -41,7 +40,7 @@ provider.
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
 | Single binding idiom | Every shipped binding is generated through `alloy::sol!`; no hand-rolled encoder remains in `cow-sdk-contracts` | Conforms |
-| Committed provenance | Every Solidity file under `crates/contracts/abi/` is a byte-identical mirror of a single upstream source pinned in `parity/source-lock.yaml`; `cargo parity-verify-sol-provenance` enforces SHA-256 equality against the manifest `vendored:` row and (when run with `--upstream-root`) against the live upstream bytes at the pinned commit. All 40 shipped `.sol` files follow this posture; no excerpt-style or documentation-only file ships in the workspace | Conforms |
+| Pinned provenance | Every binding's `alloy::sol!` interface reproduces the upstream Solidity surface verbatim, and the upstream repository each binding mirrors is pinned by commit in `parity/source-lock.yaml` so a reviewer can diff the binding against the upstream source at the pinned commit | Conforms |
 | Byte-identity parity | Encoded call-data and hashed payloads match the TypeScript-SDK-derived golden fixtures on every binding | Conforms |
 | Domain separator parity | `cow-sdk-contracts` and `cow-sdk-signing` route every EIP-712 domain separator through `alloy_sol_types::Eip712Domain::separator` and pin the same fixture value | Conforms |
 | Order EIP-712 hashing | The `GPv2 Order` and `OrderCancellations` typed-data structs are macro-emitted via `alloy_sol_types::sol!` and route their signing hashes through `<T as SolStruct>::eip712_signing_hash`; the eight per-chain rows in the order-digest fixture pin the wire-byte contract | Conforms |
@@ -117,120 +116,31 @@ are byte-locked against an independent keccak of the canonical signatures.
 
 ### Provenance
 
-Every binding is introduced by a `sol! { ... }` block that reproduces
-the upstream Solidity surface verbatim. The byte-identical Solidity
-mirror used to author the binding is committed under
-`crates/contracts/abi/<family>/*.sol` so a reviewer can diff `HEAD`
-against the upstream source at any time. The upstream repositories are
-named in each binding's module-level doc comment and pinned in
-`parity/source-lock.yaml`.
+Every binding is introduced by an inline `alloy::sol!` interface block
+that reproduces the upstream Solidity surface verbatim. The upstream
+repository each binding mirrors is named in the binding's module-level
+doc comment and pinned by commit under `repositories:` in
+`parity/source-lock.yaml`, so a reviewer can diff the inline interface
+against the upstream source at the exact pinned commit.
 
-Every `.sol` file under `crates/contracts/abi/` is a byte-identical
-mirror of a single upstream source pinned in `parity/source-lock.yaml`,
-and `cargo parity-verify-sol-provenance` enforces the discipline before
-any workspace build is considered green. The local path, the upstream
-path under the repository root, and the SHA-256 of the upstream bytes
-at the pinned commit live as a `vendored:` row under the matching
-repository. The verifier rejects any drift between the on-disk SHA and
-the manifest SHA, and (when run with `--upstream-root <path>`) any
-drift between the manifest SHA and the live upstream bytes at the
-pinned commit. All 40 shipped `.sol` files follow this posture; no
-excerpt-style or documentation-only file ships in the workspace.
+The shipped bindings mirror upstream surfaces from three CoW Protocol
+repositories, each pinned by commit in `parity/source-lock.yaml`:
 
-The 40 byte-identical mirrors are sourced from four upstream repositories,
-each pinned in `parity/source-lock.yaml`:
+- `cowprotocol/contracts` — the `GPv2Settlement`, `GPv2Trade`,
+  `GPv2Interaction`, `GPv2VaultRelayer`, EIP-1967, and `IERC20`
+  surfaces.
+- `cowprotocol/ethflowcontract` — the `CoWSwapEthFlow` and
+  `EthFlowOrder` surfaces.
+- `cowdao-grants/cow-shed` — the COW Shed surfaces (reviewed in the
+  [COW Shed Contract Bindings Audit](cow-shed-contract-bindings-audit.md)).
 
-- `cowprotocol/contracts` — `settlement/GPv2Settlement.sol`,
-  `settlement/GPv2Trade.sol`, `settlement/GPv2Interaction.sol`,
-  `vault-relayer/GPv2VaultRelayer.sol`, `eip1967/GPv2EIP1967.sol`,
-  `erc20/IERC20.sol`.
-- `cowprotocol/ethflowcontract` — `eth-flow/CoWSwapEthFlow.sol`,
-  `eth-flow/EthFlowOrder.sol`.
-- `cowprotocol/composable-cow` — every file under
-  `crates/contracts/abi/composable-cow/` including the Safe Global
-  `extensible/ExtensibleFallbackHandler.sol` mirror, which is reached
-  transitively through composable-cow's `lib/safe` submodule SHA
-  captured by composable-cow's pinned commit.
-- `cowdao-grants/cow-shed` — every file under
-  `crates/contracts/abi/cow-shed/`.
-
-Each `.sol` is LF-normalised on every host through `.gitattributes`
-so the SHA gate stays byte-stable across Windows, macOS, and Linux
-checkouts. The verifier ships as a subcommand of the
-`parity-maintainer` binary and is wired into the CI quality gate so
-the workspace cannot ship with an unverified `.sol` file under
-`crates/contracts/abi/`. The verifier's source code retains a fallback
-excerpt code path as an escape hatch for future contracts whose
-canonical upstream might not be a single vendorable file, but no
-currently-shipped file uses that path; a reviewer's audit of the abi
-tree is `sha256sum` on every file against the matching `vendored:`
-row in `parity/source-lock.yaml`.
-
-#### How a `vendored:` SHA is generated and verified
-
-Every `sha256` field in `parity/source-lock.yaml` is the SHA-256 of the
-bytes git stores for the upstream file at the pinned commit, not the
-SHA of the working-tree file after checkout. The canonical generation
-command for any row is:
-
-```
-git -C <upstream-checkout> show <pinned-commit>:<upstream-path> | sha256sum
-```
-
-For example, the `settlement/GPv2Settlement.sol` row is verified by:
-
-```
-git -C <contracts-checkout> show \
-    c6b61ce75841ce4c25ab126def9cc981c568e6c6:src/contracts/GPv2Settlement.sol \
-    | sha256sum
-```
-
-This anchors the SHA to git's content-addressable storage at the
-pinned commit and eliminates three working-tree hazards that affect
-plain `sha256sum`:
-
-1. CRLF line-ending normalisation at checkout time (e.g. Windows
-   without `text eol=lf` would convert LF→CRLF and produce a different
-   SHA than the canonical git-tree bytes).
-2. Local working-tree edits that do not appear in `git status` (e.g.
-   filter drivers or merge conflict residue).
-3. Checkout at a different commit than the pinned one (the working
-   tree could be at `HEAD` while the pin references an older or newer
-   commit; the on-disk bytes would not match the pinned commit's
-   content).
-
-`cargo parity-verify-sol-provenance --upstream-root <path>` performs
-the same `git show <commit>:<path>` read against each upstream
-checkout under `<path>/<repo-id>/`, computes SHA-256 of the resulting
-bytes, and compares against the `sha256` field. If the pinned commit
-is not present in the local checkout, the verifier emits an error
-naming the exact `git fetch origin <commit>` invocation required.
-
-A third mode, `cargo parity-verify-sol-provenance --upstream-github`,
-fetches each `vendored:` row from
-`https://raw.githubusercontent.com/<owner>/<repo>/<commit>/<upstream-path>`
-(parsed from the row's `remote:` field) and compares the bytes against
-the manifest SHA-256. This mode is the strongest available trust
-posture for the gate: it verifies that the manifest is byte-identical
-to GitHub's canonical content at the pinned commit on every gate run,
-without requiring any local upstream checkout. The CI quality-gate
-workflow runs this mode on every push so the manifest cannot silently
-drift from upstream GitHub content. The two upstream modes are
-additive: passing both `--upstream-root <path>` and `--upstream-github`
-runs all three checks (on-disk vs manifest, local `git show` vs
-manifest, GitHub raw vs manifest) and requires every check to agree.
-
-The Safe Global `ExtensibleFallbackHandler` is reached transitively
-through composable-cow's `lib/safe` git submodule. The submodule's
-pinned commit (`11273c1f08eda18ed8ff49ec1d4abec5e451ff21`) is captured
-under its own `composable-cow/lib/safe` repository row in
-`parity/source-lock.yaml`, with `remote:` pointing at
-`https://github.com/cowdao-grants/extensible-fallback-handler.git`.
-Verifying that row requires running `git submodule update --init lib/safe`
-inside the composable-cow checkout so the submodule's own `.git`
-directory carries the pinned commit; the verifier then performs the
-same `git show <pinned-commit>:<upstream-path>` read against the
-submodule's git directory.
+The provenance posture is commit-pin plus fixture proof rather than a
+byte-mirrored source tree: the upstream commit pin records what each
+binding mirrors, and the TypeScript-SDK-derived call-data, EIP-712, and
+selector fixtures under `parity/fixtures/` together with the crate
+parity tests prove the inline binding produces byte-identical wire
+bytes. A binding drift therefore surfaces as a fixture regression in
+`cargo test -p cow-sdk-contracts` before it can reach any consumer.
 
 ### Byte-Identity Parity
 
@@ -624,12 +534,8 @@ Primary implementation points:
 - `crates/contracts/src/primitives.rs`
 - `crates/contracts/Cargo.toml`
 - `crates/trading/src/onchain.rs`
-- `crates/contracts/abi/settlement/`
-- `crates/contracts/abi/vault-relayer/`
-- `crates/contracts/abi/eth-flow/`
-- `crates/contracts/abi/eip1967/`
-- `crates/contracts/abi/erc20/`
-- `crates/contracts/abi/weth/`
+- `parity/source-lock.yaml`
+- `parity/fixtures/eip712/order_digests.json`
 - `crates/contracts/tests/fixtures/domain_separator_parity.json`
 - `crates/signing/tests/fixtures/domain_separator_parity.json`
 - `parity/fixtures/contracts.json`
@@ -673,7 +579,6 @@ cargo test -p cow-sdk-contracts --test property_contract
 cargo test -p cow-sdk-contracts --test interaction_contract
 cargo test -p cow-sdk-contracts --test onchain_orders
 cargo test -p cow-sdk-contracts --test weth
-cargo parity-verify-sol-provenance
 cargo test -p cow-sdk-contracts --test vault_contract vault_role_hashes_match_the_canonical_solidity_packed_layout
 cargo test -p cow-sdk-contracts --test parity_contract parity_fixture_cases_hold
 cargo test -p cow-sdk-contracts domain_separator_matches_shared_parity_fixture

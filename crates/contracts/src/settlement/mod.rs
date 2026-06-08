@@ -18,13 +18,13 @@ use cow_sdk_core::{
 use crate::{interaction::Interaction, signature::SigningScheme};
 sol! {
     // Canonical GPv2Settlement ABI surface used by this crate for call-data
-    // encoding. Signatures are reproduced verbatim from the mainnet-deployed
-    // GPv2Settlement contract at 0x9008D19f58AAbD9eD0D60971565AA8510560ab41
-    // (upstream source at https://github.com/cowprotocol/contracts —
-    // src/contracts/GPv2Settlement.sol plus libraries/GPv2Trade.sol and
-    // libraries/GPv2Interaction.sol). The Solidity excerpt used to author this
-    // binding is committed under `crates/contracts/abi/settlement/` for
-    // provenance.
+    // encoding. Signatures mirror the mainnet-deployed GPv2Settlement contract
+    // at 0x9008D19f58AAbD9eD0D60971565AA8510560ab41, whose source is
+    // cowprotocol/contracts `src/contracts/GPv2Settlement.sol` plus
+    // `libraries/GPv2Trade.sol` and `libraries/GPv2Interaction.sol`, pinned by
+    // commit in `parity/source-lock.yaml`. The encoded call-data is proven
+    // byte-for-byte by the fixtures under `parity/fixtures/` and the crate
+    // parity tests.
     #[sol(rename_all = "camelcase")]
     interface IGPv2Settlement {
         struct TradeData {

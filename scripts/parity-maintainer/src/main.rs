@@ -11,7 +11,6 @@ use serde::{Deserialize, Serialize};
 
 mod openapi_coverage;
 mod vendor_openapi;
-mod verify_sol_provenance;
 
 const GENERATED_AT_UTC: &str = "2026-04-29T00:00:00Z";
 const DEFAULT_SOURCE_LOCK: &str = "parity/source-lock.yaml";
@@ -225,18 +224,6 @@ enum Commands {
     VendorOpenapi(vendor_openapi::VendorOpenApiArgs),
     /// Generate or validate OpenAPI DTO coverage inventories.
     OpenapiCoverage(openapi_coverage::OpenApiCoverageArgs),
-    /// Validate every `.sol` file under `crates/contracts/abi/` against
-    /// the source-lock-pinned upstream sources. Each file is
-    /// SHA-256-checked against the matching `vendored:` row in
-    /// `parity/source-lock.yaml`. With `--upstream-root <path>` the
-    /// verifier additionally cross-checks against the live upstream
-    /// bytes via `git show <commit>:<path>`; with `--upstream-github`
-    /// it fetches the bytes from GitHub raw content at the pinned
-    /// commit so CI can verify the manifest against canonical upstream
-    /// without any local checkout. A provenance-headed excerpt fallback
-    /// is recognised for files whose canonical upstream cannot be
-    /// vendored as a single byte-stream.
-    VerifySolProvenance(verify_sol_provenance::VerifySolProvenanceArgs),
 }
 
 #[derive(Debug, Args)]
@@ -298,7 +285,6 @@ fn main() -> Result<()> {
         }),
         Commands::VendorOpenapi(args) => vendor_openapi::run(args),
         Commands::OpenapiCoverage(args) => openapi_coverage::run(args),
-        Commands::VerifySolProvenance(args) => verify_sol_provenance::run(&args),
     }
 }
 

@@ -24,8 +24,10 @@
 //! struct hash so off-chain signers can produce a 32-byte digest that any
 //! EIP-2612 token contract will accept.
 //!
-//! The Solidity excerpts used to author these bindings are committed under
-//! `crates/contracts/abi/erc20/` for provenance.
+//! These interfaces are authored inline as `alloy::sol!` against the
+//! published EIP-20 and EIP-2612 standards; their wire shape is proven by
+//! the selector and EIP-712 fixtures under `parity/fixtures/` and the
+//! crate parity tests.
 
 use alloy_sol_types::{Eip712Domain, SolStruct, sol};
 

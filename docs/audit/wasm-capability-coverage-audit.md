@@ -1,7 +1,7 @@
 # WASM Capability Coverage Audit
 
 Status: Current
-Last reviewed: 2026-06-02
+Last reviewed: 2026-06-08
 Owning surface: `cow-sdk-wasm` capability coverage relative to the native `cow-rs` SDK crates
 Refresh trigger: changes to `crates/wasm/src/exports/**`; additions or removals of public operations on the `orderbook`, `trading`, `signing`, `contracts`, `app-data`, or `subgraph` crates; or revisions to the workflow scope in `docs/parity.md`
 Related docs:
@@ -174,15 +174,18 @@ encoding and inspection surface is building-block code shared by native tooling;
 it is not exposed as a consumer API on any target and has no upstream consumer
 analogue.
 
-**Class 4 — Reserved capability families.** `cow-sdk-composable` ships as a
-reserved readiness surface per `docs/parity.md`; its helper body is
-additive on every target, so its absence from `cow-sdk-wasm` is not a
-WASM-specific boundary. `cow-sdk-cow-shed` has shipped its helper body and
-compiles for both native and `wasm32`, so it is the most direct candidate for a
-future deterministic-helper addition to the `cow-sdk-wasm` JavaScript surface;
-its absence from `cow-sdk-wasm` today is a binding-surface choice, not a target
-limitation. Bridging, the flashloan helper surface, and hook-trampoline chaining
-are likewise deferred on every target.
+**Class 4 — Deferred capability families.** The composable conditional-order
+framework is a deferred capability recorded only by
+[ADR 0048](../adr/0048-composable-conditional-order-framework.md); no
+composable crate ships in the workspace, and its deployment addresses remain
+resolvable through the typed `Registry`. Its absence from `cow-sdk-wasm` is a
+deferred-capability boundary on every target rather than a WASM-specific one.
+`cow-sdk-cow-shed` has shipped its helper body and compiles for both native and
+`wasm32`, so it is the most direct candidate for a future deterministic-helper
+addition to the `cow-sdk-wasm` JavaScript surface; its absence from
+`cow-sdk-wasm` today is a binding-surface choice, not a target limitation.
+Bridging, the flashloan helper surface, and hook-trampoline chaining are
+likewise deferred on every target.
 
 **Class 5 — Separate WASM leaf.** `cow-sdk-browser-wallet` compiles for
 `wasm32` and carries its own wallet integration, but it is a distinct leaf and

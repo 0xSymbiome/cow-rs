@@ -26,7 +26,7 @@ fragments, ADR replacement, or generic cleanup diaries.
 | Fix review | `<surface>-fix-review.md` | Focused public follow-up when previously reviewed findings are remediated |
 | Validation note | `<surface>-validation-note.md` | Narrow public confirmation record for an assurance point smaller than a full audit |
 
-The current public set is 61 standing audits, 1 fix review, and 1 validation note.
+The current public set is 59 standing audits, 1 fix review, and 1 validation note.
 
 ## Status Model
 
@@ -55,9 +55,7 @@ If the reviewed surface did not change, leave the audit alone.
 | [On-Chain Order Log Decoding Audit](onchain-order-log-decoding-audit.md) | Standing audit | `cow-sdk-contracts` `CoWSwapOnchainOrders` event decoder | Fail-closed `OrderPlacement` / `OrderInvalidation` log decoding, topic-0 byte-locks, owner resolution, UID derivation, and the eth-flow trailing-data parser | Current | 2026-05-29 |
 | [Settlement Event Log Decoding Audit](settlement-event-log-decoding-audit.md) | Standing audit | `cow-sdk-contracts` `GPv2Settlement` event decoder | Fail-closed `Trade` / `Interaction` / `Settlement` / `OrderInvalidated` / `PreSignature` log decoding, topic-0 byte-locks, the shared topic-set guard, and the 56-byte order-UID length check | Current | 2026-05-29 |
 | [Deployment Registry Audit](deployment-registry-audit.md) | Standing audit | `cow-sdk-contracts::Registry` typed deployment authority | Typed `(ContractId, SupportedChainId, CowEnv)` key, embedded TOML manifest, per-chain provenance, compile-time validation, and override composition | Current | 2026-06-01 |
-| [Composable Contract Bindings Audit](composable-contract-bindings-audit.md) | Standing audit | Byte-identical composable-cow Solidity mirrors and deployment registry rows | Conditional-order binding mirrors, schema v2 deployment rows, provenance evidence, and coverage-only Ink posture | Current | 2026-05-15 |
-| [Composable Watch-Tower Boundary Audit](composable-watch-tower-boundary-audit.md) | Standing audit | Composable helper crate boundary | Selector, decoder, event, and single-call provider helper scope with production watcher behavior explicitly out of scope | Current | 2026-06-06 |
-| [COW Shed Contract Bindings Audit](cow-shed-contract-bindings-audit.md) | Standing audit | Byte-identical COW Shed Solidity mirrors, proxy creation code, and deployment registry rows | Version-keyed proxy creation-code artifacts, digest validation, deployment rows, and factory ABI evidence | Current | 2026-06-04 |
+| [COW Shed Contract Bindings Audit](cow-shed-contract-bindings-audit.md) | Standing audit | Inline COW Shed `alloy::sol!` bindings, proxy creation code, and deployment registry rows | Version-keyed proxy creation-code artifacts, digest validation, deployment rows, and factory ABI evidence | Current | 2026-06-08 |
 | [COW Shed App-Data Integration Audit](cow-shed-app-data-integration-audit.md) | Standing audit | COW Shed hook metadata and app-data schema integration | Hook metadata shape, app-data schema reuse, and EIP-1271 signing-boundary evidence | Current | 2026-06-04 |
 | [Lens Chain Evidence Audit](lens-chain-evidence-audit.md) | Standing audit | Deployment registry chain taxonomy | Lens deployment evidence, runtime support exclusion, provenance lockstep, public route probes, and refresh triggers | Current | 2026-05-15 |
 

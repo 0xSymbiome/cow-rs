@@ -6,9 +6,10 @@
 //! EthFlow order by taking the full `EthFlowOrderData` payload (distinct from
 //! `GPv2Settlement::invalidateOrder(bytes)`, which takes a packed order UID).
 //!
-//! Bindings are generated from the canonical upstream Solidity surface via
-//! the `alloy::sol!` macro. The Solidity excerpt used to author the bindings
-//! lives under `crates/contracts/abi/eth-flow/` for provenance.
+//! Bindings are authored inline as `alloy::sol!` against the upstream
+//! cowprotocol/ethflowcontract `src/CoWSwapEthFlow.sol` surface, pinned by
+//! commit in `parity/source-lock.yaml` and proven by the call-data fixtures
+//! under `parity/fixtures/` and the crate parity tests.
 
 use alloy_primitives::{Bytes, LogData};
 use alloy_sol_types::{SolCall, SolEvent, sol};
@@ -26,11 +27,10 @@ use crate::order::hash::reject_zero_receiver;
 use crate::primitives::check_topics;
 
 sol! {
-    // Canonical CoWSwapEthFlow ABI surface. Signatures are reproduced verbatim
-    // from the mainnet-deployed CoWSwapEthFlow contract (upstream source at
-    // https://github.com/cowprotocol/ethflowcontract). The Solidity excerpt
-    // used to author these bindings is committed under
-    // `crates/contracts/abi/eth-flow/` for provenance.
+    // Canonical CoWSwapEthFlow ABI surface. Signatures mirror cowprotocol/
+    // ethflowcontract `src/CoWSwapEthFlow.sol` and `src/libraries/
+    // EthFlowOrder.sol`, pinned by commit in `parity/source-lock.yaml` and
+    // proven by the call-data fixtures under `parity/fixtures/`.
     #[sol(rename_all = "camelcase")]
     interface ICoWSwapEthFlow {
         struct EthFlowOrderData {
@@ -58,10 +58,10 @@ sol! {
     // CoWSwapEthFlow event surface, kept separate from the call binding above so
     // the events interface can be re-exported without exposing the call structs.
     // `OrderRefund` is emitted when unspent native value is refunded for an
-    // expired order; the `emit OrderRefund(...)` site is in the committed
-    // `crates/contracts/abi/eth-flow/CoWSwapEthFlow.sol` mirror, and the topic-0
-    // is byte-locked against an independent keccak in the eth-flow event
-    // integration tests.
+    // expired order; the event mirrors cowprotocol/ethflowcontract
+    // `src/CoWSwapEthFlow.sol` (pinned by commit in `parity/source-lock.yaml`),
+    // and its topic-0 is byte-locked against an independent keccak in the
+    // eth-flow event integration tests.
     #[sol(rename_all = "camelcase")]
     interface ICoWSwapEthFlowEvents {
         event OrderRefund(bytes orderUid, address indexed refunder);

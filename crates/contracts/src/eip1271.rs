@@ -16,12 +16,10 @@
 //! the macro-emitted constant for both the dispatch selector and the
 //! response magic-value comparison.
 //!
-//! The byte-identical upstream mirror of this interface is committed at
-//! `crates/contracts/abi/cow-shed/IERC1271.sol` (vendored from
-//! `cowdao-grants/cow-shed`'s `src/IERC1271.sol` at the pinned commit)
-//! and is gated by `cargo parity-verify-sol-provenance` against the
-//! SHA-256 row in `parity/source-lock.yaml`. The cow-shed mirror is the
-//! canonical EIP-1271 interface for the cow-rs workspace.
+//! This interface mirrors cowdao-grants/cow-shed `src/interfaces/IERC1271.sol`,
+//! pinned by commit in `parity/source-lock.yaml`, and its selector is proven by
+//! the crate parity tests. It is the canonical EIP-1271 interface for the
+//! cow-rs workspace.
 
 use alloy_sol_types::sol;
 

@@ -88,14 +88,15 @@ complete crate inventory is the [Crate Roles](#crate-roles) table below.
 | `cow-sdk-alloy-provider` | Native Alloy-backed `Provider` adapter | You need read-only chain RPC through Alloy without a signer dependency. |
 | `cow-sdk-alloy-signer` | Native Alloy-backed local private-key `Signer` adapter | You need local message or EIP-712 signing without provider-backed transaction submission. |
 | `cow-sdk-alloy` | Composed native Alloy provider plus signer adapter | You need one native client for `Provider`, `LogProvider`, `SigningProvider`, and `Signer` helper flows. |
-| `cow-sdk-composable` | Reserved manifest for composable-order helpers, with current readiness evidence owned by contracts, signing, docs, and parity fixtures | You need to track the planned composable leaf without pulling an unfinished helper API. |
+| `cow-sdk-composable` | Deferred composable-order capability recorded by [ADR 0048](adr/0048-composable-conditional-order-framework.md); no crate body ships, while composable deployment addresses remain resolvable through the typed `Registry` | You want to track the deferred composable capability; until it lands, use the upstream composable surface. |
 | `cow-sdk-cow-shed` | COW Shed account-abstraction proxy derivation, EIP-712 hook signing, and `executeHooks` calldata encoding for EOA and EIP-1271 owners, with the `CowShedHooks` orchestrator | You need the COW Shed account-abstraction surface. |
 | `cow-sdk-test` | Published in-memory test doubles for the public trait seams (`OrderbookClient`, `Signer`, `Provider`/`SigningProvider`), surfaced through the facade `testing` feature as `cow_sdk::testing` | You want to test your integration with no live orderbook, RPC, or wallet (a dev-dependency). |
 
-The `cow-sdk-composable` reserved manifest is not a workspace member yet and
-does not expose a crate body. It keeps package identity, MSRV, and evidence
-paths stable while the shared registry, ABI, signature, and documentation
-surfaces remain reviewable.
+The composable-order capability is deferred and recorded only by
+[ADR 0048](adr/0048-composable-conditional-order-framework.md). No
+`cow-sdk-composable` crate ships in the workspace, while the shared
+deployment `Registry` already resolves composable contract addresses so the
+capability can land additively without disturbing the registry authority.
 
 ## Layering
 
@@ -426,11 +427,11 @@ switch success.
 - Every deployed-contract-address lookup routes through the typed
   `Registry` authority; hard-coded chain-scoped address constants are not
   allowed in shipped crates.
-- Every ABI binding the SDK emits call-data against is generated through
-  `alloy::sol!` from byte-identical upstream Solidity mirrors committed
-  under `crates/contracts/abi/` and gated by
-  `cargo parity-verify-sol-provenance` against SHA-256 rows in
-  `parity/source-lock.yaml`.
+- Every ABI binding the SDK emits call-data against is declared inline with
+  `alloy::sol!` and proven byte-for-byte against the upstream protocol by the
+  TypeScript-SDK-derived call-data, EIP-712, and selector fixtures under
+  `parity/fixtures/`; the upstream Solidity each binding mirrors is pinned by
+  commit in `parity/source-lock.yaml`.
 - On-chain order event logs (`CoWSwapOnchainOrders` `OrderPlacement` /
   `OrderInvalidation`) are decoded through a fail-closed, provider-free decoder
   that validates every field and never panics on adversarial input.

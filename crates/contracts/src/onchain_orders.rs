@@ -23,8 +23,10 @@
 //! rather than the EIP-712 `string` typing used by the order type hash; the
 //! decoder maps those markers back to the typed enums.
 //!
-//! The Solidity excerpts used to author these bindings are committed under
-//! `crates/contracts/abi/eth-flow/` for provenance.
+//! These bindings are authored inline as `alloy::sol!` against the upstream
+//! cowprotocol/ethflowcontract `src/mixins/CoWSwapOnchainOrders.sol` and
+//! `src/interfaces/ICoWSwapOnchainOrders.sol` surface, pinned by commit in
+//! `parity/source-lock.yaml` and proven by the crate parity tests.
 
 use alloy_primitives::{Bytes, LogData};
 use alloy_sol_types::{SolEvent, sol};
@@ -42,13 +44,13 @@ use crate::primitives::{
 };
 
 sol! {
-    // Canonical CoWSwapOnchainOrders event surface, reproduced verbatim from the
-    // cowprotocol/ethflowcontract interface and mixin (upstream source at
-    // https://github.com/cowprotocol/ethflowcontract). The `order` tuple mirrors
-    // GPv2Order.Data, whose kind / sellTokenBalance / buyTokenBalance members are
-    // bytes32 label markers on the event ABI. The Solidity excerpts used to
-    // author these bindings are committed under `crates/contracts/abi/eth-flow/`
-    // for provenance.
+    // Canonical CoWSwapOnchainOrders event surface, mirroring cowprotocol/
+    // ethflowcontract `src/mixins/CoWSwapOnchainOrders.sol` and
+    // `src/interfaces/ICoWSwapOnchainOrders.sol` (pinned by commit in
+    // `parity/source-lock.yaml`). The `order` tuple mirrors GPv2Order.Data,
+    // whose kind / sellTokenBalance / buyTokenBalance members are bytes32 label
+    // markers on the event ABI. Topic-0 hashes are proven against the crate
+    // parity tests.
     #[sol(rename_all = "camelcase")]
     interface ICoWSwapOnchainOrders {
         struct GPv2OrderData {

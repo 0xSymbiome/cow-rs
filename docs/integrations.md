@@ -64,13 +64,14 @@ The root facade exposes matching features named `alloy-provider`,
 `wasm32-unknown-unknown`; browser integrations should use
 `cow-sdk-browser-wallet`.
 
-## Composable Readiness And COW Shed
+## Composable Deferral And COW Shed
 
 COW Shed ships as the `cow-sdk-cow-shed` leaf crate behind the opt-in `cow-shed`
-facade feature; the composable-order surface is still prepared as typed Rust
-evidence ahead of its full helper crate body. Both rest on the same provenance
-and registry foundations, which improve on directly copying TypeScript package
-behavior in seven concrete ways:
+facade feature; the composable-order capability is deferred and recorded only by
+[ADR 0048](adr/0048-composable-conditional-order-framework.md), with its
+deployment addresses still resolvable through the typed `Registry`. COW Shed
+rests on the same provenance and registry foundations, which improve on directly
+copying TypeScript package behavior in these concrete ways:
 
 - deployment addresses resolve through one typed schema v2 registry rather than
   package-local constants
@@ -79,10 +80,11 @@ behavior in seven concrete ways:
 - EIP-1271 custom signature production is owned by `cow-sdk-signing`, so trading
   workflows consume signatures without owning smart-account implementation
   details
-- Byte-identical Solidity mirrors of every upstream contract surface are
-  committed under the contracts crate and bound through `alloy::sol!`,
-  gated by `cargo parity-verify-sol-provenance`, so hand-written ABI
-  encoders never enter the workspace
+- every upstream contract surface is bound through inline `alloy::sol!` and
+  proven byte-for-byte by the call-data, EIP-712, and selector fixtures under
+  `parity/fixtures/` (with the upstream Solidity pinned by commit in
+  `parity/source-lock.yaml`), so hand-written ABI encoders never enter the
+  workspace
 - source commits and npm package integrity evidence are pinned together, with
   public generated documentation treated only as drift signal
 - COW Shed proxy creation-code bytes are hashed at build time before address

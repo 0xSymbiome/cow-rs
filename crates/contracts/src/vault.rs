@@ -7,12 +7,11 @@ use crate::ContractsError;
 
 sol! {
     // Canonical GPv2VaultRelayer ABI surface plus the partial Balancer V2 Vault
-    // interface whose selectors drive the role-grant flow. Signatures are
-    // reproduced verbatim from the upstream cowprotocol/contracts repository
-    // (`src/contracts/GPv2VaultRelayer.sol` and the Balancer V2 Vault ABI used
-    // by the GPv2 toolchain). The Solidity excerpt used to author these
-    // bindings is committed under `crates/contracts/abi/vault-relayer/` for
-    // provenance.
+    // interface whose selectors drive the role-grant flow. Signatures mirror
+    // cowprotocol/contracts `src/contracts/GPv2VaultRelayer.sol` and the
+    // Balancer V2 Vault ABI used by the GPv2 toolchain, pinned by commit in
+    // `parity/source-lock.yaml` and proven by the selector fixtures under
+    // `parity/fixtures/` and the crate parity tests.
     #[sol(rename_all = "camelcase")]
     interface IGPv2VaultRelayer {
         struct Transfer {

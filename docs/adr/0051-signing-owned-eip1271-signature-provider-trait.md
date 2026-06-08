@@ -132,5 +132,4 @@ the ADR every time a trait import lands in a new file.
 
 **Proven by:**
 
-- [Composable Contract Bindings Audit](../audit/composable-contract-bindings-audit.md)
 - [COW Shed Contract Bindings Audit](../audit/cow-shed-contract-bindings-audit.md)

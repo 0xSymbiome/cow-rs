@@ -1,7 +1,7 @@
 # Source-Lock Provenance Audit
 
 Status: Current
-Last reviewed: 2026-06-07
+Last reviewed: 2026-06-08
 Owning surface: source-lock provenance and release preflight authority
 Refresh trigger: Changes to `parity/source-lock.yaml`, vendored parity OpenAPI or fixture provenance, any change to the maintained exclusion-list policy for historical progress snapshots, or any newly archived progress snapshot that should stay outside active preflight authority
 Related docs:
@@ -45,7 +45,7 @@ or changing SDK behavior.
 | Schema enforcement | Unsupported source-lock schema versions fail closed with a stable diagnostic, while schema version 3 is accepted | Conforms |
 | Amount fixture roundtrip | Amount-shaped fixture strings parse through the shared `Amount` codec and round-trip byte-identically | Conforms |
 | Historical snapshot scope | Historical progress snapshots stay readable and unmodified while active preflight authority skips them by directory-prefix policy | Conforms |
-| Solidity mirror SHA gate | Every `.sol` file under `crates/contracts/abi/` is a byte-identical mirror of a single upstream source pinned in `parity/source-lock.yaml`, captured as a `vendored:` row under the matching repository; `cargo parity-verify-sol-provenance` enforces SHA-256 equality between the on-disk bytes and the manifest row before the workspace builds | Conforms |
+| Binding source pins | The upstream Solidity repository each `cow-sdk-contracts` inline `alloy::sol!` binding mirrors is pinned by commit under `repositories:` in `parity/source-lock.yaml`; the bindings themselves are proven byte-for-byte by the `fixtures:` provenance and crate parity tests rather than a per-file source mirror | Conforms |
 | Refresh mapping | The public audit-refresh map points source-lock changes and exclusion-policy changes back to this audit | Conforms |
 
 ## Current Contract
@@ -111,8 +111,9 @@ root choices visible before reviewers rely on them.
 ### Refresh Outcome
 
 The 2026-05-29 upstream comparison advanced `contracts` and `services` to
-upstream HEAD. Every `contracts` producer path and vendored Solidity mirror is
-byte-identical at the new commit, so the contract bindings are unaffected.
+upstream HEAD. Every `contracts` producer path and pinned binding source is
+unchanged at the new commit, so the inline `alloy::sol!` contract bindings and
+their fixture proofs are unaffected.
 `services` producer-path drift is confined to
 `crates/shared/src/order_validation.rs` and `crates/orderbook/openapi.yml`; the
 OpenAPI change removes the deprecated v1 `solver_competition` paths (the

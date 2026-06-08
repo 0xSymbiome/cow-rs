@@ -195,7 +195,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mapfile -t sources < <(find crates/signing/src/eip1271 crates/composable/src 2>/dev/null -type f -name '*.rs' | sort || true)
+          mapfile -t sources < <(find crates/signing/src/eip1271 2>/dev/null -type f -name '*.rs' | sort || true)
           if [ "${#sources[@]}" -eq 0 ]; then
             echo "No EIP-1271 encoder sources found; gate has no candidates."
             exit 0

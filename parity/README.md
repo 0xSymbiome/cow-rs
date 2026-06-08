@@ -8,7 +8,7 @@ It is not a runtime dependency of any published crate.
 
 - `source-lock.yaml` — pinned upstream producer repositories and commits
 - `fixtures/` — committed parity fixtures with in-file `source_refs` provenance,
-  covering the contracts, trading, app-data, composable, cow-shed, signing, and
+  covering the contracts, trading, app-data, cow-shed, signing, and
   orderbook surfaces
 
 ## Repo contract
@@ -90,8 +90,8 @@ Embedded `source_refs[].commit` metadata inside `parity/fixtures/*.json` must st
 Each `fixtures/*.json` file carries its own `source_refs` provenance pinning it
 to the CoW Protocol producer repositories recorded in `source-lock.yaml`:
 `cowprotocol/services` for the orderbook and trading wire surfaces, and
-`cowprotocol/contracts` — with `cowprotocol/ethflowcontract`, `composable-cow`,
-and `cow-shed` — for the on-chain surfaces. See
+`cowprotocol/contracts` — with `cowprotocol/ethflowcontract` and
+`cowdao-grants/cow-shed` — for the on-chain surfaces. See
 [docs/parity.md](../docs/parity.md) for the full authority and
 ownership split.
 

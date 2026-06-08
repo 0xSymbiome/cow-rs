@@ -8,10 +8,11 @@ use crate::hex_field::decode_hex_field_exact;
 sol! {
     // Canonical EIP-173 ownership proxy interface used by cow-sdk consumers
     // to read the current owner, transfer ownership, and probe ERC-165
-    // interface support. Signatures are reproduced verbatim from the
-    // canonical EIP-173 specification (https://eips.ethereum.org/EIPS/eip-173).
-    // The companion Solidity excerpt and the EIP-1967 storage-slot derivation
-    // are committed under `crates/contracts/abi/eip1967/` for provenance.
+    // interface support. Signatures mirror the published EIP-173 specification
+    // (https://eips.ethereum.org/EIPS/eip-173); the EIP-1967 storage-slot
+    // derivation matches cowprotocol/contracts
+    // `src/contracts/libraries/GPv2EIP1967.sol`, pinned by commit in
+    // `parity/source-lock.yaml` and proven by the crate parity tests.
     #[sol(rename_all = "camelcase")]
     interface IEip173Proxy {
         event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);

@@ -15,12 +15,12 @@
 //! order UID. Every malformed input returns a typed [`ContractsError`]; no log,
 //! however adversarial, can panic the decoder.
 //!
-//! The `Trade`, `Interaction`, `Settlement`, and `OrderInvalidated` Solidity
-//! sources are committed byte-for-byte under
-//! `crates/contracts/abi/settlement/GPv2Settlement.sol` for provenance;
-//! `PreSignature` is the inherited `GPv2Signing` mixin event. Every topic-0
-//! hash, including `PreSignature`, is byte-locked against an independent
-//! keccak-256 of the canonical event signature in the crate integration tests.
+//! The `Trade`, `Interaction`, `Settlement`, and `OrderInvalidated` events
+//! mirror cowprotocol/contracts `src/contracts/GPv2Settlement.sol` (pinned by
+//! commit in `parity/source-lock.yaml`); `PreSignature` is the inherited
+//! `GPv2Signing` mixin event. Every topic-0 hash, including `PreSignature`, is
+//! byte-locked against an independent keccak-256 of the canonical event
+//! signature in the crate integration tests.
 
 use alloy_primitives::LogData;
 use alloy_sol_types::{SolEvent, sol};
@@ -32,12 +32,10 @@ use crate::order::ORDER_UID_LENGTH;
 use crate::primitives::check_topics;
 
 sol! {
-    // Canonical GPv2Settlement event surface, reproduced verbatim from the
-    // cowprotocol/contracts settlement contract and the GPv2Signing mixin
-    // (upstream source at https://github.com/cowprotocol/contracts). The four
-    // settlement events are mirrored byte-for-byte under
-    // `crates/contracts/abi/settlement/GPv2Settlement.sol`; `PreSignature` is
-    // the inherited GPv2Signing event. Every topic-0 hash is byte-locked
+    // Canonical GPv2Settlement event surface. The four settlement events
+    // mirror cowprotocol/contracts `src/contracts/GPv2Settlement.sol` and
+    // `PreSignature` is the inherited GPv2Signing mixin event, both pinned by
+    // commit in `parity/source-lock.yaml`. Every topic-0 hash is byte-locked
     // against an independent keccak-256 of the canonical signature in tests.
     #[sol(rename_all = "camelcase")]
     interface IGPv2SettlementEvents {

@@ -153,15 +153,10 @@ fixture parity assertions catch any future whitespace creep.
 ## Links
 
 - [Architecture](../architecture.md)
-- [Composable Contract Bindings Audit](../audit/composable-contract-bindings-audit.md)
 - [ADR 0014](0014-eip1271-verification-cache.md)
 - [ADR 0048](0048-composable-conditional-order-framework.md)
 - [ADR 0049](0049-cow-shed-account-abstraction-proxy.md)
 - [ADR 0051](0051-signing-owned-eip1271-signature-provider-trait.md)
-
-**Proven by:**
-
-- [Composable Contract Bindings Audit](../audit/composable-contract-bindings-audit.md)
 
 ## Amendment 2026-05-22: canonical primitive layer (per ADR 0052)
 

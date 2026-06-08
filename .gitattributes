@@ -4,13 +4,6 @@
 # Linux checkouts.
 *.snap text eol=lf
 
-# Vendored Solidity sources whose byte-exact contents are compared by
-# `parity-maintainer verify-sol-provenance` against the upstream pins in
-# `parity/source-lock.yaml`. Any host that re-normalises CRLF on checkout
-# would break the SHA-256 gate; force LF on every host so the
-# bytes-on-disk SHA matches the git-blob SHA matches the upstream SHA.
-crates/contracts/abi/**/*.sol text eol=lf
-
 # YAML files under parity/openapi/ are byte-compared by Rust tooling:
 # `parity/openapi/services-orderbook.yml` is a vendored upstream
 # snapshot whose four-line "Vendored from cowprotocol/services @

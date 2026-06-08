@@ -21,7 +21,6 @@ parity-validate = "run --quiet --manifest-path scripts/parity-maintainer/Cargo.t
 parity-vendor-openapi = "run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- vendor-openapi"
 parity-openapi-coverage = "run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- openapi-coverage"
 parity-provision-upstreams = "run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- provision-upstreams"
-parity-verify-sol-provenance = "run --quiet --manifest-path scripts/parity-maintainer/Cargo.toml -- verify-sol-provenance"
 
 # Validation-smoke subcommands.
 registry-confirm = "run --quiet --manifest-path scripts/validation-smoke/Cargo.toml -- registry-confirm"

@@ -1,9 +1,9 @@
 # COW Shed Contract Bindings Audit
 
 Status: Current
-Last reviewed: 2026-06-04
-Owning surface: byte-identical COW Shed Solidity mirrors, proxy creation-code artifacts, version-call evidence, and deployment registry rows
-Refresh trigger: Refresh when COW Shed deployments, proxy creation code, factory ABIs, hook type strings, or the deployed `VERSION()` return value change upstream.
+Last reviewed: 2026-06-08
+Owning surface: inline COW Shed `alloy::sol!` bindings, proxy creation-code artifacts, version-call evidence, and deployment registry rows
+Refresh trigger: Refresh when COW Shed deployments, proxy creation code, factory ABIs, hook type strings, the deployed `VERSION()` return value, or the upstream commit pin for the COW Shed source change.
 Related docs:
 - [ADR 0049](../adr/0049-cow-shed-account-abstraction-proxy.md)
 - [ADR 0050](../adr/0050-eip1271-signature-blob-encoding.md)
@@ -15,9 +15,10 @@ Related docs:
 
 This audit covers:
 
-- the byte-identical COW Shed Solidity mirrors under
-  `crates/contracts/abi/cow-shed/` that anchor the SDK's typed bindings
-  and are gated by `cargo parity-verify-sol-provenance`;
+- the inline COW Shed `alloy::sol!` bindings that reproduce the upstream
+  Solidity surface verbatim, with the upstream source pinned by commit in
+  `parity/source-lock.yaml` and proven byte-for-byte by the JSON parity
+  fixtures under `parity/fixtures/cow_shed/`;
 - the per-version proxy creation-code artifacts and SHA-256 digest
   neighbors;
 - the per-chain `VERSION()` call evidence captured in
@@ -38,7 +39,7 @@ app-data crate; that boundary is governed by the
 
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
-| Solidity mirrors | The byte-identical COW Shed Solidity mirrors (gated by `cargo parity-verify-sol-provenance` against SHA-256 rows in `parity/source-lock.yaml`) compile under `alloy::sol!` and emit type strings byte-identical to the upstream sources, including no whitespace between commas | Conforms |
+| Inline bindings | The inline COW Shed `alloy::sol!` bindings (mirroring upstream pinned by commit in `parity/source-lock.yaml`) emit type strings byte-identical to the upstream sources, including no whitespace between commas, proven by the JSON parity fixtures under `parity/fixtures/cow_shed/` | Conforms |
 | Proxy creation-code | `v1.0.0.bin` and `v1.0.1.bin` artifacts ship with adjacent `.sha256` digest neighbors validated by `crates/contracts/build.rs` | Conforms |
 | Version-call evidence | Every per-chain row in `version-call-results.json` records `decoded_version == "1.0.1"` and `expected_sdk_version == "CowShedVersion::V1_0_1"` | Conforms |
 | Deployment registry | COW Shed factory and implementation rows are present in `registry.toml` for every supported chain id; `COWShedForComposableCoW` is present only for chain id 100 | Conforms |
@@ -51,20 +52,18 @@ app-data crate; that boundary is governed by the
 
 ## Current Contract
 
-### Solidity mirrors
+### Inline bindings
 
-The byte-identical COW Shed Solidity mirrors live under
-`crates/contracts/abi/cow-shed/` and are gated by
-`cargo parity-verify-sol-provenance` against SHA-256 rows in
-`parity/source-lock.yaml`. The set covers `COWShed.sol`,
-`COWShedFactory.sol`, `COWShedForComposableCoW.sol`, `COWShedProxy.sol`,
-`COWShedStorage.sol`, `ERC1271Forwarder.sol`, `IComposableCow.sol`,
-`ICOWAuthHook.sol`, `IERC1271.sol`, `IPreSignStorage.sol`,
-`LibAuthenticatedHooks.sol`, `LibCowOrder.sol`, and
-`PreSignStateStorage.sol`. The EIP-712 type strings inside these mirrors
+The COW Shed bindings are inline `alloy::sol!` interfaces that reproduce
+the upstream Solidity surface verbatim. The upstream `cowdao-grants/cow-shed`
+source they mirror is pinned by commit under `repositories:` in
+`parity/source-lock.yaml`, and the JSON parity fixtures under
+`parity/fixtures/cow_shed/` prove the bindings produce byte-identical
+wire bytes for the proxy, factory, `COWShed`, `COWShedForComposableCoW`,
+forwarder, and hook surfaces. The EIP-712 type strings the bindings emit
 carry no whitespace between commas in declaration order; any future
-amendment that adds whitespace is a regression of the byte-identity
-contract.
+amendment that adds whitespace is a regression caught by the type-string
+parity contract test.
 
 ### Proxy creation-code
 
@@ -213,7 +212,9 @@ wire-byte contract end-to-end.
 
 Primary implementation points:
 
-- `crates/contracts/abi/cow-shed/`
+- `crates/cow-shed/src/eip712/sol_types.rs`
+- `crates/cow-shed/src/bindings/`
+- `parity/source-lock.yaml`
 - `crates/contracts/abi/cow-shed/proxy-creation-code/v1.0.0.bin`
 - `crates/contracts/abi/cow-shed/proxy-creation-code/v1.0.0.bin.sha256`
 - `crates/contracts/abi/cow-shed/proxy-creation-code/v1.0.1.bin`

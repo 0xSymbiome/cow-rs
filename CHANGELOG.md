@@ -357,10 +357,10 @@ The first functional crate-family release begins at `0.1.0`.
   `deposit` / `withdraw` bindings with `wrap_interaction` / `unwrap_interaction`
   helpers that emit the canonical settlement interaction, and
   `cow_sdk_contracts::eth_flow` gains `parse_eth_flow_onchain_data`, the
-  `WRAP_ALL_SELECTOR` constant, and `wrap_all_interaction`. The Solidity
-  mirrors for the new surfaces are vendored byte-identically under
-  `crates/contracts/abi/eth-flow/` and `crates/contracts/abi/weth/` and gated by
-  the provenance contract in
+  `WRAP_ALL_SELECTOR` constant, and `wrap_all_interaction`. The new bindings are
+  declared inline with `alloy::sol!` and proven byte-for-byte by the parity
+  fixtures under `parity/fixtures/`, mirroring upstream Solidity pinned by commit
+  in `parity/source-lock.yaml`, per
   [ADR 0012](docs/adr/0012-alloy-sol-bindings-and-registry-authority.md).
 - `cow_sdk_app_data::AppDataParams` gains two fluent terminal methods:
   `into_doc(self) -> AppDataDoc` produces the canonical JSON
@@ -1234,41 +1234,6 @@ The first functional crate-family release begins at `0.1.0`.
   block cites the binding ADR, the corresponding doctrine row, and
   the CI gate that mechanizes the fence.
 
-- New CI gate `cargo parity-verify-sol-provenance` enforces a
-  byte-identity contract on every `.sol` file under
-  `crates/contracts/abi/`. All 40 shipped files are byte-identical
-  mirrors of a single upstream source pinned in
-  `parity/source-lock.yaml`; each `vendored:` manifest row carries the
-  upstream path under the repository root and the SHA-256 of the
-  upstream bytes at the pinned commit. The gate rejects any drift
-  between the on-disk SHA and the manifest SHA, and (when run with
-  `--upstream-root <path>`) any drift between the manifest SHA and the
-  live upstream bytes at the pinned commit via `git show <commit>:<path>`
-  against a local upstream checkout. A second cross-check mode
-  (`--upstream-github`) fetches each `vendored:` row from
-  `https://raw.githubusercontent.com/<owner>/<repo>/<commit>/<upstream-path>`
-  (parsed from the row's `remote:` field) and asserts the bytes match the
-  manifest SHA-256, so CI verifies the manifest against GitHub canonical
-  content on every run without anyone needing to clone the upstream
-  repositories locally. Mirrors are sourced from four
-  upstream repositories: `cowprotocol/contracts` (settlement,
-  vault-relayer, EIP-1967 proxy slots, ERC-20), `cowprotocol/ethflowcontract`
-  (EthFlow contract and order library), `cowprotocol/composable-cow`
-  (conditional-order framework including the Safe Global
-  `ExtensibleFallbackHandler` reached transitively through
-  composable-cow's `lib/safe` submodule SHA), and `cowdao-grants/cow-shed`
-  (account-abstraction proxy and hooks). The gate ships as a subcommand
-  of the `parity-maintainer` binary and is wired into the workspace
-  quality-gate workflow, alongside the existing source-lock validators.
-  `.gitattributes` LF-normalises every `.sol`, `.yaml`, `.yml`, and
-  `.json` fixture path that participates in a byte-stable contract so
-  the gate stays deterministic across Windows, macOS, and Linux
-  checkouts. A reviewer's audit of the abi tree is `sha256sum` on every
-  file against the matching `vendored:` row. The provenance discipline
-  is documented in
-  [ADR 0012](docs/adr/0012-alloy-sol-bindings-and-registry-authority.md)
-  and the [Contract Bindings Parity Audit](docs/audit/contract-bindings-parity-audit.md).
-
 ### Fixed
 
 - `cow-sdk-orderbook` rejection-parser rustdoc and [ADR 0017](docs/adr/0017-typed-orderbook-rejection-parser.md)
@@ -1703,11 +1668,10 @@ The first functional crate-family release begins at `0.1.0`.
   `cow_sdk_core::Amount::new` remains lenient (accepts both decimal
   and `0x`-prefixed hex; explicitly rejects `0o`/`0b`).
 
-- `cow_sdk_contracts::IERC1271` is now a typed `alloy_sol_types::sol!` binding
-  for the canonical EIP-1271 `isValidSignature(bytes32,bytes)` interface, with
-  Solidity provenance at `crates/contracts/abi/cow-shed/IERC1271.sol` (a
-  byte-identical mirror of `cowdao-grants/cow-shed`'s
-  `src/interfaces/IERC1271.sol` gated by `cargo parity-verify-sol-provenance`).
+- `cow_sdk_contracts::IERC1271` is now a typed inline `alloy_sol_types::sol!`
+  binding for the canonical EIP-1271 `isValidSignature(bytes32,bytes)` interface,
+  mirroring `cowdao-grants/cow-shed`'s `src/interfaces/IERC1271.sol` pinned by
+  commit in `parity/source-lock.yaml` and proven by the parity fixtures.
   The
   macro-emitted
   `<IERC1271::isValidSignatureCall as alloy_sol_types::SolCall>::SELECTOR`
@@ -1755,9 +1719,9 @@ The first functional crate-family release begins at `0.1.0`.
   authority for the EthFlow construction-time invariants recorded in
   ADR 0020. The `docs/parity.md` Source Lock table and the
   `docs/parity.md` Pinned Revisions and Primary sources lists
-  reflect the new entry, and the `cow-sdk-contracts` ABI bindings under
-  `crates/contracts/abi/eth-flow/` now trace to a fixed upstream SHA
-  rather than the unpinned upstream repository.
+  reflect the new entry, and the `cow-sdk-contracts` inline `sol!` EthFlow
+  bindings now trace to a fixed upstream commit rather than the unpinned
+  upstream repository.
 
 - `PROP-CON-018`: `EthFlowOrderData::new` and
   `EthFlowOrderData::from_unsigned_order` reject `receiver == Address::ZERO`
@@ -1826,26 +1790,27 @@ The first functional crate-family release begins at `0.1.0`.
   for proxy addresses, selectors, calldata, type hashes, domain separators, and
   init-code construction.
 
-- Added the composable and COW Shed contract bindings to `cow-sdk-contracts`:
-  the deployment registry now binds the byte-identical composable
-  conditional-order framework Solidity mirrors and COW Shed
-  account-abstraction proxy Solidity mirrors (both vendored under
-  `crates/contracts/abi/` and gated by `cargo parity-verify-sol-provenance`),
-  registers eleven new capability contract identifiers
-  (ComposableCow, ExtensibleFallbackHandler, CurrentBlockTimestampFactory,
-  the four non-TWAP handlers, the TWAP handler, the COW Shed
-  implementation, the COW Shed factory, and the Gnosis-only
+- Added the COW Shed contract bindings to `cow-sdk-contracts` and extended the
+  deployment registry with the composable and COW Shed contract families: the
+  COW Shed account-abstraction proxy is bound through inline `alloy::sol!` proven
+  by the parity fixtures, mirroring upstream Solidity pinned by commit in
+  `parity/source-lock.yaml`. The registry registers eleven new capability
+  contract identifiers (ComposableCow, ExtensibleFallbackHandler,
+  CurrentBlockTimestampFactory, the four non-TWAP handlers, the TWAP handler,
+  the COW Shed implementation, the COW Shed factory, and the Gnosis-only
   COWShedForComposableCoW forwarder), publishes 111 per-chain capability
   rows alongside the existing GPv2 rows, and records 24 absence and
   exclusion records (Ink not-deployed and Optimism not-supported) in the
-  separate coverage manifest. Selector parity tests pin the twelve
-  canonical composable custom-error selectors and the COW Shed
-  signature-verifier muxer interface identifier.
+  separate coverage manifest, so composable deployment addresses resolve through
+  the typed `Registry` even though composable order construction is deferred
+  ([ADR 0048](docs/adr/0048-composable-conditional-order-framework.md)). A
+  selector parity test pins the COW Shed signature-verifier muxer interface
+  identifier.
 
-- Added schema v2 deployment registry readiness for composable and COW Shed
-  contracts, including separated verification and coverage taxonomies,
-  pinned helper source evidence, reserved leaf crate manifests, and public
-  ADR/audit records for the orchestration and signing boundaries.
+- Added schema v2 deployment registry readiness for the composable and COW Shed
+  contract families, including separated verification and coverage taxonomies,
+  pinned source evidence, and public ADR/audit records for the orchestration and
+  signing boundaries.
 
 - Added a cow-sdk-wasm comparative benchmark validation note at
   `docs/audit/cow-sdk-wasm-comparative-benchmark-validation-note.md`
@@ -2247,12 +2212,12 @@ The first functional crate-family release begins at `0.1.0`.
   struct used to derive the typed-data hash. A pinned `PERMIT_TYPE_HASH`
   constant and a `permit_typed_data_hash(domain, permit)` helper compose the
   EIP-712 envelope so off-chain signers produce a digest every EIP-2612
-  deployment accepts, and the byte-identical Solidity mirror at
-  `crates/contracts/abi/erc20/IERC20.sol` (vendored from
-  `cowprotocol/contracts` and gated by `cargo parity-verify-sol-provenance`)
-  preserves upstream provenance for reviewers; the `IERC20Permit` interface
-  is declared inline in `crates/contracts/src/erc20.rs` because EIP-2612 has
-  no canonical upstream pinned in `parity/source-lock.yaml`.
+  deployment accepts. The `IERC20` binding is declared inline with
+  `alloy::sol!` and proven by `parity/fixtures/contracts.json`, mirroring
+  `cowprotocol/contracts` pinned by commit in `parity/source-lock.yaml`; the
+  `IERC20Permit` interface is declared inline in `crates/contracts/src/erc20.rs`
+  because EIP-2612 has no canonical upstream pinned in
+  `parity/source-lock.yaml`.
 
 - Deterministic native example scenarios plus browser-hosted WASM verification
   surfaces for the supported SDK and browser-wallet flows.
@@ -2324,20 +2289,19 @@ The first functional crate-family release begins at `0.1.0`.
   on every pull request, asserting empty output before the change can
   land.
 
-- Canonical `alloy::sol!`-generated typed bindings for every contract
+- Canonical inline `alloy::sol!` typed bindings for every contract
   surface the SDK emits call-data against: `GPv2Settlement` settlement
   plus pre-signature and invalidation, `GPv2VaultRelayer` authorization
   checks, `CoWSwapEthFlow` order creation and invalidation, the EIP-1967
   storage-slot and proxy ownership surface, and the `IERC20` plus
-  `IERC20Permit` (EIP-2612) ERC-20 surface. Every binding is generated
-  from byte-identical Solidity mirrors committed under
-  `crates/contracts/abi/**/*.sol`, gated by
-  `cargo parity-verify-sol-provenance` against SHA-256 rows in
-  `parity/source-lock.yaml`, and locked further by a byte-identity
-  parity regression against fixtures derived from the upstream
-  TypeScript SDK, so the encoded call-data output is always sourced from
-  the upstream CoW Protocol Solidity surface rather than a parallel Rust
-  reimplementation.
+  `IERC20Permit` (EIP-2612) ERC-20 surface. Every binding is declared
+  inline with `sol!` and proven byte-for-byte by a parity regression
+  against the call-data, EIP-712, and selector fixtures under
+  `parity/fixtures/` (derived from the upstream TypeScript SDK), with the
+  upstream Solidity each binding mirrors pinned by commit in
+  `parity/source-lock.yaml`, so the encoded call-data output is always
+  sourced from the upstream CoW Protocol Solidity surface rather than a
+  parallel Rust reimplementation.
 
 - Opt-in quote-cache seam in `cow-sdk-trading`. The `QuoteCache` trait
   exposes async `lookup`, `insert`, and `invalidate` contract, with
@@ -3301,10 +3265,9 @@ The first functional crate-family release begins at `0.1.0`.
   fully ABI-encoded `settle(...)` payload for downstream transaction builders.
   The `GPv2Order` EIP-712 type-hash, the 56-byte `OrderUid` layout, and the
   trade-flags bit encoding remain byte-identical to the pre-migration
-  baseline, and the byte-identical Solidity mirror at
-  `crates/contracts/abi/settlement/GPv2Settlement.sol` (vendored from
-  `cowprotocol/contracts` and gated by `cargo parity-verify-sol-provenance`)
-  preserves upstream provenance for reviewers.
+  baseline, and the inline `sol!` binding is proven by
+  `parity/fixtures/contracts.json`, mirroring `cowprotocol/contracts` pinned by
+  commit in `parity/source-lock.yaml`.
 
 - `cow-sdk-contracts` now derives its `GPv2VaultRelayer` authorization-role
   bindings from an `alloy::sol!` interface block that declares the canonical
@@ -3314,11 +3277,9 @@ The first functional crate-family release begins at `0.1.0`.
   from the generated typed interface and derive the role digest through the
   `alloy-sol-types` ABI-encoded `(address, bytes4)` tuple, keeping the
   role-hash byte output identical to the pre-migration baseline. The
-  byte-identical Solidity mirror at
-  `crates/contracts/abi/vault-relayer/GPv2VaultRelayer.sol` (vendored
-  from `cowprotocol/contracts` and gated by
-  `cargo parity-verify-sol-provenance`) preserves upstream provenance for
-  reviewers.
+  inline `sol!` binding is proven by `parity/fixtures/contracts.json`,
+  mirroring `cowprotocol/contracts` pinned by commit in
+  `parity/source-lock.yaml`.
 
 - `cow-sdk-contracts` now hosts the typed `CoWSwapEthFlow` call-data
   bindings under a new `cow_sdk_contracts::eth_flow` module generated from
@@ -3333,11 +3294,9 @@ The first functional crate-family release begins at `0.1.0`.
   boundary with canonical two's-complement sign-extension, and the call-data
   layout now matches the upstream on-chain struct field order byte-for-byte.
   The typed EthFlow surface is re-exported as `cow_sdk_trading::eth_flow`
-  for downstream consumers, and the byte-identical Solidity mirror at
-  `crates/contracts/abi/eth-flow/CoWSwapEthFlow.sol` (vendored from
-  `cowprotocol/ethflowcontract` and gated by
-  `cargo parity-verify-sol-provenance`) preserves upstream provenance for
-  reviewers.
+  for downstream consumers, and the inline `sol!` binding is proven by
+  `parity/fixtures/contracts.json`, mirroring `cowprotocol/ethflowcontract`
+  pinned by commit in `parity/source-lock.yaml`.
 
 - The `cow-sdk-contracts` EIP-1967 proxy-inspection surface now derives
   from an `alloy::sol!` interface block that declares the canonical
@@ -3354,11 +3313,10 @@ The first functional crate-family release begins at `0.1.0`.
   their signatures and now route through the typed surface; `owner_address`
   stays available as a legacy alias for `admin_address` so downstream
   ownership-proxy consumers migrate without behavioral changes. The
-  committed Solidity mirror at
-  `crates/contracts/abi/eip1967/GPv2EIP1967.sol` (a byte-identical mirror
-  of `cowprotocol/contracts`'s `src/contracts/libraries/GPv2EIP1967.sol`
-  gated by `cargo parity-verify-sol-provenance`) preserves upstream
-  provenance for reviewers.
+  inline `sol!` binding is proven by `parity/fixtures/contracts.json`,
+  mirroring `cowprotocol/contracts`'s
+  `src/contracts/libraries/GPv2EIP1967.sol` pinned by commit in
+  `parity/source-lock.yaml`.
 
 - The typed `cow_sdk_contracts::deployments::Registry` is now the single
   authority for resolving canonical contract addresses from the

@@ -1,7 +1,7 @@
 # On-Chain Order Log Decoding Audit
 
 Status: Current
-Last reviewed: 2026-05-29
+Last reviewed: 2026-06-08
 Owning surface: `cow-sdk-contracts` eth-flow order event decoders (`CoWSwapOnchainOrders` and `CoWSwapEthFlow`)
 Refresh trigger: a change to the `OrderPlacement` / `OrderInvalidation` / `OrderRefund` event ABI, the `decode_eth_flow_log` dispatch set, the on-chain signing-scheme set, the eth-flow trailing-data layout, the `GPv2` order markers, or the `compute_order_uid` hashing path
 Related docs:
@@ -75,5 +75,4 @@ Validation surface:
 ```text
 cargo test -p cow-sdk-contracts --test onchain_orders
 cargo test -p cow-sdk-contracts --test eth_flow_events_contract
-cargo parity-verify-sol-provenance
 ```

@@ -11,8 +11,10 @@
 //! [`cow_sdk_core::wrapped_native_token`]; callers pass that address into the
 //! helpers below.
 //!
-//! The Solidity excerpt used to author these bindings is committed under
-//! `crates/contracts/abi/weth/` for provenance.
+//! These bindings are authored inline as `alloy::sol!` against the upstream
+//! cowprotocol/ethflowcontract `src/interfaces/IWrappedNativeToken.sol`
+//! surface, pinned by commit in `parity/source-lock.yaml` and proven by the
+//! selector fixtures under `parity/fixtures/` and the crate parity tests.
 
 use alloy_primitives::Bytes;
 use alloy_sol_types::{SolCall, sol};
@@ -23,12 +25,11 @@ use crate::interaction::Interaction;
 
 sol! {
     // Canonical wrapped-native-token surface. The `deposit()` / `withdraw(uint256)`
-    // signatures are reproduced verbatim from the cowprotocol/ethflowcontract
-    // `IWrappedNativeToken` interface (upstream source at
-    // https://github.com/cowprotocol/ethflowcontract); the 4-byte selectors they
-    // generate are byte-identical to those every WETH9 deployment exposes. The
-    // Solidity excerpt used to author these bindings is committed under
-    // `crates/contracts/abi/weth/` for provenance.
+    // signatures mirror cowprotocol/ethflowcontract
+    // `src/interfaces/IWrappedNativeToken.sol` (pinned by commit in
+    // `parity/source-lock.yaml`); the 4-byte selectors they generate are
+    // byte-identical to those every WETH9 deployment exposes and are proven by
+    // the selector fixtures under `parity/fixtures/`.
     interface IWrappedNativeToken {
         function deposit() external payable;
         function withdraw(uint256 wad) external;

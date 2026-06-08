@@ -106,12 +106,13 @@ and the decision tree for when a new primitive joins each bucket.
 
 ## Canonical Contract Bindings
 
-Every ABI binding the SDK emits call-data against is generated through
-`alloy::sol!` from byte-identical Solidity mirrors committed under
-`crates/contracts/abi/` and gated by `cargo parity-verify-sol-provenance`
-against SHA-256 rows in `parity/source-lock.yaml`. Hand-rolled encoders
-are not allowed in shipped crates, and every chain-scoped address lookup
-routes through the typed `Registry` authority in `cow-sdk-contracts`.
+Every ABI binding the SDK emits call-data against is authored as an inline
+`alloy::sol!` interface in `cow-sdk-contracts` and proven byte-for-byte against
+TypeScript-SDK-derived call-data and EIP-712 digest fixtures under
+`parity/fixtures/`. The upstream Solidity each binding mirrors is pinned by
+commit in `parity/source-lock.yaml`. Hand-rolled encoders are not allowed in
+shipped crates, and every chain-scoped address lookup routes through the typed
+`Registry` authority in `cow-sdk-contracts`.
 The canonical EVM primitive layer is `alloy_primitives` and the canonical
 EIP-712 / Solidity-binding layer is `alloy_sol_types` per
 [ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md).
