@@ -11,7 +11,7 @@ use serde::Deserialize;
 mod common;
 use common::{address, parse_version};
 
-const VERSION_CALLS: &str = include_str!("../../contracts/abi/cow-shed/version-call-results.json");
+const VERSION_CALLS: &str = include_str!("fixtures/version-call-results.json");
 const PROXY_ADDRESSES: &str =
     include_str!("../../../parity/fixtures/cow_shed/proxy_addresses.json");
 

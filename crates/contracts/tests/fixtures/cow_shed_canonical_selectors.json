@@ -3,7 +3,7 @@
   "source_authority": {
     "deployed_interface": "the deployed COWShedFactory v1.0.1 runtime; each selector is keccak256 of the deployed signature (verifiable on-chain). The deployed 2-arg initializeProxy(address,bool) diverges from the cow-shed source-HEAD 1-arg form.",
     "solidity_reference": "cow-shed/src/*.sol (pinned cow-shed SHA 9e01a88e0010314ee1e4c1a822105897a87d3bda)",
-    "deployment_runtime": "crates/contracts/abi/cow-shed/version-call-results.json"
+    "deployment_runtime": "crates/cow-shed/tests/fixtures/version-call-results.json"
   },
   "factory_methods": [
     {

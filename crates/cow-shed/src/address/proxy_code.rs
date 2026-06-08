@@ -3,12 +3,10 @@
 use crate::CowShedVersion;
 
 /// COW Shed proxy creation code for `1.0.0`.
-pub const V1_0_0_PROXY_CREATION_CODE: &[u8] =
-    include_bytes!("../../../contracts/abi/cow-shed/proxy-creation-code/v1.0.0.bin");
+pub const V1_0_0_PROXY_CREATION_CODE: &[u8] = include_bytes!("proxy-creation-code/v1.0.0.bin");
 
 /// COW Shed proxy creation code for `1.0.1`.
-pub const V1_0_1_PROXY_CREATION_CODE: &[u8] =
-    include_bytes!("../../../contracts/abi/cow-shed/proxy-creation-code/v1.0.1.bin");
+pub const V1_0_1_PROXY_CREATION_CODE: &[u8] = include_bytes!("proxy-creation-code/v1.0.1.bin");
 
 /// Returns the proxy creation code for a supported COW Shed version.
 #[must_use]

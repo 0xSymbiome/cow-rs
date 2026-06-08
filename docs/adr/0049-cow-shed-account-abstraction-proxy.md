@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-05-15
-- Last reviewed: 2026-05-22
+- Last reviewed: 2026-06-08
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: cow-shed, account-abstraction, version-forwarding, proxy-derivation
 - Related: [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md), [ADR 0048](0048-composable-conditional-order-framework.md), [ADR 0050](0050-eip1271-signature-blob-encoding.md), [ADR 0051](0051-signing-owned-eip1271-signature-provider-trait.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
@@ -50,7 +50,7 @@ opt-in behind the facade-level `cow-shed` feature and is never on the default
 `CowShedVersion` has variants `V1_0_0` and `V1_0_1` with `V1_0_1` as
 `Default::default()`. The SDK signs and derives proxy addresses against the
 deployed `VERSION()` return value captured in
-`crates/contracts/abi/cow-shed/version-call-results.json`. The version selected
+`crates/cow-shed/tests/fixtures/version-call-results.json`. The version selected
 by the caller threads through every internal builder; no helper may construct
 a downstream object without forwarding the caller-selected version.
 
@@ -143,8 +143,9 @@ not a dependency direction for cow-shed.
 ## Must Remain True
 
 - Public surface: `CowShedVersion::V1_0_1` is the default; the
-  `version-call-results.json` artifact carries per-chain rows with
-  `decoded_version == "1.0.1"` and `expected_sdk_version == "CowShedVersion::V1_0_1"`.
+  `crates/cow-shed/tests/fixtures/version-call-results.json` artifact carries
+  per-chain rows with `decoded_version == "1.0.1"` and
+  `expected_sdk_version == "CowShedVersion::V1_0_1"`.
 - Runtime and support: every internal builder forwards the caller-selected
   version. The regression test asserts distinct version variants produce
   distinct proxy addresses.

@@ -19,10 +19,10 @@ This audit covers:
   Solidity surface verbatim, with the upstream source pinned by commit in
   `parity/source-lock.yaml` and proven byte-for-byte by the JSON parity
   fixtures under `parity/fixtures/cow_shed/`;
-- the per-version proxy creation-code artifacts and SHA-256 digest
-  neighbors;
+- the per-version proxy creation-code artifacts embedded by the cow-shed
+  crate and guarded by the CREATE2 address-parity test;
 - the per-chain `VERSION()` call evidence captured in
-  `crates/contracts/abi/cow-shed/version-call-results.json`;
+  `crates/cow-shed/tests/fixtures/version-call-results.json`;
 - the schema v2 deployment registry rows for the COW Shed factory and
   implementation contracts;
 - the Gnosis-only `COWShedForComposableCoW` forwarder gate that enforces
@@ -40,7 +40,7 @@ app-data crate; that boundary is governed by the
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
 | Inline bindings | The inline COW Shed `alloy::sol!` bindings (mirroring upstream pinned by commit in `parity/source-lock.yaml`) emit type strings byte-identical to the upstream sources, including no whitespace between commas, proven by the JSON parity fixtures under `parity/fixtures/cow_shed/` | Conforms |
-| Proxy creation-code | `v1.0.0.bin` and `v1.0.1.bin` artifacts ship with adjacent `.sha256` digest neighbors validated by `crates/contracts/build.rs` | Conforms |
+| Proxy creation-code | `v1.0.0.bin` and `v1.0.1.bin` artifacts are embedded by the cow-shed crate and guarded by the CREATE2 address-parity test `crates/cow-shed/tests/deployment_address_parity_contract.rs`, which derives proxy addresses from the `.bin` bytes and locks them to `parity/fixtures/cow_shed/proxy_addresses.json` for both versions | Conforms |
 | Version-call evidence | Every per-chain row in `version-call-results.json` records `decoded_version == "1.0.1"` and `expected_sdk_version == "CowShedVersion::V1_0_1"` | Conforms |
 | Deployment registry | COW Shed factory and implementation rows are present in `registry.toml` for every supported chain id; `COWShedForComposableCoW` is present only for chain id 100 | Conforms |
 | Gnosis forwarder gate | The Gnosis-only forwarder is reachable only when the caller selects chain id 100; all other chains return the typed `CowShedError::COWShedForComposableCoWGnosisOnly { chain }` variant | Conforms (contract; helper body lands in a later capability landing) |
@@ -68,11 +68,17 @@ parity contract test.
 ### Proxy creation-code
 
 Per-version proxy creation-code artifacts ship at
-`crates/contracts/abi/cow-shed/proxy-creation-code/v1.0.0.bin` and
-`v1.0.1.bin` with adjacent `.sha256` digest neighbors. The build script
-`crates/contracts/build.rs` reads each `.bin` file, computes SHA-256, and
-compares to the digest neighbor; a mismatch fails the build. The
-init-code hash used at CREATE2 derivation time is computed per call as
+`crates/cow-shed/src/address/proxy-creation-code/v1.0.0.bin` and
+`v1.0.1.bin`, embedded into the cow-shed crate via `include_bytes!` in
+`crates/cow-shed/src/address/proxy_code.rs`. Their integrity is guarded by
+the CREATE2 address-parity test
+`crates/cow-shed/tests/deployment_address_parity_contract.rs::proxy_for_matches_reference_vectors`,
+which derives proxy addresses from the `.bin` bytes (via
+`proxy_creation_code` → `init_code_hash` → keccak) and locks them to the
+pinned vectors in `parity/fixtures/cow_shed/proxy_addresses.json` for both
+versions; any byte change in the `.bin` files shifts a derived address and
+fails the parity test. The init-code hash used at CREATE2 derivation time is
+computed per call as
 `keccak256(PROXY_CREATION_CODE || abi.encode(implementation, who))`; the
 `.bin` files store the deployer bytecode prefix and never the full init
 code, so derivation works correctly for any user address.
@@ -80,7 +86,7 @@ code, so derivation works correctly for any user address.
 ### Version-call evidence
 
 The per-chain `VERSION()` call evidence at
-`crates/contracts/abi/cow-shed/version-call-results.json` records the
+`crates/cow-shed/tests/fixtures/version-call-results.json` records the
 deployed implementation address, the factory address, and the decoded
 version string per chain id. Every row records
 `decoded_version == "1.0.1"` and `expected_sdk_version ==
@@ -215,13 +221,13 @@ Primary implementation points:
 - `crates/cow-shed/src/eip712/sol_types.rs`
 - `crates/cow-shed/src/bindings/`
 - `parity/source-lock.yaml`
-- `crates/contracts/abi/cow-shed/proxy-creation-code/v1.0.0.bin`
-- `crates/contracts/abi/cow-shed/proxy-creation-code/v1.0.0.bin.sha256`
-- `crates/contracts/abi/cow-shed/proxy-creation-code/v1.0.1.bin`
-- `crates/contracts/abi/cow-shed/proxy-creation-code/v1.0.1.bin.sha256`
-- `crates/contracts/abi/cow-shed/version-call-results.json`
+- `crates/cow-shed/src/address/proxy-creation-code/v1.0.0.bin`
+- `crates/cow-shed/src/address/proxy-creation-code/v1.0.1.bin`
+- `crates/cow-shed/src/address/proxy_code.rs`
+- `crates/cow-shed/tests/fixtures/version-call-results.json`
 - `crates/contracts/registry.toml`
-- `crates/contracts/build.rs` (`validate_cow_shed_proxy_artifacts`)
+- `crates/cow-shed/tests/deployment_address_parity_contract.rs`
+- `parity/fixtures/cow_shed/proxy_addresses.json`
 - `parity/cow-shed-invariants.md`
 - `parity/fixtures/cow_shed/`
 
@@ -233,6 +239,7 @@ Primary regression coverage:
 Validation surface:
 
 ```text
+cargo test -p cow-sdk-cow-shed
 cargo test -p cow-sdk-contracts --all-features
 cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml
 ```

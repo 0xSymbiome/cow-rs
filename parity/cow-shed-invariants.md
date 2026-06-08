@@ -11,9 +11,12 @@ Refresh trigger: Refresh when COW Shed proxy bytecode, factory addresses, or EIP
   supported chain returns `"1.0.1"` from `VERSION()` even though source
   HEAD has been advanced to `"2.1.0"`. The SDK signs against deployed
   reality.
-- Proxy creation-code artifacts are stored as raw byte files with adjacent
-  SHA-256 digest files, validated at build time by
-  `crates/contracts/build.rs::validate_cow_shed_proxy_artifacts`.
+- Proxy creation-code artifacts are stored as raw byte files embedded by the
+  cow-shed crate. Their integrity is guarded by the CREATE2 address-parity test
+  `crates/cow-shed/tests/deployment_address_parity_contract.rs`, which derives
+  proxy addresses from the `.bin` bytes and locks them to the pinned vectors in
+  `parity/fixtures/cow_shed/proxy_addresses.json`; a byte change in either
+  `.bin` file shifts a derived address and fails the parity test.
 - The v1.0.1 factory is `0x312f92fe5f1710408B20D52A374fa29e099cFA86` and the
   implementation is `0xa2704cf562ad418bf0453f4b662ebf6a2489ed88`.
 - The canonical v1.0.1 user vector maps

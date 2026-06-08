@@ -4,7 +4,6 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
 use serde::Deserialize;
-use sha2::{Digest, Sha256};
 
 include!("src/chain_ids.rs");
 
@@ -16,7 +15,6 @@ fn main() {
     println!("cargo:rerun-if-changed={MANIFEST_PATH}");
     println!("cargo:rerun-if-changed={COVERAGE_PATH}");
     println!("cargo:rerun-if-changed=src/chain_ids.rs");
-    println!("cargo:rerun-if-changed=abi/cow-shed/proxy-creation-code");
 
     let manifest = read_toml_manifest();
     let coverage = read_yaml_manifest::<CoverageManifest>(COVERAGE_PATH);
@@ -37,7 +35,6 @@ fn main() {
 
     let registry_entries = validate_registry_manifest(&manifest.entries, &supported);
     validate_coverage_manifest(&coverage.coverage, &registry_entries, &supported);
-    validate_cow_shed_proxy_artifacts();
 }
 
 #[derive(Debug, Deserialize)]
@@ -281,35 +278,6 @@ fn is_valid_ethereum_address(candidate: &str) -> bool {
         return false;
     };
     body.len() == 40 && body.chars().all(|ch| ch.is_ascii_hexdigit())
-}
-
-fn validate_cow_shed_proxy_artifacts() {
-    for version in ["1.0.0", "1.0.1"] {
-        let code_path = format!("abi/cow-shed/proxy-creation-code/v{version}.bin");
-        let digest_path = format!("{code_path}.sha256");
-        let bytes = std::fs::read(&code_path)
-            .unwrap_or_else(|source| fail(&format!("failed to read `{code_path}`: {source}")));
-        if bytes.is_empty() {
-            fail(&format!("{code_path}: proxy init code must not be empty"));
-        }
-        let expected = read_to_string(&digest_path);
-        let actual = hex_lower(Sha256::digest(&bytes).as_slice());
-        if expected.trim() != actual {
-            fail(&format!(
-                "{digest_path}: SHA-256 mismatch for COW Shed {version} proxy init code"
-            ));
-        }
-    }
-}
-
-fn hex_lower(bytes: &[u8]) -> String {
-    const HEX: &[u8; 16] = b"0123456789abcdef";
-    let mut out = String::with_capacity(bytes.len() * 2);
-    for byte in bytes {
-        out.push(char::from(HEX[(byte >> 4) as usize]));
-        out.push(char::from(HEX[(byte & 0x0f) as usize]));
-    }
-    out
 }
 
 fn fail(message: &str) -> ! {
