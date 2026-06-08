@@ -169,3 +169,34 @@ pub enum OrderStatus {
     /// Expired because `valid_to` has passed.
     Expired,
 }
+
+impl OrderStatus {
+    /// Returns whether the order has reached a terminal lifecycle state, where
+    /// no further fills or transitions are possible (`Fulfilled`, `Cancelled`,
+    /// or `Expired`).
+    ///
+    /// Prefer this predicate over a hand-rolled match. `OrderStatus` is
+    /// `#[non_exhaustive]` because the orderbook owns the wire tags and may add
+    /// variants, so an exhaustive caller-side match risks silently
+    /// misclassifying a future terminal status; this accessor is updated in the
+    /// same crate that adds the variant.
+    #[inline]
+    #[must_use]
+    pub const fn is_terminal(self) -> bool {
+        matches!(self, Self::Fulfilled | Self::Cancelled | Self::Expired)
+    }
+
+    /// Returns whether the order is still live — open and fillable, or awaiting a
+    /// pre-signature (`Open` or `PresignaturePending`) — and therefore not yet
+    /// terminal.
+    ///
+    /// The complement of [`OrderStatus::is_terminal`] over the variants known
+    /// today. Both predicates partition the current surface, but because the
+    /// enum is `#[non_exhaustive]` callers should treat them as the SDK-owned
+    /// classification rather than re-deriving either side.
+    #[inline]
+    #[must_use]
+    pub const fn is_open(self) -> bool {
+        matches!(self, Self::Open | Self::PresignaturePending)
+    }
+}

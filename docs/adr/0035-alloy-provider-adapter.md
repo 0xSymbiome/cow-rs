@@ -99,3 +99,41 @@ fallible keyed lookups that mirror the canonical Ethereum JSON-RPC names and the
 `alloy` provider surface this adapter implements, so the prefix denotes the keyed-lookup
 `get` family rather than a field getter. Non-fetch operations on the seam stay bare
 (`call`, `read_contract`).
+
+## Amendment 2026-06-08: Opt-In RPC Retry Seam
+
+The provider adapters gain an opt-in retry seam. The leaf
+`RpcAlloyProviderBuilder` and the umbrella `AlloyClientBuilder` each accept a
+SDK-owned `RetryConfig` through a `with_retry` setter. When configured, the
+JSON-RPC client is wrapped in `alloy`'s bounded exponential backoff layer, which
+transparently retries transient, rate-limited requests; when absent, the
+provider issues each request once and surfaces the transport failure to the
+caller.
+
+This resolves the asymmetry where the orderbook and subgraph REST transports
+carry the shared [ADR 0041](0041-transport-policy-l3-layering.md)
+`TransportPolicy` retry but the RPC adapter had no resilience seam, forcing
+consumers to hand-roll backoff around idempotent reads. The retry *mechanism*
+now lives in the SDK; the *policy* and the decision to opt in stay with the
+consumer.
+
+Constraints that keep this consistent with the existing decision:
+
+- **Default unchanged.** Retry is off by default, so the runtime-neutral posture
+  of [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md) and parity
+  with the upstream `@cowprotocol/cow-sdk` default (which never retries RPC
+  reads) are preserved.
+- **Adapter stays thin.** Only the SDK-owned `RetryConfig` is added to the public
+  surface; the underlying `alloy` transport layer and its compute-units budget
+  stay private. The umbrella reuses the leaf's layer constructor through the
+  doc-hidden `__seam` so the policy is defined once.
+- **`TransportPolicy` is not reused here.** Its retry signal is keyed on REST
+  HTTP status codes (ADR 0041), which JSON-RPC-over-HTTP errors do not cleanly
+  surface, so the RPC seam uses `alloy`'s native rate-limit retry rather than
+  widening the REST policy across the boundary.
+- **Native-only, reads-in-practice.** The seam is native HTTP like the rest of
+  the adapter. The rate-limit policy retries transient transport errors and does
+  not re-broadcast transactions, so write nonce-safety is unaffected.
+
+Proven by `crates/alloy-provider/tests/retry_contract.rs` and recorded in
+[PROP-AP-014](../../PROPERTIES.md).

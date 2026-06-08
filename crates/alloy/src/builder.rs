@@ -2,6 +2,7 @@
 
 use alloy_primitives::B256;
 use alloy_signer_local::PrivateKeySigner;
+use cow_sdk_alloy_provider::RetryConfig;
 use cow_sdk_core::{ChainId, Provider, Redacted, SupportedChainId};
 use thiserror::Error;
 
@@ -100,6 +101,7 @@ where
     transport: T,
     key: K,
     chain: C,
+    retry: Option<RetryConfig>,
 }
 
 impl Default for AlloyClientBuilder<TransportUnset, KeySourceUnset, ChainUnset> {
@@ -115,7 +117,28 @@ impl AlloyClientBuilder<TransportUnset, KeySourceUnset, ChainUnset> {
             transport: TransportUnset { _private: () },
             key: KeySourceUnset { _private: () },
             chain: ChainUnset { _private: () },
+            retry: None,
         }
+    }
+}
+
+impl<T, K, C> AlloyClientBuilder<T, K, C>
+where
+    T: TransportState,
+    K: KeySourceState,
+    C: ChainState,
+{
+    /// Opts into bounded exponential backoff for transient, rate-limited RPC
+    /// requests issued by the composed client.
+    ///
+    /// Without this setter each request is issued once and a transient transport
+    /// failure (such as a public-endpoint `429`) is surfaced directly to the
+    /// caller — the runtime-neutral default. Supplying a [`RetryConfig`] wraps
+    /// the composed client's JSON-RPC transport in the same retry layer the
+    /// read-only provider leaf uses.
+    pub const fn with_retry(mut self, retry: RetryConfig) -> Self {
+        self.retry = Some(retry);
+        self
     }
 }
 
@@ -142,6 +165,7 @@ where
             },
             key: self.key,
             chain: self.chain,
+            retry: self.retry,
         })
     }
 }
@@ -169,6 +193,7 @@ where
             transport: self.transport,
             key: PrivateKeySource { signer },
             chain: self.chain,
+            retry: self.retry,
         })
     }
 
@@ -188,6 +213,7 @@ where
             transport: self.transport,
             key: PrivateKeySource { signer },
             chain: self.chain,
+            retry: self.retry,
         })
     }
 }
@@ -205,6 +231,7 @@ where
             chain: ChainSet {
                 chain_id: ChainId::from(chain_id),
             },
+            retry: self.retry,
         }
     }
 }
@@ -226,6 +253,7 @@ impl AlloyClientBuilder<HttpTransport, PrivateKeySource, ChainSet> {
             self.transport.url.into_inner(),
             self.key.signer,
             self.chain.chain_id,
+            self.retry,
         ))
     }
 
@@ -274,6 +302,7 @@ impl std::fmt::Debug for AlloyClientBuilder<HttpTransport, PrivateKeySource, Cha
             .field("transport", &self.transport)
             .field("key", &"[redacted]")
             .field("chain_id", &self.chain.chain_id)
+            .field("retry", &self.retry)
             .finish()
     }
 }

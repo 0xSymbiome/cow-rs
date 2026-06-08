@@ -14,6 +14,24 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Added
 
+- `cow_sdk_orderbook::OrderStatus` gains `is_terminal()` and `is_open()`
+  `const fn` predicates. `is_terminal()` returns `true` for `Fulfilled`,
+  `Cancelled`, and `Expired`; `is_open()` returns `true` for `Open` and
+  `PresignaturePending`. Because `OrderStatus` is `#[non_exhaustive]` and the
+  orderbook owns the wire tags, these accessors centralize terminal/live
+  classification in the defining crate so a future status variant cannot be
+  silently misclassified by a hand-rolled consumer match.
+- The native Alloy provider adapters gain an opt-in RPC retry seam.
+  `cow_sdk_alloy_provider::RetryConfig` configures a maximum retry count and
+  initial backoff, and `RpcAlloyProviderBuilder::with_retry` (leaf) and
+  `AlloyClientBuilder::with_retry` (umbrella, re-exported as
+  `cow_sdk_alloy::RetryConfig`) wrap the JSON-RPC client in a bounded
+  exponential backoff layer that transparently retries transient,
+  rate-limited reads. Retry is off by default — each request is issued once
+  and a transient failure is surfaced to the caller — preserving the
+  runtime-neutral default of
+  [ADR 0010](docs/adr/0010-runtime-neutral-async-and-transport-posture.md).
+  Governed by [ADR 0035](docs/adr/0035-alloy-provider-adapter.md).
 - `cow_sdk_trading::WaitError` exposes
   `reverted(&self) -> Option<&TransactionReceipt>`, which returns the reverted
   receipt when a receipt wait failed because the mined transaction reverted
@@ -207,12 +225,6 @@ The first functional crate-family release begins at `0.1.0`.
   `ReqwestTransport` fails before any request context exists, and is distinct
   from `SubgraphError::Transport`, which carries per-request context for
   failures observed once a query is in flight.
-- `cow_sdk_trading::TradingOptions::with_transport_policy` sets the request
-  retry, rate-limit, and HTTP-client policy applied to the orderbook client the
-  trading SDK builds on its default construction path. An injected orderbook
-  client keeps its own transport policy, so the setting is consulted only when
-  the SDK builds the client itself. Governed by
-  [ADR 0041](docs/adr/0041-transport-policy-l3-layering.md).
 - `cow_sdk_orderbook::OrderCreation::from_signed` is the canonical conversion
   from a signed `cow_sdk_core::OrderData` into a submission payload: it copies
   every signed economic field verbatim, wires the order-level fee as `"0"`, and

@@ -139,11 +139,14 @@ impl Trading {
         {
             let chain_id = requested_chain.ok_or(missing_chain_error)?;
             let env = requested_env.unwrap_or(CowEnv::Prod);
-            let mut builder = OrderbookApi::builder().chain(chain_id).environment(env);
-            if let Some(policy) = self.options.transport_policy() {
-                builder = builder.transport_policy(policy);
-            }
-            let client = builder.build()?;
+            // The default-built client carries the standard orderbook transport
+            // policy. Consumers needing a custom retry/rate-limit policy build
+            // their own `OrderbookApi` with it and inject it through
+            // `TradingOptions::with_orderbook_client`.
+            let client = OrderbookApi::builder()
+                .chain(chain_id)
+                .environment(env)
+                .build()?;
             Ok(ResolvedOrderbookBinding {
                 client: Arc::new(client),
                 chain_id,

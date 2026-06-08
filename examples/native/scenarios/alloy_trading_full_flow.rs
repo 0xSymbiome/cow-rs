@@ -2,14 +2,20 @@
 //!
 //! Drives the async `Trading` boundaries through a real `AlloyClient`
 //! (a `SigningProvider`) against a wiremock JSON-RPC server: read the protocol
-//! allowance (`cow_protocol_allowance`), broadcast an approval and wait for
-//! its receipt (`approval_transaction` + `submit_and_wait_for_receipt`), and
-//! build a pre-sign transaction (`pre_sign_transaction`).
+//! allowance (`cow_protocol_allowance`), wrap native currency into the
+//! wrapped-native token (`wrap_interaction` + `submit_and_wait_for_receipt`),
+//! broadcast an approval and wait for its receipt (`approval_transaction` +
+//! `submit_and_wait_for_receipt`), and build a pre-sign transaction
+//! (`pre_sign_transaction`).
 
 use std::error::Error;
 
 use cow_sdk::alloy::AlloyClient;
-use cow_sdk::core::{SigningProvider, TransactionHash, TransactionStatus};
+use cow_sdk::contracts::wrap_interaction;
+use cow_sdk::core::{
+    HexData, SigningProvider, TransactionHash, TransactionRequest, TransactionStatus,
+    wrapped_native_token,
+};
 use cow_sdk::prelude::{Amount, CowEnv, SupportedChainId};
 use cow_sdk::trading::{
     AllowanceParameters, ApprovalParameters, OrderTraderParameters, Trading, WaitOptions,
@@ -67,7 +73,24 @@ async fn main() -> Result<(), Box<dyn Error>> {
     );
     assert_eq!(approval_receipt.status, Some(TransactionStatus::Success));
 
-    // 3. Build a pre-sign transaction; gas is estimated through the client.
+    // 3. Wrap native currency into the wrapped-native token. `wrap_interaction`
+    //    returns a settlement `Interaction` (target + native value + calldata),
+    //    not a ready transaction, so lift it into a `TransactionRequest` before
+    //    broadcasting it through the same submit-and-wait helper.
+    let weth = wrapped_native_token(SupportedChainId::Mainnet).address;
+    let wrap = wrap_interaction(weth, Amount::new("1000")?);
+    let wrap_tx = TransactionRequest::new(
+        Some(wrap.target),
+        Some(HexData::from_bytes(wrap.call_data.to_vec())),
+        Some(wrap.value),
+        Some(Amount::from(50_000u32)),
+    );
+    let wrap_receipt =
+        submit_and_wait_for_receipt(&signer, &client, &wrap_tx, WaitOptions::approve_default())
+            .await?;
+    assert_eq!(wrap_receipt.status, Some(TransactionStatus::Success));
+
+    // 4. Build a pre-sign transaction; gas is estimated through the client.
     let pre_sign = trading
         .pre_sign_transaction(&OrderTraderParameters::new(sample_order_uid()), &signer)
         .await?;
@@ -84,6 +107,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         "approvalStatus": format!("{:?}", approval_receipt.status),
         "approvalBlockNumber": approval_receipt.block_number,
         "approvalGasUsed": approval_receipt.gas_used,
+        "wrapTarget": weth.to_hex_string(),
+        "wrapStatus": format!("{:?}", wrap_receipt.status),
         "preSignGasLimit": pre_sign.gas_limit,
         "rpcMethods": methods
     });

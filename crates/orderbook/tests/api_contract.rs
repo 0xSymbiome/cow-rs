@@ -1229,3 +1229,30 @@ mod recording_transport {
         }
     }
 }
+
+#[test]
+fn order_status_terminal_and_open_predicates_partition_known_variants() {
+    // Terminal states: no further fills or transitions are possible.
+    assert!(OrderStatus::Fulfilled.is_terminal());
+    assert!(OrderStatus::Cancelled.is_terminal());
+    assert!(OrderStatus::Expired.is_terminal());
+
+    // Live states: still fillable or awaiting a pre-signature.
+    assert!(OrderStatus::Open.is_open());
+    assert!(OrderStatus::PresignaturePending.is_open());
+
+    // The two predicates are exact complements over the variants known today.
+    for status in [
+        OrderStatus::PresignaturePending,
+        OrderStatus::Open,
+        OrderStatus::Fulfilled,
+        OrderStatus::Cancelled,
+        OrderStatus::Expired,
+    ] {
+        assert_ne!(
+            status.is_terminal(),
+            status.is_open(),
+            "{status:?} must be classified as exactly one of terminal or open",
+        );
+    }
+}

@@ -5,7 +5,7 @@ use std::{fmt, time::Duration};
 use cow_sdk_core::Redacted;
 use thiserror::Error;
 
-use crate::{client, provider::RpcAlloyProvider};
+use crate::{client, provider::RpcAlloyProvider, retry::RetryConfig};
 
 mod sealed {
     /// Typestate marker for a builder that has not selected a transport.
@@ -49,6 +49,7 @@ impl TransportSelected for HttpTransport {}
 pub struct RpcAlloyProviderBuilder<T: TransportState = TransportUnset> {
     transport: T,
     timeout: Option<Duration>,
+    retry: Option<RetryConfig>,
 }
 
 impl Default for RpcAlloyProviderBuilder<TransportUnset> {
@@ -63,6 +64,7 @@ impl RpcAlloyProviderBuilder<TransportUnset> {
         Self {
             transport: TransportUnset { _private: () },
             timeout: None,
+            retry: None,
         }
     }
 
@@ -84,6 +86,7 @@ impl RpcAlloyProviderBuilder<TransportUnset> {
                 url: Redacted::new(url),
             },
             timeout: self.timeout,
+            retry: self.retry,
         })
     }
 }
@@ -92,6 +95,19 @@ impl<T: TransportState> RpcAlloyProviderBuilder<T> {
     /// Configures the HTTP client timeout used by the underlying Alloy provider.
     pub const fn timeout(mut self, timeout: Duration) -> Self {
         self.timeout = Some(timeout);
+        self
+    }
+
+    /// Opts into bounded exponential backoff for transient, rate-limited RPC
+    /// requests.
+    ///
+    /// Without this setter the provider issues each request once and surfaces a
+    /// transient transport failure (such as a public-endpoint `429`) directly to
+    /// the caller — the runtime-neutral default. Supplying a [`RetryConfig`]
+    /// wraps the JSON-RPC client in a retry layer; see [`RetryConfig`] for the
+    /// policy and its boundaries.
+    pub const fn with_retry(mut self, retry: RetryConfig) -> Self {
+        self.retry = Some(retry);
         self
     }
 }
@@ -125,7 +141,7 @@ impl RpcAlloyProviderBuilder<HttpTransport> {
                 detail: Redacted::new(error.to_string()),
             }
         })?;
-        let inner = client::build_http_provider(client, url.clone());
+        let inner = client::build_http_provider(client, url.clone(), self.retry.as_ref());
 
         Ok(RpcAlloyProvider::from_parts(
             inner,
@@ -141,6 +157,7 @@ impl fmt::Debug for RpcAlloyProviderBuilder<TransportUnset> {
         f.debug_struct("RpcAlloyProviderBuilder")
             .field("transport", &"unset")
             .field("timeout", &self.timeout)
+            .field("retry", &self.retry)
             .finish()
     }
 }
@@ -150,6 +167,7 @@ impl fmt::Debug for RpcAlloyProviderBuilder<HttpTransport> {
         f.debug_struct("RpcAlloyProviderBuilder")
             .field("transport", &Redacted::new("http"))
             .field("timeout", &self.timeout)
+            .field("retry", &self.retry)
             .finish()
     }
 }

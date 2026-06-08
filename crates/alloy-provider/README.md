@@ -38,6 +38,39 @@ The builder stores the RPC URL behind `cow_sdk_core::Redacted` before the
 transport state becomes visible through debug output. Invalid URLs return a
 typed builder error without echoing the supplied value.
 
+## Opt-In Retry
+
+By default the provider issues each RPC request once and surfaces a transient
+transport failure — such as a public-endpoint `429 Too Many Requests` — directly
+to the caller. This keeps the default runtime-neutral: the consumer owns
+chain-RPC resilience.
+
+To opt into transparent retries for transient, rate-limited reads, pass a
+`RetryConfig` to `with_retry`. It wraps the JSON-RPC client in a bounded
+exponential backoff layer:
+
+```rust,no_run
+use cow_sdk_alloy_provider::{RetryConfig, RpcAlloyProvider};
+use cow_sdk_core::Provider;
+
+# async fn example() -> Result<(), Box<dyn std::error::Error>> {
+let provider = RpcAlloyProvider::builder()
+    .http("https://example.invalid/rpc")?
+    .with_retry(RetryConfig::default())
+    .build()
+    .await?;
+
+let chain_id = provider.get_chain_id().await?;
+# let _ = chain_id;
+# Ok(())
+# }
+```
+
+The policy retries only rate-limit-class transport errors and never
+re-broadcasts a transaction, so write nonce-safety is unaffected. The same
+`with_retry` setter is available on the composed `cow-sdk-alloy` `AlloyClient`
+builder.
+
 ## Capability Boundary
 
 `RpcAlloyProvider` implements `Provider` only. The crate provides all

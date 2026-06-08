@@ -50,6 +50,7 @@ alloy-json-rpc.workspace = true
 alloy-network.workspace = true
 alloy-primitives = { workspace = true, features = ["k256"] }
 alloy-provider.workspace = true
+alloy-rpc-client.workspace = true
 alloy-rpc-types-eth.workspace = true
 alloy-signer.workspace = true
 alloy-signer-local.workspace = true

@@ -83,6 +83,11 @@ between the configured SDK chain and the remote node. Use `build()` only when
 the caller intentionally defers chain verification, then call
 `verify_chain_id().await` before using the client for chain-sensitive work.
 
+RPC retries are off by default. Pass a `cow_sdk_alloy::RetryConfig` to the
+builder's `with_retry` setter to opt into bounded exponential backoff for
+transient, rate-limited reads; the umbrella reuses the provider leaf's retry
+policy.
+
 ## Signing And Submission
 
 Raw `sign_transaction` is intentionally unsupported in this release because

@@ -37,6 +37,8 @@ mod error;
 mod provider;
 #[cfg(not(target_arch = "wasm32"))]
 mod read_contract;
+#[cfg(not(target_arch = "wasm32"))]
+mod retry;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use builder::{
@@ -47,6 +49,8 @@ pub use builder::{
 pub use error::{ProviderError, ProviderErrorClass};
 #[cfg(not(target_arch = "wasm32"))]
 pub use provider::RpcAlloyProvider;
+#[cfg(not(target_arch = "wasm32"))]
+pub use retry::RetryConfig;
 
 /// Hidden inter-crate seam for sibling `cow-rs` Alloy adapter crates.
 ///
@@ -175,5 +179,19 @@ pub mod __seam {
     #[must_use]
     pub fn alloy_log_to_cow_raw_log(log: &alloy_rpc_types_eth::Log) -> cow_sdk_core::RawLog {
         crate::conversion::alloy_log_to_cow_raw_log(log)
+    }
+
+    /// Builds the opt-in RPC retry/backoff transport layer for a
+    /// [`crate::RetryConfig`].
+    ///
+    /// Inter-crate seam entry; not part of the semver-stable consumer API. The
+    /// sibling umbrella adapter consumes this so its layered JSON-RPC client uses
+    /// the same retry policy and internal compute-units budget as the read-only
+    /// provider leaf, without redefining either.
+    #[must_use]
+    pub fn retry_backoff_layer(
+        config: &crate::RetryConfig,
+    ) -> alloy_transport::layers::RetryBackoffLayer {
+        config.backoff_layer()
     }
 }

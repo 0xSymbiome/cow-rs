@@ -123,6 +123,14 @@ impl CowShedHooks {
     /// builds the payload with [`typed_data_payload`](Self::typed_data_payload),
     /// signs it with the owner's signer, and encodes the resulting blob with
     /// [`encode_execute_hooks_calldata_with_signature`](crate::encode_execute_hooks_calldata_with_signature).
+    /// Because the crate is provider-free, validating that blob against the
+    /// owner's on-chain `isValidSignature` is the consumer's step: a smart-account
+    /// owner can self-validate it with the provider-backed
+    /// `cow_sdk_contracts::verify_eip1271_signature_cached` helper before
+    /// submission. The same low-level path also expresses non-EIP-712 ECDSA
+    /// schemes such as `ETHSIGN` — sign the payload digest under the desired
+    /// scheme and encode the 65-byte result — so `sign` itself stays EIP-712-only
+    /// for the common case.
     ///
     /// # Errors
     ///
@@ -195,6 +203,11 @@ impl SignedCowShedCall {
     /// The hook targets the COW Shed factory with the encoded `executeHooks`
     /// calldata and the supplied `gas_limit`, ready to set as a
     /// `metadata.hooks.pre[..]` or `.post[..]` entry on an order's app data.
+    ///
+    /// The crate is provider-free and does not estimate gas: choose `gas_limit`
+    /// yourself. A consumer holding a provider can derive it by simulating the
+    /// factory call — `eth_estimateGas` against [`factory`](Self::factory) with
+    /// [`factory_calldata`](Self::factory_calldata) — and pass the result here.
     #[must_use]
     pub fn to_app_data_hook(&self, gas_limit: u64) -> Hook {
         Hook::new(

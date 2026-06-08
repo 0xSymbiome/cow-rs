@@ -4,6 +4,7 @@ use std::{fmt, sync::Arc};
 
 use alloy_network::Ethereum;
 use alloy_provider::{DynProvider, Provider as _, ProviderBuilder};
+use alloy_rpc_client::ClientBuilder;
 use alloy_signer::Signer as AlloySigner;
 use alloy_signer_local::PrivateKeySigner;
 use cow_sdk_core::{
@@ -12,10 +13,14 @@ use cow_sdk_core::{
 };
 
 use alloy_primitives::{B256, U256};
-use cow_sdk_alloy_provider::__seam::{
-    alloy_log_to_cow_raw_log as alloy_log_to_cow_raw_log_seam,
-    cow_log_query_to_alloy_filter as cow_log_query_to_alloy_filter_seam,
-    execute_read_contract as execute_read_contract_seam,
+use cow_sdk_alloy_provider::{
+    __seam::{
+        alloy_log_to_cow_raw_log as alloy_log_to_cow_raw_log_seam,
+        cow_log_query_to_alloy_filter as cow_log_query_to_alloy_filter_seam,
+        execute_read_contract as execute_read_contract_seam,
+        retry_backoff_layer as retry_backoff_layer_seam,
+    },
+    RetryConfig,
 };
 
 use crate::{
@@ -55,14 +60,25 @@ impl AlloyClient {
         rpc_url: reqwest::Url,
         signer: PrivateKeySigner,
         chain_id: ChainId,
+        retry: Option<RetryConfig>,
     ) -> Self {
         let signer = signer.with_chain_id(Some(chain_id));
         let alloy_address = AlloySigner::address(&signer);
         let signer_address = Address::from_bytes(alloy_address.into_array());
-        let provider = ProviderBuilder::new()
-            .wallet(signer.clone())
-            .connect_http(rpc_url)
-            .erased();
+        let wallet = ProviderBuilder::new().wallet(signer.clone());
+        // When a retry policy is configured, route the wallet-filler provider
+        // through a JSON-RPC client carrying the shared backoff layer (built by
+        // the provider leaf so the policy stays defined in one place). The
+        // default path issues each request once — the runtime-neutral default.
+        let provider = match retry {
+            None => wallet.connect_http(rpc_url).erased(),
+            Some(config) => {
+                let rpc_client = ClientBuilder::default()
+                    .layer(retry_backoff_layer_seam(&config))
+                    .http(rpc_url);
+                wallet.connect_client(rpc_client).erased()
+            }
+        };
 
         Self {
             inner: Arc::new(AlloyClientInner {

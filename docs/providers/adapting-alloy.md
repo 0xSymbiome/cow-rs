@@ -106,6 +106,34 @@ The signer leaf returns provider-required errors for transaction submission and
 gas estimation because it does not own RPC state. Use the umbrella client when
 the same runtime must both sign and submit transactions.
 
+## RPC Resilience
+
+By default every RPC request is issued once and a transient transport failure —
+such as a public-endpoint `429` — is surfaced to the caller, keeping the SDK
+runtime-neutral. The consumer owns chain-RPC resilience.
+
+Both the provider leaf and the umbrella client expose an opt-in `with_retry`
+setter that wraps the JSON-RPC client in a bounded exponential backoff layer for
+transient, rate-limited reads:
+
+```rust,no_run
+use cow_sdk_alloy_provider::{RetryConfig, RpcAlloyProvider};
+
+# async fn example() -> Result<(), Box<dyn std::error::Error>> {
+let provider = RpcAlloyProvider::builder()
+    .http("https://example.invalid/rpc")?
+    .with_retry(RetryConfig::default())
+    .build()
+    .await?;
+# let _ = provider;
+# Ok(())
+# }
+```
+
+`RetryConfig` is re-exported from `cow_sdk_alloy` for the umbrella builder. The
+REST transports (orderbook, subgraph, IPFS) carry their own shared
+`TransportPolicy` retry and are configured separately on their builders.
+
 ## Transaction Lifecycle
 
 `AlloyClientSignerHandle::send_transaction` submits through Alloy's
