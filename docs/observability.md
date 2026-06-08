@@ -94,6 +94,10 @@ downstream dashboards can pivot on the same names across every SDK call.
 | `quote_id` | numeric | Orderbook quote id returned by a quote or attached to an order submission |
 | `owner` | string | Owner address exposed on the request parameters |
 | `verifier` | string | Public on-chain verifier address for EIP-1271 verification |
+| `tx_hash` | string | Broadcast transaction hash on transaction-lifecycle spans |
+| `tx_status` | string | Mined terminal status on a receipt span: `success`, `reverted`, or `unknown` |
+| `block_number` | numeric | Mined block number on a receipt span, when the provider reports it |
+| `gas_used` | numeric | Gas used by the mined transaction on a receipt span, when the provider reports it |
 | `scheme` | string | Signing scheme (`eip712`, `eth_sign`, `eip1271`, `pre_sign`) |
 | `cache_status` | string | EIP-1271 verification cache state: `hit`, `miss`, `store`, or `skip` |
 | `verification_result` | string | EIP-1271 verification result when known: `valid`, `invalid`, or `error` |
@@ -180,6 +184,20 @@ also wraps its lower-level contract call in a
 - `approve_cow_protocol`
 - `post_sell_native_currency_order` (module-level)
 
+The transaction receipt-wait helpers emit a separated lifecycle pair rather
+than a single method span, so a submission is never conflated with inclusion.
+`submit_and_wait_for_receipt` emits a `transaction.submit` span that records
+only the broadcast `tx_hash`, followed by a `transaction.receipt` span that
+records `tx_status`, `block_number`, and `gas_used` once a provider receipt is
+observed. `poll_for_receipt`, which never broadcasts, carries only the
+`transaction.receipt` span. These spans record no signer, signature, calldata,
+sender, or recipient material, and a `transaction.submit` span never implies
+inclusion or execution success
+([ADR 0038](adr/0038-transaction-lifecycle-types.md)).
+
+- `transaction.submit` (module-level, `submit_and_wait_for_receipt`)
+- `transaction.receipt` (module-level, `submit_and_wait_for_receipt` and `poll_for_receipt`)
+
 ### `cow-sdk-contracts`
 
 `verify_eip1271_signature_cached` emits one span named `verify.eip1271`
@@ -225,12 +243,14 @@ fields. Downstream applications that need provider-specific telemetry can add
 their own spans around the `Provider`, `SigningProvider`, or
 `Signer` calls.
 
-Keep transaction lifecycle telemetry separated at the host boundary:
-submission spans should record broadcast acknowledgement details such as the
-transaction hash, while receipt-observation spans should record mined fields
-such as status, block number, and gas used only after an explicit provider
-receipt lookup. A `send_transaction` span should not imply inclusion or
-execution success.
+Transaction lifecycle telemetry stays separated. The `cow-sdk-trading`
+receipt-wait helpers realize this contract directly through the
+`transaction.submit` and `transaction.receipt` spans described above: a
+submission span records only the broadcast hash, a receipt-observation span
+records mined fields such as status, block number, and gas used only after an
+explicit provider receipt lookup, and a `send_transaction` span never implies
+inclusion or execution success. Host applications that instrument an adapter's
+`Signer`/`Provider` calls directly should keep the same separation.
 
 ## Secrets
 

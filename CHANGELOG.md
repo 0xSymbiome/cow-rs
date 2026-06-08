@@ -14,6 +14,16 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Added
 
+- The `cow-sdk-trading` receipt-wait helpers emit transaction-lifecycle
+  telemetry when the `tracing` feature is enabled. `submit_and_wait_for_receipt`
+  emits a `transaction.submit` span recording only the broadcast `tx_hash`,
+  followed by a `transaction.receipt` span recording `tx_status`,
+  `block_number`, and `gas_used` once a provider receipt is observed;
+  `poll_for_receipt` carries only the receipt span. The submission and receipt
+  observations stay separated so a submission span never implies inclusion or
+  execution success, and no signer, signature, calldata, sender, or recipient
+  material is recorded. Governed by
+  [ADR 0038](docs/adr/0038-transaction-lifecycle-types.md).
 - `cow_sdk_orderbook::OrderStatus` gains `is_terminal()` and `is_open()`
   `const fn` predicates. `is_terminal()` returns `true` for `Fulfilled`,
   `Cancelled`, and `Expired`; `is_open()` returns `true` for `Open` and

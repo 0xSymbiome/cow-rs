@@ -235,12 +235,41 @@ where
     S: Signer,
     P: Provider,
 {
-    let broadcast: TransactionBroadcast = signer
-        .send_transaction(tx)
+    let broadcast = broadcast_transaction(signer, tx)
         .await
         .map_err(WaitError::Broadcast)?;
 
     poll_for_receipt_inner::<S::Error, P>(provider, &broadcast.transaction_hash, options).await
+}
+
+/// Broadcasts the transaction and records the broadcast acknowledgement.
+///
+/// The `transaction.submit` span records only the returned transaction hash on
+/// success. It deliberately records no mined fields, so a submission span never
+/// implies inclusion or execution success; the mined outcome belongs to the
+/// separate `transaction.receipt` span (ADR 0038).
+#[cfg_attr(
+    feature = "tracing",
+    tracing::instrument(
+        name = "transaction.submit",
+        skip_all,
+        fields(tx_hash = tracing::field::Empty),
+    ),
+)]
+async fn broadcast_transaction<S>(
+    signer: &S,
+    tx: &TransactionRequest,
+) -> Result<TransactionBroadcast, S::Error>
+where
+    S: Signer,
+{
+    let broadcast = signer.send_transaction(tx).await?;
+    #[cfg(feature = "tracing")]
+    tracing::Span::current().record(
+        "tx_hash",
+        tracing::field::display(&broadcast.transaction_hash),
+    );
+    Ok(broadcast)
 }
 
 /// Polls a provider for a receipt when the caller already has a hash.
@@ -266,6 +295,19 @@ where
     poll_for_receipt_inner::<std::convert::Infallible, P>(provider, transaction_hash, options).await
 }
 
+#[cfg_attr(
+    feature = "tracing",
+    tracing::instrument(
+        name = "transaction.receipt",
+        skip_all,
+        fields(
+            tx_hash = %transaction_hash,
+            tx_status = tracing::field::Empty,
+            block_number = tracing::field::Empty,
+            gas_used = tracing::field::Empty,
+        ),
+    ),
+)]
 async fn poll_for_receipt_inner<B, P>(
     provider: &P,
     transaction_hash: &TransactionHash,
@@ -283,6 +325,8 @@ where
             .map_err(WaitError::Lookup)?;
 
         if let Some(receipt) = lookup {
+            #[cfg(feature = "tracing")]
+            record_receipt_fields(&receipt);
             if options.require_success
                 && matches!(receipt.status, Some(TransactionStatus::Reverted))
             {
@@ -321,5 +365,30 @@ async fn delay_for(duration: Duration) {
         let millis = u32::try_from(duration.as_millis().min(u128::from(u32::MAX)))
             .expect("millisecond delay is clamped to `u32::MAX`");
         TimeoutFuture::new(millis).await;
+    }
+}
+
+/// Records the mined fields of an observed receipt onto the current
+/// `transaction.receipt` span.
+///
+/// The terminal status is recorded as a low-cardinality label, and the block
+/// number and gas used are recorded only when the provider reports them. No
+/// signature material, calldata, sender, or recipient address is recorded.
+#[cfg(feature = "tracing")]
+fn record_receipt_fields(receipt: &TransactionReceipt) {
+    let span = tracing::Span::current();
+    if let Some(status) = receipt.status.as_ref() {
+        let label = match status {
+            TransactionStatus::Success => "success",
+            TransactionStatus::Reverted => "reverted",
+            _ => "unknown",
+        };
+        span.record("tx_status", label);
+    }
+    if let Some(block_number) = receipt.block_number {
+        span.record("block_number", block_number);
+    }
+    if let Some(gas_used) = receipt.gas_used.as_ref() {
+        span.record("gas_used", tracing::field::display(gas_used));
     }
 }
