@@ -20,6 +20,7 @@ cow-sdk-orderbook = { version = "0.1", features = ["tracing"] }
 cow-sdk-subgraph = { version = "0.1", features = ["tracing"] }
 cow-sdk-signing = { version = "0.1", features = ["tracing"] }
 cow-sdk-browser-wallet = { version = "0.1", features = ["tracing"] }
+cow-sdk-cow-shed = { version = "0.1", features = ["tracing"] }
 cow-sdk-transport-wasm = { version = "0.1", features = ["tracing"] }
 cow-sdk-alloy-provider = { version = "0.1", features = ["tracing"] }
 cow-sdk-alloy-signer = { version = "0.1", features = ["tracing"] }
@@ -94,6 +95,7 @@ downstream dashboards can pivot on the same names across every SDK call.
 | `quote_id` | numeric | Orderbook quote id returned by a quote or attached to an order submission |
 | `owner` | string | Owner address exposed on the request parameters |
 | `verifier` | string | Public on-chain verifier address for EIP-1271 verification |
+| `version` | debug | COW Shed deployment version on cow-shed signing spans |
 | `tx_hash` | string | Broadcast transaction hash on transaction-lifecycle spans |
 | `tx_status` | string | Mined terminal status on a receipt span: `success`, `reverted`, or `unknown` |
 | `block_number` | numeric | Mined block number on a receipt span, when the provider reports it |
@@ -107,7 +109,8 @@ downstream dashboards can pivot on the same names across every SDK call.
 
 Tracing spans are emitted by every long-running public async method on
 `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-trading`,
-`cow-sdk-signing`, and `cow-sdk-browser-wallet`. Each canonical public async
+`cow-sdk-signing`, `cow-sdk-browser-wallet`, and, behind its opt-in
+`cow-shed` facade feature, `cow-sdk-cow-shed`. Each canonical public async
 method carries `#[tracing::instrument]` and emits exactly one span per call.
 The native Alloy adapter crates participate in the facade `tracing` feature
 family and follow the same redaction posture for any adapter diagnostics.
@@ -224,6 +227,19 @@ without logging signatures or private material.
 - `sign_order_with_scheme`
 - `sign_order_cancellation_with_scheme`
 - `sign_order_cancellations_with_scheme`
+
+### `cow-sdk-cow-shed`
+
+`CowShedHooks::sign` is the crate's one signer-mediated async method. It emits a
+single `sign` span carrying `chain`, `version`, and `endpoint = "cow_shed.sign"`.
+Like local signing, COW Shed signing is chain-bound and the owner is resolved
+from the supplied signer and is not surfaced; the span records no signer,
+signature, owner, nonce, deadline, or typed-data payload material. The
+deterministic building blocks (proxy derivation, EIP-712 digest, calldata
+encoding) are pure transforms and carry no spans. This crate is opt-in behind
+the facade `cow-shed` feature ([ADR 0049](adr/0049-cow-shed-account-abstraction-proxy.md)).
+
+- `sign`
 
 ### `cow-sdk-browser-wallet`
 

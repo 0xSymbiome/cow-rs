@@ -14,6 +14,15 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Added
 
+- `cow_sdk_cow_shed::CowShedHooks::sign` emits a `sign` span carrying `chain`,
+  `version`, and `endpoint = "cow_shed.sign"` when the `tracing` feature is
+  enabled, closing the one signer-mediated telemetry gap in the COW Shed leaf.
+  The owner is resolved from the signer and never surfaced, and the span
+  records no signer, signature, owner, nonce, deadline, or typed-data payload
+  material; the deterministic proxy, EIP-712, and calldata helpers stay
+  span-free. The crate's `tracing` feature is reached through the facade
+  `tracing` feature when `cow-shed` is enabled. Governed by
+  [ADR 0049](docs/adr/0049-cow-shed-account-abstraction-proxy.md).
 - The `cow-sdk-trading` receipt-wait helpers emit transaction-lifecycle
   telemetry when the `tracing` feature is enabled. `submit_and_wait_for_receipt`
   emits a `transaction.submit` span recording only the broadcast `tx_hash`,

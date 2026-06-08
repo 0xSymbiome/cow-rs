@@ -70,6 +70,7 @@ tracing = [
     "cow-sdk-transport-policy/tracing",
     "cow-sdk-trading/tracing",
     "cow-sdk-browser-wallet?/tracing",
+    "cow-sdk-cow-shed?/tracing",
     "cow-sdk-subgraph?/tracing",
     "cow-sdk-wasm?/tracing",
 ]

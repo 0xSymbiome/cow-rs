@@ -137,6 +137,17 @@ impl CowShedHooks {
     /// Returns [`CowShedError::Other`] if the signer cannot resolve its
     /// address, the typed-data signing fails, or the signer returns a value
     /// that is not a canonical 65-byte recoverable signature.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?self.chain,
+                version = ?self.version,
+                endpoint = "cow_shed.sign",
+            ),
+        ),
+    )]
     pub async fn sign<S>(
         &self,
         signer: &S,

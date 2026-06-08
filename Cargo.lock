@@ -1558,12 +1558,15 @@ dependencies = [
  "cow-sdk-core",
  "cow-sdk-pure-helpers",
  "cow-sdk-signing",
+ "cow-sdk-test-utils",
  "getrandom 0.4.2",
  "serde",
  "serde_json",
  "sha3 0.11.0",
  "syn 2.0.117",
  "thiserror 2.0.18",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
