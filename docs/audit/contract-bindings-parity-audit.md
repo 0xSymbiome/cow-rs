@@ -2,7 +2,7 @@
 
 Status: Current
 Last reviewed: 2026-06-08
-Owning surface: `cow-sdk-contracts` `alloy::sol!`-generated bindings for `GPv2Settlement`, `GPv2VaultRelayer`, `CoWSwapEthFlow`, `CoWSwapOnchainOrders` events, the wrapped-native token, EIP-1967 proxy slots, and `IERC20` / `IERC20Permit`
+Owning surface: `cow-sdk-contracts` `alloy::sol!`-generated bindings for `GPv2Settlement`, `CoWSwapEthFlow`, `CoWSwapOnchainOrders` events, the wrapped-native token, and `IERC20` / `IERC20Permit`
 Refresh trigger: A new binding family landing in `cow-sdk-contracts`; a signature change in any existing binding; a change to the upstream commit pin for any binding's source repository under `parity/source-lock.yaml`; a change to the TypeScript-SDK-derived parity fixtures that back the regression suite; a change to the EIP-712 domain-separator fixture shared with the signing crate; a change to the wasm target feature contract for the alloy/k256 dependency path
 Related docs:
 - [ADR 0012](../adr/0012-alloy-sol-bindings-and-registry-authority.md)
@@ -26,10 +26,10 @@ This audit covers:
   byte-identical with the signing crate's fixture
 - the wasm target feature contract that keeps the `alloy-primitives`
   `k256` path buildable under `wasm32-unknown-unknown`
-- the seven sol! interface families currently shipped: `IGPv2Settlement`,
-  `IGPv2VaultRelayer`, `ICoWSwapEthFlow`, the `ICoWSwapOnchainOrders` event
-  surface, the `IWrappedNativeToken` (WETH9-family) surface, the EIP-1967
-  storage-slot surface, and the `IERC20` / `IERC20Permit` ERC-20 surface
+- the five sol! interface families currently shipped: `IGPv2Settlement`,
+  `ICoWSwapEthFlow`, the `ICoWSwapOnchainOrders` event surface, the
+  `IWrappedNativeToken` (WETH9-family) surface, and the `IERC20` /
+  `IERC20Permit` ERC-20 surface
 
 It does not cover deployed-address resolution (Registry authority, a
 separate audit) or the HTTP transport that delivers call-data to a
@@ -45,11 +45,9 @@ provider.
 | Domain separator parity | `cow-sdk-contracts` and `cow-sdk-signing` route every EIP-712 domain separator through `alloy_sol_types::Eip712Domain::separator` and pin the same fixture value | Conforms |
 | Order EIP-712 hashing | The `GPv2 Order` and `OrderCancellations` typed-data structs are macro-emitted via `alloy_sol_types::sol!` and route their signing hashes through `<T as SolStruct>::eip712_signing_hash`; the eight per-chain rows in the order-digest fixture pin the wire-byte contract | Conforms |
 | EIP-1271 payload encoding | The COW EIP-1271 verifier payload `abi.encode(GPv2Order.Data, bytes)` is composed from the macro-emitted `OnchainOrder` sol struct and the raw ECDSA signature via `alloy_sol_types::SolValue::abi_encode_sequence`; the inline regression contract reproduces the canonical 12-word order tuple plus dynamic-bytes tail layout byte-for-byte | Conforms |
-| Boundary matrices | Compact order flags, settlement reader returns, settlement encoder stages, mixed-balance transfers, and multi-trade clearing prices have deterministic regression coverage | Conforms |
-| EIP-1967 derivation | Proxy storage slots match the canonical `keccak256(label) - 1` formula as well as the golden byte payloads | Conforms |
-| Vault role hash parity | Vault-relayer role helpers emit the same packed role hashes as the upstream TypeScript role-grant helpers | Conforms |
+| Boundary matrices | Compact order flags, settlement encoder stages, and multi-trade clearing prices have deterministic regression coverage | Conforms |
 | WASM compatibility | The `alloy-primitives` `k256` path enables the browser `getrandom` backend for `wasm32-unknown-unknown` builds | Conforms |
-| Scope discipline | The shipped set is the seven families named above; any new family follows the same provenance and parity contract before it lands | Conforms |
+| Scope discipline | The shipped set is the five families named above; any new family follows the same provenance and parity contract before it lands | Conforms |
 
 ## Current Contract
 
@@ -59,9 +57,6 @@ provider.
 `settle`, `invalidateOrder(bytes)`, `setPreSignature`, trade-struct,
 and interaction-struct surface against the mainnet-deployed
 `0x9008D19f58AAbD9eD0D60971565AA8510560ab41` contract.
-
-`GPv2VaultRelayer` (`crates/contracts/src/vault.rs`) carries the
-vault-relayer surface the SDK needs for authorization-role checks.
 
 `CoWSwapEthFlow` (`crates/contracts/src/eth_flow.rs`) carries
 `createOrder(EthFlowOrderData)` and `invalidateOrder(EthFlowOrderData)`
@@ -87,11 +82,6 @@ against any future upstream rename, and the proptest
 `ethflow_order_data_new_rejects_zero_receiver_iff_address_is_zero` in
 `crates/contracts/tests/property_contract.rs` covers the bidirectional
 invariant under the full 2^160 address space.
-
-The EIP-1967 surface (`crates/contracts/src/proxy.rs`) carries the
-`ADMIN_SLOT` and `IMPLEMENTATION_SLOT` storage-slot helpers.
-The regression suite verifies both the canonical hex payloads and the
-formula-derived values from `keccak256("eip1967.proxy.<label>") - 1`.
 
 The ERC-20 surface (`crates/contracts/src/erc20.rs`) carries `IERC20`
 and `IERC20Permit` (EIP-2612) for the subset of methods the SDK emits
@@ -127,8 +117,7 @@ The shipped bindings mirror upstream surfaces from three CoW Protocol
 repositories, each pinned by commit in `parity/source-lock.yaml`:
 
 - `cowprotocol/contracts` — the `GPv2Settlement`, `GPv2Trade`,
-  `GPv2Interaction`, `GPv2VaultRelayer`, EIP-1967, and `IERC20`
-  surfaces.
+  `GPv2Interaction`, and `IERC20` surfaces.
 - `cowprotocol/ethflowcontract` — the `CoWSwapEthFlow` and
   `EthFlowOrder` surfaces.
 - `cowdao-grants/cow-shed` — the COW Shed surfaces (reviewed in the
@@ -153,9 +142,7 @@ bit. The same contract covers:
 - Compact order flag decoding across every supported kind/source/destination
   combination
 - Settlement call-data for multi-trade batches
-- Settlement reader `filledAmountsForOrders` typed return decoding
 - Settlement encoder PRE, INTRA, POST interaction ordering
-- Vault relayer mixed ERC-20, external, and internal balance transfer batches
 - Multi-trade settlement clearing-price ordering
 - Encoded trade flags (kind, partial fill, balance source, balance
   destination, signing scheme)
@@ -245,16 +232,6 @@ expected byte layout by hand and pins both the full payload and the
 per-word offsets at `signature` length 65, so any drift in the wire
 layout fails the contract.
 
-Deterministic CREATE2 addresses for the deployer-derived contracts in
-`cow_sdk_contracts::deploy` route through
-`alloy_primitives::Address::create2_from_code`, which assembles the
-canonical EIP-1014 preimage (`0xff || deployer || salt ||
-keccak256(init_code)`) and hashes it internally. The inline regression
-tests in `deploy.rs` reconstruct the EIP-1014 formula by hand and
-assert byte-identity against the alloy delegation, so any silent
-divergence between the maintained primitive and the
-shipped CREATE2 salt + deployer constants is caught at test time.
-
 The `cow-sdk-trading` on-chain transaction helpers build the
 `setPreSignature(bytes,bool)` and `invalidateOrder(bytes)` settlement
 calldata by composing `IGPv2Settlement::setPreSignatureCall` and
@@ -289,7 +266,7 @@ helpers on native and wasm targets.
 
 ### Scope Discipline
 
-Only the seven binding families listed above are in scope for this
+Only the five binding families listed above are in scope for this
 audit. Third-party protocol bindings (Aave, bridging adapters,
 condition schedulers) stay in their own capability crates and carry
 their own parity contracts when they land. Hand-rolled encoder helpers
@@ -311,20 +288,6 @@ same chain and environment with
 domains pass through neutrally and leave final target authority to the
 settlement contract runtime. `PROP-CON-011` records the invariant.
 
-### Vault Relayer Role Hash Parity
-
-Vault-relayer role hash helpers are part of the reviewed binding parity
-surface because callers use the emitted role identifiers in Balancer
-Authorizer grant calls. The helpers derive each role with the same packed
-formula as the upstream TypeScript role-grant helpers:
-`solidityKeccak256(["uint256","bytes4"], [vaultAddress, selector])`.
-
-The Rust helper pads the 20-byte Vault address to the `uint256` width,
-appends the 4-byte method selector, and hashes the resulting 36-byte payload.
-`PROP-CON-010` records the invariant, and fixture
-`contracts-vault-role-hashes-match-upstream-typescript` pins the canonical
-Mainnet Vault role hashes for `manageUserBalance` and `batchSwap`.
-
 ### Wire Serde
 
 The DTO fields that carry hex-encoded byte payloads on the JSON wire route
@@ -332,14 +295,13 @@ through `alloy_primitives::Bytes`, whose native `Serialize` / `Deserialize`
 impl emits and parses the canonical `0x`-prefixed lowercase hexadecimal
 string the protocol's TypeScript SDK consumes. The migrated fields are
 `Interaction.call_data` and `InteractionLike.call_data` in
-`crates/contracts/src/interaction.rs`, and `BatchSwapStep.user_data` and
-`Swap.user_data` in `crates/contracts/src/swap.rs`. No bespoke `#[serde(with =
+`crates/contracts/src/interaction.rs`. No bespoke `#[serde(with =
 "...")]` adapter is interposed on the `Bytes`-typed fields; the alloy
 primitive owns the canonical wire form. The `cow-sdk-contracts` parity
-fixtures that exercise these fields (settlement calldata stages, batch-swap
-user data, and the interaction encoder stage matrices) stay green
-byte-identically across the migration, so the typed value contract and the
-wire byte contract remain locked together.
+fixtures that exercise these fields (settlement calldata stages and the
+interaction encoder stage matrices) stay green byte-identically across the
+migration, so the typed value contract and the wire byte contract remain
+locked together.
 
 Two related cross-workspace wire-serde surfaces follow the same
 alloy-canonical pattern and are referenced here because their byte
@@ -525,10 +487,8 @@ Primary implementation points:
 - `crates/contracts/src/settlement/codec.rs`
 - `crates/contracts/src/interaction.rs`
 - `crates/contracts/src/errors.rs`
-- `crates/contracts/src/vault.rs`
 - `crates/contracts/src/eth_flow.rs`
 - `crates/contracts/src/onchain_orders.rs`
-- `crates/contracts/src/proxy.rs`
 - `crates/contracts/src/erc20.rs`
 - `crates/contracts/src/weth.rs`
 - `crates/contracts/src/primitives.rs`
@@ -544,16 +504,13 @@ Primary regression coverage:
 
 - `crates/contracts/tests/parity_contract.rs`
 - `crates/contracts/tests/order_contract.rs::order_flag_matrix_enumerates_all_twelve_combinations`
-- `crates/contracts/tests/reader_contract.rs::settlement_reader_filled_amounts_decodes_known_payload`
 - `crates/contracts/tests/settlement_contract.rs::settlement_encoder_stage_order_pre_intra_post`
-- `crates/contracts/tests/proxy_contract.rs::eip1967_slot_constants_match_canonical_keccak_minus_one`
 - `crates/contracts/tests/property_contract.rs::decode_trade_flags_accepts_0b00_and_0b01_as_erc20`
 - `crates/contracts/tests/property_contract.rs::decode_order_rejects_out_of_bounds_token_indices`
 - `crates/contracts/tests/interaction_contract.rs::interaction_encoder_rejects_vault_relayer_target_for_canonical_settlement_domain`
 - `crates/contracts/tests/interaction_contract.rs::interaction_encoder_accepts_non_vault_target_for_canonical_settlement_domain`
 - `crates/contracts/tests/interaction_contract.rs::interaction_encoder_does_not_cross_match_chain_or_env`
 - `crates/contracts/tests/interaction_contract.rs::interaction_encoder_neutral_for_unknown_custom_settlement_domain`
-- `crates/contracts/tests/vault_contract.rs::vault_role_hashes_match_the_canonical_solidity_packed_layout`
 - `crates/contracts/src/primitives.rs::tests::domain_separator_matches_shared_parity_fixture`
 - `crates/contracts/src/primitives.rs::tests::order_kind_marker_round_trips_and_rejects_unknown`
 - `crates/contracts/tests/onchain_orders.rs::order_placement_topic0_matches_canonical_hash`
@@ -579,7 +536,6 @@ cargo test -p cow-sdk-contracts --test property_contract
 cargo test -p cow-sdk-contracts --test interaction_contract
 cargo test -p cow-sdk-contracts --test onchain_orders
 cargo test -p cow-sdk-contracts --test weth
-cargo test -p cow-sdk-contracts --test vault_contract vault_role_hashes_match_the_canonical_solidity_packed_layout
 cargo test -p cow-sdk-contracts --test parity_contract parity_fixture_cases_hold
 cargo test -p cow-sdk-contracts domain_separator_matches_shared_parity_fixture
 cargo test -p cow-sdk-signing domain_separator_matches_shared_parity_fixture

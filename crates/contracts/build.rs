@@ -1,6 +1,6 @@
 //! Compile-time validator for deployment registry and coverage manifests.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 use std::path::Path;
 
 use serde::Deserialize;
@@ -104,8 +104,8 @@ fn read_to_string(path: &str) -> String {
 fn validate_registry_manifest(
     entries: &[ManifestEntry],
     supported: &BTreeSet<u64>,
-) -> BTreeMap<(String, u64, String), RegistryEvidence> {
-    let mut seen = BTreeMap::new();
+) -> BTreeSet<(String, u64, String)> {
+    let mut seen = BTreeSet::new();
 
     for (index, entry) in entries.iter().enumerate() {
         let row = index + 1;
@@ -116,16 +116,7 @@ fn validate_registry_manifest(
         validate_verification(MANIFEST_PATH, row, &entry.verification);
 
         let key = (entry.contract_id.clone(), entry.chain_id, entry.env.clone());
-        if seen
-            .insert(
-                key,
-                RegistryEvidence {
-                    address: entry.address.clone(),
-                    verification_status: entry.verification.status.clone(),
-                },
-            )
-            .is_some()
-        {
+        if !seen.insert(key) {
             fail(&format!(
                 "{MANIFEST_PATH}: entry #{row} duplicates (contract_id=`{}`, chain_id={}, env=`{}`)",
                 entry.contract_id, entry.chain_id, entry.env
@@ -138,7 +129,7 @@ fn validate_registry_manifest(
 
 fn validate_coverage_manifest(
     entries: &[CoverageEntry],
-    registry: &BTreeMap<(String, u64, String), RegistryEvidence>,
+    registry: &BTreeSet<(String, u64, String)>,
     supported: &BTreeSet<u64>,
 ) {
     let mut seen = BTreeSet::new();
@@ -175,7 +166,7 @@ fn validate_coverage_manifest(
             ));
         }
         if registry
-            .keys()
+            .iter()
             .any(|registry_key| registry_key.0 == key.0 && registry_key.1 == key.1)
         {
             fail(&format!(
@@ -265,12 +256,6 @@ fn validate_verification(path: &str, row: usize, verification: &VerificationEntr
             "{path}: entry #{row} has empty verification.source"
         ));
     }
-}
-
-#[derive(Debug)]
-struct RegistryEvidence {
-    address: String,
-    verification_status: String,
 }
 
 fn is_valid_ethereum_address(candidate: &str) -> bool {

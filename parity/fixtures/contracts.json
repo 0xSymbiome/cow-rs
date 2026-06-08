@@ -46,40 +46,10 @@
     {
       "repo": "contracts",
       "commit": "c6b61ce75841ce4c25ab126def9cc981c568e6c6",
-      "path": "src/ts/swap.ts",
-      "anchors": [
-        "encodeSwapStep",
-        "SwapEncoder"
-      ]
-    },
-    {
-      "repo": "contracts",
-      "commit": "c6b61ce75841ce4c25ab126def9cc981c568e6c6",
       "path": "src/ts/interaction.ts",
       "anchors": [
         "normalizeInteraction",
         "normalizeInteractions"
-      ]
-    },
-    {
-      "repo": "contracts",
-      "commit": "c6b61ce75841ce4c25ab126def9cc981c568e6c6",
-      "path": "src/ts/vault.ts",
-      "anchors": [
-        "VAULT_INTERFACE",
-        "grantRequiredRoles"
-      ]
-    },
-    {
-      "repo": "contracts",
-      "commit": "c6b61ce75841ce4c25ab126def9cc981c568e6c6",
-      "path": "src/ts/proxy.ts",
-      "anchors": [
-        "IMPLEMENTATION_STORAGE_SLOT",
-        "OWNER_STORAGE_SLOT",
-        "implementationAddress",
-        "ownerAddress",
-        "EIP173_PROXY_ABI"
       ]
     },
     {
@@ -228,24 +198,6 @@
       }
     },
     {
-      "id": "contracts-deployment-constants",
-      "kind": "contract-shape",
-      "description": "Deterministic deployment uses the pinned salt and Arachnid deployment proxy address.",
-      "expected": {
-        "salt": "0x4d61747472657373657320696e204265726c696e210000000000000000000000",
-        "deployer_contract": "0x4e59b44847b379578588920ca78fbf26c0b4956c"
-      }
-    },
-    {
-      "id": "contracts-proxy-storage-slots",
-      "kind": "contract-shape",
-      "description": "Proxy helpers read EIP-1967 implementation and admin storage slots.",
-      "expected": {
-        "implementation_slot": "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc",
-        "owner_slot": "0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103"
-      }
-    },
-    {
       "id": "contracts-order-flags-default-sell",
       "kind": "positive",
       "description": "Default sell-order flags encode to zero for sell, fill-or-kill, erc20, erc20.",
@@ -277,58 +229,6 @@
         "methods": [
           "freeFilledAmountStorage",
           "freePreSignatureStorage"
-        ]
-      }
-    },
-    {
-      "id": "contracts-swap-default-user-data",
-      "kind": "behavior-scenario",
-      "description": "Swap step encoding defaults missing userData to 0x.",
-      "expected": {
-        "user_data": "0x"
-      }
-    },
-    {
-      "id": "contracts-vault-required-methods",
-      "kind": "contract-shape",
-      "description": "Vault relayer role grants cover the two expected Vault entrypoints.",
-      "expected": {
-        "methods": [
-          "manageUserBalance",
-          "batchSwap"
-        ]
-      }
-    },
-    {
-      "id": "contracts-vault-role-hashes-match-upstream-typescript",
-      "kind": "positive",
-      "description": "Vault relayer role hashes match the upstream TypeScript packed-keccak formula for the canonical Mainnet Balancer Vault.",
-      "@source_ref": "contracts:c94c595a:src/ts/vault.ts#grantRequiredRoles",
-      "expected": {
-        "vault_address": "0xBA12222222228d8Ba445958a75a0704d566BF2C8",
-        "roles": [
-          {
-            "method": "manageUserBalance",
-            "selector": "0x0e8e3e84",
-            "role_hash": "0xeba777d811cd36c06d540d7ff2ed18ed042fd67bbf7c9afcf88c818c7ee6b498"
-          },
-          {
-            "method": "batchSwap",
-            "selector": "0x945bcec9",
-            "role_hash": "0x1282ab709b2b70070f829c46bc36f76b32ad4989fecb2fcb09a1b3ce00bbfc30"
-          }
-        ]
-      }
-    },
-    {
-      "id": "contracts-reader-helper-surface",
-      "kind": "contract-shape",
-      "description": "The contracts helper layer includes the three reader-oriented public helpers from contracts-ts.",
-      "expected": {
-        "helpers": [
-          "AllowListReader",
-          "SettlementReader",
-          "TradeSimulator"
         ]
       }
     },
@@ -385,56 +285,6 @@
       "@source_ref": "contracts:c94c595a:test/GPv2Settlement/OrderRefunds.t.sol#freePreSignatureStorage",
       "expected": {
         "call_data": "0xa2a7d51b00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000038111111111111111111111111111111111111111111111111111111111111111122222222222222222222222222222222222222221234567800000000000000000000000000000000000000000000000000000000000000000000000000000038333333333333333333333333333333333333333333333333333333333333333344444444444444444444444444444444444444449abcdef00000000000000000"
-      }
-    },
-    {
-      "id": "contracts-vault-relayer-transfer-from-accounts-calldata",
-      "kind": "positive",
-      "description": "GPv2VaultRelayer.transferFromAccounts(Transfer[]) call-data for a single Transfer entry using Balancer V2 Vault conventions (balance = 0 marks the erc20 kind).",
-      "inputs": {
-        "transfers": [
-          {
-            "account": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-            "token": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-            "amount": "1000000000000000000",
-            "balance": 0
-          }
-        ]
-      },
-      "@source_ref": "contracts:c6b61ce7:src/ts/vault.ts#grantRequiredRoles",
-      "expected": {
-        "call_data": "0x3bfc497c00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001000000000000000000000000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa000000000000000000000000bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000000000000000000"
-      }
-    },
-    {
-      "id": "contracts-vault-relayer-mixed-balance-transfer-from-accounts-calldata",
-      "kind": "positive",
-      "description": "GPv2VaultRelayer.transferFromAccounts(Transfer[]) call-data for ERC20, external, and internal balances in one transfer array.",
-      "inputs": {
-        "transfers": [
-          {
-            "account": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-            "token": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-            "amount": "1000000000000000000",
-            "balance": 0
-          },
-          {
-            "account": "0xcccccccccccccccccccccccccccccccccccccccc",
-            "token": "0xdddddddddddddddddddddddddddddddddddddddd",
-            "amount": "2000000000000000000",
-            "balance": 1
-          },
-          {
-            "account": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-            "token": "0xffffffffffffffffffffffffffffffffffffffff",
-            "amount": "3000000000000000000",
-            "balance": 2
-          }
-        ]
-      },
-      "@source_ref": "contracts:c94c595a:src/ts/vault.ts#VAULT_INTERFACE",
-      "expected": {
-        "call_data": "0x3bfc497c00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000003000000000000000000000000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa000000000000000000000000bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000cccccccccccccccccccccccccccccccccccccccc000000000000000000000000dddddddddddddddddddddddddddddddddddddddd0000000000000000000000000000000000000000000000001bc16d674ec800000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee000000000000000000000000ffffffffffffffffffffffffffffffffffffffff00000000000000000000000000000000000000000000000029a2241af62c00000000000000000000000000000000000000000000000000000000000000000002"
       }
     },
     {

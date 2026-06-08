@@ -1,7 +1,7 @@
 # Shared Logic Reviewability Audit
 
 Status: Current  
-Last reviewed: 2026-05-30
+Last reviewed: 2026-06-08
 Owning surface: Orderbook, signing, and trading shared-logic reviewability boundary, plus the canonical primitive-layer invocation paths shared across the cow-rs workspace  
 Refresh trigger: Changes to shared orderbook request execution, signing payload construction, thin posting wrappers, boundary-specific order DTO separation, or the canonical primitive-layer invocation paths (keccak256, U256 and quantity parsing, address encoding, hex serde, typed-primitive bridges, and identity-wire-form preservation) that materially affect correctness or reviewability  
 Related docs:
@@ -91,10 +91,8 @@ between variants is invisible to a reviewer who only reads one site.
 - **keccak256**: production code across `cow-sdk-contracts`,
   `cow-sdk-signing`, and `cow-sdk-cow-shed` invokes
   `alloy_primitives::keccak256` directly. Hand-rolled
-  `sha3::Keccak256` helpers remain only inside `crates/*/tests/` (and
-  one inline test-mod helper in
-  `crates/contracts/src/deploy.rs::tests`) so the parity assertions
-  compare the crate output against an independent keccak
+  `sha3::Keccak256` helpers remain only inside `crates/*/tests/` so the
+  parity assertions compare the crate output against an independent keccak
   implementation. Each retained test helper carries a `// SAFETY:`
   comment naming its independent-oracle purpose.
 - **SigningScheme**: the cow-protocol-side

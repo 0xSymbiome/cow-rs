@@ -98,13 +98,6 @@ doc = false
 bench = false
 
 [[bin]]
-name = "fuzz_vault_relayer_transfer_from_accounts_encode"
-path = "fuzz_targets/fuzz_vault_relayer_transfer_from_accounts_encode.rs"
-test = false
-doc = false
-bench = false
-
-[[bin]]
 name = "fuzz_ecdsa_v_normalization"
 path = "fuzz_targets/fuzz_ecdsa_v_normalization.rs"
 test = false

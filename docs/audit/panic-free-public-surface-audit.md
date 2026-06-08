@@ -30,7 +30,7 @@ benchmarks, or private review tooling. Those surfaces may use `unwrap` or
 | Typestate builders | Builder terminals read each required input from a data-carrying marker and return typed errors; no `expect` site remains on the construction path | Conforms |
 | Numeric clamps | Conversion `expect` sites follow saturating or bounded arithmetic immediately before the conversion | Conforms |
 | Amount decimal I/O | `Amount::parse_units` and `Amount::from_units` are `Result`-returning constructors carrying no `unwrap`, `expect`, or `panic!` (`parse_units` pre-guards the alloy `parse_units` footguns; `from_units` does checked integer scaling and rejects an over-`uint256` product with `NumericOverflow`); `Amount::format_units` is infallible and clamps `decimals > 77` to `Unit::MAX` rather than panicking | Conforms |
-| Panic allowlist | `.github/config/panic-allowlist.yaml` carries 40 reviewed item-path entries, each covering an accepted static-invariant panic-bearing call enumerated below | Conforms |
+| Panic allowlist | `.github/config/panic-allowlist.yaml` carries 39 reviewed item-path entries, each covering an accepted static-invariant panic-bearing call enumerated below | Conforms |
 | Native Alloy adapters | Provider, signer, and umbrella public methods return typed errors for validation, transport, signing, pending transaction, and unsupported capability failures rather than panicking | Conforms |
 | Trading wait helper | `WaitOptions` constructors/builders, `submit_and_wait_for_receipt`, `poll_for_receipt`, and `WaitError` formatting/error implementations return typed results and retain only a clamped wasm timer conversion behind the allowlist | Conforms |
 | Transport classification growth | `TransportErrorClass::Upgrade` is an additive non-exhaustive enum variant and introduces no new panic path | Conforms |
@@ -45,7 +45,7 @@ Documented public runtime sites:
 | `crates/app-data/src/schema.rs:32`; `crates/app-data/src/types/partner_fee.rs:51` | Typed app-data and partner-fee structures serialize through owned `serde` implementations; failure would mean the shipped Rust types stopped being JSON-serializable. |
 | `crates/app-data/src/schema.rs:148`; `crates/app-data/src/schema.rs:172`; `crates/app-data/src/schema.rs:187`; `crates/app-data/src/schema.rs:196` | App-data schemas are embedded from crate-owned files; path and JSON validity are release artifacts rather than caller input. |
 | `crates/browser-wallet/src/mock.rs:76`; `crates/browser-wallet/src/wallet/chain.rs:98`; `crates/browser-wallet/src/wallet/chain.rs:328`; `crates/browser-wallet/src/wallet/mod.rs:61`; `crates/browser-wallet/src/wallet/mod.rs:65` | Built-in mock address, chain/native-currency metadata, and trusted-transport constructor inputs are static or caller-selected values validated before public use. |
-| `crates/contracts/src/deploy.rs:108`; `crates/contracts/src/deploy.rs:111`; `crates/contracts/src/deploy.rs:114`; `crates/contracts/src/deployments/registry.rs:67`; `crates/signing/src/domain.rs:46`; `crates/trading/src/allowance.rs:12`; `crates/trading/src/onchain.rs:483`; `crates/trading/src/onchain.rs:500`; `crates/trading/src/order.rs:310` | Canonical deployment lookups are backed by the embedded registry manifest; malformed or missing rows are gated by the registry parser and build-time validation before normal public use. |
+| `crates/contracts/src/deployments/registry.rs:67`; `crates/signing/src/domain.rs:46`; `crates/trading/src/allowance.rs:12`; `crates/trading/src/onchain.rs:483`; `crates/trading/src/onchain.rs:500`; `crates/trading/src/order.rs:310` | Canonical deployment lookups are backed by the embedded registry manifest; malformed or missing rows are gated by the registry parser and build-time validation before normal public use. |
 | `crates/contracts/src/primitives.rs:14`; `crates/orderbook/src/transform.rs:92`; `crates/trading/src/parameters.rs:20`; `crates/trading/src/validation.rs:345` | Static zero-address and native-token sentinel literals are crate-owned constants that must remain valid EVM address strings. |
 | `crates/core/src/types/identity.rs:63`; `crates/core/src/types/identity.rs:318`; `crates/core/src/types/identity.rs:433`; `crates/core/src/types/identity.rs:553`; `crates/core/src/types/hex.rs:149` | Hex constructors encode bytes through ASCII-only helper functions, and the guarded nibble decoder is called after shape validation. |
 | `crates/transport-policy/src/policy.rs:68`; `crates/transport-policy/src/policy.rs:89`; `crates/transport-policy/src/policy.rs:114`; `crates/transport-policy/src/policy.rs:139` | Default user-agent literals are header-safe crate constants used to build shared transport policies. |
@@ -74,7 +74,7 @@ sources without unchecked assumptions; and the `WaitError::reverted()` accessor
 reads the reverted receipt through a total `const fn` match with no panic path.
 
 The canonical panic allowlist is `.github/config/panic-allowlist.yaml`.
-It currently contains 40 reviewed item-path entries. Each accepted production
+It currently contains 39 reviewed item-path entries. Each accepted production
 panic site is enumerated in the documented public runtime sites table above and
 remains tied to a documented static invariant rather than to caller-controlled
 input.

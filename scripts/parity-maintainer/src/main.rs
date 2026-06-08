@@ -28,10 +28,7 @@ const CONTRACTS_PATHS: &[&str] = &[
     "src/ts/order.ts",
     "src/ts/sign.ts",
     "src/ts/settlement.ts",
-    "src/ts/swap.ts",
     "src/ts/interaction.ts",
-    "src/ts/vault.ts",
-    "src/ts/proxy.ts",
     "test/GPv2Order/PackOrderUidParams.t.sol",
     "test/GPv2Order/ExtractOrderUidParams.t.sol",
     "test/GPv2Trade/ExtractFlags.t.sol",
@@ -805,19 +802,7 @@ fn fixture_contracts() -> Vec<FixtureEntry> {
                 },
                 FixtureSourceRef {
                     repo: "contracts".to_string(),
-                    path: "src/ts/swap.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "contracts".to_string(),
                     path: "src/ts/interaction.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "contracts".to_string(),
-                    path: "src/ts/vault.ts".to_string(),
-                },
-                FixtureSourceRef {
-                    repo: "contracts".to_string(),
-                    path: "src/ts/proxy.ts".to_string(),
                 },
                 FixtureSourceRef {
                     repo: "contracts".to_string(),

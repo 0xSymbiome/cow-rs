@@ -1474,41 +1474,6 @@ The first functional crate-family release begins at `0.1.0`.
   `contracts-erc20-approve-calldata` fixture row exercised at
   `crates/contracts/tests/parity_contract.rs::assert_erc20_approve_calldata`.
 
-- Pre-1.0 breaking change. `cow_sdk_contracts::SALT` is re-typed from
-  `&'static str` to `alloy_primitives::B256`. The 32-byte payload
-  (`Mattresses in Berlin!` ASCII followed by eleven zero bytes,
-  `0x4d61...0000`) is unchanged and continues to drive the canonical
-  CREATE2 derivation of every Settlement, VaultRelayer, and EthFlow
-  deployment address recorded in `crates/contracts/registry.toml`. The
-  constant is now emitted by the `alloy_primitives::fixed_bytes!`
-  compile-time macro and reaches `Address::create2_from_code` as a
-  typed `B256` directly. Callers that consumed the string form should
-  reach the byte form through `SALT.as_slice()` or render to the
-  canonical hex through `format!("{SALT:#x}")`.
-
-- Pre-1.0 breaking change. `cow_sdk_contracts::DEPLOYER_CONTRACT` is
-  re-typed from `&'static str` to `alloy_primitives::Address`. The
-  20-byte payload (`0x4e59b44847b379578588920ca78fbf26c0b4956c`, the
-  Arachnid deterministic-deployment proxy) is unchanged. The constant
-  is now emitted by the `alloy_primitives::address!` compile-time macro,
-  and `deterministic_deployment_address` consumes
-  `DEPLOYER_CONTRACT.create2_from_code(SALT, &init_code)` directly
-  without intermediate hex decoding.
-
-- EIP-1967 storage-slot byte constants in `cow_sdk_contracts::proxy`
-  are emitted via `alloy_primitives::fixed_bytes!` as the single byte
-  source of truth. The `SlotBytes` alias is re-pointed to
-  `alloy_primitives::FixedBytes<32>` (the same type as the previous
-  `alloy_sol_types::private::FixedBytes<32>` re-export). The
-  `Eip1967Slot::as_hex_str` accessor continues to return a
-  `&'static str` because the cow-side `Provider::get_storage_at`
-  trait method takes the slot as a hex string; the new
-  `eip1967_slot_hex_strings_match_their_byte_forms` test in
-  `crates/contracts/tests/proxy_contract.rs` pins the round-trip
-  contract between the byte form and the hex string. The existing
-  keccak-minus-one parity test continues to pin both forms against
-  the canonical EIP-1967 derivation.
-
 - `cow-sdk-contracts`: the `ContractsError::DecodeHex { source }` typed
   source field is now `alloy_primitives::hex::FromHexError` (a re-export
   of `const_hex::FromHexError`). The variant remains `#[non_exhaustive]`
@@ -1530,10 +1495,9 @@ The first functional crate-family release begins at `0.1.0`.
   transitive path. Every production `hex::encode` and `hex::decode`
   callsite under `crates/contracts/src/**` and
   `crates/signing/src/**` (covering EIP-1271 signature payload
-  encoding, normalized ECDSA signatures, vault role hashes,
-  settlement codec, EIP-1967 proxy storage decode, deployment address
-  derivation, EIP-712 envelope assembly, and the domain-separator
-  hex serialization) is re-pointed to `alloy_primitives::hex::*`.
+  encoding, normalized ECDSA signatures, the settlement codec,
+  EIP-712 envelope assembly, and the domain-separator hex
+  serialization) is re-pointed to `alloy_primitives::hex::*`.
   Output is byte-stable on every input. The integration test suites
   of both crates continue to consume the upstream `hex` crate through
   new `[dev-dependencies]` declarations, so the integration-test
@@ -1972,20 +1936,19 @@ The first functional crate-family release begins at `0.1.0`.
 
 - Testing depth across `cow-sdk-contracts` now spans every
   `alloy::sol!` binding family through three reinforcing lanes:
-  ten new byte-identity parity fixtures in
+  nine new byte-identity parity fixtures in
   `parity/fixtures/contracts.json` pin the call-data output of
   `GPv2Settlement` (`invalidateOrder`, `setPreSignature`,
   `freeFilledAmountStorage`, `freePreSignatureStorage`),
-  `GPv2VaultRelayer` (`transferFromAccounts`), `CoWSwapEthFlow`
-  (`createOrder` and `invalidateOrder(EthFlowOrderData)`),
-  `IERC20` (`approve`, `transferFrom`), and the EIP-2612 Permit
-  typed-data digest against the deployed USD Coin domain; five
+  `CoWSwapEthFlow` (`createOrder` and
+  `invalidateOrder(EthFlowOrderData)`), `IERC20` (`approve`,
+  `transferFrom`), and the EIP-2612 Permit typed-data digest
+  against the deployed USD Coin domain; four
   new `cargo-fuzz` targets under `fuzz/fuzz_targets/`
   (`fuzz_settlement_settle_encode`,
   `fuzz_settlement_invalidate_order_encode`,
-  `fuzz_ethflow_create_order_encode`,
-  `fuzz_erc20_permit_typed_data_hash`, and
-  `fuzz_vault_relayer_transfer_from_accounts_encode`) drive
+  `fuzz_ethflow_create_order_encode`, and
+  `fuzz_erc20_permit_typed_data_hash`) drive
   arbitrary input through the same encoders and assert selector
   identity, call-data length-consistency, round-trip identity,
   and the EIP-712 envelope composition invariant; and
@@ -2233,8 +2196,8 @@ The first functional crate-family release begins at `0.1.0`.
   `cow-sdk-trading` request boundary, with `From<BigUint>` and
   `TryFrom<&str>` conversions for atomic interop.
 
-- Zero-copy settlement call-data representation. Settlement, interaction, and
-  swap encoder outputs now hold their payload as `bytes::Bytes` so fanning
+- Zero-copy settlement call-data representation. Settlement and interaction
+  encoder outputs now hold their payload as `bytes::Bytes` so fanning
   the same encoded call data across multiple settlement candidates shares a
   single backing allocation through reference-counted clones. The public
   JSON wire form remains the canonical `0x`-prefixed hex string.
@@ -2291,10 +2254,9 @@ The first functional crate-family release begins at `0.1.0`.
 
 - Canonical inline `alloy::sol!` typed bindings for every contract
   surface the SDK emits call-data against: `GPv2Settlement` settlement
-  plus pre-signature and invalidation, `GPv2VaultRelayer` authorization
-  checks, `CoWSwapEthFlow` order creation and invalidation, the EIP-1967
-  storage-slot and proxy ownership surface, and the `IERC20` plus
-  `IERC20Permit` (EIP-2612) ERC-20 surface. Every binding is declared
+  plus pre-signature and invalidation, `CoWSwapEthFlow` order creation
+  and invalidation, and the `IERC20` plus `IERC20Permit` (EIP-2612)
+  ERC-20 surface. Every binding is declared
   inline with `sol!` and proven byte-for-byte by a parity regression
   against the call-data, EIP-712, and selector fixtures under
   `parity/fixtures/` (derived from the upstream TypeScript SDK), with the
@@ -2429,10 +2391,6 @@ The first functional crate-family release begins at `0.1.0`.
   constructor so deterministic-time tests and embedders can drive cache
   expiry without sleeping. Native builds use `std::time::Instant`; WASM
   builds use `web_time::Instant`.
-
-- `cow_sdk_trading::deployment_address_hash_input` is publicly re-exported
-  for consumers that build EthFlow or pre-sign deployment-derived address
-  hashes outside the SDK.
 
 - Every `*_with_cancellation` partner method on `OrderBookApi`,
   `SubgraphApi`, and `TradingSdk` emits a structured `tracing::debug`
@@ -3000,7 +2958,7 @@ The first functional crate-family release begins at `0.1.0`.
   mirror the services `model::order::SellTokenSource` and
   `model::order::BuyTokenDestination` byte-identically on the wire.
   Every `OrderCreation`, `OrderData`, `QuoteData`, `Order`,
-  `OrderFlags`, `TradeFlags`, `TradeSimulation`, `TradeParameters`,
+  `OrderFlags`, `TradeFlags`, `TradeParameters`,
   `LimitTradeParameters`, `QuoteRequestOverride`, `QuoteCacheKey`, and
   related SDK surface now carries the side-specific type on its
   `sell_token_balance` and `buy_token_balance` fields, so quote-derived
@@ -3269,18 +3227,6 @@ The first functional crate-family release begins at `0.1.0`.
   `parity/fixtures/contracts.json`, mirroring `cowprotocol/contracts` pinned by
   commit in `parity/source-lock.yaml`.
 
-- `cow-sdk-contracts` now derives its `GPv2VaultRelayer` authorization-role
-  bindings from an `alloy::sol!` interface block that declares the canonical
-  GPv2 Vault Relayer surface alongside the partial Balancer V2 Vault ABI the
-  relayer proxies (`manageUserBalance` and `batchSwap`). Vault role hashes
-  returned by `required_vault_roles` now source their 4-byte method selectors
-  from the generated typed interface and derive the role digest through the
-  `alloy-sol-types` ABI-encoded `(address, bytes4)` tuple, keeping the
-  role-hash byte output identical to the pre-migration baseline. The
-  inline `sol!` binding is proven by `parity/fixtures/contracts.json`,
-  mirroring `cowprotocol/contracts` pinned by commit in
-  `parity/source-lock.yaml`.
-
 - `cow-sdk-contracts` now hosts the typed `CoWSwapEthFlow` call-data
   bindings under a new `cow_sdk_contracts::eth_flow` module generated from
   an `alloy::sol!` interface block sourced from the upstream Solidity
@@ -3297,26 +3243,6 @@ The first functional crate-family release begins at `0.1.0`.
   for downstream consumers, and the inline `sol!` binding is proven by
   `parity/fixtures/contracts.json`, mirroring `cowprotocol/ethflowcontract`
   pinned by commit in `parity/source-lock.yaml`.
-
-- The `cow-sdk-contracts` EIP-1967 proxy-inspection surface now derives
-  from an `alloy::sol!` interface block that declares the canonical
-  EIP-173 ownership proxy ABI alongside the EIP-1967 storage-slot
-  derivations. The paired `IMPLEMENTATION_STORAGE_SLOT` / `OWNER_STORAGE_SLOT`
-  hex-string constants and the `proxy_interface` / `EIP173_PROXY_ABI`
-  JSON-fragment helpers are replaced by a typed `Eip1967Slot` enum with
-  `Admin` and `Implementation` variants carrying the canonical 32-byte slot
-  hashes, a public `SlotBytes` type alias for the underlying `B256`
-  representation, the generated `IEip173Proxy` interface type, and an
-  `admin_address` reader that decodes storage responses through
-  `alloy_primitives::Address::from_word` rather than ad-hoc byte slicing.
-  The existing `implementation_address` and `owner_address` readers keep
-  their signatures and now route through the typed surface; `owner_address`
-  stays available as a legacy alias for `admin_address` so downstream
-  ownership-proxy consumers migrate without behavioral changes. The
-  inline `sol!` binding is proven by `parity/fixtures/contracts.json`,
-  mirroring `cowprotocol/contracts`'s
-  `src/contracts/libraries/GPv2EIP1967.sol` pinned by commit in
-  `parity/source-lock.yaml`.
 
 - The typed `cow_sdk_contracts::deployments::Registry` is now the single
   authority for resolving canonical contract addresses from the
@@ -3466,8 +3392,8 @@ The first functional crate-family release begins at `0.1.0`.
 - Added `docs/audit/wasm-browser-runner-determinism-audit.md` for the pinned
   browser runner contract used by WASM validation.
 
-- Refreshed `docs/audit/contract-bindings-parity-audit.md` for vault
-  role-hash parity and forbidden interaction target coverage.
+- Refreshed `docs/audit/contract-bindings-parity-audit.md` for forbidden
+  interaction target coverage.
 
 - Refreshed `docs/audit/eip1271-verification-cache-audit.md` for the
   non-cacheable error matrix, clock injection, and TTL boundary tests.
@@ -3584,11 +3510,10 @@ The first functional crate-family release begins at `0.1.0`.
 - Retired the hand-rolled ABI encoder helpers previously maintained inside
   `cow-sdk-contracts`. Every encoded call-data payload the SDK emits now
   flows through the `alloy::sol!`-generated typed bindings for
-  `GPv2Settlement`, `GPv2VaultRelayer`, `CoWSwapEthFlow`, the EIP-1967
-  proxy, and `IERC20` / `IERC20Permit`, so the byte output is sourced
-  directly from the upstream CoW Protocol Solidity ABI rather than from
-  a parallel Rust reimplementation. Byte-identity parity with the pre-
-  migration encoder output is gated by the regression contract at
+  `GPv2Settlement`, `CoWSwapEthFlow`, and `IERC20` / `IERC20Permit`, so the
+  byte output is sourced directly from the upstream CoW Protocol Solidity ABI
+  rather than from a parallel Rust reimplementation. Byte-identity parity with
+  the pre-migration encoder output is gated by the regression contract at
   `crates/contracts/tests/parity_contract.rs`.
 
 - Retired the legacy free-function constructor family on `OrderBookApi`

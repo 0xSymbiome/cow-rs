@@ -91,7 +91,6 @@ fn module_reexports_cover_expected_leaf_crates() {
     ));
     let validation = cow_sdk::app_data::validate_app_data_doc(&doc);
     let latest_version = cow_sdk::app_data::SchemaVersion::latest();
-    let deployment = cow_sdk::contracts::deployment_for_chain(11_155_111).unwrap();
     let api = cow_sdk::orderbook::OrderbookApi::builder_from_context(
         cow_sdk::core::ApiContext::default(),
     )
@@ -117,7 +116,6 @@ fn module_reexports_cover_expected_leaf_crates() {
         "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
     );
     assert_eq!(cow_sdk::contracts::ORDER_UID_LENGTH, 56);
-    assert_ne!(deployment.settlement, deployment.eth_flow);
     assert_eq!(api.context().env, cow_sdk::core::CowEnv::Prod);
     assert!(cow_sdk::signing::SigningScheme::Eip712.is_ecdsa());
 }

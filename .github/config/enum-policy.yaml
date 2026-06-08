@@ -265,11 +265,6 @@ enums:
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: Settlement interaction stages are protocol-facing and may grow with upstream contracts.
-  - name: Eip1967Slot
-    file: crates/contracts/src/proxy.rs
-    category: upstream-growing
-    expected_marker: non_exhaustive
-    reason: Proxy slot helpers can grow with additional reviewed EIP-1967 slots.
   - name: ContractsError
     file: crates/contracts/src/errors.rs
     category: sdk-local-state
@@ -315,11 +310,6 @@ enums:
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: Host policy diagnostics can grow as external routing validation expands.
-  - name: ContractName
-    file: crates/contracts/src/deploy.rs
-    category: upstream-growing
-    expected_marker: non_exhaustive
-    reason: Named deployment artifacts can grow with upstream contract deployments.
   - name: AppDataWarning
     file: crates/app-data/src/info.rs
     category: sdk-local-state

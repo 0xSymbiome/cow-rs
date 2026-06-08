@@ -16,35 +16,23 @@
 //!   success magic value is the typed selector emitted by the `sol!`-
 //!   generated [`IERC1271::isValidSignatureCall`] binding.
 //! * [`normalize_interaction`] — interaction defaulting rule.
-//! * [`SALT`], [`DEPLOYER_CONTRACT`] — deterministic deployment constants
-//!   typed as [`alloy_primitives::B256`] and [`alloy_primitives::Address`].
-//! * [`Eip1967Slot::Implementation`], [`Eip1967Slot::Admin`] — EIP-1967 proxy
-//!   storage slot constants.
 //! * [`encode_order_flags`], [`encode_trade_flags`] — order and trade flag
 //!   bitfield codecs.
 //! * [`SettlementEncoder::encoded_order_refunds`] — order refund method names.
-//! * [`encode_swap_step`] — swap user-data default.
-//! * [`VAULT_INTERFACE`] — vault method surface.
-//! * [`AllowListReader`], [`SettlementReader`], [`TradeSimulator`] — reader
-//!   helper surface.
 //!
 //! Failure messages carry the fixture case id so a reviewer looking at a
 //! broken CI run sees the exact upstream vector that diverged.
 
-use alloy_primitives::{Address as AlloyAddress, B256};
 use alloy_sol_types::{
     Eip712Domain, SolCall, SolStruct,
     private::{Address as SolAddress, Bytes as SolBytes, FixedBytes, U256},
     sol,
 };
 use cow_sdk_contracts::{
-    AllowListReader, CANCELLATIONS_TYPE_FIELDS, DEPLOYER_CONTRACT, Eip1967Slot, EthFlowOrderData,
-    IERC20, IERC20Permit, IERC1271, InteractionLike, ORDER_TYPE_FIELDS, ORDER_UID_LENGTH,
-    OrderFlags, SALT, SettlementEncoder, SettlementReader, Signature, SigningScheme, Swap,
-    TokenRegistry, TradeExecution, TradeFlags, TradeSimulator, VAULT_INTERFACE,
-    encode_create_order_calldata, encode_invalidate_order_calldata, encode_order_flags,
-    encode_swap_step, encode_trade_flags, normalize_interaction, permit_typed_data_hash,
-    required_vault_roles,
+    CANCELLATIONS_TYPE_FIELDS, EthFlowOrderData, IERC20, IERC20Permit, IERC1271, InteractionLike,
+    ORDER_TYPE_FIELDS, ORDER_UID_LENGTH, OrderFlags, SettlementEncoder, Signature, SigningScheme,
+    TradeExecution, TradeFlags, encode_create_order_calldata, encode_invalidate_order_calldata,
+    encode_order_flags, encode_trade_flags, normalize_interaction, permit_typed_data_hash,
 };
 use cow_sdk_core::{
     Address, Amount, AppDataHash, AppDataHex, BuyTokenDestination, OrderData, OrderDigest,
@@ -64,17 +52,6 @@ sol! {
         function setPreSignature(bytes orderUid, bool signed) external;
         function freeFilledAmountStorage(bytes[] orderUids) external;
         function freePreSignatureStorage(bytes[] orderUids) external;
-    }
-
-    interface IGPv2VaultRelayer {
-        struct Transfer {
-            address account;
-            address token;
-            uint256 amount;
-            uint8 balance;
-        }
-
-        function transferFromAccounts(Transfer[] transfers) external;
     }
 }
 
@@ -121,8 +98,6 @@ fn parity_fixture_cases_hold() {
             }
             "contracts-eip1271-magic-value" => assert_eip1271_magic_value(id, expected),
             "contracts-interaction-defaults" => assert_interaction_defaults(id, expected),
-            "contracts-deployment-constants" => assert_deployment_constants(id, expected),
-            "contracts-proxy-storage-slots" => assert_proxy_storage_slots(id, expected),
             "contracts-order-flags-default-sell" => {
                 assert_order_flags_default_sell(id, expected);
             }
@@ -133,12 +108,6 @@ fn parity_fixture_cases_hold() {
             "contracts-order-refund-method-names" => {
                 assert_order_refund_method_names(id, expected);
             }
-            "contracts-swap-default-user-data" => assert_swap_default_user_data(id, expected),
-            "contracts-vault-required-methods" => assert_vault_required_methods(id, expected),
-            "contracts-vault-role-hashes-match-upstream-typescript" => {
-                assert_vault_role_hashes_match_upstream_typescript(id, expected);
-            }
-            "contracts-reader-helper-surface" => assert_reader_helper_surface(id, expected),
             "contracts-settlement-invalidate-order-calldata" => {
                 assert_settlement_invalidate_order_calldata(id, expected);
             }
@@ -150,12 +119,6 @@ fn parity_fixture_cases_hold() {
             }
             "contracts-settlement-free-presignature-storage-calldata" => {
                 assert_settlement_free_presignature_storage_calldata(id, expected);
-            }
-            "contracts-vault-relayer-transfer-from-accounts-calldata" => {
-                assert_vault_relayer_transfer_from_accounts_calldata(id, expected);
-            }
-            "contracts-vault-relayer-mixed-balance-transfer-from-accounts-calldata" => {
-                assert_vault_relayer_mixed_balance_transfer_from_accounts_calldata(id, expected);
             }
             "contracts-settlement-clearing-prices-multi-trade" => {
                 assert_settlement_clearing_prices_multi_trade(id, expected);
@@ -426,52 +389,6 @@ fn assert_interaction_defaults(id: &str, expected: &Value) {
     );
 }
 
-fn assert_deployment_constants(id: &str, expected: &Value) {
-    let expected_salt: B256 = expected["salt"]
-        .as_str()
-        .unwrap_or_else(|| panic!("case {id}: expected.salt must be a string"))
-        .parse()
-        .unwrap_or_else(|error| {
-            panic!("case {id}: expected.salt must parse as 32-byte hex: {error}")
-        });
-    let expected_deployer: AlloyAddress = expected["deployer_contract"]
-        .as_str()
-        .unwrap_or_else(|| panic!("case {id}: expected.deployer_contract must be a string"))
-        .parse()
-        .unwrap_or_else(|error| {
-            panic!("case {id}: expected.deployer_contract must parse as a 20-byte address: {error}")
-        });
-
-    assert_eq!(
-        SALT, expected_salt,
-        "case {id}: SALT must equal the pinned deterministic deployment salt",
-    );
-    assert_eq!(
-        DEPLOYER_CONTRACT, expected_deployer,
-        "case {id}: DEPLOYER_CONTRACT must equal the Arachnid deployment proxy",
-    );
-}
-
-fn assert_proxy_storage_slots(id: &str, expected: &Value) {
-    let expected_impl = expected["implementation_slot"]
-        .as_str()
-        .unwrap_or_else(|| panic!("case {id}: expected.implementation_slot must be a string"));
-    let expected_owner = expected["owner_slot"]
-        .as_str()
-        .unwrap_or_else(|| panic!("case {id}: expected.owner_slot must be a string"));
-
-    assert_eq!(
-        Eip1967Slot::Implementation.as_hex_str(),
-        expected_impl,
-        "case {id}: Eip1967Slot::Implementation must match the EIP-1967 slot",
-    );
-    assert_eq!(
-        Eip1967Slot::Admin.as_hex_str(),
-        expected_owner,
-        "case {id}: Eip1967Slot::Admin must match the fixture admin-slot hash",
-    );
-}
-
 fn assert_order_flags_default_sell(id: &str, expected: &Value) {
     let expected_flags = expected["encoded_flags"]
         .as_u64()
@@ -582,135 +499,6 @@ fn assert_order_refund_method_names(id: &str, expected: &Value) {
             "case {id}: refund interaction call-data must start with {selector}",
         );
     }
-}
-
-fn assert_swap_default_user_data(id: &str, expected: &Value) {
-    let expected_user_data = expected["user_data"]
-        .as_str()
-        .unwrap_or_else(|| panic!("case {id}: expected.user_data must be a string"));
-    assert_eq!(
-        expected_user_data, "0x",
-        "case {id}: fixture expects the hex-empty user-data marker 0x",
-    );
-
-    let mut tokens = TokenRegistry::default();
-    let step = encode_swap_step(
-        &mut tokens,
-        &Swap::new(
-            "0x0000000000000000000000000000000000000000000000000000000000000001".to_owned(),
-            Address::new("0x1111111111111111111111111111111111111111").unwrap(),
-            Address::new("0x2222222222222222222222222222222222222222").unwrap(),
-            Amount::new("1").unwrap(),
-            None,
-        ),
-    );
-
-    assert_eq!(
-        step.user_data.len(),
-        0,
-        "case {id}: encode_swap_step must default missing user_data to an empty buffer",
-    );
-}
-
-fn assert_vault_required_methods(id: &str, expected: &Value) {
-    let expected_methods: Vec<&str> = expected["methods"]
-        .as_array()
-        .unwrap_or_else(|| panic!("case {id}: expected.methods must be an array"))
-        .iter()
-        .map(|method| {
-            method
-                .as_str()
-                .unwrap_or_else(|| panic!("case {id}: expected.methods entries must be strings"))
-        })
-        .collect();
-
-    let actual_methods: Vec<&str> = VAULT_INTERFACE
-        .iter()
-        .map(|entry| {
-            entry
-                .trim_start_matches("function ")
-                .split('(')
-                .next()
-                .unwrap()
-        })
-        .collect();
-
-    assert_eq!(
-        actual_methods, expected_methods,
-        "case {id}: VAULT_INTERFACE must expose the fixture-named methods in order",
-    );
-}
-
-fn assert_vault_role_hashes_match_upstream_typescript(id: &str, expected: &Value) {
-    let vault_address = expected["vault_address"]
-        .as_str()
-        .unwrap_or_else(|| panic!("case {id}: expected.vault_address must be a string"));
-    let expected_roles = expected["roles"]
-        .as_array()
-        .unwrap_or_else(|| panic!("case {id}: expected.roles must be an array"));
-
-    let vault = Address::new(vault_address)
-        .unwrap_or_else(|error| panic!("case {id}: expected.vault_address must parse: {error}"));
-    let roles = required_vault_roles(&vault)
-        .unwrap_or_else(|error| panic!("case {id}: vault role derivation must succeed: {error}"));
-
-    assert_eq!(
-        roles.len(),
-        expected_roles.len(),
-        "case {id}: fixture must cover every required vault role",
-    );
-
-    for (role, expected_role) in roles.iter().zip(expected_roles.iter()) {
-        let method = expected_role["method"]
-            .as_str()
-            .unwrap_or_else(|| panic!("case {id}: expected role method must be a string"));
-        let selector = expected_role["selector"]
-            .as_str()
-            .unwrap_or_else(|| panic!("case {id}: expected role selector must be a string"));
-        let role_hash = expected_role["role_hash"]
-            .as_str()
-            .unwrap_or_else(|| panic!("case {id}: expected role_hash must be a string"));
-
-        assert_eq!(
-            role.method, method,
-            "case {id}: vault role method must match upstream order",
-        );
-        assert_eq!(
-            role.selector, selector,
-            "case {id}: vault role selector must match upstream TypeScript",
-        );
-        assert_eq!(
-            role.role, role_hash,
-            "case {id}: vault role hash must match upstream packed-keccak formula",
-        );
-    }
-}
-
-fn assert_reader_helper_surface(id: &str, expected: &Value) {
-    let expected_helpers: Vec<&str> = expected["helpers"]
-        .as_array()
-        .unwrap_or_else(|| panic!("case {id}: expected.helpers must be an array"))
-        .iter()
-        .map(|helper| {
-            helper
-                .as_str()
-                .unwrap_or_else(|| panic!("case {id}: expected.helpers entries must be strings"))
-        })
-        .collect();
-
-    // The reader helper surface is the three public struct types; referencing
-    // each through a size_of assertion proves they remain part of the shipped
-    // API and compiles only when the types are still exported.
-    let _ = std::mem::size_of::<AllowListReader<()>>();
-    let _ = std::mem::size_of::<SettlementReader<()>>();
-    let _ = std::mem::size_of::<TradeSimulator<()>>();
-
-    let rust_surface = ["AllowListReader", "SettlementReader", "TradeSimulator"];
-    assert_eq!(
-        rust_surface.as_slice(),
-        expected_helpers.as_slice(),
-        "case {id}: reader helper surface must expose AllowListReader, SettlementReader, and TradeSimulator",
-    );
 }
 
 fn sample_domain() -> TypedDataDomain {
@@ -870,67 +658,6 @@ fn assert_settlement_free_presignature_storage_calldata(id: &str, expected: &Val
         orderUids: vec![
             order_uid_as_sol_bytes(&primary),
             order_uid_as_sol_bytes(&secondary),
-        ],
-    }
-    .abi_encode();
-
-    assert_calldata_hex(id, &call_data, expected_hex);
-}
-
-fn assert_vault_relayer_transfer_from_accounts_calldata(id: &str, expected: &Value) {
-    let expected_hex = expected["call_data"]
-        .as_str()
-        .unwrap_or_else(|| panic!("case {id}: expected.call_data must be a string"));
-
-    let account = Address::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa").unwrap();
-    let token = Address::new("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb").unwrap();
-    let amount = U256::from(1_000_000_000_000_000_000_u128);
-
-    let call_data = IGPv2VaultRelayer::transferFromAccountsCall {
-        transfers: vec![IGPv2VaultRelayer::Transfer {
-            account: to_sol_address(&account),
-            token: to_sol_address(&token),
-            amount,
-            balance: 0,
-        }],
-    }
-    .abi_encode();
-
-    assert_calldata_hex(id, &call_data, expected_hex);
-}
-
-fn assert_vault_relayer_mixed_balance_transfer_from_accounts_calldata(id: &str, expected: &Value) {
-    let expected_hex = expected["call_data"]
-        .as_str()
-        .unwrap_or_else(|| panic!("case {id}: expected.call_data must be a string"));
-
-    let transfer =
-        |account: &str, token: &str, amount: u128, balance: u8| IGPv2VaultRelayer::Transfer {
-            account: to_sol_address(&Address::new(account).unwrap()),
-            token: to_sol_address(&Address::new(token).unwrap()),
-            amount: U256::from(amount),
-            balance,
-        };
-    let call_data = IGPv2VaultRelayer::transferFromAccountsCall {
-        transfers: vec![
-            transfer(
-                "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-                "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-                1_000_000_000_000_000_000,
-                0,
-            ),
-            transfer(
-                "0xcccccccccccccccccccccccccccccccccccccccc",
-                "0xdddddddddddddddddddddddddddddddddddddddd",
-                2_000_000_000_000_000_000,
-                1,
-            ),
-            transfer(
-                "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
-                "0xffffffffffffffffffffffffffffffffffffffff",
-                3_000_000_000_000_000_000,
-                2,
-            ),
         ],
     }
     .abi_encode();
