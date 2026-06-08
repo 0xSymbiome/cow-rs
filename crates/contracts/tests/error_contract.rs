@@ -8,9 +8,8 @@
 //! this contract fails the corresponding test at compile time.
 
 use cow_sdk_contracts::ContractsError;
-use cow_sdk_core::{Address, Cancellable, CancellationToken, Cancelled};
+use cow_sdk_core::{Cancellable, CancellationToken, Cancelled};
 
-const fn assert_typed_token_address(_: &Address) {}
 const fn assert_typed_magic_value_bytes(_: [u8; 4]) {}
 
 #[test]
@@ -30,24 +29,6 @@ async fn cancellation_combinator_composes_with_contracts_error() {
         .await;
 
     assert!(matches!(result, Err(ContractsError::Cancelled)));
-}
-
-#[test]
-fn missing_clearing_price_carries_typed_token_address() {
-    let token =
-        Address::new("0x1111111111111111111111111111111111111111").expect("literal must parse");
-    let error = ContractsError::MissingClearingPrice { token };
-
-    let ContractsError::MissingClearingPrice { token: extracted } = &error else {
-        panic!("expected MissingClearingPrice variant, got {error:?}");
-    };
-    assert_typed_token_address(extracted);
-    assert_eq!(extracted, &token);
-
-    assert_eq!(
-        error.to_string(),
-        format!("missing clearing price for token {}", token.to_hex_string()),
-    );
 }
 
 #[test]
@@ -127,26 +108,6 @@ fn invalid_decoded_length_variant_carries_structured_field_expected_and_actual_f
 }
 
 #[test]
-fn forbidden_interaction_target_carries_typed_target_address() {
-    let target =
-        Address::new("0x1111111111111111111111111111111111111111").expect("literal must parse");
-    let error = ContractsError::ForbiddenInteractionTarget { target };
-
-    let ContractsError::ForbiddenInteractionTarget { target: extracted } = &error else {
-        panic!("expected ForbiddenInteractionTarget variant, got {error:?}");
-    };
-    assert_typed_token_address(extracted);
-    assert_eq!(extracted, &target);
-    assert_eq!(
-        error.to_string(),
-        format!(
-            "forbidden settlement interaction target: {}",
-            target.to_hex_string()
-        ),
-    );
-}
-
-#[test]
 fn decode_hex_variant_wraps_hex_from_hex_error_source() {
     let source = alloy_primitives::hex::decode("zzzz").unwrap_err();
     let error = ContractsError::DecodeHex {
@@ -207,14 +168,6 @@ fn class_partitions_validation_internal_and_signing() {
     );
     assert_eq!(
         ContractsError::InvalidOrderUidLength { actual: 4 }.class(),
-        ErrorClass::Validation,
-    );
-    assert_eq!(
-        ContractsError::InvalidNumeric {
-            field: "sellAmount",
-            value: "1".to_owned().into(),
-        }
-        .class(),
         ErrorClass::Validation,
     );
 

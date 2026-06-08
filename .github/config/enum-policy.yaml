@@ -260,11 +260,6 @@ enums:
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: Protocol signature payload families can grow without breaking downstream matches.
-  - name: InteractionStage
-    file: crates/contracts/src/settlement/mod.rs
-    category: upstream-growing
-    expected_marker: non_exhaustive
-    reason: Settlement interaction stages are protocol-facing and may grow with upstream contracts.
   - name: ContractsError
     file: crates/contracts/src/errors.rs
     category: sdk-local-state
@@ -455,16 +450,6 @@ enums:
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: Registry-row verification modes can grow as new evidence authorities are accepted.
-  - name: DeploymentCoverageStatus
-    file: crates/contracts/src/deployments/coverage.rs
-    category: upstream-growing
-    expected_marker: non_exhaustive
-    reason: Coverage-only absence reasons can grow independently from registry verification.
-  - name: DeploymentCoverageError
-    file: crates/contracts/src/deployments/coverage.rs
-    category: sdk-local-state
-    expected_marker: non_exhaustive
-    reason: Coverage parser diagnostics can grow as manifest validation expands.
   - name: Eip1271SignatureError
     file: crates/signing/src/eip1271/error.rs
     category: sdk-local-state

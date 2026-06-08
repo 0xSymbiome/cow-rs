@@ -68,6 +68,7 @@ fn alloy_two_family_pin_lockstep() {
         "alloy-json-rpc".to_owned(),
         "alloy-network".to_owned(),
         "alloy-provider".to_owned(),
+        "alloy-rpc-client".to_owned(),
         "alloy-rpc-types-eth".to_owned(),
         "alloy-signer".to_owned(),
         "alloy-signer-local".to_owned(),

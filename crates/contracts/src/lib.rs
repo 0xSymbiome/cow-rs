@@ -48,21 +48,21 @@ mod chain_ids;
 mod primitives;
 
 pub use primitives::{
-    buy_balance_from_marker, buy_balance_name, encode_address_word, order_kind_from_marker,
-    order_kind_name, sell_balance_from_marker, sell_balance_name,
+    buy_balance_from_marker, buy_balance_name, order_kind_from_marker, order_kind_name,
+    sell_balance_from_marker, sell_balance_name,
 };
 
 pub use deployments::{
-    ContractId, DeploymentChainId, DeploymentCoverage, DeploymentCoverageError,
-    DeploymentCoverageStatus, DeploymentEnv, DeploymentVerificationStatus, Registry, RegistryError,
+    ContractId, DeploymentChainId, DeploymentEnv, DeploymentVerificationStatus, Registry,
+    RegistryError,
 };
 pub use eip1271::IERC1271;
 pub use erc20::{IERC20, IERC20Permit, PERMIT_TYPE_HASH, permit_typed_data_hash};
 pub use errors::ContractsError;
 pub use eth_flow::{
     EthFlowEvent, EthFlowOnchainData, EthFlowOrderData, ICoWSwapEthFlowEvents, OnchainOrderRefund,
-    WRAP_ALL_SELECTOR, decode_eth_flow_log, decode_order_refund, encode_create_order_calldata,
-    encode_invalidate_order_calldata, parse_eth_flow_onchain_data, wrap_all_interaction,
+    decode_eth_flow_log, decode_order_refund, encode_create_order_calldata,
+    encode_invalidate_order_calldata, parse_eth_flow_onchain_data,
 };
 pub use interaction::{
     Interaction, InteractionLike, normalize_interaction, normalize_interactions,
@@ -78,12 +78,6 @@ pub use order::{
     order_eip712_type_hash, pack_order_uid_params,
 };
 pub use settlement::events::{IGPv2SettlementEvents, SettlementEvent, decode_settlement_log};
-pub use settlement::{
-    EncodedSettlement, InteractionStage, OrderFlags, OrderRefunds, Prices, SettlementEncoder,
-    TokenRegistry, Trade, TradeExecution, TradeFlags, decode_order, decode_order_flags,
-    decode_trade_flags, encode_order_flags, encode_signature_data, encode_trade,
-    encode_trade_flags,
-};
 pub use signature::{
     Eip1271SignatureData, Eip1271VerificationRequest, MAX_SIGNATURE_HEX_BYTES,
     RecoverableSignature, Signature, SigningScheme, decode_eip1271_signature_data,

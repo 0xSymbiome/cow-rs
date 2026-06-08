@@ -65,10 +65,10 @@ Every primitive in this table uses the alloy symbol directly. No cow-owned re-im
 | ABI decode returns | `<MyCall as SolCall>::abi_decode_returns` | `cow-sdk-contracts`, `cow-sdk-cow-shed` | ADR 0012 | |
 | ABI encode tuple | `alloy_sol_types::SolValue::abi_encode` and `abi_encode_sequence` | composable (deferred per ADR 0048) | ADR 0050, ADR 0052 | Shape B (forwarder) emits a tuple via this surface; Shape A (Safe muxer) uses `SolCall::abi_encode` because the selector prefix is load-bearing. |
 | Format decimal units | `alloy_primitives::utils::format_units` | `cow-sdk-core::Amount::format_units` | ADR 0052 | Guarded delegation: the `decimals == 0` short-circuit is preserved (avoid the literal drop-in that breaks at `Unit::MAX`). |
-| Hex compile-time literal | `alloy_primitives::hex!` macro | `cow-sdk-core::config::chains` | ADR 0052 | Replaces `hex_decode_20` + `decode_nibble` panic-allowlisted helpers; ten `WRAPPED_NATIVE_*_BYTES` constants flip to `hex!("0x...")`. |
+| Hex compile-time literal | `alloy_primitives::hex!` macro | `cow-sdk-core::config::chains` | ADR 0052 | The ten `WRAPPED_NATIVE_*_BYTES` constants are `hex!("0x...")` literals; the former `hex_decode_20` / `decode_nibble` compile-time helpers are retired. |
 | Hex runtime decode/encode | `alloy_primitives::hex::{decode, encode}` | Every first-party crate under `crates/` plus `examples/native/` | ADR 0052 | The upstream `hex` crate is fully retired from the workspace dependency graph. Every production and test callsite resolves through `alloy-primitives → const-hex`. Adding a direct `hex` dep to any new crate is forbidden by this doctrine row. |
 | FixedBytes parsing | `alloy_primitives::FixedBytes::<N>::from_str` | `cow-sdk-core::types::identity` | ADR 0052 | Wrapped through a cow-owned classifier (`fn classify_alloy_hex_error`) so the alloy `c: char` payload never leaks past the redaction boundary (`crates/sdk/tests/error_redaction_contract.rs`). |
-| Address to 32-byte word | `alloy_primitives::Address::into_word` | NOT used directly — cow keeps `encode_address_word` | (cosmetic, no ADR) | Kept as a `[u8; 32]`-shaped helper because the production callsite at `crates/trading/src/allowance.rs:190` already routes through the cow helper; replacing it with `Address::into_word` is cosmetic at best. |
+| Address to 32-byte word | `alloy_primitives::Address::into_word` | canonical; no production callsite | (no ADR) | No shipped code right-aligns an address into a 32-byte word — the `sol!` ABI encoders handle word layout internally. A hand-shaped `[u8; 32]` oracle is retained only in the `crates/contracts/src/order/hash.rs` test module as an independent EIP-712 parity reference (see the `keccak_word` test-oracle entry). |
 | Multiplexer merkle proofs | `rs_merkle` (maintained crate adopted via ADR 0052) | composable (deferred per ADR 0048) | ADR 0052 | Replaces hand-rolled Multiplexer merkle machinery. |
 | RFC 8785 canonical JSON | `serde_jcs` (maintained crate adopted via ADR 0052) | `cow-sdk-app-data` | ADR 0052 | Replaces bytewise key-ordering canonicalisation; one documented behaviour change for non-ASCII keys (ADR 0052). |
 | IMF-fixdate parsing | `httpdate::parse_http_date` | `cow-sdk-transport-policy::retry_after` | ADR 0052 | Drives `Retry-After` HTTP header parsing; the `parse_retry_after` *function* is cow-owned (Bucket 2) because alloy's namesake parses JSON-RPC error message strings, not the REST HTTP header. |
@@ -89,7 +89,6 @@ Every surface in this table is shipped from cow-rs source and may not be swapped
 | `TypedDataDomain` JSON wire shape | `crates/core/src/traits/typed_data.rs` | ADR 0052, ADR 0040 — cow shape is the EIP-1193 `eth_signTypedData_v4` wallet payload (required fields, numeric `chainId`, no `salt`); alloy `Eip712Domain` is the hashing-side type with `Option<>` everywhere, `U256` for chainId, and a `salt` field. | Every JS wallet integration fails (`null` fields, hex chainId, unexpected `salt` field). |
 | ECDSA `v` byte canonicalization (`0/1 → 27/28`) | `crates/contracts/src/signature.rs` | ADR 0022 | alloy `normalize_v` collapses to a parity bit; Solidity `ecrecover(hash, v, r, s)` expects `v ∈ {27, 28}` and returns `address(0)` on `0/1`. Every smart-contract verification reverts. |
 | `SupportedChainId` orderbook support-set enum + `api_path()` URL grammar | `crates/core/src/config/chains.rs` | ADR 0005 (strong domain types, supported-chain semantics), ADR 0011 typestate binding | `alloy_chains::NamedChain` covers 100+ chains and has no concept of CoW orderbook support; would silently accept chains with no backend; `GnosisChain → "xdai"` and `ArbitrumOne → "arbitrum_one"` URL mappings disappear. |
-| `hex_decode_20` `const fn` (compile-time wrapped-native-token decoder) | `crates/core/src/config/chains.rs` | ADR 0052 implicit | After the compile-time `hex!` macro adoption lands, this row migrates: hex literals are Bucket 1, the panic-allowlist entry retires, and there is no surface left to "swap". |
 | `Amount` decimal-string `Serialize` impl | `crates/core/src/types/amount.rs` | ADR 0052 — alloy's default `Serialize` for `U256` is hex; cow wire is decimal. | Every orderbook DTO field carrying an amount flips to hex; backend rejects; reconciliation breaks. |
 | `OrderUid` 56-byte packing helper (encode digest ‖ owner ‖ valid_to) | `cow-sdk-contracts::order::uid` | GPv2 protocol contract (no ADR; CoW-protocol-specific) | The 56-byte packing is the protocol identity of an order; alloy ships no equivalent because this is cow-specific. |
 | `cow_shed_eip712_domain` + `execute_hooks_signing_hash` cow-shed envelope | `crates/cow-shed/src/eip712/` | ADR 0049 cow-shed account-abstraction proxy | The envelope payload is GPv2/cow-shed-specific; the *hashing primitive* is alloy (Bucket 1), the *envelope identity* is cow. |
@@ -203,9 +202,9 @@ ADR 0026 binds: "Letting alloy types leak into the stable SDK facade would turn 
 
 The Bucket 2 rejection contract on `Amount::Deserialize` (rejects `0o`/`0b` per ADR 0052) is re-validated against the new alloy `FromStr` behaviour — the alloy contract change may add new radices that need to be added to the cow rejection list.
 
-## The 9 never-swap exceptions
+## The 8 never-swap exceptions
 
-Eight constraints plus four additional surfaces are verified as `DO NOT SWAP`. The CI grep gates that mechanize each fence live at `.github/workflows/never-swap-gates.yml`; the per-site `// DO NOT SWAP` comments live at the load-bearing call sites in `crates/contracts/`, `crates/core/`, `crates/signing/`, `crates/transport-policy/`, and `crates/transport-wasm/`. One further reimplementation fence — `Amount::parse_units` does the decimal scaling itself with checked arithmetic instead of the fail-open, panic-prone, silently-wrapping raw `alloy_primitives::utils::parse_units` (Bucket 2 row above) — carries its own `// DO NOT SWAP` comment block but no dedicated grep gate; it is held by the `gate-do-not-swap-census` comment-block count rather than a symbol-specific regex, so the census gate locks at eleven `DO NOT SWAP` blocks rather than ten.
+Seven constraints plus three additional surfaces are verified as `DO NOT SWAP`. The CI grep gates that mechanize each fence live at `.github/workflows/never-swap-gates.yml`; the per-site `// DO NOT SWAP` comments live at the load-bearing call sites in `crates/contracts/`, `crates/core/`, `crates/signing/`, `crates/transport-policy/`, and `crates/transport-wasm/`. One further reimplementation fence — `Amount::parse_units` does the decimal scaling itself with checked arithmetic instead of the fail-open, panic-prone, silently-wrapping raw `alloy_primitives::utils::parse_units` (Bucket 2 row above) — carries its own `// DO NOT SWAP` comment block but no dedicated grep gate; it is held by the `gate-do-not-swap-census` comment-block count rather than a symbol-specific regex, so the census gate locks at eleven `DO NOT SWAP` blocks rather than ten.
 
 The canonical roster is:
 
@@ -216,10 +215,8 @@ The canonical roster is:
 5. `TypedDataDomain` cow struct (ADR 0052, ADR 0040).
 6. EIP-1271 blob Shape A vs B (ADR 0050 — future, composable deferred).
 7. `cow-sdk-transport-policy` + `cow-sdk-transport-wasm` (ADR 0010, 0019, 0041, 0046).
-8. `encode_address_word` cosmetic helper (no ADR — keep as-is).
-9. Plus four additional never-swap surfaces:
+8. Plus three additional never-swap surfaces:
    - `api_path()` URL labels (sub-invariant of #4),
-   - `hex_decode_20` `const fn` (until the `hex!` macro adoption retires it),
    - `keccak_word` test oracle in `crates/contracts/src/order/hash.rs`,
    - EIP-712 type-string whitespace contract (ADR 0050).
 

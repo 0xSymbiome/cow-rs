@@ -41,7 +41,7 @@ public and runtime shape of `cow-rs`.
 | [0031](0031-wire-dto-openapi-driven-with-order-auction-order-split.md) | Accepted (amended) | Drive orderbook response DTO coverage from the source-lock OpenAPI inventory; the original `Order`/`AuctionOrder` split collapsed to a single `Order` type after the auction read proved non-public. |
 | [0032](0032-deployment-authority-machine-readable-provenance.md) | Accepted (amended) | Back deployment-address authority with machine-readable provenance and dual-mode live confirmation. |
 | [0033](0033-minimum-viable-panic-surface.md) | Accepted | Keep production panic sites allowlisted, documented, and limited to static invariants. |
-| [0034](0034-interaction-encoder-target-policy.md) | Accepted (amended) | Guard canonical vault-relayer interaction targets at the settlement encoder boundary while leaving custom domains to runtime authority. |
+| [0034](0034-interaction-encoder-target-policy.md) | Superseded | Guarded canonical vault-relayer interaction targets at the settlement encoder boundary; superseded when the settlement encoder was removed (a solver/backend concern). |
 | [0035](0035-alloy-provider-adapter.md) | Accepted | Ship a read-only Alloy provider adapter behind an opt-in native crate. |
 | [0036](0036-alloy-signer-adapter.md) | Accepted | Ship a native Alloy local signer adapter behind an opt-in native crate. |
 | [0037](0037-alloy-umbrella-adapter.md) | Accepted | Compose the native Alloy provider and local signer into one wallet-capable client. |

@@ -11,13 +11,12 @@
 //! commit in `parity/source-lock.yaml` and proven by the call-data fixtures
 //! under `parity/fixtures/` and the crate parity tests.
 
-use alloy_primitives::{Bytes, LogData};
+use alloy_primitives::LogData;
 use alloy_sol_types::{SolCall, SolEvent, sol};
 
 use cow_sdk_core::{Address, Amount, AppDataHash, OrderData, OrderUid};
 
 use crate::ContractsError;
-use crate::interaction::Interaction;
 use crate::onchain_orders::{
     ICoWSwapOnchainOrders, OnchainOrderInvalidation, OnchainOrderPlacement,
     decode_order_invalidation, decode_order_placement,
@@ -235,28 +234,6 @@ fn to_sol_struct(order: &EthFlowOrderData) -> ICoWSwapEthFlow::EthFlowOrderData 
         partiallyFillable: order.partially_fillable,
         quoteId: order.quote_id,
     }
-}
-
-/// Function selector for the `CoWSwapEthFlow` `wrapAll()` entrypoint.
-///
-/// Equals `keccak256("wrapAll()")[..4]`. The eth-flow contract wraps its entire
-/// native-asset balance into the wrapped-native token through this call; an
-/// on-chain order placed through eth-flow is preceded by a `wrapAll()`
-/// pre-interaction targeting the eth-flow contract.
-pub const WRAP_ALL_SELECTOR: [u8; 4] = [0x4c, 0x84, 0xc1, 0xc8];
-
-/// Builds the `wrapAll()` pre-interaction targeting a `CoWSwapEthFlow` contract.
-///
-/// The interaction calls `wrapAll()` on `eth_flow` with no arguments and zero
-/// native value; it is the pre-interaction associated with an eth-flow on-chain
-/// order.
-#[must_use]
-pub fn wrap_all_interaction(eth_flow: Address) -> Interaction {
-    Interaction::new(
-        eth_flow,
-        Amount::ZERO,
-        Bytes::from(WRAP_ALL_SELECTOR.to_vec()),
-    )
 }
 
 /// Decoded trailing data carried by an eth-flow `OrderPlacement` event.

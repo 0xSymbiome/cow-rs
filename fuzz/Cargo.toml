@@ -63,20 +63,6 @@ doc = false
 bench = false
 
 [[bin]]
-name = "fuzz_settlement_settle_encode"
-path = "fuzz_targets/fuzz_settlement_settle_encode.rs"
-test = false
-doc = false
-bench = false
-
-[[bin]]
-name = "fuzz_settlement_invalidate_order_encode"
-path = "fuzz_targets/fuzz_settlement_invalidate_order_encode.rs"
-test = false
-doc = false
-bench = false
-
-[[bin]]
 name = "fuzz_ethflow_create_order_encode"
 path = "fuzz_targets/fuzz_ethflow_create_order_encode.rs"
 test = false

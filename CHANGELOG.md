@@ -734,6 +734,33 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Removed
 
+- Removed the settlement encoder and trade/order flag codec from
+  `cow-sdk-contracts` (`SettlementEncoder`, `TokenRegistry`, `encode_trade`,
+  `encode_order_flags` / `decode_order_flags`, `encode_trade_flags` /
+  `decode_trade_flags`, `encode_signature_data`, `decode_order`, and the
+  `Trade` / `TradeFlags` / `OrderFlags` / `TradeExecution` / `OrderRefunds` /
+  `InteractionStage` / `EncodedSettlement` / `Prices` DTOs). Settlement-calldata
+  encoding is a solver/backend concern — the upstream `@cowprotocol/cow-sdk`
+  exposes no settlement encoder and `cowprotocol/services` keeps its settlement
+  encoder in the `solver` crate — and the surface had no SDK consumer. The
+  `IGPv2Settlement` binding and the fail-closed `decode_settlement_log` event
+  decoder are retained; the trader-facing `setPreSignature` and `invalidateOrder`
+  calls encode directly from the binding. The cascading
+  `ContractsError::{InvalidFlags, MissingClearingPrice, MissingExecutedAmount,
+  InvalidTokenIndex, ForbiddenInteractionTarget}` variants and the
+  `fuzz_settlement_settle_encode` / `fuzz_settlement_invalidate_order_encode`
+  targets are removed with it; [ADR 0034](docs/adr/0034-interaction-encoder-target-policy.md)
+  is superseded.
+- Removed the runtime deployment-coverage API from `cow-sdk-contracts`
+  (`DeploymentCoverage`, `DeploymentCoverageStatus`, `DeploymentCoverageError`).
+  The coverage manifest (`crates/contracts/deployment-coverage.yaml`) is
+  unchanged and stays enforced at compile time by `build.rs`; only the unused
+  runtime parser is dropped.
+- Removed dead `cow-sdk-contracts` surface that had no consumer: the
+  `ContractsError::{InvalidNumeric, NumericOverflow, MissingTrade}` variants
+  (never constructed), the `OnchainOrderPlacement::decode` inherent wrapper
+  (callers use the free `decode_order_placement`), and the `wrap_all_interaction`
+  helper with its `WRAP_ALL_SELECTOR` constant.
 - Removed the unused `getrandom` dependency from `cow-sdk-browser-wallet`. The
   crate performs no randomness; its wasm32 declaration was dead weight. The
   workspace `getrandom` pin and its `wasm_js` backend remain provided by the

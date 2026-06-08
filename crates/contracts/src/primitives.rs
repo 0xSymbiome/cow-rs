@@ -1,26 +1,9 @@
 use alloy_primitives::{B256, LogData, keccak256};
-use cow_sdk_core::{Address, BuyTokenDestination, OrderKind, SellTokenSource};
+use cow_sdk_core::{BuyTokenDestination, OrderKind, SellTokenSource};
 
 use crate::ContractsError;
 
 pub(crate) const ORDER_UID_LENGTH_BYTES: usize = 56;
-
-/// Right-aligns a cow [`Address`] into a 32-byte ABI word.
-///
-/// The EVM ABI lays out addresses as `bytes32` words whose low-order 20
-/// bytes carry the canonical address payload and the high-order 12 bytes
-/// are zero. The cow [`Address`] newtype is `#[repr(transparent)]` over
-/// [`alloy_primitives::Address`] per ADR 0052, so the conversion is a
-/// borrow of the inner 20-byte slice with no hex parsing or
-/// reallocation. Production callers that target the ERC-20 / settlement
-/// ABI surface route through this helper to keep the single canonical
-/// pre-encoded shape across the workspace.
-#[must_use]
-pub fn encode_address_word(address: &Address) -> [u8; 32] {
-    let mut out = [0u8; 32];
-    out[12..].copy_from_slice(address.as_slice());
-    out
-}
 
 /// Returns the EIP-712 type-string label for a supported order kind.
 ///

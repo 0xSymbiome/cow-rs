@@ -386,15 +386,6 @@ fn contracts_and_signing_errors_redact_secret_bearing_messages() {
         ContractsError::Cancelled,
         ContractsError::UnsupportedChain(999_999),
         ContractsError::InvalidOrderUidLength { actual: 4 },
-        ContractsError::InvalidNumeric {
-            field: "sellAmount",
-            value: secret_payload().into(),
-        },
-        ContractsError::NumericOverflow {
-            field: "sellAmount",
-            value: secret_payload().into(),
-        },
-        ContractsError::InvalidFlags(0b1000_0000),
         ContractsError::UnsupportedSigningScheme(99),
         ContractsError::InvalidEip1271SignatureData,
         ContractsError::UnsupportedEip1271Verifier {
@@ -411,19 +402,7 @@ fn contracts_and_signing_errors_redact_secret_bearing_messages() {
             expected: [0x16, 0x26, 0xba, 0x7e],
             actual: [0xff, 0xff, 0xff, 0xff],
         },
-        ContractsError::MissingClearingPrice {
-            token: address("0x2222222222222222222222222222222222222222"),
-        },
-        ContractsError::MissingExecutedAmount,
-        ContractsError::MissingTrade,
         ContractsError::ZeroReceiver,
-        ContractsError::InvalidTokenIndex {
-            index: 4,
-            registered: 2,
-        },
-        ContractsError::ForbiddenInteractionTarget {
-            target: address("0x3333333333333333333333333333333333333333"),
-        },
         ContractsError::Provider {
             operation: "eth_call",
             message: secret_payload().into(),

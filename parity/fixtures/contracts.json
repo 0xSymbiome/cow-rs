@@ -32,20 +32,6 @@
     {
       "repo": "contracts",
       "commit": "c6b61ce75841ce4c25ab126def9cc981c568e6c6",
-      "path": "src/ts/settlement.ts",
-      "anchors": [
-        "FLAG_MASKS",
-        "encodeOrderFlags",
-        "decodeOrderFlags",
-        "encodeTradeFlags",
-        "decodeTradeFlags",
-        "TokenRegistry",
-        "SettlementEncoder"
-      ]
-    },
-    {
-      "repo": "contracts",
-      "commit": "c6b61ce75841ce4c25ab126def9cc981c568e6c6",
       "path": "src/ts/interaction.ts",
       "anchors": [
         "normalizeInteraction",
@@ -198,41 +184,6 @@
       }
     },
     {
-      "id": "contracts-order-flags-default-sell",
-      "kind": "positive",
-      "description": "Default sell-order flags encode to zero for sell, fill-or-kill, erc20, erc20.",
-      "expected": {
-        "encoded_flags": 0
-      }
-    },
-    {
-      "id": "contracts-order-flags-buy-partial-internal",
-      "kind": "positive",
-      "description": "Buy plus partially-fillable plus internal balances encodes to the canonical bitfield layout.",
-      "expected": {
-        "encoded_flags": 31
-      }
-    },
-    {
-      "id": "contracts-trade-flags-presign",
-      "kind": "positive",
-      "description": "Presign trade flags append the signing scheme bits on top of the order flag layout.",
-      "expected": {
-        "encoded_flags": 96
-      }
-    },
-    {
-      "id": "contracts-order-refund-method-names",
-      "kind": "contract-shape",
-      "description": "Settlement order refund encoding targets the two canonical storage-freeing functions.",
-      "expected": {
-        "methods": [
-          "freeFilledAmountStorage",
-          "freePreSignatureStorage"
-        ]
-      }
-    },
-    {
       "id": "contracts-settlement-invalidate-order-calldata",
       "kind": "positive",
       "description": "GPv2Settlement.invalidateOrder(bytes) call-data matches the canonical ABI encoding for a packed 56-byte OrderUid.",
@@ -285,32 +236,6 @@
       "@source_ref": "contracts:c94c595a:test/GPv2Settlement/OrderRefunds.t.sol#freePreSignatureStorage",
       "expected": {
         "call_data": "0xa2a7d51b00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000038111111111111111111111111111111111111111111111111111111111111111122222222222222222222222222222222222222221234567800000000000000000000000000000000000000000000000000000000000000000000000000000038333333333333333333333333333333333333333333333333333333333333333344444444444444444444444444444444444444449abcdef00000000000000000"
-      }
-    },
-    {
-      "id": "contracts-settlement-clearing-prices-multi-trade",
-      "kind": "positive",
-      "description": "SettlementEncoder clearing prices remain aligned to first-seen token registry order across multiple trades sharing a token.",
-      "inputs": {
-        "trades": 2,
-        "tokens": [
-          "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
-          "0x6b175474e89094c44da98b954eedeac495271d0f",
-          "0x1111111111111111111111111111111111111111"
-        ]
-      },
-      "@source_ref": "contracts:c6b61ce7:src/ts/settlement.ts#SettlementEncoder",
-      "expected": {
-        "tokens": [
-          "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
-          "0x6b175474e89094c44da98b954eedeac495271d0f",
-          "0x1111111111111111111111111111111111111111"
-        ],
-        "clearing_prices": [
-          "1000000000000000000",
-          "500000000000000",
-          "250000000000000000"
-        ]
       }
     },
     {

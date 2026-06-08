@@ -93,13 +93,13 @@ impl ContractId {
 
 /// Capability contracts that are `EnvironmentAgnostic` per schema v2.
 ///
-/// The slice is the single source of truth for which contract identifiers
-/// may appear under `env = environment_agnostic` in `registry.toml`. The
-/// `is_environment_agnostic` accessor consults the same set via a `matches!`
-/// expression so the membership stays in lockstep across the const slice
-/// and the runtime predicate; the build script asserts the slice length is
-/// exactly 11 and that every variant is reachable from
-/// `is_environment_agnostic`.
+/// The slice and the `is_environment_agnostic` predicate are the crate's
+/// runtime source of truth for which contract identifiers may carry
+/// `env = environment_agnostic`; the predicate consults the same set via a
+/// `matches!` expression, and the unit test below proves the two stay in
+/// lockstep. An in-file compile-time assertion pins the slice length at 11.
+/// The `build.rs` manifest validator enforces the same environment-agnostic
+/// scope on `registry.toml` rows through its own independent check.
 pub const ENVIRONMENT_AGNOSTIC_CONTRACTS: &[ContractId] = &[
     ContractId::ComposableCow,
     ContractId::ExtensibleFallbackHandler,

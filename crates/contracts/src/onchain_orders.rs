@@ -145,16 +145,6 @@ pub struct OnchainOrderPlacement {
 }
 
 impl OnchainOrderPlacement {
-    /// Decodes an `OrderPlacement` log. See [`decode_order_placement`].
-    ///
-    /// # Errors
-    ///
-    /// Returns [`ContractsError`] when the log topics, ABI body, signing scheme,
-    /// or order markers are malformed.
-    pub fn decode(log: &LogData) -> Result<Self, ContractsError> {
-        decode_order_placement(log)
-    }
-
     /// Resolves the order owner from the on-chain signature.
     ///
     /// For [`OnchainSigningScheme::PreSign`] the owner is the event `sender`.

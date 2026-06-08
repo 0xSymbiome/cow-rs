@@ -16,9 +16,6 @@
 //!   success magic value is the typed selector emitted by the `sol!`-
 //!   generated [`IERC1271::isValidSignatureCall`] binding.
 //! * [`normalize_interaction`] — interaction defaulting rule.
-//! * [`encode_order_flags`], [`encode_trade_flags`] — order and trade flag
-//!   bitfield codecs.
-//! * [`SettlementEncoder::encoded_order_refunds`] — order refund method names.
 //!
 //! Failure messages carry the fixture case id so a reviewer looking at a
 //! broken CI run sees the exact upstream vector that diverged.
@@ -30,13 +27,11 @@ use alloy_sol_types::{
 };
 use cow_sdk_contracts::{
     CANCELLATIONS_TYPE_FIELDS, EthFlowOrderData, IERC20, IERC20Permit, IERC1271, InteractionLike,
-    ORDER_TYPE_FIELDS, ORDER_UID_LENGTH, OrderFlags, SettlementEncoder, Signature, SigningScheme,
-    TradeExecution, TradeFlags, encode_create_order_calldata, encode_invalidate_order_calldata,
-    encode_order_flags, encode_trade_flags, normalize_interaction, permit_typed_data_hash,
+    ORDER_TYPE_FIELDS, ORDER_UID_LENGTH, SigningScheme, encode_create_order_calldata,
+    encode_invalidate_order_calldata, normalize_interaction, permit_typed_data_hash,
 };
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, AppDataHex, BuyTokenDestination, OrderData, OrderDigest,
-    OrderKind, OrderUid, SellTokenSource, TypedDataDomain,
+    Address, Amount, AppDataHash, BuyTokenDestination, OrderDigest, OrderUid, SellTokenSource,
 };
 use serde_json::Value;
 
@@ -98,16 +93,6 @@ fn parity_fixture_cases_hold() {
             }
             "contracts-eip1271-magic-value" => assert_eip1271_magic_value(id, expected),
             "contracts-interaction-defaults" => assert_interaction_defaults(id, expected),
-            "contracts-order-flags-default-sell" => {
-                assert_order_flags_default_sell(id, expected);
-            }
-            "contracts-order-flags-buy-partial-internal" => {
-                assert_order_flags_buy_partial_internal(id, expected);
-            }
-            "contracts-trade-flags-presign" => assert_trade_flags_presign(id, expected),
-            "contracts-order-refund-method-names" => {
-                assert_order_refund_method_names(id, expected);
-            }
             "contracts-settlement-invalidate-order-calldata" => {
                 assert_settlement_invalidate_order_calldata(id, expected);
             }
@@ -119,9 +104,6 @@ fn parity_fixture_cases_hold() {
             }
             "contracts-settlement-free-presignature-storage-calldata" => {
                 assert_settlement_free_presignature_storage_calldata(id, expected);
-            }
-            "contracts-settlement-clearing-prices-multi-trade" => {
-                assert_settlement_clearing_prices_multi_trade(id, expected);
             }
             "contracts-ethflow-create-order-calldata" => {
                 assert_ethflow_create_order_calldata(id, expected);
@@ -389,122 +371,6 @@ fn assert_interaction_defaults(id: &str, expected: &Value) {
     );
 }
 
-fn assert_order_flags_default_sell(id: &str, expected: &Value) {
-    let expected_flags = expected["encoded_flags"]
-        .as_u64()
-        .unwrap_or_else(|| panic!("case {id}: expected.encoded_flags must be a u64"));
-
-    let encoded = encode_order_flags(&OrderFlags::new(
-        OrderKind::Sell,
-        false,
-        SellTokenSource::Erc20,
-        BuyTokenDestination::Erc20,
-    ))
-    .expect("default sell-erc20 order flags must encode");
-
-    assert_eq!(
-        u64::from(encoded),
-        expected_flags,
-        "case {id}: default sell-order flags must encode to zero",
-    );
-}
-
-fn assert_order_flags_buy_partial_internal(id: &str, expected: &Value) {
-    let expected_flags = expected["encoded_flags"]
-        .as_u64()
-        .unwrap_or_else(|| panic!("case {id}: expected.encoded_flags must be a u64"));
-
-    let encoded = encode_order_flags(&OrderFlags::new(
-        OrderKind::Buy,
-        true,
-        SellTokenSource::Internal,
-        BuyTokenDestination::Internal,
-    ))
-    .expect("buy-partial-internal order flags must encode");
-
-    assert_eq!(
-        u64::from(encoded),
-        expected_flags,
-        "case {id}: buy + partially_fillable + internal/internal must encode to 31",
-    );
-}
-
-fn assert_trade_flags_presign(id: &str, expected: &Value) {
-    let expected_flags = expected["encoded_flags"]
-        .as_u64()
-        .unwrap_or_else(|| panic!("case {id}: expected.encoded_flags must be a u64"));
-
-    let encoded = encode_trade_flags(&TradeFlags::new(
-        OrderKind::Sell,
-        false,
-        SellTokenSource::Erc20,
-        BuyTokenDestination::Erc20,
-        SigningScheme::PreSign,
-    ))
-    .expect("presign trade flags must encode");
-
-    assert_eq!(
-        u64::from(encoded),
-        expected_flags,
-        "case {id}: presign trade flags must layer the scheme bits above the order flags",
-    );
-}
-
-fn assert_order_refund_method_names(id: &str, expected: &Value) {
-    let expected_methods: Vec<&str> = expected["methods"]
-        .as_array()
-        .unwrap_or_else(|| panic!("case {id}: expected.methods must be an array"))
-        .iter()
-        .map(|method| {
-            method
-                .as_str()
-                .unwrap_or_else(|| panic!("case {id}: expected.methods entries must be strings"))
-        })
-        .collect();
-
-    let domain = sample_domain();
-    let mut encoder = SettlementEncoder::new(domain);
-    encoder
-        .encode_order_refunds(&cow_sdk_contracts::OrderRefunds::new(
-            vec![sample_order_uid()],
-            vec![sample_order_uid()],
-        ))
-        .expect("sample order refunds must encode");
-
-    let interactions = encoder
-        .encoded_order_refunds()
-        .expect("encoded refunds must serialize");
-    assert_eq!(
-        interactions.len(),
-        expected_methods.len(),
-        "case {id}: encoded refunds must produce one interaction per method",
-    );
-
-    let method_selectors: Vec<String> = expected_methods
-        .iter()
-        .map(|method| {
-            let signature = format!("{method}(bytes[])");
-            let hash = keccak256(signature.as_bytes());
-            format!("0x{}", alloy_primitives::hex::encode(&hash[..4]))
-        })
-        .collect();
-
-    for (interaction, selector) in interactions.iter().zip(method_selectors.iter()) {
-        let call_data_hex = format!(
-            "0x{}",
-            alloy_primitives::hex::encode(&interaction.call_data)
-        );
-        assert!(
-            call_data_hex.starts_with(selector),
-            "case {id}: refund interaction call-data must start with {selector}",
-        );
-    }
-}
-
-fn sample_domain() -> TypedDataDomain {
-    cow_sdk_test_utils::builders::sample_domain()
-}
-
 fn sample_order_uid() -> OrderUid {
     // 56 byte fixture UID: 32-byte digest | 20-byte owner | 4-byte valid_to.
     let digest =
@@ -663,114 +529,6 @@ fn assert_settlement_free_presignature_storage_calldata(id: &str, expected: &Val
     .abi_encode();
 
     assert_calldata_hex(id, &call_data, expected_hex);
-}
-
-fn assert_settlement_clearing_prices_multi_trade(id: &str, expected: &Value) {
-    let expected_tokens = expected["tokens"]
-        .as_array()
-        .unwrap_or_else(|| panic!("case {id}: expected.tokens must be an array"))
-        .iter()
-        .map(|value| {
-            value
-                .as_str()
-                .unwrap_or_else(|| panic!("case {id}: token entries must be strings"))
-        })
-        .collect::<Vec<_>>();
-    let expected_prices = expected["clearing_prices"]
-        .as_array()
-        .unwrap_or_else(|| panic!("case {id}: expected.clearing_prices must be an array"))
-        .iter()
-        .map(|value| {
-            value
-                .as_str()
-                .unwrap_or_else(|| panic!("case {id}: clearing price entries must be strings"))
-        })
-        .collect::<Vec<_>>();
-
-    let mut encoder = SettlementEncoder::new(sample_domain());
-    encoder
-        .encode_trade(
-            &settlement_sample_order(
-                "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
-                "0x6b175474e89094c44da98b954eedeac495271d0f",
-                "1000",
-                "2000",
-                1_700_000_001,
-            ),
-            &settlement_sample_signature(),
-            Some(TradeExecution::new(Amount::new("1000").unwrap())),
-        )
-        .expect("first fixture trade must encode");
-    encoder
-        .encode_trade(
-            &settlement_sample_order(
-                "0x1111111111111111111111111111111111111111",
-                "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
-                "3000",
-                "4000",
-                1_700_000_002,
-            ),
-            &settlement_sample_signature(),
-            Some(TradeExecution::new(Amount::new("3000").unwrap())),
-        )
-        .expect("second fixture trade must encode");
-
-    let prices = serde_json::from_value::<cow_sdk_contracts::Prices>(serde_json::json!({
-        "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": "1000000000000000000",
-        "0x6b175474e89094c44da98b954eedeac495271d0f": "500000000000000",
-        "0x1111111111111111111111111111111111111111": "250000000000000000"
-    }))
-    .expect("fixture prices must deserialize");
-
-    assert_eq!(
-        encoder
-            .tokens()
-            .iter()
-            .map(Address::to_hex_string)
-            .collect::<Vec<_>>(),
-        expected_tokens,
-        "case {id}: token registry order must follow first-seen trade order",
-    );
-    assert_eq!(
-        encoder
-            .clearing_prices(&prices)
-            .expect("fixture prices cover every registered token")
-            .iter()
-            .map(ToString::to_string)
-            .collect::<Vec<_>>(),
-        expected_prices,
-        "case {id}: clearing prices must align with encoded token order",
-    );
-}
-
-fn settlement_sample_order(
-    sell_token: &str,
-    buy_token: &str,
-    sell_amount: &str,
-    buy_amount: &str,
-    valid_to: u32,
-) -> OrderData {
-    OrderData::new(
-        Address::new(sell_token).unwrap(),
-        Address::new(buy_token).unwrap(),
-        Address::ZERO,
-        Amount::new(sell_amount).unwrap(),
-        Amount::new(buy_amount).unwrap(),
-        valid_to,
-        AppDataHex::new("0x0000000000000000000000000000000000000000000000000000000000000000")
-            .unwrap(),
-        Amount::ZERO,
-        OrderKind::Sell,
-        false,
-        SellTokenSource::Erc20,
-        BuyTokenDestination::Erc20,
-    )
-}
-
-fn settlement_sample_signature() -> Signature {
-    Signature::PreSign {
-        owner: Address::new("0x9999999999999999999999999999999999999999").unwrap(),
-    }
 }
 
 fn assert_ethflow_create_order_calldata(id: &str, expected: &Value) {

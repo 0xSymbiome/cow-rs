@@ -1,11 +1,26 @@
 # ADR 0034: Guard Canonical Vault-Relayer Interaction Targets
 
-- Status: Accepted (amended)
+- Status: Superseded
 - Date: 2026-05-01
-- Last reviewed: 2026-05-22
+- Last reviewed: 2026-06-08
+- Superseded: 2026-06-08 — the `SettlementEncoder` this ADR governs was removed
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: contracts, settlement, registry, interaction, error-typing
 - Related: [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md), [ADR 0019](0019-http-transport-sole-dispatch.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+
+## Superseded 2026-06-08
+
+The `SettlementEncoder` this decision governs has been removed from
+`cow-sdk-contracts`. Settlement-calldata encoding is a solver/backend concern:
+the upstream `@cowprotocol/cow-sdk` exposes no settlement encoder, and
+`cowprotocol/services` keeps its `SettlementEncoder` in the `solver` crate. The
+trader-facing SDK encodes only the `setPreSignature` and `invalidateOrder` calls
+it actually uses, directly from the `IGPv2Settlement` binding. With the encoder
+removed, the encoder-side vault-relayer target guard described below no longer
+exists and the typed `ContractsError::ForbiddenInteractionTarget` variant has
+been dropped; the upstream settlement runtime remains the sole authority for
+interaction-target rejection (`GPv2: forbidden interaction`). The original
+decision is retained below as historical record.
 
 ## Decision
 

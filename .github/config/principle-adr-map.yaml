@@ -96,7 +96,6 @@ out_of_scope_adrs:
   # contracts rather than to a standing principle. Each entry remains an
   # accepted architecture decision; relocating one into a principle's
   # supporting set is a documentation-only refresh.
-  - "0034"  # Settlement interaction encoder target policy lives under the contract bindings audit lane.
   - "0035"  # Alloy provider adapter shape is governed by the alloy major-release plan and the alloy-provider invariant gate.
   - "0036"  # Alloy signer adapter shape is governed by the alloy major-release plan and the alloy-signer invariant gate.
   - "0037"  # Alloy umbrella adapter shape is governed by the alloy major-release plan.

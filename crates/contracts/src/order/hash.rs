@@ -150,7 +150,6 @@ fn decode_order_uid_bytes(uid: &OrderUid) -> AlloyBytes {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::encode_address_word;
     use alloy_primitives::U256;
     use cow_sdk_core::{
         Amount, AppDataHash, BuyTokenDestination, OrderData, OrderKind, SellTokenSource,
@@ -190,6 +189,15 @@ mod tests {
     fn encode_u32_word(value: u32) -> [u8; 32] {
         let mut out = [0u8; 32];
         out[28..].copy_from_slice(&value.to_be_bytes());
+        out
+    }
+
+    // Independent test oracle: right-aligns an address into a 32-byte word
+    // by hand so the EIP-712 parity assertions below do not verify alloy's
+    // `Address::into_word` against itself.
+    fn encode_address_word(address: &Address) -> [u8; 32] {
+        let mut out = [0u8; 32];
+        out[12..].copy_from_slice(address.as_slice());
         out
     }
 

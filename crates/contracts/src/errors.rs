@@ -20,25 +20,6 @@ pub enum ContractsError {
         /// Actual decoded byte length.
         actual: usize,
     },
-    /// A numeric value could not be parsed for ABI encoding.
-    #[error("invalid numeric value for {field}: {value}")]
-    InvalidNumeric {
-        /// Field being encoded.
-        field: &'static str,
-        /// Original invalid value.
-        value: Redacted<String>,
-    },
-    /// A numeric value exceeded `uint256` bounds.
-    #[error("numeric value for {field} exceeds uint256: {value}")]
-    NumericOverflow {
-        /// Field being encoded.
-        field: &'static str,
-        /// Original overflowing value.
-        value: Redacted<String>,
-    },
-    /// Encoded settlement or trade flags used unsupported bits.
-    #[error("invalid encoded flag bits: {0:#010b}")]
-    InvalidFlags(u8),
     /// A signing-scheme discriminator was not recognized.
     #[error("unsupported signing scheme value: {0}")]
     UnsupportedSigningScheme(u8),
@@ -88,35 +69,9 @@ pub enum ContractsError {
         /// Actual 4-byte magic value returned by the verifier.
         actual: [u8; 4],
     },
-    /// A clearing price was missing for a token used in a settlement.
-    #[error("missing clearing price for token {token}")]
-    MissingClearingPrice {
-        /// Token address whose clearing price was missing.
-        token: Address,
-    },
-    /// Partially fillable trade encoding requires an executed amount.
-    #[error("missing executed amount for partially fillable trade")]
-    MissingExecutedAmount,
-    /// Swap encoding requires a trade to have been encoded first.
-    #[error("trade not encoded")]
-    MissingTrade,
     /// Contract orders cannot use the zero address as a receiver.
     #[error("receiver cannot be address(0)")]
     ZeroReceiver,
-    /// A settlement trade referenced a token index outside the registered range.
-    #[error("invalid trade token index {index}; only {registered} tokens are registered")]
-    InvalidTokenIndex {
-        /// Offending token index on the trade.
-        index: usize,
-        /// Number of registered tokens in the settlement registry.
-        registered: usize,
-    },
-    /// A settlement interaction targeted a registry-paired forbidden contract.
-    #[error("forbidden settlement interaction target: {target}")]
-    ForbiddenInteractionTarget {
-        /// Rejected interaction target address.
-        target: Address,
-    },
     /// Provider operation failed outside the EIP-1271 helpers.
     #[error("provider error during {operation}: {message}")]
     Provider {
@@ -223,28 +178,23 @@ impl ContractsError {
             // check classifies as validation.
             Self::UnsupportedChain(_)
             | Self::InvalidOrderUidLength { .. }
-            | Self::InvalidNumeric { .. }
-            | Self::NumericOverflow { .. }
             | Self::InvalidHexPrefix { .. }
             | Self::InvalidDecodedLength { .. }
             | Self::FieldTooLarge { .. }
             | Self::InvalidSignatureLength { .. }
             | Self::InvalidSignatureRecoveryByte { .. }
-            | Self::ZeroReceiver
-            | Self::InvalidTokenIndex { .. } => ErrorClass::Validation,
+            | Self::ZeroReceiver => ErrorClass::Validation,
             // Serialization, ABI, hex-decode, and on-chain event/marker decode
             // failures are data round-trip invariants, matching the
             // `CoreError` serialization classification.
             Self::Serialization { .. }
             | Self::Abi(_)
             | Self::DecodeHex { .. }
-            | Self::InvalidFlags(_)
             | Self::UnknownOrderMarker(_)
             | Self::UnexpectedEventTopics { .. } => ErrorClass::Internal,
             // EIP-1271 verification, provider interaction, ECDSA recovery,
-            // signing-scheme classification, settlement-construction
-            // invariants, and any future additive variant classify as the
-            // contracts crate's signing-edge bucket.
+            // signing-scheme classification, and any future additive variant
+            // classify as the contracts crate's signing-edge bucket.
             _ => ErrorClass::Signing,
         }
     }

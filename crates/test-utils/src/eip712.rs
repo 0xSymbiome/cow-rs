@@ -1,9 +1,9 @@
 //! Independent EIP-712 / ABI-word oracle for hashing-parity tests.
 //!
-//! It is deliberately self-contained — it does **not** route through the
-//! production `cow_sdk_contracts::encode_address_word`, because the whole point
-//! of an oracle is to be an *independent* re-implementation that cross-checks
-//! the production hashing path.
+//! It is deliberately self-contained — it does **not** route through
+//! `alloy_primitives::Address::into_word` or the production hashing path,
+//! because the whole point of an oracle is to be an *independent*
+//! re-implementation that cross-checks the production hashing path.
 
 use std::str::FromStr;
 

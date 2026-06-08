@@ -15,12 +15,12 @@
 mod common;
 
 use cow_sdk_contracts::{
-    BUY_ETH_ADDRESS, ContractId, OrderCancellations, OrderFlags, OrderUidParams, Registry,
-    compute_order_uid, decode_order_flags, encode_order_flags, extract_order_uid_params,
-    hash_order, hash_order_cancellation, hash_order_cancellations, pack_order_uid_params,
+    BUY_ETH_ADDRESS, ContractId, OrderCancellations, OrderUidParams, Registry, compute_order_uid,
+    extract_order_uid_params, hash_order, hash_order_cancellation, hash_order_cancellations,
+    pack_order_uid_params,
 };
 use cow_sdk_core::{
-    Address, BuyTokenDestination, CowEnv, OrderData, OrderKind, SellTokenSource, SupportedChainId,
+    Address, BuyTokenDestination, CowEnv, OrderData, SellTokenSource, SupportedChainId,
     TypedDataDomain,
 };
 
@@ -129,38 +129,5 @@ fn canonical_unsigned_order_path_matches_upstream_signing_fixture_digest_and_uid
     assert_eq!(
         unpacked.order_digest.to_hex_string(),
         UPSTREAM_SEPOLIA_ORDER_DIGEST
-    );
-}
-
-#[test]
-fn order_flag_matrix_enumerates_all_twelve_combinations() {
-    let mut encoded = Vec::new();
-
-    for kind in [OrderKind::Sell, OrderKind::Buy] {
-        for sell_token_balance in [
-            SellTokenSource::Erc20,
-            SellTokenSource::External,
-            SellTokenSource::Internal,
-        ] {
-            for buy_token_balance in [BuyTokenDestination::Erc20, BuyTokenDestination::Internal] {
-                let flags = OrderFlags::new(kind, false, sell_token_balance, buy_token_balance);
-                let encoded_flags = encode_order_flags(&flags).expect("flag tuple must encode");
-
-                assert_eq!(
-                    decode_order_flags(encoded_flags).expect("encoded flag tuple must decode"),
-                    flags,
-                    "order flag tuple must round-trip for {flags:?}",
-                );
-                encoded.push(encoded_flags);
-            }
-        }
-    }
-
-    encoded.sort_unstable();
-    encoded.dedup();
-    assert_eq!(
-        encoded.len(),
-        12,
-        "2 order kinds x 3 sell balance sources x 2 buy destinations x 1 fill policy",
     );
 }

@@ -65,12 +65,11 @@ use the environment-agnostic scope.
 - `ReadmeTableUnverified`
 - `CanonicalUnverified`
 
-`DeploymentCoverageStatus` lives only in the coverage manifest for
-non-addressable evidence:
+The coverage manifest records non-addressable evidence with a status field:
 
-- `NotDeployed`
-- `NotSupported`
-- `OutOfScope`
+- `not_deployed`
+- `not_supported`
+- `out_of_scope`
 
 Coverage records are not registry rows and never resolve through
 `Registry::address`. For example, Optimism is represented as unsupported
@@ -103,15 +102,12 @@ per source repository in `parity/source-lock.yaml`, and the read-only
 `crates/contracts/deployment-coverage.yaml` records not-deployed, not-supported,
 and out-of-scope evidence that must not become addressable rows.
 
-The manifests are validated twice:
-
-- At compile time through `build.rs`. Malformed rows, duplicate keys,
-  unsupported registry chains, invalid environment scopes, wrong schema
-  versions, and COW Shed proxy creation-code hash drift fail the build with
-  precise diagnostics.
-- At runtime through `Registry::from_toml_str` and
-  `DeploymentCoverage::from_yaml_str`, so custom manifests see typed parser
-  errors rather than unchecked strings.
+Both manifests are validated at compile time through `build.rs`: malformed rows,
+duplicate keys, unsupported registry chains, invalid environment scopes, wrong
+schema versions, and COW Shed proxy creation-code hash drift fail the build with
+precise diagnostics. The registry is additionally validated at runtime through
+`Registry::from_toml_str`, so custom registry manifests see typed parser errors
+rather than unchecked strings.
 
 ## Loading A Custom Manifest
 

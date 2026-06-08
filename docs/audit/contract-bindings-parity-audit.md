@@ -6,7 +6,6 @@ Owning surface: `cow-sdk-contracts` `alloy::sol!`-generated bindings for `GPv2Se
 Refresh trigger: A new binding family landing in `cow-sdk-contracts`; a signature change in any existing binding; a change to the upstream commit pin for any binding's source repository under `parity/source-lock.yaml`; a change to the TypeScript-SDK-derived parity fixtures that back the regression suite; a change to the EIP-712 domain-separator fixture shared with the signing crate; a change to the wasm target feature contract for the alloy/k256 dependency path
 Related docs:
 - [ADR 0012](../adr/0012-alloy-sol-bindings-and-registry-authority.md)
-- [ADR 0034](../adr/0034-interaction-encoder-target-policy.md)
 - [ADR 0026](../adr/0026-alloy-major-release-absorption-plan.md)
 - [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md)
 - [Parity Matrix](../parity.md)
@@ -45,7 +44,6 @@ provider.
 | Domain separator parity | `cow-sdk-contracts` and `cow-sdk-signing` route every EIP-712 domain separator through `alloy_sol_types::Eip712Domain::separator` and pin the same fixture value | Conforms |
 | Order EIP-712 hashing | The `GPv2 Order` and `OrderCancellations` typed-data structs are macro-emitted via `alloy_sol_types::sol!` and route their signing hashes through `<T as SolStruct>::eip712_signing_hash`; the eight per-chain rows in the order-digest fixture pin the wire-byte contract | Conforms |
 | EIP-1271 payload encoding | The COW EIP-1271 verifier payload `abi.encode(GPv2Order.Data, bytes)` is composed from the macro-emitted `OnchainOrder` sol struct and the raw ECDSA signature via `alloy_sol_types::SolValue::abi_encode_sequence`; the inline regression contract reproduces the canonical 12-word order tuple plus dynamic-bytes tail layout byte-for-byte | Conforms |
-| Boundary matrices | Compact order flags, settlement encoder stages, and multi-trade clearing prices have deterministic regression coverage | Conforms |
 | WASM compatibility | The `alloy-primitives` `k256` path enables the browser `getrandom` backend for `wasm32-unknown-unknown` builds | Conforms |
 | Scope discipline | The shipped set is the five families named above; any new family follows the same provenance and parity contract before it lands | Conforms |
 
@@ -272,21 +270,15 @@ condition schedulers) stay in their own capability crates and carry
 their own parity contracts when they land. Hand-rolled encoder helpers
 are not allowed in `cow-sdk-contracts`.
 
-### Interaction Encoder
+### Interaction Normalization
 
-Settlement interaction encoding is the reviewed boundary for translating
-typed interaction data into contract calldata. `normalize_interaction` remains
-infallible and value-neutral: missing value defaults to zero and missing
-calldata defaults to an empty payload.
-
-`SettlementEncoder::encode_interaction` is fallible. When the encoder's
-typed-data domain resolves through `Registry::default()` to exactly one
-canonical settlement for the domain chain id and verifying contract, the
-encoder rejects an interaction whose target is the paired vault relayer for the
-same chain and environment with
-`ContractsError::ForbiddenInteractionTarget`. Unknown or custom settlement
-domains pass through neutrally and leave final target authority to the
-settlement contract runtime. `PROP-CON-011` records the invariant.
+`normalize_interaction` is the reviewed boundary for defaulting typed
+interaction data. It remains infallible and value-neutral: a missing value
+defaults to zero and missing calldata defaults to an empty payload. The
+trader-facing SDK does not encode settlement batches — settlement-calldata
+encoding is a solver/backend concern that upstream keeps in its `solver`
+crate — so the only settlement calls the SDK builds (`setPreSignature`,
+`invalidateOrder`) are encoded directly from the `IGPv2Settlement` binding.
 
 ### Wire Serde
 
@@ -382,13 +374,12 @@ ceiling at parse time, so the historical hand-rolled radix sniffer and
 the BigUint fallback path in the browser-wallet copy are retired and
 the `num-bigint` direct dependency is dropped from
 `cow-sdk-core` `[dependencies]` (it persists only as a `[dev-dependency]`
-for the wider-product oracle in the U256 overflow property test). The
-production `encode_address_word(&Address) -> [u8; 32]` helper that
-right-aligns an EVM address into a 32-byte ABI word is now a single
-`cow_sdk_contracts::encode_address_word` re-export; the duplicate
-`fn encode_address_word(address: &Address)` body that lived in
-`cow-sdk-trading::allowance` is removed and the trading crate consumes
-the shared helper cross-crate. The cow-sdk-trading slippage subsystem
+for the wider-product oracle in the U256 overflow property test).
+Address-to-32-byte-word encoding has no shipped helper: the `sol!` ABI
+encoders handle word layout, and `alloy_primitives::Address::into_word`
+is the canonical API for any direct need; only an independent EIP-712
+parity oracle in the `cow-sdk-contracts` order-hash test module retains a
+hand-shaped `[u8; 32]` form. The cow-sdk-trading slippage subsystem
 (`order.rs`, `slippage/amounts.rs`, `slippage/breakdown.rs`,
 `slippage/policy.rs`) drops its `num_bigint::BigInt` direct dependency
 and routes the percentage and partner-fee arithmetic through
@@ -503,14 +494,6 @@ Primary implementation points:
 Primary regression coverage:
 
 - `crates/contracts/tests/parity_contract.rs`
-- `crates/contracts/tests/order_contract.rs::order_flag_matrix_enumerates_all_twelve_combinations`
-- `crates/contracts/tests/settlement_contract.rs::settlement_encoder_stage_order_pre_intra_post`
-- `crates/contracts/tests/property_contract.rs::decode_trade_flags_accepts_0b00_and_0b01_as_erc20`
-- `crates/contracts/tests/property_contract.rs::decode_order_rejects_out_of_bounds_token_indices`
-- `crates/contracts/tests/interaction_contract.rs::interaction_encoder_rejects_vault_relayer_target_for_canonical_settlement_domain`
-- `crates/contracts/tests/interaction_contract.rs::interaction_encoder_accepts_non_vault_target_for_canonical_settlement_domain`
-- `crates/contracts/tests/interaction_contract.rs::interaction_encoder_does_not_cross_match_chain_or_env`
-- `crates/contracts/tests/interaction_contract.rs::interaction_encoder_neutral_for_unknown_custom_settlement_domain`
 - `crates/contracts/src/primitives.rs::tests::domain_separator_matches_shared_parity_fixture`
 - `crates/contracts/src/primitives.rs::tests::order_kind_marker_round_trips_and_rejects_unknown`
 - `crates/contracts/tests/onchain_orders.rs::order_placement_topic0_matches_canonical_hash`

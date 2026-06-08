@@ -14,14 +14,12 @@
 
 mod chain_id;
 mod contract_id;
-mod coverage;
 mod env;
 mod registry;
 mod verification;
 
 pub use chain_id::{DeploymentChainId, DeploymentChainIdError};
 pub use contract_id::{ContractId, ENVIRONMENT_AGNOSTIC_CONTRACTS};
-pub use coverage::{DeploymentCoverage, DeploymentCoverageError, DeploymentCoverageStatus};
 pub use env::DeploymentEnv;
 pub use registry::{Registry, RegistryError};
 pub use verification::DeploymentVerificationStatus;

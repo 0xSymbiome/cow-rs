@@ -75,7 +75,6 @@ bloats and a clone or cross-tree copy stays fast.
 Target names follow the pattern `fuzz_<surface>_<action>`. `<surface>`
 is the codec boundary under test (`order_uid`, `typed_data`,
 `app_data_cid`, `order_signature`, `subgraph_graphql_error`,
-`settlement_settle`, `settlement_invalidate_order`,
 `ethflow_create_order`, `erc20_permit_typed_data`,
 `order_bounds_validator`,
 `orderbook_rejection`, `app_data_merge`, `transport_error`) and
@@ -104,16 +103,9 @@ stay in maintainer-local working copies.
 
 ## Encoder Fuzz Targets
 
-Five targets exercise the `alloy::sol!`-generated encoder surface for
-every shipped contract binding family in `cow-sdk-contracts`:
+Two targets exercise the `alloy::sol!`-generated encoder surface for
+shipped contract binding families in `cow-sdk-contracts`:
 
-- `fuzz_settlement_settle_encode` — asserts `GPv2Settlement.settle(...)`
-  call-data carries the canonical selector and the four dynamic-argument
-  offset words on every well-typed input.
-- `fuzz_settlement_invalidate_order_encode` — asserts
-  `GPv2Settlement.invalidateOrder(bytes)` call-data length matches
-  `selector + offset + length + padded(input)` on every arbitrary
-  payload.
 - `fuzz_ethflow_create_order_encode` — round-trips
   `CoWSwapEthFlow.createOrder(EthFlowOrderData)` through the matching
   decoder and asserts every struct field survives the encode/decode

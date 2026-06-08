@@ -21,11 +21,9 @@
 )]
 
 use cow_sdk_contracts::{
-    ContractsError, Eip1271SignatureData, EthFlowOrderData, OrderFlags, OrderUidParams,
-    RecoverableSignature, Signature, SigningScheme, TokenRegistry, Trade, TradeExecution,
-    TradeFlags, compute_order_uid, decode_eip1271_signature_data, decode_order, decode_order_flags,
-    decode_signing_scheme, decode_trade_flags, encode_eip1271_signature_data, encode_order_flags,
-    encode_signing_scheme, encode_trade, encode_trade_flags, extract_order_uid_params, hash_order,
+    ContractsError, Eip1271SignatureData, EthFlowOrderData, OrderUidParams, RecoverableSignature,
+    SigningScheme, compute_order_uid, decode_eip1271_signature_data, decode_signing_scheme,
+    encode_eip1271_signature_data, encode_signing_scheme, extract_order_uid_params, hash_order,
     pack_order_uid_params,
 };
 use cow_sdk_core::{
@@ -199,141 +197,12 @@ fn domain_strategy() -> impl Strategy<Value = TypedDataDomain> {
     })
 }
 
-/// Strategy that emits a `(scheme, signature)` pair where the payload
-/// matches the reviewed shape for the scheme: ECDSA schemes carry a
-/// 65-byte body, EIP-1271 carries a verifier address plus a 65-byte
-/// body, and pre-sign carries just the owner address.
-fn scheme_and_signature_strategy() -> impl Strategy<Value = (SigningScheme, Signature)> {
-    signing_scheme_strategy().prop_flat_map(|scheme| match scheme {
-        SigningScheme::Eip712 | SigningScheme::EthSign => any::<[u8; 65]>()
-            .prop_map(move |bytes| {
-                (
-                    scheme,
-                    Signature::Ecdsa {
-                        scheme,
-                        data: format!("0x{}", alloy_primitives::hex::encode(bytes)),
-                    },
-                )
-            })
-            .boxed(),
-        SigningScheme::Eip1271 => (address_strategy(), any::<[u8; 65]>())
-            .prop_map(move |(verifier, bytes)| {
-                (
-                    scheme,
-                    Signature::Eip1271 {
-                        data: Eip1271SignatureData::new(
-                            verifier,
-                            format!("0x{}", alloy_primitives::hex::encode(bytes)),
-                        ),
-                    },
-                )
-            })
-            .boxed(),
-        SigningScheme::PreSign => address_strategy()
-            .prop_map(move |owner| (scheme, Signature::PreSign { owner }))
-            .boxed(),
-        _ => unreachable!("signing_scheme_strategy emits only the four reviewed variants"),
-    })
-}
-
 fn signature_with_v(r_bytes: &[u8; 32], s_bytes: &[u8; 32], v_byte: u8) -> String {
     let mut bytes = [0u8; 65];
     bytes[..32].copy_from_slice(r_bytes);
     bytes[32..64].copy_from_slice(s_bytes);
     bytes[64] = v_byte;
     format!("0x{}", alloy_primitives::hex::encode(bytes))
-}
-
-fn trade_with_indices_and_flags(
-    sell_token_index: usize,
-    buy_token_index: usize,
-    flags: u8,
-) -> Trade {
-    Trade::new(
-        sell_token_index,
-        buy_token_index,
-        Address::new("0x3333333333333333333333333333333333333333").unwrap(),
-        Amount::new("10").unwrap(),
-        Amount::new("20").unwrap(),
-        123,
-        AppDataHex::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-            .unwrap(),
-        Amount::new("1").unwrap(),
-        flags,
-        Amount::ZERO,
-        "0x".to_owned(),
-    )
-}
-
-#[test]
-fn decode_trade_flags_accepts_0b00_and_0b01_as_erc20() {
-    let sell_cases = [
-        (0b00, SellTokenSource::Erc20),
-        (0b01, SellTokenSource::Erc20),
-        (0b10, SellTokenSource::External),
-        (0b11, SellTokenSource::Internal),
-    ];
-    let buy_cases = [
-        (0b0, BuyTokenDestination::Erc20),
-        (0b1, BuyTokenDestination::Internal),
-    ];
-
-    for (sell_bits, expected_sell_balance) in sell_cases {
-        for (buy_bits, expected_buy_balance) in buy_cases {
-            for signing_scheme in [
-                SigningScheme::Eip712,
-                SigningScheme::EthSign,
-                SigningScheme::Eip1271,
-                SigningScheme::PreSign,
-            ] {
-                let flags = (sell_bits << 2) | (buy_bits << 4) | (signing_scheme.as_u8() << 5);
-                let decoded = decode_trade_flags(flags).unwrap();
-
-                assert_eq!(decoded.sell_token_balance, expected_sell_balance);
-                assert_eq!(decoded.buy_token_balance, expected_buy_balance);
-                assert_eq!(decoded.signing_scheme, signing_scheme);
-            }
-        }
-    }
-}
-
-#[test]
-fn decode_order_rejects_out_of_bounds_token_indices() {
-    let mut tokens = TokenRegistry::new();
-    tokens.index(&Address::new("0x1111111111111111111111111111111111111111").unwrap());
-    tokens.index(&Address::new("0x2222222222222222222222222222222222222222").unwrap());
-    let addresses = tokens.addresses();
-    let flags = encode_order_flags(&OrderFlags::new(
-        OrderKind::Sell,
-        false,
-        SellTokenSource::Erc20,
-        BuyTokenDestination::Erc20,
-    ))
-    .unwrap();
-
-    let sell_invalid = trade_with_indices_and_flags(addresses.len(), 0, flags);
-    assert!(matches!(
-        decode_order(&sell_invalid, &addresses),
-        Err(ContractsError::InvalidTokenIndex {
-            index: 2,
-            registered: 2,
-        })
-    ));
-
-    let buy_invalid = trade_with_indices_and_flags(0, addresses.len() + 1, flags);
-    assert!(matches!(
-        decode_order(&buy_invalid, &addresses),
-        Err(ContractsError::InvalidTokenIndex {
-            index: 3,
-            registered: 2,
-        })
-    ));
-
-    let malformed_flags = trade_with_indices_and_flags(0, 1, 0b1000_0000);
-    assert!(matches!(
-        decode_order(&malformed_flags, &addresses),
-        Err(ContractsError::InvalidFlags(0b1000_0000))
-    ));
 }
 
 #[test]
@@ -460,62 +329,6 @@ proptest! {
         let hash_original = hash_order(&domain, &order).unwrap();
         let hash_upper = hash_order(&domain, &uppercase_order).unwrap();
         prop_assert_eq!(hash_original.to_hex_string(), hash_upper.to_hex_string());
-    }
-
-    /// [`encode_trade`] / [`decode_order`] / [`decode_trade_flags`]
-    /// preserve the order boundary: encoding a concrete [`OrderData`]
-    /// with any supported signing-scheme signature and decoding through
-    /// the token registry reproduces the order's kind, partial-fill flag,
-    /// sell balance, buy balance, executed amount, and the order itself.
-    #[test]
-    fn encoded_trades_preserve_the_order_boundary(
-        order in order_strategy(),
-        executed_amount in amount_strategy(),
-        (_scheme, signature) in scheme_and_signature_strategy(),
-    ) {
-        let execution = TradeExecution::new(executed_amount);
-        let mut tokens = TokenRegistry::new();
-
-        let trade = encode_trade(&mut tokens, &order, &signature, &execution).unwrap();
-        let decoded_flags = decode_trade_flags(trade.flags).unwrap();
-        let decoded_order = decode_order(&trade, &tokens.addresses()).unwrap();
-
-        prop_assert_eq!(decoded_flags.kind, order.kind);
-        prop_assert_eq!(decoded_flags.partially_fillable, order.partially_fillable);
-        prop_assert_eq!(decoded_flags.sell_token_balance, order.sell_token_balance);
-        prop_assert_eq!(decoded_flags.buy_token_balance, order.buy_token_balance);
-        prop_assert_eq!(&trade.executed_amount, &execution.executed_amount);
-        prop_assert_eq!(&decoded_order, &order);
-    }
-
-    /// [`encode_order_flags`] / [`decode_order_flags`] and
-    /// [`encode_trade_flags`] / [`decode_trade_flags`] are strict
-    /// inverses on every admitted variant after the reviewed buy-balance
-    /// normalization rule; the encoded trade flag reserves the high bit
-    /// so the sign bit stays zero.
-    #[test]
-    fn compact_flag_codecs_roundtrip_across_generated_variants(
-        kind_sell in any::<bool>(),
-        partially_fillable in any::<bool>(),
-        sell_balance in sell_balance_strategy(),
-        buy_balance in buy_balance_strategy(),
-        scheme in signing_scheme_strategy(),
-    ) {
-        let kind = if kind_sell { OrderKind::Sell } else { OrderKind::Buy };
-        let order_flags =
-            OrderFlags::new(kind, partially_fillable, sell_balance, buy_balance);
-        let encoded_order = encode_order_flags(&order_flags).unwrap();
-        let decoded_order = decode_order_flags(encoded_order).unwrap();
-        prop_assert_eq!(&decoded_order, &order_flags);
-        prop_assert_eq!(encode_order_flags(&decoded_order).unwrap(), encoded_order);
-
-        let trade_flags =
-            TradeFlags::new(kind, partially_fillable, sell_balance, buy_balance, scheme);
-        let encoded_trade = encode_trade_flags(&trade_flags).unwrap();
-        let decoded_trade = decode_trade_flags(encoded_trade).unwrap();
-        prop_assert_eq!(encoded_trade & 0b1000_0000, 0);
-        prop_assert_eq!(&decoded_trade, &trade_flags);
-        prop_assert_eq!(encode_trade_flags(&decoded_trade).unwrap(), encoded_trade);
     }
 
     /// [`encode_eip1271_signature_data`] and
