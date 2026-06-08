@@ -165,12 +165,12 @@ cargo doc --workspace --no-deps --all-features
 The cow-rs primitive layer uses cow-owned `#[repr(transparent)]` newtypes
 over `alloy_primitives` types for the byte-typed identity family
 (`Address`, `Hash32`, `AppDataHash`, `HexData`, `OrderUid`) and the
-numeric family (`Amount`, `SignedAmount`) per
+numeric type (`Amount`) per
 [ADR 0052](docs/adr/0052-alloy-primitives-canonical-primitive-layer.md).
 The newtypes carry cow-owned `Display`, `Serialize`, and `Deserialize`
 impls where the cow wire contract diverges from alloy defaults
 (lowercase 0x-prefixed `Address` `Display`; strict-decimal-only
-`Amount` / `SignedAmount` `Deserialize` that rejects `0x`, `0o`, and
+`Amount` `Deserialize` that rejects `0x`, `0o`, and
 `0b`-prefixed input).
 
 Contributors extending the public surface should preserve the

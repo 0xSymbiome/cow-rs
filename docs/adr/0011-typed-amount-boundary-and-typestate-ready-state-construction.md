@@ -388,3 +388,20 @@ builders keep their `with_*` setters. The construction builder and the value
 structs are deliberately distinct surfaces. The typestate guarantee is unchanged:
 `chain_id` and `app_code` still transition the `ChainIdSet` and `AppCodeSet`
 markers, and `build()` is reachable only once both are set.
+## Amendment 2026-06-08: `SignedAmount` removed
+
+`SignedAmount` is removed from the public surface. The signed `int256`
+newtype carried signed protocol quantities (token deltas), but its only
+consumer has been removed, leaving it load-bearing for no shipped flow —
+zero type-position uses across every public crate, and no analogue in the
+upstream `@cowprotocol/cow-sdk` it ports. The removal is exactly parallel
+to the 2026-06-01 `DecimalAmount` removal above: dead public surface that
+no observing helper depended on, narrowed without changing observable
+behaviour. `Amount` (the unsigned `uint256` newtype) is unchanged and
+remains the single canonical atomic amount type across every public
+crate. The strict-decimal radix-rejection `Deserialize` contract
+(2026-05-22) and the checked/saturating fallible-by-return arithmetic
+surface (2026-05-28) are preserved verbatim on `Amount`; the
+`SignedAmount`-specific clauses in those amendments no longer apply, and
+the workspace ships one `DO NOT SWAP` radix anchor (on `Amount::new`)
+where it previously carried two.

@@ -406,3 +406,17 @@ invariant land without a breaking change. The bit-for-bit layout contract is
 governed by `#[repr(transparent)]`, which is unaffected by field visibility.
 Sealing pre-1.0 is free; sealing once a published consumer relied on `.0` would
 be a breaking change, so it is done now.
+
+## Amendment 2026-06-08: `SignedAmount` removed
+
+`SignedAmount` is removed from the public surface (see the 2026-06-08
+amendment to [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md)):
+its only consumer was removed, leaving it load-bearing for no shipped flow.
+Every `SignedAmount` reference in the Decision body and the earlier
+amendments above is preserved as the historical record but no longer
+describes shipped code. `Amount` (the unsigned `uint256` newtype) is
+unchanged and remains the sole cow-owned numeric newtype, keeping its
+cow-owned `Display` / `Serialize` / `Deserialize` impls, the strict-decimal
+fail-closed `Deserialize` boundary, and the fallible-by-return
+`checked_*` / `saturating_*` arithmetic surface. The cow newtype family is
+now `Address`, `Hash32`, `AppDataHash`, `HexData`, `OrderUid`, and `Amount`.

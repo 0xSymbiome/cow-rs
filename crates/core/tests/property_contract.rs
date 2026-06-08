@@ -21,9 +21,9 @@
 
 use std::collections::{HashMap, HashSet};
 
-use alloy_primitives::{I256, U256};
+use alloy_primitives::U256;
 use cow_sdk_core::{
-    Address, Amount, AppDataHex, ChainId, Hash32, HexData, OrderUid, SignedAmount,
+    Address, Amount, AppDataHex, ChainId, Hash32, HexData, OrderUid,
     SupportedChainId, VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS, ValidTo,
 };
 use num_bigint::BigUint;
@@ -77,44 +77,6 @@ fn address_bytes() -> impl Strategy<Value = [u8; 20]> {
 /// fits in 256 bits.
 fn atom_amount_bytes() -> impl Strategy<Value = [u8; 32]> {
     any::<[u8; 32]>()
-}
-
-/// Strategy that emits arbitrary `I256` values across the full signed
-/// 256-bit range. Sampling re-interprets the unsigned 32-byte payload
-/// as a two's-complement [`I256`], so every representable bit pattern
-/// — including both extremes `I256::MIN` and `I256::MAX` — appears
-/// with equal probability.
-fn signed_amount_value_strategy() -> impl Strategy<Value = I256> {
-    atom_amount_bytes().prop_map(|bytes| I256::from_raw(U256::from_be_bytes(bytes)))
-}
-
-/// Strategy that emits valid signed-decimal strings including redundant
-/// leading zeroes so [`SignedAmount::new`] normalization is exercised.
-fn signed_amount_input_strategy() -> impl Strategy<Value = String> {
-    (signed_amount_value_strategy(), 0usize..=4usize).prop_map(|(value, leading_zeroes)| {
-        let canonical = value.to_string();
-        let (prefix, digits) = canonical
-            .strip_prefix('-')
-            .map_or(("", canonical.as_str()), |digits| ("-", digits));
-        format!("{prefix}{}{digits}", "0".repeat(leading_zeroes))
-    })
-}
-
-/// Curated signed-amount literals that pin the canonical decimal-string
-/// wire form across zero, sign, `i128`, and `I256` boundary values.
-fn curated_signed_amount_inputs() -> Vec<String> {
-    vec![
-        "0".to_owned(),
-        "-0".to_owned(),
-        "1".to_owned(),
-        "-1".to_owned(),
-        "00042".to_owned(),
-        "-00042".to_owned(),
-        i128::MAX.to_string(),
-        i128::MIN.to_string(),
-        I256::MAX.to_string(),
-        I256::MIN.to_string(),
-    ]
 }
 
 /// Strategy that emits an arbitrary 56-byte order-UID payload.
@@ -406,39 +368,6 @@ proptest! {
         prop_assert_eq!(from_new, amount);
     }
 
-    /// [`SignedAmount::new`] canonicalizes valid decimal inputs while
-    /// preserving the typed `I256` storage and remaining idempotent
-    /// across its own string form.
-    #[test]
-    fn signed_amount_roundtrip_is_idempotent(input in signed_amount_input_strategy()) {
-        let amount = SignedAmount::new(&input).unwrap();
-        let canonical = amount.to_string();
-
-        // The cow newtype's `Display` impl is the canonical decimal-string
-        // wire form; the inner `I256` accessor exposes the same value.
-        prop_assert_eq!(amount.as_i256().to_string(), canonical.clone());
-
-        let rebuilt = SignedAmount::new(canonical.clone()).unwrap();
-        prop_assert_eq!(rebuilt, amount);
-        prop_assert_eq!(rebuilt.to_string(), canonical);
-    }
-
-    /// [`SignedAmount`] keeps the pre-promotion decimal-string JSON shape
-    /// byte-identical across the reviewed boundary literals.
-    #[test]
-    fn signed_amount_wire_serde_matches_legacy_decimal_string_shape(
-        input in prop::sample::select(curated_signed_amount_inputs()),
-    ) {
-        let amount = SignedAmount::new(&input).unwrap();
-        let expected = serde_json::to_vec(&amount.to_string()).unwrap();
-        let actual = serde_json::to_vec(&amount).unwrap();
-
-        prop_assert_eq!(actual.as_slice(), expected.as_slice());
-
-        let rebuilt: SignedAmount = serde_json::from_slice(&actual).unwrap();
-        prop_assert_eq!(rebuilt, amount);
-    }
-
     /// [`Amount::format_units`] composed with [`Amount::parse_units`]
     /// is an exact identity for every representable `(atoms, decimals)`
     /// pair: `format_units` preserves the full `decimals`-wide
@@ -709,36 +638,5 @@ proptest! {
         let raw_bits = value.into_u256().bit_len() as u64;
         prop_assert_eq!(cow_bits, raw_bits);
         prop_assert!(cow_bits <= 256);
-    }
-
-    /// `SignedAmount::checked_pow` must equal
-    /// `Signed::checked_pow` for every random `(base, exp)` pair.
-    /// The exponent is unsigned per the alloy
-    /// `Signed::checked_pow(self, exp: Uint<BITS, LIMBS>)` shape.
-    #[test]
-    fn signed_amount_checked_pow_delegates_to_inner_signed_checked_pow(
-        base_raw in any::<i128>(),
-        exp in 0u32..=8u32,
-    ) {
-        let base = SignedAmount::from_i256(I256::try_from(base_raw).unwrap());
-        let exp_amount = Amount::new(exp.to_string()).unwrap();
-        let cow_result = base.checked_pow(&exp_amount);
-        let raw_result = base
-            .into_i256()
-            .checked_pow(U256::from(exp))
-            .map(SignedAmount::from_i256);
-        prop_assert_eq!(cow_result, raw_result);
-    }
-
-    /// `SignedAmount::bits` is a direct passthrough to
-    /// `Signed::bits` (`u32`).
-    #[test]
-    fn signed_amount_bits_passes_through_inner_signed_bits(
-        value_raw in any::<i128>(),
-    ) {
-        let value = SignedAmount::from_i256(I256::try_from(value_raw).unwrap());
-        let cow_bits = value.bits();
-        let raw_bits = value.into_i256().bits();
-        prop_assert_eq!(cow_bits, raw_bits);
     }
 }

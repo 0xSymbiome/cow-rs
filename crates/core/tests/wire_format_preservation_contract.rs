@@ -4,15 +4,13 @@
 //! string that the protocol's TypeScript SDK and the
 //! `parity/fixtures/**/*.json` corpora exchange on the wire. The four
 //! byte-typed cow newtypes (`Address`, `Hash32`, `HexData`, `OrderUid`)
-//! plus `AppDataHash`, `Amount`, and `SignedAmount` ship as
+//! plus `AppDataHash` and `Amount` ship as
 //! `#[repr(transparent)]` wrappers around their `alloy_primitives`
 //! counterparts per ADR 0052. Every test exercises both the direct
 //! accessor surface and the JSON serde round-trip so the wire bytes
 //! stay locked through either path.
 
-use alloy_primitives::I256;
-
-use cow_sdk_core::{Address, Amount, AppDataHash, Hash32, HexData, OrderUid, SignedAmount};
+use cow_sdk_core::{Address, Amount, AppDataHash, Hash32, HexData, OrderUid};
 
 const ADDRESS_HEX: &str = "0x6810e776880c02933d47db1b9fc05908e5386b96";
 const ADDRESS_ZERO_HEX: &str = "0x0000000000000000000000000000000000000000";
@@ -240,80 +238,6 @@ fn amount_constructor_accepts_decimal_and_hex_but_not_other_radix() {
         Amount::new(format!("0x1{}", "0".repeat(64))).is_err(),
         "2^256 Amount::new must reject as uint256 overflow"
     );
-}
-
-// ---- SignedAmount (decimal with optional leading minus) --------------
-
-const SIGNED_AMOUNT_DECIMAL: &str = "-12345678901234567890";
-
-#[test]
-fn signed_amount_negative_round_trips_byte_identically_on_the_wire() {
-    let amount =
-        SignedAmount::new(SIGNED_AMOUNT_DECIMAL).expect("canonical SignedAmount must parse");
-    assert_eq!(amount.to_string(), SIGNED_AMOUNT_DECIMAL);
-    assert_eq!(amount.to_decimal_string(), SIGNED_AMOUNT_DECIMAL);
-
-    let json = serde_json::to_string(&amount).expect("SignedAmount must serialize");
-    assert_eq!(json, format!("\"{SIGNED_AMOUNT_DECIMAL}\""));
-
-    let round_trip: SignedAmount =
-        serde_json::from_str(&json).expect("SignedAmount must deserialize round trip");
-    assert_eq!(round_trip.to_string(), SIGNED_AMOUNT_DECIMAL);
-    assert_eq!(round_trip, amount);
-    assert!(round_trip.is_negative());
-
-    // Curated decimal-string boundary rows for both signs.
-    for canonical in ["-1", "-12345", "0", "1"] {
-        let parsed = SignedAmount::new(canonical)
-            .unwrap_or_else(|err| panic!("canonical `{canonical}` must parse: {err}"));
-        assert_eq!(parsed.to_string(), canonical);
-        let json = serde_json::to_string(&parsed).expect("SignedAmount must serialize");
-        assert_eq!(json, format!("\"{canonical}\""));
-    }
-
-    // `"-0"` canonicalises to `"0"` on the cow display surface (the
-    // inner `I256` collapses the redundant sign byte before formatting).
-    let neg_zero = SignedAmount::new("-0").expect("`-0` must parse");
-    assert_eq!(neg_zero.to_string(), "0");
-
-    // `I256::MIN` / `I256::MAX` survive a serde round-trip
-    // byte-identically across the cow wire form.
-    for boundary in [I256::MIN, I256::MAX] {
-        let amount = SignedAmount::from_i256(boundary);
-        let canonical = boundary.to_string();
-        let json = serde_json::to_string(&amount).expect("SignedAmount must serialize");
-        assert_eq!(json, format!("\"{canonical}\""));
-        let round_trip: SignedAmount =
-            serde_json::from_str(&json).expect("SignedAmount must deserialize round trip");
-        assert_eq!(round_trip, amount);
-    }
-}
-
-/// Stage B contract row: the cow `SignedAmount` accepts only the
-/// signed-decimal shape `-?[0-9]+`. The `0x`-prefixed hex form, the
-/// `-0x`-prefixed signed-hex form, and the leading-plus form are all
-/// rejected at the constructor boundary and at the serde boundary
-/// alike — `SignedAmount` is intentionally stricter than `Amount::new`
-/// because the sign byte interacts with the radix-prefix grammar.
-#[test]
-fn signed_amount_rejects_hex_input_on_the_wire() {
-    // Constructor-level rejections.
-    for forbidden in ["0x5", "-0x5", "+5", "0X1", "0o52", "0b101"] {
-        assert!(
-            SignedAmount::new(forbidden).is_err(),
-            "SignedAmount::new must reject `{forbidden}`"
-        );
-    }
-    // Serde-boundary rejections (the cow `Deserialize` impl delegates
-    // through the validating constructor so the two surfaces stay
-    // aligned).
-    for forbidden in [r#""0x5""#, r#""-0x5""#, r#""+5""#, r#""0X1""#] {
-        let outcome = serde_json::from_str::<SignedAmount>(forbidden);
-        assert!(
-            outcome.is_err(),
-            "SignedAmount deserialize must reject `{forbidden}`"
-        );
-    }
 }
 
 // ---- HexData (variable length) ----------------------------------------

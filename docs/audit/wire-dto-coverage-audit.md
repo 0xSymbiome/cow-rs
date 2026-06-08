@@ -1,7 +1,7 @@
 # Wire DTO Coverage Audit
 
 Status: Current
-Last reviewed: 2026-06-07
+Last reviewed: 2026-06-08
 Owning surface: cow-sdk-orderbook DTO coverage
 Refresh trigger: changes to `parity/openapi/services-orderbook.yml`, changes to `parity/openapi/coverage.yaml`, source-lock refreshes for the services OpenAPI, or public field changes on covered orderbook request or response DTOs
 Related docs:
@@ -39,7 +39,7 @@ It does not cover app-data schema content, contract ABI DTOs, or live orderbook 
 | Request DTO coverage | Every constructed orderbook request payload has a reviewed fixture under `parity/fixtures/orderbook-requests/` with source references to the pinned services revision. | Conforms |
 | OrderCreation fee boundary | `OrderCreation` serializes `feeAmount` as `"0"` and rejects inbound non-zero `feeAmount` during deserialization. | Conforms |
 | OrderCreation app-data routing | `OrderCreation` serialises the `(app_data, app_data_hash)` pair onto the three services `OrderCreationAppData` untagged-enum variants (`Both`, `Hash`, `Full`); the hash-only case keys the hash hex string under the `appData` key per the services `Hash` variant. | Conforms |
-| Identity wire-form preservation | Cow newtypes `Address`, `Hash32`, `AppDataHash`, `HexData`, and `OrderUid` emit the lowercase `0x`-prefixed hex wire form through their cow-owned or alloy-forwarded `Display`/`Serialize`/`Deserialize` impls; `Amount` and `SignedAmount` emit strict-decimal-only wire form through their cow-owned `Serialize`/`Deserialize` impls per [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md). | Conforms |
+| Identity wire-form preservation | Cow newtypes `Address`, `Hash32`, `AppDataHash`, `HexData`, and `OrderUid` emit the lowercase `0x`-prefixed hex wire form through their cow-owned or alloy-forwarded `Display`/`Serialize`/`Deserialize` impls; `Amount` emits strict-decimal-only wire form through its cow-owned `Serialize`/`Deserialize` impls per [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md). | Conforms |
 
 ## Current Contract
 

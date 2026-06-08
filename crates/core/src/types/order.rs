@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     amount::Amount,
-    identity::{Address, AppDataHash, ChainId, OrderUid},
+    identity::{Address, AppDataHash, ChainId},
 };
 /// Canonical EIP-712 order field names in struct-hash order.
 pub const ORDER_TYPE_FIELD_NAMES: [&str; 12] = [
@@ -269,35 +269,5 @@ impl OrderData {
     #[must_use]
     pub const fn field_names() -> &'static [&'static str; ORDER_TYPE_FIELD_NAMES.len()] {
         &ORDER_TYPE_FIELD_NAMES
-    }
-}
-
-/// Simplified trade execution view used by SDK consumers.
-#[non_exhaustive]
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Trade {
-    /// Order UID that produced the trade.
-    pub order_uid: OrderUid,
-    /// Executed sell amount.
-    pub executed_sell_amount: Amount,
-    /// Executed buy amount.
-    pub executed_buy_amount: Amount,
-}
-
-impl Trade {
-    /// Creates a simplified trade execution view.
-    #[inline]
-    #[must_use]
-    pub const fn new(
-        order_uid: OrderUid,
-        executed_sell_amount: Amount,
-        executed_buy_amount: Amount,
-    ) -> Self {
-        Self {
-            order_uid,
-            executed_sell_amount,
-            executed_buy_amount,
-        }
     }
 }

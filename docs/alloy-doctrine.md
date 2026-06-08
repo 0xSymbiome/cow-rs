@@ -51,7 +51,6 @@ Every primitive in this table uses the alloy symbol directly. No cow-owned re-im
 | Variable bytes | `alloy_primitives::Bytes` | `cow-sdk-core` (via `HexData`) | ADR 0052 | Display/Serialize/Deserialize forward to alloy defaults. |
 | Fixed-width 56-byte UID | `alloy_primitives::FixedBytes<56>` | `cow-sdk-core` (via `OrderUid`) | ADR 0052 | UID packing payload byte width is fixed by GPv2; cow owns only the 56-byte packing function (Bucket 2 below). |
 | Unsigned 256-bit integer | `alloy_primitives::U256` | `cow-sdk-core` (via `Amount`) | ADR 0052 | The integer is alloy; the strict-decimal `Deserialize` is cow-owned (Bucket 2). |
-| Signed 256-bit integer | `alloy_primitives::I256` | `cow-sdk-core` (via `SignedAmount`) | ADR 0052 | Same split as `Amount`. |
 | keccak256 hash | `alloy_primitives::keccak256` | `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-cow-shed` | ADR 0052 | One independent oracle (`sha3::Keccak256::digest`) is retained inside `crates/contracts/src/order/hash.rs` as a test-only parity reference; do not collapse (see the `keccak_word` test-oracle entry in Bucket 2 below). |
 | EIP-712 domain separator | `alloy_sol_types::Eip712Domain::separator()` | `cow-sdk-signing`, `cow-sdk-contracts`, `cow-sdk-cow-shed` | ADR 0052 | Bridged from cow `TypedDataDomain` via `into_alloy_domain()` (Bucket 2). |
 | EIP-712 struct signing hash | `alloy_sol_types::SolStruct::eip712_signing_hash` | `cow-sdk-contracts`, `cow-sdk-cow-shed`; composable deferred per ADR 0048 | ADR 0052 | cow-shed routes through `ExecuteHooks { ... }.eip712_signing_hash(domain)` once the inner hashing has collapsed onto `SolStruct::eip712_signing_hash`. |
@@ -82,7 +81,7 @@ Every surface in this table is shipped from cow-rs source and may not be swapped
 | Surface | cow-rs location | Why cow-owned (binding ADR) | Risk if swapped |
 |---|---|---|---|
 | `Amount::Deserialize` strict-decimal-only wire boundary | `crates/core/src/types/amount.rs` | ADR 0052 — alloy's `Uint::FromStr` sniffs four radices (`0x`, `0o`, `0b`, plus uppercase); cow fails closed on the wire to preserve the JSON-decimal-only contract. | `"0o755"` silently parses as 493 wei; bug invisible until off-chain ledger reconciliation. |
-| `Amount::new` / `SignedAmount::new` lenient constructors that reject `0o`/`0b` | `crates/core/src/types/amount.rs` | ADR 0052 | Same failure mode as above — config files, env vars, and CLI flags route through the same prefix-sniffer. |
+| `Amount::new` lenient constructor that rejects `0o`/`0b` | `crates/core/src/types/amount.rs` | ADR 0052 | Same failure mode as above — config files, env vars, and CLI flags route through the same prefix-sniffer. |
 | `Amount::parse_units` reimplements decimal scaling instead of `alloy_primitives::utils::parse_units` | `crates/core/src/types/amount.rs` | ADR 0011 — the raw alloy call is unsafe for untrusted input: it is fail-OPEN (`parse_units("", d)` returns `Ok(0)`; a leading `-` routes to the `I256` arm whose `Into<U256>` returns a huge two's-complement positive), it PANICS on a non-ASCII input whose fractional-truncation byte offset lands inside a multi-byte char, and its final scaling multiply silently WRAPS over `uint256`. cow does the scaling itself with checked arithmetic (ASCII-digit grammar, `checked_mul`) and uses alloy only for the `Unit::new` decimals bound. | A blank field silently becomes zero, a negative input a near-`2^256` value, untrusted UTF-8 a panic, and an over-`uint256` magnitude a silent wrap — all bypassing the typed boundary. |
 | `Address::Display` lowercase emission | `crates/core/src/types/identity.rs` | ADR 0052 — alloy default is EIP-55 mixed-case checksum; cow wire is lowercase. | Every parity fixture diffs; every string-equality tool reports a false mismatch; EIP-712 JSON-stringified payload digests drift. |
 | `Address::Serialize` / `Deserialize` | `crates/core/src/types/identity.rs` | ADR 0052 | Same family; inbound deserialize accepts mixed case, outbound serialize always emits lowercase. |
@@ -204,12 +203,12 @@ The Bucket 2 rejection contract on `Amount::Deserialize` (rejects `0o`/`0b` per 
 
 ## The 8 never-swap exceptions
 
-Seven constraints plus three additional surfaces are verified as `DO NOT SWAP`. The CI grep gates that mechanize each fence live at `.github/workflows/never-swap-gates.yml`; the per-site `// DO NOT SWAP` comments live at the load-bearing call sites in `crates/contracts/`, `crates/core/`, `crates/signing/`, `crates/transport-policy/`, and `crates/transport-wasm/`. One further reimplementation fence — `Amount::parse_units` does the decimal scaling itself with checked arithmetic instead of the fail-open, panic-prone, silently-wrapping raw `alloy_primitives::utils::parse_units` (Bucket 2 row above) — carries its own `// DO NOT SWAP` comment block but no dedicated grep gate; it is held by the `gate-do-not-swap-census` comment-block count rather than a symbol-specific regex, so the census gate locks at eleven `DO NOT SWAP` blocks rather than ten.
+Seven constraints plus three additional surfaces are verified as `DO NOT SWAP`. The CI grep gates that mechanize each fence live at `.github/workflows/never-swap-gates.yml`; the per-site `// DO NOT SWAP` comments live at the load-bearing call sites in `crates/contracts/`, `crates/core/`, `crates/signing/`, `crates/transport-policy/`, and `crates/transport-wasm/`. One further reimplementation fence — `Amount::parse_units` does the decimal scaling itself with checked arithmetic instead of the fail-open, panic-prone, silently-wrapping raw `alloy_primitives::utils::parse_units` (Bucket 2 row above) — carries its own `// DO NOT SWAP` comment block but no dedicated grep gate; it is held by the `gate-do-not-swap-census` comment-block count rather than a symbol-specific regex, so the census gate locks at ten `DO NOT SWAP` blocks rather than nine.
 
 The canonical roster is:
 
 1. ECDSA `v` byte canonicalization (ADR 0022).
-2. `Amount` / `SignedAmount` `new` radix sniffing (ADR 0052).
+2. `Amount::new` radix sniffing (ADR 0052).
 3. `Address::Display` lowercase (ADR 0052).
 4. `SupportedChainId` + `api_path()` (ADR 0005, ADR 0011).
 5. `TypedDataDomain` cow struct (ADR 0052, ADR 0040).
@@ -228,7 +227,7 @@ Numbered ADR cites with the load-bearing topics:
 
 - **ADR 0005** — strong domain types as the default public contract.
 - **ADR 0010** — runtime-neutral async + transport posture; three `HttpTransport` impls; cancellation seam.
-- **ADR 0011** — typed Amount boundary; typestate builders; amendment anchors `Amount`/`SignedAmount` to `alloy_primitives::U256`/`I256`.
+- **ADR 0011** — typed Amount boundary; typestate builders; amendment anchors `Amount` to `alloy_primitives::U256`.
 - **ADR 0012** — canonical `alloy::sol!` bindings + typed `Registry`; hand-rolled encoders forbidden.
 - **ADR 0014** — EIP-1271 verification cache trait + two canonical impls; default-off, explicit-cache-arg contract.
 - **ADR 0019** — `HttpTransport` is the sole live-dispatch surface on `OrderbookApi` / `SubgraphApi`.
@@ -265,7 +264,7 @@ The principle map and the audit-refresh map together are the operational mechani
 
 Two minor ADR-vs-code drifts are flagged here so future amendments to the relevant ADRs can land alongside the corresponding source changes:
 
-- **ADR 0052** — the ADR sentence "the cow `Amount::new` and `SignedAmount::new` constructors remain lenient (accept both decimal and `0x`-prefixed hex)" matches the shipped `Amount::new` but does *not* match the shipped `SignedAmount::new`, which is strict-decimal-only. The amendment lands alongside the strict-decimal `SignedAmount::new` audit refresh.
+- **ADR 0052** — the ADR sentence "the cow `Amount::new` constructor remains lenient (accepts both decimal and `0x`-prefixed hex)" matches the shipped `Amount::new`.
 - **ADR 0049 cow-shed** — the `execute_hooks_signing_hash` collapse onto `SolStruct::eip712_signing_hash` (Bucket 1) should add an amendment block to ADR 0049 recording the swap.
 
 No other ADR-vs-code drift was surfaced.

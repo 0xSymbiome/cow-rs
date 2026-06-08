@@ -75,7 +75,7 @@ on every add or cut.
 | Parser and decoder | Orderbook rejection envelope, orderbook rejection code allowlist, decoded body and canonical status text, subgraph GraphQL error decoder, transport-error classifier, retry-after header parser, retry policy delay, jitter strategy delay, partner-fee `from_value`, flashloan-hints deserializer, hook-list deserializer, on-chain order log decoder, settlement event log decoder, eth-flow event log decoder |
 | Crypto envelope and hash | EIP-712 order-cancellations hash, EIP-1271 signature data decoder, EIP-1271 magic-value response decoder |
 | Order UID and signature classifier | Order UID pack and unpack, signature classifier and signing-scheme discriminant |
-| Core types and identities | `Amount` parser, `SignedAmount` parser, hex identity validators (`Address`, `Hash32`, `AppDataHash`, `OrderUid`, `HexData`), `Amount::parse_units`, redaction body scanner |
+| Core types and identities | `Amount` parser, hex identity validators (`Address`, `Hash32`, `AppDataHash`, `OrderUid`, `HexData`), `Amount::parse_units`, redaction body scanner |
 | App-data | CID round-trip, CID-to-hex decoder, schema version `is_semver`, `stringify_deterministic`, app-data size limit, `params_from_doc` |
 | Trading and slippage | App-data merge, slippage amounts, slippage policy helpers |
 | Orderbook wire totals | `calculate_total_fee` |
@@ -165,7 +165,7 @@ asserted invariant is meaningful for the public surface even when the
 target cannot drive the private helper directly.
 
 The fuzz crate declares `alloy-primitives` as a direct dependency in
-`fuzz/Cargo.toml` so the `Amount` and `SignedAmount` parser harnesses
+`fuzz/Cargo.toml` so the `Amount` parser harness
 and the slippage harnesses can construct `alloy_primitives::U256` and
 `alloy_primitives::I256` boundary inputs without routing through a
 published cow newtype constructor every iteration. The direct

@@ -47,7 +47,7 @@ bridging to alloy types is zero-cost via `From::from(addr).into()` or the
 `as_alloy` / `into_alloy` accessors. Constructors validate input; the cow public surface preserves the
 lowercase wire form for byte-typed identities (`Address`, `Hash32`,
 `AppDataHash`, `HexData`, `OrderUid`) and the strict-decimal-only wire form
-for the numeric types (`Amount`, `SignedAmount`).
+for the numeric type (`Amount`).
 
 ## Shipped Alloy Adapters
 

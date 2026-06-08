@@ -734,6 +734,21 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Removed
 
+- Removed `cow_sdk_core::SignedAmount`, the signed `int256` newtype. Its only
+  consumer was removed, leaving it load-bearing for no shipped flow and with no
+  analogue in the upstream `@cowprotocol/cow-sdk`; `Amount` (the unsigned atomic
+  newtype) is unchanged and remains the single canonical amount type. The paired
+  property, wire-format, and compile-fail test coverage and the
+  `fuzz_signed_amount_parse` target are removed with it, and
+  [ADR 0011](docs/adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md)
+  is amended.
+- Removed `AppDataHash::to_cid` and `AppDataHash::try_from_cid` from
+  `cow-sdk-core`, a byte-identical duplicate of the canonical `cow-sdk-app-data`
+  CID helpers. The removal drops the `cid`, `multihash`, and `multibase`
+  dependencies from `cow-sdk-core`.
+- Removed the unused `cow_sdk_core::QuoteRequest`, `cow_sdk_core::QuoteResponse`,
+  and `cow_sdk_core::Trade` user-domain types, which duplicated the
+  `cow-sdk-orderbook` quote and trade surfaces every shipped flow already uses.
 - Removed the settlement encoder and trade/order flag codec from
   `cow-sdk-contracts` (`SettlementEncoder`, `TokenRegistry`, `encode_trade`,
   `encode_order_flags` / `decode_order_flags`, `encode_trade_flags` /

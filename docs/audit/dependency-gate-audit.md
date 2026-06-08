@@ -1,7 +1,7 @@
 # Dependency Gate Audit
 
 Status: Current
-Last reviewed: 2026-06-06
+Last reviewed: 2026-06-08
 Owning surface: Release-facing dependency-audit gate for current published `cow-rs` surfaces
 Refresh trigger: Changes to blocking dependency policy, Cargo.lock advisory posture, release or verification dependency commands, published CID dependency posture, shared transport-policy dependencies, transport crate advisory posture, native Alloy two-family lockfile posture, ADR 0026 Alloy absorption rehearsal, the canonical primitive layer dependency closure per ADR 0052, or browser-wallet alloy advisory posture
 Related docs:
@@ -46,7 +46,7 @@ architecture reviews.
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
 | Transport advisories | The reqwest transport path resolves through a reviewed published `rustls-webpki` patch release | Conforms |
-| Published CID posture | The app-data and core CID stack no longer reaches the yanked `core2` path after the `cid 0.11.3` uplift, and both crates consume the published `cid`/`multihash`/`multibase` trio through shared workspace pins | Conforms |
+| Published CID posture | The app-data CID stack no longer reaches the yanked `core2` path after the `cid 0.11.3` uplift, and `cow-sdk-app-data` consumes the published `cid`/`multihash`/`multibase` trio through shared workspace pins | Conforms |
 | Gate ownership | `cargo deny` owns bans, licenses, sources, and yanked advisory policy, while `cargo audit` blocks vulnerabilities plus unsound and unmaintained advisories | Conforms |
 | Advisory tolerance source | `.github/config/deny.toml` is the canonical RustSec ignore register; CI derives `cargo audit` ignore arguments from it | Conforms |
 | Source whitelist | The dependency-source policy allows crates.io registry dependencies and rejects unknown registries and all git sources | Conforms |
@@ -126,8 +126,7 @@ through `jsonschema` (consumed by `cow-sdk-app-data`) resolve. No
 first-party crate retains a production direct dependency on either
 crate after the canonical primitive layer landed: the `cow-sdk-app-data`
 digest path routes through `alloy_primitives::keccak256`, and the cow
-`Amount` and `SignedAmount` newtypes wrap `alloy_primitives::U256` and
-`alloy_primitives::I256` directly per
+`Amount` newtype wraps `alloy_primitives::U256` directly per
 [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md).
 The alloy-core ABI workspace dependency family (`alloy-primitives`,
 `alloy-sol-types`, `alloy-sol-macro`, `alloy-dyn-abi`, `alloy-json-abi`,

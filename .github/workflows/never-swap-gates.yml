@@ -72,7 +72,7 @@ jobs:
           fi
 
   gate-amount-radix:
-    name: Amount / SignedAmount radix sniffing (ADR 0052)
+    name: Amount radix sniffing (ADR 0052)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -94,7 +94,7 @@ jobs:
           violations="$(grep -nE '\b(U256|I256)::from_str\s*\(' crates/core/src/types/amount.rs 2>/dev/null | grep -vE '^[0-9]+:[[:space:]]*//' || true)"
           if [ -n "$violations" ]; then
             printf '%s\n' "$violations" >&2
-            echo "::error::Never-swap fence: alloy U256/I256 from_str sniffs 0x/0o/0b radix prefixes. cow Amount and SignedAmount enforce explicit radix via from_str_radix and from_dec_str (ADR 0052)."
+            echo "::error::Never-swap fence: alloy U256 from_str sniffs 0x/0o/0b radix prefixes. cow Amount enforces explicit radix via from_str_radix and from_dec_str (ADR 0052)."
             exit 1
           fi
 
@@ -247,7 +247,7 @@ jobs:
           fi
 
   gate-do-not-swap-census:
-    name: DO NOT SWAP comment census (11 expected)
+    name: DO NOT SWAP comment census (10 expected)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -264,18 +264,17 @@ jobs:
             echo "::error::No crate sources found; refusing to silently pass."
             exit 1
           fi
-          # Eleven anchor blocks land at nine never-swap surfaces; the
-          # `Amount::new` / `SignedAmount::new` surface carries two blocks
-          # (one per constructor) and the `SupportedChainId` enum /
-          # `api_path()` surface carries two blocks (one per anchor). The
-          # eleventh block anchors `Amount::parse_units`, which reimplements
+          # Ten anchor blocks land at nine never-swap surfaces; the
+          # `SupportedChainId` enum / `api_path()` surface carries two blocks
+          # (one per anchor). The tenth block anchors `Amount::parse_units`,
+          # which reimplements
           # decimal scaling with checked arithmetic instead of
           # `alloy_primitives::utils::parse_units` — whose raw form is
           # fail-OPEN on empty/signed input, panics on non-ASCII, and
           # silently wraps over uint256.
           count="$(grep -RIc 'DO NOT SWAP' "${sources[@]}" | awk -F: '{s+=$2} END {print s+0}')"
-          if [ "$count" -ne 11 ]; then
-            echo "::error::Never-swap fence: expected exactly 11 DO NOT SWAP comment blocks across crates/ (one per anchor; two anchors carry paired blocks). Found ${count}. Either restore the missing comment or update this gate's expected count and amend docs/alloy-doctrine.md."
+          if [ "$count" -ne 10 ]; then
+            echo "::error::Never-swap fence: expected exactly 10 DO NOT SWAP comment blocks across crates/ (one per anchor; one anchor carries paired blocks). Found ${count}. Either restore the missing comment or update this gate's expected count and amend docs/alloy-doctrine.md."
             exit 1
           fi
           echo "Found ${count} DO NOT SWAP comment blocks — census matches."

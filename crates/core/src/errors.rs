@@ -117,9 +117,6 @@ pub enum CoreError {
     /// A long-running operation was cancelled through a cooperative cancellation token.
     #[error("operation was cancelled")]
     Cancelled,
-    /// A CID input failed to parse or did not match the canonical app-data shape.
-    #[error("invalid CID")]
-    InvalidCid,
 }
 
 impl From<Cancelled> for CoreError {

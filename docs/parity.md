@@ -159,7 +159,6 @@ following invariants, each pinned by a parity fixture or a contract test:
 - `Amount` strict-decimal-only `Deserialize` rejection of `0x`, `0o`, and
   `0b`-prefixed input that alloy's underlying `ruint::Uint::FromStr` would
   otherwise accept
-- `SignedAmount` negative-value decimal-string round-trip
 - the cow `TypedDataDomain` direct emission of the EIP-1193
   `eth_signTypedData_v4` wire shape (numeric `chainId`, required
   `verifyingContract`, no `salt`)

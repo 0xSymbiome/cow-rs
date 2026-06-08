@@ -260,24 +260,22 @@ provider-specific timing assumptions.
 
 ### Typed Amounts
 
-`cow-sdk-core` keeps two distinct amount roles at the typed boundary.
-`Amount` and `SignedAmount` are cow-owned `#[repr(transparent)]` newtypes
-over `alloy_primitives::U256` and `alloy_primitives::I256` respectively per
+`cow-sdk-core` keeps the atomic amount role at the typed boundary.
+`Amount` is a cow-owned `#[repr(transparent)]` newtype
+over `alloy_primitives::U256` per
 [ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md),
 preserving the decimal-string wire form. `Amount` carries the atomic
 (base-unit) quantity that crosses the wire; human-readable token amounts
 convert in and out through `Amount::from_units(whole, decimals)` for whole
 amounts, `Amount::parse_units(value, decimals)` for fractional or textual
 input, and `Amount::format_units(decimals)`, which scale by `10^decimals`
-with integer arithmetic (never floating point) so the round trip stays exact. Both numeric
-newtypes
-expose a fallible-by-return arithmetic surface — `checked_*` (returning
+with integer arithmetic (never floating point) so the round trip stays exact. `Amount` exposes a fallible-by-return arithmetic surface — `checked_*` (returning
 `Option`) and explicit `saturating_*` clamps — and intentionally ship no
 bare `Add` / `Sub` / `Mul` operators, so an overflow or underflow can
 never silently wrap (or panic) on a typed amount; a caller that needs raw
 wrapping reaches through `as_u256` / `into_u256`.
 The cow-owned `Deserialize` impl is strict-decimal-only on the wire
-boundary; the cow `Amount::new` and `SignedAmount::new` constructors stay
+boundary; the cow `Amount::new` constructor stays
 lenient to preserve the existing constructor contract.
 
 ### Transport Seams

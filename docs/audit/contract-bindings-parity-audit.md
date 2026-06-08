@@ -319,8 +319,7 @@ newtypes over the canonical `alloy_primitives` byte and integer types.
 `OrderDigest`, `BlockHash`, and `AppDataHash` wrap
 `alloy_primitives::B256`; `HexData` wraps `alloy_primitives::Bytes`;
 `OrderUid` wraps `alloy_primitives::FixedBytes<56>`; `Amount` wraps
-`alloy_primitives::U256`; `SignedAmount` wraps
-`alloy_primitives::I256`. The cached `{ inner, hex }` struct layout from
+`alloy_primitives::U256`. The cached `{ inner, hex }` struct layout from
 the historical parity revision is retired across every primitive in the
 family, along with the `identity_ext` extension trait module, the
 `cow_sdk_core::types::hex` encoder helpers, and the previous
@@ -335,9 +334,7 @@ canonical, matching the deployed protocol convention), `Amount`
 (canonical base-10 decimal string, strict-decimal-fail-closed at the
 serde boundary so radix-prefixed `0x`, `0o`, or `0b` inputs the alloy
 `ruint::Uint::FromStr` impl would otherwise silently accept are
-rejected through deserialization), and `SignedAmount` (canonical
-signed-decimal string with optional leading minus, same strict-decimal
-serde boundary). The remaining byte-typed primitives (`Hash32`,
+rejected through deserialization). The remaining byte-typed primitives (`Hash32`,
 `OrderDigest`, `BlockHash`, `AppDataHash`, `HexData`, `OrderUid`)
 forward Serialize / Deserialize to the inner alloy primitive via
 `#[serde(transparent)]` because the alloy lowercase 0x-prefixed default
@@ -351,8 +348,8 @@ emission seams that previously borrowed the cached hex string. The
 internal `pub` tuple-struct field carries a rustdoc-documented
 escape-hatch caveat: it is reachable for advanced callers but is
 explicitly not part of the API stability contract, and the safe
-accessors (`as_alloy` / `as_u256` / `as_i256`,
-`into_alloy` / `into_u256` / `into_i256`, `to_hex_string`,
+accessors (`as_alloy` / `as_u256`,
+`into_alloy` / `into_u256`, `to_hex_string`,
 `write_into`, `as_slice`) cover every supported workflow.
 
 Equality, hash, and ordering on the strict newtypes collapse onto the
@@ -410,26 +407,25 @@ ceiling is enforced by the type system at construction and the runtime
 overflow guards collapse to constant-true invariants. The contract
 tests at `crates/core/tests/wire_format_preservation_contract.rs` lock
 the canonical wire byte sequence for every identity primitive
-(`Address`, `Hash32`, `AppDataHash`, `HexData`, `OrderUid`, `Amount`,
-`SignedAmount`) and pin the `write_into` / `to_hex_string` byte-parity
+(`Address`, `Hash32`, `AppDataHash`, `HexData`, `OrderUid`, `Amount`)
+and pin the `write_into` / `to_hex_string` byte-parity
 property against the four byte-typed strict newtypes, the canonical
 lowercase form on uppercase `AppDataHash` input, the strict-decimal
 serde boundary on `Amount` (the `0x` / `0o` / `0b` radix-prefix
-rejection), and the strict-decimal serde boundary on `SignedAmount`
-(the `0x` and leading-plus rejection), so the canonical wire contract
+rejection), so the canonical wire contract
 stays byte-identical across the Stage B migration.
 
-The seven cow primitive newtypes (`Address`, `AppDataHash`, `Amount`,
-`Hash32`, `HexData`, `OrderUid`, `SignedAmount`) carry a wasm-target
+The six cow primitive newtypes (`Address`, `AppDataHash`, `Amount`,
+`Hash32`, `HexData`, `OrderUid`) carry a wasm-target
 Tsify derive (`#[cfg_attr(target_family = "wasm",
 derive(tsify::Tsify))]` with the `into_wasm_abi`, `from_wasm_abi`, and
 `type = "string"` attributes) so the canonical lowercase hex string (or
-decimal string for the numeric pair) is the wasm-bindgen ABI shape for
+decimal string for `Amount`) is the wasm-bindgen ABI shape for
 any future binding that exposes a cow identity newtype across the JS
 boundary. The non-wasm targets pick up no extra dependency surface; the
 derive is gated entirely behind `target_family = "wasm"`. The
 `cow_sdk_core::prelude` re-export hub now carries `Address`, `Amount`,
-`AppDataHash`, `Hash32`, `HexData`, `OrderUid`, and `SignedAmount`
+`AppDataHash`, `Hash32`, `HexData`, and `OrderUid`
 together, so a single `use cow_sdk_core::prelude::*;` brings every
 strict newtype into scope per ADR 0052.
 

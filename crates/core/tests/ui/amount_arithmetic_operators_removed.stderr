@@ -45,23 +45,3 @@ error[E0599]: no method named `pow` found for struct `Amount` in the current sco
    |
 18 |     let _ = a.pow(&b);
    |               ^^^ method not found in `Amount`
-
-error[E0369]: cannot subtract `SignedAmount` from `SignedAmount`
-  --> tests/ui/amount_arithmetic_operators_removed.rs:22:15
-   |
-22 |     let _ = s - t;
-   |             - ^ - SignedAmount
-   |             |
-   |             SignedAmount
-   |
-note: `SignedAmount` does not implement `Sub`
-  --> src/types/amount.rs
-   |
-   | pub struct SignedAmount(
-   | ^^^^^^^^^^^^^^^^^^^^^^^ `SignedAmount` is defined in another crate
-
-error[E0599]: no method named `pow` found for struct `SignedAmount` in the current scope
-  --> tests/ui/amount_arithmetic_operators_removed.rs:23:15
-   |
-23 |     let _ = s.pow(&Amount::ZERO);
-   |               ^^^ method not found in `SignedAmount`

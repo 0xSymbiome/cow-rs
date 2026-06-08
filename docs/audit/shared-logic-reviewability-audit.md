@@ -105,13 +105,13 @@ between variants is invisible to a reviewer who only reads one site.
   upstream variant is added or renamed.
 - **Identity wire-form preservation**: the cow-named identity types
   (`Address`, `Hash32`, `AppDataHash`, `HexData`, `OrderUid`) and the
-  cow-named numeric types (`Amount`, `SignedAmount`) resolve to
+  cow-named numeric type (`Amount`) resolves to
   cow-owned `#[repr(transparent)]` newtypes over the corresponding
   `alloy_primitives` type per
   [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md).
   Each newtype's `Display` and serde impls emit the canonical wire
   form (lowercase 0x-prefixed hex for byte-typed identities;
-  strict-decimal for `Amount` and `SignedAmount`); the cow inherent
+  strict-decimal for `Amount`); the cow inherent
   `to_hex_string()` returns the same form. The wire-format preservation
   invariant is pinned by
   `crates/core/tests/wire_format_preservation_contract.rs` and the
@@ -119,8 +119,7 @@ between variants is invisible to a reviewer who only reads one site.
   underlying primitive backing cannot silently drift the wire
   format. `Address` carries a cow-owned `Display` impl because
   `alloy_primitives::Address::Display` defaults to EIP-55 checksum
-  casing and the cow wire form is lowercase; `Amount` and
-  `SignedAmount` carry cow-owned `Serialize`/`Deserialize` impls
+  casing and the cow wire form is lowercase; `Amount` carries cow-owned `Serialize`/`Deserialize` impls
   because alloy's `U256::Serialize` emits hex and alloy's
   `ruint::Uint::FromStr` accepts four radices, both of which would
   silently relax the cow strict-decimal-only fail-closed contract.

@@ -1,7 +1,7 @@
 # WASM Callback Shape Design Audit
 
 Status: Current
-Last reviewed: 2026-05-22
+Last reviewed: 2026-06-08
 Owning surface: `cow-sdk-wasm` typed JavaScript wallet, signer, EIP-1271, cancellation, and HTTP callback boundary
 Refresh trigger: Changes to callback type declarations, callback registry ownership, signing callback payloads, cancellation signing, wallet timeout handling, or callback error mapping
 Related docs:
@@ -47,13 +47,13 @@ Each callback receives a typed payload or request DTO and may return either a
 plain value, a Promise, or a thenable.
 
 The cow identity newtypes (`Address`, `Hash32`, `AppDataHash`, `HexData`,
-`OrderUid`) and the cow numeric newtypes (`Amount`, `SignedAmount`) carry a
+`OrderUid`) and the cow numeric newtype (`Amount`) carries a
 `Tsify` derive gated to `target_family = "wasm"` per
 [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md), so
 when a cow newtype crosses the JavaScript boundary in a callback payload
 the wasm-bindgen ABI shape is the canonical lowercase `0x`-prefixed hex
 string (for the byte-typed identity family) or the strict-decimal string
-(for the `Amount` / `SignedAmount` numeric family).
+(for the `Amount` numeric type).
 
 ### Registry Ownership
 

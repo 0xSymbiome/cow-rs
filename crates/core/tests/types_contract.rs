@@ -1,8 +1,8 @@
-use alloy_primitives::{I256, U256};
+use alloy_primitives::U256;
 use cow_sdk_core::{
     Address, Amount, Amounts, AppDataHash, AppDataHex, BuyTokenDestination, Costs, FeeComponent,
     Hash32, HexData, NetworkFee, ORDER_TYPE_FIELD_NAMES, OrderData, OrderKind, OrderUid,
-    QUOTE_AMOUNT_STAGE_NAMES, QuoteAmountsAndCosts, SellTokenSource, SignedAmount,
+    QUOTE_AMOUNT_STAGE_NAMES, QuoteAmountsAndCosts, SellTokenSource,
     VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS, ValidTo, ValidationError,
 };
 
@@ -269,10 +269,6 @@ fn typed_primitives_normalize_and_fail_closed() {
     assert!(Amount::new("abc").is_err());
     assert!(Amount::new(format!("0x1{}", "0".repeat(64))).is_err());
 
-    assert_eq!(SignedAmount::new("-0005").unwrap().to_string(), "-5");
-    assert_eq!(SignedAmount::new("0").unwrap().to_string(), "0");
-    assert!(SignedAmount::new("0x5").is_err());
-
     assert_eq!(HexData::new("0xabc").unwrap().to_hex_string(), "0x0abc");
     assert_eq!(HexData::empty().to_hex_string(), "0x");
     assert!(HexData::new("1234").is_err());
@@ -280,49 +276,6 @@ fn typed_primitives_normalize_and_fail_closed() {
     let hash = Hash32::new(format!("0x{}", "ab".repeat(32))).unwrap();
     assert_eq!(hash.to_hex_string().len(), 66);
     assert!(Hash32::new("0x1234").is_err());
-}
-
-#[test]
-fn signed_amount_typed_accessors_preserve_i256_storage() {
-    // Largest representable positive `I256` value: `2^255 - 1`. The cow
-    // newtype storage is `#[repr(transparent)]` over `I256`, so every
-    // bit pattern fits in 32 bytes and the accessor surface returns
-    // borrowed / owned `I256` views without intermediate parsing.
-    let value = I256::MAX;
-    let canonical = value.to_string();
-    let amount = SignedAmount::from_i256(value);
-
-    assert_eq!(amount.as_i256(), &value);
-    assert_eq!(amount.to_string(), canonical);
-    assert_eq!(amount.into_i256(), value);
-}
-
-#[test]
-fn signed_amount_checked_arithmetic_returns_i256_results() {
-    let lhs = SignedAmount::new("-12345678901234567890").unwrap();
-    let rhs = SignedAmount::new("9876543210").unwrap();
-    // A 10^9 multiplier keeps `rhs * multiplier` well inside the `I256`
-    // representable range while still exercising the full 64-bit-class
-    // arithmetic surface.
-    let multiplier = SignedAmount::from_i256(I256::try_from(1_000_000_000i64).unwrap());
-
-    let sum = lhs.checked_add(&rhs).unwrap();
-    assert_eq!(
-        sum.into_i256(),
-        lhs.as_i256().checked_add(*rhs.as_i256()).unwrap()
-    );
-
-    let difference = lhs.checked_sub(&rhs).unwrap();
-    assert_eq!(
-        difference.into_i256(),
-        lhs.as_i256().checked_sub(*rhs.as_i256()).unwrap()
-    );
-
-    let product = rhs.checked_mul(&multiplier).unwrap();
-    assert_eq!(
-        product.into_i256(),
-        rhs.as_i256().checked_mul(*multiplier.as_i256()).unwrap()
-    );
 }
 
 #[test]
@@ -382,11 +335,6 @@ fn cow_primitive_newtype_zero_constants_equal_alloy_zero() {
     assert_eq!(Amount::ZERO, zero_amount);
     assert!(Amount::ZERO.is_zero());
 
-    // SignedAmount (int256 zero)
-    let zero_signed = SignedAmount::new("0").unwrap();
-    assert_eq!(SignedAmount::ZERO, zero_signed);
-    assert!(SignedAmount::ZERO.is_zero());
-
     // AppDataHash (32 zero bytes)
     let zero_app_data_hash =
         AppDataHash::new("0x0000000000000000000000000000000000000000000000000000000000000000")
@@ -408,8 +356,8 @@ fn cow_primitive_newtype_zero_constants_equal_alloy_zero() {
 }
 
 // Contract tests for the narrowed checked / saturating / bit_len /
-// bits / MAX / MIN arithmetic surface on `Amount` and `SignedAmount`.
-// The newtypes expose no bare `+` `-` `*` operators and no `pow`; the
+// MAX / MIN arithmetic surface on `Amount`.
+// The newtype exposes no bare `+` `-` `*` operators and no `pow`; the
 // only arithmetic is fallible-by-return (`checked_*` -> `Option`) or
 // an explicit `saturating_*` clamp, so overflow can never silently
 // wrap or panic. `checked_pow` is the genuine overflow-detecting
@@ -488,110 +436,6 @@ fn amount_bit_len_returns_significant_bit_count_across_boundaries() {
     assert_eq!(Amount::new("4").unwrap().bit_len(), 3);
     // U256::MAX has all 256 bits set.
     assert_eq!(Amount::MAX.bit_len(), 256);
-}
-
-#[test]
-fn signed_amount_max_and_min_constants_equal_alloy_i256_bounds() {
-    assert_eq!(SignedAmount::MAX.into_i256(), I256::MAX);
-    assert_eq!(SignedAmount::MIN.into_i256(), I256::MIN);
-    assert!(SignedAmount::MAX > SignedAmount::ZERO);
-    assert!(SignedAmount::MIN < SignedAmount::ZERO);
-}
-
-#[test]
-fn signed_amount_checked_pow_matches_for_small_inputs() {
-    let two = SignedAmount::new("2").unwrap();
-    let three = SignedAmount::new("3").unwrap();
-    let neg_two = SignedAmount::new("-2").unwrap();
-
-    let amount_zero = Amount::ZERO;
-    let amount_four = Amount::new("4").unwrap();
-    let amount_five = Amount::new("5").unwrap();
-    let amount_three = Amount::new("3").unwrap();
-
-    assert_eq!(
-        two.checked_pow(&amount_zero),
-        Some(SignedAmount::new("1").unwrap())
-    );
-    assert_eq!(
-        two.checked_pow(&amount_four),
-        Some(SignedAmount::new("16").unwrap())
-    );
-    assert_eq!(
-        three.checked_pow(&amount_five),
-        Some(SignedAmount::new("243").unwrap())
-    );
-    // Negative base, odd exponent stays negative.
-    assert_eq!(
-        neg_two.checked_pow(&amount_three),
-        Some(SignedAmount::new("-8").unwrap())
-    );
-    // Negative base, even exponent flips positive.
-    assert_eq!(
-        neg_two.checked_pow(&amount_four),
-        Some(SignedAmount::new("16").unwrap())
-    );
-}
-
-#[test]
-fn signed_amount_checked_pow_returns_none_on_overflow() {
-    // I256::MAX is roughly 2^255. Squaring it overflows.
-    assert_eq!(
-        SignedAmount::MAX.checked_pow(&Amount::new("2").unwrap()),
-        None,
-    );
-    // Large exponent on a small base overflows.
-    assert_eq!(
-        SignedAmount::new("2")
-            .unwrap()
-            .checked_pow(&Amount::new("256").unwrap()),
-        None,
-    );
-}
-
-#[test]
-fn signed_amount_saturating_pow_saturates_at_signed_bounds() {
-    assert_eq!(
-        SignedAmount::MAX.saturating_pow(&Amount::new("2").unwrap()),
-        SignedAmount::MAX,
-    );
-    // Non-overflowing positive case stays exact.
-    assert_eq!(
-        SignedAmount::new("2")
-            .unwrap()
-            .saturating_pow(&Amount::new("10").unwrap()),
-        SignedAmount::new("1024").unwrap(),
-    );
-    // Negative base with very large odd exponent saturates at MIN.
-    assert_eq!(
-        SignedAmount::new("-2")
-            .unwrap()
-            .saturating_pow(&Amount::new("255").unwrap()),
-        SignedAmount::MIN,
-    );
-}
-
-#[test]
-fn signed_amount_bits_returns_twos_complement_minimum_width_across_boundaries() {
-    // `SignedAmount::bits` delegates to `alloy_primitives::Signed::bits`,
-    // which returns the minimum number of bits needed to represent the
-    // value as a *signed* two's-complement integer (including a sign bit
-    // for positive values that are not negative powers of two). This is
-    // NOT the magnitude bit count.
-    assert_eq!(SignedAmount::ZERO.bits(), 0);
-    // +1 needs a sign bit + value bit = 2 bits in signed representation.
-    assert_eq!(SignedAmount::new("1").unwrap().bits(), 2);
-    // -1 is the special all-ones pattern; just the sign bit suffices.
-    assert_eq!(SignedAmount::new("-1").unwrap().bits(), 1);
-    // +2 needs sign + two value bits = 3 bits.
-    assert_eq!(SignedAmount::new("2").unwrap().bits(), 3);
-    // -2 is a negative power of two; magnitude width is enough.
-    assert_eq!(SignedAmount::new("-2").unwrap().bits(), 2);
-    // I256::MAX = 2^255 - 1; needs 255 magnitude bits + 1 sign bit = 256.
-    assert_eq!(SignedAmount::MAX.bits(), 256);
-    // I256::MIN = -(2^255); is a negative power of two; magnitude
-    // width (256 bits) is enough.
-    assert_eq!(SignedAmount::MIN.bits(), 256);
 }
 
 #[test]

@@ -147,13 +147,6 @@ doc = false
 bench = false
 
 [[bin]]
-name = "fuzz_signed_amount_parse"
-path = "fuzz_targets/fuzz_signed_amount_parse.rs"
-test = false
-doc = false
-bench = false
-
-[[bin]]
 name = "fuzz_core_identity_validators"
 path = "fuzz_targets/fuzz_core_identity_validators.rs"
 test = false
