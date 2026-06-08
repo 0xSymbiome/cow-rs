@@ -155,7 +155,18 @@ pub trait Provider {
     ///
     /// Returns the implementation-defined provider error when the call fails.
     async fn call(&self, tx: &TransactionRequest) -> Result<HexData, Self::Error>;
-    /// Executes a typed contract read request.
+    /// Executes a contract read against a runtime-supplied ABI and returns the
+    /// decoded result serialized as JSON.
+    ///
+    /// The ABI and arguments are supplied dynamically on [`ContractCall`], so the
+    /// decoded output cannot be a compile-time type; it is returned as a
+    /// serialized JSON string. This is also the form the result takes when the
+    /// read is served across a TypeScript/WASM callback boundary, where JSON is
+    /// the wire shape. It is therefore an explicit serialized boundary (see
+    /// ADR 0005), and callers decode it into strong domain types through the
+    /// dedicated helpers — for example the allowance reader in `cow-sdk-trading`
+    /// and the EIP-1271 magic-value decoder in `cow-sdk-contracts` — rather than
+    /// matching on the raw string.
     ///
     /// # Errors
     ///

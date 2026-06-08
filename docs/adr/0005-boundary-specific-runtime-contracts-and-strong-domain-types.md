@@ -70,3 +70,17 @@ respectively; the type-system distinction between same-width byte
 primitives (`Hash32` vs `AppDataHash`, both 32 bytes wide) is preserved
 by the newtype layer rather than by naming convention or extension
 traits. The wire-form preservation contract is unchanged.
+
+## Amendment 2026-06-08: the read-contract serialized boundary
+
+`Provider::read_contract` returns the ABI-decoded result as a serialized JSON
+`String`. This is a deliberate serialized boundary, not a stringly-typed public
+surface: the ABI is supplied at runtime on `ContractCall` (so no compile-time
+output type exists), and the result must also cross the TypeScript/WASM callback
+boundary, where JSON is the wire form. Strong-typed decoding lives one layer up
+in the dedicated consumer helpers — the allowance reader in `cow-sdk-trading`
+and the EIP-1271 magic-value decoder in `cow-sdk-contracts` — which return
+strong domain types. The `Provider` method set itself stays frozen per
+[ADR 0057](0057-log-provider-capability-trait.md); this amendment records why
+the serialized return is the correct shape for that frozen contract rather than
+a deviation from the strong-domain-type default above.
