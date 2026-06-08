@@ -537,7 +537,7 @@ fn has_contract_code(code: Option<&HexData>) -> bool {
     matches!(code, Some(code) if !code.is_empty())
 }
 
-fn ensure_magic_value(raw: &str) -> Result<(), ContractsError> {
+pub(crate) fn ensure_magic_value(raw: &str) -> Result<(), ContractsError> {
     let actual = decode_magic_value_response(raw)?;
     if actual == IERC1271::isValidSignatureCall::SELECTOR {
         Ok(())

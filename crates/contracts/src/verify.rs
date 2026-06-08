@@ -45,14 +45,12 @@
 use std::fmt;
 
 use alloy_primitives::keccak256;
-use alloy_sol_types::SolCall;
 use cow_sdk_core::{Address, Provider};
 
 use crate::ContractsError;
-use crate::eip1271::IERC1271;
 use crate::signature::{
-    EIP1271_IS_VALID_SIGNATURE_ABI_JSON, Eip1271VerificationRequest, decode_magic_value_response,
-    ensure_contract_code,
+    EIP1271_IS_VALID_SIGNATURE_ABI_JSON, Eip1271VerificationRequest, ensure_contract_code,
+    ensure_magic_value,
 };
 
 /// Optional caching seam consumed by [`verify_eip1271_signature_cached`].
@@ -218,16 +216,4 @@ fn emit_cache_skip_event() {
 
 const fn decode_digest_key(digest: &cow_sdk_core::Hash32) -> [u8; 32] {
     digest.into_alloy().0
-}
-
-fn ensure_magic_value(raw: &str) -> Result<(), ContractsError> {
-    let actual = decode_magic_value_response(raw)?;
-    if actual == IERC1271::isValidSignatureCall::SELECTOR {
-        Ok(())
-    } else {
-        Err(ContractsError::Eip1271MagicValueMismatch {
-            expected: IERC1271::isValidSignatureCall::SELECTOR,
-            actual,
-        })
-    }
 }
