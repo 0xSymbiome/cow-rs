@@ -88,7 +88,9 @@ downstream dashboards can pivot on the same names across every SDK call.
 | `attempt_index` | numeric | Attempt index on retry events |
 | `backoff_ms` | numeric | Retry wait duration in milliseconds |
 | `transport_error_class` | string | Transport failure class on retry events without an HTTP response |
-| `duration_ms` | numeric | Elapsed time in milliseconds for the span |
+| `duration_ms` | numeric | Span elapsed time. Derived by the subscriber from span enter/exit timings (for example the `fmt` layer's span timing); the SDK does not emit this field itself |
+| `policy` | string | External-host or provider-origin policy label on a `cow_sdk::trust` event |
+| `allowed` | boolean | Whether the evaluated host or origin was permitted under the policy on a `cow_sdk::trust` event |
 | `order_uid` | string | Order UID of the target order |
 | `order_uid_count` | numeric | Number of order UIDs included in a cancellation-signing event |
 | `quote_id` | numeric | Orderbook quote id returned by a quote or attached to an order submission |
@@ -133,11 +135,15 @@ contains the URL scheme, host, credentials, query string, or fragment.
 ### `cow-sdk-orderbook`
 
 Every public async method on `OrderbookApi` emits one span. Spans carry
-`chain`, `env`, `endpoint`, and `method`; retry-bearing spans populate
-`attempts` and `status`, and `quote_id`, `order_uid`, and `owner` are added
-where the request or response exposes them. When the `tracing` feature is
-enabled, retry decisions also emit events with `attempt_index`, `backoff_ms`,
-and either `status` or `transport_error_class`.
+`chain`, `env`, `endpoint`, and `method`; the `quote` and `send_order` spans
+additionally declare `attempts` and `status` and have them recorded as the
+request runs, and `quote_id`, `order_uid`, and `owner` are added where the
+request or response exposes them. When the `tracing` feature is enabled, retry
+decisions also emit `debug` events with `attempt_index`, `backoff_ms`, and
+either `status` or `transport_error_class`. A fully exhausted retry budget
+emits a `warn`-level event on the same `cow_sdk::transport` target with
+`attempt_index`, either `status` or `transport_error_class`, and a sentinel
+`backoff_ms = 0` (no further wait follows).
 
 - `version`
 - `quote`
@@ -367,6 +373,27 @@ strategy for deterministic tests. The native cooldown contract is exercised by
 the parser boundary is covered by `crates/transport-policy/tests/policy_contract.rs` and `crates/transport-policy/tests/retry_after_contract.rs`,
 and the retry-event contract is covered by
 `crates/orderbook/tests/request_contract.rs::tracing_contract::execute_with_emits_retry_events_with_status_and_transport_error_fields`.
+
+## Host and Origin Trust
+
+The SDK emits a `warn`-level event on the `cow_sdk::trust` target when it
+evaluates a host or wallet origin that is outside the canonical allow-set. These
+are advisory signals, not failures: the call may still proceed under the
+configured policy. Two sites emit them:
+
+- `cow-sdk-core` evaluates a non-canonical external service host and emits an
+  event with `host`, `policy`, and `allowed`. The `host` value is wrapped in
+  `Redacted` and always renders `[redacted]`; `policy` is the external-host
+  policy label and `allowed` is the boolean verdict.
+- `cow-sdk-browser-wallet` evaluates a non-discovered or anonymous EIP-1193
+  provider origin and emits an event with `origin` and `allowed`. The `origin`
+  value is `Redacted` and always renders `[redacted]` (the anonymous case
+  records the constant `<anonymous>` placeholder, also redacted), and `allowed`
+  is the boolean verdict.
+
+The level is `warn` so a host running at the default `info` verbosity surfaces a
+non-canonical host or untrusted wallet origin without opting into SDK `debug`
+output.
 
 ## Error Classification
 
