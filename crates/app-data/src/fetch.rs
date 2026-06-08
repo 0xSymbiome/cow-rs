@@ -98,9 +98,26 @@ pub async fn fetch_doc_from_cid(
 
 /// Fetches an app-data document by CID using an explicit fetch policy.
 ///
+/// This is the shared IPFS read leaf: every `fetch_doc_*` entry point funnels
+/// here, so the single `fetch_doc_from_cid_with_policy` span covers each fetch
+/// path exactly once. The span records the requested `cid` and a stable
+/// `endpoint` label only; the configured read base URI — which may carry a
+/// gateway credential — is never recorded, matching the `Redacted<String>`
+/// posture of [`IpfsConfig`].
+///
 /// # Errors
 ///
 /// Returns [`AppDataError`] if the transport fails or the fetched payload is not valid JSON.
+#[cfg_attr(
+    feature = "tracing",
+    tracing::instrument(
+        skip_all,
+        fields(
+            endpoint = "app_data.fetch_doc_from_cid",
+            cid = %cid,
+        ),
+    ),
+)]
 pub async fn fetch_doc_from_cid_with_policy(
     cid: &str,
     transport: &impl IpfsFetchTransport,

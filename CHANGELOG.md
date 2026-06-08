@@ -14,6 +14,13 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Added
 
+- The `cow-sdk-app-data` IPFS document-read helpers emit a fetch span when the
+  `tracing` feature is enabled, closing a previously inert feature. Every
+  `fetch_doc_*` entry path funnels through the shared
+  `fetch_doc_from_cid_with_policy` leaf, so each fetch emits exactly one span
+  carrying `endpoint = "app_data.fetch_doc_from_cid"` and the requested `cid`.
+  The configured gateway read base URI is never recorded, matching the
+  `Redacted<String>` posture of `IpfsConfig`.
 - `cow_sdk_cow_shed::CowShedHooks::sign` emits a `sign` span carrying `chain`,
   `version`, and `endpoint = "cow_shed.sign"` when the `tracing` feature is
   enabled, closing the one signer-mediated telemetry gap in the COW Shed leaf.

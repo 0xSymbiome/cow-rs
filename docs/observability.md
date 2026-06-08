@@ -15,6 +15,7 @@ single facade feature on `cow-sdk` that activates them all in one step:
 cow-sdk = { version = "0.1", features = ["tracing"] }
 # or, reaching individual crates directly:
 cow-sdk-trading = { version = "0.1", features = ["tracing"] }
+cow-sdk-app-data = { version = "0.1", features = ["tracing"] }
 cow-sdk-contracts = { version = "0.1", features = ["tracing"] }
 cow-sdk-orderbook = { version = "0.1", features = ["tracing"] }
 cow-sdk-subgraph = { version = "0.1", features = ["tracing"] }
@@ -95,6 +96,7 @@ downstream dashboards can pivot on the same names across every SDK call.
 | `quote_id` | numeric | Orderbook quote id returned by a quote or attached to an order submission |
 | `owner` | string | Owner address exposed on the request parameters |
 | `verifier` | string | Public on-chain verifier address for EIP-1271 verification |
+| `cid` | string | IPFS content identifier requested on an app-data fetch span |
 | `version` | debug | COW Shed deployment version on cow-shed signing spans |
 | `tx_hash` | string | Broadcast transaction hash on transaction-lifecycle spans |
 | `tx_status` | string | Mined terminal status on a receipt span: `success`, `reverted`, or `unknown` |
@@ -109,8 +111,8 @@ downstream dashboards can pivot on the same names across every SDK call.
 
 Tracing spans are emitted by every long-running public async method on
 `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-trading`,
-`cow-sdk-signing`, `cow-sdk-browser-wallet`, and, behind its opt-in
-`cow-shed` facade feature, `cow-sdk-cow-shed`. Each canonical public async
+`cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-browser-wallet`, and, behind
+its opt-in `cow-shed` facade feature, `cow-sdk-cow-shed`. Each canonical public async
 method carries `#[tracing::instrument]` and emits exactly one span per call.
 The native Alloy adapter crates participate in the facade `tracing` feature
 family and follow the same redaction posture for any adapter diagnostics.
@@ -200,6 +202,18 @@ inclusion or execution success
 
 - `transaction.submit` (module-level, `submit_and_wait_for_receipt`)
 - `transaction.receipt` (module-level, `submit_and_wait_for_receipt` and `poll_for_receipt`)
+
+### `cow-sdk-app-data`
+
+The IPFS document-read helpers all funnel through one shared leaf, so each
+fetch path emits exactly one span. `fetch_doc_from_cid_with_policy` carries
+`endpoint = "app_data.fetch_doc_from_cid"` and records the requested `cid`. The
+non-policy `fetch_doc_from_cid`, the `fetch_doc_from_app_data_hex` variants, and
+the hex-to-CID derivation all delegate to this leaf rather than emitting their
+own spans. The configured gateway read base URI — which may carry a credential —
+is never recorded, matching the `Redacted<String>` posture of `IpfsConfig`.
+
+- `fetch_doc_from_cid_with_policy` (module-level; the shared read leaf for every `fetch_doc_*` entry)
 
 ### `cow-sdk-contracts`
 
