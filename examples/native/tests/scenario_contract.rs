@@ -53,7 +53,7 @@ async fn version_fixture_is_plain_text() {
         SupportedChainId::Sepolia,
         CowEnv::Prod,
     ))
-    .with_external_host_policy(ExternalHostPolicy::Test)
+    .external_host_policy(ExternalHostPolicy::Test)
     .base_url(server.uri())
     .build()
     .expect("test orderbook client with local mock endpoint must build");

@@ -1,7 +1,7 @@
 # Typestate Builder Contract Audit
 
 Status: Current
-Last reviewed: 2026-06-02
+Last reviewed: 2026-06-08
 Owning surface: `cow-sdk-orderbook::OrderbookApiBuilder`, `cow-sdk-subgraph::SubgraphApiBuilder`, and `cow-sdk-trading::TradingBuilder` construction seams
 Refresh trigger: ADR 0038 review confirmed no builder-shape change; future type-parameter or marker visibility changes on any covered builder, a change to the set of required inputs (chain, environment, API key, appCode, or transport), a change to host-policy validation, a change to the native default-transport convenience impl, a change to the wasm32 transport-required or injected-orderbook invariant, or a new `trybuild` witness replacing the current compile-fail coverage
 Related docs:
@@ -75,7 +75,13 @@ reaching `.build()` without a chain id, without an environment, and on an
 empty builder each fail with the `no method named build` diagnostic. The fluent
 layer additionally exposes optional setters for transport policy,
 external host policy, shared `reqwest::Client` reuse on native targets,
-and per-chain base-URL overrides. The `.base_url(...)` convenience —
+and per-chain base-URL overrides. Every construction-builder setter is
+named by its bare configuration noun — `chain`, `environment`,
+`transport`, `transport_policy`, `api_key`, `external_host_policy`, and
+`base_urls` — with no `with_` prefix, matching the standard-library
+builder convention (`Command::arg`, `OpenOptions::read`). The `with_`
+prefix is reserved for the owned-value setters of parameter and
+configuration types whose bare noun is already an accessor. The `.base_url(...)` convenience —
 which reuses the environment already carried by the `EnvSet` marker — is
 implemented only on the `EnvSet` state, so calling it before
 `.environment(...)` is a compile error rather than a runtime panic. The

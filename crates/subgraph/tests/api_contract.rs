@@ -422,7 +422,7 @@ async fn run_query_with_config_honors_chain_override_for_generic_queries() {
     let api = SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("FakeApiKey")
-        .with_external_host_policy(ExternalHostPolicy::Test)
+        .external_host_policy(ExternalHostPolicy::Test)
         .base_urls(base_urls)
         .build()
         .expect("subgraph test client with loopback override must build");
@@ -473,7 +473,7 @@ async fn run_query_uses_custom_base_url_overrides() {
     let api = SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("FakeApiKey")
-        .with_external_host_policy(ExternalHostPolicy::AllowAny)
+        .external_host_policy(ExternalHostPolicy::AllowAny)
         .base_urls(custom_urls)
         .build()
         .expect("subgraph test client with custom overrides must build");
@@ -537,7 +537,7 @@ async fn transport_policy_override_rebuilds_client_with_custom_user_agent() {
     let api = SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("FakeApiKey")
-        .with_external_host_policy(ExternalHostPolicy::Test)
+        .external_host_policy(ExternalHostPolicy::Test)
         .base_urls(base_urls)
         .transport_policy(transport_policy)
         .build()
@@ -833,7 +833,7 @@ async fn transport_failures_surface_typed_context() {
     let api = SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("FakeApiKey")
-        .with_external_host_policy(ExternalHostPolicy::Test)
+        .external_host_policy(ExternalHostPolicy::Test)
         .base_urls(base_urls)
         .build()
         .expect("subgraph test client with loopback override must build");
@@ -1039,7 +1039,7 @@ async fn shared_client_fans_queries_across_multiple_subgraph_instances() {
     let first_api = SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("FakeApiKey")
-        .with_external_host_policy(ExternalHostPolicy::Test)
+        .external_host_policy(ExternalHostPolicy::Test)
         .base_urls(first_base_urls)
         .client(shared.clone())
         .build()
@@ -1050,7 +1050,7 @@ async fn shared_client_fans_queries_across_multiple_subgraph_instances() {
     let second_api = SubgraphApi::builder()
         .chain(SupportedChainId::GnosisChain)
         .api_key("FakeApiKey")
-        .with_external_host_policy(ExternalHostPolicy::Test)
+        .external_host_policy(ExternalHostPolicy::Test)
         .base_urls(second_base_urls)
         .client(shared)
         .build()
@@ -1102,7 +1102,7 @@ mod recording_transport {
         SubgraphApi::builder()
             .chain(SupportedChainId::Mainnet)
             .api_key("FakeApiKey")
-            .with_external_host_policy(ExternalHostPolicy::Allow(vec![
+            .external_host_policy(ExternalHostPolicy::Allow(vec![
                 "subgraph-recording.example".to_owned(),
             ]))
             .base_urls(base_urls)

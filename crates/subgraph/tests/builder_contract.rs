@@ -55,7 +55,7 @@ fn base_urls_override_propagates_to_the_built_client() {
     let api = SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("partner-key")
-        .with_external_host_policy(ExternalHostPolicy::Allow(vec![
+        .external_host_policy(ExternalHostPolicy::Allow(vec![
             "subgraph.example".to_owned(),
         ]))
         .base_urls(base_urls.clone())
@@ -162,7 +162,7 @@ async fn injected_transport_observes_every_live_request_from_the_built_client() 
     let api = SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("partner-key")
-        .with_external_host_policy(ExternalHostPolicy::Allow(vec![
+        .external_host_policy(ExternalHostPolicy::Allow(vec![
             "builder-recording.example".to_owned(),
         ]))
         .base_urls(overrides)

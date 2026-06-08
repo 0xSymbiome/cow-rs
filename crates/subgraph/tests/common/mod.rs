@@ -25,7 +25,7 @@ pub fn loopback_client(uri: String) -> SubgraphApi {
     SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("FakeApiKey")
-        .with_external_host_policy(ExternalHostPolicy::Test)
+        .external_host_policy(ExternalHostPolicy::Test)
         .base_urls(loopback_base_urls(uri))
         .build()
         .expect("subgraph test client with loopback override must build")
@@ -37,7 +37,7 @@ pub fn loopback_client_no_timeout(uri: String) -> SubgraphApi {
     SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("FakeApiKey")
-        .with_external_host_policy(ExternalHostPolicy::Test)
+        .external_host_policy(ExternalHostPolicy::Test)
         .transport_policy(
             TransportPolicy::default_subgraph().with_client_policy(
                 HttpClientPolicy::new(DEFAULT_SUBGRAPH_USER_AGENT)

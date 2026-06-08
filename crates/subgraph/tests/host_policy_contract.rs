@@ -44,7 +44,7 @@ fn subgraph_builder_accepts_explicit_allow_and_loopback_policy() {
     let allow = SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("partner-key")
-        .with_external_host_policy(ExternalHostPolicy::Allow(vec!["mirror.example".to_owned()]))
+        .external_host_policy(ExternalHostPolicy::Allow(vec!["mirror.example".to_owned()]))
         .base_urls(base_urls("https://mirror.example/subgraphs"))
         .build();
     assert!(allow.is_ok());
@@ -57,7 +57,7 @@ fn subgraph_builder_accepts_explicit_allow_and_loopback_policy() {
         let api = SubgraphApi::builder()
             .chain(SupportedChainId::Mainnet)
             .api_key("partner-key")
-            .with_external_host_policy(ExternalHostPolicy::Test)
+            .external_host_policy(ExternalHostPolicy::Test)
             .base_urls(base_urls(url))
             .build();
         assert!(
@@ -73,7 +73,7 @@ fn host_policy_treats_rfc_1918_private_ip_as_custom_host() {
         let error = SubgraphApi::builder()
             .chain(SupportedChainId::Mainnet)
             .api_key("partner-key")
-            .with_external_host_policy(policy)
+            .external_host_policy(policy)
             .base_urls(base_urls("http://192.168.1.10:39111/subgraphs"))
             .build()
             .unwrap_err();
@@ -87,7 +87,7 @@ fn host_policy_treats_rfc_1918_private_ip_as_custom_host() {
     let allowed = SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("partner-key")
-        .with_external_host_policy(ExternalHostPolicy::Allow(vec!["192.168.1.10".to_owned()]))
+        .external_host_policy(ExternalHostPolicy::Allow(vec!["192.168.1.10".to_owned()]))
         .base_urls(base_urls("http://192.168.1.10:39111/subgraphs"))
         .build();
     assert!(allowed.is_ok());

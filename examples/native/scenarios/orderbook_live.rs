@@ -36,7 +36,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // since it may point off the built-in CoW hosts.
     let orderbook = if let Some(base_url) = base_url_override {
         OrderbookApi::builder_from_context(context)
-            .with_external_host_policy(ExternalHostPolicy::AllowAny)
+            .external_host_policy(ExternalHostPolicy::AllowAny)
             .base_url(base_url)
             .build()?
     } else {

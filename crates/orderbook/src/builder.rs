@@ -259,7 +259,7 @@ impl<C, E, T> OrderbookApiBuilder<C, E, T> {
     /// private mirrors should use [`ExternalHostPolicy::Allow`] with the
     /// mirror host.
     #[must_use]
-    pub fn with_external_host_policy(mut self, policy: ExternalHostPolicy) -> Self {
+    pub fn external_host_policy(mut self, policy: ExternalHostPolicy) -> Self {
         self.host_policy = policy;
         self
     }

@@ -128,7 +128,7 @@ fn api_pointed_at(server: &MockServer) -> SubgraphApi {
     SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("example-api-key")
-        .with_external_host_policy(ExternalHostPolicy::Test)
+        .external_host_policy(ExternalHostPolicy::Test)
         .base_urls(base_urls)
         .build()
         .expect("subgraph example client with local mock endpoint must build")

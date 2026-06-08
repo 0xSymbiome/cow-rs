@@ -161,7 +161,7 @@ async fn classify_a_real_rejection() -> Result<serde_json::Value, Box<dyn Error>
         SupportedChainId::Sepolia,
         CowEnv::Prod,
     ))
-    .with_external_host_policy(ExternalHostPolicy::Test)
+    .external_host_policy(ExternalHostPolicy::Test)
     .base_url(server.uri())
     .build()?;
 

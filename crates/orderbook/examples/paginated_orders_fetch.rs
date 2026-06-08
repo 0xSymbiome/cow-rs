@@ -69,7 +69,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         SupportedChainId::GnosisChain,
         CowEnv::Prod,
     ))
-    .with_external_host_policy(ExternalHostPolicy::Test)
+    .external_host_policy(ExternalHostPolicy::Test)
     .base_url(server.uri())
     .build()?;
 

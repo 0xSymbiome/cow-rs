@@ -434,6 +434,18 @@ The first functional crate-family release begins at `0.1.0`.
   they mirror the Ethereum JSON-RPC method names, so they read as keyed lookups rather than
   field getters. The TypeScript and npm export names are unchanged. Governed by
   [ADR 0067](docs/adr/0067-idiomatic-accessor-naming.md).
+- The `cow_sdk_orderbook::OrderbookApiBuilder` and
+  `cow_sdk_subgraph::SubgraphApiBuilder` host-policy setter is renamed from
+  `with_external_host_policy` to `external_host_policy`. Construction builders
+  name their setters by the bare configuration noun — matching the rest of each
+  builder (`chain`, `environment`, `api_key`, `transport`, `transport_policy`,
+  `base_urls`) and the standard-library builder convention (`Command::arg`,
+  `OpenOptions::read`) — so the lone `with_`-prefixed setter was the only
+  deviation on either typestate construction chain. The `with_` prefix remains on
+  the owned-value setters of parameter and configuration types
+  (`TradeParameters::with_owner`, `TransportPolicy::with_rate_limit`), where the
+  bare noun is already the field's accessor. Behavior is unchanged. Governed by
+  [ADR 0013](docs/adr/0013-http-transport-injection-and-typestate-builders.md).
 - `cow-sdk-wasm` no longer builds the standalone `web` target for the `default`,
   `orderbook`, and `signing` flavors. Those flavors' facade ESM and CommonJS
   entries are backed by the `bundler` and `nodejs` raw builds, so their

@@ -49,7 +49,7 @@ pub fn build_orderbook_api_with_base_url(
     base_url: impl Into<String>,
 ) -> OrderbookApi {
     OrderbookApi::builder_from_context(context)
-        .with_external_host_policy(ExternalHostPolicy::Test)
+        .external_host_policy(ExternalHostPolicy::Test)
         .base_url(base_url)
         .build()
         .expect("orderbook test client with loopback base URL must build")
@@ -70,7 +70,7 @@ pub fn build_orderbook_api_with_shared_client(
     context: ApiContext,
 ) -> OrderbookApi {
     OrderbookApi::builder_from_context(context)
-        .with_external_host_policy(ExternalHostPolicy::Test)
+        .external_host_policy(ExternalHostPolicy::Test)
         .client(client)
         .build()
         .expect("orderbook test client with shared client must build")

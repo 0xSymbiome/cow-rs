@@ -37,7 +37,7 @@ fn orderbook_builder_accepts_explicit_allow_and_loopback_policy() {
     let allow = OrderbookApi::builder()
         .chain(SupportedChainId::GnosisChain)
         .environment(CowEnv::Prod)
-        .with_external_host_policy(ExternalHostPolicy::Allow(vec!["mirror.example".to_owned()]))
+        .external_host_policy(ExternalHostPolicy::Allow(vec!["mirror.example".to_owned()]))
         .base_url("https://mirror.example/xdai")
         .build();
     assert!(allow.is_ok());
@@ -50,7 +50,7 @@ fn orderbook_builder_accepts_explicit_allow_and_loopback_policy() {
         let api = OrderbookApi::builder()
             .chain(SupportedChainId::GnosisChain)
             .environment(CowEnv::Prod)
-            .with_external_host_policy(ExternalHostPolicy::Test)
+            .external_host_policy(ExternalHostPolicy::Test)
             .base_url(url)
             .build();
         assert!(
@@ -90,7 +90,7 @@ fn partner_api_routing_x_host_policy_compose_correctly() {
         .chain(SupportedChainId::Mainnet)
         .environment(CowEnv::Prod)
         .api_key("partner-key")
-        .with_external_host_policy(ExternalHostPolicy::Allow(vec![
+        .external_host_policy(ExternalHostPolicy::Allow(vec![
             "partner-mirror.example".to_owned(),
         ]))
         .base_url("https://partner-mirror.example/mainnet")

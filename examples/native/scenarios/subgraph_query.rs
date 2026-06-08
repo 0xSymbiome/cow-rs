@@ -119,7 +119,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let subgraph = SubgraphApi::builder()
         .chain(SupportedChainId::Mainnet)
         .api_key("review-key")
-        .with_external_host_policy(ExternalHostPolicy::Test)
+        .external_host_policy(ExternalHostPolicy::Test)
         .base_urls(base_urls)
         .build()?;
 

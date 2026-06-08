@@ -55,7 +55,7 @@ fn builder_from_context_propagates_chain_environment_api_key_and_base_urls() {
         .with_base_urls(base_urls.clone());
 
     let api = OrderbookApi::builder_from_context(context)
-        .with_external_host_policy(ExternalHostPolicy::Allow(vec![
+        .external_host_policy(ExternalHostPolicy::Allow(vec![
             "shipped.example".to_owned(),
         ]))
         .build()
