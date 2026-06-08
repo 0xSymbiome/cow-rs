@@ -256,11 +256,12 @@ verification statuses:
 Coverage rows carry not-deployed, not-supported, or out-of-scope status and do
 not resolve through `Registry::address`. The review procedure is:
 
-1. Confirm `registry.toml` and `deployment-provenance.yaml` have identical
-   `(contract, chain, environment, address, verification)` rows.
-2. For code-hash rows, confirm the upstream manifest at the pinned `source_commit`
-   lists the address, and that the live presence probe (`registry-confirm`)
-   reports non-empty `eth_getCode` bytecode on the expected chain.
+1. Confirm every `registry.toml` row is keyed by `(contract, chain, environment)`
+   with no duplicates and resolves to a non-zero address.
+2. For code-hash rows, confirm the upstream source repository at the commit
+   pinned in `parity/source-lock.yaml` lists the address, and that the live
+   presence probe (`registry-confirm`) reports non-empty `eth_getCode` bytecode
+   on the expected chain.
 3. For external rows, inspect the named explorer or attestation source and
    confirm the address, chain, and contract family match.
 4. For canonical-unverified rows, confirm the address comes from the pinned

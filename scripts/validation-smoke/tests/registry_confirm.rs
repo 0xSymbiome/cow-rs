@@ -32,18 +32,19 @@ fn output_text(output: &Output) -> String {
     )
 }
 
-/// Minimal deployment manifest in the shipped schema: `deployments:` key,
-/// `version: 2`, one Settlement/1/prod row. The presence probe reads only
-/// `contract_id`, `chain_id`, `env`, and `address`.
+/// Minimal registry manifest in the shipped `registry.toml` schema:
+/// `schema_version = 2` and one Settlement/1/prod `[[entries]]` row. The
+/// presence probe reads only `contract_id`, `chain_id`, `env`, and `address`.
 fn write_manifest(path: &Path) {
     fs::write(
         path,
-        "version: 2\n\
-         deployments:\n\
-         - contract_id: Settlement\n\
-         \x20 chain_id: 1\n\
-         \x20 env: prod\n\
-         \x20 address: '0x1111111111111111111111111111111111111111'\n",
+        "schema_version = 2\n\
+         \n\
+         [[entries]]\n\
+         contract_id = \"Settlement\"\n\
+         chain_id = 1\n\
+         env = \"prod\"\n\
+         address = \"0x1111111111111111111111111111111111111111\"\n",
     )
     .unwrap();
 }
@@ -55,7 +56,7 @@ fn args(manifest: &Path, mode: &str) -> Vec<String> {
         mode.to_owned(),
         "--chain-ids".to_owned(),
         "1".to_owned(),
-        "--provenance-yaml".to_owned(),
+        "--registry-toml".to_owned(),
         manifest.to_str().unwrap().to_owned(),
     ]
 }
@@ -117,7 +118,7 @@ fn request_complete(buffer: &[u8]) -> bool {
 #[test]
 fn local_skips_missing_rpc() {
     let temp = tempdir().unwrap();
-    let manifest = temp.path().join("deployment-provenance.yaml");
+    let manifest = temp.path().join("registry.toml");
     write_manifest(&manifest);
 
     let output = command().args(args(&manifest, "local")).output().unwrap();
@@ -129,7 +130,7 @@ fn local_skips_missing_rpc() {
 #[test]
 fn release_fails_on_missing_prod_rpc() {
     let temp = tempdir().unwrap();
-    let manifest = temp.path().join("deployment-provenance.yaml");
+    let manifest = temp.path().join("registry.toml");
     write_manifest(&manifest);
 
     let output = command().args(args(&manifest, "release")).output().unwrap();
@@ -141,7 +142,7 @@ fn release_fails_on_missing_prod_rpc() {
 #[test]
 fn confirms_present_bytecode() {
     let temp = tempdir().unwrap();
-    let manifest = temp.path().join("deployment-provenance.yaml");
+    let manifest = temp.path().join("registry.toml");
     write_manifest(&manifest);
     let url = start_rpc_server("0x1", "0x6001", 2);
 
@@ -158,7 +159,7 @@ fn confirms_present_bytecode() {
 #[test]
 fn fails_when_bytecode_is_empty() {
     let temp = tempdir().unwrap();
-    let manifest = temp.path().join("deployment-provenance.yaml");
+    let manifest = temp.path().join("registry.toml");
     write_manifest(&manifest);
     let url = start_rpc_server("0x1", "0x", 2);
 
@@ -175,7 +176,7 @@ fn fails_when_bytecode_is_empty() {
 #[test]
 fn fails_on_chain_id_mismatch() {
     let temp = tempdir().unwrap();
-    let manifest = temp.path().join("deployment-provenance.yaml");
+    let manifest = temp.path().join("registry.toml");
     write_manifest(&manifest);
     let url = start_rpc_server("0x2", "0x6001", 1);
 

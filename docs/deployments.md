@@ -96,18 +96,19 @@ status = "code_hash_verified"
 source = "pinned deployment provenance"
 ```
 
-The registry currently contains 177 addressable rows. The companion
-`crates/contracts/deployment-provenance.yaml` file mirrors every registry row
-with source provenance, and `crates/contracts/deployment-coverage.yaml` records
-not-deployed, not-supported, and out-of-scope evidence that must not become
-addressable rows.
+The registry currently contains 177 addressable rows. `registry.toml` is the
+address authority; the upstream commit each address derives from is pinned once
+per source repository in `parity/source-lock.yaml`, and the read-only
+`registry-confirm` `eth_getCode` probe confirms on-chain presence for each row.
+`crates/contracts/deployment-coverage.yaml` records not-deployed, not-supported,
+and out-of-scope evidence that must not become addressable rows.
 
 The manifests are validated twice:
 
 - At compile time through `build.rs`. Malformed rows, duplicate keys,
   unsupported registry chains, invalid environment scopes, wrong schema
-  versions, provenance drift, and COW Shed proxy creation-code hash drift fail
-  the build with precise diagnostics.
+  versions, and COW Shed proxy creation-code hash drift fail the build with
+  precise diagnostics.
 - At runtime through `Registry::from_toml_str` and
   `DeploymentCoverage::from_yaml_str`, so custom manifests see typed parser
   errors rather than unchecked strings.

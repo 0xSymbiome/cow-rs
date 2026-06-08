@@ -9,9 +9,7 @@ enum OutputFormat {
 }
 
 #[derive(Debug, Parser)]
-#[command(
-    about = "Confirm CoW Protocol deployment provenance against live chain bytecode."
-)]
+#[command(about = "Confirm CoW Protocol deployment provenance against live chain bytecode.")]
 struct Cli {
     #[arg(long, value_enum, default_value_t = OutputFormat::Text)]
     format: OutputFormat,

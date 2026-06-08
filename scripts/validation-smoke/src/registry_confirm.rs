@@ -1,12 +1,13 @@
 //! Read-only on-chain presence probe for the deployment registry.
 //!
-//! For every `(contract_id, chain_id, env)` row in the committed deployment
-//! manifest, this confirms — against a configured RPC — that the chain id
-//! matches and that `eth_getCode` returns non-empty bytecode at the recorded
-//! address. It never mutates any file: trust rests on the pinned `source_commit`
-//! and deterministic CREATE2 address in the manifest, with this probe adding a
-//! live check that the claimed deployment actually exists on-chain. Committed
-//! per-row code hashes are intentionally not used (see ADR 0032).
+//! For every `(contract_id, chain_id, env)` row in the committed `registry.toml`
+//! address manifest, this confirms — against a configured RPC — that the chain
+//! id matches and that `eth_getCode` returns non-empty bytecode at the recorded
+//! address. It never mutates any file: trust rests on the upstream commit pinned
+//! in `parity/source-lock.yaml` and the deterministic CREATE2 address, with this
+//! probe adding a live check that the claimed deployment actually exists
+//! on-chain. Committed per-row code hashes are intentionally not used (see
+//! ADR 0032).
 
 use std::{collections::BTreeSet, env, fs, path::PathBuf, time::Duration};
 
@@ -41,9 +42,9 @@ pub struct RegistryConfirmArgs {
     /// Comma-separated chain ids to probe.
     #[arg(long, value_delimiter = ',', required = true)]
     pub chain_ids: Vec<u64>,
-    /// Deployment manifest supplying the `(contract, chain, env, address)` rows.
-    #[arg(long, default_value = "crates/contracts/deployment-provenance.yaml")]
-    pub provenance_yaml: PathBuf,
+    /// Registry manifest supplying the `(contract, chain, env, address)` rows.
+    #[arg(long, default_value = "crates/contracts/registry.toml")]
+    pub registry_toml: PathBuf,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
@@ -74,7 +75,7 @@ pub struct RegistryConfirmationSkip {
 #[derive(Debug, Serialize)]
 pub struct RegistryConfirmReport {
     pub mode: RegistryMode,
-    pub provenance_yaml: String,
+    pub registry_toml: String,
     pub selected_chain_ids: Vec<u64>,
     pub confirmed_rows: usize,
     pub skipped_rows: Vec<RegistryConfirmationSkip>,
@@ -123,10 +124,10 @@ pub fn run(args: &RegistryConfirmArgs) -> Result<RegistryConfirmReport> {
     let selected: BTreeSet<u64> = args.chain_ids.iter().copied().collect();
     let selected_chain_ids = selected.iter().copied().collect::<Vec<_>>();
 
-    let raw = fs::read_to_string(&args.provenance_yaml)
-        .with_context(|| format!("failed to read {}", args.provenance_yaml.display()))?;
-    let doc: Value = serde_norway::from_str(&raw)
-        .with_context(|| format!("failed to parse {}", args.provenance_yaml.display()))?;
+    let raw = fs::read_to_string(&args.registry_toml)
+        .with_context(|| format!("failed to read {}", args.registry_toml.display()))?;
+    let doc: Value = toml::from_str(&raw)
+        .with_context(|| format!("failed to parse {}", args.registry_toml.display()))?;
 
     let client = Client::builder()
         .user_agent("cow-rs-validation-smoke/registry-confirm")
@@ -139,16 +140,16 @@ pub fn run(args: &RegistryConfirmArgs) -> Result<RegistryConfirmReport> {
     let mut failures = Vec::new();
     let mut matched = 0usize;
 
-    let deployments = doc
-        .get("deployments")
+    let entries = doc
+        .get("entries")
         .and_then(Value::as_array)
-        .context("provenance manifest has no `deployments` array")?;
+        .context("registry manifest has no `entries` array")?;
 
-    for entry in deployments {
+    for entry in entries {
         let chain_id = entry
             .get("chain_id")
             .and_then(Value::as_u64)
-            .context("provenance entry missing chain_id")?;
+            .context("registry entry missing chain_id")?;
         if !selected.contains(&chain_id) {
             continue;
         }
@@ -156,17 +157,17 @@ pub fn run(args: &RegistryConfirmArgs) -> Result<RegistryConfirmReport> {
         let contract_id = entry
             .get("contract_id")
             .and_then(Value::as_str)
-            .context("provenance entry missing contract_id")?
+            .context("registry entry missing contract_id")?
             .to_owned();
         let env = entry
             .get("env")
             .and_then(Value::as_str)
-            .context("provenance entry missing env")?
+            .context("registry entry missing env")?
             .to_owned();
         let address = entry
             .get("address")
             .and_then(Value::as_str)
-            .context("provenance entry missing address")?
+            .context("registry entry missing address")?
             .to_owned();
         let row = RegistryRowKey {
             contract_id,
@@ -188,7 +189,7 @@ pub fn run(args: &RegistryConfirmArgs) -> Result<RegistryConfirmReport> {
 
     if matched == 0 {
         bail!(
-            "no provenance entries matched --chain-ids {}",
+            "no registry entries matched --chain-ids {}",
             args.chain_ids
                 .iter()
                 .map(u64::to_string)
@@ -199,7 +200,7 @@ pub fn run(args: &RegistryConfirmArgs) -> Result<RegistryConfirmReport> {
 
     Ok(RegistryConfirmReport {
         mode: args.mode,
-        provenance_yaml: args.provenance_yaml.display().to_string(),
+        registry_toml: args.registry_toml.display().to_string(),
         selected_chain_ids,
         confirmed_rows,
         skipped_rows,

@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-29
-- Last reviewed: 2026-06-01
+- Last reviewed: 2026-06-08
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: deployments, provenance, contracts, release
 - Anchors: Deterministic Protocol Transforms (supporting); Evidence-Backed Public Claims (supporting)
@@ -10,21 +10,22 @@
 
 ## Decision
 
-`crates/contracts/registry.toml` keeps runtime address data.
-`crates/contracts/deployment-provenance.yaml` keeps structured source
-provenance keyed by `(contract_id, chain_id, env)`.
+`crates/contracts/registry.toml` is the runtime address authority, keyed by
+`(contract_id, chain_id, env)`. Each row records the deployed `address` and a
+`verification` status and source. The upstream commit each address was taken
+from is pinned once per source repository in `parity/source-lock.yaml`
+(per [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md)), not
+duplicated on every row.
 
-Each provenance entry records the address, the `verification` status and
-source, and the source repository, commit, path, and symbol the address was
-taken from. Deployment trust rests on three layers: (1) the pinned
-`source_commit` to an upstream machine-readable manifest (where deployments are
-explorer/Sourcify-verified), (2) the deterministic CREATE2 address, and (3) a
-read-only live presence probe.
+Deployment trust rests on three layers: (1) the pinned upstream `source_commit`
+in `parity/source-lock.yaml` (where deployments are explorer/Sourcify-verified),
+(2) the deterministic CREATE2 address, and (3) a read-only live presence probe.
 
-`validation-smoke registry-confirm --mode {local|release}` guards each RPC with
-`eth_chainId` and asserts `eth_getCode` returns non-empty bytecode at every
-recorded address. Release mode fails closed on a missing production-chain RPC or
-an absent deployment. The probe never mutates a file.
+`validation-smoke registry-confirm --mode {local|release}` reads every
+`(contract_id, chain_id, env, address)` row from `registry.toml`, guards each
+RPC with `eth_chainId`, and asserts `eth_getCode` returns non-empty bytecode at
+the recorded address. Release mode fails closed on a missing production-chain RPC
+or an absent deployment. The probe never mutates a file.
 
 Committed per-row code-hash confirmation is **not** used for the current
 contract set: every deployed contract is a non-upgradeable CREATE2 singleton
@@ -34,25 +35,28 @@ future upgradeable deployment.
 
 ## Why
 
-A wrong settlement address is a wallet-draining bug. Structured provenance makes
-every row traceable to an upstream repository and pinned commit; the
-deterministic CREATE2 address plus one-time upstream explorer verification
-establish initial correctness; and the live presence probe proves the claimed
-deployment actually exists on-chain. This matches what every upstream CoW
-repository relies on (address + source, no committed code hashes) while adding a
-matrix-driven live check the upstreams lack.
+A wrong settlement address is a wallet-draining bug. The registry row plus the
+per-repository commit pin in `parity/source-lock.yaml` make every address
+traceable to an upstream repository and pinned commit; the deterministic CREATE2
+address plus one-time upstream explorer verification establish initial
+correctness; and the live presence probe proves the claimed deployment actually
+exists on-chain. This matches what every upstream CoW repository relies on
+(address + source, no committed code hashes) while adding a matrix-driven live
+check the upstreams lack.
 
-A committed per-row code hash would only catch bytecode *substitution* at a fixed
-address — impossible for non-upgradeable CREATE2 singletons — at far higher
-committed-evidence and review cost than any upstream carries, so it is declined
-here.
+A separate, per-row provenance file duplicating every registry row is declined:
+its only non-redundant payload is the upstream commit, which already has one
+authoritative home in `parity/source-lock.yaml`. A committed per-row code hash
+would only catch bytecode *substitution* at a fixed address — impossible for
+non-upgradeable CREATE2 singletons — at far higher committed-evidence and review
+cost than any upstream carries, so it is declined here too.
 
 ## Must Remain True
 
-- Every registry row has one matching provenance entry.
-- Every provenance entry is keyed by `(contract_id, chain_id, env)` with
-  no duplicates.
-- Each row pins a 40-hex `source_commit` to the upstream manifest it came from.
+- Every `registry.toml` row is keyed by `(contract_id, chain_id, env)` with no
+  duplicates and resolves to a non-zero address.
+- The upstream commit each address derives from is pinned in
+  `parity/source-lock.yaml`.
 - `registry-confirm --mode release` fails on a missing production-chain RPC and
   on a registry row whose `eth_getCode` is empty on the expected chain.
 - The probe is read-only; it never mutates committed evidence.
@@ -61,6 +65,10 @@ here.
 
 ## Alternatives Rejected
 
+- Keep a dedicated per-row provenance file mirroring every registry row: its
+  address and verification fields duplicate `registry.toml` and its only unique
+  payload (the upstream commit) already lives in `parity/source-lock.yaml`, so
+  the file is almost entirely redundant and adds per-sync review churn.
 - Keep source provenance in comments beside TOML rows: human-readable, but not
   parseable or enforceable.
 - Commit a per-row `keccak256(eth_getCode)` digest and fail-closed-compare it:
@@ -86,14 +94,13 @@ Evidence-Backed Public Claims principles.
 **Proven by:**
 
 - [Deployment Registry Audit](../audit/deployment-registry-audit.md)
-- `crates/contracts/tests/deployment_provenance_contract.rs`
+- `crates/contracts/tests/registry.rs`
 - `scripts/validation-smoke/tests/registry_confirm.rs`
 
 ## Amendment 2026-05-22: canonical primitive layer (per ADR 0052)
 
-The deployed-contract addresses in `crates/contracts/registry.toml` and
-`crates/contracts/deployment-provenance.yaml` deserialize through the
-cow-owned `#[repr(transparent)]` newtype around
+The deployed-contract addresses in `crates/contracts/registry.toml`
+deserialize through the cow-owned `#[repr(transparent)]` newtype around
 `alloy_primitives::Address` per
 [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md).
 
@@ -109,3 +116,19 @@ read-only `eth_getCode` presence probe; committed code-hash confirmation is
 reserved for upgradeable deployments. The `code_hash_verified`
 `verification.status` denotes upstream explorer/manifest verification, not a
 locally committed digest.
+
+## Amendment 2026-06-08: source-commit pin moves to source-lock; dedicated provenance file retired
+
+The original decision kept a dedicated `crates/contracts/deployment-provenance.yaml`
+that mirrored every `registry.toml` row and added per-row `source_repo`,
+`source_commit`, `source_path`, and `source_symbol`. Measurement showed the file
+was almost entirely redundant: its address and verification fields duplicated the
+registry, and its only non-redundant payload was the upstream commit, which is
+already pinned once per source repository in `parity/source-lock.yaml`
+(ADR 0012). The dedicated file is retired. The upstream commit pin now has a
+single authoritative home in `parity/source-lock.yaml`; the deterministic CREATE2
+address and the read-only `registry-confirm` `eth_getCode` probe (now reading the
+rows directly from `registry.toml`) are unchanged. This matches the upstream
+posture (address + source, no committed per-row provenance file) and removes the
+compile-time registry/provenance lockstep validator that previously forced the
+two files to stay byte-aligned.

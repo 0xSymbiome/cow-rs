@@ -110,7 +110,7 @@ Every surface in this table is shipped from cow-rs source and may not be swapped
 | EIP-712 type-string whitespace contract | `crates/contracts/src/order/hash.rs`, every type string literal in `cow-sdk-cow-shed` and (future) `cow-sdk-composable` | ADR 0050 | Any whitespace creep between commas in EIP-712 type strings shifts the struct hash; every signature breaks. Formatter-driven risk. |
 | `keccak_word` test oracle (independent `sha3::Keccak256`) | `crates/contracts/src/order/hash.rs` | ADR 0052 implicit | Test-only but load-bearing: collapsing to `alloy_primitives::keccak256` means the parity test verifies alloy against itself. |
 | `cow-sdk-wasm` "no direct alloy imports" rule | `crates/wasm/src/` | ADR 0052, enforced by `.github/workflows/wasm-imports-grep-gate.yml` | wasm leaf consumes alloy types via re-exports from `cow-sdk-contracts` and `cow-sdk-pure-helpers`; direct imports are a release-gating CI failure. |
-| Source-lock provenance (upstream commit hashes for parity validation) | `parity/source-lock.yaml`, `crates/contracts/deployment-provenance.yaml` | [Evidence-Backed Public Claims](principles.md), ADR 0026, ADR 0030, ADR 0032 | alloy ships no provenance authority; cow's release evidence is repository-visible. |
+| Source-lock provenance (upstream commit hashes for parity validation) | `parity/source-lock.yaml` (the single per-repository commit pin behind every `crates/contracts/registry.toml` address) | [Evidence-Backed Public Claims](principles.md), ADR 0026, ADR 0030, ADR 0032 | alloy ships no provenance authority; cow's release evidence is repository-visible. |
 
 ## Bucket 3: BOUNDARY-ADAPTER
 

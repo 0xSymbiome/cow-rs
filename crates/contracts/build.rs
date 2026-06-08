@@ -10,18 +10,15 @@ include!("src/chain_ids.rs");
 
 const SCHEMA_VERSION: u32 = 2;
 const MANIFEST_PATH: &str = "registry.toml";
-const PROVENANCE_PATH: &str = "deployment-provenance.yaml";
 const COVERAGE_PATH: &str = "deployment-coverage.yaml";
 
 fn main() {
     println!("cargo:rerun-if-changed={MANIFEST_PATH}");
-    println!("cargo:rerun-if-changed={PROVENANCE_PATH}");
     println!("cargo:rerun-if-changed={COVERAGE_PATH}");
     println!("cargo:rerun-if-changed=src/chain_ids.rs");
     println!("cargo:rerun-if-changed=abi/cow-shed/proxy-creation-code");
 
     let manifest = read_toml_manifest();
-    let provenance = read_yaml_manifest::<ProvenanceManifest>(PROVENANCE_PATH);
     let coverage = read_yaml_manifest::<CoverageManifest>(COVERAGE_PATH);
     let supported: BTreeSet<u64> = DEPLOYMENT_CHAIN_IDS.iter().copied().collect();
 
@@ -29,12 +26,6 @@ fn main() {
         fail(&format!(
             "{MANIFEST_PATH}: unsupported schema_version {}; expected {SCHEMA_VERSION}",
             manifest.schema_version
-        ));
-    }
-    if provenance.version != SCHEMA_VERSION {
-        fail(&format!(
-            "{PROVENANCE_PATH}: unsupported version {}; expected {SCHEMA_VERSION}",
-            provenance.version
         ));
     }
     if coverage.schema_version != SCHEMA_VERSION {
@@ -45,8 +36,6 @@ fn main() {
     }
 
     let registry_entries = validate_registry_manifest(&manifest.entries, &supported);
-    let provenance_entries = validate_provenance_manifest(&provenance.deployments, &supported);
-    validate_registry_provenance_lockstep(&registry_entries, &provenance_entries);
     validate_coverage_manifest(&coverage.coverage, &registry_entries, &supported);
     validate_cow_shed_proxy_artifacts();
 }
@@ -74,30 +63,6 @@ struct ManifestEntry {
 struct VerificationEntry {
     status: String,
     source: String,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-struct ProvenanceManifest {
-    version: u32,
-    #[allow(dead_code, reason = "metadata shape is validated by serde")]
-    generated_at_utc: Option<String>,
-    #[serde(default)]
-    deployments: Vec<ProvenanceEntry>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-struct ProvenanceEntry {
-    contract_id: String,
-    chain_id: u64,
-    env: String,
-    address: String,
-    source_repo: String,
-    source_commit: String,
-    source_path: String,
-    source_symbol: String,
-    verification: VerificationEntry,
 }
 
 #[derive(Debug, Deserialize)]
@@ -172,93 +137,6 @@ fn validate_registry_manifest(
     }
 
     seen
-}
-
-fn validate_provenance_manifest(
-    entries: &[ProvenanceEntry],
-    supported: &BTreeSet<u64>,
-) -> BTreeMap<(String, u64, String), RegistryEvidence> {
-    let mut seen = BTreeMap::new();
-
-    for (index, entry) in entries.iter().enumerate() {
-        let row = index + 1;
-        validate_contract_id(PROVENANCE_PATH, row, &entry.contract_id);
-        validate_env_scope(PROVENANCE_PATH, row, &entry.contract_id, &entry.env);
-        validate_chain_id(PROVENANCE_PATH, row, entry.chain_id, supported);
-        validate_address(PROVENANCE_PATH, row, &entry.address);
-        validate_verification(PROVENANCE_PATH, row, &entry.verification);
-        for (field, value) in [
-            ("source_repo", entry.source_repo.as_str()),
-            ("source_path", entry.source_path.as_str()),
-            ("source_symbol", entry.source_symbol.as_str()),
-        ] {
-            if value.trim().is_empty() {
-                fail(&format!(
-                    "{PROVENANCE_PATH}: entry #{row} has empty {field}"
-                ));
-            }
-        }
-        if !is_40_byte_hex_without_prefix(&entry.source_commit) {
-            fail(&format!(
-                "{PROVENANCE_PATH}: entry #{row} has malformed source_commit `{}`",
-                entry.source_commit
-            ));
-        }
-
-        let key = (entry.contract_id.clone(), entry.chain_id, entry.env.clone());
-        if seen
-            .insert(
-                key,
-                RegistryEvidence {
-                    address: entry.address.clone(),
-                    verification_status: entry.verification.status.clone(),
-                },
-            )
-            .is_some()
-        {
-            fail(&format!(
-                "{PROVENANCE_PATH}: entry #{row} duplicates (contract_id=`{}`, chain_id={}, env=`{}`)",
-                entry.contract_id, entry.chain_id, entry.env
-            ));
-        }
-    }
-
-    seen
-}
-
-fn validate_registry_provenance_lockstep(
-    registry: &BTreeMap<(String, u64, String), RegistryEvidence>,
-    provenance: &BTreeMap<(String, u64, String), RegistryEvidence>,
-) {
-    for (key, registry_row) in registry {
-        let Some(provenance_row) = provenance.get(key) else {
-            fail(&format!(
-                "{PROVENANCE_PATH}: missing provenance row for (contract_id=`{}`, chain_id={}, env=`{}`)",
-                key.0, key.1, key.2
-            ));
-        };
-        if registry_row.address != provenance_row.address {
-            fail(&format!(
-                "{PROVENANCE_PATH}: address mismatch for (contract_id=`{}`, chain_id={}, env=`{}`)",
-                key.0, key.1, key.2
-            ));
-        }
-        if registry_row.verification_status != provenance_row.verification_status {
-            fail(&format!(
-                "{PROVENANCE_PATH}: verification mismatch for (contract_id=`{}`, chain_id={}, env=`{}`)",
-                key.0, key.1, key.2
-            ));
-        }
-    }
-
-    for key in provenance.keys() {
-        if !registry.contains_key(key) {
-            fail(&format!(
-                "{PROVENANCE_PATH}: provenance row for (contract_id=`{}`, chain_id={}, env=`{}`) has no matching registry row",
-                key.0, key.1, key.2
-            ));
-        }
-    }
 }
 
 fn validate_coverage_manifest(
@@ -403,10 +281,6 @@ fn is_valid_ethereum_address(candidate: &str) -> bool {
         return false;
     };
     body.len() == 40 && body.chars().all(|ch| ch.is_ascii_hexdigit())
-}
-
-fn is_40_byte_hex_without_prefix(candidate: &str) -> bool {
-    candidate.len() == 40 && candidate.chars().all(|ch| ch.is_ascii_hexdigit())
 }
 
 fn validate_cow_shed_proxy_artifacts() {

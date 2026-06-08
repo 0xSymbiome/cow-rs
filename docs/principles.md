@@ -141,11 +141,11 @@ never allowed to leak onto an ordinary order record. Regression fixtures
 recorded from live or replayed services responses prove every modeled field
 round-trips.
 
-Deployment authority claims are backed by structured provenance entries in
-`crates/contracts/deployment-provenance.yaml` — a pinned upstream `source_commit`
-plus the deterministic CREATE2 address — and confirmed by a release-mode live
-`eth_getCode` presence probe. Missing production-chain RPCs and absent
-deployments are never silently allowed in release mode.
+Deployment authority claims are backed by the typed `Registry` in
+`cow-sdk-contracts` — each address pinned to an upstream `source_commit` in
+`parity/source-lock.yaml` plus the deterministic CREATE2 address — and confirmed
+by a release-mode live `eth_getCode` presence probe. Missing production-chain
+RPCs and absent deployments are never silently allowed in release mode.
 
 **Anchored by**: [ADR 0026](adr/0026-alloy-major-release-absorption-plan.md) (primary). Supporting: [ADR 0025](adr/0025-workspace-url-redaction-convention.md), [ADR 0030](adr/0030-workspace-locked-versioning-tag-baseline.md), [ADR 0032](adr/0032-deployment-authority-machine-readable-provenance.md), [ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md).
 
