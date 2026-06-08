@@ -55,8 +55,15 @@ pub enum OrderbookError {
     Core(#[from] CoreError),
     /// Structured non-2xx response returned by the orderbook API whose body
     /// did not carry a recognisable rejection envelope.
-    #[error(transparent)]
-    Api(Box<OrderbookApiError>),
+    ///
+    /// The HTTP status is surfaced on the public message so an unclassified
+    /// API failure is not opaque, while the response body and the derived
+    /// public message stay redacted on the wrapped [`OrderbookApiError`]
+    /// source. This mirrors the [`OrderbookError::Rejected`] arm, which also
+    /// renders the status, and keeps the free-form body behind redaction per
+    /// ADR 0025.
+    #[error("orderbook request failed ({})", http_status_label(.0.status))]
+    Api(#[source] Box<OrderbookApiError>),
     /// Structured rejection classified from the non-2xx response body using
     /// the typed [`OrderbookRejection`] taxonomy.
     #[error("orderbook rejected the request ({status}): {rejection}")]
@@ -331,6 +338,15 @@ impl From<serde_json::Error> for OrderbookError {
     }
 }
 
+/// Renders an HTTP status code as its canonical `code reason` label (for
+/// example `422 Unprocessable Content`), falling back to a bare `HTTP <code>`
+/// form for values outside the assignable HTTP status range. The status code
+/// is a non-sensitive protocol identifier, so it is surfaced on the public
+/// error message even when the response body is redacted.
+fn http_status_label(status: u16) -> String {
+    StatusCode::from_u16(status).map_or_else(|_| format!("HTTP {status}"), |code| code.to_string())
+}
+
 /// Maps a `serde_json` failure to its stable category tag.
 fn serialization_error_category(error: &serde_json::Error) -> &'static str {
     match error.classify() {
@@ -487,5 +503,27 @@ mod retry_classification_tests {
     fn backoff_hint_is_absent_without_a_header() {
         assert_eq!(api_error(503, None).backoff_hint(), None);
         assert_eq!(transport(TransportErrorClass::Timeout).backoff_hint(), None);
+    }
+
+    #[test]
+    fn api_error_display_surfaces_status_and_redacts_body() {
+        use crate::request::ResponseBody;
+
+        let error: OrderbookError = OrderbookApiError::new(
+            422,
+            "Unprocessable Content",
+            ResponseBody::Text("sell amount must cover the fee".to_owned()),
+        )
+        .into();
+
+        let rendered = format!("{error:#}");
+        assert!(
+            rendered.contains("orderbook request failed") && rendered.contains("422"),
+            "the HTTP status must be surfaced: {rendered}"
+        );
+        assert!(
+            !rendered.contains("sell amount must cover the fee"),
+            "the response body must stay redacted: {rendered}"
+        );
     }
 }

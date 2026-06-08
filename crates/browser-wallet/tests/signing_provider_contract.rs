@@ -107,7 +107,7 @@ async fn create_signer_with_valid_hint_not_in_wallet_accounts_returns_malformed_
 
     match error {
         BrowserWalletError::MalformedResponse { method, message } => {
-            assert_eq!(method.into_inner(), "create_signer");
+            assert_eq!(method, "create_signer");
             let message = message.into_inner();
             assert!(
                 message.contains("wallet does not expose account"),

@@ -111,7 +111,7 @@ impl BrowserWallet {
                 ))
             }
             Err(BrowserWalletError::ChainNotAdded { chain_id, .. })
-                if chain_id == u64::from(parameters.chain_id) =>
+                if chain_id == Some(u64::from(parameters.chain_id)) =>
             {
                 self.add_chain_request(parameters).await?;
                 self.switch_chain_request(parameters.chain_id).await?;

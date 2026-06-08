@@ -84,6 +84,15 @@ Read-only actions use the chainless `wallet.signer()`; signing actions use
 `wallet.signer_for_chain(…)`, which validates the network (and the example
 switches it) first. SDK errors propagate with `anyhow` and are shown verbatim.
 
+The example also models the consumer-side hygiene the SDK leaves to the
+application: it refuses a non-positive or sub-wei (truncated-to-zero) amount
+before constructing any wrap, approve, or quote; it leaves slippage unset so the
+SDK applies the quote's AUTO (suggested) tolerance, and surfaces a short warning
+when that suggestion signals a fee-dominated trade; and it notes a chain mismatch
+at connect time. Input and economic policy belong to the consumer — the SDK stays
+a faithful primitive (an ERC-20 `approve(0)`, for instance, is the canonical
+allowance reset and is never blocked at the SDK level).
+
 ## Quality
 
 The example is held to the same bar as the crates:

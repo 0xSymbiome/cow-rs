@@ -632,8 +632,8 @@ async fn switch_or_add_chain_does_not_add_when_chain_not_added_targets_a_differe
     transport.fail_method(
         "wallet_switchEthereumChain",
         BrowserWalletError::ChainNotAdded {
-            chain_id: u64::from(SupportedChainId::Mainnet),
-            method: "wallet_switchEthereumChain".to_owned().into(),
+            chain_id: Some(u64::from(SupportedChainId::Mainnet)),
+            method: "wallet_switchEthereumChain".to_owned(),
             code: 4902,
             message: "mock wallet does not know chain 1".to_owned().into(),
         },
@@ -647,8 +647,8 @@ async fn switch_or_add_chain_does_not_add_when_chain_not_added_targets_a_differe
     assert_eq!(
         error,
         BrowserWalletError::ChainNotAdded {
-            chain_id: u64::from(SupportedChainId::Mainnet),
-            method: "wallet_switchEthereumChain".to_owned().into(),
+            chain_id: Some(u64::from(SupportedChainId::Mainnet)),
+            method: "wallet_switchEthereumChain".to_owned(),
             code: 4902,
             message: "mock wallet does not know chain 1".to_owned().into(),
         }

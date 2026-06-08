@@ -741,7 +741,7 @@ mod tests {
         assert_eq!(
             parse_quantity_to_decimal(&json!(42), "eth_estimateGas").unwrap_err(),
             BrowserWalletError::MalformedResponse {
-                method: "eth_estimateGas".to_owned().into(),
+                method: "eth_estimateGas".to_owned(),
                 message: "expected hex quantity string".to_owned().into(),
             }
         );

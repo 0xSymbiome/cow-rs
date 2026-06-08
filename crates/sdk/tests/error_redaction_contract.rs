@@ -777,7 +777,7 @@ fn alloy_adapter_errors_redact_secret_bearing_payloads() {
 
 #[cfg(feature = "browser-wallet")]
 #[test]
-fn browser_wallet_errors_and_rpc_payloads_redact_method_message_and_data() {
+fn browser_wallet_errors_surface_method_and_redact_message_and_data() {
     use cow_sdk::browser_wallet::{BrowserWalletError, RpcErrorPayload};
 
     let rpc_payload = RpcErrorPayload::new(
@@ -802,23 +802,23 @@ fn browser_wallet_errors_and_rpc_payloads_redact_method_message_and_data() {
             origin: secret_payload().into(),
         },
         BrowserWalletError::UserRejectedRequest {
-            method: secret_payload().into(),
+            method: "eth_sendTransaction".to_owned(),
             code: 4001,
             message: secret_payload().into(),
         },
         BrowserWalletError::Disconnected {
-            method: secret_payload().into(),
+            method: "eth_sendTransaction".to_owned(),
             code: 4900,
             message: secret_payload().into(),
         },
         BrowserWalletError::WrongChain {
-            method: secret_payload().into(),
+            method: "eth_sendTransaction".to_owned(),
             code: 4901,
             message: secret_payload().into(),
         },
         BrowserWalletError::ChainNotAdded {
-            chain_id: 8453,
-            method: secret_payload().into(),
+            chain_id: Some(8453),
+            method: "eth_sendTransaction".to_owned(),
             code: 4902,
             message: secret_payload().into(),
         },
@@ -835,15 +835,15 @@ fn browser_wallet_errors_and_rpc_payloads_redact_method_message_and_data() {
             typed_data_chain_id: 8453,
         },
         BrowserWalletError::UnsupportedRpcMethod {
-            method: secret_payload().into(),
+            method: "eth_sendTransaction".to_owned(),
             message: secret_payload().into(),
         },
         BrowserWalletError::MalformedResponse {
-            method: secret_payload().into(),
+            method: "eth_sendTransaction".to_owned(),
             message: secret_payload().into(),
         },
         BrowserWalletError::Rpc {
-            method: secret_payload().into(),
+            method: "eth_sendTransaction".to_owned(),
             code: -32_000,
             message: secret_payload().into(),
             data: Some(json!({ "payload": secret_payload() }).into()),
@@ -859,6 +859,22 @@ fn browser_wallet_errors_and_rpc_payloads_redact_method_message_and_data() {
     ];
 
     assert_all_render("BrowserWalletError", &errors);
+
+    // The RPC method name is a closed-set protocol identifier supplied by the
+    // SDK, not a credential, so it is surfaced on the public message while the
+    // wallet's free-form message stays redacted. The `4001` user-rejection
+    // renders as cleanly as the signing-layer typed-data rejection.
+    let rejection = BrowserWalletError::UserRejectedRequest {
+        method: "eth_sendTransaction".to_owned(),
+        code: 4001,
+        message: secret_payload().into(),
+    };
+    let rendered = rejection.to_string();
+    assert!(
+        rendered.contains("eth_sendTransaction") && rendered.contains("4001"),
+        "the rejected method and EIP-1193 code must be visible: {rendered}"
+    );
+    assert_no_secret("UserRejectedRequest", "Display", &rendered);
 }
 
 fn assert_all_render<E>(label: &str, errors: &[E])

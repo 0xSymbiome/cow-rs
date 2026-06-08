@@ -76,13 +76,19 @@ pub enum BrowserWalletError {
         origin: Redacted<String>,
     },
     /// The wallet explicitly rejected a user-authorized request.
-    #[error("wallet request `{method}` was rejected by the user ({code}): {message}")]
+    ///
+    /// The rejected RPC method and the EIP-1193 code are surfaced; the
+    /// provider's free-form message is retained for programmatic access but
+    /// kept off the public rendering, so this variant reads as cleanly as the
+    /// signing-layer typed-data rejection for the same `4001` condition.
+    #[error("wallet request `{method}` was rejected by the user ({code})")]
     UserRejectedRequest {
         /// RPC method that was rejected.
-        method: Redacted<String>,
+        method: String,
         /// Provider error code.
         code: i32,
-        /// Provider error message.
+        /// Provider error message, retained for diagnostics and redacted on
+        /// public rendering.
         message: Redacted<String>,
     },
     /// The wallet reported that it is disconnected from all chains.
@@ -91,7 +97,7 @@ pub enum BrowserWalletError {
     )]
     Disconnected {
         /// RPC method that failed.
-        method: Redacted<String>,
+        method: String,
         /// Provider error code.
         code: i32,
         /// Provider error message.
@@ -103,7 +109,7 @@ pub enum BrowserWalletError {
     )]
     WrongChain {
         /// RPC method that failed.
-        method: Redacted<String>,
+        method: String,
         /// Provider error code.
         code: i32,
         /// Provider error message.
@@ -111,13 +117,17 @@ pub enum BrowserWalletError {
     },
     /// The requested chain has not been added to the wallet yet.
     #[error(
-        "wallet request `{method}` failed because chain {chain_id} is not added ({code}): {message}"
+        "wallet request `{method}` failed because the requested chain is not added ({code}): {message}"
     )]
     ChainNotAdded {
-        /// Chain id requested by the wallet call.
-        chain_id: ChainId,
+        /// Chain id requested by the wallet call, when the request carried one.
+        ///
+        /// `None` when the failing request did not carry a parseable chain id,
+        /// so the surfaced error never claims a chain the caller did not
+        /// request.
+        chain_id: Option<ChainId>,
         /// RPC method that failed.
-        method: Redacted<String>,
+        method: String,
         /// Provider error code.
         code: i32,
         /// Provider error message.
@@ -155,7 +165,7 @@ pub enum BrowserWalletError {
     #[error("wallet method `{method}` is unsupported: {message}")]
     UnsupportedRpcMethod {
         /// Unsupported RPC method.
-        method: Redacted<String>,
+        method: String,
         /// Provider-supplied failure description.
         message: Redacted<String>,
     },
@@ -163,7 +173,7 @@ pub enum BrowserWalletError {
     #[error("wallet response for `{method}` is malformed: {message}")]
     MalformedResponse {
         /// RPC method whose response could not be decoded.
-        method: Redacted<String>,
+        method: String,
         /// Decode or validation failure description.
         message: Redacted<String>,
     },
@@ -171,7 +181,7 @@ pub enum BrowserWalletError {
     #[error("wallet rpc error for `{method}` ({code}): {message}")]
     Rpc {
         /// RPC method that failed.
-        method: Redacted<String>,
+        method: String,
         /// Provider error code.
         code: i32,
         /// Provider error message.
@@ -228,32 +238,32 @@ impl BrowserWalletError {
     ) -> Self {
         match payload.code {
             4001 => Self::UserRejectedRequest {
-                method: method.to_owned().into(),
+                method: method.to_owned(),
                 code: payload.code,
                 message: payload.message,
             },
             4900 => Self::Disconnected {
-                method: method.to_owned().into(),
+                method: method.to_owned(),
                 code: payload.code,
                 message: payload.message,
             },
             4901 => Self::WrongChain {
-                method: method.to_owned().into(),
+                method: method.to_owned(),
                 code: payload.code,
                 message: payload.message,
             },
             4902 => Self::ChainNotAdded {
-                chain_id: requested_chain.unwrap_or_default(),
-                method: method.to_owned().into(),
+                chain_id: requested_chain,
+                method: method.to_owned(),
                 code: payload.code,
                 message: payload.message,
             },
             -32601 => Self::UnsupportedRpcMethod {
-                method: method.to_owned().into(),
+                method: method.to_owned(),
                 message: payload.message,
             },
             _ => Self::Rpc {
-                method: method.to_owned().into(),
+                method: method.to_owned(),
                 code: payload.code,
                 message: payload.message,
                 data: payload.data,
@@ -263,7 +273,7 @@ impl BrowserWalletError {
 
     pub(crate) fn malformed_response(method: &str, message: impl Into<String>) -> Self {
         Self::MalformedResponse {
-            method: method.to_owned().into(),
+            method: method.to_owned(),
             message: message.into().into(),
         }
     }
@@ -333,7 +343,7 @@ mod tests {
                 4001,
                 None,
                 BrowserWalletError::UserRejectedRequest {
-                    method: "eth_requestAccounts".to_owned().into(),
+                    method: "eth_requestAccounts".to_owned(),
                     code: 4001,
                     message: "code-4001".to_owned().into(),
                 },
@@ -342,7 +352,7 @@ mod tests {
                 4900,
                 None,
                 BrowserWalletError::Disconnected {
-                    method: "eth_requestAccounts".to_owned().into(),
+                    method: "eth_requestAccounts".to_owned(),
                     code: 4900,
                     message: "code-4900".to_owned().into(),
                 },
@@ -351,7 +361,7 @@ mod tests {
                 4901,
                 None,
                 BrowserWalletError::WrongChain {
-                    method: "eth_requestAccounts".to_owned().into(),
+                    method: "eth_requestAccounts".to_owned(),
                     code: 4901,
                     message: "code-4901".to_owned().into(),
                 },
@@ -360,8 +370,8 @@ mod tests {
                 4902,
                 Some(u64::from(cow_sdk_core::SupportedChainId::Base)),
                 BrowserWalletError::ChainNotAdded {
-                    chain_id: u64::from(cow_sdk_core::SupportedChainId::Base),
-                    method: "eth_requestAccounts".to_owned().into(),
+                    chain_id: Some(u64::from(cow_sdk_core::SupportedChainId::Base)),
+                    method: "eth_requestAccounts".to_owned(),
                     code: 4902,
                     message: "code-4902".to_owned().into(),
                 },
@@ -370,7 +380,7 @@ mod tests {
                 -32601,
                 None,
                 BrowserWalletError::UnsupportedRpcMethod {
-                    method: "eth_requestAccounts".to_owned().into(),
+                    method: "eth_requestAccounts".to_owned(),
                     message: "code--32601".to_owned().into(),
                 },
             ),
@@ -402,7 +412,7 @@ mod tests {
         assert_eq!(
             error,
             BrowserWalletError::Rpc {
-                method: "wallet_switchEthereumChain".to_owned().into(),
+                method: "wallet_switchEthereumChain".to_owned(),
                 code: -32_000,
                 message: "generic rpc error".to_owned().into(),
                 data: Some(json!({ "detail": "kept" }).into()),

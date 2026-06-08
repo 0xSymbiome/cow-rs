@@ -72,7 +72,7 @@ fn sample_order() -> OrderData {
 async fn typed_data_signing_rejection_propagates_as_typed_signer_rejection() {
     let signer = RejectingSigner {
         error: BrowserWalletError::UserRejectedRequest {
-            method: "eth_signTypedData_v4".to_owned().into(),
+            method: "eth_signTypedData_v4".to_owned(),
             code: 4001,
             message: "User rejected typed-data signature".to_owned().into(),
         },
@@ -95,7 +95,7 @@ async fn typed_data_signing_rejection_propagates_as_typed_signer_rejection() {
 async fn typed_data_signing_rejection_renders_user_facing_label_and_code() {
     let signer = RejectingSigner {
         error: BrowserWalletError::UserRejectedRequest {
-            method: "eth_signTypedData_v4".to_owned().into(),
+            method: "eth_signTypedData_v4".to_owned(),
             code: 4001,
             message: "User rejected typed-data signature".to_owned().into(),
         },
@@ -120,7 +120,7 @@ async fn typed_data_signing_rejection_renders_user_facing_label_and_code() {
 async fn non_rejection_signer_errors_keep_the_redacted_display_path() {
     let signer = RejectingSigner {
         error: BrowserWalletError::Rpc {
-            method: "eth_signTypedData_v4".to_owned().into(),
+            method: "eth_signTypedData_v4".to_owned(),
             code: -32_603,
             message: "internal error".to_owned().into(),
             data: None,

@@ -171,8 +171,11 @@ redacted route identity. Public error diagnostics for provider, signer, RPC,
 transport, response-body, orderbook rejection, subgraph context, browser-wallet,
 and facade errors keep credential-bearing message payloads behind explicit
 `Redacted<T>` access or typed sanitizers, while safe diagnostics such as chain
-IDs, schema versions, environment labels, and sanitized orderbook rejection tags
-remain visible. `crates/sdk/tests/error_redaction_contract.rs` proves the
+IDs, HTTP status codes, EIP-1193 RPC method names, schema versions, environment
+labels, and sanitized orderbook rejection tags remain visible. Closed-set
+protocol identifiers — supplied by the SDK or the protocol, never attacker-shaped
+free text — are surfaced as the safely-typed half of this contract; free-form
+echoes such as server descriptions and wallet messages remain redacted. `crates/sdk/tests/error_redaction_contract.rs` proves the
 contract by rendering the reviewed error families with URL, bearer-token,
 private-key-shaped, and PEM-shaped payloads across `Debug`, `Display`, and
 existing `Serialize` surfaces. No code path bypasses redaction through `Deref`

@@ -283,7 +283,7 @@ async fn account_returns_malformed_response_when_wallet_exposes_no_account() {
 
     match error {
         BrowserWalletError::MalformedResponse { method, message } => {
-            assert_eq!(method.into_inner(), "eth_accounts");
+            assert_eq!(method, "eth_accounts");
             let rendered = message.into_inner();
             assert!(
                 rendered.contains("does not currently expose any account"),

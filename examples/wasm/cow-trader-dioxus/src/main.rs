@@ -222,8 +222,20 @@ async fn connect_active(
     busy.set(true);
     match candidate.connect().await {
         Ok(_) => {
+            // Connecting on another network is allowed; signing actions switch
+            // to Sepolia first (`signer_for` is fail-closed). Surface the
+            // mismatch now so it is not a surprise at the first transaction.
+            let note = if candidate.chain_id() == Some(u64::from(CHAIN)) {
+                "wallet connected".to_string()
+            } else {
+                let on = candidate.chain_id().map_or_else(
+                    || "an unknown chain".to_string(),
+                    |id| format!("chain {id}"),
+                );
+                format!("wallet connected on {on} — swaps will switch to Sepolia first")
+            };
             wallet.set(Some(candidate));
-            output.set("wallet connected".to_string());
+            output.set(note);
         }
         Err(error) => output.set(format!("error: {error:#}")),
     }
@@ -280,7 +292,11 @@ async fn quote(wallet: &BrowserWallet, sell_is_weth: bool, amount: &str) -> Resu
     let results = build_trading()?
         .quote_results(trade(amount, sell_is_weth)?, &signer, None)
         .await?;
-    Ok(serde_json::to_string_pretty(&results)?)
+    let pretty = serde_json::to_string_pretty(&results)?;
+    Ok(match economic_warning(results.suggested_slippage_bps) {
+        Some(warning) => format!("{warning}\n\n{pretty}"),
+        None => pretty,
+    })
 }
 
 /// Quote, EIP-712 sign in the wallet, and post the swap order.
@@ -348,23 +364,49 @@ fn sell_token(sell_is_weth: bool) -> Result<Address> {
 }
 
 /// Parses a human amount (e.g. `1.5`) into atoms; WETH and COW are 18 decimals.
+///
+/// `Amount::parse_units` truncates sub-wei precision to zero — the same result
+/// viem's `parseUnits` reaches by rounding — so a 19-decimal input becomes `0`.
+/// A zero-value wrap, approve, or quote wastes gas or returns an opaque API
+/// rejection, so the example refuses it here. Input policy is the consumer's
+/// job; the SDK stays a faithful primitive (an ERC-20 `approve(0)`, for example,
+/// is the canonical allowance reset and must not be blocked at the SDK level).
 fn parse_amount(amount: &str) -> Result<Amount> {
-    Ok(Amount::parse_units(amount.trim(), 18)?)
+    let parsed = Amount::parse_units(amount.trim(), 18)?;
+    if parsed.is_zero() {
+        anyhow::bail!("sell amount must be greater than 0 (sub-wei input rounds to 0)");
+    }
+    Ok(parsed)
 }
 
 /// Sells `amount` of the chosen sell token for the other one.
 ///
-/// `with_slippage_bps(50)` is an explicit 0.5% tolerance the SDK signs verbatim;
-/// omit it for AUTO slippage, where the SDK applies the quote's
-/// `suggested_slippage_bps` instead (fee/volume-aware — well above 50 bps on
-/// small, fee-heavy trades). A tighter bound prices better but can expire unfilled.
+/// Leaving slippage unset selects AUTO slippage: the SDK applies the quote's
+/// `suggested_slippage_bps` (fee/volume-aware — well above 50 bps on small,
+/// fee-heavy trades), the safer default on volatile or thin pairs. Add
+/// `.with_slippage_bps(50)` to sign an explicit 0.5% bound instead — it prices
+/// better but can expire unfilled when the market moves past it. The SDK signs
+/// whichever the caller chooses; it never overrides an explicit value.
 fn trade(amount: &str, sell_is_weth: bool) -> Result<TradeParameters> {
     let (sell, buy) = token_pair(sell_is_weth)?;
     Ok(
         TradeParameters::new(OrderKind::Sell, sell, buy, parse_amount(amount)?)
-            .with_slippage_bps(50)
             .with_valid_for(1800),
     )
+}
+
+/// A one-line advisory when the quote's suggested slippage is high enough that
+/// the trade is likely fee-dominated and may not fill. The SDK faithfully signs
+/// and submits whatever the caller builds; surfacing the protocol's own signal
+/// before the user commits gas is the consumer's job.
+fn economic_warning(suggested_slippage_bps: u32) -> Option<String> {
+    (suggested_slippage_bps >= 1000).then(|| {
+        format!(
+            "⚠ CoW suggests {:.1}% slippage for this trade — the fee likely consumes most of \
+             the sell amount and the order may not fill. Consider a larger amount.",
+            f64::from(suggested_slippage_bps) / 100.0
+        )
+    })
 }
 
 /// Trading client backed by the live CoW orderbook over the browser `fetch`

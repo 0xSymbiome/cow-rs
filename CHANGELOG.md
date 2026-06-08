@@ -389,6 +389,39 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- `cow_sdk_orderbook::OrderbookError::Api` — the fallback for a non-2xx response
+  whose body does not match the typed rejection envelope — now renders the HTTP
+  status on its public message (`orderbook request failed (<status>)`), mirroring
+  the `Rejected` arm. Previously the variant was `#[error(transparent)]` and
+  rendered only the redacted body message, so an unclassified API failure (for
+  example a `422` on an otherwise well-formed quote request) surfaced as a bare
+  `[redacted]` with no status. The HTTP status is a non-sensitive protocol
+  identifier; the response body and derived message stay redacted on the wrapped
+  `OrderbookApiError` source. Governed by
+  [ADR 0017](docs/adr/0017-typed-orderbook-rejection-parser.md) and
+  [ADR 0025](docs/adr/0025-workspace-url-redaction-convention.md).
+- `cow_sdk_browser_wallet::BrowserWalletError` now surfaces the EIP-1193 RPC
+  method name on every variant that carries one — the `method` field changed from
+  `Redacted<String>` to `String`. The method is an SDK-supplied, closed-set
+  protocol identifier (`eth_sendTransaction`, `wallet_switchEthereumChain`, …),
+  not a credential, so redacting it only obscured which request failed; the
+  wallet's free-form `message` stays redacted. The `4001` user rejection
+  (`UserRejectedRequest`) now renders as ``wallet request `<method>` was rejected
+  by the user (4001)``, matching the signing layer's typed-data rejection for the
+  same condition. `ChainNotAdded` now carries `chain_id: Option<ChainId>` and no
+  longer coerces a missing or unparseable requested chain to `0`, so the error
+  never claims a chain the caller did not request. Governed by
+  [ADR 0007](docs/adr/0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md)
+  and [ADR 0025](docs/adr/0025-workspace-url-redaction-convention.md).
+- The `cow-trader-dioxus` browser-wallet example now models consumer-side input
+  and economic hygiene: it refuses a non-positive (or sub-wei, truncated-to-zero)
+  amount before constructing any wrap, approve, or quote; leaves slippage unset to
+  use the SDK's AUTO tolerance (the quote's fee/volume-aware suggestion) with an
+  explicit bound available as an opt-in; surfaces a one-line advisory when the
+  quote's suggested slippage signals a fee-dominated trade; and notes a chain
+  mismatch at connect time. The SDK contract is unchanged — these are consumer
+  responsibilities the canonical example demonstrates. Governed by
+  [ADR 0065](docs/adr/0065-canonical-browser-wallet-example.md).
 - `cow_sdk_orderbook::OrderbookRejection::category()` now classifies
   `SellAmountDoesNotCoverFee` as `OrderbookRejectionCategory::Unfulfillable`
   instead of `InvalidOrder`. The fee-coverage shortfall is an economic,

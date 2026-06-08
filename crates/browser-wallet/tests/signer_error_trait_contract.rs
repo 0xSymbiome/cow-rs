@@ -13,8 +13,8 @@ use serde_json::json;
 const SAMPLE_METHOD: &str = "eth_signTypedData_v4";
 const SAMPLE_MESSAGE: &str = "user rejected the request";
 
-fn redacted_method() -> cow_sdk_core::Redacted<String> {
-    SAMPLE_METHOD.to_owned().into()
+fn method_name() -> String {
+    SAMPLE_METHOD.to_owned()
 }
 
 fn redacted_message() -> cow_sdk_core::Redacted<String> {
@@ -24,7 +24,7 @@ fn redacted_message() -> cow_sdk_core::Redacted<String> {
 #[test]
 fn user_rejected_request_exposes_the_carried_provider_error_code() {
     let error = BrowserWalletError::UserRejectedRequest {
-        method: redacted_method(),
+        method: method_name(),
         code: 4001,
         message: redacted_message(),
     };
@@ -36,7 +36,7 @@ fn user_rejected_request_preserves_any_eip1193_4xxx_code_the_wallet_returned() {
     let cases = [4001, 4100, 4101, 4900, 4901, 4902];
     for code in cases {
         let error = BrowserWalletError::UserRejectedRequest {
-            method: redacted_method(),
+            method: method_name(),
             code,
             message: redacted_message(),
         };
@@ -60,18 +60,18 @@ fn non_rejection_variants_return_none_so_the_signer_helper_keeps_redaction() {
             origin: redacted_message(),
         },
         BrowserWalletError::Disconnected {
-            method: redacted_method(),
+            method: method_name(),
             code: 4900,
             message: redacted_message(),
         },
         BrowserWalletError::WrongChain {
-            method: redacted_method(),
+            method: method_name(),
             code: 4901,
             message: redacted_message(),
         },
         BrowserWalletError::ChainNotAdded {
-            chain_id: 8453,
-            method: redacted_method(),
+            chain_id: Some(8453),
+            method: method_name(),
             code: 4902,
             message: redacted_message(),
         },
@@ -88,15 +88,15 @@ fn non_rejection_variants_return_none_so_the_signer_helper_keeps_redaction() {
             typed_data_chain_id: 8453,
         },
         BrowserWalletError::UnsupportedRpcMethod {
-            method: redacted_method(),
+            method: method_name(),
             message: redacted_message(),
         },
         BrowserWalletError::MalformedResponse {
-            method: redacted_method(),
+            method: method_name(),
             message: redacted_message(),
         },
         BrowserWalletError::Rpc {
-            method: redacted_method(),
+            method: method_name(),
             code: -32_603,
             message: redacted_message(),
             data: Some(json!({ "any": "shape" }).into()),
@@ -124,7 +124,7 @@ fn unknown_rpc_payload_codes_do_not_classify_as_user_rejections() {
     // the private constructor surface.
     let _payload = RpcErrorPayload::new(-32_000, "generic rpc error", None);
     let error = BrowserWalletError::Rpc {
-        method: "wallet_switchEthereumChain".to_owned().into(),
+        method: "wallet_switchEthereumChain".to_owned(),
         code: -32_000,
         message: "generic rpc error".to_owned().into(),
         data: None,

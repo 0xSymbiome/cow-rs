@@ -1,7 +1,7 @@
 # Browser Wallet Trust Posture Audit
 
 Status: Current
-Last reviewed: 2026-05-22
+Last reviewed: 2026-06-08
 Owning surface: `cow-sdk-browser-wallet` EIP-1193 provider construction and wallet chain-management URL payloads
 Refresh trigger: Changes to EIP-1193 provider construction, EIP-6963 discovery metadata, wallet origin handling, chain-management URL validation, or browser-wallet error redaction
 Related docs:
@@ -32,7 +32,7 @@ prompts, or RPC endpoint safety after a wallet accepts
 | --- | --- | --- |
 | Provider trust | EIP-6963-discovered providers carry a detected origin into construction, while anonymous providers require `with_trusted_origin(...)` | Conforms |
 | Origin schemes | Trusted origins accept the documented browser-wallet schemes and reject unsupported schemes before provider construction | Conforms |
-| Error redaction | Untrusted provider-origin errors and trust telemetry use redacted origin values | Conforms |
+| Error redaction | Untrusted provider-origin errors and trust telemetry use redacted origin values; EIP-1193 RPC method names surface as closed-set protocol identifiers while wallet free-form messages stay redacted | Conforms |
 | Wallet URL payloads | `rpc_urls`, `block_explorer_urls`, and `icon_urls` stay wallet payload data and are not governed by SDK service-host policy | Conforms |
 | Regression depth | Provider-builder tests pin anonymous rejection, explicit trust, and session preservation | Conforms |
 
@@ -55,6 +55,17 @@ provider can be constructed from the supplied origin.
 Provider-origin trust warnings use the `cow_sdk::trust` tracing target and
 record redacted origin fields. Public error display and debug output do not
 emit raw origin strings for untrusted anonymous providers.
+
+Typed wallet errors surface the EIP-1193 RPC method name they failed on (an
+SDK-supplied, closed-set protocol identifier such as `eth_sendTransaction` or
+`wallet_switchEthereumChain`) so a caller can tell which request failed, while
+the wallet's free-form provider message stays behind `Redacted<T>`. The `4001`
+user-rejection renders as ``wallet request `<method>` was rejected by the user
+(4001)``, matching the signing layer's typed-data rejection
+([ADR 0053](../adr/0053-typed-signer-rejection-classification.md)) for the same
+condition. `ChainNotAdded` carries `chain_id: Option<ChainId>` and omits the
+chain identifier from its message when the failing request did not carry a
+parseable one, so the error never names a chain the caller did not request.
 
 The browser-wallet typed-data signing path consumes
 `cow_sdk_core::TypedDataDomain` directly per

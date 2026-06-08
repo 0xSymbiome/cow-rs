@@ -162,3 +162,22 @@ validation errors. The `OrderbookRejectionCategory` set, the additive-accessor
 contract, and the exhaustive-with-no-wildcard mapping are all unchanged; only
 this one variant's assignment moves to the bucket that names the correct
 consumer action (re-quote, wait, or resize).
+
+## Amendment 2026-06-08: the unclassified `Api` fallback surfaces the HTTP status
+
+`OrderbookError::Api` — the fallback taken when a non-2xx response body does not
+deserialize into the typed rejection envelope (`parse_rejection` returns `None`)
+— now renders the HTTP status on its public message
+(`orderbook request failed (<status>)`), mirroring the `Rejected` arm rather than
+delegating transparently to the wrapped `OrderbookApiError`. Previously the
+variant was `#[error(transparent)]`, so an unclassified failure surfaced only the
+redacted body message — a bare `[redacted]` with no status. The HTTP status is a
+non-sensitive, closed-set protocol identifier; surfacing it makes the
+unclassified path as informative as the typed path while the response body and
+the derived public message stay redacted on the `#[source]` `OrderbookApiError`
+per [ADR 0025](0025-workspace-url-redaction-convention.md). The variant stays a
+tuple holding the envelope, so the `(status, errorType)` payload remains
+reachable for telemetry, and `class()`, `is_retryable()`, and `backoff_hint()`
+are unaffected. Pinned by
+`crates/orderbook/src/error.rs::retry_classification_tests::api_error_display_surfaces_status_and_redacts_body`
+and `crates/sdk/tests/error_redaction_contract.rs`.
