@@ -17,7 +17,7 @@ use crate::{
     events::{
         WalletProviderEvent, WalletRuntimeBinding, WalletRuntimeBindingHandle, apply_provider_event,
     },
-    provider::{hex_quantity, parse_chain_id_value},
+    provider::{hex_quantity, parse_quantity_to_u64},
 };
 
 /// Recorded mock wallet request.
@@ -435,7 +435,7 @@ fn requested_chain_id(
         .and_then(|item| item.get("chainId"))
         .cloned()
         .ok_or_else(|| BrowserWalletError::malformed_response(method, missing_message))?;
-    parse_chain_id_value(&requested, method)
+    parse_quantity_to_u64(&requested, method)
 }
 
 struct MockSessionBinding {

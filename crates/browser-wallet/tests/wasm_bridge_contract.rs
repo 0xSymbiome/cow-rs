@@ -250,14 +250,14 @@ struct LegacyProviderFixture {
 }
 
 impl LegacyProviderFixture {
-    fn install(config: Value) -> Self {
-        let provider = bw_create_provider(&to_js(&config));
+    fn install(config: &Value) -> Self {
+        let provider = bw_create_provider(&to_js(config));
         bw_install_legacy_provider(&provider);
         Self { provider }
     }
 
-    fn emit(&self, event_name: &str, payload: Value) {
-        bw_emit_provider_event(&self.provider, event_name, &to_js(&payload));
+    fn emit(&self, event_name: &str, payload: &Value) {
+        bw_emit_provider_event(&self.provider, event_name, &to_js(payload));
     }
 
     fn listener_count(&self, event_name: &str) -> u32 {
@@ -284,16 +284,16 @@ impl DiscoveryAnnouncements {
         for (provider, name, uuid, rdns) in announcements {
             let entry = Object::new();
             let info = Object::new();
-            set_field(&info, "name", JsValue::from_str(name));
-            set_field(&info, "uuid", JsValue::from_str(uuid));
-            set_field(&info, "rdns", JsValue::from_str(rdns));
+            set_field(&info, "name", &JsValue::from_str(name));
+            set_field(&info, "uuid", &JsValue::from_str(uuid));
+            set_field(&info, "rdns", &JsValue::from_str(rdns));
             set_field(
                 &info,
                 "icon",
-                JsValue::from_str("data:image/svg+xml,<svg/>"),
+                &JsValue::from_str("data:image/svg+xml,<svg/>"),
             );
-            set_field(&entry, "provider", provider.clone());
-            set_field(&entry, "info", info.into());
+            set_field(&entry, "provider", provider);
+            set_field(&entry, "info", &info);
             entries.push(&entry);
         }
         bw_install_eip6963_announcements(entries.as_ref());
@@ -309,7 +309,7 @@ impl Drop for DiscoveryAnnouncements {
 
 #[wasm_bindgen_test(async)]
 async fn legacy_detect_connect_and_signer_requests_cross_the_typed_promise_bridge() {
-    let fixture = LegacyProviderFixture::install(json!({
+    let fixture = LegacyProviderFixture::install(&json!({
         "accounts": [ACCOUNT],
         "chainId": "0xaa36a7",
         "flags": {
@@ -405,7 +405,7 @@ async fn legacy_detect_connect_and_signer_requests_cross_the_typed_promise_bridg
 
 #[wasm_bindgen_test(async)]
 async fn provider_events_keep_session_synchronized_and_listener_cleanup_tracks_rust_owners() {
-    let fixture = LegacyProviderFixture::install(json!({
+    let fixture = LegacyProviderFixture::install(&json!({
         "accounts": [ACCOUNT],
         "chainId": "0xaa36a7",
         "flags": {
@@ -423,10 +423,10 @@ async fn provider_events_keep_session_synchronized_and_listener_cleanup_tracks_r
     assert_eq!(fixture.listener_count("connect"), 1);
     assert_eq!(fixture.listener_count("disconnect"), 1);
 
-    fixture.emit("connect", json!({ "chainId": "0x1" }));
-    fixture.emit("accountsChanged", json!([ALTERNATE_ACCOUNT]));
-    fixture.emit("chainChanged", json!("0x1"));
-    fixture.emit("disconnect", json!({ "message": "fixture disconnected" }));
+    fixture.emit("connect", &json!({ "chainId": "0x1" }));
+    fixture.emit("accountsChanged", &json!([ALTERNATE_ACCOUNT]));
+    fixture.emit("chainChanged", &json!("0x1"));
+    fixture.emit("disconnect", &json!({ "message": "fixture disconnected" }));
 
     let session = wallet.session();
     assert!(!session.connected);
@@ -526,7 +526,7 @@ async fn eip6963_discovery_preserves_metadata_and_requires_explicit_selection() 
 
 #[wasm_bindgen_test(async)]
 async fn rejected_chain_switch_requests_map_to_typed_browser_wallet_errors() {
-    let fixture = LegacyProviderFixture::install(json!({
+    let fixture = LegacyProviderFixture::install(&json!({
         "accounts": [ACCOUNT],
         "chainId": "0xaa36a7",
         "errors": {
@@ -573,7 +573,7 @@ async fn rejected_chain_switch_requests_map_to_typed_browser_wallet_errors() {
 
 #[wasm_bindgen_test(async)]
 async fn successful_switch_requests_fail_when_the_refreshed_session_stays_on_a_different_chain() {
-    let fixture = LegacyProviderFixture::install(json!({
+    let fixture = LegacyProviderFixture::install(&json!({
         "accounts": [ACCOUNT],
         "chainId": "0xaa36a7",
         "addedChains": ["0xaa36a7", "0x1"],
@@ -620,7 +620,7 @@ async fn successful_switch_requests_fail_when_the_refreshed_session_stays_on_a_d
 
 #[wasm_bindgen_test(async)]
 async fn mock_wallet_console_state_machine_is_deterministic() {
-    let fixture = LegacyProviderFixture::install(json!({
+    let fixture = LegacyProviderFixture::install(&json!({
         "accounts": [ACCOUNT],
         "chainId": "0xaa36a7",
         "flags": {
@@ -759,7 +759,7 @@ where
         .expect("fixture values must stay serializable")
 }
 
-fn set_field(target: &Object, field: &str, value: JsValue) {
-    Reflect::set(target, &JsValue::from_str(field), &value)
+fn set_field(target: &Object, field: &str, value: &JsValue) {
+    Reflect::set(target, &JsValue::from_str(field), value)
         .expect("fixture objects must accept direct field assignment");
 }

@@ -153,8 +153,8 @@ async fn malformed_json_rpc_error_classifies_as_typed_provider_error() {
             assert!(
                 message
                     .as_inner()
-                    .contains("expected string or number chain id"),
-                "malformed-response message must retain chain-id parse context: {message}",
+                    .contains("expected a string or number quantity"),
+                "malformed-response message must retain quantity parse context: {message}",
             );
         }
         other => panic!("expected MalformedResponse, got {other:?}"),

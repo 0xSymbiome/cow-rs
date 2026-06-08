@@ -5,8 +5,7 @@ use serde_json::Value;
 
 use crate::{BrowserWalletError, EventLog, WalletSession, events::WalletRuntimeBindingHandle};
 
-#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
-#[cfg_attr(not(target_arch = "wasm32"), async_trait(?Send))]
+#[async_trait(?Send)]
 /// Transport seam for typed EIP-1193 browser-wallet requests.
 ///
 /// Implementors are responsible for method dispatch, request serialization, and optional session

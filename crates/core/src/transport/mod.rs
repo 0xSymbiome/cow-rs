@@ -100,7 +100,7 @@ pub fn sanitize_public_base_url(base_url: &str) -> String {
 }
 
 #[cfg(target_arch = "wasm32")]
-fn is_supported_public_scheme(scheme: &str) -> bool {
+const fn is_supported_public_scheme(scheme: &str) -> bool {
     scheme.eq_ignore_ascii_case("http") || scheme.eq_ignore_ascii_case("https")
 }
 

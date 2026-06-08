@@ -19,10 +19,7 @@ impl SigningProvider for Eip1193Provider {
             } else {
                 self.session.borrow().accounts.clone()
             };
-            if !accounts
-                .iter()
-                .any(|candidate| candidate.to_hex_string() == expected.to_hex_string())
-            {
+            if !accounts.contains(expected) {
                 return Err(BrowserWalletError::malformed_response(
                     "create_signer",
                     format!(

@@ -119,7 +119,7 @@ impl Provider for Eip1193Provider {
                     "block response must include `number`",
                 )
             })
-            .and_then(|number| parse_chain_id_value(number, "eth_getBlockByNumber"))?;
+            .and_then(|number| parse_quantity_to_u64(number, "eth_getBlockByNumber"))?;
         let hash = value
             .get("hash")
             .and_then(Value::as_str)
@@ -138,28 +138,23 @@ impl Provider for Eip1193Provider {
 }
 
 pub(crate) fn hex_quantity(value: &str) -> Result<String, BrowserWalletError> {
-    let parsed = value
-        .strip_prefix("0x")
-        .map_or_else(
-            || U256::from_str_radix(value, 10),
-            |stripped| U256::from_str_radix(stripped, 16),
-        )
+    let parsed = U256::from_str(value)
         .map_err(|_| BrowserWalletError::serialization(format!("invalid quantity `{value}`")))?;
-
     Ok(format!("0x{parsed:x}"))
 }
 
-pub(crate) fn parse_chain_id_value(
+/// Parses a JSON-RPC quantity — a `0x`-prefixed hex or decimal string, or a JSON
+/// number — into a `u64`.
+///
+/// Shared by the chain-id and block-number response paths. `method` names the
+/// originating RPC call so a malformed value reports the correct context rather
+/// than a fixed label.
+pub(crate) fn parse_quantity_to_u64(
     value: &Value,
     method: &str,
-) -> Result<ChainId, BrowserWalletError> {
+) -> Result<u64, BrowserWalletError> {
     let parsed = match value {
-        Value::String(raw) => raw
-            .strip_prefix("0x")
-            .map_or_else(
-                || U256::from_str_radix(raw, 10),
-                |stripped| U256::from_str_radix(stripped, 16),
-            )
+        Value::String(raw) => U256::from_str(raw)
             .map_err(|error| BrowserWalletError::malformed_response(method, error.to_string()))?,
         Value::Number(number) => U256::from(number.as_u64().ok_or_else(|| {
             BrowserWalletError::malformed_response(method, "expected a u64-compatible number")
@@ -167,14 +162,14 @@ pub(crate) fn parse_chain_id_value(
         other => {
             return Err(BrowserWalletError::malformed_response(
                 method,
-                format!("expected string or number chain id, received {other}"),
+                format!("expected a string or number quantity, received {other}"),
             ));
         }
     };
     u64::try_from(parsed).map_err(|_| {
         BrowserWalletError::malformed_response(
             method,
-            format!("chain id `{value}` exceeds u64 bounds"),
+            format!("`{method}` value `{value}` exceeds u64 bounds"),
         )
     })
 }

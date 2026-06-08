@@ -1472,7 +1472,6 @@ dependencies = [
  "async-trait",
  "cow-sdk-core",
  "cow-sdk-test-utils",
- "getrandom 0.4.2",
  "gloo-timers",
  "js-sys",
  "serde",

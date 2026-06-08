@@ -427,6 +427,12 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- `cow_sdk_browser_wallet` no longer reports a malformed `eth_getBlockByNumber`
+  block number as a `chain id` error. The shared JSON-RPC quantity parser is now
+  named for what it does (parse a hex/decimal quantity into a `u64`) and reports
+  the originating RPC method, so a bad block number surfaces as
+  `` `eth_getBlockByNumber` value `<value>` exceeds u64 bounds `` rather than a
+  misleading chain-id message. Internal refactor; no public API change.
 - `cow_sdk_orderbook::OrderbookError::Api` — the fallback for a non-2xx response
   whose body does not match the typed rejection envelope — now renders the HTTP
   status on its public message (`orderbook request failed (<status>)`), mirroring
@@ -735,6 +741,11 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Removed
 
+- Removed the unused `getrandom` dependency from `cow-sdk-browser-wallet`. The
+  crate performs no randomness; its wasm32 declaration was dead weight. The
+  workspace `getrandom` pin and its `wasm_js` backend remain provided by the
+  crates that actually need a randomness source (`cow-sdk-contracts`,
+  `cow-sdk-cow-shed`, `cow-sdk-wasm`), so the wasm32 build is unchanged.
 - Removed the inert `tracing` feature and its optional `tracing` dependency
   from `cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, and `cow-sdk-alloy`.
   The feature emitted no spans or events — the native Alloy adapters are

@@ -24,7 +24,7 @@ use crate::{
 use self::provider_impl::parse_address_array;
 
 pub(crate) use self::provider_impl::{
-    hex_quantity, parse_chain_id_value, parse_quantity_to_decimal, transaction_to_rpc,
+    hex_quantity, parse_quantity_to_decimal, parse_quantity_to_u64, transaction_to_rpc,
 };
 pub use self::{builder::Eip1193ProviderBuilder, origin::Origin, transport::Eip1193Transport};
 
@@ -134,7 +134,7 @@ impl Eip1193Provider {
     /// Returns an error when the wallet rejects `eth_chainId` or returns a malformed chain id.
     pub async fn query_chain_id(&self) -> Result<ChainId, BrowserWalletError> {
         let value = self.request("eth_chainId", None).await?;
-        let chain_id = parse_chain_id_value(&value, "eth_chainId")?;
+        let chain_id = parse_quantity_to_u64(&value, "eth_chainId")?;
         self.update_session(|session| {
             session.chain_id = Some(chain_id);
         });

@@ -23,7 +23,7 @@ use crate::{
     events::{
         WalletProviderEvent, WalletRuntimeBinding, WalletRuntimeBindingHandle, apply_provider_event,
     },
-    provider::parse_chain_id_value,
+    provider::parse_quantity_to_u64,
 };
 
 #[cfg(target_arch = "wasm32")]
@@ -118,11 +118,11 @@ impl InjectedProviderTransport {
         )))
     }
 
-    fn from_provider(provider: JsValue, info: InjectedWalletInfo) -> Self {
+    const fn from_provider(provider: JsValue, info: InjectedWalletInfo) -> Self {
         Self { provider, info }
     }
 
-    fn provider(&self) -> &JsValue {
+    const fn provider(&self) -> &JsValue {
         &self.provider
     }
 
@@ -195,7 +195,7 @@ pub(crate) async fn discover_injected_wallets(
 }
 
 #[cfg(target_arch = "wasm32")]
-#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
+#[async_trait(?Send)]
 impl Eip1193Transport for InjectedProviderTransport {
     fn label(&self) -> &str {
         &self.info.provider_label
@@ -239,14 +239,14 @@ impl Eip1193Transport for InjectedProviderTransport {
             .and_then(|value| value.as_array())
             .and_then(|items| items.first())
             .and_then(|item| item.get("chainId"))
-            .and_then(|chain_id| parse_chain_id_value(chain_id, method).ok());
+            .and_then(|chain_id| parse_quantity_to_u64(chain_id, method).ok());
         let promise = typed_provider(&self.provider)
             .request(&payload)
-            .map_err(|error| map_js_error(method, error, requested_chain))?;
+            .map_err(|error| map_js_error(method, &error, requested_chain))?;
         let value = JsFuture::from(promise)
             .await
-            .map_err(|error| map_js_error(method, error, requested_chain))?;
-        serde_wasm_bindgen::from_value(value.clone()).map_err(|error| {
+            .map_err(|error| map_js_error(method, &error, requested_chain))?;
+        serde_wasm_bindgen::from_value(value).map_err(|error| {
             BrowserWalletError::malformed_response(
                 method,
                 format!("failed to deserialize wallet response: {error}"),
@@ -404,7 +404,7 @@ fn parse_accounts_changed_event(payload: JsValue) -> Option<WalletProviderEvent>
 #[cfg(target_arch = "wasm32")]
 fn parse_chain_changed_event(payload: JsValue) -> Option<WalletProviderEvent> {
     let value: Value = serde_wasm_bindgen::from_value(payload).ok()?;
-    let chain_id = parse_chain_id_value(&value, "chainChanged").ok()?;
+    let chain_id = parse_quantity_to_u64(&value, "chainChanged").ok()?;
     Some(WalletProviderEvent::ChainChanged { chain_id })
 }
 
@@ -414,8 +414,8 @@ fn parse_connect_chain_id(payload: JsValue) -> Option<u64> {
     match &value {
         Value::Object(fields) => fields
             .get("chainId")
-            .and_then(|chain_id| parse_chain_id_value(chain_id, "connect").ok()),
-        _ => parse_chain_id_value(&value, "connect").ok(),
+            .and_then(|chain_id| parse_quantity_to_u64(chain_id, "connect").ok()),
+        _ => parse_quantity_to_u64(&value, "connect").ok(),
     }
 }
 
@@ -434,6 +434,16 @@ fn parse_disconnect_message(payload: JsValue) -> Option<String> {
     }
 }
 
+/// Resolves the display label and vendor booleans for an injected provider.
+///
+/// The label prefers the EIP-6963 announced `info.name` when present; the
+/// `isMetaMask` / `isCoinbaseWallet` / `isRabby` flags are a best-effort
+/// fallback only for the legacy `window.ethereum` path, where no announced
+/// metadata exists. The flag set is intentionally a small, closed list — the
+/// crate keeps injected-wallet support bounded and EIP-6963-first — so an
+/// unlisted legacy wallet is labeled generically rather than guessed. The
+/// booleans are also surfaced verbatim on [`InjectedWalletInfo`] for callers
+/// that want them.
 #[cfg(target_arch = "wasm32")]
 fn detect_wallet_info(
     provider: &JsValue,
@@ -520,18 +530,18 @@ fn browser_window() -> Result<web_sys::Window, BrowserWalletError> {
 }
 
 #[cfg(target_arch = "wasm32")]
-fn map_js_error(method: &str, error: JsValue, requested_chain: Option<u64>) -> BrowserWalletError {
+fn map_js_error(method: &str, error: &JsValue, requested_chain: Option<u64>) -> BrowserWalletError {
     // Provider error payloads remain explicitly dynamic because injected-wallet runtimes may add
     // vendor-specific fields beyond the standardized RPC code and message shape.
-    let code = Reflect::get(&error, &JsValue::from_str("code"))
+    let code = Reflect::get(error, &JsValue::from_str("code"))
         .ok()
         .and_then(|value| value.as_f64())
-        .map(|value| value as i32);
-    let message = Reflect::get(&error, &JsValue::from_str("message"))
+        .and_then(integral_i32);
+    let message = Reflect::get(error, &JsValue::from_str("message"))
         .ok()
         .and_then(|value| value.as_string())
-        .unwrap_or_else(|| js_value_to_string(&error));
-    let data = Reflect::get(&error, &JsValue::from_str("data"))
+        .unwrap_or_else(|| js_value_to_string(error));
+    let data = Reflect::get(error, &JsValue::from_str("data"))
         .ok()
         .filter(|value| !value.is_null() && !value.is_undefined())
         .and_then(|value| serde_wasm_bindgen::from_value(value).ok());
@@ -547,6 +557,26 @@ fn map_js_error(method: &str, error: JsValue, requested_chain: Option<u64>) -> B
     BrowserWalletError::js(message)
 }
 
+/// Accepts a JSON-RPC error code only when it is an integral value within `i32`
+/// range.
+///
+/// JSON-RPC / EIP-1474 codes are integers in `i32` range; a non-integral or
+/// out-of-range value from a misbehaving wallet is treated as absent so the
+/// error falls through to the generic JS variant rather than being silently
+/// truncated.
+#[cfg(target_arch = "wasm32")]
+fn integral_i32(value: f64) -> Option<i32> {
+    if value.fract() == 0.0 && value >= f64::from(i32::MIN) && value <= f64::from(i32::MAX) {
+        #[allow(
+            clippy::cast_possible_truncation,
+            reason = "guarded above: value is integral and within i32 range"
+        )]
+        Some(value as i32)
+    } else {
+        None
+    }
+}
+
 #[cfg(target_arch = "wasm32")]
 fn js_value_to_string(value: &JsValue) -> String {
     value.as_string().unwrap_or_else(|| format!("{value:?}"))
@@ -554,15 +584,16 @@ fn js_value_to_string(value: &JsValue) -> String {
 
 #[cfg(not(target_arch = "wasm32"))]
 /// Non-WASM placeholder for the injected-provider transport type.
+///
+/// Injected wallets exist only in a browser runtime; on non-`wasm32` targets
+/// this is an inert placeholder that preserves the crate's public API shape
+/// across targets. It is never constructed off-wasm (discovery returns `None`)
+/// and carries no session state.
 #[derive(Debug, Clone)]
 pub struct InjectedProviderTransport;
 
 #[cfg(not(target_arch = "wasm32"))]
 impl InjectedProviderTransport {
-    pub(crate) const fn detect_legacy() -> Option<Self> {
-        None
-    }
-
     /// Returns default injected-wallet metadata on non-WASM targets.
     #[must_use]
     pub fn info(&self) -> crate::InjectedWalletInfo {

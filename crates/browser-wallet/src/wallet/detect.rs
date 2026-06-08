@@ -128,7 +128,6 @@ impl BrowserWallet {
     ///
     /// Returns an error when the runtime transport probe fails unexpectedly.
     pub const fn detect() -> Result<Option<Self>, BrowserWalletError> {
-        let _ = crate::js::InjectedProviderTransport::detect_legacy();
         Ok(None)
     }
 }
