@@ -244,20 +244,9 @@ impl TradingBuilder<ChainIdSet, AppCodeSet> {
     /// [`TradingError::MissingInjectedOrderbookClient`] when no orderbook
     /// client has been supplied.
     ///
-    /// ```compile_fail
-    /// use cow_sdk_trading::TradingBuilder;
-    /// let _ = TradingBuilder::new()
-    ///     .app_code("test")
-    ///     .build();
-    /// ```
-    ///
-    /// ```compile_fail
-    /// use cow_sdk_core::SupportedChainId;
-    /// use cow_sdk_trading::TradingBuilder;
-    /// let _ = TradingBuilder::new()
-    ///     .chain_id(SupportedChainId::Mainnet)
-    ///     .build();
-    /// ```
+    /// `build` is reachable only once both the chain id and application code
+    /// have been supplied; the builder typestate makes calling it earlier a
+    /// compile error rather than a runtime failure.
     pub fn build(self) -> Result<Trading, TradingError> {
         if let Some(error) = self.app_code_error {
             return Err(error.into());

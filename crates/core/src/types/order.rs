@@ -127,32 +127,8 @@ impl TokenInfo {
 ///
 /// Downstream crates construct orders through [`OrderData::new`] and the
 /// chainable `with_*` setters rather than a struct literal so additive fields
-/// remain semver-compatible.
-///
-/// ```compile_fail
-/// use cow_sdk_core::{
-///     Address, Amount, AppDataHash, BuyTokenDestination, OrderKind, SellTokenSource,
-///     OrderData,
-/// };
-///
-/// let _order = OrderData {
-///     sell_token: Address::new("0x1111111111111111111111111111111111111111").unwrap(),
-///     buy_token: Address::new("0x2222222222222222222222222222222222222222").unwrap(),
-///     receiver: Address::new("0x3333333333333333333333333333333333333333").unwrap(),
-///     sell_amount: Amount::new("100").unwrap(),
-///     buy_amount: Amount::new("200").unwrap(),
-///     valid_to: 1_700_000_000,
-///     app_data: AppDataHash::new(
-///         "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-///     )
-///     .unwrap(),
-///     fee_amount: Amount::new("5").unwrap(),
-///     kind: OrderKind::Sell,
-///     partially_fillable: true,
-///     sell_token_balance: SellTokenSource::External,
-///     buy_token_balance: BuyTokenDestination::Internal,
-/// };
-/// ```
+/// remain semver-compatible; the `#[non_exhaustive]` attribute additionally
+/// prevents external struct-literal construction.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

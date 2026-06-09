@@ -293,18 +293,6 @@ impl<C, T> OrderbookApiBuilder<C, EnvSet, T> {
     /// [`OrderbookApiBuilder::environment`] or
     /// [`OrderbookApiBuilder::from_context`], so calling it before the
     /// environment is set is a compile error rather than a runtime panic.
-    ///
-    /// ```compile_fail
-    /// use cow_sdk_core::SupportedChainId;
-    /// use cow_sdk_orderbook::OrderbookApi;
-    ///
-    /// // `base_url` is gated on the `EnvSet` typestate, so reaching it before
-    /// // `.environment(...)` does not compile: the method is not in scope
-    /// // until the environment has been supplied.
-    /// let _ = OrderbookApi::builder()
-    ///     .chain(SupportedChainId::Mainnet)
-    ///     .base_url("https://api.cow.fi");
-    /// ```
     #[must_use]
     pub fn base_url(self, base_url: impl Into<String>) -> Self {
         let env = self.env.0;

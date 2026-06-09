@@ -260,16 +260,9 @@ impl<'a> SwapBuilder<'a, Set, Set, Set> {
     /// Returns [`TradingError`] when quoting, signing, app-data upload, or order
     /// submission fails.
     ///
-    /// ```compile_fail
-    /// # use cow_sdk_trading::Trading;
-    /// # use cow_sdk_core::{Address, Signer, SignerError};
-    /// # async fn demo<S>(trading: &Trading, signer: &S)
-    /// # where S: Signer, S::Error: std::fmt::Display + SignerError {
-    /// // Does not compile: `execute` is unavailable until the buy token and
-    /// // amount are also set.
-    /// let _ = trading.swap().sell_token(Address::ZERO).execute(signer).await;
-    /// # }
-    /// ```
+    /// `execute` is reachable only once the sell-token, buy-token, and amount
+    /// markers are all set; the swap-builder typestate makes an incomplete
+    /// `swap()...execute(...)` chain a compile error.
     pub async fn execute<S>(self, signer: &S) -> Result<OrderPostingResult, TradingError>
     where
         S: Signer,

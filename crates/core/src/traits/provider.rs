@@ -72,46 +72,12 @@ use super::transaction::{BlockInfo, TransactionReceipt, TransactionRequest};
 /// # }
 /// ```
 ///
-/// Read-only providers do not satisfy `SigningProvider` unless they
-/// explicitly implement the signing-capable extension:
-///
-/// ```compile_fail
-/// # use cow_sdk_core::{
-/// #     Address, BlockInfo, ContractCall, ContractHandle, HexData, Provider, SigningProvider,
-/// #     TransactionHash, TransactionReceipt, TransactionRequest,
-/// # };
-/// # struct ReadOnlyProvider;
-/// # impl Provider for ReadOnlyProvider {
-/// #     type Error = String;
-/// #     async fn get_chain_id(&self) -> Result<u64, Self::Error> { Ok(1) }
-/// #     async fn get_code(&self, _address: &Address) -> Result<Option<HexData>, Self::Error> { Ok(None) }
-/// #     async fn get_transaction_receipt(
-/// #         &self,
-/// #         _transaction_hash: &TransactionHash,
-/// #     ) -> Result<Option<TransactionReceipt>, Self::Error> { Ok(None) }
-/// #     async fn get_storage_at(
-/// #         &self,
-/// #         _address: &Address,
-/// #         _slot: &str,
-/// #     ) -> Result<HexData, Self::Error> { Ok(HexData::new("0x").unwrap()) }
-/// #     async fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> { Ok(HexData::new("0x").unwrap()) }
-/// #     async fn read_contract(&self, _request: &ContractCall) -> Result<String, Self::Error> { Ok("null".to_owned()) }
-/// #     async fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> { Ok(BlockInfo::new(1, None)) }
-/// #     async fn get_contract(
-/// #         &self,
-/// #         address: &Address,
-/// #         abi_json: &str,
-/// #     ) -> Result<ContractHandle, Self::Error> {
-/// #         Ok(ContractHandle::new(address.clone(), abi_json.to_owned()))
-/// #     }
-/// # }
-/// fn requires_signing<P: SigningProvider>(_provider: &P) {}
-///
-/// fn main() {
-///     let provider = ReadOnlyProvider;
-///     requires_signing(&provider);
-/// }
-/// ```
+/// Read-only providers do not satisfy [`SigningProvider`]: a function bounded
+/// by `SigningProvider` will not accept a `Provider`-only type, so signer
+/// dependencies stay out of read-only provider crates (ADR 0024). The
+/// capability boundary is exercised at runtime by
+/// `tests/provider_capability_split_contract.rs` and, for the concrete
+/// adapters, by the `trybuild` witnesses behind `PROP-AP-003` / `PROP-AS-003`.
 #[expect(
     async_fn_in_trait,
     reason = "the trait surface adopts native async fn in trait per ADR 0010 runtime-neutral posture; the resulting non-Send futures are covered by the workspace future_not_send allow so wasm callbacks can satisfy the same trait without an explicit Send bound"

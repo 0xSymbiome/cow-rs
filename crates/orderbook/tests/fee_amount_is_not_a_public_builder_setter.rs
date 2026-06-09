@@ -4,12 +4,11 @@
 //!
 //! The cow-protocol services backend rejects orders with a non-zero
 //! order-level fee, so the submission path always wires `"feeAmount": "0"`
-//! and no public Rust builder exposes a `fee_amount(...)` setter. The
-//! compile-fail invariant is asserted by the module-level `compile_fail`
-//! doctests on `cow_sdk_orderbook`, which are executed by `cargo test
-//! --doc`. The runtime tests in this file prove that submission and
-//! order-response wire shapes stay aligned with the retained EIP-712
-//! struct-hash contract.
+//! and no public Rust builder exposes a `fee_amount(...)` setter — the types
+//! ship no such setter, so attempting to set it does not compile. The runtime
+//! tests in this file prove that submission and order-response wire shapes
+//! stay aligned with the retained EIP-712 struct-hash contract and that the
+//! submission path always emits `"feeAmount": "0"`.
 
 use cow_sdk_core::{Address, Amount, AppDataHash, OrderKind};
 use cow_sdk_orderbook::{OrderCreation, QuoteData, SigningScheme};

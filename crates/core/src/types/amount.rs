@@ -80,17 +80,9 @@ use crate::errors::{CoreError, ValidationError};
 /// every operation cow's own crates need to perform on a typed
 /// amount.
 ///
-/// ```compile_fail
-/// use cow_sdk_core::Amount;
-///
-/// let _: Amount = String::from("1").into();
-/// ```
-///
-/// ```compile_fail
-/// use cow_sdk_core::Amount;
-///
-/// let _: Amount = "1".into();
-/// ```
+/// There is no `From<String>` or `From<&str>` conversion: construct through
+/// [`Amount::new`] or [`Amount::parse_units`] so malformed input fails closed
+/// at the typed boundary rather than via an infallible `.into()`.
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct Amount(

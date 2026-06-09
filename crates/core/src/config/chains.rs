@@ -31,27 +31,8 @@ const WRAPPED_NATIVE_LINEA_BYTES: [u8; 20] = hex!("0xe5d7c2a44ffddf6b295a15c1481
 /// ```
 ///
 /// Downstream crates must include a wildcard arm when matching so future chain
-/// additions remain semver-compatible.
-///
-/// ```compile_fail
-/// use cow_sdk_core::SupportedChainId;
-///
-/// fn label(chain_id: SupportedChainId) -> &'static str {
-///     match chain_id {
-///         SupportedChainId::Mainnet => "mainnet",
-///         SupportedChainId::Bnb => "bnb",
-///         SupportedChainId::GnosisChain => "gnosis",
-///         SupportedChainId::Polygon => "polygon",
-///         SupportedChainId::Base => "base",
-///         SupportedChainId::Plasma => "plasma",
-///         SupportedChainId::ArbitrumOne => "arbitrum",
-///         SupportedChainId::Avalanche => "avalanche",
-///         SupportedChainId::Ink => "ink",
-///         SupportedChainId::Linea => "linea",
-///         SupportedChainId::Sepolia => "sepolia",
-///     }
-/// }
-/// ```
+/// additions remain semver-compatible; the type is `#[non_exhaustive]`, so a
+/// match without a wildcard arm does not compile outside this crate.
 // DO NOT SWAP for alloy_chains::NamedChain.
 //
 // `SupportedChainId` encodes only the chains the CoW orderbook

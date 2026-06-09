@@ -1,9 +1,9 @@
 //! Public-surface contract assertions for [`OrderbookApiBuilder`].
 //!
 //! Every test exercises one observable shape of the typestate-checked
-//! construction path. Inline `compile_fail` doctests pin the typestate
-//! preconditions: invoking `.build()` before chain id, environment, or
-//! transport are supplied is a compile-time error. Runtime tests cover the
+//! construction path. The `trybuild` compile-fail witnesses below pin the
+//! typestate preconditions: invoking `.build()` before chain id, environment,
+//! or transport are supplied is a compile-time error. Runtime tests cover the
 //! happy-path build variants and assert that transport injection,
 //! per-environment base-URL overrides, partner API keys, and shared
 //! `reqwest::Client` reuse all flow through the resulting `OrderbookApi`.

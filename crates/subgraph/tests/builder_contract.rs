@@ -1,8 +1,8 @@
 //! Public-surface contract assertions for [`SubgraphApiBuilder`].
 //!
 //! Every test exercises one observable shape of the typestate-checked
-//! construction path. Inline `compile_fail` doctests pin the typestate
-//! preconditions: invoking `.build()` before chain id, API key, or
+//! construction path. The `trybuild` compile-fail witnesses below pin the
+//! typestate preconditions: invoking `.build()` before chain id, API key, or
 //! transport are supplied is a compile-time error. Runtime tests cover the
 //! happy-path build variants and assert that transport injection,
 //! per-chain base-URL overrides, partner API keys, and shared
