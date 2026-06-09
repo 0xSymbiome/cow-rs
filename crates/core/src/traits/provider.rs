@@ -165,107 +165,15 @@ pub trait Provider {
 /// # Examples
 ///
 /// ```
-/// # use cow_sdk_core::{
-/// #     Address, Amount, BlockInfo, ContractCall, ContractHandle, Hash32, HexData, Provider,
-/// #     Signer, SigningProvider, TransactionHash, TransactionReceipt, TransactionBroadcast,
-/// #     TransactionRequest, TypedDataDomain, TypedDataField,
-/// # };
-/// #[derive(Clone)]
-/// struct WalletSigner;
+/// use cow_sdk_core::{Address, Signer, SigningProvider};
 ///
-/// impl Signer for WalletSigner {
-///     type Error = String;
-///
-///     async fn address(&self) -> Result<Address, Self::Error> {
-///         Address::new("0x1111111111111111111111111111111111111111")
-///             .map_err(|error| error.to_string())
-///     }
-///
-/// #   async fn sign_message(&self, _message: &[u8]) -> Result<String, Self::Error> {
-/// #       Ok("0xsigned".to_owned())
-/// #   }
-/// #   async fn sign_transaction(&self, _tx: &TransactionRequest) -> Result<String, Self::Error> {
-/// #       Ok("0xsigned".to_owned())
-/// #   }
-/// #   async fn sign_typed_data(
-/// #       &self,
-/// #       _domain: &TypedDataDomain,
-/// #       _fields: &[TypedDataField],
-/// #       _value_json: &str,
-/// #   ) -> Result<String, Self::Error> {
-/// #       Ok("0xsigned".to_owned())
-/// #   }
-/// #   async fn send_transaction(
-/// #       &self,
-/// #       _tx: &TransactionRequest,
-/// #   ) -> Result<TransactionBroadcast, Self::Error> {
-/// #       Ok(TransactionBroadcast::new(Hash32::new(format!("0x{}", "11".repeat(32))).unwrap()))
-/// #   }
-/// #   async fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {
-/// #       Ok(Amount::from(21_000u32))
-/// #   }
+/// // A leaf crate bounds on `SigningProvider` to obtain a signer without
+/// // depending on a concrete wallet adapter; the `Signer<Error = Self::Error>`
+/// // bound unifies the signer's error type with the provider's.
+/// async fn signer_address<P: SigningProvider>(provider: &P) -> Result<Address, P::Error> {
+///     let signer = provider.create_signer("primary").await?;
+///     signer.address().await
 /// }
-///
-/// struct WalletProvider;
-///
-/// impl Provider for WalletProvider {
-///     type Error = String;
-///
-///     async fn get_chain_id(&self) -> Result<u64, Self::Error> {
-///         Ok(1)
-///     }
-///
-/// #   async fn get_code(&self, _address: &Address) -> Result<Option<HexData>, Self::Error> {
-/// #       Ok(None)
-/// #   }
-/// #   async fn get_transaction_receipt(
-/// #       &self,
-/// #       _transaction_hash: &TransactionHash,
-/// #   ) -> Result<Option<TransactionReceipt>, Self::Error> {
-/// #       Ok(None)
-/// #   }
-/// #   async fn get_storage_at(
-/// #       &self,
-/// #       _address: &Address,
-/// #       _slot: &str,
-/// #   ) -> Result<HexData, Self::Error> {
-/// #       Ok(HexData::new("0x").unwrap())
-/// #   }
-/// #   async fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> {
-/// #       Ok(HexData::new("0x").unwrap())
-/// #   }
-/// #   async fn read_contract(&self, _request: &ContractCall) -> Result<String, Self::Error> {
-/// #       Ok("null".to_owned())
-/// #   }
-/// #   async fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
-/// #       Ok(BlockInfo::new(1, None))
-/// #   }
-/// #   async fn get_contract(
-/// #       &self,
-/// #       address: &Address,
-/// #       abi_json: &str,
-/// #   ) -> Result<ContractHandle, Self::Error> {
-/// #       Ok(ContractHandle::new(address.clone(), abi_json.to_owned()))
-/// #   }
-/// }
-///
-/// impl SigningProvider for WalletProvider {
-///     type Signer = WalletSigner;
-///
-///     async fn create_signer(&self, _signer_hint: &str) -> Result<Self::Signer, Self::Error> {
-///         Ok(WalletSigner)
-///     }
-/// }
-///
-/// # #[tokio::main]
-/// # async fn main() {
-/// let provider = WalletProvider;
-/// let signer = provider.create_signer("primary").await.unwrap();
-/// assert_eq!(
-///     signer.address().await.unwrap().to_hex_string(),
-///     "0x1111111111111111111111111111111111111111"
-/// );
-/// # }
 /// ```
 #[expect(
     async_fn_in_trait,
