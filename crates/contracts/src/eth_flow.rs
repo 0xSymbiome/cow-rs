@@ -22,7 +22,7 @@ use crate::onchain_orders::{
     decode_order_invalidation, decode_order_placement,
 };
 use crate::order::ORDER_UID_LENGTH;
-use crate::order::hash::reject_zero_receiver;
+use crate::order::reject_zero_receiver;
 use crate::primitives::check_topics;
 
 sol! {

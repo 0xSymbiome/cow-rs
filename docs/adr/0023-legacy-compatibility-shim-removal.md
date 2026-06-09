@@ -77,7 +77,7 @@ for protocol-correct hashing.
 `cow_sdk_contracts::compute_order_uid` route the canonical
 `OrderData` digest path through
 `alloy_sol_types::SolStruct::eip712_signing_hash` on the macro-emitted
-internal `crate::order::sol_types::Order` codec struct per
+internal `crate::order::sol::Order` codec struct per
 [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md). The
 EIP-712 hashing seam uses `alloy_sol_types::Eip712Domain` (constructed
 through the `TypedDataDomain::into_alloy_domain()` adapter on the cow

@@ -36,7 +36,7 @@ allowed:
   - file: crates/core/src/redaction/body.rs
     item: strip_credential_tokens
     reason: Redaction offsets are computed from in-bounds string match indices.
-  - file: crates/contracts/src/order/uid.rs
+  - file: crates/contracts/src/order.rs
     item: extract_order_uid_params
     reason: The two slice-to-array conversions in extract_order_uid_params operate on slices whose length is guaranteed by the ORDER_UID_LENGTH guard at the top of the function (bytes.len() == 56); the try_into-to-[u8; 32] and try_into-to-[u8; 20] conversions cannot fail under that guard, and the expect calls document the unreachability proof inline through // SAFETY comments naming the guarantee.
   - file: crates/contracts/src/signature.rs

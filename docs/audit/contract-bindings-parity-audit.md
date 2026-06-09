@@ -176,10 +176,9 @@ canonical, so the contracts-side and signing-side fixture cases gate
 the same byte contract from both crate boundaries.
 
 The `GPv2` order and batch-cancellation EIP-712 schemas are
-macro-emitted via `alloy_sol_types::sol!` at
-`crates/contracts/src/order/sol_types.rs` (`Order`) and
-`crates/contracts/src/order/sol_cancellations.rs`
-(`OrderCancellations`). The order struct is crate-internal codec
+macro-emitted via `alloy_sol_types::sol!` in the private `sol`
+submodule of `crates/contracts/src/order.rs` (`Order` and
+`OrderCancellations`). The order struct is crate-internal codec
 machinery — order hashing flows through `hash_order` and the canonical
 type hash is exposed as `cow_sdk_contracts::order_eip712_type_hash()` —
 while the cancellation struct is re-exported at the crate root as
@@ -400,7 +399,7 @@ wrapped value directly, with no `Result` indirection. The
 `amount_to_u256(&Amount)` / `biguint_to_u256(&'static str, &BigUint)`
 overflow-guard helpers in
 `cow-sdk-contracts::settlement::codec`,
-`cow-sdk-contracts::order::hash`, `cow-sdk-contracts::eth_flow`, and
+`cow-sdk-contracts::order`, `cow-sdk-contracts::eth_flow`, and
 `cow-sdk-signing::order_signing` are retired in favour of a direct
 `*amount.as_u256()` deref on the cow newtype, because the `uint256`
 ceiling is enforced by the type system at construction and the runtime

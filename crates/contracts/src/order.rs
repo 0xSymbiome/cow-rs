@@ -1,11 +1,175 @@
+//! Order hashing, UID packing, EIP-712 metadata, and the `GPv2` typed-data
+//! `sol!` bindings.
+//!
+//! This module owns the order surface: the EIP-712 digest and type-hash helpers
+//! ([`hash_order`], [`hash_order_cancellations`], [`order_eip712_type_hash`]),
+//! the 56-byte UID pack/unpack codec ([`compute_order_uid`],
+//! [`pack_order_uid_params`], [`extract_order_uid_params`]), the canonical
+//! EIP-712 field tables, and the macro-emitted `Order` / `OrderCancellations`
+//! codec structs.
+//!
+//! The generated `sol!` structs live in the private [`sol`] submodule because
+//! the codec `OrderCancellations` shares its name with the public domain
+//! [`OrderCancellations`] message type. This crate owns no public order *type*
+//! of its own — the user-domain order type is [`cow_sdk_core::OrderData`] — and
+//! exposes hashing / UID / encoding *functions* over it. The cancellation codec
+//! struct is re-exported at the crate root as `GPv2OrderCancellations`.
+
 use alloy_primitives::Bytes as AlloyBytes;
 use alloy_sol_types::SolStruct;
+use serde::{Deserialize, Serialize};
+
 use cow_sdk_core::{Address, Hash32, OrderData, OrderDigest, OrderUid, TypedDataDomain};
 
-use super::OrderCancellations;
-use super::sol::{Order as SolOrder, OrderCancellations as SolOrderCancellations};
 use crate::ContractsError;
-use crate::primitives::{buy_balance_name, order_kind_name, sell_balance_name};
+use crate::primitives::{
+    ORDER_UID_LENGTH_BYTES, buy_balance_name, order_kind_name, sell_balance_name,
+};
+
+use self::sol::{Order as SolOrder, OrderCancellations as SolOrderCancellations};
+
+/// Sentinel address used by the protocol to represent native ETH buys.
+pub const BUY_ETH_ADDRESS: &str = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
+/// Encoded order UID length in bytes.
+pub const ORDER_UID_LENGTH: usize = ORDER_UID_LENGTH_BYTES;
+
+/// EIP-712 field descriptor used for `CoW` order-type metadata.
+#[non_exhaustive]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct OrderTypeField {
+    /// Field name.
+    pub name: &'static str,
+    /// Solidity field type.
+    #[serde(rename = "type")]
+    pub kind: &'static str,
+}
+
+impl OrderTypeField {
+    /// Creates an order-type field descriptor.
+    #[must_use]
+    pub const fn new(name: &'static str, kind: &'static str) -> Self {
+        Self { name, kind }
+    }
+}
+
+/// Canonical order type fields in struct-hash order.
+pub const ORDER_TYPE_FIELDS: [OrderTypeField; 12] = [
+    OrderTypeField::new("sellToken", "address"),
+    OrderTypeField::new("buyToken", "address"),
+    OrderTypeField::new("receiver", "address"),
+    OrderTypeField::new("sellAmount", "uint256"),
+    OrderTypeField::new("buyAmount", "uint256"),
+    OrderTypeField::new("validTo", "uint32"),
+    OrderTypeField::new("appData", "bytes32"),
+    OrderTypeField::new("feeAmount", "uint256"),
+    OrderTypeField::new("kind", "string"),
+    OrderTypeField::new("partiallyFillable", "bool"),
+    OrderTypeField::new("sellTokenBalance", "string"),
+    OrderTypeField::new("buyTokenBalance", "string"),
+];
+
+/// Canonical EIP-712 field descriptor for order-cancellation payloads.
+pub const CANCELLATIONS_TYPE_FIELDS: [OrderTypeField; 1] =
+    [OrderTypeField::new("orderUids", "bytes[]")];
+
+/// Macro-emitted `GPv2` typed-data codec structs.
+///
+/// Kept in a private submodule because the `OrderCancellations` codec struct
+/// shares its name with the public domain [`OrderCancellations`] message type.
+/// The Rust struct names MUST stay `Order` and `OrderCancellations` (not
+/// `GPv2Order`/`GPv2OrderCancellations` or any other variant) because the alloy
+/// `sol!` macro derives the EIP-712 type-name prefix from the Rust struct name;
+/// renaming either would change the type-hash bytes.
+mod sol {
+    alloy_sol_types::sol! {
+        /// `GPv2` settlement `Order` typed-data struct. The canonical type
+        /// string keccak256-hashes to the protocol constant
+        /// `0xd5a25ba2e97094ad7d83dc28a6572da797d6b3e7fc6663bd93efb789fc17e489`.
+        #[derive(Debug, Default, PartialEq, Eq)]
+        struct Order {
+            address sellToken;
+            address buyToken;
+            address receiver;
+            uint256 sellAmount;
+            uint256 buyAmount;
+            uint32 validTo;
+            bytes32 appData;
+            uint256 feeAmount;
+            string kind;
+            bool partiallyFillable;
+            string sellTokenBalance;
+            string buyTokenBalance;
+        }
+
+        /// `GPv2` batch order cancellation typed-data struct. Canonical type
+        /// string `OrderCancellations(bytes[] orderUids)`.
+        #[derive(Debug, Default, PartialEq, Eq)]
+        struct OrderCancellations {
+            bytes[] orderUids;
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::Order;
+        use alloy_primitives::b256;
+        use alloy_sol_types::SolStruct;
+
+        /// Pins the macro-emitted `GPv2` `Order` type hash to the deployed
+        /// protocol constant.
+        #[test]
+        fn order_type_hash_matches_protocol_constant() {
+            let expected =
+                b256!("0xd5a25ba2e97094ad7d83dc28a6572da797d6b3e7fc6663bd93efb789fc17e489");
+            let sample = Order::default();
+            assert_eq!(sample.eip712_type_hash(), expected);
+        }
+    }
+}
+
+pub use self::sol::OrderCancellations as GPv2OrderCancellations;
+
+/// Structured order UID components.
+#[non_exhaustive]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OrderUidParams {
+    /// Order digest.
+    pub order_digest: OrderDigest,
+    /// Order owner address.
+    pub owner: Address,
+    /// Order expiration timestamp.
+    pub valid_to: u32,
+}
+
+/// EIP-712 message body for order cancellations.
+#[non_exhaustive]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OrderCancellations {
+    /// Order UIDs being cancelled.
+    pub order_uids: Vec<OrderUid>,
+}
+
+impl OrderUidParams {
+    /// Creates structured order UID components.
+    #[must_use]
+    pub const fn new(order_digest: OrderDigest, owner: Address, valid_to: u32) -> Self {
+        Self {
+            order_digest,
+            owner,
+            valid_to,
+        }
+    }
+}
+
+impl OrderCancellations {
+    /// Creates an order-cancellation payload.
+    #[must_use]
+    pub const fn new(order_uids: Vec<OrderUid>) -> Self {
+        Self { order_uids }
+    }
+}
 
 /// Rejects construction paths that would emit `address(0)` as the order
 /// receiver. The cow-protocol `GPv2` order surface treats `address(0)` as
@@ -81,8 +245,7 @@ pub fn hash_order_cancellation(
 /// Returns the canonical
 /// `keccak256(0x19 || 0x01 || domain_separator || struct_hash)`
 /// envelope per the EIP-712 specification, evaluated against the
-/// macro-emitted
-/// [`crate::order::sol::OrderCancellations`] struct hash.
+/// macro-emitted [`sol::OrderCancellations`] struct hash.
 ///
 /// # Errors
 ///
@@ -144,6 +307,89 @@ fn sol_order_from_order_data(order: &OrderData) -> SolOrder {
 
 fn decode_order_uid_bytes(uid: &OrderUid) -> AlloyBytes {
     AlloyBytes::from(uid.as_slice().to_vec())
+}
+
+/// Computes the encoded order UID for an order and owner.
+///
+/// # Errors
+///
+/// Returns [`ContractsError`] if order hashing or UID packing fails.
+#[inline]
+pub fn compute_order_uid(
+    domain: &TypedDataDomain,
+    order: &OrderData,
+    owner: &Address,
+) -> Result<OrderUid, ContractsError> {
+    pack_order_uid_params(&OrderUidParams::new(
+        hash_order(domain, order)?,
+        *owner,
+        order.valid_to,
+    ))
+}
+
+/// Packs structured order UID components into the compact UID string.
+///
+/// # Errors
+///
+/// Returns [`ContractsError`] if the digest or owner cannot be decoded into the
+/// fixed byte lengths required by the UID format.
+#[inline]
+pub fn pack_order_uid_params(params: &OrderUidParams) -> Result<OrderUid, ContractsError> {
+    let digest = params.order_digest.into_alloy().0;
+    let owner = params.owner.into_alloy().0.0;
+    let mut out = [0u8; ORDER_UID_LENGTH];
+    out[..32].copy_from_slice(&digest);
+    out[32..52].copy_from_slice(&owner);
+    out[52..56].copy_from_slice(&params.valid_to.to_be_bytes());
+    Ok(OrderUid::from_bytes(out))
+}
+
+/// Extracts structured order UID components from a compact UID string.
+///
+/// # Errors
+///
+/// Returns [`ContractsError`] if the UID cannot be decoded into the expected format.
+///
+/// # Panics
+///
+/// Cannot panic in practice. The function returns early with
+/// [`ContractsError::InvalidOrderUidLength`] when the byte length is
+/// not exactly [`ORDER_UID_LENGTH`]; after that guard, the internal
+/// 32-byte and 20-byte slice-to-array conversions are infallible by
+/// construction. The `expect` calls inside the body document the
+/// unreachability proof so a future contributor cannot accidentally
+/// weaken the guard without removing the proof first.
+#[inline]
+pub fn extract_order_uid_params(order_uid: &OrderUid) -> Result<OrderUidParams, ContractsError> {
+    let bytes = order_uid.as_slice();
+    if bytes.len() != ORDER_UID_LENGTH {
+        return Err(ContractsError::InvalidOrderUidLength {
+            actual: bytes.len(),
+        });
+    }
+
+    // SAFETY: the `bytes.len() != ORDER_UID_LENGTH` guard above guarantees
+    // `bytes.len() == 56` here, so the `[..32]` and `[32..52]` slices are
+    // always 32 and 20 bytes respectively and `try_into` cannot fail.
+    let order_digest = OrderDigest::from_bytes(
+        bytes[..32]
+            .try_into()
+            .expect("slice length 32 is guaranteed by the ORDER_UID_LENGTH check above"),
+    );
+    let owner = Address::from_bytes(
+        bytes[32..52]
+            .try_into()
+            .expect("slice length 20 is guaranteed by the ORDER_UID_LENGTH check above"),
+    );
+    let valid_to_bytes: [u8; 4] =
+        bytes[52..56]
+            .try_into()
+            .map_err(|_| ContractsError::InvalidOrderUidLength {
+                actual: bytes.len(),
+            })?;
+    let valid_to = u32::from_be_bytes(valid_to_bytes);
+
+    Ok(OrderUidParams::new(order_digest, owner, valid_to))
 }
 
 #[cfg(test)]
