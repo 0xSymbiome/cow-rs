@@ -66,8 +66,9 @@ internally consistent. It does not prove that the pinned commits still match rea
 checkouts.
 
 The app-data metadata is validated by typed Rust construction, not a vendored
-JSON-Schema bundle. `crates/app-data/schemas/` retains the latest-version schema
-closure as test-only drift fixtures: the `schema_drift_contract` test asserts the
+JSON-Schema bundle. `crates/app-data/schemas/` retains one self-contained drift
+fixture per modeled metadata family (`flashloan`, `partnerFee`, `quote`, and the
+`hook` shape) as test-only fixtures: the `schema_drift_contract` test asserts the
 typed metadata structs still match the upstream field names, so an upstream
 rename or addition surfaces at review time. Refresh those fixtures by hand from a
 pinned `cowprotocol/app-data` checkout when the drift test flags a change.

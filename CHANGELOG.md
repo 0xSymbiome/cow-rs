@@ -742,6 +742,13 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Removed
 
+- Removed the EIP-2612 `IERC20Permit` binding, the `permit_typed_data_hash`
+  helper, and the `PERMIT_TYPE_HASH` constant from `cow-sdk-contracts`. The
+  permit surface had no production or example consumer and is absent from the
+  upstream `@cowprotocol/cow-sdk` the crate family ports; the `IERC20` approve
+  and balance/transfer bindings the trading allowance flow uses are unchanged.
+  The `fuzz_erc20_permit_typed_data_hash` target and the permit parity fixture
+  case are removed with it.
 - Collapsed the deployment registry to a const table. The 1,595-line
   `crates/contracts/registry.toml`, the `build.rs` schema validator, the
   `deployment-coverage.yaml` manifest, and the runtime TOML parser

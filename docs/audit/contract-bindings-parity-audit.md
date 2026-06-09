@@ -82,7 +82,7 @@ against any future upstream rename, and the proptest
 `crates/contracts/tests/property_contract.rs` covers the bidirectional
 invariant under the full 2^160 address space.
 
-The ERC-20 surface (`crates/contracts/src/erc20.rs`) carries `IERC20`
+The ERC-20 surface (`crates/contracts/src/tokens.rs`) carries `IERC20`
 for the subset of methods the SDK emits against any ERC-20 token: the
 vault-relayer `approve` flow plus the balance and transfer reads.
 
@@ -96,7 +96,7 @@ on-chain signature, and derives the 56-byte order UID through
 [ADR 0054](../adr/0054-onchain-order-event-decoding-is-fail-closed.md) and the
 [On-Chain Order Log Decoding Audit](onchain-order-log-decoding-audit.md).
 
-The `IWrappedNativeToken` surface (`crates/contracts/src/weth.rs`) carries the
+The `IWrappedNativeToken` surface (`crates/contracts/src/tokens.rs`) carries the
 WETH9-family `deposit` / `withdraw` methods, with `wrap_interaction` and
 `unwrap_interaction` helpers that emit the canonical settlement interaction for
 converting between the native asset and its wrapped form. The 4-byte selectors
@@ -473,8 +473,7 @@ Primary implementation points:
 - `crates/contracts/src/errors.rs`
 - `crates/contracts/src/eth_flow.rs`
 - `crates/contracts/src/onchain_orders.rs`
-- `crates/contracts/src/erc20.rs`
-- `crates/contracts/src/weth.rs`
+- `crates/contracts/src/tokens.rs`
 - `crates/contracts/src/primitives.rs`
 - `crates/contracts/Cargo.toml`
 - `crates/trading/src/onchain.rs`
@@ -492,7 +491,7 @@ Primary regression coverage:
 - `crates/contracts/tests/onchain_orders.rs::order_placement_topic0_matches_canonical_hash`
 - `crates/contracts/tests/onchain_orders.rs::order_hash_matches_canonical_ethflow_foundry_vector`
 - `crates/contracts/tests/onchain_orders.rs::eip1271_placement_decodes_owner_uid_and_trailer`
-- `crates/contracts/tests/weth.rs::withdraw_selector_matches_canonical_keccak`
+- `crates/contracts/tests/tokens_contract.rs::withdraw_selector_matches_canonical_keccak`
 - `crates/signing/src/domain.rs::tests::domain_separator_matches_shared_parity_fixture`
 - `crates/trading/tests/onchain_contract.rs`
 - `crates/trading/tests/parity_contract.rs`

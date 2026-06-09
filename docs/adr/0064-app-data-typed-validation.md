@@ -23,11 +23,15 @@ validator.
   historical documents pass through so they continue to hash.
 - Unmodeled metadata families pass through unchanged, so the SDK is no stricter
   than the orderbook's own acceptance contract.
-- The schema bundle is reduced to the v1.14.0 schema closure and retained as
-  test-only drift fixtures under `crates/app-data/schemas`; a drift test asserts
-  the typed structs still cover the upstream field names, so an upstream rename
-  or addition fails review rather than diverging silently. The byte-for-byte
-  schema-vendoring tooling (the `vendor-app-data-schemas` command) is removed.
+- The schema bundle is reduced to one self-contained drift fixture per modeled
+  metadata family (`flashloan`, `partnerFee`, `quote`, and the `hook` shape)
+  retained under `crates/app-data/schemas`; a drift test asserts the typed
+  structs still cover the upstream field names, so an upstream rename or addition
+  fails review rather than diverging silently. The root-envelope schema, the
+  unmodeled-family sub-schemas, the shared `definitions.json`, and the
+  byte-for-byte schema-vendoring tooling (the `vendor-app-data-schemas` command)
+  are removed: nothing resolves the schema graph at runtime, so a flat fixture
+  per modeled family is the whole drift surface.
 
 ## Why
 
