@@ -304,30 +304,6 @@
       "expected": {
         "call_data": "0x23b872dd000000000000000000000000111111111111111111111111111111111111111100000000000000000000000022222222222222222222222222222222222222220000000000000000000000000000000000000000000000000de0b6b3a7640000"
       }
-    },
-    {
-      "id": "contracts-erc20-permit-typed-data-hash",
-      "kind": "positive",
-      "description": "EIP-712 typed-data digest for an EIP-2612 Permit bound to the deployed USD Coin domain separator (name=\"USD Coin\", version=\"2\", chainId=1, verifyingContract=USDC mainnet address).",
-      "inputs": {
-        "domain": {
-          "name": "USD Coin",
-          "version": "2",
-          "chain_id": 1,
-          "verifying_contract": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
-        },
-        "permit": {
-          "owner": "0x1111111111111111111111111111111111111111",
-          "spender": "0x2222222222222222222222222222222222222222",
-          "value": "1000000000000000000",
-          "nonce": "0",
-          "deadline": "2000000000"
-        }
-      },
-      "@source_ref": "eip:eip-2612#Permit",
-      "expected": {
-        "typed_data_hash": "0x127a8458d8805ac3516391bcf4b0a7aafc845c82dff3d7edee1851fcdd79b93e"
-      }
     }
   ]
 }

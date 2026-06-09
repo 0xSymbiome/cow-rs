@@ -69,7 +69,7 @@ on every add or cut.
 
 | Boundary class | Surfaces exercised |
 | --- | --- |
-| Encoder | `GPv2Settlement.settle`, `GPv2Settlement.invalidateOrder`, `CoWSwapEthFlow.createOrder`, EIP-2612 permit envelope |
+| Encoder | `GPv2Settlement.settle`, `GPv2Settlement.invalidateOrder`, `CoWSwapEthFlow.createOrder` |
 | Signing | EIP-712 typed-data digest, ECDSA `v` normalization, ECDSA address recovery, recoverable-signature hex parse, recoverable-signature differential, EIP-712 domain separator |
 | Validator and bounds | Order bounds validator, `ValidTo::relative` window |
 | Parser and decoder | Orderbook rejection envelope, orderbook rejection code allowlist, decoded body and canonical status text, subgraph GraphQL error decoder, transport-error classifier, retry-after header parser, retry policy delay, jitter strategy delay, partner-fee `from_value`, flashloan-hints deserializer, hook-list deserializer, on-chain order log decoder, settlement event log decoder, eth-flow event log decoder |

@@ -1,14 +1,32 @@
 use std::fmt;
 
 use alloy_primitives::{B256, Signature as AlloySignature};
-use alloy_sol_types::SolCall;
+use alloy_sol_types::{SolCall, sol};
 use serde::{Deserialize, Serialize};
 
 use cow_sdk_core::{Address, Hash32, HexData, Provider};
 
 use crate::ContractsError;
-use crate::eip1271::IERC1271;
 use crate::hex_field::{decode_hex_field_bounded, decode_hex_field_exact};
+
+sol! {
+    /// EIP-1271 smart-account signature-validation interface.
+    ///
+    /// Reproduces the canonical surface defined by
+    /// [EIP-1271](https://eips.ethereum.org/EIPS/eip-1271). Verifier contracts
+    /// return the 4-byte function selector
+    /// `keccak256("isValidSignature(bytes32,bytes)")[..4]` on a successful
+    /// validation; the cow signature path compares the decoded response against
+    /// [`IERC1271::isValidSignatureCall::SELECTOR`], which doubles as both the
+    /// dispatch selector and the success magic value.
+    ///
+    /// Mirrors cowdao-grants/cow-shed `src/interfaces/IERC1271.sol`, pinned by
+    /// commit in `parity/source-lock.yaml`; the selector is proven by the crate
+    /// parity tests.
+    interface IERC1271 {
+        function isValidSignature(bytes32 hash, bytes calldata signature) external view returns (bytes4);
+    }
+}
 
 pub(crate) const EIP1271_IS_VALID_SIGNATURE_ABI_JSON: &str = r#"[{"type":"function","name":"isValidSignature","inputs":[{"name":"hash","type":"bytes32"},{"name":"signature","type":"bytes"}],"outputs":[{"name":"","type":"bytes4"}],"stateMutability":"view"}]"#;
 

@@ -103,17 +103,13 @@ stay in maintainer-local working copies.
 
 ## Encoder Fuzz Targets
 
-Two targets exercise the `alloy::sol!`-generated encoder surface for
+One target exercises the `alloy::sol!`-generated encoder surface for
 shipped contract binding families in `cow-sdk-contracts`:
 
 - `fuzz_ethflow_create_order_encode` — round-trips
   `CoWSwapEthFlow.createOrder(EthFlowOrderData)` through the matching
   decoder and asserts every struct field survives the encode/decode
   cycle.
-- `fuzz_erc20_permit_typed_data_hash` — compares
-  `permit_typed_data_hash(&domain, &permit)` against a hand-computed
-  reference `keccak256(0x19 || 0x01 || domain_separator || struct_hash)`
-  envelope.
 
 ## Validator Fuzz Targets
 

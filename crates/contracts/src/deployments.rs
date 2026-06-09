@@ -338,30 +338,53 @@ mod tests {
 
         // Settlement and vault-relayer are chain- and env-invariant singletons.
         let settlement = registry
-            .address(ContractId::Settlement, DeploymentChainId::Mainnet, DeploymentEnv::Prod)
+            .address(
+                ContractId::Settlement,
+                DeploymentChainId::Mainnet,
+                DeploymentEnv::Prod,
+            )
             .expect("settlement is deployed on mainnet");
         assert_eq!(
             settlement.to_hex_string(),
             "0x9008d19f58aabd9ed0d60971565aa8510560ab41"
         );
         assert_eq!(
-            registry.address(ContractId::Settlement, DeploymentChainId::Base, DeploymentEnv::Staging),
+            registry.address(
+                ContractId::Settlement,
+                DeploymentChainId::Base,
+                DeploymentEnv::Staging
+            ),
             Some(settlement),
             "settlement is identical across chains and environments"
         );
 
         // Eth-flow resolves a distinct production and staging deployment.
         let prod = registry
-            .address(ContractId::EthFlow, DeploymentChainId::GnosisChain, DeploymentEnv::Prod)
+            .address(
+                ContractId::EthFlow,
+                DeploymentChainId::GnosisChain,
+                DeploymentEnv::Prod,
+            )
             .expect("eth-flow production deployment exists");
         let staging = registry
-            .address(ContractId::EthFlow, DeploymentChainId::GnosisChain, DeploymentEnv::Staging)
+            .address(
+                ContractId::EthFlow,
+                DeploymentChainId::GnosisChain,
+                DeploymentEnv::Staging,
+            )
             .expect("eth-flow staging deployment exists");
-        assert_ne!(prod, staging, "eth-flow prod and staging are distinct deployments");
+        assert_ne!(
+            prod, staging,
+            "eth-flow prod and staging are distinct deployments"
+        );
 
         // The GPv2 contracts are not deployed on the deployment-only Lens chain.
         assert_eq!(
-            registry.address(ContractId::Settlement, DeploymentChainId::Lens, DeploymentEnv::Prod),
+            registry.address(
+                ContractId::Settlement,
+                DeploymentChainId::Lens,
+                DeploymentEnv::Prod
+            ),
             None,
         );
     }

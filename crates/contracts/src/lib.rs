@@ -11,11 +11,8 @@
 
 /// Chain-keyed registry of canonical CoW Protocol contract deployments.
 pub mod deployments;
-/// Typed ABI binding for the EIP-1271 standard signature-validation
-/// interface, generated via the `alloy::sol!` macro.
-pub mod eip1271;
-/// Typed ERC-20 and EIP-2612 Permit bindings generated from the upstream
-/// Solidity surface via the `alloy::sol!` macro.
+/// Typed ERC-20 bindings generated from the upstream Solidity surface via the
+/// `alloy::sol!` macro.
 pub mod erc20;
 /// Contract crate error types.
 pub mod errors;
@@ -52,8 +49,7 @@ pub use primitives::{
 };
 
 pub use deployments::{ContractId, DeploymentChainId, DeploymentEnv, Registry};
-pub use eip1271::IERC1271;
-pub use erc20::{IERC20, IERC20Permit, PERMIT_TYPE_HASH, permit_typed_data_hash};
+pub use erc20::IERC20;
 pub use errors::ContractsError;
 pub use eth_flow::{
     EthFlowEvent, EthFlowOnchainData, EthFlowOrderData, ICoWSwapEthFlowEvents, OnchainOrderRefund,
@@ -75,7 +71,7 @@ pub use order::{
 };
 pub use settlement::{IGPv2SettlementEvents, SettlementEvent, decode_settlement_log};
 pub use signature::{
-    Eip1271SignatureData, Eip1271VerificationRequest, MAX_SIGNATURE_HEX_BYTES,
+    Eip1271SignatureData, Eip1271VerificationRequest, IERC1271, MAX_SIGNATURE_HEX_BYTES,
     RecoverableSignature, Signature, SigningScheme, decode_eip1271_signature_data,
     decode_signing_scheme, encode_eip1271_signature_data, encode_signing_scheme,
     verify_eip1271_signature,

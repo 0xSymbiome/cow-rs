@@ -21,14 +21,14 @@
 //! broken CI run sees the exact upstream vector that diverged.
 
 use alloy_sol_types::{
-    Eip712Domain, SolCall, SolStruct,
-    private::{Address as SolAddress, Bytes as SolBytes, FixedBytes, U256},
+    SolCall,
+    private::{Address as SolAddress, Bytes as SolBytes, U256},
     sol,
 };
 use cow_sdk_contracts::{
-    CANCELLATIONS_TYPE_FIELDS, EthFlowOrderData, IERC20, IERC20Permit, IERC1271, InteractionLike,
+    CANCELLATIONS_TYPE_FIELDS, EthFlowOrderData, IERC20, IERC1271, InteractionLike,
     ORDER_TYPE_FIELDS, ORDER_UID_LENGTH, SigningScheme, encode_create_order_calldata,
-    encode_invalidate_order_calldata, normalize_interaction, permit_typed_data_hash,
+    encode_invalidate_order_calldata, normalize_interaction,
 };
 use cow_sdk_core::{
     Address, Amount, AppDataHash, BuyTokenDestination, OrderDigest, OrderUid, SellTokenSource,
@@ -116,9 +116,6 @@ fn parity_fixture_cases_hold() {
             }
             "contracts-erc20-transfer-from-calldata" => {
                 assert_erc20_transfer_from_calldata(id, expected);
-            }
-            "contracts-erc20-permit-typed-data-hash" => {
-                assert_erc20_permit_typed_data_hash(id, expected);
             }
             other => panic!("unknown contracts fixture case id: {other}"),
         }
@@ -386,19 +383,6 @@ fn sample_order_uid() -> OrderUid {
     .expect("sample OrderUid packing must succeed")
 }
 
-// Hand-rolled `sha3::Keccak256` helper used by the assertions in this
-// file. Crate code routes through `alloy_primitives::keccak256` per
-// ADR 0052; this helper deliberately runs `sha3::Keccak256` directly so
-// the parity check compares the crate output against an independent
-// keccak implementation.
-fn keccak256(bytes: &[u8]) -> [u8; 32] {
-    use sha3::{Digest, Keccak256};
-    let digest = Keccak256::digest(bytes);
-    let mut out = [0u8; 32];
-    out.copy_from_slice(&digest);
-    out
-}
-
 fn assert_calldata_hex(id: &str, actual_bytes: &[u8], expected_hex: &str) {
     let actual_hex = format!("0x{}", alloy_primitives::hex::encode(actual_bytes));
     assert_eq!(
@@ -585,85 +569,4 @@ fn assert_erc20_transfer_from_calldata(id: &str, expected: &Value) {
     .abi_encode();
 
     assert_calldata_hex(id, &call_data, expected_hex);
-}
-
-fn assert_erc20_permit_typed_data_hash(id: &str, expected: &Value) {
-    let expected_hex = expected["typed_data_hash"]
-        .as_str()
-        .unwrap_or_else(|| panic!("case {id}: expected.typed_data_hash must be a string"));
-
-    // USDC mainnet domain separator inputs: the deployed USD Coin (USDC) token
-    // at 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48 publishes
-    // `DOMAIN_SEPARATOR()` with name = "USD Coin", version = "2", chainId = 1,
-    // verifyingContract = the USDC contract itself. Using a real, deployed
-    // token rather than a synthetic domain keeps the typed-data hash
-    // cross-checkable against an on-chain reply.
-    let domain = Eip712Domain::new(
-        Some(alloy_sol_types::private::Cow::Borrowed("USD Coin")),
-        Some(alloy_sol_types::private::Cow::Borrowed("2")),
-        Some(U256::from(1_u64)),
-        Some(SolAddress::from([
-            0xa0, 0xb8, 0x69, 0x91, 0xc6, 0x21, 0x8b, 0x36, 0xc1, 0xd1, 0x9d, 0x4a, 0x2e, 0x9e,
-            0xb0, 0xce, 0x36, 0x06, 0xeb, 0x48,
-        ])),
-        None,
-    );
-
-    let owner = SolAddress::from([
-        0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
-        0x11, 0x11, 0x11, 0x11, 0x11,
-    ]);
-    let spender = SolAddress::from([
-        0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
-        0x22, 0x22, 0x22, 0x22, 0x22,
-    ]);
-
-    let permit = IERC20Permit::Permit {
-        owner,
-        spender,
-        value: U256::from(1_000_000_000_000_000_000_u128),
-        nonce: U256::ZERO,
-        deadline: U256::from(2_000_000_000_u64),
-    };
-
-    let digest = permit_typed_data_hash(&domain, &permit);
-    let digest_hex = format!("0x{}", alloy_primitives::hex::encode(digest));
-
-    assert_eq!(
-        digest_hex.as_str(),
-        expected_hex,
-        "case {id}: EIP-712 typed-data digest must match the pinned fixture value",
-    );
-
-    // Cross-check that the canonical permit struct hash preimage (type hash +
-    // 5 fields) composes with the domain separator through the standard
-    // `\x19\x01 || domainSeparator || structHash` envelope. A mismatch here
-    // indicates drift between `permit_typed_data_hash` and the upstream
-    // EIP-712 specification.
-    let struct_hash: [u8; 32] = permit.eip712_hash_struct().into();
-    let domain_separator: [u8; 32] = domain.separator().into();
-    let mut envelope = Vec::with_capacity(2 + 32 + 32);
-    envelope.push(0x19);
-    envelope.push(0x01);
-    envelope.extend_from_slice(&domain_separator);
-    envelope.extend_from_slice(&struct_hash);
-    let manual_digest = keccak256(&envelope);
-    assert_eq!(
-        digest, manual_digest,
-        "case {id}: permit_typed_data_hash must compose `0x1901 || domain || struct` exactly",
-    );
-
-    // Fail closed if the fixture carries an obviously-malformed constant.
-    let raw_hex = expected_hex
-        .strip_prefix("0x")
-        .unwrap_or_else(|| panic!("case {id}: expected.typed_data_hash must start with 0x"));
-    assert_eq!(
-        raw_hex.len(),
-        64,
-        "case {id}: expected.typed_data_hash must be a 32-byte digest expressed as 64 hex chars",
-    );
-
-    // Reference the declared typed constants to prove they remain exported on
-    // the shipped surface.
-    let _ = FixedBytes::<32>::from(digest);
 }

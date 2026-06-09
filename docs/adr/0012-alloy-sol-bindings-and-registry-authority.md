@@ -51,7 +51,7 @@ description produces upstream-identical bytes.
   deployment on top of the embedded manifest. The canonical binding families
   covered by this rule are `GPv2Settlement`, `GPv2VaultRelayer`,
   `CoWSwapEthFlow`, the `CoWSwapOnchainOrders` event surface, the EIP-1967
-  proxy slot surface, `IERC20` / `IERC20Permit`, and `IWrappedNativeToken`.
+  proxy slot surface, `IERC20`, and `IWrappedNativeToken`.
 - Runtime and support: native Alloy provider and local-signer dependencies are
   confined by the policy-maintainer allow-list checks rather than by a
   hand-maintained crate enumeration in this ADR. The `alloy::sol!` machinery

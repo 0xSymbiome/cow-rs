@@ -2,7 +2,7 @@
 
 Status: Current
 Last reviewed: 2026-06-09
-Owning surface: `cow-sdk-contracts` `alloy::sol!`-generated bindings for `GPv2Settlement`, `CoWSwapEthFlow`, `CoWSwapOnchainOrders` events, the wrapped-native token, and `IERC20` / `IERC20Permit`
+Owning surface: `cow-sdk-contracts` `alloy::sol!`-generated bindings for `GPv2Settlement`, `CoWSwapEthFlow`, `CoWSwapOnchainOrders` events, the wrapped-native token, and `IERC20`
 Refresh trigger: A new binding family landing in `cow-sdk-contracts`; a signature change in any existing binding; a change to the upstream commit pin for any binding's source repository under `parity/source-lock.yaml`; a change to the TypeScript-SDK-derived parity fixtures that back the regression suite; a change to the EIP-712 domain-separator fixture shared with the signing crate; a change to the wasm target feature contract for the alloy/k256 dependency path
 Related docs:
 - [ADR 0012](../adr/0012-alloy-sol-bindings-and-registry-authority.md)
@@ -27,8 +27,9 @@ This audit covers:
   `k256` path buildable under `wasm32-unknown-unknown`
 - the five sol! interface families currently shipped: `IGPv2Settlement`,
   `ICoWSwapEthFlow`, the `ICoWSwapOnchainOrders` event surface, the
-  `IWrappedNativeToken` (WETH9-family) surface, and the `IERC20` /
-  `IERC20Permit` ERC-20 surface
+  `IWrappedNativeToken` (WETH9-family) surface, and the `IERC20` ERC-20
+  surface; `IERC1271` is the EIP-1271 verifier interface and is co-located
+  with the signature codecs in `crates/contracts/src/signature.rs`
 
 It does not cover deployed-address resolution (Registry authority, a
 separate audit) or the HTTP transport that delivers call-data to a
@@ -82,9 +83,8 @@ against any future upstream rename, and the proptest
 invariant under the full 2^160 address space.
 
 The ERC-20 surface (`crates/contracts/src/erc20.rs`) carries `IERC20`
-and `IERC20Permit` (EIP-2612) for the subset of methods the SDK emits
-against any ERC-20 token, including the EIP-2612 `permit` domain
-separator type hash.
+for the subset of methods the SDK emits against any ERC-20 token: the
+vault-relayer `approve` flow plus the balance and transfer reads.
 
 `CoWSwapOnchainOrders` (`crates/contracts/src/onchain_orders.rs`) carries the
 `OrderPlacement` and `OrderInvalidation` event bindings used by on-chain order

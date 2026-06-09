@@ -70,13 +70,6 @@ doc = false
 bench = false
 
 [[bin]]
-name = "fuzz_erc20_permit_typed_data_hash"
-path = "fuzz_targets/fuzz_erc20_permit_typed_data_hash.rs"
-test = false
-doc = false
-bench = false
-
-[[bin]]
 name = "fuzz_order_bounds_validator"
 path = "fuzz_targets/fuzz_order_bounds_validator.rs"
 test = false
