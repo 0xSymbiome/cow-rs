@@ -184,8 +184,22 @@ impl<C, A> TradingBuilder<C, A> {
 
     /// Returns a copy of this builder with an injected orderbook client.
     ///
+    /// Accepts the client by value and shares it internally, so callers do not
+    /// wrap it in [`Arc`]. Use [`TradingBuilder::orderbook_client`] when an
+    /// `Arc<dyn OrderbookClient>` is already held and is shared elsewhere.
+    ///
     /// The injected client fixes the effective orderbook chain and environment
     /// for orderbook-bound flows.
+    #[must_use]
+    pub fn orderbook(self, orderbook: impl OrderbookClient + 'static) -> Self {
+        self.orderbook_client(Arc::new(orderbook))
+    }
+
+    /// Returns a copy of this builder with an injected orderbook client.
+    ///
+    /// The injected client fixes the effective orderbook chain and environment
+    /// for orderbook-bound flows. Prefer [`TradingBuilder::orderbook`] to inject
+    /// a client by value; this variant accepts an existing shared handle.
     #[must_use]
     pub fn orderbook_client(mut self, orderbook_client: Arc<dyn OrderbookClient>) -> Self {
         self.options = self.options.with_orderbook_client(orderbook_client);

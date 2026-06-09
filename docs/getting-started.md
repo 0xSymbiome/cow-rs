@@ -196,6 +196,60 @@ fn quote_request(owner: Address) -> Result<TradeParameters, Box<dyn std::error::
 }
 ```
 
+### Fluent Swap Lifecycle
+
+For the common swap path, `Trading::swap()` opens a typed builder with named
+token setters, so the sell and buy tokens cannot be transposed. Supply the sell
+token, buy token, and an amount, then either `execute(&signer)` to quote, sign,
+and post in one call, or `quote(&signer)` to inspect the quote before
+`submit(&signer)`. The owner defaults to the signer's address. The same chain
+drives any signer — a local key, a remote signer, a browser wallet, or a smart
+account.
+
+```rust,ignore
+use cow_sdk::core::{Address, Amount, Signer, SignerError};
+use cow_sdk::trading::Trading;
+
+async fn place_swap<S>(
+    trading: &Trading,
+    signer: &S,
+    sell: Address,
+    buy: Address,
+) -> Result<(), Box<dyn std::error::Error>>
+where
+    S: Signer,
+    S::Error: std::fmt::Display + SignerError,
+{
+    // One call quotes, signs, and posts.
+    let posted = trading
+        .swap()
+        .sell_token(sell)
+        .buy_token(buy)
+        .sell_amount(Amount::from_units(100, 6)?)
+        .slippage_bps(50)
+        .execute(signer)
+        .await?;
+    println!("posted {}", posted.order_id.to_hex_string());
+
+    // Or inspect the quote first, then submit the exact quoted order.
+    let quoted = trading
+        .swap()
+        .sell_token(sell)
+        .buy_token(buy)
+        .sell_amount(Amount::from_units(100, 6)?)
+        .quote(signer)
+        .await?;
+    let _costs = quoted.results().amounts_and_costs.clone();
+    let _posted = quoted.submit(signer).await?;
+
+    Ok(())
+}
+```
+
+The flat `post_swap_order`, `quote_only`, and `post_swap_order_from_quote`
+entries remain available for callers that prefer to assemble `TradeParameters`
+directly.
+
 ### Browser Ready-State Wiring
 
 On `wasm32-unknown-unknown`, the ready-state trading API is the same, but

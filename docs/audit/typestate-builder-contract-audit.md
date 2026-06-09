@@ -1,9 +1,9 @@
 # Typestate Builder Contract Audit
 
 Status: Current
-Last reviewed: 2026-06-08
-Owning surface: `cow-sdk-orderbook::OrderbookApiBuilder`, `cow-sdk-subgraph::SubgraphApiBuilder`, and `cow-sdk-trading::TradingBuilder` construction seams
-Refresh trigger: ADR 0038 review confirmed no builder-shape change; future type-parameter or marker visibility changes on any covered builder, a change to the set of required inputs (chain, environment, API key, appCode, or transport), a change to host-policy validation, a change to the native default-transport convenience impl, a change to the wasm32 transport-required or injected-orderbook invariant, or a new `trybuild` witness replacing the current compile-fail coverage
+Last reviewed: 2026-06-09
+Owning surface: `cow-sdk-orderbook::OrderbookApiBuilder`, `cow-sdk-subgraph::SubgraphApiBuilder`, and `cow-sdk-trading::TradingBuilder` construction seams, plus the `cow-sdk-trading::SwapBuilder` swap lifecycle seam
+Refresh trigger: future type-parameter or marker visibility changes on any covered builder, a change to the set of required inputs (chain, environment, API key, appCode, transport, or the swap sell-token/buy-token/amount markers), a change to host-policy validation, a change to the native default-transport convenience impl, a change to the wasm32 transport-required or injected-orderbook invariant, a change to the swap lifecycle terminals, or a new `trybuild`/`compile_fail` witness replacing the current compile-fail coverage
 Related docs:
 - [ADR 0011](../adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md)
 - [ADR 0013](../adr/0013-http-transport-injection-and-typestate-builders.md)
@@ -29,6 +29,9 @@ This audit covers:
   (`ChainIdState`, `AppCodeState`), validated `AppCode` attribution,
   the `Trading` ready terminal type, and the
   documented `wasm32` injected-orderbook runtime terminal
+- the three-marker `SwapBuilder` swap lifecycle typestate
+  (sell-token, buy-token, and amount markers), its named token setters,
+  and the `execute` / `quote` terminals reachable only once all three are set
 - the native Alloy provider, signer, and umbrella builders that expose
   terminal construction only after their sealed transport, key-source, and
   chain marker states are satisfied
@@ -58,6 +61,7 @@ the trading-sdk runtime prerequisites audit.
 | wasm32 invariant | the default-transport `.build()` is `cfg`-gated off on `wasm32`, so a transportless build does not compile; both builder crates are compiled for `wasm32` in CI to guard the gate | Conforms |
 | Trading SDK construction | `build` requires chain id plus validated `AppCode` and returns the ready `Trading` client | Conforms |
 | Trading wasm32 posture | `build` documents and enforces the injected orderbook-client requirement at the runtime terminal on `wasm32` | Conforms |
+| Swap lifecycle builder | `Trading::swap` requires sell token, buy token, and amount through named setters before `execute`/`quote` compile; the lifecycle delegates to the existing post entries and adds no protocol logic | Conforms |
 | Native Alloy builders | Provider, signer, and umbrella construction terminals are reachable only after required transport, key-source, and chain marker axes are set | Conforms |
 
 ## Current Contract
@@ -158,7 +162,32 @@ callers must inject an orderbook client with
 `TradingOptions::with_orderbook_client(...)`, otherwise the terminal returns
 `TradingError::MissingInjectedOrderbookClient`. That avoids adding a third
 builder marker while keeping the browser runtime requirement explicit in
-rustdoc and regression coverage.
+rustdoc and regression coverage. The injected client is also accepted by
+value through `TradingBuilder::orderbook(...)` and
+`TradingOptions::with_orderbook(...)`, which share it internally as the same
+`Arc<dyn OrderbookClient>` the options store; the `Arc`-taking variants remain
+for an already-shared handle.
+
+### Trading Swap Lifecycle Builder
+
+`SwapBuilder<SellToken, BuyToken, AmountState>` lives at
+`crates/trading/src/sdk/swap.rs` and is opened by `Trading::swap()`. The sell
+token, buy token, and amount are tracked as the sealed `Set` / `Unset` markers;
+each has its own named setter (`sell_token`, `buy_token`, `sell_amount`,
+`buy_amount`), so two same-typed token addresses cannot be transposed at the
+call boundary. The `execute` and `quote` terminals are implemented only on
+`SwapBuilder<Set, Set, Set>`; reaching them before all three required fields
+are set is a compile error, pinned by a `compile_fail` doctest on `execute`.
+`execute(&signer)` performs the one-call quote-sign-post path and `quote(&signer)`
+returns a `QuotedSwap` whose `results()` exposes the quote for inspection before
+`submit(&signer)`. The owner is resolved from the signer when no explicit
+`owner` is set, so an explicit `owner` is optional and the builder tracks the
+three required markers (sell token, buy token, amount). The terminals are
+asynchronous, following the crate's runtime-neutral async `Signer` boundary; the
+builder delegates to `quote_results`, `post_swap_order`, and
+`post_swap_order_from_quote` and adds no protocol logic. The `Set` / `Unset`
+markers use private tuple fields, so external callers cannot construct
+typestate witnesses directly.
 
 ### Legacy Constructor Retirement
 
@@ -191,6 +220,7 @@ Primary implementation points:
 - `crates/subgraph/src/builder.rs`
 - `crates/subgraph/src/api.rs`
 - `crates/trading/src/sdk/builder.rs`
+- `crates/trading/src/sdk/swap.rs`
 - `crates/core/src/types/app_code.rs`
 - `crates/alloy-provider/src/builder.rs`
 - `crates/alloy-signer/src/builder.rs`
@@ -211,7 +241,9 @@ Primary regression coverage:
 - `crates/contracts/tests/ui/typestate_marker_sealing.rs`
 - `crates/trading/tests/sdk_contract.rs`
 - `crates/trading/tests/app_code_contract.rs`
+- `crates/trading/tests/swap_lifecycle_contract.rs`
 - `crates/trading/tests/ui.rs`
+- `cargo test -p cow-sdk-trading --doc` (the `SwapBuilder::execute` compile-fail witness)
 - `crates/alloy/tests/compile_fail.rs`
 - `crates/alloy/tests/chain_coherence.rs`
 - `crates/alloy/tests/no_broadcast_for_sign_transaction.rs`

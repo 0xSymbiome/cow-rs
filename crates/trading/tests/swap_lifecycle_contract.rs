@@ -1,19 +1,14 @@
-//! PROTOTYPE / SIMULATION contract for the `fluent-preview` swap chain.
+//! Contract for the fluent swap lifecycle (`Trading::swap`).
 //!
-//! Proves the fluent `swap().…quote().submit()` façade is runtime-equivalent to
-//! the flat `post_swap_order` path it delegates to, and that the quote can be
-//! inspected between `quote` and `submit`. Compiled only with the
-//! `fluent-preview` feature.
-#![cfg(feature = "fluent-preview")]
+//! Proves the typed builder is an additive façade over the flat surface: it
+//! posts the same order as `post_swap_order`, the quote can be inspected between
+//! `quote` and `submit`, the builder injects an orderbook client without an
+//! `Arc` at the call site, and the one-shot `execute` path is transposition-safe.
 
 mod common;
 
-use std::sync::Arc;
-
 use cow_sdk_core::{OrderKind, SupportedChainId};
-use cow_sdk_trading::{
-    TradeParameters, Trading, TradingBuilder, TradingOptions, post_swap_order,
-};
+use cow_sdk_trading::{TradeParameters, Trading, TradingBuilder, TradingOptions, post_swap_order};
 
 use crate::common::{
     MockOrderbook, MockSigner, sample_trade_parameters, sample_trader_parameters,
@@ -21,7 +16,7 @@ use crate::common::{
 };
 
 #[tokio::test]
-async fn fluent_swap_chain_matches_flat_post_swap_order() {
+async fn swap_builder_quote_then_submit_matches_flat_post_swap_order() {
     let trader = sample_trader_parameters();
     let signer = MockSigner::default();
 
@@ -44,11 +39,11 @@ async fn fluent_swap_chain_matches_flat_post_swap_order() {
         .cloned()
         .expect("flat order must be recorded");
 
-    // Fluent chain path over the same inputs, against the SDK facade.
-    let fluent_orderbook = Arc::new(MockOrderbook::new(trader.chain_id, sell_quote_response()));
+    // Fluent builder path against the SDK facade.
+    let fluent_orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
     let trading = TradingBuilder::ready(
         trader.clone(),
-        TradingOptions::new().with_orderbook_client(fluent_orderbook.clone()),
+        TradingOptions::new().with_orderbook(fluent_orderbook.clone()),
     )
     .expect("sdk construction should succeed");
 
@@ -62,10 +57,9 @@ async fn fluent_swap_chain_matches_flat_post_swap_order() {
         .expect("fluent quote should succeed");
 
     // Inspect-before-submit is available and the quote is real.
-    let inspected_quote_id = quoted.results().quote_response.id;
     assert!(
-        inspected_quote_id.is_some(),
-        "the fluent chain exposes the quote for inspection before submission"
+        quoted.results().quote_response.id.is_some(),
+        "the quote is exposed for inspection before submission"
     );
 
     let fluent = quoted
@@ -79,7 +73,7 @@ async fn fluent_swap_chain_matches_flat_post_swap_order() {
         .cloned()
         .expect("fluent order must be recorded");
 
-    // The fluent chain submits the same order the flat path does.
+    // The fluent builder submits the same order the flat path does.
     assert_eq!(fluent_sent.sell_amount, flat_sent.sell_amount);
     assert_eq!(fluent_sent.buy_amount, flat_sent.buy_amount);
     assert_eq!(fluent.signing_scheme, flat.signing_scheme);
@@ -87,18 +81,15 @@ async fn fluent_swap_chain_matches_flat_post_swap_order() {
     assert_eq!(fluent.order_to_sign.buy_token, flat.order_to_sign.buy_token);
 }
 
-/// Proves the ergonomic win: the whole chain runs from `Trading::builder()`
-/// with `.orderbook(client)` — NO `Arc::new(...)` at the call site — and the
-/// async `Signer` (MockSigner is async) drives `quote` and `submit`.
 #[tokio::test]
-async fn fluent_chain_builds_without_arc_and_drives_async_signer() {
+async fn swap_builder_injects_orderbook_without_arc_and_drives_async_signer() {
     let signer = MockSigner::default();
     let sample = sample_trade_parameters(OrderKind::Sell);
 
-    // `.orderbook(MockOrderbook::new(...))` — owned client, no `Arc::new` here.
+    // `.orderbook(client)` takes the client by value — no `Arc::new` at the call site.
     let trading = Trading::builder()
         .chain_id(SupportedChainId::Sepolia)
-        .app_code("cow-rs-fluent-preview")
+        .app_code("cow-rs-swap-lifecycle")
         .orderbook(MockOrderbook::new(SupportedChainId::Sepolia, sell_quote_response()))
         .build()
         .expect("build should succeed without an Arc at the call site");
@@ -108,15 +99,39 @@ async fn fluent_chain_builds_without_arc_and_drives_async_signer() {
         .sell_token(sample.sell_token)
         .buy_token(sample.buy_token)
         .sell_amount(sample.amount)
-        .quote(&signer) // async signer drives owner resolution
+        .quote(&signer) // the async signer resolves the owner
         .await
         .expect("quote should succeed")
-        .submit(&signer) // async signer signs + posts
+        .submit(&signer) // the async signer signs and posts
         .await
         .expect("submit should succeed");
 
     assert!(
         !posted.signature.is_empty(),
-        "the chain completed end to end and produced a signature"
+        "the lifecycle completed end to end and produced a signature"
     );
+}
+
+#[tokio::test]
+async fn swap_builder_execute_is_one_call_and_transposition_safe() {
+    let signer = MockSigner::default();
+    let sample = sample_trade_parameters(OrderKind::Sell);
+
+    let trading = Trading::builder()
+        .chain_id(SupportedChainId::Sepolia)
+        .app_code("cow-rs-swap-lifecycle")
+        .orderbook(MockOrderbook::new(SupportedChainId::Sepolia, sell_quote_response()))
+        .build()
+        .expect("build should succeed");
+
+    let posted = trading
+        .swap()
+        .sell_token(sample.sell_token) // named — cannot be swapped with the buy token
+        .buy_token(sample.buy_token)
+        .sell_amount(sample.amount)
+        .execute(&signer)
+        .await
+        .expect("one-call execute should succeed");
+
+    assert!(!posted.signature.is_empty());
 }

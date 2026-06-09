@@ -22,10 +22,6 @@ workspace = true
 
 [features]
 default = []
-# PROTOTYPE/SIMULATION ONLY (trading-typestate-gap dossier): gates the fluent
-# `swap().…quote().submit()` lifecycle façade so it can be compiled and evaluated
-# without entering the default public surface or the public-API snapshots.
-fluent-preview = []
 tracing = [
   "dep:tracing",
   "cow-sdk-app-data/tracing",

@@ -1,19 +1,17 @@
 //! Smallest deterministic end-to-end swap.
 //!
-//! Construct a ready-state trading client, then quote, sign, and post a swap in one call
-//! against a transport-mocked orderbook. No network and no private key, so it
-//! runs the same way on every machine — the shortest path from the facade to a
-//! posted order.
+//! Construct a ready-state trading client, then quote, sign, and post a swap in
+//! one call through the fluent swap builder, against a transport-mocked
+//! orderbook. No network and no private key, so it runs the same way on every
+//! machine — the shortest path from the facade to a posted order.
 
-use std::{error::Error, sync::Arc};
+use std::error::Error;
 
-use cow_sdk::core::{Amount, OrderKind, SupportedChainId};
-use cow_sdk::trading::{TradeParameters, Trading};
+use cow_sdk::core::{Amount, SupportedChainId};
+use cow_sdk::trading::Trading;
 
 use cow_sdk::testing::{MockOrderbook, MockSigner};
-use cow_sdk_examples_native::support::{
-    sample_buy_token, sample_owner, sample_quote_response, sample_sell_token,
-};
+use cow_sdk_examples_native::support::{sample_buy_token, sample_owner, sample_quote_response, sample_sell_token};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -23,28 +21,27 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .build();
     let signer = MockSigner::builder().address(sample_owner()).build();
 
-    // Construct a ready-state trading client with the mock orderbook injected. A concrete
-    // `Arc<MockOrderbook>` coerces into the `Arc<dyn OrderbookClient>` the
-    // option expects — no explicit cast needed.
+    // Construct a ready-state trading client with the mock orderbook injected.
+    // `orderbook(...)` takes the client by value — no `Arc` at the call site.
     let trading = Trading::builder()
         .chain_id(SupportedChainId::Sepolia)
         .app_code("cow-rs-quickstart")
-        .orderbook_client(Arc::new(orderbook))
+        .orderbook(orderbook)
         .build()?;
 
-    // Sell 0.1 WETH for COW. The owner is set explicitly here; with a real
-    // signer it defaults to the signer's address.
-    let params = TradeParameters::new(
-        OrderKind::Sell,
-        sample_sell_token(),
-        sample_buy_token(),
-        Amount::parse_units("0.1", 18)?,
-    )
-    .with_owner(sample_owner())
-    .with_slippage_bps(50);
-
-    // One call quotes, signs, and posts.
-    let posted = trading.post_swap_order(params, &signer, None).await?;
+    // Sell 0.1 WETH for COW. The sell and buy tokens have named setters, so they
+    // cannot be transposed. The owner defaults to the signer's address; set it
+    // explicitly with `.owner(...)` for quote-only or delegated flows.
+    let weth = sample_sell_token();
+    let cow = sample_buy_token();
+    let posted = trading
+        .swap()
+        .sell_token(weth)
+        .buy_token(cow)
+        .sell_amount(Amount::parse_units("0.1", 18)?)
+        .slippage_bps(50)
+        .execute(&signer)
+        .await?;
 
     println!("posted order: {}", posted.order_id.to_hex_string());
     Ok(())

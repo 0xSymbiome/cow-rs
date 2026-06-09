@@ -790,6 +790,16 @@ impl TradingOptions {
         self
     }
 
+    /// Returns a copy of these options with an injected orderbook client by value.
+    ///
+    /// Shares the client internally, so callers do not wrap it in [`Arc`]. Use
+    /// [`TradingOptions::with_orderbook_client`] when an
+    /// `Arc<dyn OrderbookClient>` is already held and is shared elsewhere.
+    #[must_use]
+    pub fn with_orderbook(self, orderbook: impl OrderbookClient + 'static) -> Self {
+        self.with_orderbook_client(Arc::new(orderbook))
+    }
+
     /// Returns the injected orderbook client, if one is configured.
     #[must_use]
     pub fn orderbook_client(&self) -> Option<Arc<dyn OrderbookClient>> {

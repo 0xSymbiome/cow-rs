@@ -14,6 +14,19 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Added
 
+- `cow_sdk_trading::Trading::swap` opens a fluent, typed swap lifecycle builder
+  (`SwapBuilder`). Named `sell_token` / `buy_token` / `sell_amount` /
+  `buy_amount` setters track the required fields in the type system so the two
+  token addresses cannot be transposed, and the terminals are reachable only
+  once all three are set: `execute(&signer)` quotes, signs, and posts in one
+  call, while `quote(&signer)` returns a `QuotedSwap` whose `results()` can be
+  inspected before `submit(&signer)`. The owner defaults to the signer address.
+  The builder is an additive façade over the existing free functions and
+  `Trading` methods and adds no protocol logic. `TradingBuilder::orderbook` and
+  `TradingOptions::with_orderbook` inject an orderbook client by value, so the
+  common path no longer wraps it in `Arc`; the `Arc<dyn OrderbookClient>`
+  variants remain for an already-shared handle. See
+  [ADR 0011](docs/adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md).
 - The `cow-sdk-wasm` JavaScript signing, EIP-1271, subgraph, and IPFS export
   modules emit a span carrying a stable `wasm.<area>.<method>` endpoint label
   when the `tracing` feature is enabled, matching the trading and orderbook

@@ -20,6 +20,15 @@
 //! [`cow_sdk_core::TypedDataSigner`],
 //! [`cow_sdk_core::DigestSigner`]) remain available for
 //! callback-shaped adapters that expose only one signing operation.
+//!
+//! # Fluent swap lifecycle
+//!
+//! [`Trading::swap`] opens a typed [`SwapBuilder`] for the common swap path:
+//! named sell/buy/amount setters that cannot be transposed, then a single
+//! asynchronous terminal — [`SwapBuilder::execute`] for one-call quote-sign-post,
+//! or [`SwapBuilder::quote`] to inspect a [`QuotedSwap`] before
+//! [`QuotedSwap::submit`]. The flat free functions and [`Trading`] methods remain
+//! the full surface; the builder is an additive ergonomic entry over them.
 
 #![warn(missing_docs)]
 
@@ -75,7 +84,10 @@ pub use post::{
     post_swap_order_from_quote,
 };
 pub use quote::{quote_only, quote_results};
-pub use sdk::{AppCodeSet, AppCodeUnset, ChainIdSet, ChainIdUnset, Trading, TradingBuilder};
+pub use sdk::{
+    AppCodeSet, AppCodeUnset, ChainIdSet, ChainIdUnset, QuotedSwap, Set, SwapBuilder, Trading,
+    TradingBuilder, Unset,
+};
 pub use slippage::{
     DEFAULT_QUOTE_VALIDITY, DEFAULT_SLIPPAGE_BPS, GAS_LIMIT_DEFAULT, GAS_MARGIN_PERCENT,
     MAX_SLIPPAGE_BPS, calculate_quote_amounts_and_costs, default_slippage_bps, partner_fee_bps,

@@ -405,3 +405,58 @@ surface (2026-05-28) are preserved verbatim on `Amount`; the
 `SignedAmount`-specific clauses in those amendments no longer apply, and
 the workspace ships one `DO NOT SWAP` radix anchor (on `Amount::new`)
 where it previously carried two.
+
+## Amendment 2026-06-09: fluent swap lifecycle builder
+
+`Trading` gains an additive fluent entry for the common swap path,
+`Trading::swap()`, which returns a typestate `SwapBuilder<SellToken,
+BuyToken, AmountState>`. The sell token, buy token, and amount are
+tracked as compile-time markers (`Set` / `Unset`, sealed with private
+tuple fields per [ADR 0013](0013-http-transport-injection-and-typestate-builders.md));
+each has its own named setter (`sell_token`, `buy_token`, `sell_amount`,
+`buy_amount`), so two same-typed token addresses cannot be transposed at
+the call boundary, and the terminals are reachable only once all three
+markers are set. The remaining trade fields (`owner`, `slippage_bps`,
+`receiver`, `valid_for`, `valid_to`, `partially_fillable`, `advanced`)
+are optional setters that do not move the markers.
+
+The builder exposes two terminals. `execute(&signer)` quotes, signs, and
+submits in one call. `quote(&signer)` returns a `QuotedSwap` whose
+`results()` exposes the amounts, costs, suggested slippage, and order to
+sign for inspection, and whose `submit(&signer)` posts the exact quoted
+order. The owner is resolved from the signer address when no explicit
+`owner` is set, so an explicit `owner` is optional; the builder tracks the
+three required markers — sell token, buy token, and amount — with `owner`
+available for quote-only and delegated flows.
+
+The `execute` and `submit` terminals are asynchronous, following the
+crate's runtime-neutral async `Signer` boundary
+([ADR 0010](0010-runtime-neutral-async-and-transport-posture.md),
+[ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md),
+[ADR 0045](0045-async-signer-trait-narrowing.md)): a browser wallet signs
+through an asynchronous EIP-1193 request, and remote-signer and
+smart-account backends sign over the network, so one builder drives a
+local key, a remote signer, a browser wallet, and a smart account
+uniformly. The builder adds no protocol logic: signing stays interleaved
+with app-data upload in the existing `post_cow_protocol_trade`
+orchestration, and the terminals delegate to the existing `quote_results`,
+`post_swap_order`, and `post_swap_order_from_quote` entries.
+
+The injected orderbook client is accepted by value through
+`TradingBuilder::orderbook(...)` and `TradingOptions::with_orderbook(...)`,
+which share it internally as the `Arc<dyn OrderbookClient>` the options
+store. The pre-existing `orderbook_client(Arc<dyn OrderbookClient>)` and
+`with_orderbook_client(Arc<dyn OrderbookClient>)` variants remain for an
+already-shared handle. The flat free functions and `Trading` methods stay
+the full surface; the builder is an additive ergonomic entry, and the
+construction typestate on `TradingBuilder` recorded above is unchanged.
+
+## Acknowledgements
+
+The fluent typestate builder ergonomics for the trading lifecycle were
+suggested by [@mfw78](https://github.com/mfw78) in public design review on
+the CoW DAO grants repository
+([review comment](https://github.com/cowdao-grants/cow-rs/pull/5#issuecomment-4648911544)).
+The `cow-rs` builder expresses that lifecycle through the crate's
+runtime-neutral async `Signer` boundary, so a single chain serves
+local-key, remote-signer, browser-wallet, and smart-account backends.
