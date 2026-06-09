@@ -28,7 +28,6 @@ workspace = true
 default = []
 alloy = [
     "dep:cow-sdk-alloy",
-    "cow-sdk-alloy/http",
     "cow-sdk-alloy/eip712",
     "alloy-provider",
     "alloy-signer",
