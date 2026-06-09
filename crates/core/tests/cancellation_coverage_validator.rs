@@ -32,7 +32,7 @@ const SURFACES: &[Surface] = &[
     },
     Surface {
         type_name: "Trading",
-        source_paths: &["crates/trading/src/sdk"],
+        source_paths: &["crates/trading/src/client"],
         table_path: "crates/trading/tests/cancellation_composition_contract.rs",
         seed_methods: &["quote_only"],
     },
@@ -81,7 +81,7 @@ fn cancellation_tables_cover_every_public_async_method() {
 #[test]
 fn trading_sdk_source_directory_aggregates_public_async_methods() {
     let root = workspace_root();
-    let public_async = public_async_methods(&root, &["crates/trading/src/sdk"], "Trading");
+    let public_async = public_async_methods(&root, &["crates/trading/src/client"], "Trading");
     let expected = [
         "approve_cow_protocol",
         "cow_protocol_allowance",

@@ -55,8 +55,8 @@ pub mod parameters;
 pub mod post;
 /// Quote construction and quote-request precedence helpers.
 pub mod quote;
-/// High-level `Trading` facade and builder.
-pub mod sdk;
+// The stateful, high-level `Trading` client; its public types are re-exported below.
+mod client;
 /// Slippage and fee calculation helpers.
 pub mod slippage;
 /// Shared trading DTOs, trait seams, and settings types.
@@ -84,7 +84,7 @@ pub use post::{
     post_swap_order_from_quote,
 };
 pub use quote::{quote_only, quote_results};
-pub use sdk::{
+pub use client::{
     AppCodeSet, AppCodeUnset, ChainIdSet, ChainIdUnset, QuotedSwap, Set, SwapBuilder, Trading,
     TradingBuilder, Unset,
 };

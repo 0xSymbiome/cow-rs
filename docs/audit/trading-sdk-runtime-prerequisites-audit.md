@@ -106,11 +106,11 @@ SDK; no SDK-level fallback fires.
 
 Primary implementation points:
 
-- `crates/trading/src/sdk/builder.rs`
+- `crates/trading/src/client/builder.rs`
 - `crates/trading/src/types/trader.rs`
 - `crates/trading/src/types/options.rs`
 - `crates/trading/src/onchain.rs`
-- `crates/trading/src/sdk/helpers.rs`
+- `crates/trading/src/client/helpers.rs`
 - `crates/trading/src/quote.rs`
 - `crates/sdk/src/lib.rs`
 - `README.md`

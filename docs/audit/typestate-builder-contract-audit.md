@@ -146,7 +146,7 @@ requirement is compiler-enforced; compiling `cow-sdk-orderbook` and
 ### Trading SDK Construction
 
 `TradingBuilder<ChainIdState, AppCodeState>` lives at
-`crates/trading/src/sdk/builder.rs`. The fluent chain-id and app-code setters move
+`crates/trading/src/client/builder.rs`. The fluent chain-id and app-code setters move
 the builder from unset to set marker states. `build()` is implemented
 only on `(ChainIdSet, AppCodeSet)` and returns `Trading`. App-code-less helper
 flows (allowance, approval, pre-sign, on-chain cancellation) are the crate's
@@ -171,7 +171,7 @@ for an already-shared handle.
 ### Trading Swap Lifecycle Builder
 
 `SwapBuilder<SellToken, BuyToken, AmountState>` lives at
-`crates/trading/src/sdk/swap.rs` and is opened by `Trading::swap()`. The sell
+`crates/trading/src/client/swap.rs` and is opened by `Trading::swap()`. The sell
 token, buy token, and amount are tracked as the sealed `Set` / `Unset` markers;
 each has its own named setter (`sell_token`, `buy_token`, `sell_amount`,
 `buy_amount`), so two same-typed token addresses cannot be transposed at the
@@ -219,8 +219,8 @@ Primary implementation points:
 - `crates/orderbook/src/api.rs`
 - `crates/subgraph/src/builder.rs`
 - `crates/subgraph/src/api.rs`
-- `crates/trading/src/sdk/builder.rs`
-- `crates/trading/src/sdk/swap.rs`
+- `crates/trading/src/client/builder.rs`
+- `crates/trading/src/client/swap.rs`
 - `crates/core/src/types/app_code.rs`
 - `crates/alloy-provider/src/builder.rs`
 - `crates/alloy-signer/src/builder.rs`

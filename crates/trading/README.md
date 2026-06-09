@@ -64,6 +64,48 @@ Owner attribution lives on the per-trade `TradeParameters` (or
 signer-backed flows the signer's address fills the slot when
 `TradeParameters.owner` is `None`.
 
+## Swap in one call
+
+`Trading::swap()` opens a typed builder with named token setters, so the sell
+and buy tokens cannot be transposed. `execute` quotes, signs, and posts in one
+call; `quote` returns a result you can inspect before `submit`. The same chain
+works with any signer — a local key, a remote signer, a browser wallet, or a
+smart account:
+
+```rust,no_run
+use cow_sdk_core::{Address, Amount, Signer, SignerError};
+use cow_sdk_trading::Trading;
+
+# async fn run<S>(trading: Trading, signer: &S) -> Result<(), Box<dyn std::error::Error>>
+# where S: Signer, S::Error: std::fmt::Display + SignerError {
+let weth = Address::new("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2")?;
+let usdc = Address::new("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48")?;
+
+// Quote, sign, and post in one call.
+let posted = trading
+    .swap()
+    .sell_token(weth)
+    .buy_token(usdc)
+    .sell_amount(Amount::from_units(1, 18)?)
+    .slippage_bps(50)
+    .execute(signer)
+    .await?;
+println!("posted order {}", posted.order_id.to_hex_string());
+
+// Or inspect the quote first, then submit the exact quoted order.
+let quoted = trading
+    .swap()
+    .sell_token(weth)
+    .buy_token(usdc)
+    .sell_amount(Amount::from_units(1, 18)?)
+    .quote(signer)
+    .await?;
+println!("suggested slippage (bps): {}", quoted.results().suggested_slippage_bps);
+let _posted = quoted.submit(signer).await?;
+# Ok(())
+# }
+```
+
 ## Quoting a swap
 
 Quoting is the lowest-friction action and needs no signer — the owner comes

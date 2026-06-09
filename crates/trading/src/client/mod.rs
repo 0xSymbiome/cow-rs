@@ -1,4 +1,5 @@
-//! High-level `Trading` facade and builder.
+//! The stateful, high-level `Trading` client, its construction builder, and the
+//! fluent swap lifecycle.
 
 use crate::{PartialTraderParameters, TradingOptions};
 mod builder;

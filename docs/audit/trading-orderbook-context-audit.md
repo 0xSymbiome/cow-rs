@@ -63,7 +63,7 @@ Primary implementation points:
 - `crates/trading/src/types/trader.rs`
 - `crates/trading/src/types/context.rs`
 - `crates/trading/src/types/options.rs`
-- `crates/trading/src/sdk/{builder,helpers}.rs`
+- `crates/trading/src/client/{builder,helpers}.rs`
 - `crates/trading/src/quote.rs`
 - `crates/trading/src/post/generic.rs`
 - `crates/trading/src/cancel.rs`
