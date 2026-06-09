@@ -1,14 +1,9 @@
 //! High-level `Trading` facade and builder.
 
 use crate::{PartialTraderParameters, TradingOptions};
-mod allowance;
 mod builder;
-mod cancel;
 mod helpers;
-mod post;
-mod presign;
-mod query;
-mod quote;
+mod methods;
 
 pub use self::builder::TradingBuilder;
 /// Typestate marker for a builder that has not yet been given a chain id.
