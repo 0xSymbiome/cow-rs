@@ -74,7 +74,10 @@ impl Default for SubgraphConfig {
     }
 }
 
-/// Per-call overrides for [`SubgraphConfig`].
+/// Routing overrides applied through [`SubgraphApi::with_config_override`].
+///
+/// Use [`SubgraphConfigOverride::for_chain`] for the common case of querying a
+/// different supported chain from the same client.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
@@ -88,7 +91,7 @@ pub struct SubgraphConfigOverride {
 }
 
 impl SubgraphConfigOverride {
-    /// Creates per-call subgraph configuration overrides.
+    /// Creates subgraph configuration overrides.
     #[must_use]
     pub const fn new(
         chain_id: Option<SupportedChainId>,
@@ -98,6 +101,29 @@ impl SubgraphConfigOverride {
             chain_id,
             base_urls,
         }
+    }
+
+    /// Creates an override that switches the queried chain.
+    #[must_use]
+    pub const fn for_chain(chain_id: SupportedChainId) -> Self {
+        Self {
+            chain_id: Some(chain_id),
+            base_urls: None,
+        }
+    }
+
+    /// Returns a copy with an explicit chain-id override.
+    #[must_use]
+    pub const fn with_chain_id(mut self, chain_id: SupportedChainId) -> Self {
+        self.chain_id = Some(chain_id);
+        self
+    }
+
+    /// Returns a copy with an explicit base-URL map override.
+    #[must_use]
+    pub fn with_base_urls(mut self, base_urls: SubgraphApiBaseUrls) -> Self {
+        self.base_urls = Some(base_urls);
+        self
     }
 }
 
@@ -226,6 +252,30 @@ impl SubgraphApi {
         self
     }
 
+    /// Returns a copy of this client with routing configuration overrides applied.
+    ///
+    /// The returned client targets the overridden chain and/or base URLs for
+    /// every subsequent query; the injected transport and transport policy are
+    /// unchanged. Compose it inline to query a different supported chain from a
+    /// single client:
+    ///
+    /// ```rust,ignore
+    /// let totals = api
+    ///     .with_config_override(SubgraphConfigOverride::for_chain(SupportedChainId::GnosisChain))
+    ///     .totals()
+    ///     .await?;
+    /// ```
+    #[must_use]
+    pub fn with_config_override(mut self, config_override: SubgraphConfigOverride) -> Self {
+        if let Some(chain_id) = config_override.chain_id {
+            self.config.chain_id = chain_id;
+        }
+        if let Some(base_urls) = config_override.base_urls {
+            self.config.base_urls = Some(base_urls);
+        }
+        self
+    }
+
     /// Fetches the first totals row from the canonical totals query.
     ///
     /// Callers that need cooperative cancellation wrap this future through
@@ -248,29 +298,8 @@ impl SubgraphApi {
         ),
     )]
     pub async fn totals(&self) -> Result<Total, SubgraphError> {
-        self.totals_with_config(SubgraphConfigOverride::default())
-            .await
-    }
-
-    /// Fetches the first totals row with per-call configuration overrides.
-    ///
-    /// Callers that need cooperative cancellation wrap this future through
-    /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`SubgraphError::NoTotalsFound`] when the response contains no
-    /// totals rows, or any transport, HTTP, GraphQL, serialization, missing
-    /// data, or unsupported-network error surfaced by the underlying query.
-    pub async fn totals_with_config(
-        &self,
-        config_override: SubgraphConfigOverride,
-    ) -> Result<Total, SubgraphError> {
         let response: TotalsResponse = self
-            .run_query_with_config(
-                SubgraphQueryRequest::new(TOTALS_QUERY).with_operation_name("Totals"),
-                config_override,
-            )
+            .run_query(SubgraphQueryRequest::new(TOTALS_QUERY).with_operation_name("Totals"))
             .await?;
 
         response
@@ -281,6 +310,10 @@ impl SubgraphApi {
     }
 
     /// Fetches daily volume rows for the last `days` entries.
+    ///
+    /// `days` is forwarded to the GraphQL `first` argument, which The Graph caps
+    /// at 1000; for larger or keyset-paginated windows use
+    /// [`SubgraphApi::run_query`].
     ///
     /// Callers that need cooperative cancellation wrap this future through
     /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site.
@@ -304,34 +337,19 @@ impl SubgraphApi {
         &self,
         days: u32,
     ) -> Result<LastDaysVolumeResponse, SubgraphError> {
-        self.last_days_volume_with_config(days, SubgraphConfigOverride::default())
-            .await
-    }
-
-    /// Fetches daily volume rows for the last `days` entries with per-call overrides.
-    ///
-    /// Callers that need cooperative cancellation wrap this future through
-    /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site.
-    ///
-    /// # Errors
-    ///
-    /// Returns any transport, HTTP, GraphQL, serialization, missing-data, or
-    /// unsupported-network error surfaced by the underlying query.
-    pub async fn last_days_volume_with_config(
-        &self,
-        days: u32,
-        config_override: SubgraphConfigOverride,
-    ) -> Result<LastDaysVolumeResponse, SubgraphError> {
-        self.run_query_with_config(
+        self.run_query(
             SubgraphQueryRequest::new(LAST_DAYS_VOLUME_QUERY)
                 .with_variables(json!({ "days": days }))
                 .with_operation_name("LastDaysVolume"),
-            config_override,
         )
         .await
     }
 
     /// Fetches hourly volume rows for the last `hours` entries.
+    ///
+    /// `hours` is forwarded to the GraphQL `first` argument, which The Graph
+    /// caps at 1000; for larger or keyset-paginated windows use
+    /// [`SubgraphApi::run_query`].
     ///
     /// Callers that need cooperative cancellation wrap this future through
     /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site.
@@ -355,29 +373,10 @@ impl SubgraphApi {
         &self,
         hours: u32,
     ) -> Result<LastHoursVolumeResponse, SubgraphError> {
-        self.last_hours_volume_with_config(hours, SubgraphConfigOverride::default())
-            .await
-    }
-
-    /// Fetches hourly volume rows for the last `hours` entries with per-call overrides.
-    ///
-    /// Callers that need cooperative cancellation wrap this future through
-    /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site.
-    ///
-    /// # Errors
-    ///
-    /// Returns any transport, HTTP, GraphQL, serialization, missing-data, or
-    /// unsupported-network error surfaced by the underlying query.
-    pub async fn last_hours_volume_with_config(
-        &self,
-        hours: u32,
-        config_override: SubgraphConfigOverride,
-    ) -> Result<LastHoursVolumeResponse, SubgraphError> {
-        self.run_query_with_config(
+        self.run_query(
             SubgraphQueryRequest::new(LAST_HOURS_VOLUME_QUERY)
                 .with_variables(json!({ "hours": hours }))
                 .with_operation_name("LastHoursVolume"),
-            config_override,
         )
         .await
     }
@@ -411,36 +410,10 @@ impl SubgraphApi {
         T: DeserializeOwned,
         R: Into<SubgraphQueryRequest>,
     {
-        self.run_query_with_config(request, SubgraphConfigOverride::default())
-            .await
-    }
-
-    /// Executes an explicit raw GraphQL request with per-call configuration overrides.
-    ///
-    /// Callers that need cooperative cancellation wrap this future through
-    /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site. The
-    /// in-flight request future is dropped on cancellation so the underlying
-    /// socket is released promptly rather than waiting for the request
-    /// deadline.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`SubgraphError`] for transport failures, non-success HTTP
-    /// status codes, GraphQL error payloads, response-decoding failures,
-    /// missing `data`, or unsupported networks.
-    pub async fn run_query_with_config<T, R>(
-        &self,
-        request: R,
-        config_override: SubgraphConfigOverride,
-    ) -> Result<T, SubgraphError>
-    where
-        T: DeserializeOwned,
-        R: Into<SubgraphQueryRequest>,
-    {
         let request = request.into();
-        let resolved_config = self.config_with_override(&config_override);
-        let api = self.base_url_for(&resolved_config)?;
-        let public_api = self.public_base_url_for(&resolved_config)?;
+        let chain_id = self.config.chain_id;
+        let api = self.base_url_for(&self.config)?;
+        let public_api = self.public_base_url_for(&self.config)?;
         let graphql_request = GraphQlRequest {
             query: request.document(),
             variables: request.variables(),
@@ -448,40 +421,23 @@ impl SubgraphApi {
         };
 
         let body = serde_json::to_string(&graphql_request).map_err(|error| {
-            serialization_error(
-                &public_api,
-                resolved_config.chain_id,
-                &request,
-                "",
-                error.to_string(),
-            )
+            serialization_error(&public_api, chain_id, &request, "", error.to_string())
         })?;
         let body = self
-            .post_graphql_with_policy(&api, &public_api, resolved_config.chain_id, &request, &body)
+            .post_graphql_with_policy(&api, &public_api, chain_id, &request, &body)
             .await?;
 
         let response: GraphQlResponse<T> = serde_json::from_str(&body).map_err(|error| {
-            serialization_error(
-                &public_api,
-                resolved_config.chain_id,
-                &request,
-                &body,
-                error.to_string(),
-            )
+            serialization_error(&public_api, chain_id, &request, &body, error.to_string())
         })?;
 
         if !response.errors.is_empty() {
-            return Err(graphql_error(
-                &public_api,
-                resolved_config.chain_id,
-                &request,
-                response.errors,
-            ));
+            return Err(graphql_error(&public_api, chain_id, &request, response.errors));
         }
 
         response
             .data
-            .ok_or_else(|| missing_data_error(&public_api, resolved_config.chain_id, &request))
+            .ok_or_else(|| missing_data_error(&public_api, chain_id, &request))
     }
 
     async fn post_graphql_with_policy(
@@ -552,20 +508,6 @@ impl SubgraphApi {
         .await
     }
 
-    fn config_with_override(&self, config_override: &SubgraphConfigOverride) -> SubgraphConfig {
-        let mut config = self.config.clone();
-
-        if let Some(chain_id) = config_override.chain_id {
-            config.chain_id = chain_id;
-        }
-
-        if let Some(base_urls) = &config_override.base_urls {
-            config.base_urls = Some(base_urls.clone());
-        }
-
-        config
-    }
-
     fn base_url_for(&self, config: &SubgraphConfig) -> Result<String, SubgraphError> {
         if let Some(base_urls) = &config.base_urls {
             return base_urls
@@ -626,63 +568,68 @@ struct GraphQlResponse<T> {
     errors: Vec<SubgraphGraphQlError>,
 }
 
+/// Single source of truth for production subgraph deployments: each supported
+/// chain paired with its The Graph subgraph id. Both the routing path
+/// ([`prod_subgraph_id`]) and the redacted display map ([`build_prod_config`])
+/// read this slice, so a deployment-id rotation is a one-line edit and the two
+/// surfaces cannot drift apart.
+const PROD_SUBGRAPH_IDS: &[(SupportedChainId, &str)] = &[
+    (
+        SupportedChainId::Mainnet,
+        "8mdwJG7YCSwqfxUbhCypZvoubeZcFVpCHb4zmHhvuKTD",
+    ),
+    (
+        SupportedChainId::GnosisChain,
+        "HTQcP2gLuAy235CMNE8ApN4cbzpLVjjNxtCAUfpzRubq",
+    ),
+    (
+        SupportedChainId::ArbitrumOne,
+        "CQ8g2uJCjdAkUSNkVbd9oqqRP2GALKu1jJCD3fyY5tdc",
+    ),
+    (
+        SupportedChainId::Base,
+        "EYfBtJDj2thuBCVhdpYDpzfsWzDg3qzpEsitqMouU4Rg",
+    ),
+    (
+        SupportedChainId::Sepolia,
+        "31isonmztVX9ejBneP6SaVDQwEtyKCGBb3RTafB9Uf2y",
+    ),
+];
+
+/// Chains the production configuration explicitly marks unsupported. They stay
+/// in the public route map with `None` values so the support posture remains
+/// visible rather than silently absent.
+const UNSUPPORTED_PROD_CHAINS: &[SupportedChainId] = &[
+    SupportedChainId::Polygon,
+    SupportedChainId::Avalanche,
+    SupportedChainId::Bnb,
+    SupportedChainId::Linea,
+    SupportedChainId::Plasma,
+    SupportedChainId::Ink,
+];
+
 pub(crate) fn build_prod_config() -> SubgraphApiBaseUrls {
-    [
-        (
-            SupportedChainId::Mainnet,
-            Some(build_prod_gateway_url(
-                REDACTED_API_KEY_SEGMENT,
-                "8mdwJG7YCSwqfxUbhCypZvoubeZcFVpCHb4zmHhvuKTD",
-            )),
-        ),
-        (
-            SupportedChainId::GnosisChain,
-            Some(build_prod_gateway_url(
-                REDACTED_API_KEY_SEGMENT,
-                "HTQcP2gLuAy235CMNE8ApN4cbzpLVjjNxtCAUfpzRubq",
-            )),
-        ),
-        (
-            SupportedChainId::ArbitrumOne,
-            Some(build_prod_gateway_url(
-                REDACTED_API_KEY_SEGMENT,
-                "CQ8g2uJCjdAkUSNkVbd9oqqRP2GALKu1jJCD3fyY5tdc",
-            )),
-        ),
-        (
-            SupportedChainId::Base,
-            Some(build_prod_gateway_url(
-                REDACTED_API_KEY_SEGMENT,
-                "EYfBtJDj2thuBCVhdpYDpzfsWzDg3qzpEsitqMouU4Rg",
-            )),
-        ),
-        (
-            SupportedChainId::Sepolia,
-            Some(build_prod_gateway_url(
-                REDACTED_API_KEY_SEGMENT,
-                "31isonmztVX9ejBneP6SaVDQwEtyKCGBb3RTafB9Uf2y",
-            )),
-        ),
-        (SupportedChainId::Polygon, None),
-        (SupportedChainId::Avalanche, None),
-        (SupportedChainId::Bnb, None),
-        (SupportedChainId::Linea, None),
-        (SupportedChainId::Plasma, None),
-        (SupportedChainId::Ink, None),
-    ]
-    .into_iter()
-    .collect()
+    PROD_SUBGRAPH_IDS
+        .iter()
+        .map(|(chain_id, subgraph_id)| {
+            (
+                *chain_id,
+                Some(build_prod_gateway_url(REDACTED_API_KEY_SEGMENT, subgraph_id)),
+            )
+        })
+        .chain(
+            UNSUPPORTED_PROD_CHAINS
+                .iter()
+                .map(|chain_id| (*chain_id, None)),
+        )
+        .collect()
 }
 
-const fn prod_subgraph_id(chain_id: SupportedChainId) -> Option<&'static str> {
-    match chain_id {
-        SupportedChainId::Mainnet => Some("8mdwJG7YCSwqfxUbhCypZvoubeZcFVpCHb4zmHhvuKTD"),
-        SupportedChainId::GnosisChain => Some("HTQcP2gLuAy235CMNE8ApN4cbzpLVjjNxtCAUfpzRubq"),
-        SupportedChainId::ArbitrumOne => Some("CQ8g2uJCjdAkUSNkVbd9oqqRP2GALKu1jJCD3fyY5tdc"),
-        SupportedChainId::Base => Some("EYfBtJDj2thuBCVhdpYDpzfsWzDg3qzpEsitqMouU4Rg"),
-        SupportedChainId::Sepolia => Some("31isonmztVX9ejBneP6SaVDQwEtyKCGBb3RTafB9Uf2y"),
-        _ => None,
-    }
+fn prod_subgraph_id(chain_id: SupportedChainId) -> Option<&'static str> {
+    PROD_SUBGRAPH_IDS
+        .iter()
+        .find(|(id, _)| *id == chain_id)
+        .map(|(_, subgraph_id)| *subgraph_id)
 }
 
 fn build_prod_gateway_url(api_key: &str, subgraph_id: &str) -> String {

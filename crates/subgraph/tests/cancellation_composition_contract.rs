@@ -17,8 +17,8 @@ use std::{
 
 use cow_sdk_core::{Cancellable, CancellationToken, SupportedChainId};
 use cow_sdk_subgraph::{
-    LastDaysVolumeResponse, LastHoursVolumeResponse, SubgraphApi, SubgraphConfigOverride,
-    SubgraphError, SubgraphQueryRequest, Total,
+    LastDaysVolumeResponse, LastHoursVolumeResponse, SubgraphApi, SubgraphError,
+    SubgraphQueryRequest, Total,
 };
 use serde_json::Value;
 use wiremock::{
@@ -37,32 +37,20 @@ struct CancellationCase {
 
 const TESTED_METHODS: &[CancellationCase] = &[
     CancellationCase {
-        method_name: "totals_with_config",
-        invoke: invoke_get_totals_with_config,
+        method_name: "totals",
+        invoke: invoke_get_totals,
     },
     CancellationCase {
         method_name: "last_days_volume",
         invoke: invoke_get_last_days_volume,
     },
     CancellationCase {
-        method_name: "last_days_volume_with_config",
-        invoke: invoke_get_last_days_volume_with_config,
-    },
-    CancellationCase {
         method_name: "last_hours_volume",
         invoke: invoke_get_last_hours_volume,
     },
     CancellationCase {
-        method_name: "last_hours_volume_with_config",
-        invoke: invoke_get_last_hours_volume_with_config,
-    },
-    CancellationCase {
         method_name: "run_query",
         invoke: invoke_run_query,
-    },
-    CancellationCase {
-        method_name: "run_query_with_config",
-        invoke: invoke_run_query_with_config,
     },
 ];
 
@@ -186,25 +174,13 @@ async fn wait_until_request_is_in_flight(server: &MockServer) {
     }
 }
 
-fn invoke_get_totals_with_config(api: &SubgraphApi) -> CaseFuture<'_> {
-    Box::pin(async move {
-        api.totals_with_config(SubgraphConfigOverride::default())
-            .await
-            .map(|_: Total| ())
-    })
+fn invoke_get_totals(api: &SubgraphApi) -> CaseFuture<'_> {
+    Box::pin(async move { api.totals().await.map(|_: Total| ()) })
 }
 
 fn invoke_get_last_days_volume(api: &SubgraphApi) -> CaseFuture<'_> {
     Box::pin(async move {
         api.last_days_volume(7)
-            .await
-            .map(|_: LastDaysVolumeResponse| ())
-    })
-}
-
-fn invoke_get_last_days_volume_with_config(api: &SubgraphApi) -> CaseFuture<'_> {
-    Box::pin(async move {
-        api.last_days_volume_with_config(7, SubgraphConfigOverride::default())
             .await
             .map(|_: LastDaysVolumeResponse| ())
     })
@@ -218,31 +194,11 @@ fn invoke_get_last_hours_volume(api: &SubgraphApi) -> CaseFuture<'_> {
     })
 }
 
-fn invoke_get_last_hours_volume_with_config(api: &SubgraphApi) -> CaseFuture<'_> {
-    Box::pin(async move {
-        api.last_hours_volume_with_config(24, SubgraphConfigOverride::default())
-            .await
-            .map(|_: LastHoursVolumeResponse| ())
-    })
-}
-
 fn invoke_run_query(api: &SubgraphApi) -> CaseFuture<'_> {
     Box::pin(async move {
         api.run_query::<Value, _>(
             SubgraphQueryRequest::new("query CancellationProbe { totals { orders } }")
                 .with_operation_name("CancellationProbe"),
-        )
-        .await
-        .map(|_: Value| ())
-    })
-}
-
-fn invoke_run_query_with_config(api: &SubgraphApi) -> CaseFuture<'_> {
-    Box::pin(async move {
-        api.run_query_with_config::<Value, _>(
-            SubgraphQueryRequest::new("query CancellationProbe { totals { orders } }")
-                .with_operation_name("CancellationProbe"),
-            SubgraphConfigOverride::default(),
         )
         .await
         .map(|_: Value| ())

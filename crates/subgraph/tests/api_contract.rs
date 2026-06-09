@@ -415,7 +415,7 @@ async fn run_query_accepts_anonymous_documents_without_operation_name() {
 }
 
 #[tokio::test]
-async fn run_query_with_config_honors_chain_override_for_generic_queries() {
+async fn with_config_override_routes_generic_queries_to_the_overridden_chain() {
     let server = MockServer::start().await;
     let base_urls: SubgraphApiBaseUrls =
         std::iter::once((SupportedChainId::GnosisChain, Some(server.uri()))).collect();
@@ -443,13 +443,10 @@ async fn run_query_with_config_honors_chain_override_for_generic_queries() {
         .await;
 
     let response: Value = api
-        .run_query_with_config(
-            SubgraphQueryRequest::new(query).with_operation_name("TotalsForAudit"),
-            cow_sdk_subgraph::SubgraphConfigOverride::new(
-                Some(SupportedChainId::GnosisChain),
-                None,
-            ),
-        )
+        .with_config_override(cow_sdk_subgraph::SubgraphConfigOverride::for_chain(
+            SupportedChainId::GnosisChain,
+        ))
+        .run_query(SubgraphQueryRequest::new(query).with_operation_name("TotalsForAudit"))
         .await
         .expect("chain override should drive generic-query transport resolution");
     let request = only_request(&server).await;

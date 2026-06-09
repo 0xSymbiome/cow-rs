@@ -448,6 +448,17 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- `cow_sdk_subgraph::SubgraphApi` replaces the per-call `*_with_config` method
+  twins (`totals_with_config`, `last_days_volume_with_config`,
+  `last_hours_volume_with_config`, `run_query_with_config`) with a single
+  `with_config_override(self) -> Self` that returns a reconfigured client,
+  mirroring `OrderbookApi::with_context_override`; the operation methods
+  (`totals`, `last_days_volume`, `last_hours_volume`, `run_query`) are now
+  single. `SubgraphConfigOverride` gains `for_chain`, `with_chain_id`, and
+  `with_base_urls`, so a per-chain query reads
+  `api.with_config_override(SubgraphConfigOverride::for_chain(chain)).totals()`.
+  The production subgraph deployment ids are consolidated into one source of
+  truth shared by request routing and the redacted route-identity map.
 - The COW Shed account-abstraction surface — proxy derivation, EIP-712 hook
   signing, the `executeHooks` calldata builders, and the `CowShedHooks`
   orchestrator — moved from the standalone `cow-sdk-cow-shed` crate into the

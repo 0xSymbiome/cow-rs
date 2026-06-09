@@ -176,9 +176,10 @@ example stays runnable without network access:
   same trait surface a real deployment would use.
 - **HTTP mock transport** (`cow-sdk-orderbook`, `cow-sdk-subgraph`):
   a local `wiremock::MockServer` serves the HTTP or GraphQL shape the
-  client expects, and the crate's `*::new_with_base_url` /
-  `with_config` path points the client at the mock URL. This mirrors
-  the upstream test pattern for each crate.
+  client expects, and the crate's typestate builder points the client at
+  the mock URL through its `base_url` / `base_urls` setter with
+  `ExternalHostPolicy::Test`. This mirrors the upstream test pattern for
+  each crate.
 
 When a consumer wants to adapt a per-crate example to a real service,
 replacing the mock server with the production URL (or replacing the
