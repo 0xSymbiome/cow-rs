@@ -2,9 +2,6 @@
 
 pub use self::{params::*, result::*, seams::*};
 
-/// Compatibility alias for the transaction type returned by trading helpers.
-pub type TradingTransactionParams = cow_sdk_core::TransactionRequest;
-
 pub(crate) use self::params::{
     QuoteRequestParameterTargets, apply_app_data_parameter_overrides,
     apply_quote_request_parameter_overrides,

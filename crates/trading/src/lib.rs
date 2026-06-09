@@ -88,7 +88,7 @@ pub use types::{
     PartialTraderParameters, PostTradeAdditionalParams, QuoteRequestOverride, QuoteResults,
     QuoterParameters, SlippageSuggestionProvider, SlippageToleranceRequest,
     SlippageToleranceResponse, TradeAdvancedSettings, TradeParameters, TraderParameters,
-    TradingAppDataInfo, TradingOptions, TradingTransactionParams,
+    TradingAppDataInfo, TradingOptions,
 };
 pub use validation::{AmountSide, ClientRejection, OrderBoundsValidator};
 pub use wait::{WaitError, WaitOptions, poll_for_receipt, submit_and_wait_for_receipt};
