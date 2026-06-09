@@ -1,8 +1,9 @@
 # cow-sdk-contracts
 
 Low-level [CoW Protocol](https://cow.fi) contract helpers for order
-hashing, settlement encoding, signature codecs, fail-closed on-chain order
-event decoding, wrapped-native interactions, and deployment metadata.
+hashing and UID packing, EIP-712 / EIP-1271 signature codecs and on-chain
+verification, fail-closed on-chain event decoding, the settlement /
+eth-flow / token ABI bindings, and deployment metadata.
 
 This crate owns the deterministic building blocks used by higher-level
 crates such as [`cow-sdk-signing`](https://crates.io/crates/cow-sdk-signing)

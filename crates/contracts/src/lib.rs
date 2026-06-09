@@ -1,7 +1,8 @@
 #![cfg_attr(any(doctest, docsrs), doc = include_str!("../README.md"))]
 
-//! Low-level `CoW` Protocol contract helpers for hashing, settlement encoding,
-//! signature verification, and deployment metadata.
+//! Low-level `CoW` Protocol contract helpers for order hashing, signature
+//! codecs and on-chain verification, ABI bindings, fail-closed event decoding,
+//! and deployment metadata.
 
 #![warn(missing_docs)]
 #![allow(
