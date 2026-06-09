@@ -11,7 +11,7 @@
 //! confirms each address on-chain.
 //!
 //! Lens is deployment-only for the composable / COW-Shed contract families
-//! and carries none of the GPv2 contracts, so it resolves to [`None`].
+//! and carries none of the `GPv2` contracts, so it resolves to [`None`].
 
 use cow_sdk_core::Address;
 
@@ -64,7 +64,7 @@ impl Registry {
     /// Returns the deployed address registered for the supplied identifier
     /// triple, or [`None`] when the contract is not deployed on that chain.
     ///
-    /// The GPv2 settlement, vault-relayer, and eth-flow contracts deploy on
+    /// The `GPv2` settlement, vault-relayer, and eth-flow contracts deploy on
     /// every runtime-supported chain; settlement and vault-relayer share one
     /// address across both environments, while eth-flow resolves the
     /// production or staging deployment from `env`.

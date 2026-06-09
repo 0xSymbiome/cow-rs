@@ -84,6 +84,13 @@ jobs:
         run: cargo check -p cow-sdk-wasm --no-default-features
       - name: Check cow-sdk-wasm wasm32
         run: cargo check -p cow-sdk-wasm --target wasm32-unknown-unknown --no-default-features
+      - name: Check cow-sdk-wasm wasm32 default flavor
+        # The --no-default-features check above cannot see breakage in the
+        # signing, orderbook, or trading export surfaces, which only compile
+        # under flavor-default. This step compiles the default flavor for
+        # wasm32 so a shipped-flavor break fails in the fast checks rather than
+        # only in the slower wasm-pack flavour matrix.
+        run: cargo check -p cow-sdk-wasm --target wasm32-unknown-unknown
       - name: Check native-default builder crates compile for wasm32
         # The orderbook and subgraph builders gate their default-transport
         # `.build()` impl on `#[cfg(not(target_arch = "wasm32"))]`, so a

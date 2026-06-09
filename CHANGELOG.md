@@ -388,6 +388,14 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Fixed
 
+- `cow-sdk-wasm` now compiles for `wasm32-unknown-unknown` under the default
+  feature flavor. The `signing`-gated `From<ContractsError>` conversion in the
+  JavaScript error surface matched a settlement-interaction-target error variant
+  that was removed together with the settlement encoder (ADR 0034). The
+  `exports` module is `wasm32`-only, so the host workspace check could not see
+  the break. The conversion now maps every `ContractsError` to the typed signing
+  error, and the wasm workflow gained a default-flavor `wasm32` compile check in
+  its fast checks so the gap cannot recur.
 - The hand-written `cow-sdk-wasm` TypeScript facade `CowError` `orderbook`
   member now declares the `retryable` and `retryAfterMs` fields the Rust
   `WasmError` already emits, so a TypeScript consumer reads the retry verdict

@@ -160,27 +160,6 @@ fn forbidden_interaction_variant_round_trips() {
 }
 
 #[wasm_bindgen_test]
-fn contracts_forbidden_interaction_maps_to_typed_error() {
-    let target = cow_sdk_core::Address::new("0x1111111111111111111111111111111111111111").unwrap();
-    let error =
-        WasmError::from(cow_sdk_contracts::ContractsError::ForbiddenInteractionTarget { target });
-    let value: Value = serde_wasm_bindgen::from_value(error.into_js()).unwrap();
-
-    assert_eq!(value["schemaVersion"], "v1");
-    assert_eq!(value["kind"], "forbiddenInteraction");
-    assert!(
-        value["message"]
-            .as_str()
-            .unwrap()
-            .contains("Remove this target")
-    );
-    assert_eq!(
-        value["target"],
-        "0x1111111111111111111111111111111111111111"
-    );
-}
-
-#[wasm_bindgen_test]
 fn cancelled_variant_carries_actionable_message() {
     let value = round_trip(json!({
         "schemaVersion": "v1",

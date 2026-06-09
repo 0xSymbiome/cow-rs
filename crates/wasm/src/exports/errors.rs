@@ -638,19 +638,9 @@ impl From<cow_sdk_core::CoreError> for WasmError {
 #[cfg(feature = "signing")]
 impl From<cow_sdk_contracts::ContractsError> for WasmError {
     fn from(value: cow_sdk_contracts::ContractsError) -> Self {
-        match value {
-            cow_sdk_contracts::ContractsError::ForbiddenInteractionTarget { target } => {
-                Self::ForbiddenInteraction {
-                    schema_version: SchemaVersion::V1,
-                    message: forbidden_interaction_message(&target.to_hex_string()),
-                    target: target.to_hex_string(),
-                    reason: "forbidden settlement interaction target".to_owned(),
-                }
-            }
-            error => Self::Signing {
-                schema_version: SchemaVersion::V1,
-                message: signing_message(error.to_string()),
-            },
+        Self::Signing {
+            schema_version: SchemaVersion::V1,
+            message: signing_message(value.to_string()),
         }
     }
 }
@@ -758,12 +748,6 @@ fn app_data_message(class: Option<&str>, detail: String) -> String {
             "App-data operation failed: {detail}. Verify the app-data document, CID/hash, and schema version."
         ),
     }
-}
-
-fn forbidden_interaction_message(target: &str) -> String {
-    format!(
-        "Forbidden settlement interaction target `{target}`. Remove this target from settlement interactions before signing or submitting the order."
-    )
 }
 
 fn cancelled_message() -> String {
