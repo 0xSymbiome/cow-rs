@@ -103,6 +103,7 @@ wallet; **Surfaced (composed)** — covered by combining exported operations;
 | `quote_only` | `getQuote` | Surfaced |
 | `post_swap_order` | `postSwapOrder` | Surfaced |
 | `post_swap_order_from_quote` | `postSwapOrderFromQuote` | Surfaced |
+| `swap` (fluent `SwapBuilder` lifecycle) | `postSwapOrder` / `postSwapOrderFromQuote` / `getQuote` | Surfaced (native-only fluent shape over surfaced ops; see shape note) |
 | `post_limit_order` | `postLimitOrder` | Surfaced |
 | `cow_protocol_allowance` | `getCowProtocolAllowance` | Surfaced |
 | `post_sell_native_currency_order` | `buildSellNativeCurrencyTx` | Surfaced (builder form) |
@@ -130,8 +131,8 @@ wallet; **Surfaced (composed)** — covered by combining exported operations;
 | Crate | Coverage |
 | --- | --- |
 | `app-data` | Surfaced: document generation, info/hash/CID derivation, validation, CID and hex conversion, and IPFS fetch by CID and by app-data hash. Typed metadata builders (hooks, flashloan, partner fee) are reachable through the app-data document `metadata` field rather than as individual typed exports. |
-| `subgraph` | Surfaced: totals, recent daily and hourly volume, and arbitrary GraphQL query execution. Per-call context-override variants are not surfaced. |
-| `contracts` | Surfaced for the consumer-relevant surface: settlement and eth-flow event-log decoders, deployment-address lookup, and the eth-flow and settlement calldata used by the transaction builders. The low-level encoding and on-chain inspection surface (settlement and swap encoders, vault-role helpers, proxy inspection, contract readers, wrapped-native interactions, and raw order hashing or UID packing) is internal building-block code and is not a consumer API on any target. |
+| `subgraph` | Surfaced: totals, recent daily and hourly volume, and arbitrary GraphQL query execution. The native builder-level routing override (`SubgraphApi::with_config_override`) is a construction-time concern rather than a separate surfaced operation. |
+| `contracts` | Surfaced for the consumer-relevant surface: settlement and eth-flow event-log decoders, deployment-address lookup, and the eth-flow and settlement calldata used by the transaction builders. The low-level encoding and verification surface (raw order hashing and UID packing, signature codecs and on-chain EIP-1271 verification, wrapped-native wrap/unwrap interactions, and interaction normalization) is internal building-block code and is not a consumer API on any target. |
 
 ### Non-surfaced capability classification
 
@@ -170,9 +171,9 @@ runtime-model boundary. Members:
   a chain `Provider` read rather than a service call.
 
 **Class 3 — Internal contract-binding surface.** The low-level `contracts`
-encoding and inspection surface is building-block code shared by native tooling;
-it is not exposed as a consumer API on any target and has no upstream consumer
-analogue.
+encoding and verification surface is building-block code shared by native
+tooling; it is not exposed as a consumer API on any target and has no upstream
+consumer analogue.
 
 **Class 4 — Deferred capability families.** The composable conditional-order
 framework is a deferred capability recorded only by
@@ -318,6 +319,15 @@ Beyond the uniform transforms, these specific differences are worth tracking:
   `"0"`.
 - **Client instances require explicit release.** `free()` / `dispose()` has no
   native analogue.
+- **The native fluent swap builder has no TypeScript counterpart.**
+  `Trading::swap()` returns a typestate `SwapBuilder` whose `execute` / `submit`
+  / `quote` terminals compose the already-surfaced quote-sign-post flow. It is a
+  native-only ergonomic wrapper: its `Set` / `Unset` typestate cannot cross the
+  wasm-bindgen ABI, and the sell/buy transposition safety it retrofits onto the
+  positional `TradeParameters::new` constructor is already provided by the
+  named-field `SwapParametersInput` DTO. The wasm surface covers the same
+  capability through `postSwapOrder`, `postSwapOrderFromQuote`, and `getQuote`,
+  so the builder's absence is a shape choice, not a capability gap.
 
 ## Evidence
 
