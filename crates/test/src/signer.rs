@@ -34,7 +34,6 @@ struct Inner {
 
 /// A snapshot of what a [`MockSigner`] was asked to do.
 #[derive(Clone, Debug, Default)]
-#[non_exhaustive]
 pub struct SignerCalls {
     /// Transactions passed to [`Signer::send_transaction`].
     pub sent_transactions: Vec<TransactionRequest>,

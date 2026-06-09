@@ -64,7 +64,6 @@ pub enum LogBlockSelector {
 ///     .with_topic1(Hash32::from_indexed_address(&owner)) // only this owner's trades
 /// # }
 /// ```
-#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LogQuery {
     /// Contract addresses to scan; empty matches logs from any address, and a

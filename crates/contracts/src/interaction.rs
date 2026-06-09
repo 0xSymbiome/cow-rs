@@ -10,7 +10,6 @@ use cow_sdk_core::{Address, Amount};
 /// share a single backing allocation through reference-counted clones. The JSON
 /// wire form remains the `0x`-prefixed lowercase hexadecimal string accepted by
 /// downstream consumers; the alloy primitive carries that wire serde natively.
-#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Interaction {
@@ -28,7 +27,6 @@ pub struct Interaction {
 /// so callers can build interaction proposals without materializing
 /// empty-buffer placeholders and without losing the cheap-clone property during
 /// encoding.
-#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct InteractionLike {

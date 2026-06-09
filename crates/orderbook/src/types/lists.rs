@@ -5,7 +5,6 @@ use super::{Address, Amount, OrderUid, TransactionHash, order::ExecutedProtocolF
 /// Request DTO for listing an account's orders.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[non_exhaustive]
 pub struct GetOrdersRequest {
     /// Account owner whose orders should be listed.
     pub owner: Address,
@@ -50,7 +49,6 @@ impl GetOrdersRequest {
 /// Request DTO for listing trades by owner or order UID.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[non_exhaustive]
 pub struct GetTradesRequest {
     /// Optional owner filter.
     #[serde(skip_serializing_if = "Option::is_none")]

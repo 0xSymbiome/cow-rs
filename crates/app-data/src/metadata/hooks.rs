@@ -10,7 +10,6 @@ use cow_sdk_core::{Address, HexData};
 use serde::{Deserialize, Serialize};
 
 /// Typed `metadata.hooks` value with pre- and post-interaction hook lists.
-#[non_exhaustive]
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct HookList {
@@ -45,7 +44,6 @@ impl HookList {
 }
 
 /// One typed pre- or post-interaction hook call.
-#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Hook {

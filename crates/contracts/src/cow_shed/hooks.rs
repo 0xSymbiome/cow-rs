@@ -28,7 +28,6 @@ use crate::cow_shed::version::CowShedVersion;
 /// The builder is a small `Copy` value carrying only the chain and version;
 /// the per-call inputs are passed explicitly so there is no hidden clock or
 /// randomness and no "forgot to set the nonce" failure mode.
-#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct CowShedHooks {
     chain: DeploymentChainId,

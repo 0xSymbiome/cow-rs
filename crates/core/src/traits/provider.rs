@@ -192,7 +192,6 @@ pub trait SigningProvider: Provider {
 }
 
 /// Typed contract-read request used by runtime-neutral providers.
-#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ContractCall {

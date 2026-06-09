@@ -22,7 +22,6 @@ use super::{
 /// document string and services derives the hash). The cow pair maps
 /// onto these variants per the table in the Serialize impl below.
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[non_exhaustive]
 pub struct OrderCreation {
     /// Sell-token address.
     pub sell_token: Address,
@@ -376,7 +375,6 @@ impl OrderCreation {
 /// Signed order-cancellation payload for `/api/v1/orders`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[non_exhaustive]
 pub struct OrderCancellations {
     /// Order UIDs to cancel.
     pub order_uids: Vec<OrderUid>,
@@ -473,7 +471,6 @@ impl OnchainOrderData {
 /// Smart-contract interaction payload used by order pre and post hooks.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[non_exhaustive]
 pub struct InteractionData {
     /// Contract address targeted by the interaction.
     pub target: Address,

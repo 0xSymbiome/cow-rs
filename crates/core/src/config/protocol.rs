@@ -13,7 +13,6 @@ use super::{
 };
 
 /// Protocol-wide address and environment overrides.
-#[non_exhaustive]
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ProtocolOptions {
@@ -62,7 +61,6 @@ impl ProtocolOptions {
 }
 
 /// API routing context used by transport-owning crates.
-#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ApiContext {

@@ -97,7 +97,6 @@ pub struct Eip1271SignatureData {
 }
 
 /// Input contract for EIP-1271 verification helpers.
-#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Eip1271VerificationRequest {

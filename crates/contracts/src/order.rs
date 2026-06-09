@@ -130,7 +130,6 @@ mod sol {
 pub use self::sol::OrderCancellations as GPv2OrderCancellations;
 
 /// Structured order UID components.
-#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OrderUidParams {
@@ -143,7 +142,6 @@ pub struct OrderUidParams {
 }
 
 /// EIP-712 message body for order cancellations.
-#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OrderCancellations {

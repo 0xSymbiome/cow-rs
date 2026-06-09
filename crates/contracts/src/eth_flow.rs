@@ -71,7 +71,6 @@ sol! {
 /// [`encode_create_order_calldata`] and [`encode_invalidate_order_calldata`].
 ///
 /// Field order mirrors the upstream on-chain `EthFlowOrder.Data` struct.
-#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EthFlowOrderData {
     /// Buy-token address.

@@ -23,7 +23,6 @@ pub enum InjectedWalletDiscoverySource {
 }
 
 /// Options that bound injected-wallet discovery behavior.
-#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct InjectedWalletDetectionOptions {

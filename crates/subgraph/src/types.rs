@@ -12,7 +12,6 @@ use serde_json::Value;
     reason = "the `variables: Option<serde_json::Value>` field cannot participate in `Eq` because `serde_json::Value` does not implement `Eq`"
 )]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[non_exhaustive]
 pub struct SubgraphQueryRequest {
     /// Raw GraphQL document sent to the subgraph endpoint.
     pub document: String,

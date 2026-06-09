@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::types::{Address, Amount, BlockHash, HexData, TransactionHash};
 /// Transaction request shape used across signer and provider traits.
-#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct TransactionRequest {

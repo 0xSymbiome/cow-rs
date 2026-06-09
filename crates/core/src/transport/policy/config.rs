@@ -36,7 +36,6 @@ pub const SUBGRAPH_MAX_RESPONSE_BYTES: usize = 2 * 1024 * 1024;
 pub const IPFS_MAX_RESPONSE_BYTES: usize = 16 * 1024;
 
 /// Combined HTTP client, retry, rate-limit, and tracing policy.
-#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TransportPolicy {
     client: HttpClientPolicy,

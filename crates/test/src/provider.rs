@@ -34,7 +34,6 @@ struct Inner {
 
 /// A snapshot of what a [`MockProvider`] was asked to do.
 #[derive(Clone, Debug, Default)]
-#[non_exhaustive]
 pub struct ProviderCalls {
     /// Contract reads passed to [`Provider::read_contract`].
     pub contract_reads: Vec<ContractCall>,

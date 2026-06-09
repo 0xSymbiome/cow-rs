@@ -115,7 +115,6 @@ macro_rules! impl_common_trade_setters {
 /// Swap-style trade request accepted by quote and post helpers.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[non_exhaustive]
 pub struct TradeParameters {
     /// Order kind.
     pub kind: OrderKind,
@@ -198,7 +197,6 @@ impl_common_trade_setters!(TradeParameters);
 /// Limit-order request accepted by posting and signing helpers.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[non_exhaustive]
 pub struct LimitTradeParameters {
     /// Order kind.
     pub kind: OrderKind,
@@ -364,7 +362,6 @@ impl AsRef<LimitTradeParameters> for LimitTradeParametersFromQuote {
 /// Fully resolved trader configuration used by order-posting and on-chain flows.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[non_exhaustive]
 pub struct TraderParameters {
     /// Active chain id for the workflow.
     pub chain_id: SupportedChainId,
@@ -457,7 +454,6 @@ pub(crate) struct PartialTraderParameters {
 /// Quoter configuration used by quote-only and quote-and-sign flows.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[non_exhaustive]
 pub struct QuoterParameters {
     /// Active chain id for the workflow.
     pub chain_id: SupportedChainId,
@@ -527,7 +523,6 @@ impl QuoterParameters {
 /// Parameters for order lookup, cancellation, and on-chain helper flows.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[non_exhaustive]
 pub struct OrderTraderParameters {
     /// Target order UID.
     pub order_uid: OrderUid,
@@ -590,7 +585,6 @@ impl OrderTraderParameters {
 /// Parameters for allowance-check helpers.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[non_exhaustive]
 pub struct AllowanceParameters {
     /// ERC-20 token address.
     pub token_address: Address,
@@ -645,7 +639,6 @@ impl AllowanceParameters {
 /// Parameters for approval-transaction helpers.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[non_exhaustive]
 pub struct ApprovalParameters {
     /// ERC-20 token address.
     pub token_address: Address,
@@ -758,7 +751,6 @@ impl TradingOptions {
 /// Optional overrides applied directly to the orderbook quote request.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[non_exhaustive]
 pub struct QuoteRequestOverride {
     /// Replacement sell-token address.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -998,7 +990,6 @@ pub(crate) const fn apply_quote_request_parameter_overrides(
 
 /// Optional knobs applied after quoting and before final submission.
 #[derive(Clone, Default)]
-#[non_exhaustive]
 pub struct PostTradeAdditionalParams {
     /// Optional existence checker used by `EthFlow` unique-order-id generation.
     pub check_eth_flow_order_exists: Option<Arc<dyn EthFlowOrderExistsChecker>>,
@@ -1088,7 +1079,6 @@ impl fmt::Debug for PostTradeAdditionalParams {
 /// limit submission path does not apply slippage in the same shape as
 /// swaps; the field is documented but unused on that flow.
 #[derive(Clone, Default)]
-#[non_exhaustive]
 pub struct TradeAdvancedSettings {
     /// Optional direct orderbook quote-request overrides.
     pub quote_request: Option<QuoteRequestOverride>,
@@ -1159,7 +1149,6 @@ impl fmt::Debug for TradeAdvancedSettings {
 /// Explicit verifier and signature payload for EIP-1271 verification helpers.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[non_exhaustive]
 pub struct Eip1271VerificationParameters {
     /// Smart-account verifier address.
     pub verifier: Address,

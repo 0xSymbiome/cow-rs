@@ -15,7 +15,6 @@ pub const DEFAULT_BASE_DELAY: Duration = Duration::from_millis(50);
 pub const DEFAULT_MAX_DELAY: Duration = Duration::from_millis(3_200);
 
 /// Retry policy for SDK HTTP requests.
-#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RetryPolicy {
     max_attempts: usize,

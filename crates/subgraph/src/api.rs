@@ -41,7 +41,6 @@ pub type SubgraphApiBaseUrls = RedactedOptionalUrlMap<SupportedChainId>;
 /// API key supplied when constructing [`SubgraphApi`].
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[non_exhaustive]
 pub struct SubgraphConfig {
     /// Active chain id used for helper methods and generic queries.
     pub chain_id: SupportedChainId,
@@ -80,7 +79,6 @@ impl Default for SubgraphConfig {
 /// different supported chain from the same client.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[non_exhaustive]
 pub struct SubgraphConfigOverride {
     /// Optional chain override for a single request.
     #[serde(default, skip_serializing_if = "Option::is_none")]

@@ -155,7 +155,6 @@ impl TradingAppDataInfo {
 /// Slippage-suggestion request sent to a custom suggestion provider.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[non_exhaustive]
 pub struct SlippageToleranceRequest {
     /// Active chain id for the quote.
     pub chain_id: SupportedChainId,

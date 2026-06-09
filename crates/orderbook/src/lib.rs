@@ -53,7 +53,6 @@ pub mod types;
 /// Runtime binding captured from an orderbook client for quote-derived workflows.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[non_exhaustive]
 pub struct OrderbookRuntimeBinding {
     /// Chain id fixed by the orderbook client.
     pub chain_id: CoreSupportedChainId,

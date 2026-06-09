@@ -17,7 +17,6 @@ use cow_sdk_core::{
 };
 
 /// Configuration for receipt wait helpers.
-#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WaitOptions {
     /// How often to call `get_transaction_receipt` while the receipt is absent.

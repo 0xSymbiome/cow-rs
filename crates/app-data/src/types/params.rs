@@ -62,7 +62,6 @@ use super::MetadataMap;
     reason = "the `metadata: MetadataMap` field is a `serde_json::Map<String, serde_json::Value>` alias, and `serde_json::Value` does not implement `Eq`"
 )]
 #[derive(Debug, Clone, PartialEq, Default)]
-#[non_exhaustive]
 pub struct AppDataParams {
     /// Optional validated application identifier written to the `appCode`
     /// field on the wire.

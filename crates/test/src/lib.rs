@@ -51,7 +51,6 @@ use cow_sdk_trading::{Trading, TradingError};
 
 /// A [`Trading`] client pre-wired to in-memory doubles, plus the handles to
 /// assert against after driving it.
-#[non_exhaustive]
 #[derive(Debug)]
 pub struct MockTrading {
     /// A real `Trading` client with [`MockTrading::orderbook`] injected.

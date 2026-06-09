@@ -6,7 +6,6 @@ use cow_sdk_core::{ChainId, Redacted, SupportedChainId};
 use crate::{BrowserWalletError, WalletSession, provider::hex_quantity};
 
 /// Native-currency metadata for typed add-chain requests.
-#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WalletNativeCurrency {
@@ -40,7 +39,6 @@ impl WalletNativeCurrency {
 }
 
 /// Typed chain parameters for `wallet_addEthereumChain`.
-#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WalletChainParameters {

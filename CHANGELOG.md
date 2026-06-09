@@ -460,6 +460,16 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- Caller-built request and configuration structs across the public crates no
+  longer carry `#[non_exhaustive]`. Input and option types such as
+  `TradeParameters`, `LimitTradeParameters`, `OrderCreation`, `OrderQuoteRequest`,
+  `RetryPolicy`, `TransportPolicy`, `WaitOptions`, `SubgraphConfig`, and
+  `AppDataParams` now support direct struct construction and exhaustive matching;
+  they continue to expose `new()` plus `with_*()` builders so additive fields stay
+  compatible. `#[non_exhaustive]` is retained where it earns its place — error
+  enums, server-extensible protocol enums, SDK-constructed response DTOs, and the
+  EIP-712 wire structs (`TypedDataDomain`) — per the Forward-Compatible Public
+  Surfaces principle.
 - `cow_sdk_subgraph::SubgraphApi` replaces the per-call `*_with_config` method
   twins (`totals_with_config`, `last_days_volume_with_config`,
   `last_hours_volume_with_config`, `run_query_with_config`) with a single

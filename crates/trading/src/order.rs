@@ -29,7 +29,6 @@ use web_time::{SystemTime, UNIX_EPOCH};
 /// the usual pass-by-reference dance — calling code composes the struct
 /// literal at the call site and the by-value move is bit-for-bit free.
 #[derive(Debug, Clone, Copy)]
-#[non_exhaustive]
 pub struct OrderToSignParams {
     /// Active chain id.
     pub chain_id: SupportedChainId,

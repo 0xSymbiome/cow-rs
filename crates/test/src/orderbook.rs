@@ -35,7 +35,6 @@ struct Inner {
 
 /// A snapshot of what a [`MockOrderbook`] was asked to do.
 #[derive(Clone, Debug, Default)]
-#[non_exhaustive]
 pub struct OrderbookCalls {
     /// Requests passed to [`OrderbookClient::quote`].
     pub quote_requests: Vec<OrderQuoteRequest>,

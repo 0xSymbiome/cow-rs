@@ -335,7 +335,6 @@ impl TryFrom<QuoteSigningSchemeWire> for QuoteSigningScheme {
 /// Quote request DTO for the orderbook `/api/v1/quote` endpoint.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[non_exhaustive]
 pub struct OrderQuoteRequest {
     /// Sell-token address.
     pub sell_token: Address,

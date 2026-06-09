@@ -19,7 +19,6 @@ mod prices;
 mod quote;
 
 /// Partial override applied to an [`ApiContext`] when cloning an orderbook client.
-#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct ApiContextOverride {
@@ -74,7 +73,6 @@ impl ApiContextOverride {
 }
 
 /// Per-environment base URL overrides applied ahead of [`ApiContext`] resolution.
-#[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct EnvBaseUrlOverrides {
     /// Explicit production base URL.
