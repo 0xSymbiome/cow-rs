@@ -16,12 +16,12 @@
 use std::sync::Arc;
 
 use cow_sdk_core::{
-    Address, AddressPerChain, Amount, AppCode, AppCodeError, BuyTokenDestination, CowEnv,
+    Address, AddressPerChain, Amount, AppCodeError, BuyTokenDestination, CowEnv,
     OrderKind, OrderUid, SellTokenSource, SupportedChainId,
 };
 use cow_sdk_orderbook::{OrderbookClient, SigningScheme};
 use cow_sdk_trading::{
-    LimitTradeParameters, OrderTraderParameters, PartialTraderParameters,
+    LimitTradeParameters, OrderTraderParameters,
     PostTradeAdditionalParams, QuoterParameters, SlippageToleranceRequest,
     SlippageToleranceResponse, TradeAdvancedSettings, TradeParameters, TraderParameters,
     TradingOptions,
@@ -128,34 +128,6 @@ fn trader_parameters_new_rejects_invalid_app_code() {
         TraderParameters::new(SupportedChainId::Mainnet, "cow\nrs"),
         Err(AppCodeError::ControlCharacter),
     );
-}
-
-#[test]
-fn partial_trader_parameters_builders_preserve_inputs() {
-    let partial = PartialTraderParameters::new();
-    assert!(partial.chain_id.is_none());
-    assert!(partial.app_code.is_none());
-
-    let populated = partial
-        .with_chain_id(SupportedChainId::Sepolia)
-        .with_env(CowEnv::Staging)
-        .with_app_code("cow-rs")
-        .expect("valid app code");
-    assert_eq!(populated.chain_id, Some(SupportedChainId::Sepolia));
-    assert_eq!(populated.env, Some(CowEnv::Staging));
-    assert_eq!(
-        populated.app_code.as_ref().map(AppCode::as_str),
-        Some("cow-rs")
-    );
-}
-
-#[test]
-fn partial_trader_parameters_with_app_code_rejects_invalid_input() {
-    let partial = PartialTraderParameters::new();
-    assert!(matches!(
-        partial.with_app_code(""),
-        Err(AppCodeError::Empty),
-    ));
 }
 
 #[test]

@@ -80,8 +80,9 @@ pub use order::{
     calculate_unique_order_id, is_ethflow_order, order_to_sign, swap_params_to_limit_order_params,
 };
 pub use post::{
-    post_cow_protocol_trade, post_limit_order, post_sell_native_currency_order, post_swap_order,
-    post_swap_order_from_quote,
+    eip1271_order_verification_request, post_cow_protocol_trade, post_limit_order,
+    post_sell_native_currency_order, post_swap_order, post_swap_order_from_quote,
+    verify_eip1271_order_signature,
 };
 pub use quote::{quote_only, quote_results};
 pub use client::{
@@ -95,12 +96,16 @@ pub use slippage::{
     suggest_slippage_from_fee, suggest_slippage_from_volume,
 };
 pub use types::{
-    AllowanceParameters, ApprovalParameters, EthFlowOrderExistsChecker, LimitTradeParameters,
+    AllowanceParameters, ApprovalParameters, Eip1271VerificationParameters,
+    EthFlowOrderExistsChecker, LimitTradeParameters,
     LimitTradeParametersFromQuote, OrderPostingResult, OrderTraderParameters,
-    PartialTraderParameters, PostTradeAdditionalParams, QuoteRequestOverride, QuoteResults,
+    PostTradeAdditionalParams, QuoteRequestOverride, QuoteResults,
     QuoterParameters, SlippageSuggestionProvider, SlippageToleranceRequest,
     SlippageToleranceResponse, TradeAdvancedSettings, TradeParameters, TraderParameters,
     TradingAppDataInfo, TradingOptions,
 };
+// Crate-internal: the partial trader defaults are stored state, not a public
+// construction shape (see ADR 0011). Internal modules reach it through the crate root.
+pub(crate) use types::PartialTraderParameters;
 pub use validation::{AmountSide, ClientRejection, OrderBoundsValidator};
 pub use wait::{WaitError, WaitOptions, poll_for_receipt, submit_and_wait_for_receipt};

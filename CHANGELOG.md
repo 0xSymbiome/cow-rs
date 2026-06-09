@@ -14,6 +14,18 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Added
 
+- EIP-1271 order-signature verification is now part of the crate's public API:
+  `cow_sdk_trading::verify_eip1271_order_signature`,
+  `eip1271_order_verification_request`, and `Eip1271VerificationParameters`
+  confirm a smart-account (EIP-1271) wallet's signature over a `CoW` order
+  against a provider. They were previously reachable only through the
+  `cow_sdk_trading::post` module path.
+- `cow_sdk_trading::Trading` exposes its stored trader defaults through typed
+  read accessors — `chain_id()`, `app_code()`, `env()`,
+  `settlement_contract_override()`, and `eth_flow_contract_override()`. The
+  partial trader-defaults bundle (`PartialTraderParameters`) is now
+  crate-internal and the prior `trader_defaults()` accessor is removed; the
+  bundle was a public builder with no public destination (see ADR 0011).
 - `cow_sdk_trading::Trading::swap` opens a fluent, typed swap lifecycle builder
   (`SwapBuilder`). Named `sell_token` / `buy_token` / `sell_amount` /
   `buy_amount` setters track the required fields in the type system so the two

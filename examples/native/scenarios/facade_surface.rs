@@ -27,7 +27,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let report = json!({
         "surface": "cow-sdk",
         "mode": "deterministic",
-        "sdkConstructed": trading.trader_defaults().chain_id == Some(chain_id),
+        "sdkConstructed": trading.chain_id() == Some(chain_id),
         "chainId": u64::from(chain_id),
         "wrappedNative": {
             "address": wrapped_native.address.to_hex_string(),

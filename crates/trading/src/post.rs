@@ -625,10 +625,29 @@ pub fn eip1271_order_verification_request(
 
 /// Verifies an EIP-1271 order signature against a provider.
 ///
+/// Use this to confirm that a smart-account (EIP-1271) wallet's signature over a
+/// `CoW` order is valid — the verifier contract is called and must return the
+/// EIP-1271 magic value.
+///
 /// # Errors
 ///
 /// Returns an error when the verification request cannot be derived or when the provider reports
 /// missing code, malformed responses, or an invalid EIP-1271 magic value.
+///
+/// ```no_run
+/// # use cow_sdk_trading::{verify_eip1271_order_signature, Eip1271VerificationParameters};
+/// # use cow_sdk_core::{Address, HexData, OrderData, Provider, SupportedChainId};
+/// # async fn demo<P>(provider: &P, order: &OrderData) -> Result<(), Box<dyn std::error::Error>>
+/// # where P: Provider, P::Error: std::fmt::Display {
+/// let verification = Eip1271VerificationParameters::new(
+///     Address::ZERO,              // the smart-account verifier contract
+///     HexData::new("0x1234")?,    // the EIP-1271 signature payload (illustrative)
+/// );
+/// verify_eip1271_order_signature(provider, order, SupportedChainId::Mainnet, &verification, None)
+///     .await?;
+/// # Ok(())
+/// # }
+/// ```
 pub async fn verify_eip1271_order_signature<P>(
     provider: &P,
     order_to_sign: &cow_sdk_core::OrderData,

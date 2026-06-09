@@ -90,24 +90,14 @@ fn sdk_ready_shortcut_accepts_total_trader_parameters() {
     )
     .expect("ready shortcut should construct from total trader parameters");
 
+    assert_eq!(trading.chain_id(), Some(SupportedChainId::Sepolia));
     assert_eq!(
-        trading.trader_defaults().chain_id,
-        Some(SupportedChainId::Sepolia)
+        trading.app_code().map(cow_sdk_core::AppCode::as_str),
+        Some("0x007")
     );
-    assert_eq!(trading.trader_defaults().app_code.as_deref(), Some("0x007"));
-    assert_eq!(trading.trader_defaults().env, Some(CowEnv::Prod));
-    assert!(
-        trading
-            .trader_defaults()
-            .settlement_contract_override
-            .is_some()
-    );
-    assert!(
-        trading
-            .trader_defaults()
-            .eth_flow_contract_override
-            .is_some()
-    );
+    assert_eq!(trading.env(), Some(CowEnv::Prod));
+    assert!(trading.settlement_contract_override().is_some());
+    assert!(trading.eth_flow_contract_override().is_some());
 }
 
 #[tokio::test]
@@ -534,12 +524,9 @@ async fn build_succeeds_on_native_without_injected_orderbook_client() {
         .build()
         .expect("native build must succeed when the typestate prerequisites are set");
 
+    assert_eq!(trading.chain_id(), Some(SupportedChainId::Mainnet));
     assert_eq!(
-        trading.trader_defaults().chain_id,
-        Some(SupportedChainId::Mainnet)
-    );
-    assert_eq!(
-        trading.trader_defaults().app_code.as_deref(),
+        trading.app_code().map(cow_sdk_core::AppCode::as_str),
         Some("test-app")
     );
 }

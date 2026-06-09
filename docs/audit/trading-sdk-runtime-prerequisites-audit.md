@@ -86,8 +86,8 @@ helpers that do not consume that contract.
 The trading SDK does not store a default owner. The `owner` field
 lives on the per-trade types (`TradeParameters`, `LimitTradeParameters`)
 and on `OrderTraderParameters` for order-context flows. The
-`TradingBuilder` does not expose `with_owner`, and
-`PartialTraderParameters` does not carry an `owner` field.
+`TradingBuilder` does not expose `with_owner`, and the stored trader
+defaults do not carry an `owner` field.
 
 Resolved owner precedence is:
 

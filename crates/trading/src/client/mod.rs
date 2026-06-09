@@ -1,6 +1,8 @@
 //! The stateful, high-level `Trading` client, its construction builder, and the
 //! fluent swap lifecycle.
 
+use cow_sdk_core::{AddressPerChain, AppCode, CowEnv, SupportedChainId};
+
 use crate::{PartialTraderParameters, TradingOptions};
 mod builder;
 mod helpers;
@@ -39,10 +41,34 @@ impl Trading {
         TradingBuilder::new()
     }
 
-    /// Returns the stored trader defaults.
+    /// Returns the default chain id supplied at construction, if any.
     #[must_use]
-    pub const fn trader_defaults(&self) -> &PartialTraderParameters {
-        &self.trader_defaults
+    pub const fn chain_id(&self) -> Option<SupportedChainId> {
+        self.trader_defaults.chain_id
+    }
+
+    /// Returns the default app code supplied at construction, if any.
+    #[must_use]
+    pub const fn app_code(&self) -> Option<&AppCode> {
+        self.trader_defaults.app_code.as_ref()
+    }
+
+    /// Returns the default environment supplied at construction, if any.
+    #[must_use]
+    pub const fn env(&self) -> Option<CowEnv> {
+        self.trader_defaults.env
+    }
+
+    /// Returns the default settlement-contract overrides supplied at construction, if any.
+    #[must_use]
+    pub const fn settlement_contract_override(&self) -> Option<&AddressPerChain> {
+        self.trader_defaults.settlement_contract_override.as_ref()
+    }
+
+    /// Returns the default `EthFlow`-contract overrides supplied at construction, if any.
+    #[must_use]
+    pub const fn eth_flow_contract_override(&self) -> Option<&AddressPerChain> {
+        self.trader_defaults.eth_flow_contract_override.as_ref()
     }
 
     /// Returns the stored SDK options.

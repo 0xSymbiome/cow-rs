@@ -36,7 +36,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build()?;
     println!(
         "ready sdk built through the typestate path for chain {:?}",
-        ready_sdk.trader_defaults().chain_id
+        ready_sdk.chain_id()
     );
 
     Ok(())

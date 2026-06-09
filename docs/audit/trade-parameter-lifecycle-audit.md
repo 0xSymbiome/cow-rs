@@ -108,8 +108,7 @@ The `owner: Option<Address>` field lives on `TradeParameters` and
 `LimitTradeParameters` and is the sole source of trade-level owner
 attribution observed by the SDK. The `OrderTraderParameters` shape
 exposes order-context owner identity through its `order_uid` plus
-chain id; the trader-defaults bag (`PartialTraderParameters`) holds
-no owner field.
+chain id; the stored trader defaults hold no owner field.
 
 Owner precedence in observing helpers is documented in the
 [Trading SDK Runtime Prerequisites Audit](trading-sdk-runtime-prerequisites-audit.md).

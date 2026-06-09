@@ -436,74 +436,22 @@ impl TraderParameters {
 /// sole owner source.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[non_exhaustive]
-pub struct PartialTraderParameters {
+pub(crate) struct PartialTraderParameters {
     /// Default chain id when call-level params omit it.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub chain_id: Option<SupportedChainId>,
+    pub(crate) chain_id: Option<SupportedChainId>,
     /// Default app code written into generated app-data documents.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub app_code: Option<AppCode>,
+    pub(crate) app_code: Option<AppCode>,
     /// Default environment for endpoint and contract resolution.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub env: Option<CowEnv>,
+    pub(crate) env: Option<CowEnv>,
     /// Optional settlement contract overrides keyed by chain id.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub settlement_contract_override: Option<AddressPerChain>,
+    pub(crate) settlement_contract_override: Option<AddressPerChain>,
     /// Optional `EthFlow` contract overrides keyed by chain id.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub eth_flow_contract_override: Option<AddressPerChain>,
-}
-
-impl PartialTraderParameters {
-    /// Creates an empty partial-trader-parameters bundle; attach values through the `with_*` setters.
-    #[must_use]
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Returns a copy with an explicit default chain id.
-    #[must_use]
-    pub const fn with_chain_id(mut self, chain_id: SupportedChainId) -> Self {
-        self.chain_id = Some(chain_id);
-        self
-    }
-
-    /// Returns a copy with an explicit default app code.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`AppCodeError`] when `app_code` is empty or contains
-    /// forbidden control characters.
-    pub fn with_app_code<T>(mut self, app_code: T) -> Result<Self, AppCodeError>
-    where
-        T: TryInto<AppCode>,
-        T::Error: Into<AppCodeError>,
-    {
-        self.app_code = Some(app_code.try_into().map_err(Into::into)?);
-        Ok(self)
-    }
-
-    /// Returns a copy with an explicit default environment.
-    #[must_use]
-    pub const fn with_env(mut self, env: CowEnv) -> Self {
-        self.env = Some(env);
-        self
-    }
-
-    /// Returns a copy with settlement-contract overrides keyed by chain id.
-    #[must_use]
-    pub fn with_settlement_contract_override(mut self, overrides: AddressPerChain) -> Self {
-        self.settlement_contract_override = Some(overrides);
-        self
-    }
-
-    /// Returns a copy with `EthFlow`-contract overrides keyed by chain id.
-    #[must_use]
-    pub fn with_eth_flow_contract_override(mut self, overrides: AddressPerChain) -> Self {
-        self.eth_flow_contract_override = Some(overrides);
-        self
-    }
+    pub(crate) eth_flow_contract_override: Option<AddressPerChain>,
 }
 
 /// Quoter configuration used by quote-only and quote-and-sign flows.

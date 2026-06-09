@@ -451,6 +451,24 @@ already-shared handle. The flat free functions and `Trading` methods stay
 the full surface; the builder is an additive ergonomic entry, and the
 construction typestate on `TradingBuilder` recorded above is unchanged.
 
+## Amendment 2026-06-09: partial trader defaults are crate-internal
+
+`PartialTraderParameters` — the partial bundle of trader defaults a `Trading`
+instance stores (chain id, app code, environment, and contract overrides) — is
+crate-internal (`pub(crate)`). It is not a public construction shape: no public
+entry accepts a `PartialTraderParameters`, and its public builder (`new` plus the
+`with_*` setters) is removed, because no public flow consumed the constructed
+value once `with_trader_defaults` was dropped (the 2026-06-02 amendment above).
+This closes the Sole Construction Seam drift of shipping a `Partial*` builder
+with no public destination.
+
+`Trading` exposes the stored defaults through typed read accessors —
+`chain_id()`, `app_code()`, `env()`, `settlement_contract_override()`, and
+`eth_flow_contract_override()` — replacing the prior
+`trader_defaults() -> &PartialTraderParameters` accessor that returned the
+partial type. `TraderParameters` remains the public total identity shape, and the
+typestate construction recorded above is unchanged.
+
 ## Acknowledgements
 
 The fluent typestate builder ergonomics for the trading lifecycle were
