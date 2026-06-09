@@ -3,8 +3,7 @@ use alloy_sol_types::SolStruct;
 use cow_sdk_core::{Address, Hash32, OrderData, OrderDigest, OrderUid, TypedDataDomain};
 
 use super::OrderCancellations;
-use super::sol_cancellations::OrderCancellations as SolOrderCancellations;
-use super::sol_types::Order as SolOrder;
+use super::sol::{Order as SolOrder, OrderCancellations as SolOrderCancellations};
 use crate::ContractsError;
 use crate::primitives::{buy_balance_name, order_kind_name, sell_balance_name};
 
@@ -83,7 +82,7 @@ pub fn hash_order_cancellation(
 /// `keccak256(0x19 || 0x01 || domain_separator || struct_hash)`
 /// envelope per the EIP-712 specification, evaluated against the
 /// macro-emitted
-/// [`crate::order::sol_cancellations::OrderCancellations`] struct hash.
+/// [`crate::order::sol::OrderCancellations`] struct hash.
 ///
 /// # Errors
 ///

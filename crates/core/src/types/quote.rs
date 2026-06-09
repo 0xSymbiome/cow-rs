@@ -163,10 +163,4 @@ impl<T> QuoteAmountsAndCosts<T> {
             amounts_to_sign,
         }
     }
-
-    /// Returns the canonical stage ordering for quote amount breakdowns.
-    #[must_use]
-    pub const fn stage_names() -> &'static [&'static str; QUOTE_AMOUNT_STAGE_NAMES.len()] {
-        &QUOTE_AMOUNT_STAGE_NAMES
-    }
 }

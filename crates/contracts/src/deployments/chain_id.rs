@@ -41,22 +41,6 @@ pub enum DeploymentChainId {
 }
 
 impl DeploymentChainId {
-    /// Complete list of addressable deployment chain ids.
-    pub const ALL: [Self; 12] = [
-        Self::Mainnet,
-        Self::Bnb,
-        Self::GnosisChain,
-        Self::Polygon,
-        Self::Base,
-        Self::Plasma,
-        Self::ArbitrumOne,
-        Self::Avalanche,
-        Self::Ink,
-        Self::Linea,
-        Self::Sepolia,
-        Self::Lens,
-    ];
-
     /// Returns the numeric EVM chain id.
     #[must_use]
     pub const fn as_u64(self) -> u64 {

@@ -27,12 +27,6 @@ impl<T> Redacted<T> {
     pub const fn as_inner(&self) -> &T {
         &self.0
     }
-
-    /// Returns a mutable borrow of the inner value for deliberate mutation.
-    #[inline]
-    pub const fn as_inner_mut(&mut self) -> &mut T {
-        &mut self.0
-    }
 }
 
 impl<T> fmt::Debug for Redacted<T> {

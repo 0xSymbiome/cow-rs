@@ -264,10 +264,4 @@ impl OrderData {
         self.buy_token_balance = buy_token_balance;
         self
     }
-
-    /// Returns the canonical EIP-712 field ordering for orders.
-    #[must_use]
-    pub const fn field_names() -> &'static [&'static str; ORDER_TYPE_FIELD_NAMES.len()] {
-        &ORDER_TYPE_FIELD_NAMES
-    }
 }
