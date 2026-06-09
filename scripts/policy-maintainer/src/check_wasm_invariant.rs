@@ -74,15 +74,15 @@ fn run_host_gate(repo_root: &Path) -> anyhow::Result<()> {
 }
 
 fn check_source_invariants(repo_root: &Path, failures: &mut Vec<String>) -> anyhow::Result<()> {
-    let pure_mod = read(repo_root, "crates/pure-helpers/src/lib.rs")?;
+    let helpers_mod = read(repo_root, "crates/wasm/src/helpers/mod.rs")?;
     let exports_mod = read(repo_root, "crates/wasm/src/exports/mod.rs")?;
     let transport = read(repo_root, "crates/wasm/src/exports/transport.rs")?;
     let errors = read(repo_root, "crates/wasm/src/exports/errors.rs")?;
 
     require_contains(
-        &pure_mod,
+        &helpers_mod,
         "pub mod",
-        "pure helper crate modules must remain host-visible",
+        "host-safe helper modules must remain host-visible under src/helpers",
         failures,
     );
     require_contains(

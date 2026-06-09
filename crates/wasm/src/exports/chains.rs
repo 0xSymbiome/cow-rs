@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
 
-use cow_sdk_pure_helpers as pure;
+use crate::helpers as pure;
 
 use crate::exports::{
     dto::{DeploymentAddressesDto, to_js_value},
@@ -85,7 +85,7 @@ pub fn compute_order_uid(
     let owner = parse_owner(&owner)?;
     let generated = pure::signing::generate_order_id(chain, &order, &owner)
         .map_err(|error| WasmError::from(error).into_js())?;
-    let dto = GeneratedOrderUidDto::from(pure::uid::generated_order_uid_dto(&generated));
+    let dto = GeneratedOrderUidDto::from(pure::dto::generated_order_uid_dto(&generated));
     to_js_value(&WasmEnvelope::v1(dto))
 }
 

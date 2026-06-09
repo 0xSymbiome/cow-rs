@@ -3,11 +3,11 @@
 mod common;
 
 use cow_sdk_core::{Address, SupportedChainId};
-use cow_sdk_pure_helpers::{
+use cow_sdk_wasm::helpers::{
     app_data, chains,
-    dto::{AppDataDocInput, OrderKindDto, TokenBalanceDto},
+    dto::{AppDataDocInput, OrderKindDto, TokenBalanceDto, generated_order_uid_dto},
     errors::PureError,
-    signing, uid,
+    signing,
 };
 use serde_json::json;
 
@@ -227,7 +227,7 @@ fn generated_order_uid_uses_canonical_strings() {
     let chain = chains::supported_chain(CHAIN_MAINNET).unwrap();
     let owner = Address::new(ADDR_OWNER).unwrap();
     let generated = signing::generate_order_id(chain, &order, &owner).unwrap();
-    let dto = uid::generated_order_uid_dto(&generated);
+    let dto = generated_order_uid_dto(&generated);
     assert_eq!(dto.order_uid, generated.order_id.to_hex_string());
     assert_eq!(dto.order_digest, generated.order_digest.to_hex_string());
     assert_eq!(dto.order_uid.len(), 114);

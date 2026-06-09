@@ -7,10 +7,11 @@ use cow_sdk_core::{
     Address, Amount, AppDataHash, BuyTokenDestination, OrderData, OrderKind, SellTokenSource,
     TypedDataDomain, TypedDataField, TypedDataPayload, TypedDataTypes,
 };
+use cow_sdk_signing::GeneratedOrderId;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
-use crate::errors::PureError;
+use crate::helpers::errors::PureError;
 
 /// Order side accepted by the wasm input DTOs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -190,6 +191,15 @@ pub struct GeneratedOrderUidDto {
     pub order_uid: String,
     /// Underlying order digest.
     pub order_digest: String,
+}
+
+/// Converts generated UID data into canonical string DTO fields.
+#[must_use]
+pub fn generated_order_uid_dto(generated: &GeneratedOrderId) -> GeneratedOrderUidDto {
+    GeneratedOrderUidDto {
+        order_uid: generated.order_id.to_hex_string(),
+        order_digest: generated.order_digest.to_hex_string(),
+    }
 }
 
 /// Host-safe typed-data domain DTO.

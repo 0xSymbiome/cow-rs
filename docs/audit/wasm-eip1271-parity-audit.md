@@ -63,7 +63,7 @@ arrays.
 
 Primary implementation points:
 
-- `crates/pure-helpers/src/signing.rs`
+- `crates/wasm/src/helpers/signing.rs`
 - `crates/wasm/src/exports/eip1271.rs`
 - `crates/wasm/src/exports/signing.rs`
 - `crates/wasm/tests/fixtures/eip1271_upstream_vector.json`

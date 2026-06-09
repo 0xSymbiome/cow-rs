@@ -109,8 +109,8 @@ feature `cow-shed-ens` (default off) that gates ENS-record helpers.
 
 ### Crate-Graph Invariants
 
-`cow-sdk-cow-shed` depends on `cow-sdk-core`, `cow-sdk-contracts`,
-`cow-sdk-signing`, `cow-sdk-app-data`, and `cow-sdk-pure-helpers`. It MUST
+`cow-sdk-cow-shed` depends on `cow-sdk-core`, `cow-sdk-contracts`, and
+`cow-sdk-app-data`. It MUST
 NOT depend on `cow-sdk-trading`, `cow-sdk-orderbook`, `cow-sdk-subgraph`,
 `cow-sdk-browser-wallet`, `alloy-provider`, `alloy-signer-local`, `reqwest`,
 or `tokio` runtime features. The negative-edge invariant

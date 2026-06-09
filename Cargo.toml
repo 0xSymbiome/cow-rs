@@ -7,7 +7,6 @@ members = [
   "crates/cow-shed",
   "crates/transport-policy",
   "crates/orderbook",
-  "crates/pure-helpers",
   "crates/trading",
   "crates/subgraph",
   "crates/browser-wallet",

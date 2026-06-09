@@ -203,25 +203,20 @@ pub use cow_sdk_trading as trading;
 #[cfg_attr(docsrs, doc(cfg(target_arch = "wasm32")))]
 pub use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
 
-#[cfg(all(feature = "wasm", target_arch = "wasm32"))]
+#[cfg(feature = "wasm")]
 #[cfg_attr(docsrs, doc(cfg(feature = "wasm")))]
 /// TypeScript-callable WASM surface plus the host-safe protocol helpers.
 ///
 /// `pure_helpers` is reachable here on both targets so a single
 /// `cow_sdk::wasm::pure_helpers` path works whether the crate is built for
-/// the host or for `wasm32`.
+/// the host or for `wasm32`. The `wasm32`-only JavaScript ABI lives under
+/// `cow_sdk::wasm::exports`.
 pub mod wasm {
     /// Host-safe protocol helper modules shared with the WASM crate.
-    pub use cow_sdk_pure_helpers as pure_helpers;
-    pub use cow_sdk_wasm::*;
-}
-
-#[cfg(all(feature = "wasm", not(target_arch = "wasm32")))]
-#[cfg_attr(docsrs, doc(cfg(feature = "wasm")))]
-/// Host-safe subset of the TypeScript-callable WASM crate.
-pub mod wasm {
-    /// Host-safe protocol helper modules shared with the WASM crate.
-    pub use cow_sdk_pure_helpers as pure_helpers;
+    pub use cow_sdk_wasm::helpers as pure_helpers;
+    /// JavaScript ABI surface, available only on `wasm32` targets.
+    #[cfg(target_arch = "wasm32")]
+    pub use cow_sdk_wasm::exports;
 }
 
 use thiserror::Error;

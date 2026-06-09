@@ -1,7 +1,7 @@
 # WASM Capability Coverage Audit
 
 Status: Current
-Last reviewed: 2026-06-08
+Last reviewed: 2026-06-09
 Owning surface: `cow-sdk-wasm` capability coverage relative to the native `cow-rs` SDK crates
 Refresh trigger: changes to `crates/wasm/src/exports/**`; additions or removals of public operations on the `orderbook`, `trading`, `signing`, `contracts`, `app-data`, or `subgraph` crates; or revisions to the workflow scope in `docs/parity.md`
 Related docs:
@@ -272,7 +272,7 @@ native type under the uniform transforms above. The principal correspondences:
 | `TypedDataEnvelopeDto` | `cow_sdk_core::TypedDataPayload` |
 | `TransactionRequestDto` | `cow_sdk_core::TransactionRequest` |
 | `SettlementEventDto` / `EthFlowEventDto` | `cow_sdk_contracts::SettlementEvent` / `EthFlowEvent` |
-| `DeploymentAddressesDto` | `cow_sdk_pure_helpers::dto::DeploymentAddresses` |
+| `DeploymentAddressesDto` | `cow_sdk_wasm::helpers::dto::DeploymentAddresses` |
 | `AppDataInfoDto` / `ValidationResultDto` / `AppDataDocInput` | `cow-sdk-app-data` info, validation, and document inputs |
 
 The exhaustive field-level inventory of the generated DTOs is the committed
@@ -327,7 +327,7 @@ Primary implementation points:
 - `crates/wasm/src/exports/dto/`
 - `crates/wasm/snapshots/facade/`
 - `crates/wasm/snapshots/raw/`
-- `crates/pure-helpers/src/`
+- `crates/wasm/src/helpers/`
 - `crates/orderbook/src/api.rs`
 - `crates/trading/src/`
 - `crates/signing/src/`

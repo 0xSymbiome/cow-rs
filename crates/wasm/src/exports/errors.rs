@@ -7,7 +7,7 @@ use cow_sdk_core::{
 };
 #[cfg(feature = "orderbook")]
 use cow_sdk_orderbook::{OrderbookError, OrderbookRejectionCategory};
-use cow_sdk_pure_helpers::errors::PureError;
+use crate::helpers::errors::PureError;
 #[cfg(feature = "signing")]
 use cow_sdk_signing::SigningError;
 #[cfg(feature = "subgraph")]
@@ -338,7 +338,6 @@ impl From<PureError> for WasmError {
                 message: unsupported_chain_message(chain_id),
                 chain_id,
             },
-            error => Self::internal(error.to_string()),
         }
     }
 }

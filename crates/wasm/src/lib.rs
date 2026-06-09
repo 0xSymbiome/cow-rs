@@ -20,8 +20,8 @@
 //! The crate separates runtime-neutral helpers from the JavaScript binding
 //! surface:
 //!
-//! - `cow-sdk-pure-helpers` holds host-safe protocol helpers. Those modules
-//!   compile for both native and `wasm32-unknown-unknown` targets and contain no
+//! - [`helpers`] holds host-safe protocol helpers. Those modules compile for
+//!   both native and `wasm32-unknown-unknown` targets and contain no
 //!   `wasm-bindgen` derives, no `tsify` derives, and no `JsValue` references.
 //! - `exports` (visible only on `wasm32-unknown-unknown`) holds the
 //!   `wasm-bindgen` surface, the `tsify`-derived DTOs, the four
@@ -32,6 +32,8 @@
 //! native target with `cargo check -p cow-sdk-wasm
 //! --no-default-features` succeeds only when no wasm-bindgen or
 //! tsify derive leaks into target-agnostic dependencies.
+
+pub mod helpers;
 
 #[cfg(target_arch = "wasm32")]
 pub mod exports;

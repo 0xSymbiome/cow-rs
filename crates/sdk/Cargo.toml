@@ -57,7 +57,7 @@ in-memory-cache = ["cow-sdk-signing/in-memory-cache"]
 # downstream apps to test their integration. Dev-dependency only; off by
 # default so the doubles never enter a production dependency graph (ADR 0063).
 testing = ["dep:cow-sdk-test"]
-wasm = ["dep:cow-sdk-pure-helpers", "dep:cow-sdk-wasm"]
+wasm = ["dep:cow-sdk-wasm"]
 tracing = [
     "cow-sdk-app-data/tracing",
     "cow-sdk-contracts/tracing",
@@ -86,7 +86,6 @@ cow-sdk-subgraph = { path = "../subgraph", version = "0.1.0", optional = true, d
 cow-sdk-transport-policy = { path = "../transport-policy", version = "0.1.0" }
 cow-sdk-trading = { path = "../trading", version = "0.1.0" }
 cow-sdk-test = { path = "../test", version = "0.1.0", optional = true, default-features = false }
-cow-sdk-pure-helpers = { path = "../pure-helpers", version = "0.1.0", optional = true }
 cow-sdk-wasm = { path = "../wasm", version = "0.1.0", optional = true }
 cow-sdk-core = { path = "../core", version = "0.1.0" }
 thiserror.workspace = true

@@ -1,4 +1,4 @@
-use cow_sdk_pure_helpers as pure;
+use crate::helpers as pure;
 use serde::{Deserialize, Serialize};
 use tsify::Tsify;
 use wasm_bindgen::prelude::*;

@@ -1,7 +1,7 @@
 # cow-sdk-wasm Comparative Benchmark Validation Note
 
 Status: Current
-Last reviewed: 2026-06-01
+Last reviewed: 2026-06-09
 Owning surface: `cow-sdk-wasm` crate and npm package
 Refresh trigger:
 - `cow-sdk-wasm` flavor feature change (added, removed, re-scoped)
@@ -428,7 +428,7 @@ packages:
 
 | Side | Approximate LOC (excluding tests, comments, generated files) |
 | --- | --- |
-| cow-rs protocol-logic Rust crates (signing, contracts, app-data, core, pure-helpers reachable from WASM exports) | ~9.5 kLOC |
+| cow-rs protocol-logic Rust crates (signing, contracts, app-data, core, and the cow-sdk-wasm helpers reachable from WASM exports) | ~9.5 kLOC |
 | Upstream TypeScript packages with equivalent functional scope (order-signing, contracts-ts, app-data, common) | ~7.1 kLOC |
 
 The order of magnitude is comparable. Approximately 75-80 percent of the

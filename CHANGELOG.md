@@ -742,6 +742,13 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Removed
 
+- Folded the `cow-sdk-pure-helpers` crate into `cow-sdk-wasm` as the host-safe
+  `cow-sdk-wasm::helpers` module and removed the standalone crate. The wasm crate
+  was its only consumer, and the crate was not part of the published release
+  family. The module keeps the deterministic, FFI-free protocol helpers (chains,
+  app-data, signing payloads, EIP-1271 payloads, order UIDs) on the host-safe
+  boundary, now enforced by `crates/wasm/tests/no_ffi_helpers.rs`, and the
+  `cow_sdk::wasm::pure_helpers` facade path is unchanged. ADR 0042 is superseded.
 - Removed the EIP-2612 `IERC20Permit` binding, the `permit_typed_data_hash`
   helper, and the `PERMIT_TYPE_HASH` constant from `cow-sdk-contracts`. The
   permit surface had no production or example consumer and is absent from the

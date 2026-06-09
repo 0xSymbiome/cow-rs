@@ -1,7 +1,7 @@
 # COW Shed App-Data Integration Audit
 
 Status: Current
-Last reviewed: 2026-06-04
+Last reviewed: 2026-06-09
 Owning surface: COW Shed hook metadata emission and app-data schema integration
 Refresh trigger: Refresh when COW Shed hook metadata, app-data hook schemas, or the EIP-1271 signing trait boundary change.
 Related docs:
@@ -60,8 +60,8 @@ the workspace.
 
 ### Crate-graph posture
 
-The COW Shed helper crate depends on `cow-sdk-core`, `cow-sdk-contracts`,
-`cow-sdk-signing`, `cow-sdk-app-data`, and `cow-sdk-pure-helpers`. The
+The COW Shed helper crate depends on `cow-sdk-core`, `cow-sdk-contracts`, and
+`cow-sdk-app-data`. The
 negative-edge invariants `cow-sdk-cow-shed ⇏ cow-sdk-trading`,
 `cow-sdk-cow-shed ⇏ cow-sdk-orderbook`,
 `cow-sdk-cow-shed ⇏ cow-sdk-subgraph`, and

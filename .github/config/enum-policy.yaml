@@ -326,17 +326,17 @@ enums:
     expected_marker: non_exhaustive
     reason: Partner fee policy variants can grow with upstream partner fee semantics.
   - name: OrderKindDto
-    file: crates/pure-helpers/src/dto.rs
+    file: crates/wasm/src/helpers/dto.rs
     category: protocol-fixed-exhaustive
     expected_marker: exhaustive
     reason: Pure helper order-kind DTO mirrors the fixed CoW order side wire values.
   - name: TokenBalanceDto
-    file: crates/pure-helpers/src/dto.rs
+    file: crates/wasm/src/helpers/dto.rs
     category: sdk-local-state
     expected_marker: exhaustive
     reason: Pure helper balance DTO accepts only the SDK-supported balance tags and maps unsupported buy paths to typed errors.
   - name: PureError
-    file: crates/pure-helpers/src/errors.rs
+    file: crates/wasm/src/helpers/errors.rs
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: Pure helper diagnostics can grow as additional host-safe validation paths are added.

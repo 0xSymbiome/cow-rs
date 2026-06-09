@@ -49,7 +49,7 @@ public and runtime shape of `cow-rs`.
 | [0039](0039-typescript-callable-wasm-sdk-surface.md) | Accepted (amended) | Keep the TypeScript-callable WASM SDK surface as an additive leaf crate. |
 | [0040](0040-wallet-provider-callback-boundary-for-js-consumers.md) | Accepted (amended) | Keep wallet and provider interop behind typed JavaScript callbacks. |
 | [0041](0041-transport-policy-l3-layering.md) | Accepted (amended) | Share retry, rate-limit, cooldown, and classification policy across HTTP clients. |
-| [0042](0042-pure-helpers-extraction.md) | Accepted | Extract pure WASM helpers into `cow-sdk-pure-helpers`. |
+| [0042](0042-pure-helpers-extraction.md) | Superseded | Extract pure WASM helpers into `cow-sdk-pure-helpers` (since folded into the `cow-sdk-wasm::helpers` module). |
 | [0043](0043-callback-registry-internalization.md) | Accepted | Keep WASM callback registries internal to client constructors. |
 | [0044](0044-bundle-size-profile-and-flavor-builds.md) | Accepted | Ship feature-scoped WASM flavor builds from one package. |
 | [0045](0045-async-signer-trait-narrowing.md) | Accepted | Narrow async signer capabilities by operation. |

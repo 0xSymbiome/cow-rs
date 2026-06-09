@@ -11,7 +11,7 @@
 
 `cow-sdk-wasm` is the canonical TypeScript-callable SDK surface. It remains a
 publishable additive leaf crate, not part of `cow-sdk-core`, and exposes four
-layers: pure protocol helpers sourced from `cow-sdk-pure-helpers`, wallet and
+layers: pure protocol helpers in the host-safe `cow-sdk-wasm::helpers` module, wallet and
 signer callback functions, orderbook plus subgraph plus IPFS clients, and
 trading clients. EIP-1271 signing uses a facade-resolves-callback pattern:
 JavaScript resolves the final signature at the wasm boundary, while Rust stores

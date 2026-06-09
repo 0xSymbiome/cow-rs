@@ -104,7 +104,7 @@ sorted-pair internal nodes. Params hashing uses `abi.encode` (never
 ### Crate-Graph Invariants
 
 `cow-sdk-composable` depends on `cow-sdk-core`, `cow-sdk-contracts`,
-`cow-sdk-signing`, `cow-sdk-orderbook`, and `cow-sdk-pure-helpers`. It MUST
+`cow-sdk-signing`, and `cow-sdk-orderbook`. It MUST
 NOT depend on `cow-sdk-trading`, `alloy-provider`, or `alloy-signer`. The
 negative-edge invariants `cow-sdk-composable ⇏ cow-sdk-trading` and
 `cow-sdk-composable ⇏ alloy-provider` are asserted via `cargo metadata` and

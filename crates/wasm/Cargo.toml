@@ -31,8 +31,11 @@ workspace = true
 [features]
 default = ["flavor-default"]
 orderbook = ["dep:cow-sdk-orderbook", "transport-policy"]
-signing = ["dep:cow-sdk-contracts", "dep:cow-sdk-signing"]
-app-data = ["dep:cow-sdk-app-data"]
+# `cow-sdk-contracts`, `cow-sdk-signing`, and `cow-sdk-app-data` are unconditional
+# dependencies of the `helpers` module, so these features are pure cfg toggles
+# that gate the matching wasm-bindgen `exports` submodules.
+signing = []
+app-data = []
 ipfs = ["app-data", "transport-policy"]
 cancellation = ["signing"]
 transport-policy = ["dep:cow-sdk-transport-policy"]
@@ -69,11 +72,10 @@ tracing = ["dep:tracing"]
 alloy-primitives.workspace = true
 alloy-sol-types.workspace = true
 async-trait.workspace = true
-cow-sdk-app-data = { path = "../app-data", version = "0.1.0", optional = true }
-cow-sdk-contracts = { path = "../contracts", version = "0.1.0", optional = true }
+cow-sdk-app-data = { path = "../app-data", version = "0.1.0" }
+cow-sdk-contracts = { path = "../contracts", version = "0.1.0" }
 cow-sdk-core = { path = "../core", version = "0.1.0" }
-cow-sdk-pure-helpers = { path = "../pure-helpers", version = "0.1.0" }
-cow-sdk-signing = { path = "../signing", version = "0.1.0", optional = true }
+cow-sdk-signing = { path = "../signing", version = "0.1.0" }
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true

@@ -1,7 +1,7 @@
 # Dependency Gate Audit
 
 Status: Current
-Last reviewed: 2026-06-08
+Last reviewed: 2026-06-09
 Owning surface: Release-facing dependency-audit gate for current published `cow-rs` surfaces
 Refresh trigger: Changes to blocking dependency policy, Cargo.lock advisory posture, release or verification dependency commands, published CID dependency posture, shared transport-policy dependencies, transport crate advisory posture, native Alloy two-family lockfile posture, ADR 0026 Alloy absorption rehearsal, the canonical primitive layer dependency closure per ADR 0052, or browser-wallet alloy advisory posture
 Related docs:
@@ -61,7 +61,7 @@ architecture reviews.
 | Native Alloy two-family lockfile | The workspace lockfile keeps reviewed Alloy runtime crates on `2.0.4` and Alloy Core ABI crates on `1.5.7`, with exactly one resolved version per listed crate | Conforms |
 | Alloy canary failures | Scheduled canary failures are triaged as upstream-compatibility reports, with local pins changed only after ordinary quality gates pass and without dependency-policy waivers | Conforms |
 | `cow-sdk-wasm` wasm32 tree | The wasm32 dependency graph excludes `cow-sdk-browser-wallet`, `cow-sdk-alloy*`, `alloy-provider`, reqwest, and hyper families; `tokio` is limited to the existing cancellation-token path | Conforms |
-| Pure-helper FFI boundary | `cow-sdk-pure-helpers` remains independent of wasm-bindgen, `js-sys`, `web-sys`, and `serde-wasm-bindgen` | Conforms |
+| Helper-module FFI boundary | The `cow-sdk-wasm::helpers` module remains independent of wasm-bindgen, `js-sys`, `web-sys`, and `serde-wasm-bindgen` | Conforms |
 | Canonical primitive layer dependency closure | The workspace-level `sha3` and `num-bigint` declarations carry zero first-party direct production consumers and only resolve through `[dev-dependencies]` or transitive paths; the alloy-core ABI workspace pins, `httpdate`, and `serde_jcs` are consumed at the documented callsites per [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md) | Conforms |
 | `encode_prefixed` mechanical fence | The `.github/workflows/encode-prefixed-grep-gate.yml` workflow blocks the `format!("0x{}", alloy_primitives::hex::encode(...))` legacy hand-roll and unqualified `use alloy_primitives::hex::encode` imports in production sources, locking the canonical-primitive-layer hex-string contract from [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md) | Conforms |
 | Workspace dependency hygiene | The orphan `async-lock` workspace pin has been retired; no first-party crate referenced the pin and the lockfile no longer carries a first-party direct edge into the crate | Conforms |
@@ -300,8 +300,8 @@ test reads cargo metadata for the wasm32 target and fails if any forbidden
 crate appears in the dependency closure. This keeps the TypeScript-callable
 crate browser-safe and preserves the native Alloy adapter boundary.
 
-`cow-sdk-pure-helpers` is a pure Rust dependency boundary for deterministic
-wasm helper logic. Its tests reject JavaScript FFI imports so helper extraction
+The `cow-sdk-wasm::helpers` module is a pure Rust boundary for deterministic
+wasm helper logic. Its FFI-neutrality test rejects JavaScript FFI imports so the helper module
 does not pull wasm-bindgen concerns into reusable protocol code.
 
 ## Evidence
@@ -326,8 +326,8 @@ Primary implementation points:
 - `docs/audit/cid-dependency-audit.md`
 - `docs/audit/browser-wallet-alloy-dependency-audit.md`
 - `crates/wasm/Cargo.toml`
-- `crates/pure-helpers/Cargo.toml`
-- `crates/pure-helpers/tests/no_ffi_imports.rs`
+- `crates/wasm/Cargo.toml`
+- `crates/wasm/tests/no_ffi_helpers.rs`
 - `crates/browser-wallet/Cargo.toml`
 - `crates/contracts/Cargo.toml`
 - `crates/orderbook/Cargo.toml`
@@ -350,6 +350,6 @@ cargo test --workspace --all-features
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo check --workspace --all-features --target wasm32-unknown-unknown
 cargo test -p cow-rs-workspace-tests --test dependency_default_features_audit
-cargo test -p cow-sdk-pure-helpers --test no_ffi_imports
+cargo test -p cow-sdk-wasm --test no_ffi_helpers
 bash scripts/check-release-docs-agree.sh
 ```

@@ -1,7 +1,7 @@
 # Panic-Free Public Surface Audit
 
 Status: Current
-Last reviewed: 2026-06-08
+Last reviewed: 2026-06-09
 Owning surface: every `crates/*/src/**/*.rs` file accessible from the published public API
 Refresh trigger: any ADR 0033 panic-policy change, panic-allowlist addition, or new `expect`, `unwrap`, or `panic!` site on a path reachable from the published public API
 Related docs:
@@ -36,7 +36,7 @@ benchmarks, or private review tooling. Those surfaces may use `unwrap` or
 | Transport classification growth | `TransportErrorClass::Upgrade` is an additive non-exhaustive enum variant and introduces no new panic path | Conforms |
 | Item-level panic artifacts | Each documented allowlist entry requires a rationale, `# Panics` rustdoc on the named item, and a `// SAFETY:` comment in the item body | Conforms |
 | WASM exports | Every `#[wasm_bindgen]` export returns `Result<T, JsValue>` and `__cow_sdk_wasm_init` initializes `console_error_panic_hook` exactly once | Conforms |
-| Pure WASM helpers | `cow-sdk-pure-helpers` exposes fallible helper APIs through typed errors rather than JavaScript or panic boundaries | Conforms |
+| Pure WASM helpers | The `cow-sdk-wasm::helpers` module exposes fallible helper APIs through typed errors rather than JavaScript or panic boundaries | Conforms |
 
 Documented public runtime sites:
 
@@ -122,7 +122,7 @@ Primary implementation points:
 - `crates/wasm/src/lib.rs`
 - `crates/wasm/src/exports/mod.rs`
 - `crates/wasm/src/exports/errors.rs`
-- `crates/pure-helpers/src/`
+- `crates/wasm/src/helpers/`
 
 Primary regression coverage:
 

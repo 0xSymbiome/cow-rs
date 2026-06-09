@@ -60,7 +60,7 @@ native adapter crates per [ADR 0026](0026-alloy-major-release-absorption-plan.md
 
 `cow-sdk-wasm` continues to forbid direct `alloy*` imports through the
 `wasm-imports-grep-gate.yml` workflow; cow-sdk-wasm consumes alloy
-types via `cow-sdk-contracts` and `cow-sdk-pure-helpers` re-exports.
+types via `cow-sdk-contracts` re-exports and its own host-safe `helpers` module.
 
 ## Why
 

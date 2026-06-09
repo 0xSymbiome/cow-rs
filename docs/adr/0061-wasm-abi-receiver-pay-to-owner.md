@@ -74,6 +74,6 @@ signed struct, or from treating omission as an error.
 ## Links
 
 - [WASM order-input construction](../../crates/wasm/src/exports/dto/core.rs)
-- [Host-safe order-input mapping](../../crates/pure-helpers/src/dto.rs)
+- [Host-safe order-input mapping](../../crates/wasm/src/helpers/dto.rs)
 - [ADR 0020](0020-ethflow-owner-threading.md)
 - [ADR 0059](0059-hash-concrete-orderdata-directly.md)

@@ -7,7 +7,7 @@ use cow_sdk_core::{
     TransactionRequest, TypedDataDomain, TypedDataField,
 };
 use cow_sdk_orderbook::{OrderbookApi, SigningScheme};
-use cow_sdk_pure_helpers as pure;
+use crate::helpers as pure;
 use cow_sdk_signing::eip1271::Eip1271SignatureProvider;
 use cow_sdk_trading::{
     AllowanceParameters, GAS_LIMIT_DEFAULT, LimitTradeParameters, PostTradeAdditionalParams,

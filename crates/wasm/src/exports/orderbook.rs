@@ -2,7 +2,7 @@ use cow_sdk_core::{Address, AppDataHash, OrderUid};
 use cow_sdk_orderbook::{
     GetOrdersRequest, GetTradesRequest, OrderCancellations, OrderCreation, OrderbookApi,
 };
-use cow_sdk_pure_helpers as pure;
+use crate::helpers as pure;
 use cow_sdk_transport_policy::TransportPolicy;
 use serde_json::json;
 use wasm_bindgen::prelude::*;
