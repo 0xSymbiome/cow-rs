@@ -11,9 +11,6 @@
 
 /// Chain-keyed registry of canonical CoW Protocol contract deployments.
 pub mod deployments;
-/// Typed ERC-20 bindings generated from the upstream Solidity surface via the
-/// `alloy::sol!` macro.
-pub mod erc20;
 /// Contract crate error types.
 pub mod errors;
 /// Typed `CoWSwapEthFlow` call-data encoders generated from the upstream
@@ -35,11 +32,11 @@ pub mod order;
 pub mod settlement;
 /// Signature codecs and EIP-1271 verification helpers.
 pub mod signature;
+/// Typed ERC-20 and wrapped-native (WETH9-family) token bindings and wrap /
+/// unwrap interaction helpers.
+pub mod tokens;
 /// Cache-aware EIP-1271 signature verification path.
 pub mod verify;
-/// Typed `IWrappedNativeToken` (WETH9-family) bindings and wrap / unwrap
-/// interaction helpers.
-pub mod weth;
 
 mod primitives;
 
@@ -49,7 +46,6 @@ pub use primitives::{
 };
 
 pub use deployments::{ContractId, DeploymentChainId, DeploymentEnv, Registry};
-pub use erc20::IERC20;
 pub use errors::ContractsError;
 pub use eth_flow::{
     EthFlowEvent, EthFlowOnchainData, EthFlowOrderData, ICoWSwapEthFlowEvents, OnchainOrderRefund,
@@ -76,5 +72,5 @@ pub use signature::{
     decode_signing_scheme, encode_eip1271_signature_data, encode_signing_scheme,
     verify_eip1271_signature,
 };
+pub use tokens::{IERC20, IWrappedNativeToken, unwrap_interaction, wrap_interaction};
 pub use verify::{Eip1271VerificationCache, verify_eip1271_signature_cached};
-pub use weth::{IWrappedNativeToken, unwrap_interaction, wrap_interaction};
