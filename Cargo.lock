@@ -1548,8 +1548,6 @@ dependencies = [
  "cow-sdk-app-data",
  "cow-sdk-contracts",
  "cow-sdk-core",
- "cow-sdk-pure-helpers",
- "cow-sdk-signing",
  "cow-sdk-test-utils",
  "getrandom 0.4.2",
  "serde",
@@ -1700,15 +1698,12 @@ dependencies = [
 name = "cow-sdk-transport-policy"
 version = "0.1.0"
 dependencies = [
- "async-trait",
  "cow-sdk-core",
  "futures-timer",
  "gloo-timers",
- "http",
  "httpdate",
  "proptest",
  "reqwest",
- "serde",
  "serde_json",
  "thiserror 2.0.18",
  "tokio",

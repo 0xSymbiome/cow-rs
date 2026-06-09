@@ -887,6 +887,7 @@ where
     assert_no_secret(label, "Debug", &debug);
 }
 
+#[cfg(any(feature = "subgraph", feature = "browser-wallet"))]
 fn assert_debug_render<T>(label: &str, value: &T)
 where
     T: Debug,
