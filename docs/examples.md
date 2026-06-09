@@ -8,27 +8,38 @@ not a second landing page.
 
 ## Native Rust
 
-Use the native examples when you want deterministic, transport-mocked flows for
-the main SDK surfaces.
+All consumer-facing examples are deterministic, transport-mocked recipes in the
+`cow-sdk-examples-native` cookbook, and they consume the **`cow-sdk` facade**
+(`cow_sdk::...`) — the recommended single-dependency path. Browse them by goal
+below. The SDK ships no consumer examples that depend on the individual leaf
+crates; the facade is the one entry point.
+
+### Recommended: place a swap with `Trading::swap()`
+
+The recommended way to place a swap is the fluent `Trading::swap()` builder:
+named token setters that cannot be transposed, then `execute` to quote, sign,
+and post in one call — or `quote` to inspect the result before `submit`. The
+`swap_quickstart` scenario runs it end to end.
+
+### Scenarios by goal
 
 | Goal | Example surface |
 | --- | --- |
+| Make your first swap end to end (recommended `Trading::swap()`) | `swap_quickstart` |
 | Learn the facade shape | `facade_surface` |
-| Make your first swap end to end | `swap_quickstart` |
+| Quote, then build, cancel, or simulate trading flows | `quote`, `slippage_suggester`, `cancel_in_flight`, `limit_order`, `trading_full_cycle` |
+| Inspect order lifecycle and on-chain actions | `order_lifecycle`, `receipt_lifecycle`, `ethflow`, `ethflow_checker`, `onchain_actions` |
 | Classify and handle SDK errors | `error_classification` |
 | Work with app-data and signing | `app_data`, `sign_order`, `eip1271_signer` |
-| Quote, build, cancel, and simulate trading flows | `quote`, `slippage_suggester`, `cancel_in_flight`, `limit_order`, `trading_full_cycle` |
-| Inspect order lifecycle and on-chain actions | `order_lifecycle`, `receipt_lifecycle`, `ethflow`, `ethflow_checker`, `onchain_actions` |
 | Inspect typed orderbook transport | `orderbook_transport`, `order_history` |
 | Work with read-only subgraph access | `subgraph_query` |
 | Work with native Alloy adapters | `alloy_quickstart`, `alloy_provider`, `alloy_signer`, `transaction_lifecycle`, `alloy_custom_traits`, `alloy_trading_full_flow` |
 | Run an opt-in live service check | `orderbook_live`, `subgraph_live` |
 
-See [Native examples](../examples/native/README.md) for commands and
-environment notes.
+See [Native examples](../examples/native/README.md) for the full scenario
+catalog, commands, and environment notes.
 
-The deterministic non-live native and per-crate example binaries share one
-smoke command:
+The deterministic non-live native example binaries share one smoke command:
 
 ```text
 cargo run-deterministic-examples

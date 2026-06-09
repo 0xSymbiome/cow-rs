@@ -21,107 +21,81 @@ pub struct Args {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum DeterministicExample {
-    WorkspacePackage {
-        package: &'static str,
-        example: &'static str,
-    },
-    Manifest {
-        manifest_path: &'static str,
-        example: &'static str,
-    },
+pub struct DeterministicExample {
+    manifest_path: &'static str,
+    example: &'static str,
 }
 
 pub const DETERMINISTIC_EXAMPLES: &[DeterministicExample] = &[
-    DeterministicExample::WorkspacePackage {
-        package: "cow-sdk",
-        example: "wasm_smoke",
-    },
-    DeterministicExample::WorkspacePackage {
-        package: "cow-sdk-trading",
-        example: "signed_order_end_to_end",
-    },
-    DeterministicExample::WorkspacePackage {
-        package: "cow-sdk-trading",
-        example: "typestate_builder_example",
-    },
-    DeterministicExample::WorkspacePackage {
-        package: "cow-sdk-orderbook",
-        example: "paginated_orders_fetch",
-    },
-    DeterministicExample::WorkspacePackage {
-        package: "cow-sdk-subgraph",
-        example: "typed_query_with_escape_hatch",
-    },
-    DeterministicExample::Manifest {
+    DeterministicExample {
         manifest_path: "examples/native/Cargo.toml",
         example: "facade_surface",
     },
-    DeterministicExample::Manifest {
+    DeterministicExample {
         manifest_path: "examples/native/Cargo.toml",
         example: "app_data",
     },
-    DeterministicExample::Manifest {
+    DeterministicExample {
         manifest_path: "examples/native/Cargo.toml",
         example: "sign_order",
     },
-    DeterministicExample::Manifest {
+    DeterministicExample {
         manifest_path: "examples/native/Cargo.toml",
         example: "quote",
     },
-    DeterministicExample::Manifest {
+    DeterministicExample {
         manifest_path: "examples/native/Cargo.toml",
         example: "limit_order",
     },
-    DeterministicExample::Manifest {
+    DeterministicExample {
         manifest_path: "examples/native/Cargo.toml",
         example: "order_lifecycle",
     },
-    DeterministicExample::Manifest {
+    DeterministicExample {
         manifest_path: "examples/native/Cargo.toml",
         example: "trading_full_cycle",
     },
-    DeterministicExample::Manifest {
+    DeterministicExample {
         manifest_path: "examples/native/Cargo.toml",
         example: "ethflow",
     },
-    DeterministicExample::Manifest {
+    DeterministicExample {
         manifest_path: "examples/native/Cargo.toml",
         example: "onchain_actions",
     },
-    DeterministicExample::Manifest {
+    DeterministicExample {
         manifest_path: "examples/native/Cargo.toml",
         example: "orderbook_transport",
     },
-    DeterministicExample::Manifest {
+    DeterministicExample {
         manifest_path: "examples/native/Cargo.toml",
         example: "subgraph_query",
     },
-    DeterministicExample::Manifest {
+    DeterministicExample {
         manifest_path: "examples/native/Cargo.toml",
         example: "swap_quickstart",
     },
-    DeterministicExample::Manifest {
+    DeterministicExample {
         manifest_path: "examples/native/Cargo.toml",
         example: "error_classification",
     },
-    DeterministicExample::Manifest {
+    DeterministicExample {
         manifest_path: "examples/native/Cargo.toml",
         example: "order_history",
     },
-    DeterministicExample::Manifest {
+    DeterministicExample {
         manifest_path: "examples/native/Cargo.toml",
         example: "receipt_lifecycle",
     },
-    DeterministicExample::Manifest {
+    DeterministicExample {
         manifest_path: "examples/native/Cargo.toml",
         example: "slippage_suggester",
     },
-    DeterministicExample::Manifest {
+    DeterministicExample {
         manifest_path: "examples/native/Cargo.toml",
         example: "eip1271_signer",
     },
-    DeterministicExample::Manifest {
+    DeterministicExample {
         manifest_path: "examples/native/Cargo.toml",
         example: "ethflow_checker",
     },
@@ -169,9 +143,7 @@ pub fn run_with_writer(
 
 impl DeterministicExample {
     pub const fn label(self) -> &'static str {
-        match self {
-            Self::WorkspacePackage { example, .. } | Self::Manifest { example, .. } => example,
-        }
+        self.example
     }
 
     fn command(self, repo_root: &Path, locked: bool) -> Command {
@@ -180,21 +152,11 @@ impl DeterministicExample {
         if locked {
             command.arg("--locked");
         }
-        match self {
-            Self::WorkspacePackage { package, example } => {
-                command.arg("-p").arg(package).arg("--example").arg(example);
-            }
-            Self::Manifest {
-                manifest_path,
-                example,
-            } => {
-                command
-                    .arg("--manifest-path")
-                    .arg(manifest_path)
-                    .arg("--example")
-                    .arg(example);
-            }
-        }
+        command
+            .arg("--manifest-path")
+            .arg(self.manifest_path)
+            .arg("--example")
+            .arg(self.example);
         command
     }
 }
@@ -223,7 +185,7 @@ mod tests {
             .map(DeterministicExample::label)
             .collect();
 
-        assert!(labels.contains(&"signed_order_end_to_end"));
+        assert!(labels.contains(&"swap_quickstart"));
         assert!(labels.contains(&"trading_full_cycle"));
     }
 }

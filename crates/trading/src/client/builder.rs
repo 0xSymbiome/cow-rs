@@ -247,6 +247,19 @@ impl TradingBuilder<ChainIdSet, AppCodeSet> {
     /// `build` is reachable only once both the chain id and application code
     /// have been supplied; the builder typestate makes calling it earlier a
     /// compile error rather than a runtime failure.
+    ///
+    /// ```compile_fail
+    /// use cow_sdk_trading::TradingBuilder;
+    /// // Missing chain id: `build` is not callable.
+    /// let _ = TradingBuilder::new().app_code("test").build();
+    /// ```
+    ///
+    /// ```compile_fail
+    /// use cow_sdk_core::SupportedChainId;
+    /// use cow_sdk_trading::TradingBuilder;
+    /// // Missing app code: `build` is not callable.
+    /// let _ = TradingBuilder::new().chain_id(SupportedChainId::Mainnet).build();
+    /// ```
     pub fn build(self) -> Result<Trading, TradingError> {
         if let Some(error) = self.app_code_error {
             return Err(error.into());

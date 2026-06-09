@@ -7,16 +7,10 @@ If you are starting from scratch, begin with
 [Getting Started](../../docs/getting-started.md). This page is the native
 scenario catalog that extends that canonical onboarding path.
 
-Two complementary example lanes live in this repository:
-
-- The scenario catalog below runs from the aggregate package
-  `cow-sdk-examples-native` and shows cross-crate flows that combine the
-  public facade with the lower-level crates.
-- Per-crate examples under each individual crate show the shortest public
-  surface for a single crate against recorded fixtures or local mock
-  transports, so a reviewer can read one file and see how that crate is
-  consumed in isolation. See [Per-Crate Examples](#per-crate-examples)
-  below.
+All consumer-facing examples live in this `cow-sdk-examples-native` cookbook and
+consume the `cow-sdk` facade (`cow_sdk::...`) — the recommended single-dependency
+path. The SDK ships no consumer examples that depend on the individual leaf
+crates; the facade is the one entry point.
 
 ## Recommended First Sequence
 
@@ -26,6 +20,11 @@ Use this order when you want the shortest deterministic path:
 2. `sign_order`
 3. `limit_order`
 4. `trading_full_cycle`
+
+`swap_quickstart` uses the recommended fluent `Trading::swap()` builder — named
+sell/buy/amount setters that cannot be transposed, then `execute` to quote,
+sign, and post in one call (or `quote` to inspect before `submit`). It is the
+shortest path from the facade to a posted order.
 
 After that, branch by goal through the full scenario table below.
 
@@ -141,47 +140,11 @@ Before running `subgraph_live`, set:
 - `THE_GRAPH_API_KEY`
 - optionally `COW_SUBGRAPH_CHAIN_ID`
 
-## Per-Crate Examples
+## Example Placement Rule
 
-Each leaf crate that owns a durable public surface carries a small,
-self-contained example that demonstrates the crate's primary user
-journey against a recorded fixture or a local mock transport. These
-examples compile under the pinned MSRV and require no RPC credentials.
-
-| Crate | Example | Primary user journey |
-| --- | --- | --- |
-| `cow-sdk-trading` | `signed_order_end_to_end` | full quote → sign → post flow through `Trading::builder()` against an injected in-process orderbook and signer |
-| `cow-sdk-trading` | `typestate_builder_example` | the ready-state builder terminal and its compile-time chain-and-app-code prerequisites |
-| `cow-sdk-orderbook` | `paginated_orders_fetch` | paginated `GetOrdersRequest` loop through `OrderbookApi::builder_from_context(...).base_url(...).build()` against a `wiremock::MockServer` |
-| `cow-sdk-subgraph` | `typed_query_with_escape_hatch` | canonical `TOTALS_QUERY` typed path plus the explicit `run_query` raw-document escape hatch, both against a `wiremock::MockServer` |
-
-Run them with:
-
-```text
-cargo run -p cow-sdk-trading --example signed_order_end_to_end
-cargo run -p cow-sdk-trading --example typestate_builder_example
-cargo run -p cow-sdk-orderbook --example paginated_orders_fetch
-cargo run -p cow-sdk-subgraph --example typed_query_with_escape_hatch
-```
-
-### Recorded-Fixture And Mock-Transport Patterns
-
-All three per-crate examples use one of two lightweight patterns so the
-example stays runnable without network access:
-
-- **Recorded fixture + in-process trait impl** (`cow-sdk-trading`): a
-  fixed `OrderQuoteResponse` JSON fixture plus an inline struct that
-  implements the public `OrderbookClient` trait, backed by an inline
-  signer that implements the public `Signer` trait. The SDK sees the
-  same trait surface a real deployment would use.
-- **HTTP mock transport** (`cow-sdk-orderbook`, `cow-sdk-subgraph`):
-  a local `wiremock::MockServer` serves the HTTP or GraphQL shape the
-  client expects, and the crate's typestate builder points the client at
-  the mock URL through its `base_url` / `base_urls` setter with
-  `ExternalHostPolicy::Test`. This mirrors the upstream test pattern for
-  each crate.
-
-When a consumer wants to adapt a per-crate example to a real service,
-replacing the mock server with the production URL (or replacing the
-inline `OrderbookClient` with the live `OrderbookApi`) is the only
-change required.
+Consumer-facing examples live in this `examples/native/` cookbook and import the
+`cow-sdk` facade (`cow_sdk::...`) — the recommended single-dependency path. The
+SDK does not ship consumer examples under individual crates' `examples/`
+directories: depending on a leaf crate directly is not the recommended
+consumption model, so an example that imported one would teach the wrong shape.
+New examples are added as facade scenarios here.
