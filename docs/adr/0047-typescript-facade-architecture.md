@@ -17,10 +17,12 @@ modules selected by flavor and runtime target.
 ## Why
 
 Raw wasm-bindgen declarations mirror Rust export mechanics rather than a stable
-TypeScript SDK. The facade gives consumers stable camelCase methods, named
-callback types, single-object constructors, explicit disposal, normalized error
-envelopes, and package subpaths that can evolve independently from raw binding
-details.
+TypeScript SDK. wasm-bindgen already camelCases exported names on its own, so the
+facade is not about cosmetics; it carries the work the binding layer cannot
+express: explicit instance disposal over wasm-bindgen's manual `free()` lifetime,
+normalized error envelopes, single typed-config-object constructors, named
+callback types, per-call option merging, and package subpaths that can evolve
+independently from raw binding details.
 
 ## Must Remain True
 

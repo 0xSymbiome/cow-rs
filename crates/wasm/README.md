@@ -108,6 +108,26 @@ Cloudflare Workers use the web-target package output through the package export
 map. Consumers should import public subpaths such as `./cloudflare` and
 `./cloudflare/wasm`; nested build-output paths are not public API.
 
+Because Workers cannot compile WebAssembly from bytes at runtime, the
+`./cloudflare` facade exposes an explicit `initialize` step that accepts the
+statically imported `WebAssembly.Module`. Import the precompiled module from the
+`./cloudflare/wasm` subpath, initialize once, then use clients normally:
+
+```ts
+import initialize, { OrderBookClient } from "<published-cow-sdk-wasm-package>/cloudflare";
+import wasmModule from "<published-cow-sdk-wasm-package>/cloudflare/wasm";
+
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    await initialize(wasmModule);
+    const client = new OrderBookClient({ chainId: 1, transport: { kind: "fetch" } });
+    const quote = await client.getQuote(await request.json(), { timeoutMs: 8_000 });
+    client.dispose();
+    return Response.json(quote);
+  }
+};
+```
+
 The cloudflare flavor's gzip-compressed artifact is below the current
 Cloudflare Workers Free compressed-size limit at the time of measurement; the
 release pipeline enforces an explicit byte budget on every build. Full Workers
@@ -119,12 +139,24 @@ startup limit. Cloudflare's published platform limits are at
 ## TypeScript Declarations
 
 All DTOs that cross the wasm ABI are represented in TypeScript declarations.
-The committed declaration snapshots for the bundler and nodejs targets, plus
-the web target for the Cloudflare flavor, live under
-`crates/wasm/snapshots/raw/` and are compared during validation so export drift
-is visible. The package export verification script also checks
-that every exported target exists and that declaration files carry the required
-TypeScript library references.
+The committed declaration snapshots under `crates/wasm/snapshots/` are an
+**API-lock**: CI diffs them on every build, so any change to the public
+TypeScript contract surfaces as a reviewed diff rather than a silent drift. This
+is the wasm/TypeScript analog of the Rust ecosystem's `cargo-public-api`
+snapshot pattern (and of TypeScript's API Extractor report files). The two
+snapshot layers lock complementary surfaces and are not redundant:
+
+- `snapshots/raw/` (bundler and nodejs targets, plus the web target for the
+  Cloudflare flavor) locks the wasm-bindgen output and the `tsify` DTO **fields**
+  — the field-level shape a consumer sees through the re-exported DTO types.
+- `snapshots/facade/` locks the public **class and function surface** of the
+  TypeScript facade — method signatures, option objects, and disposal.
+
+Committing generated declarations is a deliberate choice: pure-`wasm-bindgen`
+projects typically regenerate them, but locking the published contract matches
+this SDK's parity-and-stability goal. The package export verification script
+additionally checks that every exported target exists and that declaration files
+carry the required TypeScript library references.
 
 ## Error Contract
 

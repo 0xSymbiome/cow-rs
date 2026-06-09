@@ -1,6 +1,6 @@
 # Repository File Map
 
-> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `7759817` &nbsp;&middot;&nbsp; **Generated:** 2026-06-09  
+> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `defabfc` &nbsp;&middot;&nbsp; **Generated:** 2026-06-09  
 > **Total tracked files:** **1,050** &nbsp;&middot;&nbsp; **Lines of code:** tokei 14.0.0
 
 A navigable inventory of every file tracked by Git on this branch, grouped by the role each directory plays in the workspace. Use the table of contents to jump straight to a section; full file listings are collapsed by default so the high-level shape stays scannable.
@@ -34,7 +34,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 - **36,464 lines of Rust** across the 16 SDK crates, covered by **38,813 lines of tests** — a **1.1× test-to-code ratio** — plus **180 lines of benchmarks**.
 - **11,927 doc-comment lines** documenting the public API (~32.7% of crate code), plus **839 inline comment lines**.
 - **6,381 lines of TypeScript** across examples, e2e harnesses, and wasm bindings.
-- **25,923 lines of Markdown prose** — ADRs, audit notes, and READMEs.
+- **25,952 lines of Markdown prose** — ADRs, audit notes, and READMEs.
 - **19,730 lines of data & config** (JSON schemas, parity fixtures, vendored ABIs, YAML, TOML) — tracked, but excluded from code metrics by design.
 
 **Footprint** (tracked files)
@@ -52,8 +52,8 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 | Path | Files | Lines | Code | Purpose |
 |------|------:|------:|-----:|---------|
-| `crates/` | 592 | 121,941 | 83,790 | Workspace member crates (the SDK itself) |
-| `docs/` | 153 | 23,662 | 0 | Architecture decision records, audit notes, provider notes |
+| `crates/` | 592 | 121,973 | 83,790 | Workspace member crates (the SDK itself) |
+| `docs/` | 153 | 23,664 | 0 | Architecture decision records, audit notes, provider notes |
 | `examples/` | 63 | 17,744 | 5,682 | Runnable usage examples (Rust + TypeScript) |
 | `scripts/` | 57 | 14,105 | 7,698 | Internal maintenance tool crates |
 | `parity/` | 48 | 7,118 | 6,875 | Golden fixtures + pinned specs from upstream services |
@@ -77,7 +77,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `rust-toolchain.toml` | 1 | 6 | 4 | Pinned Rust toolchain |
 | `.gitattributes` | 1 | 32 | 0 | Git attributes |
 | `CHANGELOG.md` | 1 | 3,932 | 0 | Release changelog |
-| **Total** | **1050** | **216,144** | **116,633** | |
+| **Total** | **1050** | **216,178** | **116,633** | |
 
 ---
 
@@ -86,7 +86,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | Extension | Files | Lines | Code | Comments | Blank | Typical role |
 |-----------|------:|------:|-----:|---------:|------:|--------------|
 | `.rs` | 593 | 118,484 | 90,522 | 17,002 | 10,960 | Rust source and tests |
-| `.md` | 187 | 31,324 | 0 | 25,923 | 5,401 | Markdown docs (ADRs, audit notes, READMEs) |
+| `.md` | 187 | 31,358 | 0 | 25,952 | 5,406 | Markdown docs (ADRs, audit notes, READMEs) |
 | `.ts` | 60 | 17,394 | 6,381 | 9,874 | 1,139 | TypeScript (examples, e2e, wasm bindings) |
 | `.json` | 58 | 4,009 | 3,906 | 103 | 0 | JSON schemas, ABIs, parity fixtures |
 | `.toml` | 33 | 2,010 | 1,664 | 79 | 267 | Cargo manifests and tool configs |
@@ -108,7 +108,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `.gitattributes` | 1 | 32 | 0 | 28 | 4 |  |
 | `.yamllint` | 1 | 7 | 0 | 6 | 1 |  |
 | `.proptest-regressions` | 1 | 7 | 0 | 7 | 0 | proptest regression seeds |
-| **Total** | **1050** | **216,144** | **116,633** | **77,320** | **22,191** | |
+| **Total** | **1050** | **216,178** | **116,633** | **77,349** | **22,196** | |
 
 > **Code + Comments + Blank = Lines** for every row. ``Comments`` is all non-code, non-blank content: inline + doc-comments in source, prose in Markdown/text, and raw content in formats tokei does not parse as code (lockfiles, ``.stderr``, snapshots). Rust doc-comments are isolated in the per-crate ``Doc`` column above.
 
@@ -220,10 +220,10 @@ The 25 largest hand-written source files by code lines (Rust + TypeScript; vendo
 
 | Subtree | Files | Lines | Code | Purpose |
 |---------|------:|------:|-----:|---------|
-| [`adr`](docs/adr) | 69 | 7,892 | 0 | Architecture Decision Records |
+| [`adr`](docs/adr) | 69 | 7,894 | 0 | Architecture Decision Records |
 | [`audit`](docs/audit) | 63 | 10,119 | 0 | Audit notes and review artifacts |
 | [`providers`](docs/providers) | 2 | 279 | 0 | Provider integration notes |
-| **Total (listed)** | **134** | **18,290** | **0** | |
+| **Total (listed)** | **134** | **18,292** | **0** | |
 
 ---
 
@@ -1410,7 +1410,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <summary><code>crates/wasm/</code> &mdash; 2 file(s)</summary>
 
 - [`Cargo.toml`](crates/wasm/Cargo.toml) &mdash; 104 lines
-- [`README.md`](crates/wasm/README.md) &mdash; 154 lines
+- [`README.md`](crates/wasm/README.md) &mdash; 186 lines
 
 </details>
 
@@ -1685,7 +1685,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`0044-bundle-size-profile-and-flavor-builds.md`](docs/adr/0044-bundle-size-profile-and-flavor-builds.md) &mdash; 98 lines
 - [`0045-async-signer-trait-narrowing.md`](docs/adr/0045-async-signer-trait-narrowing.md) &mdash; 54 lines
 - [`0046-transport-policy-js-exposure.md`](docs/adr/0046-transport-policy-js-exposure.md) &mdash; 53 lines
-- [`0047-typescript-facade-architecture.md`](docs/adr/0047-typescript-facade-architecture.md) &mdash; 58 lines
+- [`0047-typescript-facade-architecture.md`](docs/adr/0047-typescript-facade-architecture.md) &mdash; 60 lines
 - [`0048-composable-conditional-order-framework.md`](docs/adr/0048-composable-conditional-order-framework.md) &mdash; 198 lines
 - [`0049-cow-shed-account-abstraction-proxy.md`](docs/adr/0049-cow-shed-account-abstraction-proxy.md) &mdash; 265 lines
 - [`0050-eip1271-signature-blob-encoding.md`](docs/adr/0050-eip1271-signature-blob-encoding.md) &mdash; 174 lines
