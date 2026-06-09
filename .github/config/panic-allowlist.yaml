@@ -18,15 +18,15 @@ allowed:
   - file: crates/browser-wallet/src/wallet/chain.rs
     item: known_wallet_native_currency
     reason: Built-in native-currency metadata is static and validated by construction.
-  - file: crates/contracts/src/deployments/chain_id.rs
+  - file: crates/contracts/src/deployments.rs
     item: DeploymentChainId::from
     reason: SupportedChainId is the only producer and the bridge match is exhaustive across the currently supported chains; non-exhaustive future variants must land in the same patch with an explicit policy review.
-  - file: crates/contracts/src/deployments/env.rs
+  - file: crates/contracts/src/deployments.rs
     item: DeploymentEnv::from
     reason: CowEnv is the only producer and the bridge match is exhaustive across the currently supported environments; non-exhaustive future variants must land in the same patch with an explicit policy review.
-  - file: crates/contracts/src/deployments/registry.rs
+  - file: crates/contracts/src/deployments.rs
     item: Registry::default
-    reason: The embedded registry manifest is validated by build.rs before runtime use.
+    reason: The committed address constants are validated at construction and pinned by the deployment_addresses_resolve_to_canonical_singletons regression.
   - file: crates/contracts/src/primitives.rs
     item: sell_balance_name
     reason: In-crate balance mapping covers every currently representable settlement sell-balance variant.

@@ -34,7 +34,7 @@ pub mod interaction;
 pub mod onchain_orders;
 /// Order hashing, UID packing, and normalization helpers.
 pub mod order;
-/// Settlement encoding helpers and flag codecs.
+/// Typed `GPv2Settlement` ABI binding and a fail-closed settlement event-log decoder.
 pub mod settlement;
 /// Signature codecs and EIP-1271 verification helpers.
 pub mod signature;
@@ -73,7 +73,7 @@ pub use order::{
     extract_order_uid_params, hash_order, hash_order_cancellation, hash_order_cancellations,
     order_eip712_type_hash, pack_order_uid_params,
 };
-pub use settlement::events::{IGPv2SettlementEvents, SettlementEvent, decode_settlement_log};
+pub use settlement::{IGPv2SettlementEvents, SettlementEvent, decode_settlement_log};
 pub use signature::{
     Eip1271SignatureData, Eip1271VerificationRequest, MAX_SIGNATURE_HEX_BYTES,
     RecoverableSignature, Signature, SigningScheme, decode_eip1271_signature_data,

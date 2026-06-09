@@ -1,7 +1,7 @@
 # Contract Bindings Parity Audit
 
 Status: Current
-Last reviewed: 2026-06-08
+Last reviewed: 2026-06-09
 Owning surface: `cow-sdk-contracts` `alloy::sol!`-generated bindings for `GPv2Settlement`, `CoWSwapEthFlow`, `CoWSwapOnchainOrders` events, the wrapped-native token, and `IERC20` / `IERC20Permit`
 Refresh trigger: A new binding family landing in `cow-sdk-contracts`; a signature change in any existing binding; a change to the upstream commit pin for any binding's source repository under `parity/source-lock.yaml`; a change to the TypeScript-SDK-derived parity fixtures that back the regression suite; a change to the EIP-712 domain-separator fixture shared with the signing crate; a change to the wasm target feature contract for the alloy/k256 dependency path
 Related docs:
@@ -51,7 +51,7 @@ provider.
 
 ### Binding Families
 
-`GPv2Settlement` (`crates/contracts/src/settlement/mod.rs`) carries the
+`GPv2Settlement` (`crates/contracts/src/settlement.rs`) carries the
 `settle`, `invalidateOrder(bytes)`, `setPreSignature`, trade-struct,
 and interaction-struct surface against the mainnet-deployed
 `0x9008D19f58AAbD9eD0D60971565AA8510560ab41` contract.
@@ -469,9 +469,7 @@ and the canonical EIP-712 reference signature
 
 Primary implementation points:
 
-- `crates/contracts/src/settlement/mod.rs`
-- `crates/contracts/src/settlement/encoder.rs`
-- `crates/contracts/src/settlement/codec.rs`
+- `crates/contracts/src/settlement.rs`
 - `crates/contracts/src/interaction.rs`
 - `crates/contracts/src/errors.rs`
 - `crates/contracts/src/eth_flow.rs`

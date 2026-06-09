@@ -1,7 +1,7 @@
 # Settlement Event Log Decoding Audit
 
 Status: Current
-Last reviewed: 2026-06-08
+Last reviewed: 2026-06-09
 Owning surface: `cow-sdk-contracts` `GPv2Settlement` event decoder
 Refresh trigger: a change to the `Trade` / `Interaction` / `Settlement` / `OrderInvalidated` / `PreSignature` event ABI, the `SettlementEvent` domain enum, or the shared `check_topics` topic-set guard
 Related docs:
@@ -57,7 +57,7 @@ client.
 
 Primary implementation points:
 
-- `crates/contracts/src/settlement/events.rs`
+- `crates/contracts/src/settlement.rs`
 - `crates/contracts/src/primitives.rs`
 
 Primary regression coverage:

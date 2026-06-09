@@ -426,17 +426,17 @@ enums:
     expected_marker: non_exhaustive
     reason: Wasm eth-flow event DTO mirrors the eth-flow on-chain order lifecycle event family, which can grow as the protocol adds events.
   - name: ContractId
-    file: crates/contracts/src/deployments/contract_id.rs
+    file: crates/contracts/src/deployments.rs
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: Deployed contract identifiers can grow with upstream deployment authority.
   - name: DeploymentChainId
-    file: crates/contracts/src/deployments/chain_id.rs
+    file: crates/contracts/src/deployments.rs
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: Deployment evidence can add chains independently from runtime orderbook support.
   - name: DeploymentEnv
-    file: crates/contracts/src/deployments/env.rs
+    file: crates/contracts/src/deployments.rs
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: Deployment environment taxonomy can grow with upstream deployment authority.
@@ -471,7 +471,7 @@ enums:
     expected_marker: non_exhaustive
     reason: COW Shed nonce strong-type is a typed wrapper; the wrapping shape may grow with derivation variants.
   - name: SettlementEvent
-    file: crates/contracts/src/settlement/events.rs
+    file: crates/contracts/src/settlement.rs
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: GPv2Settlement on-chain event coverage can grow as the protocol adds settlement events.

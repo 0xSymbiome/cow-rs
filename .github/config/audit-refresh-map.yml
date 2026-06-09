@@ -32,5 +32,4 @@ entries:
     owning_surface: deployment chain taxonomy
     refresh_triggers:
       paths:
-        - crates/contracts/src/deployments/chain_id.rs
-        - crates/contracts/src/deployments/registry.rs
+        - crates/contracts/src/deployments.rs

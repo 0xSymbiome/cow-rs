@@ -1,10 +1,10 @@
 # Deployment Registry Audit
 
 Status: Current
-Last reviewed: 2026-06-08
+Last reviewed: 2026-06-09
 Re-review by: 2026-08-02
 Owning surface: `cow-sdk-contracts` deployment registry
-Refresh trigger: Changes to the address constants in `crates/contracts/src/deployments/registry.rs`, the upstream commit pins in `parity/source-lock.yaml`, the `registry-confirm` presence probe, or supported chains
+Refresh trigger: Changes to the address constants in `crates/contracts/src/deployments.rs`, the upstream commit pins in `parity/source-lock.yaml`, the `registry-confirm` presence probe, or supported chains
 Related docs:
 - [ADR 0012](../adr/0012-alloy-sol-bindings-and-registry-authority.md)
 - [ADR 0032](../adr/0032-deployment-authority-machine-readable-provenance.md)
@@ -16,7 +16,7 @@ Related docs:
 
 This audit covers:
 
-- the const address table and typed `Registry` lookup surface in `crates/contracts/src/deployments/registry.rs`
+- the const address table and typed `Registry` lookup surface in `crates/contracts/src/deployments.rs`
 - the upstream commit pins in `parity/source-lock.yaml` that anchor each deployed address to a source repository
 - live bytecode confirmation through `validation-smoke registry-confirm`
 
@@ -36,7 +36,7 @@ It does not cover binding generation, partner API routing, arbitrary consumer RP
 
 ### Registry And Source Authority
 
-`crates/contracts/src/deployments/registry.rs` is the runtime address source of truth. It resolves the settlement, vault-relayer, and eth-flow CREATE2 singletons from committed address constants: settlement and vault-relayer are chain- and environment-invariant, and eth-flow carries a production and a staging deployment, each identical across the runtime-supported chains. Lens is deployment-only for the composable / COW-Shed contract families and carries none of the GPv2 contracts.
+`crates/contracts/src/deployments.rs` is the runtime address source of truth. It resolves the settlement, vault-relayer, and eth-flow CREATE2 singletons from committed address constants: settlement and vault-relayer are chain- and environment-invariant, and eth-flow carries a production and a staging deployment, each identical across the runtime-supported chains. Lens is deployment-only for the composable / COW-Shed contract families and carries none of the GPv2 contracts.
 
 The upstream commit each address derives from is not duplicated on every row. It is pinned once per source repository in `parity/source-lock.yaml` (per [ADR 0012](../adr/0012-alloy-sol-bindings-and-registry-authority.md) and [ADR 0032](../adr/0032-deployment-authority-machine-readable-provenance.md)): the `contracts`, `composable-cow`, and `cow-shed` repository rows pin the commits behind the GPv2, composable-order, and COW Shed contract families respectively. That single per-repository pin, the deterministic CREATE2 address, and the read-only presence probe together establish deployment trust.
 
@@ -55,7 +55,7 @@ metadata, TypeScript SDK support, and wrapped-native-token evidence have one
 reviewed authority. It lists the 11 runtime-supported `SupportedChainId`
 variants; Lens (chain 232) is deployment-only and so appears in the registry but
 not in this `SupportedChainId` view. Registry rows are authoritatively keyed by
-`(contract_id, chain_id, env)` in `crates/contracts/src/deployments/registry.rs`. The
+`(contract_id, chain_id, env)` in `crates/contracts/src/deployments.rs`. The
 deployment-source column points at the per-repository upstream commit pin in
 `parity/source-lock.yaml`; the GPv2 settlement, vault relayer, and eth-flow
 addresses behind every chain below derive from the pinned `contracts` repository
@@ -97,14 +97,14 @@ appropriate check and no per-row code hash is committed.
 
 Primary implementation points:
 
-- `crates/contracts/src/deployments/registry.rs`
+- `crates/contracts/src/deployments.rs`
 - `crates/core/src/config/chains.rs`
 - `parity/source-lock.yaml`
 - `scripts/validation-smoke/src/registry_confirm.rs`
 
 Primary regression coverage:
 
-- `crates/contracts/src/deployments/registry.rs::deployment_addresses_resolve_to_canonical_singletons`
+- `crates/contracts/src/deployments.rs::deployment_addresses_resolve_to_canonical_singletons`
 - `scripts/validation-smoke/tests/registry_confirm.rs`
 - `tests/supported_chains_doc_table.rs::supported_networks_doc_table_matches_enum`
 - `scripts/validation-smoke/tests/registry_confirm.rs`

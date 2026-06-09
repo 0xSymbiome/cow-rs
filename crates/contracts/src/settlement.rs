@@ -1,5 +1,8 @@
-//! Typed bindings and a fail-closed decoder for the `GPv2Settlement` event
-//! surface.
+//! `GPv2Settlement` ABI binding and fail-closed event decoding.
+//!
+//! This module owns the typed `GPv2Settlement` call binding ([`IGPv2Settlement`],
+//! whose `setPreSignature` and `invalidateOrder` calls the SDK encodes) and a
+//! fail-closed decoder for the settlement event surface.
 //!
 //! The deployed settlement contract emits five events: `Trade` (one per filled
 //! order), `Interaction` (one per executed solver interaction), `Settlement`
@@ -15,12 +18,11 @@
 //! order UID. Every malformed input returns a typed [`ContractsError`]; no log,
 //! however adversarial, can panic the decoder.
 //!
-//! The `Trade`, `Interaction`, `Settlement`, and `OrderInvalidated` events
-//! mirror cowprotocol/contracts `src/contracts/GPv2Settlement.sol` (pinned by
-//! commit in `parity/source-lock.yaml`); `PreSignature` is the inherited
-//! `GPv2Signing` mixin event. Every topic-0 hash, including `PreSignature`, is
-//! byte-locked against an independent keccak-256 of the canonical event
-//! signature in the crate integration tests.
+//! Both ABI surfaces mirror cowprotocol/contracts
+//! `src/contracts/GPv2Settlement.sol` (pinned by commit in
+//! `parity/source-lock.yaml`); `PreSignature` is the inherited `GPv2Signing`
+//! mixin event. Every topic-0 hash is byte-locked against an independent
+//! keccak-256 of the canonical event signature in the crate integration tests.
 
 use alloy_primitives::LogData;
 use alloy_sol_types::{SolEvent, sol};
@@ -30,6 +32,55 @@ use cow_sdk_core::{Address, Amount, OrderUid};
 use crate::errors::ContractsError;
 use crate::order::ORDER_UID_LENGTH;
 use crate::primitives::check_topics;
+
+sol! {
+    // Canonical GPv2Settlement ABI surface. Signatures mirror the
+    // mainnet-deployed GPv2Settlement contract at
+    // 0x9008D19f58AAbD9eD0D60971565AA8510560ab41, whose source is
+    // cowprotocol/contracts `src/contracts/GPv2Settlement.sol` plus
+    // `libraries/GPv2Trade.sol` and `libraries/GPv2Interaction.sol`, pinned by
+    // commit in `parity/source-lock.yaml`. Consumers encode the
+    // `setPreSignature` and `invalidateOrder` calls from this binding; the call
+    // selectors are proven against the fixtures under `parity/fixtures/` and the
+    // crate parity tests.
+    #[sol(rename_all = "camelcase")]
+    interface IGPv2Settlement {
+        struct TradeData {
+            uint256 sellTokenIndex;
+            uint256 buyTokenIndex;
+            address receiver;
+            uint256 sellAmount;
+            uint256 buyAmount;
+            uint32 validTo;
+            bytes32 appData;
+            uint256 feeAmount;
+            uint256 flags;
+            uint256 executedAmount;
+            bytes signature;
+        }
+
+        struct InteractionData {
+            address target;
+            uint256 value;
+            bytes callData;
+        }
+
+        function settle(
+            address[] calldata tokens,
+            uint256[] calldata clearingPrices,
+            TradeData[] calldata trades,
+            InteractionData[][3] calldata interactions
+        ) external;
+
+        function invalidateOrder(bytes calldata orderUid) external;
+
+        function setPreSignature(bytes calldata orderUid, bool signed) external;
+
+        function freeFilledAmountStorage(bytes[] calldata orderUids) external;
+
+        function freePreSignatureStorage(bytes[] calldata orderUids) external;
+    }
+}
 
 sol! {
     // Canonical GPv2Settlement event surface. The four settlement events
