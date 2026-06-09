@@ -734,6 +734,21 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Removed
 
+- Collapsed the deployment registry to a const table. The 1,595-line
+  `crates/contracts/registry.toml`, the `build.rs` schema validator, the
+  `deployment-coverage.yaml` manifest, and the runtime TOML parser
+  (`Registry::from_toml_str`, `Registry::with_override`, `RegistryError`,
+  `DeploymentVerificationStatus`, and the `Registry` audit accessors) are
+  removed; `Registry` now resolves the settlement, vault-relayer, and eth-flow
+  CREATE2 singletons from committed address constants behind the unchanged
+  `Registry::address(ContractId, chain, env)` lookup. `ContractId` narrows to
+  `Settlement`, `VaultRelayer`, and `EthFlow` — the composable and COW-Shed
+  identifiers, which had no runtime address consumer, are dropped — and
+  `cow-sdk-contracts` drops its `toml` and `serde_yaml` dependencies. The
+  read-only `registry-confirm` presence probe now iterates the const registry.
+  [ADR 0032](docs/adr/0032-deployment-authority-machine-readable-provenance.md)
+  is superseded and
+  [ADR 0012](docs/adr/0012-alloy-sol-bindings-and-registry-authority.md) amended.
 - Removed `cow_sdk_core::SignedAmount`, the signed `int256` newtype. Its only
   consumer was removed, leaving it load-bearing for no shipped flow and with no
   analogue in the upstream `@cowprotocol/cow-sdk`; `Amount` (the unsigned atomic

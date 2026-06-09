@@ -2,7 +2,7 @@
 
 Status: Current
 Last reviewed: 2026-06-08
-Owning surface: inline COW Shed `alloy::sol!` bindings, proxy creation-code artifacts, version-call evidence, and deployment registry rows
+Owning surface: inline COW Shed `alloy::sol!` bindings, proxy creation-code artifacts, version-call evidence, and self-hosted deployment addresses
 Refresh trigger: Refresh when COW Shed deployments, proxy creation code, factory ABIs, hook type strings, the deployed `VERSION()` return value, or the upstream commit pin for the COW Shed source change.
 Related docs:
 - [ADR 0049](../adr/0049-cow-shed-account-abstraction-proxy.md)
@@ -23,7 +23,7 @@ This audit covers:
   crate and guarded by the CREATE2 address-parity test;
 - the per-chain `VERSION()` call evidence captured in
   `crates/cow-shed/tests/fixtures/version-call-results.json`;
-- the schema v2 deployment registry rows for the COW Shed factory and
+- the self-hosted COW Shed factory and
   implementation contracts;
 - the Gnosis-only `COWShedForComposableCoW` forwarder gate that enforces
   chain id 100 for the bridge variant;
@@ -42,7 +42,7 @@ app-data crate; that boundary is governed by the
 | Inline bindings | The inline COW Shed `alloy::sol!` bindings (mirroring upstream pinned by commit in `parity/source-lock.yaml`) emit type strings byte-identical to the upstream sources, including no whitespace between commas, proven by the JSON parity fixtures under `parity/fixtures/cow_shed/` | Conforms |
 | Proxy creation-code | `v1.0.0.bin` and `v1.0.1.bin` artifacts are embedded by the cow-shed crate and guarded by the CREATE2 address-parity test `crates/cow-shed/tests/deployment_address_parity_contract.rs`, which derives proxy addresses from the `.bin` bytes and locks them to `parity/fixtures/cow_shed/proxy_addresses.json` for both versions | Conforms |
 | Version-call evidence | Every per-chain row in `version-call-results.json` records `decoded_version == "1.0.1"` and `expected_sdk_version == "CowShedVersion::V1_0_1"` | Conforms |
-| Deployment registry | COW Shed factory and implementation rows are present in `registry.toml` for every supported chain id; `COWShedForComposableCoW` is present only for chain id 100 | Conforms |
+| Deployment addresses | COW Shed factory and implementation addresses are self-hosted in `crates/cow-shed/src/address/mod.rs` for every supported chain; the COW-Shed-for-ComposableCoW address diverges only on Gnosis Chain (id 100) | Conforms |
 | Gnosis forwarder gate | The Gnosis-only forwarder is reachable only when the caller selects chain id 100; all other chains return the typed `CowShedError::COWShedForComposableCoWGnosisOnly { chain }` variant | Conforms (contract; helper body lands in a later capability landing) |
 | Hook type strings | Canonical type strings carry no whitespace between commas in declaration order; the EOA signature byte order is `r || s || v` | Conforms |
 | EIP-712 hashing | Domain separator and signing digest are produced by `alloy_sol_types::Eip712Domain::separator` and `<ExecuteHooks as SolStruct>::eip712_signing_hash` respectively; bytes match the reference parity fixtures | Conforms |
@@ -225,7 +225,7 @@ Primary implementation points:
 - `crates/cow-shed/src/address/proxy-creation-code/v1.0.1.bin`
 - `crates/cow-shed/src/address/proxy_code.rs`
 - `crates/cow-shed/tests/fixtures/version-call-results.json`
-- `crates/contracts/registry.toml`
+- `crates/cow-shed/src/address/mod.rs`
 - `crates/cow-shed/tests/deployment_address_parity_contract.rs`
 - `parity/fixtures/cow_shed/proxy_addresses.json`
 - `parity/cow-shed-invariants.md`
@@ -233,8 +233,6 @@ Primary implementation points:
 
 Primary regression coverage:
 
-- `crates/contracts/tests/schema_v2_success.rs`
-- `crates/contracts/tests/schema_v2_rejection.rs`
 
 Validation surface:
 

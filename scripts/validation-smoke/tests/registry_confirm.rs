@@ -1,13 +1,9 @@
 use std::{
-    fs,
     io::{Read, Write},
     net::TcpListener,
-    path::Path,
     process::{Command, Output},
     thread,
 };
-
-use tempfile::tempdir;
 
 fn command() -> Command {
     let mut command = Command::new(env!("CARGO_BIN_EXE_validation-smoke"));
@@ -32,32 +28,16 @@ fn output_text(output: &Output) -> String {
     )
 }
 
-/// Minimal registry manifest in the shipped `registry.toml` schema:
-/// `schema_version = 2` and one Settlement/1/prod `[[entries]]` row. The
-/// presence probe reads only `contract_id`, `chain_id`, `env`, and `address`.
-fn write_manifest(path: &Path) {
-    fs::write(
-        path,
-        "schema_version = 2\n\
-         \n\
-         [[entries]]\n\
-         contract_id = \"Settlement\"\n\
-         chain_id = 1\n\
-         env = \"prod\"\n\
-         address = \"0x1111111111111111111111111111111111111111\"\n",
-    )
-    .unwrap();
-}
-
-fn args(manifest: &Path, mode: &str) -> Vec<String> {
+/// The probe sources its rows from `cow_sdk_contracts::Registry`, so no manifest
+/// path is supplied; chain 1 resolves the settlement, vault-relayer, and
+/// eth-flow (prod + staging) singletons.
+fn args(mode: &str) -> Vec<String> {
     vec![
         "registry-confirm".to_owned(),
         "--mode".to_owned(),
         mode.to_owned(),
         "--chain-ids".to_owned(),
         "1".to_owned(),
-        "--registry-toml".to_owned(),
-        manifest.to_str().unwrap().to_owned(),
     ]
 }
 
@@ -117,11 +97,7 @@ fn request_complete(buffer: &[u8]) -> bool {
 
 #[test]
 fn local_skips_missing_rpc() {
-    let temp = tempdir().unwrap();
-    let manifest = temp.path().join("registry.toml");
-    write_manifest(&manifest);
-
-    let output = command().args(args(&manifest, "local")).output().unwrap();
+    let output = command().args(args("local")).output().unwrap();
 
     assert!(output.status.success(), "{}", output_text(&output));
     assert!(output_text(&output).contains("skipped"));
@@ -129,11 +105,7 @@ fn local_skips_missing_rpc() {
 
 #[test]
 fn release_fails_on_missing_prod_rpc() {
-    let temp = tempdir().unwrap();
-    let manifest = temp.path().join("registry.toml");
-    write_manifest(&manifest);
-
-    let output = command().args(args(&manifest, "release")).output().unwrap();
+    let output = command().args(args("release")).output().unwrap();
 
     assert!(!output.status.success(), "{}", output_text(&output));
     assert!(output_text(&output).contains("missing RPC_1"));
@@ -141,31 +113,27 @@ fn release_fails_on_missing_prod_rpc() {
 
 #[test]
 fn confirms_present_bytecode() {
-    let temp = tempdir().unwrap();
-    let manifest = temp.path().join("registry.toml");
-    write_manifest(&manifest);
-    let url = start_rpc_server("0x1", "0x6001", 2);
+    // Four rows per chain (settlement, vault-relayer, eth-flow prod + staging),
+    // each probed with an eth_chainId + eth_getCode pair.
+    let url = start_rpc_server("0x1", "0x6001", 8);
 
     let output = command()
         .env("RPC_1", url)
-        .args(args(&manifest, "release"))
+        .args(args("release"))
         .output()
         .unwrap();
 
     assert!(output.status.success(), "{}", output_text(&output));
-    assert!(output_text(&output).contains("1 present"));
+    assert!(output_text(&output).contains("present"));
 }
 
 #[test]
 fn fails_when_bytecode_is_empty() {
-    let temp = tempdir().unwrap();
-    let manifest = temp.path().join("registry.toml");
-    write_manifest(&manifest);
-    let url = start_rpc_server("0x1", "0x", 2);
+    let url = start_rpc_server("0x1", "0x", 8);
 
     let output = command()
         .env("RPC_1", url)
-        .args(args(&manifest, "release"))
+        .args(args("release"))
         .output()
         .unwrap();
 
@@ -175,14 +143,11 @@ fn fails_when_bytecode_is_empty() {
 
 #[test]
 fn fails_on_chain_id_mismatch() {
-    let temp = tempdir().unwrap();
-    let manifest = temp.path().join("registry.toml");
-    write_manifest(&manifest);
-    let url = start_rpc_server("0x2", "0x6001", 1);
+    let url = start_rpc_server("0x2", "0x6001", 4);
 
     let output = command()
         .env("RPC_1", url)
-        .args(args(&manifest, "release"))
+        .args(args("release"))
         .output()
         .unwrap();
 

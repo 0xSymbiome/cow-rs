@@ -9,21 +9,6 @@ allowed:
   - file: crates/app-data/src/metadata/hooks.rs
     item: Hook
     reason: SDK-owned app-data metadata schema with a closed hook entry shape.
-  - file: crates/contracts/src/deployments/registry.rs
-    item: ManifestSchema
-    reason: Build-time TOML manifest; unknown fields indicate a repository bug.
-  - file: crates/contracts/src/deployments/registry.rs
-    item: ManifestEntry
-    reason: Build-time TOML manifest entry; unknown fields indicate a repository bug.
-  - file: crates/contracts/src/deployments/registry.rs
-    item: ManifestVerification
-    reason: Build-time TOML manifest verification block; unknown fields indicate a repository bug.
-  - file: crates/contracts/src/deployments/coverage.rs
-    item: CoverageManifest
-    reason: Build-time YAML deployment-coverage manifest; unknown fields indicate a repository bug.
-  - file: crates/contracts/src/deployments/coverage.rs
-    item: DeploymentCoverageRecord
-    reason: Build-time YAML deployment-coverage row; unknown fields indicate a repository bug.
   - file: crates/wasm/src/exports/dto/transport.rs
     item: RetryPolicyConfig
     reason: JS-facing retry-policy override request DTO; an unknown field is a caller typo that must fail loudly rather than silently drop the override.

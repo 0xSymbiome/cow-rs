@@ -425,11 +425,6 @@ enums:
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: Wasm eth-flow event DTO mirrors the eth-flow on-chain order lifecycle event family, which can grow as the protocol adds events.
-  - name: RegistryError
-    file: crates/contracts/src/deployments/registry.rs
-    category: sdk-local-state
-    expected_marker: non_exhaustive
-    reason: Registry parser diagnostics can grow as manifest validation expands.
   - name: ContractId
     file: crates/contracts/src/deployments/contract_id.rs
     category: upstream-growing
@@ -445,11 +440,6 @@ enums:
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: Deployment environment taxonomy can grow with upstream deployment authority.
-  - name: DeploymentVerificationStatus
-    file: crates/contracts/src/deployments/verification.rs
-    category: upstream-growing
-    expected_marker: non_exhaustive
-    reason: Registry-row verification modes can grow as new evidence authorities are accepted.
   - name: Eip1271SignatureError
     file: crates/signing/src/eip1271/error.rs
     category: sdk-local-state

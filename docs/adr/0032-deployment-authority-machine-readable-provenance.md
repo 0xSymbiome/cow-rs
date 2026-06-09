@@ -132,3 +132,29 @@ rows directly from `registry.toml`) are unchanged. This matches the upstream
 posture (address + source, no committed per-row provenance file) and removes the
 compile-time registry/provenance lockstep validator that previously forced the
 two files to stay byte-aligned.
+
+## Amendment 2026-06-08: registry collapsed to a const table
+
+The committed `crates/contracts/registry.toml`, the `build.rs` schema
+validator, the `deployment-coverage.yaml` manifest, and the runtime TOML
+parser (`Registry::from_toml_str` and the typed `RegistryError`) are retired.
+Measurement showed the manifest carried, for every contract the SDK resolves at
+runtime, a single CREATE2 address repeated across every chain: `GPv2Settlement`
+and `GPv2VaultRelayer` are one address each, and `CoWSwapEthFlow` is one
+production and one staging address, all identical on every supported chain. The
+1,595-row manifest, its compile-time and runtime validators, and the coverage
+manifest therefore validated data that does not vary. `Registry` now resolves
+those addresses from four committed constants behind the unchanged
+`Registry::address(ContractId, chain, env)` lookup, and `ContractId` narrows to
+the three runtime-resolved identifiers (`Settlement`, `VaultRelayer`, `EthFlow`).
+
+The deployment-trust model is unchanged in substance: the upstream
+`source_commit` each address derives from remains pinned per source repository
+in `parity/source-lock.yaml`, the addresses remain deterministic CREATE2
+singletons, and the read-only `validation-smoke registry-confirm` probe still
+asserts `eth_getCode` returns non-empty bytecode at each resolved address — it
+now iterates the const registry instead of reading `registry.toml`, and release
+mode still fails closed on a missing production-chain RPC. The "Must Remain
+True" clauses that referenced `registry.toml` rows now read against the const
+table: every resolved address is non-zero, pins to a `source-lock` commit, and
+is confirmed on-chain by the read-only probe.

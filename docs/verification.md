@@ -50,7 +50,7 @@ outside the routine blocking contract.
 | --- | --- | --- | --- | --- |
 | `cow-sdk-core` | Shared chain config, validated partner-route selection, domain types, runtime traits, the `HttpTransport` seam with `ReqwestTransport` native default, and redacted API-context diagnostics | `config_contract.rs`, `types_contract.rs`, `traits_contract.rs`, `transport_contract.rs`, `docs/audit/partner-api-routing-audit.md`, `docs/audit/http-transport-contract-audit.md` | `cargo test -p cow-sdk-core` | Foundational seam; no live dependency |
 | `cow-sdk-transport-policy` | Default policy stability, retryable-status completeness, jitter bounds, per-host limiter keying, and optional reqwest classifier coverage | `cargo test -p cow-sdk-transport-policy` over default-policy, retryable-status, jitter-bound, limiter-keying, and classifier coverage | `cargo test -p cow-sdk-transport-policy` | Live endpoint timing remains environment-sensitive |
-| `cow-sdk-contracts` | `alloy::sol!`-generated typed bindings for Settlement, EthFlow, CoWSwapOnchainOrders event decoding, the wrapped-native token, and ERC-20 / ERC-20 Permit; the typed `Registry` deployment authority; and the `Eip1271VerificationCache` trait co-located with `verify_eip1271_signature_cached` | `parity_contract.rs`, `order_contract.rs`, `onchain_orders.rs`, `weth.rs`, `signature_contract.rs`, `settlement_contract.rs`, `interaction_contract.rs`, `registry.rs`, `schema_v2_rejection.rs`, `docs/audit/contract-bindings-parity-audit.md`, `docs/audit/onchain-order-log-decoding-audit.md`, `docs/audit/deployment-registry-audit.md` | `cargo test -p cow-sdk-contracts` | Live chain-backed spot checks are optional |
+| `cow-sdk-contracts` | `alloy::sol!`-generated typed bindings for Settlement, EthFlow, CoWSwapOnchainOrders event decoding, the wrapped-native token, and ERC-20 / ERC-20 Permit; the typed `Registry` deployment authority; and the `Eip1271VerificationCache` trait co-located with `verify_eip1271_signature_cached` | `parity_contract.rs`, `order_contract.rs`, `onchain_orders.rs`, `weth.rs`, `signature_contract.rs`, `settlement_contract.rs`, `interaction_contract.rs`, `deployments/registry.rs (tests)`, `docs/audit/contract-bindings-parity-audit.md`, `docs/audit/onchain-order-log-decoding-audit.md`, `docs/audit/deployment-registry-audit.md` | `cargo test -p cow-sdk-contracts` | Live chain-backed spot checks are optional |
 | `cow-sdk-signing` | EIP-712 order signing, typed-data payload construction, generated ids, EIP-1271 payloads, cancellation signing, domain separation, the always-available `NoopEip1271VerificationCache`, and the feature-gated `InMemoryEip1271VerificationCache` implementation | `property_contract.rs`, `order_signing_contract.rs`, `eip1271_contract.rs`, `eip1271_cache_contract.rs`, `cancellation_contract.rs`, `domain_contract.rs`, `docs/audit/eip1271-verification-cache-audit.md` | `cargo test -p cow-sdk-signing --features in-memory-cache` | Live chain-backed spot checks are optional |
 | `cow-sdk-app-data` | Canonical JSON rendering, app-data schema handling, typed partner-fee metadata, CID conversion, fail-closed CID/app-data encoding, the IPFS read seam, and redacted IPFS-config diagnostics | `property_contract.rs`, `app_data_info_contract.rs`, `cid_contract.rs`, `schema_contract.rs`, `fetch_contract.rs`, `ipfs_config_redaction_contract.rs`, `docs/audit/cid-dependency-audit.md`, `docs/audit/dependency-gate-audit.md`, `docs/audit/credential-surface-contract-hygiene-audit.md` | `cargo test -p cow-sdk-app-data` | Live IPFS read access remains an optional integration check |
 | `cow-sdk-orderbook` | Typed orderbook transport over the `HttpTransport` seam, typestate builder construction, retry/status behavior, DTO conversion, typed quote-request `oneOf`s, quote-request `appData` and pagination fidelity, quote-response `OrderParameters` coverage, malformed-payload failure boundaries, source-schema evidence, redacted context-override diagnostics, and validated partner header assembly | `property_contract.rs`, `api_contract.rs`, `builder_contract.rs`, `request_contract.rs`, `transform_contract.rs`, `types_contract.rs`, `wire_contract.rs`, `docs/audit/dependency-gate-audit.md`, `docs/audit/partner-api-routing-audit.md`, `docs/audit/typestate-builder-contract-audit.md`, `docs/audit/quote-response-surface-audit.md` | `cargo test -p cow-sdk-orderbook` | Live orderbook behavior depends on remote endpoints |
@@ -253,23 +253,15 @@ verification statuses:
 - `CanonicalUnverified`: the row is canonical source evidence, but no committed
   hash or external attestation is available
 
-Coverage rows carry not-deployed, not-supported, or out-of-scope status and do
-not resolve through `Registry::address`. The review procedure is:
+The review procedure is:
 
-1. Confirm every `registry.toml` row is keyed by `(contract, chain, environment)`
-   with no duplicates and resolves to a non-zero address.
-2. For code-hash rows, confirm the upstream source repository at the commit
-   pinned in `parity/source-lock.yaml` lists the address, and that the live
-   presence probe (`registry-confirm`) reports non-empty `eth_getCode` bytecode
-   on the expected chain.
-3. For external rows, inspect the named explorer or attestation source and
-   confirm the address, chain, and contract family match.
-4. For canonical-unverified rows, confirm the address comes from the pinned
-   source-lock commit; these carry no upstream-manifest entry or external
-   attestation.
-5. For not-deployed coverage, confirm the probe returned empty bytecode.
-6. For unsupported coverage, confirm the chain is outside the Rust runtime
-   support set and is not present in the registry.
+1. Confirm `Registry::address` resolves the settlement, vault-relayer, and
+   eth-flow contracts to non-zero addresses, and that the deployment-only Lens
+   chain resolves to `None`.
+2. Confirm each resolved address matches the upstream source repository at the
+   commit pinned in `parity/source-lock.yaml`, and that the live presence probe
+   (`registry-confirm`) reports non-empty `eth_getCode` bytecode on every
+   runtime-supported chain.
 
 COW Shed adds one extra bytecode check: proxy creation-code files under the
 contracts ABI directory carry neighboring SHA-256 files, and `build.rs`

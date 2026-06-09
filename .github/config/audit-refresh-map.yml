@@ -33,4 +33,4 @@ entries:
     refresh_triggers:
       paths:
         - crates/contracts/src/deployments/chain_id.rs
-        - crates/contracts/registry.toml
+        - crates/contracts/src/deployments/registry.rs

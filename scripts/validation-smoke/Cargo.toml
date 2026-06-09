@@ -8,11 +8,12 @@ publish = false
 [dependencies]
 anyhow = "1.0.102"
 clap = { version = "4.5.51", features = ["derive", "env"] }
+cow-sdk-contracts = { path = "../../crates/contracts" }
+cow-sdk-core = { path = "../../crates/core" }
 hex = "0.4.3"
 reqwest = { version = "0.13.2", default-features = false, features = ["blocking", "json", "rustls"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
-toml = "1.1.2"
 
 [[bin]]
 name = "validation-smoke"
@@ -20,8 +21,5 @@ path = "src/main.rs"
 
 [lib]
 path = "src/lib.rs"
-
-[dev-dependencies]
-tempfile = "3.23.0"
 
 [workspace]

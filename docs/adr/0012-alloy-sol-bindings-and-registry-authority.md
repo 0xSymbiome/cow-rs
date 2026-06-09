@@ -112,3 +112,15 @@ description produces upstream-identical bytes.
 
 - [Contract Bindings Parity Audit](../audit/contract-bindings-parity-audit.md)
 - [Deployment Registry Audit](../audit/deployment-registry-audit.md)
+
+## Amendment 2026-06-08: deployment registry collapsed to a const table
+
+The "registry authority" half of this decision is updated: the committed
+`crates/contracts/registry.toml` manifest and its compile-time / runtime
+validators are retired in favour of a const table of CREATE2 singleton
+addresses, per the 2026-06-08 amendment to
+[ADR 0032](0032-deployment-authority-machine-readable-provenance.md). The
+inline `alloy::sol!` binding decision and the parity-fixture posture recorded
+above are unchanged; only the address-resolution backing store moved from a TOML
+manifest to committed constants, and `RegistryError` (the runtime TOML-parser
+diagnostic) is removed with the parser.

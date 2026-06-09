@@ -1,7 +1,7 @@
 # Lens Chain Evidence Audit
 
 Status: Accepted
-Last reviewed: 2026-05-15
+Last reviewed: 2026-06-08
 Owning surface: deployment registry chain taxonomy
 Refresh trigger: Refresh when Lens deployment rows or chain support posture changes.
 
@@ -17,7 +17,7 @@ added to the runtime orderbook-supported chain list by this evidence alone.
 | Runtime support exclusion | `SupportedChainId` does not include Lens, so orderbook clients cannot select it as a normal trading chain. |
 | Upstream deployment rows | Composable-order and COW Shed rows are sourced from pinned upstream deployment artifacts. |
 | Provenance lockstep | Registry rows and deployment provenance rows carry matching address, chain, environment, and verification values. |
-| Coverage distinction | Unsupported or empty-code outcomes remain coverage records and do not become registry rows. |
+| Coverage distinction | Unsupported or empty-code outcomes resolve to `None` and never surface as a deployed address. |
 | Public route probes | The Lens orderbook probe artifact records 404 responses on the checked public routes as of 2026-05-15. |
 | Source locks | The helper repositories are pinned by commit before their deployment rows are trusted. |
 | Documentation | Deployment docs describe Lens as deployment evidence, not runtime chain support. |

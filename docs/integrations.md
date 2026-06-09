@@ -73,7 +73,7 @@ deployment addresses still resolvable through the typed `Registry`. COW Shed
 rests on the same provenance and registry foundations, which improve on directly
 copying TypeScript package behavior in these concrete ways:
 
-- deployment addresses resolve through one typed schema v2 registry rather than
+- deployment addresses resolve through one typed `Registry` const table rather than
   package-local constants
 - not-deployed and unsupported chains live in a coverage manifest instead of
   being mixed into addressable rows

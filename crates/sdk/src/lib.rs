@@ -113,11 +113,6 @@ pub use cow_sdk_app_data as app_data;
 #[cfg_attr(docsrs, doc(cfg(feature = "browser-wallet")))]
 pub use cow_sdk_browser_wallet as browser_wallet;
 pub use cow_sdk_contracts as contracts;
-/// Typed [`RegistryError`] surface produced by the runtime registry
-/// loader, re-exported on the facade so downstream consumers can match
-/// against every failure mode without reaching into the contracts crate
-/// directly.
-pub use cow_sdk_contracts::RegistryError;
 pub use cow_sdk_core as core;
 /// Opt-in COW Shed account-abstraction hook helpers (proxy derivation,
 /// EIP-712 signing, factory calldata, and the [`cow_shed::CowShedHooks`]

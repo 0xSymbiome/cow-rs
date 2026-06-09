@@ -44,7 +44,6 @@ pub mod verify;
 /// interaction helpers.
 pub mod weth;
 
-mod chain_ids;
 mod primitives;
 
 pub use primitives::{
@@ -52,10 +51,7 @@ pub use primitives::{
     sell_balance_from_marker, sell_balance_name,
 };
 
-pub use deployments::{
-    ContractId, DeploymentChainId, DeploymentEnv, DeploymentVerificationStatus, Registry,
-    RegistryError,
-};
+pub use deployments::{ContractId, DeploymentChainId, DeploymentEnv, Registry};
 pub use eip1271::IERC1271;
 pub use erc20::{IERC20, IERC20Permit, PERMIT_TYPE_HASH, permit_typed_data_hash};
 pub use errors::ContractsError;

@@ -1,18 +1,19 @@
 //! Read-only on-chain presence probe for the deployment registry.
 //!
-//! For every `(contract_id, chain_id, env)` row in the committed `registry.toml`
-//! address manifest, this confirms — against a configured RPC — that the chain
-//! id matches and that `eth_getCode` returns non-empty bytecode at the recorded
-//! address. It never mutates any file: trust rests on the upstream commit pinned
+//! For every `(contract_id, chain_id, env)` deployment the SDK's
+//! `cow_sdk_contracts::Registry` resolves, this confirms — against a configured
+//! RPC — that the chain id matches and that `eth_getCode` returns non-empty
+//! bytecode at the resolved address. It never mutates any file: trust rests on the upstream commit pinned
 //! in `parity/source-lock.yaml` and the deterministic CREATE2 address, with this
 //! probe adding a live check that the claimed deployment actually exists
 //! on-chain. Committed per-row code hashes are intentionally not used (see
 //! ADR 0032).
 
-use std::{collections::BTreeSet, env, fs, path::PathBuf, time::Duration};
+use std::{collections::BTreeSet, env, time::Duration};
 
 use anyhow::{Context, Result, bail};
 use clap::ValueEnum;
+use cow_sdk_contracts::{ContractId, DeploymentChainId, DeploymentEnv, Registry};
 use reqwest::blocking::Client;
 use serde::Serialize;
 use serde_json::{Value, json};
@@ -42,9 +43,6 @@ pub struct RegistryConfirmArgs {
     /// Comma-separated chain ids to probe.
     #[arg(long, value_delimiter = ',', required = true)]
     pub chain_ids: Vec<u64>,
-    /// Registry manifest supplying the `(contract, chain, env, address)` rows.
-    #[arg(long, default_value = "crates/contracts/registry.toml")]
-    pub registry_toml: PathBuf,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
@@ -75,7 +73,6 @@ pub struct RegistryConfirmationSkip {
 #[derive(Debug, Serialize)]
 pub struct RegistryConfirmReport {
     pub mode: RegistryMode,
-    pub registry_toml: String,
     pub selected_chain_ids: Vec<u64>,
     pub confirmed_rows: usize,
     pub skipped_rows: Vec<RegistryConfirmationSkip>,
@@ -124,11 +121,7 @@ pub fn run(args: &RegistryConfirmArgs) -> Result<RegistryConfirmReport> {
     let selected: BTreeSet<u64> = args.chain_ids.iter().copied().collect();
     let selected_chain_ids = selected.iter().copied().collect::<Vec<_>>();
 
-    let raw = fs::read_to_string(&args.registry_toml)
-        .with_context(|| format!("failed to read {}", args.registry_toml.display()))?;
-    let doc: Value = toml::from_str(&raw)
-        .with_context(|| format!("failed to parse {}", args.registry_toml.display()))?;
-
+    let registry = Registry::default();
     let client = Client::builder()
         .user_agent("cow-rs-validation-smoke/registry-confirm")
         .timeout(Duration::from_secs(20))
@@ -140,56 +133,47 @@ pub fn run(args: &RegistryConfirmArgs) -> Result<RegistryConfirmReport> {
     let mut failures = Vec::new();
     let mut matched = 0usize;
 
-    let entries = doc
-        .get("entries")
-        .and_then(Value::as_array)
-        .context("registry manifest has no `entries` array")?;
+    // The CREATE2 singletons the registry resolves: settlement and vault-relayer
+    // are environment-invariant; eth-flow carries a production and a staging
+    // deployment.
+    const PROBES: [(ContractId, DeploymentEnv); 4] = [
+        (ContractId::Settlement, DeploymentEnv::Prod),
+        (ContractId::VaultRelayer, DeploymentEnv::Prod),
+        (ContractId::EthFlow, DeploymentEnv::Prod),
+        (ContractId::EthFlow, DeploymentEnv::Staging),
+    ];
 
-    for entry in entries {
-        let chain_id = entry
-            .get("chain_id")
-            .and_then(Value::as_u64)
-            .context("registry entry missing chain_id")?;
-        if !selected.contains(&chain_id) {
+    for &chain_id in &selected {
+        let Ok(chain) = DeploymentChainId::try_from(chain_id) else {
             continue;
-        }
-        matched += 1;
-        let contract_id = entry
-            .get("contract_id")
-            .and_then(Value::as_str)
-            .context("registry entry missing contract_id")?
-            .to_owned();
-        let env = entry
-            .get("env")
-            .and_then(Value::as_str)
-            .context("registry entry missing env")?
-            .to_owned();
-        let address = entry
-            .get("address")
-            .and_then(Value::as_str)
-            .context("registry entry missing address")?
-            .to_owned();
-        let row = RegistryRowKey {
-            contract_id,
-            chain_id,
-            env: env.clone(),
         };
-
-        match probe_presence(&client, chain_id, &env, &address, args.mode) {
-            Ok(Presence::Confirmed) => confirmed_rows += 1,
-            Ok(Presence::Skipped(reason)) => {
-                skipped_rows.push(RegistryConfirmationSkip { row, reason });
+        for (contract_id, env) in PROBES {
+            let Some(address) = registry.address(contract_id, chain, env) else {
+                continue;
+            };
+            matched += 1;
+            let row = RegistryRowKey {
+                contract_id: contract_id.as_str().to_owned(),
+                chain_id,
+                env: env.as_str().to_owned(),
+            };
+            match probe_presence(&client, chain_id, env.as_str(), &address.to_hex_string(), args.mode)
+            {
+                Ok(Presence::Confirmed) => confirmed_rows += 1,
+                Ok(Presence::Skipped(reason)) => {
+                    skipped_rows.push(RegistryConfirmationSkip { row, reason });
+                }
+                Err(error) => failures.push(RegistryConfirmationFailure {
+                    row,
+                    message: error.to_string(),
+                }),
             }
-            Err(error) => failures.push(RegistryConfirmationFailure {
-                row,
-                message: error.to_string(),
-            }),
         }
     }
 
     if matched == 0 {
         bail!(
-            "no registry entries matched --chain-ids {}",
+            "no deployment rows matched --chain-ids {}",
             args.chain_ids
                 .iter()
                 .map(u64::to_string)
@@ -200,7 +184,6 @@ pub fn run(args: &RegistryConfirmArgs) -> Result<RegistryConfirmReport> {
 
     Ok(RegistryConfirmReport {
         mode: args.mode,
-        registry_toml: args.registry_toml.display().to_string(),
         selected_chain_ids,
         confirmed_rows,
         skipped_rows,
