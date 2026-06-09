@@ -435,6 +435,19 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- The COW Shed account-abstraction surface — proxy derivation, EIP-712 hook
+  signing, the `executeHooks` calldata builders, and the `CowShedHooks`
+  orchestrator — moved from the standalone `cow-sdk-cow-shed` crate into the
+  `cow_sdk_contracts::cow_shed` module, gated behind the off-by-default
+  `cow-shed` feature of `cow-sdk-contracts` (with `cow-shed-gnosis` lifting the
+  Gnosis `COWShedForComposableCoW` forwarder). The public types are unchanged
+  and are now reached through `cow_sdk_contracts::cow_shed`; the facade still
+  re-exports them as `cow_sdk::cow_shed` behind its `cow-shed` feature. With the
+  feature off, the default `cow-sdk-contracts` surface and dependency closure
+  are unchanged, so the capability stays off the default `cow-sdk` closure. The
+  reserved-but-unused `cow-shed-ens` feature and its `COWShedFactoryEns` binding
+  were dropped, and the module's `sol!` ABI definitions are consolidated into a
+  single `bindings.rs` (ADR 0049).
 - The shared HTTP transport policy — the `run_with_retry` driver, rate-limit,
   jitter, `Retry-After` parsing, target-neutral wall clock, and transport-error
   classification — moved from the standalone `cow-sdk-transport-policy` crate

@@ -33,7 +33,7 @@ contracts.
 | Node.js 22 or 24 LTS backend service | `<published-cow-sdk-wasm-package>` | Node target works with explicit fetch or callback transport |
 | Cloudflare Worker proxying orderbook calls | `<published-cow-sdk-wasm-package>/cloudflare` | Size-compatible with the current Workers Free compressed-size limit at the time of measurement; full Workers support pending release-bundle and startup validation |
 | Deno | `<published-cow-sdk-wasm-package>` | Experimental build-only support; validate in your own runtime before production use |
-| Account-abstraction hooks via Cow Shed | `cow-sdk` with the `cow-shed` feature, or `cow-sdk-cow-shed` directly | Deterministic proxy derivation, EIP-712 hook signing, factory calldata, and the `CowShedHooks` orchestrator; opt-in and off the default closure |
+| Account-abstraction hooks via Cow Shed | `cow-sdk` with the `cow-shed` feature, or `cow-sdk-contracts` with the `cow-shed` feature | Deterministic proxy derivation, EIP-712 hook signing, factory calldata, and the `CowShedHooks` orchestrator; opt-in and off the default closure |
 | TWAP, composable, bridging, flash-loan, weiroll, or hardware-wallet flows | Upstream TypeScript packages until `cow-rs` ships those capabilities | These capability families are intentionally outside the 0.1.0 package scope |
 | Non-JS wasm consumers, WASI, WebAssembly components, TinyGo, Blazor, AssemblyScript guests, or no_std | Out of scope for 0.1.0 | Use native Rust crates where possible; the npm package targets JavaScript hosts |
 <!-- runtime-routing:end -->

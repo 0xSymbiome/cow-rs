@@ -1,7 +1,7 @@
 # COW Shed Contract Bindings Audit
 
 Status: Current
-Last reviewed: 2026-06-08
+Last reviewed: 2026-06-09
 Owning surface: inline COW Shed `alloy::sol!` bindings, proxy creation-code artifacts, version-call evidence, and self-hosted deployment addresses
 Refresh trigger: Refresh when COW Shed deployments, proxy creation code, factory ABIs, hook type strings, the deployed `VERSION()` return value, or the upstream commit pin for the COW Shed source change.
 Related docs:
@@ -22,7 +22,7 @@ This audit covers:
 - the per-version proxy creation-code artifacts embedded by the cow-shed
   crate and guarded by the CREATE2 address-parity test;
 - the per-chain `VERSION()` call evidence captured in
-  `crates/cow-shed/tests/fixtures/version-call-results.json`;
+  `crates/contracts/tests/fixtures/version-call-results.json`;
 - the self-hosted COW Shed factory and
   implementation contracts;
 - the Gnosis-only `COWShedForComposableCoW` forwarder gate that enforces
@@ -40,9 +40,9 @@ app-data crate; that boundary is governed by the
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
 | Inline bindings | The inline COW Shed `alloy::sol!` bindings (mirroring upstream pinned by commit in `parity/source-lock.yaml`) emit type strings byte-identical to the upstream sources, including no whitespace between commas, proven by the JSON parity fixtures under `parity/fixtures/cow_shed/` | Conforms |
-| Proxy creation-code | `v1.0.0.bin` and `v1.0.1.bin` artifacts are embedded by the cow-shed crate and guarded by the CREATE2 address-parity test `crates/cow-shed/tests/deployment_address_parity_contract.rs`, which derives proxy addresses from the `.bin` bytes and locks them to `parity/fixtures/cow_shed/proxy_addresses.json` for both versions | Conforms |
+| Proxy creation-code | `v1.0.0.bin` and `v1.0.1.bin` artifacts are embedded by the cow-shed crate and guarded by the CREATE2 address-parity test `crates/contracts/tests/deployment_address_parity_contract.rs`, which derives proxy addresses from the `.bin` bytes and locks them to `parity/fixtures/cow_shed/proxy_addresses.json` for both versions | Conforms |
 | Version-call evidence | Every per-chain row in `version-call-results.json` records `decoded_version == "1.0.1"` and `expected_sdk_version == "CowShedVersion::V1_0_1"` | Conforms |
-| Deployment addresses | COW Shed factory and implementation addresses are self-hosted in `crates/cow-shed/src/address/mod.rs` for every supported chain; the COW-Shed-for-ComposableCoW address diverges only on Gnosis Chain (id 100) | Conforms |
+| Deployment addresses | COW Shed factory and implementation addresses are self-hosted in `crates/contracts/src/cow_shed/address/mod.rs` for every supported chain; the COW-Shed-for-ComposableCoW address diverges only on Gnosis Chain (id 100) | Conforms |
 | Gnosis forwarder gate | The Gnosis-only forwarder is reachable only when the caller selects chain id 100; all other chains return the typed `CowShedError::COWShedForComposableCoWGnosisOnly { chain }` variant | Conforms (contract; helper body lands in a later capability landing) |
 | Hook type strings | Canonical type strings carry no whitespace between commas in declaration order; the EOA signature byte order is `r || s || v` | Conforms |
 | EIP-712 hashing | Domain separator and signing digest are produced by `alloy_sol_types::Eip712Domain::separator` and `<ExecuteHooks as SolStruct>::eip712_signing_hash` respectively; bytes match the reference parity fixtures | Conforms |
@@ -68,11 +68,11 @@ parity contract test.
 ### Proxy creation-code
 
 Per-version proxy creation-code artifacts ship at
-`crates/cow-shed/src/address/proxy-creation-code/v1.0.0.bin` and
+`crates/contracts/src/cow_shed/address/proxy-creation-code/v1.0.0.bin` and
 `v1.0.1.bin`, embedded into the cow-shed crate via `include_bytes!` in
-`crates/cow-shed/src/address/proxy_code.rs`. Their integrity is guarded by
+`crates/contracts/src/cow_shed/address/mod.rs`. Their integrity is guarded by
 the CREATE2 address-parity test
-`crates/cow-shed/tests/deployment_address_parity_contract.rs::proxy_for_matches_reference_vectors`,
+`crates/contracts/tests/deployment_address_parity_contract.rs::proxy_for_matches_reference_vectors`,
 which derives proxy addresses from the `.bin` bytes (via
 `proxy_creation_code` → `init_code_hash` → keccak) and locks them to the
 pinned vectors in `parity/fixtures/cow_shed/proxy_addresses.json` for both
@@ -86,7 +86,7 @@ code, so derivation works correctly for any user address.
 ### Version-call evidence
 
 The per-chain `VERSION()` call evidence at
-`crates/cow-shed/tests/fixtures/version-call-results.json` records the
+`crates/contracts/tests/fixtures/version-call-results.json` records the
 deployed implementation address, the factory address, and the decoded
 version string per chain id. Every row records
 `decoded_version == "1.0.1"` and `expected_sdk_version ==
@@ -124,7 +124,7 @@ is opt-in only via the `Call::delegate_call` builder, which requires a
 The COW Shed EIP-712 hashing path delegates to alloy primitives
 end-to-end. The `Call` and `ExecuteHooks` typed-data structs are
 declared via the `alloy_sol_types::sol!` macro in
-`crates/cow-shed/src/eip712/sol_types.rs`; the macro emits the canonical
+`crates/contracts/src/cow_shed/bindings.rs`; the macro emits the canonical
 type strings at expansion time and rejects any whitespace insertion or
 declaration-order swap at macro expansion. `cow_shed_eip712_domain`
 constructs an `alloy_sol_types::Eip712Domain` (name `"COWShed"`, the
@@ -150,20 +150,20 @@ independent keccak path rather than the alloy crate's own.
 ### Call type identity
 
 The COW Shed crate carries one `Call` type definition. The
-macro-emitted `Call` in `crates/cow-shed/src/eip712/sol_types.rs` is the
+macro-emitted `Call` in `crates/contracts/src/cow_shed/bindings.rs` is the
 single source of truth: the same sol! block declares the canonical
 `ExecuteHooks` typed-data envelope plus the `COWShed` proxy and
 `COWShedFactory` factory interfaces, so the `Call[]` arguments on every
 hook-bearing function (`executeHooks`, `executePreSignedHooks`,
 `isPreSignedHooks`, `preSignHooks`, `trustedExecuteHooks` on the proxy,
 and the factory `executeHooks`) reference the same generated Rust type.
-The `crates/cow-shed/src/bindings/shed.rs` and
-`crates/cow-shed/src/bindings/factory.rs` modules re-export the
+The `crates/contracts/src/cow_shed/bindings.rs` and
+`crates/contracts/src/cow_shed/bindings.rs` modules re-export the
 canonical interfaces under
-`cow_sdk_cow_shed::bindings::shed::COWShed` and
-`cow_sdk_cow_shed::bindings::factory::COWShedFactory`, and
-`crates/cow-shed/src/types/call.rs` re-exports the canonical struct as
-the crate-level `cow_sdk_cow_shed::Call` alias. The ergonomic builder
+`cow_sdk_contracts::cow_shed::bindings::shed::COWShed` and
+`cow_sdk_contracts::cow_shed::bindings::factory::COWShedFactory`, and
+`crates/contracts/src/cow_shed/types.rs` re-exports the canonical struct as
+the crate-level `cow_sdk_contracts::cow_shed::Call` alias. The ergonomic builder
 helpers (`Call::new(target, value, call_data)`, `Call::allow_failure()`,
 `Call::delegate_call()`) are inherent `const fn` methods on `Call`, so
 call-site code reads in snake-case while the sol-generated struct keeps its
@@ -177,7 +177,7 @@ edge case) lock the wire-byte contract for both the factory
 ### CREATE2 derivation
 
 Proxy address derivation in
-`crates/cow-shed/src/address/mod.rs::proxy_of` routes through
+`crates/contracts/src/cow_shed/address/mod.rs::proxy_of` routes through
 [`alloy_primitives::Address::create2`], which assembles the canonical
 EIP-1014 preimage (`0xff || factory || salt || init_code_hash`) and
 keccak256-hashes it internally. The salt is the user address left-padded
@@ -198,7 +198,7 @@ init-code-hash, and proxy-address byte contract.
 ### EOA signature byte order
 
 The ERC-2098 compact signature decoder
-`cow_sdk_cow_shed::eoa_signature_from_compact` concatenates the
+`cow_sdk_contracts::cow_shed::eoa_signature_from_compact` concatenates the
 caller-supplied `r_compact` and `vs` 32-byte arrays into the 64-byte
 ERC-2098 input and routes through
 [`alloy_primitives::Signature::from_erc2098`], which extracts the
@@ -218,15 +218,15 @@ wire-byte contract end-to-end.
 
 Primary implementation points:
 
-- `crates/cow-shed/src/eip712/sol_types.rs`
-- `crates/cow-shed/src/bindings/`
+- `crates/contracts/src/cow_shed/bindings.rs`
+- `crates/contracts/src/cow_shed/bindings.rs`
 - `parity/source-lock.yaml`
-- `crates/cow-shed/src/address/proxy-creation-code/v1.0.0.bin`
-- `crates/cow-shed/src/address/proxy-creation-code/v1.0.1.bin`
-- `crates/cow-shed/src/address/proxy_code.rs`
-- `crates/cow-shed/tests/fixtures/version-call-results.json`
-- `crates/cow-shed/src/address/mod.rs`
-- `crates/cow-shed/tests/deployment_address_parity_contract.rs`
+- `crates/contracts/src/cow_shed/address/proxy-creation-code/v1.0.0.bin`
+- `crates/contracts/src/cow_shed/address/proxy-creation-code/v1.0.1.bin`
+- `crates/contracts/src/cow_shed/address/mod.rs`
+- `crates/contracts/tests/fixtures/version-call-results.json`
+- `crates/contracts/src/cow_shed/address/mod.rs`
+- `crates/contracts/tests/deployment_address_parity_contract.rs`
 - `parity/fixtures/cow_shed/proxy_addresses.json`
 - `parity/cow-shed-invariants.md`
 - `parity/fixtures/cow_shed/`
@@ -237,7 +237,6 @@ Primary regression coverage:
 Validation surface:
 
 ```text
-cargo test -p cow-sdk-cow-shed
 cargo test -p cow-sdk-contracts --all-features
 cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml
 ```

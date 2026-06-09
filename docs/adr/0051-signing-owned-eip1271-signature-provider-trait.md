@@ -56,7 +56,7 @@ definition exists in any other crate.
 
 The negative-edge invariants `cow-sdk-signing ⇏ cow-sdk-trading`,
 `cow-sdk-composable ⇏ cow-sdk-trading`, and
-`cow-sdk-cow-shed ⇏ cow-sdk-trading` are asserted via `cargo metadata` and
+`cow-sdk-contracts[cow-shed] ⇏ cow-sdk-trading` are asserted via `cargo metadata` and
 the `parity-maintainer check-deps` validator in CI. The reverse-edge guard
 `cow-sdk-trading ⇒ cow-sdk-signing` continues to hold.
 
@@ -97,7 +97,7 @@ the ADR every time a trait import lands in a new file.
 - Crate graph: `cargo metadata` continues to prove
   `cow-sdk-signing ⇏ cow-sdk-trading`,
   `cow-sdk-composable ⇏ cow-sdk-trading`,
-  `cow-sdk-cow-shed ⇏ cow-sdk-trading`.
+  `cow-sdk-contracts[cow-shed] ⇏ cow-sdk-trading`.
 - Validation and review: the compile-fail regression at
   `crates/trading/tests/eip1271_signature_provider_no_reexport.rs`
   continues to fail to compile when any future re-export of
@@ -119,7 +119,7 @@ the ADR every time a trait import lands in a new file.
   canonical paths and confuse downstream callers; any future renaming
   would have to touch both.
 - Duplicate the trait definition in `cow-sdk-composable` and
-  `cow-sdk-cow-shed`: would let every leaf crate implement its own
+  `cow-sdk-contracts`: would let every leaf crate implement its own
   variant and break interop with the trading submission path.
 
 ## Links

@@ -39,12 +39,12 @@ alloy-signer = [
     "cow-sdk-alloy-signer/eip712",
 ]
 browser-wallet = ["dep:cow-sdk-browser-wallet"]
-# Opt-in COW Shed account-abstraction hooks. Off by default, so the crate is
+# Opt-in COW Shed account-abstraction hooks. Off by default, so the surface is
 # never on the default `cow-sdk` dependency closure (ADR 0049). Re-exports the
-# `cow-sdk-cow-shed` leaf as `cow_sdk::cow_shed`.
-cow-shed = ["dep:cow-sdk-cow-shed"]
+# `cow-sdk-contracts` `cow_shed` module as `cow_sdk::cow_shed`.
+cow-shed = ["cow-sdk-contracts/cow-shed"]
 # Lifts the Gnosis-only `COWShedForComposableCoW` forwarder surface.
-cow-shed-gnosis = ["cow-shed", "cow-sdk-cow-shed/cow-shed-gnosis"]
+cow-shed-gnosis = ["cow-shed", "cow-sdk-contracts/cow-shed-gnosis"]
 http-classifier = ["cow-sdk-core/reqwest-classifier"]
 # Opt-in read-only subgraph analytics. Off by default, so the crate is never on
 # the default `cow-sdk` dependency closure. Re-exports the `cow-sdk-subgraph`
@@ -66,7 +66,6 @@ tracing = [
     "cow-sdk-signing/tracing",
     "cow-sdk-trading/tracing",
     "cow-sdk-browser-wallet?/tracing",
-    "cow-sdk-cow-shed?/tracing",
     "cow-sdk-subgraph?/tracing",
     "cow-sdk-wasm?/tracing",
 ]
@@ -78,7 +77,6 @@ cow-sdk-alloy-signer = { path = "../alloy-signer", version = "0.1.0", optional =
 cow-sdk-app-data = { path = "../app-data", version = "0.1.0" }
 cow-sdk-browser-wallet = { path = "../browser-wallet", version = "0.1.0", optional = true, default-features = false }
 cow-sdk-contracts = { path = "../contracts", version = "0.1.0" }
-cow-sdk-cow-shed = { path = "../cow-shed", version = "0.1.0", optional = true, default-features = false }
 cow-sdk-orderbook = { path = "../orderbook", version = "0.1.0" }
 cow-sdk-signing = { path = "../signing", version = "0.1.0" }
 cow-sdk-subgraph = { path = "../subgraph", version = "0.1.0", optional = true, default-features = false }

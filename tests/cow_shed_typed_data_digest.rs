@@ -12,7 +12,7 @@
 use alloy_primitives::{Bytes, U256, address, b256};
 use cow_sdk_alloy_signer::__seam::cow_typed_data_payload_to_alloy;
 use cow_sdk_contracts::DeploymentChainId;
-use cow_sdk_cow_shed::{
+use cow_sdk_contracts::cow_shed::{
     Call, CowShedVersion, cow_shed_eip712_domain, execute_hooks_signing_hash,
     execute_hooks_typed_data_payload, proxy_for,
 };

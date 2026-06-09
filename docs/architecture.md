@@ -22,7 +22,6 @@ flowchart TD
   end
   subgraph cl_features["Opt-in features (off by default)"]
     wallet["cow-sdk-browser-wallet"]
-    cow_shed["cow-sdk-cow-shed"]
     alloy["cow-sdk-alloy"]
     alloy_provider["cow-sdk-alloy-provider"]
     alloy_signer["cow-sdk-alloy-signer"]
@@ -38,7 +37,6 @@ flowchart TD
   sdk --> appdata
   sdk -.->|feature: subgraph| subgraph_crate
   sdk -.->|feature: browser-wallet| wallet
-  sdk -.->|feature: cow-shed| cow_shed
   sdk -.->|feature: alloy| alloy
   sdk -.->|feature: alloy-provider| alloy_provider
   sdk -.->|feature: alloy-signer| alloy_signer
@@ -69,7 +67,7 @@ complete crate inventory is the [Crate Roles](#crate-roles) table below.
 | --- | --- | --- |
 | `cow-sdk` | Thin public facade | You want the main Rust SDK entrypoint. |
 | `cow-sdk-core` | Shared domain types, config, validation, runtime traits, the `HttpTransport` seam with its native `ReqwestTransport` default, and the opt-in `transport::policy` module (shared HTTP retry driver `run_with_retry`, rate-limit, jitter, `Retry-After`, target-neutral wall clock, and transport classification behind the off-by-default `transport-policy` feature) | You need the common typed contracts, or consistent transport behavior across typed clients via the `transport-policy` feature. |
-| `cow-sdk-contracts` | `alloy::sol!`-generated typed bindings, the typed `Registry` deployment authority, fail-closed `CoWSwapOnchainOrders` event decoding, and deterministic hashing and verification helpers | You need ABI-level, address-authority, or settlement-level primitives. |
+| `cow-sdk-contracts` | `alloy::sol!`-generated typed bindings, the typed `Registry` deployment authority, fail-closed `CoWSwapOnchainOrders` event decoding, and deterministic hashing and verification helpers, plus the opt-in `cow-shed` account-abstraction module (proxy derivation, EIP-712 hook signing, calldata) | You need ABI-level, address-authority, or settlement-level primitives. |
 | `cow-sdk-signing` | Typed-data, signing, cancellation, UID helpers, and the `Eip1271VerificationCache` seam (the always-available `NoopEip1271VerificationCache` plus the feature-gated `InMemoryEip1271VerificationCache`) | You need signing without the full trading layer. |
 | `cow-sdk-app-data` | App-data encoding, schema handling, and CID behavior | You need app-data generation or validation. |
 | `cow-sdk-orderbook` | Typed orderbook transport over the `HttpTransport` seam, with the `OrderbookApiBuilder` typestate | You need explicit request and response control. |
@@ -82,7 +80,6 @@ complete crate inventory is the [Crate Roles](#crate-roles) table below.
 | `cow-sdk-alloy-signer` | Native Alloy-backed local private-key `Signer` adapter | You need local message or EIP-712 signing without provider-backed transaction submission. |
 | `cow-sdk-alloy` | Composed native Alloy provider plus signer adapter | You need one native client for `Provider`, `LogProvider`, `SigningProvider`, and `Signer` helper flows. |
 | `cow-sdk-composable` | Deferred composable-order capability recorded by [ADR 0048](adr/0048-composable-conditional-order-framework.md); no crate body ships, while composable deployment addresses remain resolvable through the typed `Registry` | You want to track the deferred composable capability; until it lands, use the upstream composable surface. |
-| `cow-sdk-cow-shed` | COW Shed account-abstraction proxy derivation, EIP-712 hook signing, and `executeHooks` calldata encoding for EOA and EIP-1271 owners, with the `CowShedHooks` orchestrator | You need the COW Shed account-abstraction surface. |
 | `cow-sdk-test` | Published in-memory test doubles for the public trait seams (`OrderbookClient`, `Signer`, `Provider`/`SigningProvider`), surfaced through the facade `testing` feature as `cow_sdk::testing` | You want to test your integration with no live orderbook, RPC, or wallet (a dev-dependency). |
 
 The composable-order capability is deferred and recorded only by

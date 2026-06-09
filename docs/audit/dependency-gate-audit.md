@@ -120,7 +120,7 @@ lacks a matching rationale in this audit.
 The workspace retains the `sha3 = "0.11.0"` and `num-bigint = "0.4.6"`
 declarations at the workspace-dependencies level so the per-crate
 `[dev-dependencies]` `sha3.workspace = true` declarations on
-`cow-sdk-contracts`, `cow-sdk-signing`, and `cow-sdk-cow-shed` resolve
+`cow-sdk-contracts` and `cow-sdk-signing` resolve
 for their parity-oracle tests, and so the `num-bigint` transitive paths
 through `jsonschema` (consumed by `cow-sdk-app-data`) resolve. No
 first-party crate retains a production direct dependency on either
@@ -146,7 +146,7 @@ encode and decode callsite across `crates/core/**`,
 `crates/alloy-provider/**`, `crates/alloy-signer/**`,
 `crates/alloy/**`, `crates/app-data/**`, `crates/trading/**`,
 `crates/browser-wallet/**`, `crates/wasm/**`, and
-`crates/cow-shed/**` routes through `alloy_primitives::hex::{encode,
+`crates/contracts/src/cow_shed/**` routes through `alloy_primitives::hex::{encode,
 decode}`, which resolves transitively to the `const-hex 1.18.x`
 re-export carried by `alloy-primitives 1.5.x`. The
 `ContractsError::DecodeHex { source }` variant carries the typed

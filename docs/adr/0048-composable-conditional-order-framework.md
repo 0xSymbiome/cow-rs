@@ -110,7 +110,7 @@ negative-edge invariants `cow-sdk-composable ⇏ cow-sdk-trading` and
 `cow-sdk-composable ⇏ alloy-provider` are asserted via `cargo metadata` and
 the `parity-maintainer check-deps` validator in CI. An optional
 `composable-with-cow-shed` feature lifts a non-default dependency on
-`cow-sdk-cow-shed` for the narrow Gnosis-only `COWShedForComposableCoW`
+`cow-sdk-contracts` for the narrow Gnosis-only `COWShedForComposableCoW`
 forwarder flow.
 
 ## Why

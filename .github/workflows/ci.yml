@@ -348,7 +348,6 @@ jobs:
             --config "patch.crates-io.cow-sdk-browser-wallet.path='crates/browser-wallet'"
             --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'"
             --config "patch.crates-io.cow-sdk-core.path='crates/core'"
-            --config "patch.crates-io.cow-sdk-cow-shed.path='crates/cow-shed'"
             --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'"
             --config "patch.crates-io.cow-sdk-signing.path='crates/signing'"
             --config "patch.crates-io.cow-sdk-subgraph.path='crates/subgraph'"

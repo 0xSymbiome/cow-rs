@@ -16,6 +16,7 @@ categories = ["api-bindings", "cryptography::cryptocurrencies"]
 [package.metadata.docs.rs]
 default-target = "x86_64-unknown-linux-gnu"
 targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
+all-features = true
 
 [lints]
 workspace = true
@@ -23,11 +24,18 @@ workspace = true
 [features]
 default = []
 tracing = ["dep:tracing", "cow-sdk-core/tracing"]
+# COW Shed account-abstraction proxy, EIP-712, calldata, and hook-signing
+# helpers. Off by default so the core contract helpers stay lean and pull no
+# account-abstraction surface or `cow-sdk-app-data` dependency.
+cow-shed = ["dep:cow-sdk-app-data"]
+# Lifts the Gnosis-only `COWShedForComposableCoW` forwarder binding.
+cow-shed-gnosis = ["cow-shed"]
 
 [dependencies]
 alloy-primitives = { workspace = true, features = ["k256", "serde"] }
 alloy-sol-macro.workspace = true
 alloy-sol-types.workspace = true
+cow-sdk-app-data = { path = "../app-data", version = "0.1.0", optional = true }
 cow-sdk-core = { path = "../core", version = "0.1.0" }
 serde.workspace = true
 serde_json.workspace = true

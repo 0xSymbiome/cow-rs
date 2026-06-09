@@ -223,7 +223,7 @@ of upstream TypeScript methods. The release supports these workflow buckets:
 
 The 0.1.0 scope does not claim total method-for-method parity with the upstream
 TypeScript SDK. The COW Shed account-abstraction proxy ships its full helper body
-in 0.1.0 — the `cow-sdk-cow-shed` leaf crate behind the opt-in `cow-shed` facade
+in 0.1.0 — the `cow-sdk-contracts` leaf crate behind the opt-in `cow-shed` facade
 feature. Composable conditional-order helpers are deferred and recorded only by
 [ADR 0048](adr/0048-composable-conditional-order-framework.md); their deployment
 addresses already resolve through the typed `Registry`, and the helper surface
@@ -254,7 +254,7 @@ The Rust SDK ships in scope:
   adapters (`cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, `cow-sdk-alloy`)
 - TypeScript-callable wasm-bindgen bindings (`cow-sdk-wasm`) with typed
   JavaScript callbacks for wallet, signer, EIP-1271, and HTTP dispatch
-- the shipped COW Shed account-abstraction helper crate (`cow-sdk-cow-shed`),
+- the shipped COW Shed account-abstraction helper crate (`cow-sdk-contracts`),
   backed by inline `sol!` bindings, deployment taxonomy rows, JSON fixtures, and
   audit records
 
@@ -284,7 +284,7 @@ additively in a later release. Until then, use the upstream composable surface.
 
 ### Cow-shed
 
-COW Shed ships in 0.1.0 as the `cow-sdk-cow-shed` leaf crate, opt-in through the
+COW Shed ships in 0.1.0 as the `cow-sdk-contracts` leaf crate, opt-in through the
 off-by-default `cow-shed` facade feature (re-exported as `cow_sdk::cow_shed`) and
 never on the default `cow-sdk` closure. The crate covers deterministic proxy
 derivation (`proxy_of` / `proxy_for`, including the Gnosis factory/implementation

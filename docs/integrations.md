@@ -66,7 +66,7 @@ The root facade exposes matching features named `alloy-provider`,
 
 ## Composable Deferral And COW Shed
 
-COW Shed ships as the `cow-sdk-cow-shed` leaf crate behind the opt-in `cow-shed`
+COW Shed ships as the `cow-sdk-contracts` leaf crate behind the opt-in `cow-shed`
 facade feature; the composable-order capability is deferred and recorded only by
 [ADR 0048](adr/0048-composable-conditional-order-framework.md), with its
 deployment addresses still resolvable through the typed `Registry`. COW Shed

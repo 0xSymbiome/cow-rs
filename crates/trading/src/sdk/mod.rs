@@ -2,10 +2,14 @@
 
 use crate::{PartialTraderParameters, TradingOptions};
 mod builder;
+#[cfg(feature = "fluent-preview")]
+mod fluent;
 mod helpers;
 mod methods;
 
 pub use self::builder::TradingBuilder;
+#[cfg(feature = "fluent-preview")]
+pub use self::fluent::{QuotedSwap, Set, SwapBuilder, Unset};
 /// Typestate marker for a builder that has not yet been given a chain id.
 #[derive(Debug, Clone, Copy)]
 pub struct ChainIdUnset(());

@@ -1,4 +1,5 @@
 #![cfg_attr(any(doctest, docsrs), doc = include_str!("../README.md"))]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 //! Low-level `CoW` Protocol contract helpers for order hashing, signature
 //! codecs and on-chain verification, ABI bindings, fail-closed event decoding,
@@ -10,6 +11,13 @@
     reason = "the remaining items inside the private `primitives` module (`ORDER_UID_LENGTH_BYTES`) carry explicit `pub(crate)` markers as cross-module use documentation and as defensive scoping if the module is ever promoted to `pub mod`"
 )]
 
+/// COW Shed account-abstraction proxy, EIP-712, and hook-signing helpers.
+///
+/// Gated behind the off-by-default `cow-shed` feature so the default
+/// `cow-sdk-contracts` surface and dependency closure stay lean.
+#[cfg(feature = "cow-shed")]
+#[cfg_attr(docsrs, doc(cfg(feature = "cow-shed")))]
+pub mod cow_shed;
 /// Chain-keyed registry of canonical CoW Protocol contract deployments.
 pub mod deployments;
 /// Contract crate error types.

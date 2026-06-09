@@ -41,16 +41,19 @@ silently drops the caller-selected `version` and defaults every instance to
 
 ## Decision
 
-`cow-sdk-cow-shed` is an additive leaf crate per ADR 0008. The crate is
-opt-in behind the facade-level `cow-shed` feature and is never on the default
-`cow-sdk` dependency closure.
+The COW Shed surface ships as the `cow_sdk_contracts::cow_shed` module, gated
+behind the off-by-default `cow-shed` feature of `cow-sdk-contracts` and exposed
+through the facade-level `cow-shed` feature as `cow_sdk::cow_shed`. It is an
+additive capability per ADR 0008 and is never on the default `cow-sdk`
+dependency closure. (Originally shipped as the standalone `cow-sdk-cow-shed`
+leaf crate; see the 2026-06-09 amendment.)
 
 ### Version Forwarding
 
 `CowShedVersion` has variants `V1_0_0` and `V1_0_1` with `V1_0_1` as
 `Default::default()`. The SDK signs and derives proxy addresses against the
 deployed `VERSION()` return value captured in
-`crates/cow-shed/tests/fixtures/version-call-results.json`. The version selected
+`crates/contracts/tests/fixtures/version-call-results.json`. The version selected
 by the caller threads through every internal builder; no helper may construct
 a downstream object without forwarding the caller-selected version.
 
@@ -104,18 +107,17 @@ The `COWShedForComposableCoW` forwarder is deployed on Gnosis Chain (chain id
 100) only. Helpers that construct or interact with the forwarder must reject
 every other chain id with the typed
 `CowShedError::COWShedForComposableCoWGnosisOnly { chain }` variant. The gate
-is enforced by the typed Cargo feature `cow-shed-gnosis` and an ENS-related
-feature `cow-shed-ens` (default off) that gates ENS-record helpers.
+is enforced by the off-by-default `cow-shed-gnosis` Cargo feature.
 
 ### Crate-Graph Invariants
 
-`cow-sdk-cow-shed` depends on `cow-sdk-core`, `cow-sdk-contracts`, and
-`cow-sdk-app-data`. It MUST
-NOT depend on `cow-sdk-trading`, `cow-sdk-orderbook`, `cow-sdk-subgraph`,
-`cow-sdk-browser-wallet`, `alloy-provider`, `alloy-signer-local`, `reqwest`,
-or `tokio` runtime features. The negative-edge invariant
-`cow-sdk-cow-shed ⇏ cow-sdk-trading` is asserted via `cargo metadata` and the
-`parity-maintainer check-deps` validator in CI.
+The `cow-shed` feature of `cow-sdk-contracts` adds only the `cow-sdk-app-data`
+dependency on top of the crate's `cow-sdk-core` foundation. It MUST NOT pull
+`cow-sdk-trading`, `cow-sdk-orderbook`, `cow-sdk-subgraph`,
+`cow-sdk-browser-wallet`, `alloy-provider`, `alloy-signer-local`, `reqwest`, or
+`tokio` runtime features into the `cow-sdk-contracts` closure. The negative-edge
+invariant `cow-sdk-contracts[cow-shed] ⇏ cow-sdk-trading` is asserted via
+`cargo metadata` and the `parity-maintainer check-deps` validator in CI.
 
 ## Why
 
@@ -143,17 +145,15 @@ not a dependency direction for cow-shed.
 ## Must Remain True
 
 - Public surface: `CowShedVersion::V1_0_1` is the default; the
-  `crates/cow-shed/tests/fixtures/version-call-results.json` artifact carries
+  `crates/contracts/tests/fixtures/version-call-results.json` artifact carries
   per-chain rows with `decoded_version == "1.0.1"` and
   `expected_sdk_version == "CowShedVersion::V1_0_1"`.
 - Runtime and support: every internal builder forwards the caller-selected
   version. The regression test asserts distinct version variants produce
   distinct proxy addresses.
-- Crate graph: `cargo metadata` continues to prove
-  `cow-sdk-cow-shed ⇏ cow-sdk-trading`,
-  `cow-sdk-cow-shed ⇏ cow-sdk-orderbook`,
-  `cow-sdk-cow-shed ⇏ cow-sdk-subgraph`,
-  `cow-sdk-cow-shed ⇏ alloy-provider`.
+- Crate graph: `cargo metadata` continues to prove the `cow-sdk-contracts`
+  `cow-shed` feature closure excludes `cow-sdk-trading`, `cow-sdk-orderbook`,
+  `cow-sdk-subgraph`, and `alloy-provider`.
 - Validation and review: the COW Shed contract bindings audit and the COW
   Shed app-data integration audit cross-link this ADR. Both stay `Current`
   whenever the audited surface moves.
@@ -247,4 +247,19 @@ discovery. The `Call` hook-call builders (`new`, `allow_failure`,
 `delegate_call`) are inherent `const fn` methods on `Call`. The version
 forwarding regression asserting distinct `CowShedVersion` variants derive
 distinct proxies ships as `distinct_versions_derive_distinct_proxies` in
-`crates/cow-shed/src/address/mod.rs`.
+`crates/contracts/src/cow_shed/address/mod.rs`.
+
+## Amendment 2026-06-09: folded into `cow-sdk-contracts`
+
+The COW Shed surface moved from the standalone `cow-sdk-cow-shed` crate into the
+`cow_sdk_contracts::cow_shed` module, gated behind the off-by-default `cow-shed`
+feature of `cow-sdk-contracts` (with `cow-shed-gnosis` lifting the Gnosis
+forwarder). The public types are unchanged and are reached through
+`cow_sdk_contracts::cow_shed::*`; the facade still re-exports them as
+`cow_sdk::cow_shed` behind its `cow-shed` feature. With the feature off, the
+default `cow-sdk-contracts` surface and dependency closure are unchanged, so the
+capability stays off the default `cow-sdk` closure exactly as before. The
+reserved `cow-shed-ens` feature and its `COWShedFactoryEns` binding — never
+deployed and never consumed — were dropped in the same change, and the module's
+`sol!` ABI definitions are consolidated into `cow_shed/bindings.rs`. This sheds
+one published crate without altering any COW Shed contract.

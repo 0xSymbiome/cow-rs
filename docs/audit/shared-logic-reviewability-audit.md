@@ -89,7 +89,7 @@ because each variant must be re-verified independently and any drift
 between variants is invisible to a reviewer who only reads one site.
 
 - **keccak256**: production code across `cow-sdk-contracts`,
-  `cow-sdk-signing`, and `cow-sdk-cow-shed` invokes
+  `cow-sdk-signing`, and `cow-sdk-contracts` invokes
   `alloy_primitives::keccak256` directly. Hand-rolled
   `sha3::Keccak256` helpers remain only inside `crates/*/tests/` so the
   parity assertions compare the crate output against an independent keccak

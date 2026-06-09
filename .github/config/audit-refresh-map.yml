@@ -20,13 +20,13 @@ entries:
     owning_surface: COW Shed contract binding evidence
     refresh_triggers:
       paths:
-        - crates/cow-shed/src
+        - crates/contracts/src/cow_shed
         - parity/cow-shed-invariants.md
   - audit: docs/audit/cow-shed-app-data-integration-audit.md
     owning_surface: COW Shed app-data integration
     refresh_triggers:
       paths:
-        - crates/cow-shed/Cargo.toml
+        - crates/contracts/Cargo.toml
         - docs/adr/0049-cow-shed-account-abstraction-proxy.md
   - audit: docs/audit/lens-chain-evidence-audit.md
     owning_surface: deployment chain taxonomy

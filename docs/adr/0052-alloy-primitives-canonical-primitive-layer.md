@@ -52,7 +52,7 @@ replaced by maintained-crate equivalents (`alloy_primitives::keccak256`,
 The alloy-core ABI family (`alloy-primitives`, `alloy-sol-types`,
 `alloy-sol-macro`, `alloy-dyn-abi`, `alloy-json-abi`, `alloy-serde`)
 becomes an in-scope dependency of `cow-sdk-core`, `cow-sdk-contracts`,
-`cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-cow-shed`, and
+`cow-sdk-signing`, `cow-sdk-app-data`, and
 `cow-sdk-composable`. The alloy-runtime family (`alloy-provider`,
 `alloy-signer-local`, `alloy-network`, `alloy-consensus`,
 `alloy-rpc-types-eth`, `alloy-transport-*`) remains confined to the
@@ -150,7 +150,7 @@ non-ASCII keys. ASCII-only documents remain byte-identical.
   unpublished baseline (the lane runs as drift-detection against
   `main` until the first published release).
 - Runtime and support: `cow-sdk-core`, `cow-sdk-contracts`,
-  `cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-cow-shed`, and
+  `cow-sdk-signing`, `cow-sdk-app-data`, and
   `cow-sdk-composable` may depend directly on `alloy-primitives`,
   `alloy-sol-types`, `alloy-sol-macro`, `alloy-dyn-abi`,
   `alloy-json-abi`, and `alloy-serde`. `cow-sdk-core` and every

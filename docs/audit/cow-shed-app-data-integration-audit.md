@@ -31,7 +31,7 @@ artifacts; those are governed by the
 | --- | --- | --- |
 | Hook schema reuse | COW Shed hook metadata emits through the existing `crates/app-data/src/metadata/hooks.rs::Hook` schema via `SignedCowShedCall::to_app_data_hook`, with no parallel metadata format | Conforms |
 | EIP-1271 trait boundary | Custom COW Shed signers consume the signing-owned `Eip1271SignatureProvider` trait from `cow_sdk_signing::eip1271`; no parallel trait definition exists in the COW Shed helper crate | Conforms |
-| Crate-graph posture | `cow-sdk-cow-shed ⇏ cow-sdk-trading`, `cow-sdk-cow-shed ⇏ cow-sdk-orderbook`, `cow-sdk-cow-shed ⇏ cow-sdk-subgraph`, `cow-sdk-cow-shed ⇏ alloy-provider` all hold under `cargo metadata` | Conforms |
+| Crate-graph posture | `cow-sdk-contracts[cow-shed] ⇏ cow-sdk-trading`, `cow-sdk-contracts[cow-shed] ⇏ cow-sdk-orderbook`, `cow-sdk-contracts[cow-shed] ⇏ cow-sdk-subgraph`, `cow-sdk-contracts[cow-shed] ⇏ alloy-provider` all hold under `cargo metadata` | Conforms |
 | Version forwarding discipline | The caller-selected `CowShedVersion` is threaded through every internal builder; `distinct_versions_derive_distinct_proxies` asserts distinct versions produce distinct CREATE2 proxy addresses | Conforms |
 
 ## Current Contract
@@ -62,10 +62,10 @@ the workspace.
 
 The COW Shed helper crate depends on `cow-sdk-core`, `cow-sdk-contracts`, and
 `cow-sdk-app-data`. The
-negative-edge invariants `cow-sdk-cow-shed ⇏ cow-sdk-trading`,
-`cow-sdk-cow-shed ⇏ cow-sdk-orderbook`,
-`cow-sdk-cow-shed ⇏ cow-sdk-subgraph`, and
-`cow-sdk-cow-shed ⇏ alloy-provider` hold under `cargo metadata`. The
+negative-edge invariants `cow-sdk-contracts[cow-shed] ⇏ cow-sdk-trading`,
+`cow-sdk-contracts[cow-shed] ⇏ cow-sdk-orderbook`,
+`cow-sdk-contracts[cow-shed] ⇏ cow-sdk-subgraph`, and
+`cow-sdk-contracts[cow-shed] ⇏ alloy-provider` hold under `cargo metadata`. The
 COW Shed helper crate is a peer leaf to trading rather than a dependency
 layer above or below it; embedding the helper crate behind the facade-level
 `cow-shed` feature keeps the default `cow-sdk` dependency closure free of
@@ -76,7 +76,7 @@ COW Shed types.
 The caller-selected `CowShedVersion` is threaded through every internal
 builder. The SDK signs and derives proxy addresses against deployed reality
 (`V1_0_1`) by default; `distinct_versions_derive_distinct_proxies`
-(`crates/cow-shed/src/address/mod.rs`) asserts that distinct `CowShedVersion`
+(`crates/contracts/src/cow_shed/address/mod.rs`) asserts that distinct `CowShedVersion`
 variants produce distinct CREATE2 proxy addresses for the same user, so the
 version selected at construction is never dropped before signing.
 
@@ -89,8 +89,8 @@ Primary implementation points:
 - `docs/adr/0051-signing-owned-eip1271-signature-provider-trait.md`
 - `crates/app-data/src/metadata/hooks.rs` (existing hook schema)
 - `crates/signing/src/eip1271/` (signing-owned trait home)
-- `crates/cow-shed/` (leaf crate)
-- `crates/cow-shed/src/hooks.rs` (`SignedCowShedCall::to_app_data_hook`)
+- `crates/contracts/src/cow_shed/` (feature-gated module of `cow-sdk-contracts`)
+- `crates/contracts/src/cow_shed/hooks.rs` (`SignedCowShedCall::to_app_data_hook`)
 
 Primary regression coverage:
 
@@ -98,14 +98,15 @@ Primary regression coverage:
   invariants
 - `crates/trading/tests/eip1271_signature_provider_no_reexport.rs`
   (compile-fail regression for the trading re-export contract)
-- `crates/cow-shed/src/address/mod.rs::distinct_versions_derive_distinct_proxies`
+- `crates/contracts/src/cow_shed/address/mod.rs::distinct_versions_derive_distinct_proxies`
   (per-version distinct-proxy regression)
 
 Validation surface:
 
 ```text
 cargo test -p cow-sdk-app-data --all-features
-cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- check-deps --negative-edge cow-sdk-cow-shed::cow-sdk-trading
-cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- check-deps --negative-edge cow-sdk-cow-shed::cow-sdk-orderbook
-cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- check-deps --negative-edge cow-sdk-cow-shed::alloy-provider
+# The `cow-shed` feature closure of `cow-sdk-contracts` must stay clear of the
+# trading/orderbook/subgraph and alloy-provider edges (prints nothing on pass):
+cargo tree -p cow-sdk-contracts --features cow-shed-gnosis --edges normal --prefix none \
+  | grep -E 'cow-sdk-(trading|orderbook|subgraph)|alloy-provider'
 ```

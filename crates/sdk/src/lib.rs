@@ -121,7 +121,7 @@ pub use cow_sdk_core as core;
 /// `cow-sdk = { features = ["cow-shed"] }`.
 #[cfg(feature = "cow-shed")]
 #[cfg_attr(docsrs, doc(cfg(feature = "cow-shed")))]
-pub use cow_sdk_cow_shed as cow_shed;
+pub use cow_sdk_contracts::cow_shed;
 /// Shared HTTP retry, rate-limit, and classification policy.
 pub mod http {
     pub use cow_sdk_core::transport::policy::{

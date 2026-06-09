@@ -446,27 +446,27 @@ enums:
     expected_marker: non_exhaustive
     reason: Custom EIP-1271 provider diagnostics can grow with signing-owned provider checks.
   - name: CowShedVersion
-    file: crates/cow-shed/src/version.rs
+    file: crates/contracts/src/cow_shed/version.rs
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: COW Shed version variants can grow as new deployed-bytecode versions land upstream.
   - name: SigSource
-    file: crates/cow-shed/src/errors.rs
+    file: crates/contracts/src/cow_shed/errors.rs
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: COW Shed signature-source taxonomy can grow as new ECDSA and contract-signature paths are added.
   - name: CowShedError
-    file: crates/cow-shed/src/errors.rs
+    file: crates/contracts/src/cow_shed/errors.rs
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: COW Shed proxy and hook diagnostics can grow as account-abstraction helpers expand.
   - name: Deadline
-    file: crates/cow-shed/src/types/deadline.rs
+    file: crates/contracts/src/cow_shed/types.rs
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: COW Shed deadline strong-type is a typed wrapper; the wrapping shape may grow with clock-source variants.
   - name: Nonce
-    file: crates/cow-shed/src/types/nonce.rs
+    file: crates/contracts/src/cow_shed/types.rs
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: COW Shed nonce strong-type is a typed wrapper; the wrapping shape may grow with derivation variants.

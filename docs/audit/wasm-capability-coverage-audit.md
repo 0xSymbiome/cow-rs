@@ -180,7 +180,7 @@ framework is a deferred capability recorded only by
 composable crate ships in the workspace, and its deployment addresses remain
 resolvable through the typed `Registry`. Its absence from `cow-sdk-wasm` is a
 deferred-capability boundary on every target rather than a WASM-specific one.
-`cow-sdk-cow-shed` has shipped its helper body and compiles for both native and
+`cow-sdk-contracts` has shipped its helper body and compiles for both native and
 `wasm32`, so it is the most direct candidate for a future deterministic-helper
 addition to the `cow-sdk-wasm` JavaScript surface; its absence from
 `cow-sdk-wasm` today is a binding-surface choice, not a target limitation.

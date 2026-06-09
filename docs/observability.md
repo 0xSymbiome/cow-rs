@@ -21,7 +21,6 @@ cow-sdk-orderbook = { version = "0.1", features = ["tracing"] }
 cow-sdk-subgraph = { version = "0.1", features = ["tracing"] }
 cow-sdk-signing = { version = "0.1", features = ["tracing"] }
 cow-sdk-browser-wallet = { version = "0.1", features = ["tracing"] }
-cow-sdk-cow-shed = { version = "0.1", features = ["tracing"] }
 cow-sdk-wasm = { version = "0.1", features = ["tracing"] }
 cow-sdk-transport-wasm = { version = "0.1", features = ["tracing"] }
 ```
@@ -112,7 +111,7 @@ downstream dashboards can pivot on the same names across every SDK call.
 Tracing spans are emitted by every long-running public async method on
 `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-trading`,
 `cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-browser-wallet`, and, behind
-its opt-in `cow-shed` facade feature, `cow-sdk-cow-shed`. Each canonical public async
+its opt-in `cow-shed` facade feature. Each canonical public async
 method carries `#[tracing::instrument]` and emits exactly one span per call.
 The `cow-sdk-wasm` JavaScript export surface emits one span per export call
 under the same redaction posture; see its subsection below.
@@ -248,7 +247,7 @@ without logging signatures or private material.
 - `sign_order_cancellation_with_scheme`
 - `sign_order_cancellations_with_scheme`
 
-### `cow-sdk-cow-shed`
+### `cow-sdk-contracts`
 
 `CowShedHooks::sign` is the crate's one signer-mediated async method. It emits a
 single `sign` span carrying `chain`, `version`, and `endpoint = "cow_shed.sign"`.

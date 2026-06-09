@@ -100,7 +100,7 @@ Future rows record exact resolved versions, not caret ranges.
 The alloy-core ABI family (`alloy-primitives`, `alloy-sol-types`,
 `alloy-sol-macro`, `alloy-dyn-abi`, `alloy-json-abi`, `alloy-serde`) is
 in scope for direct dependency on `cow-sdk-core`, `cow-sdk-contracts`,
-`cow-sdk-signing`, `cow-sdk-app-data`, and `cow-sdk-cow-shed` (plus
+`cow-sdk-signing`, `cow-sdk-app-data`, and `cow-sdk-contracts` (plus
 `cow-sdk-composable` when that crate is rooted) per
 [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md). The
 alloy-runtime family (`alloy-provider`, `alloy-signer-local`,
