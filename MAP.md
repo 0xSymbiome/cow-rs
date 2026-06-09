@@ -1,7 +1,7 @@
 # Repository File Map
 
-> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `ba05b68` &nbsp;&middot;&nbsp; **Generated:** 2026-06-09  
-> **Total tracked files:** **1,110** &nbsp;&middot;&nbsp; **Lines of code:** tokei 14.0.0
+> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `1141cc5` &nbsp;&middot;&nbsp; **Generated:** 2026-06-09  
+> **Total tracked files:** **1,094** &nbsp;&middot;&nbsp; **Lines of code:** tokei 14.0.0
 
 A navigable inventory of every file tracked by Git on this branch, grouped by the role each directory plays in the workspace. Use the table of contents to jump straight to a section; full file listings are collapsed by default so the high-level shape stays scannable.
 
@@ -31,15 +31,15 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 **Lines of code** (tracked files only)
 
-- **36,550 lines of Rust** across the 19 SDK crates, covered by **39,306 lines of tests** — a **1.1× test-to-code ratio** — plus **180 lines of benchmarks**.
-- **12,055 doc-comment lines** documenting the public API (~33% of crate code), plus **838 inline comment lines**.
+- **36,550 lines of Rust** across the 19 SDK crates, covered by **39,291 lines of tests** — a **1.1× test-to-code ratio** — plus **180 lines of benchmarks**.
+- **12,054 doc-comment lines** documenting the public API (~33% of crate code), plus **838 inline comment lines**.
 - **6,381 lines of TypeScript** across examples, e2e harnesses, and wasm bindings.
 - **25,825 lines of Markdown prose** — ADRs, audit notes, and READMEs.
-- **20,292 lines of data & config** (JSON schemas, parity fixtures, vendored ABIs, YAML, TOML) — tracked, but excluded from code metrics by design.
+- **19,638 lines of data & config** (JSON schemas, parity fixtures, vendored ABIs, YAML, TOML) — tracked, but excluded from code metrics by design.
 
 **Footprint** (tracked files)
 
-- **652 files** live under `crates/` — 19 workspace member crates make up roughly 59% of the repo.
+- **636 files** live under `crates/` — 19 workspace member crates make up roughly 58% of the repo.
 - **153 files** under `docs/` are mostly architecture decision records and audit notes.
 - **48 files** under `parity/` are golden fixtures captured from upstream services to keep the Rust SDK byte-compatible.
 - **48 files** under `fuzz/` cover cargo-fuzz targets and their seed corpora.
@@ -52,7 +52,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 | Path | Files | Lines | Code | Purpose |
 |------|------:|------:|-----:|---------|
-| `crates/` | 652 | 124,169 | 85,459 | Workspace member crates (the SDK itself) |
+| `crates/` | 636 | 123,497 | 84,790 | Workspace member crates (the SDK itself) |
 | `docs/` | 153 | 23,413 | 0 | Architecture decision records, audit notes, provider notes |
 | `examples/` | 63 | 17,916 | 5,683 | Runnable usage examples (Rust + TypeScript) |
 | `scripts/` | 57 | 14,143 | 7,736 | Internal maintenance tool crates |
@@ -77,7 +77,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `rust-toolchain.toml` | 1 | 6 | 4 | Pinned Rust toolchain |
 | `.gitattributes` | 1 | 32 | 0 | Git attributes |
 | `CHANGELOG.md` | 1 | 3,848 | 0 | Release changelog |
-| **Total** | **1110** | **218,378** | **118,350** | |
+| **Total** | **1094** | **217,706** | **117,681** | |
 
 ---
 
@@ -85,10 +85,10 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 | Extension | Files | Lines | Code | Comments | Blank | Typical role |
 |-----------|------:|------:|-----:|---------:|------:|--------------|
-| `.rs` | 635 | 119,997 | 91,677 | 17,212 | 11,108 | Rust source and tests |
+| `.rs` | 635 | 119,980 | 91,662 | 17,211 | 11,107 | Rust source and tests |
 | `.md` | 191 | 31,247 | 0 | 25,825 | 5,422 | Markdown docs (ADRs, audit notes, READMEs) |
-| `.json` | 70 | 4,445 | 4,341 | 103 | 1 | JSON schemas, ABIs, parity fixtures |
 | `.ts` | 60 | 17,394 | 6,381 | 9,874 | 1,139 | TypeScript (examples, e2e, wasm bindings) |
+| `.json` | 54 | 3,790 | 3,687 | 103 | 0 | JSON schemas, ABIs, parity fixtures |
 | `.toml` | 36 | 2,141 | 1,788 | 67 | 286 | Cargo manifests and tool configs |
 | `.yaml` | 26 | 8,746 | 7,289 | 24 | 1,433 | CI workflows, OpenAPI specs, config |
 | `.stderr` | 22 | 506 | 0 | 487 | 19 | trybuild compile-fail snapshots |
@@ -108,7 +108,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `.gitattributes` | 1 | 32 | 0 | 28 | 4 |  |
 | `.yamllint` | 1 | 7 | 0 | 6 | 1 |  |
 | `.proptest-regressions` | 1 | 7 | 0 | 7 | 0 | proptest regression seeds |
-| **Total** | **1110** | **218,378** | **118,350** | **77,628** | **22,400** | |
+| **Total** | **1094** | **217,706** | **117,681** | **77,627** | **22,398** | |
 
 > **Code + Comments + Blank = Lines** for every row. ``Comments`` is all non-code, non-blank content: inline + doc-comments in source, prose in Markdown/text, and raw content in formats tokei does not parse as code (lockfiles, ``.stderr``, snapshots). Rust doc-comments are isolated in the per-crate ``Doc`` column above.
 
@@ -126,7 +126,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | [`core`](crates/core) | 57 | 4,043 | 3,451 | 0 | 2,051 | 0.9× | Shared CoW Protocol core types and validation primitives |
 | [`browser-wallet`](crates/browser-wallet) | 30 | 3,710 | 2,666 | 0 | 587 | 0.7× | Browser wallet integration for the CoW Protocol Rust SDK |
 | [`contracts`](crates/contracts) | 41 | 2,365 | 3,574 | 61 | 1,115 | 1.5× | CoW Protocol low-level contracts helpers for order hashing, signature codecs and verification, ABI bindings, and fail-closed on-chain event decoding |
-| [`app-data`](crates/app-data) | 57 | 1,461 | 2,212 | 33 | 739 | 1.5× | CoW Protocol app-data encoding, validation, and CID compatibility |
+| [`app-data`](crates/app-data) | 41 | 1,461 | 2,197 | 33 | 738 | 1.5× | CoW Protocol app-data encoding, validation, and CID compatibility |
 | [`alloy-provider`](crates/alloy-provider) | 27 | 1,358 | 1,550 | 0 | 209 | 1.1× | Alloy-backed read-only Provider adapter for the CoW Protocol Rust SDK |
 | [`transport-policy`](crates/transport-policy) | 18 | 1,355 | 982 | 0 | 342 | 0.7× | Retry, rate-limit, and transport classification policy for CoW Protocol SDK HTTP clients |
 | [`subgraph`](crates/subgraph) | 27 | 1,326 | 2,249 | 0 | 469 | 1.7× | Typed CoW Protocol subgraph query primitives |
@@ -139,7 +139,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | [`pure-helpers`](crates/pure-helpers) | 10 | 429 | 53 | 0 | 165 | 0.1× | Runtime-neutral helper functions for the CoW Protocol Rust SDK wasm surface |
 | [`transport-wasm`](crates/transport-wasm) | 8 | 423 | 819 | 0 | 126 | 1.9× | Browser fetch-based HTTP transport for the CoW Protocol Rust SDK |
 | [`sdk`](crates/sdk) | 16 | 133 | 1,391 | 0 | 174 | 10.5× | Facade crate for CoW Protocol Rust SDK surfaces |
-| **Total** | **652** | **36,550** | **39,306** | **180** | **12,055** | **1.1×** | |
+| **Total** | **636** | **36,550** | **39,291** | **180** | **12,054** | **1.1×** | |
 
 ---
 
@@ -515,112 +515,6 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>crates/app-data/schemas/</code> &mdash; 2 file(s)</summary>
-
-- [`definitions.json`](crates/app-data/schemas/definitions.json) &mdash; 77 lines
-- [`v1.14.0.json`](crates/app-data/schemas/v1.14.0.json) &mdash; 80 lines
-
-</details>
-
-<details>
-<summary><code>crates/app-data/schemas/bridging/</code> &mdash; 1 file(s)</summary>
-
-- [`v0.4.0.json`](crates/app-data/schemas/bridging/v0.4.0.json) &mdash; 51 lines
-
-</details>
-
-<details>
-<summary><code>crates/app-data/schemas/flashloan/</code> &mdash; 1 file(s)</summary>
-
-- [`v0.2.0.json`](crates/app-data/schemas/flashloan/v0.2.0.json) &mdash; 42 lines
-
-</details>
-
-<details>
-<summary><code>crates/app-data/schemas/hook/</code> &mdash; 1 file(s)</summary>
-
-- [`v0.2.0.json`](crates/app-data/schemas/hook/v0.2.0.json) &mdash; 40 lines
-
-</details>
-
-<details>
-<summary><code>crates/app-data/schemas/hooks/</code> &mdash; 1 file(s)</summary>
-
-- [`v0.2.0.json`](crates/app-data/schemas/hooks/v0.2.0.json) &mdash; 35 lines
-
-</details>
-
-<details>
-<summary><code>crates/app-data/schemas/orderClass/</code> &mdash; 1 file(s)</summary>
-
-- [`v0.3.0.json`](crates/app-data/schemas/orderClass/v0.3.0.json) &mdash; 30 lines
-
-</details>
-
-<details>
-<summary><code>crates/app-data/schemas/partnerFee/</code> &mdash; 1 file(s)</summary>
-
-- [`v1.0.0.json`](crates/app-data/schemas/partnerFee/v1.0.0.json) &mdash; 100 lines
-
-</details>
-
-<details>
-<summary><code>crates/app-data/schemas/quote/</code> &mdash; 1 file(s)</summary>
-
-- [`v1.1.0.json`](crates/app-data/schemas/quote/v1.1.0.json) &mdash; 23 lines
-
-</details>
-
-<details>
-<summary><code>crates/app-data/schemas/referrer/</code> &mdash; 1 file(s)</summary>
-
-- [`v1.0.0.json`](crates/app-data/schemas/referrer/v1.0.0.json) &mdash; 16 lines
-
-</details>
-
-<details>
-<summary><code>crates/app-data/schemas/replacedOrder/</code> &mdash; 1 file(s)</summary>
-
-- [`v0.1.0.json`](crates/app-data/schemas/replacedOrder/v0.1.0.json) &mdash; 15 lines
-
-</details>
-
-<details>
-<summary><code>crates/app-data/schemas/signer/</code> &mdash; 1 file(s)</summary>
-
-- [`v0.1.0.json`](crates/app-data/schemas/signer/v0.1.0.json) &mdash; 7 lines
-
-</details>
-
-<details>
-<summary><code>crates/app-data/schemas/userConsents/</code> &mdash; 1 file(s)</summary>
-
-- [`v0.1.0.json`](crates/app-data/schemas/userConsents/v0.1.0.json) &mdash; 27 lines
-
-</details>
-
-<details>
-<summary><code>crates/app-data/schemas/utm/</code> &mdash; 1 file(s)</summary>
-
-- [`v0.3.0.json`](crates/app-data/schemas/utm/v0.3.0.json) &mdash; 55 lines
-
-</details>
-
-<details>
-<summary><code>crates/app-data/schemas/widget/</code> &mdash; 1 file(s)</summary>
-
-- [`v0.1.0.json`](crates/app-data/schemas/widget/v0.1.0.json) &mdash; 24 lines
-
-</details>
-
-<details>
-<summary><code>crates/app-data/schemas/wrappers/</code> &mdash; 1 file(s)</summary>
-
-- [`v0.2.0.json`](crates/app-data/schemas/wrappers/v0.2.0.json) &mdash; 33 lines
-
-</details>
-
-<details>
 <summary><code>crates/app-data/src/</code> &mdash; 6 file(s)</summary>
 
 - [`cid.rs`](crates/app-data/src/cid.rs) &mdash; 143 lines
@@ -635,7 +529,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <details>
 <summary><code>crates/app-data/src/metadata/</code> &mdash; 4 file(s)</summary>
 
-- [`flashloan.rs`](crates/app-data/src/metadata/flashloan.rs) &mdash; 108 lines
+- [`flashloan.rs`](crates/app-data/src/metadata/flashloan.rs) &mdash; 107 lines
 - [`hooks.rs`](crates/app-data/src/metadata/hooks.rs) &mdash; 82 lines
 - [`mod.rs`](crates/app-data/src/metadata/mod.rs) &mdash; 18 lines
 - [`quote.rs`](crates/app-data/src/metadata/quote.rs) &mdash; 97 lines
@@ -672,7 +566,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`partner_fee_contract.rs`](crates/app-data/tests/partner_fee_contract.rs) &mdash; 426 lines
 - [`property_contract.rs`](crates/app-data/tests/property_contract.rs) &mdash; 326 lines
 - [`schema_contract.rs`](crates/app-data/tests/schema_contract.rs) &mdash; 165 lines
-- [`schema_drift_contract.rs`](crates/app-data/tests/schema_drift_contract.rs) &mdash; 93 lines
+- [`schema_drift_contract.rs`](crates/app-data/tests/schema_drift_contract.rs) &mdash; 77 lines
 - [`typed_metadata_contract.rs`](crates/app-data/tests/typed_metadata_contract.rs) &mdash; 67 lines
 - [`validated_shape_contract.rs`](crates/app-data/tests/validated_shape_contract.rs) &mdash; 138 lines
 

@@ -3,10 +3,9 @@
 //! The reviewed services authority carries a single flash-loan hint per order
 //! with five required fields — `liquidityProvider`, `protocolAdapter`,
 //! `receiver`, `token`, and `amount` — expressed on the wire as a camelCase
-//! object. The bundled `flashloan/v0.2.0.json` sub-schema constrains
-//! `amount` through the `bigPositiveNumber` definition (decimal strings
-//! matching `^[1-9]\d*$`) and the address fields through the shared
-//! `ethereumAddress` regex.
+//! object. The `flashloan-v0.2.0.json` drift fixture constrains `amount` to a
+//! positive decimal string (`^[1-9]\d*$`) and the address fields through the
+//! Ethereum-address regex.
 //!
 //! [`FlashloanHints`] narrows that wire shape to a typed Rust struct whose
 //! derived serde impls reproduce the wire form byte-identically. The typed

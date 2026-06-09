@@ -1,7 +1,7 @@
 //! Contract suite pinning the public typed flash-loan hint surface.
 //!
 //! The fixture input mirrors the reviewed golden sample for the
-//! `flashloan/v0.2.0.json` sub-schema so drift in either the wire shape or
+//! `flashloan-v0.2.0.json` drift fixture so drift in either the wire shape or
 //! the construction-time validation rules surfaces before it reaches
 //! release.
 

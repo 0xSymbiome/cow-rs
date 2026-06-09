@@ -1,6 +1,7 @@
 {
-  "$id": "#quote/v1.1.0.json",
+  "$id": "quote-v1.1.0.json",
   "$schema": "http://json-schema.org/draft-07/schema",
+  "$comment": "Drift fixture from cowprotocol/app-data quote/v1.1.0.json; shared primitives inlined from upstream definitions.json. Not resolved at runtime (ADR 0064).",
   "required": [
     "slippageBips"
   ],
@@ -11,7 +12,9 @@
     "slippageBips": {
       "title": "Slippage Bips",
       "description": "Slippage tolerance that was applied to the order to get the limit price. Expressed in Basis Points (BPS). One basis point is equivalent to 0.01% (1/100th of a percent)",
-      "$ref": "../definitions.json#/definitions/bps"
+      "type": "integer",
+      "maximum": 10000,
+      "minimum": 0
     },
     "smartSlippage": {
       "title": "Smart Slippage",

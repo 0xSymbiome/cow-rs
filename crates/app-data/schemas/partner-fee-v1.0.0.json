@@ -1,6 +1,7 @@
 {
-  "$id": "#partnerFee/v1.0.0.json",
+  "$id": "partner-fee-v1.0.0.json",
   "$schema": "http://json-schema.org/draft-07/schema",
+  "$comment": "Drift fixture from cowprotocol/app-data partnerFee/v1.0.0.json; shared primitives inlined from upstream definitions.json. Not resolved at runtime (ADR 0064).",
   "title": "Partner fee",
   "oneOf": [
     {
@@ -94,7 +95,8 @@
     "recipient": {
       "title": "Partner account",
       "description": "The Ethereum address of the partner to receive the fee.",
-      "$ref": "../definitions.json#/definitions/ethereumAddress"
+      "type": "string",
+      "pattern": "^0x[a-fA-F0-9]{40}$"
     }
   }
 }
