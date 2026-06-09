@@ -354,7 +354,6 @@ jobs:
             --config "patch.crates-io.cow-sdk-subgraph.path='crates/subgraph'"
             --config "patch.crates-io.cow-sdk-test.path='crates/test'"
             --config "patch.crates-io.cow-sdk-trading.path='crates/trading'"
-            --config "patch.crates-io.cow-sdk-transport-policy.path='crates/transport-policy'"
             --config "patch.crates-io.cow-sdk-transport-wasm.path='crates/transport-wasm'"
             --config "patch.crates-io.cow-sdk-wasm.path='crates/wasm'"
           )

@@ -109,7 +109,7 @@ to the shared enum.
 
 - `is_retryable(&self) -> bool` returns whether retrying the same request may
   succeed. A structured non-2xx response keys off the retained HTTP status
-  through `cow_sdk_transport_policy::is_retryable_status` (the `408`, `425`,
+  through `cow_sdk_core::transport::policy::is_retryable_status` (the `408`, `425`,
   `429`, `500`, `502`, `503`, `504` set); a transport failure keys off its
   `TransportErrorClass` through the shared `RetryPolicy::should_retry_network`
   mapping. This is the same verdict the SDK transport retry loop applies, so a
@@ -130,7 +130,7 @@ them. `class()` stays the coarse telemetry bucket and is unchanged.
 
 `OrderbookApiError` carries the parsed `Retry-After` so both the `Rejected` and
 `Api` promotion paths expose it. The value is resolved through
-`cow_sdk_transport_policy::retry_after_from_headers` while the response headers
+`cow_sdk_core::transport::policy::retry_after_from_headers` while the response headers
 are in scope, then attached to the error; the transport retry loop computes its
 own clock-injected backoff and does not depend on the stored value.
 

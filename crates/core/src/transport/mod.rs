@@ -26,6 +26,10 @@
 mod error;
 mod http;
 
+#[cfg(feature = "transport-policy")]
+#[cfg_attr(docsrs, doc(cfg(feature = "transport-policy")))]
+pub mod policy;
+
 #[cfg(not(target_arch = "wasm32"))]
 pub mod reqwest;
 

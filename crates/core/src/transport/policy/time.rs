@@ -40,8 +40,8 @@ pub async fn sleep(duration: Duration) {
 /// browser wall clock through `web_time::SystemTime` and re-anchors it onto a
 /// [`std::time::SystemTime`] via `UNIX_EPOCH` arithmetic (which is available on
 /// wasm). The returned value therefore feeds
-/// [`crate::RetryPolicy::delay_for_status`] and
-/// [`crate::parse_retry_after`] uniformly across targets without a panic path.
+/// [`crate::transport::policy::RetryPolicy::delay_for_status`] and
+/// [`crate::transport::policy::parse_retry_after`] uniformly across targets without a panic path.
 #[cfg(not(target_arch = "wasm32"))]
 #[must_use]
 pub fn system_now() -> SystemTime {

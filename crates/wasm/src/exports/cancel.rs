@@ -2,7 +2,7 @@ use std::{future::Future, time::Duration};
 
 use cow_sdk_core::{Cancellable, CancellationToken};
 #[cfg(feature = "transport-policy")]
-use cow_sdk_transport_policy::TransportPolicy;
+use cow_sdk_core::transport::policy::TransportPolicy;
 use js_sys::Reflect;
 use wasm_bindgen::{JsCast, closure::Closure, prelude::*};
 

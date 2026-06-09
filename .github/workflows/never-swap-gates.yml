@@ -224,7 +224,7 @@ jobs:
         run: |
           set -euo pipefail
           mapfile -t sources < <(find \
-            crates/transport-policy/src crates/transport-wasm/src \
+            crates/core/src/transport/policy crates/transport-wasm/src \
             crates/orderbook/src crates/subgraph/src \
             -type f -name '*.rs' 2>/dev/null | sort || true)
           if [ "${#sources[@]}" -eq 0 ]; then

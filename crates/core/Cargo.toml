@@ -23,12 +23,21 @@ workspace = true
 [features]
 default = []
 tracing = ["dep:tracing"]
+# Shared HTTP retry, rate-limit, `Retry-After`, jitter, and transport-error
+# classification policy for the orderbook, subgraph, and IPFS clients. Off by
+# default so a `cow-sdk-core` consumer that needs only the primitive types does
+# not pull the retry-timer dependencies.
+transport-policy = ["dep:httpdate", "dep:futures-timer", "dep:gloo-timers", "dep:web-time"]
+# Native `reqwest::Error` classifier for the transport-policy taxonomy.
+reqwest-classifier = ["transport-policy"]
 
 [dependencies]
 alloy-primitives.workspace = true
 alloy-sol-types.workspace = true
 async-trait.workspace = true
+futures-timer = { workspace = true, optional = true }
 http.workspace = true
+httpdate = { workspace = true, optional = true }
 pin-project-lite.workspace = true
 serde.workspace = true
 thiserror.workspace = true
@@ -43,13 +52,17 @@ reqwest = { workspace = true, features = ["rustls"] }
 tsify.workspace = true
 wasm-bindgen.workspace = true
 
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+gloo-timers = { workspace = true, optional = true }
+web-time = { workspace = true, optional = true }
+
 [dev-dependencies]
 cow-sdk-test-utils = { path = "../test-utils", features = ["proptest"] }
 num-bigint.workspace = true
 proptest.workspace = true
 serde_json.workspace = true
 syn.workspace = true
-tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "test-util", "time"] }
 trybuild.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]

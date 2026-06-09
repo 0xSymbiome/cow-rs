@@ -1,3 +1,5 @@
+#![cfg(feature = "transport-policy")]
+
 //! Behavior tests for the transport-error classification surface.
 //!
 //! `NetworkErrorKind::from_transport_error_class` is a pure `match` over the
@@ -13,7 +15,7 @@
 //! doctests and the core crate's integration tests under `httpmock`.
 
 use cow_sdk_core::TransportErrorClass;
-use cow_sdk_transport_policy::NetworkErrorKind;
+use cow_sdk_core::transport::policy::NetworkErrorKind;
 
 #[test]
 fn network_error_kind_mapping_round_trip_is_total() {
@@ -48,7 +50,7 @@ fn response_too_large_is_never_retried() {
     // Retrying an over-cap response is futile and would re-download up to the
     // limit on every attempt, so the deterministic ResponseTooLarge outcome
     // must be classified non-retryable.
-    let policy = cow_sdk_transport_policy::RetryPolicy::default();
+    let policy = cow_sdk_core::transport::policy::RetryPolicy::default();
     assert!(!policy.should_retry_network(NetworkErrorKind::ResponseTooLarge));
 }
 
@@ -56,7 +58,7 @@ fn response_too_large_is_never_retried() {
 mod reqwest_classifier {
     use std::time::Duration;
 
-    use cow_sdk_transport_policy::{ErrorClassifier, NetworkErrorKind, ReqwestErrorClassifier};
+    use cow_sdk_core::transport::policy::{ErrorClassifier, NetworkErrorKind, ReqwestErrorClassifier};
 
     /// A malformed URL at build-time yields a `Builder` or `Request` error,
     /// never `Other`. This pins the documented `is_builder` / `is_request`

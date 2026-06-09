@@ -2,10 +2,10 @@
 
 use std::time::Duration;
 
-use cow_sdk_core::{HttpClientPolicy, ValidationError};
+use crate::{HttpClientPolicy, ValidationError};
 use thiserror::Error;
 
-use crate::{JitterStrategy, RequestRateLimiter, RetryPolicy};
+use crate::transport::policy::{JitterStrategy, RequestRateLimiter, RetryPolicy};
 
 const DEFAULT_JITTER_SEED: u64 = 0xC0DE_CAFE_5EED_0001;
 
@@ -284,7 +284,7 @@ impl TransportPolicyBuilder {
             .client
             .as_ref()
             .and_then(HttpClientPolicy::timeout)
-            .unwrap_or(cow_sdk_core::DEFAULT_HTTP_TIMEOUT);
+            .unwrap_or(crate::DEFAULT_HTTP_TIMEOUT);
         self.client = Some(HttpClientPolicy::with_timeout_and_user_agent(
             existing_timeout,
             user_agent,

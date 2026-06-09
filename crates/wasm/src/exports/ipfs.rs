@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use cow_sdk_app_data::{AppDataError, IpfsFetchTransport};
 use cow_sdk_core::{HttpTransport, Redacted, TransportError, TransportErrorClass};
 use crate::helpers as pure;
-use cow_sdk_transport_policy::{
+use cow_sdk_core::transport::policy::{
     AttemptOutcome as RetryOutcome, LimiterKey, RetrySignal, TransportPolicy, run_with_retry,
 };
 use wasm_bindgen::prelude::*;
@@ -47,7 +47,7 @@ impl IpfsHttpAdapter {
 #[async_trait(?Send)]
 impl IpfsFetchTransport for IpfsHttpAdapter {
     async fn get(&self, uri: &str) -> Result<String, AppDataError> {
-        // The shared driver in `cow-sdk-transport-policy` owns the retry loop,
+        // The shared driver in `cow_sdk_core::transport::policy` owns the retry loop,
         // rate-limit acquisition, backoff, and `Retry-After` clock — including
         // the wasm-safe wall clock that keeps this browser path from aborting
         // on a retryable gateway status. The closure performs one fetch and

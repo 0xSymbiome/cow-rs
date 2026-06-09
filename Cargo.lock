@@ -1345,7 +1345,6 @@ dependencies = [
  "cow-sdk-subgraph",
  "cow-sdk-test",
  "cow-sdk-trading",
- "cow-sdk-transport-policy",
  "cow-sdk-transport-wasm",
  "cow-sdk-wasm",
  "num-bigint",
@@ -1519,7 +1518,10 @@ dependencies = [
  "async-trait",
  "cow-sdk-test-utils",
  "flate2",
+ "futures-timer",
+ "gloo-timers",
  "http",
+ "httpdate",
  "num-bigint",
  "pin-project-lite",
  "proptest",
@@ -1535,6 +1537,7 @@ dependencies = [
  "tsify",
  "url",
  "wasm-bindgen",
+ "web-time",
  "wiremock",
 ]
 
@@ -1567,7 +1570,6 @@ dependencies = [
  "cow-sdk-contracts",
  "cow-sdk-core",
  "cow-sdk-test-utils",
- "cow-sdk-transport-policy",
  "criterion",
  "http",
  "proptest",
@@ -1612,7 +1614,6 @@ version = "0.1.0"
 dependencies = [
  "cow-sdk-core",
  "cow-sdk-test-utils",
- "cow-sdk-transport-policy",
  "reqwest",
  "serde",
  "serde_json",
@@ -1663,7 +1664,6 @@ dependencies = [
  "cow-sdk-orderbook",
  "cow-sdk-signing",
  "cow-sdk-test-utils",
- "cow-sdk-transport-policy",
  "cow-sdk-transport-wasm",
  "criterion",
  "futures-timer",
@@ -1677,25 +1677,6 @@ dependencies = [
  "trybuild",
  "wasm-bindgen-test",
  "web-time",
-]
-
-[[package]]
-name = "cow-sdk-transport-policy"
-version = "0.1.0"
-dependencies = [
- "cow-sdk-core",
- "futures-timer",
- "gloo-timers",
- "httpdate",
- "proptest",
- "reqwest",
- "serde_json",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
- "url",
- "web-time",
- "wiremock",
 ]
 
 [[package]]
@@ -1734,7 +1715,6 @@ dependencies = [
  "cow-sdk-subgraph",
  "cow-sdk-test-utils",
  "cow-sdk-trading",
- "cow-sdk-transport-policy",
  "getrandom 0.4.2",
  "gloo-timers",
  "js-sys",

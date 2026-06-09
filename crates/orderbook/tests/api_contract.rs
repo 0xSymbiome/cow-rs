@@ -12,7 +12,7 @@ use cow_sdk_orderbook::{
     HashMismatchStage, OrderCancellations, OrderCreation, OrderQuoteSide, OrderStatus,
     OrderbookError, SigningScheme, SolverCompetitionResponse, SupportedChainId,
 };
-use cow_sdk_transport_policy::{
+use cow_sdk_core::transport::policy::{
     DEFAULT_MAX_ATTEMPTS, DEFAULT_ORDERBOOK_USER_AGENT, TransportPolicy,
 };
 use serde_json::json;
@@ -1052,7 +1052,7 @@ mod recording_transport {
         OrderbookRejection, SigningScheme,
     };
     use cow_sdk_test_utils::mocks::{Canned, RecordingHttpTransport};
-    use cow_sdk_transport_policy::TransportPolicy;
+    use cow_sdk_core::transport::policy::TransportPolicy;
 
     use crate::common::{
         sample_buy_token, sample_order_uid, sample_owner, sample_quote_response_json,

@@ -7,11 +7,12 @@
 //! that contract: short-circuiting `Duration::ZERO` before yielding, and
 //! swapping in an unpinned `yield_now` helper.
 //!
-//! It lives in `transport-policy` (which owns `src/time.rs`) rather than a
-//! consuming crate, so a refactor of the sleep path fails the owning crate's
-//! own suite instead of a surprising cross-crate test.
+//! It lives with `cow-sdk-core` (which owns
+//! `src/transport/policy/time.rs`) rather than a consuming crate, so a
+//! refactor of the sleep path fails the owning crate's own suite instead of a
+//! surprising cross-crate test.
 
-const TIME_SOURCE: &str = include_str!("../src/time.rs");
+const TIME_SOURCE: &str = include_str!("../src/transport/policy/time.rs");
 
 #[test]
 fn wasm_zero_delay_path_yields_through_gloo_timeout_zero() {

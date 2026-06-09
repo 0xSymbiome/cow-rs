@@ -1,5 +1,5 @@
 use cow_sdk_subgraph::{SubgraphApi, SubgraphQueryRequest};
-use cow_sdk_transport_policy::TransportPolicy;
+use cow_sdk_core::transport::policy::TransportPolicy;
 use serde_json::Value;
 use wasm_bindgen::prelude::*;
 

@@ -9,10 +9,10 @@ use std::{
     time::Duration,
 };
 
-use cow_sdk_core::{CancellationToken, Cancelled};
+use crate::{CancellationToken, Cancelled};
 use url::Url;
 
-use crate::time::sleep;
+use crate::transport::policy::time::sleep;
 
 #[cfg(not(target_arch = "wasm32"))]
 use std::time::Instant;

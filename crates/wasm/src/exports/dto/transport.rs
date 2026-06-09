@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 #[cfg(feature = "transport-policy")]
-use cow_sdk_transport_policy::{
+use cow_sdk_core::transport::policy::{
     JitterStrategy, LimiterScope, RequestRateLimiter, RetryPolicy, TransportPolicy,
 };
 #[cfg(feature = "transport-policy")]

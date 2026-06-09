@@ -16,7 +16,7 @@ use cow_sdk_core::{
 };
 use cow_sdk_orderbook::{EnvBaseUrlOverrides, ExternalHostPolicy, OrderbookApi};
 use cow_sdk_test_utils::mocks::{Canned, RecordingHttpTransport, StubHttpTransport};
-use cow_sdk_transport_policy::{RetryPolicy, TransportPolicy};
+use cow_sdk_core::transport::policy::{RetryPolicy, TransportPolicy};
 
 #[test]
 fn build_with_required_inputs_yields_a_typed_api() {

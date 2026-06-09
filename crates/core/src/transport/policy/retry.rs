@@ -2,7 +2,7 @@
 
 use std::time::{Duration, SystemTime};
 
-use crate::{
+use crate::transport::policy::{
     JitterStrategy, NetworkErrorKind, RetryAfter, parse_retry_after,
     status::{SERVICE_UNAVAILABLE, TOO_MANY_REQUESTS, is_retryable_status},
 };

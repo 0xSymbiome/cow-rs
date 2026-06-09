@@ -5,7 +5,7 @@ use cow_sdk_core::{
     AppDataHash, Cancelled, CoreError, ErrorClass, HostPolicyError, Redacted, TransportError,
     TransportErrorClass, ValidationReason,
 };
-use cow_sdk_transport_policy::{NetworkErrorKind, RetryPolicy, is_retryable_status};
+use cow_sdk_core::transport::policy::{NetworkErrorKind, RetryPolicy, is_retryable_status};
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;

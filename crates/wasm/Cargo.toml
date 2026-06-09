@@ -38,7 +38,7 @@ signing = []
 app-data = []
 ipfs = ["app-data", "transport-policy"]
 cancellation = ["signing"]
-transport-policy = ["dep:cow-sdk-transport-policy"]
+transport-policy = ["cow-sdk-core/transport-policy"]
 trading = ["orderbook", "signing", "app-data", "dep:cow-sdk-trading"]
 subgraph = ["dep:cow-sdk-subgraph", "transport-policy"]
 flavor-default = [
@@ -87,7 +87,6 @@ console_error_panic_hook.workspace = true
 cow-sdk-orderbook = { path = "../orderbook", version = "0.1.0", optional = true }
 cow-sdk-subgraph = { path = "../subgraph", version = "0.1.0", optional = true }
 cow-sdk-trading = { path = "../trading", version = "0.1.0", optional = true }
-cow-sdk-transport-policy = { path = "../transport-policy", version = "0.1.0", optional = true }
 getrandom = { workspace = true }
 gloo-timers = { workspace = true }
 js-sys.workspace = true
@@ -100,7 +99,6 @@ web-sys = { workspace = true, features = ["AbortController", "AbortSignal", "Eve
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test.workspace = true
 cow-sdk-test-utils = { path = "../test-utils" }
-cow-sdk-transport-policy = { path = "../transport-policy", version = "0.1.0" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt-multi-thread", "test-util"] }

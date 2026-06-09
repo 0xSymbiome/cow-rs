@@ -66,22 +66,22 @@ enums:
     expected_marker: non_exhaustive
     reason: Transport classification can grow as adapters surface new failure classes.
   - name: NetworkErrorKind
-    file: crates/transport-policy/src/classify.rs
+    file: crates/core/src/transport/policy/classify.rs
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: Retry-oriented transport failure categories can grow as adapters surface new classes.
   - name: JitterStrategy
-    file: crates/transport-policy/src/jitter.rs
+    file: crates/core/src/transport/policy/jitter.rs
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: Retry jitter strategies can grow without breaking downstream matches.
   - name: LimiterScope
-    file: crates/transport-policy/src/rate_limit.rs
+    file: crates/core/src/transport/policy/rate_limit.rs
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: Request limiter bucket scopes can grow as additional routing policies are added.
   - name: TransportPolicyBuildError
-    file: crates/transport-policy/src/policy.rs
+    file: crates/core/src/transport/policy/config.rs
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: Transport policy builder diagnostics can grow with new validation knobs.
@@ -491,17 +491,17 @@ enums:
     expected_marker: non_exhaustive
     reason: App-data hash-mismatch detection stages can grow as the orderbook client adds integrity checkpoints.
   - name: RetrySignal
-    file: crates/transport-policy/src/runner.rs
+    file: crates/core/src/transport/policy/runner.rs
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: Retry classification signals can grow as the transport runner distinguishes new failure shapes.
   - name: AttemptOutcome
-    file: crates/transport-policy/src/runner.rs
+    file: crates/core/src/transport/policy/runner.rs
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: Attempt-outcome variants can grow as the retry runner models new terminal or continuation states.
   - name: LimiterKey
-    file: crates/transport-policy/src/runner.rs
+    file: crates/core/src/transport/policy/runner.rs
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: Rate-limiter bucket selectors can grow as additional request-routing scopes are added.

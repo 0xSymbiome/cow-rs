@@ -1,9 +1,9 @@
 # Transport Policy Coverage Audit
 
 Status: Current
-Last reviewed: 2026-06-05
-Owning surface: `cow-sdk-transport-policy` public retry, jitter, rate-limit, classification, and `Retry-After` parser surfaces, the shared `run_with_retry` driver and its `AttemptOutcome`, `RetrySignal`, and `LimiterKey` types, and the target-neutral `system_now` wall clock, including the HTTP-date delegation to `httpdate::parse_http_date` on `retry_after.rs` and the bounded-jitter contract on `jitter.rs`
-Refresh trigger: Changes to any public function on `cow-sdk-transport-policy`; changes to `RetryPolicy`, `JitterStrategy`, `RequestRateLimiter`, `RetryAfter`, `NetworkErrorKind`, or `ErrorClassifier`; changes to `run_with_retry`, `AttemptOutcome`, `RetrySignal`, `LimiterKey`, or `system_now`; changes to the `Retry-After` HTTP-date delegation or its expected accept/reject contract; changes to the workspace `Retry-After` cooldown honor rule documented in `http-transport-contract-audit.md`
+Last reviewed: 2026-06-09
+Owning surface: the `cow_sdk_core::transport::policy` module (the off-by-default `transport-policy` feature of `cow-sdk-core`) — public retry, jitter, rate-limit, classification, and `Retry-After` parser surfaces, the shared `run_with_retry` driver and its `AttemptOutcome`, `RetrySignal`, and `LimiterKey` types, and the target-neutral `system_now` wall clock, including the HTTP-date delegation to `httpdate::parse_http_date` on `retry_after.rs` and the bounded-jitter contract on `jitter.rs`
+Refresh trigger: Changes to any public function in `cow_sdk_core::transport::policy`; changes to `RetryPolicy`, `JitterStrategy`, `RequestRateLimiter`, `RetryAfter`, `NetworkErrorKind`, or `ErrorClassifier`; changes to `run_with_retry`, `AttemptOutcome`, `RetrySignal`, `LimiterKey`, or `system_now`; changes to the `Retry-After` HTTP-date delegation or its expected accept/reject contract; changes to the workspace `Retry-After` cooldown honor rule documented in `http-transport-contract-audit.md`
 Related docs:
 - [ADR 0041](../adr/0041-transport-policy-l3-layering.md)
 - [ADR 0033](../adr/0033-minimum-viable-panic-surface.md)
@@ -187,47 +187,47 @@ current time on both targets without the standard clock's wasm abort.
 
 Primary implementation points:
 
-- `crates/transport-policy/src/retry_after.rs`
-- `crates/transport-policy/src/jitter.rs`
-- `crates/transport-policy/src/retry.rs`
-- `crates/transport-policy/src/rate_limit.rs`
-- `crates/transport-policy/src/classify.rs`
-- `crates/transport-policy/src/policy.rs`
-- `crates/transport-policy/src/status.rs`
-- `crates/transport-policy/src/runner.rs`
-- `crates/transport-policy/src/time.rs`
+- `crates/core/src/transport/policy/retry_after.rs`
+- `crates/core/src/transport/policy/jitter.rs`
+- `crates/core/src/transport/policy/retry.rs`
+- `crates/core/src/transport/policy/rate_limit.rs`
+- `crates/core/src/transport/policy/classify.rs`
+- `crates/core/src/transport/policy/config.rs`
+- `crates/core/src/transport/policy/status.rs`
+- `crates/core/src/transport/policy/runner.rs`
+- `crates/core/src/transport/policy/time.rs`
 
 Primary regression coverage:
 
-- `crates/transport-policy/src/runner.rs` (`tests::immediate_success_does_not_sleep`, `tests::retryable_status_then_success_backs_off_once`, `tests::delta_retry_after_overrides_backoff_floor`, `tests::http_date_retry_after_uses_the_injected_clock`, `tests::persistent_retryable_status_exhausts_attempts`, `tests::persistent_transport_error_exhausts_attempts`, `tests::non_retryable_status_returns_immediately`, `tests::non_retryable_transport_returns_without_redispatch`, `tests::mixed_transport_then_status_then_success`, `tests::no_retry_policy_makes_one_attempt`)
+- `crates/core/src/transport/policy/runner.rs` (`tests::immediate_success_does_not_sleep`, `tests::retryable_status_then_success_backs_off_once`, `tests::delta_retry_after_overrides_backoff_floor`, `tests::http_date_retry_after_uses_the_injected_clock`, `tests::persistent_retryable_status_exhausts_attempts`, `tests::persistent_transport_error_exhausts_attempts`, `tests::non_retryable_status_returns_immediately`, `tests::non_retryable_transport_returns_without_redispatch`, `tests::mixed_transport_then_status_then_success`, `tests::no_retry_policy_makes_one_attempt`)
 - `crates/wasm/tests/wasm_retry_runner_contract.rs::system_now_returns_a_wall_clock_value_without_panicking`
 - `crates/wasm/tests/wasm_retry_runner_contract.rs::retryable_status_drives_backoff_without_panicking`
-- `crates/transport-policy/tests/retry_after_contract.rs`
-- `crates/transport-policy/tests/retry_after_fixture_contract.rs`
+- `crates/core/tests/retry_after_contract.rs`
+- `crates/core/tests/retry_after_fixture_contract.rs`
 - `parity/fixtures/retry_after/imf_fixdate_accept.json`
 - `parity/fixtures/retry_after/imf_fixdate_reject.json`
 - `parity/fixtures/retry_after/legacy_rfc850.json`
-- `crates/transport-policy/tests/classify_contract.rs::network_error_kind_mapping_round_trip_is_total`
-- `crates/transport-policy/tests/classify_contract.rs::reqwest_classifier::reqwest_classifier_maps_invalid_url_to_builder_or_request`
-- `crates/transport-policy/tests/classify_contract.rs::reqwest_classifier::reqwest_classifier_maps_unreachable_host_to_connect_or_timeout`
-- `crates/transport-policy/tests/classify_contract.rs::reqwest_classifier::reqwest_classifier_maps_status_500_to_http_status`
-- `crates/transport-policy/tests/policy_contract.rs::prop_tpp_001_default_orderbook_transport_policy_is_stable`
-- `crates/transport-policy/tests/policy_contract.rs::prop_tpp_009_explicit_constructor_disables_tracing_and_preserves_parts`
-- `crates/transport-policy/tests/policy_contract.rs::prop_tpp_010_default_trading_uses_trading_user_agent_and_orderbook_limiter`
-- `crates/transport-policy/tests/policy_contract.rs::prop_tpp_011_default_ipfs_disables_retry_and_timeout_and_uses_unlimited_limiter`
-- `crates/transport-policy/tests/policy_contract.rs::prop_tpp_012_with_setters_replace_only_their_targeted_field`
-- `crates/transport-policy/tests/policy_contract.rs::prop_tpp_014_builder_round_trip_preserves_every_setter`
-- `crates/transport-policy/tests/policy_contract.rs::prop_tpp_016_none_jitter_returns_capped_base_delay_unchanged`
-- `crates/transport-policy/tests/policy_contract.rs::prop_tpp_018_equal_jitter_returns_at_least_half_capped_base_delay`
-- `crates/transport-policy/tests/policy_contract.rs::prop_tpp_020_zero_base_delay_returns_zero_across_every_strategy`
-- `crates/transport-policy/tests/policy_contract.rs::prop_tpp_021_unlimited_rate_limiter_never_delays_or_errors`
-- `crates/transport-policy/tests/policy_contract.rs::prop_tpp_022_global_scope_uses_constant_key_regardless_of_host`
-- `crates/transport-policy/tests/policy_contract.rs::prop_tpp_024_pre_cancelled_token_returns_cancelled_immediately`
-- `crates/transport-policy/tests/policy_contract.rs::prop_tpp_028_should_retry_status_matches_the_public_retryable_list`
-- `crates/transport-policy/tests/policy_contract.rs::prop_tpp_029_should_retry_network_only_retries_documented_kinds`
-- `crates/transport-policy/tests/policy_contract.rs::prop_tpp_030_base_backoff_clamps_to_max_delay_across_attempt_range`
-- `crates/transport-policy/tests/policy_contract.rs::prop_tpp_031_retry_after_helper_is_case_insensitive`
-- `crates/transport-policy/tests/policy_contract.rs::prop_tpp_032_retry_builder_round_trip_and_zero_attempts_clamps_to_one`
+- `crates/core/tests/classify_contract.rs::network_error_kind_mapping_round_trip_is_total`
+- `crates/core/tests/classify_contract.rs::reqwest_classifier::reqwest_classifier_maps_invalid_url_to_builder_or_request`
+- `crates/core/tests/classify_contract.rs::reqwest_classifier::reqwest_classifier_maps_unreachable_host_to_connect_or_timeout`
+- `crates/core/tests/classify_contract.rs::reqwest_classifier::reqwest_classifier_maps_status_500_to_http_status`
+- `crates/core/tests/policy_contract.rs::prop_tpp_001_default_orderbook_transport_policy_is_stable`
+- `crates/core/tests/policy_contract.rs::prop_tpp_009_explicit_constructor_disables_tracing_and_preserves_parts`
+- `crates/core/tests/policy_contract.rs::prop_tpp_010_default_trading_uses_trading_user_agent_and_orderbook_limiter`
+- `crates/core/tests/policy_contract.rs::prop_tpp_011_default_ipfs_disables_retry_and_timeout_and_uses_unlimited_limiter`
+- `crates/core/tests/policy_contract.rs::prop_tpp_012_with_setters_replace_only_their_targeted_field`
+- `crates/core/tests/policy_contract.rs::prop_tpp_014_builder_round_trip_preserves_every_setter`
+- `crates/core/tests/policy_contract.rs::prop_tpp_016_none_jitter_returns_capped_base_delay_unchanged`
+- `crates/core/tests/policy_contract.rs::prop_tpp_018_equal_jitter_returns_at_least_half_capped_base_delay`
+- `crates/core/tests/policy_contract.rs::prop_tpp_020_zero_base_delay_returns_zero_across_every_strategy`
+- `crates/core/tests/policy_contract.rs::prop_tpp_021_unlimited_rate_limiter_never_delays_or_errors`
+- `crates/core/tests/policy_contract.rs::prop_tpp_022_global_scope_uses_constant_key_regardless_of_host`
+- `crates/core/tests/policy_contract.rs::prop_tpp_024_pre_cancelled_token_returns_cancelled_immediately`
+- `crates/core/tests/policy_contract.rs::prop_tpp_028_should_retry_status_matches_the_public_retryable_list`
+- `crates/core/tests/policy_contract.rs::prop_tpp_029_should_retry_network_only_retries_documented_kinds`
+- `crates/core/tests/policy_contract.rs::prop_tpp_030_base_backoff_clamps_to_max_delay_across_attempt_range`
+- `crates/core/tests/policy_contract.rs::prop_tpp_031_retry_after_helper_is_case_insensitive`
+- `crates/core/tests/policy_contract.rs::prop_tpp_032_retry_builder_round_trip_and_zero_attempts_clamps_to_one`
 - `fuzz/fuzz_targets/fuzz_parse_retry_after.rs`
 - `fuzz/fuzz_targets/fuzz_retry_policy_delay.rs`
 - `fuzz/fuzz_targets/fuzz_jitter_delay_for_attempt.rs`
@@ -236,8 +236,8 @@ Validation surface:
 
 ```text
 cargo fmt --all --check
-cargo clippy -p cow-sdk-transport-policy --all-targets --all-features -- -D warnings
-cargo test -p cow-sdk-transport-policy --all-features
-cargo llvm-cov -p cow-sdk-transport-policy --all-features --summary-only --fail-under-lines 85
-RUSTDOCFLAGS="-D warnings" cargo doc -p cow-sdk-transport-policy --no-deps
+cargo clippy -p cow-sdk-core --features reqwest-classifier --all-targets -- -D warnings
+cargo test -p cow-sdk-core --features reqwest-classifier
+cargo llvm-cov -p cow-sdk-core --features reqwest-classifier --summary-only
+RUSTDOCFLAGS="-D warnings" cargo doc -p cow-sdk-core --features reqwest-classifier --no-deps
 ```

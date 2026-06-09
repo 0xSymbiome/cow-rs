@@ -781,9 +781,9 @@ impl TradingOptions {
     /// the SDK builds an orderbook client with the standard
     /// [`TransportPolicy::default_orderbook`] policy.
     ///
-    /// [`TransportPolicy`]: cow_sdk_transport_policy::TransportPolicy
+    /// [`TransportPolicy`]: cow_sdk_core::transport::policy::TransportPolicy
     /// [`OrderbookApi::builder().transport_policy(...)`]: cow_sdk_orderbook::OrderbookApiBuilder::transport_policy
-    /// [`TransportPolicy::default_orderbook`]: cow_sdk_transport_policy::TransportPolicy::default_orderbook
+    /// [`TransportPolicy::default_orderbook`]: cow_sdk_core::transport::policy::TransportPolicy::default_orderbook
     #[must_use]
     pub fn with_orderbook_client(mut self, orderbook_client: Arc<dyn OrderbookClient>) -> Self {
         self.order_book_api = Some(orderbook_client);

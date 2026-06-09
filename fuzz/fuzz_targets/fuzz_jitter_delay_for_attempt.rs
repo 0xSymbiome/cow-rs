@@ -2,7 +2,7 @@
 
 //! Fuzz target for the retry jitter strategy.
 //!
-//! **Surface:** `cow_sdk_transport_policy::JitterStrategy::delay_for_attempt`.
+//! **Surface:** `cow_sdk_core::transport::policy::JitterStrategy::delay_for_attempt`.
 //! **Property:** `PROP-TPP-004`.
 //! **Seed contract:** corpus inputs cover canonical decorrelated, full, and
 //! equal jitter shapes; boundary zero / equal base+max windows; and
@@ -17,7 +17,7 @@
 
 use std::time::Duration;
 
-use cow_sdk_transport_policy::JitterStrategy;
+use cow_sdk_core::transport::policy::JitterStrategy;
 use libfuzzer_sys::{
     arbitrary::{Arbitrary, Unstructured},
     fuzz_target,

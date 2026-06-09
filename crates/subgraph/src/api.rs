@@ -6,7 +6,7 @@ use cow_sdk_core::{
     HttpClientPolicy, HttpTransport, Redacted, RedactedOptionalUrlMap, SupportedChainId,
     TransportError, TransportErrorClass, redact_response_body,
 };
-use cow_sdk_transport_policy::{
+use cow_sdk_core::transport::policy::{
     AttemptOutcome as RetryOutcome, LimiterKey, RequestRateLimiter, RetrySignal, TransportPolicy,
     run_with_retry,
 };
@@ -505,7 +505,7 @@ impl SubgraphApi {
             )
         })?;
 
-        // The shared driver in `cow-sdk-transport-policy` owns the retry loop,
+        // The shared driver in `cow_sdk_core::transport::policy` owns the retry loop,
         // rate-limit acquisition, backoff, `Retry-After` clock, and retry
         // telemetry; the closure performs one GraphQL POST and classifies the
         // result, building the typed `SubgraphError` for the terminal path.

@@ -95,8 +95,7 @@ let _wallet = BrowserWallet::from_trusted_transport(transport, origin)
 | Need | Crate |
 | --- | --- |
 | Main Rust SDK entrypoint | `cow-sdk` |
-| Shared domain types, runtime traits, and the `HttpTransport` seam with its native `ReqwestTransport` default | `cow-sdk-core` |
-| Shared HTTP retry, rate-limit, jitter, `Retry-After`, and error-classification policy | `cow-sdk-transport-policy` |
+| Shared domain types, runtime traits, the `HttpTransport` seam with its native `ReqwestTransport` default, and the opt-in HTTP retry, rate-limit, jitter, `Retry-After`, and error-classification policy (`transport-policy` feature) | `cow-sdk-core` |
 | Browser-target HTTP transport (`FetchTransport`) for `wasm32-unknown-unknown` | `cow-sdk-transport-wasm` |
 | TypeScript-callable wasm-bindgen SDK bindings for browser, Node.js, Workers, and optional Deno consumers | `cow-sdk-wasm` |
 | Read-only subgraph queries | `cow-sdk-subgraph` or `cow-sdk` with `subgraph` |

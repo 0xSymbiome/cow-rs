@@ -5,15 +5,15 @@
 //! `wasm32-unknown-unknown`, so a retry-delay computation that read it would
 //! abort the wasm instance on the first retryable response. The orderbook,
 //! subgraph, and IPFS clients all route their retries through
-//! [`cow_sdk_transport_policy::run_with_retry`], which reads the browser wall
-//! clock through [`cow_sdk_transport_policy::system_now`]. These tests lock the
+//! [`cow_sdk_core::transport::policy::run_with_retry`], which reads the browser wall
+//! clock through [`cow_sdk_core::transport::policy::system_now`]. These tests lock the
 //! no-panic behavior of that path on the wasm target.
 
 #![cfg(target_arch = "wasm32")]
 
 use std::time::Duration;
 
-use cow_sdk_transport_policy::{
+use cow_sdk_core::transport::policy::{
     AttemptOutcome, JitterStrategy, LimiterKey, RequestRateLimiter, RetryPolicy, RetrySignal,
     run_with_retry, system_now,
 };

@@ -204,7 +204,7 @@ use std::time::Duration;
 use cow_sdk_core::SupportedChainId;
 use cow_sdk_orderbook::{CowEnv, OrderbookApi};
 use cow_sdk_subgraph::SubgraphApi;
-use cow_sdk_transport_policy::DEFAULT_ORDERBOOK_USER_AGENT;
+use cow_sdk_core::transport::policy::DEFAULT_ORDERBOOK_USER_AGENT;
 
 fn build_shared_client() -> reqwest::Client {
     reqwest::Client::builder()

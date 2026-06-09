@@ -98,7 +98,7 @@ fn unix_timestamp(time: SystemTime) -> Option<i64> {
 ///
 /// Scans `headers` for a `Retry-After` field name (ASCII case-insensitive) and
 /// parses its value with [`parse_retry_after`] against the wasm-safe wall clock
-/// ([`crate::system_now`]). Returns [`None`] when no `Retry-After` header is
+/// ([`crate::transport::policy::system_now`]). Returns [`None`] when no `Retry-After` header is
 /// present or its value does not parse; an HTTP-date in the past resolves to
 /// [`Duration::ZERO`].
 ///
@@ -110,7 +110,7 @@ pub fn retry_after_from_headers(headers: &[(String, String)]) -> Option<Duration
     headers
         .iter()
         .find(|(name, _)| name.eq_ignore_ascii_case("retry-after"))
-        .and_then(|(_, value)| parse_retry_after(value, crate::system_now()))
+        .and_then(|(_, value)| parse_retry_after(value, crate::transport::policy::system_now()))
         .map(RetryAfter::delay)
 }
 

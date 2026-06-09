@@ -435,6 +435,17 @@ The first functional crate-family release begins at `0.1.0`.
 
 ### Changed
 
+- The shared HTTP transport policy — the `run_with_retry` driver, rate-limit,
+  jitter, `Retry-After` parsing, target-neutral wall clock, and transport-error
+  classification — moved from the standalone `cow-sdk-transport-policy` crate
+  into the `cow_sdk_core::transport::policy` module, gated behind the
+  off-by-default `transport-policy` feature of `cow-sdk-core`. The public types
+  are unchanged and are now reached through `cow_sdk_core::transport::policy`;
+  consumers enable the capability with the `cow-sdk-core` `transport-policy`
+  feature (or `reqwest-classifier` for the native classifier). With the feature
+  off, the default `cow-sdk-core` surface and dependency closure are unchanged
+  and the raw `HttpTransport` seam stays unwidened, so the workspace sheds one
+  published crate without altering the transport dispatch seam (ADR 0041).
 - `cow_sdk_browser_wallet` no longer reports a malformed `eth_getBlockByNumber`
   block number as a `chain id` error. The shared JSON-RPC quantity parser is now
   named for what it does (parse a hex/decimal quantity into a `u64`) and reports

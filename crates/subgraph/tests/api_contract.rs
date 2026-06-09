@@ -8,7 +8,7 @@ use cow_sdk_subgraph::{
     SubgraphError, SubgraphGraphQlError, SubgraphGraphQlErrorLocation, SubgraphQueryRequest,
     SubgraphRequestErrorContext, TOTALS_QUERY, Total,
 };
-use cow_sdk_transport_policy::{DEFAULT_SUBGRAPH_USER_AGENT, TransportPolicy};
+use cow_sdk_core::transport::policy::{DEFAULT_SUBGRAPH_USER_AGENT, TransportPolicy};
 use serde::Deserialize;
 use serde_json::{Map, Value, json};
 use std::net::TcpListener;
@@ -1078,7 +1078,7 @@ mod recording_transport {
         ExternalHostPolicy, SubgraphApi, SubgraphApiBaseUrls, SubgraphQueryRequest,
     };
     use cow_sdk_test_utils::mocks::{Canned, RecordingHttpTransport};
-    use cow_sdk_transport_policy::{RetryPolicy, TransportPolicy};
+    use cow_sdk_core::transport::policy::{RetryPolicy, TransportPolicy};
     use serde_json::{Value, json};
 
     const RECORDING_BASE_URL: &str = "https://subgraph-recording.example";

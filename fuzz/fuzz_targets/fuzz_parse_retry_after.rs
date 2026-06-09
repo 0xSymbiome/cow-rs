@@ -2,7 +2,7 @@
 
 //! Fuzz target for the HTTP `Retry-After` header parser.
 //!
-//! **Surface:** `cow_sdk_transport_policy::parse_retry_after`.
+//! **Surface:** `cow_sdk_core::transport::policy::parse_retry_after`.
 //! **Property:** `PROP-TPP-004`.
 //! **Seed contract:** corpus inputs cover canonical delta-seconds values,
 //! canonical IMF-fixdate values, boundary empty / whitespace / zero inputs,
@@ -15,7 +15,7 @@
 
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use cow_sdk_transport_policy::parse_retry_after;
+use cow_sdk_core::transport::policy::parse_retry_after;
 use libfuzzer_sys::fuzz_target;
 
 const FIXED_NOW_SECS: u64 = 1_700_000_000;

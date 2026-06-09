@@ -84,24 +84,24 @@ allowed:
   - file: crates/trading/src/validation.rs
     item: native_sentinel
     reason: Native currency sentinel is a repository-owned valid EVM address literal.
-  - file: crates/transport-policy/src/jitter.rs
+  - file: crates/core/src/transport/policy/jitter.rs
     item: bounded_offset
     reason: Jitter offset is explicitly capped to u64::MAX before conversion.
-  - file: crates/transport-policy/src/policy.rs
+  - file: crates/core/src/transport/policy/config.rs
     item: TransportPolicy::default_orderbook
     reason: Static orderbook user-agent is a repository-owned valid header literal.
-  - file: crates/transport-policy/src/policy.rs
+  - file: crates/core/src/transport/policy/config.rs
     item: TransportPolicy::default_subgraph
     reason: Static subgraph user-agent is a repository-owned valid header literal.
-  - file: crates/transport-policy/src/policy.rs
+  - file: crates/core/src/transport/policy/config.rs
     item: TransportPolicy::default_trading
     reason: Static trading user-agent is a repository-owned valid header literal.
-  - file: crates/transport-policy/src/policy.rs
+  - file: crates/core/src/transport/policy/config.rs
     item: TransportPolicy::default_ipfs
     reason: Static IPFS user-agent is a repository-owned valid header literal.
-  - file: crates/transport-policy/src/retry.rs
+  - file: crates/core/src/transport/policy/retry.rs
     item: RetryPolicy::base_backoff_delay
     reason: Retry exponent is clamped to a u32-safe range before conversion.
-  - file: crates/transport-policy/src/time.rs
+  - file: crates/core/src/transport/policy/time.rs
     item: sleep
     reason: Millisecond retry delay is clamped to u32::MAX before wasm timer conversion.

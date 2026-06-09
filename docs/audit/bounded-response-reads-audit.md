@@ -1,8 +1,8 @@
 # Bounded Response Reads Audit
 
 Status: Current
-Last reviewed: 2026-05-29
-Owning surface: HTTP transport response reads across `cow-sdk-core`, `cow-sdk-transport-policy`, `cow-sdk-transport-wasm`, `cow-sdk-wasm`, and the signature decode path in `cow-sdk-contracts`
+Last reviewed: 2026-06-09
+Owning surface: HTTP transport response reads across `cow-sdk-core` (including its `transport::policy` module), `cow-sdk-transport-wasm`, `cow-sdk-wasm`, and the signature decode path in `cow-sdk-contracts`
 Refresh trigger: changes to the transport read loops, the `max_response_bytes` policy field or its per-client defaults, the `ResponseTooLarge` classification, the signature hex bound, or the reqwest/web-sys decompression posture
 Related docs:
 - [ADR 0055](../adr/0055-bounded-response-reads.md)
@@ -97,8 +97,8 @@ Primary implementation points:
 - `crates/core/src/transport/reqwest.rs`
 - `crates/core/src/config/http.rs`
 - `crates/core/src/validation.rs`
-- `crates/transport-policy/src/policy.rs`
-- `crates/transport-policy/src/classify.rs`
+- `crates/core/src/transport/policy/config.rs`
+- `crates/core/src/transport/policy/classify.rs`
 - `crates/transport-wasm/src/fetch.rs`
 - `crates/wasm/src/exports/transport.rs`
 - `crates/contracts/src/hex_field.rs`
@@ -111,8 +111,8 @@ Primary regression coverage:
 - `crates/core/tests/transport_contract.rs::response_exactly_at_cap_is_accepted_and_one_over_is_rejected`
 - `crates/core/tests/transport_contract.rs::oversized_error_status_body_is_rejected_as_response_too_large`
 - `crates/core/tests/transport_contract.rs::non_utf8_body_is_decoded_lossily_without_a_cap_layer_error`
-- `crates/transport-policy/tests/classify_contract.rs::response_too_large_is_never_retried`
-- `crates/transport-policy/tests/policy_contract.rs::default_policies_carry_per_client_response_byte_caps`
+- `crates/core/tests/classify_contract.rs::response_too_large_is_never_retried`
+- `crates/core/tests/policy_contract.rs::default_policies_carry_per_client_response_byte_caps`
 - `crates/contracts/src/hex_field.rs::tests::decode_hex_field_bounded_rejects_payload_over_the_limit`
 - `crates/app-data/tests/json_recursion_contract.rs::deeply_nested_json_is_rejected_by_the_recursion_guard`
 
@@ -120,7 +120,7 @@ Validation surface:
 
 ```text
 cargo test -p cow-sdk-core --test transport_contract
-cargo test -p cow-sdk-transport-policy
+cargo test -p cow-sdk-core --features transport-policy
 cargo test -p cow-sdk-contracts
 cargo test -p cow-sdk-app-data --test json_recursion_contract
 ```

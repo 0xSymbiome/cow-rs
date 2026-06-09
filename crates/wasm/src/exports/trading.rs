@@ -13,7 +13,7 @@ use cow_sdk_trading::{
     AllowanceParameters, GAS_LIMIT_DEFAULT, LimitTradeParameters, PostTradeAdditionalParams,
     QuoteRequestOverride, QuoteResults, TradeAdvancedSettings, TradeParameters, Trading,
 };
-use cow_sdk_transport_policy::TransportPolicy;
+use cow_sdk_core::transport::policy::TransportPolicy;
 use js_sys::Function;
 use wasm_bindgen::prelude::*;
 

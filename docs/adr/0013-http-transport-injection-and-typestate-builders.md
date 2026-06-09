@@ -19,7 +19,7 @@ native consumers pass `Arc<ReqwestTransport>`, browser wasm consumers pass
 `Arc<FetchTransport>`, and runtime-neutral JS consumers pass
 `Arc<JsCallbackHttpTransport>`. Transport policy for timeout, retry,
 rate-limit, and jitter is injected through
-`cow_sdk_transport_policy::TransportPolicy` per ADR 0041. Builders remain
+`cow_sdk_core::transport::policy::TransportPolicy` per ADR 0041. Builders remain
 transport-agnostic; new transports land as additive peers without changing the
 builder API.
 

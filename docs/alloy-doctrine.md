@@ -70,7 +70,7 @@ Every primitive in this table uses the alloy symbol directly. No cow-owned re-im
 | Address to 32-byte word | `alloy_primitives::Address::into_word` | canonical; no production callsite | (no ADR) | No shipped code right-aligns an address into a 32-byte word — the `sol!` ABI encoders handle word layout internally. A hand-shaped `[u8; 32]` oracle is retained only in the `crates/contracts/src/order.rs` test module as an independent EIP-712 parity reference (see the `keccak_word` test-oracle entry). |
 | Multiplexer merkle proofs | `rs_merkle` (maintained crate adopted via ADR 0052) | composable (deferred per ADR 0048) | ADR 0052 | Replaces hand-rolled Multiplexer merkle machinery. |
 | RFC 8785 canonical JSON | `serde_jcs` (maintained crate adopted via ADR 0052) | `cow-sdk-app-data` | ADR 0052 | Replaces bytewise key-ordering canonicalisation; one documented behaviour change for non-ASCII keys (ADR 0052). |
-| IMF-fixdate parsing | `httpdate::parse_http_date` | `cow-sdk-transport-policy::retry_after` | ADR 0052 | Drives `Retry-After` HTTP header parsing; the `parse_retry_after` *function* is cow-owned (Bucket 2) because alloy's namesake parses JSON-RPC error message strings, not the REST HTTP header. |
+| IMF-fixdate parsing | `httpdate::parse_http_date` | `cow_sdk_core::transport::policy::retry_after` | ADR 0052 | Drives `Retry-After` HTTP header parsing; the `parse_retry_after` *function* is cow-owned (Bucket 2) because alloy's namesake parses JSON-RPC error message strings, not the REST HTTP header. |
 
 The principle binding is binary on every row: cow-rs does not maintain a parallel implementation in shipped crates. The one independent oracle retained in test code (`sha3::Keccak256` in `crates/contracts/src/order.rs`) is preserved on purpose so the parity test does not verify alloy's `keccak256` against itself.
 
@@ -101,8 +101,8 @@ Every surface in this table is shipped from cow-rs source and may not be swapped
 | Composable conditional order framework (encoders, decoders, selectors, `PollResult` taxonomy, single-call provider operations, local simulator) | `cow-sdk-composable` (deferred per ADR 0048) | ADR 0048 watch-tower boundary | Service loops, persistence, notifications, auto-posting are explicitly out of scope; alloy ships no composable surface. |
 | Subgraph GraphQL transport (typed queries, request shape, schema constants) | `cow-sdk-subgraph` | ADR 0003 (separate read-only subgraph crate) | alloy ships no GraphQL transport; cow uses `HttpTransport` (`cow-sdk-core`) as the seam (Bucket 3). |
 | HTTP REST transport seam (`HttpTransport` trait + `TransportError::HttpStatus` carrying headers/body) | `cow-sdk-core::transport` | ADR 0010, ADR 0019 | alloy's transport is `tower::Service<RequestPacket>` over JSON-RPC; cow's is REST; they are not type-compatible. The trait is cow-owned (here); the alloy *wrap of the alloy ecosystem* would be Bucket 3 if any — none ships, because alloy has no REST transport. |
-| `parse_retry_after` for the HTTP `Retry-After` header | `crates/transport-policy/src/retry_after.rs` | ADR 0041 | alloy's namesake parses `"try again in 4ms"` JSON-RPC error message strings; swapping silently ignores RFC 7231 §7.1.1.1 (delta-seconds + IMF-fixdate + RFC 850). The IMF-fixdate parse itself (`httpdate::parse_http_date`) is Bucket 1; the *RFC 7231 dispatch policy* around it is Bucket 2. |
-| Retry, throttle, error-classification policy | `cow-sdk-transport-policy` | ADR 0041, ADR 0046 | Honours `Retry-After` for 429/503, retries on `408,425,429,500,502,503,504`; not alloy's policy. |
+| `parse_retry_after` for the HTTP `Retry-After` header | `crates/core/src/transport/policy/retry_after.rs` | ADR 0041 | alloy's namesake parses `"try again in 4ms"` JSON-RPC error message strings; swapping silently ignores RFC 7231 §7.1.1.1 (delta-seconds + IMF-fixdate + RFC 850). The IMF-fixdate parse itself (`httpdate::parse_http_date`) is Bucket 1; the *RFC 7231 dispatch policy* around it is Bucket 2. |
+| Retry, throttle, error-classification policy | `cow_sdk_core::transport::policy` | ADR 0041, ADR 0046 | Honours `Retry-After` for 429/503, retries on `408,425,429,500,502,503,504`; not alloy's policy. |
 | Browser `FetchTransport` with `AbortController` lifecycle | `crates/transport-wasm/src/fetch.rs` | ADR 0010 | alloy ships no browser-fetch transport; alloy transport stack would pull tokio into a `wasm32-unknown-unknown` build. |
 | `JsCallbackHttpTransport` (Node/Deno/Workers callback transport) | `cow-sdk-wasm::exports::JsCallbackHttpTransport` | ADR 0010, ADR 0040 | Runtime-neutral JS callback transport; alloy ships no equivalent. |
 | EIP-712 type-string whitespace contract | `crates/contracts/src/order.rs`, every type string literal in `cow-sdk-cow-shed` and (future) `cow-sdk-composable` | ADR 0050 | Any whitespace creep between commas in EIP-712 type strings shifts the struct hash; every signature breaks. Formatter-driven risk. |
@@ -203,7 +203,7 @@ The Bucket 2 rejection contract on `Amount::Deserialize` (rejects `0o`/`0b` per 
 
 ## The 8 never-swap exceptions
 
-Seven constraints plus three additional surfaces are verified as `DO NOT SWAP`. The CI grep gates that mechanize each fence live at `.github/workflows/never-swap-gates.yml`; the per-site `// DO NOT SWAP` comments live at the load-bearing call sites in `crates/contracts/`, `crates/core/`, `crates/signing/`, `crates/transport-policy/`, and `crates/transport-wasm/`. One further reimplementation fence — `Amount::parse_units` does the decimal scaling itself with checked arithmetic instead of the fail-open, panic-prone, silently-wrapping raw `alloy_primitives::utils::parse_units` (Bucket 2 row above) — carries its own `// DO NOT SWAP` comment block but no dedicated grep gate; it is held by the `gate-do-not-swap-census` comment-block count rather than a symbol-specific regex, so the census gate locks at ten `DO NOT SWAP` blocks rather than nine.
+Seven constraints plus three additional surfaces are verified as `DO NOT SWAP`. The CI grep gates that mechanize each fence live at `.github/workflows/never-swap-gates.yml`; the per-site `// DO NOT SWAP` comments live at the load-bearing call sites in `crates/contracts/`, `crates/core/`, `crates/signing/`, and `crates/transport-wasm/`. One further reimplementation fence — `Amount::parse_units` does the decimal scaling itself with checked arithmetic instead of the fail-open, panic-prone, silently-wrapping raw `alloy_primitives::utils::parse_units` (Bucket 2 row above) — carries its own `// DO NOT SWAP` comment block but no dedicated grep gate; it is held by the `gate-do-not-swap-census` comment-block count rather than a symbol-specific regex, so the census gate locks at ten `DO NOT SWAP` blocks rather than nine.
 
 The canonical roster is:
 
@@ -213,7 +213,7 @@ The canonical roster is:
 4. `SupportedChainId` + `api_path()` (ADR 0005, ADR 0011).
 5. `TypedDataDomain` cow struct (ADR 0052, ADR 0040).
 6. EIP-1271 blob Shape A vs B (ADR 0050 — future, composable deferred).
-7. `cow-sdk-transport-policy` + `cow-sdk-transport-wasm` (ADR 0010, 0019, 0041, 0046).
+7. `cow_sdk_core::transport::policy` + `cow-sdk-transport-wasm` (ADR 0010, 0019, 0041, 0046).
 8. Plus three additional never-swap surfaces:
    - `api_path()` URL labels (sub-invariant of #4),
    - `keccak_word` test oracle in `crates/contracts/src/order.rs`,

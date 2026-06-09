@@ -2,7 +2,7 @@
 
 //! Fuzz target for the `RetryPolicy` backoff helpers.
 //!
-//! **Surface:** `cow_sdk_transport_policy::RetryPolicy::{delay_for_attempt,
+//! **Surface:** `cow_sdk_core::transport::policy::RetryPolicy::{delay_for_attempt,
 //! delay_for_status}` together with the builder seam that selects a jitter
 //! strategy.
 //! **Property:** `PROP-TPP-004`.
@@ -19,7 +19,7 @@
 
 use std::time::{Duration, UNIX_EPOCH};
 
-use cow_sdk_transport_policy::{JitterStrategy, RetryPolicy};
+use cow_sdk_core::transport::policy::{JitterStrategy, RetryPolicy};
 use libfuzzer_sys::{
     arbitrary::{Arbitrary, Unstructured},
     fuzz_target,

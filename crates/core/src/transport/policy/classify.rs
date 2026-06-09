@@ -1,6 +1,6 @@
 //! Transport-error classification helpers.
 
-use cow_sdk_core::TransportErrorClass;
+use crate::TransportErrorClass;
 
 /// Retry-oriented network failure categories used by transport policies.
 #[non_exhaustive]

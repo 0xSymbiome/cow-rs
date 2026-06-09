@@ -124,7 +124,7 @@ pub use cow_sdk_core as core;
 pub use cow_sdk_cow_shed as cow_shed;
 /// Shared HTTP retry, rate-limit, and classification policy.
 pub mod http {
-    pub use cow_sdk_transport_policy::{
+    pub use cow_sdk_core::transport::policy::{
         ErrorClassifier, JitterStrategy, LimiterScope, NetworkErrorKind, RequestRateLimiter,
         RequestRateLimiterBuilder, RetryAfter, RetryPolicy, RetryPolicyBuilder, TransportPolicy,
         TransportPolicyBuildError, TransportPolicyBuilder, is_retryable_status, parse_retry_after,
@@ -135,7 +135,7 @@ pub mod http {
         docsrs,
         doc(cfg(all(feature = "http-classifier", not(target_arch = "wasm32"))))
     )]
-    pub use cow_sdk_transport_policy::ReqwestErrorClassifier;
+    pub use cow_sdk_core::transport::policy::ReqwestErrorClassifier;
 }
 /// Transport-error classification shared across transport-capable crates.
 ///

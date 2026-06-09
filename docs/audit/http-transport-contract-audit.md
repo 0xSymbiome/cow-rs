@@ -119,7 +119,7 @@ there is empty by design.
 
 ### Retry Cooldowns
 
-The shared `cow-sdk-transport-policy::run_with_retry` driver is the single
+The shared `cow_sdk_core::transport::policy::run_with_retry` driver is the single
 retry loop for the orderbook, subgraph, and IPFS clients. It reads
 `Retry-After` from `TransportError::HttpStatus.headers` on
 `429 Too Many Requests` and `503 Service Unavailable` responses. The parser
@@ -201,8 +201,8 @@ Primary implementation points:
 - `crates/core/src/transport/reqwest.rs`
 - `crates/transport-wasm/src/fetch.rs`
 - `crates/transport-wasm/src/lib.rs`
-- `crates/transport-policy/src/runner.rs`
-- `crates/transport-policy/src/time.rs`
+- `crates/core/src/transport/policy/runner.rs`
+- `crates/core/src/transport/policy/time.rs`
 - `crates/orderbook/src/api.rs`
 - `crates/orderbook/src/request.rs`
 - `crates/orderbook/src/builder.rs`
@@ -214,12 +214,12 @@ Primary regression coverage:
 
 - `crates/core/tests/transport_contract.rs`
 - `crates/transport-wasm/tests/parity_contract.rs`
-- `crates/transport-policy/tests/retry_after_contract.rs`
-- `crates/transport-policy/tests/classify_contract.rs::network_error_kind_mapping_round_trip_is_total`
-- `crates/transport-policy/tests/policy_contract.rs::prop_tpp_031_retry_after_helper_is_case_insensitive`
-- `crates/transport-policy/src/runner.rs` (`tests::non_retryable_transport_returns_without_redispatch`, `tests::http_date_retry_after_uses_the_injected_clock`, `tests::persistent_transport_error_exhausts_attempts`)
+- `crates/core/tests/retry_after_contract.rs`
+- `crates/core/tests/classify_contract.rs::network_error_kind_mapping_round_trip_is_total`
+- `crates/core/tests/policy_contract.rs::prop_tpp_031_retry_after_helper_is_case_insensitive`
+- `crates/core/src/transport/policy/runner.rs` (`tests::non_retryable_transport_returns_without_redispatch`, `tests::http_date_retry_after_uses_the_injected_clock`, `tests::persistent_transport_error_exhausts_attempts`)
 - `crates/wasm/tests/wasm_retry_runner_contract.rs::retryable_status_drives_backoff_without_panicking`
-- `crates/transport-policy/tests/policy_contract.rs::prop_tpp_004_decorrelated_jitter_is_bounded_by_max_delay`
+- `crates/core/tests/policy_contract.rs::prop_tpp_004_decorrelated_jitter_is_bounded_by_max_delay`
 - `crates/orderbook/tests/request_contract.rs::tracing_contract::execute_with_emits_retry_events_with_status_and_transport_error_fields`
 - `crates/orderbook/tests/request_contract.rs::tracing_contract::send_order_span_records_quote_id_attempts_and_status`
 - `crates/orderbook/tests/api_contract.rs::service_unavailable_retry_after_header_delays_retry_for_at_least_server_cooldown`

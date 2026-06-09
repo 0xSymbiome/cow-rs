@@ -45,7 +45,7 @@ browser-wallet = ["dep:cow-sdk-browser-wallet"]
 cow-shed = ["dep:cow-sdk-cow-shed"]
 # Lifts the Gnosis-only `COWShedForComposableCoW` forwarder surface.
 cow-shed-gnosis = ["cow-shed", "cow-sdk-cow-shed/cow-shed-gnosis"]
-http-classifier = ["cow-sdk-transport-policy/reqwest-classifier"]
+http-classifier = ["cow-sdk-core/reqwest-classifier"]
 # Opt-in read-only subgraph analytics. Off by default, so the crate is never on
 # the default `cow-sdk` dependency closure. Re-exports the `cow-sdk-subgraph`
 # leaf as `cow_sdk::subgraph` and lifts `SubgraphError` into `CowError`.
@@ -64,7 +64,6 @@ tracing = [
     "cow-sdk-core/tracing",
     "cow-sdk-orderbook/tracing",
     "cow-sdk-signing/tracing",
-    "cow-sdk-transport-policy/tracing",
     "cow-sdk-trading/tracing",
     "cow-sdk-browser-wallet?/tracing",
     "cow-sdk-cow-shed?/tracing",
@@ -83,11 +82,10 @@ cow-sdk-cow-shed = { path = "../cow-shed", version = "0.1.0", optional = true, d
 cow-sdk-orderbook = { path = "../orderbook", version = "0.1.0" }
 cow-sdk-signing = { path = "../signing", version = "0.1.0" }
 cow-sdk-subgraph = { path = "../subgraph", version = "0.1.0", optional = true, default-features = false }
-cow-sdk-transport-policy = { path = "../transport-policy", version = "0.1.0" }
 cow-sdk-trading = { path = "../trading", version = "0.1.0" }
 cow-sdk-test = { path = "../test", version = "0.1.0", optional = true, default-features = false }
 cow-sdk-wasm = { path = "../wasm", version = "0.1.0", optional = true }
-cow-sdk-core = { path = "../core", version = "0.1.0" }
+cow-sdk-core = { path = "../core", version = "0.1.0", features = ["transport-policy"] }
 thiserror.workspace = true
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]

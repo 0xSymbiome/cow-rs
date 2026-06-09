@@ -395,7 +395,7 @@ authenticated proxies, or in-process mock servers.
 
 The transport-policy layer (retry, rate-limit, user-agent, cooldowns, and
 classification) sits above the trait and is unchanged by the transport choice.
-`cow-sdk-transport-policy::TransportPolicy` is consumed by both the orderbook
+`cow_sdk_core::transport::policy::TransportPolicy` is consumed by both the orderbook
 and subgraph builders through `.transport_policy(...)`, while `cow-sdk` exposes
 the same types under `cow_sdk::http`. The default orderbook and subgraph
 policies preserve the reviewed retryable status set (`408`, `425`, `429`,

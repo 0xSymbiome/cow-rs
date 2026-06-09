@@ -21,7 +21,7 @@ This audit covers:
 - the dependency-audit gate used by routine CI and release-readiness validation
 - the published `rustls-webpki` patch uplift on the orderbook and subgraph
   transport path
-- the shared `cow-sdk-transport-policy` dependency boundary used by
+- the shared `cow-sdk-core` dependency boundary used by
   orderbook and subgraph retry behavior
 - the clean published CID dependency posture recorded for `cow-sdk-app-data` and `cow-sdk-core`
 - the canonical advisory tolerance register shared by the RustSec gates
@@ -53,7 +53,7 @@ architecture reviews.
 | Workspace default features | Root workspace dependencies either disable default features explicitly or appear in the reviewed exception register for dependencies without a meaningful default-feature control | Conforms |
 | Ignore rationale lint | Every canonical RustSec ignore token must appear in this audit before release-doc agreement passes | Conforms |
 | Direct WASM randomness | Direct crate use of `getrandom` for wasm32 is centralized on the workspace `0.4.2` pin with the `wasm_js` feature | Conforms |
-| Shared transport policy | Retry timers and browser timer dependencies are centralized in `cow-sdk-transport-policy` instead of duplicated in orderbook or subgraph | Conforms |
+| Shared transport policy | Retry timers and browser timer dependencies are centralized in `cow-sdk-core` instead of duplicated in orderbook or subgraph | Conforms |
 | Workspace dependency inheritance | Shared helper pins for timers, browser panic hooks, and test HTTP fixtures are centralized in the workspace table | Conforms |
 | Duplicate-version exceptions | Residual duplicate roots are documented as explicit skip-tree entries; stale `tiny-keccak`, `getrandom 0.2`, and `graphql_client` exceptions were removed because they are no longer in the workspace graph | Conforms |
 | Legacy `thiserror` reachability | The remaining `thiserror 1.0.69` line is reached only through the Android-target `jni -> rustls-platform-verifier -> reqwest` path; the former `graphql_client` dev/test chain was removed | Conforms |
@@ -130,7 +130,7 @@ digest path routes through `alloy_primitives::keccak256`, and the cow
 [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md).
 The alloy-core ABI workspace dependency family (`alloy-primitives`,
 `alloy-sol-types`, `alloy-sol-macro`, `alloy-dyn-abi`, `alloy-json-abi`,
-`alloy-serde`), `httpdate 1.0` (consumed by `cow-sdk-transport-policy`
+`alloy-serde`), `httpdate 1.0` (consumed by `cow-sdk-core`
 to parse `Retry-After` HTTP-date headers), and `serde_jcs 0.2.0`
 (consumed by `cow-sdk-app-data` for the RFC 8785 canonical JSON that
 feeds the keccak256 digest input) are consumed at the callsites
@@ -225,7 +225,7 @@ wasm32 builds.
 
 The workspace dependency table centralizes the shared `wiremock`,
 `web-time`, `gloo-timers`, `futures-timer`, and
-`console_error_panic_hook` pins. `cow-sdk-transport-policy` owns the retry
+`console_error_panic_hook` pins. `cow-sdk-core` owns the retry
 timer dependencies used by orderbook and subgraph. Consumer manifests inherit
 those pins through workspace dependencies, keeping the reviewed versions in one
 place while preserving the existing target-specific dependency boundaries.

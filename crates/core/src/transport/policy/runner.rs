@@ -5,7 +5,7 @@
 //! retry decisions ([`RetryPolicy::should_retry_status`],
 //! [`RetryPolicy::should_retry_network`], [`RetryPolicy::delay_for_attempt`],
 //! [`RetryPolicy::delay_for_status`]), the wasm-safe `Retry-After` clock
-//! ([`crate::time::system_now`]), and retry telemetry.
+//! ([`crate::transport::policy::time::system_now`]), and retry telemetry.
 //!
 //! Per-client behavior stays in the calling crate: the attempt closure performs
 //! the dispatch and classifies the result into an [`AttemptOutcome`], building
@@ -14,17 +14,17 @@
 //! payload type, success decoding, error type, and rate-limiter scope.
 //!
 //! Cancellation is cooperative and external: callers compose
-//! [`cow_sdk_core::Cancellable::cancel_with`] at the call site, which drops the
+//! [`crate::Cancellable::cancel_with`] at the call site, which drops the
 //! returned future — and any in-flight rate-limit acquire or backoff sleep —
 //! when the token fires. The driver installs no hidden cancellation state.
 
 use std::future::Future;
 use std::time::{Duration, SystemTime};
 
-use cow_sdk_core::{CancellationToken, TransportErrorClass};
+use crate::{CancellationToken, TransportErrorClass};
 use url::Url;
 
-use crate::{NetworkErrorKind, RequestRateLimiter, RetryPolicy};
+use crate::transport::policy::{NetworkErrorKind, RequestRateLimiter, RetryPolicy};
 
 /// Classification of a failed attempt, used by [`run_with_retry`] to decide
 /// retryability and the backoff delay.
@@ -86,14 +86,14 @@ pub enum LimiterKey<'a> {
 /// attempt the runner acquires a rate-limit token, runs `attempt`, and on
 /// [`AttemptOutcome::Failure`] consults `policy` to either back off and retry or
 /// return the terminal error. Backoff for `429`/`503` honors a `Retry-After`
-/// response header through the wasm-safe [`crate::time::system_now`] clock; a
+/// response header through the wasm-safe [`crate::transport::policy::time::system_now`] clock; a
 /// non-retryable signal returns immediately without re-dispatching.
 ///
 /// No `Send` bound is imposed on the attempt future, so the same driver serves
 /// native (`Send`) and browser (`?Send`) transports.
 ///
 /// Cancellation is external: wrap the returned future with
-/// [`cow_sdk_core::Cancellable::cancel_with`] to drop it (and any in-flight
+/// [`crate::Cancellable::cancel_with`] to drop it (and any in-flight
 /// acquire or backoff sleep) when a token fires.
 ///
 /// # Errors
@@ -116,8 +116,8 @@ where
         rate_limiter,
         limiter_key,
         attempt,
-        crate::time::sleep,
-        crate::time::system_now,
+        crate::transport::policy::time::sleep,
+        crate::transport::policy::time::system_now,
     )
     .await
 }
@@ -126,7 +126,7 @@ where
 /// wall clock injected.
 ///
 /// Production callers reach this through [`run_with_retry`], which supplies
-/// [`crate::time::sleep`] and [`crate::time::system_now`]. Tests inject a
+/// [`crate::transport::policy::time::sleep`] and [`crate::transport::policy::time::system_now`]. Tests inject a
 /// recording sleeper and a fixed clock to assert the deterministic delay
 /// sequence without real time.
 pub(crate) async fn run_with_retry_using<T, E, F, Fut, S, SFut, C>(
@@ -251,10 +251,10 @@ mod tests {
     use std::rc::Rc;
     use std::time::{Duration, SystemTime};
 
-    use cow_sdk_core::TransportErrorClass;
+    use crate::TransportErrorClass;
 
     use super::{AttemptOutcome, LimiterKey, RetrySignal, run_with_retry_using};
-    use crate::{JitterStrategy, RequestRateLimiter, RetryPolicy};
+    use crate::transport::policy::{JitterStrategy, RequestRateLimiter, RetryPolicy};
 
     const NOW_SECS: u64 = 1_000_000;
 

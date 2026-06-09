@@ -1,3 +1,5 @@
+#![cfg(feature = "transport-policy")]
+
 //! Behavior tests for the `Retry-After` header parser.
 //!
 //! These tests assert observable semantics of `parse_retry_after` for both
@@ -13,7 +15,7 @@
 
 use std::time::{Duration, SystemTime};
 
-use cow_sdk_transport_policy::{RetryAfter, parse_retry_after};
+use cow_sdk_core::transport::policy::{RetryAfter, parse_retry_after};
 use proptest::prelude::*;
 
 const EPOCH: SystemTime = SystemTime::UNIX_EPOCH;

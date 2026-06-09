@@ -87,7 +87,7 @@ reports as non-retryable with no backoff hint.
 
 `OrderbookError::is_retryable()` returns the same verdict the SDK transport
 retry loop applies: a structured non-2xx response keys off the retained HTTP
-status through `cow_sdk_transport_policy::is_retryable_status`, and a transport
+status through `cow_sdk_core::transport::policy::is_retryable_status`, and a transport
 failure keys off its `TransportErrorClass` through
 `RetryPolicy::should_retry_network`. It keys off the status rather than
 `class()` because the coarse partition collapses every non-429 remote response
@@ -114,7 +114,7 @@ Primary implementation points:
   `crates/browser-wallet/src/error.rs`, `crates/trading/src/error.rs`,
   `crates/subgraph/src/error.rs` (`class`, behind the `subgraph` feature)
 - `crates/orderbook/src/request.rs` (`OrderbookApiError` `Retry-After` capture)
-- `crates/transport-policy/src/retry_after.rs` (`retry_after_from_headers`)
+- `crates/core/src/transport/policy/retry_after.rs` (`retry_after_from_headers`)
 - `crates/sdk/src/lib.rs` (`CowError` `class` / `is_retryable` / `backoff_hint`
   delegation)
 
@@ -130,7 +130,7 @@ Primary regression coverage:
 - `crates/sdk/tests/error_class_contract.rs::subgraph::subgraph_error_class_delegates_through_facade` (with `--features subgraph`)
 - `crates/contracts/tests/error_contract.rs::class_partitions_validation_internal_and_signing`
 - `crates/orderbook/src/error.rs` retry-classification unit tests
-- `crates/transport-policy/src/retry_after.rs` `Retry-After` header tests
+- `crates/core/src/transport/policy/retry_after.rs` `Retry-After` header tests
 - `crates/wasm/tests/wasm_error_abi_contract.rs::orderbook_variant_carries_retry_hints`
 
 Validation surface:
@@ -138,6 +138,6 @@ Validation surface:
 ```text
 cargo test -p cow-sdk --test error_class_contract --all-features
 cargo test -p cow-sdk-orderbook --lib
-cargo test -p cow-sdk-transport-policy --lib
+cargo test -p cow-sdk-core --features reqwest-classifier --lib
 cargo check-enum-policy
 ```

@@ -1,3 +1,5 @@
+#![cfg(feature = "transport-policy")]
+
 //! Fixture-driven contract suite pinning the `parse_retry_after` HTTP-date
 //! branch byte-for-byte against the committed parity fixture rows.
 //!
@@ -17,7 +19,7 @@
 
 use std::time::{Duration, SystemTime};
 
-use cow_sdk_transport_policy::parse_retry_after;
+use cow_sdk_core::transport::policy::parse_retry_after;
 use serde_json::Value;
 
 const IMF_FIXDATE_ACCEPT: &str =

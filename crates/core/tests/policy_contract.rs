@@ -1,14 +1,16 @@
+#![cfg(feature = "transport-policy")]
+
 use std::time::{Duration, SystemTime};
 
 use cow_sdk_core::{CancellationToken, DEFAULT_HTTP_TIMEOUT, HttpClientPolicy};
-use cow_sdk_transport_policy::{
+use cow_sdk_core::transport::policy::{
     DEFAULT_IPFS_USER_AGENT, DEFAULT_ORDERBOOK_USER_AGENT, DEFAULT_SUBGRAPH_USER_AGENT,
     DEFAULT_TRADING_USER_AGENT, JitterStrategy, LimiterScope, NetworkErrorKind, RETRYABLE_STATUSES,
     RequestRateLimiter, RequestRateLimiterBuilder, RetryPolicy, RetryPolicyBuilder,
     TransportPolicy, TransportPolicyBuildError, TransportPolicyBuilder, is_retryable_status, sleep,
 };
 #[cfg(feature = "reqwest-classifier")]
-use cow_sdk_transport_policy::{ErrorClassifier, ReqwestErrorClassifier};
+use cow_sdk_core::transport::policy::{ErrorClassifier, ReqwestErrorClassifier};
 use proptest::prelude::*;
 use url::Url;
 
@@ -37,7 +39,7 @@ fn prop_tpp_002_default_subgraph_transport_policy_is_stable() {
 #[test]
 fn default_policies_carry_per_client_response_byte_caps() {
     use cow_sdk_core::DEFAULT_MAX_RESPONSE_BYTES;
-    use cow_sdk_transport_policy::{IPFS_MAX_RESPONSE_BYTES, SUBGRAPH_MAX_RESPONSE_BYTES};
+    use cow_sdk_core::transport::policy::{IPFS_MAX_RESPONSE_BYTES, SUBGRAPH_MAX_RESPONSE_BYTES};
 
     assert_eq!(
         TransportPolicy::default_orderbook()

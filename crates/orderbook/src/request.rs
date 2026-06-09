@@ -1,7 +1,7 @@
 use std::{future::Future, sync::Arc, time::Duration};
 
 use cow_sdk_core::{HttpTransport, Redacted, TransportError};
-use cow_sdk_transport_policy::{
+use cow_sdk_core::transport::policy::{
     AttemptOutcome as RetryOutcome, LimiterKey, RequestRateLimiter, RetryPolicy, RetrySignal,
     retry_after_from_headers, run_with_retry,
 };
@@ -98,7 +98,7 @@ impl OrderbookApiError {
     ///
     /// `retry_after` is the resolved delay from the failing response's
     /// `Retry-After` header (see
-    /// [`cow_sdk_transport_policy::retry_after_from_headers`]), or [`None`]
+    /// [`cow_sdk_core::transport::policy::retry_after_from_headers`]), or [`None`]
     /// when the server sent no hint.
     #[must_use]
     pub const fn with_retry_after(mut self, retry_after: Option<Duration>) -> Self {
@@ -687,7 +687,7 @@ where
     Fut: Future<Output = Result<AttemptOutcome, (cow_sdk_core::TransportErrorClass, String)>>,
     D: Fn(&ResponseEnvelope) -> Result<T, OrderbookError>,
 {
-    // The shared driver in `cow-sdk-transport-policy` owns the retry loop,
+    // The shared driver in `cow_sdk_core::transport::policy` owns the retry loop,
     // rate-limit acquisition, backoff, `Retry-After` clock, and retry telemetry.
     // The closure performs one dispatch and classifies the result into the
     // unified outcome space; the success envelope is decoded after the driver
