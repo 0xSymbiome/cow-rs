@@ -127,6 +127,10 @@ jobs:
       # Source ref: Swatinem/rust-cache@v2
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
       - name: Registry presence confirmation in release mode
+        # Provision authenticated provider URLs for the RPC secrets; public
+        # endpoints rate-limit Actions runners aggressively and make scheduled
+        # runs flaky. The deployment-only Lens chain carries none of the
+        # GPv2-family registry rows, so it is not probed here.
         env:
           RPC_1: ${{ secrets.RPC_MAINNET }}
           RPC_100: ${{ secrets.RPC_GNOSIS }}
@@ -139,11 +143,10 @@ jobs:
           RPC_9745: ${{ secrets.RPC_PLASMA }}
           RPC_59144: ${{ secrets.RPC_LINEA }}
           RPC_57073: ${{ secrets.RPC_INK }}
-          RPC_232: ${{ secrets.RPC_LENS }}
         run: |
           cargo registry-confirm \
             --mode release \
-            --chain-ids 1,100,42161,8453,11155111,137,43114,56,9745,59144,57073,232
+            --chain-ids 1,100,42161,8453,11155111,137,43114,56,9745,59144,57073
 
   quality-gate:
     if: ${{ github.event_name != 'schedule' }}

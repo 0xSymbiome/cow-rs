@@ -424,10 +424,12 @@ the release check.
 ## 9. Optional Validation Smoke
 
 Use the smoke kit when a release needs a live deployment-registry presence
-confirmation in addition to the deterministic proof surfaces above.
+confirmation in addition to the deterministic proof surfaces above. The probe
+covers the production and staging deployments of every registry row; the
+deployment-only Lens chain carries none of them and is not probed.
 
 ```text
-cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- registry-confirm --mode release
+cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- registry-confirm --mode release --chain-ids 1,100,42161,8453,11155111,137,43114,56,9745,59144,57073
 ```
 
 ## 10. Manual Confirmation Before Publish
