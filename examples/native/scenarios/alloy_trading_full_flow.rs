@@ -1,6 +1,6 @@
 //! End-to-end Alloy-backed trading boundaries.
 //!
-//! Drives the async `Trading` boundaries through a real `Client`
+//! Drives the async `Trading` boundaries through a real `AlloyClient`
 //! (a `SigningProvider`) against a wiremock JSON-RPC server: read the protocol
 //! allowance (`cow_protocol_allowance`), wrap native currency into the
 //! wrapped-native token (`wrap_interaction` + `submit_and_wait_for_receipt`),
@@ -10,7 +10,7 @@
 
 use std::error::Error;
 
-use cow_sdk::alloy::Client;
+use cow_sdk::alloy::AlloyClient;
 use cow_sdk::contracts::wrap_interaction;
 use cow_sdk::core::{
     Amount, CowEnv, HexData, SigningProvider, SupportedChainId, TransactionHash,
@@ -33,7 +33,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let server = MockServer::start().await;
     let methods = mount_rpc(&server).await;
     // build_checked() verifies the configured chain id against the RPC endpoint.
-    let client = Client::builder()
+    let client = AlloyClient::builder()
         .http(server.uri())?
         .private_key(TEST_KEY)?
         .chain_id(SupportedChainId::Mainnet)
@@ -100,7 +100,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .unwrap_or_else(std::sync::PoisonError::into_inner)
         .clone();
     let report = json!({
-        "surface": "cow-sdk::alloy::Client with Trading",
+        "surface": "cow-sdk::alloy::AlloyClient with Trading",
         "allowance": allowance,
         "approvalTxHash": approval_receipt.transaction_hash.to_hex_string(),
         "approvalStatus": format!("{:?}", approval_receipt.status),
