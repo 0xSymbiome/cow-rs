@@ -133,12 +133,13 @@ pub fn run(args: &RegistryConfirmArgs) -> Result<RegistryConfirmReport> {
     let mut failures = Vec::new();
     let mut matched = 0usize;
 
-    // The CREATE2 singletons the registry resolves: settlement and vault-relayer
-    // are environment-invariant; eth-flow carries a production and a staging
-    // deployment.
-    const PROBES: [(ContractId, DeploymentEnv); 4] = [
+    // The CREATE2 singletons the registry resolves: settlement, vault-relayer,
+    // and eth-flow each carry a production and a staging deployment.
+    const PROBES: [(ContractId, DeploymentEnv); 6] = [
         (ContractId::Settlement, DeploymentEnv::Prod),
+        (ContractId::Settlement, DeploymentEnv::Staging),
         (ContractId::VaultRelayer, DeploymentEnv::Prod),
+        (ContractId::VaultRelayer, DeploymentEnv::Staging),
         (ContractId::EthFlow, DeploymentEnv::Prod),
         (ContractId::EthFlow, DeploymentEnv::Staging),
     ];
@@ -157,8 +158,13 @@ pub fn run(args: &RegistryConfirmArgs) -> Result<RegistryConfirmReport> {
                 chain_id,
                 env: env.as_str().to_owned(),
             };
-            match probe_presence(&client, chain_id, env.as_str(), &address.to_hex_string(), args.mode)
-            {
+            match probe_presence(
+                &client,
+                chain_id,
+                env.as_str(),
+                &address.to_hex_string(),
+                args.mode,
+            ) {
                 Ok(Presence::Confirmed) => confirmed_rows += 1,
                 Ok(Presence::Skipped(reason)) => {
                     skipped_rows.push(RegistryConfirmationSkip { row, reason });

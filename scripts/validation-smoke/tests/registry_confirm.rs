@@ -30,7 +30,7 @@ fn output_text(output: &Output) -> String {
 
 /// The probe sources its rows from `cow_sdk_contracts::Registry`, so no manifest
 /// path is supplied; chain 1 resolves the settlement, vault-relayer, and
-/// eth-flow (prod + staging) singletons.
+/// eth-flow singletons (one production and one staging deployment each).
 fn args(mode: &str) -> Vec<String> {
     vec![
         "registry-confirm".to_owned(),
@@ -113,9 +113,9 @@ fn release_fails_on_missing_prod_rpc() {
 
 #[test]
 fn confirms_present_bytecode() {
-    // Four rows per chain (settlement, vault-relayer, eth-flow prod + staging),
-    // each probed with an eth_chainId + eth_getCode pair.
-    let url = start_rpc_server("0x1", "0x6001", 8);
+    // Six rows per chain (settlement, vault-relayer, and eth-flow, prod +
+    // staging each), each probed with an eth_chainId + eth_getCode pair.
+    let url = start_rpc_server("0x1", "0x6001", 12);
 
     let output = command()
         .env("RPC_1", url)
@@ -129,7 +129,7 @@ fn confirms_present_bytecode() {
 
 #[test]
 fn fails_when_bytecode_is_empty() {
-    let url = start_rpc_server("0x1", "0x", 8);
+    let url = start_rpc_server("0x1", "0x", 12);
 
     let output = command()
         .env("RPC_1", url)
@@ -143,7 +143,7 @@ fn fails_when_bytecode_is_empty() {
 
 #[test]
 fn fails_on_chain_id_mismatch() {
-    let url = start_rpc_server("0x2", "0x6001", 4);
+    let url = start_rpc_server("0x2", "0x6001", 6);
 
     let output = command()
         .env("RPC_1", url)

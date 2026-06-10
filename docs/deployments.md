@@ -46,9 +46,11 @@ composable / COW-Shed contract families. `DeploymentEnv` is `Prod` or
 ## Addresses Are CREATE2 Singletons
 
 The settlement, vault-relayer, and eth-flow contracts are CREATE2 singletons:
-`GPv2Settlement` and `GPv2VaultRelayer` deploy to the same address on every
-supported chain, and `CoWSwapEthFlow` carries one production and one staging
-deployment, each identical across chains. The registry is therefore a small
+each contract family carries one production and one staging deployment, and
+every deployment sits at the same address on every supported chain. The
+staging deployments back the staging orderbook environment — an order signed
+for that environment verifies against the staging settlement domain, and its
+approvals target the staging vault relayer. The registry is therefore a small
 committed const table rather than a per-chain manifest:
 
 ```rust
@@ -57,16 +59,17 @@ use cow_sdk::core::{CowEnv, SupportedChainId};
 
 let registry = Registry::default();
 
-// Settlement and vault-relayer are chain- and environment-invariant.
+// Every deployment is chain-invariant within its environment.
 let mainnet =
     registry.address(ContractId::Settlement, SupportedChainId::Mainnet, CowEnv::Prod);
-let base = registry.address(ContractId::Settlement, SupportedChainId::Base, CowEnv::Staging);
+let base = registry.address(ContractId::Settlement, SupportedChainId::Base, CowEnv::Prod);
 assert_eq!(mainnet, base);
 
-// Eth-flow resolves a distinct production and staging deployment.
-let prod = registry.address(ContractId::EthFlow, SupportedChainId::GnosisChain, CowEnv::Prod);
+// Each contract family resolves a distinct production and staging deployment.
+let prod =
+    registry.address(ContractId::Settlement, SupportedChainId::GnosisChain, CowEnv::Prod);
 let staging =
-    registry.address(ContractId::EthFlow, SupportedChainId::GnosisChain, CowEnv::Staging);
+    registry.address(ContractId::Settlement, SupportedChainId::GnosisChain, CowEnv::Staging);
 assert_ne!(prod, staging);
 ```
 

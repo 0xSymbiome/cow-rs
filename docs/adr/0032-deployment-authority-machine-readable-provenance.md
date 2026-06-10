@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-29
-- Last reviewed: 2026-06-08
+- Last reviewed: 2026-06-10
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: deployments, provenance, contracts, release
 - Anchors: Deterministic Protocol Transforms (supporting); Evidence-Backed Public Claims (supporting)
@@ -94,7 +94,7 @@ Evidence-Backed Public Claims principles.
 **Proven by:**
 
 - [Deployment Registry Audit](../audit/deployment-registry-audit.md)
-- `crates/contracts/tests/registry.rs`
+- `crates/contracts/src/deployments.rs` (tests)
 - `scripts/validation-smoke/tests/registry_confirm.rs`
 
 ## Amendment 2026-05-22: canonical primitive layer (per ADR 0052)
@@ -158,3 +158,26 @@ mode still fails closed on a missing production-chain RPC. The "Must Remain
 True" clauses that referenced `registry.toml` rows now read against the const
 table: every resolved address is non-zero, pins to a `source-lock` commit, and
 is confirmed on-chain by the read-only probe.
+
+## Amendment 2026-06-10: staging deployments join the registry
+
+The const table originally resolved one settlement and one vault-relayer
+address regardless of environment, mirroring only the eth-flow family's
+production/staging split. The upstream TypeScript SDK routes the staging
+orderbook environment to a distinct staging settlement (the typed-data
+`verifyingContract` for staging orders) and a distinct staging vault relayer
+(the allowance spender for staging approvals), so an environment-blind
+resolver produced production addresses for staging flows.
+
+The registry now resolves a distinct production and staging deployment for
+every contract family: `GPv2Settlement`, `GPv2VaultRelayer`, and
+`CoWSwapEthFlow` each carry two committed constants, every address remains a
+chain-invariant CREATE2 singleton within its environment, and
+`DeploymentEnv` narrows to `Prod` and `Staging` (the consumer-free
+`EnvironmentAgnostic` variant is retired). The staging constants derive from
+the TypeScript SDK's published contract constants, pinned through the
+`cow-sdk` repository row in `parity/source-lock.yaml`; the `registry-confirm`
+probe iterates all six rows per chain, and its release mode confirmed presence
+for every row across the 11 runtime-supported chains with zero failures. The
+trust model is otherwise unchanged: per-repository commit pin, deterministic
+CREATE2 address, read-only presence probe.

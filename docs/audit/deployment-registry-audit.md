@@ -1,7 +1,7 @@
 # Deployment Registry Audit
 
 Status: Current
-Last reviewed: 2026-06-09
+Last reviewed: 2026-06-10
 Re-review by: 2026-08-02
 Owning surface: `cow-sdk-contracts` deployment registry
 Refresh trigger: Changes to the address constants in `crates/contracts/src/deployments.rs`, the upstream commit pins in `parity/source-lock.yaml`, the `registry-confirm` presence probe, or supported chains
@@ -36,9 +36,9 @@ It does not cover binding generation, partner API routing, arbitrary consumer RP
 
 ### Registry And Source Authority
 
-`crates/contracts/src/deployments.rs` is the runtime address source of truth. It resolves the settlement, vault-relayer, and eth-flow CREATE2 singletons from committed address constants: settlement and vault-relayer are chain- and environment-invariant, and eth-flow carries a production and a staging deployment, each identical across the runtime-supported chains. Lens is deployment-only for the composable / COW-Shed contract families and carries none of the GPv2 contracts.
+`crates/contracts/src/deployments.rs` is the runtime address source of truth. It resolves the settlement, vault-relayer, and eth-flow CREATE2 singletons from committed address constants: each contract family carries one production and one staging deployment, and every deployment is identical across the runtime-supported chains. The staging deployments back the staging orderbook environment, so a staging order's typed-data domain verifies against the staging settlement and its approvals target the staging vault relayer. Lens is deployment-only for the composable / COW-Shed contract families and carries none of the GPv2 contracts.
 
-The upstream commit each address derives from is not duplicated on every row. It is pinned once per source repository in `parity/source-lock.yaml` (per [ADR 0012](../adr/0012-alloy-sol-bindings-and-registry-authority.md) and [ADR 0032](../adr/0032-deployment-authority-machine-readable-provenance.md)): the `contracts`, `composable-cow`, and `cow-shed` repository rows pin the commits behind the GPv2, composable-order, and COW Shed contract families respectively. That single per-repository pin, the deterministic CREATE2 address, and the read-only presence probe together establish deployment trust.
+The upstream commit each address derives from is not duplicated on every row. It is pinned once per source repository in `parity/source-lock.yaml` (per [ADR 0012](../adr/0012-alloy-sol-bindings-and-registry-authority.md) and [ADR 0032](../adr/0032-deployment-authority-machine-readable-provenance.md)): the `contracts` row pins the commit behind the production GPv2 addresses (carried by its `networks.json` manifest), the `cow-sdk` row pins the TypeScript SDK constants that publish the staging settlement and vault-relayer deployments, the `ethflowcontract` row pins the eth-flow sources, and the `composable-cow` and `cow-shed` rows pin the composable-order and COW Shed contract families. That single per-repository pin, the deterministic CREATE2 address, and the read-only presence probe together establish deployment trust.
 
 The runtime lookup regression enumerates every shipped contract id across each
 supported chain and environment. Tuples present in the embedded manifest must
@@ -57,9 +57,11 @@ variants; Lens (chain 232) is deployment-only and so appears in the registry but
 not in this `SupportedChainId` view. Registry rows are authoritatively keyed by
 `(contract_id, chain_id, env)` in `crates/contracts/src/deployments.rs`. The
 deployment-source column points at the per-repository upstream commit pin in
-`parity/source-lock.yaml`; the GPv2 settlement, vault relayer, and eth-flow
-addresses behind every chain below derive from the pinned `contracts` repository
-row.
+`parity/source-lock.yaml`: the production GPv2 settlement and vault-relayer
+addresses behind every chain below derive from the pinned `contracts`
+repository row, the staging settlement and vault-relayer constants from the
+pinned `cow-sdk` row, and the eth-flow family from the pinned
+`ethflowcontract` row.
 
 | Chain | `SupportedChainId` variant | Numeric chain id | Deployment source | Services metadata | TypeScript SDK source | Wrapped native token | Last reviewed |
 | --- | --- | ---: | --- | --- | --- | --- | --- |
@@ -83,9 +85,11 @@ address was taken from) plus the deterministic CREATE2 address; on top of that a
 read-only live probe confirms the claimed deployment actually exists on-chain.
 
 `registry-confirm --mode release` resolves every selected row from the const
-`Registry`, guards the RPC with `eth_chainId`, and asserts `eth_getCode` returns non-empty
-bytecode at the recorded address. It is non-mutating and fails closed on a missing
-production-chain RPC or an absent deployment. The last full run confirmed presence
+`Registry` — the production and staging deployments of settlement,
+vault-relayer, and eth-flow — guards the RPC with `eth_chainId`, and asserts
+`eth_getCode` returns non-empty bytecode at the recorded address. It is
+non-mutating and fails closed on a missing production-chain RPC or an absent
+deployment. The last full run confirmed presence for all six registry rows
 across the 11 runtime-supported chains with zero failures.
 
 Per ADR 0032, committed code-hash confirmation is reserved for upgradeable
@@ -105,9 +109,9 @@ Primary implementation points:
 Primary regression coverage:
 
 - `crates/contracts/src/deployments.rs::deployment_addresses_resolve_to_canonical_singletons`
+- `crates/signing/tests/domain_contract.rs::domain_resolution_honors_default_env_staging_and_override_precedence`
 - `scripts/validation-smoke/tests/registry_confirm.rs`
 - `tests/supported_chains_doc_table.rs::supported_networks_doc_table_matches_enum`
-- `scripts/validation-smoke/tests/registry_confirm.rs`
 
 Validation surface:
 

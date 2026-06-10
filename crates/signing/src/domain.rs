@@ -20,10 +20,11 @@ pub type OrderTypedData = TypedDataEnvelope<OrderData>;
 ///
 /// # Panics
 ///
-/// Panics if the embedded deployment registry is missing the canonical
+/// Panics if the deployment registry is missing the canonical
 /// settlement-contract entry for the resolved chain and environment. The
-/// shipped registry manifest is validated at compile time, so this panic
-/// cannot be reached from an unmodified binary.
+/// registry's const table carries a settlement deployment for every supported
+/// chain and environment, so this panic cannot be reached from an unmodified
+/// binary.
 pub fn domain(
     chain_id: SupportedChainId,
     options: Option<&ProtocolOptions>,
@@ -40,9 +41,9 @@ pub fn domain(
         "v2".to_owned(),
         chain_id.into(),
         override_address.unwrap_or_else(|| {
-            // SAFETY: Registry::default parses the build-validated embedded
-            // manifest, which must include settlement addresses for supported
-            // chain/environment pairs.
+            // SAFETY: the registry const table carries a settlement deployment
+            // for every supported chain/environment pair, pinned by the
+            // deployment-address regression in cow-sdk-contracts.
             Registry::default()
                 .address(ContractId::Settlement, chain_id, env)
                 .expect("canonical settlement address is registered for every supported chain/env")

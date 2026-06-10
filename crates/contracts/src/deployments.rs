@@ -5,11 +5,11 @@
 //! contract address from the `(ContractId, DeploymentChainId, DeploymentEnv)`
 //! key triple. The `GPv2Settlement`, `GPv2VaultRelayer`, and `CoWSwapEthFlow`
 //! contracts are CREATE2 singletons that deploy to the same address on every
-//! supported chain (eth-flow carries one production and one staging
-//! deployment), so the registry is a small const table rather than a per-chain
-//! manifest. Each address is pinned to its upstream source repository in
-//! `parity/source-lock.yaml` and confirmed on-chain by a read-only
-//! `eth_getCode` presence probe.
+//! supported chain; each contract family carries one production and one
+//! staging deployment, so the registry is a small const table rather than a
+//! per-chain manifest. Each address is pinned to its upstream source
+//! repository in `parity/source-lock.yaml` and confirmed on-chain by a
+//! read-only `eth_getCode` presence probe.
 //!
 //! [`DeploymentChainId`] is kept distinct from [`cow_sdk_core::SupportedChainId`]
 //! so deployment evidence for chains such as Lens can be represented without
@@ -203,8 +203,6 @@ pub enum DeploymentEnv {
     Prod,
     /// Staging deployment row.
     Staging,
-    /// Deployment row shared by every environment.
-    EnvironmentAgnostic,
 }
 
 impl DeploymentEnv {
@@ -214,7 +212,6 @@ impl DeploymentEnv {
         match self {
             Self::Prod => "prod",
             Self::Staging => "staging",
-            Self::EnvironmentAgnostic => "environment_agnostic",
         }
     }
 }
@@ -256,10 +253,14 @@ impl std::fmt::Display for DeploymentEnv {
 
 // ----- Address registry -----
 
-/// `GPv2Settlement` singleton — identical on every supported chain.
+/// `GPv2Settlement` production deployment — identical on every supported chain.
 const GPV2_SETTLEMENT: &str = "0x9008D19f58AAbD9eD0D60971565AA8510560ab41";
-/// `GPv2VaultRelayer` singleton — identical on every supported chain.
+/// `GPv2Settlement` staging deployment — identical on every supported chain.
+const GPV2_SETTLEMENT_STAGING: &str = "0xf553d092b50bdcbddeD1A99aF2cA29FBE5E2CB13";
+/// `GPv2VaultRelayer` production deployment — identical on every supported chain.
 const GPV2_VAULT_RELAYER: &str = "0xC92E8bdf79f0507f65a392b0ab4667716BFE0110";
+/// `GPv2VaultRelayer` staging deployment — identical on every supported chain.
+const GPV2_VAULT_RELAYER_STAGING: &str = "0xC7242d167563352E2BCA4d71C043fbe542DB8FB2";
 /// `CoWSwapEthFlow` production deployment — identical on every supported chain.
 const ETH_FLOW_PROD: &str = "0xba3cb449bd2b4adddbc894d8697f5170800eadec";
 /// `CoWSwapEthFlow` staging deployment — identical on every supported chain.
@@ -273,7 +274,9 @@ const ETH_FLOW_STAGING: &str = "0xb37aDD6AC288BD3825a901Cba6ec65A89f31B8CC";
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Registry {
     settlement: Address,
+    settlement_staging: Address,
     vault_relayer: Address,
+    vault_relayer_staging: Address,
     eth_flow_prod: Address,
     eth_flow_staging: Address,
 }
@@ -292,7 +295,9 @@ impl Default for Registry {
             |hex: &str| Address::new(hex).expect("canonical deployment address literal is valid");
         Self {
             settlement: parse(GPV2_SETTLEMENT),
+            settlement_staging: parse(GPV2_SETTLEMENT_STAGING),
             vault_relayer: parse(GPV2_VAULT_RELAYER),
+            vault_relayer_staging: parse(GPV2_VAULT_RELAYER_STAGING),
             eth_flow_prod: parse(ETH_FLOW_PROD),
             eth_flow_staging: parse(ETH_FLOW_STAGING),
         }
@@ -304,8 +309,7 @@ impl Registry {
     /// triple, or [`None`] when the contract is not deployed on that chain.
     ///
     /// The `GPv2` settlement, vault-relayer, and eth-flow contracts deploy on
-    /// every runtime-supported chain; settlement and vault-relayer share one
-    /// address across both environments, while eth-flow resolves the
+    /// every runtime-supported chain; each contract family resolves a distinct
     /// production or staging deployment from `env`.
     #[must_use]
     pub fn address(
@@ -320,10 +324,12 @@ impl Registry {
             return None;
         }
         Some(match (contract_id, env.into()) {
-            (ContractId::Settlement, _) => self.settlement,
-            (ContractId::VaultRelayer, _) => self.vault_relayer,
+            (ContractId::Settlement, DeploymentEnv::Prod) => self.settlement,
+            (ContractId::Settlement, DeploymentEnv::Staging) => self.settlement_staging,
+            (ContractId::VaultRelayer, DeploymentEnv::Prod) => self.vault_relayer,
+            (ContractId::VaultRelayer, DeploymentEnv::Staging) => self.vault_relayer_staging,
+            (ContractId::EthFlow, DeploymentEnv::Prod) => self.eth_flow_prod,
             (ContractId::EthFlow, DeploymentEnv::Staging) => self.eth_flow_staging,
-            (ContractId::EthFlow, _) => self.eth_flow_prod,
         })
     }
 }
@@ -336,7 +342,7 @@ mod tests {
     fn deployment_addresses_resolve_to_canonical_singletons() {
         let registry = Registry::default();
 
-        // Settlement and vault-relayer are chain- and env-invariant singletons.
+        // Each environment resolves a chain-invariant CREATE2 singleton.
         let settlement = registry
             .address(
                 ContractId::Settlement,
@@ -352,10 +358,57 @@ mod tests {
             registry.address(
                 ContractId::Settlement,
                 DeploymentChainId::Base,
-                DeploymentEnv::Staging
+                DeploymentEnv::Prod
             ),
             Some(settlement),
-            "settlement is identical across chains and environments"
+            "production settlement is identical across chains"
+        );
+
+        // Settlement and vault-relayer resolve distinct staging deployments,
+        // each likewise identical across chains.
+        let settlement_staging = registry
+            .address(
+                ContractId::Settlement,
+                DeploymentChainId::Mainnet,
+                DeploymentEnv::Staging,
+            )
+            .expect("staging settlement is deployed on mainnet");
+        assert_eq!(
+            settlement_staging.to_hex_string(),
+            "0xf553d092b50bdcbdded1a99af2ca29fbe5e2cb13"
+        );
+        assert_eq!(
+            registry.address(
+                ContractId::Settlement,
+                DeploymentChainId::Base,
+                DeploymentEnv::Staging
+            ),
+            Some(settlement_staging),
+            "staging settlement is identical across chains"
+        );
+        assert_ne!(
+            settlement, settlement_staging,
+            "settlement prod and staging are distinct deployments"
+        );
+        let vault_relayer_staging = registry
+            .address(
+                ContractId::VaultRelayer,
+                DeploymentChainId::Mainnet,
+                DeploymentEnv::Staging,
+            )
+            .expect("staging vault-relayer is deployed on mainnet");
+        assert_eq!(
+            vault_relayer_staging.to_hex_string(),
+            "0xc7242d167563352e2bca4d71c043fbe542db8fb2"
+        );
+        assert_ne!(
+            registry.address(
+                ContractId::VaultRelayer,
+                DeploymentChainId::Mainnet,
+                DeploymentEnv::Prod,
+            ),
+            Some(vault_relayer_staging),
+            "vault-relayer prod and staging are distinct deployments"
         );
 
         // Eth-flow resolves a distinct production and staging deployment.
