@@ -11,6 +11,7 @@ repositories:
   pinned_at: 2026-05-29T00:00:00Z
   pinned_by: cow-rs maintainers
   producer_paths:
+  - networks.json
   - src/ts/order.ts
   - src/ts/sign.ts
   - src/ts/settlement.ts
@@ -34,6 +35,18 @@ repositories:
   - crates/orderbook/src/app_data.rs
   - crates/model/src/order.rs
   - crates/orderbook/src/quoter.rs
+  # Publishes the canonical contract-address constants for both orderbook
+  # environments; pins the staging settlement and vault-relayer deployments
+  # resolved by the typed Registry.
+- id: cow-sdk
+  remote: https://github.com/cowprotocol/cow-sdk.git
+  commit: 1c3c9619c3d0ee832ce43a2d695ad650c2ec7a18
+  role: primary
+  optional_local_path: <cow-sdk-checkout>
+  pinned_at: 2026-06-10T00:00:00Z
+  pinned_by: cow-rs maintainers
+  producer_paths:
+  - packages/config/src/chains/const/contracts.ts
 - id: composable-cow
   remote: https://github.com/cowprotocol/composable-cow.git
   commit: 471ca59aa95da1bbf3b03e002de96449bc78e6f0

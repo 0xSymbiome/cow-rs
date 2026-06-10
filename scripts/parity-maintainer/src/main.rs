@@ -25,6 +25,7 @@ struct RepoTemplate {
 }
 
 const CONTRACTS_PATHS: &[&str] = &[
+    "networks.json",
     "src/ts/order.ts",
     "src/ts/sign.ts",
     "src/ts/settlement.ts",
@@ -36,6 +37,8 @@ const CONTRACTS_PATHS: &[&str] = &[
     "test/GPv2Settlement/OrderRefunds.t.sol",
     "test/GPv2Settlement/Swap/Swap.t.sol",
 ];
+
+const COW_SDK_PATHS: &[&str] = &["packages/config/src/chains/const/contracts.ts"];
 
 const SERVICES_PATHS: &[&str] = &[
     "crates/orderbook/openapi.yml",
@@ -97,6 +100,13 @@ const HELPER_REPO_TEMPLATES: &[RepoTemplate] = &[
         role: "wire-authority",
         local_hint: "<services-checkout>",
         producer_paths: SERVICES_PATHS,
+    },
+    RepoTemplate {
+        id: "cow-sdk",
+        remote: "https://github.com/cowprotocol/cow-sdk.git",
+        role: "primary",
+        local_hint: "<cow-sdk-checkout>",
+        producer_paths: COW_SDK_PATHS,
     },
     RepoTemplate {
         id: "composable-cow",
@@ -199,6 +209,7 @@ struct CliOptions {
     output_root: Option<PathBuf>,
     contracts_root: Option<PathBuf>,
     services_root: Option<PathBuf>,
+    cow_sdk_root: Option<PathBuf>,
 }
 
 #[derive(Debug, Parser)]
@@ -247,6 +258,8 @@ struct ValidateArgs {
     contracts_root: Option<PathBuf>,
     #[arg(long)]
     services_root: Option<PathBuf>,
+    #[arg(long)]
+    cow_sdk_root: Option<PathBuf>,
 }
 
 #[derive(Debug, Args)]
@@ -265,6 +278,7 @@ fn main() -> Result<()> {
             output_root: None,
             contracts_root: Some(args.contracts_root),
             services_root: Some(args.services_root),
+            cow_sdk_root: None,
         }),
         Commands::Validate(args) => validate(&CliOptions {
             source_lock: args.source.source_lock,
@@ -272,6 +286,7 @@ fn main() -> Result<()> {
             output_root: None,
             contracts_root: args.contracts_root,
             services_root: args.services_root,
+            cow_sdk_root: args.cow_sdk_root,
         }),
         Commands::ProvisionUpstreams(args) => provision_upstreams(&CliOptions {
             source_lock: args.source.source_lock,
@@ -279,6 +294,7 @@ fn main() -> Result<()> {
             output_root: Some(args.output_root),
             contracts_root: None,
             services_root: None,
+            cow_sdk_root: None,
         }),
         Commands::VendorOpenapi(args) => vendor_openapi::run(args),
         Commands::OpenapiCoverage(args) => openapi_coverage::run(args),
@@ -527,6 +543,9 @@ fn resolve_optional_roots(options: &CliOptions) -> BTreeMap<String, PathBuf> {
     }
     if let Some(path) = &options.services_root {
         roots.insert("services".to_string(), path.clone());
+    }
+    if let Some(path) = &options.cow_sdk_root {
+        roots.insert("cow-sdk".to_string(), path.clone());
     }
     roots
 }
@@ -1030,6 +1049,7 @@ mod tests {
                 output_root: None,
                 contracts_root: Some(self.contracts_root.clone()),
                 services_root: Some(self.services_root.clone()),
+                cow_sdk_root: None,
             }
         }
     }
@@ -1246,6 +1266,7 @@ mod tests {
             output_root: None,
             contracts_root: None,
             services_root: None,
+            cow_sdk_root: None,
         };
 
         validate(&standalone)?;
@@ -1289,6 +1310,7 @@ mod tests {
             output_root: None,
             contracts_root: None,
             services_root: None,
+            cow_sdk_root: None,
         };
 
         let error =

@@ -9,6 +9,7 @@ repositories:
   role: primary
   optional_local_path: <contracts-checkout>
   producer_paths:
+  - networks.json
   - src/ts/order.ts
   - src/ts/sign.ts
   - src/ts/settlement.ts
