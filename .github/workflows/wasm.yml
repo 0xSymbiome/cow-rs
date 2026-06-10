@@ -18,7 +18,7 @@ on:
       - 'examples/wasm/cow-signer-node/**'
       - 'examples/wasm/cow-gateway-cloudflare/**'
       - 'rust-toolchain.toml'
-      - 'scripts/policy-maintainer/**'
+      - 'xtask/**'
       - 'tests/**'
   push:
     branches:
@@ -36,7 +36,7 @@ on:
       - 'examples/wasm/cow-signer-node/**'
       - 'examples/wasm/cow-gateway-cloudflare/**'
       - 'rust-toolchain.toml'
-      - 'scripts/policy-maintainer/**'
+      - 'xtask/**'
       - 'tests/**'
 
 permissions:
@@ -105,7 +105,7 @@ jobs:
         run: cargo test -p cow-sdk-app-data --test fetch_contract
       - name: Test wasm dependency invariant
         run: cargo test -p cow-rs-workspace-tests --test wasm_dependency_invariant
-      - name: Run policy-maintainer wasm invariant
+      - name: Run the wasm invariant policy check
         run: cargo check-wasm-invariant
       - name: Run workspace clippy
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings

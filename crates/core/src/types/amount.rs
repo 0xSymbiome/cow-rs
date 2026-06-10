@@ -143,7 +143,7 @@ impl Amount {
     // (lines 99-104).
     // Doctrine: docs/alloy-doctrine.md, Bucket 2 row for `Amount::new`
     // lenient constructor.
-    // CI gate: .github/workflows/never-swap-gates.yml#gate-amount-radix.
+    // Enforced by cargo check-source-fences (xtask/src/policy/fences.rs).
     pub fn new(value: impl AsRef<str>) -> Result<Self, CoreError> {
         let value = value.as_ref();
         if value.is_empty() {

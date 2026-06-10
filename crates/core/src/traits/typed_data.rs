@@ -26,7 +26,7 @@ use crate::types::{Address, ChainId};
 // (lines 38-39).
 // Doctrine: docs/alloy-doctrine.md, Bucket 2 row for `TypedDataDomain`
 // JSON wire shape.
-// CI gate: .github/workflows/never-swap-gates.yml#gate-typed-data-domain.
+// Enforced by cargo check-source-fences (xtask/src/policy/fences.rs).
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

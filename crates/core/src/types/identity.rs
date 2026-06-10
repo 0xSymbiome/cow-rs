@@ -178,7 +178,7 @@ impl Address {
 // (lines 96-99).
 // Doctrine: docs/alloy-doctrine.md, Bucket 2 row for `Address::Display`
 // lowercase emission.
-// CI gate: .github/workflows/never-swap-gates.yml#gate-address-display.
+// Enforced by cargo check-source-fences (xtask/src/policy/fences.rs).
 impl fmt::Display for Address {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:#x}", self.0)

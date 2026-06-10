@@ -65,7 +65,7 @@
 // docs/adr/0046-transport-policy-js-exposure.md (lines 25-31).
 // Doctrine: docs/alloy-doctrine.md, Bucket 2 row for Browser
 // `FetchTransport` with `AbortController` lifecycle.
-// CI gate: .github/workflows/never-swap-gates.yml#gate-transport-stack.
+// Enforced by cargo check-source-fences (xtask/src/policy/fences.rs).
 
 #[cfg(feature = "tracing")]
 use std::borrow::Cow;

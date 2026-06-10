@@ -56,7 +56,7 @@ const WRAPPED_NATIVE_LINEA_BYTES: [u8; 20] = hex!("0xe5d7c2a44ffddf6b295a15c1481
 // (typestate binding on `SupportedChainId`).
 // Doctrine: docs/alloy-doctrine.md, Bucket 2 row for `SupportedChainId`
 // orderbook support-set enum + `api_path()` URL grammar.
-// CI gate: .github/workflows/never-swap-gates.yml#gate-alloy-chains.
+// Enforced by cargo check-alloy-family-pins (alloy-chains is a forbidden dependency).
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[repr(u64)]
@@ -113,7 +113,7 @@ impl SupportedChainId {
     // ADR: docs/adr/0005-boundary-specific-runtime-contracts-and-strong-domain-types.md.
     // Doctrine: docs/alloy-doctrine.md, Bucket 2 row for `SupportedChainId`
     // orderbook support-set enum + `api_path()` URL grammar.
-    // CI gate: .github/workflows/never-swap-gates.yml#gate-alloy-chains.
+    // Enforced by cargo check-alloy-family-pins (alloy-chains is a forbidden dependency).
     #[must_use]
     pub const fn api_path(self) -> &'static str {
         match self {

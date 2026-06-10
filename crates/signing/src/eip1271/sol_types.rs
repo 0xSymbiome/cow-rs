@@ -41,7 +41,7 @@
 // composable crate).
 // Doctrine: docs/alloy-doctrine.md, Bucket 2 rows for EIP-1271
 // signature blob Shape A (Safe muxer) and Shape B (raw forwarder).
-// CI gate: .github/workflows/never-swap-gates.yml#gate-eip1271-shape.
+// Enforced by cargo check-source-fences (xtask/src/policy/fences.rs).
 alloy_sol_types::sol! {
     /// On-chain `GPv2Order.Data` representation as ABI-encoded into the
     /// EIP-1271 verifier payload. The `kind`, `sellTokenBalance`, and

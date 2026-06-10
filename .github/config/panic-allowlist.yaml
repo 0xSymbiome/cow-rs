@@ -75,9 +75,12 @@ allowed:
   - file: crates/trading/src/params.rs
     item: native_sentinel
     reason: Native currency sentinel is a repository-owned valid EVM address literal.
-  - file: crates/trading/src/types/trade.rs
+  - file: crates/trading/src/types/params.rs
     item: LimitTradeParamsFromQuote::quote_id
     reason: try_from_limit is the only public constructor and rejects None on entry, and the inner field is private and immutable through the public API so the invariant cannot be broken.
+  - file: crates/trading/src/client/swap.rs
+    item: SwapBuilder::to_trade_parameters
+    reason: The method is only reachable from the fully-set builder typestate, whose marker parameters guarantee the three required fields were assigned before the conversion runs.
   - file: crates/trading/src/wait.rs
     item: delay_for
     reason: Millisecond polling delay is clamped to u32::MAX before wasm timer conversion.

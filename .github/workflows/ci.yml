@@ -25,7 +25,7 @@ on:
       - 'examples/**'
       - 'parity/**'
       - 'rust-toolchain.toml'
-      - 'scripts/**'
+      - 'xtask/**'
   push:
     branches:
       - main
@@ -43,7 +43,7 @@ on:
       - 'examples/**'
       - 'parity/**'
       - 'rust-toolchain.toml'
-      - 'scripts/**'
+      - 'xtask/**'
 
 permissions:
   contents: read
@@ -208,80 +208,6 @@ jobs:
             echo "</details>"
           } >> "$GITHUB_STEP_SUMMARY"
 
-  wasm-stale-phrase-grep:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      # Source ref: actions/checkout@v4
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with:
-          persist-credentials: false
-      - name: Reject stale wasm surface wording
-        run: |
-          python - <<'PY'
-          import re
-          import sys
-          from pathlib import Path
-
-          roots = [
-              Path("README.md"),
-              Path("CONTRIBUTING.md"),
-              Path("docs"),
-              Path("crates"),
-              Path("e2e"),
-              Path("examples"),
-          ]
-          suffixes = {".md", ".toml", ".ts", ".tsx", ".js", ".mjs", ".json", ".jsonc"}
-          phrases = [
-              "browser integrations should use cow-sdk-browser-wallet",
-              "use cow-sdk-browser-wallet for browser",
-              "the browser path is cow-sdk-browser-wallet",
-              "the wasm path is cow-sdk-browser-wallet",
-              "cow-sdk-browser-wallet is the wasm path",
-              "the wasm crate is cow-sdk-browser-wallet",
-              "cow-sdk-browser-wallet for typescript front-end",
-              "cow-sdk-browser-wallet is the typescript front-end path",
-              "only browser path is cow-sdk-browser-wallet",
-              "the only wasm crate",
-              "the only typescript path",
-              "the only browser-wallet path",
-              "Bun + Vitest",
-              "bundler wasm-pack target inside workerd",
-              "Node + Deno + Workers",
-              "Deno, workerd",
-              "locally-built tarball via a `file:",
-              "node-version: 20",
-          ]
-          deep_import = re.compile(r"cow-sdk-wasm(?:-test-package)?(?:/[^\"'`\\s]+)?/dist/")
-          failures = []
-
-          def files():
-              for root in roots:
-                  if root.is_file():
-                      yield root
-                  elif root.is_dir():
-                      for path in root.rglob("*"):
-                          if "node_modules" in path.parts or "target" in path.parts:
-                              continue
-                          if path.is_file() and path.suffix in suffixes:
-                              yield path
-
-          for path in files():
-              text = path.read_text(encoding="utf-8", errors="replace")
-              lower = text.lower()
-              for phrase in phrases:
-                  if phrase.lower() in lower:
-                      failures.append(f"{path}: stale phrase {phrase!r}")
-              if deep_import.search(text):
-                  failures.append(f"{path}: public imports must use package subpaths, not dist paths")
-
-          if failures:
-              for failure in failures:
-                  print(f"::error::{failure}")
-              sys.exit(1)
-          print("wasm stale-phrase grep passed")
-          PY
-
   publication:
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -290,7 +216,6 @@ jobs:
       - doctest
       - msrv
       - wasm-alloy-must-fail
-      - wasm-stale-phrase-grep
     steps:
       # Source ref: actions/checkout@v4
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
@@ -381,7 +306,6 @@ jobs:
       - msrv
       - wasm-alloy-must-fail
       - publication
-      - wasm-stale-phrase-grep
     steps:
       # Source ref: re-actors/alls-green@release/v1
       - uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe

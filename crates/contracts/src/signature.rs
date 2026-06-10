@@ -278,7 +278,7 @@ impl RecoverableSignature {
     // ADR: docs/adr/0022-ecdsa-signature-v-normalization.md
     // Doctrine: docs/alloy-doctrine.md, Bucket 2 row for ECDSA `v` byte
     // canonicalization.
-    // CI gate: .github/workflows/never-swap-gates.yml#gate-ecdsa-v.
+    // Enforced by cargo check-source-fences (xtask/src/policy/fences.rs).
     pub fn parse_bytes(bytes: &[u8]) -> Result<Self, ContractsError> {
         if bytes.len() != 65 {
             return Err(ContractsError::InvalidSignatureLength {
@@ -314,7 +314,8 @@ impl RecoverableSignature {
     /// representations (for example `Signature::as_rsy`, which writes
     /// the raw parity byte `{0, 1}` instead of the legacy `{27, 28}`
     /// form) is forbidden in the contracts and signing surfaces and
-    /// guarded by the `gate-ecdsa-v` workflow.
+    /// guarded by the `ecdsa-v-normalization` source fence
+    /// (`cargo check-source-fences`).
     #[must_use]
     pub const fn as_alloy(&self) -> &AlloySignature {
         &self.inner

@@ -1,10 +1,17 @@
 name: _quality-gate
 
 # Reusable workflow that owns the shared quality-gate jobs consumed by the
-# `ci` workflow and the `release-readiness` workflow. Both callers delegate
-# via `uses: ./.github/workflows/_quality-gate.yml` so the fmt, clippy,
-# test, nextest, doc, typos, deny, audit, feature-matrix, and
-# public-api-lints jobs have a single source of truth.
+# `ci` and `release-readiness` workflows. Both callers delegate via
+# `uses: ./.github/workflows/_quality-gate.yml`.
+#
+# Every repository policy check runs in the single `policy` job through the
+# `cargo xtask` policy sweep: enum/panic/DTO allowlists, dependency and version
+# invariants, the alloy family-pin and adapter-isolation gates, ADR coverage,
+# property citations, the source-level never-swap fences, workflow security,
+# the shell-wrapper ban, README rendering, OpenAPI DTO coverage, release-gate
+# docs agreement, and chain-patch eligibility. The remaining jobs own fmt,
+# clippy, test, nextest, docs, typos, deny/audit, the feature matrix, the
+# public-API lints, and the deterministic examples.
 
 on:
   workflow_call:
@@ -24,223 +31,34 @@ env:
   # Strip debuginfo from dev / test builds in CI only. The alloy 2.x stack
   # plus aws-lc-sys leaves test binaries with multi-GB debug sections that
   # exhaust the ubuntu-latest runner disk at link time. CI does not run a
-  # debugger against these binaries, so dropping the symbols is free, and
-  # setting it at the workflow level covers every cargo invocation in
-  # every downstream job (test, nextest, clippy, docs, feature-matrix,
-  # public-api-lints, ...).
+  # debugger against these binaries, so dropping the symbols is free.
   CARGO_PROFILE_DEV_DEBUG: "0"
   CARGO_PROFILE_TEST_DEBUG: "0"
 
 jobs:
-  workflow-security:
+  policy:
+    name: Repository policies
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 20
     steps:
       # Source ref: actions/checkout@v4
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
-          persist-credentials: false
-      - name: Assert workflow action refs are SHA-pinned
-        shell: bash
-        run: |
-          set -euo pipefail
-          failures=0
-          while IFS= read -r hit; do
-            file="${hit%%:*}"
-            rest="${hit#*:}"
-            line="${rest%%:*}"
-            text="${rest#*:}"
-            ref="$(printf '%s\n' "$text" | sed -E 's/^[[:space:]]*(-[[:space:]]*)?uses:[[:space:]]*//; s/[[:space:]]+#.*$//; s/[[:space:]]+$//')"
-            if [[ "$ref" == ./* ]]; then
-              continue
-            fi
-            if [[ ! "$ref" =~ @[0-9a-f]{40}$ ]]; then
-              echo "::error file=${file},line=${line}::GitHub Action ref must be pinned to a 40-character commit SHA: ${ref}" >&2
-              failures=1
-            fi
-          done < <(grep -RInE '^[[:space:]]*(-[[:space:]]*)?uses:[[:space:]]*[^[:space:]#]+' .github/workflows/*.yml || true)
-          exit "$failures"
-      - name: Assert pull_request_target triggers are reviewed
-        shell: bash
-        run: |
-          set -euo pipefail
-          failures=0
-          while IFS= read -r file; do
-            if ! grep -qE '#[[:space:]]*allow-pull-request-target:[[:space:]]*.+' "$file"; then
-              echo "::error file=${file}::pull_request_target requires an explicit '# allow-pull-request-target: <review rationale>' comment." >&2
-              failures=1
-            fi
-          done < <(grep -RIlE '^[[:space:]]*(-[[:space:]]*)?pull_request_target[[:space:]]*:|^[[:space:]]*on:[^#]*pull_request_target' .github/workflows/*.yml || true)
-          exit "$failures"
-
-  no-new-shell-wrappers:
-    name: No new shell wrappers
-    runs-on: ubuntu-latest
-    timeout-minutes: 1
-    steps:
-      # Source ref: actions/checkout@v4
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with:
-          persist-credentials: false
-      - name: Reject new shell dispatch wrappers
-        shell: bash
-        run: |
-          set -euo pipefail
-          allowed_legacy='check-release-docs-agree.sh|check-audit-index-agreement.sh'
-          found="$(
-            find scripts -maxdepth 2 -type f \( -name '*.sh' -o -name '*.ps1' \) \
-              | grep -Ev "/(${allowed_legacy})$" || true
-          )"
-          if [ -n "$found" ]; then
-            echo "Forbidden shell wrapper(s) found:"
-            echo "$found"
-            echo
-            echo "Use a Cargo alias in .cargo/config.toml instead."
-            exit 1
-          fi
-
-  enum-policy:
-    name: Enum policy coverage
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      # Source ref: actions/checkout@v4
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with:
-          persist-credentials: false
-      # Source ref: dtolnay/rust-toolchain@stable
-      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
-        with:
-          toolchain: ${{ inputs.rust_toolchain }}
-      - name: Check enum policy coverage
-        run: cargo check-enum-policy
-
-  panic-allowlist:
-    name: Panic allowlist
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      # Source ref: actions/checkout@v4
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with:
-          persist-credentials: false
-      # Source ref: dtolnay/rust-toolchain@stable
-      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
-        with:
-          toolchain: ${{ inputs.rust_toolchain }}
-      - name: Check panic allowlist
-        run: cargo check-panic-allowlist
-
-  deny-unknown-fields-coverage:
-    name: deny_unknown_fields coverage
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      # Source ref: actions/checkout@v4
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with:
-          persist-credentials: false
-      # Source ref: dtolnay/rust-toolchain@stable
-      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
-        with:
-          toolchain: ${{ inputs.rust_toolchain }}
-      - name: Check deny_unknown_fields coverage
-        run: cargo check-deny-unknown-fields
-
-  openapi-coverage:
-    name: OpenAPI DTO coverage
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      # Source ref: actions/checkout@v4
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with:
-          persist-credentials: false
-      # Source ref: dtolnay/rust-toolchain@stable
-      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
-        with:
-          toolchain: ${{ inputs.rust_toolchain }}
-      - name: Validate OpenAPI DTO coverage
-        # Expands each schema inventory in memory from the vendored services
-        # spec and checks it against the Rust DTOs; no inventory cache is
-        # committed, so there is nothing to regenerate or diff.
-        run: cargo parity-openapi-coverage
-
-  parity-maintainer:
-    name: parity-maintainer tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      # Source ref: actions/checkout@v4
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with:
-          persist-credentials: false
-      # Source ref: dtolnay/rust-toolchain@stable
-      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
-        with:
-          toolchain: ${{ inputs.rust_toolchain }}
-      # Source ref: Swatinem/rust-cache@v2
-      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
-        with:
-          workspaces: scripts/parity-maintainer
-          shared-key: parity-maintainer-tests
-      - name: Run parity-maintainer test suite
-        run: cargo test --manifest-path scripts/parity-maintainer/Cargo.toml
-
-  validation-smoke:
-    name: validation-smoke tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      # Source ref: actions/checkout@v4
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with:
-          persist-credentials: false
-      # Source ref: dtolnay/rust-toolchain@stable
-      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
-        with:
-          toolchain: ${{ inputs.rust_toolchain }}
-      # Source ref: Swatinem/rust-cache@v2
-      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
-        with:
-          workspaces: scripts/validation-smoke
-          shared-key: validation-smoke-tests
-      - name: Run validation-smoke test suite
-        # Offline only: the suite exercises the registry-confirm probe against
-        # a local mock RPC server, so the deployment-registry prober cannot
-        # drift against the contracts crate between release runs.
-        run: cargo test --manifest-path scripts/validation-smoke/Cargo.toml
-
-  workspace-version-alignment:
-    name: Workspace version alignment
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      # Source ref: actions/checkout@v4
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with:
-          persist-credentials: false
-      # Source ref: dtolnay/rust-toolchain@stable
-      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
-        with:
-          toolchain: ${{ inputs.rust_toolchain }}
-      - name: Check workspace version alignment
-        run: cargo check-workspace-versions
-
-  chain-patch-eligibility:
-    name: Chain patch eligibility
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      # Source ref: actions/checkout@v4
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with:
+          # Full history so check-chain-patch-eligibility can diff the PR base.
           fetch-depth: 0
           persist-credentials: false
       # Source ref: dtolnay/rust-toolchain@stable
       - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
         with:
           toolchain: ${{ inputs.rust_toolchain }}
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      - name: Run repository policy sweep
+        run: cargo check-policies
+      - name: Validate OpenAPI DTO coverage
+        run: cargo parity-openapi-coverage
+      - name: Verify release-gate commands agree across docs and CI
+        run: cargo docs-agree
       - name: Check chain patch eligibility
         if: github.event_name == 'pull_request'
         run: cargo check-chain-patch-eligibility --base-ref "${{ github.event.pull_request.base.ref }}"
@@ -373,108 +191,6 @@ jobs:
       - name: Run workspace nextest suite
         run: cargo nextest run --workspace --all-features --config-file .github/config/nextest.toml
 
-  ipfs-fetch-await-grep:
-    name: IpfsFetch await grep
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      # Source ref: actions/checkout@v4
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with:
-          persist-credentials: false
-      - name: Assert IpfsFetchTransport async usage
-        shell: bash
-        run: |
-          set -euo pipefail
-          python - <<'PY'
-          from pathlib import Path
-          import re
-          import sys
-
-          roots = [Path("crates"), Path("tests"), Path("examples"), Path("e2e")]
-          rust_sources = sorted(
-              path
-              for root in roots
-              if root.exists()
-              for path in root.rglob("*.rs")
-              if "target" not in path.parts
-          )
-
-          fetch_call = re.compile(r"\bfetch_doc_from_[a-z_]+\s*\(")
-          impl_start = re.compile(
-              r"impl\s*(?:<[^>{}]*>)?\s+(?:[\w:]+::)?IpfsFetchTransport\s+for\b",
-              re.MULTILINE,
-          )
-          bare_get = re.compile(r"(?<!async\s)fn\s+get\s*\(")
-
-          failures: list[str] = []
-
-          def line_number(text: str, offset: int) -> int:
-              return text.count("\n", 0, offset) + 1
-
-          def line_at(text: str, offset: int) -> str:
-              start = text.rfind("\n", 0, offset) + 1
-              end = text.find("\n", offset)
-              if end == -1:
-                  end = len(text)
-              return text[start:end]
-
-          def brace_block(text: str, open_brace: int) -> str:
-              depth = 0
-              for cursor in range(open_brace, len(text)):
-                  char = text[cursor]
-                  if char == "{":
-                      depth += 1
-                  elif char == "}":
-                      depth -= 1
-                      if depth == 0:
-                          return text[open_brace : cursor + 1]
-              return text[open_brace:]
-
-          for path in rust_sources:
-              text = path.read_text(encoding="utf-8")
-              for match in fetch_call.finditer(text):
-                  line = line_at(text, match.start())
-                  stripped = line.lstrip()
-                  prefix = line[: match.start() - (text.rfind("\n", 0, match.start()) + 1)]
-                  if stripped.startswith(("//", "///", "//!")):
-                      continue
-                  if "use " in prefix or "fn " in prefix:
-                      continue
-                  end = text.find(";", match.end())
-                  if end == -1:
-                      end = len(text)
-                  statement = text[match.start() : end]
-                  if ".await" not in statement:
-                      failures.append(
-                          f"{path}:{line_number(text, match.start())}: fetch_doc_from_* call is not awaited"
-                      )
-
-              for match in impl_start.finditer(text):
-                  open_brace = text.find("{", match.end())
-                  if open_brace == -1:
-                      failures.append(
-                          f"{path}:{line_number(text, match.start())}: IpfsFetchTransport impl has no body"
-                      )
-                      continue
-                  block = brace_block(text, open_brace)
-                  if "async fn get" not in block:
-                      failures.append(
-                          f"{path}:{line_number(text, match.start())}: IpfsFetchTransport impl must contain async fn get"
-                      )
-                  if bare_get.search(block):
-                      failures.append(
-                          f"{path}:{line_number(text, match.start())}: IpfsFetchTransport impl contains sync fn get"
-                      )
-
-          if failures:
-              for failure in failures:
-                  print(f"::error::{failure}", file=sys.stderr)
-              raise SystemExit(1)
-
-          print("IpfsFetchTransport async usage verified.")
-          PY
-
   docs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -525,58 +241,10 @@ jobs:
       - uses: taiki-e/install-action@94cb46f8d6e437890146ffbd78a778b78e623fb2
         with:
           tool: cargo-audit
-      - name: Verify alloy-* workspace pins by family
-        shell: bash
-        run: |
-          set -euo pipefail
-          # Upstream alloy publishes two coordinated release trains:
-          #   - alloy-core (1.x): alloy-primitives, alloy-sol-types,
-          #     alloy-sol-macro, alloy-dyn-abi, alloy-json-abi, alloy-serde
-          #   - alloy runtime (2.x): alloy-consensus, alloy-network,
-          #     alloy-provider, alloy-signer*, alloy-transport*,
-          #     alloy-rpc-types-eth, alloy-json-rpc
-          # Each family must be internally consistent on major.minor; the
-          # cross-family lockfile lockstep is enforced by
-          # tests/alloy_two_family_lockfile_invariant.rs.
-          core_re='^alloy-(primitives|sol-types|sol-macro|dyn-abi|json-abi|serde)[[:space:]]*='
-          runtime_re='^alloy-(consensus|network|provider|signer-local|signer|transport-http|transport|rpc-types-eth|json-rpc)[[:space:]]*='
-
-          extract_minors() {
-            local pattern="$1"
-            grep -E "$pattern" Cargo.toml \
-              | sed -nE 's/^alloy-[a-z-]+[[:space:]]*=[[:space:]]*(\{[[:space:]]*version[[:space:]]*=[[:space:]]*)?"([0-9]+\.[0-9]+).*/\2/p' \
-              | sort -u
-          }
-
-          check_family() {
-            local label="$1" pattern="$2" minors count
-            minors="$(extract_minors "$pattern")"
-            count="$(printf '%s\n' "$minors" | grep -c . || true)"
-            case "$count" in
-              0) echo "::error::no $label alloy-* pins matched in Cargo.toml" >&2
-                 return 1 ;;
-              1) echo "$label pins all on $minors" ;;
-              *) echo "::error::$label pins disagree on major.minor:" >&2
-                 printf '%s\n' "$minors" >&2
-                 grep -E "$pattern" Cargo.toml >&2
-                 return 1 ;;
-            esac
-          }
-
-          failures=0
-          check_family "alloy-core" "$core_re" || failures=1
-          check_family "alloy runtime" "$runtime_re" || failures=1
-
-          unclassified="$(grep -E '^alloy-[a-z-]+[[:space:]]*=' Cargo.toml \
-            | grep -Ev "$core_re|$runtime_re" || true)"
-          if [ -n "$unclassified" ]; then
-            echo "::error::unclassified alloy-* pin(s); update the family regexes in _quality-gate.yml:" >&2
-            printf '%s\n' "$unclassified" >&2
-            failures=1
-          fi
-
-          exit "$failures"
       - name: Check dependency policy
+        # The alloy-* family-pin coherence check runs in the `policy` job via
+        # `cargo check-alloy-family-pins`; the cross-family lockfile lockstep is
+        # `tests/alloy_two_family_lockfile_invariant.rs`.
         run: cargo deny check --config .github/config/deny.toml
       - name: Check RustSec advisories
         shell: bash
@@ -635,84 +303,6 @@ jobs:
         env:
           RUSTFLAGS: -Dmissing-docs -Dmissing-debug-implementations -Dunreachable-pub -Dunnameable-types
 
-  alloy-provider-invariant:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      # Source ref: actions/checkout@v4
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with:
-          persist-credentials: false
-      # Source ref: dtolnay/rust-toolchain@stable
-      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
-        with:
-          toolchain: ${{ inputs.rust_toolchain }}
-      # Source ref: Swatinem/rust-cache@v2
-      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
-      - name: Assert alloy-provider stays inside the native provider allow-list
-        run: |
-          # docs-agreement package list:
-          # cargo tree --invert alloy-provider \
-          #   -p cow-sdk-core \
-          #   -p cow-sdk-contracts \
-          #   -p cow-sdk-signing \
-          #   -p cow-sdk-orderbook \
-          #   -p cow-sdk-subgraph \
-          #   -p cow-sdk-app-data \
-          #   -p cow-sdk-trading \
-          #   -p cow-sdk-browser-wallet \
-          #   -p cow-sdk-transport-wasm \
-          #   -p cow-sdk-alloy-provider \
-          #   -p cow-sdk-alloy-signer \
-          #   -p cow-sdk-alloy \
-          #   -p cow-sdk 2>&1
-          cargo check-alloy-provider-invariant
-
-  alloy-signer-invariant:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      # Source ref: actions/checkout@v4
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with:
-          persist-credentials: false
-      # Source ref: dtolnay/rust-toolchain@stable
-      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
-        with:
-          toolchain: ${{ inputs.rust_toolchain }}
-      # Source ref: Swatinem/rust-cache@v2
-      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
-      - name: Assert alloy-signer-local stays inside the native signer allow-list
-        run: cargo check-alloy-signer-invariant
-
-  adr-coverage:
-    name: ADR coverage (blocking)
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      # Source ref: actions/checkout@v4
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with:
-          persist-credentials: false
-      # Source ref: dtolnay/rust-toolchain@stable
-      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
-        with:
-          toolchain: ${{ inputs.rust_toolchain }}
-      - name: Check principle ADR coverage
-        run: |
-          cargo check-adr-coverage --mode blocking
-
-  docs-agree-on-release-gates:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      # Source ref: actions/checkout@v4
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
-        with:
-          persist-credentials: false
-      - name: Verify release-gate commands agree across docs and CI
-        run: scripts/check-release-docs-agree.sh
-
   native-examples-locked:
     name: deterministic examples locked
     runs-on: ubuntu-latest
@@ -743,30 +333,16 @@ jobs:
     timeout-minutes: 10
     permissions: {}
     needs:
-      - workflow-security
-      - no-new-shell-wrappers
-      - enum-policy
-      - panic-allowlist
-      - deny-unknown-fields-coverage
-      - openapi-coverage
-      - parity-maintainer
-      - validation-smoke
-      - workspace-version-alignment
-      - chain-patch-eligibility
+      - policy
       - fmt
       - clippy
       - test
       - nextest
-      - ipfs-fetch-await-grep
       - docs
       - typos
       - deny
       - feature-matrix
       - public-api-lints
-      - alloy-provider-invariant
-      - alloy-signer-invariant
-      - adr-coverage
-      - docs-agree-on-release-gates
       - native-examples-locked
     steps:
       # Source ref: re-actors/alls-green@release/v1

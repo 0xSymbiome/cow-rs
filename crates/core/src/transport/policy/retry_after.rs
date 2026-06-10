@@ -59,7 +59,7 @@ impl RetryAfter {
 // JS exposure).
 // Doctrine: docs/alloy-doctrine.md, Bucket 2 row for `parse_retry_after`
 // for the HTTP `Retry-After` header.
-// CI gate: .github/workflows/never-swap-gates.yml#gate-transport-stack.
+// Enforced by cargo check-source-fences (xtask/src/policy/fences.rs).
 #[must_use]
 pub fn parse_retry_after(value: &str, now: SystemTime) -> Option<RetryAfter> {
     let trimmed = value.trim();

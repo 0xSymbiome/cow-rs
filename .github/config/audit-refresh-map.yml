@@ -6,9 +6,7 @@ entries:
       paths:
         - parity/source-lock.yaml
       upstreams:
-        - https://github.com/cowprotocol/composable-cow
         - https://github.com/cowdao-grants/cow-shed
-        - https://github.com/cowprotocol/watch-tower
   - audit: docs/audit/contract-bindings-parity-audit.md
     owning_surface: canonical alloy::sol! bindings (settlement, vault-relayer, eth-flow, eip1967 proxy, ERC-20, EIP-1271)
     refresh_triggers:
