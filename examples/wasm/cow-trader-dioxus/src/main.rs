@@ -24,7 +24,7 @@ use cow_sdk::core::{
 };
 use cow_sdk::orderbook::{ApiContext, OrderbookApi};
 use cow_sdk::trading::{
-    ApprovalParameters, TradeParameters, Trading, TradingOptions, approval_transaction,
+    ApprovalParams, TradeParams, Trading, TradingOptions, approval_transaction,
 };
 
 const CHAIN: SupportedChainId = SupportedChainId::Sepolia;
@@ -317,7 +317,7 @@ async fn swap(wallet: &BrowserWallet, sell_is_weth: bool, amount: &str) -> Resul
 /// until its sell token is approved. Sends an on-chain `approve` tx.
 async fn approve(wallet: &BrowserWallet, sell_is_weth: bool, amount: &str) -> Result<String> {
     let signer = signer_for(wallet).await?;
-    let approval = ApprovalParameters::new(sell_token(sell_is_weth)?, parse_amount(amount)?)
+    let approval = ApprovalParams::new(sell_token(sell_is_weth)?, parse_amount(amount)?)
         .with_chain_id(CHAIN);
     let tx = approval_transaction(&approval, CHAIN, ENV)?;
     let broadcast = signer.send_transaction(&tx).await?;
@@ -389,10 +389,10 @@ fn parse_amount(amount: &str) -> Result<Amount> {
 /// `.with_slippage_bps(50)` to sign an explicit 0.5% bound instead — it prices
 /// better but can expire unfilled when the market moves past it. The SDK signs
 /// whichever the caller chooses; it never overrides an explicit value.
-fn trade(amount: &str, sell_is_weth: bool) -> Result<TradeParameters> {
+fn trade(amount: &str, sell_is_weth: bool) -> Result<TradeParams> {
     let (sell, buy) = token_pair(sell_is_weth)?;
     Ok(
-        TradeParameters::new(OrderKind::Sell, sell, buy, parse_amount(amount)?)
+        TradeParams::new(OrderKind::Sell, sell, buy, parse_amount(amount)?)
             .with_valid_for(1800),
     )
 }

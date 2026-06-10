@@ -2,10 +2,9 @@ mod common;
 
 use cow_sdk_core::OrderData;
 use cow_sdk_orderbook::{
-    Address, Amount, ApiContextOverride, AppDataHash, BuyTokenDestination, CowEnv,
-    GetOrdersRequest, GetTradesRequest, OrderCreation, OrderKind, OrderQuoteRequest,
-    OrderQuoteSide, PriceQuality, QuoteAppData, QuoteSigningScheme, SellTokenSource, SigningScheme,
-    SupportedChainId,
+    Address, Amount, ApiContextOverride, AppDataHash, BuyTokenDestination, CowEnv, OrderCreation,
+    OrderKind, OrderQuoteRequest, OrderQuoteSide, OrdersQuery, PriceQuality, QuoteAppData,
+    QuoteSigningScheme, SellTokenSource, SigningScheme, SupportedChainId, TradesQuery,
 };
 use serde_json::json;
 
@@ -246,9 +245,9 @@ fn quote_request_app_data_routes_to_server_valid_wire_shapes() {
 #[test]
 fn orders_and_trades_requests_keep_upstream_defaults() {
     let owner = sample_owner();
-    let orders = GetOrdersRequest::new(owner);
-    let trades_by_owner = GetTradesRequest::by_owner(owner);
-    let trades_by_uid = GetTradesRequest::by_order_uid(sample_order_uid());
+    let orders = OrdersQuery::new(owner);
+    let trades_by_owner = TradesQuery::by_owner(owner);
+    let trades_by_uid = TradesQuery::by_order_uid(sample_order_uid());
 
     assert_eq!(orders.offset, 0);
     assert_eq!(orders.limit, 1_000);

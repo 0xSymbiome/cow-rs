@@ -3,7 +3,7 @@
 pub use self::{params::*, result::*, seams::*};
 
 pub(crate) use self::params::{
-    PartialTraderParameters, QuoteRequestParameterTargets, apply_app_data_parameter_overrides,
+    PartialTraderParams, QuoteRequestParameterTargets, apply_app_data_parameter_overrides,
     apply_quote_request_parameter_overrides,
 };
 pub(crate) use self::result::{

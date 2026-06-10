@@ -23,7 +23,7 @@ cow-sdk-subgraph = "0.1"
 
 - `totals()` — protocol-wide aggregates (tokens, orders, traders, settlements, volume, fees).
 - `last_days_volume(days)` / `last_hours_volume(hours)` — recent volume buckets.
-- `run_query(request)` — the escape hatch: any GraphQL document, decoded into a response type you choose.
+- `query(request)` — the escape hatch: any GraphQL document, decoded into a response type you choose.
 - `with_config_override(SubgraphConfigOverride::for_chain(chain))` — query another supported chain from the same client.
 
 The typestate `SubgraphApi::builder()` requires a chain, a The Graph API key,
@@ -47,7 +47,7 @@ let totals = subgraph.totals().await?;
 
 // The escape hatch: bring your own document and response type.
 let raw: TotalsResponse = subgraph
-    .run_query(SubgraphQueryRequest::new(TOTALS_QUERY).with_operation_name("Totals"))
+    .query(SubgraphQueryRequest::new(TOTALS_QUERY).with_operation_name("Totals"))
     .await?;
 
 // Query a different supported chain from the same client.

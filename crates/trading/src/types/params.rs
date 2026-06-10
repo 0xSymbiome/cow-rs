@@ -18,9 +18,9 @@ use cow_sdk_core::{
     OrderKind, OrderUid, SellTokenSource, SupportedChainId,
 };
 use cow_sdk_orderbook::{OrderbookClient, PriceQuality, SigningScheme};
-use cow_sdk_signing::eip1271::Eip1271SignatureProvider;
+use cow_sdk_signing::eip1271::Eip1271Signer;
 
-use super::seams::{EthFlowOrderExistsChecker, SlippageSuggestionProvider};
+use super::seams::{EthFlowOrderExistsChecker, SlippageSuggester};
 use crate::TradingError;
 
 const fn default_sell_token_source() -> SellTokenSource {
@@ -115,7 +115,7 @@ macro_rules! impl_common_trade_setters {
 /// Swap-style trade request accepted by quote and post helpers.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct TradeParameters {
+pub struct TradeParams {
     /// Order kind.
     pub kind: OrderKind,
     /// Optional owner override. Signer address becomes the fallback in signer-backed flows.
@@ -162,7 +162,7 @@ pub struct TradeParameters {
     pub partner_fee: Option<PartnerFee>,
 }
 
-impl TradeParameters {
+impl TradeParams {
     /// Creates a swap-style trade request with the required trade fields.
     #[must_use]
     pub const fn new(
@@ -192,12 +192,12 @@ impl TradeParameters {
     }
 }
 
-impl_common_trade_setters!(TradeParameters);
+impl_common_trade_setters!(TradeParams);
 
 /// Limit-order request accepted by posting and signing helpers.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct LimitTradeParameters {
+pub struct LimitTradeParams {
     /// Order kind.
     pub kind: OrderKind,
     /// Optional owner override. Signer address becomes the fallback in signer-backed flows.
@@ -249,7 +249,7 @@ pub struct LimitTradeParameters {
     pub partner_fee: Option<PartnerFee>,
 }
 
-impl LimitTradeParameters {
+impl LimitTradeParams {
     /// Creates a limit-order request with the required trade fields.
     #[must_use]
     pub const fn new(
@@ -289,7 +289,7 @@ impl LimitTradeParameters {
     }
 }
 
-impl_common_trade_setters!(LimitTradeParameters);
+impl_common_trade_setters!(LimitTradeParams);
 
 /// Limit-order request derived from a quote response.
 ///
@@ -301,13 +301,13 @@ impl_common_trade_setters!(LimitTradeParameters);
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
-pub struct LimitTradeParametersFromQuote {
+pub struct LimitTradeParamsFromQuote {
     #[serde(flatten)]
-    inner: LimitTradeParameters,
+    inner: LimitTradeParams,
 }
 
-impl LimitTradeParametersFromQuote {
-    /// Builds the newtype from a [`LimitTradeParameters`] value.
+impl LimitTradeParamsFromQuote {
+    /// Builds the newtype from a [`LimitTradeParams`] value.
     ///
     /// # Errors
     ///
@@ -315,7 +315,7 @@ impl LimitTradeParametersFromQuote {
     /// carries `quote_id = None`. The error label preserves the public
     /// diagnostic shape consumers observed before this type was
     /// introduced.
-    pub fn try_from_limit(inner: LimitTradeParameters) -> Result<Self, TradingError> {
+    pub fn try_from_limit(inner: LimitTradeParams) -> Result<Self, TradingError> {
         if inner.quote_id.is_none() {
             return Err(TradingError::MissingQuoteId("EthFlow order posting"));
         }
@@ -335,26 +335,26 @@ impl LimitTradeParametersFromQuote {
         // SAFETY: try_from_limit rejects None on entry and is the only
         // public constructor; the inner field is private and immutable
         // through the public API so the invariant cannot be broken.
-        self.inner.quote_id.expect(
-            "LimitTradeParametersFromQuote invariant: quote_id is always Some by construction",
-        )
+        self.inner
+            .quote_id
+            .expect("LimitTradeParamsFromQuote invariant: quote_id is always Some by construction")
     }
 
     /// Returns a reference to the underlying limit-trade parameters.
     #[must_use]
-    pub const fn as_limit(&self) -> &LimitTradeParameters {
+    pub const fn as_limit(&self) -> &LimitTradeParams {
         &self.inner
     }
 
     /// Consumes the newtype and returns the underlying value.
     #[must_use]
-    pub fn into_limit(self) -> LimitTradeParameters {
+    pub fn into_limit(self) -> LimitTradeParams {
         self.inner
     }
 }
 
-impl AsRef<LimitTradeParameters> for LimitTradeParametersFromQuote {
-    fn as_ref(&self) -> &LimitTradeParameters {
+impl AsRef<LimitTradeParams> for LimitTradeParamsFromQuote {
+    fn as_ref(&self) -> &LimitTradeParams {
         &self.inner
     }
 }
@@ -362,7 +362,7 @@ impl AsRef<LimitTradeParameters> for LimitTradeParametersFromQuote {
 /// Fully resolved trader configuration used by order-posting and on-chain flows.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct TraderParameters {
+pub struct TraderParams {
     /// Active chain id for the workflow.
     pub chain_id: SupportedChainId,
     /// App code written into generated app-data documents.
@@ -378,7 +378,7 @@ pub struct TraderParameters {
     pub eth_flow_contract_override: Option<AddressPerChain>,
 }
 
-impl TraderParameters {
+impl TraderParams {
     /// Creates trader parameters with the required chain and app-code fields.
     ///
     /// # Errors
@@ -427,13 +427,13 @@ impl TraderParameters {
 /// applies when call-level parameters omit them: chain id, app code,
 /// environment, settlement-contract overrides, and `EthFlow`-contract
 /// overrides. The SDK does not store a default owner; per-call
-/// [`crate::TradeParameters::owner`] (with the signer's address as the
+/// [`crate::TradeParams::owner`] (with the signer's address as the
 /// implicit fallback for signer-backed flows, or
 /// `advanced_settings.quote_request.from` for quote-only flows) is the
 /// sole owner source.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct PartialTraderParameters {
+pub(crate) struct PartialTraderParams {
     /// Default chain id when call-level params omit it.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) chain_id: Option<SupportedChainId>,
@@ -454,7 +454,7 @@ pub(crate) struct PartialTraderParameters {
 /// Quoter configuration used by quote-only and quote-and-sign flows.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct QuoterParameters {
+pub struct QuoterParams {
     /// Active chain id for the workflow.
     pub chain_id: SupportedChainId,
     /// App code written into generated app-data documents.
@@ -472,7 +472,7 @@ pub struct QuoterParameters {
     pub eth_flow_contract_override: Option<AddressPerChain>,
 }
 
-impl QuoterParameters {
+impl QuoterParams {
     /// Creates quoter parameters with the required chain, app-code, and account fields.
     ///
     /// # Errors
@@ -523,7 +523,7 @@ impl QuoterParameters {
 /// Parameters for order lookup, cancellation, and on-chain helper flows.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct OrderTraderParameters {
+pub struct OrderTraderParams {
     /// Target order UID.
     pub order_uid: OrderUid,
     /// Optional chain-id override.
@@ -540,7 +540,7 @@ pub struct OrderTraderParameters {
     pub eth_flow_contract_override: Option<AddressPerChain>,
 }
 
-impl OrderTraderParameters {
+impl OrderTraderParams {
     /// Creates order-trader parameters with the required order UID.
     #[must_use]
     pub const fn new(order_uid: OrderUid) -> Self {
@@ -585,7 +585,7 @@ impl OrderTraderParameters {
 /// Parameters for allowance-check helpers.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct AllowanceParameters {
+pub struct AllowanceParams {
     /// ERC-20 token address.
     pub token_address: Address,
     /// Owner whose allowance should be inspected.
@@ -601,7 +601,7 @@ pub struct AllowanceParameters {
     pub vault_relayer_override: Option<Address>,
 }
 
-impl AllowanceParameters {
+impl AllowanceParams {
     /// Creates allowance parameters with the required token and owner fields.
     #[must_use]
     pub const fn new(token_address: Address, owner: Address) -> Self {
@@ -639,7 +639,7 @@ impl AllowanceParameters {
 /// Parameters for approval-transaction helpers.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ApprovalParameters {
+pub struct ApprovalParams {
     /// ERC-20 token address.
     pub token_address: Address,
     /// Approval amount.
@@ -655,7 +655,7 @@ pub struct ApprovalParameters {
     pub vault_relayer_override: Option<Address>,
 }
 
-impl ApprovalParameters {
+impl ApprovalParams {
     /// Creates approval parameters with the required token and amount fields.
     #[must_use]
     pub const fn new(token_address: Address, amount: Amount) -> Self {
@@ -998,7 +998,7 @@ pub struct PostTradeAdditionalParams {
     /// Explicit signing scheme override for submission.
     pub signing_scheme: Option<SigningScheme>,
     /// Optional custom EIP-1271 signer for smart-account signatures.
-    pub custom_eip1271_signature: Option<Arc<dyn Eip1271SignatureProvider>>,
+    pub custom_eip1271_signature: Option<Arc<dyn Eip1271Signer>>,
     /// Whether costs, slippage, and fees should be applied when building the order payload.
     pub apply_costs_slippage_and_fees: Option<bool>,
 }
@@ -1036,10 +1036,7 @@ impl PostTradeAdditionalParams {
 
     /// Returns a copy with a custom EIP-1271 signature provider.
     #[must_use]
-    pub fn with_custom_eip1271_signature(
-        mut self,
-        provider: Arc<dyn Eip1271SignatureProvider>,
-    ) -> Self {
+    pub fn with_custom_eip1271_signature(mut self, provider: Arc<dyn Eip1271Signer>) -> Self {
         self.custom_eip1271_signature = Some(provider);
         self
     }
@@ -1090,7 +1087,7 @@ pub struct TradeAdvancedSettings {
     ///
     /// Ignored on limit-order flows; limit orders do not apply
     /// slippage in the same shape as swaps.
-    pub slippage_suggester: Option<Arc<dyn SlippageSuggestionProvider>>,
+    pub slippage_suggester: Option<Arc<dyn SlippageSuggester>>,
 }
 
 impl TradeAdvancedSettings {
@@ -1126,10 +1123,7 @@ impl TradeAdvancedSettings {
     /// Limit-order flows ignore this provider; only swap quote and
     /// post flows read it.
     #[must_use]
-    pub fn with_slippage_suggester(
-        mut self,
-        suggester: Arc<dyn SlippageSuggestionProvider>,
-    ) -> Self {
+    pub fn with_slippage_suggester(mut self, suggester: Arc<dyn SlippageSuggester>) -> Self {
         self.slippage_suggester = Some(suggester);
         self
     }
@@ -1149,14 +1143,14 @@ impl fmt::Debug for TradeAdvancedSettings {
 /// Explicit verifier and signature payload for EIP-1271 verification helpers.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Eip1271VerificationParameters {
+pub struct Eip1271VerificationParams {
     /// Smart-account verifier address.
     pub verifier: Address,
     /// Signature bytes supplied to the verifier contract.
     pub signature: HexData,
 }
 
-impl Eip1271VerificationParameters {
+impl Eip1271VerificationParams {
     /// Creates explicit verifier and signature payload for EIP-1271 verification helpers.
     #[must_use]
     pub const fn new(verifier: Address, signature: HexData) -> Self {

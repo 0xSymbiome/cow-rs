@@ -9,10 +9,10 @@ use cow_sdk_core::{
     TransactionRequest, TypedDataDomain, TypedDataField,
 };
 use cow_sdk_orderbook::{OrderbookApi, SigningScheme};
-use cow_sdk_signing::eip1271::Eip1271SignatureProvider;
+use cow_sdk_signing::eip1271::Eip1271Signer;
 use cow_sdk_trading::{
-    AllowanceParameters, GAS_LIMIT_DEFAULT, LimitTradeParameters, PostTradeAdditionalParams,
-    QuoteRequestOverride, QuoteResults, TradeAdvancedSettings, TradeParameters, Trading,
+    AllowanceParams, DEFAULT_GAS_LIMIT, LimitTradeParams, PostTradeAdditionalParams,
+    QuoteRequestOverride, QuoteResults, TradeAdvancedSettings, TradeParams, Trading,
 };
 use js_sys::Function;
 use wasm_bindgen::prelude::*;
@@ -425,7 +425,7 @@ async fn trading_get_quote(
     inner: &Trading,
     params: SwapParametersInput,
 ) -> Result<JsValue, JsValue> {
-    let params: TradeParameters = from_json_value("params", params.into_value()?)?;
+    let params: TradeParams = from_json_value("params", params.into_value()?)?;
     let quote = inner
         .quote_only(params, None)
         .await
@@ -441,7 +441,7 @@ async fn trading_post_swap_order(
     wallet_timeout_ms: Option<u32>,
 ) -> Result<JsValue, JsValue> {
     let owner = parse_address("owner", owner)?;
-    let mut params: TradeParameters = from_json_value("params", params.into_value()?)?;
+    let mut params: TradeParams = from_json_value("params", params.into_value()?)?;
     params.owner = Some(owner.clone());
     let signer = JsTradingSigner::new(owner, signer_callback, wallet_timeout_ms);
     let result = inner
@@ -477,7 +477,7 @@ async fn trading_post_limit_order(
     wallet_timeout_ms: Option<u32>,
 ) -> Result<JsValue, JsValue> {
     let owner = parse_address("owner", owner)?;
-    let mut params: LimitTradeParameters = from_json_value("params", params.into_value()?)?;
+    let mut params: LimitTradeParams = from_json_value("params", params.into_value()?)?;
     params.owner = params.owner.or_else(|| Some(owner.clone()));
     let signer = JsTradingSigner::new(owner, signer_callback, wallet_timeout_ms);
     let result = inner
@@ -572,7 +572,7 @@ async fn trading_get_cow_protocol_allowance(
     params: AllowanceParametersInput,
     read_contract_callback: Function,
 ) -> Result<JsValue, JsValue> {
-    let params: AllowanceParameters = from_json_value("params", params.into_value()?)?;
+    let params: AllowanceParams = from_json_value("params", params.into_value()?)?;
     let provider = JsContractReadProvider::new(read_contract_callback);
     let allowance = inner
         .cow_protocol_allowance(&provider, &params)
@@ -590,7 +590,7 @@ async fn trading_post_swap_order_with_eip1271(
     wallet_timeout_ms: Option<u32>,
 ) -> Result<JsValue, JsValue> {
     let owner_address = parse_address("owner", owner)?;
-    let mut params: TradeParameters = from_json_value("params", params.into_value()?)?;
+    let mut params: TradeParams = from_json_value("params", params.into_value()?)?;
     params.owner = Some(owner_address.clone());
     let quote_settings = TradeAdvancedSettings::new().with_quote_request(
         QuoteRequestOverride::new()
@@ -620,8 +620,7 @@ async fn trading_post_swap_order_with_eip1271(
         wallet_timeout_ms,
     )
     .await?;
-    let provider: Arc<dyn Eip1271SignatureProvider> =
-        Arc::new(ResolvedEip1271Provider::new(signature));
+    let provider: Arc<dyn Eip1271Signer> = Arc::new(ResolvedEip1271Provider::new(signature));
     let settings = quote_settings.with_additional_params(
         PostTradeAdditionalParams::new().with_custom_eip1271_signature(provider),
     );
@@ -638,7 +637,7 @@ fn parse_address(field: &'static str, value: String) -> Result<Address, JsValue>
 }
 
 fn default_gas_limit() -> Result<Amount, JsValue> {
-    Amount::new(GAS_LIMIT_DEFAULT.to_string())
+    Amount::new(DEFAULT_GAS_LIMIT.to_string())
         .map_err(|error| WasmError::invalid("gasLimit", error.to_string()).into_js())
 }
 

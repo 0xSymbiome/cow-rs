@@ -2,7 +2,7 @@
 //!
 //! Builds a pre-sign transaction (`pre_sign_transaction`) and on-chain
 //! cancellation call data (`onchain_cancellation_transaction`), then dispatches
-//! an on-chain cancel (`Trading::on_chain_cancel_order`) for both a regular and
+//! an on-chain cancel (`Trading::onchain_cancel_order`) for both a regular and
 //! an EthFlow order, against a transport-mocked orderbook and signer. These are
 //! the smart-contract paths, distinct from the off-chain signed cancellation.
 
@@ -12,7 +12,7 @@ use serde_json::json;
 
 use cow_sdk::core::{HexData, SupportedChainId};
 use cow_sdk::trading::{
-    OrderTraderParameters, Trading, onchain_cancellation_transaction, pre_sign_transaction,
+    OrderTraderParams, Trading, onchain_cancellation_transaction, pre_sign_transaction,
 };
 
 use cow_sdk::testing::{MockOrderbook, MockSigner};
@@ -51,7 +51,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let chain_id = SupportedChainId::Sepolia;
     let preview_signer = MockSigner::builder().address(sample_owner()).build();
     let order_uid = sample_order_uid();
-    let params = OrderTraderParameters::new(order_uid).with_chain_id(chain_id);
+    let params = OrderTraderParams::new(order_uid).with_chain_id(chain_id);
 
     // Build call data only (no dispatch): a pre-sign transaction, plus cancellation
     // call data for a regular order and an EthFlow order — these take different routes.
@@ -72,7 +72,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let regular_signer = MockSigner::builder().address(sample_owner()).build();
     let regular_sdk = trading_sdk(regular_orderbook);
     let regular_hash = regular_sdk
-        .on_chain_cancel_order(&params, &regular_signer)
+        .onchain_cancel_order(&params, &regular_signer)
         .await?;
     let regular_sent = regular_signer
         .recorded()
@@ -89,7 +89,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let ethflow_signer = MockSigner::builder().address(sample_owner()).build();
     let ethflow_sdk = trading_sdk(ethflow_orderbook);
     let ethflow_hash = ethflow_sdk
-        .on_chain_cancel_order(&params, &ethflow_signer)
+        .onchain_cancel_order(&params, &ethflow_signer)
         .await?;
     let ethflow_sent = ethflow_signer
         .recorded()
@@ -99,7 +99,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .expect("ethflow cancellation should send a transaction");
 
     let report = json!({
-        "surface": "cow-sdk::trading::pre_sign_transaction + cow-sdk::Trading::on_chain_cancel_order",
+        "surface": "cow-sdk::trading::pre_sign_transaction + cow-sdk::Trading::onchain_cancel_order",
         "mode": "simulated-transport",
         "preSignTransaction": {
             "orderUid": order_uid.to_hex_string(),

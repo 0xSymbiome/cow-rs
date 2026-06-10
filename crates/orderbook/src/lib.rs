@@ -142,7 +142,7 @@ pub trait OrderbookClient: Send + Sync {
     /// # Errors
     ///
     /// Returns the underlying orderbook error from the implementation.
-    async fn send_signed_order_cancellations(
+    async fn send_cancellations(
         &self,
         request: &types::OrderCancellations,
     ) -> Result<(), error::OrderbookError>;
@@ -195,11 +195,11 @@ impl OrderbookClient for api::OrderbookApi {
         Self::send_order(self, request).await
     }
 
-    async fn send_signed_order_cancellations(
+    async fn send_cancellations(
         &self,
         request: &types::OrderCancellations,
     ) -> Result<(), error::OrderbookError> {
-        Self::send_signed_order_cancellations(self, request).await
+        Self::send_cancellations(self, request).await
     }
 
     async fn order(&self, order_uid: &CoreOrderUid) -> Result<types::Order, error::OrderbookError> {
@@ -226,14 +226,14 @@ pub use transform::{calculate_total_fee, transform_order, transform_orders};
 pub use types::{
     Address, Amount, ApiBaseUrls, ApiContext, ApiContextOverride, AppDataHash, AppDataObject,
     AuctionPrices, BuyTokenDestination, CompetitionAuction, CompetitionOrderStatus,
-    CompetitionOrderStatusKind, CowEnv, ENVS_LIST, EVM_NATIVE_CURRENCY_ADDRESS, EcdsaSigningScheme,
+    CompetitionOrderStatusKind, CowEnv, EVM_NATIVE_CURRENCY_ADDRESS, EcdsaSigningScheme,
     EnvBaseUrlOverrides, EthflowData, ExecutedAmounts, ExecutedProtocolFee, ExternalHostPolicy,
-    FeePolicy, GetOrdersRequest, GetTradesRequest, HostPolicyError, InteractionData,
-    NativePriceResponse, OnchainOrderData, Order, OrderCancellations, OrderClass, OrderCreation,
-    OrderInteractions, OrderKind, OrderQuoteRequest, OrderQuoteResponse, OrderQuoteSide,
-    OrderStatus, OrderUid, PriceQuality, QuoteAmountsAndCosts, QuoteAppData, QuoteData,
-    QuoteSigningScheme, QuoteValidity, SellAmount, SellTokenSource, SigningScheme,
-    SigningSchemeNotEcdsa, SolverCompetitionOrder, SolverCompetitionResponse, SolverExecution,
-    SolverSettlement, StoredOrderQuote, SupportedChainId, TotalSurplus, Trade, TransactionHash,
+    FeePolicy, HostPolicyError, InteractionData, NativePriceResponse, OnchainOrderData, Order,
+    OrderCancellations, OrderClass, OrderCreation, OrderInteractions, OrderKind, OrderQuoteRequest,
+    OrderQuoteResponse, OrderQuoteSide, OrderStatus, OrderUid, OrdersQuery, PriceQuality,
+    QuoteAmountsAndCosts, QuoteAppData, QuoteData, QuoteSigningScheme, QuoteValidity, SellAmount,
+    SellTokenSource, SigningScheme, SigningSchemeNotEcdsa, SolverCompetitionOrder,
+    SolverCompetitionResponse, SolverExecution, SolverSettlement, StoredOrderQuote,
+    SupportedChainId, TotalSurplus, Trade, TradesQuery, TransactionHash,
     default_verification_gas_limit,
 };

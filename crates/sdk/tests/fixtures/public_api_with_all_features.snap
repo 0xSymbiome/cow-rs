@@ -10,10 +10,5 @@ modules:
 - trading
 root exports:
 - ErrorClass
-- HttpTransport
-- InMemoryEip1271VerificationCache
-- NoopEip1271VerificationCache
 - RegistryError
 - CowError
-- TransportError
-- TransportErrorClass

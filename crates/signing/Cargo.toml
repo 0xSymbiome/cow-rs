@@ -23,10 +23,10 @@ workspace = true
 [features]
 default = []
 # Opt-in batteries-included cache. Enables the capacity-bounded,
-# TTL-respecting `InMemoryEip1271VerificationCache` and its `Clock`
+# TTL-respecting `InMemoryEip1271Cache` and its `Clock`
 # machinery, and is the only reason the signing crate pulls `parking_lot`
-# (and, on wasm32, `web-time`). The `Eip1271VerificationCache` trait and the
-# dependency-free `NoopEip1271VerificationCache` are always available.
+# (and, on wasm32, `web-time`). The `Eip1271Cache` trait and the
+# dependency-free `NoopEip1271Cache` are always available.
 in-memory-cache = ["dep:parking_lot", "dep:web-time"]
 tracing = ["dep:tracing", "cow-sdk-core/tracing", "cow-sdk-contracts/tracing"]
 

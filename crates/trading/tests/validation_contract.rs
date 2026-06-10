@@ -20,8 +20,7 @@ use cow_sdk_core::{
 };
 use cow_sdk_test_utils::builders::address;
 use cow_sdk_trading::{
-    AmountSide, ClientRejection, LimitTradeParameters, OrderBoundsValidator, TradeParameters,
-    TradingError,
+    AmountSide, ClientRejection, LimitTradeParams, OrderBoundsValidator, TradeParams, TradingError,
 };
 
 const FROM: &str = "0x1111111111111111111111111111111111111111";
@@ -292,7 +291,7 @@ fn owner_mismatch_lifts_through_trading_error_client_rejected() {
 #[test]
 fn trade_parameters_validate_enforces_builder_subset() {
     let native = Address::new(EVM_NATIVE_CURRENCY_ADDRESS).unwrap();
-    let params = TradeParameters::new(
+    let params = TradeParams::new(
         OrderKind::Sell,
         native,
         address(BUY_TOKEN),
@@ -306,7 +305,7 @@ fn trade_parameters_validate_enforces_builder_subset() {
 
 #[test]
 fn trade_parameters_validate_rejects_zero_amount() {
-    let params = TradeParameters::new(
+    let params = TradeParams::new(
         OrderKind::Sell,
         address(SELL_TOKEN),
         address(BUY_TOKEN),
@@ -325,7 +324,7 @@ fn trade_parameters_validate_rejects_zero_amount() {
 
 #[test]
 fn limit_trade_parameters_validate_rejects_zero_buy_amount() {
-    let params = LimitTradeParameters::new(
+    let params = LimitTradeParams::new(
         OrderKind::Sell,
         address(SELL_TOKEN),
         address(BUY_TOKEN),

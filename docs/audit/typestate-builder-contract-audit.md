@@ -71,7 +71,7 @@ the trading-sdk runtime prerequisites audit.
 `OrderbookApiBuilder<ChainState, EnvironmentState, TransportState>`
 lives at `crates/orderbook/src/builder.rs`. Each marker transitions
 from `…Unset` to `…Set` through the corresponding fluent setter
-(`.chain(...)`, `.environment(...)`, `.transport(...)`). The `.build()`
+(`.chain(...)`, `.env(...)`, `.transport(...)`). The `.build()`
 method is implemented only on the fully-set state; attempting to
 call it before every marker is set is a compile error. Three `trybuild`
 compile-fail witnesses under `crates/orderbook/tests/ui/` pin this rejection:
@@ -88,7 +88,7 @@ prefix is reserved for the owned-value setters of parameter and
 configuration types whose bare noun is already an accessor. The `.base_url(...)` convenience —
 which reuses the environment already carried by the `EnvSet` marker — is
 implemented only on the `EnvSet` state, so calling it before
-`.environment(...)` is a compile error rather than a runtime panic. The
+`.env(...)` is a compile error rather than a runtime panic. The
 `.build()` method returns a `Result` so explicit endpoint overrides can
 fail closed before a client is constructed.
 
@@ -205,7 +205,7 @@ through the typestate builder.
 
 `cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, and `cow-sdk-alloy` each
 use sealed marker states to make required construction inputs explicit. The
-umbrella `AlloyClientBuilder` combines the native HTTP endpoint, private key,
+umbrella `ClientBuilder` combines the native HTTP endpoint, private key,
 and chain id into a single terminal `.build()` path. Compile-fail witnesses
 cover incomplete states on the public client and signer handle surfaces, while
 runtime tests assert chain coherence and non-broadcasting synchronous signing

@@ -29,6 +29,9 @@ pub enum CowEnv {
 }
 
 impl CowEnv {
+    /// All supported `CoW` API environments.
+    pub const ALL: [Self; 2] = [Self::Prod, Self::Staging];
+
     /// Returns the stable lowercase environment identifier.
     #[must_use]
     pub const fn as_str(self) -> &'static str {

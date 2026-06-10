@@ -3,7 +3,7 @@
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 
-/// Explicit raw GraphQL request input for [`crate::SubgraphApi::run_query`].
+/// Explicit raw GraphQL request input for [`crate::SubgraphApi::query`].
 ///
 /// This request shape keeps the document, variables, and optional operation
 /// name visible to callers instead of inferring them from the GraphQL string.

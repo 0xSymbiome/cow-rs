@@ -2,7 +2,7 @@
 
 Status: Current
 Last reviewed: 2026-05-28
-Owning surface: `cow-sdk-contracts` `Eip1271VerificationCache` trait, the always-available `NoopEip1271VerificationCache`, and the `InMemoryEip1271VerificationCache` implementation shipped from `cow-sdk-signing::cache` behind the opt-in `in-memory-cache` feature
+Owning surface: `cow-sdk-contracts` `Eip1271Cache` trait, the always-available `NoopEip1271Cache`, and the `InMemoryEip1271Cache` implementation shipped from `cow-sdk-signing::cache` behind the opt-in `in-memory-cache` feature
 Refresh trigger: Changes to the trait signature, the cache key, the caching policy (what is recorded and what is not), the `verify_eip1271_signature_cached` call shape, the verification tracing fields, the default TTL or capacity on the in-memory implementation, the clock injection seam, the platform time-source selection, the `in-memory-cache` feature gate, or the thread-safety posture; a new canonical implementation that ships in the workspace
 Related docs:
 - [ADR 0014](../adr/0014-eip1271-verification-cache.md)
@@ -15,10 +15,10 @@ Related docs:
 
 This audit covers:
 
-- the `Eip1271VerificationCache` trait defined in `cow-sdk-contracts`
+- the `Eip1271Cache` trait defined in `cow-sdk-contracts`
 - the trait re-export from `cow-sdk-signing::cache`
-- the always-available `NoopEip1271VerificationCache` and the
-  feature-gated `InMemoryEip1271VerificationCache` implementation
+- the always-available `NoopEip1271Cache` and the
+  feature-gated `InMemoryEip1271Cache` implementation
 - the cache key (the full `(verifier, digest, signature_hash)` probe
   identity) and the positive-only recording policy on
   `verify_eip1271_signature_cached`
@@ -44,17 +44,17 @@ covered by its own contract).
 | EOA miss posture | Verifiers with no contract code return a typed error and do not record anything | Conforms |
 | Pre-interaction scope | The verification helpers document that they do not simulate order pre-interactions before checking EIP-1271 signatures | Conforms |
 | Verification telemetry | `verify_eip1271_signature_cached` emits `verify.eip1271` tracing with cache, RPC, and final magic-value outcome fields | Conforms |
-| Shipped implementations | `NoopEip1271VerificationCache` (zero-sized, always miss, always available) and `InMemoryEip1271VerificationCache` (bounded capacity, TTL-expiring, behind the `in-memory-cache` feature) | Conforms |
-| Default availability | The default build performs no memoized verification; the only in-tree caller passes `NoopEip1271VerificationCache`, and the in-memory implementation is compiled only when `in-memory-cache` is enabled | Conforms |
-| Platform time source | `InMemoryEip1271VerificationCache` defaults to wall-clock `Instant::now`, accepts an injected clock for deterministic TTL checks, and uses `web_time::Instant` on `wasm32` | Conforms |
+| Shipped implementations | `NoopEip1271Cache` (zero-sized, always miss, always available) and `InMemoryEip1271Cache` (bounded capacity, TTL-expiring, behind the `in-memory-cache` feature) | Conforms |
+| Default availability | The default build performs no memoized verification; the only in-tree caller passes `NoopEip1271Cache`, and the in-memory implementation is compiled only when `in-memory-cache` is enabled | Conforms |
+| Platform time source | `InMemoryEip1271Cache` defaults to wall-clock `Instant::now`, accepts an injected clock for deterministic TTL checks, and uses `web_time::Instant` on `wasm32` | Conforms |
 | TTL boundary | A 5-minute TTL cache hits at 4m59s999ms and misses at 5m1ms under controlled time on native and wasm32 targets | Conforms |
-| Thread-safety | `InMemoryEip1271VerificationCache` sustains concurrent records against the same key space without losing writes | Conforms |
+| Thread-safety | `InMemoryEip1271Cache` sustains concurrent records against the same key space without losing writes | Conforms |
 
 ## Current Contract
 
 ### Trait Definition
 
-`Eip1271VerificationCache` lives at `crates/contracts/src/verify.rs`
+`Eip1271Cache` lives at `crates/contracts/src/verify.rs`
 co-located with its sole consumer `verify_eip1271_signature_cached` so
 no reverse dependency on the signing crate is introduced. The trait is
 re-exported from `crates/signing/src/cache.rs` where the default
@@ -84,7 +84,7 @@ one signature is never returned for a different signature on the same
 
 ### Positive-Only Recording Policy
 
-`verify_eip1271_signature_cached` takes `&impl Eip1271VerificationCache`
+`verify_eip1271_signature_cached` takes `&impl Eip1271Cache`
 as a required parameter. On a `contains_valid` hit the function returns
 `Ok(())` without a chain call. On a miss it dispatches the on-chain
 `isValidSignature` call; on `Ok(())` it records the probe and on every
@@ -118,13 +118,13 @@ error is reported as `skip` and is never recorded.
 
 ### Shipped Implementations
 
-`NoopEip1271VerificationCache` is a zero-sized `Default + Clone + Copy`
+`NoopEip1271Cache` is a zero-sized `Default + Clone + Copy`
 unit struct and is always available without any feature. `contains_valid`
 returns `false`, `record_valid` is a no-op. Consumers that do not want
 caching pass a reference to it and pay zero allocation or synchronization
 overhead. It carries no dependencies.
 
-`InMemoryEip1271VerificationCache` is a bounded in-memory cache backed by
+`InMemoryEip1271Cache` is a bounded in-memory cache backed by
 `parking_lot::RwLock<HashMap<(Address, [u8; 32], [u8; 32]), Instant>>`
 with a default 5-minute TTL and a default 1024-entry capacity. It is
 compiled only when the `in-memory-cache` feature is enabled, which is the
@@ -143,7 +143,7 @@ tests or embedders that centralize time elsewhere.
 
 Caching is off by default. `verify_eip1271_signature_cached` takes the
 cache as a required argument, the only in-tree caller passes
-`NoopEip1271VerificationCache`, and no shipped code path constructs an
+`NoopEip1271Cache`, and no shipped code path constructs an
 in-memory cache. The in-memory implementation and its locking and time
 dependencies are excluded from the default build and from the default
 wasm bundle; enabling `in-memory-cache` is an explicit, additive opt-in.

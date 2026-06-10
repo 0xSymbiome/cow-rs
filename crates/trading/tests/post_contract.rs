@@ -22,7 +22,7 @@ use cow_sdk_core::{
     SellTokenSource,
 };
 
-fn protocol_options_from_trader(trader: &cow_sdk_trading::TraderParameters) -> ProtocolOptions {
+fn protocol_options_from_trader(trader: &cow_sdk_trading::TraderParams) -> ProtocolOptions {
     let mut options = ProtocolOptions::new();
     if let Some(env) = trader.env {
         options = options.with_env(env);
@@ -36,10 +36,9 @@ fn protocol_options_from_trader(trader: &cow_sdk_trading::TraderParameters) -> P
     options
 }
 use cow_sdk_trading::{
-    LimitTradeParameters, LimitTradeParametersFromQuote, PartnerFeePolicy,
-    PostTradeAdditionalParams, QuoteRequestOverride, TradeAdvancedSettings, TradingError,
-    build_app_data, post_limit_order, post_sell_native_currency_order, post_swap_order,
-    post_swap_order_from_quote, quote_results,
+    LimitTradeParams, LimitTradeParamsFromQuote, PartnerFeePolicy, PostTradeAdditionalParams,
+    QuoteRequestOverride, TradeAdvancedSettings, TradingError, build_app_data, post_limit_order,
+    post_sell_native_currency_order, post_swap_order, post_swap_order_from_quote, quote_results,
 };
 
 use crate::common::{
@@ -263,7 +262,7 @@ async fn native_sell_post_flow_uploads_app_data_sends_transaction_and_supports_c
     let app_data = build_app_data(&test_app_code(), 50, "market", None, None)
         .await
         .expect("app data should build");
-    let mut params: LimitTradeParameters = sample_limit_parameters(OrderKind::Sell);
+    let mut params: LimitTradeParams = sample_limit_parameters(OrderKind::Sell);
     params.sell_token = address(EVM_NATIVE_CURRENCY_ADDRESS);
     params.quote_id = Some(3);
     params.slippage_bps = Some(50);
@@ -275,8 +274,8 @@ async fn native_sell_post_flow_uploads_app_data_sends_transaction_and_supports_c
         .with_network_costs_amount(*sell_quote_response().quote.network_cost_amount())
         .with_custom_eip1271_signature(Arc::new(MockEip1271Provider));
 
-    let from_quote = LimitTradeParametersFromQuote::try_from_limit(params)
-        .expect("test params carry a quote id");
+    let from_quote =
+        LimitTradeParamsFromQuote::try_from_limit(params).expect("test params carry a quote id");
     let result = post_sell_native_currency_order(
         &orderbook,
         &app_data,
@@ -307,7 +306,7 @@ async fn native_sell_posting_requires_quote_id_before_signing_or_submission() {
     let trader = sample_trader_parameters();
     let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
     let signer = CountingSigner::new(address(OWNER));
-    let mut params: LimitTradeParameters = sample_limit_parameters(OrderKind::Sell);
+    let mut params: LimitTradeParams = sample_limit_parameters(OrderKind::Sell);
     params.sell_token = address(EVM_NATIVE_CURRENCY_ADDRESS);
     params.quote_id = None;
 
@@ -569,7 +568,7 @@ async fn async_order_level_eip1271_verification_is_explicit_and_reuses_contract_
         &provider,
         &order_to_sign,
         trader.chain_id,
-        &cow_sdk_trading::types::Eip1271VerificationParameters::new(
+        &cow_sdk_trading::types::Eip1271VerificationParams::new(
             verifier,
             HexData::new("0x7e57c0de").unwrap(),
         ),
@@ -609,7 +608,7 @@ async fn order_level_eip1271_verification_surfaces_contract_failures_explicitly(
         &provider,
         &order_to_sign,
         trader.chain_id,
-        &cow_sdk_trading::types::Eip1271VerificationParameters::new(
+        &cow_sdk_trading::types::Eip1271VerificationParams::new(
             verifier,
             HexData::new("0x7e57c0de").unwrap(),
         ),
@@ -645,8 +644,8 @@ fn ethflow_additional_params(
         .with_custom_eip1271_signature(Arc::new(MockEip1271Provider))
 }
 
-fn ethflow_params_with_receiver(receiver: Option<cow_sdk_core::Address>) -> LimitTradeParameters {
-    let mut params: LimitTradeParameters = sample_limit_parameters(OrderKind::Sell);
+fn ethflow_params_with_receiver(receiver: Option<cow_sdk_core::Address>) -> LimitTradeParams {
+    let mut params: LimitTradeParams = sample_limit_parameters(OrderKind::Sell);
     params.sell_token = address(EVM_NATIVE_CURRENCY_ADDRESS);
     params.quote_id = Some(3);
     params.slippage_bps = Some(50);
@@ -668,8 +667,8 @@ async fn ethflow_validation_uses_signer_owner_not_receiver() {
     let params = ethflow_params_with_receiver(Some(address(ALT_RECEIVER)));
     let additional = ethflow_additional_params(&sell_quote_response());
 
-    let from_quote = LimitTradeParametersFromQuote::try_from_limit(params)
-        .expect("test params carry a quote id");
+    let from_quote =
+        LimitTradeParamsFromQuote::try_from_limit(params).expect("test params carry a quote id");
     let result = post_sell_native_currency_order(
         &orderbook,
         &app_data,
@@ -705,8 +704,8 @@ async fn ethflow_validation_rejects_mismatched_signer() {
     let params = ethflow_params_with_receiver(Some(address(ALT_RECEIVER)));
     let additional = ethflow_additional_params(&sell_quote_response());
 
-    let from_quote = LimitTradeParametersFromQuote::try_from_limit(params)
-        .expect("test params carry a quote id");
+    let from_quote =
+        LimitTradeParamsFromQuote::try_from_limit(params).expect("test params carry a quote id");
     let error = post_sell_native_currency_order(
         &orderbook,
         &app_data,
@@ -755,8 +754,8 @@ async fn ethflow_validation_accepts_matched_signer_with_default_receiver() {
     let params = ethflow_params_with_receiver(None);
     let additional = ethflow_additional_params(&sell_quote_response());
 
-    let from_quote = LimitTradeParametersFromQuote::try_from_limit(params)
-        .expect("test params carry a quote id");
+    let from_quote =
+        LimitTradeParamsFromQuote::try_from_limit(params).expect("test params carry a quote id");
     let result = post_sell_native_currency_order(
         &orderbook,
         &app_data,

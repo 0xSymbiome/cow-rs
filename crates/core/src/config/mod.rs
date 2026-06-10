@@ -10,8 +10,6 @@ mod hosts;
 mod http;
 mod protocol;
 
-/// All supported `CoW` API environments.
-pub const ENVS_LIST: [CowEnv; 2] = [CowEnv::Prod, CowEnv::Staging];
 /// Sentinel address used by `CoW` Protocol to represent the native chain asset.
 ///
 /// Stored in the canonical lowercase 0x-prefixed wire form per PROP-WB-004 so it

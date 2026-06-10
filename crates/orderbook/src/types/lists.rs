@@ -5,7 +5,7 @@ use super::{Address, Amount, OrderUid, TransactionHash, order::ExecutedProtocolF
 /// Request DTO for listing an account's orders.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct GetOrdersRequest {
+pub struct OrdersQuery {
     /// Account owner whose orders should be listed.
     pub owner: Address,
     /// Pagination offset.
@@ -20,7 +20,7 @@ const fn default_orders_limit() -> u32 {
     1_000
 }
 
-impl GetOrdersRequest {
+impl OrdersQuery {
     /// Creates an order-list request with the upstream default pagination.
     #[must_use]
     pub const fn new(owner: Address) -> Self {
@@ -49,7 +49,7 @@ impl GetOrdersRequest {
 /// Request DTO for listing trades by owner or order UID.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct GetTradesRequest {
+pub struct TradesQuery {
     /// Optional owner filter.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub owner: Option<Address>,
@@ -68,7 +68,7 @@ const fn default_trades_limit() -> u32 {
     10
 }
 
-impl GetTradesRequest {
+impl TradesQuery {
     /// Creates a trades request with raw owner and order-UID filter slots.
     ///
     /// Prefer [`by_owner`](Self::by_owner) or

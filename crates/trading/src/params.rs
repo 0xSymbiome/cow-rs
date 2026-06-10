@@ -12,7 +12,7 @@ use cow_sdk_app_data::{AppDataError, PartnerFee};
 use cow_sdk_core::{Address, Amount, EVM_NATIVE_CURRENCY_ADDRESS, OrderKind, ValidationReason};
 
 use crate::{
-    LimitTradeParameters, TradeParameters,
+    LimitTradeParams, TradeParams,
     validation::{AmountSide, ClientRejection},
 };
 
@@ -72,7 +72,7 @@ fn validate_partner_fee(partner_fee: Option<&PartnerFee>) -> Result<(), ClientRe
     })
 }
 
-impl TradeParameters {
+impl TradeParams {
     /// Validates the builder-level subset of the reviewed protocol-invariant
     /// matrix that can be enforced without a full `OrderCreation`.
     ///
@@ -96,7 +96,7 @@ impl TradeParameters {
     }
 }
 
-impl LimitTradeParameters {
+impl LimitTradeParams {
     /// Validates the builder-level subset of the reviewed protocol-invariant
     /// matrix that can be enforced without a full `OrderCreation`.
     ///

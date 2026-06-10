@@ -1,6 +1,6 @@
-//! Custom slippage suggestion through the public `SlippageSuggestionProvider` seam.
+//! Custom slippage suggestion through the public `SlippageSuggester` seam.
 //!
-//! Implements `SlippageSuggestionProvider` and wires it through
+//! Implements `SlippageSuggester` and wires it through
 //! `TradeAdvancedSettings::with_slippage_suggester`, then quotes with
 //! `Trading::quote_results` against the `cow_sdk::testing` doubles. The report
 //! contrasts the SDK's default suggestion with the consumer-supplied one to show
@@ -15,7 +15,7 @@ use serde_json::json;
 
 use cow_sdk::core::SupportedChainId;
 use cow_sdk::trading::{
-    SlippageSuggestionProvider, SlippageToleranceRequest, SlippageToleranceResponse,
+    SlippageSuggester, SlippageToleranceRequest, SlippageToleranceResponse,
     TradeAdvancedSettings, Trading, TradingError,
 };
 
@@ -31,7 +31,7 @@ struct StaticSlippageProvider {
 
 #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 #[cfg_attr(not(target_arch = "wasm32"), async_trait)]
-impl SlippageSuggestionProvider for StaticSlippageProvider {
+impl SlippageSuggester for StaticSlippageProvider {
     async fn slippage_suggestion(
         &self,
         _request: SlippageToleranceRequest,
@@ -65,7 +65,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .await?;
 
     let report = json!({
-        "surface": "cow-sdk::trading::SlippageSuggestionProvider",
+        "surface": "cow-sdk::trading::SlippageSuggester",
         "mode": "simulated-transport",
         "providerSuggestionBps": 200,
         "defaultSuggestedSlippageBps": baseline.suggested_slippage_bps,

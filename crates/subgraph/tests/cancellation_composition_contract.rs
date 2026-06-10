@@ -49,7 +49,7 @@ const TESTED_METHODS: &[CancellationCase] = &[
         invoke: invoke_get_last_hours_volume,
     },
     CancellationCase {
-        method_name: "run_query",
+        method_name: "query",
         invoke: invoke_run_query,
     },
 ];
@@ -196,7 +196,7 @@ fn invoke_get_last_hours_volume(api: &SubgraphApi) -> CaseFuture<'_> {
 
 fn invoke_run_query(api: &SubgraphApi) -> CaseFuture<'_> {
     Box::pin(async move {
-        api.run_query::<Value, _>(
+        api.query::<Value, _>(
             SubgraphQueryRequest::new("query CancellationProbe { totals { orders } }")
                 .with_operation_name("CancellationProbe"),
         )

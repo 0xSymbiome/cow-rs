@@ -4,8 +4,8 @@ use std::{cell::RefCell, fmt, rc::Rc, sync::Mutex};
 
 use alloy_sol_types::SolCall;
 use cow_sdk_contracts::{
-    ContractsError, Eip1271SignatureData, Eip1271VerificationCache, Eip1271VerificationRequest,
-    IERC1271, RecoverableSignature, Signature, SigningScheme, decode_eip1271_signature_data,
+    ContractsError, Eip1271Cache, Eip1271SignatureData, Eip1271VerificationRequest, IERC1271,
+    RecoverableSignature, Signature, SigningScheme, decode_eip1271_signature_data,
     decode_signing_scheme, encode_eip1271_signature_data, verify_eip1271_signature,
     verify_eip1271_signature_cached,
 };
@@ -19,7 +19,7 @@ use sha3::{Digest, Keccak256};
 #[derive(Default)]
 struct NoCache;
 
-impl Eip1271VerificationCache for NoCache {
+impl Eip1271Cache for NoCache {
     fn contains_valid(
         &self,
         _verifier: Address,
@@ -53,7 +53,7 @@ impl RecordingCache {
     }
 }
 
-impl Eip1271VerificationCache for RecordingCache {
+impl Eip1271Cache for RecordingCache {
     fn contains_valid(
         &self,
         _verifier: Address,

@@ -292,7 +292,7 @@ async fn run_query_supports_variableized_custom_queries() {
         .mount(&server)
         .await;
 
-    let response: TokensByVolumeResponse = api.run_query(request).await.unwrap();
+    let response: TokensByVolumeResponse = api.query(request).await.unwrap();
     let request = only_request(&server).await;
 
     assert_graphql_request(
@@ -326,7 +326,7 @@ async fn run_query_supports_explicit_operation_name_for_multi_operation_document
         .mount(&server)
         .await;
 
-    let response: TokensByVolumeResponse = api.run_query(request).await.unwrap();
+    let response: TokensByVolumeResponse = api.query(request).await.unwrap();
     let request = only_request(&server).await;
 
     assert_graphql_request(&request, document, Some("TokensByVolume"), None);
@@ -353,7 +353,7 @@ async fn multi_operation_document_without_operation_name_surfaces_typed_graphql_
         .await;
 
     let error = api
-        .run_query::<Value, _>(document)
+        .query::<Value, _>(document)
         .await
         .expect_err("multi-operation documents without operationName must fail explicitly");
     let request = only_request(&server).await;
@@ -406,7 +406,7 @@ async fn run_query_accepts_anonymous_documents_without_operation_name() {
         .mount(&server)
         .await;
 
-    let response: cow_sdk_subgraph::TotalsResponse = api.run_query(query).await.unwrap();
+    let response: cow_sdk_subgraph::TotalsResponse = api.query(query).await.unwrap();
     let request = only_request(&server).await;
 
     assert_graphql_request(&request, query, None, None);
@@ -446,7 +446,7 @@ async fn with_config_override_routes_generic_queries_to_the_overridden_chain() {
         .with_config_override(cow_sdk_subgraph::SubgraphConfigOverride::for_chain(
             SupportedChainId::GnosisChain,
         ))
-        .run_query(SubgraphQueryRequest::new(query).with_operation_name("TotalsForAudit"))
+        .query(SubgraphQueryRequest::new(query).with_operation_name("TotalsForAudit"))
         .await
         .expect("chain override should drive generic-query transport resolution");
     let request = only_request(&server).await;
@@ -609,7 +609,7 @@ async fn invalid_graphql_query_surfaces_typed_context() {
         .await;
 
     let error = api
-        .run_query::<Value, _>(SubgraphQueryRequest::new(query).with_operation_name("InvalidQuery"))
+        .query::<Value, _>(SubgraphQueryRequest::new(query).with_operation_name("InvalidQuery"))
         .await
         .unwrap_err();
     let request = only_request(&server).await;
@@ -662,7 +662,7 @@ async fn graphql_error_preserves_variables_in_typed_context() {
         .await;
 
     let error = api
-        .run_query::<Value, _>(request)
+        .query::<Value, _>(request)
         .await
         .expect_err("GraphQL failures should preserve request variables");
     let captured_request = only_request(&server).await;
@@ -746,9 +746,7 @@ async fn non_success_status_surfaces_http_status_error() {
         .await;
 
     let error = api
-        .run_query::<Value, _>(
-            SubgraphQueryRequest::new(query).with_operation_name("TokensByVolume"),
-        )
+        .query::<Value, _>(SubgraphQueryRequest::new(query).with_operation_name("TokensByVolume"))
         .await
         .expect_err("http failure should surface typed status context");
 
@@ -791,7 +789,7 @@ async fn missing_data_surfaces_typed_missing_data_error_for_generic_queries() {
         .await;
 
     let error = api
-        .run_query::<Value, _>(request)
+        .query::<Value, _>(request)
         .await
         .expect_err("missing data should fail with typed context");
 
@@ -837,9 +835,7 @@ async fn transport_failures_surface_typed_context() {
     let query = "query TokensByVolume { tokens(first: 1) { symbol } }";
 
     let error = api
-        .run_query::<Value, _>(
-            SubgraphQueryRequest::new(query).with_operation_name("TokensByVolume"),
-        )
+        .query::<Value, _>(SubgraphQueryRequest::new(query).with_operation_name("TokensByVolume"))
         .await
         .expect_err("connection failure should surface typed transport context");
 
@@ -1125,7 +1121,7 @@ mod recording_transport {
         let query = "query TokensByVolume { tokens(first: 1) { symbol } }";
 
         let response: Value = api
-            .run_query(SubgraphQueryRequest::new(query).with_operation_name("TokensByVolume"))
+            .query(SubgraphQueryRequest::new(query).with_operation_name("TokensByVolume"))
             .await
             .expect("the injected transport must deliver the canned response");
 
@@ -1175,7 +1171,7 @@ mod recording_transport {
         let query = "query TokensByVolume { tokens(first: 1) { symbol } }";
 
         let response: Value = api
-            .run_query(SubgraphQueryRequest::new(query).with_operation_name("TokensByVolume"))
+            .query(SubgraphQueryRequest::new(query).with_operation_name("TokensByVolume"))
             .await
             .expect("a transient status must retry and return the successful response");
 

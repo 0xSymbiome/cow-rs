@@ -27,8 +27,8 @@ use cow_sdk_orderbook::{
     Order, OrderCancellations, OrderCreation, OrderQuoteRequest, OrderQuoteResponse, OrderbookError,
 };
 use cow_sdk_trading::{
-    AllowanceParameters, ApprovalParameters, OrderPostingResult, OrderTraderParameters,
-    OrderbookClient, QuoteResults, Trading, TradingError, TradingOptions,
+    AllowanceParams, ApprovalParams, OrderPostingResult, OrderTraderParams, OrderbookClient,
+    QuoteResults, Trading, TradingError, TradingOptions,
 };
 
 use crate::common::{
@@ -72,11 +72,11 @@ const TESTED_METHODS: &[CancellationCase] = &[
         invoke: invoke_get_order,
     },
     CancellationCase {
-        method_name: "off_chain_cancel_order",
+        method_name: "offchain_cancel_order",
         invoke: invoke_off_chain_cancel_order,
     },
     CancellationCase {
-        method_name: "on_chain_cancel_order",
+        method_name: "onchain_cancel_order",
         invoke: invoke_on_chain_cancel_order,
     },
     CancellationCase {
@@ -246,12 +246,9 @@ impl OrderbookClient for DelayedOrderbook {
         OrderbookClient::send_order(&self.inner, request).await
     }
 
-    async fn send_signed_order_cancellations(
-        &self,
-        request: &OrderCancellations,
-    ) -> Result<(), OrderbookError> {
+    async fn send_cancellations(&self, request: &OrderCancellations) -> Result<(), OrderbookError> {
         self.wait().await;
-        OrderbookClient::send_signed_order_cancellations(&self.inner, request).await
+        OrderbookClient::send_cancellations(&self.inner, request).await
     }
 
     async fn order(&self, order_uid: &OrderUid) -> Result<Order, OrderbookError> {
@@ -484,7 +481,7 @@ fn invoke_off_chain_cancel_order(harness: &TradingHarness) -> CaseFuture<'_> {
     Box::pin(async move {
         harness
             .trading
-            .off_chain_cancel_order(&order_params(), &harness.signer)
+            .offchain_cancel_order(&order_params(), &harness.signer)
             .await
             .map(|_: bool| ())
     })
@@ -494,7 +491,7 @@ fn invoke_on_chain_cancel_order(harness: &TradingHarness) -> CaseFuture<'_> {
     Box::pin(async move {
         harness
             .trading
-            .on_chain_cancel_order(&order_params(), &harness.signer)
+            .onchain_cancel_order(&order_params(), &harness.signer)
             .await
             .map(|_: TransactionHash| ())
     })
@@ -520,20 +517,20 @@ fn invoke_approve_cow_protocol(harness: &TradingHarness) -> CaseFuture<'_> {
     })
 }
 
-fn order_params() -> OrderTraderParameters {
-    OrderTraderParameters::new(order_uid())
+fn order_params() -> OrderTraderParams {
+    OrderTraderParams::new(order_uid())
         .with_chain_id(SupportedChainId::Sepolia)
         .with_env(CowEnv::Prod)
 }
 
-fn allowance_params() -> AllowanceParameters {
-    AllowanceParameters::new(address(COW), address(OWNER))
+fn allowance_params() -> AllowanceParams {
+    AllowanceParams::new(address(COW), address(OWNER))
         .with_chain_id(SupportedChainId::Sepolia)
         .with_env(CowEnv::Prod)
 }
 
-fn approval_params() -> ApprovalParameters {
-    ApprovalParameters::new(
+fn approval_params() -> ApprovalParams {
+    ApprovalParams::new(
         address(COW),
         Amount::new("1000").expect("test approval amount literal must be valid"),
     )

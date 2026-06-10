@@ -79,7 +79,7 @@ wallet; **Surfaced (composed)** — covered by combining exported operations;
 | --- | --- | --- |
 | `quote` | `getQuote` | Surfaced |
 | `send_order` | `sendOrder` / `sendOrderCreation` | Surfaced |
-| `send_signed_order_cancellations` | `cancelOrders` | Surfaced |
+| `send_cancellations` | `cancelOrders` | Surfaced |
 | `order` | `getOrder` | Surfaced |
 | `orders` | `getOrders` / `getOrdersByOwner` | Surfaced |
 | `trades` | `getTrades` | Surfaced |
@@ -92,7 +92,7 @@ wallet; **Surfaced (composed)** — covered by combining exported operations;
 | `tx_orders` | — | Not surfaced (Class 2) |
 | `order_competition_status` | — | Not surfaced (Class 2) |
 | `total_surplus` | — | Not surfaced (Class 2) |
-| `solver_competition_by_auction_id` | — | Not surfaced (Class 2) |
+| `solver_competition` | — | Not surfaced (Class 2) |
 | `solver_competition_by_tx_hash` | — | Not surfaced (Class 2) |
 | `latest_solver_competition` | — | Not surfaced (Class 2) |
 
@@ -110,8 +110,8 @@ wallet; **Surfaced (composed)** — covered by combining exported operations;
 | `quote_results` | `getQuote` (owner supplied explicitly) | Surfaced (alternate shape) |
 | `order` | `OrderBookClient.getOrder` | Surfaced (via orderbook client) |
 | `pre_sign_transaction` | `buildPresignTx` | Surfaced (builder form) |
-| `on_chain_cancel_order` | `buildCancelOrderTx` | Surfaced (builder form) |
-| `off_chain_cancel_order` | `signCancellation*` + `cancelOrders` | Surfaced (composed) |
+| `onchain_cancel_order` | `buildCancelOrderTx` | Surfaced (builder form) |
+| `offchain_cancel_order` | `signCancellation*` + `cancelOrders` | Surfaced (composed) |
 | `approval_transaction` / `approve_cow_protocol` | — | Not surfaced (recorded observation) |
 | `poll_for_receipt` / `submit_and_wait_for_receipt` | — | Not surfaced (Class 1) |
 
@@ -163,7 +163,7 @@ runtime-model boundary. Members:
   `cowprotocol/cow-sdk` `OrderBookApi` (`packages/order-book/src/api.ts`):
   `version`, `order_link`, `order_multi_env`, `tx_orders`,
   `order_competition_status`, `total_surplus`,
-  `solver_competition_by_auction_id`, and
+  `solver_competition`, and
   `solver_competition_by_tx_hash`. `latest_solver_competition` is a
   native convenience read with no direct upstream `OrderBookApi` method.
 - On-chain EIP-1271 signature verification (`verify_eip1271_signature` /
@@ -229,9 +229,9 @@ facade's.
 
 | Concern | Native Rust shape | WASM / TypeScript shape |
 | --- | --- | --- |
-| Client construction | Typestate builder (`OrderbookApi::builder().chain(..).environment(..).transport(..).build()`) | Single typed config object (`new OrderBookClient({ chainId, env?, apiKey?, transport, transportPolicy?, timeoutMs? })`) |
+| Client construction | Typestate builder (`OrderbookApi::builder().chain(..).env(..).transport(..).build()`) | Single typed config object (`new OrderBookClient({ chainId, env?, apiKey?, transport, transportPolicy?, timeoutMs? })`) |
 | Capability injection | Generic over the `Signer` / `Provider` / `HttpTransport` traits | JS callbacks (`TypedDataSignerCallback`, `DigestSignerCallback`, `Eip1193RequestCallback`, `CustomEip1271Callback`, `ContractReadCallback`); transport via `HttpTransportConfig = { kind: "fetch" } \| { kind: "callback"; callback: CowFetchCallback }` |
-| Operation inputs | Typed structs built with constructors and `with_*` (`TradeParameters::new(..).with_slippage_bps(..)`) | Plain input DTO objects with `camelCase` fields (`SwapParametersInput`, `LimitTradeParametersInput`, `OrderQuoteRequestInput`, …) |
+| Operation inputs | Typed structs built with constructors and `with_*` (`TradeParams::new(..).with_slippage_bps(..)`) | Plain input DTO objects with `camelCase` fields (`SwapParametersInput`, `LimitTradeParametersInput`, `OrderQuoteRequestInput`, …) |
 | Operation outputs | Typed value `T` carried by `Result<T, E>` | `WasmEnvelope<T> = { schemaVersion: "v1" \| "__unknown"; value: T }` (exceptions below) |
 | Atomic amounts | `Amount` (`#[repr(transparent)]` over `U256`, decimal-string serde) | `string` |
 | Addresses, UIDs, hashes | `Address`, `OrderUid`, `Hash32`, `AppDataHash`, `HexData` newtypes | `string` (lowercase `0x`-canonical) |
@@ -267,7 +267,7 @@ native type under the uniform transforms above. The principal correspondences:
 | `OrderDto` | `cow_sdk_orderbook::Order` |
 | `OrderQuoteRequestInput` / `OrderQuoteResponseDto` / `QuoteDataDto` | `OrderQuoteRequest` / `OrderQuoteResponse` / `QuoteData` |
 | `TradeDto` | `cow_sdk_orderbook::Trade` |
-| `SwapParametersInput` / `LimitTradeParametersInput` | `cow_sdk_trading::TradeParameters` / `LimitTradeParameters` |
+| `SwapParametersInput` / `LimitTradeParametersInput` | `cow_sdk_trading::TradeParams` / `LimitTradeParams` |
 | `QuoteResultsDto` | `cow_sdk_trading::QuoteResults` |
 | `OrderPostingResultDto` | `cow_sdk_trading::OrderPostingResult` |
 | `TypedDataEnvelopeDto` | `cow_sdk_core::TypedDataPayload` |
@@ -286,11 +286,11 @@ the correspondence, not every field.
 | Operation | Native Rust | WASM / TypeScript |
 | --- | --- | --- |
 | Orderbook quote | `OrderbookApi::quote(&OrderQuoteRequest) -> Result<OrderQuoteResponse, OrderbookError>` | `OrderBookClient.getQuote(request: OrderQuoteRequestInput, options?): Promise<WasmEnvelope<OrderQuoteResponseDto>>` |
-| Owner orders | `orders(&GetOrdersRequest) -> Result<Vec<Order>, _>` (request struct carries owner and pagination) | `getOrders(owner: string, pagination?: PaginationOptions, options?): Promise<WasmEnvelope<OrderDto[]>>` (decomposed arguments) |
+| Owner orders | `orders(&OrdersQuery) -> Result<Vec<Order>, _>` (request struct carries owner and pagination) | `getOrders(owner: string, pagination?: PaginationOptions, options?): Promise<WasmEnvelope<OrderDto[]>>` (decomposed arguments) |
 | Submit order | `send_order(&OrderCreation) -> Result<OrderUid, _>` | `sendOrder(signed: SignedOrderDto, options?): Promise<WasmEnvelope<string>>` (UID as `string`) |
 | Sign order | `sign_order(&OrderData, chain, &S: TypedDataSigner, opts) -> Result<SigningResult, _>` | `signOrderWithTypedDataSigner(input: OrderInput, chainId: number, owner: string, typedDataSigner: TypedDataSignerCallback, options?): Promise<WasmEnvelope<SignedOrderDto>>` |
-| Managed swap | `Trading::post_swap_order(TradeParameters, &S: Signer, opts) -> Result<OrderPostingResult, _>` | `TradingClient.postSwapOrder(params: SwapParametersInput, owner: string, signerCallback: TypedDataSignerCallback, options?): Promise<WasmEnvelope<OrderPostingResultDto>>` |
-| Cancellation success | `send_signed_order_cancellations(&OrderCancellations) -> Result<(), _>` | `cancelOrders(signed: SignedCancellationsInput, options?): Promise<WasmEnvelope<{ cancelled: true }>>` |
+| Managed swap | `Trading::post_swap_order(TradeParams, &S: Signer, opts) -> Result<OrderPostingResult, _>` | `TradingClient.postSwapOrder(params: SwapParametersInput, owner: string, signerCallback: TypedDataSignerCallback, options?): Promise<WasmEnvelope<OrderPostingResultDto>>` |
+| Cancellation success | `send_cancellations(&OrderCancellations) -> Result<(), _>` | `cancelOrders(signed: SignedCancellationsInput, options?): Promise<WasmEnvelope<{ cancelled: true }>>` |
 
 ### Shape divergences to track
 
@@ -305,7 +305,7 @@ Beyond the uniform transforms, these specific differences are worth tracking:
 - **Bare-value helpers.** `domainSeparator`, `supportedChainIds`, and
   `wasmVersion` return values directly, outside the `WasmEnvelope` rule.
 - **Decomposed inputs.** `getOrders` and `getOrdersByOwner` split the native
-  `GetOrdersRequest` into `(owner, pagination?)`; `getTrades` accepts the
+  `OrdersQuery` into `(owner, pagination?)`; `getTrades` accepts the
   combined `TradesQueryInput`, whose exactly-one-of `owner` / `orderUid`
   constraint is a runtime check rather than a type.
 - **Owner is an explicit parameter.** Signing and managed-post exports take
@@ -324,7 +324,7 @@ Beyond the uniform transforms, these specific differences are worth tracking:
   / `quote` terminals compose the already-surfaced quote-sign-post flow. It is a
   native-only ergonomic wrapper: its `Set` / `Unset` typestate cannot cross the
   wasm-bindgen ABI, and the sell/buy transposition safety it retrofits onto the
-  positional `TradeParameters::new` constructor is already provided by the
+  positional `TradeParams::new` constructor is already provided by the
   named-field `SwapParametersInput` DTO. The wasm surface covers the same
   capability through `postSwapOrder`, `postSwapOrderFromQuote`, and `getQuote`,
   so the builder's absence is a shape choice, not a capability gap.

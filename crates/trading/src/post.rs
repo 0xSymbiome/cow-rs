@@ -14,10 +14,10 @@ use crate::types::{
 };
 use crate::validation::OrderBoundsValidator;
 use crate::{
-    LimitTradeParameters, LimitTradeParametersFromQuote, OrderPostingResult, OrderbookClient,
-    QuoteResults, TradeAdvancedSettings, TradeParameters, TraderParameters, TradingAppDataInfo,
-    TradingError, adjust_ethflow_limit_parameters, build_app_data, is_ethflow_order,
-    merge_and_seal_app_data, order_to_sign, params_from_doc, swap_params_to_limit_order_params,
+    LimitTradeParams, LimitTradeParamsFromQuote, OrderPostingResult, OrderbookClient, QuoteResults,
+    TradeAdvancedSettings, TradeParams, TraderParams, TradingAppDataInfo, TradingError,
+    adjust_eth_flow_limit_params, build_app_data, is_eth_flow_order, merge_and_seal_app_data,
+    order_to_sign, params_from_doc, swap_params_to_limit_order_params,
 };
 
 fn build_order_body(
@@ -26,7 +26,7 @@ fn build_order_body(
     scheme: SigningScheme,
     signature: String,
     from: Address,
-    params: &LimitTradeParameters,
+    params: &LimitTradeParams,
 ) -> OrderCreation {
     OrderCreation::from_signed(
         order_to_sign,
@@ -59,9 +59,9 @@ fn build_order_body(
 pub async fn post_cow_protocol_trade<O, S>(
     orderbook: &O,
     app_data: &TradingAppDataInfo,
-    params: &LimitTradeParameters,
+    params: &LimitTradeParams,
     additional_params: &crate::types::PostTradeAdditionalParams,
-    trader: &TraderParameters,
+    trader: &TraderParams,
     signer: &S,
     app_data_signer: Option<Address>,
 ) -> Result<OrderPostingResult, TradingError>
@@ -78,10 +78,10 @@ where
     let canonical_env = orderbook_context.env;
     let mut params = params.clone();
     params.env = Some(canonical_env);
-    let is_ethflow = is_ethflow_order(&params.sell_token);
-    if is_ethflow {
-        let adjusted = adjust_ethflow_limit_parameters(canonical_chain_id, &params);
-        let from_quote = LimitTradeParametersFromQuote::try_from_limit(adjusted)?;
+    let is_eth_flow = is_eth_flow_order(&params.sell_token);
+    if is_eth_flow {
+        let adjusted = adjust_eth_flow_limit_params(canonical_chain_id, &params);
+        let from_quote = LimitTradeParamsFromQuote::try_from_limit(adjusted)?;
         return post_sell_native_currency_order(
             orderbook,
             app_data,
@@ -149,7 +149,7 @@ where
         crate::order::OrderToSignParams {
             chain_id,
             from,
-            is_ethflow: false,
+            is_eth_flow: false,
             network_costs_amount: additional_params.network_costs_amount,
             apply_costs_slippage_and_fees: additional_params
                 .apply_costs_slippage_and_fees
@@ -218,10 +218,10 @@ pub(super) fn current_unix_seconds() -> u64 {
 }
 
 pub(super) fn apply_settings_to_limit_trade_parameters(
-    params: &LimitTradeParameters,
+    params: &LimitTradeParams,
     quote_request: Option<&crate::QuoteRequestOverride>,
     app_data_override: Option<&cow_sdk_app_data::AppDataParams>,
-) -> Result<LimitTradeParameters, TradingError> {
+) -> Result<LimitTradeParams, TradingError> {
     let mut params = params.clone();
 
     apply_app_data_parameter_overrides(
@@ -355,7 +355,7 @@ const fn map_contract_scheme(scheme: SigningSchemeContract) -> Result<SigningSch
 )]
 pub async fn post_swap_order_from_quote<O, S>(
     quote_results: &QuoteResults,
-    trader: &TraderParameters,
+    trader: &TraderParams,
     signer: &S,
     advanced_settings: Option<&TradeAdvancedSettings>,
     orderbook: &O,
@@ -422,8 +422,8 @@ where
 /// Returns an error when app-data generation fails, when signing fails, or when the orderbook
 /// rejects the order submission.
 pub async fn post_limit_order<O, S>(
-    params: &LimitTradeParameters,
-    trader: &TraderParameters,
+    params: &LimitTradeParams,
+    trader: &TraderParams,
     signer: &S,
     advanced_settings: Option<&TradeAdvancedSettings>,
     orderbook: &O,
@@ -506,9 +506,9 @@ where
 pub async fn post_sell_native_currency_order<O, S>(
     orderbook: &O,
     app_data: &TradingAppDataInfo,
-    params: &LimitTradeParametersFromQuote,
+    params: &LimitTradeParamsFromQuote,
     additional_params: &crate::types::PostTradeAdditionalParams,
-    trader: &TraderParameters,
+    trader: &TraderParams,
     signer: &S,
     app_data_signer: Option<Address>,
 ) -> Result<OrderPostingResult, TradingError>
@@ -525,7 +525,7 @@ where
     let canonical_env = orderbook_context.env;
     let mut inner = params.as_limit().clone();
     inner.env = Some(canonical_env);
-    let params = LimitTradeParametersFromQuote::try_from_limit(inner)?;
+    let params = LimitTradeParamsFromQuote::try_from_limit(inner)?;
 
     let tx = crate::eth_flow_transaction(
         &app_data.app_data_keccak256,
@@ -578,8 +578,8 @@ where
 /// Returns an error when quoting fails, when app-data generation or merging fails, when signing
 /// fails, or when the orderbook rejects the order submission.
 pub async fn post_swap_order<O, S>(
-    trade_parameters: &TradeParameters,
-    trader: &TraderParameters,
+    trade_parameters: &TradeParams,
+    trader: &TraderParams,
     signer: &S,
     advanced_settings: Option<&TradeAdvancedSettings>,
     orderbook: &O,
@@ -610,7 +610,7 @@ where
 pub fn eip1271_order_verification_request(
     order_to_sign: &cow_sdk_core::OrderData,
     chain_id: cow_sdk_core::SupportedChainId,
-    verification: &crate::types::Eip1271VerificationParameters,
+    verification: &crate::types::Eip1271VerificationParams,
     options: Option<&ProtocolOptions>,
 ) -> Result<cow_sdk_contracts::Eip1271VerificationRequest, TradingError> {
     let domain = cow_sdk_signing::domain(chain_id, options)?;
@@ -635,11 +635,11 @@ pub fn eip1271_order_verification_request(
 /// missing code, malformed responses, or an invalid EIP-1271 magic value.
 ///
 /// ```no_run
-/// # use cow_sdk_trading::{verify_eip1271_order_signature, Eip1271VerificationParameters};
+/// # use cow_sdk_trading::{verify_eip1271_order_signature, Eip1271VerificationParams};
 /// # use cow_sdk_core::{Address, HexData, OrderData, Provider, SupportedChainId};
 /// # async fn demo<P>(provider: &P, order: &OrderData) -> Result<(), Box<dyn std::error::Error>>
 /// # where P: Provider, P::Error: std::fmt::Display {
-/// let verification = Eip1271VerificationParameters::new(
+/// let verification = Eip1271VerificationParams::new(
 ///     Address::ZERO,              // the smart-account verifier contract
 ///     HexData::new("0x1234")?,    // the EIP-1271 signature payload (illustrative)
 /// );
@@ -652,7 +652,7 @@ pub async fn verify_eip1271_order_signature<P>(
     provider: &P,
     order_to_sign: &cow_sdk_core::OrderData,
     chain_id: cow_sdk_core::SupportedChainId,
-    verification: &crate::types::Eip1271VerificationParameters,
+    verification: &crate::types::Eip1271VerificationParams,
     options: Option<&ProtocolOptions>,
 ) -> Result<(), TradingError>
 where
@@ -664,7 +664,7 @@ where
     let verification = cow_sdk_contracts::verify_eip1271_signature_cached(
         provider,
         &request,
-        &cow_sdk_signing::NoopEip1271VerificationCache,
+        &cow_sdk_signing::NoopEip1271Cache,
     );
     #[cfg(feature = "tracing")]
     let verification = {

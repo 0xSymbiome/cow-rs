@@ -16,7 +16,7 @@ that lets the owner passed to the validator diverge from
 identity for the `AppdataFromMismatch` check on the EthFlow
 path; changes to the EthFlow-aware invocation of the validator
 (the `is_eth_flow: true` skip rule); changes to the
-`LimitTradeParametersFromQuote` newtype invariant or its
+`LimitTradeParamsFromQuote` newtype invariant or its
 EthFlow entry binding.
 Related docs:
 - [ADR 0020](../adr/0020-ethflow-owner-threading.md)

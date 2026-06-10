@@ -11,9 +11,8 @@ use cow_sdk_core::{
     AddressPerChain, Amount, CowEnv, EVM_NATIVE_CURRENCY_ADDRESS, OrderKind, SupportedChainId,
 };
 use cow_sdk_trading::{
-    GAS_LIMIT_DEFAULT, LimitTradeParametersFromQuote, PostTradeAdditionalParams,
-    cancel_order_onchain, eth_flow_transaction, onchain_cancellation_transaction,
-    pre_sign_transaction,
+    DEFAULT_GAS_LIMIT, LimitTradeParamsFromQuote, PostTradeAdditionalParams, eth_flow_transaction,
+    onchain_cancel_order, onchain_cancellation_transaction, pre_sign_transaction,
 };
 
 use crate::common::{
@@ -118,8 +117,8 @@ async fn ethflow_transaction_uses_wrapped_native_value_margin_and_ethflow_overri
         address("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"),
     )]));
 
-    let from_quote = LimitTradeParametersFromQuote::try_from_limit(params)
-        .expect("test params carry a quote id");
+    let from_quote =
+        LimitTradeParamsFromQuote::try_from_limit(params).expect("test params carry a quote id");
     let transaction = eth_flow_transaction(
         &app_data_hash(),
         &from_quote,
@@ -156,7 +155,7 @@ async fn eth_flow_gas_estimate_applies_documented_floor_overhead() {
         params.sell_token = address(EVM_NATIVE_CURRENCY_ADDRESS);
         params.quote_id = Some(3);
 
-        let from_quote = LimitTradeParametersFromQuote::try_from_limit(params)
+        let from_quote = LimitTradeParamsFromQuote::try_from_limit(params)
             .expect("test params carry a quote id");
         let transaction = eth_flow_transaction(
             &app_data_hash(),
@@ -190,8 +189,8 @@ async fn ethflow_transaction_encodes_high_bit_uint256_amounts_as_unsigned_words(
     params.quote_id = Some(3);
     params.valid_to = Some(1_234_567_890);
 
-    let from_quote = LimitTradeParametersFromQuote::try_from_limit(params)
-        .expect("test params carry a quote id");
+    let from_quote =
+        LimitTradeParamsFromQuote::try_from_limit(params).expect("test params carry a quote id");
     let transaction = eth_flow_transaction(
         &app_data_hash(),
         &from_quote,
@@ -231,8 +230,8 @@ async fn ethflow_transaction_sign_extends_negative_quote_id_in_the_encoded_tuple
     params.quote_id = Some(-1);
     params.valid_to = Some(1_234_567_890);
 
-    let from_quote = LimitTradeParametersFromQuote::try_from_limit(params)
-        .expect("test params carry a quote id");
+    let from_quote =
+        LimitTradeParamsFromQuote::try_from_limit(params).expect("test params carry a quote id");
     let transaction = eth_flow_transaction(
         &app_data_hash(),
         &from_quote,
@@ -309,7 +308,7 @@ async fn onchain_cancellation_uses_fallback_gas_when_estimation_fails() {
     .await
     .expect("fallback cancellation should build");
 
-    let expected = GAS_LIMIT_DEFAULT.to_string();
+    let expected = DEFAULT_GAS_LIMIT.to_string();
     assert_eq!(
         tx.gas_limit,
         Some(Amount::new(expected).expect("fallback gas literal must be valid"))
@@ -320,7 +319,7 @@ async fn onchain_cancellation_uses_fallback_gas_when_estimation_fails() {
 async fn cancel_order_onchain_sends_transaction_and_returns_hash() {
     let signer = MockSigner::default();
 
-    let tx_hash = cancel_order_onchain(&signer, SupportedChainId::Sepolia, &regular_order(), None)
+    let tx_hash = onchain_cancel_order(&signer, SupportedChainId::Sepolia, &regular_order(), None)
         .await
         .expect("onchain cancellation should send");
 

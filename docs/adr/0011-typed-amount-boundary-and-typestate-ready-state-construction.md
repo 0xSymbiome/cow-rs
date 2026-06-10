@@ -76,7 +76,7 @@ widening the runtime surface.
   one each. The single canonical `Amount(BigUint)` newtype replaces the
   retired wire-string wrapper, so every amount-adjacent surface carries
   one accessor shape instead of two.
-- Trade-parameter surface: `TradeParameters` and `LimitTradeParameters`
+- Trade-parameter surface: `TradeParams` and `LimitTradeParams`
   carry the protocol-level fields (kind, tokens, amounts, and the
   documented optional overrides) and do not accept token-decimal
   arguments at their `::new` constructors. The wasm input DTOs
@@ -84,21 +84,21 @@ widening the runtime surface.
   same scope. `DecimalAmount` remains the canonical
   typed-amount-boundary home for token decimals across every
   display and user-input flow.
-- Trade-parameter lifecycle: `TradeParameters` is the pre-quote
+- Trade-parameter lifecycle: `TradeParams` is the pre-quote
   request shape carrying a single amount interpreted by `kind`;
-  `LimitTradeParameters` is the post-quote / canonical-submission
+  `LimitTradeParams` is the post-quote / canonical-submission
   shape carrying both `sell_amount` and `buy_amount` plus an
   optional `quote_id`. The lifecycle distinction is enforced
   through nominal typing on every submission and on-chain helper
-  that needs both amounts. `LimitTradeParametersFromQuote` is a
-  real newtype around `LimitTradeParameters` that guarantees a
+  that needs both amounts. `LimitTradeParamsFromQuote` is a
+  real newtype around `LimitTradeParams` that guarantees a
   non-`None` `quote_id` by construction; it is produced exclusively
   by `swap_params_to_limit_order_params` and accepted by the
   `EthFlow` native-currency submission seam and the `EthFlow`
   transaction helper so the quote-identifier requirement is
   enforced at the type system rather than as a runtime check on
   the submission path. The `with_*` setter bodies shared by
-  `TradeParameters` and `LimitTradeParameters` are factored
+  `TradeParams` and `LimitTradeParams` are factored
   through one internal definition that emits inherent methods on
   each public type without altering the public surface.
 - Advanced-settings surface: one `TradeAdvancedSettings` bundle is
@@ -174,7 +174,7 @@ named to match the canonical alloy primitive that backs each newtype.
 
 ## Amendment 2026-05-26: trade-parameter decimals scope
 
-`TradeParameters` and `LimitTradeParameters` carry the protocol-level
+`TradeParams` and `LimitTradeParams` carry the protocol-level
 fields only. The `sell_token_decimals` and `buy_token_decimals`
 fields, the matching positional `u8` arguments on `::new`, and the
 equivalents on the wasm `SwapParametersInput` and
@@ -184,16 +184,16 @@ same change set. `DecimalAmount` remains the canonical
 typed-amount-boundary home for token decimals; the typed-amount
 invariants recorded above are preserved verbatim.
 
-## Amendment 2026-05-27: trade-parameter consolidation and `LimitTradeParametersFromQuote` newtype
+## Amendment 2026-05-27: trade-parameter consolidation and `LimitTradeParamsFromQuote` newtype
 
 The trade-parameter surface consolidates around the lifecycle
-distinction recorded above. `LimitTradeParametersFromQuote` ships
-as a real newtype around `LimitTradeParameters` that guarantees a
+distinction recorded above. `LimitTradeParamsFromQuote` ships
+as a real newtype around `LimitTradeParams` that guarantees a
 non-`None` `quote_id` by construction; the prior transparent type
 alias is removed. The `EthFlow` native-currency submission seam
 (`post_sell_native_currency_order`) and the `EthFlow` transaction
 helper (`eth_flow_transaction`) accept only
-`LimitTradeParametersFromQuote` on their public entries, lifting
+`LimitTradeParamsFromQuote` on their public entries, lifting
 the prior `MissingQuoteId` runtime check on the `EthFlow` path to
 a compile-time guarantee at the public boundary while preserving
 the public diagnostic shape for callers that explicitly attempt
@@ -207,16 +207,16 @@ quote entry. Limit-order callers leave `slippage_suggester` as
 in the same shape as swaps; the field is documented but unused on
 that flow.
 
-The shared `with_*` setter bodies on `TradeParameters` and
-`LimitTradeParameters` continue to exist as inherent methods on
+The shared `with_*` setter bodies on `TradeParams` and
+`LimitTradeParams` continue to exist as inherent methods on
 both public types, with the implementation factored through one
 internal definition that is invoked once per target struct.
 
 ## Amendment 2026-05-28: owner placement
 
 The `owner` field is a per-trade attribution that lives on
-`TradeParameters`, `LimitTradeParameters`, and `OrderTraderParameters`.
-It does not live on `PartialTraderParameters`, on `TraderParameters`,
+`TradeParams`, `LimitTradeParams`, and `OrderTraderParams`.
+It does not live on `PartialTraderParams`, on `TraderParams`,
 or on the `TradingBuilder`. The SDK does not store a default
 owner; the call-level owner is the only owner the SDK observes.
 
@@ -224,16 +224,16 @@ For signer-backed flows (`post_swap_order`,
 `post_swap_order_from_quote`, `post_limit_order`,
 `quote_results`) the signer address resolved through
 `Signer::address` is the implicit fallback when
-`TradeParameters.owner` is `None`. For quote-only flows
+`TradeParams.owner` is `None`. For quote-only flows
 (`quote_only`) the owner must be supplied through
-`TradeParameters.owner` or through
+`TradeParams.owner` or through
 `advanced_settings.quote_request.from`; missing owner surfaces as
 `TradingError::MissingOwner` at the call boundary.
 
 The retired SDK-default-owner surface
-(`TradingBuilder::with_owner`, `PartialTraderParameters::owner`,
-`PartialTraderParameters::with_owner`) was load-bearing for no shipped
-flow because per-call `TradeParameters.owner` won precedence in every
+(`TradingBuilder::with_owner`, `PartialTraderParams::owner`,
+`PartialTraderParams::with_owner`) was load-bearing for no shipped
+flow because per-call `TradeParams.owner` won precedence in every
 observing helper. The removal narrows the public surface without
 changing observable behaviour.
 
@@ -312,7 +312,7 @@ at the decimal-I/O boundary and is never carried on the wire. The wire
 form is unchanged — every amount still serialises to the canonical
 base-10 string defined by the orderbook contract, and the strict-decimal
 fail-closed `Deserialize` boundary recorded in the 2026-05-22 amendment
-is preserved. `TradeParameters::new` and `LimitTradeParameters::new`
+is preserved. `TradeParams::new` and `LimitTradeParams::new`
 still take no token-decimal arguments; the 2026-05-26 trade-parameter
 decimals-scope amendment is preserved verbatim, with the decimal-I/O
 home now the atomic `Amount` rather than the retired `DecimalAmount`.
@@ -331,13 +331,13 @@ type is superseded: `TradingBuilder` exposes a single ready-state terminal pair 
 trading client.
 
 `TradingHelpers` duplicated four methods already on `Trading`
-(`pre_sign_transaction`, `on_chain_cancel_order`,
+(`pre_sign_transaction`, `onchain_cancel_order`,
 `cow_protocol_allowance`, `approve_cow_protocol`) plus their chain-binding
 resolvers, and added no capability that `Trading` or the crate's free functions
 did not already provide. App-code-less helper flows — allowance, approval,
 pre-sign, and on-chain cancellation, none of which need an `appCode` — are the
 crate's free functions (`cow_protocol_allowance`, `approval_transaction`,
-`pre_sign_transaction`, `cancel_order_onchain`), which take chain and
+`pre_sign_transaction`, `onchain_cancel_order`), which take chain and
 protocol context directly and require no trading client.
 
 The "Sole Construction Seam" principle is unchanged: `Trading` still constructs
@@ -357,7 +357,7 @@ the exact concern recorded in the original decision above. The helper-only
 terminal was removed in the preceding amendment, so there is now one terminal
 and one product type (`Trading`); the suffix names a distinction that no longer
 exists, and every sibling client builder (`OrderbookApi`, `SubgraphApi`,
-`AlloyClient`, and the alloy provider and signer builders) already terminates
+`Client`, and the alloy provider and signer builders) already terminates
 with `build()`. Renaming restores that consistency. The compile-time typestate
 guarantee is unchanged: `build()` is still implemented only on
 `TradingBuilder<ChainIdSet, AppCodeSet>`, the `TradingBuilder::ready(...)`
@@ -365,11 +365,11 @@ total-input shortcut still calls it, and the `wasm32` injected-orderbook runtime
 check is unchanged.
 
 The builder also drops `with_trader_defaults`. It accepted a
-`PartialTraderParameters` bag without transitioning the typestate markers, so it
+`PartialTraderParams` bag without transitioning the typestate markers, so it
 could never satisfy the terminal on its own and only duplicated the individual
 `with_*` setters. Trader defaults reach the builder through the explicit typed
 setters (`with_chain_id`, `with_app_code`, `with_env`, and the contract-override
-setters) or, for callers holding a total `TraderParameters`, through
+setters) or, for callers holding a total `TraderParams`, through
 `TradingBuilder::ready(...)`.
 
 ## Amendment 2026-06-02: builder setters dropped the `with_` prefix
@@ -380,10 +380,10 @@ prefix: `chain_id`, `app_code`, `env`, `settlement_contract_override`,
 `with_`-prefixed names used in the amendment above are superseded.
 
 This aligns `TradingBuilder` with every other client construction builder in the
-workspace — `OrderbookApi`, `SubgraphApi`, `AlloyClient`, and the alloy provider
+workspace — `OrderbookApi`, `SubgraphApi`, `Client`, and the alloy provider
 and signer builders all use bare setters on their typestate construction chains.
 The `with_` prefix is retained for the owned-value setters on the parameter and
-option types: `TraderParameters`, `TradingOptions`, and the quote and override
+option types: `TraderParams`, `TradingOptions`, and the quote and override
 builders keep their `with_*` setters. The construction builder and the value
 structs are deliberately distinct surfaces. The typestate guarantee is unchanged:
 `chain_id` and `app_code` still transition the `ChainIdSet` and `AppCodeSet`
@@ -453,10 +453,10 @@ construction typestate on `TradingBuilder` recorded above is unchanged.
 
 ## Amendment 2026-06-09: partial trader defaults are crate-internal
 
-`PartialTraderParameters` — the partial bundle of trader defaults a `Trading`
+`PartialTraderParams` — the partial bundle of trader defaults a `Trading`
 instance stores (chain id, app code, environment, and contract overrides) — is
 crate-internal (`pub(crate)`). It is not a public construction shape: no public
-entry accepts a `PartialTraderParameters`, and its public builder (`new` plus the
+entry accepts a `PartialTraderParams`, and its public builder (`new` plus the
 `with_*` setters) is removed, because no public flow consumed the constructed
 value once `with_trader_defaults` was dropped (the 2026-06-02 amendment above).
 This closes the Sole Construction Seam drift of shipping a `Partial*` builder
@@ -465,8 +465,8 @@ with no public destination.
 `Trading` exposes the stored defaults through typed read accessors —
 `chain_id()`, `app_code()`, `env()`, `settlement_contract_override()`, and
 `eth_flow_contract_override()` — replacing the prior
-`trader_defaults() -> &PartialTraderParameters` accessor that returned the
-partial type. `TraderParameters` remains the public total identity shape, and the
+`trader_defaults() -> &PartialTraderParams` accessor that returned the
+partial type. `TraderParams` remains the public total identity shape, and the
 typestate construction recorded above is unchanged.
 
 ## Acknowledgements

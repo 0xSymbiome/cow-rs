@@ -169,20 +169,20 @@ fn build_trading() -> Result<Trading, Box<dyn std::error::Error>> {
 }
 ```
 
-The owner field belongs on the per-trade `TradeParameters` or
-`LimitTradeParameters`, not on the `Trading` client. The `Trading` client
+The owner field belongs on the per-trade `TradeParams` or
+`LimitTradeParams`, not on the `Trading` client. The `Trading` client
 does not store a default owner. For signer-backed flows (`post_swap_order`, `post_limit_order`,
 `quote_results`), the signer's address fills the slot when
-`TradeParameters.owner` is `None`. For quote-only flows
-(`quote_only`), the owner must come from `TradeParameters.owner` or
+`TradeParams.owner` is `None`. For quote-only flows
+(`quote_only`), the owner must come from `TradeParams.owner` or
 from `TradeAdvancedSettings::quote_request.from`.
 
 ```rust
 use cow_sdk::core::{Address, Amount, OrderKind};
-use cow_sdk::trading::TradeParameters;
+use cow_sdk::trading::TradeParams;
 
-fn quote_request(owner: Address) -> Result<TradeParameters, Box<dyn std::error::Error>> {
-    let params = TradeParameters::new(
+fn quote_request(owner: Address) -> Result<TradeParams, Box<dyn std::error::Error>> {
+    let params = TradeParams::new(
         OrderKind::Sell,
         // USDC (6 decimals) sold for DAI.
         Address::new("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48")?,
@@ -247,7 +247,7 @@ where
 ```
 
 The flat `post_swap_order`, `quote_only`, and `post_swap_order_from_quote`
-entries remain available for callers that prefer to assemble `TradeParameters`
+entries remain available for callers that prefer to assemble `TradeParams`
 directly.
 
 ### Browser Ready-State Wiring
@@ -263,7 +263,7 @@ use std::sync::Arc;
 use cow_sdk::core::{CowEnv, SupportedChainId};
 use cow_sdk::orderbook::OrderbookApi;
 use cow_sdk::trading::{Trading, TradingOptions};
-use cow_sdk::HttpTransport;
+use cow_sdk::http::HttpTransport;
 use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
 
 fn build_browser_ready_trading() -> Result<Trading, Box<dyn std::error::Error>> {
@@ -272,7 +272,7 @@ fn build_browser_ready_trading() -> Result<Trading, Box<dyn std::error::Error>> 
     ));
     let orderbook = OrderbookApi::builder()
         .chain(SupportedChainId::Sepolia)
-        .environment(CowEnv::Prod)
+        .env(CowEnv::Prod)
         .transport(transport)
         .build()?;
 
@@ -292,7 +292,7 @@ fn build_browser_ready_trading() -> Result<Trading, Box<dyn std::error::Error>> 
 Allowance reads, approval submission, pre-sign transaction construction, and
 on-chain cancellation need chain authority but no app code. Call the crate's
 free functions directly — `cow_protocol_allowance`, `approval_transaction`,
-`pre_sign_transaction`, and `cancel_order_onchain` — so an integration such
+`pre_sign_transaction`, and `onchain_cancel_order` — so an integration such
 as an allowance/approval screen or a pre-sign tool needs no trading client at
 all. Quote, post, order lookup, and off-chain cancellation flows use the ready
 `Trading` client built with `build()`.
@@ -318,7 +318,7 @@ Those proofs come from the maintained scenarios below.
 
 Native-sell / EthFlow posting requires the quote identifier returned by the
 orderbook. The `swap_params_to_limit_order_params` bridge produces a
-`LimitTradeParametersFromQuote` value that guarantees the quote identifier
+`LimitTradeParamsFromQuote` value that guarantees the quote identifier
 is present by construction, and the EthFlow native-currency submission
 helper and transaction helper accept only that newtype on their public
 entries. In the snippet below, `trading`, `orderbook`, `trader`, and `signer` are
@@ -354,7 +354,7 @@ If the orderbook quote response does not carry an identifier,
 `TradingError::MissingQuoteId("EthFlow order posting")` before the
 native-currency transaction is built. The typed boundary lifts the
 previous runtime check to a compile error when a consumer attempts to
-pass a `LimitTradeParameters` value missing a quote id directly to the
+pass a `LimitTradeParams` value missing a quote id directly to the
 EthFlow entries.
 
 ## Step 2: Run The Deterministic Signing Scenario
@@ -730,7 +730,7 @@ Use them only when you specifically need live service confirmation.
 If you want one recommended first session from a fresh checkout, use:
 
 ```text
-cargo check -p cow-sdk --examples
+cargo check --manifest-path examples/native/Cargo.toml --examples
 cargo run --manifest-path examples/native/Cargo.toml --example sign_order
 cargo run --manifest-path examples/native/Cargo.toml --example limit_order
 ```

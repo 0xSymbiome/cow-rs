@@ -93,8 +93,8 @@ Every surface in this table is shipped from cow-rs source and may not be swapped
 | `cow_shed_eip712_domain` + `execute_hooks_signing_hash` cow-shed envelope | `crates/contracts/src/cow_shed/eip712.rs` | ADR 0049 cow-shed account-abstraction proxy | The envelope payload is GPv2/cow-shed-specific; the *hashing primitive* is alloy (Bucket 1), the *envelope identity* is cow. |
 | EIP-1271 signature blob Shape A (Safe muxer, selector-prefixed) | composable (deferred per ADR 0048) | ADR 0050 | Drop the selector → Safe muxer fails to dispatch → on-chain settlement reverts. |
 | EIP-1271 signature blob Shape B (raw forwarder, no selector) | composable (deferred per ADR 0048) | ADR 0050 | Include the selector → ABI decode fails because every field offset shifts by 4. |
-| `Eip1271SignatureProvider` trait | `cow_sdk_signing::eip1271` | ADR 0051 | Custom smart-account signing callback contract; not an alloy concept; placement is signing per ADR 0051 (not trading, not composable). |
-| `Eip1271VerificationCache` trait | `cow_sdk_contracts::verify` (defined), re-exported from `cow_sdk_signing::cache` | ADR 0014 | A safe-by-construction positive-only memoization boundary specific to EIP-1271 probes, keyed on `(verifier, digest, signature_hash)`; alloy ships no equivalent. Default-off, explicit-cache-arg contract is the security invariant; the in-memory impl is gated behind the `in-memory-cache` feature. |
+| `Eip1271Signer` trait | `cow_sdk_signing::eip1271` | ADR 0051 | Custom smart-account signing callback contract; not an alloy concept; placement is signing per ADR 0051 (not trading, not composable). |
+| `Eip1271Cache` trait | `cow_sdk_contracts::verify` (defined), re-exported from `cow_sdk_signing::cache` | ADR 0014 | A safe-by-construction positive-only memoization boundary specific to EIP-1271 probes, keyed on `(verifier, digest, signature_hash)`; alloy ships no equivalent. Default-off, explicit-cache-arg contract is the security invariant; the in-memory impl is gated behind the `in-memory-cache` feature. |
 | `Redacted<T>` credential wrapper | `cow-sdk-core::redacted` | ADR 0025 (workspace url-redaction convention) + [Credential Redaction by Construction](principles.md) | alloy types do not redact credentials; cow's Debug/Display/Serialize/panic-path renderings must emit only sanitized identity. |
 | Address registry (deployment authority) | `cow-sdk-contracts::Registry` (const table in `crates/contracts/src/deployments.rs`) | ADR 0012 | `(ContractId, SupportedChainId, CowEnv)` keyed; alloy ships no deployment authority for the CoW protocol. |
 | App-data CID encoding | `cow-sdk-app-data` | (no specific ADR; cow-protocol surface) | CIDv0 / multihash for the app-data SHA-256; cow-protocol-specific. |
@@ -243,7 +243,7 @@ Numbered ADR cites with the load-bearing topics:
 - **ADR 0044** — wasm flavor builds (default, orderbook, signing, cloudflare); positioning vs upstream TypeScript SDK.
 - **ADR 0045** — async signer trait narrowing by operation.
 - **ADR 0050** — EIP-1271 signature blob Shape A (Safe muxer) vs Shape B (raw forwarder); whitespace-free type strings; amendment defers composable + anchors encoder to `alloy_sol_types::SolValue`.
-- **ADR 0051** — `Eip1271SignatureProvider` owned by `cow-sdk-signing`; trading consumes via inline `map_err`; compile-fail regression for re-export from trading.
+- **ADR 0051** — `Eip1271Signer` owned by `cow-sdk-signing`; trading consumes via inline `map_err`; compile-fail regression for re-export from trading.
 - **ADR 0052** — alloy primitives as the canonical primitive layer (the umbrella ADR for this doctrine).
 
 The principle-ADR map at `.github/config/principle-adr-map.yaml` is the traceability anchor. Every principle in `docs/principles.md` resolves to exactly one primary ADR plus an optional supporting set; ADRs scoped to adapter shape live in `out_of_scope_adrs` with written rationale so they do not require a principle pairing.
@@ -280,7 +280,7 @@ In addition to the never-swap CI gates above, the following gates exist or are s
 - **`alloy-runtime` family confinement** — `alloy-network`, `alloy-consensus`, `alloy-rpc-types-eth`, `alloy-transport-*` confined to the same three adapter crates (ADR 0052).
 - **`wasm-imports-grep-gate.yml`** — `cow-sdk-wasm` forbids direct `alloy*` imports; types are consumed via re-exports through `cow-sdk-contracts` and its own host-safe `helpers` module (ADR 0052).
 - **`cargo-metadata` negative-edge invariants** — `cow-sdk-signing ⇏ cow-sdk-trading`, `cow-sdk-contracts[cow-shed] ⇏ cow-sdk-trading`; reverse-edge `cow-sdk-trading ⇒ cow-sdk-signing` (ADR 0051).
-- **Compile-fail regression** — `crates/trading/tests/eip1271_signature_provider_no_reexport.rs` fails compile if `Eip1271SignatureProvider` is re-exported from `cow_sdk_trading` (ADR 0051).
+- **Compile-fail regression** — `crates/trading/tests/eip1271_signature_provider_no_reexport.rs` fails compile if `Eip1271Signer` is re-exported from `cow_sdk_trading` (ADR 0051).
 - **Workspace resolution invariant test** — `Cargo.lock` resolves each alloy crate to exactly one version per ADR 0026.
 - **Source-lock provenance gate** — the upstream commit hash is reproducible from the pinned reference; release validation rejects mutable upstream branches (ADR 0026, ADR 0032).
 - **Panic-allowlist gate** — `.github/config/panic-allowlist.yaml` entry count strictly decreases by exactly 1 after the chain hex literal migration lands. The exact pre-migration baseline is recorded in the corresponding migration audit; the doctrine binds the *delta*, not the absolute count.

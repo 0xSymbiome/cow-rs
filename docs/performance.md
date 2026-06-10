@@ -236,7 +236,7 @@ fn assemble_sdk_clients(
 ) -> (OrderbookApi, SubgraphApi) {
     let orderbook = OrderbookApi::builder()
         .chain(chain)
-        .environment(environment)
+        .env(environment)
         .client(shared.clone())
         .build()
         .expect("orderbook client builds with canonical defaults");

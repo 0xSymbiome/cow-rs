@@ -17,9 +17,9 @@ mod common;
 
 use cow_sdk_core::Amount;
 use cow_sdk_orderbook::{
-    BuyTokenDestination, GetOrdersRequest, GetTradesRequest, OrderQuoteRequest, OrderQuoteResponse,
-    OrderQuoteSide, PriceQuality, QuoteSigningScheme, QuoteValidity, SellTokenSource,
-    SigningScheme, calculate_total_fee,
+    BuyTokenDestination, OrderQuoteRequest, OrderQuoteResponse, OrderQuoteSide, OrdersQuery,
+    PriceQuality, QuoteSigningScheme, QuoteValidity, SellTokenSource, SigningScheme, TradesQuery,
+    calculate_total_fee,
 };
 use proptest::prelude::*;
 use proptest::test_runner::FileFailurePersistence;
@@ -240,20 +240,20 @@ proptest! {
         );
 
         let owner_request = if set_pagination {
-            GetOrdersRequest::new(sample_owner())
+            OrdersQuery::new(sample_owner())
                 .with_offset(offset)
                 .with_limit(limit)
         } else {
-            GetOrdersRequest::new(sample_owner())
+            OrdersQuery::new(sample_owner())
         };
         let owner_value =
             serde_json::to_value(&owner_request).expect("orders request must serialize");
-        let owner_roundtrip: GetOrdersRequest =
+        let owner_roundtrip: OrdersQuery =
             serde_json::from_value(owner_value).expect("orders request must deserialize");
 
         prop_assert_eq!(&owner_roundtrip, &owner_request);
         if owner_request.offset == 0 && owner_request.limit == 1_000 {
-            prop_assert_eq!(&owner_request, &GetOrdersRequest::new(sample_owner()));
+            prop_assert_eq!(&owner_request, &OrdersQuery::new(sample_owner()));
         }
     }
 
@@ -266,12 +266,12 @@ proptest! {
     ) {
         let owner = set_owner.then(sample_owner);
         let order_uid = set_order_uid.then(sample_order_uid);
-        let request = GetTradesRequest::new(owner, order_uid)
+        let request = TradesQuery::new(owner, order_uid)
             .with_offset(offset)
             .with_limit(limit);
 
         let value = serde_json::to_value(&request).expect("trades request must serialize");
-        let roundtrip: GetTradesRequest =
+        let roundtrip: TradesQuery =
             serde_json::from_value(value).expect("trades request must deserialize");
 
         prop_assert_eq!(request.is_valid(), owner.is_some() ^ order_uid.is_some());

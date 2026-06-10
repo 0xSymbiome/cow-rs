@@ -24,8 +24,8 @@ use alloy_primitives::U256;
 use cow_sdk_core::{Amount, CowEnv, EVM_NATIVE_CURRENCY_ADDRESS, OrderKind, SupportedChainId};
 use cow_sdk_orderbook::{OrderQuoteResponse, PriceQuality, QuoteValidity};
 use cow_sdk_trading::{
-    LimitTradeParametersFromQuote, MAX_SLIPPAGE_BPS, PartnerFee, PartnerFeePolicy,
-    PostTradeAdditionalParams, QuoteRequestOverride, QuoterParameters, TradeAdvancedSettings,
+    LimitTradeParamsFromQuote, MAX_SLIPPAGE_BPS, PartnerFee, PartnerFeePolicy,
+    PostTradeAdditionalParams, QuoteRequestOverride, QuoterParams, TradeAdvancedSettings,
     eth_flow_transaction, quote_results, suggest_slippage_bps, swap_params_to_limit_order_params,
 };
 use proptest::prelude::*;
@@ -42,8 +42,8 @@ const REGRESSION_FILE: &str = concat!(
     "/tests/proptest-regressions/invariant_contract.txt"
 );
 
-fn trader() -> QuoterParameters {
-    QuoterParameters::new(SupportedChainId::Sepolia, "0x007", address(OWNER))
+fn trader() -> QuoterParams {
+    QuoterParams::new(SupportedChainId::Sepolia, "0x007", address(OWNER))
         .expect("app code should validate")
 }
 
@@ -162,7 +162,7 @@ proptest! {
         sell_amount in quote_amount_strategy(),
         buy_amount in quote_amount_strategy(),
         fee_amount in fee_strategy(),
-        is_ethflow in any::<bool>(),
+        is_eth_flow in any::<bool>(),
         low_tenths in 1u32..=500,
         extra_tenths in 1u32..=500,
     ) {
@@ -172,9 +172,9 @@ proptest! {
         let low_multiplier = f64::from(low_tenths) / 10.0;
         let high_multiplier = f64::from(low_tenths + extra_tenths) / 10.0;
 
-        let low = suggest_slippage_bps(&quote, &trade, &trader, is_ethflow, Some(low_multiplier))
+        let low = suggest_slippage_bps(&quote, &trade, &trader, is_eth_flow, Some(low_multiplier))
             .expect("lower multiplier should produce a deterministic slippage suggestion");
-        let high = suggest_slippage_bps(&quote, &trade, &trader, is_ethflow, Some(high_multiplier))
+        let high = suggest_slippage_bps(&quote, &trade, &trader, is_eth_flow, Some(high_multiplier))
             .expect("higher multiplier should produce a deterministic slippage suggestion");
 
         prop_assert!(
@@ -182,7 +182,7 @@ proptest! {
             "slippage must not decrease when the volume multiplier increases"
         );
         prop_assert!(high <= MAX_SLIPPAGE_BPS);
-        if is_ethflow {
+        if is_eth_flow {
             prop_assert!(low >= 50);
         }
     }
@@ -264,7 +264,7 @@ proptest! {
             params.quote_id = Some(quote_id);
             params.valid_to = Some(valid_to);
 
-            let from_quote = LimitTradeParametersFromQuote::try_from_limit(params)
+            let from_quote = LimitTradeParamsFromQuote::try_from_limit(params)
                 .expect("test params carry a quote id");
             let transaction = eth_flow_transaction(
                 &app_data_hash(),

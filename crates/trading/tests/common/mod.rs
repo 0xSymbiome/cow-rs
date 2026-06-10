@@ -23,10 +23,10 @@ use cow_sdk_core::{
 use cow_sdk_orderbook::{
     Order, OrderCancellations, OrderCreation, OrderQuoteRequest, OrderQuoteResponse, OrderbookError,
 };
-use cow_sdk_signing::eip1271::{Eip1271SignatureError, Eip1271SignatureProvider};
+use cow_sdk_signing::eip1271::{Eip1271SignatureError, Eip1271Signer};
 use cow_sdk_trading::{
-    EthFlowOrderExistsChecker, OrderbookClient, SlippageSuggestionProvider,
-    SlippageToleranceRequest, SlippageToleranceResponse, TradingError,
+    EthFlowOrderExistsChecker, OrderbookClient, SlippageSuggester, SlippageToleranceRequest,
+    SlippageToleranceResponse, TradingError,
 };
 
 // Canonical lowercase 0x-prefixed wire form per PROP-WB-004; cow Address
@@ -110,24 +110,24 @@ pub fn buy_quote_response() -> OrderQuoteResponse {
     .expect("buy quote fixture must deserialize")
 }
 
-pub fn sample_trade_parameters(kind: OrderKind) -> cow_sdk_trading::TradeParameters {
+pub fn sample_trade_parameters(kind: OrderKind) -> cow_sdk_trading::TradeParams {
     let amount = if kind == OrderKind::Sell {
         Amount::new("100000000000000000").expect("test sell amount literal must be valid")
     } else {
         Amount::new("400000000000000000000").expect("test buy amount literal must be valid")
     };
-    cow_sdk_trading::TradeParameters::new(kind, address(WETH), address(COW), amount)
+    cow_sdk_trading::TradeParams::new(kind, address(WETH), address(COW), amount)
         .with_owner(address(OWNER))
         .with_slippage_bps(50)
 }
 
-pub fn sample_trader_parameters() -> cow_sdk_trading::TraderParameters {
-    cow_sdk_trading::TraderParameters::new(SupportedChainId::Sepolia, "0x007")
+pub fn sample_trader_parameters() -> cow_sdk_trading::TraderParams {
+    cow_sdk_trading::TraderParams::new(SupportedChainId::Sepolia, "0x007")
         .expect("app code should validate")
         .with_env(CowEnv::Prod)
 }
 
-pub fn sample_limit_parameters(kind: OrderKind) -> cow_sdk_trading::LimitTradeParameters {
+pub fn sample_limit_parameters(kind: OrderKind) -> cow_sdk_trading::LimitTradeParams {
     let quote = if kind == OrderKind::Sell {
         sell_quote_response()
     } else {
@@ -136,7 +136,7 @@ pub fn sample_limit_parameters(kind: OrderKind) -> cow_sdk_trading::LimitTradePa
 
     let sell_amount = quote.quote.sell_amount;
     let buy_amount = quote.quote.buy_amount;
-    let mut params = cow_sdk_trading::LimitTradeParameters::new(
+    let mut params = cow_sdk_trading::LimitTradeParams::new(
         kind,
         address(WETH),
         address(COW),
@@ -257,10 +257,7 @@ impl OrderbookClient for MockOrderbook {
         Ok(state.order_id.expect("test order id remains configured"))
     }
 
-    async fn send_signed_order_cancellations(
-        &self,
-        request: &OrderCancellations,
-    ) -> Result<(), OrderbookError> {
+    async fn send_cancellations(&self, request: &OrderCancellations) -> Result<(), OrderbookError> {
         self.state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -628,7 +625,7 @@ pub struct MockSlippageProvider {
 
 #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 #[cfg_attr(not(target_arch = "wasm32"), async_trait)]
-impl SlippageSuggestionProvider for MockSlippageProvider {
+impl SlippageSuggester for MockSlippageProvider {
     async fn slippage_suggestion(
         &self,
         _request: SlippageToleranceRequest,
@@ -669,7 +666,7 @@ pub struct MockEip1271Provider;
 
 #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 #[cfg_attr(not(target_arch = "wasm32"), async_trait)]
-impl Eip1271SignatureProvider for MockEip1271Provider {
+impl Eip1271Signer for MockEip1271Provider {
     async fn sign(
         &self,
         _order_to_sign: &cow_sdk_core::OrderData,

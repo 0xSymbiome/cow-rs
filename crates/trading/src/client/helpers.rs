@@ -6,8 +6,8 @@ use cow_sdk_orderbook::OrderbookApi;
 
 use super::Trading;
 use crate::{
-    OrderbookClient, PartialTraderParameters, QuoterParameters, TradeAdvancedSettings,
-    TradeParameters, TraderParameters, TradingError, types::validate_orderbook_context,
+    OrderbookClient, PartialTraderParams, QuoterParams, TradeAdvancedSettings, TradeParams,
+    TraderParams, TradingError, types::validate_orderbook_context,
 };
 
 #[derive(Clone)]
@@ -19,7 +19,7 @@ pub(super) struct ResolvedOrderbookBinding {
 
 impl Trading {
     pub(super) fn resolve_quote_owner(
-        params: &TradeParameters,
+        params: &TradeParams,
         advanced_settings: Option<&TradeAdvancedSettings>,
     ) -> Result<Address, TradingError> {
         advanced_settings
@@ -33,20 +33,20 @@ impl Trading {
         &self,
         owner: Address,
         requested_env: Option<CowEnv>,
-    ) -> Result<(QuoterParameters, ResolvedOrderbookBinding), TradingError> {
+    ) -> Result<(QuoterParams, ResolvedOrderbookBinding), TradingError> {
         let app_code = self
             .trader_defaults
             .app_code
             .clone()
-            .ok_or(TradingError::MissingQuoterParameters("appCode"))?;
+            .ok_or(TradingError::MissingQuoterParams("appCode"))?;
         let orderbook = self.resolve_orderbook_binding(
             self.trader_defaults.chain_id,
             requested_env.or(self.trader_defaults.env),
-            TradingError::MissingQuoterParameters("chainId"),
+            TradingError::MissingQuoterParams("chainId"),
         )?;
 
         Ok((
-            QuoterParameters {
+            QuoterParams {
                 chain_id: orderbook.chain_id,
                 app_code,
                 account: owner,
@@ -65,20 +65,20 @@ impl Trading {
         &self,
         requested_chain: Option<SupportedChainId>,
         requested_env: Option<CowEnv>,
-    ) -> Result<(TraderParameters, ResolvedOrderbookBinding), TradingError> {
+    ) -> Result<(TraderParams, ResolvedOrderbookBinding), TradingError> {
         let app_code = self
             .trader_defaults
             .app_code
             .clone()
-            .ok_or_else(|| TradingError::MissingTraderParameters("chainId, appCode"))?;
+            .ok_or_else(|| TradingError::MissingTraderParams("chainId, appCode"))?;
         let orderbook = self.resolve_orderbook_binding(
             requested_chain.or(self.trader_defaults.chain_id),
             requested_env.or(self.trader_defaults.env),
-            TradingError::MissingTraderParameters("chainId, appCode"),
+            TradingError::MissingTraderParams("chainId, appCode"),
         )?;
 
         Ok((
-            TraderParameters {
+            TraderParams {
                 chain_id: orderbook.chain_id,
                 app_code,
                 env: Some(orderbook.env),
@@ -96,15 +96,15 @@ impl Trading {
         &self,
         requested_chain: Option<SupportedChainId>,
         requested_env: Option<CowEnv>,
-    ) -> Result<(PartialTraderParameters, ResolvedOrderbookBinding), TradingError> {
+    ) -> Result<(PartialTraderParams, ResolvedOrderbookBinding), TradingError> {
         let orderbook = self.resolve_orderbook_binding(
             requested_chain.or(self.trader_defaults.chain_id),
             requested_env.or(self.trader_defaults.env),
-            TradingError::MissingTraderParameters("chainId"),
+            TradingError::MissingTraderParams("chainId"),
         )?;
 
         Ok((
-            PartialTraderParameters {
+            PartialTraderParams {
                 chain_id: Some(orderbook.chain_id),
                 app_code: self.trader_defaults.app_code.clone(),
                 env: Some(orderbook.env),
@@ -143,10 +143,7 @@ impl Trading {
             // policy. Consumers needing a custom retry/rate-limit policy build
             // their own `OrderbookApi` with it and inject it through
             // `TradingOptions::with_orderbook_client`.
-            let client = OrderbookApi::builder()
-                .chain(chain_id)
-                .environment(env)
-                .build()?;
+            let client = OrderbookApi::builder().chain(chain_id).env(env).build()?;
             Ok(ResolvedOrderbookBinding {
                 client: Arc::new(client),
                 chain_id,

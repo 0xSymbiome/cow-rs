@@ -32,7 +32,7 @@ async fn http_status_body_is_redacted_at_storage_and_public_representations() {
         .await;
 
     let error = api
-        .run_query::<serde_json::Value, _>(
+        .query::<serde_json::Value, _>(
             SubgraphQueryRequest::new("query Totals { totals { orders } }")
                 .with_operation_name("Totals"),
         )
@@ -60,7 +60,7 @@ async fn serialization_body_is_redacted_at_storage_and_public_representations() 
         .await;
 
     let error = api
-        .run_query::<serde_json::Value, _>(
+        .query::<serde_json::Value, _>(
             SubgraphQueryRequest::new("query Totals { totals { orders } }")
                 .with_operation_name("Totals"),
         )

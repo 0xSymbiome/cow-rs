@@ -8,7 +8,7 @@
 mod common;
 
 use cow_sdk_core::{OrderKind, SupportedChainId};
-use cow_sdk_trading::{TradeParameters, Trading, TradingBuilder, TradingOptions, post_swap_order};
+use cow_sdk_trading::{TradeParams, Trading, TradingBuilder, TradingOptions, post_swap_order};
 
 use crate::common::{
     MockOrderbook, MockSigner, sample_trade_parameters, sample_trader_parameters,
@@ -28,7 +28,7 @@ async fn swap_builder_quote_then_submit_matches_flat_post_swap_order() {
 
     // Flat reference path.
     let flat_orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
-    let flat_trade = TradeParameters::new(OrderKind::Sell, sell_token, buy_token, amount);
+    let flat_trade = TradeParams::new(OrderKind::Sell, sell_token, buy_token, amount);
     let flat = post_swap_order(&flat_trade, &trader, &signer, None, &flat_orderbook)
         .await
         .expect("flat post_swap_order should succeed");

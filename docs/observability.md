@@ -147,7 +147,7 @@ emits a `warn`-level event on the same `cow_sdk::transport` target with
 - `version`
 - `quote`
 - `send_order`
-- `send_signed_order_cancellations`
+- `send_cancellations`
 - `order`
 - `order_multi_env`
 - `orders`
@@ -158,7 +158,7 @@ emits a `warn`-level event on the same `cow_sdk::transport` target with
 - `total_surplus`
 - `app_data`
 - `upload_app_data`
-- `solver_competition_by_auction_id`
+- `solver_competition`
 - `solver_competition_by_tx_hash`
 - `latest_solver_competition`
 
@@ -171,7 +171,7 @@ protocol `env` axis.
 - `totals`
 - `last_days_volume`
 - `last_hours_volume`
-- `run_query`
+- `query`
 
 ### `cow-sdk-trading`
 
@@ -188,8 +188,8 @@ also wraps its lower-level contract call in a
 - `post_limit_order`
 - `pre_sign_transaction`
 - `order`
-- `off_chain_cancel_order`
-- `on_chain_cancel_order`
+- `offchain_cancel_order`
+- `onchain_cancel_order`
 - `cow_protocol_allowance`
 - `approve_cow_protocol`
 - `post_sell_native_currency_order` (module-level)

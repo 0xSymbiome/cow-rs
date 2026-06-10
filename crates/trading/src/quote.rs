@@ -10,9 +10,9 @@ use crate::types::{
 };
 use crate::{
     DEFAULT_QUOTE_VALIDITY, OrderbookClient, OrderbookRuntimeBinding, QuoteRequestOverride,
-    QuoteResults, QuoterParameters, TradeAdvancedSettings, TradeParameters, TraderParameters,
-    TradingAppDataInfo, TradingError, adjust_ethflow_trade_parameters,
-    calculate_quote_amounts_and_costs, default_slippage_bps, is_ethflow_order, order_to_sign,
+    QuoteResults, QuoterParams, TradeAdvancedSettings, TradeParams, TraderParams,
+    TradingAppDataInfo, TradingError, adjust_eth_flow_trade_params,
+    calculate_quote_amounts_and_costs, default_slippage_bps, is_eth_flow_order, order_to_sign,
     partner_fee_bps, resolve_slippage_suggestion, sanitize_protocol_fee_bps,
 };
 
@@ -27,8 +27,8 @@ use crate::{
 /// Returns an error when quote validity inputs conflict, when app-data generation fails, when the
 /// orderbook quote request fails, or when the derived signing payload cannot be constructed.
 pub async fn quote_only<O>(
-    trade_parameters: &TradeParameters,
-    trader: &QuoterParameters,
+    trade_parameters: &TradeParams,
+    trader: &QuoterParams,
     advanced_settings: Option<&TradeAdvancedSettings>,
     orderbook: &O,
 ) -> Result<QuoteResults, TradingError>
@@ -72,8 +72,8 @@ where
 /// when app-data generation fails, when the orderbook quote request fails, or when the derived
 /// signing payload cannot be constructed.
 pub async fn quote_results<O, S>(
-    trade_parameters: &TradeParameters,
-    trader: &TraderParameters,
+    trade_parameters: &TradeParams,
+    trader: &TraderParams,
     signer: &S,
     advanced_settings: Option<&TradeAdvancedSettings>,
     orderbook: &O,
@@ -96,7 +96,7 @@ where
             })?,
     };
     effective_trade_parameters.owner = Some(account);
-    let quoter = QuoterParameters {
+    let quoter = QuoterParams {
         chain_id: trader.chain_id,
         app_code: trader.app_code.clone(),
         account,
@@ -115,8 +115,8 @@ where
 }
 
 async fn get_quote_internal<O>(
-    trade_parameters: &TradeParameters,
-    trader: &QuoterParameters,
+    trade_parameters: &TradeParams,
+    trader: &QuoterParams,
     advanced_settings: Option<&TradeAdvancedSettings>,
     orderbook: &O,
 ) -> Result<QuoteResults, TradingError>
@@ -139,13 +139,13 @@ where
     effective_trader.chain_id = canonical_chain_id;
     effective_trader.env = Some(canonical_env);
 
-    let is_ethflow = is_ethflow_order(&effective_trade_parameters.sell_token);
-    let trade_parameters_for_quote = if is_ethflow {
-        adjust_ethflow_trade_parameters(canonical_chain_id, &effective_trade_parameters)
+    let is_eth_flow = is_eth_flow_order(&effective_trade_parameters.sell_token);
+    let trade_parameters_for_quote = if is_eth_flow {
+        adjust_eth_flow_trade_params(canonical_chain_id, &effective_trade_parameters)
     } else {
         effective_trade_parameters.clone()
     };
-    let default_slippage = default_slippage_bps(canonical_chain_id, is_ethflow);
+    let default_slippage = default_slippage_bps(canonical_chain_id, is_eth_flow);
     let initial_slippage = trade_parameters.slippage_bps.unwrap_or(default_slippage);
     let initial_app_data = build_app_data(
         &effective_trader.app_code,
@@ -159,7 +159,7 @@ where
     let request = build_quote_request(
         &trade_parameters_for_quote,
         &effective_trader,
-        is_ethflow,
+        is_eth_flow,
         &initial_app_data,
         advanced_settings.and_then(|settings| settings.quote_request.as_ref()),
     )?;
@@ -169,7 +169,7 @@ where
         &trade_parameters_for_quote,
         &effective_trader,
         &quote_response,
-        is_ethflow,
+        is_eth_flow,
         advanced_settings,
     )
     .await?
@@ -199,7 +199,7 @@ where
         &quote_response.quote,
         trade_parameters
             .slippage_bps
-            .unwrap_or_else(|| default_slippage_bps(canonical_chain_id, is_ethflow)),
+            .unwrap_or_else(|| default_slippage_bps(canonical_chain_id, is_eth_flow)),
         partner_fee_bps(trade_parameters.partner_fee.as_ref()),
         sanitize_protocol_fee_bps(quote_response.protocol_fee_bps.as_deref()),
     )?;
@@ -211,20 +211,20 @@ where
         orderbook_binding: orderbook.runtime_binding(),
         suggested_slippage,
         amounts_and_costs,
-        is_ethflow,
+        is_eth_flow,
         resolved_env: canonical_env,
     })
 }
 
 struct QuoteResultInputs<'a> {
-    trader: &'a QuoterParameters,
-    trade_parameters: TradeParameters,
+    trader: &'a QuoterParams,
+    trade_parameters: TradeParams,
     quote_response: cow_sdk_orderbook::OrderQuoteResponse,
     app_data_info: TradingAppDataInfo,
     orderbook_binding: OrderbookRuntimeBinding,
     suggested_slippage: u32,
     amounts_and_costs: cow_sdk_core::QuoteAmountsAndCosts,
-    is_ethflow: bool,
+    is_eth_flow: bool,
     resolved_env: cow_sdk_orderbook::CowEnv,
 }
 
@@ -250,7 +250,7 @@ fn build_quote_results(inputs: QuoteResultInputs<'_>) -> Result<QuoteResults, Tr
         crate::order::OrderToSignParams {
             chain_id: inputs.trader.chain_id,
             from: inputs.trader.account,
-            is_ethflow: inputs.is_ethflow,
+            is_eth_flow: inputs.is_eth_flow,
             network_costs_amount: Some(*inputs.quote_response.quote.network_cost_amount()),
             apply_costs_slippage_and_fees: true,
             protocol_fee_bps: sanitize_protocol_fee_bps(
@@ -277,9 +277,9 @@ fn build_quote_results(inputs: QuoteResultInputs<'_>) -> Result<QuoteResults, Tr
 }
 
 pub(crate) fn apply_advanced_settings_to_trade_parameters(
-    trade_parameters: &TradeParameters,
+    trade_parameters: &TradeParams,
     advanced_settings: Option<&TradeAdvancedSettings>,
-) -> Result<TradeParameters, TradingError> {
+) -> Result<TradeParams, TradingError> {
     let mut trade_parameters = trade_parameters.clone();
 
     apply_app_data_parameter_overrides(
@@ -306,9 +306,9 @@ pub(crate) fn apply_advanced_settings_to_trade_parameters(
 }
 
 fn build_quote_request(
-    trade_parameters: &TradeParameters,
-    trader: &QuoterParameters,
-    is_ethflow: bool,
+    trade_parameters: &TradeParams,
+    trader: &QuoterParams,
+    is_eth_flow: bool,
     app_data_info: &TradingAppDataInfo,
     request_override: Option<&QuoteRequestOverride>,
 ) -> Result<OrderQuoteRequest, TradingError> {
@@ -341,7 +341,7 @@ fn build_quote_request(
             request.with_valid_for(trade_parameters.valid_for.unwrap_or(DEFAULT_QUOTE_VALIDITY));
     }
 
-    if is_ethflow {
+    if is_eth_flow {
         request = request
             .with_signing_scheme(SigningScheme::Eip1271)
             .with_onchain_order()

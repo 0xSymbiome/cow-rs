@@ -6,5 +6,5 @@ use cow_sdk_core::CowEnv;
 use cow_sdk_orderbook::OrderbookApi;
 
 fn main() {
-    let _ = OrderbookApi::builder().environment(CowEnv::Prod).build();
+    let _ = OrderbookApi::builder().env(CowEnv::Prod).build();
 }

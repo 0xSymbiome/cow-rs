@@ -6,8 +6,7 @@ use std::sync::Mutex;
 
 use common::MockProvider;
 use cow_sdk_contracts::{
-    ContractsError, Eip1271VerificationCache, Eip1271VerificationRequest,
-    verify_eip1271_signature_cached,
+    ContractsError, Eip1271Cache, Eip1271VerificationRequest, verify_eip1271_signature_cached,
 };
 use cow_sdk_core::{Address, Hash32, HexData};
 use cow_sdk_test_utils::builders::address;
@@ -183,7 +182,7 @@ impl TestCache {
     }
 }
 
-impl Eip1271VerificationCache for TestCache {
+impl Eip1271Cache for TestCache {
     fn contains_valid(
         &self,
         _verifier: Address,

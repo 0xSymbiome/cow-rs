@@ -322,8 +322,6 @@ jobs:
         run: cargo test -p cow-rs-workspace-tests --test alloy_two_family_lockfile_invariant
       - name: Read-contract parity invariant
         run: cargo test -p cow-rs-workspace-tests --test alloy_read_contract_parity_invariant
-      - name: Check sdk examples
-        run: cargo check -p cow-sdk --examples
       - name: Check native showcase examples
         run: cargo check --manifest-path examples/native/Cargo.toml --examples
       - name: Check fuzz crate against the stable toolchain

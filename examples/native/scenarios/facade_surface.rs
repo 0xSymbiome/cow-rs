@@ -9,7 +9,7 @@ use std::error::Error;
 use serde_json::json;
 
 use cow_sdk::core::{AppCode, SupportedChainId, wrapped_native_token};
-use cow_sdk::trading::{TraderParameters, TradingBuilder, TradingOptions};
+use cow_sdk::trading::{TraderParams, TradingBuilder, TradingOptions};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let chain_id = SupportedChainId::Sepolia;
@@ -17,7 +17,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Construct a ready-state trading client — the minimal facade entry point.
     let trading = TradingBuilder::ready(
-        TraderParameters::new(chain_id, app_code).expect("app code should validate"),
+        TraderParams::new(chain_id, app_code).expect("app code should validate"),
         TradingOptions::default(),
     )?;
 

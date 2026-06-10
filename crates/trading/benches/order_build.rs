@@ -3,10 +3,10 @@ use criterion::{Criterion, black_box, criterion_group, criterion_main};
 use cow_sdk_core::{
     Address, Amount, AppDataHash, BuyTokenDestination, OrderKind, SellTokenSource, SupportedChainId,
 };
-use cow_sdk_trading::{LimitTradeParameters, OrderToSignParams, order_to_sign};
+use cow_sdk_trading::{LimitTradeParams, OrderToSignParams, order_to_sign};
 
-fn sample_limit_parameters() -> LimitTradeParameters {
-    LimitTradeParameters::new(
+fn sample_limit_parameters() -> LimitTradeParams {
+    LimitTradeParams::new(
         OrderKind::Sell,
         Address::new("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2").unwrap(),
         Address::new("0x6b175474e89094c44da98b954eedeac495271d0f").unwrap(),

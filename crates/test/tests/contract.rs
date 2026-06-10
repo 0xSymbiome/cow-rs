@@ -63,7 +63,7 @@ async fn orderbook_returns_canned_and_records() {
         .await
         .expect("upload ok");
     orderbook
-        .send_signed_order_cancellations(&OrderCancellations::new(
+        .send_cancellations(&OrderCancellations::new(
             vec![defaults::order_uid()],
             defaults::message_signature(),
         ))

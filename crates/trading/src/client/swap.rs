@@ -14,9 +14,7 @@ use std::marker::PhantomData;
 use cow_sdk_core::{Address, Amount, OrderKind, Signer, SignerError};
 
 use super::Trading;
-use crate::{
-    OrderPostingResult, QuoteResults, TradeAdvancedSettings, TradeParameters, TradingError,
-};
+use crate::{OrderPostingResult, QuoteResults, TradeAdvancedSettings, TradeParams, TradingError};
 
 /// Typestate marker: a required swap field has not been supplied yet.
 #[derive(Debug, Clone, Copy)]
@@ -226,11 +224,11 @@ impl<'a, SellToken, BuyToken, AmountState> SwapBuilder<'a, SellToken, BuyToken, 
 impl<'a> SwapBuilder<'a, Set, Set, Set> {
     #[allow(
         clippy::missing_const_for_fn,
-        reason = "the intermediate TradeParameters carries Option<AddressPerChain> whose destructor runs on each `with_*` rebind, which is not const-evaluable"
+        reason = "the intermediate TradeParams carries Option<AddressPerChain> whose destructor runs on each `with_*` rebind, which is not const-evaluable"
     )]
-    fn to_trade_parameters(&self) -> TradeParameters {
+    fn to_trade_parameters(&self) -> TradeParams {
         // The three required fields are guaranteed `Some` by the `<Set, Set, Set>` typestate.
-        let mut params = TradeParameters::new(
+        let mut params = TradeParams::new(
             self.kind,
             self.sell_token.expect("sell_token typestate is Set"),
             self.buy_token.expect("buy_token typestate is Set"),

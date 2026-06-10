@@ -40,7 +40,7 @@
 //! ```rust,no_run
 //! # use std::error::Error;
 //! use cow_sdk::core::{Address, Amount, OrderKind, SupportedChainId};
-//! use cow_sdk::trading::{TradeParameters, Trading};
+//! use cow_sdk::trading::{TradeParams, Trading};
 //! #
 //! # async fn run<S>(signer: &S) -> Result<(), Box<dyn Error>>
 //! # where
@@ -55,7 +55,7 @@
 //! // Sell 0.1 WETH for COW on Sepolia.
 //! let weth = Address::new("0xfff9976782d46cc05630d1f6ebab18b2324d6b14")?;
 //! let cow = Address::new("0x0625afb445c3b6b7b929342a04a22599fd5dbb59")?;
-//! let params = TradeParameters::new(
+//! let params = TradeParams::new(
 //!     OrderKind::Sell,
 //!     weth,
 //!     cow,
@@ -72,7 +72,7 @@
 //! For allowance, approval, pre-sign, or on-chain cancellation that does not
 //! need an app code, call the crate's free functions directly
 //! (`cow_protocol_allowance`, `approval_transaction`,
-//! `pre_sign_transaction`, `cancel_order_onchain`) without constructing a
+//! `pre_sign_transaction`, `onchain_cancel_order`) without constructing a
 //! trading client.
 #![warn(missing_docs)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
@@ -130,6 +130,19 @@ pub mod http {
         TransportPolicyBuildError, TransportPolicyBuilder, is_retryable_status, parse_retry_after,
     };
 
+    /// Production HTTP transport seam and its typed failure surface.
+    ///
+    /// [`HttpTransport`] is the async injection point downstream clients
+    /// consume; [`TransportError`] is its typed failure surface, and
+    /// [`TransportErrorClass`] is the label telemetry and retry layers use to
+    /// partition REST-transport failures without parsing error messages. The
+    /// native default implementation is [`ReqwestTransport`]; the browser
+    /// default lives in `cow-sdk-transport-wasm`.
+    pub use cow_sdk_core::{HttpTransport, TransportError, TransportErrorClass};
+    /// Native default HTTP transport implementation and its configuration.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub use cow_sdk_core::{ReqwestTransport, ReqwestTransportConfig};
+
     #[cfg(all(feature = "http-classifier", not(target_arch = "wasm32")))]
     #[cfg_attr(
         docsrs,
@@ -137,34 +150,8 @@ pub mod http {
     )]
     pub use cow_sdk_core::transport::policy::ReqwestErrorClassifier;
 }
-/// Transport-error classification shared across transport-capable crates.
-///
-/// Typed label that downstream telemetry and retry layers can use to
-/// partition REST-transport failures without parsing error messages.
-pub use cow_sdk_core::TransportErrorClass;
-/// Production HTTP transport surface shared across `cow-sdk` crates.
-///
-/// [`HttpTransport`] is the async injection point downstream clients
-/// consume; [`TransportError`] is its typed failure surface. The native
-/// default implementation is `ReqwestTransport`; the browser default
-/// lives in `cow-sdk-transport-wasm`.
-pub use cow_sdk_core::{HttpTransport, TransportError};
-#[cfg(not(target_arch = "wasm32"))]
-pub use cow_sdk_core::{ReqwestTransport, ReqwestTransportConfig};
 pub use cow_sdk_orderbook as orderbook;
 pub use cow_sdk_signing as signing;
-#[cfg(feature = "in-memory-cache")]
-#[cfg_attr(docsrs, doc(cfg(feature = "in-memory-cache")))]
-pub use cow_sdk_signing::InMemoryEip1271VerificationCache;
-/// Optional caching seam for EIP-1271 signature verification.
-///
-/// [`Eip1271VerificationCache`] is the trait consumed by
-/// [`cow_sdk_contracts::verify_eip1271_signature_cached`].
-/// [`NoopEip1271VerificationCache`] is the always-available zero-sized
-/// default for callers that do not want caching. The TTL-respecting,
-/// capacity-bounded `InMemoryEip1271VerificationCache` is re-exported only
-/// when the opt-in `in-memory-cache` feature is enabled.
-pub use cow_sdk_signing::{Eip1271VerificationCache, NoopEip1271VerificationCache};
 /// Optional read-only subgraph analytics (protocol totals, daily and hourly
 /// volume, and a typed raw-GraphQL escape hatch). Behind the off-by-default
 /// `subgraph` feature so the default facade stays trading-first; enable it with
@@ -197,8 +184,9 @@ pub use cow_sdk_test as testing;
 pub use cow_sdk_trading as trading;
 /// Browser-native HTTP transport surface — the `wasm32` sibling of the native
 /// `ReqwestTransport` default. [`FetchTransport`] is the browser default
-/// implementation of [`HttpTransport`]; compose it into typed clients as
-/// `Arc<dyn HttpTransport + Send + Sync>` exactly like the native transport.
+/// implementation of [`HttpTransport`](crate::http::HttpTransport); compose it
+/// into typed clients as `Arc<dyn cow_sdk_core::HttpTransport + Send + Sync>`
+/// exactly like the native transport.
 #[cfg(target_arch = "wasm32")]
 #[cfg_attr(docsrs, doc(cfg(target_arch = "wasm32")))]
 pub use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
@@ -207,8 +195,8 @@ pub use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
 #[cfg_attr(docsrs, doc(cfg(feature = "wasm")))]
 /// TypeScript-callable WASM surface plus the host-safe protocol helpers.
 ///
-/// `pure_helpers` is reachable here on both targets so a single
-/// `cow_sdk::wasm::pure_helpers` path works whether the crate is built for
+/// `helpers` is reachable here on both targets so a single
+/// `cow_sdk::wasm::helpers` path works whether the crate is built for
 /// the host or for `wasm32`. The `wasm32`-only JavaScript ABI lives under
 /// `cow_sdk::wasm::exports`.
 pub mod wasm {
@@ -216,7 +204,7 @@ pub mod wasm {
     #[cfg(target_arch = "wasm32")]
     pub use cow_sdk_wasm::exports;
     /// Host-safe protocol helper modules shared with the WASM crate.
-    pub use cow_sdk_wasm::helpers as pure_helpers;
+    pub use cow_sdk_wasm::helpers;
 }
 
 use thiserror::Error;

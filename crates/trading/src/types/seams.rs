@@ -8,7 +8,7 @@ use crate::TradingError;
 #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 #[cfg_attr(not(target_arch = "wasm32"), async_trait)]
 /// External slippage-suggestion provider used by advanced swap settings.
-pub trait SlippageSuggestionProvider: Send + Sync {
+pub trait SlippageSuggester: Send + Sync {
     /// Returns an optional slippage suggestion for the supplied request.
     ///
     /// # Errors

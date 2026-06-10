@@ -61,10 +61,10 @@ pub enum TradingError {
     AppCode(#[from] AppCodeError),
     /// Missing quote-only parameters after precedence resolution.
     #[error("Missing quoter parameters: {0}")]
-    MissingQuoterParameters(&'static str),
+    MissingQuoterParams(&'static str),
     /// Missing trading parameters after precedence resolution.
     #[error("Missing trader parameters: {0}")]
-    MissingTraderParameters(&'static str),
+    MissingTraderParams(&'static str),
     /// Both relative and absolute quote-validity values were provided simultaneously.
     #[error(
         "Cannot specify both validFor and validTo. Use validFor for relative time or validTo for absolute time."

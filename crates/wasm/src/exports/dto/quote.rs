@@ -158,7 +158,7 @@ pub enum PartnerFeeDto {
 }
 
 /// Effective trade parameters after SDK defaults and advanced settings were
-/// applied, mirroring `cow_sdk_trading::TradeParameters`.
+/// applied, mirroring `cow_sdk_trading::TradeParams`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]

@@ -13,7 +13,7 @@ fn rejected_host(error: OrderbookError) -> HostPolicyError {
 fn orderbook_builder_blocks_custom_hosts_by_default() {
     let error = OrderbookApi::builder()
         .chain(SupportedChainId::GnosisChain)
-        .environment(CowEnv::Prod)
+        .env(CowEnv::Prod)
         .base_url("https://user:pass@mirror.example/xdai?token=secret")
         .build()
         .unwrap_err();
@@ -36,7 +36,7 @@ fn orderbook_builder_blocks_custom_hosts_by_default() {
 fn orderbook_builder_accepts_explicit_allow_and_loopback_policy() {
     let allow = OrderbookApi::builder()
         .chain(SupportedChainId::GnosisChain)
-        .environment(CowEnv::Prod)
+        .env(CowEnv::Prod)
         .external_host_policy(ExternalHostPolicy::Allow(vec!["mirror.example".to_owned()]))
         .base_url("https://mirror.example/xdai")
         .build();
@@ -49,7 +49,7 @@ fn orderbook_builder_accepts_explicit_allow_and_loopback_policy() {
     ] {
         let api = OrderbookApi::builder()
             .chain(SupportedChainId::GnosisChain)
-            .environment(CowEnv::Prod)
+            .env(CowEnv::Prod)
             .external_host_policy(ExternalHostPolicy::Test)
             .base_url(url)
             .build();
@@ -64,7 +64,7 @@ fn orderbook_builder_accepts_explicit_allow_and_loopback_policy() {
 fn partner_api_routing_x_host_policy_compose_correctly() {
     let partner = OrderbookApi::builder()
         .chain(SupportedChainId::Mainnet)
-        .environment(CowEnv::Prod)
+        .env(CowEnv::Prod)
         .api_key("partner-key")
         .build()
         .expect("canonical partner host must be accepted by default policy");
@@ -76,7 +76,7 @@ fn partner_api_routing_x_host_policy_compose_correctly() {
 
     let blocked = OrderbookApi::builder()
         .chain(SupportedChainId::Mainnet)
-        .environment(CowEnv::Prod)
+        .env(CowEnv::Prod)
         .api_key("partner-key")
         .base_url("https://partner-mirror.example/mainnet")
         .build()
@@ -88,7 +88,7 @@ fn partner_api_routing_x_host_policy_compose_correctly() {
 
     let allowed = OrderbookApi::builder()
         .chain(SupportedChainId::Mainnet)
-        .environment(CowEnv::Prod)
+        .env(CowEnv::Prod)
         .api_key("partner-key")
         .external_host_policy(ExternalHostPolicy::Allow(vec![
             "partner-mirror.example".to_owned(),

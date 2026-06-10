@@ -50,7 +50,7 @@ pub mod onchain;
 /// Order-construction helpers and `EthFlow` adjustments.
 pub mod order;
 /// Offline helper validation entry points on trade-parameter builders.
-pub mod parameters;
+pub mod params;
 /// Quote-to-post orchestration helpers.
 pub mod post;
 /// Quote construction and quote-request precedence helpers.
@@ -69,19 +69,19 @@ pub mod wait;
 
 pub use allowance::{approval_transaction, approve_cow_protocol, cow_protocol_allowance};
 pub use app_data::{build_app_data, merge_and_seal_app_data, params_from_doc};
-pub use cancel::off_chain_cancel_order;
+pub use cancel::offchain_cancel_order;
 pub use client::{
     AppCodeSet, AppCodeUnset, ChainIdSet, ChainIdUnset, QuotedSwap, Set, SwapBuilder, Trading,
     TradingBuilder, Unset,
 };
 pub use error::{OrderbookContextValue, TradingError};
 pub use onchain::{
-    EthFlowTransaction, cancel_order_onchain, eth_flow_transaction,
+    EthFlowTransaction, eth_flow_transaction, onchain_cancel_order,
     onchain_cancellation_transaction, pre_sign_transaction, protocol_options_for_order,
 };
 pub use order::{
-    OrderToSignParams, adjust_ethflow_limit_parameters, adjust_ethflow_trade_parameters,
-    calculate_unique_order_id, is_ethflow_order, order_to_sign, swap_params_to_limit_order_params,
+    OrderToSignParams, adjust_eth_flow_limit_params, adjust_eth_flow_trade_params,
+    calculate_unique_order_id, is_eth_flow_order, order_to_sign, swap_params_to_limit_order_params,
 };
 pub use post::{
     eip1271_order_verification_request, post_cow_protocol_trade, post_limit_order,
@@ -90,21 +90,20 @@ pub use post::{
 };
 pub use quote::{quote_only, quote_results};
 pub use slippage::{
-    DEFAULT_QUOTE_VALIDITY, DEFAULT_SLIPPAGE_BPS, GAS_LIMIT_DEFAULT, GAS_MARGIN_PERCENT,
+    DEFAULT_GAS_LIMIT, DEFAULT_QUOTE_VALIDITY, DEFAULT_SLIPPAGE_BPS, GAS_MARGIN_PERCENT,
     MAX_SLIPPAGE_BPS, calculate_quote_amounts_and_costs, default_slippage_bps, partner_fee_bps,
     resolve_slippage_suggestion, sanitize_protocol_fee_bps, suggest_slippage_bps,
     suggest_slippage_from_fee, suggest_slippage_from_volume,
 };
 pub use types::{
-    AllowanceParameters, ApprovalParameters, Eip1271VerificationParameters,
-    EthFlowOrderExistsChecker, LimitTradeParameters, LimitTradeParametersFromQuote,
-    OrderPostingResult, OrderTraderParameters, PostTradeAdditionalParams, QuoteRequestOverride,
-    QuoteResults, QuoterParameters, SlippageSuggestionProvider, SlippageToleranceRequest,
-    SlippageToleranceResponse, TradeAdvancedSettings, TradeParameters, TraderParameters,
-    TradingAppDataInfo, TradingOptions,
+    AllowanceParams, ApprovalParams, Eip1271VerificationParams, EthFlowOrderExistsChecker,
+    LimitTradeParams, LimitTradeParamsFromQuote, OrderPostingResult, OrderTraderParams,
+    PostTradeAdditionalParams, QuoteRequestOverride, QuoteResults, QuoterParams, SlippageSuggester,
+    SlippageToleranceRequest, SlippageToleranceResponse, TradeAdvancedSettings, TradeParams,
+    TraderParams, TradingAppDataInfo, TradingOptions,
 };
 // Crate-internal: the partial trader defaults are stored state, not a public
 // construction shape (see ADR 0011). Internal modules reach it through the crate root.
-pub(crate) use types::PartialTraderParameters;
+pub(crate) use types::PartialTraderParams;
 pub use validation::{AmountSide, ClientRejection, OrderBoundsValidator};
 pub use wait::{WaitError, WaitOptions, poll_for_receipt, submit_and_wait_for_receipt};

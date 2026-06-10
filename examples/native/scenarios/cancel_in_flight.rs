@@ -17,7 +17,7 @@ use wiremock::{
 use cow_sdk::{
     core::{Cancellable, CancellationToken, CowEnv, SupportedChainId},
     orderbook::{ApiContext, ExternalHostPolicy, OrderbookApi},
-    trading::{TraderParameters, TradingBuilder, TradingError, TradingOptions},
+    trading::{TraderParams, TradingBuilder, TradingError, TradingOptions},
 };
 
 use cow_sdk_examples_native::support::{sample_quote_response_json, sample_trade_parameters};
@@ -46,7 +46,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     .build()?;
 
     let trading = TradingBuilder::ready(
-        TraderParameters::new(SupportedChainId::Sepolia, "cow-rs-cancellation-example")
+        TraderParams::new(SupportedChainId::Sepolia, "cow-rs-cancellation-example")
             .expect("app code should validate"),
         TradingOptions::new().with_orderbook_client(Arc::new(orderbook)),
     )?;

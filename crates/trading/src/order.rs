@@ -10,9 +10,9 @@ use cow_sdk_signing::{GeneratedOrderId, generate_order_id};
 
 use crate::slippage::parse_integer;
 use crate::{
-    DEFAULT_QUOTE_VALIDITY, EthFlowOrderExistsChecker, LimitTradeParameters,
-    LimitTradeParametersFromQuote, TradeParameters, TradingError,
-    calculate_quote_amounts_and_costs, default_slippage_bps, partner_fee_bps,
+    DEFAULT_QUOTE_VALIDITY, EthFlowOrderExistsChecker, LimitTradeParams, LimitTradeParamsFromQuote,
+    TradeParams, TradingError, calculate_quote_amounts_and_costs, default_slippage_bps,
+    partner_fee_bps,
 };
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -35,7 +35,7 @@ pub struct OrderToSignParams {
     /// Effective owner.
     pub from: Address,
     /// Whether the flow is building an `EthFlow` order.
-    pub is_ethflow: bool,
+    pub is_eth_flow: bool,
     /// Optional network cost amount folded into amount calculations.
     pub network_costs_amount: Option<Amount>,
     /// Whether costs, slippage, and fees should be applied to the final order payload.
@@ -54,11 +54,11 @@ impl OrderToSignParams {
     /// opt out explicitly by calling
     /// [`OrderToSignParams::with_apply_costs_slippage_and_fees`] with `false`.
     #[must_use]
-    pub const fn new(chain_id: SupportedChainId, from: Address, is_ethflow: bool) -> Self {
+    pub const fn new(chain_id: SupportedChainId, from: Address, is_eth_flow: bool) -> Self {
         Self {
             chain_id,
             from,
-            is_ethflow,
+            is_eth_flow,
             network_costs_amount: None,
             apply_costs_slippage_and_fees: true,
             protocol_fee_bps: None,
@@ -87,7 +87,7 @@ impl OrderToSignParams {
     }
 }
 
-impl LimitTradeParameters {
+impl LimitTradeParams {
     /// Resolves the order expiration into a typed [`ValidTo`].
     ///
     /// `valid_to` wins when present; otherwise `valid_for` is combined with
@@ -118,7 +118,7 @@ impl LimitTradeParameters {
 
 /// Returns `true` when `sell_token` is the protocol native-asset sentinel address.
 #[must_use]
-pub fn is_ethflow_order(sell_token: &Address) -> bool {
+pub fn is_eth_flow_order(sell_token: &Address) -> bool {
     sell_token
         .to_hex_string()
         .eq_ignore_ascii_case(EVM_NATIVE_CURRENCY_ADDRESS)
@@ -126,10 +126,10 @@ pub fn is_ethflow_order(sell_token: &Address) -> bool {
 
 /// Rewrites a swap trade to use the wrapped-native token for `EthFlow` quoting.
 #[must_use]
-pub fn adjust_ethflow_trade_parameters(
+pub fn adjust_eth_flow_trade_params(
     chain_id: SupportedChainId,
-    trade_parameters: &TradeParameters,
-) -> TradeParameters {
+    trade_parameters: &TradeParams,
+) -> TradeParams {
     let mut adjusted = trade_parameters.clone();
     adjusted.sell_token = wrapped_native_token(chain_id).address;
     adjusted
@@ -137,10 +137,10 @@ pub fn adjust_ethflow_trade_parameters(
 
 /// Rewrites a limit-order request to use the wrapped-native token for `EthFlow` posting.
 #[must_use]
-pub fn adjust_ethflow_limit_parameters(
+pub fn adjust_eth_flow_limit_params(
     chain_id: SupportedChainId,
-    limit_parameters: &LimitTradeParameters,
-) -> LimitTradeParameters {
+    limit_parameters: &LimitTradeParams,
+) -> LimitTradeParams {
     let mut adjusted = limit_parameters.clone();
     adjusted.sell_token = wrapped_native_token(chain_id).address;
     adjusted
@@ -149,7 +149,7 @@ pub fn adjust_ethflow_limit_parameters(
 /// Converts swap-style trade params plus a quote response into the
 /// from-quote limit-order shape.
 ///
-/// The returned [`LimitTradeParametersFromQuote`] is the typed
+/// The returned [`LimitTradeParamsFromQuote`] is the typed
 /// guarantee that the `quote_id` field is present; downstream
 /// `EthFlow` entries require this newtype on their public boundary.
 ///
@@ -158,10 +158,10 @@ pub fn adjust_ethflow_limit_parameters(
 /// Returns [`TradingError::MissingQuoteId`] when the orderbook quote
 /// response does not carry an identifier.
 pub fn swap_params_to_limit_order_params(
-    trade_parameters: &TradeParameters,
+    trade_parameters: &TradeParams,
     quote_response: &OrderQuoteResponse,
-) -> Result<LimitTradeParametersFromQuote, TradingError> {
-    let inner = LimitTradeParameters {
+) -> Result<LimitTradeParamsFromQuote, TradingError> {
+    let inner = LimitTradeParams {
         kind: trade_parameters.kind,
         owner: trade_parameters.owner,
         sell_token: trade_parameters.sell_token,
@@ -181,7 +181,7 @@ pub fn swap_params_to_limit_order_params(
         valid_to: trade_parameters.valid_to,
         partner_fee: trade_parameters.partner_fee.clone(),
     };
-    LimitTradeParametersFromQuote::try_from_limit(inner)
+    LimitTradeParamsFromQuote::try_from_limit(inner)
 }
 
 /// Builds the unsigned order payload used for signing or on-chain helpers.
@@ -202,7 +202,7 @@ pub fn swap_params_to_limit_order_params(
 /// The implementation clamps it to the supported `u32` range before conversion.
 pub fn order_to_sign(
     params: OrderToSignParams,
-    limit_parameters: &LimitTradeParameters,
+    limit_parameters: &LimitTradeParams,
     app_data_keccak256: &AppDataHash,
 ) -> Result<OrderData, TradingError> {
     let network_costs_amount = params.network_costs_amount.unwrap_or(Amount::ZERO);
@@ -234,7 +234,7 @@ pub fn order_to_sign(
 
     let slippage_bps = limit_parameters
         .slippage_bps
-        .unwrap_or_else(|| default_slippage_bps(params.chain_id, params.is_ethflow));
+        .unwrap_or_else(|| default_slippage_bps(params.chain_id, params.is_eth_flow));
     let (sell_amount_to_use, buy_amount_to_use) = if params.apply_costs_slippage_and_fees {
         let quote = cow_sdk_orderbook::QuoteData::new(
             limit_parameters.sell_token,

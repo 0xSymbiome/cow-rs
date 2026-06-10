@@ -3,12 +3,12 @@
 //! [`verify_eip1271_signature_cached`] orchestrates the canonical
 //! `isValidSignature` dispatch against the verifier contract through an
 //! injected [`cow_sdk_core::Provider`], consulting an
-//! [`Eip1271VerificationCache`] before reaching the chain. The trait is
+//! [`Eip1271Cache`] before reaching the chain. The trait is
 //! defined here so the contracts crate can take it as a parameter
 //! without depending on its sibling crates; callers typically reach for
 //! the trait through `cow_sdk_signing::cache` and the
-//! `NoopEip1271VerificationCache` and
-//! `InMemoryEip1271VerificationCache` implementations in the signing
+//! `NoopEip1271Cache` and
+//! `InMemoryEip1271Cache` implementations in the signing
 //! crate.
 //!
 //! # Cache key
@@ -62,7 +62,7 @@ use crate::signature::{
 /// that is not present (or has expired) re-hits the chain. The trait is
 /// `Send + Sync + 'static` so the cache may be shared across `tokio`
 /// tasks and across consumer crates without lifetime juggling.
-pub trait Eip1271VerificationCache: Send + Sync + 'static {
+pub trait Eip1271Cache: Send + Sync + 'static {
     /// Returns `true` iff the `(verifier, digest, signature_hash)` probe
     /// was recorded VALID by a previous [`record_valid`] and the entry has
     /// not expired. A `false` return means "unknown" — the caller must
@@ -71,7 +71,7 @@ pub trait Eip1271VerificationCache: Send + Sync + 'static {
     /// `signature_hash` is the `keccak256` of the signature bytes the
     /// verifier consumes.
     ///
-    /// [`record_valid`]: Eip1271VerificationCache::record_valid
+    /// [`record_valid`]: Eip1271Cache::record_valid
     fn contains_valid(&self, verifier: Address, digest: [u8; 32], signature_hash: [u8; 32])
     -> bool;
 
@@ -85,7 +85,7 @@ pub trait Eip1271VerificationCache: Send + Sync + 'static {
 }
 
 /// Verifies an EIP-1271 signature using an asynchronous provider, with
-/// an injected [`Eip1271VerificationCache`] consulted before any
+/// an injected [`Eip1271Cache`] consulted before any
 /// on-chain call.
 ///
 /// ## Note
@@ -123,7 +123,7 @@ pub async fn verify_eip1271_signature_cached<P, C>(
 where
     P: Provider,
     P::Error: fmt::Display,
-    C: Eip1271VerificationCache + ?Sized,
+    C: Eip1271Cache + ?Sized,
 {
     let digest_key = decode_digest_key(&request.digest);
     let signature_key = keccak256(request.signature.as_slice()).0;

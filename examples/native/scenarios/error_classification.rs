@@ -106,7 +106,7 @@ fn partition_tour() -> Vec<serde_json::Value> {
         (
             "Transport",
             OrderbookError::Transport {
-                class: cow_sdk::TransportErrorClass::Timeout,
+                class: cow_sdk::http::TransportErrorClass::Timeout,
                 detail: "connection timed out".to_owned().into(),
             }
             .into(),

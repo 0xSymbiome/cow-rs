@@ -3,7 +3,7 @@ mod common;
 use cow_sdk_contracts::{ContractId, Registry};
 use cow_sdk_core::{Amount, CowEnv, SupportedChainId};
 use cow_sdk_trading::{
-    AllowanceParameters, ApprovalParameters, approval_transaction, approve_cow_protocol,
+    AllowanceParams, ApprovalParams, approval_transaction, approve_cow_protocol,
     cow_protocol_allowance,
 };
 
@@ -51,7 +51,7 @@ async fn allowance_reads_use_runtime_chain_resolution_and_explicit_overrides() {
 
     let custom = address(ALT_RECEIVER);
     let tx = approval_transaction(
-        &ApprovalParameters::new(
+        &ApprovalParams::new(
             address(COW),
             Amount::new("123456").expect("test approval amount literal must be valid"),
         )
@@ -80,7 +80,7 @@ async fn approval_submission_returns_transaction_hash() {
     let signer = MockSigner::default();
     let tx_hash = approve_cow_protocol(
         &signer,
-        &ApprovalParameters::new(
+        &ApprovalParams::new(
             address(COW),
             Amount::new("1000").expect("test approval amount literal must be valid"),
         )
@@ -98,7 +98,7 @@ async fn approval_submission_returns_transaction_hash() {
 #[test]
 fn approval_transaction_accepts_max_uint256_amount() {
     let tx = approval_transaction(
-        &ApprovalParameters::new(
+        &ApprovalParams::new(
             address(COW),
             Amount::new(
                 "115792089237316195423570985008687907853269984665640564039457584007913129639935",
@@ -123,11 +123,11 @@ fn approval_transaction_accepts_max_uint256_amount() {
 
 #[test]
 fn parameter_structs_preserve_call_level_chain_and_override_values() {
-    let allowance = AllowanceParameters::new(address(COW), address(OWNER))
+    let allowance = AllowanceParams::new(address(COW), address(OWNER))
         .with_chain_id(SupportedChainId::Mainnet)
         .with_env(CowEnv::Staging)
         .with_vault_relayer_override(address(ALT_RECEIVER));
-    let approval = ApprovalParameters::new(
+    let approval = ApprovalParams::new(
         address(COW),
         Amount::new("42").expect("test approval amount literal must be valid"),
     )

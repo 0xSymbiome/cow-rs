@@ -18,7 +18,7 @@ use cow_sdk_orderbook::{
 };
 use cow_sdk_signing::OrderTypedData;
 
-use super::params::TradeParameters;
+use super::params::TradeParams;
 use crate::{OrderbookContextValue, TradingError};
 
 /// Fully resolved quote result produced by trading quote helpers.
@@ -27,7 +27,7 @@ use crate::{OrderbookContextValue, TradingError};
 #[non_exhaustive]
 pub struct QuoteResults {
     /// Effective trade parameters after SDK defaults and advanced settings were applied.
-    pub trade_parameters: TradeParameters,
+    pub trade_parameters: TradeParams,
     /// Suggested slippage in basis points after SDK or custom-provider resolution.
     pub suggested_slippage_bps: u32,
     /// Fee and amount breakdown derived from the orderbook quote.
@@ -53,7 +53,7 @@ impl QuoteResults {
     /// Creates a quote-results payload from its required fields.
     #[must_use]
     pub const fn new(
-        trade_parameters: TradeParameters,
+        trade_parameters: TradeParams,
         suggested_slippage_bps: u32,
         amounts_and_costs: QuoteAmountsAndCosts,
         order_to_sign: OrderData,

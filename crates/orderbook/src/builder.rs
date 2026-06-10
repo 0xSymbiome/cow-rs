@@ -32,7 +32,7 @@
 //! # {
 //! let orderbook = OrderbookApi::builder()
 //!     .chain(SupportedChainId::Mainnet)
-//!     .environment(CowEnv::Prod)
+//!     .env(CowEnv::Prod)
 //!     .build()
 //!     .expect("orderbook client builds with canonical defaults");
 //! let _ = orderbook;
@@ -133,7 +133,7 @@ impl OrderbookApiBuilder<ChainIdUnset, EnvUnset, TransportUnset> {
     pub fn from_context(
         context: ApiContext,
     ) -> OrderbookApiBuilder<ChainIdSet, EnvSet, TransportUnset> {
-        let mut builder = Self::new().chain(context.chain_id).environment(context.env);
+        let mut builder = Self::new().chain(context.chain_id).env(context.env);
         if let Some(api_key) = context.api_key {
             builder.api_key = Some(api_key);
         }
@@ -170,7 +170,7 @@ impl<C, T> OrderbookApiBuilder<C, EnvUnset, T> {
     /// Transitions the environment typestate from [`EnvUnset`] to [`EnvSet`],
     /// which carries the supplied environment.
     #[must_use]
-    pub fn environment(self, env: CowEnv) -> OrderbookApiBuilder<C, EnvSet, T> {
+    pub fn env(self, env: CowEnv) -> OrderbookApiBuilder<C, EnvSet, T> {
         OrderbookApiBuilder {
             chain: self.chain,
             env: EnvSet(env),

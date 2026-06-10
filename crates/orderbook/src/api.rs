@@ -15,9 +15,9 @@ use crate::{
     transform::{transform_order, transform_orders},
     types::{
         ApiContext, ApiContextOverride, AppDataHash, AppDataObject, CompetitionOrderStatus, CowEnv,
-        ENVS_LIST, EnvBaseUrlOverrides, GetOrdersRequest, GetTradesRequest, NativePriceResponse,
-        Order, OrderCancellations, OrderCreation, OrderQuoteRequest, OrderQuoteResponse, OrderUid,
-        SolverCompetitionResponse, TotalSurplus, Trade,
+        EnvBaseUrlOverrides, NativePriceResponse, Order, OrderCancellations, OrderCreation,
+        OrderQuoteRequest, OrderQuoteResponse, OrderUid, OrdersQuery, SolverCompetitionResponse,
+        TotalSurplus, Trade, TradesQuery,
     },
 };
 
@@ -174,7 +174,7 @@ impl OrderbookApi {
 
     /// Returns the orderbook request policy embedded in the transport policy.
     #[must_use]
-    pub const fn request_policy(&self) -> &RetryPolicy {
+    pub const fn retry_policy(&self) -> &RetryPolicy {
         self.transport_policy.retry()
     }
 
@@ -316,7 +316,7 @@ impl OrderbookApi {
             ),
         ),
     )]
-    pub async fn send_signed_order_cancellations(
+    pub async fn send_cancellations(
         &self,
         request: &OrderCancellations,
     ) -> Result<(), OrderbookError> {
@@ -388,7 +388,8 @@ impl OrderbookApi {
             Ok(order) => Ok(order),
             Err(error) if is_not_found(&error) => {
                 let current_env = self.context.env;
-                if let Some(fallback_env) = ENVS_LIST.into_iter().find(|env| *env != current_env) {
+                if let Some(fallback_env) = CowEnv::ALL.into_iter().find(|env| *env != current_env)
+                {
                     self.clone()
                         .with_context_override(ApiContextOverride {
                             env: Some(fallback_env),
@@ -427,7 +428,7 @@ impl OrderbookApi {
             ),
         ),
     )]
-    pub async fn orders(&self, request: &GetOrdersRequest) -> Result<Vec<Order>, OrderbookError> {
+    pub async fn orders(&self, request: &OrdersQuery) -> Result<Vec<Order>, OrderbookError> {
         let params = FetchParams::new(
             format!("/api/v1/account/{}/orders", request.owner.to_hex_string()),
             HttpMethod::Get,
@@ -493,7 +494,7 @@ impl OrderbookApi {
             ),
         ),
     )]
-    pub async fn trades(&self, request: &GetTradesRequest) -> Result<Vec<Trade>, OrderbookError> {
+    pub async fn trades(&self, request: &TradesQuery) -> Result<Vec<Trade>, OrderbookError> {
         if !request.is_valid() {
             return Err(OrderbookError::InvalidTradesQuery {
                 field: "filter",
@@ -753,7 +754,7 @@ impl OrderbookApi {
             ),
         ),
     )]
-    pub async fn solver_competition_by_auction_id(
+    pub async fn solver_competition(
         &self,
         auction_id: i64,
     ) -> Result<SolverCompetitionResponse, OrderbookError> {

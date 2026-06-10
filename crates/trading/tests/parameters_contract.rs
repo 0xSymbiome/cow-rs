@@ -1,5 +1,5 @@
-//! Builder-level same-token policy contract for `TradeParameters` and
-//! `LimitTradeParameters`.
+//! Builder-level same-token policy contract for `TradeParams` and
+//! `LimitTradeParams`.
 //!
 //! The builder validators are chain-agnostic, so they pin exact same-token
 //! `OrderKind` semantics here while the order-level validator owns the
@@ -12,7 +12,7 @@
 
 use cow_sdk_core::{Amount, EVM_NATIVE_CURRENCY_ADDRESS, OrderKind};
 use cow_sdk_test_utils::builders::address;
-use cow_sdk_trading::{ClientRejection, LimitTradeParameters, TradeParameters};
+use cow_sdk_trading::{ClientRejection, LimitTradeParams, TradeParams};
 
 const SELL_TOKEN: &str = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 // Canonical lowercase 0x-prefixed wire form (PROP-WB-004 / ADR 0052).
@@ -22,8 +22,8 @@ fn amount(value: &str) -> Amount {
     Amount::new(value).expect("fixture amount must be valid")
 }
 
-fn trade_parameters(kind: OrderKind, sell_token: &str, buy_token: &str) -> TradeParameters {
-    TradeParameters::new(
+fn trade_parameters(kind: OrderKind, sell_token: &str, buy_token: &str) -> TradeParams {
+    TradeParams::new(
         kind,
         address(sell_token),
         address(buy_token),
@@ -31,12 +31,8 @@ fn trade_parameters(kind: OrderKind, sell_token: &str, buy_token: &str) -> Trade
     )
 }
 
-fn limit_trade_parameters(
-    kind: OrderKind,
-    sell_token: &str,
-    buy_token: &str,
-) -> LimitTradeParameters {
-    LimitTradeParameters::new(
+fn limit_trade_parameters(kind: OrderKind, sell_token: &str, buy_token: &str) -> LimitTradeParams {
+    LimitTradeParams::new(
         kind,
         address(sell_token),
         address(buy_token),

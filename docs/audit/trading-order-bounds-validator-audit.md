@@ -10,8 +10,8 @@ Refresh trigger: Changes to the `validate` signature, the
 `OrderBoundsValidator::services_default_for_chain`
 constructor, the eth-flow `is_eth_flow` skip rule, upstream services
 `crates/shared/src/order_validation.rs` same-token semantics, the
-WETH-paired-with-native-buy guard, or the offline `TradeParameters::validate`
-/ `LimitTradeParameters::validate` builder-level subset.
+WETH-paired-with-native-buy guard, or the offline `TradeParams::validate`
+/ `LimitTradeParams::validate` builder-level subset.
 Related docs:
 - [ADR 0015](../adr/0015-client-side-order-bounds-validator.md)
 - [Architecture](../architecture.md)
@@ -36,8 +36,8 @@ This audit covers:
   `OrderBoundsValidator::services_default_for_chain`, which attaches
   the chain-specific wrapped-native-token address for the same-token
   paired guard
-- the offline `TradeParameters::validate` and
-  `LimitTradeParameters::validate` builder-level subset
+- the offline `TradeParams::validate` and
+  `LimitTradeParams::validate` builder-level subset
 - the `cow_sdk_core::Amount::is_zero` predicate consumed by
   zero-amount checks
 
@@ -60,7 +60,7 @@ encoder.
 | Time-source determinism | Property coverage compares validation classifications at `now` and `now + delta` while the order is not expired at either observation | Conforms |
 | Timestamp extremes | `valid_to = u32::MAX` resolves to typed validation outcomes at `u32::MAX` and `u64::MAX` timestamp boundaries without panicking | Conforms |
 | Gas overhead | EthFlow and pre-sign transaction helpers apply the documented 20% gas overhead with floor integer rounding | Conforms |
-| Cancellation gas fallback | On-chain cancellation transaction construction falls back to `GAS_LIMIT_DEFAULT` when signer gas estimation is unavailable | Conforms |
+| Cancellation gas fallback | On-chain cancellation transaction construction falls back to `DEFAULT_GAS_LIMIT` when signer gas estimation is unavailable | Conforms |
 | Fuzz harness | `fuzz_order_bounds_validator` carries a documented seed-class contract covering validator rejection classes and timestamp/token sentinels; the working corpus stays local-only (gitignored) | Conforms |
 | Scope framing | The public validator documentation frames the local checks as defence-in-depth and names services-side rejection classes outside SDK pre-check coverage | Conforms |
 
@@ -140,7 +140,7 @@ reviewed-services configuration in production deployments runs the
 same `AllowSell` mode (the `Disallow` and `Allow` modes are
 upstream policy variants out of scope for `cow-sdk-trading`).
 
-`TradeParameters::validate` and `LimitTradeParameters::validate` apply the
+`TradeParams::validate` and `LimitTradeParams::validate` apply the
 same buy-only exact same-token rule at the chain-agnostic builder layer. The
 chain-specific WETH/native-sentinel pairing remains owned by the order-level
 validator because it requires the wrapped-native token address for the
@@ -189,7 +189,7 @@ changes cannot silently switch multiplier or rounding behavior.
 
 On-chain cancellation transaction construction keeps a separate fallback
 contract: if signer gas estimation fails, the helper uses the documented
-`GAS_LIMIT_DEFAULT` constant rather than surfacing an estimation-only error
+`DEFAULT_GAS_LIMIT` constant rather than surfacing an estimation-only error
 before callers can sign or inspect the cancellation transaction.
 
 ## Evidence

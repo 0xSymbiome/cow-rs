@@ -21,15 +21,15 @@ cow-sdk-trading = "0.1"
 ## Minimal example
 
 The `TradingBuilder::ready` one-call shortcut accepts a complete
-`TraderParameters` plus an options bundle and returns a ready-state
+`TraderParams` plus an options bundle and returns a ready-state
 `Trading`:
 
 ```rust
 use cow_sdk_core::SupportedChainId;
-use cow_sdk_trading::{TraderParameters, TradingBuilder, TradingOptions};
+use cow_sdk_trading::{TraderParams, TradingBuilder, TradingOptions};
 
 let _trading = TradingBuilder::ready(
-    TraderParameters::new(SupportedChainId::Sepolia, "your-app-code")
+    TraderParams::new(SupportedChainId::Sepolia, "your-app-code")
         .expect("app code validates"),
     TradingOptions::default(),
 )
@@ -55,14 +55,14 @@ let _trading = Trading::builder()
 Allowance reads, approval submission, pre-sign transaction construction, and
 on-chain cancellation need chain authority but no app code, so they are the
 crate's free functions — `cow_protocol_allowance`, `approval_transaction`,
-`pre_sign_transaction`, and `cancel_order_onchain` — and need no trading
+`pre_sign_transaction`, and `onchain_cancel_order` — and need no trading
 client. Quote, post, order lookup, and off-chain cancellation flows use the
 ready `Trading` client.
 
-Owner attribution lives on the per-trade `TradeParameters` (or
-`LimitTradeParameters`); the `Trading` client does not store a default owner. For
+Owner attribution lives on the per-trade `TradeParams` (or
+`LimitTradeParams`); the `Trading` client does not store a default owner. For
 signer-backed flows the signer's address fills the slot when
-`TradeParameters.owner` is `None`.
+`TradeParams.owner` is `None`.
 
 ## Swap in one call
 
@@ -109,22 +109,22 @@ let _posted = quoted.submit(signer).await?;
 ## Quoting a swap
 
 Quoting is the lowest-friction action and needs no signer — the owner comes
-from `TradeParameters`:
+from `TradeParams`:
 
 ```rust,no_run
 use cow_sdk_core::{Address, Amount, OrderKind, SupportedChainId};
-use cow_sdk_trading::{TradeParameters, TradingBuilder, TradingOptions};
+use cow_sdk_trading::{TradeParams, TradingBuilder, TradingOptions};
 
 # async fn run() -> Result<(), Box<dyn std::error::Error>> {
 let trading = TradingBuilder::ready(
-    cow_sdk_trading::TraderParameters::new(SupportedChainId::Mainnet, "your-app-code")?,
+    cow_sdk_trading::TraderParams::new(SupportedChainId::Mainnet, "your-app-code")?,
     TradingOptions::default(),
 )?;
 
 // Sell 1 WETH for USDC.
 let weth = Address::new("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2")?;
 let usdc = Address::new("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48")?;
-let params = TradeParameters::new(
+let params = TradeParams::new(
     OrderKind::Sell,
     weth,
     usdc,

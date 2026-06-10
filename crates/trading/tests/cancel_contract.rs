@@ -2,8 +2,7 @@ mod common;
 
 use cow_sdk_core::{Amount, SupportedChainId};
 use cow_sdk_trading::{
-    GAS_LIMIT_DEFAULT, OrderTraderParameters, off_chain_cancel_order,
-    onchain_cancellation_transaction,
+    DEFAULT_GAS_LIMIT, OrderTraderParams, offchain_cancel_order, onchain_cancellation_transaction,
 };
 
 use crate::common::{
@@ -15,12 +14,12 @@ async fn offchain_cancellation_signs_and_dispatches_order_uids_to_orderbook() {
     let trader = sample_trader_parameters();
     let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
     let signer = MockSigner::default();
-    let mut params = OrderTraderParameters::new(order_uid()).with_chain_id(trader.chain_id);
+    let mut params = OrderTraderParams::new(order_uid()).with_chain_id(trader.chain_id);
     if let Some(env) = trader.env {
         params = params.with_env(env);
     }
 
-    let cancelled = off_chain_cancel_order(&orderbook, &params, &trader, &signer)
+    let cancelled = offchain_cancel_order(&orderbook, &params, &trader, &signer)
         .await
         .expect("off-chain cancellation should succeed");
     let state = orderbook.state();
@@ -44,13 +43,12 @@ async fn offchain_cancellation_rejects_call_level_chain_conflicts_with_orderbook
     let trader = sample_trader_parameters();
     let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
     let signer = MockSigner::default();
-    let mut params =
-        OrderTraderParameters::new(order_uid()).with_chain_id(SupportedChainId::Mainnet);
+    let mut params = OrderTraderParams::new(order_uid()).with_chain_id(SupportedChainId::Mainnet);
     if let Some(env) = trader.env {
         params = params.with_env(env);
     }
 
-    let error = off_chain_cancel_order(&orderbook, &params, &trader, &signer)
+    let error = offchain_cancel_order(&orderbook, &params, &trader, &signer)
         .await
         .expect_err("mismatched cancellation chain must fail before signing");
 
@@ -84,6 +82,6 @@ async fn cancellation_gas_estimation_fallback_uses_documented_constant() {
 
     assert_eq!(
         tx.gas_limit,
-        Some(Amount::new(GAS_LIMIT_DEFAULT.to_string()).expect("default gas literal is valid")),
+        Some(Amount::new(DEFAULT_GAS_LIMIT.to_string()).expect("default gas literal is valid")),
     );
 }

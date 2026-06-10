@@ -6,13 +6,13 @@ use std::{
 };
 
 use cow_sdk_core::Address;
-use cow_sdk_signing::{Clock, Eip1271VerificationCache, InMemoryEip1271VerificationCache};
+use cow_sdk_signing::{Clock, Eip1271Cache, InMemoryEip1271Cache};
 use wasm_bindgen_test::wasm_bindgen_test;
 use web_time::Instant;
 
 #[wasm_bindgen_test]
 fn in_memory_cache_round_trips_without_panicking_on_wasm32() {
-    let cache = InMemoryEip1271VerificationCache::default();
+    let cache = InMemoryEip1271Cache::default();
     let verifier = Address::new("0x1111111111111111111111111111111111111111")
         .expect("static verifier must stay valid");
     let digest = [0xAB; 32];
@@ -27,11 +27,7 @@ fn in_memory_cache_round_trips_without_panicking_on_wasm32() {
 fn cache_ttl_boundary_holds_at_minus_one_and_misses_at_plus_one_on_wasm32() {
     let start = Instant::now();
     let clock = ManualClock::new(start);
-    let cache = InMemoryEip1271VerificationCache::with_clock(
-        Duration::from_secs(5 * 60),
-        16,
-        clock.clone(),
-    );
+    let cache = InMemoryEip1271Cache::with_clock(Duration::from_secs(5 * 60), 16, clock.clone());
     let verifier = Address::new("0x2222222222222222222222222222222222222222")
         .expect("static verifier must stay valid");
     let digest = [0xCD; 32];

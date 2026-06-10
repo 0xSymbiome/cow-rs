@@ -35,7 +35,7 @@ use cow_sdk_orderbook::{
 # async fn run() -> Result<(), Box<dyn std::error::Error>> {
 let orderbook = OrderbookApi::builder()
     .chain(SupportedChainId::Mainnet)
-    .environment(CowEnv::Prod)
+    .env(CowEnv::Prod)
     .build()?;
 
 // Sell-side quote for 1 WETH -> USDC.

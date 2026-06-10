@@ -9,14 +9,14 @@
 
 ## Decision
 
-EIP-1271 signature verification threads an `Eip1271VerificationCache`
+EIP-1271 signature verification threads an `Eip1271Cache`
 trait through `verify_eip1271_signature_cached`. The trait is defined in
 `cow-sdk-contracts` so the function that consumes it does not pull a
 reverse dependency on the signing crate, and it is re-exported from
 `cow-sdk-signing::cache` where the default implementations live. Two
-canonical implementations ship: `NoopEip1271VerificationCache`
+canonical implementations ship: `NoopEip1271Cache`
 (zero-sized, always misses, used when memoization is not wanted) and
-`InMemoryEip1271VerificationCache` (bounded-capacity, TTL-expiring, used
+`InMemoryEip1271Cache` (bounded-capacity, TTL-expiring, used
 when repeated probes of the same verifier and digest are expected). The
 cache is a parameter on every call; the function never silently
 memoizes without a caller-supplied cache argument.
@@ -39,7 +39,7 @@ crates away.
 
 ## Must Remain True
 
-- Public surface: `Eip1271VerificationCache` defines a narrow positive-only
+- Public surface: `Eip1271Cache` defines a narrow positive-only
   set trait with
   `contains_valid(verifier: Address, digest: [u8; 32], signature_hash: [u8; 32]) -> bool`
   and
@@ -48,10 +48,10 @@ crates away.
   2026-05-28 amendment for the move from `get`/`put` to this shape). The
   key is the full probe identity including the signature hash; there is
   no `bool` value and no negative cache. The function
-  `verify_eip1271_signature_cached` takes `&impl Eip1271VerificationCache`
+  `verify_eip1271_signature_cached` takes `&impl Eip1271Cache`
   as a required parameter — there is no overload that defaults the cache.
-  `NoopEip1271VerificationCache` is always available and carries no
-  dependencies; `InMemoryEip1271VerificationCache` ships behind the
+  `NoopEip1271Cache` is always available and carries no
+  dependencies; `InMemoryEip1271Cache` ships behind the
   opt-in `in-memory-cache` feature (default off). Third-party impls
   (Redis, bounded LRU, Postgres) are expected to live in downstream code.
 - Runtime and support: the cache records a probe only on a successful
@@ -62,13 +62,13 @@ crates away.
   failure cannot pin a signer into a "rejected" state and a not-yet-valid
   signature that becomes valid on-chain within the TTL is never blocked by
   a stale negative entry. The TTL is the second safety rail:
-  `InMemoryEip1271VerificationCache` expires entries after five minutes by
+  `InMemoryEip1271Cache` expires entries after five minutes by
   default so the cache never pretends to be an authoritative view of
   mutable on-chain state, and on-chain settlement re-checks the signature
   regardless.
 - Validation and review: a Noop miss contract test asserts every
-  `get` against `NoopEip1271VerificationCache` returns `None`. A TTL
-  contract test asserts `InMemoryEip1271VerificationCache` drops an
+  `get` against `NoopEip1271Cache` returns `None`. A TTL
+  contract test asserts `InMemoryEip1271Cache` drops an
   expired entry on the next probe. A capacity contract test asserts
   past-capacity inserts evict the oldest entry. A thread-safety contract
   test drives concurrent inserts against the same key space and asserts
@@ -76,8 +76,8 @@ crates away.
   e2e surfaces compiles against the three-parameter shape.
 - Cost: one trait, two canonical implementations, and one new
   `parking_lot` dependency on `cow-sdk-signing` for the
-  `InMemoryEip1271VerificationCache` lock. Callers that do not want
-  caching pass `&NoopEip1271VerificationCache::default()` and pay zero
+  `InMemoryEip1271Cache` lock. Callers that do not want
+  caching pass `&NoopEip1271Cache::default()` and pay zero
   allocation or synchronization overhead.
 
 ## Alternatives Rejected
@@ -111,8 +111,8 @@ crates away.
 
 ## Amendment 2026-05-22: canonical primitive layer (per ADR 0052)
 
-The `verifier: Address` parameter on `Eip1271VerificationCache::get` and
-`Eip1271VerificationCache::put` resolves through the cow-owned
+The `verifier: Address` parameter on `Eip1271Cache::get` and
+`Eip1271Cache::put` resolves through the cow-owned
 `#[repr(transparent)]` newtype around `alloy_primitives::Address` per
 [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md). The
 `digest: [u8; 32]` parameter stays a raw fixed-size byte array on the
@@ -126,7 +126,7 @@ via `Hash32::as_alloy()` plus `.into()` or via the
 The `cow-sdk-trading` crate ships an `InMemoryQuoteCache` reference
 implementation of its `QuoteCache` trait that mirrors the cache
 primitive pattern this ADR established for
-`InMemoryEip1271VerificationCache`. The shared pattern covers:
+`InMemoryEip1271Cache`. The shared pattern covers:
 
 - `parking_lot::RwLock<HashMap<K, V>>` as the storage primitive.
 - A `Clock` trait with `now(&self) -> Instant` plus a default
@@ -147,7 +147,7 @@ primitive pattern this ADR established for
 
 The EIP-1271-specific conservative-cache semantics (only `Ok(())` and
 `Eip1271MagicValueMismatch` cached, every other error class never
-cached) remain scoped to `InMemoryEip1271VerificationCache` and the
+cached) remain scoped to `InMemoryEip1271Cache` and the
 `verify_eip1271_signature_cached` call shape — the trading quote cache
 caches every result the `QuoteCache` trait passes through `insert`
 because the trading flow caller already decides what is safe to
@@ -197,13 +197,13 @@ was removed.
   within the TTL is never blocked by a stale negative entry. Negative
   caching is unrepresentable in the trait.
 - **The in-memory implementation sits behind a feature.** The trait and
-  the dependency-free `NoopEip1271VerificationCache` are always available;
-  the capacity-bounded, TTL-respecting `InMemoryEip1271VerificationCache`
+  the dependency-free `NoopEip1271Cache` are always available;
+  the capacity-bounded, TTL-respecting `InMemoryEip1271Cache`
   and its `Clock` machinery now sit behind the opt-in `in-memory-cache`
   feature (default off). That feature is the only reason the signing crate
   pulls `parking_lot` (and, on `wasm32`, `web-time`), so the default build
   and the default wasm bundle carry neither. The facade re-exports
-  `InMemoryEip1271VerificationCache` only under its own matching feature.
+  `InMemoryEip1271Cache` only under its own matching feature.
 
 This supersedes the 2026-05-26 amendment above: the `cow-sdk-trading`
 `QuoteCache` trait, its `QuoteCacheKey`, and its `NoopQuoteCache` /

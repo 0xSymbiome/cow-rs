@@ -5,7 +5,7 @@ use cow_sdk_core::{AppCode, AppCodeError, CowEnv, SupportedChainId};
 
 use super::{AppCodeSet, AppCodeUnset, ChainIdSet, ChainIdUnset, Trading};
 use crate::{
-    OrderbookClient, PartialTraderParameters, TraderParameters, TradingError, TradingOptions,
+    OrderbookClient, PartialTraderParams, TraderParams, TradingError, TradingOptions,
     types::validate_orderbook_context,
 };
 
@@ -26,7 +26,7 @@ use crate::{
 /// requirement is not satisfied.
 #[derive(Debug, Clone)]
 pub struct TradingBuilder<C = ChainIdUnset, A = AppCodeUnset> {
-    trader_defaults: PartialTraderParameters,
+    trader_defaults: PartialTraderParams,
     options: TradingOptions,
     app_code_error: Option<AppCodeError>,
     _state: PhantomData<(C, A)>,
@@ -35,7 +35,7 @@ pub struct TradingBuilder<C = ChainIdUnset, A = AppCodeUnset> {
 impl Default for TradingBuilder<ChainIdUnset, AppCodeUnset> {
     fn default() -> Self {
         Self {
-            trader_defaults: PartialTraderParameters::default(),
+            trader_defaults: PartialTraderParams::default(),
             options: TradingOptions::default(),
             app_code_error: None,
             _state: PhantomData,
@@ -58,8 +58,8 @@ impl TradingBuilder<ChainIdUnset, AppCodeUnset> {
     /// Builds a ready-state [`Trading`] from total trader parameters.
     ///
     /// This one-call terminal is for callers that already hold the complete
-    /// [`TraderParameters`] shape. It intentionally does not accept
-    /// `PartialTraderParameters`, so chain id and `appCode` stay present
+    /// [`TraderParams`] shape. It intentionally does not accept
+    /// `PartialTraderParams`, so chain id and `appCode` stay present
     /// before construction reaches the ready-state terminal.
     ///
     /// # Errors
@@ -68,11 +68,8 @@ impl TradingBuilder<ChainIdUnset, AppCodeUnset> {
     /// trader parameters conflict with an injected orderbook client. On
     /// `wasm32`, also returns [`TradingError::MissingInjectedOrderbookClient`]
     /// when no orderbook client has been supplied.
-    pub fn ready(
-        params: TraderParameters,
-        options: TradingOptions,
-    ) -> Result<Trading, TradingError> {
-        let TraderParameters {
+    pub fn ready(params: TraderParams, options: TradingOptions) -> Result<Trading, TradingError> {
+        let TraderParams {
             chain_id,
             app_code,
             env,
@@ -107,7 +104,7 @@ impl<C, A> TradingBuilder<C, A> {
     #[must_use]
     pub fn chain_id(self, chain_id: SupportedChainId) -> TradingBuilder<ChainIdSet, A> {
         TradingBuilder {
-            trader_defaults: PartialTraderParameters {
+            trader_defaults: PartialTraderParams {
                 chain_id: Some(chain_id),
                 ..self.trader_defaults
             },
@@ -138,7 +135,7 @@ impl<C, A> TradingBuilder<C, A> {
         };
 
         TradingBuilder {
-            trader_defaults: PartialTraderParameters {
+            trader_defaults: PartialTraderParams {
                 app_code,
                 ..self.trader_defaults
             },

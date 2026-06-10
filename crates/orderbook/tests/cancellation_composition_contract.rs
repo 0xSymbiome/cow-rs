@@ -19,10 +19,10 @@ use std::{
 
 use cow_sdk_core::{Amount, Cancellable, CancellationToken};
 use cow_sdk_orderbook::{
-    AppDataObject, CompetitionOrderStatus, CowEnv, GetOrdersRequest, GetTradesRequest,
-    NativePriceResponse, Order, OrderCancellations, OrderCreation, OrderQuoteRequest,
-    OrderQuoteResponse, OrderQuoteSide, OrderUid, OrderbookApi, SigningScheme,
-    SolverCompetitionResponse, SupportedChainId, TotalSurplus, Trade,
+    AppDataObject, CompetitionOrderStatus, CowEnv, NativePriceResponse, Order, OrderCancellations,
+    OrderCreation, OrderQuoteRequest, OrderQuoteResponse, OrderQuoteSide, OrderUid, OrderbookApi,
+    OrdersQuery, SigningScheme, SolverCompetitionResponse, SupportedChainId, TotalSurplus, Trade,
+    TradesQuery,
 };
 use wiremock::{
     Mock, MockServer, ResponseTemplate,
@@ -59,7 +59,7 @@ const TESTED_METHODS: &[CancellationCase] = &[
         invoke: invoke_send_order,
     },
     CancellationCase {
-        method_name: "send_signed_order_cancellations",
+        method_name: "send_cancellations",
         http_method: "DELETE",
         path: path_orders,
         invoke: invoke_send_signed_order_cancellations,
@@ -125,7 +125,7 @@ const TESTED_METHODS: &[CancellationCase] = &[
         invoke: invoke_upload_app_data,
     },
     CancellationCase {
-        method_name: "solver_competition_by_auction_id",
+        method_name: "solver_competition",
         http_method: "GET",
         path: path_solver_competition_by_auction_id,
         invoke: invoke_get_solver_competition_by_auction_id,
@@ -352,7 +352,7 @@ fn invoke_send_signed_order_cancellations(api: &OrderbookApi) -> CaseFuture<'_> 
     Box::pin(async move {
         let cancellation =
             OrderCancellations::new(vec![sample_order_uid()], sample_signature().to_owned());
-        api.send_signed_order_cancellations(&cancellation).await
+        api.send_cancellations(&cancellation).await
     })
 }
 
@@ -370,7 +370,7 @@ fn invoke_get_order_multi_env(api: &OrderbookApi) -> CaseFuture<'_> {
 
 fn invoke_get_orders(api: &OrderbookApi) -> CaseFuture<'_> {
     Box::pin(async move {
-        let request = GetOrdersRequest::new(sample_owner());
+        let request = OrdersQuery::new(sample_owner());
         api.orders(&request).await.map(|_: Vec<Order>| ())
     })
 }
@@ -385,7 +385,7 @@ fn invoke_get_tx_orders(api: &OrderbookApi) -> CaseFuture<'_> {
 
 fn invoke_get_trades(api: &OrderbookApi) -> CaseFuture<'_> {
     Box::pin(async move {
-        let request = GetTradesRequest::by_owner(sample_owner());
+        let request = TradesQuery::by_owner(sample_owner());
         api.trades(&request).await.map(|_: Vec<Trade>| ())
     })
 }
@@ -431,7 +431,7 @@ fn invoke_upload_app_data(api: &OrderbookApi) -> CaseFuture<'_> {
 
 fn invoke_get_solver_competition_by_auction_id(api: &OrderbookApi) -> CaseFuture<'_> {
     Box::pin(async move {
-        api.solver_competition_by_auction_id(7)
+        api.solver_competition(7)
             .await
             .map(|_: SolverCompetitionResponse| ())
     })

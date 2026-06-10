@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 pub use cow_sdk_core::{
-    Address, Amount, ApiBaseUrls, ApiContext, AppDataHash, BuyTokenDestination, CowEnv, ENVS_LIST,
+    Address, Amount, ApiBaseUrls, ApiContext, AppDataHash, BuyTokenDestination, CowEnv,
     EVM_NATIVE_CURRENCY_ADDRESS, ExternalHostPolicy, HostPolicyError, OrderKind, OrderUid,
     QuoteAmountsAndCosts, Redacted, SellTokenSource, SupportedChainId, TransactionHash,
 };

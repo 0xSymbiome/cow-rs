@@ -7,8 +7,7 @@ use cow_sdk_core::{Amount, OrderKind, QuoteAmountsAndCosts, SupportedChainId};
 use cow_sdk_orderbook::{OrderQuoteResponse, PriceQuality, QuoteData};
 
 use crate::{
-    QuoterParameters, SlippageToleranceResponse, TradeAdvancedSettings, TradeParameters,
-    TradingError,
+    QuoterParams, SlippageToleranceResponse, TradeAdvancedSettings, TradeParams, TradingError,
 };
 
 /// Default quote validity, in seconds, when no explicit validity window is supplied.
@@ -20,7 +19,7 @@ pub const MAX_SLIPPAGE_BPS: u32 = 10_000;
 /// Extra gas margin, in percent, added to derived on-chain transaction estimates.
 pub const GAS_MARGIN_PERCENT: u32 = 20;
 /// Fallback gas limit used when no explicit verification gas limit is available.
-pub const GAS_LIMIT_DEFAULT: u32 = 150_000;
+pub const DEFAULT_GAS_LIMIT: u32 = 150_000;
 
 pub(super) const ONE_HUNDRED_BPS: i64 = 10_000;
 
@@ -664,9 +663,9 @@ pub fn suggest_slippage_from_volume(
 /// or overflow the supported typed amount surface.
 pub fn suggest_slippage_bps(
     quote: &OrderQuoteResponse,
-    trade_parameters: &TradeParameters,
-    trader: &QuoterParameters,
-    is_ethflow: bool,
+    trade_parameters: &TradeParams,
+    trader: &QuoterParams,
+    is_eth_flow: bool,
     volume_multiplier_percent: Option<f64>,
 ) -> Result<u32, TradingError> {
     let amounts = calculate_quote_amounts_and_costs(
@@ -695,7 +694,7 @@ pub fn suggest_slippage_bps(
         &total_slippage.to_string(),
     )?;
     let slippage_bps = scaled_percent_to_bps(&slippage_percent_scaled)?;
-    let lower_cap = if is_ethflow {
+    let lower_cap = if is_eth_flow {
         default_slippage_bps(trader.chain_id, true)
     } else {
         0
@@ -717,14 +716,14 @@ pub fn suggest_slippage_bps(
 /// fee inputs are malformed.
 pub async fn resolve_slippage_suggestion(
     chain_id: SupportedChainId,
-    trade_parameters: &TradeParameters,
-    trader: &QuoterParameters,
+    trade_parameters: &TradeParams,
+    trader: &QuoterParams,
     quote: &OrderQuoteResponse,
-    is_ethflow: bool,
+    is_eth_flow: bool,
     advanced_settings: Option<&TradeAdvancedSettings>,
 ) -> Result<SlippageToleranceResponse, TradingError> {
     let default_suggestion =
-        suggest_slippage_bps(quote, trade_parameters, trader, is_ethflow, None)?;
+        suggest_slippage_bps(quote, trade_parameters, trader, is_eth_flow, None)?;
     let Some(provider) =
         advanced_settings.and_then(|settings| settings.slippage_suggester.as_ref())
     else {
@@ -775,7 +774,7 @@ pub async fn resolve_slippage_suggestion(
                 quote,
                 trade_parameters,
                 trader,
-                is_ethflow,
+                is_eth_flow,
                 Some(f64::from(suggested) / 100.0),
             )?),
         }),

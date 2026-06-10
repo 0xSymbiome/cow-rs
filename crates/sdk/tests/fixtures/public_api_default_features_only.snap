@@ -8,13 +8,8 @@ modules:
 - trading
 root exports:
 - ErrorClass
-- HttpTransport
-- NoopEip1271VerificationCache
 - RegistryError
 - CowError
-- TransportError
-- TransportErrorClass
 feature-gated exports absent:
 - browser_wallet
 - subgraph
-- InMemoryEip1271VerificationCache

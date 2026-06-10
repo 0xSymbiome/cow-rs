@@ -1,15 +1,14 @@
 use std::collections::BTreeMap;
 
 use cow_sdk_core::{
-    Address, ApiContext, CoreError, CowEnv, ENVS_LIST, ExternalHostPolicy, HostPolicyError,
-    ProtocolOptions, SupportedChainId, UrlParseFailureClass, ValidationError,
-    canonical_orderbook_hosts, default_api_base_urls, validate_external_service_url,
-    wrapped_native_token,
+    Address, ApiContext, CoreError, CowEnv, ExternalHostPolicy, HostPolicyError, ProtocolOptions,
+    SupportedChainId, UrlParseFailureClass, ValidationError, canonical_orderbook_hosts,
+    default_api_base_urls, validate_external_service_url, wrapped_native_token,
 };
 
 #[test]
 fn environment_defaults_match_core_fixture() {
-    let actual_envs: Vec<&str> = ENVS_LIST.iter().map(|env| env.as_str()).collect();
+    let actual_envs: Vec<&str> = CowEnv::ALL.iter().map(|env| env.as_str()).collect();
     // Canonical environment list (formerly pinned in the retired core fixture).
     assert_eq!(actual_envs, ["prod", "staging"]);
 

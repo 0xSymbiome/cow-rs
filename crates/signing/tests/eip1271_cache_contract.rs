@@ -30,10 +30,7 @@ use cow_sdk_core::{
     Address, BlockInfo, ContractCall, ContractHandle, Hash32, HexData, Provider,
     TransactionReceipt, TransactionRequest,
 };
-use cow_sdk_signing::cache::{
-    Clock, DEFAULT_EIP1271_VERIFICATION_CACHE_CAPACITY, DEFAULT_EIP1271_VERIFICATION_CACHE_TTL,
-    Eip1271VerificationCache, InMemoryEip1271VerificationCache, NoopEip1271VerificationCache,
-};
+use cow_sdk_signing::cache::{Clock, Eip1271Cache, InMemoryEip1271Cache, NoopEip1271Cache};
 
 const VALID_MAGIC: &str = "\"0x1626ba7e\"";
 const INVALID_MAGIC: &str = "\"0xffffffff\"";
@@ -58,7 +55,7 @@ const fn sig_hash(seed: u8) -> [u8; 32] {
 
 #[test]
 fn noop_cache_always_misses_and_never_records() {
-    let cache = NoopEip1271VerificationCache;
+    let cache = NoopEip1271Cache;
     let verifier = sample_address(0);
 
     assert!(!cache.contains_valid(verifier, digest(1), sig_hash(1)));
@@ -68,18 +65,15 @@ fn noop_cache_always_misses_and_never_records() {
 
 #[test]
 fn in_memory_cache_default_ttl_and_capacity_match_documented_constants() {
-    let cache = InMemoryEip1271VerificationCache::default();
-    assert_eq!(cache.ttl(), DEFAULT_EIP1271_VERIFICATION_CACHE_TTL);
-    assert_eq!(
-        cache.capacity(),
-        DEFAULT_EIP1271_VERIFICATION_CACHE_CAPACITY
-    );
+    let cache = InMemoryEip1271Cache::default();
+    assert_eq!(cache.ttl(), InMemoryEip1271Cache::DEFAULT_TTL);
+    assert_eq!(cache.capacity(), InMemoryEip1271Cache::DEFAULT_CAPACITY);
     assert!(cache.is_empty());
 }
 
 #[test]
 fn in_memory_cache_records_and_observes_a_valid_probe() {
-    let cache = InMemoryEip1271VerificationCache::default();
+    let cache = InMemoryEip1271Cache::default();
     let verifier = sample_address(1);
 
     assert!(!cache.contains_valid(verifier, digest(7), sig_hash(7)));
@@ -97,7 +91,7 @@ fn in_memory_cache_keys_on_signature_so_distinct_signatures_do_not_alias() {
     // M1 regression at the cache level: a recorded VALID for one signature
     // must not be observable for a different signature on the same
     // (verifier, digest).
-    let cache = InMemoryEip1271VerificationCache::default();
+    let cache = InMemoryEip1271Cache::default();
     let verifier = sample_address(2);
 
     cache.record_valid(verifier, digest(5), sig_hash(0xAA));
@@ -113,8 +107,7 @@ fn in_memory_cache_keys_on_signature_so_distinct_signatures_do_not_alias() {
 fn in_memory_cache_respects_ttl_expiry() {
     let start = Instant::now();
     let clock = ManualClock::new(start);
-    let cache =
-        InMemoryEip1271VerificationCache::with_clock(Duration::from_millis(40), 16, clock.clone());
+    let cache = InMemoryEip1271Cache::with_clock(Duration::from_millis(40), 16, clock.clone());
     let verifier = sample_address(3);
 
     cache.record_valid(verifier, digest(3), sig_hash(3));
@@ -127,11 +120,7 @@ fn in_memory_cache_respects_ttl_expiry() {
 fn cache_ttl_boundary_holds_at_minus_one_and_misses_at_plus_one() {
     let start = Instant::now();
     let clock = ManualClock::new(start);
-    let cache = InMemoryEip1271VerificationCache::with_clock(
-        Duration::from_secs(5 * 60),
-        16,
-        clock.clone(),
-    );
+    let cache = InMemoryEip1271Cache::with_clock(Duration::from_secs(5 * 60), 16, clock.clone());
     let verifier = sample_address(8);
 
     cache.record_valid(verifier, digest(9), sig_hash(9));
@@ -152,8 +141,7 @@ fn cache_ttl_boundary_holds_at_minus_one_and_misses_at_plus_one() {
 fn in_memory_cache_evicts_oldest_entry_when_capacity_is_exceeded() {
     let start = Instant::now();
     let clock = ManualClock::new(start);
-    let cache =
-        InMemoryEip1271VerificationCache::with_clock(Duration::from_secs(60), 2, clock.clone());
+    let cache = InMemoryEip1271Cache::with_clock(Duration::from_secs(60), 2, clock.clone());
     let verifier = sample_address(3);
 
     cache.record_valid(verifier, digest(1), sig_hash(1));
@@ -176,7 +164,7 @@ async fn verify_cached_does_not_serve_a_cached_valid_for_a_different_signature()
     // returned for a different signature B on the same (verifier, digest).
     let verifier = sample_address(7);
     let provider = MagicProvider::with_response(VALID_MAGIC);
-    let cache = InMemoryEip1271VerificationCache::default();
+    let cache = InMemoryEip1271Cache::default();
     let digest_hash = Hash32::from_bytes(digest(0x42));
 
     let request_a =
@@ -211,7 +199,7 @@ async fn verify_cached_never_records_a_mismatch() {
     // later becomes valid is not blocked by a stale negative entry.
     let verifier = sample_address(6);
     let provider = MagicProvider::with_response(INVALID_MAGIC);
-    let cache = InMemoryEip1271VerificationCache::default();
+    let cache = InMemoryEip1271Cache::default();
     let request = Eip1271VerificationRequest::new(
         verifier,
         Hash32::from_bytes(digest(0x21)),
@@ -244,7 +232,7 @@ async fn verify_cached_never_records_a_mismatch() {
 async fn verify_cached_replays_identical_probe_from_cache() {
     let verifier = sample_address(5);
     let provider = MagicProvider::with_response(VALID_MAGIC);
-    let cache = InMemoryEip1271VerificationCache::default();
+    let cache = InMemoryEip1271Cache::default();
     let request = Eip1271VerificationRequest::new(
         verifier,
         Hash32::from_bytes(digest(0x33)),
@@ -274,7 +262,7 @@ async fn cache_skips_every_non_cacheable_error_class() {
 
     for scenario in NonCacheableScenario::ALL {
         let provider = ScenarioProvider::new(scenario);
-        let cache = InMemoryEip1271VerificationCache::default();
+        let cache = InMemoryEip1271Cache::default();
 
         let first = verify_eip1271_signature_cached(&provider, &request, &cache)
             .await
@@ -307,10 +295,7 @@ async fn in_memory_cache_is_thread_safe_under_concurrent_record_and_observe_load
     const KEY_SPACE: u8 = 8;
     const VERIFIER_SPACE: u8 = 4;
 
-    let cache = Arc::new(InMemoryEip1271VerificationCache::new(
-        Duration::from_secs(60),
-        4096,
-    ));
+    let cache = Arc::new(InMemoryEip1271Cache::new(Duration::from_secs(60), 4096));
 
     let mut handles = Vec::with_capacity(TASKS);
     for task_id in 0..TASKS {

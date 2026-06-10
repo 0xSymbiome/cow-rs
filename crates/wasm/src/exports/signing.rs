@@ -38,10 +38,10 @@ use crate::exports::dto::{
 
 // The `cancellation` feature does not depend on `cow-sdk-trading`, so this
 // settlement-tx gas fallback is kept local and in step with
-// `cow_sdk_trading::GAS_LIMIT_DEFAULT` (mirrors upstream `@cowprotocol/cow-sdk`,
+// `cow_sdk_trading::DEFAULT_GAS_LIMIT` (mirrors upstream `@cowprotocol/cow-sdk`,
 // which likewise keeps a separate cancellation gas default).
 #[cfg(feature = "cancellation")]
-const GAS_LIMIT_DEFAULT: u32 = 150_000;
+const DEFAULT_GAS_LIMIT: u32 = 150_000;
 
 pub(crate) struct JsDigestSigner {
     callback: Function,
@@ -683,7 +683,7 @@ fn settlement_transaction(
 
 #[cfg(feature = "cancellation")]
 fn default_gas_limit() -> Result<Amount, JsValue> {
-    Amount::new(GAS_LIMIT_DEFAULT.to_string())
+    Amount::new(DEFAULT_GAS_LIMIT.to_string())
         .map_err(|error| WasmError::invalid("gasLimit", error.to_string()).into_js())
 }
 

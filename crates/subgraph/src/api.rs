@@ -297,7 +297,7 @@ impl SubgraphApi {
     )]
     pub async fn totals(&self) -> Result<Total, SubgraphError> {
         let response: TotalsResponse = self
-            .run_query(SubgraphQueryRequest::new(TOTALS_QUERY).with_operation_name("Totals"))
+            .query(SubgraphQueryRequest::new(TOTALS_QUERY).with_operation_name("Totals"))
             .await?;
 
         response
@@ -311,7 +311,7 @@ impl SubgraphApi {
     ///
     /// `days` is forwarded to the GraphQL `first` argument, which The Graph caps
     /// at 1000; for larger or keyset-paginated windows use
-    /// [`SubgraphApi::run_query`].
+    /// [`SubgraphApi::query`].
     ///
     /// Callers that need cooperative cancellation wrap this future through
     /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site.
@@ -335,7 +335,7 @@ impl SubgraphApi {
         &self,
         days: u32,
     ) -> Result<LastDaysVolumeResponse, SubgraphError> {
-        self.run_query(
+        self.query(
             SubgraphQueryRequest::new(LAST_DAYS_VOLUME_QUERY)
                 .with_variables(json!({ "days": days }))
                 .with_operation_name("LastDaysVolume"),
@@ -347,7 +347,7 @@ impl SubgraphApi {
     ///
     /// `hours` is forwarded to the GraphQL `first` argument, which The Graph
     /// caps at 1000; for larger or keyset-paginated windows use
-    /// [`SubgraphApi::run_query`].
+    /// [`SubgraphApi::query`].
     ///
     /// Callers that need cooperative cancellation wrap this future through
     /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site.
@@ -371,7 +371,7 @@ impl SubgraphApi {
         &self,
         hours: u32,
     ) -> Result<LastHoursVolumeResponse, SubgraphError> {
-        self.run_query(
+        self.query(
             SubgraphQueryRequest::new(LAST_HOURS_VOLUME_QUERY)
                 .with_variables(json!({ "hours": hours }))
                 .with_operation_name("LastHoursVolume"),
@@ -398,12 +398,12 @@ impl SubgraphApi {
             skip_all,
             fields(
                 chain = ?self.config().chain_id,
-                endpoint = "subgraph.run_query",
+                endpoint = "subgraph.query",
                 method = "POST",
             ),
         ),
     )]
-    pub async fn run_query<T, R>(&self, request: R) -> Result<T, SubgraphError>
+    pub async fn query<T, R>(&self, request: R) -> Result<T, SubgraphError>
     where
         T: DeserializeOwned,
         R: Into<SubgraphQueryRequest>,

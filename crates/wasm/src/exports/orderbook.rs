@@ -2,7 +2,7 @@ use crate::helpers as pure;
 use cow_sdk_core::transport::policy::TransportPolicy;
 use cow_sdk_core::{Address, AppDataHash, OrderUid};
 use cow_sdk_orderbook::{
-    GetOrdersRequest, GetTradesRequest, OrderCancellations, OrderCreation, OrderbookApi,
+    OrderCancellations, OrderCreation, OrderbookApi, OrdersQuery, TradesQuery,
 };
 use serde_json::json;
 use wasm_bindgen::prelude::*;
@@ -428,7 +428,7 @@ pub(crate) fn build_orderbook(
         .map_err(|error| WasmError::from(error).into_js())?;
     let mut builder = OrderbookApi::builder()
         .chain(chain)
-        .environment(env)
+        .env(env)
         .transport(transport)
         .transport_policy(transport_policy);
     if let Some(api_key) = api_key {
@@ -530,8 +530,8 @@ async fn orderbook_get_trades(
     query: TradesQueryInput,
 ) -> Result<JsValue, JsValue> {
     let mut request = match (query.owner, query.order_uid) {
-        (Some(owner), None) => GetTradesRequest::by_owner(parse_address("owner", owner)?),
-        (None, Some(order_uid)) => GetTradesRequest::by_order_uid(parse_order_uid(order_uid)?),
+        (Some(owner), None) => TradesQuery::by_owner(parse_address("owner", owner)?),
+        (None, Some(order_uid)) => TradesQuery::by_order_uid(parse_order_uid(order_uid)?),
         _ => {
             return Err(WasmError::invalid(
                 "trades",
@@ -559,7 +559,7 @@ async fn orderbook_get_orders_by_owner(
     pagination: Option<PaginationOptions>,
 ) -> Result<JsValue, JsValue> {
     let owner = parse_address("owner", owner)?;
-    let mut request = GetOrdersRequest::new(owner);
+    let mut request = OrdersQuery::new(owner);
     if let Some(pagination) = pagination {
         if let Some(offset) = pagination.offset {
             request = request.with_offset(offset);
@@ -599,7 +599,7 @@ async fn orderbook_cancel_orders(
     let scheme = ecdsa_signing_scheme(&signed.signing_scheme)?;
     let request = OrderCancellations::new(order_uids, signed.signature).with_signing_scheme(scheme);
     inner
-        .send_signed_order_cancellations(&request)
+        .send_cancellations(&request)
         .await
         .map_err(|error| WasmError::from(error).into_js())?;
     to_js_value(&WasmEnvelope::v1(json!({ "cancelled": true })))

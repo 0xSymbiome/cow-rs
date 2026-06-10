@@ -30,7 +30,7 @@ artifacts; those are governed by the
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
 | Hook schema reuse | COW Shed hook metadata emits through the existing `crates/app-data/src/metadata/hooks.rs::Hook` schema via `SignedCowShedCall::to_app_data_hook`, with no parallel metadata format | Conforms |
-| EIP-1271 trait boundary | Custom COW Shed signers consume the signing-owned `Eip1271SignatureProvider` trait from `cow_sdk_signing::eip1271`; no parallel trait definition exists in the COW Shed helper crate | Conforms |
+| EIP-1271 trait boundary | Custom COW Shed signers consume the signing-owned `Eip1271Signer` trait from `cow_sdk_signing::eip1271`; no parallel trait definition exists in the COW Shed helper crate | Conforms |
 | Crate-graph posture | `cow-sdk-contracts[cow-shed] ⇏ cow-sdk-trading`, `cow-sdk-contracts[cow-shed] ⇏ cow-sdk-orderbook`, `cow-sdk-contracts[cow-shed] ⇏ cow-sdk-subgraph`, `cow-sdk-contracts[cow-shed] ⇏ alloy-provider` all hold under `cargo metadata` | Conforms |
 | Version forwarding discipline | The caller-selected `CowShedVersion` is threaded through every internal builder; `distinct_versions_derive_distinct_proxies` asserts distinct versions produce distinct CREATE2 proxy addresses | Conforms |
 
@@ -51,7 +51,7 @@ rather than as new schema columns, preserving the app-data schema's stability.
 ### EIP-1271 trait boundary
 
 Custom COW Shed account-abstraction signers consume the signing-owned
-`Eip1271SignatureProvider` trait at `cow_sdk_signing::eip1271`. The COW
+`Eip1271Signer` trait at `cow_sdk_signing::eip1271`. The COW
 Shed helper crate does not define a parallel trait; it imports the
 canonical signing path. Trading-side call sites that surface signature
 failures use inline `map_err` per ADR 0051; no blanket

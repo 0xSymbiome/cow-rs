@@ -16,14 +16,14 @@ The first functional crate-family release begins at `0.1.0`.
 
 - EIP-1271 order-signature verification is now part of the crate's public API:
   `cow_sdk_trading::verify_eip1271_order_signature`,
-  `eip1271_order_verification_request`, and `Eip1271VerificationParameters`
+  `eip1271_order_verification_request`, and `Eip1271VerificationParams`
   confirm a smart-account (EIP-1271) wallet's signature over a `CoW` order
   against a provider. They were previously reachable only through the
   `cow_sdk_trading::post` module path.
 - `cow_sdk_trading::Trading` exposes its stored trader defaults through typed
   read accessors — `chain_id()`, `app_code()`, `env()`,
   `settlement_contract_override()`, and `eth_flow_contract_override()`. The
-  partial trader-defaults bundle (`PartialTraderParameters`) is now
+  partial trader-defaults bundle (`PartialTraderParams`) is now
   crate-internal and the prior `trader_defaults()` accessor is removed; the
   bundle was a public builder with no public destination (see ADR 0011).
 - `cow_sdk_trading::Trading::swap` opens a fluent, typed swap lifecycle builder
@@ -87,7 +87,7 @@ The first functional crate-family release begins at `0.1.0`.
 - The native Alloy provider adapters gain an opt-in RPC retry seam.
   `cow_sdk_alloy_provider::RetryConfig` configures a maximum retry count and
   initial backoff, and `RpcAlloyProviderBuilder::with_retry` (leaf) and
-  `AlloyClientBuilder::with_retry` (umbrella, re-exported as
+  `ClientBuilder::with_retry` (umbrella, re-exported as
   `cow_sdk_alloy::RetryConfig`) wrap the JSON-RPC client in a bounded
   exponential backoff layer that transparently retries transient,
   rate-limited reads. Retry is off by default — each request is issued once
@@ -278,7 +278,7 @@ The first functional crate-family release begins at `0.1.0`.
   Governed by [ADR 0017](docs/adr/0017-typed-orderbook-rejection-parser.md).
 - On `wasm32` targets the `cow-sdk` facade re-exports the browser
   `FetchTransport` and `FetchTransportConfig`, mirroring the native
-  `ReqwestTransport` re-export, and exposes `cow_sdk::wasm::pure_helpers` on both
+  `ReqwestTransport` re-export, and exposes `cow_sdk::wasm::helpers` on both
   targets so the host-safe helper path resolves the same way regardless of
   build target.
 - `cow_sdk_subgraph::SubgraphError::TransportConfiguration` is an additive
@@ -429,10 +429,10 @@ The first functional crate-family release begins at `0.1.0`.
   cannot drift again. Governed by
   [ADR 0047](docs/adr/0047-typescript-facade-architecture.md) and
   [ADR 0060](docs/adr/0060-uniform-error-classification.md).
-- `cow_sdk_trading::Trading::off_chain_cancel_order` and `on_chain_cancel_order`
+- `cow_sdk_trading::Trading::offchain_cancel_order` and `onchain_cancel_order`
   tracing spans now record the effective chain and environment resolved from the
   SDK's trader defaults instead of `None` when the caller supplies an
-  `OrderTraderParameters` without them, matching the quote-path spans and the
+  `OrderTraderParams` without them, matching the quote-path spans and the
   `chain` field contract in `docs/observability.md`.
 - `cow_sdk_orderbook::OrderQuoteRequest::with_app_data_hash` now produces the
   hash-only quote app-data wire form instead of pairing the requested hash with
@@ -462,7 +462,7 @@ The first functional crate-family release begins at `0.1.0`.
 
 - Caller-built request and configuration structs across the public crates no
   longer carry `#[non_exhaustive]`. Input and option types such as
-  `TradeParameters`, `LimitTradeParameters`, `OrderCreation`, `OrderQuoteRequest`,
+  `TradeParams`, `LimitTradeParams`, `OrderCreation`, `OrderQuoteRequest`,
   `RetryPolicy`, `TransportPolicy`, `WaitOptions`, `SubgraphConfig`, and
   `AppDataParams` now support direct struct construction and exhaustive matching;
   they continue to expose `new()` plus `with_*()` builders so additive fields stay
@@ -475,7 +475,7 @@ The first functional crate-family release begins at `0.1.0`.
   `last_hours_volume_with_config`, `run_query_with_config`) with a single
   `with_config_override(self) -> Self` that returns a reconfigured client,
   mirroring `OrderbookApi::with_context_override`; the operation methods
-  (`totals`, `last_days_volume`, `last_hours_volume`, `run_query`) are now
+  (`totals`, `last_days_volume`, `last_hours_volume`, `query`) are now
   single. `SubgraphConfigOverride` gains `for_chain`, `with_chain_id`, and
   `with_base_urls`, so a per-chain query reads
   `api.with_config_override(SubgraphConfigOverride::for_chain(chain)).totals()`.
@@ -558,7 +558,7 @@ The first functional crate-family release begins at `0.1.0`.
   is re-exported as a named module, and every workflow and identity type is reached
   on its module path — for example
   `cow_sdk::core::{Address, Amount, OrderKind, OrderUid, SupportedChainId, CowEnv}`,
-  `cow_sdk::trading::{Trading, TradeParameters}`, and `cow_sdk::orderbook::OrderbookApi`
+  `cow_sdk::trading::{Trading, TradeParams}`, and `cow_sdk::orderbook::OrderbookApi`
   — matching `alloy`, `reqwest`, and `tower`. The crate root retains only the
   cross-cutting aggregate error (`CowError`, `ErrorClass`) and the typed transport,
   registry, and EIP-1271 cache leaf surfaces. The workspace's only prelude is the
@@ -595,7 +595,7 @@ The first functional crate-family release begins at `0.1.0`.
   `OpenOptions::read`) — so the lone `with_`-prefixed setter was the only
   deviation on either typestate construction chain. The `with_` prefix remains on
   the owned-value setters of parameter and configuration types
-  (`TradeParameters::with_owner`, `TransportPolicy::with_rate_limit`), where the
+  (`TradeParams::with_owner`, `TransportPolicy::with_rate_limit`), where the
   bare noun is already the field's accessor. Behavior is unchanged. Governed by
   [ADR 0013](docs/adr/0013-http-transport-injection-and-typestate-builders.md).
 - `cow-sdk-wasm` no longer builds the standalone `web` target for the `default`,
@@ -615,7 +615,7 @@ The first functional crate-family release begins at `0.1.0`.
   (`OrderbookError::Transport` or `SubgraphError::TransportConfiguration`)
   instead of panicking when a configured user-agent cannot be encoded as an
   HTTP header value. `OrderbookApiBuilder::base_url` is now reachable only on
-  the environment-set typestate, so calling it before `.environment(...)` or
+  the environment-set typestate, so calling it before `.env(...)` or
   `.from_context(...)` is a compile error rather than a runtime panic. The
   public construction API and the private-field marker seal are unchanged, so
   no existing caller needs to migrate.
@@ -651,7 +651,7 @@ The first functional crate-family release begins at `0.1.0`.
   `eth_flow_contract_override`, `options`, and `orderbook_client`. This aligns the
   trading construction builder with the bare-setter convention already used by the
   `OrderbookApi`, `SubgraphApi`, and `AlloyClient` builders. The `with_*` convention
-  is retained on the owned-value parameter and option types (`TraderParameters`,
+  is retained on the owned-value parameter and option types (`TraderParams`,
   `TradingOptions`, and the quote and override builders). Governed by
   [ADR 0011](docs/adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md).
 - `cow_sdk_orderbook::OrderbookError::Serialization` now carries a structured
@@ -744,15 +744,15 @@ The first functional crate-family release begins at `0.1.0`.
 
 - The EIP-1271 verification cache is now a positive-only set keyed on the
   full `(verifier, digest, signature_hash)` probe identity. The
-  `cow_sdk_contracts::Eip1271VerificationCache` trait replaces its
+  `cow_sdk_contracts::Eip1271Cache` trait replaces its
   `get` / `put` methods with `contains_valid` / `record_valid`:
   `verify_eip1271_signature_cached` folds `keccak256(signature)` into the
   cache key and records only successful magic-value matches, so a probe
   carrying a different signature on the same digest can never be served a
   verdict recorded for another signature, and a magic-value mismatch is
   never cached (a miss means "unknown", never "known invalid"). The
-  trait and the dependency-free `NoopEip1271VerificationCache` stay always
-  available; the in-memory `InMemoryEip1271VerificationCache` and the
+  trait and the dependency-free `NoopEip1271Cache` stay always
+  available; the in-memory `InMemoryEip1271Cache` and the
   `parking_lot` / `web-time` dependencies it requires now ship behind the
   new default-off `in-memory-cache` feature on `cow-sdk-signing` and the
   `cow-sdk` facade. See
@@ -818,7 +818,7 @@ The first functional crate-family release begins at `0.1.0`.
   family. The module keeps the deterministic, FFI-free protocol helpers (chains,
   app-data, signing payloads, EIP-1271 payloads, order UIDs) on the host-safe
   boundary, now enforced by `crates/wasm/tests/no_ffi_helpers.rs`, and the
-  `cow_sdk::wasm::pure_helpers` facade path is unchanged. ADR 0042 is superseded.
+  `cow_sdk::wasm::helpers` facade path is unchanged. ADR 0042 is superseded.
 - Removed the EIP-2612 `IERC20Permit` binding, the `permit_typed_data_hash`
   helper, and the `PERMIT_TYPE_HASH` constant from `cow-sdk-contracts`. The
   permit surface had no production or example consumer and is absent from the
@@ -905,19 +905,19 @@ The first functional crate-family release begins at `0.1.0`.
   `TradingBuilder::build_helper_only` terminal, and the
   `TradingBuilder::helper_only(...)` shortcut. `TradingHelpers` duplicated four
   methods already on `Trading` (`get_pre_sign_transaction`,
-  `on_chain_cancel_order`, `get_cow_protocol_allowance`, `approve_cow_protocol`)
+  `onchain_cancel_order`, `get_cow_protocol_allowance`, `approve_cow_protocol`)
   and added no capability the crate free functions did not already provide.
   App-code-less helper flows — allowance, approval, pre-sign, and on-chain
   cancellation — are the crate's free functions (`get_cow_protocol_allowance`,
-  `approval_transaction`, `get_pre_sign_transaction`, `cancel_order_onchain`),
+  `approval_transaction`, `get_pre_sign_transaction`, `onchain_cancel_order`),
   which need no `appCode` and no trading client; `Trading` (built through
   `build`) still exposes them as conveniences. Governed by
   [ADR 0011](docs/adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md).
 - Removed the `TradingBuilder::with_trader_defaults` setter. It accepted a
-  `PartialTraderParameters` bag without transitioning the typestate markers, so
+  `PartialTraderParams` bag without transitioning the typestate markers, so
   it could never satisfy the `build()` terminal on its own and only duplicated
   the individual `with_*` setters. Trader defaults reach the builder through the
-  explicit typed setters or, for callers holding a total `TraderParameters`,
+  explicit typed setters or, for callers holding a total `TraderParams`,
   through `TradingBuilder::ready(...)`. Governed by
   [ADR 0011](docs/adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md).
 - Removed the unused `cow_sdk_core::DecimalAmount` type and its
@@ -1027,10 +1027,10 @@ The first functional crate-family release begins at `0.1.0`.
   shape is required.
 
 - `cow_sdk_trading::TradingSdkBuilder::with_owner`,
-  `cow_sdk_trading::PartialTraderParameters::owner`, and
-  `cow_sdk_trading::PartialTraderParameters::with_owner` are removed.
+  `cow_sdk_trading::PartialTraderParams::owner`, and
+  `cow_sdk_trading::PartialTraderParams::with_owner` are removed.
   The SDK no longer stores a default owner; per-call
-  `TradeParameters.owner` and `LimitTradeParameters.owner` (with the
+  `TradeParams.owner` and `LimitTradeParams.owner` (with the
   signer's address as the implicit fallback for signer-backed flows,
   or `TradeAdvancedSettings::quote_request.from` for quote-only
   flows) are the sole owner source. ADR 0011 carries the new
@@ -1142,8 +1142,8 @@ The first functional crate-family release begins at `0.1.0`.
   [ECDSA Signature Normalization Audit](docs/audit/ecdsa-signature-normalization-audit.md)
   as the standing current-state proof.
 
-- `cow_sdk_trading::LimitTradeParametersFromQuote` is a real newtype
-  around `LimitTradeParameters` that guarantees a non-`None`
+- `cow_sdk_trading::LimitTradeParamsFromQuote` is a real newtype
+  around `LimitTradeParams` that guarantees a non-`None`
   `quote_id` by construction. The prior transparent type alias is
   removed. The newtype is produced exclusively by
   [`swap_params_to_limit_order_params`](crates/trading/src/order.rs)
@@ -1157,7 +1157,7 @@ The first functional crate-family release begins at `0.1.0`.
   construction from a value missing a quote id. The public accessor
   `quote_id()` returns `i64` without an `Option`, `as_limit()` and
   `into_limit()` provide reference and owned access to the
-  underlying `LimitTradeParameters`, and `AsRef<LimitTradeParameters>`
+  underlying `LimitTradeParams`, and `AsRef<LimitTradeParams>`
   is implemented for ergonomic interop. ADR 0011 carries a new
   Must-Remain-True bullet recording the lifecycle distinction and
   the newtype invariant, with the
@@ -1173,14 +1173,14 @@ The first functional crate-family release begins at `0.1.0`.
   documented but unused on that flow. The wasm export surface follows
   the same single-type shape.
 
-- `cow_sdk_trading::TradeParameters` and
-  `cow_sdk_trading::LimitTradeParameters` share their common `with_*`
+- `cow_sdk_trading::TradeParams` and
+  `cow_sdk_trading::LimitTradeParams` share their common `with_*`
   setter bodies through one internal definition that emits inherent
   methods on each public type. Public API shape is preserved: every
   setter remains an inherent method on each public type with the
   same signature, the same `#[must_use]`, the same `const fn`
   qualifier, and the same rustdoc text.
-  `cow_sdk_trading::LimitTradeParameters::with_quote_id` remains an
+  `cow_sdk_trading::LimitTradeParams::with_quote_id` remains an
   inherent method on the limit type because it is limit-only.
 
 - `cow_sdk_core` exposes a single async trait family for the signer
@@ -1205,7 +1205,7 @@ The first functional crate-family release begins at `0.1.0`.
 - `cow_sdk_trading` ships one async entry point per public operation:
   `post_swap_order`, `post_limit_order`, `post_swap_order_from_quote`,
   `post_cow_protocol_trade`, `post_sell_native_currency_order`,
-  `off_chain_cancel_order`, `cancel_order_onchain`,
+  `offchain_cancel_order`, `onchain_cancel_order`,
   `onchain_cancellation_transaction`, `get_pre_sign_transaction`,
   `get_eth_flow_transaction`, `get_quote_results`,
   `get_cow_protocol_allowance`, and `approve_cow_protocol`. Each
@@ -1218,8 +1218,8 @@ The first functional crate-family release begins at `0.1.0`.
   `trading.post_swap_order`, `trading.post_swap_order_from_quote`,
   `trading.post_limit_order`,
   `trading.post_sell_native_currency_order`,
-  `trading.get_quote_results`, `trading.off_chain_cancel_order`,
-  `trading.on_chain_cancel_order`, `trading.get_pre_sign_transaction`,
+  `trading.get_quote_results`, `trading.offchain_cancel_order`,
+  `trading.onchain_cancel_order`, `trading.get_pre_sign_transaction`,
   `trading.get_cow_protocol_allowance`, and
   `trading.approve_cow_protocol`. Browser-wallet flows per
   [ADR 0040](docs/adr/0040-wallet-provider-callback-boundary-for-js-consumers.md)
@@ -1247,8 +1247,8 @@ The first functional crate-family release begins at `0.1.0`.
   [ADR 0015](docs/adr/0015-client-side-order-bounds-validator.md)
   amendment.
 
-- `cow_sdk_trading::TradeParameters` and
-  `cow_sdk_trading::LimitTradeParameters` carry the protocol-level
+- `cow_sdk_trading::TradeParams` and
+  `cow_sdk_trading::LimitTradeParams` carry the protocol-level
   fields only. The `sell_token_decimals` and `buy_token_decimals`
   fields and their positional `u8` arguments on `::new` are removed,
   and the same fields are removed from the wasm input DTOs
@@ -1291,7 +1291,7 @@ The first functional crate-family release begins at `0.1.0`.
 - `cow_sdk_trading::cache` now ships a capacity-bounded, TTL-respecting
   `InMemoryQuoteCache` that mirrors the cache primitive pattern
   [ADR 0014](docs/adr/0014-eip1271-verification-cache.md) established
-  for `InMemoryEip1271VerificationCache`. The cache exposes a `Clock`
+  for `InMemoryEip1271Cache`. The cache exposes a `Clock`
   trait with a default `SystemClock` and a blanket `Fn() -> Instant`
   impl, a `with_clock` constructor for deterministic TTL tests, `ttl`,
   `capacity`, `len`, `is_empty`, and `clear` accessors, and a `Default`
@@ -2195,7 +2195,7 @@ The first functional crate-family release begins at `0.1.0`.
   `OwnerMismatch`. `TradingSdkBuilder::with_order_bounds` is an
   additive setter that defaults to
   `OrderValidityBounds::SERVICES_DEFAULT`, and
-  `TradeParameters::validate` / `LimitTradeParameters::validate`
+  `TradeParams::validate` / `LimitTradeParams::validate`
   expose the builder-level subset of the protocol-invariant matrix
   for callers that assemble an order outside the hot submission
   path. `Amount::is_zero` is now exposed on
@@ -2260,21 +2260,21 @@ The first functional crate-family release begins at `0.1.0`.
   `cow-sdk-browser-wallet`.
 
 - Optional caching seam for EIP-1271 signature verification.
-  `cow_sdk_signing::Eip1271VerificationCache` is a narrow `Send + Sync`
+  `cow_sdk_signing::Eip1271Cache` is a narrow `Send + Sync`
   trait keyed by `(verifier, digest)` that
   `cow_sdk_contracts::verify_eip1271_signature_cached` consults before
   any on-chain `isValidSignature` call. Two default implementations
   ship from the signing crate: the zero-sized
-  `NoopEip1271VerificationCache` for callers that do not want caching
-  and `InMemoryEip1271VerificationCache`, a TTL-respecting,
+  `NoopEip1271Cache` for callers that do not want caching
+  and `InMemoryEip1271Cache`, a TTL-respecting,
   capacity-bounded in-memory store backed by `parking_lot::RwLock`
   (default five-minute TTL, default 1024-entry capacity, oldest-first
   eviction). The cache stores `bool` outcomes — `true` for a
   successful magic-value match and `false` for the typed
   `Eip1271MagicValueMismatch` — and never caches transport, missing
   contract code, serialization, or hex-decode failures so transient
-  errors always re-hit the chain. `Eip1271VerificationCache`,
-  `NoopEip1271VerificationCache`, and `InMemoryEip1271VerificationCache`
+  errors always re-hit the chain. `Eip1271Cache`,
+  `NoopEip1271Cache`, and `InMemoryEip1271Cache`
   re-export through the `cow-sdk` facade root, where the trait is
   available for compositions that hold the cache generically.
 
@@ -2362,7 +2362,7 @@ The first functional crate-family release begins at `0.1.0`.
 
 - Typed `ValidTo` newtype in `cow-sdk-core` with absolute and relative-window
   constructors plus exported `VALID_TO_MIN_RELATIVE_SECONDS` and
-  `VALID_TO_MAX_RELATIVE_SECONDS` constants. `LimitTradeParameters` exposes a
+  `VALID_TO_MAX_RELATIVE_SECONDS` constants. `LimitTradeParams` exposes a
   `valid_to_typed` accessor that resolves absolute or relative inputs through
   the typed boundary so out-of-window deadlines fail closed with a typed
   `ValidationError::ValidToOutOfRange` at the client edge.
@@ -2464,17 +2464,17 @@ The first functional crate-family release begins at `0.1.0`.
   the trading-first surface so later additive fields no longer require a
   major version bump. `cow-sdk-orderbook` now annotates `OrderCreation`,
   `OrderQuoteRequest`, `OrderQuoteResponse`, the wire `Order` and `Trade`
-  DTOs, `EthflowData`, `QuoteSide`, `QuoteData`, `GetOrdersRequest`,
-  `GetTradesRequest`, `OrderCancellations`, `NativePriceResponse`,
+  DTOs, `EthflowData`, `QuoteSide`, `QuoteData`, `OrdersQuery`,
+  `TradesQuery`, `OrderCancellations`, `NativePriceResponse`,
   `TotalSurplus`, `AppDataObject`, `CompetitionOrderStatus`,
   `CompetitionAuction`, `SolverCompetitionResponse`, `SolverSettlement`, and
   `SolverExecution`. `cow-sdk-trading` annotates
-  `TradeParameters`, `LimitTradeParameters`, `TraderParameters`,
-  `PartialTraderParameters`, `OrderTraderParameters`, `QuoterParameters`,
+  `TradeParams`, `LimitTradeParams`, `TraderParams`,
+  `PartialTraderParams`, `OrderTraderParams`, `QuoterParams`,
   `QuoteResults`, `QuoteRequestOverride`, `OrderPostingResult`,
   `TradeAdvancedSettings`,
   `PostTradeAdditionalParams`, `TradingAppDataInfo`, `OrderToSignParams`,
-  `AllowanceParameters`, `ApprovalParameters`, `OrderbookRuntimeBinding`,
+  `AllowanceParams`, `ApprovalParams`, `OrderbookRuntimeBinding`,
   `SlippageToleranceRequest`, `SlippageToleranceResponse`, and
   `EthFlowTransaction`. `cow-sdk-subgraph` annotates `TotalsResponse`,
   `DailyTotal`, `HourlyTotal`, `LastDaysVolumeResponse`,
@@ -2536,7 +2536,7 @@ The first functional crate-family release begins at `0.1.0`.
 
 - `cow_sdk_signing` exports the public `Clock` trait, the
   `SystemClock` default implementation, and
-  `InMemoryEip1271VerificationCache::with_clock(ttl, capacity, clock)`
+  `InMemoryEip1271Cache::with_clock(ttl, capacity, clock)`
   constructor so deterministic-time tests and embedders can drive cache
   expiry without sleeping. Native builds use `std::time::Instant`; WASM
   builds use `web_time::Instant`.
@@ -3107,8 +3107,8 @@ The first functional crate-family release begins at `0.1.0`.
   mirror the services `model::order::SellTokenSource` and
   `model::order::BuyTokenDestination` byte-identically on the wire.
   Every `OrderCreation`, `OrderData`, `QuoteData`, `Order`,
-  `OrderFlags`, `TradeFlags`, `TradeParameters`,
-  `LimitTradeParameters`, `QuoteRequestOverride`, `QuoteCacheKey`, and
+  `OrderFlags`, `TradeFlags`, `TradeParams`,
+  `LimitTradeParams`, `QuoteRequestOverride`, `QuoteCacheKey`, and
   related SDK surface now carries the side-specific type on its
   `sell_token_balance` and `buy_token_balance` fields, so quote-derived
   and direct trading-order construction cannot silently rewrite the
@@ -3332,7 +3332,7 @@ The first functional crate-family release begins at `0.1.0`.
   `cow_sdk::core::ValidationReason` enum describes the canonical validation
   failure modes (`Missing`, `OutOfRange`, `BadShape`, `Precondition`)
   and surfaces through `cow_sdk::core`; a new
-  `cow_sdk::TransportErrorClass` enum classifies REST-transport failure
+  `cow_sdk::http::TransportErrorClass` enum classifies REST-transport failure
   categories (`Timeout`, `Connect`, `Redirect`, `Decode`, `Body`,
   `Builder`, `Request`, `Status`, `Other`) and is re-exported from the
   facade. `ContractsError::Decode` has also been split so hex-decode
@@ -3404,7 +3404,7 @@ The first functional crate-family release begins at `0.1.0`.
   cases routed through the new `Registry::with_override` extension point
   so callers that previously supplied a local-dev deployment address
   retain that capability without reaching for the retired accessors.
-  `AllowanceParameters` and `ApprovalParameters` rename their
+  `AllowanceParams` and `ApprovalParams` rename their
   `vault_relayer_address` field and the matching
   `with_vault_relayer_address` builder to `vault_relayer_override` and
   `with_vault_relayer_override` respectively so the name tells the
@@ -3848,7 +3848,7 @@ The first functional crate-family release begins at `0.1.0`.
   of serializing them as an explicit `0x0000…` recipient, matching the
   upstream behavior where a zero-address receiver means "no override."
 
-- `cow_sdk_signing::InMemoryEip1271VerificationCache` no longer caches
+- `cow_sdk_signing::InMemoryEip1271Cache` no longer caches
   transient verification errors. Only successful verification and
   `Eip1271MagicValueMismatch` outcomes are stored; every other
   `ContractsError` variant re-checks the chain on the next call.

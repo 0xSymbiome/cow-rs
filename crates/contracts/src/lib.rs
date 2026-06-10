@@ -82,4 +82,4 @@ pub use signature::{
     verify_eip1271_signature,
 };
 pub use tokens::{IERC20, IWrappedNativeToken, unwrap_interaction, wrap_interaction};
-pub use verify::{Eip1271VerificationCache, verify_eip1271_signature_cached};
+pub use verify::{Eip1271Cache, verify_eip1271_signature_cached};

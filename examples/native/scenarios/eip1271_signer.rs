@@ -1,7 +1,7 @@
-//! Custom EIP-1271 signing through the public `Eip1271SignatureProvider` seam.
+//! Custom EIP-1271 signing through the public `Eip1271Signer` seam.
 //!
 //! A smart-account integration supplies a pre-built EIP-1271 order signature
-//! instead of signing locally: implement `Eip1271SignatureProvider`, then wire it
+//! instead of signing locally: implement `Eip1271Signer`, then wire it
 //! through `PostTradeAdditionalParams::with_signing_scheme(SigningScheme::Eip1271)`
 //! plus `with_custom_eip1271_signature`, and post a limit order via
 //! `Trading::post_limit_order` against the `cow_sdk::testing` doubles. Both knobs
@@ -16,7 +16,7 @@ use serde_json::json;
 
 use cow_sdk::core::{OrderData, SupportedChainId};
 use cow_sdk::orderbook::SigningScheme;
-use cow_sdk::signing::eip1271::{Eip1271SignatureError, Eip1271SignatureProvider};
+use cow_sdk::signing::eip1271::{Eip1271SignatureError, Eip1271Signer};
 use cow_sdk::trading::{PostTradeAdditionalParams, TradeAdvancedSettings, Trading};
 
 use cow_sdk::testing::{MockOrderbook, MockSigner};
@@ -29,7 +29,7 @@ struct SmartAccountSigner;
 
 #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 #[cfg_attr(not(target_arch = "wasm32"), async_trait)]
-impl Eip1271SignatureProvider for SmartAccountSigner {
+impl Eip1271Signer for SmartAccountSigner {
     async fn sign(&self, _order_to_sign: &OrderData) -> Result<String, Eip1271SignatureError> {
         // A real integration forwards the order to a smart account / multisig.
         Ok("0x7e57c0de".to_owned())
@@ -63,7 +63,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let sent = orderbook.recorded().sent_orders;
     let report = json!({
-        "surface": "cow-sdk::signing::eip1271::Eip1271SignatureProvider",
+        "surface": "cow-sdk::signing::eip1271::Eip1271Signer",
         "mode": "simulated-transport",
         "signingScheme": format!("{:?}", post.signing_scheme),
         "orderSignature": post.signature,

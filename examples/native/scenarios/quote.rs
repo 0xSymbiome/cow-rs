@@ -9,7 +9,7 @@ use std::{error::Error, sync::Arc};
 use serde_json::json;
 
 use cow_sdk::core::SupportedChainId;
-use cow_sdk::trading::{TraderParameters, TradingBuilder, TradingOptions};
+use cow_sdk::trading::{TraderParams, TradingBuilder, TradingOptions};
 
 use cow_sdk::testing::MockOrderbook;
 use cow_sdk_examples_native::support::{sample_quote_response, sample_trade_parameters};
@@ -24,7 +24,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Ready-state client with the mock injected. `orderbook.clone()` keeps a
     // handle so we can read what the client sent after the call.
     let trading = TradingBuilder::ready(
-        TraderParameters::new(SupportedChainId::Sepolia, "cow-rs-quote-only")
+        TraderParams::new(SupportedChainId::Sepolia, "cow-rs-quote-only")
             .expect("app code should validate"),
         TradingOptions::new().with_orderbook_client(Arc::new(orderbook.clone())),
     )?;

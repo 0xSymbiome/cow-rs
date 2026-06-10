@@ -16,7 +16,7 @@ use serde_json::json;
 
 use cow_sdk::core::{Address, EVM_NATIVE_CURRENCY_ADDRESS, OrderDigest, OrderUid};
 use cow_sdk::trading::{
-    EthFlowOrderExistsChecker, LimitTradeParametersFromQuote, PostTradeAdditionalParams,
+    EthFlowOrderExistsChecker, LimitTradeParamsFromQuote, PostTradeAdditionalParams,
     TradingError, build_app_data, eth_flow_transaction,
 };
 
@@ -51,7 +51,7 @@ impl EthFlowOrderExistsChecker for ScriptedEthFlowChecker {
     }
 }
 
-fn native_sell_params() -> Result<LimitTradeParametersFromQuote, Box<dyn Error>> {
+fn native_sell_params() -> Result<LimitTradeParamsFromQuote, Box<dyn Error>> {
     // Sell the native token with a one-hour validity window from now.
     let mut params = sample_limit_parameters();
     params.sell_token = Address::new(EVM_NATIVE_CURRENCY_ADDRESS)?;
@@ -60,7 +60,7 @@ fn native_sell_params() -> Result<LimitTradeParametersFromQuote, Box<dyn Error>>
         .expect("system clock must be at or after the unix epoch")
         .as_secs();
     params.valid_to = Some(u32::try_from(now + 3600).expect("valid_to fits in u32"));
-    Ok(LimitTradeParametersFromQuote::try_from_limit(params)?)
+    Ok(LimitTradeParamsFromQuote::try_from_limit(params)?)
 }
 
 /// Builds an EthFlow order id under a scripted collision sequence and reports the

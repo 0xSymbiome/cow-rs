@@ -43,7 +43,7 @@ operation name and the typed signing error visible at the trading layer.
 
 ## Decision
 
-`Eip1271SignatureProvider` and `Eip1271SignatureError` live in
+`Eip1271Signer` and `Eip1271SignatureError` live in
 `cow_sdk_signing::eip1271`. Trading consumes the signing-owned trait by
 importing the canonical path and maps provider failures into `TradingError`
 inline at the call site using `map_err` with a per-operation message.
@@ -61,7 +61,7 @@ the `parity-maintainer check-deps` validator in CI. The reverse-edge guard
 `cow-sdk-trading ⇒ cow-sdk-signing` continues to hold.
 
 A compile-fail regression test asserts that any future re-export of
-`Eip1271SignatureProvider` from `cow_sdk_trading::types::seams` fails to
+`Eip1271Signer` from `cow_sdk_trading::types::seams` fails to
 compile. This regression makes the single-canonical-path contract
 checkable at build time.
 
@@ -86,7 +86,7 @@ the ADR every time a trait import lands in a new file.
 
 ## Must Remain True
 
-- Public surface: `Eip1271SignatureProvider` and
+- Public surface: `Eip1271Signer` and
   `Eip1271SignatureError` are reachable exclusively from
   `cow_sdk_signing::eip1271`. No re-export from any other crate's public
   surface.
@@ -101,7 +101,7 @@ the ADR every time a trait import lands in a new file.
 - Validation and review: the compile-fail regression at
   `crates/trading/tests/eip1271_signature_provider_no_reexport.rs`
   continues to fail to compile when any future re-export of
-  `Eip1271SignatureProvider` lands inside trading.
+  `Eip1271Signer` lands inside trading.
 - Cost: trading-side call sites carry one inline `map_err` per
   EIP-1271-surfacing entry point rather than a blanket `From` impl. This
   is intentional.

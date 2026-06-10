@@ -151,10 +151,10 @@ impl SubgraphClient {
     /// @throws CowError for transport, timeout, cancellation, or GraphQL errors.
     #[cfg_attr(
         feature = "tracing",
-        tracing::instrument(skip_all, fields(endpoint = "wasm.subgraph.run_query"))
+        tracing::instrument(skip_all, fields(endpoint = "wasm.subgraph.query"))
     )]
     #[wasm_bindgen(js_name = "runQuery")]
-    pub async fn run_query(
+    pub async fn query(
         &self,
         request: SubgraphQueryInput,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
@@ -227,7 +227,7 @@ async fn subgraph_run_query(
 ) -> Result<JsValue, JsValue> {
     let request = parse_subgraph_request(request);
     let value: Value = inner
-        .run_query(request)
+        .query(request)
         .await
         .map_err(|error| WasmError::from(error).into_js())?;
     to_js_value(&WasmEnvelope::v1(value))

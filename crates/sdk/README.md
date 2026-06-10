@@ -46,7 +46,7 @@ owner defaults to the signer's address:
 ```rust,no_run
 # use std::error::Error;
 use cow_sdk::core::{Address, Amount, OrderKind, SupportedChainId};
-use cow_sdk::trading::{TradeParameters, Trading};
+use cow_sdk::trading::{TradeParams, Trading};
 #
 # async fn run<S>(signer: &S) -> Result<(), Box<dyn Error>>
 # where
@@ -61,7 +61,7 @@ let trading = Trading::builder()
 // Sell 0.1 WETH for COW on Sepolia.
 let weth = Address::new("0xfff9976782d46cc05630d1f6ebab18b2324d6b14")?;
 let cow = Address::new("0x0625afb445c3b6b7b929342a04a22599fd5dbb59")?;
-let params = TradeParameters::new(
+let params = TradeParams::new(
     OrderKind::Sell,
     weth,
     cow,
@@ -78,7 +78,7 @@ println!("posted order: {}", posted.order_id.to_hex_string());
 For allowance, approval, pre-sign, or on-chain cancellation that does not need
 an app code, call the crate's free functions directly —
 `cow_protocol_allowance`, `approval_transaction`, `pre_sign_transaction`,
-and `cancel_order_onchain` — without constructing a trading client.
+and `onchain_cancel_order` — without constructing a trading client.
 
 ## Handling errors
 

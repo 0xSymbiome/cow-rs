@@ -10,8 +10,7 @@ use cow_sdk_orderbook::OrderbookApi;
 #[cfg(target_arch = "wasm32")]
 use cow_sdk_trading::TradingError;
 use cow_sdk_trading::{
-    ApprovalParameters, OrderTraderParameters, TraderParameters, Trading, TradingBuilder,
-    TradingOptions,
+    ApprovalParams, OrderTraderParams, TraderParams, Trading, TradingBuilder, TradingOptions,
 };
 #[cfg(target_arch = "wasm32")]
 use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
@@ -48,7 +47,7 @@ async fn sdk_quote_only_works_without_signer_and_uses_owner_as_from() {
         sell_quote_response(),
     ));
     let trading = TradingBuilder::ready(
-        TraderParameters::new(SupportedChainId::Sepolia, "0x007")
+        TraderParams::new(SupportedChainId::Sepolia, "0x007")
             .expect("app code should validate")
             .with_env(CowEnv::Prod),
         TradingOptions::new().with_orderbook_client(orderbook.clone()),
@@ -75,7 +74,7 @@ async fn sdk_quote_only_works_without_signer_and_uses_owner_as_from() {
 #[test]
 fn sdk_ready_shortcut_accepts_total_trader_parameters() {
     let trading = TradingBuilder::ready(
-        TraderParameters::new(SupportedChainId::Sepolia, "0x007")
+        TraderParams::new(SupportedChainId::Sepolia, "0x007")
             .expect("app code should validate")
             .with_env(CowEnv::Prod)
             .with_settlement_contract_override(AddressPerChain::from([(
@@ -158,7 +157,7 @@ fn sdk_ready_shortcut_validates_injected_orderbook_context_with_the_same_contrac
     ));
 
     let error = TradingBuilder::ready(
-        TraderParameters::new(SupportedChainId::Mainnet, "0x007")
+        TraderParams::new(SupportedChainId::Mainnet, "0x007")
             .expect("app code should validate")
             .with_env(CowEnv::Prod),
         TradingOptions::new().with_orderbook_client(orderbook),
@@ -215,7 +214,7 @@ async fn sdk_allowance_and_approval_use_call_level_chain_resolution() {
     let allowance = trading
         .cow_protocol_allowance(
             &provider,
-            &cow_sdk_trading::AllowanceParameters::new(address(COW), address(OWNER))
+            &cow_sdk_trading::AllowanceParams::new(address(COW), address(OWNER))
                 .with_chain_id(SupportedChainId::Mainnet)
                 .with_env(CowEnv::Prod),
         )
@@ -229,7 +228,7 @@ async fn sdk_allowance_and_approval_use_call_level_chain_resolution() {
     let approval_hash = trading
         .approve_cow_protocol(
             &signer,
-            &ApprovalParameters::new(
+            &ApprovalParams::new(
                 address(COW),
                 Amount::new("1000").expect("test approval amount literal must be valid"),
             )
@@ -277,7 +276,7 @@ async fn sdk_async_allowance_and_approval_accept_async_runtime_contracts() {
     let allowance = trading
         .cow_protocol_allowance(
             &provider,
-            &cow_sdk_trading::AllowanceParameters::new(address(COW), address(OWNER))
+            &cow_sdk_trading::AllowanceParams::new(address(COW), address(OWNER))
                 .with_chain_id(SupportedChainId::Mainnet)
                 .with_env(CowEnv::Prod),
         )
@@ -291,7 +290,7 @@ async fn sdk_async_allowance_and_approval_accept_async_runtime_contracts() {
     let approval_hash = trading
         .approve_cow_protocol(
             &signer,
-            &ApprovalParameters::new(
+            &ApprovalParams::new(
                 address(COW),
                 Amount::new("1000").expect("test approval amount literal must be valid"),
             )
@@ -331,7 +330,7 @@ async fn sdk_call_level_overrides_beat_trader_level_overrides_for_settlement_and
 
     let pre_sign_tx = trading
         .pre_sign_transaction(
-            &OrderTraderParameters::new(order_uid())
+            &OrderTraderParams::new(order_uid())
                 .with_chain_id(SupportedChainId::Sepolia)
                 .with_env(CowEnv::Staging)
                 .with_settlement_contract_override(AddressPerChain::from([(
@@ -345,8 +344,8 @@ async fn sdk_call_level_overrides_beat_trader_level_overrides_for_settlement_and
     assert_eq!(pre_sign_tx.to, Some(address(CUSTOM_SETTLEMENT)));
 
     let tx_hash = trading
-        .on_chain_cancel_order(
-            &OrderTraderParameters::new(order_uid())
+        .onchain_cancel_order(
+            &OrderTraderParams::new(order_uid())
                 .with_chain_id(SupportedChainId::Sepolia)
                 .with_env(CowEnv::Staging)
                 .with_eth_flow_contract_override(AddressPerChain::from([(
@@ -377,7 +376,7 @@ async fn sdk_onchain_cancel_order_routes_regular_orders_through_settlement_when_
     orderbook.push_order(crate::common::regular_order());
     let signer = MockSigner::default();
     let trading = TradingBuilder::ready(
-        TraderParameters::new(SupportedChainId::Sepolia, "0x007")
+        TraderParams::new(SupportedChainId::Sepolia, "0x007")
             .expect("app code should validate")
             .with_env(CowEnv::Prod)
             .with_settlement_contract_override(AddressPerChain::from([(
@@ -393,8 +392,8 @@ async fn sdk_onchain_cancel_order_routes_regular_orders_through_settlement_when_
     .expect("sdk construction should succeed");
 
     trading
-        .on_chain_cancel_order(
-            &OrderTraderParameters::new(order_uid())
+        .onchain_cancel_order(
+            &OrderTraderParams::new(order_uid())
                 .with_chain_id(SupportedChainId::Sepolia)
                 .with_env(CowEnv::Prod),
             &signer,
@@ -426,7 +425,7 @@ async fn sdk_onchain_cancel_order_preserves_full_uint256_range_for_ethflow_order
 
     let signer = MockSigner::default();
     let trading = TradingBuilder::ready(
-        TraderParameters::new(SupportedChainId::Sepolia, "0x007")
+        TraderParams::new(SupportedChainId::Sepolia, "0x007")
             .expect("app code should validate")
             .with_env(CowEnv::Prod)
             .with_settlement_contract_override(AddressPerChain::from([(
@@ -442,8 +441,8 @@ async fn sdk_onchain_cancel_order_preserves_full_uint256_range_for_ethflow_order
     .expect("sdk construction should succeed");
 
     trading
-        .on_chain_cancel_order(
-            &OrderTraderParameters::new(order_uid())
+        .onchain_cancel_order(
+            &OrderTraderParams::new(order_uid())
                 .with_chain_id(SupportedChainId::Sepolia)
                 .with_env(CowEnv::Prod),
             &signer,
@@ -502,7 +501,7 @@ fn build_succeeds_on_wasm32_with_injected_orderbook_client() {
     let transport = FetchTransport::new(&FetchTransportConfig::new("https://api.cow.fi"));
     let orderbook = OrderbookApi::builder()
         .chain(SupportedChainId::Mainnet)
-        .environment(CowEnv::Prod)
+        .env(CowEnv::Prod)
         .transport(Arc::new(transport))
         .build()
         .expect("wasm32 injected orderbook client must build with explicit transport");

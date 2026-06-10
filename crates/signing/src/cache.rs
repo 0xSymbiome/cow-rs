@@ -1,13 +1,13 @@
 //! Optional caching seam for EIP-1271 signature verification.
 //!
-//! [`Eip1271VerificationCache`] is the narrow trait consumed by
+//! [`Eip1271Cache`] is the narrow trait consumed by
 //! [`cow_sdk_contracts::verify_eip1271_signature_cached`]. The cache records
 //! the `(verifier, digest, signature_hash)` probes that have verified VALID
 //! so compositions that replay the same probe (composable orders,
 //! flash-loans, bridging) avoid hitting the chain on every call. The trait
-//! and the always-available [`NoopEip1271VerificationCache`] carry no extra
+//! and the always-available [`NoopEip1271Cache`] carry no extra
 //! dependencies; the capacity-bounded, TTL-respecting
-//! [`InMemoryEip1271VerificationCache`] is gated behind the opt-in
+//! [`InMemoryEip1271Cache`] is gated behind the opt-in
 //! `in-memory-cache` feature, which is the only reason the signing crate
 //! pulls `parking_lot` (and, on `wasm32`, `web-time`).
 //!
@@ -22,35 +22,35 @@
 //! # Cached-value semantics (positive-only)
 //!
 //! The cache is a *set* of probes observed VALID, not a `bool` map. Only a
-//! successful magic-value match is recorded ([`Eip1271VerificationCache::record_valid`]);
+//! successful magic-value match is recorded ([`Eip1271Cache::record_valid`]);
 //! a magic-value mismatch and every other failure mode (transport, missing
 //! contract code, serialization, hex decode) are **never recorded**, so those
 //! probes re-hit the chain on the next call. A
-//! [`get`](Eip1271VerificationCache::contains_valid) miss means "unknown",
+//! [`get`](Eip1271Cache::contains_valid) miss means "unknown",
 //! never "known invalid", so a not-yet-valid signature that becomes valid
 //! on-chain within the TTL is never blocked by a stale negative entry. The
 //! in-memory implementation uses [`SystemClock`] by default and exposes
-//! [`InMemoryEip1271VerificationCache::with_clock`] so tests and deterministic
+//! [`InMemoryEip1271Cache::with_clock`] so tests and deterministic
 //! runtimes can inject a controlled clock without changing production
 //! wall-clock behaviour.
 
 use cow_sdk_core::Address;
 
-pub use cow_sdk_contracts::Eip1271VerificationCache;
+pub use cow_sdk_contracts::Eip1271Cache;
 
-/// Zero-sized [`Eip1271VerificationCache`] that never records anything.
+/// Zero-sized [`Eip1271Cache`] that never records anything.
 ///
-/// Every [`contains_valid`](Eip1271VerificationCache::contains_valid) call
+/// Every [`contains_valid`](Eip1271Cache::contains_valid) call
 /// returns `false`; every
-/// [`record_valid`](Eip1271VerificationCache::record_valid) call is a no-op.
+/// [`record_valid`](Eip1271Cache::record_valid) call is a no-op.
 /// Callers that do not want EIP-1271 caching pass a reference to this type to
 /// keep the cache parameter on `verify_eip1271_signature_cached` mandatory
 /// without paying any allocation or synchronization overhead. This is the
 /// always-available default; it carries no dependencies and needs no feature.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-pub struct NoopEip1271VerificationCache;
+pub struct NoopEip1271Cache;
 
-impl Eip1271VerificationCache for NoopEip1271VerificationCache {
+impl Eip1271Cache for NoopEip1271Cache {
     fn contains_valid(
         &self,
         _verifier: Address,
@@ -64,10 +64,7 @@ impl Eip1271VerificationCache for NoopEip1271VerificationCache {
 }
 
 #[cfg(feature = "in-memory-cache")]
-pub use in_memory::{
-    Clock, DEFAULT_EIP1271_VERIFICATION_CACHE_CAPACITY, DEFAULT_EIP1271_VERIFICATION_CACHE_TTL,
-    InMemoryEip1271VerificationCache, SystemClock,
-};
+pub use in_memory::{Clock, InMemoryEip1271Cache, SystemClock};
 
 #[cfg(feature = "in-memory-cache")]
 mod in_memory {
@@ -80,19 +77,14 @@ mod in_memory {
     #[cfg(target_arch = "wasm32")]
     use web_time::Instant;
 
-    use cow_sdk_contracts::Eip1271VerificationCache;
+    use cow_sdk_contracts::Eip1271Cache;
     use cow_sdk_core::Address;
     use parking_lot::RwLock;
 
     /// Probe key: the full `(verifier, digest, signature_hash)` identity.
     type ProbeKey = (Address, [u8; 32], [u8; 32]);
 
-    /// Default TTL applied by [`InMemoryEip1271VerificationCache`].
-    pub const DEFAULT_EIP1271_VERIFICATION_CACHE_TTL: Duration = Duration::from_secs(300);
-    /// Default capacity applied by [`InMemoryEip1271VerificationCache`].
-    pub const DEFAULT_EIP1271_VERIFICATION_CACHE_CAPACITY: usize = 1024;
-
-    /// Time source used by [`InMemoryEip1271VerificationCache`].
+    /// Time source used by [`InMemoryEip1271Cache`].
     ///
     /// The default [`SystemClock`] implementation calls [`Instant::now`].
     /// Tests can implement this trait with a deterministic clock to assert
@@ -124,21 +116,22 @@ mod in_memory {
     }
 
     /// Capacity-bounded, TTL-respecting in-memory
-    /// [`Eip1271VerificationCache`] backed by [`parking_lot::RwLock`].
+    /// [`Eip1271Cache`] backed by [`parking_lot::RwLock`].
     ///
     /// The cache stores, for each `(verifier, digest, signature_hash)` probe
     /// observed VALID, the instant it was recorded. It evicts the oldest
     /// entry (by insertion timestamp) when recording beyond the configured
     /// capacity, and treats entries older than the configured TTL as absent.
     /// The default TTL is five minutes
-    /// ([`DEFAULT_EIP1271_VERIFICATION_CACHE_TTL`]) and the default capacity
-    /// is 1024 entries ([`DEFAULT_EIP1271_VERIFICATION_CACHE_CAPACITY`]).
+    /// ([`InMemoryEip1271Cache::DEFAULT_TTL`]) and the default
+    /// capacity is 1024 entries
+    /// ([`InMemoryEip1271Cache::DEFAULT_CAPACITY`]).
     ///
     /// The store is `Send + Sync + 'static`, so the cache may be wrapped in
     /// [`std::sync::Arc`] and shared across `tokio` tasks.
-    /// [`InMemoryEip1271VerificationCache::with_clock`] accepts a custom
+    /// [`InMemoryEip1271Cache::with_clock`] accepts a custom
     /// [`Clock`] for deterministic TTL tests and embedders that already
-    /// centralize time; [`InMemoryEip1271VerificationCache::new`] preserves
+    /// centralize time; [`InMemoryEip1271Cache::new`] preserves
     /// the default wall-clock behaviour.
     ///
     /// # Eviction Trade-Off
@@ -149,26 +142,28 @@ mod in_memory {
     /// the target workloads (composable orders, flash loans, bridging).
     /// Consumers that require a much larger key space, or that probe a
     /// very high fan-out of verifier addresses, should compose a proper
-    /// LRU-backed impl of [`Eip1271VerificationCache`] rather than grow
+    /// LRU-backed impl of [`Eip1271Cache`] rather than grow
     /// the in-memory cache past a few thousand entries.
     #[derive(Debug)]
-    pub struct InMemoryEip1271VerificationCache<C = SystemClock> {
+    pub struct InMemoryEip1271Cache<C = SystemClock> {
         inner: RwLock<HashMap<ProbeKey, Instant>>,
         ttl: Duration,
         capacity: usize,
         clock: C,
     }
 
-    impl Default for InMemoryEip1271VerificationCache<SystemClock> {
+    impl Default for InMemoryEip1271Cache<SystemClock> {
         fn default() -> Self {
-            Self::new(
-                DEFAULT_EIP1271_VERIFICATION_CACHE_TTL,
-                DEFAULT_EIP1271_VERIFICATION_CACHE_CAPACITY,
-            )
+            Self::new(Self::DEFAULT_TTL, Self::DEFAULT_CAPACITY)
         }
     }
 
-    impl InMemoryEip1271VerificationCache<SystemClock> {
+    impl InMemoryEip1271Cache<SystemClock> {
+        /// Default TTL applied by [`InMemoryEip1271Cache::default`].
+        pub const DEFAULT_TTL: Duration = Duration::from_secs(300);
+        /// Default capacity applied by [`InMemoryEip1271Cache::default`].
+        pub const DEFAULT_CAPACITY: usize = 1024;
+
         /// Creates a cache with the supplied TTL and capacity bound.
         #[must_use]
         pub fn new(ttl: Duration, capacity: usize) -> Self {
@@ -176,7 +171,7 @@ mod in_memory {
         }
     }
 
-    impl<C> InMemoryEip1271VerificationCache<C>
+    impl<C> InMemoryEip1271Cache<C>
     where
         C: Clock,
     {
@@ -186,7 +181,7 @@ mod in_memory {
         ///
         /// The provided [`Clock`] is used for both write timestamps and read
         /// expiry checks. This keeps TTL behaviour deterministic in tests
-        /// while leaving [`InMemoryEip1271VerificationCache::new`] on the
+        /// while leaving [`InMemoryEip1271Cache::new`] on the
         /// production wall clock.
         #[must_use]
         pub fn with_clock(ttl: Duration, capacity: usize, clock: C) -> Self {
@@ -229,7 +224,7 @@ mod in_memory {
         }
     }
 
-    impl<C> Eip1271VerificationCache for InMemoryEip1271VerificationCache<C>
+    impl<C> Eip1271Cache for InMemoryEip1271Cache<C>
     where
         C: Clock,
     {

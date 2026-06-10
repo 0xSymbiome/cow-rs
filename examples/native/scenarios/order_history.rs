@@ -22,7 +22,7 @@ use wiremock::{
 
 use cow_sdk::core::{CowEnv, SupportedChainId};
 use cow_sdk::orderbook::{
-    ApiContext, ExternalHostPolicy, GetOrdersRequest, GetTradesRequest, OrderbookApi,
+    ApiContext, ExternalHostPolicy, OrdersQuery, TradesQuery, OrderbookApi,
 };
 
 use cow_sdk_examples_native::support::{
@@ -72,10 +72,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     .build()?;
 
     // LIST an account's orders (default pagination: offset 0, limit 1000).
-    let orders = orderbook.orders(&GetOrdersRequest::new(owner)).await?;
+    let orders = orderbook.orders(&OrdersQuery::new(owner)).await?;
 
     // HISTORY: trades for the same owner (owner XOR order-uid; default limit 10).
-    let trades = orderbook.trades(&GetTradesRequest::by_owner(owner)).await?;
+    let trades = orderbook.trades(&TradesQuery::by_owner(owner)).await?;
 
     let report = json!({
         "surface": "cow-sdk::orderbook list/history (OrderbookApi)",

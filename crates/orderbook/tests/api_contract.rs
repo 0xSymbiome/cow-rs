@@ -11,9 +11,9 @@ use cow_sdk_core::{
     Amount, AppDataHash, CoreError, DEFAULT_HTTP_TIMEOUT, HttpClientPolicy, ValidationError,
 };
 use cow_sdk_orderbook::{
-    ApiContextOverride, AppDataObject, CowEnv, GetOrdersRequest, GetTradesRequest,
-    HashMismatchStage, OrderCancellations, OrderCreation, OrderQuoteSide, OrderStatus,
-    OrderbookError, SigningScheme, SolverCompetitionResponse, SupportedChainId,
+    ApiContextOverride, AppDataObject, CowEnv, HashMismatchStage, OrderCancellations,
+    OrderCreation, OrderQuoteSide, OrderStatus, OrderbookError, OrdersQuery, SigningScheme,
+    SolverCompetitionResponse, SupportedChainId, TradesQuery,
 };
 use serde_json::json;
 use wiremock::{
@@ -190,7 +190,7 @@ async fn transport_policy_override_rebuilds_client_with_custom_user_agent() {
 
     assert_eq!(version, "v9.9.9");
     assert_eq!(api.client_policy().timeout(), None);
-    assert_eq!(api.request_policy().max_attempts(), 1);
+    assert_eq!(api.retry_policy().max_attempts(), 1);
 }
 
 #[tokio::test]
@@ -351,7 +351,7 @@ async fn get_orders_uses_default_pagination_and_transforms_orders() {
     );
 
     let orders = api
-        .orders(&GetOrdersRequest::new(sample_owner()))
+        .orders(&OrdersQuery::new(sample_owner()))
         .await
         .expect("orders request should succeed");
 
@@ -383,7 +383,7 @@ async fn account_orders_pagination_boundary_table() {
             default_context(SupportedChainId::GnosisChain, CowEnv::Prod),
             server.uri(),
         );
-        let request = GetOrdersRequest::new(sample_owner())
+        let request = OrdersQuery::new(sample_owner())
             .with_offset(offset)
             .with_limit(limit);
 
@@ -414,7 +414,7 @@ async fn get_trades_requires_owner_xor_order_uid_and_keeps_default_pagination() 
         server.uri(),
     );
     let trades = api
-        .trades(&GetTradesRequest::by_owner(sample_owner()))
+        .trades(&TradesQuery::by_owner(sample_owner()))
         .await
         .expect("trade request should succeed");
 
@@ -429,7 +429,7 @@ async fn get_trades_requires_owner_xor_order_uid_and_keeps_default_pagination() 
     );
 
     let invalid = api
-        .trades(&GetTradesRequest::new(
+        .trades(&TradesQuery::new(
             Some(sample_owner()),
             Some(sample_order_uid()),
         ))
@@ -524,7 +524,7 @@ async fn signed_cancellations_use_delete_orders_route() {
     let cancellation =
         OrderCancellations::new(vec![sample_order_uid()], sample_signature().to_owned());
 
-    api.send_signed_order_cancellations(&cancellation)
+    api.send_cancellations(&cancellation)
         .await
         .expect("signed cancellation should succeed");
 }
@@ -790,7 +790,7 @@ async fn native_price_surplus_and_solver_competition_routes_are_covered() {
         .await
         .expect("surplus request should succeed");
     let by_auction = api
-        .solver_competition_by_auction_id(7)
+        .solver_competition(7)
         .await
         .expect("competition by auction id should succeed");
     let by_tx = api
@@ -1151,7 +1151,7 @@ mod recording_transport {
         let cancellation =
             OrderCancellations::new(vec![sample_order_uid()], sample_signature().to_owned());
 
-        api.send_signed_order_cancellations(&cancellation)
+        api.send_cancellations(&cancellation)
             .await
             .expect("signed cancellation must succeed through the injected transport");
 

@@ -37,7 +37,7 @@ impl ResolvedEip1271Provider {
 #[cfg(feature = "trading")]
 #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 #[cfg_attr(not(target_arch = "wasm32"), async_trait)]
-impl cow_sdk_signing::eip1271::Eip1271SignatureProvider for ResolvedEip1271Provider {
+impl cow_sdk_signing::eip1271::Eip1271Signer for ResolvedEip1271Provider {
     async fn sign(
         &self,
         _order_to_sign: &cow_sdk_core::OrderData,
@@ -49,7 +49,7 @@ impl cow_sdk_signing::eip1271::Eip1271SignatureProvider for ResolvedEip1271Provi
 /// Compile-time guarantee that the resolved provider never captures a
 /// non-`Send` JavaScript handle. It must stay `Send + Sync` (it holds only a
 /// resolved signature string) so the trading workflow can keep it behind an
-/// `Arc<dyn Eip1271SignatureProvider>`; this bound is enforced on every target
+/// `Arc<dyn Eip1271Signer>`; this bound is enforced on every target
 /// build, including `wasm32`, where `JsValue` would otherwise be `!Send`.
 #[cfg(feature = "trading")]
 const _: fn() = || {

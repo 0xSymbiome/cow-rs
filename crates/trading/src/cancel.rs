@@ -3,7 +3,7 @@ use cow_sdk_orderbook::{EcdsaSigningScheme, OrderCancellations};
 use cow_sdk_signing::{SigningScheme as SigningSchemeContract, sign_order_cancellations};
 
 use crate::types::{validate_orderbook_chain_context, validate_orderbook_env_context};
-use crate::{OrderTraderParameters, OrderbookClient, TraderParameters, TradingError};
+use crate::{OrderTraderParams, OrderbookClient, TraderParams, TradingError};
 
 /// Signs and submits an off-chain cancellation.
 ///
@@ -15,10 +15,10 @@ use crate::{OrderTraderParameters, OrderbookClient, TraderParameters, TradingErr
 ///
 /// Returns [`TradingError`] when signing fails, unsupported local signing
 /// schemes are produced, or the orderbook rejects the cancellation.
-pub async fn off_chain_cancel_order<O, S>(
+pub async fn offchain_cancel_order<O, S>(
     orderbook: &O,
-    params: &OrderTraderParameters,
-    trader: &TraderParameters,
+    params: &OrderTraderParams,
+    trader: &TraderParams,
     signer: &S,
 ) -> Result<bool, TradingError>
 where
@@ -68,6 +68,6 @@ where
     let body = OrderCancellations::new(vec![params.order_uid], signing.signature)
         .with_signing_scheme(scheme);
 
-    orderbook.send_signed_order_cancellations(&body).await?;
+    orderbook.send_cancellations(&body).await?;
     Ok(true)
 }

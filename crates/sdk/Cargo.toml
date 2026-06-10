@@ -49,8 +49,8 @@ http-classifier = ["cow-sdk-core/reqwest-classifier"]
 # the default `cow-sdk` dependency closure. Re-exports the `cow-sdk-subgraph`
 # leaf as `cow_sdk::subgraph` and lifts `SubgraphError` into `CowError`.
 subgraph = ["dep:cow-sdk-subgraph"]
-# Re-exports the opt-in `InMemoryEip1271VerificationCache`. Off by default;
-# the trait and `NoopEip1271VerificationCache` are always available.
+# Re-exports the opt-in `InMemoryEip1271Cache`. Off by default;
+# the trait and `NoopEip1271Cache` are always available.
 in-memory-cache = ["cow-sdk-signing/in-memory-cache"]
 # Opt-in in-memory test doubles, re-exported as `cow_sdk::testing`, for
 # downstream apps to test their integration. Dev-dependency only; off by
@@ -67,6 +67,12 @@ tracing = [
     "cow-sdk-browser-wallet?/tracing",
     "cow-sdk-subgraph?/tracing",
     "cow-sdk-wasm?/tracing",
+    # `cow-sdk-transport-wasm` is a non-optional wasm32-only dependency, so its
+    # tracing feature is enabled unconditionally here; on non-wasm32 targets the
+    # dependency is absent and this entry resolves to a no-op. Without it the
+    # browser `FetchTransport` dispatch spans are unreachable when a wasm32
+    # consumer turns on `cow-sdk/tracing`.
+    "cow-sdk-transport-wasm/tracing",
 ]
 
 [dependencies]

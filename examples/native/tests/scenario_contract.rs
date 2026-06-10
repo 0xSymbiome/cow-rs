@@ -143,7 +143,7 @@ fn mandatory_trading_examples_reference_reviewed_sdk_surfaces() {
     assert!(ethflow.contains("eth_flow_transaction"));
     assert!(ethflow.contains("post_sell_native_currency_order"));
     assert!(onchain.contains("pre_sign_transaction"));
-    assert!(onchain.contains("on_chain_cancel_order"));
+    assert!(onchain.contains("onchain_cancel_order"));
     assert!(onchain.contains("onchain_cancellation_transaction"));
 }
 
@@ -197,9 +197,9 @@ fn seam_examples_are_declared_and_documented() {
     let slippage = include_str!("../scenarios/slippage_suggester.rs");
     let eip1271 = include_str!("../scenarios/eip1271_signer.rs");
     let ethflow_checker = include_str!("../scenarios/ethflow_checker.rs");
-    assert!(slippage.contains("SlippageSuggestionProvider"));
+    assert!(slippage.contains("SlippageSuggester"));
     assert!(slippage.contains("with_slippage_suggester"));
-    assert!(eip1271.contains("Eip1271SignatureProvider"));
+    assert!(eip1271.contains("Eip1271Signer"));
     assert!(eip1271.contains("with_custom_eip1271_signature"));
     assert!(ethflow_checker.contains("EthFlowOrderExistsChecker"));
     assert!(ethflow_checker.contains("with_check_eth_flow_order_exists"));

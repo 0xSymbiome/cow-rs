@@ -5,7 +5,7 @@ use cow_sdk_core::{
     Amount, CowEnv, HexData, OrderUid, SigningProvider, SupportedChainId, TransactionHash,
     TransactionRequest,
 };
-use cow_sdk_trading::{AllowanceParameters, ApprovalParameters, OrderTraderParameters, Trading};
+use cow_sdk_trading::{AllowanceParams, ApprovalParams, OrderTraderParams, Trading};
 use wiremock::MockServer;
 
 #[path = "support/rpc.rs"]
@@ -39,10 +39,7 @@ async fn alloy_client_satisfies_trading_sdk_boundaries() {
         .unwrap();
 
     let allowance = trading
-        .cow_protocol_allowance(
-            &client,
-            &AllowanceParameters::new(address(COW), address(OWNER)),
-        )
+        .cow_protocol_allowance(&client, &AllowanceParams::new(address(COW), address(OWNER)))
         .await
         .unwrap();
     assert_eq!(allowance, Amount::from(42u32));
@@ -50,14 +47,14 @@ async fn alloy_client_satisfies_trading_sdk_boundaries() {
     let approval_hash = trading
         .approve_cow_protocol(
             &signer,
-            &ApprovalParameters::new(address(COW), Amount::new("1000").unwrap()),
+            &ApprovalParams::new(address(COW), Amount::new("1000").unwrap()),
         )
         .await
         .unwrap();
     assert_eq!(approval_hash, TransactionHash::new(HASH).unwrap());
 
     let pre_sign = trading
-        .pre_sign_transaction(&OrderTraderParameters::new(order_uid()), &signer)
+        .pre_sign_transaction(&OrderTraderParams::new(order_uid()), &signer)
         .await
         .unwrap();
     assert!(pre_sign.to.is_some());

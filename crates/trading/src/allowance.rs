@@ -5,7 +5,7 @@ use cow_sdk_core::{
     TransactionRequest,
 };
 
-use crate::{ApprovalParameters, TradingError};
+use crate::{ApprovalParams, TradingError};
 
 /// Resolves the canonical vault-relayer address for allowance checks.
 ///
@@ -72,7 +72,7 @@ where
 /// Returns [`TradingError`] when ABI encoding fails or `amount` is outside the
 /// supported `uint256` range.
 pub fn approval_transaction(
-    params: &ApprovalParameters,
+    params: &ApprovalParams,
     chain_id: SupportedChainId,
     env: cow_sdk_core::CowEnv,
 ) -> Result<TransactionRequest, TradingError> {
@@ -97,7 +97,7 @@ pub fn approval_transaction(
 /// Returns [`TradingError`] when transaction construction or submission fails.
 pub async fn approve_cow_protocol<S>(
     signer: &S,
-    params: &ApprovalParameters,
+    params: &ApprovalParams,
     chain_id: SupportedChainId,
     env: cow_sdk_core::CowEnv,
 ) -> Result<TransactionHash, TradingError>

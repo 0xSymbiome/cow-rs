@@ -355,7 +355,7 @@ export interface Eip1193Request {
 
 /**
  * Effective trade parameters after SDK defaults and advanced settings were
- * applied, mirroring `cow_sdk_trading::TradeParameters`.
+ * applied, mirroring `cow_sdk_trading::TradeParams`.
  */
 export interface TradeParametersDto {
     /**

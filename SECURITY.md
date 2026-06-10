@@ -12,7 +12,7 @@ This policy covers security issues in the `cow-rs` repository, including:
 
 Security-relevant public surfaces worth a reviewer's attention include:
 
-- the `Eip1271VerificationCache` trait on `verify_eip1271_signature_cached`
+- the `Eip1271Cache` trait on `verify_eip1271_signature_cached`
   and its conservative caching semantics (only `Ok(())` magic-value
   matches and `Eip1271MagicValueMismatch` outcomes are cached; every
   other error class, including transport, missing-contract-code, decode,
@@ -119,7 +119,7 @@ surface through sanitized `HostPolicyError` variants that do not retain raw
 URL credentials, paths, queries, or fragments.
 
 Operator recommendation: use the canonical
-`OrderbookApi::builder().environment(CowEnv::Prod)` default for production
+`OrderbookApi::builder().env(CowEnv::Prod)` default for production
 bots that do not need partner-relay support. Use
 `ExternalHostPolicy::Allow` only for reviewed private endpoints, and keep
 `ExternalHostPolicy::Test` limited to loopback test fixtures.

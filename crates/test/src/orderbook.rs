@@ -40,7 +40,7 @@ pub struct OrderbookCalls {
     pub quote_requests: Vec<OrderQuoteRequest>,
     /// Orders passed to [`OrderbookClient::send_order`].
     pub sent_orders: Vec<OrderCreation>,
-    /// Cancellations passed to [`OrderbookClient::send_signed_order_cancellations`].
+    /// Cancellations passed to [`OrderbookClient::send_cancellations`].
     pub cancellations: Vec<OrderCancellations>,
     /// App-data uploads passed to [`OrderbookClient::upload_app_data`].
     pub uploads: Vec<(AppDataHash, String)>,
@@ -187,10 +187,7 @@ impl OrderbookClient for MockOrderbook {
         Ok(guard.order_uid)
     }
 
-    async fn send_signed_order_cancellations(
-        &self,
-        request: &OrderCancellations,
-    ) -> Result<(), OrderbookError> {
+    async fn send_cancellations(&self, request: &OrderCancellations) -> Result<(), OrderbookError> {
         self.lock().calls.cancellations.push(request.clone());
         Ok(())
     }

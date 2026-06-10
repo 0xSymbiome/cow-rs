@@ -1,6 +1,6 @@
 //! End-to-end Alloy-backed trading boundaries.
 //!
-//! Drives the async `Trading` boundaries through a real `AlloyClient`
+//! Drives the async `Trading` boundaries through a real `Client`
 //! (a `SigningProvider`) against a wiremock JSON-RPC server: read the protocol
 //! allowance (`cow_protocol_allowance`), wrap native currency into the
 //! wrapped-native token (`wrap_interaction` + `submit_and_wait_for_receipt`),
@@ -10,14 +10,14 @@
 
 use std::error::Error;
 
-use cow_sdk::alloy::AlloyClient;
+use cow_sdk::alloy::Client;
 use cow_sdk::contracts::wrap_interaction;
 use cow_sdk::core::{
     Amount, CowEnv, HexData, SigningProvider, SupportedChainId, TransactionHash,
     TransactionRequest, TransactionStatus, wrapped_native_token,
 };
 use cow_sdk::trading::{
-    AllowanceParameters, ApprovalParameters, OrderTraderParameters, Trading, WaitOptions,
+    AllowanceParams, ApprovalParams, OrderTraderParams, Trading, WaitOptions,
     approval_transaction, submit_and_wait_for_receipt,
 };
 use cow_sdk_examples_native::support::{
@@ -33,7 +33,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let server = MockServer::start().await;
     let methods = mount_rpc(&server).await;
     // build_checked() verifies the configured chain id against the RPC endpoint.
-    let client = AlloyClient::builder()
+    let client = Client::builder()
         .http(server.uri())?
         .private_key(TEST_KEY)?
         .chain_id(SupportedChainId::Mainnet)
@@ -50,13 +50,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let allowance = trading
         .cow_protocol_allowance(
             &client,
-            &AllowanceParameters::new(address(COW), address(OWNER)),
+            &AllowanceParams::new(address(COW), address(OWNER)),
         )
         .await?;
     assert_eq!(allowance, Amount::from(42u32));
 
     // 2. Build an approval transaction, broadcast it, and wait for the receipt.
-    let approval_params = ApprovalParameters::new(address(COW), Amount::new("1000")?);
+    let approval_params = ApprovalParams::new(address(COW), Amount::new("1000")?);
     let approval_tx =
         approval_transaction(&approval_params, SupportedChainId::Mainnet, CowEnv::Prod)?;
     let approval_receipt = submit_and_wait_for_receipt(
@@ -91,7 +91,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // 4. Build a pre-sign transaction; gas is estimated through the client.
     let pre_sign = trading
-        .pre_sign_transaction(&OrderTraderParameters::new(sample_order_uid()), &signer)
+        .pre_sign_transaction(&OrderTraderParams::new(sample_order_uid()), &signer)
         .await?;
     assert_eq!(pre_sign.gas_limit, Some(Amount::from(25_200u32)));
 
@@ -100,7 +100,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .unwrap_or_else(std::sync::PoisonError::into_inner)
         .clone();
     let report = json!({
-        "surface": "cow-sdk::alloy::AlloyClient with Trading",
+        "surface": "cow-sdk::alloy::Client with Trading",
         "allowance": allowance,
         "approvalTxHash": approval_receipt.transaction_hash.to_hex_string(),
         "approvalStatus": format!("{:?}", approval_receipt.status),

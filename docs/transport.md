@@ -100,7 +100,7 @@ use cow_sdk::orderbook::OrderbookApi;
 
 let orderbook = OrderbookApi::builder()
     .chain(SupportedChainId::Mainnet)
-    .environment(CowEnv::Prod)
+    .env(CowEnv::Prod)
     .build()?;
 ```
 
@@ -108,7 +108,7 @@ For explicit control, build a `ReqwestTransport` from a configuration:
 
 ```rust,ignore
 use std::sync::Arc;
-use cow_sdk::{HttpTransport, ReqwestTransport, ReqwestTransportConfig};
+use cow_sdk::http::{HttpTransport, ReqwestTransport, ReqwestTransportConfig};
 
 let config = ReqwestTransportConfig::new("https://api.cow.fi")
     .with_user_agent("my-bot/1.0");
@@ -134,7 +134,7 @@ browser consumers supply the transport explicitly:
 use std::sync::Arc;
 use cow_sdk::core::{CowEnv, SupportedChainId};
 use cow_sdk::orderbook::OrderbookApi;
-use cow_sdk::HttpTransport;
+use cow_sdk::http::HttpTransport;
 use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
 
 let transport: Arc<dyn HttpTransport + Send + Sync> = Arc::new(FetchTransport::new(
@@ -142,7 +142,7 @@ let transport: Arc<dyn HttpTransport + Send + Sync> = Arc::new(FetchTransport::n
 ));
 let orderbook = OrderbookApi::builder()
     .chain(SupportedChainId::Mainnet)
-    .environment(CowEnv::Prod)
+    .env(CowEnv::Prod)
     .transport(transport)
     .build()?;
 ```
@@ -302,7 +302,7 @@ without touching the network:
 
 ```rust,no_run
 use async_trait::async_trait;
-use cow_sdk::{HttpTransport, TransportError};
+use cow_sdk::http::{HttpTransport, TransportError};
 use std::{collections::HashMap, time::Duration};
 
 #[derive(Debug, Clone, Default)]
@@ -378,12 +378,13 @@ Install it through the builder's `.transport(...)` setter:
 
 ```rust,ignore
 use std::sync::Arc;
-use cow_sdk::{OrderbookApi, SupportedChainId};
+use cow_sdk::core::SupportedChainId;
+use cow_sdk::orderbook::OrderbookApi;
 
-let transport: Arc<dyn cow_sdk::HttpTransport + Send + Sync> = Arc::new(fixture_transport);
+let transport: Arc<dyn cow_sdk::http::HttpTransport + Send + Sync> = Arc::new(fixture_transport);
 let orderbook = OrderbookApi::builder()
     .chain(SupportedChainId::Mainnet)
-    .environment(/* prod | staging */)
+    .env(/* prod | staging */)
     .transport(transport)
     .build()?;
 ```

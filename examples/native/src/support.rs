@@ -13,7 +13,7 @@ use cow_sdk::core::{
     SellTokenSource, SupportedChainId,
 };
 use cow_sdk::orderbook::{AppDataHash, Order, OrderQuoteResponse};
-use cow_sdk::trading::{LimitTradeParameters, TradeParameters, TraderParameters};
+use cow_sdk::trading::{LimitTradeParams, TradeParams, TraderParams};
 use wiremock::{Mock, MockServer, ResponseTemplate, matchers::method};
 
 pub const WETH: &str = "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14";
@@ -92,8 +92,8 @@ pub fn sample_unsigned_order() -> OrderData {
     )
 }
 
-pub fn sample_trade_parameters() -> TradeParameters {
-    TradeParameters::new(
+pub fn sample_trade_parameters() -> TradeParams {
+    TradeParams::new(
         OrderKind::Sell,
         sample_sell_token(),
         sample_buy_token(),
@@ -103,13 +103,13 @@ pub fn sample_trade_parameters() -> TradeParameters {
     .with_slippage_bps(50)
 }
 
-pub fn sample_limit_parameters() -> LimitTradeParameters {
+pub fn sample_limit_parameters() -> LimitTradeParams {
     let quote = sample_quote_response();
     let sell_token_balance = quote.quote.sell_token_balance;
     let buy_token_balance = quote.quote.buy_token_balance;
     let quote_id = quote.id;
 
-    let mut params = LimitTradeParameters::new(
+    let mut params = LimitTradeParams::new(
         OrderKind::Sell,
         sample_sell_token(),
         sample_buy_token(),
@@ -126,8 +126,8 @@ pub fn sample_limit_parameters() -> LimitTradeParameters {
     params
 }
 
-pub fn sample_trader_parameters() -> TraderParameters {
-    TraderParameters::new(SupportedChainId::Sepolia, "cow-rs-native-examples")
+pub fn sample_trader_parameters() -> TraderParams {
+    TraderParams::new(SupportedChainId::Sepolia, "cow-rs-native-examples")
         .expect("app code should validate")
         .with_env(CowEnv::Prod)
 }

@@ -3,7 +3,7 @@
 //! Walks the complete facade surface against transport-mocked doubles: fetch a
 //! quote (`quote_results`), post a swap (`post_swap_order`), read the
 //! protocol allowance (`cow_protocol_allowance`), send an approval
-//! (`approve_cow_protocol`), and cancel off-chain (`off_chain_cancel_order`).
+//! (`approve_cow_protocol`), and cancel off-chain (`offchain_cancel_order`).
 //! The only scenario that also exercises `MockProvider`, for the allowance and
 //! approval reads.
 
@@ -12,7 +12,7 @@ use std::{error::Error, sync::Arc};
 use serde_json::json;
 
 use cow_sdk::core::{Amount, SupportedChainId};
-use cow_sdk::trading::{AllowanceParameters, ApprovalParameters, OrderTraderParameters, Trading};
+use cow_sdk::trading::{AllowanceParams, ApprovalParams, OrderTraderParams, Trading};
 
 use cow_sdk::testing::{MockOrderbook, MockProvider, MockSigner};
 use cow_sdk_examples_native::support::{
@@ -49,7 +49,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let allowance = trading
         .cow_protocol_allowance(
             &provider,
-            &AllowanceParameters::new(sample_sell_token(), sample_owner()),
+            &AllowanceParams::new(sample_sell_token(), sample_owner()),
         )
         .await?;
 
@@ -57,7 +57,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let approval_tx_hash = trading
         .approve_cow_protocol(
             &signer,
-            &ApprovalParameters::new(
+            &ApprovalParams::new(
                 sample_sell_token(),
                 Amount::from_units(1, 18).expect("example approval amount must remain valid"),
             ),
@@ -66,7 +66,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // 5. Cancel the posted order off-chain.
     let cancelled = trading
-        .off_chain_cancel_order(&OrderTraderParameters::new(post_result.order_id), &signer)
+        .offchain_cancel_order(&OrderTraderParams::new(post_result.order_id), &signer)
         .await?;
 
     let orderbook_state = orderbook.recorded();

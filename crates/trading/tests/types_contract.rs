@@ -21,9 +21,9 @@ use cow_sdk_core::{
 };
 use cow_sdk_orderbook::{OrderbookClient, SigningScheme};
 use cow_sdk_trading::{
-    LimitTradeParameters, OrderTraderParameters, PostTradeAdditionalParams, QuoterParameters,
-    SlippageToleranceRequest, SlippageToleranceResponse, TradeAdvancedSettings, TradeParameters,
-    TraderParameters, TradingOptions,
+    LimitTradeParams, OrderTraderParams, PostTradeAdditionalParams, QuoterParams,
+    SlippageToleranceRequest, SlippageToleranceResponse, TradeAdvancedSettings, TradeParams,
+    TraderParams, TradingOptions,
 };
 
 const VALID_ADDRESS: &str = "0x1111111111111111111111111111111111111111";
@@ -82,13 +82,13 @@ fn slippage_tolerance_response_constructors_record_optional_field() {
 }
 
 // -------------------------------------------------------------------------
-// TraderParameters and friends
+// TraderParams and friends
 // -------------------------------------------------------------------------
 
 #[test]
 fn trader_parameters_constructors_and_with_setters_preserve_inputs() {
-    let trader = TraderParameters::new(SupportedChainId::Mainnet, "cow-rs")
-        .expect("valid app code is accepted");
+    let trader =
+        TraderParams::new(SupportedChainId::Mainnet, "cow-rs").expect("valid app code is accepted");
     assert_eq!(trader.chain_id, SupportedChainId::Mainnet);
     assert_eq!(trader.app_code.as_str(), "cow-rs");
     assert!(trader.env.is_none());
@@ -116,22 +116,22 @@ fn trader_parameters_constructors_and_with_setters_preserve_inputs() {
 #[test]
 fn trader_parameters_new_rejects_invalid_app_code() {
     assert_eq!(
-        TraderParameters::new(SupportedChainId::Mainnet, ""),
+        TraderParams::new(SupportedChainId::Mainnet, ""),
         Err(AppCodeError::Empty),
     );
     assert_eq!(
-        TraderParameters::new(SupportedChainId::Mainnet, "cow\0rs"),
+        TraderParams::new(SupportedChainId::Mainnet, "cow\0rs"),
         Err(AppCodeError::NulByte),
     );
     assert_eq!(
-        TraderParameters::new(SupportedChainId::Mainnet, "cow\nrs"),
+        TraderParams::new(SupportedChainId::Mainnet, "cow\nrs"),
         Err(AppCodeError::ControlCharacter),
     );
 }
 
 #[test]
 fn quoter_parameters_constructors_and_with_setters_preserve_inputs() {
-    let quoter = QuoterParameters::new(SupportedChainId::Mainnet, "cow-rs", valid_address())
+    let quoter = QuoterParams::new(SupportedChainId::Mainnet, "cow-rs", valid_address())
         .expect("valid quoter parameters");
     assert_eq!(quoter.chain_id, SupportedChainId::Mainnet);
     assert_eq!(quoter.account, valid_address());
@@ -145,13 +145,13 @@ fn quoter_parameters_constructors_and_with_setters_preserve_inputs() {
     assert!(populated.eth_flow_contract_override.is_some());
 
     // Invalid app code is rejected.
-    let invalid = QuoterParameters::new(SupportedChainId::Mainnet, "", valid_address());
+    let invalid = QuoterParams::new(SupportedChainId::Mainnet, "", valid_address());
     assert_eq!(invalid, Err(AppCodeError::Empty));
 }
 
 #[test]
 fn order_trader_parameters_constructors_and_with_setters_preserve_inputs() {
-    let params = OrderTraderParameters::new(order_uid());
+    let params = OrderTraderParams::new(order_uid());
     assert_eq!(params.order_uid, order_uid());
     assert!(params.chain_id.is_none());
     assert!(params.env.is_none());
@@ -211,12 +211,12 @@ fn swap_advanced_settings_builders_round_trip_and_debug_renders() {
 // -------------------------------------------------------------------------
 
 // -------------------------------------------------------------------------
-// TradeParameters and LimitTradeParameters
+// TradeParams and LimitTradeParams
 // -------------------------------------------------------------------------
 
 #[test]
 fn trade_parameters_new_seeds_documented_defaults_and_with_setters_attach_fields() {
-    let trade = TradeParameters::new(
+    let trade = TradeParams::new(
         OrderKind::Sell,
         valid_address(),
         other_address(),
@@ -262,7 +262,7 @@ fn trade_parameters_new_seeds_documented_defaults_and_with_setters_attach_fields
 
 #[test]
 fn limit_trade_parameters_new_seeds_documented_defaults_and_with_setters_attach_fields() {
-    let limit = LimitTradeParameters::new(
+    let limit = LimitTradeParams::new(
         OrderKind::Buy,
         valid_address(),
         other_address(),

@@ -3,7 +3,7 @@
 Status: Current
 Last reviewed: 2026-05-31
 Owning surface: `cow-sdk-trading` order assembly, injected-orderbook builder terminal parity, and recoverable-signature posting boundary
-Refresh trigger: Changes to quote-derived or direct order construction, `Trading` builder terminals with injected orderbooks, recoverable-signature posting validation, upstream services `crates/shared/src/order_validation.rs` same-token semantics, the `TradeParameters::validate` / `LimitTradeParameters::validate` same-token predicate, the `LimitTradeParametersFromQuote` newtype invariant or its `EthFlow` entry binding
+Refresh trigger: Changes to quote-derived or direct order construction, `Trading` builder terminals with injected orderbooks, recoverable-signature posting validation, upstream services `crates/shared/src/order_validation.rs` same-token semantics, the `TradeParams::validate` / `LimitTradeParams::validate` same-token predicate, the `LimitTradeParamsFromQuote` newtype invariant or its `EthFlow` entry binding
 Related docs:
 - [ADR 0002](../adr/0002-dedicated-trading-orchestration-crate.md)
 - [Architecture](../architecture.md)
@@ -20,7 +20,7 @@ This audit covers:
 - receiver fallback when the caller leaves the receiver unset or set to the
   zero address
 - quote-derived order assembly and direct posting flows
-- public `TradeParameters::validate` and `LimitTradeParameters::validate`
+- public `TradeParams::validate` and `LimitTradeParams::validate`
   builder-level same-token semantics
 - `Trading` builder terminals that accept injected orderbook context
 - local signature validation before orderbook submission
@@ -38,7 +38,7 @@ unrelated leaf-crate transport policy.
 | Same-token posting policy | Direct posting rejects buy-side same-token orders before upload or signing and submits sell-side same-token orders | Conforms |
 | `Trading` injected-orderbook terminals | Typestate and total-input builder terminals enforce one fail-fast authority contract | Conforms |
 | Recoverable signature posting | Reject explicit owner or signer mismatch before submission | Conforms |
-| `EthFlow` entry binding | The `EthFlow` native-currency submission entry and the `EthFlow` transaction helper accept only `LimitTradeParametersFromQuote`, lifting the quote-id requirement to the type system at the public boundary while preserving the documented `MissingQuoteId` diagnostic | Conforms |
+| `EthFlow` entry binding | The `EthFlow` native-currency submission entry and the `EthFlow` transaction helper accept only `LimitTradeParamsFromQuote`, lifting the quote-id requirement to the type system at the public boundary while preserving the documented `MissingQuoteId` diagnostic | Conforms |
 
 ## Current Contract
 
@@ -66,7 +66,7 @@ services `OrderCreationAppData` untagged-enum wire shape (`Full`, `Hash`,
 
 ### Same-Token Builder And Posting Policy
 
-`TradeParameters::validate` and `LimitTradeParameters::validate` reject
+`TradeParams::validate` and `LimitTradeParams::validate` reject
 buy-side exact same-token orders with
 `ClientRejection::SameBuyAndSellToken` and accept sell-side exact
 same-token orders. Chain-specific WETH/native-sentinel pairing remains on

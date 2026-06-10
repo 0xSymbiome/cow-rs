@@ -21,7 +21,7 @@ EIP-1271 callbacks for wasm consumers follow the facade-resolves-callback
 pattern. `signOrderWithCustomEip1271` is the JavaScript smart-account entry
 point: the callback returns the final ABI-encoded signature (verifier plus
 signature blob), and the Rust facade wraps that resolved hex string in a
-`cow_sdk_signing::Eip1271SignatureProvider` implementation. No
+`cow_sdk_signing::Eip1271Signer` implementation. No
 `js_sys::Function` or `JsValue` is stored in the trait object; the trait
 remains trivially `Send + Sync` and composes with native consumers.
 

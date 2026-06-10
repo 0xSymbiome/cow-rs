@@ -12,7 +12,7 @@ use serde_json::json;
 
 use cow_sdk::core::{Address, EVM_NATIVE_CURRENCY_ADDRESS, HexData, SupportedChainId};
 use cow_sdk::trading::{
-    LimitTradeParametersFromQuote, PostTradeAdditionalParams, build_app_data, eth_flow_transaction,
+    LimitTradeParamsFromQuote, PostTradeAdditionalParams, build_app_data, eth_flow_transaction,
     post_sell_native_currency_order,
 };
 
@@ -50,7 +50,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let requested_sell_token = params.sell_token;
     let requested_quote_id = params.quote_id;
-    let from_quote = LimitTradeParametersFromQuote::try_from_limit(params)?;
+    let from_quote = LimitTradeParamsFromQuote::try_from_limit(params)?;
 
     // Build the on-chain EthFlow transaction (the contract call that creates the
     // order) without posting anything.

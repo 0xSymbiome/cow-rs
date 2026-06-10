@@ -3,7 +3,7 @@
 
 use cow_sdk_core::{AddressPerChain, AppCode, CowEnv, SupportedChainId};
 
-use crate::{PartialTraderParameters, TradingOptions};
+use crate::{PartialTraderParams, TradingOptions};
 mod builder;
 mod helpers;
 mod methods;
@@ -30,7 +30,7 @@ pub struct AppCodeSet(());
 /// High-level trading facade that stores trader defaults plus optional injected services.
 #[derive(Debug, Clone)]
 pub struct Trading {
-    trader_defaults: PartialTraderParameters,
+    trader_defaults: PartialTraderParams,
     options: TradingOptions,
 }
 

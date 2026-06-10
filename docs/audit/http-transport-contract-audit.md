@@ -183,7 +183,7 @@ orderbook's request pipeline runs the transport call inside the shared
 `run_with_retry` driver, which provides the rate-limit gate, backoff, and
 `Retry-After` cooldown, while the orderbook closure keeps the typed-error
 classification around the single network-call line that previously invoked
-`reqwest::RequestBuilder::send`. The subgraph's `run_query`
+`reqwest::RequestBuilder::send`. The subgraph's `query`
 serializes the GraphQL envelope into a string, builds the
 `Content-Type: application/json` header, and dispatches
 `self.transport.post(api, body, headers, timeout).await` through the same

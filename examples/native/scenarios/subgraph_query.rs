@@ -17,7 +17,7 @@ use wiremock::{
 use cow_sdk::core::SupportedChainId;
 use cow_sdk::subgraph::{ExternalHostPolicy, SubgraphApi, SubgraphQueryRequest};
 
-/// A caller-owned response shape, deserialized straight out of `run_query`.
+/// A caller-owned response shape, deserialized straight out of `query`.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct TokensByVolumeResponse {
@@ -82,7 +82,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .mount(&server)
         .await;
 
-    // Custom GraphQL through the `run_query` escape hatch, for documents the typed
+    // Custom GraphQL through the `query` escape hatch, for documents the typed
     // helpers do not cover.
     let document = "query TokensByVolume($limit: Int!) {\n  tokens(first: $limit, orderBy: totalVolumeUsd, orderDirection: desc) {\n    address\n    symbol\n    totalVolumeUsd\n    priceUsd\n  }\n}";
     let custom_request = SubgraphQueryRequest::new(document)
@@ -129,7 +129,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let last_hours = subgraph.last_hours_volume(24).await?;
 
     // Custom GraphQL deserialized into a caller-owned type.
-    let custom: TokensByVolumeResponse = subgraph.run_query(custom_request).await?;
+    let custom: TokensByVolumeResponse = subgraph.query(custom_request).await?;
 
     let report = json!({
         "surface": "cow_sdk::subgraph",

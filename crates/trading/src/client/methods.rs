@@ -7,9 +7,9 @@ use cow_sdk_core::{Amount, CowEnv, Provider, Signer, TransactionHash};
 
 use super::Trading;
 use crate::{
-    AllowanceParameters, ApprovalParameters, LimitTradeParameters, OrderTraderParameters,
-    QuoteResults, TradeAdvancedSettings, TradeParameters, TradingError, cancel_order_onchain,
-    cow_protocol_allowance, off_chain_cancel_order, onchain::protocol_options_for_partial_order,
+    AllowanceParams, ApprovalParams, LimitTradeParams, OrderTraderParams, QuoteResults,
+    TradeAdvancedSettings, TradeParams, TradingError, cow_protocol_allowance,
+    offchain_cancel_order, onchain::protocol_options_for_partial_order, onchain_cancel_order,
     pre_sign_transaction, quote_only, quote_results,
 };
 
@@ -30,10 +30,10 @@ impl Trading {
     /// `EthFlow` sell orders require a quote identifier and are routed to the
     /// native-currency transaction path. The
     /// [`swap_params_to_limit_order_params`](crate::swap_params_to_limit_order_params)
-    /// bridge produces a [`LimitTradeParametersFromQuote`](crate::LimitTradeParametersFromQuote)
+    /// bridge produces a [`LimitTradeParamsFromQuote`](crate::LimitTradeParamsFromQuote)
     /// value that guarantees the quote identifier is present, and the
     /// `EthFlow` native-currency submission seam accepts only that newtype.
-    /// A `LimitTradeParameters` value constructed without a quote id surfaces
+    /// A `LimitTradeParams` value constructed without a quote id surfaces
     /// [`TradingError::MissingQuoteId`] at the typed boundary before the
     /// transaction is built.
     #[cfg_attr(
@@ -49,7 +49,7 @@ impl Trading {
     )]
     pub async fn post_swap_order<S>(
         &self,
-        params: TradeParameters,
+        params: TradeParams,
         signer: &S,
         advanced_settings: Option<&TradeAdvancedSettings>,
     ) -> Result<crate::OrderPostingResult, TradingError>
@@ -86,10 +86,10 @@ impl Trading {
     /// `EthFlow` sell orders require a quote identifier and are routed to the
     /// native-currency transaction path. The
     /// [`swap_params_to_limit_order_params`](crate::swap_params_to_limit_order_params)
-    /// bridge produces a [`LimitTradeParametersFromQuote`](crate::LimitTradeParametersFromQuote)
+    /// bridge produces a [`LimitTradeParamsFromQuote`](crate::LimitTradeParamsFromQuote)
     /// value that guarantees the quote identifier is present, and the
     /// `EthFlow` native-currency submission seam accepts only that newtype.
-    /// A `LimitTradeParameters` value constructed without a quote id surfaces
+    /// A `LimitTradeParams` value constructed without a quote id surfaces
     /// [`TradingError::MissingQuoteId`] at the typed boundary before the
     /// transaction is built.
     #[cfg_attr(
@@ -142,10 +142,10 @@ impl Trading {
     /// `EthFlow` sell orders require a quote identifier and are routed to the
     /// native-currency transaction path. The
     /// [`swap_params_to_limit_order_params`](crate::swap_params_to_limit_order_params)
-    /// bridge produces a [`LimitTradeParametersFromQuote`](crate::LimitTradeParametersFromQuote)
+    /// bridge produces a [`LimitTradeParamsFromQuote`](crate::LimitTradeParamsFromQuote)
     /// value that guarantees the quote identifier is present, and the
     /// `EthFlow` native-currency submission seam accepts only that newtype.
-    /// A `LimitTradeParameters` value constructed without a quote id surfaces
+    /// A `LimitTradeParams` value constructed without a quote id surfaces
     /// [`TradingError::MissingQuoteId`] at the typed boundary before the
     /// transaction is built.
     #[cfg_attr(
@@ -161,7 +161,7 @@ impl Trading {
     )]
     pub async fn post_limit_order<S>(
         &self,
-        params: LimitTradeParameters,
+        params: LimitTradeParams,
         signer: &S,
         advanced_settings: Option<&TradeAdvancedSettings>,
     ) -> Result<crate::OrderPostingResult, TradingError>
@@ -186,7 +186,7 @@ impl Trading {
     /// Fetches quote-only results using SDK defaults plus optional advanced settings.
     ///
     /// Owner precedence: advanced-settings `quote_request.from`, then
-    /// call-level [`TradeParameters::owner`]. The SDK does not store a
+    /// call-level [`TradeParams::owner`]. The SDK does not store a
     /// default owner; missing owner surfaces as
     /// [`TradingError::MissingOwner`].
     ///
@@ -210,7 +210,7 @@ impl Trading {
     )]
     pub async fn quote_only(
         &self,
-        params: TradeParameters,
+        params: TradeParams,
         advanced_settings: Option<&TradeAdvancedSettings>,
     ) -> Result<QuoteResults, TradingError> {
         let owner = Self::resolve_quote_owner(&params, advanced_settings)?;
@@ -227,7 +227,7 @@ impl Trading {
 
     /// Fetches quote results.
     ///
-    /// Owner precedence: call-level [`TradeParameters::owner`], then the
+    /// Owner precedence: call-level [`TradeParams::owner`], then the
     /// signer address resolved through
     /// [`cow_sdk_core::Signer::address`]. The SDK does not store a
     /// default owner.
@@ -252,7 +252,7 @@ impl Trading {
     )]
     pub async fn quote_results<S>(
         &self,
-        params: TradeParameters,
+        params: TradeParams,
         signer: &S,
         advanced_settings: Option<&TradeAdvancedSettings>,
     ) -> Result<QuoteResults, TradingError>
@@ -290,14 +290,14 @@ impl Trading {
             fields(
                 chain = ?params.chain_id.or(self.trader_defaults.chain_id),
                 env = ?params.env.or(self.trader_defaults.env),
-                endpoint = "trading.off_chain_cancel_order",
+                endpoint = "trading.offchain_cancel_order",
                 order_uid = %params.order_uid,
             ),
         ),
     )]
-    pub async fn off_chain_cancel_order<S>(
+    pub async fn offchain_cancel_order<S>(
         &self,
-        params: &OrderTraderParameters,
+        params: &OrderTraderParams,
         signer: &S,
     ) -> Result<bool, TradingError>
     where
@@ -305,13 +305,13 @@ impl Trading {
         S::Error: std::fmt::Display + cow_sdk_core::SignerError,
     {
         let (trader, orderbook) = self.resolve_orderbook_trader(params.chain_id, params.env)?;
-        let effective_params = OrderTraderParameters {
+        let effective_params = OrderTraderParams {
             chain_id: Some(orderbook.chain_id),
             env: Some(orderbook.env),
             ..params.clone()
         };
 
-        off_chain_cancel_order(
+        offchain_cancel_order(
             orderbook.client.as_ref(),
             &effective_params,
             &trader,
@@ -339,14 +339,14 @@ impl Trading {
             fields(
                 chain = ?params.chain_id.or(self.trader_defaults.chain_id),
                 env = ?params.env.or(self.trader_defaults.env),
-                endpoint = "trading.on_chain_cancel_order",
+                endpoint = "trading.onchain_cancel_order",
                 order_uid = %params.order_uid,
             ),
         ),
     )]
-    pub async fn on_chain_cancel_order<S>(
+    pub async fn onchain_cancel_order<S>(
         &self,
-        params: &OrderTraderParameters,
+        params: &OrderTraderParams,
         signer: &S,
     ) -> Result<TransactionHash, TradingError>
     where
@@ -357,14 +357,14 @@ impl Trading {
 
         let order = orderbook.client.order(&params.order_uid).await?;
 
-        let effective_params = OrderTraderParameters {
+        let effective_params = OrderTraderParams {
             chain_id: Some(orderbook.chain_id),
             env: Some(orderbook.env),
             ..params.clone()
         };
         let options = protocol_options_for_partial_order(&effective_params, &trader);
 
-        cancel_order_onchain(signer, orderbook.chain_id, &order, Some(&options)).await
+        onchain_cancel_order(signer, orderbook.chain_id, &order, Some(&options)).await
     }
 }
 
@@ -392,7 +392,7 @@ impl Trading {
     )]
     pub async fn pre_sign_transaction<S>(
         &self,
-        params: &OrderTraderParameters,
+        params: &OrderTraderParams,
         signer: &S,
     ) -> Result<cow_sdk_core::TransactionRequest, TradingError>
     where
@@ -402,7 +402,7 @@ impl Trading {
         let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
         let chain_id = trader
             .chain_id
-            .ok_or(TradingError::MissingTraderParameters("chainId"))?;
+            .ok_or(TradingError::MissingTraderParams("chainId"))?;
         let options = protocol_options_for_partial_order(params, &trader);
 
         pre_sign_transaction(signer, chain_id, &params.order_uid, Some(&options)).await
@@ -433,7 +433,7 @@ impl Trading {
     pub async fn cow_protocol_allowance<P>(
         &self,
         provider: &P,
-        params: &AllowanceParameters,
+        params: &AllowanceParams,
     ) -> Result<Amount, TradingError>
     where
         P: Provider,
@@ -442,7 +442,7 @@ impl Trading {
         let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
         let chain_id = trader
             .chain_id
-            .ok_or(TradingError::MissingTraderParameters("chainId"))?;
+            .ok_or(TradingError::MissingTraderParams("chainId"))?;
         let env = trader.env.unwrap_or(CowEnv::Prod);
 
         cow_protocol_allowance(
@@ -481,7 +481,7 @@ impl Trading {
     pub async fn approve_cow_protocol<S>(
         &self,
         signer: &S,
-        params: &ApprovalParameters,
+        params: &ApprovalParams,
     ) -> Result<TransactionHash, TradingError>
     where
         S: Signer,
@@ -490,7 +490,7 @@ impl Trading {
         let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
         let chain_id = trader
             .chain_id
-            .ok_or(TradingError::MissingTraderParameters("chainId"))?;
+            .ok_or(TradingError::MissingTraderParams("chainId"))?;
         let env = trader.env.unwrap_or(CowEnv::Prod);
 
         crate::approve_cow_protocol(signer, params, chain_id, env).await
@@ -521,7 +521,7 @@ impl Trading {
     )]
     pub async fn order(
         &self,
-        params: &OrderTraderParameters,
+        params: &OrderTraderParams,
     ) -> Result<cow_sdk_orderbook::Order, TradingError> {
         let (_, orderbook) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
 

@@ -4,13 +4,13 @@ use cow_sdk::core::{
 };
 use cow_sdk::signing::{ORDER_PRIMARY_TYPE, generate_order_id, order_typed_data};
 use cow_sdk::trading::{
-    PartnerFee, PartnerFeePolicy, TradeParameters, TraderParameters, TradingBuilder, TradingOptions,
+    PartnerFee, PartnerFeePolicy, TradeParams, TraderParams, TradingBuilder, TradingOptions,
 };
 
 #[test]
 fn module_paths_cover_primary_workflow_surface() {
     let _ready_trading = TradingBuilder::ready(
-        TraderParameters::new(SupportedChainId::Sepolia, "cow-rs/public-api")
+        TraderParams::new(SupportedChainId::Sepolia, "cow-rs/public-api")
             .expect("app code should validate"),
         TradingOptions::default(),
     )
@@ -47,7 +47,7 @@ fn module_paths_cover_primary_workflow_surface() {
     assert_eq!(generated.order_digest.to_hex_string().len(), 66);
     assert_eq!(generated.order_id.to_hex_string().len(), 114);
 
-    let _trade = TradeParameters::new(
+    let _trade = TradeParams::new(
         OrderKind::Sell,
         Address::new("0x1111111111111111111111111111111111111111").unwrap(),
         Address::new("0x2222222222222222222222222222222222222222").unwrap(),
@@ -97,7 +97,7 @@ fn module_reexports_cover_expected_leaf_crates() {
     .build()
     .expect("default facade orderbook client must build");
     let _trading = cow_sdk::trading::TradingBuilder::ready(
-        cow_sdk::trading::TraderParameters::new(
+        cow_sdk::trading::TraderParams::new(
             cow_sdk::core::SupportedChainId::Sepolia,
             "cow-rs/public-api",
         )

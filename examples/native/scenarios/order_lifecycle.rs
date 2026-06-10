@@ -1,7 +1,7 @@
 //! Single-order lookup and off-chain cancellation.
 //!
 //! Looks up an order by uid (`Trading::order`) and cancels it off-chain
-//! (`Trading::off_chain_cancel_order`) through a transport-mocked orderbook and
+//! (`Trading::offchain_cancel_order`) through a transport-mocked orderbook and
 //! signer, inspecting the signed cancellation the SDK records. Off-chain
 //! cancellation is a signed API call, not an on-chain transaction.
 
@@ -10,7 +10,7 @@ use std::{error::Error, sync::Arc};
 use serde_json::json;
 
 use cow_sdk::core::SupportedChainId;
-use cow_sdk::trading::{OrderTraderParameters, Trading};
+use cow_sdk::trading::{OrderTraderParams, Trading};
 
 use cow_sdk::testing::{MockOrderbook, MockSigner};
 use cow_sdk_examples_native::support::{
@@ -32,11 +32,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .build()?;
 
     // Both calls key off the order uid.
-    let params = OrderTraderParameters::new(sample_order_uid());
+    let params = OrderTraderParams::new(sample_order_uid());
 
     // Fetch the order, then cancel it off-chain — a signed API call, not a transaction.
     let order = trading.order(&params).await?;
-    let cancelled = trading.off_chain_cancel_order(&params, &signer).await?;
+    let cancelled = trading.offchain_cancel_order(&params, &signer).await?;
     let state = orderbook.recorded();
 
     let report = json!({

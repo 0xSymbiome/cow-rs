@@ -72,11 +72,11 @@ allowed:
   - file: crates/trading/src/order.rs
     item: calculate_unique_order_id
     reason: Canonical EthFlow address is guaranteed by the validated deployment registry.
-  - file: crates/trading/src/parameters.rs
+  - file: crates/trading/src/params.rs
     item: native_sentinel
     reason: Native currency sentinel is a repository-owned valid EVM address literal.
   - file: crates/trading/src/types/trade.rs
-    item: LimitTradeParametersFromQuote::quote_id
+    item: LimitTradeParamsFromQuote::quote_id
     reason: try_from_limit is the only public constructor and rejects None on entry, and the inner field is private and immutable through the public API so the invariant cannot be broken.
   - file: crates/trading/src/wait.rs
     item: delay_for

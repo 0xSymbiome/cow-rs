@@ -13,8 +13,8 @@ use cow_sdk_orderbook::Order;
 
 use crate::slippage::{gas_with_margin, parse_integer};
 use crate::{
-    GAS_LIMIT_DEFAULT, OrderTraderParameters, PartialTraderParameters, TraderParameters,
-    TradingError, calculate_unique_order_id, order_to_sign,
+    DEFAULT_GAS_LIMIT, OrderTraderParams, PartialTraderParams, TraderParams, TradingError,
+    calculate_unique_order_id, order_to_sign,
 };
 
 /// `EthFlow` transaction bundle returned by native-sell helper flows.
@@ -122,10 +122,10 @@ where
 /// encoding, unique-order-id generation, or gas-margin conversion fails.
 pub async fn eth_flow_transaction<S>(
     app_data_keccak256: &cow_sdk_core::AppDataHash,
-    params: &crate::LimitTradeParametersFromQuote,
+    params: &crate::LimitTradeParamsFromQuote,
     chain_id: SupportedChainId,
     additional_params: &crate::types::PostTradeAdditionalParams,
-    trader: &TraderParameters,
+    trader: &TraderParams,
     signer: &S,
 ) -> Result<EthFlowTransaction, TradingError>
 where
@@ -141,7 +141,7 @@ where
         })?;
     let owner = from;
     let quote_id = params.quote_id();
-    let mut adjusted = crate::adjust_ethflow_limit_parameters(chain_id, params.as_limit());
+    let mut adjusted = crate::adjust_eth_flow_limit_params(chain_id, params.as_limit());
     if adjusted.slippage_bps.is_none() {
         adjusted.slippage_bps = Some(crate::default_slippage_bps(chain_id, true));
     }
@@ -168,7 +168,7 @@ where
         crate::order::OrderToSignParams {
             chain_id,
             from,
-            is_ethflow: true,
+            is_eth_flow: true,
             network_costs_amount: additional_params.network_costs_amount,
             apply_costs_slippage_and_fees: additional_params
                 .apply_costs_slippage_and_fees
@@ -268,7 +268,7 @@ where
 /// # Errors
 ///
 /// Returns [`TradingError`] when transaction construction or submission fails.
-pub async fn cancel_order_onchain<S>(
+pub async fn onchain_cancel_order<S>(
     signer: &S,
     chain_id: SupportedChainId,
     order: &Order,
@@ -295,12 +295,12 @@ where
 /// and contract overrides.
 #[must_use]
 pub fn protocol_options_for_order(
-    params: &OrderTraderParameters,
-    trader: &TraderParameters,
+    params: &OrderTraderParams,
+    trader: &TraderParams,
 ) -> ProtocolOptions {
     protocol_options_for_partial_order(
         params,
-        &PartialTraderParameters {
+        &PartialTraderParams {
             chain_id: Some(trader.chain_id),
             app_code: Some(trader.app_code.clone()),
             env: trader.env,
@@ -314,8 +314,8 @@ pub fn protocol_options_for_order(
 /// chain-bound protocol context.
 #[must_use]
 pub(crate) fn protocol_options_for_partial_order(
-    params: &OrderTraderParameters,
-    trader: &PartialTraderParameters,
+    params: &OrderTraderParams,
+    trader: &PartialTraderParams,
 ) -> ProtocolOptions {
     let mut options = ProtocolOptions::new();
     if let Some(env) = params.env.or(trader.env) {
@@ -397,9 +397,9 @@ fn resolve_eth_flow_address(
 /// Panics only if the crate-owned decimal gas-limit literal stops fitting the
 /// SDK amount validator.
 fn default_gas_limit() -> Amount {
-    // SAFETY: GAS_LIMIT_DEFAULT is a small static decimal literal that remains
+    // SAFETY: DEFAULT_GAS_LIMIT is a small static decimal literal that remains
     // within the supported amount range.
-    Amount::new(GAS_LIMIT_DEFAULT.to_string()).expect("static gas limit literal must remain valid")
+    Amount::new(DEFAULT_GAS_LIMIT.to_string()).expect("static gas limit literal must remain valid")
 }
 
 fn encode_set_pre_signature(order_uid: &cow_sdk_core::OrderUid, enabled: bool) -> String {
