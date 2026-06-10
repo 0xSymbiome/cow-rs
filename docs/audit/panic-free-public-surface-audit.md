@@ -83,7 +83,7 @@ already non-exhaustive enum. It adds no conversion, allocation, parsing, or
 panic-bearing runtime path, and current transports continue producing only
 their existing classes.
 
-The `policy-maintainer check-panic-allowlist` gate enforces ADR 0033 at item
+The `cargo check-panic-allowlist` gate enforces ADR 0033 at item
 level. Each allowlist entry keeps the reviewed rationale, and each documented
 entry must name an item whose rustdoc contains a `# Panics` section and whose
 body contains a `// SAFETY:` comment explaining the local invariant. The
@@ -118,7 +118,7 @@ Primary implementation points:
 - `crates/*/src/**/*.rs`
 - `crates/trading/src/wait.rs`
 - `Cargo.toml` workspace clippy lint configuration
-- `scripts/policy-maintainer/src/check_panic_allowlist.rs`
+- `xtask/src/policy/check_panic_allowlist.rs`
 - `crates/wasm/src/lib.rs`
 - `crates/wasm/src/exports/mod.rs`
 - `crates/wasm/src/exports/errors.rs`
@@ -126,10 +126,10 @@ Primary implementation points:
 
 Primary regression coverage:
 
-- `scripts/policy-maintainer/tests/check_panic_allowlist.rs::rejects_allowlisted_item_missing_panics_rustdoc`
-- `scripts/policy-maintainer/tests/check_panic_allowlist.rs::rejects_allowlisted_item_missing_safety_comment`
-- `scripts/policy-maintainer/tests/check_panic_allowlist.rs::accepts_item_with_both_artifacts`
-- `scripts/policy-maintainer/tests/check_panic_allowlist.rs::accepts_item_with_documented_false_opt_out`
+- `xtask/tests/check_panic_allowlist.rs::rejects_allowlisted_item_missing_panics_rustdoc`
+- `xtask/tests/check_panic_allowlist.rs::rejects_allowlisted_item_missing_safety_comment`
+- `xtask/tests/check_panic_allowlist.rs::accepts_item_with_both_artifacts`
+- `xtask/tests/check_panic_allowlist.rs::accepts_item_with_documented_false_opt_out`
 - `.github/workflows/_quality-gate.yml` clippy job with warnings denied, which
   enforces the workspace `missing_panics_doc` lint so every retained
   static-invariant panic site carries a `# Panics` rustdoc section
@@ -143,6 +143,6 @@ Validation surface:
 
 ```text
 cargo check-panic-allowlist
-cargo test --manifest-path scripts/policy-maintainer/Cargo.toml --test check_panic_allowlist
+cargo test --manifest-path xtask/Cargo.toml --test check_panic_allowlist
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 ```

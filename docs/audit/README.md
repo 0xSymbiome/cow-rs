@@ -103,7 +103,7 @@ If the reviewed surface did not change, leave the audit alone.
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [WASM Browser Runner Determinism Audit](wasm-browser-runner-determinism-audit.md) | Standing audit | Pinned Chrome-for-Testing runner used by browser-targeted WASM validation lanes | Committed browser-runner pin, setup command, freshness gate, and workflow use of pinned Chrome/chromedriver for wasm-pack tests | Current | 2026-06-03 |
+| [WASM Browser Runner Determinism Audit](wasm-browser-runner-determinism-audit.md) | Standing audit | Headless Firefox runner used by browser-targeted WASM validation lanes | Provisioning the headless Firefox runner through pinned setup actions, the pinned geckodriver, and the deterministic browser-wallet bridge tests | Current | 2026-06-10 |
 
 ## TypeScript-Callable WASM SDK
 
@@ -126,7 +126,7 @@ If the reviewed surface did not change, leave the audit alone.
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
 | [CID Dependency Audit](cid-dependency-audit.md) | Standing audit | `cow-sdk-app-data` and `cow-sdk-core` CID encoding and published dependency boundary | Supported CID paths, fail-closed encoding, and clean published-upstream posture | Current | 2026-06-08 |
-| [Dependency Gate Audit](dependency-gate-audit.md) | Standing audit | Release-facing dependency-audit gate for current published surfaces | Blocking transport advisory policy, clean CID posture, direct WASM randomness alignment, canonical advisory tolerance, source whitelist, native Alloy provider/signer dependency allow-lists, `cow-sdk-wasm` wasm32 dependency exclusions, and pure-helper FFI exclusion | Current | 2026-06-09 |
+| [Dependency Gate Audit](dependency-gate-audit.md) | Standing audit | Release-facing dependency-audit gate for current published surfaces | Blocking transport advisory policy, clean CID posture, direct WASM randomness alignment, canonical advisory tolerance, source whitelist, native Alloy provider/signer dependency allow-lists, `cow-sdk-wasm` wasm32 dependency exclusions, and pure-helper FFI exclusion | Current | 2026-06-10 |
 
 ## Source Provenance
 
@@ -138,7 +138,7 @@ If the reviewed surface did not change, leave the audit alone.
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [Wire DTO Coverage Audit](wire-dto-coverage-audit.md) | Standing audit | `cow-sdk-orderbook` DTO coverage | OpenAPI-vendored orderbook response DTO inventories, request-payload fixtures, field-level round trips, and response forward compatibility | Current | 2026-06-10 |
+| [Wire DTO Coverage Audit](wire-dto-coverage-audit.md) | Standing audit | `cow-sdk-orderbook` DTO coverage | in-memory OpenAPI DTO coverage against the vendored orderbook spec, request-payload fixtures, field-level round trips, and response forward compatibility | Current | 2026-06-10 |
 | [Quote Response Surface Audit](quote-response-surface-audit.md) | Standing audit | `cow-sdk-orderbook` quote DTOs and `cow-sdk-trading` quote projection | Quote response `OrderParameters` fidelity and coverage, the `priceQuality` default, read-only quote network-cost fields, projection parity, and the bounds-validator trust posture | Current | 2026-06-10 |
 | [Quote Request App-Data Fix Review](quote-request-app-data-fix-review.md) | Fix review | `cow-sdk-orderbook` quote-request app-data wire shape (`OrderQuoteRequest`, `QuoteAppData`) | Hash-only, document-only, document-plus-hash, and default quote app-data wire forms and `QuoteAppData` round-trip stability | Current | 2026-05-30 |
 
@@ -172,7 +172,7 @@ If the reviewed surface did not change, leave the audit alone.
 | --- | --- | --- | --- | --- | --- |
 | [Unsafe-Code Policy Audit](unsafe-code-policy-audit.md) | Standing audit | Workspace `unsafe_code = deny` lint declared in `Cargo.toml` workspace lint section | Workspace unsafe-code deny lint, crate lint adoption, public-path source posture, and clippy enforcement | Current | 2026-04-23 |
 | [Panic-Free Public Surface Audit](panic-free-public-surface-audit.md) | Standing audit | Every `crates/*/src/**/*.rs` file accessible from the published public API | Public-runtime `expect`, `unwrap`, and `panic!` site set with rationale for every remaining static-invariant panic site, including the `Result`-returning `Amount::parse_units` and `Amount::from_units` constructors and infallible `Amount::format_units`, native Alloy adapter conversion, trading receipt-wait helpers, wasm exports, pure helpers, and allowlist coverage | Current | 2026-06-09 |
-| [Workflow Security Audit](workflow-security-audit.md) | Standing audit | Every `.github/workflows/*.yml` file | SHA-pinned third-party actions, explicit permissions, reviewed action source refs, and guarded `pull_request_target` use | Current | 2026-06-05 |
+| [Workflow Security Audit](workflow-security-audit.md) | Standing audit | Every `.github/workflows/*.yml` file | SHA-pinned third-party actions, explicit permissions, reviewed action source refs, and guarded `pull_request_target` use | Current | 2026-06-10 |
 | [Fuzz Coverage Audit](fuzz-coverage-audit.md) | Standing audit | The standalone `cow-sdk-fuzz` crate and every `cargo-fuzz` target it ships against the published SDK crates | Target inventory across encoder, signing, validator, parser, classifier, crypto envelope, app-data, transport, browser-wallet adjacent, and trading surfaces; per-target seed contract; stable-toolchain compile gate; nightly enumerate; property traceability; public-surface boundary on `pub(crate)` helpers | Current | 2026-06-08 |
 
 ## Cross-Cutting Reviewability And Contract Hygiene

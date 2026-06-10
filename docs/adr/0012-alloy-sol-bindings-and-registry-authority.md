@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-04-21
-- Last reviewed: 2026-06-08
+- Last reviewed: 2026-06-10
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: contracts, bindings, abi, registry, deployments
 - Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md), [ADR 0054](0054-onchain-order-event-decoding-is-fail-closed.md)
@@ -53,7 +53,7 @@ description produces upstream-identical bytes.
   `CoWSwapEthFlow`, the `CoWSwapOnchainOrders` event surface, the EIP-1967
   proxy slot surface, `IERC20`, and `IWrappedNativeToken`.
 - Runtime and support: native Alloy provider and local-signer dependencies are
-  confined by the policy-maintainer allow-list checks rather than by a
+  confined by the xtask policy allow-list checks rather than by a
   hand-maintained crate enumeration in this ADR. The `alloy::sol!` machinery
   (`alloy-sol-types`, `alloy-sol-macro`, `alloy-primitives`) is wasm-safe and
   carries no tokio-bound network client. Consumers select their own chain-RPC
@@ -124,3 +124,30 @@ inline `alloy::sol!` binding decision and the parity-fixture posture recorded
 above are unchanged; only the address-resolution backing store moved from a TOML
 manifest to committed constants, and `RegistryError` (the runtime TOML-parser
 diagnostic) is removed with the parser.
+
+## Amendment 2026-06-10: source-lock validated by form; maintenance tools consolidated
+
+The source-lock authority recorded above is unchanged — `parity/source-lock.yaml`
+remains the single per-repository commit pin behind the inline `alloy::sol!`
+bindings and committed fixtures. Two mechanical changes land:
+
+- The validator now checks the lock by **form** (a GitHub `.git` remote, a
+  40-character lowercase hex commit, a known role, and unique non-traversing
+  producer paths) instead of matching every row against a hardcoded Rust
+  contract, and the typed model rejects unknown or missing fields. The
+  committed YAML is the single source of truth, so re-pinning an upstream is
+  one edit to the lock rather than a parallel edit to the tool. The metadata
+  block and the `optional_local_path`, `pinned_at`, and `pinned_by` fields
+  (each unused by any consumer) are dropped — the lock's only parsers ship in
+  the same commit as the file, so a schema-version gate guards nothing — and
+  the reference-only `watch-tower` row is removed: an ecosystem boundary
+  statement needs prose, not a pinned commit.
+- Repository tooling consolidates into one non-published `xtask` workspace
+  member: the source-lock validator, OpenAPI coverage and vendoring, the
+  deployment-registry probe, the policy checks, and the docs-agreement gates.
+  Its structural checks run as ordinary workspace tests; the existing
+  `cargo parity-*`, `cargo check-*`, and `cargo registry-confirm` aliases are
+  unchanged, and `cargo xtask parity sync` / `cargo xtask parity drift`
+  materialize the pinned checkouts and report producer-path drift against the
+  upstream default branches (git blob OIDs — the pin already content-addresses
+  every path, so no checksums are committed).

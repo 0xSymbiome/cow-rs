@@ -21,7 +21,7 @@ cargo test -p cow-rs-workspace-tests --test alloy_two_family_lockfile_invariant
 cargo test -p cow-sdk-alloy --test send_transaction_does_not_wait_for_confirmation
 cargo test -p cow-sdk-browser-wallet --test transaction_receipt_parsing
 cargo test -p cow-rs-workspace-tests --test transaction_lifecycle_cross_adapter_invariant
-cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-browser-wallet -p cow-sdk-transport-wasm -p cow-sdk-alloy-provider -p cow-sdk-alloy-signer -p cow-sdk-alloy -p cow-sdk
+cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-browser-wallet -p cow-sdk-transport-wasm -p cow-sdk-alloy-provider -p cow-sdk-alloy-signer -p cow-sdk-alloy -p cow-sdk -p cow-sdk-wasm -p cow-sdk-test
 ```
 
 The native Alloy dependency gates enforce explicit allow-lists:
@@ -32,7 +32,7 @@ output via `cargo check-alloy-provider-invariant` and
 `cargo check-alloy-signer-invariant`; contributors should use the wrappers
 rather than reading raw Cargo tree output directly.
 
-This command is guarded for drift by `scripts/check-release-docs-agree.sh`;
+This command is guarded for drift by `cargo docs-agree`;
 any mismatch against `docs/verification.md`,
 `.github/workflows/_quality-gate.yml`, `CONTRIBUTING.md`, or
 `PROPERTIES.md` fails the `docs-agree-on-release-gates` CI job.
@@ -43,12 +43,13 @@ any mismatch against `docs/verification.md`,
 - The `_quality-gate.yml` nextest lane runs the standard workspace test
   runner on Ubuntu, macOS, and Windows with `fail-fast: false`, so routine
   host coverage is centralized in the shared quality gate.
-- The `wasm-imports-grep-gate.yml` lane rejects forbidden `cow-sdk-wasm`
-  source imports for native-only Alloy crates, `reqwest`, Tokio runtime
-  entrypoints, Tokio macros, and the `cow-sdk-core` reqwest re-exports.
-- The `_quality-gate.yml` IpfsFetch static gate rejects dropped
-  `fetch_doc_from_*` futures and synchronous `IpfsFetchTransport::get`
-  implementations.
+- The `cow-sdk-wasm` import fences in `cargo check-source-fences` reject forbidden
+  `cow-sdk-wasm` source imports for native-only Alloy crates, `reqwest`, Tokio
+  runtime entrypoints, Tokio macros, and the `cow-sdk-core` reqwest re-exports.
+- The compiler enforces the IpfsFetch await contract: the `fetch_doc_from_*`
+  futures are `#[must_use]`, so an un-awaited call fails `unused_must_use = deny`,
+  and an `IpfsFetchTransport::get` that does not return the trait's future does
+  not compile.
 - The lockfile invariant enforces single-version resolution for the reviewed
   Alloy runtime crates at `2.0.4` and Alloy Core ABI crates at `1.5.7`. Alloy
   runtime and ABI crates ship on independent release cadences, so both family
@@ -65,7 +66,7 @@ deriving its reviewed ignore arguments from `.github/config/deny.toml`.
 published-upstream cases must stay explicit in the public audit evidence until
 a published replacement exists.
 
-This command is guarded for drift by `scripts/check-release-docs-agree.sh`;
+This command is guarded for drift by `cargo docs-agree`;
 any mismatch against `docs/verification.md` or the advisory tolerance
 register in `.github/config/deny.toml` fails the
 `docs-agree-on-release-gates` CI job.
@@ -373,12 +374,12 @@ cargo build --target wasm32-unknown-unknown -p cow-sdk-transport-wasm
 cargo build --target wasm32-unknown-unknown -p cow-sdk-wasm
 ```
 
-Point the wasm-pack browser lanes at a Chrome-for-Testing chromedriver that
-matches the version pinned in `.github/config/wasm-test-versions.yaml`. The
-browser runner is provisioned directly by the wasm-pack browser lanes:
+Run the wasm-pack browser lanes in headless Firefox. The CI lanes provision the
+runner with `browser-actions/setup-firefox` and geckodriver `0.36.0`; locally,
+put a matching `geckodriver` on `PATH`:
 
 ```text
-export WASM_BINDGEN_TEST_CHROMEDRIVER="/path/to/chromedriver"
+wasm-pack test --headless --firefox crates/wasm
 ```
 
 Deterministic browser-wallet checks:
@@ -388,7 +389,7 @@ Deterministic browser-wallet checks:
 cargo test -p cow-sdk-browser-wallet
 
 # 2. Direct-bridge wasm (browser-wallet crate)
-cd crates/browser-wallet && wasm-pack test --headless --chrome --chromedriver "$WASM_BINDGEN_TEST_CHROMEDRIVER"
+cd crates/browser-wallet && wasm-pack test --headless --firefox
 
 # 3. WASM build of the published SDK with the browser-wallet feature
 cargo build --target wasm32-unknown-unknown -p cow-sdk --features browser-wallet
@@ -404,7 +405,7 @@ TypeScript-callable wasm package checks:
 
 ```text
 cargo test -p cow-sdk-wasm --test host_pure_helpers
-wasm-pack test crates/wasm --headless --chrome --chromedriver "$WASM_BINDGEN_TEST_CHROMEDRIVER"
+wasm-pack test crates/wasm --headless --firefox
 bash crates/wasm/npm/scripts/build.sh
 node crates/wasm/npm/scripts/verify-exports.mjs
 pnpm install --dir e2e/wasm-typescript --frozen-lockfile
@@ -429,7 +430,7 @@ covers the production and staging deployments of every registry row; the
 deployment-only Lens chain carries none of them and is not probed.
 
 ```text
-cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- registry-confirm --mode release --chain-ids 1,100,42161,8453,11155111,137,43114,56,9745,59144,57073
+cargo registry-confirm --mode release --chain-ids 1,100,42161,8453,11155111,137,43114,56,9745,59144,57073
 ```
 
 ## 10. Manual Confirmation Before Publish

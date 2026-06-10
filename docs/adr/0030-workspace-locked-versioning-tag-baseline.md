@@ -71,4 +71,4 @@ This ADR supports the Evidence-Backed Public Claims principle.
 **Proven by:**
 
 - [Source-Lock Provenance Audit](../audit/source-lock-provenance-audit.md)
-- `scripts/policy-maintainer/tests/classify_release.rs`
+- `xtask/tests/classify_release.rs`

@@ -108,7 +108,7 @@ sorted-pair internal nodes. Params hashing uses `abi.encode` (never
 NOT depend on `cow-sdk-trading`, `alloy-provider`, or `alloy-signer`. The
 negative-edge invariants `cow-sdk-composable ⇏ cow-sdk-trading` and
 `cow-sdk-composable ⇏ alloy-provider` are asserted via `cargo metadata` and
-the `parity-maintainer check-deps` validator in CI. An optional
+the workspace dependency-invariant checks in CI. An optional
 `composable-with-cow-shed` feature lifts a non-default dependency on
 `cow-sdk-contracts` for the narrow Gnosis-only `COWShedForComposableCoW`
 forwarder flow.

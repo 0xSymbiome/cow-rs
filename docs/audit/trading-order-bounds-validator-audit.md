@@ -234,5 +234,5 @@ cargo test -p cow-sdk-trading --all-features
 cargo clippy -p cow-sdk-trading --all-targets --all-features -- -D warnings
 cargo +nightly fuzz build --fuzz-dir fuzz fuzz_order_bounds_validator
 cargo +nightly fuzz run fuzz_order_bounds_validator --fuzz-dir fuzz -- -runs=1024
-cargo run --manifest-path scripts/policy-maintainer/Cargo.toml -- check-property-citations
+cargo run -p xtask -- policy check-property-citations
 ```

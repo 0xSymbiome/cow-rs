@@ -101,6 +101,6 @@ Validation surface:
 
 ```text
 cargo test -p cow-sdk-wasm --test wasm_snapshot_surface_contract
-wasm-pack test crates/wasm --headless --chrome
+wasm-pack test crates/wasm --headless --firefox
 pnpm --dir crates/wasm/npm test
 ```

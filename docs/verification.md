@@ -57,7 +57,7 @@ outside the routine blocking contract.
 | `cow-sdk-trading` | Quote, post, allowance, approval, cancellation, slippage monotonicity and boundary clamping, calldata boundary preservation, quote-request override precedence, quote-amounts projection parity, quote-to-order orchestration, order-id collision retry, receiver fallback, typed partner-fee public inputs and app-data merge-through, balance-semantics preservation, `Trading` construction and `AppCode` validation, helper-specific prerequisite resolution, and recoverable-signature owner or signer validation | `property_contract.rs`, `quote_contract.rs`, `post_contract.rs`, `order_contract.rs`, `allowance_contract.rs`, `cancel_contract.rs`, `onchain_contract.rs`, `slippage_contract.rs`, `sdk_contract.rs`, `app_code_contract.rs`, `parity_contract.rs`, `quote_projection_parity.rs`, `ui.rs`, `docs/audit/trading-order-construction-integrity-audit.md`, `docs/audit/trading-sdk-runtime-prerequisites-audit.md`, `docs/audit/trading-app-data-merge-audit.md`, `docs/audit/quote-response-surface-audit.md`, `docs/audit/credential-surface-contract-hygiene-audit.md` | `cargo test -p cow-sdk-trading` | Optional live API calls remain outside the routine blocking contract |
 | `cow-sdk-subgraph` | Read-only GraphQL query construction over the `HttpTransport` seam, typestate builder construction, redacted production route identity, sanitized typed request-failure context, nested request-variable fidelity, typed responses, equivalent string-or-number scalar decoding, malformed-scalar failure boundaries, and source-schema evidence | `property_contract.rs`, `api_contract.rs`, `builder_contract.rs`, `query_contract.rs`, `types_contract.rs`, `docs/audit/dependency-gate-audit.md`, `docs/audit/credential-surface-contract-hygiene-audit.md`, `docs/audit/typestate-builder-contract-audit.md` | `cargo test -p cow-sdk-subgraph` | Live subgraph access depends on external endpoint configuration |
 | `cow-sdk-transport-wasm` | Browser-target `HttpTransport` implementation (`FetchTransport`) plus cross-adapter parity against the native `ReqwestTransport` default, request/response-only scope, and cache-control header forwarding | `parity_contract.rs`, `fetch_contract.rs`, `docs/transport.md`, `docs/audit/http-transport-contract-audit.md` | `cargo check -p cow-sdk-transport-wasm --target wasm32-unknown-unknown` and `wasm-pack test --headless --firefox crates/transport-wasm --all-features` | Live browser fetch behavior depends on vendor-specific network stacks |
-| `cow-sdk-browser-wallet` | EIP-1193 browser wallet provider/signer boundaries, direct browser-bridge proof, deterministic mock proof, explicit session-state transitions, typed chain-management postconditions, and typed-data transport | `state_machine_contract.rs`, `provider_contract.rs`, `wallet_contract.rs`, `wasm_bridge_contract.rs`, `wasm-pack test --headless --chrome` | `cargo test -p cow-sdk-browser-wallet` and `cd crates/browser-wallet && wasm-pack test --headless --chrome` | Live extension-backed authorization, prompts, and vendor behavior remain environment-sensitive |
+| `cow-sdk-browser-wallet` | EIP-1193 browser wallet provider/signer boundaries, direct browser-bridge proof, deterministic mock proof, explicit session-state transitions, typed chain-management postconditions, and typed-data transport | `state_machine_contract.rs`, `provider_contract.rs`, `wallet_contract.rs`, `wasm_bridge_contract.rs`, `wasm-pack test --headless --firefox` | `cargo test -p cow-sdk-browser-wallet` and `cd crates/browser-wallet && wasm-pack test --headless --firefox` | Live extension-backed authorization, prompts, and vendor behavior remain environment-sensitive |
 | `cow-sdk-alloy-provider` | Native Alloy read-only RPC adapter, redacted builder and errors, contract-read ABI bridge, dependency boundary, and rich transaction receipt conversion | `provider_contract.rs`, `dependency_boundary_contract.rs`, `read_contract_parity.rs`, `read_contract_no_panic.rs`, `redaction_contract.rs`, `cancellation_contract.rs`, `src/conversion.rs` unit tests, `docs/audit/alloy-provider-adapter-audit.md` | `cargo test -p cow-sdk-alloy-provider --all-features` | Live RPC behavior depends on caller-supplied endpoints |
 | `cow-sdk-alloy-signer` | Native Alloy local-key signer adapter, typed-data primary-type preservation, ECDSA normalization, provider-required transaction boundary, redacted errors, and cancellation propagation | `signer_contract.rs`, `eip191_reference_vectors.rs`, `eip712_reference_vectors.rs`, `proptests.rs`, `redaction_contract.rs`, `cancellation_contract.rs`, `compile_fail.rs`, `docs/audit/alloy-signer-adapter-audit.md` | `cargo test -p cow-sdk-alloy-signer --all-features` | Live RPC behavior depends on caller-supplied endpoints |
 | `cow-sdk-alloy` | Composed native Alloy provider plus signer, owned signer handles, no implicit receipt polling during submission, rich receipt delegation, and Trading helper compatibility | `provider_contract.rs`, `signing_provider_contract.rs`, `send_transaction_does_not_wait_for_confirmation.rs`, `tests/transaction_lifecycle_cross_adapter_invariant.rs`, `tests/alloy_umbrella_composition.rs`, `docs/audit/alloy-umbrella-adapter-audit.md` | `cargo test -p cow-sdk-alloy --all-features` | Live RPC behavior depends on caller-supplied endpoints |
@@ -67,7 +67,7 @@ Two whole-workspace surfaces sit above any single crate: the **stability
 invariant** (native Alloy dependencies stay inside explicit allow-lists —
 `alloy-provider` only in `cow-sdk-alloy-provider` and `cow-sdk-alloy`, and
 `alloy-signer-local` only in `cow-sdk-alloy-signer` and `cow-sdk-alloy`, with the
-policy-maintainer wrappers validating the full published crate list), and
+xtask policy wrappers validating the full published crate list), and
 **quality and publishability** (formatting, linting, tests, doctests, docs,
 source-lock validation, and package dry runs). Both are exercised by the gates
 below.
@@ -110,7 +110,7 @@ cross-cutting properties whose evidence spans more than one crate.
 | `cargo fmt --all --check` | Formatting gate for consistent public diffs |
 | `cargo clippy --workspace --all-targets --all-features -- -D warnings` | Lint gate across crates and test targets |
 | `cargo deny check --config .github/config/deny.toml` | Blocking advisory, license, source, and duplicate-version policy gate |
-| `cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2024-0388 --ignore RUSTSEC-2024-0436` | Blocking RustSec vulnerability, unsound, and unmaintained advisory gate; `scripts/check-release-docs-agree.sh` keeps the ignore-token list aligned with the release checklist and `.github/config/deny.toml`, and requires a dependency-gate audit rationale for every ignored RustSec token. |
+| `cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2024-0388 --ignore RUSTSEC-2024-0436` | Blocking RustSec vulnerability, unsound, and unmaintained advisory gate; `cargo docs-agree` keeps the ignore-token list aligned with the release checklist and `.github/config/deny.toml`, and requires a dependency-gate audit rationale for every ignored RustSec token. |
 | `cargo test --workspace` | Main workspace test gate |
 | `cargo test -p cow-rs-workspace-tests` | Workspace policy tests for MSRV alignment, root dependency default-feature review, nested Alloy pin lockstep, and native Alloy adapter composition coverage |
 | `cargo test -p cow-sdk-alloy --test send_transaction_does_not_wait_for_confirmation` | Native Alloy submission timing gate that rejects hidden receipt polling during broadcast |
@@ -120,9 +120,9 @@ cross-cutting properties whose evidence spans more than one crate.
 | Published crate README doctests | Every published crate README is wired into crate rustdoc with a `cfg_attr(doctest, ...)` shim, so `cargo test --workspace --doc` compiles every fenced README example on CI. |
 | `cargo test --all-features --workspace --doc` | All-feature doctest gate for the public docs contract |
 | Native host matrix | Shared quality-gate host coverage on Ubuntu, macOS, and Windows |
-| `wasm-imports-grep-gate.yml` | Forbidden-import gate for `cow-sdk-wasm` source files; rejects native-only Alloy crates, `reqwest`, Tokio runtime entrypoints, Tokio macros, and the `cow-sdk-core` reqwest re-exports before they can enter the browser leaf crate. |
+| `cow-sdk-wasm` import fences (`cargo check-source-fences`) | Forbidden-import fences for `cow-sdk-wasm` source files; reject native-only Alloy crates, `reqwest`, Tokio runtime entrypoints, Tokio macros, and the `cow-sdk-core` reqwest re-exports before they can enter the browser leaf crate. |
 | Shared nextest OS matrix | `_quality-gate.yml` runs `cargo nextest run --workspace --all-features --config-file .github/config/nextest.toml` on Ubuntu, macOS, and Windows with `fail-fast: false`. |
-| IpfsFetch await static gate | `_quality-gate.yml` rejects `fetch_doc_from_*` calls without `.await` and rejects any `IpfsFetchTransport` implementation that defines a synchronous `fn get`. |
+| IpfsFetch await contract | Compiler-enforced: the `fetch_doc_from_*` futures are `#[must_use]`, so an un-awaited call fails the workspace's `unused_must_use = deny`; an `IpfsFetchTransport` impl whose `get` does not return the trait's future does not compile. |
 | `cargo doc --workspace --all-features --no-deps` | Public rustdoc build gate |
 | `docs-quality.yml` | Nightly docs.rs-style rustdoc lane with `DOCS_RS=1`, `--cfg docsrs`, nightly rustdoc presentation flags, and rendered README heading smoke coverage |
 | `retry-soak.yml` | Nightly deterministic orderbook retry and timeout soak through an explicitly ignored long-run test |
@@ -132,7 +132,7 @@ cross-cutting properties whose evidence spans more than one crate.
 | `cargo check-source-lock-roots --contracts-root <path> --services-root <path>` | Report-only warning command for manually supplied upstream roots that do not match the source-lock remotes or commits |
 | `ci-success` | Aggregate routine CI status for branch protection across the required native validation and publication jobs |
 | Alloy release-candidate canary | Scheduled and manual forward-compat drift workflow in `.github/workflows/alloy-release-candidate.yml` checks configurable `ALLOY_CANARY_REF` with a pinned SHA fallback and has no pull-request trigger. |
-| `cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-browser-wallet -p cow-sdk-transport-wasm -p cow-sdk-alloy-provider -p cow-sdk-alloy-signer -p cow-sdk-alloy -p cow-sdk` | Blocking allow-list gate asserting `alloy-provider` remains limited to `cow-sdk-alloy-provider` and `cow-sdk-alloy`; `cargo check-alloy-provider-invariant` normalises the raw Cargo tree output, and `scripts/check-release-docs-agree.sh` keeps the raw package list aligned across the release checklist, `_quality-gate.yml`, `CONTRIBUTING.md`, and `PROPERTIES.md`. |
+| `cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-browser-wallet -p cow-sdk-transport-wasm -p cow-sdk-alloy-provider -p cow-sdk-alloy-signer -p cow-sdk-alloy -p cow-sdk -p cow-sdk-wasm -p cow-sdk-test` | Blocking allow-list gate asserting `alloy-provider` remains limited to `cow-sdk-alloy-provider` and `cow-sdk-alloy`; `cargo check-alloy-provider-invariant` normalises the raw Cargo tree output, and `cargo docs-agree` keeps the raw package list aligned across the release checklist, `_quality-gate.yml`, `CONTRIBUTING.md`, and `PROPERTIES.md`. |
 | `cargo check-alloy-signer-invariant` | Blocking allow-list gate asserting `alloy-signer-local` remains limited to `cow-sdk-alloy-signer` and `cow-sdk-alloy`. |
 | Release reproducibility posture | Reproducible-build posture documented across the release checklist with explicit source-and-lockfile guarantees and a documented future extension for WebAssembly artifact byte-reproducibility. |
 
@@ -236,7 +236,7 @@ Release artifacts ship reproducible at the source and lockfile level today;
 the release checklist records the two-tier reproducibility posture and the path
 to binary reproducibility for the WebAssembly artifacts.
 
-The `cargo tree --invert alloy-provider` package list, the `cargo audit --deny ... --ignore RUSTSEC-...` ignore-token list, each ignored RustSec rationale entry, and the browser-wallet Playwright install browser set are guarded against their source-of-truth files by `scripts/check-release-docs-agree.sh`.
+The `cargo tree --invert alloy-provider` package list, the `cargo audit --deny ... --ignore RUSTSEC-...` ignore-token list, each ignored RustSec rationale entry, and the browser-wallet Playwright install browser set are guarded against their source-of-truth files by `cargo docs-agree`.
 
 ### Deployment And Capability Evidence
 
@@ -263,16 +263,16 @@ The review procedure is:
    (`registry-confirm`) reports non-empty `eth_getCode` bytecode on every
    runtime-supported chain.
 
-COW Shed adds one extra bytecode check: proxy creation-code files under the
-contracts ABI directory carry neighboring SHA-256 files, and `build.rs`
-validates those bytes before fixture-based CREATE2 address derivation is
-trusted.
+COW Shed adds one extra bytecode check: the embedded proxy creation-code
+`.bin` bytes are locked by the CREATE2 address-parity test, which derives the
+per-version proxy addresses from those bytes and pins them (with their
+SHA-256 digests) to `parity/fixtures/cow_shed/proxy_addresses.json`.
 
 ### CI Architecture Gates
 
-The workflow layer carries three static architecture gates in addition to the
-ordinary Rust build and test jobs. The `wasm-imports-grep-gate.yml` workflow
-rejects native-only Alloy, `reqwest`, Tokio runtime, Tokio macro, and
+The policy layer carries the source-level architecture fences in addition to the
+ordinary Rust build and test jobs. The `cow-sdk-wasm` import fences in
+`cargo check-source-fences` reject native-only Alloy, `reqwest`, Tokio runtime, Tokio macro, and
 `cow-sdk-core` reqwest re-export references in `cow-sdk-wasm` sources. The
 shared quality gate runs the standard nextest suite on Ubuntu, macOS, and
 Windows with `fail-fast: false`, replacing duplicate single-host jobs with one

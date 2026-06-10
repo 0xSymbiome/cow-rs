@@ -219,7 +219,6 @@ wire-byte contract end-to-end.
 Primary implementation points:
 
 - `crates/contracts/src/cow_shed/bindings.rs`
-- `crates/contracts/src/cow_shed/bindings.rs`
 - `parity/source-lock.yaml`
 - `crates/contracts/src/cow_shed/address/proxy-creation-code/v1.0.0.bin`
 - `crates/contracts/src/cow_shed/address/proxy-creation-code/v1.0.1.bin`
@@ -237,5 +236,5 @@ Validation surface:
 
 ```text
 cargo test -p cow-sdk-contracts --all-features
-cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate --source-lock parity/source-lock.yaml
+cargo parity-validate --source-lock parity/source-lock.yaml
 ```

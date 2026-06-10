@@ -57,7 +57,7 @@ definition exists in any other crate.
 The negative-edge invariants `cow-sdk-signing ⇏ cow-sdk-trading`,
 `cow-sdk-composable ⇏ cow-sdk-trading`, and
 `cow-sdk-contracts[cow-shed] ⇏ cow-sdk-trading` are asserted via `cargo metadata` and
-the `parity-maintainer check-deps` validator in CI. The reverse-edge guard
+the workspace dependency-invariant checks in CI. The reverse-edge guard
 `cow-sdk-trading ⇒ cow-sdk-signing` continues to hold.
 
 A compile-fail regression test asserts that any future re-export of

@@ -21,7 +21,7 @@ Deployment trust rests on three layers: (1) the pinned upstream `source_commit`
 in `parity/source-lock.yaml` (where deployments are explorer/Sourcify-verified),
 (2) the deterministic CREATE2 address, and (3) a read-only live presence probe.
 
-`validation-smoke registry-confirm --mode {local|release}` reads every
+`cargo registry-confirm --mode {local|release}` reads every
 `(contract_id, chain_id, env, address)` row from `registry.toml`, guards each
 RPC with `eth_chainId`, and asserts `eth_getCode` returns non-empty bytecode at
 the recorded address. Release mode fails closed on a missing production-chain RPC
@@ -95,7 +95,7 @@ Evidence-Backed Public Claims principles.
 
 - [Deployment Registry Audit](../audit/deployment-registry-audit.md)
 - `crates/contracts/src/deployments.rs` (tests)
-- `scripts/validation-smoke/tests/registry_confirm.rs`
+- `xtask/tests/registry_confirm.rs`
 
 ## Amendment 2026-05-22: canonical primitive layer (per ADR 0052)
 
@@ -151,7 +151,7 @@ the three runtime-resolved identifiers (`Settlement`, `VaultRelayer`, `EthFlow`)
 The deployment-trust model is unchanged in substance: the upstream
 `source_commit` each address derives from remains pinned per source repository
 in `parity/source-lock.yaml`, the addresses remain deterministic CREATE2
-singletons, and the read-only `validation-smoke registry-confirm` probe still
+singletons, and the read-only `cargo registry-confirm` probe still
 asserts `eth_getCode` returns non-empty bytecode at each resolved address — it
 now iterates the const registry instead of reading `registry.toml`, and release
 mode still fails closed on a missing production-chain RPC. The "Must Remain

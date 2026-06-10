@@ -59,7 +59,7 @@ becomes an in-scope dependency of `cow-sdk-core`, `cow-sdk-contracts`,
 native adapter crates per [ADR 0026](0026-alloy-major-release-absorption-plan.md).
 
 `cow-sdk-wasm` continues to forbid direct `alloy*` imports through the
-`wasm-imports-grep-gate.yml` workflow; cow-sdk-wasm consumes alloy
+`cow-sdk-wasm` import fences in `cargo check-source-fences`; cow-sdk-wasm consumes alloy
 types via `cow-sdk-contracts` re-exports and its own host-safe `helpers` module.
 
 ## Why
@@ -161,7 +161,7 @@ non-ASCII keys. ASCII-only documents remain byte-identical.
   and `cow-sdk-alloy-signer` per
   [ADR 0026](0026-alloy-major-release-absorption-plan.md).
   `cow-sdk-wasm` must not carry direct alloy imports in its source;
-  the `wasm-imports-grep-gate.yml` workflow continues to enforce this.
+  the `cow-sdk-wasm` import fences in `cargo check-source-fences` continue to enforce this.
 - Validation and review: every parity fixture under
   `parity/fixtures/` continues to pass byte-identically. The one
   documented exception is

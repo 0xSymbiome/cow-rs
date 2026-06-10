@@ -135,7 +135,7 @@ Primary regression coverage:
 Validation surface:
 
 ```text
-cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- openapi-coverage
+cargo parity-openapi-coverage
 cargo test -p cow-sdk-orderbook --test fee_amount_is_not_a_public_builder_setter
 cargo test -p cow-sdk-orderbook --test wire_contract
 cargo test -p cow-sdk-orderbook --doc

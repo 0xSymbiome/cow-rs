@@ -20,7 +20,7 @@ Each accepted statically-invariant panic site carries three things:
 2. an inline `// SAFETY:` comment naming the build-time invariant;
 3. an entry in `.github/config/panic-allowlist.yaml` keyed by item path.
 
-`policy-maintainer check-panic-allowlist` fails on any panic-bearing
+`cargo check-panic-allowlist` (the xtask policy gate) fails on any panic-bearing
 production-source call not listed in the allowlist and on any allowlist
 entry that points at a non-existent symbol.
 
@@ -68,4 +68,4 @@ Minimum-Viable Panic Surface principle.
 **Proven by:**
 
 - [Panic-Free Public Surface Audit](../audit/panic-free-public-surface-audit.md)
-- `scripts/policy-maintainer/src/check_panic_allowlist.rs`
+- `xtask/src/policy/check_panic_allowlist.rs`

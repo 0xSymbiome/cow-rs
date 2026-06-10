@@ -171,7 +171,7 @@ Two additional surfaces ride on the same typestate:
   applied at parse time; callers opt in when their downstream invariants
   require a uniquely-shaped signature.
 
-The never-swap fence at `.github/workflows/never-swap-gates.yml#gate-ecdsa-v`
+The `ecdsa-v-normalization` source fence (`cargo check-source-fences`)
 is widened to forbid `Signature::from_raw` and `Signature::as_rsy` in
 the contracts and signing trees alongside the previously-forbidden
 `normalize_v` and `Signature::v` symbols. Both newly-forbidden symbols

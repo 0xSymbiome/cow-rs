@@ -80,7 +80,7 @@ The Lens chain carries none of the GPv2 contracts, so it resolves to `None`.
 The upstream commit each address derives from is pinned once per source
 repository in `parity/source-lock.yaml`; the addresses are deterministic
 CREATE2 singletons; and the read-only `registry-confirm` presence probe
-(`scripts/validation-smoke`) confirms `eth_getCode` returns non-empty bytecode
+(`xtask`) confirms `eth_getCode` returns non-empty bytecode
 at each resolved address on-chain. The probe never mutates a file, and its
 release mode fails closed on a missing production-chain RPC. See
 [ADR 0032](adr/0032-deployment-authority-machine-readable-provenance.md).

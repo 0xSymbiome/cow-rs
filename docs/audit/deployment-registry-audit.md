@@ -18,7 +18,7 @@ This audit covers:
 
 - the const address table and typed `Registry` lookup surface in `crates/contracts/src/deployments.rs`
 - the upstream commit pins in `parity/source-lock.yaml` that anchor each deployed address to a source repository
-- live bytecode confirmation through `validation-smoke registry-confirm`
+- live bytecode confirmation through `cargo registry-confirm`
 
 It does not cover binding generation, partner API routing, arbitrary consumer RPC configuration, or future contract upgrades after the recorded confirmation time.
 
@@ -38,7 +38,7 @@ It does not cover binding generation, partner API routing, arbitrary consumer RP
 
 `crates/contracts/src/deployments.rs` is the runtime address source of truth. It resolves the settlement, vault-relayer, and eth-flow CREATE2 singletons from committed address constants: each contract family carries one production and one staging deployment, and every deployment is identical across the runtime-supported chains. The staging deployments back the staging orderbook environment, so a staging order's typed-data domain verifies against the staging settlement and its approvals target the staging vault relayer. Lens is deployment-only for the composable / COW-Shed contract families and carries none of the GPv2 contracts.
 
-The upstream commit each address derives from is not duplicated on every row. It is pinned once per source repository in `parity/source-lock.yaml` (per [ADR 0012](../adr/0012-alloy-sol-bindings-and-registry-authority.md) and [ADR 0032](../adr/0032-deployment-authority-machine-readable-provenance.md)): the `contracts` row pins the commit behind the production GPv2 addresses (carried by its `networks.json` manifest), the `cow-sdk` row pins the TypeScript SDK constants that publish the staging settlement and vault-relayer deployments, the `ethflowcontract` row pins the eth-flow sources, and the `composable-cow` and `cow-shed` rows pin the composable-order and COW Shed contract families. That single per-repository pin, the deterministic CREATE2 address, and the read-only presence probe together establish deployment trust.
+The upstream commit each address derives from is not duplicated on every row. It is pinned once per source repository in `parity/source-lock.yaml` (per [ADR 0012](../adr/0012-alloy-sol-bindings-and-registry-authority.md) and [ADR 0032](../adr/0032-deployment-authority-machine-readable-provenance.md)): the `contracts` row pins the commit behind the production GPv2 addresses (carried by its `networks.json` manifest), the `cow-sdk` row pins the TypeScript SDK constants that publish the staging settlement and vault-relayer deployments, the `ethflowcontract` row pins the eth-flow sources, and the `cow-shed` row pins the COW Shed contract family. That single per-repository pin, the deterministic CREATE2 address, and the read-only presence probe together establish deployment trust.
 
 The runtime lookup regression enumerates every shipped contract id across each
 supported chain and environment. Tuples present in the embedded manifest must
@@ -104,19 +104,19 @@ Primary implementation points:
 - `crates/contracts/src/deployments.rs`
 - `crates/core/src/config/chains.rs`
 - `parity/source-lock.yaml`
-- `scripts/validation-smoke/src/registry_confirm.rs`
+- `xtask/src/registry_confirm.rs`
 
 Primary regression coverage:
 
 - `crates/contracts/src/deployments.rs::deployment_addresses_resolve_to_canonical_singletons`
 - `crates/signing/tests/domain_contract.rs::domain_resolution_honors_default_env_staging_and_override_precedence`
-- `scripts/validation-smoke/tests/registry_confirm.rs`
+- `xtask/tests/registry_confirm.rs`
 - `tests/supported_chains_doc_table.rs::supported_networks_doc_table_matches_enum`
 
 Validation surface:
 
 ```text
 cargo test -p cow-rs-workspace-tests --test supported_chains_doc_table
-cargo run --manifest-path scripts/validation-smoke/Cargo.toml -- registry-confirm --mode release --chain-ids 1,100,42161,8453,11155111,137,43114,56,9745,59144,57073
-bash scripts/check-release-docs-agree.sh
+cargo registry-confirm --mode release --chain-ids 1,100,42161,8453,11155111,137,43114,56,9745,59144,57073
+cargo docs-agree
 ```

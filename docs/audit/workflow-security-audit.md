@@ -1,7 +1,7 @@
 # Workflow Security Audit
 
 Status: Current
-Last reviewed: 2026-06-05
+Last reviewed: 2026-06-10
 Owning surface: every `.github/workflows/*.yml` file
 Refresh trigger: any new workflow file; any unpinned action; any addition of `pull_request_target`; any third-party action new to the workspace; any permission widening or issue-creation behavior in scheduled workflows
 Related docs:
@@ -29,8 +29,8 @@ runner infrastructure outside the committed workflow definitions.
 | Permissions | Every workflow declares explicit least-privilege `permissions:` at workflow or job scope | Conforms |
 | Trigger safety | Any workflow using `pull_request_target` must carry an explicit allow-list review comment; the current workflow set does not use the trigger | Conforms |
 | Third-party review log | Each pinned third-party action keeps a nearby `# Source ref:` comment naming the reviewed tag or source ref | Conforms |
-| WASM import gate | The forbidden-import workflow uses read-only permissions and SHA-pinned checkout only | Conforms |
-| Inline docs smoke | The docs-quality rendered README smoke uses the existing job environment and does not introduce a new third-party action or elevated permission | Conforms |
+| WASM import fences | The `cow-sdk-wasm` import fences (`cargo check-source-fences`) run in the shared policy job with read-only permissions and SHA-pinned checkout only | Conforms |
+| README inclusion check | The README docs.rs inclusion check runs at source level in the policy sweep, with no rendered-HTML scrape, new third-party action, or elevated permission | Conforms |
 | Scheduled retry soak | The retry-soak workflow uses read-only permissions, pinned actions, no privileged triggers, and a deterministic ignored test invocation | Conforms |
 | Alloy canary issue creation | The report-only Alloy canary grants `issues: write` only to create or reuse a tracking issue through `gh api`, with no new third-party action | Conforms |
 
@@ -49,7 +49,6 @@ Workflow snapshot:
 | `docs-quality.yml` | workflow `{}`; jobs grant `contents: read` | SHA-pinned | Absent |
 | `release-readiness.yml` | `contents: read` | SHA-pinned or same-repo reusable workflow | Absent |
 | `retry-soak.yml` | `contents: read` | SHA-pinned | Absent |
-| `wasm-imports-grep-gate.yml` | `contents: read` | SHA-pinned | Absent |
 | `wasm.yml` | `contents: read` | SHA-pinned | Absent |
 
 ## Current Contract
@@ -95,12 +94,13 @@ does not add a third-party `uses:` action, does not widen workflow
 permissions, and remains covered by the same workflow-security pinning and
 permissions checks as the rest of the workflow set.
 
-### WASM Import Gate
+### WASM Import Fences
 
-The `wasm-imports-grep-gate.yml` workflow runs on pull requests that touch the
-browser leaf crate source tree. It uses read-only repository permissions and a
-SHA-pinned checkout action, and its enforcement logic runs inline in the hosted
-shell without introducing a new third-party action.
+The `cow-sdk-wasm` import fences run in the shared `policy` job (through
+`cargo check-source-fences`) on every pull request. The job uses the shared
+gate's read-only repository permissions and SHA-pinned checkout action, and the
+enforcement is a Rust policy in the `cargo xtask` sweep rather than inline
+shell, so it introduces no new third-party action.
 
 ### Scheduled Retry Lane
 
@@ -132,17 +132,15 @@ Primary implementation points:
 - `.github/workflows/docs-quality.yml`
 - `.github/workflows/release-readiness.yml`
 - `.github/workflows/retry-soak.yml`
-- `.github/workflows/wasm-imports-grep-gate.yml`
 - `.github/workflows/wasm.yml`
 
 Primary regression coverage:
 
-- `.github/workflows/_quality-gate.yml` workflow-security job
+- `xtask/src/policy/check_workflow_security.rs`
 
 Validation surface:
 
 ```text
-rg -n "^[[:space:]]*(-[[:space:]]*)?pull_request_target[[:space:]]*:|^[[:space:]]*on:[^#]*pull_request_target" .github/workflows -g "*.yml"
-rg -n "^[[:space:]]*(-[[:space:]]*)?uses:[[:space:]]*[^[:space:]#]+@(?![0-9a-f]{40}\\b)" .github/workflows -g "*.yml" -P
-scripts/check-release-docs-agree.sh
+cargo check-workflow-security
+cargo docs-agree
 ```

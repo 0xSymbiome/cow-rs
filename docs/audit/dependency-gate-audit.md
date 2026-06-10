@@ -1,7 +1,7 @@
 # Dependency Gate Audit
 
 Status: Current
-Last reviewed: 2026-06-09
+Last reviewed: 2026-06-10
 Owning surface: Release-facing dependency-audit gate for current published `cow-rs` surfaces
 Refresh trigger: Changes to blocking dependency policy, Cargo.lock advisory posture, release or verification dependency commands, published CID dependency posture, shared transport-policy dependencies, transport crate advisory posture, native Alloy two-family lockfile posture, ADR 0026 Alloy absorption rehearsal, the canonical primitive layer dependency closure per ADR 0052, or browser-wallet alloy advisory posture
 Related docs:
@@ -57,13 +57,13 @@ architecture reviews.
 | Workspace dependency inheritance | Shared helper pins for timers, browser panic hooks, and test HTTP fixtures are centralized in the workspace table | Conforms |
 | Duplicate-version exceptions | Residual duplicate roots are documented as explicit skip-tree entries; stale `tiny-keccak`, `getrandom 0.2`, and `graphql_client` exceptions were removed because they are no longer in the workspace graph | Conforms |
 | Legacy `thiserror` reachability | The remaining `thiserror 1.0.69` line is reached only through the Android-target `jni -> rustls-platform-verifier -> reqwest` path; the former `graphql_client` dev/test chain was removed | Conforms |
-| Native Alloy allow-lists | Shipped crates that depend on `alloy-provider` or `alloy-signer-local` are limited to the reviewed adapter crates and fail the policy-maintainer gate if the dependency escapes | Conforms |
+| Native Alloy allow-lists | Shipped crates that depend on `alloy-provider` or `alloy-signer-local` are limited to the reviewed adapter crates and fail the xtask policy gate if the dependency escapes | Conforms |
 | Native Alloy two-family lockfile | The workspace lockfile keeps reviewed Alloy runtime crates on `2.0.4` and Alloy Core ABI crates on `1.5.7`, with exactly one resolved version per listed crate | Conforms |
 | Alloy canary failures | Scheduled canary failures are triaged as upstream-compatibility reports, with local pins changed only after ordinary quality gates pass and without dependency-policy waivers | Conforms |
 | `cow-sdk-wasm` wasm32 tree | The wasm32 dependency graph excludes `cow-sdk-browser-wallet`, `cow-sdk-alloy*`, `alloy-provider`, reqwest, and hyper families; `tokio` is limited to the existing cancellation-token path | Conforms |
 | Helper-module FFI boundary | The `cow-sdk-wasm::helpers` module remains independent of wasm-bindgen, `js-sys`, `web-sys`, and `serde-wasm-bindgen` | Conforms |
 | Canonical primitive layer dependency closure | The workspace-level `sha3` and `num-bigint` declarations carry zero first-party direct production consumers and only resolve through `[dev-dependencies]` or transitive paths; the alloy-core ABI workspace pins, `httpdate`, and `serde_jcs` are consumed at the documented callsites per [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md) | Conforms |
-| `encode_prefixed` mechanical fence | The `.github/workflows/encode-prefixed-grep-gate.yml` workflow blocks the `format!("0x{}", alloy_primitives::hex::encode(...))` legacy hand-roll and unqualified `use alloy_primitives::hex::encode` imports in production sources, locking the canonical-primitive-layer hex-string contract from [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md) | Conforms |
+| `encode_prefixed` mechanical fence | The `encode-prefixed` source fences (`cargo check-source-fences`) block the `format!("0x{}", alloy_primitives::hex::encode(...))` legacy hand-roll and unqualified `use alloy_primitives::hex::encode` imports in production sources, locking the canonical-primitive-layer hex-string contract from [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md) | Conforms |
 | Workspace dependency hygiene | The orphan `async-lock` workspace pin has been retired; no first-party crate referenced the pin and the lockfile no longer carries a first-party direct edge into the crate | Conforms |
 
 ## Current Contract
@@ -166,13 +166,13 @@ across the workspace has collapsed onto the single-call
 The cascade touched twenty production call sites plus three sites
 inside `#[cfg(test)] mod tests {}` blocks embedded in `src/`, spanning
 the alloy adapter, contracts, app-data, trading, browser-wallet, and
-wasm crates. The emitted hex strings remain byte-identical. The new
-`.github/workflows/encode-prefixed-grep-gate.yml` workflow fences
-future regression with two parallel jobs: the first rejects any
+wasm crates. The emitted hex strings remain byte-identical. The
+`encode-prefixed` source fences (`cargo check-source-fences`) fence
+future regression with two parallel rules: the first rejects any
 production-source `format!("0x{}", alloy_primitives::hex::encode(...))`
-hand-roll on the gate's regex, and the second rejects unqualified
+hand-roll on its pattern, and the second rejects unqualified
 `use alloy_primitives::hex::encode` imports in production sources so
-the call-site regex's coverage envelope stays honest. Both jobs filter
+the call-site pattern's coverage envelope stays honest. Both rules filter
 `//`-prefixed lines so doc-comment narratives that name the forbidden
 symbol cannot self-trigger them.
 
@@ -259,7 +259,7 @@ duplicate-version debt rather than hiding it behind an advisory tolerance.
 ### Native Alloy Dependency Allow-Lists
 
 The native Alloy adapters are the only shipped crates allowed to carry
-`alloy-provider` or `alloy-signer-local` reachability. The policy-maintainer
+`alloy-provider` or `alloy-signer-local` reachability. The xtask policy
 commands `cargo check-alloy-provider-invariant` and
 `cargo check-alloy-signer-invariant` parse the inverse dependency tree and
 fail if those runtime dependencies appear in any other shipped `cow-sdk*`
@@ -317,9 +317,8 @@ Primary implementation points:
 - `tests/dependency_default_features_audit.rs`
 - `tests/alloy_two_family_lockfile_invariant.rs`
 - `tests/wasm_dependency_invariant.rs`
-- `scripts/check-release-docs-agree.sh`
-- `scripts/policy-maintainer/src/check_alloy_provider_invariant.rs`
-- `scripts/policy-maintainer/src/check_alloy_signer_invariant.rs`
+- `xtask/src/docs/agree.rs`
+- `xtask/src/policy/dependency_invariant.rs`
 - `docs/release-checklist.md`
 - `docs/verification.md`
 - `docs/verification.md`
@@ -344,12 +343,12 @@ cargo check-alloy-provider-invariant
 cargo check-alloy-signer-invariant
 cargo test -p cow-rs-workspace-tests --test alloy_two_family_lockfile_invariant
 gh workflow run alloy-release-candidate.yml
-gh workflow run encode-prefixed-grep-gate.yml
+gh workflow run ci.yml
 cargo build --workspace --all-features
 cargo test --workspace --all-features
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo check --workspace --all-features --target wasm32-unknown-unknown
 cargo test -p cow-rs-workspace-tests --test dependency_default_features_audit
 cargo test -p cow-sdk-wasm --test no_ffi_helpers
-bash scripts/check-release-docs-agree.sh
+cargo docs-agree
 ```

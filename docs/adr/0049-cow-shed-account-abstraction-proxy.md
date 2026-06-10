@@ -117,7 +117,7 @@ dependency on top of the crate's `cow-sdk-core` foundation. It MUST NOT pull
 `cow-sdk-browser-wallet`, `alloy-provider`, `alloy-signer-local`, `reqwest`, or
 `tokio` runtime features into the `cow-sdk-contracts` closure. The negative-edge
 invariant `cow-sdk-contracts[cow-shed] ⇏ cow-sdk-trading` is asserted via
-`cargo metadata` and the `parity-maintainer check-deps` validator in CI.
+`cargo metadata` and the workspace dependency-invariant checks in CI.
 
 ## Why
 

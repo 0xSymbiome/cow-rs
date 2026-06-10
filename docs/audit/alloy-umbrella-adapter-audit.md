@@ -77,8 +77,7 @@ operator reliability, or smart-account signing.
 - `tests/transaction_lifecycle_cross_adapter_invariant.rs`
 - `tests/alloy_read_contract_parity_invariant.rs`
 - `examples/native/scenarios/alloy_trading_full_flow.rs`
-- `scripts/policy-maintainer/src/check_alloy_provider_invariant.rs`
-- `scripts/policy-maintainer/src/check_alloy_signer_invariant.rs`
+- `xtask/src/policy/dependency_invariant.rs`
 
 ## Residual Risk
 

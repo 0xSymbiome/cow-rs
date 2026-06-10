@@ -37,9 +37,8 @@ cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo test --workspace
 cargo check --manifest-path examples/native/Cargo.toml --examples --all-features
 cargo run-deterministic-examples
-cargo check-alloy-provider-invariant
-cargo check-alloy-signer-invariant
-cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-browser-wallet -p cow-sdk-transport-wasm -p cow-sdk-alloy-provider -p cow-sdk-alloy-signer -p cow-sdk-alloy -p cow-sdk
+cargo check-policies
+cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-browser-wallet -p cow-sdk-transport-wasm -p cow-sdk-alloy-provider -p cow-sdk-alloy-signer -p cow-sdk-alloy -p cow-sdk -p cow-sdk-wasm -p cow-sdk-test
 ```
 
 The Alloy dependency gates enforce explicit native adapter allow-lists:
@@ -66,17 +65,35 @@ cargo nextest run --workspace
 cargo test --workspace --doc
 ```
 
-## Cargo Aliases
+## Command Surface
 
-The repository exposes maintainer tooling through Cargo aliases in
-`.cargo/config.toml`. Use `cargo --list` to see the available aliases.
+The repository exposes its maintained guarantees as Cargo aliases in
+`.cargo/config.toml` rather than as standalone shell scripts or an external task
+runner. Run `cargo --list` to see every alias. The table below maps each public
+guarantee to the command a contributor runs locally; the same commands run on
+every pull request under the `ci.yml` aggregate status check.
 
-Common examples:
+| Guarantee | Command |
+| --- | --- |
+| Formatting | `cargo fmt --all --check` |
+| Lints (pedantic + nursery, warnings as errors) | `cargo clippy --workspace --all-targets --all-features -- -D warnings` |
+| Library, integration, and doc tests | `cargo nextest run --workspace` · `cargo test --workspace --doc` |
+| Workspace documentation builds clean | `cargo doc --workspace --no-deps` |
+| Dependency policy (advisories, licenses, bans, sources) | `cargo deny check --config .github/config/deny.toml` |
+| Every repository-state policy check in one pass | `cargo check-policies` |
+| Enum, panic, and serde policy coverage | `cargo check-enum-policy` · `cargo check-panic-allowlist` · `cargo check-deny-unknown-fields` |
+| Workspace version and MSRV-notice coherence | `cargo check-workspace-versions` · `cargo check-msrv-notice` |
+| Native Alloy adapter allow-lists and family pins | `cargo check-alloy-provider-invariant` · `cargo check-alloy-signer-invariant` · `cargo check-alloy-family-pins` |
+| ADR and property-citation coverage | `cargo check-adr-coverage` · `cargo check-property-citations` |
+| WASM package boundary invariants | `cargo check-wasm-invariant` |
+| Source-level never-swap fences and workflow hygiene | `cargo check-source-fences` · `cargo check-workflow-security` · `cargo check-shell-wrappers` · `cargo check-readme-include` |
+| Parity against pinned upstreams | `cargo parity-validate --source-lock parity/source-lock.yaml` · `cargo parity-openapi-coverage` |
+| Docs/CI release-gate agreement | `cargo docs-agree` |
+| Deterministic example catalog | `cargo run-deterministic-examples` |
 
-```text
-cargo parity-validate --source-lock parity/source-lock.yaml
-cargo check-property-citations
-```
+Maintainer-only verbs (upstream checkout sync, pin refresh, and drift
+reporting) are documented in [parity/README.md](parity/README.md) and run as
+`cargo xtask parity ...` subcommands.
 
 The clippy gate runs under the workspace lint posture declared in the root
 `Cargo.toml`, which enables both the `pedantic` and `nursery` groups at warn

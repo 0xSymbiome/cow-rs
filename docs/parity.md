@@ -49,16 +49,16 @@ upstream producer commits and paths.
 | --- | --- | --- |
 | `cowprotocol/services` | Primary protocol authority | Orderbook HTTP API, OpenAPI schemas, wire DTOs, and order-validation and rejection semantics |
 | `cowprotocol/contracts` | Primary protocol authority | EIP-712 order hashing, settlement ABI, and deployment addresses |
-| `cowprotocol/composable-cow` | Primary capability evidence | Commit pin for the deferred composable-order capability (recorded by [ADR 0048](adr/0048-composable-conditional-order-framework.md)): composable deployment rows resolvable through the typed `Registry` |
+| `cowprotocol/cow-sdk` | Primary capability evidence | Commit pin for the TypeScript SDK contract-address constants behind the staging settlement and vault-relayer deployments resolved by the typed `Registry` |
 | `cowprotocol/ethflowcontract` | Primary capability evidence | Commit pin for the inline `sol!` EthFlow bindings (`CoWSwapEthFlow`, `EthFlowOrder`, `ICoWSwapOnchainOrders`, `CoWSwapOnchainOrders`, `IWrappedNativeToken`) proven by parity fixtures, plus the `ReceiverMustBeSet()` revert-selector evidence |
-| `cowdao-grants/cow-shed` | Primary capability evidence | Commit pin for the inline `sol!` COW Shed bindings proven by JSON fixtures, plus the proxy creation-code `.bin` bytes (build.rs SHA self-check), factory address derivation, hook signature shape, and version-call evidence |
-| `cowprotocol/watch-tower` | Reference-only boundary evidence | Off-chain orchestration behavior used to define what remains outside the SDK |
+| `cowdao-grants/cow-shed` | Primary capability evidence | Commit pin for the inline `sol!` COW Shed bindings proven by JSON fixtures, plus the proxy creation-code `.bin` bytes locked by the CREATE2 address-parity test, factory address derivation, hook signature shape, and version-call evidence |
 
-Pinned revisions (the full set is authoritative in `parity/source-lock.yaml`):
+Off-chain orchestration behavior (for example `cowprotocol/watch-tower`) is
+consulted as ecosystem context to define what stays outside the SDK; it is a
+boundary statement rather than a pinned source, so it carries no commit pin.
 
-- `contracts`: `c6b61ce75841ce4c25ab126def9cc981c568e6c6`
-- `ethflowcontract`: `762d182674f8f890bd27917872ee62125171b54d`
-- `services`: `1f80d54bc3521b3fa81cd8ad66d9f749c5450591`
+The pinned commits themselves are authoritative in
+`parity/source-lock.yaml` and are not duplicated here.
 
 Normal `cow-rs` builds, tests, and publishes never require local checkouts of
 the upstream repositories. Local upstream checkout paths are optional validation
@@ -112,7 +112,7 @@ maintainer workflow for refreshing the lock lives in
 | `CoWSwapOnchainOrders` event decoder | `cowprotocol/ethflowcontract` `CoWSwapOnchainOrders` mixin and interface | `cow-sdk-contracts::onchain_orders` via inline `alloy::sol!` | Inline `sol!` binding proven by selector and order-hash fixtures, mirroring upstream Solidity pinned by commit in `parity/source-lock.yaml` | `crates/contracts/tests/onchain_orders.rs::order_placement_topic0_matches_canonical_hash`, `crates/contracts/tests/onchain_orders.rs::order_hash_matches_canonical_ethflow_foundry_vector` |
 | `IWrappedNativeToken` (WETH9-family) bindings | `cowprotocol/ethflowcontract` `IWrappedNativeToken` interface | `cow-sdk-contracts::tokens` via inline `alloy::sol!` | Inline `sol!` binding proven by deposit/withdraw selector fixtures, mirroring upstream Solidity pinned by commit in `parity/source-lock.yaml` | `crates/contracts/tests/tokens_contract.rs::deposit_selector_matches_canonical_keccak`, `crates/contracts/tests/tokens_contract.rs::withdraw_selector_matches_canonical_keccak` |
 | ERC-20 bindings | `cowprotocol/contracts` `IERC20` interface (carrying its own OpenZeppelin v3.4.0 lineage in the upstream header) | `cow-sdk-contracts::tokens` via inline `alloy::sol!` | Inline `sol!` binding for `IERC20` proven by `parity/fixtures/contracts.json`, mirroring upstream Solidity pinned by commit in `parity/source-lock.yaml` | `crates/contracts/tests/parity_contract.rs::parity_fixture_cases_hold` |
-| Deployment registry authority | `cowprotocol/contracts` deployments record | `cow-sdk-contracts::Registry` const table | `crates/contracts/src/deployments.rs` | `crates/contracts/src/deployments.rs (tests)`, `scripts/validation-smoke/tests/registry_confirm.rs` |
+| Deployment registry authority | `cowprotocol/contracts` deployments record | `cow-sdk-contracts::Registry` const table | `crates/contracts/src/deployments.rs` | `crates/contracts/src/deployments.rs (tests)`, `xtask/tests/registry_confirm.rs` |
 | App-data parity | `cowprotocol/app-data` JSON schemas and `cowprotocol/services` app-data hashing | `cow-sdk-app-data`, `cow-sdk-trading` | `parity/fixtures/app_data/` | `crates/app-data/tests/cid_contract.rs`, `crates/app-data/tests/schema_contract.rs`, `crates/app-data/tests/fetch_contract.rs`, `crates/trading/tests/quote_contract.rs` |
 | Subgraph support | the deployed CoW Protocol subgraph GraphQL schema, with cow-rs-owned query documents | `cow-sdk-subgraph` | `crates/subgraph/src/query_documents/` | `crates/subgraph/tests/api_contract.rs`, `crates/subgraph/tests/query_contract.rs`, `crates/subgraph/tests/types_contract.rs` |
 | Orderbook transport | `cowprotocol/services` orderbook OpenAPI and wire DTOs | `cow-sdk-orderbook` | `parity/fixtures/orderbook-requests/`, `parity/openapi/coverage.yaml` | `crates/orderbook/tests/api_contract.rs`, `crates/orderbook/tests/request_contract.rs`, `crates/orderbook/tests/transform_contract.rs`, `crates/orderbook/tests/types_contract.rs`, `crates/orderbook/tests/wire_contract.rs` |
@@ -213,9 +213,10 @@ of upstream TypeScript methods. The release supports these workflow buckets:
    metadata validation, CID-to-hex conversion, and hex-to-CID conversion.
 7. **IPFS app-data fetch**: fetch by CID and fetch by app-data hash through an
    injected HTTP transport.
-8. **Deployment registry**: chain and environment addresses for GPv2,
-   composable-order, and COW Shed contract families, with deployment coverage
-   records for not-deployed and unsupported chain evidence.
+8. **Deployment registry**: production and staging addresses for the GPv2
+   contract families (settlement, vault relayer, eth-flow) plus the COW Shed
+   per-version address tables, with typed misses for chains where a contract
+   is not deployed.
 9. **Runtime support**: browser bundlers, Node.js 22 and 24 LTS, Cloudflare
    Workers, and best-effort self-built Deno targets.
 10. **Cancellation and timeouts**: per-call `signal`, per-call `timeoutMs`, and
@@ -225,9 +226,8 @@ The 0.1.0 scope does not claim total method-for-method parity with the upstream
 TypeScript SDK. The COW Shed account-abstraction proxy ships its full helper body
 in 0.1.0 — the `cow-sdk-contracts` leaf crate behind the opt-in `cow-shed` facade
 feature. Composable conditional-order helpers are deferred and recorded only by
-[ADR 0048](adr/0048-composable-conditional-order-framework.md); their deployment
-addresses already resolve through the typed `Registry`, and the helper surface
-lands additively in a later release. Capability families that are
+[ADR 0048](adr/0048-composable-conditional-order-framework.md); the helper
+surface and its upstream pin land additively in a later release. Capability families that are
 explicitly deferred for 0.1.0 (cross-chain bridging order construction,
 hook-trampoline bytecode chaining, ecosystem provider adapters outside Alloy, and
 other items listed under Out-of-Scope below) should continue to use the upstream

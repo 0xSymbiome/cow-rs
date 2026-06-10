@@ -183,5 +183,5 @@ cargo test -p cow-sdk-trading
 cargo test --workspace --all-features
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo build --target wasm32-unknown-unknown -p cow-sdk
-wasm-pack test crates/wasm --headless --chrome
+wasm-pack test crates/wasm --headless --firefox
 ```

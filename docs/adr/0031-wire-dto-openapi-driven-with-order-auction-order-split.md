@@ -21,7 +21,7 @@ covering separate OpenAPI schemas. `protocolFees`, `preInteractions`,
 `postInteractions`, `created`, `executed`, and the auction-side
 `quote: Quote` live on `AuctionOrder`; they do not appear on `Order`.
 
-`parity-maintainer openapi-coverage` expands each schema's inventory in
+`cargo parity-openapi-coverage` expands each schema's inventory in
 memory from the vendored OpenAPI and validates Rust DTO coverage against
 required, nullable, and default semantics. Hand-written DTO snippets are not
 authoritative; the vendored spec is.
@@ -111,6 +111,6 @@ verified producer.
 
 - [Wire DTO Coverage Audit](../audit/wire-dto-coverage-audit.md)
 - [Quote Response Surface Audit](../audit/quote-response-surface-audit.md)
-- `scripts/parity-maintainer/src/openapi_coverage.rs`
+- `xtask/src/openapi_coverage.rs`
 - `crates/orderbook/tests/transform_contract.rs`
 - `crates/orderbook/tests/wire_contract.rs`

@@ -124,7 +124,7 @@ Validation surface:
 ```text
 cargo test -p cow-sdk-wasm --test host_pure_helpers
 cargo test -p cow-rs-workspace-tests --test wasm_dependency_invariant
-wasm-pack test crates/wasm --headless --chrome
+wasm-pack test crates/wasm --headless --firefox
 node crates/wasm/npm/scripts/verify-exports.mjs
 node crates/wasm/npm/scripts/verify-no-raw-exports.mjs
 pnpm --dir e2e/wasm-typescript test

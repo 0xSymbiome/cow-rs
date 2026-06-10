@@ -132,12 +132,13 @@ public typed surface and covered by fixtures.
 
 The OpenAPI coverage validator has negative self-tests for structured field
 mismatches and required-field drift:
-`scripts/parity-maintainer/tests/openapi_coverage.rs::openapi_coverage_validate_reports_structured_field_mismatches`
+`xtask/tests/openapi_coverage.rs::openapi_coverage_validate_reports_structured_field_mismatches`
 and
-`scripts/parity-maintainer/tests/openapi_coverage.rs::openapi_coverage_validate_reports_required_field_drift`.
-The shared quality gate runs the full `parity-maintainer` test suite through
-the `parity-maintainer` job, so validator regressions fail CI instead of
-remaining only locally reproducible.
+`xtask/tests/openapi_coverage.rs::openapi_coverage_validate_reports_required_field_drift`.
+The shared quality gate runs the full `xtask` test suite through
+`cargo test --workspace`, and re-runs the coverage validator against the real
+vendored spec in the `openapi-coverage` job, so validator regressions fail CI
+instead of remaining only locally reproducible.
 
 ## Evidence
 
@@ -149,7 +150,7 @@ Primary implementation points:
 - `crates/orderbook/src/types/lists.rs`
 - `crates/orderbook/src/types/auction.rs`
 - `crates/orderbook/src/api.rs`
-- `scripts/parity-maintainer/src/openapi_coverage.rs`
+- `xtask/src/openapi_coverage.rs`
 - `.github/workflows/_quality-gate.yml`
 - `parity/openapi/coverage.yaml`
 - `parity/openapi/services-orderbook.yml`
@@ -172,17 +173,17 @@ Primary regression coverage:
 - `crates/orderbook/tests/transform_contract.rs::onchain_order_data_fixture_deserializes_typed_accessors`
 - `crates/orderbook/tests/wire_contract.rs::promoted_amount_dtos_roundtrip_byte_identical`
 - `crates/orderbook/tests/wire_contract.rs::openapi_response_dtos_roundtrip_required_fixture_fields`
-- `scripts/parity-maintainer/tests/openapi_coverage.rs::openapi_coverage_validate_reports_structured_field_mismatches`
-- `scripts/parity-maintainer/tests/openapi_coverage.rs::openapi_coverage_validate_reports_required_field_drift`
+- `xtask/tests/openapi_coverage.rs::openapi_coverage_validate_reports_structured_field_mismatches`
+- `xtask/tests/openapi_coverage.rs::openapi_coverage_validate_reports_required_field_drift`
 
 Validation surface:
 
 ```text
-cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- openapi-coverage
+cargo parity-openapi-coverage
 cargo parity-validate --source-lock parity/source-lock.yaml
-cargo test --manifest-path scripts/parity-maintainer/Cargo.toml
+cargo test -p xtask
 cargo test -p cow-sdk-orderbook --test order_creation_fee_deserialize
 cargo test -p cow-sdk-orderbook --test wire_contract
 cargo test -p cow-sdk-orderbook --test transform_contract
-cargo run --manifest-path scripts/policy-maintainer/Cargo.toml -- check-deny-unknown-fields
+cargo run -p xtask -- policy check-deny-unknown-fields
 ```

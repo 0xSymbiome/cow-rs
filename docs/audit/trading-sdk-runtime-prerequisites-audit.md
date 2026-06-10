@@ -134,5 +134,5 @@ cargo test -p cow-sdk
 cargo test --workspace --all-features
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo check --workspace --all-features --target wasm32-unknown-unknown
-cd crates/trading && wasm-pack test --headless --chrome
+cd crates/trading && wasm-pack test --headless --firefox
 ```

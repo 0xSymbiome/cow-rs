@@ -39,10 +39,10 @@ or changing SDK behavior.
 | Freshness disclosure | Current upstream HEADs are checked explicitly so stale pins are visible before release evidence relies on freshness | Conforms |
 | Refresh outcome | The 2026-05-29 sync advanced the two CoW Protocol pins (`contracts`, `services`) to upstream HEAD, re-vendored the services OpenAPI, and re-aligned fixture provenance; parity validation and OpenAPI coverage pass, and the `git ls-remote` upstream HEAD comparison shows both pins Current | Conforms |
 | Local-root warnings | Reviewer-supplied upstream roots are checked for independent git top-levels, expected remotes, and pinned `HEAD` commits without making repo-local validation depend on those roots | Conforms |
-| Publication preflight | Source-lock validation metadata lists the complete package-family dry-run contract with local patches for unpublished intra-family crates | Conforms |
+| Publication preflight | The package-family dry-run contract (with local patches for unpublished intra-family crates) lives in the release-readiness publication job, which validates the committed lock before the dry runs | Conforms |
 | Native Alloy provenance | The native adapter family pins Alloy by crates.io version (`alloy-* = 2.0.4`, `alloy-core-* = 1.5.7`), enforced by `Cargo.lock` and the two-family lockfile invariant | Conforms |
 | App-data schema drift fixtures | `crates/app-data/schemas/` retains one self-contained drift fixture per modeled metadata family for the typed metadata structs and is no longer vendored as a byte-for-byte parity asset | Conforms |
-| Schema enforcement | Unsupported source-lock schema versions fail closed with a stable diagnostic, while schema version 3 is accepted | Conforms |
+| Form enforcement | The lock parses through typed models that reject unknown or missing fields, and row rules fail closed on malformed remotes, commits, roles, or paths | Conforms |
 | Amount fixture roundtrip | Amount-shaped fixture strings parse through the shared `Amount` codec and round-trip byte-identically | Conforms |
 | Historical snapshot scope | Historical progress snapshots stay readable and unmodified while active preflight authority skips them by directory-prefix policy | Conforms |
 | Binding source pins | The upstream Solidity repository each `cow-sdk-contracts` inline `alloy::sol!` binding mirrors is pinned by commit under `repositories:` in `parity/source-lock.yaml`; the bindings themselves are proven byte-for-byte by the `fixtures:` provenance and crate parity tests rather than a per-file source mirror | Conforms |
@@ -57,6 +57,17 @@ fixtures and source-derived evidence. It currently pins:
 
 - `contracts` at `c6b61ce75841ce4c25ab126def9cc981c568e6c6`
 - `services` at `1f80d54bc3521b3fa81cd8ad66d9f749c5450591`
+- `cow-sdk` at `1c3c9619c3d0ee832ce43a2d695ad650c2ec7a18`
+- `cow-shed` at `9e01a88e0010314ee1e4c1a822105897a87d3bda`
+- `ethflowcontract` at `762d182674f8f890bd27917872ee62125171b54d`
+
+This review removed the deferred composable-order pins (`composable-cow` and
+its `lib/safe` submodule row): the SDK ships no composable surface, no fixture
+cites their paths, and the deferral is recorded by ADR 0048 — the capability
+re-pins its upstream when it lands. The cow-shed row was trimmed to the files
+the inline bindings and address tables actually mirror; two stale paths that
+do not exist at the pinned commit (`src/interfaces/ICOWAuthHook.sol`,
+`src/interfaces/IERC1271.sol`) were removed with it.
 
 The lock is intentionally commit-based rather than branch-based. A release
 claim that depends on upstream freshness has to compare these pins against the
@@ -101,7 +112,7 @@ validation.
 
 ### Local-Root Warning Command
 
-`cargo check-source-lock-roots` is a report-only policy-maintainer command for
+`cargo check-source-lock-roots` is a report-only xtask policy command for
 reviewers who pass local upstream checkouts into provenance-sensitive
 validation. When `--contracts-root` or `--services-root` is
 supplied, the command warns if the path resolves to a parent git checkout, if
@@ -127,31 +138,28 @@ every quote and order DTO schema (`OrderParameters`,
 provenance was aligned to the refreshed commits, and OpenAPI DTO coverage was
 re-validated.
 
-### Publication Preflight Metadata
+### Publication Preflight
 
-The validation metadata in `parity/source-lock.yaml` records the repo-local
-package dry-run contract used before release evidence relies on the committed
-parity fixtures. The contract covers the full published crate family, including
-`cow-sdk-transport-wasm`, and patches unpublished local crate dependencies for
-pre-publication dry-runs. In particular, `cow-sdk-contracts` patches
-`cow-sdk-orderbook` and `cow-sdk-subgraph` because they are dev-dependencies of
-the contracts crate, and `cow-sdk-trading` patches `cow-sdk-transport-wasm`
-until the first package family has been published.
+The package-family dry-run contract lives in the release-readiness
+publication job (`.github/workflows/release-readiness.yml`): it validates the
+committed lock (`cargo parity-validate`), then dry-run packages and publishes
+the full published crate family with local patches for unpublished
+intra-family dependencies. The source lock intentionally carries no
+metadata block; its purpose is stated in a header comment, and the dry-run
+contract is workflow-owned, not lock-embedded.
 
-The package dry-run contract also covers `cow-sdk-alloy-provider`,
-`cow-sdk-alloy-signer`, and `cow-sdk-alloy`, with `cow-sdk` patched to the
-local adapter crates when validating the facade before publication.
+### Form Enforcement
 
-### Schema Version Enforcement
-
-The maintainer validates source-lock schema version 3 as the only supported
-schema. The fixture tests in
-`scripts/parity-maintainer/tests/source_lock_schema_version.rs` pin v2 and v4
-rejection with the stable diagnostic substring `expected source-lock
-schema_version 3`, and pin v3 acceptance against the current validation
-contract. The shared quality gate now runs
-`cargo test --manifest-path scripts/parity-maintainer/Cargo.toml`, so these
-checks are CI-enforced with the rest of the maintainer suite.
+`xtask` validates the source lock by form rather than by matching it against a
+hardcoded contract: the typed model rejects unknown or missing fields
+(`deny_unknown_fields`, so a misspelled key cannot be silently ignored), and
+each repository row must carry a GitHub `.git` remote, a 40-character
+lowercase hex commit, a known role, and unique non-traversing producer paths.
+The lock carries no schema-version field: its only parsers (`xtask` and the
+policy maintainer's root check) ship in the same commit as the file, so
+tool/file skew cannot occur, and shape changes fail closed at parse time. The
+parse and row-form rules are pinned by the unit tests in `xtask/src/main.rs`,
+which the shared quality gate runs through `cargo test --workspace`.
 
 ### Cross-Fixture Amount Roundtrip
 
@@ -191,11 +199,11 @@ Primary implementation points:
 - `parity/fixtures/orderbook/solver_execution.json`
 - `crates/orderbook/src/types/order.rs`
 - `.cargo/config.toml`
-- `scripts/parity-maintainer/src/main.rs`
-- `scripts/policy-maintainer/src/check_source_lock_roots.rs`
-- `scripts/parity-maintainer/tests/fixtures/source-lock-v2.yaml`
-- `scripts/parity-maintainer/tests/fixtures/source-lock-v3.yaml`
-- `scripts/parity-maintainer/tests/fixtures/source-lock-v4.yaml`
+- `xtask/src/main.rs`
+- `xtask/src/policy/check_source_lock_roots.rs`
+- `xtask/tests/fixtures/source-lock-v3.yaml`
+- `xtask/tests/fixtures/source-lock-v4.yaml`
+- `xtask/tests/fixtures/source-lock-v5.yaml`
 - `crates/sdk/tests/cross_fixture_amount_roundtrip.rs`
 - `.github/workflows/_quality-gate.yml`
 - `.github/config/audit-refresh-map.yml`
@@ -205,9 +213,7 @@ Primary regression coverage:
 
 - Maintainer-side exclusion tests cover exclusion-list loading, directory-prefix
   skipping, and rejection of file-level entries.
-- `scripts/parity-maintainer/tests/source_lock_schema_version.rs::source_lock_with_schema_v2_is_rejected_with_stable_diagnostic`
-- `scripts/parity-maintainer/tests/source_lock_schema_version.rs::source_lock_with_schema_v3_is_accepted`
-- `scripts/parity-maintainer/tests/source_lock_schema_version.rs::source_lock_with_schema_v4_is_rejected_with_stable_diagnostic`
+- `xtask/src/main.rs::tests::malformed_source_lock_files_fail_closed`
 - `crates/orderbook/tests/wire_contract.rs::openapi_response_dtos_roundtrip_required_fixture_fields`
 - `crates/orderbook/tests/wire_contract.rs::promoted_amount_dtos_roundtrip_byte_identical`
 - `crates/sdk/tests/cross_fixture_amount_roundtrip.rs::cross_fixture_amount_roundtrip`
@@ -215,11 +221,10 @@ Primary regression coverage:
 Validation surface:
 
 ```text
-git ls-remote https://github.com/cowprotocol/services HEAD
-git ls-remote https://github.com/cowprotocol/contracts HEAD
 cargo parity-validate --source-lock parity/source-lock.yaml
+cargo xtask parity sync
+cargo xtask parity drift
 cargo check-source-lock-roots --contracts-root <contracts-checkout> --services-root <services-checkout>
-cargo test --manifest-path scripts/parity-maintainer/Cargo.toml
-cargo test --manifest-path scripts/policy-maintainer/Cargo.toml check_source_lock_roots
+cargo test -p xtask
 cargo test --workspace --all-features cross_fixture_amount_roundtrip
 ```

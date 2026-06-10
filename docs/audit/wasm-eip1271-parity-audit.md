@@ -84,6 +84,6 @@ Validation surface:
 
 ```text
 cargo test -p cow-sdk-wasm --test host_pure_helpers
-wasm-pack test crates/wasm --headless --chrome
+wasm-pack test crates/wasm --headless --firefox
 pnpm --dir e2e/wasm-typescript test
 ```

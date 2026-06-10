@@ -107,7 +107,7 @@ Every surface in this table is shipped from cow-rs source and may not be swapped
 | `JsCallbackHttpTransport` (Node/Deno/Workers callback transport) | `cow-sdk-wasm::exports::JsCallbackHttpTransport` | ADR 0010, ADR 0040 | Runtime-neutral JS callback transport; alloy ships no equivalent. |
 | EIP-712 type-string whitespace contract | `crates/contracts/src/order.rs`, every type string literal in `cow-sdk-contracts` and (future) `cow-sdk-composable` | ADR 0050 | Any whitespace creep between commas in EIP-712 type strings shifts the struct hash; every signature breaks. Formatter-driven risk. |
 | `keccak_word` test oracle (independent `sha3::Keccak256`) | `crates/contracts/src/order.rs` | ADR 0052 implicit | Test-only but load-bearing: collapsing to `alloy_primitives::keccak256` means the parity test verifies alloy against itself. |
-| `cow-sdk-wasm` "no direct alloy imports" rule | `crates/wasm/src/` | ADR 0052, enforced by `.github/workflows/wasm-imports-grep-gate.yml` | wasm leaf consumes alloy types via re-exports from `cow-sdk-contracts` and its own host-safe `helpers` module; direct imports are a release-gating CI failure. |
+| `cow-sdk-wasm` "no direct alloy imports" rule | `crates/wasm/src/` | ADR 0052, enforced by the `cow-sdk-wasm` import fences in `cargo check-source-fences` | wasm leaf consumes alloy types via re-exports from `cow-sdk-contracts` and its own host-safe `helpers` module; direct imports are a release-gating CI failure. |
 | Source-lock provenance (upstream commit hashes for parity validation) | `parity/source-lock.yaml` (the single per-repository commit pin behind every `cow-sdk-contracts::Registry` address) | [Evidence-Backed Public Claims](principles.md), ADR 0026, ADR 0030, ADR 0032 | alloy ships no provenance authority; cow's release evidence is repository-visible. |
 
 ## Bucket 3: BOUNDARY-ADAPTER
@@ -151,7 +151,7 @@ The decision tree is meant to be runnable. The following worked examples walk it
 
 **Step 3:** Classify as COW-OWNED. Add a `Mantle` variant to `SupportedChainId` under the `#[non_exhaustive]` carve-out ([Forward-Compatible Public Surfaces](principles.md) / ADR 0031). Add an `api_path()` arm that matches the CoW orderbook URL segment. Add a `WRAPPED_NATIVE_MANTLE_BYTES` constant using `hex!` (Bucket 1). The settlement, vault-relayer, and eth-flow CREATE2 singletons resolve unchanged on the new chain through `cow-sdk-contracts::Registry` (Bucket 2 — registry is cow-owned per ADR 0012).
 
-**Do not** add `alloy-chains` as a workspace dependency. The `alloy-chains` workspace-dep ban CI gate at `.github/workflows/never-swap-gates.yml` catches the import.
+**Do not** add `alloy-chains` as a workspace dependency. The `check-alloy-family-pins` policy rejects it — no `alloy-*` crate may sit outside the two release trains, and `alloy-chains` is on its forbidden list (it would duplicate `SupportedChainId`).
 
 ### Example 3 — A new wallet provider (Frame)
 
@@ -203,7 +203,7 @@ The Bucket 2 rejection contract on `Amount::Deserialize` (rejects `0o`/`0b` per 
 
 ## The 8 never-swap exceptions
 
-Seven constraints plus three additional surfaces are verified as `DO NOT SWAP`. The CI grep gates that mechanize each fence live at `.github/workflows/never-swap-gates.yml`; the per-site `// DO NOT SWAP` comments live at the load-bearing call sites in `crates/contracts/`, `crates/core/`, `crates/signing/`, and `crates/transport-wasm/`. One further reimplementation fence — `Amount::parse_units` does the decimal scaling itself with checked arithmetic instead of the fail-open, panic-prone, silently-wrapping raw `alloy_primitives::utils::parse_units` (Bucket 2 row above) — carries its own `// DO NOT SWAP` comment block but no dedicated grep gate; it is held by the `gate-do-not-swap-census` comment-block count rather than a symbol-specific regex, so the census gate locks at ten `DO NOT SWAP` blocks rather than nine.
+Seven constraints plus three additional surfaces are verified as `DO NOT SWAP`. The source fences that mechanize each one are run by `cargo check-source-fences` (`xtask/src/policy/fences.rs`); the per-site `// DO NOT SWAP` comments live at the load-bearing call sites in `crates/contracts/`, `crates/core/`, `crates/signing/`, and `crates/transport-wasm/`. One further reimplementation fence — `Amount::parse_units` does the decimal scaling itself with checked arithmetic instead of the fail-open, panic-prone, silently-wrapping raw `alloy_primitives::utils::parse_units` (Bucket 2 row above) — carries its own `// DO NOT SWAP` comment block but no dedicated symbol fence; it is held by the `do-not-swap-census` fence's comment-block count rather than a symbol-specific pattern, so the census locks at ten `DO NOT SWAP` blocks rather than nine.
 
 The canonical roster is:
 
@@ -219,7 +219,7 @@ The canonical roster is:
    - `keccak_word` test oracle in `crates/contracts/src/order.rs`,
    - EIP-712 type-string whitespace contract (ADR 0050).
 
-The doctrine treats every entry in the canonical roster above as a binding never-swap fence; the CI grep gates at `.github/workflows/never-swap-gates.yml` enforce them mechanically.
+The doctrine treats every entry in the canonical roster above as a binding never-swap fence; the source fences run by `cargo check-source-fences` (`xtask/src/policy/fences.rs`) enforce them mechanically.
 
 ## ADRs this doctrine consolidates
 
@@ -271,14 +271,14 @@ No other ADR-vs-code drift was surfaced.
 
 ## Lint and CI enforcement
 
-The eight grep gates that mechanize the never-swap fences live at `.github/workflows/never-swap-gates.yml`. The doctrine does not duplicate the gate regexes; it depends on the workflow remaining the canonical mechanical floor.
+The never-swap fences are mechanized by `cargo check-source-fences` — the fence table in `xtask/src/policy/fences.rs`. The doctrine does not duplicate the fence patterns; it depends on that policy remaining the canonical mechanical floor.
 
 In addition to the never-swap CI gates above, the following gates exist or are scheduled:
 
 - **`alloy-provider` allow-list check** — `alloy-provider` may appear in `cow-sdk-alloy-provider` and `cow-sdk-alloy` only (ADR 0026).
 - **`alloy-signer-local` allow-list check** — same posture, `cow-sdk-alloy-signer` and `cow-sdk-alloy` only (ADR 0026).
 - **`alloy-runtime` family confinement** — `alloy-network`, `alloy-consensus`, `alloy-rpc-types-eth`, `alloy-transport-*` confined to the same three adapter crates (ADR 0052).
-- **`wasm-imports-grep-gate.yml`** — `cow-sdk-wasm` forbids direct `alloy*` imports; types are consumed via re-exports through `cow-sdk-contracts` and its own host-safe `helpers` module (ADR 0052).
+- **`cow-sdk-wasm` import fences (`cargo check-source-fences`)** — `cow-sdk-wasm` forbids direct `alloy*` imports; types are consumed via re-exports through `cow-sdk-contracts` and its own host-safe `helpers` module (ADR 0052).
 - **`cargo-metadata` negative-edge invariants** — `cow-sdk-signing ⇏ cow-sdk-trading`, `cow-sdk-contracts[cow-shed] ⇏ cow-sdk-trading`; reverse-edge `cow-sdk-trading ⇒ cow-sdk-signing` (ADR 0051).
 - **Compile-fail regression** — `crates/trading/tests/eip1271_signature_provider_no_reexport.rs` fails compile if `Eip1271Signer` is re-exported from `cow_sdk_trading` (ADR 0051).
 - **Workspace resolution invariant test** — `Cargo.lock` resolves each alloy crate to exactly one version per ADR 0026.

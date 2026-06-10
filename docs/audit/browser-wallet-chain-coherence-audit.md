@@ -98,5 +98,5 @@ cargo test -p cow-sdk-browser-wallet
 cargo test --workspace --all-features
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo build --target wasm32-unknown-unknown -p cow-sdk-browser-wallet
-cd crates/browser-wallet && wasm-pack test --headless --chrome
+cd crates/browser-wallet && wasm-pack test --headless --firefox
 ```

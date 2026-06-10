@@ -93,7 +93,7 @@ Validation surface:
 ```text
 cargo test -p cow-sdk-wasm --test wasm_facade_snapshot_contract
 cargo test -p cow-sdk-wasm --test wasm_snapshot_surface_contract
-wasm-pack test crates/wasm --headless --chrome
+wasm-pack test crates/wasm --headless --firefox
 bash crates/wasm/npm/scripts/build.sh
 node crates/wasm/npm/scripts/verify-exports.mjs
 node crates/wasm/npm/scripts/verify-no-raw-exports.mjs
