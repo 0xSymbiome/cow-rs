@@ -1,6 +1,6 @@
 # cow-rs
 
-[![CI](https://img.shields.io/badge/CI-workflow-2088FF?logo=githubactions&logoColor=white)](.github/workflows/ci.yml) [![docs.rs](https://img.shields.io/docsrs/cow-sdk?label=docs.rs)](https://docs.rs/cow-sdk) [![crates.io](https://img.shields.io/crates/v/cow-sdk)](https://crates.io/crates/cow-sdk) [![MSRV 1.94.0](https://img.shields.io/badge/MSRV-1.94.0-0A7BBB)](docs/release-checklist.md#3-compatibility-and-host-coverage) [![License GPL-3.0-only](https://img.shields.io/badge/license-GPL--3.0--only-1F6FEB)](LICENSE)
+[![CI](https://github.com/cowdao-grants/cow-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/cowdao-grants/cow-rs/actions/workflows/ci.yml) [![docs.rs](https://img.shields.io/docsrs/cow-sdk?label=docs.rs)](https://docs.rs/cow-sdk) [![crates.io](https://img.shields.io/crates/v/cow-sdk)](https://crates.io/crates/cow-sdk) [![MSRV 1.94.0](https://img.shields.io/badge/MSRV-1.94.0-0A7BBB)](docs/release-checklist.md#3-compatibility-and-host-coverage) [![License GPL-3.0-only](https://img.shields.io/badge/license-GPL--3.0--only-1F6FEB)](LICENSE)
 
 `cow-rs` is a Rust SDK for CoW Protocol.
 
@@ -17,6 +17,53 @@ Ethereum applications without trading helpers should depend on Alloy directly;
 the adapter exists to wire native Alloy into the SDK's signing and transaction
 contracts.
 
+## Quickstart
+
+Sell WETH for COW on Sepolia — quote, sign, and post in one fluent call. Tokens
+are typed `Address` values; the named setters keep the sell and buy legs from
+being transposed, and `execute` is reachable only once both tokens and an amount
+are set. The order owner defaults to the signer address:
+
+```rust,no_run
+use cow_sdk::alloy_signer::LocalAlloyKeystoreSigner;
+use cow_sdk::core::{Address, Amount, SupportedChainId};
+use cow_sdk::trading::Trading;
+
+# async fn run(private_key: &str) -> Result<(), Box<dyn std::error::Error>> {
+let signer = LocalAlloyKeystoreSigner::builder()
+    .private_key(private_key)?
+    .chain_id(SupportedChainId::Sepolia)
+    .build()?;
+
+let trading = Trading::builder()
+    .chain_id(SupportedChainId::Sepolia)
+    .app_code("your-app-code")
+    .build()?;
+
+let weth = Address::new("0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14")?;
+let cow = Address::new("0x0625aFB445C3B6B7B929342a04A22599fd5dBB59")?;
+
+let posted = trading
+    .swap()
+    .sell_token(weth)
+    .buy_token(cow)
+    .sell_amount(Amount::parse_units("0.001", 18)?)
+    .execute(&signer)
+    .await?;
+
+println!(
+    "https://explorer.cow.fi/sepolia/orders/{}",
+    posted.order_id.to_hex_string()
+);
+# Ok(()) }
+```
+
+This snippet uses `cow-sdk` with the `alloy-signer` feature; any
+`cow_sdk::core::Signer` works in `execute`, and the local-key signer is the
+batteries-included one. The same fluent flow is compiled on every CI run as the
+[`cow-sdk` crate doctest](crates/sdk/README.md). For an end-to-end runnable path,
+see the [native examples](examples/native/README.md).
+
 <!-- runtime-routing:start -->
 ## When to use cow-rs
 
@@ -26,17 +73,21 @@ contracts.
 | Native Rust app using Alloy | `cow-sdk` plus `cow-sdk-alloy-*` | Opt-in Alloy provider and signer adapters without widening the default facade |
 | Rust app compiled to browser WASM | `cow-sdk-browser-wallet` plus `cow-sdk-transport-wasm` | Rust-on-wasm wallet and fetch plumbing; not the JavaScript-callable npm package |
 | Standard browser dapp or CowSwap-style UI in TypeScript | Upstream [`@cowprotocol/cow-sdk`](https://www.npmjs.com/package/@cowprotocol/cow-sdk) | Substantially smaller bundle at equivalent feature subsets; mature web ecosystem fit |
-| TypeScript service that needs byte-for-byte Rust signing parity (viem, ethers, wagmi, or EIP-1193 wallets) | `<published-cow-sdk-wasm-package>` | TypeScript facade over deterministic Rust helpers with wallet-stack-agnostic callbacks |
-| Single-source-of-truth Rust + TypeScript embedding | `<published-cow-sdk-wasm-package>` | One implementation across Rust and JavaScript runtimes |
-| Browser dapp that only needs orderbook plus signing (smaller bundle) | `<published-cow-sdk-wasm-package>/orderbook` | Smaller wasm flavor for quote, post, lookup, trade, and cancellation flows |
-| Signer service or HSM proxy | `<published-cow-sdk-wasm-package>/signing` | Signing, UID, EIP-1271, deployment, and version helpers without HTTP clients |
-| Node.js 22 or 24 LTS backend service | `<published-cow-sdk-wasm-package>` | Node target works with explicit fetch or callback transport |
-| Cloudflare Worker proxying orderbook calls | `<published-cow-sdk-wasm-package>/cloudflare` | Size-compatible with the current Workers Free compressed-size limit at the time of measurement; full Workers support pending release-bundle and startup validation |
-| Deno | `<published-cow-sdk-wasm-package>` | Experimental build-only support; validate in your own runtime before production use |
+| TypeScript service that needs byte-for-byte Rust signing parity (viem, ethers, wagmi, or EIP-1193 wallets) | npm package&nbsp;† | TypeScript facade over deterministic Rust helpers with wallet-stack-agnostic callbacks |
+| Single-source-of-truth Rust + TypeScript embedding | npm package&nbsp;† | One implementation across Rust and JavaScript runtimes |
+| Browser dapp that only needs orderbook plus signing (smaller bundle) | npm package&nbsp;† (orderbook flavor) | Smaller wasm flavor for quote, post, lookup, trade, and cancellation flows |
+| Signer service or HSM proxy | npm package&nbsp;† (signing flavor) | Signing, UID, EIP-1271, deployment, and version helpers without HTTP clients |
+| Node.js 22 or 24 LTS backend service | npm package&nbsp;† | Node target works with explicit fetch or callback transport |
+| Cloudflare Worker proxying orderbook calls | npm package&nbsp;† (cloudflare flavor) | Size-compatible with the current Workers Free compressed-size limit at the time of measurement; full Workers support pending release-bundle and startup validation |
+| Deno | npm package&nbsp;† | Experimental build-only support; validate in your own runtime before production use |
 | Account-abstraction hooks via Cow Shed | `cow-sdk` with the `cow-shed` feature, or `cow-sdk-contracts` with the `cow-shed` feature | Deterministic proxy derivation, EIP-712 hook signing, factory calldata, and the `CowShedHooks` orchestrator; opt-in and off the default closure |
 | TWAP, composable, bridging, flash-loan, weiroll, or hardware-wallet flows | Upstream TypeScript packages until `cow-rs` ships those capabilities | These capability families are intentionally outside the 0.1.0 package scope |
 | Non-JS wasm consumers, WASI, WebAssembly components, TinyGo, Blazor, AssemblyScript guests, or no_std | Out of scope for 0.1.0 | Use native Rust crates where possible; the npm package targets JavaScript hosts |
 <!-- runtime-routing:end -->
+
+† The TypeScript-callable WASM package name is finalized at npm publication; the
+install command is in [Start Here](#start-here). It ships in default,
+`orderbook`, `signing`, and `cloudflare` flavors.
 
 ## Start Here
 
@@ -62,21 +113,9 @@ functional SDK release. Until `0.1.0` is live, use the getting-started guide
 and the maintained native scenarios in this repository to evaluate the same
 facade and trading flow end to end.
 
-Ready-state facade setup on the native/default transport path:
-
-```rust
-use cow_sdk::core::SupportedChainId;
-use cow_sdk::trading::Trading;
-
-let _trading = Trading::builder()
-    .chain_id(SupportedChainId::Sepolia)
-    .app_code("your-app-code")
-    .build()
-    .unwrap();
-```
-
 Use `appCode` as the stable identifier for the application or integration
-surface that originates the order flow.
+surface that originates the order flow; the [Quickstart](#quickstart) above shows
+it wired into a full swap on the native/default transport path.
 
 Browser-wallet integrations that wrap a reviewed local transport should keep
 the trusted origin explicit:

@@ -45,8 +45,8 @@ owner defaults to the signer's address:
 
 ```rust,no_run
 # use std::error::Error;
-use cow_sdk::core::{Address, Amount, OrderKind, SupportedChainId};
-use cow_sdk::trading::{TradeParams, Trading};
+use cow_sdk::core::{Address, Amount, SupportedChainId};
+use cow_sdk::trading::Trading;
 #
 # async fn run<S>(signer: &S) -> Result<(), Box<dyn Error>>
 # where
@@ -58,19 +58,25 @@ let trading = Trading::builder()
     .app_code("your-app-code")
     .build()?;
 
-// Sell 0.1 WETH for COW on Sepolia.
+// Tokens are typed `Address` values, not raw strings. The named setters keep
+// the sell and buy legs from being transposed, and `execute` becomes callable
+// only once both tokens and an amount are set. The owner defaults to the signer
+// address and slippage uses the quote-aware tolerance unless either is set.
 let weth = Address::new("0xfff9976782d46cc05630d1f6ebab18b2324d6b14")?;
 let cow = Address::new("0x0625afb445c3b6b7b929342a04a22599fd5dbb59")?;
-let params = TradeParams::new(
-    OrderKind::Sell,
-    weth,
-    cow,
-    Amount::parse_units("0.1", 18)?,
-);
 
-// One call quotes, signs with `signer`, and posts to the orderbook.
-let posted = trading.post_swap_order(params, signer, None).await?;
-println!("posted order: {}", posted.order_id.to_hex_string());
+let posted = trading
+    .swap()
+    .sell_token(weth)
+    .buy_token(cow)
+    .sell_amount(Amount::parse_units("0.1", 18)?)
+    .execute(signer)
+    .await?;
+
+println!(
+    "https://explorer.cow.fi/sepolia/orders/{}",
+    posted.order_id.to_hex_string()
+);
 # Ok(())
 # }
 ```
