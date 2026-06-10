@@ -32,10 +32,10 @@ That means the parity layer proves three things:
 - structural anchoring to pinned upstream commits recorded in
   `parity/source-lock.yaml`
 - curated test-case integrity inside the committed fixture corpus
-- source-lock validation through the parity maintainer:
+- source-lock validation through the `xtask` validator:
 
 ```sh
-cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate \
+cargo parity-validate \
   --source-lock parity/source-lock.yaml
 ```
 
@@ -52,13 +52,38 @@ documented here.
 
 ## Maintainer workflow
 
-Validate pinned upstream roots:
+Materialize the pinned upstream checkouts (blob-less clones under
+`target/upstream/`, or `--root`/`XTASK_UPSTREAM_ROOT` for a custom location):
 
 ```sh
-cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- validate \
+cargo xtask parity sync
+```
+
+Check whether upstream default branches have moved any producer path since the
+pins (exit 0 = no drift, 1 = drift reported, 2 = a pin or fetch failed):
+
+```sh
+cargo xtask parity drift
+```
+
+Advance the pins: fetches each remote's default branch, prints the per-file
+drift table, rewrites the `commit:` lines in `parity/source-lock.yaml`
+(comments preserved), and fails closed if any producer path is missing at the
+new pin. Review the lock diff, refresh whatever the drift table cites
+(re-vendor the OpenAPI document if `services` moved), and re-run the gates:
+
+```sh
+cargo xtask parity sync --update
+```
+
+Deep-validate pinned roots (the synced checkouts work directly):
+
+```sh
+cargo parity-validate \
   --source-lock parity/source-lock.yaml \
-  --contracts-root <path-to-contracts> \
-  --services-root <path-to-services>
+  --contracts-root target/upstream/contracts \
+  --services-root target/upstream/services \
+  --cow-sdk-root target/upstream/cow-sdk
 ```
 
 Running `validate` without upstream roots only proves that the committed lockfile and fixtures are
@@ -73,20 +98,30 @@ typed metadata structs still match the upstream field names, so an upstream
 rename or addition surfaces at review time. Refresh those fixtures by hand from a
 pinned `cowprotocol/app-data` checkout when the drift test flags a change.
 
-Refresh the source lock from pinned working roots:
-
-```sh
-cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- snapshot \
-  --output parity/source-lock.yaml \
-  --contracts-root <path-to-contracts> \
-  --services-root <path-to-services>
-```
+Refresh the source lock by editing the pinned rows in
+`parity/source-lock.yaml` directly: bump the `commit` for the changed upstream
+(and adjust its `producer_paths` if files moved), then rerun the root-checked
+`validate` above against fresh checkouts at the new commits. The validator
+checks the lock by form — schema version, GitHub `.git` remotes, 40-character
+lowercase hex commits, known roles, and unique non-traversing producer paths —
+so the committed file is the single source of truth rather than a copy of a
+hardcoded contract.
 
 The canonical fixture corpus stays committed in this repository so parity review and
 normal CI do not depend on those upstream roots.
 
 Embedded `source_refs[].commit` metadata inside `parity/fixtures/*.json` must stay aligned with
 `parity/source-lock.yaml`. `validate` treats commit drift there as a real failure.
+
+`parity/fixtures/` holds **class-T** files only: values transcribed from a
+pinned upstream artifact, whose `source_refs` point at the transcription source
+(digests, byte vectors, wire-DTO samples, RFC-derived dates). Self-derived
+**class-C** convention pins — outputs our own formula produces from inputs, with
+no upstream byte to transcribe — live inline in the consuming test as `const`
+literals with a derivation comment, not as a fixture; their provenance is the
+documented convention (the relevant ADR plus the cited services source), which a
+comment records more faithfully than a `source_refs` block that would otherwise
+cite where the convention is defined rather than where the numbers came from.
 
 Each `fixtures/*.json` file carries its own `source_refs` provenance pinning it
 to the CoW Protocol producer repositories recorded in `source-lock.yaml`:

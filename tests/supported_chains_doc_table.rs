@@ -51,9 +51,9 @@ fn parse_per_chain_provenance_table(doc: &str) -> BTreeMap<String, u64> {
     assert!(
         header.contains("`SupportedChainId` variant")
             && header.contains("Numeric chain id")
-            && header.contains("Deployment provenance")
+            && header.contains("Deployment source")
             && header.contains("Wrapped native token"),
-        "Per-chain Provenance table header must document variant, numeric id, deployment provenance, and wrapped native token"
+        "Per-chain Provenance table header must document variant, numeric id, deployment source, and wrapped native token"
     );
 
     let separator = rows

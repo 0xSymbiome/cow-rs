@@ -1,7 +1,7 @@
 # Vendored from cowprotocol/services @ 1f80d54bc3521b3fa81cd8ad66d9f749c5450591
 # Path: crates/orderbook/openapi.yml
 # Generated: 2026-05-29T19:14:17Z
-# DO NOT EDIT - regenerate via `parity-maintainer vendor-openapi`.
+# DO NOT EDIT - regenerate via `cargo parity-vendor-openapi`.
 openapi: 3.0.3
 info:
   version: 0.0.1

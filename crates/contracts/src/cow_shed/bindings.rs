@@ -21,6 +21,12 @@
 //! EIP-712 surface, and the `SolCall` implementations whose `abi_encode()` /
 //! `abi_decode()` back the calldata builders in [`crate::cow_shed::calls`]. The
 //! `parity/fixtures/cow_shed/*.json` rows gate the wire-byte-identity contract.
+//!
+//! The mirrored upstream sources are `src/COWShed.sol`,
+//! `src/COWShedFactory.sol`, and `src/COWShedForComposableCoW.sol` in
+//! `cowdao-grants/cow-shed`, with the [`Call`] / [`ExecuteHooks`] hashing
+//! semantics defined by `src/LibAuthenticatedHooks.sol` — all pinned by
+//! commit in `parity/source-lock.yaml` (per ADR 0012).
 
 alloy_sol_types::sol! {
     /// EIP-712 `Call` struct as encoded by the COW Shed `executeHooks`

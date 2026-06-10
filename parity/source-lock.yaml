@@ -1,16 +1,13 @@
-meta:
-  schema_version: 3
-  generated_at_utc: 2026-05-29T00:00:00Z
-  purpose: pinned upstream commits backing the committed parity fixtures and the inline alloy::sol! contract bindings
+# Pinned upstream commits backing the committed parity fixtures and the
+# inline alloy::sol! contract bindings. Validated by `cargo parity-validate`
+# (xtask): typed parsing rejects unknown fields, and form rules check every
+# repository row and fixture reference.
 repositories:
 - id: contracts
   remote: https://github.com/cowprotocol/contracts.git
   commit: c6b61ce75841ce4c25ab126def9cc981c568e6c6
   # why: GPv2 order/trade layout, EIP-712 type strings, the settlement and vault-relayer addresses, and the networks.json deployment manifest.
   role: primary
-  optional_local_path: <contracts-checkout>
-  pinned_at: 2026-05-29T00:00:00Z
-  pinned_by: cow-rs maintainers
   producer_paths:
   - networks.json
   - src/ts/order.ts
@@ -28,9 +25,6 @@ repositories:
   commit: 1f80d54bc3521b3fa81cd8ad66d9f749c5450591
   # why: orderbook wire DTOs, the OpenAPI schema, order-validation rules, and app-data hashing.
   role: wire-authority
-  optional_local_path: <services-checkout>
-  pinned_at: 2026-05-29T00:00:00Z
-  pinned_by: cow-rs maintainers
   producer_paths:
   - crates/orderbook/openapi.yml
   - crates/shared/src/order_validation.rs
@@ -42,90 +36,31 @@ repositories:
   commit: 1c3c9619c3d0ee832ce43a2d695ad650c2ec7a18
   # why: the canonical contract-address constants for both orderbook environments, pinning the staging settlement and vault-relayer deployments resolved by the typed Registry.
   role: primary
-  optional_local_path: <cow-sdk-checkout>
-  pinned_at: 2026-06-10T00:00:00Z
-  pinned_by: cow-rs maintainers
   producer_paths:
   - packages/config/src/chains/const/contracts.ts
-- id: composable-cow
-  remote: https://github.com/cowprotocol/composable-cow.git
-  commit: 471ca59aa95da1bbf3b03e002de96449bc78e6f0
-  # why: the ComposableCoW conditional-order Solidity surface and its networks.json addresses (deferred from the SDK, pinned for provenance).
-  role: primary
-  optional_local_path: <composable-cow-checkout>
-  pinned_at: 2026-05-15T00:00:00Z
-  pinned_by: cow-rs maintainers
-  producer_paths:
-  - networks.json
-  - src/ComposableCoW.sol
-  - src/BaseConditionalOrder.sol
-  - src/types/twap/TWAP.sol
-  - src/types/GoodAfterTime.sol
-  - src/types/StopLoss.sol
-  - src/types/TradeAboveThreshold.sol
-  - src/types/PerpetualStableSwap.sol
-  - src/interfaces/IConditionalOrder.sol
-  - src/interfaces/ISwapGuard.sol
-  - src/interfaces/IValueFactory.sol
-- id: composable-cow/lib/safe
-  remote: https://github.com/cowdao-grants/extensible-fallback-handler.git
-  commit: 11273c1f08eda18ed8ff49ec1d4abec5e451ff21
-  role: primary-via-submodule
-  optional_local_path: <composable-cow-checkout>/lib/safe
-  pinned_at: 2026-05-25T00:00:00Z
-  pinned_by: cow-rs maintainers
-  producer_paths:
-  - contracts/handler/ExtensibleFallbackHandler.sol
-  # Pins the `lib/safe` git submodule reference captured by the
-  # composable-cow repository at
-  # composable-cow@471ca59aa95da1bbf3b03e002de96449bc78e6f0. It anchors the
-  # ExtensibleFallbackHandler deployment address resolved through the typed
-  # Registry to a specific upstream submodule commit.
 - id: cow-shed
   remote: https://github.com/cowdao-grants/cow-shed.git
   commit: 9e01a88e0010314ee1e4c1a822105897a87d3bda
-  # why: the COW Shed proxy, factory, and forwarder Solidity plus the networks.json addresses behind the account-abstraction surface.
+  # why: the COW Shed proxy, factory, and hooks-hashing Solidity the inline sol! bindings mirror, plus the networks.json addresses behind the account-abstraction surface.
   role: primary
-  optional_local_path: <cow-shed-checkout>
-  pinned_at: 2026-05-15T00:00:00Z
-  pinned_by: cow-rs maintainers
   producer_paths:
   - networks.json
   - src/COWShed.sol
   - src/COWShedFactory.sol
   - src/COWShedForComposableCoW.sol
   - src/COWShedProxy.sol
-  - src/COWShedStorage.sol
-  - src/ERC1271Forwarder.sol
-  - src/interfaces/ICOWAuthHook.sol
-  - src/interfaces/IERC1271.sol
   - src/LibAuthenticatedHooks.sol
 - id: ethflowcontract
   remote: https://github.com/cowprotocol/ethflowcontract.git
   commit: 762d182674f8f890bd27917872ee62125171b54d
   # why: the CoWSwapEthFlow contract, EthFlowOrder library, and on-chain-orders mixin behind the native-asset order path.
   role: primary
-  optional_local_path: <ethflowcontract-checkout>
-  pinned_at: 2026-05-22T00:00:00Z
-  pinned_by: cow-rs maintainers
   producer_paths:
   - src/CoWSwapEthFlow.sol
   - src/libraries/EthFlowOrder.sol
   - src/interfaces/ICoWSwapOnchainOrders.sol
   - src/mixins/CoWSwapOnchainOrders.sol
   - src/interfaces/IWrappedNativeToken.sol
-- id: watch-tower
-  remote: https://github.com/cowprotocol/watch-tower.git
-  commit: 61eeaec55949337a42e66cb9d2439f400dd4e67a
-  # why: reference-only orderbook API helper types consulted when modelling the watch-tower integration surface.
-  role: reference-only
-  optional_local_path: <watch-tower-checkout>
-  pinned_at: 2026-05-15T00:00:00Z
-  pinned_by: cow-rs maintainers
-  producer_paths:
-  - README.md
-  - src/utils/orderBookApi.ts
-  - src/types/index.ts
 fixtures:
 - surface: contracts
   file: parity/fixtures/contracts.json
