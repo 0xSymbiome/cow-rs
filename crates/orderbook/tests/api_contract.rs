@@ -4,6 +4,9 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
+use cow_sdk_core::transport::policy::{
+    DEFAULT_MAX_ATTEMPTS, DEFAULT_ORDERBOOK_USER_AGENT, TransportPolicy,
+};
 use cow_sdk_core::{
     Amount, AppDataHash, CoreError, DEFAULT_HTTP_TIMEOUT, HttpClientPolicy, ValidationError,
 };
@@ -11,9 +14,6 @@ use cow_sdk_orderbook::{
     ApiContextOverride, AppDataObject, CowEnv, GetOrdersRequest, GetTradesRequest,
     HashMismatchStage, OrderCancellations, OrderCreation, OrderQuoteSide, OrderStatus,
     OrderbookError, SigningScheme, SolverCompetitionResponse, SupportedChainId,
-};
-use cow_sdk_core::transport::policy::{
-    DEFAULT_MAX_ATTEMPTS, DEFAULT_ORDERBOOK_USER_AGENT, TransportPolicy,
 };
 use serde_json::json;
 use wiremock::{
@@ -1046,13 +1046,13 @@ async fn shared_client_fans_requests_across_multiple_orderbook_instances() {
 mod recording_transport {
     use std::sync::Arc;
 
+    use cow_sdk_core::transport::policy::TransportPolicy;
     use cow_sdk_core::{Amount, ApiContext, HttpTransport, SupportedChainId};
     use cow_sdk_orderbook::{
         CowEnv, OrderCancellations, OrderCreation, OrderQuoteSide, OrderbookApi, OrderbookError,
         OrderbookRejection, SigningScheme,
     };
     use cow_sdk_test_utils::mocks::{Canned, RecordingHttpTransport};
-    use cow_sdk_core::transport::policy::TransportPolicy;
 
     use crate::common::{
         sample_buy_token, sample_order_uid, sample_owner, sample_quote_response_json,

@@ -77,7 +77,10 @@ async fn swap_builder_quote_then_submit_matches_flat_post_swap_order() {
     assert_eq!(fluent_sent.sell_amount, flat_sent.sell_amount);
     assert_eq!(fluent_sent.buy_amount, flat_sent.buy_amount);
     assert_eq!(fluent.signing_scheme, flat.signing_scheme);
-    assert_eq!(fluent.order_to_sign.sell_token, flat.order_to_sign.sell_token);
+    assert_eq!(
+        fluent.order_to_sign.sell_token,
+        flat.order_to_sign.sell_token
+    );
     assert_eq!(fluent.order_to_sign.buy_token, flat.order_to_sign.buy_token);
 }
 
@@ -90,7 +93,10 @@ async fn swap_builder_injects_orderbook_without_arc_and_drives_async_signer() {
     let trading = Trading::builder()
         .chain_id(SupportedChainId::Sepolia)
         .app_code("cow-rs-swap-lifecycle")
-        .orderbook(MockOrderbook::new(SupportedChainId::Sepolia, sell_quote_response()))
+        .orderbook(MockOrderbook::new(
+            SupportedChainId::Sepolia,
+            sell_quote_response(),
+        ))
         .build()
         .expect("build should succeed without an Arc at the call site");
 
@@ -120,7 +126,10 @@ async fn swap_builder_execute_is_one_call_and_transposition_safe() {
     let trading = Trading::builder()
         .chain_id(SupportedChainId::Sepolia)
         .app_code("cow-rs-swap-lifecycle")
-        .orderbook(MockOrderbook::new(SupportedChainId::Sepolia, sell_quote_response()))
+        .orderbook(MockOrderbook::new(
+            SupportedChainId::Sepolia,
+            sell_quote_response(),
+        ))
         .build()
         .expect("build should succeed");
 

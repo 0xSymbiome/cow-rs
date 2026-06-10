@@ -16,15 +16,14 @@
 use std::sync::Arc;
 
 use cow_sdk_core::{
-    Address, AddressPerChain, Amount, AppCodeError, BuyTokenDestination, CowEnv,
-    OrderKind, OrderUid, SellTokenSource, SupportedChainId,
+    Address, AddressPerChain, Amount, AppCodeError, BuyTokenDestination, CowEnv, OrderKind,
+    OrderUid, SellTokenSource, SupportedChainId,
 };
 use cow_sdk_orderbook::{OrderbookClient, SigningScheme};
 use cow_sdk_trading::{
-    LimitTradeParameters, OrderTraderParameters,
-    PostTradeAdditionalParams, QuoterParameters, SlippageToleranceRequest,
-    SlippageToleranceResponse, TradeAdvancedSettings, TradeParameters, TraderParameters,
-    TradingOptions,
+    LimitTradeParameters, OrderTraderParameters, PostTradeAdditionalParams, QuoterParameters,
+    SlippageToleranceRequest, SlippageToleranceResponse, TradeAdvancedSettings, TradeParameters,
+    TraderParameters, TradingOptions,
 };
 
 const VALID_ADDRESS: &str = "0x1111111111111111111111111111111111111111";

@@ -9,9 +9,9 @@
 //! [`crate::cow_shed::encode_execute_hooks_calldata`]) remain public for advanced and
 //! digest-only callers.
 
+use crate::{DeploymentChainId, RecoverableSignature};
 use alloy_primitives::{Address, B256, Bytes, U256};
 use cow_sdk_app_data::Hook;
-use crate::{DeploymentChainId, RecoverableSignature};
 use cow_sdk_core::{Address as CoreAddress, HexData, Signer, TypedDataPayload};
 
 use crate::cow_shed::address::{cow_shed_factory, proxy_for};

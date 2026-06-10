@@ -18,11 +18,11 @@ use std::time::Duration;
 
 use serde_json::{Value, json};
 
+use cow_sdk_core::transport::policy::{RequestRateLimiter, RetryPolicy, TransportPolicy};
 use cow_sdk_orderbook::{
     Address, ApiContext, AppDataHash, CowEnv, ExternalHostPolicy, OrderUid, OrderbookApi,
     SupportedChainId,
 };
-use cow_sdk_core::transport::policy::{RequestRateLimiter, RetryPolicy, TransportPolicy};
 
 pub use cow_sdk_test_utils::builders::address;
 

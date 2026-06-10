@@ -7,7 +7,9 @@
 //! drift, including the Gnosis Chain factory/implementation divergence.
 
 use cow_sdk_contracts::DeploymentChainId;
-use cow_sdk_contracts::cow_shed::{CowShedVersion, cow_shed_factory, cow_shed_implementation, proxy_for};
+use cow_sdk_contracts::cow_shed::{
+    CowShedVersion, cow_shed_factory, cow_shed_implementation, proxy_for,
+};
 use serde::Deserialize;
 
 mod cow_shed_common;

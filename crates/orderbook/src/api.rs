@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use cow_sdk_core::{CoreError, HttpClientPolicy, HttpTransport, ValidationError};
 use cow_sdk_core::transport::policy::{RequestRateLimiter, RetryPolicy, TransportPolicy};
+use cow_sdk_core::{CoreError, HttpClientPolicy, HttpTransport, ValidationError};
 use http::header::{HeaderMap, HeaderValue};
 use serde_json::json;
 

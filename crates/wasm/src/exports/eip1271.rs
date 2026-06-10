@@ -1,6 +1,6 @@
+use crate::helpers as pure;
 #[cfg(feature = "trading")]
 use async_trait::async_trait;
-use crate::helpers as pure;
 use js_sys::Function;
 use wasm_bindgen::prelude::*;
 

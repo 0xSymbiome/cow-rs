@@ -70,6 +70,10 @@ pub mod wait;
 pub use allowance::{approval_transaction, approve_cow_protocol, cow_protocol_allowance};
 pub use app_data::{build_app_data, merge_and_seal_app_data, params_from_doc};
 pub use cancel::off_chain_cancel_order;
+pub use client::{
+    AppCodeSet, AppCodeUnset, ChainIdSet, ChainIdUnset, QuotedSwap, Set, SwapBuilder, Trading,
+    TradingBuilder, Unset,
+};
 pub use error::{OrderbookContextValue, TradingError};
 pub use onchain::{
     EthFlowTransaction, cancel_order_onchain, eth_flow_transaction,
@@ -85,10 +89,6 @@ pub use post::{
     verify_eip1271_order_signature,
 };
 pub use quote::{quote_only, quote_results};
-pub use client::{
-    AppCodeSet, AppCodeUnset, ChainIdSet, ChainIdUnset, QuotedSwap, Set, SwapBuilder, Trading,
-    TradingBuilder, Unset,
-};
 pub use slippage::{
     DEFAULT_QUOTE_VALIDITY, DEFAULT_SLIPPAGE_BPS, GAS_LIMIT_DEFAULT, GAS_MARGIN_PERCENT,
     MAX_SLIPPAGE_BPS, calculate_quote_amounts_and_costs, default_slippage_bps, partner_fee_bps,
@@ -97,10 +97,9 @@ pub use slippage::{
 };
 pub use types::{
     AllowanceParameters, ApprovalParameters, Eip1271VerificationParameters,
-    EthFlowOrderExistsChecker, LimitTradeParameters,
-    LimitTradeParametersFromQuote, OrderPostingResult, OrderTraderParameters,
-    PostTradeAdditionalParams, QuoteRequestOverride, QuoteResults,
-    QuoterParameters, SlippageSuggestionProvider, SlippageToleranceRequest,
+    EthFlowOrderExistsChecker, LimitTradeParameters, LimitTradeParametersFromQuote,
+    OrderPostingResult, OrderTraderParameters, PostTradeAdditionalParams, QuoteRequestOverride,
+    QuoteResults, QuoterParameters, SlippageSuggestionProvider, SlippageToleranceRequest,
     SlippageToleranceResponse, TradeAdvancedSettings, TradeParameters, TraderParameters,
     TradingAppDataInfo, TradingOptions,
 };

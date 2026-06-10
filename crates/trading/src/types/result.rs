@@ -13,7 +13,9 @@ use cow_sdk_core::{
     Address, Amount, AppDataHash, CowEnv, OrderData, OrderUid, QuoteAmountsAndCosts,
     SupportedChainId, TransactionHash,
 };
-use cow_sdk_orderbook::{OrderQuoteResponse, OrderbookClient, OrderbookRuntimeBinding, SigningScheme};
+use cow_sdk_orderbook::{
+    OrderQuoteResponse, OrderbookClient, OrderbookRuntimeBinding, SigningScheme,
+};
 use cow_sdk_signing::OrderTypedData;
 
 use super::params::TradeParameters;

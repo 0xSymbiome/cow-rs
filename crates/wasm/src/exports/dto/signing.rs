@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
-use cow_sdk_core::{TypedDataDomain, TypedDataField, TypedDataPayload};
 use crate::helpers as pure;
+use cow_sdk_core::{TypedDataDomain, TypedDataField, TypedDataPayload};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tsify::Tsify;

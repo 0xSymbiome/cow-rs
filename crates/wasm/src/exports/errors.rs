@@ -1,3 +1,4 @@
+use crate::helpers::errors::PureError;
 #[cfg(feature = "app-data")]
 use cow_sdk_app_data::AppDataError;
 #[cfg(any(feature = "orderbook", feature = "trading"))]
@@ -7,7 +8,6 @@ use cow_sdk_core::{
 };
 #[cfg(feature = "orderbook")]
 use cow_sdk_orderbook::{OrderbookError, OrderbookRejectionCategory};
-use crate::helpers::errors::PureError;
 #[cfg(feature = "signing")]
 use cow_sdk_signing::SigningError;
 #[cfg(feature = "subgraph")]

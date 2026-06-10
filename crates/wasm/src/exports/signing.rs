@@ -9,10 +9,10 @@ use cow_sdk_contracts::settlement::IGPv2Settlement;
 use cow_sdk_contracts::{ContractId, Registry};
 use std::{cell::RefCell, rc::Rc};
 
+use crate::helpers as pure;
 use cow_sdk_core::{Address, DigestSigner, Eip1193};
 #[cfg(feature = "cancellation")]
 use cow_sdk_core::{Amount, Hash32, HexData, OrderUid, TransactionRequest};
-use crate::helpers as pure;
 use cow_sdk_signing::GeneratedOrderId;
 #[cfg(feature = "cancellation")]
 use cow_sdk_signing::order_cancellations_typed_data_payload;

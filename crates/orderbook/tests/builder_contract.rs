@@ -10,13 +10,13 @@
 
 use std::sync::Arc;
 
+use cow_sdk_core::transport::policy::{RetryPolicy, TransportPolicy};
 use cow_sdk_core::{
     ApiContext, CowEnv, HttpTransport, REDACTED_PLACEHOLDER, RedactedUrlMap, ReqwestTransport,
     ReqwestTransportConfig, SupportedChainId,
 };
 use cow_sdk_orderbook::{EnvBaseUrlOverrides, ExternalHostPolicy, OrderbookApi};
 use cow_sdk_test_utils::mocks::{Canned, RecordingHttpTransport, StubHttpTransport};
-use cow_sdk_core::transport::policy::{RetryPolicy, TransportPolicy};
 
 #[test]
 fn build_with_required_inputs_yields_a_typed_api() {

@@ -46,12 +46,12 @@ pub mod time;
 )]
 pub use classify::ReqwestErrorClassifier;
 pub use classify::{ErrorClassifier, NetworkErrorKind};
-pub use jitter::JitterStrategy;
 pub use config::{
     DEFAULT_IPFS_USER_AGENT, DEFAULT_ORDERBOOK_USER_AGENT, DEFAULT_SUBGRAPH_USER_AGENT,
     DEFAULT_TRADING_USER_AGENT, IPFS_MAX_RESPONSE_BYTES, SUBGRAPH_MAX_RESPONSE_BYTES,
     TransportPolicy, TransportPolicyBuildError, TransportPolicyBuilder,
 };
+pub use jitter::JitterStrategy;
 pub use rate_limit::{DEFAULT_INTERVAL_LABEL, DEFAULT_TOKENS_PER_INTERVAL};
 pub use rate_limit::{LimiterScope, RequestRateLimiter, RequestRateLimiterBuilder};
 pub use retry::{DEFAULT_MAX_ATTEMPTS, RetryPolicy, RetryPolicyBuilder};

@@ -1,7 +1,7 @@
 use std::error::Error;
 
-use alloy_primitives::Bytes;
 use crate::DeploymentChainId;
+use alloy_primitives::Bytes;
 use thiserror::Error;
 
 /// Signature path that failed COW Shed validation.

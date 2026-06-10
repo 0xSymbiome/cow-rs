@@ -1,5 +1,4 @@
 #![cfg(feature = "cow-shed")]
-
 #![cfg(feature = "tracing")]
 //! Telemetry contract for the COW Shed signing entry point.
 //!
@@ -9,8 +8,8 @@
 //! payload material.
 
 use alloy_primitives::{Address, B256, Bytes, U256};
-use cow_sdk_core::SupportedChainId;
 use cow_sdk_contracts::cow_shed::{Call, CowShedHooks, CowShedVersion};
+use cow_sdk_core::SupportedChainId;
 use cow_sdk_test_utils::mocks::RecordingSigner;
 use cow_sdk_test_utils::trace::TraceCapture;
 

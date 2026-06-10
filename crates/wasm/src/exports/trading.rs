@@ -1,19 +1,19 @@
 use std::sync::Arc;
 
+use crate::helpers as pure;
 use cow_sdk_contracts::eth_flow::{EthFlowOrderData, encode_create_order_calldata};
+use cow_sdk_core::transport::policy::TransportPolicy;
 use cow_sdk_core::{
     Address, Amount, BlockInfo, ContractCall, ContractHandle, EVM_NATIVE_CURRENCY_ADDRESS, HexData,
     ProtocolOptions, Provider, Signer, TransactionBroadcast, TransactionHash, TransactionReceipt,
     TransactionRequest, TypedDataDomain, TypedDataField,
 };
 use cow_sdk_orderbook::{OrderbookApi, SigningScheme};
-use crate::helpers as pure;
 use cow_sdk_signing::eip1271::Eip1271SignatureProvider;
 use cow_sdk_trading::{
     AllowanceParameters, GAS_LIMIT_DEFAULT, LimitTradeParameters, PostTradeAdditionalParams,
     QuoteRequestOverride, QuoteResults, TradeAdvancedSettings, TradeParameters, Trading,
 };
-use cow_sdk_core::transport::policy::TransportPolicy;
 use js_sys::Function;
 use wasm_bindgen::prelude::*;
 

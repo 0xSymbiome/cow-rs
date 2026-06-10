@@ -1,10 +1,10 @@
 use std::{future::Future, sync::Arc, time::Duration};
 
-use cow_sdk_core::{HttpTransport, Redacted, TransportError};
 use cow_sdk_core::transport::policy::{
     AttemptOutcome as RetryOutcome, LimiterKey, RequestRateLimiter, RetryPolicy, RetrySignal,
     retry_after_from_headers, run_with_retry,
 };
+use cow_sdk_core::{HttpTransport, Redacted, TransportError};
 use http::header::{ACCEPT, CONTENT_TYPE, HeaderMap};
 use serde::de::DeserializeOwned;
 use serde_json::Value;

@@ -11,9 +11,9 @@
     reason = "not every test binary that includes this module uses every helper"
 )]
 
+use cow_sdk_core::transport::policy::{DEFAULT_SUBGRAPH_USER_AGENT, TransportPolicy};
 use cow_sdk_core::{HttpClientPolicy, SupportedChainId};
 use cow_sdk_subgraph::{ExternalHostPolicy, SubgraphApi, SubgraphApiBaseUrls};
-use cow_sdk_core::transport::policy::{DEFAULT_SUBGRAPH_USER_AGENT, TransportPolicy};
 
 /// Single-entry base-URL map routing mainnet at `uri`.
 pub fn loopback_base_urls(uri: String) -> SubgraphApiBaseUrls {

@@ -113,7 +113,6 @@ pub use cow_sdk_app_data as app_data;
 #[cfg_attr(docsrs, doc(cfg(feature = "browser-wallet")))]
 pub use cow_sdk_browser_wallet as browser_wallet;
 pub use cow_sdk_contracts as contracts;
-pub use cow_sdk_core as core;
 /// Opt-in COW Shed account-abstraction hook helpers (proxy derivation,
 /// EIP-712 signing, factory calldata, and the [`cow_shed::CowShedHooks`]
 /// orchestrator). Behind the off-by-default `cow-shed` feature, so the default
@@ -122,6 +121,7 @@ pub use cow_sdk_core as core;
 #[cfg(feature = "cow-shed")]
 #[cfg_attr(docsrs, doc(cfg(feature = "cow-shed")))]
 pub use cow_sdk_contracts::cow_shed;
+pub use cow_sdk_core as core;
 /// Shared HTTP retry, rate-limit, and classification policy.
 pub mod http {
     pub use cow_sdk_core::transport::policy::{
@@ -212,11 +212,11 @@ pub use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
 /// the host or for `wasm32`. The `wasm32`-only JavaScript ABI lives under
 /// `cow_sdk::wasm::exports`.
 pub mod wasm {
-    /// Host-safe protocol helper modules shared with the WASM crate.
-    pub use cow_sdk_wasm::helpers as pure_helpers;
     /// JavaScript ABI surface, available only on `wasm32` targets.
     #[cfg(target_arch = "wasm32")]
     pub use cow_sdk_wasm::exports;
+    /// Host-safe protocol helper modules shared with the WASM crate.
+    pub use cow_sdk_wasm::helpers as pure_helpers;
 }
 
 use thiserror::Error;

@@ -35,15 +35,15 @@
 
 use std::sync::Arc;
 
+#[cfg(not(target_arch = "wasm32"))]
+use cow_sdk_core::transport::policy::DEFAULT_SUBGRAPH_USER_AGENT;
+use cow_sdk_core::transport::policy::TransportPolicy;
 use cow_sdk_core::{
     ExternalHostPolicy, HttpTransport, Redacted, SupportedChainId, canonical_subgraph_hosts,
     validate_external_service_url,
 };
 #[cfg(not(target_arch = "wasm32"))]
 use cow_sdk_core::{ReqwestTransport, ReqwestTransportConfig, TransportError, TransportErrorClass};
-#[cfg(not(target_arch = "wasm32"))]
-use cow_sdk_core::transport::policy::DEFAULT_SUBGRAPH_USER_AGENT;
-use cow_sdk_core::transport::policy::TransportPolicy;
 #[cfg(not(target_arch = "wasm32"))]
 use reqwest::Client;
 

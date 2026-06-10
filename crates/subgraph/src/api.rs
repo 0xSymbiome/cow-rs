@@ -2,13 +2,13 @@
 
 use std::{fmt, sync::Arc};
 
-use cow_sdk_core::{
-    HttpClientPolicy, HttpTransport, Redacted, RedactedOptionalUrlMap, SupportedChainId,
-    TransportError, TransportErrorClass, redact_response_body,
-};
 use cow_sdk_core::transport::policy::{
     AttemptOutcome as RetryOutcome, LimiterKey, RequestRateLimiter, RetrySignal, TransportPolicy,
     run_with_retry,
+};
+use cow_sdk_core::{
+    HttpClientPolicy, HttpTransport, Redacted, RedactedOptionalUrlMap, SupportedChainId,
+    TransportError, TransportErrorClass, redact_response_body,
 };
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::{Value, json};
@@ -430,7 +430,12 @@ impl SubgraphApi {
         })?;
 
         if !response.errors.is_empty() {
-            return Err(graphql_error(&public_api, chain_id, &request, response.errors));
+            return Err(graphql_error(
+                &public_api,
+                chain_id,
+                &request,
+                response.errors,
+            ));
         }
 
         response
@@ -612,7 +617,10 @@ pub(crate) fn build_prod_config() -> SubgraphApiBaseUrls {
         .map(|(chain_id, subgraph_id)| {
             (
                 *chain_id,
-                Some(build_prod_gateway_url(REDACTED_API_KEY_SEGMENT, subgraph_id)),
+                Some(build_prod_gateway_url(
+                    REDACTED_API_KEY_SEGMENT,
+                    subgraph_id,
+                )),
             )
         })
         .chain(

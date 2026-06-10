@@ -2,7 +2,6 @@
 
 use std::time::{Duration, SystemTime};
 
-use cow_sdk_core::{CancellationToken, DEFAULT_HTTP_TIMEOUT, HttpClientPolicy};
 use cow_sdk_core::transport::policy::{
     DEFAULT_IPFS_USER_AGENT, DEFAULT_ORDERBOOK_USER_AGENT, DEFAULT_SUBGRAPH_USER_AGENT,
     DEFAULT_TRADING_USER_AGENT, JitterStrategy, LimiterScope, NetworkErrorKind, RETRYABLE_STATUSES,
@@ -11,6 +10,7 @@ use cow_sdk_core::transport::policy::{
 };
 #[cfg(feature = "reqwest-classifier")]
 use cow_sdk_core::transport::policy::{ErrorClassifier, ReqwestErrorClassifier};
+use cow_sdk_core::{CancellationToken, DEFAULT_HTTP_TIMEOUT, HttpClientPolicy};
 use proptest::prelude::*;
 use url::Url;
 

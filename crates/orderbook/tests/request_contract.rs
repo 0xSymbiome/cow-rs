@@ -9,6 +9,9 @@ use std::time::{Duration, Instant};
 
 #[cfg(feature = "tracing")]
 use cow_sdk_core::Amount;
+use cow_sdk_core::transport::policy::{
+    INTERNAL_SERVER_ERROR, JitterStrategy, RequestRateLimiter, RetryPolicy, TOO_MANY_REQUESTS,
+};
 use cow_sdk_core::{Cancellable, HttpTransport, ReqwestTransport, ReqwestTransportConfig};
 use cow_sdk_orderbook::OrderbookError;
 use cow_sdk_orderbook::error::classify_reqwest_error;
@@ -20,9 +23,6 @@ use cow_sdk_orderbook::request::{
 use cow_sdk_orderbook::{CowEnv, SupportedChainId};
 #[cfg(feature = "tracing")]
 use cow_sdk_orderbook::{OrderCreation, OrderQuoteRequest, OrderQuoteSide, SigningScheme};
-use cow_sdk_core::transport::policy::{
-    INTERNAL_SERVER_ERROR, JitterStrategy, RequestRateLimiter, RetryPolicy, TOO_MANY_REQUESTS,
-};
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 
 fn build_shared_transport() -> Arc<dyn HttpTransport + Send + Sync> {

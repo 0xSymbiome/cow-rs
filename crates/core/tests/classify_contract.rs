@@ -58,7 +58,9 @@ fn response_too_large_is_never_retried() {
 mod reqwest_classifier {
     use std::time::Duration;
 
-    use cow_sdk_core::transport::policy::{ErrorClassifier, NetworkErrorKind, ReqwestErrorClassifier};
+    use cow_sdk_core::transport::policy::{
+        ErrorClassifier, NetworkErrorKind, ReqwestErrorClassifier,
+    };
 
     /// A malformed URL at build-time yields a `Builder` or `Request` error,
     /// never `Other`. This pins the documented `is_builder` / `is_request`
