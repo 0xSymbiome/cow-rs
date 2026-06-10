@@ -44,24 +44,27 @@ use cow_sdk_trading::{
 use crate::common::{
     ALT_RECEIVER, CountingSigner, MockEip1271Provider, MockEthFlowChecker, MockOrderbook,
     MockSigner, OWNER, address, buy_quote_response, sample_limit_parameters,
-    sample_trade_parameters, sample_trader_parameters, sell_quote_response, trading_fixture,
+    sample_trade_parameters, sample_trader_parameters, sell_quote_response,
 };
 
 #[tokio::test]
 async fn swap_posting_matches_pinned_sell_and_buy_adjustment_vectors() {
-    let fixture = trading_fixture();
-    let sell_case = fixture["cases"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .find(|case| case["id"] == "trading-sell-order-amount-adjustment")
-        .unwrap();
-    let buy_case = fixture["cases"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .find(|case| case["id"] == "trading-buy-order-amount-adjustment")
-        .unwrap();
+    // Convention pins (ADR 0066), self-derived from the mock quote builders in
+    // `common/mod.rs` (slippage_bps = 50 via `sample_trade_parameters`) — not
+    // transcribed from upstream, so the expected values live next to the
+    // assertion with their derivation rather than in a parity fixture:
+    //   sell sell_amount = quote_sell + quote_fee                (fee-inclusive)
+    //     98646335338956442 + 1353664661043558 = 100000000000000000
+    //   sell buy_amount  = quote_buy * (10000 - bps) / 10000     (floor)
+    //     30000000000000000000 * 9950 / 10000 = 29850000000000000000
+    //   buy sell_amount  = (quote_sell + quote_fee) * (10000 + bps) / 10000  (floor)
+    //     (1005456782512030400 + 1112955650440102) * 10050 / 10000 = 1011602586853282854
+    //   buy buy_amount   = quote_buy                              (held fixed)
+    //     400000000000000000000
+    const SELL_EXPECTED_SELL_AMOUNT: &str = "100000000000000000";
+    const SELL_EXPECTED_BUY_AMOUNT: &str = "29850000000000000000";
+    const BUY_EXPECTED_SELL_AMOUNT: &str = "1011602586853282854";
+    const BUY_EXPECTED_BUY_AMOUNT: &str = "400000000000000000000";
 
     let trader = sample_trader_parameters();
     let signer = MockSigner::default();
@@ -80,12 +83,9 @@ async fn swap_posting_matches_pinned_sell_and_buy_adjustment_vectors() {
 
     assert_eq!(
         sell_order.sell_amount.to_string(),
-        sell_case["expected"]["sell_amount"].as_str().unwrap()
+        SELL_EXPECTED_SELL_AMOUNT
     );
-    assert_eq!(
-        sell_order.buy_amount.to_string(),
-        sell_case["expected"]["buy_amount"].as_str().unwrap()
-    );
+    assert_eq!(sell_order.buy_amount.to_string(), SELL_EXPECTED_BUY_AMOUNT);
     assert_eq!(
         sell_result.order_to_sign.sell_amount,
         sell_order.sell_amount
@@ -104,14 +104,8 @@ async fn swap_posting_matches_pinned_sell_and_buy_adjustment_vectors() {
         .cloned()
         .expect("buy order must be recorded");
 
-    assert_eq!(
-        buy_order.sell_amount.to_string(),
-        buy_case["expected"]["sell_amount"].as_str().unwrap()
-    );
-    assert_eq!(
-        buy_order.buy_amount.to_string(),
-        buy_case["expected"]["buy_amount"].as_str().unwrap()
-    );
+    assert_eq!(buy_order.sell_amount.to_string(), BUY_EXPECTED_SELL_AMOUNT);
+    assert_eq!(buy_order.buy_amount.to_string(), BUY_EXPECTED_BUY_AMOUNT);
     assert_eq!(buy_result.order_to_sign.sell_amount, buy_order.sell_amount);
     assert_eq!(buy_result.order_to_sign.buy_amount, buy_order.buy_amount);
 }

@@ -16,20 +16,11 @@ use cow_sdk_trading::{
 
 use crate::common::{
     MockEthFlowChecker, MockOrderbook, MockSigner, MockSlippageProvider, OWNER, address,
-    app_data_hash, sample_trade_parameters, sell_quote_response, trading_fixture,
+    app_data_hash, sample_trade_parameters, sell_quote_response,
 };
 
 #[tokio::test]
 async fn quote_app_data_and_request_shape_follow_pinned_contract() {
-    let fixture = trading_fixture();
-    assert!(
-        fixture["cases"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .any(|case| case["id"] == "trading-quote-app-data-enrichment")
-    );
-
     let orderbook = MockOrderbook::new(
         cow_sdk_core::SupportedChainId::Sepolia,
         sell_quote_response(),

@@ -222,12 +222,20 @@ impl<'a, SellToken, BuyToken, AmountState> SwapBuilder<'a, SellToken, BuyToken, 
 }
 
 impl<'a> SwapBuilder<'a, Set, Set, Set> {
+    /// Converts the fully-set builder into [`TradeParams`].
+    ///
+    /// # Panics
+    ///
+    /// Never in practice: this method is only reachable from the
+    /// `<Set, Set, Set>` typestate, which guarantees the three required
+    /// fields were assigned before the conversion runs.
     #[allow(
         clippy::missing_const_for_fn,
         reason = "the intermediate TradeParams carries Option<AddressPerChain> whose destructor runs on each `with_*` rebind, which is not const-evaluable"
     )]
     fn to_trade_parameters(&self) -> TradeParams {
-        // The three required fields are guaranteed `Some` by the `<Set, Set, Set>` typestate.
+        // SAFETY: the `<Set, Set, Set>` typestate guarantees the three
+        // required fields are `Some` before this conversion can be called.
         let mut params = TradeParams::new(
             self.kind,
             self.sell_token.expect("sell_token typestate is Set"),
