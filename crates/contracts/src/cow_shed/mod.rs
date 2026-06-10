@@ -6,16 +6,22 @@
 //! account-abstraction surface or its `cow-sdk-app-data` dependency.
 //!
 //! - **Building blocks** — deterministic, provider-free primitives: proxy
-//!   address derivation ([`proxy_of`], [`proxy_for`]), EIP-712 domain and
-//!   signing hash ([`cow_shed_eip712_domain`], [`execute_hooks_signing_hash`]),
-//!   the typed-data payload ([`execute_hooks_typed_data_payload`]), and ABI
-//!   calldata builders ([`encode_execute_hooks_calldata_signed`] for an EOA
-//!   signature, [`encode_execute_hooks_calldata_with_signature`] for any owner
-//!   including EIP-1271).
-//! - **Orchestrator** — [`CowShedHooks`], which composes those blocks plus an
-//!   owned [`Signer`](cow_sdk_core::Signer) into a single
-//!   [`sign`](CowShedHooks::sign) call returning a ready-to-submit
-//!   [`SignedCowShedCall`] that can also be attached to a `CoW` order as a hook.
+//!   address derivation ([`proxy_of`](crate::cow_shed::proxy_of),
+//!   [`proxy_for`](crate::cow_shed::proxy_for)), EIP-712 domain and signing
+//!   hash ([`cow_shed_eip712_domain`](crate::cow_shed::cow_shed_eip712_domain),
+//!   [`execute_hooks_signing_hash`](crate::cow_shed::execute_hooks_signing_hash)),
+//!   the typed-data payload
+//!   ([`execute_hooks_typed_data_payload`](crate::cow_shed::execute_hooks_typed_data_payload)),
+//!   and ABI calldata builders
+//!   ([`encode_execute_hooks_calldata_signed`](crate::cow_shed::encode_execute_hooks_calldata_signed)
+//!   for an EOA signature,
+//!   [`encode_execute_hooks_calldata_with_signature`](crate::cow_shed::encode_execute_hooks_calldata_with_signature)
+//!   for any owner including EIP-1271).
+//! - **Orchestrator** — [`CowShedHooks`](crate::cow_shed::CowShedHooks), which
+//!   composes those blocks plus an owned [`Signer`](cow_sdk_core::Signer) into
+//!   a single [`sign`](crate::cow_shed::CowShedHooks::sign) call returning a
+//!   ready-to-submit [`SignedCowShedCall`](crate::cow_shed::SignedCowShedCall)
+//!   that can also be attached to a `CoW` order as a hook.
 //!
 //! The module never owns an RPC provider, service loop, persistence, gas
 //! estimation, or automatic order submission: signing is delegated to the

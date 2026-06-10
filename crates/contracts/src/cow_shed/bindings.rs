@@ -4,7 +4,7 @@
 //! that back the COW Shed wire surface. The `alloy_sol_types::sol!` macro
 //! requires every referenced struct to be declared in the same macro scope, so
 //! the EIP-712 typed-data structs ([`Call`], [`ExecuteHooks`]) and the on-chain
-//! ABI interfaces ([`COWShed`], [`COWShedFactory`]) are co-located in one block.
+//! ABI interfaces (`COWShed`, `COWShedFactory`) are co-located in one block.
 //! [`types::Call`](crate::cow_shed::types::Call) re-exports the canonical `Call`
 //! as the `cow_sdk_contracts::cow_shed::Call` alias.
 //!

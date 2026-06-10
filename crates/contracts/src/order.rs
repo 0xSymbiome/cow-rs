@@ -8,7 +8,7 @@
 //! EIP-712 field tables, and the macro-emitted `Order` / `OrderCancellations`
 //! codec structs.
 //!
-//! The generated `sol!` structs live in the private [`sol`] submodule because
+//! The generated `sol!` structs live in the private `sol` submodule because
 //! the codec `OrderCancellations` shares its name with the public domain
 //! [`OrderCancellations`] message type. This crate owns no public order *type*
 //! of its own — the user-domain order type is [`cow_sdk_core::OrderData`] — and

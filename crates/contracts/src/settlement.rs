@@ -1,6 +1,6 @@
 //! `GPv2Settlement` ABI binding and fail-closed event decoding.
 //!
-//! This module owns the typed `GPv2Settlement` call binding ([`IGPv2Settlement`],
+//! This module owns the typed `GPv2Settlement` call binding (`IGPv2Settlement`,
 //! whose `setPreSignature` and `invalidateOrder` calls the SDK encodes) and a
 //! fail-closed decoder for the settlement event surface.
 //!
