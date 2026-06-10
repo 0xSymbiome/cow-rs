@@ -61,7 +61,8 @@ After that, branch by goal through the full scenario table below.
 | `alloy_trading_full_flow` | Invoke allowance, approval receipt waiting, native-currency wrapping (`wrap_interaction`), and pre-sign Trading async boundaries through `Client` |
 
 Subgraph scenarios reach the subgraph surface through the `cow-sdk` `subgraph`
-feature, the same way the other scenarios use the root facade.
+feature, which re-exports the `cow-sdk-subgraph` crate, the same way the other
+scenarios use the root facade.
 
 ### Test Doubles
 

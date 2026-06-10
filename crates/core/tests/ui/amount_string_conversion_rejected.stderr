@@ -1,16 +1,16 @@
-error[E0277]: the trait bound `Amount: From<String>` is not satisfied
+error[E0277]: the trait bound `Amount: From<std::string::String>` is not satisfied
   --> tests/ui/amount_string_conversion_rejected.rs:13:39
    |
 13 |     let _: Amount = String::from("1").into();
-   |                                       ^^^^ the trait `From<String>` is not implemented for `Amount`
+   |                                       ^^^^ the trait `From<std::string::String>` is not implemented for `Amount`
    |
    = help: the following other types implement trait `From<T>`:
-             `Amount` implements `From<ruint::Uint<256, 4>>`
+             `Amount` implements `From<Uint<256, 4>>`
              `Amount` implements `From<u128>`
              `Amount` implements `From<u32>`
              `Amount` implements `From<u64>`
              `Amount` implements `From<usize>`
-   = note: required for `String` to implement `Into<Amount>`
+   = note: required for `std::string::String` to implement `Into<Amount>`
 
 error[E0277]: the trait bound `Amount: From<&str>` is not satisfied
   --> tests/ui/amount_string_conversion_rejected.rs:14:25
@@ -19,7 +19,7 @@ error[E0277]: the trait bound `Amount: From<&str>` is not satisfied
    |                         ^^^^ the trait `From<&str>` is not implemented for `Amount`
    |
    = help: the following other types implement trait `From<T>`:
-             `Amount` implements `From<ruint::Uint<256, 4>>`
+             `Amount` implements `From<Uint<256, 4>>`
              `Amount` implements `From<u128>`
              `Amount` implements `From<u32>`
              `Amount` implements `From<u64>`

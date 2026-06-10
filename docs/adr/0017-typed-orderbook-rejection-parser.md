@@ -110,7 +110,7 @@ on the happy diagnostic path.
   coarse `category()`: rejected. The recovery action is consumer policy, not a
   property of the rejection: the same rejection is a skip for an automated
   strategy loop and an abort for a one-shot call, so the SDK cannot name it
-  without mis-serving one of them. The coarse `category()` (the action class)
+  without serving one of them poorly. The coarse `category()` (the action class)
   and the orderbook retry verdict (`is_retryable()` / `backoff_hint()`) already
   let a consumer derive its own action; a further classification axis would add
   public surface without removing that consumer-side decision.
