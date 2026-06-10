@@ -1,7 +1,7 @@
 # Source-Lock Provenance Audit
 
 Status: Current
-Last reviewed: 2026-06-09
+Last reviewed: 2026-06-10
 Owning surface: source-lock provenance and release preflight authority
 Refresh trigger: Changes to `parity/source-lock.yaml`, vendored parity OpenAPI or fixture provenance, any change to the maintained exclusion-list policy for historical progress snapshots, or any newly archived progress snapshot that should stay outside active preflight authority
 Related docs:
@@ -188,7 +188,6 @@ Primary implementation points:
 
 - `parity/source-lock.yaml`
 - `parity/openapi/coverage.yaml`
-- `parity/openapi/solver-execution-inventory.yaml`
 - `parity/fixtures/orderbook/solver_execution.json`
 - `crates/orderbook/src/types/order.rs`
 - `.cargo/config.toml`

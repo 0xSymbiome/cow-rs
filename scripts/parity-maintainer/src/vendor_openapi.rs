@@ -4,7 +4,6 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use chrono::{SecondsFormat, Utc};
 use clap::Args;
 
 use crate::{load_source_lock, repository_entry, validate_repository_root};
@@ -40,10 +39,9 @@ fn vendor_openapi(source_lock: &Path, services_root: &Path, output: &Path) -> Re
             .with_context(|| format!("failed to create {}", parent.display()))?;
     }
 
-    let generated = Utc::now().to_rfc3339_opts(SecondsFormat::Secs, true);
     let stamped = format!(
-        "# Vendored from cowprotocol/services @ {}\n# Path: {}\n# Generated: {}\n# DO NOT EDIT - regenerate via `parity-maintainer vendor-openapi`.\n{}",
-        services_repo.commit, SERVICES_OPENAPI_PATH, generated, raw
+        "# Vendored from cowprotocol/services @ {}\n# Path: {}\n# DO NOT EDIT - regenerate via `parity-maintainer vendor-openapi`.\n{}",
+        services_repo.commit, SERVICES_OPENAPI_PATH, raw
     );
     fs::write(output, stamped).with_context(|| format!("failed to write {}", output.display()))?;
 

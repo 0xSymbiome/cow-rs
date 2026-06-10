@@ -21,7 +21,6 @@ entries:
     refresh_triggers:
       paths:
         - crates/contracts/src/cow_shed
-        - parity/cow-shed-invariants.md
   - audit: docs/audit/cow-shed-app-data-integration-audit.md
     owning_surface: COW Shed app-data integration
     refresh_triggers:

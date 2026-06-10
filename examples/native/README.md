@@ -86,7 +86,7 @@ anything non-obvious, without narrating line by line.
 ## Validation
 
 ```text
-cargo check --manifest-path examples/native/Cargo.toml --examples
+cargo check --manifest-path examples/native/Cargo.toml --examples --all-features
 cargo test --manifest-path examples/native/Cargo.toml
 cargo run-deterministic-examples
 ```

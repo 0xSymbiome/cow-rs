@@ -1,7 +1,7 @@
 # Trading App-Data Merge Audit
 
 Status: Current
-Last reviewed: 2026-06-08
+Last reviewed: 2026-06-10
 Owning surface: `cow-sdk-trading` quote-to-post app-data edit path,
 including the public `merge_and_seal_app_data` and
 `params_from_doc` helpers, the private typed merge with its
@@ -52,8 +52,7 @@ This audit covers:
   `crates/trading/src/post/generic.rs`
 
 It does not cover the direct-build app-data path used by
-`cow_sdk_trading::build_app_data` (covered by the parity fixture
-at `parity/fixtures/trading.json`), the IPFS read and write
+`cow_sdk_trading::build_app_data`, the IPFS read and write
 preflight (covered by the app-data preflight contract), or the
 orderbook submission path (covered by the trading order-bounds
 validator audit).
@@ -174,8 +173,6 @@ Primary regression coverage:
 - `crates/trading/tests/app_data_merge_contract.rs::override_with_only_flashloan_survives_into_wire_doc`
 - `crates/trading/tests/app_data_merge_contract.rs::partner_fee_in_advanced_settings_appdata_merges_through_to_post`
 - `crates/trading/tests/post_contract.rs`
-- `crates/trading/tests/parity_contract.rs`
-- `parity/fixtures/trading.json`
 
 Validation surface:
 

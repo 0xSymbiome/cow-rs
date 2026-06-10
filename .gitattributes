@@ -4,13 +4,12 @@
 # Linux checkouts.
 *.snap text eol=lf
 
-# YAML files under parity/openapi/ are byte-compared by Rust tooling:
+# YAML files under parity/openapi/ are read by Rust tooling:
 # `parity/openapi/services-orderbook.yml` is a vendored upstream
-# snapshot whose four-line "Vendored from cowprotocol/services @
-# <commit>" header pins it to a specific upstream commit, and the
-# `*-inventory.yaml` plus `coverage.yaml` manifests are read by the
-# DTO coverage validator. CRLF on any host would change the bytes
-# under both contracts.
+# snapshot whose "Vendored from cowprotocol/services @ <commit>" header
+# pins it to a specific upstream commit, and `coverage.yaml` is the DTO
+# coverage manifest the validator expands in memory. CRLF on any host
+# would change the bytes the vendoring header and parser depend on.
 parity/openapi/**/*.yaml text eol=lf
 parity/openapi/**/*.yml text eol=lf
 
@@ -26,7 +25,7 @@ parity/source-lock.yaml text eol=lf
 
 # COW Shed proxy creation-code is RAW EVM bytecode, not text. Mark it
 # explicitly `binary` so git neither normalises nor diffs the byte
-# stream. It is embedded via `include_bytes!` in cow-sdk-cow-shed, and
+# stream. It is embedded via `include_bytes!` in cow-sdk-contracts, and
 # its derived CREATE2 proxy addresses are locked by the address-parity
 # fixtures.
-crates/cow-shed/src/address/proxy-creation-code/*.bin binary
+crates/contracts/src/cow_shed/address/proxy-creation-code/*.bin binary

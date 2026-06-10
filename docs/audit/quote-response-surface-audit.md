@@ -1,7 +1,7 @@
 # Quote Response Surface Audit
 
 Status: Current
-Last reviewed: 2026-06-07
+Last reviewed: 2026-06-10
 Owning surface: cow-sdk-orderbook quote request/response DTOs and cow-sdk-trading quote projection
 Refresh trigger: changes to the quote DTOs (`OrderQuoteRequest`, `OrderQuoteResponse`, `QuoteData`), the orderbook quote OpenAPI schemas, the quote-amounts projection, or the `priceQuality` default
 Related docs:
@@ -33,8 +33,8 @@ content, or composable-order quoting.
 
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
-| Quote response fidelity | `QuoteData` covers every required `OrderParameters` field — including `gasAmount`, `gasPrice`, `sellTokenPrice`, and `signingScheme` — and is enrolled in `parity/openapi/coverage.yaml` with its own inventory and fixture. | Conforms |
-| Coverage enforcement | `openapi-coverage --validate` checks `QuoteData` against the `OrderParameters` inventory, so a dropped or mistyped quote field fails the gate instead of passing silently. | Conforms |
+| Quote response fidelity | `QuoteData` covers every required `OrderParameters` field — including `gasAmount`, `gasPrice`, `sellTokenPrice`, and `signingScheme` — and is enrolled in `parity/openapi/coverage.yaml`, where its required fields are checked against the vendored spec. | Conforms |
+| Coverage enforcement | `openapi-coverage` checks `QuoteData` against the `OrderParameters` schema expanded in memory from the vendored spec, so a dropped or mistyped quote field fails the gate instead of passing silently. | Conforms |
 | Price-quality default | `OrderQuoteRequest` defaults `priceQuality` to `optimal`, the submittable estimate, and always serializes it. | Conforms |
 | Read-only quote costs | The quote network-cost fields are populated only from the `/quote` response and exposed through accessors; no public builder exposes a setter. | Conforms |
 | Projection parity | The quote-amounts projection matches the orderbook quote-amounts algorithm and is locked by a parity regression test. | Conforms |
@@ -48,12 +48,11 @@ content, or composable-order quoting.
 `cow_sdk_orderbook::QuoteData` is the Rust mirror of the orderbook
 `OrderParameters` schema returned in a `/quote` response. It is enrolled in
 `parity/openapi/coverage.yaml` as `components.schemas.OrderParameters ->
-cow_sdk_orderbook::QuoteData`, with the inventory
-`parity/openapi/order-parameters-inventory.yaml` and the fixture
-`parity/fixtures/orderbook/order_parameters.json`. Because the inventory
-enumerates every `OrderParameters` property, the coverage validator checks that
-`QuoteData` carries each one — closing the gap where the `OrderQuoteResponse`
-`quote` field was validated only as an opaque object.
+cow_sdk_orderbook::QuoteData`, by expanding the `OrderParameters` inventory in memory from the vendored
+spec. Because the expansion enumerates every `OrderParameters` property, the
+coverage validator checks that `QuoteData` carries each one — closing the gap
+where the `OrderQuoteResponse` `quote` field was validated only as an opaque
+object.
 
 The quote response carries the network-fee inputs `gasAmount`, `gasPrice`, and
 `sellTokenPrice`, which the orderbook combines as
@@ -122,8 +121,6 @@ Primary implementation points:
 - `crates/orderbook/src/lib.rs`
 - `crates/trading/src/slippage/amounts.rs`
 - `parity/openapi/coverage.yaml`
-- `parity/openapi/order-parameters-inventory.yaml`
-- `parity/fixtures/orderbook/order_parameters.json`
 - `parity/fixtures/orderbook/order_quote_response.json`
 
 Primary regression coverage:
@@ -138,7 +135,7 @@ Primary regression coverage:
 Validation surface:
 
 ```text
-cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- openapi-coverage --validate
+cargo run --manifest-path scripts/parity-maintainer/Cargo.toml -- openapi-coverage
 cargo test -p cow-sdk-orderbook --test fee_amount_is_not_a_public_builder_setter
 cargo test -p cow-sdk-orderbook --test wire_contract
 cargo test -p cow-sdk-orderbook --doc

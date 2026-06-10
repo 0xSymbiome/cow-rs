@@ -16,9 +16,9 @@ authority, consistent with [ADR 0031](0031-wire-dto-openapi-driven-with-order-au
 The quote response payload is the orderbook `OrderParameters` schema, mirrored
 by `cow_sdk_orderbook::QuoteData`. `QuoteData` covers every required
 `OrderParameters` field — including `gasAmount`, `gasPrice`, `sellTokenPrice`,
-and `signingScheme` — and is enrolled in `parity/openapi/coverage.yaml` with its
-own inventory (`parity/openapi/order-parameters-inventory.yaml`) and fixture
-(`parity/fixtures/orderbook/order_parameters.json`). The `quote` field of
+and `signingScheme` — and is enrolled in `parity/openapi/coverage.yaml`; its schema inventory is
+expanded in memory from the vendored spec and every required field is checked
+against the Rust mirror. The `quote` field of
 `OrderQuoteResponse` is therefore validated for field-level fidelity rather than
 treated as an opaque object.
 
@@ -86,10 +86,9 @@ not a per-field equality check against the request.
 ## Must Remain True
 
 - `QuoteData` covers every required `OrderParameters` field, proven by the
-  `OrderParameters` coverage entry and `openapi-coverage --validate`.
-- The quote response coverage entry, its inventory, and its fixture stay in
-  `parity/openapi/coverage.yaml`, `parity/openapi/order-parameters-inventory.yaml`,
-  and `parity/fixtures/orderbook/order_parameters.json`.
+  `OrderParameters` coverage entry and `openapi-coverage`.
+- The quote response coverage entry stays in `parity/openapi/coverage.yaml`,
+  and its required fields are checked against the vendored spec.
 - `priceQuality` defaults to `optimal` and is always serialized.
 - The quote `expiration` is exposed as the lossless ISO-8601 UTC string and
   cow-rs takes no datetime dependency to parse it; consumers parse with their
@@ -136,7 +135,6 @@ the quote surface.
 - [Quote Response Surface Audit](../audit/quote-response-surface-audit.md)
 - [Wire DTO Coverage Audit](../audit/wire-dto-coverage-audit.md)
 - `parity/openapi/coverage.yaml`
-- `parity/openapi/order-parameters-inventory.yaml`
 
 **Proven by:**
 

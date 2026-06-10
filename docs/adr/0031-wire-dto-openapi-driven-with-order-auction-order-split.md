@@ -21,10 +21,10 @@ covering separate OpenAPI schemas. `protocolFees`, `preInteractions`,
 `postInteractions`, `created`, `executed`, and the auction-side
 `quote: Quote` live on `AuctionOrder`; they do not appear on `Order`.
 
-`parity-maintainer openapi-coverage --validate` parses the OpenAPI
-inventory and validates Rust DTO coverage against required, nullable, and
-default semantics. Hand-written DTO snippets are not authoritative; the
-inventory is.
+`parity-maintainer openapi-coverage` expands each schema's inventory in
+memory from the vendored OpenAPI and validates Rust DTO coverage against
+required, nullable, and default semantics. Hand-written DTO snippets are not
+authoritative; the vendored spec is.
 
 ## Why
 
@@ -38,13 +38,13 @@ keeps each Rust type faithful to its upstream schema.
 ## Must Remain True
 
 - Every public response DTO listed in `parity/openapi/coverage.yaml` has
-  a Rust mirror that passes `openapi-coverage --validate`.
+  a Rust mirror that passes `openapi-coverage`.
 - `OrderParameters` (the quote response payload) is covered by the
   `cow_sdk_orderbook::QuoteData` mirror, so the `OrderQuoteResponse` `quote`
   field is validated for field-level fidelity rather than as an opaque object
   (see [ADR 0058](0058-typed-quote-request-response-surface.md)).
 - `Order` is exercised by a recorded fixture that passes
-  `openapi-coverage --validate`.
+  `openapi-coverage`.
 - `Order` does not carry auction-only fields (`protocolFees`,
   `preInteractions`, `postInteractions`, `created`, `executed`, or an
   auction-side `quote`); those fields belong to the auction schema, which has
@@ -90,7 +90,7 @@ An auction-retrieval method, the `AuctionOrder` mirror, and its quote can return
 additively if `/api/v1/auction` becomes publicly consumable.
 
 `SolverCompetitionResponse` is intentionally not enrolled in the
-`openapi-coverage --validate` manifest. The vendored v2 schema omits a
+`openapi-coverage` manifest. The vendored v2 schema omits a
 `required:` block, so the optionality check would demand an all-`Option` shape;
 the upstream producer (the `Response` struct in `solver_competition_v2.rs`)
 instead treats the identity and collection fields as required and only

@@ -7,7 +7,7 @@ use std::{
 use anyhow::{Context, Result, bail};
 use clap::Args;
 use serde::{Deserialize, Serialize};
-use serde_yaml::Value;
+use serde_norway::Value;
 use syn::{Field, Fields, GenericArgument, Item, PathArguments, Type};
 
 const DEFAULT_COVERAGE_MANIFEST: &str = "parity/openapi/coverage.yaml";
@@ -25,8 +25,6 @@ pub(crate) struct OpenApiCoverageArgs {
     schema: Option<String>,
     #[arg(long)]
     rust_type: Option<String>,
-    #[arg(long)]
-    validate: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -39,9 +37,7 @@ struct CoverageManifest {
 struct CoverageEntry {
     schema: String,
     rust_type: String,
-    inventory: PathBuf,
     required_fields: Vec<String>,
-    fixtures: Vec<PathBuf>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -93,56 +89,24 @@ struct Diagnostic {
 }
 
 pub(crate) fn run(args: OpenApiCoverageArgs) -> Result<()> {
-    if args.validate {
-        validate_coverage(args)
-    } else {
-        generate_inventories(args)
-    }
-}
-
-fn generate_inventories(args: OpenApiCoverageArgs) -> Result<()> {
     ensure_source_lock_present(&args.source_lock)?;
     let manifest = load_manifest(&args.coverage)?;
     let openapi = load_yaml(&args.openapi)?;
     let selected = selected_entries(&manifest, args.schema.as_deref(), args.rust_type.as_deref())?;
-
-    for entry in &selected {
-        let inventory = build_inventory(&openapi, &entry.schema)?;
-        if let Some(parent) = entry.inventory.parent() {
-            fs::create_dir_all(parent)
-                .with_context(|| format!("failed to create {}", parent.display()))?;
-        }
-        fs::write(
-            &entry.inventory,
-            serde_yaml::to_string(&inventory).context("failed to serialize inventory")?,
-        )
-        .with_context(|| format!("failed to write {}", entry.inventory.display()))?;
-        println!(
-            "wrote {} for {} ({})",
-            entry.inventory.display(),
-            entry.schema,
-            entry.rust_type
-        );
-    }
-
-    Ok(())
-}
-
-fn validate_coverage(args: OpenApiCoverageArgs) -> Result<()> {
-    ensure_source_lock_present(&args.source_lock)?;
-    let manifest = load_manifest(&args.coverage)?;
-    let selected = selected_entries(&manifest, args.schema.as_deref(), args.rust_type.as_deref())?;
     let mut diagnostics = Vec::new();
 
     for entry in &selected {
-        let inventory = match load_inventory(&entry.inventory) {
+        // The per-schema inventory is expanded in memory from the vendored
+        // OpenAPI document; it is not a committed artifact, so there is no
+        // generated cache to keep in lockstep with the spec.
+        let inventory = match build_inventory(&openapi, &entry.schema) {
             Ok(inventory) => inventory,
             Err(error) => {
                 diagnostics.push(Diagnostic {
                     schema: entry.schema.clone(),
                     rust_type: entry.rust_type.clone(),
                     field: None,
-                    kind: "inventory_read_error",
+                    kind: "inventory_build_error",
                     message: format!("{error:#}"),
                 });
                 continue;
@@ -180,7 +144,7 @@ fn validate_coverage(args: OpenApiCoverageArgs) -> Result<()> {
         };
         eprintln!(
             "{}",
-            serde_yaml::to_string(&report).context("failed to serialize diagnostics")?
+            serde_norway::to_string(&report).context("failed to serialize diagnostics")?
         );
         bail!("openapi coverage validation failed")
     }
@@ -192,7 +156,7 @@ fn ensure_source_lock_present(path: &Path) -> Result<()> {
 }
 
 fn load_manifest(path: &Path) -> Result<CoverageManifest> {
-    let manifest: CoverageManifest = serde_yaml::from_str(
+    let manifest: CoverageManifest = serde_norway::from_str(
         &fs::read_to_string(path).with_context(|| format!("failed to read {}", path.display()))?,
     )
     .with_context(|| format!("failed to parse {}", path.display()))?;
@@ -201,11 +165,6 @@ fn load_manifest(path: &Path) -> Result<CoverageManifest> {
     }
     if manifest.dtos.is_empty() {
         bail!("OpenAPI coverage manifest has no dto entries");
-    }
-    for entry in &manifest.dtos {
-        if entry.fixtures.is_empty() {
-            bail!("coverage entry {} has no fixture paths", entry.schema);
-        }
     }
     Ok(manifest)
 }
@@ -228,14 +187,7 @@ fn selected_entries<'a>(
 }
 
 fn load_yaml(path: &Path) -> Result<Value> {
-    serde_yaml::from_str(
-        &fs::read_to_string(path).with_context(|| format!("failed to read {}", path.display()))?,
-    )
-    .with_context(|| format!("failed to parse {}", path.display()))
-}
-
-fn load_inventory(path: &Path) -> Result<SchemaInventory> {
-    serde_yaml::from_str(
+    serde_norway::from_str(
         &fs::read_to_string(path).with_context(|| format!("failed to read {}", path.display()))?,
     )
     .with_context(|| format!("failed to parse {}", path.display()))

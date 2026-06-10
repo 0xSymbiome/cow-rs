@@ -323,7 +323,7 @@ fn snapshot(options: &CliOptions) -> Result<()> {
         fixtures: fixture_contracts(),
     };
 
-    let yaml = serde_yaml::to_string(&source_lock).context("failed to serialize source lock")?;
+    let yaml = serde_norway::to_string(&source_lock).context("failed to serialize source lock")?;
     if let Some(parent) = options.output.parent() {
         fs::create_dir_all(parent)
             .with_context(|| format!("failed to create {}", parent.display()))?;
@@ -553,7 +553,7 @@ fn resolve_optional_roots(options: &CliOptions) -> BTreeMap<String, PathBuf> {
 fn load_source_lock(path: &Path) -> Result<SourceLock> {
     let raw =
         fs::read_to_string(path).with_context(|| format!("failed to read {}", path.display()))?;
-    serde_yaml::from_str(&raw).context("failed to parse source lock")
+    serde_norway::from_str(&raw).context("failed to parse source lock")
 }
 
 fn validate_repository_entry_template(
@@ -1185,7 +1185,7 @@ mod tests {
 
         snapshot(&options)?;
 
-        let mut lock: SourceLock = serde_yaml::from_str(
+        let mut lock: SourceLock = serde_norway::from_str(
             &fs::read_to_string(&options.source_lock)
                 .with_context(|| format!("failed to read {}", options.source_lock.display()))?,
         )
@@ -1198,7 +1198,7 @@ mod tests {
         contracts_entry.commit = "0000000000000000000000000000000000000000".to_string();
         fs::write(
             &options.source_lock,
-            serde_yaml::to_string(&lock).context("failed to serialize mutated source lock")?,
+            serde_norway::to_string(&lock).context("failed to serialize mutated source lock")?,
         )
         .with_context(|| format!("failed to write {}", options.source_lock.display()))?;
 
@@ -1220,7 +1220,7 @@ mod tests {
 
         snapshot(&options)?;
 
-        let mut lock: SourceLock = serde_yaml::from_str(
+        let mut lock: SourceLock = serde_norway::from_str(
             &fs::read_to_string(&options.source_lock)
                 .with_context(|| format!("failed to read {}", options.source_lock.display()))?,
         )
@@ -1233,7 +1233,7 @@ mod tests {
         contracts_entry.commit = "1111111111111111111111111111111111111111".to_string();
         fs::write(
             &options.source_lock,
-            serde_yaml::to_string(&lock).context("failed to serialize mutated source lock")?,
+            serde_norway::to_string(&lock).context("failed to serialize mutated source lock")?,
         )
         .with_context(|| format!("failed to write {}", options.source_lock.display()))?;
 

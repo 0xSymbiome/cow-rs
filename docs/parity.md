@@ -104,7 +104,7 @@ maintainer workflow for refreshing the lock lives in
 
 | Surface | Primary upstream producers | Rust crates | Committed authority | Primary evidence |
 | --- | --- | --- | --- | --- |
-| Order creation, signing, and submission | `cowprotocol/services` order-creation and quote DTOs and `cowprotocol/contracts` EIP-712 signing; the slippage layer follows the CoW SDK convention (ADR 0066) | `cow-sdk-signing`, `cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk` | `parity/fixtures/orderbook-requests/order_creation.json`, `parity/fixtures/trading.json` | `crates/signing/tests/order_signing_contract.rs`, `crates/orderbook/tests/api_contract.rs`, `crates/trading/tests/post_contract.rs`, `crates/trading/tests/sdk_contract.rs`, `crates/sdk/tests/public_api.rs`, `crates/sdk/tests/public_api_default_features_only.rs`, `crates/sdk/tests/public_api_with_all_features.rs` |
+| Order creation, signing, and submission | `cowprotocol/services` order-creation and quote DTOs and `cowprotocol/contracts` EIP-712 signing; the slippage layer follows the CoW SDK convention (ADR 0066) | `cow-sdk-signing`, `cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk` | `parity/fixtures/orderbook-requests/order_creation.json` | `crates/signing/tests/order_signing_contract.rs`, `crates/orderbook/tests/api_contract.rs`, `crates/trading/tests/post_contract.rs`, `crates/trading/tests/sdk_contract.rs`, `crates/sdk/tests/public_api.rs`, `crates/sdk/tests/public_api_default_features_only.rs`, `crates/sdk/tests/public_api_with_all_features.rs` |
 | Contracts parity | `cowprotocol/contracts` | `cow-sdk-contracts`, `cow-sdk-signing` | `parity/fixtures/contracts.json` | `crates/contracts/tests/order_contract.rs`, `crates/contracts/tests/settlement_contract.rs`, `crates/contracts/tests/parity_contract.rs`, `crates/signing/tests/eip1271_contract.rs` |
 | Codec fuzz corpora | `cowprotocol/contracts` order UID and EIP-712 typed-data helpers | `cow-sdk-contracts`, `cow-sdk-signing` | `fuzz/corpus/fuzz_order_uid_pack_unpack/` (six 56-byte triples), `fuzz/corpus/fuzz_typed_data_digest/` (five 200-byte inputs), `parity/fixtures/contracts.json` | `fuzz/fuzz_targets/fuzz_order_uid_pack_unpack.rs`, `fuzz/fuzz_targets/fuzz_typed_data_digest.rs`, `cargo fuzz run fuzz_order_uid_pack_unpack --runs 65536`, `cargo fuzz run fuzz_typed_data_digest --runs 65536` |
 | `GPv2Settlement` bindings | `cowprotocol/contracts` settlement surface | `cow-sdk-contracts::settlement` via inline `alloy::sol!` | Inline `sol!` binding proven by `parity/fixtures/contracts.json`, mirroring upstream Solidity pinned by commit in `parity/source-lock.yaml` | `crates/contracts/tests/parity_contract.rs::settlement_calldata_matches_upstream_fixtures` |
@@ -138,7 +138,7 @@ represented directly and preserve services wire spelling.
 The `metadata.utm` row below is a local Rust SDK attribution policy rather than
 an upstream fixture vector. It is asserted by
 `crates/trading/tests/quote_contract.rs::default_utm_block_uses_env_cargo_pkg_version`
-and not carried in `parity/fixtures/trading.json`.
+rather than by a committed parity fixture.
 
 | Surface | Default | Opt-out / opt-in |
 | --- | --- | --- |
@@ -398,7 +398,7 @@ for anyone who later considers reintroducing the surface.
   [ADR 0031](adr/0031-wire-dto-openapi-driven-with-order-auction-order-split.md).
 - **Strict OpenAPI-optionality coverage for `SolverCompetitionResponse`** — the
   vendored `/api/v2/solver_competition/*` schema omits a `required:` block, so the
-  `openapi-coverage --validate` optionality check would force every field —
+  `openapi-coverage` optionality check would force every field —
   including the always-present `auctionId`, the block deadlines, and `auction` —
   to `Option<T>`. The upstream producer (the `Response` struct in `services`
   `solver_competition_v2.rs`, serialized behind that route) instead models the

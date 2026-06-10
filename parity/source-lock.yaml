@@ -6,6 +6,7 @@ repositories:
 - id: contracts
   remote: https://github.com/cowprotocol/contracts.git
   commit: c6b61ce75841ce4c25ab126def9cc981c568e6c6
+  # why: GPv2 order/trade layout, EIP-712 type strings, the settlement and vault-relayer addresses, and the networks.json deployment manifest.
   role: primary
   optional_local_path: <contracts-checkout>
   pinned_at: 2026-05-29T00:00:00Z
@@ -25,6 +26,7 @@ repositories:
 - id: services
   remote: https://github.com/cowprotocol/services.git
   commit: 1f80d54bc3521b3fa81cd8ad66d9f749c5450591
+  # why: orderbook wire DTOs, the OpenAPI schema, order-validation rules, and app-data hashing.
   role: wire-authority
   optional_local_path: <services-checkout>
   pinned_at: 2026-05-29T00:00:00Z
@@ -35,12 +37,10 @@ repositories:
   - crates/orderbook/src/app_data.rs
   - crates/model/src/order.rs
   - crates/orderbook/src/quoter.rs
-  # Publishes the canonical contract-address constants for both orderbook
-  # environments; pins the staging settlement and vault-relayer deployments
-  # resolved by the typed Registry.
 - id: cow-sdk
   remote: https://github.com/cowprotocol/cow-sdk.git
   commit: 1c3c9619c3d0ee832ce43a2d695ad650c2ec7a18
+  # why: the canonical contract-address constants for both orderbook environments, pinning the staging settlement and vault-relayer deployments resolved by the typed Registry.
   role: primary
   optional_local_path: <cow-sdk-checkout>
   pinned_at: 2026-06-10T00:00:00Z
@@ -50,6 +50,7 @@ repositories:
 - id: composable-cow
   remote: https://github.com/cowprotocol/composable-cow.git
   commit: 471ca59aa95da1bbf3b03e002de96449bc78e6f0
+  # why: the ComposableCoW conditional-order Solidity surface and its networks.json addresses (deferred from the SDK, pinned for provenance).
   role: primary
   optional_local_path: <composable-cow-checkout>
   pinned_at: 2026-05-15T00:00:00Z
@@ -83,6 +84,7 @@ repositories:
 - id: cow-shed
   remote: https://github.com/cowdao-grants/cow-shed.git
   commit: 9e01a88e0010314ee1e4c1a822105897a87d3bda
+  # why: the COW Shed proxy, factory, and forwarder Solidity plus the networks.json addresses behind the account-abstraction surface.
   role: primary
   optional_local_path: <cow-shed-checkout>
   pinned_at: 2026-05-15T00:00:00Z
@@ -101,6 +103,7 @@ repositories:
 - id: ethflowcontract
   remote: https://github.com/cowprotocol/ethflowcontract.git
   commit: 762d182674f8f890bd27917872ee62125171b54d
+  # why: the CoWSwapEthFlow contract, EthFlowOrder library, and on-chain-orders mixin behind the native-asset order path.
   role: primary
   optional_local_path: <ethflowcontract-checkout>
   pinned_at: 2026-05-22T00:00:00Z
@@ -114,6 +117,7 @@ repositories:
 - id: watch-tower
   remote: https://github.com/cowprotocol/watch-tower.git
   commit: 61eeaec55949337a42e66cb9d2439f400dd4e67a
+  # why: reference-only orderbook API helper types consulted when modelling the watch-tower integration surface.
   role: reference-only
   optional_local_path: <watch-tower-checkout>
   pinned_at: 2026-05-15T00:00:00Z
@@ -155,29 +159,8 @@ fixtures:
     path: crates/shared/src/order_validation.rs
   - repo: services
     path: crates/model/src/order.rs
-- surface: orderbook-request-order-quote
-  file: parity/fixtures/orderbook-requests/order_quote_request.json
-  source_refs:
-  - repo: services
-    path: crates/orderbook/openapi.yml
-- surface: orderbook-request-app-data-put
-  file: parity/fixtures/orderbook-requests/app_data_put.json
-  source_refs:
-  - repo: services
-    path: crates/orderbook/openapi.yml
-  - repo: services
-    path: crates/orderbook/src/app_data.rs
 - surface: orderbook-request-cancellations
   file: parity/fixtures/orderbook-requests/order_cancellations.json
   source_refs:
   - repo: services
     path: crates/orderbook/openapi.yml
-- surface: trading
-  file: parity/fixtures/trading.json
-  source_refs:
-  - repo: services
-    path: crates/orderbook/openapi.yml
-  - repo: services
-    path: crates/orderbook/src/quoter.rs
-  - repo: services
-    path: crates/shared/src/order_validation.rs

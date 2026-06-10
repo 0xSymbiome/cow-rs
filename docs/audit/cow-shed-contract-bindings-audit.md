@@ -1,7 +1,7 @@
 # COW Shed Contract Bindings Audit
 
 Status: Current
-Last reviewed: 2026-06-09
+Last reviewed: 2026-06-10
 Owning surface: inline COW Shed `alloy::sol!` bindings, proxy creation-code artifacts, version-call evidence, and self-hosted deployment addresses
 Refresh trigger: Refresh when COW Shed deployments, proxy creation code, factory ABIs, hook type strings, the deployed `VERSION()` return value, or the upstream commit pin for the COW Shed source change.
 Related docs:
@@ -99,9 +99,9 @@ The `COWShedForComposableCoW` contract is deployed only on Gnosis Chain
 (chain id 100). The forwarder gate is anchored by the typed
 `CowShedError::COWShedForComposableCoWGnosisOnly { chain }` variant; any
 constructor or interaction helper that targets the forwarder on a
-non-Gnosis chain id must return this variant. The ENS-related helpers gate
-behind the `cow-shed-ens` Cargo feature (default off) so non-Gnosis builds
-do not pull in the ENS resolver surface.
+non-Gnosis chain id must return this variant. The Gnosis-only forwarder
+surface gates behind the off-by-default `cow-shed-gnosis` Cargo feature, so
+builds that do not target Gnosis Chain do not compile the forwarder binding.
 
 ### Hook type strings
 
@@ -228,7 +228,6 @@ Primary implementation points:
 - `crates/contracts/src/cow_shed/address/mod.rs`
 - `crates/contracts/tests/deployment_address_parity_contract.rs`
 - `parity/fixtures/cow_shed/proxy_addresses.json`
-- `parity/cow-shed-invariants.md`
 - `parity/fixtures/cow_shed/`
 
 Primary regression coverage:

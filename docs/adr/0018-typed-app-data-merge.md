@@ -83,9 +83,9 @@ the three defects unreachable without reintroducing an opaque
   signer metadata, the override-signer precedence, the
   extra-top-level-key preservation, the round-trip idempotency of
   `params_from_doc(generate_app_data_doc(p)) == p`, and the
-  `metadata.userConsents` array replacement. The parity fixture
-  at `parity/fixtures/trading.json` also exercises the typed
-  pipeline end-to-end through the field-level parity runner.
+  `metadata.userConsents` array replacement. The typed merge pipeline
+  is exercised end-to-end by
+  `crates/trading/tests/app_data_merge_contract.rs`.
 - Cost: one public helper pair on `cow-sdk-trading`
   (`merge_and_seal_app_data` and `params_from_doc`), one
   extension to the private `merge_app_data_params` helper for the

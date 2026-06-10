@@ -46,7 +46,9 @@ fn vendor_openapi_stamps_synthetic_services_openapi() -> Result<()> {
     let vendored = std::fs::read_to_string(root.join("parity/openapi/services-orderbook.yml"))?;
     assert!(vendored.contains(&format!("# Vendored from cowprotocol/services @ {commit}")));
     assert!(vendored.contains("# Path: crates/orderbook/openapi.yml"));
-    assert!(vendored.contains("# Generated: "));
+    // The header carries no wall-clock timestamp so re-vendoring an unchanged
+    // upstream commit is byte-for-byte deterministic.
+    assert!(!vendored.contains("# Generated:"));
     assert!(
         vendored.contains("# DO NOT EDIT - regenerate via `parity-maintainer vendor-openapi`.")
     );

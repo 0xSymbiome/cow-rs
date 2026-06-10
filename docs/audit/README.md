@@ -55,9 +55,9 @@ If the reviewed surface did not change, leave the audit alone.
 | [On-Chain Order Log Decoding Audit](onchain-order-log-decoding-audit.md) | Standing audit | `cow-sdk-contracts` `CoWSwapOnchainOrders` event decoder | Fail-closed `OrderPlacement` / `OrderInvalidation` log decoding, topic-0 byte-locks, owner resolution, UID derivation, and the eth-flow trailing-data parser | Current | 2026-06-08 |
 | [Settlement Event Log Decoding Audit](settlement-event-log-decoding-audit.md) | Standing audit | `cow-sdk-contracts` `GPv2Settlement` event decoder | Fail-closed `Trade` / `Interaction` / `Settlement` / `OrderInvalidated` / `PreSignature` log decoding, topic-0 byte-locks, the shared topic-set guard, and the 56-byte order-UID length check | Current | 2026-06-09 |
 | [Deployment Registry Audit](deployment-registry-audit.md) | Standing audit | `cow-sdk-contracts::Registry` typed deployment authority | Typed `(ContractId, SupportedChainId, CowEnv)` key, const CREATE2-singleton address table, per-chain provenance, and live on-chain presence confirmation | Current | 2026-06-10 |
-| [COW Shed Contract Bindings Audit](cow-shed-contract-bindings-audit.md) | Standing audit | Inline COW Shed `alloy::sol!` bindings, proxy creation code, and self-hosted deployment addresses | Version-keyed proxy creation-code artifacts, digest validation, self-hosted addresses, and factory ABI evidence | Current | 2026-06-09 |
+| [COW Shed Contract Bindings Audit](cow-shed-contract-bindings-audit.md) | Standing audit | Inline COW Shed `alloy::sol!` bindings, proxy creation code, and self-hosted deployment addresses | Version-keyed proxy creation-code artifacts, digest validation, self-hosted addresses, and factory ABI evidence | Current | 2026-06-10 |
 | [COW Shed App-Data Integration Audit](cow-shed-app-data-integration-audit.md) | Standing audit | COW Shed hook metadata and app-data schema integration | Hook metadata shape, app-data schema reuse, and EIP-1271 signing-boundary evidence | Current | 2026-06-09 |
-| [Lens Chain Evidence Audit](lens-chain-evidence-audit.md) | Standing audit | Deployment registry chain taxonomy | Lens deployment evidence, runtime support exclusion, provenance lockstep, public route probes, and refresh triggers | Current | 2026-06-08 |
+| [Lens Chain Evidence Audit](lens-chain-evidence-audit.md) | Standing audit | Deployment registry chain taxonomy | Lens deployment evidence, runtime support exclusion, provenance lockstep, public route probes, and refresh triggers | Current | 2026-06-10 |
 
 ## HTTP Transport And Construction
 
@@ -132,14 +132,14 @@ If the reviewed surface did not change, leave the audit alone.
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [Source-Lock Provenance Audit](source-lock-provenance-audit.md) | Standing audit | source-lock provenance and release preflight authority | Source-lock commit pins, upstream freshness disclosure, Alloy runtime/core dependency provenance, publication preflight metadata, historical snapshot scope, and refresh ownership | Current | 2026-06-09 |
+| [Source-Lock Provenance Audit](source-lock-provenance-audit.md) | Standing audit | source-lock provenance and release preflight authority | Source-lock commit pins, upstream freshness disclosure, Alloy runtime/core dependency provenance, publication preflight metadata, historical snapshot scope, and refresh ownership | Current | 2026-06-10 |
 
 ## Orderbook Wire DTO Coverage
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [Wire DTO Coverage Audit](wire-dto-coverage-audit.md) | Standing audit | `cow-sdk-orderbook` DTO coverage | OpenAPI-vendored orderbook response DTO inventories, request-payload fixtures, field-level round trips, and response forward compatibility | Current | 2026-06-08 |
-| [Quote Response Surface Audit](quote-response-surface-audit.md) | Standing audit | `cow-sdk-orderbook` quote DTOs and `cow-sdk-trading` quote projection | Quote response `OrderParameters` fidelity and coverage, the `priceQuality` default, read-only quote network-cost fields, projection parity, and the bounds-validator trust posture | Current | 2026-06-07 |
+| [Wire DTO Coverage Audit](wire-dto-coverage-audit.md) | Standing audit | `cow-sdk-orderbook` DTO coverage | OpenAPI-vendored orderbook response DTO inventories, request-payload fixtures, field-level round trips, and response forward compatibility | Current | 2026-06-10 |
+| [Quote Response Surface Audit](quote-response-surface-audit.md) | Standing audit | `cow-sdk-orderbook` quote DTOs and `cow-sdk-trading` quote projection | Quote response `OrderParameters` fidelity and coverage, the `priceQuality` default, read-only quote network-cost fields, projection parity, and the bounds-validator trust posture | Current | 2026-06-10 |
 | [Quote Request App-Data Fix Review](quote-request-app-data-fix-review.md) | Fix review | `cow-sdk-orderbook` quote-request app-data wire shape (`OrderQuoteRequest`, `QuoteAppData`) | Hash-only, document-only, document-plus-hash, and default quote app-data wire forms and `QuoteAppData` round-trip stability | Current | 2026-05-30 |
 
 ## Transport And Routing
@@ -162,7 +162,7 @@ If the reviewed surface did not change, leave the audit alone.
 | --- | --- | --- | --- | --- | --- |
 | [Trading Order Construction Integrity Audit](trading-order-construction-integrity-audit.md) | Standing audit | `cow-sdk-trading` order assembly and recoverable-signature posting contract | Balance semantics, same-token builder policy, builder terminal parity, local signature validation, and `EthFlow` newtype-typed entry binding | Current | 2026-05-31 |
 | [Trading Order-Bounds Validator Audit](trading-order-bounds-validator-audit.md) | Standing audit | `cow-sdk-trading` `OrderBoundsValidator`, order validity bounds, and client rejection surface | Mandatory client-side submission validation, same-token `AllowSell` parity, EthFlow skip rule, chain-aware default validator, and builder-level subset | Current | 2026-06-07 |
-| [Trading App-Data Merge Audit](trading-app-data-merge-audit.md) | Standing audit | `cow-sdk-trading` quote-to-post app-data edit path | Typed app-data merge, hooks replacement semantics, typed signer derivation, and `merge_and_seal_app_data` / `params_from_doc` public helpers | Current | 2026-06-08 |
+| [Trading App-Data Merge Audit](trading-app-data-merge-audit.md) | Standing audit | `cow-sdk-trading` quote-to-post app-data edit path | Typed app-data merge, hooks replacement semantics, typed signer derivation, and `merge_and_seal_app_data` / `params_from_doc` public helpers | Current | 2026-06-10 |
 | [Trading EthFlow Owner Identity Audit](trading-ethflow-owner-identity-audit.md) | Standing audit | `cow-sdk-trading` EthFlow submission seam | `EthFlowTransaction.from` owner threading, validation owner identity selection, EthFlow-aware validator invocation, and `LimitTradeParamsFromQuote` newtype-typed entry binding | Current | 2026-05-30 |
 | [Trade-Parameter Lifecycle Audit](trade-parameter-lifecycle-audit.md) | Standing audit | `cow-sdk-trading` trade-parameter input shape and the lifecycle distinction between pre-quote and post-quote request types | Pre-quote `TradeParams` shape, post-quote `LimitTradeParams` shape, `LimitTradeParamsFromQuote` newtype invariant, `swap_params_to_limit_order_params` bridge, and the `EthFlow` entry binding | Current | 2026-05-27 |
 

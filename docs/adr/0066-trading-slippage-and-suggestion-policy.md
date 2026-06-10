@@ -42,10 +42,10 @@ rest of the ecosystem; it is not cow-rs's place to diverge from it.
 
 ## Consequences
 
-- `parity/fixtures/trading.json` records the convention's output. Its
-  `source_refs` anchor to `cowprotocol/services` — the quote/order DTOs
-  (`openapi.yml`), the `quoter.rs` fee accounting, and the
-  `order_validation.rs` market-price invariant the output must satisfy.
+- The slippage convention's output is locked by the trading slippage
+  contract tests, which derive the signable amounts the
+  `cowprotocol/services` `quoter.rs` fee accounting and `order_validation.rs`
+  market-price invariant must satisfy.
 - `@cowprotocol/cow-sdk` is the convention's reference implementation (prior
   art). It is not a pinned parity source in `parity/source-lock.yaml`; the wire,
   fee, and validity authority is `cowprotocol/services`.

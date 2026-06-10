@@ -35,7 +35,7 @@ Run these checks before opening a pull request:
 cargo fmt --all --check
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo test --workspace
-cargo check --manifest-path examples/native/Cargo.toml --examples
+cargo check --manifest-path examples/native/Cargo.toml --examples --all-features
 cargo run-deterministic-examples
 cargo check-alloy-provider-invariant
 cargo check-alloy-signer-invariant
