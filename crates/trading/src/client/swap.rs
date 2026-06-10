@@ -6,46 +6,17 @@
 //! ([`SwapBuilder::execute`], [`SwapBuilder::quote`]) are only callable once all
 //! three are supplied. The lifecycle terminates in a single asynchronous step so
 //! the same chain serves every [`Signer`] backend — a local key, a remote
-//! signer, a browser wallet, or a smart account.
-//!
-//! ```no_run
-//! # use cow_sdk_trading::Trading;
-//! # use cow_sdk_core::{Address, Amount, Signer, SignerError};
-//! # async fn demo<S>(trading: &Trading, signer: &S) -> Result<(), Box<dyn std::error::Error>>
-//! # where S: Signer, S::Error: std::fmt::Display + SignerError {
-//! let usdc = Address::ZERO;
-//! let weth = Address::ZERO;
-//!
-//! // One call quotes, signs, and submits.
-//! let posted = trading
-//!     .swap()
-//!     .sell_token(usdc)
-//!     .buy_token(weth)
-//!     .sell_amount(Amount::from_units(100, 6)?)
-//!     .execute(signer)
-//!     .await?;
-//!
-//! // Or inspect the quote before committing to it.
-//! let quoted = trading
-//!     .swap()
-//!     .sell_token(usdc)
-//!     .buy_token(weth)
-//!     .sell_amount(Amount::from_units(100, 6)?)
-//!     .quote(signer)
-//!     .await?;
-//! let _costs = quoted.results().amounts_and_costs.clone();
-//! let posted = quoted.submit(signer).await?;
-//! # let _ = posted;
-//! # Ok(())
-//! # }
-//! ```
+//! signer, a browser wallet, or a smart account. [`Trading::swap`] carries
+//! the runnable lifecycle example.
 
 use std::marker::PhantomData;
 
 use cow_sdk_core::{Address, Amount, OrderKind, Signer, SignerError};
 
 use super::Trading;
-use crate::{OrderPostingResult, QuoteResults, TradeAdvancedSettings, TradeParameters, TradingError};
+use crate::{
+    OrderPostingResult, QuoteResults, TradeAdvancedSettings, TradeParameters, TradingError,
+};
 
 /// Typestate marker: a required swap field has not been supplied yet.
 #[derive(Debug, Clone, Copy)]
@@ -62,6 +33,38 @@ impl Trading {
     /// [`SwapBuilder::sell_amount`] or [`SwapBuilder::buy_amount`]); only then do
     /// the [`SwapBuilder::execute`] and [`SwapBuilder::quote`] terminals become
     /// available.
+    ///
+    /// ```no_run
+    /// # use cow_sdk_trading::Trading;
+    /// # use cow_sdk_core::{Address, Amount, Signer, SignerError};
+    /// # async fn demo<S>(trading: &Trading, signer: &S) -> Result<(), Box<dyn std::error::Error>>
+    /// # where S: Signer, S::Error: std::fmt::Display + SignerError {
+    /// let usdc = Address::ZERO;
+    /// let weth = Address::ZERO;
+    ///
+    /// // One call quotes, signs, and submits.
+    /// let posted = trading
+    ///     .swap()
+    ///     .sell_token(usdc)
+    ///     .buy_token(weth)
+    ///     .sell_amount(Amount::from_units(100, 6)?)
+    ///     .execute(signer)
+    ///     .await?;
+    ///
+    /// // Or inspect the quote before committing to it.
+    /// let quoted = trading
+    ///     .swap()
+    ///     .sell_token(usdc)
+    ///     .buy_token(weth)
+    ///     .sell_amount(Amount::from_units(100, 6)?)
+    ///     .quote(signer)
+    ///     .await?;
+    /// let _costs = quoted.results().amounts_and_costs.clone();
+    /// let posted = quoted.submit(signer).await?;
+    /// # let _ = posted;
+    /// # Ok(())
+    /// # }
+    /// ```
     #[must_use]
     pub const fn swap(&self) -> SwapBuilder<'_> {
         SwapBuilder {
@@ -128,7 +131,10 @@ impl<'a, SellToken, BuyToken, AmountState> SwapBuilder<'a, SellToken, BuyToken, 
     /// The setter is named, so the sell and buy tokens cannot be transposed the
     /// way two positional address arguments could be.
     #[must_use]
-    pub fn sell_token(mut self, sell_token: Address) -> SwapBuilder<'a, Set, BuyToken, AmountState> {
+    pub fn sell_token(
+        mut self,
+        sell_token: Address,
+    ) -> SwapBuilder<'a, Set, BuyToken, AmountState> {
         self.sell_token = Some(sell_token);
         self.cast()
     }

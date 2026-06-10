@@ -59,7 +59,7 @@ impl TradingBuilder<ChainIdUnset, AppCodeUnset> {
     ///
     /// This one-call terminal is for callers that already hold the complete
     /// [`TraderParameters`] shape. It intentionally does not accept
-    /// [`PartialTraderParameters`], so chain id and `appCode` stay present
+    /// `PartialTraderParameters`, so chain id and `appCode` stay present
     /// before construction reaches the ready-state terminal.
     ///
     /// # Errors
