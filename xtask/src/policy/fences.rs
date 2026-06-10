@@ -1,7 +1,7 @@
 //! Source-level "never-swap" fences: lexical bans that keep alloy-adjacent
 //! hand-rolls and forbidden imports out of protected crate surfaces.
 //!
-//! Each [`Fence`] is one constraint anchored by an ADR (see
+//! Each `Fence` is one constraint anchored by an ADR (see
 //! `docs/alloy-doctrine.md`). A fence scans a scope of files for a forbidden
 //! pattern, or asserts a required marker count, and fails with the ADR-cited
 //! guidance. This table is the Rust home of the former `never-swap-gates.yml`
@@ -249,7 +249,11 @@ pub fn run(args: &Args) -> Result<()> {
     for fence in FENCES {
         match evaluate(&args.repo_root, fence) {
             Ok(violations) => {
-                failures.extend(violations.into_iter().map(|v| format!("[{}] {v}", fence.name)));
+                failures.extend(
+                    violations
+                        .into_iter()
+                        .map(|v| format!("[{}] {v}", fence.name)),
+                );
             }
             Err(error) => failures.push(format!("[{}] {error:#}", fence.name)),
         }
@@ -271,9 +275,9 @@ fn evaluate(repo_root: &Path, fence: &Fence) -> Result<Vec<String>> {
     if files.is_empty() {
         return match fence.on_empty {
             OnEmpty::Pass => Ok(Vec::new()),
-            OnEmpty::Fail => {
-                Ok(vec!["no candidate files under scope; refusing to silently pass".to_owned()])
-            }
+            OnEmpty::Fail => Ok(vec![
+                "no candidate files under scope; refusing to silently pass".to_owned(),
+            ]),
         };
     }
 
@@ -281,7 +285,13 @@ fn evaluate(repo_root: &Path, fence: &Fence) -> Result<Vec<String>> {
         Rule::Forbid {
             pattern,
             skip_line_comments,
-        } => forbid(repo_root, &files, pattern, *skip_line_comments, fence.message),
+        } => forbid(
+            repo_root,
+            &files,
+            pattern,
+            *skip_line_comments,
+            fence.message,
+        ),
         Rule::Count { needle, expected } => count(&files, needle, *expected, fence.message),
     }
 }
@@ -293,7 +303,8 @@ fn forbid(
     skip_line_comments: bool,
     message: &str,
 ) -> Result<Vec<String>> {
-    let regex = Regex::new(pattern).with_context(|| format!("invalid fence pattern `{pattern}`"))?;
+    let regex =
+        Regex::new(pattern).with_context(|| format!("invalid fence pattern `{pattern}`"))?;
     let mut violations = Vec::new();
     for file in files {
         let text = read(file)?;
@@ -317,7 +328,10 @@ fn forbid(
 fn count(files: &[PathBuf], needle: &str, expected: usize, message: &str) -> Result<Vec<String>> {
     let mut total = 0usize;
     for file in files {
-        total += read(file)?.lines().filter(|line| line.contains(needle)).count();
+        total += read(file)?
+            .lines()
+            .filter(|line| line.contains(needle))
+            .count();
     }
     if total == expected {
         Ok(Vec::new())
@@ -349,7 +363,9 @@ fn collect(repo_root: &Path, scope: &Scope) -> Result<Vec<PathBuf>> {
             }
         }
         Scope::ProductionRust => collect_production_rust(repo_root, &mut files)?,
-        Scope::WasmSources => collect_by_extension(&repo_root.join("crates/wasm/src"), "rs", &mut files)?,
+        Scope::WasmSources => {
+            collect_by_extension(&repo_root.join("crates/wasm/src"), "rs", &mut files)?;
+        }
         Scope::DocsAndTypeScript => collect_docs_and_typescript(repo_root, &mut files)?,
     }
     files.sort();
@@ -410,7 +426,11 @@ fn collect_docs_and_typescript(repo_root: &Path, files: &mut Vec<PathBuf>) -> Re
     Ok(())
 }
 
-fn push_if_file_matching(path: PathBuf, matches: &impl Fn(&Path) -> bool, files: &mut Vec<PathBuf>) {
+fn push_if_file_matching(
+    path: PathBuf,
+    matches: &impl Fn(&Path) -> bool,
+    files: &mut Vec<PathBuf>,
+) {
     if path.is_file() && matches(&path) {
         files.push(path);
     }
@@ -418,7 +438,11 @@ fn push_if_file_matching(path: PathBuf, matches: &impl Fn(&Path) -> bool, files:
 
 /// Recursively collects files under `dir` for which `accept` returns true.
 /// A missing directory is skipped rather than an error.
-fn walk(dir: &Path, files: &mut Vec<PathBuf>, accept: &mut impl FnMut(&Path) -> bool) -> Result<()> {
+fn walk(
+    dir: &Path,
+    files: &mut Vec<PathBuf>,
+    accept: &mut impl FnMut(&Path) -> bool,
+) -> Result<()> {
     if !dir.exists() {
         return Ok(());
     }
@@ -442,8 +466,9 @@ mod tests {
     fn every_forbid_pattern_compiles() {
         for fence in FENCES {
             if let Rule::Forbid { pattern, .. } = &fence.rule {
-                Regex::new(pattern)
-                    .unwrap_or_else(|error| panic!("fence `{}` pattern is invalid: {error}", fence.name));
+                Regex::new(pattern).unwrap_or_else(|error| {
+                    panic!("fence `{}` pattern is invalid: {error}", fence.name)
+                });
             }
         }
     }
@@ -454,7 +479,11 @@ mod tests {
             .iter()
             .find(|fence| fence.name == "ecdsa-v-normalization")
             .expect("ecdsa fence is registered");
-        let Rule::Forbid { pattern, skip_line_comments } = &fence.rule else {
+        let Rule::Forbid {
+            pattern,
+            skip_line_comments,
+        } = &fence.rule
+        else {
             panic!("ecdsa fence is a forbid rule");
         };
         let regex = Regex::new(pattern).unwrap();

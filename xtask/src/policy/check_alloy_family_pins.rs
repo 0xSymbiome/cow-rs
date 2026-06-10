@@ -77,9 +77,10 @@ pub fn run_default() -> Result<()> {
 }
 
 pub fn run(args: &Args) -> Result<()> {
-    let manifest: Manifest =
-        toml::from_str(&workspace::read_to_string(&args.repo_root.join("Cargo.toml"))?)
-            .context("failed to parse workspace Cargo.toml")?;
+    let manifest: Manifest = toml::from_str(&workspace::read_to_string(
+        &args.repo_root.join("Cargo.toml"),
+    )?)
+    .context("failed to parse workspace Cargo.toml")?;
     let errors = validate(&manifest.workspace.dependencies);
 
     if errors.is_empty() {
@@ -133,7 +134,9 @@ fn check_family(label: &str, pins: &BTreeMap<String, String>, errors: &mut Vec<S
     let distinct: BTreeMap<&String, &String> = pins.iter().collect();
     let minors: std::collections::BTreeSet<&String> = distinct.values().copied().collect();
     match minors.len() {
-        0 => errors.push(format!("no {label} alloy-* pins found in the workspace manifest")),
+        0 => errors.push(format!(
+            "no {label} alloy-* pins found in the workspace manifest"
+        )),
         1 => {}
         _ => errors.push(format!(
             "{label} pins disagree on major.minor: {}",
@@ -178,7 +181,12 @@ mod tests {
     fn deps(pairs: &[(&str, &str)]) -> BTreeMap<String, toml::Value> {
         pairs
             .iter()
-            .map(|(name, version)| ((*name).to_owned(), toml::Value::String((*version).to_owned())))
+            .map(|(name, version)| {
+                (
+                    (*name).to_owned(),
+                    toml::Value::String((*version).to_owned()),
+                )
+            })
             .collect()
     }
 
@@ -202,7 +210,11 @@ mod tests {
             ("alloy-brand-new", "3.0.0"),
         ]);
         let errors = validate(&dependencies);
-        assert!(errors.iter().any(|error| error.contains("disagree on major.minor")));
+        assert!(
+            errors
+                .iter()
+                .any(|error| error.contains("disagree on major.minor"))
+        );
         assert!(errors.iter().any(|error| error.contains("unclassified")));
     }
 
@@ -214,7 +226,11 @@ mod tests {
             ("alloy-chains", "0.1.0"),
         ]);
         let errors = validate(&dependencies);
-        assert!(errors.iter().any(|error| error.contains("alloy-chains is forbidden")));
+        assert!(
+            errors
+                .iter()
+                .any(|error| error.contains("alloy-chains is forbidden"))
+        );
         // A forbidden crate must give its specific reason, not the generic
         // "unclassified" message.
         assert!(!errors.iter().any(|error| error.contains("unclassified")));

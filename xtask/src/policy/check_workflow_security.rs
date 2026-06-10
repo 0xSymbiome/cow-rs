@@ -51,7 +51,10 @@ pub fn run(args: &Args) -> Result<()> {
     }
 
     if errors.is_empty() {
-        println!("workflow security invariants hold across {} workflow(s)", paths.len());
+        println!(
+            "workflow security invariants hold across {} workflow(s)",
+            paths.len()
+        );
         return Ok(());
     }
     for error in &errors {
@@ -64,10 +67,9 @@ fn audit_workflow(relative: &str, text: &str) -> Vec<String> {
     // Compiled once per call; the workflow set is small.
     let uses = Regex::new(r"^\s*(?:-\s*)?uses:\s*(\S+)").expect("uses regex is valid");
     let sha_pinned = Regex::new(r"@[0-9a-f]{40}$").expect("sha regex is valid");
-    let pull_request_target = Regex::new(
-        r"^\s*(?:-\s*)?pull_request_target\s*:|^\s*on:[^#]*pull_request_target",
-    )
-    .expect("pull_request_target regex is valid");
+    let pull_request_target =
+        Regex::new(r"^\s*(?:-\s*)?pull_request_target\s*:|^\s*on:[^#]*pull_request_target")
+            .expect("pull_request_target regex is valid");
     let allow_comment =
         Regex::new(r"#\s*allow-pull-request-target:\s*.+").expect("allow regex is valid");
 
@@ -109,8 +111,16 @@ mod tests {
     fn unpinned_ref_and_unreviewed_pull_request_target_are_rejected() {
         let workflow = "on:\n  pull_request_target:\njobs:\n  build:\n    steps:\n      - uses: actions/checkout@v4\n";
         let errors = audit_workflow("ci.yml", workflow);
-        assert!(errors.iter().any(|error| error.contains("40-character commit SHA")));
-        assert!(errors.iter().any(|error| error.contains("allow-pull-request-target")));
+        assert!(
+            errors
+                .iter()
+                .any(|error| error.contains("40-character commit SHA"))
+        );
+        assert!(
+            errors
+                .iter()
+                .any(|error| error.contains("allow-pull-request-target"))
+        );
     }
 
     #[test]

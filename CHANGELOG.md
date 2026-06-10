@@ -114,6 +114,17 @@ sections below describe the public contract a `0.1.0` consumer receives.
   / `checked_mul` / `checked_pow` returning `Option`, with explicit
   `saturating_*` clamps — so an overflow can never silently wrap a typed amount;
   raw wrapping is available through `as_u256` / `into_u256`.
+- `cow_sdk_core::OrderData` is exhaustive with all-public fields, so consumers
+  on the manual signing path construct it as a struct literal — named fields
+  make the three addresses and three amounts impossible to transpose. The
+  field set is the EIP-712 `Order` struct frozen by the deployed settlement
+  contract, so exhaustiveness is not a semver liability. The positional
+  `OrderData::new` constructor and `with_*` setters remain available.
+- The `cow_sdk_core::address!` macro constructs a compile-time validated
+  `Address` from a `0x`-prefixed hex literal — the typed mirror of
+  `alloy_primitives::address!` — so well-known addresses live in `const` items
+  with malformed hex, wrong lengths, and failed EIP-55 checksums rejected at
+  build time instead of through a runtime `Address::new` call.
 - `cow_sdk_core::Amount::parse_units(value, decimals)` and `format_units(decimals)`
   are the exact decimal token-amount construction and display surface — the
   typed analogues of viem's `parseUnits` / `formatUnits`. `parse_units` scales a
@@ -286,6 +297,15 @@ sections below describe the public contract a `0.1.0` consumer receives.
   `OrderCreation`, so every form (full / hash / both) is wire-correct. The
   request defaults `priceQuality` to `PriceQuality::Optimal`. Recorded in
   [ADR 0058](docs/adr/0058-typed-quote-request-response-surface.md).
+- `cow_sdk_orderbook::OrderCreation::from_quote` consumes the full
+  `OrderQuoteResponse` and threads the response's quote id straight onto the
+  submission payload, so the posted order settles against the quote the user
+  approved instead of a fresh server-side rebind; `with_quote_id` remains the
+  explicit override for hand-built payloads.
+  `OrderCreation::presign_from_quote` builds the `presign` submission shape —
+  no cryptographic signature; the order becomes fillable once the owner
+  activates the on-chain pre-signature flag on the settlement contract — for
+  smart-contract owners such as vaults and DAO treasuries.
 - `cow_sdk_orderbook::OrderCreation::from_signed` is the canonical conversion
   from a signed `OrderData` into a submission payload, deriving the wire
   `appDataHash` from the signed commitment so the submitted hash cannot diverge.

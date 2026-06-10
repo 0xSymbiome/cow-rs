@@ -83,15 +83,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
     .with_price_quality(PriceQuality::Optimal);
     let quote = orderbook.quote(&quote_request).await?;
 
-    // 3. Turn the quote into a signed order and submit it.
+    // 3. Turn the quote into a signed order and submit it. The response's
+    //    quote id rides along automatically, binding the submission to the
+    //    quote the user approved.
     let order = OrderCreation::from_quote(
-        &quote.quote,
+        &quote,
         sample_owner(),
         None,
         OrderbookSigningScheme::Eip712,
         sample_signature(),
-    )
-    .with_quote_id(quote.id.expect("example quote id remains present"));
+    );
     let created_order_uid = orderbook.send_order(&order).await?;
 
     // 4. Read the order's competition status.

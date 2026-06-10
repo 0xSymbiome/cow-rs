@@ -11,7 +11,7 @@
 //! submission path always emits `"feeAmount": "0"`.
 
 use cow_sdk_core::{Address, Amount, AppDataHash, OrderKind};
-use cow_sdk_orderbook::{OrderCreation, QuoteData, SigningScheme};
+use cow_sdk_orderbook::{OrderCreation, OrderQuoteResponse, QuoteData, SigningScheme};
 
 fn amount(value: &str) -> Amount {
     Amount::new(value).expect("test amount literal must be valid")
@@ -74,7 +74,8 @@ fn order_creation_from_quote_zeroes_fee_amount_on_submission() {
         "QuoteData must surface the configured network-cost amount through its accessor",
     );
 
-    let order = OrderCreation::from_quote(&quote, address, None, SigningScheme::Eip712, "0x");
+    let response = OrderQuoteResponse::new(quote, "2026-01-01T00:00:00Z", false);
+    let order = OrderCreation::from_quote(&response, address, None, SigningScheme::Eip712, "0x");
     let wire = serde_json::to_value(&order).expect("OrderCreation must serialize");
     assert_eq!(
         wire.get("feeAmount"),

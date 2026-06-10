@@ -161,4 +161,3 @@ fn release_readiness_workflow() -> bool {
         .map(|workflow| workflow.to_ascii_lowercase().contains("release-readiness"))
         .unwrap_or(false)
 }
-

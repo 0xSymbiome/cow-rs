@@ -478,13 +478,12 @@ async fn get_quote_and_send_order_cover_quote_and_duplicate_order_paths() {
         .expect("quote should succeed");
 
     let order = OrderCreation::from_quote(
-        &quote.quote,
+        &quote,
         sample_owner(),
         None,
         SigningScheme::Eip712,
         sample_signature(),
-    )
-    .with_quote_id(quote.id.expect("fixture includes quote id"));
+    );
 
     let error = api
         .send_order(&order)
@@ -1118,13 +1117,12 @@ mod recording_transport {
             .expect("quote request must succeed through the injected transport");
 
         let order = OrderCreation::from_quote(
-            &quote.quote,
+            &quote,
             sample_owner(),
             None,
             SigningScheme::Eip712,
             sample_signature(),
-        )
-        .with_quote_id(quote.id.expect("fixture includes quote id"));
+        );
         let uid = api
             .send_order(&order)
             .await

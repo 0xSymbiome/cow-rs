@@ -141,7 +141,9 @@ fn messages_for_observed(
     }
 
     if messages.is_empty() {
-        messages.push(format!("`{repo_id}` local upstream root matches source-lock"));
+        messages.push(format!(
+            "`{repo_id}` local upstream root matches source-lock"
+        ));
     }
 
     messages

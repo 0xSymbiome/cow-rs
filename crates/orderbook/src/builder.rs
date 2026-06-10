@@ -290,7 +290,7 @@ impl<C, T> OrderbookApiBuilder<C, EnvSet, T> {
     /// Convenience over [`OrderbookApiBuilder::env_base_url`] that reuses the
     /// environment carried by the [`EnvSet`] typestate. The method is reachable
     /// only after the environment has been supplied through
-    /// [`OrderbookApiBuilder::environment`] or
+    /// [`OrderbookApiBuilder::env`] or
     /// [`OrderbookApiBuilder::from_context`], so calling it before the
     /// environment is set is a compile error rather than a runtime panic.
     #[must_use]

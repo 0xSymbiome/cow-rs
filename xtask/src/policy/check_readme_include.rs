@@ -98,6 +98,8 @@ mod tests {
         assert!(!renders_readme_on_docsrs(
             r#"#![cfg_attr(doctest, doc = include_str!("../README.md"))]"#
         ));
-        assert!(!renders_readme_on_docsrs("//! crate docs without a README include"));
+        assert!(!renders_readme_on_docsrs(
+            "//! crate docs without a README include"
+        ));
     }
 }

@@ -940,15 +940,13 @@ mod tracing_contract {
             ))
             .await
             .expect("quote should succeed");
-        let quote_id = quote.id.expect("fixture carries a quote id");
         let order = OrderCreation::from_quote(
-            &quote.quote,
+            &quote,
             sample_owner(),
             None,
             SigningScheme::Eip712,
             sample_signature(),
-        )
-        .with_quote_id(quote_id);
+        );
 
         let uid = api
             .send_order(&order)

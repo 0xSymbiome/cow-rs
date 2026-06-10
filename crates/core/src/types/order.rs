@@ -125,11 +125,13 @@ impl TokenInfo {
 /// submitted to the orderbook as `cow_sdk_orderbook::OrderCreation` and read
 /// back as the separate `cow_sdk_orderbook::Order` response record.
 ///
-/// Downstream crates construct orders through [`OrderData::new`] and the
-/// chainable `with_*` setters rather than a struct literal so additive fields
-/// remain semver-compatible; the `#[non_exhaustive]` attribute additionally
-/// prevents external struct-literal construction.
-#[non_exhaustive]
+/// All fields are public and the struct is exhaustive: the field set is the
+/// EIP-712 `Order` struct frozen by the deployed settlement contract, so it
+/// cannot grow without a protocol-level change. Construct it as a struct
+/// literal (named fields make the three addresses and three amounts
+/// impossible to transpose) or through [`OrderData::new`] and the chainable
+/// `with_*` setters when positional construction reads better at the call
+/// site.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OrderData {

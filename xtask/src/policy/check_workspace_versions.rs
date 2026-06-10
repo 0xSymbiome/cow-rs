@@ -53,13 +53,15 @@ fn validate_npm_template(repo_root: &Path, workspace_version: &str) -> anyhow::R
     }
     let template: serde_json::Value = serde_json::from_str(&workspace::read_to_string(&path)?)
         .with_context(|| format!("failed to parse {}", path.display()))?;
-    Ok(match template.get("version").and_then(serde_json::Value::as_str) {
-        Some(version) if version == workspace_version => Vec::new(),
-        Some(version) => vec![format!(
-            "npm package template version {version} does not match workspace version {workspace_version}"
-        )],
-        None => vec!["npm package template is missing a string version field".to_owned()],
-    })
+    Ok(
+        match template.get("version").and_then(serde_json::Value::as_str) {
+            Some(version) if version == workspace_version => Vec::new(),
+            Some(version) => vec![format!(
+                "npm package template version {version} does not match workspace version {workspace_version}"
+            )],
+            None => vec!["npm package template is missing a string version field".to_owned()],
+        },
+    )
 }
 
 pub fn validate_versions(workspace_version: &str, members: &[MemberVersion]) -> Vec<String> {

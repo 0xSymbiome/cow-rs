@@ -203,4 +203,3 @@ fn is_post_1_0_minor(base: &Version, head: &Version) -> bool {
 fn is_major(base: &Version, head: &Version) -> bool {
     head.major == base.major + 1 && head.minor == 0 && head.patch == 0 && head.pre.is_empty()
 }
-

@@ -35,12 +35,12 @@ feature (`cow-sdk = { features = ["testing"] }` → `cow_sdk::testing`), or depe
 on `cow-sdk-test` directly.
 
 ```rust
+use cow_sdk::core::SupportedChainId;
 use cow_sdk::testing::trading;
-use cow_sdk::SupportedChainId;
 
 let testing = trading(SupportedChainId::Sepolia, "my-app")?;
-// Drive `testing.sdk` with `testing.signer` in your async test:
-//   testing.sdk.post_swap_order(params, &testing.signer, None).await?;
+// Drive `testing.trading` with `testing.signer` in your async test:
+//   testing.trading.post_swap_order(params, &testing.signer, None).await?;
 // then assert on what your code sent:
 assert_eq!(testing.orderbook.recorded().sent_orders.len(), 1);
 ```

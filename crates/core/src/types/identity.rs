@@ -88,6 +88,17 @@ impl Address {
         Self(AlloyAddress::new(bytes))
     }
 
+    /// Creates an address from an already-validated [`alloy_primitives::Address`].
+    ///
+    /// Const counterpart of the `From` conversion, completing the
+    /// [`Address::as_alloy`] / [`Address::into_alloy`] accessor family for
+    /// const contexts such as the [`address!`](crate::address) literal macro.
+    #[inline]
+    #[must_use]
+    pub const fn from_alloy(inner: AlloyAddress) -> Self {
+        Self(inner)
+    }
+
     /// Returns the canonical lowercase 0x-prefixed hex form as an owned
     /// [`String`].
     ///
@@ -196,6 +207,30 @@ impl<'de> Deserialize<'de> for Address {
         let value = <Cow<'_, str>>::deserialize(de)?;
         Self::new(value.as_ref()).map_err(serde::de::Error::custom)
     }
+}
+
+/// Constructs a compile-time validated [`Address`] from a `0x`-prefixed
+/// hexadecimal literal, mirroring `alloy_primitives::address!`.
+///
+/// Malformed hex, a wrong length, or a failed EIP-55 checksum (for
+/// mixed-case input) reject at build time, so well-known addresses can live
+/// in `const` items without a runtime [`Address::new`] call and `?` at every
+/// use site.
+///
+/// ```
+/// use cow_sdk_core::{Address, address};
+///
+/// const VAULT_RELAYER: Address = address!("0xC92E8bdf79f0507f65a392b0ab4667716BFE0110");
+/// assert_eq!(
+///     VAULT_RELAYER.to_hex_string(),
+///     "0xc92e8bdf79f0507f65a392b0ab4667716bfe0110",
+/// );
+/// ```
+#[macro_export]
+macro_rules! address {
+    ($hex:literal) => {
+        $crate::Address::from_alloy($crate::__private::alloy_primitives::address!($hex))
+    };
 }
 
 impl From<AlloyAddress> for Address {

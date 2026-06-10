@@ -4,7 +4,7 @@ use super::{
     Address, Amount, AppDataHash, BuyTokenDestination, OrderKind, OrderUid, SellTokenSource,
     TransactionHash,
     enums::{EcdsaSigningScheme, OrderClass, OrderStatus, SigningScheme},
-    quote::QuoteData,
+    quote::OrderQuoteResponse,
 };
 
 /// Orderbook order submission DTO.
@@ -237,17 +237,21 @@ impl OrderCreation {
 
     /// Creates an order-submission payload from a quote response.
     ///
-    /// The order-level fee is always wired as `"0"` on submission; the
-    /// network-cost component returned on the quote response does not
-    /// round-trip into the signed order.
+    /// Copies the economic fields from the resolved quote and threads the
+    /// response's quote id straight onto the payload, so the submission
+    /// settles against the quote the user actually approved rather than a
+    /// fresh server-side rebind. The order-level fee is always wired as `"0"`
+    /// on submission; the network-cost component returned on the quote
+    /// response does not round-trip into the signed order.
     #[must_use]
     pub fn from_quote(
-        quote: &QuoteData,
+        response: &OrderQuoteResponse,
         from: Address,
         receiver: Option<Address>,
         signing_scheme: SigningScheme,
         signature: impl Into<String>,
     ) -> Self {
+        let quote = &response.quote;
         Self {
             sell_token: quote.sell_token,
             buy_token: quote.buy_token,
@@ -266,8 +270,25 @@ impl OrderCreation {
             signing_scheme,
             signature: signature.into(),
             from,
-            quote_id: None,
+            quote_id: response.id,
         }
+    }
+
+    /// Creates a `presign` order-submission payload from a quote response.
+    ///
+    /// Pre-sign placements carry no cryptographic signature: the orderbook
+    /// accepts an empty signature for the `presign` scheme, and the order
+    /// only becomes fillable once the owner activates the on-chain
+    /// pre-signature flag on the settlement contract (`setPreSignature`).
+    /// This is the smart-contract-owner path (vaults, DAOs, protocol
+    /// treasuries) where the signing identity is the contract itself.
+    #[must_use]
+    pub fn presign_from_quote(
+        response: &OrderQuoteResponse,
+        from: Address,
+        receiver: Option<Address>,
+    ) -> Self {
+        Self::from_quote(response, from, receiver, SigningScheme::PreSign, "")
     }
 
     /// Creates a submission payload from a signed user-domain order.

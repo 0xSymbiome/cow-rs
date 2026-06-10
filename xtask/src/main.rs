@@ -13,11 +13,10 @@ use xtask::docs::{agree, audit_index};
 use xtask::parity::{self, openapi_coverage, registry_confirm, sync, vendor_openapi};
 use xtask::policy::{
     check_adr_coverage, check_alloy_family_pins, check_chain_patch_eligibility,
-    check_deny_unknown_fields,
-    check_enum_policy, check_msrv_notice, check_panic_allowlist, check_property_citations,
-    check_readme_include, check_shell_wrappers, check_source_lock_roots, check_wasm_invariant,
-    check_workflow_security, check_workspace_versions, dependency_invariant, fences,
-    run_deterministic_examples,
+    check_deny_unknown_fields, check_enum_policy, check_msrv_notice, check_panic_allowlist,
+    check_property_citations, check_readme_include, check_shell_wrappers, check_source_lock_roots,
+    check_wasm_invariant, check_workflow_security, check_workspace_versions, dependency_invariant,
+    fences, run_deterministic_examples,
 };
 
 #[derive(Debug, Parser)]

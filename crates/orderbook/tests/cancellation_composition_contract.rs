@@ -466,11 +466,10 @@ fn order_creation() -> OrderCreation {
     let quote: OrderQuoteResponse = serde_json::from_value(sample_quote_response_json())
         .expect("quote fixture must deserialize for order creation");
     OrderCreation::from_quote(
-        &quote.quote,
+        &quote,
         sample_owner(),
         None,
         SigningScheme::Eip712,
         sample_signature(),
     )
-    .with_quote_id(quote.id.expect("quote fixture includes quote id"))
 }

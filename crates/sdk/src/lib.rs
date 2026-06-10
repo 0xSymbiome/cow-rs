@@ -23,10 +23,12 @@
 //! Native/default ready-state setup:
 //!
 //! ```rust
-//! use cow_sdk::core::{Address, SupportedChainId};
+//! use cow_sdk::core::{Address, SupportedChainId, address};
 //! use cow_sdk::trading::Trading;
 //!
-//! let _address = Address::new("0x1111111111111111111111111111111111111111").unwrap();
+//! // Compile-time validated address literal — no runtime parse, no unwrap.
+//! const SETTLEMENT: Address = address!("0x9008D19f58AAbD9eD0D60971565AA8510560ab41");
+//!
 //! let _trading = Trading::builder()
 //!     .chain_id(SupportedChainId::Sepolia)
 //!     .app_code("your-app-code")
@@ -39,8 +41,12 @@
 //!
 //! ```rust,no_run
 //! # use std::error::Error;
-//! use cow_sdk::core::{Address, Amount, OrderKind, SupportedChainId};
+//! use cow_sdk::core::{Address, Amount, OrderKind, SupportedChainId, address};
 //! use cow_sdk::trading::{TradeParams, Trading};
+//!
+//! // Sell 0.1 WETH for COW on Sepolia.
+//! const WETH: Address = address!("0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14");
+//! const COW: Address = address!("0x0625aFB445C3B6B7B929342a04A22599fd5dBB59");
 //! #
 //! # async fn run<S>(signer: &S) -> Result<(), Box<dyn Error>>
 //! # where
@@ -52,13 +58,10 @@
 //!     .app_code("your-app-code")
 //!     .build()?;
 //!
-//! // Sell 0.1 WETH for COW on Sepolia.
-//! let weth = Address::new("0xfff9976782d46cc05630d1f6ebab18b2324d6b14")?;
-//! let cow = Address::new("0x0625afb445c3b6b7b929342a04a22599fd5dbb59")?;
 //! let params = TradeParams::new(
 //!     OrderKind::Sell,
-//!     weth,
-//!     cow,
+//!     WETH,
+//!     COW,
 //!     Amount::from(100_000_000_000_000_000u128),
 //! );
 //!

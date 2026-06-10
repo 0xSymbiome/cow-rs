@@ -264,16 +264,19 @@ fn order_creation_from_quote_keeps_quote_shape_and_quote_id() {
     )
     .expect("quote response fixture must deserialize");
     let order = OrderCreation::from_quote(
-        &quote_response.quote,
+        &quote_response,
         sample_owner(),
         None,
         SigningScheme::EthSign,
         sample_signature(),
-    )
-    .with_quote_id(quote_response.id.expect("fixture has quote id"));
+    );
 
     assert_eq!(order.kind, OrderKind::Sell);
-    assert_eq!(order.quote_id, Some(42));
+    assert_eq!(
+        order.quote_id,
+        Some(42),
+        "from_quote must thread the response id onto the submission payload",
+    );
     assert_eq!(order.signing_scheme, SigningScheme::EthSign);
     assert!(order.app_data.is_none());
     assert_eq!(order.app_data_hash, Some(sample_app_data_hash()));
@@ -433,7 +436,7 @@ fn order_creation_from_quote_serialize_emits_services_hash_variant() {
     )
     .expect("quote response fixture must deserialize");
     let order = OrderCreation::from_quote(
-        &quote_response.quote,
+        &quote_response,
         sample_owner(),
         None,
         SigningScheme::EthSign,

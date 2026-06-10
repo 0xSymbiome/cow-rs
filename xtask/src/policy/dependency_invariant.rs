@@ -48,15 +48,21 @@ pub enum Evaluation {
 }
 
 pub fn run_alloy_provider_default() -> anyhow::Result<()> {
-    run(&ALLOY_PROVIDER, &Args {
-        repo_root: PathBuf::from("."),
-    })
+    run(
+        &ALLOY_PROVIDER,
+        &Args {
+            repo_root: PathBuf::from("."),
+        },
+    )
 }
 
 pub fn run_alloy_signer_default() -> anyhow::Result<()> {
-    run(&ALLOY_SIGNER, &Args {
-        repo_root: PathBuf::from("."),
-    })
+    run(
+        &ALLOY_SIGNER,
+        &Args {
+            repo_root: PathBuf::from("."),
+        },
+    )
 }
 
 pub fn run(invariant: &Invariant, args: &Args) -> anyhow::Result<()> {

@@ -64,3 +64,14 @@ pub use types::{
     TransactionHash, VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS, ValidTo,
 };
 pub use validation::{TransportErrorClass, ValidationReason};
+
+// Macro-support re-export only: gives the `address!` literal macro a stable
+// `$crate::__private::alloy_primitives` expansion path inside downstream
+// crates that do not depend on `alloy-primitives` directly. Nested in a
+// module (rather than re-exported at the crate root) so it never becomes the
+// shortest visible path rustc picks when rendering diagnostics. Not public
+// API.
+#[doc(hidden)]
+pub mod __private {
+    pub use alloy_primitives;
+}
