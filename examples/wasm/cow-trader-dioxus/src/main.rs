@@ -317,8 +317,8 @@ async fn swap(wallet: &BrowserWallet, sell_is_weth: bool, amount: &str) -> Resul
 /// until its sell token is approved. Sends an on-chain `approve` tx.
 async fn approve(wallet: &BrowserWallet, sell_is_weth: bool, amount: &str) -> Result<String> {
     let signer = signer_for(wallet).await?;
-    let approval = ApprovalParams::new(sell_token(sell_is_weth)?, parse_amount(amount)?)
-        .with_chain_id(CHAIN);
+    let approval =
+        ApprovalParams::new(sell_token(sell_is_weth)?, parse_amount(amount)?).with_chain_id(CHAIN);
     let tx = approval_transaction(&approval, CHAIN, ENV)?;
     let broadcast = signer.send_transaction(&tx).await?;
     Ok(serde_json::to_string_pretty(&broadcast)?)
@@ -391,10 +391,7 @@ fn parse_amount(amount: &str) -> Result<Amount> {
 /// whichever the caller chooses; it never overrides an explicit value.
 fn trade(amount: &str, sell_is_weth: bool) -> Result<TradeParams> {
     let (sell, buy) = token_pair(sell_is_weth)?;
-    Ok(
-        TradeParams::new(OrderKind::Sell, sell, buy, parse_amount(amount)?)
-            .with_valid_for(1800),
-    )
+    Ok(TradeParams::new(OrderKind::Sell, sell, buy, parse_amount(amount)?).with_valid_for(1800))
 }
 
 /// A one-line advisory when the quote's suggested slippage is high enough that

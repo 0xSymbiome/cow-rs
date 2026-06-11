@@ -14,7 +14,7 @@ cargo nextest run --workspace --all-features --config-file .github/config/nextes
 cargo run-deterministic-examples --locked
 typos --config .github/config/typos.toml
 cargo deny check --config .github/config/deny.toml
-cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2024-0388 --ignore RUSTSEC-2024-0436
+cargo audit --deny unsound --deny unmaintained --ignore RUSTSEC-2024-0388 --ignore RUSTSEC-2024-0436 --ignore RUSTSEC-2026-0173
 cargo check-alloy-provider-invariant
 cargo check-alloy-signer-invariant
 cargo test -p cow-rs-workspace-tests --test alloy_two_family_lockfile_invariant

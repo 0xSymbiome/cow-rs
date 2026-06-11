@@ -10,11 +10,16 @@ unused-ignored-advisory = "allow"
 ignore = [
   { id = "RUSTSEC-2024-0436", reason = "Unmaintained `paste` is reachable only through the alloy-sol-macro and alloy-primitives proc-macro subtrees and does not compile runtime code; tracked in docs/audit/browser-wallet-alloy-dependency-audit.md. Next re-review on or before 2026-08-11 (90 days from 2026-05-13)." },
   { id = "RUSTSEC-2024-0388", reason = "Unmaintained `derivative` is reachable only through the ark-ff / ruint / nybbles / alloy-trie subtree pulled by the alloy-consensus native adapter family; the crate is a derive-macro helper that does not compile into runtime cow-sdk code; tracked in docs/audit/dependency-gate-audit.md. Next re-review on or before 2026-08-16 (90 days from 2026-05-18)." },
+  { id = "RUSTSEC-2026-0173", reason = "Unmaintained `proc-macro-error2` is reachable only through the alloy-sol-macro proc-macro subtree that derives the inline `sol!` contract bindings; it is a build-time proc-macro helper that does not compile into runtime cow-sdk code; tracked in docs/audit/dependency-gate-audit.md. Next re-review on or before 2026-09-09 (90 days from 2026-06-11)." },
 ]
 
 [bans]
 multiple-versions = "warn"
 wildcards = "deny"
+# The unpublished `cow-sdk-test-utils` helper is pulled by every crate as a
+# path dev-dependency; such intra-workspace path links carry no registry
+# version by design, so they are allowed here while registry wildcards stay denied.
+allow-wildcard-paths = true
 highlight = "all"
 # Duplicate-version maintenance is curated here with explicit subtree scope and reasons.
 

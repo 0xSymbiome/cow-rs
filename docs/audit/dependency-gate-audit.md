@@ -95,7 +95,7 @@ Routine CI and release-readiness apply the same split dependency contract:
 `cargo deny check --config .github/config/deny.toml` owns policy on allowed
 sources, licenses, curated duplicate-version tolerances, and yanked advisory
 handling, while `cargo audit --deny unsound --deny unmaintained` blocks RustSec
-vulnerabilities plus unsound and unmaintained advisories. Two identifiers are
+vulnerabilities plus unsound and unmaintained advisories. Three identifiers are
 currently tolerated with documented revisit triggers:
 
 - `RUSTSEC-2024-0388` — `derivative` is reachable only through the
@@ -106,6 +106,11 @@ currently tolerated with documented revisit triggers:
   replacement lands upstream.
 - `RUSTSEC-2024-0436` — covered by
   [Browser-Wallet Alloy Dependency Audit](browser-wallet-alloy-dependency-audit.md)
+- `RUSTSEC-2026-0173` — `proc-macro-error2` is reachable only through the
+  `alloy-sol-macro` proc-macro subtree that derives the inline `sol!` contract
+  bindings. The crate is a build-time proc-macro helper and does not compile
+  into runtime `cow-sdk` code. Revisit when the pinned alloy family moves to an
+  `alloy-sol-macro` release that no longer depends on `proc-macro-error2`.
 
 Each ignore lives in `.github/config/deny.toml` under `[advisories].ignore`.
 The shared quality gate reads that TOML register at runtime and derives the
