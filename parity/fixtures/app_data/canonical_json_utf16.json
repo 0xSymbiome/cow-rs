@@ -1,7 +1,9 @@
 {
-  "schema_version": 2,
+  "surface": "app-data-canonical-json-utf16",
+  "standards": [
+    "RFC 8785 §3.2.3 (object key ordering)"
+  ],
   "description": "RFC 8785 canonical JSON output for an app-data document whose object keys span code points whose UTF-16 code-unit ordering diverges from their UTF-8 byte ordering. The previous hand-rolled stringify_deterministic sorted keys bytewise; serde_jcs::to_string sorts by UTF-16 code unit per RFC 8785 section 3.2.3. The two orderings agree for ASCII-only keys (every other parity fixture under parity/fixtures/app_data/ stays green); the divergence is documented and locked here.",
-  "@source_ref": "RFC 8785 section 3.2.3 (object key ordering)",
   "cases": [
     {
       "id": "app-data-canonical-json-utf16-non-bmp-supersedes-bytewise",

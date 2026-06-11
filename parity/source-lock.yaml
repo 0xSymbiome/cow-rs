@@ -1,15 +1,18 @@
 # Pinned upstream commits backing the committed parity fixtures and the
 # inline alloy::sol! contract bindings. Validated by `cargo parity-validate`
-# (xtask): typed parsing rejects unknown fields, and form rules check every
-# repository row and fixture reference.
+# (xtask): typed parsing rejects unknown fields, every repository row is
+# checked by form, and fixture provenance is validated per-file by globbing
+# parity/fixtures/**/*.json — each fixture carries its own sources/standards
+# header pinned to these rows. Pins are the only committed truth; every hash
+# is derived from them at check time.
 repositories:
 - id: contracts
   remote: https://github.com/cowprotocol/contracts.git
   commit: c6b61ce75841ce4c25ab126def9cc981c568e6c6
-  # why: GPv2 order/trade layout, EIP-712 type strings, the settlement and vault-relayer addresses, and the networks.json deployment manifest.
-  role: primary
+  # why: GPv2 order/trade layout, EIP-712 type strings, the GPv2Signing domain block, the settlement and vault-relayer addresses, and the networks.json deployment manifest.
   producer_paths:
   - networks.json
+  - src/contracts/mixins/GPv2Signing.sol
   - src/ts/order.ts
   - src/ts/sign.ts
   - src/ts/settlement.ts
@@ -23,26 +26,25 @@ repositories:
 - id: services
   remote: https://github.com/cowprotocol/services.git
   commit: 1f80d54bc3521b3fa81cd8ad66d9f749c5450591
-  # why: orderbook wire DTOs, the OpenAPI schema, order-validation rules, and app-data hashing.
-  role: wire-authority
+  # why: orderbook wire DTOs, the OpenAPI schema (vendored to parity/openapi/services-orderbook.yml), order-validation rules, the solver-competition v2 producer, the flash-loan hint shape, and app-data hashing.
   producer_paths:
-  - crates/orderbook/openapi.yml
-  - crates/shared/src/order_validation.rs
-  - crates/orderbook/src/app_data.rs
+  - crates/app-data/src/app_data.rs
   - crates/model/src/order.rs
+  - crates/model/src/solver_competition_v2.rs
+  - crates/orderbook/openapi.yml
+  - crates/orderbook/src/app_data.rs
   - crates/orderbook/src/quoter.rs
+  - crates/shared/src/order_validation.rs
 - id: cow-sdk
   remote: https://github.com/cowprotocol/cow-sdk.git
   commit: 1c3c9619c3d0ee832ce43a2d695ad650c2ec7a18
   # why: the canonical contract-address constants for both orderbook environments, pinning the staging settlement and vault-relayer deployments resolved by the typed Registry.
-  role: primary
   producer_paths:
   - packages/config/src/chains/const/contracts.ts
 - id: cow-shed
   remote: https://github.com/cowdao-grants/cow-shed.git
   commit: 9e01a88e0010314ee1e4c1a822105897a87d3bda
   # why: the COW Shed proxy, factory, and hooks-hashing Solidity the inline sol! bindings mirror, plus the networks.json addresses behind the account-abstraction surface.
-  role: primary
   producer_paths:
   - networks.json
   - src/COWShed.sol
@@ -54,48 +56,19 @@ repositories:
   remote: https://github.com/cowprotocol/ethflowcontract.git
   commit: 762d182674f8f890bd27917872ee62125171b54d
   # why: the CoWSwapEthFlow contract, EthFlowOrder library, and on-chain-orders mixin behind the native-asset order path.
-  role: primary
   producer_paths:
   - src/CoWSwapEthFlow.sol
   - src/libraries/EthFlowOrder.sol
   - src/interfaces/ICoWSwapOnchainOrders.sol
   - src/mixins/CoWSwapOnchainOrders.sol
   - src/interfaces/IWrappedNativeToken.sol
-fixtures:
-- surface: contracts
-  file: parity/fixtures/contracts.json
-  source_refs:
-  - repo: contracts
-    path: src/ts/order.ts
-  - repo: contracts
-    path: src/ts/sign.ts
-  - repo: contracts
-    path: src/ts/settlement.ts
-  - repo: contracts
-    path: src/ts/interaction.ts
-  - repo: contracts
-    path: test/GPv2Order/PackOrderUidParams.t.sol
-  - repo: contracts
-    path: test/GPv2Order/ExtractOrderUidParams.t.sol
-  - repo: contracts
-    path: test/GPv2Trade/ExtractFlags.t.sol
-  - repo: contracts
-    path: test/GPv2Trade/ExtractOrder.t.sol
-  - repo: contracts
-    path: test/GPv2Settlement/OrderRefunds.t.sol
-  - repo: contracts
-    path: test/GPv2Settlement/Swap/Swap.t.sol
-- surface: orderbook-request-order-creation
-  file: parity/fixtures/orderbook-requests/order_creation.json
-  source_refs:
-  - repo: services
-    path: crates/orderbook/openapi.yml
-  - repo: services
-    path: crates/shared/src/order_validation.rs
-  - repo: services
-    path: crates/model/src/order.rs
-- surface: orderbook-request-cancellations
-  file: parity/fixtures/orderbook-requests/order_cancellations.json
-  source_refs:
-  - repo: services
-    path: crates/orderbook/openapi.yml
+- id: app-data
+  remote: https://github.com/cowprotocol/app-data.git
+  commit: 31f130d1838ea5018facdfe240aef46ff0cc1881
+  # why: the canonical app-data JSON Schema families — the hooks metadata cited by the hooks parity fixture, plus the quote/partnerFee/definitions schemas the fixtures/app_data/schemas drift mirrors track.
+  producer_paths:
+  - src/schemas/definitions.json
+  - src/schemas/hook/v0.2.0.json
+  - src/schemas/hooks/v0.2.0.json
+  - src/schemas/partnerFee/v1.0.0.json
+  - src/schemas/quote/v1.1.0.json

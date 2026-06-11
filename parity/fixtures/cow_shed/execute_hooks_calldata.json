@@ -1,5 +1,14 @@
 {
-  "schema_version": 2,
+  "surface": "cow-shed-execute-hooks-calldata",
+  "sources": {
+    "cow-shed": {
+      "commit": "9e01a88e0010314ee1e4c1a822105897a87d3bda",
+      "refs": [
+        "src/COWShed.sol#executeHooks",
+        "src/LibAuthenticatedHooks.sol#Call"
+      ]
+    }
+  },
   "rows": [
     {
       "name": "single_call_simple",

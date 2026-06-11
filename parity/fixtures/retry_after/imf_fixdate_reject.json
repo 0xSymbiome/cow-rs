@@ -1,7 +1,9 @@
 {
-  "schema_version": 2,
+  "surface": "retry-after-imf-fixdate-reject",
+  "standards": [
+    "RFC 7231 §7.1.1.1 (IMF-fixdate, negative space)"
+  ],
   "description": "Retry-After IMF-fixdate reject cases. Every row presents a malformed HTTP-date header value that must fail to parse and surface as a typed None to the caller. The parser routes through httpdate::parse_http_date which enforces strict RFC 7231 syntax.",
-  "@source_ref": "RFC 7231 section 7.1.1.1 (negative space)",
   "cases": [
     {
       "id": "retry-after-imf-fixdate-rejects-missing-timezone",

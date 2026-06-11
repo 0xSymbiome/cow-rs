@@ -37,8 +37,14 @@ fn assert_fixture_roundtrips_field_for_field<T>(label: &str, raw: &str)
 where
     T: DeserializeOwned + Serialize,
 {
-    let expected: serde_json::Value =
+    let fixture: serde_json::Value =
         serde_json::from_str(raw).expect("response DTO fixture must be valid JSON");
+    // The wire document lives under the `payload` envelope; the provenance
+    // header around it is validated by `cargo parity-validate`.
+    let expected = fixture
+        .get("payload")
+        .cloned()
+        .unwrap_or_else(|| panic!("{label} fixture must carry a payload envelope"));
     let typed: T = serde_json::from_value(expected.clone())
         .unwrap_or_else(|error| panic!("{label} fixture must deserialize: {error}"));
     let actual = serde_json::to_value(&typed)
@@ -163,10 +169,12 @@ fn typed_amount_builders_keep_decimal_string_wire_shape() {
 
 #[test]
 fn order_quote_response_amount_fields_deserialize_through_typed_amount() {
-    let response: OrderQuoteResponse = serde_json::from_str(include_str!(
+    let fixture: serde_json::Value = serde_json::from_str(include_str!(
         "../../../parity/fixtures/orderbook/order_quote_response.json"
     ))
-    .expect("quote response fixture must deserialize");
+    .expect("quote response fixture must be valid JSON");
+    let response: OrderQuoteResponse = serde_json::from_value(fixture["payload"].clone())
+        .expect("quote response fixture must deserialize");
 
     assert_eq!(response.quote.sell_amount, amount("1000000000000000000"));
     assert_eq!(response.quote.buy_amount, amount("2000000000000000000"));
@@ -202,5 +210,9 @@ fn openapi_response_dtos_roundtrip_required_fixture_fields() {
     assert_fixture_roundtrips_field_for_field::<SolverExecution>(
         "SolverExecution",
         include_str!("../../../parity/fixtures/orderbook/solver_execution.json"),
+    );
+    assert_fixture_roundtrips_field_for_field::<TotalSurplus>(
+        "TotalSurplus",
+        include_str!("../../../parity/fixtures/orderbook/total_surplus.json"),
     );
 }

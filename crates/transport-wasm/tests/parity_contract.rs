@@ -1,9 +1,11 @@
 //! Parity contract between [`cow_sdk_core::ReqwestTransport`] and
 //! `cow_sdk_transport_wasm::FetchTransport`.
 //!
-//! Shared fixtures under `crates/core/tests/fixtures/transport/` carry the
-//! canonical response bytes both adapters are required to deliver through
-//! the shared [`HttpTransport`] trait. The `error-class` matrix re-exercises
+//! The inline `*_FIXTURE` constants carry the canonical response bytes both
+//! adapters are required to deliver through the shared [`HttpTransport`]
+//! trait — synthetic, self-owned bodies shared between the native and wasm
+//! halves of this file (upstream wire-shape parity lives in
+//! `parity/fixtures/orderbook/`). The `error-class` matrix re-exercises
 //! each adapter against synthetic failure scenarios (connect-refused,
 //! server-500, timeout, truncated-body) and asserts both adapters agree on
 //! the same partitioned outcome: transport-level failures map to the same
@@ -22,12 +24,9 @@
 
 use cow_sdk_core::TransportErrorClass;
 
-const GET_ORDERS_FIXTURE: &str =
-    include_str!("../../core/tests/fixtures/transport/get_orders_ok.json");
-const POST_QUOTE_FIXTURE: &str =
-    include_str!("../../core/tests/fixtures/transport/post_quote_ok.json");
-const DELETE_ORDER_FIXTURE: &str =
-    include_str!("../../core/tests/fixtures/transport/delete_order_ok.txt");
+const GET_ORDERS_FIXTURE: &str = r#"{"orders":[{"uid":"0x0000000000000000000000000000000000000000000000000000000000000001","sellToken":"0x1111111111111111111111111111111111111111","buyToken":"0x2222222222222222222222222222222222222222","kind":"sell"}],"count":1}"#;
+const POST_QUOTE_FIXTURE: &str = r#"{"quoteId":42,"sellAmount":"1000000000000000000","buyAmount":"500000000000000000","validTo":1700000000,"appData":"0x","feeAmount":"1000"}"#;
+const DELETE_ORDER_FIXTURE: &str = "ok";
 
 /// Transport-layer error-class parity matrix shared between the native and
 /// wasm halves.

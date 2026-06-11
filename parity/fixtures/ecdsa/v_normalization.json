@@ -1,6 +1,9 @@
 {
-  "schema_version": 2,
-  "source": "cow_sdk_contracts::RecoverableSignature::parse_bytes canonicalises v in {0, 1, 27, 28} onto {27, 28} and rejects every other recovery byte through ContractsError::InvalidSignatureRecoveryByte per ADR 0022",
+  "surface": "ecdsa-v-normalization",
+  "standards": [
+    "Ethereum ECDSA recovery-id convention (v in {0, 1, 27, 28})"
+  ],
+  "derivation": "cow_sdk_contracts::RecoverableSignature::parse_bytes canonicalises v in {0, 1, 27, 28} onto {27, 28} and rejects every other recovery byte through ContractsError::InvalidSignatureRecoveryByte per ADR 0022",
   "rows": [
     {
       "name": "v_0_normalizes_to_27",

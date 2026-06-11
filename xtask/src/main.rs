@@ -14,9 +14,9 @@ use xtask::parity::{self, openapi_coverage, registry_confirm, sync, vendor_opena
 use xtask::policy::{
     check_adr_coverage, check_alloy_family_pins, check_chain_patch_eligibility,
     check_deny_unknown_fields, check_enum_policy, check_msrv_notice, check_panic_allowlist,
-    check_property_citations, check_readme_include, check_shell_wrappers, check_source_lock_roots,
-    check_wasm_invariant, check_workflow_security, check_workspace_versions, dependency_invariant,
-    fences, run_deterministic_examples,
+    check_property_citations, check_readme_include, check_shell_wrappers, check_wasm_invariant,
+    check_workflow_security, check_workspace_versions, dependency_invariant, fences,
+    run_deterministic_examples,
 };
 
 #[derive(Debug, Parser)]
@@ -53,8 +53,6 @@ enum DocsCommand {
 enum ParityCommand {
     /// Validate source-lock and committed parity fixture provenance.
     Validate(ValidateArgs),
-    /// Provision source-lock-pinned upstream checkouts.
-    ProvisionUpstreams(ProvisionUpstreamsArgs),
     /// Vendor the source-lock-pinned services orderbook `OpenAPI` document.
     VendorOpenapi(vendor_openapi::VendorOpenApiArgs),
     /// Generate or validate `OpenAPI` DTO coverage inventories.
@@ -92,20 +90,11 @@ struct SourceLockArg {
 struct ValidateArgs {
     #[command(flatten)]
     source: SourceLockArg,
-    #[arg(long)]
-    contracts_root: Option<PathBuf>,
-    #[arg(long)]
-    services_root: Option<PathBuf>,
-    #[arg(long)]
-    cow_sdk_root: Option<PathBuf>,
-}
-
-#[derive(Debug, Args)]
-struct ProvisionUpstreamsArgs {
-    #[command(flatten)]
-    source: SourceLockArg,
-    #[arg(long)]
-    output_root: PathBuf,
+    /// Root holding one checkout per lock repository (`<root>/<id>`, as
+    /// materialized by `parity sync`). Enables deep validation of every
+    /// repository row and the vendored `OpenAPI` body.
+    #[arg(long, env = "XTASK_UPSTREAM_ROOT")]
+    upstream_root: Option<PathBuf>,
 }
 
 #[derive(Debug, Args)]
@@ -151,9 +140,6 @@ enum PolicyCommand {
     /// Verify property registry citations resolve to real test functions.
     #[command(name = "check-property-citations")]
     CheckPropertyCitations(check_property_citations::Args),
-    /// Verify source-lock local roots match their pinned upstream repositories.
-    #[command(name = "check-source-lock-roots")]
-    CheckSourceLockRoots(check_source_lock_roots::Args),
     /// Verify wasm package boundary invariants.
     #[command(name = "check-wasm-invariant")]
     CheckWasmInvariant(check_wasm_invariant::Args),
@@ -187,20 +173,11 @@ fn run_parity(command: ParityCommand) -> Result<()> {
     match command {
         ParityCommand::Validate(args) => parity::validate(&parity::CliOptions {
             source_lock: args.source.source_lock,
-            output_root: None,
-            contracts_root: args.contracts_root,
-            services_root: args.services_root,
-            cow_sdk_root: args.cow_sdk_root,
+            // An empty env value means "not configured", not "the cwd".
+            upstream_root: args
+                .upstream_root
+                .filter(|root| !root.as_os_str().is_empty()),
         }),
-        ParityCommand::ProvisionUpstreams(args) => {
-            parity::provision_upstreams(&parity::CliOptions {
-                source_lock: args.source.source_lock,
-                output_root: Some(args.output_root),
-                contracts_root: None,
-                services_root: None,
-                cow_sdk_root: None,
-            })
-        }
         ParityCommand::VendorOpenapi(args) => vendor_openapi::run(&args),
         ParityCommand::OpenapiCoverage(args) => openapi_coverage::run(&args),
         ParityCommand::ConfirmDeployments(args) => confirm_deployments(&args),
@@ -240,7 +217,6 @@ fn run_policy(cli: PolicyCli) -> Result<()> {
         PolicyCommand::CheckAlloyFamilyPins(args) => check_alloy_family_pins::run(&args),
         PolicyCommand::CheckChainPatchEligibility(args) => check_chain_patch_eligibility::run(args),
         PolicyCommand::CheckPropertyCitations(args) => check_property_citations::run(args),
-        PolicyCommand::CheckSourceLockRoots(args) => check_source_lock_roots::run(args),
         PolicyCommand::CheckWasmInvariant(args) => check_wasm_invariant::run(args),
         PolicyCommand::CheckSourceFences(args) => fences::run(&args),
         PolicyCommand::CheckWorkflowSecurity(args) => check_workflow_security::run(&args),

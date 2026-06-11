@@ -1,7 +1,19 @@
 {
-  "amount": "2000000000000000000",
-  "liquidityProvider": "0xb50201558b00496a145fe76f7424749556e326d8",
-  "protocolAdapter": "0x1186b5ad42e3e6d6c6901fc53b4a367540e6ecfe",
-  "receiver": "0x1186b5ad42e3e6d6c6901fc53b4a367540e6ecfe",
-  "token": "0xe91d153e0b41518a2ce8dd3d7944fa863463a97d"
+  "surface": "app-data-flashloan-hints",
+  "dto": "cow_sdk_app_data::FlashloanHints",
+  "sources": {
+    "services": {
+      "commit": "1f80d54bc3521b3fa81cd8ad66d9f749c5450591",
+      "refs": [
+        "crates/app-data/src/app_data.rs#Flashloan"
+      ]
+    }
+  },
+  "payload": {
+    "amount": "2000000000000000000",
+    "liquidityProvider": "0xb50201558b00496a145fe76f7424749556e326d8",
+    "protocolAdapter": "0x1186b5ad42e3e6d6c6901fc53b4a367540e6ecfe",
+    "receiver": "0x1186b5ad42e3e6d6c6901fc53b4a367540e6ecfe",
+    "token": "0xe91d153e0b41518a2ce8dd3d7944fa863463a97d"
+  }
 }

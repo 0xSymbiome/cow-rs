@@ -317,17 +317,19 @@ async fn account_returns_hint_when_signer_was_constructed_with_explicit_account(
 }
 
 /// Regen helper. Captures the canonical wire JSON the cow signer emits
-/// for every `(chain, primary_type)` row in the
-/// `parity/fixtures/signing/eth_sign_typed_data_request.json` fixture
-/// and prints the full fixture body to stdout in the cow-rs parity
-/// schema. Invoked manually when the fixture needs refreshing:
+/// for every `(chain, primary_type)` row and prints the refreshed `rows`
+/// array. Splice it over the fixture's `rows` key — the provenance header
+/// (`surface`/`dto`/`endpoint`/`sources`) is maintained by hand and
+/// validated against `parity/source-lock.yaml` by `cargo parity-validate`,
+/// so this helper never emits provenance. Invoked manually when the fixture
+/// needs refreshing:
 ///
 /// ```text
 /// cargo test -p cow-sdk-browser-wallet --test signer_contract \
 ///     -- --ignored regen_eth_sign_typed_data_request_fixture --nocapture
 /// ```
 ///
-/// The output goes to `parity/fixtures/signing/eth_sign_typed_data_request.json`.
+/// The rows go to `parity/fixtures/signing/eth_sign_typed_data_request.json`.
 #[ignore = "regen helper; run with --ignored --nocapture to refresh the fixture"]
 #[tokio::test(flavor = "current_thread")]
 async fn regen_eth_sign_typed_data_request_fixture() {
@@ -343,26 +345,9 @@ async fn regen_eth_sign_typed_data_request_fixture() {
             }));
         }
     }
-    let fixture = serde_json::json!({
-        "schema_version": 1,
-        "surface": "browser-wallet-eth-sign-typed-data-request",
-        "dto": "cow_sdk_core::TypedDataPayload",
-        "endpoint": "EIP-1193 eth_signTypedData_v4 (params[1])",
-        "reviewed_at": "2026-05-21",
-        "source_refs": [
-            {
-                "repo": "contracts",
-                "commit": "main",
-                "path": "src/contracts/mixins/GPv2Signing.sol",
-                "line_start": 33,
-                "line_end": 36
-            }
-        ],
-        "rows": rows,
-    });
     println!(
         "{}",
-        serde_json::to_string_pretty(&fixture).expect("fixture serializes")
+        serde_json::to_string_pretty(&serde_json::json!({ "rows": rows })).expect("rows serialize")
     );
 }
 

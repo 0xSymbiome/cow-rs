@@ -1,5 +1,16 @@
 {
-  "schema_version": 1,
+  "surface": "cow-shed-execute-hooks-digest",
+  "sources": {
+    "cow-shed": {
+      "commit": "9e01a88e0010314ee1e4c1a822105897a87d3bda",
+      "refs": [
+        "src/LibAuthenticatedHooks.sol#CALL_TYPE_HASH,EXECUTE_HOOKS_TYPE_HASH,hashToSign"
+      ]
+    }
+  },
+  "standards": [
+    "EIP-712"
+  ],
   "rows": [
     {
       "chain_id": 1,

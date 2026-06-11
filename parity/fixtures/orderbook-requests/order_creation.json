@@ -1,32 +1,17 @@
 {
-  "schema_version": 1,
   "surface": "orderbook-request-order-creation",
   "dto": "cow_sdk_orderbook::OrderCreation",
   "endpoint": "POST /api/v1/orders",
-  "reviewed_at": "2026-05-21",
-  "source_refs": [
-    {
-      "repo": "services",
+  "sources": {
+    "services": {
       "commit": "1f80d54bc3521b3fa81cd8ad66d9f749c5450591",
-      "path": "crates/orderbook/openapi.yml",
-      "line_start": 1122,
-      "line_end": 1269
-    },
-    {
-      "repo": "services",
-      "commit": "1f80d54bc3521b3fa81cd8ad66d9f749c5450591",
-      "path": "crates/shared/src/order_validation.rs",
-      "line_start": 916,
-      "line_end": 917
-    },
-    {
-      "repo": "services",
-      "commit": "1f80d54bc3521b3fa81cd8ad66d9f749c5450591",
-      "path": "crates/model/src/order.rs",
-      "line_start": 439,
-      "line_end": 461
+      "refs": [
+        "crates/orderbook/openapi.yml#components.schemas.OrderCreation",
+        "crates/shared/src/order_validation.rs#L916-L917",
+        "crates/model/src/order.rs#L439-L461"
+      ]
     }
-  ],
+  },
   "examples": [
     {
       "name": "full_app_data_zero_fee",

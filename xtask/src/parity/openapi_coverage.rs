@@ -15,8 +15,6 @@ const DEFAULT_OPENAPI: &str = "parity/openapi/services-orderbook.yml";
 
 #[derive(Debug, Args)]
 pub struct OpenApiCoverageArgs {
-    #[arg(long, default_value = crate::parity::DEFAULT_SOURCE_LOCK)]
-    source_lock: PathBuf,
     #[arg(long, default_value = DEFAULT_COVERAGE_MANIFEST)]
     coverage: PathBuf,
     #[arg(long, default_value = DEFAULT_OPENAPI)]
@@ -89,7 +87,6 @@ struct Diagnostic {
 }
 
 pub fn run(args: &OpenApiCoverageArgs) -> Result<()> {
-    ensure_source_lock_present(&args.source_lock)?;
     let manifest = load_manifest(&args.coverage)?;
     let openapi = load_yaml(&args.openapi)?;
     let selected = selected_entries(&manifest, args.schema.as_deref(), args.rust_type.as_deref())?;
@@ -148,11 +145,6 @@ pub fn run(args: &OpenApiCoverageArgs) -> Result<()> {
         );
         bail!("openapi coverage validation failed")
     }
-}
-
-fn ensure_source_lock_present(path: &Path) -> Result<()> {
-    fs::metadata(path).with_context(|| format!("failed to read {}", path.display()))?;
-    Ok(())
 }
 
 fn load_manifest(path: &Path) -> Result<CoverageManifest> {
@@ -594,7 +586,7 @@ fn load_rust_struct(rust_type: &str) -> Result<RustStruct> {
         .next()
         .with_context(|| format!("invalid rust type path {rust_type}"))?;
     let crate_src = crate_src_dir(rust_type)?;
-    let files = collect_rs_files(&crate_src)?;
+    let files = crate::parity::collect_files(&crate_src, "rs")?;
 
     for file in files {
         let parsed = syn::parse_file(
@@ -631,28 +623,6 @@ fn crate_src_dir(rust_type: &str) -> Result<PathBuf> {
         other => bail!("unsupported crate prefix `{other}` in rust type `{rust_type}`"),
     };
     Ok(PathBuf::from(crate_dir))
-}
-
-fn collect_rs_files(root: &Path) -> Result<Vec<PathBuf>> {
-    let mut files = Vec::new();
-    collect_rs_files_inner(root, &mut files)?;
-    Ok(files)
-}
-
-fn collect_rs_files_inner(current: &Path, files: &mut Vec<PathBuf>) -> Result<()> {
-    for entry in
-        fs::read_dir(current).with_context(|| format!("failed to read {}", current.display()))?
-    {
-        let path = entry
-            .with_context(|| format!("failed to inspect entry in {}", current.display()))?
-            .path();
-        if path.is_dir() {
-            collect_rs_files_inner(&path, files)?;
-        } else if path.extension().and_then(|ext| ext.to_str()) == Some("rs") {
-            files.push(path);
-        }
-    }
-    Ok(())
 }
 
 fn find_struct_fields(items: &[Item], struct_name: &str) -> Option<BTreeMap<String, Field>> {

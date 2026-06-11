@@ -39,11 +39,10 @@ const TRADE_FIXTURE: &str = include_str!("../../../parity/fixtures/orderbook/tra
 /// (for example `totalFee`) are permitted; a dropped or changed *fixture* field
 /// is not.
 fn assert_fixture_preserved(label: &str, fixture: &str, rendered: &serde_json::Value) {
-    let expected: serde_json::Value =
-        serde_json::from_str(fixture).expect("fixture must be valid JSON");
+    let expected = fixture_payload(fixture);
     let expected_obj = expected
         .as_object()
-        .expect("fixture root must be a JSON object");
+        .expect("fixture payload must be a JSON object");
     let actual_obj = rendered
         .as_object()
         .expect("serialized DTO root must be a JSON object");
@@ -56,10 +55,18 @@ fn assert_fixture_preserved(label: &str, fixture: &str, rendered: &serde_json::V
     }
 }
 
+/// Extracts the wire document from a fixture's `payload` envelope; the
+/// provenance header around it is validated by `cargo parity-validate`.
+fn fixture_payload(fixture: &str) -> serde_json::Value {
+    let parsed: serde_json::Value =
+        serde_json::from_str(fixture).expect("fixture must be valid JSON");
+    parsed["payload"].clone()
+}
+
 #[wasm_bindgen_test]
 fn order_dto_mirrors_native_order_fixture() {
-    let dto: OrderDto =
-        serde_json::from_str(ORDER_FIXTURE).expect("OrderDto must deserialize the native fixture");
+    let dto: OrderDto = serde_json::from_value(fixture_payload(ORDER_FIXTURE))
+        .expect("OrderDto must deserialize the native fixture");
     let rendered = serde_json::to_value(&dto).expect("OrderDto must serialize");
     assert_fixture_preserved("OrderDto", ORDER_FIXTURE, &rendered);
 }
@@ -69,8 +76,9 @@ fn order_quote_response_dto_mirrors_native_fixture() {
     // Round-tripping the response also exercises the nested `QuoteDataDto`
     // through the `quote` field: a drift in `QuoteDataDto` changes the rendered
     // `quote` object and fails the top-level field comparison.
-    let dto: OrderQuoteResponseDto = serde_json::from_str(ORDER_QUOTE_RESPONSE_FIXTURE)
-        .expect("OrderQuoteResponseDto must deserialize the native fixture");
+    let dto: OrderQuoteResponseDto =
+        serde_json::from_value(fixture_payload(ORDER_QUOTE_RESPONSE_FIXTURE))
+            .expect("OrderQuoteResponseDto must deserialize the native fixture");
     let rendered = serde_json::to_value(&dto).expect("OrderQuoteResponseDto must serialize");
     assert_fixture_preserved(
         "OrderQuoteResponseDto",
@@ -81,8 +89,8 @@ fn order_quote_response_dto_mirrors_native_fixture() {
 
 #[wasm_bindgen_test]
 fn trade_dto_mirrors_native_trade_fixture() {
-    let dto: TradeDto =
-        serde_json::from_str(TRADE_FIXTURE).expect("TradeDto must deserialize the native fixture");
+    let dto: TradeDto = serde_json::from_value(fixture_payload(TRADE_FIXTURE))
+        .expect("TradeDto must deserialize the native fixture");
     let rendered = serde_json::to_value(&dto).expect("TradeDto must serialize");
     assert_fixture_preserved("TradeDto", TRADE_FIXTURE, &rendered);
 }
@@ -90,10 +98,11 @@ fn trade_dto_mirrors_native_trade_fixture() {
 #[wasm_bindgen_test]
 fn native_price_response_dto_mirrors_native_shape() {
     // `NativePriceResponse` carries a single `price` field and has no golden
-    // fixture; pin the wire shape directly so a rename or retype still fails.
-    const FIXTURE: &str = r#"{"price":1234.5}"#;
-    let dto: NativePriceResponseDto =
-        serde_json::from_str(FIXTURE).expect("NativePriceResponseDto must deserialize");
+    // fixture; pin the wire shape inline (under the same payload envelope the
+    // committed fixtures use) so a rename or retype still fails.
+    const FIXTURE: &str = r#"{"payload":{"price":1234.5}}"#;
+    let dto: NativePriceResponseDto = serde_json::from_value(fixture_payload(FIXTURE))
+        .expect("NativePriceResponseDto must deserialize");
     let rendered = serde_json::to_value(&dto).expect("NativePriceResponseDto must serialize");
     assert_fixture_preserved("NativePriceResponseDto", FIXTURE, &rendered);
 }

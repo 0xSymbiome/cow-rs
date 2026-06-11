@@ -323,24 +323,18 @@ git clone https://github.com/cowprotocol/contracts.git <path>/contracts
 git clone https://github.com/cowprotocol/services.git <path>/services
 ```
 
-If you prefer the parity maintainer to create the sibling checkouts from the
-pinned source lock, run:
+If you prefer the parity maintainer to create the checkouts from the pinned
+source lock (one blob-less clone per lock repository at `<path>/<id>`), run:
 
 ```text
-cargo parity-provision-upstreams --source-lock parity/source-lock.yaml --output-root <path>
+cargo xtask parity sync --root <path>
 ```
 
-Before relying on manually supplied upstream roots, run the report-only root
-check so parent-checkout, remote, or commit mismatches are visible:
+Then deep-validate every pinned repository and the vendored OpenAPI body
+against those independent roots:
 
 ```text
-cargo check-source-lock-roots --contracts-root <path>/contracts --services-root <path>/services
-```
-
-Then validate against those independent roots:
-
-```text
-cargo parity-validate --source-lock parity/source-lock.yaml --contracts-root <path>/contracts --services-root <path>/services
+cargo parity-validate --upstream-root <path>
 ```
 
 Rules:

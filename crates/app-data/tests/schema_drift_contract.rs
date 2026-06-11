@@ -2,17 +2,18 @@
 //!
 //! Runtime validation is performed by the typed metadata structs, not by a
 //! JSON-Schema validator. One self-contained drift fixture per modeled
-//! metadata family is retained under `crates/app-data/schemas/` so that a
-//! future upstream field rename or addition fails here — at review time —
-//! instead of silently diverging from the hand-written typed structs. The
-//! checks are deliberately coarse field-name probes: they flag drift for a
-//! maintainer to resolve rather than re-implementing schema validation.
+//! metadata family lives under `parity/fixtures/app_data/schemas/` (with
+//! lock-validated provenance headers) so that a future upstream field rename
+//! or addition fails here — at review time — instead of silently diverging
+//! from the hand-written typed structs. The checks are deliberately coarse
+//! field-name probes: they flag drift for a maintainer to resolve rather
+//! than re-implementing schema validation.
 
 use std::{fs, path::PathBuf};
 
 fn read_schema(relative: &str) -> String {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("schemas")
+        .join("../../parity/fixtures/app_data/schemas")
         .join(relative);
     fs::read_to_string(&path).unwrap_or_else(|error| {
         panic!(
@@ -35,7 +36,7 @@ fn assert_mentions(relative: &str, needles: &[&str], typed_surface: &str) {
 #[test]
 fn flashloan_schema_matches_the_typed_flashloan_hint() {
     assert_mentions(
-        "flashloan-v0.2.0.json",
+        "flashloan.json",
         &[
             "liquidityProvider",
             "protocolAdapter",

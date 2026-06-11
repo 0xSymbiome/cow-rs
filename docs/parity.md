@@ -45,13 +45,17 @@ Prior art (not a pinned parity source):
 Pinned sources live in `parity/source-lock.yaml`, the portable authority for
 upstream producer commits and paths.
 
-| Producer | Pinned role | Used for |
-| --- | --- | --- |
-| `cowprotocol/services` | Primary protocol authority | Orderbook HTTP API, OpenAPI schemas, wire DTOs, and order-validation and rejection semantics |
-| `cowprotocol/contracts` | Primary protocol authority | EIP-712 order hashing, settlement ABI, and deployment addresses |
-| `cowprotocol/cow-sdk` | Primary capability evidence | Commit pin for the TypeScript SDK contract-address constants behind the staging settlement and vault-relayer deployments resolved by the typed `Registry` |
-| `cowprotocol/ethflowcontract` | Primary capability evidence | Commit pin for the inline `sol!` EthFlow bindings (`CoWSwapEthFlow`, `EthFlowOrder`, `ICoWSwapOnchainOrders`, `CoWSwapOnchainOrders`, `IWrappedNativeToken`) proven by parity fixtures, plus the `ReceiverMustBeSet()` revert-selector evidence |
-| `cowdao-grants/cow-shed` | Primary capability evidence | Commit pin for the inline `sol!` COW Shed bindings proven by JSON fixtures, plus the proxy creation-code `.bin` bytes locked by the CREATE2 address-parity test, factory address derivation, hook signature shape, and version-call evidence |
+| Producer | Used for |
+| --- | --- |
+| `cowprotocol/services` | Orderbook HTTP API, OpenAPI schemas (vendored to `parity/openapi/services-orderbook.yml`), wire DTOs, the solver-competition v2 producer, the flash-loan hint shape, and order-validation and rejection semantics |
+| `cowprotocol/contracts` | EIP-712 order hashing (including the `GPv2Signing` domain block), settlement ABI, and deployment addresses |
+| `cowprotocol/cow-sdk` | Commit pin for the TypeScript SDK contract-address constants behind the staging settlement and vault-relayer deployments resolved by the typed `Registry` |
+| `cowprotocol/ethflowcontract` | Commit pin for the inline `sol!` EthFlow bindings (`CoWSwapEthFlow`, `EthFlowOrder`, `ICoWSwapOnchainOrders`, `CoWSwapOnchainOrders`, `IWrappedNativeToken`) proven by parity fixtures, plus the `ReceiverMustBeSet()` revert-selector evidence |
+| `cowdao-grants/cow-shed` | Commit pin for the inline `sol!` COW Shed bindings proven by JSON fixtures, plus the proxy creation-code `.bin` bytes locked by the CREATE2 address-parity test, factory address derivation, hook signature shape, and version-call evidence |
+| `cowprotocol/app-data` | Commit pin for the canonical app-data JSON Schema families: the hooks metadata cited by the hooks parity fixture, plus the quote/partnerFee/definitions schemas the `parity/fixtures/app_data/schemas/` drift mirrors track |
+
+Each repository row carries a `# why:` comment in the lock itself; the lock is
+the single home for the pinned commits and producer paths.
 
 Off-chain orchestration behavior (for example `cowprotocol/watch-tower`) is
 consulted as ecosystem context to define what stays outside the SDK; it is a
@@ -62,42 +66,45 @@ The pinned commits themselves are authoritative in
 
 Normal `cow-rs` builds, tests, and publishes never require local checkouts of
 the upstream repositories. Local upstream checkout paths are optional validation
-inputs; when used, they must be independent git checkouts or worktrees at the
-pinned commits. Local development snapshots are reference-only and are not commit
-provenance — release validation uses fresh git checkouts at the source-lock-pinned
-commits, produced by `cargo parity-provision-upstreams` whenever provenance is
-required.
+inputs; when used, they must be independent git checkouts at the pinned
+commits — `cargo xtask parity sync` materializes (or re-detaches) exactly that
+layout, one blob-less clone per lock repository under `<root>/<id>`.
 
 Provenance is layered so it is always reproducible from the committed record,
 never from a caller-local copy: (1) `parity/source-lock.yaml` pins each producer
-to a commit and every fixture cites its producer paths under one of those pins;
-(2) provenance-sensitive verification materializes each pinned repository as an
-independent git worktree and validates its remote and `HEAD` against the pin;
-(3) `cargo parity-provision-upstreams --output-root <dir>` clones each pinned
-repository under `<dir>/<id>` for reviewers who want to reproduce the step.
+to a commit and every fixture's header cites producer paths under one of those
+pins; (2) provenance-sensitive verification materializes each pinned repository
+as an independent checkout and validates its remote and `HEAD` against the pin;
+(3) `cargo xtask parity sync --root <dir>` reproduces the layout for reviewers.
 
 ## Validation Modes
 
 Repo-local validation does not require upstream checkouts:
 
 ```text
-cargo parity-validate --source-lock parity/source-lock.yaml
+cargo parity-validate
 ```
 
-Upstream-root validation is stricter and only meaningful when the supplied paths
-are independent git checkouts or worktrees of the pinned producer repositories:
+That validates the lock by form, every fixture header under
+`parity/fixtures/**/*.json` against the pins (cited repositories, the
+commit-equality freshness ratchet, refs confined to declared producer paths),
+and the vendored OpenAPI stamp against the services pin.
+
+Upstream-root validation is stricter: it deep-checks **every** lock repository
+against the checkout at `<root>/<id>` and compares the vendored OpenAPI body
+against the blob at the pinned services commit:
 
 ```text
-cargo parity-validate --source-lock parity/source-lock.yaml --contracts-root <contracts-checkout> --services-root <services-checkout>
+cargo xtask parity sync --root <dir>
+cargo parity-validate --upstream-root <dir>
 ```
 
-For each supplied root the validator requires the git top-level for that
-repository, a remote matching the expected upstream, `HEAD` at the pinned commit,
-and all declared producer paths present and clean relative to `HEAD`. Before
-relying on manually supplied roots, the report-only
-`cargo check-source-lock-roots` warns when a path resolves to a parent checkout,
-has a mismatched remote, or sits at a different commit than the pin. The
-maintainer workflow for refreshing the lock lives in
+For each repository the validator requires the git top-level, a remote
+matching the expected upstream, `HEAD` at the pinned commit, and all declared
+producer paths present and clean relative to `HEAD`. The scheduled
+`upstream-drift` workflow runs `cargo xtask parity drift` weekly to report
+producer-path movement on the upstream default branches. The maintainer
+workflow for refreshing the lock lives in
 [parity/README.md](../parity/README.md).
 
 ## Surface Matrix
@@ -449,9 +456,15 @@ inputs, or justification for copied literals or defaults.
 
 - do not point parity evidence at floating upstream `main`
 - update pinned SHAs only in dedicated parity refresh changes
-- keep fixture provenance explicit in every `parity/fixtures/*.json` file
-- keep embedded fixture commits aligned with `parity/source-lock.yaml`
-- keep `crates/app-data/schemas/` synchronized from a real `cowprotocol/app-data` checkout
+- keep fixture provenance explicit in every `parity/fixtures/**/*.json` header
+  (`cargo parity-validate` fails closed on a fixture without one)
+- keep fixture `sources` commits aligned with `parity/source-lock.yaml` — the
+  validator enforces equality, so a pin bump names every fixture that still
+  needs re-verification
+- keep the `parity/fixtures/app_data/schemas/` drift mirrors synchronized from
+  the `app-data` repository pinned in `parity/source-lock.yaml` (the
+  flash-loan mirror tracks the `services` producer instead — its header says
+  so)
 - keep local upstream roots out of the normal repository contract
 
 ## See Also

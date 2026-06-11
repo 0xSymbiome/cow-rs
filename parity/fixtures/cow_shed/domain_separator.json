@@ -1,5 +1,9 @@
 {
-  "schema_version": 1,
+  "surface": "cow-shed-domain-separator",
+  "standards": [
+    "EIP-712 (domain separator)"
+  ],
+  "derivation": "Golden domain separators computed by cow_sdk_contracts::cow_shed::eip712 for CREATE2-derived COWShed proxies; the COWShed name/version constants live in upstream COWShedStorage.sol, outside the pinned mirror set.",
   "rows": [
     {
       "chain_id": 1,

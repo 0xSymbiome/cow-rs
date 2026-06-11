@@ -20,7 +20,6 @@ pub struct RepoSpec<'a> {
     pub id: &'a str,
     pub remote: String,
     pub commit: String,
-    pub role: &'a str,
     pub producer_paths: Vec<&'a str>,
 }
 
@@ -29,18 +28,16 @@ pub fn write_source_lock(path: &Path, repos: &[RepoSpec<'_>]) -> Result<()> {
     for repo in repos {
         write!(
             yaml,
-            "- id: {}\n  remote: {}\n  commit: {}\n  role: {}\n  producer_paths:\n",
+            "- id: {}\n  remote: {}\n  commit: {}\n  producer_paths:\n",
             quote(repo.id),
             quote(&repo.remote),
             quote(&repo.commit),
-            quote(repo.role),
         )
         .expect("writing to a String is infallible");
         for path in &repo.producer_paths {
             writeln!(yaml, "  - {}", quote(path)).expect("writing to a String is infallible");
         }
     }
-    yaml.push_str("fixtures: []\n");
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)
             .with_context(|| format!("failed to create {}", parent.display()))?;

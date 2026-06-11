@@ -1,0 +1,38 @@
+{
+  "surface": "app-data-schema-quote",
+  "sources": {
+    "app-data": {
+      "commit": "31f130d1838ea5018facdfe240aef46ff0cc1881",
+      "refs": [
+        "src/schemas/quote/v1.1.0.json",
+        "src/schemas/definitions.json#inlined-primitives"
+      ]
+    }
+  },
+  "payload": {
+    "$id": "quote-v1.1.0.json",
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$comment": "Shared primitives inlined from upstream definitions.json; not resolved at runtime (ADR 0064).",
+    "required": [
+      "slippageBips"
+    ],
+    "title": "Quote",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "slippageBips": {
+        "title": "Slippage Bips",
+        "description": "Slippage tolerance that was applied to the order to get the limit price. Expressed in Basis Points (BPS). One basis point is equivalent to 0.01% (1/100th of a percent)",
+        "type": "integer",
+        "maximum": 10000,
+        "minimum": 0
+      },
+      "smartSlippage": {
+        "title": "Smart Slippage",
+        "description": "Whether the given slippageBips used is originated from a Smart slippage suggestion",
+        "type": "boolean",
+        "default": false
+      }
+    }
+  }
+}

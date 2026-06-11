@@ -1,13 +1,25 @@
 {
-  "gasAmount": "150000",
-  "gasPrice": "15000000000",
-  "sellTokenPrice": "1000000000",
-  "sellAmount": "1000000000000000000",
-  "buyAmount": "2000000000000000000",
-  "feeAmount": "3000000000000000",
-  "solver": "0x0000000000000000000000000000000000000007",
-  "verified": true,
-  "metadata": {
-    "route": "direct"
+  "surface": "orderbook-stored-order-quote",
+  "dto": "cow_sdk_orderbook::StoredOrderQuote",
+  "sources": {
+    "services": {
+      "commit": "1f80d54bc3521b3fa81cd8ad66d9f749c5450591",
+      "refs": [
+        "crates/orderbook/openapi.yml#components.schemas.StoredOrderQuote"
+      ]
+    }
+  },
+  "payload": {
+    "gasAmount": "150000",
+    "gasPrice": "15000000000",
+    "sellTokenPrice": "1000000000",
+    "sellAmount": "1000000000000000000",
+    "buyAmount": "2000000000000000000",
+    "feeAmount": "3000000000000000",
+    "solver": "0x0000000000000000000000000000000000000007",
+    "verified": true,
+    "metadata": {
+      "route": "direct"
+    }
   }
 }

@@ -15,7 +15,6 @@ pub mod check_panic_allowlist;
 pub mod check_property_citations;
 pub mod check_readme_include;
 pub mod check_shell_wrappers;
-pub mod check_source_lock_roots;
 pub mod check_wasm_invariant;
 pub mod check_workflow_security;
 pub mod check_workspace_versions;
@@ -68,10 +67,6 @@ const REPO_STATE_CHECKS: &[Check] = &[
     (
         "check-property-citations",
         check_property_citations::run_default,
-    ),
-    (
-        "check-source-lock-roots",
-        check_source_lock_roots::run_default,
     ),
     ("check-wasm-invariant", check_wasm_invariant::run_default),
     ("check-source-fences", fences::run_default),

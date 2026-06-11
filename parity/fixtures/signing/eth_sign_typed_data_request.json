@@ -1,7 +1,15 @@
 {
+  "surface": "browser-wallet-eth-sign-typed-data-request",
   "dto": "cow_sdk_core::TypedDataPayload",
   "endpoint": "EIP-1193 eth_signTypedData_v4 (params[1])",
-  "reviewed_at": "2026-05-21",
+  "sources": {
+    "contracts": {
+      "commit": "c6b61ce75841ce4c25ab126def9cc981c568e6c6",
+      "refs": [
+        "src/contracts/mixins/GPv2Signing.sol#L33-L36"
+      ]
+    }
+  },
   "rows": [
     {
       "chain_id": 1,
@@ -861,16 +869,5 @@
         }
       }
     }
-  ],
-  "schema_version": 1,
-  "source_refs": [
-    {
-      "commit": "c6b61ce75841ce4c25ab126def9cc981c568e6c6",
-      "line_end": 36,
-      "line_start": 33,
-      "path": "src/contracts/mixins/GPv2Signing.sol",
-      "repo": "contracts"
-    }
-  ],
-  "surface": "browser-wallet-eth-sign-typed-data-request"
+  ]
 }

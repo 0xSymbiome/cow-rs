@@ -1,0 +1,80 @@
+{
+  "surface": "cow-shed-version-calls",
+  "sources": {
+    "cow-shed": {
+      "commit": "9e01a88e0010314ee1e4c1a822105897a87d3bda",
+      "refs": [
+        "networks.json#factory-and-implementation-addresses"
+      ]
+    }
+  },
+  "derivation": "Per-chain version() results decoded from the deployed factories and implementations (deployed-reality record; the live lane is cargo registry-confirm). Creation-code sha256s and CREATE2 vectors live in cow_shed/proxy_addresses.json.",
+  "version_calls": [
+    {
+      "chain_id": 1,
+      "factory": "0x312f92fe5f1710408B20D52A374fa29e099cFA86",
+      "implementation": "0xa2704cf562ad418bf0453f4b662ebf6a2489ed88",
+      "decoded_version": "1.0.1"
+    },
+    {
+      "chain_id": 56,
+      "factory": "0x312f92fe5f1710408B20D52A374fa29e099cFA86",
+      "implementation": "0xa2704cf562ad418bf0453f4b662ebf6a2489ed88",
+      "decoded_version": "1.0.1"
+    },
+    {
+      "chain_id": 100,
+      "factory": "0x4f4350bf2c74aacd508d598a1ba94ef84378793d",
+      "implementation": "0x62d3a7ff48f9ae1c28a9552a055482f8c63787f8",
+      "decoded_version": "1.0.1"
+    },
+    {
+      "chain_id": 137,
+      "factory": "0x312f92fe5f1710408B20D52A374fa29e099cFA86",
+      "implementation": "0xa2704cf562ad418bf0453f4b662ebf6a2489ed88",
+      "decoded_version": "1.0.1"
+    },
+    {
+      "chain_id": 232,
+      "factory": "0x312f92fe5f1710408B20D52A374fa29e099cFA86",
+      "implementation": "0xa2704cf562ad418bf0453f4b662ebf6a2489ed88",
+      "decoded_version": "1.0.1"
+    },
+    {
+      "chain_id": 8453,
+      "factory": "0x312f92fe5f1710408B20D52A374fa29e099cFA86",
+      "implementation": "0xa2704cf562ad418bf0453f4b662ebf6a2489ed88",
+      "decoded_version": "1.0.1"
+    },
+    {
+      "chain_id": 9745,
+      "factory": "0x312f92fe5f1710408B20D52A374fa29e099cFA86",
+      "implementation": "0xa2704cf562ad418bf0453f4b662ebf6a2489ed88",
+      "decoded_version": "1.0.1"
+    },
+    {
+      "chain_id": 42161,
+      "factory": "0x312f92fe5f1710408B20D52A374fa29e099cFA86",
+      "implementation": "0xa2704cf562ad418bf0453f4b662ebf6a2489ed88",
+      "decoded_version": "1.0.1"
+    },
+    {
+      "chain_id": 43114,
+      "factory": "0x312f92fe5f1710408B20D52A374fa29e099cFA86",
+      "implementation": "0xa2704cf562ad418bf0453f4b662ebf6a2489ed88",
+      "decoded_version": "1.0.1"
+    },
+    {
+      "chain_id": 59144,
+      "factory": "0x312f92fe5f1710408B20D52A374fa29e099cFA86",
+      "implementation": "0xa2704cf562ad418bf0453f4b662ebf6a2489ed88",
+      "decoded_version": "1.0.1"
+    },
+    {
+      "chain_id": 11155111,
+      "factory": "0x312f92fe5f1710408B20D52A374fa29e099cFA86",
+      "implementation": "0xa2704cf562ad418bf0453f4b662ebf6a2489ed88",
+      "decoded_version": "1.0.1"
+    }
+  ]
+}

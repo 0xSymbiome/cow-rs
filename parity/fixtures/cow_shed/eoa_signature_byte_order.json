@@ -1,5 +1,16 @@
 {
-  "schema_version": 2,
+  "surface": "cow-shed-eoa-signature-byte-order",
+  "sources": {
+    "cow-shed": {
+      "commit": "9e01a88e0010314ee1e4c1a822105897a87d3bda",
+      "refs": [
+        "src/LibAuthenticatedHooks.sol#decodeEOASignature"
+      ]
+    }
+  },
+  "standards": [
+    "ERC-2098 (compact signature representation)"
+  ],
   "order": "r || s || v with v in {27, 28}; compact_2098 is the ERC-2098 r || vs form where the high bit of vs[0] holds y_parity",
   "rows": [
     {

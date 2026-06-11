@@ -25,7 +25,7 @@ validator.
   than the orderbook's own acceptance contract.
 - The schema bundle is reduced to one self-contained drift fixture per modeled
   metadata family (`flashloan`, `partnerFee`, `quote`, and the `hook` shape)
-  retained under `crates/app-data/schemas`; a drift test asserts the typed
+  retained under `parity/fixtures/app_data/schemas/`; a drift test asserts the typed
   structs still cover the upstream field names, so an upstream rename or addition
   fails review rather than diverging silently. The root-envelope schema, the
   unmodeled-family sub-schemas, the shared `definitions.json`, and the

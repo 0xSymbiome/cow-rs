@@ -198,9 +198,7 @@ jobs:
       # Source ref: Swatinem/rust-cache@v2
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
       - name: Validate parity fixtures and source lock
-        run: cargo parity-validate --source-lock parity/source-lock.yaml
-      - name: Check source-lock local root posture
-        run: cargo check-source-lock-roots
+        run: cargo parity-validate
       - name: Fetch locked dependency graph
         run: cargo fetch --locked
       - name: Build workspace with frozen lockfile
@@ -270,13 +268,9 @@ jobs:
       # Source ref: Swatinem/rust-cache@v2
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
       - name: Provision pinned upstream parity sources
-        run: |
-          PARITY_UPSTREAM_ROOT="$RUNNER_TEMP/parity-upstreams"
-          cargo parity-provision-upstreams --source-lock parity/source-lock.yaml --output-root "$PARITY_UPSTREAM_ROOT"
+        run: cargo xtask parity sync --root "$RUNNER_TEMP/parity-upstreams"
       - name: Validate pinned upstream provenance
-        run: |
-          PARITY_UPSTREAM_ROOT="$RUNNER_TEMP/parity-upstreams"
-          cargo parity-validate --source-lock parity/source-lock.yaml --cow-sdk-root "$PARITY_UPSTREAM_ROOT/cow-sdk" --contracts-root "$PARITY_UPSTREAM_ROOT/contracts" --services-root "$PARITY_UPSTREAM_ROOT/services"
+        run: cargo parity-validate --upstream-root "$RUNNER_TEMP/parity-upstreams"
 
   sbom:
     if: ${{ github.event_name != 'schedule' }}

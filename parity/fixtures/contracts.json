@@ -1,92 +1,30 @@
 {
-  "schema_version": 1,
   "surface": "contracts",
-  "generated_at_utc": "2026-04-08T00:00:00Z",
-  "generator": "curated-from-pinned-upstream-tests",
-  "source_refs": [
-    {
-      "repo": "contracts",
+  "sources": {
+    "contracts": {
       "commit": "c6b61ce75841ce4c25ab126def9cc981c568e6c6",
-      "path": "src/ts/order.ts",
-      "anchors": [
-        "ORDER_TYPE_FIELDS",
-        "BUY_ETH_ADDRESS",
-        "ORDER_UID_LENGTH",
-        "hashOrderCancellation",
-        "hashOrderCancellations",
-        "normalizeBuyTokenBalance",
-        "extractOrderUidParams"
+      "refs": [
+        "src/ts/order.ts#ORDER_TYPE_FIELDS,BUY_ETH_ADDRESS,ORDER_UID_LENGTH,hashOrderCancellation,hashOrderCancellations,normalizeBuyTokenBalance,extractOrderUidParams",
+        "src/ts/sign.ts#SigningScheme,EIP1271_MAGICVALUE,encodeEip1271SignatureData,decodeEip1271SignatureData",
+        "src/ts/settlement.ts#SettlementEncoder",
+        "src/ts/interaction.ts#normalizeInteraction,normalizeInteractions",
+        "test/GPv2Order/PackOrderUidParams.t.sol#packOrderUidParams",
+        "test/GPv2Order/ExtractOrderUidParams.t.sol#extractOrderUidParams",
+        "test/GPv2Trade/ExtractFlags.t.sol#extractFlags",
+        "test/GPv2Trade/ExtractOrder.t.sol#extractOrder",
+        "test/GPv2Settlement/OrderRefunds.t.sol#freeFilledAmountStorage,freePreSignatureStorage",
+        "test/GPv2Settlement/Swap/Swap.t.sol#swap"
       ]
     },
-    {
-      "repo": "contracts",
-      "commit": "c6b61ce75841ce4c25ab126def9cc981c568e6c6",
-      "path": "src/ts/sign.ts",
-      "anchors": [
-        "SigningScheme",
-        "EIP1271_MAGICVALUE",
-        "encodeEip1271SignatureData",
-        "decodeEip1271SignatureData"
-      ]
-    },
-    {
-      "repo": "contracts",
-      "commit": "c6b61ce75841ce4c25ab126def9cc981c568e6c6",
-      "path": "src/ts/interaction.ts",
-      "anchors": [
-        "normalizeInteraction",
-        "normalizeInteractions"
-      ]
-    },
-    {
-      "repo": "contracts",
-      "commit": "c6b61ce75841ce4c25ab126def9cc981c568e6c6",
-      "path": "test/GPv2Order/PackOrderUidParams.t.sol",
-      "anchors": [
-        "packOrderUidParams"
-      ]
-    },
-    {
-      "repo": "contracts",
-      "commit": "c6b61ce75841ce4c25ab126def9cc981c568e6c6",
-      "path": "test/GPv2Order/ExtractOrderUidParams.t.sol",
-      "anchors": [
-        "extractOrderUidParams"
-      ]
-    },
-    {
-      "repo": "contracts",
-      "commit": "c6b61ce75841ce4c25ab126def9cc981c568e6c6",
-      "path": "test/GPv2Trade/ExtractFlags.t.sol",
-      "anchors": [
-        "extractFlags"
-      ]
-    },
-    {
-      "repo": "contracts",
-      "commit": "c6b61ce75841ce4c25ab126def9cc981c568e6c6",
-      "path": "test/GPv2Trade/ExtractOrder.t.sol",
-      "anchors": [
-        "extractOrder"
-      ]
-    },
-    {
-      "repo": "contracts",
-      "commit": "c6b61ce75841ce4c25ab126def9cc981c568e6c6",
-      "path": "test/GPv2Settlement/OrderRefunds.t.sol",
-      "anchors": [
-        "freeFilledAmountStorage",
-        "freePreSignatureStorage"
-      ]
-    },
-    {
-      "repo": "contracts",
-      "commit": "c6b61ce75841ce4c25ab126def9cc981c568e6c6",
-      "path": "test/GPv2Settlement/Swap/Swap.t.sol",
-      "anchors": [
-        "swap"
+    "ethflowcontract": {
+      "commit": "762d182674f8f890bd27917872ee62125171b54d",
+      "refs": [
+        "src/CoWSwapEthFlow.sol#createOrder,invalidateOrder"
       ]
     }
+  },
+  "standards": [
+    "EIP-20 (approve and transferFrom calldata shapes)"
   ],
   "cases": [
     {
@@ -151,8 +89,15 @@
       "kind": "contract-shape",
       "description": "BuyTokenDestination is a closed type whose supported variants are the services enum {erc20, internal}; the external variant is sell-only and cannot be constructed on the buy-side destination type.",
       "expected": {
-        "buy_token_destination_variants": ["erc20", "internal"],
-        "sell_token_source_variants": ["erc20", "external", "internal"]
+        "buy_token_destination_variants": [
+          "erc20",
+          "internal"
+        ],
+        "sell_token_source_variants": [
+          "erc20",
+          "external",
+          "internal"
+        ]
       }
     },
     {
@@ -190,7 +135,7 @@
       "inputs": {
         "order_uid": "0x1111111111111111111111111111111111111111111111111111111111111111222222222222222222222222222222222222222212345678"
       },
-      "@source_ref": "contracts:c94c595a:src/ts/settlement.ts#SettlementEncoder",
+      "source_ref": "contracts:src/ts/settlement.ts#SettlementEncoder",
       "expected": {
         "call_data": "0x15337bc00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000003811111111111111111111111111111111111111111111111111111111111111112222222222222222222222222222222222222222123456780000000000000000"
       }
@@ -203,7 +148,7 @@
         "order_uid": "0x1111111111111111111111111111111111111111111111111111111111111111222222222222222222222222222222222222222212345678",
         "signed": true
       },
-      "@source_ref": "contracts:c94c595a:src/ts/settlement.ts#SettlementEncoder",
+      "source_ref": "contracts:src/ts/settlement.ts#SettlementEncoder",
       "expected": {
         "call_data": "0xec6cb13f00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000003811111111111111111111111111111111111111111111111111111111111111112222222222222222222222222222222222222222123456780000000000000000"
       }
@@ -218,7 +163,7 @@
           "0x3333333333333333333333333333333333333333333333333333333333333333444444444444444444444444444444444444444444449abcdef0"
         ]
       },
-      "@source_ref": "contracts:c94c595a:test/GPv2Settlement/OrderRefunds.t.sol#freeFilledAmountStorage",
+      "source_ref": "contracts:test/GPv2Settlement/OrderRefunds.t.sol#freeFilledAmountStorage",
       "expected": {
         "call_data": "0xed9f35ce00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000038111111111111111111111111111111111111111111111111111111111111111122222222222222222222222222222222222222221234567800000000000000000000000000000000000000000000000000000000000000000000000000000038333333333333333333333333333333333333333333333333333333333333333344444444444444444444444444444444444444449abcdef00000000000000000"
       }
@@ -233,7 +178,7 @@
           "0x3333333333333333333333333333333333333333333333333333333333333333444444444444444444444444444444444444444444449abcdef0"
         ]
       },
-      "@source_ref": "contracts:c94c595a:test/GPv2Settlement/OrderRefunds.t.sol#freePreSignatureStorage",
+      "source_ref": "contracts:test/GPv2Settlement/OrderRefunds.t.sol#freePreSignatureStorage",
       "expected": {
         "call_data": "0xa2a7d51b00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000038111111111111111111111111111111111111111111111111111111111111111122222222222222222222222222222222222222221234567800000000000000000000000000000000000000000000000000000000000000000000000000000038333333333333333333333333333333333333333333333333333333333333333344444444444444444444444444444444444444449abcdef00000000000000000"
       }
@@ -253,7 +198,7 @@
         "partially_fillable": false,
         "quote_id": 42
       },
-      "@source_ref": "ethflowcontract:762d1826:src/CoWSwapEthFlow.sol#createOrder",
+      "source_ref": "ethflowcontract:src/CoWSwapEthFlow.sol#createOrder",
       "expected": {
         "call_data": "0x322bba21000000000000000000000000111111111111111111111111111111111111111100000000000000000000000022222222222222222222222222222222222222220000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000001bc16d674ec80000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000123456780000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002a"
       }
@@ -273,7 +218,7 @@
         "partially_fillable": false,
         "quote_id": 42
       },
-      "@source_ref": "ethflowcontract:762d1826:src/CoWSwapEthFlow.sol#invalidateOrder",
+      "source_ref": "ethflowcontract:src/CoWSwapEthFlow.sol#invalidateOrder",
       "expected": {
         "call_data": "0x7bc41b96000000000000000000000000111111111111111111111111111111111111111100000000000000000000000022222222222222222222222222222222222222220000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000001bc16d674ec80000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000123456780000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002a"
       }
@@ -286,7 +231,6 @@
         "spender": "0x1111111111111111111111111111111111111111",
         "value": "1000000000000000000"
       },
-      "@source_ref": "eip:eip-20#approve",
       "expected": {
         "call_data": "0x095ea7b300000000000000000000000011111111111111111111111111111111111111110000000000000000000000000000000000000000000000000de0b6b3a7640000"
       }
@@ -300,7 +244,6 @@
         "to": "0x2222222222222222222222222222222222222222",
         "value": "1000000000000000000"
       },
-      "@source_ref": "eip:eip-20#transferFrom",
       "expected": {
         "call_data": "0x23b872dd000000000000000000000000111111111111111111111111111111111111111100000000000000000000000022222222222222222222222222222222222222220000000000000000000000000000000000000000000000000de0b6b3a7640000"
       }

@@ -54,8 +54,11 @@ fn sample_hints() -> FlashloanHints {
 fn fixture_golden_sample_roundtrips_byte_identically() {
     let fixture_text = std::fs::read_to_string(FIXTURE_PATH)
         .expect("flash-loan fixture sample must remain pinned in the tree");
-    let wire: Value =
+    let fixture: Value =
         serde_json::from_str(&fixture_text).expect("fixture sample must be valid JSON");
+    // The reviewed wire sample lives under the `payload` envelope; the
+    // provenance header around it is validated by `cargo parity-validate`.
+    let wire = fixture["payload"].clone();
 
     let parsed: FlashloanHints = serde_json::from_value(wire.clone())
         .expect("fixture sample must parse into FlashloanHints");

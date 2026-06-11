@@ -1,4 +1,16 @@
 {
-  "sender": "0x0000000000000000000000000000000000000005",
-  "placementError": "none"
+  "surface": "orderbook-onchain-order-data",
+  "dto": "cow_sdk_orderbook::OnchainOrderData",
+  "sources": {
+    "services": {
+      "commit": "1f80d54bc3521b3fa81cd8ad66d9f749c5450591",
+      "refs": [
+        "crates/orderbook/openapi.yml#components.schemas.OnchainOrderData"
+      ]
+    }
+  },
+  "payload": {
+    "sender": "0x0000000000000000000000000000000000000005",
+    "placementError": "none"
+  }
 }

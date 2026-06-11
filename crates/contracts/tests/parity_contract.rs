@@ -57,11 +57,6 @@ fn parity_fixture_cases_hold() {
     let fixture: Value = serde_json::from_str(FIXTURE).expect("fixture must parse as JSON");
 
     assert_eq!(
-        fixture["schema_version"].as_u64(),
-        Some(1),
-        "contracts fixture must declare schema_version 1"
-    );
-    assert_eq!(
         fixture["surface"].as_str(),
         Some("contracts"),
         "contracts fixture must carry the contracts surface label"

@@ -53,7 +53,7 @@ leaf crate; see the 2026-06-09 amendment.)
 `CowShedVersion` has variants `V1_0_0` and `V1_0_1` with `V1_0_1` as
 `Default::default()`. The SDK signs and derives proxy addresses against the
 deployed `VERSION()` return value captured in
-`crates/contracts/tests/fixtures/version-call-results.json`. The version selected
+`parity/fixtures/cow_shed/version_calls.json`. The version selected
 by the caller threads through every internal builder; no helper may construct
 a downstream object without forwarding the caller-selected version.
 
@@ -145,9 +145,8 @@ not a dependency direction for cow-shed.
 ## Must Remain True
 
 - Public surface: `CowShedVersion::V1_0_1` is the default; the
-  `crates/contracts/tests/fixtures/version-call-results.json` artifact carries
-  per-chain rows with `decoded_version == "1.0.1"` and
-  `expected_sdk_version == "CowShedVersion::V1_0_1"`.
+  `parity/fixtures/cow_shed/version_calls.json` artifact carries
+  per-chain rows with `decoded_version == "1.0.1"`.
 - Runtime and support: every internal builder forwards the caller-selected
   version. The regression test asserts distinct version variants produce
   distinct proxy addresses.

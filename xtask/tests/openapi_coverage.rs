@@ -3,7 +3,7 @@ mod common;
 use anyhow::Result;
 use tempfile::tempdir;
 
-use common::{RepoSpec, command, output_text, write_file, write_source_lock};
+use common::{command, output_text, write_file};
 
 #[test]
 fn openapi_coverage_validates_matching_rust_fixture() -> Result<()> {
@@ -14,12 +14,7 @@ fn openapi_coverage_validates_matching_rust_fixture() -> Result<()> {
 
     let validate = command()
         .current_dir(root)
-        .args([
-            "parity",
-            "openapi-coverage",
-            "--source-lock",
-            "source-lock.yaml",
-        ])
+        .args(["parity", "openapi-coverage"])
         .output()?;
     assert!(validate.status.success(), "{}", output_text(&validate));
     Ok(())
@@ -45,12 +40,7 @@ pub struct FixtureOrder {
 
     let validate = command()
         .current_dir(root)
-        .args([
-            "parity",
-            "openapi-coverage",
-            "--source-lock",
-            "source-lock.yaml",
-        ])
+        .args(["parity", "openapi-coverage"])
         .output()?;
     assert!(!validate.status.success(), "{}", output_text(&validate));
     let text = output_text(&validate);
@@ -82,12 +72,7 @@ dtos:
 
     let validate = command()
         .current_dir(root)
-        .args([
-            "parity",
-            "openapi-coverage",
-            "--source-lock",
-            "source-lock.yaml",
-        ])
+        .args(["parity", "openapi-coverage"])
         .output()?;
     assert!(!validate.status.success(), "{}", output_text(&validate));
     assert!(output_text(&validate).contains("required_fields_mismatch"));
@@ -95,7 +80,6 @@ dtos:
 }
 
 fn write_openapi_fixture(root: &std::path::Path) -> Result<()> {
-    write_source_lock(&root.join("source-lock.yaml"), &[] as &[RepoSpec<'_>])?;
     write_file(
         root.join("parity/openapi/coverage.yaml"),
         r"

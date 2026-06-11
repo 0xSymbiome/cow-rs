@@ -21,8 +21,7 @@ fn assert_fixture_fields_roundtrip<T>(
 where
     T: DeserializeOwned + Serialize,
 {
-    let expected: Value = serde_json::from_str(raw)
-        .unwrap_or_else(|error| panic!("{fixture_name} must be valid JSON: {error}"));
+    let expected = fixture_payload(fixture_name, raw);
     let typed: T = serde_json::from_value(expected.clone())
         .unwrap_or_else(|error| panic!("{fixture_name} must deserialize: {error}"));
     let actual = serde_json::to_value(&typed)
@@ -39,13 +38,25 @@ where
     (typed, expected, actual)
 }
 
+/// Extracts the wire document from a fixture's `payload` envelope; the
+/// provenance header around it is validated by `cargo parity-validate`.
+fn fixture_payload(fixture_name: &str, raw: &str) -> Value {
+    let fixture: Value = serde_json::from_str(raw)
+        .unwrap_or_else(|error| panic!("{fixture_name} must be valid JSON: {error}"));
+    fixture
+        .get("payload")
+        .cloned()
+        .unwrap_or_else(|| panic!("{fixture_name} must carry a payload envelope"))
+}
+
 #[test]
 fn order_fixture_deserializes_nested_typed_accessors() {
     // The `Order` wire shape round-trips byte-for-byte in `wire_contract.rs`, so
     // this test pins only the typed accessors and nested deserialization a
     // round-trip comparison does not surface.
-    let order: Order = serde_json::from_str(include_str!(
-        "../../../parity/fixtures/orderbook/order_with_full_metadata.json"
+    let order: Order = serde_json::from_value(fixture_payload(
+        "order_with_full_metadata.json",
+        include_str!("../../../parity/fixtures/orderbook/order_with_full_metadata.json"),
     ))
     .expect("order_with_full_metadata.json must deserialize");
 
@@ -71,8 +82,9 @@ fn order_fixture_deserializes_nested_typed_accessors() {
 
 #[test]
 fn order_quote_response_fixture_deserializes_typed_accessors() {
-    let response: OrderQuoteResponse = serde_json::from_str(include_str!(
-        "../../../parity/fixtures/orderbook/order_quote_response.json"
+    let response: OrderQuoteResponse = serde_json::from_value(fixture_payload(
+        "order_quote_response.json",
+        include_str!("../../../parity/fixtures/orderbook/order_quote_response.json"),
     ))
     .expect("order_quote_response.json must deserialize");
 
@@ -86,8 +98,9 @@ fn order_quote_response_fixture_deserializes_typed_accessors() {
 
 #[test]
 fn trade_fixture_deserializes_typed_accessors() {
-    let trade: Trade = serde_json::from_str(include_str!(
-        "../../../parity/fixtures/orderbook/trade.json"
+    let trade: Trade = serde_json::from_value(fixture_payload(
+        "trade.json",
+        include_str!("../../../parity/fixtures/orderbook/trade.json"),
     ))
     .expect("trade.json must deserialize");
 
@@ -101,8 +114,9 @@ fn trade_fixture_deserializes_typed_accessors() {
 
 #[test]
 fn stored_order_quote_fixture_deserializes_typed_accessors() {
-    let quote: StoredOrderQuote = serde_json::from_str(include_str!(
-        "../../../parity/fixtures/orderbook/stored_order_quote.json"
+    let quote: StoredOrderQuote = serde_json::from_value(fixture_payload(
+        "stored_order_quote.json",
+        include_str!("../../../parity/fixtures/orderbook/stored_order_quote.json"),
     ))
     .expect("stored_order_quote.json must deserialize");
 
@@ -116,8 +130,9 @@ fn stored_order_quote_fixture_deserializes_typed_accessors() {
 
 #[test]
 fn onchain_order_data_fixture_deserializes_typed_accessors() {
-    let data: OnchainOrderData = serde_json::from_str(include_str!(
-        "../../../parity/fixtures/orderbook/onchain_order_data.json"
+    let data: OnchainOrderData = serde_json::from_value(fixture_payload(
+        "onchain_order_data.json",
+        include_str!("../../../parity/fixtures/orderbook/onchain_order_data.json"),
     ))
     .expect("onchain_order_data.json must deserialize");
 

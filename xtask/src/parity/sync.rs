@@ -135,17 +135,16 @@ pub fn sync(args: &SyncArgs) -> Result<()> {
             fs::rename(&tmp, &args.source_lock)
                 .with_context(|| format!("failed to replace {}", args.source_lock.display()))?;
 
-            // The rewritten lock must still validate before the update counts.
-            super::validate(&super::CliOptions {
-                source_lock: args.source_lock.clone(),
-                output_root: None,
-                contracts_root: None,
-                services_root: None,
-                cow_sdk_root: None,
-            })?;
+            // The rewritten lock must still be well-formed before the update
+            // counts. Full validation is deliberately NOT run here: the
+            // fixture ratchet and the vendored-OpenAPI stamp are expected to
+            // fail until the maintainer refreshes them, and that refresh is
+            // the next step the drift table describes.
+            super::validate_lock_form(&args.source_lock)?;
             println!(
-                "updated {} pin(s) in {}; review the diff and refresh fixtures/vendored \
-                 artifacts cited by the drift table above",
+                "updated {} pin(s) in {}; refresh the fixtures and vendored artifacts cited \
+                 by the drift table above — `cargo parity-validate` fails closed until every \
+                 stale fixture commit and the OpenAPI stamp are re-verified",
                 updates.len(),
                 args.source_lock.display()
             );
@@ -280,7 +279,7 @@ fn resolve_remote_ref(checkout: &Path, reference: &str) -> Result<String> {
 }
 
 /// Ensures a blob-less clone of the repository exists at `checkout`.
-fn ensure_checkout(repo: &RepositoryEntry, checkout: &Path, force: bool) -> Result<()> {
+pub(crate) fn ensure_checkout(repo: &RepositoryEntry, checkout: &Path, force: bool) -> Result<()> {
     if checkout.join(".git").exists() {
         if !force && is_dirty(checkout)? {
             bail!(
@@ -324,7 +323,7 @@ fn ensure_checkout(repo: &RepositoryEntry, checkout: &Path, force: bool) -> Resu
     )
 }
 
-fn fetch_commit(checkout: &Path, commit: &str) -> Result<()> {
+pub(crate) fn fetch_commit(checkout: &Path, commit: &str) -> Result<()> {
     if git_stdout(checkout, &["cat-file", "-e", commit]).is_ok() {
         return Ok(());
     }
@@ -334,7 +333,7 @@ fn fetch_commit(checkout: &Path, commit: &str) -> Result<()> {
     Ok(())
 }
 
-fn checkout_detached(checkout: &Path, commit: &str, force: bool) -> Result<()> {
+pub(crate) fn checkout_detached(checkout: &Path, commit: &str, force: bool) -> Result<()> {
     let mut args = vec!["checkout", "--detach"];
     if force {
         args.push("--force");

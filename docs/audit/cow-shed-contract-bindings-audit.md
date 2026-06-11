@@ -22,7 +22,7 @@ This audit covers:
 - the per-version proxy creation-code artifacts embedded by the cow-shed
   crate and guarded by the CREATE2 address-parity test;
 - the per-chain `VERSION()` call evidence captured in
-  `crates/contracts/tests/fixtures/version-call-results.json`;
+  `parity/fixtures/cow_shed/version_calls.json`;
 - the self-hosted COW Shed factory and
   implementation contracts;
 - the Gnosis-only `COWShedForComposableCoW` forwarder gate that enforces
@@ -41,7 +41,7 @@ app-data crate; that boundary is governed by the
 | --- | --- | --- |
 | Inline bindings | The inline COW Shed `alloy::sol!` bindings (mirroring upstream pinned by commit in `parity/source-lock.yaml`) emit type strings byte-identical to the upstream sources, including no whitespace between commas, proven by the JSON parity fixtures under `parity/fixtures/cow_shed/` | Conforms |
 | Proxy creation-code | `v1.0.0.bin` and `v1.0.1.bin` artifacts are embedded by the cow-shed crate and guarded by the CREATE2 address-parity test `crates/contracts/tests/deployment_address_parity_contract.rs`, which derives proxy addresses from the `.bin` bytes and locks them to `parity/fixtures/cow_shed/proxy_addresses.json` for both versions | Conforms |
-| Version-call evidence | Every per-chain row in `version-call-results.json` records `decoded_version == "1.0.1"` and `expected_sdk_version == "CowShedVersion::V1_0_1"` | Conforms |
+| Version-call evidence | Every per-chain row in `parity/fixtures/cow_shed/version_calls.json` records `decoded_version == "1.0.1"`, anchoring the SDK's `CowShedVersion::V1_0_1` default to deployed reality | Conforms |
 | Deployment addresses | COW Shed factory and implementation addresses are self-hosted in `crates/contracts/src/cow_shed/address/mod.rs` for every supported chain; the COW-Shed-for-ComposableCoW address diverges only on Gnosis Chain (id 100) | Conforms |
 | Gnosis forwarder gate | The Gnosis-only forwarder is reachable only when the caller selects chain id 100; all other chains return the typed `CowShedError::COWShedForComposableCoWGnosisOnly { chain }` variant | Conforms (contract; helper body lands in a later capability landing) |
 | Hook type strings | Canonical type strings carry no whitespace between commas in declaration order; the EOA signature byte order is `r || s || v` | Conforms |
@@ -86,11 +86,10 @@ code, so derivation works correctly for any user address.
 ### Version-call evidence
 
 The per-chain `VERSION()` call evidence at
-`crates/contracts/tests/fixtures/version-call-results.json` records the
+`parity/fixtures/cow_shed/version_calls.json` records the
 deployed implementation address, the factory address, and the decoded
 version string per chain id. Every row records
-`decoded_version == "1.0.1"` and `expected_sdk_version ==
-"CowShedVersion::V1_0_1"`, anchoring the SDK's default version to deployed
+`decoded_version == "1.0.1"`, anchoring the SDK's default version to deployed
 reality.
 
 ### Gnosis forwarder gate
@@ -223,7 +222,7 @@ Primary implementation points:
 - `crates/contracts/src/cow_shed/address/proxy-creation-code/v1.0.0.bin`
 - `crates/contracts/src/cow_shed/address/proxy-creation-code/v1.0.1.bin`
 - `crates/contracts/src/cow_shed/address/mod.rs`
-- `crates/contracts/tests/fixtures/version-call-results.json`
+- `parity/fixtures/cow_shed/version_calls.json`
 - `crates/contracts/src/cow_shed/address/mod.rs`
 - `crates/contracts/tests/deployment_address_parity_contract.rs`
 - `parity/fixtures/cow_shed/proxy_addresses.json`

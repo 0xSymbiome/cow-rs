@@ -479,8 +479,7 @@ Primary implementation points:
 - `crates/trading/src/onchain.rs`
 - `parity/source-lock.yaml`
 - `parity/fixtures/eip712/order_digests.json`
-- `crates/contracts/tests/fixtures/domain_separator_parity.json`
-- `crates/signing/tests/fixtures/domain_separator_parity.json`
+- `parity/fixtures/eip712/settlement_domain_separator.json`
 - `parity/fixtures/contracts.json`
 
 Primary regression coverage:

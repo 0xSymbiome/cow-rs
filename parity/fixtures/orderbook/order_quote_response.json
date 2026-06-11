@@ -1,25 +1,38 @@
 {
-  "quote": {
-    "sellToken": "0x0000000000000000000000000000000000000001",
-    "buyToken": "0x0000000000000000000000000000000000000002",
-    "receiver": "0x0000000000000000000000000000000000000003",
-    "sellAmount": "1000000000000000000",
-    "buyAmount": "2000000000000000000",
-    "validTo": 1700000000,
-    "appData": "0x0000000000000000000000000000000000000000000000000000000000000000",
-    "feeAmount": "3000000000000000",
-    "kind": "sell",
-    "partiallyFillable": true,
-    "sellTokenBalance": "erc20",
-    "buyTokenBalance": "internal",
-    "gasAmount": "150000",
-    "gasPrice": "15000000000",
-    "sellTokenPrice": "400000000000000",
-    "signingScheme": "eip712"
+  "surface": "orderbook-order-quote-response",
+  "dto": "cow_sdk_orderbook::OrderQuoteResponse",
+  "endpoint": "POST /api/v1/quote",
+  "sources": {
+    "services": {
+      "commit": "1f80d54bc3521b3fa81cd8ad66d9f749c5450591",
+      "refs": [
+        "crates/orderbook/openapi.yml#components.schemas.OrderQuoteResponse"
+      ]
+    }
   },
-  "from": "0x0000000000000000000000000000000000000004",
-  "expiration": "2026-04-28T10:00:00Z",
-  "id": 42,
-  "verified": true,
-  "protocolFeeBps": "2"
+  "payload": {
+    "quote": {
+      "sellToken": "0x0000000000000000000000000000000000000001",
+      "buyToken": "0x0000000000000000000000000000000000000002",
+      "receiver": "0x0000000000000000000000000000000000000003",
+      "sellAmount": "1000000000000000000",
+      "buyAmount": "2000000000000000000",
+      "validTo": 1700000000,
+      "appData": "0x0000000000000000000000000000000000000000000000000000000000000000",
+      "feeAmount": "3000000000000000",
+      "kind": "sell",
+      "partiallyFillable": true,
+      "sellTokenBalance": "erc20",
+      "buyTokenBalance": "internal",
+      "gasAmount": "150000",
+      "gasPrice": "15000000000",
+      "sellTokenPrice": "400000000000000",
+      "signingScheme": "eip712"
+    },
+    "from": "0x0000000000000000000000000000000000000004",
+    "expiration": "2026-04-28T10:00:00Z",
+    "id": 42,
+    "verified": true,
+    "protocolFeeBps": "2"
+  }
 }

@@ -49,7 +49,10 @@ fn sample_hooks() -> HookList {
 }
 
 fn fixture_doc() -> Value {
-    serde_json::from_str(FIXTURE).expect("hooks fixture must be valid JSON")
+    // The reviewed app-data document lives under the `payload` envelope; the
+    // provenance header around it is validated by `cargo parity-validate`.
+    let fixture: Value = serde_json::from_str(FIXTURE).expect("hooks fixture must be valid JSON");
+    fixture["payload"].clone()
 }
 
 #[test]

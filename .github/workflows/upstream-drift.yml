@@ -1,0 +1,40 @@
+name: upstream-drift
+
+# Scheduled watch on the upstream producers pinned in parity/source-lock.yaml:
+# `parity drift` compares every producer path's blob OID at the pin against
+# the remote default branch and fails this job when anything moved (exit 1)
+# or when a pin/fetch is broken (exit 2). The job is a detector, not a gate —
+# it runs on a schedule, never in the pull-request lane, and the failure log
+# carries the per-file drift table naming exactly what to refresh.
+
+on:
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+  CARGO_TERM_COLOR: always
+  RUST_CI_TOOLCHAIN: 1.94.1
+
+jobs:
+  drift:
+    name: Producer-path drift vs upstream default branches
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: ${{ env.RUST_CI_TOOLCHAIN }}
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      - name: Report producer-path drift against the pins
+        run: cargo xtask parity drift

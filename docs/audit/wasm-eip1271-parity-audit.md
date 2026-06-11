@@ -66,7 +66,7 @@ Primary implementation points:
 - `crates/wasm/src/helpers/signing.rs`
 - `crates/wasm/src/exports/eip1271.rs`
 - `crates/wasm/src/exports/signing.rs`
-- `crates/wasm/tests/fixtures/eip1271_upstream_vector.json`
+- `parity/fixtures/signing/eip1271_typescript_vector.json`
 - `parity/source-lock.yaml`
 
 Primary regression coverage:

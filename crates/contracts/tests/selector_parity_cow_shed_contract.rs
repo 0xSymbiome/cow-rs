@@ -1,17 +1,15 @@
 //! COW Shed selector parity contract test: assert the canonical
 //! cow-shed selectors fixture pins the deployed-runtime entry-point
-//! selectors and EIP-712 type hashes. The authority is the deployed
+//! selectors and EIP-712 type strings. The authority is the deployed
 //! `COWShedFactory` v1.0.1 runtime interface (verifiable on-chain; each
 //! selector is keccak256 of the deployed signature). The deployed
 //! 2-arg `initializeProxy(address,bool)` diverges from the cow-shed
 //! source-HEAD 1-arg form, so the record is anchored to the deployed
-//! runtime rather than any source checkout.
+//! runtime rather than any source checkout. The canonical EIP-712
+//! type-hash values are pinned by `cow_shed/execute_hooks_digest.json`.
 
 fn canonical_fixture() -> serde_json::Value {
-    cow_sdk_test_utils::fixtures::manifest_fixture(
-        env!("CARGO_MANIFEST_DIR"),
-        "tests/fixtures/cow_shed_canonical_selectors.json",
-    )
+    cow_sdk_test_utils::fixtures::fixture("cow_shed/canonical_selectors")
 }
 
 fn lookup_factory_selector(fixture: &serde_json::Value, name: &str) -> String {
@@ -57,18 +55,39 @@ fn execute_hooks_selector_pinned() {
 }
 
 #[test]
-fn type_hashes_have_no_whitespace_between_commas() {
+fn type_strings_have_no_whitespace_between_commas() {
     let fixture = canonical_fixture();
-    let type_hashes = fixture["type_hashes"]
-        .as_array()
-        .expect("type_hashes array");
-    for row in type_hashes {
-        let type_string = row["type_string"].as_str().expect("type_string");
+    let type_strings = fixture["type_strings"]
+        .as_object()
+        .expect("type_strings map");
+    assert!(
+        !type_strings.is_empty(),
+        "type_strings must carry the COW Shed EIP-712 type strings"
+    );
+    for (name, type_string) in type_strings {
+        let type_string = type_string.as_str().expect("type_string is a string");
         assert!(
             !type_string.contains(", "),
-            "type string `{type_string}` must contain no whitespace between commas in declaration order"
+            "type string `{name}` must contain no whitespace between commas in declaration order: {type_string}"
         );
     }
+}
+
+#[test]
+fn forwarder_is_valid_signature_selector_pinned() {
+    let fixture = canonical_fixture();
+    let selector = cow_sdk_test_utils::fixtures::row_by_name(
+        &fixture,
+        "forwarder_methods",
+        "isValidSignature(bytes32,bytes)",
+    )["selector"]
+        .as_str()
+        .expect("selector must be a string")
+        .to_string();
+    assert_eq!(
+        selector, "0x1626ba7e",
+        "ERC1271Forwarder must expose the canonical ERC-1271 isValidSignature selector"
+    );
 }
 
 #[test]

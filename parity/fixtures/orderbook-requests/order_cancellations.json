@@ -1,18 +1,15 @@
 {
-  "schema_version": 1,
   "surface": "orderbook-request-cancellations",
   "dto": "cow_sdk_orderbook::OrderCancellations",
   "endpoint": "DELETE /api/v1/orders",
-  "reviewed_at": "2026-05-04",
-  "source_refs": [
-    {
-      "repo": "services",
+  "sources": {
+    "services": {
       "commit": "1f80d54bc3521b3fa81cd8ad66d9f749c5450591",
-      "path": "crates/orderbook/openapi.yml",
-      "line_start": 1665,
-      "line_end": 1685
+      "refs": [
+        "crates/orderbook/openapi.yml#components.schemas.OrderCancellations"
+      ]
     }
-  ],
+  },
   "examples": [
     {
       "name": "single_uid_eip712",

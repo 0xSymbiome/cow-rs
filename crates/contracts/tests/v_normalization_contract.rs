@@ -16,7 +16,6 @@ const FIXTURE: &str = include_str!("../../../parity/fixtures/ecdsa/v_normalizati
 
 #[derive(Debug, Deserialize)]
 struct Fixture {
-    schema_version: u32,
     rows: Vec<Row>,
     rejection_rows: Vec<RejectionRow>,
 }
@@ -54,7 +53,6 @@ struct RejectionExpected {
 #[test]
 fn v_normalization_fixture_rows_hold() {
     let fixture: Fixture = serde_json::from_str(FIXTURE).expect("v_normalization fixture parses");
-    assert_eq!(fixture.schema_version, 2, "fixture schema version pinned");
     assert!(
         !fixture.rows.is_empty(),
         "v_normalization fixture must carry at least one accept row"

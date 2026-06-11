@@ -25,7 +25,6 @@ fn vendor_openapi_stamps_synthetic_services_openapi() -> Result<()> {
             id: "services",
             remote: services_root.display().to_string(),
             commit: commit.clone(),
-            role: "wire-authority",
             producer_paths: vec!["crates/orderbook/openapi.yml"],
         }],
     )?;
@@ -37,13 +36,14 @@ fn vendor_openapi_stamps_synthetic_services_openapi() -> Result<()> {
             "vendor-openapi",
             "--source-lock",
             "source-lock.yaml",
-            "--services-root",
-            services_root.to_str().expect("utf8 temp path"),
+            "--root",
+            root.to_str().expect("utf8 temp path"),
         ])
         .output()?;
     assert!(output.status.success(), "{}", output_text(&output));
 
-    let vendored = std::fs::read_to_string(root.join("parity/openapi/services-orderbook.yml"))?;
+    // The output defaults to `openapi/services-orderbook.yml` next to the lock.
+    let vendored = std::fs::read_to_string(root.join("openapi/services-orderbook.yml"))?;
     assert!(vendored.contains(&format!("# Vendored from cowprotocol/services @ {commit}")));
     assert!(vendored.contains("# Path: crates/orderbook/openapi.yml"));
     // The header carries no wall-clock timestamp so re-vendoring an unchanged
@@ -55,7 +55,7 @@ fn vendor_openapi_stamps_synthetic_services_openapi() -> Result<()> {
 }
 
 #[test]
-fn vendor_openapi_rejects_services_checkout_at_wrong_commit() -> Result<()> {
+fn vendor_openapi_pins_an_ahead_checkout_before_vendoring() -> Result<()> {
     let temp = tempdir()?;
     let root = temp.path();
     let services_root = root.join("services");
@@ -76,12 +76,13 @@ fn vendor_openapi_rejects_services_checkout_at_wrong_commit() -> Result<()> {
         &[RepoSpec {
             id: "services",
             remote: services_root.display().to_string(),
-            commit: pinned,
-            role: "wire-authority",
+            commit: pinned.clone(),
             producer_paths: vec!["crates/orderbook/openapi.yml"],
         }],
     )?;
 
+    // The checkout sits ahead of the pin; the command re-detaches it at the
+    // pinned commit and vendors the pinned bytes, not the checkout's HEAD.
     let output = command()
         .current_dir(root)
         .args([
@@ -89,11 +90,15 @@ fn vendor_openapi_rejects_services_checkout_at_wrong_commit() -> Result<()> {
             "vendor-openapi",
             "--source-lock",
             "source-lock.yaml",
-            "--services-root",
-            services_root.to_str().expect("utf8 temp path"),
+            "--root",
+            root.to_str().expect("utf8 temp path"),
         ])
         .output()?;
-    assert!(!output.status.success(), "{}", output_text(&output));
-    assert!(output_text(&output).contains("commit mismatch"));
+    assert!(output.status.success(), "{}", output_text(&output));
+
+    let vendored = std::fs::read_to_string(root.join("openapi/services-orderbook.yml"))?;
+    assert!(vendored.contains(&format!("# Vendored from cowprotocol/services @ {pinned}")));
+    assert!(vendored.contains("title: first"));
+    assert!(!vendored.contains("title: second"));
     Ok(())
 }

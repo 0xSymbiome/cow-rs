@@ -20,8 +20,7 @@ fn workspace_root() -> PathBuf {
         .to_path_buf()
 }
 
-/// Loads `parity/fixtures/<name>.json` (Form A — the canonical
-/// `{ "cases": [ { "id": .. } ] }` registry shape).
+/// Loads `parity/fixtures/<name>.json`.
 ///
 /// # Panics
 /// Panics if the file cannot be read or is not valid JSON.
@@ -50,21 +49,6 @@ pub fn case(name: &str, id: &str) -> Value {
         .find(|case| case["id"] == id)
         .cloned()
         .unwrap_or_else(|| panic!("missing fixture case {id} in {name}"))
-}
-
-/// Loads a fixture relative to a *consuming crate's* manifest directory
-/// (Form B — the contracts selector fixtures under `tests/fixtures/`). The
-/// caller passes its own `env!("CARGO_MANIFEST_DIR")`.
-///
-/// # Panics
-/// Panics if the file cannot be read or is not valid JSON.
-#[must_use]
-pub fn manifest_fixture(manifest_dir: &str, rel_path: &str) -> Value {
-    let path = Path::new(manifest_dir).join(rel_path);
-    let raw = std::fs::read_to_string(&path)
-        .unwrap_or_else(|error| panic!("failed to read {}: {error}", path.display()));
-    serde_json::from_str(&raw)
-        .unwrap_or_else(|error| panic!("fixture {} must be valid JSON: {error}", path.display()))
 }
 
 /// Finds the row whose `name` field equals `name` within `fixture[array_key]`.

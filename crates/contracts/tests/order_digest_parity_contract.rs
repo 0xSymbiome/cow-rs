@@ -22,7 +22,6 @@ const FIXTURE: &str = include_str!("../../../parity/fixtures/eip712/order_digest
 
 #[derive(Debug, Deserialize)]
 struct Fixture {
-    schema_version: u32,
     order_type_hash: String,
     rows: Vec<Row>,
 }
@@ -71,7 +70,6 @@ struct Expected {
 #[test]
 fn order_digest_fixture_rows_hold() {
     let fixture: Fixture = serde_json::from_str(FIXTURE).expect("order digest fixture parses");
-    assert_eq!(fixture.schema_version, 1, "fixture schema version pinned");
     assert_eq!(
         fixture.order_type_hash,
         order_eip712_type_hash().to_hex_string(),

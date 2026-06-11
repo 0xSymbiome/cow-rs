@@ -72,8 +72,8 @@ pub fn domain_separator(
 /// verifyingContract)` type string, where the encoded data packs
 /// `(name_hash, version_hash, chain_id_word, verifying_contract_word)`
 /// per EIP-712. The
-/// `crates/signing/tests/fixtures/domain_separator_parity.json` row
-/// locks the per-chain byte contract.
+/// `parity/fixtures/eip712/settlement_domain_separator.json` case
+/// locks the byte contract.
 ///
 /// # Errors
 ///
@@ -174,11 +174,11 @@ mod tests {
     }
 
     fn domain_separator_parity_fixture() -> (TypedDataDomain, String) {
-        const FIXTURE: &str = include_str!("../tests/fixtures/domain_separator_parity.json");
+        const FIXTURE: &str =
+            include_str!("../../../parity/fixtures/eip712/settlement_domain_separator.json");
 
         let fixture: serde_json::Value =
             serde_json::from_str(FIXTURE).expect("domain separator fixture must parse");
-        assert_eq!(fixture["schema_version"].as_u64(), Some(1));
 
         let case = &fixture["case"];
         let name = case["name"]

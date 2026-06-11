@@ -20,7 +20,6 @@ const FIXTURE: &str =
 
 #[derive(Debug, Deserialize)]
 struct Fixture {
-    schema_version: u32,
     rows: Vec<Row>,
 }
 
@@ -55,7 +54,6 @@ struct Expected {
 #[test]
 fn eoa_signature_compact_fixture_rows_hold() {
     let fixture: Fixture = serde_json::from_str(FIXTURE).expect("fixture parses");
-    assert_eq!(fixture.schema_version, 2, "fixture schema version pinned");
     assert!(
         !fixture.rows.is_empty(),
         "fixture must carry at least one row"

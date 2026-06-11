@@ -1,6 +1,9 @@
 {
-  "schema_version": 1,
-  "source": "alloy_sol_types::SolStruct::eip712_signing_hash on GPv2 Order",
+  "surface": "eip712-order-digests",
+  "standards": [
+    "EIP-712"
+  ],
+  "derivation": "alloy_sol_types::SolStruct::eip712_signing_hash on GPv2 Order",
   "order_type_hash": "0xd5a25ba2e97094ad7d83dc28a6572da797d6b3e7fc6663bd93efb789fc17e489",
   "rows": [
     {

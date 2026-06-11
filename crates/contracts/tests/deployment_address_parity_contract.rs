@@ -2,9 +2,10 @@
 
 //! Contract: the chain-keyed `cow_shed_factory` / `cow_shed_implementation`
 //! lookups and `proxy_for` agree with the deployed-reality probe
-//! (`version-call-results.json`) and the CREATE2 reference vectors
-//! (`proxy_addresses.json`). This locks the per-chain address table against
-//! drift, including the Gnosis Chain factory/implementation divergence.
+//! (`cow_shed/version_calls.json`) and the CREATE2 reference vectors
+//! (`cow_shed/proxy_addresses.json`). This locks the per-chain address table
+//! against drift, including the Gnosis Chain factory/implementation
+//! divergence.
 
 use cow_sdk_contracts::DeploymentChainId;
 use cow_sdk_contracts::cow_shed::{
@@ -15,7 +16,7 @@ use serde::Deserialize;
 mod cow_shed_common;
 use cow_shed_common::{address, parse_version};
 
-const VERSION_CALLS: &str = include_str!("fixtures/version-call-results.json");
+const VERSION_CALLS: &str = include_str!("../../../parity/fixtures/cow_shed/version_calls.json");
 const PROXY_ADDRESSES: &str =
     include_str!("../../../parity/fixtures/cow_shed/proxy_addresses.json");
 
@@ -49,10 +50,10 @@ struct ProxyRow {
 #[test]
 fn factory_and_implementation_match_the_deployed_probe() {
     let probe: VersionCalls =
-        serde_json::from_str(VERSION_CALLS).expect("version-call-results.json parses");
+        serde_json::from_str(VERSION_CALLS).expect("version_calls.json parses");
     assert!(
         !probe.version_calls.is_empty(),
-        "version-call-results must carry per-chain rows"
+        "version_calls must carry per-chain rows"
     );
 
     for row in &probe.version_calls {

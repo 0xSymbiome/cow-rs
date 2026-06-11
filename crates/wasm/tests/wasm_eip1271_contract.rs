@@ -61,8 +61,13 @@ fn eip1271_payload_matches_native_rust() {
 
 #[wasm_bindgen_test]
 fn eip1271_payload_matches_recorded_typescript_sdk_vector() {
-    let vector: UpstreamVector =
-        serde_json::from_str(include_str!("fixtures/eip1271_upstream_vector.json")).unwrap();
+    // The recorded vector lives under the fixture's `payload` envelope; the
+    // provenance header around it is validated by `cargo parity-validate`.
+    let fixture: Value = serde_json::from_str(include_str!(
+        "../../../parity/fixtures/signing/eip1271_typescript_vector.json"
+    ))
+    .unwrap();
+    let vector: UpstreamVector = serde_json::from_value(fixture["payload"].clone()).unwrap();
     let exported = envelope_string(
         eip1271_signature_payload_export(wasm_order_input(), vector.ecdsa_signature).unwrap(),
     );

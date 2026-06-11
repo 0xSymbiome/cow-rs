@@ -1,7 +1,20 @@
 {
-  "solver": "solver-a",
-  "executedAmounts": {
-    "sell": "100000000000000000",
-    "buy": "200000000000000000"
+  "surface": "orderbook-solver-execution",
+  "dto": "cow_sdk_orderbook::SolverExecution",
+  "sources": {
+    "services": {
+      "commit": "1f80d54bc3521b3fa81cd8ad66d9f749c5450591",
+      "refs": [
+        "crates/orderbook/openapi.yml#components.schemas.SolverCompetitionResponse",
+        "crates/model/src/solver_competition_v2.rs#Solution"
+      ]
+    }
+  },
+  "payload": {
+    "solver": "solver-a",
+    "executedAmounts": {
+      "sell": "100000000000000000",
+      "buy": "200000000000000000"
+    }
   }
 }

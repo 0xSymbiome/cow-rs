@@ -152,10 +152,10 @@ mod tests {
 
     #[test]
     fn domain_separator_matches_shared_parity_fixture() {
-        const FIXTURE: &str = include_str!("../tests/fixtures/domain_separator_parity.json");
+        const FIXTURE: &str =
+            include_str!("../../../parity/fixtures/eip712/settlement_domain_separator.json");
         let fixture: serde_json::Value =
             serde_json::from_str(FIXTURE).expect("domain separator fixture must parse");
-        assert_eq!(fixture["schema_version"].as_u64(), Some(1));
         let case = &fixture["case"];
         let name = case["name"].as_str().expect("fixture case must carry name");
         let version = case["version"]

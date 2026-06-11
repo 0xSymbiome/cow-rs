@@ -1,3 +1,16 @@
 {
-  "totalSurplus": "12345678901234567890"
+  "surface": "orderbook-total-surplus",
+  "dto": "cow_sdk_orderbook::TotalSurplus",
+  "endpoint": "GET /api/v1/users/{address}/total_surplus",
+  "sources": {
+    "services": {
+      "commit": "1f80d54bc3521b3fa81cd8ad66d9f749c5450591",
+      "refs": [
+        "crates/orderbook/openapi.yml#components.schemas.TotalSurplus"
+      ]
+    }
+  },
+  "payload": {
+    "totalSurplus": "12345678901234567890"
+  }
 }
