@@ -10,6 +10,13 @@
 //! witness through `rustc` and asserts the captured stderr matches the
 //! live diagnostic, so a regression that loosens the literal contract
 //! fails the test rather than passing a stale snapshot.
+//!
+//! The captured `.stderr` snapshots reflect the CI baseline toolchain, which
+//! does not install the optional `rust-src` component. A local run with
+//! `rust-src` present renders the const-panic's `core/src/panic.rs` frame as
+//! an inline source snippet instead of the `= note: the failure occurred here`
+//! line, so re-bless only without `rust-src` or the snapshot will diverge from
+//! CI.
 
 #[test]
 fn address_literal_macro_rejects_malformed_invocations_at_compile_time() {
