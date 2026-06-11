@@ -5,6 +5,11 @@
 //! (`cow_sdk::subgraph`); the same types are also available from the standalone
 //! `cow-sdk-subgraph` crate.
 
+#![allow(
+    clippy::too_many_lines,
+    reason = "the example scenario is one linear end-to-end narrative; splitting it would obscure the flow it demonstrates"
+)]
+
 use std::{collections::BTreeMap, error::Error};
 
 use serde::Deserialize;

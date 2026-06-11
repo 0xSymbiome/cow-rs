@@ -1,9 +1,14 @@
-//! Native-sell / EthFlow order construction and posting.
+//! Native-sell / `EthFlow` order construction and posting.
 //!
-//! Builds the on-chain EthFlow transaction (`eth_flow_transaction`) and
+//! Builds the on-chain `EthFlow` transaction (`eth_flow_transaction`) and
 //! posts a native-currency sell order (`post_sell_native_currency_order`) with
 //! merged app data (`build_app_data`), against a transport-mocked orderbook and
-//! signer. EthFlow lets a user sell the native token (for example ETH) directly.
+//! signer. `EthFlow` lets a user sell the native token (for example ETH) directly.
+
+#![allow(
+    clippy::redundant_closure_for_method_calls,
+    reason = "example clarity: the explicit `|value| value.to_hex_string()` closure reads better for a learner than a fully-qualified method reference"
+)]
 
 use std::error::Error;
 
@@ -42,7 +47,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let requested_quote_id = params.quote_id;
     let from_quote = LimitTradeParamsFromQuote::try_from_limit(params)?;
 
-    // Build the on-chain EthFlow transaction (the contract call that creates the
+    // Build the on-chain `EthFlow` transaction (the contract call that creates the
     // order) without posting anything. The chain comes from `trader.chain_id`.
     let ethflow = eth_flow_transaction(
         &app_data.app_data_keccak256,

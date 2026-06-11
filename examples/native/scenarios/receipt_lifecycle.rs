@@ -16,12 +16,12 @@ use cow_sdk::trading::{WaitError, WaitOptions, submit_and_wait_for_receipt};
 use serde_json::json;
 
 // Fast, deterministic polling so the example finishes promptly offline.
-fn fast_wait(require_success: bool) -> WaitOptions {
+const fn fast_wait(require_success: bool) -> WaitOptions {
     WaitOptions::new(Duration::from_millis(5), Duration::from_millis(200))
         .with_require_success(require_success)
 }
 
-fn mined_receipt(status: TransactionStatus) -> TransactionReceipt {
+const fn mined_receipt(status: TransactionStatus) -> TransactionReceipt {
     TransactionReceipt::new(defaults::transaction_hash())
         .with_status(status)
         .with_block_number(1_234)

@@ -3,8 +3,14 @@
 //! Builds a pre-sign transaction (`pre_sign_transaction`) and on-chain
 //! cancellation call data (`onchain_cancellation_transaction`), then dispatches
 //! an on-chain cancel (`Trading::onchain_cancel_order`) for both a regular and
-//! an EthFlow order, against a transport-mocked orderbook and signer. These are
+//! an `EthFlow` order, against a transport-mocked orderbook and signer. These are
 //! the smart-contract paths, distinct from the off-chain signed cancellation.
+
+#![allow(
+    clippy::redundant_closure_for_method_calls,
+    clippy::too_many_lines,
+    reason = "example scenario: a linear end-to-end narrative whose explicit `|value| value.to_hex_string()` closures read better for a learner than fully-qualified method references"
+)]
 
 use std::error::Error;
 

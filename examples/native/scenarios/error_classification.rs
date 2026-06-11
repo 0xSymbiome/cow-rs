@@ -52,6 +52,10 @@ enum Disposition {
     Surface,
 }
 
+#[allow(
+    clippy::match_same_arms,
+    reason = "the explicit-variant arm and the `#[non_exhaustive]` catch-all share a body but are kept separate to document forward-compatible handling"
+)]
 const fn retry_disposition(class: ErrorClass) -> Disposition {
     match class {
         ErrorClass::Transport | ErrorClass::Remote => Disposition::Retry,

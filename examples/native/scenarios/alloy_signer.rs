@@ -1,7 +1,7 @@
 //! Alloy signer leaf in isolation: EIP-712 order signing.
 //!
 //! Uses `LocalAlloySigner` (the signer leaf, no provider) to sign a real
-//! CoW order's EIP-712 typed-data payload (`order_typed_data_payload`,
+//! `CoW` order's EIP-712 typed-data payload (`order_typed_data_payload`,
 //! `ORDER_PRIMARY_TYPE`) entirely in memory — no RPC — and checks the recovery
 //! byte normalizes to the legacy 27/28 range.
 

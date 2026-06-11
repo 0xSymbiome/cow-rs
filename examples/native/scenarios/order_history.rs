@@ -12,6 +12,11 @@
 //! Deterministic: the `OrderbookApi` is pointed at a wiremock server (the same
 //! pattern as `orderbook_transport`); no live services are contacted.
 
+#![allow(
+    clippy::redundant_closure_for_method_calls,
+    reason = "example clarity: the explicit `|value| value.to_hex_string()` closure reads better for a learner than a fully-qualified method reference"
+)]
+
 use std::error::Error;
 
 use serde_json::json;

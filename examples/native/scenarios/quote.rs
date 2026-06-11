@@ -4,6 +4,11 @@
 //! orderbook — the shortest read-only path for a consumer that wants a quote
 //! without building, signing, or posting an order.
 
+#![allow(
+    clippy::redundant_closure_for_method_calls,
+    reason = "example clarity: the explicit `|value| value.to_hex_string()` closure reads better for a learner than a fully-qualified method reference"
+)]
+
 use std::error::Error;
 
 use serde_json::json;

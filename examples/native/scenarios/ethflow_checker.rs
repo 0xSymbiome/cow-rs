@@ -1,8 +1,8 @@
-//! EthFlow order-id collision avoidance through the public `EthFlowOrderExistsChecker` seam.
+//! `EthFlow` order-id collision avoidance through the public `EthFlowOrderExistsChecker` seam.
 //!
 //! Implements `EthFlowOrderExistsChecker` and wires it through
 //! `PostTradeAdditionalParams::with_check_eth_flow_order_exists`, then builds the
-//! on-chain EthFlow transaction with `eth_flow_transaction`. Each reported
+//! on-chain `EthFlow` transaction with `eth_flow_transaction`. Each reported
 //! collision forces a fresh order id, so a run with scripted collisions resolves
 //! to a different id than a collision-free run; both runs drain their checker
 //! queue. Uses the `cow_sdk::testing` signer and no live transport.
@@ -56,7 +56,7 @@ fn native_sell_params() -> Result<LimitTradeParamsFromQuote, Box<dyn Error>> {
     Ok(LimitTradeParamsFromQuote::try_from_limit(params)?)
 }
 
-/// Builds an EthFlow order id under a scripted collision sequence and reports the
+/// Builds an `EthFlow` order id under a scripted collision sequence and reports the
 /// resolved id plus how many scripted entries were left unconsumed.
 async fn build_order_id(collisions: Vec<bool>) -> Result<(OrderUid, usize), Box<dyn Error>> {
     let trader = sample_trader_parameters();
