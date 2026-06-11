@@ -9,7 +9,6 @@ use cow_sdk_core::{
     TransactionRequest,
 };
 use cow_sdk_orderbook::{OrderbookApi, SigningScheme};
-use cow_sdk_signing::eip1271::Eip1271Signer;
 use cow_sdk_trading::{
     AllowanceParams, DEFAULT_GAS_LIMIT, LimitTradeParams, PostTradeAdditionalParams,
     QuoteRequestOverride, QuoteResults, TradeAdvancedSettings, TradeParams, Trading,
@@ -616,9 +615,9 @@ async fn trading_post_swap_order_with_eip1271(
         wallet_timeout_ms,
     )
     .await?;
-    let provider: Arc<dyn Eip1271Signer> = Arc::new(ResolvedEip1271Provider::new(signature));
     let settings = quote_settings.with_additional_params(
-        PostTradeAdditionalParams::new().with_custom_eip1271_signature(provider),
+        PostTradeAdditionalParams::new()
+            .with_custom_eip1271_signature(ResolvedEip1271Provider::new(signature)),
     );
     let signer = JsTradingSigner::new(owner_address, custom_callback, wallet_timeout_ms);
     let result = inner

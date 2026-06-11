@@ -8,7 +8,6 @@
 //! suggester in the quote path (an explicit `Fast` quality would bypass it).
 
 use std::error::Error;
-use std::sync::Arc;
 
 use async_trait::async_trait;
 use serde_json::json;
@@ -47,7 +46,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let trading = Trading::builder()
         .chain_id(SupportedChainId::Sepolia)
         .app_code("cow-rs-native-examples")
-        .orderbook_client(Arc::new(orderbook.clone()))
+        .orderbook(orderbook)
         .build()?;
 
     // Baseline: no suggester, so the SDK derives its own default suggestion.
@@ -56,8 +55,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .await?;
 
     // With a consumer-supplied suggester wired through the advanced settings.
-    let advanced = TradeAdvancedSettings::new()
-        .with_slippage_suggester(Arc::new(StaticSlippageProvider { bps: 200 }));
+    let advanced =
+        TradeAdvancedSettings::new().with_slippage_suggester(StaticSlippageProvider { bps: 200 });
     let suggested = trading
         .quote_results(sample_trade_parameters(), &signer, Some(&advanced))
         .await?;

@@ -6,7 +6,7 @@
 //! a delayed response — aborting an in-flight request cannot be shown against an
 //! instant in-memory double.
 
-use std::{error::Error, sync::Arc, time::Duration};
+use std::{error::Error, time::Duration};
 
 use serde_json::json;
 use wiremock::{
@@ -47,7 +47,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let trading = TradingBuilder::ready(
         TraderParams::new(SupportedChainId::Sepolia, "cow-rs-cancellation-example")?,
-        TradingOptions::new().with_orderbook_client(Arc::new(orderbook)),
+        TradingOptions::new().with_orderbook(orderbook),
     )?;
 
     // One token, cloned: clones share the same cancellation state. A background

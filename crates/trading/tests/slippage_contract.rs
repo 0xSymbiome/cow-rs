@@ -211,10 +211,10 @@ async fn resolve_slippage_suggestion_skips_provider_for_fast_quotes_and_uses_pro
     let fast_calls = Arc::new(AtomicUsize::new(0));
     let fast_settings = TradeAdvancedSettings::new()
         .with_quote_request(QuoteRequestOverride::new().with_price_quality(PriceQuality::Fast))
-        .with_slippage_suggester(Arc::new(CountingProvider {
+        .with_slippage_suggester(CountingProvider {
             calls: fast_calls.clone(),
             response: Some(200),
-        }));
+        });
 
     let fast = resolve_slippage_suggestion(
         SupportedChainId::Sepolia,
@@ -230,11 +230,10 @@ async fn resolve_slippage_suggestion_skips_provider_for_fast_quotes_and_uses_pro
     assert!(fast.slippage_bps.is_some());
 
     let optimal_calls = Arc::new(AtomicUsize::new(0));
-    let optimal_settings =
-        TradeAdvancedSettings::new().with_slippage_suggester(Arc::new(CountingProvider {
-            calls: optimal_calls.clone(),
-            response: Some(200),
-        }));
+    let optimal_settings = TradeAdvancedSettings::new().with_slippage_suggester(CountingProvider {
+        calls: optimal_calls.clone(),
+        response: Some(200),
+    });
     let optimal = resolve_slippage_suggestion(
         SupportedChainId::Sepolia,
         &trade,

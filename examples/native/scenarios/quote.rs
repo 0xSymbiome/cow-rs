@@ -4,7 +4,7 @@
 //! orderbook — the shortest read-only path for a consumer that wants a quote
 //! without building, signing, or posting an order.
 
-use std::{error::Error, sync::Arc};
+use std::error::Error;
 
 use serde_json::json;
 
@@ -23,20 +23,21 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // Ready-state client with the mock injected. `orderbook.clone()` keeps a
     // handle so we can read what the client sent after the call.
+    // `TradingBuilder::ready` is the params-in-hand altitude — a deliberate
+    // contrast to the fluent `Trading::builder()` chain in the quickstart.
     let trading = TradingBuilder::ready(
         TraderParams::new(SupportedChainId::Sepolia, "cow-rs-quote-only")?,
-        TradingOptions::new().with_orderbook_client(Arc::new(orderbook.clone())),
+        TradingOptions::new().with_orderbook(orderbook.clone()),
     )?;
 
     // Quote only — no order is built, signed, or posted.
     let quote = trading.quote_only(sample_trade_parameters(), None).await?;
 
     // Inspect the request the client actually sent to the orderbook.
-    let request = orderbook
-        .recorded()
+    let recorded = orderbook.recorded();
+    let request = recorded
         .quote_requests
         .last()
-        .cloned()
         .expect("example quote request must be captured");
 
     let report = json!({

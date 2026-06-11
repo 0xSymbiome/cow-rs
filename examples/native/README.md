@@ -87,41 +87,41 @@ anything non-obvious, without narrating line by line.
 ## Validation
 
 ```text
-cargo check --manifest-path examples/native/Cargo.toml --examples --all-features
-cargo test --manifest-path examples/native/Cargo.toml
+cargo check -p cow-sdk-examples-native --examples --all-features
+cargo test -p cow-sdk-examples-native
 cargo run-deterministic-examples
 ```
 
 ## Running Examples
 
 ```text
-cargo run --manifest-path examples/native/Cargo.toml --example facade_surface
-cargo run --manifest-path examples/native/Cargo.toml --example app_data
-cargo run --manifest-path examples/native/Cargo.toml --example sign_order
-cargo run --manifest-path examples/native/Cargo.toml --example quote
-cargo run --manifest-path examples/native/Cargo.toml --example cancel_in_flight
-cargo run --manifest-path examples/native/Cargo.toml --example limit_order
-cargo run --manifest-path examples/native/Cargo.toml --example order_lifecycle
-cargo run --manifest-path examples/native/Cargo.toml --example receipt_lifecycle
-cargo run --manifest-path examples/native/Cargo.toml --example swap_quickstart
-cargo run --manifest-path examples/native/Cargo.toml --example trading_full_cycle
-cargo run --manifest-path examples/native/Cargo.toml --example error_classification
-cargo run --manifest-path examples/native/Cargo.toml --example ethflow
-cargo run --manifest-path examples/native/Cargo.toml --example onchain_actions
-cargo run --manifest-path examples/native/Cargo.toml --example orderbook_transport
-cargo run --manifest-path examples/native/Cargo.toml --example order_history
-cargo run --manifest-path examples/native/Cargo.toml --example slippage_suggester
-cargo run --manifest-path examples/native/Cargo.toml --example eip1271_signer
-cargo run --manifest-path examples/native/Cargo.toml --example ethflow_checker
-cargo run --manifest-path examples/native/Cargo.toml --example orderbook_live
-cargo run --manifest-path examples/native/Cargo.toml --example subgraph_query
-cargo run --manifest-path examples/native/Cargo.toml --example subgraph_live
-cargo run --manifest-path examples/native/Cargo.toml --example alloy_quickstart --features alloy
-cargo run --manifest-path examples/native/Cargo.toml --example alloy_provider --features alloy-provider
-cargo run --manifest-path examples/native/Cargo.toml --example alloy_signer --features alloy-signer
-cargo run --manifest-path examples/native/Cargo.toml --example transaction_lifecycle --features alloy
-cargo run --manifest-path examples/native/Cargo.toml --example alloy_custom_traits --features alloy
-cargo run --manifest-path examples/native/Cargo.toml --example alloy_trading_full_flow --features alloy
+cargo run -p cow-sdk-examples-native --example facade_surface
+cargo run -p cow-sdk-examples-native --example app_data
+cargo run -p cow-sdk-examples-native --example sign_order
+cargo run -p cow-sdk-examples-native --example quote
+cargo run -p cow-sdk-examples-native --example cancel_in_flight
+cargo run -p cow-sdk-examples-native --example limit_order
+cargo run -p cow-sdk-examples-native --example order_lifecycle
+cargo run -p cow-sdk-examples-native --example receipt_lifecycle
+cargo run -p cow-sdk-examples-native --example swap_quickstart
+cargo run -p cow-sdk-examples-native --example trading_full_cycle
+cargo run -p cow-sdk-examples-native --example error_classification
+cargo run -p cow-sdk-examples-native --example ethflow
+cargo run -p cow-sdk-examples-native --example onchain_actions
+cargo run -p cow-sdk-examples-native --example orderbook_transport
+cargo run -p cow-sdk-examples-native --example order_history
+cargo run -p cow-sdk-examples-native --example slippage_suggester
+cargo run -p cow-sdk-examples-native --example eip1271_signer
+cargo run -p cow-sdk-examples-native --example ethflow_checker
+cargo run -p cow-sdk-examples-native --example orderbook_live
+cargo run -p cow-sdk-examples-native --example subgraph_query
+cargo run -p cow-sdk-examples-native --example subgraph_live
+cargo run -p cow-sdk-examples-native --example alloy_quickstart --features alloy
+cargo run -p cow-sdk-examples-native --example alloy_provider --features alloy-provider
+cargo run -p cow-sdk-examples-native --example alloy_signer --features alloy-signer
+cargo run -p cow-sdk-examples-native --example transaction_lifecycle --features alloy
+cargo run -p cow-sdk-examples-native --example alloy_custom_traits --features alloy
+cargo run -p cow-sdk-examples-native --example alloy_trading_full_flow --features alloy
 ```
 
 The live probes are opt-in follow-ons. They extend the deterministic onboarding

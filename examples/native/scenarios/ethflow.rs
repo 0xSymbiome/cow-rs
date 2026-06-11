@@ -9,7 +9,7 @@ use std::error::Error;
 
 use serde_json::json;
 
-use cow_sdk::core::{HexData, NATIVE_CURRENCY_ADDRESS, SupportedChainId};
+use cow_sdk::core::{NATIVE_CURRENCY_ADDRESS, SupportedChainId};
 use cow_sdk::orderbook::OrderClass;
 use cow_sdk::trading::{
     LimitTradeParamsFromQuote, PostTradeAdditionalParams, build_app_data, eth_flow_transaction,
@@ -18,12 +18,9 @@ use cow_sdk::trading::{
 
 use cow_sdk::testing::{MockOrderbook, MockSigner};
 use cow_sdk_examples_native::support::{
-    OWNER, sample_limit_parameters, sample_quote_response, sample_trader_parameters, text_preview,
+    OWNER, call_data_prefix, sample_limit_parameters, sample_quote_response,
+    sample_trader_parameters, text_preview,
 };
-
-fn call_data_prefix(data: &HexData) -> String {
-    text_preview(&data.to_hex_string(), 10).to_owned()
-}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {

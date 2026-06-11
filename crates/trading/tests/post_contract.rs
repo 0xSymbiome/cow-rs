@@ -263,11 +263,11 @@ async fn native_sell_post_flow_uploads_app_data_sends_transaction_and_supports_c
     params.slippage_bps = Some(50);
     let collision_results = Arc::new(Mutex::new(vec![true, false]));
     let additional = PostTradeAdditionalParams::new()
-        .with_check_eth_flow_order_exists(Arc::new(MockEthFlowChecker {
+        .with_check_eth_flow_order_exists(MockEthFlowChecker {
             results: collision_results.clone(),
-        }))
+        })
         .with_network_costs_amount(*sell_quote_response().quote.network_cost_amount())
-        .with_custom_eip1271_signature(Arc::new(MockEip1271Provider));
+        .with_custom_eip1271_signature(MockEip1271Provider);
 
     let from_quote =
         LimitTradeParamsFromQuote::try_from_limit(params).expect("test params carry a quote id");
@@ -327,7 +327,7 @@ async fn limit_posting_accepts_custom_eip1271_signatures_without_local_re_signin
     let advanced = TradeAdvancedSettings::new().with_additional_params(
         PostTradeAdditionalParams::new()
             .with_signing_scheme(cow_sdk_orderbook::SigningScheme::Eip1271)
-            .with_custom_eip1271_signature(Arc::new(MockEip1271Provider)),
+            .with_custom_eip1271_signature(MockEip1271Provider),
     );
 
     let result = post_limit_order(&params, &trader, &signer, Some(&advanced), &orderbook)
@@ -632,11 +632,11 @@ fn ethflow_additional_params(
     quote: &cow_sdk_orderbook::OrderQuoteResponse,
 ) -> PostTradeAdditionalParams {
     PostTradeAdditionalParams::new()
-        .with_check_eth_flow_order_exists(Arc::new(MockEthFlowChecker {
+        .with_check_eth_flow_order_exists(MockEthFlowChecker {
             results: Arc::new(Mutex::new(Vec::new())),
-        }))
+        })
         .with_network_costs_amount(*quote.quote.network_cost_amount())
-        .with_custom_eip1271_signature(Arc::new(MockEip1271Provider))
+        .with_custom_eip1271_signature(MockEip1271Provider)
 }
 
 fn ethflow_params_with_receiver(receiver: Option<cow_sdk_core::Address>) -> LimitTradeParams {

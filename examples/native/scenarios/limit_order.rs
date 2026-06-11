@@ -6,7 +6,7 @@
 //! section posts the same parameters through `Trading::post_limit_order_presign`
 //! — the smart-account path that needs no signer at all.
 
-use std::{error::Error, sync::Arc};
+use std::error::Error;
 
 use serde_json::json;
 
@@ -26,7 +26,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let trading = Trading::builder()
         .chain_id(SupportedChainId::Sepolia)
         .app_code("cow-rs-limit-order")
-        .orderbook_client(Arc::new(orderbook.clone()))
+        .orderbook(orderbook.clone())
         .build()?;
 
     // Post a limit order: the price comes from the parameters, not a fetched quote.

@@ -19,7 +19,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Wiremock JSON-RPC server; `mount_rpc` records each method so the report can
     // count how many receipt lookups each shape triggers.
     let server = MockServer::start().await;
-    let methods = mount_rpc(&server).await;
+    let rpc = mount_rpc(&server).await;
     let client = AlloyClient::builder()
         .http(server.uri())?
         .private_key(TEST_KEY)?
@@ -37,18 +37,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     assert_eq!(helper_receipt.status, Some(TransactionStatus::Success));
 
     // Shape B: one manual broadcast, with receipt observation left separate.
-    let method_start = {
-        methods
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .len()
-    };
+    let method_start = rpc.methods().len();
     let broadcast: TransactionBroadcast = signer.send_transaction(&tx).await?;
 
-    let methods = methods
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
-        .clone();
+    let methods = rpc.methods();
     let shape_b_methods = &methods[method_start..];
     let report = json!({
         "surface": "cow_sdk::trading::submit_and_wait_for_receipt + cow_sdk::core::Signer::send_transaction",

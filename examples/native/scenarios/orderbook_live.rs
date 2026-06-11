@@ -5,12 +5,16 @@
 //! `Redacted` API key). The one native scenario that contacts a live service; it
 //! is excluded from the deterministic runner.
 
-use std::{env, error::Error, io};
+use std::error::Error;
 
 use serde_json::json;
 
-use cow_sdk::core::{CowEnv, Redacted, SupportedChainId};
+use cow_sdk::core::Redacted;
 use cow_sdk::orderbook::{ApiContext, ExternalHostPolicy, OrderbookApi};
+
+use cow_sdk_examples_native::support::{
+    optional_cow_env, optional_env, optional_supported_chain_id,
+};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -56,36 +60,4 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     println!("{}", serde_json::to_string_pretty(&report)?);
     Ok(())
-}
-
-fn optional_env(name: &str) -> Option<String> {
-    env::var(name).ok().filter(|value| !value.trim().is_empty())
-}
-
-fn optional_cow_env(name: &str) -> Result<CowEnv, Box<dyn Error>> {
-    let Some(raw_value) = optional_env(name) else {
-        return Ok(CowEnv::Prod);
-    };
-
-    match raw_value.to_ascii_lowercase().as_str() {
-        "prod" | "production" => Ok(CowEnv::Prod),
-        "staging" | "barn" => Ok(CowEnv::Staging),
-        other => Err(io::Error::other(format!(
-            "{name} must be one of prod or staging. Received {other}."
-        ))
-        .into()),
-    }
-}
-
-fn optional_supported_chain_id(name: &str) -> Result<SupportedChainId, Box<dyn Error>> {
-    let Some(raw_value) = optional_env(name) else {
-        return Ok(SupportedChainId::Mainnet);
-    };
-    let chain_id: u64 = raw_value.parse()?;
-    SupportedChainId::try_from(chain_id).map_err(|error| {
-        io::Error::other(format!(
-            "{name} must be a supported chain id. Received {chain_id}: {error}"
-        ))
-        .into()
-    })
 }

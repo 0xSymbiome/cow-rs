@@ -101,7 +101,13 @@ sections below describe the public contract a `0.1.0` consumer receives.
   orderbook client by value (`TradingBuilder::orderbook`,
   `TradingOptions::with_orderbook`), so the common path no longer wraps it in
   `Arc`; the `Arc<dyn OrderbookClient>` variants remain for an already-shared
-  handle.
+  handle. The advanced-seam setters follow the same shape:
+  `PostTradeAdditionalParams::with_check_eth_flow_order_exists`,
+  `PostTradeAdditionalParams::with_custom_eip1271_signature`, and
+  `TradeAdvancedSettings::with_slippage_suggester` take their backend by
+  value, with `with_check_eth_flow_order_exists_shared`,
+  `with_custom_eip1271_signature_shared`, and `with_slippage_suggester_shared`
+  accepting a backend deliberately shared across settings instances.
 - EIP-1271 order-signature verification is part of the public API:
   `cow_sdk_trading::verify_eip1271_order_signature`,
   `eip1271_order_verification_request`, and `Eip1271VerificationParams` confirm a
@@ -488,6 +494,10 @@ sections below describe the public contract a `0.1.0` consumer receives.
 
 #### Verification, provenance, examples, and documentation
 
+- The native example scenarios build as the `cow-sdk-examples-native` workspace
+  member, so they share the workspace lockfile and lint policy and every
+  workspace-wide check covers them; run any scenario from the repository root
+  with `cargo run -p cow-sdk-examples-native --example <name>`.
 - Generator-backed `proptest` property tests run on the deterministic-codec
   crates with committed regression seeds; fixture-driven parity regressions load
   `parity/fixtures/<surface>.json` and carry the upstream case id into every

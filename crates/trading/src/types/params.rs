@@ -1011,8 +1011,27 @@ impl PostTradeAdditionalParams {
     }
 
     /// Returns a copy with an explicit `EthFlow` existence checker.
+    ///
+    /// Accepts the checker by value and shares it internally, so callers do
+    /// not wrap it in [`Arc`]. Use
+    /// [`PostTradeAdditionalParams::with_check_eth_flow_order_exists_shared`]
+    /// when an `Arc<dyn EthFlowOrderExistsChecker>` is already held and is
+    /// shared elsewhere.
     #[must_use]
     pub fn with_check_eth_flow_order_exists(
+        self,
+        checker: impl EthFlowOrderExistsChecker + 'static,
+    ) -> Self {
+        self.with_check_eth_flow_order_exists_shared(Arc::new(checker))
+    }
+
+    /// Returns a copy with an explicit `EthFlow` existence checker.
+    ///
+    /// Prefer [`PostTradeAdditionalParams::with_check_eth_flow_order_exists`]
+    /// to inject a checker by value; this variant accepts an existing shared
+    /// handle for a backend deliberately shared across settings instances.
+    #[must_use]
+    pub fn with_check_eth_flow_order_exists_shared(
         mut self,
         checker: Arc<dyn EthFlowOrderExistsChecker>,
     ) -> Self {
@@ -1035,8 +1054,27 @@ impl PostTradeAdditionalParams {
     }
 
     /// Returns a copy with a custom EIP-1271 signature provider.
+    ///
+    /// Accepts the provider by value and shares it internally, so callers do
+    /// not wrap it in [`Arc`]. Use
+    /// [`PostTradeAdditionalParams::with_custom_eip1271_signature_shared`]
+    /// when an `Arc<dyn Eip1271Signer>` is already held and is shared
+    /// elsewhere.
     #[must_use]
-    pub fn with_custom_eip1271_signature(mut self, provider: Arc<dyn Eip1271Signer>) -> Self {
+    pub fn with_custom_eip1271_signature(self, provider: impl Eip1271Signer + 'static) -> Self {
+        self.with_custom_eip1271_signature_shared(Arc::new(provider))
+    }
+
+    /// Returns a copy with a custom EIP-1271 signature provider.
+    ///
+    /// Prefer [`PostTradeAdditionalParams::with_custom_eip1271_signature`] to
+    /// inject a provider by value; this variant accepts an existing shared
+    /// handle for a backend deliberately shared across settings instances.
+    #[must_use]
+    pub fn with_custom_eip1271_signature_shared(
+        mut self,
+        provider: Arc<dyn Eip1271Signer>,
+    ) -> Self {
         self.custom_eip1271_signature = Some(provider);
         self
     }
@@ -1120,10 +1158,28 @@ impl TradeAdvancedSettings {
 
     /// Returns a copy with a custom slippage-suggestion provider attached.
     ///
+    /// Accepts the suggester by value and shares it internally, so callers do
+    /// not wrap it in [`Arc`]. Use
+    /// [`TradeAdvancedSettings::with_slippage_suggester_shared`] when an
+    /// `Arc<dyn SlippageSuggester>` is already held and is shared elsewhere.
+    ///
     /// Limit-order flows ignore this provider; only swap quote and
     /// post flows read it.
     #[must_use]
-    pub fn with_slippage_suggester(mut self, suggester: Arc<dyn SlippageSuggester>) -> Self {
+    pub fn with_slippage_suggester(self, suggester: impl SlippageSuggester + 'static) -> Self {
+        self.with_slippage_suggester_shared(Arc::new(suggester))
+    }
+
+    /// Returns a copy with a custom slippage-suggestion provider attached.
+    ///
+    /// Prefer [`TradeAdvancedSettings::with_slippage_suggester`] to inject a
+    /// suggester by value; this variant accepts an existing shared handle for
+    /// a backend deliberately shared across settings instances.
+    ///
+    /// Limit-order flows ignore this provider; only swap quote and
+    /// post flows read it.
+    #[must_use]
+    pub fn with_slippage_suggester_shared(mut self, suggester: Arc<dyn SlippageSuggester>) -> Self {
         self.slippage_suggester = Some(suggester);
         self
     }

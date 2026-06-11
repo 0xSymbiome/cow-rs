@@ -31,7 +31,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Wiremock JSON-RPC server; `mount_rpc` records each method it sees so the
     // report can show the exact RPC calls the SDK made.
     let server = MockServer::start().await;
-    let methods = mount_rpc(&server).await;
+    let rpc = mount_rpc(&server).await;
     // build_checked() verifies the configured chain id against the RPC endpoint.
     let client = AlloyClient::builder()
         .http(server.uri())?
@@ -86,10 +86,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .await?;
     assert_eq!(pre_sign.gas_limit, Amount::from(25_200u32));
 
-    let methods = methods
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
-        .clone();
+    let methods = rpc.methods();
     let report = json!({
         "surface": "cow_sdk::alloy::AlloyClient + cow_sdk::trading::Trading",
         "allowance": allowance,

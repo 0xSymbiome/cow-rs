@@ -64,11 +64,10 @@ async fn build_order_id(collisions: Vec<bool>) -> Result<(OrderUid, usize), Box<
     let app_data = build_app_data(&trader.app_code, 0, OrderClass::Market, None, None).await?;
 
     let queue = Arc::new(Mutex::new(collisions));
-    let additional = PostTradeAdditionalParams::new().with_check_eth_flow_order_exists(Arc::new(
-        ScriptedEthFlowChecker {
+    let additional =
+        PostTradeAdditionalParams::new().with_check_eth_flow_order_exists(ScriptedEthFlowChecker {
             collisions: queue.clone(),
-        },
-    ));
+        });
 
     let ethflow = eth_flow_transaction(
         &app_data.app_data_keccak256,

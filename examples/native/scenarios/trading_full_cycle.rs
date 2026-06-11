@@ -7,7 +7,7 @@
 //! The only scenario that also exercises `MockProvider`, for the allowance and
 //! approval reads.
 
-use std::{error::Error, sync::Arc};
+use std::error::Error;
 
 use serde_json::json;
 
@@ -32,7 +32,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let trading = Trading::builder()
         .chain_id(SupportedChainId::Sepolia)
         .app_code("cow-rs-native-examples")
-        .orderbook_client(Arc::new(orderbook.clone()))
+        .orderbook(orderbook.clone())
         .build()?;
 
     // 1. Quote — signed quote results carry the merged app data.

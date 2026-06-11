@@ -4,13 +4,18 @@
 //! published `cow_sdk::testing` crate; this module keeps only the example-domain
 //! constants, parameter builders, and wire fixtures the scenarios share.
 
-use std::sync::{Arc, Mutex};
+use std::{
+    env,
+    error::Error,
+    io,
+    sync::{Arc, Mutex, PoisonError},
+};
 
 use serde_json::{Value, json};
 
 use cow_sdk::core::{
-    Address, Amount, BuyTokenDestination, OrderData, OrderKind, OrderUid, SellTokenSource,
-    SupportedChainId, address,
+    Address, Amount, BuyTokenDestination, CowEnv, HexData, OrderData, OrderKind, OrderUid,
+    SellTokenSource, SupportedChainId, address,
 };
 use cow_sdk::orderbook::{AppDataHash, Order, OrderQuoteResponse};
 use cow_sdk::trading::{
@@ -58,6 +63,57 @@ pub fn text_preview(value: &str, max_chars: usize) -> &str {
         .char_indices()
         .nth(max_chars)
         .map_or(value, |(index, _)| &value[..index])
+}
+
+/// A short `0x`-prefixed preview of contract call data for the JSON reports.
+pub fn call_data_prefix(data: &HexData) -> String {
+    text_preview(&data.to_hex_string(), 10).to_owned()
+}
+
+/// The environment variable's value, when set to something non-blank.
+pub fn optional_env(name: &str) -> Option<String> {
+    env::var(name).ok().filter(|value| !value.trim().is_empty())
+}
+
+/// The environment variable's value, failing with a configuration hint when
+/// it is unset or blank.
+pub fn required_env(name: &str) -> Result<String, Box<dyn Error>> {
+    optional_env(name).ok_or_else(|| {
+        io::Error::other(format!(
+            "{name} is required for this live example. Configure it explicitly before running."
+        ))
+        .into()
+    })
+}
+
+/// A [`CowEnv`] parsed from the environment, defaulting to production.
+pub fn optional_cow_env(name: &str) -> Result<CowEnv, Box<dyn Error>> {
+    let Some(raw_value) = optional_env(name) else {
+        return Ok(CowEnv::Prod);
+    };
+
+    match raw_value.to_ascii_lowercase().as_str() {
+        "prod" | "production" => Ok(CowEnv::Prod),
+        "staging" | "barn" => Ok(CowEnv::Staging),
+        other => Err(io::Error::other(format!(
+            "{name} must be one of prod or staging. Received {other}."
+        ))
+        .into()),
+    }
+}
+
+/// A [`SupportedChainId`] parsed from the environment, defaulting to mainnet.
+pub fn optional_supported_chain_id(name: &str) -> Result<SupportedChainId, Box<dyn Error>> {
+    let Some(raw_value) = optional_env(name) else {
+        return Ok(SupportedChainId::Mainnet);
+    };
+    let chain_id: u64 = raw_value.parse()?;
+    SupportedChainId::try_from(chain_id).map_err(|error| {
+        io::Error::other(format!(
+            "{name} must be a supported chain id. Received {chain_id}: {error}"
+        ))
+        .into()
+    })
 }
 
 pub fn orderbook_version_response(version: &str) -> ResponseTemplate {
@@ -171,10 +227,26 @@ pub fn sample_open_order() -> Order {
     .expect("example order fixture must deserialize")
 }
 
+/// Handle onto the JSON-RPC method names recorded by [`mount_rpc`], sharing
+/// one backing store with the mounted handler.
+#[derive(Clone, Debug)]
+pub struct RecordedRpc(Arc<Mutex<Vec<String>>>);
+
+impl RecordedRpc {
+    /// A snapshot of the JSON-RPC method names recorded so far.
+    #[must_use]
+    pub fn methods(&self) -> Vec<String> {
+        self.0
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone()
+    }
+}
+
 /// Mounts a wiremock JSON-RPC `POST` handler that records every method it sees
 /// and replays a canned result for it. The returned handle lets a scenario
 /// report the exact RPC calls the SDK made.
-pub async fn mount_rpc(server: &MockServer) -> Arc<Mutex<Vec<String>>> {
+pub async fn mount_rpc(server: &MockServer) -> RecordedRpc {
     let methods = Arc::new(Mutex::new(Vec::new()));
     Mock::given(method("POST"))
         .respond_with({
@@ -188,7 +260,7 @@ pub async fn mount_rpc(server: &MockServer) -> Arc<Mutex<Vec<String>>> {
                     .to_owned();
                 methods
                     .lock()
-                    .unwrap_or_else(std::sync::PoisonError::into_inner)
+                    .unwrap_or_else(PoisonError::into_inner)
                     .push(method_name.clone());
                 let id = body.get("id").cloned().unwrap_or_else(|| json!(1));
 
@@ -211,7 +283,7 @@ pub async fn mount_rpc(server: &MockServer) -> Arc<Mutex<Vec<String>>> {
         })
         .mount(server)
         .await;
-    methods
+    RecordedRpc(methods)
 }
 
 /// Canned JSON-RPC results for the methods the Alloy scenarios exercise. The set

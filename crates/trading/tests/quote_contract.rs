@@ -167,10 +167,9 @@ async fn auto_slippage_uses_provider_suggestion_and_quote_only_uses_owner_withou
     let mut trade = sample_trade_parameters(OrderKind::Sell);
     trade.owner = Some(address(OWNER));
     trade.slippage_bps = None;
-    let advanced =
-        TradeAdvancedSettings::new().with_slippage_suggester(Arc::new(MockSlippageProvider {
-            response: Some(200),
-        }));
+    let advanced = TradeAdvancedSettings::new().with_slippage_suggester(MockSlippageProvider {
+        response: Some(200),
+    });
 
     let result = quote_only(&trade, &quoter, Some(&advanced), &orderbook)
         .await

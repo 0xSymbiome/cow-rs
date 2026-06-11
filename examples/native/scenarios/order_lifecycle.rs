@@ -5,7 +5,7 @@
 //! signer, inspecting the signed cancellation the SDK records. Off-chain
 //! cancellation is a signed API call, not an on-chain transaction.
 
-use std::{error::Error, sync::Arc};
+use std::error::Error;
 
 use serde_json::json;
 
@@ -28,7 +28,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let trading = Trading::builder()
         .chain_id(SupportedChainId::Sepolia)
         .app_code("cow-rs-order-lifecycle")
-        .orderbook_client(Arc::new(orderbook.clone()))
+        .orderbook(orderbook.clone())
         .build()?;
 
     // Both calls key off the order uid.

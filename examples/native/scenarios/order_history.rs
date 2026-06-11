@@ -28,15 +28,16 @@ use cow_sdk_examples_native::support::{COW, ORDER_UID, OWNER, TX_HASH, WETH, sam
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let server = MockServer::start().await;
-    let owner_hex = OWNER.to_hex_string();
 
     // GET /api/v1/account/{owner}/orders -> a one-element order list. The fixture
     // reuses `sample_open_order()` so the wire shape is the same normalized
     // `Order` the rest of the suite uses.
-    let order_json = serde_json::to_value(sample_open_order())?;
     Mock::given(method("GET"))
-        .and(path(format!("/api/v1/account/{owner_hex}/orders")))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!([order_json])))
+        .and(path(format!(
+            "/api/v1/account/{}/orders",
+            OWNER.to_hex_string()
+        )))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([sample_open_order()])))
         .mount(&server)
         .await;
 
@@ -76,7 +77,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         "surface": "cow_sdk::orderbook::OrderbookApi::{orders, trades}",
         "mode": "simulated-transport",
         "note": "orders/trades live on OrderbookApi; the Trading facade forwards only order",
-        "owner": owner_hex,
+        "owner": OWNER,
         "orders": orders.iter().map(|o| json!({
             "uid": o.uid.to_hex_string(),
             "owner": o.owner.to_hex_string(),

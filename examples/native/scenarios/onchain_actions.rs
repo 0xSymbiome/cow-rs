@@ -6,24 +6,20 @@
 //! an EthFlow order, against a transport-mocked orderbook and signer. These are
 //! the smart-contract paths, distinct from the off-chain signed cancellation.
 
-use std::{error::Error, sync::Arc};
+use std::error::Error;
 
 use serde_json::json;
 
-use cow_sdk::core::{HexData, SupportedChainId};
+use cow_sdk::core::SupportedChainId;
 use cow_sdk::trading::{
     OrderTraderParams, Trading, onchain_cancellation_transaction, pre_sign_transaction,
 };
 
 use cow_sdk::testing::{MockOrderbook, MockSigner};
 use cow_sdk_examples_native::support::{
-    OWNER, sample_open_order, sample_order_uid, sample_quote_response, sample_trader_parameters,
-    text_preview,
+    OWNER, call_data_prefix, sample_open_order, sample_order_uid, sample_quote_response,
+    sample_trader_parameters,
 };
-
-fn call_data_prefix(data: &HexData) -> String {
-    text_preview(&data.to_hex_string(), 10).to_owned()
-}
 
 fn sample_ethflow_order() -> cow_sdk::orderbook::Order {
     let mut order = sample_open_order();
@@ -36,7 +32,7 @@ fn trading_client(orderbook: MockOrderbook) -> Trading {
     Trading::builder()
         .chain_id(trader.chain_id)
         .app_code(trader.app_code)
-        .orderbook_client(Arc::new(orderbook))
+        .orderbook(orderbook)
         .build()
         .expect("example trading client construction should succeed")
 }

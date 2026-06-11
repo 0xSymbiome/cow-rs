@@ -9,7 +9,6 @@
 //! `eip1271` scheme, and the order owner identifies the smart account.
 
 use std::error::Error;
-use std::sync::Arc;
 
 use async_trait::async_trait;
 use serde_json::json;
@@ -43,7 +42,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let trading = Trading::builder()
         .chain_id(SupportedChainId::Sepolia)
         .app_code("cow-rs-native-examples")
-        .orderbook_client(Arc::new(orderbook.clone()))
+        .orderbook(orderbook.clone())
         .build()?;
 
     // Both knobs are required: the scheme selects the EIP-1271 path, and the
@@ -52,7 +51,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let advanced = TradeAdvancedSettings::new().with_additional_params(
         PostTradeAdditionalParams::new()
             .with_signing_scheme(SigningScheme::Eip1271)
-            .with_custom_eip1271_signature(Arc::new(SmartAccountSigner)),
+            .with_custom_eip1271_signature(SmartAccountSigner),
     );
 
     let post = trading
@@ -65,7 +64,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         "mode": "simulated-transport",
         "signingScheme": post.signing_scheme,
         "orderSignature": post.signature,
-        "postedOrderSignature": sent.first().map(|order| order.signature.clone()),
+        "postedOrderSignature": sent.first().map(|order| &order.signature),
         "postedOrderCount": sent.len()
     });
     println!("{}", serde_json::to_string_pretty(&report)?);
