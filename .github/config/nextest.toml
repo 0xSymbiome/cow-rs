@@ -21,11 +21,18 @@ slow-timeout = { period = "30s", terminate-after = 3 }
 #     and identify themselves by the `_at_compile_time` suffix on the
 #     `#[test]` function (the partner-fee width witness in
 #     `cow-sdk-app-data` and the token-balance cross-side coercion
-#     witness in `cow-sdk-core` both follow this convention).
+#     witness in `cow-sdk-core` both follow this convention);
+#   * the builder typestate witnesses in the orderbook and subgraph
+#     `builder_contract` binaries, matched by their shared exact test
+#     name so the rest of each binary keeps full parallelism.
+#
+# The terminate window is sized from observed cold-cache runs: the
+# largest in-group build (the `cow-sdk` ui harness) has passed at ~221 s
+# on the ubuntu runner, so the previous 240 s ceiling left no margin.
 [[profile.default.overrides]]
-filter = 'binary(=ui) + binary(=compile_fail) + test(/_at_compile_time$/)'
+filter = 'binary(=ui) + binary(=compile_fail) + test(/_at_compile_time$/) + test(=typestate_rejects_incomplete_builders)'
 test-group = 'trybuild'
-slow-timeout = { period = '60s', terminate-after = 4 }
+slow-timeout = { period = '60s', terminate-after = 6 }
 
 [test-groups]
 trybuild = { max-threads = 1 }

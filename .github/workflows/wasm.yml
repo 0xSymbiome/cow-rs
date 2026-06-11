@@ -51,6 +51,14 @@ env:
   CARGO_TERM_COLOR: always
   NODE_VERSION: '24'
   PNPM_VERSION: '11.0.9'
+  # Strip debuginfo from dev / test builds: the alloy 2.x stack plus
+  # aws-lc-sys leaves test binaries with multi-GB debug sections that
+  # exhaust the hosted runner disk at link time. CI never debugs these
+  # binaries, so the symbols are free to drop. Workspace clippy and the
+  # full workspace test matrix run in the shared quality gate; this
+  # workflow only builds the wasm-facing subset.
+  CARGO_PROFILE_DEV_DEBUG: '0'
+  CARGO_PROFILE_TEST_DEBUG: '0'
 
 jobs:
   rust-checks:
@@ -107,10 +115,6 @@ jobs:
         run: cargo test -p cow-rs-workspace-tests --test wasm_dependency_invariant
       - name: Run the wasm invariant policy check
         run: cargo check-wasm-invariant
-      - name: Run workspace clippy
-        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
-      - name: Run workspace tests
-        run: cargo test --workspace --all-features
 
   wasm-flavour-matrix:
     runs-on: ubuntu-latest
