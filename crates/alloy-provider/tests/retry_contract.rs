@@ -24,7 +24,6 @@ async fn default_provider_does_not_retry_a_rate_limited_read() {
         .http(server.uri())
         .unwrap()
         .build()
-        .await
         .unwrap();
 
     let error = provider.get_chain_id().await.unwrap_err();
@@ -61,7 +60,6 @@ async fn with_retry_recovers_from_a_transient_rate_limit() {
         .unwrap()
         .with_retry(RetryConfig::new(3, Duration::from_millis(10)))
         .build()
-        .await
         .unwrap();
 
     assert_eq!(provider.get_chain_id().await.unwrap(), 1);

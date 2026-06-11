@@ -189,9 +189,8 @@ fn validation_accepts_documents_carrying_the_typed_flashloan_hint() {
 
     let validation = validate_app_data_doc(&doc);
     assert!(
-        validation.success,
-        "generated document carrying typed FlashloanHints must validate, got {:?}",
-        validation.errors,
+        validation.is_ok(),
+        "generated document carrying typed FlashloanHints must validate, got {validation:?}",
     );
 }
 
@@ -249,15 +248,11 @@ fn flashloan_v1_7_0_rejects_invalid_address() {
     let mut doc = flashloan_v1_7_0_document();
     doc["metadata"]["flashloan"]["liquidityProvider"] = json!("not-an-address");
 
-    let validation = validate_app_data_doc(&doc);
-    assert!(!validation.success);
+    let error =
+        validate_app_data_doc(&doc).expect_err("a malformed flashloan address must be rejected");
     assert!(
-        validation
-            .errors
-            .as_deref()
-            .is_some_and(|errors| errors.contains("flashloan")),
-        "validation error must identify the flashloan family, got {:?}",
-        validation.errors,
+        error.to_string().contains("flashloan"),
+        "validation error must identify the flashloan family, got {error:?}",
     );
 }
 
@@ -288,14 +283,10 @@ fn flashloan_v1_7_0_rejects_missing_field() {
         .expect("flashloan fixture is an object")
         .remove("receiver");
 
-    let validation = validate_app_data_doc(&doc);
-    assert!(!validation.success);
+    let error =
+        validate_app_data_doc(&doc).expect_err("a flashloan with a missing field must be rejected");
     assert!(
-        validation
-            .errors
-            .as_deref()
-            .is_some_and(|errors| errors.contains("flashloan")),
-        "validation error must identify the flashloan family, got {:?}",
-        validation.errors,
+        error.to_string().contains("flashloan"),
+        "validation error must identify the flashloan family, got {error:?}",
     );
 }

@@ -17,8 +17,8 @@ use cow_sdk::trading::{
 
 use cow_sdk::testing::{MockOrderbook, MockSigner};
 use cow_sdk_examples_native::support::{
-    sample_open_order, sample_order_uid, sample_owner, sample_quote_response,
-    sample_trader_parameters, text_preview,
+    OWNER, sample_open_order, sample_order_uid, sample_quote_response, sample_trader_parameters,
+    text_preview,
 };
 
 fn call_data_prefix(data: &HexData) -> String {
@@ -31,25 +31,20 @@ fn sample_ethflow_order() -> cow_sdk::orderbook::Order {
     order
 }
 
-fn trading_sdk(orderbook: MockOrderbook) -> Trading {
+fn trading_client(orderbook: MockOrderbook) -> Trading {
     let trader = sample_trader_parameters();
-    let mut builder = Trading::builder()
+    Trading::builder()
         .chain_id(trader.chain_id)
-        .app_code(trader.app_code);
-    if let Some(env) = trader.env {
-        builder = builder.env(env);
-    }
-
-    builder
+        .app_code(trader.app_code)
         .orderbook_client(Arc::new(orderbook))
         .build()
-        .expect("example trading sdk construction should succeed")
+        .expect("example trading client construction should succeed")
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let chain_id = SupportedChainId::Sepolia;
-    let preview_signer = MockSigner::builder().address(sample_owner()).build();
+    let preview_signer = MockSigner::builder().address(OWNER).build();
     let order_uid = sample_order_uid();
     let params = OrderTraderParams::new(order_uid).with_chain_id(chain_id);
 
@@ -69,9 +64,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .quote(sample_quote_response())
         .build();
     regular_orderbook.push_order(sample_open_order());
-    let regular_signer = MockSigner::builder().address(sample_owner()).build();
-    let regular_sdk = trading_sdk(regular_orderbook);
-    let regular_hash = regular_sdk
+    let regular_signer = MockSigner::builder().address(OWNER).build();
+    let regular_trading = trading_client(regular_orderbook);
+    let regular_hash = regular_trading
         .onchain_cancel_order(&params, &regular_signer)
         .await?;
     let regular_sent = regular_signer
@@ -86,9 +81,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .quote(sample_quote_response())
         .build();
     ethflow_orderbook.push_order(sample_ethflow_order());
-    let ethflow_signer = MockSigner::builder().address(sample_owner()).build();
-    let ethflow_sdk = trading_sdk(ethflow_orderbook);
-    let ethflow_hash = ethflow_sdk
+    let ethflow_signer = MockSigner::builder().address(OWNER).build();
+    let ethflow_trading = trading_client(ethflow_orderbook);
+    let ethflow_hash = ethflow_trading
         .onchain_cancel_order(&params, &ethflow_signer)
         .await?;
     let ethflow_sent = ethflow_signer
@@ -98,20 +93,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .cloned()
         .expect("ethflow cancellation should send a transaction");
 
+    // `pre_sign_transaction` returns a concrete `PreparedTransaction`: every
+    // field is unconditionally set, so the report reads them directly.
     let report = json!({
-        "surface": "cow-sdk::trading::pre_sign_transaction + cow-sdk::Trading::onchain_cancel_order",
+        "surface": "cow_sdk::trading::pre_sign_transaction + cow_sdk::trading::Trading::onchain_cancel_order",
         "mode": "simulated-transport",
         "preSignTransaction": {
             "orderUid": order_uid.to_hex_string(),
-            "contract": pre_sign.to.as_ref().map(|address| address.to_hex_string()),
-            "value": pre_sign.value.as_ref().map(ToString::to_string),
-            "gasLimit": pre_sign.gas_limit.as_ref().map(ToString::to_string),
-            "callDataPrefix": call_data_prefix(
-                pre_sign
-                    .data
-                    .as_ref()
-                    .expect("pre-sign transaction should include call data"),
-            )
+            "contract": pre_sign.to.to_hex_string(),
+            "value": pre_sign.value.to_string(),
+            "gasLimit": pre_sign.gas_limit.to_string(),
+            "callDataPrefix": call_data_prefix(&pre_sign.data)
         },
         "cancellationPreview": {
             "regularOrder": {

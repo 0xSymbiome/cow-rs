@@ -1,7 +1,7 @@
 # Trading EthFlow Owner Identity Audit
 
 Status: Current
-Last reviewed: 2026-05-30
+Last reviewed: 2026-06-11
 Owning surface: `cow-sdk-trading` EthFlow submission seam,
 including the `EthFlowTransaction` bundle shape, the
 `eth_flow_transaction` owner resolution, and the
@@ -66,7 +66,9 @@ or the orderbook authoritative server-side validation.
 
 `cow_sdk_trading::EthFlowTransaction` is a `#[non_exhaustive]`
 struct with `order_id: OrderUid`, `transaction:
-TransactionRequest`, `order_to_sign: OrderData`, and a
+PreparedTransaction` (the fully-populated `{ to, data, value,
+gas_limit }` bundle convertible into a `TransactionRequest`),
+`order_to_sign: OrderData`, and a
 typed `from: cow_sdk_core::Address`. The `from` field carries
 the signer-derived owner captured at transaction construction
 and documents the owner-versus-receiver distinction in its
@@ -131,7 +133,7 @@ without triggering a false rejection.
 Primary implementation points:
 
 - `crates/trading/src/onchain.rs`
-- `crates/trading/src/post/native.rs`
+- `crates/trading/src/post.rs`
 - `crates/trading/src/validation.rs`
 - `crates/core/src/types/identity.rs` (`Address`)
 

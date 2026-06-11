@@ -61,15 +61,39 @@ sections below describe the public contract a `0.1.0` consumer receives.
   inspected before `submit(&signer)`. The owner defaults to the signer address.
   Governed by [ADR 0011](docs/adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md).
 - `cow_sdk_trading` exposes one async entry point per public operation —
-  `post_swap_order`, `post_limit_order`, `post_swap_order_from_quote`,
-  `post_cow_protocol_trade`, `post_sell_native_currency_order`,
-  `offchain_cancel_order`, `onchain_cancel_order`, `pre_sign_transaction`,
-  `eth_flow_transaction`, `quote_results`, `cow_protocol_allowance`, and
-  `approve_cow_protocol`. Each accepts any signer implementing
-  `cow_sdk_core::Signer`, and cooperative cancellation composes on every entry
-  through `cow_sdk_core::Cancellable::cancel_with(&token)`. App-code-less helper
+  `post_swap_order`, `post_limit_order`, `post_limit_order_presign`,
+  `post_swap_order_from_quote`, `post_cow_protocol_trade`,
+  `post_sell_native_currency_order`, `offchain_cancel_order`,
+  `onchain_cancel_order`, `pre_sign_transaction`, `eth_flow_transaction`,
+  `quote_results`, `cow_protocol_allowance`, and `approve_cow_protocol`. The
+  signer-backed entries accept any signer implementing `cow_sdk_core::Signer`
+  (`post_limit_order_presign` is the deliberate signer-less exception), and
+  cooperative cancellation composes on every entry through
+  `cow_sdk_core::Cancellable::cancel_with(&token)`. App-code-less helper
   flows (allowance, approval, pre-sign, on-chain cancellation) are crate free
   functions that need no trading client.
+- `cow_sdk_trading::Trading::post_limit_order_presign(params, advanced)` (and
+  the matching crate free function) places a limit order under the `presign`
+  signing scheme without consulting a signer — the smart-contract-owner path
+  for Safes, vaults, and DAO treasuries. The owner must be explicit on the
+  params, the wire `signature` carries the owner address in hex per the
+  reviewed upstream convention, and the order becomes fillable once the owner
+  activates the on-chain pre-signature flag via `setPreSignature` — for
+  example by submitting the transaction built by `pre_sign_transaction`.
+- On-chain transaction construction returns the fully-populated
+  `cow_sdk_trading::PreparedTransaction { to, data, value, gas_limit }`:
+  `pre_sign_transaction` returns it, `EthFlowTransaction.transaction` carries
+  it, and `From<PreparedTransaction> for TransactionRequest` makes the bundle
+  submittable through any `Signer` without per-field `Option` unwrapping.
+  `eth_flow_transaction` reads the chain from `trader.chain_id` rather than a
+  separate chain-id parameter, so the transaction and the trader context
+  cannot disagree. Governed by
+  [ADR 0020](docs/adr/0020-ethflow-owner-threading.md).
+- `cow_sdk_trading::build_app_data` takes the typed
+  `cow_sdk_orderbook::OrderClass` for the generated document's order-class
+  metadata, stamped in its lowercase wire form through the `OrderClass` serde
+  representation, so a misspelled or unsupported class string cannot reach the
+  wire.
 - `cow_sdk_trading::Trading` exposes its stored trader defaults through typed
   read accessors: `chain_id()`, `app_code()`, `env()`,
   `settlement_contract_override()`, and `eth_flow_contract_override()`.
@@ -123,8 +147,22 @@ sections below describe the public contract a `0.1.0` consumer receives.
 - The `cow_sdk_core::address!` macro constructs a compile-time validated
   `Address` from a `0x`-prefixed hex literal — the typed mirror of
   `alloy_primitives::address!` — so well-known addresses live in `const` items
-  with malformed hex, wrong lengths, and failed EIP-55 checksums rejected at
-  build time instead of through a runtime `Address::new` call.
+  with malformed hex and wrong lengths rejected at build time instead of
+  through a runtime `Address::new` call. The macro takes exactly one lowercase
+  wire-form string literal: an EIP-55 checksum cannot be verified during const
+  evaluation, so a const guard rejects a mixed-case literal at compile time
+  rather than accepting an unverified checksum, and `Address::ZERO` is the
+  spelling for the zero address. Both rules are pinned by trybuild cases.
+  `cow_sdk::core::prelude` re-exports `address!` beside `Address`, matching
+  std's `vec!`-beside-`Vec` precedent, so importing the prelude is enough to
+  write compile-time validated address constants.
+- `cow_sdk_core::NATIVE_CURRENCY_ADDRESS` is a typed `Address` constant
+  carrying the EIP-7528 native-asset sentinel
+  (`0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee`), so call sites compare and
+  assign it directly; no runtime re-parse of the sentinel string remains in
+  the orderbook or trading crates.
+- The app-data digest newtype carries exactly one name, `AppDataHash`, across
+  the workspace and the facade.
 - `cow_sdk_core::Amount::parse_units(value, decimals)` and `format_units(decimals)`
   are the exact decimal token-amount construction and display surface — the
   typed analogues of viem's `parseUnits` / `formatUnits`. `parse_units` scales a
@@ -227,6 +265,20 @@ sections below describe the public contract a `0.1.0` consumer receives.
   through `order_eip712_type_hash()`, and a `receiver` of `address(0)` is hashed
   verbatim as the protocol's pay-to-owner sentinel. Governed by
   [ADR 0059](docs/adr/0059-hash-concrete-orderdata-directly.md).
+- `cow_sdk_core::Signer` and the narrow `TypedDataSigner` capability are
+  payload-only for typed data: `sign_typed_data_payload(&TypedDataPayload)` is
+  the single required typed-data method, and the payload carries the domain,
+  the full types map, the primary-type name, and the message — everything a
+  backend needs to compute the canonical EIP-712 digest. Field-based signing
+  is not a trait obligation, because a `(domain, fields, message)` triple
+  cannot name its primary type or carry nested type definitions; the
+  browser-wallet signer keeps the reviewed two-layout field-based conversion
+  as its inherent `sign_typed_data_compatibility` helper. Governed by
+  [ADR 0068](docs/adr/0068-payload-only-typed-data-signing.md).
+- `cow_sdk_contracts::Interaction` converts directly into a
+  `cow_sdk_core::TransactionRequest` through `From`, so a decoded or
+  hand-built settlement interaction is submittable through any `Signer`
+  without field-by-field copying.
 - `cow_sdk_contracts` exposes one closed-construction `RecoverableSignature`
   typestate for recoverable ECDSA signatures. It accepts only inputs whose
   trailing recovery byte is in `{0, 1, 27, 28}`, rejecting the wider alloy
@@ -322,9 +374,16 @@ sections below describe the public contract a `0.1.0` consumer receives.
   and decode into a fully typed `SolverCompetitionResponse` carrying per-solver
   reference scores and each solution's touched orders, with addresses, amounts,
   order UIDs, and transaction hashes as workspace domain newtypes.
+- `cow_sdk_app_data::validate_app_data_doc(&AppDataDoc)` returns
+  `Result<(), AppDataError>`: a valid document is `Ok(())` and a failure is
+  the typed, field-named error, so there is no result struct to unpack at the
+  Rust boundary (the TypeScript-callable layer keeps its JavaScript
+  result-object DTO). `app_data_info` runs that validation exactly once on its
+  path. Governed by
+  [ADR 0064](docs/adr/0064-app-data-typed-validation.md).
 - `cow_sdk_app_data::AppDataParams::new(app_code: AppCode)` is the single typed
   construction entry, with fluent `into_doc()` and `into_validated()` terminals;
-  the latter runs the embedded JSON-schema validation and computes the CID,
+  the latter runs the typed document validation and computes the CID,
   canonical JSON, and keccak256 digest in one call. App-data canonical JSON
   sorts object keys by UTF-16 code unit per RFC 8785 (JCS), closing a latent
   divergence with the upstream canonical form. `PartnerFee` and
@@ -380,6 +439,16 @@ sections below describe the public contract a `0.1.0` consumer receives.
   [ADR 0035](docs/adr/0035-alloy-provider-adapter.md),
   [ADR 0036](docs/adr/0036-alloy-signer-adapter.md), and
   [ADR 0037](docs/adr/0037-alloy-umbrella-adapter.md).
+- `cow_sdk_alloy_signer::LocalAlloySigner` (with `LocalAlloySignerBuilder` and
+  `LocalAlloySignerBuilderError`) is the local signer's shipped name, named
+  for what it holds — a locally-held private key; the adapter never loads
+  keystore files. Recorded in the
+  [ADR 0036](docs/adr/0036-alloy-signer-adapter.md) amendment.
+- `cow_sdk_alloy_provider::RpcAlloyProviderBuilder::build()` is synchronous:
+  constructing the HTTP-backed provider performs no network I/O, so no
+  `.await` is required at the build terminal. The chain-checked construction
+  path stays async (`cow_sdk_alloy::AlloyClientBuilder::build_checked`)
+  because it performs an `eth_chainId` round-trip before returning the client.
 - Transaction submission and observation are split into distinct public types:
   `TransactionBroadcast` carries the broadcast hash from signer-backed
   submission, while `TransactionReceipt` represents receipt observation with
@@ -621,7 +690,7 @@ sections below describe the public contract a `0.1.0` consumer receives.
   `ContractsError::ZeroReceiver`, mirroring the contract's `ReceiverMustBeSet()`
   revert. The general order hash path still hashes `address(0)` verbatim as the
   pay-to-owner sentinel. Recorded as `PROP-CON-018` in `PROPERTIES.md` and
-  governed by [ADR 0020](docs/adr/0020-ethflow-order-construction.md).
+  governed by [ADR 0020](docs/adr/0020-ethflow-owner-threading.md).
 - `cow_sdk_trading::Trading` cancellation spans record the effective chain and
   environment resolved from the trader defaults instead of `None` when the caller
   supplies an `OrderTraderParams` without them, matching the quote-path spans and

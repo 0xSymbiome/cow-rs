@@ -1,11 +1,11 @@
-//! Typestate builder for the native Alloy local-keystore signer.
+//! Typestate builder for the native Alloy local private-key signer.
 
 use alloy_primitives::B256;
 use alloy_signer_local::PrivateKeySigner;
 use cow_sdk_core::{ChainId, SupportedChainId};
 use thiserror::Error;
 
-use crate::signer::LocalAlloyKeystoreSigner;
+use crate::signer::LocalAlloySigner;
 
 mod sealed {
     use alloy_signer_local::PrivateKeySigner;
@@ -76,14 +76,14 @@ pub trait ChainState: sealed::SealedChain {}
 impl ChainState for ChainUnset {}
 impl ChainState for ChainSet {}
 
-/// Typestate builder for [`LocalAlloyKeystoreSigner`].
+/// Typestate builder for [`LocalAlloySigner`].
 ///
 /// `K` tracks the key-source axis and `C` tracks the chain-id axis. The
-/// [`build`](LocalAlloyKeystoreSignerBuilder::build) method is available only
+/// [`build`](LocalAlloySignerBuilder::build) method is available only
 /// after both axes have been selected.
 #[derive(Debug)]
 #[must_use]
-pub struct LocalAlloyKeystoreSignerBuilder<K = KeySourceUnset, C = ChainUnset>
+pub struct LocalAlloySignerBuilder<K = KeySourceUnset, C = ChainUnset>
 where
     K: KeySourceState,
     C: ChainState,
@@ -92,13 +92,13 @@ where
     chain: C,
 }
 
-impl Default for LocalAlloyKeystoreSignerBuilder<KeySourceUnset, ChainUnset> {
+impl Default for LocalAlloySignerBuilder<KeySourceUnset, ChainUnset> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl LocalAlloyKeystoreSignerBuilder<KeySourceUnset, ChainUnset> {
+impl LocalAlloySignerBuilder<KeySourceUnset, ChainUnset> {
     /// Creates a builder with neither key source nor chain id selected.
     pub const fn new() -> Self {
         Self {
@@ -108,7 +108,7 @@ impl LocalAlloyKeystoreSignerBuilder<KeySourceUnset, ChainUnset> {
     }
 }
 
-impl<C> LocalAlloyKeystoreSignerBuilder<KeySourceUnset, C>
+impl<C> LocalAlloySignerBuilder<KeySourceUnset, C>
 where
     C: ChainState,
 {
@@ -119,17 +119,14 @@ where
     ///
     /// # Errors
     ///
-    /// Returns [`LocalAlloyKeystoreSignerBuilderError::InvalidPrivateKey`]
+    /// Returns [`LocalAlloySignerBuilderError::InvalidPrivateKey`]
     /// when the input is not a valid secp256k1 private key.
     pub fn private_key(
         self,
         hex: impl AsRef<str>,
-    ) -> Result<
-        LocalAlloyKeystoreSignerBuilder<PrivateKeySource, C>,
-        LocalAlloyKeystoreSignerBuilderError,
-    > {
+    ) -> Result<LocalAlloySignerBuilder<PrivateKeySource, C>, LocalAlloySignerBuilderError> {
         let signer = parse_private_key(hex.as_ref())?;
-        Ok(LocalAlloyKeystoreSignerBuilder {
+        Ok(LocalAlloySignerBuilder {
             key: sealed::PrivateKeySource { signer },
             chain: self.chain,
         })
@@ -139,34 +136,28 @@ where
     ///
     /// # Errors
     ///
-    /// Returns [`LocalAlloyKeystoreSignerBuilderError::InvalidPrivateKey`]
+    /// Returns [`LocalAlloySignerBuilderError::InvalidPrivateKey`]
     /// when the bytes do not encode a valid secp256k1 private key.
     pub fn private_key_bytes(
         self,
         bytes: [u8; 32],
-    ) -> Result<
-        LocalAlloyKeystoreSignerBuilder<PrivateKeySource, C>,
-        LocalAlloyKeystoreSignerBuilderError,
-    > {
+    ) -> Result<LocalAlloySignerBuilder<PrivateKeySource, C>, LocalAlloySignerBuilderError> {
         let signer = PrivateKeySigner::from_bytes(&B256::from(bytes))
-            .map_err(|_| LocalAlloyKeystoreSignerBuilderError::InvalidPrivateKey)?;
-        Ok(LocalAlloyKeystoreSignerBuilder {
+            .map_err(|_| LocalAlloySignerBuilderError::InvalidPrivateKey)?;
+        Ok(LocalAlloySignerBuilder {
             key: sealed::PrivateKeySource { signer },
             chain: self.chain,
         })
     }
 }
 
-impl<K> LocalAlloyKeystoreSignerBuilder<K, ChainUnset>
+impl<K> LocalAlloySignerBuilder<K, ChainUnset>
 where
     K: KeySourceState,
 {
     /// Selects the chain id bound to the signer.
-    pub fn chain_id(
-        self,
-        chain_id: SupportedChainId,
-    ) -> LocalAlloyKeystoreSignerBuilder<K, ChainSet> {
-        LocalAlloyKeystoreSignerBuilder {
+    pub fn chain_id(self, chain_id: SupportedChainId) -> LocalAlloySignerBuilder<K, ChainSet> {
+        LocalAlloySignerBuilder {
             key: self.key,
             chain: sealed::ChainSet {
                 chain_id: ChainId::from(chain_id),
@@ -175,7 +166,7 @@ where
     }
 }
 
-impl LocalAlloyKeystoreSignerBuilder<PrivateKeySource, ChainSet> {
+impl LocalAlloySignerBuilder<PrivateKeySource, ChainSet> {
     /// Builds the signer after both key source and chain id have been selected.
     ///
     /// # Errors
@@ -183,31 +174,29 @@ impl LocalAlloyKeystoreSignerBuilder<PrivateKeySource, ChainSet> {
     /// The current selected states are fully validated before this method is
     /// available, so this method cannot fail today. The `Result` preserves the
     /// builder error contract for future key-source additions.
-    pub fn build(self) -> Result<LocalAlloyKeystoreSigner, LocalAlloyKeystoreSignerBuilderError> {
-        Ok(LocalAlloyKeystoreSigner::from_parts(
+    pub fn build(self) -> Result<LocalAlloySigner, LocalAlloySignerBuilderError> {
+        Ok(LocalAlloySigner::from_parts(
             self.key.signer,
             self.chain.chain_id,
         ))
     }
 }
 
-/// Builder errors for [`LocalAlloyKeystoreSignerBuilder`].
+/// Builder errors for [`LocalAlloySignerBuilder`].
 #[non_exhaustive]
 #[derive(Debug, Error)]
-pub enum LocalAlloyKeystoreSignerBuilderError {
+pub enum LocalAlloySignerBuilderError {
     /// The provided private key could not be parsed or was not a valid
     /// secp256k1 key.
     #[error("invalid private key")]
     InvalidPrivateKey,
 }
 
-fn parse_private_key(
-    value: &str,
-) -> Result<PrivateKeySigner, LocalAlloyKeystoreSignerBuilderError> {
+fn parse_private_key(value: &str) -> Result<PrivateKeySigner, LocalAlloySignerBuilderError> {
     value
         .parse()
         .or_else(|_| value.strip_prefix("0x").unwrap_or(value).parse())
-        .map_err(|_| LocalAlloyKeystoreSignerBuilderError::InvalidPrivateKey)
+        .map_err(|_| LocalAlloySignerBuilderError::InvalidPrivateKey)
 }
 
 #[cfg(test)]
@@ -218,13 +207,13 @@ mod tests {
 
     #[test]
     fn builder_default_starts_empty() {
-        let _builder = LocalAlloyKeystoreSignerBuilder::default();
+        let _builder = LocalAlloySignerBuilder::default();
     }
 
     #[test]
     fn private_key_invalid_returns_error_no_leak() {
         let secret = "not-a-private-key";
-        let Err(error) = LocalAlloyKeystoreSigner::builder().private_key(secret) else {
+        let Err(error) = LocalAlloySigner::builder().private_key(secret) else {
             panic!("invalid key must fail");
         };
 
@@ -235,15 +224,13 @@ mod tests {
 
     #[test]
     fn private_key_with_0x_prefix_succeeds() {
-        let builder = LocalAlloyKeystoreSigner::builder()
-            .private_key(TEST_KEY)
-            .unwrap();
+        let builder = LocalAlloySigner::builder().private_key(TEST_KEY).unwrap();
         let _builder = builder.chain_id(SupportedChainId::Sepolia);
     }
 
     #[test]
     fn private_key_without_0x_prefix_succeeds() {
-        let builder = LocalAlloyKeystoreSigner::builder()
+        let builder = LocalAlloySigner::builder()
             .private_key(TEST_KEY.trim_start_matches("0x"))
             .unwrap();
         let _builder = builder.chain_id(SupportedChainId::Sepolia);
@@ -251,19 +238,19 @@ mod tests {
 
     #[test]
     fn private_key_bytes_zero_returns_error() {
-        let Err(error) = LocalAlloyKeystoreSigner::builder().private_key_bytes([0u8; 32]) else {
+        let Err(error) = LocalAlloySigner::builder().private_key_bytes([0u8; 32]) else {
             panic!("zero key must fail");
         };
 
         assert!(matches!(
             error,
-            LocalAlloyKeystoreSignerBuilderError::InvalidPrivateKey
+            LocalAlloySignerBuilderError::InvalidPrivateKey
         ));
     }
 
     #[test]
     fn chain_id_transitions_typestate() {
-        let signer = LocalAlloyKeystoreSigner::builder()
+        let signer = LocalAlloySigner::builder()
             .private_key(TEST_KEY)
             .unwrap()
             .chain_id(SupportedChainId::Sepolia)

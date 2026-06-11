@@ -61,7 +61,6 @@ async fn provider_with_eth_call(result: &str) -> RpcAlloyProvider {
         .http(server.uri())
         .unwrap()
         .build()
-        .await
         .unwrap();
     // The server is intentionally moved into a static slot via `Box::leak`
     // so it outlives the request. A test-only leak is acceptable; the process

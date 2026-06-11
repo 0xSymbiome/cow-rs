@@ -3,7 +3,7 @@
 use std::str::FromStr;
 
 use alloy_primitives::Signature as AlloySignature;
-use cow_sdk_alloy_signer::LocalAlloyKeystoreSigner;
+use cow_sdk_alloy_signer::LocalAlloySigner;
 use cow_sdk_core::{Address, Signer, SupportedChainId};
 
 const TEST_KEY: &str = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
@@ -32,8 +32,8 @@ async fn address_matches_lowercase_and_eip55_checksum_forms() {
     assert_eq!(address, Address::new(EXPECTED_CHECKSUM_ADDRESS).unwrap());
 }
 
-fn signer() -> LocalAlloyKeystoreSigner {
-    LocalAlloyKeystoreSigner::builder()
+fn signer() -> LocalAlloySigner {
+    LocalAlloySigner::builder()
         .private_key(TEST_KEY)
         .unwrap()
         .chain_id(SupportedChainId::Mainnet)

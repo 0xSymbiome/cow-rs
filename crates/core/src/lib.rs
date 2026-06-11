@@ -29,10 +29,10 @@ pub mod validation;
 pub use cancellation::{Cancellable, Cancelled, WithCancellation};
 pub use config::{
     AddressPerChain, ApiBaseUrls, ApiContext, CowEnv, DEFAULT_HTTP_TIMEOUT,
-    DEFAULT_MAX_RESPONSE_BYTES, EVM_NATIVE_CURRENCY_ADDRESS, ExternalHostPolicy, HostPolicyError,
-    HttpClientPolicy, MAX_VALID_TO_EPOCH, ProtocolOptions, SupportedChainId, UrlParseFailureClass,
-    canonical_orderbook_hosts, canonical_subgraph_hosts, default_api_base_urls,
-    validate_external_service_url, wrapped_native_token,
+    DEFAULT_MAX_RESPONSE_BYTES, ExternalHostPolicy, HostPolicyError, HttpClientPolicy,
+    MAX_VALID_TO_EPOCH, NATIVE_CURRENCY_ADDRESS, ProtocolOptions, SupportedChainId,
+    UrlParseFailureClass, canonical_orderbook_hosts, canonical_subgraph_hosts,
+    default_api_base_urls, validate_external_service_url, wrapped_native_token,
 };
 pub use errors::{CoreError, ErrorClass, ValidationError};
 pub use redaction::{
@@ -57,21 +57,47 @@ pub use transport::{HttpTransport, TransportError};
 #[cfg(not(target_arch = "wasm32"))]
 pub use transport::{ReqwestTransport, ReqwestTransportConfig};
 pub use types::{
-    Address, Amount, Amounts, AppCode, AppCodeError, AppDataHash, AppDataHex, BlockHash,
-    BuyTokenDestination, ChainId, Costs, FeeComponent, Hash32, HexData, LogBlockSelector, LogMeta,
-    LogQuery, NetworkFee, ORDER_TYPE_FIELD_NAMES, OrderData, OrderDigest, OrderKind, OrderUid,
-    QUOTE_AMOUNT_STAGE_NAMES, QuoteAmountsAndCosts, RawLog, SellTokenSource, TokenInfo,
-    TransactionHash, VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS, ValidTo,
+    Address, Amount, Amounts, AppCode, AppCodeError, AppDataHash, BlockHash, BuyTokenDestination,
+    ChainId, Costs, FeeComponent, Hash32, HexData, LogBlockSelector, LogMeta, LogQuery, NetworkFee,
+    ORDER_TYPE_FIELD_NAMES, OrderData, OrderDigest, OrderKind, OrderUid, QUOTE_AMOUNT_STAGE_NAMES,
+    QuoteAmountsAndCosts, RawLog, SellTokenSource, TokenInfo, TransactionHash,
+    VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS, ValidTo,
 };
 pub use validation::{TransportErrorClass, ValidationReason};
 
-// Macro-support re-export only: gives the `address!` literal macro a stable
+// Macro-support items only: gives the `address!` literal macro a stable
 // `$crate::__private::alloy_primitives` expansion path inside downstream
-// crates that do not depend on `alloy-primitives` directly. Nested in a
-// module (rather than re-exported at the crate root) so it never becomes the
-// shortest visible path rustc picks when rendering diagnostics. Not public
-// API.
+// crates that do not depend on `alloy-primitives` directly, plus the
+// compile-time literal guard the macro expands. Nested in a module (rather
+// than re-exported at the crate root) so it never becomes the shortest
+// visible path rustc picks when rendering diagnostics. Not public API.
 #[doc(hidden)]
 pub mod __private {
     pub use alloy_primitives;
+
+    /// Compile-time guard expanded by the [`address!`](crate::address) macro.
+    ///
+    /// The literal must use the protocol-canonical lowercase wire form,
+    /// because an EIP-55 checksum cannot be verified during const evaluation.
+    ///
+    /// # Panics
+    ///
+    /// Panics during const evaluation — surfacing as a build error, never at
+    /// runtime — when the literal contains an ASCII uppercase character
+    /// outside the `0x` prefix.
+    pub const fn assert_lowercase_address_literal(literal: &str) {
+        let bytes = literal.as_bytes();
+        let mut index = if bytes.len() >= 2 && bytes[0] == b'0' && bytes[1] == b'x' {
+            2
+        } else {
+            0
+        };
+        while index < bytes.len() {
+            assert!(
+                !bytes[index].is_ascii_uppercase(),
+                "address! takes the lowercase wire form: an EIP-55 checksum cannot be verified at compile time, so mixed-case literals fail closed; lowercase the literal"
+            );
+            index += 1;
+        }
+    }
 }

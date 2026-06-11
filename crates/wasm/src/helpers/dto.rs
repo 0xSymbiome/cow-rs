@@ -2,7 +2,7 @@
 
 use std::collections::BTreeMap;
 
-use cow_sdk_app_data::{AppDataDoc, AppDataInfo, ValidationResult};
+use cow_sdk_app_data::{AppDataDoc, AppDataError, AppDataInfo};
 use cow_sdk_core::{
     Address, Amount, AppDataHash, BuyTokenDestination, OrderData, OrderKind, SellTokenSource,
     TypedDataDomain, TypedDataField, TypedDataPayload, TypedDataTypes,
@@ -300,6 +300,11 @@ impl From<AppDataInfo> for AppDataInfoDto {
 }
 
 /// App-data validation result DTO.
+///
+/// JavaScript-facing `{success, errors}` projection of the typed
+/// `Result<(), AppDataError>` returned by the SDK validator. The rendered
+/// error text names only the offending public field and never the
+/// caller-supplied value.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ValidationResultDto {
@@ -310,11 +315,17 @@ pub struct ValidationResultDto {
     pub errors: Option<String>,
 }
 
-impl From<ValidationResult> for ValidationResultDto {
-    fn from(value: ValidationResult) -> Self {
-        Self {
-            success: value.success,
-            errors: value.errors,
+impl From<Result<(), AppDataError>> for ValidationResultDto {
+    fn from(value: Result<(), AppDataError>) -> Self {
+        match value {
+            Ok(()) => Self {
+                success: true,
+                errors: None,
+            },
+            Err(error) => Self {
+                success: false,
+                errors: Some(error.to_string()),
+            },
         }
     }
 }

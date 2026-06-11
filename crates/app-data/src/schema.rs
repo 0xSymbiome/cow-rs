@@ -4,7 +4,7 @@ use cow_sdk_core::{AppCode, ValidationReason};
 
 use crate::{
     AppDataDoc, AppDataError, AppDataParams, DEFAULT_APP_CODE, LATEST_APP_DATA_VERSION, PartnerFee,
-    QuoteMetadata, SchemaVersion, ValidationResult, metadata::FlashloanHints,
+    QuoteMetadata, SchemaVersion, metadata::FlashloanHints,
 };
 
 /// Builds a canonical app-data document from typed parameters.
@@ -78,37 +78,29 @@ pub fn generate_app_data_doc(params: AppDataParams) -> AppDataDoc {
 /// are left untouched so the result is never stricter than the orderbook's own
 /// acceptance contract.
 ///
-/// On failure [`ValidationResult::errors`] carries the typed error rendering,
-/// which names only the offending public field and never the caller-supplied
-/// value.
-#[must_use]
-pub fn validate_app_data_doc(app_data_doc: &AppDataDoc) -> ValidationResult {
-    match validate_app_data_doc_inner(app_data_doc) {
-        Ok(()) => ValidationResult {
-            success: true,
-            errors: None,
-        },
-        Err(err) => ValidationResult {
-            success: false,
-            errors: Some(err.to_string()),
-        },
-    }
-}
-
-/// Extracts the schema version string from an app-data document.
+/// This is the same single validation pass [`crate::app_data_info`] runs
+/// before deriving the document digest, so callers that need both the check
+/// and the derived identifiers should call [`crate::app_data_info`] once
+/// rather than validating separately first.
 ///
 /// # Errors
 ///
-/// Returns [`AppDataError::MissingSchemaVersion`] when the document does not
-/// contain a string-valued `version` field.
-pub fn extract_schema_version(app_data_doc: &AppDataDoc) -> Result<&str, AppDataError> {
-    app_data_doc
-        .get("version")
-        .and_then(Value::as_str)
-        .ok_or(AppDataError::MissingSchemaVersion)
-}
-
-pub(crate) fn validate_app_data_doc_inner(app_data_doc: &AppDataDoc) -> Result<(), AppDataError> {
+/// Every error rendering names only the offending public field and never the
+/// caller-supplied value:
+///
+/// - [`AppDataError::MissingSchemaVersion`] when the document does not
+///   contain a string-valued `version` field.
+/// - [`AppDataError::InvalidSchemaVersion`] when `version` is not in
+///   `<major>.<minor>.<patch>` form.
+/// - [`AppDataError::InvalidAppDataProvided`] when a present
+///   `metadata.flashloan` or `metadata.partnerFee` value does not match its
+///   typed wire shape, or when a typed `metadata.quote` carries an
+///   out-of-range `slippageBips`.
+/// - [`AppDataError::InvalidFlashloanHints`] when a well-shaped
+///   `metadata.flashloan` fails its bound checks.
+/// - [`AppDataError::InvalidPartnerFee`] when a well-shaped
+///   `metadata.partnerFee` fails its bound checks.
+pub fn validate_app_data_doc(app_data_doc: &AppDataDoc) -> Result<(), AppDataError> {
     let version = extract_schema_version(app_data_doc)?;
     SchemaVersion::new(version)?;
 
@@ -150,4 +142,17 @@ pub(crate) fn validate_app_data_doc_inner(app_data_doc: &AppDataDoc) -> Result<(
     }
 
     Ok(())
+}
+
+/// Extracts the schema version string from an app-data document.
+///
+/// # Errors
+///
+/// Returns [`AppDataError::MissingSchemaVersion`] when the document does not
+/// contain a string-valued `version` field.
+pub fn extract_schema_version(app_data_doc: &AppDataDoc) -> Result<&str, AppDataError> {
+    app_data_doc
+        .get("version")
+        .and_then(Value::as_str)
+        .ok_or(AppDataError::MissingSchemaVersion)
 }

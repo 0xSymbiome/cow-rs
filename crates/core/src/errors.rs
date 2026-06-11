@@ -131,10 +131,14 @@ impl From<Cancelled> for CoreError {
 /// Every public error type that the `cow-sdk` facade aggregates exposes a
 /// `class(&self) -> ErrorClass` accessor that resolves to one of these
 /// buckets, so downstream telemetry and retry layers can partition failures
-/// without pattern-matching every nested variant by hand. Retry policies
-/// typically retry only [`ErrorClass::Transport`] and [`ErrorClass::Remote`];
-/// the other classes signal caller-side or protocol-level conditions that
-/// benefit from different recovery paths.
+/// without pattern-matching every nested variant by hand.
+/// [`ErrorClass::Transport`] is the retryable class: the failure happened
+/// before a complete response arrived, so resending is safe. For
+/// [`ErrorClass::Remote`] the class alone is insufficient — a structured
+/// 4xx rejection is permanent while a 5xx outage is transient — so consult
+/// the concrete error's `is_retryable()` / `backoff_hint()` accessors
+/// before retrying. The remaining classes signal caller-side or
+/// protocol-level conditions that benefit from different recovery paths.
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ErrorClass {

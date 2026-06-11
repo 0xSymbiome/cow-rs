@@ -34,7 +34,7 @@ fn provider_manifest_declares_no_signer_family_dependencies() {
 }
 
 #[test]
-fn cargo_tree_for_provider_does_not_include_local_keystore_signer() {
+fn cargo_tree_for_provider_does_not_include_local_private_key_signer() {
     let output = Command::new("cargo")
         .args(["tree", "-p", "cow-sdk-alloy-provider", "--edges", "normal"])
         .output()

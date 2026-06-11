@@ -43,7 +43,7 @@ public and runtime shape of `cow-rs`.
 | [0033](0033-minimum-viable-panic-surface.md) | Accepted | Keep production panic sites allowlisted, documented, and limited to static invariants. |
 | [0034](0034-interaction-encoder-target-policy.md) | Superseded | Guarded canonical vault-relayer interaction targets at the settlement encoder boundary; superseded when the settlement encoder was removed (a solver/backend concern). |
 | [0035](0035-alloy-provider-adapter.md) | Accepted | Ship a read-only Alloy provider adapter behind an opt-in native crate. |
-| [0036](0036-alloy-signer-adapter.md) | Accepted | Ship a native Alloy local signer adapter behind an opt-in native crate. |
+| [0036](0036-alloy-signer-adapter.md) | Accepted (amended) | Ship a native Alloy local signer adapter behind an opt-in native crate. |
 | [0037](0037-alloy-umbrella-adapter.md) | Accepted | Compose the native Alloy provider and local signer into one wallet-capable client. |
 | [0038](0038-transaction-lifecycle-types.md) | Accepted (amended) | Split transaction broadcast acknowledgement from mined receipt observation. |
 | [0039](0039-typescript-callable-wasm-sdk-surface.md) | Accepted (amended) | Keep the TypeScript-callable WASM SDK surface as an additive leaf crate. |
@@ -71,7 +71,11 @@ public and runtime shape of `cow-rs`.
 | [0061](0061-wasm-abi-receiver-pay-to-owner.md) | Accepted | Treat an omitted and an explicit zero-address `receiver` identically at the WASM order-input boundary (both resolve to the zero-address pay-to-owner sentinel), with no receiver-to-owner reinterpretation. |
 | [0062](0062-internal-shared-test-support-crate.md) | Accepted | Keep shared cross-crate test support in one unpublished `cow-sdk-test-utils` crate consumed only as a dev-dependency. |
 | [0063](0063-published-consumer-test-doubles-crate.md) | Accepted | Ship consumer-facing in-memory test doubles for the public trait seams as the published `cow-sdk-test` crate, re-exported behind the facade `testing` feature. |
+| [0064](0064-app-data-typed-validation.md) | Accepted (amended) | Validate app-data documents through typed Rust construction plus structural checks, not a runtime JSON-Schema validator, keeping one self-contained drift fixture per modeled metadata family. |
 | [0065](0065-canonical-browser-wallet-example.md) | Accepted | Ship one canonical, runnable browser-wallet trade example in place of the WASM verification-console genre. |
+| [0066](0066-trading-slippage-and-suggestion-policy.md) | Accepted | Implement the established CoW SDK slippage transform, fee folding, and slippage-suggestion heuristics faithfully, byte-for-byte with `@cowprotocol/cow-sdk`, without redefining the convention. |
+| [0067](0067-idiomatic-accessor-naming.md) | Accepted | Name public accessors and domain fetch methods by their bare domain noun with no `get_` prefix, retaining `get_` only on the chain-RPC `Provider` / `LogProvider` methods that mirror Ethereum JSON-RPC names. |
+| [0068](0068-payload-only-typed-data-signing.md) | Accepted | Take the canonical EIP-712 typed-data payload at the signer seam — `sign_typed_data_payload(&TypedDataPayload)` is the single required typed-data method — and keep field-based signing out of the trait contract, with wallet-protocol compatibility owned by the browser-wallet inherent helper. |
 
 ## When To Write An ADR
 

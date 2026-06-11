@@ -16,7 +16,7 @@ use cow_sdk::trading::{AllowanceParams, ApprovalParams, OrderTraderParams, Tradi
 
 use cow_sdk::testing::{MockOrderbook, MockProvider, MockSigner};
 use cow_sdk_examples_native::support::{
-    sample_owner, sample_quote_response, sample_sell_token, sample_trade_parameters,
+    OWNER, WETH, sample_quote_response, sample_trade_parameters,
 };
 
 #[tokio::main]
@@ -26,7 +26,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let orderbook = MockOrderbook::builder(SupportedChainId::Sepolia)
         .quote(sample_quote_response())
         .build();
-    let signer = MockSigner::builder().address(sample_owner()).build();
+    let signer = MockSigner::builder().address(OWNER).build();
     let provider = MockProvider::builder().signer(signer.clone()).build();
 
     let trading = Trading::builder()
@@ -47,10 +47,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // 3. Read the protocol allowance for the sell token (through the provider).
     let allowance = trading
-        .cow_protocol_allowance(
-            &provider,
-            &AllowanceParams::new(sample_sell_token(), sample_owner()),
-        )
+        .cow_protocol_allowance(&provider, &AllowanceParams::new(WETH, OWNER))
         .await?;
 
     // 4. Approve the protocol to spend the sell token (sends a transaction).
@@ -58,7 +55,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .approve_cow_protocol(
             &signer,
             &ApprovalParams::new(
-                sample_sell_token(),
+                WETH,
                 Amount::from_units(1, 18).expect("example approval amount must remain valid"),
             ),
         )
@@ -74,7 +71,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let provider_state = provider.recorded();
 
     let report = json!({
-        "surface": "cow-sdk::Trading",
+        "surface": "cow_sdk::trading::Trading",
         "mode": "simulated-transport",
         "quote": {
             "suggestedSlippageBps": quote.suggested_slippage_bps,

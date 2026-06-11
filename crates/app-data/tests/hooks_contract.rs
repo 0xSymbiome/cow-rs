@@ -126,9 +126,8 @@ fn generated_document_with_typed_hooks_validates() {
     let validation = validate_app_data_doc(&doc);
 
     assert!(
-        validation.success,
-        "generated hook-bearing app-data document must validate, got {:?}",
-        validation.errors,
+        validation.is_ok(),
+        "generated hook-bearing app-data document must validate, got {validation:?}",
     );
     assert_eq!(
         doc["metadata"]["hooks"]["pre"][0]["target"],

@@ -1,8 +1,8 @@
 # Alloy Signer Adapter Audit
 
 Status: Current
-Last reviewed: 2026-06-03
-Owning surface: `cow-sdk-alloy-signer` `LocalAlloyKeystoreSigner`, its builder, and its `Signer` implementation
+Last reviewed: 2026-06-11
+Owning surface: `cow-sdk-alloy-signer` `LocalAlloySigner`, its builder, and its `Signer` implementation
 Refresh trigger: ADR 0038 - `send_transaction` return type clarification, or changes to the signer public API, the `Signer` trait, typed-data conversion, signature normalization, the inter-crate seam entries consumed by sibling Alloy adapters, cancellation propagation, the workspace Alloy signer pin, or the crate dependency boundary
 Related docs:
 - [ADR 0036](../adr/0036-alloy-signer-adapter.md)
@@ -17,7 +17,7 @@ Related docs:
 
 This audit covers:
 
-- the `LocalAlloyKeystoreSigner` public type and its `Signer`
+- the `LocalAlloySigner` public type and its `Signer`
   implementation
 - the private-key plus chain-id typestate builder and builder error type
 - the `SignerError` and `SignerErrorClass` surfaces
@@ -36,11 +36,11 @@ or submission, browser-wallet behavior, or smart-account signing.
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
 | Public API exposure | Documented signer and builder methods expose SDK-owned domain types; upstream Alloy local signer values remain private | Conforms |
-| Trait coverage | `LocalAlloyKeystoreSigner` implements `Signer` and compile-fail tests assert it is not a `Provider` or `SigningProvider` | Conforms |
+| Trait coverage | `LocalAlloySigner` implements `Signer` and compile-fail tests assert it is not a `Provider` or `SigningProvider` | Conforms |
 | Builder typestate | `build()` is callable only after private-key source and chain id are selected; externally constructed marker states cannot bypass the builder | Conforms |
 | EIP-191 signing | Message signatures match the committed reference vector and recover to the local signer address | Conforms |
-| EIP-712 signing | Canonical order typed-data signatures preserve `Order` as the primary type, match the committed reference vector, and recover through the contracts crate; nested multi-type payloads with struct-typed fields convert and produce digests byte-identical to the macro-emitted `SolStruct` envelope, while undeclared struct references stay fail-closed | Conforms |
-| Legacy typed-data fallback | The flat-fields compatibility method uses `Message` as its placeholder primary type and is distinct from canonical payload signing | Conforms |
+| EIP-712 signing | Typed-data signing is payload-only: order signatures preserve `Order` as the primary type, match the committed reference vector, and recover through the contracts crate; nested multi-type payloads with struct-typed fields convert and produce digests byte-identical to the macro-emitted `SolStruct` envelope, while undeclared struct references stay fail-closed | Conforms |
+| Primary-type preservation | A payload differing only by primary type signs to a different committed vector, so payload signing cannot silently collapse to a placeholder digest | Conforms |
 | Error and cancellation | Public error classes cover validation, signing, provider-required, unsupported, cancelled, and internal failures with redacted formatting where detail may be sensitive | Conforms |
 | Dependency boundary | The crate declares no provider or transport dependency and the resolved normal graph excludes `alloy-provider` | Conforms |
 
@@ -48,17 +48,17 @@ or submission, browser-wallet behavior, or smart-account signing.
 
 ### Public Surface
 
-`cow-sdk-alloy-signer` exposes `LocalAlloyKeystoreSigner`,
-`LocalAlloyKeystoreSignerBuilder`, sealed builder-state marker names,
-`LocalAlloyKeystoreSignerBuilderError`, `SignerError`, and
+`cow-sdk-alloy-signer` exposes `LocalAlloySigner`,
+`LocalAlloySignerBuilder`, sealed builder-state marker names,
+`LocalAlloySignerBuilderError`, `SignerError`, and
 `SignerErrorClass`. The signer stores the upstream Alloy private-key
 signer in private state and redacts it from debug output.
 
 The crate also exposes a `#[doc(hidden)] pub mod __seam` module so
 sibling `cow-rs` Alloy adapter crates can reuse the EIP-712 typed-data
-conversion helpers (`cow_typed_data_payload_to_alloy`,
-`cow_flat_to_alloy_typed_data`) and the shared signature normalizer
-(`alloy_signature_to_hex`) without duplicating the implementation.
+conversion helper (`cow_typed_data_payload_to_alloy`) and the shared
+signature normalizer (`alloy_signature_to_hex`) without duplicating the
+implementation.
 Anything inside the seam is not part of the documented consumer API and
 is not semver-guaranteed for downstream consumers.
 
@@ -68,8 +68,9 @@ error that does not echo the input.
 
 ### Signer Methods
 
-The adapter implements `address`, `sign_message`,
-`sign_typed_data_payload`, and the legacy flat `sign_typed_data` path.
+The adapter implements `address`, `sign_message`, and
+`sign_typed_data_payload` — the only typed-data signing entry point; the
+trait carries no flat `(domain, fields, value)` form.
 `sign_transaction`, `send_transaction`, and `estimate_gas` return
 `ProviderRequired` because the local signer does not own provider context.
 The `send_transaction` method still has the `Result<TransactionBroadcast, _>`
@@ -82,8 +83,9 @@ typed data without dropping the payload primary type. A field may reference
 another struct declared in the type map, directly or as an array (for example a
 `Call[]` over a `Call` struct), so nested multi-type EIP-712 payloads convert
 end to end; a field naming a struct that is not declared in the type map stays
-fail-closed. The legacy flat path has no primary-type input, so it synthesizes a
-typed-data payload with `Message` as the compatibility placeholder.
+fail-closed. The payload is self-contained — domain, full type map,
+primary-type name, and message — so the adapter never synthesizes a
+placeholder primary type.
 
 ### Signature Normalization
 

@@ -2,8 +2,8 @@ use alloy_primitives::aliases::I512;
 
 use cow_sdk_contracts::{ContractId, Registry};
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, CowEnv, EVM_NATIVE_CURRENCY_ADDRESS, MAX_VALID_TO_EPOCH,
-    OrderData, ProtocolOptions, SupportedChainId, ValidTo, wrapped_native_token,
+    Address, Amount, AppDataHash, CowEnv, MAX_VALID_TO_EPOCH, NATIVE_CURRENCY_ADDRESS, OrderData,
+    ProtocolOptions, SupportedChainId, ValidTo, wrapped_native_token,
 };
 use cow_sdk_orderbook::OrderQuoteResponse;
 use cow_sdk_signing::{GeneratedOrderId, generate_order_id};
@@ -119,9 +119,7 @@ impl LimitTradeParams {
 /// Returns `true` when `sell_token` is the protocol native-asset sentinel address.
 #[must_use]
 pub fn is_eth_flow_order(sell_token: &Address) -> bool {
-    sell_token
-        .to_hex_string()
-        .eq_ignore_ascii_case(EVM_NATIVE_CURRENCY_ADDRESS)
+    *sell_token == NATIVE_CURRENCY_ADDRESS
 }
 
 /// Rewrites a swap trade to use the wrapped-native token for `EthFlow` quoting.

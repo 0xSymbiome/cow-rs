@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use cow_sdk_core::{
     Address, Amount, Signer, TransactionBroadcast, TransactionHash, TransactionRequest,
-    TypedDataDomain, TypedDataField,
+    TypedDataPayload,
 };
 
 use crate::{defaults, error::MockError};
@@ -39,8 +39,9 @@ pub struct SignerCalls {
     pub sent_transactions: Vec<TransactionRequest>,
     /// Messages passed to [`Signer::sign_message`].
     pub signed_messages: Vec<Vec<u8>>,
-    /// Typed-data value JSON passed to [`Signer::sign_typed_data`].
-    pub typed_data_payloads: Vec<String>,
+    /// Typed-data payloads passed to [`Signer::sign_typed_data_payload`],
+    /// each carrying the primary-type name and the canonical message JSON.
+    pub typed_data_payloads: Vec<TypedDataPayload>,
 }
 
 impl MockSigner {
@@ -122,7 +123,7 @@ impl MockSignerBuilder {
         self
     }
 
-    /// Sets the value [`Signer::sign_typed_data`] returns.
+    /// Sets the value [`Signer::sign_typed_data_payload`] returns.
     #[must_use]
     pub fn typed_data_signature(mut self, signature: impl Into<String>) -> Self {
         self.typed_data_signature = signature.into();
@@ -200,14 +201,12 @@ impl Signer for MockSigner {
         Ok(self.lock().transaction_signature.clone())
     }
 
-    async fn sign_typed_data(
+    async fn sign_typed_data_payload(
         &self,
-        _domain: &TypedDataDomain,
-        _fields: &[TypedDataField],
-        value_json: &str,
+        payload: &TypedDataPayload,
     ) -> Result<String, Self::Error> {
         let mut guard = self.lock();
-        guard.calls.typed_data_payloads.push(value_json.to_owned());
+        guard.calls.typed_data_payloads.push(payload.clone());
         Ok(guard.typed_data_signature.clone())
     }
 

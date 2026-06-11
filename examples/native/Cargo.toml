@@ -2,9 +2,6 @@
 members = []
 resolver = "2"
 
-[workspace.dependencies]
-alloy-primitives = { version = "1.5", default-features = false }
-
 [package]
 name = "cow-sdk-examples-native"
 version = "0.1.0"
@@ -20,7 +17,6 @@ alloy-signer = ["cow-sdk/alloy-signer"]
 alloy = ["cow-sdk/alloy"]
 
 [dependencies]
-alloy-primitives = { workspace = true }
 async-trait = "0.1.89"
 cow-sdk = { path = "../../crates/sdk", features = ["testing", "subgraph"] }
 serde = { version = "1.0.228", features = ["derive"] }

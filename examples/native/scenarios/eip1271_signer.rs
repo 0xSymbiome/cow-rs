@@ -20,9 +20,7 @@ use cow_sdk::signing::eip1271::{Eip1271SignatureError, Eip1271Signer};
 use cow_sdk::trading::{PostTradeAdditionalParams, TradeAdvancedSettings, Trading};
 
 use cow_sdk::testing::{MockOrderbook, MockSigner};
-use cow_sdk_examples_native::support::{
-    sample_limit_parameters, sample_owner, sample_quote_response,
-};
+use cow_sdk_examples_native::support::{OWNER, sample_limit_parameters, sample_quote_response};
 
 /// A smart-account signer that returns a pre-built EIP-1271 signature blob.
 struct SmartAccountSigner;
@@ -41,7 +39,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let orderbook = MockOrderbook::builder(SupportedChainId::Sepolia)
         .quote(sample_quote_response())
         .build();
-    let signer = MockSigner::builder().address(sample_owner()).build();
+    let signer = MockSigner::builder().address(OWNER).build();
     let trading = Trading::builder()
         .chain_id(SupportedChainId::Sepolia)
         .app_code("cow-rs-native-examples")
@@ -63,9 +61,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let sent = orderbook.recorded().sent_orders;
     let report = json!({
-        "surface": "cow-sdk::signing::eip1271::Eip1271Signer",
+        "surface": "cow_sdk::signing::eip1271::Eip1271Signer",
         "mode": "simulated-transport",
-        "signingScheme": format!("{:?}", post.signing_scheme),
+        "signingScheme": post.signing_scheme,
         "orderSignature": post.signature,
         "postedOrderSignature": sent.first().map(|order| order.signature.clone()),
         "postedOrderCount": sent.len()

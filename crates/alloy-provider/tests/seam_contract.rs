@@ -138,7 +138,6 @@ async fn seam_rpc_error_to_class_and_detail_classifies_remote_error() {
         .http(server.uri())
         .unwrap()
         .build()
-        .await
         .unwrap();
     let _server: &'static MockServer = Box::leak(Box::new(server));
 
@@ -215,7 +214,6 @@ async fn read_contract_path_propagates_validation_for_malformed_args_json() {
         .http(server.uri())
         .unwrap()
         .build()
-        .await
         .unwrap();
     let _server: &'static MockServer = Box::leak(Box::new(server));
 

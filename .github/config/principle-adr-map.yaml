@@ -54,7 +54,7 @@ principles:
   - id: 8
     name: Chain-RPC Runtime Neutrality
     primary_adr: "0024"
-    supporting_adrs: ["0010", "0014", "0028", "0057"]
+    supporting_adrs: ["0010", "0014", "0028", "0057", "0068"]
 
   - id: 9
     name: Canonical Contract Bindings

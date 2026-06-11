@@ -119,11 +119,7 @@ impl RpcAlloyProviderBuilder<HttpTransport> {
     ///
     /// Returns [`RpcAlloyProviderBuilderError::TransportInit`] if the native
     /// HTTP client cannot be constructed.
-    #[allow(
-        clippy::unused_async,
-        reason = "builder stays async-compatible with future transport setup and existing examples"
-    )]
-    pub async fn build(self) -> Result<RpcAlloyProvider, RpcAlloyProviderBuilderError> {
+    pub fn build(self) -> Result<RpcAlloyProvider, RpcAlloyProviderBuilderError> {
         require_selected_transport(&self.transport);
         let url = self.transport.url.into_inner();
         // Disable transparent gzip on the untrusted-RPC client so a hostile or

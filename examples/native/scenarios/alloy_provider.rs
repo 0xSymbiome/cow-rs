@@ -7,11 +7,11 @@
 use std::error::Error;
 
 use cow_sdk::alloy_provider::RpcAlloyProvider;
-use cow_sdk::core::{Address, Provider};
+use cow_sdk::core::{Address, Provider, address};
 use serde_json::json;
 use wiremock::{Mock, MockServer, ResponseTemplate, matchers::method};
 
-const ADDRESS: &str = "0x1111111111111111111111111111111111111111";
+const ADDRESS: Address = address!("0x1111111111111111111111111111111111111111");
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -27,16 +27,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .await;
 
     // Build the provider leaf (no signer) pointed at the mock RPC.
-    let provider = RpcAlloyProvider::builder()
-        .http(server.uri())?
-        .build()
-        .await?;
+    let provider = RpcAlloyProvider::builder().http(server.uri())?.build()?;
 
     // Read the on-chain bytecode at an address through the `Provider` trait.
-    let code = provider.get_code(&Address::new(ADDRESS)?).await?;
+    let code = provider.get_code(&ADDRESS).await?;
 
     let report = json!({
-        "surface": "cow-sdk::alloy_provider::RpcAlloyProvider",
+        "surface": "cow_sdk::alloy_provider::RpcAlloyProvider",
         "address": ADDRESS,
         "code": code.map(|data| data.to_hex_string())
     });

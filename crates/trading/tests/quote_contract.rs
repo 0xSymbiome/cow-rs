@@ -7,7 +7,7 @@ use cow_sdk_core::{
     Amount, BuyTokenDestination, CowEnv, MAX_VALID_TO_EPOCH, OrderData, ProtocolOptions,
     SellTokenSource, SupportedChainId, ValidationReason, wrapped_native_token,
 };
-use cow_sdk_orderbook::{OrderKind, SigningScheme};
+use cow_sdk_orderbook::{OrderClass, OrderKind, SigningScheme};
 use cow_sdk_signing::ORDER_PRIMARY_TYPE;
 use cow_sdk_trading::{
     ClientRejection, PartnerFeePolicy, QuoteRequestOverride, QuoterParams, TradeAdvancedSettings,
@@ -126,7 +126,7 @@ async fn native_sell_quote_uses_wrapped_native_and_onchain_defaults() {
         cow_sdk_trading::TraderParams::new(cow_sdk_core::SupportedChainId::Sepolia, "0x007")
             .expect("app code should validate");
     let mut trade = sample_trade_parameters(OrderKind::Sell);
-    trade.sell_token = address(cow_sdk_core::EVM_NATIVE_CURRENCY_ADDRESS);
+    trade.sell_token = cow_sdk_core::NATIVE_CURRENCY_ADDRESS;
     trade.slippage_bps = None;
 
     let _ = quote_results(&trade, &trader, &signer, None, &orderbook)
@@ -377,7 +377,7 @@ async fn quote_results_capture_originating_orderbook_runtime_binding() {
 async fn order_id_collision_retries_with_new_salt_until_success_or_cap() {
     let chain_id = SupportedChainId::Sepolia;
     let order = OrderData::new(
-        address(cow_sdk_core::EVM_NATIVE_CURRENCY_ADDRESS),
+        cow_sdk_core::NATIVE_CURRENCY_ADDRESS,
         address(crate::common::COW),
         address(OWNER),
         Amount::new("1000000000000000000").expect("test sell amount literal must be valid"),
@@ -647,7 +647,7 @@ async fn build_app_data_injects_default_utm_when_override_absent() {
     const EXPECTED_UTM_TERM: &str = "rs";
     const EXPECTED_UTM_MEDIUM_PREFIX: &str = "cow-rs@";
 
-    let info = build_app_data(&test_app_code(), 50, "market", None, None)
+    let info = build_app_data(&test_app_code(), 50, OrderClass::Market, None, None)
         .await
         .expect("default-utm build_app_data must succeed");
     let doc: serde_json::Value = serde_json::from_str(&info.full_app_data)
@@ -692,7 +692,7 @@ async fn build_app_data_injects_default_utm_when_override_absent() {
 
 #[tokio::test]
 async fn default_utm_block_uses_env_cargo_pkg_version() {
-    let info = build_app_data(&test_app_code(), 50, "market", None, None)
+    let info = build_app_data(&test_app_code(), 50, OrderClass::Market, None, None)
         .await
         .expect("default app-data construction must succeed");
     let doc: serde_json::Value =
@@ -723,9 +723,15 @@ async fn build_app_data_respects_full_utm_override() {
         .expect("full-utm override metadata must deserialize"),
     );
 
-    let info = build_app_data(&test_app_code(), 50, "market", None, Some(&override_params))
-        .await
-        .expect("full-utm-override build_app_data must succeed");
+    let info = build_app_data(
+        &test_app_code(),
+        50,
+        OrderClass::Market,
+        None,
+        Some(&override_params),
+    )
+    .await
+    .expect("full-utm-override build_app_data must succeed");
     let doc: serde_json::Value = serde_json::from_str(&info.full_app_data)
         .expect("sealed app-data document must remain valid json");
     let utm = doc
@@ -758,9 +764,15 @@ async fn build_app_data_respects_partial_utm_override() {
         .expect("partial-utm override metadata must deserialize"),
     );
 
-    let info = build_app_data(&test_app_code(), 50, "market", None, Some(&override_params))
-        .await
-        .expect("partial-utm-override build_app_data must succeed");
+    let info = build_app_data(
+        &test_app_code(),
+        50,
+        OrderClass::Market,
+        None,
+        Some(&override_params),
+    )
+    .await
+    .expect("partial-utm-override build_app_data must succeed");
     let doc: serde_json::Value = serde_json::from_str(&info.full_app_data)
         .expect("sealed app-data document must remain valid json");
     let utm = doc

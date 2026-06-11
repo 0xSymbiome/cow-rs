@@ -51,10 +51,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .clone();
     let shape_b_methods = &methods[method_start..];
     let report = json!({
-        "surface": "transaction lifecycle",
+        "surface": "cow_sdk::trading::submit_and_wait_for_receipt + cow_sdk::core::Signer::send_transaction",
         "shapeA": {
             "receiptHash": helper_receipt.transaction_hash.to_hex_string(),
-            "status": format!("{:?}", helper_receipt.status),
+            "status": helper_receipt.status,
             "blockNumber": helper_receipt.block_number,
             "gasUsed": helper_receipt.gas_used,
         },

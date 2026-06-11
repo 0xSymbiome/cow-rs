@@ -1,7 +1,7 @@
 use alloy_primitives::U256;
 use cow_sdk_core::{
-    Address, Amount, Amounts, AppDataHash, AppDataHex, BuyTokenDestination, Costs, FeeComponent,
-    Hash32, HexData, NetworkFee, ORDER_TYPE_FIELD_NAMES, OrderData, OrderKind, OrderUid,
+    Address, Amount, Amounts, AppDataHash, BuyTokenDestination, Costs, FeeComponent, Hash32,
+    HexData, NetworkFee, ORDER_TYPE_FIELD_NAMES, OrderData, OrderKind, OrderUid,
     QUOTE_AMOUNT_STAGE_NAMES, QuoteAmountsAndCosts, SellTokenSource, VALID_TO_MAX_RELATIVE_SECONDS,
     VALID_TO_MIN_RELATIVE_SECONDS, ValidTo, ValidationError,
 };
@@ -74,7 +74,7 @@ fn canonical_order_and_quote_shapes_are_pinned() {
         Amount::new("100").unwrap(),
         Amount::new("200").unwrap(),
         1_700_000_000,
-        AppDataHex::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+        AppDataHash::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
             .unwrap(),
         Amount::new("5").unwrap(),
         OrderKind::Sell,
@@ -143,12 +143,12 @@ fn from_bytes_constructors_match_string_based_equivalents_byte_for_byte() {
     );
 
     let app_data_bytes: [u8; 32] = [0x5a; 32];
-    let from_bytes_app_data = AppDataHex::from_bytes(app_data_bytes);
+    let from_bytes_app_data = AppDataHash::from_bytes(app_data_bytes);
     let from_new_app_data =
-        AppDataHex::new(format!("0x{}", "5a".repeat(32))).expect("valid app-data hash literal");
+        AppDataHash::new(format!("0x{}", "5a".repeat(32))).expect("valid app-data hash literal");
     assert_eq!(
         from_bytes_app_data, from_new_app_data,
-        "AppDataHex::from_bytes must match the AppDataHex::new equivalent"
+        "AppDataHash::from_bytes must match the AppDataHash::new equivalent"
     );
 
     let mut uid_bytes = [0u8; 56];

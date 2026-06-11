@@ -33,15 +33,15 @@ use cow_sdk::orderbook::{
 use cow_sdk::signing::SigningError;
 use cow_sdk::{CowError, ErrorClass};
 
-use cow_sdk_examples_native::support::{
-    sample_buy_token, sample_owner, sample_sell_token, sample_signature,
-};
+use cow_sdk_examples_native::support::{COW, OWNER, WETH, sample_signature};
 
 /// Application-level retry decision derived purely from the coarse class.
 ///
-/// The crate doc on `ErrorClass` states the policy: retry only `Transport` and
-/// `Remote`; back off on `RateLimited`; surface everything else. This helper is
-/// the single source of truth both beats below reference.
+/// First cut only: `Transport` and `Remote` are retry *candidates*, `RateLimited`
+/// backs off, everything else surfaces. The class alone cannot settle `Remote`
+/// (a 4xx rejection is permanent, a 5xx outage is transient), so Beat 3 refines
+/// the verdict with `is_retryable()` — the accessor the `ErrorClass` rustdoc
+/// defers to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Disposition {
     /// Re-dispatch may succeed; safe for a bounded application retry.
@@ -166,15 +166,15 @@ async fn classify_a_real_rejection() -> Result<serde_json::Value, Box<dyn Error>
     .build()?;
 
     let order = OrderCreation::new(
-        sample_sell_token(),
-        sample_buy_token(),
+        WETH,
+        COW,
         Amount::parse_units("0.1", 18)?,
         Amount::parse_units("0.25", 18)?,
         1_700_000_000,
         cow_sdk::core::OrderKind::Sell,
         OrderbookSigningScheme::Eip712,
         sample_signature(),
-        sample_owner(),
+        OWNER,
     );
 
     let error = orderbook
@@ -217,7 +217,7 @@ async fn classify_a_real_rejection() -> Result<serde_json::Value, Box<dyn Error>
     };
 
     Ok(json!({
-        "call": "cow-sdk::orderbook::OrderbookApi::send_order",
+        "call": "cow_sdk::orderbook::OrderbookApi::send_order",
         "class": format!("{class:?}"),
         "disposition": format!("{disposition:?}"),
         "rejectionCategory": rejection_category,
@@ -266,9 +266,9 @@ fn retry_verdict_tour() -> Vec<serde_json::Value> {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let report = json!({
-        "surface": "cow-sdk error classification",
+        "surface": "cow_sdk::{CowError, ErrorClass}",
         "mode": "simulated-transport",
-        "retryRule": "retry only Transport and Remote; back off on RateLimited; surface the rest",
+        "retryRule": "Transport/Remote are retry candidates, RateLimited backs off, the rest surface; is_retryable() settles Remote",
         "partitionTour": partition_tour(),
         "retryVerdict": retry_verdict_tour(),
         "realisticDecision": classify_a_real_rejection().await?,

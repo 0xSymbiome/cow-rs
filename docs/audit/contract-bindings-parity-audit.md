@@ -444,10 +444,10 @@ canonical EIP-1193 `eth_signTypedData_v4` wire shape directly: numeric
 lowercase-hex `verifyingContract`, and no `salt` field on the wire.
 
 The `crates/alloy-signer/src/conversion.rs` module provides the
-one-way cow → alloy adapter the EIP-712 hashing seam needs. Two
-caller helpers (`cow_flat_to_alloy_typed_data` and
-`cow_typed_data_payload_to_alloy`) lift the cow envelope into the
-alloy `Eip712Domain` shape so `alloy_sol_types::SolStruct::eip712_signing_hash`
+one-way cow → alloy adapter the EIP-712 hashing seam needs. The
+caller helper (`cow_typed_data_payload_to_alloy`) lifts the cow
+envelope into the alloy `Eip712Domain` shape so
+`alloy_sol_types::SolStruct::eip712_signing_hash`
 can compute the canonical separator and signing hash. The cow type
 remains the public API surface; the alloy type is the transient
 hashing-step helper.

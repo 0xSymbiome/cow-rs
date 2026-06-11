@@ -45,7 +45,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // The one live call: fetch the deployed orderbook version.
     let version = orderbook.version().await?;
     let report = json!({
-        "surface": "cow-sdk-orderbook",
+        "surface": "cow_sdk::orderbook::OrderbookApi",
         "mode": "live",
         "env": env.as_str(),
         "chainId": u64::from(chain_id),

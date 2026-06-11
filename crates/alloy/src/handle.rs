@@ -6,15 +6,12 @@ use alloy_provider::Provider as AlloyProviderTrait;
 use alloy_signer::Signer as AlloySigner;
 use cow_sdk_core::{
     Address, Amount, Signer, TransactionBroadcast, TransactionHash, TransactionRequest,
-    TypedDataDomain, TypedDataField, TypedDataPayload,
+    TypedDataPayload,
 };
 
 use crate::{
     client::AlloyClientInner,
-    conversion::{
-        alloy_signature_to_hex, cow_flat_to_alloy_typed_data, cow_request_to_alloy,
-        cow_typed_data_payload_to_alloy,
-    },
+    conversion::{alloy_signature_to_hex, cow_request_to_alloy, cow_typed_data_payload_to_alloy},
     error::AlloyClientError,
 };
 
@@ -89,31 +86,6 @@ impl Signer for AlloyClientSignerHandle {
             let _ = payload;
             Err(AlloyClientError::Validation(
                 "sign_typed_data_payload requires the eip712 feature".to_owned(),
-            ))
-        }
-    }
-
-    async fn sign_typed_data(
-        &self,
-        domain: &TypedDataDomain,
-        fields: &[TypedDataField],
-        value_json: &str,
-    ) -> Result<String, Self::Error> {
-        #[cfg(feature = "eip712")]
-        {
-            let typed = cow_flat_to_alloy_typed_data(domain, fields, value_json)
-                .map_err(AlloyClientError::Validation)?;
-            let signature = AlloySigner::sign_dynamic_typed_data(&self.inner.signer, &typed)
-                .await
-                .map_err(|error| AlloyClientError::from_alloy_signer(&error))?;
-            Ok(alloy_signature_to_hex(&signature)?)
-        }
-
-        #[cfg(not(feature = "eip712"))]
-        {
-            let _ = (domain, fields, value_json);
-            Err(AlloyClientError::Validation(
-                "sign_typed_data requires the eip712 feature".to_owned(),
             ))
         }
     }

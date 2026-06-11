@@ -1,7 +1,7 @@
 use crate::types::{Address, Amount};
 
 use super::transaction::{TransactionBroadcast, TransactionRequest};
-use super::typed_data::{TypedDataDomain, TypedDataField, TypedDataPayload};
+use super::typed_data::TypedDataPayload;
 
 /// Owner-address capability.
 ///
@@ -32,33 +32,21 @@ pub trait TypedDataSigner {
     /// Error type returned by typed-data signing.
     type Error;
 
-    /// Signs an explicit typed-data payload.
+    /// Signs the canonical EIP-712 typed-data payload.
     ///
-    /// # Errors
-    ///
-    /// Returns any error from [`TypedDataSigner::sign_typed_data`].
-    async fn sign_typed_data_payload(
-        &self,
-        payload: &TypedDataPayload,
-    ) -> Result<String, Self::Error> {
-        self.sign_typed_data(
-            &payload.domain,
-            payload.primary_type_fields().unwrap_or_default(),
-            payload.message_json(),
-        )
-        .await
-    }
-
-    /// Signs typed-data components using the compatibility field-based contract.
+    /// The payload carries the domain, the full types map, the primary-type
+    /// name, and the message — everything a backend needs to compute the
+    /// canonical EIP-712 digest. Field-based signing is deliberately not a
+    /// trait obligation: a (domain, fields, message) triple cannot name its
+    /// primary type or carry nested type definitions, so it cannot express a
+    /// correct digest for arbitrary payloads.
     ///
     /// # Errors
     ///
     /// Returns the implementation-defined signer error when signing fails.
-    async fn sign_typed_data(
+    async fn sign_typed_data_payload(
         &self,
-        domain: &TypedDataDomain,
-        fields: &[TypedDataField],
-        value_json: &str,
+        payload: &TypedDataPayload,
     ) -> Result<String, Self::Error>;
 }
 
@@ -127,32 +115,18 @@ pub trait Signer {
     ///
     /// Returns the implementation-defined signer error when signing fails.
     async fn sign_transaction(&self, tx: &TransactionRequest) -> Result<String, Self::Error>;
-    /// Signs an explicit typed-data payload.
+    /// Signs the canonical EIP-712 typed-data payload.
     ///
-    /// # Errors
-    ///
-    /// Returns any error from [`Signer::sign_typed_data`].
-    async fn sign_typed_data_payload(
-        &self,
-        payload: &TypedDataPayload,
-    ) -> Result<String, Self::Error> {
-        self.sign_typed_data(
-            &payload.domain,
-            payload.primary_type_fields().unwrap_or_default(),
-            payload.message_json(),
-        )
-        .await
-    }
-    /// Signs typed-data components using the compatibility field-based contract.
+    /// The payload carries the domain, the full types map, the primary-type
+    /// name, and the message — everything a backend needs to compute the
+    /// canonical EIP-712 digest.
     ///
     /// # Errors
     ///
     /// Returns the implementation-defined signer error when signing fails.
-    async fn sign_typed_data(
+    async fn sign_typed_data_payload(
         &self,
-        domain: &TypedDataDomain,
-        fields: &[TypedDataField],
-        value_json: &str,
+        payload: &TypedDataPayload,
     ) -> Result<String, Self::Error>;
     /// Sends a transaction and returns the broadcast transaction hash.
     ///
@@ -198,15 +172,6 @@ where
         payload: &TypedDataPayload,
     ) -> Result<String, Self::Error> {
         Signer::sign_typed_data_payload(self, payload).await
-    }
-
-    async fn sign_typed_data(
-        &self,
-        domain: &TypedDataDomain,
-        fields: &[TypedDataField],
-        value_json: &str,
-    ) -> Result<String, Self::Error> {
-        Signer::sign_typed_data(self, domain, fields, value_json).await
     }
 }
 

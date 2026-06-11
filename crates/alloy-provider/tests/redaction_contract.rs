@@ -107,7 +107,6 @@ async fn provider_debug_redacts_credential_bearing_url() {
         .http(SECRET_URL)
         .unwrap()
         .build()
-        .await
         .unwrap();
 
     let debug = format!("{provider:?}");

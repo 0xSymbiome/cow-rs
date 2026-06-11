@@ -45,9 +45,6 @@ allowed:
   - file: crates/orderbook/src/request.rs
     item: ResponseEnvelope::json
     reason: Test-only response envelope helper serializes serde_json::Value fixtures.
-  - file: crates/orderbook/src/transform.rs
-    item: native_token_address
-    reason: Native token sentinel literal is static and validated by the Address constructor.
   - file: crates/orderbook/src/types/enums.rs
     item: SigningScheme::from
     reason: The variant-by-variant SigningScheme bridge parity test prevents drift; any new cow-sdk-contracts SigningScheme variant must land in the same patch.
@@ -72,9 +69,6 @@ allowed:
   - file: crates/trading/src/order.rs
     item: calculate_unique_order_id
     reason: Canonical EthFlow address is guaranteed by the validated deployment registry.
-  - file: crates/trading/src/params.rs
-    item: native_sentinel
-    reason: Native currency sentinel is a repository-owned valid EVM address literal.
   - file: crates/trading/src/types/params.rs
     item: LimitTradeParamsFromQuote::quote_id
     reason: try_from_limit is the only public constructor and rejects None on entry, and the inner field is private and immutable through the public API so the invariant cannot be broken.
@@ -84,9 +78,6 @@ allowed:
   - file: crates/trading/src/wait.rs
     item: delay_for
     reason: Millisecond polling delay is clamped to u32::MAX before wasm timer conversion.
-  - file: crates/trading/src/validation.rs
-    item: native_sentinel
-    reason: Native currency sentinel is a repository-owned valid EVM address literal.
   - file: crates/core/src/transport/policy/jitter.rs
     item: bounded_offset
     reason: Jitter offset is explicitly capped to u64::MAX before conversion.

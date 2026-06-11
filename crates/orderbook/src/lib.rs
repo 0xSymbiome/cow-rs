@@ -226,9 +226,9 @@ pub use transform::{calculate_total_fee, transform_order, transform_orders};
 pub use types::{
     Address, Amount, ApiBaseUrls, ApiContext, ApiContextOverride, AppDataHash, AppDataObject,
     AuctionPrices, BuyTokenDestination, CompetitionAuction, CompetitionOrderStatus,
-    CompetitionOrderStatusKind, CowEnv, EVM_NATIVE_CURRENCY_ADDRESS, EcdsaSigningScheme,
-    EnvBaseUrlOverrides, EthflowData, ExecutedAmounts, ExecutedProtocolFee, ExternalHostPolicy,
-    FeePolicy, HostPolicyError, InteractionData, NativePriceResponse, OnchainOrderData, Order,
+    CompetitionOrderStatusKind, CowEnv, EcdsaSigningScheme, EnvBaseUrlOverrides, EthflowData,
+    ExecutedAmounts, ExecutedProtocolFee, ExternalHostPolicy, FeePolicy, HostPolicyError,
+    InteractionData, NATIVE_CURRENCY_ADDRESS, NativePriceResponse, OnchainOrderData, Order,
     OrderCancellations, OrderClass, OrderCreation, OrderInteractions, OrderKind, OrderQuoteRequest,
     OrderQuoteResponse, OrderQuoteSide, OrderStatus, OrderUid, OrdersQuery, PriceQuality,
     QuoteAmountsAndCosts, QuoteAppData, QuoteData, QuoteSigningScheme, QuoteValidity, SellAmount,

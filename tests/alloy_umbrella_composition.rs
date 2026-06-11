@@ -57,10 +57,10 @@ async fn alloy_client_satisfies_trading_sdk_boundaries() {
         .pre_sign_transaction(&OrderTraderParams::new(order_uid()), &signer)
         .await
         .unwrap();
-    assert!(pre_sign.to.is_some());
-    assert!(pre_sign.data.is_some());
-    assert_eq!(pre_sign.value, Some(Amount::ZERO));
-    assert_eq!(pre_sign.gas_limit, Some(Amount::from(25_200u32)));
+    assert!(!pre_sign.to.is_zero());
+    assert!(!pre_sign.data.as_slice().is_empty());
+    assert_eq!(pre_sign.value, Amount::ZERO);
+    assert_eq!(pre_sign.gas_limit, Amount::from(25_200u32));
 
     let methods = {
         let guard = methods

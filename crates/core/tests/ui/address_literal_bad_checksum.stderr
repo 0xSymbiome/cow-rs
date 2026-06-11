@@ -1,0 +1,19 @@
+error[E0080]: evaluation panicked: address! takes the lowercase wire form: an EIP-55 checksum cannot be verified at compile time, so mixed-case literals fail closed; lowercase the literal
+  --> tests/ui/address_literal_bad_checksum.rs:13:13
+   |
+13 |     let _ = address!("0xc92E8bdf79f0507f65a392b0ab4667716BFE0110");
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ evaluation of `main::_` failed inside this call
+   |
+note: inside `assert_lowercase_address_literal`
+  --> $RUST/core/src/panic.rs
+   |
+   |           $crate::panicking::panic_fmt($crate::const_format_args!($($t)+));
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the failure occurred here
+   |
+  ::: src/lib.rs
+   |
+   | / ...   assert!(
+   | | ...       !bytes[index].is_ascii_uppercase(),
+   | | ...       "address! takes the lowercase wire form: an EIP-55 checksum cannot be verified at compile time, so mixed-case literals f...
+   | | ...   );
+   | |_______- in this macro invocation

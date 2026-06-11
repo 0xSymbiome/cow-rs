@@ -15,7 +15,7 @@
 //! source and its captured `stderr` remain pinned in the tree.
 
 use cow_sdk_core::{
-    Address, Amount, AppDataHex, BuyTokenDestination, OrderKind, SellTokenSource, OrderData,
+    Address, Amount, AppDataHash, BuyTokenDestination, OrderKind, SellTokenSource, OrderData,
 };
 
 fn main() {
@@ -30,7 +30,7 @@ fn main() {
         Amount::new("1").unwrap(),
         Amount::new("1").unwrap(),
         0,
-        AppDataHex::new("0x0000000000000000000000000000000000000000000000000000000000000000")
+        AppDataHash::new("0x0000000000000000000000000000000000000000000000000000000000000000")
             .unwrap(),
         Amount::ZERO,
         OrderKind::Sell,

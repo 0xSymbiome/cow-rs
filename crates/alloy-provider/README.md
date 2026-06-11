@@ -25,8 +25,7 @@ use cow_sdk_core::Provider;
 let provider = RpcAlloyProvider::builder()
     .timeout(Duration::from_secs(20))
     .http("https://example.invalid/rpc")?
-    .build()
-    .await?;
+    .build()?;
 
 let chain_id = provider.get_chain_id().await?;
 # let _ = chain_id;
@@ -57,8 +56,7 @@ use cow_sdk_core::Provider;
 let provider = RpcAlloyProvider::builder()
     .http("https://example.invalid/rpc")?
     .with_retry(RetryConfig::default())
-    .build()
-    .await?;
+    .build()?;
 
 let chain_id = provider.get_chain_id().await?;
 # let _ = chain_id;

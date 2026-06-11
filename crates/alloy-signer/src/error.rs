@@ -43,7 +43,7 @@ impl fmt::Display for SignerErrorClass {
     }
 }
 
-/// Error returned by [`crate::LocalAlloyKeystoreSigner`].
+/// Error returned by [`crate::LocalAlloySigner`].
 #[non_exhaustive]
 pub enum SignerError {
     /// Caller-controlled input failed validation.
@@ -146,7 +146,7 @@ impl From<cow_sdk_core::Cancelled> for SignerError {
     }
 }
 
-/// `LocalAlloyKeystoreSigner` operates on a locally-held private key
+/// `LocalAlloySigner` operates on a locally-held private key
 /// and never goes through an EIP-1193 provider, so no variant of
 /// `SignerError` can represent a user rejection in the sense
 /// EIP-1193 defines (codes `4001`, `4100`, etc.). The trait impl

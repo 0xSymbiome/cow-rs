@@ -3,7 +3,7 @@ use std::fmt;
 use cow_sdk_core::{
     Address, Amount, BlockInfo, ContractCall, ContractHandle, Hash32, HexData, Provider, Signer,
     SigningProvider, TransactionBroadcast, TransactionHash, TransactionReceipt, TransactionRequest,
-    TypedDataDomain, TypedDataField,
+    TypedDataPayload,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -85,17 +85,15 @@ impl Signer for DirectSigner {
         Ok(format!("tx:{}", tx.to.is_some()))
     }
 
-    async fn sign_typed_data(
+    async fn sign_typed_data_payload(
         &self,
-        domain: &TypedDataDomain,
-        fields: &[TypedDataField],
-        value_json: &str,
+        payload: &TypedDataPayload,
     ) -> Result<String, Self::Error> {
         Ok(format!(
             "{}:{}:{}",
-            domain.name,
-            fields.len(),
-            value_json.len()
+            payload.domain.name,
+            payload.primary_type_fields().unwrap_or_default().len(),
+            payload.message_json().len()
         ))
     }
 

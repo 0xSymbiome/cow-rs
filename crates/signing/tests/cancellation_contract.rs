@@ -74,12 +74,15 @@ async fn cancellation_signing_uses_typed_data_and_ethsign_digest_paths() {
         .unwrap();
     assert_eq!(signer.calls.borrow().typed_data.len(), 1);
     assert_eq!(
-        signer.calls.borrow().typed_data[0].fields[0].kind,
+        signer.calls.borrow().typed_data[0]
+            .primary_type_fields()
+            .unwrap_or_default()[0]
+            .kind,
         "bytes[]"
     );
     assert!(
         signer.calls.borrow().typed_data[0]
-            .value_json
+            .message
             .contains(&order_uid_hex)
     );
 

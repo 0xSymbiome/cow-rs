@@ -39,18 +39,15 @@ fn app_data_params_builders_preserve_top_level_wire_fields() {
 #[test]
 fn validation_accepts_modelled_docs_and_rejects_out_of_range_quote() {
     let valid = validate_app_data_doc(&app_data_doc_custom());
-    assert!(valid.success, "{valid:?}");
+    assert!(valid.is_ok(), "{valid:?}");
 
-    let invalid = validate_app_data_doc(&json!({
+    let error = validate_app_data_doc(&json!({
         "version": LATEST_APP_DATA_VERSION,
         "appCode": "cow-rs",
         "metadata": { "quote": { "slippageBips": 20_000 } }
-    }));
-    assert!(!invalid.success);
-    assert!(
-        invalid.errors.as_deref().unwrap().contains("slippageBips"),
-        "{invalid:?}"
-    );
+    }))
+    .expect_err("an out-of-range quote slippage must be rejected");
+    assert!(error.to_string().contains("slippageBips"), "{error:?}");
 }
 
 #[test]
@@ -65,7 +62,7 @@ fn modelled_and_unmodelled_metadata_families_validate_through_the_document_surfa
             }
         }
     });
-    assert!(validate_app_data_doc(&bridging).success);
+    assert!(validate_app_data_doc(&bridging).is_ok());
 
     // A modelled flashloan hint in its current shape validates.
     let flashloan = json!({
@@ -81,7 +78,7 @@ fn modelled_and_unmodelled_metadata_families_validate_through_the_document_surfa
             }
         }
     });
-    assert!(validate_app_data_doc(&flashloan).success);
+    assert!(validate_app_data_doc(&flashloan).is_ok());
 
     // The typed `FlashloanHints` surface produces a document that validates
     // through the same typed bound checks.
@@ -98,7 +95,7 @@ fn modelled_and_unmodelled_metadata_families_validate_through_the_document_surfa
     )
     .with_flashloan(hints);
     let generated = generate_app_data_doc(params);
-    assert!(validate_app_data_doc(&generated).success);
+    assert!(validate_app_data_doc(&generated).is_ok());
 }
 
 #[test]
@@ -119,9 +116,8 @@ fn unmodelled_wrappers_doc_passes_through_and_preserves_typed_fields() {
 
     let validation = validate_app_data_doc(&wrappers);
     assert!(
-        validation.success,
-        "an unmodelled wrappers document must pass through, got {:?}",
-        validation.errors,
+        validation.is_ok(),
+        "an unmodelled wrappers document must pass through, got {validation:?}",
     );
 
     let wrapper = wrappers
@@ -148,18 +144,15 @@ fn non_semver_version_is_rejected_without_leaking_the_value() {
         "version": "Bearer eyJleHAiOiAibGVha19jaGVjayJ9",
         "metadata": {}
     });
-    let result = validate_app_data_doc(&secret_bearing_doc);
-    assert!(!result.success);
-    let errors = result
-        .errors
-        .as_deref()
-        .expect("validation failure must carry a rendered error");
+    let error = validate_app_data_doc(&secret_bearing_doc)
+        .expect_err("a non-semver version must be rejected");
+    let rendered = error.to_string();
     assert!(
-        !errors.contains("Bearer"),
-        "rendered error must not include the caller-supplied version value; got {errors:?}",
+        !rendered.contains("Bearer"),
+        "rendered error must not include the caller-supplied version value; got {rendered:?}",
     );
     assert!(
-        !errors.contains("eyJleHAiOiAibGVha19jaGVjayJ9"),
-        "rendered error must not include the caller-supplied version value; got {errors:?}",
+        !rendered.contains("eyJleHAiOiAibGVha19jaGVjayJ9"),
+        "rendered error must not include the caller-supplied version value; got {rendered:?}",
     );
 }

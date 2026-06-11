@@ -54,7 +54,6 @@ async fn timeout_setter_works_on_both_transport_states_unset_first_or_http_first
         .http("https://example.invalid/rpc")
         .expect("URL parses")
         .build()
-        .await
         .expect("provider builds with timeout-first ordering");
     drop(provider_1);
 
@@ -64,7 +63,6 @@ async fn timeout_setter_works_on_both_transport_states_unset_first_or_http_first
         .expect("URL parses")
         .timeout(Duration::from_millis(500))
         .build()
-        .await
         .expect("provider builds with http-first ordering");
     drop(provider_2);
 }

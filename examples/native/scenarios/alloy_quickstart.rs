@@ -38,7 +38,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let signature = signer.sign_message(b"hello cow").await?;
 
     let report = json!({
-        "surface": "cow-sdk::alloy::AlloyClient",
+        "surface": "cow_sdk::alloy::AlloyClient",
         "chainId": client.get_chain_id().await?,
         "signer": signer.address().await?.to_hex_string(),
         "messageSignatureBytes": (signature.len() - 2) / 2

@@ -1,5 +1,7 @@
 use cow_sdk_core::{ProtocolOptions, Signer};
-use cow_sdk_orderbook::{OrderQuoteRequest, OrderQuoteSide, PriceQuality, SigningScheme};
+use cow_sdk_orderbook::{
+    OrderClass, OrderQuoteRequest, OrderQuoteSide, PriceQuality, SigningScheme,
+};
 use cow_sdk_signing::order_typed_data;
 
 pub use crate::app_data::{build_app_data, merge_and_seal_app_data, params_from_doc};
@@ -150,7 +152,7 @@ where
     let initial_app_data = build_app_data(
         &effective_trader.app_code,
         initial_slippage,
-        "market",
+        OrderClass::Market,
         effective_trade_parameters.partner_fee.as_ref(),
         advanced_settings.and_then(|settings| settings.app_data.as_ref()),
     )
@@ -184,7 +186,7 @@ where
         let app_data = build_app_data(
             &effective_trader.app_code,
             suggested_slippage,
-            "market",
+            OrderClass::Market,
             effective_trade_parameters.partner_fee.as_ref(),
             advanced_settings.and_then(|settings| settings.app_data.as_ref()),
         )

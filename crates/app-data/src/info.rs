@@ -174,13 +174,17 @@ impl AppDataSource for String {
 ///
 /// # Errors
 ///
-/// Returns [`AppDataError`] if the source cannot be parsed, validation
-/// fails, the stringified payload exceeds [`APP_DATA_MAX_BYTES`], or CID
-/// conversion fails.
+/// Returns [`AppDataError`] if the source cannot be parsed, the document
+/// fails the single [`crate::validate_app_data_doc`] pass this function
+/// runs internally, the stringified payload exceeds [`APP_DATA_MAX_BYTES`],
+/// or CID conversion fails.
 pub fn app_data_info(source: impl AppDataSource) -> Result<AppDataValidated, AppDataError> {
     let (document, app_data_content) = source.into_document_and_content(true)?;
     ensure_document_under_size_limit(&app_data_content, APP_DATA_MAX_BYTES)?;
-    ensure_valid_document(&document)?;
+    // The one validation pass for this document: the same
+    // `validate_app_data_doc` check callers can run standalone, so deriving
+    // the digest never re-validates what a separate call already proved.
+    crate::schema::validate_app_data_doc(&document)?;
 
     let bytes_used = app_data_content.len();
     let digest = keccak256(app_data_content.as_bytes());
@@ -252,10 +256,6 @@ const fn ensure_document_under_size_limit(
         });
     }
     Ok(())
-}
-
-fn ensure_valid_document(document: &AppDataDoc) -> Result<(), AppDataError> {
-    crate::schema::validate_app_data_doc_inner(document)
 }
 
 /// Returns only the app-data hex digest.

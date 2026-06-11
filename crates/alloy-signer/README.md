@@ -5,7 +5,7 @@ Native Alloy-backed local signing adapter package for the `cow-rs` SDK.
 This crate is the signing leaf for native applications that want
 `cow_sdk_core::Signer` backed by Alloy local private-key signing. It is
 published as a separate opt-in crate so read-only provider users and the default
-`cow-sdk` facade do not pull native local-keystore dependencies.
+`cow-sdk` facade do not pull native local-signing dependencies.
 
 ## Capability Boundary
 
@@ -19,13 +19,11 @@ shipping local-key native dependencies into browser builds.
 
 The package boundary is intentionally narrow:
 
-- `LocalAlloyKeystoreSigner` implements `cow_sdk_core::Signer`.
+- `LocalAlloySigner` implements `cow_sdk_core::Signer`.
 - It signs EIP-191 messages and EIP-712 typed-data payloads.
 - Canonical typed-data signing preserves the payload primary type.
 - Canonical typed-data signing accepts nested multi-type payloads whose fields
   reference other structs declared in the type map, directly or as arrays.
-- The legacy flat typed-data compatibility path uses `Message` as its
-  placeholder primary type.
 - ECDSA signatures are normalized through the shared `cow-sdk-contracts`
   signature helper before they are returned.
 - `sign_transaction`, `send_transaction`, and `estimate_gas` return
@@ -35,10 +33,11 @@ The package boundary is intentionally narrow:
   signer handle returns `TransactionBroadcast`; receipt observation is a
   provider lookup, not a local-signing concern.
 
-The canonical typed-data path preserves the caller's primary type because CoW
-Protocol order signing depends on the `Order` domain shape matching the payload.
-The legacy flat typed-data helper keeps its `Message` placeholder isolated to
-the compatibility path.
+The typed-data path preserves the caller's primary type because CoW Protocol
+order signing depends on the `Order` domain shape matching the payload. The
+payload form is the only typed-data entry point: it carries the domain, the
+full type map, the primary-type name, and the message in one value, so the
+signer never has to guess a placeholder type.
 
 The cow `TypedDataDomain` is a cow-owned `#[non_exhaustive]` struct per
 [ADR 0052](https://github.com/cowdao-grants/cow-rs/blob/main/docs/adr/0052-alloy-primitives-canonical-primitive-layer.md);
@@ -78,11 +77,11 @@ cow-sdk-alloy-signer = { version = "0.1", default-features = false }
 ## Example
 
 ```rust
-use cow_sdk_alloy_signer::LocalAlloyKeystoreSigner;
+use cow_sdk_alloy_signer::LocalAlloySigner;
 use cow_sdk_core::{Signer, SupportedChainId};
 
 # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-let signer = LocalAlloyKeystoreSigner::builder()
+let signer = LocalAlloySigner::builder()
     .private_key("0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d")?
     .chain_id(SupportedChainId::Mainnet)
     .build()?;

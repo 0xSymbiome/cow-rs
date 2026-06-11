@@ -1,4 +1,4 @@
-use cow_sdk_core::{Address, Amount, EVM_NATIVE_CURRENCY_ADDRESS};
+use cow_sdk_core::{Amount, NATIVE_CURRENCY_ADDRESS};
 
 use crate::{
     error::OrderbookError,
@@ -23,7 +23,7 @@ pub fn transform_order(mut order: Order) -> Result<Order, OrderbookError> {
         if let Some(onchain_user) = &order.onchain_user {
             order.owner = *onchain_user;
         }
-        order.sell_token = native_token_address();
+        order.sell_token = NATIVE_CURRENCY_ADDRESS;
     }
 
     Ok(order)
@@ -86,17 +86,4 @@ fn trim_leading_zeroes(value: &str) -> String {
     } else {
         trimmed.to_owned()
     }
-}
-
-/// Returns the orderbook native-token sentinel address.
-///
-/// # Panics
-///
-/// Panics only if the shared native-currency sentinel literal stops being a
-/// valid EVM address.
-fn native_token_address() -> Address {
-    // SAFETY: EVM_NATIVE_CURRENCY_ADDRESS is a crate-owned protocol sentinel
-    // literal validated through the shared Address constructor.
-    Address::new(EVM_NATIVE_CURRENCY_ADDRESS)
-        .expect("native token literal must remain a valid address")
 }

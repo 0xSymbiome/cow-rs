@@ -212,15 +212,23 @@ impl<'de> Deserialize<'de> for Address {
 /// Constructs a compile-time validated [`Address`] from a `0x`-prefixed
 /// hexadecimal literal, mirroring `alloy_primitives::address!`.
 ///
-/// Malformed hex, a wrong length, or a failed EIP-55 checksum (for
-/// mixed-case input) reject at build time, so well-known addresses can live
-/// in `const` items without a runtime [`Address::new`] call and `?` at every
-/// use site.
+/// Malformed hex, a wrong length, or a mixed-case literal reject at build
+/// time, so well-known addresses can live in `const` items without a
+/// runtime [`Address::new`] call and `?` at every use site. The literal
+/// must use the protocol-canonical lowercase wire form: an EIP-55 checksum
+/// cannot be verified during const evaluation (it would take a Keccak-256
+/// pass), so rather than accepting a checksummed-looking literal whose
+/// checksum may be wrong, the macro fails closed and asks for the case-free
+/// form. Lowercasing drops no information — the checksum is derived from
+/// the hex digits alone.
+///
+/// The macro takes exactly one string literal; for the zero address use
+/// [`Address::ZERO`] instead of an all-zero literal.
 ///
 /// ```
 /// use cow_sdk_core::{Address, address};
 ///
-/// const VAULT_RELAYER: Address = address!("0xC92E8bdf79f0507f65a392b0ab4667716BFE0110");
+/// const VAULT_RELAYER: Address = address!("0xc92e8bdf79f0507f65a392b0ab4667716bfe0110");
 /// assert_eq!(
 ///     VAULT_RELAYER.to_hex_string(),
 ///     "0xc92e8bdf79f0507f65a392b0ab4667716bfe0110",
@@ -228,9 +236,10 @@ impl<'de> Deserialize<'de> for Address {
 /// ```
 #[macro_export]
 macro_rules! address {
-    ($hex:literal) => {
+    ($hex:literal) => {{
+        const _: () = $crate::__private::assert_lowercase_address_literal($hex);
         $crate::Address::from_alloy($crate::__private::alloy_primitives::address!($hex))
-    };
+    }};
 }
 
 impl From<AlloyAddress> for Address {
@@ -649,9 +658,6 @@ impl fmt::Display for AppDataHash {
         fmt::Display::fmt(&self.0, f)
     }
 }
-
-/// Backward-compatible alias for the app-data hash hex representation.
-pub type AppDataHex = AppDataHash;
 
 // --- Hash32 -----------------------------------------------------------------
 

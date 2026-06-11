@@ -1,8 +1,6 @@
 //! App-data document and CID helpers.
 
-use cow_sdk_app_data::{
-    AppDataDoc, AppDataError, AppDataInfo, IpfsFetchTransport, ValidationResult,
-};
+use cow_sdk_app_data::{AppDataDoc, AppDataError, AppDataInfo, IpfsFetchTransport};
 
 use crate::helpers::{dto::AppDataDocInput, errors::PureError};
 
@@ -25,8 +23,12 @@ pub fn app_data_info(document: &AppDataDoc) -> Result<AppDataInfo, AppDataError>
 }
 
 /// Validates an app-data document against the typed metadata contract.
-#[must_use]
-pub fn validate_app_data_doc(document: &AppDataDoc) -> ValidationResult {
+///
+/// # Errors
+///
+/// Returns [`AppDataError`] when the document fails schema-version or typed
+/// metadata validation.
+pub fn validate_app_data_doc(document: &AppDataDoc) -> Result<(), AppDataError> {
     cow_sdk_app_data::validate_app_data_doc(document)
 }
 

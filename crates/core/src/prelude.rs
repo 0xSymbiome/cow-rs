@@ -18,3 +18,8 @@
 //!   `zero`, `is_zero`, `checked_*`, and `saturating_*`.
 
 pub use crate::types::{Address, Amount, AppDataHash, Hash32, HexData, OrderUid};
+
+/// The prelude pairs [`Address`] with its literal macro [`address!`](crate::address),
+/// matching std's `vec!`-beside-`Vec` prelude precedent, so importing the
+/// prelude is enough to write compile-time validated address constants.
+pub use crate::address;

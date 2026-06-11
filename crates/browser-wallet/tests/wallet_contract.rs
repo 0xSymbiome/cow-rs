@@ -256,12 +256,12 @@ async fn legacy_typed_data_compatibility_is_limited_to_order_and_cancellation_sh
     let cancellation_fields = legacy_cancellation_fields();
 
     signer
-        .sign_typed_data(&domain, &order_fields, legacy_order_message())
+        .sign_typed_data_compatibility(&domain, &order_fields, legacy_order_message())
         .await
         .unwrap();
 
     signer
-        .sign_typed_data(&domain, &cancellation_fields, legacy_cancellation_message())
+        .sign_typed_data_compatibility(&domain, &cancellation_fields, legacy_cancellation_message())
         .await
         .unwrap();
 
@@ -310,7 +310,7 @@ async fn legacy_typed_data_compatibility_rejects_unknown_primary_type_shapes() {
     let signer = wallet.signer();
 
     let error = signer
-        .sign_typed_data(
+        .sign_typed_data_compatibility(
             &supported_domain(SupportedChainId::Sepolia),
             &[typed_field("actor", "address")],
             r#"{"actor":"0x1111111111111111111111111111111111111111"}"#,

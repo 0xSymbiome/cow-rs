@@ -169,7 +169,9 @@ An async signer owns:
 - address resolution via `address`
 - message signing via `sign_message`
 - transaction signing via `sign_transaction`
-- typed-data signing via `sign_typed_data` or `sign_typed_data_payload`
+- typed-data signing via `sign_typed_data_payload`, which receives the
+  canonical EIP-712 payload: domain, full type map, primary-type name, and
+  message in one self-contained value
 - transaction submission via `send_transaction`, which returns a
   `TransactionBroadcast` carrying the broadcast hash. This is not a mined
   receipt and does not prove block inclusion or execution success.
@@ -214,7 +216,7 @@ Its job is to demonstrate the trait shape, not to model a production RPC stack.
 use cow_sdk_core::{
     Address, Amount, BlockInfo, ChainId, ContractCall, ContractHandle, CoreError, HexData,
     Provider, Signer, SigningProvider, TransactionBroadcast, TransactionHash, TransactionReceipt,
-    TransactionRequest, TransactionStatus, TypedDataDomain, TypedDataField,
+    TransactionRequest, TransactionStatus, TypedDataPayload,
 };
 
 #[derive(Debug, Clone)]
@@ -239,11 +241,9 @@ impl Signer for StaticSigner {
         Ok("0xdeadbeef".to_owned())
     }
 
-    async fn sign_typed_data(
+    async fn sign_typed_data_payload(
         &self,
-        _domain: &TypedDataDomain,
-        _fields: &[TypedDataField],
-        _value_json: &str,
+        _payload: &TypedDataPayload,
     ) -> Result<String, Self::Error> {
         Ok("0xtypeddata".to_owned())
     }

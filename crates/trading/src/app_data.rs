@@ -2,6 +2,7 @@ use serde_json::{Map, Value, json};
 
 use cow_sdk_app_data::{AppDataParams, PartnerFee, app_data_info, generate_app_data_doc};
 use cow_sdk_core::AppCode;
+use cow_sdk_orderbook::OrderClass;
 
 use crate::{TradingAppDataInfo, TradingError};
 
@@ -41,7 +42,9 @@ fn default_utm() -> Value {
 
 /// Builds the trading app-data document and its derived hash.
 ///
-/// The generated base document always includes quote slippage metadata and order class metadata.
+/// The generated base document always includes quote slippage metadata and
+/// order class metadata; `order_class` is stamped in its lowercase wire form
+/// through the [`OrderClass`] serde representation.
 /// When the caller does not supply `metadata.utm`, an SDK-family default
 /// UTM attribution block is stamped onto the base document so downstream
 /// analytics can group `CoW SDK` traffic while preserving Rust-specific
@@ -56,7 +59,7 @@ fn default_utm() -> Value {
 pub async fn build_app_data(
     app_code: &AppCode,
     slippage_bps: u32,
-    order_class: &str,
+    order_class: OrderClass,
     partner_fee: Option<&PartnerFee>,
     advanced_params: Option<&AppDataParams>,
 ) -> Result<TradingAppDataInfo, TradingError> {

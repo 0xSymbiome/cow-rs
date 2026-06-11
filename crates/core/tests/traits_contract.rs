@@ -31,17 +31,15 @@ impl Signer for MockSigner {
         Ok(format!("signed-transaction:{}", tx.to.is_some()))
     }
 
-    async fn sign_typed_data(
+    async fn sign_typed_data_payload(
         &self,
-        domain: &TypedDataDomain,
-        fields: &[TypedDataField],
-        value_json: &str,
+        payload: &TypedDataPayload,
     ) -> Result<String, Self::Error> {
         Ok(format!(
             "{}:{}:{}",
-            domain.name,
-            fields.len(),
-            value_json.len()
+            payload.domain.name,
+            payload.primary_type_fields().unwrap_or_default().len(),
+            payload.message_json().len()
         ))
     }
 
@@ -225,20 +223,6 @@ async fn assert_signer_contracts(
     assert_eq!(
         Signer::sign_transaction(active_signer, tx).await.unwrap(),
         "signed-transaction:true"
-    );
-    assert_eq!(
-        Signer::sign_typed_data(
-            active_signer,
-            domain,
-            &[TypedDataField::new(
-                "sellToken".to_owned(),
-                "address".to_owned(),
-            )],
-            "{\"kind\":\"sell\"}"
-        )
-        .await
-        .unwrap(),
-        "Gnosis Protocol:1:15"
     );
     assert_eq!(
         Signer::sign_typed_data_payload(active_signer, &sample_typed_data_payload(domain.clone()))

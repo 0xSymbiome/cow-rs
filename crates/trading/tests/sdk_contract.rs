@@ -19,7 +19,8 @@ use wasm_bindgen_test::{wasm_bindgen_test, wasm_bindgen_test_configure};
 
 use crate::common::{
     ALT_RECEIVER, COW, CUSTOM_ETHFLOW, CUSTOM_SETTLEMENT, MockOrderbook, MockProvider, MockSigner,
-    OWNER, address, ethflow_order, order_uid, sample_trade_parameters, sell_quote_response,
+    OWNER, address, ethflow_order, order_uid, sample_limit_parameters, sample_trade_parameters,
+    sell_quote_response,
 };
 
 #[cfg(target_arch = "wasm32")]
@@ -341,7 +342,7 @@ async fn sdk_call_level_overrides_beat_trader_level_overrides_for_settlement_and
         )
         .await
         .expect("pre-sign transaction should succeed");
-    assert_eq!(pre_sign_tx.to, Some(address(CUSTOM_SETTLEMENT)));
+    assert_eq!(pre_sign_tx.to, address(CUSTOM_SETTLEMENT));
 
     let tx_hash = trading
         .onchain_cancel_order(
@@ -365,6 +366,64 @@ async fn sdk_call_level_overrides_beat_trader_level_overrides_for_settlement_and
 
     assert_eq!(tx_hash.to_hex_string(), crate::common::TX_HASH);
     assert_eq!(sent.to, Some(address(CUSTOM_ETHFLOW)));
+}
+
+#[tokio::test]
+async fn sdk_post_limit_order_presign_posts_without_a_signer_and_requires_an_explicit_owner() {
+    let orderbook = Arc::new(MockOrderbook::new(
+        SupportedChainId::Sepolia,
+        sell_quote_response(),
+    ));
+    let trading = Trading::builder()
+        .chain_id(SupportedChainId::Sepolia)
+        .app_code("test-app")
+        .env(CowEnv::Prod)
+        .options(TradingOptions::new().with_orderbook_client(orderbook.clone()))
+        .build()
+        .expect("sdk construction should succeed");
+
+    // `sample_limit_parameters` carries an explicit owner; no signer exists
+    // anywhere in this test, so any signer consultation fails the placement.
+    let result = trading
+        .post_limit_order_presign(sample_limit_parameters(cow_sdk_core::OrderKind::Sell), None)
+        .await
+        .expect("pre-sign placement with an explicit owner should post");
+
+    let state = orderbook.state();
+    let sent = state
+        .sent_orders
+        .last()
+        .expect("pre-sign placement must reach the orderbook");
+    assert_eq!(
+        result.signing_scheme,
+        cow_sdk_orderbook::SigningScheme::PreSign
+    );
+    assert_eq!(
+        sent.signing_scheme,
+        cow_sdk_orderbook::SigningScheme::PreSign
+    );
+    assert_eq!(sent.from, address(OWNER));
+    assert_eq!(
+        sent.signature,
+        address(OWNER).to_hex_string(),
+        "the pre-sign wire signature carries the owner address",
+    );
+    assert_eq!(
+        state.uploads.len(),
+        1,
+        "pre-sign placements upload app-data like any other posting",
+    );
+
+    let mut ownerless = sample_limit_parameters(cow_sdk_core::OrderKind::Sell);
+    ownerless.owner = None;
+    let error = trading
+        .post_limit_order_presign(ownerless, None)
+        .await
+        .expect_err("pre-sign placement without an explicit owner must fail");
+    assert!(matches!(
+        error,
+        cow_sdk_trading::TradingError::MissingSubmissionOwner
+    ));
 }
 
 #[tokio::test]

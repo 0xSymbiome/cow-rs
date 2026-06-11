@@ -23,7 +23,7 @@ use std::collections::{HashMap, HashSet};
 
 use alloy_primitives::U256;
 use cow_sdk_core::{
-    Address, Amount, AppDataHex, ChainId, Hash32, HexData, OrderUid, SupportedChainId,
+    Address, Amount, AppDataHash, ChainId, Hash32, HexData, OrderUid, SupportedChainId,
     VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS, ValidTo,
 };
 use num_bigint::BigUint;
@@ -124,7 +124,7 @@ fn malformed_hash32_strategy() -> impl Strategy<Value = String> {
 }
 
 /// Strategy that emits the union of malformed hex shapes
-/// [`AppDataHex::new`] must reject.
+/// [`AppDataHash::new`] must reject.
 fn malformed_app_data_hex_strategy() -> impl Strategy<Value = String> {
     prop_oneof![
         any::<[u8; 32]>().prop_map(|bytes| alloy_primitives::hex::encode(bytes)),
@@ -295,7 +295,7 @@ proptest! {
         prop_assert!(Hash32::new(&input).is_err(), "input = {input}");
     }
 
-    /// [`AppDataHex::new`] preserves a 32-byte canonical payload and
+    /// [`AppDataHash::new`] preserves a 32-byte canonical payload and
     /// round-trips through its own string form; malformed shapes (missing
     /// prefix, wrong length) fail closed.
     #[test]
@@ -305,11 +305,11 @@ proptest! {
     ) {
         let canonical = format!("0x{}", alloy_primitives::hex::encode(bytes));
 
-        let app_data = AppDataHex::new(&canonical).unwrap();
+        let app_data = AppDataHash::new(&canonical).unwrap();
         prop_assert_eq!(app_data.to_hex_string(), canonical.clone());
-        prop_assert_eq!(AppDataHex::new(app_data.to_hex_string()).unwrap(), app_data);
+        prop_assert_eq!(AppDataHash::new(app_data.to_hex_string()).unwrap(), app_data);
 
-        prop_assert!(AppDataHex::new(&malformed).is_err(), "malformed = {malformed}");
+        prop_assert!(AppDataHash::new(&malformed).is_err(), "malformed = {malformed}");
     }
 
     /// [`OrderUid::new`] preserves a 56-byte canonical payload and

@@ -6,7 +6,7 @@ use std::str::FromStr;
 
 use alloy_primitives::Signature as AlloySignature;
 use common::{order_digest, sample_order};
-use cow_sdk_alloy_signer::LocalAlloyKeystoreSigner;
+use cow_sdk_alloy_signer::LocalAlloySigner;
 use cow_sdk_contracts::SigningScheme;
 use cow_sdk_core::{Address, Signer, SupportedChainId};
 use cow_sdk_signing::order_typed_data_payload;
@@ -76,8 +76,8 @@ proptest! {
     }
 }
 
-fn signer_from_key(bytes: [u8; 32]) -> Option<LocalAlloyKeystoreSigner> {
-    LocalAlloyKeystoreSigner::builder()
+fn signer_from_key(bytes: [u8; 32]) -> Option<LocalAlloySigner> {
+    LocalAlloySigner::builder()
         .private_key_bytes(bytes)
         .ok()?
         .chain_id(SupportedChainId::Mainnet)

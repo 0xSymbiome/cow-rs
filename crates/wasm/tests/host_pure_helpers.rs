@@ -5,7 +5,10 @@ mod common;
 use cow_sdk_core::{Address, SupportedChainId};
 use cow_sdk_wasm::helpers::{
     app_data, chains,
-    dto::{AppDataDocInput, OrderKindDto, TokenBalanceDto, generated_order_uid_dto},
+    dto::{
+        AppDataDocInput, OrderKindDto, TokenBalanceDto, ValidationResultDto,
+        generated_order_uid_dto,
+    },
     errors::PureError,
     signing,
 };
@@ -185,8 +188,30 @@ fn app_data_info_returns_canonical_hash_content_and_cid() {
 fn app_data_doc_validation_reports_success() {
     let doc = app_data::document_from_input(host_app_data_input()).unwrap();
     let result = app_data::validate_app_data_doc(&doc);
-    assert!(result.success);
-    assert!(result.errors.is_none());
+    assert!(result.is_ok());
+
+    let dto = ValidationResultDto::from(result);
+    assert!(dto.success);
+    assert!(dto.errors.is_none());
+}
+
+#[test]
+fn app_data_doc_validation_failure_maps_into_the_js_dto() {
+    let mut doc = app_data::document_from_input(host_app_data_input()).unwrap();
+    doc["metadata"]["quote"] = json!({ "slippageBips": 20_000 });
+
+    let result = app_data::validate_app_data_doc(&doc);
+    assert!(result.is_err());
+
+    let dto = ValidationResultDto::from(result);
+    assert!(!dto.success);
+    assert!(
+        dto.errors
+            .as_deref()
+            .is_some_and(|errors| errors.contains("slippageBips")),
+        "DTO must carry the rendered validation error, got {:?}",
+        dto.errors,
+    );
 }
 
 #[test]

@@ -1,6 +1,6 @@
 #![cfg(not(target_arch = "wasm32"))]
 
-use cow_sdk_alloy_signer::{LocalAlloyKeystoreSigner, SignerError, SignerErrorClass};
+use cow_sdk_alloy_signer::{LocalAlloySigner, SignerError, SignerErrorClass};
 use cow_sdk_core::{Redacted, SupportedChainId};
 
 #[test]
@@ -57,7 +57,7 @@ fn internal_display_and_debug_do_not_leak_input() {
 #[test]
 fn builder_invalid_private_key_does_not_echo_bytes() {
     let secret = "not-a-real-private-key";
-    let Err(error) = LocalAlloyKeystoreSigner::builder().private_key(secret) else {
+    let Err(error) = LocalAlloySigner::builder().private_key(secret) else {
         panic!("invalid key must fail");
     };
 
@@ -70,7 +70,7 @@ fn builder_invalid_private_key_does_not_echo_bytes() {
 
 #[test]
 fn signer_debug_redacts_private_key_material() {
-    let signer = LocalAlloyKeystoreSigner::builder()
+    let signer = LocalAlloySigner::builder()
         .private_key("0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d")
         .unwrap()
         .chain_id(SupportedChainId::Mainnet)

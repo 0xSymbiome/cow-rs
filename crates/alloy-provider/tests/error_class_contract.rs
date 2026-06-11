@@ -135,7 +135,6 @@ mod wiremock_transport {
             .http(server.uri())
             .unwrap()
             .build()
-            .await
             .unwrap();
         let _server: &'static MockServer = Box::leak(Box::new(server));
         provider

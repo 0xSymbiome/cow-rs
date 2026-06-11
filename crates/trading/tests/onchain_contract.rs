@@ -8,7 +8,8 @@ mod common;
 
 use alloy_primitives::U256;
 use cow_sdk_core::{
-    AddressPerChain, Amount, CowEnv, EVM_NATIVE_CURRENCY_ADDRESS, OrderKind, SupportedChainId,
+    AddressPerChain, Amount, CowEnv, NATIVE_CURRENCY_ADDRESS, OrderKind, SupportedChainId,
+    TransactionRequest,
 };
 use cow_sdk_trading::{
     DEFAULT_GAS_LIMIT, LimitTradeParamsFromQuote, PostTradeAdditionalParams, eth_flow_transaction,
@@ -74,12 +75,20 @@ async fn presign_transaction_uses_zero_value_margin_and_settlement_override() {
     .await
     .expect("pre-sign transaction should build");
 
-    assert_eq!(tx.to, Some(address(CUSTOM_SETTLEMENT)));
-    assert_eq!(tx.value, Some(Amount::ZERO));
+    assert_eq!(tx.to, address(CUSTOM_SETTLEMENT));
+    assert_eq!(tx.value, Amount::ZERO);
     assert_eq!(
         tx.gas_limit,
-        Some(Amount::new("150000").expect("test gas literal must be valid"))
+        Amount::new("150000").expect("test gas literal must be valid")
     );
+
+    // The submission-side conversion mirrors every prepared field into the
+    // optional-field wire shape.
+    let request = TransactionRequest::from(tx.clone());
+    assert_eq!(request.to, Some(tx.to));
+    assert_eq!(request.data.as_ref(), Some(&tx.data));
+    assert_eq!(request.value, Some(tx.value));
+    assert_eq!(request.gas_limit, Some(tx.gas_limit));
 }
 
 #[tokio::test]
@@ -94,7 +103,7 @@ async fn pre_sign_gas_estimate_applies_documented_floor_overhead() {
 
         assert_eq!(
             tx.gas_limit,
-            Some(expected_gas_with_floor_overhead(estimate)),
+            expected_gas_with_floor_overhead(estimate),
             "estimate={estimate}"
         );
     }
@@ -104,7 +113,7 @@ async fn pre_sign_gas_estimate_applies_documented_floor_overhead() {
 async fn ethflow_transaction_uses_wrapped_native_value_margin_and_ethflow_override() {
     let signer = MockSigner::default();
     let mut params = sample_limit_parameters(cow_sdk_core::OrderKind::Sell);
-    params.sell_token = address(EVM_NATIVE_CURRENCY_ADDRESS);
+    params.sell_token = NATIVE_CURRENCY_ADDRESS;
     params.quote_id = Some(3);
     params.slippage_bps = Some(50);
     params.eth_flow_contract_override = Some(AddressPerChain::from([(
@@ -122,7 +131,6 @@ async fn ethflow_transaction_uses_wrapped_native_value_margin_and_ethflow_overri
     let transaction = eth_flow_transaction(
         &app_data_hash(),
         &from_quote,
-        SupportedChainId::Sepolia,
         &PostTradeAdditionalParams::default(),
         &trader,
         &signer,
@@ -130,18 +138,18 @@ async fn ethflow_transaction_uses_wrapped_native_value_margin_and_ethflow_overri
     .await
     .expect("ethflow transaction should build");
 
-    assert_eq!(transaction.transaction.to, Some(address(CUSTOM_ETHFLOW)));
+    assert_eq!(transaction.transaction.to, address(CUSTOM_ETHFLOW));
     assert_eq!(
         transaction.order_to_sign.sell_token,
         cow_sdk_core::wrapped_native_token(SupportedChainId::Sepolia).address
     );
     assert_eq!(
         transaction.transaction.value,
-        Some(transaction.order_to_sign.sell_amount)
+        transaction.order_to_sign.sell_amount
     );
     assert_eq!(
         transaction.transaction.gas_limit,
-        Some(Amount::new("150000").expect("test gas literal must be valid"))
+        Amount::new("150000").expect("test gas literal must be valid")
     );
 }
 
@@ -152,7 +160,7 @@ async fn eth_flow_gas_estimate_applies_documented_floor_overhead() {
         set_estimated_gas(&signer, estimate);
         let trader = sample_trader_parameters();
         let mut params = sample_limit_parameters(OrderKind::Sell);
-        params.sell_token = address(EVM_NATIVE_CURRENCY_ADDRESS);
+        params.sell_token = NATIVE_CURRENCY_ADDRESS;
         params.quote_id = Some(3);
 
         let from_quote = LimitTradeParamsFromQuote::try_from_limit(params)
@@ -160,7 +168,6 @@ async fn eth_flow_gas_estimate_applies_documented_floor_overhead() {
         let transaction = eth_flow_transaction(
             &app_data_hash(),
             &from_quote,
-            SupportedChainId::Sepolia,
             &PostTradeAdditionalParams::default(),
             &trader,
             &signer,
@@ -170,7 +177,7 @@ async fn eth_flow_gas_estimate_applies_documented_floor_overhead() {
 
         assert_eq!(
             transaction.transaction.gas_limit,
-            Some(expected_gas_with_floor_overhead(estimate)),
+            expected_gas_with_floor_overhead(estimate),
             "estimate={estimate}"
         );
     }
@@ -183,7 +190,7 @@ async fn ethflow_transaction_encodes_high_bit_uint256_amounts_as_unsigned_words(
     let high_sell: U256 = U256::from(1u8) << 255usize;
     let high_buy = high_sell + U256::from(1u8);
     let mut params = sample_limit_parameters(OrderKind::Sell);
-    params.sell_token = address(EVM_NATIVE_CURRENCY_ADDRESS);
+    params.sell_token = NATIVE_CURRENCY_ADDRESS;
     params.sell_amount = Amount::from_u256(high_sell);
     params.buy_amount = Amount::from_u256(high_buy);
     params.quote_id = Some(3);
@@ -194,18 +201,13 @@ async fn ethflow_transaction_encodes_high_bit_uint256_amounts_as_unsigned_words(
     let transaction = eth_flow_transaction(
         &app_data_hash(),
         &from_quote,
-        SupportedChainId::Sepolia,
         &PostTradeAdditionalParams::new().with_apply_costs_slippage_and_fees(false),
         &trader,
         &signer,
     )
     .await
     .expect("ethflow transaction should encode high-bit amounts");
-    let data = transaction
-        .transaction
-        .data
-        .as_ref()
-        .expect("ethflow transaction must include call data");
+    let data = &transaction.transaction.data;
 
     assert_eq!(
         calldata_word(&data.to_hex_string(), 2),
@@ -226,7 +228,7 @@ async fn ethflow_transaction_sign_extends_negative_quote_id_in_the_encoded_tuple
     let signer = MockSigner::default();
     let trader = sample_trader_parameters();
     let mut params = sample_limit_parameters(OrderKind::Sell);
-    params.sell_token = address(EVM_NATIVE_CURRENCY_ADDRESS);
+    params.sell_token = NATIVE_CURRENCY_ADDRESS;
     params.quote_id = Some(-1);
     params.valid_to = Some(1_234_567_890);
 
@@ -235,7 +237,6 @@ async fn ethflow_transaction_sign_extends_negative_quote_id_in_the_encoded_tuple
     let transaction = eth_flow_transaction(
         &app_data_hash(),
         &from_quote,
-        SupportedChainId::Sepolia,
         &PostTradeAdditionalParams::new().with_apply_costs_slippage_and_fees(false),
         &trader,
         &signer,
@@ -243,11 +244,7 @@ async fn ethflow_transaction_sign_extends_negative_quote_id_in_the_encoded_tuple
     .await
     .expect("signed int64 quote id must round-trip through the ABI boundary");
 
-    let data = transaction
-        .transaction
-        .data
-        .as_ref()
-        .expect("ethflow transaction must include call data");
+    let data = &transaction.transaction.data;
 
     assert_eq!(
         calldata_word(&data.to_hex_string(), 8),

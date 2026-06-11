@@ -15,7 +15,7 @@
 )]
 
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, BuyTokenDestination, EVM_NATIVE_CURRENCY_ADDRESS, OrderData,
+    Address, Amount, AppDataHash, BuyTokenDestination, NATIVE_CURRENCY_ADDRESS, OrderData,
     OrderKind, SellTokenSource,
 };
 use cow_sdk_test_utils::builders::address;
@@ -100,7 +100,7 @@ fn valid_to_one_second_in_the_future_is_accepted() {
 fn native_sell_token_rejects_on_non_ethflow_path() {
     let validator = OrderBoundsValidator::services_default();
     let mut order = order();
-    order.sell_token = address(EVM_NATIVE_CURRENCY_ADDRESS);
+    order.sell_token = NATIVE_CURRENCY_ADDRESS;
     let error = validator
         .validate(&order, address(FROM), None, NOW, false)
         .expect_err("native sell token must reject");
@@ -111,7 +111,7 @@ fn native_sell_token_rejects_on_non_ethflow_path() {
 fn eth_flow_path_accepts_native_sell_token_but_still_enforces_zero_amount() {
     let validator = OrderBoundsValidator::services_default();
     let mut order = order();
-    order.sell_token = address(EVM_NATIVE_CURRENCY_ADDRESS);
+    order.sell_token = NATIVE_CURRENCY_ADDRESS;
     validator
         .validate(&order, address(FROM), None, NOW, true)
         .expect("eth-flow path must admit the native sentinel as sell token");
@@ -140,29 +140,29 @@ fn validate_same_token_matches_services_allow_sell_policy() {
     let cases = [
         (
             "same-token sell",
-            SELL_TOKEN,
-            SELL_TOKEN,
+            address(SELL_TOKEN),
+            address(SELL_TOKEN),
             OrderKind::Sell,
             Outcome::Accept,
         ),
         (
             "same-token buy",
-            SELL_TOKEN,
-            SELL_TOKEN,
+            address(SELL_TOKEN),
+            address(SELL_TOKEN),
             OrderKind::Buy,
             Outcome::Reject(SELL_TOKEN),
         ),
         (
             "WETH-native sell",
-            WETH,
-            EVM_NATIVE_CURRENCY_ADDRESS,
+            address(WETH),
+            NATIVE_CURRENCY_ADDRESS,
             OrderKind::Sell,
             Outcome::Accept,
         ),
         (
             "WETH-native buy",
-            WETH,
-            EVM_NATIVE_CURRENCY_ADDRESS,
+            address(WETH),
+            NATIVE_CURRENCY_ADDRESS,
             OrderKind::Buy,
             Outcome::Reject(WETH),
         ),
@@ -170,8 +170,8 @@ fn validate_same_token_matches_services_allow_sell_policy() {
 
     for (label, sell, buy, kind, expected) in cases {
         let mut order = order();
-        order.sell_token = address(sell);
-        order.buy_token = address(buy);
+        order.sell_token = sell;
+        order.buy_token = buy;
         order.kind = kind;
         let result = validator.validate(&order, address(FROM), None, NOW, false);
         match (expected, result) {
@@ -196,7 +196,7 @@ fn paired_weth_native_guard_requires_configured_weth_to_engage() {
     let validator = OrderBoundsValidator::services_default();
     let mut order = order();
     order.sell_token = address(WETH);
-    order.buy_token = address(EVM_NATIVE_CURRENCY_ADDRESS);
+    order.buy_token = NATIVE_CURRENCY_ADDRESS;
     validator
         .validate(&order, address(FROM), None, NOW, false)
         .expect("without configured WETH the native-buy pair is admitted by the exact-match guard");
@@ -290,10 +290,9 @@ fn owner_mismatch_lifts_through_trading_error_client_rejected() {
 
 #[test]
 fn trade_parameters_validate_enforces_builder_subset() {
-    let native = Address::new(EVM_NATIVE_CURRENCY_ADDRESS).unwrap();
     let params = TradeParams::new(
         OrderKind::Sell,
-        native,
+        NATIVE_CURRENCY_ADDRESS,
         address(BUY_TOKEN),
         cow_sdk_core::Amount::new("1000000").unwrap(),
     );

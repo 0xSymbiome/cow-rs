@@ -21,19 +21,14 @@ use wiremock::{
 };
 
 use cow_sdk::core::{CowEnv, SupportedChainId};
-use cow_sdk::orderbook::{
-    ApiContext, ExternalHostPolicy, OrdersQuery, TradesQuery, OrderbookApi,
-};
+use cow_sdk::orderbook::{ApiContext, ExternalHostPolicy, OrderbookApi, OrdersQuery, TradesQuery};
 
-use cow_sdk_examples_native::support::{
-    ORDER_UID, OWNER, TX_HASH, sample_open_order, sample_owner,
-};
+use cow_sdk_examples_native::support::{COW, ORDER_UID, OWNER, TX_HASH, WETH, sample_open_order};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let server = MockServer::start().await;
-    let owner = sample_owner();
-    let owner_hex = owner.to_hex_string();
+    let owner_hex = OWNER.to_hex_string();
 
     // GET /api/v1/account/{owner}/orders -> a one-element order list. The fixture
     // reuses `sample_open_order()` so the wire shape is the same normalized
@@ -53,8 +48,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
             "logIndex": 3u64,
             "orderUid": ORDER_UID,
             "owner": OWNER,
-            "sellToken": "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14",
-            "buyToken": "0x0625aFB445C3B6B7B929342a04A22599fd5dBB59",
+            "sellToken": WETH,
+            "buyToken": COW,
             "sellAmount": "1000000000000000000",
             "sellAmountBeforeFees": "1000000000000000000",
             "buyAmount": "500000000000000000",
@@ -72,21 +67,21 @@ async fn main() -> Result<(), Box<dyn Error>> {
     .build()?;
 
     // LIST an account's orders (default pagination: offset 0, limit 1000).
-    let orders = orderbook.orders(&OrdersQuery::new(owner)).await?;
+    let orders = orderbook.orders(&OrdersQuery::new(OWNER)).await?;
 
     // HISTORY: trades for the same owner (owner XOR order-uid; default limit 10).
-    let trades = orderbook.trades(&TradesQuery::by_owner(owner)).await?;
+    let trades = orderbook.trades(&TradesQuery::by_owner(OWNER)).await?;
 
     let report = json!({
-        "surface": "cow-sdk::orderbook list/history (OrderbookApi)",
+        "surface": "cow_sdk::orderbook::OrderbookApi::{orders, trades}",
         "mode": "simulated-transport",
         "note": "orders/trades live on OrderbookApi; the Trading facade forwards only order",
         "owner": owner_hex,
         "orders": orders.iter().map(|o| json!({
             "uid": o.uid.to_hex_string(),
             "owner": o.owner.to_hex_string(),
-            "status": format!("{:?}", o.status),
-            "kind": format!("{:?}", o.kind),
+            "status": o.status,
+            "kind": o.kind,
             "executedSellAmount": o.executed_sell_amount,
             "executedBuyAmount": o.executed_buy_amount,
         })).collect::<Vec<_>>(),

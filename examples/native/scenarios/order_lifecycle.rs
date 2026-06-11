@@ -14,7 +14,7 @@ use cow_sdk::trading::{OrderTraderParams, Trading};
 
 use cow_sdk::testing::{MockOrderbook, MockSigner};
 use cow_sdk_examples_native::support::{
-    sample_open_order, sample_order_uid, sample_owner, sample_quote_response,
+    OWNER, sample_open_order, sample_order_uid, sample_quote_response,
 };
 
 #[tokio::main]
@@ -24,7 +24,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .quote(sample_quote_response())
         .build();
     orderbook.push_order(sample_open_order());
-    let signer = MockSigner::builder().address(sample_owner()).build();
+    let signer = MockSigner::builder().address(OWNER).build();
     let trading = Trading::builder()
         .chain_id(SupportedChainId::Sepolia)
         .app_code("cow-rs-order-lifecycle")
@@ -40,13 +40,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let state = orderbook.recorded();
 
     let report = json!({
-        "surface": "cow-sdk::Trading::order_lifecycle",
+        "surface": "cow_sdk::trading::Trading::{order, offchain_cancel_order}",
         "mode": "simulated-transport",
         "order": {
             "uid": order.uid.to_hex_string(),
             "owner": order.owner.to_hex_string(),
-            "status": format!("{:?}", order.status),
-            "kind": format!("{:?}", order.kind)
+            "status": order.status,
+            "kind": order.kind
         },
         "cancellation": {
             "dispatched": cancelled,

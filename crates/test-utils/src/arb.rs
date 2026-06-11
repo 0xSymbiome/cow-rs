@@ -4,7 +4,7 @@
 //! per-crate variants (different ranges, value types, or value shapes) stay
 //! local to their `property_contract.rs`.
 
-use cow_sdk_core::{Address, Amount, AppDataHex, SupportedChainId};
+use cow_sdk_core::{Address, Amount, AppDataHash, SupportedChainId};
 use proptest::prelude::*;
 
 /// A strategy emitting an [`Address`] with a non-zero low byte, so downstream
@@ -38,13 +38,13 @@ pub fn arb_amount() -> impl Strategy<Value = Amount> {
     })
 }
 
-/// A strategy emitting an [`AppDataHex`] payload.
+/// A strategy emitting an [`AppDataHash`] payload.
 ///
 /// # Panics
 /// Never panics — every sampled value is a valid 32-byte hex digest.
-pub fn arb_app_data_hex() -> impl Strategy<Value = AppDataHex> {
+pub fn arb_app_data_hex() -> impl Strategy<Value = AppDataHash> {
     any::<[u8; 32]>().prop_map(|bytes| {
-        AppDataHex::new(alloy_primitives::hex::encode_prefixed(bytes))
+        AppDataHash::new(alloy_primitives::hex::encode_prefixed(bytes))
             .expect("byte-derived app-data hex is valid")
     })
 }

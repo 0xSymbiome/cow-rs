@@ -4,9 +4,9 @@ use crate::helpers as pure;
 use cow_sdk_contracts::eth_flow::{EthFlowOrderData, encode_create_order_calldata};
 use cow_sdk_core::transport::policy::TransportPolicy;
 use cow_sdk_core::{
-    Address, Amount, BlockInfo, ContractCall, ContractHandle, EVM_NATIVE_CURRENCY_ADDRESS, HexData,
+    Address, Amount, BlockInfo, ContractCall, ContractHandle, HexData, NATIVE_CURRENCY_ADDRESS,
     ProtocolOptions, Provider, Signer, TransactionBroadcast, TransactionHash, TransactionReceipt,
-    TransactionRequest, TypedDataDomain, TypedDataField,
+    TransactionRequest,
 };
 use cow_sdk_orderbook::{OrderbookApi, SigningScheme};
 use cow_sdk_signing::eip1271::Eip1271Signer;
@@ -496,11 +496,7 @@ async fn trading_build_sell_native_currency_tx(
 ) -> Result<JsValue, JsValue> {
     let from = parse_address("from", from)?;
     let order = parse_order(input)?;
-    if !order
-        .sell_token
-        .to_hex_string()
-        .eq_ignore_ascii_case(EVM_NATIVE_CURRENCY_ADDRESS)
-    {
+    if order.sell_token != NATIVE_CURRENCY_ADDRESS {
         return Err(WasmError::invalid(
             "order.sellToken",
             "native-currency sell transactions require the native token sentinel address",
@@ -688,15 +684,6 @@ impl Signer for JsTradingSigner {
         .await
         .map_err(js_error_to_string)?;
         normalize_signature(&signature).map_err(js_error_to_string)
-    }
-
-    async fn sign_typed_data(
-        &self,
-        _domain: &TypedDataDomain,
-        _fields: &[TypedDataField],
-        _value_json: &str,
-    ) -> Result<String, Self::Error> {
-        Err("field-based typed-data signing is not available through this callback".to_owned())
     }
 
     async fn send_transaction(

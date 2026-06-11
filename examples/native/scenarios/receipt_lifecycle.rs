@@ -68,10 +68,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
         };
 
     let report = json!({
-        "surface": "cow-sdk::trading::submit_and_wait_for_receipt with cow_sdk::testing doubles",
+        "surface": "cow_sdk::trading::submit_and_wait_for_receipt + cow_sdk::testing",
         "mode": "scripted-receipt-sequence",
         "minedAfterPolls": {
-            "status": format!("{:?}", mined.status),
+            "status": mined.status,
             "blockNumber": mined.block_number
         },
         "revertedOutcome": reverted_outcome,

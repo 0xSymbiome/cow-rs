@@ -11,7 +11,7 @@ use cow_sdk::core::{Amount, SupportedChainId};
 use cow_sdk::trading::Trading;
 
 use cow_sdk::testing::{MockOrderbook, MockSigner};
-use cow_sdk_examples_native::support::{sample_buy_token, sample_owner, sample_quote_response, sample_sell_token};
+use cow_sdk_examples_native::support::{COW, OWNER, WETH, sample_quote_response};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -19,7 +19,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let orderbook = MockOrderbook::builder(SupportedChainId::Sepolia)
         .quote(sample_quote_response())
         .build();
-    let signer = MockSigner::builder().address(sample_owner()).build();
+    let signer = MockSigner::builder().address(OWNER).build();
 
     // Construct a ready-state trading client with the mock orderbook injected.
     // `orderbook(...)` takes the client by value — no `Arc` at the call site.
@@ -32,12 +32,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Sell 0.1 WETH for COW. The sell and buy tokens have named setters, so they
     // cannot be transposed. The owner defaults to the signer's address; set it
     // explicitly with `.owner(...)` for quote-only or delegated flows.
-    let weth = sample_sell_token();
-    let cow = sample_buy_token();
     let posted = trading
         .swap()
-        .sell_token(weth)
-        .buy_token(cow)
+        .sell_token(WETH)
+        .buy_token(COW)
         .sell_amount(Amount::parse_units("0.1", 18)?)
         .slippage_bps(50)
         .execute(&signer)

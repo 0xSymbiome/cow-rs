@@ -277,7 +277,7 @@ pub(crate) fn signer_error<E: fmt::Display + SignerError>(
 /// rejection without inspecting backend-specific strings.
 fn signer_operation_label(operation: &str) -> &'static str {
     match operation {
-        "sign_typed_data_payload" | "sign_typed_data" => "typed-data signature",
+        "sign_typed_data_payload" => "typed-data signature",
         "sign_message" | "sign_digest" => "message signature",
         _ => "signing request",
     }
@@ -321,16 +321,14 @@ mod signer_error_tests {
     impl TypedDataSigner for RecordingSigner {
         type Error = FakeSignerError;
 
-        async fn sign_typed_data(
+        async fn sign_typed_data_payload(
             &self,
-            _domain: &cow_sdk_core::TypedDataDomain,
-            _fields: &[cow_sdk_core::TypedDataField],
-            value_json: &str,
+            payload: &TypedDataPayload,
         ) -> Result<String, Self::Error> {
             self.typed_data_messages
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .push(value_json.to_owned());
+                .push(payload.message_json().to_owned());
             Ok(test_signature("aa"))
         }
     }
@@ -462,10 +460,6 @@ mod signer_error_tests {
     fn signer_operation_label_maps_known_operations() {
         assert_eq!(
             signer_operation_label("sign_typed_data_payload"),
-            "typed-data signature"
-        );
-        assert_eq!(
-            signer_operation_label("sign_typed_data"),
             "typed-data signature"
         );
         assert_eq!(signer_operation_label("sign_message"), "message signature");

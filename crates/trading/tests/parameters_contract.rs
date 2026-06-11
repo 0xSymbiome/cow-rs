@@ -10,7 +10,7 @@
     reason = "pedantic lint group acceptable inside integration test code"
 )]
 
-use cow_sdk_core::{Amount, EVM_NATIVE_CURRENCY_ADDRESS, OrderKind};
+use cow_sdk_core::{Address, Amount, NATIVE_CURRENCY_ADDRESS, OrderKind};
 use cow_sdk_test_utils::builders::address;
 use cow_sdk_trading::{ClientRejection, LimitTradeParams, TradeParams};
 
@@ -22,20 +22,19 @@ fn amount(value: &str) -> Amount {
     Amount::new(value).expect("fixture amount must be valid")
 }
 
-fn trade_parameters(kind: OrderKind, sell_token: &str, buy_token: &str) -> TradeParams {
-    TradeParams::new(
-        kind,
-        address(sell_token),
-        address(buy_token),
-        amount("1000000"),
-    )
+fn trade_parameters(kind: OrderKind, sell_token: Address, buy_token: Address) -> TradeParams {
+    TradeParams::new(kind, sell_token, buy_token, amount("1000000"))
 }
 
-fn limit_trade_parameters(kind: OrderKind, sell_token: &str, buy_token: &str) -> LimitTradeParams {
+fn limit_trade_parameters(
+    kind: OrderKind,
+    sell_token: Address,
+    buy_token: Address,
+) -> LimitTradeParams {
     LimitTradeParams::new(
         kind,
-        address(sell_token),
-        address(buy_token),
+        sell_token,
+        buy_token,
         amount("1000000"),
         amount("2000000"),
     )
@@ -52,29 +51,29 @@ fn tradeparameters_validate_mirrors_services_allow_sell() {
     let cases = [
         (
             "same-token sell",
-            SELL_TOKEN,
-            SELL_TOKEN,
+            address(SELL_TOKEN),
+            address(SELL_TOKEN),
             OrderKind::Sell,
             Outcome::Accept,
         ),
         (
             "same-token buy",
-            SELL_TOKEN,
-            SELL_TOKEN,
+            address(SELL_TOKEN),
+            address(SELL_TOKEN),
             OrderKind::Buy,
             Outcome::Reject,
         ),
         (
             "WETH-native sell",
-            WETH,
-            EVM_NATIVE_CURRENCY_ADDRESS,
+            address(WETH),
+            NATIVE_CURRENCY_ADDRESS,
             OrderKind::Sell,
             Outcome::Accept,
         ),
         (
             "WETH-native buy",
-            WETH,
-            EVM_NATIVE_CURRENCY_ADDRESS,
+            address(WETH),
+            NATIVE_CURRENCY_ADDRESS,
             OrderKind::Buy,
             Outcome::Accept,
         ),
@@ -95,29 +94,29 @@ fn limittradeparameters_validate_mirrors_services_allow_sell() {
     let cases = [
         (
             "same-token sell",
-            SELL_TOKEN,
-            SELL_TOKEN,
+            address(SELL_TOKEN),
+            address(SELL_TOKEN),
             OrderKind::Sell,
             Outcome::Accept,
         ),
         (
             "same-token buy",
-            SELL_TOKEN,
-            SELL_TOKEN,
+            address(SELL_TOKEN),
+            address(SELL_TOKEN),
             OrderKind::Buy,
             Outcome::Reject,
         ),
         (
             "WETH-native sell",
-            WETH,
-            EVM_NATIVE_CURRENCY_ADDRESS,
+            address(WETH),
+            NATIVE_CURRENCY_ADDRESS,
             OrderKind::Sell,
             Outcome::Accept,
         ),
         (
             "WETH-native buy",
-            WETH,
-            EVM_NATIVE_CURRENCY_ADDRESS,
+            address(WETH),
+            NATIVE_CURRENCY_ADDRESS,
             OrderKind::Buy,
             Outcome::Accept,
         ),

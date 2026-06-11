@@ -1,8 +1,8 @@
-error[E0277]: the trait bound `LocalAlloyKeystoreSigner: Provider` is not satisfied
+error[E0277]: the trait bound `LocalAlloySigner: Provider` is not satisfied
   --> tests/trybuild/no_provider.rs:14:23
    |
 14 |     requires_provider(&signer);
-   |     ----------------- ^^^^^^^ the trait `Provider` is not implemented for `LocalAlloyKeystoreSigner`
+   |     ----------------- ^^^^^^^ the trait `Provider` is not implemented for `LocalAlloySigner`
    |     |
    |     required by a bound introduced by this call
    |

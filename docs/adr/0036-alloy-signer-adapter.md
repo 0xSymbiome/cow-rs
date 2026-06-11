@@ -1,6 +1,6 @@
 # ADR 0036: Ship A Native Alloy Local Signer Adapter
 
-- Status: Accepted
+- Status: Accepted (amended)
 - Date: 2026-05-06
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: alloy, signer, adapter, native, eip712
@@ -93,3 +93,17 @@ any minor release.
 **Proven by:**
 
 - [Alloy Signer Adapter Audit](../audit/alloy-signer-adapter-audit.md)
+
+## Amendment 2026-06-11: `LocalAlloySigner` rename and payload-only seam
+
+The adapter type family is renamed for what it actually holds — a locally-held
+private key, never a keystore file: `LocalAlloyKeystoreSigner` →
+`LocalAlloySigner`, `LocalAlloyKeystoreSignerBuilder` →
+`LocalAlloySignerBuilder`, with the builder error following as
+`LocalAlloySignerBuilderError`. Typed-data signing is payload-only per
+[ADR 0068](0068-payload-only-typed-data-signing.md): the legacy flat
+typed-data path and the `cow_flat_to_alloy_typed_data` seam helper are
+removed, so the `__seam` module re-exports `cow_typed_data_payload_to_alloy`
+and `alloy_signature_to_hex` only. Every other reviewed boundary —
+capability exclusions, builder typestate, normalization, redaction — is
+unchanged.

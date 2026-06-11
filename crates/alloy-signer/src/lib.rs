@@ -1,8 +1,8 @@
 #![cfg_attr(doctest, doc = include_str!("../README.md"))]
 
-//! Alloy-backed local-keystore `Signer` adapter for the `CoW` Protocol Rust SDK.
+//! Alloy-backed local private-key `Signer` adapter for the `CoW` Protocol Rust SDK.
 //!
-//! [`LocalAlloyKeystoreSigner`] wraps an Alloy local private-key signer and
+//! [`LocalAlloySigner`] wraps an Alloy local private-key signer and
 //! exposes message and typed-data signing through [`cow_sdk_core::Signer`].
 //! The crate intentionally does not provide provider-backed transaction
 //! methods: `sign_transaction`, `send_transaction`, and `estimate_gas` return
@@ -10,11 +10,11 @@
 //! fill nonce, fee, chain, or transaction-type fields.
 //!
 //! ```rust,no_run
-//! use cow_sdk_alloy_signer::LocalAlloyKeystoreSigner;
+//! use cow_sdk_alloy_signer::LocalAlloySigner;
 //! use cow_sdk_core::SupportedChainId;
 //!
 //! # fn example() -> Result<(), Box<dyn std::error::Error>> {
-//! let signer = LocalAlloyKeystoreSigner::builder()
+//! let signer = LocalAlloySigner::builder()
 //!     .private_key("0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d")?
 //!     .chain_id(SupportedChainId::Sepolia)
 //!     .build()?;
@@ -40,13 +40,13 @@ mod signer;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use builder::{
-    ChainSet, ChainState, ChainUnset, KeySourceState, KeySourceUnset,
-    LocalAlloyKeystoreSignerBuilder, LocalAlloyKeystoreSignerBuilderError, PrivateKeySource,
+    ChainSet, ChainState, ChainUnset, KeySourceState, KeySourceUnset, LocalAlloySignerBuilder,
+    LocalAlloySignerBuilderError, PrivateKeySource,
 };
 #[cfg(not(target_arch = "wasm32"))]
 pub use error::{SignerError, SignerErrorClass};
 #[cfg(not(target_arch = "wasm32"))]
-pub use signer::LocalAlloyKeystoreSigner;
+pub use signer::LocalAlloySigner;
 
 /// Inter-crate seam for sibling `CoW` Protocol Alloy adapter crates.
 ///
@@ -60,7 +60,5 @@ pub use signer::LocalAlloyKeystoreSigner;
 #[cfg(not(target_arch = "wasm32"))]
 #[doc(hidden)]
 pub mod __seam {
-    pub use crate::conversion::{
-        alloy_signature_to_hex, cow_flat_to_alloy_typed_data, cow_typed_data_payload_to_alloy,
-    };
+    pub use crate::conversion::{alloy_signature_to_hex, cow_typed_data_payload_to_alloy};
 }

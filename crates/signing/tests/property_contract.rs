@@ -25,7 +25,7 @@ use std::collections::BTreeMap;
 
 use cow_sdk_contracts::{OrderCancellations, SigningScheme, hash_order, hash_order_cancellations};
 use cow_sdk_core::{
-    Address, Amount, AppDataHex, BuyTokenDestination, CowEnv, OrderData, OrderKind, OrderUid,
+    Address, Amount, AppDataHash, BuyTokenDestination, CowEnv, OrderData, OrderKind, OrderUid,
     ProtocolOptions, SellTokenSource, SupportedChainId, TypedDataDomain,
 };
 use cow_sdk_signing::{
@@ -54,8 +54,8 @@ fn address_strategy() -> impl Strategy<Value = Address> {
     cow_sdk_test_utils::arb::arb_address()
 }
 
-/// Strategy that emits an [`AppDataHex`] payload.
-fn app_data_strategy() -> impl Strategy<Value = AppDataHex> {
+/// Strategy that emits an [`AppDataHash`] payload.
+fn app_data_strategy() -> impl Strategy<Value = AppDataHash> {
     cow_sdk_test_utils::arb::arb_app_data_hex()
 }
 

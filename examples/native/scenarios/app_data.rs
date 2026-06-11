@@ -20,8 +20,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let app_code = AppCode::new("cow-rs/app-data-roundtrip")?;
     let document = generate_app_data_doc(AppDataParams::new(app_code).with_environment("example"));
 
-    // Validate the generated JSON against the app-data schema.
-    let validation = validate_app_data_doc(&document);
+    // Validate the generated JSON against the app-data schema; a violation
+    // surfaces as a typed `AppDataError` through `?`.
+    validate_app_data_doc(&document)?;
 
     // Inspect the document: its canonical content hash and the IPFS CID it pins to.
     let info = app_data_info(&document)?;
@@ -31,9 +32,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let derived_cid = app_data_hex_to_cid(&info.app_data_hex)?;
 
     let report = json!({
-        "surface": "cow-sdk::app_data",
+        "surface": "cow_sdk::app_data",
         "mode": "deterministic",
-        "valid": validation.success,
+        "validated": true,
         "schemaVersion": SchemaVersion::latest().as_str(),
         "current": {
             "cid": info.cid,

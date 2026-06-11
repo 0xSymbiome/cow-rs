@@ -76,7 +76,7 @@ pub use client::{
 };
 pub use error::{OrderbookContextValue, TradingError};
 pub use onchain::{
-    EthFlowTransaction, eth_flow_transaction, onchain_cancel_order,
+    EthFlowTransaction, PreparedTransaction, eth_flow_transaction, onchain_cancel_order,
     onchain_cancellation_transaction, pre_sign_transaction, protocol_options_for_order,
 };
 pub use order::{
@@ -85,8 +85,8 @@ pub use order::{
 };
 pub use post::{
     eip1271_order_verification_request, post_cow_protocol_trade, post_limit_order,
-    post_sell_native_currency_order, post_swap_order, post_swap_order_from_quote,
-    verify_eip1271_order_signature,
+    post_limit_order_presign, post_sell_native_currency_order, post_swap_order,
+    post_swap_order_from_quote, verify_eip1271_order_signature,
 };
 pub use quote::{quote_only, quote_results};
 pub use slippage::{

@@ -46,8 +46,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     .build()?;
 
     let trading = TradingBuilder::ready(
-        TraderParams::new(SupportedChainId::Sepolia, "cow-rs-cancellation-example")
-            .expect("app code should validate"),
+        TraderParams::new(SupportedChainId::Sepolia, "cow-rs-cancellation-example")?,
         TradingOptions::new().with_orderbook_client(Arc::new(orderbook)),
     )?;
 
@@ -76,7 +75,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     );
 
     let report = json!({
-        "surface": "cow-sdk::Trading::quote_only",
+        "surface": "cow_sdk::core::Cancellable + cow_sdk::trading::Trading::quote_only",
         "mode": "simulated-transport",
         "cancellation": {
             "delayMs": 100,

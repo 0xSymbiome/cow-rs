@@ -18,7 +18,7 @@
 //! deterministic and reproducible across replays.
 
 use cow_sdk_core::{
-    Address, Amount, EVM_NATIVE_CURRENCY_ADDRESS, OrderData, OrderKind, SupportedChainId,
+    Address, Amount, NATIVE_CURRENCY_ADDRESS, OrderData, OrderKind, SupportedChainId,
 };
 use serde::{Deserialize, Serialize};
 
@@ -213,18 +213,15 @@ impl OrderBoundsValidator {
         kind: OrderKind,
         is_eth_flow: bool,
     ) -> Result<(), ClientRejection> {
-        if !is_eth_flow {
-            let native = native_sentinel();
-            if sell_token == &native {
-                return Err(ClientRejection::InvalidNativeSellToken);
-            }
+        if !is_eth_flow && *sell_token == NATIVE_CURRENCY_ADDRESS {
+            return Err(ClientRejection::InvalidNativeSellToken);
         }
         if sell_token == buy_token && kind == OrderKind::Buy {
             return Err(ClientRejection::SameBuyAndSellToken { token: *sell_token });
         }
         if let Some(weth) = self.weth_address.as_ref()
             && sell_token == weth
-            && buy_token == &native_sentinel()
+            && *buy_token == NATIVE_CURRENCY_ADDRESS
             && kind == OrderKind::Buy
         {
             return Err(ClientRejection::SameBuyAndSellToken { token: *weth });
@@ -248,19 +245,6 @@ fn validate_amount(
         return Err(ClientRejection::ZeroAmount { side });
     }
     Ok(())
-}
-
-/// Returns the native-currency sentinel address used by order validation.
-///
-/// # Panics
-///
-/// Panics only if the shared native-currency sentinel literal stops being a
-/// valid EVM address.
-fn native_sentinel() -> Address {
-    // SAFETY: EVM_NATIVE_CURRENCY_ADDRESS is a crate-owned protocol sentinel
-    // literal validated through the shared Address constructor.
-    Address::new(EVM_NATIVE_CURRENCY_ADDRESS)
-        .expect("EVM_NATIVE_CURRENCY_ADDRESS must remain a valid address literal")
 }
 
 const fn zero_address() -> Address {

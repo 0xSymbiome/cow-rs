@@ -25,12 +25,12 @@ being transposed, and `execute` is reachable only once both tokens and an amount
 are set. The order owner defaults to the signer address:
 
 ```rust,no_run
-use cow_sdk::alloy_signer::LocalAlloyKeystoreSigner;
+use cow_sdk::alloy_signer::LocalAlloySigner;
 use cow_sdk::core::{Address, Amount, SupportedChainId};
 use cow_sdk::trading::Trading;
 
 # async fn run(private_key: &str) -> Result<(), Box<dyn std::error::Error>> {
-let signer = LocalAlloyKeystoreSigner::builder()
+let signer = LocalAlloySigner::builder()
     .private_key(private_key)?
     .chain_id(SupportedChainId::Sepolia)
     .build()?;
@@ -40,13 +40,13 @@ let trading = Trading::builder()
     .app_code("your-app-code")
     .build()?;
 
-let weth = Address::new("0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14")?;
-let cow = Address::new("0x0625aFB445C3B6B7B929342a04A22599fd5dBB59")?;
+let WETH = Address::new("0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14")?;
+let COW = Address::new("0x0625aFB445C3B6B7B929342a04A22599fd5dBB59")?;
 
 let posted = trading
     .swap()
-    .sell_token(weth)
-    .buy_token(cow)
+    .sell_token(WETH)
+    .buy_token(COW)
     .sell_amount(Amount::parse_units("0.001", 18)?)
     .execute(&signer)
     .await?;

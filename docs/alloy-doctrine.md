@@ -118,7 +118,7 @@ Each entry defines a cow-owned trait in `cow-sdk-core` and ships a separate adap
 |---|---|---|---|---|
 | `Provider` (read-only chain RPC) | `cow_sdk_core::Provider` | `cow-sdk-alloy-provider` (native, read-only); browser-wallet leaf provides an EIP-1193 impl on `wasm32` | `alloy_provider::DynProvider<Ethereum>`, transport via `reqwest`, redacted URL via `Redacted<reqwest::Url>` | ADR 0024, ADR 0035 |
 | `SigningProvider: Provider` (signer creation extension) | `cow_sdk_core::SigningProvider` | `cow-sdk-alloy` (composed read+sign) | `alloy_provider::DynProvider<Ethereum>` with wallet filler | ADR 0024, ADR 0037 |
-| `Signer` (EIP-191 + EIP-712 signing) | `cow_sdk_core::Signer` | `cow-sdk-alloy-signer` (native local keystore); `cow-sdk-alloy::AlloyClientSignerHandle` (composed) | `alloy_signer_local::PrivateKeySigner`, `alloy_signer::Signer` | ADR 0024, ADR 0036, ADR 0045 |
+| `Signer` (EIP-191 + EIP-712 signing) | `cow_sdk_core::Signer` | `cow-sdk-alloy-signer` (native local private-key); `cow-sdk-alloy::AlloyClientSignerHandle` (composed) | `alloy_signer_local::PrivateKeySigner`, `alloy_signer::Signer` | ADR 0024, ADR 0036, ADR 0045 |
 | Narrow capability traits (`Owner`, `TypedDataSigner`, `DigestSigner`, `Eip1193`) | `cow_sdk_core::{Owner, TypedDataSigner, DigestSigner, Eip1193}` | Callback-shaped adapters (`cow-sdk-browser-wallet`, `cow-sdk-wasm`) that expose a single signing operation | n/a — these are cow-owned shapes; alloy ships no peer | ADR 0024, ADR 0029, ADR 0045 |
 | `HttpTransport` (REST/GraphQL) | `cow_sdk_core::HttpTransport` | `ReqwestTransport` (target-gated inside `cow-sdk-core`); `cow_sdk_transport_wasm::FetchTransport`; `cow_sdk_wasm::exports::JsCallbackHttpTransport` | `reqwest::Client` for native; `web_sys::Fetch` for browser; JS callback for Node/Deno/Workers | ADR 0010, ADR 0013, ADR 0019 |
 | `IpfsFetchTransport` | `cow_sdk_app_data::IpfsFetchTransport` (re-exported via `cow-sdk-core` cancellation contract) | `cow-sdk-app-data` native + browser variants | Same underlying transports as `HttpTransport`; the CID-fetch policy is cow-owned | ADR 0010 (cancellation extension to IPFS fetch) |
@@ -237,7 +237,7 @@ Numbered ADR cites with the load-bearing topics:
 - **ADR 0027** — non-exhaustive signature boundaries for future schemes (post-quantum, EIP-7212 secp256r1).
 - **ADR 0029** — trait evolution through extension traits; `Provider` / `SigningProvider` shapes frozen through `0.x.y`.
 - **ADR 0035** — `cow-sdk-alloy-provider` read-only adapter.
-- **ADR 0036** — `cow-sdk-alloy-signer` local keystore adapter.
+- **ADR 0036** — `cow-sdk-alloy-signer` local private-key signer adapter.
 - **ADR 0037** — `cow-sdk-alloy` composed adapter (`AlloyClient` + `AlloyClientSignerHandle`).
 - **ADR 0040** — wallet/provider callback boundary for JS consumers (five typed callbacks).
 - **ADR 0044** — wasm flavor builds (default, orderbook, signing, cloudflare); positioning vs upstream TypeScript SDK.

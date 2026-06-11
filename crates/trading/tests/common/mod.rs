@@ -18,7 +18,7 @@ use cow_sdk_core::{
     Address, Amount, ApiBaseUrls, ApiContext, AppCode, AppDataHash, BlockHash, BlockInfo,
     ContractCall, ContractHandle, CowEnv, Hash32, HexData, OrderKind, OrderUid, Provider, Signer,
     SupportedChainId, TransactionBroadcast, TransactionHash, TransactionReceipt,
-    TransactionRequest, TransactionStatus, TypedDataDomain, TypedDataField, TypedDataPayload,
+    TransactionRequest, TransactionStatus, TypedDataDomain, TypedDataPayload,
 };
 use cow_sdk_orderbook::{
     Order, OrderCancellations, OrderCreation, OrderQuoteRequest, OrderQuoteResponse, OrderbookError,
@@ -346,19 +346,6 @@ impl Signer for CountingSigner {
         )
     }
 
-    async fn sign_typed_data(
-        &self,
-        _domain: &TypedDataDomain,
-        _fields: &[TypedDataField],
-        _value_json: &str,
-    ) -> Result<String, Self::Error> {
-        self.record_sign_call();
-        Err(
-            "CountingSigner::sign_typed_data must not be reached under validator-first invariant"
-                .into(),
-        )
-    }
-
     async fn send_transaction(
         &self,
         _tx: &TransactionRequest,
@@ -439,16 +426,14 @@ impl Signer for MockSigner {
         Ok(TX_HASH.to_owned())
     }
 
-    async fn sign_typed_data(
+    async fn sign_typed_data_payload(
         &self,
-        domain: &TypedDataDomain,
-        _fields: &[TypedDataField],
-        _value_json: &str,
+        payload: &TypedDataPayload,
     ) -> Result<String, Self::Error> {
         self.state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .last_typed_data_domain = Some(domain.clone());
+            .last_typed_data_domain = Some(payload.domain.clone());
         Ok(TYPED_SIGNATURE.to_owned())
     }
 
@@ -795,15 +780,6 @@ impl Signer for FakeSigner {
     async fn sign_typed_data_payload(
         &self,
         _payload: &TypedDataPayload,
-    ) -> Result<String, Self::Error> {
-        Ok(TYPED_SIGNATURE.to_owned())
-    }
-
-    async fn sign_typed_data(
-        &self,
-        _domain: &TypedDataDomain,
-        _fields: &[TypedDataField],
-        _value_json: &str,
     ) -> Result<String, Self::Error> {
         Ok(TYPED_SIGNATURE.to_owned())
     }

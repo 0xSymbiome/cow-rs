@@ -108,10 +108,9 @@ pub type TypedDataTypes = BTreeMap<String, Vec<TypedDataField>>;
 
 /// Generic EIP-712 envelope shape used by typed helpers and signer payloads.
 ///
-/// The signer-facing alias uses a canonical JSON string for `message` so
-/// existing `Signer` implementors can keep the legacy `sign_typed_data`
-/// method and still gain additive compatibility through the default
-/// `sign_typed_data_payload` implementation.
+/// The signer-facing alias uses a canonical JSON string for `message` so the
+/// payload travels as one self-contained, digest-complete value: domain,
+/// full type map, primary-type name, and message together.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

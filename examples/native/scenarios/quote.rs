@@ -24,8 +24,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Ready-state client with the mock injected. `orderbook.clone()` keeps a
     // handle so we can read what the client sent after the call.
     let trading = TradingBuilder::ready(
-        TraderParams::new(SupportedChainId::Sepolia, "cow-rs-quote-only")
-            .expect("app code should validate"),
+        TraderParams::new(SupportedChainId::Sepolia, "cow-rs-quote-only")?,
         TradingOptions::new().with_orderbook_client(Arc::new(orderbook.clone())),
     )?;
 
@@ -41,7 +40,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .expect("example quote request must be captured");
 
     let report = json!({
-        "surface": "cow-sdk::Trading::quote_only",
+        "surface": "cow_sdk::trading::Trading::quote_only",
         "mode": "simulated-transport",
         "quote": {
             "id": quote.quote_response.id,
@@ -52,7 +51,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         "request": {
             "from": request.from.to_hex_string(),
             "receiver": request.receiver.as_ref().map(|address| address.to_hex_string()),
-            "priceQuality": format!("{:?}", request.price_quality)
+            "priceQuality": request.price_quality
         }
     });
 

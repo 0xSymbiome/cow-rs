@@ -20,8 +20,8 @@ use cow_sdk::orderbook::{
 };
 
 use cow_sdk_examples_native::support::{
-    orderbook_version_response, sample_buy_token, sample_order_uid, sample_owner,
-    sample_quote_response_json, sample_sell_token, sample_signature,
+    COW, OWNER, WETH, orderbook_version_response, sample_order_uid, sample_quote_response_json,
+    sample_signature,
 };
 
 #[tokio::main]
@@ -73,9 +73,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // 2. Request a sell-side quote.
     let quote_request = OrderQuoteRequest::new(
-        sample_sell_token(),
-        sample_buy_token(),
-        sample_owner(),
+        WETH,
+        COW,
+        OWNER,
         OrderQuoteSide::sell(
             Amount::parse_units("0.1", 18).expect("example quote amount must remain valid"),
         ),
@@ -88,7 +88,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     //    quote the user approved.
     let order = OrderCreation::from_quote(
         &quote,
-        sample_owner(),
+        OWNER,
         None,
         OrderbookSigningScheme::Eip712,
         sample_signature(),
@@ -101,7 +101,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .await?;
 
     let report = json!({
-        "surface": "cow-sdk::orderbook",
+        "surface": "cow_sdk::orderbook::OrderbookApi",
         "mode": "simulated-transport",
         "version": version,
         "quote": {
@@ -115,7 +115,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             "signingScheme": "eip712"
         },
         "status": {
-            "type": format!("{:?}", status.kind)
+            "type": status.kind
         }
     });
 

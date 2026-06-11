@@ -437,7 +437,7 @@ fn contracts_and_signing_errors_redact_secret_bearing_messages() {
         }),
         SigningError::Serialization(secret_payload().into()),
         SigningError::Signer {
-            operation: "sign_typed_data",
+            operation: "sign_typed_data_payload",
             message: secret_payload().into(),
         },
         SigningError::SignerRejection {

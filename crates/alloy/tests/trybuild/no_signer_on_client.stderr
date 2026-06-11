@@ -12,8 +12,8 @@ help: the following other types implement trait `Signer`
   |
  ::: $WORKSPACE/crates/alloy-signer/src/signer.rs
   |
-  | impl Signer for LocalAlloyKeystoreSigner {
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `LocalAlloyKeystoreSigner`
+  | impl Signer for LocalAlloySigner {
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `LocalAlloySigner`
 note: required by a bound in `requires_signer`
  --> tests/trybuild/no_signer_on_client.rs:4:23
   |

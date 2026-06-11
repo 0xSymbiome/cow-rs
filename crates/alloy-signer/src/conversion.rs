@@ -5,35 +5,7 @@ use alloy_dyn_abi::{
     eip712::{PropertyDef, Resolver, TypeDef, TypedData},
 };
 use alloy_primitives::Signature;
-use cow_sdk_core::{TypedDataDomain, TypedDataField, TypedDataPayload};
-
-/// Converts legacy flat typed-data fields into Alloy's dynamic typed-data shape.
-///
-/// The flat shape has no primary type name, so this compatibility path uses the
-/// placeholder primary type `"Message"`. Canonical `CoW` order signing must
-/// use [`cow_typed_data_payload_to_alloy`] so the original primary type is
-/// preserved.
-///
-/// # Errors
-///
-/// Returns the error returned by [`cow_typed_data_payload_to_alloy`] when the
-/// underlying typed-data payload cannot be converted into Alloy's dynamic
-/// typed-data shape.
-pub fn cow_flat_to_alloy_typed_data(
-    domain: &TypedDataDomain,
-    fields: &[TypedDataField],
-    value_json: &str,
-) -> Result<TypedData, String> {
-    let mut types = cow_sdk_core::TypedDataTypes::new();
-    types.insert("Message".to_owned(), fields.to_vec());
-    let payload = TypedDataPayload::new(
-        domain.clone(),
-        "Message".to_owned(),
-        types,
-        value_json.to_owned(),
-    );
-    cow_typed_data_payload_to_alloy(&payload)
-}
+use cow_sdk_core::{TypedDataField, TypedDataPayload};
 
 /// Converts an explicit SDK typed-data payload into Alloy's dynamic typed-data shape.
 ///
@@ -172,26 +144,6 @@ mod tests {
             })
         );
         typed.eip712_signing_hash().unwrap();
-    }
-
-    #[test]
-    fn flat_conversion_uses_message_placeholder_primary_type() {
-        let payload = simple_payload("Greeting");
-        let typed = cow_flat_to_alloy_typed_data(
-            &payload.domain,
-            payload.primary_type_fields().unwrap(),
-            payload.message_json(),
-        )
-        .unwrap();
-
-        assert_eq!(typed.primary_type, "Message");
-        assert_ne!(
-            typed.eip712_signing_hash().unwrap(),
-            cow_typed_data_payload_to_alloy(&payload)
-                .unwrap()
-                .eip712_signing_hash()
-                .unwrap()
-        );
     }
 
     #[test]

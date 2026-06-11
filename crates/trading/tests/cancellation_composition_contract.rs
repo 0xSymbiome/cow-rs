@@ -20,15 +20,15 @@ use std::{
 use cow_sdk_core::{
     Address, Amount, ApiContext, AppDataHash, BlockInfo, Cancellable, ContractCall, ContractHandle,
     CowEnv, Hash32, HexData, OrderKind, OrderUid, Provider, Signer, SupportedChainId,
-    TransactionBroadcast, TransactionHash, TransactionReceipt, TransactionRequest, TypedDataDomain,
-    TypedDataField, TypedDataPayload,
+    TransactionBroadcast, TransactionHash, TransactionReceipt, TransactionRequest,
+    TypedDataPayload,
 };
 use cow_sdk_orderbook::{
     Order, OrderCancellations, OrderCreation, OrderQuoteRequest, OrderQuoteResponse, OrderbookError,
 };
 use cow_sdk_trading::{
     AllowanceParams, ApprovalParams, OrderPostingResult, OrderTraderParams, OrderbookClient,
-    QuoteResults, Trading, TradingError, TradingOptions,
+    PreparedTransaction, QuoteResults, Trading, TradingError, TradingOptions,
 };
 
 use crate::common::{
@@ -62,6 +62,10 @@ const TESTED_METHODS: &[CancellationCase] = &[
     CancellationCase {
         method_name: "post_limit_order",
         invoke: invoke_post_limit_order,
+    },
+    CancellationCase {
+        method_name: "post_limit_order_presign",
+        invoke: invoke_post_limit_order_presign,
     },
     CancellationCase {
         method_name: "pre_sign_transaction",
@@ -300,21 +304,7 @@ impl Signer for SlowSigner {
 
     async fn sign_typed_data_payload(
         &self,
-        payload: &TypedDataPayload,
-    ) -> Result<String, Self::Error> {
-        self.sign_typed_data(
-            &payload.domain,
-            payload.primary_type_fields().unwrap_or_default(),
-            payload.message_json(),
-        )
-        .await
-    }
-
-    async fn sign_typed_data(
-        &self,
-        _domain: &TypedDataDomain,
-        _fields: &[TypedDataField],
-        _value_json: &str,
+        _payload: &TypedDataPayload,
     ) -> Result<String, Self::Error> {
         self.wait().await;
         Ok(TYPED_SIGNATURE.to_owned())
@@ -463,7 +453,17 @@ fn invoke_get_pre_sign_transaction(harness: &TradingHarness) -> CaseFuture<'_> {
             .trading
             .pre_sign_transaction(&order_params(), &harness.signer)
             .await
-            .map(|_: TransactionRequest| ())
+            .map(|_: PreparedTransaction| ())
+    })
+}
+
+fn invoke_post_limit_order_presign(harness: &TradingHarness) -> CaseFuture<'_> {
+    Box::pin(async move {
+        harness
+            .trading
+            .post_limit_order_presign(sample_limit_parameters(OrderKind::Sell), None)
+            .await
+            .map(|_: OrderPostingResult| ())
     })
 }
 

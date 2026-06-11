@@ -3,7 +3,7 @@
 mod common;
 
 use common::{order_digest, sample_order};
-use cow_sdk_alloy_signer::LocalAlloyKeystoreSigner;
+use cow_sdk_alloy_signer::LocalAlloySigner;
 use cow_sdk_contracts::SigningScheme;
 use cow_sdk_core::{Signer, SupportedChainId};
 use cow_sdk_signing::{ORDER_PRIMARY_TYPE, order_typed_data_payload};
@@ -11,7 +11,7 @@ use cow_sdk_test_utils::consts::{ANVIL_KEY_1 as TEST_KEY, EXPECTED_ORDER_SIGNATU
 
 #[tokio::test]
 async fn sign_typed_data_payload_matches_canonical_cow_order_vector() {
-    let signer = LocalAlloyKeystoreSigner::builder()
+    let signer = LocalAlloySigner::builder()
         .private_key(TEST_KEY)
         .unwrap()
         .chain_id(SupportedChainId::Mainnet)

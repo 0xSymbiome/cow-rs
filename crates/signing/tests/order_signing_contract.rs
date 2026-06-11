@@ -148,15 +148,16 @@ async fn sign_order_routes_typed_data_fields_to_signer() {
         assert!(calls.messages.is_empty());
         assert_eq!(calls.typed_data[0].domain.chain_id, 11_155_111);
         assert_eq!(
-            calls.typed_data[0].value_json,
+            calls.typed_data[0].message,
             serde_json::to_string(&order).unwrap()
         );
         assert!(
             calls.typed_data[0]
-                .fields
+                .primary_type_fields()
+                .unwrap_or_default()
                 .iter()
                 .any(|field| field.name == "sellToken" && field.kind == "address"),
-            "EIP-712 signing must route the order typed-data fields to sign_typed_data",
+            "EIP-712 signing must route the order typed-data payload to sign_typed_data_payload",
         );
     }
 
@@ -224,7 +225,7 @@ fn eip1271_signature_payload_matches_the_manual_contract_encoding() {
     order.sell_amount = Amount::new(format!("0x{}", "ff".repeat(32))).unwrap();
     order.buy_amount = Amount::new("0x01").unwrap();
     order.fee_amount = Amount::new("0x02").unwrap();
-    order.app_data = cow_sdk_core::AppDataHex::new(format!("0x{}", "11".repeat(32))).unwrap();
+    order.app_data = cow_sdk_core::AppDataHash::new(format!("0x{}", "11".repeat(32))).unwrap();
 
     let signature = format!("0x{}1b", "aa".repeat(64));
     let payload = eip1271_signature_payload(&order, &signature).unwrap();
@@ -261,7 +262,7 @@ fn eip1271_signature_payload_matches_the_manual_contract_encoding() {
 #[test]
 fn eip1271_signature_payload_keeps_full_bytes32_app_data_and_exact_word_padding() {
     let mut order = sample_order();
-    order.app_data = cow_sdk_core::AppDataHex::new(format!("0x{}", "ab".repeat(32))).unwrap();
+    order.app_data = cow_sdk_core::AppDataHash::new(format!("0x{}", "ab".repeat(32))).unwrap();
 
     let signature = format!("0x{}1b", "cd".repeat(64));
     let payload = eip1271_signature_payload(&order, &signature).unwrap();

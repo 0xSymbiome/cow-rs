@@ -141,7 +141,7 @@ async fn call_returns_hex_data() {
 #[tokio::test]
 async fn get_contract_returns_value_handle_without_rpc() {
     let server = MockServer::start().await;
-    let provider = provider_for(&server).await;
+    let provider = provider_for(&server);
     let address = Address::new(ADDRESS).unwrap();
 
     let handle = provider.get_contract(&address, "[]").await.unwrap();
@@ -189,7 +189,6 @@ async fn network_failure_maps_to_transport_error_class() {
         .unwrap()
         .timeout(Duration::from_millis(200))
         .build()
-        .await
         .unwrap();
 
     let error = provider.get_chain_id().await.unwrap_err();
@@ -250,16 +249,15 @@ async fn provider_with_response(response: Value) -> (MockServer, RpcAlloyProvide
         .respond_with(ResponseTemplate::new(200).set_body_json(response))
         .mount(&server)
         .await;
-    let provider = provider_for(&server).await;
+    let provider = provider_for(&server);
     (server, provider)
 }
 
-async fn provider_for(server: &MockServer) -> RpcAlloyProvider {
+fn provider_for(server: &MockServer) -> RpcAlloyProvider {
     RpcAlloyProvider::builder()
         .http(server.uri())
         .unwrap()
         .build()
-        .await
         .unwrap()
 }
 

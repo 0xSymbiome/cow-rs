@@ -6,7 +6,7 @@ license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 
-description = "Alloy-backed local-keystore Signer adapter for the CoW Protocol Rust SDK"
+description = "Alloy-backed local private-key Signer adapter for the CoW Protocol Rust SDK"
 readme = "README.md"
 documentation = "https://docs.rs/cow-sdk-alloy-signer"
 homepage = "https://github.com/cowdao-grants/cow-rs"

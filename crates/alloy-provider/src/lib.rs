@@ -12,8 +12,7 @@
 //! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 //! let provider = RpcAlloyProvider::builder()
 //!     .http("https://example.invalid/rpc")?
-//!     .build()
-//!     .await?;
+//!     .build()?;
 //! # let _ = provider;
 //! # Ok(())
 //! # }

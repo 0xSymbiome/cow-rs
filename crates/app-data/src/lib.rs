@@ -60,5 +60,5 @@ pub use schema::{extract_schema_version, generate_app_data_doc, validate_app_dat
 pub use types::{
     AppDataDoc, AppDataInfo, AppDataParams, DEFAULT_APP_CODE, DEFAULT_IPFS_READ_URI, IpfsConfig,
     LATEST_APP_DATA_VERSION, LATEST_SCHEMA_VERSION, MetadataMap, PartnerFee, PartnerFeePolicy,
-    SchemaVersion, ValidationResult,
+    SchemaVersion,
 };

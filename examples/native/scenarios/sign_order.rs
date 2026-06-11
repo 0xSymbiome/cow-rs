@@ -17,7 +17,7 @@ use cow_sdk::signing::{
 
 use cow_sdk::testing::MockSigner;
 use cow_sdk_examples_native::support::{
-    sample_order_uid, sample_owner, sample_unsigned_order, text_preview,
+    OWNER, sample_order_uid, sample_unsigned_order, text_preview,
 };
 
 #[tokio::main]
@@ -32,7 +32,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Derive the typed data and the order id without signing — both are pure
     // functions of the order, chain, and owner.
     let typed_order = order_typed_data(chain_id, &order, None)?;
-    let generated = generate_order_id(chain_id, &order, &sample_owner(), None)?;
+    let generated = generate_order_id(chain_id, &order, &OWNER, None)?;
 
     // Sign an order cancellation: a separate signed message keyed by the order uid.
     let cancellation =
@@ -42,20 +42,20 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let eip1271_payload = eip1271_signature_payload(&order, &signed_order.signature)?;
 
     let report = json!({
-        "surface": "cow-sdk::signing",
+        "surface": "cow_sdk::signing",
         "mode": "deterministic",
         "order": {
             "primaryType": typed_order.primary_type,
             "digest": generated.order_digest,
             "orderId": generated.order_id.to_hex_string(),
             "signature": signed_order.signature,
-            "scheme": format!("{:?}", signed_order.signing_scheme),
+            "scheme": signed_order.signing_scheme,
             "eip1271PayloadPrefix": text_preview(&eip1271_payload, 18)
         },
         "cancellation": {
             "orderUid": sample_order_uid().to_hex_string(),
             "signature": cancellation.signature,
-            "scheme": format!("{:?}", cancellation.signing_scheme)
+            "scheme": cancellation.signing_scheme
         }
     });
 

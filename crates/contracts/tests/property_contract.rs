@@ -27,8 +27,8 @@ use cow_sdk_contracts::{
     pack_order_uid_params,
 };
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, AppDataHex, BuyTokenDestination, OrderData, OrderDigest,
-    OrderKind, SellTokenSource, TypedDataDomain,
+    Address, Amount, AppDataHash, BuyTokenDestination, OrderData, OrderDigest, OrderKind,
+    SellTokenSource, TypedDataDomain,
 };
 use proptest::prelude::*;
 use proptest::test_runner::{FileFailurePersistence, TestRunner};
@@ -85,8 +85,8 @@ fn order_digest_strategy() -> impl Strategy<Value = OrderDigest> {
     })
 }
 
-/// Strategy that emits an [`AppDataHex`] payload.
-fn app_data_strategy() -> impl Strategy<Value = AppDataHex> {
+/// Strategy that emits an [`AppDataHash`] payload.
+fn app_data_strategy() -> impl Strategy<Value = AppDataHash> {
     cow_sdk_test_utils::arb::arb_app_data_hex()
 }
 

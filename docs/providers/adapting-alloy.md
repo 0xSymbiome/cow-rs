@@ -78,8 +78,7 @@ use cow_sdk_alloy_provider::RpcAlloyProvider;
 # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 let provider = RpcAlloyProvider::builder()
     .http("https://example.invalid/rpc")?
-    .build()
-    .await?;
+    .build()?;
 # let _ = provider;
 # Ok(())
 # }
@@ -89,11 +88,11 @@ Use the signer leaf when a flow needs local message or typed-data signing but
 does not need provider-backed transaction submission:
 
 ```rust,no_run
-use cow_sdk_alloy_signer::LocalAlloyKeystoreSigner;
+use cow_sdk_alloy_signer::LocalAlloySigner;
 use cow_sdk_core::SupportedChainId;
 
 # fn example() -> Result<(), Box<dyn std::error::Error>> {
-let signer = LocalAlloyKeystoreSigner::builder()
+let signer = LocalAlloySigner::builder()
     .private_key("0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d")?
     .chain_id(SupportedChainId::Sepolia)
     .build()?;
@@ -123,8 +122,7 @@ use cow_sdk_alloy_provider::{RetryConfig, RpcAlloyProvider};
 let provider = RpcAlloyProvider::builder()
     .http("https://example.invalid/rpc")?
     .with_retry(RetryConfig::default())
-    .build()
-    .await?;
+    .build()?;
 # let _ = provider;
 # Ok(())
 # }

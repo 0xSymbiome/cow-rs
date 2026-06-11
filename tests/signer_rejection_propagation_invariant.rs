@@ -39,15 +39,6 @@ impl TypedDataSigner for RejectingSigner {
     ) -> Result<String, Self::Error> {
         Err(self.error.clone())
     }
-
-    async fn sign_typed_data(
-        &self,
-        _domain: &cow_sdk_core::TypedDataDomain,
-        _fields: &[cow_sdk_core::TypedDataField],
-        _value_json: &str,
-    ) -> Result<String, Self::Error> {
-        Err(self.error.clone())
-    }
 }
 
 fn sample_order() -> OrderData {

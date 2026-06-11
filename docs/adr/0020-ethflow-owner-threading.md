@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-22
-- Last reviewed: 2026-05-30
+- Last reviewed: 2026-06-11
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: trading, eth-flow, validation, client-side, defense-in-depth
 - Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md), [ADR 0015](0015-client-side-order-bounds-validator.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
@@ -172,3 +172,10 @@ single async entry points bounded on `cow_sdk_core::Signer`.
 The previous sync-bounded `eth_flow_transaction` companion is
 removed. The `EthFlowTransaction` bundle shape and the
 owner-threading invariant are unchanged.
+
+## Amendment 2026-06-11: the bundle carries a `PreparedTransaction`
+
+The `EthFlowTransaction.transaction` field is the fully-populated
+`cow_sdk_trading::PreparedTransaction { to, data, value, gas_limit }`
+(convertible into a `TransactionRequest` via `From`); the owner-threading
+invariant and the `from` field are unchanged.

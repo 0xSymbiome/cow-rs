@@ -1,7 +1,7 @@
 use alloy_primitives::Bytes;
 use serde::{Deserialize, Serialize};
 
-use cow_sdk_core::{Address, Amount};
+use cow_sdk_core::{Address, Amount, HexData, TransactionRequest};
 
 /// Fully normalized settlement interaction.
 ///
@@ -64,6 +64,22 @@ impl InteractionLike {
     }
 }
 
+/// Lifts a settlement interaction into a broadcastable transaction request.
+///
+/// The interaction's `target`, `value`, and `call_data` map onto the
+/// request's `to`, `value`, and `data` fields. The gas limit is left unset so
+/// the submitting provider's estimation path supplies it.
+impl From<Interaction> for TransactionRequest {
+    fn from(interaction: Interaction) -> Self {
+        Self::new(
+            Some(interaction.target),
+            Some(HexData::from_bytes(interaction.call_data)),
+            Some(interaction.value),
+            None,
+        )
+    }
+}
+
 /// Normalizes an interaction by filling default value and calldata fields.
 #[must_use]
 pub fn normalize_interaction(interaction: &InteractionLike) -> Interaction {
@@ -78,4 +94,23 @@ pub fn normalize_interaction(interaction: &InteractionLike) -> Interaction {
 #[must_use]
 pub fn normalize_interactions(interactions: &[InteractionLike]) -> Vec<Interaction> {
     interactions.iter().map(normalize_interaction).collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn transaction_request_from_interaction_maps_target_value_and_calldata() {
+        let target = Address::from_bytes([0x11; 20]);
+        let value = Amount::from(7u32);
+        let call_data = Bytes::from_static(&[0xde, 0xad, 0xbe, 0xef]);
+
+        let request = TransactionRequest::from(Interaction::new(target, value, call_data.clone()));
+
+        assert_eq!(request.to, Some(target));
+        assert_eq!(request.data, Some(HexData::from_bytes(call_data)));
+        assert_eq!(request.value, Some(value));
+        assert_eq!(request.gas_limit, None);
+    }
 }

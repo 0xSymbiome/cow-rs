@@ -21,7 +21,7 @@
 mod common;
 
 use alloy_primitives::U256;
-use cow_sdk_core::{Amount, CowEnv, EVM_NATIVE_CURRENCY_ADDRESS, OrderKind, SupportedChainId};
+use cow_sdk_core::{Amount, CowEnv, NATIVE_CURRENCY_ADDRESS, OrderKind, SupportedChainId};
 use cow_sdk_orderbook::{OrderQuoteResponse, PriceQuality, QuoteValidity};
 use cow_sdk_trading::{
     LimitTradeParamsFromQuote, MAX_SLIPPAGE_BPS, PartnerFee, PartnerFeePolicy,
@@ -256,7 +256,7 @@ proptest! {
             let mut params = sample_limit_parameters(OrderKind::Sell);
             let quote_id = i64::from(quote_id_seed);
 
-            params.sell_token = address(EVM_NATIVE_CURRENCY_ADDRESS);
+            params.sell_token = NATIVE_CURRENCY_ADDRESS;
             params.sell_amount =
                 Amount::new(sell_amount.clone()).expect("generated sell amount must remain valid");
             params.buy_amount =
@@ -269,19 +269,13 @@ proptest! {
             let transaction = eth_flow_transaction(
                 &app_data_hash(),
                 &from_quote,
-                SupportedChainId::Sepolia,
                 &PostTradeAdditionalParams::new().with_apply_costs_slippage_and_fees(false),
                 &trader,
                 &signer,
             )
             .await
             .expect("ethflow helper should encode deterministic uint256 values");
-            let data = transaction
-                .transaction
-                .data
-                .as_ref()
-                .expect("ethflow transaction must include calldata");
-            let hex = data.to_hex_string();
+            let hex = transaction.transaction.data.to_hex_string();
 
             prop_assert_eq!(
                 transaction.order_to_sign.sell_amount.to_string(),

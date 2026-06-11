@@ -17,7 +17,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Construct a ready-state trading client — the minimal facade entry point.
     let trading = TradingBuilder::ready(
-        TraderParams::new(chain_id, app_code).expect("app code should validate"),
+        TraderParams::new(chain_id, app_code)?,
         TradingOptions::default(),
     )?;
 
@@ -25,7 +25,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let wrapped_native = wrapped_native_token(chain_id);
 
     let report = json!({
-        "surface": "cow-sdk",
+        "surface": "cow_sdk",
         "mode": "deterministic",
         "sdkConstructed": trading.chain_id() == Some(chain_id),
         "chainId": u64::from(chain_id),

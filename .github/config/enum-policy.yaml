@@ -105,7 +105,7 @@ enums:
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: Hidden inter-crate RPC classification can grow as adapter transport mappings expand.
-  - name: LocalAlloyKeystoreSignerBuilderError
+  - name: LocalAlloySignerBuilderError
     file: crates/alloy-signer/src/builder.rs
     category: sdk-local-state
     expected_marker: non_exhaustive

@@ -15,14 +15,12 @@ use serde_json::json;
 
 use cow_sdk::core::SupportedChainId;
 use cow_sdk::trading::{
-    SlippageSuggester, SlippageToleranceRequest, SlippageToleranceResponse,
-    TradeAdvancedSettings, Trading, TradingError,
+    SlippageSuggester, SlippageToleranceRequest, SlippageToleranceResponse, TradeAdvancedSettings,
+    Trading, TradingError,
 };
 
 use cow_sdk::testing::{MockOrderbook, MockSigner};
-use cow_sdk_examples_native::support::{
-    sample_owner, sample_quote_response, sample_trade_parameters,
-};
+use cow_sdk_examples_native::support::{OWNER, sample_quote_response, sample_trade_parameters};
 
 /// A consumer slippage policy that always suggests a fixed tolerance.
 struct StaticSlippageProvider {
@@ -45,7 +43,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let orderbook = MockOrderbook::builder(SupportedChainId::Sepolia)
         .quote(sample_quote_response())
         .build();
-    let signer = MockSigner::builder().address(sample_owner()).build();
+    let signer = MockSigner::builder().address(OWNER).build();
     let trading = Trading::builder()
         .chain_id(SupportedChainId::Sepolia)
         .app_code("cow-rs-native-examples")
@@ -65,7 +63,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .await?;
 
     let report = json!({
-        "surface": "cow-sdk::trading::SlippageSuggester",
+        "surface": "cow_sdk::trading::SlippageSuggester",
         "mode": "simulated-transport",
         "providerSuggestionBps": 200,
         "defaultSuggestedSlippageBps": baseline.suggested_slippage_bps,

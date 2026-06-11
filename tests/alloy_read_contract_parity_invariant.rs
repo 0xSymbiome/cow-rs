@@ -54,7 +54,6 @@ async fn assert_fixture_matches(fixture: Fixture<'_>) {
         .http(server.uri())
         .expect("provider transport")
         .build()
-        .await
         .expect("provider build");
     let client = AlloyClient::builder()
         .http(server.uri())

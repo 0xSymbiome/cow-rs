@@ -122,7 +122,7 @@ provider error type.
 The crate depends on Alloy runtime provider crates and direct `reqwest` with
 rustls TLS. It does not declare direct `alloy-signer` or
 `alloy-signer-local` dependencies, and tests assert the resolved provider graph
-does not include the local keystore signer crate.
+does not include the local private-key signer crate.
 
 ## Evidence
 

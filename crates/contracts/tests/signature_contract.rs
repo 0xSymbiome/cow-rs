@@ -117,11 +117,9 @@ impl Signer for DummySigner {
         Err(AsyncMockProviderError("not used".to_owned()))
     }
 
-    async fn sign_typed_data(
+    async fn sign_typed_data_payload(
         &self,
-        _domain: &cow_sdk_core::TypedDataDomain,
-        _fields: &[cow_sdk_core::TypedDataField],
-        _value_json: &str,
+        _payload: &cow_sdk_core::TypedDataPayload,
     ) -> Result<String, Self::Error> {
         Err(AsyncMockProviderError("not used".to_owned()))
     }

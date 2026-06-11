@@ -2,6 +2,8 @@
 
 use std::time::Duration;
 
+use crate::{address, types::Address};
+
 pub use self::{chains::*, env::*, hosts::*, http::*, protocol::*};
 
 mod chains;
@@ -10,13 +12,14 @@ mod hosts;
 mod http;
 mod protocol;
 
-/// Sentinel address used by `CoW` Protocol to represent the native chain asset.
+/// The EIP-7528 native-asset sentinel (`0xeeee…eeee`): the address `CoW`
+/// Protocol uses to represent the chain's native currency, e.g. as the sell
+/// token for native-currency (`EthFlow`) sells.
 ///
-/// Stored in the canonical lowercase 0x-prefixed wire form per PROP-WB-004 so it
-/// compares byte-identically against any [`Address`](crate::Address) constructed
-/// from the same logical value; alloy address checksum casing is parsed and
-/// normalized by the cow newtype at construction.
-pub const EVM_NATIVE_CURRENCY_ADDRESS: &str = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+/// Typed as [`Address`], so call sites compare and assign it directly; the
+/// canonical lowercase wire form per PROP-WB-004 is available through
+/// [`Address::to_hex_string`].
+pub const NATIVE_CURRENCY_ADDRESS: Address = address!("0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
 /// Default timeout applied to HTTP-backed SDK clients.
 pub const DEFAULT_HTTP_TIMEOUT: Duration = Duration::from_secs(10);
 /// Default maximum number of bytes the HTTP transport buffers from a single

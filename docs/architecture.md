@@ -213,7 +213,7 @@ RPC, `cow-sdk-alloy-signer` for local private-key signing, and `cow-sdk-alloy`
 for the composed read, log-fetch, and sign flow that most trading applications
 need. The composed client implements `LogProvider` over the same provider it
 already holds, so a consumer fetches event logs without a second provider. The
-split keeps the provider leaf free of the local-keystore signer
+split keeps the provider leaf free of the local private-key signer
 (`alloy-signer-local`) and the order-signing surface (`alloy-sol-types`,
 `cow-sdk-contracts`) — the read path links no private-key signing machinery,
 though it shares alloy's k256 recovery primitive — and lets the signer leaf

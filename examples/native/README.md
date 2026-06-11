@@ -38,7 +38,7 @@ After that, branch by goal through the full scenario table below.
 | `quote` | Build a quote flow without submission |
 | `slippage_suggester` | Quote with a consumer-supplied `SlippageSuggester` |
 | `cancel_in_flight` | Cancel an in-flight quote with `Cancellable::cancel_with(&token)` |
-| `limit_order` | Build and simulate signed limit-order submission |
+| `limit_order` | Build and simulate signed limit-order submission, plus the signer-less pre-sign variant (`post_limit_order_presign`) |
 | `eip1271_signer` | Post a limit order signed by a custom `Eip1271Signer` (smart account) |
 | `order_lifecycle` | Inspect order lookup and off-chain cancellation |
 | `receipt_lifecycle` | Drive `submit_and_wait_for_receipt` through the testing doubles for mined, reverted, and timeout outcomes |
@@ -57,7 +57,7 @@ After that, branch by goal through the full scenario table below.
 | `alloy_provider` | Use the read-only Alloy provider leaf against a mock RPC |
 | `alloy_signer` | Sign a real CoW order typed-data payload with the Alloy signer leaf |
 | `transaction_lifecycle` | Compare helper-based receipt waiting with broadcast-only submission through the composed Alloy signer |
-| `alloy_custom_traits` | Compose an Alloy leaf with a consumer-supplied trait impl in both directions (SDK provider + your signer, SDK signer + your provider) |
+| `alloy_custom_traits` | Compose an Alloy leaf with a consumer-supplied trait impl in both directions, proving the mixed pair through `submit_and_wait_for_receipt` |
 | `alloy_trading_full_flow` | Invoke allowance, approval receipt waiting, native-currency wrapping (`wrap_interaction`), and pre-sign Trading async boundaries through `Client` |
 
 Subgraph scenarios reach the subgraph surface through the `cow-sdk` `subgraph`

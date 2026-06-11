@@ -1,7 +1,7 @@
 # Trading App-Data Merge Audit
 
 Status: Current
-Last reviewed: 2026-06-10
+Last reviewed: 2026-06-11
 Owning surface: `cow-sdk-trading` quote-to-post app-data edit path,
 including the public `merge_and_seal_app_data` and
 `params_from_doc` helpers, the private typed merge with its
@@ -49,7 +49,7 @@ This audit covers:
   `TradingAppDataInfo`
 - the submission-seam derivation of `app_data_signer` consumed by
   `OrderBoundsValidator::validate` on the quote-to-post path at
-  `crates/trading/src/post/generic.rs`
+  `crates/trading/src/post.rs`
 
 It does not cover the direct-build app-data path used by
 `cow_sdk_trading::build_app_data`, the IPFS read and write
@@ -66,7 +66,7 @@ validator audit).
 | Hooks replacement | When the override's metadata contains `"hooks"`, the base's `metadata.hooks` is dropped before recursive metadata merge so the override hook set fully replaces the base | Conforms |
 | User-consents replacement | Override-supplied `metadata.userConsents` arrays replace the base array through the object-aware fall-through in the typed merge | Conforms |
 | Partner-fee metadata | `PartnerFee` metadata supplied through advanced app-data settings survives the merge into the posted app-data document | Conforms |
-| Signer derivation | The submission-seam `app_data_signer` reads `merged_params.signer.clone()` from the typed merged value; no override-only read remains on the quote-to-post path | Conforms |
+| Signer derivation | The submission-seam `app_data_signer` reads `merged_params.signer` from the typed merged value; no override-only read remains on the quote-to-post path | Conforms |
 | Round-trip idempotency | `params_from_doc(generate_app_data_doc(p))` equals `p` for every `AppDataParams` value constructed through the public surface | Conforms |
 | Runtime-neutral validation | `cow_sdk_app_data::validate_app_data_doc` validates the same `AppDataDoc` wire shape used by browser-facing bindings, so the WASM boundary does not introduce a trading merge rewrite | Conforms |
 
@@ -132,7 +132,7 @@ drop the partner-fee policy while preserving the surrounding order.
 ### Signer Derivation
 
 The quote-to-post submission seam reads
-`app_data_signer = merged_params.signer.clone()` from the typed
+`app_data_signer = merged_params.signer` from the typed
 merged value returned by `merge_and_seal_app_data`. No read on
 `advanced_settings.app_data.signer` remains on the path. When
 the override is absent, the submission seam re-parses the base
@@ -159,7 +159,7 @@ introducing another merge or rewrite step on the quote-to-post path.
 Primary implementation points:
 
 - `crates/trading/src/app_data.rs`
-- `crates/trading/src/post/generic.rs`
+- `crates/trading/src/post.rs`
 - `crates/trading/src/lib.rs`
 - `crates/app-data/src/types/partner_fee.rs`
 - `crates/app-data/src/schema.rs`

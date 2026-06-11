@@ -17,14 +17,61 @@ use crate::{
     calculate_unique_order_id, order_to_sign,
 };
 
+/// Fully populated transaction produced by the on-chain helper flows.
+///
+/// Unlike [`TransactionRequest`] — the optional-field wire shape accepted by
+/// [`Signer`] backends — every field here is unconditionally set by the
+/// producing helper, so consumers read `to`, `data`, `value`, and `gas_limit`
+/// directly instead of unwrapping SDK output. Convert with `.into()` when
+/// handing the transaction to a submission seam such as
+/// [`Signer::send_transaction`] or
+/// [`submit_and_wait_for_receipt`](crate::submit_and_wait_for_receipt).
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub struct PreparedTransaction {
+    /// Destination contract address.
+    pub to: Address,
+    /// Hex-encoded calldata payload.
+    pub data: HexData,
+    /// Native token value to transfer.
+    pub value: Amount,
+    /// Gas limit, either margin-adjusted from an estimate or the documented
+    /// default fallback.
+    pub gas_limit: Amount,
+}
+
+impl PreparedTransaction {
+    /// Creates a prepared transaction from its component fields.
+    #[must_use]
+    pub const fn new(to: Address, data: HexData, value: Amount, gas_limit: Amount) -> Self {
+        Self {
+            to,
+            data,
+            value,
+            gas_limit,
+        }
+    }
+}
+
+impl From<PreparedTransaction> for TransactionRequest {
+    fn from(prepared: PreparedTransaction) -> Self {
+        Self::new(
+            Some(prepared.to),
+            Some(prepared.data),
+            Some(prepared.value),
+            Some(prepared.gas_limit),
+        )
+    }
+}
+
 /// `EthFlow` transaction bundle returned by native-sell helper flows.
 #[derive(Debug, Clone)]
 #[non_exhaustive]
 pub struct EthFlowTransaction {
     /// Final unique order id.
     pub order_id: cow_sdk_core::OrderUid,
-    /// Transaction request to submit.
-    pub transaction: TransactionRequest,
+    /// Prepared transaction to submit.
+    pub transaction: PreparedTransaction,
     /// Unsigned order payload used to derive `order_id` and the transaction body.
     pub order_to_sign: cow_sdk_core::OrderData,
     /// Signer-derived owner resolved at transaction construction via
@@ -46,7 +93,7 @@ impl EthFlowTransaction {
     #[must_use]
     pub const fn new(
         order_id: cow_sdk_core::OrderUid,
-        transaction: TransactionRequest,
+        transaction: PreparedTransaction,
         order_to_sign: cow_sdk_core::OrderData,
         from: cow_sdk_core::Address,
     ) -> Self {
@@ -61,8 +108,10 @@ impl EthFlowTransaction {
 
 /// Builds a pre-sign transaction.
 ///
-/// When gas estimation fails, the helper falls back to the documented default
-/// gas limit instead of failing closed.
+/// The returned [`PreparedTransaction`] targets the settlement contract with
+/// a `setPreSignature` calldata payload and zero native value. When gas
+/// estimation fails, the helper falls back to the documented default gas
+/// limit instead of failing closed.
 ///
 /// ## Gas overhead
 ///
@@ -77,35 +126,51 @@ pub async fn pre_sign_transaction<S>(
     chain_id: SupportedChainId,
     order_uid: &cow_sdk_core::OrderUid,
     options: Option<&ProtocolOptions>,
-) -> Result<TransactionRequest, TradingError>
+) -> Result<PreparedTransaction, TradingError>
 where
     S: Signer,
     S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
     let settlement = resolve_settlement_address(chain_id, options);
-    let mut tx = TransactionRequest::new(
-        Some(settlement),
-        Some(HexData::new(encode_set_pre_signature(order_uid, true))?),
-        Some(Amount::ZERO),
-        None,
-    );
-    let gas = signer
-        .estimate_gas(&tx)
-        .await
-        .map_err(|error| TradingError::Signer {
-            operation: "estimate_gas",
-            message: error.to_string().into(),
-        });
-    let gas_limit = match gas {
-        Ok(value) => gas_with_margin(&value)?,
-        Err(_) => default_gas_limit(),
-    };
+    let data = HexData::new(encode_set_pre_signature(order_uid, true))?;
+    let gas_limit = gas_limit_with_margin_or_default(
+        signer,
+        &TransactionRequest::new(
+            Some(settlement),
+            Some(data.clone()),
+            Some(Amount::ZERO),
+            None,
+        ),
+    )
+    .await?;
 
-    tx.gas_limit = Some(gas_limit);
-    Ok(tx)
+    Ok(PreparedTransaction::new(
+        settlement,
+        data,
+        Amount::ZERO,
+        gas_limit,
+    ))
+}
+
+/// Estimates gas for `request` and applies the documented 20% floor-division
+/// margin, falling back to the crate default gas limit when estimation fails.
+async fn gas_limit_with_margin_or_default<S>(
+    signer: &S,
+    request: &TransactionRequest,
+) -> Result<Amount, TradingError>
+where
+    S: Signer,
+{
+    signer.estimate_gas(request).await.map_or_else(
+        |_| Ok(default_gas_limit()),
+        |estimate| gas_with_margin(&estimate),
+    )
 }
 
 /// Builds an `EthFlow` order-creation transaction.
+///
+/// Chain authority comes from [`TraderParams::chain_id`]; the trader value is
+/// the single source of truth for chain resolution in this helper.
 ///
 /// `EthFlow` order ids are generated against the wrapped-native sell token and
 /// `MAX_VALID_TO_EPOCH`, then retried by decrementing buy amount until the
@@ -123,7 +188,6 @@ where
 pub async fn eth_flow_transaction<S>(
     app_data_keccak256: &cow_sdk_core::AppDataHash,
     params: &crate::LimitTradeParamsFromQuote,
-    chain_id: SupportedChainId,
     additional_params: &crate::types::PostTradeAdditionalParams,
     trader: &TraderParams,
     signer: &S,
@@ -132,6 +196,7 @@ where
     S: Signer,
     S::Error: std::fmt::Display + cow_sdk_core::SignerError,
 {
+    let chain_id = trader.chain_id;
     let from = signer
         .address()
         .await
@@ -185,32 +250,19 @@ where
         Some(&options),
     )
     .await?;
-    let mut tx = TransactionRequest::new(
-        Some(resolve_eth_flow_address(chain_id, Some(&options))),
-        Some(HexData::new(encode_ethflow_create_order(
-            &order_to_sign,
-            quote_id,
-        )?)?),
-        Some(order_to_sign.sell_amount),
-        None,
-    );
-    let gas = signer
-        .estimate_gas(&tx)
-        .await
-        .map_err(|error| TradingError::Signer {
-            operation: "estimate_gas",
-            message: error.to_string().into(),
-        });
-    let gas_limit = match gas {
-        Ok(value) => gas_with_margin(&value)?,
-        Err(_) => default_gas_limit(),
-    };
+    let to = resolve_eth_flow_address(chain_id, Some(&options));
+    let data = HexData::new(encode_ethflow_create_order(&order_to_sign, quote_id)?)?;
+    let value = order_to_sign.sell_amount;
+    let gas_limit = gas_limit_with_margin_or_default(
+        signer,
+        &TransactionRequest::new(Some(to), Some(data.clone()), Some(value), None),
+    )
+    .await?;
 
-    tx.gas_limit = Some(gas_limit);
     Ok(EthFlowTransaction {
         order_id: generated.order_id,
         order_to_sign,
-        transaction: tx,
+        transaction: PreparedTransaction::new(to, data, value, gas_limit),
         from: owner,
     })
 }

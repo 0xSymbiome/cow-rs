@@ -4,33 +4,38 @@
 //! `Provider` and `Signer` seams accept any async implementation, so a consumer
 //! can keep one half from the SDK and supply the other — for example an
 //! HSM-backed signer in front of the SDK provider, or a bespoke RPC provider
-//! behind the SDK signer.
+//! behind the SDK signer. The mixed pair is proven end-to-end by driving it
+//! through `cow_sdk::trading::submit_and_wait_for_receipt` against a wiremock
+//! JSON-RPC server: the consumer signer broadcasts, the SDK provider polls the
+//! mined receipt.
 
 use std::{convert::Infallible, error::Error};
 
 use cow_sdk::alloy_provider::RpcAlloyProvider;
-use cow_sdk::alloy_signer::LocalAlloyKeystoreSigner;
+use cow_sdk::alloy_signer::LocalAlloySigner;
 use cow_sdk::core::{
     Address, Amount, BlockHash, BlockInfo, ChainId, ContractCall, ContractHandle, HexData,
     Provider, Signer, SupportedChainId, TransactionBroadcast, TransactionHash, TransactionReceipt,
-    TransactionRequest, TransactionStatus, TypedDataDomain, TypedDataField,
+    TransactionRequest, TransactionStatus, TypedDataPayload, address,
 };
+use cow_sdk::trading::{WaitOptions, submit_and_wait_for_receipt};
+use cow_sdk_examples_native::support::{TEST_KEY, TX_HASH, mount_rpc};
 use serde_json::json;
-use wiremock::{Mock, MockServer, ResponseTemplate, matchers::method};
+use wiremock::MockServer;
 
-const ADDRESS: &str = "0x1111111111111111111111111111111111111111";
-const HASH: &str = "0x13579bdf2468ace013579bdf2468ace013579bdf2468ace013579bdf2468ace0";
-const TEST_KEY: &str = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
+const ADDRESS: Address = address!("0x1111111111111111111111111111111111111111");
 
 /// A consumer-supplied signer behind the public `Signer` trait — stand-in for
 /// an HSM, remote KMS, or hardware wallet exposing the same async interface.
+/// Its broadcast acknowledgement carries the canned RPC fixture hash, the way
+/// a real backend returns the hash of the transaction it just submitted.
 struct StaticSigner;
 
 impl Signer for StaticSigner {
     type Error = Infallible;
 
     async fn address(&self) -> Result<Address, Self::Error> {
-        Ok(Address::new(ADDRESS).unwrap())
+        Ok(ADDRESS)
     }
 
     async fn sign_message(&self, _message: &[u8]) -> Result<String, Self::Error> {
@@ -41,11 +46,9 @@ impl Signer for StaticSigner {
         Ok("0x01".to_owned())
     }
 
-    async fn sign_typed_data(
+    async fn sign_typed_data_payload(
         &self,
-        _domain: &TypedDataDomain,
-        _fields: &[TypedDataField],
-        _value_json: &str,
+        _payload: &TypedDataPayload,
     ) -> Result<String, Self::Error> {
         Ok(format!("0x{}1b", "22".repeat(64)))
     }
@@ -55,7 +58,7 @@ impl Signer for StaticSigner {
         _tx: &TransactionRequest,
     ) -> Result<TransactionBroadcast, Self::Error> {
         Ok(TransactionBroadcast::new(
-            TransactionHash::new(format!("0x{}", "33".repeat(32))).unwrap(),
+            TransactionHash::new(TX_HASH).expect("example transaction hash must remain valid"),
         ))
     }
 
@@ -87,10 +90,10 @@ impl Provider for StaticProvider {
             *transaction_hash,
             Some(TransactionStatus::Success),
             Some(1234),
-            Some(BlockHash::new(HASH).unwrap()),
+            Some(BlockHash::new(TX_HASH).unwrap()),
             Some(Amount::from(21_000u64)),
-            Some(Address::new(ADDRESS).unwrap()),
-            Some(Address::new(ADDRESS).unwrap()),
+            Some(ADDRESS),
+            Some(ADDRESS),
         )))
     }
 
@@ -126,51 +129,54 @@ impl Provider for StaticProvider {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     // Direction 1: SDK provider leaf (`RpcAlloyProvider`) + consumer `Signer`.
+    // `mount_rpc` serves the JSON-RPC fixtures (chain id, mined receipt) the
+    // provider leaf reads over real HTTP.
     let server = MockServer::start().await;
-    Mock::given(method("POST"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
-            "jsonrpc": "2.0",
-            "id": 1,
-            "result": "0x1",
-        })))
-        .mount(&server)
-        .await;
-    let sdk_provider = RpcAlloyProvider::builder()
-        .http(server.uri())?
-        .build()
-        .await?;
+    mount_rpc(&server).await;
+    let sdk_provider = RpcAlloyProvider::builder().http(server.uri())?.build()?;
     let consumer_signer = StaticSigner;
 
-    // Direction 2: SDK signer leaf (`LocalAlloyKeystoreSigner`) + consumer `Provider`.
-    let sdk_signer = LocalAlloyKeystoreSigner::builder()
+    // The mixed pair driven through one real SDK seam: the consumer signer
+    // broadcasts (an HSM would do this out of process), then the SDK provider
+    // polls the wiremock RPC until the mined receipt arrives.
+    let tx = TransactionRequest::new(
+        Some(ADDRESS),
+        None,
+        Some(Amount::ZERO),
+        Some(Amount::from(21_000u32)),
+    );
+    let receipt = submit_and_wait_for_receipt(
+        &consumer_signer,
+        &sdk_provider,
+        &tx,
+        WaitOptions::approve_default(),
+    )
+    .await?;
+
+    // Direction 2: SDK signer leaf (`LocalAlloySigner`) + consumer `Provider`.
+    let sdk_signer = LocalAlloySigner::builder()
         .private_key(TEST_KEY)?
         .chain_id(SupportedChainId::Mainnet)
         .build()?;
     let consumer_provider = StaticProvider;
 
-    let address = Address::new(ADDRESS)?;
-    let code = consumer_provider.get_code(&address).await?;
-    let receipt = consumer_provider
-        .get_transaction_receipt(&TransactionHash::new(HASH)?)
-        .await?
-        .expect("static provider returns a receipt");
+    let code = consumer_provider.get_code(&ADDRESS).await?;
 
     let report = json!({
-        "surface": "cow-sdk::core::{Provider, Signer} seams accept consumer trait impls",
+        "surface": "cow_sdk::core::{Provider, Signer} + cow_sdk::trading::submit_and_wait_for_receipt",
         "sdkProviderWithConsumerSigner": {
             "chainId": sdk_provider.get_chain_id().await?,
             "signer": consumer_signer.address().await?.to_hex_string(),
-            "messageSignatureBytes": (consumer_signer.sign_message(b"hello").await?.len() - 2) / 2
+            "submitAndWaitReceipt": {
+                "transactionHash": receipt.transaction_hash.to_hex_string(),
+                "status": receipt.status,
+                "blockNumber": receipt.block_number
+            }
         },
         "sdkSignerWithConsumerProvider": {
             "chainId": consumer_provider.get_chain_id().await?,
             "signer": sdk_signer.address().await?.to_hex_string(),
-            "code": code.map(|data| data.to_hex_string()),
-            "receipt": {
-                "status": receipt.status.map(|status| format!("{status:?}")),
-                "blockNumber": receipt.block_number,
-                "gasUsed": receipt.gas_used.map(|gas| gas.to_string())
-            }
+            "code": code.map(|data| data.to_hex_string())
         }
     });
     println!("{}", serde_json::to_string_pretty(&report)?);

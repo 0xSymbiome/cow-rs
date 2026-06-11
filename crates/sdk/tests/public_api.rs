@@ -1,5 +1,5 @@
 use cow_sdk::core::{
-    Address, Amount, AppDataHex, BuyTokenDestination, OrderData, OrderKind, SellTokenSource,
+    Address, Amount, AppDataHash, BuyTokenDestination, OrderData, OrderKind, SellTokenSource,
     SupportedChainId,
 };
 use cow_sdk::signing::{ORDER_PRIMARY_TYPE, generate_order_id, order_typed_data};
@@ -30,7 +30,7 @@ fn module_paths_cover_primary_workflow_surface() {
         Amount::new("100000000000000000").unwrap(),
         Amount::new("250000000000000000").unwrap(),
         1_700_000_000,
-        AppDataHex::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+        AppDataHash::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
             .unwrap(),
         Amount::ZERO,
         OrderKind::Sell,
@@ -106,7 +106,7 @@ fn module_reexports_cover_expected_leaf_crates() {
     )
     .expect("default facade ready trading sdk construction should succeed");
 
-    assert!(validation.success);
+    assert!(validation.is_ok());
     assert_eq!(
         latest_version.as_str(),
         cow_sdk::app_data::LATEST_APP_DATA_VERSION

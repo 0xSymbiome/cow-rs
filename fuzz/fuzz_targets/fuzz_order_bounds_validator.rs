@@ -16,7 +16,7 @@
 //! amounts, time, and path flags.
 
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, BuyTokenDestination, EVM_NATIVE_CURRENCY_ADDRESS, OrderKind,
+    Address, Amount, AppDataHash, BuyTokenDestination, NATIVE_CURRENCY_ADDRESS, OrderKind,
     SellTokenSource, OrderData, ValidationReason,
 };
 use cow_sdk_trading::{
@@ -264,8 +264,7 @@ fn zero_address() -> Address {
 }
 
 fn native_sentinel() -> Address {
-    Address::new(EVM_NATIVE_CURRENCY_ADDRESS)
-        .expect("native sentinel literal must remain a valid address")
+    NATIVE_CURRENCY_ADDRESS
 }
 
 fn weth_address() -> Address {

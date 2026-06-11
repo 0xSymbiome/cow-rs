@@ -9,18 +9,24 @@ use std::sync::{Arc, Mutex};
 use serde_json::{Value, json};
 
 use cow_sdk::core::{
-    Address, Amount, AppDataHex, BuyTokenDestination, CowEnv, OrderData, OrderKind, OrderUid,
-    SellTokenSource, SupportedChainId,
+    Address, Amount, BuyTokenDestination, OrderData, OrderKind, OrderUid, SellTokenSource,
+    SupportedChainId, address,
 };
 use cow_sdk::orderbook::{AppDataHash, Order, OrderQuoteResponse};
-use cow_sdk::trading::{LimitTradeParams, TradeParams, TraderParams};
+use cow_sdk::trading::{
+    LimitTradeParams, TradeParams, TraderParams, swap_params_to_limit_order_params,
+};
 use wiremock::{Mock, MockServer, ResponseTemplate, matchers::method};
 
-pub const WETH: &str = "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14";
-pub const COW: &str = "0x0625aFB445C3B6B7B929342a04A22599fd5dBB59";
-pub const OWNER: &str = "0xc8c753Ee51E8Fc80e199AB297fB575634a1aC1d3";
-pub const ALT_RECEIVER: &str = "0x974cAa59E49682CdA0aD2BbE82983419A2ECC400";
-pub const SETTLEMENT: &str = "0x9008D19f58AAbD9eD0D60971565AA8510560ab41";
+// Compile-time validated address constants in the canonical lowercase wire
+// form (`address!` rejects malformed or mixed-case literals at build time).
+// `Address` serializes to the same lowercase wire string, so the JSON
+// fixtures below embed the constants directly.
+pub const WETH: Address = address!("0xfff9976782d46cc05630d1f6ebab18b2324d6b14");
+pub const COW: Address = address!("0x0625afb445c3b6b7b929342a04a22599fd5dbb59");
+pub const OWNER: Address = address!("0xc8c753ee51e8fc80e199ab297fb575634a1ac1d3");
+pub const ALT_RECEIVER: Address = address!("0x974caa59e49682cda0ad2bbe82983419a2ecc400");
+pub const SETTLEMENT: Address = address!("0x9008d19f58aabd9ed0d60971565aa8510560ab41");
 pub const ORDER_UID: &str = "0xd64389693b6cf89ad6c140a113b10df08073e5ef3063d05a02f3f42e1a42f0ad0b7795e18767259cc253a2af471dbc4c72b49516ffffffff";
 pub const APP_DATA_HASH: &str =
     "0xe269b09f45b1d3c98d8e4e841b99a0779fbd3b77943d069b91ddc4fd9789e27e";
@@ -34,22 +40,6 @@ pub const TEST_KEY: &str = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412
 
 /// Filler account address for the synthetic JSON-RPC block and receipt fixtures.
 const RPC_FIXTURE_ACCOUNT: &str = "0x1111111111111111111111111111111111111111";
-
-pub fn address(value: &str) -> Address {
-    Address::new(value).expect("example address literal must remain valid")
-}
-
-pub fn sample_owner() -> Address {
-    address(OWNER)
-}
-
-pub fn sample_sell_token() -> Address {
-    address(WETH)
-}
-
-pub fn sample_buy_token() -> Address {
-    address(COW)
-}
 
 pub fn sample_order_uid() -> OrderUid {
     OrderUid::new(ORDER_UID).expect("example order uid literal must remain valid")
@@ -75,61 +65,49 @@ pub fn orderbook_version_response(version: &str) -> ResponseTemplate {
 }
 
 pub fn sample_unsigned_order() -> OrderData {
-    OrderData::new(
-        sample_sell_token(),
-        sample_buy_token(),
-        address(ALT_RECEIVER),
-        Amount::parse_units("0.1", 18).expect("example sell amount must remain valid"),
-        Amount::parse_units("0.25", 18).expect("example buy amount must remain valid"),
-        1_700_000_000,
-        AppDataHex::new("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-            .expect("example app-data hex must remain valid"),
-        Amount::ZERO,
-        OrderKind::Sell,
-        false,
-        SellTokenSource::Erc20,
-        BuyTokenDestination::Erc20,
-    )
+    // `OrderData` has public fields by design: the struct literal is the
+    // named-arguments surface, so amounts and addresses cannot transpose.
+    OrderData {
+        sell_token: WETH,
+        buy_token: COW,
+        receiver: ALT_RECEIVER,
+        sell_amount: Amount::parse_units("0.1", 18).expect("example sell amount must remain valid"),
+        buy_amount: Amount::parse_units("0.25", 18).expect("example buy amount must remain valid"),
+        valid_to: 1_700_000_000,
+        app_data: AppDataHash::new(
+            "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        )
+        .expect("example app-data hash must remain valid"),
+        fee_amount: Amount::ZERO,
+        kind: OrderKind::Sell,
+        partially_fillable: false,
+        sell_token_balance: SellTokenSource::Erc20,
+        buy_token_balance: BuyTokenDestination::Erc20,
+    }
 }
 
 pub fn sample_trade_parameters() -> TradeParams {
     TradeParams::new(
         OrderKind::Sell,
-        sample_sell_token(),
-        sample_buy_token(),
+        WETH,
+        COW,
         Amount::parse_units("0.1", 18).expect("example trade amount must remain valid"),
     )
-    .with_owner(sample_owner())
+    .with_owner(OWNER)
     .with_slippage_bps(50)
 }
 
 pub fn sample_limit_parameters() -> LimitTradeParams {
-    let quote = sample_quote_response();
-    let sell_token_balance = quote.quote.sell_token_balance;
-    let buy_token_balance = quote.quote.buy_token_balance;
-    let quote_id = quote.id;
-
-    let mut params = LimitTradeParams::new(
-        OrderKind::Sell,
-        sample_sell_token(),
-        sample_buy_token(),
-        quote.quote.sell_amount,
-        quote.quote.buy_amount,
-    )
-    .with_owner(sample_owner())
-    .with_sell_token_balance(sell_token_balance)
-    .with_buy_token_balance(buy_token_balance)
-    .with_slippage_bps(0);
-    if let Some(id) = quote_id {
-        params = params.with_quote_id(id);
-    }
-    params
+    // The public swap-to-limit conversion threads the quote amounts, balance
+    // flavours, and quote id; no hand-copied quote fields.
+    swap_params_to_limit_order_params(&sample_trade_parameters(), &sample_quote_response())
+        .expect("example quote fixture carries a quote id")
+        .into_limit()
 }
 
 pub fn sample_trader_parameters() -> TraderParams {
     TraderParams::new(SupportedChainId::Sepolia, "cow-rs-native-examples")
         .expect("app code should validate")
-        .with_env(CowEnv::Prod)
 }
 
 pub fn sample_quote_response() -> OrderQuoteResponse {

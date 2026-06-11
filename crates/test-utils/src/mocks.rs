@@ -16,7 +16,7 @@ use std::time::Duration;
 
 use cow_sdk_core::{
     Address, Amount, Hash32, HttpTransport, Signer, TransactionBroadcast, TransactionRequest,
-    TransportError, TypedDataDomain, TypedDataField,
+    TransportError, TypedDataPayload,
 };
 
 /// The canonical canned broadcast hash returned by the recording mocks.
@@ -28,24 +28,13 @@ pub fn canned_tx_hash() -> Hash32 {
     Hash32::new(format!("0x{}", "fa".repeat(32))).expect("canned hash is valid")
 }
 
-/// A recorded `sign_typed_data` invocation.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TypedDataCall {
-    /// The domain passed to the signer.
-    pub domain: TypedDataDomain,
-    /// The typed-data fields passed to the signer.
-    pub fields: Vec<TypedDataField>,
-    /// The JSON-encoded message value.
-    pub value_json: String,
-}
-
 /// The call log accumulated by a [`RecordingSigner`].
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct RecordedCalls {
     /// Every `sign_message` payload, in order.
     pub messages: Vec<Vec<u8>>,
-    /// Every `sign_typed_data` invocation, in order.
-    pub typed_data: Vec<TypedDataCall>,
+    /// Every `sign_typed_data_payload` payload, in order.
+    pub typed_data: Vec<TypedDataPayload>,
 }
 
 /// A typed signer error for the recorder.
@@ -65,7 +54,7 @@ impl cow_sdk_core::SignerError for RecordingSignerError {}
 pub struct RecordingSigner {
     /// The address returned by `address`.
     pub address: Address,
-    /// The signature returned by `sign_typed_data`.
+    /// The signature returned by `sign_typed_data_payload`.
     pub typed_data_signature: String,
     /// The signature returned by `sign_message`.
     pub message_signature: String,
@@ -113,17 +102,11 @@ impl Signer for RecordingSigner {
         Ok("0xsigned-transaction".to_owned())
     }
 
-    async fn sign_typed_data(
+    async fn sign_typed_data_payload(
         &self,
-        domain: &TypedDataDomain,
-        fields: &[TypedDataField],
-        value_json: &str,
+        payload: &TypedDataPayload,
     ) -> Result<String, Self::Error> {
-        self.calls.borrow_mut().typed_data.push(TypedDataCall {
-            domain: domain.clone(),
-            fields: fields.to_vec(),
-            value_json: value_json.to_owned(),
-        });
+        self.calls.borrow_mut().typed_data.push(payload.clone());
         Ok(self.typed_data_signature.clone())
     }
 

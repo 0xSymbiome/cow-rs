@@ -1,7 +1,10 @@
 //! Quote-to-post orchestration helpers grouped by order family.
 
-use cow_sdk_core::{Address, ProtocolOptions, Provider, Signer};
-use cow_sdk_orderbook::{OrderCreation, SigningScheme};
+use cow_sdk_core::{
+    Address, Amount, ProtocolOptions, Provider, Signer, TransactionBroadcast, TransactionRequest,
+    TypedDataPayload,
+};
+use cow_sdk_orderbook::{OrderClass, OrderCreation, SigningScheme};
 use cow_sdk_signing::{
     SigningScheme as SigningSchemeContract, eip1271_signature_payload, sign_order,
     sign_order_with_scheme,
@@ -449,7 +452,7 @@ where
     let app_data_info = build_app_data(
         &trader.app_code,
         params.slippage_bps.unwrap_or(0),
-        "limit",
+        OrderClass::Limit,
         params.partner_fee.as_ref(),
         advanced_settings.and_then(|settings| settings.app_data.as_ref()),
     )
@@ -470,6 +473,125 @@ where
         app_data_signer,
     )
     .await
+}
+
+/// Posts a limit order under the pre-sign scheme without consulting a signer.
+///
+/// Pre-sign placements carry no cryptographic signature: the order is
+/// submitted with [`SigningScheme::PreSign`] (the wire `signature` field
+/// carries the owner address, mirroring the reviewed upstream SDK) and only
+/// becomes fillable once the owner sets the on-chain pre-signature flag via
+/// `setPreSignature` on the settlement contract — for example by submitting
+/// the transaction built by [`crate::pre_sign_transaction`]. This is the
+/// smart-contract-owner path: Safes and other smart accounts place the order
+/// off-chain first and approve it on-chain from the contract itself.
+///
+/// Because no signer participates, the owner must be explicit:
+/// [`LimitTradeParams::owner`] (or an advanced-settings `quote_request.from`
+/// override) is required. Any signing-scheme override carried in
+/// `advanced_settings` is superseded by [`SigningScheme::PreSign`].
+///
+/// # Errors
+///
+/// Returns [`TradingError::MissingSubmissionOwner`] when no explicit owner is
+/// supplied, [`TradingError::InvalidInput`] for native-currency sell orders
+/// (`EthFlow` orders are created on-chain and need a signer-backed entry),
+/// and otherwise the same app-data, validation, and submission errors as
+/// [`post_limit_order`].
+pub async fn post_limit_order_presign<O>(
+    params: &LimitTradeParams,
+    trader: &TraderParams,
+    advanced_settings: Option<&TradeAdvancedSettings>,
+    orderbook: &O,
+) -> Result<OrderPostingResult, TradingError>
+where
+    O: OrderbookClient + ?Sized,
+{
+    let effective = apply_settings_to_limit_trade_parameters(
+        params,
+        advanced_settings.and_then(|settings| settings.quote_request.as_ref()),
+        advanced_settings.and_then(|settings| settings.app_data.as_ref()),
+    )?;
+    if effective.owner.is_none() {
+        return Err(TradingError::MissingSubmissionOwner);
+    }
+    if is_eth_flow_order(&effective.sell_token) {
+        return Err(TradingError::InvalidInput {
+            field: "sellToken",
+            reason: cow_sdk_core::ValidationReason::Precondition {
+                details: "native-currency sell orders are created on-chain through the EthFlow \
+                          contract and need a signer-backed posting entry, not a pre-sign placement",
+            },
+        });
+    }
+
+    let mut settings = advanced_settings.cloned().unwrap_or_default();
+    settings.additional_params = Some(
+        settings
+            .additional_params
+            .take()
+            .unwrap_or_default()
+            .with_signing_scheme(SigningScheme::PreSign),
+    );
+
+    post_limit_order(
+        params,
+        trader,
+        &PreSignPlacementSigner,
+        Some(&settings),
+        orderbook,
+    )
+    .await
+}
+
+/// Signer stand-in threaded through the signer-less pre-sign posting entry.
+///
+/// Pre-sign placements never consult a signer: the owner is explicit by
+/// construction and the pre-sign arm of the signing dispatch derives the
+/// submission payload from that owner. Every operation therefore fails with a
+/// description of the unexpected call, so a pipeline change that starts
+/// consulting the signer on this path surfaces loudly instead of fabricating
+/// a signature.
+struct PreSignPlacementSigner;
+
+impl PreSignPlacementSigner {
+    fn unreachable_operation(operation: &str) -> String {
+        format!("pre-sign posting must not consult a signer ({operation})")
+    }
+}
+
+impl Signer for PreSignPlacementSigner {
+    type Error = String;
+
+    async fn address(&self) -> Result<Address, Self::Error> {
+        Err(Self::unreachable_operation("address"))
+    }
+
+    async fn sign_message(&self, _message: &[u8]) -> Result<String, Self::Error> {
+        Err(Self::unreachable_operation("sign_message"))
+    }
+
+    async fn sign_transaction(&self, _tx: &TransactionRequest) -> Result<String, Self::Error> {
+        Err(Self::unreachable_operation("sign_transaction"))
+    }
+
+    async fn sign_typed_data_payload(
+        &self,
+        _payload: &TypedDataPayload,
+    ) -> Result<String, Self::Error> {
+        Err(Self::unreachable_operation("sign_typed_data_payload"))
+    }
+
+    async fn send_transaction(
+        &self,
+        _tx: &TransactionRequest,
+    ) -> Result<TransactionBroadcast, Self::Error> {
+        Err(Self::unreachable_operation("send_transaction"))
+    }
+
+    async fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {
+        Err(Self::unreachable_operation("estimate_gas"))
+    }
 }
 
 /// Submits an `EthFlow`-style native-currency sell order.
@@ -530,7 +652,6 @@ where
     let tx = crate::eth_flow_transaction(
         &app_data.app_data_keccak256,
         &params,
-        canonical_chain_id,
         additional_params,
         trader,
         signer,
@@ -552,8 +673,9 @@ where
         .upload_app_data(&app_data.app_data_keccak256, &app_data.full_app_data)
         .await?;
 
+    let transaction = TransactionRequest::from(tx.transaction);
     let broadcast = signer
-        .send_transaction(&tx.transaction)
+        .send_transaction(&transaction)
         .await
         .map_err(|error| TradingError::Signer {
             operation: "send_transaction",

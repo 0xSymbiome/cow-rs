@@ -5,29 +5,26 @@ use std::{fmt, sync::Arc};
 use alloy_signer::Signer as AlloySigner;
 use alloy_signer_local::PrivateKeySigner;
 use cow_sdk_core::{
-    Address, Amount, ChainId, Signer, TransactionBroadcast, TransactionRequest, TypedDataDomain,
-    TypedDataField, TypedDataPayload,
+    Address, Amount, ChainId, Signer, TransactionBroadcast, TransactionRequest, TypedDataPayload,
 };
 
 use crate::{
-    builder::LocalAlloyKeystoreSignerBuilder,
-    conversion::{
-        alloy_signature_to_hex, cow_flat_to_alloy_typed_data, cow_typed_data_payload_to_alloy,
-    },
+    builder::LocalAlloySignerBuilder,
+    conversion::{alloy_signature_to_hex, cow_typed_data_payload_to_alloy},
     error::SignerError,
 };
 
-/// Alloy-backed local-keystore signer for native SDK consumers.
+/// Alloy-backed local private-key signer for native SDK consumers.
 #[derive(Clone)]
-pub struct LocalAlloyKeystoreSigner {
+pub struct LocalAlloySigner {
     inner: Arc<PrivateKeySigner>,
     chain_id: ChainId,
 }
 
-impl LocalAlloyKeystoreSigner {
+impl LocalAlloySigner {
     /// Returns a fresh typestate builder.
-    pub const fn builder() -> LocalAlloyKeystoreSignerBuilder {
-        LocalAlloyKeystoreSignerBuilder::new()
+    pub const fn builder() -> LocalAlloySignerBuilder {
+        LocalAlloySignerBuilder::new()
     }
 
     pub(crate) fn from_parts(inner: PrivateKeySigner, chain_id: ChainId) -> Self {
@@ -49,16 +46,16 @@ impl LocalAlloyKeystoreSigner {
     }
 }
 
-impl fmt::Debug for LocalAlloyKeystoreSigner {
+impl fmt::Debug for LocalAlloySigner {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("LocalAlloyKeystoreSigner")
+        f.debug_struct("LocalAlloySigner")
             .field("inner", &"[redacted]")
             .field("chain_id", &self.chain_id)
             .finish()
     }
 }
 
-impl Signer for LocalAlloyKeystoreSigner {
+impl Signer for LocalAlloySigner {
     type Error = SignerError;
 
     async fn address(&self) -> Result<Address, Self::Error> {
@@ -98,31 +95,6 @@ impl Signer for LocalAlloyKeystoreSigner {
             let _ = payload;
             Err(SignerError::Unsupported(
                 "sign_typed_data_payload requires the eip712 feature",
-            ))
-        }
-    }
-
-    async fn sign_typed_data(
-        &self,
-        domain: &TypedDataDomain,
-        fields: &[TypedDataField],
-        value_json: &str,
-    ) -> Result<String, Self::Error> {
-        #[cfg(feature = "eip712")]
-        {
-            let typed = cow_flat_to_alloy_typed_data(domain, fields, value_json)
-                .map_err(SignerError::Validation)?;
-            let signature = AlloySigner::sign_dynamic_typed_data(self.upstream_signer(), &typed)
-                .await
-                .map_err(|error| SignerError::from_alloy_signer(&error))?;
-            Ok(alloy_signature_to_hex(&signature)?)
-        }
-
-        #[cfg(not(feature = "eip712"))]
-        {
-            let _ = (domain, fields, value_json);
-            Err(SignerError::Unsupported(
-                "sign_typed_data requires the eip712 feature",
             ))
         }
     }

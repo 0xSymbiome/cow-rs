@@ -71,6 +71,5 @@ async fn provider() -> RpcAlloyProvider {
         .http(server.uri())
         .unwrap()
         .build()
-        .await
         .unwrap()
 }

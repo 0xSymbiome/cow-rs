@@ -92,6 +92,7 @@ fn trading_sdk_source_directory_aggregates_public_async_methods() {
         "offchain_cancel_order",
         "onchain_cancel_order",
         "post_limit_order",
+        "post_limit_order_presign",
         "post_swap_order",
         "post_swap_order_from_quote",
     ]

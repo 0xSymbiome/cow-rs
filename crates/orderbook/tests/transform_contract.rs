@@ -1,7 +1,7 @@
 mod common;
 
 use cow_sdk_orderbook::{
-    EVM_NATIVE_CURRENCY_ADDRESS, OnchainOrderData, Order, OrderQuoteResponse,
+    NATIVE_CURRENCY_ADDRESS, OnchainOrderData, Order, OrderQuoteResponse,
     SolverCompetitionResponse, StoredOrderQuote, Trade, calculate_total_fee, transform_order,
 };
 use serde::{Serialize, de::DeserializeOwned};
@@ -254,10 +254,7 @@ fn ethflow_transform_rewrites_owner_sell_token_and_valid_to() {
     let transformed = transform_order(order).expect("ethflow order must transform");
 
     assert_eq!(transformed.owner, sample_owner());
-    assert_eq!(
-        transformed.sell_token.to_hex_string(),
-        EVM_NATIVE_CURRENCY_ADDRESS
-    );
+    assert_eq!(transformed.sell_token, NATIVE_CURRENCY_ADDRESS);
     assert_eq!(transformed.valid_to, 1_700_000_123);
     assert_eq!(transformed.total_fee, amount("10"));
 }

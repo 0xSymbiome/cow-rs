@@ -13,5 +13,5 @@ pub(crate) use cow_sdk_alloy_provider::__seam::{
 };
 
 pub(crate) use cow_sdk_alloy_signer::__seam::{
-    alloy_signature_to_hex, cow_flat_to_alloy_typed_data, cow_typed_data_payload_to_alloy,
+    alloy_signature_to_hex, cow_typed_data_payload_to_alloy,
 };

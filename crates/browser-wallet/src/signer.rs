@@ -101,7 +101,9 @@ impl Eip1193Signer {
 
     /// Signs typed data through the legacy compatibility bridge.
     ///
-    /// This helper is intentionally narrow. It supports only the `CoW` order and order-cancellation
+    /// This helper is the wallet-protocol compatibility surface for field-based
+    /// signing, not a [`cow_sdk_core::Signer`] trait obligation. It is
+    /// intentionally narrow: it supports only the `CoW` order and order-cancellation
     /// field layouts that legacy browser-wallet integrations expect. For other primary types, use
     /// [`cow_sdk_core::Signer::sign_typed_data_payload`] with an explicit
     /// [`TypedDataPayload`].
@@ -187,16 +189,6 @@ impl Signer for Eip1193Signer {
                 "wallet must return a signature string",
             )
         })
-    }
-
-    async fn sign_typed_data(
-        &self,
-        domain: &TypedDataDomain,
-        fields: &[TypedDataField],
-        value_json: &str,
-    ) -> Result<String, Self::Error> {
-        self.sign_typed_data_compatibility(domain, fields, value_json)
-            .await
     }
 
     async fn send_transaction(

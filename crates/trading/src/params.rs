@@ -9,25 +9,12 @@
 //! mandatory pre-transport step on every submission seam.
 
 use cow_sdk_app_data::{AppDataError, PartnerFee};
-use cow_sdk_core::{Address, Amount, EVM_NATIVE_CURRENCY_ADDRESS, OrderKind, ValidationReason};
+use cow_sdk_core::{Address, Amount, NATIVE_CURRENCY_ADDRESS, OrderKind, ValidationReason};
 
 use crate::{
     LimitTradeParams, TradeParams,
     validation::{AmountSide, ClientRejection},
 };
-
-/// Returns the native-currency sentinel address used in trade-parameter checks.
-///
-/// # Panics
-///
-/// Panics only if the shared native-currency sentinel literal stops being a
-/// valid EVM address.
-fn native_sentinel() -> Address {
-    // SAFETY: EVM_NATIVE_CURRENCY_ADDRESS is a crate-owned protocol sentinel
-    // literal validated through the shared Address constructor.
-    Address::new(EVM_NATIVE_CURRENCY_ADDRESS)
-        .expect("EVM_NATIVE_CURRENCY_ADDRESS must remain a valid address literal")
-}
 
 fn validate_distinct_tokens(
     sell_token: &Address,
@@ -41,7 +28,7 @@ fn validate_distinct_tokens(
 }
 
 fn validate_non_native_sell_token(sell_token: &Address) -> Result<(), ClientRejection> {
-    if sell_token == &native_sentinel() {
+    if *sell_token == NATIVE_CURRENCY_ADDRESS {
         return Err(ClientRejection::InvalidNativeSellToken);
     }
     Ok(())

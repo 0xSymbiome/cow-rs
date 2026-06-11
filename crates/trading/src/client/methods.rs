@@ -7,8 +7,8 @@ use cow_sdk_core::{Amount, CowEnv, Provider, Signer, TransactionHash};
 
 use super::Trading;
 use crate::{
-    AllowanceParams, ApprovalParams, LimitTradeParams, OrderTraderParams, QuoteResults,
-    TradeAdvancedSettings, TradeParams, TradingError, cow_protocol_allowance,
+    AllowanceParams, ApprovalParams, LimitTradeParams, OrderTraderParams, PreparedTransaction,
+    QuoteResults, TradeAdvancedSettings, TradeParams, TradingError, cow_protocol_allowance,
     offchain_cancel_order, onchain::protocol_options_for_partial_order, onchain_cancel_order,
     pre_sign_transaction, quote_only, quote_results,
 };
@@ -175,6 +175,65 @@ impl Trading {
             &params,
             &trader,
             signer,
+            advanced_settings,
+            orderbook.client.as_ref(),
+        )
+        .await
+    }
+
+    /// Posts a limit order under the pre-sign scheme without consulting a
+    /// signer.
+    ///
+    /// Pre-sign placements carry no cryptographic signature: the order is
+    /// submitted with [`cow_sdk_orderbook::SigningScheme::PreSign`] (the wire
+    /// `signature` field carries the owner address, mirroring the reviewed
+    /// upstream SDK) and only becomes fillable once the owner sets the
+    /// on-chain pre-signature flag via `setPreSignature` on the settlement
+    /// contract — for example by submitting the transaction built by
+    /// [`Trading::pre_sign_transaction`]. This is the smart-contract-owner
+    /// path: Safes and other smart accounts place the order off-chain first
+    /// and approve it on-chain from the contract itself.
+    ///
+    /// Because no signer participates, the owner must be explicit:
+    /// [`LimitTradeParams::owner`] (or an advanced-settings
+    /// `quote_request.from` override) is required. Any signing-scheme
+    /// override carried in `advanced_settings` is superseded by the pre-sign
+    /// scheme.
+    ///
+    /// Callers that need cooperative cancellation wrap this future through
+    /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site;
+    /// cancellation only affects pre-broadcast work, because once the order
+    /// payload has been accepted by the orderbook, the order cannot be
+    /// un-submitted.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError::MissingSubmissionOwner`] when no explicit
+    /// owner is supplied, [`TradingError::InvalidInput`] for native-currency
+    /// sell orders (`EthFlow` orders are created on-chain and need a
+    /// signer-backed entry), and otherwise [`TradingError`] when required
+    /// defaults are missing, app-data generation fails, or submission fails.
+    #[cfg_attr(
+        feature = "tracing",
+        tracing::instrument(
+            skip_all,
+            fields(
+                chain = ?self.trader_defaults.chain_id,
+                env = ?self.trader_defaults.env,
+                endpoint = "trading.post_limit_order_presign",
+            ),
+        ),
+    )]
+    pub async fn post_limit_order_presign(
+        &self,
+        params: LimitTradeParams,
+        advanced_settings: Option<&TradeAdvancedSettings>,
+    ) -> Result<crate::OrderPostingResult, TradingError> {
+        let (trader, orderbook) = self.resolve_orderbook_trader(None, params.env)?;
+
+        crate::post::post_limit_order_presign(
+            &params,
+            &trader,
             advanced_settings,
             orderbook.client.as_ref(),
         )
@@ -371,6 +430,10 @@ impl Trading {
 impl Trading {
     /// Builds the pre-sign transaction for an order.
     ///
+    /// The returned [`PreparedTransaction`] carries every field set; convert
+    /// it with `.into()` when a submission seam expects a
+    /// [`cow_sdk_core::TransactionRequest`].
+    ///
     /// Callers that need cooperative cancellation wrap this future through
     /// [`cow_sdk_core::Cancellable::cancel_with`] at the call site.
     ///
@@ -394,7 +457,7 @@ impl Trading {
         &self,
         params: &OrderTraderParams,
         signer: &S,
-    ) -> Result<cow_sdk_core::TransactionRequest, TradingError>
+    ) -> Result<PreparedTransaction, TradingError>
     where
         S: Signer,
         S::Error: std::fmt::Display + cow_sdk_core::SignerError,

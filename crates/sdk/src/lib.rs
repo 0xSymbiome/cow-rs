@@ -27,7 +27,9 @@
 //! use cow_sdk::trading::Trading;
 //!
 //! // Compile-time validated address literal — no runtime parse, no unwrap.
-//! const SETTLEMENT: Address = address!("0x9008D19f58AAbD9eD0D60971565AA8510560ab41");
+//! // The literal is the lowercase wire form; mixed-case literals reject at
+//! // build time because EIP-55 checksums cannot be verified in const eval.
+//! const SETTLEMENT: Address = address!("0x9008d19f58aabd9ed0d60971565aa8510560ab41");
 //!
 //! let _trading = Trading::builder()
 //!     .chain_id(SupportedChainId::Sepolia)
@@ -45,8 +47,8 @@
 //! use cow_sdk::trading::{TradeParams, Trading};
 //!
 //! // Sell 0.1 WETH for COW on Sepolia.
-//! const WETH: Address = address!("0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14");
-//! const COW: Address = address!("0x0625aFB445C3B6B7B929342a04A22599fd5dBB59");
+//! const WETH: Address = address!("0xfff9976782d46cc05630d1f6ebab18b2324d6b14");
+//! const COW: Address = address!("0x0625afb445c3b6b7b929342a04a22599fd5dbb59");
 //! #
 //! # async fn run<S>(signer: &S) -> Result<(), Box<dyn Error>>
 //! # where
