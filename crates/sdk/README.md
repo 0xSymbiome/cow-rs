@@ -125,6 +125,15 @@ On-chain submission has its own verdict. The receipt-wait helpers return
 so it stays out of `CowError`; use `WaitError::reverted()` to tell a real
 on-chain revert from a transient broadcast, lookup, timeout, or cancellation.
 
+## Examples
+
+The workspace ships runnable, deterministic scenarios for every facade
+workflow — quoting, posting, signing, app-data, transport, subgraph access,
+and the Alloy adapters — cataloged by goal in
+[Examples](https://github.com/cowdao-grants/cow-rs/blob/main/docs/examples.md).
+[Getting Started](https://github.com/cowdao-grants/cow-rs/blob/main/docs/getting-started.md)
+walks the recommended first session.
+
 ## Where to next
 
 - [Getting Started](https://github.com/cowdao-grants/cow-rs/blob/main/docs/getting-started.md)

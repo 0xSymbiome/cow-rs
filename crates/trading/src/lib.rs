@@ -32,6 +32,9 @@
 
 #![warn(missing_docs)]
 
+/// Re-exported so seam-trait implementors need no direct `async-trait`
+/// dependency, mirroring serde's derive re-export.
+pub use async_trait::async_trait;
 pub use cow_sdk_app_data::{PartnerFee, PartnerFeePolicy};
 pub use cow_sdk_contracts::eth_flow;
 pub use cow_sdk_core::SupportedChainId;

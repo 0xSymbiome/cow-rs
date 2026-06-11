@@ -731,15 +731,19 @@ If you want one recommended first session from a fresh checkout, use:
 
 ```text
 cargo check -p cow-sdk-examples-native --examples
+cargo run -p cow-sdk-examples-native --example swap_quickstart
 cargo run -p cow-sdk-examples-native --example sign_order
 cargo run -p cow-sdk-examples-native --example limit_order
+cargo run -p cow-sdk-examples-native --example trading_full_cycle
 ```
 
-That sequence proves:
+That sequence — the native catalog's recommended first sequence — proves:
 
 - the facade compiles in the current checkout
+- the recommended `Trading::swap()` path quotes, signs, and posts end to end
 - the signing lane is stable
-- the high-level post path is stable under deterministic simulation
+- the high-level post, allowance, and approval paths are stable under
+  deterministic simulation
 
 ## Common Questions
 

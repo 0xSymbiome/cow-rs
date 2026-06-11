@@ -4,7 +4,8 @@ The examples are organized by user goal rather than by crate internals.
 
 If you are new to `cow-rs`, start with [Getting Started](getting-started.md)
 first. This page is the branch point after the deterministic onboarding flow,
-not a second landing page.
+not a second landing page. This page branches by goal; the scenario catalog in
+reference order lives in [Native examples](../examples/native/README.md).
 
 ## Native Rust
 

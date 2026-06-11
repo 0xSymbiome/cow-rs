@@ -9,13 +9,12 @@
 
 use std::error::Error;
 
-use async_trait::async_trait;
 use serde_json::json;
 
 use cow_sdk::core::SupportedChainId;
 use cow_sdk::trading::{
     SlippageSuggester, SlippageToleranceRequest, SlippageToleranceResponse, TradeAdvancedSettings,
-    Trading, TradingError,
+    Trading, TradingError, async_trait,
 };
 
 use cow_sdk::testing::{MockOrderbook, MockSigner};
@@ -26,8 +25,7 @@ struct StaticSlippageProvider {
     bps: u32,
 }
 
-#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
-#[cfg_attr(not(target_arch = "wasm32"), async_trait)]
+#[async_trait]
 impl SlippageSuggester for StaticSlippageProvider {
     async fn slippage_suggestion(
         &self,

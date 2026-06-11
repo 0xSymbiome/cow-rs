@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-17
-- Last reviewed: 2026-05-09
+- Last reviewed: 2026-06-11
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: async, cancellation, transport, observability, error-model
 - Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md), [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), [ADR 0040](0040-wallet-provider-callback-boundary-for-js-consumers.md)
@@ -81,3 +81,12 @@ to compose and review.
 
 - [Cooperative Cancellation Contract Audit](../audit/cooperative-cancellation-contract-audit.md)
 - [Credential Surface Contract Hygiene Audit](../audit/credential-surface-contract-hygiene-audit.md)
+
+## Amendment 2026-06-11: seam-owning crates re-export `async_trait`
+
+`cow-sdk-trading` and `cow-sdk-signing` — the crates owning the `Arc<dyn …>`
+seam traits (`SlippageSuggester`, `EthFlowOrderExistsChecker`, `Eip1271Signer`)
+— re-export `async_trait::async_trait`, so implementors add no direct
+`async-trait` dependency. Native-only implementors use the plain
+`#[async_trait]` attribute; the dual-gate `cfg_attr` pair recorded above is
+required only for code that compiles for both native and wasm32 targets.

@@ -209,6 +209,15 @@ reverted receipt for a mined on-chain failure and `None` for the transient
 broadcast, lookup, timeout, and cancellation variants — a coarse alternative to
 matching each variant.
 
+## Examples
+
+The workspace ships runnable, deterministic scenarios for the trading
+workflows — quoting, posting, EthFlow, receipt waiting, and the advanced
+seam traits — cataloged by goal in
+[Examples](https://github.com/cowdao-grants/cow-rs/blob/main/docs/examples.md).
+[Getting Started](https://github.com/cowdao-grants/cow-rs/blob/main/docs/getting-started.md)
+walks the recommended first session.
+
 ## Where to next
 
 - [Getting Started](https://github.com/cowdao-grants/cow-rs/blob/main/docs/getting-started.md)

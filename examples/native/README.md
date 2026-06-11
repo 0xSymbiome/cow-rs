@@ -30,6 +30,9 @@ After that, branch by goal through the full scenario table below.
 
 ## Scenarios
 
+The catalog below is listed in reference order; see
+[Examples](../../docs/examples.md) for goal-based grouping.
+
 | Scenario | Purpose |
 | --- | --- |
 | `facade_surface` | Report facade construction and the resolved on-chain deployment |
@@ -99,20 +102,20 @@ cargo run -p cow-sdk-examples-native --example facade_surface
 cargo run -p cow-sdk-examples-native --example app_data
 cargo run -p cow-sdk-examples-native --example sign_order
 cargo run -p cow-sdk-examples-native --example quote
+cargo run -p cow-sdk-examples-native --example slippage_suggester
 cargo run -p cow-sdk-examples-native --example cancel_in_flight
 cargo run -p cow-sdk-examples-native --example limit_order
+cargo run -p cow-sdk-examples-native --example eip1271_signer
 cargo run -p cow-sdk-examples-native --example order_lifecycle
 cargo run -p cow-sdk-examples-native --example receipt_lifecycle
 cargo run -p cow-sdk-examples-native --example swap_quickstart
 cargo run -p cow-sdk-examples-native --example trading_full_cycle
 cargo run -p cow-sdk-examples-native --example error_classification
 cargo run -p cow-sdk-examples-native --example ethflow
+cargo run -p cow-sdk-examples-native --example ethflow_checker
 cargo run -p cow-sdk-examples-native --example onchain_actions
 cargo run -p cow-sdk-examples-native --example orderbook_transport
 cargo run -p cow-sdk-examples-native --example order_history
-cargo run -p cow-sdk-examples-native --example slippage_suggester
-cargo run -p cow-sdk-examples-native --example eip1271_signer
-cargo run -p cow-sdk-examples-native --example ethflow_checker
 cargo run -p cow-sdk-examples-native --example orderbook_live
 cargo run -p cow-sdk-examples-native --example subgraph_query
 cargo run -p cow-sdk-examples-native --example subgraph_live

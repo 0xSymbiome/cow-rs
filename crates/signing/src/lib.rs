@@ -23,6 +23,9 @@ pub mod errors;
 /// Order signing and order-id generation helpers.
 pub mod order_signing;
 
+/// Re-exported so seam-trait implementors need no direct `async-trait`
+/// dependency, mirroring serde's derive re-export.
+pub use async_trait::async_trait;
 #[cfg(feature = "in-memory-cache")]
 pub use cache::{Clock, InMemoryEip1271Cache, SystemClock};
 pub use cache::{Eip1271Cache, NoopEip1271Cache};

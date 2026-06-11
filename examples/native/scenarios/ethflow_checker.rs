@@ -10,14 +10,13 @@
 use std::error::Error;
 use std::sync::{Arc, Mutex};
 
-use async_trait::async_trait;
 use serde_json::json;
 
 use cow_sdk::core::{NATIVE_CURRENCY_ADDRESS, OrderDigest, OrderUid};
 use cow_sdk::orderbook::OrderClass;
 use cow_sdk::trading::{
     EthFlowOrderExistsChecker, LimitTradeParamsFromQuote, PostTradeAdditionalParams, TradingError,
-    build_app_data, eth_flow_transaction,
+    async_trait, build_app_data, eth_flow_transaction,
 };
 
 use cow_sdk::testing::MockSigner;
@@ -29,8 +28,7 @@ struct ScriptedEthFlowChecker {
     collisions: Arc<Mutex<Vec<bool>>>,
 }
 
-#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
-#[cfg_attr(not(target_arch = "wasm32"), async_trait)]
+#[async_trait]
 impl EthFlowOrderExistsChecker for ScriptedEthFlowChecker {
     async fn order_exists(
         &self,

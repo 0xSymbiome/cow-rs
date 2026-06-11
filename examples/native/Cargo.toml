@@ -16,7 +16,6 @@ alloy-signer = ["cow-sdk/alloy-signer"]
 alloy = ["cow-sdk/alloy"]
 
 [dependencies]
-async-trait.workspace = true
 cow-sdk = { path = "../../crates/sdk", features = ["testing", "subgraph"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true

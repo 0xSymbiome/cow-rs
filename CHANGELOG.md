@@ -108,6 +108,14 @@ sections below describe the public contract a `0.1.0` consumer receives.
   value, with `with_check_eth_flow_order_exists_shared`,
   `with_custom_eip1271_signature_shared`, and `with_slippage_suggester_shared`
   accepting a backend deliberately shared across settings instances.
+- `cow_sdk_trading` and `cow_sdk_signing` re-export `async_trait::async_trait`,
+  so implementing the advanced seam traits (`SlippageSuggester`,
+  `EthFlowOrderExistsChecker`, `Eip1271Signer`) needs no direct `async-trait`
+  dependency — mirroring serde's derive re-export. Native-only implementors
+  write a single plain `#[async_trait]` attribute, shown by each trait's
+  "Implementing" rustdoc section; the target-gated `cfg_attr` pair is required
+  only for code that compiles for both native and wasm32 targets. Governed by
+  [ADR 0010](docs/adr/0010-runtime-neutral-async-and-transport-posture.md).
 - EIP-1271 order-signature verification is part of the public API:
   `cow_sdk_trading::verify_eip1271_order_signature`,
   `eip1271_order_verification_request`, and `Eip1271VerificationParams` confirm a

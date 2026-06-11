@@ -10,11 +10,11 @@
 
 use std::error::Error;
 
-use async_trait::async_trait;
 use serde_json::json;
 
 use cow_sdk::core::{OrderData, SupportedChainId};
 use cow_sdk::orderbook::SigningScheme;
+use cow_sdk::signing::async_trait;
 use cow_sdk::signing::eip1271::{Eip1271SignatureError, Eip1271Signer};
 use cow_sdk::trading::{PostTradeAdditionalParams, TradeAdvancedSettings, Trading};
 
@@ -24,8 +24,7 @@ use cow_sdk_examples_native::support::{OWNER, sample_limit_parameters, sample_qu
 /// A smart-account signer that returns a pre-built EIP-1271 signature blob.
 struct SmartAccountSigner;
 
-#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
-#[cfg_attr(not(target_arch = "wasm32"), async_trait)]
+#[async_trait]
 impl Eip1271Signer for SmartAccountSigner {
     async fn sign(&self, _order_to_sign: &OrderData) -> Result<String, Eip1271SignatureError> {
         // A real integration forwards the order to a smart account / multisig.
