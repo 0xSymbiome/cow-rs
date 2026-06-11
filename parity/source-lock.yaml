@@ -25,7 +25,7 @@ repositories:
   - test/GPv2Settlement/Swap/Swap.t.sol
 - id: services
   remote: https://github.com/cowprotocol/services.git
-  commit: 1f80d54bc3521b3fa81cd8ad66d9f749c5450591
+  commit: 65b6953bfc2e96b2791cfb2382c7309d1fb19b99
   # why: orderbook wire DTOs, the OpenAPI schema (vendored to parity/openapi/services-orderbook.yml), order-validation rules, the solver-competition v2 producer, the flash-loan hint shape, and app-data hashing.
   producer_paths:
   - crates/app-data/src/app_data.rs
@@ -37,7 +37,7 @@ repositories:
   - crates/shared/src/order_validation.rs
 - id: cow-sdk
   remote: https://github.com/cowprotocol/cow-sdk.git
-  commit: 1c3c9619c3d0ee832ce43a2d695ad650c2ec7a18
+  commit: c931d7ecd67626736f5b8dff781741e727128c42
   # why: the canonical contract-address constants for both orderbook environments, pinning the staging settlement and vault-relayer deployments resolved by the typed Registry.
   producer_paths:
   - packages/config/src/chains/const/contracts.ts

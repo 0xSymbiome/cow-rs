@@ -3,7 +3,7 @@
   "dto": "cow_sdk_orderbook::StoredOrderQuote",
   "sources": {
     "services": {
-      "commit": "1f80d54bc3521b3fa81cd8ad66d9f749c5450591",
+      "commit": "65b6953bfc2e96b2791cfb2382c7309d1fb19b99",
       "refs": [
         "crates/orderbook/openapi.yml#components.schemas.StoredOrderQuote"
       ]

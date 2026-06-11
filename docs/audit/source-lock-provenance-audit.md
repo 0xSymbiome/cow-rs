@@ -1,7 +1,7 @@
 # Source-Lock Provenance Audit
 
 Status: Current
-Last reviewed: 2026-06-10
+Last reviewed: 2026-06-11
 Owning surface: source-lock provenance and release preflight authority
 Refresh trigger: Changes to `parity/source-lock.yaml`, vendored parity OpenAPI or fixture provenance, any change to the maintained exclusion-list policy for historical progress snapshots, or any newly archived progress snapshot that should stay outside active preflight authority
 Related docs:
@@ -15,13 +15,14 @@ This audit covers:
 
 - the committed source-lock pins that define upstream provenance for parity
   fixtures and source-derived review evidence
+- the per-file provenance validation that holds every `parity/fixtures/**/*.json`
+  to a pinned commit, and the vendored OpenAPI stamp and body gates
 - the current upstream HEAD comparison used to make source-lock freshness
   explicit before release evidence relies on it
 - the source-lock refresh outcome for the first functional release evidence
-- the report-only local-root warning command for reviewer-supplied upstream
-  checkouts
-- the repo-local package dry-run command contract embedded in source-lock
-  validation metadata
+- the deep upstream-root validation mode for reviewer-supplied checkouts
+- the publication preflight in the release-readiness job that validates the
+  committed lock before the package dry runs
 - the native Alloy runtime and core upstream pins used for source-derived
   dependency evidence and release-candidate validation
 - the exclusion-list rule that keeps historical progress snapshots readable but
@@ -37,7 +38,7 @@ or changing SDK behavior.
 | --- | --- | --- |
 | Source-lock pins | `parity/source-lock.yaml` pins exact upstream commits for every repository that contributes parity evidence | Conforms |
 | Freshness disclosure | Current upstream HEADs are checked explicitly so stale pins are visible before release evidence relies on freshness | Conforms |
-| Refresh outcome | The 2026-05-29 sync advanced the two CoW Protocol pins (`contracts`, `services`) to upstream HEAD, re-vendored the services OpenAPI, and re-aligned fixture provenance; parity validation and OpenAPI coverage pass, and the `git ls-remote` upstream HEAD comparison shows both pins Current | Conforms |
+| Refresh outcome | The 2026-06-11 refresh advanced the `services` pin (its OpenAPI document and order-validation source had moved) and the `cow-sdk` pin (no producer path changed), re-vendored the services OpenAPI, and re-stamped the twelve services-citing fixtures after re-verifying each against the new commit; parity validation passes offline and deep, and the contract suites reproduce the fixture values | Conforms |
 | Deep upstream-root validation | Reviewer-supplied upstream roots (`--upstream-root <dir>`, one checkout per lock repository) are fail-closed checked for independent git top-levels, expected remotes, pinned `HEAD` commits, clean producer paths, and the vendored OpenAPI body at the services pin, without making repo-local validation depend on those roots | Conforms |
 | Publication preflight | The package-family dry-run contract (with local patches for unpublished intra-family crates) lives in the release-readiness publication job, which validates the committed lock before the dry runs | Conforms |
 | Native Alloy provenance | The native adapter family pins Alloy by crates.io version (`alloy-* = 2.0.4`, `alloy-core-* = 1.5.7`), enforced by `Cargo.lock` and the two-family lockfile invariant | Conforms |
@@ -56,8 +57,8 @@ or changing SDK behavior.
 fixtures and source-derived evidence. It currently pins:
 
 - `contracts` at `c6b61ce75841ce4c25ab126def9cc981c568e6c6`
-- `services` at `1f80d54bc3521b3fa81cd8ad66d9f749c5450591`
-- `cow-sdk` at `1c3c9619c3d0ee832ce43a2d695ad650c2ec7a18`
+- `services` at `65b6953bfc2e96b2791cfb2382c7309d1fb19b99`
+- `cow-sdk` at `c931d7ecd67626736f5b8dff781741e727128c42`
 - `cow-shed` at `9e01a88e0010314ee1e4c1a822105897a87d3bda`
 - `ethflowcontract` at `762d182674f8f890bd27917872ee62125171b54d`
 - `app-data` at `31f130d1838ea5018facdfe240aef46ff0cc1881`
@@ -81,16 +82,23 @@ upstream repositories before treating the evidence as current.
 
 ### Freshness State
 
-Upstream HEADs were checked on 2026-05-29:
+Upstream default-branch HEADs were checked on 2026-06-11 with
+`cargo xtask parity drift`:
 
 | Repository | Source-lock pin | Upstream HEAD | State |
 | --- | --- | --- | --- |
 | `contracts` | `c6b61ce75841ce4c25ab126def9cc981c568e6c6` | `c6b61ce75841ce4c25ab126def9cc981c568e6c6` | Current |
-| `services` | `1f80d54bc3521b3fa81cd8ad66d9f749c5450591` | `1f80d54bc3521b3fa81cd8ad66d9f749c5450591` | Current |
+| `services` | `65b6953bfc2e96b2791cfb2382c7309d1fb19b99` | `65b6953bfc2e96b2791cfb2382c7309d1fb19b99` | Current |
+| `cow-sdk` | `c931d7ecd67626736f5b8dff781741e727128c42` | `c931d7ecd67626736f5b8dff781741e727128c42` | Current |
+| `cow-shed` | `9e01a88e0010314ee1e4c1a822105897a87d3bda` | `9e01a88e0010314ee1e4c1a822105897a87d3bda` | Current |
+| `ethflowcontract` | `762d182674f8f890bd27917872ee62125171b54d` | `762d182674f8f890bd27917872ee62125171b54d` | Current |
+| `app-data` | `31f130d1838ea5018facdfe240aef46ff0cc1881` | `31f130d1838ea5018facdfe240aef46ff0cc1881` | Current |
 
-The source lock remains intentionally commit-based. In this review the two
-CoW Protocol pins (contracts and services) were advanced to upstream HEAD, so no freshness drift remains
-for parity evidence to triage.
+The source lock remains intentionally commit-based. In this review the
+`services` and `cow-sdk` pins were advanced to upstream HEAD; every pin now
+matches its upstream default branch, so no freshness drift remains for parity
+evidence to triage. A release claim that depends on upstream freshness re-runs
+`cargo xtask parity drift` to re-confirm before relying on the evidence.
 
 ### App-Data Schema Drift Fixtures
 
