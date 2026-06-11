@@ -2,10 +2,19 @@
 
 - Status: Accepted
 - Date: 2026-05-29
-- Last reviewed: 2026-05-29
+- Last reviewed: 2026-06-11
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: orderbook, trading, quote, dto, openapi, compatibility
 - Anchors: Forward-Compatible Public Surfaces (primary)
+
+> **Revision (2026-06-11):** the original decision did not bind the quote
+> response to the request, on the premise that the client-side bounds validator
+> was the defensive layer. On re-review that premise was found incomplete — the
+> bounds validator checks order well-formedness, not agreement with the caller's
+> intent, and has no access to the request — so a coherent response that altered
+> the fixed amount leg or the balance sources reached a signable order
+> unchecked. This ADR now binds the request-determined fields of the response
+> (the variable price leg stays free); the superseded clauses are marked inline.
 - Related: [ADR 0031](0031-wire-dto-openapi-driven-with-order-auction-order-split.md), [ADR 0021](0021-orderbook-total-fee-policy.md), [ADR 0015](0015-client-side-order-bounds-validator.md), [ADR 0017](0017-typed-orderbook-rejection-parser.md), [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md)
 
 ## Decision
@@ -38,11 +47,19 @@ The quote-amounts projection that derives the signable order from a `/quote`
 response matches the orderbook quote-amounts algorithm and is locked by a parity
 regression test (`crates/trading/tests/quote_projection_parity.rs`).
 
-The SDK trusts the orderbook within its trust boundary: it signs the
-client-computed app-data digest and the projected amounts, then validates the
-resulting order through the client-side bounds validator
-([ADR 0015](0015-client-side-order-bounds-validator.md)) before submission. It
-does not field-bind the quote response to the quote request.
+The SDK trusts the orderbook for the variable price leg of a quote — the amount
+the solver returns for the unfixed side — but binds every request-determined
+field of the response back to the request. `OrderbookApi::quote` invokes
+`OrderQuoteResponse::ensure_matches` on each response and fails closed with
+`OrderbookError::QuoteEchoMismatch` when the token pair, order kind, owner,
+partial-fill flag, balance sources, a pinned app-data hash, an absolute
+`validTo`, or the fixed amount leg did not come back unchanged. The fixed-leg
+fold mirrors the services quote arithmetic per side basis (sell-before-fee:
+`sellAmount + feeAmount == requested`; sell-after-fee: `sellAmount == requested`;
+buy: `buyAmount == requested`). The signed order then binds the caller's
+requested balance sources rather than the response echo, and the projected order
+is still validated through the client-side bounds validator
+([ADR 0015](0015-client-side-order-bounds-validator.md)) before submission.
 
 The quote request models the orderbook's quote `oneOf`s as typed Rust so that an
 invalid request is unrepresentable rather than rejected at validation time:
@@ -79,9 +96,18 @@ Keeping the network-cost fields read-only stops callers from fabricating quote
 economics, the same reasoning that makes order-level `feeAmount` read-only under
 [ADR 0021](0021-orderbook-total-fee-policy.md).
 
-Not field-binding the response to the request keeps the SDK's trust posture
-explicit: the defensive layer is the bounds validator on the projected order,
-not a per-field equality check against the request.
+Binding the request-determined fields closes a gap the bounds validator does
+not cover. The bounds validator checks that the projected order is well-formed —
+owner present, not expired, non-zero amounts, token-pair rules — but it has no
+access to the request and never compares the order to the caller's intent, so a
+coherent response that altered the fixed leg or the balance sources passes it.
+The two guarantees are orthogonal: the bounds validator answers "is this order
+well-formed?", the echo check answers "does this order match what the caller
+asked for?". The fixed leg and the balance sources are the caller's own inputs
+echoed back, not data the orderbook authors, so verifying they returned
+unchanged is a round-trip integrity check — the same posture the SDK already
+applies to the app-data hash through `HashMismatchStage::ServerEcho`. The
+variable price leg stays trusted, because it is the answer to the request.
 
 ## Must Remain True
 
@@ -103,9 +129,13 @@ not a per-field equality check against the request.
   (`feeAmount`, `gasAmount`, `gasPrice`, `sellTokenPrice`); they are read-only
   accessors populated from the wire.
 - The quote-amounts projection has a parity regression test.
-- The SDK validates the projected order through the bounds validator
-  ([ADR 0015](0015-client-side-order-bounds-validator.md)) before submission and
-  does not field-bind the quote response to the request.
+- `OrderbookApi::quote` binds every request-determined field of the response to
+  the request through `OrderQuoteResponse::ensure_matches`, failing closed with
+  `OrderbookError::QuoteEchoMismatch`; the variable price leg stays free, and the
+  fixed-leg fold follows the services arithmetic per side basis. The signed order
+  binds the caller's requested balance sources, and the projected order is still
+  validated through the bounds validator
+  ([ADR 0015](0015-client-side-order-bounds-validator.md)) before submission.
 - The quote response DTO remains open to additive upstream fields (no
   `serde(deny_unknown_fields)` in response position, per
   [ADR 0031](0031-wire-dto-openapi-driven-with-order-auction-order-split.md)).
@@ -119,9 +149,15 @@ not a per-field equality check against the request.
   backend expects to build from `optimal`.
 - Expose public setters for the quote network-cost fields: convenient for
   test construction, but lets callers fabricate quote economics.
-- Field-bind the quote response to the request: appears defensive, but
-  duplicates the bounds-validator guarantee and couples the SDK to response
-  shape it does not own.
+- Field-bind *every* response field to the request, including the variable price
+  leg: rejected — it would reject every legitimate quote, since the solver-quoted
+  side is the answer to the request and necessarily differs from any placeholder.
+  The adopted design binds only the request-determined fields and the fixed
+  amount leg, leaving the variable leg free.
+- Rely on the bounds validator alone for response integrity (the original
+  decision): superseded on re-review (2026-06-11). The bounds validator checks
+  well-formedness, not intent, and has no access to the request, so it cannot
+  catch a coherent response that altered the fixed leg or the balance sources.
 
 ## Anchors
 
@@ -142,4 +178,6 @@ the quote surface.
 - `xtask/src/openapi_coverage.rs`
 - `crates/orderbook/tests/wire_contract.rs`
 - `crates/orderbook/tests/fee_amount_is_not_a_public_builder_setter.rs`
+- `crates/orderbook/tests/quote_echo_contract.rs`
 - `crates/trading/tests/quote_projection_parity.rs`
+- `crates/trading/tests/post_contract.rs`

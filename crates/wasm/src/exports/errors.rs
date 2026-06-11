@@ -451,6 +451,18 @@ impl From<OrderbookError> for WasmError {
             error @ OrderbookError::AppDataHashMismatch { .. } => {
                 Self::invalid("appData.appDataHash", error.to_string())
             }
+            // A quote-echo mismatch is a server-integrity fault: the orderbook
+            // returned a quote that does not match the request. It surfaces under
+            // the orderbook kind (not `internal`, which reads as an SDK bug, and
+            // not `invalidInput`, since the caller's request was well-formed).
+            error @ OrderbookError::QuoteEchoMismatch { .. } => Self::Orderbook {
+                schema_version: SchemaVersion::V1,
+                code: None,
+                category: None,
+                message: orderbook_message(error.to_string()),
+                retryable,
+                retry_after_ms,
+            },
             OrderbookError::InvalidTradesQuery { field, reason }
             | OrderbookError::InvalidQuoteRequest { field, reason } => {
                 Self::invalid(field, reason.to_string())

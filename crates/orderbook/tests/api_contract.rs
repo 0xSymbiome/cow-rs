@@ -471,7 +471,10 @@ async fn get_quote_and_send_order_cover_quote_and_duplicate_order_paths() {
             crate::common::sample_buy_token(),
             sample_owner(),
             OrderQuoteSide::sell(
-                Amount::new("1000000").expect("test amount literal must be valid"),
+                // The canned quote response echoes a fixed leg of
+                // sellAmount 1000 + feeAmount 10, so the request asks for the
+                // same before-fee total and `ensure_matches` reconciles it.
+                Amount::new("1010").expect("test amount literal must be valid"),
             ),
         ))
         .await
@@ -1110,7 +1113,10 @@ mod recording_transport {
                 sample_buy_token(),
                 sample_owner(),
                 OrderQuoteSide::sell(
-                    Amount::new("1000000").expect("test amount literal must be valid"),
+                    // The canned quote response echoes a fixed leg of
+                    // sellAmount 1000 + feeAmount 10, so the request asks for the
+                    // same before-fee total and `ensure_matches` reconciles it.
+                    Amount::new("1010").expect("test amount literal must be valid"),
                 ),
             ))
             .await

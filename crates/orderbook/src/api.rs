@@ -253,6 +253,11 @@ impl OrderbookApi {
         let params = FetchParams::new("/api/v1/quote", HttpMethod::Post).with_body(body);
 
         let response: OrderQuoteResponse = self.fetch_json(params).await?;
+        // Fail closed if the orderbook did not echo the request-determined
+        // fields: a response that altered the fixed leg, the balance sources, or
+        // the token pair would otherwise be projected into a signable order the
+        // caller never requested (ADR 0058).
+        response.ensure_matches(request)?;
         #[cfg(feature = "tracing")]
         if let Some(quote_id) = response.id {
             tracing::Span::current().record("quote_id", quote_id);

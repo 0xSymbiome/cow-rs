@@ -219,7 +219,7 @@ pub use api::OrderbookApi;
 pub use builder::{
     ChainIdSet, ChainIdUnset, EnvSet, EnvUnset, OrderbookApiBuilder, TransportSet, TransportUnset,
 };
-pub use error::{HashMismatchStage, OrderbookError};
+pub use error::{HashMismatchStage, OrderbookError, QuoteEchoField};
 pub use rejection::{OrderbookRejection, OrderbookRejectionCategory, parse_rejection};
 pub use request::{HttpMethod, OrderbookApiError, ResponseBody};
 pub use transform::{calculate_total_fee, transform_order, transform_orders};

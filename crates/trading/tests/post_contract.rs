@@ -214,6 +214,43 @@ async fn swap_posting_preserves_non_default_balance_semantics_from_quote_to_subm
 }
 
 #[tokio::test]
+async fn signed_balance_sources_bind_to_the_request_not_the_quote_response() {
+    // ADR 0058 / B3: the signed order binds the balance sources the caller
+    // requested, not the response echo. A response returning different sources
+    // (which the live `OrderbookApi::quote` echo gate rejects, but a mock
+    // bypasses) must not change the signed order — the request is authoritative.
+    let trader = sample_trader_parameters();
+    let mut quote_response = sell_quote_response();
+    quote_response.quote.sell_token_balance = SellTokenSource::External;
+    quote_response.quote.buy_token_balance = BuyTokenDestination::Internal;
+    let orderbook = MockOrderbook::new(trader.chain_id, quote_response);
+    let signer = MockSigner::default();
+    // No balance override: the trade parameters keep their default erc20 sources.
+    let trade = sample_trade_parameters(OrderKind::Sell);
+
+    let result = post_swap_order(&trade, &trader, &signer, None, &orderbook)
+        .await
+        .expect("swap posting should succeed");
+    let sent_order = orderbook
+        .state()
+        .sent_orders
+        .last()
+        .cloned()
+        .expect("order must be recorded");
+
+    assert_eq!(
+        result.order_to_sign.sell_token_balance,
+        SellTokenSource::Erc20
+    );
+    assert_eq!(
+        result.order_to_sign.buy_token_balance,
+        BuyTokenDestination::Erc20
+    );
+    assert_eq!(sent_order.sell_token_balance, SellTokenSource::Erc20);
+    assert_eq!(sent_order.buy_token_balance, BuyTokenDestination::Erc20);
+}
+
+#[tokio::test]
 async fn limit_posting_disables_cost_slippage_adjustments_for_sell_and_buy_orders() {
     let trader = sample_trader_parameters();
     let signer = MockSigner::default();

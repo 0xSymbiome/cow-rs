@@ -1,6 +1,6 @@
 use serde::{Deserialize, Deserializer, Serialize, de::Error as DeError};
 
-use crate::error::OrderbookError;
+use crate::error::{OrderbookError, QuoteEchoField};
 
 use super::{
     Address, Amount, AppDataHash, BuyTokenDestination, OrderKind, QuoteAppData, SellTokenSource,
@@ -900,6 +900,25 @@ pub struct OrderQuoteResponse {
     pub protocol_fee_bps: Option<String>,
 }
 
+/// Fails closed with [`OrderbookError::QuoteEchoMismatch`] when `echoes` is
+/// false, naming the request-determined field that diverged.
+fn require(
+    field: QuoteEchoField,
+    echoes: bool,
+    expected: String,
+    received: String,
+) -> Result<(), OrderbookError> {
+    if echoes {
+        Ok(())
+    } else {
+        Err(OrderbookError::QuoteEchoMismatch {
+            field,
+            expected,
+            received,
+        })
+    }
+}
+
 impl OrderQuoteResponse {
     /// Creates a quote response from the resolved quote payload and its expiration timestamp.
     #[must_use]
@@ -911,6 +930,150 @@ impl OrderQuoteResponse {
             id: None,
             verified,
             protocol_fee_bps: None,
+        }
+    }
+
+    /// Verifies this `/quote` response echoes every request-determined field of
+    /// `request` unchanged, returning [`OrderbookError::QuoteEchoMismatch`] on
+    /// the first field the orderbook did not return as asked.
+    ///
+    /// [`OrderbookApi::quote`](crate::OrderbookApi::quote) calls this
+    /// automatically, so a quote that would build an order the caller did not
+    /// request never reaches a signing path; raw consumers holding a stored
+    /// response can call it directly.
+    ///
+    /// The check is scoped to the fields the request *determines*. The quote's
+    /// variable leg — the price the solver returns for the unfixed side — is the
+    /// answer to the request and is never constrained.
+    ///
+    /// Checked: the sell/buy token pair, order kind, the owner `from` (when the
+    /// response carries it), the partial-fill flag, both balance sources, a
+    /// pinned app-data hash (only when the request pinned one), an absolute
+    /// `validTo` (only the `validTo` validity form), an explicit receiver (only
+    /// when both sides carry one), and the fixed amount leg. The fixed-leg fold
+    /// mirrors the services quote arithmetic: a `sellAmountBeforeFee` request
+    /// holds `sellAmount + feeAmount == requested`, a `sellAmountAfterFee`
+    /// request holds `sellAmount == requested`, and a buy request holds
+    /// `buyAmount == requested`.
+    ///
+    /// Deliberately unchecked: the variable amount leg (the quote itself),
+    /// `expiration` and a relative `validFor` (server-computed), the quote `id`,
+    /// `verified`, the read-only gas estimate fields, and `protocolFeeBps`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError::QuoteEchoMismatch`] identifying the first
+    /// request-determined field the response failed to echo.
+    pub fn ensure_matches(&self, request: &OrderQuoteRequest) -> Result<(), OrderbookError> {
+        let quote = &self.quote;
+
+        require(
+            QuoteEchoField::SellToken,
+            request.sell_token == quote.sell_token,
+            request.sell_token.to_string(),
+            quote.sell_token.to_string(),
+        )?;
+        require(
+            QuoteEchoField::BuyToken,
+            request.buy_token == quote.buy_token,
+            request.buy_token.to_string(),
+            quote.buy_token.to_string(),
+        )?;
+        require(
+            QuoteEchoField::Kind,
+            request.side.kind() == quote.kind,
+            format!("{:?}", request.side.kind()),
+            format!("{:?}", quote.kind),
+        )?;
+        require(
+            QuoteEchoField::PartiallyFillable,
+            request.partially_fillable == quote.partially_fillable,
+            request.partially_fillable.to_string(),
+            quote.partially_fillable.to_string(),
+        )?;
+        require(
+            QuoteEchoField::SellTokenBalance,
+            request.sell_token_balance == quote.sell_token_balance,
+            format!("{:?}", request.sell_token_balance),
+            format!("{:?}", quote.sell_token_balance),
+        )?;
+        require(
+            QuoteEchoField::BuyTokenBalance,
+            request.buy_token_balance == quote.buy_token_balance,
+            format!("{:?}", request.buy_token_balance),
+            format!("{:?}", quote.buy_token_balance),
+        )?;
+
+        if let (Some(requested), Some(returned)) = (request.receiver, quote.receiver) {
+            require(
+                QuoteEchoField::Receiver,
+                requested == returned,
+                requested.to_string(),
+                returned.to_string(),
+            )?;
+        }
+
+        if let Some(returned) = self.from {
+            require(
+                QuoteEchoField::From,
+                request.from == returned,
+                request.from.to_string(),
+                returned.to_string(),
+            )?;
+        }
+
+        if let Some(pinned) = request.app_data.hash {
+            require(
+                QuoteEchoField::AppDataHash,
+                quote.app_data == pinned,
+                pinned.to_string(),
+                quote.app_data.to_string(),
+            )?;
+        }
+
+        if let QuoteValidity::ValidTo(valid_to) = request.validity {
+            require(
+                QuoteEchoField::ValidTo,
+                quote.valid_to == valid_to,
+                valid_to.to_string(),
+                quote.valid_to.to_string(),
+            )?;
+        }
+
+        self.ensure_fixed_leg(&request.side)
+    }
+
+    /// Checks the fixed amount leg against the response using the services quote
+    /// arithmetic for the request's side basis: a sell request fixes the sell
+    /// leg (before-fee folds the network cost back in, after-fee passes through),
+    /// a buy request fixes the buy leg. The opposite leg is the quote and is left
+    /// free.
+    fn ensure_fixed_leg(&self, side: &OrderQuoteSide) -> Result<(), OrderbookError> {
+        let quote = &self.quote;
+        match side {
+            OrderQuoteSide::Sell { sell_amount } => {
+                let requested = *sell_amount.amount();
+                let returned = match sell_amount {
+                    SellAmount::BeforeFee { .. } => {
+                        quote.sell_amount.checked_add(quote.network_cost_amount())
+                    }
+                    SellAmount::AfterFee { .. } => Some(quote.sell_amount),
+                };
+                require(
+                    QuoteEchoField::FixedSellAmount,
+                    returned == Some(requested),
+                    requested.to_string(),
+                    returned.map_or_else(|| "overflow".to_owned(), |amount| amount.to_string()),
+                )
+            }
+            OrderQuoteSide::Buy {
+                buy_amount_after_fee,
+            } => require(
+                QuoteEchoField::FixedBuyAmount,
+                quote.buy_amount == *buy_amount_after_fee,
+                buy_amount_after_fee.to_string(),
+                quote.buy_amount.to_string(),
+            ),
         }
     }
 

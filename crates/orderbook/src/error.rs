@@ -46,6 +46,62 @@ impl fmt::Display for HashMismatchStage {
     }
 }
 
+/// Request-determined field of a `/quote` response that
+/// [`OrderQuoteResponse::ensure_matches`](crate::OrderQuoteResponse::ensure_matches)
+/// found the orderbook did not echo unchanged.
+///
+/// Carried by [`OrderbookError::QuoteEchoMismatch`]. The discriminant is typed
+/// rather than a free-form string, so a caller can match the specific field a
+/// hostile or buggy orderbook altered.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+#[non_exhaustive]
+pub enum QuoteEchoField {
+    /// The sell-token address.
+    SellToken,
+    /// The buy-token address.
+    BuyToken,
+    /// The order kind (sell or buy).
+    Kind,
+    /// The explicit receiver.
+    Receiver,
+    /// The effective owner (`from`).
+    From,
+    /// The partial-fill flag.
+    PartiallyFillable,
+    /// The sell-token balance source.
+    SellTokenBalance,
+    /// The buy-token balance destination.
+    BuyTokenBalance,
+    /// The fixed sell amount the request committed to (sell-side requests).
+    FixedSellAmount,
+    /// The fixed buy amount the request committed to (buy-side requests).
+    FixedBuyAmount,
+    /// A pinned app-data hash.
+    AppDataHash,
+    /// An absolute `validTo` expiry.
+    ValidTo,
+}
+
+impl fmt::Display for QuoteEchoField {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            Self::SellToken => "sell token",
+            Self::BuyToken => "buy token",
+            Self::Kind => "kind",
+            Self::Receiver => "receiver",
+            Self::From => "owner",
+            Self::PartiallyFillable => "partially-fillable flag",
+            Self::SellTokenBalance => "sell-token balance",
+            Self::BuyTokenBalance => "buy-token balance",
+            Self::FixedSellAmount => "fixed sell amount",
+            Self::FixedBuyAmount => "fixed buy amount",
+            Self::AppDataHash => "app-data hash",
+            Self::ValidTo => "validTo",
+        })
+    }
+}
+
 /// Errors returned by the typed orderbook client and transport helpers.
 #[non_exhaustive]
 #[derive(Debug, Error)]
@@ -170,6 +226,31 @@ pub enum OrderbookError {
         /// Stage of the upload flow that detected the mismatch.
         stage: HashMismatchStage,
     },
+    /// A `/quote` response did not echo a request-determined field, so trusting
+    /// it would build an order the caller did not request.
+    ///
+    /// Detected by
+    /// [`OrderQuoteResponse::ensure_matches`](crate::OrderQuoteResponse::ensure_matches),
+    /// which [`OrderbookApi::quote`](crate::OrderbookApi::quote) invokes
+    /// automatically. The quote's variable leg — the price the solver returns
+    /// for the unfixed side — is never checked; only the fields the request
+    /// determines must come back unchanged, including the fixed amount leg whose
+    /// fold mirrors the services quote arithmetic. Distinct from
+    /// [`OrderbookError::AppDataHashMismatch`]: the same server-echo integrity
+    /// posture, applied to the quote's request-determined fields rather than to
+    /// the app-data hash.
+    #[error(
+        "quote response field {field} does not match the request: \
+         expected {expected}, received {received}"
+    )]
+    QuoteEchoMismatch {
+        /// Request-determined field the response failed to echo.
+        field: QuoteEchoField,
+        /// Value the request determined.
+        expected: String,
+        /// Value the response returned.
+        received: String,
+    },
     /// A long-running orderbook operation was cancelled through a cooperative cancellation token.
     #[error("orderbook operation was cancelled")]
     Cancelled,
@@ -241,8 +322,10 @@ impl OrderbookError {
             }
             Self::Cancelled => ErrorClass::Cancelled,
             // HostPolicy, Serialization, IncompatibleSigningScheme,
-            // InvalidTransform, and AppDataHashMismatch plus future additive
-            // variants classify as internal.
+            // InvalidTransform, AppDataHashMismatch, QuoteEchoMismatch, and
+            // future additive variants classify as internal — a successful
+            // response that violates an SDK integrity invariant rather than a
+            // transport or remote-status fault.
             _ => ErrorClass::Internal,
         }
     }
@@ -256,8 +339,8 @@ impl OrderbookError {
     /// connection failure, request-layer failure, or unclassified transport
     /// error) rather than a deterministic decode, body, builder, status, or
     /// oversize-response failure. Validation, serialization,
-    /// signing-scheme, transform, hash-mismatch, host-policy, core, and
-    /// cancellation faults are never retryable.
+    /// signing-scheme, transform, hash-mismatch, quote-echo, host-policy,
+    /// core, and cancellation faults are never retryable.
     ///
     /// This is the same verdict the SDK's own transport retry loop reaches, so
     /// a consumer that drives its own retry loop over a returned error does not

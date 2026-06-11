@@ -1,9 +1,9 @@
 # Quote Response Surface Audit
 
 Status: Current
-Last reviewed: 2026-06-10
+Last reviewed: 2026-06-11
 Owning surface: cow-sdk-orderbook quote request/response DTOs and cow-sdk-trading quote projection
-Refresh trigger: changes to the quote DTOs (`OrderQuoteRequest`, `OrderQuoteResponse`, `QuoteData`), the orderbook quote OpenAPI schemas, the quote-amounts projection, or the `priceQuality` default
+Refresh trigger: changes to the quote DTOs (`OrderQuoteRequest`, `OrderQuoteResponse`, `QuoteData`), the orderbook quote OpenAPI schemas, the quote-amounts projection, the quote-echo binding (`ensure_matches`), or the `priceQuality` default
 Related docs:
 - [ADR 0058](../adr/0058-typed-quote-request-response-surface.md)
 - [ADR 0031](../adr/0031-wire-dto-openapi-driven-with-order-auction-order-split.md)
@@ -22,8 +22,13 @@ This audit covers:
   `gasAmount`, `gasPrice`, `sellTokenPrice`)
 - the quote-amounts projection that derives the signable order from a `/quote`
   response, and its parity test
-- the SDK trust posture: the projected order is validated by the client-side
-  bounds validator and the quote response is not field-bound to the request
+- the quote-echo binding: `OrderQuoteResponse::ensure_matches`, auto-invoked by
+  `OrderbookApi::quote`, reconciles every request-determined field of the
+  response against the request before the projection runs
+- the SDK trust posture: the request-determined fields are bound to the request,
+  the variable price leg stays free, the signed order binds the caller's balance
+  sources, and the projected order is still validated by the client-side bounds
+  validator
 - the quote request payload's current validation contract
 
 It does not cover order submission (other trading audits), app-data document
@@ -38,7 +43,8 @@ content, or composable-order quoting.
 | Price-quality default | `OrderQuoteRequest` defaults `priceQuality` to `optimal`, the submittable estimate, and always serializes it. | Conforms |
 | Read-only quote costs | The quote network-cost fields are populated only from the `/quote` response and exposed through accessors; no public builder exposes a setter. | Conforms |
 | Projection parity | The quote-amounts projection matches the orderbook quote-amounts algorithm and is locked by a parity regression test. | Conforms |
-| Trust posture | The SDK validates the projected order through the bounds validator before submission and does not field-bind the quote response to the request. | Conforms |
+| Quote-echo binding | `OrderbookApi::quote` reconciles every request-determined field of the response against the request through `OrderQuoteResponse::ensure_matches`, failing closed with `OrderbookError::QuoteEchoMismatch`; the variable price leg stays free and the fixed-leg fold follows the services arithmetic per side basis. | Conforms |
+| Trust posture | The request-determined fields are bound to the request and the signed order binds the caller's balance sources rather than the response echo; the variable price leg stays trusted, and the projected order is still validated through the bounds validator before submission. | Conforms |
 | Forward compatibility | `QuoteData` stays open to additive upstream fields (no `serde(deny_unknown_fields)` in response position). | Conforms |
 
 ## Current Contract
@@ -83,14 +89,36 @@ network fee on a sell order's signed sell amount (the settlement contract
 deducts it on-chain) and carries it on top of a buy order's signed sell amount.
 The projection is locked by `crates/trading/tests/quote_projection_parity.rs`.
 
+### Quote-Echo Binding
+
+`OrderbookApi::quote` invokes `OrderQuoteResponse::ensure_matches` on every
+response and fails closed with `OrderbookError::QuoteEchoMismatch` when a
+request-determined field did not come back unchanged: the token pair, order
+kind, owner (`from`, when the response carries it), partial-fill flag, both
+balance sources, a pinned app-data hash (only when the request pinned one), an
+absolute `validTo` (only the `validTo` validity form), an explicit receiver
+(only when both sides carry one), and the fixed amount leg. The fixed-leg fold
+mirrors the services quote arithmetic per side basis: a `sellAmountBeforeFee`
+request holds `sellAmount + feeAmount == requested`, a `sellAmountAfterFee`
+request holds `sellAmount == requested`, and a buy request holds `buyAmount ==
+requested`. The variable price leg — the amount the solver quotes for the
+unfixed side — is the answer to the request and is never constrained.
+`QuoteEchoField` carries the typed discriminant so a caller can match the
+specific field that diverged.
+
 ### Trust Posture
 
-The SDK signs the client-computed app-data digest and the projected amounts and
-validates the resulting order through the client-side bounds validator
+The SDK signs the client-computed app-data digest and the projected amounts.
+The request-determined fields of the quote response are bound to the request by
+the echo check above, and the signed order binds the caller's requested balance
+sources rather than the response echo — so a coherent response that altered the
+fixed leg or the balance sources fails closed before any signing path. The
+variable price leg stays trusted, because it is the answer to the request. The
+projected order is still validated through the client-side bounds validator
 ([ADR 0015](../adr/0015-client-side-order-bounds-validator.md)) before
-submission. It does not field-bind the quote response to the quote request; the
-defensive layer is the bounds validator on the projected order, not a per-field
-equality check against the request.
+submission: the bounds validator checks well-formedness (owner present, not
+expired, non-zero amounts, token rules), which is orthogonal to the echo
+check's intent-agreement guarantee (ADR 0058, revised 2026-06-11).
 
 ### Quote Request
 
@@ -118,7 +146,10 @@ Primary implementation points:
 
 - `crates/orderbook/src/types/quote.rs`
 - `crates/orderbook/src/types/enums.rs`
+- `crates/orderbook/src/error.rs`
+- `crates/orderbook/src/api.rs`
 - `crates/orderbook/src/lib.rs`
+- `crates/trading/src/order.rs`
 - `crates/trading/src/slippage/amounts.rs`
 - `parity/openapi/coverage.yaml`
 - `parity/fixtures/orderbook/order_quote_response.json`
@@ -131,6 +162,10 @@ Primary regression coverage:
 - `crates/orderbook/tests/types_contract.rs`
 - `crates/trading/tests/quote_projection_parity.rs::sell_signable_amounts_fold_network_cost_into_sell`
 - `crates/trading/tests/quote_projection_parity.rs::buy_signable_amounts_inflate_sell_by_network_cost`
+- `crates/orderbook/tests/quote_echo_contract.rs::honest_sell_before_fee_response_passes`
+- `crates/orderbook/tests/quote_echo_contract.rs::inflated_fixed_sell_leg_fails`
+- `crates/orderbook/tests/quote_echo_contract.rs::quote_fails_closed_end_to_end_on_a_tampered_fixed_leg`
+- `crates/trading/tests/post_contract.rs::signed_balance_sources_bind_to_the_request_not_the_quote_response`
 
 Validation surface:
 
@@ -138,6 +173,8 @@ Validation surface:
 cargo parity-openapi-coverage
 cargo test -p cow-sdk-orderbook --test fee_amount_is_not_a_public_builder_setter
 cargo test -p cow-sdk-orderbook --test wire_contract
+cargo test -p cow-sdk-orderbook --test quote_echo_contract
 cargo test -p cow-sdk-orderbook --doc
 cargo test -p cow-sdk-trading --test quote_projection_parity
+cargo test -p cow-sdk-trading --test post_contract
 ```

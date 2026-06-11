@@ -171,8 +171,13 @@ pub fn swap_params_to_limit_order_params(
         settlement_contract_override: trade_parameters.settlement_contract_override.clone(),
         eth_flow_contract_override: trade_parameters.eth_flow_contract_override.clone(),
         partially_fillable: trade_parameters.partially_fillable,
-        sell_token_balance: quote_response.quote.sell_token_balance,
-        buy_token_balance: quote_response.quote.buy_token_balance,
+        // The signed order binds the balance sources the caller requested, not
+        // the response echo. `OrderbookApi::quote` already proved the response
+        // echoed these (ADR 0058), so this is byte-identical under an honest
+        // orderbook and the authority is the caller's request rather than the
+        // wire.
+        sell_token_balance: trade_parameters.sell_token_balance,
+        buy_token_balance: trade_parameters.buy_token_balance,
         slippage_bps: trade_parameters.slippage_bps,
         receiver: trade_parameters.receiver,
         valid_for: trade_parameters.valid_for,

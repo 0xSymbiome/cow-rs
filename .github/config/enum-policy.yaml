@@ -490,6 +490,11 @@ enums:
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: App-data hash-mismatch detection stages can grow as the orderbook client adds integrity checkpoints.
+  - name: QuoteEchoField
+    file: crates/orderbook/src/error.rs
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: The quote-echo binding can grow the set of request-determined fields it reconciles as the quote surface adds integrity checks.
   - name: RetrySignal
     file: crates/core/src/transport/policy/runner.rs
     category: sdk-local-state
