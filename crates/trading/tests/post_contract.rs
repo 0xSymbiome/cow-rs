@@ -401,6 +401,41 @@ async fn recoverable_limit_posting_rejects_owner_signer_mismatch_before_upload_o
 }
 
 #[tokio::test]
+async fn post_sign_recovery_rejects_a_signer_that_signs_with_a_different_key() {
+    // ADR 0015 post-sign owner-recovery gate: the pre-sign self-report check
+    // passes because the owner resolves to the signer's reported address
+    // (OWNER), but the signer actually signs with the key for a different
+    // account, so the produced signature recovers to that other address. The
+    // gate inspects the signature itself and fails closed — a case the
+    // self-reported address cannot catch.
+    let trader = sample_trader_parameters();
+    let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
+    // Anvil account 1 — a real key whose address differs from OWNER.
+    let other_key_address = address("0x70997970c51812dc3a010c7d01b50e0d17dc79c8");
+    let signer = MockSigner::default().with_sign_key_address(other_key_address);
+    let trade = sample_trade_parameters(OrderKind::Sell);
+
+    let error = post_swap_order(&trade, &trader, &signer, None, &orderbook)
+        .await
+        .expect_err("a signature recovering to a different key must fail closed");
+
+    match error {
+        cow_sdk_trading::TradingError::ClientRejected(
+            cow_sdk_trading::ClientRejection::OwnerMismatch {
+                expected,
+                recovered,
+            },
+        ) => {
+            assert_eq!(expected, address(OWNER));
+            assert_eq!(recovered, other_key_address);
+        }
+        other => panic!("expected OwnerMismatch, got {other:?}"),
+    }
+    // The mismatched order never reaches submission.
+    assert!(orderbook.state().sent_orders.is_empty());
+}
+
+#[tokio::test]
 async fn post_swap_order_appdata_from_mismatch_does_not_upload_or_sign() {
     let trader = sample_trader_parameters();
     let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());

@@ -290,6 +290,43 @@ fn order_creation_from_quote_keeps_quote_shape_and_quote_id() {
 }
 
 #[test]
+fn from_quote_binds_caller_receiver_not_the_quote_echo() {
+    // ADR 0058: `from_quote` must never project the echoed `quote.receiver`.
+    // The quote-echo gate only reconciles the receiver when the request also
+    // pins one, so an omitted caller receiver must resolve to the owner
+    // (pay-to-owner `None`) rather than adopting an unverified, server-supplied
+    // address a hostile orderbook could use to redirect proceeds.
+    let mut quote_response = serde_json::from_value::<cow_sdk_orderbook::OrderQuoteResponse>(
+        sample_quote_response_json(),
+    )
+    .expect("quote response fixture must deserialize");
+    // A concrete receiver appears on the response echo.
+    quote_response.quote.receiver = Some(sample_buy_token());
+
+    let order = OrderCreation::from_quote(
+        &quote_response,
+        sample_owner(),
+        None,
+        SigningScheme::Eip712,
+        sample_signature(),
+    );
+    assert_eq!(
+        order.receiver, None,
+        "the echoed quote.receiver must not be projected when the caller pins none",
+    );
+
+    // A caller-supplied receiver is still honored verbatim.
+    let explicit = OrderCreation::from_quote(
+        &quote_response,
+        sample_owner(),
+        Some(sample_owner()),
+        SigningScheme::Eip712,
+        sample_signature(),
+    );
+    assert_eq!(explicit.receiver, Some(sample_owner()));
+}
+
+#[test]
 fn order_creation_serialize_routes_app_data_combinations_to_services_variants() {
     // The cow `OrderCreation::Serialize` impl routes the four
     // `(app_data, app_data_hash)` combinations onto the three services

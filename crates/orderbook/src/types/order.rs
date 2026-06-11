@@ -255,7 +255,12 @@ impl OrderCreation {
         Self {
             sell_token: quote.sell_token,
             buy_token: quote.buy_token,
-            receiver: receiver.or(quote.receiver),
+            // The receiver is caller-determined, never the response echo: a
+            // `/quote` response's receiver is only reconciled against the
+            // request when both carry one (ADR 0058), so falling back to the
+            // echoed `quote.receiver` here would project an unverified address
+            // a hostile orderbook controls. `None` resolves to the owner.
+            receiver,
             sell_amount: quote.sell_amount,
             buy_amount: quote.buy_amount,
             valid_to: quote.valid_to,

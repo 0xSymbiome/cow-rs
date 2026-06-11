@@ -1,17 +1,20 @@
 # Trading Order-Bounds Validator Audit
 
 Status: Current
-Last reviewed: 2026-06-07
+Last reviewed: 2026-06-11
 Owning surface: `cow-sdk-trading` `OrderBoundsValidator`,
-`ClientRejection`, `AmountSide`, and the `TradingError::ClientRejected`
-lifting variant.
+`ClientRejection`, `AmountSide`, the `TradingError::ClientRejected`
+lifting variant, and the post-sign owner-recovery gate in
+`post_cow_protocol_trade`.
 Refresh trigger: Changes to the `validate` signature, the
 `ClientRejection` variant set, the not-expired (`ValidToInPast`) check, the
 `OrderBoundsValidator::services_default_for_chain`
-constructor, the eth-flow `is_eth_flow` skip rule, upstream services
-`crates/shared/src/order_validation.rs` same-token semantics, the
-WETH-paired-with-native-buy guard, or the offline `TradeParams::validate`
-/ `LimitTradeParams::validate` builder-level subset.
+constructor, the eth-flow `is_eth_flow` skip rule, the post-sign
+owner-recovery gate (`assert_owner_matches_signer` over the signature
+recovered by `RecoverableSignature::recover`), upstream services
+`crates/shared/src/order_validation.rs` same-token and `WrongOwner`
+semantics, the WETH-paired-with-native-buy guard, or the offline
+`TradeParams::validate` / `LimitTradeParams::validate` builder-level subset.
 Related docs:
 - [ADR 0015](../adr/0015-client-side-order-bounds-validator.md)
 - [Architecture](../architecture.md)
@@ -53,6 +56,7 @@ encoder.
 | Variant coverage | Every stable invariant the validator enforces has a typed `ClientRejection` variant; the enum is `#[non_exhaustive]` | Conforms |
 | Validity invariant | The validator rejects an order whose `valid_to` is at or before `now` (`ValidToInPast`) and leaves the exact, operator-tunable validity window to services | Conforms |
 | Submission-seam policy | Every public submission seam constructs the validator via `OrderBoundsValidator::services_default_for_chain` and runs `validate` between order construction and HTTP upload | Conforms |
+| Owner-recovery gate | After signing and before submission, `post_cow_protocol_trade` recovers the signer from the produced ECDSA signature (`Eip712`/`EthSign`) via `RecoverableSignature::recover` and rejects `ClientRejection::OwnerMismatch { expected, recovered }` when the recovered address is not the declared owner — the client-side mirror of the services `WrongOwner` check. A pre-sign self-report fast-fail rejects an explicit owner ≠ `signer.address()` earlier; EIP-1271 and pre-sign carry no recoverable ECDSA signature and skip the gate | Conforms |
 | EthFlow skip rule | `is_eth_flow: true` skips the native-currency-sentinel sell-token check and runs every other invariant | Conforms |
 | Same-token policy | Mirrors the reviewed services `AllowSell` policy: exact same-token and WETH-paired-with-native-sentinel orders accept on sell-side and reject on buy-side with `SameBuyAndSellToken` | Conforms |
 | WETH-paired guard | A WETH-bound validator rejects buy-side `sell_token = WETH` paired with `buy_token = native sentinel` as `SameBuyAndSellToken { token: weth }` and accepts the sell-side pair | Conforms |

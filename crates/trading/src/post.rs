@@ -1,13 +1,14 @@
 //! Quote-to-post orchestration helpers grouped by order family.
 
+use cow_sdk_contracts::RecoverableSignature;
 use cow_sdk_core::{
     Address, Amount, ProtocolOptions, Provider, Signer, TransactionBroadcast, TransactionRequest,
     TypedDataPayload,
 };
 use cow_sdk_orderbook::{OrderClass, OrderCreation, SigningScheme};
 use cow_sdk_signing::{
-    SigningScheme as SigningSchemeContract, eip1271_signature_payload, sign_order,
-    sign_order_with_scheme,
+    SigningScheme as SigningSchemeContract, eip1271_signature_payload, generate_order_id,
+    sign_order, sign_order_with_scheme,
 };
 
 use crate::types::{
@@ -22,6 +23,37 @@ use crate::{
     adjust_eth_flow_limit_params, build_app_data, is_eth_flow_order, merge_and_seal_app_data,
     order_to_sign, params_from_doc, swap_params_to_limit_order_params,
 };
+
+/// Recovers the ECDSA signer from a produced order signature and requires it to
+/// equal the declared owner, the client-side mirror of the services
+/// submission-side `WrongOwner` check (ADR 0015).
+///
+/// Only `Eip712`/`EthSign` carry a recoverable ECDSA signature; EIP-1271 and
+/// pre-sign authorizations are verified by their own mechanisms and skip the
+/// gate. The recovery is scheme-aware (`EthSign` uses the EIP-191 prehash),
+/// and the digest is the order's EIP-712 hash — exactly what the signer signed
+/// — so an honest signer always recovers to `from`.
+fn assert_recovered_owner(
+    signature: &str,
+    order_to_sign: &cow_sdk_core::OrderData,
+    chain_id: cow_sdk_core::SupportedChainId,
+    options: &ProtocolOptions,
+    scheme: SigningScheme,
+    from: &Address,
+) -> Result<(), TradingError> {
+    let contract_scheme = match scheme {
+        SigningScheme::Eip712 => SigningSchemeContract::Eip712,
+        SigningScheme::EthSign => SigningSchemeContract::EthSign,
+        // EIP-1271 and pre-sign carry no recoverable ECDSA signature.
+        _ => return Ok(()),
+    };
+    let order_digest =
+        generate_order_id(chain_id, order_to_sign, from, Some(options))?.order_digest;
+    let recovered =
+        RecoverableSignature::parse_hex(signature)?.recover(&order_digest, contract_scheme)?;
+    crate::validation::assert_owner_matches_signer(from, &recovered)
+        .map_err(TradingError::ClientRejected)
+}
 
 fn build_order_body(
     order_to_sign: &cow_sdk_core::OrderData,
@@ -122,6 +154,10 @@ where
         .owner
         .or(signer_address)
         .ok_or(TradingError::MissingSubmissionOwner)?;
+    // Pre-sign fast-fail: reject a declared owner that disagrees with the
+    // signer's self-reported address before wasting an app-data upload and a
+    // signature. The post-sign recovery gate below is the authoritative check
+    // (it inspects the signature itself); this is the cheap early-out.
     if matches!(
         requested_scheme,
         SigningScheme::Eip712 | SigningScheme::EthSign
@@ -188,6 +224,20 @@ where
         &from,
     )
     .await?;
+
+    // Post-sign owner recovery: the produced ECDSA signature must recover to the
+    // declared owner before the order reaches the wire. This is the client-side
+    // mirror of the services submission-side `WrongOwner` check (ADR 0015) and
+    // catches a signer that reports one address but signs with a different key —
+    // a case the signer's self-reported address cannot.
+    assert_recovered_owner(
+        &signature,
+        &order_to_sign,
+        chain_id,
+        &options,
+        signing_scheme,
+        &from,
+    )?;
 
     let order_body = build_order_body(
         &order_to_sign,

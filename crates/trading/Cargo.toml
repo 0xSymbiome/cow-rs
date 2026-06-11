@@ -66,4 +66,5 @@ tokio = { workspace = true, features = ["macros", "rt", "test-util", "time"] }
 wasm-bindgen-test.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+cow-sdk-alloy-signer = { path = "../alloy-signer" }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread", "test-util", "time"] }

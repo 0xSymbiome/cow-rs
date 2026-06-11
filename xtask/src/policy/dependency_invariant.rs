@@ -8,6 +8,13 @@
 //! appears. The published-crate roster is read from the workspace manifest
 //! (see [`workspace::shipped_crates`]), so a newly added crate is covered
 //! automatically.
+//!
+//! The invariant protects the *shipped* dependency graph, so the inverse tree
+//! follows non-dev edges only (`--edges no-dev`): a dev-dependency is stripped
+//! from a published crate's dependency graph and cannot leak the heavyweight
+//! native crate to a consumer. A test that exercises the real signer or
+//! provider (for example to produce a recoverable signature) therefore stays
+//! allowed, while any normal- or build-dependency leak is still caught.
 
 use std::{path::PathBuf, process::Command};
 
@@ -70,7 +77,10 @@ pub fn run(invariant: &Invariant, args: &Args) -> anyhow::Result<()> {
     let mut command = Command::new("cargo");
     command
         .current_dir(&args.repo_root)
-        .args(["tree", "--invert", invariant.crate_name]);
+        // `--edges no-dev`: the invariant guards the shipped graph, and a
+        // dev-dependency never ships, so a test that pulls the real signer or
+        // provider does not leak it to consumers. Normal/build leaks still fail.
+        .args(["tree", "--edges", "no-dev", "--invert", invariant.crate_name]);
     for crate_name in &shipped {
         command.args(["-p", crate_name]);
     }

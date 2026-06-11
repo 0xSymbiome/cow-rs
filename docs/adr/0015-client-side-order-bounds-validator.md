@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-21
-- Last reviewed: 2026-06-07
+- Last reviewed: 2026-06-11
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: trading, validation, client-side, defense-in-depth, error-typing
 - Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md), [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
@@ -184,3 +184,37 @@ buy-side same-token, non-zero amounts, app-data-signer agreement, and the
 recoverable-owner check via `assert_owner_matches_signer` — are unchanged, as are
 the pure caller-supplied-`now` posture and the `TradingError::ClientRejected`
 typed channel.
+
+## Amendment 2026-06-11: the owner check recovers the signer from the signature
+
+The recoverable-owner check now actually recovers. Previously it compared the
+declared owner against the signer's self-reported `address()` before signing —
+a self-report the SDK cannot verify. A signer that reports address A but signs
+with key B (a hardware wallet on the wrong derivation path, a misloaded key, a
+buggy or adversarial `Signer`) produced a valid signature recovering to B while
+the order declared `from = A`; the self-report check passed it, and only the
+services submission-side recovery (`WrongOwner`) caught it after a full round
+trip.
+
+`post_cow_protocol_trade` now recovers the signer from the produced ECDSA
+signature and the order's EIP-712 digest after signing and before submission,
+and rejects `ClientRejection::OwnerMismatch { expected, recovered }` when the
+recovered address is not the declared owner — the client-side mirror of the
+services `WrongOwner` check. `expected` is the declared owner; `recovered` is
+the address the signature actually recovers to.
+
+- The check is ECDSA-only (`Eip712`/`EthSign`). EIP-1271 and pre-sign
+  authorizations carry no recoverable ECDSA signature and are verified by their
+  own mechanisms (on-chain EIP-1271 verification; the owner setting the
+  pre-signature flag). Recovery is scheme-aware (EthSign uses the EIP-191
+  prehash) through `RecoverableSignature::recover`, with ADR 0022
+  canonicalization enforced before any recovery runs.
+- The pre-sign self-report comparison is retained as a cheap fast-fail that
+  rejects an explicit owner ≠ `signer.address()` before wasting an app-data
+  upload and a signature; the post-sign recovery is the authoritative check
+  that inspects the signature itself. The gate fires before `send_order`, so a
+  mismatched order never reaches the wire.
+- No public surface changes: the check reuses the existing
+  `ClientRejection::OwnerMismatch` variant and `assert_owner_matches_signer`
+  helper. The `recovered` field — already its name — now carries the address
+  recovered from the signature rather than the signer's self-report.

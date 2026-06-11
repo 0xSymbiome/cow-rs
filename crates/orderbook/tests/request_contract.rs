@@ -936,7 +936,10 @@ mod tracing_contract {
                 sample_owner(),
                 sample_buy_token(),
                 sample_owner(),
-                OrderQuoteSide::sell(Amount::new("1000000").expect("test amount literal is valid")),
+                // The shared quote fixture echoes a fixed leg of sellAmount 1000
+                // + feeAmount 10, so the request asks for the same before-fee
+                // total and the quote-echo gate reconciles it (ADR 0058).
+                OrderQuoteSide::sell(Amount::new("1010").expect("test amount literal is valid")),
             ))
             .await
             .expect("quote should succeed");

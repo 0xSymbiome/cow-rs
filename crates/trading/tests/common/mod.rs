@@ -1,6 +1,7 @@
 #![allow(
     dead_code,
-    reason = "shared test-helper module aggregates fixtures, constants, and adapters that not every integration test binary exercises; an integration test may use only a subset of the shared helpers without leaving the others permanently unused"
+    clippy::missing_const_for_fn,
+    reason = "shared test-helper module aggregates fixtures, constants, and adapters that not every integration test binary exercises; an integration test may use only a subset of the shared helpers without leaving the others permanently unused, and forcing const on builder-style test helpers adds no value"
 )]
 
 use std::{
@@ -33,7 +34,11 @@ use cow_sdk_trading::{
 // canonicalizes input casing at construction (ADR 0052).
 pub const WETH: &str = "0xfff9976782d46cc05630d1f6ebab18b2324d6b14";
 pub const COW: &str = "0x0625afb445c3b6b7b929342a04a22599fd5dbb59";
-pub const OWNER: &str = "0xc8c753ee51e8fc80e199ab297fb575634a1ac1d3";
+// The default owner/signer is a well-known deterministic test account (Anvil
+// account 0) so the post-sign owner-recovery gate (ADR 0015) recovers the real
+// signer from `MockSigner`'s genuine ECDSA signature. The signing keys for the
+// addresses that sign successfully live in `test_signing_key_for` below.
+pub const OWNER: &str = "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266";
 pub const ALT_RECEIVER: &str = "0x974caa59e49682cda0ad2bbe82983419a2ecc400";
 pub const CUSTOM_SETTLEMENT: &str = "0x13579bdf2468ace013579bdf2468ace013579bdf";
 pub const CUSTOM_ETHFLOW: &str = "0x2468ace013579bdf2468ace013579bdf2468ace0";
@@ -386,6 +391,11 @@ impl Default for MockSignerState {
 #[derive(Clone)]
 pub struct MockSigner {
     pub address: Address,
+    /// The address whose key actually produces the ECDSA signature. Defaults to
+    /// `address` (an honest signer); a test sets it to a different known
+    /// address to model a signer that reports one identity but signs with
+    /// another, exercising the post-sign owner-recovery gate.
+    pub sign_key_address: Address,
     pub state: Arc<Mutex<MockSignerState>>,
 }
 
@@ -399,8 +409,17 @@ impl MockSigner {
     pub fn new(address: Address) -> Self {
         Self {
             address,
+            sign_key_address: address,
             state: Arc::new(Mutex::new(MockSignerState::default())),
         }
+    }
+
+    /// Reports `self.address` but signs with the key for `sign_key_address`,
+    /// modelling a signer that lies about its identity.
+    #[must_use]
+    pub fn with_sign_key_address(mut self, sign_key_address: Address) -> Self {
+        self.sign_key_address = sign_key_address;
+        self
     }
 
     pub fn state(&self) -> MockSignerState {
@@ -409,6 +428,41 @@ impl MockSigner {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .clone()
     }
+}
+
+/// The private key for a known deterministic test address (Anvil accounts),
+/// used by `MockSigner` to produce a genuine ECDSA signature that recovers to
+/// that address. `None` for addresses that never sign successfully (their
+/// posts are rejected before the owner-recovery gate), which keep the canned
+/// signature.
+#[cfg(not(target_arch = "wasm32"))]
+fn test_signing_key_for(signer: &Address) -> Option<&'static str> {
+    match signer.to_hex_string().as_str() {
+        // Anvil account 0 == OWNER.
+        "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266" => {
+            Some("0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80")
+        }
+        // Anvil account 1 == THIRD_OWNER (app_data_merge override identity).
+        "0x70997970c51812dc3a010c7d01b50e0d17dc79c8" => {
+            Some("0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d")
+        }
+        _ => None,
+    }
+}
+
+/// Produces a genuine EIP-712 signature over `payload` with the given test key,
+/// so the post-sign owner-recovery gate recovers the key's address.
+#[cfg(not(target_arch = "wasm32"))]
+async fn real_sign_typed_data(key: &str, payload: &TypedDataPayload) -> Result<String, String> {
+    let signer = cow_sdk_alloy_signer::LocalAlloySigner::builder()
+        .private_key(key)
+        .map_err(|error| error.to_string())?
+        .chain_id(SupportedChainId::Mainnet)
+        .build()
+        .map_err(|error| error.to_string())?;
+    Signer::sign_typed_data_payload(&signer, payload)
+        .await
+        .map_err(|error| error.to_string())
 }
 
 impl Signer for MockSigner {
@@ -434,6 +488,15 @@ impl Signer for MockSigner {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .last_typed_data_domain = Some(payload.domain.clone());
+        // On native targets sign for real with the test key for the signing
+        // identity, so the produced signature recovers to that address and the
+        // post-sign owner-recovery gate accepts (or rejects) it on its merits.
+        // Addresses without a known key (and the wasm lane, which never reaches
+        // the gate) keep the canned signature.
+        #[cfg(not(target_arch = "wasm32"))]
+        if let Some(key) = test_signing_key_for(&self.sign_key_address) {
+            return real_sign_typed_data(key, payload).await;
+        }
         Ok(TYPED_SIGNATURE.to_owned())
     }
 

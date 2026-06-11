@@ -1713,6 +1713,7 @@ dependencies = [
  "alloy-primitives",
  "alloy-sol-types",
  "async-trait",
+ "cow-sdk-alloy-signer",
  "cow-sdk-app-data",
  "cow-sdk-contracts",
  "cow-sdk-core",

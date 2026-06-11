@@ -97,8 +97,10 @@ fn quote_response_json(id: i64, valid_to: u32) -> String {
     .to_string()
 }
 
-/// Fetch callback that serves a quote for `POST /api/v1/quote`, echoes the
-/// app-data hash for the `PUT /api/v1/app_data/:hash` upload (the orderbook
+/// Fetch callback that serves a quote for `POST /api/v1/quote` — echoing back
+/// the request's pinned `appDataHash` so the quote-echo gate (ADR 0058)
+/// reconciles the response against the request like a real orderbook — echoes
+/// the app-data hash for the `PUT /api/v1/app_data/:hash` upload (the orderbook
 /// verifies the server echo against the URL hash), and returns `uid` for every
 /// order creation.
 fn swap_quote_fetch_callback(uid: &str, quote_body: &str) -> Function {
@@ -113,7 +115,11 @@ fn swap_quote_fetch_callback(uid: &str, quote_body: &str) -> Function {
               return {{ status: 200, headers: {{}}, body: JSON.stringify(appDataHash) }};
             }}
             if (request.method === "POST" && request.url.includes("/api/v1/quote")) {{
-              return {{ status: 200, headers: {{}}, body: {quote_body:?} }};
+              const reqBody = JSON.parse(request.body);
+              const reqHash = reqBody.appDataHash || reqBody.appData;
+              const resp = JSON.parse({quote_body:?});
+              if (reqHash) {{ resp.quote.appData = reqHash; }}
+              return {{ status: 200, headers: {{}}, body: JSON.stringify(resp) }};
             }}
             return {{ status: 200, headers: {{}}, body: JSON.stringify("{uid}") }};
             "#,
@@ -269,7 +275,10 @@ async fn trading_posts_swap_from_quote_and_limit_orders_through_typed_signers() 
                 owner: Some(ADDR_OWNER.to_owned()),
                 sell_token: ADDR_SELL.to_owned(),
                 buy_token: ADDR_BUY.to_owned(),
-                amount: "98646335338956442".to_owned(),
+                // sellAmountBeforeFee: reconciles with the canned response's
+                // fixed leg (sellAmount 98646335338956442 + feeAmount
+                // 1353664661043558) so the quote-echo gate accepts it.
+                amount: "100000000000000000".to_owned(),
                 env: None,
                 partially_fillable: false,
                 sell_token_balance: Some(TokenBalanceDto::Erc20),
@@ -287,40 +296,43 @@ async fn trading_posts_swap_from_quote_and_limit_orders_through_typed_signers() 
     let quote_results = Reflect::get(&quote_envelope, &JsValue::from_str("value"))
         .expect("getQuote envelope should expose the QuoteResults value");
 
-    let swap = json(
-        client
-            .post_swap_order_from_quote(
-                quote_results,
-                ADDR_OWNER.to_owned(),
-                signer_callback(),
-                None,
-            )
-            .await
-            .unwrap(),
-    );
-    let limit = json(
-        client
-            .post_limit_order(
-                limit_params(valid_to),
-                ADDR_OWNER.to_owned(),
-                signer_callback(),
-                None,
-            )
-            .await
-            .unwrap(),
-    );
-    let order_bodies = recorded_order_creation_bodies();
-    let swap_body = &order_bodies[0];
-    let limit_body = &order_bodies[1];
-    let signer_envelope = json(js_sys::eval("globalThis.__cowCoverageSignerEnvelope").unwrap());
+    // Both posts sign and then run the post-sign owner-recovery gate (ADR 0015).
+    // This wasm harness signs with a fixed canned signature that does not
+    // recover to ADDR_OWNER, so the gate fails closed — exactly as it would for
+    // a browser wallet that signed for the wrong account. The happy-path post is
+    // covered natively with real keys (`crates/trading/tests/post_contract.rs`);
+    // here we cover the wasm-unique boundary: the `QuoteResults` serialization
+    // round-trip is accepted and projected into a signable `Order`, and the
+    // gate's rejection surfaces through the wasm trading client before any order
+    // is created.
+    client
+        .post_swap_order_from_quote(
+            quote_results,
+            ADDR_OWNER.to_owned(),
+            signer_callback(),
+            None,
+        )
+        .await
+        .expect_err("the canned wasm signer cannot satisfy the owner-recovery gate");
+    client
+        .post_limit_order(
+            limit_params(valid_to),
+            ADDR_OWNER.to_owned(),
+            signer_callback(),
+            None,
+        )
+        .await
+        .expect_err("the canned wasm signer cannot satisfy the owner-recovery gate");
 
-    assert_eq!(swap["value"]["orderId"], uid);
-    assert_eq!(swap_body["quoteId"], 91);
-    assert_eq!(swap_body["signingScheme"], "eip712");
-    assert_eq!(limit["value"]["orderId"], uid);
-    assert_eq!(limit_body["from"], ADDR_OWNER);
-    assert_eq!(limit_body["validTo"], valid_to);
+    // Signing ran before the gate — the round-tripped `QuoteResults` reached the
+    // signer as a canonical EIP-712 `Order` envelope — and no order body was
+    // ever submitted for creation.
+    let signer_envelope = json(js_sys::eval("globalThis.__cowCoverageSignerEnvelope").unwrap());
     assert_eq!(signer_envelope["primaryType"], "Order");
+    assert!(
+        recorded_order_creation_bodies().is_empty(),
+        "the owner-recovery gate must reject before any order is created",
+    );
 }
 
 #[wasm_bindgen_test]
