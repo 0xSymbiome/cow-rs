@@ -1606,6 +1606,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "cow-sdk-examples-native"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "cow-sdk",
+ "serde",
+ "serde_json",
+ "tokio",
+ "wiremock",
+]
+
+[[package]]
 name = "cow-sdk-orderbook"
 version = "0.1.0"
 dependencies = [

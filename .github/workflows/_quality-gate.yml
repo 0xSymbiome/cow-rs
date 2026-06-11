@@ -143,7 +143,7 @@ jobs:
         # --all-features so the alloy-gated examples (required-features = ["alloy",
         # "alloy-provider", "alloy-signer"]) are actually compiled; without it cargo
         # silently skips them and a broken alloy example passes CI.
-        run: cargo check --manifest-path examples/native/Cargo.toml --examples --all-features
+        run: cargo check -p cow-sdk-examples-native --examples --all-features
       - name: Check fuzz crate against the stable toolchain
         run: cargo check --manifest-path fuzz/Cargo.toml --locked
 
@@ -319,9 +319,9 @@ jobs:
       # Source ref: Swatinem/rust-cache@v2
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
       - name: Check native examples with locked dependencies
-        run: cargo check --locked --manifest-path examples/native/Cargo.toml --examples --all-features
+        run: cargo check --locked -p cow-sdk-examples-native --examples --all-features
       - name: Test native examples with locked dependencies
-        run: cargo test --locked --manifest-path examples/native/Cargo.toml
+        run: cargo test --locked -p cow-sdk-examples-native
       - name: Run deterministic examples with locked dependencies
         run: cargo run-deterministic-examples --locked
       - name: Assert native examples lockfile was not rewritten

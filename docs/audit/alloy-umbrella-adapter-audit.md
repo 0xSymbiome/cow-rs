@@ -1,7 +1,7 @@
 # Alloy Umbrella Adapter Audit
 
 Status: Current
-Last reviewed: 2026-06-08
+Last reviewed: 2026-06-11
 Owning surface: `cow-sdk-alloy` `AlloyClient`, its builder, its `Provider` and `LogProvider` implementations, and its owned signer handle
 Refresh trigger: ADR 0038 - transaction lifecycle types, or changes to the umbrella public API, `Provider`, `SigningProvider`, `LogProvider`, `Signer`, wallet-filler transaction submission, the opt-in `with_retry` seam consumed from the provider leaf, typed-data conversion, chain-coherence validation, read-contract and log-fetch consumption from the provider seam, error redaction, cancellation propagation, or the Alloy provider/signer dependency boundaries
 Related docs:
@@ -94,7 +94,7 @@ cargo test -p cow-sdk-alloy --test log_provider_contract
 cargo test -p cow-sdk-alloy --test chain_coherence_mismatch
 cargo test -p cow-rs-workspace-tests --test alloy_umbrella_composition
 cargo test -p cow-rs-workspace-tests --test alloy_read_contract_parity_invariant
-cargo run --manifest-path examples/native/Cargo.toml --example alloy_trading_full_flow --features alloy
+cargo run -p cow-sdk-examples-native --example alloy_trading_full_flow --features alloy
 cargo check-alloy-provider-invariant
 cargo check-alloy-signer-invariant
 RUSTDOCFLAGS="-D warnings" cargo doc -p cow-sdk-alloy --no-deps

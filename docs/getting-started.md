@@ -362,7 +362,7 @@ EthFlow entries.
 Run the maintained signing scenario:
 
 ```text
-cargo run --manifest-path examples/native/Cargo.toml --example sign_order
+cargo run -p cow-sdk-examples-native --example sign_order
 ```
 
 This scenario is the shortest deterministic proof that the SDK can:
@@ -469,7 +469,7 @@ It is the fastest way to answer:
 Run the maintained simulated submission scenario:
 
 ```text
-cargo run --manifest-path examples/native/Cargo.toml --example limit_order
+cargo run -p cow-sdk-examples-native --example limit_order
 ```
 
 This scenario uses:
@@ -615,7 +615,7 @@ Run the maintained walkthrough for a full tour of every class and the
 action-oriented rejection categories:
 
 ```text
-cargo run --manifest-path examples/native/Cargo.toml --example error_classification
+cargo run -p cow-sdk-examples-native --example error_classification
 ```
 
 `CowError` is the convenience aggregate for `?`-propagating consumers; a consumer
@@ -730,9 +730,9 @@ Use them only when you specifically need live service confirmation.
 If you want one recommended first session from a fresh checkout, use:
 
 ```text
-cargo check --manifest-path examples/native/Cargo.toml --examples
-cargo run --manifest-path examples/native/Cargo.toml --example sign_order
-cargo run --manifest-path examples/native/Cargo.toml --example limit_order
+cargo check -p cow-sdk-examples-native --examples
+cargo run -p cow-sdk-examples-native --example sign_order
+cargo run -p cow-sdk-examples-native --example limit_order
 ```
 
 That sequence proves:
@@ -784,14 +784,14 @@ contracts.
 
 ## Troubleshooting
 
-If `cargo run --manifest-path examples/native/Cargo.toml --example sign_order`
+If `cargo run -p cow-sdk-examples-native --example sign_order`
 fails:
 
 - verify that the workspace builds on your local Rust toolchain
 - rerun `cargo fmt --all --check` if you are working from a modified checkout
 - confirm that you are running from the repository root
 
-If `cargo run --manifest-path examples/native/Cargo.toml --example limit_order`
+If `cargo run -p cow-sdk-examples-native --example limit_order`
 fails:
 
 - confirm the native example package still resolves from the checkout

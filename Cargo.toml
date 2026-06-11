@@ -16,6 +16,7 @@ members = [
   "crates/sdk",
   "crates/test-utils",
   "crates/test",
+  "examples/native",
   "tests",
   "xtask",
 ]
