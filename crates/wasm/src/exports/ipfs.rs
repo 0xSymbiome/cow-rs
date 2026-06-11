@@ -162,10 +162,6 @@ impl IpfsClient {
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing the app-data document.
     /// @throws CowError for invalid CID, transport failure, timeout, or parse failure.
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(skip_all, fields(endpoint = "wasm.ipfs.fetch_app_data_from_cid"))
-    )]
     #[wasm_bindgen(
         js_name = "fetchAppDataFromCid",
         unchecked_return_type = "WasmEnvelope<AppDataDocDto>"
@@ -175,11 +171,14 @@ impl IpfsClient {
         cid: String,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
     ) -> Result<JsValue, JsValue> {
-        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
-        let adapter = self.adapter.with_call_timeout(scope.timeout());
-        let ipfs_uri = self.ipfs_uri.clone();
-        run_with_client_options(scope, async move {
-            fetch_doc_from_cid_with_adapter(&cid, ipfs_uri.as_deref(), &adapter).await
+        super::traced("wasm.ipfs.fetch_app_data_from_cid", async move {
+            let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+            let adapter = self.adapter.with_call_timeout(scope.timeout());
+            let ipfs_uri = self.ipfs_uri.clone();
+            run_with_client_options(scope, async move {
+                fetch_doc_from_cid_with_adapter(&cid, ipfs_uri.as_deref(), &adapter).await
+            })
+            .await
         })
         .await
     }
@@ -193,10 +192,6 @@ impl IpfsClient {
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing the app-data document.
     /// @throws CowError for invalid hash, transport failure, timeout, or parse failure.
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(skip_all, fields(endpoint = "wasm.ipfs.fetch_app_data_from_hex"))
-    )]
     #[wasm_bindgen(
         js_name = "fetchAppDataFromHex",
         unchecked_return_type = "WasmEnvelope<AppDataDocDto>"
@@ -206,11 +201,14 @@ impl IpfsClient {
         #[wasm_bindgen(js_name = appDataHex)] app_data_hex: String,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
     ) -> Result<JsValue, JsValue> {
-        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
-        let adapter = self.adapter.with_call_timeout(scope.timeout());
-        let ipfs_uri = self.ipfs_uri.clone();
-        run_with_client_options(scope, async move {
-            fetch_doc_from_hex_with_adapter(&app_data_hex, ipfs_uri.as_deref(), &adapter).await
+        super::traced("wasm.ipfs.fetch_app_data_from_hex", async move {
+            let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+            let adapter = self.adapter.with_call_timeout(scope.timeout());
+            let ipfs_uri = self.ipfs_uri.clone();
+            run_with_client_options(scope, async move {
+                fetch_doc_from_hex_with_adapter(&app_data_hex, ipfs_uri.as_deref(), &adapter).await
+            })
+            .await
         })
         .await
     }

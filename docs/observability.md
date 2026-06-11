@@ -282,8 +282,9 @@ the session already reflects.
 
 The JavaScript export surface emits one span per export call, each carrying a
 stable `endpoint` label of the form `wasm.<area>.<method>` where `<area>` is the
-export module and `<method>` is the Rust export name. The spans use `skip_all`,
-so no JavaScript callback, signer, payload, or wallet input is captured. The
+export module and `<method>` is the Rust export name. The spans capture only
+the `endpoint` label, so no JavaScript callback, signer, payload, or wallet
+input is recorded. The
 underlying Rust crate's own spans are gated by that crate's `tracing` feature
 and are not enabled by `cow-sdk-wasm`'s feature alone, so each export call
 surfaces exactly one `wasm.*` span. Synchronous transaction-building exports

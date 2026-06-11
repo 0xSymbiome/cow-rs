@@ -94,10 +94,6 @@ pub fn eip1271_signature_payload_export(
 /// @param options Optional cancellation, timeout, and wallet timeout settings.
 /// @returns A versioned envelope containing the signed-order DTO.
 /// @throws CowError for invalid input, callback failure, timeout, or cancellation.
-#[cfg_attr(
-    feature = "tracing",
-    tracing::instrument(skip_all, fields(endpoint = "wasm.eip1271.sign_order_with_eip1271"))
-)]
 #[wasm_bindgen(
     js_name = "signOrderWithEip1271",
     unchecked_return_type = "WasmEnvelope<SignedOrderDto>"
@@ -110,30 +106,33 @@ pub async fn sign_order_with_eip1271(
     typed_data_signer: Function,
     #[wasm_bindgen(js_name = options)] options: Option<SigningOptions>,
 ) -> Result<JsValue, JsValue> {
-    let options = options.as_ref().map(AsRef::as_ref);
-    let scope = ClientCallScope::new(options)?;
-    let wallet_timeout_ms = signing_wallet_timeout_ms(options)?;
-    run_with_client_options(scope, async move {
-        let order = parse_order(input.clone())?;
-        let chain = parse_chain(chain_id)?;
-        let owner = parse_owner(&owner)?;
-        let payload = pure::signing::order_typed_data_payload(chain, &order)
-            .map_err(|error| WasmError::from(error).into_js())?;
-        let typed_data = TypedDataEnvelopeDto::from_payload(&payload)?;
-        let ecdsa_signature = crate::exports::signing::await_callback_string(
-            &typed_data_signer,
-            typed_data.callback_value()?,
-            "signTypedData",
-            wallet_timeout_ms,
-        )
-        .await?;
-        let signature = pure::signing::eip1271_signature_payload(&order, &ecdsa_signature)
-            .map_err(|error| WasmError::from(error).into_js())?;
-        let generated = pure::signing::generate_order_id(chain, &order, &owner)
-            .map_err(|error| WasmError::from(error).into_js())?;
-        let signed: SignedOrderDto =
-            signed_order_from_parts(generated, owner, typed_data, signature, "eip1271", None);
-        to_js_value(&WasmEnvelope::v1(signed))
+    super::traced("wasm.eip1271.sign_order_with_eip1271", async move {
+        let options = options.as_ref().map(AsRef::as_ref);
+        let scope = ClientCallScope::new(options)?;
+        let wallet_timeout_ms = signing_wallet_timeout_ms(options)?;
+        run_with_client_options(scope, async move {
+            let order = parse_order(input.clone())?;
+            let chain = parse_chain(chain_id)?;
+            let owner = parse_owner(&owner)?;
+            let payload = pure::signing::order_typed_data_payload(chain, &order)
+                .map_err(|error| WasmError::from(error).into_js())?;
+            let typed_data = TypedDataEnvelopeDto::from_payload(&payload)?;
+            let ecdsa_signature = crate::exports::signing::await_callback_string(
+                &typed_data_signer,
+                typed_data.callback_value()?,
+                "signTypedData",
+                wallet_timeout_ms,
+            )
+            .await?;
+            let signature = pure::signing::eip1271_signature_payload(&order, &ecdsa_signature)
+                .map_err(|error| WasmError::from(error).into_js())?;
+            let generated = pure::signing::generate_order_id(chain, &order, &owner)
+                .map_err(|error| WasmError::from(error).into_js())?;
+            let signed: SignedOrderDto =
+                signed_order_from_parts(generated, owner, typed_data, signature, "eip1271", None);
+            to_js_value(&WasmEnvelope::v1(signed))
+        })
+        .await
     })
     .await
 }
@@ -151,13 +150,6 @@ pub async fn sign_order_with_eip1271(
 /// @param options Optional cancellation, timeout, and wallet timeout settings.
 /// @returns A versioned envelope containing the signed-order DTO.
 /// @throws CowError for invalid input, callback failure, timeout, or cancellation.
-#[cfg_attr(
-    feature = "tracing",
-    tracing::instrument(
-        skip_all,
-        fields(endpoint = "wasm.eip1271.sign_order_with_custom_eip1271")
-    )
-)]
 #[wasm_bindgen(
     js_name = "signOrderWithCustomEip1271",
     unchecked_return_type = "WasmEnvelope<SignedOrderDto>"
@@ -170,40 +162,43 @@ pub async fn sign_order_with_custom_eip1271(
     custom_callback: Function,
     #[wasm_bindgen(js_name = options)] options: Option<SigningOptions>,
 ) -> Result<JsValue, JsValue> {
-    let options = options.as_ref().map(AsRef::as_ref);
-    let scope = ClientCallScope::new(options)?;
-    let wallet_timeout_ms = signing_wallet_timeout_ms(options)?;
-    run_with_client_options(scope, async move {
-        let order = parse_order(input.clone())?;
-        let chain = parse_chain(chain_id)?;
-        let owner_address = parse_owner(&owner)?;
-        let payload = pure::signing::order_typed_data_payload(chain, &order)
-            .map_err(|error| WasmError::from(error).into_js())?;
-        let typed_data = TypedDataEnvelopeDto::from_payload(&payload)?;
-        let request = CowEip1271SignRequest {
-            order: input,
-            typed_data: typed_data.clone(),
-            owner,
-            chain_id,
-        };
-        let signature = await_callback_string(
-            &custom_callback,
-            to_js_value(&request)?,
-            "eip1271",
-            wallet_timeout_ms,
-        )
-        .await?;
-        let generated = pure::signing::generate_order_id(chain, &order, &owner_address)
-            .map_err(|error| WasmError::from(error).into_js())?;
-        let signed = signed_order_from_parts(
-            generated,
-            owner_address,
-            typed_data,
-            signature,
-            "eip1271",
-            None,
-        );
-        to_js_value(&WasmEnvelope::v1(signed))
+    super::traced("wasm.eip1271.sign_order_with_custom_eip1271", async move {
+        let options = options.as_ref().map(AsRef::as_ref);
+        let scope = ClientCallScope::new(options)?;
+        let wallet_timeout_ms = signing_wallet_timeout_ms(options)?;
+        run_with_client_options(scope, async move {
+            let order = parse_order(input.clone())?;
+            let chain = parse_chain(chain_id)?;
+            let owner_address = parse_owner(&owner)?;
+            let payload = pure::signing::order_typed_data_payload(chain, &order)
+                .map_err(|error| WasmError::from(error).into_js())?;
+            let typed_data = TypedDataEnvelopeDto::from_payload(&payload)?;
+            let request = CowEip1271SignRequest {
+                order: input,
+                typed_data: typed_data.clone(),
+                owner,
+                chain_id,
+            };
+            let signature = await_callback_string(
+                &custom_callback,
+                to_js_value(&request)?,
+                "eip1271",
+                wallet_timeout_ms,
+            )
+            .await?;
+            let generated = pure::signing::generate_order_id(chain, &order, &owner_address)
+                .map_err(|error| WasmError::from(error).into_js())?;
+            let signed = signed_order_from_parts(
+                generated,
+                owner_address,
+                typed_data,
+                signature,
+                "eip1271",
+                None,
+            );
+            to_js_value(&WasmEnvelope::v1(signed))
+        })
+        .await
     })
     .await
 }

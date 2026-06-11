@@ -119,10 +119,6 @@ impl TradingClient {
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing quote results.
     /// @throws CowError for invalid parameters, transport failure, timeout, or cancellation.
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(skip_all, fields(endpoint = "wasm.trading.quote"))
-    )]
     #[wasm_bindgen(
         js_name = "getQuote",
         unchecked_return_type = "WasmEnvelope<QuoteResultsDto>"
@@ -132,12 +128,15 @@ impl TradingClient {
         params: SwapParametersInput,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
     ) -> Result<JsValue, JsValue> {
-        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
-        let inner = self.trading_for_scope(&scope)?;
-        run_with_client_options(
-            scope,
-            async move { trading_get_quote(&inner, params).await },
-        )
+        super::traced("wasm.trading.quote", async move {
+            let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+            let inner = self.trading_for_scope(&scope)?;
+            run_with_client_options(
+                scope,
+                async move { trading_get_quote(&inner, params).await },
+            )
+            .await
+        })
         .await
     }
 
@@ -153,10 +152,6 @@ impl TradingClient {
     /// @param options Optional cancellation, timeout, and wallet timeout settings.
     /// @returns A versioned envelope containing order posting output.
     /// @throws CowError for invalid input, quote failure, wallet failure, timeout, or rejection.
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(skip_all, fields(endpoint = "wasm.trading.post_swap_order"))
-    )]
     #[wasm_bindgen(
         js_name = "postSwapOrder",
         unchecked_return_type = "WasmEnvelope<OrderPostingResultDto>"
@@ -169,12 +164,16 @@ impl TradingClient {
         signer_callback: Function,
         #[wasm_bindgen(js_name = options)] options: Option<SigningOptions>,
     ) -> Result<JsValue, JsValue> {
-        let options_ref = options.as_ref().map(AsRef::as_ref);
-        let scope = ClientCallScope::new(options_ref)?;
-        let wallet_timeout_ms = signing_wallet_timeout_ms(options_ref)?;
-        let inner = self.trading_for_scope(&scope)?;
-        run_with_client_options(scope, async move {
-            trading_post_swap_order(&inner, params, owner, signer_callback, wallet_timeout_ms).await
+        super::traced("wasm.trading.post_swap_order", async move {
+            let options_ref = options.as_ref().map(AsRef::as_ref);
+            let scope = ClientCallScope::new(options_ref)?;
+            let wallet_timeout_ms = signing_wallet_timeout_ms(options_ref)?;
+            let inner = self.trading_for_scope(&scope)?;
+            run_with_client_options(scope, async move {
+                trading_post_swap_order(&inner, params, owner, signer_callback, wallet_timeout_ms)
+                    .await
+            })
+            .await
         })
         .await
     }
@@ -190,13 +189,6 @@ impl TradingClient {
     /// @param options Optional cancellation, timeout, and wallet timeout settings.
     /// @returns A versioned envelope containing order posting output.
     /// @throws CowError for invalid quote data, wallet failure, timeout, or rejection.
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(
-            skip_all,
-            fields(endpoint = "wasm.trading.post_swap_order_from_quote")
-        )
-    )]
     #[wasm_bindgen(
         js_name = "postSwapOrderFromQuote",
         unchecked_return_type = "WasmEnvelope<OrderPostingResultDto>"
@@ -210,18 +202,21 @@ impl TradingClient {
         signer_callback: Function,
         #[wasm_bindgen(js_name = options)] options: Option<SigningOptions>,
     ) -> Result<JsValue, JsValue> {
-        let options_ref = options.as_ref().map(AsRef::as_ref);
-        let scope = ClientCallScope::new(options_ref)?;
-        let wallet_timeout_ms = signing_wallet_timeout_ms(options_ref)?;
-        let inner = self.trading_for_scope(&scope)?;
-        run_with_client_options(scope, async move {
-            trading_post_swap_order_from_quote(
-                &inner,
-                quote_results,
-                owner,
-                signer_callback,
-                wallet_timeout_ms,
-            )
+        super::traced("wasm.trading.post_swap_order_from_quote", async move {
+            let options_ref = options.as_ref().map(AsRef::as_ref);
+            let scope = ClientCallScope::new(options_ref)?;
+            let wallet_timeout_ms = signing_wallet_timeout_ms(options_ref)?;
+            let inner = self.trading_for_scope(&scope)?;
+            run_with_client_options(scope, async move {
+                trading_post_swap_order_from_quote(
+                    &inner,
+                    quote_results,
+                    owner,
+                    signer_callback,
+                    wallet_timeout_ms,
+                )
+                .await
+            })
             .await
         })
         .await
@@ -238,10 +233,6 @@ impl TradingClient {
     /// @param options Optional cancellation, timeout, and wallet timeout settings.
     /// @returns A versioned envelope containing order posting output.
     /// @throws CowError for invalid input, wallet failure, timeout, or rejection.
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(skip_all, fields(endpoint = "wasm.trading.post_limit_order"))
-    )]
     #[wasm_bindgen(
         js_name = "postLimitOrder",
         unchecked_return_type = "WasmEnvelope<OrderPostingResultDto>"
@@ -254,13 +245,16 @@ impl TradingClient {
         signer_callback: Function,
         #[wasm_bindgen(js_name = options)] options: Option<SigningOptions>,
     ) -> Result<JsValue, JsValue> {
-        let options_ref = options.as_ref().map(AsRef::as_ref);
-        let scope = ClientCallScope::new(options_ref)?;
-        let wallet_timeout_ms = signing_wallet_timeout_ms(options_ref)?;
-        let inner = self.trading_for_scope(&scope)?;
-        run_with_client_options(scope, async move {
-            trading_post_limit_order(&inner, params, owner, signer_callback, wallet_timeout_ms)
-                .await
+        super::traced("wasm.trading.post_limit_order", async move {
+            let options_ref = options.as_ref().map(AsRef::as_ref);
+            let scope = ClientCallScope::new(options_ref)?;
+            let wallet_timeout_ms = signing_wallet_timeout_ms(options_ref)?;
+            let inner = self.trading_for_scope(&scope)?;
+            run_with_client_options(scope, async move {
+                trading_post_limit_order(&inner, params, owner, signer_callback, wallet_timeout_ms)
+                    .await
+            })
+            .await
         })
         .await
     }
@@ -277,13 +271,6 @@ impl TradingClient {
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing order UID and transaction request.
     /// @throws CowError when the order, chain, deployment, or sender is invalid.
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(
-            skip_all,
-            fields(endpoint = "wasm.trading.build_sell_native_currency_tx")
-        )
-    )]
     #[wasm_bindgen(
         js_name = "buildSellNativeCurrencyTx",
         unchecked_return_type = "WasmEnvelope<BuiltSellNativeCurrencyTxDto>"
@@ -295,12 +282,15 @@ impl TradingClient {
         from: String,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
     ) -> Result<JsValue, JsValue> {
-        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
-        let quote_id = quote_id_from_js(quote_id)?;
-        let chain_id = self.chain_id;
-        let env = self.env.clone();
-        run_with_client_options(scope, async move {
-            trading_build_sell_native_currency_tx(chain_id, env, order, quote_id, from).await
+        super::traced("wasm.trading.build_sell_native_currency_tx", async move {
+            let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+            let quote_id = quote_id_from_js(quote_id)?;
+            let chain_id = self.chain_id;
+            let env = self.env.clone();
+            run_with_client_options(scope, async move {
+                trading_build_sell_native_currency_tx(chain_id, env, order, quote_id, from).await
+            })
+            .await
         })
         .await
     }
@@ -316,10 +306,6 @@ impl TradingClient {
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing the allowance amount string.
     /// @throws CowError for invalid parameters, callback failure, timeout, or cancellation.
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(skip_all, fields(endpoint = "wasm.trading.cow_protocol_allowance"))
-    )]
     #[wasm_bindgen(
         js_name = "getCowProtocolAllowance",
         unchecked_return_type = "WasmEnvelope<string>"
@@ -331,10 +317,13 @@ impl TradingClient {
         read_contract_callback: Function,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
     ) -> Result<JsValue, JsValue> {
-        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
-        let inner = self.trading_for_scope(&scope)?;
-        run_with_client_options(scope, async move {
-            trading_get_cow_protocol_allowance(&inner, params, read_contract_callback).await
+        super::traced("wasm.trading.cow_protocol_allowance", async move {
+            let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+            let inner = self.trading_for_scope(&scope)?;
+            run_with_client_options(scope, async move {
+                trading_get_cow_protocol_allowance(&inner, params, read_contract_callback).await
+            })
+            .await
         })
         .await
     }
@@ -351,13 +340,6 @@ impl TradingClient {
     /// @param options Optional cancellation, timeout, and wallet timeout settings.
     /// @returns A versioned envelope containing order posting output.
     /// @throws CowError for invalid input, quote failure, callback failure, timeout, or rejection.
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(
-            skip_all,
-            fields(endpoint = "wasm.trading.post_swap_order_with_eip1271")
-        )
-    )]
     #[wasm_bindgen(
         js_name = "postSwapOrderWithEip1271",
         unchecked_return_type = "WasmEnvelope<OrderPostingResultDto>"
@@ -370,20 +352,23 @@ impl TradingClient {
         custom_callback: Function,
         #[wasm_bindgen(js_name = options)] options: Option<SigningOptions>,
     ) -> Result<JsValue, JsValue> {
-        let options_ref = options.as_ref().map(AsRef::as_ref);
-        let scope = ClientCallScope::new(options_ref)?;
-        let wallet_timeout_ms = signing_wallet_timeout_ms(options_ref)?;
-        let inner = self.trading_for_scope(&scope)?;
-        let chain_id = self.chain_id;
-        run_with_client_options(scope, async move {
-            trading_post_swap_order_with_eip1271(
-                &inner,
-                chain_id,
-                params,
-                owner,
-                custom_callback,
-                wallet_timeout_ms,
-            )
+        super::traced("wasm.trading.post_swap_order_with_eip1271", async move {
+            let options_ref = options.as_ref().map(AsRef::as_ref);
+            let scope = ClientCallScope::new(options_ref)?;
+            let wallet_timeout_ms = signing_wallet_timeout_ms(options_ref)?;
+            let inner = self.trading_for_scope(&scope)?;
+            let chain_id = self.chain_id;
+            run_with_client_options(scope, async move {
+                trading_post_swap_order_with_eip1271(
+                    &inner,
+                    chain_id,
+                    params,
+                    owner,
+                    custom_callback,
+                    wallet_timeout_ms,
+                )
+                .await
+            })
             .await
         })
         .await

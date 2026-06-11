@@ -125,13 +125,6 @@ impl Eip1193 for JsEip1193Requester {
 /// @param options Optional cancellation, timeout, and wallet timeout settings.
 /// @returns A versioned envelope containing the signed order.
 /// @throws CowError for invalid input, callback failure, timeout, or cancellation.
-#[cfg_attr(
-    feature = "tracing",
-    tracing::instrument(
-        skip_all,
-        fields(endpoint = "wasm.signing.sign_order_with_typed_data_signer")
-    )
-)]
 #[wasm_bindgen(
     js_name = "signOrderWithTypedDataSigner",
     unchecked_return_type = "WasmEnvelope<SignedOrderDto>"
@@ -144,21 +137,27 @@ pub async fn sign_order_with_typed_data_signer(
     typed_data_signer: Function,
     #[wasm_bindgen(js_name = options)] options: Option<SigningOptions>,
 ) -> Result<JsValue, JsValue> {
-    let options = options.as_ref().map(AsRef::as_ref);
-    let scope = ClientCallScope::new(options)?;
-    let wallet_timeout_ms = signing_wallet_timeout_ms(options)?;
-    run_with_client_options(scope, async move {
-        let signed = sign_order_with_callback(
-            input,
-            chain_id,
-            owner,
-            typed_data_signer,
-            wallet_timeout_ms,
-            "eip712",
-        )
-        .await?;
-        to_js_value(&WasmEnvelope::v1(signed))
-    })
+    super::traced(
+        "wasm.signing.sign_order_with_typed_data_signer",
+        async move {
+            let options = options.as_ref().map(AsRef::as_ref);
+            let scope = ClientCallScope::new(options)?;
+            let wallet_timeout_ms = signing_wallet_timeout_ms(options)?;
+            run_with_client_options(scope, async move {
+                let signed = sign_order_with_callback(
+                    input,
+                    chain_id,
+                    owner,
+                    typed_data_signer,
+                    wallet_timeout_ms,
+                    "eip712",
+                )
+                .await?;
+                to_js_value(&WasmEnvelope::v1(signed))
+            })
+            .await
+        },
+    )
     .await
 }
 
@@ -175,10 +174,6 @@ pub async fn sign_order_with_typed_data_signer(
 /// @param options Optional cancellation, timeout, and wallet timeout settings.
 /// @returns A versioned envelope containing the signed order.
 /// @throws CowError for invalid input, wallet failure, timeout, or cancellation.
-#[cfg_attr(
-    feature = "tracing",
-    tracing::instrument(skip_all, fields(endpoint = "wasm.signing.sign_order_with_eip1193"))
-)]
 #[wasm_bindgen(
     js_name = "signOrderWithEip1193",
     unchecked_return_type = "WasmEnvelope<SignedOrderDto>"
@@ -191,29 +186,32 @@ pub async fn sign_order_with_eip1193(
     request_callback: Function,
     #[wasm_bindgen(js_name = options)] options: Option<SigningOptions>,
 ) -> Result<JsValue, JsValue> {
-    let options = options.as_ref().map(AsRef::as_ref);
-    let scope = ClientCallScope::new(options)?;
-    let wallet_timeout_ms = signing_wallet_timeout_ms(options)?;
-    run_with_client_options(scope, async move {
-        let order = parse_order(input.clone())?;
-        let chain = parse_chain(chain_id)?;
-        let owner_address = parse_owner(&owner)?;
-        let payload = pure::signing::order_typed_data_payload(chain, &order)
-            .map_err(|error| WasmError::from(error).into_js())?;
-        let typed_data = TypedDataEnvelopeDto::from_payload(&payload)?;
-        let typed_data_string = serde_json::to_string(&typed_data_json(&typed_data))
-            .map_err(|error| WasmError::from(error).into_js())?;
-        let requester = JsEip1193Requester::new(request_callback, wallet_timeout_ms);
-        let signature = requester
-            .request(
-                "eth_signTypedData_v4",
-                &[owner_address.to_hex_string(), typed_data_string],
-            )
-            .await?;
-        let signature = normalize_signature(&signature)?;
-        let signed =
-            build_signed_order(input, chain, owner_address, typed_data, signature, "eip712")?;
-        to_js_value(&WasmEnvelope::v1(signed))
+    super::traced("wasm.signing.sign_order_with_eip1193", async move {
+        let options = options.as_ref().map(AsRef::as_ref);
+        let scope = ClientCallScope::new(options)?;
+        let wallet_timeout_ms = signing_wallet_timeout_ms(options)?;
+        run_with_client_options(scope, async move {
+            let order = parse_order(input.clone())?;
+            let chain = parse_chain(chain_id)?;
+            let owner_address = parse_owner(&owner)?;
+            let payload = pure::signing::order_typed_data_payload(chain, &order)
+                .map_err(|error| WasmError::from(error).into_js())?;
+            let typed_data = TypedDataEnvelopeDto::from_payload(&payload)?;
+            let typed_data_string = serde_json::to_string(&typed_data_json(&typed_data))
+                .map_err(|error| WasmError::from(error).into_js())?;
+            let requester = JsEip1193Requester::new(request_callback, wallet_timeout_ms);
+            let signature = requester
+                .request(
+                    "eth_signTypedData_v4",
+                    &[owner_address.to_hex_string(), typed_data_string],
+                )
+                .await?;
+            let signature = normalize_signature(&signature)?;
+            let signed =
+                build_signed_order(input, chain, owner_address, typed_data, signature, "eip712")?;
+            to_js_value(&WasmEnvelope::v1(signed))
+        })
+        .await
     })
     .await
 }
@@ -231,10 +229,6 @@ pub async fn sign_order_with_eip1193(
 /// @param options Optional cancellation, timeout, and wallet timeout settings.
 /// @returns A versioned envelope containing the signed order.
 /// @throws CowError for invalid input, callback failure, timeout, or cancellation.
-#[cfg_attr(
-    feature = "tracing",
-    tracing::instrument(skip_all, fields(endpoint = "wasm.signing.sign_order_eth_sign_digest"))
-)]
 #[wasm_bindgen(
     js_name = "signOrderEthSignDigest",
     unchecked_return_type = "WasmEnvelope<SignedOrderDto>"
@@ -247,40 +241,43 @@ pub async fn sign_order_eth_sign_digest(
     digest_signer: Function,
     #[wasm_bindgen(js_name = options)] options: Option<SigningOptions>,
 ) -> Result<JsValue, JsValue> {
-    let options = options.as_ref().map(AsRef::as_ref);
-    let scope = ClientCallScope::new(options)?;
-    let wallet_timeout_ms = signing_wallet_timeout_ms(options)?;
-    run_with_client_options(scope, async move {
-        let order = parse_order(input.clone())?;
-        let chain = parse_chain(chain_id)?;
-        let owner_address = parse_owner(&owner)?;
-        let typed_data = TypedDataEnvelopeDto::from_payload(
-            &pure::signing::order_typed_data_payload(chain, &order)
-                .map_err(|error| WasmError::from(error).into_js())?,
-        )?;
-        let generated = pure::signing::generate_order_id(chain, &order, &owner_address)
-            .map_err(|error| WasmError::from(error).into_js())?;
-        let digest = alloy_primitives::hex::decode(
-            generated
-                .order_digest
-                .to_hex_string()
-                .trim_start_matches("0x"),
-        )
-        .map_err(|error| WasmError::invalid("digest", error.to_string()).into_js())?;
-        let signer = JsDigestSigner::new(digest_signer, wallet_timeout_ms);
-        // `sign_digest` already normalizes the signature and surfaces a typed
-        // `walletTimeout` / `walletRequest` error, so the result propagates with
-        // `?` without a lossy re-wrap or a redundant second normalization.
-        let signature = signer.sign_digest(&digest).await?;
-        let signed = signed_order_from_parts(
-            generated,
-            owner_address,
-            typed_data,
-            signature,
-            "ethsign",
-            None,
-        );
-        to_js_value(&WasmEnvelope::v1(signed))
+    super::traced("wasm.signing.sign_order_eth_sign_digest", async move {
+        let options = options.as_ref().map(AsRef::as_ref);
+        let scope = ClientCallScope::new(options)?;
+        let wallet_timeout_ms = signing_wallet_timeout_ms(options)?;
+        run_with_client_options(scope, async move {
+            let order = parse_order(input.clone())?;
+            let chain = parse_chain(chain_id)?;
+            let owner_address = parse_owner(&owner)?;
+            let typed_data = TypedDataEnvelopeDto::from_payload(
+                &pure::signing::order_typed_data_payload(chain, &order)
+                    .map_err(|error| WasmError::from(error).into_js())?,
+            )?;
+            let generated = pure::signing::generate_order_id(chain, &order, &owner_address)
+                .map_err(|error| WasmError::from(error).into_js())?;
+            let digest = alloy_primitives::hex::decode(
+                generated
+                    .order_digest
+                    .to_hex_string()
+                    .trim_start_matches("0x"),
+            )
+            .map_err(|error| WasmError::invalid("digest", error.to_string()).into_js())?;
+            let signer = JsDigestSigner::new(digest_signer, wallet_timeout_ms);
+            // `sign_digest` already normalizes the signature and surfaces a typed
+            // `walletTimeout` / `walletRequest` error, so the result propagates with
+            // `?` without a lossy re-wrap or a redundant second normalization.
+            let signature = signer.sign_digest(&digest).await?;
+            let signed = signed_order_from_parts(
+                generated,
+                owner_address,
+                typed_data,
+                signature,
+                "ethsign",
+                None,
+            );
+            to_js_value(&WasmEnvelope::v1(signed))
+        })
+        .await
     })
     .await
 }
@@ -338,13 +335,6 @@ pub fn build_cancel_order_tx(params: OrderTraderParametersInput) -> Result<JsVal
 /// @returns A versioned envelope containing signed cancellations.
 /// @throws CowError for empty input, invalid UID, callback failure, or timeout.
 #[cfg(feature = "cancellation")]
-#[cfg_attr(
-    feature = "tracing",
-    tracing::instrument(
-        skip_all,
-        fields(endpoint = "wasm.signing.sign_cancellation_with_typed_data_signer")
-    )
-)]
 #[wasm_bindgen(
     js_name = "signCancellationWithTypedDataSigner",
     unchecked_return_type = "WasmEnvelope<SignedCancellationsInput>"
@@ -356,26 +346,32 @@ pub async fn sign_cancellation_with_typed_data_signer(
     typed_data_signer: Function,
     #[wasm_bindgen(js_name = options)] options: Option<SigningOptions>,
 ) -> Result<JsValue, JsValue> {
-    let options = options.as_ref().map(AsRef::as_ref);
-    let scope = ClientCallScope::new(options)?;
-    let wallet_timeout_ms = signing_wallet_timeout_ms(options)?;
-    run_with_client_options(scope, async move {
-        let (uids, payload, _digest) = cancellation_payload(order_uids, chain_id)?;
-        let envelope = TypedDataEnvelopeDto::from_payload(&payload)?;
-        let signature = await_callback_string(
-            &typed_data_signer,
-            envelope.callback_value()?,
-            "signTypedData",
-            wallet_timeout_ms,
-        )
-        .await?;
-        let signature = normalize_signature(&signature)?;
-        to_js_value(&WasmEnvelope::v1(SignedCancellationsInput {
-            order_uids: uid_strings(&uids),
-            signature,
-            signing_scheme: "eip712".to_owned(),
-        }))
-    })
+    super::traced(
+        "wasm.signing.sign_cancellation_with_typed_data_signer",
+        async move {
+            let options = options.as_ref().map(AsRef::as_ref);
+            let scope = ClientCallScope::new(options)?;
+            let wallet_timeout_ms = signing_wallet_timeout_ms(options)?;
+            run_with_client_options(scope, async move {
+                let (uids, payload, _digest) = cancellation_payload(order_uids, chain_id)?;
+                let envelope = TypedDataEnvelopeDto::from_payload(&payload)?;
+                let signature = await_callback_string(
+                    &typed_data_signer,
+                    envelope.callback_value()?,
+                    "signTypedData",
+                    wallet_timeout_ms,
+                )
+                .await?;
+                let signature = normalize_signature(&signature)?;
+                to_js_value(&WasmEnvelope::v1(SignedCancellationsInput {
+                    order_uids: uid_strings(&uids),
+                    signature,
+                    signing_scheme: "eip712".to_owned(),
+                }))
+            })
+            .await
+        },
+    )
     .await
 }
 
@@ -392,13 +388,6 @@ pub async fn sign_cancellation_with_typed_data_signer(
 /// @returns A versioned envelope containing signed cancellations.
 /// @throws CowError for invalid input, wallet failure, timeout, or cancellation.
 #[cfg(feature = "cancellation")]
-#[cfg_attr(
-    feature = "tracing",
-    tracing::instrument(
-        skip_all,
-        fields(endpoint = "wasm.signing.sign_cancellation_with_eip1193")
-    )
-)]
 #[wasm_bindgen(
     js_name = "signCancellationWithEip1193",
     unchecked_return_type = "WasmEnvelope<SignedCancellationsInput>"
@@ -411,28 +400,31 @@ pub async fn sign_cancellation_with_eip1193(
     request_callback: Function,
     #[wasm_bindgen(js_name = options)] options: Option<SigningOptions>,
 ) -> Result<JsValue, JsValue> {
-    let options = options.as_ref().map(AsRef::as_ref);
-    let scope = ClientCallScope::new(options)?;
-    let wallet_timeout_ms = signing_wallet_timeout_ms(options)?;
-    run_with_client_options(scope, async move {
-        let owner = parse_owner(&owner)?;
-        let (uids, payload, _digest) = cancellation_payload(order_uids, chain_id)?;
-        let envelope = TypedDataEnvelopeDto::from_payload(&payload)?;
-        let typed_data_string = serde_json::to_string(&typed_data_json(&envelope))
-            .map_err(|error| WasmError::from(error).into_js())?;
-        let requester = JsEip1193Requester::new(request_callback, wallet_timeout_ms);
-        let signature = requester
-            .request(
-                "eth_signTypedData_v4",
-                &[owner.to_hex_string(), typed_data_string],
-            )
-            .await?;
-        let signature = normalize_signature(&signature)?;
-        to_js_value(&WasmEnvelope::v1(SignedCancellationsInput {
-            order_uids: uid_strings(&uids),
-            signature,
-            signing_scheme: "eip712".to_owned(),
-        }))
+    super::traced("wasm.signing.sign_cancellation_with_eip1193", async move {
+        let options = options.as_ref().map(AsRef::as_ref);
+        let scope = ClientCallScope::new(options)?;
+        let wallet_timeout_ms = signing_wallet_timeout_ms(options)?;
+        run_with_client_options(scope, async move {
+            let owner = parse_owner(&owner)?;
+            let (uids, payload, _digest) = cancellation_payload(order_uids, chain_id)?;
+            let envelope = TypedDataEnvelopeDto::from_payload(&payload)?;
+            let typed_data_string = serde_json::to_string(&typed_data_json(&envelope))
+                .map_err(|error| WasmError::from(error).into_js())?;
+            let requester = JsEip1193Requester::new(request_callback, wallet_timeout_ms);
+            let signature = requester
+                .request(
+                    "eth_signTypedData_v4",
+                    &[owner.to_hex_string(), typed_data_string],
+                )
+                .await?;
+            let signature = normalize_signature(&signature)?;
+            to_js_value(&WasmEnvelope::v1(SignedCancellationsInput {
+                order_uids: uid_strings(&uids),
+                signature,
+                signing_scheme: "eip712".to_owned(),
+            }))
+        })
+        .await
     })
     .await
 }
@@ -449,13 +441,6 @@ pub async fn sign_cancellation_with_eip1193(
 /// @returns A versioned envelope containing signed cancellations.
 /// @throws CowError for empty input, invalid UID, callback failure, or timeout.
 #[cfg(feature = "cancellation")]
-#[cfg_attr(
-    feature = "tracing",
-    tracing::instrument(
-        skip_all,
-        fields(endpoint = "wasm.signing.sign_cancellation_eth_sign_digest")
-    )
-)]
 #[wasm_bindgen(
     js_name = "signCancellationEthSignDigest",
     unchecked_return_type = "WasmEnvelope<SignedCancellationsInput>"
@@ -467,22 +452,30 @@ pub async fn sign_cancellation_eth_sign_digest(
     digest_signer: Function,
     #[wasm_bindgen(js_name = options)] options: Option<SigningOptions>,
 ) -> Result<JsValue, JsValue> {
-    let options = options.as_ref().map(AsRef::as_ref);
-    let scope = ClientCallScope::new(options)?;
-    let wallet_timeout_ms = signing_wallet_timeout_ms(options)?;
-    run_with_client_options(scope, async move {
-        let (uids, _payload, digest) = cancellation_payload(order_uids, chain_id)?;
-        let digest_bytes =
-            alloy_primitives::hex::decode(digest.to_hex_string().trim_start_matches("0x"))
-                .map_err(|error| WasmError::invalid("digest", error.to_string()).into_js())?;
-        let signer = JsDigestSigner::new(digest_signer, wallet_timeout_ms);
-        let signature = signer.sign_digest(&digest_bytes).await?;
-        to_js_value(&WasmEnvelope::v1(SignedCancellationsInput {
-            order_uids: uid_strings(&uids),
-            signature,
-            signing_scheme: "ethsign".to_owned(),
-        }))
-    })
+    super::traced(
+        "wasm.signing.sign_cancellation_eth_sign_digest",
+        async move {
+            let options = options.as_ref().map(AsRef::as_ref);
+            let scope = ClientCallScope::new(options)?;
+            let wallet_timeout_ms = signing_wallet_timeout_ms(options)?;
+            run_with_client_options(scope, async move {
+                let (uids, _payload, digest) = cancellation_payload(order_uids, chain_id)?;
+                let digest_bytes =
+                    alloy_primitives::hex::decode(digest.to_hex_string().trim_start_matches("0x"))
+                        .map_err(|error| {
+                            WasmError::invalid("digest", error.to_string()).into_js()
+                        })?;
+                let signer = JsDigestSigner::new(digest_signer, wallet_timeout_ms);
+                let signature = signer.sign_digest(&digest_bytes).await?;
+                to_js_value(&WasmEnvelope::v1(SignedCancellationsInput {
+                    order_uids: uid_strings(&uids),
+                    signature,
+                    signing_scheme: "ethsign".to_owned(),
+                }))
+            })
+            .await
+        },
+    )
     .await
 }
 

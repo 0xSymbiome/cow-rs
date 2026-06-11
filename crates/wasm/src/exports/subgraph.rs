@@ -72,18 +72,17 @@ impl SubgraphClient {
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing aggregate totals.
     /// @throws CowError for transport, cancellation, timeout, or subgraph errors.
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(skip_all, fields(endpoint = "wasm.subgraph.totals"))
-    )]
     #[wasm_bindgen(js_name = "getTotals")]
     pub async fn totals(
         &self,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
     ) -> Result<JsValue, JsValue> {
-        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
-        let inner = subgraph_for_scope(&self.inner, &scope);
-        run_with_client_options(scope, async move { subgraph_get_totals(&inner).await }).await
+        super::traced("wasm.subgraph.totals", async move {
+            let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+            let inner = subgraph_for_scope(&self.inner, &scope);
+            run_with_client_options(scope, async move { subgraph_get_totals(&inner).await }).await
+        })
+        .await
     }
 
     /// Fetches recent daily volume rows.
@@ -95,20 +94,19 @@ impl SubgraphClient {
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing daily volume rows.
     /// @throws CowError for invalid query shape, transport failure, or timeout.
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(skip_all, fields(endpoint = "wasm.subgraph.last_days_volume"))
-    )]
     #[wasm_bindgen(js_name = "getLastDaysVolume")]
     pub async fn last_days_volume(
         &self,
         days: u32,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
     ) -> Result<JsValue, JsValue> {
-        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
-        let inner = subgraph_for_scope(&self.inner, &scope);
-        run_with_client_options(scope, async move {
-            subgraph_get_last_days_volume(&inner, days).await
+        super::traced("wasm.subgraph.last_days_volume", async move {
+            let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+            let inner = subgraph_for_scope(&self.inner, &scope);
+            run_with_client_options(scope, async move {
+                subgraph_get_last_days_volume(&inner, days).await
+            })
+            .await
         })
         .await
     }
@@ -122,20 +120,19 @@ impl SubgraphClient {
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing hourly volume rows.
     /// @throws CowError for invalid query shape, transport failure, or timeout.
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(skip_all, fields(endpoint = "wasm.subgraph.last_hours_volume"))
-    )]
     #[wasm_bindgen(js_name = "getLastHoursVolume")]
     pub async fn last_hours_volume(
         &self,
         hours: u32,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
     ) -> Result<JsValue, JsValue> {
-        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
-        let inner = subgraph_for_scope(&self.inner, &scope);
-        run_with_client_options(scope, async move {
-            subgraph_get_last_hours_volume(&inner, hours).await
+        super::traced("wasm.subgraph.last_hours_volume", async move {
+            let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+            let inner = subgraph_for_scope(&self.inner, &scope);
+            run_with_client_options(scope, async move {
+                subgraph_get_last_hours_volume(&inner, hours).await
+            })
+            .await
         })
         .await
     }
@@ -149,22 +146,21 @@ impl SubgraphClient {
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing the JSON GraphQL response.
     /// @throws CowError for transport, timeout, cancellation, or GraphQL errors.
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(skip_all, fields(endpoint = "wasm.subgraph.query"))
-    )]
     #[wasm_bindgen(js_name = "runQuery")]
     pub async fn query(
         &self,
         request: SubgraphQueryInput,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
     ) -> Result<JsValue, JsValue> {
-        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
-        let inner = subgraph_for_scope(&self.inner, &scope);
-        run_with_client_options(
-            scope,
-            async move { subgraph_run_query(&inner, request).await },
-        )
+        super::traced("wasm.subgraph.query", async move {
+            let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+            let inner = subgraph_for_scope(&self.inner, &scope);
+            run_with_client_options(
+                scope,
+                async move { subgraph_run_query(&inner, request).await },
+            )
+            .await
+        })
         .await
     }
 }

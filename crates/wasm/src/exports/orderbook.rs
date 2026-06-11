@@ -85,10 +85,6 @@ impl OrderBookClient {
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing the quote response.
     /// @throws CowError for invalid input, transport failure, timeout, or cancellation.
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.quote"))
-    )]
     #[wasm_bindgen(
         js_name = "getQuote",
         unchecked_return_type = "WasmEnvelope<OrderQuoteResponseDto>"
@@ -98,12 +94,15 @@ impl OrderBookClient {
         request: OrderQuoteRequestInput,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
     ) -> Result<JsValue, JsValue> {
-        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
-        let inner = orderbook_for_scope(&self.inner, &scope);
-        run_with_client_options(
-            scope,
-            async move { orderbook_get_quote(&inner, request).await },
-        )
+        super::traced("wasm.orderbook.quote", async move {
+            let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+            let inner = orderbook_for_scope(&self.inner, &scope);
+            run_with_client_options(
+                scope,
+                async move { orderbook_get_quote(&inner, request).await },
+            )
+            .await
+        })
         .await
     }
 
@@ -117,22 +116,21 @@ impl OrderBookClient {
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing the submitted order UID.
     /// @throws CowError for invalid signatures, transport failure, timeout, or rejection.
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.send_order"))
-    )]
     #[wasm_bindgen(js_name = "sendOrder", unchecked_return_type = "WasmEnvelope<string>")]
     pub async fn send_order(
         &self,
         signed: SignedOrderDto,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
     ) -> Result<JsValue, JsValue> {
-        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
-        let inner = orderbook_for_scope(&self.inner, &scope);
-        run_with_client_options(
-            scope,
-            async move { orderbook_send_order(&inner, signed).await },
-        )
+        super::traced("wasm.orderbook.send_order", async move {
+            let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+            let inner = orderbook_for_scope(&self.inner, &scope);
+            run_with_client_options(
+                scope,
+                async move { orderbook_send_order(&inner, signed).await },
+            )
+            .await
+        })
         .await
     }
 
@@ -146,10 +144,6 @@ impl OrderBookClient {
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing the submitted order UID.
     /// @throws CowError for malformed input, transport failure, timeout, or rejection.
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.send_order_creation"))
-    )]
     #[wasm_bindgen(
         js_name = "sendOrderCreation",
         unchecked_return_type = "WasmEnvelope<string>"
@@ -159,10 +153,13 @@ impl OrderBookClient {
         input: OrderCreationInput,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
     ) -> Result<JsValue, JsValue> {
-        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
-        let inner = orderbook_for_scope(&self.inner, &scope);
-        run_with_client_options(scope, async move {
-            orderbook_send_order_creation(&inner, input).await
+        super::traced("wasm.orderbook.send_order_creation", async move {
+            let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+            let inner = orderbook_for_scope(&self.inner, &scope);
+            run_with_client_options(scope, async move {
+                orderbook_send_order_creation(&inner, input).await
+            })
+            .await
         })
         .await
     }
@@ -176,20 +173,19 @@ impl OrderBookClient {
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing the order response.
     /// @throws CowError for invalid UID, not-found responses, transport failure, or timeout.
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.order"))
-    )]
     #[wasm_bindgen(js_name = "getOrder", unchecked_return_type = "WasmEnvelope<OrderDto>")]
     pub async fn order(
         &self,
         #[wasm_bindgen(js_name = orderUid)] order_uid: String,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
     ) -> Result<JsValue, JsValue> {
-        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
-        let inner = orderbook_for_scope(&self.inner, &scope);
-        run_with_client_options(scope, async move {
-            orderbook_get_order(&inner, order_uid).await
+        super::traced("wasm.orderbook.order", async move {
+            let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+            let inner = orderbook_for_scope(&self.inner, &scope);
+            run_with_client_options(scope, async move {
+                orderbook_get_order(&inner, order_uid).await
+            })
+            .await
         })
         .await
     }
@@ -203,10 +199,6 @@ impl OrderBookClient {
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing matching trades.
     /// @throws CowError when the query is ambiguous or transport fails.
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.trades"))
-    )]
     #[wasm_bindgen(
         js_name = "getTrades",
         unchecked_return_type = "WasmEnvelope<TradeDto[]>"
@@ -216,12 +208,15 @@ impl OrderBookClient {
         query: TradesQueryInput,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
     ) -> Result<JsValue, JsValue> {
-        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
-        let inner = orderbook_for_scope(&self.inner, &scope);
-        run_with_client_options(
-            scope,
-            async move { orderbook_get_trades(&inner, query).await },
-        )
+        super::traced("wasm.orderbook.trades", async move {
+            let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+            let inner = orderbook_for_scope(&self.inner, &scope);
+            run_with_client_options(
+                scope,
+                async move { orderbook_get_trades(&inner, query).await },
+            )
+            .await
+        })
         .await
     }
 
@@ -235,10 +230,6 @@ impl OrderBookClient {
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing matching orders.
     /// @throws CowError for invalid owner, transport failure, timeout, or cancellation.
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.orders_by_owner"))
-    )]
     #[wasm_bindgen(
         js_name = "getOrdersByOwner",
         unchecked_return_type = "WasmEnvelope<OrderDto[]>"
@@ -249,10 +240,13 @@ impl OrderBookClient {
         #[wasm_bindgen(js_name = pagination)] pagination: Option<PaginationOptions>,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
     ) -> Result<JsValue, JsValue> {
-        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
-        let inner = orderbook_for_scope(&self.inner, &scope);
-        run_with_client_options(scope, async move {
-            orderbook_get_orders_by_owner(&inner, owner, pagination).await
+        super::traced("wasm.orderbook.orders_by_owner", async move {
+            let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+            let inner = orderbook_for_scope(&self.inner, &scope);
+            run_with_client_options(scope, async move {
+                orderbook_get_orders_by_owner(&inner, owner, pagination).await
+            })
+            .await
         })
         .await
     }
@@ -267,10 +261,6 @@ impl OrderBookClient {
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing matching orders.
     /// @throws CowError for invalid owner, transport failure, timeout, or cancellation.
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.orders"))
-    )]
     #[wasm_bindgen(
         js_name = "getOrders",
         unchecked_return_type = "WasmEnvelope<OrderDto[]>"
@@ -281,10 +271,13 @@ impl OrderBookClient {
         #[wasm_bindgen(js_name = pagination)] pagination: Option<PaginationOptions>,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
     ) -> Result<JsValue, JsValue> {
-        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
-        let inner = orderbook_for_scope(&self.inner, &scope);
-        run_with_client_options(scope, async move {
-            orderbook_get_orders_by_owner(&inner, owner, pagination).await
+        super::traced("wasm.orderbook.orders", async move {
+            let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+            let inner = orderbook_for_scope(&self.inner, &scope);
+            run_with_client_options(scope, async move {
+                orderbook_get_orders_by_owner(&inner, owner, pagination).await
+            })
+            .await
         })
         .await
     }
@@ -298,10 +291,6 @@ impl OrderBookClient {
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing native price data.
     /// @throws CowError for invalid token address, transport failure, or timeout.
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.native_price"))
-    )]
     #[wasm_bindgen(
         js_name = "getNativePrice",
         unchecked_return_type = "WasmEnvelope<NativePriceResponseDto>"
@@ -311,10 +300,13 @@ impl OrderBookClient {
         token: String,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
     ) -> Result<JsValue, JsValue> {
-        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
-        let inner = orderbook_for_scope(&self.inner, &scope);
-        run_with_client_options(scope, async move {
-            orderbook_get_native_price(&inner, token).await
+        super::traced("wasm.orderbook.native_price", async move {
+            let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+            let inner = orderbook_for_scope(&self.inner, &scope);
+            run_with_client_options(scope, async move {
+                orderbook_get_native_price(&inner, token).await
+            })
+            .await
         })
         .await
     }
@@ -329,10 +321,6 @@ impl OrderBookClient {
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing `{ cancelled: true }` on success.
     /// @throws CowError for invalid UID, signature, transport failure, or timeout.
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.cancel_orders"))
-    )]
     #[wasm_bindgen(
         js_name = "cancelOrders",
         unchecked_return_type = "WasmEnvelope<{ cancelled: true }>"
@@ -342,10 +330,13 @@ impl OrderBookClient {
         signed: SignedCancellationsInput,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
     ) -> Result<JsValue, JsValue> {
-        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
-        let inner = orderbook_for_scope(&self.inner, &scope);
-        run_with_client_options(scope, async move {
-            orderbook_cancel_orders(&inner, signed).await
+        super::traced("wasm.orderbook.cancel_orders", async move {
+            let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+            let inner = orderbook_for_scope(&self.inner, &scope);
+            run_with_client_options(scope, async move {
+                orderbook_cancel_orders(&inner, signed).await
+            })
+            .await
         })
         .await
     }
@@ -360,10 +351,6 @@ impl OrderBookClient {
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing the app-data document.
     /// @throws CowError for an invalid hash, transport failure, or timeout.
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.app_data"))
-    )]
     #[wasm_bindgen(
         js_name = "getAppData",
         unchecked_return_type = "WasmEnvelope<AppDataObjectDto>"
@@ -373,10 +360,13 @@ impl OrderBookClient {
         #[wasm_bindgen(js_name = appDataHash)] app_data_hash: String,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
     ) -> Result<JsValue, JsValue> {
-        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
-        let inner = orderbook_for_scope(&self.inner, &scope);
-        run_with_client_options(scope, async move {
-            orderbook_get_app_data(&inner, app_data_hash).await
+        super::traced("wasm.orderbook.app_data", async move {
+            let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+            let inner = orderbook_for_scope(&self.inner, &scope);
+            run_with_client_options(scope, async move {
+                orderbook_get_app_data(&inner, app_data_hash).await
+            })
+            .await
         })
         .await
     }
@@ -393,10 +383,6 @@ impl OrderBookClient {
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing `{ uploaded: true }` on success.
     /// @throws CowError for a hash mismatch, invalid hash, transport failure, or timeout.
-    #[cfg_attr(
-        feature = "tracing",
-        tracing::instrument(skip_all, fields(endpoint = "wasm.orderbook.upload_app_data"))
-    )]
     #[wasm_bindgen(
         js_name = "uploadAppData",
         unchecked_return_type = "WasmEnvelope<{ uploaded: true }>"
@@ -407,10 +393,13 @@ impl OrderBookClient {
         #[wasm_bindgen(js_name = fullAppData)] full_app_data: String,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
     ) -> Result<JsValue, JsValue> {
-        let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
-        let inner = orderbook_for_scope(&self.inner, &scope);
-        run_with_client_options(scope, async move {
-            orderbook_upload_app_data(&inner, app_data_hash, full_app_data).await
+        super::traced("wasm.orderbook.upload_app_data", async move {
+            let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+            let inner = orderbook_for_scope(&self.inner, &scope);
+            run_with_client_options(scope, async move {
+                orderbook_upload_app_data(&inner, app_data_hash, full_app_data).await
+            })
+            .await
         })
         .await
     }

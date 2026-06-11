@@ -291,32 +291,16 @@ jobs:
     needs:
       - rust-checks
     env:
-      # The wasm-bindgen-test steps below build the wasm32 test binaries
-      # with `--release`, so the workspace `[profile.release]` applies and
-      # any `dev` / `test` profile knob would be inert. Two release knobs
-      # are overridden here, CI-only:
-      #   * `LTO=false` + `OPT_LEVEL=1` keep the wasm-bindgen describe
-      #     shims simple. wasm-bindgen interprets those shims to recover the
-      #     exported type signatures, and its interpreter only implements
-      #     the handful of ops they normally carry (`i32.const` + `call`).
-      #     The shipped profile's `lto = "fat"` + `opt-level = "z"`
-      #     size-merge the shims into parameterised functions that
-      #     introduce comparison ops (`i32.lt_u`), which the interpreter
-      #     rejects with "invalid binary op". The enlarged export surface
-      #     under `--features tracing` / `--all-features` is what crosses
-      #     that threshold; the default-feature run above stays under it.
-      #     opt-level 1 still shrinks the wasm several-fold versus an
-      #     unoptimised build, so headless Firefox keeps the binary
-      #     resident, and the shipped npm artifact is unaffected because
-      #     its default-feature build never enables tracing.
+      # CI-only knobs for the wasm32 test compile and the headless-Firefox
+      # memory budget on the ubuntu-latest runner. The `--release` steps
+      # below already strip symbols and optimise for size through the
+      # workspace `[profile.release]`, so no profile overrides are needed:
       #   * `CARGO_INCREMENTAL=0` skips per-crate incremental metadata,
       #     which otherwise accumulates on disk and inflates peak resident
       #     memory across the matrix.
       #   * `CARGO_BUILD_JOBS=2` caps the parallel rustc fan-out so several
       #     heavy codegen units do not race headless Firefox for the same
       #     memory budget.
-      CARGO_PROFILE_RELEASE_LTO: "false"
-      CARGO_PROFILE_RELEASE_OPT_LEVEL: "1"
       CARGO_INCREMENTAL: "0"
       CARGO_BUILD_JOBS: "2"
     steps:
