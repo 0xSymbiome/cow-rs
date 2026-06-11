@@ -178,15 +178,20 @@ does not store a default owner. For signer-backed flows (`post_swap_order`, `pos
 from `TradeAdvancedSettings::quote_request.from`.
 
 ```rust
-use cow_sdk::core::{Address, Amount, OrderKind};
+use cow_sdk::core::{address, Address, Amount, OrderKind};
 use cow_sdk::trading::TradeParams;
+
+// Compile-time validated address literals — the lowercase wire form, no runtime
+// parse and no unwrap.
+const USDC: Address = address!("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48");
+const DAI: Address = address!("0x6b175474e89094c44da98b954eedeac495271d0f");
 
 fn quote_request(owner: Address) -> Result<TradeParams, Box<dyn std::error::Error>> {
     let params = TradeParams::new(
         OrderKind::Sell,
         // USDC (6 decimals) sold for DAI.
-        Address::new("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48")?,
-        Address::new("0x6B175474E89094C44Da98b954EedeAC495271d0F")?,
+        USDC,
+        DAI,
         Amount::from_units(100, 6)?,
     )
     .with_owner(owner)
@@ -229,7 +234,7 @@ where
         .slippage_bps(50)
         .execute(signer)
         .await?;
-    println!("posted {}", posted.order_id.to_hex_string());
+    println!("posted {}", posted.order_id);
 
     // Or inspect the quote first, then submit the exact quoted order.
     let quoted = trading

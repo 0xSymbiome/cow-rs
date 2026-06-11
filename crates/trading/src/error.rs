@@ -4,7 +4,8 @@ use std::fmt;
 use std::time::Duration;
 
 use cow_sdk_core::{
-    AppCodeError, Cancelled, ChainId, CoreError, CowEnv, ErrorClass, Redacted, ValidationReason,
+    AppCodeError, Cancelled, ChainId, CoreError, CowEnv, ErrorClass, Redacted, SupportedChainId,
+    ValidationReason,
 };
 use cow_sdk_orderbook::OrderbookError;
 use cow_sdk_signing::SigningError;
@@ -79,6 +80,21 @@ pub enum TradingError {
     /// Order submission requires an explicit owner or a signer address that can supply one.
     #[error("owner address is required for order submission")]
     MissingSubmissionOwner,
+    /// The signer is statically bound to a chain that disagrees with the
+    /// trading client's canonical chain, caught before signing (ADR 0015).
+    ///
+    /// A signer that reports a static chain through
+    /// [`cow_sdk_core::Signer::chain_id`] must match the chain the trading
+    /// client posts to; otherwise the EIP-712 signature would carry the wrong
+    /// domain separator. Signers that learn their chain at runtime report
+    /// `None` and never raise this error.
+    #[error("signer chain {signer:?} does not match the trading client chain {trading:?}")]
+    ChainMismatch {
+        /// Chain the signer is statically bound to.
+        signer: SupportedChainId,
+        /// Canonical chain the trading client posts to.
+        trading: SupportedChainId,
+    },
     /// Injected orderbook context conflicts with requested chain or environment.
     #[error(
         "injected orderbook client fixes {field} to `{configured}`, but `{requested}` was requested"
@@ -193,8 +209,8 @@ impl TradingError {
             Self::Signer { .. } | Self::Provider { .. } => ErrorClass::Signing,
             Self::Cancelled => ErrorClass::Cancelled,
             // AppCode, missing-parameter, validity-conflict, owner, binding,
-            // client-rejection, numeric, and input failures plus future
-            // additive variants are caller-side validation failures.
+            // chain-mismatch, client-rejection, numeric, and input failures
+            // plus future additive variants are caller-side validation failures.
             _ => ErrorClass::Validation,
         }
     }

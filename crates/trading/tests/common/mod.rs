@@ -396,6 +396,10 @@ pub struct MockSigner {
     /// address to model a signer that reports one identity but signs with
     /// another, exercising the post-sign owner-recovery gate.
     pub sign_key_address: Address,
+    /// Optional statically-known chain reported through
+    /// [`Signer::chain_id`]. Defaults to `None` (opt out of the chain-coherence
+    /// gate); a test sets it to model a signer bound to a specific chain.
+    pub chain_id: Option<SupportedChainId>,
     pub state: Arc<Mutex<MockSignerState>>,
 }
 
@@ -410,6 +414,7 @@ impl MockSigner {
         Self {
             address,
             sign_key_address: address,
+            chain_id: None,
             state: Arc::new(Mutex::new(MockSignerState::default())),
         }
     }
@@ -419,6 +424,14 @@ impl MockSigner {
     #[must_use]
     pub fn with_sign_key_address(mut self, sign_key_address: Address) -> Self {
         self.sign_key_address = sign_key_address;
+        self
+    }
+
+    /// Reports a statically-known chain through [`Signer::chain_id`], so a test
+    /// can exercise the chain-coherence gate.
+    #[must_use]
+    pub const fn with_chain_id(mut self, chain_id: SupportedChainId) -> Self {
+        self.chain_id = Some(chain_id);
         self
     }
 
@@ -467,6 +480,10 @@ async fn real_sign_typed_data(key: &str, payload: &TypedDataPayload) -> Result<S
 
 impl Signer for MockSigner {
     type Error = String;
+
+    fn chain_id(&self) -> Option<SupportedChainId> {
+        self.chain_id
+    }
 
     async fn address(&self) -> Result<Address, Self::Error> {
         Ok(self.address)

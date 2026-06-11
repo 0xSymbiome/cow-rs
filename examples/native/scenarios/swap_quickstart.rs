@@ -41,6 +41,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .execute(&signer)
         .await?;
 
-    println!("posted order: {}", posted.order_id.to_hex_string());
+    println!("posted order: {}", posted.order_id);
     Ok(())
 }

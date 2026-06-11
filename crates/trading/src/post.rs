@@ -111,6 +111,21 @@ where
     let orderbook_context = orderbook.context();
     let canonical_chain_id = orderbook_context.chain_id;
     let canonical_env = orderbook_context.env;
+    // Chain-coherence gate (ADR 0015): when the signer statically knows its
+    // chain, it must match the trading client's canonical chain before any
+    // signing happens. A signer bound to the wrong chain would produce an
+    // EIP-712 signature with the wrong domain separator that the orderbook
+    // would reject after a wasted round-trip; fail closed locally instead.
+    // Signers that learn their chain at runtime return `None` and opt out
+    // (this also covers the pre-sign placement stand-in).
+    if let Some(signer_chain) = signer.chain_id()
+        && signer_chain != canonical_chain_id
+    {
+        return Err(TradingError::ChainMismatch {
+            signer: signer_chain,
+            trading: canonical_chain_id,
+        });
+    }
     let mut params = params.clone();
     params.env = Some(canonical_env);
     let is_eth_flow = is_eth_flow_order(&params.sell_token);

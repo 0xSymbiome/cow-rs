@@ -1,3 +1,4 @@
+use crate::config::SupportedChainId;
 use crate::types::{Address, Amount};
 
 use super::transaction::{TransactionBroadcast, TransactionRequest};
@@ -96,6 +97,29 @@ pub trait Eip1193 {
 pub trait Signer {
     /// Error type returned by signer operations.
     type Error;
+
+    /// Returns the chain this signer signs for, when statically known.
+    ///
+    /// A trading flow consults this hint to fast-fail a signer/trading
+    /// chain mismatch *before* signing: if the signer is statically bound
+    /// to one chain but the trading client is configured for another, the
+    /// produced EIP-712 signature would carry the wrong domain separator
+    /// and the order would be rejected after a wasted orderbook round-trip.
+    /// Catching the mismatch here keeps the failure local and typed.
+    ///
+    /// Returning [`None`] — the default — opts out of the check. Wallet and
+    /// callback signers that learn their chain at runtime (EIP-1193
+    /// providers, browser wallets, recording doubles, and the pre-sign
+    /// placement stand-in) cannot name a single static chain, so they
+    /// inherit the default and the flow proceeds without the hint.
+    ///
+    /// This method is intentionally synchronous and defaulted: it reports a
+    /// construction-time fact, not a runtime query, and a signer adopts the
+    /// trait without implementing it.
+    #[must_use]
+    fn chain_id(&self) -> Option<SupportedChainId> {
+        None
+    }
 
     /// Returns the signer address.
     ///

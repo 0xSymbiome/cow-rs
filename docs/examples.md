@@ -98,6 +98,9 @@ application code should replace it with the final
   provider-specific choices outside the default facade while preserving one
   stable seam for downstream adapters. See [Integrations](integrations.md) when
   you are ready to wire a custom runtime.
+- Quickstart surfaces may differ by audience (signer concretion, transport) but
+  not by dialect (address idiom, naming case, order-id printing, amount value
+  for the same asset).
 
 ## Choosing A Starting Point
 

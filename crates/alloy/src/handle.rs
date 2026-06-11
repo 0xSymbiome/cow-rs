@@ -5,8 +5,8 @@ use std::{fmt, sync::Arc};
 use alloy_provider::Provider as AlloyProviderTrait;
 use alloy_signer::Signer as AlloySigner;
 use cow_sdk_core::{
-    Address, Amount, Signer, TransactionBroadcast, TransactionHash, TransactionRequest,
-    TypedDataPayload,
+    Address, Amount, Signer, SupportedChainId, TransactionBroadcast, TransactionHash,
+    TransactionRequest, TypedDataPayload,
 };
 
 use crate::{
@@ -48,6 +48,13 @@ impl fmt::Debug for AlloyClientSignerHandle {
 
 impl Signer for AlloyClientSignerHandle {
     type Error = AlloyClientError;
+
+    fn chain_id(&self) -> Option<SupportedChainId> {
+        // The handle carries the chain bound to the underlying local signer at
+        // construction, so it can supply the supported-chain hint that lets a
+        // trading flow fast-fail a signer/trading chain mismatch before signing.
+        SupportedChainId::try_from(self.inner.chain_id).ok()
+    }
 
     async fn address(&self) -> Result<Address, Self::Error> {
         Ok(self.inner.signer_address)

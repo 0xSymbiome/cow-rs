@@ -436,6 +436,67 @@ async fn post_sign_recovery_rejects_a_signer_that_signs_with_a_different_key() {
 }
 
 #[tokio::test]
+async fn chain_mismatch_fast_fails_before_any_upload_signing_or_submission() {
+    // ADR 0015 chain-coherence gate: the trading client posts to Sepolia, but
+    // the signer is statically bound to Mainnet. The mismatch must be caught
+    // before app-data upload, signing, or submission so the wrong domain
+    // separator never produces a signature the orderbook would reject.
+    let trader = sample_trader_parameters();
+    let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
+    let signer = MockSigner::default().with_chain_id(cow_sdk_core::SupportedChainId::Mainnet);
+    let params = sample_limit_parameters(OrderKind::Sell);
+
+    let error = post_limit_order(&params, &trader, &signer, None, &orderbook)
+        .await
+        .expect_err("a signer bound to the wrong chain must fail closed before signing");
+
+    match error {
+        TradingError::ChainMismatch { signer, trading } => {
+            assert_eq!(signer, cow_sdk_core::SupportedChainId::Mainnet);
+            assert_eq!(trading, cow_sdk_core::SupportedChainId::Sepolia);
+        }
+        other => panic!("expected ChainMismatch, got {other:?}"),
+    }
+    // Nothing reaches the orderbook or the signer.
+    assert!(orderbook.state().uploads.is_empty());
+    assert!(orderbook.state().sent_orders.is_empty());
+    assert!(signer.state().last_typed_data_domain.is_none());
+}
+
+#[tokio::test]
+async fn matching_signer_chain_passes_through_the_coherence_gate() {
+    // A signer bound to the same chain as the trading client clears the gate
+    // and the order posts normally.
+    let trader = sample_trader_parameters();
+    let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
+    let signer = MockSigner::default().with_chain_id(cow_sdk_core::SupportedChainId::Sepolia);
+    let params = sample_limit_parameters(OrderKind::Sell);
+
+    post_limit_order(&params, &trader, &signer, None, &orderbook)
+        .await
+        .expect("a signer on the trading chain must post successfully");
+
+    assert_eq!(orderbook.state().sent_orders.len(), 1);
+}
+
+#[tokio::test]
+async fn signer_without_static_chain_opts_out_of_the_coherence_gate() {
+    // The default signer reports `None` from `chain_id`, so the gate is a
+    // no-op and the order posts even though no static chain is declared.
+    let trader = sample_trader_parameters();
+    let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
+    let signer = MockSigner::default();
+    assert!(cow_sdk_core::Signer::chain_id(&signer).is_none());
+    let params = sample_limit_parameters(OrderKind::Sell);
+
+    post_limit_order(&params, &trader, &signer, None, &orderbook)
+        .await
+        .expect("a signer without a static chain must still post");
+
+    assert_eq!(orderbook.state().sent_orders.len(), 1);
+}
+
+#[tokio::test]
 async fn post_swap_order_appdata_from_mismatch_does_not_upload_or_sign() {
     let trader = sample_trader_parameters();
     let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());

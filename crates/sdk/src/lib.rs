@@ -69,7 +69,7 @@
 //!
 //! // One call quotes, signs with `signer`, and posts to the orderbook.
 //! let posted = trading.post_swap_order(params, signer, None).await?;
-//! println!("posted order: {}", posted.order_id.to_hex_string());
+//! println!("posted order: {}", posted.order_id);
 //! # Ok(())
 //! # }
 //! ```

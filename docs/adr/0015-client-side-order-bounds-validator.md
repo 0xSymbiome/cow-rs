@@ -218,3 +218,28 @@ the address the signature actually recovers to.
   `ClientRejection::OwnerMismatch` variant and `assert_owner_matches_signer`
   helper. The `recovered` field — already its name — now carries the address
   recovered from the signature rather than the signer's self-report.
+
+## Amendment 2026-06-11: chain coherence joins the pre-submission defense-in-depth checks
+
+Chain coherence now joins owner recovery in the pre-submission defense-in-depth
+checks. A signer carries an optional, defaulted `chain_id()` hint
+(`cow_sdk_core::Signer::chain_id`) reporting the chain it is statically bound to.
+`post_cow_protocol_trade` consults it before signing: when the hint is `Some` and
+disagrees with the trading client's canonical chain, the flow fails closed
+locally with `TradingError::ChainMismatch { signer, trading }` before any
+app-data upload, signing, or submission.
+
+This catches a signer bound to the wrong chain — whose EIP-712 signature would
+carry the wrong domain separator — without the orderbook round-trip that would
+otherwise reject it. It is the chain-domain complement to the owner-recovery
+gate above: both fast-fail a domain mismatch before the order reaches the wire.
+
+- The hint is optional. Signers that learn their chain at runtime (EIP-1193
+  wallets, browser wallets, recording doubles, the pre-sign placement stand-in)
+  return `None` and the gate is a no-op, so the order posts as before. Local
+  key signers bound at construction (`LocalAlloySigner`, the Alloy client signer
+  handle) report `Some`.
+- `chain_id()` is synchronous and defaulted on the trait: it reports a
+  construction-time fact, not a runtime query, so a signer adopts the trait
+  without implementing it. `ChainMismatch` classifies as a non-retryable
+  caller-side validation error, consistent with the other configuration faults.

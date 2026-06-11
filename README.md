@@ -19,50 +19,79 @@ contracts.
 
 ## Quickstart
 
-Sell WETH for COW on Sepolia — quote, sign, and post in one fluent call. Tokens
-are typed `Address` values; the named setters keep the sell and buy legs from
+Sell WETH for COW on Sepolia — quote, sign, and post in one fluent call. This is
+a complete program: export `PRIVATE_KEY` and run it. Tokens are compile-time
+validated `Address` literals; the named setters keep the sell and buy legs from
 being transposed, and `execute` is reachable only once both tokens and an amount
 are set. The order owner defaults to the signer address:
 
 ```rust,no_run
+use std::error::Error;
+
 use cow_sdk::alloy_signer::LocalAlloySigner;
-use cow_sdk::core::{Address, Amount, SupportedChainId};
+use cow_sdk::core::{address, Address, Amount, SupportedChainId};
 use cow_sdk::trading::Trading;
 
-# async fn run(private_key: &str) -> Result<(), Box<dyn std::error::Error>> {
-let signer = LocalAlloySigner::builder()
-    .private_key(private_key)?
-    .chain_id(SupportedChainId::Sepolia)
-    .build()?;
+// Compile-time validated address literals — the lowercase wire form, no runtime
+// parse and no unwrap.
+const WETH: Address = address!("0xfff9976782d46cc05630d1f6ebab18b2324d6b14");
+const COW: Address = address!("0x0625afb445c3b6b7b929342a04a22599fd5dbb59");
 
-let trading = Trading::builder()
-    .chain_id(SupportedChainId::Sepolia)
-    .app_code("your-app-code")
-    .build()?;
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
+    let chain = SupportedChainId::Sepolia;
 
-let WETH = Address::new("0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14")?;
-let COW = Address::new("0x0625aFB445C3B6B7B929342a04A22599fd5dBB59")?;
+    let signer = LocalAlloySigner::builder()
+        .private_key(&std::env::var("PRIVATE_KEY")?)?
+        .chain_id(chain)
+        .build()?;
 
-let posted = trading
-    .swap()
-    .sell_token(WETH)
-    .buy_token(COW)
-    .sell_amount(Amount::parse_units("0.001", 18)?)
-    .execute(&signer)
-    .await?;
+    let trading = Trading::builder()
+        .chain_id(chain)
+        .app_code("your-app-code")
+        .build()?;
 
-println!(
-    "https://explorer.cow.fi/sepolia/orders/{}",
-    posted.order_id.to_hex_string()
-);
-# Ok(()) }
+    let posted = trading
+        .swap()
+        .sell_token(WETH)
+        .buy_token(COW)
+        .sell_amount(Amount::parse_units("0.1", 18)?)
+        .execute(&signer)
+        .await?;
+
+    println!("https://explorer.cow.fi/sepolia/orders/{}", posted.order_id);
+    Ok(())
+}
 ```
 
-This snippet uses `cow-sdk` with the `alloy-signer` feature; any
+This program uses `cow-sdk` with the `alloy-signer` feature; any
 `cow_sdk::core::Signer` works in `execute`, and the local-key signer is the
 batteries-included one. The same fluent flow is compiled on every CI run as the
 [`cow-sdk` crate doctest](crates/sdk/README.md). For an end-to-end runnable path,
 see the [native examples](examples/native/README.md).
+
+## Surface map
+
+The facade re-exports each leaf crate as a named module reached on its module
+path (`cow_sdk::trading::Trading`, `cow_sdk::core::Address`), matching the
+`alloy`, `reqwest`, and `tower` convention. The consumer-facing modules:
+
+| Module path | What it owns | Guide |
+| --- | --- | --- |
+| `cow_sdk::trading` | High-level quote-to-order workflows: the fluent `Trading::swap` lifecycle, limit and pre-sign posting, EthFlow, and cancellation | [Getting Started](docs/getting-started.md) |
+| `cow_sdk::orderbook` | Typed orderbook transport: quote, post, lookup, and cancellation requests | [orderbook crate](crates/orderbook/README.md) |
+| `cow_sdk::signing` | Deterministic protocol signing: order UID and digest, EIP-712 domain, EIP-1271 verification | [signing crate](crates/signing/README.md) |
+| `cow_sdk::core` | Shared domain types and runtime traits: `Address`, `Amount`, `SupportedChainId`, `Signer`, the `HttpTransport` seam, and transport policy | [core crate](crates/core/README.md) |
+| `cow_sdk::app_data` | App-data document generation, validation, and CID handling | [app-data crate](crates/app-data/README.md) |
+| `cow_sdk::subgraph` | Read-only subgraph analytics, behind the off-by-default `subgraph` feature | [subgraph crate](crates/subgraph/README.md) |
+| `cow_sdk::alloy_signer` / `cow_sdk::alloy_provider` | Opt-in native Alloy signer and provider adapters, behind the `alloy-signer` / `alloy-provider` features | [native examples](examples/native/README.md) |
+
+The full crate-by-need breakdown is in the [Crate Guide](#crate-guide) below.
+
+Every protocol transform is cross-checked byte-for-byte against 33 pinned
+upstream fixtures under [`parity/fixtures/`](parity/fixtures), so the Rust
+encoding stays identical to the upstream TypeScript SDK across releases; see
+[Parity And Provenance](docs/parity.md).
 
 <!-- runtime-routing:start -->
 ## When to use cow-rs

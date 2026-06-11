@@ -80,7 +80,13 @@ pub fn run(invariant: &Invariant, args: &Args) -> anyhow::Result<()> {
         // `--edges no-dev`: the invariant guards the shipped graph, and a
         // dev-dependency never ships, so a test that pulls the real signer or
         // provider does not leak it to consumers. Normal/build leaks still fail.
-        .args(["tree", "--edges", "no-dev", "--invert", invariant.crate_name]);
+        .args([
+            "tree",
+            "--edges",
+            "no-dev",
+            "--invert",
+            invariant.crate_name,
+        ]);
     for crate_name in &shipped {
         command.args(["-p", crate_name]);
     }

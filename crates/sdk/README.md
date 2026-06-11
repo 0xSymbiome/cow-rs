@@ -45,8 +45,13 @@ owner defaults to the signer's address:
 
 ```rust,no_run
 # use std::error::Error;
-use cow_sdk::core::{Address, Amount, SupportedChainId};
+use cow_sdk::core::{address, Address, Amount, SupportedChainId};
 use cow_sdk::trading::Trading;
+
+// Tokens are compile-time validated `Address` literals, not raw strings. The
+// literal is the lowercase wire form; a mixed-case literal rejects at build time.
+const WETH: Address = address!("0xfff9976782d46cc05630d1f6ebab18b2324d6b14");
+const COW: Address = address!("0x0625afb445c3b6b7b929342a04a22599fd5dbb59");
 #
 # async fn run<S>(signer: &S) -> Result<(), Box<dyn Error>>
 # where
@@ -58,25 +63,19 @@ let trading = Trading::builder()
     .app_code("your-app-code")
     .build()?;
 
-// Tokens are typed `Address` values, not raw strings. The named setters keep
-// the sell and buy legs from being transposed, and `execute` becomes callable
-// only once both tokens and an amount are set. The owner defaults to the signer
-// address and slippage uses the quote-aware tolerance unless either is set.
-let weth = Address::new("0xfff9976782d46cc05630d1f6ebab18b2324d6b14")?;
-let cow = Address::new("0x0625afb445c3b6b7b929342a04a22599fd5dbb59")?;
-
+// The named setters keep the sell and buy legs from being transposed, and
+// `execute` becomes callable only once both tokens and an amount are set. The
+// owner defaults to the signer address and slippage uses the quote-aware
+// tolerance unless either is set.
 let posted = trading
     .swap()
-    .sell_token(weth)
-    .buy_token(cow)
+    .sell_token(WETH)
+    .buy_token(COW)
     .sell_amount(Amount::parse_units("0.1", 18)?)
     .execute(signer)
     .await?;
 
-println!(
-    "https://explorer.cow.fi/sepolia/orders/{}",
-    posted.order_id.to_hex_string()
-);
+println!("https://explorer.cow.fi/sepolia/orders/{}", posted.order_id);
 # Ok(())
 # }
 ```

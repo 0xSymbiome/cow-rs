@@ -136,6 +136,16 @@ sections below describe the public contract a `0.1.0` consumer receives.
   `ClientRejection` channel. `OrderBoundsValidator::services_default_for_chain`,
   `services_default`, and `with_weth_address` are the public constructors.
   Governed by [ADR 0015](docs/adr/0015-client-side-order-bounds-validator.md).
+- `cow_sdk_core::Signer` gains an optional, defaulted `chain_id()` hint
+  reporting the chain a signer is statically bound to. The signer-backed
+  trading entries consult it before signing and fast-fail a signer/trading
+  chain mismatch locally with the new `TradingError::ChainMismatch { signer,
+  trading }` — the chain-domain complement to the post-sign owner-recovery
+  gate, catching a wrong-domain-separator signature before any orderbook
+  round-trip. Signers that learn their chain at runtime return `None` and the
+  check is a no-op; local key signers (`LocalAlloySigner`, the Alloy client
+  signer handle) report their bound chain. Governed by
+  [ADR 0015](docs/adr/0015-client-side-order-bounds-validator.md).
 
 #### Typed primitive and amount layer
 

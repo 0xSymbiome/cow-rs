@@ -4,8 +4,8 @@
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use cow_sdk_core::{
-    Address, Amount, Signer, TransactionBroadcast, TransactionHash, TransactionRequest,
-    TypedDataPayload,
+    Address, Amount, Signer, SupportedChainId, TransactionBroadcast, TransactionHash,
+    TransactionRequest, TypedDataPayload,
 };
 
 use crate::{defaults, error::MockError};
@@ -29,6 +29,7 @@ struct Inner {
     estimated_gas: Amount,
     fail_send: Option<String>,
     fail_estimate_gas: Option<String>,
+    chain_id: Option<SupportedChainId>,
     calls: SignerCalls,
 }
 
@@ -91,6 +92,7 @@ pub struct MockSignerBuilder {
     estimated_gas: Amount,
     fail_send: Option<String>,
     fail_estimate_gas: Option<String>,
+    chain_id: Option<SupportedChainId>,
 }
 
 impl Default for MockSignerBuilder {
@@ -104,6 +106,7 @@ impl Default for MockSignerBuilder {
             estimated_gas: Amount::from(50_000_u64),
             fail_send: None,
             fail_estimate_gas: None,
+            chain_id: None,
         }
     }
 }
@@ -165,6 +168,16 @@ impl MockSignerBuilder {
         self
     }
 
+    /// Sets the statically-known chain reported through [`Signer::chain_id`].
+    ///
+    /// Defaults to `None` (the signer opts out of the trading chain-coherence
+    /// gate); set it to model a signer bound to a specific chain.
+    #[must_use]
+    pub const fn chain_id(mut self, chain_id: SupportedChainId) -> Self {
+        self.chain_id = Some(chain_id);
+        self
+    }
+
     /// Builds the signer.
     #[must_use]
     pub fn build(self) -> MockSigner {
@@ -178,6 +191,7 @@ impl MockSignerBuilder {
                 estimated_gas: self.estimated_gas,
                 fail_send: self.fail_send,
                 fail_estimate_gas: self.fail_estimate_gas,
+                chain_id: self.chain_id,
                 calls: SignerCalls::default(),
             })),
         }
@@ -186,6 +200,10 @@ impl MockSignerBuilder {
 
 impl Signer for MockSigner {
     type Error = MockError;
+
+    fn chain_id(&self) -> Option<SupportedChainId> {
+        self.lock().chain_id
+    }
 
     async fn address(&self) -> Result<Address, Self::Error> {
         Ok(self.lock().address)

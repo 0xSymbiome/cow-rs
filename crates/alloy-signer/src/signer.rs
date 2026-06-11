@@ -5,7 +5,8 @@ use std::{fmt, sync::Arc};
 use alloy_signer::Signer as AlloySigner;
 use alloy_signer_local::PrivateKeySigner;
 use cow_sdk_core::{
-    Address, Amount, ChainId, Signer, TransactionBroadcast, TransactionRequest, TypedDataPayload,
+    Address, Amount, ChainId, Signer, SupportedChainId, TransactionBroadcast, TransactionRequest,
+    TypedDataPayload,
 };
 
 use crate::{
@@ -57,6 +58,14 @@ impl fmt::Debug for LocalAlloySigner {
 
 impl Signer for LocalAlloySigner {
     type Error = SignerError;
+
+    fn chain_id(&self) -> Option<SupportedChainId> {
+        // The typestate builder binds a numeric chain at construction; report
+        // it as the supported-chain hint when it is one the orderbook knows,
+        // so a trading flow can fast-fail a signer/trading chain mismatch
+        // before signing. A numeric chain outside the supported set opts out.
+        SupportedChainId::try_from(self.chain_id).ok()
+    }
 
     async fn address(&self) -> Result<Address, Self::Error> {
         let alloy_address = AlloySigner::address(self.upstream_signer());
