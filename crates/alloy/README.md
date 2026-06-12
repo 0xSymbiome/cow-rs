@@ -113,8 +113,8 @@ forward, and an ABI-only update cannot silently change runtime transport
 behavior.
 
 Two implementation pairs are intentionally mirrored across the leaves and the
-umbrella: `crates/alloy-provider/src/read_contract.rs` with
-`crates/alloy/src/read_contract.rs`, and
+umbrella: `crates/alloy-provider/src/read_contract.rs` with the read-contract
+path in `crates/alloy/src/client.rs`, and
 `crates/alloy-signer/src/conversion.rs` with `crates/alloy/src/conversion.rs`.
 Run `cargo test -p cow-rs-workspace-tests --test alloy_read_contract_parity_invariant`
 when changing the read-contract path so both adapters keep byte-for-byte output

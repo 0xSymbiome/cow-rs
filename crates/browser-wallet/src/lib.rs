@@ -29,7 +29,9 @@
 //! and decoding. That dependency choice, including the reviewed advisories the alloy
 //! toolchain transits, is tracked publicly in
 //! [docs/audit/browser-wallet-alloy-dependency-audit.md](https://github.com/cowdao-grants/cow-rs/blob/main/docs/audit/browser-wallet-alloy-dependency-audit.md).
-//! No `alloy_*` type appears in any `pub fn` signature across the workspace.
+//! No `alloy_*` type appears in this crate's public API; workspace-wide, alloy interop is
+//! confined to the explicit `as_alloy`/`into_alloy`/`from_alloy` accessors on the core
+//! domain newtypes, never leaked implicitly through a helper signature.
 
 #![warn(missing_docs)]
 #![allow(

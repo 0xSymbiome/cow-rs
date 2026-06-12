@@ -13,10 +13,10 @@ This policy covers security issues in the `cow-rs` repository, including:
 Security-relevant public surfaces worth a reviewer's attention include:
 
 - the `Eip1271Cache` trait on `verify_eip1271_signature_cached`
-  and its conservative caching semantics (only `Ok(())` magic-value
-  matches and `Eip1271MagicValueMismatch` outcomes are cached; every
-  other error class, including transport, missing-contract-code, decode,
-  and provider failures, re-hits the chain)
+  and its conservative positive-only caching semantics (only `Ok(())`
+  magic-value matches are cached; every other outcome — including
+  `Eip1271MagicValueMismatch`, transport, missing-contract-code, decode,
+  and provider failures — re-hits the chain)
 - the `Redacted<T>` newtype applied to partner API keys, IPFS pinning
   credentials, transport base URLs, and other secret-adjacent inputs so
   debug, display, and serialized output of configuration types never

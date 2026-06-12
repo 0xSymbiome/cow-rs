@@ -172,6 +172,7 @@ let _wallet = BrowserWallet::from_trusted_transport(transport, origin)
 | Deterministic protocol helpers, `alloy::sol!` bindings, the `Registry` authority, and EIP-1271 verification | `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data` |
 | Typed orderbook transport | `cow-sdk-orderbook` |
 | High-level trading workflows | `cow-sdk-trading` |
+| In-memory test doubles for the public traits (`OrderbookClient`, `Signer`, `Provider`) so downstream apps test without a live orderbook, RPC, or wallet | `cow-sdk-test` |
 
 ## TypeScript-Callable WASM
 

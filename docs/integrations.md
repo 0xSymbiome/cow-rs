@@ -369,7 +369,7 @@ async fn read_allowance(
     )
     .await?;
 
-    println!("allowance={}", allowance.as_str());
+    println!("allowance={allowance}");
     Ok(())
 }
 ```

@@ -186,6 +186,7 @@ also wraps its lower-level contract call in a
 - `post_swap_order`
 - `post_swap_order_from_quote`
 - `post_limit_order`
+- `post_limit_order_presign`
 - `pre_sign_transaction`
 - `order`
 - `offchain_cancel_order`
