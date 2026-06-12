@@ -21,7 +21,7 @@ use crate::{
     LimitTradeParams, LimitTradeParamsFromQuote, OrderPostingResult, OrderbookClient, QuoteResults,
     TradeAdvancedSettings, TradeParams, TraderParams, TradingAppDataInfo, TradingError,
     adjust_eth_flow_limit_params, build_app_data, is_eth_flow_order, merge_and_seal_app_data,
-    order_to_sign, params_from_doc, swap_params_to_limit_order_params,
+    order_to_sign, params_from_doc, sanitize_protocol_fee_bps, swap_params_to_limit_order_params,
 };
 
 /// Recovers the ECDSA signer from a produced order signature and requires it to
@@ -208,7 +208,7 @@ where
             apply_costs_slippage_and_fees: additional_params
                 .apply_costs_slippage_and_fees
                 .unwrap_or(true),
-            protocol_fee_bps: None,
+            protocol_fee_bps: additional_params.protocol_fee_bps,
         },
         &params,
         &app_data.app_data_keccak256,
@@ -459,11 +459,18 @@ where
         advanced_settings.and_then(|settings| settings.app_data.as_ref()),
     )?;
     let additional = advanced_additional_params(advanced_settings);
+    // Default the protocol fee from the quote response so the posted order signs
+    // the same amounts the quote previewed (ADR 0058); an explicit caller value
+    // wins, mirroring the reviewed upstream from-quote posting flow.
+    let protocol_fee_bps = additional.protocol_fee_bps.or_else(|| {
+        sanitize_protocol_fee_bps(quote_results.quote_response.protocol_fee_bps.as_deref())
+    });
     let additional_params = crate::types::PostTradeAdditionalParams {
         signing_scheme: advanced_settings
             .and_then(|settings| settings.quote_request.as_ref())
             .and_then(|request| request.signing_scheme),
         network_costs_amount: Some(*quote_results.quote_response.quote.network_cost_amount()),
+        protocol_fee_bps,
         ..additional
     };
 

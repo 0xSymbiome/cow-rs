@@ -146,6 +146,16 @@ sections below describe the public contract a `0.1.0` consumer receives.
   check is a no-op; local key signers (`LocalAlloySigner`, the Alloy client
   signer handle) report their bound chain. Governed by
   [ADR 0015](docs/adr/0015-client-side-order-bounds-validator.md).
+- `cow_sdk_trading::PostTradeAdditionalParams::protocol_fee_bps` (set through
+  `with_protocol_fee_bps`) folds a protocol fee into the signed order amounts.
+  `post_swap_order_from_quote` defaults it from the quote response's
+  `protocolFeeBps`, so the posted order signs the amounts the quote previewed
+  when a protocol fee applies; an explicit value overrides that default and
+  `0.0` disables it. The protocol fee enters the same quote-amount composition
+  as the partner fee and slippage — its base is the reconstructed
+  before-protocol-fee amount — and the native-currency (`EthFlow`) lane threads
+  it identically. Governed by
+  [ADR 0058](docs/adr/0058-typed-quote-request-response-surface.md).
 
 #### Typed primitive and amount layer
 

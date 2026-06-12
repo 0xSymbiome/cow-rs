@@ -26,7 +26,8 @@ use cow_sdk_orderbook::{OrderQuoteResponse, PriceQuality, QuoteValidity};
 use cow_sdk_trading::{
     LimitTradeParamsFromQuote, MAX_SLIPPAGE_BPS, PartnerFee, PartnerFeePolicy,
     PostTradeAdditionalParams, QuoteRequestOverride, QuoterParams, TradeAdvancedSettings,
-    eth_flow_transaction, quote_results, suggest_slippage_bps, swap_params_to_limit_order_params,
+    eth_flow_transaction, post_swap_order_from_quote, quote_results, suggest_slippage_bps,
+    swap_params_to_limit_order_params,
 };
 use proptest::prelude::*;
 use proptest::test_runner::FileFailurePersistence;
@@ -52,6 +53,7 @@ fn make_quote(
     sell_amount: u64,
     buy_amount: u64,
     fee_amount: u64,
+    protocol_fee_bps: Option<&str>,
 ) -> OrderQuoteResponse {
     let mut quote = if kind == OrderKind::Sell {
         sell_quote_response()
@@ -65,7 +67,7 @@ fn make_quote(
     quote.quote.set_network_cost_amount(
         Amount::new(fee_amount.to_string()).expect("generated fee amount must parse"),
     );
-    quote.protocol_fee_bps = None;
+    quote.protocol_fee_bps = protocol_fee_bps.map(str::to_owned);
     quote
 }
 
@@ -122,6 +124,31 @@ fn partner_fee_strategy() -> impl Strategy<Value = Option<PartnerFee>> {
     }))
 }
 
+/// Wire `protocolFeeBps` dialects: absent, the decimal form the orderbook emits,
+/// and integer basis points. Sub-minimum and malformed values sanitize to
+/// `None` and are covered by `slippage_contract.rs`.
+fn protocol_fee_strategy() -> impl Strategy<Value = Option<String>> {
+    prop_oneof![
+        Just(None),
+        Just(Some("0.3".to_owned())),
+        Just(Some("5".to_owned())),
+        (1u32..=50).prop_map(|bps| Some(bps.to_string())),
+    ]
+}
+
+/// `1e16..1e19` (sub-ETH to tens of ETH at 18 decimals). Bounded well above the
+/// network-cost range so the partner-fee base never exceeds the quoted volume
+/// and every signed intermediate stays positive across the fee composition.
+fn composition_amount_strategy() -> impl Strategy<Value = u64> {
+    10_000_000_000_000_000u64..10_000_000_000_000_000_000u64
+}
+
+/// Network cost from zero up to `1e15`, two orders of magnitude under the
+/// smallest generated amount.
+fn composition_fee_strategy() -> impl Strategy<Value = u64> {
+    0u64..1_000_000_000_000_000u64
+}
+
 /// Mutually exclusive (`validFor` XOR `validTo`) trade validity.
 fn validity_strategy() -> impl Strategy<Value = (Option<u32>, Option<u32>)> {
     prop_oneof![
@@ -168,7 +195,7 @@ proptest! {
     ) {
         let trader = trader();
         let trade = sample_trade_parameters(kind);
-        let quote = make_quote(kind, sell_amount, buy_amount, fee_amount);
+        let quote = make_quote(kind, sell_amount, buy_amount, fee_amount, None);
         let low_multiplier = f64::from(low_tenths) / 10.0;
         let high_multiplier = f64::from(low_tenths + extra_tenths) / 10.0;
 
@@ -203,7 +230,7 @@ proptest! {
         quote_id_seed in any::<u32>(),
     ) {
         let mut trade = sample_trade_parameters(kind);
-        let mut quote = make_quote(kind, sell_amount, buy_amount, fee_amount);
+        let mut quote = make_quote(kind, sell_amount, buy_amount, fee_amount, None);
 
         trade.owner = owner_is_alt.map(|is_alt| {
             if is_alt {
@@ -328,7 +355,7 @@ proptest! {
         runtime.block_on(async {
             let orderbook = MockOrderbook::new(
                 SupportedChainId::Sepolia,
-                make_quote(kind, sell_amount, buy_amount, fee_amount),
+                make_quote(kind, sell_amount, buy_amount, fee_amount, None),
             );
             let signer = MockSigner::default();
             let mut trader = sample_trader_parameters();
@@ -436,6 +463,55 @@ proptest! {
             prop_assert_eq!(limit.valid_for, result.trade_parameters.valid_for);
             prop_assert_eq!(limit.valid_to, result.trade_parameters.valid_to);
             prop_assert_eq!(&limit.partner_fee, &result.trade_parameters.partner_fee);
+            Ok(())
+        })?;
+    }
+
+    /// The managed post lane signs byte-identically what the quote lane
+    /// previewed, across generated amounts, partner fees, and protocol-fee wire
+    /// dialects: the projected `QuoteResults.order_to_sign` and the order
+    /// `post_swap_order_from_quote` submits agree field-for-field. `valid_to` is
+    /// pinned to an absolute future epoch so both lanes resolve one deadline
+    /// instead of two `now()` reads. This is the cross-lane invariant the post
+    /// path violated when it dropped the quote response's `protocolFeeBps`.
+    #[test]
+    fn posting_signs_what_the_quote_previews_across_generated_protocol_fees(
+        sell_amount in composition_amount_strategy(),
+        buy_amount in composition_amount_strategy(),
+        fee_amount in composition_fee_strategy(),
+        partner_fee in partner_fee_strategy(),
+        protocol_fee in protocol_fee_strategy(),
+        slippage in 1u32..=500,
+    ) {
+        let runtime = current_thread_runtime();
+        runtime.block_on(async {
+            let orderbook = MockOrderbook::new(
+                SupportedChainId::Sepolia,
+                make_quote(
+                    OrderKind::Sell,
+                    sell_amount,
+                    buy_amount,
+                    fee_amount,
+                    protocol_fee.as_deref(),
+                ),
+            );
+            let signer = MockSigner::default();
+            let trader = sample_trader_parameters();
+            let mut trade = sample_trade_parameters(OrderKind::Sell);
+            trade.owner = Some(address(OWNER));
+            trade.partner_fee = partner_fee;
+            trade.slippage_bps = Some(slippage);
+            trade.valid_for = None;
+            trade.valid_to = Some(1_900_000_000);
+
+            let quote = quote_results(&trade, &trader, &signer, None, &orderbook)
+                .await
+                .expect("quote flow should remain deterministic");
+            let posted = post_swap_order_from_quote(&quote, &trader, &signer, None, &orderbook)
+                .await
+                .expect("post from quote should succeed");
+
+            prop_assert_eq!(posted.order_to_sign, quote.order_to_sign);
             Ok(())
         })?;
     }

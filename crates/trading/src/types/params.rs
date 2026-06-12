@@ -1001,6 +1001,20 @@ pub struct PostTradeAdditionalParams {
     pub custom_eip1271_signature: Option<Arc<dyn Eip1271Signer>>,
     /// Whether costs, slippage, and fees should be applied when building the order payload.
     pub apply_costs_slippage_and_fees: Option<bool>,
+    /// Protocol-fee basis points folded into the signed order amounts.
+    ///
+    /// [`post_swap_order_from_quote`](crate::post_swap_order_from_quote)
+    /// defaults this from the quote response's `protocolFeeBps` so the posted
+    /// order signs the amounts the quote previewed; an explicit value here
+    /// overrides that default, and `Some(0.0)` disables the adjustment. The
+    /// direct posting entries apply no default — absent means no protocol-fee
+    /// adjustment, mirroring the reviewed upstream SDK.
+    ///
+    /// Consulted only when `apply_costs_slippage_and_fees` resolves to `true`,
+    /// and it moves the signed amounts only when a partner fee is also
+    /// configured: the partner-fee base is the reconstructed
+    /// before-protocol-fee amount.
+    pub protocol_fee_bps: Option<f64>,
 }
 
 impl PostTradeAdditionalParams {
@@ -1085,6 +1099,13 @@ impl PostTradeAdditionalParams {
         self.apply_costs_slippage_and_fees = Some(apply);
         self
     }
+
+    /// Returns a copy with an explicit protocol-fee value.
+    #[must_use]
+    pub const fn with_protocol_fee_bps(mut self, protocol_fee_bps: f64) -> Self {
+        self.protocol_fee_bps = Some(protocol_fee_bps);
+        self
+    }
 }
 
 impl fmt::Debug for PostTradeAdditionalParams {
@@ -1104,6 +1125,7 @@ impl fmt::Debug for PostTradeAdditionalParams {
                 "apply_costs_slippage_and_fees",
                 &self.apply_costs_slippage_and_fees,
             )
+            .field("protocol_fee_bps", &self.protocol_fee_bps)
             .finish()
     }
 }

@@ -1,6 +1,7 @@
 #![allow(
     clippy::missing_const_for_fn,
     clippy::must_use_candidate,
+    clippy::option_if_let_else,
     reason = "small integration-test helpers do not need public API lint polish"
 )]
 
@@ -12,13 +13,14 @@ use cow_sdk_core::{
     TransactionRequest,
 };
 use cow_sdk_trading::{
-    DEFAULT_GAS_LIMIT, LimitTradeParamsFromQuote, PostTradeAdditionalParams, eth_flow_transaction,
-    onchain_cancel_order, onchain_cancellation_transaction, pre_sign_transaction,
+    DEFAULT_GAS_LIMIT, LimitTradeParamsFromQuote, PartnerFeePolicy, PostTradeAdditionalParams,
+    eth_flow_transaction, onchain_cancel_order, onchain_cancellation_transaction,
+    pre_sign_transaction,
 };
 
 use crate::common::{
-    CUSTOM_ETHFLOW, CUSTOM_SETTLEMENT, MockSigner, address, app_data_hash, ethflow_order,
-    order_uid, regular_order, sample_limit_parameters, sample_trader_parameters,
+    ALT_RECEIVER, CUSTOM_ETHFLOW, CUSTOM_SETTLEMENT, MockSigner, address, app_data_hash,
+    ethflow_order, order_uid, regular_order, sample_limit_parameters, sample_trader_parameters,
 };
 
 fn calldata_word(data: &str, index: usize) -> String {
@@ -150,6 +152,54 @@ async fn ethflow_transaction_uses_wrapped_native_value_margin_and_ethflow_overri
     assert_eq!(
         transaction.transaction.gas_limit,
         Amount::new("150000").expect("test gas literal must be valid")
+    );
+}
+
+async fn eth_flow_signed_buy_amount(protocol_fee_bps: Option<f64>) -> String {
+    // Native-currency sell, sell 1e18 -> buy 2e18, zero network cost, partner
+    // fee 100 bps, slippage 50 — the upstream composition vector adapted to the
+    // eth-flow lane. Returns the signed buy amount so the caller can assert the
+    // protocol-fee golden against the no-protocol-fee golden.
+    let signer = MockSigner::default();
+    let trader = sample_trader_parameters();
+    let mut params = sample_limit_parameters(OrderKind::Sell);
+    params.sell_token = NATIVE_CURRENCY_ADDRESS;
+    params.sell_amount = Amount::new("1000000000000000000").expect("sell literal must be valid");
+    params.buy_amount = Amount::new("2000000000000000000").expect("buy literal must be valid");
+    params.slippage_bps = Some(50);
+    params.partner_fee = Some(
+        PartnerFeePolicy::volume(100, address(ALT_RECEIVER))
+            .expect("volume policy must validate")
+            .into(),
+    );
+    let additional = match protocol_fee_bps {
+        Some(bps) => PostTradeAdditionalParams::new().with_protocol_fee_bps(bps),
+        None => PostTradeAdditionalParams::new(),
+    };
+    let from_quote =
+        LimitTradeParamsFromQuote::try_from_limit(params).expect("test params carry a quote id");
+
+    eth_flow_transaction(&app_data_hash(), &from_quote, &additional, &trader, &signer)
+        .await
+        .expect("eth-flow transaction should build")
+        .order_to_sign
+        .buy_amount
+        .to_string()
+}
+
+#[tokio::test]
+async fn eth_flow_transaction_threads_protocol_fee_into_the_signed_amounts() {
+    // The native-currency lane applies `protocolFeeBps` to the signed amounts the
+    // same way the orderbook lane does: with a partner fee configured, the
+    // protocol fee enlarges the partner-fee base and lowers the signed buy
+    // amount (the eth-flow lane dropped the value at HEAD).
+    assert_eq!(
+        eth_flow_signed_buy_amount(Some(5.0)).await,
+        "1970090045022511257"
+    );
+    assert_eq!(
+        eth_flow_signed_buy_amount(None).await,
+        "1970100000000000000"
     );
 }
 

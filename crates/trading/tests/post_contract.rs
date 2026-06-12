@@ -111,6 +111,128 @@ async fn swap_posting_matches_pinned_sell_and_buy_adjustment_vectors() {
     assert_eq!(buy_result.order_to_sign.buy_amount, buy_order.buy_amount);
 }
 
+/// Sell quote carrying `protocolFeeBps`, matching the upstream
+/// protocol-fee-with-partner-fee composition vector transcribed in
+/// `parity/fixtures/trading/protocol_fee_partner_fee_composition.json`
+/// (sell `1e18` → buy `2e18`, zero network cost). Reuses the shared quote's
+/// tokens, owner, validity, and app-data and overrides only the amounts.
+fn protocol_fee_quote_response() -> cow_sdk_orderbook::OrderQuoteResponse {
+    let mut quote = sell_quote_response();
+    quote.quote.sell_amount =
+        Amount::new("1000000000000000000").expect("sell amount literal must be valid");
+    quote.quote.buy_amount =
+        Amount::new("2000000000000000000").expect("buy amount literal must be valid");
+    quote.quote.set_network_cost_amount(Amount::ZERO);
+    quote.with_protocol_fee_bps("5")
+}
+
+fn partner_fee_volume_100() -> cow_sdk_trading::PartnerFee {
+    PartnerFeePolicy::volume(100, address(ALT_RECEIVER))
+        .expect("volume policy must validate")
+        .into()
+}
+
+// Composition goldens transcribed in
+// `parity/fixtures/trading/protocol_fee_partner_fee_composition.json`: the
+// signed buy amount for the upstream sell vector (partner 100 bps, slippage 50)
+// with `protocolFeeBps = 5` applied versus dropped. The protocol fee enlarges
+// the partner-fee base, so the signed buy amount is strictly lower when it
+// applies.
+const SIGNED_BUY_WITH_PROTOCOL_FEE: &str = "1970090045022511257";
+const SIGNED_BUY_WITHOUT_PROTOCOL_FEE: &str = "1970100000000000000";
+
+#[tokio::test]
+async fn swap_posting_defaults_protocol_fee_from_the_quote_response() {
+    // No advanced settings: the posting lane must default `protocolFeeBps` from
+    // the quote response so the posted order signs the protocol-fee-composed
+    // amounts the quote previewed (the lane drops the value at HEAD).
+    let trader = sample_trader_parameters();
+    let signer = MockSigner::default();
+    let orderbook = MockOrderbook::new(trader.chain_id, protocol_fee_quote_response());
+    let mut trade = sample_trade_parameters(OrderKind::Sell);
+    trade.partner_fee = Some(partner_fee_volume_100());
+
+    let result = post_swap_order(&trade, &trader, &signer, None, &orderbook)
+        .await
+        .expect("sell swap order should succeed");
+    let order = orderbook
+        .state()
+        .sent_orders
+        .last()
+        .cloned()
+        .expect("order must be recorded");
+
+    assert_eq!(order.sell_amount.to_string(), "1000000000000000000");
+    assert_eq!(order.buy_amount.to_string(), SIGNED_BUY_WITH_PROTOCOL_FEE);
+    assert_eq!(result.order_to_sign.buy_amount, order.buy_amount);
+}
+
+#[tokio::test]
+async fn swap_posting_protocol_fee_override_supersedes_the_quote_default_and_zero_disables() {
+    // An explicit `Some(0.0)` override wins over the quote-response default and
+    // disables the protocol-fee adjustment, reproducing the upstream
+    // no-protocol-fee golden for the same partner-fee vector.
+    let trader = sample_trader_parameters();
+    let signer = MockSigner::default();
+    let orderbook = MockOrderbook::new(trader.chain_id, protocol_fee_quote_response());
+    let mut trade = sample_trade_parameters(OrderKind::Sell);
+    trade.partner_fee = Some(partner_fee_volume_100());
+
+    let advanced = TradeAdvancedSettings::new()
+        .with_additional_params(PostTradeAdditionalParams::new().with_protocol_fee_bps(0.0));
+    let result = post_swap_order(&trade, &trader, &signer, Some(&advanced), &orderbook)
+        .await
+        .expect("sell swap order should succeed");
+    let order = orderbook
+        .state()
+        .sent_orders
+        .last()
+        .cloned()
+        .expect("order must be recorded");
+
+    assert_eq!(
+        order.buy_amount.to_string(),
+        SIGNED_BUY_WITHOUT_PROTOCOL_FEE
+    );
+    assert_eq!(result.order_to_sign.buy_amount, order.buy_amount);
+}
+
+#[tokio::test]
+async fn post_from_quote_signs_the_order_the_quote_previewed_under_a_protocol_fee() {
+    // The structural invariant: with a protocol fee on the quote response and a
+    // partner fee configured, the managed post lane must sign byte-identically
+    // what `QuoteResults.order_to_sign` previewed. `valid_to` is pinned so both
+    // lanes resolve the same deadline rather than two `now()` reads.
+    let trader = sample_trader_parameters();
+    let signer = MockSigner::default();
+    let orderbook = MockOrderbook::new(trader.chain_id, protocol_fee_quote_response());
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .expect("UNIX_EPOCH must remain reachable")
+        .as_secs();
+    let mut trade = sample_trade_parameters(OrderKind::Sell);
+    trade.partner_fee = Some(partner_fee_volume_100());
+    trade.valid_to = Some(u32::try_from(now + 3600).expect("valid_to must fit in u32"));
+
+    let quote = quote_results(&trade, &trader, &signer, None, &orderbook)
+        .await
+        .expect("quote flow should succeed");
+    assert_eq!(
+        quote.order_to_sign.buy_amount.to_string(),
+        SIGNED_BUY_WITH_PROTOCOL_FEE,
+        "the previewed order must already carry the protocol-fee composition"
+    );
+
+    let result = post_swap_order_from_quote(&quote, &trader, &signer, None, &orderbook)
+        .await
+        .expect("post from quote should succeed");
+
+    assert_eq!(
+        result.order_to_sign, quote.order_to_sign,
+        "the posted order must match the previewed order field-for-field"
+    );
+}
+
 #[tokio::test]
 async fn posting_propagates_partner_fee_receiver_valid_to_and_owner_precedence() {
     let trader = sample_trader_parameters();

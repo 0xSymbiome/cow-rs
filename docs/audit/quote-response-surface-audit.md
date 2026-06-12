@@ -1,7 +1,7 @@
 # Quote Response Surface Audit
 
 Status: Current
-Last reviewed: 2026-06-11
+Last reviewed: 2026-06-12
 Owning surface: cow-sdk-orderbook quote request/response DTOs and cow-sdk-trading quote projection
 Refresh trigger: changes to the quote DTOs (`OrderQuoteRequest`, `OrderQuoteResponse`, `QuoteData`), the orderbook quote OpenAPI schemas, the quote-amounts projection, the quote-echo binding (`ensure_matches`), or the `priceQuality` default
 Related docs:
@@ -87,7 +87,17 @@ The quote-amounts projection that derives the signable order amounts from a
 `/quote` response matches the orderbook quote-amounts algorithm. It restores the
 network fee on a sell order's signed sell amount (the settlement contract
 deducts it on-chain) and carries it on top of a buy order's signed sell amount.
-The projection is locked by `crates/trading/tests/quote_projection_parity.rs`.
+It also folds the quote response's optional `protocolFeeBps` into the signed
+amounts: the protocol fee enters the same composition as the partner fee and
+slippage, with the partner-fee base taken from the reconstructed
+before-protocol-fee amount, so a protocol fee combined with a partner fee
+strictly lowers a sell order's signed buy amount. The signing and submission
+lanes (`post_swap_order_from_quote`, the `EthFlow` transaction lane) default and
+thread the same value, so the posted order signs the amounts the projection
+previewed. The projection is locked by
+`crates/trading/tests/quote_projection_parity.rs`, including the composition
+goldens transcribed in
+`parity/fixtures/trading/protocol_fee_partner_fee_composition.json`.
 
 ### Quote-Echo Binding
 
@@ -150,9 +160,11 @@ Primary implementation points:
 - `crates/orderbook/src/api.rs`
 - `crates/orderbook/src/lib.rs`
 - `crates/trading/src/order.rs`
-- `crates/trading/src/slippage/amounts.rs`
+- `crates/trading/src/slippage.rs`
+- `crates/trading/src/post.rs`
 - `parity/openapi/coverage.yaml`
 - `parity/fixtures/orderbook/order_quote_response.json`
+- `parity/fixtures/trading/protocol_fee_partner_fee_composition.json`
 
 Primary regression coverage:
 
@@ -162,6 +174,8 @@ Primary regression coverage:
 - `crates/orderbook/tests/types_contract.rs`
 - `crates/trading/tests/quote_projection_parity.rs::sell_signable_amounts_fold_network_cost_into_sell`
 - `crates/trading/tests/quote_projection_parity.rs::buy_signable_amounts_inflate_sell_by_network_cost`
+- `crates/trading/tests/quote_projection_parity.rs::protocol_fee_partner_fee_composition_matches_upstream_goldens`
+- `crates/trading/tests/post_contract.rs::post_from_quote_signs_the_order_the_quote_previewed_under_a_protocol_fee`
 - `crates/orderbook/tests/quote_echo_contract.rs::honest_sell_before_fee_response_passes`
 - `crates/orderbook/tests/quote_echo_contract.rs::inflated_fixed_sell_leg_fails`
 - `crates/orderbook/tests/quote_echo_contract.rs::quote_fails_closed_end_to_end_on_a_tampered_fixed_leg`

@@ -12,7 +12,8 @@ mod common;
 
 use cow_sdk_core::{Amount, OrderKind};
 use cow_sdk_orderbook::QuoteData;
-use cow_sdk_trading::calculate_quote_amounts_and_costs;
+use cow_sdk_trading::{calculate_quote_amounts_and_costs, sanitize_protocol_fee_bps};
+use serde::Deserialize;
 
 use crate::common::{COW, WETH, address, app_data_hash};
 
@@ -74,4 +75,80 @@ fn buy_signable_amounts_inflate_sell_by_network_cost() {
 
     assert_eq!(result.amounts_to_sign.sell_amount, amount("1050"));
     assert_eq!(result.amounts_to_sign.buy_amount, amount("2000"));
+}
+
+const COMPOSITION_FIXTURE: &str =
+    include_str!("../../../parity/fixtures/trading/protocol_fee_partner_fee_composition.json");
+
+#[derive(Deserialize)]
+struct CompositionFixture {
+    cases: Vec<CompositionCase>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CompositionCase {
+    name: String,
+    kind: String,
+    sell_amount: String,
+    buy_amount: String,
+    network_cost_amount: String,
+    partner_fee_volume_bps: u32,
+    slippage_bps: u32,
+    protocol_fee_bps: Option<String>,
+    expected_signed_sell_amount: String,
+    expected_signed_buy_amount: String,
+}
+
+#[test]
+fn protocol_fee_partner_fee_composition_matches_upstream_goldens() {
+    // Pins the signed amounts the quote engine derives when a protocol fee and a
+    // partner fee compose, against the goldens transcribed from the upstream
+    // posting test. The protocol fee enlarges the partner-fee base, so the
+    // signed buy amount is strictly lower than the no-protocol-fee row.
+    let fixture: CompositionFixture =
+        serde_json::from_str(COMPOSITION_FIXTURE).expect("composition fixture must parse");
+    assert!(
+        !fixture.cases.is_empty(),
+        "composition fixture must carry at least one case"
+    );
+
+    for case in &fixture.cases {
+        let kind = match case.kind.as_str() {
+            "sell" => OrderKind::Sell,
+            "buy" => OrderKind::Buy,
+            other => panic!("case {}: unsupported order kind `{other}`", case.name),
+        };
+        let quote = QuoteData::new(
+            address(WETH),
+            address(COW),
+            amount(&case.sell_amount),
+            amount(&case.buy_amount),
+            1_700_000_000,
+            app_data_hash(),
+            kind,
+        )
+        .with_network_cost_amount(amount(&case.network_cost_amount));
+
+        let result = calculate_quote_amounts_and_costs(
+            &quote,
+            case.slippage_bps,
+            Some(case.partner_fee_volume_bps),
+            sanitize_protocol_fee_bps(case.protocol_fee_bps.as_deref()),
+        )
+        .unwrap_or_else(|err| panic!("case {}: composition must succeed: {err}", case.name));
+
+        assert_eq!(
+            result.amounts_to_sign.sell_amount.to_string(),
+            case.expected_signed_sell_amount,
+            "case {}: signed sell amount",
+            case.name
+        );
+        assert_eq!(
+            result.amounts_to_sign.buy_amount.to_string(),
+            case.expected_signed_buy_amount,
+            "case {}: signed buy amount",
+            case.name
+        );
+    }
 }

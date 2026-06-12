@@ -238,7 +238,7 @@ where
             apply_costs_slippage_and_fees: additional_params
                 .apply_costs_slippage_and_fees
                 .unwrap_or(true),
-            protocol_fee_bps: None,
+            protocol_fee_bps: additional_params.protocol_fee_bps,
         },
         &adjusted,
         app_data_keccak256,
