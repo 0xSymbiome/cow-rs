@@ -243,6 +243,13 @@ impl OrderCreation {
     /// fresh server-side rebind. The order-level fee is always wired as `"0"`
     /// on submission; the network-cost component returned on the quote
     /// response does not round-trip into the signed order.
+    ///
+    /// The `validTo` copied here is the quote response's expiry. To bind it to
+    /// the caller's intent, request an absolute expiry with
+    /// [`OrderQuoteRequest::with_valid_to`](crate::OrderQuoteRequest::with_valid_to):
+    /// [`OrderbookApi::quote`](crate::OrderbookApi::quote) then reconciles the
+    /// response `validTo` against the request. A relative `validFor` window is
+    /// server-computed and is not reconciled (ADR 0058).
     #[must_use]
     pub fn from_quote(
         response: &OrderQuoteResponse,
@@ -255,11 +262,12 @@ impl OrderCreation {
         Self {
             sell_token: quote.sell_token,
             buy_token: quote.buy_token,
-            // The receiver is caller-determined, never the response echo: a
-            // `/quote` response's receiver is only reconciled against the
-            // request when both carry one (ADR 0058), so falling back to the
-            // echoed `quote.receiver` here would project an unverified address
-            // a hostile orderbook controls. `None` resolves to the owner.
+            // The receiver is caller-determined, never the response echo. The
+            // quote-echo gate reconciles the response receiver against the
+            // request (ADR 0058), but the projection still binds the caller's
+            // own value so the submitted payload cannot inherit a server-chosen
+            // address even on a raw lane that bypassed the gate. `None` resolves
+            // to the owner.
             receiver,
             sell_amount: quote.sell_amount,
             buy_amount: quote.buy_amount,

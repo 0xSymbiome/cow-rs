@@ -43,7 +43,7 @@ content, or composable-order quoting.
 | Price-quality default | `OrderQuoteRequest` defaults `priceQuality` to `optimal`, the submittable estimate, and always serializes it. | Conforms |
 | Read-only quote costs | The quote network-cost fields are populated only from the `/quote` response and exposed through accessors; no public builder exposes a setter. | Conforms |
 | Projection parity | The quote-amounts projection matches the orderbook quote-amounts algorithm and is locked by a parity regression test. | Conforms |
-| Quote-echo binding | `OrderbookApi::quote` reconciles every request-determined field of the response against the request through `OrderQuoteResponse::ensure_matches`, failing closed with `OrderbookError::QuoteEchoMismatch`; the variable price leg stays free and the fixed-leg fold follows the services arithmetic per side basis. | Conforms |
+| Quote-echo binding | `OrderbookApi::quote` reconciles every request-determined field of the response against the request through `OrderQuoteResponse::ensure_matches`, failing closed with `OrderbookError::QuoteEchoMismatch`; the variable price leg stays free, the fixed-leg fold follows the services arithmetic per side basis, the receiver is reconciled as the effective receiver, and the app-data hash is reconciled for every request form. | Conforms |
 | Trust posture | The request-determined fields are bound to the request and the signed order binds the caller's balance sources rather than the response echo; the variable price leg stays trusted, and the projected order is still validated through the bounds validator before submission. | Conforms |
 | Forward compatibility | `QuoteData` stays open to additive upstream fields (no `serde(deny_unknown_fields)` in response position). | Conforms |
 
@@ -105,16 +105,20 @@ goldens transcribed in
 response and fails closed with `OrderbookError::QuoteEchoMismatch` when a
 request-determined field did not come back unchanged: the token pair, order
 kind, owner (`from`, when the response carries it), partial-fill flag, both
-balance sources, a pinned app-data hash (only when the request pinned one), an
-absolute `validTo` (only the `validTo` validity form), an explicit receiver
-(only when both sides carry one), and the fixed amount leg. The fixed-leg fold
-mirrors the services quote arithmetic per side basis: a `sellAmountBeforeFee`
-request holds `sellAmount + feeAmount == requested`, a `sellAmountAfterFee`
-request holds `sellAmount == requested`, and a buy request holds `buyAmount ==
-requested`. The variable price leg — the amount the solver quotes for the
-unfixed side — is the answer to the request and is never constrained.
-`QuoteEchoField` carries the typed discriminant so a caller can match the
-specific field that diverged.
+balance sources, the app-data hash, an absolute `validTo` (only the `validTo`
+validity form), the effective receiver, and the fixed amount leg. The receiver
+is reconciled as the effective receiver — an unset or zero receiver resolves to
+the owner, matching the orderbook settlement rule — so an owner-equivalent echo
+agrees while a redirect to any other address fails closed, including when the
+request pinned no receiver. The app-data hash is reconciled for every request
+form: an explicit pin, the keccak digest of a full document, or the zero hash
+for an omitted pair. The fixed-leg fold mirrors the services quote arithmetic
+per side basis: a `sellAmountBeforeFee` request holds `sellAmount + feeAmount ==
+requested`, a `sellAmountAfterFee` request holds `sellAmount == requested`, and
+a buy request holds `buyAmount == requested`. The variable price leg — the
+amount the solver quotes for the unfixed side — is the answer to the request and
+is never constrained. `QuoteEchoField` carries the typed discriminant so a
+caller can match the specific field that diverged.
 
 ### Trust Posture
 
@@ -179,6 +183,10 @@ Primary regression coverage:
 - `crates/orderbook/tests/quote_echo_contract.rs::honest_sell_before_fee_response_passes`
 - `crates/orderbook/tests/quote_echo_contract.rs::inflated_fixed_sell_leg_fails`
 - `crates/orderbook/tests/quote_echo_contract.rs::quote_fails_closed_end_to_end_on_a_tampered_fixed_leg`
+- `crates/orderbook/tests/quote_echo_contract.rs::fabricated_receiver_echo_on_an_unpinned_request_fails`
+- `crates/orderbook/tests/quote_echo_contract.rs::owner_equivalent_receiver_echoes_pass`
+- `crates/orderbook/tests/quote_echo_contract.rs::full_document_request_binds_its_digest`
+- `crates/orderbook/tests/quote_echo_contract.rs::omitted_app_data_must_echo_the_zero_hash`
 - `crates/trading/tests/post_contract.rs::signed_balance_sources_bind_to_the_request_not_the_quote_response`
 
 Validation surface:

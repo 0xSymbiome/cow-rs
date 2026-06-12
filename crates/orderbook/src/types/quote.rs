@@ -919,6 +919,17 @@ fn require(
     }
 }
 
+/// Resolves the address the trade proceeds settle to. An unset or zero receiver
+/// pays the owner, mirroring the orderbook's own settlement rule, so the quote
+/// receiver is reconciled against the request as the effective receiver rather
+/// than by raw `Option` shape: owner-equivalent representations agree, and a
+/// redirect to any other address fails closed.
+fn effective_receiver(receiver: Option<Address>, owner: Address) -> Address {
+    receiver
+        .filter(|address| *address != Address::ZERO)
+        .unwrap_or(owner)
+}
+
 impl OrderQuoteResponse {
     /// Creates a quote response from the resolved quote payload and its expiration timestamp.
     #[must_use]
@@ -947,10 +958,12 @@ impl OrderQuoteResponse {
     /// answer to the request and is never constrained.
     ///
     /// Checked: the sell/buy token pair, order kind, the owner `from` (when the
-    /// response carries it), the partial-fill flag, both balance sources, a
-    /// pinned app-data hash (only when the request pinned one), an absolute
-    /// `validTo` (only the `validTo` validity form), an explicit receiver (only
-    /// when both sides carry one), and the fixed amount leg. The fixed-leg fold
+    /// response carries it), the partial-fill flag, both balance sources, the
+    /// app-data hash (an explicit pin, the keccak digest of a full document, or
+    /// the zero hash for an omitted pair), an absolute `validTo` (only the
+    /// `validTo` validity form), the effective receiver (an unset or zero
+    /// receiver resolves to the owner, so an owner-equivalent echo agrees and a
+    /// redirect fails closed), and the fixed amount leg. The fixed-leg fold
     /// mirrors the services quote arithmetic: a `sellAmountBeforeFee` request
     /// holds `sellAmount + feeAmount == requested`, a `sellAmountAfterFee`
     /// request holds `sellAmount == requested`, and a buy request holds
@@ -1004,14 +1017,14 @@ impl OrderQuoteResponse {
             format!("{:?}", quote.buy_token_balance),
         )?;
 
-        if let (Some(requested), Some(returned)) = (request.receiver, quote.receiver) {
-            require(
-                QuoteEchoField::Receiver,
-                requested == returned,
-                requested.to_string(),
-                returned.to_string(),
-            )?;
-        }
+        let requested_receiver = effective_receiver(request.receiver, request.from);
+        let returned_receiver = effective_receiver(quote.receiver, request.from);
+        require(
+            QuoteEchoField::Receiver,
+            requested_receiver == returned_receiver,
+            requested_receiver.to_string(),
+            returned_receiver.to_string(),
+        )?;
 
         if let Some(returned) = self.from {
             require(
@@ -1022,14 +1035,26 @@ impl OrderQuoteResponse {
             )?;
         }
 
-        if let Some(pinned) = request.app_data.hash {
-            require(
-                QuoteEchoField::AppDataHash,
-                quote.app_data == pinned,
-                pinned.to_string(),
-                quote.app_data.to_string(),
-            )?;
-        }
+        // The expected app-data hash is request-derivable for every form: an
+        // explicit pin is the declared hash, a full document hashes as keccak256
+        // of its bytes (the digest the services `Both` form echoes and the
+        // upload precheck computes), and an omitted pair must echo the zero hash
+        // (the services default). Reconciling it for every form binds the
+        // app-data the order commits to, including on the raw pre-sign lane
+        // where no signature re-derives it.
+        let expected_app_data = request.app_data.hash.unwrap_or_else(|| {
+            request
+                .app_data
+                .full
+                .as_deref()
+                .map_or(AppDataHash::ZERO, AppDataHash::from_full_app_data)
+        });
+        require(
+            QuoteEchoField::AppDataHash,
+            quote.app_data == expected_app_data,
+            expected_app_data.to_string(),
+            quote.app_data.to_string(),
+        )?;
 
         if let QuoteValidity::ValidTo(valid_to) = request.validity {
             require(

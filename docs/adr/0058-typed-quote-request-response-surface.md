@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-05-29
-- Last reviewed: 2026-06-11
+- Last reviewed: 2026-06-12
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: orderbook, trading, quote, dto, openapi, compatibility
 - Anchors: Forward-Compatible Public Surfaces (primary)
@@ -15,6 +15,17 @@
 > the fixed amount leg or the balance sources reached a signable order
 > unchecked. This ADR now binds the request-determined fields of the response
 > (the variable price leg stays free); the superseded clauses are marked inline.
+>
+> **Revision (2026-06-12):** the receiver and app-data echo checks were
+> tightened to close two residual gaps. The receiver is reconciled as the
+> *effective* receiver — an unset or zero receiver resolves to the owner — so a
+> response that fabricates a receiver for a request that pinned none now fails
+> closed; the check previously ran only when both sides carried a receiver. The
+> app-data hash is reconciled for *every* request form (an explicit pin, the
+> keccak digest of a full document, or the zero hash for an omitted pair), not
+> only when the request pinned a hash. Both expected values are
+> request-derivable and equal what the orderbook itself returns, so the
+> tightening adds no false positives.
 - Related: [ADR 0031](0031-wire-dto-openapi-driven-with-order-auction-order-split.md), [ADR 0021](0021-orderbook-total-fee-policy.md), [ADR 0015](0015-client-side-order-bounds-validator.md), [ADR 0017](0017-typed-orderbook-rejection-parser.md), [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md)
 
 ## Decision
@@ -52,13 +63,18 @@ the solver returns for the unfixed side — but binds every request-determined
 field of the response back to the request. `OrderbookApi::quote` invokes
 `OrderQuoteResponse::ensure_matches` on each response and fails closed with
 `OrderbookError::QuoteEchoMismatch` when the token pair, order kind, owner,
-partial-fill flag, balance sources, a pinned app-data hash, an absolute
-`validTo`, or the fixed amount leg did not come back unchanged. The fixed-leg
-fold mirrors the services quote arithmetic per side basis (sell-before-fee:
+partial-fill flag, balance sources, the effective receiver, the app-data hash,
+an absolute `validTo`, or the fixed amount leg did not come back unchanged. The
+receiver is reconciled as the effective receiver (an unset or zero receiver
+resolves to the owner, matching the orderbook settlement rule), and the app-data
+hash is reconciled for every request form (an explicit pin, the keccak digest of
+a full document, or the zero hash for an omitted pair). The fixed-leg fold
+mirrors the services quote arithmetic per side basis (sell-before-fee:
 `sellAmount + feeAmount == requested`; sell-after-fee: `sellAmount == requested`;
 buy: `buyAmount == requested`). The signed order then binds the caller's
-requested balance sources rather than the response echo, and the projected order
-is still validated through the client-side bounds validator
+requested balance sources rather than the response echo, and `from_quote` binds
+the caller's receiver rather than the echoed value, so the projected order is
+still validated through the client-side bounds validator
 ([ADR 0015](0015-client-side-order-bounds-validator.md)) before submission.
 
 The quote request models the orderbook's quote `oneOf`s as typed Rust so that an
@@ -132,9 +148,13 @@ variable price leg stays trusted, because it is the answer to the request.
 - `OrderbookApi::quote` binds every request-determined field of the response to
   the request through `OrderQuoteResponse::ensure_matches`, failing closed with
   `OrderbookError::QuoteEchoMismatch`; the variable price leg stays free, and the
-  fixed-leg fold follows the services arithmetic per side basis. The signed order
-  binds the caller's requested balance sources, and the projected order is still
-  validated through the bounds validator
+  fixed-leg fold follows the services arithmetic per side basis. The receiver is
+  reconciled as the effective receiver (an unset or zero receiver resolves to the
+  owner), and the app-data hash is reconciled for every request form (explicit
+  pin, full-document digest, or the zero hash for an omitted pair). The signed
+  order binds the caller's requested balance sources, `from_quote` binds the
+  caller's receiver rather than the echoed value, and the projected order is
+  still validated through the bounds validator
   ([ADR 0015](0015-client-side-order-bounds-validator.md)) before submission.
 - The quote response DTO remains open to additive upstream fields (no
   `serde(deny_unknown_fields)` in response position, per

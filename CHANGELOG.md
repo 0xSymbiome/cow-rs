@@ -383,6 +383,17 @@ sections below describe the public contract a `0.1.0` consumer receives.
   `OrderCreation`, so every form (full / hash / both) is wire-correct. The
   request defaults `priceQuality` to `PriceQuality::Optimal`. Recorded in
   [ADR 0058](docs/adr/0058-typed-quote-request-response-surface.md).
+- `cow_sdk_orderbook::OrderbookApi::quote` binds the `/quote` response to the
+  request before returning it. `OrderQuoteResponse::ensure_matches` fails closed
+  with `OrderbookError::QuoteEchoMismatch` (carrying a typed `QuoteEchoField`)
+  when a request-determined field did not come back unchanged: the token pair,
+  order kind, owner, partial-fill flag, balance sources, the effective receiver,
+  the app-data hash, an absolute `validTo`, or the fixed amount leg. The receiver
+  is reconciled as the effective receiver (an unset or zero receiver resolves to
+  the owner) and the app-data hash for every request form (an explicit pin, a
+  full-document digest, or the zero hash for an omitted pair); the variable price
+  leg the solver quotes stays free. Recorded in
+  [ADR 0058](docs/adr/0058-typed-quote-request-response-surface.md).
 - `cow_sdk_orderbook::OrderCreation::from_quote` consumes the full
   `OrderQuoteResponse` and threads the response's quote id straight onto the
   submission payload, so the posted order settles against the quote the user

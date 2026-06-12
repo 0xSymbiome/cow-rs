@@ -63,7 +63,7 @@ pub enum QuoteEchoField {
     BuyToken,
     /// The order kind (sell or buy).
     Kind,
-    /// The explicit receiver.
+    /// The effective receiver (an unset or zero receiver resolves to the owner).
     Receiver,
     /// The effective owner (`from`).
     From,
@@ -77,7 +77,8 @@ pub enum QuoteEchoField {
     FixedSellAmount,
     /// The fixed buy amount the request committed to (buy-side requests).
     FixedBuyAmount,
-    /// A pinned app-data hash.
+    /// The app-data hash (an explicit pin, a full-document digest, or the zero
+    /// hash for an omitted pair).
     AppDataHash,
     /// An absolute `validTo` expiry.
     ValidTo,

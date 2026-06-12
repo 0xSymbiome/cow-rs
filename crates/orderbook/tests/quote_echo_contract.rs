@@ -99,13 +99,14 @@ fn sell_after_fee_fold_passes_and_fails() {
         addr(FROM),
         OrderQuoteSide::sell_after_fee(amount("997")),
     );
+    // The request pins no app-data, so an honest response echoes the zero hash.
     let quote = QuoteData::new(
         addr(SELL_TOKEN),
         addr(BUY_TOKEN),
         amount("997"),
         amount("2000"),
         1_700_000_000,
-        app_data(),
+        AppDataHash::ZERO,
         OrderKind::Sell,
     )
     .with_network_cost_amount(amount("3"));
@@ -130,13 +131,14 @@ fn buy_fold_passes_and_fails() {
         addr(FROM),
         OrderQuoteSide::buy(amount("2000")),
     );
+    // The request pins no app-data, so an honest response echoes the zero hash.
     let quote = QuoteData::new(
         addr(SELL_TOKEN),
         addr(BUY_TOKEN),
         amount("997"),
         amount("2000"),
         1_700_000_000,
-        app_data(),
+        AppDataHash::ZERO,
         OrderKind::Buy,
     );
     let mut response = OrderQuoteResponse::new(quote, "2026-01-01T00:00:00Z", true);
@@ -242,7 +244,7 @@ fn stretched_absolute_valid_to_fails() {
         amount("1000"),
         amount("2000"),
         1_900_000_000,
-        app_data(),
+        AppDataHash::ZERO,
         OrderKind::Sell,
     );
     let response = OrderQuoteResponse::new(quote, "2026-01-01T00:00:00Z", true);
@@ -261,29 +263,155 @@ fn relative_validity_does_not_check_valid_to() {
 }
 
 #[test]
-fn absent_owner_and_receiver_echoes_are_skipped() {
+fn absent_owner_and_receiver_echoes_reconcile() {
     let request = OrderQuoteRequest::new(
         addr(SELL_TOKEN),
         addr(BUY_TOKEN),
         addr(FROM),
         OrderQuoteSide::sell(amount("1000")),
     );
-    // No receiver on the response and no `from` echo: both are optional echoes
-    // and must be skipped rather than failing closed.
+    // No `from` echo on the response (an optional echo, skipped when absent) and
+    // no receiver: an unset receiver reconciles to the owner on both sides, so
+    // the response must pass rather than fail closed. The request pins no
+    // app-data, so the honest echo is the zero hash.
     let quote = QuoteData::new(
         addr(SELL_TOKEN),
         addr(BUY_TOKEN),
         amount("997"),
         amount("2000"),
         1_700_000_000,
-        app_data(),
+        AppDataHash::ZERO,
         OrderKind::Sell,
     )
     .with_network_cost_amount(amount("3"));
     let response = OrderQuoteResponse::new(quote, "2026-01-01T00:00:00Z", true);
     response
         .ensure_matches(&request)
-        .expect("absent optional echoes must be skipped");
+        .expect("absent owner echo and an owner-equivalent receiver must reconcile");
+}
+
+#[test]
+fn fabricated_receiver_echo_on_an_unpinned_request_fails() {
+    // The request leaves the receiver unset, so the proceeds settle to the
+    // owner. A response that fabricates a receiver redirects them; reconciling
+    // the effective receiver fails closed even though the request pinned none.
+    let request = OrderQuoteRequest::new(
+        addr(SELL_TOKEN),
+        addr(BUY_TOKEN),
+        addr(FROM),
+        OrderQuoteSide::sell(amount("1000")),
+    );
+    let quote = QuoteData::new(
+        addr(SELL_TOKEN),
+        addr(BUY_TOKEN),
+        amount("997"),
+        amount("2000"),
+        1_700_000_000,
+        AppDataHash::ZERO,
+        OrderKind::Sell,
+    )
+    .with_network_cost_amount(amount("3"))
+    .with_receiver(addr(OTHER));
+    let response = OrderQuoteResponse::new(quote, "2026-01-01T00:00:00Z", true);
+    assert_mismatch(response.ensure_matches(&request), QuoteEchoField::Receiver);
+}
+
+#[test]
+fn owner_equivalent_receiver_echoes_pass() {
+    // An unset request receiver settles to the owner, so a response that echoes
+    // the owner explicitly, the zero sentinel, or nothing is owner-equivalent
+    // and must reconcile rather than fail closed.
+    let request = OrderQuoteRequest::new(
+        addr(SELL_TOKEN),
+        addr(BUY_TOKEN),
+        addr(FROM),
+        OrderQuoteSide::sell(amount("1000")),
+    );
+    for echoed in [Some(addr(FROM)), Some(Address::ZERO), None] {
+        let quote = QuoteData::new(
+            addr(SELL_TOKEN),
+            addr(BUY_TOKEN),
+            amount("997"),
+            amount("2000"),
+            1_700_000_000,
+            AppDataHash::ZERO,
+            OrderKind::Sell,
+        )
+        .with_network_cost_amount(amount("3"));
+        let mut response = OrderQuoteResponse::new(quote, "2026-01-01T00:00:00Z", true);
+        response.quote.receiver = echoed;
+        response
+            .ensure_matches(&request)
+            .expect("owner-equivalent receiver echoes must reconcile");
+    }
+}
+
+#[test]
+fn full_document_request_binds_its_digest() {
+    // A request that sends a full app-data document without pinning a hash binds
+    // the document's keccak digest: the response must echo that digest, and a
+    // substituted hash fails closed.
+    const DOCUMENT: &str = r#"{"version":"1.1.0","metadata":{}}"#;
+    let digest = AppDataHash::from_full_app_data(DOCUMENT);
+    let request = OrderQuoteRequest::new(
+        addr(SELL_TOKEN),
+        addr(BUY_TOKEN),
+        addr(FROM),
+        OrderQuoteSide::sell(amount("1000")),
+    )
+    .with_app_data(DOCUMENT);
+    let quote = QuoteData::new(
+        addr(SELL_TOKEN),
+        addr(BUY_TOKEN),
+        amount("997"),
+        amount("2000"),
+        1_700_000_000,
+        digest,
+        OrderKind::Sell,
+    )
+    .with_network_cost_amount(amount("3"));
+    let mut response = OrderQuoteResponse::new(quote, "2026-01-01T00:00:00Z", true);
+    response
+        .ensure_matches(&request)
+        .expect("a response echoing the document digest must pass");
+
+    response.quote.app_data = AppDataHash::new(OTHER_HASH).expect("valid hash");
+    assert_mismatch(
+        response.ensure_matches(&request),
+        QuoteEchoField::AppDataHash,
+    );
+}
+
+#[test]
+fn omitted_app_data_must_echo_the_zero_hash() {
+    // A request that pins no app-data must see the zero hash echoed back; a
+    // non-zero hash on an omitted pair is a server-fabricated commitment.
+    let request = OrderQuoteRequest::new(
+        addr(SELL_TOKEN),
+        addr(BUY_TOKEN),
+        addr(FROM),
+        OrderQuoteSide::sell(amount("1000")),
+    );
+    let quote = QuoteData::new(
+        addr(SELL_TOKEN),
+        addr(BUY_TOKEN),
+        amount("997"),
+        amount("2000"),
+        1_700_000_000,
+        AppDataHash::ZERO,
+        OrderKind::Sell,
+    )
+    .with_network_cost_amount(amount("3"));
+    let mut response = OrderQuoteResponse::new(quote, "2026-01-01T00:00:00Z", true);
+    response
+        .ensure_matches(&request)
+        .expect("the zero-hash echo for an omitted pair must pass");
+
+    response.quote.app_data = app_data();
+    assert_mismatch(
+        response.ensure_matches(&request),
+        QuoteEchoField::AppDataHash,
+    );
 }
 
 #[tokio::test]
