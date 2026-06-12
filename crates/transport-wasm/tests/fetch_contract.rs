@@ -35,7 +35,7 @@ mod native {
             .await
             .expect("mocked reqwest POST must succeed");
 
-        assert_eq!(response, "quoted");
+        assert_eq!(response.body(), "quoted");
         assert_transport_span(
             &capture,
             "POST",
@@ -217,7 +217,7 @@ export function restore_fetch(previous) {
             .expect("mocked fetch POST must succeed");
         restore_fetch(previous);
 
-        assert_eq!(response, "quoted");
+        assert_eq!(response.body(), "quoted");
         assert_transport_span(&capture, "POST", Some("wasm32"), body.len(), "quoted".len());
     }
 

@@ -636,7 +636,7 @@ async fn success_response_carries_the_real_status_and_headers() {
         .respond_with(
             ResponseTemplate::new(201)
                 .insert_header("X-Request-Id", "req-42")
-                .set_body_raw("\"0xorderuid\"".as_bytes(), "application/json"),
+                .set_body_raw(b"\"0xorderuid\"".to_vec(), "application/json"),
         )
         .mount(&server)
         .await;
