@@ -20,8 +20,8 @@ use cow_sdk::orderbook::{
 };
 
 use cow_sdk_examples_native::support::{
-    COW, OWNER, WETH, orderbook_version_response, sample_order_uid, sample_quote_response_json,
-    sample_signature,
+    COW, OWNER, WETH, orderbook_version_response, sample_app_data_hash, sample_order_uid,
+    sample_quote_response_json, sample_signature,
 };
 
 #[tokio::main]
@@ -71,7 +71,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // 1. Protocol version.
     let version = orderbook.version().await?;
 
-    // 2. Request a sell-side quote.
+    // 2. Request a sell-side quote. Pinning the app-data hash binds it to the
+    //    request: `OrderbookApi::quote` reconciles the response's echoed hash
+    //    against the pin and fails closed on a mismatch, so the order built from
+    //    the quote commits to the app-data the caller asked for.
     let quote_request = OrderQuoteRequest::new(
         WETH,
         COW,
@@ -80,6 +83,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             Amount::parse_units("0.1", 18).expect("example quote amount must remain valid"),
         ),
     )
+    .with_app_data_hash(sample_app_data_hash())
     .with_price_quality(PriceQuality::Optimal);
     let quote = orderbook.quote(&quote_request).await?;
 
