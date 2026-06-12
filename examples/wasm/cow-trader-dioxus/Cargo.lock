@@ -681,7 +681,6 @@ dependencies = [
  "cow-sdk-orderbook",
  "cow-sdk-signing",
  "cow-sdk-trading",
- "cow-sdk-transport-policy",
  "cow-sdk-transport-wasm",
  "thiserror 2.0.18",
 ]
@@ -710,7 +709,6 @@ dependencies = [
  "alloy-dyn-abi",
  "alloy-json-abi",
  "alloy-primitives",
- "alloy-serde",
  "async-trait",
  "cow-sdk-core",
  "gloo-timers 0.4.0",
@@ -729,7 +727,6 @@ name = "cow-sdk-contracts"
 version = "0.1.0"
 dependencies = [
  "alloy-primitives",
- "alloy-sol-macro",
  "alloy-sol-types",
  "cow-sdk-core",
  "getrandom 0.4.2",
@@ -745,7 +742,10 @@ dependencies = [
  "alloy-primitives",
  "alloy-sol-types",
  "async-trait",
+ "futures-timer",
+ "gloo-timers 0.4.0",
  "http",
+ "httpdate",
  "pin-project-lite",
  "reqwest 0.13.4",
  "serde",
@@ -754,17 +754,16 @@ dependencies = [
  "tsify",
  "url",
  "wasm-bindgen",
+ "web-time",
 ]
 
 [[package]]
 name = "cow-sdk-orderbook"
 version = "0.1.0"
 dependencies = [
- "alloy-primitives",
  "async-trait",
  "cow-sdk-contracts",
  "cow-sdk-core",
- "cow-sdk-transport-policy",
  "http",
  "reqwest 0.13.4",
  "serde",
@@ -799,29 +798,11 @@ dependencies = [
  "cow-sdk-core",
  "cow-sdk-orderbook",
  "cow-sdk-signing",
- "cow-sdk-transport-policy",
  "futures-timer",
  "gloo-timers 0.4.0",
  "serde",
  "serde_json",
  "thiserror 2.0.18",
- "web-time",
-]
-
-[[package]]
-name = "cow-sdk-transport-policy"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "cow-sdk-core",
- "futures-timer",
- "gloo-timers 0.4.0",
- "http",
- "httpdate",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
- "url",
  "web-time",
 ]
 
