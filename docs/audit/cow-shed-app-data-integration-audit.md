@@ -1,7 +1,7 @@
 # COW Shed App-Data Integration Audit
 
 Status: Current
-Last reviewed: 2026-06-09
+Last reviewed: 2026-06-12
 Owning surface: COW Shed hook metadata emission and app-data schema integration
 Refresh trigger: Refresh when COW Shed hook metadata, app-data hook schemas, or the EIP-1271 signing trait boundary change.
 Related docs:
@@ -107,6 +107,6 @@ Validation surface:
 cargo test -p cow-sdk-app-data --all-features
 # The `cow-shed` feature closure of `cow-sdk-contracts` must stay clear of the
 # trading/orderbook/subgraph and alloy-provider edges (prints nothing on pass):
-cargo tree -p cow-sdk-contracts --features cow-shed-gnosis --edges normal --prefix none \
+cargo tree -p cow-sdk-contracts --features cow-shed --edges normal --prefix none \
   | grep -E 'cow-sdk-(trading|orderbook|subgraph)|alloy-provider'
 ```

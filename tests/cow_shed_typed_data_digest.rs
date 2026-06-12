@@ -28,7 +28,8 @@ fn execute_hooks_payload_digest_matches_macro_digest() {
 
 fn assert_digests_agree(chain: DeploymentChainId, version: CowShedVersion) {
     let user = address!("0x76b0340e50BD9883D8B2CA5fd9f52439a9e7Cf58");
-    let proxy = proxy_for(chain, version, user);
+    // The proxy address is chain-independent; the chain enters via the domain.
+    let proxy = proxy_for(version, user);
 
     // A multi-call batch that exercises every `Call` field encoding: a plain
     // call, a value-bearing call with non-empty calldata and `allowFailure`,

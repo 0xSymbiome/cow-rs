@@ -111,7 +111,10 @@ negative-edge invariants `cow-sdk-composable ⇏ cow-sdk-trading` and
 the workspace dependency-invariant checks in CI. An optional
 `composable-with-cow-shed` feature lifts a non-default dependency on
 `cow-sdk-contracts` for the narrow Gnosis-only `COWShedForComposableCoW`
-forwarder flow.
+forwarder flow; that forwarder belongs to the cow-shed v2.x generation, so the
+composable crate binds it itself when this capability lands (the deployed
+v1.0.x cow-shed surface in `cow-sdk-contracts` carries no forwarder binding —
+ADR 0049, 2026-06-12 amendment).
 
 ## Why
 

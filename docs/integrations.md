@@ -73,8 +73,11 @@ deployment addresses still resolvable through the typed `Registry`. COW Shed
 rests on the same provenance and registry foundations, which improve on directly
 copying TypeScript package behavior in these concrete ways:
 
-- deployment addresses resolve through one typed `Registry` const table rather than
-  package-local constants
+- protocol deployment addresses (settlement, vault relayer, eth-flow,
+  composable) resolve through one typed `Registry` const table; the COW Shed
+  factory/implementation pairs are version-keyed module constants because each
+  deployed generation is a deterministic CREATE2 deployment identical on every
+  supported chain — there is no chain axis to register
 - not-deployed and unsupported chains live in a coverage manifest instead of
   being mixed into addressable rows
 - EIP-1271 custom signature production is owned by `cow-sdk-signing`, so trading
@@ -87,8 +90,10 @@ copying TypeScript package behavior in these concrete ways:
   workspace
 - source commits and npm package integrity evidence are pinned together, with
   public generated documentation treated only as drift signal
-- COW Shed proxy creation-code bytes are hashed at build time before address
-  derivation fixtures are trusted
+- COW Shed proxy creation-code bytes are digest-pinned (byte length +
+  keccak256, byte-identical to the TypeScript arbiter's constants) and the
+  address-derivation fixtures anchor on the arbiter's own CREATE2 golden
+  vectors
 - watch-tower behavior is represented as selectors, decoders, and local
   simulation boundaries; service loops, persistence, notification delivery, and
   automatic order posting remain outside the SDK

@@ -450,26 +450,11 @@ enums:
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: COW Shed version variants can grow as new deployed-bytecode versions land upstream.
-  - name: SigSource
-    file: crates/contracts/src/cow_shed/errors.rs
-    category: sdk-local-state
-    expected_marker: non_exhaustive
-    reason: COW Shed signature-source taxonomy can grow as new ECDSA and contract-signature paths are added.
   - name: CowShedError
     file: crates/contracts/src/cow_shed/errors.rs
     category: sdk-local-state
     expected_marker: non_exhaustive
-    reason: COW Shed proxy and hook diagnostics can grow as account-abstraction helpers expand.
-  - name: Deadline
-    file: crates/contracts/src/cow_shed/types.rs
-    category: sdk-local-state
-    expected_marker: non_exhaustive
-    reason: COW Shed deadline strong-type is a typed wrapper; the wrapping shape may grow with clock-source variants.
-  - name: Nonce
-    file: crates/contracts/src/cow_shed/types.rs
-    category: sdk-local-state
-    expected_marker: non_exhaustive
-    reason: COW Shed nonce strong-type is a typed wrapper; the wrapping shape may grow with derivation variants.
+    reason: COW Shed signing-path diagnostics can grow as the provider-free orchestration expands; on-chain revert taxonomies stay on the sol! interfaces.
   - name: SettlementEvent
     file: crates/contracts/src/settlement.rs
     category: upstream-growing

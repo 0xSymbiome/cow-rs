@@ -55,8 +55,8 @@ If the reviewed surface did not change, leave the audit alone.
 | [On-Chain Order Log Decoding Audit](onchain-order-log-decoding-audit.md) | Standing audit | `cow-sdk-contracts` `CoWSwapOnchainOrders` event decoder | Fail-closed `OrderPlacement` / `OrderInvalidation` log decoding, topic-0 byte-locks, owner resolution, UID derivation, and the eth-flow trailing-data parser | Current | 2026-06-08 |
 | [Settlement Event Log Decoding Audit](settlement-event-log-decoding-audit.md) | Standing audit | `cow-sdk-contracts` `GPv2Settlement` event decoder | Fail-closed `Trade` / `Interaction` / `Settlement` / `OrderInvalidated` / `PreSignature` log decoding, topic-0 byte-locks, the shared topic-set guard, and the 56-byte order-UID length check | Current | 2026-06-09 |
 | [Deployment Registry Audit](deployment-registry-audit.md) | Standing audit | `cow-sdk-contracts::Registry` typed deployment authority | Typed `(ContractId, SupportedChainId, CowEnv)` key, const CREATE2-singleton address table, per-chain provenance, and live on-chain presence confirmation | Current | 2026-06-10 |
-| [COW Shed Contract Bindings Audit](cow-shed-contract-bindings-audit.md) | Standing audit | Inline COW Shed `alloy::sol!` bindings, proxy creation code, and self-hosted deployment addresses | Version-keyed proxy creation-code artifacts, digest validation, self-hosted addresses, and factory ABI evidence | Current | 2026-06-10 |
-| [COW Shed App-Data Integration Audit](cow-shed-app-data-integration-audit.md) | Standing audit | COW Shed hook metadata and app-data schema integration | Hook metadata shape, app-data schema reuse, and EIP-1271 signing-boundary evidence | Current | 2026-06-09 |
+| [COW Shed Contract Bindings Audit](cow-shed-contract-bindings-audit.md) | Standing audit | Inline COW Shed `alloy::sol!` bindings, proxy creation code, deployed-generation address record, and parity evidence | Deployed-v1.0.x binding fidelity, triple-checked selector record, creation-code digest pinning against the TS arbiter constants, CREATE2 anchors, EIP-712 hashing, and the ERC-2098 round-trip on `RecoverableSignature` | Current | 2026-06-12 |
+| [COW Shed App-Data Integration Audit](cow-shed-app-data-integration-audit.md) | Standing audit | COW Shed hook metadata and app-data schema integration | Hook metadata shape, app-data schema reuse, and EIP-1271 signing-boundary evidence | Current | 2026-06-12 |
 | [Lens Chain Evidence Audit](lens-chain-evidence-audit.md) | Standing audit | Deployment registry chain taxonomy | Lens deployment evidence, runtime support exclusion, provenance lockstep, public route probes, and refresh triggers | Current | 2026-06-10 |
 
 ## HTTP Transport And Construction
@@ -132,7 +132,7 @@ If the reviewed surface did not change, leave the audit alone.
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [Source-Lock Provenance Audit](source-lock-provenance-audit.md) | Standing audit | source-lock provenance and release preflight authority | Source-lock commit pins, per-file fixture provenance validation, upstream freshness disclosure, Alloy runtime/core dependency provenance, deep upstream-root validation, publication preflight, historical snapshot scope, and refresh ownership | Current | 2026-06-11 |
+| [Source-Lock Provenance Audit](source-lock-provenance-audit.md) | Standing audit | source-lock provenance and release preflight authority | Source-lock commit pins (including the intentional cow-shed deployed-generation tag pin), per-file fixture provenance validation, upstream freshness disclosure, Alloy runtime/core dependency provenance, deep upstream-root validation, publication preflight, historical snapshot scope, and refresh ownership | Current | 2026-06-12 |
 
 ## Orderbook Wire DTO Coverage
 

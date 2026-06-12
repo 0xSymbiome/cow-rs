@@ -1,0 +1,33 @@
+{
+  "surface": "cow-shed-deployments",
+  "sources": {
+    "cow-shed": {
+      "commit": "e15a131d626edbf779c8e44451566e2c36dbdb7d",
+      "refs": [
+        "networks.json#per-chain-rows-of-the-v1.0.1-generation",
+        "src/COWShed.sol#VERSION"
+      ]
+    },
+    "cow-sdk": {
+      "commit": "c931d7ecd67626736f5b8dff781741e727128c42",
+      "refs": [
+        "packages/cow-shed/src/const.ts#COW_SHED_FACTORY,COW_SHED_IMPLEMENTATION,COW_SHED_LATEST_VERSION"
+      ]
+    }
+  },
+  "derivation": "Per-version factory/implementation pairs of the deployed COW Shed generations. Each pair is a deterministic CREATE2 deployment, identical on every supported chain, so the record is keyed by version alone and chain id enters only the EIP-712 signing domain. The eip712_version values are the deployed COWShed.VERSION constants (the domain version string) mirrored by CowShedVersion::version_str. Note: upstream networks.json chain-100 rows were later overwritten by the v2.0.0-generation Gnosis redeploy (factory 0x4f4350bf…, implementation 0x62d3a7ff…, domain version \"2.0.0\", shipped with the composable-cow work) — that deployment is outside the supported v1.0.x family; the v1.0.1 generation remains deployed on Gnosis at the canonical pair recorded at the pinned tag.",
+  "deployments": [
+    {
+      "version": "1.0.0",
+      "factory": "0x00E989b87700514118Fa55326CD1cCE82faebEF6",
+      "implementation": "0x2CFFA8cf11B90C9F437567b86352169dF4009F73",
+      "eip712_version": "1.0.0"
+    },
+    {
+      "version": "1.0.1",
+      "factory": "0x312f92fe5f1710408B20D52A374fa29e099cFA86",
+      "implementation": "0xa2704cF562AD418Bf0453F4B662ebf6A2489eD88",
+      "eip712_version": "1.0.1"
+    }
+  ]
+}

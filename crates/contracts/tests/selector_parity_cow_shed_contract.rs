@@ -1,22 +1,97 @@
-//! COW Shed selector parity contract test: assert the canonical
-//! cow-shed selectors fixture pins the deployed-runtime entry-point
-//! selectors and EIP-712 type strings. The authority is the deployed
-//! `COWShedFactory` v1.0.1 runtime interface (verifiable on-chain; each
-//! selector is keccak256 of the deployed signature). The deployed
-//! 2-arg `initializeProxy(address,bool)` diverges from the cow-shed
-//! source-HEAD 1-arg form, so the record is anchored to the deployed
-//! runtime rather than any source checkout. The canonical EIP-712
-//! type-hash values are pinned by `cow_shed/execute_hooks_digest.json`.
+#![cfg(feature = "cow-shed")]
+
+//! COW Shed selector parity contract: every selector row in
+//! `parity/fixtures/cow_shed/canonical_selectors.json` is re-derived from its
+//! canonical signature with an independent keccak implementation
+//! (`sha3::Keccak256`, not alloy's) and asserted equal to the macro-emitted
+//! `SolCall::SELECTOR` constant of the bound function — the fixture, the
+//! keccak preimage, and the `sol!` bindings must agree three ways. The record
+//! anchors to the DEPLOYED v1.0.x runtime (cow-shed tag v1.0.1, cross-checked
+//! against the deployed-runtime factory ABI the TS arbiter ships); the
+//! ENS-purged 1-arg `initializeProxy(address)` exists only in the unsupported
+//! v2.x source generations. The canonical EIP-712 type-hash values are pinned
+//! by `cow_shed/execute_hooks_digest.json`.
+
+use alloy_sol_types::SolCall;
+use cow_sdk_contracts::cow_shed::bindings::{COWShed, COWShedFactory};
+use sha3::{Digest, Keccak256};
 
 fn canonical_fixture() -> serde_json::Value {
     cow_sdk_test_utils::fixtures::fixture("cow_shed/canonical_selectors")
 }
 
-fn lookup_factory_selector(fixture: &serde_json::Value, name: &str) -> String {
-    cow_sdk_test_utils::fixtures::row_by_name(fixture, "factory_methods", name)["selector"]
-        .as_str()
-        .expect("selector must be a string")
-        .to_string()
+/// Independent selector derivation: `sha3::Keccak256`, not alloy's keccak.
+fn independent_selector(signature: &str) -> [u8; 4] {
+    let digest = Keccak256::digest(signature.as_bytes());
+    [digest[0], digest[1], digest[2], digest[3]]
+}
+
+fn parse_selector(value: &str) -> [u8; 4] {
+    let bytes =
+        alloy_primitives::hex::decode(value.trim_start_matches("0x")).expect("selector hex parses");
+    let mut out = [0_u8; 4];
+    out.copy_from_slice(&bytes);
+    out
+}
+
+/// Maps a fixture row to the macro-emitted selector constant of the bound
+/// function. A fixture row without a binding (or vice versa) is drift and
+/// fails loudly.
+fn bound_selector(name: &str) -> [u8; 4] {
+    match name {
+        "executeHooks((address,uint256,bytes,bool,bool)[],bytes32,uint256,address,bytes)" => {
+            COWShedFactory::executeHooksCall::SELECTOR
+        }
+        "initializeProxy(address,bool)" => COWShedFactory::initializeProxyCall::SELECTOR,
+        "proxyOf(address)" => COWShedFactory::proxyOfCall::SELECTOR,
+        "ownerOf(address)" => COWShedFactory::ownerOfCall::SELECTOR,
+        "implementation()" => COWShedFactory::implementationCall::SELECTOR,
+        "executeHooks((address,uint256,bytes,bool,bool)[],bytes32,uint256,bytes)" => {
+            COWShed::executeHooksCall::SELECTOR
+        }
+        "trustedExecuteHooks((address,uint256,bytes,bool,bool)[])" => {
+            COWShed::trustedExecuteHooksCall::SELECTOR
+        }
+        "claimWithResolver(address)" => COWShed::claimWithResolverCall::SELECTOR,
+        "updateTrustedExecutor(address)" => COWShed::updateTrustedExecutorCall::SELECTOR,
+        "updateImplementation(address)" => COWShed::updateImplementationCall::SELECTOR,
+        "revokeNonce(bytes32)" => COWShed::revokeNonceCall::SELECTOR,
+        "nonces(bytes32)" => COWShed::noncesCall::SELECTOR,
+        "domainSeparator()" => COWShed::domainSeparatorCall::SELECTOR,
+        "trustedExecutor()" => COWShed::trustedExecutorCall::SELECTOR,
+        "VERSION()" => COWShed::VERSIONCall::SELECTOR,
+        "initialize(address,bool)" => COWShed::initializeCall::SELECTOR,
+        other => {
+            panic!("fixture row `{other}` has no bound SolCall — fixture and bindings drifted")
+        }
+    }
+}
+
+#[test]
+fn every_selector_row_is_keccak_derived_and_binding_backed() {
+    let fixture = canonical_fixture();
+    for (group, expected_rows) in [("factory_methods", 5), ("shed_methods", 11)] {
+        let rows = fixture[group].as_array().expect("selector group array");
+        assert_eq!(
+            rows.len(),
+            expected_rows,
+            "{group} row count pins the bound surface"
+        );
+        for row in rows {
+            let name = row["name"].as_str().expect("row name");
+            let pinned = parse_selector(row["selector"].as_str().expect("row selector"));
+            assert_eq!(
+                independent_selector(name),
+                pinned,
+                "independent keccak diverges from the fixture for `{name}`"
+            );
+            assert_eq!(
+                bound_selector(name),
+                pinned,
+                "SolCall::SELECTOR diverges from the fixture for `{name}`"
+            );
+        }
+    }
 }
 
 #[test]
@@ -30,27 +105,14 @@ fn initialize_proxy_is_two_arg_form() {
         .find(|row| row["name"].as_str() == Some("initializeProxy(address,bool)"));
     assert!(
         two_arg_form.is_some(),
-        "COWShedFactory must declare the 2-arg initializeProxy(address,bool) form per the deployed v1.0.1 runtime (it diverges from the source-HEAD 1-arg form)"
+        "COWShedFactory must declare the 2-arg initializeProxy(address,bool) form per the deployed v1.0.x runtime"
     );
     let one_arg_form = methods
         .iter()
         .find(|row| row["name"].as_str() == Some("initializeProxy(address)"));
     assert!(
         one_arg_form.is_none(),
-        "COWShedFactory must NOT declare the 1-arg source-HEAD initializeProxy(address) form; the deployed bytecode targets the 2-arg selector"
-    );
-}
-
-#[test]
-fn execute_hooks_selector_pinned() {
-    let fixture = canonical_fixture();
-    let selector = lookup_factory_selector(
-        &fixture,
-        "executeHooks((address,uint256,bytes,bool,bool)[],bytes32,uint256,address,bytes)",
-    );
-    assert_eq!(
-        selector, "0x46d2f7a9",
-        "executeHooks selector must match the deployed-runtime entry point"
+        "COWShedFactory must NOT declare the ENS-purged 1-arg initializeProxy(address) form; it exists only in the unsupported v2.x generations"
     );
 }
 
@@ -71,23 +133,6 @@ fn type_strings_have_no_whitespace_between_commas() {
             "type string `{name}` must contain no whitespace between commas in declaration order: {type_string}"
         );
     }
-}
-
-#[test]
-fn forwarder_is_valid_signature_selector_pinned() {
-    let fixture = canonical_fixture();
-    let selector = cow_sdk_test_utils::fixtures::row_by_name(
-        &fixture,
-        "forwarder_methods",
-        "isValidSignature(bytes32,bytes)",
-    )["selector"]
-        .as_str()
-        .expect("selector must be a string")
-        .to_string();
-    assert_eq!(
-        selector, "0x1626ba7e",
-        "ERC1271Forwarder must expose the canonical ERC-1271 isValidSignature selector"
-    );
 }
 
 #[test]

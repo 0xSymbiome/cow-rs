@@ -1,18 +1,18 @@
 #![cfg(feature = "cow-shed")]
 
-//! EOA EIP-2098 compact-signature decoder parity contract.
+//! ERC-2098 compact ↔ canonical 65-byte signature parity.
 //!
-//! Drives the rows in
-//! `parity/fixtures/cow_shed/eoa_signature_byte_order.json` against
-//! [`cow_sdk_contracts::cow_shed::eoa_signature_from_compact`], which delegates to
-//! [`alloy_primitives::Signature::from_erc2098`] and
-//! [`alloy_primitives::Signature::as_bytes`]. Each row carries the
-//! split `r` and `s` plus the canonical `v ∈ {27, 28}` and the
-//! pre-composed 64-byte ERC-2098 input; the test asserts the cow
-//! decoder emits the canonical 65-byte `r || s || v` form
-//! byte-identically.
+//! Drives the rows in `parity/fixtures/cow_shed/eoa_signature_byte_order.json`
+//! against [`cow_sdk_contracts::RecoverableSignature`]'s alloy-backed pair
+//! ([`to_erc2098`](cow_sdk_contracts::RecoverableSignature::to_erc2098) /
+//! [`parse_erc2098`](cow_sdk_contracts::RecoverableSignature::parse_erc2098)):
+//! encoding normalizes `s` to low-s per BIP-62 first — a high-s input maps to
+//! its canonical twin `(r, n − s, !y_parity)`, which verifies for the same
+//! digest and signer under ECDSA malleability — and decoding emits the
+//! canonical `r || s || v` with `v ∈ {27, 28}`, the only EOA shape the
+//! on-chain `decodeEOASignature` accepts.
 
-use cow_sdk_contracts::cow_shed::eoa_signature_from_compact;
+use cow_sdk_contracts::RecoverableSignature;
 use serde::Deserialize;
 
 const FIXTURE: &str =
@@ -26,33 +26,13 @@ struct Fixture {
 #[derive(Debug, Deserialize)]
 struct Row {
     name: String,
-    inputs: Inputs,
-    expected: Expected,
-}
-
-#[derive(Debug, Deserialize)]
-struct Inputs {
-    r: String,
-    #[expect(
-        dead_code,
-        reason = "field participates in the serde deserialization shape that mirrors the parity fixture row layout but the contract assertion path only exercises the compact_2098 form and the r byte"
-    )]
-    s: String,
-    #[expect(
-        dead_code,
-        reason = "field participates in the serde deserialization shape that mirrors the parity fixture row layout but the contract assertion path only exercises the compact_2098 form and the r byte"
-    )]
-    v: u8,
-    compact_2098: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct Expected {
     packed_signature: String,
+    compact_2098: String,
+    canonical_packed_signature: String,
 }
 
 #[test]
-fn eoa_signature_compact_fixture_rows_hold() {
+fn compact_round_trips_through_the_canonical_twin() {
     let fixture: Fixture = serde_json::from_str(FIXTURE).expect("fixture parses");
     assert!(
         !fixture.rows.is_empty(),
@@ -60,37 +40,33 @@ fn eoa_signature_compact_fixture_rows_hold() {
     );
 
     for row in &fixture.rows {
-        let compact_bytes = decode_hex(&row.inputs.compact_2098);
+        let packed = decode_hex(&row.packed_signature);
+        let compact = decode_hex(&row.compact_2098);
+        let canonical = decode_hex(&row.canonical_packed_signature);
+        assert_eq!(packed.len(), 65, "row {}: packed length", row.name);
+        assert_eq!(compact.len(), 64, "row {}: compact length", row.name);
+
+        let signature = RecoverableSignature::parse_bytes(&packed)
+            .unwrap_or_else(|err| panic!("row {}: packed signature parses: {err:?}", row.name));
         assert_eq!(
-            compact_bytes.len(),
-            64,
-            "row {}: compact_2098 must decode to 64 bytes",
+            signature.to_erc2098().as_slice(),
+            compact.as_slice(),
+            "row {}: encode normalizes to the pinned ERC-2098 bytes",
             row.name
         );
 
-        // The cow function accepts (r, vs) split inputs; reconstruct
-        // from the canonical compact_2098 byte string.
-        let mut r_arr = [0_u8; 32];
-        r_arr.copy_from_slice(&compact_bytes[..32]);
-        let mut vs_arr = [0_u8; 32];
-        vs_arr.copy_from_slice(&compact_bytes[32..]);
-
-        let actual = eoa_signature_from_compact(&r_arr, &vs_arr);
-        let expected = decode_hex(&row.expected.packed_signature);
-        assert_eq!(expected.len(), 65, "row {}: expected length", row.name);
+        let twin = RecoverableSignature::parse_erc2098(&compact)
+            .unwrap_or_else(|err| panic!("row {}: compact parses: {err:?}", row.name));
         assert_eq!(
-            actual.as_slice(),
-            expected.as_slice(),
-            "row {}: packed_signature must match the fixture",
+            twin.to_bytes().as_slice(),
+            canonical.as_slice(),
+            "row {}: decode emits the canonical 65-byte form",
             row.name
         );
-
-        // Sanity: r in compact_2098 matches inputs.r.
-        let r_input = decode_hex(&row.inputs.r);
         assert_eq!(
-            r_input.as_slice(),
-            &compact_bytes[..32],
-            "row {}: r",
+            twin.to_erc2098().as_slice(),
+            compact.as_slice(),
+            "row {}: the canonical twin re-encodes to the same compact bytes",
             row.name
         );
     }

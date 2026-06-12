@@ -369,7 +369,11 @@ sections below describe the public contract a `0.1.0` consumer receives.
   directly or becomes a CoW order pre/post hook through `to_app_data_hook`. The
   deterministic building blocks (`proxy_of`, `cow_shed_factory`,
   `cow_shed_eip712_domain`, the calldata encoders, and `CowShedVersion::ALL`) are
-  public; the surface stays off the default `cow-sdk` closure. Governed by
+  public; the surface stays off the default `cow-sdk` closure. The bindings and
+  fixtures mirror the deployed v1.0.x generation (cow-shed pinned at the v1.0.1
+  tag), and the version-keyed factory/implementation pairs are deterministic
+  CREATE2 deployments identical on every supported chain, so derived proxy
+  addresses are chain-independent. Governed by
   [ADR 0049](docs/adr/0049-cow-shed-account-abstraction-proxy.md).
 
 #### Orderbook and app-data

@@ -1,9 +1,15 @@
 //! Deterministic COW Shed proxy address derivation.
+//!
+//! The deployed COW Shed factory and implementation are identical on every
+//! supported chain for a given [`CowShedVersion`] (deterministic CREATE2
+//! deployments, the same posture as the GPv2 settlement registry), so the
+//! lookups here are keyed by version alone and the derived proxy address is
+//! chain-independent. Chain id enters the COW Shed story only through the
+//! EIP-712 signing domain ([`crate::cow_shed::eip712`]).
 
-use alloy_primitives::{Address, keccak256};
+use alloy_primitives::{Address, address, keccak256};
 use alloy_sol_types::SolValue;
 
-use crate::DeploymentChainId;
 use crate::cow_shed::CowShedVersion;
 
 /// COW Shed proxy creation code for `1.0.0`.
@@ -20,54 +26,38 @@ const fn proxy_creation_code(version: CowShedVersion) -> &'static [u8] {
     }
 }
 
-const V1_0_0_IMPLEMENTATION: Address = Address::new([
-    0x2c, 0xff, 0xa8, 0xcf, 0x11, 0xb9, 0x0c, 0x9f, 0x43, 0x75, 0x67, 0xb8, 0x63, 0x52, 0x16, 0x9d,
-    0xf4, 0x00, 0x9f, 0x73,
-]);
-const V1_0_1_DEFAULT_IMPLEMENTATION: Address = Address::new([
-    0xa2, 0x70, 0x4c, 0xf5, 0x62, 0xad, 0x41, 0x8b, 0xf0, 0x45, 0x3f, 0x4b, 0x66, 0x2e, 0xbf, 0x6a,
-    0x24, 0x89, 0xed, 0x88,
-]);
-const V1_0_1_GNOSIS_FACTORY: Address = Address::new([
-    0x4f, 0x43, 0x50, 0xbf, 0x2c, 0x74, 0xaa, 0xcd, 0x50, 0x8d, 0x59, 0x8a, 0x1b, 0xa9, 0x4e, 0xf8,
-    0x43, 0x78, 0x79, 0x3d,
-]);
-const V1_0_1_GNOSIS_IMPLEMENTATION: Address = Address::new([
-    0x62, 0xd3, 0xa7, 0xff, 0x48, 0xf9, 0xae, 0x1c, 0x28, 0xa9, 0x55, 0x2a, 0x05, 0x54, 0x82, 0xf8,
-    0xc6, 0x37, 0x87, 0xf8,
-]);
-const V1_0_0_FACTORY: Address = Address::new([
-    0x00, 0xe9, 0x89, 0xb8, 0x77, 0x00, 0x51, 0x41, 0x18, 0xfa, 0x55, 0x32, 0x6c, 0xd1, 0xcc, 0xe8,
-    0x2f, 0xae, 0xbe, 0xf6,
-]);
-const V1_0_1_DEFAULT_FACTORY: Address = Address::new([
-    0x31, 0x2f, 0x92, 0xfe, 0x5f, 0x17, 0x10, 0x40, 0x8b, 0x20, 0xd5, 0x2a, 0x37, 0x4f, 0xa2, 0x9e,
-    0x09, 0x9c, 0xfa, 0x86,
-]);
+/// `COWShedFactory` `1.0.0` deployment — identical on every supported chain.
+const V1_0_0_FACTORY: Address = address!("0x00E989b87700514118Fa55326CD1cCE82faebEF6");
+/// `COWShedFactory` `1.0.1` deployment — identical on every supported chain.
+const V1_0_1_FACTORY: Address = address!("0x312f92fe5f1710408B20D52A374fa29e099cFA86");
+/// `COWShed` `1.0.0` implementation — identical on every supported chain.
+const V1_0_0_IMPLEMENTATION: Address = address!("0x2CFFA8cf11B90C9F437567b86352169dF4009F73");
+/// `COWShed` `1.0.1` implementation — identical on every supported chain.
+const V1_0_1_IMPLEMENTATION: Address = address!("0xa2704cF562AD418Bf0453F4B662ebf6A2489eD88");
 
-/// Returns the deterministic proxy address for a user and factory.
+/// Returns the canonical COW Shed factory address for a version.
 ///
-/// Delegates the EIP-1014 byte assembly
-/// (`0xff || factory || salt || init_code_hash`) and the trailing
-/// keccak256 to [`alloy_primitives::Address::create2`]; the
-/// `parity/fixtures/cow_shed/proxy_addresses.json` rows lock the
-/// per-chain, per-user byte contract.
+/// The factory is a deterministic deployment, identical on every supported
+/// chain, so the lookup needs no chain id. The
+/// `parity/fixtures/cow_shed/deployments.json` rows pin the per-version pair.
 #[must_use]
-pub fn proxy_of(version: CowShedVersion, factory: Address, user: Address) -> Address {
-    let implementation = implementation_for(version, factory);
-    let init_code_hash = init_code_hash(version, implementation, user);
-    factory.create2(user.into_word(), init_code_hash)
+pub const fn cow_shed_factory(version: CowShedVersion) -> Address {
+    match version {
+        CowShedVersion::V1_0_0 => V1_0_0_FACTORY,
+        CowShedVersion::V1_0_1 => V1_0_1_FACTORY,
+    }
 }
 
-/// Returns the implementation used by a version and factory pair.
+/// Returns the canonical COW Shed implementation address for a version.
+///
+/// Identical on every supported chain, mirroring [`cow_shed_factory`]. This is
+/// the implementation the canonical factory passes to the proxy constructor,
+/// so it participates in the CREATE2 [`init_code_hash`].
 #[must_use]
-pub const fn implementation_for(version: CowShedVersion, factory: Address) -> Address {
+pub const fn cow_shed_implementation(version: CowShedVersion) -> Address {
     match version {
         CowShedVersion::V1_0_0 => V1_0_0_IMPLEMENTATION,
-        CowShedVersion::V1_0_1 if factory.const_eq(&V1_0_1_GNOSIS_FACTORY) => {
-            V1_0_1_GNOSIS_IMPLEMENTATION
-        }
-        CowShedVersion::V1_0_1 => V1_0_1_DEFAULT_IMPLEMENTATION,
+        CowShedVersion::V1_0_1 => V1_0_1_IMPLEMENTATION,
     }
 }
 
@@ -77,7 +67,10 @@ pub const fn implementation_for(version: CowShedVersion, factory: Address) -> Ad
 /// encoding of the `(implementation, user)` constructor tuple (two
 /// 32-byte left-padded address words) via
 /// [`alloy_sol_types::SolValue::abi_encode`], then hashes via
-/// [`alloy_primitives::keccak256`].
+/// [`alloy_primitives::keccak256`]. Combine with
+/// [`alloy_primitives::Address::create2`] to derive a proxy for a fully
+/// custom factory/implementation pair (the TS arbiter's custom-options
+/// path); [`proxy_of`] and [`proxy_for`] cover the canonical pairs.
 #[must_use]
 pub fn init_code_hash(version: CowShedVersion, implementation: Address, user: Address) -> [u8; 32] {
     let mut init_code = proxy_creation_code(version).to_vec();
@@ -85,66 +78,40 @@ pub fn init_code_hash(version: CowShedVersion, implementation: Address, user: Ad
     keccak256(&init_code).0
 }
 
-/// Returns the canonical COW Shed factory address for a chain and version.
+/// Returns the deterministic proxy address for a user under an explicit factory.
 ///
-/// `chain` accepts either a [`cow_sdk_core::SupportedChainId`] (what a trading
-/// flow already holds) or a [`DeploymentChainId`] directly — the same
-/// `impl Into<DeploymentChainId>` shape the `cow-sdk-contracts` `Registry` uses.
-/// `DeploymentChainId` is the canonical deployment domain because it covers
-/// chains where COW Shed is deployed but the runtime API is not (notably Lens,
-/// chain id 232).
-///
-/// Every `1.0.1` chain shares the canonical factory except Gnosis Chain, which
-/// carries a distinct factory (and implementation) deployment; the `1.0.0`
-/// generation shares a single legacy factory. The returned address is the
-/// CREATE2 deployer that [`proxy_of`] derives against. The per-chain factory
-/// and implementation addresses are tracked by the `cow-sdk-contracts`
-/// deployment registry.
+/// Pairs `factory` with the version's canonical implementation and creation
+/// code, then delegates the EIP-1014 byte assembly
+/// (`0xff || factory || salt || init_code_hash`) and the trailing keccak256 to
+/// [`alloy_primitives::Address::create2`]. Reach for this when targeting a
+/// re-deployed factory of a supported generation; for a custom implementation,
+/// use [`init_code_hash`] with [`alloy_primitives::Address::create2`] directly.
+/// The `parity/fixtures/cow_shed/proxy_addresses.json` rows lock the byte
+/// contract.
 #[must_use]
-pub fn cow_shed_factory(chain: impl Into<DeploymentChainId>, version: CowShedVersion) -> Address {
-    let chain = chain.into();
-    match version {
-        CowShedVersion::V1_0_0 => V1_0_0_FACTORY,
-        CowShedVersion::V1_0_1 if chain == DeploymentChainId::GnosisChain => V1_0_1_GNOSIS_FACTORY,
-        CowShedVersion::V1_0_1 => V1_0_1_DEFAULT_FACTORY,
-    }
+pub fn proxy_of(version: CowShedVersion, factory: Address, user: Address) -> Address {
+    let implementation = cow_shed_implementation(version);
+    let init_code_hash = init_code_hash(version, implementation, user);
+    factory.create2(user.into_word(), init_code_hash)
 }
 
-/// Returns the COW Shed implementation address for a chain and version.
+/// Returns the deterministic proxy ("shed") address for a user.
 ///
-/// Resolves the chain's factory via [`cow_shed_factory`] and routes through
-/// [`implementation_for`], so the Gnosis-specific implementation is selected
-/// automatically. `chain` accepts a [`cow_sdk_core::SupportedChainId`] or a
-/// [`DeploymentChainId`].
+/// Resolves the version's canonical factory via [`cow_shed_factory`] and
+/// delegates to [`proxy_of`]. The result is chain-independent: every CREATE2
+/// input (factory, creation code, implementation, user-as-salt) is fixed per
+/// version, which is why the deployed proxy for a user is the same address on
+/// every supported chain.
 #[must_use]
-pub fn cow_shed_implementation(
-    chain: impl Into<DeploymentChainId>,
-    version: CowShedVersion,
-) -> Address {
-    implementation_for(version, cow_shed_factory(chain, version))
-}
-
-/// Returns the deterministic proxy address for a user on a chain.
-///
-/// Resolves the chain's canonical factory via [`cow_shed_factory`] and then
-/// delegates to [`proxy_of`], so callers never need to know or hardcode the
-/// per-chain factory address. Gnosis Chain's distinct factory/implementation
-/// pair is handled transparently. `chain` accepts a
-/// [`cow_sdk_core::SupportedChainId`] or a [`DeploymentChainId`].
-#[must_use]
-pub fn proxy_for(
-    chain: impl Into<DeploymentChainId>,
-    version: CowShedVersion,
-    user: Address,
-) -> Address {
-    proxy_of(version, cow_shed_factory(chain, version), user)
+pub fn proxy_for(version: CowShedVersion, user: Address) -> Address {
+    proxy_of(version, cow_shed_factory(version), user)
 }
 
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeSet;
 
-    use super::{Address, CowShedVersion, DeploymentChainId, proxy_for};
+    use super::{Address, CowShedVersion, proxy_for};
 
     /// ADR 0049: distinct `CowShedVersion` variants must derive distinct proxy
     /// addresses for the same user, so a discovery flow can tell a user's
@@ -154,7 +121,7 @@ mod tests {
         let user = Address::new([0x11_u8; 20]);
         let proxies: BTreeSet<Address> = CowShedVersion::ALL
             .into_iter()
-            .map(|version| proxy_for(DeploymentChainId::Mainnet, version, user))
+            .map(|version| proxy_for(version, user))
             .collect();
         assert_eq!(
             proxies.len(),

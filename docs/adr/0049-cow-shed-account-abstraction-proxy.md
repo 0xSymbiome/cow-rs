@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-05-15
-- Last reviewed: 2026-06-08
+- Last reviewed: 2026-06-12
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: cow-shed, account-abstraction, version-forwarding, proxy-derivation
 - Related: [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md), [ADR 0048](0048-composable-conditional-order-framework.md), [ADR 0050](0050-eip1271-signature-blob-encoding.md), [ADR 0051](0051-signing-owned-eip1271-signature-provider-trait.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
@@ -145,8 +145,9 @@ not a dependency direction for cow-shed.
 ## Must Remain True
 
 - Public surface: `CowShedVersion::V1_0_1` is the default; the
-  `parity/fixtures/cow_shed/version_calls.json` artifact carries
-  per-chain rows with `decoded_version == "1.0.1"`.
+  `parity/fixtures/cow_shed/deployments.json` artifact pins the per-version
+  factory/implementation pairs and the deployed `VERSION()` domain strings
+  (see the 2026-06-12 amendment).
 - Runtime and support: every internal builder forwards the caller-selected
   version. The regression test asserts distinct version variants produce
   distinct proxy addresses.
@@ -262,3 +263,73 @@ reserved `cow-shed-ens` feature and its `COWShedFactoryEns` binding — never
 deployed and never consumed — were dropped in the same change, and the module's
 `sol!` ABI definitions are consolidated into `cow_shed/bindings.rs`. This sheds
 one published crate without altering any COW Shed contract.
+
+## Amendment 2026-06-12: deployed-generation re-scope (corrects the record)
+
+A full-surface review against the vendored upstream git history (tags
+v1.0.0/v1.0.1/v2.0.0/v2.1.0) found that parts of this ADR's context and of
+the shipped module described a **chimera of two upstream generations**, and
+corrected both. What changed:
+
+- **The "eleven chains return 1.0.1" context claim was wrong for Gnosis.**
+  The chain-100 rows in upstream `networks.json` HEAD (factory `0x4f4350bf…`,
+  implementation `0x62d3a7ff…`) are the **v2.0.0-generation** redeploy shipped
+  with the composable-cow work; that implementation's `VERSION()` is
+  `"2.0.0"`. The fixture row claiming it decodes `"1.0.1"` was never actually
+  probed. The real v1.0.1 Gnosis deployment is the canonical pair
+  (`0x312f92fe…`/`0xa2704cf5…`, recorded in `networks.json` at the v1.0.1
+  tag) — identical to every other chain. The Gnosis special case in the
+  address module (wrong creation code **and** wrong domain version for the v2
+  factory) is deleted; the deployed pairs are chain-uniform per version, so
+  `cow_shed_factory`/`cow_shed_implementation`/`proxy_for` are keyed by
+  version alone and the derived proxy address is chain-independent.
+- **The pre-sign family is v2-only and is no longer bound.** v1.0.x deploys
+  no `executePreSignedHooks`/`preSignHooks`/`setPreSignStorage`/… selectors,
+  so the previous bindings (and the `encode_execute_pre_signed_hooks_calldata`
+  encoder) targeted functions that revert on every supported deployment. The
+  bindings now mirror the deployed v1.0.x surface exactly (2-arg
+  `initialize(address,bool)`, `VERSION()`, `claimWithResolver`,
+  `OnlyTrustedExecutor`/`OnlyAdminOrTrustedExecutorOrSelf`/`DeadlineElapsed`/
+  `NonceAlreadyUsed` errors), as a documented subset excluding the ENS
+  resolver reads. The `executePreSignedHooks` design prose in this ADR's
+  Decision section is superseded accordingly; the surface returns with a real
+  `V2_x` version family when upstream rolls v2 out beyond Gnosis.
+- **The Gnosis-only forwarder gate section is superseded.** The
+  `COWShedForComposableCoW` binding, the `cow-shed-gnosis` feature, and the
+  `CowShedError::COWShedForComposableCoWGnosisOnly` variant are removed: the
+  forwarder belongs to the v2 generation, no helper ever constructed the
+  gate variant (the documented enforcement was phantom), and the TS arbiter
+  ships no composable surface.
+- **ERC-2098 compact helpers are consolidated on `RecoverableSignature`.**
+  The module-local `compact_signature`/`eoa_signature_from_compact`/
+  compact-form encoder trio duplicated `RecoverableSignature::{to,parse}_erc2098`
+  and the hand-rolled packer corrupted high-s signatures (it OR-ed the parity
+  bit into raw `s` without BIP-62 low-s normalization). The canonical pair —
+  which normalizes on encode, mapping a high-s input to its canonical twin —
+  is the only compact surface; the on-chain decoder accepts exactly the
+  65-byte `r || s || v` form either way.
+- **Provenance re-pin.** `parity/source-lock.yaml` pins cow-shed at the
+  v1.0.1 tag commit (`e15a131d…`), the generation the bindings mirror, and
+  the cow-sdk row gains the cow-shed package producer paths
+  (deployed-runtime ABI, per-version constants including the proxy creation
+  code, and the CREATE2 golden vectors). The fabricated selector values in
+  `canonical_selectors.json` (4/4 `factory_methods` rows) were corrected from
+  independent keccak derivations, and the selector parity test now asserts
+  fixture == independent keccak == `SolCall::SELECTOR` for every bound
+  function instead of literal-asserting fixture values against themselves.
+  `version_calls.json` is replaced by `deployments.json` (the honest record:
+  pinned constants, not unperformed eth_calls), and the proxy-address fixture
+  drops its information-free chain axis in favor of the TS arbiter's two
+  external anchor vectors plus derived regression rows.
+- **Dead public surface removed.** The consumer-facing `Deadline`/`Nonce`
+  strategy enums, the `ProxyAddress` alias, the `SigSource` enum, and the
+  14 never-constructed on-chain-mirror `CowShedError` variants are deleted;
+  `CowShedError` now carries exactly the signing-path variants the
+  orchestrator produces, and on-chain revert taxonomies stay on the `sol!`
+  interfaces' generated error enums.
+
+The four-layer source authority order stands unchanged — this amendment is
+that order applied correctly: layer 1 (deployed-runtime ABI) and layer 4
+(version-keyed constants) agree on the v1.0.x generation, and the layer-3
+`networks.json` HEAD rows for Gnosis describe a different, unsupported
+generation rather than a chain divergence within the supported one.

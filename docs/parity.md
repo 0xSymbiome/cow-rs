@@ -51,7 +51,7 @@ upstream producer commits and paths.
 | `cowprotocol/contracts` | EIP-712 order hashing (including the `GPv2Signing` domain block), settlement ABI, and deployment addresses |
 | `cowprotocol/cow-sdk` | Commit pin for the TypeScript SDK contract-address constants behind the staging settlement and vault-relayer deployments resolved by the typed `Registry` |
 | `cowprotocol/ethflowcontract` | Commit pin for the inline `sol!` EthFlow bindings (`CoWSwapEthFlow`, `EthFlowOrder`, `ICoWSwapOnchainOrders`, `CoWSwapOnchainOrders`, `IWrappedNativeToken`) proven by parity fixtures, plus the `ReceiverMustBeSet()` revert-selector evidence |
-| `cowdao-grants/cow-shed` | Commit pin for the inline `sol!` COW Shed bindings proven by JSON fixtures, plus the proxy creation-code `.bin` bytes locked by the CREATE2 address-parity test, factory address derivation, hook signature shape, and version-call evidence |
+| `cowdao-grants/cow-shed` | Commit pin (the v1.0.1 tag — the deployed generation the inline `sol!` COW Shed bindings mirror) proven by JSON fixtures, plus the proxy creation-code `.bin` bytes locked by the CREATE2 address-parity test, factory address derivation, hook signature shape, and the per-version deployment record |
 | `cowprotocol/app-data` | Commit pin for the canonical app-data JSON Schema families: the hooks metadata cited by the hooks parity fixture, plus the quote/partnerFee/definitions schemas the `parity/fixtures/app_data/schemas/` drift mirrors track |
 
 Each repository row carries a `# why:` comment in the lock itself; the lock is
@@ -294,13 +294,19 @@ additively in a later release. Until then, use the upstream composable surface.
 COW Shed ships in 0.1.0 as the `cow-sdk-contracts` leaf crate, opt-in through the
 off-by-default `cow-shed` facade feature (re-exported as `cow_sdk::cow_shed`) and
 never on the default `cow-sdk` closure. The crate covers deterministic proxy
-derivation (`proxy_of` / `proxy_for`, including the Gnosis factory/implementation
-divergence), EIP-712 domain + signing hash, the `ExecuteHooks` typed-data
-payload, factory calldata encoding for both externally-owned and EIP-1271
-smart-contract owners, and the `CowShedHooks` sign-and-encode orchestrator, all
-backed by proxy creation-code hash validation, CREATE2 address fixtures, hook
-digest fixtures, and version-call evidence. ENS-record helpers (`cow-shed-ens`)
-remain additive.
+derivation (`proxy_of` / `proxy_for` — chain-independent, since each deployed
+generation's factory and implementation are identical on every supported chain),
+EIP-712 domain + signing hash, the `ExecuteHooks` typed-data payload, factory
+calldata encoding for both externally-owned and EIP-1271 smart-contract owners,
+and the `CowShedHooks` sign-and-encode orchestrator, all backed by proxy
+creation-code digest pinning (byte-identical to the TypeScript arbiter's
+constants), CREATE2 address fixtures anchored on the arbiter's own golden
+vectors, hook digest fixtures, and the per-version deployed-generation record.
+The bindings mirror the deployed v1.0.x generation (cow-shed pinned at the
+v1.0.1 tag); the v2.x source generations (ENS purge, pre-sign flow, composable
+forwarder) are deployed only as the out-of-family Gnosis redeploy and land
+later as explicit new `CowShedVersion` variants. ENS-record helpers remain
+additive.
 
 ### Flash loans
 

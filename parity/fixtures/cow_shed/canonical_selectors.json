@@ -2,43 +2,122 @@
   "surface": "cow-shed-canonical-selectors",
   "sources": {
     "cow-shed": {
-      "commit": "9e01a88e0010314ee1e4c1a822105897a87d3bda",
+      "commit": "e15a131d626edbf779c8e44451566e2c36dbdb7d",
       "refs": [
-        "src/COWShed.sol#executeHooks,executePreSignedHooks",
-        "src/COWShedFactory.sol#initializeProxy",
+        "src/COWShedFactory.sol#executeHooks,initializeProxy,proxyOf,ownerOf,implementation",
+        "src/COWShed.sol#executeHooks,trustedExecuteHooks,claimWithResolver,updateTrustedExecutor,updateImplementation,revokeNonce,nonces,domainSeparator,trustedExecutor,VERSION,initialize",
         "src/LibAuthenticatedHooks.sol#decodeEOASignature"
+      ]
+    },
+    "cow-sdk": {
+      "commit": "c931d7ecd67626736f5b8dff781741e727128c42",
+      "refs": [
+        "packages/cow-shed/src/abi/CowShedFactoryAbi.ts"
       ]
     }
   },
   "standards": [
-    "ERC-1271 (isValidSignature selector)",
     "EIP-712"
   ],
-  "derivation": "Selectors are keccak256 of the DEPLOYED COWShedFactory v1.0.1 runtime signatures (verifiable on-chain); the deployed 2-arg initializeProxy(address,bool) diverges from the cow-shed source-HEAD 1-arg form, so this record anchors to the deployed runtime. Canonical EIP-712 type-hash values are pinned by cow_shed/execute_hooks_digest.json; here only the no-whitespace type-string rule is pinned.",
+  "derivation": "Selectors are keccak256 of the canonical signatures of the DEPLOYED COW Shed v1.0.x generation: the cow-shed sources at the v1.0.1 tag, cross-checked against the deployed-runtime factory ABI shipped by the TypeScript arbiter. The contract test re-derives every selector with an independent keccak implementation (sha3 crate) and asserts the macro-emitted SolCall::SELECTOR constant equals the pinned value for every bound function, so the fixture, the keccak preimages, and the sol! bindings must agree three ways. Deliberately out of scope: the factory's inherited ENS resolver read surface (initializeEns, addr, name, baseName, baseNode, resolution-node getters, supportsInterface) and the constructor-only NoCodeAtImplementation error; the v2.x-only pre-sign family exists in no deployed v1.0.x contract and is not bound.",
   "factory_methods": [
     {
-      "name": "initializeProxy(address,bool)",
-      "selector": "0x66c87a2c",
-      "owning_contract": "COWShedFactory",
-      "rationale": "Canonical 2-arg initializeProxy form per the deployed COWShedFactory v1.0.1 runtime (selector = keccak256 of the deployed signature). The 1-arg source-HEAD form is NOT vendored because the deployed bytecode targets the 2-arg selector."
-    },
-    {
       "name": "executeHooks((address,uint256,bytes,bool,bool)[],bytes32,uint256,address,bytes)",
-      "selector": "0x46d2f7a9",
-      "owning_contract": "COWShed",
-      "rationale": "Primary hook-execution entry point for relayed batches"
+      "selector": "0xa8481abe",
+      "owning_contract": "COWShedFactory",
+      "rationale": "Primary hook-execution entry point: deploys the user proxy if needed and forwards to the proxy's executeHooks"
     },
     {
-      "name": "executePreSignedHooks((address,uint256,bytes,bool,bool)[],bytes32,uint256,address)",
-      "selector": "0xb40b1cd5",
-      "owning_contract": "COWShed",
-      "rationale": "Pre-signed hook-execution entry point indexed by struct hash without domain prefix"
+      "name": "initializeProxy(address,bool)",
+      "selector": "0x66b14069",
+      "owning_contract": "COWShedFactory",
+      "rationale": "Canonical 2-arg deployed form (withEns flag); the ENS-purged 1-arg form exists only in the unsupported v2.x generation"
     },
     {
-      "name": "setPreSigned(bytes32,bool)",
-      "selector": "0xb6c12e1c",
-      "owning_contract": "PreSignStateStorage",
-      "rationale": "Owner-only pre-signature registration entry point"
+      "name": "proxyOf(address)",
+      "selector": "0xc1a9a508",
+      "owning_contract": "COWShedFactory",
+      "rationale": "On-chain CREATE2 derivation the SDK's proxy_of/proxy_for mirror byte-for-byte"
+    },
+    {
+      "name": "ownerOf(address)",
+      "selector": "0x14afd79e",
+      "owning_contract": "COWShedFactory",
+      "rationale": "Reverse proxy-to-owner mapping getter"
+    },
+    {
+      "name": "implementation()",
+      "selector": "0x5c60da1b",
+      "owning_contract": "COWShedFactory",
+      "rationale": "Immutable implementation getter participating in the CREATE2 init-code hash"
+    }
+  ],
+  "shed_methods": [
+    {
+      "name": "executeHooks((address,uint256,bytes,bool,bool)[],bytes32,uint256,bytes)",
+      "selector": "0xffdacefc",
+      "owning_contract": "COWShed",
+      "rationale": "Proxy-side hook execution (owner implicit); the factory entry point forwards here"
+    },
+    {
+      "name": "trustedExecuteHooks((address,uint256,bytes,bool,bool)[])",
+      "selector": "0xc764c615",
+      "owning_contract": "COWShed",
+      "rationale": "Trusted-executor execution path without signature verification"
+    },
+    {
+      "name": "claimWithResolver(address)",
+      "selector": "0xd0bec7b4",
+      "owning_contract": "COWShed",
+      "rationale": "Reverse-resolution resolver claim for ENS opt-outs"
+    },
+    {
+      "name": "updateTrustedExecutor(address)",
+      "selector": "0xf9b194e1",
+      "owning_contract": "COWShed",
+      "rationale": "Admin rotation of the trusted executor"
+    },
+    {
+      "name": "updateImplementation(address)",
+      "selector": "0x025b22bc",
+      "owning_contract": "COWShed",
+      "rationale": "Admin upgrade of the proxy implementation"
+    },
+    {
+      "name": "revokeNonce(bytes32)",
+      "selector": "0x83206b56",
+      "owning_contract": "COWShed",
+      "rationale": "Admin revocation of an unused hook nonce"
+    },
+    {
+      "name": "nonces(bytes32)",
+      "selector": "0x9e317f12",
+      "owning_contract": "COWShed",
+      "rationale": "Nonce-consumption read used for replay checks"
+    },
+    {
+      "name": "domainSeparator()",
+      "selector": "0xf698da25",
+      "owning_contract": "COWShed",
+      "rationale": "Per-proxy EIP-712 domain separator the SDK recomputes off-chain"
+    },
+    {
+      "name": "trustedExecutor()",
+      "selector": "0x39584b19",
+      "owning_contract": "COWShed",
+      "rationale": "Current trusted executor read"
+    },
+    {
+      "name": "VERSION()",
+      "selector": "0xffa1ad74",
+      "owning_contract": "COWShed",
+      "rationale": "Deployed version string; doubles as the EIP-712 domain version mirrored by CowShedVersion::version_str"
+    },
+    {
+      "name": "initialize(address,bool)",
+      "selector": "0x400ada75",
+      "owning_contract": "COWShed",
+      "rationale": "Deployed 2-arg init (factory, claimResolver); this selector is embedded in both proxy creation-code blobs as the pre-initialization call guard"
     }
   ],
   "type_strings": {
@@ -46,16 +125,8 @@
     "ExecuteHooks": "ExecuteHooks(Call[] calls,bytes32 nonce,uint256 deadline)Call(address target,uint256 value,bytes callData,bool allowFailure,bool isDelegateCall)",
     "EIP712Domain": "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
   },
-  "forwarder_methods": [
-    {
-      "name": "isValidSignature(bytes32,bytes)",
-      "selector": "0x1626ba7e",
-      "owning_contract": "ERC1271Forwarder",
-      "rationale": "Canonical ERC-1271 isValidSignature entry point"
-    }
-  ],
   "signature_byte_order": {
     "order": "r || s || v",
-    "rationale": "COW Shed signed-hook signature carries r-then-s-then-v (not the standard v-then-r-then-s); enforced at the type level by a trybuild fixture in the cow-sdk-cow-shed body landing"
+    "rationale": "decodeEOASignature requires exactly 65 bytes and reads r, then s, then v; the ERC-2098 compact round-trip is pinned by cow_shed/eoa_signature_byte_order.json against RecoverableSignature"
   }
 }

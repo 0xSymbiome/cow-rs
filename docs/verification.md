@@ -264,9 +264,11 @@ The review procedure is:
    runtime-supported chain.
 
 COW Shed adds one extra bytecode check: the embedded proxy creation-code
-`.bin` bytes are locked by the CREATE2 address-parity test, which derives the
-per-version proxy addresses from those bytes and pins them (with their
-SHA-256 digests) to `parity/fixtures/cow_shed/proxy_addresses.json`.
+`.bin` bytes are locked by the proxy-address parity test, which pins each
+blob's byte length and keccak256 digest and re-derives the per-version proxy
+addresses from those bytes against
+`parity/fixtures/cow_shed/proxy_addresses.json`, whose anchor rows are the
+TypeScript arbiter's own CREATE2 golden vectors.
 
 ### CI Architecture Gates
 

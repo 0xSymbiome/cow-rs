@@ -1,9 +1,17 @@
 {
   "surface": "cow-shed-domain-separator",
+  "sources": {
+    "cow-shed": {
+      "commit": "e15a131d626edbf779c8e44451566e2c36dbdb7d",
+      "refs": [
+        "src/COWShed.sol#domainSeparator,VERSION"
+      ]
+    }
+  },
   "standards": [
     "EIP-712 (domain separator)"
   ],
-  "derivation": "Golden domain separators computed by cow_sdk_contracts::cow_shed::eip712 for CREATE2-derived COWShed proxies; the COWShed name/version constants live in upstream COWShedStorage.sol, outside the pinned mirror set.",
+  "derivation": "EIP-712 domain separators per the spec over (name \"COWShed\", version = the deployed COWShed.VERSION constant, chainId, verifyingContract = the CREATE2-derived proxy). The name and version constants are pinned at the v1.0.1 tag; the proxies are the externally anchored vectors from cow_shed/proxy_addresses.json (chain-independent, so the same proxy appears under multiple chain ids); the EIP712Domain type hash is independently keccak-verified by the eip712 type-hash parity test.",
   "rows": [
     {
       "chain_id": 1,
@@ -20,14 +28,14 @@
     {
       "chain_id": 100,
       "version": "1.0.1",
-      "proxy": "0x597474b9AffD64c545d68EDA005B437fd3C00DD8",
+      "proxy": "0x66545B93A314e5BdEC9E5Ff9c4D2C7054e6afb04",
       "domain": {
         "name": "COWShed",
         "version": "1.0.1",
         "chainId": 100,
-        "verifyingContract": "0x597474b9AffD64c545d68EDA005B437fd3C00DD8"
+        "verifyingContract": "0x66545B93A314e5BdEC9E5Ff9c4D2C7054e6afb04"
       },
-      "domain_separator": "0xf3208a56ad1f8133e0e196ff03e2704b712d34ff6dc1a04a05107dc79c0f081d"
+      "domain_separator": "0xdfe8c56847a4d3a48941a5edaf657e80eb4b75f4b7fef99b62f1cb855098249d"
     },
     {
       "chain_id": 42161,

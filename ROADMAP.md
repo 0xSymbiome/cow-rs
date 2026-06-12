@@ -21,10 +21,13 @@ examples.
 
 ## In-Flight Account-Abstraction And Composable Capabilities
 
-The current capability group prepares COW Shed and composable-order support.
-The shipped readiness surface includes source pins, deployment provenance,
-schema v2 registry and coverage taxonomy, COW Shed proxy bytecode evidence,
-reserved crate manifests, ABI excerpts, parity fixtures, and audit records.
+COW Shed account-abstraction hooks are shipped behind the off-by-default
+`cow-shed` feature (proxy derivation, EIP-712 hook signing, factory calldata,
+the `CowShedHooks` orchestrator), bound to the deployed v1.0.x generation;
+composable-order support remains in preparation. The shipped readiness
+surface includes source pins, deployment provenance, schema v2 registry and
+coverage taxonomy, COW Shed proxy bytecode evidence, reserved crate
+manifests, ABI excerpts, parity fixtures, and audit records.
 
 ## Composable Order Capabilities
 

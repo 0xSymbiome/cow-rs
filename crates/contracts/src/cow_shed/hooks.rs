@@ -68,16 +68,21 @@ impl CowShedHooks {
         self.version
     }
 
-    /// Returns the COW Shed factory address for the configured chain/version.
+    /// Returns the COW Shed factory address for the configured version.
+    ///
+    /// The factory is identical on every supported chain, so the configured
+    /// chain participates only in the EIP-712 signing domain.
     #[must_use]
-    pub fn factory(&self) -> Address {
-        cow_shed_factory(self.chain, self.version)
+    pub const fn factory(&self) -> Address {
+        cow_shed_factory(self.version)
     }
 
     /// Returns the deterministic proxy ("shed") account for `owner`.
+    ///
+    /// Chain-independent: every CREATE2 input is fixed per version.
     #[must_use]
     pub fn shed_account(&self, owner: Address) -> Address {
-        proxy_for(self.chain, self.version, owner)
+        proxy_for(self.version, owner)
     }
 
     /// Builds the EIP-712 [`TypedDataPayload`] an owner signs to authorize
@@ -133,9 +138,10 @@ impl CowShedHooks {
     ///
     /// # Errors
     ///
-    /// Returns [`CowShedError::Other`] if the signer cannot resolve its
-    /// address, the typed-data signing fails, or the signer returns a value
-    /// that is not a canonical 65-byte recoverable signature.
+    /// Returns [`CowShedError::OwnerResolution`] if the signer cannot resolve
+    /// its address, [`CowShedError::Signing`] if the typed-data signing fails,
+    /// and [`CowShedError::SignatureParse`] if the signer returns a value that
+    /// is not a canonical 65-byte recoverable signature.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(
@@ -158,9 +164,10 @@ impl CowShedHooks {
         S: Signer,
         S::Error: core::fmt::Display,
     {
-        let owner = signer.address().await.map_err(|error| {
-            CowShedError::Other(format!("cow-shed: resolve owner address: {error}").into())
-        })?;
+        let owner = signer
+            .address()
+            .await
+            .map_err(|error| CowShedError::OwnerResolution(error.to_string()))?;
         let owner_alloy = owner.into_alloy();
         let shed = self.shed_account(owner_alloy);
         let payload = execute_hooks_typed_data_payload(
@@ -174,12 +181,9 @@ impl CowShedHooks {
         let signature_hex = signer
             .sign_typed_data_payload(&payload)
             .await
-            .map_err(|error| {
-                CowShedError::Other(format!("cow-shed: sign ExecuteHooks payload: {error}").into())
-            })?;
-        let signature = RecoverableSignature::parse_hex(&signature_hex).map_err(|error| {
-            CowShedError::Other(format!("cow-shed: parse signature: {error}").into())
-        })?;
+            .map_err(|error| CowShedError::Signing(error.to_string()))?;
+        let signature = RecoverableSignature::parse_hex(&signature_hex)
+            .map_err(CowShedError::SignatureParse)?;
         let factory_calldata =
             encode_execute_hooks_calldata_signed(calls, nonce, deadline, owner_alloy, &signature);
         Ok(SignedCowShedCall {
@@ -242,21 +246,16 @@ mod tests {
         let user = address!("0x76b0340e50BD9883D8B2CA5fd9f52439a9e7Cf58");
         let hooks = CowShedHooks::new(DeploymentChainId::GnosisChain);
         assert_eq!(hooks.version(), CowShedVersion::V1_0_1);
-        assert_eq!(
-            hooks.factory(),
-            cow_shed_factory(DeploymentChainId::GnosisChain, CowShedVersion::V1_0_1)
-        );
+        assert_eq!(hooks.factory(), cow_shed_factory(CowShedVersion::V1_0_1));
         assert_eq!(
             hooks.shed_account(user),
-            proxy_for(DeploymentChainId::GnosisChain, CowShedVersion::V1_0_1, user)
+            proxy_for(CowShedVersion::V1_0_1, user),
+            "the shed account is chain-independent"
         );
 
         let pinned = hooks.with_version(CowShedVersion::V1_0_0);
         assert_eq!(pinned.version(), CowShedVersion::V1_0_0);
-        assert_eq!(
-            pinned.factory(),
-            cow_shed_factory(DeploymentChainId::GnosisChain, CowShedVersion::V1_0_0)
-        );
+        assert_eq!(pinned.factory(), cow_shed_factory(CowShedVersion::V1_0_0));
     }
 
     #[test]

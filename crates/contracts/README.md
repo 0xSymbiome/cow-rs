@@ -45,7 +45,6 @@ All off by default:
 - `cow-shed` — the COW Shed account-abstraction module (`cow_shed`):
   deterministic proxy derivation, EIP-712 hook signing, and `executeHooks`
   calldata, with the `CowShedHooks` orchestrator.
-- `cow-shed-gnosis` — adds the Gnosis-only `COWShedForComposableCoW` forwarder.
 - `tracing` — structured spans through the
   [`tracing`](https://docs.rs/tracing) facade.
 

@@ -28,23 +28,22 @@
 //! caller's [`Signer`](cow_sdk_core::Signer), and submission stays the caller's
 //! responsibility.
 //!
-//! `proxy_for` resolves the chain's factory (including Gnosis Chain's distinct
-//! deployment); the same inputs always derive the same proxy address:
+//! The deployed factory and implementation are deterministic CREATE2
+//! deployments, identical on every supported chain for a given
+//! [`CowShedVersion`](crate::cow_shed::CowShedVersion), so the derived proxy
+//! address is chain-independent — the same inputs always derive the same
+//! proxy address, and chain id matters only for the EIP-712 signing domain:
 //!
 //! ```
-//! use cow_sdk_contracts::cow_shed::{CowShedVersion, ProxyAddress, proxy_of};
+//! use alloy_primitives::address;
+//! use cow_sdk_contracts::cow_shed::{CowShedVersion, proxy_for};
 //!
-//! # fn main() -> Result<(), Box<dyn std::error::Error>> {
-//! let factory: ProxyAddress = "0x312f92fe5f1710408B20D52A374fa29e099cFA86".parse()?;
-//! let user: ProxyAddress = "0x76b0340e50BD9883D8B2CA5fd9f52439a9e7Cf58".parse()?;
-//!
-//! let proxy = proxy_of(CowShedVersion::V1_0_1, factory, user);
+//! let user = address!("0x76b0340e50BD9883D8B2CA5fd9f52439a9e7Cf58");
+//! let proxy = proxy_for(CowShedVersion::V1_0_1, user);
 //! assert_eq!(
 //!     proxy,
-//!     "0x66545B93A314e5BdEC9E5Ff9c4D2C7054e6afb04".parse::<ProxyAddress>()?,
+//!     address!("0x66545B93A314e5BdEC9E5Ff9c4D2C7054e6afb04"),
 //! );
-//! # Ok(())
-//! # }
 //! ```
 
 /// CREATE2 proxy address derivation.
@@ -64,17 +63,15 @@ pub mod types;
 /// Supported deployed COW Shed versions.
 pub mod version;
 
-pub use address::{cow_shed_factory, cow_shed_implementation, proxy_for, proxy_of};
+pub use address::{cow_shed_factory, cow_shed_implementation, init_code_hash, proxy_for, proxy_of};
 pub use calls::{
-    compact_signature, encode_execute_hooks_calldata, encode_execute_hooks_calldata_signed,
-    encode_execute_hooks_calldata_with_signature, encode_execute_pre_signed_hooks_calldata,
-    eoa_signature_from_compact,
+    encode_execute_hooks_calldata_signed, encode_execute_hooks_calldata_with_signature,
 };
 pub use eip712::{
     ExecuteHooks, SolCall, cow_shed_domain_separator, cow_shed_eip712_domain,
     execute_hooks_signing_hash, execute_hooks_typed_data_payload,
 };
-pub use errors::{CowShedError, SigSource};
+pub use errors::CowShedError;
 pub use hooks::{CowShedHooks, SignedCowShedCall};
-pub use types::{Call, Deadline, Hook, HookList, Nonce, ProxyAddress};
+pub use types::{Call, Hook, HookList};
 pub use version::CowShedVersion;

@@ -38,20 +38,23 @@ repositories:
 - id: cow-sdk
   remote: https://github.com/cowprotocol/cow-sdk.git
   commit: c931d7ecd67626736f5b8dff781741e727128c42
-  # why: the canonical contract-address constants for both orderbook environments, pinning the staging settlement and vault-relayer deployments resolved by the typed Registry, and the trading protocol-fee-with-partner-fee amount-composition goldens.
+  # why: the canonical contract-address constants for both orderbook environments, pinning the staging settlement and vault-relayer deployments resolved by the typed Registry, the trading protocol-fee-with-partner-fee amount-composition goldens, and the COW Shed deployed-runtime factory ABI, per-version constants (factory, implementation, proxy creation code), and CREATE2 golden vectors.
   producer_paths:
   - packages/config/src/chains/const/contracts.ts
+  - packages/cow-shed/src/abi/CowShedFactoryAbi.ts
+  - packages/cow-shed/src/const.ts
+  - packages/cow-shed/src/contracts/CoWShedHooks.test.ts
   - packages/trading/src/postCoWProtocolTrade.test.ts
 - id: cow-shed
   remote: https://github.com/cowdao-grants/cow-shed.git
-  commit: 9e01a88e0010314ee1e4c1a822105897a87d3bda
-  # why: the COW Shed proxy, factory, and hooks-hashing Solidity the inline sol! bindings mirror, plus the networks.json addresses behind the account-abstraction surface.
+  commit: e15a131d626edbf779c8e44451566e2c36dbdb7d
+  # why: the v1.0.1 tag — the DEPLOYED COW Shed generation the inline sol! bindings mirror (proxy, factory, hooks-hashing Solidity, the VERSION domain constant) and the networks.json rows of the v1.0.x deployments. Source HEAD has moved to the v2.x generations (ENS purge, pre-sign flow, composable forwarder), which are deployed only as the Gnosis chain-100 redeploy outside the supported version family (ADR 0049).
   producer_paths:
   - networks.json
   - src/COWShed.sol
   - src/COWShedFactory.sol
-  - src/COWShedForComposableCoW.sol
   - src/COWShedProxy.sol
+  - src/ICOWAuthHook.sol
   - src/LibAuthenticatedHooks.sol
 - id: ethflowcontract
   remote: https://github.com/cowprotocol/ethflowcontract.git

@@ -2,7 +2,7 @@
   "surface": "cow-shed-execute-hooks-digest",
   "sources": {
     "cow-shed": {
-      "commit": "9e01a88e0010314ee1e4c1a822105897a87d3bda",
+      "commit": "e15a131d626edbf779c8e44451566e2c36dbdb7d",
       "refs": [
         "src/LibAuthenticatedHooks.sol#CALL_TYPE_HASH,EXECUTE_HOOKS_TYPE_HASH,hashToSign"
       ]
@@ -44,8 +44,8 @@
     {
       "chain_id": 100,
       "version": "1.0.1",
-      "proxy": "0x597474b9AffD64c545d68EDA005B437fd3C00DD8",
-      "domain_separator": "0xf3208a56ad1f8133e0e196ff03e2704b712d34ff6dc1a04a05107dc79c0f081d",
+      "proxy": "0x66545B93A314e5BdEC9E5Ff9c4D2C7054e6afb04",
+      "domain_separator": "0xdfe8c56847a4d3a48941a5edaf657e80eb4b75f4b7fef99b62f1cb855098249d",
       "call_type_hash": "0x3fad4ba9aae5ad2d96a46400ed3ee818b640829b240f127d0d98b9430f2aa136",
       "execute_hooks_type_hash": "0x0da4f06c268cfd5c18a3ea3b26fc8357dd240b89ea101e6b7f7591f029707394",
       "message": {
@@ -68,7 +68,7 @@
         "nonce": "0x0101010101010101010101010101010101010101010101010101010101010101",
         "deadline": "1893456000"
       },
-      "digest": "0x8334f360ab7364497b2a10d99ea09e125e46c096c23606cae6ace4afaa688865"
+      "digest": "0x368c4d21546a54f9e59699b3887a2e83893c24f0a955623f98495e8494439264"
     },
     {
       "chain_id": 42161,

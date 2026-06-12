@@ -22,9 +22,11 @@ cloning anything.
 **Pins are the only committed truth; every hash is derived from them at check
 time.** A pin (a 40-character commit) already content-addresses every file in
 the upstream tree, so the system never commits a checksum it could instead
-derive. The one exception is a hash with no pinned source to derive it from —
-for example the COW Shed creation-code `sha256` entries, which lock compiled
-bytecode.
+derive. The one exception is a hash over compiled bytes rather than a pinned
+text file — the COW Shed creation-code `keccak256` entries, which lock the
+embedded `.bin` blobs; those blobs are themselves byte-identical to the
+`COW_SHED_PROXY_INIT_CODE` constants in the pinned cow-sdk commit, so even
+this exception chains back to a pin.
 
 Everything a reviewer relies on chains back to the pins:
 

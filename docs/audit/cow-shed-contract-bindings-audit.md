@@ -1,9 +1,9 @@
 # COW Shed Contract Bindings Audit
 
 Status: Current
-Last reviewed: 2026-06-10
-Owning surface: inline COW Shed `alloy::sol!` bindings, proxy creation-code artifacts, version-call evidence, and self-hosted deployment addresses
-Refresh trigger: Refresh when COW Shed deployments, proxy creation code, factory ABIs, hook type strings, the deployed `VERSION()` return value, or the upstream commit pin for the COW Shed source change.
+Last reviewed: 2026-06-12
+Owning surface: inline COW Shed `alloy::sol!` bindings, proxy creation-code artifacts, deployed-generation address record, and the CREATE2/EIP-712/selector parity evidence
+Refresh trigger: Refresh when COW Shed deployments, proxy creation code, factory ABIs, hook type strings, the deployed `VERSION()` constants, or the upstream commit pins for the COW Shed sources change.
 Related docs:
 - [ADR 0049](../adr/0049-cow-shed-account-abstraction-proxy.md)
 - [ADR 0050](../adr/0050-eip1271-signature-blob-encoding.md)
@@ -15,225 +15,190 @@ Related docs:
 
 This audit covers:
 
-- the inline COW Shed `alloy::sol!` bindings that reproduce the upstream
-  Solidity surface verbatim, with the upstream source pinned by commit in
-  `parity/source-lock.yaml` and proven byte-for-byte by the JSON parity
-  fixtures under `parity/fixtures/cow_shed/`;
-- the per-version proxy creation-code artifacts embedded by the cow-shed
-  crate and guarded by the CREATE2 address-parity test;
-- the per-chain `VERSION()` call evidence captured in
-  `parity/fixtures/cow_shed/version_calls.json`;
-- the self-hosted COW Shed factory and
-  implementation contracts;
-- the Gnosis-only `COWShedForComposableCoW` forwarder gate that enforces
-  chain id 100 for the bridge variant;
-- the EIP-712 type strings used by the hook structure, including the
-  whitespace-free declaration order and the EOA signature byte order
-  `r || s || v`.
+- the inline COW Shed `alloy::sol!` bindings that mirror the **deployed
+  v1.0.x generation** — the upstream `cowdao-grants/cow-shed` sources at the
+  v1.0.1 tag, pinned by commit in `parity/source-lock.yaml`, cross-checked
+  against the deployed-runtime factory ABI shipped by the pinned TypeScript
+  arbiter (`packages/cow-shed/src/abi/CowShedFactoryAbi.ts`);
+- the per-version proxy creation-code artifacts embedded by the module,
+  byte-identical to the arbiter's `COW_SHED_PROXY_INIT_CODE` constants and
+  digest-pinned by the proxy-address parity fixture;
+- the per-version deployed factory/implementation record
+  (`parity/fixtures/cow_shed/deployments.json`) — deterministic CREATE2
+  deployments, identical on every supported chain, so the record carries no
+  chain axis;
+- the selector record (`parity/fixtures/cow_shed/canonical_selectors.json`)
+  covering every bound function of both interfaces;
+- the EIP-712 type strings, domain/digest hashing, and the EOA signature
+  byte order `r || s || v` with the ERC-2098 compact round-trip on
+  `RecoverableSignature`.
 
 It does not cover the COW Shed hook metadata schema integration with the
 app-data crate; that boundary is governed by the
 [COW Shed App-Data Integration Audit](cow-shed-app-data-integration-audit.md).
 
+## Generation posture
+
+Upstream cow-shed has moved past the deployed generation: v2.0.0 purged ENS
+(1-arg `initializeProxy(address)`) and added the pre-sign flow; v2.1.0 added
+the ComposableCoW forwarder. The only v2-generation deployment recorded
+upstream is the Gnosis chain-100 redeploy (factory `0x4f4350bf…`,
+implementation `0x62d3a7ff…`, EIP-712 domain version `"2.0.0"`), which is
+**outside the supported `CowShedVersion` family**; the v1.0.1 generation
+remains deployed on Gnosis at the canonical pair recorded in `networks.json`
+at the pinned tag. Per ADR 0049 the SDK binds deployed reality: no v2-only
+function, event, or error is bound, and nothing in the module is keyed by
+chain. A future upstream v2 rollout lands as new `#[non_exhaustive]`
+`CowShedVersion` variants with their own creation-code artifacts and domain
+version strings.
+
 ## Outcome Summary
 
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
-| Inline bindings | The inline COW Shed `alloy::sol!` bindings (mirroring upstream pinned by commit in `parity/source-lock.yaml`) emit type strings byte-identical to the upstream sources, including no whitespace between commas, proven by the JSON parity fixtures under `parity/fixtures/cow_shed/` | Conforms |
-| Proxy creation-code | `v1.0.0.bin` and `v1.0.1.bin` artifacts are embedded by the cow-shed crate and guarded by the CREATE2 address-parity test `crates/contracts/tests/deployment_address_parity_contract.rs`, which derives proxy addresses from the `.bin` bytes and locks them to `parity/fixtures/cow_shed/proxy_addresses.json` for both versions | Conforms |
-| Version-call evidence | Every per-chain row in `parity/fixtures/cow_shed/version_calls.json` records `decoded_version == "1.0.1"`, anchoring the SDK's `CowShedVersion::V1_0_1` default to deployed reality | Conforms |
-| Deployment addresses | COW Shed factory and implementation addresses are self-hosted in `crates/contracts/src/cow_shed/address/mod.rs` for every supported chain; the COW-Shed-for-ComposableCoW address diverges only on Gnosis Chain (id 100) | Conforms |
-| Gnosis forwarder gate | The Gnosis-only forwarder is reachable only when the caller selects chain id 100; all other chains return the typed `CowShedError::COWShedForComposableCoWGnosisOnly { chain }` variant | Conforms (contract; helper body lands in a later capability landing) |
-| Hook type strings | Canonical type strings carry no whitespace between commas in declaration order; the EOA signature byte order is `r || s || v` | Conforms |
-| EIP-712 hashing | Domain separator and signing digest are produced by `alloy_sol_types::Eip712Domain::separator` and `<ExecuteHooks as SolStruct>::eip712_signing_hash` respectively; bytes match the reference parity fixtures | Conforms |
-| Call type identity | The macro-emitted `Call` declared in the canonical sol! block is the single source of truth for typed-data hashing, ABI calldata building, and both proxy and factory interface signatures; the four representative `executeHooks` calldata rows in the parity fixture catalog the wire-byte contract | Conforms |
-| CREATE2 derivation | Proxy address derivation routes through `alloy_primitives::Address::create2` over the per-user salt and the proxy init-code hash; the thirty per-chain, per-user rows in the proxy-address parity fixture catalog the wire-byte contract | Conforms |
-| EOA signature byte order | The ERC-2098 compact signature decoder routes through `alloy_primitives::Signature::from_erc2098` and `Signature::as_bytes`, emitting the canonical 65-byte `r \|\| s \|\| v` layout with `v ∈ {27, 28}`; the four representative rows in the EOA signature byte-order parity fixture catalog the wire-byte contract | Conforms |
+| Inline bindings | Both `sol!` interfaces declare only functions, events, and errors present in the deployed v1.0.x sources at the pinned tag (factory: `executeHooks`, 2-arg `initializeProxy`, `proxyOf`, `ownerOf`, `implementation`; shed: `executeHooks`, `trustedExecuteHooks`, `claimWithResolver`, admin/nonce/domain reads, `VERSION`, 2-arg `initialize`); the ENS resolver read surface and constructor-only errors are documented exclusions | Conforms |
+| Selector record | Every row in `canonical_selectors.json` is triple-checked by `selector_parity_cow_shed_contract.rs`: an independent `sha3::Keccak256` derivation of the canonical signature, the pinned fixture value, and the macro-emitted `SolCall::SELECTOR` constant must agree; row counts pin the bound surface | Conforms |
+| Proxy creation-code | `v1.0.0.bin` (881 bytes) and `v1.0.1.bin` (829 bytes) are byte-identical to the TS arbiter's `COW_SHED_PROXY_INIT_CODE` constants and pinned by length + keccak256 in `proxy_addresses.json`, asserted by `proxy_address_parity_contract.rs::creation_code_blobs_are_digest_pinned` | Conforms |
+| Deployment record | `deployments.json` pins the per-version factory/implementation pairs and the deployed `VERSION()` domain strings; `deployment_address_parity_contract.rs` locks the version-keyed lookups and `CowShedVersion::version_str` against it | Conforms |
+| CREATE2 derivation | `proxy_of`/`proxy_for` route through `alloy_primitives::Address::create2` over the user-word salt and the `keccak256(creationCode ‖ abi.encode(implementation, user))` init-code hash; the parity rows include the TS arbiter's own golden vector and its custom-options mock vector as external anchors | Conforms |
+| EIP-712 hashing | Domain separator and signing digest are produced by `alloy_sol_types::Eip712Domain::separator` and `<ExecuteHooks as SolStruct>::eip712_signing_hash`; `domain_separator.json` and `execute_hooks_digest.json` lock the bytes, and the type hashes are re-derived with an independent keccak in the type-hash parity test | Conforms |
+| Call type identity | One macro-emitted `Call` backs typed-data hashing, both interfaces, and the calldata builders; the four `execute_hooks_calldata.json` rows lock the factory and proxy `executeHooks` wire bytes | Conforms |
+| EOA signature byte order | `r || s || v` with `v ∈ {27, 28}`, the only shape the on-chain `decodeEOASignature` accepts; the ERC-2098 compact pair lives solely on `RecoverableSignature` (`to_erc2098` normalizes to low-s per BIP-62 — a high-s input maps to its canonical twin — and `parse_erc2098` is the inverse), locked by `eoa_signature_byte_order.json` including an explicit high-s normalization row | Conforms |
 
 ## Current Contract
 
 ### Inline bindings
 
-The COW Shed bindings are inline `alloy::sol!` interfaces that reproduce
-the upstream Solidity surface verbatim. The upstream `cowdao-grants/cow-shed`
-source they mirror is pinned by commit under `repositories:` in
-`parity/source-lock.yaml`, and the JSON parity fixtures under
-`parity/fixtures/cow_shed/` prove the bindings produce byte-identical
-wire bytes for the proxy, factory, `COWShed`, `COWShedForComposableCoW`,
-forwarder, and hook surfaces. The EIP-712 type strings the bindings emit
-carry no whitespace between commas in declaration order; any future
-amendment that adds whitespace is a regression caught by the type-string
-parity contract test.
+The COW Shed bindings are inline `alloy::sol!` interfaces in
+`crates/contracts/src/cow_shed/bindings.rs` mirroring the deployed v1.0.x
+generation, pinned by commit (the v1.0.1 tag) under `repositories:` in
+`parity/source-lock.yaml` and cross-checked against the deployed-runtime
+factory ABI the TypeScript arbiter ships. The mirror is a deliberate,
+documented subset: the factory's inherited ENS resolver reads
+(`initializeEns`, `addr`, `name`, `baseName`, `baseNode`, the
+resolution-node getters, `supportsInterface`) and the constructor-only
+`NoCodeAtImplementation` error are out of scope for hook execution and proxy
+discovery. Every bound symbol exists byte-for-byte in the deployed runtime;
+the v2-only pre-sign family is not bound because no deployed v1.0.x contract
+dispatches those selectors. The error sets mirror the deployed sources per
+contract, including the library errors that surface through `executeHooks`
+(`DeadlineElapsed`, `NonceAlreadyUsed`) so revert decoding through the
+generated error enums matches on-chain behavior.
+
+### Selector record
+
+`parity/fixtures/cow_shed/canonical_selectors.json` carries one row per
+bound function (5 factory, 11 shed) plus the canonical EIP-712 type strings
+and the signature byte order. The contract test derives every selector from
+its canonical signature with `sha3::Keccak256` (an independent keccak
+implementation, not alloy's), compares it to the pinned fixture value, and
+asserts the macro-emitted `SolCall::SELECTOR` constant equals both — so the
+fixture, the preimages, and the bindings cannot drift apart silently, and a
+fixture row without a binding (or a renamed binding) fails loudly. Group row
+counts pin the bound surface size.
 
 ### Proxy creation-code
 
 Per-version proxy creation-code artifacts ship at
-`crates/contracts/src/cow_shed/address/proxy-creation-code/v1.0.0.bin` and
-`v1.0.1.bin`, embedded into the cow-shed crate via `include_bytes!` in
-`crates/contracts/src/cow_shed/address/mod.rs`. Their integrity is guarded by
-the CREATE2 address-parity test
-`crates/contracts/tests/deployment_address_parity_contract.rs::proxy_for_matches_reference_vectors`,
-which derives proxy addresses from the `.bin` bytes (via
-`proxy_creation_code` → `init_code_hash` → keccak) and locks them to the
-pinned vectors in `parity/fixtures/cow_shed/proxy_addresses.json` for both
-versions; any byte change in the `.bin` files shifts a derived address and
-fails the parity test. The init-code hash used at CREATE2 derivation time is
-computed per call as
-`keccak256(PROXY_CREATION_CODE || abi.encode(implementation, who))`; the
-`.bin` files store the deployer bytecode prefix and never the full init
-code, so derivation works correctly for any user address.
+`crates/contracts/src/cow_shed/address/proxy-creation-code/{v1.0.0,v1.0.1}.bin`,
+embedded via `include_bytes!`. They are byte-identical to the TS arbiter's
+`COW_SHED_PROXY_INIT_CODE` constants at the pinned cow-sdk commit, and the
+proxy-address parity fixture pins each blob by byte length and keccak256.
+The blobs store the deployer bytecode prefix only; the full init code is
+completed per derivation with `abi.encode(implementation, user)`. The
+deployed 2-arg `initialize(address,bool)` selector (`0x400ada75`) is embedded
+in both blobs as the pre-initialization call guard, corroborating the
+generation match.
 
-### Version-call evidence
+### Deployment record
 
-The per-chain `VERSION()` call evidence at
-`parity/fixtures/cow_shed/version_calls.json` records the
-deployed implementation address, the factory address, and the decoded
-version string per chain id. Every row records
-`decoded_version == "1.0.1"`, anchoring the SDK's default version to deployed
-reality.
-
-### Gnosis forwarder gate
-
-The `COWShedForComposableCoW` contract is deployed only on Gnosis Chain
-(chain id 100). The forwarder gate is anchored by the typed
-`CowShedError::COWShedForComposableCoWGnosisOnly { chain }` variant; any
-constructor or interaction helper that targets the forwarder on a
-non-Gnosis chain id must return this variant. The Gnosis-only forwarder
-surface gates behind the off-by-default `cow-shed-gnosis` Cargo feature, so
-builds that do not target Gnosis Chain do not compile the forwarder binding.
-
-### Hook type strings
-
-The canonical EIP-712 type strings are
-`Call(address target,uint256 value,bytes callData,bool allowFailure,bool isDelegateCall)`
-and
-`ExecuteHooks(Call[] calls,bytes32 nonce,uint256 deadline)Call(address target,uint256 value,bytes callData,bool allowFailure,bool isDelegateCall)`.
-The EOA signature byte order is `r || s || v` (not the standard
-`v || r || s`); the canonical 65-byte layout is produced and validated by
-`cow_sdk_contracts::RecoverableSignature`, whose `parse_bytes` rejects any
-non-65-byte input and any recovery byte outside `{0, 1, 27, 28}` (ADR 0022). A
-smart-contract (EIP-1271) owner instead supplies a variable-length signature
-blob; `encode_execute_hooks_calldata_with_signature` carries either shape
-through to the factory's `bytes` argument. The `isDelegateCall = true` setting
-is opt-in only via the `Call::delegate_call` builder, which requires a
-`// SAFETY:` comment in the preceding three lines of the call site.
-
-### EIP-712 hashing
-
-The COW Shed EIP-712 hashing path delegates to alloy primitives
-end-to-end. The `Call` and `ExecuteHooks` typed-data structs are
-declared via the `alloy_sol_types::sol!` macro in
-`crates/contracts/src/cow_shed/bindings.rs`; the macro emits the canonical
-type strings at expansion time and rejects any whitespace insertion or
-declaration-order swap at macro expansion. `cow_shed_eip712_domain`
-constructs an `alloy_sol_types::Eip712Domain` (name `"COWShed"`, the
-deployed version string, the caller-supplied chain id, the proxy
-address, and no salt) for callers that need the typed-data domain
-value; `cow_shed_domain_separator` is the thin convenience wrapper that
-returns the same domain's `.separator()` byte for callers that only
-need the per-proxy separator. `execute_hooks_signing_hash` builds the
-`ExecuteHooks` struct from the input slice and delegates to
-`<ExecuteHooks as SolStruct>::eip712_signing_hash(&domain)`, which
-composes the canonical EIP-712 envelope (`keccak256(0x19 || 0x01 ||
-domain_separator || hashStruct(message))`) end-to-end through
-`alloy_primitives::keccak256` with no cow-owned envelope code. Callers
-that need the EIP-712 type-hash bytes call
-`<T as SolStruct>::eip712_type_hash` on the matching struct. The
-`parity/fixtures/cow_shed/domain_separator.json` and
-`parity/fixtures/cow_shed/execute_hooks_digest.json` fixtures lock the
-wire-byte contract. The type-hash parity contract test asserts the
-macro-emitted accessors equal keccak of the canonical type strings via
-a hand-rolled `sha3::Keccak256` helper, so the assertion runs against an
-independent keccak path rather than the alloy crate's own.
-
-### Call type identity
-
-The COW Shed crate carries one `Call` type definition. The
-macro-emitted `Call` in `crates/contracts/src/cow_shed/bindings.rs` is the
-single source of truth: the same sol! block declares the canonical
-`ExecuteHooks` typed-data envelope plus the `COWShed` proxy and
-`COWShedFactory` factory interfaces, so the `Call[]` arguments on every
-hook-bearing function (`executeHooks`, `executePreSignedHooks`,
-`isPreSignedHooks`, `preSignHooks`, `trustedExecuteHooks` on the proxy,
-and the factory `executeHooks`) reference the same generated Rust type.
-The `crates/contracts/src/cow_shed/bindings.rs` and
-`crates/contracts/src/cow_shed/bindings.rs` modules re-export the
-canonical interfaces under
-`cow_sdk_contracts::cow_shed::bindings::shed::COWShed` and
-`cow_sdk_contracts::cow_shed::bindings::factory::COWShedFactory`, and
-`crates/contracts/src/cow_shed/types.rs` re-exports the canonical struct as
-the crate-level `cow_sdk_contracts::cow_shed::Call` alias. The ergonomic builder
-helpers (`Call::new(target, value, call_data)`, `Call::allow_failure()`,
-`Call::delegate_call()`) are inherent `const fn` methods on `Call`, so
-call-site code reads in snake-case while the sol-generated struct keeps its
-camelCase Solidity field names. The four
-representative rows in
-`parity/fixtures/cow_shed/execute_hooks_calldata.json` (single-call,
-three-call medium fan-out, five-call max fan-out, and empty-`callData`
-edge case) lock the wire-byte contract for both the factory
-`executeHooks` and the proxy `executeHooks` ABI calldata paths.
+`parity/fixtures/cow_shed/deployments.json` records, per supported version,
+the factory, the implementation, and the deployed `VERSION()` constant that
+doubles as the EIP-712 domain version. The pairs are deterministic CREATE2
+deployments, identical on every chain the generation is deployed to, so the
+version-keyed lookups in `crates/contracts/src/cow_shed/address/mod.rs` carry
+no chain parameter and the record carries no chain axis. Chain id enters the
+COW Shed story only through the EIP-712 signing domain.
 
 ### CREATE2 derivation
 
-Proxy address derivation in
-`crates/contracts/src/cow_shed/address/mod.rs::proxy_of` routes through
-[`alloy_primitives::Address::create2`], which assembles the canonical
-EIP-1014 preimage (`0xff || factory || salt || init_code_hash`) and
-keccak256-hashes it internally. The salt is the user address left-padded
-with twelve zero bytes to fill a 32-byte word via
-[`alloy_primitives::Address::into_word`]; the init-code hash concatenates
-the embedded per-version proxy creation code with the canonical ABI
-encoding of the `(implementation, user)` constructor tuple via
-[`alloy_sol_types::SolValue::abi_encode`] and hashes the result with
-[`alloy_primitives::keccak256`]. The implementation address is selected
-by `implementation_for(version, factory)`, which returns the Gnosis
-implementation when `version = 1.0.1` and the factory equals the
-deployed Gnosis factory address, and the default implementation in
-every other case. The thirty rows in
-`parity/fixtures/cow_shed/proxy_addresses.json` (five users across two
-deployed versions across three chains) lock the per-row salt,
-init-code-hash, and proxy-address byte contract.
+`proxy_of(version, factory, user)` pairs an explicit factory with the
+version's canonical implementation; `proxy_for(version, user)` uses the
+canonical factory. Both route through
+`alloy_primitives::Address::create2` with the user address as the 32-byte
+salt and `keccak256(creationCode ‖ abi.encode(implementation, user))` as the
+init-code hash. The parity rows in `proxy_addresses.json` include two
+external anchors from the arbiter's own test suite — the canonical v1.0.1
+golden vector and the custom-options mock (v1.0.0 creation code with a
+non-canonical factory/implementation pair, exercising the explicit
+`init_code_hash` + `create2` path) — plus derived regression rows; the
+anchors transitively prove the creation-code bytes and the formula against
+an authority outside this repository.
+
+### Hook type strings and EIP-712 hashing
+
+The canonical type strings are
+`Call(address target,uint256 value,bytes callData,bool allowFailure,bool isDelegateCall)`
+and
+`ExecuteHooks(Call[] calls,bytes32 nonce,uint256 deadline)Call(address target,uint256 value,bytes callData,bool allowFailure,bool isDelegateCall)`,
+whitespace-free between commas in declaration order.
+`cow_shed_eip712_domain` builds the `alloy_sol_types::Eip712Domain`
+(name `"COWShed"`, the deployed version string, chain id, proxy address, no
+salt); `execute_hooks_signing_hash` delegates to
+`<ExecuteHooks as SolStruct>::eip712_signing_hash`, composing the canonical
+envelope through `alloy_primitives::keccak256` with no cow-owned envelope
+code. `domain_separator.json` and `execute_hooks_digest.json` lock the
+per-chain bytes (the chain-100 rows use the canonical, chain-independent
+proxy with domain version `"1.0.1"`), and the type-hash parity test asserts
+the macro accessors equal an independent `sha3::Keccak256` of the canonical
+strings.
 
 ### EOA signature byte order
 
-The ERC-2098 compact signature decoder
-`cow_sdk_contracts::cow_shed::eoa_signature_from_compact` concatenates the
-caller-supplied `r_compact` and `vs` 32-byte arrays into the 64-byte
-ERC-2098 input and routes through
-[`alloy_primitives::Signature::from_erc2098`], which extracts the
-`y_parity` bit from the high bit of `vs[0]`, masks it out of the
-recovered `s`, and constructs the canonical
-[`alloy_primitives::Signature`].
-[`alloy_primitives::Signature::as_bytes`] then emits the 65-byte
-`r || s || v` layout with `v = 27 + y_parity ∈ {27, 28}`. The four
-representative rows in
-`parity/fixtures/cow_shed/eoa_signature_byte_order.json`
-(`v_27_low_bit`, `v_28_high_bit`, `edge_max_s_value`, and a
-real-shaped `v = 28` signature) carry the matched ERC-2098 compact
-input and the canonical packed signature for each case, locking the
-wire-byte contract end-to-end.
+The on-chain `decodeEOASignature` accepts exactly 65 bytes read as
+`r || s || v`; `RecoverableSignature::parse_bytes` produces and validates
+that shape (recovery byte in `{0, 1, 27, 28}`, ADR 0022), and
+`encode_execute_hooks_calldata_with_signature` carries either a 65-byte EOA
+signature or a variable-length EIP-1271 blob through to the factory's
+`bytes` argument unchanged, keeping the proxy's length-based dispatch
+reachable for both owner kinds. The ERC-2098 compact representation lives
+solely on `RecoverableSignature`: `to_erc2098` (alloy `as_erc2098`)
+normalizes `s` to low-s per BIP-62 before packing the parity bit — a high-s
+input maps to its canonical twin `(r, n − s, !y_parity)`, the same
+(digest, signer) validity under ECDSA malleability — and `parse_erc2098` is
+the inverse. `eoa_signature_byte_order.json` locks both directions,
+including an explicit high-s row proving normalize-on-encode.
 
 ## Evidence
 
 Primary implementation points:
 
 - `crates/contracts/src/cow_shed/bindings.rs`
-- `parity/source-lock.yaml`
+- `crates/contracts/src/cow_shed/address/mod.rs`
 - `crates/contracts/src/cow_shed/address/proxy-creation-code/v1.0.0.bin`
 - `crates/contracts/src/cow_shed/address/proxy-creation-code/v1.0.1.bin`
-- `crates/contracts/src/cow_shed/address/mod.rs`
-- `parity/fixtures/cow_shed/version_calls.json`
-- `crates/contracts/src/cow_shed/address/mod.rs`
-- `crates/contracts/tests/deployment_address_parity_contract.rs`
-- `parity/fixtures/cow_shed/proxy_addresses.json`
-- `parity/fixtures/cow_shed/`
+- `crates/contracts/src/cow_shed/calls.rs`
+- `crates/contracts/src/signature.rs` (`RecoverableSignature::{to,parse}_erc2098`)
+- `parity/source-lock.yaml`
+- `parity/fixtures/cow_shed/` (`canonical_selectors`, `deployments`,
+  `proxy_addresses`, `domain_separator`, `execute_hooks_digest`,
+  `execute_hooks_calldata`, `eoa_signature_byte_order`)
 
 Primary regression coverage:
 
+- `crates/contracts/tests/selector_parity_cow_shed_contract.rs`
+- `crates/contracts/tests/deployment_address_parity_contract.rs`
+- `crates/contracts/tests/proxy_address_parity_contract.rs`
+- `crates/contracts/tests/domain_separator_parity_contract.rs`
+- `crates/contracts/tests/eip712_message_hash_parity_contract.rs`
+- `crates/contracts/tests/eip712_type_hash_parity_contract.rs`
+- `crates/contracts/tests/signed_calldata_parity_contract.rs`
+- `crates/contracts/tests/eoa_signature_byte_order_contract.rs`
+- `tests/cow_shed_typed_data_digest.rs`
 
 Validation surface:
 
 ```text
-cargo test -p cow-sdk-contracts --all-features
+cargo test -p cow-sdk-contracts --features cow-shed
 cargo parity-validate --source-lock parity/source-lock.yaml
 ```

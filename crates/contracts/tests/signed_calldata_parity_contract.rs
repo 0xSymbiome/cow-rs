@@ -1,17 +1,21 @@
 #![cfg(feature = "cow-shed")]
 
-//! Contract: the `executeHooks` calldata encoders. `encode_execute_hooks_calldata_signed`
-//! (typed 65-byte `RecoverableSignature`) reproduces the reference factory
-//! calldata byte-for-byte and equals the compact-form
-//! `encode_execute_hooks_calldata`. `encode_execute_hooks_calldata_with_signature`
-//! (general) is a faithful wrapper for the EOA case and additionally encodes an
-//! EIP-1271 contract-signature blob the typed path cannot represent.
+//! Contract: the `executeHooks` calldata encoders.
+//! `encode_execute_hooks_calldata_signed` (typed 65-byte `RecoverableSignature`)
+//! reproduces the reference factory calldata byte-for-byte and is a faithful
+//! wrapper of the general `encode_execute_hooks_calldata_with_signature`, which
+//! additionally encodes an EIP-1271 contract-signature blob the typed path
+//! cannot represent — keeping the proxy's length-based on-chain dispatch
+//! (ECDSA recovery for 65 bytes, `isValidSignature` otherwise) reachable for
+//! both owner kinds. The reference vectors also decode and re-encode through
+//! the `sol!` call types for both the factory and proxy entry points.
 
 use alloy_primitives::Bytes;
+use alloy_sol_types::SolCall;
 use cow_sdk_contracts::RecoverableSignature;
+use cow_sdk_contracts::cow_shed::bindings::{COWShed, COWShedFactory};
 use cow_sdk_contracts::cow_shed::{
-    Call, compact_signature, encode_execute_hooks_calldata, encode_execute_hooks_calldata_signed,
-    encode_execute_hooks_calldata_with_signature,
+    Call, encode_execute_hooks_calldata_signed, encode_execute_hooks_calldata_with_signature,
 };
 use serde::Deserialize;
 
@@ -34,6 +38,7 @@ struct Row {
     user: String,
     signature: String,
     factory_call_data: String,
+    proxy_call_data: String,
 }
 
 #[derive(Deserialize)]
@@ -47,7 +52,7 @@ struct FixtureCall {
 }
 
 #[test]
-fn signed_calldata_matches_reference_and_compact_builder() {
+fn signed_calldata_matches_reference_vectors_and_round_trips() {
     let fixture: Fixture = serde_json::from_str(FIXTURE).expect("calldata fixture parses");
     assert!(!fixture.rows.is_empty(), "calldata fixture must carry rows");
 
@@ -55,24 +60,43 @@ fn signed_calldata_matches_reference_and_compact_builder() {
         let calls = row.calls.iter().map(to_call).collect::<Vec<_>>();
         let signature = RecoverableSignature::parse_bytes(&bytes(&row.signature))
             .unwrap_or_else(|err| panic!("row {}: signature parses: {err:?}", row.name));
-        let nonce = b256(&row.nonce);
-        let deadline = decimal_u256(&row.deadline);
-        let user = address(&row.user);
 
-        let signed =
-            encode_execute_hooks_calldata_signed(&calls, nonce, deadline, user, &signature);
+        let encoded = encode_execute_hooks_calldata_signed(
+            &calls,
+            b256(&row.nonce),
+            decimal_u256(&row.deadline),
+            address(&row.user),
+            &signature,
+        );
         assert_eq!(
-            signed,
+            encoded,
             bytes(&row.factory_call_data),
-            "row {}: signed calldata diverges from reference vector",
+            "row {}: factory executeHooks calldata diverges from reference vector",
             row.name
         );
 
-        let (r, vs) = compact_signature(&signature);
-        let compact = encode_execute_hooks_calldata(&calls, nonce, deadline, r, vs, user);
+        let decoded = COWShedFactory::executeHooksCall::abi_decode(&encoded)
+            .unwrap_or_else(|err| panic!("row {}: factory calldata decodes: {err}", row.name));
         assert_eq!(
-            signed, compact,
-            "row {}: signed entry point must equal the compact-form builder",
+            decoded.abi_encode(),
+            encoded.as_ref(),
+            "row {}: factory calldata round-trip",
+            row.name
+        );
+    }
+}
+
+#[test]
+fn proxy_execute_hooks_fixture_round_trips() {
+    let fixture: Fixture = serde_json::from_str(FIXTURE).expect("calldata fixture parses");
+    for row in &fixture.rows {
+        let encoded = bytes(&row.proxy_call_data);
+        let decoded = COWShed::executeHooksCall::abi_decode(&encoded)
+            .unwrap_or_else(|err| panic!("row {}: proxy calldata decodes: {err}", row.name));
+        assert_eq!(
+            decoded.abi_encode(),
+            encoded.as_ref(),
+            "row {}: proxy calldata round-trip",
             row.name
         );
     }
@@ -80,9 +104,6 @@ fn signed_calldata_matches_reference_and_compact_builder() {
 
 #[test]
 fn with_signature_covers_eoa_and_eip1271() {
-    use alloy_sol_types::SolCall;
-    use cow_sdk_contracts::cow_shed::bindings::COWShedFactory;
-
     let fixture: Fixture = serde_json::from_str(FIXTURE).expect("calldata fixture parses");
     let row = fixture.rows.first().expect("fixture has at least one row");
     let calls = row.calls.iter().map(to_call).collect::<Vec<_>>();

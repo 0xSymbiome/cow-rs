@@ -1,7 +1,7 @@
 # Source-Lock Provenance Audit
 
 Status: Current
-Last reviewed: 2026-06-11
+Last reviewed: 2026-06-12
 Owning surface: source-lock provenance and release preflight authority
 Refresh trigger: Changes to `parity/source-lock.yaml`, vendored parity OpenAPI or fixture provenance, any change to the maintained exclusion-list policy for historical progress snapshots, or any newly archived progress snapshot that should stay outside active preflight authority
 Related docs:
@@ -59,7 +59,7 @@ fixtures and source-derived evidence. It currently pins:
 - `contracts` at `c6b61ce75841ce4c25ab126def9cc981c568e6c6`
 - `services` at `65b6953bfc2e96b2791cfb2382c7309d1fb19b99`
 - `cow-sdk` at `c931d7ecd67626736f5b8dff781741e727128c42`
-- `cow-shed` at `9e01a88e0010314ee1e4c1a822105897a87d3bda`
+- `cow-shed` at `e15a131d626edbf779c8e44451566e2c36dbdb7d`
 - `ethflowcontract` at `762d182674f8f890bd27917872ee62125171b54d`
 - `app-data` at `31f130d1838ea5018facdfe240aef46ff0cc1881`
 
@@ -68,13 +68,24 @@ fixture cites its schema families, and the `parity/fixtures/app_data/schemas/`
 drift mirrors are refreshed from this pin rather than from "a real checkout" with no
 recorded commit.
 
-This review removed the deferred composable-order pins (`composable-cow` and
-its `lib/safe` submodule row): the SDK ships no composable surface, no fixture
-cites their paths, and the deferral is recorded by ADR 0048 — the capability
-re-pins its upstream when it lands. The cow-shed row was trimmed to the files
-the inline bindings and address tables actually mirror; two stale paths that
-do not exist at the pinned commit (`src/interfaces/ICOWAuthHook.sol`,
-`src/interfaces/IERC1271.sol`) were removed with it.
+A prior review removed the deferred composable-order pins (`composable-cow`
+and its `lib/safe` submodule row): the SDK ships no composable surface, no
+fixture cites their paths, and the deferral is recorded by ADR 0048 — the
+capability re-pins its upstream when it lands.
+
+The 2026-06-12 review re-pinned `cow-shed` from upstream HEAD to the **v1.0.1
+tag commit** — the deployed generation the inline `sol!` bindings mirror.
+This pin is intentionally behind the upstream default branch: source HEAD has
+moved to the v2.x generations (ENS purge, pre-sign flow, composable
+forwarder), which are deployed only as the out-of-family Gnosis chain-100
+redeploy (ADR 0049, 2026-06-12 amendment). Pinning the deployed tag is what
+makes the v1.0.x fixture refs blob-verifiable; pinning HEAD is what previously
+let v2-generation fragments and invented selector values drift into the
+cow-shed fixtures. The same review dropped `src/COWShedForComposableCoW.sol`
+(v2-only, binding removed), added `src/ICOWAuthHook.sol` (the `Call` struct
+home at the tag), and expanded the `cow-sdk` row with the cow-shed package
+producer paths (deployed-runtime factory ABI, per-version constants including
+the proxy creation code, and the CREATE2 golden test vectors).
 
 The lock is intentionally commit-based rather than branch-based. A release
 claim that depends on upstream freshness has to compare these pins against the
@@ -90,13 +101,18 @@ Upstream default-branch HEADs were checked on 2026-06-11 with
 | `contracts` | `c6b61ce75841ce4c25ab126def9cc981c568e6c6` | `c6b61ce75841ce4c25ab126def9cc981c568e6c6` | Current |
 | `services` | `65b6953bfc2e96b2791cfb2382c7309d1fb19b99` | `65b6953bfc2e96b2791cfb2382c7309d1fb19b99` | Current |
 | `cow-sdk` | `c931d7ecd67626736f5b8dff781741e727128c42` | `c931d7ecd67626736f5b8dff781741e727128c42` | Current |
-| `cow-shed` | `9e01a88e0010314ee1e4c1a822105897a87d3bda` | `9e01a88e0010314ee1e4c1a822105897a87d3bda` | Current |
+| `cow-shed` | `e15a131d626edbf779c8e44451566e2c36dbdb7d` | `9e01a88e0010314ee1e4c1a822105897a87d3bda` | Intentionally behind — deployed-generation pin (v1.0.1 tag; see above) |
 | `ethflowcontract` | `762d182674f8f890bd27917872ee62125171b54d` | `762d182674f8f890bd27917872ee62125171b54d` | Current |
 | `app-data` | `31f130d1838ea5018facdfe240aef46ff0cc1881` | `31f130d1838ea5018facdfe240aef46ff0cc1881` | Current |
 
-The source lock remains intentionally commit-based. In this review the
-`services` and `cow-sdk` pins were advanced to upstream HEAD; every pin now
-matches its upstream default branch, so no freshness drift remains for parity
+The source lock remains intentionally commit-based. A prior review advanced
+the `services` and `cow-sdk` pins to upstream HEAD. Every pin except
+`cow-shed` matches its upstream default branch; the `cow-shed` pin is
+deliberately held at the v1.0.1 tag because the SDK binds the deployed
+generation, not source HEAD — the drift report is expected to flag it until
+upstream's v2.x generation actually replaces the v1.0.x deployments, at which
+point the pin advances together with new `CowShedVersion` variants. No
+unintentional freshness drift remains for parity
 evidence to triage. A release claim that depends on upstream freshness re-runs
 `cargo xtask parity drift` to re-confirm before relying on the evidence.
 

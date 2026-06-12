@@ -2,10 +2,11 @@
   "surface": "cow-shed-execute-hooks-calldata",
   "sources": {
     "cow-shed": {
-      "commit": "9e01a88e0010314ee1e4c1a822105897a87d3bda",
+      "commit": "e15a131d626edbf779c8e44451566e2c36dbdb7d",
       "refs": [
+        "src/COWShedFactory.sol#executeHooks",
         "src/COWShed.sol#executeHooks",
-        "src/LibAuthenticatedHooks.sol#Call"
+        "src/ICOWAuthHook.sol#Call"
       ]
     }
   },

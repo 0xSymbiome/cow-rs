@@ -1,14 +1,9 @@
 //! Public COW Shed helper types.
 
-use std::time::Duration;
-
-use alloy_primitives::{Address, B256, Bytes, U256};
+use alloy_primitives::{Address, Bytes, U256};
 
 pub use crate::cow_shed::bindings::Call;
 pub use cow_sdk_app_data::{Hook, HookList};
-
-/// COW Shed proxy address type.
-pub type ProxyAddress = alloy_primitives::Address;
 
 impl Call {
     /// Creates a hook call with failure tolerance and `delegatecall` dispatch
@@ -48,40 +43,4 @@ impl Call {
         self.isDelegateCall = true;
         self
     }
-}
-
-/// Deadline strategy for COW Shed hook authorization.
-#[non_exhaustive]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Deadline {
-    /// No practical expiry.
-    Never,
-    /// Absolute UNIX timestamp in seconds.
-    Absolute(u64),
-    /// Relative duration from the supplied `now` timestamp.
-    Relative(Duration),
-}
-
-impl Deadline {
-    /// Resolves this deadline to the `uint256` value encoded into calldata.
-    #[must_use]
-    pub fn resolve(self, now: u64) -> U256 {
-        match self {
-            Self::Never => U256::MAX,
-            Self::Absolute(value) => U256::from(value),
-            Self::Relative(duration) => U256::from(now.saturating_add(duration.as_secs())),
-        }
-    }
-}
-
-/// Nonce strategy for COW Shed hook authorization.
-#[non_exhaustive]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Nonce {
-    /// Caller supplies entropy when signing.
-    Random,
-    /// Monotonic caller-managed numeric nonce.
-    Sequential(u64),
-    /// Exact nonce value supplied by the caller.
-    Explicit(B256),
 }

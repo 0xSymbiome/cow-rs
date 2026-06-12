@@ -28,8 +28,6 @@ tracing = ["dep:tracing", "cow-sdk-core/tracing"]
 # helpers. Off by default so the core contract helpers stay lean and pull no
 # account-abstraction surface or `cow-sdk-app-data` dependency.
 cow-shed = ["dep:cow-sdk-app-data"]
-# Lifts the Gnosis-only `COWShedForComposableCoW` forwarder binding.
-cow-shed-gnosis = ["cow-shed"]
 
 [dependencies]
 alloy-primitives = { workspace = true, features = ["k256", "serde"] }

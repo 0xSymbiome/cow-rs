@@ -2,177 +2,36 @@
   "surface": "cow-shed-proxy-addresses",
   "sources": {
     "cow-shed": {
-      "commit": "9e01a88e0010314ee1e4c1a822105897a87d3bda",
+      "commit": "e15a131d626edbf779c8e44451566e2c36dbdb7d",
       "refs": [
-        "networks.json#factory-and-implementation-addresses",
         "src/COWShedFactory.sol#proxyOf",
         "src/COWShedProxy.sol"
       ]
+    },
+    "cow-sdk": {
+      "commit": "c931d7ecd67626736f5b8dff781741e727128c42",
+      "refs": [
+        "packages/cow-shed/src/const.ts#COW_SHED_PROXY_INIT_CODE",
+        "packages/cow-shed/src/contracts/CoWShedHooks.test.ts#golden-vectors"
+      ]
     }
   },
-  "derivation": "CREATE2 proxy addresses derived from the factory formula; the proxy_creation_code sha256 entries lock the creation bytecode the address-parity test validates.",
+  "derivation": "CREATE2 per the factory's proxyOf: address = keccak256(0xff || factory || user-as-32-byte-salt || keccak256(creationCode || abi.encode(implementation, user)))[12..]. Every input is chain-free, so a generation's proxy for a user is the same address on every chain it is deployed to — the fixture intentionally carries no chain axis. The creation_code digests pin the embedded .bin blobs, which are byte-identical to the TypeScript arbiter's COW_SHED_PROXY_INIT_CODE constants. Rows marked with an anchor are the arbiter's own test vectors (external anchors that transitively prove the creation-code bytes and the formula); the remaining rows re-run the pinned formula over the pinned inputs for regression coverage. The custom-options anchor pairs the v1.0.0 creation code with a non-canonical factory and implementation, exercising the explicit init_code_hash + CREATE2 path.",
   "proxy_creation_code": {
     "1.0.0": {
-      "sha256": "a5ae2032f88cc54e55962a8093b5049d2ddbd639d569979e6246f04d4513485b"
+      "byte_len": 881,
+      "keccak256": "0x1d99d0ba201ad3aa2c5f55b47f9a3cd21e42219273e49c00e3deb746f511f4cc"
     },
     "1.0.1": {
-      "sha256": "2e139e8e1fdd46c4bdedb07adbdc698153d7e79a63bfa765c7f2033a2b5dc842"
+      "byte_len": 829,
+      "keccak256": "0x3a9b1856a601cdf16e5861a27c434e4ab36552d495fa60f78346e767f94e5a8f"
     }
   },
   "rows": [
     {
-      "version": "1.0.0",
-      "chain_id": 1,
-      "factory": "0x00E989b87700514118Fa55326CD1cCE82faebEF6",
-      "implementation": "0x2CFFA8cf11B90C9F437567b86352169dF4009F73",
-      "user": "0x76b0340e50BD9883D8B2CA5fd9f52439a9e7Cf58",
-      "salt": "0x00000000000000000000000076b0340e50bd9883d8b2ca5fd9f52439a9e7cf58",
-      "init_code_hash": "0x70fb636fc5ad3bd155391dde4755351486e11289b37cd5d41c593932ba287301",
-      "proxy": "0xe22E86b318DAc817b4444E2fE34cC2235cDF1B00"
-    },
-    {
-      "version": "1.0.0",
-      "chain_id": 1,
-      "factory": "0x00E989b87700514118Fa55326CD1cCE82faebEF6",
-      "implementation": "0x2CFFA8cf11B90C9F437567b86352169dF4009F73",
-      "user": "0x1111111111111111111111111111111111111111",
-      "salt": "0x0000000000000000000000001111111111111111111111111111111111111111",
-      "init_code_hash": "0x07cbf393e3a400993f3510727bd176b0760def2e88805bc5cd6636115f2a63d7",
-      "proxy": "0x14561F5e206dF976A8aAd4CC87526791ABd17384"
-    },
-    {
-      "version": "1.0.0",
-      "chain_id": 1,
-      "factory": "0x00E989b87700514118Fa55326CD1cCE82faebEF6",
-      "implementation": "0x2CFFA8cf11B90C9F437567b86352169dF4009F73",
-      "user": "0x2222222222222222222222222222222222222222",
-      "salt": "0x0000000000000000000000002222222222222222222222222222222222222222",
-      "init_code_hash": "0x22bb0e8c5704cb1886047e48c18a07846e935382059121d6786714a1758bffda",
-      "proxy": "0x383FeeFbd88E125e5b741ADBCa3dd68f3406Eb4f"
-    },
-    {
-      "version": "1.0.0",
-      "chain_id": 1,
-      "factory": "0x00E989b87700514118Fa55326CD1cCE82faebEF6",
-      "implementation": "0x2CFFA8cf11B90C9F437567b86352169dF4009F73",
-      "user": "0x3333333333333333333333333333333333333333",
-      "salt": "0x0000000000000000000000003333333333333333333333333333333333333333",
-      "init_code_hash": "0xc7446eba035e88eb47e53d721d58e866dadcfc9f02af9ca85556371be5bf1540",
-      "proxy": "0x984FC806D7A2173eC462c902711b54A300cfc7E6"
-    },
-    {
-      "version": "1.0.0",
-      "chain_id": 1,
-      "factory": "0x00E989b87700514118Fa55326CD1cCE82faebEF6",
-      "implementation": "0x2CFFA8cf11B90C9F437567b86352169dF4009F73",
-      "user": "0x4444444444444444444444444444444444444444",
-      "salt": "0x0000000000000000000000004444444444444444444444444444444444444444",
-      "init_code_hash": "0x406e54302825d9fb87c3149cefc17f87247882eff387eea71bd8c7c0f7a22168",
-      "proxy": "0x3DAF90FCa0cF049aeeD585Be852Bb14315EDA1b6"
-    },
-    {
-      "version": "1.0.0",
-      "chain_id": 100,
-      "factory": "0x00E989b87700514118Fa55326CD1cCE82faebEF6",
-      "implementation": "0x2CFFA8cf11B90C9F437567b86352169dF4009F73",
-      "user": "0x76b0340e50BD9883D8B2CA5fd9f52439a9e7Cf58",
-      "salt": "0x00000000000000000000000076b0340e50bd9883d8b2ca5fd9f52439a9e7cf58",
-      "init_code_hash": "0x70fb636fc5ad3bd155391dde4755351486e11289b37cd5d41c593932ba287301",
-      "proxy": "0xe22E86b318DAc817b4444E2fE34cC2235cDF1B00"
-    },
-    {
-      "version": "1.0.0",
-      "chain_id": 100,
-      "factory": "0x00E989b87700514118Fa55326CD1cCE82faebEF6",
-      "implementation": "0x2CFFA8cf11B90C9F437567b86352169dF4009F73",
-      "user": "0x1111111111111111111111111111111111111111",
-      "salt": "0x0000000000000000000000001111111111111111111111111111111111111111",
-      "init_code_hash": "0x07cbf393e3a400993f3510727bd176b0760def2e88805bc5cd6636115f2a63d7",
-      "proxy": "0x14561F5e206dF976A8aAd4CC87526791ABd17384"
-    },
-    {
-      "version": "1.0.0",
-      "chain_id": 100,
-      "factory": "0x00E989b87700514118Fa55326CD1cCE82faebEF6",
-      "implementation": "0x2CFFA8cf11B90C9F437567b86352169dF4009F73",
-      "user": "0x2222222222222222222222222222222222222222",
-      "salt": "0x0000000000000000000000002222222222222222222222222222222222222222",
-      "init_code_hash": "0x22bb0e8c5704cb1886047e48c18a07846e935382059121d6786714a1758bffda",
-      "proxy": "0x383FeeFbd88E125e5b741ADBCa3dd68f3406Eb4f"
-    },
-    {
-      "version": "1.0.0",
-      "chain_id": 100,
-      "factory": "0x00E989b87700514118Fa55326CD1cCE82faebEF6",
-      "implementation": "0x2CFFA8cf11B90C9F437567b86352169dF4009F73",
-      "user": "0x3333333333333333333333333333333333333333",
-      "salt": "0x0000000000000000000000003333333333333333333333333333333333333333",
-      "init_code_hash": "0xc7446eba035e88eb47e53d721d58e866dadcfc9f02af9ca85556371be5bf1540",
-      "proxy": "0x984FC806D7A2173eC462c902711b54A300cfc7E6"
-    },
-    {
-      "version": "1.0.0",
-      "chain_id": 100,
-      "factory": "0x00E989b87700514118Fa55326CD1cCE82faebEF6",
-      "implementation": "0x2CFFA8cf11B90C9F437567b86352169dF4009F73",
-      "user": "0x4444444444444444444444444444444444444444",
-      "salt": "0x0000000000000000000000004444444444444444444444444444444444444444",
-      "init_code_hash": "0x406e54302825d9fb87c3149cefc17f87247882eff387eea71bd8c7c0f7a22168",
-      "proxy": "0x3DAF90FCa0cF049aeeD585Be852Bb14315EDA1b6"
-    },
-    {
-      "version": "1.0.0",
-      "chain_id": 42161,
-      "factory": "0x00E989b87700514118Fa55326CD1cCE82faebEF6",
-      "implementation": "0x2CFFA8cf11B90C9F437567b86352169dF4009F73",
-      "user": "0x76b0340e50BD9883D8B2CA5fd9f52439a9e7Cf58",
-      "salt": "0x00000000000000000000000076b0340e50bd9883d8b2ca5fd9f52439a9e7cf58",
-      "init_code_hash": "0x70fb636fc5ad3bd155391dde4755351486e11289b37cd5d41c593932ba287301",
-      "proxy": "0xe22E86b318DAc817b4444E2fE34cC2235cDF1B00"
-    },
-    {
-      "version": "1.0.0",
-      "chain_id": 42161,
-      "factory": "0x00E989b87700514118Fa55326CD1cCE82faebEF6",
-      "implementation": "0x2CFFA8cf11B90C9F437567b86352169dF4009F73",
-      "user": "0x1111111111111111111111111111111111111111",
-      "salt": "0x0000000000000000000000001111111111111111111111111111111111111111",
-      "init_code_hash": "0x07cbf393e3a400993f3510727bd176b0760def2e88805bc5cd6636115f2a63d7",
-      "proxy": "0x14561F5e206dF976A8aAd4CC87526791ABd17384"
-    },
-    {
-      "version": "1.0.0",
-      "chain_id": 42161,
-      "factory": "0x00E989b87700514118Fa55326CD1cCE82faebEF6",
-      "implementation": "0x2CFFA8cf11B90C9F437567b86352169dF4009F73",
-      "user": "0x2222222222222222222222222222222222222222",
-      "salt": "0x0000000000000000000000002222222222222222222222222222222222222222",
-      "init_code_hash": "0x22bb0e8c5704cb1886047e48c18a07846e935382059121d6786714a1758bffda",
-      "proxy": "0x383FeeFbd88E125e5b741ADBCa3dd68f3406Eb4f"
-    },
-    {
-      "version": "1.0.0",
-      "chain_id": 42161,
-      "factory": "0x00E989b87700514118Fa55326CD1cCE82faebEF6",
-      "implementation": "0x2CFFA8cf11B90C9F437567b86352169dF4009F73",
-      "user": "0x3333333333333333333333333333333333333333",
-      "salt": "0x0000000000000000000000003333333333333333333333333333333333333333",
-      "init_code_hash": "0xc7446eba035e88eb47e53d721d58e866dadcfc9f02af9ca85556371be5bf1540",
-      "proxy": "0x984FC806D7A2173eC462c902711b54A300cfc7E6"
-    },
-    {
-      "version": "1.0.0",
-      "chain_id": 42161,
-      "factory": "0x00E989b87700514118Fa55326CD1cCE82faebEF6",
-      "implementation": "0x2CFFA8cf11B90C9F437567b86352169dF4009F73",
-      "user": "0x4444444444444444444444444444444444444444",
-      "salt": "0x0000000000000000000000004444444444444444444444444444444444444444",
-      "init_code_hash": "0x406e54302825d9fb87c3149cefc17f87247882eff387eea71bd8c7c0f7a22168",
-      "proxy": "0x3DAF90FCa0cF049aeeD585Be852Bb14315EDA1b6"
-    },
-    {
       "version": "1.0.1",
-      "chain_id": 1,
+      "canonical": true,
+      "anchor": "cow-sdk CoWShedHooks.test.ts proxyOf golden vector",
       "factory": "0x312f92fe5f1710408B20D52A374fa29e099cFA86",
       "implementation": "0xa2704cF562AD418Bf0453F4B662ebf6A2489eD88",
       "user": "0x76b0340e50BD9883D8B2CA5fd9f52439a9e7Cf58",
@@ -181,8 +40,39 @@
       "proxy": "0x66545B93A314e5BdEC9E5Ff9c4D2C7054e6afb04"
     },
     {
+      "version": "1.0.0",
+      "canonical": false,
+      "anchor": "cow-sdk CoWShedHooks.test.ts custom-options mock vector",
+      "factory": "0xa9efDEf197130B945462163a0B852019BA529a66",
+      "implementation": "0x49AeF2C4005Bf572665b09014A563B5b9E46Df21",
+      "user": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+      "salt": "0x00000000000000000000000070997970c51812dc3a010c7d01b50e0d17dc79c8",
+      "init_code_hash": "0x72e74cea3c48350a5d9b08c3ca876f276fefe4093e0da8446371cdd50d4eab16",
+      "proxy": "0xB34c56557a1ec3617572C6cDd814A1a9F9A20A51"
+    },
+    {
+      "version": "1.0.0",
+      "canonical": true,
+      "factory": "0x00E989b87700514118Fa55326CD1cCE82faebEF6",
+      "implementation": "0x2CFFA8cf11B90C9F437567b86352169dF4009F73",
+      "user": "0x76b0340e50BD9883D8B2CA5fd9f52439a9e7Cf58",
+      "salt": "0x00000000000000000000000076b0340e50bd9883d8b2ca5fd9f52439a9e7cf58",
+      "init_code_hash": "0x70fb636fc5ad3bd155391dde4755351486e11289b37cd5d41c593932ba287301",
+      "proxy": "0xe22E86b318DAc817b4444E2fE34cC2235cDF1B00"
+    },
+    {
+      "version": "1.0.0",
+      "canonical": true,
+      "factory": "0x00E989b87700514118Fa55326CD1cCE82faebEF6",
+      "implementation": "0x2CFFA8cf11B90C9F437567b86352169dF4009F73",
+      "user": "0x1111111111111111111111111111111111111111",
+      "salt": "0x0000000000000000000000001111111111111111111111111111111111111111",
+      "init_code_hash": "0x07cbf393e3a400993f3510727bd176b0760def2e88805bc5cd6636115f2a63d7",
+      "proxy": "0x14561F5e206dF976A8aAd4CC87526791ABd17384"
+    },
+    {
       "version": "1.0.1",
-      "chain_id": 1,
+      "canonical": true,
       "factory": "0x312f92fe5f1710408B20D52A374fa29e099cFA86",
       "implementation": "0xa2704cF562AD418Bf0453F4B662ebf6A2489eD88",
       "user": "0x1111111111111111111111111111111111111111",
@@ -192,133 +82,13 @@
     },
     {
       "version": "1.0.1",
-      "chain_id": 1,
+      "canonical": true,
       "factory": "0x312f92fe5f1710408B20D52A374fa29e099cFA86",
       "implementation": "0xa2704cF562AD418Bf0453F4B662ebf6A2489eD88",
       "user": "0x2222222222222222222222222222222222222222",
       "salt": "0x0000000000000000000000002222222222222222222222222222222222222222",
       "init_code_hash": "0xac515e125a7695bf477327bdb4d36e3826f8535fcce4d4c7e8f5b9dc74326d36",
       "proxy": "0x10DA560e52611755A67f0c63270280B75a4a0476"
-    },
-    {
-      "version": "1.0.1",
-      "chain_id": 1,
-      "factory": "0x312f92fe5f1710408B20D52A374fa29e099cFA86",
-      "implementation": "0xa2704cF562AD418Bf0453F4B662ebf6A2489eD88",
-      "user": "0x3333333333333333333333333333333333333333",
-      "salt": "0x0000000000000000000000003333333333333333333333333333333333333333",
-      "init_code_hash": "0x8c35e634421be56ff6cf61f8dfca471741846aee7448f92ea153239b60972d70",
-      "proxy": "0x3187caAB481E6bAA7d5e425A3B3338eb59a4aA40"
-    },
-    {
-      "version": "1.0.1",
-      "chain_id": 1,
-      "factory": "0x312f92fe5f1710408B20D52A374fa29e099cFA86",
-      "implementation": "0xa2704cF562AD418Bf0453F4B662ebf6A2489eD88",
-      "user": "0x4444444444444444444444444444444444444444",
-      "salt": "0x0000000000000000000000004444444444444444444444444444444444444444",
-      "init_code_hash": "0x2145009758a28c9318a147f3708cc4a34b2953680b1490eaa0cde18b3e783b20",
-      "proxy": "0x4a63a04D8b5792EB2104989A9E08f250a6937AA5"
-    },
-    {
-      "version": "1.0.1",
-      "chain_id": 100,
-      "factory": "0x4F4350bf2c74aaCD508D598a1ba94EF84378793d",
-      "implementation": "0x62d3a7Ff48F9ae1c28a9552A055482f8C63787F8",
-      "user": "0x76b0340e50BD9883D8B2CA5fd9f52439a9e7Cf58",
-      "salt": "0x00000000000000000000000076b0340e50bd9883d8b2ca5fd9f52439a9e7cf58",
-      "init_code_hash": "0x1987291edd8e158b87b83af37ba0735c130c40cd8acfc3ca59a1b2876482641c",
-      "proxy": "0x597474b9AffD64c545d68EDA005B437fd3C00DD8"
-    },
-    {
-      "version": "1.0.1",
-      "chain_id": 100,
-      "factory": "0x4F4350bf2c74aaCD508D598a1ba94EF84378793d",
-      "implementation": "0x62d3a7Ff48F9ae1c28a9552A055482f8C63787F8",
-      "user": "0x1111111111111111111111111111111111111111",
-      "salt": "0x0000000000000000000000001111111111111111111111111111111111111111",
-      "init_code_hash": "0xf1ff90eb3ee58ad0d760a65496213edd9929b19938c9524bb6feb048a3fae4a7",
-      "proxy": "0xCaB2838989A1978CA2aCBFC43b17DC0F7D521Ca4"
-    },
-    {
-      "version": "1.0.1",
-      "chain_id": 100,
-      "factory": "0x4F4350bf2c74aaCD508D598a1ba94EF84378793d",
-      "implementation": "0x62d3a7Ff48F9ae1c28a9552A055482f8C63787F8",
-      "user": "0x2222222222222222222222222222222222222222",
-      "salt": "0x0000000000000000000000002222222222222222222222222222222222222222",
-      "init_code_hash": "0x29b8b34eb5a76342a73a70e937ff8f80c785784378677a7107e015ffd28c5777",
-      "proxy": "0x6F790d5CB0c1054990E6a3D6ddd9E32267989218"
-    },
-    {
-      "version": "1.0.1",
-      "chain_id": 100,
-      "factory": "0x4F4350bf2c74aaCD508D598a1ba94EF84378793d",
-      "implementation": "0x62d3a7Ff48F9ae1c28a9552A055482f8C63787F8",
-      "user": "0x3333333333333333333333333333333333333333",
-      "salt": "0x0000000000000000000000003333333333333333333333333333333333333333",
-      "init_code_hash": "0x471dee5ec9c5b6299fb068f35eeb13cace4676b81461f2429f764860a815ed59",
-      "proxy": "0xa1010dABE7aea220b405E3613163692AE834Bc88"
-    },
-    {
-      "version": "1.0.1",
-      "chain_id": 100,
-      "factory": "0x4F4350bf2c74aaCD508D598a1ba94EF84378793d",
-      "implementation": "0x62d3a7Ff48F9ae1c28a9552A055482f8C63787F8",
-      "user": "0x4444444444444444444444444444444444444444",
-      "salt": "0x0000000000000000000000004444444444444444444444444444444444444444",
-      "init_code_hash": "0x1dc2919a346fd412ba31fb17171828b6562796eea10e92eb19e57e3faf505478",
-      "proxy": "0x6e100A3FB1e19D18De269c21c1dE110C81109682"
-    },
-    {
-      "version": "1.0.1",
-      "chain_id": 42161,
-      "factory": "0x312f92fe5f1710408B20D52A374fa29e099cFA86",
-      "implementation": "0xa2704cF562AD418Bf0453F4B662ebf6A2489eD88",
-      "user": "0x76b0340e50BD9883D8B2CA5fd9f52439a9e7Cf58",
-      "salt": "0x00000000000000000000000076b0340e50bd9883d8b2ca5fd9f52439a9e7cf58",
-      "init_code_hash": "0xc4fd52234061601c4c4dc0e81088805c4b123664b5c7e5859c5885d4111f08b4",
-      "proxy": "0x66545B93A314e5BdEC9E5Ff9c4D2C7054e6afb04"
-    },
-    {
-      "version": "1.0.1",
-      "chain_id": 42161,
-      "factory": "0x312f92fe5f1710408B20D52A374fa29e099cFA86",
-      "implementation": "0xa2704cF562AD418Bf0453F4B662ebf6A2489eD88",
-      "user": "0x1111111111111111111111111111111111111111",
-      "salt": "0x0000000000000000000000001111111111111111111111111111111111111111",
-      "init_code_hash": "0xbadd9bbed23bbc388cc1f79218c5b411ffc039409d99c804bba4f10a6e0efd0e",
-      "proxy": "0xDfb09383E67214d4A76B9aa8e7047cB3336B6d21"
-    },
-    {
-      "version": "1.0.1",
-      "chain_id": 42161,
-      "factory": "0x312f92fe5f1710408B20D52A374fa29e099cFA86",
-      "implementation": "0xa2704cF562AD418Bf0453F4B662ebf6A2489eD88",
-      "user": "0x2222222222222222222222222222222222222222",
-      "salt": "0x0000000000000000000000002222222222222222222222222222222222222222",
-      "init_code_hash": "0xac515e125a7695bf477327bdb4d36e3826f8535fcce4d4c7e8f5b9dc74326d36",
-      "proxy": "0x10DA560e52611755A67f0c63270280B75a4a0476"
-    },
-    {
-      "version": "1.0.1",
-      "chain_id": 42161,
-      "factory": "0x312f92fe5f1710408B20D52A374fa29e099cFA86",
-      "implementation": "0xa2704cF562AD418Bf0453F4B662ebf6A2489eD88",
-      "user": "0x3333333333333333333333333333333333333333",
-      "salt": "0x0000000000000000000000003333333333333333333333333333333333333333",
-      "init_code_hash": "0x8c35e634421be56ff6cf61f8dfca471741846aee7448f92ea153239b60972d70",
-      "proxy": "0x3187caAB481E6bAA7d5e425A3B3338eb59a4aA40"
-    },
-    {
-      "version": "1.0.1",
-      "chain_id": 42161,
-      "factory": "0x312f92fe5f1710408B20D52A374fa29e099cFA86",
-      "implementation": "0xa2704cF562AD418Bf0453F4B662ebf6A2489eD88",
-      "user": "0x4444444444444444444444444444444444444444",
-      "salt": "0x0000000000000000000000004444444444444444444444444444444444444444",
-      "init_code_hash": "0x2145009758a28c9318a147f3708cc4a34b2953680b1490eaa0cde18b3e783b20",
-      "proxy": "0x4a63a04D8b5792EB2104989A9E08f250a6937AA5"
     }
   ]
 }
