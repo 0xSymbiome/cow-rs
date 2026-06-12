@@ -33,7 +33,6 @@ cow-shed-gnosis = ["cow-shed"]
 
 [dependencies]
 alloy-primitives = { workspace = true, features = ["k256", "serde"] }
-alloy-sol-macro.workspace = true
 alloy-sol-types.workspace = true
 cow-sdk-app-data = { path = "../app-data", version = "0.1.0", optional = true }
 cow-sdk-core = { path = "../core", version = "0.1.0" }
