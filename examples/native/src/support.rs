@@ -29,7 +29,10 @@ use wiremock::{Mock, MockServer, ResponseTemplate, matchers::method};
 // fixtures below embed the constants directly.
 pub const WETH: Address = address!("0xfff9976782d46cc05630d1f6ebab18b2324d6b14");
 pub const COW: Address = address!("0x0625afb445c3b6b7b929342a04a22599fd5dbb59");
-pub const OWNER: Address = address!("0xc8c753ee51e8fc80e199ab297fb575634a1ac1d3");
+// The address the testing `MockSigner` reports and signs as by default (the
+// account of the secp256k1 scalar `1`), so the signed orders in these scenarios
+// recover to their owner and clear the SDK's owner-recovery gate.
+pub const OWNER: Address = address!("0x7e5f4552091a69125d5dfcb7b8c2659029395bdf");
 pub const ALT_RECEIVER: Address = address!("0x974caa59e49682cda0ad2bbe82983419a2ecc400");
 pub const SETTLEMENT: Address = address!("0x9008d19f58aabd9ed0d60971565aa8510560ab41");
 pub const ORDER_UID: &str = "0xd64389693b6cf89ad6c140a113b10df08073e5ef3063d05a02f3f42e1a42f0ad0b7795e18767259cc253a2af471dbc4c72b49516ffffffff";

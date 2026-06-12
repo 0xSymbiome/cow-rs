@@ -34,11 +34,13 @@ use cow_sdk_trading::{
 // canonicalizes input casing at construction (ADR 0052).
 pub const WETH: &str = "0xfff9976782d46cc05630d1f6ebab18b2324d6b14";
 pub const COW: &str = "0x0625afb445c3b6b7b929342a04a22599fd5dbb59";
-// The default owner/signer is a well-known deterministic test account (Anvil
-// account 0) so the post-sign owner-recovery gate (ADR 0015) recovers the real
-// signer from `MockSigner`'s genuine ECDSA signature. The signing keys for the
-// addresses that sign successfully live in `test_signing_key_for` below.
-pub const OWNER: &str = "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266";
+// The default owner/signer is the account of the secp256k1 scalar `1` (the
+// canonical development key in Alloy's `signer-local` tests and the services
+// signature-recovery vectors) so the post-sign owner-recovery gate (ADR 0015)
+// recovers the real signer from `MockSigner`'s genuine ECDSA signature. The
+// signing keys for the addresses that sign successfully live in
+// `test_signing_key_for` below.
+pub const OWNER: &str = "0x7e5f4552091a69125d5dfcb7b8c2659029395bdf";
 pub const ALT_RECEIVER: &str = "0x974caa59e49682cda0ad2bbe82983419a2ecc400";
 pub const CUSTOM_SETTLEMENT: &str = "0x13579bdf2468ace013579bdf2468ace013579bdf";
 pub const CUSTOM_ETHFLOW: &str = "0x2468ace013579bdf2468ace013579bdf2468ace0";
@@ -443,39 +445,73 @@ impl MockSigner {
     }
 }
 
-/// The private key for a known deterministic test address (Anvil accounts),
-/// used by `MockSigner` to produce a genuine ECDSA signature that recovers to
-/// that address. `None` for addresses that never sign successfully (their
-/// posts are rejected before the owner-recovery gate), which keep the canned
-/// signature.
+/// The private key for a known deterministic test address (the Alloy /
+/// services canonical development keys), used by `MockSigner` to produce a
+/// genuine ECDSA signature that recovers to that address. `None` for addresses
+/// that never sign successfully (their posts are rejected before the
+/// owner-recovery gate), which keep the canned signature.
 #[cfg(not(target_arch = "wasm32"))]
 fn test_signing_key_for(signer: &Address) -> Option<&'static str> {
     match signer.to_hex_string().as_str() {
-        // Anvil account 0 == OWNER.
-        "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266" => {
-            Some("0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80")
+        // The account of the scalar `1` == OWNER.
+        "0x7e5f4552091a69125d5dfcb7b8c2659029395bdf" => {
+            Some("0x0000000000000000000000000000000000000000000000000000000000000001")
         }
-        // Anvil account 1 == THIRD_OWNER (app_data_merge override identity).
-        "0x70997970c51812dc3a010c7d01b50e0d17dc79c8" => {
-            Some("0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d")
+        // Alloy `signer-local`'s second test key == THIRD_OWNER (override identity).
+        "0x9b543d61faf8d0baec92b26725dc5ddc0db61d82" => {
+            Some("0x51fde55a7d696da3b318b21e231dec5ff4b33e895f191b2988e122e969b20e90")
         }
         _ => None,
     }
 }
 
 /// Produces a genuine EIP-712 signature over `payload` with the given test key,
-/// so the post-sign owner-recovery gate recovers the key's address.
+/// so the post-sign owner-recovery gate recovers the key's address. Hashes the
+/// payload through the canonical Alloy typed-data shape and signs with `k256`,
+/// the same path the published `cow-sdk-test` `MockSigner` uses.
 #[cfg(not(target_arch = "wasm32"))]
-async fn real_sign_typed_data(key: &str, payload: &TypedDataPayload) -> Result<String, String> {
-    let signer = cow_sdk_alloy_signer::LocalAlloySigner::builder()
-        .private_key(key)
-        .map_err(|error| error.to_string())?
-        .chain_id(SupportedChainId::Mainnet)
-        .build()
+fn real_sign_typed_data(key: &str, payload: &TypedDataPayload) -> Result<String, String> {
+    let message: serde_json::Value =
+        serde_json::from_str(payload.message_json()).map_err(|error| error.to_string())?;
+    let typed: alloy_dyn_abi::eip712::TypedData = serde_json::from_value(serde_json::json!({
+        "domain": payload.domain,
+        "types": payload.types,
+        "primaryType": payload.primary_type,
+        "message": message,
+    }))
+    .map_err(|error| error.to_string())?;
+    let digest = typed
+        .eip712_signing_hash()
         .map_err(|error| error.to_string())?;
-    Signer::sign_typed_data_payload(&signer, payload)
-        .await
+    let key = k256::ecdsa::SigningKey::from_slice(&decode_test_key(key)?)
+        .map_err(|error| error.to_string())?;
+    let (signature, recovery) = key
+        .sign_prehash_recoverable(digest.as_slice())
+        .map_err(|error| error.to_string())?;
+    let mut bytes = [0u8; 65];
+    bytes[..64].copy_from_slice(&signature.to_bytes());
+    bytes[64] = 27 + recovery.to_byte();
+    cow_sdk_contracts::RecoverableSignature::parse_bytes(&bytes)
+        .map(|signature| signature.to_hex_string())
         .map_err(|error| error.to_string())
+}
+
+/// Decodes a `0x`-prefixed (or bare) 32-byte hex private key.
+#[cfg(not(target_arch = "wasm32"))]
+fn decode_test_key(hex: &str) -> Result<[u8; 32], String> {
+    let hex = hex.strip_prefix("0x").unwrap_or(hex);
+    if hex.len() != 64 {
+        return Err(format!(
+            "expected a 32-byte key, got {} hex chars",
+            hex.len()
+        ));
+    }
+    let mut bytes = [0u8; 32];
+    for (index, pair) in hex.as_bytes().chunks_exact(2).enumerate() {
+        let pair = std::str::from_utf8(pair).map_err(|error| error.to_string())?;
+        bytes[index] = u8::from_str_radix(pair, 16).map_err(|error| error.to_string())?;
+    }
+    Ok(bytes)
 }
 
 impl Signer for MockSigner {
@@ -512,7 +548,7 @@ impl Signer for MockSigner {
         // the gate) keep the canned signature.
         #[cfg(not(target_arch = "wasm32"))]
         if let Some(key) = test_signing_key_for(&self.sign_key_address) {
-            return real_sign_typed_data(key, payload).await;
+            return real_sign_typed_data(key, payload);
         }
         Ok(TYPED_SIGNATURE.to_owned())
     }

@@ -16,8 +16,15 @@ workspace = true
 [dependencies]
 cow-sdk-core = { path = "../core", version = "0.1.0" }
 cow-sdk-orderbook = { path = "../orderbook", version = "0.1.0" }
+cow-sdk-contracts = { path = "../contracts", version = "0.1.0" }
 cow-sdk-trading = { path = "../trading", version = "0.1.0" }
 async-trait = { workspace = true }
+# The default signer really signs (a public dev key) so its signatures recover
+# to the reported address, clearing the owner-recovery gate end to end.
+alloy-dyn-abi = { workspace = true, features = ["std", "eip712"] }
+alloy-primitives = { workspace = true }
+k256 = { version = "0.13.4", default-features = false, features = ["ecdsa"] }
+serde_json = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt"] }

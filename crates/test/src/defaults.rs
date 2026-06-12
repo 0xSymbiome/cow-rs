@@ -13,10 +13,19 @@ use cow_sdk_orderbook::{Order, OrderKind, OrderQuoteResponse, QuoteData};
 /// read as expired.
 pub const FAR_FUTURE_VALID_TO: u32 = 4_102_444_800;
 
-/// The canned signer address the doubles report by default.
+/// The address the default signer reports — `0x7e5f…5bdf`, the account of the
+/// secp256k1 scalar `1`.
+///
+/// The default [`MockSigner`](crate::MockSigner) signs with that development key
+/// (the canonical key in Alloy's `signer-local` tests and the `CoW` services
+/// signature-recovery vectors, never a secret), so its signatures recover to
+/// this address and clear the SDK's owner-recovery gate.
 #[must_use]
 pub const fn address() -> Address {
-    Address::from_bytes([0x22; 20])
+    Address::from_bytes([
+        0x7e, 0x5f, 0x45, 0x52, 0x09, 0x1a, 0x69, 0x12, 0x5d, 0x5d, 0xfc, 0xb7, 0xb8, 0xc2, 0x65,
+        0x90, 0x29, 0x39, 0x5b, 0xdf,
+    ])
 }
 
 /// The canned order UID `send_order` returns by default.

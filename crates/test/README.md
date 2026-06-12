@@ -9,9 +9,12 @@ wallet — the `tokio-test` / `tower-test` pattern, built only on the public API
 - **`MockOrderbook`** — an `OrderbookClient` double: a canned quote and order-uid,
   orders registered for `order`, recorded requests, and injectable failures
   (`OrderbookFailure::{NotFound, RateLimited, Rejected}`).
-- **`MockSigner`** — a `Signer` double: canned signatures, transaction hash, and
-  gas, with recorded sent transactions and signed messages, plus failure
-  injection.
+- **`MockSigner`** — a `Signer` double that really signs: by default it signs
+  EIP-712 typed data and EIP-191 messages with a public development key, so a
+  signed order recovers to the address it reports and clears the SDK's
+  owner-recovery gate. Reporting a different address models a mismatched signer;
+  fixed-signature overrides remain for error-path and wire-shape tests. Records
+  sent transactions and signed messages, with failure injection.
 - **`MockProvider`** — a `Provider` + `SigningProvider` double: canned chain id,
   allowance, code, and receipt — plus a scriptable receipt sequence for driving a
   receipt-polling wait (a receipt that arrives after a number of polls, a revert,
@@ -28,7 +31,7 @@ wallet — the `tokio-test` / `tower-test` pattern, built only on the public API
 
 You want to test your CoW integration — that your code posts exactly one order,
 handles a rejection, or reads an allowance — deterministically, with no network
-or signing.
+or wallet.
 
 Add it as a **dev-dependency**. Reach it through the facade with the opt-in
 feature (`cow-sdk = { features = ["testing"] }` → `cow_sdk::testing`), or depend

@@ -501,11 +501,14 @@ sections below describe the public contract a `0.1.0` consumer receives.
 - `cow-sdk-test` is a published crate of in-memory test doubles for the SDK's
   public trait seams, so a downstream application can test its CoW Protocol
   integration without a live orderbook, RPC endpoint, or wallet. `MockOrderbook`,
-  `MockSigner`, and `MockProvider` are recording, canned-response doubles, each
-  paired with a builder and a recorded-call view; the `trading(chain, app_code)`
-  helper wires them into a real `Trading` client. Failure injection exercises a
-  consumer's error handling, and every canned value is built through infallible
-  constructors with no `unwrap` / `expect` / `panic`. Reach it directly in
+  `MockSigner`, and `MockProvider` are recording doubles, each paired with a
+  builder and a recorded-call view; the `trading(chain, app_code)` helper wires
+  them into a real `Trading` client. `MockSigner` really signs by default — with
+  a public development key, so a signed order recovers to the reported address
+  and clears the SDK's owner-recovery gate — while a different reported address
+  models a mismatched signer and fixed-signature overrides serve error-path
+  tests. Failure injection exercises a consumer's error handling, and the crate
+  is panic-free with no `unwrap` / `expect` / `panic`. Reach it directly in
   `[dev-dependencies]` or through the facade's off-by-default `testing` feature.
   Governed by
   [ADR 0063](docs/adr/0063-published-consumer-test-doubles-crate.md).

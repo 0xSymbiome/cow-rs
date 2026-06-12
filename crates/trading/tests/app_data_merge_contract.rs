@@ -47,9 +47,10 @@ const FLASH_AMOUNT: &str = "2000000000000000000";
 const HOOK_TARGET_PRE: &str = "0x1234567890abcdef1234567890abcdef12345678";
 const HOOK_TARGET_POST: &str = "0xabcdef1234567890abcdef1234567890abcdef12";
 const HOOK_GAS_LIMIT: &str = "100000";
-// A second deterministic test account (Anvil account 1) so the override
-// signer's successful post recovers to a real key under the owner-recovery gate.
-const THIRD_OWNER: &str = "0x70997970c51812dc3a010c7d01b50e0d17dc79c8";
+// A second deterministic test account (Alloy `signer-local`'s second test key)
+// so the override signer's successful post recovers to a real key under the
+// owner-recovery gate.
+const THIRD_OWNER: &str = "0x9b543d61faf8d0baec92b26725dc5ddc0db61d82";
 
 fn sample_flashloan() -> FlashloanHints {
     FlashloanHints::new(

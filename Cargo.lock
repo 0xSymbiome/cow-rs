@@ -1684,10 +1684,15 @@ dependencies = [
 name = "cow-sdk-test"
 version = "0.1.0"
 dependencies = [
+ "alloy-dyn-abi",
+ "alloy-primitives",
  "async-trait",
+ "cow-sdk-contracts",
  "cow-sdk-core",
  "cow-sdk-orderbook",
  "cow-sdk-trading",
+ "k256",
+ "serde_json",
  "tokio",
 ]
 
@@ -1710,10 +1715,10 @@ dependencies = [
 name = "cow-sdk-trading"
 version = "0.1.0"
 dependencies = [
+ "alloy-dyn-abi",
  "alloy-primitives",
  "alloy-sol-types",
  "async-trait",
- "cow-sdk-alloy-signer",
  "cow-sdk-app-data",
  "cow-sdk-contracts",
  "cow-sdk-core",
@@ -1724,6 +1729,7 @@ dependencies = [
  "criterion",
  "futures-timer",
  "gloo-timers",
+ "k256",
  "proptest",
  "serde",
  "serde_json",

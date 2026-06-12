@@ -410,8 +410,9 @@ async fn post_sign_recovery_rejects_a_signer_that_signs_with_a_different_key() {
     // self-reported address cannot catch.
     let trader = sample_trader_parameters();
     let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
-    // Anvil account 1 — a real key whose address differs from OWNER.
-    let other_key_address = address("0x70997970c51812dc3a010c7d01b50e0d17dc79c8");
+    // Alloy `signer-local`'s second test key — a real key whose address
+    // differs from OWNER.
+    let other_key_address = address("0x9b543d61faf8d0baec92b26725dc5ddc0db61d82");
     let signer = MockSigner::default().with_sign_key_address(other_key_address);
     let trade = sample_trade_parameters(OrderKind::Sell);
 

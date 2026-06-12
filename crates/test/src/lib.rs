@@ -2,7 +2,7 @@
 //!
 //! `cow-sdk-test` lets a downstream application test its integration without a
 //! live orderbook, RPC endpoint, or wallet. It provides
-//! recording, canned-response doubles for the public traits —
+//! recording doubles for the public traits —
 //! [`MockOrderbook`] ([`OrderbookClient`](cow_sdk_orderbook::OrderbookClient)),
 //! [`MockSigner`] ([`Signer`](cow_sdk_core::Signer)), and [`MockProvider`]
 //! ([`Provider`](cow_sdk_core::Provider) +
@@ -13,9 +13,10 @@
 //! the `cow-sdk` facade's `testing` feature and reach it through
 //! `cow_sdk::testing`.
 //!
-//! The doubles are native (`Send`, `Arc<Mutex<_>>`) and panic-free: every canned
-//! value is built through infallible constructors, with no
-//! `unwrap`/`expect`/`panic`, per ADR 0033.
+//! [`MockSigner`] signs with a public development key by default, so a signed
+//! order recovers to the address it reports and clears the SDK's owner-recovery
+//! gate. The doubles are native (`Send`, `Arc<Mutex<_>>`) and panic-free, with
+//! no `unwrap`/`expect`/`panic`, per ADR 0033.
 //!
 //! # Example
 //!
