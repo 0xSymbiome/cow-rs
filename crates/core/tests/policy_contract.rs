@@ -6,16 +6,16 @@ use cow_sdk_core::transport::policy::{
     DEFAULT_IPFS_USER_AGENT, DEFAULT_ORDERBOOK_USER_AGENT, DEFAULT_SUBGRAPH_USER_AGENT,
     DEFAULT_TRADING_USER_AGENT, JitterStrategy, LimiterScope, NetworkErrorKind, RETRYABLE_STATUSES,
     RequestRateLimiter, RequestRateLimiterBuilder, RetryPolicy, RetryPolicyBuilder,
-    TransportPolicy, TransportPolicyBuildError, TransportPolicyBuilder, is_retryable_status, sleep,
+    TransportPolicy, TransportPolicyBuilder, is_retryable_status, sleep,
 };
 #[cfg(feature = "reqwest-classifier")]
 use cow_sdk_core::transport::policy::{ErrorClassifier, ReqwestErrorClassifier};
-use cow_sdk_core::{CancellationToken, DEFAULT_HTTP_TIMEOUT, HttpClientPolicy};
+use cow_sdk_core::{CancellationToken, DEFAULT_HTTP_TIMEOUT, HttpClientPolicy, ValidationError};
 use proptest::prelude::*;
 use url::Url;
 
 #[test]
-fn prop_tpp_001_default_orderbook_transport_policy_is_stable() {
+fn default_orderbook_transport_policy_is_stable() {
     let policy = TransportPolicy::default_orderbook();
 
     assert_eq!(policy.user_agent(), DEFAULT_ORDERBOOK_USER_AGENT);
@@ -26,7 +26,7 @@ fn prop_tpp_001_default_orderbook_transport_policy_is_stable() {
 }
 
 #[test]
-fn prop_tpp_002_default_subgraph_transport_policy_is_stable() {
+fn default_subgraph_transport_policy_is_stable() {
     let policy = TransportPolicy::default_subgraph();
 
     assert_eq!(policy.user_agent(), DEFAULT_SUBGRAPH_USER_AGENT);
@@ -74,7 +74,7 @@ fn default_policies_carry_per_client_response_byte_caps() {
 }
 
 #[test]
-fn prop_tpp_003_no_retry_policy_is_idempotent() {
+fn no_retry_policy_is_idempotent() {
     let first = RetryPolicy::no_retry();
     let second = RetryPolicy::no_retry();
 
@@ -84,7 +84,7 @@ fn prop_tpp_003_no_retry_policy_is_idempotent() {
 }
 
 #[test]
-fn prop_tpp_004_decorrelated_jitter_is_bounded_by_max_delay() {
+fn decorrelated_jitter_is_bounded_by_max_delay() {
     let policy = RetryPolicy::builder()
         .jitter(JitterStrategy::decorrelated_from_seed(42))
         .max_delay(Duration::from_millis(250))
@@ -96,7 +96,7 @@ fn prop_tpp_004_decorrelated_jitter_is_bounded_by_max_delay() {
 }
 
 #[test]
-fn prop_tpp_005_request_rate_limiter_uses_host_keys_for_per_host_scope() {
+fn request_rate_limiter_uses_host_keys_for_per_host_scope() {
     let limiter = RequestRateLimiter::builder()
         .scope(LimiterScope::PerHost)
         .build();
@@ -110,7 +110,7 @@ fn prop_tpp_005_request_rate_limiter_uses_host_keys_for_per_host_scope() {
 
 #[cfg(feature = "reqwest-classifier")]
 #[test]
-fn prop_tpp_006_reqwest_error_classifier_is_total() {
+fn reqwest_error_classifier_is_total() {
     // The bracketed token is not a valid IPv6 literal so the URL fails at
     // the builder layer and no real network traffic is attempted.
     let client = reqwest::Client::new();
@@ -128,14 +128,14 @@ fn prop_tpp_006_reqwest_error_classifier_is_total() {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[tokio::test]
-async fn prop_tpp_007_cross_target_sleep_accuracy_is_bounded() {
+async fn cross_target_sleep_accuracy_is_bounded() {
     let start = std::time::Instant::now();
     sleep(Duration::from_millis(5)).await;
     assert!(start.elapsed() < Duration::from_millis(250));
 }
 
 #[test]
-fn prop_tpp_008_retryable_status_list_is_complete() {
+fn retryable_status_list_is_complete() {
     assert_eq!(RETRYABLE_STATUSES, [408, 425, 429, 500, 502, 503, 504]);
     for status in RETRYABLE_STATUSES {
         assert!(is_retryable_status(status));
@@ -210,7 +210,7 @@ fn retry_after_only_affects_rate_limit_and_unavailable_statuses() {
 // -------------------------------------------------------------------------
 
 #[test]
-fn prop_tpp_009_explicit_constructor_disables_tracing_and_preserves_parts() {
+fn explicit_constructor_disables_tracing_and_preserves_parts() {
     let client = HttpClientPolicy::new(DEFAULT_ORDERBOOK_USER_AGENT).expect("static UA validates");
     let retry = RetryPolicy::no_retry();
     let rate_limit = RequestRateLimiter::unlimited();
@@ -227,7 +227,7 @@ fn prop_tpp_009_explicit_constructor_disables_tracing_and_preserves_parts() {
 }
 
 #[test]
-fn prop_tpp_010_default_trading_uses_trading_user_agent_and_orderbook_limiter() {
+fn default_trading_uses_trading_user_agent_and_orderbook_limiter() {
     let policy = TransportPolicy::default_trading();
 
     assert_eq!(policy.user_agent(), DEFAULT_TRADING_USER_AGENT);
@@ -239,7 +239,7 @@ fn prop_tpp_010_default_trading_uses_trading_user_agent_and_orderbook_limiter() 
 }
 
 #[test]
-fn prop_tpp_011_default_ipfs_disables_retry_and_timeout_and_uses_unlimited_limiter() {
+fn default_ipfs_disables_retry_and_timeout_and_uses_unlimited_limiter() {
     let policy = TransportPolicy::default_ipfs();
 
     assert_eq!(policy.user_agent(), DEFAULT_IPFS_USER_AGENT);
@@ -262,7 +262,7 @@ fn prop_tpp_011_default_ipfs_disables_retry_and_timeout_and_uses_unlimited_limit
 }
 
 #[test]
-fn prop_tpp_012_with_setters_replace_only_their_targeted_field() {
+fn with_setters_replace_only_their_targeted_field() {
     let base = TransportPolicy::default_orderbook();
 
     // with_client_policy replaces only the client.
@@ -296,27 +296,32 @@ fn prop_tpp_012_with_setters_replace_only_their_targeted_field() {
 }
 
 #[test]
-fn prop_tpp_013_user_agent_validation_error_is_transparent_through_build_error() {
+fn user_agent_validation_error_surfaces_directly() {
     // ASCII control character (0x7F is DEL) is rejected by `HttpClientPolicy`
-    // header validation; the builder surfaces it as the `Client` variant.
+    // header validation; the builder surfaces the core `ValidationError`
+    // directly now that no build-error wrapper sits in front of it.
     let error = TransportPolicyBuilder::new()
         .user_agent("\u{007F}invalid")
         .expect_err("control character user-agent must fail validation");
 
     assert!(
-        matches!(error, TransportPolicyBuildError::Client(_)),
-        "control character UA must map to the Client variant; got {error:?}",
+        matches!(
+            error,
+            ValidationError::InvalidHttpHeaderValue {
+                field: "user_agent"
+            }
+        ),
+        "control character UA must surface as the header-value validation error; got {error:?}",
     );
-    // Display passes through transparently from the inner ValidationError.
-    let rendered = error.to_string();
+    // Display renders the underlying validation message.
     assert!(
-        !rendered.is_empty(),
-        "TransportPolicyBuildError Display must render the underlying validation message",
+        !error.to_string().is_empty(),
+        "ValidationError Display must render a message",
     );
 }
 
 #[test]
-fn prop_tpp_014_builder_round_trip_preserves_every_setter() {
+fn builder_round_trip_preserves_every_setter() {
     let custom_retry = RetryPolicyBuilder::new()
         .max_attempts(3)
         .base_delay(Duration::from_millis(25))
@@ -332,31 +337,69 @@ fn prop_tpp_014_builder_round_trip_preserves_every_setter() {
 
     let policy = TransportPolicyBuilder::new()
         .timeout(Duration::from_secs(13))
-        .expect("timeout accepts the default user-agent")
         .user_agent("cow-sdk-test/0.0.1")
         .expect("ASCII user-agent validates")
         .retry(custom_retry.clone())
         .rate_limit(custom_limit.clone())
         .tracing_enabled(true)
-        .build()
-        .expect("builder produces a policy when every setter is valid");
+        .build();
 
     assert_eq!(policy.user_agent(), "cow-sdk-test/0.0.1");
     assert_eq!(policy.timeout(), Some(Duration::from_secs(13)));
     assert_eq!(policy.retry(), &custom_retry);
     assert_eq!(policy.rate_limit(), &custom_limit);
     assert!(policy.tracing_enabled());
+
+    // A caller-set client policy is refined in place: `user_agent` and
+    // `timeout` preserve every other client-policy field, so a tightened
+    // ADR 0055 response-byte cap and a deliberately disabled timeout survive
+    // the refinement instead of resetting to the workspace defaults.
+    use cow_sdk_core::transport::policy::IPFS_MAX_RESPONSE_BYTES;
+    let hardened = HttpClientPolicy::new("partner-bot/1.0")
+        .expect("static UA validates")
+        .without_timeout()
+        .with_max_response_bytes(IPFS_MAX_RESPONSE_BYTES);
+
+    let after_user_agent = TransportPolicyBuilder::new()
+        .client_policy(hardened.clone())
+        .user_agent("partner-bot/2.0")
+        .expect("ASCII user-agent validates")
+        .build();
+    assert_eq!(
+        after_user_agent.client_policy().max_response_bytes(),
+        IPFS_MAX_RESPONSE_BYTES,
+        "user_agent must not reset the caller's response-byte cap",
+    );
+    assert_eq!(
+        after_user_agent.timeout(),
+        None,
+        "user_agent must not re-arm a deliberately disabled timeout",
+    );
+    assert_eq!(after_user_agent.user_agent(), "partner-bot/2.0");
+
+    let after_timeout = TransportPolicyBuilder::new()
+        .client_policy(hardened)
+        .timeout(Duration::from_secs(3))
+        .build();
+    assert_eq!(
+        after_timeout.client_policy().max_response_bytes(),
+        IPFS_MAX_RESPONSE_BYTES,
+        "timeout must not reset the caller's response-byte cap",
+    );
+    assert_eq!(after_timeout.user_agent(), "partner-bot/1.0");
+    assert_eq!(after_timeout.timeout(), Some(Duration::from_secs(3)));
 }
 
 #[test]
-fn prop_tpp_015_builder_defaults_to_orderbook_user_agent_when_unset() {
-    let policy = TransportPolicyBuilder::default()
-        .build()
-        .expect("default builder produces a policy");
+fn builder_defaults_to_orderbook_user_agent_when_unset() {
+    let policy = TransportPolicyBuilder::default().build();
 
     assert_eq!(policy.user_agent(), DEFAULT_ORDERBOOK_USER_AGENT);
     assert_eq!(policy.timeout(), Some(DEFAULT_HTTP_TIMEOUT));
     assert!(!policy.tracing_enabled());
+    // The seeded, otherwise-untouched builder is field-identical to the
+    // documented orderbook default — including the response-byte cap.
+    assert_eq!(policy, TransportPolicy::default_orderbook());
 }
 
 // -------------------------------------------------------------------------
@@ -364,7 +407,7 @@ fn prop_tpp_015_builder_defaults_to_orderbook_user_agent_when_unset() {
 // -------------------------------------------------------------------------
 
 #[test]
-fn prop_tpp_016_none_jitter_returns_capped_base_delay_unchanged() {
+fn none_jitter_returns_capped_base_delay_unchanged() {
     let policy = RetryPolicy::builder()
         .jitter(JitterStrategy::none())
         .base_delay(Duration::from_millis(50))
@@ -379,7 +422,7 @@ fn prop_tpp_016_none_jitter_returns_capped_base_delay_unchanged() {
 }
 
 #[test]
-fn prop_tpp_017_full_jitter_time_seeded_constructor_does_not_panic() {
+fn full_jitter_time_seeded_constructor_does_not_panic() {
     // The time-seeded constructor is non-deterministic; we only smoke-test
     // that it returns the `Full` variant and that applying it to a retry
     // policy yields delays within the documented `[0, max_delay]` window.
@@ -396,7 +439,7 @@ fn prop_tpp_017_full_jitter_time_seeded_constructor_does_not_panic() {
 }
 
 #[test]
-fn prop_tpp_018_equal_jitter_returns_at_least_half_capped_base_delay() {
+fn equal_jitter_returns_at_least_half_capped_base_delay() {
     // Equal-jitter preserves half the base delay deterministically, then
     // adds up to half from a seed-derived offset. With base_delay 100 and
     // a max_delay >= base_delay, the result is bounded `[50, 100]`.
@@ -422,7 +465,7 @@ fn prop_tpp_018_equal_jitter_returns_at_least_half_capped_base_delay() {
 }
 
 #[test]
-fn prop_tpp_019_default_jitter_strategy_is_decorrelated_variant() {
+fn default_jitter_strategy_is_decorrelated_variant() {
     assert!(matches!(
         JitterStrategy::default(),
         JitterStrategy::Decorrelated { .. },
@@ -434,7 +477,7 @@ fn prop_tpp_019_default_jitter_strategy_is_decorrelated_variant() {
 }
 
 #[test]
-fn prop_tpp_020_zero_base_delay_returns_zero_across_every_strategy() {
+fn zero_base_delay_returns_zero_across_every_strategy() {
     for strategy in [
         JitterStrategy::none(),
         JitterStrategy::full_from_seed(1),
@@ -461,7 +504,7 @@ fn prop_tpp_020_zero_base_delay_returns_zero_across_every_strategy() {
 // -------------------------------------------------------------------------
 
 #[tokio::test]
-async fn prop_tpp_021_unlimited_rate_limiter_never_delays_or_errors() {
+async fn unlimited_rate_limiter_never_delays_or_errors() {
     let limiter = RequestRateLimiter::unlimited();
     let url = Url::parse("https://api.cow.fi/mainnet/api/v1/orders").unwrap();
     let token = CancellationToken::new();
@@ -483,7 +526,7 @@ async fn prop_tpp_021_unlimited_rate_limiter_never_delays_or_errors() {
 }
 
 #[test]
-fn prop_tpp_022_global_scope_uses_constant_key_regardless_of_host() {
+fn global_scope_uses_constant_key_regardless_of_host() {
     let limiter = RequestRateLimiter::builder()
         .scope(LimiterScope::Global)
         .build();
@@ -501,7 +544,7 @@ fn prop_tpp_022_global_scope_uses_constant_key_regardless_of_host() {
 }
 
 #[tokio::test]
-async fn prop_tpp_023_acquire_global_shares_one_bucket_across_calls() {
+async fn acquire_global_shares_one_bucket_across_calls() {
     // tokens_per_interval = 2 with a long interval; two acquire_global
     // calls must both succeed without waiting.
     let limiter = RequestRateLimiter::builder()
@@ -519,7 +562,7 @@ async fn prop_tpp_023_acquire_global_shares_one_bucket_across_calls() {
 }
 
 #[tokio::test]
-async fn prop_tpp_024_pre_cancelled_token_returns_cancelled_immediately() {
+async fn pre_cancelled_token_returns_cancelled_immediately() {
     let limiter = RequestRateLimiter::builder()
         .tokens_per_interval(1)
         .interval(Duration::from_secs(60))
@@ -544,7 +587,7 @@ async fn prop_tpp_024_pre_cancelled_token_returns_cancelled_immediately() {
 }
 
 #[test]
-fn prop_tpp_025_rate_limiter_builder_round_trip_preserves_setters() {
+fn rate_limiter_builder_round_trip_preserves_setters() {
     let limiter = RequestRateLimiterBuilder::new()
         .tokens_per_interval(11)
         .interval(Duration::from_millis(750))
@@ -568,7 +611,7 @@ fn prop_tpp_025_rate_limiter_builder_round_trip_preserves_setters() {
 // -------------------------------------------------------------------------
 
 #[test]
-fn prop_tpp_026_retry_policy_new_sets_max_attempts_and_keeps_defaults() {
+fn retry_policy_new_sets_max_attempts_and_keeps_defaults() {
     let policy = RetryPolicy::new(5);
     assert_eq!(policy.max_attempts(), 5);
     assert_eq!(policy.base_delay(), Duration::from_millis(50));
@@ -578,7 +621,7 @@ fn prop_tpp_026_retry_policy_new_sets_max_attempts_and_keeps_defaults() {
 }
 
 #[test]
-fn prop_tpp_027_with_jitter_replaces_only_the_jitter_field() {
+fn with_jitter_replaces_only_the_jitter_field() {
     let base = RetryPolicy::default();
     let mutated = base.clone().with_jitter(JitterStrategy::equal_from_seed(7));
 
@@ -592,7 +635,7 @@ fn prop_tpp_027_with_jitter_replaces_only_the_jitter_field() {
 }
 
 #[test]
-fn prop_tpp_028_should_retry_status_matches_the_public_retryable_list() {
+fn should_retry_status_matches_the_public_retryable_list() {
     let policy = RetryPolicy::default();
     for status in RETRYABLE_STATUSES {
         assert!(
@@ -609,7 +652,7 @@ fn prop_tpp_028_should_retry_status_matches_the_public_retryable_list() {
 }
 
 #[test]
-fn prop_tpp_029_should_retry_network_only_retries_documented_kinds() {
+fn should_retry_network_only_retries_documented_kinds() {
     let policy = RetryPolicy::default();
     // Documented retryable kinds.
     assert!(policy.should_retry_network(NetworkErrorKind::Timeout));
@@ -625,7 +668,7 @@ fn prop_tpp_029_should_retry_network_only_retries_documented_kinds() {
 }
 
 #[test]
-fn prop_tpp_030_base_backoff_clamps_to_max_delay_across_attempt_range() {
+fn base_backoff_clamps_to_max_delay_across_attempt_range() {
     let policy = RetryPolicy::builder()
         .base_delay(Duration::from_millis(50))
         .max_delay(Duration::from_millis(200))
@@ -645,7 +688,7 @@ fn prop_tpp_030_base_backoff_clamps_to_max_delay_across_attempt_range() {
 }
 
 #[test]
-fn prop_tpp_031_retry_after_helper_is_case_insensitive() {
+fn retry_after_helper_is_case_insensitive() {
     let policy = RetryPolicy::builder()
         .jitter(JitterStrategy::none())
         .build();
@@ -676,7 +719,7 @@ fn prop_tpp_031_retry_after_helper_is_case_insensitive() {
 }
 
 #[test]
-fn prop_tpp_032_retry_builder_round_trip_and_zero_attempts_clamps_to_one() {
+fn retry_builder_round_trip_and_zero_attempts_clamps_to_one() {
     let custom_jitter = JitterStrategy::full_from_seed(42);
     let policy = RetryPolicyBuilder::new()
         .max_attempts(4)

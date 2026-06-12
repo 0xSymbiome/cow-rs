@@ -1,7 +1,7 @@
 # Bounded Response Reads Audit
 
 Status: Current
-Last reviewed: 2026-06-09
+Last reviewed: 2026-06-12
 Owning surface: HTTP transport response reads across `cow-sdk-core` (including its `transport::policy` module), `cow-sdk-transport-wasm`, `cow-sdk-wasm`, and the signature decode path in `cow-sdk-contracts`
 Refresh trigger: changes to the transport read loops, the `max_response_bytes` policy field or its per-client defaults, the `ResponseTooLarge` classification, the signature hex bound, or the reqwest/web-sys decompression posture
 Related docs:
@@ -67,7 +67,11 @@ documented.
 The orderbook and trading clients use the generous workspace default. The
 untrusted subgraph gateway uses a tighter default. The IPFS app-data read uses
 a bound sized to the protocol app-data document limit. All values are
-instance-scoped policy and are caller-overridable.
+instance-scoped policy and are caller-overridable. The transport-policy builder
+refines a caller-set client policy in place, so a caller-tightened
+`max_response_bytes` — and a deliberately disabled timeout — survives a later
+`user_agent` or `timeout` refinement instead of resetting to the workspace
+default.
 
 ### Retry posture
 
@@ -113,6 +117,7 @@ Primary regression coverage:
 - `crates/core/tests/transport_contract.rs::non_utf8_body_is_decoded_lossily_without_a_cap_layer_error`
 - `crates/core/tests/classify_contract.rs::response_too_large_is_never_retried`
 - `crates/core/tests/policy_contract.rs::default_policies_carry_per_client_response_byte_caps`
+- `crates/core/tests/policy_contract.rs::builder_round_trip_preserves_every_setter`
 - `crates/contracts/src/hex_field.rs::tests::decode_hex_field_bounded_rejects_payload_over_the_limit`
 - `crates/app-data/tests/json_recursion_contract.rs::deeply_nested_json_is_rejected_by_the_recursion_guard`
 

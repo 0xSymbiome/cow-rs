@@ -3,7 +3,6 @@
 use std::time::Duration;
 
 use crate::{HttpClientPolicy, ValidationError};
-use thiserror::Error;
 
 use crate::transport::policy::{JitterStrategy, RequestRateLimiter, RetryPolicy};
 
@@ -230,19 +229,10 @@ impl TransportPolicy {
     }
 }
 
-/// Error returned when building a [`TransportPolicy`].
-#[non_exhaustive]
-#[derive(Debug, Error)]
-pub enum TransportPolicyBuildError {
-    /// Shared HTTP client policy validation failed.
-    #[error(transparent)]
-    Client(#[from] ValidationError),
-}
-
 /// Builder for [`TransportPolicy`].
 #[derive(Debug, Clone)]
 pub struct TransportPolicyBuilder {
-    client: Option<HttpClientPolicy>,
+    client: HttpClientPolicy,
     retry: RetryPolicy,
     rate_limit: RequestRateLimiter,
     tracing_enabled: bool,
@@ -250,10 +240,18 @@ pub struct TransportPolicyBuilder {
 
 impl TransportPolicyBuilder {
     /// Creates a builder seeded with orderbook defaults.
+    ///
+    /// # Panics
+    ///
+    /// Panics only if the crate-owned default orderbook user-agent literal
+    /// stops being encodable as an HTTP header value.
     #[must_use]
     pub fn new() -> Self {
         Self {
-            client: None,
+            // SAFETY: this crate-owned user-agent literal is static and
+            // validated by the HTTP header parser.
+            client: HttpClientPolicy::new(DEFAULT_ORDERBOOK_USER_AGENT)
+                .expect("static orderbook user-agent must remain valid"),
             retry: RetryPolicy::builder()
                 .jitter(JitterStrategy::decorrelated_from_seed(DEFAULT_JITTER_SEED))
                 .build(),
@@ -262,51 +260,33 @@ impl TransportPolicyBuilder {
         }
     }
 
-    /// Sets the shared HTTP client policy.
+    /// Sets the shared HTTP client policy, replacing the seeded default and any
+    /// earlier `user_agent` or `timeout` refinement wholesale.
     #[must_use]
     pub fn client_policy(mut self, client: HttpClientPolicy) -> Self {
-        self.client = Some(client);
+        self.client = client;
         self
     }
 
-    /// Sets the shared HTTP user-agent.
+    /// Sets the shared HTTP user-agent in place, preserving every other
+    /// client-policy field — including the response-byte cap and a disabled
+    /// timeout.
     ///
     /// # Errors
     ///
-    /// Returns [`TransportPolicyBuildError`] if the user-agent is not a valid
+    /// Returns [`ValidationError`] if the user-agent is empty or not a valid
     /// HTTP header value.
-    pub fn user_agent(
-        mut self,
-        user_agent: impl Into<String>,
-    ) -> Result<Self, TransportPolicyBuildError> {
-        let existing_timeout = self
-            .client
-            .as_ref()
-            .and_then(HttpClientPolicy::timeout)
-            .unwrap_or(crate::DEFAULT_HTTP_TIMEOUT);
-        self.client = Some(HttpClientPolicy::with_timeout_and_user_agent(
-            existing_timeout,
-            user_agent,
-        )?);
+    pub fn user_agent(mut self, user_agent: impl Into<String>) -> Result<Self, ValidationError> {
+        self.client = self.client.try_with_user_agent(user_agent)?;
         Ok(self)
     }
 
-    /// Sets the shared HTTP timeout.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`TransportPolicyBuildError`] if the existing user-agent is no
-    /// longer a valid HTTP header value.
-    pub fn timeout(mut self, timeout: Duration) -> Result<Self, TransportPolicyBuildError> {
-        let user_agent = self
-            .client
-            .as_ref()
-            .map_or(DEFAULT_ORDERBOOK_USER_AGENT, HttpClientPolicy::user_agent)
-            .to_owned();
-        self.client = Some(HttpClientPolicy::with_timeout_and_user_agent(
-            timeout, user_agent,
-        )?);
-        Ok(self)
+    /// Sets the shared HTTP timeout in place, preserving every other
+    /// client-policy field — including the response-byte cap.
+    #[must_use]
+    pub fn timeout(mut self, timeout: Duration) -> Self {
+        self.client = self.client.with_timeout(timeout);
+        self
     }
 
     /// Sets the retry policy.
@@ -331,21 +311,14 @@ impl TransportPolicyBuilder {
     }
 
     /// Builds the transport policy.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`TransportPolicyBuildError`] if the default HTTP client policy
-    /// cannot be constructed.
-    pub fn build(self) -> Result<TransportPolicy, TransportPolicyBuildError> {
-        Ok(TransportPolicy {
-            client: match self.client {
-                Some(client) => client,
-                None => HttpClientPolicy::new(DEFAULT_ORDERBOOK_USER_AGENT)?,
-            },
+    #[must_use]
+    pub fn build(self) -> TransportPolicy {
+        TransportPolicy {
+            client: self.client,
             retry: self.retry,
             rate_limit: self.rate_limit,
             tracing_enabled: self.tracing_enabled,
-        })
+        }
     }
 }
 

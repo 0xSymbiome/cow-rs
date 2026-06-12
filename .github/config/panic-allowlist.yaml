@@ -93,6 +93,9 @@ allowed:
   - file: crates/core/src/transport/policy/config.rs
     item: TransportPolicy::default_ipfs
     reason: Static IPFS user-agent is a repository-owned valid header literal.
+  - file: crates/core/src/transport/policy/config.rs
+    item: TransportPolicyBuilder::new
+    reason: Static orderbook user-agent seed is a repository-owned valid header literal.
   - file: crates/core/src/transport/policy/retry.rs
     item: RetryPolicy::base_backoff_delay
     reason: Retry exponent is clamped to a u32-safe range before conversion.

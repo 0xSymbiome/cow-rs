@@ -132,7 +132,7 @@ pub mod http {
     pub use cow_sdk_core::transport::policy::{
         ErrorClassifier, JitterStrategy, LimiterScope, NetworkErrorKind, RequestRateLimiter,
         RequestRateLimiterBuilder, RetryAfter, RetryPolicy, RetryPolicyBuilder, TransportPolicy,
-        TransportPolicyBuildError, TransportPolicyBuilder, is_retryable_status, parse_retry_after,
+        TransportPolicyBuilder, is_retryable_status, parse_retry_after,
     };
 
     /// Production HTTP transport seam and its typed failure surface.

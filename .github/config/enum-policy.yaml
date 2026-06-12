@@ -80,11 +80,6 @@ enums:
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: Request limiter bucket scopes can grow as additional routing policies are added.
-  - name: TransportPolicyBuildError
-    file: crates/core/src/transport/policy/config.rs
-    category: sdk-local-state
-    expected_marker: non_exhaustive
-    reason: Transport policy builder diagnostics can grow with new validation knobs.
   - name: RpcAlloyProviderBuilderError
     file: crates/alloy-provider/src/builder.rs
     category: sdk-local-state

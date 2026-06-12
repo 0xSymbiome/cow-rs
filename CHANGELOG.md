@@ -758,6 +758,17 @@ sections below describe the public contract a `0.1.0` consumer receives.
   (unknown enum variant, missing required field, or wrong field type) to the
   `invalidInput` `CowError` kind instead of `internal`, surfacing the offending
   field name; the `internal` kind stays reserved for genuine SDK-side faults.
+- `cow_sdk_core::transport::policy::TransportPolicyBuilder` refines a caller-set
+  client policy in place: `user_agent` and `timeout` preserve every other
+  client-policy field — including the
+  [ADR 0055](docs/adr/0055-bounded-response-reads.md) response-byte cap and a
+  deliberately disabled timeout — instead of rebuilding the policy from defaults
+  and silently widening the cap or re-arming the timeout. The builder seeds the
+  documented orderbook default eagerly, so `timeout` and `build` are infallible
+  and the single-variant `TransportPolicyBuildError` is removed; `user_agent`
+  returns `cow_sdk_core::ValidationError` directly. Recorded as `PROP-TPP-010`
+  in `PROPERTIES.md` and governed by
+  [ADR 0041](docs/adr/0041-transport-policy-l3-layering.md).
 
 ### Security
 

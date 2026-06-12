@@ -1,7 +1,7 @@
 # Transport Policy Coverage Audit
 
 Status: Current
-Last reviewed: 2026-06-09
+Last reviewed: 2026-06-12
 Owning surface: the `cow_sdk_core::transport::policy` module (the off-by-default `transport-policy` feature of `cow-sdk-core`) — public retry, jitter, rate-limit, classification, and `Retry-After` parser surfaces, the shared `run_with_retry` driver and its `AttemptOutcome`, `RetrySignal`, and `LimiterKey` types, and the target-neutral `system_now` wall clock, including the HTTP-date delegation to `httpdate::parse_http_date` on `retry_after.rs` and the bounded-jitter contract on `jitter.rs`
 Refresh trigger: Changes to any public function in `cow_sdk_core::transport::policy`; changes to `RetryPolicy`, `JitterStrategy`, `RequestRateLimiter`, `RetryAfter`, `NetworkErrorKind`, or `ErrorClassifier`; changes to `run_with_retry`, `AttemptOutcome`, `RetrySignal`, `LimiterKey`, or `system_now`; changes to the `Retry-After` HTTP-date delegation or its expected accept/reject contract; changes to the workspace `Retry-After` cooldown honor rule documented in `http-transport-contract-audit.md`
 Related docs:
@@ -66,7 +66,7 @@ the wasm workflow).
 | Error classifier | `NetworkErrorKind::from_transport_error_class` is total across every `TransportErrorClass` variant including `Redirect` and `Upgrade` through the wildcard arm; the optional reqwest classifier maps real `reqwest::Error` shapes into the same partition | Conforms |
 | Retry driver | `run_with_retry` returns on the first `AttemptOutcome::Success`, backs off and retries a retryable status or transport signal until `max_attempts`, returns the closure's terminal error on a non-retryable signal without re-dispatching, and surfaces the last terminal error on exhaustion; the recorded backoff sequence matches the policy schedule | Conforms |
 | Wall clock | `system_now` returns a real wall-clock `SystemTime` on native and `wasm32` targets without reading the standard `SystemTime::now`, so an HTTP-date `Retry-After` evaluates against the current time on both targets and the retry path never aborts a browser runtime | Conforms |
-| Panic-free posture | The `Retry-After` HTTP-date path delegates to `httpdate::parse_http_date`, an upstream maintained crate that surfaces malformed input as a typed `Err` rather than a panic, so an attacker-controlled `Retry-After` header value cannot panic the retry loop; documented panic-allowlist entries on `jitter.rs::bounded_offset` and `transport-policy/src/policy.rs` static-UA constructors stay justified | Conforms |
+| Panic-free posture | The `Retry-After` HTTP-date path delegates to `httpdate::parse_http_date`, an upstream maintained crate that surfaces malformed input as a typed `Err` rather than a panic, so an attacker-controlled `Retry-After` header value cannot panic the retry loop; documented panic-allowlist entries on `jitter.rs::bounded_offset` and the `config.rs` static-UA constructors (the four `default_*` policies and the `TransportPolicyBuilder::new` seed) stay justified | Conforms |
 
 ## Current Contract
 
@@ -211,23 +211,23 @@ Primary regression coverage:
 - `crates/core/tests/classify_contract.rs::reqwest_classifier::reqwest_classifier_maps_invalid_url_to_builder_or_request`
 - `crates/core/tests/classify_contract.rs::reqwest_classifier::reqwest_classifier_maps_unreachable_host_to_connect_or_timeout`
 - `crates/core/tests/classify_contract.rs::reqwest_classifier::reqwest_classifier_maps_status_500_to_http_status`
-- `crates/core/tests/policy_contract.rs::prop_tpp_001_default_orderbook_transport_policy_is_stable`
-- `crates/core/tests/policy_contract.rs::prop_tpp_009_explicit_constructor_disables_tracing_and_preserves_parts`
-- `crates/core/tests/policy_contract.rs::prop_tpp_010_default_trading_uses_trading_user_agent_and_orderbook_limiter`
-- `crates/core/tests/policy_contract.rs::prop_tpp_011_default_ipfs_disables_retry_and_timeout_and_uses_unlimited_limiter`
-- `crates/core/tests/policy_contract.rs::prop_tpp_012_with_setters_replace_only_their_targeted_field`
-- `crates/core/tests/policy_contract.rs::prop_tpp_014_builder_round_trip_preserves_every_setter`
-- `crates/core/tests/policy_contract.rs::prop_tpp_016_none_jitter_returns_capped_base_delay_unchanged`
-- `crates/core/tests/policy_contract.rs::prop_tpp_018_equal_jitter_returns_at_least_half_capped_base_delay`
-- `crates/core/tests/policy_contract.rs::prop_tpp_020_zero_base_delay_returns_zero_across_every_strategy`
-- `crates/core/tests/policy_contract.rs::prop_tpp_021_unlimited_rate_limiter_never_delays_or_errors`
-- `crates/core/tests/policy_contract.rs::prop_tpp_022_global_scope_uses_constant_key_regardless_of_host`
-- `crates/core/tests/policy_contract.rs::prop_tpp_024_pre_cancelled_token_returns_cancelled_immediately`
-- `crates/core/tests/policy_contract.rs::prop_tpp_028_should_retry_status_matches_the_public_retryable_list`
-- `crates/core/tests/policy_contract.rs::prop_tpp_029_should_retry_network_only_retries_documented_kinds`
-- `crates/core/tests/policy_contract.rs::prop_tpp_030_base_backoff_clamps_to_max_delay_across_attempt_range`
-- `crates/core/tests/policy_contract.rs::prop_tpp_031_retry_after_helper_is_case_insensitive`
-- `crates/core/tests/policy_contract.rs::prop_tpp_032_retry_builder_round_trip_and_zero_attempts_clamps_to_one`
+- `crates/core/tests/policy_contract.rs::default_orderbook_transport_policy_is_stable`
+- `crates/core/tests/policy_contract.rs::explicit_constructor_disables_tracing_and_preserves_parts`
+- `crates/core/tests/policy_contract.rs::default_trading_uses_trading_user_agent_and_orderbook_limiter`
+- `crates/core/tests/policy_contract.rs::default_ipfs_disables_retry_and_timeout_and_uses_unlimited_limiter`
+- `crates/core/tests/policy_contract.rs::with_setters_replace_only_their_targeted_field`
+- `crates/core/tests/policy_contract.rs::builder_round_trip_preserves_every_setter`
+- `crates/core/tests/policy_contract.rs::none_jitter_returns_capped_base_delay_unchanged`
+- `crates/core/tests/policy_contract.rs::equal_jitter_returns_at_least_half_capped_base_delay`
+- `crates/core/tests/policy_contract.rs::zero_base_delay_returns_zero_across_every_strategy`
+- `crates/core/tests/policy_contract.rs::unlimited_rate_limiter_never_delays_or_errors`
+- `crates/core/tests/policy_contract.rs::global_scope_uses_constant_key_regardless_of_host`
+- `crates/core/tests/policy_contract.rs::pre_cancelled_token_returns_cancelled_immediately`
+- `crates/core/tests/policy_contract.rs::should_retry_status_matches_the_public_retryable_list`
+- `crates/core/tests/policy_contract.rs::should_retry_network_only_retries_documented_kinds`
+- `crates/core/tests/policy_contract.rs::base_backoff_clamps_to_max_delay_across_attempt_range`
+- `crates/core/tests/policy_contract.rs::retry_after_helper_is_case_insensitive`
+- `crates/core/tests/policy_contract.rs::retry_builder_round_trip_and_zero_attempts_clamps_to_one`
 - `fuzz/fuzz_targets/fuzz_parse_retry_after.rs`
 - `fuzz/fuzz_targets/fuzz_retry_policy_delay.rs`
 - `fuzz/fuzz_targets/fuzz_jitter_delay_for_attempt.rs`
