@@ -53,7 +53,7 @@ pub use traits::{
     TransactionRequest, TransactionStatus, TypedDataDomain, TypedDataEnvelope, TypedDataField,
     TypedDataPayload, TypedDataSigner, TypedDataTypes,
 };
-pub use transport::{HttpTransport, TransportError};
+pub use transport::{HttpTransport, TransportError, TransportResponse};
 #[cfg(not(target_arch = "wasm32"))]
 pub use transport::{ReqwestTransport, ReqwestTransportConfig};
 pub use types::{

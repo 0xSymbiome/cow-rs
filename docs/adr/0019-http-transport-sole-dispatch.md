@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-22
-- Last reviewed: 2026-05-09
+- Last reviewed: 2026-06-12
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: transport, orderbook, subgraph, wasm, async, error-typing
 - Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md)
@@ -15,9 +15,12 @@
 through `self.transport.<get|post|put|delete>(...)`; no parallel
 `reqwest::Client` field exists on either client.
 
-The trait carries per-call headers and optional timeout inputs, and
-`TransportError::HttpStatus { status, headers, body }` carries non-2xx
-responses through the typed error channel. Native builders default to
+The trait carries per-call headers and optional timeout inputs. The success
+channel returns a `TransportResponse` carrying the 2xx status code, the
+response headers, and the body; non-2xx responses stay on the typed error
+channel through `TransportError::HttpStatus { status, headers, body }`. Both
+channels share one header representation, so a calling layer never fabricates
+response metadata on the success path. Native builders default to
 `ReqwestTransport`, browser wasm callers inject `FetchTransport`, and
 runtime-neutral JS callers inject `JsCallbackHttpTransport`.
 
@@ -47,7 +50,8 @@ browser, and callback transports under one rule.
   method path with expected URL, body, headers, and timeout; builder contract
   tests prove the injected handle is the live handle.
 - Cost: the trait carries four methods, per-call headers, optional timeouts,
-  and `HttpStatus`, but eliminates the hidden second dispatch surface.
+  a `TransportResponse` success type, and `HttpStatus`, but eliminates the
+  hidden second dispatch surface and any fabricated success metadata.
 
 ## Alternatives Rejected
 

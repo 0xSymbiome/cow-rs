@@ -1232,6 +1232,40 @@ mod recording_transport {
             other => panic!("expected Rejected or Api error, got {other:?}"),
         }
     }
+
+    #[tokio::test]
+    async fn orderbook_non_2xx_in_the_ok_channel_is_normalized_onto_the_error_path() {
+        // A misbehaving custom transport that returns a non-2xx status through
+        // the `Ok` success channel instead of `TransportError::HttpStatus`. The
+        // orderbook normalizes it onto the same typed error path, so a wrong
+        // status delivered on the success channel can never be mistaken for a
+        // 2xx response and retry classification stays uniform.
+        let recorder = RecordingHttpTransport::new([Canned::Success {
+            status: 400,
+            headers: vec![("content-type".to_owned(), "application/json".to_owned())],
+            body: "{\"errorType\":\"DuplicatedOrder\",\"description\":\"order already exists\"}"
+                .to_owned(),
+        }]);
+        let policy = TransportPolicy::default().with_retry(retry_policy(1));
+        let api = api_with_recorder_and_policy(recorder.clone(), policy);
+
+        let error = api
+            .version()
+            .await
+            .expect_err("a non-2xx status in the Ok channel must surface as a typed error");
+        match error {
+            OrderbookError::Rejected {
+                status, rejection, ..
+            } => {
+                assert_eq!(status.as_u16(), 400);
+                assert_eq!(rejection, OrderbookRejection::DuplicatedOrder);
+            }
+            OrderbookError::Api(envelope) => {
+                assert_eq!(envelope.status, 400);
+            }
+            other => panic!("expected Rejected or Api error, got {other:?}"),
+        }
+    }
 }
 
 #[test]

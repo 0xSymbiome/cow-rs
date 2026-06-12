@@ -74,6 +74,7 @@ use std::time::Duration;
 use async_trait::async_trait;
 use cow_sdk_core::{
     DEFAULT_MAX_RESPONSE_BYTES, HttpTransport, Redacted, TransportError, TransportErrorClass,
+    TransportResponse,
 };
 use js_sys::{Array, Object, Reflect};
 use wasm_bindgen::{JsCast, JsValue};
@@ -202,7 +203,7 @@ impl FetchTransport {
         body: Option<&str>,
         headers: &[(String, String)],
         timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
+    ) -> Result<TransportResponse, TransportError> {
         #[cfg(feature = "tracing")]
         {
             use tracing::Instrument as _;
@@ -245,7 +246,7 @@ impl FetchTransport {
         body: Option<&str>,
         headers: &[(String, String)],
         timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
+    ) -> Result<TransportResponse, TransportError> {
         let url = self.resolve_url(path);
         let window = window_or_configuration_error()?;
         let init = build_request_init(method, body, headers)?;
@@ -318,7 +319,7 @@ impl FetchTransport {
             });
         }
         if (200..300).contains(&status) {
-            Ok(body_text)
+            Ok(TransportResponse::new(status, headers, body_text))
         } else {
             Err(TransportError::HttpStatus {
                 status,
@@ -330,9 +331,9 @@ impl FetchTransport {
 }
 
 #[cfg(feature = "tracing")]
-const fn bytes_received(result: &Result<String, TransportError>) -> Option<usize> {
+fn bytes_received(result: &Result<TransportResponse, TransportError>) -> Option<usize> {
     match result {
-        Ok(body) => Some(body.len()),
+        Ok(response) => Some(response.body().len()),
         Err(TransportError::HttpStatus { body, .. }) => Some(body.as_inner().len()),
         Err(_) => None,
     }
@@ -363,7 +364,7 @@ impl HttpTransport for FetchTransport {
         path: &str,
         headers: &[(String, String)],
         timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
+    ) -> Result<TransportResponse, TransportError> {
         self.dispatch("GET", path, None, headers, timeout).await
     }
 
@@ -373,7 +374,7 @@ impl HttpTransport for FetchTransport {
         body: &str,
         headers: &[(String, String)],
         timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
+    ) -> Result<TransportResponse, TransportError> {
         self.dispatch("POST", path, Some(body), headers, timeout)
             .await
     }
@@ -384,7 +385,7 @@ impl HttpTransport for FetchTransport {
         body: &str,
         headers: &[(String, String)],
         timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
+    ) -> Result<TransportResponse, TransportError> {
         self.dispatch("PUT", path, Some(body), headers, timeout)
             .await
     }
@@ -395,7 +396,7 @@ impl HttpTransport for FetchTransport {
         body: &str,
         headers: &[(String, String)],
         timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
+    ) -> Result<TransportResponse, TransportError> {
         self.dispatch("DELETE", path, Some(body), headers, timeout)
             .await
     }

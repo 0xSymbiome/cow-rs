@@ -474,7 +474,7 @@ impl SubgraphApi {
             LimiterKey::PerUrl(&limiter_url),
             |_attempt_index| async move {
                 match self.transport.post(api, body, headers, timeout).await {
-                    Ok(body) => RetryOutcome::Success(body),
+                    Ok(response) => RetryOutcome::Success(response.into_body()),
                     Err(TransportError::HttpStatus {
                         status,
                         headers,

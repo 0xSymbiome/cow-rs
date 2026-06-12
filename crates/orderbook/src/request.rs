@@ -612,28 +612,62 @@ async fn send_request(
     };
 
     match result {
-        Ok(body) => Ok(AttemptOutcome::Response(ResponseEnvelope {
-            status: 200,
-            status_text: canonical_status_text(200),
-            content_type: None,
-            body: body.into_bytes(),
-        })),
+        Ok(response) => {
+            let status = response.status();
+            let content_type = response
+                .header(CONTENT_TYPE.as_str())
+                .map(ToOwned::to_owned);
+            let success = (200..300).contains(&status);
+            let headers: Vec<(String, String)> = if success {
+                Vec::new()
+            } else {
+                response
+                    .headers()
+                    .iter()
+                    .map(|(name, value)| (name.clone(), value.as_inner().clone()))
+                    .collect()
+            };
+            let envelope = ResponseEnvelope {
+                status,
+                status_text: canonical_status_text(status),
+                content_type,
+                body: response.into_body().into_bytes(),
+            };
+            if success {
+                Ok(AttemptOutcome::Response(envelope))
+            } else {
+                // A conforming transport never returns `Ok` for a non-2xx
+                // status; normalize a misbehaving custom transport onto the
+                // HTTP-error outcome so retry classification and
+                // `Retry-After` handling stay uniform.
+                Ok(AttemptOutcome::HttpError {
+                    response: envelope,
+                    headers,
+                })
+            }
+        }
         Err(TransportError::HttpStatus {
             status,
             headers,
             body,
-        }) => Ok(AttemptOutcome::HttpError {
-            response: ResponseEnvelope {
-                status,
-                status_text: canonical_status_text(status),
-                content_type: None,
-                body: body.into_inner().into_bytes(),
-            },
-            headers: headers
-                .into_iter()
-                .map(|(name, value)| (name, value.into_inner()))
-                .collect(),
-        }),
+        }) => {
+            let content_type = headers
+                .iter()
+                .find(|(name, _)| name.eq_ignore_ascii_case(CONTENT_TYPE.as_str()))
+                .map(|(_, value)| value.as_inner().clone());
+            Ok(AttemptOutcome::HttpError {
+                response: ResponseEnvelope {
+                    status,
+                    status_text: canonical_status_text(status),
+                    content_type,
+                    body: body.into_inner().into_bytes(),
+                },
+                headers: headers
+                    .into_iter()
+                    .map(|(name, value)| (name, value.into_inner()))
+                    .collect(),
+            })
+        }
         Err(TransportError::Transport { class, detail }) => Err((class, detail.into_inner())),
         Err(TransportError::Configuration { message }) => Err((
             cow_sdk_core::TransportErrorClass::Builder,

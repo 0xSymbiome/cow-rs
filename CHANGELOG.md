@@ -253,9 +253,13 @@ sections below describe the public contract a `0.1.0` consumer receives.
   and subgraph clients, dyn-compatible through `async-trait` and composed as
   `Arc<dyn HttpTransport>`. The native `ReqwestTransport` and the browser
   `FetchTransport` (from `cow-sdk-transport-wasm`) are the default adapters;
-  per-call headers, an optional per-call timeout, and a typed
-  `TransportError::HttpStatus { status, body }` flow through the typed channel.
-  Trait futures are `Send` on native and `!Send` on `wasm32`. Governed by
+  per-call headers and an optional per-call timeout flow into each call. The
+  success channel returns a `TransportResponse` carrying the 2xx status code,
+  the redacted response headers, and the body, with accessors that mirror the
+  `http` crate (`status`, `headers`, `header`, `body`, `into_body`); non-2xx
+  responses stay on the typed `TransportError::HttpStatus { status, headers,
+  body }` channel, which shares that representation. Trait futures are `Send` on
+  native and `!Send` on `wasm32`. Governed by
   [ADR 0013](docs/adr/0013-http-transport-injection-and-typestate-builders.md)
   and [ADR 0019](docs/adr/0019-sole-http-dispatch.md).
 - The orderbook, subgraph, and IPFS clients run every HTTP attempt through one

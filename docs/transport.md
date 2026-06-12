@@ -53,40 +53,48 @@ pub trait HttpTransport: std::fmt::Debug {
         path: &str,
         headers: &[(String, String)],
         timeout: Option<std::time::Duration>,
-    ) -> Result<String, TransportError>;
+    ) -> Result<TransportResponse, TransportError>;
     async fn post(
         &self,
         path: &str,
         body: &str,
         headers: &[(String, String)],
         timeout: Option<std::time::Duration>,
-    ) -> Result<String, TransportError>;
+    ) -> Result<TransportResponse, TransportError>;
     async fn put(
         &self,
         path: &str,
         body: &str,
         headers: &[(String, String)],
         timeout: Option<std::time::Duration>,
-    ) -> Result<String, TransportError>;
+    ) -> Result<TransportResponse, TransportError>;
     async fn delete(
         &self,
         path: &str,
         body: &str,
         headers: &[(String, String)],
         timeout: Option<std::time::Duration>,
-    ) -> Result<String, TransportError>;
+    ) -> Result<TransportResponse, TransportError>;
 }
 ```
 
-Implementations return the raw response body as a `String` on success
-or a typed `TransportError` on failure. The trait is dyn-compatible
-through `async-trait`, so injected clients can share a transport handle
-across native and browser callers. Native futures are `Send`; browser
-futures drop that bound so the `FetchTransport` implementation remains
-viable. Callers that install a transport on the orderbook or subgraph
-builders wrap it in an `Arc<dyn HttpTransport + Send + Sync>`.
-The default seam is request/response only; it does not expose Server-Sent
-Events or streaming subscriptions.
+Implementations return a `TransportResponse` on success or a typed
+`TransportError` on failure. `TransportResponse` carries the 2xx status
+code, the response headers, and the body, with accessors that mirror the
+`http` crate (`status()`, `headers()`, `header(name)`, `body()`,
+`into_body()`); header values are held in the `Redacted<T>` newtype so
+they never surface through `Debug`, and the body renders as a byte length
+rather than its contents. Non-2xx responses stay on the typed error
+channel through `TransportError::HttpStatus`, which carries the same
+status, headers, and body shape, so success and failure share one
+representation. The trait is dyn-compatible through `async-trait`, so
+injected clients can share a transport handle across native and browser
+callers. Native futures are `Send`; browser futures drop that bound so the
+`FetchTransport` implementation remains viable. Callers that install a
+transport on the orderbook or subgraph builders wrap it in an
+`Arc<dyn HttpTransport + Send + Sync>`. The default seam is
+request/response only; it does not expose Server-Sent Events or streaming
+subscriptions.
 
 ## The Native Default: `ReqwestTransport`
 

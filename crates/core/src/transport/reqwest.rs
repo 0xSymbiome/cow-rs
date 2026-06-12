@@ -35,7 +35,9 @@ use crate::{
     config::{DEFAULT_MAX_RESPONSE_BYTES, DEFAULT_TCP_KEEPALIVE, DEFAULT_USER_AGENT},
     redaction::Redacted,
     transport::{
-        CUSTOM_OVERRIDE_ROUTE_IDENTITY, error::TransportError, http::HttpTransport,
+        CUSTOM_OVERRIDE_ROUTE_IDENTITY,
+        error::TransportError,
+        http::{HttpTransport, TransportResponse},
         sanitize_public_base_url,
     },
     validation::TransportErrorClass,
@@ -223,7 +225,7 @@ impl ReqwestTransport {
         method: &str,
         endpoint: &str,
         bytes_sent: usize,
-    ) -> Result<String, TransportError> {
+    ) -> Result<TransportResponse, TransportError> {
         let max_response_bytes = self.max_response_bytes;
         #[cfg(feature = "tracing")]
         {
@@ -263,7 +265,7 @@ impl HttpTransport for ReqwestTransport {
         path: &str,
         headers: &[(String, String)],
         timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
+    ) -> Result<TransportResponse, TransportError> {
         let url = self.resolve_url(path);
         let builder = Self::apply_call_overrides(self.client.get(&url), headers, timeout)?;
         let endpoint = span_endpoint(path);
@@ -276,7 +278,7 @@ impl HttpTransport for ReqwestTransport {
         body: &str,
         headers: &[(String, String)],
         timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
+    ) -> Result<TransportResponse, TransportError> {
         let url = self.resolve_url(path);
         let builder = self.client.post(&url).body(body.to_owned());
         let builder = Self::apply_call_overrides(builder, headers, timeout)?;
@@ -291,7 +293,7 @@ impl HttpTransport for ReqwestTransport {
         body: &str,
         headers: &[(String, String)],
         timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
+    ) -> Result<TransportResponse, TransportError> {
         let url = self.resolve_url(path);
         let builder = self.client.put(&url).body(body.to_owned());
         let builder = Self::apply_call_overrides(builder, headers, timeout)?;
@@ -306,7 +308,7 @@ impl HttpTransport for ReqwestTransport {
         body: &str,
         headers: &[(String, String)],
         timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
+    ) -> Result<TransportResponse, TransportError> {
         let url = self.resolve_url(path);
         let builder = self.client.delete(&url).body(body.to_owned());
         let builder = Self::apply_call_overrides(builder, headers, timeout)?;
@@ -319,15 +321,16 @@ impl HttpTransport for ReqwestTransport {
 async fn dispatch_request(
     builder: RequestBuilder,
     max_response_bytes: usize,
-) -> Result<String, TransportError> {
+) -> Result<TransportResponse, TransportError> {
     let response = builder.send().await.map_err(map_reqwest_error)?;
     let status = response.status();
-    if status.is_success() {
-        return read_body_capped(response, max_response_bytes).await;
-    }
-
     let status_code = status.as_u16();
     let headers = response_headers(&response);
+    if status.is_success() {
+        let body = read_body_capped(response, max_response_bytes).await?;
+        return Ok(TransportResponse::new(status_code, headers, body));
+    }
+
     let body = match read_body_capped(response, max_response_bytes).await {
         Ok(text) => text,
         Err(
@@ -374,9 +377,9 @@ async fn read_body_capped(
 }
 
 #[cfg(feature = "tracing")]
-const fn bytes_received(result: &Result<String, TransportError>) -> Option<usize> {
+fn bytes_received(result: &Result<TransportResponse, TransportError>) -> Option<usize> {
     match result {
-        Ok(body) => Some(body.len()),
+        Ok(response) => Some(response.body().len()),
         Err(TransportError::HttpStatus { body, .. }) => Some(body.as_inner().len()),
         Err(_) => None,
     }

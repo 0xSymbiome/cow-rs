@@ -135,15 +135,16 @@ pub mod http {
         TransportPolicyBuilder, is_retryable_status, parse_retry_after,
     };
 
-    /// Production HTTP transport seam and its typed failure surface.
+    /// Production HTTP transport seam and its typed surfaces.
     ///
     /// [`HttpTransport`] is the async injection point downstream clients
-    /// consume; [`TransportError`] is its typed failure surface, and
-    /// [`TransportErrorClass`] is the label telemetry and retry layers use to
-    /// partition REST-transport failures without parsing error messages. The
-    /// native default implementation is [`ReqwestTransport`]; the browser
-    /// default lives in `cow-sdk-transport-wasm`.
-    pub use cow_sdk_core::{HttpTransport, TransportError, TransportErrorClass};
+    /// consume; [`TransportResponse`] is its success envelope (2xx status,
+    /// redacted headers, body); [`TransportError`] is its typed failure
+    /// surface, and [`TransportErrorClass`] is the label telemetry and retry
+    /// layers use to partition REST-transport failures without parsing error
+    /// messages. The native default implementation is [`ReqwestTransport`];
+    /// the browser default lives in `cow-sdk-transport-wasm`.
+    pub use cow_sdk_core::{HttpTransport, TransportError, TransportErrorClass, TransportResponse};
     /// Native default HTTP transport implementation and its configuration.
     #[cfg(not(target_arch = "wasm32"))]
     pub use cow_sdk_core::{ReqwestTransport, ReqwestTransportConfig};

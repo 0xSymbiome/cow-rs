@@ -92,10 +92,10 @@ fn http_transport_trait_shape_unchanged() {
     assert_eq!(
         trait_method_signatures(HTTP_TRANSPORT_SOURCE, "HttpTransport"),
         [
-            "async fn get(&self, path: &str, headers: &[(String, String)], timeout: Option<Duration>) -> Result<String, TransportError>;",
-            "async fn post(&self, path: &str, body: &str, headers: &[(String, String)], timeout: Option<Duration>) -> Result<String, TransportError>;",
-            "async fn put(&self, path: &str, body: &str, headers: &[(String, String)], timeout: Option<Duration>) -> Result<String, TransportError>;",
-            "async fn delete(&self, path: &str, body: &str, headers: &[(String, String)], timeout: Option<Duration>) -> Result<String, TransportError>;",
+            "async fn get(&self, path: &str, headers: &[(String, String)], timeout: Option<Duration>) -> Result<TransportResponse, TransportError>;",
+            "async fn post(&self, path: &str, body: &str, headers: &[(String, String)], timeout: Option<Duration>) -> Result<TransportResponse, TransportError>;",
+            "async fn put(&self, path: &str, body: &str, headers: &[(String, String)], timeout: Option<Duration>) -> Result<TransportResponse, TransportError>;",
+            "async fn delete(&self, path: &str, body: &str, headers: &[(String, String)], timeout: Option<Duration>) -> Result<TransportResponse, TransportError>;",
         ],
     );
 }

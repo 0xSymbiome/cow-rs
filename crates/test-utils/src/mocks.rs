@@ -16,7 +16,7 @@ use std::time::Duration;
 
 use cow_sdk_core::{
     Address, Amount, Hash32, HttpTransport, Signer, TransactionBroadcast, TransactionRequest,
-    TransportError, TypedDataPayload,
+    TransportError, TransportResponse, TypedDataPayload,
 };
 
 /// The canonical canned broadcast hash returned by the recording mocks.
@@ -137,8 +137,8 @@ impl HttpTransport for StubHttpTransport {
         _path: &str,
         _headers: &[(String, String)],
         _timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
-        Ok(String::new())
+    ) -> Result<TransportResponse, TransportError> {
+        Ok(TransportResponse::new(200, Vec::new(), String::new()))
     }
     async fn post(
         &self,
@@ -146,8 +146,8 @@ impl HttpTransport for StubHttpTransport {
         _body: &str,
         _headers: &[(String, String)],
         _timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
-        Ok(String::new())
+    ) -> Result<TransportResponse, TransportError> {
+        Ok(TransportResponse::new(200, Vec::new(), String::new()))
     }
     async fn put(
         &self,
@@ -155,8 +155,8 @@ impl HttpTransport for StubHttpTransport {
         _body: &str,
         _headers: &[(String, String)],
         _timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
-        Ok(String::new())
+    ) -> Result<TransportResponse, TransportError> {
+        Ok(TransportResponse::new(200, Vec::new(), String::new()))
     }
     async fn delete(
         &self,
@@ -164,8 +164,8 @@ impl HttpTransport for StubHttpTransport {
         _body: &str,
         _headers: &[(String, String)],
         _timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
-        Ok(String::new())
+    ) -> Result<TransportResponse, TransportError> {
+        Ok(TransportResponse::new(200, Vec::new(), String::new()))
     }
 }
 
@@ -185,8 +185,18 @@ pub struct RecordedRequest {
 /// A canned response for [`RecordingHttpTransport`] to replay, one per call.
 #[derive(Debug, Clone)]
 pub enum Canned {
-    /// A success body returned through `Ok`.
+    /// A `200 OK` success body with no headers, returned through `Ok`.
     Ok(String),
+    /// A full success response with an explicit status code and headers,
+    /// returned through `Ok`.
+    Success {
+        /// The 2xx HTTP status code.
+        status: u16,
+        /// The response headers.
+        headers: Vec<(String, String)>,
+        /// The response body.
+        body: String,
+    },
     /// A non-success HTTP status surfaced as [`TransportError::HttpStatus`].
     HttpStatus {
         /// The HTTP status code.
@@ -199,9 +209,21 @@ pub enum Canned {
 }
 
 impl Canned {
-    fn into_result(self) -> Result<String, TransportError> {
+    fn into_result(self) -> Result<TransportResponse, TransportError> {
         match self {
-            Self::Ok(body) => Ok(body),
+            Self::Ok(body) => Ok(TransportResponse::new(200, Vec::new(), body)),
+            Self::Success {
+                status,
+                headers,
+                body,
+            } => Ok(TransportResponse::new(
+                status,
+                headers
+                    .into_iter()
+                    .map(|(name, value)| (name, value.into()))
+                    .collect(),
+                body,
+            )),
             Self::HttpStatus {
                 status,
                 headers,
@@ -266,7 +288,7 @@ impl HttpTransport for RecordingHttpTransport {
         path: &str,
         _headers: &[(String, String)],
         timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
+    ) -> Result<TransportResponse, TransportError> {
         self.record(RecordedRequest {
             method: "GET",
             url: path.to_owned(),
@@ -282,7 +304,7 @@ impl HttpTransport for RecordingHttpTransport {
         body: &str,
         _headers: &[(String, String)],
         timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
+    ) -> Result<TransportResponse, TransportError> {
         self.record(RecordedRequest {
             method: "POST",
             url: path.to_owned(),
@@ -298,7 +320,7 @@ impl HttpTransport for RecordingHttpTransport {
         body: &str,
         _headers: &[(String, String)],
         timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
+    ) -> Result<TransportResponse, TransportError> {
         self.record(RecordedRequest {
             method: "PUT",
             url: path.to_owned(),
@@ -314,7 +336,7 @@ impl HttpTransport for RecordingHttpTransport {
         body: &str,
         _headers: &[(String, String)],
         timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
+    ) -> Result<TransportResponse, TransportError> {
         self.record(RecordedRequest {
             method: "DELETE",
             url: path.to_owned(),

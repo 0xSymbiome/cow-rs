@@ -1,7 +1,9 @@
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use async_trait::async_trait;
-use cow_sdk_core::{HttpTransport, Redacted, TransportError, TransportErrorClass};
+use cow_sdk_core::{
+    HttpTransport, Redacted, TransportError, TransportErrorClass, TransportResponse,
+};
 use js_sys::{Array, Function, Object, Promise, Reflect};
 use wasm_bindgen::{JsCast, closure::Closure, prelude::*};
 use wasm_bindgen_futures::JsFuture;
@@ -59,7 +61,7 @@ impl JsCallbackHttpTransport {
         body: Option<&str>,
         headers: &[(String, String)],
         timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
+    ) -> Result<TransportResponse, TransportError> {
         let callback = lookup_fetch_callback(self.callback_id).ok_or_else(|| {
             TransportError::Configuration {
                 message: Redacted::new("fetch callback handle is disposed or invalid".to_owned()),
@@ -99,7 +101,7 @@ impl HttpTransport for JsCallbackHttpTransport {
         path: &str,
         headers: &[(String, String)],
         timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
+    ) -> Result<TransportResponse, TransportError> {
         self.dispatch("GET", path, None, headers, timeout).await
     }
 
@@ -109,7 +111,7 @@ impl HttpTransport for JsCallbackHttpTransport {
         body: &str,
         headers: &[(String, String)],
         timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
+    ) -> Result<TransportResponse, TransportError> {
         self.dispatch("POST", path, Some(body), headers, timeout)
             .await
     }
@@ -120,7 +122,7 @@ impl HttpTransport for JsCallbackHttpTransport {
         body: &str,
         headers: &[(String, String)],
         timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
+    ) -> Result<TransportResponse, TransportError> {
         self.dispatch("PUT", path, Some(body), headers, timeout)
             .await
     }
@@ -131,7 +133,7 @@ impl HttpTransport for JsCallbackHttpTransport {
         body: &str,
         headers: &[(String, String)],
         timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
+    ) -> Result<TransportResponse, TransportError> {
         self.dispatch("DELETE", path, Some(body), headers, timeout)
             .await
     }
@@ -512,7 +514,7 @@ fn map_callback_reject_to_transport(error: JsValue) -> TransportError {
 fn parse_callback_response(
     value: JsValue,
     max_response_bytes: usize,
-) -> Result<String, TransportError> {
+) -> Result<TransportResponse, TransportError> {
     let response: CowFetchResponse =
         serde_wasm_bindgen::from_value(value).map_err(|error| TransportError::Transport {
             class: TransportErrorClass::Decode,
@@ -535,7 +537,11 @@ fn parse_callback_response(
     }
 
     if (200..300).contains(&response.status) {
-        Ok(response.body)
+        Ok(TransportResponse::new(
+            response.status,
+            redact_response_headers(response.headers),
+            response.body,
+        ))
     } else {
         Err(TransportError::HttpStatus {
             status: response.status,

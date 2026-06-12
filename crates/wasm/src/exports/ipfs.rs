@@ -59,7 +59,7 @@ impl IpfsFetchTransport for IpfsHttpAdapter {
             LimiterKey::Global,
             |_attempt_index| async move {
                 match self.inner.get(uri, &[], timeout).await {
-                    Ok(body) => RetryOutcome::Success(body),
+                    Ok(response) => RetryOutcome::Success(response.into_body()),
                     Err(TransportError::HttpStatus {
                         status,
                         headers,

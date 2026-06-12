@@ -34,7 +34,7 @@ pub mod policy;
 pub mod reqwest;
 
 pub use error::TransportError;
-pub use http::HttpTransport;
+pub use http::{HttpTransport, TransportResponse};
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use self::reqwest::{ReqwestTransport, ReqwestTransportConfig, classify_reqwest_error};

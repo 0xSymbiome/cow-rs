@@ -121,11 +121,13 @@ mod native {
             .await;
 
         let transport = build_transport(server.uri());
-        let body = transport
+        let response = transport
             .get("/orders", NO_HEADERS, None)
             .await
             .expect("fixture round-trip must succeed through ReqwestTransport");
-        assert_eq!(body, GET_ORDERS_FIXTURE);
+        assert_eq!(response.body(), GET_ORDERS_FIXTURE);
+        assert_eq!(response.status(), 200);
+        assert_eq!(response.header("Content-Type"), Some("application/json"));
     }
 
     #[tokio::test]
@@ -142,11 +144,13 @@ mod native {
             .await;
 
         let transport = build_transport(server.uri());
-        let body = transport
+        let response = transport
             .post("/quote", "{\"kind\":\"sell\"}", NO_HEADERS, None)
             .await
             .expect("fixture round-trip must succeed through ReqwestTransport");
-        assert_eq!(body, POST_QUOTE_FIXTURE);
+        assert_eq!(response.body(), POST_QUOTE_FIXTURE);
+        assert_eq!(response.status(), 200);
+        assert_eq!(response.header("content-type"), Some("application/json"));
     }
 
     #[tokio::test]
@@ -163,11 +167,13 @@ mod native {
             .await;
 
         let transport = build_transport(server.uri());
-        let body = transport
+        let response = transport
             .delete("/orders/0x1", "{\"uid\":\"0x1\"}", NO_HEADERS, None)
             .await
             .expect("fixture round-trip must succeed through ReqwestTransport");
-        assert_eq!(body, DELETE_ORDER_FIXTURE);
+        assert_eq!(response.body(), DELETE_ORDER_FIXTURE);
+        assert_eq!(response.status(), 200);
+        assert_eq!(response.header("content-type"), Some("text/plain"));
     }
 
     #[tokio::test]
@@ -186,11 +192,12 @@ mod native {
             ("Cache-Control".to_owned(), "no-cache".to_owned()),
             ("Pragma".to_owned(), "no-cache".to_owned()),
         ];
-        let body = transport
+        let response = transport
             .get("/headers", &headers, None)
             .await
             .expect("cache-control headers must be forwarded through ReqwestTransport");
-        assert_eq!(body, "ok");
+        assert_eq!(response.body(), "ok");
+        assert_eq!(response.status(), 200);
     }
 
     #[tokio::test]

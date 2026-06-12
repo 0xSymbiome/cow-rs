@@ -1,9 +1,9 @@
 # HTTP Transport Contract Audit
 
 Status: Current
-Last reviewed: 2026-06-06
+Last reviewed: 2026-06-12
 Owning surface: `cow-sdk-core::HttpTransport` trait and the `ReqwestTransport` (native) and `FetchTransport` (browser) default adapters, including the sole-dispatch contract that binds every live REST or GraphQL call from `cow-sdk-orderbook` and `cow-sdk-subgraph` to the injected transport
-Refresh trigger: Trait signature, method set, or dyn-compatibility posture changes on `HttpTransport`; changes to `TransportError` or `TransportErrorClass`; changes to the `TransportError::HttpStatus` shape; changes to the URL-stripping contract on either default adapter; any change to the shared `run_with_retry` driver's backoff schedule, jitter policy, retry tracing events, `Retry-After` honor contract, the `Retry-After` IMF-fixdate civil-day arithmetic, or the `system_now` wall clock; a new shipped adapter crate that adopts the trait; any change that lets a live REST or GraphQL call from `OrderbookApi` or `SubgraphApi` bypass `self.transport`
+Refresh trigger: Trait signature, method set, or dyn-compatibility posture changes on `HttpTransport`; changes to the `TransportResponse` success type or its accessor set; changes to `TransportError` or `TransportErrorClass`; changes to the `TransportError::HttpStatus` shape; changes to the URL-stripping contract on either default adapter; any change to the shared `run_with_retry` driver's backoff schedule, jitter policy, retry tracing events, `Retry-After` honor contract, the `Retry-After` IMF-fixdate civil-day arithmetic, or the `system_now` wall clock; a new shipped adapter crate that adopts the trait; any change that lets a live REST or GraphQL call from `OrderbookApi` or `SubgraphApi` bypass `self.transport`
 Related docs:
 - [ADR 0013](../adr/0013-http-transport-injection-and-typestate-builders.md)
 - [ADR 0019](../adr/0019-http-transport-sole-dispatch.md)
@@ -43,8 +43,9 @@ separate runtime contract).
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
 | Trait seam | `HttpTransport` is the sole production HTTP injection point and is dyn-compatible through `async-trait` with target-aware `Send` bounds | Conforms |
+| Success fidelity | The success channel returns a `TransportResponse` carrying the 2xx status code, the redacted response headers, and the body; the calling layer reads real response metadata instead of fabricating it | Conforms |
 | Per-call controls | Every trait method carries per-call headers and an optional per-call timeout; adapters merge with constructor defaults and apply the deadline when supplied | Conforms |
-| Typed failures | Every failure routes through `TransportError::Transport { class, detail }`, `TransportError::Configuration { message }`, or `TransportError::HttpStatus { status, headers, body }` | Conforms |
+| Typed failures | Every failure routes through `TransportError::Transport { class, detail }`, `TransportError::Configuration { message }`, or `TransportError::HttpStatus { status, headers, body }`, which shares its status/headers/body shape with the success type | Conforms |
 | Canonical HTTP and URL types | Orderbook and subgraph request code reaches `http` and `url` directly where the native client previously re-exported those types | Conforms |
 | URL redaction | Both defaults strip URLs before wrapping so credential-bearing query strings never surface through `Debug` or `Display` | Conforms |
 | Adapter parity | The native and browser adapters report the same `TransportErrorClass` for the same failure class on matching fixtures, and both surface non-2xx responses through `TransportError::HttpStatus` with the numeric status code preserved | Conforms |
@@ -58,7 +59,7 @@ separate runtime contract).
 ### Trait Seam
 
 The trait lives at `cow_sdk_core::HttpTransport` and declares four async
-methods (`get`, `post`, `put`, `delete`) that return `Result<String,
+methods (`get`, `post`, `put`, `delete`) that return `Result<TransportResponse,
 TransportError>`. Each method accepts per-call headers as a slice of
 name/value pairs and an optional per-call timeout alongside the URL and
 body. The trait is `#[async_trait]` on native targets (futures are
@@ -67,6 +68,23 @@ body. The trait is `#[async_trait]` on native targets (futures are
 consumers while the browser adapter stays viable; implementations
 additionally carry `std::fmt::Debug` for derived `Debug` rendering on
 consumer-facing clients.
+
+### Success Fidelity Surface
+
+`TransportResponse` is the success type returned by every trait method on a
+2xx response. It carries the numeric status code, the response headers, and
+the body, with accessors that mirror the `http` crate: `status()`,
+`headers()`, `header(name)` (ASCII-case-insensitive first match), `body()`,
+and `into_body()`. Header values are held in the `Redacted<T>` newtype so
+they never surface through `Debug`, and the type's `Debug` renders the body
+as a byte length rather than its contents. Fields are private so the
+representation can evolve behind the accessors. Implementations construct a
+`TransportResponse` only for 2xx responses; non-2xx responses continue to
+flow through `TransportError::HttpStatus`, which carries the same
+status/headers/body shape. On browser targets, cross-origin header
+visibility is bounded by CORS exposure: `Content-Type` and the other
+safelisted response headers are always readable, while any other header
+requires the server to opt in through `Access-Control-Expose-Headers`.
 
 ### Typed Failure Surface
 
@@ -78,7 +96,7 @@ builder-time failures that prevent a request from dispatching.
 `TransportError::HttpStatus { status, headers, body }` captures a
 non-2xx response so the calling layer receives the numeric status,
 response headers, and raw response body through the typed error channel
-rather than through an `Ok(String)` success path. Downstream error
+rather than through the `TransportResponse` success path. Downstream error
 aggregates
 (`OrderbookError::Transport`, `SubgraphError::Transport`,
 `SubgraphError::HttpStatus`, `AppDataError::Transport`) carry the same
@@ -213,7 +231,11 @@ Primary implementation points:
 Primary regression coverage:
 
 - `crates/core/tests/transport_contract.rs`
+- `crates/core/tests/transport_contract.rs::transport_response_accessors_expose_status_headers_and_body`
+- `crates/core/tests/transport_contract.rs::transport_response_debug_redacts_headers_and_hides_the_body`
+- `crates/core/tests/transport_contract.rs::success_response_carries_the_real_status_and_headers`
 - `crates/transport-wasm/tests/parity_contract.rs`
+- `crates/orderbook/tests/api_contract.rs::recording_transport::orderbook_non_2xx_in_the_ok_channel_is_normalized_onto_the_error_path`
 - `crates/core/tests/retry_after_contract.rs`
 - `crates/core/tests/classify_contract.rs::network_error_kind_mapping_round_trip_is_total`
 - `crates/core/tests/policy_contract.rs::retry_after_helper_is_case_insensitive`

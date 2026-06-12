@@ -5,7 +5,8 @@ use std::time::Duration;
 use cow_sdk_core::config::{DEFAULT_TCP_KEEPALIVE, DEFAULT_USER_AGENT};
 use cow_sdk_core::transport::{classify_reqwest_error, sanitize_public_base_url};
 use cow_sdk_core::{
-    HttpTransport, ReqwestTransport, ReqwestTransportConfig, TransportError, TransportErrorClass,
+    HttpTransport, Redacted, ReqwestTransport, ReqwestTransportConfig, TransportError,
+    TransportErrorClass, TransportResponse,
 };
 use serde_json::json;
 use wiremock::matchers::{method, path};
@@ -81,7 +82,7 @@ async fn default_config_sends_services_aligned_user_agent() {
         .await
         .expect("default user-agent must be sent on requests");
 
-    assert_eq!(body, "ok");
+    assert_eq!(body.body(), "ok");
 }
 
 #[tokio::test]
@@ -99,7 +100,7 @@ async fn get_round_trip_returns_response_body() {
         .await
         .expect("get round-trip must succeed against the mock server");
 
-    assert_eq!(body, "{\"ok\":true}");
+    assert_eq!(body.body(), "{\"ok\":true}");
 }
 
 #[tokio::test]
@@ -117,7 +118,7 @@ async fn post_round_trip_forwards_body_and_returns_response_body() {
         .await
         .expect("post round-trip must succeed against the mock server");
 
-    assert_eq!(body, "{\"quoteId\":42}");
+    assert_eq!(body.body(), "{\"quoteId\":42}");
 }
 
 #[tokio::test]
@@ -135,7 +136,7 @@ async fn delete_round_trip_forwards_body_and_returns_response_body() {
         .await
         .expect("delete round-trip must succeed against the mock server");
 
-    assert_eq!(body, "deleted");
+    assert_eq!(body.body(), "deleted");
 }
 
 #[tokio::test]
@@ -231,7 +232,7 @@ async fn per_call_headers_reach_the_remote_endpoint() {
         .await
         .expect("per-call headers must be forwarded to the endpoint");
 
-    assert_eq!(body, "ok");
+    assert_eq!(body.body(), "ok");
 }
 
 #[tokio::test]
@@ -455,7 +456,7 @@ async fn response_within_cap_is_returned_intact() {
         .get("/ok", NO_HEADERS, None)
         .await
         .expect("a body within the cap must be returned");
-    assert_eq!(received, body);
+    assert_eq!(received.body(), body);
 }
 
 #[tokio::test]
@@ -494,7 +495,7 @@ async fn response_exactly_at_cap_is_accepted_and_one_over_is_rejected() {
         .get("/exact", NO_HEADERS, None)
         .await
         .expect("a body exactly at the cap must be accepted");
-    assert_eq!(at_cap.len(), 2048);
+    assert_eq!(at_cap.body().len(), 2048);
 
     let over = transport
         .get("/over", NO_HEADERS, None)
@@ -538,7 +539,7 @@ async fn non_utf8_body_is_decoded_lossily_without_a_cap_layer_error() {
         .get("/binary", NO_HEADERS, None)
         .await
         .expect("a non-UTF-8 body must decode lossily, not error");
-    assert!(received.contains('\u{FFFD}'));
+    assert!(received.body().contains('\u{FFFD}'));
 }
 
 #[tokio::test]
@@ -580,6 +581,80 @@ async fn gzip_bomb_is_rejected_on_decompressed_size() {
     assert_eq!(error.class(), Some(TransportErrorClass::ResponseTooLarge));
 }
 
+#[test]
+fn transport_response_accessors_expose_status_headers_and_body() {
+    let response = TransportResponse::new(
+        201,
+        vec![
+            (
+                "Content-Type".to_owned(),
+                Redacted::new("application/json".to_owned()),
+            ),
+            (
+                "X-Request-Id".to_owned(),
+                Redacted::new("abc-123".to_owned()),
+            ),
+        ],
+        "{\"ok\":true}",
+    );
+
+    assert_eq!(response.status(), 201);
+    assert_eq!(response.headers().len(), 2);
+    // `header` matches the name ASCII-case-insensitively and returns the
+    // first match.
+    assert_eq!(response.header("content-type"), Some("application/json"));
+    assert_eq!(response.header("X-REQUEST-ID"), Some("abc-123"));
+    assert_eq!(response.header("missing"), None);
+    assert_eq!(response.body(), "{\"ok\":true}");
+    assert_eq!(response.into_body(), "{\"ok\":true}");
+}
+
+#[test]
+fn transport_response_debug_redacts_headers_and_hides_the_body() {
+    let response = TransportResponse::new(
+        200,
+        vec![(
+            "Set-Cookie".to_owned(),
+            Redacted::new("session=secret-token".to_owned()),
+        )],
+        "secret-body-contents",
+    );
+
+    let rendered = format!("{response:?}");
+    // The body renders as a byte length, never its contents, and redacted
+    // header values never leak.
+    assert!(rendered.contains("body_bytes"));
+    assert!(!rendered.contains("secret-body-contents"));
+    assert!(!rendered.contains("secret-token"));
+}
+
+#[tokio::test]
+async fn success_response_carries_the_real_status_and_headers() {
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/orders"))
+        .respond_with(
+            ResponseTemplate::new(201)
+                .insert_header("X-Request-Id", "req-42")
+                .set_body_raw("\"0xorderuid\"".as_bytes(), "application/json"),
+        )
+        .mount(&server)
+        .await;
+
+    let transport = build_transport(server.uri());
+    let response = transport
+        .post("/orders", "{}", NO_HEADERS, None)
+        .await
+        .expect("a 2xx response must succeed through ReqwestTransport");
+
+    // The success channel reports the real status and headers instead of a
+    // fabricated `200`.
+    assert_eq!(response.status(), 201);
+    assert_eq!(response.header("content-type"), Some("application/json"));
+    assert_eq!(response.header("x-request-id"), Some("req-42"));
+    assert_eq!(response.body(), "\"0xorderuid\"");
+}
+
 #[cfg(feature = "tracing")]
 mod tracing_contract {
     use super::*;
@@ -611,7 +686,7 @@ mod tracing_contract {
             .await
             .expect("mocked POST must succeed");
 
-        assert_eq!(response, "quoted");
+        assert_eq!(response.body(), "quoted");
 
         let spans = capture.spans();
         let expected_bytes_sent = body.len().to_string();

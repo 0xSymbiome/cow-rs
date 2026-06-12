@@ -139,8 +139,15 @@ async fn stub_http_transport_succeeds_with_empty_body() {
     use cow_sdk_test_utils::mocks::StubHttpTransport;
 
     let transport = StubHttpTransport;
-    assert_eq!(transport.get("/x", &[], None).await.unwrap(), "");
-    assert_eq!(transport.post("/x", "body", &[], None).await.unwrap(), "");
+    assert_eq!(transport.get("/x", &[], None).await.unwrap().body(), "");
+    assert_eq!(
+        transport
+            .post("/x", "body", &[], None)
+            .await
+            .unwrap()
+            .body(),
+        ""
+    );
 }
 
 #[tokio::test]
@@ -156,11 +163,16 @@ async fn recording_http_transport_records_requests_and_replays_responses() {
         transport
             .get("/a", &[], Some(std::time::Duration::from_secs(1)))
             .await
-            .unwrap(),
+            .unwrap()
+            .body(),
         "first"
     );
     assert_eq!(
-        transport.post("/b", "body", &[], None).await.unwrap(),
+        transport
+            .post("/b", "body", &[], None)
+            .await
+            .unwrap()
+            .body(),
         "second"
     );
 
