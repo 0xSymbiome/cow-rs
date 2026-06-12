@@ -6,8 +6,8 @@
 //! TypeScript `CowShedSdk.signCalls` ergonomics while staying provider-free:
 //! it never owns an RPC client and never estimates gas. The low-level building
 //! blocks ([`crate::cow_shed::proxy_of`], [`crate::cow_shed::execute_hooks_signing_hash`],
-//! [`crate::cow_shed::encode_execute_hooks_calldata`]) remain public for advanced and
-//! digest-only callers.
+//! [`crate::cow_shed::encode_execute_hooks_calldata_signed`]) remain public for
+//! advanced and digest-only callers.
 
 use crate::{DeploymentChainId, RecoverableSignature};
 use alloy_primitives::{Address, B256, Bytes, U256};
