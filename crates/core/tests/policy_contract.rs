@@ -322,6 +322,8 @@ fn user_agent_validation_error_surfaces_directly() {
 
 #[test]
 fn builder_round_trip_preserves_every_setter() {
+    use cow_sdk_core::transport::policy::IPFS_MAX_RESPONSE_BYTES;
+
     let custom_retry = RetryPolicyBuilder::new()
         .max_attempts(3)
         .base_delay(Duration::from_millis(25))
@@ -354,7 +356,6 @@ fn builder_round_trip_preserves_every_setter() {
     // `timeout` preserve every other client-policy field, so a tightened
     // ADR 0055 response-byte cap and a deliberately disabled timeout survive
     // the refinement instead of resetting to the workspace defaults.
-    use cow_sdk_core::transport::policy::IPFS_MAX_RESPONSE_BYTES;
     let hardened = HttpClientPolicy::new("partner-bot/1.0")
         .expect("static UA validates")
         .without_timeout()
