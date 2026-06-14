@@ -174,7 +174,6 @@ fn generated_type_declarations_expose_transport_policy_config_for_http_flavours(
         "retryPolicy?: RetryPolicyConfig",
         "requestRateLimiter?: RequestRateLimiterConfig",
         "jitterStrategy?: JitterStrategyConfig",
-        "tracingEnabled?: boolean",
         "userAgent?: string",
         "transportPolicy?: TransportPolicyConfig",
     ];

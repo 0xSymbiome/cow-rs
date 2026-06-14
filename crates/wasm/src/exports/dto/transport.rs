@@ -178,9 +178,6 @@ pub struct TransportPolicyConfig {
     /// Optional transport user-agent value.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub user_agent: Option<String>,
-    /// Enables or disables transport tracing integration.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub tracing_enabled: Option<bool>,
 }
 
 #[cfg(feature = "transport-policy")]
@@ -208,10 +205,6 @@ impl TransportPolicyConfig {
                     WasmError::invalid("transportPolicy.userAgent", error.to_string())
                 })?;
             policy = policy.with_client_policy(client);
-        }
-
-        if let Some(tracing_enabled) = self.tracing_enabled {
-            policy = policy.with_tracing_enabled(tracing_enabled);
         }
 
         Ok(policy)

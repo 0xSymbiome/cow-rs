@@ -42,7 +42,6 @@ export interface TransportPolicyConfig {
   retryPolicy?: RetryPolicyConfig;
   requestRateLimiter?: RequestRateLimiterConfig;
   jitterStrategy?: JitterStrategyConfig;
-  tracingEnabled?: boolean;
   userAgent?: string;
 }
 

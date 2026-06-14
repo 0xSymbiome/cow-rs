@@ -1784,10 +1784,6 @@ export interface TransportPolicyConfig {
      * Optional transport user-agent value.
      */
     userAgent?: string;
-    /**
-     * Enables or disables transport tracing integration.
-     */
-    tracingEnabled?: boolean;
 }
 
 /**
