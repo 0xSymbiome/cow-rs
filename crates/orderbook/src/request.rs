@@ -259,35 +259,6 @@ struct RequestExecution<'a> {
     additional_headers: Option<HeaderMap>,
 }
 
-/// Executes a JSON request without overriding the shared-client timeout.
-///
-/// # Errors
-///
-/// Returns [`OrderbookError`] when request execution fails, the API returns a
-/// non-success response, or the success body cannot be decoded as JSON.
-pub async fn request_json<T>(
-    transport: &SharedTransport,
-    base_url: &str,
-    params: &FetchParams,
-    policy: &RetryPolicy,
-    rate_limiter: &RequestRateLimiter,
-    additional_headers: Option<HeaderMap>,
-) -> Result<T, OrderbookError>
-where
-    T: DeserializeOwned,
-{
-    request_json_with_timeout(
-        transport,
-        base_url,
-        params,
-        policy,
-        rate_limiter,
-        None,
-        additional_headers,
-    )
-    .await
-}
-
 /// Executes a JSON request with an optional per-request timeout override.
 ///
 /// # Errors
@@ -322,32 +293,6 @@ where
     .await
 }
 
-/// Executes a text request without overriding the shared-client timeout.
-///
-/// # Errors
-///
-/// Returns [`OrderbookError`] when request execution fails, the API returns a
-/// non-success response, or the success body cannot be decoded as UTF-8 text.
-pub async fn request_text(
-    transport: &SharedTransport,
-    base_url: &str,
-    params: &FetchParams,
-    policy: &RetryPolicy,
-    rate_limiter: &RequestRateLimiter,
-    additional_headers: Option<HeaderMap>,
-) -> Result<String, OrderbookError> {
-    request_text_with_timeout(
-        transport,
-        base_url,
-        params,
-        policy,
-        rate_limiter,
-        None,
-        additional_headers,
-    )
-    .await
-}
-
 /// Executes a text request with an optional per-request timeout override.
 ///
 /// # Errors
@@ -375,32 +320,6 @@ pub async fn request_text_with_timeout(
         rate_limiter,
         ResponseKind::Text,
         decode_text_body,
-    )
-    .await
-}
-
-/// Executes a request that expects an empty success body.
-///
-/// # Errors
-///
-/// Returns [`OrderbookError`] when request execution fails or the API returns a
-/// non-success response.
-pub async fn request_empty(
-    transport: &SharedTransport,
-    base_url: &str,
-    params: &FetchParams,
-    policy: &RetryPolicy,
-    rate_limiter: &RequestRateLimiter,
-    additional_headers: Option<HeaderMap>,
-) -> Result<(), OrderbookError> {
-    request_empty_with_timeout(
-        transport,
-        base_url,
-        params,
-        policy,
-        rate_limiter,
-        None,
-        additional_headers,
     )
     .await
 }
@@ -461,34 +380,6 @@ where
             async move { future.await.map(AttemptOutcome::Response) }
         },
         decode_success_body::<T>,
-    )
-    .await
-}
-
-/// Executes an abstract text-producing attempt with retry and rate-limit policy.
-///
-/// # Errors
-///
-/// Returns [`OrderbookError`] when all attempts fail, the API returns a
-/// non-success response, or the success body cannot be decoded as text.
-pub async fn execute_text_with<F, Fut>(
-    policy: &RetryPolicy,
-    rate_limiter: &RequestRateLimiter,
-    mut attempt: F,
-) -> Result<String, OrderbookError>
-where
-    F: FnMut() -> Fut,
-    Fut: Future<Output = Result<ResponseEnvelope, (cow_sdk_core::TransportErrorClass, String)>>,
-{
-    execute_with(
-        None,
-        policy,
-        rate_limiter,
-        move || {
-            let future = attempt();
-            async move { future.await.map(AttemptOutcome::Response) }
-        },
-        decode_text_body,
     )
     .await
 }

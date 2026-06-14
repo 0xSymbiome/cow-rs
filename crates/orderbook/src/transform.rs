@@ -2,7 +2,7 @@ use cow_sdk_core::{Amount, NATIVE_CURRENCY_ADDRESS};
 
 use crate::{
     error::OrderbookError,
-    types::{Order, OrderUid},
+    types::Order,
 };
 
 /// Normalizes an orderbook order response into the crate's stable DTO contract.
@@ -57,13 +57,6 @@ pub fn calculate_total_fee(executed_fee: Option<&str>) -> Result<Amount, Orderbo
             details: "expected unsigned decimal string",
         },
     })
-}
-
-/// Returns the canonical lowercase hex form of an order UID for
-/// transport-layer interpolation.
-#[must_use]
-pub fn ensure_order_uid(uid: &OrderUid) -> String {
-    uid.to_hex_string()
 }
 
 fn validate_decimal(value: &str) -> Result<(), OrderbookError> {

@@ -83,11 +83,19 @@ pub struct EnvBaseUrlOverrides {
 
 impl EnvBaseUrlOverrides {
     /// Sets the explicit base URL for `env`.
+    ///
+    /// Only [`CowEnv::Prod`] and [`CowEnv::Staging`] carry an explicit base-URL
+    /// override; any other (future, `#[non_exhaustive]`) environment is ignored.
+    /// The `debug_assert!` flags an unhandled variant in debug builds so a new
+    /// environment is wired here rather than silently dropped.
     pub fn set(&mut self, env: CowEnv, base_url: impl Into<String>) {
         match env {
             CowEnv::Prod => self.prod = Some(Redacted::new(base_url.into())),
             CowEnv::Staging => self.staging = Some(Redacted::new(base_url.into())),
-            _ => {}
+            _ => debug_assert!(
+                false,
+                "EnvBaseUrlOverrides::set received an unhandled CowEnv variant"
+            ),
         }
     }
 

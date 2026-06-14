@@ -22,7 +22,7 @@ const SURFACES: &[Surface] = &[
         type_name: "OrderbookApi",
         source_paths: &["crates/orderbook/src/api.rs"],
         table_path: "crates/orderbook/tests/cancellation_composition_contract.rs",
-        seed_methods: &["version"],
+        seed_methods: &[],
     },
     Surface {
         type_name: "SubgraphApi",

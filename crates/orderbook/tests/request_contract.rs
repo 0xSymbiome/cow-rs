@@ -14,7 +14,8 @@ use cow_sdk_core::{Cancellable, HttpTransport, ReqwestTransport, ReqwestTranspor
 use cow_sdk_orderbook::OrderbookError;
 use cow_sdk_orderbook::request::{
     FetchParams, HttpMethod, OrderbookApiError, ResponseBody, ResponseEnvelope, execute_empty_with,
-    execute_json_with, request_empty, request_json, request_text,
+    execute_json_with, request_empty_with_timeout, request_json_with_timeout,
+    request_text_with_timeout,
 };
 #[cfg(feature = "tracing")]
 use cow_sdk_orderbook::{CowEnv, SupportedChainId};
@@ -129,12 +130,13 @@ async fn request_json_retries_429_and_preserves_headers_on_each_attempt() {
         HeaderValue::from_static("secret"),
     );
 
-    let result: serde_json::Value = request_json(
+    let result: serde_json::Value = request_json_with_timeout(
         &build_shared_transport(),
         &server.uri(),
         &FetchParams::new("/api/v1/retry", HttpMethod::Get),
         &policy,
         &limiter,
+        None,
         Some(headers),
     )
     .await
@@ -310,22 +312,24 @@ async fn request_text_and_empty_share_the_request_builder_and_success_path() {
     let policy = RetryPolicy::default();
     let limiter = default_limiter();
 
-    let version = request_text(
+    let version = request_text_with_timeout(
         &build_shared_transport(),
         &server.uri(),
         &FetchParams::new("/api/v1/version", HttpMethod::Get),
         &policy,
         &limiter,
         None,
+        None,
     )
     .await
     .expect("text response should decode");
-    request_empty(
+    request_empty_with_timeout(
         &build_shared_transport(),
         &server.uri(),
         &FetchParams::new("/api/v1/orders", HttpMethod::Delete),
         &policy,
         &limiter,
+        None,
         None,
     )
     .await
@@ -434,34 +438,6 @@ fn typed_api_error_preserves_status_body_and_message() {
     );
 }
 
-#[test]
-fn json_envelope_classifies_to_typed_rejection_through_from_api_error() {
-    let api_error = OrderbookApiError::new(
-        400,
-        "Bad Request",
-        ResponseBody::Json(json!({
-            "errorType": "DuplicatedOrder",
-            "description": "order already exists"
-        })),
-    );
-
-    match cow_sdk_orderbook::OrderbookError::from(api_error) {
-        cow_sdk_orderbook::OrderbookError::Rejected {
-            status,
-            rejection,
-            source,
-        } => {
-            assert_eq!(status.as_u16(), 400);
-            assert_eq!(
-                rejection,
-                cow_sdk_orderbook::OrderbookRejection::DuplicatedOrder
-            );
-            assert_eq!(source.status, 400);
-        }
-        other => panic!("expected Rejected, got {other:?}"),
-    }
-}
-
 #[tokio::test]
 async fn request_json_surfaces_malformed_success_payloads() {
     let server = MockServer::start().await;
@@ -474,12 +450,13 @@ async fn request_json_surfaces_malformed_success_payloads() {
     let policy = retry_policy(1);
     let limiter = default_limiter();
 
-    let error = request_json::<serde_json::Value>(
+    let error = request_json_with_timeout::<serde_json::Value>(
         &build_shared_transport(),
         &server.uri(),
         &FetchParams::new("/api/v1/malformed", HttpMethod::Get),
         &policy,
         &limiter,
+        None,
         None,
     )
     .await

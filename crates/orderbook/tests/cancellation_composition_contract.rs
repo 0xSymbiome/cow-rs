@@ -137,10 +137,10 @@ const TESTED_METHODS: &[CancellationCase] = &[
         invoke: invoke_get_solver_competition_by_tx_hash,
     },
     CancellationCase {
-        method_name: "latest_solver_competition",
+        method_name: "version",
         http_method: "GET",
-        path: path_latest_solver_competition,
-        invoke: invoke_get_latest_solver_competition,
+        path: path_version,
+        invoke: invoke_get_version,
     },
 ];
 
@@ -280,7 +280,10 @@ fn path_account_orders() -> String {
 }
 
 fn path_tx_orders() -> String {
-    format!("/api/v1/transactions/{}/orders", sample_tx_hash())
+    format!(
+        "/api/v1/transactions/{}/orders",
+        sample_tx_hash().to_hex_string()
+    )
 }
 
 fn path_trades() -> String {
@@ -327,11 +330,14 @@ fn path_solver_competition_by_auction_id() -> String {
 }
 
 fn path_solver_competition_by_tx_hash() -> String {
-    format!("/api/v2/solver_competition/by_tx_hash/{}", sample_tx_hash())
+    format!(
+        "/api/v2/solver_competition/by_tx_hash/{}",
+        sample_tx_hash().to_hex_string()
+    )
 }
 
-fn path_latest_solver_competition() -> String {
-    "/api/v2/solver_competition/latest".to_owned()
+fn path_version() -> String {
+    "/api/v1/version".to_owned()
 }
 
 fn invoke_get_quote(api: &OrderbookApi) -> CaseFuture<'_> {
@@ -377,7 +383,7 @@ fn invoke_get_orders(api: &OrderbookApi) -> CaseFuture<'_> {
 
 fn invoke_get_tx_orders(api: &OrderbookApi) -> CaseFuture<'_> {
     Box::pin(async move {
-        api.tx_orders(sample_tx_hash())
+        api.tx_orders(&sample_tx_hash())
             .await
             .map(|_: Vec<Order>| ())
     })
@@ -439,18 +445,14 @@ fn invoke_get_solver_competition_by_auction_id(api: &OrderbookApi) -> CaseFuture
 
 fn invoke_get_solver_competition_by_tx_hash(api: &OrderbookApi) -> CaseFuture<'_> {
     Box::pin(async move {
-        api.solver_competition_by_tx_hash(sample_tx_hash())
+        api.solver_competition_by_tx_hash(&sample_tx_hash())
             .await
             .map(|_: SolverCompetitionResponse| ())
     })
 }
 
-fn invoke_get_latest_solver_competition(api: &OrderbookApi) -> CaseFuture<'_> {
-    Box::pin(async move {
-        api.latest_solver_competition()
-            .await
-            .map(|_: SolverCompetitionResponse| ())
-    })
+fn invoke_get_version(api: &OrderbookApi) -> CaseFuture<'_> {
+    Box::pin(async move { api.version().await.map(|_: String| ()) })
 }
 
 fn quote_request() -> OrderQuoteRequest {

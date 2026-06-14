@@ -160,7 +160,6 @@ emits a `warn`-level event on the same `cow_sdk::transport` target with
 - `upload_app_data`
 - `solver_competition`
 - `solver_competition_by_tx_hash`
-- `latest_solver_competition`
 
 ### `cow-sdk-subgraph`
 

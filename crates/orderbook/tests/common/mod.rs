@@ -21,7 +21,7 @@ use serde_json::{Value, json};
 use cow_sdk_core::transport::policy::{RequestRateLimiter, RetryPolicy, TransportPolicy};
 use cow_sdk_orderbook::{
     Address, ApiContext, AppDataHash, CowEnv, ExternalHostPolicy, OrderUid, OrderbookApi,
-    SupportedChainId,
+    SupportedChainId, TransactionHash,
 };
 
 pub use cow_sdk_test_utils::builders::address;
@@ -109,8 +109,10 @@ pub fn sample_signature() -> &'static str {
     "0x4d306ce7c770d22005bcfc00223f8d9aaa04e8a20099cc986cb9ccf60c7e876b777ceafb1e03f359ebc6d3dc84245d111a3df584212b5679cb5f9e6717b69b031b"
 }
 
-pub fn sample_tx_hash() -> &'static str {
+pub fn sample_tx_hash() -> TransactionHash {
     "0xd51f28edffcaaa76be4a22f6375ad289272c037f3cc072345676e88d92ced8b5"
+        .parse()
+        .expect("sample tx hash literal is valid")
 }
 
 pub fn sample_order_json(uid: &OrderUid) -> Value {

@@ -1,7 +1,7 @@
 # WASM Capability Coverage Audit
 
 Status: Current
-Last reviewed: 2026-06-09
+Last reviewed: 2026-06-14
 Owning surface: `cow-sdk-wasm` capability coverage relative to the native `cow-rs` SDK crates
 Refresh trigger: changes to `crates/wasm/src/exports/**`; additions or removals of public operations on the `orderbook`, `trading`, `signing`, `contracts`, `app-data`, or `subgraph` crates; or revisions to the workflow scope in `docs/parity.md`
 Related docs:
@@ -94,7 +94,6 @@ wallet; **Surfaced (composed)** — covered by combining exported operations;
 | `total_surplus` | — | Not surfaced (Class 2) |
 | `solver_competition` | — | Not surfaced (Class 2) |
 | `solver_competition_by_tx_hash` | — | Not surfaced (Class 2) |
-| `latest_solver_competition` | — | Not surfaced (Class 2) |
 
 #### trading — `Trading` → `TradingClient`
 
@@ -164,8 +163,7 @@ runtime-model boundary. Members:
   `version`, `order_link`, `order_multi_env`, `tx_orders`,
   `order_competition_status`, `total_surplus`,
   `solver_competition`, and
-  `solver_competition_by_tx_hash`. `latest_solver_competition` is a
-  native convenience read with no direct upstream `OrderBookApi` method.
+  `solver_competition_by_tx_hash`.
 - On-chain EIP-1271 signature verification (`verify_eip1271_signature` /
   `verify_eip1271_signature_cached`) and its verification caches, which require
   a chain `Provider` read rather than a service call.

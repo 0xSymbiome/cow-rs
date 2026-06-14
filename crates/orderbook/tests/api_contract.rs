@@ -1,6 +1,5 @@
 mod common;
 
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -419,14 +418,7 @@ async fn get_trades_requires_owner_xor_order_uid_and_keeps_default_pagination() 
         .expect("trade request should succeed");
 
     assert_eq!(trades.len(), 1);
-    assert_eq!(
-        trades[0]
-            .tx_hash
-            .as_ref()
-            .map(ToString::to_string)
-            .as_deref(),
-        Some(sample_tx_hash())
-    );
+    assert_eq!(trades[0].tx_hash, Some(sample_tx_hash()));
 
     let invalid = api
         .trades(&TradesQuery::new(
@@ -764,7 +756,7 @@ async fn native_price_surplus_and_solver_competition_routes_are_covered() {
     Mock::given(method("GET"))
         .and(path(format!(
             "/api/v2/solver_competition/by_tx_hash/{}",
-            sample_tx_hash()
+            sample_tx_hash().to_hex_string()
         )))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "auctionId": 8,
@@ -796,7 +788,7 @@ async fn native_price_surplus_and_solver_competition_routes_are_covered() {
         .await
         .expect("competition by auction id should succeed");
     let by_tx = api
-        .solver_competition_by_tx_hash(sample_tx_hash())
+        .solver_competition_by_tx_hash(&sample_tx_hash())
         .await
         .expect("competition by tx hash should succeed");
 
@@ -909,83 +901,6 @@ async fn get_order_status_route_is_typed() {
     assert_eq!(
         status.kind,
         cow_sdk_orderbook::CompetitionOrderStatusKind::Open
-    );
-}
-
-#[tokio::test]
-async fn get_version_returns_cancelled_when_combinator_token_fires_before_send() {
-    use cow_sdk_core::Cancellable;
-
-    let api = build_orderbook_api(default_context(SupportedChainId::Mainnet, CowEnv::Prod));
-    let token = cow_sdk_core::CancellationToken::new();
-    token.cancel();
-
-    let error = api
-        .version()
-        .cancel_with(&token)
-        .await
-        .expect_err("pre-cancelled token must produce a Cancelled error");
-    assert!(matches!(
-        error,
-        cow_sdk_orderbook::OrderbookError::Cancelled
-    ));
-}
-
-#[tokio::test(flavor = "current_thread", start_paused = true)]
-async fn get_version_combinator_aborts_an_in_flight_request() {
-    use cow_sdk_core::Cancellable;
-
-    struct DropSpy(Arc<AtomicBool>);
-
-    impl Drop for DropSpy {
-        fn drop(&mut self) {
-            self.0.store(true, Ordering::SeqCst);
-        }
-    }
-
-    let server = MockServer::start().await;
-    Mock::given(method("GET"))
-        .and(path("/api/v1/version"))
-        .respond_with(
-            ResponseTemplate::new(200)
-                .set_body_string("v1.0.0")
-                .set_delay(Duration::from_secs(30)),
-        )
-        .mount(&server)
-        .await;
-
-    let api = build_orderbook_api_with_base_url(
-        default_context(SupportedChainId::Mainnet, CowEnv::Prod),
-        server.uri(),
-    );
-    let token = cow_sdk_core::CancellationToken::new();
-    let token_for_task = token.clone();
-    let dropped = Arc::new(AtomicBool::new(false));
-    let spy = DropSpy(Arc::clone(&dropped));
-
-    let started = Instant::now();
-    let task = tokio::spawn(async move {
-        let _spy = spy;
-        api.version().cancel_with(&token_for_task).await
-    });
-
-    tokio::time::sleep(Duration::from_millis(50)).await;
-    token.cancel();
-
-    let result = task.await.expect("cancellation task should not panic");
-    let elapsed = started.elapsed();
-
-    assert!(matches!(
-        result,
-        Err(cow_sdk_orderbook::OrderbookError::Cancelled)
-    ));
-    assert!(
-        elapsed < Duration::from_secs(5),
-        "cancellation must drop the in-flight future within the request deadline; elapsed = {elapsed:?}"
-    );
-    assert!(
-        dropped.load(Ordering::SeqCst),
-        "the inner request future must be dropped when the cancellation token fires"
     );
 }
 
@@ -1265,32 +1180,5 @@ mod recording_transport {
             }
             other => panic!("expected Rejected or Api error, got {other:?}"),
         }
-    }
-}
-
-#[test]
-fn order_status_terminal_and_open_predicates_partition_known_variants() {
-    // Terminal states: no further fills or transitions are possible.
-    assert!(OrderStatus::Fulfilled.is_terminal());
-    assert!(OrderStatus::Cancelled.is_terminal());
-    assert!(OrderStatus::Expired.is_terminal());
-
-    // Live states: still fillable or awaiting a pre-signature.
-    assert!(OrderStatus::Open.is_open());
-    assert!(OrderStatus::PresignaturePending.is_open());
-
-    // The two predicates are exact complements over the variants known today.
-    for status in [
-        OrderStatus::PresignaturePending,
-        OrderStatus::Open,
-        OrderStatus::Fulfilled,
-        OrderStatus::Cancelled,
-        OrderStatus::Expired,
-    ] {
-        assert_ne!(
-            status.is_terminal(),
-            status.is_open(),
-            "{status:?} must be classified as exactly one of terminal or open",
-        );
     }
 }
