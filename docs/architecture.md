@@ -235,7 +235,7 @@ cow-named identity and numeric public types are cow-owned
 `#[repr(transparent)]` newtypes around the corresponding `alloy_primitives`
 type; `TypedDataDomain` is a cow-owned `#[non_exhaustive]` struct that emits
 the canonical EIP-1193 wire shape through its own `Serialize` impl and
-bridges to `alloy_sol_types::Eip712Domain` via an `into_alloy_domain()`
+bridges to `alloy_sol_types::Eip712Domain` via an `to_alloy_domain()`
 adapter at the EIP-712 hashing seam.
 
 ### Runtime Traits

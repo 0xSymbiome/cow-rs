@@ -221,7 +221,7 @@ pub fn hash_order(
     order: &OrderData,
 ) -> Result<OrderDigest, ContractsError> {
     let sol_order = sol_order_from_order_data(order);
-    let alloy_domain = domain.into_alloy_domain();
+    let alloy_domain = domain.to_alloy_domain();
     let digest = sol_order.eip712_signing_hash(&alloy_domain);
     Ok(OrderDigest::from_bytes(digest.into()))
 }
@@ -260,7 +260,7 @@ pub fn hash_order_cancellations(
     let sol_cancellations = SolOrderCancellations {
         orderUids: order_uids,
     };
-    let alloy_domain = domain.into_alloy_domain();
+    let alloy_domain = domain.to_alloy_domain();
     let digest = sol_cancellations.eip712_signing_hash(&alloy_domain);
     Ok(Hash32::from_bytes(digest.into()))
 }

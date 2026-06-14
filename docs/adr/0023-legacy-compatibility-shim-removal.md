@@ -80,7 +80,7 @@ for protocol-correct hashing.
 internal `crate::order::sol::Order` codec struct per
 [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md). The
 EIP-712 hashing seam uses `alloy_sol_types::Eip712Domain` (constructed
-through the `TypedDataDomain::into_alloy_domain()` adapter on the cow
+through the `TypedDataDomain::to_alloy_domain()` adapter on the cow
 `TypedDataDomain` struct) and ultimately consumes
 `alloy_primitives::keccak256` for every digest. The byte-typed identity
 fields on the cow `OrderData` struct (`Address`, `Amount`, `OrderUid`) are

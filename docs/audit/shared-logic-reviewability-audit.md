@@ -1,7 +1,7 @@
 # Shared Logic Reviewability Audit
 
 Status: Current  
-Last reviewed: 2026-06-08
+Last reviewed: 2026-06-14
 Owning surface: Orderbook, signing, and trading shared-logic reviewability boundary, plus the canonical primitive-layer invocation paths shared across the cow-rs workspace  
 Refresh trigger: Changes to shared orderbook request execution, signing payload construction, thin posting wrappers, boundary-specific order DTO separation, or the canonical primitive-layer invocation paths (keccak256, U256 and quantity parsing, address encoding, hex serde, typed-primitive bridges, and identity-wire-form preservation) that materially affect correctness or reviewability  
 Related docs:
@@ -132,7 +132,7 @@ required `verifyingContract`, no `salt`), so no bridge-side JSON
 coercion is required. The
 `crates/alloy-signer/src/conversion.rs` cow-to-alloy
 `TypedDataDomain` adapter remains in place as a thin
-`into_alloy_domain()` accessor (≈30 LoC); it simplifies but does not
+`to_alloy_domain()` accessor (≈30 LoC); it simplifies but does not
 retire, because the cow struct deliberately owns the wire shape and
 is intentionally independent of the alloy `Eip712Domain` field
 layout (which is `Option<_>` for every field and uses `U256` for

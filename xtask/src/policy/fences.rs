@@ -119,7 +119,7 @@ const FENCES: &[Fence] = &[
             skip_line_comments: false,
         },
         on_empty: OnEmpty::Pass,
-        message: "alloy Eip712Domain is the hashing-side type with Option fields, U256 chainId, and salt; cow TypedDataDomain emits the EIP-1193 eth_signTypedData_v4 wire shape (ADR 0052, ADR 0040). Use TypedDataDomain on DTO fields; bridge through .into_alloy_domain() for hashing.",
+        message: "alloy Eip712Domain is the hashing-side type with Option fields, U256 chainId, and salt; cow TypedDataDomain emits the EIP-1193 eth_signTypedData_v4 wire shape (ADR 0052, ADR 0040). Use TypedDataDomain on DTO fields; bridge through .to_alloy_domain() for hashing.",
     },
     Fence {
         name: "eip1271-shape-flag",

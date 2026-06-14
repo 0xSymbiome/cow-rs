@@ -22,7 +22,7 @@ use cow_sdk_core::{TypedDataField, TypedDataPayload};
 /// when Alloy rejects the resulting typed-data shape during the EIP-712
 /// signing-hash computation.
 pub fn cow_typed_data_payload_to_alloy(payload: &TypedDataPayload) -> Result<TypedData, String> {
-    let domain = payload.domain.into_alloy_domain();
+    let domain = payload.domain.to_alloy_domain();
     let resolver = build_resolver(&payload.types, &payload.primary_type)?;
     let message = serde_json::from_str(payload.message_json())
         .map_err(|error| format!("typed-data message JSON parse error: {error}"))?;

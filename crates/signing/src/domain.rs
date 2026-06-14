@@ -81,7 +81,7 @@ pub fn domain_separator(
 pub fn domain_separator_for(domain: &TypedDataDomain) -> Result<String, SigningError> {
     Ok(format!(
         "0x{}",
-        alloy_primitives::hex::encode(domain.into_alloy_domain().separator().as_slice())
+        alloy_primitives::hex::encode(domain.to_alloy_domain().separator().as_slice())
     ))
 }
 

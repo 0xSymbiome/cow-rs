@@ -17,7 +17,7 @@ use crate::types::{Address, ChainId};
 // MetaMask, Rabby, WalletConnect, and Frame all reject `null`
 // fields, hex `chainId`, and unexpected `salt` in the domain.
 //
-// The bridge to the hashing-side type is `into_alloy_domain()`
+// The bridge to the hashing-side type is `to_alloy_domain()`
 // (defined on this same impl block); use that adapter for hashing
 // and keep this struct as the wire-side type.
 //
@@ -72,7 +72,7 @@ impl TypedDataDomain {
     /// wallets (numeric `chainId`, lowercase 20-byte `verifyingContract`,
     /// no `salt`).
     #[must_use]
-    pub fn into_alloy_domain(&self) -> alloy_sol_types::Eip712Domain {
+    pub fn to_alloy_domain(&self) -> alloy_sol_types::Eip712Domain {
         alloy_sol_types::Eip712Domain {
             name: Some(self.name.clone().into()),
             version: Some(self.version.clone().into()),
@@ -177,7 +177,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn into_alloy_domain_emits_the_canonical_five_field_shape() {
+    fn to_alloy_domain_emits_the_canonical_five_field_shape() {
         let domain = TypedDataDomain::new(
             "Gnosis Protocol".to_owned(),
             "v2".to_owned(),
@@ -185,7 +185,7 @@ mod tests {
             crate::types::Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap(),
         );
 
-        let alloy = domain.into_alloy_domain();
+        let alloy = domain.to_alloy_domain();
 
         assert_eq!(alloy.name.as_deref(), Some("Gnosis Protocol"));
         assert_eq!(alloy.version.as_deref(), Some("v2"));
