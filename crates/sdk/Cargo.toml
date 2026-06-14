@@ -42,7 +42,6 @@ browser-wallet = ["dep:cow-sdk-browser-wallet"]
 # never on the default `cow-sdk` dependency closure (ADR 0049). Re-exports the
 # `cow-sdk-contracts` `cow_shed` module as `cow_sdk::cow_shed`.
 cow-shed = ["cow-sdk-contracts/cow-shed"]
-http-classifier = ["cow-sdk-core/reqwest-classifier"]
 # Opt-in read-only subgraph analytics. Off by default, so the crate is never on
 # the default `cow-sdk` dependency closure. Re-exports the `cow-sdk-subgraph`
 # leaf as `cow_sdk::subgraph` and lifts `SubgraphError` into `CowError`.

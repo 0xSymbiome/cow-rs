@@ -6,8 +6,6 @@ use crate::{HttpClientPolicy, ValidationError};
 
 use crate::transport::policy::{JitterStrategy, RequestRateLimiter, RetryPolicy};
 
-const DEFAULT_JITTER_SEED: u64 = 0xC0DE_CAFE_5EED_0001;
-
 /// Default orderbook user-agent string.
 pub const DEFAULT_ORDERBOOK_USER_AGENT: &str =
     concat!("cow-sdk-orderbook", "/", env!("CARGO_PKG_VERSION"));
@@ -34,13 +32,12 @@ pub const SUBGRAPH_MAX_RESPONSE_BYTES: usize = 2 * 1024 * 1024;
 /// gateway to a small read.
 pub const IPFS_MAX_RESPONSE_BYTES: usize = 16 * 1024;
 
-/// Combined HTTP client, retry, rate-limit, and tracing policy.
+/// Combined HTTP client, retry, and rate-limit policy.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TransportPolicy {
     client: HttpClientPolicy,
     retry: RetryPolicy,
     rate_limit: RequestRateLimiter,
-    tracing_enabled: bool,
 }
 
 impl Default for TransportPolicy {
@@ -61,7 +58,6 @@ impl TransportPolicy {
             client,
             retry,
             rate_limit,
-            tracing_enabled: false,
         }
     }
 
@@ -79,10 +75,9 @@ impl TransportPolicy {
             client: HttpClientPolicy::new(DEFAULT_ORDERBOOK_USER_AGENT)
                 .expect("static orderbook user-agent must remain valid"),
             retry: RetryPolicy::builder()
-                .jitter(JitterStrategy::decorrelated_from_seed(DEFAULT_JITTER_SEED))
+                .jitter(JitterStrategy::decorrelated_process())
                 .build(),
             rate_limit: RequestRateLimiter::default_orderbook(),
-            tracing_enabled: false,
         }
     }
 
@@ -101,10 +96,9 @@ impl TransportPolicy {
                 .expect("static subgraph user-agent must remain valid")
                 .with_max_response_bytes(SUBGRAPH_MAX_RESPONSE_BYTES),
             retry: RetryPolicy::builder()
-                .jitter(JitterStrategy::decorrelated_from_seed(DEFAULT_JITTER_SEED))
+                .jitter(JitterStrategy::decorrelated_process())
                 .build(),
             rate_limit: RequestRateLimiter::default_subgraph(),
-            tracing_enabled: false,
         }
     }
 
@@ -126,10 +120,9 @@ impl TransportPolicy {
             client: HttpClientPolicy::new(DEFAULT_TRADING_USER_AGENT)
                 .expect("static trading user-agent must remain valid"),
             retry: RetryPolicy::builder()
-                .jitter(JitterStrategy::decorrelated_from_seed(DEFAULT_JITTER_SEED))
+                .jitter(JitterStrategy::decorrelated_process())
                 .build(),
             rate_limit: RequestRateLimiter::default_orderbook(),
-            tracing_enabled: false,
         }
     }
 
@@ -154,7 +147,6 @@ impl TransportPolicy {
                 .with_max_response_bytes(IPFS_MAX_RESPONSE_BYTES),
             retry: RetryPolicy::no_retry(),
             rate_limit: RequestRateLimiter::unlimited(),
-            tracing_enabled: false,
         }
     }
 
@@ -180,12 +172,6 @@ impl TransportPolicy {
     #[must_use]
     pub const fn rate_limit(&self) -> &RequestRateLimiter {
         &self.rate_limit
-    }
-
-    /// Returns whether tracing integration is enabled.
-    #[must_use]
-    pub const fn tracing_enabled(&self) -> bool {
-        self.tracing_enabled
     }
 
     /// Returns the configured request timeout.
@@ -220,13 +206,6 @@ impl TransportPolicy {
         self.rate_limit = rate_limit;
         self
     }
-
-    /// Returns a copy of this policy with tracing enabled or disabled.
-    #[must_use]
-    pub const fn with_tracing_enabled(mut self, tracing_enabled: bool) -> Self {
-        self.tracing_enabled = tracing_enabled;
-        self
-    }
 }
 
 /// Builder for [`TransportPolicy`].
@@ -235,7 +214,6 @@ pub struct TransportPolicyBuilder {
     client: HttpClientPolicy,
     retry: RetryPolicy,
     rate_limit: RequestRateLimiter,
-    tracing_enabled: bool,
 }
 
 impl TransportPolicyBuilder {
@@ -253,10 +231,9 @@ impl TransportPolicyBuilder {
             client: HttpClientPolicy::new(DEFAULT_ORDERBOOK_USER_AGENT)
                 .expect("static orderbook user-agent must remain valid"),
             retry: RetryPolicy::builder()
-                .jitter(JitterStrategy::decorrelated_from_seed(DEFAULT_JITTER_SEED))
+                .jitter(JitterStrategy::decorrelated_process())
                 .build(),
             rate_limit: RequestRateLimiter::default_orderbook(),
-            tracing_enabled: false,
         }
     }
 
@@ -303,13 +280,6 @@ impl TransportPolicyBuilder {
         self
     }
 
-    /// Enables or disables tracing integration.
-    #[must_use]
-    pub const fn tracing_enabled(mut self, tracing_enabled: bool) -> Self {
-        self.tracing_enabled = tracing_enabled;
-        self
-    }
-
     /// Builds the transport policy.
     #[must_use]
     pub fn build(self) -> TransportPolicy {
@@ -317,7 +287,6 @@ impl TransportPolicyBuilder {
             client: self.client,
             retry: self.retry,
             rate_limit: self.rate_limit,
-            tracing_enabled: self.tracing_enabled,
         }
     }
 }

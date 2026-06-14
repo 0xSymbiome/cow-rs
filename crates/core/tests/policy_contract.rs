@@ -8,8 +8,6 @@ use cow_sdk_core::transport::policy::{
     RequestRateLimiter, RequestRateLimiterBuilder, RetryPolicy, RetryPolicyBuilder,
     TransportPolicy, TransportPolicyBuilder, is_retryable_status, sleep,
 };
-#[cfg(feature = "reqwest-classifier")]
-use cow_sdk_core::transport::policy::{ErrorClassifier, ReqwestErrorClassifier};
 use cow_sdk_core::{CancellationToken, DEFAULT_HTTP_TIMEOUT, HttpClientPolicy, ValidationError};
 use proptest::prelude::*;
 use url::Url;
@@ -108,24 +106,6 @@ fn request_rate_limiter_uses_host_keys_for_per_host_scope() {
     assert_ne!(limiter.key_for_url(&first), limiter.key_for_url(&third));
 }
 
-#[cfg(feature = "reqwest-classifier")]
-#[test]
-fn reqwest_error_classifier_is_total() {
-    // The bracketed token is not a valid IPv6 literal so the URL fails at
-    // the builder layer and no real network traffic is attempted.
-    let client = reqwest::Client::new();
-    let error = client
-        .request(reqwest::Method::GET, "https://[invalid ipv6]/")
-        .build()
-        .expect_err("malformed URL must fail at the builder layer");
-
-    let kind = ReqwestErrorClassifier.classify(&error);
-    assert!(matches!(
-        kind,
-        NetworkErrorKind::Builder | NetworkErrorKind::Request | NetworkErrorKind::Other
-    ));
-}
-
 #[cfg(not(target_arch = "wasm32"))]
 #[tokio::test]
 async fn cross_target_sleep_accuracy_is_bounded() {
@@ -210,17 +190,13 @@ fn retry_after_only_affects_rate_limit_and_unavailable_statuses() {
 // -------------------------------------------------------------------------
 
 #[test]
-fn explicit_constructor_disables_tracing_and_preserves_parts() {
+fn explicit_constructor_preserves_parts() {
     let client = HttpClientPolicy::new(DEFAULT_ORDERBOOK_USER_AGENT).expect("static UA validates");
     let retry = RetryPolicy::no_retry();
     let rate_limit = RequestRateLimiter::unlimited();
 
     let policy = TransportPolicy::new(client.clone(), retry.clone(), rate_limit.clone());
 
-    assert!(
-        !policy.tracing_enabled(),
-        "explicit `new` must default tracing to disabled",
-    );
     assert_eq!(policy.client_policy(), &client);
     assert_eq!(policy.retry(), &retry);
     assert_eq!(policy.rate_limit(), &rate_limit);
@@ -235,7 +211,6 @@ fn default_trading_uses_trading_user_agent_and_orderbook_limiter() {
     assert_eq!(policy.retry().max_attempts(), 10);
     assert_eq!(policy.rate_limit().tokens_per_interval(), 5);
     assert_eq!(policy.rate_limit().scope(), LimiterScope::PerHost);
-    assert!(!policy.tracing_enabled());
 }
 
 #[test]
@@ -258,7 +233,6 @@ fn default_ipfs_disables_retry_and_timeout_and_uses_unlimited_limiter() {
         0,
         "IPFS default uses the unlimited limiter (zero tokens short-circuits)",
     );
-    assert!(!policy.tracing_enabled());
 }
 
 #[test]
@@ -286,13 +260,6 @@ fn with_setters_replace_only_their_targeted_field() {
     assert_eq!(mutated.rate_limit(), &other_limit);
     assert_eq!(mutated.client_policy(), base.client_policy());
     assert_eq!(mutated.retry(), base.retry());
-
-    // with_tracing_enabled toggles only the tracing flag.
-    let mutated = base.clone().with_tracing_enabled(true);
-    assert!(mutated.tracing_enabled());
-    assert_eq!(mutated.client_policy(), base.client_policy());
-    assert_eq!(mutated.retry(), base.retry());
-    assert_eq!(mutated.rate_limit(), base.rate_limit());
 }
 
 #[test]
@@ -343,14 +310,12 @@ fn builder_round_trip_preserves_every_setter() {
         .expect("ASCII user-agent validates")
         .retry(custom_retry.clone())
         .rate_limit(custom_limit.clone())
-        .tracing_enabled(true)
         .build();
 
     assert_eq!(policy.user_agent(), "cow-sdk-test/0.0.1");
     assert_eq!(policy.timeout(), Some(Duration::from_secs(13)));
     assert_eq!(policy.retry(), &custom_retry);
     assert_eq!(policy.rate_limit(), &custom_limit);
-    assert!(policy.tracing_enabled());
 
     // A caller-set client policy is refined in place: `user_agent` and
     // `timeout` preserve every other client-policy field, so a tightened
@@ -397,7 +362,6 @@ fn builder_defaults_to_orderbook_user_agent_when_unset() {
 
     assert_eq!(policy.user_agent(), DEFAULT_ORDERBOOK_USER_AGENT);
     assert_eq!(policy.timeout(), Some(DEFAULT_HTTP_TIMEOUT));
-    assert!(!policy.tracing_enabled());
     // The seeded, otherwise-untouched builder is field-identical to the
     // documented orderbook default — including the response-byte cap.
     assert_eq!(policy, TransportPolicy::default_orderbook());
@@ -475,6 +439,28 @@ fn default_jitter_strategy_is_decorrelated_variant() {
         JitterStrategy::decorrelated(),
         JitterStrategy::Decorrelated { .. },
     ));
+}
+
+#[test]
+fn decorrelated_process_seeds_once_per_process() {
+    // The process-seeded default shares one seed for the whole process, so two
+    // calls — and the default policies built from them — stay field-equal,
+    // which `TransportPolicy`'s derived `PartialEq` and the builder/default
+    // equality rely on. Separate processes draw different seeds (the source of
+    // the cross-client decorrelation), which a single-process test cannot
+    // observe directly.
+    assert_eq!(
+        JitterStrategy::decorrelated_process(),
+        JitterStrategy::decorrelated_process(),
+    );
+    assert!(matches!(
+        JitterStrategy::decorrelated_process(),
+        JitterStrategy::Decorrelated { .. },
+    ));
+    assert_eq!(
+        TransportPolicy::default_orderbook(),
+        TransportPolicy::default_orderbook(),
+    );
 }
 
 #[test]

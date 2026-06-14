@@ -9,12 +9,9 @@ use std::time::{Duration, Instant};
 
 #[cfg(feature = "tracing")]
 use cow_sdk_core::Amount;
-use cow_sdk_core::transport::policy::{
-    INTERNAL_SERVER_ERROR, JitterStrategy, RequestRateLimiter, RetryPolicy, TOO_MANY_REQUESTS,
-};
+use cow_sdk_core::transport::policy::{JitterStrategy, RequestRateLimiter, RetryPolicy};
 use cow_sdk_core::{Cancellable, HttpTransport, ReqwestTransport, ReqwestTransportConfig};
 use cow_sdk_orderbook::OrderbookError;
-use cow_sdk_orderbook::error::classify_reqwest_error;
 use cow_sdk_orderbook::request::{
     FetchParams, HttpMethod, OrderbookApiError, ResponseBody, ResponseEnvelope, execute_empty_with,
     execute_json_with, request_empty, request_json, request_text,
@@ -23,7 +20,13 @@ use cow_sdk_orderbook::request::{
 use cow_sdk_orderbook::{CowEnv, SupportedChainId};
 #[cfg(feature = "tracing")]
 use cow_sdk_orderbook::{OrderCreation, OrderQuoteRequest, OrderQuoteSide, SigningScheme};
+use http::StatusCode;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
+
+// Status scalars sourced from `http::StatusCode` (the canonical status set) for
+// the wiremock response templates and status-equality assertions below.
+const INTERNAL_SERVER_ERROR: u16 = StatusCode::INTERNAL_SERVER_ERROR.as_u16();
+const TOO_MANY_REQUESTS: u16 = StatusCode::TOO_MANY_REQUESTS.as_u16();
 
 fn build_shared_transport() -> Arc<dyn HttpTransport + Send + Sync> {
     Arc::new(
@@ -761,7 +764,10 @@ async fn reqwest_error_classification_strips_url_query_and_host() {
         .await
         .expect_err("unreachable host must produce a reqwest error");
 
-    let (class, detail) = classify_reqwest_error(raw_error);
+    let OrderbookError::Transport { class, detail } = OrderbookError::from(raw_error) else {
+        panic!("a reqwest error must classify as the Transport variant");
+    };
+    let detail = detail.as_inner();
     assert!(
         !detail.contains(unreachable_host),
         "classified transport error must strip the host: {detail}"

@@ -6,6 +6,7 @@ use cow_sdk_core::transport::policy::{
     AttemptOutcome as RetryOutcome, LimiterKey, RequestRateLimiter, RetrySignal, TransportPolicy,
     run_with_retry,
 };
+use cow_sdk_core::transport::sanitize_public_base_url;
 use cow_sdk_core::{
     HttpClientPolicy, HttpTransport, Redacted, RedactedOptionalUrlMap, SupportedChainId,
     TransportError, TransportErrorClass, redact_response_body,
@@ -25,7 +26,6 @@ use crate::{
 
 const SUBGRAPH_BASE_URL: &str = "https://gateway.thegraph.com/api/";
 const REDACTED_API_KEY_SEGMENT: &str = "<redacted>";
-const CUSTOM_OVERRIDE_ROUTE_IDENTITY: &str = "<custom override>";
 
 /// Human-readable name for the `CoW` Protocol subgraph service.
 pub const API_NAME: &str = "CoW Protocol Subgraph";
@@ -733,23 +733,5 @@ fn request_error_context(
             .operation_name()
             .map(|value| value.to_owned().into()),
         variables: request.variables().cloned().map(Redacted::new),
-    }
-}
-
-#[allow(
-    clippy::option_if_let_else,
-    reason = "the Ok arm binds an intermediate origin and carries a nested conditional; the combinator form would collapse that multi-statement body into a closure and obscure the two-branch parallel structure"
-)]
-fn sanitize_public_base_url(base_url: &str) -> String {
-    match url::Url::parse(base_url) {
-        Ok(url) => {
-            let origin = url.origin().ascii_serialization();
-            if origin == "null" {
-                CUSTOM_OVERRIDE_ROUTE_IDENTITY.to_owned()
-            } else {
-                origin.trim_end_matches('/').to_owned()
-            }
-        }
-        Err(_) => CUSTOM_OVERRIDE_ROUTE_IDENTITY.to_owned(),
     }
 }

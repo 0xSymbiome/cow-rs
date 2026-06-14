@@ -23,7 +23,7 @@
 //! need to observe the configured URL for audit or telemetry purposes unwrap
 //! it explicitly through [`Redacted::as_inner`].
 
-use std::{borrow::Cow, time::Duration};
+use std::time::Duration;
 
 use ::reqwest::{
     Client, RequestBuilder,
@@ -35,10 +35,8 @@ use crate::{
     config::{DEFAULT_MAX_RESPONSE_BYTES, DEFAULT_TCP_KEEPALIVE, DEFAULT_USER_AGENT},
     redaction::Redacted,
     transport::{
-        CUSTOM_OVERRIDE_ROUTE_IDENTITY,
         error::TransportError,
         http::{HttpTransport, TransportResponse},
-        sanitize_public_base_url,
     },
     validation::TransportErrorClass,
 };
@@ -78,7 +76,11 @@ impl ReqwestTransportConfig {
         }
     }
 
-    /// Returns a copy of the configuration with a validated user-agent.
+    /// Returns a copy of the configuration with the supplied user-agent.
+    ///
+    /// The value is stored as-is; it is not validated here. An invalid HTTP
+    /// header value surfaces as [`TransportError::Configuration`] when
+    /// [`ReqwestTransport::new`] builds the client.
     #[must_use]
     pub fn with_user_agent(mut self, user_agent: impl Into<String>) -> Self {
         self.user_agent = user_agent.into();
@@ -223,7 +225,7 @@ impl ReqwestTransport {
         &self,
         builder: RequestBuilder,
         method: &str,
-        endpoint: &str,
+        path: &str,
         bytes_sent: usize,
     ) -> Result<TransportResponse, TransportError> {
         let max_response_bytes = self.max_response_bytes;
@@ -231,7 +233,9 @@ impl ReqwestTransport {
         {
             use tracing::Instrument as _;
 
+            let endpoint = crate::transport::span_endpoint(path);
             let span = tracing::info_span!(
+                target: "cow_sdk::transport",
                 "transport.dispatch",
                 method = method,
                 endpoint = endpoint,
@@ -252,7 +256,7 @@ impl ReqwestTransport {
 
         #[cfg(not(feature = "tracing"))]
         {
-            let _ = (method, endpoint, bytes_sent);
+            let _ = (method, path, bytes_sent);
             dispatch_request(builder, max_response_bytes).await
         }
     }
@@ -268,8 +272,7 @@ impl HttpTransport for ReqwestTransport {
     ) -> Result<TransportResponse, TransportError> {
         let url = self.resolve_url(path);
         let builder = Self::apply_call_overrides(self.client.get(&url), headers, timeout)?;
-        let endpoint = span_endpoint(path);
-        self.dispatch(builder, "GET", endpoint.as_ref(), 0).await
+        self.dispatch(builder, "GET", path, 0).await
     }
 
     async fn post(
@@ -282,9 +285,7 @@ impl HttpTransport for ReqwestTransport {
         let url = self.resolve_url(path);
         let builder = self.client.post(&url).body(body.to_owned());
         let builder = Self::apply_call_overrides(builder, headers, timeout)?;
-        let endpoint = span_endpoint(path);
-        self.dispatch(builder, "POST", endpoint.as_ref(), body.len())
-            .await
+        self.dispatch(builder, "POST", path, body.len()).await
     }
 
     async fn put(
@@ -297,9 +298,7 @@ impl HttpTransport for ReqwestTransport {
         let url = self.resolve_url(path);
         let builder = self.client.put(&url).body(body.to_owned());
         let builder = Self::apply_call_overrides(builder, headers, timeout)?;
-        let endpoint = span_endpoint(path);
-        self.dispatch(builder, "PUT", endpoint.as_ref(), body.len())
-            .await
+        self.dispatch(builder, "PUT", path, body.len()).await
     }
 
     async fn delete(
@@ -312,9 +311,7 @@ impl HttpTransport for ReqwestTransport {
         let url = self.resolve_url(path);
         let builder = self.client.delete(&url).body(body.to_owned());
         let builder = Self::apply_call_overrides(builder, headers, timeout)?;
-        let endpoint = span_endpoint(path);
-        self.dispatch(builder, "DELETE", endpoint.as_ref(), body.len())
-            .await
+        self.dispatch(builder, "DELETE", path, body.len()).await
     }
 }
 
@@ -382,27 +379,6 @@ fn bytes_received(result: &Result<TransportResponse, TransportError>) -> Option<
         Ok(response) => Some(response.body().len()),
         Err(TransportError::HttpStatus { body, .. }) => Some(body.as_inner().len()),
         Err(_) => None,
-    }
-}
-
-fn span_endpoint(path: &str) -> Cow<'_, str> {
-    let has_authority = path.contains("://");
-    if has_authority && sanitize_public_base_url(path) == CUSTOM_OVERRIDE_ROUTE_IDENTITY {
-        return Cow::Borrowed("/");
-    }
-
-    let endpoint = path.find("://").map_or(path, |scheme_end| {
-        let after_authority = &path[scheme_end + 3..];
-        after_authority
-            .find('/')
-            .map_or("/", |path_start| &after_authority[path_start..])
-    });
-    let end = endpoint.find(['?', '#']).unwrap_or(endpoint.len());
-    let endpoint = &endpoint[..end];
-    if endpoint.is_empty() && has_authority {
-        Cow::Borrowed("/")
-    } else {
-        Cow::Borrowed(endpoint)
     }
 }
 

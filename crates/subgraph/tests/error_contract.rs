@@ -1,9 +1,9 @@
 //! Public error-surface contract assertions for `cow-sdk-subgraph`.
 
-use cow_sdk_core::{SupportedChainId, TransportErrorClass};
+use cow_sdk_core::transport::classify_reqwest_error;
+use cow_sdk_core::{SupportedChainId, TransportError, TransportErrorClass};
 use cow_sdk_subgraph::{
     SubgraphError, SubgraphGraphQlError, SubgraphGraphQlErrorLocation, SubgraphRequestErrorContext,
-    error::classify_reqwest_error,
 };
 
 #[test]
@@ -20,7 +20,10 @@ fn transport_variant_carries_typed_class_and_sanitized_detail() {
         )
         .build()
         .expect_err("malformed URL must produce a builder-layer reqwest error");
-    let (class, details) = classify_reqwest_error(raw_error);
+    let TransportError::Transport { class, detail } = classify_reqwest_error(raw_error) else {
+        panic!("a reqwest error must classify as the Transport variant");
+    };
+    let details = detail.as_inner().to_owned();
 
     let error = SubgraphError::Transport {
         context: Box::new(SubgraphRequestErrorContext::new(

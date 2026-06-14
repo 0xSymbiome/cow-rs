@@ -28,8 +28,6 @@ tracing = ["dep:tracing"]
 # default so a `cow-sdk-core` consumer that needs only the primitive types does
 # not pull the retry-timer dependencies.
 transport-policy = ["dep:httpdate", "dep:futures-timer", "dep:gloo-timers", "dep:web-time"]
-# Native `reqwest::Error` classifier for the transport-policy taxonomy.
-reqwest-classifier = ["transport-policy"]
 
 [dependencies]
 alloy-primitives.workspace = true

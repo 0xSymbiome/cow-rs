@@ -101,8 +101,8 @@ compile_error!(
 // matching `alloy`, `reqwest`, and `tower`. The crate root itself carries only
 // the cross-cutting aggregate error (`CowError` / `ErrorClass`, below) and the
 // typed transport, registry, and EIP-1271 cache leaf surfaces consumers match
-// against. There is no facade prelude; the workspace's identity prelude is the
-// opt-in `cow_sdk::core::prelude` (the cow primitive newtypes, ADR 0052).
+// against. No crate in the workspace ships a prelude; identity types are reached
+// on their module path (`cow_sdk::core::Address`), matching alloy and reqwest.
 
 #[cfg(all(feature = "alloy", not(target_arch = "wasm32")))]
 #[cfg_attr(docsrs, doc(cfg(feature = "alloy")))]
@@ -130,7 +130,7 @@ pub use cow_sdk_core as core;
 /// Shared HTTP retry, rate-limit, and classification policy.
 pub mod http {
     pub use cow_sdk_core::transport::policy::{
-        ErrorClassifier, JitterStrategy, LimiterScope, NetworkErrorKind, RequestRateLimiter,
+        JitterStrategy, LimiterScope, NetworkErrorKind, RequestRateLimiter,
         RequestRateLimiterBuilder, RetryAfter, RetryPolicy, RetryPolicyBuilder, TransportPolicy,
         TransportPolicyBuilder, is_retryable_status, parse_retry_after,
     };
@@ -148,13 +148,6 @@ pub mod http {
     /// Native default HTTP transport implementation and its configuration.
     #[cfg(not(target_arch = "wasm32"))]
     pub use cow_sdk_core::{ReqwestTransport, ReqwestTransportConfig};
-
-    #[cfg(all(feature = "http-classifier", not(target_arch = "wasm32")))]
-    #[cfg_attr(
-        docsrs,
-        doc(cfg(all(feature = "http-classifier", not(target_arch = "wasm32"))))
-    )]
-    pub use cow_sdk_core::transport::policy::ReqwestErrorClassifier;
 }
 pub use cow_sdk_orderbook as orderbook;
 pub use cow_sdk_signing as signing;

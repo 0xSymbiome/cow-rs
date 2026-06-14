@@ -39,13 +39,7 @@ pub mod runner;
 pub mod status;
 pub mod time;
 
-#[cfg(all(feature = "reqwest-classifier", not(target_arch = "wasm32")))]
-#[cfg_attr(
-    docsrs,
-    doc(cfg(all(feature = "reqwest-classifier", not(target_arch = "wasm32"))))
-)]
-pub use classify::ReqwestErrorClassifier;
-pub use classify::{ErrorClassifier, NetworkErrorKind};
+pub use classify::NetworkErrorKind;
 pub use config::{
     DEFAULT_IPFS_USER_AGENT, DEFAULT_ORDERBOOK_USER_AGENT, DEFAULT_SUBGRAPH_USER_AGENT,
     DEFAULT_TRADING_USER_AGENT, IPFS_MAX_RESPONSE_BYTES, SUBGRAPH_MAX_RESPONSE_BYTES,
@@ -54,11 +48,8 @@ pub use config::{
 pub use jitter::JitterStrategy;
 pub use rate_limit::{DEFAULT_INTERVAL_LABEL, DEFAULT_TOKENS_PER_INTERVAL};
 pub use rate_limit::{LimiterScope, RequestRateLimiter, RequestRateLimiterBuilder};
-pub use retry::{DEFAULT_MAX_ATTEMPTS, RetryPolicy, RetryPolicyBuilder};
+pub use retry::{DEFAULT_MAX_ATTEMPTS, RetryPolicy, RetryPolicyBuilder, is_retryable_network};
 pub use retry_after::{RetryAfter, parse_retry_after, retry_after_from_headers};
 pub use runner::{AttemptOutcome, LimiterKey, RetrySignal, run_with_retry};
-pub use status::{
-    BAD_GATEWAY, GATEWAY_TIMEOUT, INTERNAL_SERVER_ERROR, REQUEST_TIMEOUT, RETRYABLE_STATUSES,
-    SERVICE_UNAVAILABLE, TOO_EARLY, TOO_MANY_REQUESTS, is_retryable_status,
-};
+pub use status::{RETRYABLE_STATUSES, is_retryable_status};
 pub use time::{sleep, system_now};

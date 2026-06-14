@@ -68,8 +68,6 @@
 // `FetchTransport` with `AbortController` lifecycle.
 // Enforced by cargo check-source-fences (xtask/src/policy/fences.rs).
 
-#[cfg(feature = "tracing")]
-use std::borrow::Cow;
 use std::time::Duration;
 
 use async_trait::async_trait;
@@ -192,13 +190,14 @@ impl FetchTransport {
         {
             use tracing::Instrument as _;
 
-            let endpoint = span_endpoint(path);
+            let endpoint = cow_sdk_core::transport::span_endpoint(path);
             let bytes_sent = body.map_or(0, str::len);
             let span = tracing::info_span!(
+                target: "cow_sdk::transport",
                 "transport.dispatch",
                 chain = "wasm32",
                 method = method,
-                endpoint = endpoint.as_ref(),
+                endpoint = endpoint,
                 bytes_sent = bytes_sent as u64,
                 bytes_received = tracing::field::Empty,
             );
@@ -329,24 +328,6 @@ fn bytes_received(result: &Result<TransportResponse, TransportError>) -> Option<
         Ok(response) => Some(response.body().len()),
         Err(TransportError::HttpStatus { body, .. }) => Some(body.as_inner().len()),
         Err(_) => None,
-    }
-}
-
-#[cfg(feature = "tracing")]
-fn span_endpoint(path: &str) -> Cow<'_, str> {
-    let has_authority = path.contains("://");
-    let endpoint = path.find("://").map_or(path, |scheme_end| {
-        let after_authority = &path[scheme_end + 3..];
-        after_authority
-            .find('/')
-            .map_or("/", |path_start| &after_authority[path_start..])
-    });
-    let end = endpoint.find(['?', '#']).unwrap_or(endpoint.len());
-    let endpoint = &endpoint[..end];
-    if endpoint.is_empty() && has_authority {
-        Cow::Borrowed("/")
-    } else {
-        Cow::Borrowed(endpoint)
     }
 }
 

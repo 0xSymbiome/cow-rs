@@ -1,9 +1,9 @@
 # Transport Policy Coverage Audit
 
 Status: Current
-Last reviewed: 2026-06-12
+Last reviewed: 2026-06-14
 Owning surface: the `cow_sdk_core::transport::policy` module (the off-by-default `transport-policy` feature of `cow-sdk-core`) — public retry, jitter, rate-limit, classification, and `Retry-After` parser surfaces, the shared `run_with_retry` driver and its `AttemptOutcome`, `RetrySignal`, and `LimiterKey` types, and the target-neutral `system_now` wall clock, including the HTTP-date delegation to `httpdate::parse_http_date` on `retry_after.rs` and the bounded-jitter contract on `jitter.rs`
-Refresh trigger: Changes to any public function in `cow_sdk_core::transport::policy`; changes to `RetryPolicy`, `JitterStrategy`, `RequestRateLimiter`, `RetryAfter`, `NetworkErrorKind`, or `ErrorClassifier`; changes to `run_with_retry`, `AttemptOutcome`, `RetrySignal`, `LimiterKey`, or `system_now`; changes to the `Retry-After` HTTP-date delegation or its expected accept/reject contract; changes to the workspace `Retry-After` cooldown honor rule documented in `http-transport-contract-audit.md`
+Refresh trigger: Changes to any public function in `cow_sdk_core::transport::policy`; changes to `RetryPolicy`, `JitterStrategy`, `RequestRateLimiter`, `RetryAfter`, or `NetworkErrorKind`; changes to `run_with_retry`, `AttemptOutcome`, `RetrySignal`, `LimiterKey`, or `system_now`; changes to the `Retry-After` HTTP-date delegation or its expected accept/reject contract; changes to the workspace `Retry-After` cooldown honor rule documented in `http-transport-contract-audit.md`
 Related docs:
 - [ADR 0041](../adr/0041-transport-policy-l3-layering.md)
 - [ADR 0033](../adr/0033-minimum-viable-panic-surface.md)
@@ -37,8 +37,6 @@ This audit covers:
   bucket behaviour, and the pre-cancelled-token fast path
 - the `NetworkErrorKind::from_transport_error_class` total mapping across
   every `TransportErrorClass` variant including the wildcard arm
-- the optional `reqwest-classifier` feature's dispatch across `Builder`,
-  `Request`, `Connect`, `Timeout`, and `HttpStatus` branches
 - the shared `run_with_retry` driver: the attempt loop, rate-limit
   acquisition, the success / retryable-status / retryable-transport /
   non-retryable / exhaustion outcome decisions, the `Retry-After`-aware
@@ -138,11 +136,7 @@ never sleeps the limiter interval.
 to its named `NetworkErrorKind` (`Timeout` -> `Timeout`, `Connect` -> `Connect`,
 `Decode` and `Body` -> `Decode`, `Status` -> `HttpStatus(0)`, `Request` ->
 `Request`, `Builder` -> `Builder`) and the wildcard `_` arm maps `Redirect`,
-`Upgrade`, and any future-added variant to `NetworkErrorKind::Other`. The
-optional `reqwest-classifier` feature exposes `ReqwestErrorClassifier` which
-maps real `reqwest::Error` shapes into the same partition through the
-documented `is_timeout`/`is_connect`/`is_decode`/`is_body`/`status`/
-`is_request`/`is_builder` dispatch ladder.
+`Upgrade`, and any future-added variant to `NetworkErrorKind::Other`.
 
 ### Retry Driver
 
@@ -208,11 +202,8 @@ Primary regression coverage:
 - `parity/fixtures/retry_after/imf_fixdate_reject.json`
 - `parity/fixtures/retry_after/legacy_rfc850.json`
 - `crates/core/tests/classify_contract.rs::network_error_kind_mapping_round_trip_is_total`
-- `crates/core/tests/classify_contract.rs::reqwest_classifier::reqwest_classifier_maps_invalid_url_to_builder_or_request`
-- `crates/core/tests/classify_contract.rs::reqwest_classifier::reqwest_classifier_maps_unreachable_host_to_connect_or_timeout`
-- `crates/core/tests/classify_contract.rs::reqwest_classifier::reqwest_classifier_maps_status_500_to_http_status`
 - `crates/core/tests/policy_contract.rs::default_orderbook_transport_policy_is_stable`
-- `crates/core/tests/policy_contract.rs::explicit_constructor_disables_tracing_and_preserves_parts`
+- `crates/core/tests/policy_contract.rs::explicit_constructor_preserves_parts`
 - `crates/core/tests/policy_contract.rs::default_trading_uses_trading_user_agent_and_orderbook_limiter`
 - `crates/core/tests/policy_contract.rs::default_ipfs_disables_retry_and_timeout_and_uses_unlimited_limiter`
 - `crates/core/tests/policy_contract.rs::with_setters_replace_only_their_targeted_field`
@@ -236,8 +227,8 @@ Validation surface:
 
 ```text
 cargo fmt --all --check
-cargo clippy -p cow-sdk-core --features reqwest-classifier --all-targets -- -D warnings
-cargo test -p cow-sdk-core --features reqwest-classifier
-cargo llvm-cov -p cow-sdk-core --features reqwest-classifier --summary-only
-RUSTDOCFLAGS="-D warnings" cargo doc -p cow-sdk-core --features reqwest-classifier --no-deps
+cargo clippy -p cow-sdk-core --features transport-policy --all-targets -- -D warnings
+cargo test -p cow-sdk-core --features transport-policy
+cargo llvm-cov -p cow-sdk-core --features transport-policy --summary-only
+RUSTDOCFLAGS="-D warnings" cargo doc -p cow-sdk-core --features transport-policy --no-deps
 ```

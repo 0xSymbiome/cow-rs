@@ -1,7 +1,7 @@
 # Error Classification Audit
 
 Status: Current
-Last reviewed: 2026-06-08
+Last reviewed: 2026-06-14
 Owning surface: the `class()`, `is_retryable()`, and `backoff_hint()` accessors on the `cow-sdk` error family and the shared `cow_sdk_core::ErrorClass`
 Refresh trigger: a new `ErrorClass` bucket; a new error type aggregated by `cow_sdk::CowError`; a change to any type's `class()` mapping; a change to the `is_retryable()` / `backoff_hint()` mapping or the retained `Retry-After` capture; or a new error variant whose class or retry verdict differs from its type's existing default arm
 Related docs:
@@ -138,6 +138,6 @@ Validation surface:
 ```text
 cargo test -p cow-sdk --test error_class_contract --all-features
 cargo test -p cow-sdk-orderbook --lib
-cargo test -p cow-sdk-core --features reqwest-classifier --lib
+cargo test -p cow-sdk-core --features transport-policy --lib
 cargo check-enum-policy
 ```

@@ -22,7 +22,7 @@ workspace = true
 
 [features]
 default = []
-tracing = ["dep:tracing"]
+tracing = ["dep:tracing", "cow-sdk-core/tracing"]
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 async-trait.workspace = true

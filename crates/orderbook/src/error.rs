@@ -1,7 +1,9 @@
 use std::fmt;
 use std::time::Duration;
 
-use cow_sdk_core::transport::policy::{NetworkErrorKind, RetryPolicy, is_retryable_status};
+use cow_sdk_core::transport::policy::{
+    NetworkErrorKind, is_retryable_network, is_retryable_status,
+};
 use cow_sdk_core::{
     AppDataHash, Cancelled, CoreError, ErrorClass, HostPolicyError, Redacted, TransportError,
     TransportErrorClass, ValidationReason,
@@ -378,9 +380,9 @@ impl OrderbookError {
         match self {
             Self::Rejected { status, .. } => is_retryable_status(status.as_u16()),
             Self::Api(error) => is_retryable_status(error.status),
-            Self::Transport { class, .. } => RetryPolicy::builder()
-                .build()
-                .should_retry_network(NetworkErrorKind::from_transport_error_class(*class)),
+            Self::Transport { class, .. } => {
+                is_retryable_network(NetworkErrorKind::from_transport_error_class(*class))
+            }
             _ => false,
         }
     }
@@ -444,57 +446,10 @@ fn serialization_error_category(error: &serde_json::Error) -> &'static str {
 #[cfg(not(target_arch = "wasm32"))]
 impl From<reqwest::Error> for OrderbookError {
     fn from(error: reqwest::Error) -> Self {
-        let (class, detail) = classify_reqwest_error(error);
-        Self::Transport {
-            class,
-            detail: detail.into(),
-        }
-    }
-}
-
-/// Classifies a `reqwest::Error`, strips any attached URL, and returns a typed
-/// `(class, detail)` pair.
-///
-/// [`reqwest::Error::without_url`] is called before the
-/// [`std::fmt::Display`] implementation runs so partner-route URLs and their
-/// query parameters cannot leak through error text; the typed
-/// [`TransportErrorClass`] captures the classification produced by the
-/// documented `is_timeout`, `is_connect`, `is_redirect`, `is_decode`,
-/// `is_body`, `is_builder`, `is_request`, and `is_status` partition.
-#[must_use]
-#[cfg(not(target_arch = "wasm32"))]
-pub fn classify_reqwest_error(error: reqwest::Error) -> (TransportErrorClass, String) {
-    let sanitized = error.without_url();
-    let class = reqwest_error_class(&sanitized);
-    (class, sanitized.to_string())
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-fn reqwest_error_class(error: &reqwest::Error) -> TransportErrorClass {
-    if error.is_timeout() {
-        return TransportErrorClass::Timeout;
-    }
-    #[cfg(not(target_arch = "wasm32"))]
-    {
-        if error.is_connect() {
-            return TransportErrorClass::Connect;
-        }
-        if error.is_redirect() {
-            return TransportErrorClass::Redirect;
-        }
-    }
-    if error.is_decode() {
-        TransportErrorClass::Decode
-    } else if error.is_body() {
-        TransportErrorClass::Body
-    } else if error.is_builder() {
-        TransportErrorClass::Builder
-    } else if error.is_request() {
-        TransportErrorClass::Request
-    } else if error.is_status() {
-        TransportErrorClass::Status
-    } else {
-        TransportErrorClass::Other
+        // Classify through the single canonical reqwest classifier in
+        // cow-sdk-core (it strips the URL and tags the typed class), then reuse
+        // the existing `From<TransportError>` mapping.
+        Self::from(cow_sdk_core::transport::classify_reqwest_error(error))
     }
 }
 

@@ -49,14 +49,13 @@ const CUSTOM_OVERRIDE_ROUTE_IDENTITY: &str = "<custom override>";
 /// identify a configured endpoint without echoing credential-bearing path or
 /// query material. Invalid URLs and URL forms without a public origin return a
 /// stable custom-override marker.
-#[cfg(not(target_arch = "wasm32"))]
 #[must_use]
 #[allow(
     clippy::option_if_let_else,
     reason = "the Ok arm binds an intermediate origin and carries a nested conditional; the combinator form would collapse that multi-statement body into a closure and obscure the two-branch parallel structure"
 )]
 pub fn sanitize_public_base_url(base_url: &str) -> String {
-    match ::reqwest::Url::parse(base_url) {
+    match url::Url::parse(base_url) {
         Ok(url) => {
             let origin = url.origin().ascii_serialization();
             if origin == "null" {
@@ -69,43 +68,34 @@ pub fn sanitize_public_base_url(base_url: &str) -> String {
     }
 }
 
-/// Returns the public origin for a base URL without path, query, fragment, or credentials.
+/// Returns the request endpoint for a telemetry span: authority, query, and
+/// fragment stripped, with a custom-override route collapsed to `/` so an
+/// override URL's path never reaches a span field.
 ///
-/// The helper is intended for diagnostic and telemetry surfaces that need to
-/// identify a configured endpoint without echoing credential-bearing path or
-/// query material. Invalid URLs and URL forms without a public origin return a
-/// stable custom-override marker.
-#[cfg(target_arch = "wasm32")]
+/// Shared by the native and browser transports so both targets emit an
+/// identical span endpoint. Gated on the `tracing` feature because it is only
+/// consulted when a dispatch span is actually opened.
+#[cfg(feature = "tracing")]
 #[must_use]
-pub fn sanitize_public_base_url(base_url: &str) -> String {
-    let Some((scheme, after_scheme)) = base_url.split_once("://") else {
-        return CUSTOM_OVERRIDE_ROUTE_IDENTITY.to_owned();
-    };
-    if !is_supported_public_scheme(scheme) {
-        return CUSTOM_OVERRIDE_ROUTE_IDENTITY.to_owned();
+pub fn span_endpoint(path: &str) -> &str {
+    let has_authority = path.contains("://");
+    if has_authority && sanitize_public_base_url(path) == CUSTOM_OVERRIDE_ROUTE_IDENTITY {
+        return "/";
     }
 
-    let authority = after_scheme
-        .split(['/', '?', '#'])
-        .next()
-        .unwrap_or_default();
-    let public_authority = authority
-        .rsplit_once('@')
-        .map_or(authority, |(_, public_authority)| public_authority);
-    if public_authority.is_empty() || public_authority.starts_with(':') {
-        return CUSTOM_OVERRIDE_ROUTE_IDENTITY.to_owned();
+    let endpoint = path.find("://").map_or(path, |scheme_end| {
+        let after_authority = &path[scheme_end + 3..];
+        after_authority
+            .find('/')
+            .map_or("/", |path_start| &after_authority[path_start..])
+    });
+    let end = endpoint.find(['?', '#']).unwrap_or(endpoint.len());
+    let endpoint = &endpoint[..end];
+    if endpoint.is_empty() && has_authority {
+        "/"
+    } else {
+        endpoint
     }
-
-    format!(
-        "{}://{}",
-        scheme.to_ascii_lowercase(),
-        public_authority.to_ascii_lowercase()
-    )
-}
-
-#[cfg(target_arch = "wasm32")]
-const fn is_supported_public_scheme(scheme: &str) -> bool {
-    scheme.eq_ignore_ascii_case("http") || scheme.eq_ignore_ascii_case("https")
 }
 
 /// Joins a request `path` against a `base_url` using the canonical

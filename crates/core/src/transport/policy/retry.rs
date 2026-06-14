@@ -91,13 +91,7 @@ impl RetryPolicy {
     /// Returns `true` when `kind` should be retried under this policy.
     #[must_use]
     pub const fn should_retry_network(&self, kind: NetworkErrorKind) -> bool {
-        matches!(
-            kind,
-            NetworkErrorKind::Timeout
-                | NetworkErrorKind::Connect
-                | NetworkErrorKind::Request
-                | NetworkErrorKind::Other
-        )
+        is_retryable_network(kind)
     }
 
     /// Returns the jittered exponential backoff delay for `attempt_index`.
@@ -139,6 +133,23 @@ impl RetryPolicy {
             .saturating_mul(1_u32.checked_shl(exponent).unwrap_or(u32::MAX))
             .min(self.max_delay)
     }
+}
+
+/// Returns whether a transport [`NetworkErrorKind`] is retried by the SDK
+/// transport policy.
+///
+/// Exposed as a free function so callers can classify a transport failure
+/// without constructing a throwaway [`RetryPolicy`];
+/// [`RetryPolicy::should_retry_network`] forwards to it.
+#[must_use]
+pub const fn is_retryable_network(kind: NetworkErrorKind) -> bool {
+    matches!(
+        kind,
+        NetworkErrorKind::Timeout
+            | NetworkErrorKind::Connect
+            | NetworkErrorKind::Request
+            | NetworkErrorKind::Other
+    )
 }
 
 fn retry_after(headers: &[(String, String)], now: SystemTime) -> Option<RetryAfter> {

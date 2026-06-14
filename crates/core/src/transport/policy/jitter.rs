@@ -1,5 +1,6 @@
 //! Retry jitter strategies.
 
+use std::sync::OnceLock;
 use std::time::{Duration, UNIX_EPOCH};
 
 const DEFAULT_JITTER_WINDOW_DIVISOR: u32 = 2;
@@ -70,6 +71,23 @@ impl JitterStrategy {
         Self::Decorrelated { seed }
     }
 
+    /// Returns a decorrelated strategy seeded once per process.
+    ///
+    /// The seed is drawn from the wall clock the first time it is requested and
+    /// cached for the lifetime of the process. Every transport policy built in
+    /// the same process therefore shares one seed and stays field-equal, while
+    /// separate client processes draw different seeds — so a fleet of deployed
+    /// clients decorrelates its retry waves after a shared upstream outage
+    /// instead of retrying in lockstep. Deterministic callers that need a fixed
+    /// schedule use [`decorrelated_from_seed`] instead.
+    ///
+    /// [`decorrelated_from_seed`]: Self::decorrelated_from_seed
+    #[must_use]
+    pub fn decorrelated_process() -> Self {
+        static SEED: OnceLock<u64> = OnceLock::new();
+        Self::decorrelated_from_seed(*SEED.get_or_init(jitter_seed))
+    }
+
     /// Applies jitter to `base_delay` for `attempt_index`, bounded by `max_delay`.
     #[must_use]
     pub fn delay_for_attempt(
@@ -87,6 +105,12 @@ impl JitterStrategy {
                 half.saturating_add(bounded_offset(seed, attempt_index, half))
             }
             Self::Decorrelated { seed } => {
+                // NOTE: the offset is added on top of the capped base, so once
+                // the backoff saturates at `max_delay` the result clips back to
+                // `max_delay` for every seed and the tail attempts stop
+                // decorrelating. This covers the early attempts that matter most
+                // right after a shared spike; revisit the arm if tail
+                // decorrelation is ever required.
                 let window = capped_base / DEFAULT_JITTER_WINDOW_DIVISOR;
                 capped_base.saturating_add(bounded_offset(seed, attempt_index, window))
             }
