@@ -38,13 +38,14 @@
 //!     .unwrap();
 //! ```
 //!
-//! Once constructed, a single call quotes, signs, and posts a swap. The order
-//! owner defaults to the signer's address:
+//! Once constructed, the fluent swap builder quotes, signs, and posts in one
+//! call. Its named token setters cannot be transposed, and the order owner
+//! defaults to the signer's address:
 //!
 //! ```rust,no_run
 //! # use std::error::Error;
-//! use cow_sdk::core::{Address, Amount, OrderKind, SupportedChainId, address};
-//! use cow_sdk::trading::{TradeParams, Trading};
+//! use cow_sdk::core::{Address, Amount, SupportedChainId, address};
+//! use cow_sdk::trading::Trading;
 //!
 //! // Sell 0.1 WETH for COW on Sepolia.
 //! const WETH: Address = address!("0xfff9976782d46cc05630d1f6ebab18b2324d6b14");
@@ -60,19 +61,26 @@
 //!     .app_code("your-app-code")
 //!     .build()?;
 //!
-//! let params = TradeParams::new(
-//!     OrderKind::Sell,
-//!     WETH,
-//!     COW,
-//!     Amount::from(100_000_000_000_000_000u128),
-//! );
-//!
 //! // One call quotes, signs with `signer`, and posts to the orderbook.
-//! let posted = trading.post_swap_order(params, signer, None).await?;
+//! let posted = trading
+//!     .swap()
+//!     .sell_token(WETH)
+//!     .buy_token(COW)
+//!     .sell_amount(Amount::from(100_000_000_000_000_000u128))
+//!     .execute(signer)
+//!     .await?;
 //! println!("posted order: {}", posted.order_id);
 //! # Ok(())
 //! # }
 //! ```
+//!
+//! The flat `trading.post_swap_order(params, signer, None)` method and the
+//! standalone `post_swap_order(..)` free function remain available for callers
+//! that assemble `TradeParams` directly or compose without a bound client.
+//!
+//! For a resting limit order with an explicit price, `trading.limit()` opens the
+//! matching builder: named `sell_amount` / `buy_amount` setters, then `post(signer)`
+//! (or `post_presign()` for the smart-account path that needs no signer).
 //!
 //! For allowance, approval, pre-sign, or on-chain cancellation that does not
 //! need an app code, call the crate's free functions directly

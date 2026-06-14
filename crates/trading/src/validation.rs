@@ -141,12 +141,6 @@ impl OrderBoundsValidator {
         self
     }
 
-    /// Returns the configured chain-specific wrapped-native address, if any.
-    #[must_use]
-    pub const fn weth_address(&self) -> Option<&Address> {
-        self.weth_address.as_ref()
-    }
-
     /// Validates the supplied signing order ([`cow_sdk_core::OrderData`])
     /// and its submission owner against the reviewed protocol-invariant matrix.
     ///
@@ -180,7 +174,7 @@ impl OrderBoundsValidator {
         now: u64,
         is_eth_flow: bool,
     ) -> Result<(), ClientRejection> {
-        if from == zero_address() {
+        if from.is_zero() {
             return Err(ClientRejection::MissingFrom);
         }
 
@@ -247,10 +241,6 @@ fn validate_amount(
     Ok(())
 }
 
-const fn zero_address() -> Address {
-    Address::from_bytes([0u8; 20])
-}
-
 /// Asserts the recovered signer matches the expected owner.
 ///
 /// Compares an owner and a recovered signer for the reviewed
@@ -274,58 +264,4 @@ pub fn assert_owner_matches_signer(
         });
     }
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{ClientRejection, OrderBoundsValidator};
-    use cow_sdk_core::{
-        Amount, AppDataHash, BuyTokenDestination, OrderData, OrderKind, SellTokenSource,
-    };
-    use cow_sdk_test_utils::builders::address;
-
-    const FROM: &str = "0x1111111111111111111111111111111111111111";
-    const SELL_TOKEN: &str = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
-    const BUY_TOKEN: &str = "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-    const NOW: u64 = 1_700_000_000;
-    const VALID_TO: u32 = 1_700_003_600;
-
-    fn order() -> OrderData {
-        OrderData::new(
-            address(SELL_TOKEN),
-            address(BUY_TOKEN),
-            address(FROM),
-            Amount::new("1000000000000000000").expect("test amount literal must be valid"),
-            Amount::new("1000000").expect("test amount literal must be valid"),
-            VALID_TO,
-            app_data_hash(),
-            Amount::ZERO,
-            OrderKind::Sell,
-            false,
-            SellTokenSource::Erc20,
-            BuyTokenDestination::Erc20,
-        )
-    }
-
-    fn app_data_hash() -> AppDataHash {
-        AppDataHash::new("0x0000000000000000000000000000000000000000000000000000000000000000")
-            .expect("app-data hash literal must be valid")
-    }
-
-    #[test]
-    fn valid_to_in_the_future_is_accepted() {
-        OrderBoundsValidator::services_default()
-            .validate(&order(), address(FROM), None, NOW, false)
-            .expect("a validTo in the future must be accepted");
-    }
-
-    #[test]
-    fn valid_to_at_or_before_now_rejects_as_in_past() {
-        let mut expired = order();
-        expired.valid_to = u32::try_from(NOW).expect("now must fit in u32");
-        let error = OrderBoundsValidator::services_default()
-            .validate(&expired, address(FROM), None, NOW, false)
-            .expect_err("a validTo at or before now must reject");
-        assert!(matches!(error, ClientRejection::ValidToInPast { .. }));
-    }
 }

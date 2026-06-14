@@ -77,7 +77,7 @@ let orderbook = OrderbookApi::builder_from_context(ApiContext::new(CHAIN, ENV))
 let trading = Trading::builder()
     .chain_id(CHAIN)
     .app_code(APP_CODE)
-    .options(TradingOptions::new().with_orderbook_client(Arc::new(orderbook)))
+    .orderbook(orderbook)
     .build()?;
 ```
 

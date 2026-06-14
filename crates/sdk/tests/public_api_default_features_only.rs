@@ -9,7 +9,7 @@ fn public_api_default_features_only_snapshot_matches() {
     use cow_sdk::core::{Address, Amount, AppCode, OrderUid, SupportedChainId};
     use cow_sdk::http::HttpTransport;
     use cow_sdk::orderbook::OrderbookApi;
-    use cow_sdk::trading::{TradeParams, TraderParams, Trading, TradingBuilder, TradingOptions};
+    use cow_sdk::trading::{TradeParams, TraderParams, Trading, TradingBuilder};
     use cow_sdk::{CowError, ErrorClass};
 
     let _ = core::any::type_name::<Address>();
@@ -26,7 +26,6 @@ fn public_api_default_features_only_snapshot_matches() {
     let _ = core::any::type_name::<TraderParams>();
     let _ = core::any::type_name::<Trading>();
     let _ = core::any::type_name::<TradingBuilder>();
-    let _ = core::any::type_name::<TradingOptions>();
 
     assert_eq!(
         include_str!("fixtures/public_api_default_features_only.snap"),

@@ -1,9 +1,6 @@
 use cow_sdk_core::{Amount, NATIVE_CURRENCY_ADDRESS};
 
-use crate::{
-    error::OrderbookError,
-    types::Order,
-};
+use crate::{error::OrderbookError, types::Order};
 
 /// Normalizes an orderbook order response into the crate's stable DTO contract.
 ///

@@ -75,6 +75,9 @@ allowed:
   - file: crates/trading/src/client/swap.rs
     item: SwapBuilder::to_trade_parameters
     reason: The method is only reachable from the fully-set builder typestate, whose marker parameters guarantee the three required fields were assigned before the conversion runs.
+  - file: crates/trading/src/client/limit.rs
+    item: LimitBuilder::to_limit_parameters
+    reason: The method is only reachable from the fully-set builder typestate, whose marker parameters guarantee the four required fields were assigned before the conversion runs.
   - file: crates/trading/src/wait.rs
     item: delay_for
     reason: Millisecond polling delay is clamped to u32::MAX before wasm timer conversion.

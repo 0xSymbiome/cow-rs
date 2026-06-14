@@ -153,6 +153,81 @@ async fn native_sell_quote_uses_wrapped_native_and_onchain_defaults() {
 }
 
 #[tokio::test]
+async fn eth_flow_request_shape_follows_the_overridden_sell_token() {
+    // EthFlow detection reads the effective (post-override) sell token, and the
+    // quote-request override is applied once at the trade-parameter level — it
+    // is never re-applied onto the assembled request. So a sell-token override
+    // can neither undo the wrapped-native rewrite on a native sell (the request
+    // keeps the wrapped token and on-chain EIP-1271 aux) nor leave stale
+    // on-chain aux on an ERC-20 sell (the request reverts to the EIP-712
+    // default). Neither boundary is otherwise pinned.
+    let chain = cow_sdk_core::SupportedChainId::Sepolia;
+    let weth = cow_sdk_core::wrapped_native_token(chain).address;
+    let erc20 = address("0xcccccccccccccccccccccccccccccccccccccccc");
+    let signer = MockSigner::default();
+    let trader =
+        cow_sdk_trading::TraderParams::new(chain, "0x007").expect("app code should validate");
+
+    // Native sell with a native-sentinel sell-token override stays EthFlow.
+    let native_orderbook = MockOrderbook::new(chain, sell_quote_response());
+    let mut native_trade = sample_trade_parameters(OrderKind::Sell);
+    native_trade.sell_token = cow_sdk_core::NATIVE_CURRENCY_ADDRESS;
+    let native_settings = TradeAdvancedSettings::new().with_quote_request(
+        QuoteRequestOverride::new().with_sell_token(cow_sdk_core::NATIVE_CURRENCY_ADDRESS),
+    );
+    quote_results(
+        &native_trade,
+        &trader,
+        &signer,
+        Some(&native_settings),
+        &native_orderbook,
+    )
+    .await
+    .expect("native sell with a native-sentinel override should quote");
+    let native_request = native_orderbook
+        .state()
+        .quote_requests
+        .last()
+        .cloned()
+        .expect("native sell request recorded");
+    assert_eq!(native_request.sell_token, weth);
+    assert_eq!(
+        native_request.signing_scheme,
+        cow_sdk_orderbook::QuoteSigningScheme::Eip1271 {
+            onchain_order: true,
+            verification_gas_limit: 0
+        }
+    );
+
+    // Native sell overridden to an ERC-20 sell token is no longer EthFlow.
+    let erc20_orderbook = MockOrderbook::new(chain, sell_quote_response());
+    let mut erc20_trade = sample_trade_parameters(OrderKind::Sell);
+    erc20_trade.sell_token = cow_sdk_core::NATIVE_CURRENCY_ADDRESS;
+    let erc20_settings = TradeAdvancedSettings::new()
+        .with_quote_request(QuoteRequestOverride::new().with_sell_token(erc20));
+    quote_results(
+        &erc20_trade,
+        &trader,
+        &signer,
+        Some(&erc20_settings),
+        &erc20_orderbook,
+    )
+    .await
+    .expect("ERC-20 sell-token override should quote");
+    let erc20_request = erc20_orderbook
+        .state()
+        .quote_requests
+        .last()
+        .cloned()
+        .expect("ERC-20 override request recorded");
+    assert_eq!(erc20_request.sell_token, erc20);
+    assert_eq!(
+        erc20_request.signing_scheme,
+        cow_sdk_orderbook::QuoteSigningScheme::Eip712
+    );
+}
+
+#[tokio::test]
 async fn auto_slippage_uses_provider_suggestion_and_quote_only_uses_owner_without_signer() {
     let orderbook = MockOrderbook::new(
         cow_sdk_core::SupportedChainId::Sepolia,

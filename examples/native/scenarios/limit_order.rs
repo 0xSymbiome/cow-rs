@@ -1,10 +1,11 @@
-//! Signed limit-order submission, plus the signer-less pre-sign variant.
+//! Signed limit-order submission through the fluent builder, plus the signer-less
+//! pre-sign variant.
 //!
-//! Builds and posts a limit order through `Trading::post_limit_order` against a
+//! Posts a limit order through the fluent `Trading::limit()` builder against a
 //! transport-mocked orderbook and signer, then inspects the recorded submission.
-//! The limit path takes an explicit price rather than a fetched quote. A second
-//! section posts the same parameters through `Trading::post_limit_order_presign`
-//! — the smart-account path that needs no signer at all.
+//! The limit path takes an explicit price rather than a fetched quote, and the named
+//! sell/buy setters cannot be transposed. A second section posts through the same
+//! builder's `post_presign` terminal — the smart-account path that needs no signer.
 
 use std::error::Error;
 
@@ -29,18 +30,30 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .orderbook(orderbook.clone())
         .build()?;
 
-    // Post a limit order: the price comes from the parameters, not a fetched quote.
+    // Post a limit order through the fluent builder: the named sell/buy setters cannot
+    // be transposed, and the price is the amounts you set — no quote is fetched.
+    let params = sample_limit_parameters();
     let posted = trading
-        .post_limit_order(sample_limit_parameters(), &signer, None)
+        .limit()
+        .sell_token(params.sell_token)
+        .buy_token(params.buy_token)
+        .sell_amount(params.sell_amount)
+        .buy_amount(params.buy_amount)
+        .post(&signer)
         .await?;
 
-    // Pre-sign variant: no signer participates, so the explicit owner carried by
-    // the parameters identifies the account. The order is posted under the
-    // `presign` scheme with an empty signature and only becomes fillable once
-    // the owner flips the on-chain pre-signature flag (`setPreSignature`) — the
-    // smart-account / Safe placement path.
+    // Pre-sign variant through the same builder: no signer participates, so the explicit
+    // owner identifies the account. The order is posted under the `presign` scheme with
+    // an empty signature and only becomes fillable once the owner flips the on-chain
+    // pre-signature flag (`setPreSignature`) — the smart-account / Safe placement path.
     let presigned = trading
-        .post_limit_order_presign(sample_limit_parameters(), None)
+        .limit()
+        .sell_token(params.sell_token)
+        .buy_token(params.buy_token)
+        .sell_amount(params.sell_amount)
+        .buy_amount(params.buy_amount)
+        .owner(OWNER)
+        .post_presign()
         .await?;
 
     // Inspect what the orderbook recorded for the submissions.
@@ -51,7 +64,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .expect("example limit order must be sent");
 
     let report = json!({
-        "surface": "cow_sdk::trading::Trading::{post_limit_order, post_limit_order_presign}",
+        "surface": "cow_sdk::trading::Trading::limit",
         "mode": "simulated-transport",
         "result": {
             "orderId": posted.order_id.to_hex_string(),

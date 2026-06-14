@@ -3,18 +3,14 @@ use cow_sdk::core::{
     SupportedChainId,
 };
 use cow_sdk::signing::{ORDER_PRIMARY_TYPE, generate_order_id, order_typed_data};
-use cow_sdk::trading::{
-    PartnerFee, PartnerFeePolicy, TradeParams, TraderParams, TradingBuilder, TradingOptions,
-};
+use cow_sdk::trading::{PartnerFee, PartnerFeePolicy, TradeParams, TraderParams, TradingBuilder};
 
 #[test]
 fn module_paths_cover_primary_workflow_surface() {
     let _ready_trading = TradingBuilder::ready(
         TraderParams::new(SupportedChainId::Sepolia, "cow-rs/public-api")
             .expect("app code should validate"),
-        TradingOptions::default(),
-    )
-    .expect("ready trading sdk construction should succeed");
+    );
     let _trading = TradingBuilder::new()
         .chain_id(SupportedChainId::Sepolia)
         .app_code("cow-rs/public-api")
@@ -102,9 +98,7 @@ fn module_reexports_cover_expected_leaf_crates() {
             "cow-rs/public-api",
         )
         .expect("app code should validate"),
-        cow_sdk::trading::TradingOptions::default(),
-    )
-    .expect("default facade ready trading sdk construction should succeed");
+    );
 
     assert!(validation.is_ok());
     assert_eq!(

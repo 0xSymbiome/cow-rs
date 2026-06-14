@@ -9,9 +9,11 @@ response transforms, and retry policy for the CoW Protocol orderbook
 REST API. It is used internally by the
 [`cow-sdk-trading`](https://crates.io/crates/cow-sdk-trading)
 orchestration surface and is exposed directly when you only need the
-typed transport layer without the higher-level trading flow. Transport
-configuration is policy-visible: HTTP timeout, retry rules, and
-user-agent defaults are explicit.
+typed transport layer without the higher-level trading flow. Because it
+transports already-signed orders, it depends on no signing crate: you get
+the typed quote, post, and query surface without compiling the ECDSA
+signing stack. Transport configuration is policy-visible: HTTP timeout,
+retry rules, and user-agent defaults are explicit.
 
 ## Install
 

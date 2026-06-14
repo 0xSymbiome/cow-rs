@@ -1,4 +1,4 @@
-use cow_sdk_core::{ProtocolOptions, Signer};
+use cow_sdk_core::Signer;
 use cow_sdk_orderbook::{EcdsaSigningScheme, OrderCancellations};
 use cow_sdk_signing::{SigningScheme as SigningSchemeContract, sign_order_cancellations};
 
@@ -34,21 +34,13 @@ where
     let orderbook_context = orderbook.context();
     let canonical_chain_id = orderbook_context.chain_id;
     let canonical_env = orderbook_context.env;
-    let mut options = ProtocolOptions::new().with_env(canonical_env);
-    if let Some(overrides) = params
-        .settlement_contract_override
-        .clone()
-        .or_else(|| trader.settlement_contract_override.clone())
-    {
-        options = options.with_settlement_contract_override(overrides);
-    }
-    if let Some(overrides) = params
-        .eth_flow_contract_override
-        .clone()
-        .or_else(|| trader.eth_flow_contract_override.clone())
-    {
-        options = options.with_eth_flow_contract_override(overrides);
-    }
+    let options = crate::onchain::protocol_options(
+        Some(canonical_env),
+        params.settlement_contract_override.as_ref(),
+        trader.settlement_contract_override.as_ref(),
+        params.eth_flow_contract_override.as_ref(),
+        trader.eth_flow_contract_override.as_ref(),
+    );
     let signing = sign_order_cancellations(
         std::slice::from_ref(&params.order_uid),
         canonical_chain_id,

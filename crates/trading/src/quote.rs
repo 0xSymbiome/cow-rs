@@ -1,10 +1,10 @@
-use cow_sdk_core::{ProtocolOptions, Signer};
+use cow_sdk_core::Signer;
 use cow_sdk_orderbook::{
     OrderClass, OrderQuoteRequest, OrderQuoteSide, PriceQuality, SigningScheme,
 };
 use cow_sdk_signing::order_typed_data;
 
-pub use crate::app_data::{build_app_data, merge_and_seal_app_data, params_from_doc};
+use crate::app_data::build_app_data;
 use crate::types::{
     QuoteRequestParameterTargets, apply_app_data_parameter_overrides,
     apply_quote_request_parameter_overrides, validate_orderbook_context,
@@ -179,29 +179,28 @@ where
     .unwrap_or(default_slippage);
 
     let mut updated_parameters = effective_trade_parameters.clone();
-    let (trade_parameters, app_data_info) = if effective_trade_parameters.slippage_bps.is_none()
-        && suggested_slippage != initial_slippage
-    {
-        updated_parameters.slippage_bps = Some(suggested_slippage);
-        let app_data = build_app_data(
-            &effective_trader.app_code,
-            suggested_slippage,
-            OrderClass::Market,
-            effective_trade_parameters.partner_fee.as_ref(),
-            advanced_settings.and_then(|settings| settings.app_data.as_ref()),
-        )
-        .await?;
-        (updated_parameters, app_data)
-    } else {
-        updated_parameters.slippage_bps = Some(initial_slippage);
-        (updated_parameters, initial_app_data)
-    };
+    let (trade_parameters, app_data_info, resolved_slippage) =
+        if effective_trade_parameters.slippage_bps.is_none()
+            && suggested_slippage != initial_slippage
+        {
+            updated_parameters.slippage_bps = Some(suggested_slippage);
+            let app_data = build_app_data(
+                &effective_trader.app_code,
+                suggested_slippage,
+                OrderClass::Market,
+                effective_trade_parameters.partner_fee.as_ref(),
+                advanced_settings.and_then(|settings| settings.app_data.as_ref()),
+            )
+            .await?;
+            (updated_parameters, app_data, suggested_slippage)
+        } else {
+            updated_parameters.slippage_bps = Some(initial_slippage);
+            (updated_parameters, initial_app_data, initial_slippage)
+        };
 
     let amounts_and_costs = calculate_quote_amounts_and_costs(
         &quote_response.quote,
-        trade_parameters
-            .slippage_bps
-            .unwrap_or_else(|| default_slippage_bps(canonical_chain_id, is_eth_flow)),
+        resolved_slippage,
         partner_fee_bps(trade_parameters.partner_fee.as_ref()),
         sanitize_protocol_fee_bps(quote_response.protocol_fee_bps.as_deref()),
     )?;
@@ -231,23 +230,16 @@ struct QuoteResultInputs<'a> {
 }
 
 fn build_quote_results(inputs: QuoteResultInputs<'_>) -> Result<QuoteResults, TradingError> {
-    let mut options = ProtocolOptions::new().with_env(inputs.resolved_env);
-    if let Some(overrides) = inputs
-        .trade_parameters
-        .settlement_contract_override
-        .clone()
-        .or_else(|| inputs.trader.settlement_contract_override.clone())
-    {
-        options = options.with_settlement_contract_override(overrides);
-    }
-    if let Some(overrides) = inputs
-        .trade_parameters
-        .eth_flow_contract_override
-        .clone()
-        .or_else(|| inputs.trader.eth_flow_contract_override.clone())
-    {
-        options = options.with_eth_flow_contract_override(overrides);
-    }
+    let options = crate::onchain::protocol_options(
+        Some(inputs.resolved_env),
+        inputs
+            .trade_parameters
+            .settlement_contract_override
+            .as_ref(),
+        inputs.trader.settlement_contract_override.as_ref(),
+        inputs.trade_parameters.eth_flow_contract_override.as_ref(),
+        inputs.trader.eth_flow_contract_override.as_ref(),
+    );
     let order_to_sign = order_to_sign(
         crate::order::OrderToSignParams {
             chain_id: inputs.trader.chain_id,
@@ -360,24 +352,14 @@ fn apply_quote_request_override(
         return Ok(());
     };
 
-    if let Some(sell_token) = &request_override.sell_token {
-        request.sell_token = *sell_token;
-    }
-    if let Some(buy_token) = &request_override.buy_token {
-        request.buy_token = *buy_token;
-    }
-    if let Some(receiver) = &request_override.receiver {
-        request.receiver = Some(*receiver);
-    }
-    if let Some(valid_for) = request_override.valid_for {
-        request.validity = cow_sdk_orderbook::QuoteValidity::ValidFor(valid_for);
-    }
-    if let Some(valid_to) = request_override.valid_to {
-        request.validity = cow_sdk_orderbook::QuoteValidity::ValidTo(valid_to);
-    }
-    if let Some(from) = &request_override.from {
-        request.from = *from;
-    }
+    // Quote-request overrides that also exist on the signed order — the token
+    // pair, receiver, owner, validity, and balance sources — are applied once,
+    // at the trade-parameter level (`apply_quote_request_parameter_overrides`),
+    // so the quote preview and the signed order stay consistent and the EthFlow
+    // wrapped-native sell token derived from the effective parameters stays
+    // authoritative. This applier handles only the request-shaped fields that
+    // have no signed-order counterpart: price quality, the signing-scheme
+    // group, and the request timeout.
     if let Some(price_quality) = request_override.price_quality {
         request.price_quality = price_quality;
     }
@@ -441,12 +423,6 @@ fn apply_quote_request_override(
     }
     if let Some(timeout) = request_override.timeout {
         request.timeout = Some(timeout);
-    }
-    if let Some(balance) = request_override.sell_token_balance {
-        request.sell_token_balance = balance;
-    }
-    if let Some(balance) = request_override.buy_token_balance {
-        request.buy_token_balance = balance;
     }
 
     Ok(())

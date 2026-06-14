@@ -13,17 +13,15 @@
 //! restricts itself to constructor- and builder-level coverage to keep its
 //! fixtures small.
 
-use std::sync::Arc;
-
 use cow_sdk_core::{
     Address, AddressPerChain, Amount, AppCodeError, BuyTokenDestination, CowEnv, OrderKind,
     OrderUid, SellTokenSource, SupportedChainId,
 };
-use cow_sdk_orderbook::{OrderbookClient, SigningScheme};
+use cow_sdk_orderbook::SigningScheme;
 use cow_sdk_trading::{
     LimitTradeParams, OrderTraderParams, PostTradeAdditionalParams, QuoterParams,
     SlippageToleranceRequest, SlippageToleranceResponse, TradeAdvancedSettings, TradeParams,
-    TraderParams, TradingOptions,
+    TraderParams,
 };
 
 const VALID_ADDRESS: &str = "0x1111111111111111111111111111111111111111";
@@ -207,10 +205,6 @@ fn swap_advanced_settings_builders_round_trip_and_debug_renders() {
 }
 
 // -------------------------------------------------------------------------
-// TradingOptions
-// -------------------------------------------------------------------------
-
-// -------------------------------------------------------------------------
 // TradeParams and LimitTradeParams
 // -------------------------------------------------------------------------
 
@@ -303,17 +297,4 @@ fn limit_trade_parameters_new_seeds_documented_defaults_and_with_setters_attach_
     assert_eq!(populated.sell_token_balance, SellTokenSource::Internal);
     assert_eq!(populated.buy_token_balance, BuyTokenDestination::Internal);
     assert_eq!(populated.quote_id, Some(42));
-}
-
-#[test]
-fn trading_sdk_options_default_reports_no_orderbook_client_and_debug_reflects_absence() {
-    let empty = TradingOptions::new();
-    assert!(empty.orderbook_client().is_none());
-
-    let debug = format!("{empty:?}");
-    assert!(debug.contains("order_book_api: false"));
-
-    // orderbook_client implementations live in cow_sdk_orderbook; the typed
-    // trait-object surface is exercised through Trading's builder paths.
-    drop::<Option<Arc<dyn OrderbookClient>>>(None);
 }

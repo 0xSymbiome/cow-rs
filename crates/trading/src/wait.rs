@@ -17,7 +17,7 @@ use cow_sdk_core::{
 };
 
 /// Configuration for receipt wait helpers.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct WaitOptions {
     /// How often to call `get_transaction_receipt` while the receipt is absent.
     pub poll_interval: Duration,

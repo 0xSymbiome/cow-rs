@@ -76,6 +76,7 @@ public and runtime shape of `cow-rs`.
 | [0066](0066-trading-slippage-and-suggestion-policy.md) | Accepted | Implement the established CoW SDK slippage transform, fee folding, and slippage-suggestion heuristics faithfully, byte-for-byte with `@cowprotocol/cow-sdk`, without redefining the convention. |
 | [0067](0067-idiomatic-accessor-naming.md) | Accepted | Name public accessors and domain fetch methods by their bare domain noun with no `get_` prefix, retaining `get_` only on the chain-RPC `Provider` / `LogProvider` methods that mirror Ethereum JSON-RPC names. |
 | [0068](0068-payload-only-typed-data-signing.md) | Accepted | Take the canonical EIP-712 typed-data payload at the signer seam — `sign_typed_data_payload(&TypedDataPayload)` is the single required typed-data method — and keep field-based signing out of the trait contract, with wallet-protocol compatibility owned by the browser-wallet inherent helper. |
+| [0069](0069-layered-trading-operation-surface-and-signing-free-transport.md) | Accepted | Offer trading operations at layered free-function, bound-method, and fluent-builder entries (swap and limit) that thin-delegate downward, and keep the order-lifecycle builders in `cow-sdk-trading` so `cow-sdk-orderbook` and `cow-sdk-subgraph` stay signing-free typed transport clients. |
 
 ## When To Write An ADR
 

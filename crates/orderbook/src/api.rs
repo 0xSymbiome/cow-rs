@@ -796,7 +796,10 @@ impl OrderbookApi {
         tx_hash: &TransactionHash,
     ) -> Result<SolverCompetitionResponse, OrderbookError> {
         let params = FetchParams::new(
-            format!("/api/v2/solver_competition/by_tx_hash/{}", tx_hash.to_hex_string()),
+            format!(
+                "/api/v2/solver_competition/by_tx_hash/{}",
+                tx_hash.to_hex_string()
+            ),
             HttpMethod::Get,
         );
 

@@ -83,7 +83,7 @@ pub fn trading(chain: SupportedChainId, app_code: &str) -> Result<MockTrading, T
         .chain_id(chain)
         .env(CowEnv::Prod)
         .app_code(app_code)
-        .orderbook_client(Arc::new(orderbook.clone()))
+        .orderbook_shared(Arc::new(orderbook.clone()))
         .build()?;
     Ok(MockTrading {
         trading,

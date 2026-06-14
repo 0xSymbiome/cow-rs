@@ -86,6 +86,11 @@ principles:
     primary_adr: "0033"
     supporting_adrs: []
 
+  - id: 15
+    name: Layered Operation Surface
+    primary_adr: "0069"
+    supporting_adrs: ["0002", "0013"]
+
   - id: 16
     name: Off-Chain Orchestration Boundary
     primary_adr: "0048"

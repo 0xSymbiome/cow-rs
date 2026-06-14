@@ -17,7 +17,7 @@ use wiremock::{
 use cow_sdk::{
     core::{Cancellable, CancellationToken, CowEnv, SupportedChainId},
     orderbook::{ApiContext, ExternalHostPolicy, OrderbookApi},
-    trading::{TraderParams, TradingBuilder, TradingError, TradingOptions},
+    trading::{Trading, TradingError},
 };
 
 use cow_sdk_examples_native::support::{sample_quote_response_json, sample_trade_parameters};
@@ -45,10 +45,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
     .base_url(server.uri())
     .build()?;
 
-    let trading = TradingBuilder::ready(
-        TraderParams::new(SupportedChainId::Sepolia, "cow-rs-cancellation-example")?,
-        TradingOptions::new().with_orderbook(orderbook),
-    )?;
+    let trading = Trading::builder()
+        .chain_id(SupportedChainId::Sepolia)
+        .app_code("cow-rs-cancellation-example")
+        .orderbook(orderbook)
+        .build()?;
 
     // One token, cloned: clones share the same cancellation state. A background
     // task fires it after 100ms, long before the 30s response would arrive.

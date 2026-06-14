@@ -6,12 +6,12 @@ use cow_sdk_contracts::eth_flow::{
 use cow_sdk_contracts::settlement::IGPv2Settlement;
 use cow_sdk_contracts::{ContractId, Registry};
 use cow_sdk_core::{
-    Address, Amount, HexData, ProtocolOptions, Signer, SupportedChainId, TransactionHash,
-    TransactionRequest,
+    Address, AddressPerChain, Amount, HexData, ProtocolOptions, Signer, SupportedChainId,
+    TransactionHash, TransactionRequest,
 };
 use cow_sdk_orderbook::Order;
 
-use crate::slippage::{gas_with_margin, parse_integer};
+use crate::slippage::gas_with_margin;
 use crate::{
     DEFAULT_GAS_LIMIT, OrderTraderParams, PartialTraderParams, TraderParams, TradingError,
     calculate_unique_order_id, order_to_sign,
@@ -204,31 +204,19 @@ where
             operation: "address",
             message: error.to_string().into(),
         })?;
-    let owner = from;
     let quote_id = params.quote_id();
     let mut adjusted = crate::adjust_eth_flow_limit_params(chain_id, params.as_limit());
     if adjusted.slippage_bps.is_none() {
         adjusted.slippage_bps = Some(crate::default_slippage_bps(chain_id, true));
     }
 
-    let mut options = ProtocolOptions::new();
-    if let Some(env) = adjusted.env.or(trader.env) {
-        options = options.with_env(env);
-    }
-    if let Some(overrides) = adjusted
-        .settlement_contract_override
-        .clone()
-        .or_else(|| trader.settlement_contract_override.clone())
-    {
-        options = options.with_settlement_contract_override(overrides);
-    }
-    if let Some(overrides) = adjusted
-        .eth_flow_contract_override
-        .clone()
-        .or_else(|| trader.eth_flow_contract_override.clone())
-    {
-        options = options.with_eth_flow_contract_override(overrides);
-    }
+    let options = protocol_options(
+        adjusted.env.or(trader.env),
+        adjusted.settlement_contract_override.as_ref(),
+        trader.settlement_contract_override.as_ref(),
+        adjusted.eth_flow_contract_override.as_ref(),
+        trader.eth_flow_contract_override.as_ref(),
+    );
     let order_to_sign = order_to_sign(
         crate::order::OrderToSignParams {
             chain_id,
@@ -263,7 +251,7 @@ where
         order_id: generated.order_id,
         order_to_sign,
         transaction: PreparedTransaction::new(to, data, value, gas_limit),
-        from: owner,
+        from,
     })
 }
 
@@ -301,17 +289,13 @@ where
             None,
         )
     };
-    let gas = signer
-        .estimate_gas(&tx)
-        .await
-        .map_err(|error| TradingError::Signer {
-            operation: "estimate_gas",
-            message: error.to_string().into(),
-        });
-    tx.gas_limit = Some(match gas {
-        Ok(value) => Amount::new(parse_integer("gas", &value.to_string())?.to_string())?,
-        Err(_) => default_gas_limit(),
-    });
+    tx.gas_limit = Some(
+        signer
+            .estimate_gas(&tx)
+            .await
+            .ok()
+            .unwrap_or_else(default_gas_limit),
+    );
     Ok(tx)
 }
 
@@ -341,25 +325,32 @@ where
     Ok(broadcast.transaction_hash)
 }
 
-/// Resolves protocol options for an order-level workflow.
+/// Assembles [`ProtocolOptions`] from an already-resolved environment and a
+/// call-level / trader override pair for each contract, applying call-level
+/// precedence: the call value wins and the trader value is the fallback.
 ///
-/// Call-level order params take precedence over trader defaults for environment
-/// and contract overrides.
-#[must_use]
-pub fn protocol_options_for_order(
-    params: &OrderTraderParams,
-    trader: &TraderParams,
+/// Callers resolve the environment themselves — some pass the canonical
+/// orderbook environment, some fall a call-level value back to the trader
+/// default — so this helper owns only the contract-override precedence rule
+/// shared across the quote, post, eth-flow, and cancellation lanes.
+pub(crate) fn protocol_options(
+    env: Option<cow_sdk_core::CowEnv>,
+    settlement_primary: Option<&AddressPerChain>,
+    settlement_fallback: Option<&AddressPerChain>,
+    eth_flow_primary: Option<&AddressPerChain>,
+    eth_flow_fallback: Option<&AddressPerChain>,
 ) -> ProtocolOptions {
-    protocol_options_for_partial_order(
-        params,
-        &PartialTraderParams {
-            chain_id: Some(trader.chain_id),
-            app_code: Some(trader.app_code.clone()),
-            env: trader.env,
-            settlement_contract_override: trader.settlement_contract_override.clone(),
-            eth_flow_contract_override: trader.eth_flow_contract_override.clone(),
-        },
-    )
+    let mut options = ProtocolOptions::new();
+    if let Some(env) = env {
+        options = options.with_env(env);
+    }
+    if let Some(overrides) = settlement_primary.or(settlement_fallback) {
+        options = options.with_settlement_contract_override(overrides.clone());
+    }
+    if let Some(overrides) = eth_flow_primary.or(eth_flow_fallback) {
+        options = options.with_eth_flow_contract_override(overrides.clone());
+    }
+    options
 }
 
 /// Resolves protocol options for an order-level workflow that only needs
@@ -369,25 +360,13 @@ pub(crate) fn protocol_options_for_partial_order(
     params: &OrderTraderParams,
     trader: &PartialTraderParams,
 ) -> ProtocolOptions {
-    let mut options = ProtocolOptions::new();
-    if let Some(env) = params.env.or(trader.env) {
-        options = options.with_env(env);
-    }
-    if let Some(overrides) = params
-        .settlement_contract_override
-        .clone()
-        .or_else(|| trader.settlement_contract_override.clone())
-    {
-        options = options.with_settlement_contract_override(overrides);
-    }
-    if let Some(overrides) = params
-        .eth_flow_contract_override
-        .clone()
-        .or_else(|| trader.eth_flow_contract_override.clone())
-    {
-        options = options.with_eth_flow_contract_override(overrides);
-    }
-    options
+    protocol_options(
+        params.env.or(trader.env),
+        params.settlement_contract_override.as_ref(),
+        trader.settlement_contract_override.as_ref(),
+        params.eth_flow_contract_override.as_ref(),
+        trader.eth_flow_contract_override.as_ref(),
+    )
 }
 
 /// Resolves the settlement address for on-chain helper calls.
@@ -478,9 +457,8 @@ fn encode_ethflow_create_order(
     quote_id: i64,
 ) -> Result<String, TradingError> {
     let payload = EthFlowOrderData::from_unsigned_order(order, quote_id)?;
-    Ok(format!(
-        "0x{}",
-        alloy_primitives::hex::encode(encode_create_order_calldata(&payload))
+    Ok(alloy_primitives::hex::encode_prefixed(
+        encode_create_order_calldata(&payload),
     ))
 }
 
@@ -497,8 +475,7 @@ fn encode_ethflow_invalidate_order(order: &Order) -> Result<String, TradingError
         false,
         0,
     )?;
-    Ok(format!(
-        "0x{}",
-        alloy_primitives::hex::encode(encode_invalidate_order_calldata(&payload))
+    Ok(alloy_primitives::hex::encode_prefixed(
+        encode_invalidate_order_calldata(&payload),
     ))
 }

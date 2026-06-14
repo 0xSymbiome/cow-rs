@@ -1,3 +1,4 @@
+use std::fmt;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
@@ -5,7 +6,7 @@ use cow_sdk_core::{AppCode, AppCodeError, CowEnv, SupportedChainId};
 
 use super::{AppCodeSet, AppCodeUnset, ChainIdSet, ChainIdUnset, Trading};
 use crate::{
-    OrderbookClient, PartialTraderParams, TraderParams, TradingError, TradingOptions,
+    OrderbookClient, PartialTraderParams, TraderParams, TradingError,
     types::validate_orderbook_context,
 };
 
@@ -23,19 +24,29 @@ use crate::{
 /// one lazily through `OrderbookApi::builder()`, whose default-transport
 /// terminal exists on both targets (native `ReqwestTransport`, browser
 /// `FetchTransport`).
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct TradingBuilder<C = ChainIdUnset, A = AppCodeUnset> {
     trader_defaults: PartialTraderParams,
-    options: TradingOptions,
+    orderbook: Option<Arc<dyn OrderbookClient>>,
     app_code_error: Option<AppCodeError>,
     _state: PhantomData<(C, A)>,
+}
+
+impl<C, A> fmt::Debug for TradingBuilder<C, A> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("TradingBuilder")
+            .field("trader_defaults", &self.trader_defaults)
+            .field("orderbook", &self.orderbook.is_some())
+            .field("app_code_error", &self.app_code_error)
+            .finish()
+    }
 }
 
 impl Default for TradingBuilder<ChainIdUnset, AppCodeUnset> {
     fn default() -> Self {
         Self {
             trader_defaults: PartialTraderParams::default(),
-            options: TradingOptions::default(),
+            orderbook: None,
             app_code_error: None,
             _state: PhantomData,
         }
@@ -56,16 +67,13 @@ impl TradingBuilder<ChainIdUnset, AppCodeUnset> {
 
     /// Builds a ready-state [`Trading`] from total trader parameters.
     ///
-    /// This one-call terminal is for callers that already hold the complete
-    /// [`TraderParams`] shape. It intentionally does not accept
-    /// `PartialTraderParams`, so chain id and `appCode` stay present
-    /// before construction reaches the ready-state terminal.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`TradingError::InjectedOrderbookContextConflict`] when the
-    /// trader parameters conflict with an injected orderbook client.
-    pub fn ready(params: TraderParams, options: TradingOptions) -> Result<Trading, TradingError> {
+    /// For callers that already hold a complete [`TraderParams`] — chain id and
+    /// a validated `appCode` are present by construction, so this terminal is
+    /// infallible. The orderbook client is the default per-chain factory; to
+    /// inject a custom client, use [`Trading::builder`] with
+    /// [`TradingBuilder::orderbook`].
+    #[must_use]
+    pub fn ready(params: TraderParams) -> Trading {
         let TraderParams {
             chain_id,
             app_code,
@@ -74,22 +82,16 @@ impl TradingBuilder<ChainIdUnset, AppCodeUnset> {
             eth_flow_contract_override,
         } = params;
 
-        let mut builder = Self::new()
-            .options(options)
-            .chain_id(chain_id)
-            .app_code(app_code);
-
-        if let Some(env) = env {
-            builder = builder.env(env);
+        Trading {
+            trader_defaults: PartialTraderParams {
+                chain_id: Some(chain_id),
+                app_code: Some(app_code),
+                env,
+                settlement_contract_override,
+                eth_flow_contract_override,
+            },
+            orderbook: None,
         }
-        if let Some(overrides) = settlement_contract_override {
-            builder = builder.settlement_contract_override(overrides);
-        }
-        if let Some(overrides) = eth_flow_contract_override {
-            builder = builder.eth_flow_contract_override(overrides);
-        }
-
-        builder.build()
     }
 }
 
@@ -105,7 +107,7 @@ impl<C, A> TradingBuilder<C, A> {
                 chain_id: Some(chain_id),
                 ..self.trader_defaults
             },
-            options: self.options,
+            orderbook: self.orderbook,
             app_code_error: self.app_code_error,
             _state: PhantomData,
         }
@@ -136,7 +138,7 @@ impl<C, A> TradingBuilder<C, A> {
                 app_code,
                 ..self.trader_defaults
             },
-            options: self.options,
+            orderbook: self.orderbook,
             app_code_error,
             _state: PhantomData,
         }
@@ -169,39 +171,42 @@ impl<C, A> TradingBuilder<C, A> {
         self
     }
 
-    /// Returns a copy of this builder with explicit SDK options.
-    #[must_use]
-    pub fn options(mut self, options: TradingOptions) -> Self {
-        self.options = options;
-        self
-    }
-
     /// Returns a copy of this builder with an injected orderbook client.
     ///
     /// Accepts the client by value and shares it internally, so callers do not
-    /// wrap it in [`Arc`]. Use [`TradingBuilder::orderbook_client`] when an
+    /// wrap it in [`Arc`]. Use [`TradingBuilder::orderbook_shared`] when an
     /// `Arc<dyn OrderbookClient>` is already held and is shared elsewhere.
     ///
     /// The injected client fixes the effective orderbook chain and environment
-    /// for orderbook-bound flows.
+    /// for orderbook-bound flows and carries its own [`TransportPolicy`] (retry,
+    /// rate-limit, and HTTP-client tuning). Configure that resilience on the
+    /// client before injecting it — build it through
+    /// [`OrderbookApi::builder().transport_policy(...)`] — rather than on the
+    /// trading builder. On the default construction path (no client injected),
+    /// the SDK builds an orderbook client with the standard
+    /// [`TransportPolicy::default_orderbook`] policy.
+    ///
+    /// [`TransportPolicy`]: cow_sdk_core::transport::policy::TransportPolicy
+    /// [`OrderbookApi::builder().transport_policy(...)`]: cow_sdk_orderbook::OrderbookApiBuilder::transport_policy
+    /// [`TransportPolicy::default_orderbook`]: cow_sdk_core::transport::policy::TransportPolicy::default_orderbook
     #[must_use]
     pub fn orderbook(self, orderbook: impl OrderbookClient + 'static) -> Self {
-        self.orderbook_client(Arc::new(orderbook))
+        self.orderbook_shared(Arc::new(orderbook))
     }
 
-    /// Returns a copy of this builder with an injected orderbook client.
+    /// Returns a copy of this builder with a shared orderbook client.
     ///
     /// The injected client fixes the effective orderbook chain and environment
     /// for orderbook-bound flows. Prefer [`TradingBuilder::orderbook`] to inject
     /// a client by value; this variant accepts an existing shared handle.
     #[must_use]
-    pub fn orderbook_client(mut self, orderbook_client: Arc<dyn OrderbookClient>) -> Self {
-        self.options = self.options.with_orderbook_client(orderbook_client);
+    pub fn orderbook_shared(mut self, orderbook: Arc<dyn OrderbookClient>) -> Self {
+        self.orderbook = Some(orderbook);
         self
     }
 
     fn validate_injected_orderbook_binding(&self) -> Result<(), TradingError> {
-        if let Some(orderbook_client) = self.options.orderbook_client() {
+        if let Some(orderbook_client) = self.orderbook.as_ref() {
             validate_orderbook_context(
                 orderbook_client.as_ref(),
                 self.trader_defaults.chain_id,
@@ -254,7 +259,7 @@ impl TradingBuilder<ChainIdSet, AppCodeSet> {
 
         Ok(Trading {
             trader_defaults: self.trader_defaults,
-            options: self.options,
+            orderbook: self.orderbook,
         })
     }
 }

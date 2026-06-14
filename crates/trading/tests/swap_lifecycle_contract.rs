@@ -8,7 +8,7 @@
 mod common;
 
 use cow_sdk_core::{OrderKind, SupportedChainId};
-use cow_sdk_trading::{TradeParams, Trading, TradingBuilder, TradingOptions, post_swap_order};
+use cow_sdk_trading::{TradeParams, Trading, post_swap_order};
 
 use crate::common::{
     MockOrderbook, MockSigner, sample_trade_parameters, sample_trader_parameters,
@@ -41,11 +41,12 @@ async fn swap_builder_quote_then_submit_matches_flat_post_swap_order() {
 
     // Fluent builder path against the SDK facade.
     let fluent_orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
-    let trading = TradingBuilder::ready(
-        trader.clone(),
-        TradingOptions::new().with_orderbook(fluent_orderbook.clone()),
-    )
-    .expect("sdk construction should succeed");
+    let trading = Trading::builder()
+        .chain_id(trader.chain_id)
+        .app_code(trader.app_code.clone())
+        .orderbook(fluent_orderbook.clone())
+        .build()
+        .expect("sdk construction should succeed");
 
     let quoted = trading
         .swap()

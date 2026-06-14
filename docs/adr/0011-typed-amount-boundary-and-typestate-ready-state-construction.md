@@ -54,10 +54,10 @@ widening the runtime surface.
   shipped crates. One-call ergonomic shortcuts (e.g.,
   `TradingBuilder::ready(...)`) are typestate terminals consuming
   *total* typed inputs and never `Partial*` shapes.
-- On `wasm32` targets, `build_ready()` additionally requires an injected
-  orderbook client through `TradingOptions::with_orderbook_client(...)`.
-  The default orderbook factory does not run on `wasm32` because the
-  browser runtime does not ship a default `HttpTransport` (see ADR 0013).
+- On `wasm32` targets the default orderbook factory builds a browser
+  `FetchTransport`-backed client (see ADR 0013), so the ready-state terminal
+  needs no injected client; a custom client is injected through
+  `TradingBuilder::orderbook(...)`.
 - Runtime and support: the wire form of every amount remains the
   canonical base-10 string already defined by the orderbook contract.
   `Amount` serializes to that exact string via a custom serializer;
@@ -379,16 +379,17 @@ setters) or, for callers holding a total `TraderParams`, through
 
 The `TradingBuilder` configuration setters are renamed to drop the `with_`
 prefix: `chain_id`, `app_code`, `env`, `settlement_contract_override`,
-`eth_flow_contract_override`, `options`, and `orderbook_client`. The
-`with_`-prefixed names used in the amendment above are superseded.
+`eth_flow_contract_override`, `options`, and `orderbook` (with `orderbook_shared`
+for the shared `Arc<dyn OrderbookClient>` variant). The `with_`-prefixed names
+used in the amendment above are superseded.
 
 This aligns `TradingBuilder` with every other client construction builder in the
 workspace — `OrderbookApi`, `SubgraphApi`, `Client`, and the alloy provider
 and signer builders all use bare setters on their typestate construction chains.
-The `with_` prefix is retained for the owned-value setters on the parameter and
-option types: `TraderParams`, `TradingOptions`, and the quote and override
-builders keep their `with_*` setters. The construction builder and the value
-structs are deliberately distinct surfaces. The typestate guarantee is unchanged:
+The `with_` prefix is retained for the owned-value setters on the parameter
+types: `TraderParams` and the quote and override builders keep their `with_*`
+setters. The construction builder and the value structs are deliberately
+distinct surfaces. The typestate guarantee is unchanged:
 `chain_id` and `app_code` still transition the `ChainIdSet` and `AppCodeSet`
 markers, and `build()` is reachable only once both are set.
 ## Amendment 2026-06-08: `SignedAmount` removed
@@ -446,13 +447,13 @@ orchestration, and the terminals delegate to the existing `quote_results`,
 `post_swap_order`, and `post_swap_order_from_quote` entries.
 
 The injected orderbook client is accepted by value through
-`TradingBuilder::orderbook(...)` and `TradingOptions::with_orderbook(...)`,
-which share it internally as the `Arc<dyn OrderbookClient>` the options
-store. The pre-existing `orderbook_client(Arc<dyn OrderbookClient>)` and
-`with_orderbook_client(Arc<dyn OrderbookClient>)` variants remain for an
-already-shared handle. The flat free functions and `Trading` methods stay
-the full surface; the builder is an additive ergonomic entry, and the
-construction typestate on `TradingBuilder` recorded above is unchanged.
+`TradingBuilder::orderbook(...)`, which shares it internally as an
+`Arc<dyn OrderbookClient>`. The `orderbook_shared(Arc<dyn OrderbookClient>)`
+variant remains for an already-shared handle. The flat free functions and
+`Trading` methods stay the full surface; the builder is an additive ergonomic
+entry, and the construction typestate on `TradingBuilder` recorded above is
+unchanged. (See the 2026-06-14 amendment below for the removal of the
+`TradingOptions` bag.)
 
 ## Amendment 2026-06-09: partial trader defaults are crate-internal
 
@@ -471,6 +472,21 @@ with no public destination.
 `trader_defaults() -> &PartialTraderParams` accessor that returned the
 partial type. `TraderParams` remains the public total identity shape, and the
 typestate construction recorded above is unchanged.
+
+## Amendment 2026-06-14: construction collapsed to one orderbook setter
+
+The `TradingOptions` value type is removed. An orderbook client is injected
+directly on the builder through `TradingBuilder::orderbook(...)` (by value, no
+`Arc`) or `TradingBuilder::orderbook_shared(Arc<dyn OrderbookClient>)` for an
+already-shared handle; `TradingBuilder::options(...)`, `Trading::options()`, and
+the `TradingOptions` argument on `TradingBuilder::ready(...)` are removed. The
+ready-state terminal is now `TradingBuilder::ready(params: TraderParams) ->
+Trading`: with a complete `TraderParams` (a validated `appCode` and a chain id)
+and the default per-chain orderbook, construction cannot fail, so the terminal
+returns `Trading` directly rather than `Result`. The injected orderbook field
+moves onto `TradingBuilder` and `Trading` directly; both keep a manual `Debug`
+that reports orderbook presence as a boolean. The typestate guarantee and the
+sealed inherent constructors recorded above are unchanged.
 
 ## Acknowledgements
 

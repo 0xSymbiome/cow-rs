@@ -70,7 +70,7 @@ complete crate inventory is the [Crate Roles](#crate-roles) table below.
 | `cow-sdk-contracts` | `alloy::sol!`-generated typed bindings, the typed `Registry` deployment authority, fail-closed `CoWSwapOnchainOrders` event decoding, and deterministic hashing and verification helpers, plus the opt-in `cow-shed` account-abstraction module (proxy derivation, EIP-712 hook signing, calldata) | You need ABI-level, address-authority, or settlement-level primitives. |
 | `cow-sdk-signing` | Typed-data, signing, cancellation, UID helpers, and the `Eip1271Cache` seam (the always-available `NoopEip1271Cache` plus the feature-gated `InMemoryEip1271Cache`) | You need signing without the full trading layer. |
 | `cow-sdk-app-data` | App-data encoding, schema handling, and CID behavior | You need app-data generation or validation. |
-| `cow-sdk-orderbook` | Typed orderbook transport over the `HttpTransport` seam, with the `OrderbookApiBuilder` typestate | You need explicit request and response control. |
+| `cow-sdk-orderbook` | Typed orderbook transport over the `HttpTransport` seam, with the `OrderbookApiBuilder` typestate | You need explicit request and response control, or the typed quote, post, and query surface without compiling the signing stack. |
 | `cow-sdk-trading` | Quote-to-order workflows plus the quote, submit, cancel, and approve orchestration surface | You need the main trading orchestration layer. |
 | `cow-sdk-subgraph` | Read-only subgraph access over the `HttpTransport` seam, with the `SubgraphApiBuilder` typestate | You need GraphQL reads or custom subgraph queries (via the `cow-sdk` `subgraph` feature or this crate directly). |
 | `cow-sdk-transport-wasm` | Browser-target `HttpTransport` implementation (`FetchTransport`) | You build for `wasm32-unknown-unknown` and need the shipped browser default. |
@@ -87,6 +87,12 @@ The composable-order capability is deferred and recorded only by
 `cow-sdk-composable` crate ships in the workspace, while the shared
 deployment `Registry` already resolves composable contract addresses so the
 capability can land additively without disturbing the registry authority.
+
+Client type names follow the crate's role: the transport clients carry the `Api`
+suffix (`OrderbookApi`, `SubgraphApi`) because they wrap a REST or GraphQL API,
+while the high-level orchestration client is the bare domain noun `Trading`. The
+name signals the altitude — a thin transport client versus the workflow client
+that composes them.
 
 ## Layering
 
@@ -356,7 +362,23 @@ native Alloy adapter errors, and the facade `CowError` lift the marker through
 
 `cow-sdk-trading` owns quote-to-order orchestration. It composes lower-level
 crates instead of spreading user-facing workflow logic across signing,
-transport, and contract crates. When callers inject an orderbook client into
+transport, and contract crates.
+
+It offers each operation at complementary layers: a stateless free function, a
+method on the bound `Trading` client that resolves stored chain, app-code, and
+orderbook context before delegating to that free function, and the fluent
+`Trading::swap()` and `Trading::limit()` builders for the order-placement
+operations (whose positional constructors carry transposable token and amount
+pairs the named setters make non-transposable). Each higher layer is a thin
+delegation to the one below, so there is one implementation per operation. The
+fluent order-lifecycle builders live here rather than on the orderbook client:
+placing an order signs, generates app-data, and resolves eth-flow contracts, so it
+belongs in the crate that already depends on signing, app-data, and contracts.
+`cow-sdk-orderbook` and `cow-sdk-subgraph` stay signing-free typed transport
+clients, so a consumer can use the typed transport without compiling the signing
+stack ([ADR 0069](adr/0069-layered-trading-operation-surface-and-signing-free-transport.md)).
+
+When callers inject an orderbook client into
 orderbook-bound trading helpers, that client becomes the canonical chain and
 environment authority; conflicting explicit values are rejected instead of
 being silently mixed through precedence fallbacks. When quote results are
@@ -399,6 +421,10 @@ switch success.
 
 - `cow-sdk` stays thin.
 - Pure transform crates do not perform hidden network I/O.
+- The fluent order-lifecycle (swap) builder lives in `cow-sdk-trading`;
+  `cow-sdk-orderbook` and `cow-sdk-subgraph` depend on no signing crate and host
+  no order-lifecycle builder, so the typed transport stays usable without the
+  signing stack.
 - `cow-sdk-subgraph` stays a separate read-only crate, re-exported through
   `cow-sdk` only behind the off-by-default `subgraph` feature.
 - Browser-wallet method growth stays leaf-owned and typed.

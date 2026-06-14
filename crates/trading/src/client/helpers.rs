@@ -123,7 +123,7 @@ impl Trading {
         requested_env: Option<CowEnv>,
         missing_chain_error: TradingError,
     ) -> Result<ResolvedOrderbookBinding, TradingError> {
-        if let Some(orderbook_client) = self.options.orderbook_client() {
+        if let Some(orderbook_client) = self.orderbook.clone() {
             validate_orderbook_context(orderbook_client.as_ref(), requested_chain, requested_env)?;
             let context = orderbook_client.context().clone();
 
@@ -141,7 +141,7 @@ impl Trading {
         // default-transport terminal constructs `ReqwestTransport` on native
         // and the browser `FetchTransport` on `wasm32`. Consumers needing a
         // custom retry/rate-limit policy build their own `OrderbookApi` with
-        // it and inject it through `TradingOptions::with_orderbook_client`.
+        // it and inject it through `TradingBuilder::orderbook`.
         let client = OrderbookApi::builder().chain(chain_id).env(env).build()?;
         Ok(ResolvedOrderbookBinding {
             client: Arc::new(client),

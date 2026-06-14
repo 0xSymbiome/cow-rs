@@ -28,7 +28,7 @@ use cow_sdk_orderbook::{
 };
 use cow_sdk_trading::{
     AllowanceParams, ApprovalParams, OrderPostingResult, OrderTraderParams, OrderbookClient,
-    PreparedTransaction, QuoteResults, Trading, TradingError, TradingOptions,
+    PreparedTransaction, QuoteResults, Trading, TradingError,
 };
 
 use crate::common::{
@@ -179,7 +179,7 @@ impl TradingHarness {
             .chain_id(SupportedChainId::Sepolia)
             .app_code("cancellation-composition")
             .env(CowEnv::Prod)
-            .options(TradingOptions::new().with_orderbook_client(orderbook))
+            .orderbook_shared(orderbook)
             .build()
             .expect("trading sdk must construct for cancellation composition tests");
 
@@ -198,7 +198,7 @@ async fn quote_results_fixture() -> QuoteResults {
         .chain_id(SupportedChainId::Sepolia)
         .app_code("cancellation-composition")
         .env(CowEnv::Prod)
-        .options(TradingOptions::new().with_orderbook_client(orderbook))
+        .orderbook_shared(orderbook)
         .build()
         .expect("fixture sdk must construct");
 

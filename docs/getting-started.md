@@ -255,19 +255,63 @@ The flat `post_swap_order`, `quote_only`, and `post_swap_order_from_quote`
 entries remain available for callers that prefer to assemble `TradeParams`
 directly.
 
+### Fluent Limit Lifecycle
+
+A limit order sets an explicit price — both the sell and buy amounts — so no quote is
+fetched. `Trading::limit()` opens the same kind of typed builder as `swap()`: named
+`sell_token`/`buy_token` and `sell_amount`/`buy_amount` setters that cannot be transposed
+(a transposed amount would silently invert the price), then `post(&signer)` to sign and
+post, or `post_presign()` for the smart-account path that needs no signer — there an
+explicit `owner` identifies the account.
+
+```rust,ignore
+use cow_sdk::core::{Address, Amount, Signer, SignerError};
+use cow_sdk::trading::Trading;
+
+async fn place_limit<S>(
+    trading: &Trading,
+    signer: &S,
+    sell: Address,
+    buy: Address,
+) -> Result<(), Box<dyn std::error::Error>>
+where
+    S: Signer,
+    S::Error: std::fmt::Display + SignerError,
+{
+    // Sell exactly 100 USDC, want at least 99 DAI.
+    let posted = trading
+        .limit()
+        .sell_token(sell)
+        .buy_token(buy)
+        .sell_amount(Amount::from_units(100, 6)?)
+        .buy_amount(Amount::from_units(99, 18)?)
+        .post(signer)
+        .await?;
+    println!("posted {}", posted.order_id);
+
+    Ok(())
+}
+```
+
+The flat `post_limit_order` and `post_limit_order_presign` entries remain available for
+callers that assemble `LimitTradeParams` directly. Native-currency (EthFlow) sells go
+through `swap()` instead — set the native-currency sell token and the swap path
+auto-routes to the on-chain EthFlow transaction; `limit()` is for ERC-20 limit orders and
+rejects a native-currency sell token.
+
 ### Browser Ready-State Wiring
 
 On `wasm32-unknown-unknown`, the ready-state trading API is the same, but
 the browser cannot use the native default HTTP transport. Build an orderbook
 client with `cow-sdk-transport-wasm::FetchTransport` and inject it once
-through `TradingOptions`:
+through the builder's `orderbook` setter:
 
 ```rust,ignore
 use std::sync::Arc;
 
 use cow_sdk::core::{CowEnv, SupportedChainId};
 use cow_sdk::orderbook::OrderbookApi;
-use cow_sdk::trading::{Trading, TradingOptions};
+use cow_sdk::trading::Trading;
 use cow_sdk::http::HttpTransport;
 use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
 
@@ -281,11 +325,10 @@ fn build_browser_ready_trading() -> Result<Trading, Box<dyn std::error::Error>> 
         .transport(transport)
         .build()?;
 
-    let options = TradingOptions::new().with_orderbook_client(Arc::new(orderbook));
     let trading = Trading::builder()
         .chain_id(SupportedChainId::Sepolia)
         .app_code("your-browser-app-code")
-        .options(options)
+        .orderbook(orderbook)
         .build()?;
 
     Ok(trading)

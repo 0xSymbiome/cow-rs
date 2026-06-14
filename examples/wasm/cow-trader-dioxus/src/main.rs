@@ -11,7 +11,6 @@
 //! public types — no JavaScript and no raw RPC.
 
 use std::future::Future;
-use std::sync::Arc;
 
 use anyhow::Result;
 use dioxus::prelude::*;
@@ -23,9 +22,7 @@ use cow_sdk::core::{
     wrapped_native_token,
 };
 use cow_sdk::orderbook::{ApiContext, OrderbookApi};
-use cow_sdk::trading::{
-    ApprovalParams, TradeParams, Trading, TradingOptions, approval_transaction,
-};
+use cow_sdk::trading::{ApprovalParams, TradeParams, Trading, approval_transaction};
 
 const CHAIN: SupportedChainId = SupportedChainId::Sepolia;
 // CoW's Sepolia liquidity lives on the production API (`api.cow.fi/sepolia`);
@@ -420,7 +417,7 @@ fn build_trading() -> Result<Trading> {
     Ok(Trading::builder()
         .chain_id(CHAIN)
         .app_code(APP_CODE)
-        .options(TradingOptions::new().with_orderbook_client(Arc::new(orderbook)))
+        .orderbook(orderbook)
         .build()?)
 }
 

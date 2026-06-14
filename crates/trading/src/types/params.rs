@@ -14,10 +14,10 @@ use serde_json::Value;
 
 use cow_sdk_app_data::{AppDataParams, PartnerFee};
 use cow_sdk_core::{
-    Address, AddressPerChain, Amount, AppCode, AppCodeError, BuyTokenDestination, CowEnv, HexData,
+    Address, AddressPerChain, Amount, AppCode, AppCodeError, BuyTokenDestination, CowEnv,
     OrderKind, OrderUid, SellTokenSource, SupportedChainId,
 };
-use cow_sdk_orderbook::{OrderbookClient, PriceQuality, SigningScheme};
+use cow_sdk_orderbook::{PriceQuality, SigningScheme};
 use cow_sdk_signing::eip1271::Eip1271Signer;
 
 use super::seams::{EthFlowOrderExistsChecker, SlippageSuggester};
@@ -690,64 +690,6 @@ impl ApprovalParams {
     }
 }
 
-/// Options stored on [`crate::Trading`] that do not belong in trader defaults.
-#[derive(Clone, Default)]
-pub struct TradingOptions {
-    order_book_api: Option<Arc<dyn OrderbookClient>>,
-}
-
-impl fmt::Debug for TradingOptions {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("TradingOptions")
-            .field("order_book_api", &self.order_book_api.is_some())
-            .finish()
-    }
-}
-
-impl TradingOptions {
-    /// Creates an empty options bundle.
-    #[must_use]
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Returns a copy of these options with an injected orderbook client.
-    ///
-    /// The injected client fixes chain and environment for orderbook-bound
-    /// flows and carries its own [`TransportPolicy`] (retry, rate-limit, and
-    /// HTTP-client tuning). Configure that resilience on the client before
-    /// injecting it — build it through
-    /// [`OrderbookApi::builder().transport_policy(...)`] — rather than on the
-    /// trading options. On the default construction path (no client injected),
-    /// the SDK builds an orderbook client with the standard
-    /// [`TransportPolicy::default_orderbook`] policy.
-    ///
-    /// [`TransportPolicy`]: cow_sdk_core::transport::policy::TransportPolicy
-    /// [`OrderbookApi::builder().transport_policy(...)`]: cow_sdk_orderbook::OrderbookApiBuilder::transport_policy
-    /// [`TransportPolicy::default_orderbook`]: cow_sdk_core::transport::policy::TransportPolicy::default_orderbook
-    #[must_use]
-    pub fn with_orderbook_client(mut self, orderbook_client: Arc<dyn OrderbookClient>) -> Self {
-        self.order_book_api = Some(orderbook_client);
-        self
-    }
-
-    /// Returns a copy of these options with an injected orderbook client by value.
-    ///
-    /// Shares the client internally, so callers do not wrap it in [`Arc`]. Use
-    /// [`TradingOptions::with_orderbook_client`] when an
-    /// `Arc<dyn OrderbookClient>` is already held and is shared elsewhere.
-    #[must_use]
-    pub fn with_orderbook(self, orderbook: impl OrderbookClient + 'static) -> Self {
-        self.with_orderbook_client(Arc::new(orderbook))
-    }
-
-    /// Returns the injected orderbook client, if one is configured.
-    #[must_use]
-    pub fn orderbook_client(&self) -> Option<Arc<dyn OrderbookClient>> {
-        self.order_book_api.clone()
-    }
-}
-
 /// Optional overrides applied directly to the orderbook quote request.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -1201,26 +1143,5 @@ impl fmt::Debug for TradeAdvancedSettings {
             .field("additional_params", &self.additional_params)
             .field("slippage_suggester", &self.slippage_suggester.is_some())
             .finish()
-    }
-}
-
-/// Explicit verifier and signature payload for EIP-1271 verification helpers.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Eip1271VerificationParams {
-    /// Smart-account verifier address.
-    pub verifier: Address,
-    /// Signature bytes supplied to the verifier contract.
-    pub signature: HexData,
-}
-
-impl Eip1271VerificationParams {
-    /// Creates explicit verifier and signature payload for EIP-1271 verification helpers.
-    #[must_use]
-    pub const fn new(verifier: Address, signature: HexData) -> Self {
-        Self {
-            verifier,
-            signature,
-        }
     }
 }

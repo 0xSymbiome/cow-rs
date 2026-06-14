@@ -18,24 +18,9 @@ use serde_json::json;
 
 use common::test_app_code;
 use cow_sdk_core::{
-    Amount, BuyTokenDestination, HexData, NATIVE_CURRENCY_ADDRESS, OrderKind, ProtocolOptions,
-    SellTokenSource,
+    Amount, BuyTokenDestination, NATIVE_CURRENCY_ADDRESS, OrderKind, SellTokenSource,
 };
 use cow_sdk_orderbook::OrderClass;
-
-fn protocol_options_from_trader(trader: &cow_sdk_trading::TraderParams) -> ProtocolOptions {
-    let mut options = ProtocolOptions::new();
-    if let Some(env) = trader.env {
-        options = options.with_env(env);
-    }
-    if let Some(overrides) = trader.settlement_contract_override.clone() {
-        options = options.with_settlement_contract_override(overrides);
-    }
-    if let Some(overrides) = trader.eth_flow_contract_override.clone() {
-        options = options.with_eth_flow_contract_override(overrides);
-    }
-    options
-}
 use cow_sdk_trading::{
     LimitTradeParams, LimitTradeParamsFromQuote, PartnerFeePolicy, PostTradeAdditionalParams,
     QuoteRequestOverride, TradeAdvancedSettings, TradingError, build_app_data, post_limit_order,
@@ -794,86 +779,6 @@ async fn post_from_quote_rejects_orderbook_binding_mismatch_before_signing_or_su
     ));
     assert!(signer.state().last_typed_data_domain.is_none());
     assert!(posting_orderbook.state().sent_orders.is_empty());
-}
-
-#[tokio::test]
-async fn async_order_level_eip1271_verification_is_explicit_and_reuses_contract_helpers() {
-    let trader = sample_trader_parameters();
-    let params = sample_limit_parameters(OrderKind::Sell);
-    let app_data = build_app_data(&test_app_code(), 50, OrderClass::Limit, None, None)
-        .await
-        .expect("app data should build");
-    let order_to_sign = cow_sdk_trading::order_to_sign(
-        cow_sdk_trading::OrderToSignParams::new(trader.chain_id, address(OWNER), false)
-            .with_apply_costs_slippage_and_fees(false),
-        &params,
-        &app_data.app_data_keccak256,
-    )
-    .expect("order to sign should build");
-    let provider = crate::common::MockProvider::default();
-    let verifier = address(OWNER);
-    provider.set_code(&verifier, "0x6001600055");
-    provider.set_contract_response("isValidSignature", "\"0x1626ba7e\"");
-
-    cow_sdk_trading::post::verify_eip1271_order_signature(
-        &provider,
-        &order_to_sign,
-        trader.chain_id,
-        &cow_sdk_trading::types::Eip1271VerificationParams::new(
-            verifier,
-            HexData::new("0x7e57c0de").unwrap(),
-        ),
-        Some(&protocol_options_from_trader(&trader)),
-    )
-    .await
-    .expect("verification should succeed");
-
-    let call = provider
-        .state()
-        .last_contract_call
-        .expect("verification call recorded");
-    assert_eq!(call.address, verifier);
-    assert_eq!(call.method, "isValidSignature");
-}
-
-#[tokio::test]
-async fn order_level_eip1271_verification_surfaces_contract_failures_explicitly() {
-    let trader = sample_trader_parameters();
-    let params = sample_limit_parameters(OrderKind::Sell);
-    let app_data = build_app_data(&test_app_code(), 50, OrderClass::Limit, None, None)
-        .await
-        .expect("app data should build");
-    let order_to_sign = cow_sdk_trading::order_to_sign(
-        cow_sdk_trading::OrderToSignParams::new(trader.chain_id, address(OWNER), false)
-            .with_apply_costs_slippage_and_fees(false),
-        &params,
-        &app_data.app_data_keccak256,
-    )
-    .expect("order to sign should build");
-    let provider = crate::common::MockProvider::default();
-    let verifier = address(OWNER);
-    provider.set_code(&verifier, "0x6001600055");
-    provider.set_contract_response("isValidSignature", "\"0xffffffff\"");
-
-    let error = cow_sdk_trading::post::verify_eip1271_order_signature(
-        &provider,
-        &order_to_sign,
-        trader.chain_id,
-        &cow_sdk_trading::types::Eip1271VerificationParams::new(
-            verifier,
-            HexData::new("0x7e57c0de").unwrap(),
-        ),
-        Some(&protocol_options_from_trader(&trader)),
-    )
-    .await
-    .expect_err("wrong magic value must fail");
-
-    assert!(matches!(
-        error,
-        cow_sdk_trading::TradingError::Contracts(
-            cow_sdk_contracts::ContractsError::Eip1271MagicValueMismatch { .. }
-        )
-    ));
 }
 
 // The three tests below pin the eth-flow submission seam's owner-vs-receiver

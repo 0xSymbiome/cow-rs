@@ -84,6 +84,27 @@ marker types use private tuple fields so external crates cannot construct them.
 
 **Anchored by**: [ADR 0013](adr/0013-http-transport-injection-and-typestate-builders.md) (primary). Supporting: [ADR 0011](adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md).
 
+## Layered Operation Surface
+
+High-level trading operations are offered at complementary layers — stateless free
+functions, methods on a bound `Trading` client, and fluent builders for the order-placement
+operations (`swap` and `limit`) — where each layer serves a distinct caller and every
+higher layer is a thin delegation to the one below. The bound-client method layer is a
+curated subset of the free functions, not a full mirror; the fluent builders cover the
+order-placement operations, whose positional constructors carry transposable token and
+amount pairs, and are not added for operations without such a pair (cancellation, pre-sign,
+allowance, approval).
+
+The fluent order-lifecycle builder lives in the orchestration crate. `cow-sdk-orderbook`
+and `cow-sdk-subgraph` stay signing-free typed transport clients — a typestate
+construction builder, one method per endpoint, an injection trait seam, and request DTOs
+— so a consumer can use the typed transport without compiling the signing stack. A swap
+signs, generates app-data, and resolves eth-flow contracts, so the swap builder lives in
+`cow-sdk-trading` where those dependencies already are, not on the orderbook client.
+Each operation is reachable by one public import path.
+
+**Anchored by**: [ADR 0069](adr/0069-layered-trading-operation-surface-and-signing-free-transport.md) (primary). Supporting: [ADR 0002](adr/0002-dedicated-trading-orchestration-crate.md), [ADR 0013](adr/0013-http-transport-injection-and-typestate-builders.md).
+
 ## Chain-RPC Runtime Neutrality
 
 The default SDK path stays provider-neutral. Consumers own their chain-RPC

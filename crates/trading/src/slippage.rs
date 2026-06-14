@@ -332,16 +332,13 @@ pub(super) fn rounded_nonnegative_f64_to_u32(
             value: rounded.to_string().into(),
         });
     }
-    if rounded == 0.0 {
-        return Ok(0);
-    }
 
-    format!("{rounded:.0}")
-        .parse::<u32>()
-        .map_err(|_| TradingError::NumericOverflow {
-            field,
-            value: rounded.to_string().into(),
-        })
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        reason = "the guard above bounds `rounded` to a finite, non-negative value no greater than `u32::MAX`, and `round()` makes it integer-valued, so the narrowing cast is exact"
+    )]
+    Ok(rounded as u32)
 }
 
 const PROTOCOL_FEE_BPS_SCALE: i64 = 100_000;

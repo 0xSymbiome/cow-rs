@@ -2,7 +2,7 @@
 
 use cow_sdk_contracts::RecoverableSignature;
 use cow_sdk_core::{
-    Address, Amount, ProtocolOptions, Provider, Signer, TransactionBroadcast, TransactionRequest,
+    Address, Amount, ProtocolOptions, Signer, TransactionBroadcast, TransactionRequest,
     TypedDataPayload,
 };
 use cow_sdk_orderbook::{OrderClass, OrderCreation, SigningScheme};
@@ -181,24 +181,13 @@ where
         crate::validation::assert_owner_matches_signer(&from, signer_address)
             .map_err(TradingError::ClientRejected)?;
     }
-    let mut options = ProtocolOptions::new();
-    if let Some(env) = params.env {
-        options = options.with_env(env);
-    }
-    if let Some(overrides) = params
-        .settlement_contract_override
-        .clone()
-        .or_else(|| trader.settlement_contract_override.clone())
-    {
-        options = options.with_settlement_contract_override(overrides);
-    }
-    if let Some(overrides) = params
-        .eth_flow_contract_override
-        .clone()
-        .or_else(|| trader.eth_flow_contract_override.clone())
-    {
-        options = options.with_eth_flow_contract_override(overrides);
-    }
+    let options = crate::onchain::protocol_options(
+        params.env,
+        params.settlement_contract_override.as_ref(),
+        trader.settlement_contract_override.as_ref(),
+        params.eth_flow_contract_override.as_ref(),
+        trader.eth_flow_contract_override.as_ref(),
+    );
     let order_to_sign = order_to_sign(
         crate::order::OrderToSignParams {
             chain_id,
@@ -792,83 +781,4 @@ where
     .await?;
 
     post_swap_order_from_quote(&quote_results, trader, signer, advanced_settings, orderbook).await
-}
-
-/// Builds an EIP-1271 verification request for a `CoW` order digest.
-///
-/// # Errors
-///
-/// Returns an error when the signing domain cannot be resolved or when the order digest cannot be
-/// derived for the verification request.
-pub fn eip1271_order_verification_request(
-    order_to_sign: &cow_sdk_core::OrderData,
-    chain_id: cow_sdk_core::SupportedChainId,
-    verification: &crate::types::Eip1271VerificationParams,
-    options: Option<&ProtocolOptions>,
-) -> Result<cow_sdk_contracts::Eip1271VerificationRequest, TradingError> {
-    let domain = cow_sdk_signing::domain(chain_id, options)?;
-    let digest = cow_sdk_contracts::hash_order(&domain, order_to_sign)?;
-
-    Ok(cow_sdk_contracts::Eip1271VerificationRequest::new(
-        verification.verifier,
-        digest,
-        verification.signature.clone(),
-    ))
-}
-
-/// Verifies an EIP-1271 order signature against a provider.
-///
-/// Use this to confirm that a smart-account (EIP-1271) wallet's signature over a
-/// `CoW` order is valid — the verifier contract is called and must return the
-/// EIP-1271 magic value.
-///
-/// # Errors
-///
-/// Returns an error when the verification request cannot be derived or when the provider reports
-/// missing code, malformed responses, or an invalid EIP-1271 magic value.
-///
-/// ```no_run
-/// # use cow_sdk_trading::{verify_eip1271_order_signature, Eip1271VerificationParams};
-/// # use cow_sdk_core::{Address, HexData, OrderData, Provider, SupportedChainId};
-/// # async fn demo<P>(provider: &P, order: &OrderData) -> Result<(), Box<dyn std::error::Error>>
-/// # where P: Provider, P::Error: std::fmt::Display {
-/// let verification = Eip1271VerificationParams::new(
-///     Address::ZERO,              // the smart-account verifier contract
-///     HexData::new("0x1234")?,    // the EIP-1271 signature payload (illustrative)
-/// );
-/// verify_eip1271_order_signature(provider, order, SupportedChainId::Mainnet, &verification, None)
-///     .await?;
-/// # Ok(())
-/// # }
-/// ```
-pub async fn verify_eip1271_order_signature<P>(
-    provider: &P,
-    order_to_sign: &cow_sdk_core::OrderData,
-    chain_id: cow_sdk_core::SupportedChainId,
-    verification: &crate::types::Eip1271VerificationParams,
-    options: Option<&ProtocolOptions>,
-) -> Result<(), TradingError>
-where
-    P: Provider,
-    P::Error: std::fmt::Display,
-{
-    let request =
-        eip1271_order_verification_request(order_to_sign, chain_id, verification, options)?;
-    let verification = cow_sdk_contracts::verify_eip1271_signature_cached(
-        provider,
-        &request,
-        &cow_sdk_signing::NoopEip1271Cache,
-    );
-    #[cfg(feature = "tracing")]
-    let verification = {
-        use tracing::Instrument as _;
-
-        verification.instrument(tracing::debug_span!(
-            "trading.verify_eip1271_caller",
-            chain_id = ?chain_id,
-            verifier = %request.verifier,
-        ))
-    };
-    verification.await?;
-    Ok(())
 }

@@ -400,7 +400,7 @@ fn build_trading_with_orderbook(
         .chain_id(chain)
         .app_code(app_code)
         .env(env_value)
-        .orderbook_client(orderbook)
+        .orderbook_shared(orderbook)
         .build()
         .map_err(|error| WasmError::from(error).into_js())
 }

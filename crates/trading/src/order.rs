@@ -3,7 +3,7 @@ use alloy_primitives::aliases::I512;
 use cow_sdk_contracts::{ContractId, Registry};
 use cow_sdk_core::{
     Address, Amount, AppDataHash, CowEnv, MAX_VALID_TO_EPOCH, NATIVE_CURRENCY_ADDRESS, OrderData,
-    ProtocolOptions, SupportedChainId, ValidTo, wrapped_native_token,
+    ProtocolOptions, SupportedChainId, wrapped_native_token,
 };
 use cow_sdk_orderbook::OrderQuoteResponse;
 use cow_sdk_signing::{GeneratedOrderId, generate_order_id};
@@ -87,44 +87,15 @@ impl OrderToSignParams {
     }
 }
 
-impl LimitTradeParams {
-    /// Resolves the order expiration into a typed [`ValidTo`].
-    ///
-    /// `valid_to` wins when present; otherwise `valid_for` is combined with
-    /// the supplied `now_epoch_seconds` through [`ValidTo::relative`]. Returns
-    /// `Ok(None)` when neither field is configured so callers can apply their
-    /// own default before signing.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`TradingError::InvalidInput`] when a relative `valid_for`
-    /// value falls outside the supported duration window.
-    pub fn valid_to_typed(&self, now_epoch_seconds: u64) -> Result<Option<ValidTo>, TradingError> {
-        if let Some(absolute) = self.valid_to {
-            return Ok(Some(ValidTo::absolute(absolute)));
-        }
-        self.valid_for.map_or(Ok(None), |duration| {
-            ValidTo::relative(now_epoch_seconds, u64::from(duration))
-                .map(Some)
-                .map_err(|_| TradingError::InvalidInput {
-                    field: "validFor",
-                    reason: cow_sdk_core::ValidationReason::OutOfRange {
-                        details: "relative valid_for window must sit inside the supported bounds",
-                    },
-                })
-        })
-    }
-}
-
 /// Returns `true` when `sell_token` is the protocol native-asset sentinel address.
 #[must_use]
-pub fn is_eth_flow_order(sell_token: &Address) -> bool {
+pub(crate) fn is_eth_flow_order(sell_token: &Address) -> bool {
     *sell_token == NATIVE_CURRENCY_ADDRESS
 }
 
 /// Rewrites a swap trade to use the wrapped-native token for `EthFlow` quoting.
 #[must_use]
-pub fn adjust_eth_flow_trade_params(
+pub(crate) fn adjust_eth_flow_trade_params(
     chain_id: SupportedChainId,
     trade_parameters: &TradeParams,
 ) -> TradeParams {
@@ -135,7 +106,7 @@ pub fn adjust_eth_flow_trade_params(
 
 /// Rewrites a limit-order request to use the wrapped-native token for `EthFlow` posting.
 #[must_use]
-pub fn adjust_eth_flow_limit_params(
+pub(crate) fn adjust_eth_flow_limit_params(
     chain_id: SupportedChainId,
     limit_parameters: &LimitTradeParams,
 ) -> LimitTradeParams {
@@ -211,7 +182,7 @@ pub fn order_to_sign(
     let network_costs_amount = params.network_costs_amount.unwrap_or(Amount::ZERO);
     let receiver = limit_parameters
         .receiver
-        .filter(|receiver| !is_zero_address(receiver))
+        .filter(|receiver| !receiver.is_zero())
         .unwrap_or(params.from);
     let valid_to = if let Some(valid_to) = limit_parameters.valid_to {
         valid_to
@@ -363,8 +334,4 @@ fn adjust_buy_amount(value: &Amount) -> Result<Amount, TradingError> {
         });
     }
     Amount::new((amount - I512::ONE).to_string()).map_err(Into::into)
-}
-
-fn is_zero_address(address: &Address) -> bool {
-    address.is_zero()
 }

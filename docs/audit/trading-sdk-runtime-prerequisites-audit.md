@@ -1,7 +1,7 @@
 # Trading SDK Runtime Prerequisites Audit
 
 Status: Current
-Last reviewed: 2026-06-12
+Last reviewed: 2026-06-14
 Owning surface: `cow-sdk-trading` ready-state `Trading` construction, the chain-bound helper free functions, helper-specific prerequisite contract, and per-trade owner attribution
 Refresh trigger: Changes to ready-state `Trading` builder terminals, the chain-bound helper free functions, method-specific prerequisite enforcement, the per-trade owner-attribution placement, or any change to the target-neutral default orderbook factory inside `build()`
 Related docs:
@@ -57,9 +57,9 @@ default orderbook factory constructs one lazily through
 targets (native `ReqwestTransport`, browser `FetchTransport` backed by the
 realm's global `fetch` — ADR 0013).
 
-The root `cow-sdk` facade re-exports `TradingOptions` so consumers can still
-inject a custom orderbook client from the same first-touch import surface on
-any target.
+A custom orderbook client is injected through the builder's `orderbook` setter
+(`Trading::builder()…orderbook(client)`), reachable from the same first-touch
+`cow-sdk` import surface on any target.
 
 ### Chain-Bound Helper Free Functions
 

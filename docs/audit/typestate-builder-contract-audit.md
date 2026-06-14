@@ -1,7 +1,7 @@
 # Typestate Builder Contract Audit
 
 Status: Current
-Last reviewed: 2026-06-12
+Last reviewed: 2026-06-14
 Owning surface: `cow-sdk-orderbook::OrderbookApiBuilder`, `cow-sdk-subgraph::SubgraphApiBuilder`, and `cow-sdk-trading::TradingBuilder` construction seams, plus the `cow-sdk-trading::SwapBuilder` swap lifecycle seam
 Refresh trigger: future type-parameter or marker visibility changes on any covered builder, a change to the set of required inputs (chain, environment, API key, appCode, transport, or the swap sell-token/buy-token/amount markers), a change to host-policy validation, a change to either per-target default-transport `.build()` impl, a change to the trading target-neutral default orderbook factory, a change to the swap lifecycle terminals, or a new `trybuild`/`compile_fail` witness replacing the current compile-fail coverage
 Related docs:
@@ -164,11 +164,10 @@ and ASCII control characters so source-backed examples such as `CoW Swap`,
 `build()` is target-neutral: with no injected orderbook client, the default
 orderbook factory constructs one lazily through `OrderbookApi::builder()` on
 native and `wasm32` alike, because the orderbook builder's default-transport
-terminal exists on both targets (ADR 0013). An injected client is still
-accepted by value through `TradingBuilder::orderbook(...)` and
-`TradingOptions::with_orderbook(...)`, which share it internally as the same
-`Arc<dyn OrderbookClient>` the options store; the `Arc`-taking variants remain
-for an already-shared handle.
+terminal exists on both targets (ADR 0013). An injected client is accepted by
+value through `TradingBuilder::orderbook(...)`, which shares it internally as an
+`Arc<dyn OrderbookClient>`; the `Arc`-taking `TradingBuilder::orderbook_shared(...)`
+variant remains for an already-shared handle.
 
 ### Trading Swap Lifecycle Builder
 

@@ -9,17 +9,15 @@ use std::error::Error;
 use serde_json::json;
 
 use cow_sdk::core::{AppCode, SupportedChainId, wrapped_native_token};
-use cow_sdk::trading::{TraderParams, TradingBuilder, TradingOptions};
+use cow_sdk::trading::{TraderParams, TradingBuilder};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let chain_id = SupportedChainId::Sepolia;
     let app_code = AppCode::new("cow-rs/native-capability-report")?;
 
-    // Construct a ready-state trading client — the minimal facade entry point.
-    let trading = TradingBuilder::ready(
-        TraderParams::new(chain_id, app_code)?,
-        TradingOptions::default(),
-    )?;
+    // Construct a ready-state trading client from total trader parameters —
+    // the minimal facade entry point (the default orderbook is built per chain).
+    let trading = TradingBuilder::ready(TraderParams::new(chain_id, app_code)?);
 
     // Resolve the wrapped-native token (the WETH-equivalent) for this chain.
     let wrapped_native = wrapped_native_token(chain_id);

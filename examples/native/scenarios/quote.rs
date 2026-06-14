@@ -14,7 +14,7 @@ use std::error::Error;
 use serde_json::json;
 
 use cow_sdk::core::SupportedChainId;
-use cow_sdk::trading::{TraderParams, TradingBuilder, TradingOptions};
+use cow_sdk::trading::Trading;
 
 use cow_sdk::testing::MockOrderbook;
 use cow_sdk_examples_native::support::{sample_quote_response, sample_trade_parameters};
@@ -27,13 +27,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .build();
 
     // Ready-state client with the mock injected. `orderbook.clone()` keeps a
-    // handle so we can read what the client sent after the call.
-    // `TradingBuilder::ready` is the params-in-hand altitude — a deliberate
-    // contrast to the fluent `Trading::builder()` chain in the quickstart.
-    let trading = TradingBuilder::ready(
-        TraderParams::new(SupportedChainId::Sepolia, "cow-rs-quote-only")?,
-        TradingOptions::new().with_orderbook(orderbook.clone()),
-    )?;
+    // handle so we can read what the client sent after the call. The recording
+    // orderbook is injected by value through the builder's `orderbook` setter —
+    // the same one-call chain a real app uses, with no `Arc` wrapping.
+    let trading = Trading::builder()
+        .chain_id(SupportedChainId::Sepolia)
+        .app_code("cow-rs-quote-only")
+        .orderbook(orderbook.clone())
+        .build()?;
 
     // Quote only — no order is built, signed, or posted.
     let quote = trading.quote_only(sample_trade_parameters(), None).await?;

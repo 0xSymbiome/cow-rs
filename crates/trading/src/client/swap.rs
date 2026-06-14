@@ -163,49 +163,10 @@ impl<'a, SellToken, BuyToken, AmountState> SwapBuilder<'a, SellToken, BuyToken, 
         self.cast()
     }
 
-    /// Sets an explicit owner.
-    ///
-    /// When omitted, the signer address resolves the owner at the
-    /// [`quote`](SwapBuilder::quote) or [`execute`](SwapBuilder::execute)
-    /// terminal.
-    #[must_use]
-    pub const fn owner(mut self, owner: Address) -> Self {
-        self.owner = Some(owner);
-        self
-    }
-
     /// Sets an explicit slippage tolerance in basis points.
     #[must_use]
     pub const fn slippage_bps(mut self, slippage_bps: u32) -> Self {
         self.slippage_bps = Some(slippage_bps);
-        self
-    }
-
-    /// Sets an explicit receiver address.
-    #[must_use]
-    pub const fn receiver(mut self, receiver: Address) -> Self {
-        self.receiver = Some(receiver);
-        self
-    }
-
-    /// Sets a relative validity window in seconds.
-    #[must_use]
-    pub const fn valid_for(mut self, valid_for: u32) -> Self {
-        self.valid_for = Some(valid_for);
-        self
-    }
-
-    /// Sets an absolute expiry timestamp.
-    #[must_use]
-    pub const fn valid_to(mut self, valid_to: u32) -> Self {
-        self.valid_to = Some(valid_to);
-        self
-    }
-
-    /// Allows partial fills.
-    #[must_use]
-    pub const fn partially_fillable(mut self, partially_fillable: bool) -> Self {
-        self.partially_fillable = partially_fillable;
         self
     }
 
@@ -220,6 +181,8 @@ impl<'a, SellToken, BuyToken, AmountState> SwapBuilder<'a, SellToken, BuyToken, 
         self
     }
 }
+
+impl_common_order_builder_setters!(SwapBuilder<'a, SellToken, BuyToken, AmountState>);
 
 impl<'a> SwapBuilder<'a, Set, Set, Set> {
     /// Converts the fully-set builder into [`TradeParams`].

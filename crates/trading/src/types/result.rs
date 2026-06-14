@@ -49,38 +49,6 @@ pub struct QuoteResults {
     pub order_typed_data: OrderTypedData,
 }
 
-impl QuoteResults {
-    /// Creates a quote-results payload from its required fields.
-    #[must_use]
-    pub const fn new(
-        trade_parameters: TradeParams,
-        suggested_slippage_bps: u32,
-        amounts_and_costs: QuoteAmountsAndCosts,
-        order_to_sign: OrderData,
-        quote_response: OrderQuoteResponse,
-        app_data_info: TradingAppDataInfo,
-        order_typed_data: OrderTypedData,
-    ) -> Self {
-        Self {
-            trade_parameters,
-            suggested_slippage_bps,
-            amounts_and_costs,
-            order_to_sign,
-            quote_response,
-            app_data_info,
-            orderbook_binding: None,
-            order_typed_data,
-        }
-    }
-
-    /// Returns a copy with an explicit orderbook runtime binding attached.
-    #[must_use]
-    pub fn with_orderbook_binding(mut self, binding: OrderbookRuntimeBinding) -> Self {
-        self.orderbook_binding = Some(binding);
-        self
-    }
-}
-
 /// Result returned after submitting a trade or transaction-producing flow.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -99,32 +67,6 @@ pub struct OrderPostingResult {
     pub order_to_sign: OrderData,
 }
 
-impl OrderPostingResult {
-    /// Creates a posting result with the required identity and payload fields.
-    #[must_use]
-    pub fn new(
-        order_id: OrderUid,
-        signing_scheme: SigningScheme,
-        signature: impl Into<String>,
-        order_to_sign: OrderData,
-    ) -> Self {
-        Self {
-            order_id,
-            tx_hash: None,
-            signing_scheme,
-            signature: signature.into(),
-            order_to_sign,
-        }
-    }
-
-    /// Returns a copy of this result with an explicit transaction hash.
-    #[must_use]
-    pub const fn with_tx_hash(mut self, tx_hash: TransactionHash) -> Self {
-        self.tx_hash = Some(tx_hash);
-        self
-    }
-}
-
 /// App-data bundle used by trading quote and post helpers.
 #[allow(
     clippy::derive_partial_eq_without_eq,
@@ -140,18 +82,6 @@ pub struct TradingAppDataInfo {
     pub full_app_data: String,
     /// Keccak-256 digest used in protocol order payloads.
     pub app_data_keccak256: AppDataHash,
-}
-
-impl TradingAppDataInfo {
-    /// Creates a trading app-data bundle from its component fields.
-    #[must_use]
-    pub fn new(doc: AppDataDoc, full_app_data: impl Into<String>, hash: AppDataHash) -> Self {
-        Self {
-            doc,
-            full_app_data: full_app_data.into(),
-            app_data_keccak256: hash,
-        }
-    }
 }
 
 /// Slippage-suggestion request sent to a custom suggestion provider.

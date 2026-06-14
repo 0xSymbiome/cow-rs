@@ -59,6 +59,15 @@ sections below describe the public contract a `0.1.0` consumer receives.
   call, while `quote(&signer)` returns a `QuotedSwap` whose `results()` can be
   inspected before `submit(&signer)`. The owner defaults to the signer address.
   Governed by [ADR 0011](docs/adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md).
+- `cow_sdk_trading::Trading::limit` opens the matching fluent limit-order builder
+  (`LimitBuilder`). Named `sell_token` / `buy_token` / `sell_amount` / `buy_amount`
+  setters track the four required fields so neither the token addresses nor the amounts
+  can be transposed, and the terminals are reachable only once all four are set:
+  `post(&signer)` signs and posts, while `post_presign()` posts under the pre-sign scheme
+  without a signer (the smart-account path). A limit order carries an explicit price, so
+  no quote is fetched. `SwapBuilder` and `LimitBuilder` are distinct typestate builders
+  that share their optional setters through one internal definition. Governed by
+  [ADR 0069](docs/adr/0069-layered-trading-operation-surface-and-signing-free-transport.md).
 - `cow_sdk_trading` exposes one async entry point per public operation —
   `post_swap_order`, `post_limit_order`, `post_limit_order_presign`,
   `post_swap_order_from_quote`, `post_cow_protocol_trade`,
@@ -97,10 +106,12 @@ sections below describe the public contract a `0.1.0` consumer receives.
   read accessors: `chain_id()`, `app_code()`, `env()`,
   `settlement_contract_override()`, and `eth_flow_contract_override()`.
 - `cow_sdk_trading::Trading::swap` and the trading entry points accept an
-  orderbook client by value (`TradingBuilder::orderbook`,
-  `TradingOptions::with_orderbook`), so the common path no longer wraps it in
-  `Arc`; the `Arc<dyn OrderbookClient>` variants remain for an already-shared
-  handle. The advanced-seam setters follow the same shape:
+  orderbook client by value through the builder's `TradingBuilder::orderbook`
+  setter, so the common path no longer wraps it in `Arc`; the
+  `TradingBuilder::orderbook_shared` variant accepts an already-shared
+  `Arc<dyn OrderbookClient>`. There is no separate `TradingOptions` bag — the
+  builder injects the client directly. The advanced-seam setters follow the
+  same shape:
   `PostTradeAdditionalParams::with_check_eth_flow_order_exists`,
   `PostTradeAdditionalParams::with_custom_eip1271_signature`, and
   `TradeAdvancedSettings::with_slippage_suggester` take their backend by
@@ -115,10 +126,6 @@ sections below describe the public contract a `0.1.0` consumer receives.
   "Implementing" rustdoc section; the target-gated `cfg_attr` pair is required
   only for code that compiles for both native and wasm32 targets. Governed by
   [ADR 0010](docs/adr/0010-runtime-neutral-async-and-transport-posture.md).
-- EIP-1271 order-signature verification is part of the public API:
-  `cow_sdk_trading::verify_eip1271_order_signature`,
-  `eip1271_order_verification_request`, and `Eip1271VerificationParams` confirm a
-  smart-account wallet's signature over a CoW order against a provider.
 - `cow_sdk_trading::LimitTradeParamsFromQuote` is a newtype around
   `LimitTradeParams` that guarantees a non-`None` `quote_id` by construction,
   lifting the prior runtime `MissingQuoteId` check on the eth-flow path to a
@@ -737,6 +744,17 @@ sections below describe the public contract a `0.1.0` consumer receives.
 
 ### Fixed
 
+- `cow_sdk_trading` applies a `QuoteRequestOverride` once, at the trade-parameter
+  level, for every field it shares with the signed order — the token pair,
+  receiver, owner, validity, and balance sources. The assembled quote request and
+  the signed order both derive from those effective parameters, so a sell-token
+  override can no longer rewrite the request after `EthFlow` detection has wrapped
+  a native sell into its wrapped-native form: a native-sentinel override keeps the
+  wrapped token and the on-chain EIP-1271 aux, and an override to an ERC-20 sell
+  reverts the request to the EIP-712 default with no stale on-chain aux. Only the
+  request-shaped fields without a signed-order counterpart — price quality, the
+  signing-scheme group, and the request timeout — are applied to the assembled
+  request directly. Recorded as `PROP-TRD-001` in `PROPERTIES.md`.
 - `cow-sdk-wasm` compiles for `wasm32-unknown-unknown` under the default feature
   flavor. A `signing`-gated error conversion matched a removed
   settlement-interaction-target variant; the conversion now maps every

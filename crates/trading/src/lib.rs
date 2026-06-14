@@ -74,22 +74,23 @@ pub use allowance::{approval_transaction, approve_cow_protocol, cow_protocol_all
 pub use app_data::{build_app_data, merge_and_seal_app_data, params_from_doc};
 pub use cancel::offchain_cancel_order;
 pub use client::{
-    AppCodeSet, AppCodeUnset, ChainIdSet, ChainIdUnset, QuotedSwap, Set, SwapBuilder, Trading,
-    TradingBuilder, Unset,
+    AppCodeSet, AppCodeUnset, ChainIdSet, ChainIdUnset, LimitBuilder, QuotedSwap, Set, SwapBuilder,
+    Trading, TradingBuilder, Unset,
 };
 pub use error::{OrderbookContextValue, TradingError};
 pub use onchain::{
     EthFlowTransaction, PreparedTransaction, eth_flow_transaction, onchain_cancel_order,
-    onchain_cancellation_transaction, pre_sign_transaction, protocol_options_for_order,
+    onchain_cancellation_transaction, pre_sign_transaction,
 };
 pub use order::{
-    OrderToSignParams, adjust_eth_flow_limit_params, adjust_eth_flow_trade_params,
-    calculate_unique_order_id, is_eth_flow_order, order_to_sign, swap_params_to_limit_order_params,
+    OrderToSignParams, calculate_unique_order_id, order_to_sign, swap_params_to_limit_order_params,
+};
+pub(crate) use order::{
+    adjust_eth_flow_limit_params, adjust_eth_flow_trade_params, is_eth_flow_order,
 };
 pub use post::{
-    eip1271_order_verification_request, post_cow_protocol_trade, post_limit_order,
-    post_limit_order_presign, post_sell_native_currency_order, post_swap_order,
-    post_swap_order_from_quote, verify_eip1271_order_signature,
+    post_cow_protocol_trade, post_limit_order, post_limit_order_presign,
+    post_sell_native_currency_order, post_swap_order, post_swap_order_from_quote,
 };
 pub use quote::{quote_only, quote_results};
 pub use slippage::{
@@ -99,11 +100,11 @@ pub use slippage::{
     suggest_slippage_from_fee, suggest_slippage_from_volume,
 };
 pub use types::{
-    AllowanceParams, ApprovalParams, Eip1271VerificationParams, EthFlowOrderExistsChecker,
-    LimitTradeParams, LimitTradeParamsFromQuote, OrderPostingResult, OrderTraderParams,
-    PostTradeAdditionalParams, QuoteRequestOverride, QuoteResults, QuoterParams, SlippageSuggester,
-    SlippageToleranceRequest, SlippageToleranceResponse, TradeAdvancedSettings, TradeParams,
-    TraderParams, TradingAppDataInfo, TradingOptions,
+    AllowanceParams, ApprovalParams, EthFlowOrderExistsChecker, LimitTradeParams,
+    LimitTradeParamsFromQuote, OrderPostingResult, OrderTraderParams, PostTradeAdditionalParams,
+    QuoteRequestOverride, QuoteResults, QuoterParams, SlippageSuggester, SlippageToleranceRequest,
+    SlippageToleranceResponse, TradeAdvancedSettings, TradeParams, TraderParams,
+    TradingAppDataInfo,
 };
 // Crate-internal: the partial trader defaults are stored state, not a public
 // construction shape (see ADR 0011). Internal modules reach it through the crate root.

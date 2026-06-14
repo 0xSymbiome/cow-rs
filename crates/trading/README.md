@@ -21,33 +21,30 @@ cow-sdk-trading = "0.1"
 ## Minimal example
 
 The `TradingBuilder::ready` one-call shortcut accepts a complete
-`TraderParams` plus an options bundle and returns a ready-state
-`Trading`:
+total `TraderParams` and returns a ready-state `Trading` with the default
+per-chain orderbook client:
 
 ```rust
 use cow_sdk_core::SupportedChainId;
-use cow_sdk_trading::{TraderParams, TradingBuilder, TradingOptions};
+use cow_sdk_trading::{TraderParams, TradingBuilder};
 
 let _trading = TradingBuilder::ready(
     TraderParams::new(SupportedChainId::Sepolia, "your-app-code")
         .expect("app code validates"),
-    TradingOptions::default(),
-)
-.expect("ready-state construction");
+);
 ```
 
-For fluent control over env, settlement-contract overrides, or transport
+For fluent control over env, settlement-contract overrides, or orderbook
 injection, use the full builder:
 
 ```rust
 use cow_sdk_core::{CowEnv, SupportedChainId};
-use cow_sdk_trading::{Trading, TradingOptions};
+use cow_sdk_trading::Trading;
 
 let _trading = Trading::builder()
     .chain_id(SupportedChainId::Sepolia)
     .app_code("your-app-code")
     .env(CowEnv::Prod)
-    .options(TradingOptions::new())
     .build()
     .expect("ready-state construction");
 ```
@@ -73,13 +70,13 @@ works with any signer — a local key, a remote signer, a browser wallet, or a
 smart account:
 
 ```rust,no_run
-use cow_sdk_core::{Address, Amount, Signer, SignerError};
+use cow_sdk_core::{Amount, Signer, SignerError, address};
 use cow_sdk_trading::Trading;
 
 # async fn run<S>(trading: Trading, signer: &S) -> Result<(), Box<dyn std::error::Error>>
 # where S: Signer, S::Error: std::fmt::Display + SignerError {
-let weth = Address::new("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2")?;
-let usdc = Address::new("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48")?;
+let weth = address!("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2");
+let usdc = address!("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48");
 
 // Quote, sign, and post in one call.
 let posted = trading
@@ -106,24 +103,53 @@ let _posted = quoted.submit(signer).await?;
 # }
 ```
 
+## Limit order in one call
+
+A limit order sets an explicit price — both amounts — so no quote is fetched.
+`Trading::limit()` opens the same kind of typed builder as `swap()`: named setters that
+cannot be transposed, then `post` to sign and post, or `post_presign` for the
+smart-account path that needs no signer:
+
+```rust,no_run
+use cow_sdk_core::{Amount, Signer, SignerError, address};
+use cow_sdk_trading::Trading;
+
+# async fn run<S>(trading: Trading, signer: &S) -> Result<(), Box<dyn std::error::Error>>
+# where S: Signer, S::Error: std::fmt::Display + SignerError {
+let weth = address!("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2");
+let usdc = address!("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48");
+
+// Sell exactly 1 WETH, want at least 3000 USDC.
+let posted = trading
+    .limit()
+    .sell_token(weth)
+    .buy_token(usdc)
+    .sell_amount(Amount::from_units(1, 18)?)
+    .buy_amount(Amount::from_units(3000, 6)?)
+    .post(signer)
+    .await?;
+println!("posted order {}", posted.order_id.to_hex_string());
+# Ok(())
+# }
+```
+
 ## Quoting a swap
 
 Quoting is the lowest-friction action and needs no signer — the owner comes
 from `TradeParams`:
 
 ```rust,no_run
-use cow_sdk_core::{Address, Amount, OrderKind, SupportedChainId};
-use cow_sdk_trading::{TradeParams, TradingBuilder, TradingOptions};
+use cow_sdk_core::{Address, Amount, OrderKind, SupportedChainId, address};
+use cow_sdk_trading::{TradeParams, TradingBuilder};
 
 # async fn run() -> Result<(), Box<dyn std::error::Error>> {
 let trading = TradingBuilder::ready(
     cow_sdk_trading::TraderParams::new(SupportedChainId::Mainnet, "your-app-code")?,
-    TradingOptions::default(),
-)?;
+);
 
 // Sell 1 WETH for USDC.
-let weth = Address::new("0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2")?;
-let usdc = Address::new("0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48")?;
+let weth = address!("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2");
+let usdc = address!("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48");
 let params = TradeParams::new(
     OrderKind::Sell,
     weth,
