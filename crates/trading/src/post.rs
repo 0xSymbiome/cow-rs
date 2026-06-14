@@ -305,7 +305,6 @@ pub(super) fn apply_settings_to_limit_trade_parameters(
             receiver: &mut params.receiver,
             valid_for: &mut params.valid_for,
             valid_to: &mut params.valid_to,
-            partially_fillable: &mut params.partially_fillable,
             sell_token_balance: &mut params.sell_token_balance,
             buy_token_balance: &mut params.buy_token_balance,
         },

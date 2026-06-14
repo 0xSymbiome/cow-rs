@@ -220,9 +220,6 @@ pub struct OrderQuoteRequestInput {
     /// App-data hash.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub app_data_hash: Option<String>,
-    /// Whether partial fills are allowed.
-    #[serde(default)]
-    pub partially_fillable: bool,
     /// Sell-token balance source.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub sell_token_balance: Option<TokenBalanceDto>,

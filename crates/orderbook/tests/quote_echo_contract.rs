@@ -175,6 +175,13 @@ fn inflated_fee_breaks_the_fold() {
 }
 
 #[test]
+fn swapped_sell_token_fails() {
+    let (request, mut response) = matching_sell();
+    response.quote.sell_token = addr(OTHER);
+    assert_mismatch(response.ensure_matches(&request), QuoteEchoField::SellToken);
+}
+
+#[test]
 fn swapped_buy_token_fails() {
     let (request, mut response) = matching_sell();
     response.quote.buy_token = addr(OTHER);

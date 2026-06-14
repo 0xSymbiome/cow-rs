@@ -277,6 +277,11 @@ impl OrderCreation {
             fee_amount: order_creation_zero_fee_amount(),
             full_balance_check: false,
             kind: quote.kind,
+            // The quote never determines partial-fillability: the orderbook
+            // response always reports a fill-or-kill order, so this projects one
+            // too. Callers that want a partial fill chain
+            // [`with_partially_fillable`](Self::with_partially_fillable); the
+            // trading flow sets the flag from the caller's trade parameters.
             partially_fillable: quote.partially_fillable,
             sell_token_balance: quote.sell_token_balance,
             buy_token_balance: quote.buy_token_balance,

@@ -297,7 +297,6 @@ pub(crate) fn apply_advanced_settings_to_trade_parameters(
             receiver: &mut trade_parameters.receiver,
             valid_for: &mut trade_parameters.valid_for,
             valid_to: &mut trade_parameters.valid_to,
-            partially_fillable: &mut trade_parameters.partially_fillable,
             sell_token_balance: &mut trade_parameters.sell_token_balance,
             buy_token_balance: &mut trade_parameters.buy_token_balance,
         },
@@ -330,9 +329,6 @@ fn build_quote_request(
     .with_app_data_hash(app_data_info.app_data_keccak256)
     .with_price_quality(PriceQuality::Optimal);
 
-    if trade_parameters.partially_fillable {
-        request = request.with_partially_fillable();
-    }
     request.sell_token_balance = trade_parameters.sell_token_balance;
     request.buy_token_balance = trade_parameters.buy_token_balance;
 
@@ -445,9 +441,6 @@ fn apply_quote_request_override(
     }
     if let Some(timeout) = request_override.timeout {
         request.timeout = Some(timeout);
-    }
-    if let Some(partially_fillable) = request_override.partially_fillable {
-        request.partially_fillable = partially_fillable;
     }
     if let Some(balance) = request_override.sell_token_balance {
         request.sell_token_balance = balance;

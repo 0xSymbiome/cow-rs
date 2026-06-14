@@ -69,8 +69,6 @@ pub enum QuoteEchoField {
     Receiver,
     /// The effective owner (`from`).
     From,
-    /// The partial-fill flag.
-    PartiallyFillable,
     /// The sell-token balance source.
     SellTokenBalance,
     /// The buy-token balance destination.
@@ -94,7 +92,6 @@ impl fmt::Display for QuoteEchoField {
             Self::Kind => "kind",
             Self::Receiver => "receiver",
             Self::From => "owner",
-            Self::PartiallyFillable => "partially-fillable flag",
             Self::SellTokenBalance => "sell-token balance",
             Self::BuyTokenBalance => "buy-token balance",
             Self::FixedSellAmount => "fixed sell amount",
@@ -244,7 +241,7 @@ pub enum OrderbookError {
     /// the app-data hash.
     #[error(
         "quote response field {field} does not match the request: \
-         expected {expected}, received {received}"
+         expected {expected}, observed {observed}"
     )]
     QuoteEchoMismatch {
         /// Request-determined field the response failed to echo.
@@ -252,7 +249,7 @@ pub enum OrderbookError {
         /// Value the request determined.
         expected: String,
         /// Value the response returned.
-        received: String,
+        observed: String,
     },
     /// A long-running orderbook operation was cancelled through a cooperative cancellation token.
     #[error("orderbook operation was cancelled")]

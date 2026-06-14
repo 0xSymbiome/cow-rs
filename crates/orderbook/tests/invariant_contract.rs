@@ -103,7 +103,6 @@ proptest! {
         valid_to in proptest::option::of(any::<u32>()),
         timeout in proptest::option::of(1u64..60_000u64),
         verification_gas_limit in proptest::option::of(21_000u64..1_000_000u64),
-        set_partially_fillable in any::<bool>(),
         set_onchain in any::<bool>(),
     ) {
         let side = if is_sell {
@@ -132,9 +131,6 @@ proptest! {
         }
         if let Some(gas) = verification_gas_limit {
             request = request.with_verification_gas_limit(gas);
-        }
-        if set_partially_fillable {
-            request = request.with_partially_fillable();
         }
         if set_onchain {
             request = request.with_onchain_order();

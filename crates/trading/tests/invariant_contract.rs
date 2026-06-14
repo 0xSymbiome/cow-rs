@@ -349,7 +349,6 @@ proptest! {
         override_validity in override_validity_strategy(),
         override_from in any::<bool>(),
         override_price_quality in proptest::option::of(price_quality_strategy()),
-        override_partially_fillable in proptest::option::of(any::<bool>()),
     ) {
         let runtime = current_thread_runtime();
         runtime.block_on(async {
@@ -386,9 +385,6 @@ proptest! {
             if let Some(price_quality) = override_price_quality {
                 quote_request = quote_request.with_price_quality(price_quality);
             }
-            if let Some(partially_fillable) = override_partially_fillable {
-                quote_request = quote_request.with_partially_fillable(partially_fillable);
-            }
             let advanced = TradeAdvancedSettings::new().with_quote_request(quote_request.clone());
 
             let result = quote_results(&trade, &trader, &signer, Some(&advanced), &orderbook)
@@ -416,10 +412,6 @@ proptest! {
                 } else {
                     (trade.valid_for, trade.valid_to)
                 };
-            let expected_partially_fillable = quote_request
-                .partially_fillable
-                .unwrap_or(trade.partially_fillable);
-
             prop_assert_eq!(result.trade_parameters.owner, Some(expected_owner));
             prop_assert_eq!(request.from, expected_owner);
             prop_assert_eq!(result.trade_parameters.receiver, expected_trade_receiver);
@@ -437,9 +429,8 @@ proptest! {
             prop_assert_eq!(request.validity, expected_validity);
             prop_assert_eq!(
                 result.trade_parameters.partially_fillable,
-                expected_partially_fillable
+                trade_partially_fillable
             );
-            prop_assert_eq!(request.partially_fillable, expected_partially_fillable);
             if let Some(price_quality) = quote_request.price_quality {
                 prop_assert_eq!(request.price_quality, price_quality);
             }

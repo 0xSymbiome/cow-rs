@@ -1,7 +1,7 @@
 # Quote Response Surface Audit
 
 Status: Current
-Last reviewed: 2026-06-12
+Last reviewed: 2026-06-14
 Owning surface: cow-sdk-orderbook quote request/response DTOs and cow-sdk-trading quote projection
 Refresh trigger: changes to the quote DTOs (`OrderQuoteRequest`, `OrderQuoteResponse`, `QuoteData`), the orderbook quote OpenAPI schemas, the quote-amounts projection, the quote-echo binding (`ensure_matches`), or the `priceQuality` default
 Related docs:
@@ -104,7 +104,7 @@ goldens transcribed in
 `OrderbookApi::quote` invokes `OrderQuoteResponse::ensure_matches` on every
 response and fails closed with `OrderbookError::QuoteEchoMismatch` when a
 request-determined field did not come back unchanged: the token pair, order
-kind, owner (`from`, when the response carries it), partial-fill flag, both
+kind, owner (`from`, when the response carries it), both
 balance sources, the app-data hash, an absolute `validTo` (only the `validTo`
 validity form), the effective receiver, and the fixed amount leg. The receiver
 is reconciled as the effective receiver — an unset or zero receiver resolves to

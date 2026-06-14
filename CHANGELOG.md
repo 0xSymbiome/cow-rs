@@ -404,7 +404,7 @@ sections below describe the public contract a `0.1.0` consumer receives.
   request before returning it. `OrderQuoteResponse::ensure_matches` fails closed
   with `OrderbookError::QuoteEchoMismatch` (carrying a typed `QuoteEchoField`)
   when a request-determined field did not come back unchanged: the token pair,
-  order kind, owner, partial-fill flag, balance sources, the effective receiver,
+  order kind, owner, balance sources, the effective receiver,
   the app-data hash, an absolute `validTo`, or the fixed amount leg. The receiver
   is reconciled as the effective receiver (an unset or zero receiver resolves to
   the owner) and the app-data hash for every request form (an explicit pin, a

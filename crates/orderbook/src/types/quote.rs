@@ -352,9 +352,6 @@ pub struct OrderQuoteRequest {
     /// wire shape for every combination (see [`QuoteAppData`]).
     #[serde(flatten)]
     pub app_data: QuoteAppData,
-    /// Whether partial fills are allowed.
-    #[serde(default)]
-    pub partially_fillable: bool,
     /// Sell-token balance source.
     #[serde(default)]
     pub sell_token_balance: SellTokenSource,
@@ -404,7 +401,6 @@ impl OrderQuoteRequest {
             receiver: None,
             validity: QuoteValidity::ValidFor(30 * 60),
             app_data: QuoteAppData::default(),
-            partially_fillable: false,
             sell_token_balance: SellTokenSource::Erc20,
             buy_token_balance: BuyTokenDestination::Erc20,
             from,
@@ -553,13 +549,6 @@ impl OrderQuoteRequest {
                 verification_gas_limit,
             };
         }
-        self
-    }
-
-    /// Returns a copy of this request marked as partially fillable.
-    #[must_use]
-    pub const fn with_partially_fillable(mut self) -> Self {
-        self.partially_fillable = true;
         self
     }
 
@@ -906,7 +895,7 @@ fn require(
     field: QuoteEchoField,
     echoes: bool,
     expected: String,
-    received: String,
+    observed: String,
 ) -> Result<(), OrderbookError> {
     if echoes {
         Ok(())
@@ -914,7 +903,7 @@ fn require(
         Err(OrderbookError::QuoteEchoMismatch {
             field,
             expected,
-            received,
+            observed,
         })
     }
 }
@@ -958,7 +947,7 @@ impl OrderQuoteResponse {
     /// answer to the request and is never constrained.
     ///
     /// Checked: the sell/buy token pair, order kind, the owner `from` (when the
-    /// response carries it), the partial-fill flag, both balance sources, the
+    /// response carries it), both balance sources, the
     /// app-data hash (an explicit pin, the keccak digest of a full document, or
     /// the zero hash for an omitted pair), an absolute `validTo` (only the
     /// `validTo` validity form), the effective receiver (an unset or zero
@@ -971,7 +960,9 @@ impl OrderQuoteResponse {
     ///
     /// Deliberately unchecked: the variable amount leg (the quote itself),
     /// `expiration` and a relative `validFor` (server-computed), the quote `id`,
-    /// `verified`, the read-only gas estimate fields, and `protocolFeeBps`.
+    /// `verified`, the read-only gas estimate fields, `protocolFeeBps`, and the
+    /// `signingScheme` (a signing-time input the caller supplies when building
+    /// the order; it is not part of the EIP-712 order digest).
     ///
     /// # Errors
     ///
@@ -997,12 +988,6 @@ impl OrderQuoteResponse {
             request.side.kind() == quote.kind,
             format!("{:?}", request.side.kind()),
             format!("{:?}", quote.kind),
-        )?;
-        require(
-            QuoteEchoField::PartiallyFillable,
-            request.partially_fillable == quote.partially_fillable,
-            request.partially_fillable.to_string(),
-            quote.partially_fillable.to_string(),
         )?;
         require(
             QuoteEchoField::SellTokenBalance,

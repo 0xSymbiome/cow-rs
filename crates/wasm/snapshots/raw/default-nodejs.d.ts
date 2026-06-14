@@ -1132,10 +1132,6 @@ export interface OrderQuoteRequestInput {
      */
     appDataHash?: string;
     /**
-     * Whether partial fills are allowed.
-     */
-    partiallyFillable?: boolean;
-    /**
      * Sell-token balance source.
      */
     sellTokenBalance?: TokenBalanceDto;

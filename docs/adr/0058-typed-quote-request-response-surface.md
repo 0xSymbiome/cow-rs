@@ -63,7 +63,7 @@ the solver returns for the unfixed side — but binds every request-determined
 field of the response back to the request. `OrderbookApi::quote` invokes
 `OrderQuoteResponse::ensure_matches` on each response and fails closed with
 `OrderbookError::QuoteEchoMismatch` when the token pair, order kind, owner,
-partial-fill flag, balance sources, the effective receiver, the app-data hash,
+balance sources, the effective receiver, the app-data hash,
 an absolute `validTo`, or the fixed amount leg did not come back unchanged. The
 receiver is reconciled as the effective receiver (an unset or zero receiver
 resolves to the owner, matching the orderbook settlement rule), and the app-data

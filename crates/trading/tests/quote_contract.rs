@@ -286,7 +286,7 @@ async fn quote_results_preserve_non_default_balance_semantics_from_quote_and_ove
 }
 
 #[tokio::test]
-async fn quote_request_keeps_trade_partial_fill_flag_without_direct_override() {
+async fn partial_fill_trade_produces_a_partial_fill_signed_order() {
     let orderbook = MockOrderbook::new(
         cow_sdk_core::SupportedChainId::Sepolia,
         sell_quote_response(),
@@ -298,17 +298,13 @@ async fn quote_request_keeps_trade_partial_fill_flag_without_direct_override() {
     let mut trade: TradeParams = sample_trade_parameters(OrderKind::Sell);
     trade.partially_fillable = true;
 
+    // Partial-fillability is a trade and signed-order property, never a quote
+    // request field: the orderbook always quotes a fill-or-kill order, so the
+    // flag must travel from the trade parameters to the signed order untouched.
     let result = quote_results(&trade, &trader, &signer, None, &orderbook)
         .await
-        .expect("quote with trade-level partial-fill flag should succeed");
-    let request = orderbook
-        .state()
-        .quote_requests
-        .last()
-        .cloned()
-        .expect("quote request recorded");
+        .expect("quote for a partial-fill trade should succeed");
 
-    assert!(request.partially_fillable);
     assert!(result.trade_parameters.partially_fillable);
     assert!(result.order_to_sign.partially_fillable);
 }
@@ -443,8 +439,7 @@ async fn quote_results_apply_advanced_owner_validity_slippage_and_partner_fee_pr
             QuoteRequestOverride::new()
                 .with_from(address(crate::common::ALT_RECEIVER))
                 .with_receiver(address(crate::common::ALT_RECEIVER))
-                .with_valid_to(5_600_000)
-                .with_partially_fillable(true),
+                .with_valid_to(5_600_000),
         )
         .with_app_data(
             cow_sdk_app_data::AppDataParams::default().with_metadata(
@@ -501,8 +496,6 @@ async fn quote_results_apply_advanced_owner_validity_slippage_and_partner_fee_pr
                 .into(),
         )
     );
-    assert!(result.trade_parameters.partially_fillable);
-    assert!(result.order_to_sign.partially_fillable);
     assert_eq!(
         app_data["metadata"]["partnerFee"]["volumeBps"],
         serde_json::json!(42)

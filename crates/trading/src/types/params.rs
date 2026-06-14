@@ -785,9 +785,6 @@ pub struct QuoteRequestOverride {
     /// Replacement timeout in milliseconds.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub timeout: Option<u64>,
-    /// Replacement partial-fill flag.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub partially_fillable: Option<bool>,
     /// Replacement sell-token balance source.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sell_token_balance: Option<SellTokenSource>,
@@ -873,13 +870,6 @@ impl QuoteRequestOverride {
         self
     }
 
-    /// Returns a copy with an explicit partial-fill replacement.
-    #[must_use]
-    pub const fn with_partially_fillable(mut self, partially_fillable: bool) -> Self {
-        self.partially_fillable = Some(partially_fillable);
-        self
-    }
-
     /// Returns a copy with an explicit sell-token balance replacement.
     #[must_use]
     pub const fn with_sell_token_balance(mut self, balance: SellTokenSource) -> Self {
@@ -944,7 +934,6 @@ pub(crate) struct QuoteRequestParameterTargets<'a> {
     pub receiver: &'a mut Option<Address>,
     pub valid_for: &'a mut Option<u32>,
     pub valid_to: &'a mut Option<u32>,
-    pub partially_fillable: &'a mut bool,
     pub sell_token_balance: &'a mut SellTokenSource,
     pub buy_token_balance: &'a mut BuyTokenDestination,
 }
@@ -976,9 +965,6 @@ pub(crate) const fn apply_quote_request_parameter_overrides(
     if let Some(valid_to_override) = request_override.valid_to {
         *targets.valid_to = Some(valid_to_override);
         *targets.valid_for = None;
-    }
-    if let Some(partially_fillable_override) = request_override.partially_fillable {
-        *targets.partially_fillable = partially_fillable_override;
     }
     if let Some(sell_token_balance_override) = request_override.sell_token_balance {
         *targets.sell_token_balance = sell_token_balance_override;
