@@ -52,7 +52,7 @@ Use the WASM example when you want a runnable browser-wallet flow in Rust.
 
 | Surface | Crate features | Purpose |
 | --- | --- | --- |
-| [`cow-trader-dioxus`](../examples/wasm/cow-trader-dioxus/README.md) | `cow-sdk` (`browser-wallet`) + `cow-sdk-transport-wasm` | Discover an injected wallet (EIP-6963), connect, sign, and swap a CoW order end to end in the browser — written entirely in Rust with Dioxus, using only SDK public types |
+| [`cow-trader-dioxus`](../examples/wasm/cow-trader-dioxus/README.md) | `cow-sdk` (`browser-wallet`) | Discover an injected wallet (EIP-6963), connect, sign, and swap a CoW order end to end in the browser — written entirely in Rust with Dioxus, using only SDK public types |
 
 The example is a consumer demonstration that talks to the live orderbook. The
 deterministic browser-runtime proof for the underlying contract lives in the

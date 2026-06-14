@@ -1,9 +1,9 @@
 # Trading SDK Runtime Prerequisites Audit
 
 Status: Current
-Last reviewed: 2026-06-08
+Last reviewed: 2026-06-12
 Owning surface: `cow-sdk-trading` ready-state `Trading` construction, the chain-bound helper free functions, helper-specific prerequisite contract, and per-trade owner attribution
-Refresh trigger: Changes to ready-state `Trading` builder terminals, the chain-bound helper free functions, method-specific prerequisite enforcement, the per-trade owner-attribution placement, or any change that weakens the wasm32 orderbook-client requirement inside `build()`
+Refresh trigger: Changes to ready-state `Trading` builder terminals, the chain-bound helper free functions, method-specific prerequisite enforcement, the per-trade owner-attribution placement, or any change to the target-neutral default orderbook factory inside `build()`
 Related docs:
 - [ADR 0002](../adr/0002-dedicated-trading-orchestration-crate.md)
 - [ADR 0006](../adr/0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
@@ -32,7 +32,7 @@ or unrelated credential-hygiene questions.
 | --- | --- | --- |
 | AppCode attribution | Trading attribution uses the `AppCode` newtype, rejecting empty strings, NUL bytes, and ASCII control characters before ready-state construction | Conforms |
 | Typestate ready construction | `TradingBuilder::build` and `TradingBuilder::ready` require total chain id plus validated `appCode` inputs before ready-state construction | Conforms |
-| wasm32 build() requires injected orderbook client | `build()` returns `TradingError::MissingInjectedOrderbookClient` when `options.orderbook_client().is_none()` on `wasm32` | Conforms |
+| Target-neutral build() terminal | `build()` succeeds without an injected orderbook client on native and `wasm32` alike; the lazy default orderbook factory rides the orderbook builder's per-target default transport (ADR 0013) | Conforms |
 | Chain-bound helper free functions | `cow_protocol_allowance`, `approval_transaction`, `pre_sign_transaction`, and `onchain_cancel_order` need chain authority but no `appCode`, and run without a trading client | Conforms |
 | Chain-bound helper prerequisites | Allowance, approval, pre-sign, and on-chain cancellation no longer require `appCode` when only chain and protocol context are needed | Conforms |
 | Per-trade owner attribution | `TradeParams.owner`, `LimitTradeParams.owner`, and `OrderTraderParams` carry the per-trade owner. The SDK does not store a default owner; for signer-backed flows the signer address resolved through `Signer::address` is the implicit fallback, and for quote-only flows the owner must come from `TradeParams.owner` or `advanced_settings.quote_request.from`. | Conforms |
@@ -48,19 +48,18 @@ invalid attribution strings are rejected before the SDK handle is returned.
 `TradingBuilder::ready` is the one-call ready-state shortcut for callers
 that already hold total `TraderParams`; it does not accept partial defaults.
 
-### wasm32 Typestate Ready Terminal
+### Target-Neutral Ready Terminal
 
-`TradingBuilder::build()` is the stronger typestate terminal. On
-native targets it remains compatible with the default orderbook factory. On
-`wasm32`, the terminal additionally requires an injected orderbook client
-because the browser runtime does not ship a default HTTP transport; the
-terminal now returns `TradingError::MissingInjectedOrderbookClient` instead of
-returning a misleading ready-state handle whose first quote or post call would
-fail in orderbook binding resolution.
+`TradingBuilder::build()` is the typestate terminal and behaves identically
+on native and `wasm32` targets: when no orderbook client is injected, the
+default orderbook factory constructs one lazily through
+`OrderbookApi::builder()`, whose default-transport terminal exists on both
+targets (native `ReqwestTransport`, browser `FetchTransport` backed by the
+realm's global `fetch` — ADR 0013).
 
-The root `cow-sdk` facade re-exports `TradingOptions` so consumers can
-inject the browser orderbook client from the same first-touch import surface
-used by native ready-state construction.
+The root `cow-sdk` facade re-exports `TradingOptions` so consumers can still
+inject a custom orderbook client from the same first-touch import surface on
+any target.
 
 ### Chain-Bound Helper Free Functions
 
@@ -117,7 +116,7 @@ Primary implementation points:
 
 Primary regression coverage:
 
-- `crates/trading/tests/sdk_contract.rs::build_rejects_missing_injected_orderbook_client_on_wasm32`
+- `crates/trading/tests/sdk_contract.rs::build_succeeds_on_wasm32_without_injected_orderbook_client`
 - `crates/trading/tests/sdk_contract.rs::build_succeeds_on_wasm32_with_injected_orderbook_client`
 - `crates/trading/tests/sdk_contract.rs::build_succeeds_on_native_without_injected_orderbook_client`
 - `crates/trading/tests/sdk_contract.rs::sdk_ready_shortcut_accepts_total_trader_parameters`

@@ -6,7 +6,7 @@ export interface OrderBookClientConfig {
     chainId: number;
     env?: string | null;
     apiKey?: string | null;
-    transport: HttpTransportConfig;
+    transport?: HttpTransportConfig;
     transportPolicy?: TransportPolicyConfig | null;
     timeoutMs?: number | null;
 }

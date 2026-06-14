@@ -21,7 +21,7 @@ response headers, and the body; non-2xx responses stay on the typed error
 channel through `TransportError::HttpStatus { status, headers, body }`. Both
 channels share one header representation, so a calling layer never fabricates
 response metadata on the success path. Native builders default to
-`ReqwestTransport`, browser wasm callers inject `FetchTransport`, and
+`ReqwestTransport` and browser wasm builders default to `FetchTransport`;
 runtime-neutral JS callers inject `JsCallbackHttpTransport`.
 
 The sole-dispatch invariant extends to the JS callback transport:

@@ -408,23 +408,13 @@ fn economic_warning(suggested_slippage_bps: u32) -> Option<String> {
     })
 }
 
-/// Trading client backed by the live CoW orderbook over the browser `fetch`
-/// transport. Rebuilt per action so the example stays stateless and obvious.
+/// Trading client backed by the live CoW orderbook. The orderbook builder
+/// defaults its transport per target — `ReqwestTransport` natively, the browser
+/// `fetch` on `wasm32` — so this one path serves both without a transport crate
+/// or any transport wiring. Rebuilt per action so the example stays stateless
+/// and obvious.
 fn build_trading() -> Result<Trading> {
     let context = ApiContext::new(CHAIN, ENV);
-
-    #[cfg(target_arch = "wasm32")]
-    let orderbook = {
-        use cow_sdk::core::HttpTransport;
-        use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
-        let base_url = context.resolved_base_url()?;
-        let transport: Arc<dyn HttpTransport + Send + Sync> =
-            Arc::new(FetchTransport::new(&FetchTransportConfig::new(base_url)));
-        OrderbookApi::builder_from_context(context)
-            .transport(transport)
-            .build()?
-    };
-    #[cfg(not(target_arch = "wasm32"))]
     let orderbook = OrderbookApi::builder_from_context(context).build()?;
 
     Ok(Trading::builder()

@@ -1,7 +1,8 @@
-//! Browser [`HttpTransport`] implementation backed by `web-sys::fetch`.
+//! Browser [`HttpTransport`] implementation backed by the realm's global `fetch`.
 //!
-//! [`FetchTransport`] dispatches REST requests through the browser's native
-//! `fetch` API and bridges the returned `Promise` to a `Future` via
+//! [`FetchTransport`] dispatches REST requests through the realm's global
+//! `fetch` function — present on a `Window` or a worker global scope — and
+//! bridges the returned `Promise` to a `Future` via
 //! [`wasm_bindgen_futures::JsFuture`]. Every failure surfaces through the
 //! shared [`TransportError`] enum with the same [`TransportErrorClass`]
 //! taxonomy that the native [`cow_sdk_core::ReqwestTransport`] uses, so
@@ -76,10 +77,10 @@ use cow_sdk_core::{
     DEFAULT_MAX_RESPONSE_BYTES, HttpTransport, Redacted, TransportError, TransportErrorClass,
     TransportResponse,
 };
-use js_sys::{Array, Object, Reflect};
+use js_sys::{Array, Function, Object, Promise, Reflect};
 use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
-use web_sys::{AbortController, Headers, Request, RequestInit, Response, Window};
+use web_sys::{AbortController, Headers, Request, RequestInit, Response};
 
 /// Configuration bundle for [`FetchTransport`].
 ///
@@ -123,25 +124,6 @@ impl FetchTransportConfig {
         self
     }
 
-    /// Returns a copy of this configuration with the supplied timeout in
-    /// milliseconds.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`TransportError::Configuration`] when `timeout_ms` exceeds
-    /// the browser-side `setTimeout` range of a signed 32-bit integer.
-    pub fn try_with_timeout_ms(mut self, timeout_ms: u64) -> Result<Self, TransportError> {
-        if timeout_ms > i32::MAX as u64 {
-            return Err(TransportError::Configuration {
-                message: Redacted::new(format!(
-                    "timeout {timeout_ms} ms exceeds the supported browser setTimeout range"
-                )),
-            });
-        }
-        self.timeout = Some(Duration::from_millis(timeout_ms));
-        Ok(self)
-    }
-
     /// Returns the configured base URL for deliberate inspection.
     #[must_use]
     pub fn base_url(&self) -> &str {
@@ -164,9 +146,11 @@ impl FetchTransportConfig {
 /// Browser fetch-based [`HttpTransport`] implementation.
 ///
 /// The transport is cheap to clone: the base URL and timeout are stored
-/// alongside each handle and every dispatch call re-reads `window.fetch`
+/// alongside each handle and every dispatch call re-reads the global `fetch`
 /// from the current realm, so consumers can cache the instance per client
-/// without worrying about cross-realm retention.
+/// without worrying about cross-realm retention. Reading `fetch` from the
+/// global scope rather than `window()` lets the same transport run on a
+/// `Window` or a worker, not the main thread alone.
 #[derive(Debug, Clone)]
 pub struct FetchTransport {
     base_url: Redacted<String>,
@@ -248,7 +232,7 @@ impl FetchTransport {
         timeout: Option<Duration>,
     ) -> Result<TransportResponse, TransportError> {
         let url = self.resolve_url(path);
-        let window = window_or_configuration_error()?;
+        let (global, fetch) = global_fetch_or_configuration_error()?;
         let init = build_request_init(method, body, headers)?;
         let effective_timeout = timeout.or(self.timeout);
         let mut abort_timeout = match effective_timeout {
@@ -264,7 +248,16 @@ impl FetchTransport {
                 return Err(configuration_error("could not build fetch request", &error));
             }
         };
-        let response_value = match JsFuture::from(window.fetch_with_request(&request)).await {
+        let fetch_invocation = match fetch.call1(&global, request.as_ref()) {
+            Ok(value) => value,
+            Err(error) => {
+                if let Some(handle) = abort_timeout.take() {
+                    handle.cancel();
+                }
+                return Err(classify_fetch_rejection(&error));
+            }
+        };
+        let response_value = match JsFuture::from(Promise::resolve(&fetch_invocation)).await {
             Ok(value) => value,
             Err(error) => {
                 if let Some(handle) = abort_timeout.take() {
@@ -402,12 +395,24 @@ impl HttpTransport for FetchTransport {
     }
 }
 
-fn window_or_configuration_error() -> Result<Window, TransportError> {
-    web_sys::window().ok_or_else(|| TransportError::Configuration {
-        message: Redacted::new(
-            "fetch requires a browser window; no global window is available".to_owned(),
-        ),
-    })
+/// Resolves the global `fetch` function from the active realm.
+///
+/// The lookup goes through [`js_sys::global`] rather than `web_sys::window()`
+/// so the transport serves any realm that exposes `fetch` on its global scope
+/// — a `Window` or a worker — not the main thread alone. The function is
+/// invoked with the global object as `this`. A realm without a global `fetch`
+/// returns a typed [`TransportError::Configuration`].
+fn global_fetch_or_configuration_error() -> Result<(JsValue, Function), TransportError> {
+    let global: JsValue = js_sys::global().into();
+    let fetch = Reflect::get(&global, &JsValue::from_str("fetch"))
+        .ok()
+        .and_then(|value| value.dyn_into::<Function>().ok())
+        .ok_or_else(|| TransportError::Configuration {
+            message: Redacted::new(
+                "no global `fetch` function is available in this JavaScript realm".to_owned(),
+            ),
+        })?;
+    Ok((global, fetch))
 }
 
 fn build_request_init(

@@ -63,16 +63,17 @@ ETH or COW.
 ## How it maps to the SDK
 
 - `cow-sdk` (feature `browser-wallet`) provides `BrowserWallet`, `Eip1193Signer`,
-  and the `Trading` client.
-- `cow-sdk-transport-wasm` provides `FetchTransport`, the browser `fetch`-based
-  HTTP transport the orderbook client uses.
+  and the `Trading` client. On `wasm32` the orderbook builder defaults its HTTP
+  transport to the browser `fetch`, so the example needs no transport crate and
+  no transport wiring.
 
-The trading client is built exactly as a real app would:
+The trading client is built exactly as a real app would — the same code on
+native and in the browser, because the orderbook builder supplies the default
+transport for each target:
 
 ```rust
 let orderbook = OrderbookApi::builder_from_context(ApiContext::new(CHAIN, ENV))
-    .transport(Arc::new(FetchTransport::new(&FetchTransportConfig::new(base_url))))
-    .build()?;
+    .build()?; // wasm32 → browser fetch · native → reqwest
 let trading = Trading::builder()
     .chain_id(CHAIN)
     .app_code(APP_CODE)

@@ -1,9 +1,9 @@
 # Typestate Builder Contract Audit
 
 Status: Current
-Last reviewed: 2026-06-09
+Last reviewed: 2026-06-12
 Owning surface: `cow-sdk-orderbook::OrderbookApiBuilder`, `cow-sdk-subgraph::SubgraphApiBuilder`, and `cow-sdk-trading::TradingBuilder` construction seams, plus the `cow-sdk-trading::SwapBuilder` swap lifecycle seam
-Refresh trigger: future type-parameter or marker visibility changes on any covered builder, a change to the set of required inputs (chain, environment, API key, appCode, transport, or the swap sell-token/buy-token/amount markers), a change to host-policy validation, a change to the native default-transport convenience impl, a change to the wasm32 transport-required or injected-orderbook invariant, a change to the swap lifecycle terminals, or a new `trybuild`/`compile_fail` witness replacing the current compile-fail coverage
+Refresh trigger: future type-parameter or marker visibility changes on any covered builder, a change to the set of required inputs (chain, environment, API key, appCode, transport, or the swap sell-token/buy-token/amount markers), a change to host-policy validation, a change to either per-target default-transport `.build()` impl, a change to the trading target-neutral default orderbook factory, a change to the swap lifecycle terminals, or a new `trybuild`/`compile_fail` witness replacing the current compile-fail coverage
 Related docs:
 - [ADR 0011](../adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md)
 - [ADR 0013](../adr/0013-http-transport-injection-and-typestate-builders.md)
@@ -22,13 +22,13 @@ This audit covers:
 - the three-marker `SubgraphApiBuilder` typestate
   (`ChainState`, `ApiKeyState`, `TransportState`) and the single
   `.build()` path
-- the native default-transport convenience on both builders and its
-  `#[cfg(not(target_arch = "wasm32"))]` gate
+- the per-target default-transport `.build()` convenience on both builders
+  (native `ReqwestTransport`, `wasm32` `FetchTransport`)
 - external host-policy validation for explicit endpoint overrides
 - the two-marker `TradingBuilder` typestate
   (`ChainIdState`, `AppCodeState`), validated `AppCode` attribution,
-  the `Trading` ready terminal type, and the
-  documented `wasm32` injected-orderbook runtime terminal
+  the `Trading` ready terminal type, and the target-neutral default
+  orderbook factory inside `build()`
 - the three-marker `SwapBuilder` swap lifecycle typestate
   (sell-token, buy-token, and amount markers), its named token setters,
   and the `execute` / `quote` terminals reachable only once all three are set
@@ -38,8 +38,8 @@ This audit covers:
 - the sealed, data-carrying marker structs that prevent direct external
   construction of typestate witnesses, proven by a `trybuild` compile-fail
   witness
-- the wasm32 transport-required invariant proven by a `trybuild`
-  compile-fail witness
+- the per-target default-transport `.build()` terminals, type-checked for
+  `wasm32` by compiling both builder crates for that target in CI
 - the retirement of the legacy free-function constructors on
   `OrderbookApi` and `SubgraphApi`
 
@@ -55,12 +55,12 @@ the trading-sdk runtime prerequisites audit.
 | OrderbookApi construction | `OrderbookApi::builder()` is the only production construction path; every required input is encoded as a compile-time marker | Conforms |
 | SubgraphApi construction | `SubgraphApi::builder()` is the only production construction path; every required input is encoded as a compile-time marker | Conforms |
 | Marker sealing | Public marker types use private tuple fields — the `…Set` markers carry their supplied value in that private field — so external callers cannot construct typestate witnesses directly | Conforms |
-| Native convenience | Both builders carry a default-transport `.build()` impl gated on `#[cfg(not(target_arch = "wasm32"))]` that installs a `ReqwestTransport` | Conforms |
+| Default-transport convenience | Both builders carry a default-transport `.build()` impl per target: native installs `ReqwestTransport`, `wasm32` installs the browser `FetchTransport` | Conforms |
 | Panic-free terminals | Build terminals read each input from the data-carrying marker and return typed errors; no typestate-guard `expect`/`panic!` remains | Conforms |
 | Host policy | Explicit orderbook and subgraph endpoint overrides are validated at build time and fail through typed host-policy errors | Conforms |
-| wasm32 invariant | the default-transport `.build()` is `cfg`-gated off on `wasm32`, so a transportless build does not compile; both builder crates are compiled for `wasm32` in CI to guard the gate | Conforms |
+| wasm32 default terminal | the `wasm32` default-transport `.build()` constructs `FetchTransport`; both builder crates are compiled for `wasm32` in CI to type-check that terminal and its `cow-sdk-transport-wasm` edge | Conforms |
 | Trading SDK construction | `build` requires chain id plus validated `AppCode` and returns the ready `Trading` client | Conforms |
-| Trading wasm32 posture | `build` documents and enforces the injected orderbook-client requirement at the runtime terminal on `wasm32` | Conforms |
+| Trading default terminal | `build` is target-neutral: the lazy default orderbook factory rides the orderbook builder's per-target default transport on native and `wasm32` alike | Conforms |
 | Swap lifecycle builder | `Trading::swap` requires sell token, buy token, and amount through named setters before `execute`/`quote` compile; the lifecycle delegates to the existing post entries and adds no protocol logic | Conforms |
 | Native Alloy builders | Provider, signer, and umbrella construction terminals are reachable only after required transport, key-source, and chain marker axes are set | Conforms |
 
@@ -128,20 +128,24 @@ mirrors, open routing, or local loopback fixtures must opt in with
 `HostPolicyError` variants rather than panicking or constructing a client
 pointed at an unreviewed service host.
 
-### Native Convenience And wasm32 Invariant
+### Per-Target Default-Transport Convenience
 
-On non-`wasm32` targets, a convenience `.build()` impl is defined on the
-`(ChainSet, EnvironmentSet | ApiKeySet, TransportUnset)` state and
-installs a default `ReqwestTransport`. Constructing that default
-transport is fallible: a user-agent that cannot be encoded as an HTTP
-header value returns a typed error (`OrderbookError::Transport` for the
-orderbook builder, `SubgraphError::TransportConfiguration` for the
-subgraph builder) rather than panicking. On `wasm32` this convenience impl
-is absent, so a caller must invoke `.transport(...)` explicitly to
-reach `.build()`. Because that convenience impl is the only `wasm32` path to
-`.build()` and its body relies on the native-only `ReqwestTransport`, the
-requirement is compiler-enforced; compiling `cow-sdk-orderbook` and
-`cow-sdk-subgraph` for `wasm32` in CI guards the gate against regression.
+A convenience `.build()` impl is defined on the
+`(ChainSet, EnvironmentSet | ApiKeySet, TransportUnset)` state for every
+target. On non-`wasm32` targets it installs a default `ReqwestTransport`;
+constructing that default is fallible because a user-agent that cannot be
+encoded as an HTTP header value returns a typed error
+(`OrderbookError::Transport` for the orderbook builder,
+`SubgraphError::TransportConfiguration` for the subgraph builder) rather
+than panicking. On `wasm32` the same terminal installs the browser
+`FetchTransport` from `cow-sdk-transport-wasm`, acquired from the realm's
+global `fetch`; the policy timeout and response-byte cap apply to either
+default, and the browser default omits the user-agent because `User-Agent`
+is a forbidden request header for `fetch`. Compiling `cow-sdk-orderbook` and
+`cow-sdk-subgraph` for `wasm32` in CI type-checks the browser terminal and
+its target-gated `cow-sdk-transport-wasm` dependency edge. Explicit
+`.transport(...)` injection remains available on every target for a custom
+backend.
 
 ### Trading SDK Construction
 
@@ -157,13 +161,11 @@ returned. The validation deliberately rejects only empty strings, NUL bytes,
 and ASCII control characters so source-backed examples such as `CoW Swap`,
 `cow-rs/wasm-console`, and `COW_BRIDGING_REACT_EXAMPLE` remain accepted.
 
-On `wasm32`, `build()` keeps the documented runtime terminal posture:
-callers must inject an orderbook client with
-`TradingOptions::with_orderbook_client(...)`, otherwise the terminal returns
-`TradingError::MissingInjectedOrderbookClient`. That avoids adding a third
-builder marker while keeping the browser runtime requirement explicit in
-rustdoc and regression coverage. The injected client is also accepted by
-value through `TradingBuilder::orderbook(...)` and
+`build()` is target-neutral: with no injected orderbook client, the default
+orderbook factory constructs one lazily through `OrderbookApi::builder()` on
+native and `wasm32` alike, because the orderbook builder's default-transport
+terminal exists on both targets (ADR 0013). An injected client is still
+accepted by value through `TradingBuilder::orderbook(...)` and
 `TradingOptions::with_orderbook(...)`, which share it internally as the same
 `Arc<dyn OrderbookClient>` the options store; the `Arc`-taking variants remain
 for an already-shared handle.

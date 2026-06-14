@@ -177,7 +177,19 @@ pub(crate) fn configured_fetch_transport(
     timeout: Option<Duration>,
     max_response_bytes: usize,
 ) -> Result<(Arc<dyn HttpTransport + Send + Sync>, FetchCallbackGuard), JsValue> {
-    let transport = required_object(config, "transport")?;
+    let Some(transport) = optional_object(config, "transport")? else {
+        // An omitted `transport` defaults to the realm's global `fetch`,
+        // matching the Rust builders' default-transport terminals on both
+        // targets.
+        let fetch = global_fetch_function().ok_or_else(|| {
+            WasmError::invalid(
+                "transport",
+                "globalThis.fetch is unavailable; pass an explicit transport",
+            )
+            .into_js()
+        })?;
+        return fetch_adapter_transport(fetch, timeout, max_response_bytes);
+    };
     let kind = required_string(&transport, "kind")?;
 
     match kind.as_str() {
@@ -253,13 +265,16 @@ pub(crate) fn optional_string(
         .transpose()
 }
 
-fn required_object(config: &JsValue, field: &'static str) -> Result<JsValue, JsValue> {
-    let value = required_value(config, field)?;
-    if value.is_object() {
-        Ok(value)
-    } else {
-        Err(WasmError::invalid(field, "expected an object").into_js())
-    }
+fn optional_object(config: &JsValue, field: &'static str) -> Result<Option<JsValue>, JsValue> {
+    optional_value(config, field)?
+        .map(|value| {
+            if value.is_object() {
+                Ok(value)
+            } else {
+                Err(WasmError::invalid(field, "expected an object").into_js())
+            }
+        })
+        .transpose()
 }
 
 fn required_function(config: &JsValue, field: &'static str) -> Result<Function, JsValue> {

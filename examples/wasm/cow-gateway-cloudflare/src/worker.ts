@@ -1,6 +1,7 @@
 import initialize, {
   OrderBookClient,
   supportedChainIds,
+  type CowError,
   type HttpTransportConfig,
   type OrderQuoteRequestInput
 } from "cow-sdk-wasm-local/cloudflare";
@@ -84,19 +85,14 @@ function gatewayTransport(env: WorkerEnv): HttpTransportConfig {
   return { kind: "fetch" };
 }
 
-// The SDK throws a typed `WasmError` discriminated union, which crosses the wasm
-// boundary as a plain object (not an `Error` instance). The package facade does
-// not re-export that type — errors are thrown, not constructed — so a consumer
-// narrows structurally on the variant it cares about. Here that is the
-// `orderbook` variant's retry surface.
-interface RetryableOrderbookError {
-  kind: "orderbook";
-  message: string;
-  retryable: boolean;
-  retryAfterMs?: number;
-}
+// The SDK throws its `CowError` discriminated union, which crosses the wasm
+// boundary as a plain object (not an `Error` instance). The package re-exports
+// the `CowError` type, so the gateway narrows the caught value to the variant it
+// cares about — the `orderbook` retry surface (`retryable` / `retryAfterMs`) —
+// with a small runtime type guard rather than restating the shape by hand.
+type OrderbookError = Extract<CowError, { kind: "orderbook" }>;
 
-function isRetryableOrderbookError(value: unknown): value is RetryableOrderbookError {
+function isRetryableOrderbookError(value: unknown): value is OrderbookError {
   return (
     typeof value === "object" &&
     value !== null &&

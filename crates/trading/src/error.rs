@@ -179,12 +179,6 @@ pub enum TradingError {
     /// A long-running trading operation was cancelled through a cooperative cancellation token.
     #[error("trading operation was cancelled")]
     Cancelled,
-    /// An injected orderbook client is required on `wasm32` targets because
-    /// the browser runtime does not ship a default HTTP transport.
-    #[error(
-        "wasm32 targets require an injected orderbook client through TradingOptions::with_orderbook_client"
-    )]
-    MissingInjectedOrderbookClient,
 }
 
 impl From<Cancelled> for TradingError {

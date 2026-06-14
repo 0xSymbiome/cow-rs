@@ -7,14 +7,13 @@
 //! transport policy and per-chain base-URL overrides — is layered on
 //! through fluent methods that do not affect the typestate.
 //!
-//! On native targets the builder also exposes [`SubgraphApiBuilder::build`]
-//! against the typestate where transport is unset, defaulting the transport
-//! to [`ReqwestTransport`](cow_sdk_core::ReqwestTransport) so the common
-//! single-target consumer never has to wire a transport explicitly. On
-//! `wasm32` targets the default-transport build path is unavailable: the
-//! caller MUST supply a `FetchTransport` from `cow-sdk-transport-wasm`
-//! through [`SubgraphApiBuilder::transport`] before `build` becomes
-//! reachable.
+//! The builder also exposes [`SubgraphApiBuilder::build`] against the
+//! typestate where transport is unset, defaulting the transport per target:
+//! [`ReqwestTransport`](cow_sdk_core::ReqwestTransport) on native targets and
+//! `FetchTransport` from `cow-sdk-transport-wasm` (the realm's global
+//! `fetch`) on `wasm32`, so the common consumer never has to wire a
+//! transport explicitly on either target. Consumers that need a custom
+//! backend keep the explicit [`SubgraphApiBuilder::transport`] seam.
 //!
 //! # Examples
 //!
@@ -44,6 +43,8 @@ use cow_sdk_core::{
 };
 #[cfg(not(target_arch = "wasm32"))]
 use cow_sdk_core::{ReqwestTransport, ReqwestTransportConfig, TransportError, TransportErrorClass};
+#[cfg(target_arch = "wasm32")]
+use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
 #[cfg(not(target_arch = "wasm32"))]
 use reqwest::Client;
 
@@ -286,10 +287,9 @@ impl SubgraphApiBuilder<ChainIdSet, ApiKeySet, TransportUnset> {
     /// Builds the [`SubgraphApi`] with the supplied chain and API key,
     /// defaulting the transport to a native [`ReqwestTransport`] handle.
     ///
-    /// This convenience build path is only available on non-`wasm32`
-    /// targets; browser consumers must call
-    /// [`SubgraphApiBuilder::transport`] with a `FetchTransport` before
-    /// reaching `build`.
+    /// On `wasm32` targets the same terminal defaults to the browser
+    /// `FetchTransport` instead, so the zero-config construction path is
+    /// available on every target.
     ///
     /// # Errors
     ///
@@ -321,6 +321,43 @@ impl SubgraphApiBuilder<ChainIdSet, ApiKeySet, TransportUnset> {
         }
         let transport =
             ReqwestTransport::new(config).map_err(subgraph_transport_configuration_error)?;
+        self.finish(Arc::new(transport))
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+impl SubgraphApiBuilder<ChainIdSet, ApiKeySet, TransportUnset> {
+    /// Builds the [`SubgraphApi`] with the supplied chain and API key,
+    /// defaulting the transport to the browser [`FetchTransport`] backed by
+    /// the realm's global `fetch`.
+    ///
+    /// The default mirrors the native [`ReqwestTransport`] terminal: the
+    /// configured transport policy's timeout and response-byte cap are
+    /// applied to the transport. The policy's user-agent is deliberately not
+    /// applied — `User-Agent` is a forbidden request header for browser
+    /// `fetch`, so the runtime's own value is sent instead.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`SubgraphError`] when explicit base-URL overrides fail the
+    /// configured external host policy.
+    pub fn build(self) -> Result<SubgraphApi, SubgraphError> {
+        let timeout = self
+            .transport_policy
+            .as_ref()
+            .and_then(TransportPolicy::timeout);
+        let max_response_bytes = self
+            .transport_policy
+            .as_ref()
+            .map(|policy| policy.client_policy().max_response_bytes());
+        let mut config = FetchTransportConfig::new(String::new());
+        if let Some(timeout) = timeout {
+            config = config.with_timeout(timeout);
+        }
+        if let Some(max_response_bytes) = max_response_bytes {
+            config = config.with_max_response_bytes(max_response_bytes);
+        }
+        let transport = FetchTransport::new(&config);
         self.finish(Arc::new(transport))
     }
 }

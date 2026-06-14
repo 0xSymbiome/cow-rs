@@ -133,10 +133,30 @@ the same.
 ## The Browser Default: `FetchTransport`
 
 On `wasm32-unknown-unknown`, `cow-sdk-transport-wasm::FetchTransport`
-bridges the same async signature through `web-sys::fetch` and
-`wasm-bindgen-futures`. The builder's native default-transport
-convenience is gated on `#[cfg(not(target_arch = "wasm32"))]`, so
-browser consumers supply the transport explicitly:
+bridges the same async signature through the realm's global `fetch` and
+`wasm-bindgen-futures`. The builder's default-transport `.build()`
+terminal installs it automatically on `wasm32`, the mirror of the native
+`ReqwestTransport` default, so the zero-config construction path is
+identical on both targets:
+
+```rust,ignore
+use cow_sdk::core::{CowEnv, SupportedChainId};
+use cow_sdk::orderbook::OrderbookApi;
+
+// On wasm32 this defaults the transport to the browser FetchTransport.
+let orderbook = OrderbookApi::builder()
+    .chain(SupportedChainId::Mainnet)
+    .env(CowEnv::Prod)
+    .build()?;
+```
+
+The default acquires `fetch` from the realm's global object through
+`js_sys::global()`, so the same client runs on a `Window` or a worker. A
+realm without a global `fetch` fails closed with a typed
+`TransportError::Configuration`. The default omits the `User-Agent`
+header because it is a forbidden request header for `fetch`; the runtime
+sends its own value. Consumers that need a custom backend keep the
+explicit `.transport(...)` seam:
 
 ```rust,ignore
 use std::sync::Arc;
@@ -155,6 +175,10 @@ let orderbook = OrderbookApi::builder()
     .build()?;
 ```
 
+When a cross-origin server has not opted into
+`Access-Control-Expose-Headers`, a browser `fetch` exposes only the
+CORS-safelisted response headers (including `Content-Type`); the success
+response carries exactly the headers the runtime makes visible.
 `FetchTransport` uses the default fetch redirect policy (auto-follow),
 so the `TransportErrorClass::Redirect` variant is unreachable from the
 browser side. Cross-adapter parity tests exercise every other

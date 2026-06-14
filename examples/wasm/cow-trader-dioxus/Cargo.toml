@@ -14,7 +14,6 @@ description = "Minimal browser-wallet + trade example for the CoW Protocol Rust 
 [dependencies]
 dioxus = { version = "0.7", features = ["web"] }
 cow-sdk = { path = "../../../crates/sdk", features = ["browser-wallet"] }
-cow-sdk-transport-wasm = { path = "../../../crates/transport-wasm" }
 anyhow = "1"
 serde_json = "1"
 console_error_panic_hook = "0.1"

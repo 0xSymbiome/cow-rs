@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use cow_sdk_core::{Address, CowEnv, SupportedChainId};
-#[cfg(not(target_arch = "wasm32"))]
 use cow_sdk_orderbook::OrderbookApi;
 
 use super::Trading;
@@ -135,30 +134,19 @@ impl Trading {
             });
         }
 
-        #[cfg(not(target_arch = "wasm32"))]
-        {
-            let chain_id = requested_chain.ok_or(missing_chain_error)?;
-            let env = requested_env.unwrap_or(CowEnv::Prod);
-            // The default-built client carries the standard orderbook transport
-            // policy. Consumers needing a custom retry/rate-limit policy build
-            // their own `OrderbookApi` with it and inject it through
-            // `TradingOptions::with_orderbook_client`.
-            let client = OrderbookApi::builder().chain(chain_id).env(env).build()?;
-            Ok(ResolvedOrderbookBinding {
-                client: Arc::new(client),
-                chain_id,
-                env,
-            })
-        }
-        #[cfg(target_arch = "wasm32")]
-        {
-            // On `wasm32` the typestate builder requires an explicit
-            // `HttpTransport`. Browser consumers compose a `FetchTransport`
-            // from `cow-sdk-transport-wasm` and inject the resulting
-            // [`OrderbookApi`] through
-            // [`TradingOptions::with_orderbook_client`].
-            let _ = (requested_chain, requested_env);
-            Err(missing_chain_error)
-        }
+        let chain_id = requested_chain.ok_or(missing_chain_error)?;
+        let env = requested_env.unwrap_or(CowEnv::Prod);
+        // The default-built client carries the standard orderbook transport
+        // policy and works on every target: the orderbook builder's
+        // default-transport terminal constructs `ReqwestTransport` on native
+        // and the browser `FetchTransport` on `wasm32`. Consumers needing a
+        // custom retry/rate-limit policy build their own `OrderbookApi` with
+        // it and inject it through `TradingOptions::with_orderbook_client`.
+        let client = OrderbookApi::builder().chain(chain_id).env(env).build()?;
+        Ok(ResolvedOrderbookBinding {
+            client: Arc::new(client),
+            chain_id,
+            env,
+        })
     }
 }

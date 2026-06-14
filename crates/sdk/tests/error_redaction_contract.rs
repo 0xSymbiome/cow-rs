@@ -518,7 +518,6 @@ fn trading_errors_redact_workflow_message_and_conflict_payloads() {
         },
         TradingError::AppCode(AppCodeError::ControlCharacter),
         TradingError::Cancelled,
-        TradingError::MissingInjectedOrderbookClient,
     ];
 
     assert_all_render("TradingError", &errors);

@@ -17,10 +17,24 @@ when you are running order flow inside a Worker.
 
 ## Run
 
+This example depends on the workspace WASM package (`cow-sdk-wasm-local`) through
+a local `file:` dependency, and that package's `dist/` is a build artifact (it is
+gitignored). Build it once first, from the repository root:
+
+```text
+pnpm --dir crates/wasm/npm build   # builds cow-sdk-wasm-local (requires wasm-pack + binaryen)
+```
+
+Then, from this directory:
+
 ```text
 pnpm install
 pnpm test
 ```
+
+If you pull changes that touch the package's TypeScript facade, rebuild the
+package (above) and re-run `pnpm install` here so the local copy picks up the new
+types.
 
 `pnpm test` type-checks the Worker, bundles a deployable entrypoint with the wasm
 module as a Cloudflare `CompiledWasm` binding, runs `wrangler deploy --dry-run`,

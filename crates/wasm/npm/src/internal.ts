@@ -16,15 +16,18 @@ export type DisposableRawClient = {
   free?: () => void;
 };
 
-export function translateHttpTransport(transport: HttpTransportConfig): {
+export function translateHttpTransport(transport?: HttpTransportConfig): {
   kind: "callback";
   callback: CowFetchCallback;
 } {
-  if (transport.kind === "callback") {
+  if (transport?.kind === "callback") {
     return transport;
   }
 
-  const fetchFn = transport.fetch ?? globalThis.fetch;
+  // An omitted transport (or `{ kind: "fetch" }` without an explicit fetch)
+  // defaults to the runtime's global `fetch`, matching the Rust builders'
+  // zero-config default.
+  const fetchFn = transport?.fetch ?? globalThis.fetch;
   if (typeof fetchFn !== "function") {
     throw invalidInput(
       "transport.fetch",
@@ -38,7 +41,7 @@ export function translateHttpTransport(transport: HttpTransportConfig): {
   };
 }
 
-export function translateClientConfig<T extends { transport: HttpTransportConfig }>(
+export function translateClientConfig<T extends { transport?: HttpTransportConfig }>(
   config: T
 ): Omit<T, "signal" | "transport"> & { transport: { kind: "callback"; callback: CowFetchCallback } } {
   const { signal: _signal, transport, ...rest } = config as T & { signal?: AbortSignal };

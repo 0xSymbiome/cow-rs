@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-04-21
-- Last reviewed: 2026-05-31
+- Last reviewed: 2026-06-12
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: transport, typestate, builders, wasm, async
 - Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md), [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md)
@@ -29,8 +29,15 @@ construct them; the fully-set markers carry the value they prove is present
 (chain id, environment or API key, and transport), so `.build()` reads each
 input directly from the marker without unwrapping an `Option` or retaining a
 typestate-guard panic, and it is reachable only from the fully-set state.
-Native targets keep `.client(reqwest::Client)` as a convenience over
-`ReqwestTransport`; wasm targets must inject an explicit transport.
+The builders expose a default-transport `.build()` on the transport-unset
+typestate for every target: native targets default to `ReqwestTransport`, and
+`wasm32` targets default to the browser `FetchTransport` backed by the realm's
+global `fetch`. The policy timeout and response-byte cap apply to either
+default; the browser default omits the user-agent because `User-Agent` is a
+forbidden request header for `fetch`. Native targets additionally keep
+`.client(reqwest::Client)` as a convenience over `ReqwestTransport`, and
+explicit `.transport(...)` injection remains the customization seam on every
+target.
 
 ## Why
 

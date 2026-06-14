@@ -99,13 +99,13 @@ jobs:
         # wasm32 so a shipped-flavor break fails in the fast checks rather than
         # only in the slower wasm-pack flavour matrix.
         run: cargo check -p cow-sdk-wasm --target wasm32-unknown-unknown
-      - name: Check native-default builder crates compile for wasm32
-        # The orderbook and subgraph builders gate their default-transport
-        # `.build()` impl on `#[cfg(not(target_arch = "wasm32"))]`, so a
-        # browser caller must inject a transport explicitly. Compiling both
-        # crates for wasm32 guards that gate: if it were removed, the
-        # `.build()` body's native-only `ReqwestTransport` reference would
-        # fail to compile here.
+      - name: Check default-transport builder crates compile for wasm32
+        # The orderbook and subgraph builders split their default-transport
+        # `.build()` impl by target: native targets construct `ReqwestTransport`
+        # and `wasm32` targets construct the browser `FetchTransport`. Compiling
+        # both crates for wasm32 type-checks the `wasm32` default terminal and
+        # its target-gated `cow-sdk-transport-wasm` dependency edge, so a break
+        # in the browser default surfaces in the fast checks.
         run: cargo check -p cow-sdk-orderbook -p cow-sdk-subgraph --target wasm32-unknown-unknown
       - name: Test host pure helpers
         run: cargo test -p cow-sdk-wasm --test host_pure_helpers

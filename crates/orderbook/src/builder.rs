@@ -13,14 +13,13 @@
 //! misconstructed builder is a compile error, and the terminals contain no
 //! typestate-guard `expect`.
 //!
-//! On native targets the builder also exposes [`OrderbookApiBuilder::build`]
-//! against the typestate where transport is unset, defaulting the transport
-//! to [`ReqwestTransport`](cow_sdk_core::ReqwestTransport) so the common
-//! single-target consumer never has to wire a transport explicitly. On
-//! `wasm32` targets the default-transport build path is unavailable: the
-//! caller MUST supply a `FetchTransport` from `cow-sdk-transport-wasm`
-//! through [`OrderbookApiBuilder::transport`] before `build` becomes
-//! reachable.
+//! The builder also exposes [`OrderbookApiBuilder::build`] against the
+//! typestate where transport is unset, defaulting the transport per target:
+//! [`ReqwestTransport`](cow_sdk_core::ReqwestTransport) on native targets and
+//! `FetchTransport` from `cow-sdk-transport-wasm` (the realm's global
+//! `fetch`) on `wasm32`, so the common consumer never has to wire a
+//! transport explicitly on either target. Consumers that need a custom
+//! backend keep the explicit [`OrderbookApiBuilder::transport`] seam.
 //!
 //! # Examples
 //!
@@ -50,6 +49,8 @@ use cow_sdk_core::{
 };
 #[cfg(not(target_arch = "wasm32"))]
 use cow_sdk_core::{ReqwestTransport, ReqwestTransportConfig};
+#[cfg(target_arch = "wasm32")]
+use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
 #[cfg(not(target_arch = "wasm32"))]
 use reqwest::Client;
 
@@ -359,10 +360,9 @@ impl OrderbookApiBuilder<ChainIdSet, EnvSet, TransportUnset> {
     /// Builds the [`OrderbookApi`] with the supplied chain and environment,
     /// defaulting the transport to a native [`ReqwestTransport`] handle.
     ///
-    /// This convenience build path is only available on non-`wasm32` targets;
-    /// browser consumers must call
-    /// [`OrderbookApiBuilder::transport`] with a `FetchTransport` before
-    /// reaching `build`.
+    /// On `wasm32` targets the same terminal defaults to the browser
+    /// `FetchTransport` instead, so the zero-config construction path is
+    /// available on every target.
     ///
     /// # Errors
     ///
@@ -392,6 +392,43 @@ impl OrderbookApiBuilder<ChainIdSet, EnvSet, TransportUnset> {
             config = config.with_max_response_bytes(max_response_bytes);
         }
         let transport = ReqwestTransport::new(config)?;
+        self.finish(Arc::new(transport))
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+impl OrderbookApiBuilder<ChainIdSet, EnvSet, TransportUnset> {
+    /// Builds the [`OrderbookApi`] with the supplied chain and environment,
+    /// defaulting the transport to the browser [`FetchTransport`] backed by
+    /// the realm's global `fetch`.
+    ///
+    /// The default mirrors the native [`ReqwestTransport`] terminal: the
+    /// configured transport policy's timeout and response-byte cap are
+    /// applied to the transport. The policy's user-agent is deliberately not
+    /// applied — `User-Agent` is a forbidden request header for browser
+    /// `fetch`, so the runtime's own value is sent instead.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OrderbookError`] when explicit base-URL overrides fail the
+    /// configured external host policy.
+    pub fn build(self) -> Result<OrderbookApi, OrderbookError> {
+        let timeout = self
+            .transport_policy
+            .as_ref()
+            .and_then(TransportPolicy::timeout);
+        let max_response_bytes = self
+            .transport_policy
+            .as_ref()
+            .map(|policy| policy.client_policy().max_response_bytes());
+        let mut config = FetchTransportConfig::new(String::new());
+        if let Some(timeout) = timeout {
+            config = config.with_timeout(timeout);
+        }
+        if let Some(max_response_bytes) = max_response_bytes {
+            config = config.with_max_response_bytes(max_response_bytes);
+        }
+        let transport = FetchTransport::new(&config);
         self.finish(Arc::new(transport))
     }
 }

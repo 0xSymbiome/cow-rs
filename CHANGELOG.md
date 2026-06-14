@@ -273,13 +273,23 @@ sections below describe the public contract a `0.1.0` consumer receives.
 - `OrderbookApi` and `SubgraphApi` are constructed exclusively through their
   typestate builders, which carry the value each marker proves is present so the
   build terminals construct panic-free, returning a typed error rather than
-  panicking when a configured user-agent cannot be encoded. On native targets a
-  `.build()` overload defaults the transport to `ReqwestTransport`; on `wasm32`
-  the caller supplies a `FetchTransport`. Default-constructed transports apply a
-  `cow-sdk/<version>` user-agent and a 60-second TCP keepalive. Orderbook and
-  subgraph base-URL overrides enforce canonical-host guard rails by default,
-  with explicit opt-in policies for reviewed external hosts and loopback test
-  routes.
+  panicking when a configured user-agent cannot be encoded. A `.build()`
+  overload defaults the transport per target: `ReqwestTransport` on native and
+  the browser `FetchTransport` on `wasm32`, so the zero-config construction path
+  is identical on both targets. The browser default acquires `fetch` from the
+  realm's global object, so the same client runs on a `Window` or a worker, and
+  fails closed with a typed `TransportError::Configuration` in a realm without a
+  global `fetch`. The native
+  default applies a `cow-sdk/<version>` user-agent and a 60-second TCP keepalive;
+  the browser default omits the user-agent because it is a forbidden `fetch`
+  request header. `TradingBuilder::build()` is target-neutral for the same
+  reason: it constructs a default orderbook client on native and `wasm32` alike
+  unless one is injected. Orderbook and subgraph base-URL overrides enforce
+  canonical-host guard rails by default, with explicit opt-in policies for
+  reviewed external hosts and loopback test routes.
+- The TypeScript-callable wasm clients accept an optional `transport`: omitting
+  it defaults to the realm's global `fetch`, matching the Rust builders'
+  zero-config default across the native, browser, and JavaScript surfaces.
 - The native Alloy provider adapters gain an opt-in RPC retry seam.
   `cow_sdk_alloy_provider::RetryConfig` and `with_retry` wrap the JSON-RPC client
   in a bounded exponential-backoff layer that transparently retries transient,

@@ -104,6 +104,20 @@ impl std::fmt::Debug for TransportResponse {
 /// default implementation lives in `cow-sdk-transport-wasm` and bridges the
 /// same async signature through `JsFuture`.
 ///
+/// Most consumers never implement this trait. The orderbook and subgraph
+/// builders install the per-target default automatically, so the zero-config
+/// `.build()` path serves native and browser callers alike. Common tuning does
+/// not require a custom transport either: reuse a pre-configured
+/// `reqwest::Client` (proxy, custom TLS, connection pool) through the native
+/// builder's `.client(..)` seam, supply credentials through `.api_key(..)` and
+/// the per-call header set, and shape retry, rate limiting, timeout, and
+/// user-agent through `TransportPolicy`. Implementing this trait is the
+/// deliberate escape hatch for three cases: a JavaScript host supplying its own
+/// `fetch` or callback (see `cow_sdk_wasm::exports::JsCallbackHttpTransport`),
+/// test doubles that record or replay requests, and wrapping an inner transport
+/// to add caching or other middleware. The `Arc<dyn HttpTransport>` seam is what
+/// keeps those injectable at runtime.
+///
 /// This trait does not retry. Retry, jitter, rate limiting, and
 /// `Retry-After` handling are applied at the orderbook layer via
 /// `cow_sdk_core::transport::policy::TransportPolicy`. See `docs/transport.md`.

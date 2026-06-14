@@ -541,17 +541,14 @@ async fn sdk_onchain_cancel_order_preserves_full_uint256_range_for_ethflow_order
 
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen_test]
-fn build_rejects_missing_injected_orderbook_client_on_wasm32() {
-    let error = TradingBuilder::new()
+fn build_succeeds_on_wasm32_without_injected_orderbook_client() {
+    let trading = TradingBuilder::new()
         .chain_id(SupportedChainId::Mainnet)
         .app_code("test-app")
         .build()
-        .expect_err("wasm32 build must reject a missing injected orderbook client");
+        .expect("wasm32 build must succeed without an injected orderbook client");
 
-    assert!(matches!(
-        error,
-        TradingError::MissingInjectedOrderbookClient
-    ));
+    assert_eq!(trading.chain_id(), Some(SupportedChainId::Mainnet));
 }
 
 #[cfg(target_arch = "wasm32")]

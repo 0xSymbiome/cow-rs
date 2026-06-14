@@ -18,12 +18,11 @@ use crate::{
 /// available and returns a fully-configured [`Trading`] with only a
 /// runtime orderbook-binding check remaining.
 ///
-/// On `wasm32`, the SDK keeps a documented runtime terminal for ready-state
-/// orderbook injection: [`TradingBuilder::build`] requires
-/// [`TradingBuilder::orderbook_client`] or
-/// [`TradingBuilder::options`] with an injected orderbook client, and
-/// returns [`TradingError::MissingInjectedOrderbookClient`] when that runtime
-/// requirement is not satisfied.
+/// The terminal behaves identically on native and `wasm32` targets: when no
+/// orderbook client is injected, the default orderbook factory constructs
+/// one lazily through `OrderbookApi::builder()`, whose default-transport
+/// terminal exists on both targets (native `ReqwestTransport`, browser
+/// `FetchTransport`).
 #[derive(Debug, Clone)]
 pub struct TradingBuilder<C = ChainIdUnset, A = AppCodeUnset> {
     trader_defaults: PartialTraderParams,
@@ -65,9 +64,7 @@ impl TradingBuilder<ChainIdUnset, AppCodeUnset> {
     /// # Errors
     ///
     /// Returns [`TradingError::InjectedOrderbookContextConflict`] when the
-    /// trader parameters conflict with an injected orderbook client. On
-    /// `wasm32`, also returns [`TradingError::MissingInjectedOrderbookClient`]
-    /// when no orderbook client has been supplied.
+    /// trader parameters conflict with an injected orderbook client.
     pub fn ready(params: TraderParams, options: TradingOptions) -> Result<Trading, TradingError> {
         let TraderParams {
             chain_id,
@@ -220,26 +217,18 @@ impl TradingBuilder<ChainIdSet, AppCodeSet> {
     /// Builds a fully-configured ready-state [`Trading`].
     ///
     /// The compile-time typestate guarantees that both chain id and app code
-    /// have been supplied before this terminal runs. On native targets the
+    /// have been supplied before this terminal runs. On every target the
     /// default orderbook factory resolves the remaining runtime prerequisite
-    /// for quote and post flows. On `wasm32` targets, the builder requires an
-    /// injected orderbook client through
-    /// [`crate::TradingOptions::with_orderbook_client`] because the browser
-    /// runtime does not ship a default HTTP transport; see ADR 0013.
-    /// This is the chosen `wasm32` posture for the ready terminal: the
-    /// requirement remains a documented runtime terminal check rather than a
-    /// third typestate axis, keeping the public builder state readable while
-    /// still failing before any quote or post method can run.
-    /// Attempting to call `build` on a builder that does not own the
-    /// typestate prerequisites is a compile error.
+    /// for quote and post flows lazily through `OrderbookApi::builder()`,
+    /// whose default-transport terminal exists on native and `wasm32` alike
+    /// (see ADR 0013). Attempting to call `build` on a builder that does not
+    /// own the typestate prerequisites is a compile error.
     ///
     /// # Errors
     ///
     /// Returns [`TradingError::InjectedOrderbookContextConflict`] when the
     /// builder's default chain or environment conflicts with an injected
-    /// orderbook client. On `wasm32`, also returns
-    /// [`TradingError::MissingInjectedOrderbookClient`] when no orderbook
-    /// client has been supplied.
+    /// orderbook client.
     ///
     /// `build` is reachable only once both the chain id and application code
     /// have been supplied; the builder typestate makes calling it earlier a
@@ -262,15 +251,6 @@ impl TradingBuilder<ChainIdSet, AppCodeSet> {
             return Err(error.into());
         }
         self.validate_injected_orderbook_binding()?;
-
-        // On wasm32 targets the default orderbook factory cannot run because
-        // ADR 0013 requires an explicit HTTP transport. Fail at the terminal
-        // instead of deferring the missing-client error to the first
-        // orderbook-bound call.
-        #[cfg(target_arch = "wasm32")]
-        if self.options.orderbook_client().is_none() {
-            return Err(TradingError::MissingInjectedOrderbookClient);
-        }
 
         Ok(Trading {
             trader_defaults: self.trader_defaults,

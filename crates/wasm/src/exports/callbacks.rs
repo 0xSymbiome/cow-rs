@@ -91,7 +91,7 @@ export interface OrderBookClientConfig {
   chainId: number;
   env?: string | null;
   apiKey?: string | null;
-  transport: HttpTransportConfig;
+  transport?: HttpTransportConfig;
   transportPolicy?: TransportPolicyConfig | null;
   timeoutMs?: number | null;
 }
@@ -103,7 +103,7 @@ const SUBGRAPH_CONFIG_TYPES: &str = r#"
 export interface SubgraphClientConfig {
   chainId: number;
   apiKey: string;
-  transport: HttpTransportConfig;
+  transport?: HttpTransportConfig;
   transportPolicy?: TransportPolicyConfig | null;
   timeoutMs?: number | null;
 }
@@ -117,7 +117,7 @@ export interface TradingClientConfig {
   env?: string | null;
   appCode: string;
   apiKey?: string | null;
-  transport: HttpTransportConfig;
+  transport?: HttpTransportConfig;
   transportPolicy?: TransportPolicyConfig | null;
   timeoutMs?: number | null;
 }
@@ -128,7 +128,7 @@ export interface TradingClientConfig {
 const IPFS_CONFIG_TYPES: &str = r#"
 export interface IpfsClientConfig {
   ipfsUri?: string | null;
-  transport: HttpTransportConfig;
+  transport?: HttpTransportConfig;
   transportPolicy?: TransportPolicyConfig | null;
   timeoutMs?: number | null;
 }

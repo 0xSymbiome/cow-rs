@@ -50,7 +50,7 @@ export interface CommonClientConfig {
   chainId: number;
   env?: CowEnv | string | null;
   apiKey?: string | null;
-  transport: HttpTransportConfig;
+  transport?: HttpTransportConfig;
   transportPolicy?: TransportPolicyConfig | null;
   timeoutMs?: number | null;
   signal?: AbortSignal;
@@ -58,7 +58,7 @@ export interface CommonClientConfig {
 
 export interface IpfsClientConfig {
   ipfsUri?: string | null;
-  transport: HttpTransportConfig;
+  transport?: HttpTransportConfig;
   transportPolicy?: TransportPolicyConfig | null;
   timeoutMs?: number | null;
   signal?: AbortSignal;
@@ -67,7 +67,7 @@ export interface IpfsClientConfig {
 export interface SubgraphClientConfig {
   chainId: number;
   apiKey: string;
-  transport: HttpTransportConfig;
+  transport?: HttpTransportConfig;
   transportPolicy?: TransportPolicyConfig | null;
   timeoutMs?: number | null;
   signal?: AbortSignal;

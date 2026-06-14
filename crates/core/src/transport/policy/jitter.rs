@@ -1,6 +1,6 @@
 //! Retry jitter strategies.
 
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, UNIX_EPOCH};
 
 const DEFAULT_JITTER_WINDOW_DIVISOR: u32 = 2;
 
@@ -121,7 +121,10 @@ fn bounded_offset(seed: u64, attempt_index: usize, window: Duration) -> Duration
 }
 
 fn jitter_seed() -> u64 {
-    SystemTime::now()
+    // `super::time::system_now` reads the wall clock through the
+    // target-neutral seam, so the time-seeded constructors stay panic-free on
+    // `wasm32-unknown-unknown` where the standard `SystemTime::now` aborts.
+    super::time::system_now()
         .duration_since(UNIX_EPOCH)
         .map_or(0x9E37_79B9_7F4A_7C15, |duration| {
             duration.as_secs().rotate_left(32) ^ u64::from(duration.subsec_nanos())
