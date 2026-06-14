@@ -1,7 +1,7 @@
 # Contract Bindings Parity Audit
 
 Status: Current
-Last reviewed: 2026-06-09
+Last reviewed: 2026-06-14
 Owning surface: `cow-sdk-contracts` `alloy::sol!`-generated bindings for `GPv2Settlement`, `CoWSwapEthFlow`, `CoWSwapOnchainOrders` events, the wrapped-native token, and `IERC20`
 Refresh trigger: A new binding family landing in `cow-sdk-contracts`; a signature change in any existing binding; a change to the upstream commit pin for any binding's source repository under `parity/source-lock.yaml`; a change to the TypeScript-SDK-derived parity fixtures that back the regression suite; a change to the EIP-712 domain-separator fixture shared with the signing crate; a change to the wasm target feature contract for the alloy/k256 dependency path
 Related docs:
@@ -340,16 +340,13 @@ forward Serialize / Deserialize to the inner alloy primitive via
 already matches the cow wire form. The inherent stdlib-style accessor
 is renamed `as_str() -> &str` to `to_hex_string() -> String` so callers
 receive an owned string that honors the canonical lowercase encoding
-contract without depending on internal caching. The new
-`write_into(&self, f: &mut impl core::fmt::Write) -> core::fmt::Result`
-accessor provides a zero-allocation path for the hot tracing and JSON
-emission seams that previously borrowed the cached hex string. The
+contract without depending on internal caching. The
 internal `pub` tuple-struct field carries a rustdoc-documented
 escape-hatch caveat: it is reachable for advanced callers but is
 explicitly not part of the API stability contract, and the safe
 accessors (`as_alloy` / `as_u256`,
 `into_alloy` / `into_u256`, `to_hex_string`,
-`write_into`, `as_slice`) cover every supported workflow.
+`as_slice`) cover every supported workflow.
 
 Equality, hash, and ordering on the strict newtypes collapse onto the
 underlying alloy byte comparison, which is equivalent to the previous
@@ -423,10 +420,9 @@ decimal string for `Amount`) is the wasm-bindgen ABI shape for
 any future binding that exposes a cow identity newtype across the JS
 boundary. The non-wasm targets pick up no extra dependency surface; the
 derive is gated entirely behind `target_family = "wasm"`. The
-`cow_sdk_core::prelude` re-export hub now carries `Address`, `Amount`,
-`AppDataHash`, `Hash32`, `HexData`, and `OrderUid`
-together, so a single `use cow_sdk_core::prelude::*;` brings every
-strict newtype into scope per ADR 0052.
+`cow_sdk_core` exports `Address`, `Amount`, `AppDataHash`, `Hash32`,
+`HexData`, and `OrderUid` directly on their module path, so callers
+import each strict newtype explicitly per ADR 0052.
 
 ### EIP-712 Domain Shape
 

@@ -2,7 +2,7 @@
 
 - Status: Accepted (amended)
 - Date: 2026-05-19
-- Last reviewed: 2026-06-02
+- Last reviewed: 2026-06-14
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: alloy-primitives, alloy-sol-types, eip-712, abi, canonical-types
 - Related: [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md), [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md), [ADR 0014](0014-eip1271-verification-cache.md), [ADR 0022](0022-ecdsa-signature-v-normalization.md), [ADR 0026](0026-alloy-major-release-absorption-plan.md), [ADR 0028](0028-account-abstraction-integration-plan.md), [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), [ADR 0048](0048-composable-conditional-order-framework.md), [ADR 0049](0049-cow-shed-account-abstraction-proxy.md), [ADR 0050](0050-eip1271-signature-blob-encoding.md)
@@ -23,7 +23,7 @@ ships in the working tree (`name: String`, `version: String`,
 preserved as-is; the cow struct's cow-owned `Serialize` impl emits the
 EIP-1193 `eth_signTypedData_v4` wire shape directly (numeric
 `chainId`, required `verifyingContract`, no `salt`) and an
-`into_alloy_domain()` adapter method converts to
+`to_alloy_domain()` adapter method converts to
 `alloy_sol_types::Eip712Domain` at the EIP-712 hashing seam.
 `Address`, `Amount`, and `SignedAmount` carry cow-owned
 `Display`/`Serialize`/`Deserialize` impls; the other four byte-typed
@@ -114,7 +114,8 @@ non-ASCII keys. ASCII-only documents remain byte-identical.
   cow lowercase wire form. Each newtype carries cow-defined inherent
   methods for the canonical accessor surface (`new`, `from_bytes`,
   `to_hex_string`, `as_slice`, `as_alloy`, `into_alloy`, `zero`,
-  `is_zero`, `byte_length`, plus `to_cid` on `AppDataHash`). The owned hex-string accessor is
+  `is_zero`, plus `to_cid` on `AppDataHash` and a dynamic `byte_length`
+  on the variable-length `HexData`). The owned hex-string accessor is
   named `to_hex_string(&self) -> String` (following the Rust stdlib
   convention that `to_*` returns owned and `as_*` returns a borrow);
   the prior cached-struct `as_str(&self) -> &str` shape retires and
@@ -132,23 +133,17 @@ non-ASCII keys. ASCII-only documents remain byte-identical.
   Address`, no `salt`); the cow struct's cow-owned `Serialize` impl
   emits the EIP-1193 `eth_signTypedData_v4` wire shape directly
   (numeric `chainId`, required `verifyingContract`, no `salt`) and
-  the cow struct carries an `into_alloy_domain(&self) ->
+  the cow struct carries an `to_alloy_domain(&self) ->
   alloy_sol_types::Eip712Domain` adapter method for the EIP-712
   hashing seam. The cow identity and numeric newtypes carry cow-owned
   `Tsify` derives (via the `tsify` crate at version `0.5`) for
   wasm-bindgen so the TypeScript declaration shape does not depend
-  on alloy primitives implementing `Tsify`. The `cow_sdk_core::prelude`
-  re-export ships the cow newtypes directly; the prior `AddressExt`,
+  on alloy primitives implementing `Tsify`. `cow_sdk_core` exports the
+  cow newtypes directly on their module path; the prior `AddressExt`,
   `Hash32Ext`, `AppDataHashExt`, `HexDataExt`, `OrderUidExt`,
   `AmountExt`, and `SignedAmountExt` extension traits are retired
   entirely because the cow newtypes carry their accessor surface as
-  inherent methods. The `cargo-semver-checks` lane on
-  `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`,
-  `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-trading`,
-  `cow-sdk-subgraph`, `cow-sdk-browser-wallet`, and
-  `cow-sdk-transport-wasm` reports no breaking changes against the
-  unpublished baseline (the lane runs as drift-detection against
-  `main` until the first published release).
+  inherent methods.
 - Runtime and support: `cow-sdk-core`, `cow-sdk-contracts`,
   `cow-sdk-signing`, `cow-sdk-app-data`, and
   `cow-sdk-composable` may depend directly on `alloy-primitives`,
@@ -185,7 +180,7 @@ non-ASCII keys. ASCII-only documents remain byte-identical.
   `serde_jcs` among the dependency-coverage rows.
 - Cost: every cow newtype carries a cow-owned inherent-method
   accessor surface (`new`, `from_bytes`, `to_hex_string`, `as_slice`,
-  `as_alloy`, `into_alloy`, `zero`, `is_zero`, `byte_length`, plus
+  `as_alloy`, `into_alloy`, `zero`, `is_zero`, plus
   `to_cid` on `AppDataHash`).
   `Address`, `Amount`, and `SignedAmount` additionally carry a
   cow-owned trait surface (`Display`, `Serialize`, `Deserialize`);
@@ -213,7 +208,7 @@ non-ASCII keys. ASCII-only documents remain byte-identical.
   helpers across `crates/alloy-provider/src/conversion.rs` and
   `crates/alloy/src/conversion.rs`. The cow→alloy `TypedDataDomain`
   adapter at `crates/alloy-signer/src/conversion.rs` simplifies from
-  207 lines to a focused `into_alloy_domain()` helper (~30 lines)
+  207 lines to a focused `to_alloy_domain()` helper (~30 lines)
   rather than deleting entirely — the cow `TypedDataDomain` stays the
   canonical in-memory shape and owns its `Serialize` impl, but the
   EIP-712 hashing seam still needs a cow→alloy struct adapter and

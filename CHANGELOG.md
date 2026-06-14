@@ -34,8 +34,7 @@ sections below describe the public contract a `0.1.0` consumer receives.
   the rest — matching the no-prelude convention of `alloy`, `reqwest`, and
   `tower`. The crate root retains only the cross-cutting aggregate error
   (`CowError`, `ErrorClass`) and the typed transport, registry, and EIP-1271
-  cache leaf surfaces. The workspace's only prelude is the opt-in
-  `cow_sdk::core::prelude` of cow primitive newtypes.
+  cache leaf surfaces. No crate in the workspace ships a prelude.
 - The published crate family: `cow-sdk` (facade), `cow-sdk-core` (shared domain
   types, runtime traits, and the `HttpTransport` seam), `cow-sdk-contracts`,
   `cow-sdk-signing`, `cow-sdk-app-data` (deterministic protocol helpers,
@@ -187,9 +186,9 @@ sections below describe the public contract a `0.1.0` consumer receives.
   evaluation, so a const guard rejects a mixed-case literal at compile time
   rather than accepting an unverified checksum, and `Address::ZERO` is the
   spelling for the zero address. Both rules are pinned by trybuild cases.
-  `cow_sdk::core::prelude` re-exports `address!` beside `Address`, matching
-  std's `vec!`-beside-`Vec` precedent, so importing the prelude is enough to
-  write compile-time validated address constants.
+  `address!` is exported beside `Address` from `cow_sdk_core` (and `cow_sdk::core`),
+  matching std's `vec!`-beside-`Vec` precedent for compile-time validated address
+  constants.
 - `cow_sdk_core::NATIVE_CURRENCY_ADDRESS` is a typed `Address` constant
   carrying the EIP-7528 native-asset sentinel
   (`0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee`), so call sites compare and
