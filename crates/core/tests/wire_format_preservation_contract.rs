@@ -40,7 +40,7 @@ fn address_wire_form_is_lowercase_0x_prefixed_42_chars() {
 fn address_zero_round_trips_with_canonical_zero_bytes() {
     let zero = Address::new(ADDRESS_ZERO_HEX).expect("zero address must parse");
     assert_eq!(zero.to_hex_string(), ADDRESS_ZERO_HEX);
-    assert_eq!(zero.byte_length(), 20);
+    assert_eq!(zero.as_slice().len(), 20);
 
     let json = serde_json::to_string(&zero).expect("zero Address must serialize");
     assert_eq!(json, format!("\"{ADDRESS_ZERO_HEX}\""));
@@ -75,7 +75,7 @@ fn hash32_wire_form_is_lowercase_0x_prefixed_66_chars() {
 fn hash32_zero_round_trips_with_canonical_zero_bytes() {
     let zero = Hash32::new(HASH32_ZERO_HEX).expect("zero Hash32 must parse");
     assert_eq!(zero.to_hex_string(), HASH32_ZERO_HEX);
-    assert_eq!(zero.byte_length(), 32);
+    assert_eq!(zero.as_slice().len(), 32);
 
     let json = serde_json::to_string(&zero).expect("zero Hash32 must serialize");
     assert_eq!(json, format!("\"{HASH32_ZERO_HEX}\""));
@@ -133,7 +133,6 @@ const AMOUNT_DECIMAL: &str = "1234567890";
 fn amount_wire_form_is_canonical_decimal_string() {
     let amount = Amount::new(AMOUNT_DECIMAL).expect("canonical Amount must parse");
     assert_eq!(amount.to_string(), AMOUNT_DECIMAL);
-    assert_eq!(amount.to_decimal_string(), AMOUNT_DECIMAL);
 
     let json = serde_json::to_string(&amount).expect("Amount must serialize");
     assert_eq!(json, format!("\"{AMOUNT_DECIMAL}\""));
@@ -292,48 +291,4 @@ fn order_uid_rejects_malformed_inputs() {
     assert!(OrderUid::new("not-hex").is_err());
     assert!(OrderUid::new("0x1234").is_err());
     assert!(serde_json::from_str::<OrderUid>(r#""0x""#).is_err());
-}
-
-// ---- R8 byte-parity property contract ---------------------------------
-
-/// Asserts that the `write_into` zero-allocation accessor produces a
-/// byte-identical string to the `to_hex_string` owned accessor across the
-/// four byte-typed cow newtypes per AMENDMENTS §9.7.
-#[test]
-fn write_into_matches_to_hex_string_byte_identically() {
-    let address = Address::new(ADDRESS_HEX).unwrap();
-    let hash = Hash32::new(HASH32_HEX).unwrap();
-    let uid = OrderUid::new(ORDER_UID_HEX).unwrap();
-    let hex_data = HexData::new(HEX_DATA_FOUR_BYTES).unwrap();
-
-    let mut buffer = String::new();
-
-    address
-        .write_into(&mut buffer)
-        .expect("Address write_into must succeed");
-    assert_eq!(buffer, address.to_hex_string());
-
-    buffer.clear();
-    hash.write_into(&mut buffer)
-        .expect("Hash32 write_into must succeed");
-    assert_eq!(buffer, hash.to_hex_string());
-
-    buffer.clear();
-    uid.write_into(&mut buffer)
-        .expect("OrderUid write_into must succeed");
-    assert_eq!(buffer, uid.to_hex_string());
-
-    buffer.clear();
-    hex_data
-        .write_into(&mut buffer)
-        .expect("HexData write_into must succeed");
-    assert_eq!(buffer, hex_data.to_hex_string());
-
-    // Test zero values
-    buffer.clear();
-    let zero_addr = Address::ZERO;
-    zero_addr
-        .write_into(&mut buffer)
-        .expect("zero Address write_into must succeed");
-    assert_eq!(buffer, zero_addr.to_hex_string());
 }

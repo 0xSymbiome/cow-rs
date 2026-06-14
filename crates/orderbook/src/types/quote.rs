@@ -1080,7 +1080,7 @@ impl OrderQuoteResponse {
                 let requested = *sell_amount.amount();
                 let returned = match sell_amount {
                     SellAmount::BeforeFee { .. } => {
-                        quote.sell_amount.checked_add(quote.network_cost_amount())
+                        quote.sell_amount.checked_add(*quote.network_cost_amount())
                     }
                     SellAmount::AfterFee { .. } => Some(quote.sell_amount),
                 };

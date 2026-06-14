@@ -53,7 +53,7 @@ fuzz_target!(|input: Input| {
                 left_hex, right_hex,
                 "recover_ecdsa_address must be deterministic for identical input",
             );
-            assert_eq!(left.byte_length(), 20, "recovered address must be 20 bytes");
+            assert_eq!(left.as_slice().len(), 20, "recovered address must be 20 bytes");
             assert!(
                 left_hex.starts_with("0x"),
                 "recovered address must be 0x-prefixed",

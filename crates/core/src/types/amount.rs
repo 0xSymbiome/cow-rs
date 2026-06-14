@@ -63,22 +63,23 @@ use crate::errors::{CoreError, ValidationError};
 /// - `wrapping_*` / `overflowing_*`: same rationale; the wrapping and
 ///   `(value, overflow)` tuple forms belong at the low-level
 ///   primitive seam, not on the typed financial surface.
-/// - Bit-counting helpers (`count_ones`, `count_zeros`,
-///   `leading_zeros`, `trailing_zeros`, `is_power_of_two`,
-///   `next_power_of_two`): no demand from the `CoW` Protocol
-///   surfaces this type was built for. The exposed
-///   [`Amount::bit_len`] covers the "how big is this number"
-///   question.
+/// - Exponentiation (`pow`, `checked_pow`, `saturating_pow`): raising
+///   a token amount to a power has no money meaning, so no
+///   exponentiation form is exposed.
+/// - Bit-inspection helpers (`bit_len`, `bits`, `count_ones`,
+///   `count_zeros`, `leading_zeros`, `trailing_zeros`,
+///   `is_power_of_two`, `next_power_of_two`): counting or measuring
+///   the bits of a token amount has no money meaning either, so none
+///   are exposed. A caller that genuinely needs them reaches through
+///   [`Amount::as_u256`].
 ///
 /// The shipped surface is: [`Amount::ZERO`], [`Amount::MAX`],
 /// [`Amount::new`], [`Amount::checked_add`] / [`Amount::checked_sub`]
-/// / [`Amount::checked_mul`] / [`Amount::checked_pow`],
-/// [`Amount::saturating_add`] / [`Amount::saturating_sub`] /
-/// [`Amount::saturating_mul`] / [`Amount::saturating_pow`], and
-/// [`Amount::bit_len`]. Combined with [`Amount::as_u256`] /
-/// [`Amount::into_u256`] for the explicit alloy seam, this covers
-/// every operation cow's own crates need to perform on a typed
-/// amount.
+/// / [`Amount::checked_mul`], [`Amount::saturating_add`] /
+/// [`Amount::saturating_sub`] / [`Amount::saturating_mul`], and
+/// [`Amount::as_u256`] / [`Amount::into_u256`] for the explicit alloy
+/// seam. This covers every operation cow's own crates need to perform
+/// on a typed amount.
 ///
 /// There is no `From<String>` or `From<&str>` conversion: construct through
 /// [`Amount::new`] or [`Amount::parse_units`] so malformed input fails closed
@@ -107,10 +108,7 @@ impl Amount {
     /// hexadecimal (`0x[0-9a-fA-F]+`); both uppercase (`0X`) and
     /// lowercase prefixes are honoured. Octal (`0o`) and binary (`0b`)
     /// prefixes are rejected so the cow constructor does not silently
-    /// widen beyond the historical working-tree contract observed at
-    /// `crates/core/src/types/amount.rs::parse_u256_quantity` lines
-    /// 510-528 and asserted by the committed contract test at
-    /// `crates/orderbook/tests/types_contract.rs:349`. Leading zeroes
+    /// widen the accepted radix set. Leading zeroes
     /// are accepted and canonicalised on the [`fmt::Display`] /
     /// [`Serialize`] return path. Negative values are rejected because
     /// [`Amount`] is unsigned.
@@ -200,24 +198,6 @@ impl Amount {
         self.0
     }
 
-    /// Returns the canonical base-10 decimal string form of this amount
-    /// as an owned [`String`].
-    ///
-    /// Follows the Rust stdlib naming convention: `to_*` returns an
-    /// owned value. The returned string matches the byte sequence the
-    /// cow newtype emits through its [`fmt::Display`] and
-    /// [`Serialize`] impls, so callers that need the wire form without
-    /// routing through `serde_json` can use this accessor directly.
-    /// The `decimal` qualifier in the method name distinguishes it
-    /// from the byte-typed `to_hex_string` accessor on
-    /// [`AppDataHash`](crate::AppDataHash) and the other identity
-    /// newtypes.
-    #[inline]
-    #[must_use]
-    pub fn to_decimal_string(&self) -> String {
-        self.0.to_string()
-    }
-
     /// Returns `true` when this amount equals the zero quantity.
     #[inline]
     #[must_use]
@@ -228,69 +208,43 @@ impl Amount {
     /// Returns the checked sum of two amounts; `None` on `uint256` overflow.
     #[inline]
     #[must_use]
-    pub fn checked_add(&self, other: &Self) -> Option<Self> {
+    pub fn checked_add(self, other: Self) -> Option<Self> {
         self.0.checked_add(other.0).map(Self)
     }
 
     /// Returns the checked difference of two amounts; `None` on underflow.
     #[inline]
     #[must_use]
-    pub fn checked_sub(&self, other: &Self) -> Option<Self> {
+    pub fn checked_sub(self, other: Self) -> Option<Self> {
         self.0.checked_sub(other.0).map(Self)
     }
 
     /// Returns the checked product of two amounts; `None` on `uint256` overflow.
     #[inline]
     #[must_use]
-    pub fn checked_mul(&self, other: &Self) -> Option<Self> {
+    pub fn checked_mul(self, other: Self) -> Option<Self> {
         self.0.checked_mul(other.0).map(Self)
     }
 
     /// Returns the saturating sum of two amounts (clamps at `U256::MAX`).
     #[inline]
     #[must_use]
-    pub const fn saturating_add(&self, other: &Self) -> Self {
+    pub const fn saturating_add(self, other: Self) -> Self {
         Self(self.0.saturating_add(other.0))
     }
 
     /// Returns the saturating difference of two amounts (clamps at zero).
     #[inline]
     #[must_use]
-    pub const fn saturating_sub(&self, other: &Self) -> Self {
+    pub const fn saturating_sub(self, other: Self) -> Self {
         Self(self.0.saturating_sub(other.0))
     }
 
     /// Returns the saturating product of two amounts (clamps at `U256::MAX`).
     #[inline]
     #[must_use]
-    pub fn saturating_mul(&self, other: &Self) -> Self {
+    pub fn saturating_mul(self, other: Self) -> Self {
         Self(self.0.saturating_mul(other.0))
-    }
-
-    /// Raises `self` to the power `exp`, returning `None` on overflow.
-    #[inline]
-    #[must_use]
-    pub fn checked_pow(&self, exp: &Self) -> Option<Self> {
-        self.0.checked_pow(exp.0).map(Self)
-    }
-
-    /// Raises `self` to the power `exp`, saturating to [`Amount::MAX`] on overflow.
-    #[inline]
-    #[must_use]
-    pub fn saturating_pow(&self, exp: &Self) -> Self {
-        Self(self.0.saturating_pow(exp.0))
-    }
-
-    /// Returns the number of significant bits needed to represent `self`.
-    ///
-    /// Equivalent to `ceil(log2(self + 1))` for non-zero values; returns 0
-    /// for [`Amount::ZERO`]. Always ≤ 256 for the 256-bit storage, so the
-    /// widening from the inner `usize` to `u64` is lossless on every
-    /// supported target.
-    #[inline]
-    #[must_use]
-    pub const fn bit_len(&self) -> u64 {
-        self.0.bit_len() as u64
     }
 
     /// Parses an exact token amount from a human-readable decimal string and

@@ -260,13 +260,13 @@ proptest! {
         let product = &left_big * &right_big;
 
         prop_assert_eq!(
-            left.checked_mul(&right).is_some(),
+            left.checked_mul(right).is_some(),
             product.bits() <= 256,
         );
 
         let max = Amount::from_u256(U256::MAX);
         let two = Amount::from(2u32);
-        prop_assert!(max.checked_mul(&two).is_none());
+        prop_assert!(max.checked_mul(two).is_none());
     }
 
     /// [`Hash32::new`] preserves the supplied input string exactly
@@ -581,62 +581,5 @@ proptest! {
             ..=u64::from(VALID_TO_MAX_RELATIVE_SECONDS))
             .contains(&duration_seconds);
         prop_assert_eq!(result.is_ok(), in_range);
-    }
-}
-
-// Property coverage for the narrowed `pow` / `bit_len` / `bits`
-// surface. Each property pins the cow wrapper against the underlying
-// alloy / ruint primitive across a randomised input range, so a
-// future refactor that diverges from the documented delegation
-// contract will surface immediately with a shrunken counter-example.
-proptest! {
-    #![proptest_config(ProptestConfig {
-        failure_persistence: Some(Box::new(FileFailurePersistence::Direct(REGRESSION_FILE))),
-        ..ProptestConfig::default()
-    })]
-
-    /// `Amount::checked_pow` must equal `U256::checked_pow` (the
-    /// genuine overflow-detecting variant) for every random
-    /// `(base, exp)` pair. If a future contributor rewires the cow
-    /// body to call `U256::pow` instead, this property catches the
-    /// silent-wrap divergence: `U256::pow` is `wrapping_pow` and
-    /// would return `Some(wrapped)` where the contract expects
-    /// `None` on overflow.
-    #[test]
-    fn amount_checked_pow_delegates_to_inner_uint_checked_pow(
-        base in any::<u128>().prop_map(U256::from).prop_map(Amount::from),
-        exp in 0u32..=32u32,
-    ) {
-        let exp_amount = Amount::new(exp.to_string()).unwrap();
-        let cow_result = base.checked_pow(&exp_amount);
-        let raw_result = base.into_u256().checked_pow(U256::from(exp)).map(Amount::from);
-        prop_assert_eq!(cow_result, raw_result);
-    }
-
-    /// `Amount::saturating_pow` must equal `U256::saturating_pow`
-    /// for every random `(base, exp)` pair.
-    #[test]
-    fn amount_saturating_pow_delegates_to_inner_uint_saturating_pow(
-        base in any::<u128>().prop_map(U256::from).prop_map(Amount::from),
-        exp in 0u32..=32u32,
-    ) {
-        let exp_amount = Amount::new(exp.to_string()).unwrap();
-        let cow_result = base.saturating_pow(&exp_amount);
-        let raw_result = Amount::from(base.into_u256().saturating_pow(U256::from(exp)));
-        prop_assert_eq!(cow_result, raw_result);
-    }
-
-    /// `Amount::bit_len` widens the inner `usize` to `u64`
-    /// losslessly. The inner `Uint::bit_len` is always `<= 256` for a
-    /// 256-bit storage, so the `as u64` conversion is correct on
-    /// every supported target.
-    #[test]
-    fn amount_bit_len_widens_inner_uint_bit_len_losslessly(
-        value in any::<u128>().prop_map(U256::from).prop_map(Amount::from),
-    ) {
-        let cow_bits = value.bit_len();
-        let raw_bits = value.into_u256().bit_len() as u64;
-        prop_assert_eq!(cow_bits, raw_bits);
-        prop_assert!(cow_bits <= 256);
     }
 }

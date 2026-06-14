@@ -129,7 +129,7 @@ fn protocol_constants_surface_byte_equivalent_addresses_across_every_accessor() 
     for chain in SupportedChainId::ALL {
         let wrapped = wrapped_native_token(chain);
         assert_eq!(
-            wrapped.address.byte_length(),
+            wrapped.address.as_slice().len(),
             20,
             "every wrapped-native address must decode into 20 bytes for chain {chain:?}"
         );

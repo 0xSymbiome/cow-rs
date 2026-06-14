@@ -1,9 +1,8 @@
 use alloy_primitives::U256;
 use cow_sdk_core::{
     Address, Amount, Amounts, AppDataHash, BuyTokenDestination, Costs, FeeComponent, Hash32,
-    HexData, NetworkFee, ORDER_TYPE_FIELD_NAMES, OrderData, OrderKind, OrderUid,
-    QUOTE_AMOUNT_STAGE_NAMES, QuoteAmountsAndCosts, SellTokenSource, VALID_TO_MAX_RELATIVE_SECONDS,
-    VALID_TO_MIN_RELATIVE_SECONDS, ValidTo, ValidationError,
+    HexData, NetworkFee, OrderData, OrderKind, OrderUid, QuoteAmountsAndCosts, SellTokenSource,
+    VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS, ValidTo, ValidationError,
 };
 
 #[test]
@@ -20,11 +19,6 @@ fn shared_type_contract_matches_core_fixture() {
         "Address PartialEq is case-insensitive across checksum casing"
     );
     assert_eq!(
-        checksummed.byte_length(),
-        20,
-        "byte_length must match the fixed EVM address width"
-    );
-    assert_eq!(
         checksummed.to_hex_string().len(),
         42,
         "to_hex_string emits the canonical lowercase 0x-prefixed 42-character form"
@@ -38,35 +32,9 @@ fn shared_type_contract_matches_core_fixture() {
 
 #[test]
 fn canonical_order_and_quote_shapes_are_pinned() {
-    // Canonical order field names and quote amount stages (formerly pinned in
-    // the retired core fixture).
-    let expected_fields = [
-        "sellToken",
-        "buyToken",
-        "receiver",
-        "sellAmount",
-        "buyAmount",
-        "validTo",
-        "appData",
-        "feeAmount",
-        "kind",
-        "partiallyFillable",
-        "sellTokenBalance",
-        "buyTokenBalance",
-    ];
-    let expected_stages = [
-        "beforeAllFees",
-        "beforeNetworkCosts",
-        "afterProtocolFees",
-        "afterNetworkCosts",
-        "afterPartnerFees",
-        "afterSlippage",
-        "amountsToSign",
-    ];
-
-    assert_eq!(ORDER_TYPE_FIELD_NAMES.to_vec(), expected_fields);
-    assert_eq!(QUOTE_AMOUNT_STAGE_NAMES.to_vec(), expected_stages);
-
+    // The canonical order field names and quote amount stages are pinned by
+    // the serialized wire shape below rather than by re-asserting a constant
+    // against a hand-typed copy of itself.
     let order = OrderData::new(
         Address::new("0x1111111111111111111111111111111111111111").unwrap(),
         Address::new("0x2222222222222222222222222222222222222222").unwrap(),
@@ -186,22 +154,22 @@ fn amount_checked_arithmetic_preserves_option_shape() {
     let factor = Amount::from(3u32);
 
     assert_eq!(
-        small.checked_add(&large),
+        small.checked_add(large),
         Some(Amount::from(18u32)),
         "checked_add must return Some for in-range U256 inputs"
     );
     assert_eq!(
-        small.checked_sub(&large),
+        small.checked_sub(large),
         None,
         "checked_sub must expose underflow through the Option boundary",
     );
     assert_eq!(
-        small.saturating_sub(&large),
+        small.saturating_sub(large),
         Amount::ZERO,
         "saturating_sub must clamp underflow to zero instead of wrapping",
     );
     assert_eq!(
-        large.checked_mul(&factor),
+        large.checked_mul(factor),
         Some(Amount::from(33u32)),
         "checked_mul must return Some for in-range U256 inputs"
     );
@@ -368,74 +336,6 @@ fn cow_primitive_newtype_zero_constants_equal_alloy_zero() {
 fn amount_max_constant_equals_alloy_u256_max() {
     assert_eq!(Amount::MAX.into_u256(), U256::MAX);
     assert!(Amount::MAX > Amount::ZERO);
-}
-
-#[test]
-fn amount_checked_pow_matches_for_small_inputs() {
-    let two = Amount::new("2").unwrap();
-    let three = Amount::new("3").unwrap();
-    let four = Amount::new("4").unwrap();
-    let five = Amount::new("5").unwrap();
-
-    assert_eq!(
-        two.checked_pow(&Amount::ZERO),
-        Some(Amount::new("1").unwrap())
-    );
-    assert_eq!(
-        Amount::ZERO.checked_pow(&Amount::ZERO),
-        Some(Amount::new("1").unwrap())
-    );
-    assert_eq!(two.checked_pow(&four), Some(Amount::new("16").unwrap()));
-    assert_eq!(three.checked_pow(&five), Some(Amount::new("243").unwrap()));
-}
-
-#[test]
-fn amount_checked_pow_returns_none_on_overflow() {
-    // `Amount::checked_pow` delegates to `U256::checked_pow`, the
-    // genuine overflow-detecting variant, so it returns `None` rather
-    // than the silently-wrapped value the inner `ruint::Uint::pow`
-    // (= `wrapping_pow`) would produce.
-    assert_eq!(Amount::MAX.checked_pow(&Amount::new("2").unwrap()), None,);
-    // Mid-range overflow too: 2^256 itself overflows U256.
-    let two_hundred_fifty_seven = Amount::new("257").unwrap();
-    assert_eq!(
-        Amount::new("2")
-            .unwrap()
-            .checked_pow(&two_hundred_fifty_seven),
-        None,
-    );
-}
-
-#[test]
-fn amount_saturating_pow_saturates_to_max_on_overflow() {
-    assert_eq!(
-        Amount::MAX.saturating_pow(&Amount::new("2").unwrap()),
-        Amount::MAX,
-    );
-    assert_eq!(
-        Amount::new("2")
-            .unwrap()
-            .saturating_pow(&Amount::new("257").unwrap()),
-        Amount::MAX,
-    );
-    // Non-overflowing case stays exact.
-    assert_eq!(
-        Amount::new("2")
-            .unwrap()
-            .saturating_pow(&Amount::new("10").unwrap()),
-        Amount::new("1024").unwrap(),
-    );
-}
-
-#[test]
-fn amount_bit_len_returns_significant_bit_count_across_boundaries() {
-    assert_eq!(Amount::ZERO.bit_len(), 0);
-    assert_eq!(Amount::new("1").unwrap().bit_len(), 1);
-    assert_eq!(Amount::new("2").unwrap().bit_len(), 2);
-    assert_eq!(Amount::new("3").unwrap().bit_len(), 2);
-    assert_eq!(Amount::new("4").unwrap().bit_len(), 3);
-    // U256::MAX has all 256 bits set.
-    assert_eq!(Amount::MAX.bit_len(), 256);
 }
 
 #[test]

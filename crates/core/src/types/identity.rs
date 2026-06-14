@@ -1,5 +1,5 @@
 use std::borrow::Cow;
-use std::fmt::{self, Write as FmtWrite};
+use std::fmt;
 use std::str::FromStr;
 
 use alloy_primitives::hex::FromHexError;
@@ -103,30 +103,11 @@ impl Address {
     /// [`String`].
     ///
     /// Follows the Rust stdlib naming convention: `to_*` returns an owned
-    /// value; `as_*` returns a borrow. For the allocation-free path that
-    /// writes the canonical form into a caller-provided formatter without
-    /// intermediate allocation, see [`Address::write_into`].
+    /// value; `as_*` returns a borrow.
     #[inline]
     #[must_use]
     pub fn to_hex_string(&self) -> String {
         format!("{:#x}", self.0)
-    }
-
-    /// Writes the canonical lowercase 0x-prefixed hex form into the given
-    /// formatter without allocating.
-    ///
-    /// Equivalent to `write!(f, "{}", self)` via the cow newtype's
-    /// [`fmt::Display`] impl, but named explicitly so hot-path callers
-    /// (URL templating with reusable buffers, tracing field encoders,
-    /// batch log formatters) can target the allocation-free path.
-    ///
-    /// # Errors
-    ///
-    /// Returns the same [`fmt::Error`] the caller's formatter raises; the
-    /// cow body itself is infallible.
-    #[inline]
-    pub fn write_into(&self, f: &mut impl FmtWrite) -> fmt::Result {
-        write!(f, "{:#x}", self.0)
     }
 
     /// Returns the raw 20 bytes of the address as a borrowed slice.
@@ -159,13 +140,6 @@ impl Address {
     #[must_use]
     pub fn is_zero(&self) -> bool {
         self.0 == AlloyAddress::ZERO
-    }
-
-    /// Returns the fixed decoded byte length of an EVM address.
-    #[inline]
-    #[must_use]
-    pub const fn byte_length(&self) -> usize {
-        Self::BYTE_LENGTH
     }
 }
 
@@ -352,25 +326,11 @@ impl HexData {
     /// [`String`].
     ///
     /// Follows the Rust stdlib naming convention: `to_*` returns an owned
-    /// value; `as_*` returns a borrow. For the allocation-free path that
-    /// writes the canonical form into a caller-provided formatter without
-    /// intermediate allocation, see [`HexData::write_into`].
+    /// value; `as_*` returns a borrow.
     #[inline]
     #[must_use]
     pub fn to_hex_string(&self) -> String {
         format!("{:#x}", self.0)
-    }
-
-    /// Writes the canonical lowercase 0x-prefixed hex form into the given
-    /// formatter without allocating.
-    ///
-    /// # Errors
-    ///
-    /// Returns the same [`fmt::Error`] the caller's formatter raises; the
-    /// cow body itself is infallible.
-    #[inline]
-    pub fn write_into(&self, f: &mut impl FmtWrite) -> fmt::Result {
-        write!(f, "{:#x}", self.0)
     }
 
     /// Returns the raw bytes of the payload as a borrowed slice.
@@ -554,25 +514,11 @@ impl AppDataHash {
     /// [`String`].
     ///
     /// Follows the Rust stdlib naming convention: `to_*` returns an owned
-    /// value; `as_*` returns a borrow. For the allocation-free path that
-    /// writes the canonical form into a caller-provided formatter without
-    /// intermediate allocation, see [`AppDataHash::write_into`].
+    /// value; `as_*` returns a borrow.
     #[inline]
     #[must_use]
     pub fn to_hex_string(&self) -> String {
         format!("{:#x}", self.0)
-    }
-
-    /// Writes the canonical lowercase 0x-prefixed hex form into the given
-    /// formatter without allocating.
-    ///
-    /// # Errors
-    ///
-    /// Returns the same [`fmt::Error`] the caller's formatter raises; the
-    /// cow body itself is infallible.
-    #[inline]
-    pub fn write_into(&self, f: &mut impl FmtWrite) -> fmt::Result {
-        write!(f, "{:#x}", self.0)
     }
 
     /// Returns the raw 32 bytes of the hash as a borrowed slice.
@@ -605,13 +551,6 @@ impl AppDataHash {
     #[must_use]
     pub fn is_zero(&self) -> bool {
         self.0 == B256::ZERO
-    }
-
-    /// Returns the fixed decoded byte length of an app-data hash.
-    #[inline]
-    #[must_use]
-    pub const fn byte_length(&self) -> usize {
-        Self::BYTE_LENGTH
     }
 }
 
@@ -739,18 +678,6 @@ impl Hash32 {
         format!("{:#x}", self.0)
     }
 
-    /// Writes the canonical lowercase 0x-prefixed hex form into the given
-    /// formatter without allocating.
-    ///
-    /// # Errors
-    ///
-    /// Returns the same [`fmt::Error`] the caller's formatter raises; the
-    /// cow body itself is infallible.
-    #[inline]
-    pub fn write_into(&self, f: &mut impl FmtWrite) -> fmt::Result {
-        write!(f, "{:#x}", self.0)
-    }
-
     /// Returns the raw 32 bytes of the hash as a borrowed slice.
     #[inline]
     #[must_use]
@@ -777,13 +704,6 @@ impl Hash32 {
     #[must_use]
     pub fn is_zero(&self) -> bool {
         self.0 == B256::ZERO
-    }
-
-    /// Returns the fixed decoded byte length of a 32-byte hash.
-    #[inline]
-    #[must_use]
-    pub const fn byte_length(&self) -> usize {
-        Self::BYTE_LENGTH
     }
 }
 
@@ -908,18 +828,6 @@ impl OrderUid {
         format!("{:#x}", self.0)
     }
 
-    /// Writes the canonical lowercase 0x-prefixed hex form into the given
-    /// formatter without allocating.
-    ///
-    /// # Errors
-    ///
-    /// Returns the same [`fmt::Error`] the caller's formatter raises; the
-    /// cow body itself is infallible.
-    #[inline]
-    pub fn write_into(&self, f: &mut impl FmtWrite) -> fmt::Result {
-        write!(f, "{:#x}", self.0)
-    }
-
     /// Returns the raw 56 bytes of the UID as a borrowed slice.
     #[inline]
     #[must_use]
@@ -946,13 +854,6 @@ impl OrderUid {
     #[must_use]
     pub fn is_zero(&self) -> bool {
         self.0 == FixedBytes::<56>::ZERO
-    }
-
-    /// Returns the fixed decoded byte length of an order UID.
-    #[inline]
-    #[must_use]
-    pub const fn byte_length(&self) -> usize {
-        Self::BYTE_LENGTH
     }
 }
 

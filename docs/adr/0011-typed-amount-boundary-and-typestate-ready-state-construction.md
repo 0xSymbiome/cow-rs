@@ -246,10 +246,13 @@ post-amendment invariant.
 `Amount` and `SignedAmount` expose no bare arithmetic operators. The
 `Add` / `Sub` / `Mul` (and `*Assign`) impls and the `pow` method are
 removed from both newtypes. The supported arithmetic surface is
-`checked_add` / `checked_sub` / `checked_mul` / `checked_pow` (each
-returning `Option`), the explicit `saturating_*` clamps, and — on
-`SignedAmount` — `checked_neg` / `checked_abs` / `checked_unsigned_abs`.
-A caller that needs raw wrapping reaches through `as_u256` /
+`checked_add` / `checked_sub` / `checked_mul` (each returning `Option`),
+the explicit `saturating_*` clamps, and — on `SignedAmount` —
+`checked_neg` / `checked_abs` / `checked_unsigned_abs`. Exponentiation
+and bit-inspection are intentionally absent: raising a token amount to a
+power or counting its bits has no money meaning, so `Amount` ships no
+`pow` or `bit_len`/`bits` in any form. A caller that needs raw wrapping
+reaches through `as_u256` /
 `into_u256` (respectively `as_i256` / `into_i256`), keeping the wrapping
 intent visible at the type boundary.
 
