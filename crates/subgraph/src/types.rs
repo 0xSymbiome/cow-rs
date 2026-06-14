@@ -59,13 +59,6 @@ impl SubgraphQueryRequest {
         self
     }
 
-    /// Returns a copy of this request with optional variables.
-    #[must_use]
-    pub fn with_optional_variables(mut self, variables: Option<Value>) -> Self {
-        self.variables = variables;
-        self
-    }
-
     /// Returns a copy of this request with an explicit operation name.
     #[must_use]
     pub fn with_operation_name(mut self, operation_name: impl Into<String>) -> Self {

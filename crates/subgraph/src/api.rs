@@ -27,8 +27,6 @@ use crate::{
 const SUBGRAPH_BASE_URL: &str = "https://gateway.thegraph.com/api/";
 const REDACTED_API_KEY_SEGMENT: &str = "<redacted>";
 
-/// Human-readable name for the `CoW` Protocol subgraph service.
-pub const API_NAME: &str = "CoW Protocol Subgraph";
 /// Redacting base-URL overrides keyed by chain id.
 ///
 /// A `Some(url)` entry enables that chain and routes requests to `url`. A
@@ -51,17 +49,6 @@ pub struct SubgraphConfig {
     /// its stable public metadata.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub base_urls: Option<SubgraphApiBaseUrls>,
-}
-
-impl SubgraphConfig {
-    /// Creates a static subgraph client configuration.
-    #[must_use]
-    pub const fn new(chain_id: SupportedChainId, base_urls: Option<SubgraphApiBaseUrls>) -> Self {
-        Self {
-            chain_id,
-            base_urls,
-        }
-    }
 }
 
 impl Default for SubgraphConfig {
@@ -89,18 +76,6 @@ pub struct SubgraphConfigOverride {
 }
 
 impl SubgraphConfigOverride {
-    /// Creates subgraph configuration overrides.
-    #[must_use]
-    pub const fn new(
-        chain_id: Option<SupportedChainId>,
-        base_urls: Option<SubgraphApiBaseUrls>,
-    ) -> Self {
-        Self {
-            chain_id,
-            base_urls,
-        }
-    }
-
     /// Creates an override that switches the queried chain.
     #[must_use]
     pub const fn for_chain(chain_id: SupportedChainId) -> Self {
@@ -207,7 +182,7 @@ impl SubgraphApi {
     /// Returns the human-readable API name for this client.
     #[must_use]
     pub const fn api_name(&self) -> &'static str {
-        API_NAME
+        "CoW Protocol Subgraph"
     }
 
     /// Returns the static configuration stored in this client.

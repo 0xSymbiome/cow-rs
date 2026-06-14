@@ -49,6 +49,17 @@ fn subgraph_builder_accepts_explicit_allow_and_loopback_policy() {
         .build();
     assert!(allow.is_ok());
 
+    let allow_any = SubgraphApi::builder()
+        .chain(SupportedChainId::Mainnet)
+        .api_key("partner-key")
+        .external_host_policy(ExternalHostPolicy::AllowAny)
+        .base_urls(base_urls("https://any-host.example/subgraphs"))
+        .build();
+    assert!(
+        allow_any.is_ok(),
+        "AllowAny must accept an arbitrary external host"
+    );
+
     for url in [
         "http://127.0.0.1:39111/subgraphs",
         "http://localhost:39111/subgraphs",

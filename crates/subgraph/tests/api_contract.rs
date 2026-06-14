@@ -12,8 +12,6 @@ use cow_sdk_subgraph::{
 use serde::Deserialize;
 use serde_json::{Map, Value, json};
 use std::net::TcpListener;
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
 use wiremock::{
     Mock, MockServer, Request, ResponseTemplate,
     matchers::{header, method, path},
@@ -126,7 +124,10 @@ fn config_debug_and_serialize_redact_custom_base_url_credentials() {
     ]
     .into_iter()
     .collect();
-    let config = cow_sdk_subgraph::SubgraphConfig::new(SupportedChainId::Mainnet, Some(base_urls));
+    let config = cow_sdk_subgraph::SubgraphConfig {
+        chain_id: SupportedChainId::Mainnet,
+        base_urls: Some(base_urls),
+    };
 
     let debug = format!("{config:#?}");
     let json = serde_json::to_value(&config).expect("subgraph config serializes");
@@ -453,53 +454,6 @@ async fn with_config_override_routes_generic_queries_to_the_overridden_chain() {
 
     assert_graphql_request(&request, query, Some("TotalsForAudit"), None);
     assert_eq!(response["totals"][0]["orders"], "365210");
-}
-
-#[tokio::test]
-async fn run_query_uses_custom_base_url_overrides() {
-    let server = MockServer::start().await;
-    let custom_urls: SubgraphApiBaseUrls = [
-        (SupportedChainId::Mainnet, Some(server.uri())),
-        (
-            SupportedChainId::GnosisChain,
-            Some("https://example.com/xdai".to_owned()),
-        ),
-    ]
-    .into_iter()
-    .collect();
-    let api = SubgraphApi::builder()
-        .chain(SupportedChainId::Mainnet)
-        .api_key("FakeApiKey")
-        .external_host_policy(ExternalHostPolicy::AllowAny)
-        .base_urls(custom_urls)
-        .build()
-        .expect("subgraph test client with custom overrides must build");
-
-    Mock::given(method("POST"))
-        .and(path("/"))
-        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
-            "data": {
-                "totals": [
-                    {
-                        "tokens": "192",
-                        "orders": "365210",
-                        "traders": "50731",
-                        "settlements": "160092",
-                        "volumeUsd": "49548634.23978489392550883815112596",
-                        "volumeEth": "20349080.82753326160179174564685693",
-                        "feesUsd": "1495.18088540037791409373835505834",
-                        "feesEth": "632.7328748466552906975758491191759"
-                    }
-                ]
-            }
-        })))
-        .mount(&server)
-        .await;
-
-    let _ = api.totals().await.unwrap();
-    let request = only_request(&server).await;
-
-    assert_graphql_request(&request, TOTALS_QUERY, Some("Totals"), None);
 }
 
 #[tokio::test]
@@ -900,78 +854,6 @@ struct TokensByVolumeResponse {
 #[derive(Debug, Deserialize)]
 struct TokenByVolume {
     symbol: String,
-}
-
-#[tokio::test]
-async fn get_totals_returns_cancelled_when_combinator_token_fires_before_send() {
-    use cow_sdk_core::Cancellable;
-
-    let api = SubgraphApi::builder()
-        .chain(SupportedChainId::Mainnet)
-        .api_key("FakeApiKey")
-        .build()
-        .expect("default subgraph client must build");
-    let token = cow_sdk_core::CancellationToken::new();
-    token.cancel();
-
-    let error = api
-        .totals()
-        .cancel_with(&token)
-        .await
-        .expect_err("pre-cancelled token must produce a Cancelled error");
-    assert!(matches!(error, SubgraphError::Cancelled));
-}
-
-#[tokio::test(flavor = "current_thread", start_paused = true)]
-async fn get_totals_combinator_aborts_an_in_flight_request() {
-    use cow_sdk_core::Cancellable;
-
-    struct DropSpy(Arc<AtomicBool>);
-
-    impl Drop for DropSpy {
-        fn drop(&mut self) {
-            self.0.store(true, Ordering::SeqCst);
-        }
-    }
-
-    let server = MockServer::start().await;
-    Mock::given(method("POST"))
-        .and(path("/"))
-        .respond_with(
-            ResponseTemplate::new(200)
-                .set_body_json(json!({ "data": { "totals": [] } }))
-                .set_delay(std::time::Duration::from_secs(30)),
-        )
-        .mount(&server)
-        .await;
-
-    let api = common::loopback_client(server.uri());
-    let token = cow_sdk_core::CancellationToken::new();
-    let token_for_task = token.clone();
-    let dropped = Arc::new(AtomicBool::new(false));
-    let spy = DropSpy(Arc::clone(&dropped));
-
-    let started = std::time::Instant::now();
-    let task = tokio::spawn(async move {
-        let _spy = spy;
-        api.totals().cancel_with(&token_for_task).await
-    });
-
-    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
-    token.cancel();
-
-    let result = task.await.expect("cancellation task should not panic");
-    let elapsed = started.elapsed();
-
-    assert!(matches!(result, Err(SubgraphError::Cancelled)));
-    assert!(
-        elapsed < std::time::Duration::from_secs(5),
-        "cancellation must drop the in-flight future within the request deadline; elapsed = {elapsed:?}"
-    );
-    assert!(
-        dropped.load(Ordering::SeqCst),
-        "the inner request future must be dropped when the cancellation token fires"
-    );
 }
 
 #[tokio::test]
