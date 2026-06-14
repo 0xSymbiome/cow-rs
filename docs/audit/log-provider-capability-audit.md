@@ -1,7 +1,7 @@
 # Log-Provider Capability Audit
 
 Status: Current
-Last reviewed: 2026-06-03
+Last reviewed: 2026-06-14
 Owning surface: `cow-sdk-core` `LogProvider` capability trait, the `LogQuery` / `RawLog` / `LogMeta` log types, the single bounded-call `get_logs` contract, and the `cow-sdk-alloy-provider` leaf plus `cow-sdk-alloy` umbrella `LogProvider` implementations
 Refresh trigger: a change to the `LogProvider` trait shape, the `LogQuery` / `RawLog` / `LogMeta` types, the single-call `get_logs` contract, the alloy-provider or alloy umbrella `LogProvider` implementations or their `LogQuery` / `RawLog` conversions, the provider-leaf seam entries the umbrella consumes, or the `Provider` / `SigningProvider` capability split
 Related docs:
@@ -106,8 +106,6 @@ Primary implementation points:
 
 Primary regression coverage:
 
-- `crates/core/tests/trait_evolution_contract.rs::log_provider_trait_shape`
-- `crates/core/tests/trait_evolution_contract.rs::provider_trait_shape_unchanged`
 - `crates/core/src/types/logs.rs::tests::builders_populate_addresses_and_topic_slots`
 - `crates/core/src/types/logs.rs::tests::from_indexed_address_left_pads_to_a_topic`
 - `crates/alloy-provider/src/conversion.rs::tests::cow_log_query_to_alloy_filter_sets_caller_bounded_range`
@@ -120,7 +118,6 @@ Validation surface:
 
 ```text
 cargo test -p cow-sdk-core --lib logs
-cargo test -p cow-sdk-core --test trait_evolution_contract
 cargo test -p cow-sdk-alloy-provider --lib
 cargo test -p cow-sdk-alloy-provider --test seam_contract
 cargo test -p cow-sdk-alloy --test log_provider_contract

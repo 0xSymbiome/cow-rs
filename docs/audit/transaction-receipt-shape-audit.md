@@ -1,7 +1,7 @@
 # Transaction Receipt Shape Audit
 
 Status: Current
-Last reviewed: 2026-05-13
+Last reviewed: 2026-06-14
 Owning surface: `cow-sdk-core` transaction lifecycle types and adapter receipt conversions
 Refresh trigger: ADR 0038 - transaction lifecycle types
 Related docs:
@@ -67,7 +67,6 @@ Primary implementation points:
 Primary regression coverage:
 
 - `crates/core/tests/traits_contract.rs`
-- `crates/core/tests/trait_evolution_contract.rs`
 - `crates/alloy/tests/send_transaction_does_not_wait_for_confirmation.rs::send_transaction_does_not_dispatch_get_transaction_receipt`
 - `crates/alloy/tests/provider_contract.rs::get_transaction_receipt_populates_rich_fields_from_alloy_receipt`
 - `crates/alloy-provider/src/conversion.rs::tests::alloy_to_cow_receipt_populates_status_success`

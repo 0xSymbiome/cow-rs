@@ -109,9 +109,17 @@ pub enum CoreError {
         partner_api: bool,
     },
     /// A JSON or ABI-adjacent serialization step failed.
+    ///
+    /// Retained as a redaction-conformance witness: it is constructed only by
+    /// the error-redaction and classification test suites to prove this arm's
+    /// `Debug` redacts, and no production path emits it.
     #[error("serialization error: {0}")]
     Serialization(Redacted<String>),
     /// A downstream transport implementation violated the core contract.
+    ///
+    /// Retained as a redaction-conformance witness: it is constructed only by
+    /// the error-redaction and classification test suites to prove this arm's
+    /// `Debug` redacts, and no production path emits it.
     #[error("transport contract violation: {0}")]
     TransportContract(Redacted<String>),
     /// A long-running operation was cancelled through a cooperative cancellation token.
@@ -170,8 +178,8 @@ impl CoreError {
         match self {
             Self::Validation(_) | Self::MissingBaseUrl { .. } => ErrorClass::Validation,
             Self::Cancelled => ErrorClass::Cancelled,
-            // Serialization, transport-contract, and CID failures plus any
-            // future additive variants signal invariant violations.
+            // Serialization and transport-contract failures plus any future
+            // additive variants signal invariant violations.
             _ => ErrorClass::Internal,
         }
     }

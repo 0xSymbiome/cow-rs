@@ -1,4 +1,4 @@
-use std::{fmt, ops::Deref, str::FromStr};
+use std::{fmt, str::FromStr};
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use thiserror::Error;
@@ -100,14 +100,6 @@ impl AsRef<str> for AppCode {
     }
 }
 
-impl Deref for AppCode {
-    type Target = str;
-
-    fn deref(&self) -> &Self::Target {
-        self.as_str()
-    }
-}
-
 impl fmt::Display for AppCode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.fmt(f)
@@ -172,7 +164,6 @@ mod tests {
         let code = AppCode::new("cow-rs").expect("valid app code is accepted");
         assert_eq!(code.as_str(), "cow-rs");
         assert_eq!(<AppCode as AsRef<str>>::as_ref(&code), "cow-rs");
-        assert_eq!(&*code, "cow-rs"); // Deref<Target = str>
         assert_eq!(format!("{code}"), "cow-rs"); // Display
         assert_eq!(code.into_inner(), "cow-rs");
     }

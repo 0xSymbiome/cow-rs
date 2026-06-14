@@ -413,6 +413,22 @@ fn transaction_receipt_with_builders_round_trips() {
     let deserialized = serde_json::from_str::<TransactionReceipt>(&serialized).unwrap();
 
     assert_eq!(deserialized, receipt);
+
+    // The `with_*` builder chain and the positional `from_parts` constructor
+    // produce an identical receipt with the same rich fields populated.
+    let from_parts = TransactionReceipt::from_parts(
+        transaction_hash(HASH_1),
+        Some(TransactionStatus::Reverted),
+        Some(98_765),
+        Some(transaction_hash(BLOCK_HASH_1)),
+        Some(Amount::from(30_000u64)),
+        Some(sample_from_address()),
+        Some(sample_to_address()),
+    );
+    assert_eq!(receipt, from_parts);
+    assert_eq!(from_parts.status, Some(TransactionStatus::Reverted));
+    assert_eq!(from_parts.block_number, Some(98_765));
+    assert_eq!(from_parts.gas_used, Some(Amount::from(30_000u64)));
 }
 
 #[test]

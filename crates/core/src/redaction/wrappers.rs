@@ -150,24 +150,6 @@ where
     }
 }
 
-impl<K> PartialEq<BTreeMap<K, String>> for RedactedUrlMap<K>
-where
-    K: Ord + PartialEq,
-{
-    fn eq(&self, other: &BTreeMap<K, String>) -> bool {
-        self.0 == *other
-    }
-}
-
-impl<K> PartialEq<RedactedUrlMap<K>> for BTreeMap<K, String>
-where
-    K: Ord + PartialEq,
-{
-    fn eq(&self, other: &RedactedUrlMap<K>) -> bool {
-        *self == other.0
-    }
-}
-
 /// Redacting wrapper for URL maps where `None` marks unsupported chains.
 ///
 /// Serialization is diagnostic-only: keys and `None` support markers are
@@ -268,24 +250,6 @@ where
 {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         BTreeMap::<K, Option<String>>::deserialize(deserializer).map(Self)
-    }
-}
-
-impl<K> PartialEq<BTreeMap<K, Option<String>>> for RedactedOptionalUrlMap<K>
-where
-    K: Ord + PartialEq,
-{
-    fn eq(&self, other: &BTreeMap<K, Option<String>>) -> bool {
-        self.0 == *other
-    }
-}
-
-impl<K> PartialEq<RedactedOptionalUrlMap<K>> for BTreeMap<K, Option<String>>
-where
-    K: Ord + PartialEq,
-{
-    fn eq(&self, other: &RedactedOptionalUrlMap<K>) -> bool {
-        *self == other.0
     }
 }
 

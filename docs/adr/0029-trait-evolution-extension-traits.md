@@ -68,7 +68,10 @@ This ADR supports the Forward-Compatible Public Surfaces principle.
 
 **Proven by:**
 
-- `crates/core/tests/trait_evolution_contract.rs`
+- `crates/core/tests/traits_contract.rs` (behavioral trait-contract coverage:
+  every trait method is implemented and called through fully-qualified syntax)
+- the Rust compiler: any trait method-signature change breaks its impls and the
+  behavioral tests above, so the shape cannot drift silently
 
 ## Amendment 2026-05-29: non-object-safe core traits and the new-primitive carve-out
 

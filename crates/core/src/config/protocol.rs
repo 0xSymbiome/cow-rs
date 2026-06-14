@@ -145,17 +145,22 @@ impl ApiContext {
     pub fn resolved_base_url(&self) -> Result<String, CoreError> {
         let chain_id: ChainId = self.chain_id.into();
         let partner_api = self.validated_api_key()?.is_some();
-        let default_urls = default_api_base_urls(self.env, partner_api);
-        let base_urls = self.base_urls.as_ref().unwrap_or(&default_urls);
+        // Build the per-chain default map only when no override is supplied, so
+        // an override path never formats the full default set just to discard it.
+        let resolved = self.base_urls.as_ref().map_or_else(
+            || {
+                default_api_base_urls(self.env, partner_api)
+                    .as_inner()
+                    .get(&chain_id)
+                    .cloned()
+            },
+            |base_urls| base_urls.as_inner().get(&chain_id).cloned(),
+        );
 
-        base_urls
-            .as_inner()
-            .get(&chain_id)
-            .cloned()
-            .ok_or(CoreError::MissingBaseUrl {
-                chain_id,
-                env: self.env,
-                partner_api,
-            })
+        resolved.ok_or(CoreError::MissingBaseUrl {
+            chain_id,
+            env: self.env,
+            partner_api,
+        })
     }
 }

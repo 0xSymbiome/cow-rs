@@ -127,7 +127,6 @@ The fail-closed, provider-free decoders (ADR 0054, ADR 0056) stay pure;
 
 **Proven by:**
 
-- `crates/core/tests/trait_evolution_contract.rs::log_provider_trait_shape`
-- `crates/core/tests/trait_evolution_contract.rs::provider_trait_shape_unchanged`
+- `crates/core/tests/traits_contract.rs` (behavioral `Provider` capability coverage; the compiler enforces the supertrait shape across impls)
 - `crates/alloy/tests/log_provider_contract.rs::alloy_client_implements_log_provider_and_returns_typed_error_on_unreachable_rpc`
 - [Log-Provider Capability Audit](../audit/log-provider-capability-audit.md)
