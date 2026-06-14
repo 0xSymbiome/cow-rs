@@ -114,8 +114,7 @@ mod native {
             .and(path("/orders"))
             .respond_with(
                 ResponseTemplate::new(200)
-                    .insert_header("Content-Type", "application/json")
-                    .set_body_string(GET_ORDERS_FIXTURE),
+                    .set_body_raw(GET_ORDERS_FIXTURE.as_bytes(), "application/json"),
             )
             .mount(&server)
             .await;
@@ -137,8 +136,7 @@ mod native {
             .and(path("/quote"))
             .respond_with(
                 ResponseTemplate::new(200)
-                    .insert_header("Content-Type", "application/json")
-                    .set_body_string(POST_QUOTE_FIXTURE),
+                    .set_body_raw(POST_QUOTE_FIXTURE.as_bytes(), "application/json"),
             )
             .mount(&server)
             .await;
@@ -431,34 +429,37 @@ export function restore_fetch(previous) {
     #[wasm_bindgen_test]
     async fn fetch_transport_get_returns_fixture_bytes() {
         let previous = install_fetch_ok_mock(GET_ORDERS_FIXTURE);
-        let body = transport()
+        let response = transport()
             .get("/orders", NO_HEADERS, None)
             .await
             .expect("fetch transport must deliver the mocked fixture body");
         restore_fetch(previous);
-        assert_eq!(body, GET_ORDERS_FIXTURE);
+        assert_eq!(response.body(), GET_ORDERS_FIXTURE);
+        assert_eq!(response.status(), 200);
     }
 
     #[wasm_bindgen_test]
     async fn fetch_transport_post_returns_fixture_bytes() {
         let previous = install_fetch_ok_mock(POST_QUOTE_FIXTURE);
-        let body = transport()
+        let response = transport()
             .post("/quote", "{\"kind\":\"sell\"}", NO_HEADERS, None)
             .await
             .expect("fetch transport must deliver the mocked fixture body");
         restore_fetch(previous);
-        assert_eq!(body, POST_QUOTE_FIXTURE);
+        assert_eq!(response.body(), POST_QUOTE_FIXTURE);
+        assert_eq!(response.status(), 200);
     }
 
     #[wasm_bindgen_test]
     async fn fetch_transport_delete_returns_fixture_bytes() {
         let previous = install_fetch_ok_mock(DELETE_ORDER_FIXTURE);
-        let body = transport()
+        let response = transport()
             .delete("/orders/0x1", "{\"uid\":\"0x1\"}", NO_HEADERS, None)
             .await
             .expect("fetch transport must deliver the mocked fixture body");
         restore_fetch(previous);
-        assert_eq!(body, DELETE_ORDER_FIXTURE);
+        assert_eq!(response.body(), DELETE_ORDER_FIXTURE);
+        assert_eq!(response.status(), 200);
     }
 
     #[wasm_bindgen_test]
@@ -468,14 +469,14 @@ export function restore_fetch(previous) {
             ("Cache-Control".to_owned(), "no-cache".to_owned()),
             ("Pragma".to_owned(), "no-cache".to_owned()),
         ];
-        let body = transport()
+        let response = transport()
             .get("/headers", &headers, None)
             .await
             .expect("fetch transport must forward cache-control headers");
         restore_fetch(previous);
 
-        assert!(body.contains("\"cacheControl\":\"no-cache\""));
-        assert!(body.contains("\"pragma\":\"no-cache\""));
+        assert!(response.body().contains("\"cacheControl\":\"no-cache\""));
+        assert!(response.body().contains("\"pragma\":\"no-cache\""));
     }
 
     #[wasm_bindgen_test]
