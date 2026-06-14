@@ -4,21 +4,6 @@ use super::{
     amount::Amount,
     identity::{Address, AppDataHash, ChainId},
 };
-/// Canonical EIP-712 order field names in struct-hash order.
-pub const ORDER_TYPE_FIELD_NAMES: [&str; 12] = [
-    "sellToken",
-    "buyToken",
-    "receiver",
-    "sellAmount",
-    "buyAmount",
-    "validTo",
-    "appData",
-    "feeAmount",
-    "kind",
-    "partiallyFillable",
-    "sellTokenBalance",
-    "buyTokenBalance",
-];
 
 /// Sell or buy side of a trade.
 ///
@@ -90,29 +75,6 @@ pub struct TokenInfo {
     /// Optional logo URL.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub logo_url: Option<String>,
-}
-
-impl TokenInfo {
-    /// Creates token metadata from the canonical display fields.
-    #[inline]
-    #[must_use]
-    pub const fn new(
-        chain_id: ChainId,
-        address: Address,
-        decimals: u8,
-        symbol: String,
-        name: String,
-        logo_url: Option<String>,
-    ) -> Self {
-        Self {
-            chain_id,
-            address,
-            decimals,
-            symbol,
-            name,
-            logo_url,
-        }
-    }
 }
 
 /// User-domain order shape prepared for signing and trading workflows.

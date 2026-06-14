@@ -12,9 +12,6 @@ pub mod cancellation;
 pub mod config;
 /// Common validation and configuration errors used by the foundational crates.
 pub mod errors;
-/// Convenience prelude bringing the canonical cow identity newtypes
-/// into scope per ADR 0052.
-pub mod prelude;
 /// Typed redaction wrapper for secret-bearing configuration fields.
 pub mod redaction;
 /// Runtime-neutral signer, provider, and typed-data trait contracts.
@@ -48,10 +45,10 @@ pub use redaction::{
 /// consumer.
 pub use tokio_util::sync::CancellationToken;
 pub use traits::{
-    BlockInfo, ContractCall, ContractHandle, DigestSigner, Eip1193, LogProvider, Owner, Provider,
-    Signer, SignerError, SigningProvider, TransactionBroadcast, TransactionReceipt,
-    TransactionRequest, TransactionStatus, TypedDataDomain, TypedDataEnvelope, TypedDataField,
-    TypedDataPayload, TypedDataSigner, TypedDataTypes,
+    BlockInfo, ContractCall, ContractHandle, DigestSigner, LogProvider, Owner, Provider, Signer,
+    SignerError, SigningProvider, TransactionBroadcast, TransactionReceipt, TransactionRequest,
+    TransactionStatus, TypedDataDomain, TypedDataEnvelope, TypedDataField, TypedDataPayload,
+    TypedDataSigner, TypedDataTypes,
 };
 pub use transport::{HttpTransport, TransportError, TransportResponse};
 #[cfg(not(target_arch = "wasm32"))]
@@ -59,9 +56,9 @@ pub use transport::{ReqwestTransport, ReqwestTransportConfig};
 pub use types::{
     Address, Amount, Amounts, AppCode, AppCodeError, AppDataHash, BlockHash, BuyTokenDestination,
     ChainId, Costs, FeeComponent, Hash32, HexData, LogBlockSelector, LogMeta, LogQuery, NetworkFee,
-    ORDER_TYPE_FIELD_NAMES, OrderData, OrderDigest, OrderKind, OrderUid, QUOTE_AMOUNT_STAGE_NAMES,
-    QuoteAmountsAndCosts, RawLog, SellTokenSource, TokenInfo, TransactionHash,
-    VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS, ValidTo,
+    OrderData, OrderDigest, OrderKind, OrderUid, QuoteAmountsAndCosts, RawLog, SellTokenSource,
+    TokenInfo, TransactionHash, VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS,
+    ValidTo,
 };
 pub use validation::{TransportErrorClass, ValidationReason};
 

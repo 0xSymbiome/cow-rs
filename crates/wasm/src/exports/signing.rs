@@ -10,7 +10,7 @@ use cow_sdk_contracts::{ContractId, Registry};
 use std::{cell::RefCell, rc::Rc};
 
 use crate::helpers as pure;
-use cow_sdk_core::{Address, DigestSigner, Eip1193};
+use cow_sdk_core::{Address, DigestSigner};
 #[cfg(feature = "cancellation")]
 use cow_sdk_core::{Amount, Hash32, HexData, OrderUid, TransactionRequest};
 use cow_sdk_signing::GeneratedOrderId;
@@ -91,12 +91,8 @@ impl JsEip1193Requester {
             wallet_timeout_ms,
         }
     }
-}
 
-impl Eip1193 for JsEip1193Requester {
-    type Error = JsValue;
-
-    async fn request(&self, method: &str, params: &[String]) -> Result<String, Self::Error> {
+    async fn request(&self, method: &str, params: &[String]) -> Result<String, JsValue> {
         let request = Eip1193Request {
             method: method.to_owned(),
             params: Some(params.iter().map(|param| json!(param)).collect()),

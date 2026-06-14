@@ -34,9 +34,9 @@ would blur product identity, crate ownership, and runtime boundaries.
   and EIP-1271 cache leaf surfaces consumers match against. The facade ships
   **no prelude** — there is no `cow_sdk::prelude` — and the root is never grown
   by a glob (`pub use <module>::*` is disallowed), so it stays explicit and
-  pinnable in the public-API snapshot. The workspace's only prelude is the
-  opt-in `cow_sdk::core::prelude` (the cow primitive newtypes, ADR 0052), the
-  way `cow-sdk-core` already scopes it.
+  pinnable in the public-API snapshot. No crate in the workspace ships a prelude;
+  identity and numeric newtypes are reached on their module path, the way `alloy`
+  and `reqwest` scope theirs.
 - Runtime and support: runtime-specific dependencies can stay isolated instead
   of forcing one dependency and runtime model across the whole workspace.
 - Validation and review: targeted crate-level tests, docs, and review can stay

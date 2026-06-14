@@ -68,23 +68,6 @@ pub trait DigestSigner {
     async fn sign_digest(&self, digest: &[u8]) -> Result<String, Self::Error>;
 }
 
-/// EIP-1193 request capability.
-#[expect(
-    async_fn_in_trait,
-    reason = "the trait surface adopts native async fn in trait per ADR 0010 runtime-neutral posture; the resulting non-Send futures are covered by the workspace future_not_send allow so wasm callbacks can satisfy the same trait without an explicit Send bound"
-)]
-pub trait Eip1193 {
-    /// Error type returned by provider requests.
-    type Error;
-
-    /// Executes an EIP-1193 request with string parameters.
-    ///
-    /// # Errors
-    ///
-    /// Returns the implementation-defined provider error when the request fails.
-    async fn request(&self, method: &str, params: &[String]) -> Result<String, Self::Error>;
-}
-
 /// Signing boundary for wallets and runtimes.
 ///
 /// Production adapters implement this trait directly. Narrow capability

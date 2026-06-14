@@ -1,16 +1,6 @@
 use serde::{Deserialize, Serialize};
 
 use super::amount::Amount;
-/// Canonical quote amount stage names used by [`QuoteAmountsAndCosts`].
-pub const QUOTE_AMOUNT_STAGE_NAMES: [&str; 7] = [
-    "beforeAllFees",
-    "beforeNetworkCosts",
-    "afterProtocolFees",
-    "afterNetworkCosts",
-    "afterPartnerFees",
-    "afterSlippage",
-    "amountsToSign",
-];
 
 /// Generic sell/buy amount pair.
 #[non_exhaustive]
