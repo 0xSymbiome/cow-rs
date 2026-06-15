@@ -92,8 +92,12 @@ impl TryFrom<u8> for SigningScheme {
 pub struct Eip1271SignatureData {
     /// Verifier contract address.
     pub verifier: Address,
-    /// Encoded signature payload as hex.
-    pub signature: String,
+    /// Encoded signature payload.
+    ///
+    /// Typed as [`HexData`] — the same shape as the sibling
+    /// [`Eip1271VerificationRequest::signature`] — so the payload cannot hold
+    /// non-hex bytes and the codec path needs no per-call re-parse.
+    pub signature: HexData,
 }
 
 /// Input contract for EIP-1271 verification helpers.
@@ -139,7 +143,7 @@ pub enum Signature {
 impl Eip1271SignatureData {
     /// Creates an EIP-1271 verifier payload.
     #[must_use]
-    pub const fn new(verifier: Address, signature: String) -> Self {
+    pub const fn new(verifier: Address, signature: HexData) -> Self {
         Self {
             verifier,
             signature,
@@ -389,11 +393,11 @@ impl RecoverableSignature {
             .inner
             .recover_address_from_prehash(&B256::from(prehash_bytes))
             .map_err(|error| signature_recovery_error(&error))?;
-        Ok(Address::new(recovered.to_string())?)
+        Ok(Address::from_bytes(recovered.into_array()))
     }
 }
 
-const fn hash32_bytes(digest: &Hash32) -> [u8; 32] {
+pub(crate) const fn hash32_bytes(digest: &Hash32) -> [u8; 32] {
     digest.into_alloy().0
 }
 
@@ -415,13 +419,19 @@ fn signature_recovery_error(error: &alloy_primitives::SignatureError) -> Contrac
 pub fn encode_eip1271_signature_data(
     data: &Eip1271SignatureData,
 ) -> Result<String, ContractsError> {
-    let mut payload = Vec::new();
+    // The payload is already typed bytes, so there is no hex to re-parse. Keep
+    // the decoded-length budget as a cheap guard so a caller-built oversized
+    // payload is refused before the verifier-prefixed buffer is materialized.
+    let signature = data.signature.as_slice();
+    if signature.len() > MAX_SIGNATURE_HEX_BYTES {
+        return Err(ContractsError::FieldTooLarge {
+            field: "signature",
+            max_bytes: MAX_SIGNATURE_HEX_BYTES,
+        });
+    }
+    let mut payload = Vec::with_capacity(20 + signature.len());
     payload.extend_from_slice(&data.verifier.into_alloy().0.0);
-    payload.extend_from_slice(&decode_hex_field_bounded(
-        "signature",
-        &data.signature,
-        MAX_SIGNATURE_HEX_BYTES,
-    )?);
+    payload.extend_from_slice(signature);
     Ok(alloy_primitives::hex::encode_prefixed(payload))
 }
 
@@ -456,7 +466,7 @@ pub fn decode_eip1271_signature_data(
             .try_into()
             .expect("slice length 20 is guaranteed by the bytes.len() < 20 check above"),
     );
-    let signature = alloy_primitives::hex::encode_prefixed(&bytes[20..]);
+    let signature = HexData::from_bytes(bytes[20..].to_vec());
     Ok(Eip1271SignatureData::new(verifier, signature))
 }
 
@@ -505,24 +515,15 @@ where
     P: Provider,
     P::Error: fmt::Display,
 {
-    ensure_contract_code(provider, &request.verifier).await?;
-    let raw = provider
-        .read_contract(&cow_sdk_core::ContractCall::new(
-            request.verifier,
-            "isValidSignature".to_owned(),
-            EIP1271_IS_VALID_SIGNATURE_ABI_JSON.to_owned(),
-            serde_json::to_string(&(
-                request.digest.to_hex_string(),
-                request.signature.to_hex_string(),
-            ))?,
-        ))
-        .await
-        .map_err(|error| ContractsError::Eip1271Provider {
-            operation: "read_contract",
-            message: error.to_string().into(),
-        })?;
-
-    ensure_magic_value(&raw)
+    // The uncached path is the cached path with the always-miss
+    // [`NoopEip1271Cache`](crate::verify::NoopEip1271Cache), so the
+    // `isValidSignature` dispatch lives in exactly one place.
+    crate::verify::verify_eip1271_signature_cached(
+        provider,
+        request,
+        &crate::verify::NoopEip1271Cache,
+    )
+    .await
 }
 
 pub(crate) async fn ensure_contract_code<P>(

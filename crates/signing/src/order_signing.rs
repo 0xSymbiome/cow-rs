@@ -137,8 +137,7 @@ pub fn generate_order_id(
 ) -> Result<GeneratedOrderId, SigningError> {
     let domain = domain(chain_id, options)?;
     let order_digest = hash_order(&domain, order)?;
-    let order_id =
-        pack_order_uid_params(&OrderUidParams::new(order_digest, *owner, order.valid_to))?;
+    let order_id = pack_order_uid_params(&OrderUidParams::new(order_digest, *owner, order.valid_to));
 
     Ok(GeneratedOrderId {
         order_id,

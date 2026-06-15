@@ -16,8 +16,7 @@ fn bench_pack_order_uid_params(c: &mut Criterion) {
     let params = sample_params();
     c.bench_function("pack_order_uid_params", |b| {
         b.iter(|| {
-            let uid = pack_order_uid_params(black_box(&params))
-                .expect("fixed UID parameters must pack successfully");
+            let uid = pack_order_uid_params(black_box(&params));
             black_box(uid);
         });
     });
@@ -25,7 +24,7 @@ fn bench_pack_order_uid_params(c: &mut Criterion) {
 
 fn bench_extract_order_uid_params(c: &mut Criterion) {
     let params = sample_params();
-    let uid = pack_order_uid_params(&params).expect("fixed UID parameters must pack successfully");
+    let uid = pack_order_uid_params(&params);
     c.bench_function("extract_order_uid_params", |b| {
         b.iter(|| {
             let extracted = extract_order_uid_params(black_box(&uid))

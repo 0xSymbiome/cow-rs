@@ -210,8 +210,7 @@ fn generate_order_id_reuses_contract_hashing_and_uid_packing() {
         expected_digest,
         owner,
         order.valid_to,
-    ))
-    .unwrap();
+    ));
 
     assert_eq!(
         generated,

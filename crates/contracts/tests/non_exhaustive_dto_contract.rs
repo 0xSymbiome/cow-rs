@@ -7,8 +7,10 @@
 //! - [`OrderCancellations`] — the live `DELETE /api/v1/orders` request body.
 //! - eth-flow `createOrder` — the on-chain calldata byte layout, cross-checked
 //!   against an independent local `sol!` re-encoding (a differential oracle).
-//! - the `#[non_exhaustive]` marker policy (ADR 0027) across the signing enums,
-//!   driven by `.github/config/enum-policy.yaml`.
+//!
+//! The `#[non_exhaustive]` marker policy (ADR 0027) is enforced workspace-wide by
+//! the syn-based `xtask check-enum-policy` gate over `.github/config/enum-policy.yaml`,
+//! so it is not re-checked here.
 
 use alloy_sol_types::{
     SolCall,
@@ -18,11 +20,7 @@ use alloy_sol_types::{
 use cow_sdk_contracts::{EthFlowOrderData, OrderCancellations, encode_create_order_calldata};
 use cow_sdk_core::{Amount, AppDataHash, OrderUid};
 use cow_sdk_test_utils::builders::address;
-use serde::Deserialize;
 use serde::Serialize;
-
-const CONTRACT_SIGNATURE_SOURCE: &str = include_str!("../src/signature.rs");
-const ORDERBOOK_TYPES_SOURCE: &str = include_str!("../../orderbook/src/types/enums.rs");
 
 const ADDR1: &str = "0x1111111111111111111111111111111111111111";
 const ADDR2: &str = "0x2222222222222222222222222222222222222222";
@@ -118,98 +116,4 @@ fn eth_flow_order_data_new_preserves_abi_shape() {
     .abi_encode();
 
     assert_eq!(actual, expected);
-}
-
-#[test]
-fn adr_0027_signature_family_non_exhaustive() {
-    assert_enum_has_non_exhaustive(CONTRACT_SIGNATURE_SOURCE, "SigningScheme");
-    assert_enum_has_non_exhaustive(CONTRACT_SIGNATURE_SOURCE, "Signature");
-    assert_enum_has_non_exhaustive(ORDERBOOK_TYPES_SOURCE, "SigningScheme");
-}
-
-#[test]
-fn enum_policy_manifest_entries_match_expected_markers() {
-    let repo_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .and_then(std::path::Path::parent)
-        .expect("contracts crate must live under crates/contracts");
-    let manifest_path = repo_root.join(".github/config/enum-policy.yaml");
-    let manifest = std::fs::read_to_string(&manifest_path)
-        .unwrap_or_else(|error| panic!("failed to read {}: {error}", manifest_path.display()));
-    let policy: EnumPolicyManifest =
-        serde_yaml::from_str(&manifest).expect("enum-policy.yaml must parse");
-
-    assert_eq!(
-        policy.version, 1,
-        "enum-policy schema version must stay at 1"
-    );
-    assert!(
-        !policy.enums.is_empty(),
-        "enum-policy.yaml must classify at least one enum",
-    );
-
-    for entry in policy.enums {
-        if entry.planned {
-            // Reserved entry: the source-of-truth Rust definition lands in a
-            // later capability landing, so skip the file/line marker check
-            // until the enum exists.
-            continue;
-        }
-        let source_path = repo_root.join(&entry.file);
-        let source = std::fs::read_to_string(&source_path)
-            .unwrap_or_else(|error| panic!("failed to read {}: {error}", source_path.display()));
-        let has_marker = enum_has_non_exhaustive(&source, &entry.name);
-        match entry.expected_marker.as_str() {
-            "non_exhaustive" => assert!(
-                has_marker,
-                "{} in {} must carry #[non_exhaustive]",
-                entry.name, entry.file,
-            ),
-            "exhaustive" => assert!(
-                !has_marker,
-                "{} in {} must not carry #[non_exhaustive]",
-                entry.name, entry.file,
-            ),
-            marker => panic!(
-                "{} in enum-policy.yaml has unsupported expected_marker `{marker}`",
-                entry.name,
-            ),
-        }
-    }
-}
-
-#[derive(Deserialize)]
-struct EnumPolicyManifest {
-    version: u32,
-    enums: Vec<EnumPolicyEntry>,
-}
-
-#[derive(Deserialize)]
-struct EnumPolicyEntry {
-    name: String,
-    file: String,
-    expected_marker: String,
-    #[serde(default)]
-    planned: bool,
-}
-
-fn assert_enum_has_non_exhaustive(source: &str, enum_name: &str) {
-    assert!(
-        enum_has_non_exhaustive(source, enum_name),
-        "public enum `{enum_name}` must carry #[non_exhaustive]",
-    );
-}
-
-fn enum_has_non_exhaustive(source: &str, enum_name: &str) -> bool {
-    let enum_start = source
-        .find(&format!("pub enum {enum_name}"))
-        .unwrap_or_else(|| panic!("public enum `{enum_name}` must exist"));
-    let preceding = &source[..enum_start];
-    let item_header_start = preceding
-        .rfind("\n///")
-        .or_else(|| preceding.rfind("\n#["))
-        .map_or(0, |position| position + 1);
-    let item_header = &preceding[item_header_start..];
-
-    item_header.contains("#[non_exhaustive]")
 }

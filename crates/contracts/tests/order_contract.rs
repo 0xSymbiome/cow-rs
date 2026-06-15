@@ -20,7 +20,7 @@ use cow_sdk_contracts::{
     pack_order_uid_params,
 };
 use cow_sdk_core::{
-    Address, BuyTokenDestination, CowEnv, OrderData, SellTokenSource, SupportedChainId,
+    Address, BuyTokenDestination, CowEnv, OrderData, SupportedChainId,
     TypedDataDomain,
 };
 
@@ -61,17 +61,12 @@ fn upstream_signing_domain() -> TypedDataDomain {
 }
 
 #[test]
-fn sample_order_defaults_and_buy_eth_sentinel() {
-    let order = sample_order();
+fn buy_eth_sentinel_is_the_typed_native_marker() {
+    // The sentinel is a typed `Address`; its canonical lowercase wire form is the
+    // protocol's `0xEeee…EEeE` native-currency marker.
     assert_eq!(
-        order.receiver.to_hex_string(),
-        "0x0000000000000000000000000000000000000000"
-    );
-    assert_eq!(order.sell_token_balance, SellTokenSource::Erc20);
-    assert_eq!(order.buy_token_balance, BuyTokenDestination::Internal);
-    assert_eq!(
-        BUY_ETH_ADDRESS,
-        "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
+        BUY_ETH_ADDRESS.to_hex_string(),
+        "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
     );
 }
 
@@ -99,8 +94,7 @@ fn order_hash_and_uid_helpers_are_consistent() {
     assert_eq!(extracted.valid_to, order.valid_to);
     assert_eq!(extracted.order_digest, order_hash);
 
-    let roundtrip =
-        pack_order_uid_params(&OrderUidParams::new(order_hash, owner, order.valid_to)).unwrap();
+    let roundtrip = pack_order_uid_params(&OrderUidParams::new(order_hash, owner, order.valid_to));
     assert_eq!(roundtrip, uid);
 
     let cancellation = hash_order_cancellation(&domain, &uid).unwrap();

@@ -50,7 +50,7 @@ use cow_sdk_core::{Address, Provider};
 use crate::ContractsError;
 use crate::signature::{
     EIP1271_IS_VALID_SIGNATURE_ABI_JSON, Eip1271VerificationRequest, ensure_contract_code,
-    ensure_magic_value,
+    ensure_magic_value, hash32_bytes,
 };
 
 /// Optional caching seam consumed by [`verify_eip1271_signature_cached`].
@@ -82,6 +82,30 @@ pub trait Eip1271Cache: Send + Sync + 'static {
     /// to evict pre-existing entries (TTL expiry, capacity bounds, eviction
     /// policy) at record time.
     fn record_valid(&self, verifier: Address, digest: [u8; 32], signature_hash: [u8; 32]);
+}
+
+/// Zero-sized [`Eip1271Cache`] that never records anything.
+///
+/// Every [`contains_valid`](Eip1271Cache::contains_valid) call returns `false`
+/// and every [`record_valid`](Eip1271Cache::record_valid) call is a no-op, so a
+/// caller gets one verifier dispatch per probe with no caching. It is the
+/// default backing for the uncached [`verify_eip1271_signature`], and it lets
+/// consumers keep the cache parameter on [`verify_eip1271_signature_cached`]
+/// mandatory without paying any allocation or synchronization overhead. It lives
+/// here next to the trait so the contracts crate owns the always-available
+/// implementation; `cow_sdk_signing::cache` re-exports it alongside the
+/// capacity-bounded `InMemoryEip1271Cache`.
+///
+/// [`verify_eip1271_signature`]: crate::signature::verify_eip1271_signature
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct NoopEip1271Cache;
+
+impl Eip1271Cache for NoopEip1271Cache {
+    fn contains_valid(&self, _verifier: Address, _digest: [u8; 32], _signature_hash: [u8; 32]) -> bool {
+        false
+    }
+
+    fn record_valid(&self, _verifier: Address, _digest: [u8; 32], _signature_hash: [u8; 32]) {}
 }
 
 /// Verifies an EIP-1271 signature using an asynchronous provider, with
@@ -125,7 +149,7 @@ where
     P::Error: fmt::Display,
     C: Eip1271Cache + ?Sized,
 {
-    let digest_key = decode_digest_key(&request.digest);
+    let digest_key = hash32_bytes(&request.digest);
     let signature_key = keccak256(request.signature.as_slice()).0;
 
     if cache.contains_valid(request.verifier, digest_key, signature_key) {
@@ -214,6 +238,3 @@ fn emit_cache_skip_event() {
     );
 }
 
-const fn decode_digest_key(digest: &cow_sdk_core::Hash32) -> [u8; 32] {
-    digest.into_alloy().0
-}

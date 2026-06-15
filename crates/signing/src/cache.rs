@@ -34,34 +34,11 @@
 //! runtimes can inject a controlled clock without changing production
 //! wall-clock behaviour.
 
-use cow_sdk_core::Address;
-
-pub use cow_sdk_contracts::Eip1271Cache;
-
-/// Zero-sized [`Eip1271Cache`] that never records anything.
-///
-/// Every [`contains_valid`](Eip1271Cache::contains_valid) call
-/// returns `false`; every
-/// [`record_valid`](Eip1271Cache::record_valid) call is a no-op.
-/// Callers that do not want EIP-1271 caching pass a reference to this type to
-/// keep the cache parameter on `verify_eip1271_signature_cached` mandatory
-/// without paying any allocation or synchronization overhead. This is the
-/// always-available default; it carries no dependencies and needs no feature.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
-pub struct NoopEip1271Cache;
-
-impl Eip1271Cache for NoopEip1271Cache {
-    fn contains_valid(
-        &self,
-        _verifier: Address,
-        _digest: [u8; 32],
-        _signature_hash: [u8; 32],
-    ) -> bool {
-        false
-    }
-
-    fn record_valid(&self, _verifier: Address, _digest: [u8; 32], _signature_hash: [u8; 32]) {}
-}
+// The narrow [`Eip1271Cache`] trait and the always-available
+// [`NoopEip1271Cache`] are owned by `cow-sdk-contracts` (next to the verifier
+// that consumes them) and re-exported here so signing consumers reach the whole
+// caching seam through one module.
+pub use cow_sdk_contracts::{Eip1271Cache, NoopEip1271Cache};
 
 #[cfg(feature = "in-memory-cache")]
 pub use in_memory::{Clock, InMemoryEip1271Cache, SystemClock};

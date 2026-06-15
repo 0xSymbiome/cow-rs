@@ -49,7 +49,6 @@ cow-sdk-test-utils = { path = "../test-utils", features = ["proptest"] }
 criterion.workspace = true
 k256 = { version = "0.13.4", default-features = false, features = ["ecdsa"] }
 proptest.workspace = true
-serde_yaml.workspace = true
 sha3.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 trybuild.workspace = true

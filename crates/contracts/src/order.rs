@@ -22,16 +22,20 @@ use serde::{Deserialize, Serialize};
 use cow_sdk_core::{Address, Hash32, OrderData, OrderDigest, OrderUid, TypedDataDomain};
 
 use crate::ContractsError;
-use crate::primitives::{
-    ORDER_UID_LENGTH_BYTES, buy_balance_name, order_kind_name, sell_balance_name,
-};
+use crate::primitives::{buy_balance_name, order_kind_name, sell_balance_name};
 
 use self::sol::{Order as SolOrder, OrderCancellations as SolOrderCancellations};
 
-/// Sentinel address used by the protocol to represent native ETH buys.
-pub const BUY_ETH_ADDRESS: &str = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
+/// Sentinel address used by the protocol to represent native-currency (ETH) buys.
+///
+/// Aliases core's typed
+/// [`NATIVE_CURRENCY_ADDRESS`](cow_sdk_core::NATIVE_CURRENCY_ADDRESS) so the
+/// workspace keeps one typed source of truth for the `0xEeee…EEeE` marker. The
+/// `BUY_ETH_ADDRESS` name mirrors the upstream TypeScript SDK
+/// (`order.ts#BUY_ETH_ADDRESS`) and is pinned by the parity fixtures.
+pub const BUY_ETH_ADDRESS: Address = cow_sdk_core::NATIVE_CURRENCY_ADDRESS;
 /// Encoded order UID length in bytes.
-pub const ORDER_UID_LENGTH: usize = ORDER_UID_LENGTH_BYTES;
+pub const ORDER_UID_LENGTH: usize = 56;
 
 /// EIP-712 field descriptor used for `CoW` order-type metadata.
 #[non_exhaustive]
@@ -130,7 +134,7 @@ mod sol {
 pub use self::sol::OrderCancellations as GPv2OrderCancellations;
 
 /// Structured order UID components.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OrderUidParams {
     /// Order digest.
@@ -318,28 +322,27 @@ pub fn compute_order_uid(
     order: &OrderData,
     owner: &Address,
 ) -> Result<OrderUid, ContractsError> {
-    pack_order_uid_params(&OrderUidParams::new(
+    Ok(pack_order_uid_params(&OrderUidParams::new(
         hash_order(domain, order)?,
         *owner,
         order.valid_to,
-    ))
+    )))
 }
 
-/// Packs structured order UID components into the compact UID string.
+/// Packs structured order UID components into the compact 56-byte UID.
 ///
-/// # Errors
-///
-/// Returns [`ContractsError`] if the digest or owner cannot be decoded into the
-/// fixed byte lengths required by the UID format.
+/// Infallible: the digest and owner are already fixed-width typed values and the
+/// `valid_to` timestamp is a `u32`, so the byte layout cannot fail.
 #[inline]
-pub fn pack_order_uid_params(params: &OrderUidParams) -> Result<OrderUid, ContractsError> {
+#[must_use]
+pub fn pack_order_uid_params(params: &OrderUidParams) -> OrderUid {
     let digest = params.order_digest.into_alloy().0;
     let owner = params.owner.into_alloy().0.0;
     let mut out = [0u8; ORDER_UID_LENGTH];
     out[..32].copy_from_slice(&digest);
     out[32..52].copy_from_slice(&owner);
     out[52..56].copy_from_slice(&params.valid_to.to_be_bytes());
-    Ok(OrderUid::from_bytes(out))
+    OrderUid::from_bytes(out)
 }
 
 /// Extracts structured order UID components from a compact UID string.
@@ -379,12 +382,9 @@ pub fn extract_order_uid_params(order_uid: &OrderUid) -> Result<OrderUidParams, 
             .try_into()
             .expect("slice length 20 is guaranteed by the ORDER_UID_LENGTH check above"),
     );
-    let valid_to_bytes: [u8; 4] =
-        bytes[52..56]
-            .try_into()
-            .map_err(|_| ContractsError::InvalidOrderUidLength {
-                actual: bytes.len(),
-            })?;
+    let valid_to_bytes: [u8; 4] = bytes[52..56]
+        .try_into()
+        .expect("slice length 4 is guaranteed by the ORDER_UID_LENGTH check above");
     let valid_to = u32::from_be_bytes(valid_to_bytes);
 
     Ok(OrderUidParams::new(order_digest, owner, valid_to))

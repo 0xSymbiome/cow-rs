@@ -106,8 +106,8 @@ fn module_reexports_cover_expected_leaf_crates() {
         cow_sdk::app_data::LATEST_APP_DATA_VERSION
     );
     assert_eq!(
-        cow_sdk::contracts::BUY_ETH_ADDRESS,
-        "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
+        cow_sdk::contracts::BUY_ETH_ADDRESS.to_hex_string(),
+        "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
     );
     assert_eq!(cow_sdk::contracts::ORDER_UID_LENGTH, 56);
     assert_eq!(api.context().env, cow_sdk::core::CowEnv::Prod);

@@ -17,15 +17,19 @@
 //! COW-Shed contract families and carries none of the `GPv2` contracts, so it
 //! resolves to [`None`].
 
-use cow_sdk_core::{Address, CowEnv, SupportedChainId};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use cow_sdk_core::{Address, CowEnv, SupportedChainId, address};
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 // ----- Chain identifiers -----
 
 /// Chain ids accepted by the deployment registry.
+///
+/// Serialized as the bare numeric chain id through the existing
+/// [`From<DeploymentChainId>`](DeploymentChainId) / [`TryFrom<u64>`] conversions.
 #[non_exhaustive]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(into = "u64", try_from = "u64")]
 #[repr(u64)]
 pub enum DeploymentChainId {
     /// Ethereum mainnet.
@@ -125,25 +129,6 @@ impl TryFrom<u64> for DeploymentChainId {
 impl From<DeploymentChainId> for u64 {
     fn from(value: DeploymentChainId) -> Self {
         value.as_u64()
-    }
-}
-
-impl Serialize for DeploymentChainId {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_u64((*self).into())
-    }
-}
-
-impl<'de> Deserialize<'de> for DeploymentChainId {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let value = u64::deserialize(deserializer)?;
-        Self::try_from(value).map_err(serde::de::Error::custom)
     }
 }
 
@@ -254,17 +239,17 @@ impl std::fmt::Display for DeploymentEnv {
 // ----- Address registry -----
 
 /// `GPv2Settlement` production deployment — identical on every supported chain.
-const GPV2_SETTLEMENT: &str = "0x9008D19f58AAbD9eD0D60971565AA8510560ab41";
+const GPV2_SETTLEMENT: Address = address!("0x9008d19f58aabd9ed0d60971565aa8510560ab41");
 /// `GPv2Settlement` staging deployment — identical on every supported chain.
-const GPV2_SETTLEMENT_STAGING: &str = "0xf553d092b50bdcbddeD1A99aF2cA29FBE5E2CB13";
+const GPV2_SETTLEMENT_STAGING: Address = address!("0xf553d092b50bdcbdded1a99af2ca29fbe5e2cb13");
 /// `GPv2VaultRelayer` production deployment — identical on every supported chain.
-const GPV2_VAULT_RELAYER: &str = "0xC92E8bdf79f0507f65a392b0ab4667716BFE0110";
+const GPV2_VAULT_RELAYER: Address = address!("0xc92e8bdf79f0507f65a392b0ab4667716bfe0110");
 /// `GPv2VaultRelayer` staging deployment — identical on every supported chain.
-const GPV2_VAULT_RELAYER_STAGING: &str = "0xC7242d167563352E2BCA4d71C043fbe542DB8FB2";
+const GPV2_VAULT_RELAYER_STAGING: Address = address!("0xc7242d167563352e2bca4d71c043fbe542db8fb2");
 /// `CoWSwapEthFlow` production deployment — identical on every supported chain.
-const ETH_FLOW_PROD: &str = "0xba3cb449bd2b4adddbc894d8697f5170800eadec";
+const ETH_FLOW_PROD: Address = address!("0xba3cb449bd2b4adddbc894d8697f5170800eadec");
 /// `CoWSwapEthFlow` staging deployment — identical on every supported chain.
-const ETH_FLOW_STAGING: &str = "0xb37aDD6AC288BD3825a901Cba6ec65A89f31B8CC";
+const ETH_FLOW_STAGING: Address = address!("0xb37add6ac288bd3825a901cba6ec65a89f31b8cc");
 
 /// Resolver for canonical `CoW` Protocol contract deployment addresses.
 ///
@@ -282,24 +267,15 @@ pub struct Registry {
 }
 
 impl Default for Registry {
-    /// Builds the canonical registry from the committed address constants.
-    ///
-    /// # Panics
-    ///
-    /// Panics only if a committed address literal stops being a valid 20-byte
-    /// address — impossible without a source edit, and pinned by the
-    /// `deployment_addresses_resolve_to_canonical_singletons` regression.
+    /// Builds the canonical registry from the committed typed address constants.
     fn default() -> Self {
-        // SAFETY: every literal above is a canonical 20-byte deployment address.
-        let parse =
-            |hex: &str| Address::new(hex).expect("canonical deployment address literal is valid");
         Self {
-            settlement: parse(GPV2_SETTLEMENT),
-            settlement_staging: parse(GPV2_SETTLEMENT_STAGING),
-            vault_relayer: parse(GPV2_VAULT_RELAYER),
-            vault_relayer_staging: parse(GPV2_VAULT_RELAYER_STAGING),
-            eth_flow_prod: parse(ETH_FLOW_PROD),
-            eth_flow_staging: parse(ETH_FLOW_STAGING),
+            settlement: GPV2_SETTLEMENT,
+            settlement_staging: GPV2_SETTLEMENT_STAGING,
+            vault_relayer: GPV2_VAULT_RELAYER,
+            vault_relayer_staging: GPV2_VAULT_RELAYER_STAGING,
+            eth_flow_prod: ETH_FLOW_PROD,
+            eth_flow_staging: ETH_FLOW_STAGING,
         }
     }
 }

@@ -1,9 +1,30 @@
 use alloy_primitives::{B256, LogData, keccak256};
-use cow_sdk_core::{BuyTokenDestination, OrderKind, SellTokenSource};
+use cow_sdk_core::{BuyTokenDestination, OrderKind, OrderUid, SellTokenSource};
 
 use crate::ContractsError;
+use crate::order::ORDER_UID_LENGTH;
 
-pub(crate) const ORDER_UID_LENGTH_BYTES: usize = 56;
+/// Length-checks a decoded `bytes orderUid` field and wraps it as an [`OrderUid`].
+///
+/// The shared fail-closed converter for every event decoder that reads a
+/// `bytes orderUid` field (`GPv2Settlement`, `CoWSwapEthFlow`, and the on-chain
+/// order events): it rejects any length other than the canonical 56 bytes with a
+/// typed [`ContractsError::InvalidOrderUidLength`] instead of panicking on a
+/// hostile log.
+///
+/// # Errors
+///
+/// Returns [`ContractsError::InvalidOrderUidLength`] when `bytes` is not exactly
+/// [`ORDER_UID_LENGTH`] bytes long.
+pub fn order_uid_from_bytes(bytes: &[u8]) -> Result<OrderUid, ContractsError> {
+    let uid: [u8; ORDER_UID_LENGTH] =
+        bytes
+            .try_into()
+            .map_err(|_| ContractsError::InvalidOrderUidLength {
+                actual: bytes.len(),
+            })?;
+    Ok(OrderUid::from_bytes(uid))
+}
 
 /// Returns the EIP-712 type-string label for a supported order kind.
 ///
@@ -130,7 +151,7 @@ pub fn buy_balance_from_marker(marker: B256) -> Result<BuyTokenDestination, Cont
 /// Returns [`ContractsError::UnexpectedEventTopics`] when the topic count does
 /// not equal `expected_len` or when `topics[0]` does not equal
 /// `expected_topic0`.
-pub(crate) fn check_topics(
+pub fn check_topics(
     log: &LogData,
     expected_topic0: B256,
     expected_len: usize,

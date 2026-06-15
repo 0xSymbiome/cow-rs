@@ -6,10 +6,6 @@
 //! and deployment metadata.
 
 #![warn(missing_docs)]
-#![allow(
-    clippy::redundant_pub_crate,
-    reason = "the remaining items inside the private `primitives` module (`ORDER_UID_LENGTH_BYTES`) carry explicit `pub(crate)` markers as cross-module use documentation and as defensive scoping if the module is ever promoted to `pub mod`"
-)]
 
 /// COW Shed account-abstraction proxy, EIP-712, and hook-signing helpers.
 ///
@@ -82,4 +78,4 @@ pub use signature::{
     verify_eip1271_signature,
 };
 pub use tokens::{IERC20, IWrappedNativeToken, unwrap_interaction, wrap_interaction};
-pub use verify::{Eip1271Cache, verify_eip1271_signature_cached};
+pub use verify::{Eip1271Cache, NoopEip1271Cache, verify_eip1271_signature_cached};

@@ -30,48 +30,20 @@ use alloy_sol_types::{SolEvent, sol};
 use cow_sdk_core::{Address, Amount, OrderUid};
 
 use crate::errors::ContractsError;
-use crate::order::ORDER_UID_LENGTH;
-use crate::primitives::check_topics;
+use crate::primitives::{check_topics, order_uid_from_bytes};
 
 sol! {
-    // Canonical GPv2Settlement ABI surface. Signatures mirror the
-    // mainnet-deployed GPv2Settlement contract at
+    // Canonical GPv2Settlement call surface the SDK encodes. Signatures mirror
+    // the mainnet-deployed GPv2Settlement contract at
     // 0x9008D19f58AAbD9eD0D60971565AA8510560ab41, whose source is
-    // cowprotocol/contracts `src/contracts/GPv2Settlement.sol` plus
-    // `libraries/GPv2Trade.sol` and `libraries/GPv2Interaction.sol`, pinned by
-    // commit in `parity/source-lock.yaml`. Consumers encode the
-    // `setPreSignature` and `invalidateOrder` calls from this binding; the call
-    // selectors are proven against the fixtures under `parity/fixtures/` and the
-    // crate parity tests.
+    // cowprotocol/contracts `src/contracts/GPv2Settlement.sol`, pinned by commit
+    // in `parity/source-lock.yaml`. Consumers encode the `setPreSignature` and
+    // `invalidateOrder` calls from this binding; the call selectors are proven
+    // against the fixtures under `parity/fixtures/` and the crate parity tests.
+    // The solver-only `settle` entry point and its trade/interaction tuples are
+    // deliberately out of scope: this is an order-lifecycle SDK, not a solver.
     #[sol(rename_all = "camelcase")]
     interface IGPv2Settlement {
-        struct TradeData {
-            uint256 sellTokenIndex;
-            uint256 buyTokenIndex;
-            address receiver;
-            uint256 sellAmount;
-            uint256 buyAmount;
-            uint32 validTo;
-            bytes32 appData;
-            uint256 feeAmount;
-            uint256 flags;
-            uint256 executedAmount;
-            bytes signature;
-        }
-
-        struct InteractionData {
-            address target;
-            uint256 value;
-            bytes callData;
-        }
-
-        function settle(
-            address[] calldata tokens,
-            uint256[] calldata clearingPrices,
-            TradeData[] calldata trades,
-            InteractionData[][3] calldata interactions
-        ) external;
-
         function invalidateOrder(bytes calldata orderUid) external;
 
         function setPreSignature(bytes calldata orderUid, bool signed) external;
@@ -162,17 +134,6 @@ pub enum SettlementEvent {
         /// `true` when the order is now pre-signed, `false` when revoked.
         signed: bool,
     },
-}
-
-/// Length-checks a decoded `bytes orderUid` field and wraps it as an [`OrderUid`].
-fn order_uid_from_bytes(bytes: &[u8]) -> Result<OrderUid, ContractsError> {
-    let uid: [u8; ORDER_UID_LENGTH] =
-        bytes
-            .try_into()
-            .map_err(|_| ContractsError::InvalidOrderUidLength {
-                actual: bytes.len(),
-            })?;
-    Ok(OrderUid::from_bytes(uid))
 }
 
 /// Decodes a `GPv2Settlement` event log into a typed [`SettlementEvent`].
@@ -284,5 +245,14 @@ pub fn decode_settlement_log(log: &LogData) -> Result<SettlementEvent, Contracts
         Err(ContractsError::UnexpectedEventTopics {
             event: "settlement",
         })
+    }
+}
+
+impl TryFrom<&LogData> for SettlementEvent {
+    type Error = ContractsError;
+
+    /// Decodes a `GPv2Settlement` event log; see [`decode_settlement_log`].
+    fn try_from(log: &LogData) -> Result<Self, Self::Error> {
+        decode_settlement_log(log)
     }
 }

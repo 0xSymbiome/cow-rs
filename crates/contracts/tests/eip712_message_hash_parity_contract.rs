@@ -3,7 +3,7 @@
 use alloy_primitives::{Address, B256, Bytes, U256};
 use alloy_sol_types::SolStruct;
 use cow_sdk_contracts::cow_shed::{
-    Call, ExecuteHooks, SolCall, cow_shed_eip712_domain, execute_hooks_signing_hash,
+    Call, ExecuteHooks, cow_shed_eip712_domain, execute_hooks_signing_hash,
 };
 use serde::Deserialize;
 
@@ -54,7 +54,7 @@ fn execute_hooks_digest_matches_reference_vectors() {
     // so they live once at the fixture header: assert the type hashes once and
     // build the message once. Only the domain separator and the final digest vary
     // per chain.
-    let call_sample = SolCall {
+    let call_sample = Call {
         target: Address::ZERO,
         value: U256::ZERO,
         callData: Bytes::default(),

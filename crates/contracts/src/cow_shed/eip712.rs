@@ -10,7 +10,7 @@ use cow_sdk_core::{
 use crate::cow_shed::CowShedVersion;
 use crate::cow_shed::types::Call;
 
-pub use crate::cow_shed::bindings::{Call as SolCall, ExecuteHooks};
+pub use crate::cow_shed::bindings::ExecuteHooks;
 
 const DOMAIN_NAME: &str = "COWShed";
 const PRIMARY_TYPE: &str = "ExecuteHooks";

@@ -21,9 +21,8 @@ use crate::onchain_orders::{
     ICoWSwapOnchainOrders, OnchainOrderInvalidation, OnchainOrderPlacement,
     decode_order_invalidation, decode_order_placement,
 };
-use crate::order::ORDER_UID_LENGTH;
 use crate::order::reject_zero_receiver;
-use crate::primitives::check_topics;
+use crate::primitives::{check_topics, order_uid_from_bytes};
 
 sol! {
     // Canonical CoWSwapEthFlow ABI surface. Signatures mirror cowprotocol/
@@ -71,7 +70,7 @@ sol! {
 /// [`encode_create_order_calldata`] and [`encode_invalidate_order_calldata`].
 ///
 /// Field order mirrors the upstream on-chain `EthFlowOrder.Data` struct.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EthFlowOrderData {
     /// Buy-token address.
     pub buy_token: Address,
@@ -313,17 +312,19 @@ pub fn decode_order_refund(log: &LogData) -> Result<OnchainOrderRefund, Contract
         log.topics().iter().copied(),
         log.data.as_ref(),
     )?;
-    let bytes = event.orderUid.as_ref();
-    let uid: [u8; ORDER_UID_LENGTH] =
-        bytes
-            .try_into()
-            .map_err(|_| ContractsError::InvalidOrderUidLength {
-                actual: bytes.len(),
-            })?;
     Ok(OnchainOrderRefund {
-        order_uid: OrderUid::from_bytes(uid),
+        order_uid: order_uid_from_bytes(event.orderUid.as_ref())?,
         refunder: Address::from_bytes(event.refunder.into_array()),
     })
+}
+
+impl TryFrom<&LogData> for OnchainOrderRefund {
+    type Error = ContractsError;
+
+    /// Decodes a `CoWSwapEthFlow` `OrderRefund` log; see [`decode_order_refund`].
+    fn try_from(log: &LogData) -> Result<Self, Self::Error> {
+        decode_order_refund(log)
+    }
 }
 
 /// A decoded event from the eth-flow on-chain order lifecycle.
@@ -373,6 +374,15 @@ pub fn decode_eth_flow_log(log: &LogData) -> Result<EthFlowEvent, ContractsError
         decode_order_refund(log).map(EthFlowEvent::OrderRefund)
     } else {
         Err(ContractsError::UnexpectedEventTopics { event: "eth-flow" })
+    }
+}
+
+impl TryFrom<&LogData> for EthFlowEvent {
+    type Error = ContractsError;
+
+    /// Decodes any eth-flow lifecycle event log; see [`decode_eth_flow_log`].
+    fn try_from(log: &LogData) -> Result<Self, Self::Error> {
+        decode_eth_flow_log(log)
     }
 }
 

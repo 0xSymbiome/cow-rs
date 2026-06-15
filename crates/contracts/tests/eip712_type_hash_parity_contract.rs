@@ -2,7 +2,7 @@
 
 use alloy_primitives::{Address, B256, Bytes, U256};
 use alloy_sol_types::{Eip712Domain, SolStruct};
-use cow_sdk_contracts::cow_shed::{ExecuteHooks, SolCall};
+use cow_sdk_contracts::cow_shed::{Call, ExecuteHooks};
 use sha3::{Digest, Keccak256};
 
 /// Asserts the macro-emitted EIP-712 type hashes for the COW Shed
@@ -12,7 +12,7 @@ use sha3::{Digest, Keccak256};
 /// independent keccak implementation.
 #[test]
 fn type_hashes_match_canonical_type_strings() {
-    let call_sample = SolCall {
+    let call_sample = Call {
         target: Address::ZERO,
         value: U256::ZERO,
         callData: Bytes::default(),

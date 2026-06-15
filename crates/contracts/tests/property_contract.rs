@@ -27,7 +27,7 @@ use cow_sdk_contracts::{
     pack_order_uid_params,
 };
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, BuyTokenDestination, OrderData, OrderDigest, OrderKind,
+    Address, Amount, AppDataHash, BuyTokenDestination, HexData, OrderData, OrderDigest, OrderKind,
     SellTokenSource, TypedDataDomain,
 };
 use proptest::prelude::*;
@@ -260,7 +260,7 @@ proptest! {
         valid_to in any::<u32>(),
     ) {
         let params = OrderUidParams::new(digest, owner, valid_to);
-        let uid = pack_order_uid_params(&params).unwrap();
+        let uid = pack_order_uid_params(&params);
         let extracted = extract_order_uid_params(&uid).unwrap();
 
         prop_assert_eq!(extracted.order_digest.to_hex_string(), digest.to_hex_string());
@@ -371,13 +371,13 @@ proptest! {
 
         let encoded = encode_eip1271_signature_data(&Eip1271SignatureData::new(
             verifier,
-            signature.clone(),
+            HexData::new(&signature).unwrap(),
         ))
         .unwrap();
         let decoded = decode_eip1271_signature_data(&encoded).unwrap();
 
         prop_assert_eq!(&decoded.verifier, &verifier);
-        prop_assert_eq!(decoded.signature, format!("0x{}", alloy_primitives::hex::encode(&payload_bytes)));
+        prop_assert_eq!(decoded.signature.to_hex_string(), format!("0x{}", alloy_primitives::hex::encode(&payload_bytes)));
         prop_assert_eq!(encoded.len(), 2 + ((20 + byte_len) * 2));
 
         let encoded_bytes = alloy_primitives::hex::decode(encoded.trim_start_matches("0x")).unwrap();

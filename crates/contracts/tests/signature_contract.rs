@@ -5,31 +5,15 @@ use std::{cell::RefCell, fmt, rc::Rc, sync::Mutex};
 use alloy_sol_types::SolCall;
 use cow_sdk_contracts::{
     ContractsError, Eip1271Cache, Eip1271SignatureData, Eip1271VerificationRequest, IERC1271,
-    RecoverableSignature, Signature, SigningScheme, decode_eip1271_signature_data,
-    decode_signing_scheme, encode_eip1271_signature_data, verify_eip1271_signature,
-    verify_eip1271_signature_cached,
+    NoopEip1271Cache, RecoverableSignature, Signature, SigningScheme,
+    decode_eip1271_signature_data, decode_signing_scheme, encode_eip1271_signature_data,
+    verify_eip1271_signature, verify_eip1271_signature_cached,
 };
 use cow_sdk_core::{
     Address, Amount, BlockInfo, ContractCall, ContractHandle, Hash32, HexData, Provider, Signer,
     SigningProvider, TransactionBroadcast, TransactionReceipt, TransactionRequest,
 };
-use k256::ecdsa::SigningKey;
 use sha3::{Digest, Keccak256};
-
-#[derive(Default)]
-struct NoCache;
-
-impl Eip1271Cache for NoCache {
-    fn contains_valid(
-        &self,
-        _verifier: Address,
-        _digest: [u8; 32],
-        _signature_hash: [u8; 32],
-    ) -> bool {
-        false
-    }
-    fn record_valid(&self, _verifier: Address, _digest: [u8; 32], _signature_hash: [u8; 32]) {}
-}
 
 /// Recorded `(verifier, digest, signature_hash)` probe identity.
 type CacheWrite = (Address, [u8; 32], [u8; 32]);
@@ -71,24 +55,7 @@ impl Eip1271Cache for RecordingCache {
     }
 }
 
-use common::{MockProvider, deterministic_signing_key, expected_address_for_key};
-
-fn ecdsa_signature_for_prehash(signing_key: &SigningKey, prehash: &[u8; 32]) -> String {
-    let (signature, recovery_id) = signing_key.sign_prehash_recoverable(prehash).unwrap();
-    let mut bytes = [0_u8; 65];
-    bytes[..64].copy_from_slice(signature.to_bytes().as_slice());
-    bytes[64] = recovery_id.to_byte() + 27;
-    format!("0x{}", alloy_primitives::hex::encode(bytes))
-}
-
-fn cow_eth_sign_prehash(digest: &Hash32) -> [u8; 32] {
-    let digest_bytes =
-        alloy_primitives::hex::decode(digest.to_hex_string().trim_start_matches("0x")).unwrap();
-    let mut payload = Vec::with_capacity(60);
-    payload.extend_from_slice(b"\x19Ethereum Signed Message:\n32");
-    payload.extend_from_slice(&digest_bytes);
-    Keccak256::digest(payload).into()
-}
+use common::MockProvider;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct AsyncMockProviderError(String);
@@ -263,7 +230,7 @@ fn eip1271_signature_payloads_roundtrip_with_variable_lengths() {
         "0x1234",
         "0x29a674dfc87f8c78fc2bfbcbe8ffdd435091a6a84bc7761db72a45da453d73ac41c5ce28eceb34be73fddc12a5d04af6e736405e41b613aeefeed3db8122420c1b",
     ] {
-        let data = Eip1271SignatureData::new(verifier, signature.to_owned());
+        let data = Eip1271SignatureData::new(verifier, HexData::new(signature).unwrap());
 
         let encoded = encode_eip1271_signature_data(&data).unwrap();
         let decoded = decode_eip1271_signature_data(&encoded).unwrap();
@@ -290,7 +257,7 @@ fn signature_helpers_preserve_public_contract_surface() {
     };
     let pre_sign = Signature::PreSign { owner: signer };
     let eip1271 = Signature::Eip1271 {
-        data: Eip1271SignatureData::new(signer, "0x1234".to_owned()),
+        data: Eip1271SignatureData::new(signer, HexData::new("0x1234").unwrap()),
     };
 
     assert_eq!(ecdsa.scheme(), SigningScheme::Eip712);
@@ -304,46 +271,16 @@ fn signature_helpers_preserve_public_contract_surface() {
     assert!(!SigningScheme::Eip1271.is_ecdsa());
 }
 
-#[test]
-fn recover_ecdsa_address_recovers_eip712_prehash_signer() {
-    let digest =
-        Hash32::new("0x5eb4f5a33c621f32a8622d5f943b6b102994dfe4e5aebbefe69bb1b2aa0fc93e").unwrap();
-    let signature = Signature::Ecdsa {
-        scheme: SigningScheme::Eip712,
-        data: "0x48b55bfa915ac795c431978d8a6a992b628d557da5ff759b307d495a36649353efffd310ac743f371de3b9f7f9cb56c0b28ad43601b4ab949f53faa07bd2c8041b".to_owned(),
-    };
-
-    let recovered = signature.recover_ecdsa_address(&digest).unwrap();
-
-    assert_eq!(
-        recovered,
-        Address::new("0x0f65fe9276bc9a24ae7083ae28e2660ef72df99e").unwrap()
-    );
-}
-
-#[test]
-fn recover_ecdsa_address_eth_sign_recovers_signer_through_canonical_eip191_prehash() {
-    let signing_key = deterministic_signing_key();
-    let digest =
-        Hash32::new("0x0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20").unwrap();
-    let prehash = cow_eth_sign_prehash(&digest);
-    let expected = expected_address_for_key(&signing_key);
-    let signature = Signature::Ecdsa {
-        scheme: SigningScheme::EthSign,
-        data: ecdsa_signature_for_prehash(&signing_key, &prehash),
-    };
-
-    let recovered = signature.recover_ecdsa_address(&digest).unwrap();
-
-    assert_eq!(recovered, expected);
-}
-
+// The ECDSA happy-path recovery (EIP-712 and EthSign prehash) is proven on the
+// underlying `RecoverableSignature::recover` in `recoverable_signature_contract.rs`;
+// `Signature::recover_ecdsa_address` only delegates to it for the `Ecdsa` variant,
+// so the contract test here pins the variant dispatch that the delegate adds.
 #[test]
 fn recover_ecdsa_address_rejects_non_ecdsa_variants() {
     let digest = Hash32::new(format!("0x{}", "11".repeat(32))).unwrap();
     let verifier = Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap();
     let eip1271 = Signature::Eip1271 {
-        data: Eip1271SignatureData::new(verifier, "0x1234".to_owned()),
+        data: Eip1271SignatureData::new(verifier, HexData::new("0x1234").unwrap()),
     };
     let pre_sign = Signature::PreSign { owner: verifier };
 
@@ -378,129 +315,6 @@ async fn eip1271_verification_reads_contract_code_and_magic_value() {
     let args: Vec<String> = serde_json::from_str(&call.args_json).unwrap();
     assert_eq!(args[0], format!("0x{}", "11".repeat(32)));
     assert_eq!(args[1], "0x1234");
-}
-
-#[tokio::test]
-async fn eip1271_verification_fails_closed_for_missing_code_and_transport_errors() {
-    let provider = MockProvider::new();
-    let verifier = Address::new("0x1111111111111111111111111111111111111111").unwrap();
-
-    let missing = verify_eip1271_signature(
-        &provider,
-        &Eip1271VerificationRequest::new(
-            verifier,
-            Hash32::new(format!("0x{}", "22".repeat(32))).unwrap(),
-            HexData::new("0x").unwrap(),
-        ),
-    )
-    .await
-    .unwrap_err();
-    match &missing {
-        ContractsError::UnsupportedEip1271Verifier { verifier: got } => {
-            assert_eq!(got.to_hex_string(), verifier.to_hex_string());
-        }
-        other => panic!("expected UnsupportedEip1271Verifier, got {other:?}"),
-    }
-
-    provider.set_code(Some("0x6001600055"));
-    provider.set_response_error(Some("rpc unavailable"));
-    let transport = verify_eip1271_signature(
-        &provider,
-        &Eip1271VerificationRequest::new(
-            verifier,
-            Hash32::new(format!("0x{}", "33".repeat(32))).unwrap(),
-            HexData::new("0x1234").unwrap(),
-        ),
-    )
-    .await
-    .unwrap_err();
-    match transport {
-        ContractsError::Eip1271Provider { operation, message } => {
-            assert_eq!(operation, "read_contract");
-            assert_eq!(message.as_inner(), "rpc unavailable");
-        }
-        other => panic!("expected Eip1271Provider, got {other:?}"),
-    }
-}
-
-#[tokio::test]
-async fn eip1271_verification_rejects_malformed_and_wrong_magic_responses() {
-    let provider = MockProvider::new();
-    let verifier = Address::new("0x2222222222222222222222222222222222222222").unwrap();
-    provider.set_code(Some("0x6001600055"));
-
-    provider.set_response("{\"unexpected\":true}");
-    let malformed = verify_eip1271_signature(
-        &provider,
-        &Eip1271VerificationRequest::new(
-            verifier,
-            Hash32::new(format!("0x{}", "44".repeat(32))).unwrap(),
-            HexData::new("0x1234").unwrap(),
-        ),
-    )
-    .await
-    .unwrap_err();
-    match &malformed {
-        ContractsError::MalformedEip1271Response { response } => {
-            assert_eq!(response.as_inner(), "{\"unexpected\":true}");
-        }
-        other => panic!("expected MalformedEip1271Response, got {other:?}"),
-    }
-
-    provider.set_response("\"0xffffffff\"");
-    let mismatch = verify_eip1271_signature(
-        &provider,
-        &Eip1271VerificationRequest::new(
-            verifier,
-            Hash32::new(format!("0x{}", "55".repeat(32))).unwrap(),
-            HexData::new("0x1234").unwrap(),
-        ),
-    )
-    .await
-    .unwrap_err();
-    match &mismatch {
-        ContractsError::Eip1271MagicValueMismatch { expected, actual } => {
-            assert_eq!(*expected, [0x16, 0x26, 0xba, 0x7e]);
-            assert_eq!(*actual, [0xff, 0xff, 0xff, 0xff]);
-        }
-        other => panic!("expected Eip1271MagicValueMismatch, got {other:?}"),
-    }
-    assert_eq!(
-        format!(
-            "0x{}",
-            alloy_primitives::hex::encode(IERC1271::isValidSignatureCall::SELECTOR)
-        ),
-        "0x1626ba7e",
-        "IERC1271 selector must render to the canonical EIP-1271 magic-value hex",
-    );
-    assert_eq!(
-        mismatch.to_string(),
-        "unexpected EIP-1271 magic value: expected 0x1626ba7e, got 0xffffffff",
-    );
-}
-
-#[tokio::test(flavor = "current_thread")]
-async fn async_eip1271_verification_reads_contract_code_and_magic_value() {
-    let provider = AsyncMockProvider::new();
-    let verifier = Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap();
-    provider.set_code(Some("0x6001600055"));
-    provider.set_response("\"0x1626ba7e\"");
-
-    verify_eip1271_signature_cached(
-        &provider,
-        &Eip1271VerificationRequest::new(
-            verifier,
-            Hash32::new(format!("0x{}", "11".repeat(32))).unwrap(),
-            HexData::new("0x1234").unwrap(),
-        ),
-        &NoCache,
-    )
-    .await
-    .unwrap();
-
-    let call = provider.calls.borrow().last().cloned().unwrap();
-    assert_eq!(call.address, verifier);
-    assert_eq!(call.method, "isValidSignature");
 }
 
 #[tokio::test(flavor = "current_thread")]
@@ -615,7 +429,7 @@ async fn async_eip1271_verification_fails_closed_for_missing_code_and_transport_
             Hash32::new(format!("0x{}", "22".repeat(32))).unwrap(),
             HexData::new("0x1234").unwrap(),
         ),
-        &NoCache,
+        &NoopEip1271Cache,
     )
     .await
     .unwrap_err();
@@ -635,7 +449,7 @@ async fn async_eip1271_verification_fails_closed_for_missing_code_and_transport_
             Hash32::new(format!("0x{}", "33".repeat(32))).unwrap(),
             HexData::new("0x1234").unwrap(),
         ),
-        &NoCache,
+        &NoopEip1271Cache,
     )
     .await
     .unwrap_err();
@@ -656,7 +470,7 @@ async fn async_eip1271_verification_fails_closed_for_missing_code_and_transport_
             Hash32::new(format!("0x{}", "44".repeat(32))).unwrap(),
             HexData::new("0x1234").unwrap(),
         ),
-        &NoCache,
+        &NoopEip1271Cache,
     )
     .await
     .unwrap_err();

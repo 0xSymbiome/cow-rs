@@ -23,33 +23,24 @@
 use alloy_sol_types::{
     SolCall,
     private::{Address as SolAddress, Bytes as SolBytes, U256},
-    sol,
 };
 use cow_sdk_contracts::{
     CANCELLATIONS_TYPE_FIELDS, EthFlowOrderData, IERC20, IERC1271, InteractionLike,
     ORDER_TYPE_FIELDS, ORDER_UID_LENGTH, SigningScheme, encode_create_order_calldata,
     encode_invalidate_order_calldata, normalize_interaction,
 };
+use cow_sdk_contracts::settlement::IGPv2Settlement;
 use cow_sdk_core::{
     Address, Amount, AppDataHash, BuyTokenDestination, OrderDigest, OrderUid, SellTokenSource,
 };
 use serde_json::Value;
 
-// Local `alloy::sol!` re-declaration of the two binding families whose
-// generated types are internal to `cow-sdk-contracts`. The parity test asserts
-// that the crate's encoder output is byte-identical to the canonical upstream
-// ABI, and the local re-declaration provides an independent authoring surface
-// that produces the same bytes only if the Solidity signature and field order
-// still match upstream.
-sol! {
-    interface IGPv2Settlement {
-        function invalidateOrder(bytes orderUid) external;
-        function setPreSignature(bytes orderUid, bool signed) external;
-        function freeFilledAmountStorage(bytes[] orderUids) external;
-        function freePreSignatureStorage(bytes[] orderUids) external;
-    }
-}
-
+// The settlement calldata cases encode through the shipped
+// `cow_sdk_contracts::settlement::IGPv2Settlement` binding (imported above) and
+// assert the bytes are identical to the upstream-pinned fixture vectors. Driving
+// the shipped binding — rather than a test-local re-declaration — is what makes
+// this gate guard the encoder the SDK actually ships: a field-order or selector
+// drift in the binding now fails here instead of passing against a decoy.
 const FIXTURE: &str = include_str!("../../../parity/fixtures/contracts.json");
 
 #[test]
@@ -375,7 +366,6 @@ fn sample_order_uid() -> OrderUid {
         owner,
         0x1234_5678,
     ))
-    .expect("sample OrderUid packing must succeed")
 }
 
 fn assert_calldata_hex(id: &str, actual_bytes: &[u8], expected_hex: &str) {
@@ -416,7 +406,6 @@ fn sample_secondary_order_uid() -> OrderUid {
         owner,
         0x9abc_def0,
     ))
-    .expect("secondary OrderUid packing must succeed")
 }
 
 fn order_uid_as_sol_bytes(uid: &OrderUid) -> SolBytes {

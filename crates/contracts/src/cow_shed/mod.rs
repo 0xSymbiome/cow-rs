@@ -68,8 +68,8 @@ pub use calls::{
     encode_execute_hooks_calldata_signed, encode_execute_hooks_calldata_with_signature,
 };
 pub use eip712::{
-    ExecuteHooks, SolCall, cow_shed_domain_separator, cow_shed_eip712_domain,
-    execute_hooks_signing_hash, execute_hooks_typed_data_payload,
+    ExecuteHooks, cow_shed_domain_separator, cow_shed_eip712_domain, execute_hooks_signing_hash,
+    execute_hooks_typed_data_payload,
 };
 pub use errors::CowShedError;
 pub use hooks::{CowShedHooks, SignedCowShedCall};

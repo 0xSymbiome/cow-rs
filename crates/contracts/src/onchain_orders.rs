@@ -38,9 +38,10 @@ use cow_sdk_core::{
 use crate::SigningScheme;
 use crate::deployments::{ContractId, Registry};
 use crate::errors::ContractsError;
-use crate::order::{ORDER_UID_LENGTH, compute_order_uid};
+use crate::order::compute_order_uid;
 use crate::primitives::{
-    buy_balance_from_marker, check_topics, order_kind_from_marker, sell_balance_from_marker,
+    buy_balance_from_marker, check_topics, order_kind_from_marker, order_uid_from_bytes,
+    sell_balance_from_marker,
 };
 
 sol! {
@@ -262,16 +263,29 @@ pub fn decode_order_invalidation(
         log.topics().iter().copied(),
         log.data.as_ref(),
     )?;
-    let bytes = event.orderUid.as_ref();
-    let uid: [u8; ORDER_UID_LENGTH] =
-        bytes
-            .try_into()
-            .map_err(|_| ContractsError::InvalidOrderUidLength {
-                actual: bytes.len(),
-            })?;
     Ok(OnchainOrderInvalidation {
-        order_uid: OrderUid::from_bytes(uid),
+        order_uid: order_uid_from_bytes(event.orderUid.as_ref())?,
     })
+}
+
+impl TryFrom<&LogData> for OnchainOrderPlacement {
+    type Error = ContractsError;
+
+    /// Decodes a `CoWSwapOnchainOrders` `OrderPlacement` log; see
+    /// [`decode_order_placement`].
+    fn try_from(log: &LogData) -> Result<Self, Self::Error> {
+        decode_order_placement(log)
+    }
+}
+
+impl TryFrom<&LogData> for OnchainOrderInvalidation {
+    type Error = ContractsError;
+
+    /// Decodes a `CoWSwapOnchainOrders` `OrderInvalidation` log; see
+    /// [`decode_order_invalidation`].
+    fn try_from(log: &LogData) -> Result<Self, Self::Error> {
+        decode_order_invalidation(log)
+    }
 }
 
 fn reconstruct_order(

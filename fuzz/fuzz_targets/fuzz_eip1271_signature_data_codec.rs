@@ -14,7 +14,7 @@
 use cow_sdk_contracts::{
     Eip1271SignatureData, decode_eip1271_signature_data, encode_eip1271_signature_data,
 };
-use cow_sdk_core::Address;
+use cow_sdk_core::{Address, HexData};
 use libfuzzer_sys::fuzz_target;
 
 const MAX_EIP1271_SIGNATURE_BYTES: usize = 256;
@@ -34,7 +34,7 @@ fuzz_target!(|data: &[u8]| {
 
     let data = Eip1271SignatureData::new(
         Address::from_bytes(verifier_bytes),
-        format!("0x{}", hex::encode(payload)),
+        HexData::from_bytes(payload.to_vec()),
     );
 
     let encoded = encode_eip1271_signature_data(&data)
