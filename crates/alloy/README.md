@@ -2,6 +2,12 @@
 
 Native composed Alloy adapter package for the `cow-rs` SDK.
 
+> ⚠️ **Alpha — `0.1.0-alpha`.** Pre-release and not security-audited; the public
+> API may change before `0.1.0`. It is published as a pre-release, so Cargo
+> selects it only when you opt in (`cow-sdk-alloy = "0.1.0-alpha.1"`). It builds
+> a local private-key signer — review it yourself before relying on it with real
+> funds.
+
 This crate is the umbrella package for applications that want native Alloy
 provider and signer support through one opt-in dependency. It re-exports the
 leaf package namespaces while keeping the default `cow-sdk` facade free of
@@ -57,7 +63,7 @@ the adapter consumes cow values directly without per-call conversion.
 
 ```toml
 [dependencies]
-cow-sdk-alloy = "0.1"
+cow-sdk-alloy = "0.1.0-alpha.1"
 ```
 
 ## Quick Start
@@ -87,6 +93,12 @@ RPC retries are off by default. Pass a `cow_sdk_alloy::RetryConfig` to the
 builder's `retry` setter to opt into bounded exponential backoff for
 transient, rate-limited reads; the umbrella reuses the provider leaf's retry
 policy.
+
+## Features
+
+| Feature | Default | Enables |
+| --- | --- | --- |
+| `eip712` | on | EIP-712 typed-data signing through the signer leaf. Disable default features for the EIP-191 message-only path. |
 
 ## Signing And Submission
 

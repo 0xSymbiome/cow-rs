@@ -4,6 +4,11 @@ Typed [CoW Protocol](https://cow.fi) subgraph query primitives with
 saved query documents, explicit raw-GraphQL request contracts, and a
 typed, credential-redacting error boundary.
 
+> ⚠️ **Alpha — `0.1.0-alpha`.** Pre-release and not security-audited; the public
+> API may change before `0.1.0`. It is published as a pre-release, so Cargo
+> selects it only when you opt in (`cow-sdk-subgraph = "0.1.0-alpha.1"`). Review
+> it yourself before relying on it with real funds.
+
 This is a read-only analytics crate. It stays separate from the **default**
 [`cow-sdk`](https://crates.io/crates/cow-sdk) facade so trading-first consumers
 do not pay a GraphQL transport dependency they do not use. Reach it either by
@@ -11,13 +16,6 @@ enabling the `subgraph` feature on `cow-sdk` (`cow-sdk = { features =
 ["subgraph"] }`, surfaced as `cow_sdk::subgraph`) or by depending on this crate
 directly when building analytics, reporting, or dashboards over CoW Protocol
 subgraph data.
-
-## Install
-
-```toml
-[dependencies]
-cow-sdk-subgraph = "0.1"
-```
 
 ## Surface
 
@@ -29,6 +27,13 @@ cow-sdk-subgraph = "0.1"
 The typestate `SubgraphApi::builder()` requires a chain, a The Graph API key,
 and (on `wasm32`) an explicit transport before `build()` is reachable. The API
 key is redacted in every debug, display, and serialized rendering.
+
+## Install
+
+```toml
+[dependencies]
+cow-sdk-subgraph = "0.1.0-alpha.1"
+```
 
 ## Example
 
@@ -59,6 +64,24 @@ let gnosis_totals = subgraph
 # Ok(())
 # }
 ```
+
+## Feature flags
+
+| Feature | Default | Enables |
+| --- | --- | --- |
+| `tracing` | off | Instruments `totals`, `last_days_volume`, `last_hours_volume`, and `query` with `tracing` spans, and enables `cow-sdk-core`'s tracing. |
+
+## Where this fits
+
+This crate is read-only analytics; it does not place, sign, or mutate orders. It
+requires a partner The Graph API key — there is no keyless route — and the key is
+redacted in every debug, display, and serialized rendering, including the gateway
+URL that embeds it (ADR 0025). Chains without a deployed subgraph (for example
+Polygon, Avalanche, BNB, and Linea) return `SubgraphError::UnsupportedNetwork`
+rather than failing silently. Order placement, signing, and submission live in
+[`cow-sdk-trading`](https://crates.io/crates/cow-sdk-trading),
+[`cow-sdk-signing`](https://crates.io/crates/cow-sdk-signing), and
+[`cow-sdk-orderbook`](https://crates.io/crates/cow-sdk-orderbook).
 
 ## Where to next
 

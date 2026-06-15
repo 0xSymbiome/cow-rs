@@ -4,6 +4,11 @@ High-level [CoW Protocol](https://cow.fi) trading orchestration surface
 covering quoting, signing, posting, allowance management, and on-chain
 order actions.
 
+> ⚠️ **Alpha — `0.1.0-alpha`.** Pre-release and not security-audited; the public
+> API may change before `0.1.0`. It is published as a pre-release, so Cargo
+> selects it only when you opt in (`cow-sdk-trading = "0.1.0-alpha.1"`). Review
+> it yourself before relying on it with real funds.
+
 This is the orchestration layer that turns configured signers,
 providers, and orderbook clients into a single ready-state trading
 facade. The primary entry point is `Trading`. Most end-user code
@@ -15,7 +20,7 @@ the browser-wallet optional dependency.
 
 ```toml
 [dependencies]
-cow-sdk-trading = "0.1"
+cow-sdk-trading = "0.1.0-alpha.1"
 ```
 
 ## Minimal example
@@ -234,6 +239,24 @@ When only the revert verdict matters, `WaitError::reverted()` returns the
 reverted receipt for a mined on-chain failure and `None` for the transient
 broadcast, lookup, timeout, and cancellation variants — a coarse alternative to
 matching each variant.
+
+## Feature flags
+
+| Feature | Default | Enables |
+| --- | --- | --- |
+| `tracing` | off | `tracing` spans on every `Trading` method and the broadcast/receipt path, and enables tracing across the core, contracts, signing, orderbook, and app-data crates. |
+
+## Where this fits
+
+`Trading` orchestrates; it carries no transport or signing crypto of its own.
+Orderbook I/O is delegated to an injected or default
+[`cow-sdk-orderbook`](https://crates.io/crates/cow-sdk-orderbook) client (which
+owns retry and rate-limit policy), and signing goes through a caller-supplied
+`cow_sdk_core::Signer`. `OrderBoundsValidator` enforces only operator-independent
+invariants client-side; the services backend remains authoritative for
+deny-lists, balances, exact validity windows, and price checks. No `alloy_*` type
+appears in the public API. Most consumers reach this crate through the
+[`cow-sdk`](https://crates.io/crates/cow-sdk) facade as `cow_sdk::trading`.
 
 ## Examples
 

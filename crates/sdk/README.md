@@ -2,6 +2,11 @@
 
 Primary Rust SDK facade for [CoW Protocol](https://cow.fi).
 
+> ⚠️ **Alpha — `0.1.0-alpha`.** Pre-release and not security-audited; the public
+> API may change before `0.1.0`. It is published as a pre-release, so Cargo
+> selects it only when you opt in (`cow-sdk = "0.1.0-alpha.1"`). Review it
+> yourself before relying on it with real funds.
+
 `cow-sdk` is the curated first-touch entry point of the `cow-rs` crate
 family. It re-exports the core types, signing helpers, contract helpers,
 orderbook client, app-data helpers, and the high-level trading
@@ -18,7 +23,7 @@ re-export through the facade as cow-owned
 
 ```toml
 [dependencies]
-cow-sdk = "0.1"
+cow-sdk = "0.1.0-alpha.1"
 ```
 
 ## Native default example

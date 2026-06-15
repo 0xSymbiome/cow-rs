@@ -3,6 +3,11 @@
 [CoW Protocol](https://cow.fi) app-data document generation, typed
 validation, CID conversion, and the IPFS read transport seam.
 
+> ⚠️ **Alpha — `0.1.0-alpha`.** Pre-release and not security-audited; the public
+> API may change before `0.1.0`. It is published as a pre-release, so Cargo
+> selects it only when you opt in (`cow-sdk-app-data = "0.1.0-alpha.1"`). Review
+> it yourself before relying on it with real funds.
+
 `appData` is the canonical metadata attached to every CoW Protocol order.
 This crate builds deterministic app-data documents, validates them through
 typed metadata construction, computes their keccak256 digest, and
@@ -19,7 +24,7 @@ through the orderbook.
 
 ```toml
 [dependencies]
-cow-sdk-app-data = "0.1"
+cow-sdk-app-data = "0.1.0-alpha.1"
 ```
 
 ## Minimal example
@@ -125,6 +130,23 @@ the canonical CID conversion lives on the inherent method
 `AppDataHash::to_cid`. The digest input fed to
 `alloy_primitives::keccak256` is the canonical-JSON byte stream produced
 by `serde_jcs`.
+
+## Feature flags
+
+| Feature | Default | Enables |
+| --- | --- | --- |
+| `tracing` | off | Emits `tracing` spans and enables `cow-sdk-core`'s tracing. |
+
+## Where this fits
+
+This crate builds and validates app-data and converts hex ↔ CID. It does not
+perform IPFS networking itself — you supply an `IpfsFetchTransport` — and it does
+not sign, submit, or attach app-data to an order. Registering a document is an
+orderbook concern via `OrderbookApi::upload_app_data`
+([`cow-sdk-orderbook`](https://crates.io/crates/cow-sdk-orderbook)); the digest
+and content also feed
+[`cow-sdk-trading`](https://crates.io/crates/cow-sdk-trading). Only the
+CIDv1 + raw + keccak-256 shape is supported; CIDv0 is rejected.
 
 ## Where to next
 

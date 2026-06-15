@@ -4,6 +4,17 @@ In-memory test doubles for the `cow-rs` SDK public trait seams, so a downstream
 application can test its integration without a live orderbook, RPC endpoint, or
 wallet — the `tokio-test` / `tower-test` pattern, built only on the public API.
 
+> ⚠️ **Alpha — `0.1.0-alpha`.** Pre-release and not security-audited; the public
+> API may change before `0.1.0`. It is published as a pre-release, so Cargo
+> selects it only when you opt in (`cow-sdk-test = "0.1.0-alpha.1"`).
+
+## Install
+
+```toml
+[dev-dependencies]
+cow-sdk-test = "0.1.0-alpha.1"
+```
+
 ## What it provides
 
 - **`MockOrderbook`** — an `OrderbookClient` double: a canned quote and order-uid,
