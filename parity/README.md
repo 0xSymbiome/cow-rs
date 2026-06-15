@@ -190,7 +190,13 @@ Fixtures hold **class-T** content only: values transcribed from a pinned
 upstream artifact (digests, byte vectors, wire-DTO samples, RFC-derived dates).
 Self-derived **class-C** convention pins — outputs our own formula produces from
 inputs, with no upstream byte to transcribe — live inline in the consuming test
-as `const` literals with a derivation comment, not as a fixture.
+as `const` literals with a derivation comment, not as a fixture. The one
+exception is a self-derived pin that anchors a *cross-cutting* contract — an
+ADR's reference-vector set that also seeds a fuzz corpus and is asserted by more
+than one suite — where a single header-validated fixture is the more auditable
+home than the same vectors copied inline across every consumer. The ECDSA
+`v`-normalization vectors (`fixtures/ecdsa/v_normalization.json`, governed by
+ADR 0022 and seeding `fuzz_recover_ecdsa_address`) are the only such pin.
 
 ## One home per provenance class
 
@@ -229,6 +235,15 @@ TypeScript executes during `cargo test`; behavioral cross-verification would
 require a separate harness beyond this layer. The provenance gate proves the
 vectors are anchored and honest; the consuming contract tests prove the SDK
 reproduces them.
+
+`cargo parity-validate` checks **provenance**, not payload values: it holds every
+fixture to its pinned source and confirms each ref lands in a declared producer
+path, but the payload below the header is opaque to it. Whether a payload value is
+a legal instance of the cited schema — an enum member, a value in range — is
+proven by the consuming `cargo test`. For a wire field the SDK models as a typed
+enum, an illegal value fails deserialization there; for a field the SDK keeps as an
+opaque string for forward compatibility, a dedicated contract test pins the closed
+set of legal values against its upstream producer.
 
 External reference implementations are not part of this contract. They may be
 consulted as secondary implementation references, but they must never be used as

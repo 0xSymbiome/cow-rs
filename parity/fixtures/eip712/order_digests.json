@@ -1,5 +1,13 @@
 {
   "surface": "eip712-order-digests",
+  "sources": {
+    "contracts": {
+      "commit": "c6b61ce75841ce4c25ab126def9cc981c568e6c6",
+      "refs": [
+        "src/ts/order.ts#ORDER_TYPE_FIELDS"
+      ]
+    }
+  },
   "standards": [
     "EIP-712"
   ],

@@ -5,12 +5,13 @@
     "services": {
       "commit": "65b6953bfc2e96b2791cfb2382c7309d1fb19b99",
       "refs": [
-        "crates/orderbook/openapi.yml#components.schemas.OnchainOrderData"
+        "crates/orderbook/openapi.yml#components.schemas.OnchainOrderData",
+        "crates/model/src/order.rs#OnchainOrderPlacementError"
       ]
     }
   },
   "payload": {
     "sender": "0x0000000000000000000000000000000000000005",
-    "placementError": "none"
+    "placementError": "validToTooFarInTheFuture"
   }
 }

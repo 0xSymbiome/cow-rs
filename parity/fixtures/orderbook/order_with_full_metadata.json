@@ -49,7 +49,7 @@
     },
     "onchainOrderData": {
       "sender": "0x0000000000000000000000000000000000000005",
-      "placementError": "none"
+      "placementError": "validToTooFarInTheFuture"
     },
     "fullAppData": "{\"version\":\"1.0.0\",\"metadata\":{}}",
     "settlementContract": "0x0000000000000000000000000000000000000006",
@@ -81,7 +81,6 @@
           "callData": "0x1234"
         }
       ]
-    },
-    "totalFee": "3000000000000000"
+    }
   }
 }

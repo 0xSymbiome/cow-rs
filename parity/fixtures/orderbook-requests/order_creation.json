@@ -8,7 +8,7 @@
       "refs": [
         "crates/orderbook/openapi.yml#components.schemas.OrderCreation",
         "crates/shared/src/order_validation.rs#partial_validate,validate_period",
-        "crates/model/src/order.rs#L439-L461"
+        "crates/model/src/order.rs#OrderCreationAppData"
       ]
     }
   },

@@ -140,7 +140,10 @@ fn onchain_order_data_fixture_deserializes_typed_accessors() {
         data.sender.to_hex_string(),
         "0x0000000000000000000000000000000000000005"
     );
-    assert_eq!(data.placement_error.as_deref(), Some("none"));
+    assert_eq!(
+        data.placement_error.as_deref(),
+        Some("validToTooFarInTheFuture")
+    );
 }
 
 // Source-locked to the upstream services producer's own v2 serialization
@@ -354,5 +357,79 @@ fn total_fee_x_executed_fee_amount_matrix_holds_for_zero_legacy_zero_canonical_l
             amount(expected_legacy),
             "{label}: legacy executedFeeAmount must remain preserved",
         );
+    }
+}
+
+/// Closed set of `OnchainOrderPlacementError` wire values, mirrored from the
+/// services `crates/model/src/order.rs` producer enum
+/// (`#[serde(rename_all = "camelCase")]`) at the pinned commit. Refresh only when
+/// that enum changes.
+const KNOWN_PLACEMENT_ERRORS: &[&str] = &[
+    "validToTooFarInTheFuture",
+    "disabledOrderClass",
+    "preValidationError",
+    "invalidQuote",
+    "insufficientFee",
+    "nonZeroFee",
+    "invalidOrderData",
+    "other",
+];
+
+/// Value-legality guard the lenient `Option<String>` type cannot give: every
+/// `placementError` a fixture carries must be a real `OnchainOrderPlacementError`
+/// member. The SDK keeps `placement_error` as `Option<String>` for forward
+/// compatibility — a new upstream variant must not break deserialization — so,
+/// unlike the typed-enum wire fields, the type system does not reject an invented
+/// value. This pins the closed set instead.
+#[test]
+fn fixture_placement_errors_are_real_upstream_variants() {
+    let fixtures = [
+        (
+            "onchain_order_data.json",
+            include_str!("../../../parity/fixtures/orderbook/onchain_order_data.json"),
+        ),
+        (
+            "order_with_full_metadata.json",
+            include_str!("../../../parity/fixtures/orderbook/order_with_full_metadata.json"),
+        ),
+    ];
+    let mut checked = 0usize;
+    for (name, raw) in fixtures {
+        let document: Value =
+            serde_json::from_str(raw).unwrap_or_else(|error| panic!("{name} must parse: {error}"));
+        visit_placement_errors(&document, &mut |value| {
+            checked += 1;
+            assert!(
+                KNOWN_PLACEMENT_ERRORS.contains(&value),
+                "{name}: placementError {value:?} is not an OnchainOrderPlacementError variant; \
+                 the lenient Option<String> deserialises it, but services never emits it",
+            );
+        });
+    }
+    assert!(
+        checked > 0,
+        "expected at least one placementError across the onchain-order fixtures",
+    );
+}
+
+/// Invokes `visit` for every string keyed by `placementError`, at any depth.
+fn visit_placement_errors(value: &Value, visit: &mut impl FnMut(&str)) {
+    match value {
+        Value::Object(map) => {
+            for (key, nested) in map {
+                if key == "placementError"
+                    && let Some(rendered) = nested.as_str()
+                {
+                    visit(rendered);
+                }
+                visit_placement_errors(nested, visit);
+            }
+        }
+        Value::Array(items) => {
+            for item in items {
+                visit_placement_errors(item, visit);
+            }
+        }
+        _ => {}
     }
 }
