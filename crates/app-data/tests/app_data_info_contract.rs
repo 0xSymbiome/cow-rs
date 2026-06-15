@@ -1,6 +1,6 @@
 mod common;
 
-use cow_sdk_app_data::{APP_DATA_MAX_BYTES, AppDataError, app_data_info};
+use cow_sdk_app_data::{AppDataError, app_data_info};
 use serde_json::json;
 
 use crate::common::{
@@ -38,58 +38,7 @@ fn invalid_documents_fail_through_typed_error_surface() {
     assert!(matches!(error, AppDataError::InvalidAppDataProvided { .. }));
 }
 
-#[test]
-fn app_data_size_guard_accepts_exactly_the_configured_maximum() {
-    assert_eq!(APP_DATA_MAX_BYTES, 8192);
-
-    let overhead_with_empty_filler =
-        r#"{"appCode":"","environment":"production","metadata":{},"version":"1.3.0"}"#.len();
-    let filler_size = APP_DATA_MAX_BYTES - overhead_with_empty_filler;
-    let filler = "a".repeat(filler_size);
-    let at_limit_doc = format!(
-        r#"{{"appCode":"{filler}","environment":"production","metadata":{{}},"version":"1.3.0"}}"#
-    );
-    assert_eq!(
-        at_limit_doc.len(),
-        APP_DATA_MAX_BYTES,
-        "constructed document must match the configured ceiling exactly"
-    );
-
-    let accepted = app_data_info(at_limit_doc);
-    assert!(
-        accepted.is_ok(),
-        "documents at exactly the configured ceiling must pass the size guard: {accepted:?}"
-    );
-}
-
-#[test]
-fn app_data_size_guard_rejects_documents_above_the_configured_maximum() {
-    let overhead_with_empty_filler =
-        r#"{"appCode":"","environment":"production","metadata":{},"version":"1.3.0"}"#.len();
-    let filler_size = APP_DATA_MAX_BYTES - overhead_with_empty_filler + 1;
-    let filler = "a".repeat(filler_size);
-    let oversized_doc = format!(
-        r#"{{"appCode":"{filler}","environment":"production","metadata":{{}},"version":"1.3.0"}}"#
-    );
-    assert_eq!(
-        oversized_doc.len(),
-        APP_DATA_MAX_BYTES + 1,
-        "constructed document must sit one byte past the configured ceiling"
-    );
-
-    let rejected = app_data_info(oversized_doc).unwrap_err();
-    match rejected {
-        AppDataError::TooLarge {
-            actual_bytes,
-            max_bytes,
-        } => {
-            assert_eq!(max_bytes, APP_DATA_MAX_BYTES);
-            assert_eq!(
-                actual_bytes,
-                APP_DATA_MAX_BYTES + 1,
-                "TooLarge must surface the exact oversized byte count"
-            );
-        }
-        other => panic!("expected AppDataError::TooLarge, got {other:?}"),
-    }
-}
+// The at-ceiling acceptance (+ the `APP_DATA_MAX_BYTES == 8192` pin and the
+// approaching-limit warning) and the one-byte-over `TooLarge` rejection are
+// owned by `validated_shape_contract.rs`, which additionally asserts the
+// validated wrapper is never constructed past the ceiling.

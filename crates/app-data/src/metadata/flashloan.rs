@@ -3,9 +3,9 @@
 //! The reviewed services authority carries a single flash-loan hint per order
 //! with five required fields — `liquidityProvider`, `protocolAdapter`,
 //! `receiver`, `token`, and `amount` — expressed on the wire as a camelCase
-//! object. The `flashloan-v0.2.0.json` drift fixture constrains `amount` to a
-//! positive decimal string (`^[1-9]\d*$`) and the address fields through the
-//! Ethereum-address regex.
+//! object. The `parity/fixtures/app_data/schemas/flashloan.json` drift schema
+//! constrains `amount` to a positive decimal string (`^[1-9]\d*$`) and the
+//! address fields through the Ethereum-address regex.
 //!
 //! [`FlashloanHints`] narrows that wire shape to a typed Rust struct whose
 //! derived serde impls reproduce the wire form byte-identically. The typed
@@ -95,7 +95,7 @@ impl FlashloanHints {
 }
 
 fn validate_non_zero_address(field: &'static str, address: &Address) -> Result<(), AppDataError> {
-    if address == &Address::from_bytes([0u8; 20]) {
+    if address.is_zero() {
         return Err(AppDataError::InvalidFlashloanHints {
             field,
             reason: ValidationReason::BadShape {

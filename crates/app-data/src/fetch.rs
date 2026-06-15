@@ -164,10 +164,11 @@ pub async fn fetch_doc_from_app_data_hex_with_policy(
     transport: &impl IpfsFetchTransport,
     policy: &IpfsFetchPolicy,
 ) -> Result<AppDataDoc, AppDataError> {
-    let cid = app_data_hex_to_cid(app_data_hex).map_err(|err| AppDataError::Transport {
-        class: cow_sdk_core::TransportErrorClass::Decode,
-        detail: format!("error decoding appDataHex={app_data_hex}: {err}").into(),
-    })?;
+    // Propagate the original typed `InvalidAppDataHex` (class = Validation): a
+    // caller-supplied bad digest is a validation failure, not a transport/decode
+    // one, and the typed error carries the precise reason without re-wrapping the
+    // caller's input into a transport detail string.
+    let cid = app_data_hex_to_cid(app_data_hex)?;
     fetch_doc_from_cid_with_policy(&cid, transport, policy).await
 }
 

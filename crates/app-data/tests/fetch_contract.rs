@@ -87,13 +87,11 @@ async fn fetch_by_app_data_hex_rejects_invalid_hex() {
     let error = fetch_doc_from_app_data_hex("invalidHash", &transport, None)
         .await
         .unwrap_err();
-    match &error {
-        AppDataError::Transport { detail, .. } => {
-            assert!(detail.as_inner().contains("error decoding appDataHex"));
-        }
-        other => panic!("expected Transport error, got {other:?}"),
-    }
-    assert_eq!(error.to_string(), "transport error (decode): [redacted]");
+    assert!(
+        matches!(error, AppDataError::InvalidAppDataHex),
+        "a malformed appDataHex is a validation failure, not a transport error: {error:?}"
+    );
+    assert_eq!(error.to_string(), "invalid app data hex");
 }
 
 #[test]

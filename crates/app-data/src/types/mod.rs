@@ -17,5 +17,3 @@ pub const DEFAULT_APP_CODE: &str = "CoW Swap";
 pub const DEFAULT_IPFS_READ_URI: &str = "https://gnosis.mypinata.cloud/ipfs";
 /// Latest bundled app-data schema version.
 pub const LATEST_APP_DATA_VERSION: &str = "1.14.0";
-/// Alias for the latest bundled schema version.
-pub const LATEST_SCHEMA_VERSION: &str = LATEST_APP_DATA_VERSION;

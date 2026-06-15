@@ -77,6 +77,10 @@ fn payload_at_threshold_emits_approaching_size_limit_warning() {
 
 #[test]
 fn payload_at_ceiling_still_emits_approaching_size_limit_warning() {
+    assert_eq!(
+        APP_DATA_MAX_BYTES, 8192,
+        "app-data size ceiling is pinned at 8192 bytes"
+    );
     let doc = document_of_size(APP_DATA_MAX_BYTES);
     let validated = app_data_info(doc).expect("at-ceiling payload must still succeed");
     assert_eq!(validated.validation.bytes_used, APP_DATA_MAX_BYTES);

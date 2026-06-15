@@ -327,7 +327,7 @@ const fn validate_surplus_bps(field: &'static str, value: u16) -> Result<(), App
 }
 
 fn validate_recipient(field: &'static str, recipient: &Address) -> Result<(), AppDataError> {
-    if recipient == &address_zero() {
+    if recipient.is_zero() {
         return Err(AppDataError::InvalidPartnerFee {
             field,
             reason: ValidationReason::Precondition {
@@ -336,10 +336,6 @@ fn validate_recipient(field: &'static str, recipient: &Address) -> Result<(), Ap
         });
     }
     Ok(())
-}
-
-const fn address_zero() -> Address {
-    Address::from_bytes([0u8; 20])
 }
 
 #[cfg(test)]

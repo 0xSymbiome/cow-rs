@@ -189,23 +189,9 @@ fn validate_rejects_out_of_range_volume_bps() {
     ));
 }
 
-#[test]
-fn validate_rejects_zero_volume_bps() {
-    let policy = PartnerFeePolicy::Volume {
-        volume_bps: 0,
-        recipient: address(RECIPIENT_A),
-    };
-    let error = policy
-        .validate()
-        .expect_err("zero volume bps must be rejected");
-    assert!(matches!(
-        error,
-        AppDataError::InvalidPartnerFee {
-            field: "partnerFee.volumeBps",
-            reason: ValidationReason::OutOfRange { .. },
-        }
-    ));
-}
+// Zero volume bps is the lower edge of the same out-of-range contract covered by
+// the exhaustive `0..=200` sweep below; the over-cap case above pins the typed
+// field/reason once.
 
 #[test]
 fn validate_rejects_out_of_range_surplus_bps() {

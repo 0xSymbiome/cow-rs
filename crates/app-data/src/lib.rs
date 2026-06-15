@@ -53,12 +53,11 @@ pub use fetch::{
 pub use info::{
     APP_DATA_APPROACHING_LIMIT_RATIO, APP_DATA_MAX_BYTES, AppDataSource, AppDataValidated,
     AppDataValidation, AppDataWarning, app_data_cid, app_data_content, app_data_info,
-    app_data_info_hex, digest_from_cid, stringify_deterministic,
+    app_data_info_hex, stringify_deterministic,
 };
 pub use metadata::{FlashloanHints, Hook, HookList, QuoteMetadata};
 pub use schema::{extract_schema_version, generate_app_data_doc, validate_app_data_doc};
 pub use types::{
     AppDataDoc, AppDataInfo, AppDataParams, DEFAULT_APP_CODE, DEFAULT_IPFS_READ_URI, IpfsConfig,
-    LATEST_APP_DATA_VERSION, LATEST_SCHEMA_VERSION, MetadataMap, PartnerFee, PartnerFeePolicy,
-    SchemaVersion,
+    LATEST_APP_DATA_VERSION, MetadataMap, PartnerFee, PartnerFeePolicy, SchemaVersion,
 };

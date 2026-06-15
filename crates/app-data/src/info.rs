@@ -4,7 +4,7 @@ use alloy_primitives::keccak256;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{AppDataDoc, AppDataError, AppDataInfo, app_data_hex_to_cid, cid_to_app_data_hex};
+use crate::{AppDataDoc, AppDataError, AppDataInfo, app_data_hex_to_cid};
 
 /// Client-side size ceiling for stringified app-data documents.
 ///
@@ -285,14 +285,6 @@ pub fn app_data_content(source: impl AppDataSource) -> Result<String, AppDataErr
     Ok(app_data_info(source)?.info.app_data_content)
 }
 
-/// Extracts the app-data hex digest from a supported CID.
-///
-/// # Errors
-///
-/// Returns [`AppDataError::InvalidCid`] if the CID is malformed or unsupported.
-pub fn digest_from_cid(cid: &str) -> Result<String, AppDataError> {
-    cid_to_app_data_hex(cid)
-}
 
 #[cfg(test)]
 mod tests {
@@ -354,6 +346,5 @@ mod tests {
         assert_eq!(app_data_info_hex(&document).unwrap(), info.app_data_hex);
         assert_eq!(app_data_cid(&document).unwrap(), info.cid);
         assert_eq!(app_data_content(&document).unwrap(), info.app_data_content);
-        assert_eq!(digest_from_cid(&info.cid).unwrap(), info.app_data_hex);
     }
 }
