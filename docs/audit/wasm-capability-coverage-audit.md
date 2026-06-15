@@ -63,8 +63,12 @@ reimplemented:
    EIP-1271-backed swap path, the native-currency-sell transaction builder, and
    the vault-relayer approval transaction builder.
 
-The canonical export inventory is enforced by
-`crates/wasm/tests/wasm_surface_contract.rs` and
+The canonical export inventory is pinned at the declaration level by
+`crates/wasm/tests/wasm_snapshot_surface_contract.rs` — which asserts every
+flavour's generated `.d.ts` declares the expected client methods (including
+`cancelOrders`, the `SubgraphClient` query methods, and the settlement and
+eth-flow log decoders), deterministic helpers, and DTOs — and exercised
+behaviourally by `crates/wasm/tests/wasm_surface_contract.rs` and
 `crates/wasm/tests/wasm_workflow_coverage_contract.rs`.
 
 ### Coverage map by crate
@@ -346,6 +350,7 @@ Primary regression coverage:
 
 - `crates/wasm/tests/wasm_surface_contract.rs`
 - `crates/wasm/tests/wasm_workflow_coverage_contract.rs`
+- `crates/wasm/tests/wasm_snapshot_surface_contract.rs`
 - `crates/wasm/tests/host_pure_helpers.rs`
 - `tests/wasm_dependency_invariant.rs`
 

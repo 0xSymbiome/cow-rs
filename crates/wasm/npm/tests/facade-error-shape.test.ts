@@ -36,7 +36,7 @@ describe("orderbook error retry-field parity (facade ⇄ generated)", () => {
 
   test("the generated declaration snapshot still emits the same retry fields", () => {
     const snapshot = readFileSync(
-      fileURLToPath(new URL("../../snapshots/raw/orderbook-bundler.d.ts", import.meta.url)),
+      fileURLToPath(new URL("../../snapshots/raw/orderbook.d.ts", import.meta.url)),
       "utf8",
     );
     const member = orderbookErrorMember(snapshot);

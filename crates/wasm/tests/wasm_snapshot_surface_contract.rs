@@ -220,6 +220,24 @@ fn generated_type_declarations_expose_feature_scoped_workflow_helpers() {
                     "getTrades(query: TradesQueryInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<TradeDto[]>>",
                     "getAppData(appDataHash: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<AppDataObjectDto>>",
                     "uploadAppData(appDataHash: string, fullAppData: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<{ uploaded: true }>>",
+                    "getQuote(request: OrderQuoteRequestInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<OrderQuoteResponseDto>>",
+                    "sendOrder(signed: SignedOrderDto, options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>",
+                    "sendOrderCreation(input: OrderCreationInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>",
+                    "cancelOrders(signed: SignedCancellationsInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<{ cancelled: true }>>",
+                ],
+            );
+        }
+
+        if snapshot.has_feature("subgraph") {
+            assert_contains_all(
+                &snapshot.name,
+                &content,
+                &[
+                    "export class SubgraphClient",
+                    "getTotals(options?: SdkClientOptions | null): Promise<any>",
+                    "getLastDaysVolume(days: number, options?: SdkClientOptions | null): Promise<any>",
+                    "getLastHoursVolume(hours: number, options?: SdkClientOptions | null): Promise<any>",
+                    "runQuery(request: SubgraphQueryInput, options?: SdkClientOptions | null): Promise<any>",
                 ],
             );
         }
@@ -311,6 +329,27 @@ fn generated_type_declarations_keep_feature_scoped_client_classes() {
         assert_feature_class(&snapshot, &content, "orderbook", "OrderBookClient");
         assert_feature_class(&snapshot, &content, "subgraph", "SubgraphClient");
         assert_feature_class(&snapshot, &content, "trading", "TradingClient");
+    }
+}
+
+#[test]
+fn generated_type_declarations_expose_event_log_decoders() {
+    // The provider-free settlement and eth-flow event-log decoders are
+    // always-compiled deterministic helpers, present on every flavour.
+    let expected = [
+        "decodeSettlementLog(log: EventLogInput): WasmEnvelope<SettlementEventDto>",
+        "decodeEthFlowLog(log: EventLogInput): WasmEnvelope<EthFlowEventDto>",
+    ];
+
+    for snapshot in snapshots() {
+        let content = read_snapshot(&snapshot.name);
+        for token in expected {
+            assert!(
+                content.contains(token),
+                "{} must expose `{token}`",
+                snapshot.name
+            );
+        }
     }
 }
 
