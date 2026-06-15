@@ -37,8 +37,7 @@ fuzz_target!(|data: &[u8]| {
 
     let params = OrderUidParams::new(order_digest.clone(), owner.clone(), valid_to);
 
-    let uid = pack_order_uid_params(&params)
-        .expect("pack_order_uid_params must accept hex-typed inputs from `from_bytes`");
+    let uid = pack_order_uid_params(&params);
     let extracted = extract_order_uid_params(&uid)
         .expect("extract_order_uid_params must round-trip a just-packed UID");
 

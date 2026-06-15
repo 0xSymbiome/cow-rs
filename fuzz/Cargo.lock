@@ -785,7 +785,6 @@ name = "cow-sdk-orderbook"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "cow-sdk-contracts",
  "cow-sdk-core",
  "cow-sdk-transport-wasm",
  "http",

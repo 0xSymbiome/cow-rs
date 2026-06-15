@@ -123,14 +123,11 @@ fn build_uids(
         digest[0] = digest[0].wrapping_add(index as u8);
         owner[0] = owner[0].wrapping_add(rotation_seed.wrapping_mul(index as u8));
         let valid_to = seed_valid_to.wrapping_add(index as u32);
-        match pack_order_uid_params(&OrderUidParams::new(
+        uids.push(pack_order_uid_params(&OrderUidParams::new(
             OrderDigest::from_bytes(digest),
             Address::from_bytes(owner),
             valid_to,
-        )) {
-            Ok(uid) => uids.push(uid),
-            Err(_) => return uids,
-        }
+        )));
     }
     uids
 }
@@ -143,7 +140,6 @@ fn rotate_uid(seed_digest: &[u8; 32], seed_owner: &[u8; 20], seed_valid_to: u32)
         Address::from_bytes(*seed_owner),
         seed_valid_to.wrapping_add(1),
     ))
-    .unwrap_or_else(|_| OrderUid::from_bytes([0u8; 56]))
 }
 
 /// Builds a bounded ASCII string from a seed byte and a length byte.

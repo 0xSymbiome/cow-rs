@@ -101,8 +101,7 @@ fuzz_target!(|input: FuzzInput| {
         OrderDigest::from_bytes(input.app_data),
         Address::from_bytes(input.receiver),
         input.valid_to,
-    ))
-    .expect("pack_order_uid_params must accept hex-typed components from from_bytes");
+    ));
     let cancellations = OrderCancellations::new(vec![uid]);
     let _ = hash_order_cancellations(&domain, &cancellations)
         .expect("hash_order_cancellations must accept a just-packed UID");
