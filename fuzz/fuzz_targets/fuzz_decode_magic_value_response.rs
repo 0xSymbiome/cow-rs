@@ -40,7 +40,7 @@ use cow_sdk_contracts::{
     ContractsError, Eip1271VerificationRequest, IERC1271, verify_eip1271_signature,
 };
 use cow_sdk_core::{
-    Address, BlockInfo, ContractCall, ContractHandle, Hash32, HexData, Provider, TransactionHash,
+    Address, BlockInfo, ContractCall, Hash32, HexData, Provider, TransactionHash,
     TransactionReceipt, TransactionRequest,
 };
 use libfuzzer_sys::fuzz_target;
@@ -198,16 +198,6 @@ impl Provider for StubProvider {
         Ok(None)
     }
 
-    async fn get_storage_at(
-        &self,
-        _address: &Address,
-        _slot: &str,
-    ) -> Result<HexData, Self::Error> {
-        Err(StubProviderError(
-            "stub provider does not implement get_storage_at".to_owned(),
-        ))
-    }
-
     async fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> {
         Err(StubProviderError(
             "stub provider does not implement call".to_owned(),
@@ -220,13 +210,5 @@ impl Provider for StubProvider {
 
     async fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
         Ok(BlockInfo::new(0, None))
-    }
-
-    async fn get_contract(
-        &self,
-        address: &Address,
-        abi_json: &str,
-    ) -> Result<ContractHandle, Self::Error> {
-        Ok(ContractHandle::new(address.clone(), abi_json.to_owned()))
     }
 }
