@@ -1,27 +1,17 @@
-//! Live `trybuild` harness for the pinned compile-fail witnesses that
-//! prove the [`address!`](cow_sdk_core::address) literal macro stays
-//! strict: it takes exactly one string literal and rejects non-string
-//! literals, empty invocations, and mixed-case literals whose EIP-55
-//! checksum does not hold.
+//! Live `trybuild` harness for the pinned compile-fail witnesses that prove the
+//! [`address!`](cow_sdk_core::address) macro stays strict: it takes exactly one
+//! string literal and rejects non-string literals and empty invocations.
 //!
-//! The witness sources live at `tests/ui/address_literal_*.rs` and their
-//! captured diagnostic snapshots live alongside as `.stderr` files. On
-//! every `cargo test` run the `trybuild::TestCases` harness compiles each
-//! witness through `rustc` and asserts the captured stderr matches the
-//! live diagnostic, so a regression that loosens the literal contract
-//! fails the test rather than passing a stale snapshot.
-//!
-//! The captured `.stderr` snapshots reflect the CI baseline toolchain, which
-//! does not install the optional `rust-src` component. A local run with
-//! `rust-src` present renders the const-panic's `core/src/panic.rs` frame as
-//! an inline source snippet instead of the `= note: the failure occurred here`
-//! line, so re-bless only without `rust-src` or the snapshot will diverge from
-//! CI.
+//! Mixed-case rejection is covered separately by the runtime unit tests on
+//! `is_lowercase_address_literal` (see `crates/core/src/lib.rs`). That contract
+//! is intentionally not a `trybuild` witness: it fails through a const-evaluation
+//! panic whose diagnostic rendering changes between rustc versions and with the
+//! presence of the `rust-src` component, so a captured `.stderr` snapshot would
+//! drift on every toolchain bump.
 
 #[test]
 fn address_literal_macro_rejects_malformed_invocations_at_compile_time() {
     let cases = trybuild::TestCases::new();
     cases.compile_fail("tests/ui/address_literal_non_string.rs");
     cases.compile_fail("tests/ui/address_literal_empty.rs");
-    cases.compile_fail("tests/ui/address_literal_bad_checksum.rs");
 }

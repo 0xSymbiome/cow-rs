@@ -4,6 +4,11 @@
 # Linux checkouts.
 *.snap text eol=lf
 
+# trybuild compile-fail snapshots (`tests/ui/*.stderr`) are byte-compared
+# against the diagnostics the pinned toolchain emits. CRLF on a Windows
+# checkout would break that comparison against the LF output CI generates.
+*.stderr text eol=lf
+
 # wasm TypeScript declaration snapshots are byte-compared against freshly
 # generated declarations by the wasm workflow's snapshot diff. CRLF on a
 # Windows checkout would break that diff against the LF output CI generates.

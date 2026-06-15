@@ -82,17 +82,19 @@ pub use validation::{TransportErrorClass, ValidationReason};
 pub mod __private {
     pub use alloy_primitives;
 
-    /// Compile-time guard expanded by the [`address!`](crate::address) macro.
+    /// Returns whether an address literal is already in the protocol-canonical
+    /// lowercase wire form.
     ///
-    /// The literal must use the protocol-canonical lowercase wire form,
-    /// because an EIP-55 checksum cannot be verified during const evaluation.
+    /// The `address!` macro requires the lowercase form because an EIP-55
+    /// checksum cannot be verified during const evaluation, so a mixed-case
+    /// literal is rejected outright rather than accepted unchecked. The `0x`
+    /// prefix is ignored; every other byte must not be ASCII uppercase.
     ///
-    /// # Panics
-    ///
-    /// Panics during const evaluation — surfacing as a build error, never at
-    /// runtime — when the literal contains an ASCII uppercase character
-    /// outside the `0x` prefix.
-    pub const fn assert_lowercase_address_literal(literal: &str) {
+    /// This is the pure predicate behind [`assert_lowercase_address_literal`].
+    /// It is unit-tested at runtime so the contract is covered without
+    /// snapshotting a toolchain-version-specific const-evaluation panic.
+    #[must_use]
+    pub const fn is_lowercase_address_literal(literal: &str) -> bool {
         let bytes = literal.as_bytes();
         let mut index = if bytes.len() >= 2 && bytes[0] == b'0' && bytes[1] == b'x' {
             2
@@ -100,11 +102,55 @@ pub mod __private {
             0
         };
         while index < bytes.len() {
-            assert!(
-                !bytes[index].is_ascii_uppercase(),
-                "address! takes the lowercase wire form: an EIP-55 checksum cannot be verified at compile time, so mixed-case literals fail closed; lowercase the literal"
-            );
+            if bytes[index].is_ascii_uppercase() {
+                return false;
+            }
             index += 1;
         }
+        true
+    }
+
+    /// Compile-time guard expanded by the [`address!`](crate::address) macro.
+    ///
+    /// # Panics
+    ///
+    /// Panics during const evaluation — surfacing as a build error, never at
+    /// runtime — when the literal is not in the lowercase wire form
+    /// ([`is_lowercase_address_literal`] returns `false`).
+    pub const fn assert_lowercase_address_literal(literal: &str) {
+        assert!(
+            is_lowercase_address_literal(literal),
+            "address! takes the lowercase wire form: an EIP-55 checksum cannot be verified at compile time, so mixed-case literals fail closed; lowercase the literal"
+        );
+    }
+}
+
+#[cfg(test)]
+mod address_literal_guard_tests {
+    use super::__private::is_lowercase_address_literal;
+
+    #[test]
+    fn lowercase_wire_form_is_accepted() {
+        // The CoW vault relayer in its canonical lowercase wire form.
+        assert!(is_lowercase_address_literal(
+            "0xc92e8bdf79f0507f65a392b0ab4667716bfe0110"
+        ));
+        // Prefix-only and empty literals carry no uppercase, so they pass the
+        // case guard; length and hex validity are enforced downstream by alloy.
+        assert!(is_lowercase_address_literal("0x"));
+        assert!(is_lowercase_address_literal(""));
+    }
+
+    #[test]
+    fn mixed_case_literal_is_rejected() {
+        // The same relayer address with the leading nibble case-flipped, and a
+        // fully checksummed spelling: both must be rejected, because the macro
+        // cannot verify an EIP-55 checksum during const evaluation.
+        assert!(!is_lowercase_address_literal(
+            "0xc92E8bdf79f0507f65a392b0ab4667716BFE0110"
+        ));
+        assert!(!is_lowercase_address_literal(
+            "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+        ));
     }
 }
