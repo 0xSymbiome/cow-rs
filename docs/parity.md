@@ -38,7 +38,7 @@ Prior art (not a pinned parity source):
   pinned parity source and is not listed in `parity/source-lock.yaml`: it does
   not define the Rust public API shape (Rust idiom governs that), the wire format
   (services), on-chain shapes (contracts), the app-data schemas
-  (`cowprotocol/app-data`), or the subgraph schema (the deployed Graph).
+  (`cowprotocol/cow-sdk`), or the subgraph schema (the deployed Graph).
 
 ## Source Lock
 
@@ -49,10 +49,9 @@ upstream producer commits and paths.
 | --- | --- |
 | `cowprotocol/services` | Orderbook HTTP API, OpenAPI schemas (vendored to `parity/openapi/services-orderbook.yml`), wire DTOs, the solver-competition v2 producer, the flash-loan hint shape, and order-validation and rejection semantics |
 | `cowprotocol/contracts` | EIP-712 order hashing (including the `GPv2Signing` domain block), settlement ABI, and deployment addresses |
-| `cowprotocol/cow-sdk` | Commit pin for the TypeScript SDK contract-address constants behind the staging settlement and vault-relayer deployments resolved by the typed `Registry` |
+| `cowprotocol/cow-sdk` | Commit pin for the TypeScript SDK contract-address constants behind the staging settlement and vault-relayer deployments resolved by the typed `Registry`, the COW Shed factory ABI and version constants with their CREATE2 goldens, the trading protocol-fee amount-composition goldens, and the canonical app-data JSON Schema families (hooks/flashloan/quote/partnerFee/definitions) the `parity/fixtures/app_data/` fixtures track; this monorepo (published as `@cowprotocol/sdk-app-data`) is their canonical home, and the standalone `cowprotocol/app-data` repo it long ago superseded is deprecated |
 | `cowprotocol/ethflowcontract` | Commit pin for the inline `sol!` EthFlow bindings (`CoWSwapEthFlow`, `EthFlowOrder`, `ICoWSwapOnchainOrders`, `CoWSwapOnchainOrders`, `IWrappedNativeToken`) proven by parity fixtures, plus the `ReceiverMustBeSet()` revert-selector evidence |
 | `cowdao-grants/cow-shed` | Commit pin (the v1.0.1 tag — the deployed generation the inline `sol!` COW Shed bindings mirror) proven by JSON fixtures, plus the proxy creation-code `.bin` bytes locked by the CREATE2 address-parity test, factory address derivation, hook signature shape, and the per-version deployment record |
-| `cowprotocol/app-data` | Commit pin for the canonical app-data JSON Schema families: the hooks metadata cited by the hooks parity fixture, plus the quote/partnerFee/definitions schemas the `parity/fixtures/app_data/schemas/` drift mirrors track |
 
 Each repository row carries a `# why:` comment in the lock itself; the lock is
 the single home for the pinned commits and producer paths.
@@ -120,7 +119,7 @@ workflow for refreshing the lock lives in
 | `IWrappedNativeToken` (WETH9-family) bindings | `cowprotocol/ethflowcontract` `IWrappedNativeToken` interface | `cow-sdk-contracts::tokens` via inline `alloy::sol!` | Inline `sol!` binding proven by deposit/withdraw selector fixtures, mirroring upstream Solidity pinned by commit in `parity/source-lock.yaml` | `crates/contracts/tests/tokens_contract.rs::deposit_selector_matches_canonical_keccak`, `crates/contracts/tests/tokens_contract.rs::withdraw_selector_matches_canonical_keccak` |
 | ERC-20 bindings | `cowprotocol/contracts` `IERC20` interface (carrying its own OpenZeppelin v3.4.0 lineage in the upstream header) | `cow-sdk-contracts::tokens` via inline `alloy::sol!` | Inline `sol!` binding for `IERC20` proven by `parity/fixtures/contracts.json`, mirroring upstream Solidity pinned by commit in `parity/source-lock.yaml` | `crates/contracts/tests/parity_contract.rs::parity_fixture_cases_hold` |
 | Deployment registry authority | `cowprotocol/contracts` deployments record | `cow-sdk-contracts::Registry` const table | `crates/contracts/src/deployments.rs` | `crates/contracts/src/deployments.rs (tests)`, `xtask/tests/registry_confirm.rs` |
-| App-data parity | `cowprotocol/app-data` JSON schemas and `cowprotocol/services` app-data hashing | `cow-sdk-app-data`, `cow-sdk-trading` | `parity/fixtures/app_data/` | `crates/app-data/tests/cid_contract.rs`, `crates/app-data/tests/schema_contract.rs`, `crates/app-data/tests/fetch_contract.rs`, `crates/trading/tests/quote_contract.rs` |
+| App-data parity | `cowprotocol/cow-sdk` app-data JSON schemas and `cowprotocol/services` app-data hashing | `cow-sdk-app-data`, `cow-sdk-trading` | `parity/fixtures/app_data/` | `crates/app-data/tests/cid_contract.rs`, `crates/app-data/tests/schema_contract.rs`, `crates/app-data/tests/fetch_contract.rs`, `crates/trading/tests/quote_contract.rs` |
 | Subgraph support | the deployed CoW Protocol subgraph GraphQL schema, with cow-rs-owned query documents | `cow-sdk-subgraph` | `crates/subgraph/src/query_documents/` | `crates/subgraph/tests/api_contract.rs`, `crates/subgraph/tests/query_contract.rs`, `crates/subgraph/tests/types_contract.rs` |
 | Orderbook transport | `cowprotocol/services` orderbook OpenAPI and wire DTOs | `cow-sdk-orderbook` | `parity/fixtures/orderbook-requests/`, `parity/openapi/coverage.yaml` | `crates/orderbook/tests/api_contract.rs`, `crates/orderbook/tests/request_contract.rs`, `crates/orderbook/tests/transform_contract.rs`, `crates/orderbook/tests/types_contract.rs`, `crates/orderbook/tests/wire_contract.rs` |
 | WASM target | the cow-rs SDK helper surface compiled to WASM | `cow-sdk`, `cow-sdk-app-data`, the WASM example | committed workflow definitions, example READMEs | `crates/transport-wasm/tests/wasm.rs`, `wasm-pack test --headless --firefox`, and the `wasm.yml` compatibility workflow |

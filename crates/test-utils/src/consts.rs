@@ -48,7 +48,7 @@ pub const ANVIL_ADDR_1: Address = address!("70997970c51812dc3a010c7d01b50e0d17dc
 /// signed by [`ANVIL_KEY_1`] through the typed-data payload path.
 pub const EXPECTED_ORDER_SIGNATURE: &str = "0x34bc8d9249f7f9399d1db57b96bfc3a2f935a25965fe265292142c305284c7241daf1b3049bc75da81012cf33aeac1de09ec5684bccf03afe7274262703780d01c";
 
-// --- App-data CID vectors. source: cowprotocol/app-data schemas + cowprotocol/services app-data hashing (keccak256 + CIDv1) ---
+// --- App-data CID vectors. source: cowprotocol/cow-sdk app-data schemas + cowprotocol/services app-data hashing (keccak256 + CIDv1) ---
 /// Upstream app-data hash vector #1.
 pub const APP_DATA_HEX_1: &str =
     "0x337aa6e6c2a7a0d1eb79a35ebd88b08fc963d5f7a3fc953b7ffb2b7f5898a1df";

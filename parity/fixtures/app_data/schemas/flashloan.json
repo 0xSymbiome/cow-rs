@@ -1,18 +1,18 @@
 {
   "surface": "app-data-schema-flashloan",
   "sources": {
-    "services": {
-      "commit": "65b6953bfc2e96b2791cfb2382c7309d1fb19b99",
+    "cow-sdk": {
+      "commit": "c931d7ecd67626736f5b8dff781741e727128c42",
       "refs": [
-        "crates/app-data/src/app_data.rs#Flashloan"
+        "packages/app-data/src/schemas/flashloan/v0.2.0.json",
+        "packages/app-data/src/schemas/definitions.json#inlined-primitives"
       ]
     }
   },
-  "derivation": "Drift schema for the services-defined flash-loan hint shape; cowprotocol/app-data has no schema with these fields (its flashloan/v0.1.0 uses lender/borrower).",
   "payload": {
     "$id": "flashloan.json",
     "$schema": "http://json-schema.org/draft-07/schema",
-    "$comment": "Mirrors the services flash-loan hint shape; shared primitives inlined from upstream app-data definitions.json. Not resolved at runtime (ADR 0064).",
+    "$comment": "Mirrors the cow-sdk app-data flashloan/v0.2.0 schema; shared primitives inlined from upstream definitions.json. Not resolved at runtime (ADR 0064).",
     "title": "Flashloan",
     "description": "Information about flashloan parameters for the order",
     "type": "object",

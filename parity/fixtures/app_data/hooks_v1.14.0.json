@@ -2,11 +2,11 @@
   "surface": "app-data-hooks-metadata",
   "dto": "cow_sdk_app_data::HookList",
   "sources": {
-    "app-data": {
-      "commit": "31f130d1838ea5018facdfe240aef46ff0cc1881",
+    "cow-sdk": {
+      "commit": "c931d7ecd67626736f5b8dff781741e727128c42",
       "refs": [
-        "src/schemas/hooks/v0.2.0.json",
-        "src/schemas/hook/v0.2.0.json"
+        "packages/app-data/src/schemas/hooks/v0.2.0.json",
+        "packages/app-data/src/schemas/hook/v0.2.0.json"
       ]
     }
   },

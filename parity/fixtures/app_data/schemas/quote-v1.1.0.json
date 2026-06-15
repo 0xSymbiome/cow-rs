@@ -1,11 +1,11 @@
 {
   "surface": "app-data-schema-quote",
   "sources": {
-    "app-data": {
-      "commit": "31f130d1838ea5018facdfe240aef46ff0cc1881",
+    "cow-sdk": {
+      "commit": "c931d7ecd67626736f5b8dff781741e727128c42",
       "refs": [
-        "src/schemas/quote/v1.1.0.json",
-        "src/schemas/definitions.json#inlined-primitives"
+        "packages/app-data/src/schemas/quote/v1.1.0.json",
+        "packages/app-data/src/schemas/definitions.json#inlined-primitives"
       ]
     }
   },
