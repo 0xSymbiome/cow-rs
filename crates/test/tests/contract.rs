@@ -152,6 +152,17 @@ async fn orderbook_injected_failure_surfaces() {
 }
 
 #[tokio::test]
+async fn injected_failure_still_records_the_attempt() {
+    // Record-first: an injected failure still leaves the request in the log, so
+    // an error-path test can assert the call was attempted.
+    let orderbook = MockOrderbook::builder(SupportedChainId::Sepolia)
+        .fail_send(OrderbookFailure::Rejected("nope".to_owned()))
+        .build();
+    assert!(orderbook.send_order(&order_creation()).await.is_err());
+    assert_eq!(orderbook.recorded().sent_orders.len(), 1);
+}
+
+#[tokio::test]
 async fn signer_signs_and_records() {
     let signer = MockSigner::new();
     assert_eq!(signer.address(), defaults::address());

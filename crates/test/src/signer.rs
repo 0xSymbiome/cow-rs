@@ -60,6 +60,7 @@ struct Inner {
 
 /// A snapshot of what a [`MockSigner`] was asked to do.
 #[derive(Clone, Debug, Default)]
+#[non_exhaustive]
 pub struct SignerCalls {
     /// Transactions passed to [`Signer::send_transaction`].
     pub sent_transactions: Vec<TransactionRequest>,
@@ -91,6 +92,10 @@ impl MockSigner {
     }
 
     /// A snapshot of the calls recorded so far.
+    ///
+    /// Every request the double received is recorded regardless of the response:
+    /// a canned success and an injected failure both leave the request in the
+    /// log, so an error-path test can assert the call was attempted.
     #[must_use]
     pub fn recorded(&self) -> SignerCalls {
         self.lock().calls.clone()
@@ -265,10 +270,10 @@ impl Signer for MockSigner {
         tx: &TransactionRequest,
     ) -> Result<TransactionBroadcast, Self::Error> {
         let mut guard = self.lock();
+        guard.calls.sent_transactions.push(tx.clone());
         if let Some(error) = &guard.fail_send {
             return Err(MockError::new(error.clone()));
         }
-        guard.calls.sent_transactions.push(tx.clone());
         Ok(TransactionBroadcast::new(guard.transaction_hash))
     }
 

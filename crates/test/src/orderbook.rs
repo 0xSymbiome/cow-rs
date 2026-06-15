@@ -35,6 +35,7 @@ struct Inner {
 
 /// A snapshot of what a [`MockOrderbook`] was asked to do.
 #[derive(Clone, Debug, Default)]
+#[non_exhaustive]
 pub struct OrderbookCalls {
     /// Requests passed to [`OrderbookClient::quote`].
     pub quote_requests: Vec<OrderQuoteRequest>,
@@ -60,6 +61,10 @@ impl MockOrderbook {
     }
 
     /// A snapshot of the calls recorded so far.
+    ///
+    /// Every request the double received is recorded regardless of the response:
+    /// a canned success and an injected failure both leave the request in the
+    /// log, so an error-path test can assert the call was attempted.
     #[must_use]
     pub fn recorded(&self) -> OrderbookCalls {
         self.lock().calls.clone()
@@ -180,10 +185,10 @@ impl OrderbookClient for MockOrderbook {
 
     async fn send_order(&self, request: &OrderCreation) -> Result<OrderUid, OrderbookError> {
         let mut guard = self.lock();
+        guard.calls.sent_orders.push(request.clone());
         if let Some(failure) = &guard.fail_send {
             return Err(failure.to_error());
         }
-        guard.calls.sent_orders.push(request.clone());
         Ok(guard.order_uid)
     }
 

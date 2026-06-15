@@ -34,6 +34,7 @@ struct Inner {
 
 /// A snapshot of what a [`MockProvider`] was asked to do.
 #[derive(Clone, Debug, Default)]
+#[non_exhaustive]
 pub struct ProviderCalls {
     /// Contract reads passed to [`Provider::read_contract`].
     pub contract_reads: Vec<ContractCall>,
@@ -55,6 +56,10 @@ impl MockProvider {
     }
 
     /// A snapshot of the calls recorded so far.
+    ///
+    /// Every request the double received is recorded regardless of the response:
+    /// a canned success and an injected failure both leave the request in the
+    /// log, so an error-path test can assert the call was attempted.
     #[must_use]
     pub fn recorded(&self) -> ProviderCalls {
         self.lock().calls.clone()
@@ -202,10 +207,10 @@ impl Provider for MockProvider {
 
     async fn call(&self, tx: &TransactionRequest) -> Result<HexData, Self::Error> {
         let mut guard = self.lock();
+        guard.calls.calls.push(tx.clone());
         if let Some(error) = &guard.fail_call {
             return Err(MockError::new(error.clone()));
         }
-        guard.calls.calls.push(tx.clone());
         drop(guard);
         Ok(HexData::empty())
     }

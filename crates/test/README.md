@@ -38,15 +38,17 @@ feature (`cow-sdk = { features = ["testing"] }` → `cow_sdk::testing`), or depe
 on `cow-sdk-test` directly.
 
 ```rust
-use cow_sdk::core::SupportedChainId;
-use cow_sdk::testing::trading;
+use cow_sdk_core::SupportedChainId;
+use cow_sdk_test::trading;
 
-let testing = trading(SupportedChainId::Sepolia, "my-app")?;
-// Drive `testing.trading` with `testing.signer` in your async test:
-//   testing.trading.post_swap_order(params, &testing.signer, None).await?;
-// then assert on what your code sent:
-assert_eq!(testing.orderbook.recorded().sent_orders.len(), 1);
+let testing = trading(SupportedChainId::Sepolia, "my-app").unwrap();
+// Drive `testing.trading` with `testing.signer` in your async test, e.g.
+//   testing.trading.post_swap_order(params, &testing.signer, None).await.unwrap();
+// then assert on what your code sent. Un-driven, the log is empty:
+assert_eq!(testing.orderbook.recorded().sent_orders.len(), 0);
 ```
+
+Through the facade the same entry point is `cow_sdk::testing::trading`.
 
 ## Design
 

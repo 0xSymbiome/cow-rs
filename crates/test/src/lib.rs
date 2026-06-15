@@ -1,3 +1,5 @@
+#![cfg_attr(doctest, doc = include_str!("../README.md"))]
+
 //! In-memory test doubles for the `cow-rs` SDK public trait seams.
 //!
 //! `cow-sdk-test` lets a downstream application test its integration without a
