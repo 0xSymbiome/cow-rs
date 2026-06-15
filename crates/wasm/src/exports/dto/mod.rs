@@ -36,8 +36,9 @@ pub use self::events::{EthFlowEventDto, EventLogInput, SettlementEventDto};
 pub use self::order::OrderDto;
 #[cfg(feature = "orderbook")]
 pub use self::orderbook::{
-    AppDataObjectDto, ExecutedProtocolFeeDto, NativePriceResponseDto, OrderCreationInput,
-    OrderQuoteRequestInput, OrderQuoteResponseDto, SigningSchemeDto, TradeDto,
+    AppDataObjectDto, CompetitionOrderStatusDto, CompetitionOrderStatusKindDto, ExecutedAmountsDto,
+    ExecutedProtocolFeeDto, NativePriceResponseDto, OrderCreationInput, OrderQuoteRequestInput,
+    OrderQuoteResponseDto, SigningSchemeDto, SolverExecutionDto, TotalSurplusDto, TradeDto,
 };
 pub use self::orderbook::{PaginationOptions, TradesQueryInput};
 #[cfg(feature = "trading")]

@@ -112,6 +112,85 @@ pub struct TradeDto {
     pub tx_hash: Option<String>,
 }
 
+/// Competition-status kind for an order, mirroring
+/// `cow_sdk_orderbook::CompetitionOrderStatusKind`, whose wire form is the
+/// camelCased variant name.
+#[cfg(feature = "orderbook")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+#[non_exhaustive]
+pub enum CompetitionOrderStatusKindDto {
+    /// Open but not yet scheduled.
+    Open,
+    /// Scheduled for competition.
+    Scheduled,
+    /// Actively competing.
+    Active,
+    /// Solved by at least one solver.
+    Solved,
+    /// Currently executing.
+    Executing,
+    /// Traded successfully.
+    Traded,
+    /// Cancelled before execution.
+    Cancelled,
+}
+
+/// Executed sell and buy amounts for a solver path, mirroring
+/// `cow_sdk_orderbook::ExecutedAmounts`.
+#[cfg(feature = "orderbook")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+pub struct ExecutedAmountsDto {
+    /// Executed sell amount in the upstream decimal-string wire shape.
+    pub sell: String,
+    /// Executed buy amount in the upstream decimal-string wire shape.
+    pub buy: String,
+}
+
+/// Solver execution entry nested in competition-status responses, mirroring
+/// `cow_sdk_orderbook::SolverExecution`.
+#[cfg(feature = "orderbook")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+pub struct SolverExecutionDto {
+    /// Solver identifier or address rendered by the API.
+    pub solver: String,
+    /// Executed amounts for this solver path, when present.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub executed_amounts: Option<ExecutedAmountsDto>,
+}
+
+/// Competition status for an order, mirroring
+/// `cow_sdk_orderbook::CompetitionOrderStatus`.
+#[cfg(feature = "orderbook")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+pub struct CompetitionOrderStatusDto {
+    /// High-level competition status kind (the wire `type` field).
+    #[serde(rename = "type")]
+    pub kind: CompetitionOrderStatusKindDto,
+    /// Optional solver execution payload.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub value: Option<Vec<SolverExecutionDto>>,
+}
+
+/// Total accumulated surplus for an account, mirroring
+/// `cow_sdk_orderbook::TotalSurplus`.
+#[cfg(feature = "orderbook")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+pub struct TotalSurplusDto {
+    /// Total surplus in the upstream decimal-string wire shape, when present.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub total_surplus: Option<String>,
+}
+
 /// Resolved quote payload echoed by the orderbook `/quote` response, mirroring
 /// `cow_sdk_orderbook::QuoteData`.
 #[cfg(feature = "orderbook")]

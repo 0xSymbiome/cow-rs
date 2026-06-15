@@ -280,6 +280,65 @@ impl OrderBookClient {
         .await
     }
 
+    /// Fetches the live competition status for one order.
+    ///
+    /// Returns the order's status in the current or most recent solver
+    /// competition, including any per-solver executed amounts the service
+    /// reports. The UID must be the full 56-byte CoW order UID.
+    ///
+    /// @param orderUid Full order UID to look up.
+    /// @param options Optional per-call cancellation and timeout settings.
+    /// @returns A versioned envelope containing the competition status.
+    /// @throws CowError for invalid UID, not-found responses, transport failure, or timeout.
+    #[wasm_bindgen(
+        js_name = "getOrderCompetitionStatus",
+        unchecked_return_type = "WasmEnvelope<CompetitionOrderStatusDto>"
+    )]
+    pub async fn order_competition_status(
+        &self,
+        #[wasm_bindgen(js_name = orderUid)] order_uid: String,
+        #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
+    ) -> Result<JsValue, JsValue> {
+        super::traced("wasm.orderbook.order_competition_status", async move {
+            let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+            let inner = orderbook_for_scope(&self.inner, &scope);
+            run_with_client_options(scope, async move {
+                orderbook_get_order_competition_status(&inner, order_uid).await
+            })
+            .await
+        })
+        .await
+    }
+
+    /// Fetches the total accumulated surplus for an account.
+    ///
+    /// Returns the lifetime surplus the protocol has captured for the owner
+    /// across its settled orders, in the upstream decimal-string wire shape.
+    ///
+    /// @param owner Owner address to query.
+    /// @param options Optional per-call cancellation and timeout settings.
+    /// @returns A versioned envelope containing the total-surplus response.
+    /// @throws CowError for invalid owner, transport failure, or timeout.
+    #[wasm_bindgen(
+        js_name = "getTotalSurplus",
+        unchecked_return_type = "WasmEnvelope<TotalSurplusDto>"
+    )]
+    pub async fn total_surplus(
+        &self,
+        owner: String,
+        #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
+    ) -> Result<JsValue, JsValue> {
+        super::traced("wasm.orderbook.total_surplus", async move {
+            let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+            let inner = orderbook_for_scope(&self.inner, &scope);
+            run_with_client_options(scope, async move {
+                orderbook_get_total_surplus(&inner, owner).await
+            })
+            .await
+        })
+        .await
+    }
+
     /// Submits signed off-chain order cancellations.
     ///
     /// Build the signed cancellation payload with one of the cancellation
@@ -543,6 +602,30 @@ async fn orderbook_get_native_price(
         .await
         .map_err(|error| WasmError::from(error).into_js())?;
     to_js_value(&WasmEnvelope::v1(price))
+}
+
+async fn orderbook_get_order_competition_status(
+    inner: &OrderbookApi,
+    order_uid: String,
+) -> Result<JsValue, JsValue> {
+    let order_uid = parse_order_uid(order_uid)?;
+    let status = inner
+        .order_competition_status(&order_uid)
+        .await
+        .map_err(|error| WasmError::from(error).into_js())?;
+    to_js_value(&WasmEnvelope::v1(status))
+}
+
+async fn orderbook_get_total_surplus(
+    inner: &OrderbookApi,
+    owner: String,
+) -> Result<JsValue, JsValue> {
+    let owner = parse_address("owner", owner)?;
+    let total = inner
+        .total_surplus(&owner)
+        .await
+        .map_err(|error| WasmError::from(error).into_js())?;
+    to_js_value(&WasmEnvelope::v1(total))
 }
 
 async fn orderbook_cancel_orders(

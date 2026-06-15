@@ -21,7 +21,10 @@
 
 use wasm_bindgen_test::*;
 
-use cow_sdk_wasm::exports::{NativePriceResponseDto, OrderDto, OrderQuoteResponseDto, TradeDto};
+use cow_sdk_wasm::exports::{
+    CompetitionOrderStatusDto, NativePriceResponseDto, OrderDto, OrderQuoteResponseDto,
+    TotalSurplusDto, TradeDto,
+};
 
 wasm_bindgen_test_configure!(run_in_browser);
 
@@ -30,6 +33,8 @@ const ORDER_FIXTURE: &str =
 const ORDER_QUOTE_RESPONSE_FIXTURE: &str =
     include_str!("../../../parity/fixtures/orderbook/order_quote_response.json");
 const TRADE_FIXTURE: &str = include_str!("../../../parity/fixtures/orderbook/trade.json");
+const TOTAL_SURPLUS_FIXTURE: &str =
+    include_str!("../../../parity/fixtures/orderbook/total_surplus.json");
 
 /// Asserts every field present in `fixture` survives a `fixture → DTO → JSON`
 /// round-trip with an identical value — the same field-preservation contract
@@ -105,4 +110,25 @@ fn native_price_response_dto_mirrors_native_shape() {
         .expect("NativePriceResponseDto must deserialize");
     let rendered = serde_json::to_value(&dto).expect("NativePriceResponseDto must serialize");
     assert_fixture_preserved("NativePriceResponseDto", FIXTURE, &rendered);
+}
+
+#[wasm_bindgen_test]
+fn total_surplus_dto_mirrors_native_fixture() {
+    let dto: TotalSurplusDto = serde_json::from_value(fixture_payload(TOTAL_SURPLUS_FIXTURE))
+        .expect("TotalSurplusDto must deserialize the native fixture");
+    let rendered = serde_json::to_value(&dto).expect("TotalSurplusDto must serialize");
+    assert_fixture_preserved("TotalSurplusDto", TOTAL_SURPLUS_FIXTURE, &rendered);
+}
+
+#[wasm_bindgen_test]
+fn competition_order_status_dto_mirrors_native_shape() {
+    // `CompetitionOrderStatus` renames `kind` to the wire `type` and nests
+    // `SolverExecution` + `ExecutedAmounts`; it has no standalone golden fixture,
+    // so pin the wire shape inline (under the same payload envelope the committed
+    // fixtures use) so a rename, retype, or drop fails closed.
+    const FIXTURE: &str = r#"{"payload":{"type":"solved","value":[{"solver":"0xabc","executedAmounts":{"sell":"1000","buy":"2000"}}]}}"#;
+    let dto: CompetitionOrderStatusDto = serde_json::from_value(fixture_payload(FIXTURE))
+        .expect("CompetitionOrderStatusDto must deserialize");
+    let rendered = serde_json::to_value(&dto).expect("CompetitionOrderStatusDto must serialize");
+    assert_fixture_preserved("CompetitionOrderStatusDto", FIXTURE, &rendered);
 }

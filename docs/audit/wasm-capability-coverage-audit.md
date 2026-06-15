@@ -95,8 +95,8 @@ wallet; **Surfaced (composed)** — covered by combining exported operations;
 | `order_link` | — | Not surfaced (Class 2) |
 | `order_multi_env` | — | Not surfaced (Class 2) |
 | `tx_orders` | — | Not surfaced (Class 2) |
-| `order_competition_status` | — | Not surfaced (Class 2) |
-| `total_surplus` | — | Not surfaced (Class 2) |
+| `order_competition_status` | `getOrderCompetitionStatus` | Surfaced |
+| `total_surplus` | `getTotalSurplus` | Surfaced |
 | `solver_competition` | — | Not surfaced (Class 2) |
 | `solver_competition_by_tx_hash` | — | Not surfaced (Class 2) |
 
@@ -164,12 +164,10 @@ TypeScript SDK (ADR 0039). They use the same transport, DTO, and envelope
 machinery as the surfaced reads, so each is an additive item rather than a
 runtime-model boundary. Members:
 
-- Orderbook reads, eight of which are public methods on the upstream
+- Orderbook reads, six of which are public methods on the upstream
   `cowprotocol/cow-sdk` `OrderBookApi` (`packages/order-book/src/api.ts`):
   `version`, `order_link`, `order_multi_env`, `tx_orders`,
-  `order_competition_status`, `total_surplus`,
-  `solver_competition`, and
-  `solver_competition_by_tx_hash`.
+  `solver_competition`, and `solver_competition_by_tx_hash`.
 - On-chain EIP-1271 signature verification (`verify_eip1271_signature` /
   `verify_eip1271_signature_cached`) and its verification caches, which require
   a chain `Provider` read rather than a service call.
@@ -210,11 +208,13 @@ boundary rather than a Rust-side wallet.
   for host submission — mirroring the other builders and completing the
   read-allowance-then-approve path. The managed `approve_cow_protocol` broadcast
   helper remains a Class 1 runtime-model boundary (the host owns submission).
-- **Consumer-relevant Class 2 reads.** Among the Class 2 reads,
-  `order_competition_status` and `total_surplus` are the operations a
-  host building order-status or surplus presentation would most likely require.
-  They remain out of the defined scope; any future decision to support such a
-  host on `cow-sdk-wasm` should treat them as the first additions.
+- **Order-status and surplus reads.** `order_competition_status`
+  (`getOrderCompetitionStatus`) and `total_surplus` (`getTotalSurplus`) are
+  surfaced as `OrderBookClient` reads — the operations a host building an
+  order-status or surplus view needs — reusing the same transport, DTO, and
+  envelope machinery as the other surfaced reads. The remaining Class 2 orderbook
+  reads stay out of scope; full-feature consumers route to the upstream
+  TypeScript SDK.
 
 ## Shape Correspondence
 
@@ -270,6 +270,8 @@ native type under the uniform transforms above. The principal correspondences:
 | `OrderDto` | `cow_sdk_orderbook::Order` |
 | `OrderQuoteRequestInput` / `OrderQuoteResponseDto` / `QuoteDataDto` | `OrderQuoteRequest` / `OrderQuoteResponse` / `QuoteData` |
 | `TradeDto` | `cow_sdk_orderbook::Trade` |
+| `CompetitionOrderStatusDto` / `SolverExecutionDto` / `ExecutedAmountsDto` | `cow_sdk_orderbook::{CompetitionOrderStatus, SolverExecution, ExecutedAmounts}` |
+| `TotalSurplusDto` | `cow_sdk_orderbook::TotalSurplus` |
 | `SwapParametersInput` / `LimitTradeParametersInput` | `cow_sdk_trading::TradeParams` / `LimitTradeParams` |
 | `AllowanceParametersInput` / `ApprovalParametersInput` | `cow_sdk_trading::AllowanceParams` / `ApprovalParams` |
 | `QuoteResultsDto` | `cow_sdk_trading::QuoteResults` |

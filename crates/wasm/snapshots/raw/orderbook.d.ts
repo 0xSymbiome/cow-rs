@@ -131,6 +131,28 @@ export interface InteractionDataDto {
 export type OrderBookRejectionCategoryDto = "authorization" | "insufficientFunds" | "invalidOrder" | "notFound" | "conflict" | "unfulfillable" | "server" | "__unknown";
 
 /**
+ * Competition status for an order, mirroring
+ * `cow_sdk_orderbook::CompetitionOrderStatus`.
+ */
+export interface CompetitionOrderStatusDto {
+    /**
+     * High-level competition status kind (the wire `type` field).
+     */
+    type: CompetitionOrderStatusKindDto;
+    /**
+     * Optional solver execution payload.
+     */
+    value?: SolverExecutionDto[];
+}
+
+/**
+ * Competition-status kind for an order, mirroring
+ * `cow_sdk_orderbook::CompetitionOrderStatusKind`, whose wire form is the
+ * camelCased variant name.
+ */
+export type CompetitionOrderStatusKindDto = "open" | "scheduled" | "active" | "solved" | "executing" | "traded" | "cancelled";
+
+/**
  * Custom EIP-1271 callback request.
  */
 export interface CowEip1271SignRequest {
@@ -202,6 +224,21 @@ export interface ExecutedProtocolFeeDto {
      * Token in which the fee was taken.
      */
     token?: string;
+}
+
+/**
+ * Executed sell and buy amounts for a solver path, mirroring
+ * `cow_sdk_orderbook::ExecutedAmounts`.
+ */
+export interface ExecutedAmountsDto {
+    /**
+     * Executed sell amount in the upstream decimal-string wire shape.
+     */
+    sell: string;
+    /**
+     * Executed buy amount in the upstream decimal-string wire shape.
+     */
+    buy: string;
 }
 
 /**
@@ -975,6 +1012,21 @@ export interface SignedCancellationsInput {
 }
 
 /**
+ * Solver execution entry nested in competition-status responses, mirroring
+ * `cow_sdk_orderbook::SolverExecution`.
+ */
+export interface SolverExecutionDto {
+    /**
+     * Solver identifier or address rendered by the API.
+     */
+    solver: string;
+    /**
+     * Executed amounts for this solver path, when present.
+     */
+    executedAmounts?: ExecutedAmountsDto;
+}
+
+/**
  * Stored quote metadata for quote-linked orders, mirroring
  * `cow_sdk_orderbook::StoredOrderQuote`.
  */
@@ -1021,6 +1073,17 @@ export interface StoredOrderQuoteDto {
  * Token-balance mode accepted by wasm order inputs.
  */
 export type TokenBalanceDto = "erc20" | "external" | "internal";
+
+/**
+ * Total accumulated surplus for an account, mirroring
+ * `cow_sdk_orderbook::TotalSurplus`.
+ */
+export interface TotalSurplusDto {
+    /**
+     * Total surplus in the upstream decimal-string wire shape, when present.
+     */
+    totalSurplus?: string;
+}
 
 /**
  * Trade returned by the orderbook trades endpoint, mirroring
@@ -1377,6 +1440,19 @@ export class OrderBookClient {
      */
     getOrder(orderUid: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<OrderDto>>;
     /**
+     * Fetches the live competition status for one order.
+     *
+     * Returns the order's status in the current or most recent solver
+     * competition, including any per-solver executed amounts the service
+     * reports. The UID must be the full 56-byte CoW order UID.
+     *
+     * @param orderUid Full order UID to look up.
+     * @param options Optional per-call cancellation and timeout settings.
+     * @returns A versioned envelope containing the competition status.
+     * @throws CowError for invalid UID, not-found responses, transport failure, or timeout.
+     */
+    getOrderCompetitionStatus(orderUid: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<CompetitionOrderStatusDto>>;
+    /**
      * Fetches orders owned by an address with optional pagination.
      *
      * The owner address is validated before the request is dispatched. The
@@ -1402,6 +1478,18 @@ export class OrderBookClient {
      * @throws CowError for invalid input, transport failure, timeout, or cancellation.
      */
     getQuote(request: OrderQuoteRequestInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<OrderQuoteResponseDto>>;
+    /**
+     * Fetches the total accumulated surplus for an account.
+     *
+     * Returns the lifetime surplus the protocol has captured for the owner
+     * across its settled orders, in the upstream decimal-string wire shape.
+     *
+     * @param owner Owner address to query.
+     * @param options Optional per-call cancellation and timeout settings.
+     * @returns A versioned envelope containing the total-surplus response.
+     * @throws CowError for invalid owner, transport failure, or timeout.
+     */
+    getTotalSurplus(owner: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<TotalSurplusDto>>;
     /**
      * Fetches trades for exactly one owner address or order UID.
      *

@@ -81,6 +81,23 @@ export class OrderBookClient {
     return this.#call((client, merged) => client.getTrades(query, merged), options);
   }
 
+  async getOrderCompetitionStatus(
+    orderUid: string,
+    options?: SdkClientOptions | null
+  ): Promise<WasmEnvelope<raw.CompetitionOrderStatusDto>> {
+    return this.#call(
+      (client, merged) => client.getOrderCompetitionStatus(orderUid, merged),
+      options
+    );
+  }
+
+  async getTotalSurplus(
+    owner: string,
+    options?: SdkClientOptions | null
+  ): Promise<WasmEnvelope<raw.TotalSurplusDto>> {
+    return this.#call((client, merged) => client.getTotalSurplus(owner, merged), options);
+  }
+
   async getAppData(
     appDataHash: string,
     options?: SdkClientOptions | null
@@ -291,12 +308,15 @@ export function wasmVersion(): string {
 
 export type {
   AppDataObjectDto,
+  CompetitionOrderStatusDto,
+  CompetitionOrderStatusKindDto,
   CowEip1271SignRequest,
   DeploymentAddressesDto,
   Eip1193Request,
   EthFlowEventDto,
   EthflowDataDto,
   EventLogInput,
+  ExecutedAmountsDto,
   ExecutedProtocolFeeDto,
   GeneratedOrderUidDto,
   InteractionDataDto,
@@ -318,8 +338,10 @@ export type {
   SignedCancellationsInput,
   SignedOrderDto,
   SigningSchemeDto,
+  SolverExecutionDto,
   StoredOrderQuoteDto,
   TokenBalanceDto,
+  TotalSurplusDto,
   TradeDto,
   TradesQueryInput,
   TransactionRequestDto,

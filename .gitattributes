@@ -4,6 +4,11 @@
 # Linux checkouts.
 *.snap text eol=lf
 
+# wasm TypeScript declaration snapshots are byte-compared against freshly
+# generated declarations by the wasm workflow's snapshot diff. CRLF on a
+# Windows checkout would break that diff against the LF output CI generates.
+crates/wasm/snapshots/**/*.d.ts text eol=lf
+
 # YAML files under parity/openapi/ are read by Rust tooling:
 # `parity/openapi/services-orderbook.yml` is a vendored upstream
 # snapshot whose "Vendored from cowprotocol/services @ <commit>" header

@@ -365,6 +365,11 @@ enums:
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: Wasm mirror of the orderbook SigningScheme; non_exhaustive matches the native enum that future protocol signing schemes can grow.
+  - name: CompetitionOrderStatusKindDto
+    file: crates/wasm/src/exports/dto/orderbook.rs
+    category: upstream-growing
+    expected_marker: non_exhaustive
+    reason: Wasm mirror of the orderbook CompetitionOrderStatusKind; non_exhaustive matches the native enum whose competition status tags upstream auction services can grow.
   - name: OrderClassDto
     file: crates/wasm/src/exports/dto/order.rs
     category: upstream-growing
