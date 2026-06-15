@@ -65,23 +65,28 @@ pub fn rust_source_files(repo_root: &Path) -> anyhow::Result<Vec<PathBuf>> {
     Ok(files)
 }
 
-/// Returns `true` when a crate manifest opts out of publication with
-/// `publish = false`. The published-surface policy gates (public enums,
-/// wire-type field policy, and the panic-free surface) govern only crates
-/// that ship to consumers, so an unpublished dev-only crate such as the
-/// shared test-support crate stays outside their scope (see ADR 0062).
+/// Returns `true` when a crate is genuinely outside published-consumer scope:
+/// `publish = false` **and** it ships no `cdylib` artifact. The published-surface
+/// policy gates (public enums, wire-type field policy, and the panic-free
+/// surface) govern every crate that ships to consumers — including the
+/// `publish = false` wasm-bindgen leaf, which ships to npm as a `cdylib` even
+/// though it never reaches crates.io. Only a `publish = false` crate that ships
+/// nothing to consumers (the dev-only shared test-support crate, ADR 0062) stays
+/// out of scope.
 fn is_unpublished_crate(crate_dir: &Path) -> bool {
     let manifest = crate_dir.join("Cargo.toml");
     let Ok(contents) = fs::read_to_string(&manifest) else {
         return false;
     };
-    contents.lines().any(|line| {
+    let publish_false = contents.lines().any(|line| {
         let normalized: String = line
             .chars()
             .filter(|value| !value.is_whitespace())
             .collect();
         normalized == "publish=false"
-    })
+    });
+    let ships_cdylib = contents.contains("cdylib");
+    publish_false && !ships_cdylib
 }
 
 pub fn parse_rust_file(path: &Path) -> anyhow::Result<syn::File> {
