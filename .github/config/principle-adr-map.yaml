@@ -101,9 +101,7 @@ out_of_scope_adrs:
   # contracts rather than to a standing principle. Each entry remains an
   # accepted architecture decision; relocating one into a principle's
   # supporting set is a documentation-only refresh.
-  - "0035"  # Alloy provider adapter shape is governed by the alloy major-release plan and the alloy-provider invariant gate.
-  - "0036"  # Alloy signer adapter shape is governed by the alloy major-release plan and the alloy-signer invariant gate.
-  - "0037"  # Alloy umbrella adapter shape is governed by the alloy major-release plan.
+  - "0035"  # Alloy adapter family (provider, signer, umbrella) is governed by the alloy major-release plan and the alloy-provider/-signer invariant gates. Consolidates the former ADR 0036 and 0037.
   - "0038"  # Transaction lifecycle types are typed adapter surface details under the alloy-provider adapter.
   - "0039"  # TypeScript-callable wasm SDK surface is governed by the wasm-imports gate and the wasm flavour-matrix.
   - "0040"  # Wallet provider callback boundary is governed by the browser-wallet audit lane and EIP-1271 verification cache audit.

@@ -42,9 +42,9 @@ public and runtime shape of `cow-rs`.
 | [0032](0032-deployment-authority-machine-readable-provenance.md) | Accepted | Back deployment-address authority with machine-readable provenance and dual-mode live confirmation. |
 | [0033](0033-minimum-viable-panic-surface.md) | Accepted | Keep production panic sites allowlisted, documented, and limited to static invariants. |
 | [0034](0034-interaction-encoder-target-policy.md) | Superseded | Guarded canonical vault-relayer interaction targets at the settlement encoder boundary; superseded when the settlement encoder was removed (a solver/backend concern). |
-| [0035](0035-alloy-provider-adapter.md) | Accepted | Ship a read-only Alloy provider adapter behind an opt-in native crate. |
-| [0036](0036-alloy-signer-adapter.md) | Accepted | Ship a native Alloy local signer adapter behind an opt-in native crate. |
-| [0037](0037-alloy-umbrella-adapter.md) | Accepted | Compose the native Alloy provider and local signer into one wallet-capable client. |
+| [0035](0035-alloy-provider-adapter.md) | Accepted (amended) | Alloy adapter family: read-only provider, local signer, and composed umbrella as three native crates (consolidates 0036/0037). |
+| [0036](0036-alloy-signer-adapter.md) | Superseded by 0035 | Consolidated into the Alloy Adapter Family ADR (0035). |
+| [0037](0037-alloy-umbrella-adapter.md) | Superseded by 0035 | Consolidated into the Alloy Adapter Family ADR (0035). |
 | [0038](0038-transaction-lifecycle-types.md) | Accepted | Split transaction broadcast acknowledgement from mined receipt observation. |
 | [0039](0039-typescript-callable-wasm-sdk-surface.md) | Accepted | Keep the TypeScript-callable WASM SDK surface as an additive leaf crate. |
 | [0040](0040-wallet-provider-callback-boundary-for-js-consumers.md) | Accepted | Keep wallet and provider interop behind typed JavaScript callbacks. |

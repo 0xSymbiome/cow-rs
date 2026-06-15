@@ -150,10 +150,10 @@ const FENCES: &[Fence] = &[
         scope: Scope::RustUnder(&["crates"]),
         rule: Rule::Count {
             needle: "DO NOT SWAP",
-            expected: 10,
+            expected: 9,
         },
         on_empty: OnEmpty::Fail,
-        message: "expected exactly 10 DO NOT SWAP comment blocks across crates/ (one per anchor; one anchor carries paired blocks). Restore the missing comment, or update this fence's expected count and amend docs/alloy-doctrine.md.",
+        message: "expected exactly 9 DO NOT SWAP comment blocks across crates/. Restore the missing comment, or update this fence's expected count and amend docs/alloy-doctrine.md.",
     },
     Fence {
         name: "encode-prefixed-hand-roll",
