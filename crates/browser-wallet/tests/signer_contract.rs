@@ -316,9 +316,9 @@ async fn account_returns_hint_when_signer_was_constructed_with_explicit_account(
     assert_eq!(address.to_hex_string(), primary.to_hex_string());
 }
 
-/// Regen helper. Captures the canonical wire JSON the cow signer emits
-/// for every `(chain, primary_type)` row and prints the refreshed `rows`
-/// array. Splice it over the fixture's `rows` key — the provenance header
+/// Regen helper. Captures the canonical wire JSON the cow signer emits for
+/// each primary type on the canonical chain (mainnet) and prints the refreshed
+/// `rows` array. Splice it over the fixture's `rows` key — the provenance header
 /// (`surface`/`dto`/`endpoint`/`sources`) is maintained by hand and
 /// validated against `parity/source-lock.yaml` by `cargo parity-validate`,
 /// so this helper never emits provenance. Invoked manually when the fixture
@@ -334,16 +334,17 @@ async fn account_returns_hint_when_signer_was_constructed_with_explicit_account(
 #[tokio::test(flavor = "current_thread")]
 async fn regen_eth_sign_typed_data_request_fixture() {
     let mut rows: Vec<serde_json::Value> = Vec::new();
-    for (chain, chain_name) in FIXTURE_CHAINS {
-        for primary_type in ["Order", "OrderCancellations"] {
-            let wire = capture_wire_payload(*chain, primary_type).await;
-            rows.push(serde_json::json!({
-                "chain_id": u64::from(*chain),
-                "chain_name": chain_name,
-                "primary_type": primary_type,
-                "wire_payload": wire,
-            }));
-        }
+    // Emit the canonical (mainnet) envelope per primary type; the contract test
+    // derives every other supported chain by substituting `domain.chainId`.
+    let (chain, chain_name) = (SupportedChainId::Mainnet, "mainnet");
+    for primary_type in ["Order", "OrderCancellations"] {
+        let wire = capture_wire_payload(chain, primary_type).await;
+        rows.push(serde_json::json!({
+            "chain_id": u64::from(chain),
+            "chain_name": chain_name,
+            "primary_type": primary_type,
+            "wire_payload": wire,
+        }));
     }
     println!(
         "{}",
@@ -359,14 +360,14 @@ async fn regen_eth_sign_typed_data_request_fixture() {
 /// The fixture lives at
 /// `parity/fixtures/signing/eth_sign_typed_data_request.json` and is
 /// regenerable via the ignored `regen_eth_sign_typed_data_request_fixture`
-/// helper above. Each row carries the canonical wire shape for one
-/// `(supported chain, primary type)` pair across six supported chains
-/// (mainnet, gnosis, polygon, base, arbitrum-one, sepolia) and two
-/// primary types (`Order`, `OrderCancellations`).
+/// helper above. The fixture pins the canonical (mainnet) envelope for each
+/// primary type (`Order`, `OrderCancellations`); the test asserts every
+/// supported chain (mainnet, gnosis, polygon, base, arbitrum-one, sepolia)
+/// reproduces that envelope with only `domain.chainId` substituted.
 #[tokio::test(flavor = "current_thread")]
 #[allow(
     clippy::too_many_lines,
-    reason = "single end-to-end loop walks every fixture row with defense-in-depth shape-pinning assertions alongside the byte-equality gate; splitting the body would scatter the wire-shape contract across multiple helpers"
+    reason = "the per-chain loop carries defense-in-depth shape-pinning assertions alongside the byte-equality gate; splitting the body would scatter the wire-shape contract across multiple helpers"
 )]
 async fn typed_data_payload_emits_canonical_eip1193_wire_shape_against_fixture() {
     const FIXTURE_JSON: &str =
@@ -378,107 +379,122 @@ async fn typed_data_payload_emits_canonical_eip1193_wire_shape_against_fixture()
         .and_then(serde_json::Value::as_array)
         .expect("fixture must carry a `rows` array");
 
-    let chain_lookup: std::collections::HashMap<u64, SupportedChainId> = FIXTURE_CHAINS
+    // The committed fixture pins the canonical (mainnet) envelope for each primary
+    // type. Every other supported chain's wire payload must equal that envelope with
+    // only `domain.chainId` substituted, so one byte-exact row per primary type
+    // replaces the per-chain rows whose sole difference was the chain id.
+    let canonical: std::collections::HashMap<&str, &serde_json::Value> = rows
         .iter()
-        .map(|(chain, _)| (u64::from(*chain), *chain))
+        .map(|row| {
+            let primary_type = row
+                .get("primary_type")
+                .and_then(serde_json::Value::as_str)
+                .expect("fixture row missing primary_type");
+            let wire = row
+                .get("wire_payload")
+                .expect("fixture row missing wire_payload");
+            (primary_type, wire)
+        })
         .collect();
+    assert!(
+        canonical.contains_key("Order") && canonical.contains_key("OrderCancellations"),
+        "fixture must pin a canonical envelope for both `Order` and `OrderCancellations`",
+    );
 
-    for (index, row) in rows.iter().enumerate() {
-        let chain_id = row
-            .get("chain_id")
-            .and_then(serde_json::Value::as_u64)
-            .unwrap_or_else(|| panic!("fixture row {index} missing chain_id"));
-        let chain = *chain_lookup.get(&chain_id).unwrap_or_else(|| {
-            panic!("fixture row {index} references unsupported chain {chain_id}")
-        });
-        let primary_type = row
-            .get("primary_type")
-            .and_then(serde_json::Value::as_str)
-            .unwrap_or_else(|| panic!("fixture row {index} missing primary_type"));
-        let expected_wire = row
-            .get("wire_payload")
-            .unwrap_or_else(|| panic!("fixture row {index} missing wire_payload"));
+    for (chain, _chain_name) in FIXTURE_CHAINS {
+        for primary_type in ["Order", "OrderCancellations"] {
+            let chain_id = u64::from(*chain);
+            let actual_wire = capture_wire_payload(*chain, primary_type).await;
 
-        let actual_wire = capture_wire_payload(chain, primary_type).await;
-
-        // Defense-in-depth shape checks. The byte-equality assertion
-        // below fails on any drift; these inline checks surface
-        // precisely WHICH invariant the drift broke so the failure
-        // diagnostic points at the root cause.
-        let domain = actual_wire
-            .get("domain")
-            .and_then(serde_json::Value::as_object)
-            .unwrap_or_else(|| {
-                panic!("row {index}: wire payload must carry a JSON object `domain`")
-            });
-        let domain_chain_id = domain
-            .get("chainId")
-            .unwrap_or_else(|| panic!("row {index}: domain missing `chainId`"));
-        assert!(
-            domain_chain_id.is_number(),
-            "row {index}: `chainId` must be a JSON Number per EIP-1193; got {domain_chain_id:?}"
-        );
-        assert_eq!(
-            domain_chain_id.as_u64(),
-            Some(chain_id),
-            "row {index}: domain `chainId` must equal the cow-bound chain id"
-        );
-        assert_eq!(
-            domain.get("name").and_then(serde_json::Value::as_str),
-            Some(CANONICAL_DOMAIN_NAME),
-            "row {index}: domain `name` must be the canonical cow value"
-        );
-        assert_eq!(
-            domain.get("version").and_then(serde_json::Value::as_str),
-            Some(CANONICAL_DOMAIN_VERSION),
-            "row {index}: domain `version` must be the canonical cow value"
-        );
-        let verifying_contract = domain
-            .get("verifyingContract")
-            .and_then(serde_json::Value::as_str)
-            .unwrap_or_else(|| panic!("row {index}: domain missing `verifyingContract` string"));
-        assert_eq!(
-            verifying_contract.len(),
-            42,
-            "row {index}: `verifyingContract` must be a 0x-prefixed 42-char hex string; got `{verifying_contract}`"
-        );
-        assert!(
-            verifying_contract
-                .strip_prefix("0x")
-                .is_some_and(|tail| tail.chars().all(|c| c.is_ascii_hexdigit())),
-            "row {index}: `verifyingContract` must be a 0x-prefixed lowercase hex string; got `{verifying_contract}`"
-        );
-        assert!(
-            !domain.contains_key("salt"),
-            "row {index}: cow `TypedDataDomain` never emits a `salt` field on the wire"
-        );
-        assert_eq!(
-            actual_wire
-                .get("primaryType")
-                .and_then(serde_json::Value::as_str),
-            Some(primary_type),
-            "row {index}: top-level `primaryType` must carry through verbatim"
-        );
-        assert!(
-            actual_wire
-                .get("types")
+            // Defense-in-depth shape checks. The byte-equality assertion below
+            // fails on any drift; these inline checks surface precisely WHICH
+            // invariant the drift broke so the diagnostic points at the root cause.
+            let domain = actual_wire
+                .get("domain")
                 .and_then(serde_json::Value::as_object)
-                .is_some_and(|types| types.contains_key(primary_type)),
-            "row {index}: `types` map must declare the primary type"
-        );
-        assert!(
-            actual_wire
-                .get("message")
-                .is_some_and(serde_json::Value::is_object),
-            "row {index}: `message` must be a JSON object"
-        );
+                .unwrap_or_else(|| {
+                    panic!("chain {chain_id} {primary_type}: wire payload must carry a JSON object `domain`")
+                });
+            let domain_chain_id = domain.get("chainId").unwrap_or_else(|| {
+                panic!("chain {chain_id} {primary_type}: domain missing `chainId`")
+            });
+            assert!(
+                domain_chain_id.is_number(),
+                "chain {chain_id} {primary_type}: `chainId` must be a JSON Number per EIP-1193; got {domain_chain_id:?}"
+            );
+            assert_eq!(
+                domain_chain_id.as_u64(),
+                Some(chain_id),
+                "chain {chain_id} {primary_type}: domain `chainId` must equal the cow-bound chain id"
+            );
+            assert_eq!(
+                domain.get("name").and_then(serde_json::Value::as_str),
+                Some(CANONICAL_DOMAIN_NAME),
+                "chain {chain_id} {primary_type}: domain `name` must be the canonical cow value"
+            );
+            assert_eq!(
+                domain.get("version").and_then(serde_json::Value::as_str),
+                Some(CANONICAL_DOMAIN_VERSION),
+                "chain {chain_id} {primary_type}: domain `version` must be the canonical cow value"
+            );
+            let verifying_contract = domain
+                .get("verifyingContract")
+                .and_then(serde_json::Value::as_str)
+                .unwrap_or_else(|| {
+                    panic!(
+                        "chain {chain_id} {primary_type}: domain missing `verifyingContract` string"
+                    )
+                });
+            assert_eq!(
+                verifying_contract.len(),
+                42,
+                "chain {chain_id} {primary_type}: `verifyingContract` must be a 0x-prefixed 42-char hex string; got `{verifying_contract}`"
+            );
+            assert!(
+                verifying_contract
+                    .strip_prefix("0x")
+                    .is_some_and(|tail| tail.chars().all(|c| c.is_ascii_hexdigit())),
+                "chain {chain_id} {primary_type}: `verifyingContract` must be a 0x-prefixed lowercase hex string; got `{verifying_contract}`"
+            );
+            assert!(
+                !domain.contains_key("salt"),
+                "chain {chain_id} {primary_type}: cow `TypedDataDomain` never emits a `salt` field on the wire"
+            );
+            assert_eq!(
+                actual_wire
+                    .get("primaryType")
+                    .and_then(serde_json::Value::as_str),
+                Some(primary_type),
+                "chain {chain_id} {primary_type}: top-level `primaryType` must carry through verbatim"
+            );
+            assert!(
+                actual_wire
+                    .get("types")
+                    .and_then(serde_json::Value::as_object)
+                    .is_some_and(|types| types.contains_key(primary_type)),
+                "chain {chain_id} {primary_type}: `types` map must declare the primary type"
+            );
+            assert!(
+                actual_wire
+                    .get("message")
+                    .is_some_and(serde_json::Value::is_object),
+                "chain {chain_id} {primary_type}: `message` must be a JSON object"
+            );
 
-        // Byte-equality against the committed fixture. Fires last so
-        // the defense-in-depth checks above pinpoint regressions.
-        assert_eq!(
-            &actual_wire, expected_wire,
-            "fixture row {index} (chain_id={chain_id}, primary_type={primary_type}): cow wire \
-             shape diverges from the committed fixture; run the regen helper to refresh"
-        );
+            // Byte-equality against the canonical envelope with only `domain.chainId`
+            // substituted: every supported chain must reproduce the committed envelope
+            // save for the chain id. Fires last so the checks above pinpoint regressions.
+            let mut expected_wire = canonical
+                .get(primary_type)
+                .copied()
+                .unwrap_or_else(|| panic!("fixture missing a canonical `{primary_type}` row"))
+                .clone();
+            expected_wire["domain"]["chainId"] = serde_json::json!(chain_id);
+            assert_eq!(
+                &actual_wire, &expected_wire,
+                "chain {chain_id} {primary_type}: cow wire shape diverges from the committed \
+                 canonical envelope (chain id substituted); run the regen helper to refresh"
+            );
+        }
     }
 }
