@@ -1,11 +1,11 @@
 # ADR 0040: Keep Wallet And Provider Interop Behind Typed JavaScript Callbacks
 
-- Status: Accepted (amended)
+- Status: Accepted
 - Date: 2026-05-09
-- Last reviewed: 2026-05-11
+- Last reviewed: 2026-06-15
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: wasm, wallet, provider, callback-boundary, eip1271
-- Related: [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), [ADR 0007](0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0029](0029-trait-evolution-extension-traits.md), [ADR 0043](0043-callback-registry-internalization.md), [ADR 0045](0045-async-signer-trait-narrowing.md)
+- Related: [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), [ADR 0007](0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0043](0043-callback-registry-internalization.md), [ADR 0045](0045-async-signer-trait-narrowing.md)
 
 ## Decision
 

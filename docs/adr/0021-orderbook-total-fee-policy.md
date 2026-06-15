@@ -1,6 +1,6 @@
 # ADR 0021: Narrow `Order.total_fee` And Read-Only Legacy Executed-Fee Surface
 
-- Status: Accepted (amended)
+- Status: Accepted
 - Date: 2026-04-22
 - Last reviewed: 2026-05-22
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
@@ -108,14 +108,3 @@ order-level fees on submission.
 - [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
 - [ADR 0013](0013-http-transport-injection-and-typestate-builders.md)
 - [ADR 0017](0017-typed-orderbook-rejection-parser.md)
-
-## Amendment 2026-05-22: canonical primitive layer (per ADR 0052)
-
-The `Order.total_fee: Amount` and `Order.executed_fee_amount: Amount`
-field types resolve to the cow-owned `#[repr(transparent)]` newtype
-around `alloy_primitives::U256` per
-[ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md). The
-decimal-string wire format and the legacy `executedFeeAmount`
-skip-when-zero serializer rule are preserved through the cow-owned
-`Serialize` impl on `Amount`; no per-field `#[serde(...)]` annotations
-are required.

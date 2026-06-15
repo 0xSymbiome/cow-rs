@@ -1,28 +1,28 @@
-# ADR 0053: Typed signer rejection classification through the `SignerError` trait
+# ADR 0053: Typed signer rejection classification through the `UserRejection` trait
 
 - Status: Accepted
 - Date: 2026-05-19
-- Last reviewed: 2026-05-19
+- Last reviewed: 2026-06-15
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: signing, error-surface, eip-1193, browser-wallet, alloy, classification
 - Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0007](0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md), [ADR 0017](0017-typed-orderbook-rejection-parser.md), [ADR 0025](0025-workspace-url-redaction-convention.md), [ADR 0045](0045-async-signer-trait-narrowing.md)
 
 ## Decision
 
-- `cow_sdk_core` exposes a `SignerError` trait whose single
+- `cow_sdk_core` exposes a `UserRejection` trait whose single
   `user_rejection_code(&self) -> Option<i32>` method names the
   EIP-1193 provider error code carried by a user-driven rejection.
   Every other failure class returns `None` and falls through to the
   redacted `cow_sdk_signing::SigningError::Signer` display path.
 - Every typed signer error in the workspace implements
-  `SignerError` against its own variants:
+  `UserRejection` against its own variants:
   `cow_sdk_browser_wallet::BrowserWalletError` returns the code from
   the `UserRejectedRequest` variant; `cow_sdk_alloy_signer::SignerError`
   and `cow_sdk_alloy::AlloyClientError` return `None` for every
   variant because local-key signing cannot produce an EIP-1193 4xxx
   user rejection.
 - The helpers in `cow-sdk-signing` bound the signer's
-  associated error on `fmt::Display + cow_sdk_core::SignerError`.
+  associated error on `fmt::Display + cow_sdk_core::UserRejection`.
   `signer_error` consumes the trait result first: when the code is
   present it emits `SigningError::SignerRejection { label, code }`
   with a static, non-sensitive operation label
@@ -88,13 +88,13 @@ problem the existing per-type `class()` convention does not.
 
 ## Must Remain True
 
-- Public surface: `cow_sdk_core::SignerError` is a new trait in the
+- Public surface: `cow_sdk_core::UserRejection` is a new trait in the
   workspace's public-API perimeter. Signer crates and downstream
   callers that implement `TypedDataSigner` (or any other capability
   trait that routes through the signing helpers) must implement
-  `SignerError` for their associated
+  `UserRejection` for their associated
   `Error` type. The trait carries a `None` default so adoption is a
-  one-line `impl SignerError for MyError {}` for signers that never
+  one-line `impl UserRejection for MyError {}` for signers that never
   represent EIP-1193 rejections. Courtesy impls on `String`,
   `&str`, and `core::convert::Infallible` cover the canonical
   test-signer `Error` shapes without forcing a per-test impl.
@@ -105,7 +105,7 @@ problem the existing per-type `class()` convention does not.
   `SignerRejection` variant exposes only the static operation
   label and the numeric provider code; no wallet-supplied message
   text crosses the redaction boundary.
-- Trait-bound placement: the `S::Error: fmt::Display + SignerError`
+- Trait-bound placement: the `S::Error: fmt::Display + UserRejection`
   bound lives on every signing-helper signature in
   `cow-sdk-signing` plus every trading SDK API that forwards an
   upstream signer error. The bound is **not** added to the
@@ -138,7 +138,7 @@ problem the existing per-type `class()` convention does not.
   participation guarantee.
 - **String-shape parsing of the upstream `Display`**: see *Why*
   above. Brittle, no compile-time signal under upstream refactor.
-- **Bound `TypedDataSigner::Error: SignerError` on the trait
+- **Bound `TypedDataSigner::Error: UserRejection` on the trait
   itself**: forces every implementer of the trait to pay the bound
   even if they never route through the signing crate. The current
   decision narrows the requirement to the actual call sites and

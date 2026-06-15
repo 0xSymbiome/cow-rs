@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-06-02
-- Last reviewed: 2026-06-02
+- Last reviewed: 2026-06-15
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: testing, crate-boundary, dev-dependencies
 - Related: [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md), [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md), [ADR 0063](0063-published-consumer-test-doubles-crate.md)
@@ -31,9 +31,9 @@ build regardless of feature unification.
   `[dev-dependencies]` and adds nothing to the published SDK surface.
 - Runtime and support: it depends only on the workspace crates it supports plus
   test libraries, and its default dependency path stays target-agnostic so a
-  core-only build still compiles for `wasm32`. Property-test generators that
-  require a property-testing dependency stay on their owning crate behind an
-  opt-in feature rather than moving here, keeping this crate dependency-light.
+  core-only build still compiles for `wasm32`. Shared property-test generators
+  live here behind the off-by-default `proptest` feature, so the default
+  dependency path stays light.
 - Validation and review: it holds test scaffolding only — constants, oracle,
   fixtures, builders, recording doubles — never production behavior, and
   production code never imports it. As dev-only test code it sits outside the

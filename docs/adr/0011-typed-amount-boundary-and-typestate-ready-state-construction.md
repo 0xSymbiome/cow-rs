@@ -1,148 +1,131 @@
 # ADR 0011: Typed Amount Boundary And Typestate Ready-State Construction
 
-- Status: Accepted (amended)
+- Status: Accepted
 - Date: 2026-04-17
-- Last reviewed: 2026-06-02
+- Last reviewed: 2026-06-15
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: types, trading, builders, semver
-- Related: [ADR 0002](0002-dedicated-trading-orchestration-crate.md), [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+- Related: [ADR 0002](0002-dedicated-trading-orchestration-crate.md), [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
 
 ## Decision
 
-Public amount-carrying surfaces distinguish atomic and decimal-scaled
-values through dedicated newtypes, and `TradingBuilder` advertises its
-prerequisites through typestate terminals. `Amount` wraps an unsigned
-256-bit integer as a typed `BigUint` with wire-native base-10 string
-serialization for ABI and transport use; `DecimalAmount` pairs an atomic
-value with a `decimals` scale for display and user-input flows. The
-`Amount(BigUint)` newtype is the single canonical atomic type across
-`cow-sdk-core`, `cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk-signing`,
-`cow-sdk-app-data`, and `cow-sdk-contracts`; the retired wire-string
-wrapper no longer exists. The builder carries two marker type
-parameters that track whether `chain_id` and `app_code` have been
-supplied, and the `build_ready` terminal is only reachable from the
-fully-set state. `build_helper_only` is only reachable once the chain-id
-marker is set. The permissive runtime-validated builder terminals have been
-removed so construction flows through those two typestate-gated terminals.
+Two boundaries are typed so the most common integration mistakes surface as
+compile errors instead of production failures: amount handling and `Trading`
+construction.
+
+**Amounts.** `Amount` is the single canonical atomic quantity across every
+public crate — a `#[repr(transparent)]` newtype over `alloy_primitives::U256`
+with a sealed inner field (per [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)).
+It serializes to the orderbook's canonical base-10 decimal string, and its
+`Deserialize` boundary is strict-decimal fail-closed. There is no second amount
+type: human-decimal construction and display are methods on the atomic value —
+`parse_units` (decimal string + token `decimals`), `from_units` (integer
+whole-units + `decimals`), and `format_units` (atomic → scaled string) — each
+scaling by `10^decimals` through checked integer arithmetic, with `decimals`
+supplied per call and never carried on the wire. Arithmetic is fallible by
+return only: `checked_add` / `checked_sub` / `checked_mul` (returning `Option`)
+and explicit `saturating_*` clamps. `Amount` exposes no bare operators, no
+`pow`, and no bit inspection, so a silent `uint256` wrap cannot occur at a call
+site; a caller that genuinely wants raw wrapping reaches through `as_u256` /
+`into_u256`, keeping the intent visible at the type boundary.
+
+**Construction.** `Trading` constructs only through `TradingBuilder`, whose two
+marker type parameters track whether `chain_id` and `app_code` have been
+supplied. The terminal `build()` is implemented only on the fully-set
+`TradingBuilder<ChainIdSet, AppCodeSet>`, and the `ready(params: TraderParams)
+-> Trading` shortcut consumes a complete `TraderParams` and — with the default
+per-chain orderbook — cannot fail. Inherent associated constructors
+(`Trading::new` and equivalents) are forbidden in shipped crates, so a missing
+prerequisite is a compile error rather than a first-quote runtime failure. On
+`wasm32` the default orderbook factory builds a `FetchTransport`-backed client
+([ADR 0013](0013-http-transport-injection-and-typestate-builders.md)); a custom
+client is injected by value through `TradingBuilder::orderbook(...)` (or
+`orderbook_shared(Arc<dyn OrderbookClient>)` for an already-shared handle).
+
+**Trade parameters.** `TradeParams` is the pre-quote request shape (one amount
+interpreted by `kind`); `LimitTradeParams` is the post-quote shape (both
+`sell_amount` and `buy_amount` plus an optional `quote_id`).
+`LimitTradeParamsFromQuote` is a real newtype that guarantees a non-`None`
+`quote_id` by construction — produced only by
+`swap_params_to_limit_order_params` and required by the EthFlow native-currency
+submission seam — lifting the quote-id requirement from a runtime check to a
+type-system guarantee. Neither `::new` takes token-decimal arguments. `owner` is
+a per-call attribution on the parameter types; the SDK stores no default owner
+and falls back to the signer address for signer-backed flows. One
+`TradeAdvancedSettings` bundle is accepted by every public quote and post entry.
+
+The common swap path also has a fluent entry, `Trading::swap()`, returning a
+typestate `SwapBuilder` with named setters (`sell_token`, `buy_token`,
+`sell_amount`, `buy_amount`) so two same-typed token addresses cannot be
+transposed at the call boundary, and `execute` / `quote` terminals reachable
+only once the required markers are set ([ADR 0013](0013-http-transport-injection-and-typestate-builders.md)
+sealed markers).
 
 ## Why
 
-A protocol SDK that accepts raw `BigUint` everywhere makes the most common
-class of bot bug — confusing a human-readable `1.5` with its atomic
-`1_500_000_000_000_000_000` — a runtime failure at first submission
-instead of a compile-time refusal. A `Trading` that builds successfully
-without `chain_id` or `app_code` and then fails on the first quote
-pushes the same discovery to hours after startup. Moving both discoveries
-to the type system removes entire classes of latent defect without
-widening the runtime surface.
+A protocol SDK that accepts a raw integer everywhere makes the most common bot
+bug — confusing a human-readable `1.5` with its atomic
+`1_500_000_000_000_000_000` — a runtime failure at first submission instead of a
+compile-time refusal. A `Trading` that builds without `chain_id` or `app_code`
+and then fails on the first quote pushes the same discovery to hours after
+startup. Moving both to the type system removes whole classes of latent defect
+without widening the runtime surface. Checked-only arithmetic extends the same
+discipline to money math: `U256` wraps silently in every build profile, so
+`sell - fee` for `fee > sell` would otherwise become a value near `2^256`. This
+aligns the typed-amount surface with [ADR 0033](0033-minimum-viable-panic-surface.md).
 
 ## Must Remain True
 
-- Public surface: `Amount` (typed `BigUint`) and `DecimalAmount` are the
-  amount-carrying contract on the `cow-sdk-trading` request surface and
-  every other public crate; `From<BigUint>`, `Into<BigUint>`, and
-  `TryFrom<&str>` conversions keep atomic interop ergonomic, and
-  `Amount::as_biguint` / `Amount::into_biguint` expose the inner value
-  for typed arithmetic without reparsing a decimal string.
-  `TradingBuilder` exposes exactly two terminals: `build_ready`
-  (requires both markers set) and `build_helper_only` (requires only the
-  chain-id marker).
-- `Trading` and `TradingBuilder` expose ready-state and helper-only
-  construction exclusively through typestate-builder terminal methods.
-  **Inherent associated constructors** (`Trading::new`,
-  `Trading::new_partial`, or any future equivalent) are forbidden in
-  shipped crates. One-call ergonomic shortcuts (e.g.,
-  `TradingBuilder::ready(...)`) are typestate terminals consuming
-  *total* typed inputs and never `Partial*` shapes.
-- On `wasm32` targets the default orderbook factory builds a browser
-  `FetchTransport`-backed client (see ADR 0013), so the ready-state terminal
-  needs no injected client; a custom client is injected through
-  `TradingBuilder::orderbook(...)`.
-- Runtime and support: the wire form of every amount remains the
-  canonical base-10 string already defined by the orderbook contract.
-  `Amount` serializes to that exact string via a custom serializer;
-  decimal scaling is a pure presentation concern. Helper-only flows use
-  the distinct `TradingHelpers` type, which exposes pre-sign, allowance,
-  approval, and on-chain cancellation helpers and does not expose quote,
-  post, or off-chain cancellation methods.
-- Validation and review: the wire and ABI boundary remains byte-equal
-  against the pinned upstream fixtures; every per-crate parity contract
-  suite continues to pass against the same vectors that validated the
-  prior surface. Typestate failure modes (a missing prerequisite) are
-  observable as a compile error, not a runtime panic. The new terminal
-  names never regress to a single overloaded `build` that silently
-  produces a helper-only instance.
-- Cost: two public amount types and two builder terminals in place of
-  one each. The single canonical `Amount(BigUint)` newtype replaces the
-  retired wire-string wrapper, so every amount-adjacent surface carries
-  one accessor shape instead of two.
-- Trade-parameter surface: `TradeParams` and `LimitTradeParams`
-  carry the protocol-level fields (kind, tokens, amounts, and the
-  documented optional overrides) and do not accept token-decimal
-  arguments at their `::new` constructors. The wasm input DTOs
-  `SwapParametersInput` and `LimitTradeParametersInput` follow the
-  same scope. `DecimalAmount` remains the canonical
-  typed-amount-boundary home for token decimals across every
-  display and user-input flow.
-- Trade-parameter lifecycle: `TradeParams` is the pre-quote
-  request shape carrying a single amount interpreted by `kind`;
-  `LimitTradeParams` is the post-quote / canonical-submission
-  shape carrying both `sell_amount` and `buy_amount` plus an
-  optional `quote_id`. The lifecycle distinction is enforced
-  through nominal typing on every submission and on-chain helper
-  that needs both amounts. `LimitTradeParamsFromQuote` is a
-  real newtype around `LimitTradeParams` that guarantees a
-  non-`None` `quote_id` by construction; it is produced exclusively
-  by `swap_params_to_limit_order_params` and accepted by the
-  `EthFlow` native-currency submission seam and the `EthFlow`
-  transaction helper so the quote-identifier requirement is
-  enforced at the type system rather than as a runtime check on
-  the submission path. The `with_*` setter bodies shared by
-  `TradeParams` and `LimitTradeParams` are factored
-  through one internal definition that emits inherent methods on
-  each public type without altering the public surface.
-- Advanced-settings surface: one `TradeAdvancedSettings` bundle is
-  accepted by every public quote and post entry. Limit-order
-  callers leave `slippage_suggester` as `None` because the limit
-  submission path does not apply slippage in the same shape as
-  swaps; the field is documented but unused on that flow. The
-  wasm export surface mirrors the same single-type shape.
+- `Amount` is the single atomic amount type on every public crate's
+  amount-carrying surface, `#[repr(transparent)]` over `U256` with a private
+  inner field; `as_u256` / `into_u256` are the typed accessors.
+- The wire form of every amount is the canonical base-10 decimal string; the
+  `Deserialize` boundary is strict-decimal fail-closed (rejects every radix
+  prefix).
+- `Amount` arithmetic is `checked_*` / `saturating_*` only — no bare operators,
+  no `pow`, no bit inspection. A committed compile-fail witness pins the removal.
+- `Trading` constructs only through `TradingBuilder`; `build()` is reachable
+  only on `<ChainIdSet, AppCodeSet>`; inherent constructors are forbidden. A
+  missing prerequisite is a compile error, not a runtime panic.
+- `TradeParams::new` / `LimitTradeParams::new` take no token-decimal arguments;
+  `LimitTradeParamsFromQuote` guarantees its `quote_id` by construction.
+- The wire and ABI boundary stays byte-equal against the pinned upstream parity
+  fixtures.
 
 ## Alternatives Rejected
 
-- Keep `Amount = BigUint` as the only public surface: simpler, but
-  preserves the silent human-vs-atomic failure mode the SDK is most
-  frequently blamed for.
-- Make the builder runtime-only and return `Err` on missing
-  prerequisites: matches many builder-pattern crates, but defers the
-  discovery to the first quote or post call when the consumer is already
-  in production.
-- Make `Trading` generic over a mode type parameter: compile-time
-  safe, but forces every downstream signature to leak the mode and
-  collapses the ergonomic path for consumers who do not care about the
-  helper-only lane.
+- **Keep a raw integer as the only public amount surface.** Simpler, but
+  preserves the silent human-vs-atomic failure the SDK is most blamed for.
+- **A second `decimals`-carrying amount type.** A `DecimalAmount` pairing an
+  atomic value with a scale was load-bearing for no shipped flow and has no
+  analogue in the upstream `@cowprotocol/cow-sdk`; decimal I/O lives as methods
+  on the one atomic `Amount` instead.
+- **A runtime-only builder returning `Err` on missing prerequisites.** Matches
+  many builder crates, but defers discovery to the first quote or post in
+  production.
+- **Make `Trading` generic over a mode type parameter.** Compile-time safe, but
+  leaks the mode into every downstream signature.
+- **Bare arithmetic operators delegating to the inner integer.** Reintroduces a
+  silent wrap (release) and debug-only panic on financial amounts.
 
 ## Intentionally Out-of-Scope
 
-The typed-amount decision records what the canonical atomic type is; it
-does not attempt to mirror every historical upstream surface. The
-authoritative list of TypeScript-SDK surfaces that `cow-rs` intentionally
-declines to mirror — including the retired wire-string `Amount` wrapper
-and the related parity-scope exclusions from the same release cycle —
-lives in [Parity Scope](../parity.md). Reviewers and contributors
-should consult that document before filing any issue claiming a missing
-positive fixture implies a parity gap; the parity-scope discipline is
-recorded alongside the typed-amount decision in the shipped
-architecture record.
+The decision records the canonical atomic type; it does not mirror every
+historical upstream surface, including the retired wire-string `Amount` wrapper.
+The authoritative list of TypeScript-SDK surfaces `cow-rs` intentionally
+declines to mirror lives in [Parity Scope](../parity.md); consult it before
+filing any issue claiming a missing positive fixture implies a parity gap.
 
 ## Links
 
 - [Parity Scope](../parity.md)
 - [Architecture](../architecture.md)
-- [Verification Guide](../verification.md)
+- [Verification](../verification.md)
 - [Properties](../../PROPERTIES.md)
-- [ADR 0002](0002-dedicated-trading-orchestration-crate.md)
-- [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
+- [ADR 0002](0002-dedicated-trading-orchestration-crate.md),
+  [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md),
+  [ADR 0013](0013-http-transport-injection-and-typestate-builders.md),
+  [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
 
 **Proven by:**
 
@@ -150,350 +133,8 @@ architecture record.
 - [Typestate Builder Contract Audit](../audit/typestate-builder-contract-audit.md)
 - [Trade-Parameter Lifecycle Audit](../audit/trade-parameter-lifecycle-audit.md)
 
-## Amendment 2026-05-22: canonical primitive layer (per ADR 0052)
-
-`Amount` and `SignedAmount` ship as cow-owned `#[repr(transparent)]`
-newtypes around `alloy_primitives::U256` and `alloy_primitives::I256`
-respectively per
-[ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md). The
-newtypes carry cow-owned `Display`, `Serialize`, and `Deserialize`
-impls plus a fallible-by-return arithmetic surface (`checked_*`
-returning `Option`, and explicit `saturating_*` clamps). The
-decimal-string wire format is locked by the cow-owned
-`Serialize`/`Deserialize` impls; the strict-decimal-only fail-closed
-contract on the `Deserialize` boundary rejects `0x`/`0X`/`0o`/`0O`/`0b`/`0B`-prefixed
-input that alloy's default `ruint::Uint::FromStr` impl would otherwise
-accept silently. The Decision body's references to `Amount` as a "typed
-`BigUint`" and to the `as_biguint` / `into_biguint` accessor names
-predate the canonical primitive layer; the recorded decision (typed
-atomic-vs-decimal amount boundary and the typestate-builder terminals)
-is preserved verbatim while the inner type and accessor surface follow
-ADR 0052. The owned accessor surface on `Amount` is `as_u256` /
-`into_u256` (and equivalent `as_i256` / `into_i256` on `SignedAmount`),
-named to match the canonical alloy primitive that backs each newtype.
-
-## Amendment 2026-05-26: trade-parameter decimals scope
-
-`TradeParams` and `LimitTradeParams` carry the protocol-level
-fields only. The `sell_token_decimals` and `buy_token_decimals`
-fields, the matching positional `u8` arguments on `::new`, and the
-equivalents on the wasm `SwapParametersInput` and
-`LimitTradeParametersInput` DTOs are removed from the public surface;
-the generated TypeScript declaration snapshots are refreshed in the
-same change set. `DecimalAmount` remains the canonical
-typed-amount-boundary home for token decimals; the typed-amount
-invariants recorded above are preserved verbatim.
-
-## Amendment 2026-05-27: trade-parameter consolidation and `LimitTradeParamsFromQuote` newtype
-
-The trade-parameter surface consolidates around the lifecycle
-distinction recorded above. `LimitTradeParamsFromQuote` ships
-as a real newtype around `LimitTradeParams` that guarantees a
-non-`None` `quote_id` by construction; the prior transparent type
-alias is removed. The `EthFlow` native-currency submission seam
-(`post_sell_native_currency_order`) and the `EthFlow` transaction
-helper (`eth_flow_transaction`) accept only
-`LimitTradeParamsFromQuote` on their public entries, lifting
-the prior `MissingQuoteId` runtime check on the `EthFlow` path to
-a compile-time guarantee at the public boundary while preserving
-the public diagnostic shape for callers that explicitly attempt
-construction with a missing quote id.
-
-The two prior advanced-settings types `SwapAdvancedSettings` and
-`LimitOrderAdvancedSettings` collapse into one
-`TradeAdvancedSettings` type accepted by every public post and
-quote entry. Limit-order callers leave `slippage_suggester` as
-`None` because the limit submission path does not apply slippage
-in the same shape as swaps; the field is documented but unused on
-that flow.
-
-The shared `with_*` setter bodies on `TradeParams` and
-`LimitTradeParams` continue to exist as inherent methods on
-both public types, with the implementation factored through one
-internal definition that is invoked once per target struct.
-
-## Amendment 2026-05-28: owner placement
-
-The `owner` field is a per-trade attribution that lives on
-`TradeParams`, `LimitTradeParams`, and `OrderTraderParams`.
-It does not live on `PartialTraderParams`, on `TraderParams`,
-or on the `TradingBuilder`. The SDK does not store a default
-owner; the call-level owner is the only owner the SDK observes.
-
-For signer-backed flows (`post_swap_order`,
-`post_swap_order_from_quote`, `post_limit_order`,
-`quote_results`) the signer address resolved through
-`Signer::address` is the implicit fallback when
-`TradeParams.owner` is `None`. For quote-only flows
-(`quote_only`) the owner must be supplied through
-`TradeParams.owner` or through
-`advanced_settings.quote_request.from`; missing owner surfaces as
-`TradingError::MissingOwner` at the call boundary.
-
-The retired SDK-default-owner surface
-(`TradingBuilder::with_owner`, `PartialTraderParams::owner`,
-`PartialTraderParams::with_owner`) was load-bearing for no shipped
-flow because per-call `TradeParams.owner` won precedence in every
-observing helper. The removal narrows the public surface without
-changing observable behaviour.
-
-The Trade-Parameter Lifecycle Audit and the Trading SDK Runtime
-Prerequisites Audit are the standing current-state proofs for the
-post-amendment invariant.
-
-## Amendment 2026-05-28: checked-only typed-amount arithmetic
-
-`Amount` and `SignedAmount` expose no bare arithmetic operators. The
-`Add` / `Sub` / `Mul` (and `*Assign`) impls and the `pow` method are
-removed from both newtypes. The supported arithmetic surface is
-`checked_add` / `checked_sub` / `checked_mul` (each returning `Option`),
-the explicit `saturating_*` clamps, and — on `SignedAmount` —
-`checked_neg` / `checked_abs` / `checked_unsigned_abs`. Exponentiation
-and bit-inspection are intentionally absent: raising a token amount to a
-power or counting its bits has no money meaning, so `Amount` ships no
-`pow` or `bit_len`/`bits` in any form. A caller that needs raw wrapping
-reaches through `as_u256` /
-`into_u256` (respectively `as_i256` / `into_i256`), keeping the wrapping
-intent visible at the type boundary.
-
-The bare operators delegated to the inner alloy primitives, whose
-overflow behaviour is unsafe for financial amounts: `U256` wraps
-silently in every build profile (so `sell - fee` for `fee > sell`
-silently became a value near `2^256`), while `I256` panicked only in
-debug builds and wrapped silently in release. Removing the operators
-makes the two newtypes symmetric and total/fallible — an overflow or
-underflow is always either an `Option::None` the caller must handle or
-an explicit clamp, never a silent corruption and never a
-runtime-input-dependent panic, which also aligns the typed-amount
-surface with [ADR 0033](0033-minimum-viable-panic-surface.md). The
-arithmetic-operator clause in the 2026-05-22 amendment above is
-superseded accordingly; the typed atomic-vs-decimal boundary and the
-typestate-builder terminals recorded in the Decision are preserved
-verbatim. A committed compile-fail witness pins the removal so a
-wrapping (or debug-only panicking) operator cannot silently return to
-the typed amount surface.
-
-## Amendment 2026-06-01: decimal I/O on the atomic `Amount`; `DecimalAmount` removed
-
-`DecimalAmount` is removed from the public surface. The
-atomic-vs-decimal split recorded in the original Decision named a
-second amount-carrying newtype that paired an atomic value with a
-`decimals` scale; that type was load-bearing for no shipped flow —
-zero type-position uses across every public crate, and no analogue in
-the upstream `@cowprotocol/cow-sdk` it ports. The removal is exactly
-parallel to the 2026-05-28 `with_owner` removal above: dead public
-surface that no observing helper depended on, narrowed without
-changing observable behaviour.
-
-Exact human-decimal construction and display now live directly on the
-atomic `Amount`. `Amount::parse_units(value, decimals) -> Result<Amount,
-CoreError>` builds an atomic amount from a human-readable decimal
-string and the token's `decimals` scale, and `Amount::format_units(&self,
-decimals) -> String` renders an atomic amount back to its scaled decimal
-string. These are the typed analogues of the viem/ethers
-`parseUnits`/`formatUnits` helpers, scaling by `10^decimals` through
-integer arithmetic so the result is exact. `parse_units` fails closed on
-empty/whitespace input, on a leading `+`/`-` sign (`Amount` is
-unsigned), and on `decimals` above `77`, surfacing
-`ValidationError::DecimalsOutOfRange` for the last case per
-[ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md).
-
-`Amount::from_units(whole, decimals) -> Result<Amount, CoreError>` is the
-numeric companion to `parse_units` for the common case where the amount is a
-whole number already held as an integer (for example
-`Amount::from_units(1000, 6)` for 1000 USDC): it scales a `u128` whole-unit
-count by `10^decimals` with the same checked integer arithmetic and the same
-`decimals <= 77` bound, so a caller never has to render a number as a string
-or hand-count zeros. A decimal string is therefore required only for
-genuinely fractional or untrusted-text input, never for a whole-token
-literal.
-
-`Amount` stays atomic: none of these methods store a scale on the value, so
-the single canonical `Amount(U256)` newtype remains the one atomic
-amount type across every public crate. `decimals` is supplied per call
-at the decimal-I/O boundary and is never carried on the wire. The wire
-form is unchanged — every amount still serialises to the canonical
-base-10 string defined by the orderbook contract, and the strict-decimal
-fail-closed `Deserialize` boundary recorded in the 2026-05-22 amendment
-is preserved. `TradeParams::new` and `LimitTradeParams::new`
-still take no token-decimal arguments; the 2026-05-26 trade-parameter
-decimals-scope amendment is preserved verbatim, with the decimal-I/O
-home now the atomic `Amount` rather than the retired `DecimalAmount`.
-The typed atomic-vs-decimal boundary, the typestate-builder terminals,
-and every prior amendment recorded above are otherwise preserved
-verbatim.
-
-## Amendment 2026-06-02: helper-only trading terminal removed
-
-The `build_helper_only` builder terminal, the `TradingBuilder::helper_only(...)`
-shortcut, and the distinct `TradingHelpers` type are removed. The "Must Remain
-True" text above describing two builder terminals and a separate helper-only
-type is superseded: `TradingBuilder` exposes a single ready-state terminal pair —
-`build_ready` (requires the `ChainIdSet` and `AppCodeSet` markers) and the
-`TradingBuilder::ready(...)` total-input shortcut — and `Trading` is the only
-trading client.
-
-`TradingHelpers` duplicated four methods already on `Trading`
-(`pre_sign_transaction`, `onchain_cancel_order`,
-`cow_protocol_allowance`, `approve_cow_protocol`) plus their chain-binding
-resolvers, and added no capability that `Trading` or the crate's free functions
-did not already provide. App-code-less helper flows — allowance, approval,
-pre-sign, and on-chain cancellation, none of which need an `appCode` — are the
-crate's free functions (`cow_protocol_allowance`, `approval_transaction`,
-`pre_sign_transaction`, `onchain_cancel_order`), which take chain and
-protocol context directly and require no trading client.
-
-The "Sole Construction Seam" principle is unchanged: `Trading` still constructs
-only through the typestate builder with `appCode` as a compile-time marker on
-`build_ready`. Removing the helper-only terminal does not relax that — the
-app-code-less path is simply not a `Trading` construction. The upstream
-TypeScript SDK and the CoW Swap frontend likewise use one trading client plus
-standalone functions / direct calls for the app-code-less operations.
-
-## Amendment 2026-06-02: builder terminal renamed to `build`
-
-The ready-state terminal `TradingBuilder::build_ready()` is renamed to
-`TradingBuilder::build()`. The `_ready` suffix existed only to keep the two
-former terminals (`build_ready` and `build_helper_only`) from collapsing into a
-single overloaded `build` that could silently produce a helper-only instance —
-the exact concern recorded in the original decision above. The helper-only
-terminal was removed in the preceding amendment, so there is now one terminal
-and one product type (`Trading`); the suffix names a distinction that no longer
-exists, and every sibling client builder (`OrderbookApi`, `SubgraphApi`,
-`Client`, and the alloy provider and signer builders) already terminates
-with `build()`. Renaming restores that consistency. The compile-time typestate
-guarantee is unchanged: `build()` is still implemented only on
-`TradingBuilder<ChainIdSet, AppCodeSet>`, the `TradingBuilder::ready(...)`
-total-input shortcut still calls it, and the `wasm32` injected-orderbook runtime
-check is unchanged.
-
-The builder also drops `with_trader_defaults`. It accepted a
-`PartialTraderParams` bag without transitioning the typestate markers, so it
-could never satisfy the terminal on its own and only duplicated the individual
-`with_*` setters. Trader defaults reach the builder through the explicit typed
-setters (`with_chain_id`, `with_app_code`, `with_env`, and the contract-override
-setters) or, for callers holding a total `TraderParams`, through
-`TradingBuilder::ready(...)`.
-
-## Amendment 2026-06-02: builder setters dropped the `with_` prefix
-
-The `TradingBuilder` configuration setters are renamed to drop the `with_`
-prefix: `chain_id`, `app_code`, `env`, `settlement_contract_override`,
-`eth_flow_contract_override`, `options`, and `orderbook` (with `orderbook_shared`
-for the shared `Arc<dyn OrderbookClient>` variant). The `with_`-prefixed names
-used in the amendment above are superseded.
-
-This aligns `TradingBuilder` with every other client construction builder in the
-workspace — `OrderbookApi`, `SubgraphApi`, `Client`, and the alloy provider
-and signer builders all use bare setters on their typestate construction chains.
-The `with_` prefix is retained for the owned-value setters on the parameter
-types: `TraderParams` and the quote and override builders keep their `with_*`
-setters. The construction builder and the value structs are deliberately
-distinct surfaces. The typestate guarantee is unchanged:
-`chain_id` and `app_code` still transition the `ChainIdSet` and `AppCodeSet`
-markers, and `build()` is reachable only once both are set.
-## Amendment 2026-06-08: `SignedAmount` removed
-
-`SignedAmount` is removed from the public surface. The signed `int256`
-newtype carried signed protocol quantities (token deltas), but its only
-consumer has been removed, leaving it load-bearing for no shipped flow —
-zero type-position uses across every public crate, and no analogue in the
-upstream `@cowprotocol/cow-sdk` it ports. The removal is exactly parallel
-to the 2026-06-01 `DecimalAmount` removal above: dead public surface that
-no observing helper depended on, narrowed without changing observable
-behaviour. `Amount` (the unsigned `uint256` newtype) is unchanged and
-remains the single canonical atomic amount type across every public
-crate. The strict-decimal radix-rejection `Deserialize` contract
-(2026-05-22) and the checked/saturating fallible-by-return arithmetic
-surface (2026-05-28) are preserved verbatim on `Amount`; the
-`SignedAmount`-specific clauses in those amendments no longer apply, and
-the workspace ships one `DO NOT SWAP` radix anchor (on `Amount::new`)
-where it previously carried two.
-
-## Amendment 2026-06-09: fluent swap lifecycle builder
-
-`Trading` gains an additive fluent entry for the common swap path,
-`Trading::swap()`, which returns a typestate `SwapBuilder<SellToken,
-BuyToken, AmountState>`. The sell token, buy token, and amount are
-tracked as compile-time markers (`Set` / `Unset`, sealed with private
-tuple fields per [ADR 0013](0013-http-transport-injection-and-typestate-builders.md));
-each has its own named setter (`sell_token`, `buy_token`, `sell_amount`,
-`buy_amount`), so two same-typed token addresses cannot be transposed at
-the call boundary, and the terminals are reachable only once all three
-markers are set. The remaining trade fields (`owner`, `slippage_bps`,
-`receiver`, `valid_for`, `valid_to`, `partially_fillable`, `advanced`)
-are optional setters that do not move the markers.
-
-The builder exposes two terminals. `execute(&signer)` quotes, signs, and
-submits in one call. `quote(&signer)` returns a `QuotedSwap` whose
-`results()` exposes the amounts, costs, suggested slippage, and order to
-sign for inspection, and whose `submit(&signer)` posts the exact quoted
-order. The owner is resolved from the signer address when no explicit
-`owner` is set, so an explicit `owner` is optional; the builder tracks the
-three required markers — sell token, buy token, and amount — with `owner`
-available for quote-only and delegated flows.
-
-The `execute` and `submit` terminals are asynchronous, following the
-crate's runtime-neutral async `Signer` boundary
-([ADR 0010](0010-runtime-neutral-async-and-transport-posture.md),
-[ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md),
-[ADR 0045](0045-async-signer-trait-narrowing.md)): a browser wallet signs
-through an asynchronous EIP-1193 request, and remote-signer and
-smart-account backends sign over the network, so one builder drives a
-local key, a remote signer, a browser wallet, and a smart account
-uniformly. The builder adds no protocol logic: signing stays interleaved
-with app-data upload in the existing `post_cow_protocol_trade`
-orchestration, and the terminals delegate to the existing `quote_results`,
-`post_swap_order`, and `post_swap_order_from_quote` entries.
-
-The injected orderbook client is accepted by value through
-`TradingBuilder::orderbook(...)`, which shares it internally as an
-`Arc<dyn OrderbookClient>`. The `orderbook_shared(Arc<dyn OrderbookClient>)`
-variant remains for an already-shared handle. The flat free functions and
-`Trading` methods stay the full surface; the builder is an additive ergonomic
-entry, and the construction typestate on `TradingBuilder` recorded above is
-unchanged. (See the 2026-06-14 amendment below for the removal of the
-`TradingOptions` bag.)
-
-## Amendment 2026-06-09: partial trader defaults are crate-internal
-
-`PartialTraderParams` — the partial bundle of trader defaults a `Trading`
-instance stores (chain id, app code, environment, and contract overrides) — is
-crate-internal (`pub(crate)`). It is not a public construction shape: no public
-entry accepts a `PartialTraderParams`, and its public builder (`new` plus the
-`with_*` setters) is removed, because no public flow consumed the constructed
-value once `with_trader_defaults` was dropped (the 2026-06-02 amendment above).
-This closes the Sole Construction Seam drift of shipping a `Partial*` builder
-with no public destination.
-
-`Trading` exposes the stored defaults through typed read accessors —
-`chain_id()`, `app_code()`, `env()`, `settlement_contract_override()`, and
-`eth_flow_contract_override()` — replacing the prior
-`trader_defaults() -> &PartialTraderParams` accessor that returned the
-partial type. `TraderParams` remains the public total identity shape, and the
-typestate construction recorded above is unchanged.
-
-## Amendment 2026-06-14: construction collapsed to one orderbook setter
-
-The `TradingOptions` value type is removed. An orderbook client is injected
-directly on the builder through `TradingBuilder::orderbook(...)` (by value, no
-`Arc`) or `TradingBuilder::orderbook_shared(Arc<dyn OrderbookClient>)` for an
-already-shared handle; `TradingBuilder::options(...)`, `Trading::options()`, and
-the `TradingOptions` argument on `TradingBuilder::ready(...)` are removed. The
-ready-state terminal is now `TradingBuilder::ready(params: TraderParams) ->
-Trading`: with a complete `TraderParams` (a validated `appCode` and a chain id)
-and the default per-chain orderbook, construction cannot fail, so the terminal
-returns `Trading` directly rather than `Result`. The injected orderbook field
-moves onto `TradingBuilder` and `Trading` directly; both keep a manual `Debug`
-that reports orderbook presence as a boolean. The typestate guarantee and the
-sealed inherent constructors recorded above are unchanged.
-
 ## Acknowledgements
 
-The fluent typestate builder ergonomics for the trading lifecycle were
-suggested by [@mfw78](https://github.com/mfw78) in public design review on
-the CoW DAO grants repository
-([review comment](https://github.com/cowdao-grants/cow-rs/pull/5#issuecomment-4648911544)).
-The `cow-rs` builder expresses that lifecycle through the crate's
-runtime-neutral async `Signer` boundary, so a single chain serves
-local-key, remote-signer, browser-wallet, and smart-account backends.
+The fluent typestate swap builder ergonomics were suggested by
+[@mfw78](https://github.com/mfw78) in public design review
+([comment](https://github.com/0xSymbiome/cow-rs/pull/5#issuecomment-4648911544)).

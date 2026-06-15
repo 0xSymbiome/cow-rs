@@ -1,7 +1,7 @@
 # Error Classification Audit
 
 Status: Current
-Last reviewed: 2026-06-14
+Last reviewed: 2026-06-15
 Owning surface: the `class()`, `is_retryable()`, and `backoff_hint()` accessors on the `cow-sdk` error family and the shared `cow_sdk_core::ErrorClass`
 Refresh trigger: a new `ErrorClass` bucket; a new error type aggregated by `cow_sdk::CowError`; a change to any type's `class()` mapping; a change to the `is_retryable()` / `backoff_hint()` mapping or the retained `Retry-After` capture; or a new error variant whose class or retry verdict differs from its type's existing default arm
 Related docs:
@@ -44,6 +44,7 @@ cancellation variants — rather than a `class()` mapping.
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
 | Shared partition | `ErrorClass` lives in `cow-sdk-core`, is `#[non_exhaustive]`, and is re-exported as `cow_sdk::ErrorClass` | Conforms |
+| Label rendering | `ErrorClass` exposes `as_str()` and a `Display` impl with stable lowercase labels, mirroring `TransportErrorClass` and the adapter class enums | Conforms |
 | Per-type accessors | Every facade-family error type exposes `const fn class(&self) -> ErrorClass` | Conforms |
 | Facade delegation | `CowError::class()` delegates to each leaf accessor and holds no classification logic of its own | Conforms |
 | Composite granularity | `TradingError::class()` delegates to the wrapped error, so a wrapped 429 orderbook rejection stays `RateLimited` | Conforms |
@@ -62,7 +63,11 @@ Cancelled | Internal`) is defined in `crates/core/src/errors.rs` and
 re-exported from the facade, so `cow_sdk::ErrorClass` resolves to the same type
 a leaf crate returns. Retry layers treat `Transport` and `Remote` as retryable;
 `RateLimited` is reached only once the transport retry budget has honored
-`Retry-After`.
+`Retry-After`. Telemetry and logging layers render the class through
+`ErrorClass::as_str()` — a stable lowercase label (`validation`, `transport`,
+`remote`, `rate-limited`, `signing`, `cancelled`, `internal`) — or its `Display`
+impl, mirroring `TransportErrorClass` and the adapter class enums; `Debug` is
+not a stability contract.
 
 ### Per-type accessors and delegation
 

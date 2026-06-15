@@ -1,8 +1,8 @@
 # ADR 0041: Share Transport Policy Across HTTP Clients
 
-- Status: Accepted (amended)
+- Status: Accepted
 - Date: 2026-05-08
-- Last reviewed: 2026-06-09
+- Last reviewed: 2026-06-15
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: transport, retry, layering
 - Related: [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), [ADR 0019](0019-http-transport-sole-dispatch.md), [ADR 0046](0046-transport-policy-js-exposure.md)
@@ -21,23 +21,6 @@ The TypeScript-callable package exposes the same policy through a typed
 `TransportPolicyConfig` on JavaScript client constructors. Omitting the config
 preserves Rust defaults; invalid policy values fail during constructor
 validation.
-
-### Amendment (2026-06-09): module placement
-
-The policy was originally shipped as a standalone `cow-sdk-transport-policy`
-crate. It is now a feature-gated module of `cow-sdk-core`. The two boundaries
-that the original separation protected are preserved by the feature gate, while
-the workspace sheds one published crate, one `Cargo.toml`, and one docs.rs entry:
-
-- The raw `HttpTransport` dispatch seam is unchanged. The policy module is
-  opt-in (`transport-policy` feature, off by default) and adds no item to the
-  transport trait, so a `cow-sdk-core` consumer that needs only the primitive
-  types or the bare transport seam links neither the policy code nor its
-  retry-timer dependencies (`httpdate`, `futures-timer`, `gloo-timers`,
-  `web-time`).
-- The layering is preserved. Policy still composes the transport seam from
-  above and is consumed from below by typed clients; only its packaging changed
-  from a crate to a gated module.
 
 ## Why
 

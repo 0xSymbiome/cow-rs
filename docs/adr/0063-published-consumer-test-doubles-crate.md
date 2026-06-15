@@ -1,11 +1,11 @@
 # ADR 0063: Publish Consumer Test Doubles As The `cow-sdk-test` Crate
 
-- Status: Accepted (amended)
+- Status: Accepted
 - Date: 2026-06-02
 - Last reviewed: 2026-06-12
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: testing, crate-boundary, public-api, feature-gating, panic
-- Related: [ADR 0004](0004-feature-gated-browser-wallet-sidecar.md), [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md), [ADR 0033](0033-minimum-viable-panic-surface.md), [ADR 0062](0062-internal-shared-test-support-crate.md)
+- Related: [ADR 0007](0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md), [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md), [ADR 0033](0033-minimum-viable-panic-surface.md), [ADR 0062](0062-internal-shared-test-support-crate.md)
 
 ## Decision
 
@@ -14,7 +14,10 @@ Consumer-facing test doubles for the SDK public trait seams ship as a published
 doubles for `OrderbookClient`, `Signer`, and `Provider` / `SigningProvider`,
 ready-made typed-error constructors, and a one-call wired `Trading` convenience,
 so a downstream application can test its CoW integration without a live
-orderbook, RPC endpoint, or wallet. The root facade re-exports it behind an
+orderbook, RPC endpoint, or wallet. The `Signer` double (`MockSigner`) signs
+with a public development key and produces real, recoverable signatures, so a
+double-driven posting flow clears the client-side owner-recovery gate rather
+than failing it. The root facade re-exports it behind an
 opt-in `testing` feature as `cow_sdk::testing`, for use from a consumer's
 `[dev-dependencies]`.
 
@@ -47,6 +50,23 @@ outside the workspace.
   constructors with no `unwrap`/`expect`/`panic!` and no allowlist carve-out.
   The crate's own tests drive a real `Trading` through the doubles to prove they
   satisfy the actual trait contracts.
+- Real signing: the `Signer` double (`MockSigner`) produces real, recoverable
+  signatures by default. It signs EIP-712 typed data and EIP-191 messages with a
+  public development key — the secp256k1 scalar `1`, the canonical key in Alloy's
+  `signer-local` tests and the `CoW` services signature-recovery vectors, never a
+  secret — emitting the canonical legacy-`v` recoverable form through
+  `RecoverableSignature` (ADR 0022), so a signed order recovers to the reported
+  address and clears the client-side owner-recovery gate (ADR 0015) end to end.
+- Identity knobs: the reported address (`MockSignerBuilder::address`) defaults to
+  the development key's address; setting it to a different address models a wallet
+  that reports one identity but signs with another (the owner-recovery mismatch
+  case). The fixed-signature overrides (`MockSignerBuilder::typed_data_signature`
+  / `message_signature`) remain for error-path and wire-shape tests.
+- Confined crypto: the added dependencies are the pure `alloy-dyn-abi` typed-data
+  hasher, `k256`, `cow-sdk-contracts`, and `alloy-primitives` — none keystore-capable.
+  `alloy-signer-local` stays confined to the alloy-adapter crates, so the workspace
+  no longer dev-depends on `cow-sdk-alloy-signer` outside those crates and the
+  dependency-isolation gate covers the full dev-edge-inclusive graph.
 - Cost: one more published crate to version, and the doubles must track the
   public trait seams they implement.
 
@@ -54,7 +74,7 @@ outside the workspace.
 
 - A `testing` feature on `cow-sdk-trading`: weaker release isolation, and it
   couples test scaffolding to a product crate against the thin-facade,
-  real-crate-boundary posture of ADR 0001 and ADR 0008.
+  real-crate-boundary posture of ADR 0001.
 - A mocking-framework dependency: an expectation DSL fits `#[async_trait]`
   traits but not the native-async `Signer` / `Provider` traits, and would
   publish a third-party DSL as part of the surface; hand-written recording
@@ -66,42 +86,9 @@ outside the workspace.
 
 - [Architecture](../architecture.md)
 - [Principles](../principles.md)
-- [ADR 0004](0004-feature-gated-browser-wallet-sidecar.md)
-- [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md)
+- [ADR 0007](0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md)
+- [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md)
 - [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md)
 - [ADR 0033](0033-minimum-viable-panic-surface.md)
 - [ADR 0053](0053-typed-signer-rejection-classification.md)
 - [ADR 0062](0062-internal-shared-test-support-crate.md)
-
-## Amendment 2026-06-12: the signer double signs with a development key
-
-The `MockSigner` now produces real, recoverable signatures by default. It signs
-EIP-712 typed data and EIP-191 messages with a public development key — the
-secp256k1 scalar `1`, the canonical key in Alloy's `signer-local` tests and the
-`CoW` services signature-recovery vectors, never a secret — emitting the
-canonical legacy-`v` recoverable form through
-`RecoverableSignature` ([ADR 0022](0022-ecdsa-signature-v-normalization.md)), so
-a signed order recovers to the reported address and clears the client-side
-owner-recovery gate ([ADR 0015](0015-client-side-order-bounds-validator.md)) end
-to end. The previous canned signature constants could not recover to any
-address, so a double-driven posting flow failed that gate; the doubles now
-produce cryptographically coherent orders, which is the property a consumer
-testing a posting flow needs.
-
-- The reported address (`MockSignerBuilder::address`) defaults to the
-  development key's address. Setting it to a different address models a wallet
-  that reports one identity but signs with another — the owner-recovery gate's
-  mismatch case — so that path stays testable. The fixed-signature overrides
-  (`MockSignerBuilder::typed_data_signature` / `message_signature`) remain for
-  error-path and wire-shape tests.
-- The crate stays panic-free per [ADR 0033](0033-minimum-viable-panic-surface.md):
-  the development key's address is a compile-time constant, and key parsing and
-  signing defer to the `Signer` trait's `Result`, so no `unwrap`/`expect`/`panic`
-  and no allowlist carve-out is introduced.
-- The added dependencies are the pure `alloy-dyn-abi` typed-data hasher, `k256`,
-  `cow-sdk-contracts`, and `alloy-primitives`; none is a keystore-capable signer.
-  `alloy-signer-local` stays confined to the alloy-adapter crates: the internal
-  trading test harness signs through the same `k256` + Alloy-typed-data path, so
-  the workspace no longer dev-depends on `cow-sdk-alloy-signer` outside those
-  crates, and the dependency-isolation gate covers the full dev-edge-inclusive
-  graph.

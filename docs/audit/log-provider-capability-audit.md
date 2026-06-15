@@ -6,7 +6,7 @@ Owning surface: `cow-sdk-core` `LogProvider` capability trait, the `LogQuery` / 
 Refresh trigger: a change to the `LogProvider` trait shape, the `LogQuery` / `RawLog` / `LogMeta` types, the single-call `get_logs` contract, the alloy-provider or alloy umbrella `LogProvider` implementations or their `LogQuery` / `RawLog` conversions, the provider-leaf seam entries the umbrella consumes, or the `Provider` / `SigningProvider` capability split
 Related docs:
 - [ADR 0057](../adr/0057-log-provider-capability-trait.md)
-- [ADR 0029](../adr/0029-trait-evolution-extension-traits.md)
+
 - [ADR 0024](../adr/0024-asyncprovider-asyncsigningprovider-capability-split.md)
 - [ADR 0037](../adr/0037-alloy-umbrella-adapter.md)
 - [ADR 0048](../adr/0048-composable-conditional-order-framework.md)
@@ -34,7 +34,7 @@ live log retrieval.
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
 | Capability split | `LogProvider` extends `Provider` as an opt-in supertrait; `Provider`'s method set is unchanged | Conforms |
-| New-primitive rule | `get_logs` is a new RPC primitive modelled as a capability supertrait, never as a blanket `*Ext` | Conforms |
+| New-primitive rule | `get_logs` is a new RPC primitive modelled as an opt-in capability supertrait, keeping the base `Provider` shape frozen | Conforms |
 | Single-call scan | `get_logs` issues exactly one backend query over the caller-bounded block range and never loops, polls, watches, or expands the range | Conforms |
 | Provider independence | `LogQuery` / `RawLog` / `LogMeta` carry no provider or network dependency | Conforms |
 | Decoder feed | `RawLog::data` is the input the fail-closed decoders consume, keeping the fetch seam separate from decoding | Conforms |
@@ -54,12 +54,11 @@ frozen and is pinned by an unchanged trait-shape test; `LogProvider` adds only
 
 ### New-primitive rule
 
-`get_logs` cannot be derived from existing `Provider` methods, so it is not an
-`*Ext` blanket capability. Following the amended trait-evolution rule, a new RPC
-primitive lands on the core read trait (while pre-`0.1.0`) or as a capability
-supertrait; `LogProvider` is the latter. The core traits use native `async fn`
-in trait and are not object-safe, so the `*Ext` dyn-vtable rationale does not
-apply here.
+`get_logs` cannot be derived from existing `Provider` methods, so it lands as
+its own opt-in capability supertrait rather than as a method on the base
+`Provider`: a new RPC primitive lands on the core read trait (while pre-`0.1.0`)
+or as a capability supertrait, and `LogProvider` is the latter, keeping the
+frozen `Provider` shape minimal.
 
 ### Single-call scan
 

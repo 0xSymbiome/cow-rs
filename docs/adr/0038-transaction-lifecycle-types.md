@@ -1,11 +1,11 @@
 # ADR 0038: Split Transaction Broadcast And Receipt Observation
 
-- Status: Accepted (amended)
+- Status: Accepted
 - Date: 2026-05-07
 - Last reviewed: 2026-05-22
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: types, adapters, trading
-- Related: [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0029](0029-trait-evolution-extension-traits.md), [ADR 0037](0037-alloy-umbrella-adapter.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+- Related: [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0037](0037-alloy-umbrella-adapter.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
 
 ## Decision
 
@@ -42,6 +42,13 @@ fields are malformed.
   malformed-field cases.
 - Cost: adapters now maintain explicit conversion code for receipt fields
   instead of returning a hash-only placeholder.
+- Wait verdict: `WaitError::reverted(&self) -> Option<&TransactionReceipt>`
+  returns the reverted receipt only when a receipt wait failed because the mined
+  transaction reverted (and `None` for `Broadcast`/`Lookup`/`Timeout`/`Cancelled`);
+  a receipt reaches `WaitError::Reverted` only under `WaitOptions::require_success`,
+  while an inclusion-only wait returns `Ok(receipt)`. `WaitError` is generic over
+  the caller's signer/provider error types, so it stays outside the `ErrorClass`
+  family.
 
 ## Alternatives Rejected
 
@@ -64,34 +71,3 @@ fields are malformed.
 **Proven by:**
 
 - [Transaction Receipt Shape Audit](../audit/transaction-receipt-shape-audit.md)
-
-## Amendment 2026-05-22: canonical primitive layer (per ADR 0052)
-
-The `transaction_hash: TransactionHash` field on `TransactionBroadcast`
-and the `transaction_hash`, `block_hash: Option<BlockHash>`,
-`from: Option<Address>`, and `to: Option<Address>` fields on
-`TransactionReceipt` resolve through the cow-owned
-`#[repr(transparent)]` newtypes per
-[ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md):
-`TransactionHash` and `BlockHash` are `pub type` aliases over the cow
-`Hash32` newtype around `alloy_primitives::B256`, and `Address` is the
-cow newtype around `alloy_primitives::Address`. The `TransactionStatus`
-post-EIP-658 success-or-reverted bit is read through the alloy
-`receipt.inner.status_or_post_state().as_eip658()` accessor in the
-adapter conversion; the optional-field tolerance contract on
-receipt-capable providers is preserved.
-
-## Amendment 2026-06-08: reverted-receipt verdict on the wait helper
-
-`WaitError::reverted(&self) -> Option<&TransactionReceipt>` returns the reverted
-receipt when a receipt wait failed because the mined transaction reverted
-on-chain, and `None` for the transient or environmental variants (`Broadcast`,
-`Lookup`, `Timeout`, `Cancelled`). `WaitError` is generic over the caller's
-signer and provider error types per the runtime-neutral posture
-([ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md)), so it
-stays outside the `ErrorClass` family and is not a `CowError` variant; the
-purpose-built `reverted()` accessor reads only the SDK-owned `Reverted` variant,
-so its verdict never depends on the caller's runtime error type. A reverted
-receipt reaches `WaitError::Reverted` only when `WaitOptions::require_success` is
-set; an inclusion-only wait returns `Ok(receipt)` and the caller reads the
-receipt's `status`.

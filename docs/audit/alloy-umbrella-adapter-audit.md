@@ -3,7 +3,7 @@
 Status: Current
 Last reviewed: 2026-06-15
 Owning surface: `cow-sdk-alloy` `AlloyClient`, its builder, its `Provider` and `LogProvider` implementations, and its owned signer handle
-Refresh trigger: ADR 0038 - transaction lifecycle types, or changes to the umbrella public API, `Provider`, `SigningProvider`, `LogProvider`, `Signer`, wallet-filler transaction submission, the opt-in `with_retry` seam consumed from the provider leaf, typed-data conversion, chain-coherence validation, read-contract and log-fetch consumption from the provider seam, error redaction, cancellation propagation, or the Alloy provider/signer dependency boundaries
+Refresh trigger: ADR 0038 - transaction lifecycle types, or changes to the umbrella public API, `Provider`, `SigningProvider`, `LogProvider`, `Signer`, wallet-filler transaction submission, the opt-in `retry` seam consumed from the provider leaf, typed-data conversion, chain-coherence validation, read-contract and log-fetch consumption from the provider seam, error redaction, cancellation propagation, or the Alloy provider/signer dependency boundaries
 Related docs:
 - [ADR 0037](../adr/0037-alloy-umbrella-adapter.md)
 - [ADR 0024](../adr/0024-asyncprovider-asyncsigningprovider-capability-split.md)
@@ -24,7 +24,7 @@ This audit covers:
   posture
 - the `Provider`, `LogProvider`, and `SigningProvider` implementations on
   `AlloyClient`
-- the opt-in `with_retry` seam, which reuses the provider leaf's `RetryConfig`
+- the opt-in `retry` seam, which reuses the provider leaf's `RetryConfig`
   and backoff-layer constructor through the doc-hidden seam
 - the owned `AlloyClientSignerHandle` returned by `create_signer`
 - EIP-191, EIP-712, transaction submission, and gas estimation behavior on the
@@ -48,7 +48,7 @@ operator reliability, or smart-account signing.
 | Provider coverage | Every `Provider` method delegates through the inner Alloy provider with SDK-owned conversions | Conforms |
 | Read-contract parity | The umbrella's read-contract path consumes the provider leaf's `execute_read_contract` entry through the doc-hidden inter-crate seam and lifts the provider's error variants through the `From<ProviderError> for AlloyClientError` impl. The workspace `alloy_read_contract_parity_invariant` integration test continues to assert byte-for-byte equality between the umbrella and the provider for pinned ABI fixtures as a regression pin against any future re-fork. | Conforms |
 | Log-provider coverage | `AlloyClient` implements `LogProvider`, issuing one bounded `eth_getLogs` over the composed provider and reusing the leaf's `LogQuery` / `RawLog` conversions through the doc-hidden seam, so a consumer fetches event logs without constructing a second provider | Conforms |
-| RPC retry seam | `with_retry(RetryConfig)` is off by default; when configured it routes the wallet-filler provider through a JSON-RPC client carrying the leaf's shared backoff layer (built via the doc-hidden seam), so umbrella and leaf share one retry policy | Conforms |
+| RPC retry seam | `retry(RetryConfig)` is off by default; when configured it routes the wallet-filler provider through a JSON-RPC client carrying the leaf's shared backoff layer (built via the doc-hidden seam), so umbrella and leaf share one retry policy | Conforms |
 | Signing-provider coverage | `create_signer` returns an owned handle that survives parent client drop | Conforms |
 | Typed-data signing | Canonical payload signing preserves the caller's primary type and matches the CoW order reference vector | Conforms |
 | Transaction behavior | `send_transaction` uses the Alloy wallet-filler provider and reads the broadcast hash through `*pending.tx_hash()` without waiting for confirmation; returns `TransactionBroadcast`. `get_transaction_receipt` delegates to the provider crate, which populates rich receipt fields from the Alloy receipt. `estimate_gas` delegates to the provider. | Conforms |

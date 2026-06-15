@@ -4,7 +4,7 @@
 # Every accepted ADR is referenced under at least one principle or listed in
 # out_of_scope_adrs with a written rationale.
 #
-# ADRs 0029-0033 are accepted and covered by the blocking ADR coverage lane.
+# ADRs 0030-0033 are accepted and covered by the blocking ADR coverage lane.
 #
 # Doctrines: `docs/alloy-doctrine.md` is the canonical human-readable
 # consolidation of the ADRs listed under principles 8 (Chain-RPC Runtime
@@ -19,17 +19,17 @@ principles:
   - id: 1
     name: Deterministic Protocol Transforms
     primary_adr: "0012"
-    supporting_adrs: ["0011", "0022", "0023", "0052"]
+    supporting_adrs: ["0011", "0022", "0052"]
 
   - id: 2
     name: Explicit Runtime Boundaries
     primary_adr: "0010"
-    supporting_adrs: ["0019", "0055"]
+    supporting_adrs: ["0055"]
 
   - id: 3
     name: Thin Facade, Real Crate Boundaries
     primary_adr: "0001"
-    supporting_adrs: ["0002", "0003", "0008", "0062", "0063"]
+    supporting_adrs: ["0002", "0003", "0062", "0063"]
 
   - id: 4
     name: Instance-Scoped Configuration
@@ -43,8 +43,8 @@ principles:
 
   - id: 6
     name: Additive Optional Ecosystems
-    primary_adr: "0008"
-    supporting_adrs: ["0004", "0007", "0065"]
+    primary_adr: "0001"
+    supporting_adrs: ["0007", "0065"]
 
   - id: 7
     name: Sole Construction Seam
@@ -59,7 +59,7 @@ principles:
   - id: 9
     name: Canonical Contract Bindings
     primary_adr: "0012"
-    supporting_adrs: ["0020", "0022", "0023", "0052", "0054", "0056"]
+    supporting_adrs: ["0020", "0022", "0052", "0054"]
 
   - id: 10
     name: Evidence-Backed Public Claims
@@ -69,7 +69,7 @@ principles:
   - id: 11
     name: Forward-Compatible Public Surfaces
     primary_adr: "0031"
-    supporting_adrs: ["0027", "0029", "0058"]
+    supporting_adrs: ["0027", "0058"]
 
   - id: 12
     name: Credential Redaction by Construction
@@ -93,7 +93,7 @@ principles:
 
   - id: 16
     name: Off-Chain Orchestration Boundary
-    primary_adr: "0048"
+    primary_adr: "0057"
     supporting_adrs: ["0010", "0024", "0049", "0050", "0051"]
 
 out_of_scope_adrs:
@@ -109,8 +109,5 @@ out_of_scope_adrs:
   - "0040"  # Wallet provider callback boundary is governed by the browser-wallet audit lane and EIP-1271 verification cache audit.
   - "0041"  # Transport policy L3 layering is governed by the transport-policy coverage audit.
   - "0042"  # Pure helpers crate extraction is a crate-topology decision documented in the architecture guide.
-  - "0043"  # Callback registry internalization is a crate-topology decision documented in the architecture guide.
   - "0044"  # Bundle size profile and flavour builds are governed by the wasm flavour-matrix gate.
   - "0045"  # Async signer trait narrowing is a typed adapter surface detail under the alloy-signer adapter.
-  - "0046"  # Transport policy JS exposure is governed by the wasm-imports gate and the transport-policy coverage audit.
-  - "0047"  # TypeScript facade architecture is documented under the public docs and examples lanes.

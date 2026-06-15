@@ -18,6 +18,13 @@ struct. The contracts crate defines no public order type: the former
 generated `GPv2Order` `sol!` re-export are removed, along with the
 optional-to-concrete normalization step they required.
 
+The earlier legacy compatibility shims that produced protocol-incorrect digests
+— `OrderModel`, `QuoteModel`, `hash_order_for_contract`, `uid_for_contract`, and
+`compatibility_order` — are removed for the same reason: they zeroed
+`sell_amount`, `buy_amount`, `valid_to`, and `fee_amount` before hashing,
+detaching the digest from the order's real economics. The concrete `OrderData`
+is therefore the sole supported order-identity input.
+
 ## Why
 
 `OrderData` is already concrete — every field, including `receiver` and the two
@@ -45,6 +52,11 @@ for a reviewer to audit against the protocol type hash.
   Sepolia anchor in `crates/contracts/tests/order_contract.rs` stay
   byte-identical, and the fixture type hash matches `order_eip712_type_hash()`.
   `PROP-CON-023` and `PROP-CON-006` register the invariants.
+- Legacy shims removed: no `OrderModel`, `QuoteModel`, `hash_order_for_contract`,
+  `uid_for_contract`, or `compatibility_order` helper is re-exported from
+  `cow-sdk-core`, `cow-sdk-contracts`, or the facade; every surviving caller
+  constructs the canonical `OrderData`, so a digest always carries the real
+  amount, fee, and expiry fields.
 - Cost: an optional-field order wire shape, if one is ever introduced, must be
   modelled at its own boundary rather than reusing the hashing input.
 

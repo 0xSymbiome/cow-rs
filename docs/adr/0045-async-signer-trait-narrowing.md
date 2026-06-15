@@ -5,7 +5,7 @@
 - Last reviewed: 2026-05-11
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: signing, wasm, callbacks, capability-traits
-- Related: [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0029](0029-trait-evolution-extension-traits.md), [ADR 0040](0040-wallet-provider-callback-boundary-for-js-consumers.md)
+- Related: [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0040](0040-wallet-provider-callback-boundary-for-js-consumers.md)
 
 ## Decision
 
@@ -31,7 +31,7 @@ from depending on unrelated wallet methods.
 - ECDSA signatures normalize recovery bytes before leaving the signing seam.
 - EIP-1271 custom callbacks preserve caller-provided contract-wallet
   signatures without forcing an EOA recovery path.
-- Adding a new signing operation adds a targeted callback or extension trait
+- Adding a new signing operation adds a targeted callback or capability trait
   rather than widening every signer.
 
 ## Alternatives Rejected

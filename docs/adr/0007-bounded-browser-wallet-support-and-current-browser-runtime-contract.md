@@ -1,6 +1,6 @@
 # ADR 0007: Bounded Browser Wallet Support And Current Browser Runtime Contract
 
-- Status: Accepted (amended)
+- Status: Accepted
 - Date: 2026-04-13
 - Last reviewed: 2026-05-09
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)

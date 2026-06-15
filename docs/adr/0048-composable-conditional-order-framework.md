@@ -1,11 +1,17 @@
 # ADR 0048: Composable Conditional Order Framework
 
-- Status: Accepted (amended)
+- Status: Proposed (deferred — not yet rooted in the workspace)
 - Date: 2026-05-15
-- Last reviewed: 2026-06-08
+- Last reviewed: 2026-06-15
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: composable, conditional-orders, off-chain-orchestration, watch-tower-boundary
 - Related: [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0049](0049-cow-shed-account-abstraction-proxy.md), [ADR 0050](0050-eip1271-signature-blob-encoding.md), [ADR 0051](0051-signing-owned-eip1271-signature-provider-trait.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+
+> **Deferred capability — not shipped.** `cow-sdk-composable` is **not** a
+> workspace member and is in no release; there is no `composable` facade feature
+> and no composable CI invariant today. This ADR records the *planned* design and
+> watch-tower boundary so the capability lands consistently when it is built —
+> every present-tense claim below describes the intended shape, not shipped code.
 
 ## Context
 
@@ -107,8 +113,10 @@ sorted-pair internal nodes. Params hashing uses `abi.encode` (never
 `cow-sdk-signing`, and `cow-sdk-orderbook`. It MUST
 NOT depend on `cow-sdk-trading`, `alloy-provider`, or `alloy-signer`. The
 negative-edge invariants `cow-sdk-composable ⇏ cow-sdk-trading` and
-`cow-sdk-composable ⇏ alloy-provider` are asserted via `cargo metadata` and
-the workspace dependency-invariant checks in CI. An optional
+`cow-sdk-composable ⇏ alloy-provider` must be asserted via `cargo metadata` and
+the workspace dependency-invariant checks when the crate lands (no such check
+exists today — the dependency-invariant policy currently covers only the alloy
+adapters). An optional
 `composable-with-cow-shed` feature lifts a non-default dependency on
 `cow-sdk-contracts` for the narrow Gnosis-only `COWShedForComposableCoW`
 forwarder flow; that forwarder belongs to the cow-shed v2.x generation, so the
@@ -146,11 +154,10 @@ dependency of every facade consumer.
   site, no `start()` or `run_forever()` method, no `Storage` trait
   implementation, no Slack / Discord / email / webhook hook, and no internal
   call to `OrderbookClient::create_order` may appear in `cow-sdk-composable`.
-- Crate graph: `cargo metadata` continues to prove
+- Crate graph: when the crate lands, `cargo metadata` must prove
   `cow-sdk-composable ⇏ cow-sdk-trading` and
-  `cow-sdk-composable ⇏ alloy-provider` (default features). The
-  reverse-edge guard `cow-sdk-orderbook ⇏ cow-sdk-composable` continues to
-  hold.
+  `cow-sdk-composable ⇏ alloy-provider` (default features), and the
+  reverse-edge guard `cow-sdk-orderbook ⇏ cow-sdk-composable` must hold.
 - Cost: any future PR that adds a service loop, a persistence adapter, a
   notification system, an automatic order poster, a global retry cadence, a
   chain event indexer beyond `event_scan_async`, or any background task into
@@ -181,7 +188,7 @@ dependency of every facade consumer.
 - [ADR 0050](0050-eip1271-signature-blob-encoding.md)
 - [ADR 0051](0051-signing-owned-eip1271-signature-provider-trait.md)
 
-## Amendment 2026-05-22: canonical primitive layer (per ADR 0052)
+## Deferred primitive-layer binding
 
 The `cow-sdk-composable` crate is not yet rooted in the workspace
 members list and is deferred to a later capability landing. The

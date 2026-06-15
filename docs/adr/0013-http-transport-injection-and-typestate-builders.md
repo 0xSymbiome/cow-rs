@@ -1,8 +1,8 @@
 # ADR 0013: HTTP Transport Injection Seam And Typestate Construction For Orderbook And Subgraph
 
-- Status: Accepted (amended)
+- Status: Accepted
 - Date: 2026-04-21
-- Last reviewed: 2026-06-12
+- Last reviewed: 2026-06-15
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: transport, typestate, builders, wasm, async
 - Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md), [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md)
@@ -55,6 +55,13 @@ set before a live client exists.
 
 - Public surface: `HttpTransport` is the production injection point for every
   REST or GraphQL call issued by orderbook and subgraph clients.
+- Sole live dispatch: `OrderbookApi` and `SubgraphApi` each hold exactly one
+  `Arc<dyn HttpTransport + Send + Sync>` and no parallel `reqwest::Client`, so
+  the injected handle is the live handle. The success channel returns a
+  `TransportResponse` (2xx status, response headers, body) while non-2xx
+  responses stay on the typed `TransportError::HttpStatus { status, headers,
+  body }` channel, so a calling layer never fabricates response metadata on the
+  success path.
 - Runtime and support: `TransportError` remains typed and URL-redacted on both
   native and browser adapters; retry and rate-limit orchestration stays above
   the transport trait.

@@ -79,17 +79,3 @@ settlement domains.
   records the current evidence surface for settlement and interaction encoding.
 - [Deployment Registry ADR](0012-alloy-sol-bindings-and-registry-authority.md)
   records the registry authority used to identify canonical settlement domains.
-
-## Amendment 2026-05-22: canonical primitive layer (per ADR 0052)
-
-The `target` interaction-target parameter at the
-`SettlementEncoder::encode_interaction` boundary, the
-`verifying_contract: Address` field on the cow `TypedDataDomain`
-struct, and the rejected-target payload on
-`ContractsError::ForbiddenInteractionTarget { target: Address }`
-resolve through the cow-owned `#[repr(transparent)]` newtype around
-`alloy_primitives::Address` per
-[ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md). The
-registry-backed canonical settlement identification
-(`chain_id` + `verifying_contract` -> paired vault-relayer address)
-preserves the cow newtype layer end-to-end.

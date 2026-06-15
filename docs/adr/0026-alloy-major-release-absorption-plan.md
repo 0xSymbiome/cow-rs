@@ -1,8 +1,8 @@
 # ADR 0026: Bound Alloy Major Releases Behind SDK Types And A Configurable Canary Lane
 
-- Status: Accepted (amended)
+- Status: Accepted
 - Date: 2026-04-27
-- Last reviewed: 2026-05-22
+- Last reviewed: 2026-06-15
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: alloy, dependencies, provider, compatibility, ci
 - Related: [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
@@ -21,8 +21,9 @@ allowed only in `cow-sdk-alloy-provider` and `cow-sdk-alloy`.
 `alloy-signer-local` is allowed only in `cow-sdk-alloy-signer` and
 `cow-sdk-alloy`.
 
-A scheduled and manually-dispatched canary workflow checks the workspace
-against configurable upstream Alloy and Alloy Core refs. It reports
+A manually-dispatched canary workflow (with a weekly schedule paused during
+pre-publication) checks the workspace against configurable upstream Alloy and
+Alloy Core refs. It reports
 forward-compatibility drift without adding a pull-request trigger; promotion to
 PR-blocking status requires an explicit policy change. The operational
 rehearsal, release-day, rollback, and escalation procedures live in the
@@ -94,21 +95,3 @@ Future rows record exact resolved versions, not caret ranges.
 - [Alloy Umbrella Adapter Audit](../audit/alloy-umbrella-adapter-audit.md)
 - [Source-Lock Provenance Audit](../audit/source-lock-provenance-audit.md)
 - [Workflow Security Audit](../audit/workflow-security-audit.md)
-
-## Amendment 2026-05-22: canonical primitive layer (per ADR 0052)
-
-The alloy-core ABI family (`alloy-primitives`, `alloy-sol-types`,
-`alloy-sol-macro`, `alloy-dyn-abi`, `alloy-json-abi`, `alloy-serde`) is
-in scope for direct dependency on `cow-sdk-core`, `cow-sdk-contracts`,
-`cow-sdk-signing`, `cow-sdk-app-data`, and `cow-sdk-contracts` (plus
-`cow-sdk-composable` when that crate is rooted) per
-[ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md). The
-alloy-runtime family (`alloy-provider`, `alloy-signer-local`,
-`alloy-network`, `alloy-consensus`, `alloy-rpc-types-eth`, and the
-`alloy-transport-*` family) remains confined to the native adapter
-crates `cow-sdk-alloy`, `cow-sdk-alloy-provider`, and
-`cow-sdk-alloy-signer`. The cow-named identity and numeric types
-re-exported from `cow-sdk-core` are cow-owned `#[repr(transparent)]`
-newtypes over the alloy-core primitive types per ADR 0052; the facade
-does not leak raw alloy paths into public docs or wasm-bindgen exports.
-The canary lane continues to cover the expanded alloy-core surface.

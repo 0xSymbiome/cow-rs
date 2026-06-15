@@ -91,10 +91,10 @@ wallet; **Surfaced (composed)** — covered by combining exported operations;
 | `native_price` | `getNativePrice` | Surfaced |
 | `app_data` | `getAppData` | Surfaced |
 | `upload_app_data` | `uploadAppData` | Surfaced |
-| `version` | — | Not surfaced (Class 2) |
-| `order_link` | — | Not surfaced (Class 2) |
-| `order_multi_env` | — | Not surfaced (Class 2) |
-| `tx_orders` | — | Not surfaced (Class 2) |
+| `version` | `getVersion` | Surfaced |
+| `order_link` | `getOrderLink` | Surfaced |
+| `order_multi_env` | `getOrderMultiEnv` | Surfaced |
+| `tx_orders` | `getTxOrders` | Surfaced |
 | `order_competition_status` | `getOrderCompetitionStatus` | Surfaced |
 | `total_surplus` | `getTotalSurplus` | Surfaced |
 | `solver_competition` | — | Not surfaced (Class 2) |
@@ -164,10 +164,12 @@ TypeScript SDK (ADR 0039). They use the same transport, DTO, and envelope
 machinery as the surfaced reads, so each is an additive item rather than a
 runtime-model boundary. Members:
 
-- Orderbook reads, six of which are public methods on the upstream
-  `cowprotocol/cow-sdk` `OrderBookApi` (`packages/order-book/src/api.ts`):
-  `version`, `order_link`, `order_multi_env`, `tx_orders`,
-  `solver_competition`, and `solver_competition_by_tx_hash`.
+- The solver-competition reads `solver_competition` and
+  `solver_competition_by_tx_hash`. The native client targets the v2
+  (`/api/v2/solver_competition`) routes — the only solver-competition contract
+  the services backend still serves. Surfacing them on the WASM client would
+  require modelling the CIP-67 `SolverCompetitionResponse` as a dedicated DTO,
+  which is deferred.
 - On-chain EIP-1271 signature verification (`verify_eip1271_signature` /
   `verify_eip1271_signature_cached`) and its verification caches, which require
   a chain `Provider` read rather than a service call.
@@ -212,9 +214,15 @@ boundary rather than a Rust-side wallet.
   (`getOrderCompetitionStatus`) and `total_surplus` (`getTotalSurplus`) are
   surfaced as `OrderBookClient` reads — the operations a host building an
   order-status or surplus view needs — reusing the same transport, DTO, and
-  envelope machinery as the other surfaced reads. The remaining Class 2 orderbook
-  reads stay out of scope; full-feature consumers route to the upstream
-  TypeScript SDK.
+  envelope machinery as the other surfaced reads.
+- **Lookup and metadata reads.** `version` (`getVersion`), `order_link`
+  (`getOrderLink`, a pure URL builder with no network call), `order_multi_env`
+  (`getOrderMultiEnv`), and `tx_orders` (`getTxOrders`) are surfaced as
+  `OrderBookClient` reads, matching the upstream `OrderBookApi`'s `getVersion`,
+  `getOrderLink`, `getOrderMultiEnv`, and `getTxOrders`. They reuse the existing
+  `OrderDto` and string envelope machinery and add no new DTO. The remaining
+  solver-competition reads stay out of scope (Class 2); full-feature consumers
+  route to the upstream TypeScript SDK.
 
 ## Shape Correspondence
 

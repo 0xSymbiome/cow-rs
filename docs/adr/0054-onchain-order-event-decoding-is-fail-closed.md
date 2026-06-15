@@ -1,6 +1,6 @@
-# ADR 0054: On-Chain Order Event Decoding Is Fail-Closed And Provider-Free
+# ADR 0054: On-Chain Event Decoding Is Fail-Closed And Provider-Free
 
-- Status: Accepted (amended)
+- Status: Accepted
 - Date: 2026-05-28
 - Last reviewed: 2026-05-28
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
@@ -17,7 +17,9 @@ validates the topic set against the generated `SIGNATURE_HASH` and the indexed
 arity before ABI decoding, range-checks the on-chain signing scheme,
 length-checks the EIP-1271 owner payload, and maps every `GPv2` order marker
 through the canonical label tables. Every malformed input returns a typed
-`ContractsError`; no log, however adversarial, can panic the decoder.
+`ContractsError`; no log, however adversarial, can panic the decoder. The same
+fail-closed, provider-free posture extends to the `GPv2Settlement` event family
+through `decode_settlement_log` (see Must Remain True).
 
 ## Why
 
@@ -47,6 +49,19 @@ settlement contract derives.
 - Cost: a decoded `GPv2` order carrying an unrecognized kind or balance marker
   is rejected rather than silently coerced, so a future marker addition is a
   deliberate code change.
+- EthFlow refund + dispatcher: the same fail-closed, provider-free posture covers
+  the `CoWSwapEthFlow` `OrderRefund` event (`decode_order_refund`) and a unified
+  `decode_eth_flow_log` dispatcher that routes the `OrderPlacement` /
+  `OrderInvalidation` / `OrderRefund` topic-0 to the matching decoder and returns
+  the typed `#[non_exhaustive]` `EthFlowEvent`; the `OrderRefund` interface is a
+  dedicated `ICoWSwapEthFlowEvents` `sol!` block.
+- Settlement events: `decode_settlement_log` takes `&LogData` and returns
+  `Result<SettlementEvent, ContractsError>` over the `GPv2Settlement` `Trade` /
+  `Interaction` / `Settlement` / `OrderInvalidated` / `PreSignature` logs,
+  validating the topic set through the shared `check_topics` guard and
+  length-checking the 56-byte order UID before ABI decoding. `SettlementEvent`
+  is `#[non_exhaustive]` and `upstream-growing` in `enum-policy.yaml`; the
+  decoder takes no `Provider` and never panics on adversarial input.
 
 ## Alternatives Rejected
 
@@ -68,16 +83,4 @@ settlement contract derives.
 **Proven by:**
 
 - [On-Chain Order Log Decoding Audit](../audit/onchain-order-log-decoding-audit.md)
-
-## Amendment 2026-05-29: eth-flow refund and unified dispatcher
-
-The fail-closed, provider-free posture extends to the `CoWSwapEthFlow`
-`OrderRefund` event (`decode_order_refund`) and a unified `decode_eth_flow_log`
-dispatcher that routes the `OrderPlacement` / `OrderInvalidation` / `OrderRefund`
-topic-0 to the matching decoder and returns the typed `#[non_exhaustive]`
-`EthFlowEvent`. `decode_order_refund` borrows `LogData`, validates the topic set
-and the single indexed `refunder`, length-checks the 56-byte order UID, and
-byte-locks its topic-0 against an independent keccak of the canonical signature;
-the dispatcher performs no I/O. The `OrderRefund` event interface is bound in a
-dedicated `ICoWSwapEthFlowEvents` `sol!` block kept separate from the eth-flow
-call binding.
+- [Settlement Event Log Decoding Audit](../audit/settlement-event-log-decoding-audit.md)

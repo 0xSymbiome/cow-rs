@@ -1,8 +1,8 @@
 # ADR 0028: Integrate Account Abstraction Through Provider Capabilities And EIP-1271 Signing
 
-- Status: Accepted (amended)
+- Status: Accepted
 - Date: 2026-04-27
-- Last reviewed: 2026-05-22
+- Last reviewed: 2026-06-15
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: account-abstraction, provider, signing, eip1271, eip4337, eip7702, eip7212
 - Related: [ADR 0014](0014-eip1271-verification-cache.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), [ADR 0040](0040-wallet-provider-callback-boundary-for-js-consumers.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
@@ -26,9 +26,9 @@ signature blob), and the Rust facade wraps that resolved hex string in a
 remains trivially `Send + Sync` and composes with native consumers.
 
 Contributor rule for cross-ABI DTOs that include an `OrderUid` or
-`OrderDigest`: source the field from `as_str()` (the canonical hex string),
-never from `as_bytes()`. The wasm crate's PROP-WB-004 covers this invariant;
-CI and contract tests enforce it.
+`OrderDigest`: source the field from `to_hex_string()` (the owned canonical
+lowercase hex string) or the `Display` impl, never from `as_bytes()`. The wasm
+crate's PROP-WB-004 covers this invariant; CI and contract tests enforce it.
 
 The root facade does not grow a monolithic account-abstraction client. Bundler,
 paymaster, wallet, and passkey-specific behavior belongs in leaf adapters until
@@ -71,7 +71,7 @@ dependencies in read-only flows and keeps order ownership reviewable.
 - [Parity scope surface boundaries](../parity.md#surface-matrix)
 - [Verification matrix crate contracts](../verification.md#crate-evidence-matrix)
 - [Core provider traits](../../crates/core/src/traits/provider.rs)
-- [Trading EIP-1271 signature provider](../../crates/trading/src/types/seams.rs)
+- [EIP-1271 signature provider](../../crates/signing/src/eip1271/provider.rs)
 - See also: ADR 0024, ADR 0031, ADR 0039, and ADR 0040.
 
 **Proven by:**
@@ -80,14 +80,5 @@ dependencies in read-only flows and keeps order ownership reviewable.
 - [Browser Wallet Trust Posture Audit](../audit/browser-wallet-trust-posture-audit.md)
 - [Typestate Builder Contract Audit](../audit/typestate-builder-contract-audit.md)
 
-## Amendment 2026-05-22: canonical primitive layer (per ADR 0052)
-
-The contributor rule above on cross-ABI DTOs that include an `OrderUid`
-or `OrderDigest` is preserved in substance: the canonical hex string is
-sourced from the cow newtype's `to_hex_string()` accessor (owned hex
-form, following the Rust stdlib convention that `to_*` returns owned)
-or through the `Display` impl, never from `as_bytes()`. The prior
-`as_str()` accessor name retires per
-[ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md); the
-cow-owned newtype shape, the canonical lowercase hex wire form, and the
-PROP-WB-004 + contract-test enforcement are preserved unchanged.
+_(The 2026-05-22 `as_str()` → `to_hex_string()` accessor rename is folded into
+the Decision above.)_

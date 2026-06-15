@@ -1,6 +1,6 @@
-# ADR 0031: Wire DTOs Follow OpenAPI With Separate Order And AuctionOrder Types
+# ADR 0031: Wire DTOs Follow OpenAPI; The Order/AuctionOrder Split Collapsed To One Order Type
 
-- Status: Accepted (amended)
+- Status: Accepted
 - Date: 2026-04-29
 - Last reviewed: 2026-05-30
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
@@ -16,10 +16,19 @@ use `deny_unknown_fields` only when the SDK owns the schema.
 
 The source of truth for orderbook response DTOs is the
 source-lock-pinned `services/crates/orderbook/openapi.yml`, vendored into
-`parity/openapi/`. `Order` and `AuctionOrder` are separate Rust types
-covering separate OpenAPI schemas. `protocolFees`, `preInteractions`,
-`postInteractions`, `created`, `executed`, and the auction-side
-`quote: Quote` live on `AuctionOrder`; they do not appear on `Order`.
+`parity/openapi/`. The order-shaped response surface is the single `Order` type: the
+auction-only fields (`protocolFees`, `preInteractions`, `postInteractions`,
+`created`, `executed`, and an auction-side `quote: Quote`) do not appear on
+`Order`, have no public producer, and ship no `AuctionOrder` mirror —
+`/api/v1/auction` is an upstream liveness probe, not a public data feed.
+Solver-competition reads target the orderbook `v2` routes and decode into a
+fully typed `SolverCompetitionResponse` (typed addresses, amounts, order UIDs,
+transaction hashes, per-solver reference scores, and each solution's touched
+orders), with a shared `AuctionPrices` (`BTreeMap<Address, Amount>`) typing the
+clearing- and reference-price maps. `SolverCompetitionResponse` is covered by a
+producer-pinned round-trip fixture rather than the `openapi-coverage` manifest
+(the vendored v2 schema omits a `required:` block, which would force an
+all-`Option` shape against the producer's actual required fields).
 
 `cargo parity-openapi-coverage` expands each schema's inventory in
 memory from the vendored OpenAPI and validates Rust DTO coverage against
@@ -47,8 +56,8 @@ keeps each Rust type faithful to its upstream schema.
   `openapi-coverage`.
 - `Order` does not carry auction-only fields (`protocolFees`,
   `preInteractions`, `postInteractions`, `created`, `executed`, or an
-  auction-side `quote`); those fields belong to the auction schema, which has
-  no public producer and is not mirrored (see the amendment below).
+  auction-side `quote`); those fields belong to the unmirrored auction schema,
+  which has no public producer.
 - Adding a new upstream response field is a `0.x.0` minor update on the
   Rust SDK, never a `0.x.y` patch.
 - Response DTOs remain open to unknown fields under serde defaults.
@@ -66,51 +75,3 @@ keeps each Rust type faithful to its upstream schema.
 
 This ADR is the primary anchor for the
 Forward-Compatible Public Surfaces principle.
-
-## Amendment (2026-05-29)
-
-Solver-competition reads target the orderbook `v2` routes and decode into a
-fully typed `SolverCompetitionResponse` — typed addresses, amounts, order UIDs,
-and transaction hashes; per-solver reference scores; and each solution's touched
-orders (`SolverCompetitionOrder`). A shared `AuctionPrices`
-(`BTreeMap<Address, Amount>`) types the clearing- and reference-price maps. This
-is consistent with this ADR's OpenAPI-driven, typed-response posture and with
-[ADR 0058](0058-typed-quote-request-response-surface.md).
-
-`OrderbookApi::get_auction` and the `Auction` response wrapper are not exposed:
-`/api/v1/auction` is not reachable for public clients and is treated upstream as
-a liveness probe rather than a consumer data feed. Because no public endpoint
-produces an auction snapshot, the `AuctionOrder` mirror and its auction-side
-`quote: Quote` had no reachable producer and are removed; the order-shaped
-response surface collapses to the single `Order` type, and the OpenAPI-driven
-coverage discipline above now governs `Order` and the remaining response DTOs
-(`OrderQuoteResponse`, `OrderParameters`/`QuoteData`, `Trade`,
-`StoredOrderQuote`, `OnchainOrderData`, `TotalSurplus`, and `SolverExecution`).
-An auction-retrieval method, the `AuctionOrder` mirror, and its quote can return
-additively if `/api/v1/auction` becomes publicly consumable.
-
-`SolverCompetitionResponse` is intentionally not enrolled in the
-`openapi-coverage` manifest. The vendored v2 schema omits a
-`required:` block, so the optionality check would demand an all-`Option` shape;
-the upstream producer (the `Response` struct in `solver_competition_v2.rs`)
-instead treats the identity and collection fields as required and only
-`txHash` / `referenceScore` as optional, and the SDK mirrors that producer
-contract. The type is covered by a producer-pinned round-trip fixture
-(`parity/fixtures/orderbook/solver_competition_response.json`) rather than the
-OpenAPI-optionality manifest, which would degrade the typed boundary against the
-verified producer.
-
-## Links
-
-- [Principles](../principles.md)
-- [Parity Matrix](../parity.md)
-- [Wire DTO Coverage Audit](../audit/wire-dto-coverage-audit.md)
-- `parity/openapi/coverage.yaml`
-
-**Proven by:**
-
-- [Wire DTO Coverage Audit](../audit/wire-dto-coverage-audit.md)
-- [Quote Response Surface Audit](../audit/quote-response-surface-audit.md)
-- `xtask/src/openapi_coverage.rs`
-- `crates/orderbook/tests/transform_contract.rs`
-- `crates/orderbook/tests/wire_contract.rs`

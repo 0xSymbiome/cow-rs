@@ -22,8 +22,8 @@ use crate::types::{Address, ChainId};
 // and keep this struct as the wire-side type.
 //
 // ADR: docs/adr/0052-alloy-primitives-canonical-primitive-layer.md
-// (lines 124-131), docs/adr/0040-wallet-provider-callback-boundary-for-js-consumers.md
-// (lines 38-39).
+// (the TypedDataDomain wire-shape invariant) and
+// docs/adr/0040-wallet-provider-callback-boundary-for-js-consumers.md.
 // Doctrine: docs/alloy-doctrine.md, Bucket 2 row for `TypedDataDomain`
 // JSON wire shape.
 // Enforced by cargo check-source-fences (xtask/src/policy/fences.rs).

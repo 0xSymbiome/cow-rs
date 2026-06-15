@@ -1,6 +1,6 @@
 # ADR 0064: App-Data Validation Is Typed By Construction, Not JSON-Schema
 
-- Status: Accepted (amended)
+- Status: Accepted
 - Date: 2026-06-03
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: app-data, validation, typing
@@ -47,10 +47,13 @@ system, not a dynamic schema, is the validation authority.
 
 ## Must Remain True
 
-- Public surface: `validate_app_data_doc` and `AppDataParams::into_validated`
-  keep their signatures and the `ValidationResult` shape; `get_app_data_schema`
-  and the per-family `LATEST_*_METADATA_VERSION` constants are removed.
-  `SchemaVersion` remains the typed semver version.
+- Public surface: `validate_app_data_doc(&AppDataDoc) -> Result<(), AppDataError>`
+  (a valid document is `Ok(())`, a failure the typed field-named `AppDataError`)
+  and `AppDataParams::into_validated` are the validation entries; the
+  `ValidationResult { success, errors }` struct is removed from `cow-sdk-app-data`
+  and survives only in the `cow-sdk-wasm` DTO layer. `get_app_data_schema` and the
+  per-family `LATEST_*_METADATA_VERSION` constants are removed; `SchemaVersion`
+  remains the typed semver version.
 - Runtime and support: the crate carries no JSON-Schema validator or embedded
   schema bundle at runtime; validation is typed plus structural and the
   keccak/CID hashing path is unchanged, so previously valid documents keep their
@@ -77,14 +80,3 @@ system, not a dynamic schema, is the validation authority.
 - [Typed App-Data Merge](0018-typed-app-data-merge.md)
 - [Strong Domain Types](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
 - [App-Data Crate README](../../crates/app-data/README.md)
-
-## Amendment 2026-06-11: validation surfaces a typed `Result`, not a result struct
-
-At the Rust boundary, validation surfaces
-`validate_app_data_doc(&AppDataDoc) -> Result<(), AppDataError>`: a valid
-document is `Ok(())` and a failure is the typed, field-named `AppDataError`.
-The `ValidationResult { success, errors }` struct named under Must Remain True
-is removed from `cow-sdk-app-data`; the `{ success, errors }` shape remains
-only in the `cow-sdk-wasm` DTO layer, where the JavaScript boundary keeps its
-result-object convention. The typed-construction validation authority and the
-hashing path are unchanged.

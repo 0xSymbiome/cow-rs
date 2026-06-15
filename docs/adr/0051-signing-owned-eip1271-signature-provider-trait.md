@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-05-15
-- Last reviewed: 2026-05-15
+- Last reviewed: 2026-06-15
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: eip-1271, signing, trait-ownership, additive-leaf-crates
 - Related: [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md), [ADR 0014](0014-eip1271-verification-cache.md), [ADR 0048](0048-composable-conditional-order-framework.md), [ADR 0050](0050-eip1271-signature-blob-encoding.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
@@ -54,16 +54,16 @@ Trading must not re-export the provider trait at any path under
 needs the trait imports the canonical signing path; no parallel trait
 definition exists in any other crate.
 
-The negative-edge invariants `cow-sdk-signing ⇏ cow-sdk-trading`,
-`cow-sdk-composable ⇏ cow-sdk-trading`, and
-`cow-sdk-contracts[cow-shed] ⇏ cow-sdk-trading` are asserted via `cargo metadata` and
-the workspace dependency-invariant checks in CI. The reverse-edge guard
-`cow-sdk-trading ⇒ cow-sdk-signing` continues to hold.
+The negative edge `cow-sdk-signing ⇏ cow-sdk-trading` holds structurally:
+`cow-sdk-trading ⇒ cow-sdk-signing`, so a signing → trading dependency would be
+a cargo-rejected cycle. The same edge for `cow-sdk-composable` and
+`cow-sdk-contracts[cow-shed]` applies when those consumers land; there is no
+dedicated dependency-invariant check for them today.
 
-A compile-fail regression test asserts that any future re-export of
-`Eip1271Signer` from `cow_sdk_trading::types::seams` fails to
-compile. This regression makes the single-canonical-path contract
-checkable at build time.
+The single-canonical-path contract — no re-export of `Eip1271Signer` from
+`cow_sdk_trading`, no parallel definition elsewhere — is a maintained review
+convention, grep-checkable over the workspace public surface; there is no
+mechanical re-export gate today.
 
 ## Why
 
@@ -80,9 +80,9 @@ bridge would collapse the typed signing context into a generic trading
 error and force every consumer to grep the call site to figure out which
 operation failed.
 
-The compile-fail regression makes the contract enforceable rather than
-aspirational. Reviewers can rely on the type system rather than reading
-the ADR every time a trait import lands in a new file.
+Keeping one canonical path means reviewers and downstream callers resolve the
+trait at a single import (`cow_sdk_signing::eip1271::Eip1271Signer`) rather than
+guessing among re-export aliases.
 
 ## Must Remain True
 
@@ -94,14 +94,13 @@ the ADR every time a trait import lands in a new file.
   failures use inline `map_err` with a per-operation message. No
   `From<Eip1271SignatureError> for TradingError` impl exists anywhere in
   the workspace.
-- Crate graph: `cargo metadata` continues to prove
-  `cow-sdk-signing ⇏ cow-sdk-trading`,
-  `cow-sdk-composable ⇏ cow-sdk-trading`,
-  `cow-sdk-contracts[cow-shed] ⇏ cow-sdk-trading`.
-- Validation and review: the compile-fail regression at
-  `crates/trading/tests/eip1271_signature_provider_no_reexport.rs`
-  continues to fail to compile when any future re-export of
-  `Eip1271Signer` lands inside trading.
+- Crate graph: `cow-sdk-signing ⇏ cow-sdk-trading` holds structurally
+  (`cow-sdk-trading ⇒ cow-sdk-signing` makes the reverse a cargo-rejected
+  cycle); the composable and cow-shed edges apply when those consumers land.
+- Validation and review: no crate other than `cow-sdk-signing` exposes
+  `Eip1271Signer`, and no `From<Eip1271SignatureError> for TradingError` impl
+  exists anywhere in the workspace — both checkable by grep over the public
+  surface.
 - Cost: trading-side call sites carry one inline `map_err` per
   EIP-1271-surfacing entry point rather than a blanket `From` impl. This
   is intentional.

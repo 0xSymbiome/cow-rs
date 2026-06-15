@@ -1,11 +1,21 @@
 # ADR 0050: EIP-1271 Signature Blob Encoding
 
-- Status: Accepted (amended)
+- Status: Accepted
 - Date: 2026-05-15
-- Last reviewed: 2026-05-22
+- Last reviewed: 2026-06-15
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: eip-1271, signature-encoding, composable, safe-muxer, erc1271-forwarder
 - Related: [ADR 0014](0014-eip1271-verification-cache.md), [ADR 0048](0048-composable-conditional-order-framework.md), [ADR 0049](0049-cow-shed-account-abstraction-proxy.md), [ADR 0051](0051-signing-owned-eip1271-signature-provider-trait.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+
+> **Partially shipped.** Shape B (the raw `ERC1271Forwarder`
+> `abi.encode(order, payload)` layout) ships today in `cow_sdk_signing::eip1271`
+> (`OrderAndSignature` + `SolValue::abi_encode_sequence`, consumed by
+> `eip1271_signature_payload`). Shape A (the Safe-muxer encoder), the
+> `cow-sdk-composable` hosting crate, and the `parity/fixtures/composable/*`
+> vectors are **deferred** with the composable capability (ADR 0048). The live
+> guard for the no-shape-flag rule is the `eip1271-shape-flag` fence in
+> `xtask/src/policy/fences.rs`. Present-tense claims about composable below
+> describe the planned shape, not shipped code.
 
 ## Context
 
@@ -121,14 +131,17 @@ fixture parity assertions catch any future whitespace creep.
 - Runtime and support: the EIP-712 type strings stay whitespace-free
   between commas in declaration order, byte-identically with the pinned
   upstream test vectors.
-- Validation and review: the fixture parity tests at
+- Validation and review: the shipped Shape-B layout is exercised by the
+  signing-crate tests around `eip1271_signature_payload`, and the no-shape-flag
+  rule is enforced by the `eip1271-shape-flag` fence. When composable lands, the
+  fixture parity tests at
   `parity/fixtures/composable/safe_muxer_signature_blob.json` and
-  `forwarder_signature_blob.json` stay byte-exact against the pinned
-  upstream vectors. Both fixture files carry at least five rows each.
+  `forwarder_signature_blob.json` must stay byte-exact against the pinned
+  upstream vectors (those files do not exist yet).
 - Crate graph: the trait that lets custom signers plug into the trading
-  submission path lives in `cow-sdk-signing` per ADR 0051. Composable
-  consumes the trait through a re-export of the signing-owned path; no
-  parallel trait definition exists in composable.
+  submission path lives in `cow-sdk-signing` per ADR 0051. When composable
+  lands it consumes that canonical signing path directly; no parallel trait
+  definition exists.
 - Cost: any future shape addition requires a new ADR and a new fixture
   file; the two-shape boundary is not silently extendable.
 
@@ -157,18 +170,3 @@ fixture parity assertions catch any future whitespace creep.
 - [ADR 0048](0048-composable-conditional-order-framework.md)
 - [ADR 0049](0049-cow-shed-account-abstraction-proxy.md)
 - [ADR 0051](0051-signing-owned-eip1271-signature-provider-trait.md)
-
-## Amendment 2026-05-22: canonical primitive layer (per ADR 0052)
-
-The `cow-sdk-composable` crate that hosts the Shape A and Shape B
-encoders is not yet rooted in the workspace members list and is
-deferred to a later capability landing. The prescribed encoding above
-anchors to the canonical primitive layer per
-[ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md). When
-the encoders land, Shape A and Shape B encode through
-`alloy_sol_types::SolValue::abi_encode` and decode through the alloy
-`SolInterface` / `SolValue` family; the whitespace-free EIP-712 type
-strings between commas in declaration order are preserved
-byte-identically with the pinned upstream test vectors at
-`parity/fixtures/composable/safe_muxer_signature_blob.json` and
-`parity/fixtures/composable/forwarder_signature_blob.json`.

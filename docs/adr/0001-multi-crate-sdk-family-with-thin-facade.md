@@ -30,13 +30,20 @@ would blur product identity, crate ownership, and runtime boundaries.
   workflow and identity type is reached on its module path
   (`cow_sdk::core::Address`, `cow_sdk::trading::Trading`), matching `alloy`,
   `reqwest`, and `tower`. The crate root itself carries only the cross-cutting
-  aggregate error (`CowError` / `ErrorClass`) and the typed transport, registry,
-  and EIP-1271 cache leaf surfaces consumers match against. The facade ships
+  aggregate error (`CowError` / `ErrorClass`) and the typed transport-policy
+  surface (`cow_sdk::http`); the deployment `Registry` and the EIP-1271
+  verification cache are reached on their module paths (`cow_sdk::contracts`
+  and `cow_sdk::signing`), not at the root. The facade ships
   **no prelude** — there is no `cow_sdk::prelude` — and the root is never grown
   by a glob (`pub use <module>::*` is disallowed), so it stays explicit and
   pinnable in the public-API snapshot. No crate in the workspace ships a prelude;
   identity and numeric newtypes are reached on their module path, the way `alloy`
   and `reqwest` scope theirs.
+- Additive growth: new capability surfaces land as additive leaf crates or
+  off-by-default features (subgraph, browser-wallet, the `cow-shed` contracts
+  feature, the published `cow-sdk-test` doubles), never by widening the default
+  facade closure; an optional capability a default consumer does not use adds
+  nothing to its dependency graph.
 - Runtime and support: runtime-specific dependencies can stay isolated instead
   of forcing one dependency and runtime model across the whole workspace.
 - Validation and review: targeted crate-level tests, docs, and review can stay

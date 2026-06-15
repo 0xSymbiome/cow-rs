@@ -1,11 +1,11 @@
 # ADR 0039: Keep The TypeScript-Callable WASM SDK Surface As An Additive Leaf Crate
 
-- Status: Accepted (amended)
+- Status: Accepted
 - Date: 2026-05-09
 - Last reviewed: 2026-05-22
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: wasm, typescript, public-surface, additive-leaf-crates
-- Related: [ADR 0007](0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), [ADR 0019](0019-http-transport-sole-dispatch.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0029](0029-trait-evolution-extension-traits.md), [ADR 0037](0037-alloy-umbrella-adapter.md), [ADR 0038](0038-transaction-lifecycle-types.md), [ADR 0042](0042-pure-helpers-extraction.md), [ADR 0043](0043-callback-registry-internalization.md), [ADR 0044](0044-bundle-size-profile-and-flavor-builds.md), [ADR 0046](0046-transport-policy-js-exposure.md), [ADR 0047](0047-typescript-facade-architecture.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+- Related: [ADR 0007](0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), [ADR 0019](0019-http-transport-sole-dispatch.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0037](0037-alloy-umbrella-adapter.md), [ADR 0038](0038-transaction-lifecycle-types.md), [ADR 0042](0042-pure-helpers-extraction.md), [ADR 0043](0043-callback-registry-internalization.md), [ADR 0044](0044-bundle-size-profile-and-flavor-builds.md), [ADR 0046](0046-transport-policy-js-exposure.md), [ADR 0047](0047-typescript-facade-architecture.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
 
 ## Decision
 
@@ -69,8 +69,8 @@ this ADR does not blur:
 3. Every cross-ABI input and output uses typed DTOs or typed callbacks.
 4. Raw `JsValue` stays local to wasm exports and never becomes a public Rust SDK
    contract.
-5. `OrderUid` and `OrderDigest` strings come from `as_str()`, not byte
-   re-encoding.
+5. `OrderUid` and `OrderDigest` strings come from `to_hex_string()` (or
+   `Display`), not byte re-encoding.
 6. EIP-1271 signing resolves JavaScript callbacks at the facade boundary before
    storing a pure provider.
 7. Provider objects stored behind Rust trait objects remain `Send + Sync`.
@@ -137,19 +137,3 @@ this ADR does not blur:
 - [WASM Public API Stability Audit](../audit/wasm-public-api-stability-audit.md)
 - [WASM Facade Architecture Audit](../audit/wasm-facade-architecture-audit.md)
 - [cow-sdk-wasm Comparative Benchmark Validation Note](../audit/cow-sdk-wasm-comparative-benchmark-validation-note.md)
-
-## Amendment 2026-05-22: canonical primitive layer (per ADR 0052)
-
-Invariant 5 above ("`OrderUid` and `OrderDigest` strings come from
-`as_str()`, not byte re-encoding") is preserved in substance: the
-canonical hex string for cross-ABI DTOs is sourced from the cow
-newtype's `to_hex_string()` accessor (owned hex form, following the
-Rust stdlib convention that `to_*` returns owned and `as_*` returns a
-borrow) or through the `Display` impl. The prior `as_str()` accessor
-name retires per
-[ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md). The
-cow-owned newtypes carry `Tsify` derives gated to `target_family =
-"wasm"` (via the `tsify` crate at version `0.5`) so the TypeScript
-declaration shape does not depend on alloy primitives implementing
-`Tsify`; the wasm-bindgen export contract stays byte-identical with
-the prior cached-struct shape.

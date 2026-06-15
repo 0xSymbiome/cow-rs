@@ -1,6 +1,6 @@
 # ADR 0022: Canonicalize ECDSA Signature `v` At The Contracts Boundary
 
-- Status: Accepted (amended)
+- Status: Accepted
 - Date: 2026-04-23
 - Last reviewed: 2026-05-28
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
@@ -69,6 +69,14 @@ sites.
   asserts that the cow rejection set is a strict refinement of the
   alloy parity-normalization rejection set on the same 65-byte input
   space.
+- Additional surfaces on the same typestate: `to_erc2098` / `parse_erc2098`
+  expose the ERC-2098 compact 64-byte form (delegating to alloy's `as_erc2098` /
+  `from_erc2098`), and `canonicalized_low_s` exposes opt-in BIP-62 low-s
+  canonicalisation (not applied at parse time, since the orderbook accepts both).
+  Recovery delegates to alloy's `from_bytes_and_parity` /
+  `recover_address_from_prehash`; the `ecdsa-v-normalization` source fence forbids
+  `Signature::from_raw` and `Signature::as_rsy` (either would readmit the wider
+  alloy parity-normalization input or emit the raw `{0, 1}` parity byte).
 - Cost: two additive `ContractsError` variants and one stricter
   contracts-boundary helper. No new signing scheme, wire format, or
   on-chain ABI surface is introduced.
@@ -125,56 +133,3 @@ produced the signature.
 **Proven by:**
 
 - [ECDSA Signature Normalization Audit](../audit/ecdsa-signature-normalization-audit.md)
-
-## Amendment 2026-05-28: typestate construction (`RecoverableSignature`)
-
-The canonical ECDSA contracts-boundary type is now
-`cow_sdk_contracts::RecoverableSignature`, a `#[repr]`-stable newtype
-that holds an `alloy_primitives::Signature` behind a private field. The
-construction surface is closed at `RecoverableSignature::parse_hex` and
-`RecoverableSignature::parse_bytes`; both validate the trailing recovery
-byte against the ADR 0022 accept set `{0, 1, 27, 28}` and reduce the
-accepted byte to a parity bool before handing the value to
-`alloy_primitives::Signature::from_bytes_and_parity`. The cow accept set
-is a proper subset of alloy's wider parity-normalization input range,
-which admits EIP-155 chain-encoded `v >= 35`. The strict pre-validation
-keeps the typed `InvalidSignatureRecoveryByte` rejection in force on
-the contracts boundary while delegating canonical byte assembly (the
-legacy `r || s || (27 + y_parity)` layout that on-chain `ecrecover`
-expects) to alloy `Signature::as_bytes`.
-
-Holding a `RecoverableSignature` is therefore a compile-time proof that
-the ADR 0022 input contract has been satisfied. Downstream contracts,
-signing, alloy-signer, and WASM helpers consume the typestate directly
-through `RecoverableSignature::to_bytes`,
-`RecoverableSignature::to_hex_string`, and the scheme-bundled
-`RecoverableSignature::recover(digest, scheme)` method.
-
-Recovery routes through the same value: the inner alloy primitive's
-`recover_address_from_prehash` is reached through
-`RecoverableSignature::recover`, which selects the digest preimage by
-scheme (the supplied 32-byte digest for `Eip712`; the canonical
-EIP-191 `"\x19Ethereum Signed Message:\n32" || digest` prehash for
-`EthSign`). `Signature::recover_ecdsa_address` is preserved on the
-scheme-tagged `Signature` enum and now delegates through
-`RecoverableSignature::parse_hex(...)?.recover(...)`.
-
-Two additional surfaces ride on the same typestate:
-
-- `RecoverableSignature::to_erc2098` / `RecoverableSignature::parse_erc2098`
-  expose the ERC-2098 compact 64-byte form for callers that want the
-  packed representation. The compact path delegates to
-  `alloy_primitives::Signature::as_erc2098` / `from_erc2098`.
-- `RecoverableSignature::canonicalized_low_s` exposes the BIP-62 low-s
-  canonicalisation as an opt-in operation. The orderbook accepts both
-  low-s and high-s recoverable signatures today, so this is **not**
-  applied at parse time; callers opt in when their downstream invariants
-  require a uniquely-shaped signature.
-
-The `ecdsa-v-normalization` source fence (`cargo check-source-fences`)
-is widened to forbid `Signature::from_raw` and `Signature::as_rsy` in
-the contracts and signing trees alongside the previously-forbidden
-`normalize_v` and `Signature::v` symbols. Both newly-forbidden symbols
-would re-introduce the wider alloy parity-normalization input surface
-or emit the raw parity byte `{0, 1}` instead of the legacy `{27, 28}`
-form.

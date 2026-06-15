@@ -1,419 +1,126 @@
 # ADR 0052: Alloy primitives as the canonical primitive layer
 
-- Status: Accepted (amended)
+- Status: Accepted
 - Date: 2026-05-19
-- Last reviewed: 2026-06-14
+- Last reviewed: 2026-06-15
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: alloy-primitives, alloy-sol-types, eip-712, abi, canonical-types
-- Related: [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md), [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md), [ADR 0014](0014-eip1271-verification-cache.md), [ADR 0022](0022-ecdsa-signature-v-normalization.md), [ADR 0026](0026-alloy-major-release-absorption-plan.md), [ADR 0028](0028-account-abstraction-integration-plan.md), [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), [ADR 0048](0048-composable-conditional-order-framework.md), [ADR 0049](0049-cow-shed-account-abstraction-proxy.md), [ADR 0050](0050-eip1271-signature-blob-encoding.md)
+- Related: [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md), [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md), [ADR 0022](0022-ecdsa-signature-v-normalization.md), [ADR 0026](0026-alloy-major-release-absorption-plan.md), [Alloy Doctrine](../alloy-doctrine.md)
 
 ## Decision
 
-`cow_sdk_core` adopts `alloy_primitives` and `alloy_sol_types` as the
-canonical primitive and EIP-712 / ABI layer across the workspace.
+`cow-sdk-core` adopts `alloy-primitives` and `alloy-sol-types` as the canonical
+primitive and EIP-712 / ABI layer for the workspace. cow-rs does not maintain a
+parallel implementation of any primitive that alloy already ships.
 
-The cow-named identity types `Address`, `Hash32`, `AppDataHash`,
-`HexData`, and `OrderUid` and the cow-named numeric types `Amount` and
-`SignedAmount` are cow-owned `#[repr(transparent)]` newtypes over the
-corresponding `alloy_primitives` type. The type-aliased derivative
-hashes `TransactionHash`, `BlockHash`, and `OrderDigest` re-route
-through `Hash32`. `TypedDataDomain` is the cow struct that already
-ships in the working tree (`name: String`, `version: String`,
-`chain_id: ChainId`, `verifying_contract: Address`, no `salt`),
-preserved as-is; the cow struct's cow-owned `Serialize` impl emits the
-EIP-1193 `eth_signTypedData_v4` wire shape directly (numeric
-`chainId`, required `verifyingContract`, no `salt`) and an
-`to_alloy_domain()` adapter method converts to
-`alloy_sol_types::Eip712Domain` at the EIP-712 hashing seam.
-`Address`, `Amount`, and `SignedAmount` carry cow-owned
-`Display`/`Serialize`/`Deserialize` impls; the other four byte-typed
-identity newtypes forward to alloy defaults that already match the
-cow lowercase wire form. The cow newtype layer preserves the Rust
-type-system distinction between same-width byte primitives that the
-cow capability crates rely on (`Hash32` vs `AppDataHash` vs the
-digest-shaped fields embedded in DTOs) and preserves the
-strict-decimal-only fail-closed wire-form contract for `Amount` and
-`SignedAmount` on the `Deserialize` boundary (the constructors stay
-lenient — accepting both decimal and `0x`-prefixed hex — to preserve
-the existing observed behavior), while keeping bit-for-bit layout
-compatibility with the underlying alloy primitive (zero-cost
-conversion at the adapter boundary via `From::from(...)` and the typed
-`as_*` / `into_*` accessors).
+Six cow-named types remain as `#[repr(transparent)]` newtypes over an alloy base,
+each with a **sealed (private) inner field** so a value is constructible only
+through a validating constructor:
 
-Hand-rolled `keccak256`, `domain_separator`, `typed_data_digest`,
-EIP-712 type strings, EIP-191 message wrappers, CREATE2 derivation,
-hex-prefixed serde, signature byte-pack, IMF-fixdate parsing,
-canonical-JSON serialisation, and Multiplexer merkle machinery are
-replaced by maintained-crate equivalents (`alloy_primitives::keccak256`,
-`Eip712Domain::separator`, `SolStruct::eip712_signing_hash`,
-`eip191_hash_message`, `Address::create2`, `Bytes` serde,
-`Signature::as_bytes`, `httpdate`, `serde_jcs`, `rs_merkle`).
+| cow type | alloy base | wire form |
+| --- | --- | --- |
+| `Address` | `alloy_primitives::Address` | cow-owned `Display`/`Serialize`/`Deserialize` — **lowercase** |
+| `Amount` | `alloy_primitives::U256` | cow-owned `Display`/`Serialize`/`Deserialize` — **decimal**, strict-decimal fail-closed `Deserialize` |
+| `Hash32` | `alloy_primitives::B256` | alloy default (lowercase hex) |
+| `AppDataHash` | `alloy_primitives::B256` | alloy default (lowercase hex) |
+| `HexData` | `alloy_primitives::Bytes` | alloy default (lowercase hex) |
+| `OrderUid` | `alloy_primitives::FixedBytes<56>` | alloy default (lowercase hex) |
+
+The newtypes exist for two reasons a bare `pub type` alias cannot serve. First,
+they keep the Rust type system distinguishing same-width domain types — `Hash32`
+and `AppDataHash` are both `B256`, `OrderUid` is a `FixedBytes<56>` — across the
+capability crates, where multi-argument constructors rely on compile-time
+argument-swap detection as a safety guarantee. Second, they let cow own the wire
+form where it diverges from an alloy default: `Address` emits lowercase (alloy
+defaults to EIP-55 mixed-case checksum) and `Amount` emits and accepts decimal
+(alloy serializes `U256` as hex, and alloy's `FromStr` sniffs four radix
+prefixes). `#[repr(transparent)]` keeps the layout bit-for-bit identical to the
+alloy base, so crossing the alloy seam is free through `From` and the typed
+`as_alloy` / `into_alloy` (and `as_u256` / `into_u256`) accessors — never the
+inner field.
+
+`Amount` exposes **no operator overloads**. Arithmetic is explicit and
+overflow-checked through `checked_add` / `checked_sub` / `checked_mul` and the
+`saturating_*` family, so a silent `uint256` wrap cannot occur at a call site.
+
+Hand-rolled cryptographic and encoding primitives — keccak256, EIP-712 domain
+separation and struct hashing, EIP-191 message hashing, CREATE2 derivation,
+signature byte assembly, hex serde, and canonical JSON — delegate to the
+maintained alloy surface (`keccak256`, `Eip712Domain::separator`,
+`SolStruct::eip712_signing_hash`, `eip191_hash_message`, `Address::create2`,
+`Signature`) and a small set of maintained companion crates. cow-rs retains an
+implementation only where a binding ADR records a required divergence from the
+alloy behaviour; those exceptions are enumerated in the
+[Alloy Doctrine](../alloy-doctrine.md) and pinned at their call sites by
+`cargo check-source-fences`.
 
 The alloy-core ABI family (`alloy-primitives`, `alloy-sol-types`,
-`alloy-sol-macro`, `alloy-dyn-abi`, `alloy-json-abi`, `alloy-serde`)
-becomes an in-scope dependency of `cow-sdk-core`, `cow-sdk-contracts`,
-`cow-sdk-signing`, `cow-sdk-app-data`, and
-`cow-sdk-composable`. The alloy-runtime family (`alloy-provider`,
-`alloy-signer-local`, `alloy-network`, `alloy-consensus`,
-`alloy-rpc-types-eth`, `alloy-transport-*`) remains confined to the
-native adapter crates per [ADR 0026](0026-alloy-major-release-absorption-plan.md).
-
-`cow-sdk-wasm` continues to forbid direct `alloy*` imports through the
-`cow-sdk-wasm` import fences in `cargo check-source-fences`; cow-sdk-wasm consumes alloy
-types via `cow-sdk-contracts` re-exports and its own host-safe `helpers` module.
+`alloy-sol-macro`, `alloy-dyn-abi`, `alloy-json-abi`, `alloy-serde`) is an
+in-scope dependency of `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`,
+and `cow-sdk-app-data`. The alloy-runtime family (`alloy-provider`,
+`alloy-signer-local`, `alloy-network`, `alloy-consensus`, `alloy-rpc-types-eth`,
+`alloy-transport-*`) stays confined to the native adapter crates per
+[ADR 0026](0026-alloy-major-release-absorption-plan.md). `cow-sdk-wasm` consumes
+alloy-core primitives (`alloy_primitives`, `alloy_sol_types`) directly for ABI
+and event decoding, but takes no dependency on the native alloy adapter crates
+(`cow-sdk-alloy*`) or the alloy-runtime family; the `wasm-no-alloy-family` fence
+enforces that exclusion.
 
 ## Why
 
-Maintained-crate equivalents for every algorithm in scope eliminate
-roughly 2,530 net lines of hand-rolled code across 17 workspace
-crates, retire two direct dependencies (`sha3`, `num-bigint`), add
-four maintained dependencies (`httpdate`, `serde_jcs`, `rs_merkle`,
-`alloy-serde`), reduce the wasm binary size, and remove duplicate
-definitions of `keccak256`, `parse_u256`, `encode_address`, and
-`Call` (5 + 3 + 3 + 3 = 14 duplicate definitions collapse to one
-each). The two `SigningScheme` enums in `cow-sdk-contracts` and
-`cow-sdk-orderbook` retain divergent wire formats and stay separate
-types; `cow-sdk-orderbook` carries no cross-crate conversion to the
-contracts enum, keeping its dependency graph free of the
-signing-recovery primitive stack.
+A single canonical implementation per primitive is the structural precondition
+for the workspace's shared-logic reviewability boundary: every shared primitive
+operation has exactly one invocation path, so a reviewer audits keccak256,
+EIP-712 hashing, or signature assembly once instead of chasing parallel
+re-implementations across crates. Delegating to maintained alloy code also
+absorbs upstream fixes and shrinks the wasm binary.
 
-The maintained-crate path is byte-identical to the hand-rolled path
-on every existing parity fixture, with one documented exception:
-`crates/app-data/src/info.rs`'s JSON canonicalisation now uses
-RFC 8785 UTF-16 key ordering instead of bytewise ordering, closing a
-latent gap with the upstream `cow-sdk` TypeScript implementation for
-non-ASCII keys. ASCII-only documents remain byte-identical.
+The delegation is byte-identical to the prior hand-rolled path on every parity
+fixture under `parity/fixtures/`, with one deliberate exception: app-data JSON
+canonicalisation now follows RFC 8785 UTF-16 key ordering, closing a latent gap
+with the upstream TypeScript SDK for non-ASCII keys. ASCII-only documents are
+unchanged.
 
 ## Must Remain True
 
-- Public surface: the cow-named public types `Address`, `Hash32`,
-  `AppDataHash`, `HexData`, `OrderUid`, `Amount`, `SignedAmount`, and
-  `TypedDataDomain` resolve through `cow_sdk_core::types::*` at their
-  existing paths. `Address`, `Hash32`, `AppDataHash`, `HexData`,
-  `OrderUid`, `Amount`, and `SignedAmount` are cow-owned
-  `#[repr(transparent)]` newtypes around `alloy_primitives::Address`,
-  `alloy_primitives::B256`, `alloy_primitives::B256`,
-  `alloy_primitives::Bytes`, `alloy_primitives::FixedBytes<56>`,
-  `alloy_primitives::U256`, and `alloy_primitives::I256` respectively.
-  `Address`, `Amount`, and `SignedAmount` carry cow-owned `Display`,
-  `Serialize`, and `Deserialize` impls — `Address` because alloy's
-  default `Display` is EIP-55 checksum casing and the cow wire form
-  is lowercase, and `Amount`/`SignedAmount` because alloy's default
-  `Serialize` for `U256` is hex (not decimal) and alloy's `FromStr`
-  for `Uint`/`Signed` prefix-sniffs four radices. The cow
-  strict-decimal-only fail-closed contract for `Amount` and
-  `SignedAmount` applies to both the `Deserialize` wire boundary AND
-  to `SignedAmount::new`, which accepts only the grammar `-?[0-9]+`
-  and rejects every `0x`/`0X`/`0o`/`0O`/`0b`/`0B` prefix that the
-  alloy `I256::from_str` would otherwise silently accept; the
-  `SignedAmount::new` narrowing protects the strict JSON-decimal-only
-  signed wire contract. The cow `Amount::new` constructor remains
-  lenient (accepts both decimal and `0x`-prefixed hex; explicitly
-  rejects `0o`/`0b`) to preserve the existing unsigned-amount
-  constructor contract. `Hash32`, `AppDataHash`, `HexData`,
-  and `OrderUid` forward `Display`, `Serialize`, and `Deserialize`
-  to the underlying alloy primitive whose defaults already match the
-  cow lowercase wire form. Each newtype carries cow-defined inherent
-  methods for the canonical accessor surface (`new`, `from_bytes`,
-  `to_hex_string`, `as_slice`, `as_alloy`, `into_alloy`, `zero`,
-  `is_zero`, plus `to_cid` on `AppDataHash` and a dynamic `byte_length`
-  on the variable-length `HexData`). The owned hex-string accessor is
-  named `to_hex_string(&self) -> String` (following the Rust stdlib
-  convention that `to_*` returns owned and `as_*` returns a borrow);
-  the prior cached-struct `as_str(&self) -> &str` shape retires and
-  the legacy callsites are normalized to the canonical accessor for
-  each use case (`Display`, `as_slice`, `is_zero`, `to_string`, or
-  `to_hex_string` where the hex form is required explicitly).
-  Bit-for-bit layout compatibility with the underlying alloy
-  primitive is preserved through the `repr(transparent)`
-  representation; conversion at the alloy seam is free at runtime
-  through `From::from(addr).into()` (canonical) or the `as_alloy` /
-  `into_alloy` accessors. `TransactionHash`, `BlockHash`, and `OrderDigest`
-  are `pub type` aliases over `Hash32`. `TypedDataDomain` is the cow
-  struct that already ships in the working tree (`name: String`,
-  `version: String`, `chain_id: ChainId`, `verifying_contract:
-  Address`, no `salt`); the cow struct's cow-owned `Serialize` impl
-  emits the EIP-1193 `eth_signTypedData_v4` wire shape directly
-  (numeric `chainId`, required `verifyingContract`, no `salt`) and
-  the cow struct carries an `to_alloy_domain(&self) ->
-  alloy_sol_types::Eip712Domain` adapter method for the EIP-712
-  hashing seam. The cow identity and numeric newtypes carry cow-owned
-  `Tsify` derives (via the `tsify` crate at version `0.5`) for
-  wasm-bindgen so the TypeScript declaration shape does not depend
-  on alloy primitives implementing `Tsify`. `cow_sdk_core` exports the
-  cow newtypes directly on their module path; the prior `AddressExt`,
-  `Hash32Ext`, `AppDataHashExt`, `HexDataExt`, `OrderUidExt`,
-  `AmountExt`, and `SignedAmountExt` extension traits are retired
-  entirely because the cow newtypes carry their accessor surface as
-  inherent methods.
-- Runtime and support: `cow-sdk-core`, `cow-sdk-contracts`,
-  `cow-sdk-signing`, `cow-sdk-app-data`, and
-  `cow-sdk-composable` may depend directly on `alloy-primitives`,
-  `alloy-sol-types`, `alloy-sol-macro`, `alloy-dyn-abi`,
-  `alloy-json-abi`, and `alloy-serde`. `cow-sdk-core` and every
-  other capability crate must not depend directly on any alloy-runtime
-  crate (`alloy-provider`, `alloy-signer-local`, `alloy-network`,
-  `alloy-consensus`, `alloy-rpc-types-eth`, `alloy-transport-*`);
-  those remain confined to `cow-sdk-alloy`, `cow-sdk-alloy-provider`,
-  and `cow-sdk-alloy-signer` per
-  [ADR 0026](0026-alloy-major-release-absorption-plan.md).
-  `cow-sdk-wasm` must not carry direct alloy imports in its source;
-  the `cow-sdk-wasm` import fences in `cargo check-source-fences` continue to enforce this.
-- Validation and review: every parity fixture under
-  `parity/fixtures/` continues to pass byte-identically. The one
-  documented exception is
-  `parity/fixtures/app_data/canonical_json_utf16.json` (new), which
-  documents the RFC 8785 UTF-16 key ordering for non-ASCII keys;
-  ASCII-only fixtures under `parity/fixtures/app_data/` continue
-  byte-identical. Seven new parity fixtures land alongside this
-  decision:
-  `parity/fixtures/cow_shed/execute_hooks_calldata.json` (populated),
-  `parity/fixtures/cow_shed/eoa_signature_byte_order.json` (expanded),
-  `parity/fixtures/eip712/order_digests.json` (new),
-  `parity/fixtures/ecdsa/v_normalization.json` (new),
-  `parity/fixtures/app_data/canonical_json_utf16.json` (new — covers
-  the UTF-16 ordering gap closure),
-  `parity/fixtures/retry_after/imf_fixdate_*.json` (new — covers
-  IMF-fixdate accept / reject branches and RFC 850 legacy support),
-  and `parity/fixtures/composable/multiplexer_proofs.json` (new —
-  covers Multiplexer merkle proofs for trees of size 1, 2, 4, 8, and
-  16). `docs/audit/transport-policy-coverage-audit.md` reflects the
-  `httpdate` dispatch; `docs/audit/cid-dependency-audit.md` names
-  `serde_jcs` among the dependency-coverage rows.
-- Cost: every cow newtype carries a cow-owned inherent-method
-  accessor surface (`new`, `from_bytes`, `to_hex_string`, `as_slice`,
-  `as_alloy`, `into_alloy`, `zero`, `is_zero`, plus
-  `to_cid` on `AppDataHash`).
-  `Address`, `Amount`, and `SignedAmount` additionally carry a
-  cow-owned trait surface (`Display`, `Serialize`, `Deserialize`);
-  `Hash32`, `AppDataHash`, `HexData`, and `OrderUid` forward to alloy
-  defaults via `#[serde(transparent)]` and a one-line `Display`
-  delegate, saving roughly 150-200 lines of re-implementation.
-  `Amount` and `SignedAmount` additionally carry cow-owned operator
-  overloads (`Add`, `Sub`, `Mul`, `AddAssign`, etc.) that delegate to
-  the inner `U256`/`I256` so existing arithmetic callsites work
-  verbatim. The `repr(transparent)` representation keeps the layout
-  bit-for-bit identical to the underlying alloy primitive, so
-  conversion at the alloy boundary is free at runtime through
-  `From::from(...).into()` (canonical) or the `as_*` / `into_*` accessors.
-  The trait + inherent surface costs roughly 70-100 lines per newtype
-  on the cow-owned-trait family (`Address`, `Amount`, `SignedAmount`)
-  and roughly 30-40 lines per newtype on the alloy-forwarding family
-  (`Hash32`, `AppDataHash`, `HexData`, `OrderUid`) — net roughly
-  500-600 lines of newtype code in `crates/core/src/types/`. In
-  exchange for retiring the historical `String`-backed identity
-  newtype layer, the `crates/core/src/types/identity_ext.rs`
-  extension-trait surface, the cow-side `crates/core/src/types/hex.rs`
-  helpers, the cached `inner + hex` half-state on every identity
-  type, the cow-side hex helpers in
-  `crates/contracts/src/primitives.rs`, and the cow-alloy conversion
-  helpers across `crates/alloy-provider/src/conversion.rs` and
-  `crates/alloy/src/conversion.rs`. The cow→alloy `TypedDataDomain`
-  adapter at `crates/alloy-signer/src/conversion.rs` simplifies from
-  207 lines to a focused `to_alloy_domain()` helper (~30 lines)
-  rather than deleting entirely — the cow `TypedDataDomain` stays the
-  canonical in-memory shape and owns its `Serialize` impl, but the
-  EIP-712 hashing seam still needs a cow→alloy struct adapter and
-  that adapter lives in the alloy-signer crate. The workspace surface
-  dependency on alloy widens beyond the native adapter crates; the
-  cow-rs contracts, signing, and orderbook parity fixture suites must
-  run in full as part of any alloy-major rehearsal so the alloy-core
-  surface is re-validated at every major-version absorption.
+- The six public types resolve at `cow_sdk_core::types::*` as
+  `#[repr(transparent)]` newtypes with private inner fields.
+- `Address` serializes and displays lowercase; `Amount` serializes decimal and
+  its `Deserialize` rejects every radix prefix. These two divergences from alloy
+  defaults are the reason the types are owned rather than aliased.
+- Layout stays bit-for-bit identical to the alloy base; the alloy seam is crossed
+  only through `From` / `as_alloy` / `into_alloy` / `as_u256` / `into_u256`.
+- `Amount` exposes no operator overloads; arithmetic is `checked_*` / `saturating_*`.
+- No capability crate depends on an alloy-runtime crate, and `cow-sdk-wasm` takes
+  no dependency on the `cow-sdk-alloy*` adapter crates.
+- Every parity fixture continues to pass byte-identically, the RFC 8785 UTF-16
+  app-data case excepted.
 
 ## Alternatives Rejected
 
-- Keep the hand-rolled string newtypes: rejected. The string-newtype
-  layer forces every consuming crate to round-trip through hex
-  parsing on every accessor read and to maintain parallel
-  implementations of the same primitive operations across the
-  workspace (`keccak256` wrappers, U256 and quantity parsers,
-  address-encoding helpers, and the cow-to-alloy conversion modules
-  in the alloy-adapter crates). The shared-logic reviewability
-  boundary captured in
-  [`docs/audit/shared-logic-reviewability-audit.md`](../audit/shared-logic-reviewability-audit.md)
-  requires every shared primitive to have one canonical invocation
-  path; the string-newtype layer is the structural reason the
-  workspace cannot satisfy that requirement without typed
-  re-exports. Replacing the newtypes with `alloy_primitives`
-  re-exports collapses the parallel implementations onto canonical
-  alloy entry points and resolves the reviewability boundary at the
-  type system.
-- Use `pub type` aliases for the byte-typed identity types without
-  `repr(transparent)` newtype wrappers: rejected. The all-aliases
-  shape would seamlessly interoperate with the alloy ecosystem but at
-  the cost of conflating cow domain types that share an underlying
-  byte width — `Hash32` and `AppDataHash` would both become
-  `alloy_primitives::B256` at the Rust type level, and `HexData`
-  would become `alloy_primitives::Bytes`. The cow codebase relies on
-  the Rust type system to distinguish these in function signatures
-  and DTO field types across the orderbook, trading, app-data,
-  signing, and composable crates (over 750 identity-type occurrences
-  across more than 130 files, including 22 multi-parameter
-  constructor signatures where compile-time argument-swap detection
-  is the safety guarantee). The `repr(transparent)` newtype shape
-  preserves the type distinction while keeping bit-for-bit layout
-  compatibility (zero-cost conversion at the adapter boundary). The
-  all-aliases shape would also require an extension-trait surface to
-  attach cow-specific accessor methods (orphan rules forbid inherent
-  methods on external types), introducing method-resolution
-  ambiguity between extension traits that target the same alloy
-  primitive.
-- Use `pub type` aliases for the numeric types `Amount` and
-  `SignedAmount` (with per-DTO-field
-  `#[serde(with = "alloy_serde::displayfromstr")]`): rejected. The
-  alias approach would require annotating roughly 100 DTO fields
-  across the capability crates; missing the annotation on any single
-  field would silently flip the wire form from decimal to
-  alloy-default hex. More critically, alloy's underlying
-  `ruint::Uint::FromStr` prefix-sniffs four radices (`0x`, `0o`,
-  `0b`, plus uppercase variants), so the `displayfromstr` mitigation
-  widens the input grammar for both `Amount` and `SignedAmount`
-  deserialization — relaxing cow's strict-decimal fail-closed
-  contract. Only a cow-owned `Deserialize` impl closes the gap, and
-  the cleanest place for that impl is on a cow newtype rather than
-  on a per-DTO-field serde helper. The cow newtype approach matches
-  the design language already chosen for the byte-typed identity
-  family and replaces every per-field annotation with two cow-owned
-  trait implementations.
-- Use `alloy-primitives` directly without re-export: rejected.
-  Public-API stability requires the cow-named import path
-  `cow_sdk_core::Address` to continue resolving. Re-export via
-  `pub type` aliases preserves both the path and the type identity.
-- Use a single coordinated change set for the full migration:
-  rejected. The incremental decomposition spreads the work across
-  multiple commits; each change set's parity-fixture gate catches
-  regression locally; rollback at any change-set boundary is
-  feasible.
-- Wait for a future alloy major release before adopting alloy
-  primitives: rejected. The current workspace pins `alloy-core 1.5.7`
-  and `alloy-runtime 2.0.4` and stays on those pins. This decision is
-  orthogonal to alloy-major bumps; future bumps are handled by
-  `docs/alloy-major-release-runbook.md`.
+- **Keep the hand-rolled string newtypes.** Forces every accessor to re-parse hex
+  and every crate to carry parallel primitive implementations — the structural
+  reason the shared-logic reviewability boundary could not be met.
+- **Use bare `pub type` aliases over the alloy types.** Erases the domain
+  distinction between same-width types (`Hash32` vs `AppDataHash`) that the
+  capability crates rely on for compile-time argument-swap detection, and forces
+  an extension-trait surface for cow accessors (orphan rules forbid inherent
+  methods on alloy types).
+- **Alias the numeric type with a per-field `#[serde(with = …)]` helper.**
+  Requires annotating every amount-bearing DTO field; a single miss silently
+  flips an amount from decimal to hex, and alloy's `FromStr` still widens the
+  accepted radix set. A cow-owned `Deserialize` on one newtype closes the gap
+  once.
+- **Depend on `alloy-primitives` without the cow re-export.** Breaks the stable
+  `cow_sdk_core::Address` import path that downstream code resolves against.
 
 ## Links
 
+- [Alloy Doctrine](../alloy-doctrine.md) — the operational bucket tables and
+  never-swap fences this decision anchors
 - [Architecture](../architecture.md)
 - [Principles](../principles.md)
-- [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md)
-- [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md)
-- [ADR 0026](0026-alloy-major-release-absorption-plan.md)
-- [Alloy major release runbook](../alloy-major-release-runbook.md)
-
-## Amendment 2026-05-22: retire `Address::normalized_key`
-
-`Address::normalized_key` previously returned the lowercase 0x-prefixed
-hex form. The body was identical to `Address::to_hex_string` because the
-cow `Address` already canonicalises every input to its lowercase
-representation at construction time, so the two accessors produced
-byte-identical output for every input. The duplicate accessor is
-retired; every call site routes through `Address::to_hex_string`
-directly. The canonical inherent-method surface for the cow newtypes
-listed above no longer enumerates a per-type case-insensitive-key
-accessor.
-
-**Proven by:**
-
-- [Shared Logic Reviewability Audit](../audit/shared-logic-reviewability-audit.md)
-
-## Amendment 2026-05-26: retire direct `hex` dependency from contracts and signing
-
-The canonical hex API for the cow workspace is `alloy_primitives::hex::*`,
-which resolves to the `const-hex` crate re-exported through
-`alloy-primitives 1.5.x`. The doctrinal boundary that previously closed
-on `cow-sdk-core` now closes on `cow-sdk-contracts` and `cow-sdk-signing`
-as well: every production `hex::encode` and `hex::decode` callsite under
-`crates/contracts/src/**` and `crates/signing/src/**` routes through
-`alloy_primitives::hex::{encode, decode}`, and both crates retire their
-`[dependencies]` declaration of the upstream `hex` crate.
-
-The `ContractsError::DecodeHex { source }` variant carries the typed
-`alloy_primitives::hex::FromHexError` value (a re-export of
-`const_hex::FromHexError`) so the production error surface no longer
-references the upstream `hex` crate's error type. The variant remains
-`#[non_exhaustive]` through the enum-level marker.
-
-A permanent carve-out remains for `[dev-dependencies]`: any cow crate
-whose integration tests parse hex fixtures may continue to declare
-`hex.workspace = true` under `[dev-dependencies]` without violating the
-canonical-primitive-layer mandate. The carve-out applies to test
-fixture parsing only and does not extend to production code.
-
-**Proven by:**
-
-- [Dependency Gate Audit](../audit/dependency-gate-audit.md)
-
-## Amendment 2026-06-01: cow-owned decimal-units wrappers on `Amount`
-
-`Amount::format_units` is a cow-owned, error-mapped wrapper over
-`alloy_primitives::utils::format_units` (through
-`ParseUnits::format_units`), with the `decimals == 0` short-circuit
-preserved and a `decimals` above `Unit::MAX` clamped to `Unit::MAX`
-rather than panicking.
-
-`Amount::parse_units` deliberately does **not** delegate to
-`alloy_primitives::utils::parse_units`: it performs the `10^decimals`
-scaling itself with checked integer arithmetic. The raw alloy helper is
-unsafe for untrusted input — it is fail-open on an empty string
-(`parse_units("", d) == Ok(0)`) and on a leading sign (which routes
-through the signed `I256` arm and widens the two's-complement bit
-pattern into a huge positive), it panics on a non-ASCII input whose
-fractional-truncation byte offset lands inside a multi-byte UTF-8 char,
-and its final scaling multiply silently wraps an over-`uint256`
-magnitude. To honour the fail-closed `Result<Amount, CoreError>`
-contract, `parse_units` pre-rejects empty/whitespace and a leading
-`+`/`-`, restricts the grammar to ASCII decimal digits with a single
-`.` separator, truncates fractional digits beyond `decimals`, and
-rejects an over-`uint256` result through `checked_mul`
-(`ValidationError::NumericOverflow`); it uses alloy only for the
-`Unit::new(decimals)` bound check
-(`ValidationError::DecimalsOutOfRange` above `Unit::MAX`). This is the
-same fail-closed discipline the cow-owned `Deserialize` impl applies to
-the strict-decimal wire boundary.
-
-`Amount::from_units(whole, decimals)` shares the same checked-scaling
-discipline for numeric input: it performs the identical checked
-`10^decimals` scaling (`ValidationError::NumericOverflow` on an
-over-`uint256` product) and uses alloy only for the `Unit::new(decimals)`
-bound check, so it likewise never routes through a fail-open alloy helper.
-
-None of these methods store a scale on
-`Amount`; it stays the atomic `#[repr(transparent)]` newtype over
-`alloy_primitives::U256`. See
-[ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md)
-for the typed-amount-boundary decision these wrappers serve.
-
-## Amendment 2026-06-02: sealed primitive-newtype inner fields
-
-The `#[repr(transparent)]` inner field of every cow primitive newtype
-(`Address`, `HexData`, `AppDataHash`, `Hash32`, `OrderUid`, `Amount`,
-`SignedAmount`) is now **private**. The escape-hatch framing earlier in this
-ADR — `.0` access alongside `From::from` — is withdrawn: `.0` is no longer
-reachable from outside the defining module.
-
-The zero-cost alloy bridge is unchanged and stays available through the
-canonical `From::from(...).into()` conversion and the typed inherent
-accessors — `as_alloy` / `into_alloy` for the byte-typed identities,
-`as_u256` / `into_u256` for `Amount`, and `as_i256` / `into_i256` for
-`SignedAmount`. No wire form, serde shape, validation rule, or accessor
-signature changes; the seal removes only the off-contract field access.
-
-Rationale: sealing makes the validated newtype boundary enforceable — a value
-can only be built through a validating constructor — and lets a future runtime
-invariant land without a breaking change. The bit-for-bit layout contract is
-governed by `#[repr(transparent)]`, which is unaffected by field visibility.
-Sealing pre-1.0 is free; sealing once a published consumer relied on `.0` would
-be a breaking change, so it is done now.
-
-## Amendment 2026-06-08: `SignedAmount` removed
-
-`SignedAmount` is removed from the public surface (see the 2026-06-08
-amendment to [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md)):
-its only consumer was removed, leaving it load-bearing for no shipped flow.
-Every `SignedAmount` reference in the Decision body and the earlier
-amendments above is preserved as the historical record but no longer
-describes shipped code. `Amount` (the unsigned `uint256` newtype) is
-unchanged and remains the sole cow-owned numeric newtype, keeping its
-cow-owned `Display` / `Serialize` / `Deserialize` impls, the strict-decimal
-fail-closed `Deserialize` boundary, and the fallible-by-return
-`checked_*` / `saturating_*` arithmetic surface. The cow newtype family is
-now `Address`, `Hash32`, `AppDataHash`, `HexData`, `OrderUid`, and `Amount`.
+- [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md),
+  [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md),
+  [ADR 0022](0022-ecdsa-signature-v-normalization.md),
+  [ADR 0026](0026-alloy-major-release-absorption-plan.md)

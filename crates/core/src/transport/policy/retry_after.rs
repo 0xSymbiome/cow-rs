@@ -54,7 +54,7 @@ impl RetryAfter {
 // docs/adr/0019-http-transport-sole-dispatch.md (HttpTransport sole
 // dispatch),
 // docs/adr/0041-transport-policy-l3-layering.md (transport policy
-// layering, lines 36-43),
+// layering),
 // docs/adr/0046-transport-policy-js-exposure.md (transport policy
 // JS exposure).
 // Doctrine: docs/alloy-doctrine.md, Bucket 2 row for `parse_retry_after`

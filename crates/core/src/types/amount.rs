@@ -138,7 +138,7 @@ impl Amount {
     // pick the radix explicitly; do not collapse onto `U256::from_str`.
     //
     // ADR: docs/adr/0052-alloy-primitives-canonical-primitive-layer.md
-    // (lines 99-104).
+    // (the strict-decimal Amount wire-form / constructor contract).
     // Doctrine: docs/alloy-doctrine.md, Bucket 2 row for `Amount::new`
     // lenient constructor.
     // Enforced by cargo check-source-fences (xtask/src/policy/fences.rs).

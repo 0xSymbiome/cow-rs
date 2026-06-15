@@ -1,6 +1,6 @@
 # ADR 0044: Ship Feature-Scoped WASM Flavor Builds From One Package
 
-- Status: Accepted (amended)
+- Status: Accepted
 - Date: 2026-05-11
 - Last reviewed: 2026-06-01
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
@@ -47,6 +47,11 @@ recommended choice.
   resolve the ESM facade entry through a bundler; a bundler-free browser entry
   for those flavors would come from the wasm-bindgen source-phase `module`
   target, tracked as a future addition rather than shipped today.
+- The shipped flavor enumeration is exactly four — `default`, `orderbook`,
+  `signing`, and `cloudflare`. No `full` flavor ships: its feature set was
+  mechanically identical to `default` (verified through the shipped
+  `flavours.json` descriptor), so the `./full` package subpath is not in the
+  exports map.
 - Package verification proves every exported JavaScript and declaration target
   exists.
 - Size measurement is tied to the generated package artifacts and can fail the
@@ -87,12 +92,3 @@ recommended choice.
 - [WASM Performance Budget Audit](../audit/wasm-performance-budget-audit.md)
 - [WASM Public API Stability Audit](../audit/wasm-public-api-stability-audit.md)
 - [cow-sdk-wasm Comparative Benchmark Validation Note](../audit/cow-sdk-wasm-comparative-benchmark-validation-note.md)
-
-## Amendment 2026-05-22: shipped flavor enumeration
-
-The `full` flavor entry was retired before any consumer release. Its feature
-set was mechanically identical to `default` (verified through the shipped
-`flavours.json` descriptor), so it published a duplicate artifact under a
-second subpath without consumer-visible value. The shipped flavor enumeration
-is now four entries: `default`, `orderbook`, `signing`, and `cloudflare`. The
-`./full` subpath is removed from the package exports map.

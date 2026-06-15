@@ -47,11 +47,9 @@ side-specific type on the right field.
   `SellTokenSource`, and every DTO and helper that previously
   carried `OrderBalance` for the buy-side now carries
   `BuyTokenDestination`. The contract-encoding helpers in
-  `cow-sdk-contracts` split into `sell_balance_name`,
-  `buy_balance_name`, `sell_balance_id`, and `buy_balance_id`, and
-  the settlement-encoding flags route the sell- and buy-side
-  values through their respective enums. No internal shim collapses
-  the two enums back into one shape.
+  `cow-sdk-contracts` are `sell_balance_name` and `buy_balance_name`,
+  each routing its side's value through the respective enum. No internal
+  shim collapses the two enums back into one shape.
 - Validation and review: a fixture round-trip test pins both enums
   to the reviewed snake-case wire strings (`"erc20"`, `"external"`,
   `"internal"`) and asserts the closed `BuyTokenDestination` domain

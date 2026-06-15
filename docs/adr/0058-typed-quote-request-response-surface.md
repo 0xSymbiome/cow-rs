@@ -195,7 +195,7 @@ the quote surface.
 **Proven by:**
 
 - [Quote Response Surface Audit](../audit/quote-response-surface-audit.md)
-- `xtask/src/openapi_coverage.rs`
+- `xtask/src/parity/openapi_coverage.rs`
 - `crates/orderbook/tests/wire_contract.rs`
 - `crates/orderbook/tests/fee_amount_is_not_a_public_builder_setter.rs`
 - `crates/orderbook/tests/quote_echo_contract.rs`

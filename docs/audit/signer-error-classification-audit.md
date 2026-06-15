@@ -1,9 +1,9 @@
 # Signer Error Classification Audit
 
 Status: Current
-Last reviewed: 2026-05-19
+Last reviewed: 2026-06-15
 Owning surface: `cow-sdk-core`, `cow-sdk-signing`, `cow-sdk-browser-wallet`, `cow-sdk-alloy-signer`, `cow-sdk-alloy`
-Refresh trigger: any new signer crate, any new variant on `BrowserWalletError`, `cow_sdk_alloy_signer::SignerError`, or `AlloyClientError`, any change to `cow_sdk_core::SignerError`'s method set, or any change to `SigningError::SignerRejection`'s field set
+Refresh trigger: any new signer crate, any new variant on `BrowserWalletError`, `cow_sdk_alloy_signer::SignerError`, or `AlloyClientError`, any change to `cow_sdk_core::UserRejection`'s method set, or any change to `SigningError::SignerRejection`'s field set
 Related docs:
 - [ADR 0053](../adr/0053-typed-signer-rejection-classification.md)
 - [ADR 0025](../adr/0025-workspace-url-redaction-convention.md)
@@ -13,8 +13,8 @@ Related docs:
 
 This audit covers:
 
-- The `cow_sdk_core::SignerError` trait and its `user_rejection_code` method
-- Every signer-error type that implements `cow_sdk_core::SignerError`
+- The `cow_sdk_core::UserRejection` trait and its `user_rejection_code` method
+- Every signer-error type that implements `cow_sdk_core::UserRejection`
   (`BrowserWalletError`, `cow_sdk_alloy_signer::SignerError`,
   `AlloyClientError`, the test mocks in `cow-sdk-signing`,
   and the trading native example)
@@ -31,19 +31,19 @@ classes, provider error classes, contracts errors).
 
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
-| `SignerError` trait | Exposes only the EIP-1193 numeric code; never an implementer-controlled string | Conforms |
+| `UserRejection` trait | Exposes only the EIP-1193 numeric code; never an implementer-controlled string | Conforms |
 | `BrowserWalletError` impl | `UserRejectedRequest` returns the carried code; every other variant returns `None` | Conforms |
 | `cow_sdk_alloy_signer::SignerError` impl | Every variant returns `None` because local-key signing never produces EIP-1193 rejections | Conforms |
 | `AlloyClientError` impl | Every variant returns `None`; umbrella adapter never routes wallet prompts | Conforms |
 | `signer_error` helper | Routes through the trait, emitting `SignerRejection` only when the trait returns `Some(_)` | Conforms |
-| `SigningError::SignerRejection` | Display renders `User rejected {label} ({code})`; fields are static label plus numeric code only | Conforms |
+| `SigningError::SignerRejection` | Display renders `user rejected {label} ({code})`; fields are static label plus numeric code only | Conforms |
 | Redaction posture | `SigningError::Signer` redacted path preserved for every non-rejection failure; redaction contract sweep covers both variants | Conforms |
 
 ## Current Contract
 
 ### Trait surface
 
-`cow_sdk_core::SignerError::user_rejection_code` returns
+`cow_sdk_core::UserRejection::user_rejection_code` returns
 `Option<i32>`. The default returns `None` so an implementer adopts
 the trait with a one-line `impl` for signers that never represent
 EIP-1193 rejections. The trait deliberately exposes only the
@@ -70,10 +70,10 @@ returns either:
 ### Surface invariant for downstream consoles
 
 `SigningError::SignerRejection`'s `Display` renders
-`User rejected {label} ({code})`. The browser-wallet console
+`user rejected {label} ({code})`. The browser-wallet console
 JavaScript classifier scans for the `(NNNN)` parenthesised code to
 look up the EIP-1193 label table; the static operation label gives
-downstream renderers a stable substring (`"User rejected
+downstream renderers a stable substring (`"user rejected
 typed-data signature"`) for the contract-state `errorText` panel
 without exposing any wallet-controlled message text.
 

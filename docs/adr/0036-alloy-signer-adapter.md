@@ -1,6 +1,6 @@
 # ADR 0036: Ship A Native Alloy Local Signer Adapter
 
-- Status: Accepted (amended)
+- Status: Accepted
 - Date: 2026-05-06
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: alloy, signer, adapter, native, eip712
@@ -9,7 +9,7 @@
 ## Decision
 
 The workspace ships `cow-sdk-alloy-signer` as a native Alloy local-keystore
-adapter. `LocalAlloyKeystoreSigner` wraps an Alloy private-key signer internally
+adapter. `LocalAlloySigner` wraps an Alloy private-key signer internally
 and exposes it through `cow_sdk_core::Signer`.
 
 The crate is a signer leaf, not a provider. It signs EIP-191 messages and
@@ -37,7 +37,7 @@ signature bytes and the Solidity-compatible form used by the contracts crate.
 
 - Public surface: documented constructors and signer methods expose SDK-owned
   types, not upstream Alloy provider or transport types.
-- Trait coverage: `LocalAlloyKeystoreSigner` implements `Signer` and does
+- Trait coverage: `LocalAlloySigner` implements `Signer` and does
   not implement `Provider` or `SigningProvider`.
 - Builder state: `build()` is available only after a private key and chain id
   have both been selected; builder markers remain sealed from external
@@ -71,18 +71,18 @@ It exists so sibling adapter crates can lift `alloy_signer::Error` values into
 the signer's typed error surface. It is not a semver-stable consumer API and
 may change in any minor release.
 
-The documented consumer surface is limited to `LocalAlloyKeystoreSigner`,
-`LocalAlloyKeystoreSignerBuilder`, `SignerError`, and the typestate
+The documented consumer surface is limited to `LocalAlloySigner`,
+`LocalAlloySignerBuilder`, `SignerError`, and the typestate
 markers explicitly exported from `lib.rs`.
 
 The signer crate also exposes a `#[doc(hidden)] pub mod __seam` module
-following the same posture as `cow_sdk_alloy_provider::__seam`. The seam
-re-exports the EIP-712 typed-data conversion helpers
-(`cow_typed_data_payload_to_alloy`, `cow_flat_to_alloy_typed_data`) and
-the shared signature normalizer (`alloy_signature_to_hex`) so the
-sibling umbrella adapter can consume them without duplicating the
-implementation. Anything inside the seam may change without notice in
-any minor release.
+following the same posture as `cow_sdk_alloy_provider::__seam`. Typed-data
+signing is payload-only ([ADR 0068](0068-payload-only-typed-data-signing.md)), so
+the seam re-exports the canonical EIP-712 payload converter
+(`cow_typed_data_payload_to_alloy`) and the shared signature normalizer
+(`alloy_signature_to_hex`) — the legacy flat typed-data path and its
+`cow_flat_to_alloy_typed_data` helper are removed. Anything inside the seam may
+change without notice in any minor release.
 
 ## Links
 
@@ -93,17 +93,3 @@ any minor release.
 **Proven by:**
 
 - [Alloy Signer Adapter Audit](../audit/alloy-signer-adapter-audit.md)
-
-## Amendment 2026-06-11: `LocalAlloySigner` rename and payload-only seam
-
-The adapter type family is renamed for what it actually holds — a locally-held
-private key, never a keystore file: `LocalAlloyKeystoreSigner` →
-`LocalAlloySigner`, `LocalAlloyKeystoreSignerBuilder` →
-`LocalAlloySignerBuilder`, with the builder error following as
-`LocalAlloySignerBuilderError`. Typed-data signing is payload-only per
-[ADR 0068](0068-payload-only-typed-data-signing.md): the legacy flat
-typed-data path and the `cow_flat_to_alloy_typed_data` seam helper are
-removed, so the `__seam` module re-exports `cow_typed_data_payload_to_alloy`
-and `alloy_signature_to_hex` only. Every other reviewed boundary —
-capability exclusions, builder typestate, normalization, redaction — is
-unchanged.

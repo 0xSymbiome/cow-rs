@@ -17,6 +17,18 @@ owns `type Signer: Signer<Error = Self::Error>` and
 `create_signer`. Wallet-capable providers implement both traits. Read-only
 adapters implement only `Provider`.
 
+The `Provider` and `SigningProvider` method sets are frozen through `0.x.y`. A
+genuinely new RPC primitive — one that cannot be expressed through the existing
+methods, such as `get_logs` — lands on the core read trait (while pre-`0.1.0`)
+or as its own opt-in capability supertrait in the `SigningProvider` mould (for
+example `LogProvider`, [ADR 0057](0057-log-provider-capability-trait.md)).
+Because the core traits use
+native `async fn` and are not object-safe, there is no `dyn` vtable for an added
+method to break, so the forward-compatibility basis is review discipline plus
+core minimalism, with the release-time semver gate
+([ADR 0030](0030-workspace-locked-versioning-tag-baseline.md)) reactivating on
+the 1.0 runway.
+
 ## Why
 
 Read-only chain adapters should not carry signer dependencies merely to expose
@@ -36,6 +48,9 @@ separate capability bound.
   wallet-runtime bindings to satisfy the provider trait.
 - Validation: contract tests cover read-only dispatch and signing-capable
   dispatch on the same provider type.
+- Trait evolution: the `Provider` / `SigningProvider` method sets stay frozen
+  through `0.x.y`; a new RPC primitive lands on the core read trait or its own
+  opt-in capability supertrait.
 
 ## Alternatives Rejected
 

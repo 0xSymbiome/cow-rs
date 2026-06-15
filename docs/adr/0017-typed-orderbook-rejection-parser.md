@@ -1,6 +1,6 @@
 # ADR 0017: Typed `OrderbookRejection` Parser With Permanent Unknown-Tag Fallback
 
-- Status: Accepted (amended)
+- Status: Accepted
 - Date: 2026-04-21
 - Last reviewed: 2026-05-31
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
@@ -83,6 +83,17 @@ on the happy diagnostic path.
   `cow_sdk::CowError::class` classification still lifts a
   `Rejected` response onto `ErrorClass::Remote` so downstream
   telemetry partitions remain stable.
+- Coarse category: `OrderbookRejection::category()` returns an additive,
+  action-oriented `OrderbookRejectionCategory` partition (`Authorization`,
+  `InsufficientFunds`, `InvalidOrder`, `NotFound`, `Conflict`, `Unfulfillable`,
+  `Server`, `Unknown`) — `#[non_exhaustive]`, exhaustive over the typed tags with
+  no wildcard, and carrying no `code`/`message` so it is safe to log;
+  `SellAmountDoesNotCoverFee` categorizes as `Unfulfillable` (an economic,
+  re-quotable condition), not `InvalidOrder`.
+- Unclassified fallback: `OrderbookError::Api` (taken when `parse_rejection`
+  returns `None`) renders the HTTP status on its public message
+  (`orderbook request failed (<status>)`) while the body and derived message
+  stay redacted on the `#[source]` error per ADR 0025.
 - Cost: one new module (`crates/orderbook/src/rejection.rs`), one
   typed variant on `OrderbookError`, one byte-slice-level public
   function, and one re-export through the `cow-sdk` facade `orderbook` module.
@@ -122,62 +133,3 @@ on the happy diagnostic path.
 - [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
 - [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md)
 - [ADR 0013](0013-http-transport-injection-and-typestate-builders.md)
-
-## Amendment 2026-05-22: canonical primitive layer (per ADR 0052)
-
-The typed `fee_amount: Amount` field carried by
-`OrderbookRejection::SellAmountDoesNotCoverFee` resolves through the
-cow-owned `#[repr(transparent)]` newtype around `alloy_primitives::U256`
-per
-[ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md). The
-decimal-string wire format is preserved through the cow-owned
-`Serialize`/`Deserialize` impls on `Amount`; the strict-decimal-only
-fail-closed contract on the `Deserialize` boundary rejects radix-prefixed
-payloads that alloy's underlying `ruint::Uint::FromStr` would otherwise
-accept.
-
-## Amendment 2026-05-31: coarse category accessor
-
-`OrderbookRejection::category()` returns a coarse, action-oriented
-`OrderbookRejectionCategory` partition (`Authorization`, `InsufficientFunds`,
-`InvalidOrder`, `NotFound`, `Conflict`, `Unfulfillable`, `Server`, `Unknown`).
-It is an **additive accessor**: the typed per-tag taxonomy and the permanent
-`Unknown` fallback are unchanged, and the partition itself is
-`#[non_exhaustive]`. The mapping is exhaustive over the typed tags with no
-wildcard arm, so a newly added wire tag must be assigned a category at the
-source rather than being silently misclassified. The category carries no `code`
-or `message`, so it never re-exposes a redacted rejection payload and is safe to
-log or partition telemetry on directly.
-
-## Amendment 2026-06-08: economic rejections categorize as `Unfulfillable`
-
-`SellAmountDoesNotCoverFee` categorizes as `Unfulfillable`, alongside
-`NoLiquidity` and the other economic conditions, rather than `InvalidOrder`. The
-fee-coverage shortfall is an economic, quote-time condition — the network fee
-floor moved relative to the order's sell amount — that clears when the fee drops
-or the order is resized; it is not a malformed request to fix in code. This
-matches the upstream taxonomy, which surfaces the shortfall on the quote path
-and groups it with `NoLiquidity` rather than with the order-parameter
-validation errors. The `OrderbookRejectionCategory` set, the additive-accessor
-contract, and the exhaustive-with-no-wildcard mapping are all unchanged; only
-this one variant's assignment moves to the bucket that names the correct
-consumer action (re-quote, wait, or resize).
-
-## Amendment 2026-06-08: the unclassified `Api` fallback surfaces the HTTP status
-
-`OrderbookError::Api` — the fallback taken when a non-2xx response body does not
-deserialize into the typed rejection envelope (`parse_rejection` returns `None`)
-— now renders the HTTP status on its public message
-(`orderbook request failed (<status>)`), mirroring the `Rejected` arm rather than
-delegating transparently to the wrapped `OrderbookApiError`. Previously the
-variant was `#[error(transparent)]`, so an unclassified failure surfaced only the
-redacted body message — a bare `[redacted]` with no status. The HTTP status is a
-non-sensitive, closed-set protocol identifier; surfacing it makes the
-unclassified path as informative as the typed path while the response body and
-the derived public message stay redacted on the `#[source]` `OrderbookApiError`
-per [ADR 0025](0025-workspace-url-redaction-convention.md). The variant stays a
-tuple holding the envelope, so the `(status, errorType)` payload remains
-reachable for telemetry, and `class()`, `is_retryable()`, and `backoff_hint()`
-are unaffected. Pinned by
-`crates/orderbook/src/error.rs::retry_classification_tests::api_error_display_surfaces_status_and_redacts_body`
-and `crates/sdk/tests/error_redaction_contract.rs`.

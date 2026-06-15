@@ -160,7 +160,7 @@ impl Address {
 // which emits the lowercase byte sequence we depend on; keep it.
 //
 // ADR: docs/adr/0052-alloy-primitives-canonical-primitive-layer.md
-// (lines 96-99).
+// (the Address lowercase Display invariant).
 // Doctrine: docs/alloy-doctrine.md, Bucket 2 row for `Address::Display`
 // lowercase emission.
 // Enforced by cargo check-source-fences (xtask/src/policy/fences.rs).

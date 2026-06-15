@@ -21,7 +21,6 @@ cow-sdk-orderbook = { version = "0.1", features = ["tracing"] }
 cow-sdk-subgraph = { version = "0.1", features = ["tracing"] }
 cow-sdk-signing = { version = "0.1", features = ["tracing"] }
 cow-sdk-browser-wallet = { version = "0.1", features = ["tracing"] }
-cow-sdk-wasm = { version = "0.1", features = ["tracing"] }
 cow-sdk-transport-wasm = { version = "0.1", features = ["tracing"] }
 ```
 

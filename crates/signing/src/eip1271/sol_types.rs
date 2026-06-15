@@ -36,9 +36,9 @@
 // the shape from an enum argument; the failure mode is silent
 // on-chain revert, not a compile error.
 //
-// ADR: docs/adr/0050-eip1271-signature-blob-encoding.md (lines 31-37,
-// Must Remain True at :117-120, amendment at :166-179 deferring the
-// composable crate).
+// ADR: docs/adr/0050-eip1271-signature-blob-encoding.md (the Shape A vs
+// Shape B blob-encoding decision, its Must Remain True invariants, and
+// the composable-deferral amendment).
 // Doctrine: docs/alloy-doctrine.md, Bucket 2 rows for EIP-1271
 // signature blob Shape A (Safe muxer) and Shape B (raw forwarder).
 // Enforced by cargo check-source-fences (xtask/src/policy/fences.rs).

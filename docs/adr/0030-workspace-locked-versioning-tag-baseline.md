@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-04-29
-- Last reviewed: 2026-04-29
+- Last reviewed: 2026-06-15
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: versioning, semver, release, compatibility
 - Anchors: Evidence-Backed Public Claims (supporting)
@@ -15,12 +15,16 @@ through `0.x.y`. Per-crate version divergence is allowed only after
 `1.0.0` and only for patch releases where the changed crate can publish
 without changing the facade contract.
 
-`cargo-semver-checks` is blocking for patch releases starting at
-`0.1.1`. The first functional release, `0.1.0`, has no baseline. Patch
-baseline source is the crates.io version published from the previous tag
-`v0.x.(y-1)`, so release branches fetch tags before the lane runs. The
-facade crate `cow-sdk` is checked as a first-class package alongside
-the leaf crates.
+The version-lockstep rule above is active today. The `cargo-semver-checks`
+policy below is the **target release-gate policy**, not a currently-running
+CI lane: a pre-1.0 semver report against an unpublished baseline is
+non-blocking, so the lane is removed through the pre-1.0 cycle and is
+reintroduced on the 1.0 runway (see [Release Checklist](../release-checklist.md)).
+The `SemverChecksMode` classifier in `xtask` already encodes the per-release
+modes below, so the gate activates without rework. When it runs, the patch
+baseline is the crates.io version published from the previous tag
+`v0.x.(y-1)`, and the facade crate `cow-sdk` is checked as a first-class
+package alongside the leaf crates.
 
 ## Why
 

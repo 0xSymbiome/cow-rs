@@ -1,47 +1,17 @@
 # ADR 0004: Feature-Gated Browser Wallet Sidecar
 
-- Status: Accepted
+- Status: Superseded by [ADR 0007](0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md)
 - Date: 2026-04-09
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: browser-wallet, wasm, feature-gating
-- Related: [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md)
 
-## Decision
+## Superseded
 
-Implement browser wallet support in `cow-sdk-browser-wallet` and expose it from
-`cow-sdk` only behind the `browser-wallet` feature.
-
-## Why
-
-Browser wallets use injected, async EIP-1193 providers and a WASM runtime model
-that does not fit the native-first default SDK surface. The browser path needs
-its own dependency and runtime boundary.
-
-## Must Remain True
-
-- Public surface: browser wallet support is explicit and feature-scoped instead
-  of being part of the default `cow-sdk` contract.
-- Runtime and support: browser-only dependencies and async provider behavior
-  stay isolated in `cow-sdk-browser-wallet`, which keeps native defaults lean
-  and support claims bounded.
-- Validation and review: browser-targeted proof can stay separate from native validation
-  and from environment-sensitive wallet confirmation.
-- Cost: browser consumers need an explicit feature or a direct dependency on
-  the sidecar crate.
-
-## Alternatives Rejected
-
-- Treat browser support as raw private-key handling inside examples: unsafe and
-  not representative of browser wallet workflows.
-- Add browser globals and wallet shims directly to `cow-sdk`: widens the root
-  facade and leaks browser-only dependencies into default builds.
-
-## Links
-
-- [Architecture](../architecture.md)
-- [Verification Guide](../verification.md)
-- [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md)
-
-**Proven by:**
-
-- [Browser Wallet Chain Coherence Audit](../audit/browser-wallet-chain-coherence-audit.md)
+The feature-gated browser-wallet sidecar decision — browser-wallet support lives
+in its own `cow-sdk-browser-wallet` leaf behind an off-by-default feature, never
+in the default facade closure — is now part of
+[ADR 0007](0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md).
+ADR 0007 records the bounded browser-wallet posture and the three-peer WASM leaf
+map (`cow-sdk-browser-wallet`, `cow-sdk-transport-wasm`, `cow-sdk-wasm`), each
+single-purpose and additive per the multi-crate-family growth rule in
+[ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md).

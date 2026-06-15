@@ -111,7 +111,7 @@ By default every RPC request is issued once and a transient transport failure â€
 such as a public-endpoint `429` â€” is surfaced to the caller, keeping the SDK
 runtime-neutral. The consumer owns chain-RPC resilience.
 
-Both the provider leaf and the umbrella client expose an opt-in `with_retry`
+Both the provider leaf and the umbrella client expose an opt-in `retry`
 setter that wraps the JSON-RPC client in a bounded exponential backoff layer for
 transient, rate-limited reads:
 
@@ -121,7 +121,7 @@ use cow_sdk_alloy_provider::{RetryConfig, RpcAlloyProvider};
 # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 let provider = RpcAlloyProvider::builder()
     .http("https://example.invalid/rpc")?
-    .with_retry(RetryConfig::default())
+    .retry(RetryConfig::default())
     .build()?;
 # let _ = provider;
 # Ok(())

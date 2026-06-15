@@ -79,7 +79,7 @@ to success through Alloy's higher-level `status()` helper.
   `get_transaction_receipt` delegates to the provider crate's rich receipt
   conversion.
 - Typed-data behavior: `sign_typed_data_payload` preserves the payload primary
-  type rather than routing through the legacy flat-fields fallback.
+  type.
 - Support posture: native targets are supported; wasm targets fail closed with
   the documented compile-time diagnostic.
 - Validation: tests cover provider delegation, owned signer handles, EIP-712

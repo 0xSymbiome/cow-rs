@@ -1,7 +1,7 @@
 # Browser Wallet Trust Posture Audit
 
 Status: Current
-Last reviewed: 2026-06-08
+Last reviewed: 2026-06-15
 Owning surface: `cow-sdk-browser-wallet` EIP-1193 provider construction and wallet chain-management URL payloads
 Refresh trigger: Changes to EIP-1193 provider construction, EIP-6963 discovery metadata, wallet origin handling, chain-management URL validation, or browser-wallet error redaction
 Related docs:
@@ -30,7 +30,7 @@ prompts, or RPC endpoint safety after a wallet accepts
 
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
-| Provider trust | EIP-6963-discovered providers carry a detected origin into construction, while anonymous providers require `with_trusted_origin(...)` | Conforms |
+| Provider trust | EIP-6963-discovered providers carry a detected origin into construction, while anonymous providers require `trusted_origin(...)` | Conforms |
 | Origin schemes | Trusted origins accept the documented browser-wallet schemes and reject unsupported schemes before provider construction | Conforms |
 | Error redaction | Untrusted provider-origin errors and trust telemetry use redacted origin values; EIP-1193 RPC method names surface as closed-set protocol identifiers while wallet free-form messages stay redacted | Conforms |
 | Wallet URL payloads | `rpc_urls`, `block_explorer_urls`, and `icon_urls` stay wallet payload data and are not governed by SDK service-host policy | Conforms |
@@ -45,7 +45,7 @@ EIP-1193 providers. Providers selected from EIP-6963 discovery carry their
 reverse-DNS identifier into the builder as detected origin metadata. A
 transport without EIP-6963 metadata is anonymous and fails construction with
 `BrowserWalletError::UntrustedProviderOrigin` unless the caller adds an
-explicit reviewed origin through `with_trusted_origin(...)`.
+explicit reviewed origin through `trusted_origin(...)`.
 Reviewed trusted origins accept reverse-DNS identifiers plus the documented
 `http`, `https`, `test`, and `transport` schemes. Other schemes fail before a
 provider can be constructed from the supplied origin.

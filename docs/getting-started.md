@@ -212,7 +212,7 @@ drives any signer — a local key, a remote signer, a browser wallet, or a smart
 account.
 
 ```rust,ignore
-use cow_sdk::core::{Address, Amount, Signer, SignerError};
+use cow_sdk::core::{Address, Amount, Signer, UserRejection};
 use cow_sdk::trading::Trading;
 
 async fn place_swap<S>(
@@ -223,7 +223,7 @@ async fn place_swap<S>(
 ) -> Result<(), Box<dyn std::error::Error>>
 where
     S: Signer,
-    S::Error: std::fmt::Display + SignerError,
+    S::Error: std::fmt::Display + UserRejection,
 {
     // One call quotes, signs, and posts.
     let posted = trading
@@ -265,7 +265,7 @@ post, or `post_presign()` for the smart-account path that needs no signer — th
 explicit `owner` identifies the account.
 
 ```rust,ignore
-use cow_sdk::core::{Address, Amount, Signer, SignerError};
+use cow_sdk::core::{Address, Amount, Signer, UserRejection};
 use cow_sdk::trading::Trading;
 
 async fn place_limit<S>(
@@ -276,7 +276,7 @@ async fn place_limit<S>(
 ) -> Result<(), Box<dyn std::error::Error>>
 where
     S: Signer,
-    S::Error: std::fmt::Display + SignerError,
+    S::Error: std::fmt::Display + UserRejection,
 {
     // Sell exactly 100 USDC, want at least 99 DAI.
     let posted = trading

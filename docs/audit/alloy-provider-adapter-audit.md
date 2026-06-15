@@ -3,7 +3,7 @@
 Status: Current
 Last reviewed: 2026-06-15
 Owning surface: `cow-sdk-alloy-provider` `RpcAlloyProvider`, its builder, and its `Provider` implementation
-Refresh trigger: ADR 0038 - rich receipt population, or changes to the provider public API, the `Provider` trait, transport classification, the `read_contract` algorithm, the opt-in `with_retry` seam or its `RetryConfig`, the inter-crate seam entries consumed by sibling Alloy adapters, the workspace Alloy runtime pin, or the crate dependency boundary
+Refresh trigger: ADR 0038 - rich receipt population, or changes to the provider public API, the `Provider` trait, transport classification, the `read_contract` algorithm, the opt-in `retry` seam or its `RetryConfig`, the inter-crate seam entries consumed by sibling Alloy adapters, the workspace Alloy runtime pin, or the crate dependency boundary
 Related docs:
 - [ADR 0035](../adr/0035-alloy-provider-adapter.md)
 - [ADR 0038](../adr/0038-transaction-lifecycle-types.md)
@@ -19,7 +19,7 @@ This audit covers:
 
 - the `RpcAlloyProvider` public type and its `Provider` implementation
 - the `RpcAlloyProviderBuilder` HTTP typestate builder and builder error type
-- the opt-in `with_retry` seam and its `RetryConfig`
+- the opt-in `retry` seam and its `RetryConfig`
 - the `ProviderError` and `ProviderErrorClass` surfaces
 - conversion between `cow-sdk-core` domain types and Alloy RPC values
 - the `read_contract` ABI encode, dispatch, decode, and JSON result path
@@ -39,7 +39,7 @@ transport support, browser-wallet behavior, or transaction submission.
 | Trait coverage | `RpcAlloyProvider` implements all six `Provider` methods from `cow-sdk-core` | Conforms |
 | Negative capability boundary | Compile-fail tests assert the provider is not a `SigningProvider` or `Signer` | Conforms |
 | Builder typestate | `build()` is callable only on the HTTP-selected builder state; transport state stores the URL through `Redacted<reqwest::Url>` | Conforms |
-| RPC retry seam | Retry is off by default (one request per call); `with_retry(RetryConfig)` wraps the JSON-RPC client in `alloy`'s bounded backoff layer and transparently retries a transient rate-limited request | Conforms |
+| RPC retry seam | Retry is off by default (one request per call); `retry(RetryConfig)` wraps the JSON-RPC client in `alloy`'s bounded backoff layer and transparently retries a transient rate-limited request | Conforms |
 | Error classification | `ProviderError::class()` covers validation, transport, remote, cancelled, and internal failures | Conforms |
 | Credential redaction | Invalid URL errors carry no input detail, provider debug output redacts the transport, and transport details use `Redacted<String>` | Conforms |
 | `read_contract` | The adapter loads the ABI, resolves a single function, parses JSON arguments, ABI-encodes, dispatches `eth_call`, decodes the response, serializes supported JSON value strings, and rejects unsupported decoded shapes as validation errors | Conforms |
@@ -80,7 +80,7 @@ the Alloy receipt carries them; contract creation leaves `to` unset.
 Retry is opt-in. The default builder path issues each request once and surfaces
 a transient transport failure — such as a public-endpoint `429` — directly to
 the caller, preserving the runtime-neutral default. Passing a `RetryConfig`
-(maximum retry count and initial backoff) through `with_retry` wraps the
+(maximum retry count and initial backoff) through `retry` wraps the
 JSON-RPC client in `alloy`'s rate-limit backoff layer, which transparently
 retries a rate-limited request up to the configured attempt count. Only the
 SDK-owned `RetryConfig` is public; the underlying transport layer and its

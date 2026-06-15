@@ -5,8 +5,8 @@
 - Last reviewed: 2026-05-29
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: traits, providers, events, capability-split, semver
-- Anchors: Chain-RPC Runtime Neutrality (supporting)
-- Related: [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0029](0029-trait-evolution-extension-traits.md), [ADR 0048](0048-composable-conditional-order-framework.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md)
+- Anchors: Off-Chain Orchestration Boundary (primary); Chain-RPC Runtime Neutrality (supporting)
+- Related: [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0048](0048-composable-conditional-order-framework.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md)
 
 ## Decision
 
@@ -38,9 +38,10 @@ calls.
 
 The fail-closed, provider-free decoders (ADR 0054, ADR 0056) stay pure;
 `LogProvider` is the optional fetch seam that feeds them through
-`RawLog::data`. `LogProvider` is deliberately not an `*Ext` blanket trait:
-`get_logs` is a genuinely new RPC primitive not derivable from existing
-`Provider` methods, so the `*Ext` pattern (ADR 0029) does not apply.
+`RawLog::data`. `get_logs` is a genuinely new RPC primitive, not derivable from
+existing `Provider` methods, so it lands as its own opt-in capability supertrait
+in the `SigningProvider` mould (ADR 0024) rather than widening the base
+`Provider`.
 
 ## Why
 
@@ -48,21 +49,18 @@ The fail-closed, provider-free decoders (ADR 0054, ADR 0056) stay pure;
   `Provider` consumer can fetch logs by other means and hand `&RawLog::data` to
   a decoder. The fetch seam is therefore a separate, optional convenience, not a
   decoding dependency.
-- A capability supertrait keeps the core `Provider` minimal (ADR 0008) and lets
+- A capability supertrait keeps the core `Provider` minimal (ADR 0001) and lets
   a leaf crate bound `P: LogProvider` without depending on any concrete adapter
   — the exact shape the SDK already uses for `SigningProvider`. Read-only
   adapters are never forced to carry log-fetch wiring they cannot serve.
 - `get_logs` is a new primitive, not derivable from `get_code` / `call` /
-  `read_contract`; an `*Ext` blanket trait cannot express it. The
-  capability-supertrait is the ADR-0029-consistent home for a new primitive
-  (see the ADR 0029 amendment landed with this decision).
-- The core traits use native `async fn` in trait and are therefore not
-  object-safe, so the `dyn`-vtable rationale that motivated `*Ext` does not
-  apply here. The operative forward-compatibility basis is the semver patch gate
-  (ADR 0030) plus core minimalism.
+  `read_contract`, so the capability supertrait (the ADR-0024 mould) is its
+  home, keeping the base `Provider` minimal.
+- The operative forward-compatibility basis is the semver patch gate (ADR 0030)
+  plus core minimalism: the frozen `Provider` shape stays small and new
+  primitives arrive as opt-in supertraits.
 - Deciding before `0.1.0` (ADR 0030 skips semver-checks at `0.1.0`) bakes the
-  capability into the baseline now, so it never needs a post-freeze `*Ext`
-  retrofit.
+  capability into the baseline now, so it never needs a post-freeze retrofit.
 - `get_logs` is a single bounded call, honoring ADR 0048's off-chain
   orchestration boundary (no watcher loop, no rolling scan). The `event_scan`
   vocabulary is reserved for a future composable-specific fetch-and-decode
@@ -98,14 +96,11 @@ The fail-closed, provider-free decoders (ADR 0054, ADR 0056) stay pure;
   selection (number range or block hash) and never loops, polls, watches, or
   expands the selection.
 - A genuinely new RPC primitive lands on the core read trait (while pre-`0.1.0`)
-  or as a capability supertrait — never as a non-derivable blanket `*Ext`
-  (ADR 0029, amended).
+  or as its own opt-in capability supertrait (ADR 0024).
 
 ## Alternatives Rejected
 
-- An `*Ext` blanket trait for `get_logs`: not expressible, because `get_logs` is
-  not derivable from existing `Provider` methods; and the `*Ext` dyn-vtable
-  rationale does not apply to the non-object-safe core traits.
+
 - A `get_logs` method directly on `Provider`: universalizes a leaf capability
   onto every adapter and test mock; rejected unless log-fetch becomes a
   universal read.
@@ -120,7 +115,6 @@ The fail-closed, provider-free decoders (ADR 0054, ADR 0056) stay pure;
 - [Principles](../principles.md)
 - [Architecture](../architecture.md)
 - [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md)
-- [ADR 0029](0029-trait-evolution-extension-traits.md)
 - [ADR 0048](0048-composable-conditional-order-framework.md)
 - [ADR 0054](0054-onchain-order-event-decoding-is-fail-closed.md)
 - [ADR 0056](0056-settlement-event-decoding-is-fail-closed.md)

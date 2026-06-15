@@ -10,14 +10,14 @@ underlying byte width remain type-level distinct per
 [ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md), so a
 transform cannot silently consume the wrong domain's bytes.
 
-**Anchored by**: [ADR 0012](adr/0012-alloy-sol-bindings-and-registry-authority.md) (primary). Supporting: [ADR 0011](adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md), [ADR 0022](adr/0022-ecdsa-signature-v-normalization.md), [ADR 0023](adr/0023-legacy-compatibility-shim-removal.md), [ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md).
+**Anchored by**: [ADR 0012](adr/0012-alloy-sol-bindings-and-registry-authority.md) (primary). Supporting: [ADR 0011](adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md), [ADR 0022](adr/0022-ecdsa-signature-v-normalization.md), [ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md).
 
 ## Explicit Runtime Boundaries
 
 Pure transform crates do not perform hidden HTTP, RPC, GraphQL, or pinning I/O.
 Runtime interaction belongs in explicit clients and adapters.
 
-**Anchored by**: [ADR 0010](adr/0010-runtime-neutral-async-and-transport-posture.md) (primary). Supporting: [ADR 0019](adr/0019-http-transport-sole-dispatch.md).
+**Anchored by**: [ADR 0010](adr/0010-runtime-neutral-async-and-transport-posture.md) (primary). Supporting: [ADR 0055](adr/0055-bounded-response-reads.md).
 
 ## Thin Facade, Real Crate Boundaries
 
@@ -25,7 +25,7 @@ Runtime interaction belongs in explicit clients and adapters.
 Leaf crates own transport, orchestration, browser integration, and other
 specialized behavior.
 
-**Anchored by**: [ADR 0001](adr/0001-multi-crate-sdk-family-with-thin-facade.md) (primary). Supporting: [ADR 0002](adr/0002-dedicated-trading-orchestration-crate.md), [ADR 0003](adr/0003-separate-read-only-subgraph-crate.md), [ADR 0008](adr/0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md).
+**Anchored by**: [ADR 0001](adr/0001-multi-crate-sdk-family-with-thin-facade.md) (primary). Supporting: [ADR 0002](adr/0002-dedicated-trading-orchestration-crate.md), [ADR 0003](adr/0003-separate-read-only-subgraph-crate.md), [ADR 0062](adr/0062-internal-shared-test-support-crate.md), [ADR 0063](adr/0063-published-consumer-test-doubles-crate.md).
 
 ## Instance-Scoped Configuration
 
@@ -52,24 +52,13 @@ source-lock-pinned OpenAPI inventory, not from hand-written prior memory.
 
 **Anchored by**: [ADR 0011](adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md) (primary). Supporting: [ADR 0005](adr/0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0015](adr/0015-client-side-order-bounds-validator.md), [ADR 0016](adr/0016-split-sell-and-buy-token-balance-enums.md), [ADR 0017](adr/0017-typed-orderbook-rejection-parser.md), [ADR 0018](adr/0018-typed-app-data-merge.md), [ADR 0021](adr/0021-orderbook-total-fee-policy.md), [ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md), [ADR 0059](adr/0059-hash-concrete-orderdata-directly.md), [ADR 0060](adr/0060-uniform-error-classification.md), [ADR 0061](adr/0061-wasm-abi-receiver-pay-to-owner.md), [ADR 0067](adr/0067-idiomatic-accessor-naming.md).
 
-## Type The Lifecycle
-
-Public transaction APIs name the lifecycle state they actually observe.
-Signer-backed submission returns `TransactionBroadcast`, which carries only the
-broadcast hash. Provider receipt lookup returns `TransactionReceipt`, which may
-carry mined execution status, block, gas, sender, and recipient fields when the
-runtime exposes them. Submission must not hide implicit receipt polling behind a
-hash-shaped return value.
-
-**Anchored by**: [ADR 0038](adr/0038-transaction-lifecycle-types.md) (primary). Supporting: [ADR 0010](adr/0010-runtime-neutral-async-and-transport-posture.md), [ADR 0024](adr/0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0029](adr/0029-trait-evolution-extension-traits.md).
-
 ## Additive Optional Ecosystems
 
 Optional capabilities grow through leaf crates and feature-gated additions.
 Browser-runtime behavior, provider-specific behavior, and future capability
 families do not silently widen the default facade contract.
 
-**Anchored by**: [ADR 0008](adr/0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md) (primary). Supporting: [ADR 0004](adr/0004-feature-gated-browser-wallet-sidecar.md), [ADR 0007](adr/0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md), [ADR 0065](adr/0065-canonical-browser-wallet-example.md).
+**Anchored by**: [ADR 0001](adr/0001-multi-crate-sdk-family-with-thin-facade.md) (primary). Supporting: [ADR 0007](adr/0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md), [ADR 0065](adr/0065-canonical-browser-wallet-example.md).
 
 ## Sole Construction Seam
 
@@ -138,7 +127,7 @@ The canonical EVM primitive layer is `alloy_primitives` and the canonical
 EIP-712 / Solidity-binding layer is `alloy_sol_types` per
 [ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md).
 
-**Anchored by**: [ADR 0012](adr/0012-alloy-sol-bindings-and-registry-authority.md) (primary). Supporting: [ADR 0020](adr/0020-ethflow-owner-threading.md), [ADR 0022](adr/0022-ecdsa-signature-v-normalization.md), [ADR 0023](adr/0023-legacy-compatibility-shim-removal.md), [ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md), [ADR 0054](adr/0054-onchain-order-event-decoding-is-fail-closed.md).
+**Anchored by**: [ADR 0012](adr/0012-alloy-sol-bindings-and-registry-authority.md) (primary). Supporting: [ADR 0020](adr/0020-ethflow-owner-threading.md), [ADR 0022](adr/0022-ecdsa-signature-v-normalization.md), [ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md), [ADR 0054](adr/0054-onchain-order-event-decoding-is-fail-closed.md).
 
 **Operational doctrine**: [Alloy Doctrine](alloy-doctrine.md) — the
 three-bucket classification (ALWAYS-ALLOY, COW-OWNED, BOUNDARY-ADAPTER)
@@ -182,11 +171,12 @@ SDK-constructed response DTOs and EIP-712 protocol wire structs may carry
 request and configuration structs do not: they expose a `new()` plus `with_*()`
 builder, so additive fields land through the builder without blocking the
 literal construction and exhaustive matching those input types exist for.
-Public traits evolve through extension traits (the `*Ext` pattern) rather than
-silently adding methods. Adding `#[must_use]` and `# Errors` doc sections to
+Frozen public chain-RPC traits grow new primitives through opt-in capability
+supertraits (`SigningProvider`, `LogProvider`) rather than by silently widening
+the base trait. Adding `#[must_use]` and `# Errors` doc sections to
 fallible public APIs is a release-gating lint.
 
-**Anchored by**: [ADR 0031](adr/0031-wire-dto-openapi-driven-with-order-auction-order-split.md) (primary). Supporting: [ADR 0027](adr/0027-post-quantum-signing-absorption-plan.md), [ADR 0029](adr/0029-trait-evolution-extension-traits.md).
+**Anchored by**: [ADR 0031](adr/0031-wire-dto-openapi-driven-with-order-auction-order-split.md) (primary). Supporting: [ADR 0027](adr/0027-post-quantum-signing-absorption-plan.md).
 
 ## Credential Redaction by Construction
 
@@ -250,17 +240,3 @@ belongs to applications and services built on top of the SDK primitives.
 **Required**: yes.
 
 **Anchored by**: [ADR 0048](adr/0048-composable-conditional-order-framework.md) (primary). Supporting: [ADR 0010](adr/0010-runtime-neutral-async-and-transport-posture.md), [ADR 0024](adr/0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0050](adr/0050-eip1271-signature-blob-encoding.md).
-
-## First-Class, Bounded Test Support
-
-Test support is designed, not improvised. Shared internal test helpers live in a
-single unpublished, dev-only crate (`cow-sdk-test-utils`, `publish = false`)
-consumed only through `[dev-dependencies]`, so they never enter a published
-dependency graph. Consumer-facing test doubles for the public trait seams ship as
-a published crate (`cow-sdk-test`) built only on the public API and held to the
-same panic-free bar as production code, re-exported behind the facade `testing`
-feature. A published crate never depends on an unpublished one, and building the
-consumer doubles on the public surface alone continuously proves those seams are
-implementable from outside the workspace.
-
-**Anchored by**: [ADR 0063](adr/0063-published-consumer-test-doubles-crate.md) (primary). Supporting: [ADR 0062](adr/0062-internal-shared-test-support-crate.md), [ADR 0008](adr/0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md), [ADR 0033](adr/0033-minimum-viable-panic-surface.md).

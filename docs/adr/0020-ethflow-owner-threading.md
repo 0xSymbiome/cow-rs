@@ -1,6 +1,6 @@
 # ADR 0020: EthFlow Transaction Bundle Carries The Signer-Derived Owner For Pre-HTTP Validation
 
-- Status: Accepted (amended)
+- Status: Accepted
 - Date: 2026-04-22
 - Last reviewed: 2026-06-11
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
@@ -93,6 +93,11 @@ the signer.
   change inside `post_sell_native_currency_order` that passes
   `tx.from` (the owner) as the validation owner. No change to the
   payout semantics or the EthFlow transaction encoding.
+- Bundle shape: `EthFlowTransaction.transaction` is a fully-populated
+  `cow_sdk_trading::PreparedTransaction { to, data, value, gas_limit }`
+  (convertible into a `TransactionRequest` via `From`); `eth_flow_transaction`
+  and `post_sell_native_currency_order` are single async entry points bounded on
+  `cow_sdk_core::Signer`.
 - Construction-time receiver invariant:
   `cow_sdk_contracts::EthFlowOrderData::new` and
   `EthFlowOrderData::from_unsigned_order` return
@@ -152,30 +157,3 @@ the signer.
 
 - [Trading EthFlow Owner Identity Audit](../audit/trading-ethflow-owner-identity-audit.md)
 - [Contract Bindings Parity Audit](../audit/contract-bindings-parity-audit.md)
-
-## Amendment 2026-05-22: canonical primitive layer (per ADR 0052)
-
-The `from: cow_sdk_core::Address` field on `EthFlowTransaction` and the
-`Address`-typed `from` parameter on `EthFlowTransaction::new` resolve
-through the cow-owned `#[repr(transparent)]` newtype around
-`alloy_primitives::Address` per
-[ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md). The
-owner identity carried onto the bundle and read by the native-currency
-submission seam preserves the lowercase `0x`-prefixed hex wire form
-through the cow-owned `Display`/`Serialize`/`Deserialize` impls on
-`Address`.
-
-## Amendment 2026-05-26: single-async-entry EthFlow submission surface
-
-`eth_flow_transaction` and `post_sell_native_currency_order` are
-single async entry points bounded on `cow_sdk_core::Signer`.
-The previous sync-bounded `eth_flow_transaction` companion is
-removed. The `EthFlowTransaction` bundle shape and the
-owner-threading invariant are unchanged.
-
-## Amendment 2026-06-11: the bundle carries a `PreparedTransaction`
-
-The `EthFlowTransaction.transaction` field is the fully-populated
-`cow_sdk_trading::PreparedTransaction { to, data, value, gas_limit }`
-(convertible into a `TransactionRequest` via `From`); the owner-threading
-invariant and the `from` field are unchanged.

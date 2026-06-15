@@ -1,6 +1,6 @@
 # ADR 0010: Runtime-Neutral Async And Transport Posture
 
-- Status: Accepted (amended)
+- Status: Accepted
 - Date: 2026-04-17
 - Last reviewed: 2026-06-11
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
@@ -54,6 +54,11 @@ to compose and review.
 - Validation and review: reqwest error conversions classify through upstream
   predicates and call `without_url()` before wrapping; `tracing` fields never
   carry secrets.
+- Async-trait ergonomics: the seam-owning crates (`cow-sdk-trading`,
+  `cow-sdk-signing`) re-export `async_trait`, so implementors of their
+  `Arc<dyn …>` seam traits add no direct `async-trait` dependency; native-only
+  implementors use plain `#[async_trait]`, and the dual-gate `cfg_attr` pair is
+  needed only for code compiled for both native and `wasm32`.
 - Cost: the shared `CancellationToken`, `Cancellable` combinator, target-gated
   transport adapters, and string schema versioning add small surface area to
   preserve runtime neutrality.
@@ -75,18 +80,9 @@ to compose and review.
 - [Performance](../performance.md)
 - [Verification Guide](../verification.md)
 - [ADR 0013](0013-http-transport-injection-and-typestate-builders.md)
-- See also: ADR 0024, ADR 0029, ADR 0030, ADR 0039, ADR 0040, and ADR 0041.
+- See also: ADR 0024, ADR 0030, ADR 0039, ADR 0040, and ADR 0041.
 
 **Proven by:**
 
 - [Cooperative Cancellation Contract Audit](../audit/cooperative-cancellation-contract-audit.md)
 - [Credential Surface Contract Hygiene Audit](../audit/credential-surface-contract-hygiene-audit.md)
-
-## Amendment 2026-06-11: seam-owning crates re-export `async_trait`
-
-`cow-sdk-trading` and `cow-sdk-signing` — the crates owning the `Arc<dyn …>`
-seam traits (`SlippageSuggester`, `EthFlowOrderExistsChecker`, `Eip1271Signer`)
-— re-export `async_trait::async_trait`, so implementors add no direct
-`async-trait` dependency. Native-only implementors use the plain
-`#[async_trait]` attribute; the dual-gate `cfg_attr` pair recorded above is
-required only for code that compiles for both native and wasm32 targets.

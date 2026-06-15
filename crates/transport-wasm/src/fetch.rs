@@ -61,9 +61,8 @@
 // documented above is part of the cow public API; the alloy
 // ecosystem does not own this seam.
 //
-// ADR: docs/adr/0010-runtime-neutral-async-and-transport-posture.md
-// (lines 19-31),
-// docs/adr/0046-transport-policy-js-exposure.md (lines 25-31).
+// ADR: docs/adr/0010-runtime-neutral-async-and-transport-posture.md,
+// docs/adr/0046-transport-policy-js-exposure.md.
 // Doctrine: docs/alloy-doctrine.md, Bucket 2 row for Browser
 // `FetchTransport` with `AbortController` lifecycle.
 // Enforced by cargo check-source-fences (xtask/src/policy/fences.rs).
