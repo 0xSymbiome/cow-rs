@@ -15,6 +15,7 @@
 //! binary is dispatch only; every capability lives here so the test suite
 //! exercises the same code paths CI runs through the cargo aliases.
 
+pub mod changelog;
 pub mod docs;
 pub mod parity;
 pub mod policy;

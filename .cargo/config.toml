@@ -21,6 +21,7 @@ run-deterministic-examples = "run --quiet -p xtask -- policy run-deterministic-e
 
 # Workspace maintenance tasks (xtask member).
 xtask = "run --quiet -p xtask --"
+changelog = "run --quiet -p xtask -- changelog"
 docs-agree = "run --quiet -p xtask -- docs agree"
 parity-validate = "run --quiet -p xtask -- parity validate"
 parity-vendor-openapi = "run --quiet -p xtask -- parity vendor-openapi"

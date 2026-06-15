@@ -9,6 +9,7 @@ use std::path::PathBuf;
 use anyhow::Result;
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use serde_json::json;
+use xtask::changelog;
 use xtask::docs::{agree, audit_index};
 use xtask::parity::{self, openapi_coverage, registry_confirm, sync, vendor_openapi};
 use xtask::policy::{
@@ -39,6 +40,8 @@ enum Commands {
     /// Documentation-agreement gates.
     #[command(subcommand)]
     Docs(DocsCommand),
+    /// Regenerate CHANGELOG.md from conventional commits via git-cliff.
+    Changelog(changelog::Args),
 }
 
 #[derive(Debug, Subcommand)]
@@ -166,6 +169,7 @@ fn main() -> Result<()> {
         Commands::Policy(cli) => run_policy(cli),
         Commands::Docs(DocsCommand::Agree(args)) => agree::run(&args),
         Commands::Docs(DocsCommand::AuditIndex(args)) => audit_index::run(&args),
+        Commands::Changelog(args) => changelog::run(&args),
     }
 }
 
