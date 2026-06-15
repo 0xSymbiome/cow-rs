@@ -1,7 +1,7 @@
 # WASM Performance Budget Audit
 
 Status: Current
-Last reviewed: 2026-06-01
+Last reviewed: 2026-06-15
 Owning surface: `cow-sdk-wasm` release profile, wasm optimization pass, flavor build outputs, and size-budget gate
 Refresh trigger: Changes to wasm feature flavors, package build scripts, release profile size settings, wasm optimization flags, package export targets, or measured size budgets; Cloudflare Workers compressed-size limit changes
 Related docs:

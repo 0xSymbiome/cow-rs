@@ -476,6 +476,10 @@ sections below describe the public contract a `0.1.0` consumer receives.
   `uploadAppData` route through the content-addressed-write path, and
   `decodeSettlementLog` / `decodeEthFlowLog` dispatch to the fail-closed
   contracts decoders without network access.
+- The unsigned-transaction builders return a `TransactionRequestDto` for hosts
+  that own submission: `buildPresignTx`, `buildCancelOrderTx`,
+  `buildSellNativeCurrencyTx`, and `buildApprovalTx`, completing the
+  read-allowance-then-approve path alongside `getCowProtocolAllowance`.
 - The TypeScript-callable `WasmError` maps every `OrderbookError` and
   `TradingError` through the shared `ErrorClass`, projects the retry verdict to
   JavaScript as `retryable` plus optional `retryAfterMs`, and carries the coarse

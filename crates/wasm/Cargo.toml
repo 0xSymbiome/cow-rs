@@ -51,21 +51,6 @@ flavor-default = [
     "trading",
     "subgraph",
 ]
-flavor-orderbook = [
-    "orderbook",
-    "signing",
-    "cancellation",
-    "transport-policy",
-]
-flavor-signing = ["signing"]
-flavor-cloudflare = [
-    "orderbook",
-    "signing",
-    "app-data",
-    "cancellation",
-    "transport-policy",
-    "trading",
-]
 tracing = ["dep:tracing"]
 
 [dependencies]
@@ -94,7 +79,7 @@ serde-wasm-bindgen.workspace = true
 tsify.workspace = true
 wasm-bindgen.workspace = true
 wasm-bindgen-futures.workspace = true
-web-sys = { workspace = true, features = ["AbortController", "AbortSignal", "EventTarget", "Headers", "Response", "console"] }
+web-sys = { workspace = true, features = ["AbortController", "AbortSignal", "EventTarget", "console"] }
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test.workspace = true

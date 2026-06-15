@@ -230,7 +230,7 @@ async fn fetch_doc_from_hex_with_adapter(
     ipfs_uri: Option<&str>,
     adapter: &IpfsHttpAdapter,
 ) -> Result<JsValue, JsValue> {
-    let document = cow_sdk_app_data::fetch_doc_from_app_data_hex(app_data_hex, adapter, ipfs_uri)
+    let document = pure::app_data::fetch_doc_from_app_data_hex(app_data_hex, adapter, ipfs_uri)
         .await
         .map_err(|error| WasmError::from(error).into_js())?;
     to_js_value(&WasmEnvelope::v1(AppDataDocDto::from(document)))

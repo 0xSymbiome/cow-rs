@@ -82,7 +82,6 @@ request: CowFetchRequest,
 ) => Promise<CowFetchResponse> | CowFetchResponse;
 
 export type HttpTransportConfig =
-| { kind: "fetch"; fetch?: typeof globalThis.fetch }
 | { kind: "callback"; callback: CowFetchCallback };
 
 
@@ -245,6 +244,28 @@ export interface ValidationResultDto {
      * Errors when validation failed.
      */
     errors?: string;
+}
+
+/**
+ * Approval-transaction helper parameters.
+ *
+ * The chain and environment are taken from the `TradingClient`, matching the
+ * other transaction builders; only the token, amount, and an optional
+ * vault-relayer deployment override are supplied per call.
+ */
+export interface ApprovalParametersInput {
+    /**
+     * ERC-20 token address to approve.
+     */
+    tokenAddress: string;
+    /**
+     * Approval amount as a base-unit decimal string.
+     */
+    amount: string;
+    /**
+     * Optional vault-relayer deployment override.
+     */
+    vaultRelayerOverride?: string;
 }
 
 /**
@@ -556,7 +577,7 @@ export type Hash32 = string;
 /**
  * JS-visible typed error envelope for every wasm export.
  */
-export type WasmError = { kind: "invalidInput"; schemaVersion: SchemaVersion; message: string; field?: string } | { kind: "unknownEnumValue"; schemaVersion: SchemaVersion; message: string; field: string; value: string } | { kind: "unsupportedChain"; schemaVersion: SchemaVersion; message: string; chainId: number } | { kind: "walletRequest"; schemaVersion: SchemaVersion; method: string; code?: number; message: string; data?: Value } | { kind: "walletTimeout"; schemaVersion: SchemaVersion; message: string; timeoutMs: number } | { kind: "transport"; schemaVersion: SchemaVersion; class: string; message: string; status?: number; headers?: [string, string][]; body?: string } | { kind: "orderbook"; schemaVersion: SchemaVersion; code?: string; category?: OrderBookRejectionCategoryDto; message: string; retryable?: boolean; retryAfterMs?: number } | { kind: "subgraph"; schemaVersion: SchemaVersion; message: string } | { kind: "signing"; schemaVersion: SchemaVersion; message: string } | { kind: "appData"; schemaVersion: SchemaVersion; class?: string; message: string } | { kind: "forbiddenInteraction"; schemaVersion: SchemaVersion; message: string; target: string; reason: string } | { kind: "cancelled"; schemaVersion: SchemaVersion; message: string } | { kind: "internal"; schemaVersion: SchemaVersion; message: string } | { kind: "__unknown"; schemaVersion: SchemaVersion; message: string; raw: Value };
+export type WasmError = { kind: "invalidInput"; schemaVersion: SchemaVersion; message: string; field?: string } | { kind: "unknownEnumValue"; schemaVersion: SchemaVersion; message: string; field: string; value: string } | { kind: "unsupportedChain"; schemaVersion: SchemaVersion; message: string; chainId: number } | { kind: "walletRequest"; schemaVersion: SchemaVersion; method: string; code?: number; message: string } | { kind: "walletTimeout"; schemaVersion: SchemaVersion; message: string; timeoutMs: number } | { kind: "transport"; schemaVersion: SchemaVersion; class: string; message: string; status?: number; headers?: [string, string][]; body?: string } | { kind: "orderbook"; schemaVersion: SchemaVersion; code?: string; category?: OrderBookRejectionCategoryDto; message: string; retryable?: boolean; retryAfterMs?: number } | { kind: "subgraph"; schemaVersion: SchemaVersion; message: string } | { kind: "signing"; schemaVersion: SchemaVersion; message: string } | { kind: "appData"; schemaVersion: SchemaVersion; class?: string; message: string } | { kind: "cancelled"; schemaVersion: SchemaVersion; message: string } | { kind: "internal"; schemaVersion: SchemaVersion; message: string } | { kind: "__unknown"; schemaVersion: SchemaVersion; message: string; raw: Value };
 
 /**
  * Jitter strategy accepted by JS client constructors.
@@ -2078,19 +2099,6 @@ export class OrderBookClient {
      */
     getOrders(owner: string, pagination?: PaginationOptions | null, options?: SdkClientOptions | null): Promise<WasmEnvelope<OrderDto[]>>;
     /**
-     * Fetches orders owned by an address.
-     *
-     * This compatibility method is equivalent to `getOrders` and accepts the
-     * same pagination options. New TypeScript code can use `getOrders`.
-     *
-     * @param owner Owner address to query.
-     * @param pagination Optional offset and limit.
-     * @param options Optional per-call cancellation and timeout settings.
-     * @returns A versioned envelope containing matching orders.
-     * @throws CowError for invalid owner, transport failure, timeout, or cancellation.
-     */
-    getOrdersByOwner(owner: string, pagination?: PaginationOptions | null, options?: SdkClientOptions | null): Promise<WasmEnvelope<OrderDto[]>>;
-    /**
      * Fetches a price quote from the orderbook API.
      *
      * The request is converted to the typed orderbook quote request and sent
@@ -2179,6 +2187,19 @@ export class OrderBookClient {
 export class TradingClient {
     free(): void;
     [Symbol.dispose](): void;
+    /**
+     * Builds the ERC-20 approval transaction for the CoW Protocol vault relayer.
+     *
+     * The SDK encodes the unsigned `approve` transaction; the JavaScript host
+     * owns submission through its own wallet. This completes the
+     * read-allowance-then-approve path alongside `getCowProtocolAllowance`.
+     *
+     * @param params Approval parameters DTO (token, amount, optional vault-relayer override).
+     * @param options Optional per-call cancellation and timeout settings.
+     * @returns A versioned envelope containing the unsigned approval transaction request.
+     * @throws CowError when the token, amount, or vault-relayer override is invalid.
+     */
+    buildApprovalTx(params: ApprovalParametersInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<TransactionRequestDto>>;
     /**
      * Builds the transaction for a native-currency sell order.
      *
@@ -2661,7 +2682,6 @@ export interface InitOutput {
     readonly orderbookclient_getNativePrice: (a: number, b: number, c: number, d: number) => number;
     readonly orderbookclient_getOrder: (a: number, b: number, c: number, d: number) => number;
     readonly orderbookclient_getOrders: (a: number, b: number, c: number, d: number, e: number) => number;
-    readonly orderbookclient_getOrdersByOwner: (a: number, b: number, c: number, d: number, e: number) => number;
     readonly orderbookclient_getQuote: (a: number, b: number, c: number) => number;
     readonly orderbookclient_getTrades: (a: number, b: number, c: number) => number;
     readonly orderbookclient_new: (a: number, b: number) => void;
@@ -2677,6 +2697,7 @@ export interface InitOutput {
     readonly signOrderWithEip1271: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
     readonly signOrderWithTypedDataSigner: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
     readonly supportedChainIds: (a: number) => void;
+    readonly tradingclient_buildApprovalTx: (a: number, b: number, c: number) => number;
     readonly tradingclient_buildSellNativeCurrencyTx: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
     readonly tradingclient_getCowProtocolAllowance: (a: number, b: number, c: number, d: number) => number;
     readonly tradingclient_getQuote: (a: number, b: number, c: number) => number;
@@ -2687,10 +2708,9 @@ export interface InitOutput {
     readonly tradingclient_postSwapOrderWithEip1271: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
     readonly validateAppDataDoc: (a: number, b: number) => void;
     readonly wasmVersion: (a: number) => void;
-    readonly __wasm_bindgen_func_elem_6568: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_6576: (a: number, b: number, c: number, d: number) => void;
-    readonly __wasm_bindgen_func_elem_1375: (a: number, b: number, c: number) => number;
-    readonly __wasm_bindgen_func_elem_5802: (a: number, b: number) => void;
+    readonly __wasm_bindgen_func_elem_5802: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_5811: (a: number, b: number, c: number, d: number) => void;
+    readonly __wasm_bindgen_func_elem_5722: (a: number, b: number) => void;
     readonly __wbindgen_export: (a: number, b: number) => number;
     readonly __wbindgen_export2: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_export3: (a: number) => void;

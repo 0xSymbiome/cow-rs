@@ -66,13 +66,12 @@ fn wallet_request_variant_round_trips() {
         "kind": "walletRequest",
         "method": "eth_signTypedData_v4",
         "code": 4001,
-        "message": "user rejected",
-        "data": { "reason": "denied" }
+        "message": "user rejected"
     }));
 
     assert_eq!(value["kind"], "walletRequest");
     assert_eq!(value["code"], 4001);
-    assert_eq!(value["data"]["reason"], "denied");
+    assert_eq!(value["message"], "user rejected");
 }
 
 #[wasm_bindgen_test]
@@ -140,23 +139,6 @@ fn orderbook_subgraph_signing_and_app_data_variants_round_trip() {
     assert_eq!(subgraph["kind"], "subgraph");
     assert_eq!(signing["kind"], "signing");
     assert_eq!(app_data["kind"], "appData");
-}
-
-#[wasm_bindgen_test]
-fn forbidden_interaction_variant_round_trips() {
-    let value = round_trip(json!({
-        "schemaVersion": "v1",
-        "kind": "forbiddenInteraction",
-        "message": "Forbidden settlement interaction target `0x1111111111111111111111111111111111111111`. Remove this target from settlement interactions before signing or submitting the order.",
-        "target": "0x1111111111111111111111111111111111111111",
-        "reason": "forbidden settlement interaction target"
-    }));
-
-    assert_eq!(value["kind"], "forbiddenInteraction");
-    assert_eq!(
-        value["target"],
-        "0x1111111111111111111111111111111111111111"
-    );
 }
 
 #[wasm_bindgen_test]

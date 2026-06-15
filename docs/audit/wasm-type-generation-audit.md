@@ -1,7 +1,7 @@
 # WASM Type Generation Audit
 
 Status: Current
-Last reviewed: 2026-06-09
+Last reviewed: 2026-06-15
 Owning surface: `cow-sdk-wasm` DTO exports, tsify-derived TypeScript declarations, and npm declaration snapshots
 Refresh trigger: Changes to exported DTOs, `tsify` usage, wasm-pack targets, declaration snapshots, or package export targets
 Related docs:
@@ -19,7 +19,8 @@ This audit covers:
 
 - tsify-derived TypeScript declarations for wasm-bindgen exports
 - host gating that keeps wasm-bindgen and tsify out of host-safe pure modules
-- declaration snapshots for web, bundler, and nodejs wasm-pack targets
+- one raw declaration snapshot per package flavor, asserted against every
+  wasm-pack target's generated declaration
 - facade declaration snapshots for public package flavors
 - the package export-map gate that prevents stale declaration targets
 
@@ -32,7 +33,7 @@ committed e2e fixtures.
 | --- | --- | --- |
 | Host gating | Pure helper modules compile natively without wasm-bindgen, JsValue, or tsify-derived public types | Conforms |
 | DTO generation | Cross-ABI DTOs are generated from Rust types and exposed as TypeScript declarations | Conforms |
-| Snapshot gate | Committed declarations for web, bundler, and nodejs targets detect export drift | Conforms |
+| Snapshot gate | One committed declaration per flavor detects export drift and asserts every wasm-pack target emits the same loader-independent type contract | Conforms |
 | Facade snapshots | Public facade declarations hide raw wasm-bindgen internals and callback registry handles | Conforms |
 | Package exports | Every declared npm export target exists and declaration files include required lib references | Conforms |
 | Generated metadata | wasm-pack README and package metadata are removed from nested dist targets before verification | Conforms |
@@ -55,11 +56,16 @@ input carries the log `topics` and `data` as hex strings.
 
 ### Snapshot Gate
 
-The committed `crates/wasm/snapshots/raw/` declarations for web, bundler, and
-nodejs represent the public TypeScript contract for default targets. A
-declaration that uses `[Symbol.dispose]` must include the `esnext.disposable`
-reference so editor and TypeScript compiler defaults do not report false
-errors.
+The committed `crates/wasm/snapshots/raw/` declarations represent the public
+TypeScript contract, with one snapshot per flavor (`default`, `orderbook`,
+`signing`, `cloudflare`). wasm-bindgen emits a byte-identical `.d.ts` for every
+wasm-pack target of a flavor — the type surface is loader-independent, while the
+JavaScript loader glue and `.wasm` packaging are what differ per target — so the
+workflow diffs every target's generated declaration against the single
+per-flavor snapshot. That both detects export drift and asserts the targets
+agree; a future per-target divergence fails closed. A declaration that uses
+`[Symbol.dispose]` must include the `esnext.disposable` reference so editor and
+TypeScript compiler defaults do not report false errors.
 
 The committed `crates/wasm/snapshots/facade/` declarations represent the
 consumer-facing package surface. They are checked separately from raw
@@ -92,13 +98,10 @@ Primary implementation points:
 - `crates/wasm/src/exports/dto/` (domain DTO modules)
 - `crates/wasm/src/exports/callbacks.rs`
 - `crates/wasm/src/exports/envelope.rs`
-- `crates/wasm/snapshots/raw/default-bundler.d.ts`
-- `crates/wasm/snapshots/raw/default-nodejs.d.ts`
-- `crates/wasm/snapshots/raw/orderbook-bundler.d.ts`
-- `crates/wasm/snapshots/raw/orderbook-nodejs.d.ts`
-- `crates/wasm/snapshots/raw/signing-bundler.d.ts`
-- `crates/wasm/snapshots/raw/signing-nodejs.d.ts`
-- `crates/wasm/snapshots/raw/cloudflare-web.d.ts`
+- `crates/wasm/snapshots/raw/default.d.ts`
+- `crates/wasm/snapshots/raw/orderbook.d.ts`
+- `crates/wasm/snapshots/raw/signing.d.ts`
+- `crates/wasm/snapshots/raw/cloudflare.d.ts`
 - `crates/wasm/snapshots/facade/`
 - `crates/wasm/npm/scripts/build.sh`
 - `crates/wasm/npm/scripts/verify-exports.mjs`

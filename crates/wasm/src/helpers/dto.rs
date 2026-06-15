@@ -1,11 +1,8 @@
 //! Runtime-neutral DTOs shared by helper and wasm export layers.
 
-use std::collections::BTreeMap;
-
 use cow_sdk_app_data::{AppDataDoc, AppDataError, AppDataInfo};
 use cow_sdk_core::{
     Address, Amount, AppDataHash, BuyTokenDestination, OrderData, OrderKind, SellTokenSource,
-    TypedDataDomain, TypedDataField, TypedDataPayload, TypedDataTypes,
 };
 use cow_sdk_signing::GeneratedOrderId;
 use serde::{Deserialize, Serialize};
@@ -202,81 +199,6 @@ pub fn generated_order_uid_dto(generated: &GeneratedOrderId) -> GeneratedOrderUi
     }
 }
 
-/// Host-safe typed-data domain DTO.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TypedDataDomainDto {
-    /// Domain name.
-    pub name: String,
-    /// Domain version.
-    pub version: String,
-    /// Numeric chain id.
-    pub chain_id: u64,
-    /// Verifying contract address.
-    pub verifying_contract: String,
-}
-
-impl From<&TypedDataDomain> for TypedDataDomainDto {
-    fn from(value: &TypedDataDomain) -> Self {
-        Self {
-            name: value.name.clone(),
-            version: value.version.clone(),
-            chain_id: value.chain_id,
-            verifying_contract: value.verifying_contract.to_hex_string(),
-        }
-    }
-}
-
-/// Host-safe typed-data field DTO.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct TypedDataFieldDto {
-    /// Field name.
-    pub name: String,
-    /// Solidity field type.
-    #[serde(rename = "type")]
-    pub kind: String,
-}
-
-impl From<&TypedDataField> for TypedDataFieldDto {
-    fn from(value: &TypedDataField) -> Self {
-        Self {
-            name: value.name.clone(),
-            kind: value.kind.clone(),
-        }
-    }
-}
-
-/// Host-safe typed-data envelope with parsed JSON message.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TypedDataEnvelopeDto {
-    /// Domain metadata.
-    pub domain: TypedDataDomainDto,
-    /// Primary type.
-    pub primary_type: String,
-    /// Type map.
-    pub types: BTreeMap<String, Vec<TypedDataFieldDto>>,
-    /// Parsed message body.
-    pub message: Value,
-}
-
-impl TypedDataEnvelopeDto {
-    /// Converts a shared typed-data payload to a host-safe DTO.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`PureError`] when the canonical JSON message cannot be parsed.
-    pub fn from_payload(payload: &TypedDataPayload) -> Result<Self, PureError> {
-        Ok(Self {
-            domain: TypedDataDomainDto::from(&payload.domain),
-            primary_type: payload.primary_type.clone(),
-            types: convert_types(&payload.types),
-            message: serde_json::from_str(payload.message_json())
-                .map_err(|error| PureError::invalid("message", error.to_string()))?,
-        })
-    }
-}
-
 /// App-data result DTO.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -341,18 +263,6 @@ pub fn parse_address(field: &str, value: &str) -> Result<Address, PureError> {
 
 pub(crate) fn parse_amount(field: &str, value: &str) -> Result<Amount, PureError> {
     Amount::new(value).map_err(|error| PureError::invalid(field, error.to_string()))
-}
-
-fn convert_types(types: &TypedDataTypes) -> BTreeMap<String, Vec<TypedDataFieldDto>> {
-    types
-        .iter()
-        .map(|(name, fields)| {
-            (
-                name.clone(),
-                fields.iter().map(TypedDataFieldDto::from).collect(),
-            )
-        })
-        .collect()
 }
 
 #[cfg(test)]

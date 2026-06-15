@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use cow_sdk_core::{
     HttpTransport, Redacted, TransportError, TransportErrorClass, TransportResponse,
 };
-use js_sys::{Array, Function, Object, Promise, Reflect};
+use js_sys::{Function, Object, Reflect};
 use wasm_bindgen::{JsCast, closure::Closure, prelude::*};
 use wasm_bindgen_futures::JsFuture;
 
@@ -12,8 +12,7 @@ use crate::exports::{
     dto::CowFetchResponse,
     errors::WasmError,
     registry::{
-        FetchCallbackGuard, FetchCallbackKey, lookup_fetch_callback, register_fetch_adapter,
-        register_fetch_callback,
+        FetchCallbackGuard, FetchCallbackKey, lookup_fetch_callback, register_fetch_callback,
     },
 };
 
@@ -150,17 +149,6 @@ pub(crate) fn callback_fetch_transport(
     Ok((transport, guard))
 }
 
-pub(crate) fn fetch_adapter_transport(
-    fetch: Function,
-    timeout: Option<Duration>,
-    max_response_bytes: usize,
-) -> Result<(Arc<dyn HttpTransport + Send + Sync>, FetchCallbackGuard), JsValue> {
-    let guard = register_fetch_adapter(fetch)?;
-    let transport =
-        callback_fetch_transport_from_handle_id(guard.id(), timeout, max_response_bytes)?;
-    Ok((transport, guard))
-}
-
 fn callback_fetch_transport_from_handle_id(
     handle_id: FetchCallbackKey,
     timeout: Option<Duration>,
@@ -177,37 +165,20 @@ pub(crate) fn configured_fetch_transport(
     timeout: Option<Duration>,
     max_response_bytes: usize,
 ) -> Result<(Arc<dyn HttpTransport + Send + Sync>, FetchCallbackGuard), JsValue> {
-    let Some(transport) = optional_object(config, "transport")? else {
-        // An omitted `transport` defaults to the realm's global `fetch`,
-        // matching the Rust builders' default-transport terminals on both
-        // targets.
-        let fetch = global_fetch_function().ok_or_else(|| {
-            WasmError::invalid(
-                "transport",
-                "globalThis.fetch is unavailable; pass an explicit transport",
-            )
-            .into_js()
-        })?;
-        return fetch_adapter_transport(fetch, timeout, max_response_bytes);
-    };
+    // The npm facade adapts an omitted transport or a `{kind:"fetch"}` config to a
+    // `{kind:"callback"}` config in TypeScript (`internal.ts::adaptFetchToCallback`)
+    // before any Rust runs, so the supported boundary is callback-only and the wasm
+    // binary stays free of `web-sys` fetch response types. The raw class therefore
+    // requires an explicit callback transport.
+    let transport = optional_object(config, "transport")?.ok_or_else(|| {
+        WasmError::invalid("transport", "a callback transport is required").into_js()
+    })?;
     let kind = required_string(&transport, "kind")?;
 
     match kind.as_str() {
         "callback" => {
             let callback = required_function(&transport, "callback")?;
             callback_fetch_transport(callback, timeout, max_response_bytes)
-        }
-        "fetch" => {
-            let fetch = optional_function(&transport, "fetch")?
-                .or_else(global_fetch_function)
-                .ok_or_else(|| {
-                    WasmError::invalid(
-                        "transport.fetch",
-                        "globalThis.fetch is unavailable; pass an explicit fetch function",
-                    )
-                    .into_js()
-                })?;
-            fetch_adapter_transport(fetch, timeout, max_response_bytes)
         }
         other => Err(WasmError::invalid(
             "transport.kind",
@@ -284,16 +255,6 @@ fn required_function(config: &JsValue, field: &'static str) -> Result<Function, 
         .map_err(|_| WasmError::invalid(field, "expected a function").into_js())
 }
 
-fn optional_function(config: &JsValue, field: &'static str) -> Result<Option<Function>, JsValue> {
-    optional_value(config, field)?
-        .map(|value| {
-            value
-                .dyn_into::<Function>()
-                .map_err(|_| WasmError::invalid(field, "expected a function").into_js())
-        })
-        .transpose()
-}
-
 fn required_value(config: &JsValue, field: &'static str) -> Result<JsValue, JsValue> {
     optional_value(config, field)?
         .ok_or_else(|| WasmError::invalid(field, "missing required field").into_js())
@@ -318,94 +279,6 @@ fn parse_u32_field(value: JsValue, field: &'static str) -> Result<u32, JsValue> 
         return Err(WasmError::invalid(field, "expected an unsigned 32-bit integer").into_js());
     }
     Ok(number as u32)
-}
-
-fn global_fetch_function() -> Option<Function> {
-    Reflect::get(&js_sys::global(), &JsValue::from_str("fetch"))
-        .ok()
-        .and_then(|value| value.dyn_into::<Function>().ok())
-}
-
-pub(crate) fn dispatch_fetch_adapter(fetch: &Function, request: JsValue) -> JsValue {
-    let fetch = fetch.clone();
-    wasm_bindgen_futures::future_to_promise(
-        async move { fetch_adapter_response(fetch, request).await },
-    )
-    .into()
-}
-
-async fn fetch_adapter_response(fetch: Function, request: JsValue) -> Result<JsValue, JsValue> {
-    let url = required_string(&request, "url")?;
-    let init = Object::new();
-    set_if_present(&init, "method", &request, "method")?;
-    set_if_present(&init, "headers", &request, "headers")?;
-    set_if_present(&init, "body", &request, "body")?;
-    set_if_present(&init, "signal", &request, "signal")?;
-
-    let fetch_result = fetch.call2(&JsValue::NULL, &JsValue::from_str(&url), init.as_ref())?;
-    let fetch_promise = Promise::resolve(&fetch_result);
-    let response = JsFuture::from(fetch_promise).await?;
-    let response: web_sys::Response = response.dyn_into().map_err(|_| {
-        JsValue::from_str("fetch transport returned a value that is not a Response")
-    })?;
-    let status = response.status();
-    let status_text = response.status_text();
-    let headers = headers_to_object(response.headers())?;
-    let text = response.text()?;
-    let body = JsFuture::from(text).await?;
-    build_callback_response_object(status, &status_text, &headers, body)
-}
-
-fn build_callback_response_object(
-    status: u16,
-    status_text: &str,
-    headers: &Object,
-    body: JsValue,
-) -> Result<JsValue, JsValue> {
-    let dto = Object::new();
-    reflect_set(&dto, "status", &JsValue::from_f64(f64::from(status)))
-        .map_err(|error| JsValue::from_str(&error.to_string()))?;
-    if !status_text.is_empty() {
-        reflect_set(&dto, "statusText", &JsValue::from_str(status_text))
-            .map_err(|error| JsValue::from_str(&error.to_string()))?;
-    }
-    reflect_set(&dto, "headers", headers.as_ref())
-        .map_err(|error| JsValue::from_str(&error.to_string()))?;
-    reflect_set(&dto, "body", &body).map_err(|error| JsValue::from_str(&error.to_string()))?;
-    Ok(dto.into())
-}
-
-fn headers_to_object(headers: web_sys::Headers) -> Result<Object, JsValue> {
-    let object = Object::new();
-    for entry in Array::from(headers.as_ref()).iter() {
-        let pair = Array::from(&entry);
-        if pair.length() < 2 {
-            continue;
-        }
-        let Some(name) = pair.get(0).as_string() else {
-            continue;
-        };
-        let Some(value) = pair.get(1).as_string() else {
-            continue;
-        };
-        reflect_set(&object, &name, &JsValue::from_str(&value)).map_err(|error| {
-            JsValue::from_str(&format!("could not copy fetch response header: {error}"))
-        })?;
-    }
-    Ok(object)
-}
-
-fn set_if_present(
-    target: &Object,
-    target_key: &str,
-    source: &JsValue,
-    source_key: &'static str,
-) -> Result<(), JsValue> {
-    if let Some(value) = optional_value(source, source_key)? {
-        reflect_set(target, target_key, &value)
-            .map_err(|error| JsValue::from_str(&error.to_string()))?;
-    }
-    Ok(())
 }
 
 struct TimerGuard {

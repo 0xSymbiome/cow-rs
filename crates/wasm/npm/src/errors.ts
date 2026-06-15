@@ -27,7 +27,6 @@ export type CowError =
       method: string;
       code?: number;
       message: string;
-      data?: unknown;
     }
   | { schemaVersion: "v1"; kind: "walletTimeout"; message: string; timeoutMs: number }
   | {
@@ -55,7 +54,6 @@ export type CowError =
   | { schemaVersion: "v1"; kind: "subgraph"; message: string }
   | { schemaVersion: "v1"; kind: "signing"; message: string }
   | { schemaVersion: "v1"; kind: "appData"; class?: string; message: string }
-  | { schemaVersion: "v1"; kind: "forbiddenInteraction"; message: string; target: string; reason: string }
   | { schemaVersion: "v1"; kind: "cancelled"; message: string }
   | { schemaVersion: "v1"; kind: "internal"; message: string }
   | { schemaVersion: SchemaVersion; kind: "__unknown"; message: string; raw: unknown };
@@ -71,7 +69,6 @@ const knownKinds = new Set([
   "subgraph",
   "signing",
   "appData",
-  "forbiddenInteraction",
   "cancelled",
   "internal",
   "__unknown"
@@ -225,11 +222,6 @@ function withActionableMessage(error: CowError): CowError {
       return {
         ...error,
         message: `Wallet request timed out after ${error.timeoutMs} ms. Increase walletConfig.timeoutMs or ask the user to approve the wallet request before the timeout.`
-      };
-    case "forbiddenInteraction":
-      return {
-        ...error,
-        message: `Forbidden settlement interaction target \`${error.target}\`. Remove this target from settlement interactions before signing or submitting the order.`
       };
     case "cancelled":
       return cancelledError();

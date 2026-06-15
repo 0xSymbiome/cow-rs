@@ -5,14 +5,12 @@ use std::{
 };
 
 use js_sys::Function;
-use wasm_bindgen::{JsCast, closure::Closure, prelude::*};
+use wasm_bindgen::prelude::*;
 
 use crate::exports::errors::WasmError;
 
 const CALLBACK_KEY_RESERVED_INVALID: u32 = 0;
 const MAX_ALLOCATION_ATTEMPTS: u32 = 16;
-
-type FetchAdapterClosure = Closure<dyn FnMut(JsValue) -> JsValue>;
 
 thread_local! {
     static FETCH_CALLBACKS: RefCell<HashMap<FetchCallbackKey, CallbackEntry>> =
@@ -34,7 +32,6 @@ impl FetchCallbackKey {
 
 struct CallbackEntry {
     callback: Function,
-    _adapter: Option<FetchAdapterClosure>,
 }
 
 /// RAII registration guard for callback transports.
@@ -55,21 +52,7 @@ impl Drop for FetchCallbackGuard {
 }
 
 pub(crate) fn register_fetch_callback(callback: Function) -> Result<FetchCallbackGuard, JsValue> {
-    register_callback_entry(CallbackEntry {
-        callback,
-        _adapter: None,
-    })
-}
-
-pub(crate) fn register_fetch_adapter(fetch: Function) -> Result<FetchCallbackGuard, JsValue> {
-    let adapter = Closure::wrap(Box::new(move |request: JsValue| -> JsValue {
-        crate::exports::transport::dispatch_fetch_adapter(&fetch, request)
-    }) as Box<dyn FnMut(JsValue) -> JsValue>);
-    let callback = adapter.as_ref().unchecked_ref::<Function>().clone();
-    register_callback_entry(CallbackEntry {
-        callback,
-        _adapter: Some(adapter),
-    })
+    register_callback_entry(CallbackEntry { callback })
 }
 
 pub(crate) fn lookup_fetch_callback(id: FetchCallbackKey) -> Option<Function> {

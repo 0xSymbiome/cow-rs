@@ -287,3 +287,29 @@ impl AllowanceParametersInput {
         serde_json::to_value(self).map_err(WasmError::from)
     }
 }
+
+/// Approval-transaction helper parameters.
+///
+/// The chain and environment are taken from the `TradingClient`, matching the
+/// other transaction builders; only the token, amount, and an optional
+/// vault-relayer deployment override are supplied per call.
+#[cfg(feature = "trading")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+pub struct ApprovalParametersInput {
+    /// ERC-20 token address to approve.
+    pub token_address: String,
+    /// Approval amount as a base-unit decimal string.
+    pub amount: String,
+    /// Optional vault-relayer deployment override.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub vault_relayer_override: Option<String>,
+}
+
+#[cfg(feature = "trading")]
+impl ApprovalParametersInput {
+    pub(crate) fn into_value(self) -> Result<Value, WasmError> {
+        serde_json::to_value(self).map_err(WasmError::from)
+    }
+}

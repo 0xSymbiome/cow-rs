@@ -73,9 +73,6 @@ pub enum WasmError {
         code: Option<i64>,
         /// Redacted or callback-provided message.
         message: String,
-        /// Optional provider data.
-        #[serde(skip_serializing_if = "Option::is_none")]
-        data: Option<serde_json::Value>,
     },
     /// Wallet callback timeout.
     WalletTimeout {
@@ -152,17 +149,6 @@ pub enum WasmError {
         class: Option<String>,
         /// Redacted message.
         message: String,
-    },
-    /// Forbidden contract interaction target.
-    ForbiddenInteraction {
-        /// Error schema version.
-        schema_version: SchemaVersion,
-        /// Human-readable recovery guidance.
-        message: String,
-        /// Rejected target address.
-        target: String,
-        /// Human-readable reason.
-        reason: String,
     },
     /// Cooperative cancellation.
     Cancelled {
@@ -266,7 +252,6 @@ impl WasmError {
             method,
             code: None,
             message,
-            data: None,
         }
     }
 
@@ -274,10 +259,11 @@ impl WasmError {
     ///
     /// Per the redaction policy (ADR 0053), the provider-authored error
     /// `message` and `data` payload can echo caller secrets or RPC endpoint
-    /// tokens, so neither crosses the boundary. The structured `code` is the
-    /// safe, machine-actionable signal, and the human message is SDK-authored
-    /// guidance keyed off the standard provider code (for example the `-32601`
-    /// method-not-found hint).
+    /// tokens, so neither crosses the boundary: the message is replaced with
+    /// SDK-authored guidance and the provider `data` payload is dropped
+    /// entirely. The structured `code` is the safe, machine-actionable signal,
+    /// and the human message is keyed off the standard provider code (for
+    /// example the `-32601` method-not-found hint).
     pub(crate) fn wallet_from_code(method: impl Into<String>, code: Option<i64>) -> Self {
         let method = method.into();
         let message = wallet_request_message(&method, wallet_code_hint(code).to_owned());
@@ -286,7 +272,6 @@ impl WasmError {
             method,
             code,
             message,
-            data: None,
         }
     }
 

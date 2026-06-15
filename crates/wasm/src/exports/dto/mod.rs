@@ -50,8 +50,8 @@ pub use self::subgraph::SubgraphQueryInput;
 pub use self::trading::OrderTraderParametersInput;
 #[cfg(feature = "trading")]
 pub use self::trading::{
-    AllowanceParametersInput, LimitTradeParametersInput, OrderDataDto, OrderPostingResultDto,
-    PartnerFeeInput, PartnerFeePolicyInput, SwapParametersInput,
+    AllowanceParametersInput, ApprovalParametersInput, LimitTradeParametersInput, OrderDataDto,
+    OrderPostingResultDto, PartnerFeeInput, PartnerFeePolicyInput, SwapParametersInput,
 };
 pub use self::transport::{CowFetchRequest, CowFetchResponse};
 #[cfg(feature = "transport-policy")]

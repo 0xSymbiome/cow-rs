@@ -220,37 +220,6 @@ impl OrderBookClient {
         .await
     }
 
-    /// Fetches orders owned by an address.
-    ///
-    /// This compatibility method is equivalent to `getOrders` and accepts the
-    /// same pagination options. New TypeScript code can use `getOrders`.
-    ///
-    /// @param owner Owner address to query.
-    /// @param pagination Optional offset and limit.
-    /// @param options Optional per-call cancellation and timeout settings.
-    /// @returns A versioned envelope containing matching orders.
-    /// @throws CowError for invalid owner, transport failure, timeout, or cancellation.
-    #[wasm_bindgen(
-        js_name = "getOrdersByOwner",
-        unchecked_return_type = "WasmEnvelope<OrderDto[]>"
-    )]
-    pub async fn orders_by_owner(
-        &self,
-        owner: String,
-        #[wasm_bindgen(js_name = pagination)] pagination: Option<PaginationOptions>,
-        #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
-    ) -> Result<JsValue, JsValue> {
-        super::traced("wasm.orderbook.orders_by_owner", async move {
-            let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
-            let inner = orderbook_for_scope(&self.inner, &scope);
-            run_with_client_options(scope, async move {
-                orderbook_get_orders_by_owner(&inner, owner, pagination).await
-            })
-            .await
-        })
-        .await
-    }
-
     /// Fetches orders owned by an address with optional pagination.
     ///
     /// The owner address is validated before the request is dispatched. The

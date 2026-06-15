@@ -10,8 +10,9 @@ use cow_sdk_core::{
 };
 use cow_sdk_orderbook::{OrderbookApi, SigningScheme};
 use cow_sdk_trading::{
-    AllowanceParams, DEFAULT_GAS_LIMIT, LimitTradeParams, PostTradeAdditionalParams,
-    QuoteRequestOverride, QuoteResults, TradeAdvancedSettings, TradeParams, Trading,
+    AllowanceParams, ApprovalParams, DEFAULT_GAS_LIMIT, LimitTradeParams,
+    PostTradeAdditionalParams, QuoteRequestOverride, QuoteResults, TradeAdvancedSettings,
+    TradeParams, Trading,
 };
 use js_sys::Function;
 use wasm_bindgen::prelude::*;
@@ -22,10 +23,10 @@ use crate::exports::{
         signing_wallet_timeout_ms,
     },
     dto::{
-        AllowanceParametersInput, BuiltSellNativeCurrencyTxDto, ContractCallDto,
-        CowEip1271SignRequest, LimitTradeParametersInput, OrderInput, SwapParametersInput,
-        TransactionRequestDto, TypedDataEnvelopeDto, from_json_value, parse_chain, parse_order,
-        to_js_value, transport_policy_from_config,
+        AllowanceParametersInput, ApprovalParametersInput, BuiltSellNativeCurrencyTxDto,
+        ContractCallDto, CowEip1271SignRequest, LimitTradeParametersInput, OrderInput,
+        SwapParametersInput, TransactionRequestDto, TypedDataEnvelopeDto, from_json_value,
+        parse_chain, parse_order, to_js_value, transport_policy_from_config,
     },
     eip1271::ResolvedEip1271Provider,
     envelope::WasmEnvelope,
@@ -328,6 +329,37 @@ impl TradingClient {
         .await
     }
 
+    /// Builds the ERC-20 approval transaction for the CoW Protocol vault relayer.
+    ///
+    /// The SDK encodes the unsigned `approve` transaction; the JavaScript host
+    /// owns submission through its own wallet. This completes the
+    /// read-allowance-then-approve path alongside `getCowProtocolAllowance`.
+    ///
+    /// @param params Approval parameters DTO (token, amount, optional vault-relayer override).
+    /// @param options Optional per-call cancellation and timeout settings.
+    /// @returns A versioned envelope containing the unsigned approval transaction request.
+    /// @throws CowError when the token, amount, or vault-relayer override is invalid.
+    #[wasm_bindgen(
+        js_name = "buildApprovalTx",
+        unchecked_return_type = "WasmEnvelope<TransactionRequestDto>"
+    )]
+    pub async fn build_approval_tx(
+        &self,
+        params: ApprovalParametersInput,
+        #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
+    ) -> Result<JsValue, JsValue> {
+        super::traced("wasm.trading.build_approval_tx", async move {
+            let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+            let chain_id = self.chain_id;
+            let env = self.env.clone();
+            run_with_client_options(scope, async move {
+                trading_build_approval_tx(chain_id, env, params).await
+            })
+            .await
+        })
+        .await
+    }
+
     /// Quotes and posts a swap order with a custom EIP-1271 signature callback.
     ///
     /// Use this method when a smart-account runtime owns final contract
@@ -559,6 +591,20 @@ async fn trading_get_cow_protocol_allowance(
         .await
         .map_err(|error| WasmError::from(error).into_js())?;
     to_js_value(&WasmEnvelope::v1(allowance))
+}
+
+async fn trading_build_approval_tx(
+    chain_id: u32,
+    env: Option<String>,
+    params: ApprovalParametersInput,
+) -> Result<JsValue, JsValue> {
+    let chain = parse_chain(chain_id)?;
+    let env = pure::chains::env_from_str(env.as_deref())
+        .map_err(|error| WasmError::from(error).into_js())?;
+    let params: ApprovalParams = from_json_value("params", params.into_value()?)?;
+    let tx = cow_sdk_trading::approval_transaction(&params, chain, env)
+        .map_err(|error| WasmError::from(error).into_js())?;
+    to_js_value(&WasmEnvelope::v1(TransactionRequestDto::from(&tx)))
 }
 
 async fn trading_post_swap_order_with_eip1271(

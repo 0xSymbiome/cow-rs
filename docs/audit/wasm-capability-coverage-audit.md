@@ -1,7 +1,7 @@
 # WASM Capability Coverage Audit
 
 Status: Current
-Last reviewed: 2026-06-14
+Last reviewed: 2026-06-15
 Owning surface: `cow-sdk-wasm` capability coverage relative to the native `cow-rs` SDK crates
 Refresh trigger: changes to `crates/wasm/src/exports/**`; additions or removals of public operations on the `orderbook`, `trading`, `signing`, `contracts`, `app-data`, or `subgraph` crates; or revisions to the workflow scope in `docs/parity.md`
 Related docs:
@@ -41,7 +41,7 @@ and the [WASM Type Generation Audit](wasm-type-generation-audit.md).
 | Runtime-model boundary | The wasm32 dependency tree excludes the native Alloy adapters and browser-wallet, and exposes no Rust signer that broadcasts or provider that polls (ADR 0039) | Conforms |
 | Non-surfaced capabilities | Every native capability without a `cow-sdk-wasm` export is classified, and each class has a stated rationale | Documented |
 | Shape correspondence | Native types and signatures map to the WASM DTO and TypeScript surface through a fixed transform set (config-object construction, callback injection, camelCase DTOs, string-typed primitives, versioned envelopes, discriminated-union errors); divergences beyond the uniform transforms are enumerated | Documented |
-| Additive candidate | One non-surfaced capability with no runtime-model barrier is recorded for tracking (approval-transaction builder) | Recorded |
+| Transaction-builder coverage | The pre-sign, cancellation, native-currency-sell, and approval-transaction builders return unsigned transactions for host submission, completing the read-allowance-then-approve path | Conforms |
 
 ## Current Contract
 
@@ -60,7 +60,8 @@ reimplemented:
 3. **Service clients** — `OrderBookClient`, `SubgraphClient`, and `IpfsClient`
    over default or callback HTTP.
 4. **Trading** — `TradingClient` quote and post flows, including the
-   EIP-1271-backed swap path and the native-currency-sell transaction builder.
+   EIP-1271-backed swap path, the native-currency-sell transaction builder, and
+   the vault-relayer approval transaction builder.
 
 The canonical export inventory is enforced by
 `crates/wasm/tests/wasm_surface_contract.rs` and
@@ -81,7 +82,7 @@ wallet; **Surfaced (composed)** — covered by combining exported operations;
 | `send_order` | `sendOrder` / `sendOrderCreation` | Surfaced |
 | `send_cancellations` | `cancelOrders` | Surfaced |
 | `order` | `getOrder` | Surfaced |
-| `orders` | `getOrders` / `getOrdersByOwner` | Surfaced |
+| `orders` | `getOrders` | Surfaced |
 | `trades` | `getTrades` | Surfaced |
 | `native_price` | `getNativePrice` | Surfaced |
 | `app_data` | `getAppData` | Surfaced |
@@ -111,7 +112,8 @@ wallet; **Surfaced (composed)** — covered by combining exported operations;
 | `pre_sign_transaction` | `buildPresignTx` | Surfaced (builder form) |
 | `onchain_cancel_order` | `buildCancelOrderTx` | Surfaced (builder form) |
 | `offchain_cancel_order` | `signCancellation*` + `cancelOrders` | Surfaced (composed) |
-| `approval_transaction` / `approve_cow_protocol` | — | Not surfaced (recorded observation) |
+| `approval_transaction` | `buildApprovalTx` | Surfaced (builder form) |
+| `approve_cow_protocol` | — | Not surfaced (Class 1) |
 | `poll_for_receipt` / `submit_and_wait_for_receipt` | — | Not surfaced (Class 1) |
 
 #### signing — `signing` crate
@@ -195,16 +197,15 @@ boundary rather than a Rust-side wallet.
 ### Recorded observations
 
 - **Approval-transaction builder.** `cow-sdk-wasm` exposes transaction builders
-  for pre-sign (`buildPresignTx`), cancellation (`buildCancelOrderTx`), and
-  native-currency sell (`buildSellNativeCurrencyTx`), and exposes an allowance
-  read (`getCowProtocolAllowance`). It does not currently expose an
-  approval-transaction builder. The native `trading` crate provides a pure,
-  signer-free `approval_transaction` (`crates/trading/src/allowance.rs`) that
-  returns a `TransactionRequest`. A WASM builder mirroring the existing
-  transaction-builder shape is an additive candidate with no runtime-model
-  barrier; it completes the read-allowance-then-approve path for hosts that own
-  submission. This item is recorded for tracking and is not a conformance
-  defect against the current defined scope.
+  for pre-sign (`buildPresignTx`), cancellation (`buildCancelOrderTx`),
+  native-currency sell (`buildSellNativeCurrencyTx`), and vault-relayer approval
+  (`buildApprovalTx`), alongside the allowance read (`getCowProtocolAllowance`).
+  `buildApprovalTx` wraps the native pure, signer-free `approval_transaction`
+  (`crates/trading/src/allowance.rs`), takes the token, amount, and an optional
+  vault-relayer override, and returns the unsigned `WasmEnvelope<TransactionRequestDto>`
+  for host submission — mirroring the other builders and completing the
+  read-allowance-then-approve path. The managed `approve_cow_protocol` broadcast
+  helper remains a Class 1 runtime-model boundary (the host owns submission).
 - **Consumer-relevant Class 2 reads.** Among the Class 2 reads,
   `order_competition_status` and `total_surplus` are the operations a
   host building order-status or surplus presentation would most likely require.
@@ -266,6 +267,7 @@ native type under the uniform transforms above. The principal correspondences:
 | `OrderQuoteRequestInput` / `OrderQuoteResponseDto` / `QuoteDataDto` | `OrderQuoteRequest` / `OrderQuoteResponse` / `QuoteData` |
 | `TradeDto` | `cow_sdk_orderbook::Trade` |
 | `SwapParametersInput` / `LimitTradeParametersInput` | `cow_sdk_trading::TradeParams` / `LimitTradeParams` |
+| `AllowanceParametersInput` / `ApprovalParametersInput` | `cow_sdk_trading::AllowanceParams` / `ApprovalParams` |
 | `QuoteResultsDto` | `cow_sdk_trading::QuoteResults` |
 | `OrderPostingResultDto` | `cow_sdk_trading::OrderPostingResult` |
 | `TypedDataEnvelopeDto` | `cow_sdk_core::TypedDataPayload` |
@@ -302,10 +304,10 @@ Beyond the uniform transforms, these specific differences are worth tracking:
   the facade narrows them.)
 - **Bare-value helpers.** `domainSeparator`, `supportedChainIds`, and
   `wasmVersion` return values directly, outside the `WasmEnvelope` rule.
-- **Decomposed inputs.** `getOrders` and `getOrdersByOwner` split the native
-  `OrdersQuery` into `(owner, pagination?)`; `getTrades` accepts the
-  combined `TradesQueryInput`, whose exactly-one-of `owner` / `orderUid`
-  constraint is a runtime check rather than a type.
+- **Decomposed inputs.** `getOrders` splits the native `OrdersQuery` into
+  `(owner, pagination?)`; `getTrades` accepts the combined `TradesQueryInput`,
+  whose exactly-one-of `owner` / `orderUid` constraint is a runtime check rather
+  than a type.
 - **Owner is an explicit parameter.** Signing and managed-post exports take
   `owner: string` positionally because no Rust `Signer` is present to resolve
   it; the native signer-resolved `quote_results` path has no TS counterpart.

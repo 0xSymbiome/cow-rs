@@ -67,17 +67,6 @@ export class OrderBookClient {
     return this.#call((client, merged) => client.getOrders(owner, pagination ?? null, merged), options);
   }
 
-  async getOrdersByOwner(
-    owner: string,
-    pagination?: raw.PaginationOptions | null,
-    options?: SdkClientOptions | null
-  ): Promise<WasmEnvelope<raw.OrderDto[]>> {
-    return this.#call(
-      (client, merged) => client.getOrdersByOwner(owner, pagination ?? null, merged),
-      options
-    );
-  }
-
   async getQuote(
     request: raw.OrderQuoteRequestInput,
     options?: SdkClientOptions | null

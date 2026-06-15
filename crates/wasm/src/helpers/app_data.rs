@@ -65,3 +65,20 @@ where
 {
     cow_sdk_app_data::fetch_doc_from_cid(cid, transport, ipfs_uri).await
 }
+
+/// Fetches an app-data document by app-data hash through the supplied transport.
+///
+/// # Errors
+///
+/// Returns [`AppDataError`] when the hash is invalid or transport, policy, or
+/// JSON decoding fails.
+pub async fn fetch_doc_from_app_data_hex<T>(
+    app_data_hex: &str,
+    transport: &T,
+    ipfs_uri: Option<&str>,
+) -> Result<AppDataDoc, AppDataError>
+where
+    T: IpfsFetchTransport,
+{
+    cow_sdk_app_data::fetch_doc_from_app_data_hex(app_data_hex, transport, ipfs_uri).await
+}

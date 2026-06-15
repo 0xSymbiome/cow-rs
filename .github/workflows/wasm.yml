@@ -246,9 +246,15 @@ jobs:
           // does not accept extended regex; `\+` is the BRE form of
           // one-or-more and `[[:space:]]` covers leading indentation.
           const ignoreFuncElem = "^[[:space:]]*readonly __wasm_bindgen_func_elem_[0-9]\\+:";
+          // The raw type declarations are loader-independent: wasm-bindgen emits a
+          // byte-identical `.d.ts` for every wasm-pack target of a flavour, so one
+          // snapshot per flavour pins the public type contract. Diffing every
+          // target's generated declaration against that single snapshot both
+          // detects drift and asserts the targets agree; a future per-target
+          // divergence fails closed here.
           for (const flavour of descriptor.flavours) {
+            const snapshot = `crates/wasm/snapshots/raw/${flavour.name}.d.ts`;
             for (const target of flavour.targets) {
-              const snapshot = `crates/wasm/snapshots/raw/${flavour.name}-${target}.d.ts`;
               const generated = `crates/wasm/npm/dist/raw/${flavour.name}-${target}/cow_sdk_wasm.d.ts`;
               const result = spawnSync(
                 "diff",

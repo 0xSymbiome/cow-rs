@@ -3,10 +3,10 @@
 mod common;
 
 use cow_sdk_wasm::exports::{
-    AllowanceParametersInput, LimitTradeParametersInput, OrderBookClient, OrderBookClientConfig,
-    OrderKindDto, OrderTraderParametersInput, PaginationOptions, SwapParametersInput,
-    TokenBalanceDto, TradesQueryInput, TradingClient, build_cancel_order_tx, build_presign_tx,
-    compute_order_uid,
+    AllowanceParametersInput, ApprovalParametersInput, LimitTradeParametersInput, OrderBookClient,
+    OrderBookClientConfig, OrderKindDto, OrderTraderParametersInput, PaginationOptions,
+    SwapParametersInput, TokenBalanceDto, TradesQueryInput, TradingClient, build_cancel_order_tx,
+    build_presign_tx, compute_order_uid,
 };
 use js_sys::{Function, Object, Reflect};
 use serde_json::Value;
@@ -381,6 +381,19 @@ async fn trading_exposes_allowance_and_transaction_builders() {
             .await
             .unwrap(),
     );
+    let approval = json(
+        client
+            .build_approval_tx(
+                ApprovalParametersInput {
+                    token_address: ADDR_SELL.to_owned(),
+                    amount: "1000000000000000000".to_owned(),
+                    vault_relayer_override: None,
+                },
+                None,
+            )
+            .await
+            .unwrap(),
+    );
     let order_uid = generated_order_uid();
     let presign = json(
         build_presign_tx(OrderTraderParametersInput {
@@ -421,4 +434,12 @@ async fn trading_exposes_allowance_and_transaction_builders() {
     assert_eq!(cancel["value"]["value"], "0");
     assert!(presign["value"]["data"].as_str().unwrap().starts_with("0x"));
     assert!(cancel["value"]["data"].as_str().unwrap().starts_with("0x"));
+    assert_eq!(approval["value"]["to"], ADDR_SELL);
+    assert_eq!(approval["value"]["value"], "0");
+    assert!(
+        approval["value"]["data"]
+            .as_str()
+            .unwrap()
+            .starts_with("0x")
+    );
 }

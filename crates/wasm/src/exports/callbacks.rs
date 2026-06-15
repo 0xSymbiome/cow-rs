@@ -72,7 +72,6 @@ export type CowFetchCallback = (
 ) => Promise<CowFetchResponse> | CowFetchResponse;
 
 export type HttpTransportConfig =
-  | { kind: "fetch"; fetch?: typeof globalThis.fetch }
   | { kind: "callback"; callback: CowFetchCallback };
 "#;
 

@@ -108,7 +108,6 @@ fn generated_type_declarations_version_errors_and_outputs() {
         "export interface WasmEnvelope<T>",
         "schemaVersion: SchemaVersion;",
         "kind: \"walletTimeout\"",
-        "kind: \"forbiddenInteraction\"",
         "kind: \"__unknown\"",
     ];
     let forbidden = ["Promise<Promise<"];
@@ -245,10 +244,12 @@ fn generated_type_declarations_expose_feature_scoped_workflow_helpers() {
                 &[
                     "export type ContractReadCallback",
                     "export interface AllowanceParametersInput",
+                    "export interface ApprovalParametersInput",
                     "export interface BuiltSellNativeCurrencyTxDto",
                     "export interface ContractCallDto",
                     "export interface LimitTradeParametersInput",
                     "export interface QuoteResultsDto",
+                    "buildApprovalTx(params: ApprovalParametersInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<TransactionRequestDto>>",
                     "buildSellNativeCurrencyTx(order: OrderInput, quoteId: number, from: string",
                     "getCowProtocolAllowance(params: AllowanceParametersInput, readContractCallback: ContractReadCallback",
                     "getQuote(params: SwapParametersInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<QuoteResultsDto>>",
@@ -348,7 +349,7 @@ fn snapshots() -> Vec<Snapshot> {
         .as_array()
         .expect("flavours must be an array")
         .iter()
-        .flat_map(|flavour| {
+        .map(|flavour| {
             let name = flavour["name"].as_str().expect("flavour name").to_owned();
             let features = flavour["features"]
                 .as_array()
@@ -356,14 +357,14 @@ fn snapshots() -> Vec<Snapshot> {
                 .iter()
                 .map(|feature| feature.as_str().expect("feature name").to_owned())
                 .collect::<Vec<_>>();
-            flavour["targets"]
-                .as_array()
-                .expect("flavour targets")
-                .iter()
-                .map(move |target| Snapshot {
-                    name: format!("{}-{}.d.ts", name, target.as_str().expect("target name")),
-                    features: features.clone(),
-                })
+            // The raw type declarations are loader-independent: wasm-bindgen emits a
+            // byte-identical `.d.ts` for every wasm-pack target of a flavour, so one
+            // snapshot per flavour pins the public type contract. The wasm workflow
+            // asserts every target's generated declaration matches this snapshot.
+            Snapshot {
+                name: format!("{name}.d.ts"),
+                features,
+            }
         })
         .collect()
 }

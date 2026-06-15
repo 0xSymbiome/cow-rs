@@ -80,17 +80,6 @@ export class OrderBookClient {
     return this.#call((client, merged) => client.getOrders(owner, pagination ?? null, merged), options);
   }
 
-  async getOrdersByOwner(
-    owner: string,
-    pagination?: raw.PaginationOptions | null,
-    options?: SdkClientOptions | null
-  ): Promise<WasmEnvelope<raw.OrderDto[]>> {
-    return this.#call(
-      (client, merged) => client.getOrdersByOwner(owner, pagination ?? null, merged),
-      options
-    );
-  }
-
   async getQuote(
     request: raw.OrderQuoteRequestInput,
     options?: SdkClientOptions | null
@@ -197,6 +186,13 @@ export class TradingClient {
       (client, merged) => client.getCowProtocolAllowance(params, readContractCallback, merged),
       options
     );
+  }
+
+  async buildApprovalTx(
+    params: raw.ApprovalParametersInput,
+    options?: SdkClientOptions | null
+  ): Promise<WasmEnvelope<raw.TransactionRequestDto>> {
+    return this.#call((client, merged) => client.buildApprovalTx(params, merged), options);
   }
 
   async getQuote(
@@ -471,6 +467,7 @@ export type {
   AppDataDocInput,
   AppDataInfoDto,
   AppDataObjectDto,
+  ApprovalParametersInput,
   BuiltSellNativeCurrencyTxDto,
   ContractCallDto,
   CostsDto,
