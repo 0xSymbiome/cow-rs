@@ -13,9 +13,8 @@ use cow_sdk::core::{
     SellTokenSource, Signer, SupportedChainId, address,
 };
 use cow_sdk::signing::{ORDER_PRIMARY_TYPE, order_typed_data_payload};
+use cow_sdk_examples_native::support::TEST_KEY;
 use serde_json::json;
-
-const TEST_KEY: &str = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
 
 const SELL_TOKEN: Address = address!("0xd057b63f5e69cf1b929b356b579cba08d7688048");
 const BUY_TOKEN: Address = address!("0x7b878668cd1a3adf89764d3a331e0a7bb832192d");

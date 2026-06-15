@@ -8,10 +8,9 @@ use std::error::Error;
 
 use cow_sdk::alloy::AlloyClient;
 use cow_sdk::core::{Provider, Signer, SigningProvider, SupportedChainId};
+use cow_sdk_examples_native::support::TEST_KEY;
 use serde_json::json;
 use wiremock::{Mock, MockServer, ResponseTemplate, matchers::method};
-
-const TEST_KEY: &str = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {

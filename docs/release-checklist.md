@@ -403,9 +403,12 @@ wasm-pack test crates/wasm --headless --firefox
 bash crates/wasm/npm/scripts/build.sh
 node crates/wasm/npm/scripts/verify-exports.mjs
 pnpm install --dir e2e/wasm-typescript --frozen-lockfile
-pnpm --dir e2e/wasm-typescript test
+pnpm --dir e2e/wasm-typescript run test:vitest
+pnpm --dir e2e/wasm-typescript run test:playwright
+pnpm --dir e2e/wasm-typescript run test:type-check
 pnpm install --dir e2e/wasm-typescript-cf --frozen-lockfile
-pnpm --dir e2e/wasm-typescript-cf test
+pnpm --dir e2e/wasm-typescript-cf run test
+pnpm --dir e2e/wasm-typescript-cf run test:type-check
 ```
 
 The rendered npm package name is selected at publication time. Maintainer

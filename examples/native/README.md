@@ -41,7 +41,7 @@ The catalog below is listed in reference order; see
 | `quote` | Build a quote flow without submission |
 | `slippage_suggester` | Quote with a consumer-supplied `SlippageSuggester` |
 | `cancel_in_flight` | Cancel an in-flight quote with `Cancellable::cancel_with(&token)` |
-| `limit_order` | Build and simulate signed limit-order submission, plus the signer-less pre-sign variant (`post_limit_order_presign`) |
+| `limit_order` | Build and simulate signed limit-order submission through the fluent `Trading::limit()` builder, plus the signer-less pre-sign variant (`limit().post_presign()`) |
 | `eip1271_signer` | Post a limit order signed by a custom `Eip1271Signer` (smart account) |
 | `order_lifecycle` | Inspect order lookup and off-chain cancellation |
 | `receipt_lifecycle` | Drive `submit_and_wait_for_receipt` through the testing doubles for mined, reverted, and timeout outcomes |
@@ -77,7 +77,10 @@ Scenarios use one of two deterministic doubles, by intent:
   (`orderbook_transport`, `order_history`,
   `error_classification`, `subgraph_query`) and for
   `cancel_in_flight`, where aborting an in-flight request cannot be
-  shown against an instant in-memory double.
+  shown against an instant in-memory double. The Alloy scenarios that exercise
+  RPC (`alloy_quickstart`, `alloy_provider`, `alloy_custom_traits`,
+  `alloy_trading_full_flow`, `transaction_lifecycle`) likewise mount a wiremock
+  JSON-RPC endpoint through `support::mount_rpc`.
 
 ### Scenario Conventions
 

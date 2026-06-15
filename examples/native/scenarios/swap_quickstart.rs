@@ -1,9 +1,11 @@
 //! Smallest deterministic end-to-end swap.
 //!
 //! Construct a ready-state trading client, then quote, sign, and post a swap in
-//! one call through the fluent swap builder, against a transport-mocked
-//! orderbook. No network and no private key, so it runs the same way on every
-//! machine — the shortest path from the facade to a posted order.
+//! one call through the fluent swap builder's `execute` terminal, against a
+//! transport-mocked orderbook. A second act shows the deferred two-step path —
+//! `quote` to inspect the price, then `submit` the same quote. No network and no
+//! private key, so it runs the same way on every machine — the shortest path
+//! from the facade to a posted order.
 
 use std::error::Error;
 
@@ -42,5 +44,25 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .await?;
 
     println!("posted order: {}", posted.order_id);
+
+    // Or, to inspect the quote before committing: `.quote()` returns the priced
+    // order to read, then `.submit()` posts that same quote — the deferred
+    // two-step path. Here we read the SDK's suggested slippage (distinct from the
+    // 50 bps we set) before posting.
+    let quoted = trading
+        .swap()
+        .sell_token(WETH)
+        .buy_token(COW)
+        .sell_amount(Amount::parse_units("0.1", 18)?)
+        .slippage_bps(50)
+        .quote(&signer)
+        .await?;
+    let suggested_slippage_bps = quoted.results().suggested_slippage_bps;
+    let posted_after_quote = quoted.submit(&signer).await?;
+    println!(
+        "posted after inspecting the quote (suggested slippage {suggested_slippage_bps} bps): {}",
+        posted_after_quote.order_id
+    );
+
     Ok(())
 }

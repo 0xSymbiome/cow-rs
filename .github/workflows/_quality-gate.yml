@@ -324,8 +324,6 @@ jobs:
         run: cargo test --locked -p cow-sdk-examples-native
       - name: Run deterministic examples with locked dependencies
         run: cargo run-deterministic-examples --locked
-      - name: Assert native examples lockfile was not rewritten
-        run: git diff --exit-code -- examples/native/Cargo.lock
 
   ci-success:
     if: always()

@@ -433,19 +433,19 @@ A successful run from the committed example currently prints:
 
 ```json
 {
-  "surface": "cow-sdk::signing",
+  "surface": "cow_sdk::signing",
   "mode": "deterministic",
   "order": {
     "primaryType": "Order",
     "digest": "0x413343185c9b2b0acd540f33480c81881e1dc5f7ee98c93953383481eb1a5a01",
-    "orderId": "0x413343185c9b2b0acd540f33480c81881e1dc5f7ee98c93953383481eb1a5a01c8c753ee51e8fc80e199ab297fb575634a1ac1d36553f100",
-    "signature": "0x1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111b",
+    "orderId": "0x413343185c9b2b0acd540f33480c81881e1dc5f7ee98c93953383481eb1a5a017e5f4552091a69125d5dfcb7b8c2659029395bdf6553f100",
+    "signature": "0xdb77185465fa462491714e0a724bbdcef6bda36a1f8fec772f773377ecf79052729213692c1a99c36626dc46dd30fac941a79c0ee242ca24e5bad48967cd78ea1b",
     "scheme": "Eip712",
     "eip1271PayloadPrefix": "0x0000000000000000"
   },
   "cancellation": {
     "orderUid": "0xd64389693b6cf89ad6c140a113b10df08073e5ef3063d05a02f3f42e1a42f0ad0b7795e18767259cc253a2af471dbc4c72b49516ffffffff",
-    "signature": "0x1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111b",
+    "signature": "0x31c037bec6455a1caffc876eb4a46b2e818eeec3bec12f9463b1ed4ce9364b2d4e433652f3f77a797ec2878b8e1c687fb0f732e5bffa89259ca6a863598240961b",
     "scheme": "Eip712"
   }
 }
@@ -535,18 +535,23 @@ A successful run from the committed example currently prints:
 
 ```json
 {
-  "surface": "cow-sdk::Trading::post_limit_order",
+  "surface": "cow_sdk::trading::Trading::limit",
   "mode": "simulated-transport",
   "result": {
-    "orderId": "0xd64389693b6cf89ad6c140a113b10df08073e5ef3063d05a02f3f42e1a42f0ad0b7795e18767259cc253a2af471dbc4c72b49516ffffffff",
-    "signatureLength": 130,
-    "signingScheme": "Eip712"
+    "orderId": "0x1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
+    "signatureLength": 132,
+    "signingScheme": "eip712"
+  },
+  "presign": {
+    "orderId": "0x1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
+    "signingScheme": "presign",
+    "signatureLength": 42
   },
   "submission": {
-    "quoteId": 575401,
+    "quoteId": null,
     "sellAmount": "98646335338956442",
     "buyAmount": "30000000000000000000",
-    "uploadedAppDataCount": 1
+    "uploadedAppDataCount": 2
   }
 }
 ```
@@ -555,7 +560,8 @@ A successful run from the committed example currently prints:
 
 `surface`
 
-- confirms the scenario is exercising the high-level `Trading` post path
+- confirms the scenario is exercising the fluent `Trading::limit()` builder
+  post path
 
 `mode`
 
@@ -572,11 +578,18 @@ A successful run from the committed example currently prints:
 
 `result.signingScheme`
 
-- confirms the flow stayed on the expected `Eip712` signing path
+- confirms the flow signed under the lowercase wire-form `eip712` scheme
+
+`presign`
+
+- confirms the same builder's signer-free `post_presign` terminal: the order is
+  posted under the `presign` scheme and only becomes fillable once the owner
+  flips the on-chain pre-signature flag — the smart-account placement path
 
 `submission.quoteId`
 
-- confirms a quote shaped the posted order
+- confirms the limit path threads no quote id (`null`): a limit order takes the
+  explicit price you set rather than a fetched quote
 
 `submission.sellAmount`
 
@@ -598,7 +611,7 @@ The signing scenario proves the typed signing contract in isolation.
 This second scenario proves the broader trading shape:
 
 - `Trading` can carry ready-state defaults into a trade flow
-- quote-derived submission data stays typed
+- submission data stays typed across the seam
 - app-data handling is part of the same high-level path
 - the SDK returns stable user-facing submission output
 
