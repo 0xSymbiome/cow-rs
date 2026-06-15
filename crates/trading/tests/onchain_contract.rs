@@ -155,6 +155,54 @@ async fn ethflow_transaction_uses_wrapped_native_value_margin_and_ethflow_overri
     );
 }
 
+#[tokio::test]
+async fn ethflow_create_value_equals_encoded_sell_plus_fee_amounts() {
+    // Pin CoWSwapEthFlow.createOrder's `msg.value == sellAmount + feeAmount`
+    // rule: decode sellAmount (word 2) and feeAmount (word 5) from the encoded
+    // calldata and assert the tx value equals their sum. Fails closed if a fee
+    // is ever threaded in without raising the sent value.
+    let signer = MockSigner::default();
+    let trader = sample_trader_parameters();
+    let mut params = sample_limit_parameters(OrderKind::Sell);
+    params.sell_token = NATIVE_CURRENCY_ADDRESS;
+    params.quote_id = Some(7);
+    params.slippage_bps = Some(50);
+
+    let from_quote =
+        LimitTradeParamsFromQuote::try_from_limit(params).expect("test params carry a quote id");
+    let transaction = eth_flow_transaction(
+        &app_data_hash(),
+        &from_quote,
+        &PostTradeAdditionalParams::default(),
+        &trader,
+        &signer,
+    )
+    .await
+    .expect("ethflow transaction should build");
+
+    let data = transaction.transaction.data.to_hex_string();
+    let encoded_sell_amount = U256::from_be_slice(
+        &alloy_primitives::hex::decode(calldata_word(&data, 2))
+            .expect("encoded sell amount word must decode"),
+    );
+    let encoded_fee_amount = U256::from_be_slice(
+        &alloy_primitives::hex::decode(calldata_word(&data, 5))
+            .expect("encoded fee amount word must decode"),
+    );
+
+    assert_eq!(
+        encoded_fee_amount,
+        U256::ZERO,
+        "eth-flow signed order feeAmount must be zero on the live protocol",
+    );
+    assert_eq!(
+        *transaction.transaction.value.as_u256(),
+        encoded_sell_amount + encoded_fee_amount,
+        "eth-flow tx value must equal encoded sellAmount + feeAmount per the \
+         CoWSwapEthFlow.createOrder msg.value check",
+    );
+}
+
 async fn eth_flow_signed_buy_amount(protocol_fee_bps: Option<f64>) -> String {
     // Native-currency sell, sell 1e18 -> buy 2e18, zero network cost, partner
     // fee 100 bps, slippage 50 — the upstream composition vector adapted to the
