@@ -55,10 +55,11 @@ flowchart TD
 This diagram is an overview, not a build graph. Every crate depends on
 `cow-sdk-core`, so only the transform-layer edges to the foundation are drawn,
 and optional capabilities appear as dashed `feature:` edges that are off by
-default. The `wasm32`-target leaves — `cow-sdk-wasm` and the
-`cow-sdk-transport-wasm` HTTP transport — compose and serve the same crates and
-are shown in
+default. The `wasm32`-target leaf `cow-sdk-wasm` composes and serves the same
+crates and is shown in
 [TypeScript-Callable WASM Surface](#typescript-callable-wasm-surface); the
+browser HTTP transport (`FetchTransport`) is a target-gated module of
+`cow-sdk-core`, the browser sibling of the native `ReqwestTransport`. The
 complete crate inventory is the [Crate Roles](#crate-roles) table below.
 
 ## Crate Roles
@@ -66,14 +67,13 @@ complete crate inventory is the [Crate Roles](#crate-roles) table below.
 | Crate | Role | Use when |
 | --- | --- | --- |
 | `cow-sdk` | Thin public facade | You want the main Rust SDK entrypoint. |
-| `cow-sdk-core` | Shared domain types, config, validation, runtime traits, the `HttpTransport` seam with its native `ReqwestTransport` default, and the opt-in `transport::policy` module (shared HTTP retry driver `run_with_retry`, rate-limit, jitter, `Retry-After`, target-neutral wall clock, and transport classification behind the off-by-default `transport-policy` feature) | You need the common typed contracts, or consistent transport behavior across typed clients via the `transport-policy` feature. |
+| `cow-sdk-core` | Shared domain types, config, validation, runtime traits, the `HttpTransport` seam with its native `ReqwestTransport` default and the browser `FetchTransport` (the `transport::fetch` module, target-gated to `wasm32`), and the opt-in `transport::policy` module (shared HTTP retry driver `run_with_retry`, rate-limit, jitter, `Retry-After`, target-neutral wall clock, and transport classification behind the off-by-default `transport-policy` feature) | You need the common typed contracts, or consistent transport behavior across typed clients via the `transport-policy` feature. |
 | `cow-sdk-contracts` | `alloy::sol!`-generated typed bindings, the typed `Registry` deployment authority, fail-closed `CoWSwapOnchainOrders` event decoding, and deterministic hashing and verification helpers, plus the opt-in `cow-shed` account-abstraction module (proxy derivation, EIP-712 hook signing, calldata) | You need ABI-level, address-authority, or settlement-level primitives. |
 | `cow-sdk-signing` | Typed-data, signing, cancellation, UID helpers, and the `Eip1271Cache` seam (the always-available `NoopEip1271Cache` plus the feature-gated `InMemoryEip1271Cache`) | You need signing without the full trading layer. |
 | `cow-sdk-app-data` | App-data encoding, schema handling, and CID behavior | You need app-data generation or validation. |
 | `cow-sdk-orderbook` | Typed orderbook transport over the `HttpTransport` seam, with the `OrderbookApiBuilder` typestate | You need explicit request and response control, or the typed quote, post, and query surface without compiling the signing stack. |
 | `cow-sdk-trading` | Quote-to-order workflows plus the quote, submit, cancel, and approve orchestration surface | You need the main trading orchestration layer. |
 | `cow-sdk-subgraph` | Read-only subgraph access over the `HttpTransport` seam, with the `SubgraphApiBuilder` typestate | You need GraphQL reads or custom subgraph queries (via the `cow-sdk` `subgraph` feature or this crate directly). |
-| `cow-sdk-transport-wasm` | Browser-target `HttpTransport` implementation (`FetchTransport`) | You build for `wasm32-unknown-unknown` and need the shipped browser default. |
 | `cow-sdk-wasm` | TypeScript-callable wasm-bindgen bindings over deterministic SDK helpers, typed callbacks, orderbook/subgraph/IPFS clients, and trading flows | JavaScript or TypeScript should call the Rust SDK through wasm exports. |
 | `cow-sdk-browser-wallet` | Browser-runtime wallet integration | You need EIP-1193 wallet flows in WASM. |
 | `cow-sdk-alloy-provider` | Native Alloy-backed `Provider` adapter | You need read-only chain RPC through Alloy without a signer dependency. |
@@ -103,7 +103,7 @@ that composes them.
 | Client policy | `cow-sdk-core` (`transport-policy` feature) | Shared retry, cooldown, rate-limit, and classification behavior above the raw transport seam |
 | Client | `cow-sdk-orderbook`, `cow-sdk-subgraph` | Typed HTTP and GraphQL access through the `HttpTransport` seam |
 | Workflow | `cow-sdk-trading` | Quote, submit, cancel, approve, and related flows |
-| Runtime adapter | `cow-sdk-browser-wallet`, `cow-sdk-transport-wasm`, `cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, `cow-sdk-alloy` | Browser-wallet session integration, browser-target HTTP transport, and opt-in native Alloy provider/signer adapters |
+| Runtime adapter | `cow-sdk-browser-wallet`, `cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, `cow-sdk-alloy` | Browser-wallet session integration and opt-in native Alloy provider/signer adapters (the browser HTTP transport ships as `cow-sdk-core`'s target-gated `transport::fetch` module) |
 | TypeScript WASM leaf | `cow-sdk-wasm` | Typed wasm-bindgen exports and JavaScript callbacks over the same protocol helpers and HTTP seams |
 | Facade | `cow-sdk` | Curated public entrypoint |
 | Test support | `cow-sdk-test` | Published in-memory trait doubles for downstream integration tests, off the default dependency graph |
@@ -284,8 +284,9 @@ lenient to preserve the existing constructor contract.
 backend. The `HttpTransport` trait in `cow-sdk-core` is the HTTPS seam used
 by `cow-sdk-orderbook` and `cow-sdk-subgraph` for REST and GraphQL
 dispatch; native consumers get `ReqwestTransport` from `cow-sdk-core`, and
-browser consumers get `FetchTransport` from the dedicated
-`cow-sdk-transport-wasm` leaf crate. The shared retry driver
+browser consumers get `FetchTransport` from `cow-sdk-core`'s `transport::fetch`
+module, the target-gated browser sibling of `ReqwestTransport`. The shared
+retry driver
 (`run_with_retry`) plus retry, cooldown, rate-limit, target-neutral wall
 clock, and transport-error classification policy lives in the opt-in
 `cow_sdk_core::transport::policy` module (the off-by-default `transport-policy`

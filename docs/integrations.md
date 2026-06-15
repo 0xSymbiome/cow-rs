@@ -126,7 +126,8 @@ Their roles are:
 
 - production HTTPS dispatch for the orderbook and subgraph clients. The
   native default is `ReqwestTransport`; the browser default is
-  `FetchTransport` from `cow-sdk-transport-wasm`. Custom implementations
+  `FetchTransport` from `cow-sdk-core`'s target-gated `transport::fetch`
+  module, the browser sibling of `ReqwestTransport`. Custom implementations
   install through the builder's `.transport(Arc::new(...))` setter on
   both `OrderbookApi::builder()` and `SubgraphApi::builder()`. See
   [Transport](transport.md) for the full seam.

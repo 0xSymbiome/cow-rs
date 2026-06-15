@@ -9,9 +9,9 @@ changes, and review findings.
 The initial SDK foundation focuses on the existing SDK family:
 `cow-sdk`, `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`,
 `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-trading`,
-`cow-sdk-subgraph`, `cow-sdk-browser-wallet`, and
-`cow-sdk-transport-wasm`, plus the opt-in native Alloy adapter crates
-`cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, and `cow-sdk-alloy`.
+`cow-sdk-subgraph`, and `cow-sdk-browser-wallet`, plus the opt-in
+native Alloy adapter crates `cow-sdk-alloy-provider`,
+`cow-sdk-alloy-signer`, and `cow-sdk-alloy`.
 
 This work prioritizes a clean trading-first foundation: typed orderbook DTOs,
 typed signing and contract helpers, deployment registry provenance, cooperative

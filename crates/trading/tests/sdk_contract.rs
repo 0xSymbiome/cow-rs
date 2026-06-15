@@ -6,12 +6,12 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use alloy_primitives::U256;
 use cow_sdk_core::{AddressPerChain, Amount, CowEnv, SupportedChainId};
 #[cfg(target_arch = "wasm32")]
+use cow_sdk_core::{FetchTransport, FetchTransportConfig};
+#[cfg(target_arch = "wasm32")]
 use cow_sdk_orderbook::OrderbookApi;
 #[cfg(target_arch = "wasm32")]
 use cow_sdk_trading::TradingError;
 use cow_sdk_trading::{ApprovalParams, OrderTraderParams, TraderParams, Trading, TradingBuilder};
-#[cfg(target_arch = "wasm32")]
-use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen_test::{wasm_bindgen_test, wasm_bindgen_test_configure};
 

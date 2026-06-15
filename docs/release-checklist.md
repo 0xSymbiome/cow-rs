@@ -21,7 +21,7 @@ cargo test -p cow-rs-workspace-tests --test alloy_two_family_lockfile_invariant
 cargo test -p cow-sdk-alloy --test send_transaction_does_not_wait_for_confirmation
 cargo test -p cow-sdk-browser-wallet --test transaction_receipt_parsing
 cargo test -p cow-rs-workspace-tests --test transaction_lifecycle_cross_adapter_invariant
-cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-browser-wallet -p cow-sdk-transport-wasm -p cow-sdk-alloy-provider -p cow-sdk-alloy-signer -p cow-sdk-alloy -p cow-sdk -p cow-sdk-wasm -p cow-sdk-test
+cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-browser-wallet -p cow-sdk-alloy-provider -p cow-sdk-alloy-signer -p cow-sdk-alloy -p cow-sdk -p cow-sdk-wasm -p cow-sdk-test
 ```
 
 The native Alloy dependency gates enforce explicit allow-lists:
@@ -177,8 +177,7 @@ cargo package -p cow-sdk-app-data --allow-dirty --config "patch.crates-io.cow-sd
 cargo package -p cow-sdk-orderbook --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
 cargo package -p cow-sdk-signing --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'"
 cargo package -p cow-sdk-subgraph --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
-cargo package -p cow-sdk-transport-wasm --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
-cargo package -p cow-sdk-trading --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-transport-wasm.path='crates/transport-wasm'"
+cargo package -p cow-sdk-trading --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'"
 cargo package -p cow-sdk-browser-wallet --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
 cargo package -p cow-sdk-alloy-provider --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
 cargo package -p cow-sdk-alloy-signer --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'"
@@ -196,8 +195,7 @@ cargo publish --dry-run -p cow-sdk-app-data --allow-dirty --config "patch.crates
 cargo publish --dry-run -p cow-sdk-orderbook --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
 cargo publish --dry-run -p cow-sdk-signing --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'"
 cargo publish --dry-run -p cow-sdk-subgraph --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
-cargo publish --dry-run -p cow-sdk-transport-wasm --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
-cargo publish --dry-run -p cow-sdk-trading --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-transport-wasm.path='crates/transport-wasm'"
+cargo publish --dry-run -p cow-sdk-trading --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'"
 cargo publish --dry-run -p cow-sdk-browser-wallet --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
 cargo publish --dry-run -p cow-sdk-alloy-provider --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
 cargo publish --dry-run -p cow-sdk-alloy-signer --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'"
@@ -234,7 +232,6 @@ cargo publish -p cow-sdk-app-data
 cargo publish -p cow-sdk-orderbook
 cargo publish -p cow-sdk-signing
 cargo publish -p cow-sdk-subgraph
-cargo publish -p cow-sdk-transport-wasm
 cargo publish -p cow-sdk-trading
 cargo publish -p cow-sdk-browser-wallet
 cargo publish -p cow-sdk-alloy-provider
@@ -364,7 +361,7 @@ Build the WASM surfaces:
 cargo build --target wasm32-unknown-unknown -p cow-sdk
 cargo build --target wasm32-unknown-unknown -p cow-sdk --features browser-wallet
 cargo build --target wasm32-unknown-unknown -p cow-sdk-app-data
-cargo build --target wasm32-unknown-unknown -p cow-sdk-transport-wasm
+cargo build --target wasm32-unknown-unknown -p cow-sdk-core
 cargo build --target wasm32-unknown-unknown -p cow-sdk-wasm
 ```
 

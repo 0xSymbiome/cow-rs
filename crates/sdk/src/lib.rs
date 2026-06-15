@@ -151,12 +151,20 @@ pub mod http {
     /// surface, and [`TransportErrorClass`] is the label telemetry and retry
     /// layers use to partition REST-transport failures without parsing error
     /// messages. The native default implementation is [`ReqwestTransport`];
-    /// the browser default lives in `cow-sdk-transport-wasm`.
+    /// the browser default lives in `cow-sdk-core` (`transport::fetch`).
     pub use cow_sdk_core::{HttpTransport, TransportError, TransportErrorClass, TransportResponse};
     /// Native default HTTP transport implementation and its configuration.
     #[cfg(not(target_arch = "wasm32"))]
     pub use cow_sdk_core::{ReqwestTransport, ReqwestTransportConfig};
 }
+/// Browser-native HTTP transport surface — the `wasm32` sibling of the native
+/// `ReqwestTransport` default. [`FetchTransport`] is the browser default
+/// implementation of [`HttpTransport`](crate::http::HttpTransport); compose it
+/// into typed clients as `Arc<dyn cow_sdk_core::HttpTransport + Send + Sync>`
+/// exactly like the native transport.
+#[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+#[cfg_attr(docsrs, doc(cfg(all(target_arch = "wasm32", target_os = "unknown"))))]
+pub use cow_sdk_core::{FetchTransport, FetchTransportConfig};
 pub use cow_sdk_orderbook as orderbook;
 pub use cow_sdk_signing as signing;
 /// Optional read-only subgraph analytics (protocol totals, daily and hourly
@@ -189,14 +197,6 @@ pub use cow_sdk_subgraph as subgraph;
 #[cfg_attr(docsrs, doc(cfg(feature = "testing")))]
 pub use cow_sdk_test as testing;
 pub use cow_sdk_trading as trading;
-/// Browser-native HTTP transport surface — the `wasm32` sibling of the native
-/// `ReqwestTransport` default. [`FetchTransport`] is the browser default
-/// implementation of [`HttpTransport`](crate::http::HttpTransport); compose it
-/// into typed clients as `Arc<dyn cow_sdk_core::HttpTransport + Send + Sync>`
-/// exactly like the native transport.
-#[cfg(target_arch = "wasm32")]
-#[cfg_attr(docsrs, doc(cfg(target_arch = "wasm32")))]
-pub use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
 
 use thiserror::Error;
 

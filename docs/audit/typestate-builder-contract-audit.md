@@ -58,7 +58,7 @@ the trading-sdk runtime prerequisites audit.
 | Default-transport convenience | Both builders carry a default-transport `.build()` impl per target: native installs `ReqwestTransport`, `wasm32` installs the browser `FetchTransport` | Conforms |
 | Panic-free terminals | Build terminals read each input from the data-carrying marker and return typed errors; no typestate-guard `expect`/`panic!` remains | Conforms |
 | Host policy | Explicit orderbook and subgraph endpoint overrides are validated at build time and fail through typed host-policy errors | Conforms |
-| wasm32 default terminal | the `wasm32` default-transport `.build()` constructs `FetchTransport`; both builder crates are compiled for `wasm32` in CI to type-check that terminal and its `cow-sdk-transport-wasm` edge | Conforms |
+| wasm32 default terminal | the `wasm32` default-transport `.build()` constructs `FetchTransport`; both builder crates are compiled for `wasm32` in CI to type-check that terminal and its `cow-sdk-core` `FetchTransport` edge | Conforms |
 | Trading SDK construction | `build` requires chain id plus validated `AppCode` and returns the ready `Trading` client | Conforms |
 | Trading default terminal | `build` is target-neutral: the lazy default orderbook factory rides the orderbook builder's per-target default transport on native and `wasm32` alike | Conforms |
 | Swap lifecycle builder | `Trading::swap` requires sell token, buy token, and amount through named setters before `execute`/`quote` compile; the lifecycle delegates to the existing post entries and adds no protocol logic | Conforms |
@@ -138,12 +138,12 @@ encoded as an HTTP header value returns a typed error
 (`OrderbookError::Transport` for the orderbook builder,
 `SubgraphError::TransportConfiguration` for the subgraph builder) rather
 than panicking. On `wasm32` the same terminal installs the browser
-`FetchTransport` from `cow-sdk-transport-wasm`, acquired from the realm's
+`FetchTransport` from `cow-sdk-core`, acquired from the realm's
 global `fetch`; the policy timeout and response-byte cap apply to either
 default, and the browser default omits the user-agent because `User-Agent`
 is a forbidden request header for `fetch`. Compiling `cow-sdk-orderbook` and
 `cow-sdk-subgraph` for `wasm32` in CI type-checks the browser terminal and
-its target-gated `cow-sdk-transport-wasm` dependency edge. Explicit
+its target-gated `cow-sdk-core` `FetchTransport` dependency edge. Explicit
 `.transport(...)` injection remains available on every target for a custom
 backend.
 

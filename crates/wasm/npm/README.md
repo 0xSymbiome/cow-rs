@@ -19,7 +19,7 @@ flavor-specific imports without depending on a specific wallet library.
 | Cloudflare Worker proxying CoW orderbook calls | `<published-cow-sdk-wasm-package>/cloudflare` | Worker-compatible web target and explicit wasm module initialization |
 | Signer service or HSM proxy | `<published-cow-sdk-wasm-package>/signing` | Signing primitives without orderbook, trading, subgraph, or IPFS clients |
 | Native Rust service, bot, solver, or treasury automation | `cow-sdk` | Avoids wasm-bindgen and npm packaging entirely |
-| Rust app compiled to browser WASM | `cow-sdk-browser-wallet` plus `cow-sdk-transport-wasm` | Rust-on-wasm path; this package is for JavaScript hosts |
+| Rust app compiled to browser WASM | `cow-sdk-browser-wallet` plus `cow-sdk-core` (browser `FetchTransport`) | Rust-on-wasm path; this package is for JavaScript hosts |
 
 ## Not in this crate
 

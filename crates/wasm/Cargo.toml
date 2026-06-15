@@ -56,7 +56,7 @@ flavor-default = [
     "trading",
     "subgraph",
 ]
-tracing = ["dep:tracing"]
+tracing = ["dep:tracing", "cow-sdk-core/tracing"]
 
 [dependencies]
 alloy-primitives.workspace = true
@@ -91,4 +91,9 @@ wasm-bindgen-test.workspace = true
 cow-sdk-test-utils = { path = "../test-utils" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+# Drives the native `ReqwestTransport` half of the cross-adapter transport
+# parity and tracing-span contract tests; the wasm `FetchTransport` half of the
+# same files runs under `wasm-pack test`.
+cow-sdk-test-utils = { path = "../test-utils" }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread", "test-util"] }
+wiremock.workspace = true

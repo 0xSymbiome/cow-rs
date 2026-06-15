@@ -21,7 +21,7 @@ cow-sdk-orderbook = { version = "0.1", features = ["tracing"] }
 cow-sdk-subgraph = { version = "0.1", features = ["tracing"] }
 cow-sdk-signing = { version = "0.1", features = ["tracing"] }
 cow-sdk-browser-wallet = { version = "0.1", features = ["tracing"] }
-cow-sdk-transport-wasm = { version = "0.1", features = ["tracing"] }
+cow-sdk-core = { version = "0.1", features = ["tracing"] }
 ```
 
 With the feature off the SDK emits zero spans and zero events, and none of
@@ -124,7 +124,7 @@ emitted through the wrapped future without additional instrumentation.
 
 When the `tracing` feature is enabled, the native
 `cow_sdk_core::ReqwestTransport` and browser
-`cow_sdk_transport_wasm::FetchTransport` emit one `info` span named
+`cow_sdk_core::FetchTransport` emit one `info` span named
 `transport.dispatch` for each low-level dispatch. Both adapters record
 `method`, path-only `endpoint`, `bytes_sent`, and `bytes_received`; the
 browser adapter also records `chain = "wasm32"`. The endpoint field never

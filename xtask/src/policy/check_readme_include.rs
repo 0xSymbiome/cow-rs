@@ -33,7 +33,6 @@ const README_RENDERING_CRATES: &[&str] = &[
     "trading",
     "subgraph",
     "browser-wallet",
-    "transport-wasm",
     "sdk",
 ];
 

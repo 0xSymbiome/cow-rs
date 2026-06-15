@@ -101,8 +101,9 @@ impl std::fmt::Debug for TransportResponse {
 /// Implementations dispatch REST requests without committing the calling
 /// crate to any specific backend. The native default implementation is
 /// [`ReqwestTransport`](crate::transport::ReqwestTransport); the browser
-/// default implementation lives in `cow-sdk-transport-wasm` and bridges the
-/// same async signature through `JsFuture`.
+/// default implementation is `FetchTransport`, the `wasm32` sibling in this
+/// crate's `transport::fetch` module, which bridges the same async signature
+/// through `JsFuture`.
 ///
 /// Most consumers never implement this trait. The orderbook and subgraph
 /// builders install the per-target default automatically, so the zero-config

@@ -3,8 +3,8 @@
 `cow-rs` ships browser-runtime support behind a two-tier proof posture that
 separates deterministic contract proof from environment-sensitive
 confirmation. Both tiers are required. Neither substitutes for the other. The
-proof lives in the `cow-sdk-browser-wallet` and `cow-sdk-transport-wasm` crate
-test lanes, not in an example surface.
+proof lives in the `cow-sdk-browser-wallet` crate test lane and the
+browser-transport tests under `crates/wasm`, not in an example surface.
 
 ## Deterministic Lane
 
@@ -23,9 +23,10 @@ claim and runs on every commit.
   headless browser so the WebAssembly boundary and the `wasm-bindgen` interop
   idioms see continuous proof. These cases include the deterministic mock-wallet
   state machine and EIP-6963 discovery-event serialization round trips.
-- The fetch-backed browser transport (`cow-sdk-transport-wasm`) is exercised
-  directly through a headless browser, covering its browser dispatch shape,
-  redacted endpoint telemetry, and native-versus-browser error-class parity.
+- The fetch-backed browser transport — `cow-sdk-core`'s `FetchTransport`,
+  exercised by the tests under `crates/wasm` — runs directly through a headless
+  browser, covering its browser dispatch shape, redacted endpoint telemetry, and
+  native-versus-browser error-class parity.
 
 ## Environment-Sensitive Lane
 

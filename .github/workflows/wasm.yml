@@ -102,10 +102,11 @@ jobs:
       - name: Check default-transport builder crates compile for wasm32
         # The orderbook and subgraph builders split their default-transport
         # `.build()` impl by target: native targets construct `ReqwestTransport`
-        # and `wasm32` targets construct the browser `FetchTransport`. Compiling
-        # both crates for wasm32 type-checks the `wasm32` default terminal and
-        # its target-gated `cow-sdk-transport-wasm` dependency edge, so a break
-        # in the browser default surfaces in the fast checks.
+        # and `wasm32` targets construct the browser `FetchTransport`, both of
+        # which live in `cow-sdk-core`. Compiling both crates for wasm32
+        # type-checks the `wasm32` default terminal and its
+        # `cow_sdk_core::FetchTransport` edge, so a break in the browser default
+        # surfaces in the fast checks.
         run: cargo check -p cow-sdk-orderbook -p cow-sdk-subgraph --target wasm32-unknown-unknown
       - name: Test host pure helpers
         run: cargo test -p cow-sdk-wasm --test host_pure_helpers
@@ -407,18 +408,12 @@ jobs:
         # which the setup-geckodriver step placed on `PATH`.
         run: wasm-pack test --release --headless --firefox crates/wasm
       - name: Test cow-sdk-wasm tracing spans in headless Firefox
-        # The export-surface tracing-span tests are wasm32-only and gated on the
-        # crate's `tracing` feature, so the default run above never builds them.
-        # The `tracing` feature keeps the default flavor and adds span emission so
-        # the telemetry contract tests run.
+        # The export-surface and browser `FetchTransport` tracing-span tests are
+        # wasm32-only and gated on the crate's `tracing` feature, so the default
+        # run above never builds them. The `tracing` feature keeps the default
+        # flavor, adds span emission, and forwards `cow-sdk-core/tracing` so the
+        # transport telemetry contract tests run.
         run: wasm-pack test --release --headless --firefox crates/wasm --features tracing
-      - name: Test cow-sdk-transport-wasm in headless Firefox
-        # The browser FetchTransport parity, error-class, timeout, and
-        # tracing-span tests are wasm32-only, so the native `cargo test`
-        # workflow never builds or runs them. `--all-features` enables the
-        # crate's `tracing` feature so the tracing-span contract tests run
-        # alongside the default request/response coverage.
-        run: wasm-pack test --release --headless --firefox crates/transport-wasm --all-features
 
   vitest-nodejs:
     runs-on: ubuntu-latest

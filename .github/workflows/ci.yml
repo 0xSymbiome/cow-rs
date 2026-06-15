@@ -282,7 +282,6 @@ jobs:
             --config "patch.crates-io.cow-sdk-subgraph.path='crates/subgraph'"
             --config "patch.crates-io.cow-sdk-test.path='crates/test'"
             --config "patch.crates-io.cow-sdk-trading.path='crates/trading'"
-            --config "patch.crates-io.cow-sdk-transport-wasm.path='crates/transport-wasm'"
           )
           cargo publish --dry-run --no-verify -p cow-sdk-core --allow-dirty "${WORKSPACE_PATCHES[@]}"
           cargo publish --dry-run --no-verify -p cow-sdk-contracts --allow-dirty "${WORKSPACE_PATCHES[@]}"
@@ -290,7 +289,6 @@ jobs:
           cargo publish --dry-run --no-verify -p cow-sdk-orderbook --allow-dirty "${WORKSPACE_PATCHES[@]}"
           cargo publish --dry-run --no-verify -p cow-sdk-signing --allow-dirty "${WORKSPACE_PATCHES[@]}"
           cargo publish --dry-run --no-verify -p cow-sdk-subgraph --allow-dirty "${WORKSPACE_PATCHES[@]}"
-          cargo publish --dry-run --no-verify -p cow-sdk-transport-wasm --allow-dirty "${WORKSPACE_PATCHES[@]}"
           cargo publish --dry-run --no-verify -p cow-sdk-trading --allow-dirty "${WORKSPACE_PATCHES[@]}"
           cargo publish --dry-run --no-verify -p cow-sdk-alloy-provider --allow-dirty "${WORKSPACE_PATCHES[@]}"
           cargo publish --dry-run --no-verify -p cow-sdk-alloy-signer --allow-dirty "${WORKSPACE_PATCHES[@]}"

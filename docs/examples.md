@@ -56,8 +56,9 @@ Use the WASM example when you want a runnable browser-wallet flow in Rust.
 
 The example is a consumer demonstration that talks to the live orderbook. The
 deterministic browser-runtime proof for the underlying contract lives in the
-crate test lanes (`cow-sdk-browser-wallet`, `cow-sdk-transport-wasm`), described
-in [Browser-runtime proof posture](browser-runtime-proof-posture.md).
+`cow-sdk-browser-wallet` crate test lane and the browser-transport tests under
+`crates/wasm`, described in
+[Browser-runtime proof posture](browser-runtime-proof-posture.md).
 
 ## TypeScript WASM Package Examples
 

@@ -80,7 +80,7 @@ Primary regression coverage:
 - `crates/browser-wallet/tests/wasm_bridge_contract.rs`
 - `crates/browser-wallet/tests/wasm_bridge_contract.rs::mock_wallet_console_state_machine_is_deterministic`
 - `crates/browser-wallet/tests/wasm_bridge_contract.rs::eip6963_discovery_event_serde_roundtrip`
-- `crates/transport-wasm/tests/wasm.rs`
+- `crates/wasm/tests/transport_fetch_smoke.rs`
 
 Validation surface:
 

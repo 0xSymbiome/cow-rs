@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-04-17
-- Last reviewed: 2026-06-11
+- Last reviewed: 2026-06-15
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: async, cancellation, transport, observability, error-model
 - Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md), [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), [ADR 0040](0040-wallet-provider-callback-boundary-for-js-consumers.md)
@@ -16,12 +16,16 @@ cancellation through `cow_sdk_core::Cancellable::cancel_with(&token)`, the
 instrumentation stays opt-in.
 
 The runtime-neutral transport posture supports three
-`cow_sdk_core::HttpTransport` implementations: `ReqwestTransport` for native
-targets, target-gated inside `cow-sdk-core`; `cow_sdk_transport_wasm::FetchTransport`
-for browser `fetch`; and `cow_sdk_wasm::exports::JsCallbackHttpTransport` for
-runtime-neutral JS consumers such as Node, Workers, and Deno. reqwest stays in
-`cow-sdk-core`, target-gated; the workspace does not extract a separate
-native-reqwest transport crate.
+`cow_sdk_core::HttpTransport` implementations, two of which ship inside
+`cow-sdk-core` under target cfgs: `ReqwestTransport` for native targets and
+`FetchTransport` (browser `fetch`) for `wasm32-unknown-unknown`. The third,
+`cow_sdk_wasm::exports::JsCallbackHttpTransport`, serves runtime-neutral JS
+consumers such as Node, Workers, and Deno. Both default transports stay in
+`cow-sdk-core`, each gated to its target; the workspace does not extract a
+separate per-target transport crate. The browser `FetchTransport` is the
+`wasm32` sibling of the native `ReqwestTransport`, gated to
+`cfg(all(target_arch = "wasm32", target_os = "unknown"))` so WASI builds stay
+free of the browser-global dependency stack.
 
 The JS callback transport enforces SDK-owned request timeout with
 `globalThis.AbortController`. Its `TimerGuard` owns both the opaque timer

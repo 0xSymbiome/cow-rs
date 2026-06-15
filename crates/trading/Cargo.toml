@@ -61,7 +61,6 @@ gloo-timers.workspace = true
 web-time.workspace = true
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
-cow-sdk-transport-wasm = { path = "../transport-wasm", version = "0.1.0" }
 tokio = { workspace = true, features = ["macros", "rt", "test-util", "time"] }
 wasm-bindgen-test.workspace = true
 

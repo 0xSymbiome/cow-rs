@@ -61,6 +61,8 @@ pub use transport::{HttpTransport, TransportError, TransportResponse};
 /// not declare a separate `async-trait` dependency at a matching version,
 /// mirroring how `serde` re-exports its derive.
 pub use async_trait::async_trait;
+#[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+pub use transport::{FetchTransport, FetchTransportConfig};
 #[cfg(not(target_arch = "wasm32"))]
 pub use transport::{ReqwestTransport, ReqwestTransportConfig};
 pub use types::{

@@ -13,11 +13,13 @@ Keep browser wallet support explicit, feature-scoped, and compatibility-bounded,
 and keep browser-runtime interop aligned to the current leaf-local
 `wasm-bindgen` contract.
 
-The leaf-local rule applies per WASM leaf. cow-rs supports three peer WASM
-leaves: `cow-sdk-browser-wallet` for the Rust-native EIP-1193 wallet adapter,
-`cow-sdk-transport-wasm` for browser `fetch`, and `cow-sdk-wasm` for the
-TypeScript-callable surface used by JavaScript consumers. Each leaf is
-single-purpose and additive per ADR 0008.
+The leaf-local rule applies per WASM leaf. cow-rs supports two peer WASM
+leaves: `cow-sdk-browser-wallet` for the Rust-native EIP-1193 wallet adapter
+and `cow-sdk-wasm` for the TypeScript-callable surface used by JavaScript
+consumers. Each leaf is single-purpose and additive per ADR 0008. The browser
+`fetch` HTTP transport (`FetchTransport`) is not a separate leaf: it ships as a
+target-gated module of `cow-sdk-core`, the `wasm32` sibling of the native
+`ReqwestTransport` (ADR 0010).
 
 ## Why
 

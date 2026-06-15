@@ -101,7 +101,7 @@ Every surface in this table is shipped from cow-rs source and may not be swapped
 | HTTP REST transport seam (`HttpTransport` trait + `TransportError::HttpStatus` carrying headers/body) | `cow-sdk-core::transport` | ADR 0010, ADR 0013 | alloy's transport is `tower::Service<RequestPacket>` over JSON-RPC; cow's is REST; they are not type-compatible. The trait is cow-owned (here); the alloy *wrap of the alloy ecosystem* would be Bucket 3 if any — none ships, because alloy has no REST transport. |
 | `parse_retry_after` for the HTTP `Retry-After` header | `crates/core/src/transport/policy/retry_after.rs` | ADR 0041 | alloy's namesake parses `"try again in 4ms"` JSON-RPC error message strings; swapping silently ignores RFC 7231 §7.1.1.1 (delta-seconds + IMF-fixdate + RFC 850). The IMF-fixdate parse itself (`httpdate::parse_http_date`) is Bucket 1; the *RFC 7231 dispatch policy* around it is Bucket 2. |
 | Retry, throttle, error-classification policy | `cow_sdk_core::transport::policy` | ADR 0041, ADR 0046 | Honours `Retry-After` for 429/503, retries on `408,425,429,500,502,503,504`; not alloy's policy. |
-| Browser `FetchTransport` with `AbortController` lifecycle | `crates/transport-wasm/src/fetch.rs` | ADR 0010 | alloy ships no browser-fetch transport; alloy transport stack would pull tokio into a `wasm32-unknown-unknown` build. |
+| Browser `FetchTransport` with `AbortController` lifecycle | `crates/core/src/transport/fetch.rs` | ADR 0010 | alloy ships no browser-fetch transport; alloy transport stack would pull tokio into a `wasm32-unknown-unknown` build. |
 | `JsCallbackHttpTransport` (Node/Deno/Workers callback transport) | `cow-sdk-wasm::exports::JsCallbackHttpTransport` | ADR 0010, ADR 0040 | Runtime-neutral JS callback transport; alloy ships no equivalent. |
 | EIP-712 type-string whitespace contract | `crates/contracts/src/order.rs`, every type string literal in `cow-sdk-contracts` and (future) `cow-sdk-composable` | ADR 0050 | Any whitespace creep between commas in EIP-712 type strings shifts the struct hash; every signature breaks. Formatter-driven risk. |
 | `keccak_word` test oracle (independent `sha3::Keccak256`) | `crates/contracts/src/order.rs` | ADR 0052 implicit | Test-only but load-bearing: collapsing to `alloy_primitives::keccak256` means the parity test verifies alloy against itself. |
@@ -118,7 +118,7 @@ Each entry defines a cow-owned trait in `cow-sdk-core` and ships a separate adap
 | `SigningProvider: Provider` (signer creation extension) | `cow_sdk_core::SigningProvider` | `cow-sdk-alloy` (composed read+sign) | `alloy_provider::DynProvider<Ethereum>` with wallet filler | ADR 0024, ADR 0037 |
 | `Signer` (EIP-191 + EIP-712 signing) | `cow_sdk_core::Signer` | `cow-sdk-alloy-signer` (native local private-key); `cow-sdk-alloy::AlloyClientSignerHandle` (composed) | `alloy_signer_local::PrivateKeySigner`, `alloy_signer::Signer` | ADR 0024, ADR 0036, ADR 0045 |
 | Narrow capability traits (`TypedDataSigner`, `DigestSigner`) | `cow_sdk_core::{TypedDataSigner, DigestSigner}` | Callback-shaped adapters (`cow-sdk-browser-wallet`, `cow-sdk-wasm`) that expose a single signing operation | n/a — these are cow-owned shapes; alloy ships no peer | ADR 0024, ADR 0045 |
-| `HttpTransport` (REST/GraphQL) | `cow_sdk_core::HttpTransport` | `ReqwestTransport` (target-gated inside `cow-sdk-core`); `cow_sdk_transport_wasm::FetchTransport`; `cow_sdk_wasm::exports::JsCallbackHttpTransport` | `reqwest::Client` for native; `web_sys::Fetch` for browser; JS callback for Node/Deno/Workers | ADR 0010, ADR 0013 |
+| `HttpTransport` (REST/GraphQL) | `cow_sdk_core::HttpTransport` | `ReqwestTransport` and `FetchTransport`, both target-gated inside `cow-sdk-core`; `cow_sdk_wasm::exports::JsCallbackHttpTransport` | `reqwest::Client` for native; `web_sys` global `fetch` for browser; JS callback for Node/Deno/Workers | ADR 0010, ADR 0013 |
 | `IpfsFetchTransport` | `cow_sdk_app_data::IpfsFetchTransport` (re-exported via `cow-sdk-core` cancellation contract) | `cow-sdk-app-data` native + browser variants | Same underlying transports as `HttpTransport`; the CID-fetch policy is cow-owned | ADR 0010 (cancellation extension to IPFS fetch) |
 | Wallet/provider/signer JS callback boundary | `cow_sdk_wasm` typed callbacks (`TypedDataSignerCallback`, `Eip1193RequestCallback`, `DigestSignerCallback`, `CustomEip1271Callback`, `CowFetchCallback`) | `cow-sdk-browser-wallet`, `cow-sdk-wasm` | EIP-1193 provider request semantics owned by the host JS, not by Rust types | ADR 0040, ADR 0045, ADR 0047 |
 | Transaction lifecycle types (`TransactionBroadcast`, `TransactionReceipt`) | `cow_sdk_core::transaction` | Implemented by `cow-sdk-alloy-provider`, `cow-sdk-alloy`, `cow-sdk-browser-wallet`, any custom adapter | `alloy_rpc_types_eth::TransactionReceipt` | ADR 0038 |
@@ -144,11 +144,12 @@ The tree is runnable as-is. Two traces that show the non-obvious verdicts:
 
 ## Never-swap fences
 
-The most security-sensitive Bucket 2 entries carry an explicit `// DO NOT SWAP`
-comment at their load-bearing call site (in `crates/contracts/`, `crates/core/`,
-`crates/signing/`, and `crates/transport-wasm/`), and a source fence in
-`xtask/src/policy/fences.rs` — run by `cargo check-source-fences` — mechanically
-rejects the forbidden alloy symbol. The canonical roster:
+Every entry below is enforced by a source fence in
+`xtask/src/policy/fences.rs` — run by `cargo check-source-fences` — that
+mechanically rejects the forbidden alloy symbol. The most security-sensitive
+call sites (in `crates/contracts/`, `crates/core/`, and `crates/signing/`) also
+carry an explanatory `// DO NOT SWAP` comment; others, such as the browser
+`FetchTransport`, rely on the fence alone. The canonical roster:
 
 1. ECDSA `v` byte canonicalization (ADR 0022).
 2. `Amount::new` radix sniffing (ADR 0052).
@@ -156,7 +157,7 @@ rejects the forbidden alloy symbol. The canonical roster:
 4. `SupportedChainId` + `api_path()` (ADR 0005, ADR 0011).
 5. `TypedDataDomain` cow struct (ADR 0052, ADR 0040).
 6. EIP-1271 blob Shape A vs B (ADR 0050 — future, composable deferred).
-7. `cow_sdk_core::transport::policy` + `cow-sdk-transport-wasm` (ADR 0010, 0013, 0041, 0046).
+7. `cow_sdk_core::transport::policy` + `cow_sdk_core::transport::fetch` (ADR 0010, 0013, 0041, 0046).
 8. Plus three additional never-swap surfaces:
    - `api_path()` URL labels (sub-invariant of #4),
    - `keccak_word` test oracle in `crates/contracts/src/order.rs`,

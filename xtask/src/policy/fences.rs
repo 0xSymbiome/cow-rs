@@ -135,7 +135,6 @@ const FENCES: &[Fence] = &[
         name: "rest-transport-stack",
         scope: Scope::RustUnder(&[
             "crates/core/src/transport",
-            "crates/transport-wasm/src",
             "crates/orderbook/src",
             "crates/subgraph/src",
         ]),

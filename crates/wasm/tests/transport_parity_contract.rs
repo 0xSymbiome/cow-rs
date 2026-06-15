@@ -1,5 +1,6 @@
 //! Parity contract between [`cow_sdk_core::ReqwestTransport`] and
-//! `cow_sdk_transport_wasm::FetchTransport`.
+//! [`cow_sdk_core::FetchTransport`] — the native and browser implementations of
+//! the shared [`cow_sdk_core::HttpTransport`] seam.
 //!
 //! The inline `*_FIXTURE` constants carry the canonical response bytes both
 //! adapters are required to deliver through the shared [`HttpTransport`]
@@ -59,7 +60,7 @@ fn cross_adapter_error_matrix_names_every_exercised_class() {
 
 #[test]
 fn fetch_transport_contract_remains_request_response_only() {
-    let fetch_source = include_str!("../src/fetch.rs");
+    let fetch_source = include_str!("../../core/src/transport/fetch.rs");
     let transport_docs = include_str!("../../../docs/transport.md");
 
     assert!(
@@ -307,8 +308,8 @@ mod native {
 mod wasm {
     use std::time::Duration;
 
+    use cow_sdk_core::{FetchTransport, FetchTransportConfig};
     use cow_sdk_core::{HttpTransport, TransportError};
-    use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
     use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
     use wasm_bindgen_test::{wasm_bindgen_test, wasm_bindgen_test_configure};
 

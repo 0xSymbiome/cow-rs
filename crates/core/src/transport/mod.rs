@@ -3,8 +3,8 @@
 //! The [`HttpTransport`] trait is the production seam that downstream clients
 //! use to dispatch REST requests without committing to a concrete backend.
 //! Every method is `async` so implementations can bridge either a native
-//! runtime (through [`ReqwestTransport`]) or a browser runtime (through a
-//! `JsFuture`-backed adapter in `cow-sdk-transport-wasm`).
+//! runtime (through [`ReqwestTransport`]) or a browser runtime (through the
+//! `fetch` module's `FetchTransport` on `wasm32`).
 //!
 //! Every method carries the per-call header set and an optional per-call
 //! timeout so typed consumers compose one injection point without holding a
@@ -33,11 +33,22 @@ pub mod policy;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod reqwest;
 
+/// Browser `fetch`-backed [`HttpTransport`] for `wasm32` JS realms.
+///
+/// The wasm sibling of the native `reqwest` adapter, gated to
+/// `target_os = "unknown"` so WASI builds never pull the browser-global
+/// dependency stack.
+#[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+pub mod fetch;
+
 pub use error::TransportError;
 pub use http::{HttpTransport, TransportResponse};
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use self::reqwest::{ReqwestTransport, ReqwestTransportConfig, classify_reqwest_error};
+
+#[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+pub use self::fetch::{FetchTransport, FetchTransportConfig};
 
 pub use crate::validation::TransportErrorClass;
 

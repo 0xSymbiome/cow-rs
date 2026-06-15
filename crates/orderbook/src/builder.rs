@@ -16,7 +16,7 @@
 //! The builder also exposes [`OrderbookApiBuilder::build`] against the
 //! typestate where transport is unset, defaulting the transport per target:
 //! [`ReqwestTransport`](cow_sdk_core::ReqwestTransport) on native targets and
-//! `FetchTransport` from `cow-sdk-transport-wasm` (the realm's global
+//! `FetchTransport` from `cow-sdk-core` (the realm's global
 //! `fetch`) on `wasm32`, so the common consumer never has to wire a
 //! transport explicitly on either target. Consumers that need a custom
 //! backend keep the explicit [`OrderbookApiBuilder::transport`] seam.
@@ -47,10 +47,10 @@ use cow_sdk_core::{
     ApiBaseUrls, CowEnv, ExternalHostPolicy, HttpTransport, Redacted, SupportedChainId,
     canonical_orderbook_hosts, validate_external_service_url,
 };
+#[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+use cow_sdk_core::{FetchTransport, FetchTransportConfig};
 #[cfg(not(target_arch = "wasm32"))]
 use cow_sdk_core::{ReqwestTransport, ReqwestTransportConfig};
-#[cfg(target_arch = "wasm32")]
-use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
 #[cfg(not(target_arch = "wasm32"))]
 use reqwest::Client;
 
@@ -396,7 +396,7 @@ impl OrderbookApiBuilder<ChainIdSet, EnvSet, TransportUnset> {
     }
 }
 
-#[cfg(target_arch = "wasm32")]
+#[cfg(all(target_arch = "wasm32", target_os = "unknown"))]
 impl OrderbookApiBuilder<ChainIdSet, EnvSet, TransportUnset> {
     /// Builds the [`OrderbookApi`] with the supplied chain and environment,
     /// defaulting the transport to the browser [`FetchTransport`] backed by

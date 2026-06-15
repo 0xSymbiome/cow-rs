@@ -1,83 +1,30 @@
-//! Browser [`HttpTransport`] implementation backed by the realm's global `fetch`.
+//! Browser [`HttpTransport`] backed by the realm's global `fetch`.
 //!
-//! [`FetchTransport`] dispatches REST requests through the realm's global
-//! `fetch` function — present on a `Window` or a worker global scope — and
-//! bridges the returned `Promise` to a `Future` via
-//! [`wasm_bindgen_futures::JsFuture`]. Every failure surfaces through the
-//! shared [`TransportError`] enum with the same [`TransportErrorClass`]
-//! taxonomy that the native [`cow_sdk_core::ReqwestTransport`] uses, so
-//! consumers that partition telemetry or shape retry policy on the class
-//! value observe identical behavior across runtimes.
+//! [`FetchTransport`] dispatches each request through the global `fetch` —
+//! resolved from [`js_sys::global`], so it runs on a `Window` or a worker — and
+//! bridges the returned `Promise` to a `Future`. Failures surface through
+//! [`TransportError`] with the same [`TransportErrorClass`] taxonomy as the
+//! native `ReqwestTransport`; a non-2xx response surfaces through
+//! [`TransportError::HttpStatus`], carrying the status, headers, and body.
 //!
-//! Non-2xx responses surface through [`TransportError::HttpStatus`] with the
-//! numeric status code, response headers, and raw response body so
-//! downstream crates receive the HTTP-status context through the typed error
-//! channel instead of through an `Ok(String)` success path.
-//!
-//! # Per-call header and timeout contract
-//!
-//! Per-call headers are merged onto the [`web_sys::Request`] header set
-//! before the browser dispatches the request. An `Option<Duration>` per-call
-//! timeout overrides the transport's constructor-configured default; a
-//! `Some` timeout wires an [`web_sys::AbortController`] into the in-flight
-//! request and holds the abort handle across both the `fetch()` promise and
-//! the response-body read. The configured [`Duration`] therefore bounds the
-//! full request-response lifecycle, including headers and body bytes. A
-//! stalled body that exceeds the configured timeout is aborted and surfaces as
-//! [`TransportErrorClass::Timeout`]. Cancellation drops the owned callback
-//! closure registered with `setTimeout`, so long-lived browser sessions do
-//! not accumulate dead timeout callbacks.
-//!
-//! # URL redaction
-//!
-//! The configured base URL is held in [`cow_sdk_core::Redacted`] so it never
-//! appears in [`std::fmt::Debug`], [`std::fmt::Display`], or serde output,
-//! matching the native default.
-//!
-//! # Redirect handling
-//!
-//! The transport uses the browser's default `redirect: "follow"` fetch mode,
-//! so the `fetch` call resolves to the final destination response after the
-//! browser has walked every intermediate redirect. Redirect-chain failures
-//! surface as `TypeError`-shaped DOMExceptions classified through
-//! [`TransportErrorClass::Connect`], consistent with the browser platform
-//! contract. Callers that need manual redirect inspection run the request
-//! through their own fetch bridge rather than through this default adapter.
-
-// DO NOT SWAP for any alloy transport.
-//
-// alloy ships no browser-fetch transport. The alloy transport stack
-// (`alloy_transport_http`, `alloy_transport`, etc.) wraps
-// `tower::Service` over JSON-RPC packet types and hard-depends on
-// `tokio` for `Service::poll_ready` — both incompatible with the
-// `wasm32-unknown-unknown` target. Swapping would force a tokio
-// runtime into the browser bundle and explode the bundle size
-// budget pinned in ADR 0044.
-//
-// The `AbortController` lifecycle in this module (declared at the
-// `use web_sys::AbortController` import below and wired through the
-// dispatch path and the abort-timeout helper) is the cow-owned
-// timeout-cancellation seam. The per-call timeout contract
-// documented above is part of the cow public API; the alloy
-// ecosystem does not own this seam.
-//
-// ADR: docs/adr/0010-runtime-neutral-async-and-transport-posture.md,
-// docs/adr/0046-transport-policy-js-exposure.md.
-// Doctrine: docs/alloy-doctrine.md, Bucket 2 row for Browser
-// `FetchTransport` with `AbortController` lifecycle.
-// Enforced by cargo check-source-fences (xtask/src/policy/fences.rs).
+//! A per-call timeout wires an [`web_sys::AbortController`] into the request and
+//! bounds the whole request-response lifecycle, including the body read; an
+//! exceeded timeout surfaces as [`TransportErrorClass::Timeout`]. The base URL
+//! is held in [`crate::Redacted`] so it never reaches `Debug`, `Display`, or
+//! serde output. Redirects follow the browser default.
 
 use std::time::Duration;
 
 use async_trait::async_trait;
-use cow_sdk_core::{
-    DEFAULT_MAX_RESPONSE_BYTES, HttpTransport, Redacted, TransportError, TransportErrorClass,
-    TransportResponse,
-};
 use js_sys::{Array, Function, Object, Promise, Reflect};
 use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{AbortController, Headers, Request, RequestInit, Response};
+
+use crate::{
+    DEFAULT_MAX_RESPONSE_BYTES, HttpTransport, Redacted, TransportError, TransportErrorClass,
+    TransportResponse,
+};
 
 /// Configuration bundle for [`FetchTransport`].
 ///
@@ -140,14 +87,11 @@ impl FetchTransportConfig {
     }
 }
 
-/// Browser fetch-based [`HttpTransport`] implementation.
+/// Browser fetch-based [`HttpTransport`].
 ///
-/// The transport is cheap to clone: the base URL and timeout are stored
-/// alongside each handle and every dispatch call re-reads the global `fetch`
-/// from the current realm, so consumers can cache the instance per client
-/// without worrying about cross-realm retention. Reading `fetch` from the
-/// global scope rather than `window()` lets the same transport run on a
-/// `Window` or a worker, not the main thread alone.
+/// Cheap to clone: each dispatch re-reads the global `fetch` from the current
+/// realm, so an instance can be cached per client and used on a `Window` or a
+/// worker alike.
 #[derive(Debug, Clone)]
 pub struct FetchTransport {
     base_url: Redacted<String>,
@@ -174,7 +118,7 @@ impl FetchTransport {
     }
 
     fn resolve_url(&self, path: &str) -> String {
-        cow_sdk_core::transport::join_request_url(self.base_url.as_inner(), path)
+        super::join_request_url(self.base_url.as_inner(), path)
     }
 
     async fn dispatch(
@@ -189,7 +133,7 @@ impl FetchTransport {
         {
             use tracing::Instrument as _;
 
-            let endpoint = cow_sdk_core::transport::span_endpoint(path);
+            let endpoint = super::span_endpoint(path);
             let bytes_sent = body.map_or(0, str::len);
             let span = tracing::info_span!(
                 target: "cow_sdk::transport",
@@ -232,74 +176,35 @@ impl FetchTransport {
         let url = self.resolve_url(path);
         let (global, fetch) = global_fetch_or_configuration_error()?;
         let init = build_request_init(method, body, headers)?;
-        let effective_timeout = timeout.or(self.timeout);
-        let mut abort_timeout = match effective_timeout {
+        // RAII guard: dropping it cancels the timer (gloo calls `clearTimeout`)
+        // on every exit path, so no timeout callback outlives its request.
+        let _abort_timeout = match timeout.or(self.timeout) {
             Some(timeout) => Some(install_abort_timeout(&init, timeout)?),
             None => None,
         };
-        let request = match Request::new_with_str_and_init(&url, &init) {
-            Ok(request) => request,
-            Err(error) => {
-                if let Some(handle) = abort_timeout.take() {
-                    handle.cancel();
-                }
-                return Err(configuration_error("could not build fetch request", &error));
-            }
-        };
-        let fetch_invocation = match fetch.call1(&global, request.as_ref()) {
-            Ok(value) => value,
-            Err(error) => {
-                if let Some(handle) = abort_timeout.take() {
-                    handle.cancel();
-                }
-                return Err(classify_fetch_rejection(&error));
-            }
-        };
-        let response_value = match JsFuture::from(Promise::resolve(&fetch_invocation)).await {
-            Ok(value) => value,
-            Err(error) => {
-                if let Some(handle) = abort_timeout.take() {
-                    handle.cancel();
-                }
-                return Err(classify_fetch_rejection(&error));
-            }
-        };
-        let response: Response = match response_value.dyn_into() {
-            Ok(response) => response,
-            Err(_) => {
-                if let Some(handle) = abort_timeout.take() {
-                    handle.cancel();
-                }
-                return Err(decode_error(
-                    "fetch returned a value that was not a Response",
-                ));
-            }
-        };
+        let request = Request::new_with_str_and_init(&url, &init)
+            .map_err(|error| configuration_error("could not build fetch request", &error))?;
+        let fetch_invocation = fetch
+            .call1(&global, request.as_ref())
+            .map_err(|error| classify_fetch_rejection(&error))?;
+        let response_value = JsFuture::from(Promise::resolve(&fetch_invocation))
+            .await
+            .map_err(|error| classify_fetch_rejection(&error))?;
+        let response: Response = response_value
+            .dyn_into()
+            .map_err(|_| decode_error("fetch returned a value that was not a Response"))?;
         let status = response.status();
         let headers = response_headers(&response.headers());
-        let text_promise = match response.text() {
-            Ok(promise) => promise,
-            Err(error) => {
-                if let Some(handle) = abort_timeout.take() {
-                    handle.cancel();
-                }
-                return Err(body_error("could not read response body", &error));
-            }
-        };
-        let body_result = JsFuture::from(text_promise).await;
-        if let Some(handle) = abort_timeout.take() {
-            handle.cancel();
-        }
-        let text_value =
-            body_result.map_err(|error| body_error("could not decode response body", &error))?;
-        let body_text = text_value
+        let text_promise = response
+            .text()
+            .map_err(|error| body_error("could not read response body", &error))?;
+        let body_text = JsFuture::from(text_promise)
+            .await
+            .map_err(|error| body_error("could not decode response body", &error))?
             .as_string()
             .ok_or_else(|| decode_error("response body was not a string"))?;
-        // The browser fetch has already materialized the full body into a JS
-        // string by this point, so this bound refuses to hand an oversized body
-        // to the rest of the SDK rather than capping the read mid-stream; the
-        // browser's single-request model keeps the residual allocation small.
-        // The limit bounds decoded bytes.
+        // The body is already fully materialized in JS here, so the cap rejects
+        // an oversized body rather than capping mid-stream; it bounds decoded bytes.
         if body_text.len() > self.max_response_bytes {
             return Err(TransportError::Transport {
                 class: TransportErrorClass::ResponseTooLarge,
@@ -375,13 +280,10 @@ impl HttpTransport for FetchTransport {
     }
 }
 
-/// Resolves the global `fetch` function from the active realm.
-///
-/// The lookup goes through [`js_sys::global`] rather than `web_sys::window()`
-/// so the transport serves any realm that exposes `fetch` on its global scope
-/// — a `Window` or a worker — not the main thread alone. The function is
-/// invoked with the global object as `this`. A realm without a global `fetch`
-/// returns a typed [`TransportError::Configuration`].
+/// Resolves the global `fetch` from the active realm via [`js_sys::global`], so
+/// it serves a `Window` or a worker alike, and invokes it with the global as
+/// `this`. Returns a typed [`TransportError::Configuration`] when no global
+/// `fetch` exists.
 fn global_fetch_or_configuration_error() -> Result<(JsValue, Function), TransportError> {
     let global: JsValue = js_sys::global().into();
     let fetch = Reflect::get(&global, &JsValue::from_str("fetch"))
@@ -425,23 +327,10 @@ fn build_request_init(
     Ok(init)
 }
 
-struct AbortTimeoutHandle {
-    controller: AbortController,
-    timer: gloo_timers::callback::Timeout,
-}
-
-impl AbortTimeoutHandle {
-    fn cancel(self) {
-        let Self { controller, timer } = self;
-        drop(timer);
-        drop(controller);
-    }
-}
-
 fn install_abort_timeout(
     init: &RequestInit,
     timeout: Duration,
-) -> Result<AbortTimeoutHandle, TransportError> {
+) -> Result<gloo_timers::callback::Timeout, TransportError> {
     let controller = AbortController::new().map_err(|error| {
         configuration_error("could not build an AbortController for the timeout", &error)
     })?;
@@ -452,16 +341,12 @@ fn install_abort_timeout(
             "timeout {ms_u128} ms exceeds the supported browser setTimeout range"
         )),
     })?;
-    let controller_clone = controller.clone();
-    // `gloo_timers::callback::Timeout::new` requires a `FnOnce() + 'static`
-    // closure. `'static` is mandatory because the timer outlives the
-    // enclosing stack frame; `Send` is irrelevant on wasm32 (single-
-    // threaded) but the move-capture of `controller_clone` keeps the
-    // closure naturally `Send`-shaped on any future native-thread port.
-    let timer = gloo_timers::callback::Timeout::new(ms, move || {
-        controller_clone.abort();
-    });
-    Ok(AbortTimeoutHandle { controller, timer })
+    // The `Timeout` owns the closure, which owns the controller, so both live
+    // until the caller drops the guard; gloo's `Timeout::drop` then calls
+    // `clearTimeout`, cancelling the pending abort.
+    Ok(gloo_timers::callback::Timeout::new(ms, move || {
+        controller.abort();
+    }))
 }
 
 fn classify_fetch_rejection(error: &JsValue) -> TransportError {

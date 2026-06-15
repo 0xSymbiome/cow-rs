@@ -51,8 +51,9 @@ The cow-named identity and numeric primitive types ship as cow-owned
 - **Cooperative cancellation** — a re-exported `CancellationToken` plus the
   `Cancellable` / `WithCancellation` combinators for long-running SDK futures.
 - **The HTTP transport seam** — the `HttpTransport` async injection point with the
-  native `ReqwestTransport` default (size-capped, URL-stripping on error); the
-  browser default lives in `cow-sdk-transport-wasm`.
+  native `ReqwestTransport` default (size-capped, URL-stripping on error) and its
+  `wasm32` sibling `FetchTransport` (the browser `fetch` default), both selected
+  automatically by target.
 
 ## Install
 

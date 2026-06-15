@@ -88,8 +88,8 @@ mod native {
 mod wasm {
     use std::time::Duration;
 
+    use cow_sdk_core::{FetchTransport, FetchTransportConfig};
     use cow_sdk_core::{HttpTransport, TransportError, TransportErrorClass};
-    use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
     use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
     use wasm_bindgen_test::{wasm_bindgen_test, wasm_bindgen_test_configure};
 

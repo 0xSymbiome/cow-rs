@@ -57,9 +57,9 @@ runtime to the upstream
 - How do I plug in a custom HTTP transport? Every `HttpTransport` impl
   installs through the builder's `.transport(...)` setter on both
   `OrderbookApi` and `SubgraphApi`. Native consumers get
-  `ReqwestTransport` by default; browser consumers install
-  `FetchTransport` from `cow-sdk-transport-wasm`. See
-  [Transport](transport.md) for the full seam.
+  `ReqwestTransport` by default; browser consumers get `cow-sdk-core`'s
+  `FetchTransport` (the browser sibling of `ReqwestTransport`, in its
+  `transport::fetch` module). See [Transport](transport.md) for the full seam.
 - How do TypeScript apps use the SDK? Use `cow-sdk-wasm` after npm
   publication. Browser bundlers can use the default fetch-backed path, while
   Node.js, Workers, Deno, and custom runtimes provide `CowFetchCallback`

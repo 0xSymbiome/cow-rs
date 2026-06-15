@@ -8,7 +8,6 @@ members = [
   "crates/trading",
   "crates/subgraph",
   "crates/browser-wallet",
-  "crates/transport-wasm",
   "crates/wasm",
   "crates/alloy-provider",
   "crates/alloy-signer",

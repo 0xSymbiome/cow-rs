@@ -1,4 +1,6 @@
-use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
+#![cfg(all(target_arch = "wasm32", target_os = "unknown"))]
+
+use cow_sdk_core::{FetchTransport, FetchTransportConfig};
 use wasm_bindgen_test::{wasm_bindgen_test, wasm_bindgen_test_configure};
 
 wasm_bindgen_test_configure!(run_in_browser);

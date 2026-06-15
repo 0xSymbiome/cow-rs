@@ -41,8 +41,8 @@ sections below describe the public contract a `0.1.0` consumer receives.
   `alloy::sol!` bindings, the `Registry` authority, and EIP-1271 verification),
   `cow-sdk-orderbook` (typed orderbook transport), `cow-sdk-trading`
   (high-level quote-to-order workflows), `cow-sdk-subgraph` (read-only subgraph
-  queries), `cow-sdk-transport-wasm` (browser `FetchTransport`),
-  `cow-sdk-browser-wallet`, `cow-sdk-wasm` (TypeScript-callable bindings), the
+  queries), `cow-sdk-browser-wallet`, `cow-sdk-wasm` (TypeScript-callable
+  bindings), the
   opt-in `cow-sdk-alloy-provider` / `cow-sdk-alloy-signer` / `cow-sdk-alloy`
   adapters, and `cow-sdk-test` (in-memory test doubles).
 - Reserved-placeholder `0.0.1-reserved.0` entries are live on crates.io and
@@ -258,7 +258,7 @@ sections below describe the public contract a `0.1.0` consumer receives.
 - `cow_sdk_core::HttpTransport` is the sole live-dispatch seam on the orderbook
   and subgraph clients, dyn-compatible through `async-trait` and composed as
   `Arc<dyn HttpTransport>`. The native `ReqwestTransport` and the browser
-  `FetchTransport` (from `cow-sdk-transport-wasm`) are the default adapters;
+  `FetchTransport` (both in `cow-sdk-core`) are the default adapters;
   per-call headers and an optional per-call timeout flow into each call. The
   success channel returns a `TransportResponse` carrying the 2xx status code,
   the redacted response headers, and the body, with accessors that mirror the

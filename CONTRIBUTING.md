@@ -38,7 +38,7 @@ cargo test --workspace
 cargo check -p cow-sdk-examples-native --examples --all-features
 cargo run-deterministic-examples
 cargo check-policies
-cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-browser-wallet -p cow-sdk-transport-wasm -p cow-sdk-alloy-provider -p cow-sdk-alloy-signer -p cow-sdk-alloy -p cow-sdk -p cow-sdk-wasm -p cow-sdk-test
+cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-browser-wallet -p cow-sdk-alloy-provider -p cow-sdk-alloy-signer -p cow-sdk-alloy -p cow-sdk -p cow-sdk-wasm -p cow-sdk-test
 ```
 
 The Alloy dependency gates enforce explicit native adapter allow-lists:
@@ -113,7 +113,7 @@ cargo build --target wasm32-unknown-unknown -p cow-sdk
 cargo build --target wasm32-unknown-unknown -p cow-sdk --features browser-wallet
 cargo build --target wasm32-unknown-unknown -p cow-sdk-browser-wallet
 cargo build --target wasm32-unknown-unknown -p cow-sdk-app-data
-cargo build --target wasm32-unknown-unknown -p cow-sdk-transport-wasm
+cargo build --target wasm32-unknown-unknown -p cow-sdk-core
 cargo check --target wasm32-unknown-unknown --manifest-path examples/wasm/cow-trader-dioxus/Cargo.toml
 ```
 
@@ -240,7 +240,7 @@ maintained by repository administrators.
 | Lane | Workflow | Blocks PRs that touch |
 | --- | --- | --- |
 | Core CI aggregate | `.github/workflows/ci.yml` (`ci-success`) | every pull request |
-| Browser wallet WASM | `.github/workflows/browser-wallet-wasm.yml` | `crates/browser-wallet/**`, `crates/transport-wasm/**`, `examples/wasm/cow-trader-dioxus/**`, and any workspace change that pulls the browser-wallet path (`crates/core/**`, `crates/sdk/**`, `Cargo.lock`, `Cargo.toml`, `rust-toolchain.toml`) |
+| Browser wallet WASM | `.github/workflows/browser-wallet-wasm.yml` | `crates/browser-wallet/**`, `examples/wasm/cow-trader-dioxus/**`, and any workspace change that pulls the browser-wallet path (`crates/core/**`, `crates/sdk/**`, `Cargo.lock`, `Cargo.toml`, `rust-toolchain.toml`) |
 
 The path filters on each workflow keep the end-to-end lanes off PRs
 that cannot plausibly regress the covered surface, so workflows only

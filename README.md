@@ -114,7 +114,7 @@ the full source-to-fixture matrix is in
 | --- | --- | --- |
 | MEV bot, market maker, solver, analytics job, or treasury automation in Rust | `cow-sdk` | Native Rust facade over typed transport, signing, orderbook, trading, and subgraph surfaces |
 | Native Rust app using Alloy | `cow-sdk` plus `cow-sdk-alloy-*` | Opt-in Alloy provider and signer adapters without widening the default facade |
-| Rust app compiled to browser WASM | `cow-sdk-browser-wallet` plus `cow-sdk-transport-wasm` | Rust-on-wasm wallet and fetch plumbing; not the JavaScript-callable npm package |
+| Rust app compiled to browser WASM | `cow-sdk-browser-wallet` plus `cow-sdk-core` | Rust-on-wasm wallet and the browser `FetchTransport` from `cow-sdk-core`; not the JavaScript-callable npm package |
 | Standard browser dapp or CowSwap-style UI in TypeScript | Upstream [`@cowprotocol/cow-sdk`](https://www.npmjs.com/package/@cowprotocol/cow-sdk) | Substantially smaller bundle at equivalent feature subsets; mature web ecosystem fit |
 | TypeScript service that needs byte-for-byte Rust signing parity (viem, ethers, wagmi, or EIP-1193 wallets) | npm package&nbsp;† | TypeScript facade over deterministic Rust helpers with wallet-stack-agnostic callbacks |
 | Single-source-of-truth Rust + TypeScript embedding | npm package&nbsp;† | One implementation across Rust and JavaScript runtimes |
@@ -177,8 +177,7 @@ let _wallet = BrowserWallet::from_trusted_transport(transport, origin)
 | Need | Crate |
 | --- | --- |
 | Main Rust SDK entrypoint | `cow-sdk` |
-| Shared domain types, runtime traits, the `HttpTransport` seam with its native `ReqwestTransport` default, and the opt-in HTTP retry, rate-limit, jitter, `Retry-After`, and error-classification policy (`transport-policy` feature) | `cow-sdk-core` |
-| Browser-target HTTP transport (`FetchTransport`) for `wasm32-unknown-unknown` | `cow-sdk-transport-wasm` |
+| Shared domain types, runtime traits, the `HttpTransport` seam with its native `ReqwestTransport` default and browser `FetchTransport` default (the latter gated to `wasm32-unknown-unknown` in the `transport::fetch` module), and the opt-in HTTP retry, rate-limit, jitter, `Retry-After`, and error-classification policy (`transport-policy` feature) | `cow-sdk-core` |
 | TypeScript-callable wasm-bindgen SDK bindings for browser, Node.js, Workers, and optional Deno consumers | `cow-sdk-wasm` |
 | Read-only subgraph queries | `cow-sdk-subgraph` or `cow-sdk` with `subgraph` |
 | Browser wallet integration for WASM | `cow-sdk-browser-wallet` or `cow-sdk` with `browser-wallet` |

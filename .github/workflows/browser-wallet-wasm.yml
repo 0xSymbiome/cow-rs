@@ -13,7 +13,6 @@ on:
       - 'crates/browser-wallet/**'
       - 'crates/core/**'
       - 'crates/sdk/**'
-      - 'crates/transport-wasm/**'
       - 'examples/wasm/cow-trader-dioxus/**'
       - 'rust-toolchain.toml'
   push:
@@ -27,7 +26,6 @@ on:
       - 'crates/browser-wallet/**'
       - 'crates/core/**'
       - 'crates/sdk/**'
-      - 'crates/transport-wasm/**'
       - 'examples/wasm/cow-trader-dioxus/**'
       - 'rust-toolchain.toml'
 

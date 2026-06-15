@@ -747,6 +747,7 @@ dependencies = [
  "gloo-timers",
  "http",
  "httpdate",
+ "js-sys",
  "pin-project-lite",
  "reqwest",
  "serde",
@@ -755,6 +756,8 @@ dependencies = [
  "tsify",
  "url",
  "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
  "web-time",
 ]
 
@@ -786,7 +789,6 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "cow-sdk-core",
- "cow-sdk-transport-wasm",
  "http",
  "reqwest",
  "serde",
@@ -814,7 +816,6 @@ name = "cow-sdk-subgraph"
 version = "0.1.0"
 dependencies = [
  "cow-sdk-core",
- "cow-sdk-transport-wasm",
  "reqwest",
  "serde",
  "serde_json",
@@ -840,19 +841,6 @@ dependencies = [
  "serde_json",
  "thiserror",
  "web-time",
-]
-
-[[package]]
-name = "cow-sdk-transport-wasm"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "cow-sdk-core",
- "gloo-timers",
- "js-sys",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
 ]
 
 [[package]]

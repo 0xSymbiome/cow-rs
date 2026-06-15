@@ -68,7 +68,6 @@ Primary implementation points:
 - `crates/trading/Cargo.toml`
 - `crates/subgraph/Cargo.toml`
 - `crates/browser-wallet/Cargo.toml`
-- `crates/transport-wasm/Cargo.toml`
 - `crates/sdk/Cargo.toml`
 
 Primary regression coverage:

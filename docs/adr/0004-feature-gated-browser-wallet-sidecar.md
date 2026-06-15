@@ -11,7 +11,8 @@ The feature-gated browser-wallet sidecar decision — browser-wallet support liv
 in its own `cow-sdk-browser-wallet` leaf behind an off-by-default feature, never
 in the default facade closure — is now part of
 [ADR 0007](0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md).
-ADR 0007 records the bounded browser-wallet posture and the three-peer WASM leaf
-map (`cow-sdk-browser-wallet`, `cow-sdk-transport-wasm`, `cow-sdk-wasm`), each
-single-purpose and additive per the multi-crate-family growth rule in
-[ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md).
+ADR 0007 records the bounded browser-wallet posture and the two-peer WASM leaf
+map (`cow-sdk-browser-wallet`, `cow-sdk-wasm`), each single-purpose and additive
+per the multi-crate-family growth rule in
+[ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md). The browser `fetch`
+transport ships in `cow-sdk-core`, not as a separate leaf (ADR 0010).

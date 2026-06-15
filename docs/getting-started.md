@@ -91,11 +91,13 @@ That split matters when you choose where to start:
 - use `cow-sdk-browser-wallet` when you need injected-wallet flows in WASM
 - use `cow-sdk-wasm` when TypeScript or JavaScript code should call the Rust
   SDK through wasm-bindgen exports
-- use `cow-sdk-transport-wasm` when you build for
-  `wasm32-unknown-unknown` and need the shipped browser-target HTTP
-  transport (`FetchTransport`); install it on the orderbook and
-  subgraph builders through `.transport(...)` as
-  `Arc<dyn HttpTransport + Send + Sync>`
+
+On `wasm32-unknown-unknown`, the orderbook and subgraph builders auto-select
+the shipped browser-target HTTP transport. When you need an explicit instance,
+`cow-sdk-core` exports `FetchTransport` (the browser sibling of
+`ReqwestTransport`) from its `transport::fetch` module; install it on the
+orderbook and subgraph builders through `.transport(...)` as
+`Arc<dyn HttpTransport + Send + Sync>`.
 
 For the rest of this guide, stay on the default `cow-sdk` facade on a
 native target.
@@ -302,9 +304,11 @@ rejects a native-currency sell token.
 ### Browser Ready-State Wiring
 
 On `wasm32-unknown-unknown`, the ready-state trading API is the same, but
-the browser cannot use the native default HTTP transport. Build an orderbook
-client with `cow-sdk-transport-wasm::FetchTransport` and inject it once
-through the builder's `orderbook` setter:
+the browser cannot use the native default HTTP transport. The orderbook and
+subgraph builders auto-select the browser transport on this target, so the
+default path needs no wiring. To inject an explicit instance, build an orderbook
+client with `cow_sdk_core::FetchTransport` and pass it once through the builder's
+`orderbook` setter:
 
 ```rust,ignore
 use std::sync::Arc;
@@ -313,7 +317,7 @@ use cow_sdk::core::{CowEnv, SupportedChainId};
 use cow_sdk::orderbook::OrderbookApi;
 use cow_sdk::trading::Trading;
 use cow_sdk::http::HttpTransport;
-use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
+use cow_sdk_core::{FetchTransport, FetchTransportConfig};
 
 fn build_browser_ready_trading() -> Result<Trading, Box<dyn std::error::Error>> {
     let transport: Arc<dyn HttpTransport + Send + Sync> = Arc::new(FetchTransport::new(
@@ -774,8 +778,8 @@ When you want a runnable browser-wallet flow, use the canonical WASM example:
 
 It discovers an injected wallet (EIP-6963), connects, signs, and swaps a CoW
 order end to end in the browser using only `cow-sdk` public types. Deterministic
-browser-runtime proof lives in the crate test lanes (`cow-sdk-browser-wallet`,
-`cow-sdk-transport-wasm`), not in the example.
+browser-runtime proof lives in the `cow-sdk-browser-wallet` crate test lane and
+the browser-transport tests under `crates/wasm`, not in the example.
 
 ### Environment-Sensitive Follow-Ons
 

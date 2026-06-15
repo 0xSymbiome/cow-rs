@@ -184,7 +184,7 @@ symbol cannot self-trigger them.
 The orphan `async-lock = "3.4.2"` workspace dependency declaration has
 been retired from the root `Cargo.toml`. At the prior HEAD the pin had
 zero first-party consumers: no `[dependencies]`, `[dev-dependencies]`,
-or `[target.'cfg(...)'.dependencies]` table inside the eighteen
+or `[target.'cfg(...)'.dependencies]` table inside the seventeen
 workspace members referenced the workspace pin. The lockfile node
 retires on the next `cargo update`, removing one row of supply-chain
 attack surface and one entry from the workspace default-feature
@@ -297,8 +297,8 @@ published-crate invariant that no shipped leaf crate transitively depends on
 
 ### `cow-sdk-wasm` Dependency Boundary
 
-`cow-sdk-wasm` is a peer leaf of `cow-sdk-browser-wallet`,
-`cow-sdk-transport-wasm`, and the native Alloy adapter family. Its wasm32
+`cow-sdk-wasm` is a peer leaf of `cow-sdk-browser-wallet`
+and the native Alloy adapter family. Its wasm32
 dependency tree must not pull browser-wallet, native Alloy provider/signer
 crates, reqwest, hyper, or native Alloy RPC transport families. The workspace
 test reads cargo metadata for the wasm32 target and fails if any forbidden

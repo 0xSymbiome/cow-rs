@@ -22,7 +22,8 @@ This audit covers:
 - the `ReqwestTransport` native default adapter and its URL-stripping
   contract on `reqwest::Error`
 - the `FetchTransport` browser default adapter shipped from
-  `cow-sdk-transport-wasm`
+  `cow-sdk-core`'s `transport::fetch` module, the browser sibling of
+  `ReqwestTransport`
 - the typed `TransportError` enum and the `TransportErrorClass` partition
   every adapter is expected to populate
 - the shared `run_with_retry` driver's use of transport-surfaced
@@ -217,8 +218,7 @@ Primary implementation points:
 - `crates/core/src/transport/http.rs`
 - `crates/core/src/transport/error.rs`
 - `crates/core/src/transport/reqwest.rs`
-- `crates/transport-wasm/src/fetch.rs`
-- `crates/transport-wasm/src/lib.rs`
+- `crates/core/src/transport/fetch.rs`
 - `crates/core/src/transport/policy/runner.rs`
 - `crates/core/src/transport/policy/time.rs`
 - `crates/orderbook/src/api.rs`
@@ -234,7 +234,7 @@ Primary regression coverage:
 - `crates/core/tests/transport_contract.rs::transport_response_accessors_expose_status_headers_and_body`
 - `crates/core/tests/transport_contract.rs::transport_response_debug_redacts_headers_and_hides_the_body`
 - `crates/core/tests/transport_contract.rs::success_response_carries_the_real_status_and_headers`
-- `crates/transport-wasm/tests/parity_contract.rs`
+- `crates/wasm/tests/transport_parity_contract.rs`
 - `crates/orderbook/tests/api_contract.rs::recording_transport::orderbook_non_2xx_in_the_ok_channel_is_normalized_onto_the_error_path`
 - `crates/core/tests/retry_after_contract.rs`
 - `crates/core/tests/classify_contract.rs::network_error_kind_mapping_round_trip_is_total`
@@ -266,5 +266,6 @@ cargo test -p cow-sdk-orderbook --test request_contract
 cargo test -p cow-sdk-orderbook --features tracing --test request_contract
 cargo test -p cow-sdk-subgraph --test api_contract
 cargo check --workspace --all-features --target wasm32-unknown-unknown
-wasm-pack test --headless --firefox crates/transport-wasm --all-features
+wasm-pack test --release --headless --firefox crates/wasm
+wasm-pack test --release --headless --firefox crates/wasm --features tracing
 ```

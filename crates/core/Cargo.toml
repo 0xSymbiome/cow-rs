@@ -54,6 +54,15 @@ wasm-bindgen.workspace = true
 gloo-timers = { workspace = true, optional = true }
 web-time = { workspace = true, optional = true }
 
+# Browser fetch transport (`cow_sdk_core::transport::fetch`). Gated to JS realms
+# (`target_os = "unknown"`) so WASI builds never pull the browser-global stack.
+# This is the wasm sibling of the native `reqwest` transport above.
+[target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
+gloo-timers = { workspace = true }
+js-sys = { workspace = true }
+wasm-bindgen-futures = { workspace = true }
+web-sys = { workspace = true, features = ["AbortController", "AbortSignal", "Headers", "Request", "RequestInit", "Response"] }
+
 [dev-dependencies]
 cow-sdk-test-utils = { path = "../test-utils", features = ["proptest"] }
 num-bigint.workspace = true

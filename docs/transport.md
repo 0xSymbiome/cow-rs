@@ -13,8 +13,9 @@ concrete backend.
 - **`HttpTransport`** in `cow-sdk-core` is the production HTTPS seam
   used by `cow-sdk-orderbook` and `cow-sdk-subgraph`. It dispatches
   REST and GraphQL traffic. The native default is `ReqwestTransport`
-  in `cow-sdk-core`; the browser default is `FetchTransport` in the
-  dedicated `cow-sdk-transport-wasm` crate.
+  in `cow-sdk-core`; the browser default is `FetchTransport` in
+  `cow-sdk-core`'s `transport::fetch` module, the browser sibling of
+  the native `ReqwestTransport`.
 - **`Provider`** in `cow-sdk-core` is the read-only chain-RPC seam used by
   on-chain helpers (allowance reads, EIP-1271 verification, on-chain
   cancellation). Consumers can bring their own provider through the
@@ -132,12 +133,12 @@ the same.
 
 ## The Browser Default: `FetchTransport`
 
-On `wasm32-unknown-unknown`, `cow-sdk-transport-wasm::FetchTransport`
-bridges the same async signature through the realm's global `fetch` and
-`wasm-bindgen-futures`. The builder's default-transport `.build()`
-terminal installs it automatically on `wasm32`, the mirror of the native
-`ReqwestTransport` default, so the zero-config construction path is
-identical on both targets:
+On `wasm32-unknown-unknown`, `cow-sdk-core::FetchTransport` (the
+`transport::fetch` module) bridges the same async signature through the
+realm's global `fetch` and `wasm-bindgen-futures`. The builder's
+default-transport `.build()` terminal installs it automatically on `wasm32`,
+the mirror of the native `ReqwestTransport` default, so the zero-config
+construction path is identical on both targets:
 
 ```rust,ignore
 use cow_sdk::core::{CowEnv, SupportedChainId};
@@ -163,7 +164,7 @@ use std::sync::Arc;
 use cow_sdk::core::{CowEnv, SupportedChainId};
 use cow_sdk::orderbook::OrderbookApi;
 use cow_sdk::http::HttpTransport;
-use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
+use cow_sdk_core::{FetchTransport, FetchTransportConfig};
 
 let transport: Arc<dyn HttpTransport + Send + Sync> = Arc::new(FetchTransport::new(
     &FetchTransportConfig::new("https://api.cow.fi"),

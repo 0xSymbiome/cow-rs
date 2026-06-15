@@ -185,10 +185,11 @@ that tracks `reqwest`'s upstream defaults, which is the right choice
 for the common single-chain consumer.
 
 On `wasm32-unknown-unknown`, the shipped browser adapter is
-`FetchTransport` from `cow-sdk-transport-wasm`. Browser consumers
-install it explicitly through `.transport(...)`; the connection-pool
-tuning recipe below does not apply because browser `fetch` manages its
-own pool.
+`FetchTransport` from `cow-sdk-core`'s target-gated `transport::fetch`
+module, the browser sibling of the native `ReqwestTransport`. Browser
+consumers install it explicitly through `.transport(...)`; the
+connection-pool tuning recipe below does not apply because browser
+`fetch` manages its own pool.
 
 ## HTTP/2 Keep-Alive Recipe
 
@@ -267,5 +268,6 @@ All settings above are operator opt-ins; the shipped default
 `ReqwestTransport` adapter keeps upstream `reqwest` defaults so
 single-chain consumers and short-lived scripts stay simple. Browser
 consumers building for `wasm32-unknown-unknown` install `FetchTransport`
-from `cow-sdk-transport-wasm` instead; the knob summary above does not
-apply to that adapter because browser `fetch` owns its connection pool.
+from `cow-sdk-core`'s target-gated `transport::fetch` module instead; the
+knob summary above does not apply to that adapter because browser `fetch`
+owns its connection pool.
