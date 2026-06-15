@@ -6,10 +6,15 @@ license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 
-description = "TypeScript-callable wasm-bindgen leaf for the CoW Protocol Rust SDK"
+# JavaScript-only leaf: built to wasm32 and shipped to npm (see crates/wasm/npm),
+# never published to crates.io. Its `exports` are a wasm-bindgen JS ABI with no
+# crates.io consumer, and its host-safe `helpers` only forward to the published
+# cow-sdk-signing / cow-sdk-core / cow-sdk-app-data / cow-sdk-contracts crates.
+publish = false
+
+description = "TypeScript-callable wasm-bindgen leaf for the CoW Protocol Rust SDK; built to wasm32 and shipped to npm, not crates.io"
 readme = "README.md"
-documentation = "https://docs.rs/cow-sdk-wasm"
-homepage = "https://github.com/cowdao-grants/cow-rs"
+homepage = "https://github.com/0xSymbiome/cow-rs"
 keywords = ["cow-protocol", "sdk", "wasm", "typescript", "wasm-bindgen"]
 categories = ["api-bindings", "cryptography::cryptocurrencies", "wasm"]
 

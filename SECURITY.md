@@ -60,7 +60,7 @@ Do not open a public GitHub issue for an exploitable vulnerability.
 
 Use the private GitHub advisory flow for this repository:
 
-- [Privately report a vulnerability](https://github.com/cowdao-grants/cow-rs/security/advisories/new)
+- [Privately report a vulnerability](https://github.com/0xSymbiome/cow-rs/security/advisories/new)
 
 If the issue can affect deployed CoW Protocol contracts, settlement flows,
 protocol infrastructure, or user funds beyond this repository, also raise it
@@ -167,7 +167,7 @@ SDK.
 The browser-wallet integration treats provider identity as an explicit trust
 boundary. EIP-6963-discovered providers carry discovery metadata into the typed
 provider builder. Anonymous providers require
-`Eip1193ProviderBuilder::with_trusted_origin(...)` before construction
+`Eip1193ProviderBuilder::trusted_origin(...)` before construction
 succeeds. Wallet chain-management URLs such as `rpc_urls`,
 `block_explorer_urls`, and `icon_urls` are wallet payload data and are not
 validated with `ExternalHostPolicy`.

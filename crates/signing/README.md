@@ -63,8 +63,8 @@ assert_eq!(payload.primary_type, "Order");
 EIP-191 message hashing routes through
 `alloy_primitives::eip191_hash_message`. EIP-712 message digests route
 through `alloy_sol_types::SolStruct::eip712_signing_hash` per
-[ADR 0052](https://github.com/cowdao-grants/cow-rs/blob/main/docs/adr/0052-alloy-primitives-canonical-primitive-layer.md)
-and [ADR 0022](https://github.com/cowdao-grants/cow-rs/blob/main/docs/adr/0022-ecdsa-signature-v-normalization.md).
+[ADR 0052](https://github.com/0xSymbiome/cow-rs/blob/main/docs/adr/0052-alloy-primitives-canonical-primitive-layer.md)
+and [ADR 0022](https://github.com/0xSymbiome/cow-rs/blob/main/docs/adr/0022-ecdsa-signature-v-normalization.md).
 65-byte recoverable signature byte representation routes through
 `cow_sdk_contracts::RecoverableSignature`, which validates the trailing
 recovery byte against the canonical accept set `{0, 1, 27, 28}` and
@@ -86,12 +86,12 @@ alloy-primitive form is needed for ECDSA signing.
 
 ## Where to next
 
-- [Getting Started](https://github.com/cowdao-grants/cow-rs/blob/main/docs/getting-started.md)
-- [Integrations Guide](https://github.com/cowdao-grants/cow-rs/blob/main/docs/integrations.md)
-- [Workspace README](https://github.com/cowdao-grants/cow-rs/blob/main/README.md)
+- [Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/getting-started.md)
+- [Integrations Guide](https://github.com/0xSymbiome/cow-rs/blob/main/docs/integrations.md)
+- [Workspace README](https://github.com/0xSymbiome/cow-rs/blob/main/README.md)
 
 ## License
 
-Licensed under GPL-3.0-only. See the workspace
-[LICENSE](https://github.com/cowdao-grants/cow-rs/blob/main/LICENSE)
+Licensed under GPL-3.0-or-later. See the workspace
+[LICENSE](https://github.com/0xSymbiome/cow-rs/blob/main/LICENSE)
 file for the full text.

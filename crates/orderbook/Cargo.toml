@@ -9,7 +9,7 @@ rust-version.workspace = true
 description = "Typed CoW Protocol orderbook client models and decoding helpers"
 readme = "README.md"
 documentation = "https://docs.rs/cow-sdk-orderbook"
-homepage = "https://github.com/cowdao-grants/cow-rs"
+homepage = "https://github.com/0xSymbiome/cow-rs"
 keywords = ["cow-protocol", "sdk", "orderbook", "api", "trading"]
 categories = ["api-bindings", "cryptography::cryptocurrencies"]
 

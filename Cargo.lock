@@ -1409,7 +1409,6 @@ dependencies = [
  "cow-sdk-test",
  "cow-sdk-trading",
  "cow-sdk-transport-wasm",
- "cow-sdk-wasm",
  "num-bigint",
  "serde",
  "serde_json",

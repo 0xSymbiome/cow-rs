@@ -9,7 +9,7 @@ rust-version.workspace = true
 description = "Typed CoW Protocol subgraph query primitives"
 readme = "README.md"
 documentation = "https://docs.rs/cow-sdk-subgraph"
-homepage = "https://github.com/cowdao-grants/cow-rs"
+homepage = "https://github.com/0xSymbiome/cow-rs"
 keywords = ["cow-protocol", "sdk", "subgraph", "graphql", "analytics"]
 categories = ["api-bindings", "cryptography::cryptocurrencies"]
 

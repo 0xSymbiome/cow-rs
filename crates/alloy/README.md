@@ -50,7 +50,7 @@ and signer leaves.
 The cow-named public types interoperate with their `alloy_primitives`
 counterparts at zero runtime cost via `.0` access or
 `From::from(value).into()` per
-[ADR 0052](https://github.com/cowdao-grants/cow-rs/blob/main/docs/adr/0052-alloy-primitives-canonical-primitive-layer.md);
+[ADR 0052](https://github.com/0xSymbiome/cow-rs/blob/main/docs/adr/0052-alloy-primitives-canonical-primitive-layer.md);
 the adapter consumes cow values directly without per-call conversion.
 
 ## Install
@@ -84,7 +84,7 @@ the caller intentionally defers chain verification, then call
 `verify_chain_id().await` before using the client for chain-sensitive work.
 
 RPC retries are off by default. Pass a `cow_sdk_alloy::RetryConfig` to the
-builder's `with_retry` setter to opt into bounded exponential backoff for
+builder's `retry` setter to opt into bounded exponential backoff for
 transient, rate-limited reads; the umbrella reuses the provider leaf's retry
 policy.
 
@@ -134,6 +134,6 @@ hidden from docs and may change as the Alloy integration evolves.
 
 ## License
 
-Licensed under GPL-3.0-only. See the workspace
-[LICENSE](https://github.com/cowdao-grants/cow-rs/blob/main/LICENSE) file for
+Licensed under GPL-3.0-or-later. See the workspace
+[LICENSE](https://github.com/0xSymbiome/cow-rs/blob/main/LICENSE) file for
 the full text.

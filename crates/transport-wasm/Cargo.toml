@@ -9,7 +9,7 @@ rust-version.workspace = true
 description = "Browser fetch-based HTTP transport for the CoW Protocol Rust SDK"
 readme = "README.md"
 documentation = "https://docs.rs/cow-sdk-transport-wasm"
-homepage = "https://github.com/cowdao-grants/cow-rs"
+homepage = "https://github.com/0xSymbiome/cow-rs"
 keywords = ["cow-protocol", "sdk", "transport", "wasm", "fetch"]
 categories = ["api-bindings", "cryptography::cryptocurrencies", "wasm"]
 

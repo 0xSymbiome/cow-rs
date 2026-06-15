@@ -12,7 +12,7 @@ crate or implementing a custom `Signer` or `Provider` adapter.
 
 The cow-named identity and numeric primitive types ship as cow-owned
 `#[repr(transparent)]` newtypes over `alloy_primitives` per
-[ADR 0052](https://github.com/cowdao-grants/cow-rs/blob/main/docs/adr/0052-alloy-primitives-canonical-primitive-layer.md).
+[ADR 0052](https://github.com/0xSymbiome/cow-rs/blob/main/docs/adr/0052-alloy-primitives-canonical-primitive-layer.md).
 
 The core runtime traits split transaction lifecycle states explicitly:
 `TransactionBroadcast` is the signer-side broadcast acknowledgement, while
@@ -59,12 +59,12 @@ assert_eq!(weth.decimals, 18);
 
 ## Where to next
 
-- [Getting Started](https://github.com/cowdao-grants/cow-rs/blob/main/docs/getting-started.md)
-- [Integrations Guide](https://github.com/cowdao-grants/cow-rs/blob/main/docs/integrations.md)
-- [Workspace README](https://github.com/cowdao-grants/cow-rs/blob/main/README.md)
+- [Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/getting-started.md)
+- [Integrations Guide](https://github.com/0xSymbiome/cow-rs/blob/main/docs/integrations.md)
+- [Workspace README](https://github.com/0xSymbiome/cow-rs/blob/main/README.md)
 
 ## License
 
-Licensed under GPL-3.0-only. See the workspace
-[LICENSE](https://github.com/cowdao-grants/cow-rs/blob/main/LICENSE)
+Licensed under GPL-3.0-or-later. See the workspace
+[LICENSE](https://github.com/0xSymbiome/cow-rs/blob/main/LICENSE)
 file for the full text.

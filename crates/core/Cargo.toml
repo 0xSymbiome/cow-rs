@@ -9,7 +9,7 @@ rust-version.workspace = true
 description = "Shared CoW Protocol core types and validation primitives"
 readme = "README.md"
 documentation = "https://docs.rs/cow-sdk-core"
-homepage = "https://github.com/cowdao-grants/cow-rs"
+homepage = "https://github.com/0xSymbiome/cow-rs"
 keywords = ["cow-protocol", "sdk", "defi", "core", "trading"]
 categories = ["api-bindings", "cryptography::cryptocurrencies"]
 

@@ -1,8 +1,19 @@
 # cow-rs
 
-[![CI](https://github.com/cowdao-grants/cow-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/cowdao-grants/cow-rs/actions/workflows/ci.yml) [![docs.rs](https://img.shields.io/docsrs/cow-sdk?label=docs.rs)](https://docs.rs/cow-sdk) [![crates.io](https://img.shields.io/crates/v/cow-sdk)](https://crates.io/crates/cow-sdk) [![MSRV 1.94.0](https://img.shields.io/badge/MSRV-1.94.0-0A7BBB)](docs/release-checklist.md#3-compatibility-and-host-coverage) [![License GPL-3.0-only](https://img.shields.io/badge/license-GPL--3.0--only-1F6FEB)](LICENSE)
+[![CI](https://github.com/0xSymbiome/cow-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/0xSymbiome/cow-rs/actions/workflows/ci.yml) [![docs.rs](https://img.shields.io/docsrs/cow-sdk?label=docs.rs)](https://docs.rs/cow-sdk) [![crates.io](https://img.shields.io/crates/v/cow-sdk)](https://crates.io/crates/cow-sdk) [![MSRV 1.94.0](https://img.shields.io/badge/MSRV-1.94.0-0A7BBB)](docs/release-checklist.md#3-compatibility-and-host-coverage) [![License GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-1F6FEB)](LICENSE)
 
 `cow-rs` is a Rust SDK for CoW Protocol.
+
+It is built model-first: the protocol's invariants are encoded into the type
+system and enforced by construction, then backed by executable evidence —
+typed amounts and addresses, typestate builders that turn a misconfigured
+client into a compile error, quote-to-order binding that fails closed if a
+quote response drifts from the request, signature rules checked against pinned
+upstream fixtures, credential redaction by construction, and a panic-free
+production surface.
+Every such invariant is indexed with its proof in the
+[Properties Registry](PROPERTIES.md) and held by release-gating CI policy, so
+correctness is enforced by the build rather than trusted to memory.
 
 It provides typed Rust surfaces for order creation, signing, quoting,
 submission, app-data handling, orderbook access, read-only subgraph
@@ -88,9 +99,12 @@ path (`cow_sdk::trading::Trading`, `cow_sdk::core::Address`), matching the
 
 The full crate-by-need breakdown is in the [Crate Guide](#crate-guide) below.
 
-Every protocol transform is cross-checked byte-for-byte against 33 pinned
-upstream fixtures under [`parity/fixtures/`](parity/fixtures), so the Rust
-encoding stays identical to the upstream TypeScript SDK across releases; see
+Every protocol transform is cross-checked byte-for-byte against the pinned
+upstream fixture corpus under [`parity/fixtures/`](parity/fixtures), so the
+Rust encoding stays byte-identical to the upstream protocol producers
+(`cowprotocol/services` for the wire DTOs, `cowprotocol/contracts` and EthFlow
+for the on-chain surfaces) across releases;
+the full source-to-fixture matrix is in
 [Parity And Provenance](docs/parity.md).
 
 <!-- runtime-routing:start -->
@@ -210,7 +224,7 @@ configure transport explicitly through `transport: { kind: "fetch" }` or
 | Security disclosure | [SECURITY.md](SECURITY.md) defines the private repository reporting path and protocol-level escalation route. |
 | Chain-RPC runtime neutrality | The default facade remains provider-neutral. Native Alloy runtime dependencies are limited to the opt-in Alloy adapter crates and facade features, and CI gates the allow-list. |
 | Publication state | Reserved-placeholder `0.0.1-reserved.0` crates.io and docs.rs entries are live for the published crate family, but the functional `0.1.0` release is still pending; [Getting Started](docs/getting-started.md) and [Release Checklist](docs/release-checklist.md) describe the current repo-local and release-ready contract truthfully. |
-| Compatibility and license | Public MSRV is Rust `1.94.0`; the current workspace license is `GPL-3.0-only`. |
+| Compatibility and license | Public MSRV is Rust `1.94.0`; the current workspace license is `GPL-3.0-or-later`. |
 
 ## Documentation
 

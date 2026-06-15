@@ -120,7 +120,7 @@ are byte-identical to any earlier bytewise canonicalisation.
 
 The cow `AppDataHash` is a cow-owned `#[repr(transparent)]` newtype over
 `alloy_primitives::B256` per
-[ADR 0052](https://github.com/cowdao-grants/cow-rs/blob/main/docs/adr/0052-alloy-primitives-canonical-primitive-layer.md);
+[ADR 0052](https://github.com/0xSymbiome/cow-rs/blob/main/docs/adr/0052-alloy-primitives-canonical-primitive-layer.md);
 the canonical CID conversion lives on the inherent method
 `AppDataHash::to_cid`. The digest input fed to
 `alloy_primitives::keccak256` is the canonical-JSON byte stream produced
@@ -128,12 +128,12 @@ by `serde_jcs`.
 
 ## Where to next
 
-- [Getting Started](https://github.com/cowdao-grants/cow-rs/blob/main/docs/getting-started.md)
-- [CID Dependency Audit](https://github.com/cowdao-grants/cow-rs/blob/main/docs/audit/cid-dependency-audit.md)
-- [Workspace README](https://github.com/cowdao-grants/cow-rs/blob/main/README.md)
+- [Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/getting-started.md)
+- [CID Dependency Audit](https://github.com/0xSymbiome/cow-rs/blob/main/docs/audit/cid-dependency-audit.md)
+- [Workspace README](https://github.com/0xSymbiome/cow-rs/blob/main/README.md)
 
 ## License
 
-Licensed under GPL-3.0-only. See the workspace
-[LICENSE](https://github.com/cowdao-grants/cow-rs/blob/main/LICENSE)
+Licensed under GPL-3.0-or-later. See the workspace
+[LICENSE](https://github.com/0xSymbiome/cow-rs/blob/main/LICENSE)
 file for the full text.

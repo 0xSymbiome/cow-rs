@@ -40,7 +40,7 @@ full type map, the primary-type name, and the message in one value, so the
 signer never has to guess a placeholder type.
 
 The cow `TypedDataDomain` is a cow-owned `#[non_exhaustive]` struct per
-[ADR 0052](https://github.com/cowdao-grants/cow-rs/blob/main/docs/adr/0052-alloy-primitives-canonical-primitive-layer.md);
+[ADR 0052](https://github.com/0xSymbiome/cow-rs/blob/main/docs/adr/0052-alloy-primitives-canonical-primitive-layer.md);
 the `conversion` module bridges `TypedDataDomain` to
 `alloy_sol_types::Eip712Domain` at the alloy-signer seam where the
 alloy-primitive form is needed for ECDSA signing.
@@ -124,6 +124,6 @@ crate's error type.
 
 ## License
 
-Licensed under GPL-3.0-only. See the workspace
-[LICENSE](https://github.com/cowdao-grants/cow-rs/blob/main/LICENSE) file for
+Licensed under GPL-3.0-or-later. See the workspace
+[LICENSE](https://github.com/0xSymbiome/cow-rs/blob/main/LICENSE) file for
 the full text.

@@ -45,7 +45,7 @@ to the caller. This keeps the default runtime-neutral: the consumer owns
 chain-RPC resilience.
 
 To opt into transparent retries for transient, rate-limited reads, pass a
-`RetryConfig` to `with_retry`. It wraps the JSON-RPC client in a bounded
+`RetryConfig` to `retry`. It wraps the JSON-RPC client in a bounded
 exponential backoff layer:
 
 ```rust,no_run
@@ -55,7 +55,7 @@ use cow_sdk_core::Provider;
 # async fn example() -> Result<(), Box<dyn std::error::Error>> {
 let provider = RpcAlloyProvider::builder()
     .http("https://example.invalid/rpc")?
-    .with_retry(RetryConfig::default())
+    .retry(RetryConfig::default())
     .build()?;
 
 let chain_id = provider.get_chain_id().await?;
@@ -66,7 +66,7 @@ let chain_id = provider.get_chain_id().await?;
 
 The policy retries only rate-limit-class transport errors and never
 re-broadcasts a transaction, so write nonce-safety is unaffected. The same
-`with_retry` setter is available on the composed `cow-sdk-alloy` `AlloyClient`
+`retry` setter is available on the composed `cow-sdk-alloy` `AlloyClient`
 builder.
 
 ## Capability Boundary
@@ -121,6 +121,6 @@ the `Cancelled` variant when callers use `cow_sdk_core::Cancellable`.
 
 ## License
 
-Licensed under GPL-3.0-only. See the workspace
-[LICENSE](https://github.com/cowdao-grants/cow-rs/blob/main/LICENSE) file for
+Licensed under GPL-3.0-or-later. See the workspace
+[LICENSE](https://github.com/0xSymbiome/cow-rs/blob/main/LICENSE) file for
 the full text.

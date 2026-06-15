@@ -279,7 +279,6 @@ jobs:
             --config "patch.crates-io.cow-sdk-test.path='crates/test'"
             --config "patch.crates-io.cow-sdk-trading.path='crates/trading'"
             --config "patch.crates-io.cow-sdk-transport-wasm.path='crates/transport-wasm'"
-            --config "patch.crates-io.cow-sdk-wasm.path='crates/wasm'"
           )
           cargo publish --dry-run --no-verify -p cow-sdk-core --allow-dirty "${WORKSPACE_PATCHES[@]}"
           cargo publish --dry-run --no-verify -p cow-sdk-contracts --allow-dirty "${WORKSPACE_PATCHES[@]}"
@@ -293,6 +292,7 @@ jobs:
           cargo publish --dry-run --no-verify -p cow-sdk-alloy-signer --allow-dirty "${WORKSPACE_PATCHES[@]}"
           cargo publish --dry-run --no-verify -p cow-sdk-alloy --allow-dirty "${WORKSPACE_PATCHES[@]}"
           cargo publish --dry-run --no-verify -p cow-sdk-browser-wallet --allow-dirty "${WORKSPACE_PATCHES[@]}"
+          cargo publish --dry-run --no-verify -p cow-sdk-test --allow-dirty "${WORKSPACE_PATCHES[@]}"
           cargo publish --dry-run --no-verify -p cow-sdk --allow-dirty "${WORKSPACE_PATCHES[@]}"
 
   ci-success:

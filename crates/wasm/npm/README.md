@@ -185,10 +185,10 @@ The current measured release artifacts are:
 
 | Flavor | Raw wasm | Brotli | Gzip | Gate |
 | --- | ---: | ---: | ---: | --- |
-| default | 1.54 MiB | 490 KiB | 658 KiB | 3.3 MiB raw / 900 KiB brotli |
-| orderbook | 0.94 MiB | 317 KiB | 414 KiB | 1.5 MiB raw / 500 KiB brotli |
+| default | 1.59 MiB | 501 KiB | 674 KiB | 3.3 MiB raw / 900 KiB brotli |
+| orderbook | 0.98 MiB | 329 KiB | 430 KiB | 1.5 MiB raw / 500 KiB brotli |
 | signing | 0.31 MiB | 120 KiB | 142 KiB | 0.9 MiB raw / 300 KiB brotli |
-| cloudflare | 1.45 MiB | 466 KiB | 624 KiB | 3.2 MiB raw / 850 KiB brotli / 3,000,000 B gzip (warn at 2,700,000 B) |
+| cloudflare | 1.50 MiB | 478 KiB | 640 KiB | 3.2 MiB raw / 850 KiB brotli / 3,000,000 B gzip (warn at 2,700,000 B) |
 
 The cloudflare flavor's gzip-compressed artifact is below the current
 Cloudflare Workers Free compressed-size limit at the time of measurement.

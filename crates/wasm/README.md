@@ -172,15 +172,15 @@ JavaScript consumer driving its own retry loop reaches the same verdict.
 
 ## Where To Next
 
-- [Getting Started](https://github.com/cowdao-grants/cow-rs/blob/main/docs/getting-started.md)
-- [Integrations Guide](https://github.com/cowdao-grants/cow-rs/blob/main/docs/integrations.md)
-- [Architecture Overview](https://github.com/cowdao-grants/cow-rs/blob/main/docs/architecture.md)
-- [WASM Surface Audit](https://github.com/cowdao-grants/cow-rs/blob/main/docs/audit/wasm-surface-audit.md)
-- [WASM Type Generation Audit](https://github.com/cowdao-grants/cow-rs/blob/main/docs/audit/wasm-type-generation-audit.md)
-- [WASM EIP-1271 Parity Audit](https://github.com/cowdao-grants/cow-rs/blob/main/docs/audit/wasm-eip1271-parity-audit.md)
+- [Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/getting-started.md)
+- [Integrations Guide](https://github.com/0xSymbiome/cow-rs/blob/main/docs/integrations.md)
+- [Architecture Overview](https://github.com/0xSymbiome/cow-rs/blob/main/docs/architecture.md)
+- [WASM Surface Audit](https://github.com/0xSymbiome/cow-rs/blob/main/docs/audit/wasm-surface-audit.md)
+- [WASM Type Generation Audit](https://github.com/0xSymbiome/cow-rs/blob/main/docs/audit/wasm-type-generation-audit.md)
+- [WASM EIP-1271 Parity Audit](https://github.com/0xSymbiome/cow-rs/blob/main/docs/audit/wasm-eip1271-parity-audit.md)
 
 ## License
 
-Licensed under GPL-3.0-only. See the workspace
-[LICENSE](https://github.com/cowdao-grants/cow-rs/blob/main/LICENSE)
+Licensed under GPL-3.0-or-later. See the workspace
+[LICENSE](https://github.com/0xSymbiome/cow-rs/blob/main/LICENSE)
 file for the full text.

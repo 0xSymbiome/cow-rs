@@ -70,11 +70,11 @@ works with any signer — a local key, a remote signer, a browser wallet, or a
 smart account:
 
 ```rust,no_run
-use cow_sdk_core::{Amount, Signer, SignerError, address};
+use cow_sdk_core::{Amount, Signer, UserRejection, address};
 use cow_sdk_trading::Trading;
 
 # async fn run<S>(trading: Trading, signer: &S) -> Result<(), Box<dyn std::error::Error>>
-# where S: Signer, S::Error: std::fmt::Display + SignerError {
+# where S: Signer, S::Error: std::fmt::Display + UserRejection {
 let weth = address!("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2");
 let usdc = address!("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48");
 
@@ -111,11 +111,11 @@ cannot be transposed, then `post` to sign and post, or `post_presign` for the
 smart-account path that needs no signer:
 
 ```rust,no_run
-use cow_sdk_core::{Amount, Signer, SignerError, address};
+use cow_sdk_core::{Amount, Signer, UserRejection, address};
 use cow_sdk_trading::Trading;
 
 # async fn run<S>(trading: Trading, signer: &S) -> Result<(), Box<dyn std::error::Error>>
-# where S: Signer, S::Error: std::fmt::Display + SignerError {
+# where S: Signer, S::Error: std::fmt::Display + UserRejection {
 let weth = address!("0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2");
 let usdc = address!("0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48");
 
@@ -240,18 +240,18 @@ matching each variant.
 The workspace ships runnable, deterministic scenarios for the trading
 workflows — quoting, posting, EthFlow, receipt waiting, and the advanced
 seam traits — cataloged by goal in
-[Examples](https://github.com/cowdao-grants/cow-rs/blob/main/docs/examples.md).
-[Getting Started](https://github.com/cowdao-grants/cow-rs/blob/main/docs/getting-started.md)
+[Examples](https://github.com/0xSymbiome/cow-rs/blob/main/docs/examples.md).
+[Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/getting-started.md)
 walks the recommended first session.
 
 ## Where to next
 
-- [Getting Started](https://github.com/cowdao-grants/cow-rs/blob/main/docs/getting-started.md)
-- [Integrations Guide](https://github.com/cowdao-grants/cow-rs/blob/main/docs/integrations.md)
-- [Workspace README](https://github.com/cowdao-grants/cow-rs/blob/main/README.md)
+- [Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/getting-started.md)
+- [Integrations Guide](https://github.com/0xSymbiome/cow-rs/blob/main/docs/integrations.md)
+- [Workspace README](https://github.com/0xSymbiome/cow-rs/blob/main/README.md)
 
 ## License
 
-Licensed under GPL-3.0-only. See the workspace
-[LICENSE](https://github.com/cowdao-grants/cow-rs/blob/main/LICENSE)
+Licensed under GPL-3.0-or-later. See the workspace
+[LICENSE](https://github.com/0xSymbiome/cow-rs/blob/main/LICENSE)
 file for the full text.

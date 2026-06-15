@@ -9,7 +9,7 @@ rust-version.workspace = true
 description = "CoW Protocol low-level contracts helpers for order hashing, signature codecs and verification, ABI bindings, and fail-closed on-chain event decoding"
 readme = "README.md"
 documentation = "https://docs.rs/cow-sdk-contracts"
-homepage = "https://github.com/cowdao-grants/cow-rs"
+homepage = "https://github.com/0xSymbiome/cow-rs"
 keywords = ["cow-protocol", "sdk", "contracts", "ethereum", "hashing"]
 categories = ["api-bindings", "cryptography::cryptocurrencies"]
 

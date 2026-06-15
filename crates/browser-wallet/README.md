@@ -30,7 +30,7 @@ malformed fields fail closed with a typed browser-wallet error.
 Typed-data signing consumes `cow_sdk_core::TypedDataDomain` directly; the
 cow struct emits the canonical EIP-1193 `eth_signTypedData_v4`
 second-parameter wire shape through its own `Serialize` impl per
-[ADR 0052](https://github.com/cowdao-grants/cow-rs/blob/main/docs/adr/0052-alloy-primitives-canonical-primitive-layer.md),
+[ADR 0052](https://github.com/0xSymbiome/cow-rs/blob/main/docs/adr/0052-alloy-primitives-canonical-primitive-layer.md),
 pinned by `PROP-BWL-007` against
 `parity/fixtures/signing/eth_sign_typed_data_request.json`.
 
@@ -61,13 +61,13 @@ let _wallet = BrowserWallet::from_trusted_transport(transport, origin)
 
 ## Where to next
 
-- [Browser-Wallet Example](https://github.com/cowdao-grants/cow-rs/tree/main/examples/wasm/cow-trader-dioxus)
-- [cow-sdk-wasm README](https://github.com/cowdao-grants/cow-rs/blob/main/crates/wasm/README.md)
-- [Architecture](https://github.com/cowdao-grants/cow-rs/blob/main/docs/architecture.md)
-- [Workspace README](https://github.com/cowdao-grants/cow-rs/blob/main/README.md)
+- [Browser-Wallet Example](https://github.com/0xSymbiome/cow-rs/tree/main/examples/wasm/cow-trader-dioxus)
+- [cow-sdk-wasm README](https://github.com/0xSymbiome/cow-rs/blob/main/crates/wasm/README.md)
+- [Architecture](https://github.com/0xSymbiome/cow-rs/blob/main/docs/architecture.md)
+- [Workspace README](https://github.com/0xSymbiome/cow-rs/blob/main/README.md)
 
 ## License
 
-Licensed under GPL-3.0-only. See the workspace
-[LICENSE](https://github.com/cowdao-grants/cow-rs/blob/main/LICENSE)
+Licensed under GPL-3.0-or-later. See the workspace
+[LICENSE](https://github.com/0xSymbiome/cow-rs/blob/main/LICENSE)
 file for the full text.

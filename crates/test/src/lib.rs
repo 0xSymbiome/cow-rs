@@ -36,6 +36,8 @@
 //! # }
 //! ```
 
+#![warn(missing_docs)]
+
 pub mod defaults;
 mod error;
 mod orderbook;

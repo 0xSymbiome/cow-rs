@@ -297,7 +297,7 @@ sections below describe the public contract a `0.1.0` consumer receives.
   it defaults to the realm's global `fetch`, matching the Rust builders'
   zero-config default across the native, browser, and JavaScript surfaces.
 - The native Alloy provider adapters gain an opt-in RPC retry seam.
-  `cow_sdk_alloy_provider::RetryConfig` and `with_retry` wrap the JSON-RPC client
+  `cow_sdk_alloy_provider::RetryConfig` and `retry` wrap the JSON-RPC client
   in a bounded exponential-backoff layer that transparently retries transient,
   rate-limited reads. Retry is off by default, preserving the runtime-neutral
   posture of
@@ -475,7 +475,10 @@ sections below describe the public contract a `0.1.0` consumer receives.
   which the swap-posting methods accept back unchanged. `getAppData` /
   `uploadAppData` route through the content-addressed-write path, and
   `decodeSettlementLog` / `decodeEthFlowLog` dispatch to the fail-closed
-  contracts decoders without network access.
+  contracts decoders without network access. The orderbook lookup reads
+  `getVersion`, `getOrderLink` (a pure URL builder), `getOrderMultiEnv`, and
+  `getTxOrders` match the upstream `OrderBookApi` and reuse the `OrderDto` and
+  string envelope shapes.
 - The unsigned-transaction builders return a `TransactionRequestDto` for hosts
   that own submission: `buildPresignTx`, `buildCancelOrderTx`,
   `buildSellNativeCurrencyTx`, and `buildApprovalTx`, completing the
@@ -672,9 +675,9 @@ sections below describe the public contract a `0.1.0` consumer receives.
   `cargo clippy --workspace --all-targets --all-features -- -D warnings` gate.
   The public-API lint gate treats missing docs, missing debug implementations,
   unreachable public items, and unnameable types as hard errors.
-- The workspace pins `tokio`, `reqwest`, and `bytes` at `1.52.2`, `0.13.3`, and
-  `1.11`, and centralizes the CID stack (`cid`, `multihash`) and shared transport
-  and test pins through `[workspace.dependencies]`.
+- The workspace pins `tokio` and `reqwest` at `1.52.2` and `0.13.3`, and
+  centralizes the CID stack (`cid`, `multihash`) and shared transport and test
+  pins through `[workspace.dependencies]`.
 
 ### Removed
 
@@ -825,4 +828,4 @@ sections below describe the public contract a `0.1.0` consumer receives.
   anonymous origin, so a misconfigured host or origin is rejected rather than
   silently trusted.
 
-[Unreleased]: https://github.com/cowdao-grants/cow-rs
+[Unreleased]: https://github.com/0xSymbiome/cow-rs

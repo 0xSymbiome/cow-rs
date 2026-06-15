@@ -53,8 +53,8 @@ impl fmt::Display for HashMismatchStage {
 /// found the orderbook did not echo unchanged.
 ///
 /// Carried by [`OrderbookError::QuoteEchoMismatch`]. The discriminant is typed
-/// rather than a free-form string, so a caller can match the specific field a
-/// hostile or buggy orderbook altered.
+/// rather than a free-form string so a caller can branch on exactly which
+/// request-determined field failed to round-trip before any signing path.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[non_exhaustive]

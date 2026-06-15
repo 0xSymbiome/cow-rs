@@ -12,7 +12,7 @@ The cow-named identity and numeric primitive types (`Address`, `Hash32`,
 `AppDataHash`, `HexData`, `OrderUid`, `Amount`)
 re-export through the facade as cow-owned
 `#[repr(transparent)]` newtypes over `alloy_primitives` per
-[ADR 0052](https://github.com/cowdao-grants/cow-rs/blob/main/docs/adr/0052-alloy-primitives-canonical-primitive-layer.md).
+[ADR 0052](https://github.com/0xSymbiome/cow-rs/blob/main/docs/adr/0052-alloy-primitives-canonical-primitive-layer.md).
 
 ## Install
 
@@ -26,7 +26,7 @@ cow-sdk = "0.1"
 The shortest ready-state path uses the native default orderbook transport.
 Browser targets use the same trading API but must inject a browser transport;
 see the workspace
-[Getting Started](https://github.com/cowdao-grants/cow-rs/blob/main/docs/getting-started.md)
+[Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/getting-started.md)
 guide for that wiring.
 
 ```rust
@@ -56,7 +56,7 @@ const COW: Address = address!("0x0625afb445c3b6b7b929342a04a22599fd5dbb59");
 # async fn run<S>(signer: &S) -> Result<(), Box<dyn Error>>
 # where
 #     S: cow_sdk::core::Signer,
-#     S::Error: std::fmt::Display + cow_sdk::core::SignerError,
+#     S::Error: std::fmt::Display + cow_sdk::core::UserRejection,
 # {
 let trading = Trading::builder()
     .chain_id(SupportedChainId::Sepolia)
@@ -129,18 +129,18 @@ on-chain revert from a transient broadcast, lookup, timeout, or cancellation.
 The workspace ships runnable, deterministic scenarios for every facade
 workflow — quoting, posting, signing, app-data, transport, subgraph access,
 and the Alloy adapters — cataloged by goal in
-[Examples](https://github.com/cowdao-grants/cow-rs/blob/main/docs/examples.md).
-[Getting Started](https://github.com/cowdao-grants/cow-rs/blob/main/docs/getting-started.md)
+[Examples](https://github.com/0xSymbiome/cow-rs/blob/main/docs/examples.md).
+[Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/getting-started.md)
 walks the recommended first session.
 
 ## Where to next
 
-- [Getting Started](https://github.com/cowdao-grants/cow-rs/blob/main/docs/getting-started.md)
-- [Workspace README](https://github.com/cowdao-grants/cow-rs/blob/main/README.md)
-- [Architecture](https://github.com/cowdao-grants/cow-rs/blob/main/docs/architecture.md)
+- [Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/getting-started.md)
+- [Workspace README](https://github.com/0xSymbiome/cow-rs/blob/main/README.md)
+- [Architecture](https://github.com/0xSymbiome/cow-rs/blob/main/docs/architecture.md)
 
 ## License
 
-Licensed under GPL-3.0-only. See the workspace
-[LICENSE](https://github.com/cowdao-grants/cow-rs/blob/main/LICENSE)
+Licensed under GPL-3.0-or-later. See the workspace
+[LICENSE](https://github.com/0xSymbiome/cow-rs/blob/main/LICENSE)
 file for the full text.

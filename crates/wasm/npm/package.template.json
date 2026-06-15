@@ -2,11 +2,11 @@
   "name": "cow-sdk-wasm-placeholder",
   "version": "0.1.0",
   "description": "TypeScript-callable wasm-bindgen bindings for the CoW Protocol Rust SDK",
-  "license": "GPL-3.0-only",
-  "homepage": "https://github.com/cowdao-grants/cow-rs",
+  "license": "GPL-3.0-or-later",
+  "homepage": "https://github.com/0xSymbiome/cow-rs",
   "repository": {
     "type": "git",
-    "url": "https://github.com/cowdao-grants/cow-rs.git",
+    "url": "https://github.com/0xSymbiome/cow-rs.git",
     "directory": "crates/wasm/npm"
   },
   "keywords": [
