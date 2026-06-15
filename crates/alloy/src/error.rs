@@ -205,7 +205,7 @@ impl Error for AlloyClientError {}
 /// routes every umbrella failure through the redacted
 /// `SigningError::Signer` path. New rejection-class variants must
 /// extend this impl alongside the new variant.
-impl cow_sdk_core::SignerError for AlloyClientError {
+impl cow_sdk_core::UserRejection for AlloyClientError {
     fn user_rejection_code(&self) -> Option<i32> {
         match self {
             Self::Validation(_)

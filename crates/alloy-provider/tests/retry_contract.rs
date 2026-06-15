@@ -1,4 +1,4 @@
-//! Contract tests for the opt-in RPC retry seam (`with_retry`).
+//! Contract tests for the opt-in RPC retry seam (`retry`).
 //!
 //! The default provider issues each request once — a transient rate limit is
 //! surfaced to the caller. Opting into a [`RetryConfig`] wraps the JSON-RPC
@@ -35,7 +35,7 @@ async fn default_provider_does_not_retry_a_rate_limited_read() {
 }
 
 #[tokio::test]
-async fn with_retry_recovers_from_a_transient_rate_limit() {
+async fn retry_recovers_from_a_transient_rate_limit() {
     let server = MockServer::start().await;
     // The first request is rate limited; the mock is exhausted after one match.
     Mock::given(method("POST"))
@@ -58,7 +58,7 @@ async fn with_retry_recovers_from_a_transient_rate_limit() {
     let provider = RpcAlloyProvider::builder()
         .http(server.uri())
         .unwrap()
-        .with_retry(RetryConfig::new(3, Duration::from_millis(10)))
+        .retry(RetryConfig::new(3, Duration::from_millis(10)))
         .build()
         .unwrap();
 

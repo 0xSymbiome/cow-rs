@@ -111,7 +111,7 @@ async fn quote_validity_uses_valid_for_by_default_and_exact_valid_to_when_reques
     assert!(
         error
             .to_string()
-            .contains("Cannot specify both validFor and validTo")
+            .contains("cannot specify both validFor and validTo")
     );
 }
 

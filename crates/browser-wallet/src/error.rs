@@ -322,7 +322,7 @@ impl BrowserWalletError {
 /// against the typed error surface (and not against the `Display`
 /// shape). Pinning lives in
 /// `crates/browser-wallet/tests/signer_error_trait_contract.rs`.
-impl cow_sdk_core::SignerError for BrowserWalletError {
+impl cow_sdk_core::UserRejection for BrowserWalletError {
     fn user_rejection_code(&self) -> Option<i32> {
         match self {
             Self::UserRejectedRequest { code, .. } => Some(*code),

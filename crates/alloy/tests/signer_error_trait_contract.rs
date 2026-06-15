@@ -1,4 +1,4 @@
-//! Pins the [`cow_sdk_core::SignerError`] classification surface that
+//! Pins the [`cow_sdk_core::UserRejection`] classification surface that
 //! `AlloyClientError` exposes to the signing crate. The umbrella
 //! alloy adapter composes a local-key signer with an HTTP provider
 //! and never routes wallet prompts, so no variant can represent an
@@ -7,7 +7,7 @@
 //! new variant so this contract starts pinning the new code.
 
 use cow_sdk_alloy::AlloyClientError;
-use cow_sdk_core::{Redacted, SignerError, TransportErrorClass};
+use cow_sdk_core::{Redacted, TransportErrorClass, UserRejection};
 
 #[test]
 fn every_variant_returns_none_so_the_signer_helper_keeps_redaction() {

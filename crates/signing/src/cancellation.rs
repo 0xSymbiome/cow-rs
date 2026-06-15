@@ -2,8 +2,8 @@ use std::fmt;
 
 use cow_sdk_contracts::{OrderCancellations, SigningScheme};
 use cow_sdk_core::{
-    DigestSigner, OrderUid, ProtocolOptions, SignerError, SupportedChainId, TypedDataPayload,
-    TypedDataSigner,
+    DigestSigner, OrderUid, ProtocolOptions, SupportedChainId, TypedDataPayload, TypedDataSigner,
+    UserRejection,
 };
 
 use crate::{
@@ -33,7 +33,7 @@ pub async fn sign_order_cancellation<S>(
 ) -> Result<crate::SigningResult, SigningError>
 where
     S: TypedDataSigner,
-    S::Error: fmt::Display + SignerError,
+    S::Error: fmt::Display + UserRejection,
 {
     sign_order_cancellations(std::slice::from_ref(order_uid), chain_id, signer, options).await
 }
@@ -63,7 +63,7 @@ pub async fn sign_order_cancellation_with_scheme<S>(
 ) -> Result<crate::SigningResult, SigningError>
 where
     S: TypedDataSigner + DigestSigner<Error = <S as TypedDataSigner>::Error>,
-    <S as TypedDataSigner>::Error: fmt::Display + SignerError,
+    <S as TypedDataSigner>::Error: fmt::Display + UserRejection,
 {
     sign_order_cancellations_with_scheme(
         std::slice::from_ref(order_uid),
@@ -88,7 +88,7 @@ pub async fn sign_order_cancellations<S>(
 ) -> Result<crate::SigningResult, SigningError>
 where
     S: TypedDataSigner,
-    S::Error: fmt::Display + SignerError,
+    S::Error: fmt::Display + UserRejection,
 {
     #[cfg(feature = "tracing")]
     tracing::debug!(
@@ -133,7 +133,7 @@ pub async fn sign_order_cancellations_with_scheme<S>(
 ) -> Result<crate::SigningResult, SigningError>
 where
     S: TypedDataSigner + DigestSigner<Error = <S as TypedDataSigner>::Error>,
-    <S as TypedDataSigner>::Error: fmt::Display + SignerError,
+    <S as TypedDataSigner>::Error: fmt::Display + UserRejection,
 {
     #[cfg(feature = "tracing")]
     tracing::debug!(

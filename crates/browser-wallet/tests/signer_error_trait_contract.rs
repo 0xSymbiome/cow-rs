@@ -1,4 +1,4 @@
-//! Pins the [`cow_sdk_core::SignerError`] classification surface that
+//! Pins the [`cow_sdk_core::UserRejection`] classification surface that
 //! `BrowserWalletError` exposes to the signing crate. The test
 //! enumerates every variant carried by the wallet error and asserts
 //! the exact `user_rejection_code()` value the variant exposes, so a
@@ -7,7 +7,7 @@
 //! redacted-display path in `cow_sdk_signing::SigningError::Signer`.
 
 use cow_sdk_browser_wallet::{BrowserWalletError, RpcErrorPayload};
-use cow_sdk_core::SignerError;
+use cow_sdk_core::UserRejection;
 use serde_json::json;
 
 const SAMPLE_METHOD: &str = "eth_signTypedData_v4";

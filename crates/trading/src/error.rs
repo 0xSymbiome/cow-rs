@@ -61,14 +61,14 @@ pub enum TradingError {
     #[error(transparent)]
     AppCode(#[from] AppCodeError),
     /// Missing quote-only parameters after precedence resolution.
-    #[error("Missing quoter parameters: {0}")]
+    #[error("missing quoter parameters: {0}")]
     MissingQuoterParams(&'static str),
     /// Missing trading parameters after precedence resolution.
-    #[error("Missing trader parameters: {0}")]
+    #[error("missing trader parameters: {0}")]
     MissingTraderParams(&'static str),
     /// Both relative and absolute quote-validity values were provided simultaneously.
     #[error(
-        "Cannot specify both validFor and validTo. Use validFor for relative time or validTo for absolute time."
+        "cannot specify both validFor and validTo: use validFor for a relative window or validTo for an absolute deadline"
     )]
     QuoteValidityConflict,
     /// The quote response omitted a quote id required by the named workflow.

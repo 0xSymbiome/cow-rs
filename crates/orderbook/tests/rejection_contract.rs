@@ -338,7 +338,7 @@ fn app_data_invalid_tag_preserves_typed_message_and_display() {
         &OrderbookRejection::AppDataInvalid {
             message: description.to_owned().into(),
         },
-        "AppDataInvalid: [redacted]",
+        "app-data invalid: [redacted]",
     );
 }
 
@@ -353,7 +353,7 @@ fn app_data_mismatch_tag_preserves_typed_message_and_display() {
         &OrderbookRejection::AppDataMismatch {
             message: description.to_owned().into(),
         },
-        "AppDataMismatch: [redacted]",
+        "app-data document mismatch: [redacted]",
     );
 }
 
@@ -367,7 +367,7 @@ fn not_found_tag_preserves_typed_message_and_display() {
         &OrderbookRejection::NotFound {
             message: description.to_owned().into(),
         },
-        "NotFound: [redacted]",
+        "not found: [redacted]",
     );
 }
 

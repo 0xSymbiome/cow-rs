@@ -1,4 +1,4 @@
-//! Pins the [`cow_sdk_core::SignerError`] classification surface that
+//! Pins the [`cow_sdk_core::UserRejection`] classification surface that
 //! `SignerError` exposes to the signing crate. The
 //! local-key alloy signer holds the private key in-process and never
 //! produces an EIP-1193 wallet rejection, so every variant must
@@ -8,7 +8,7 @@
 //! so this contract starts pinning the new code.
 
 use cow_sdk_alloy_signer::SignerError;
-use cow_sdk_core::{Redacted, SignerError as SignerErrorTrait};
+use cow_sdk_core::{Redacted, UserRejection};
 
 #[test]
 fn every_variant_returns_none_so_the_signer_helper_keeps_redaction() {
@@ -26,7 +26,7 @@ fn every_variant_returns_none_so_the_signer_helper_keeps_redaction() {
     ];
     for error in cases {
         assert!(
-            SignerErrorTrait::user_rejection_code(&error).is_none(),
+            UserRejection::user_rejection_code(&error).is_none(),
             "SignerError must not classify as a user rejection: {error:?}"
         );
     }

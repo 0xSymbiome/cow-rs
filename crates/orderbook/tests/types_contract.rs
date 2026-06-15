@@ -296,7 +296,8 @@ fn from_quote_binds_caller_receiver_not_the_quote_echo() {
     // The quote-echo gate only reconciles the receiver when the request also
     // pins one, so an omitted caller receiver must resolve to the owner
     // (pay-to-owner `None`) rather than adopting an unverified, server-supplied
-    // address a hostile orderbook could use to redirect proceeds.
+    // address the gate never bound to the request, which could otherwise
+    // redirect proceeds.
     let mut quote_response = serde_json::from_value::<cow_sdk_orderbook::OrderQuoteResponse>(
         sample_quote_response_json(),
     )

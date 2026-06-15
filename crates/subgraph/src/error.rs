@@ -110,13 +110,13 @@ impl SubgraphRequestErrorContext {
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 pub enum SubgraphError {
     /// The selected chain does not have a configured subgraph endpoint.
-    #[error("Unsupported Network. The subgraph API is not available in the Network {chain_id}")]
+    #[error("subgraph API is not available for chain {chain_id}")]
     UnsupportedNetwork {
         /// Numeric chain id that could not be resolved to a supported endpoint.
         chain_id: u64,
     },
     /// The canonical totals query returned an empty list.
-    #[error("No totals found")]
+    #[error("subgraph totals query returned no results")]
     NoTotalsFound,
     /// Request execution failed before a complete HTTP response was received.
     #[error("subgraph transport error ({class}) for {} (chain {}): {details}", context.api, context.chain_id)]

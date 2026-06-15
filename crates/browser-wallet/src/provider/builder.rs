@@ -10,7 +10,7 @@ use super::{Eip1193Provider, Eip1193Transport, Origin};
 ///
 /// Providers discovered through EIP-6963 should be built with a detected
 /// origin supplied by the discovery flow. Anonymous providers must opt in
-/// through [`Self::with_trusted_origin`] before construction succeeds.
+/// through [`Self::trusted_origin`] before construction succeeds.
 pub struct Eip1193ProviderBuilder {
     transport: Rc<dyn Eip1193Transport>,
     detected_origin: Option<Origin>,
@@ -52,7 +52,7 @@ impl Eip1193ProviderBuilder {
 
     /// Adds an explicitly reviewed origin for an anonymous EIP-1193 provider.
     #[must_use]
-    pub fn with_trusted_origin(mut self, origin: Origin) -> Self {
+    pub fn trusted_origin(mut self, origin: Origin) -> Self {
         self.trusted_origins.push(origin);
         self
     }
@@ -81,7 +81,7 @@ impl Eip1193ProviderBuilder {
         session: Rc<RefCell<WalletSession>>,
         events: EventLog,
     ) -> Result<Eip1193Provider, BrowserWalletError> {
-        let origin = self.trusted_origin()?;
+        let origin = self.resolve_trusted_origin()?;
         {
             let mut session_state = session.borrow_mut();
             self.transport
@@ -96,7 +96,7 @@ impl Eip1193ProviderBuilder {
         ))
     }
 
-    fn trusted_origin(&self) -> Result<Option<Origin>, BrowserWalletError> {
+    fn resolve_trusted_origin(&self) -> Result<Option<Origin>, BrowserWalletError> {
         if let Some(origin) = &self.detected_origin {
             return Ok(Some(origin.clone()));
         }

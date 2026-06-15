@@ -136,7 +136,7 @@ where
     /// caller — the runtime-neutral default. Supplying a [`RetryConfig`] wraps
     /// the composed client's JSON-RPC transport in the same retry layer the
     /// read-only provider leaf uses.
-    pub const fn with_retry(mut self, retry: RetryConfig) -> Self {
+    pub const fn retry(mut self, retry: RetryConfig) -> Self {
         self.retry = Some(retry);
         self
     }

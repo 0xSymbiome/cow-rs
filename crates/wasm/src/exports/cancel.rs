@@ -10,9 +10,11 @@ use crate::exports::errors::WasmError;
 
 #[wasm_bindgen]
 extern "C" {
+    /// Per-call options object accepted by client methods: `{ signal?, timeoutMs? }`.
     #[wasm_bindgen(typescript_type = "SdkClientOptions")]
     pub type SdkClientOptions;
 
+    /// Per-call signing options: [`SdkClientOptions`] plus an optional `walletConfig`.
     #[wasm_bindgen(typescript_type = "SigningOptions")]
     pub type SigningOptions;
 }

@@ -14,10 +14,10 @@ pub enum AppDataError {
     #[error("invalid cid format")]
     InvalidCid,
     /// The supplied schema version did not match the expected `major.minor.patch` format.
-    #[error("AppData version {0} is not a valid version")]
+    #[error("app-data version {0} is not a valid version")]
     InvalidSchemaVersion(Redacted<String>),
     /// The app-data document did not contain a string `version` field.
-    #[error("AppData document is missing string field `version`")]
+    #[error("app-data document is missing string field `version`")]
     MissingSchemaVersion,
     /// JSON serialization or decoding failed.
     ///

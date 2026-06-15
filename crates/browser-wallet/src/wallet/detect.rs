@@ -113,7 +113,7 @@ impl BrowserWallet {
         };
         let info = transport.info();
         Self::from_provider_builder(
-            Eip1193ProviderBuilder::from_shared(Rc::new(transport)).with_trusted_origin(origin),
+            Eip1193ProviderBuilder::from_shared(Rc::new(transport)).trusted_origin(origin),
             Some(info),
         )
         .map(Some)

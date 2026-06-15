@@ -143,6 +143,62 @@ impl std::fmt::Debug for TransportResponse {
 /// futures are `Send` so downstream crates compose them onto
 /// multi-threaded runtimes; on `wasm32` targets the futures drop the
 /// `Send` bound so the browser adapter remains viable.
+///
+/// # Implementing
+///
+/// The transport is held behind `Arc<dyn HttpTransport>`, so an implementor
+/// annotates the `impl` with the re-exported
+/// [`async_trait`](macro@async_trait). `cow-sdk-core` re-exports the macro, so
+/// an out-of-tree implementor does not declare an `async-trait` dependency
+/// itself:
+///
+/// ```
+/// use std::time::Duration;
+/// use cow_sdk_core::{async_trait, HttpTransport, TransportError, TransportResponse};
+///
+/// #[derive(Debug)]
+/// struct MyTransport;
+///
+/// #[cfg_attr(not(target_arch = "wasm32"), async_trait)]
+/// #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
+/// impl HttpTransport for MyTransport {
+///     async fn get(
+///         &self,
+///         path: &str,
+///         headers: &[(String, String)],
+///         timeout: Option<Duration>,
+///     ) -> Result<TransportResponse, TransportError> {
+///         todo!("dispatch the GET through your HTTP backend")
+///     }
+///     async fn post(
+///         &self,
+///         path: &str,
+///         body: &str,
+///         headers: &[(String, String)],
+///         timeout: Option<Duration>,
+///     ) -> Result<TransportResponse, TransportError> {
+///         todo!()
+///     }
+///     async fn put(
+///         &self,
+///         path: &str,
+///         body: &str,
+///         headers: &[(String, String)],
+///         timeout: Option<Duration>,
+///     ) -> Result<TransportResponse, TransportError> {
+///         todo!()
+///     }
+///     async fn delete(
+///         &self,
+///         path: &str,
+///         body: &str,
+///         headers: &[(String, String)],
+///         timeout: Option<Duration>,
+///     ) -> Result<TransportResponse, TransportError> {
+///         todo!()
+///     }
+/// }
+/// ```
 #[cfg_attr(not(target_arch = "wasm32"), async_trait)]
 #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 pub trait HttpTransport: std::fmt::Debug {

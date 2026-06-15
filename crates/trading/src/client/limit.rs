@@ -10,7 +10,7 @@
 
 use std::marker::PhantomData;
 
-use cow_sdk_core::{Address, Amount, OrderKind, Signer, SignerError};
+use cow_sdk_core::{Address, Amount, OrderKind, Signer, UserRejection};
 
 use super::Trading;
 use super::swap::{Set, Unset};
@@ -32,9 +32,9 @@ impl Trading {
     ///
     /// ```no_run
     /// # use cow_sdk_trading::Trading;
-    /// # use cow_sdk_core::{Address, Amount, Signer, SignerError};
+    /// # use cow_sdk_core::{Address, Amount, Signer, UserRejection};
     /// # async fn demo<S>(trading: &Trading, signer: &S) -> Result<(), Box<dyn std::error::Error>>
-    /// # where S: Signer, S::Error: std::fmt::Display + SignerError {
+    /// # where S: Signer, S::Error: std::fmt::Display + UserRejection {
     /// let usdc = Address::ZERO;
     /// let dai = Address::ZERO;
     ///
@@ -260,7 +260,7 @@ impl LimitBuilder<'_, Set, Set, Set, Set> {
     pub async fn post<S>(self, signer: &S) -> Result<OrderPostingResult, TradingError>
     where
         S: Signer,
-        S::Error: std::fmt::Display + SignerError,
+        S::Error: std::fmt::Display + UserRejection,
     {
         let params = self.to_limit_parameters();
         self.trading

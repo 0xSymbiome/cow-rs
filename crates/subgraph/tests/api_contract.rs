@@ -514,7 +514,7 @@ async fn unsupported_network_rejects_before_transport() {
     assert!(
         error
             .to_string()
-            .contains("Unsupported Network. The subgraph API is not available in the Network 137")
+            .contains("subgraph API is not available for chain 137")
     );
 }
 

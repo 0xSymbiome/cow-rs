@@ -181,7 +181,7 @@ where
 /// rejections. The contract is checked by per-crate
 /// `signer_error_trait_contract` tests that pin the value returned
 /// for every variant the implementer carries.
-pub trait SignerError {
+pub trait UserRejection {
     /// Returns the EIP-1193 provider error code when this error
     /// represents a user-driven rejection of the signing request,
     /// or `None` for every other class of failure.
@@ -200,14 +200,14 @@ pub trait SignerError {
 /// type. Production signer error types should opt in with their own
 /// typed `match` over the variants that represent EIP-1193 rejections
 /// rather than rely on this passthrough.
-impl SignerError for String {}
+impl UserRejection for String {}
 
 /// Courtesy implementation for borrowed message errors so tests and
 /// signing helpers that accept `&str` keep the same default
 /// classification posture as owned `String` errors.
-impl SignerError for &str {}
+impl UserRejection for &str {}
 
 /// Courtesy implementation for the never-error case so signers that
 /// cannot fail are still callable through the signing helpers without
 /// adding a redundant per-test impl.
-impl SignerError for core::convert::Infallible {}
+impl UserRejection for core::convert::Infallible {}

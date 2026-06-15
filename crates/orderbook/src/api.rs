@@ -733,12 +733,14 @@ impl OrderbookApi {
         Ok(())
     }
 
-    // Solver-competition reads target the v2 routes. The v1 routes were retired
-    // upstream and the published OpenAPI exposes solver competition under v2
-    // only; v1 still answers in production today and some clients still call it,
-    // but a new integration follows the current contract. Solver display names
-    // are not part of the v2 payload — resolve them from a solver address
-    // through the CoW solvers registry at the presentation layer.
+    // Solver-competition reads target the v2 routes. The v1 routes and handler
+    // were removed from the services codebase (cowprotocol/services #4455) and
+    // the published OpenAPI now documents solver competition under v2 only. The
+    // upstream TypeScript SDK still calls the v1 route (a half-finished
+    // migration), so v1 may still answer in production, but a new integration
+    // follows the current v2 contract. Solver display names are not part of the
+    // v2 payload — resolve them from a solver address through the CoW solvers
+    // registry at the presentation layer.
     /// Fetches solver-competition data by auction id.
     ///
     /// Callers that need cooperative cancellation wrap this future through

@@ -83,7 +83,7 @@ pub async fn quote_results<O, S>(
 where
     O: OrderbookClient + ?Sized,
     S: Signer,
-    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
+    S::Error: std::fmt::Display + cow_sdk_core::UserRejection,
 {
     let mut effective_trade_parameters =
         apply_advanced_settings_to_trade_parameters(trade_parameters, advanced_settings)?;

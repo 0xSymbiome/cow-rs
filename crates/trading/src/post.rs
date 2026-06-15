@@ -103,7 +103,7 @@ pub async fn post_cow_protocol_trade<O, S>(
 where
     O: OrderbookClient + ?Sized,
     S: Signer,
-    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
+    S::Error: std::fmt::Display + cow_sdk_core::UserRejection,
 {
     validate_orderbook_context(orderbook, Some(trader.chain_id), trader.env)?;
     validate_orderbook_env_context(orderbook, params.env)?;
@@ -322,7 +322,7 @@ async fn sign_order_for_submission<S>(
 ) -> Result<(String, SigningScheme), TradingError>
 where
     S: Signer,
-    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
+    S::Error: std::fmt::Display + cow_sdk_core::UserRejection,
 {
     match scheme {
         SigningScheme::PreSign => Ok((from.to_hex_string(), SigningScheme::PreSign)),
@@ -419,7 +419,7 @@ pub async fn post_swap_order_from_quote<O, S>(
 where
     O: OrderbookClient + ?Sized,
     S: Signer,
-    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
+    S::Error: std::fmt::Display + cow_sdk_core::UserRejection,
 {
     validate_quote_orderbook_binding(orderbook, quote_results.orderbook_binding.as_ref())?;
 
@@ -494,7 +494,7 @@ pub async fn post_limit_order<O, S>(
 where
     O: OrderbookClient + ?Sized,
     S: Signer,
-    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
+    S::Error: std::fmt::Display + cow_sdk_core::UserRejection,
 {
     let app_data_signer = advanced_settings
         .and_then(|settings| settings.app_data.as_ref())
@@ -693,7 +693,7 @@ pub async fn post_sell_native_currency_order<O, S>(
 where
     O: OrderbookClient + ?Sized,
     S: Signer,
-    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
+    S::Error: std::fmt::Display + cow_sdk_core::UserRejection,
 {
     validate_orderbook_context(orderbook, Some(trader.chain_id), trader.env)?;
     validate_orderbook_env_context(orderbook, params.as_limit().env)?;
@@ -765,7 +765,7 @@ pub async fn post_swap_order<O, S>(
 where
     O: OrderbookClient + ?Sized,
     S: Signer,
-    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
+    S::Error: std::fmt::Display + cow_sdk_core::UserRejection,
 {
     let quote_results = crate::quote_results(
         trade_parameters,

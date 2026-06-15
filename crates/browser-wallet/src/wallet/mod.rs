@@ -79,7 +79,7 @@ impl BrowserWallet {
         T: Eip1193Transport + 'static,
     {
         Self::from_provider_builder(
-            Eip1193ProviderBuilder::new(transport).with_trusted_origin(origin),
+            Eip1193ProviderBuilder::new(transport).trusted_origin(origin),
             None,
         )
     }

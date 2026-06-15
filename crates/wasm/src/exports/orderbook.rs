@@ -1,6 +1,6 @@
 use crate::helpers as pure;
 use cow_sdk_core::transport::policy::TransportPolicy;
-use cow_sdk_core::{Address, AppDataHash, OrderUid};
+use cow_sdk_core::{Address, AppDataHash, OrderUid, TransactionHash};
 use cow_sdk_orderbook::{
     OrderCancellations, OrderCreation, OrderbookApi, OrdersQuery, TradesQuery,
 };
@@ -184,6 +184,92 @@ impl OrderBookClient {
             let inner = orderbook_for_scope(&self.inner, &scope);
             run_with_client_options(scope, async move {
                 orderbook_get_order(&inner, order_uid).await
+            })
+            .await
+        })
+        .await
+    }
+
+    /// Fetches the orderbook service version string.
+    ///
+    /// @param options Optional per-call cancellation and timeout settings.
+    /// @returns A versioned envelope containing the service version string.
+    /// @throws CowError for transport failure, timeout, or cancellation.
+    #[wasm_bindgen(js_name = "getVersion", unchecked_return_type = "WasmEnvelope<string>")]
+    pub async fn version(
+        &self,
+        #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
+    ) -> Result<JsValue, JsValue> {
+        super::traced("wasm.orderbook.version", async move {
+            let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+            let inner = orderbook_for_scope(&self.inner, &scope);
+            run_with_client_options(scope, async move { orderbook_get_version(&inner).await }).await
+        })
+        .await
+    }
+
+    /// Builds the public order-details URL for a UID without any network call.
+    ///
+    /// @param orderUid Full order UID to link to.
+    /// @returns A versioned envelope containing the order-details URL.
+    /// @throws CowError for an invalid UID or an unresolved base URL.
+    #[wasm_bindgen(
+        js_name = "getOrderLink",
+        unchecked_return_type = "WasmEnvelope<string>"
+    )]
+    pub fn order_link(
+        &self,
+        #[wasm_bindgen(js_name = orderUid)] order_uid: String,
+    ) -> Result<JsValue, JsValue> {
+        orderbook_get_order_link(&self.inner, order_uid)
+    }
+
+    /// Fetches an order by UID, falling back across environments on a 404.
+    ///
+    /// @param orderUid Full order UID to look up.
+    /// @param options Optional per-call cancellation and timeout settings.
+    /// @returns A versioned envelope containing the order response.
+    /// @throws CowError for invalid UID, not-found responses, transport failure, or timeout.
+    #[wasm_bindgen(
+        js_name = "getOrderMultiEnv",
+        unchecked_return_type = "WasmEnvelope<OrderDto>"
+    )]
+    pub async fn order_multi_env(
+        &self,
+        #[wasm_bindgen(js_name = orderUid)] order_uid: String,
+        #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
+    ) -> Result<JsValue, JsValue> {
+        super::traced("wasm.orderbook.order_multi_env", async move {
+            let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+            let inner = orderbook_for_scope(&self.inner, &scope);
+            run_with_client_options(scope, async move {
+                orderbook_get_order_multi_env(&inner, order_uid).await
+            })
+            .await
+        })
+        .await
+    }
+
+    /// Fetches the orders contained in a settlement transaction.
+    ///
+    /// @param txHash Settlement transaction hash.
+    /// @param options Optional per-call cancellation and timeout settings.
+    /// @returns A versioned envelope containing the settled orders.
+    /// @throws CowError for an invalid hash, transport failure, timeout, or cancellation.
+    #[wasm_bindgen(
+        js_name = "getTxOrders",
+        unchecked_return_type = "WasmEnvelope<OrderDto[]>"
+    )]
+    pub async fn tx_orders(
+        &self,
+        #[wasm_bindgen(js_name = txHash)] tx_hash: String,
+        #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
+    ) -> Result<JsValue, JsValue> {
+        super::traced("wasm.orderbook.tx_orders", async move {
+            let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+            let inner = orderbook_for_scope(&self.inner, &scope);
+            run_with_client_options(scope, async move {
+                orderbook_get_tx_orders(&inner, tx_hash).await
             })
             .await
         })
@@ -542,6 +628,46 @@ async fn orderbook_get_order(inner: &OrderbookApi, order_uid: String) -> Result<
     to_js_value(&WasmEnvelope::v1(order))
 }
 
+async fn orderbook_get_version(inner: &OrderbookApi) -> Result<JsValue, JsValue> {
+    let version = inner
+        .version()
+        .await
+        .map_err(|error| WasmError::from(error).into_js())?;
+    to_js_value(&WasmEnvelope::v1(version))
+}
+
+fn orderbook_get_order_link(inner: &OrderbookApi, order_uid: String) -> Result<JsValue, JsValue> {
+    let order_uid = parse_order_uid(order_uid)?;
+    let link = inner
+        .order_link(&order_uid)
+        .map_err(|error| WasmError::from(error).into_js())?;
+    to_js_value(&WasmEnvelope::v1(link))
+}
+
+async fn orderbook_get_order_multi_env(
+    inner: &OrderbookApi,
+    order_uid: String,
+) -> Result<JsValue, JsValue> {
+    let order_uid = parse_order_uid(order_uid)?;
+    let order = inner
+        .order_multi_env(&order_uid)
+        .await
+        .map_err(|error| WasmError::from(error).into_js())?;
+    to_js_value(&WasmEnvelope::v1(order))
+}
+
+async fn orderbook_get_tx_orders(
+    inner: &OrderbookApi,
+    tx_hash: String,
+) -> Result<JsValue, JsValue> {
+    let tx_hash = parse_transaction_hash(tx_hash)?;
+    let orders = inner
+        .tx_orders(&tx_hash)
+        .await
+        .map_err(|error| WasmError::from(error).into_js())?;
+    to_js_value(&WasmEnvelope::v1(orders))
+}
+
 async fn orderbook_get_trades(
     inner: &OrderbookApi,
     query: TradesQueryInput,
@@ -685,6 +811,11 @@ fn parse_order_uid(order_uid: String) -> Result<OrderUid, JsValue> {
 
 fn parse_address(field: &'static str, value: String) -> Result<Address, JsValue> {
     Address::new(value).map_err(|error| WasmError::invalid(field, error.to_string()).into_js())
+}
+
+fn parse_transaction_hash(tx_hash: String) -> Result<TransactionHash, JsValue> {
+    TransactionHash::new(tx_hash)
+        .map_err(|error| WasmError::invalid("txHash", error.to_string()).into_js())
 }
 
 fn is_zero_address(address: &Address) -> bool {

@@ -190,7 +190,7 @@ pub enum OrderbookRejection {
     /// App-data registration rejected the supplied document and
     /// preserves the validator message in the redacted wire
     /// `description` field.
-    #[error("AppDataInvalid: {message}")]
+    #[error("app-data invalid: {message}")]
     AppDataInvalid {
         /// Services-authored `description` string carried on the
         /// rejection envelope and redacted on public rendering.
@@ -204,7 +204,7 @@ pub enum OrderbookRejection {
     AppDataHashMismatch,
     /// A previously-registered full app-data document for the same
     /// hash differs from the supplied bytes.
-    #[error("AppDataMismatch: {message}")]
+    #[error("app-data document mismatch: {message}")]
     AppDataMismatch {
         /// Services-authored `description` string carried on the
         /// rejection envelope and redacted on public rendering.
@@ -285,7 +285,7 @@ pub enum OrderbookRejection {
     ///
     /// Distinct from [`OrderbookRejection::OrderNotFound`], which is
     /// the cancel-path 404 emitted by `DELETE /orders/{uid}`.
-    #[error("NotFound: {message}")]
+    #[error("not found: {message}")]
     NotFound {
         /// Services-authored `description` string carried on the
         /// rejection envelope and redacted on public rendering.

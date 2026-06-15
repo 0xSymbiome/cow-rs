@@ -45,12 +45,22 @@ pub use redaction::{
 /// consumer.
 pub use tokio_util::sync::CancellationToken;
 pub use traits::{
-    BlockInfo, ContractCall, DigestSigner, LogProvider, Provider, Signer, SignerError,
-    SigningProvider, TransactionBroadcast, TransactionReceipt, TransactionRequest,
-    TransactionStatus, TypedDataDomain, TypedDataEnvelope, TypedDataField, TypedDataPayload,
-    TypedDataSigner, TypedDataTypes,
+    BlockInfo, ContractCall, DigestSigner, LogProvider, Provider, Signer, SigningProvider,
+    TransactionBroadcast, TransactionReceipt, TransactionRequest, TransactionStatus,
+    TypedDataDomain, TypedDataEnvelope, TypedDataField, TypedDataPayload, TypedDataSigner,
+    TypedDataTypes, UserRejection,
 };
 pub use transport::{HttpTransport, TransportError, TransportResponse};
+
+/// The [`async_trait`](macro@async_trait) attribute macro, re-exported for
+/// implementors of the object-safe [`HttpTransport`] seam.
+///
+/// `HttpTransport` is dispatched behind `Arc<dyn HttpTransport>`, which native
+/// `async fn` in traits cannot express, so implementors annotate their `impl`
+/// with this macro. Re-exporting it here means a downstream implementor does
+/// not declare a separate `async-trait` dependency at a matching version,
+/// mirroring how `serde` re-exports its derive.
+pub use async_trait::async_trait;
 #[cfg(not(target_arch = "wasm32"))]
 pub use transport::{ReqwestTransport, ReqwestTransportConfig};
 pub use types::{

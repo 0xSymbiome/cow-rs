@@ -55,7 +55,7 @@ impl Trading {
     ) -> Result<crate::OrderPostingResult, TradingError>
     where
         S: Signer,
-        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
+        S::Error: std::fmt::Display + cow_sdk_core::UserRejection,
     {
         let (trader, orderbook) = self.resolve_orderbook_trader(None, params.env)?;
 
@@ -111,7 +111,7 @@ impl Trading {
     ) -> Result<crate::OrderPostingResult, TradingError>
     where
         S: Signer,
-        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
+        S::Error: std::fmt::Display + cow_sdk_core::UserRejection,
     {
         let (trader, orderbook) =
             self.resolve_orderbook_trader(None, quote_results.trade_parameters.env)?;
@@ -167,7 +167,7 @@ impl Trading {
     ) -> Result<crate::OrderPostingResult, TradingError>
     where
         S: Signer,
-        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
+        S::Error: std::fmt::Display + cow_sdk_core::UserRejection,
     {
         let (trader, orderbook) = self.resolve_orderbook_trader(None, params.env)?;
 
@@ -317,7 +317,7 @@ impl Trading {
     ) -> Result<QuoteResults, TradingError>
     where
         S: Signer,
-        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
+        S::Error: std::fmt::Display + cow_sdk_core::UserRejection,
     {
         let (trader, orderbook) = self.resolve_orderbook_trader(None, params.env)?;
 
@@ -361,7 +361,7 @@ impl Trading {
     ) -> Result<bool, TradingError>
     where
         S: Signer,
-        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
+        S::Error: std::fmt::Display + cow_sdk_core::UserRejection,
     {
         let (trader, orderbook) = self.resolve_orderbook_trader(params.chain_id, params.env)?;
         let effective_params = OrderTraderParams {
@@ -410,7 +410,7 @@ impl Trading {
     ) -> Result<TransactionHash, TradingError>
     where
         S: Signer,
-        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
+        S::Error: std::fmt::Display + cow_sdk_core::UserRejection,
     {
         let (trader, orderbook) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
 
@@ -460,7 +460,7 @@ impl Trading {
     ) -> Result<PreparedTransaction, TradingError>
     where
         S: Signer,
-        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
+        S::Error: std::fmt::Display + cow_sdk_core::UserRejection,
     {
         let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
         let chain_id = trader
@@ -548,7 +548,7 @@ impl Trading {
     ) -> Result<TransactionHash, TradingError>
     where
         S: Signer,
-        S::Error: std::fmt::Display + cow_sdk_core::SignerError,
+        S::Error: std::fmt::Display + cow_sdk_core::UserRejection,
     {
         let (trader, _) = self.resolve_chain_partial_trader(params.chain_id, params.env)?;
         let chain_id = trader

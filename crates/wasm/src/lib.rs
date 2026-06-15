@@ -1,3 +1,4 @@
+#![cfg_attr(any(doctest, docsrs), doc = include_str!("../README.md"))]
 #![forbid(unsafe_code)]
 //! TypeScript-callable wasm-bindgen leaf for the `CoW` Protocol Rust SDK.
 //!
@@ -32,6 +33,8 @@
 //! native target with `cargo check -p cow-sdk-wasm
 //! --no-default-features` succeeds only when no wasm-bindgen or
 //! tsify derive leaks into target-agnostic dependencies.
+
+#![warn(missing_docs)]
 
 pub mod helpers;
 

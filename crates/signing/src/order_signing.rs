@@ -7,8 +7,8 @@ use cow_sdk_contracts::{
     hex_field::decode_hex_field, order_kind_name, pack_order_uid_params, sell_balance_name,
 };
 use cow_sdk_core::{
-    Address, DigestSigner, OrderData, OrderDigest, OrderUid, ProtocolOptions, SignerError,
-    SupportedChainId, TypedDataPayload, TypedDataSigner,
+    Address, DigestSigner, OrderData, OrderDigest, OrderUid, ProtocolOptions, SupportedChainId,
+    TypedDataPayload, TypedDataSigner, UserRejection,
 };
 use serde::{Deserialize, Serialize};
 
@@ -80,7 +80,7 @@ pub async fn sign_order<S>(
 ) -> Result<SigningResult, SigningError>
 where
     S: TypedDataSigner,
-    S::Error: fmt::Display + SignerError,
+    S::Error: fmt::Display + UserRejection,
 {
     let payload = order_signing_payload(order, chain_id, options)?;
     let raw = signer
@@ -118,7 +118,7 @@ pub async fn sign_order_with_scheme<S>(
 ) -> Result<SigningResult, SigningError>
 where
     S: TypedDataSigner + DigestSigner<Error = <S as TypedDataSigner>::Error>,
-    <S as TypedDataSigner>::Error: fmt::Display + SignerError,
+    <S as TypedDataSigner>::Error: fmt::Display + UserRejection,
 {
     let payload = order_signing_payload(order, chain_id, options)?;
     sign_with_scheme(signer, scheme, &payload.payload, &payload.digest).await
@@ -205,7 +205,7 @@ pub(crate) async fn sign_with_scheme<S>(
 ) -> Result<SigningResult, SigningError>
 where
     S: TypedDataSigner + DigestSigner<Error = <S as TypedDataSigner>::Error>,
-    <S as TypedDataSigner>::Error: fmt::Display + SignerError,
+    <S as TypedDataSigner>::Error: fmt::Display + UserRejection,
 {
     if !scheme.is_ecdsa() {
         return Err(SigningError::UnsupportedSignerGeneratedScheme { scheme });
@@ -254,7 +254,7 @@ fn order_signing_payload(
               `.map_err` boundary; consuming the value keeps the failure path \
               free of additional borrows."
 )]
-pub(crate) fn signer_error<E: fmt::Display + SignerError>(
+pub(crate) fn signer_error<E: fmt::Display + UserRejection>(
     operation: &'static str,
     error: E,
 ) -> SigningError {
@@ -290,7 +290,7 @@ mod signer_error_tests {
     use super::*;
 
     /// Minimal typed signer error used to exercise the `signer_error`
-    /// helper against the [`SignerError`] trait without pulling in
+    /// helper against the [`UserRejection`] trait without pulling in
     /// any downstream signer crate. The wrapper carries an optional
     /// rejection code so each test pins the exact classification the
     /// trait should expose for the helper to consume.
@@ -306,7 +306,7 @@ mod signer_error_tests {
         }
     }
 
-    impl SignerError for FakeSignerError {
+    impl UserRejection for FakeSignerError {
         fn user_rejection_code(&self) -> Option<i32> {
             self.rejection_code
         }
@@ -452,7 +452,7 @@ mod signer_error_tests {
             code: 4001,
         }
         .to_string();
-        assert!(rendered.contains("User rejected typed-data signature"));
+        assert!(rendered.contains("user rejected typed-data signature"));
         assert!(rendered.contains("(4001)"));
     }
 

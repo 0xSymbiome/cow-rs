@@ -129,7 +129,7 @@ pub async fn pre_sign_transaction<S>(
 ) -> Result<PreparedTransaction, TradingError>
 where
     S: Signer,
-    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
+    S::Error: std::fmt::Display + cow_sdk_core::UserRejection,
 {
     let settlement = resolve_settlement_address(chain_id, options);
     let data = HexData::new(encode_set_pre_signature(order_uid, true))?;
@@ -194,7 +194,7 @@ pub async fn eth_flow_transaction<S>(
 ) -> Result<EthFlowTransaction, TradingError>
 where
     S: Signer,
-    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
+    S::Error: std::fmt::Display + cow_sdk_core::UserRejection,
 {
     let chain_id = trader.chain_id;
     let from = signer
@@ -272,7 +272,7 @@ pub async fn onchain_cancellation_transaction<S>(
 ) -> Result<TransactionRequest, TradingError>
 where
     S: Signer,
-    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
+    S::Error: std::fmt::Display + cow_sdk_core::UserRejection,
 {
     let mut tx = if order.ethflow_data.is_some() {
         TransactionRequest::new(
@@ -312,7 +312,7 @@ pub async fn onchain_cancel_order<S>(
 ) -> Result<TransactionHash, TradingError>
 where
     S: Signer,
-    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
+    S::Error: std::fmt::Display + cow_sdk_core::UserRejection,
 {
     let tx = onchain_cancellation_transaction(signer, chain_id, order, options).await?;
     let broadcast = signer

@@ -129,6 +129,29 @@ export class OrderBookClient {
     return this.#call((client, merged) => client.getOrders(owner, pagination ?? null, merged), options);
   }
 
+  async getOrderMultiEnv(
+    orderUid: string,
+    options?: SdkClientOptions | null
+  ): Promise<WasmEnvelope<raw.OrderDto>> {
+    return this.#call((client, merged) => client.getOrderMultiEnv(orderUid, merged), options);
+  }
+
+  async getTxOrders(
+    txHash: string,
+    options?: SdkClientOptions | null
+  ): Promise<WasmEnvelope<raw.OrderDto[]>> {
+    return this.#call((client, merged) => client.getTxOrders(txHash, merged), options);
+  }
+
+  async getVersion(options?: SdkClientOptions | null): Promise<WasmEnvelope<string>> {
+    return this.#call((client, merged) => client.getVersion(merged), options);
+  }
+
+  getOrderLink(orderUid: string): WasmEnvelope<string> {
+    assertActive(this.#disposed);
+    return callSync(() => this.#inner.getOrderLink(orderUid));
+  }
+
   async getQuote(
     request: raw.OrderQuoteRequestInput,
     options?: SdkClientOptions | null

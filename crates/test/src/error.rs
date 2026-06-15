@@ -7,7 +7,7 @@ use cow_sdk_orderbook::{OrderbookApiError, OrderbookError, ResponseBody};
 /// [`MockProvider`](crate::MockProvider) when a consumer injects a failure.
 ///
 /// It implements [`std::error::Error`], [`std::fmt::Display`], and
-/// [`cow_sdk_core::SignerError`], so it satisfies the bounds the SDK's signer
+/// [`cow_sdk_core::UserRejection`], so it satisfies the bounds the SDK's signer
 /// and provider helper surfaces place on an implementation's `Error` type.
 #[derive(Debug, Clone)]
 pub struct MockError(String);
@@ -36,7 +36,7 @@ impl std::error::Error for MockError {}
 
 // Default `user_rejection_code` (`None`) is the correct posture for a test
 // double: an injected failure is not a real EIP-1193 wallet rejection.
-impl cow_sdk_core::SignerError for MockError {}
+impl cow_sdk_core::UserRejection for MockError {}
 
 /// A canned orderbook failure a consumer can inject into a
 /// [`MockOrderbook`](crate::MockOrderbook) builder.

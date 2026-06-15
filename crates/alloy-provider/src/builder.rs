@@ -106,7 +106,7 @@ impl<T: TransportState> RpcAlloyProviderBuilder<T> {
     /// the caller — the runtime-neutral default. Supplying a [`RetryConfig`]
     /// wraps the JSON-RPC client in a retry layer; see [`RetryConfig`] for the
     /// policy and its boundaries.
-    pub const fn with_retry(mut self, retry: RetryConfig) -> Self {
+    pub const fn retry(mut self, retry: RetryConfig) -> Self {
         self.retry = Some(retry);
         self
     }

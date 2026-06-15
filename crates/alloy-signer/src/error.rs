@@ -157,7 +157,7 @@ impl From<cow_sdk_core::Cancelled> for SignerError {
 /// impl alongside the new variant so the signing crate can re-classify
 /// it. The contract is pinned by
 /// `crates/alloy-signer/tests/signer_error_trait_contract.rs`.
-impl cow_sdk_core::SignerError for SignerError {
+impl cow_sdk_core::UserRejection for SignerError {
     fn user_rejection_code(&self) -> Option<i32> {
         match self {
             Self::Validation(_)

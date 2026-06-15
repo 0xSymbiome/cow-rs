@@ -100,6 +100,62 @@ impl OrderbookRuntimeBinding {
 /// fn assert_object_safe<T: OrderbookClient>(_: T) {}
 /// fn assert_dyn(_: &dyn OrderbookClient) {}
 /// ```
+///
+/// # Implementing
+///
+/// `OrderbookClient` is dispatched as a trait object (`Arc<dyn
+/// OrderbookClient>`), so an implementor annotates the `impl` with the
+/// re-exported [`async_trait`](macro@async_trait). This crate re-exports the
+/// macro, so an out-of-tree implementor does not declare an `async-trait`
+/// dependency itself:
+///
+/// ```
+/// use cow_sdk_orderbook::{
+///     async_trait, Order, OrderCancellations, OrderCreation, OrderQuoteRequest,
+///     OrderQuoteResponse, OrderbookClient, OrderbookError,
+/// };
+/// use cow_sdk_core::{ApiContext, AppDataHash, OrderUid};
+///
+/// struct MyClient {
+///     context: ApiContext,
+/// }
+///
+/// #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
+/// #[cfg_attr(not(target_arch = "wasm32"), async_trait)]
+/// impl OrderbookClient for MyClient {
+///     fn context(&self) -> &ApiContext {
+///         &self.context
+///     }
+///     async fn quote(
+///         &self,
+///         request: &OrderQuoteRequest,
+///     ) -> Result<OrderQuoteResponse, OrderbookError> {
+///         todo!("dispatch the quote request through your transport")
+///     }
+///     async fn send_order(
+///         &self,
+///         order: &OrderCreation,
+///     ) -> Result<OrderUid, OrderbookError> {
+///         todo!()
+///     }
+///     async fn send_cancellations(
+///         &self,
+///         cancellations: &OrderCancellations,
+///     ) -> Result<(), OrderbookError> {
+///         todo!()
+///     }
+///     async fn order(&self, uid: &OrderUid) -> Result<Order, OrderbookError> {
+///         todo!()
+///     }
+///     async fn upload_app_data(
+///         &self,
+///         app_data_hash: &AppDataHash,
+///         full_app_data: &str,
+///     ) -> Result<(), OrderbookError> {
+///         todo!()
+///     }
+/// }
+/// ```
 pub trait OrderbookClient: Send + Sync {
     /// Returns the effective orderbook API context.
     fn context(&self) -> &CoreApiContext;

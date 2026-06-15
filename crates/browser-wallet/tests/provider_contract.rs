@@ -67,7 +67,7 @@ fn anonymous_provider_builder_requires_trusted_origin() {
 #[test]
 fn provider_builder_accepts_explicit_trusted_origin() {
     let provider = Eip1193ProviderBuilder::new(MockEip1193Transport::sepolia())
-        .with_trusted_origin(Origin::new("test://wallet/sepolia").unwrap())
+        .trusted_origin(Origin::new("test://wallet/sepolia").unwrap())
         .build()
         .unwrap();
 

@@ -19,7 +19,7 @@ pub(crate) const RETRY_COMPUTE_UNITS_PER_SECOND: u64 = 100;
 /// Requests` — directly to the caller. That runtime-neutral default matches the
 /// SDK posture that the consumer owns chain-RPC resilience.
 ///
-/// Supplying a `RetryConfig` through [`RpcAlloyProviderBuilder::with_retry`]
+/// Supplying a `RetryConfig` through [`RpcAlloyProviderBuilder::retry`]
 /// opts into a bounded exponential backoff layer that transparently retries
 /// rate-limited requests up to [`RetryConfig::max_retries`] times, starting from
 /// [`RetryConfig::initial_backoff`]. The policy retries only rate-limit-class
@@ -27,7 +27,7 @@ pub(crate) const RETRY_COMPUTE_UNITS_PER_SECOND: u64 = 100;
 /// nonce-safe write retries still own that logic.
 ///
 /// [`RpcAlloyProvider`]: crate::RpcAlloyProvider
-/// [`RpcAlloyProviderBuilder::with_retry`]: crate::RpcAlloyProviderBuilder::with_retry
+/// [`RpcAlloyProviderBuilder::retry`]: crate::RpcAlloyProviderBuilder::retry
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RetryConfig {
     max_retries: u32,

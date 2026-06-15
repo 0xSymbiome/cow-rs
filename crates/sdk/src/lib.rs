@@ -54,7 +54,7 @@
 //! # async fn run<S>(signer: &S) -> Result<(), Box<dyn Error>>
 //! # where
 //! #     S: cow_sdk::core::Signer,
-//! #     S::Error: std::fmt::Display + cow_sdk::core::SignerError,
+//! #     S::Error: std::fmt::Display + cow_sdk::core::UserRejection,
 //! # {
 //! let trading = Trading::builder()
 //!     .chain_id(SupportedChainId::Sepolia)
@@ -197,22 +197,6 @@ pub use cow_sdk_trading as trading;
 #[cfg(target_arch = "wasm32")]
 #[cfg_attr(docsrs, doc(cfg(target_arch = "wasm32")))]
 pub use cow_sdk_transport_wasm::{FetchTransport, FetchTransportConfig};
-
-#[cfg(feature = "wasm")]
-#[cfg_attr(docsrs, doc(cfg(feature = "wasm")))]
-/// TypeScript-callable WASM surface plus the host-safe protocol helpers.
-///
-/// `helpers` is reachable here on both targets so a single
-/// `cow_sdk::wasm::helpers` path works whether the crate is built for
-/// the host or for `wasm32`. The `wasm32`-only JavaScript ABI lives under
-/// `cow_sdk::wasm::exports`.
-pub mod wasm {
-    /// JavaScript ABI surface, available only on `wasm32` targets.
-    #[cfg(target_arch = "wasm32")]
-    pub use cow_sdk_wasm::exports;
-    /// Host-safe protocol helper modules shared with the WASM crate.
-    pub use cow_sdk_wasm::helpers;
-}
 
 use thiserror::Error;
 

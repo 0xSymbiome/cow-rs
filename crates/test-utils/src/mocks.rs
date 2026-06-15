@@ -47,7 +47,7 @@ impl fmt::Display for RecordingSignerError {
     }
 }
 
-impl cow_sdk_core::SignerError for RecordingSignerError {}
+impl cow_sdk_core::UserRejection for RecordingSignerError {}
 
 /// An `Rc<RefCell<_>>`-backed recording signer (single-threaded / wasm-friendly).
 #[derive(Clone, Debug)]

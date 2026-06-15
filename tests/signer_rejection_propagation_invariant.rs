@@ -97,7 +97,7 @@ async fn typed_data_signing_rejection_renders_user_facing_label_and_code() {
         .expect_err("signing must fail when the signer rejects")
         .to_string();
     assert!(
-        rendered.contains("User rejected typed-data signature"),
+        rendered.contains("user rejected typed-data signature"),
         "errorText contract requires the operation label substring; got `{rendered}`"
     );
     assert!(

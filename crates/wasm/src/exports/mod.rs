@@ -1,17 +1,25 @@
 //! wasm-bindgen exports for the TypeScript-callable WASM API.
 
+/// Typed JavaScript callback shapes for wallet, signer, and HTTP transport.
 pub mod callbacks;
+/// Per-call cancellation token and timeout option types.
 pub mod cancel;
+/// Supported-chain lookup helpers exposed to JavaScript.
 pub mod chains;
 pub mod dto;
+/// EIP-1271 signature-payload and smart-account signing exports.
 #[cfg(feature = "signing")]
 pub mod eip1271;
+/// Versioned response envelope wrapping every exported result.
 pub mod envelope;
+/// Typed error surface and its JavaScript conversion.
 pub mod errors;
 #[cfg(feature = "signing")]
 pub mod events;
+/// IPFS app-data read-client exports.
 #[cfg(feature = "ipfs")]
 pub mod ipfs;
+/// Orderbook client exports.
 #[cfg(feature = "orderbook")]
 pub mod orderbook;
 #[cfg(any(
@@ -21,12 +29,16 @@ pub mod orderbook;
     feature = "trading"
 ))]
 mod registry;
+/// Order and cancellation signing exports.
 #[cfg(feature = "signing")]
 pub mod signing;
+/// Subgraph analytics client exports.
 #[cfg(feature = "subgraph")]
 pub mod subgraph;
+/// Trading client exports.
 #[cfg(feature = "trading")]
 pub mod trading;
+/// HTTP transport configuration and the JavaScript callback transport bridge.
 #[cfg(any(
     feature = "orderbook",
     feature = "subgraph",

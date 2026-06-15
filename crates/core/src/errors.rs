@@ -171,6 +171,33 @@ pub enum ErrorClass {
     Internal,
 }
 
+impl ErrorClass {
+    /// Returns the stable lowercase telemetry label for this class.
+    ///
+    /// The label is a stability contract for telemetry partitioning, mirroring
+    /// [`TransportErrorClass::as_str`](crate::TransportErrorClass::as_str) and
+    /// the adapter class enums. Prefer it over `{:?}`, whose `Debug` output is
+    /// not contractual.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Validation => "validation",
+            Self::Transport => "transport",
+            Self::Remote => "remote",
+            Self::RateLimited => "rate-limited",
+            Self::Signing => "signing",
+            Self::Cancelled => "cancelled",
+            Self::Internal => "internal",
+        }
+    }
+}
+
+impl core::fmt::Display for ErrorClass {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
 impl CoreError {
     /// Returns the coarse-grained [`ErrorClass`] for this error.
     #[must_use]
@@ -181,6 +208,27 @@ impl CoreError {
             // Serialization and transport-contract failures plus any future
             // additive variants signal invariant violations.
             _ => ErrorClass::Internal,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ErrorClass;
+
+    #[test]
+    fn error_class_labels_are_stable_and_display_matches_as_str() {
+        for (class, label) in [
+            (ErrorClass::Validation, "validation"),
+            (ErrorClass::Transport, "transport"),
+            (ErrorClass::Remote, "remote"),
+            (ErrorClass::RateLimited, "rate-limited"),
+            (ErrorClass::Signing, "signing"),
+            (ErrorClass::Cancelled, "cancelled"),
+            (ErrorClass::Internal, "internal"),
+        ] {
+            assert_eq!(class.as_str(), label);
+            assert_eq!(class.to_string(), label);
         }
     }
 }

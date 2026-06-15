@@ -1453,6 +1453,23 @@ export class OrderBookClient {
      */
     getOrderCompetitionStatus(orderUid: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<CompetitionOrderStatusDto>>;
     /**
+     * Builds the public order-details URL for a UID without any network call.
+     *
+     * @param orderUid Full order UID to link to.
+     * @returns A versioned envelope containing the order-details URL.
+     * @throws CowError for an invalid UID or an unresolved base URL.
+     */
+    getOrderLink(orderUid: string): WasmEnvelope<string>;
+    /**
+     * Fetches an order by UID, falling back across environments on a 404.
+     *
+     * @param orderUid Full order UID to look up.
+     * @param options Optional per-call cancellation and timeout settings.
+     * @returns A versioned envelope containing the order response.
+     * @throws CowError for invalid UID, not-found responses, transport failure, or timeout.
+     */
+    getOrderMultiEnv(orderUid: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<OrderDto>>;
+    /**
      * Fetches orders owned by an address with optional pagination.
      *
      * The owner address is validated before the request is dispatched. The
@@ -1502,6 +1519,23 @@ export class OrderBookClient {
      * @throws CowError when the query is ambiguous or transport fails.
      */
     getTrades(query: TradesQueryInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<TradeDto[]>>;
+    /**
+     * Fetches the orders contained in a settlement transaction.
+     *
+     * @param txHash Settlement transaction hash.
+     * @param options Optional per-call cancellation and timeout settings.
+     * @returns A versioned envelope containing the settled orders.
+     * @throws CowError for an invalid hash, transport failure, timeout, or cancellation.
+     */
+    getTxOrders(txHash: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<OrderDto[]>>;
+    /**
+     * Fetches the orderbook service version string.
+     *
+     * @param options Optional per-call cancellation and timeout settings.
+     * @returns A versioned envelope containing the service version string.
+     * @throws CowError for transport failure, timeout, or cancellation.
+     */
+    getVersion(options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>;
     /**
      * Creates an orderbook client from a single config object.
      *

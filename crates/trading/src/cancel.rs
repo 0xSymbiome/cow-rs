@@ -24,7 +24,7 @@ pub async fn offchain_cancel_order<O, S>(
 where
     O: OrderbookClient + ?Sized,
     S: Signer,
-    S::Error: std::fmt::Display + cow_sdk_core::SignerError,
+    S::Error: std::fmt::Display + cow_sdk_core::UserRejection,
 {
     validate_orderbook_chain_context(orderbook, Some(trader.chain_id))?;
     validate_orderbook_chain_context(orderbook, params.chain_id)?;

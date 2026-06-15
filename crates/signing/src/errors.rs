@@ -32,7 +32,7 @@ pub enum SigningError {
     /// `code` carries the EIP-1193 numeric code so downstream
     /// consumers can render the standard provider error class without
     /// inspecting backend-specific strings.
-    #[error("User rejected {label} ({code})")]
+    #[error("user rejected {label} ({code})")]
     SignerRejection {
         /// High-level operation label derived from the signing-helper
         /// call site (e.g. `"typed-data signature"`).
