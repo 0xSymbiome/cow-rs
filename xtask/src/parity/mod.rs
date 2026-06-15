@@ -110,6 +110,7 @@ pub fn validate(options: &CliOptions) -> Result<()> {
             })?;
         }
         validate_vendored_openapi_body(&options.source_lock, &lock, root)?;
+        validate_fixture_ref_fragments(&options.source_lock, &lock, root)?;
     }
 
     println!(
@@ -459,6 +460,101 @@ fn validate_vendored_openapi_body(
         );
     }
     Ok(())
+}
+
+/// Verifies every `#fragment` symbol a fixture cites exists in the producer file
+/// at the pinned commit, closing the gap where a renamed or removed symbol
+/// passed silently (the path and commit are already checked offline).
+///
+/// Lenient by design: a fragment is split on `,`, each symbol reduced to its
+/// trailing `.`/`/` segment (so `components.schemas.Foo` checks for `Foo`), and
+/// that leaf must appear verbatim. Existence only — not that the symbol still
+/// means what the fixture assumes; that is the consuming test's job.
+fn validate_fixture_ref_fragments(
+    source_lock: &Path,
+    lock: &SourceLock,
+    upstream_root: &Path,
+) -> Result<()> {
+    let repo_commits: BTreeMap<&str, &str> = lock
+        .repositories
+        .iter()
+        .map(|repo| (repo.id.as_str(), repo.commit.as_str()))
+        .collect();
+
+    let fixtures_root = parity_root(source_lock).join("fixtures");
+    let files = collect_files(&fixtures_root, "json")?;
+
+    // A producer file cited by many fixtures is read from git once.
+    let mut blobs: BTreeMap<(String, String), String> = BTreeMap::new();
+
+    for file in &files {
+        let raw = fs::read_to_string(file)
+            .with_context(|| format!("failed to read fixture {}", file.display()))?;
+        let header: FixtureHeader = serde_json::from_str(&raw)
+            .with_context(|| format!("fixture {} has an invalid header", file.display()))?;
+
+        for (repo, source) in &header.sources {
+            let Some(commit) = repo_commits.get(repo.as_str()).copied() else {
+                continue; // the offline pass already rejected unknown repos
+            };
+            let checkout = upstream_root.join(repo);
+            for ref_entry in &source.refs {
+                let Some((path, fragment)) = ref_entry.split_once('#') else {
+                    continue; // path-only refs carry no symbol to confirm
+                };
+                if fragment.trim().is_empty() {
+                    continue;
+                }
+                let key = (repo.clone(), path.to_owned());
+                if !blobs.contains_key(&key) {
+                    let body = git_stdout(&checkout, &["show", &format!("{commit}:{path}")])
+                        .with_context(|| {
+                            format!(
+                                "failed to read {path} at {repo}@{commit} cited by fixture {}",
+                                file.display()
+                            )
+                        })?;
+                    blobs.insert(key.clone(), body);
+                }
+                let body = &blobs[&key];
+                for symbol in fragment.split(',') {
+                    let leaf = symbol
+                        .rsplit(['.', '/'])
+                        .find(|segment| !segment.trim().is_empty())
+                        .unwrap_or(symbol)
+                        .trim();
+                    // Skip descriptive labels (e.g. `inlined-primitives`); only
+                    // real identifiers are existence-checked.
+                    if !is_code_identifier(leaf) {
+                        continue;
+                    }
+                    if !body.contains(leaf) {
+                        bail!(
+                            "fixture {} cites {repo}:{path}#{leaf}, but `{leaf}` does not appear \
+                             in that file at {repo}@{commit}; the symbol was renamed or removed \
+                             upstream — re-point the ref or re-verify the fixture",
+                            file.display()
+                        );
+                    }
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Whether `leaf` is shaped like a code symbol (an ASCII identifier). Non-matches
+/// — kebab-case prose, JSON pointers, punctuation — are descriptive provenance
+/// labels rather than symbols to grep for, so the existence check skips them.
+fn is_code_identifier(leaf: &str) -> bool {
+    let mut characters = leaf.chars();
+    let Some(first) = characters.next() else {
+        return false;
+    };
+    if !(first.is_ascii_alphabetic() || first == '_') {
+        return false;
+    }
+    characters.all(|character| character.is_ascii_alphanumeric() || character == '_')
 }
 
 /// Recursively collects files with the given extension, sorted for
@@ -1054,7 +1150,13 @@ mod tests {
         for producer_path in PRODUCER_PATHS {
             let path = root.join(producer_path);
             fs::create_dir_all(path.parent().expect("producer path has a parent"))?;
-            fs::write(&path, format!("fixture source for {producer_path}\n"))?;
+            // Seed the symbol the valid fixture cites for the ref-fragment check.
+            fs::write(
+                &path,
+                format!(
+                    "fixture source for {producer_path}\nexport const ORDER_TYPE_FIELDS = [];\n"
+                ),
+            )?;
         }
         run_git(root, &["init"])?;
         run_git(root, &["config", "user.email", "tests@example.com"])?;
@@ -1182,6 +1284,29 @@ mod tests {
             .expect_err("a missing checkout is rejected");
         assert!(
             format!("{error:#}").contains("deep validation failed for contracts"),
+            "unexpected error: {error:#}"
+        );
+
+        let _ = fs::remove_dir_all(&dir);
+        Ok(())
+    }
+
+    #[test]
+    fn validate_with_upstream_root_rejects_a_fragment_naming_a_missing_symbol() -> Result<()> {
+        let dir = temp_dir("roots-fragment")?;
+        let (lock, upstreams, commit) = deep_setup(&dir)?;
+        // The path is declared (offline-valid); only the deep fragment check
+        // rejects the missing symbol.
+        let mut fixture = valid_fixture_json(&commit);
+        fixture["sources"]["contracts"]["refs"] =
+            serde_json::json!(["src/ts/order.ts#GhostSymbol"]);
+        fixture["cases"] = serde_json::json!([]);
+        write_fixture(&dir, "contracts.json", &fixture)?;
+
+        let error = validate(&cli(lock, Some(upstreams)))
+            .expect_err("a fragment naming a missing symbol is rejected");
+        assert!(
+            format!("{error:#}").contains("does not appear in that file"),
             "unexpected error: {error:#}"
         );
 

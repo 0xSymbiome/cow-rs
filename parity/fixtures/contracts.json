@@ -4,7 +4,7 @@
     "contracts": {
       "commit": "c6b61ce75841ce4c25ab126def9cc981c568e6c6",
       "refs": [
-        "src/ts/order.ts#ORDER_TYPE_FIELDS,BUY_ETH_ADDRESS,ORDER_UID_LENGTH,hashOrderCancellation,hashOrderCancellations,normalizeBuyTokenBalance,extractOrderUidParams",
+        "src/ts/order.ts#ORDER_TYPE_FIELDS,BUY_ETH_ADDRESS,ORDER_UID_LENGTH,OrderCancellations,normalizeBuyTokenBalance,extractOrderUidParams",
         "src/ts/sign.ts#SigningScheme,EIP1271_MAGICVALUE,encodeEip1271SignatureData,decodeEip1271SignatureData",
         "src/ts/settlement.ts#SettlementEncoder",
         "src/ts/interaction.ts#normalizeInteraction,normalizeInteractions",

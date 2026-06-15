@@ -416,7 +416,7 @@ mod tests {
 
     use super::*;
 
-    const LOCK: &str = "# header comment\nrepositories:\n- id: demo\n  remote: https://github.com/example/demo.git\n  commit: 1111111111111111111111111111111111111111\n  # why: demo row.\n  role: primary\n  producer_paths:\n  - a.txt\n  - b.txt\nfixtures: []\n";
+    const LOCK: &str = "# header comment\nrepositories:\n- id: demo\n  remote: https://github.com/example/demo.git\n  commit: 1111111111111111111111111111111111111111\n  # why: demo row.\n  role: primary\n  producer_paths:\n  - a.txt # inline note\n  - b.txt\nfixtures: []\n";
 
     #[test]
     fn lock_commit_rewrite_preserves_comments_and_errors_on_unknown_rows() {
@@ -424,6 +424,7 @@ mod tests {
             .expect("rewrite succeeds");
         assert!(updated.contains("# header comment"));
         assert!(updated.contains("  # why: demo row."));
+        assert!(updated.contains("  - a.txt # inline note"));
         assert!(updated.contains("  commit: 2222222222222222222222222222222222222222"));
         assert!(!updated.contains("1111111111111111111111111111111111111111"));
 
