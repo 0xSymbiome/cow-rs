@@ -13,6 +13,8 @@ The first functional crate-family release begins at `0.1.0`.
 
 ## [Unreleased]
 
+## [0.1.0-alpha.1] - 2026-06-15
+
 The first functional release of `cow-rs`, a Rust SDK for CoW Protocol. The
 sections below describe the public contract a `0.1.0` consumer receives.
 
@@ -827,5 +829,3 @@ sections below describe the public contract a `0.1.0` consumer receives.
   default, and browser-wallet provider construction fails closed on an unreviewed
   anonymous origin, so a misconfigured host or origin is rejected rather than
   silently trusted.
-
-[Unreleased]: https://github.com/0xSymbiome/cow-rs

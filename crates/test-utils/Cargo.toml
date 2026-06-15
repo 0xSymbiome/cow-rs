@@ -8,11 +8,16 @@ license.workspace = true
 
 description = "Internal, unpublished shared test helpers for the cow-rs workspace."
 
+# Internal helper crate: never published and excluded from cargo-release so it is
+# not version-bumped, README-replaced, or published during a release run.
+[package.metadata.release]
+release = false
+
 [lints]
 workspace = true
 
 [dependencies]
-cow-sdk-core = { path = "../core", version = "0.1.0" }
+cow-sdk-core = { path = "../core", version = "0.1.0-alpha.1" }
 alloy-primitives = { workspace = true }
 async-trait = { workspace = true }
 proptest = { workspace = true, optional = true }

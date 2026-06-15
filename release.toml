@@ -32,12 +32,18 @@ sign-tag = true
 # family can publish in a single run.
 rate-limit.existing-packages = 50
 
-# Regenerate the changelog for the new tag before the release commit is made.
-# Runs the `cargo changelog` xtask (Rust, cross-platform — no shell wrapper, so
-# `check-shell-wrappers` stays satisfied); it resolves the workspace root itself
-# so CHANGELOG.md lands at the repo root regardless of which crate cargo-release
-# is processing.
-pre-release-hook = ["cargo", "run", "--quiet", "-p", "xtask", "--", "changelog", "--tag", "v{{version}}"]
+# CHANGELOG.md is generated INCREMENTALLY. Each release renders only the commits
+# since the previous tag and splices that section in above the latest version
+# (the `cargo changelog` xtask); prior sections are left intact — the file is
+# never rebuilt from full history. The hand-written first-release section
+# (`## [0.1.0-alpha.1]`) is preserved the same way.
+#
+# The hook is DISABLED for the first release: with no prior tag, `--unreleased`
+# would emit the entire history. So 0.1.0-alpha.1 ships with the hand-written
+# section above. AFTER `v0.1.0-alpha.1` is tagged, uncomment the line below and
+# every subsequent release (alpha.2, ...) auto-generates only its own slice.
+# Verify the first time with `cargo release <next-version> --dry-run`.
+# pre-release-hook = ["cargo", "run", "--quiet", "-p", "xtask", "--", "changelog", "--tag", "v{{version}}"]
 
 # Keep the version strings inside each crate's README in lockstep with the
 # release. cargo-release bumps Cargo.toml only; without these, the README install
