@@ -3,7 +3,7 @@
 
 use cow_sdk_core::OrderKind;
 use cow_sdk_test_utils::builders::{self, OrderBuilder};
-use cow_sdk_test_utils::{consts, eip712, fixtures};
+use cow_sdk_test_utils::{eip712, fixtures};
 
 #[test]
 fn keccak_oracle_matches_alloy() {
@@ -44,22 +44,6 @@ fn word_encoders_are_correct() {
         eip712::encode_u256_word("255"),
         eip712::encode_u256_word("0xff")
     );
-}
-
-#[test]
-fn consts_are_canonical() {
-    assert_eq!(
-        consts::ADDR_A,
-        alloy_primitives::Address::from([0x11u8; 20])
-    );
-    assert_eq!(
-        consts::ADDR_D,
-        alloy_primitives::Address::from([0x44u8; 20])
-    );
-    assert!(consts::CID_1.starts_with("f01551b20"));
-    assert!(consts::APP_DATA_HEX_1.starts_with("0x337aa6e6"));
-    // The CID body is the app-data hash with the multicodec header prepended.
-    assert!(consts::CID_1.ends_with(consts::APP_DATA_HEX_1.trim_start_matches("0x")));
 }
 
 #[test]

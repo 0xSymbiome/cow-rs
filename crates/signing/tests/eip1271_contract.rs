@@ -18,7 +18,7 @@ use cow_sdk_contracts::{ContractsError, decode_eip1271_signature_data};
 use cow_sdk_core::OrderKind;
 use cow_sdk_signing::SigningError;
 use cow_sdk_signing::eip1271_signature_payload;
-use sha3::{Digest, Keccak256};
+use cow_sdk_test_utils::eip712::keccak256;
 
 use cow_sdk_test_utils::builders::sample_signature_hex;
 
@@ -92,18 +92,6 @@ fn independent_payload(order: &cow_sdk_core::OrderData, ecdsa_signature: &str) -
     ));
 
     format!("0x{}", alloy_primitives::hex::encode(encoded))
-}
-
-// Hand-rolled `sha3::Keccak256` helper used by the assertions above.
-// Crate code routes through `alloy_primitives::keccak256` per ADR 0052;
-// this helper deliberately runs `sha3::Keccak256` directly so the parity
-// check compares the crate output against an independent keccak
-// implementation.
-fn keccak256(bytes: impl AsRef<[u8]>) -> [u8; 32] {
-    let digest = Keccak256::digest(bytes.as_ref());
-    let mut out = [0u8; 32];
-    out.copy_from_slice(&digest);
-    out
 }
 
 fn encode_address(value: &str) -> [u8; 32] {
