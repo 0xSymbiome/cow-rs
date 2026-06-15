@@ -45,8 +45,8 @@ pub use redaction::{
 /// consumer.
 pub use tokio_util::sync::CancellationToken;
 pub use traits::{
-    BlockInfo, ContractCall, ContractHandle, DigestSigner, LogProvider, Owner, Provider, Signer,
-    SignerError, SigningProvider, TransactionBroadcast, TransactionReceipt, TransactionRequest,
+    BlockInfo, ContractCall, DigestSigner, LogProvider, Provider, Signer, SignerError,
+    SigningProvider, TransactionBroadcast, TransactionReceipt, TransactionRequest,
     TransactionStatus, TypedDataDomain, TypedDataEnvelope, TypedDataField, TypedDataPayload,
     TypedDataSigner, TypedDataTypes,
 };

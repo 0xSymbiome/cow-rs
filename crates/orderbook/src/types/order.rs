@@ -890,8 +890,8 @@ impl Order {
     /// reflects the signed order.
     ///
     /// Returns `Some` for ordinary orders: their response fields equal the
-    /// signed order, so `cow_sdk_contracts::hash_order` over the result
-    /// reproduces the stored `uid`. The response's optional receiver is mapped
+    /// signed order, so an EIP-712 order hash over the result reproduces the
+    /// stored `uid`. The response's optional receiver is mapped
     /// `None -> Address::ZERO` — the "receiver same as owner" sentinel the order
     /// was signed against — so the digest re-derives byte-for-byte.
     ///

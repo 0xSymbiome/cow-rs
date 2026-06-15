@@ -52,12 +52,6 @@ pub fn typed_data_signature() -> String {
     ecdsa_shaped(0x22, 0x1c)
 }
 
-/// A canned 65-byte ECDSA-shaped transaction signature (recovery byte `0x1b`).
-#[must_use]
-pub fn transaction_signature() -> String {
-    ecdsa_shaped(0x33, 0x1b)
-}
-
 /// The canned quote `quote` returns by default: one unit sold for two,
 /// valid into 2100, verified.
 #[must_use]

@@ -15,8 +15,7 @@ a signer's address is `address()`.
 
 The `get_` prefix is retained in exactly one place: the chain-RPC `Provider` and
 `LogProvider` trait methods that mirror canonical Ethereum JSON-RPC names (`get_chain_id`,
-`get_code`, `get_transaction_receipt`, `get_storage_at`, `get_block`, `get_contract`,
-`get_logs`). See ADR 0035.
+`get_code`, `get_transaction_receipt`, `get_block`, `get_logs`). See ADR 0035.
 
 ## Why
 

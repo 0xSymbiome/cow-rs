@@ -28,10 +28,11 @@ the wallet-filler provider, and returns `TransactionBroadcast` with the
 broadcast hash read through `*pending.tx_hash()` without waiting for
 confirmation.
 
-Raw `sign_transaction` is intentionally unsupported on the umbrella handle. It
-returns `UnsupportedTransactionRequest` without sending an HTTP request; callers
-that want on-chain execution use `send_transaction`, where nonce, fee, chain,
-and broadcast context are available.
+The `Signer` trait does not carry a raw transaction-signing method; offline
+raw-transaction signing is out of scope for this release. Callers that want
+on-chain execution use `send_transaction`, where nonce, fee, chain, and
+broadcast context are available. A consumer that needs offline raw-tx signing
+would build it on a dedicated narrow trait rather than the core `Signer`.
 
 The adapter is native-only. Wasm targets fail at compile time and should use
 browser-wallet signing plus consumer-supplied EIP-1193 provider reads.
@@ -74,19 +75,17 @@ to success through Alloy's higher-level `status()` helper.
   and does not implement `Provider`.
 - Runtime behavior: `send_transaction` uses the Alloy wallet-filler provider,
   reads the broadcast hash through `*pending.tx_hash()`, and returns
-  `TransactionBroadcast`; `sign_transaction` returns
-  `UnsupportedTransactionRequest` without dispatching HTTP; `estimate_gas`
-  delegates directly to the provider. `get_transaction_receipt` delegates to
-  the provider crate's rich receipt conversion.
+  `TransactionBroadcast`; `estimate_gas` delegates directly to the provider.
+  `get_transaction_receipt` delegates to the provider crate's rich receipt
+  conversion.
 - Typed-data behavior: `sign_typed_data_payload` preserves the payload primary
   type rather than routing through the legacy flat-fields fallback.
 - Support posture: native targets are supported; wasm targets fail closed with
   the documented compile-time diagnostic.
 - Validation: tests cover provider delegation, owned signer handles, EIP-712
   vectors, chain-coherence verification through `build_checked()` or
-  `verify_chain_id().await`, redaction, cancellation, no-broadcast
-  `sign_transaction`, compile-fail capability exclusions, examples, and
-  Trading integration.
+  `verify_chain_id().await`, redaction, cancellation, compile-fail capability
+  exclusions, examples, and Trading integration.
 
 ## Alternatives Rejected
 

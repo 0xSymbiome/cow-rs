@@ -1,7 +1,7 @@
 # Shared Logic Reviewability Audit
 
 Status: Current  
-Last reviewed: 2026-06-14
+Last reviewed: 2026-06-15
 Owning surface: Orderbook, signing, and trading shared-logic reviewability boundary, plus the canonical primitive-layer invocation paths shared across the cow-rs workspace  
 Refresh trigger: Changes to shared orderbook request execution, signing payload construction, thin posting wrappers, boundary-specific order DTO separation, or the canonical primitive-layer invocation paths (keccak256, U256 and quantity parsing, address encoding, hex serde, typed-primitive bridges, and identity-wire-form preservation) that materially affect correctness or reviewability  
 Related docs:
@@ -99,10 +99,14 @@ between variants is invisible to a reviewer who only reads one site.
   `cow_sdk_contracts::SigningScheme` (repr-u8) and the wire-side
   `cow_sdk_orderbook::SigningScheme` (`serde(rename_all =
   "lowercase")`) carry distinct wire formats and so remain separate
-  types. A typed `From` / `TryFrom` bridge in
-  `crates/orderbook/src/types/enums.rs` is the canonical conversion
-  surface, and a per-variant parity test prevents drift if any
-  upstream variant is added or renamed.
+  types. The orderbook crate holds no conversion to the contracts
+  enum, so it carries no `cow-sdk-contracts` dependency and stays free
+  of the signing-recovery primitive stack; it owns only the internal
+  `EcdsaSigningScheme`-to-`SigningScheme` subset conversion for the
+  ECDSA cancellation subset, pinned per variant by an orderbook
+  conversion-contract test. A flow that maps between the contracts and
+  orderbook scheme types does so at the layer that already depends on
+  both.
 - **Identity wire-form preservation**: the cow-named identity types
   (`Address`, `Hash32`, `AppDataHash`, `HexData`, `OrderUid`) and the
   cow-named numeric type (`Amount`) resolves to
@@ -149,7 +153,7 @@ Primary regression coverage:
 - `crates/signing/tests/cancellation_contract.rs::async_cancellation_signing_paths_match_sync_variants`
 - `crates/contracts/tests/order_contract.rs::canonical_unsigned_order_path_matches_upstream_signing_fixture_digest_and_uid`
 - `crates/orderbook/tests/types_contract.rs::order_creation_from_quote_keeps_quote_shape_and_quote_id`
-- `crates/orderbook/tests/signing_scheme_bridge_contract.rs`
+- `crates/orderbook/tests/ecdsa_scheme_conversion_contract.rs`
 - `crates/core/tests/wire_format_preservation_contract.rs`
 
 Validation surface:

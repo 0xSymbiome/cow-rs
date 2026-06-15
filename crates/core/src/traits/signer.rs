@@ -4,26 +4,6 @@ use crate::types::{Address, Amount};
 use super::transaction::{TransactionBroadcast, TransactionRequest};
 use super::typed_data::TypedDataPayload;
 
-/// Owner-address capability.
-///
-/// This narrow trait lets flows ask only for signer ownership when no
-/// signing operation is required.
-#[expect(
-    async_fn_in_trait,
-    reason = "the trait surface adopts native async fn in trait per ADR 0010 runtime-neutral posture; the resulting non-Send futures are covered by the workspace future_not_send allow so wasm callbacks can satisfy the same trait without an explicit Send bound"
-)]
-pub trait Owner {
-    /// Error type returned by owner resolution.
-    type Error;
-
-    /// Returns the signer address.
-    ///
-    /// # Errors
-    ///
-    /// Returns the implementation-defined signer error when address resolution fails.
-    async fn address(&self) -> Result<Address, Self::Error>;
-}
-
 /// EIP-712 typed-data signing capability.
 #[expect(
     async_fn_in_trait,
@@ -116,12 +96,6 @@ pub trait Signer {
     ///
     /// Returns the implementation-defined signer error when signing fails.
     async fn sign_message(&self, message: &[u8]) -> Result<String, Self::Error>;
-    /// Signs a transaction payload.
-    ///
-    /// # Errors
-    ///
-    /// Returns the implementation-defined signer error when signing fails.
-    async fn sign_transaction(&self, tx: &TransactionRequest) -> Result<String, Self::Error>;
     /// Signs the canonical EIP-712 typed-data payload.
     ///
     /// The payload carries the domain, the full types map, the primary-type
@@ -155,17 +129,6 @@ pub trait Signer {
     ///
     /// Returns the implementation-defined signer error when estimation fails.
     async fn estimate_gas(&self, tx: &TransactionRequest) -> Result<Amount, Self::Error>;
-}
-
-impl<T> Owner for T
-where
-    T: Signer,
-{
-    type Error = T::Error;
-
-    async fn address(&self) -> Result<Address, Self::Error> {
-        Signer::address(self).await
-    }
 }
 
 impl<T> TypedDataSigner for T

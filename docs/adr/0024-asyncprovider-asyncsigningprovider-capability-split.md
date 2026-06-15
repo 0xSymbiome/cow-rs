@@ -10,7 +10,7 @@
 
 `Provider` is the read-only async chain-RPC trait. It owns the provider
 error type and read methods such as chain-id lookup, bytecode lookup, contract
-calls, storage reads, block reads, and contract-handle construction.
+calls, and block reads.
 
 Signer creation lives in `SigningProvider: Provider`. That extension
 owns `type Signer: Signer<Error = Self::Error>` and

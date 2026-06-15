@@ -65,20 +65,6 @@ async fn get_transaction_receipt_populates_rich_fields_from_alloy_receipt() {
 }
 
 #[tokio::test]
-async fn get_storage_at_delegates_to_inner_provider() {
-    let word = format!("0x{:0>64}", "2a");
-    let (_server, client) = client_with_result(json!(word)).await;
-
-    assert_eq!(
-        client
-            .get_storage_at(&Address::new(ADDRESS).unwrap(), "0x0")
-            .await
-            .unwrap(),
-        HexData::new(format!("0x{:0>64}", "2a")).unwrap()
-    );
-}
-
-#[tokio::test]
 async fn call_delegates_to_inner_provider() {
     let (_server, client) = client_with_result(json!("0x1234")).await;
     let tx = TransactionRequest::new(
@@ -113,19 +99,6 @@ async fn get_block_delegates_to_inner_provider() {
 
     assert_eq!(block.number, 42);
     assert_eq!(block.hash.unwrap().to_hex_string(), HASH);
-}
-
-#[tokio::test]
-async fn get_contract_returns_handle_without_rpc() {
-    let server = MockServer::start().await;
-    let client = client_for(&server).await;
-    let address = Address::new(ADDRESS).unwrap();
-
-    let handle = client.get_contract(&address, "[]").await.unwrap();
-
-    assert_eq!(handle.address, address);
-    assert_eq!(handle.abi_json, "[]");
-    assert!(server.received_requests().await.unwrap().is_empty());
 }
 
 async fn client_with_result(result: Value) -> (MockServer, AlloyClient) {

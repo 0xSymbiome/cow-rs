@@ -4,8 +4,8 @@ use crate::helpers as pure;
 use cow_sdk_contracts::eth_flow::{EthFlowOrderData, encode_create_order_calldata};
 use cow_sdk_core::transport::policy::TransportPolicy;
 use cow_sdk_core::{
-    Address, Amount, BlockInfo, ContractCall, ContractHandle, HexData, NATIVE_CURRENCY_ADDRESS,
-    ProtocolOptions, Provider, Signer, TransactionBroadcast, TransactionHash, TransactionReceipt,
+    Address, Amount, BlockInfo, ContractCall, HexData, NATIVE_CURRENCY_ADDRESS, ProtocolOptions,
+    Provider, Signer, TransactionBroadcast, TransactionHash, TransactionReceipt,
     TransactionRequest,
 };
 use cow_sdk_orderbook::{OrderbookApi, SigningScheme};
@@ -648,10 +648,6 @@ impl Signer for JsTradingSigner {
         Err("message signing is not available through this typed-data callback".to_owned())
     }
 
-    async fn sign_transaction(&self, _tx: &TransactionRequest) -> Result<String, Self::Error> {
-        Err("transaction signing is not available through this typed-data callback".to_owned())
-    }
-
     async fn sign_typed_data_payload(
         &self,
         payload: &cow_sdk_core::TypedDataPayload,
@@ -710,14 +706,6 @@ impl Provider for JsContractReadProvider {
         Err("receipt reads are not available through this contract-read callback".to_owned())
     }
 
-    async fn get_storage_at(
-        &self,
-        _address: &Address,
-        _slot: &str,
-    ) -> Result<HexData, Self::Error> {
-        Err("storage reads are not available through this contract-read callback".to_owned())
-    }
-
     async fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> {
         Err("raw calls are not available through this contract-read callback".to_owned())
     }
@@ -731,13 +719,5 @@ impl Provider for JsContractReadProvider {
 
     async fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
         Err("block reads are not available through this contract-read callback".to_owned())
-    }
-
-    async fn get_contract(
-        &self,
-        address: &Address,
-        abi_json: &str,
-    ) -> Result<ContractHandle, Self::Error> {
-        Ok(ContractHandle::new(address.clone(), abi_json.to_owned()))
     }
 }

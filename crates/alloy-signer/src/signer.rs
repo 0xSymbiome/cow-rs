@@ -79,12 +79,6 @@ impl Signer for LocalAlloySigner {
         Ok(alloy_signature_to_hex(&signature)?)
     }
 
-    async fn sign_transaction(&self, _tx: &TransactionRequest) -> Result<String, Self::Error> {
-        Err(SignerError::ProviderRequired {
-            method: "sign_transaction",
-        })
-    }
-
     async fn sign_typed_data_payload(
         &self,
         payload: &TypedDataPayload,

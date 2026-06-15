@@ -62,51 +62,9 @@ pub use retry::RetryConfig;
 #[cfg(not(target_arch = "wasm32"))]
 #[doc(hidden)]
 pub mod __seam {
-    use cow_sdk_core::{BlockInfo, Redacted, TransactionReceipt, TransportErrorClass};
+    use cow_sdk_core::{BlockInfo, TransactionReceipt};
 
-    /// Classified Alloy JSON-RPC or transport error detail.
-    #[non_exhaustive]
-    #[derive(Debug)]
-    pub enum RpcErrorClassification {
-        /// Transport-layer classification with redacted detail.
-        Transport {
-            /// Shared transport class.
-            class: TransportErrorClass,
-            /// Redacted detail.
-            detail: Redacted<String>,
-        },
-        /// Remote JSON-RPC payload.
-        Remote {
-            /// JSON-RPC error code.
-            code: i64,
-            /// JSON-RPC error message.
-            message: String,
-        },
-        /// Local invariant or unsupported upstream path.
-        Internal(String),
-    }
-
-    impl From<crate::error::__transport_classification::RpcErrorClassification>
-        for RpcErrorClassification
-    {
-        fn from(
-            classification: crate::error::__transport_classification::RpcErrorClassification,
-        ) -> Self {
-            match classification {
-                crate::error::__transport_classification::RpcErrorClassification::Transport {
-                    class,
-                    detail,
-                } => Self::Transport { class, detail },
-                crate::error::__transport_classification::RpcErrorClassification::Remote {
-                    code,
-                    message,
-                } => Self::Remote { code, message },
-                crate::error::__transport_classification::RpcErrorClassification::Internal(
-                    message,
-                ) => Self::Internal(message),
-            }
-        }
-    }
+    pub use crate::error::__transport_classification::RpcErrorClassification;
 
     /// Converts a core transaction request into an Alloy transaction request.
     pub fn cow_request_to_alloy(
@@ -139,7 +97,7 @@ pub mod __seam {
     pub fn rpc_error_to_class_and_detail(
         error: alloy_transport::TransportError,
     ) -> RpcErrorClassification {
-        crate::error::__transport_classification::rpc_error_to_class_and_detail(error).into()
+        crate::error::__transport_classification::rpc_error_to_class_and_detail(error)
     }
 
     /// Executes the canonical read-contract algorithm.

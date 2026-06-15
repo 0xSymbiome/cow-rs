@@ -5,11 +5,9 @@ use std::{fmt, sync::Arc};
 use alloy_network::Ethereum;
 use alloy_provider::{DynProvider, Provider as AlloyProviderTrait};
 use cow_sdk_core::{
-    Address, BlockInfo, ChainId, ContractCall, ContractHandle, HexData, LogProvider, LogQuery,
-    Provider, RawLog, Redacted, TransactionHash, TransactionReceipt, TransactionRequest,
+    Address, BlockInfo, ChainId, ContractCall, HexData, LogProvider, LogQuery, Provider, RawLog,
+    Redacted, TransactionHash, TransactionReceipt, TransactionRequest,
 };
-
-use alloy_primitives::{B256, U256};
 
 use crate::{
     builder::RpcAlloyProviderBuilder,
@@ -108,27 +106,6 @@ impl Provider for RpcAlloyProvider {
         Ok(receipt)
     }
 
-    async fn get_storage_at(&self, address: &Address, slot: &str) -> Result<HexData, Self::Error> {
-        let slot = slot
-            .strip_prefix("0x")
-            .map_or_else(
-                || U256::from_str_radix(slot, 10),
-                |hex| U256::from_str_radix(hex, 16),
-            )
-            .map_err(|error| {
-                ProviderError::Validation(format!(
-                    "storage slot `{slot}` is not a valid U256: {error}"
-                ))
-            })?;
-        let value = self
-            .inner()
-            .get_storage_at(*address.as_alloy(), slot)
-            .await
-            .map_err(ProviderError::from_alloy_transport)?;
-        HexData::new(B256::from(value).to_string())
-            .map_err(|error| ProviderError::Internal(format!("storage conversion: {error}")))
-    }
-
     async fn call(&self, tx: &TransactionRequest) -> Result<HexData, Self::Error> {
         let tx = cow_request_to_alloy(tx).map_err(ProviderError::Validation)?;
         let bytes = self
@@ -154,14 +131,6 @@ impl Provider for RpcAlloyProvider {
                 ProviderError::Validation(format!("block `{block_tag}` not found on remote"))
             })?;
         Ok(alloy_to_cow_block_info(&block))
-    }
-
-    async fn get_contract(
-        &self,
-        address: &Address,
-        abi_json: &str,
-    ) -> Result<ContractHandle, Self::Error> {
-        Ok(ContractHandle::new(*address, abi_json.to_owned()))
     }
 }
 

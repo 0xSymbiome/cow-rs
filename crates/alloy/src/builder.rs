@@ -382,8 +382,6 @@ impl From<AlloyClientError> for AlloyClientBuilderError {
 }
 
 fn parse_private_key(value: &str) -> Result<PrivateKeySigner, AlloyClientBuilderError> {
-    value
-        .parse()
-        .or_else(|_| value.strip_prefix("0x").unwrap_or(value).parse())
-        .map_err(|_| AlloyClientBuilderError::InvalidPrivateKey)
+    cow_sdk_alloy_signer::__seam::parse_private_key_signer(value)
+        .ok_or(AlloyClientBuilderError::InvalidPrivateKey)
 }

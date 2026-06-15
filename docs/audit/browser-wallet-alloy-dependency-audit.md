@@ -1,7 +1,7 @@
 # Browser-Wallet Alloy Dependency Audit
 
 Status: Current
-Last reviewed: 2026-06-03
+Last reviewed: 2026-06-15
 Owning surface: `cow-sdk-browser-wallet` typed EIP-1193 contract-call bridge and its `alloy-primitives` / `alloy-dyn-abi` / `alloy-json-abi` ABI helpers
 Refresh trigger: Upstream movement in the alloy family (new major, dropped transitive dependency), a new reviewed warning surfacing through the alloy toolchain, or a new maintained successor to the affected proc-macro deps
 Related docs:
@@ -69,7 +69,7 @@ workspace and crate manifests.
 The alloy types stay private to `cow-sdk-browser-wallet`. The workspace-level
 public API never exposes an `alloy_*` type in any `pub fn` signature. The
 bridge keeps its public shape on `cow_sdk_core::{Provider,
-ContractCall, ContractHandle, ...}` so consumers reach typed results
+ContractCall, ...}` so consumers reach typed results
 without pulling alloy into their own surfaces.
 
 ### Reachable Advisories

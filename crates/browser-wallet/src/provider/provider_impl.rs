@@ -6,8 +6,8 @@ use alloy_primitives::{B256, I256, U256};
 use serde_json::{Map, Value, json};
 
 use cow_sdk_core::{
-    Address, Amount, BlockHash, BlockInfo, ChainId, ContractCall, ContractHandle, HexData,
-    Provider, TransactionHash, TransactionReceipt, TransactionRequest, TransactionStatus,
+    Address, Amount, BlockHash, BlockInfo, ChainId, ContractCall, HexData, Provider,
+    TransactionHash, TransactionReceipt, TransactionRequest, TransactionStatus,
 };
 
 use crate::BrowserWalletError;
@@ -50,16 +50,6 @@ impl Provider for Eip1193Provider {
             return Ok(None);
         }
         Ok(Some(parse_transaction_receipt(&value)?))
-    }
-
-    async fn get_storage_at(&self, address: &Address, slot: &str) -> Result<HexData, Self::Error> {
-        let value = self
-            .request(
-                "eth_getStorageAt",
-                Some(json!([address.to_hex_string(), slot, "latest"])),
-            )
-            .await?;
-        HexData::new(expect_string(&value, "eth_getStorageAt")?).map_err(Into::into)
     }
 
     async fn call(&self, tx: &TransactionRequest) -> Result<HexData, Self::Error> {
@@ -126,14 +116,6 @@ impl Provider for Eip1193Provider {
             .map(cow_sdk_core::BlockHash::new)
             .transpose()?;
         Ok(BlockInfo::new(number, hash))
-    }
-
-    async fn get_contract(
-        &self,
-        address: &Address,
-        abi_json: &str,
-    ) -> Result<ContractHandle, Self::Error> {
-        Ok(ContractHandle::new(*address, abi_json.to_owned()))
     }
 }
 

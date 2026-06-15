@@ -17,9 +17,9 @@ use serde_json::json;
 
 use cow_sdk_core::{
     Address, Amount, ApiBaseUrls, ApiContext, AppCode, AppDataHash, BlockHash, BlockInfo,
-    ContractCall, ContractHandle, CowEnv, Hash32, HexData, OrderKind, OrderUid, Provider, Signer,
-    SupportedChainId, TransactionBroadcast, TransactionHash, TransactionReceipt,
-    TransactionRequest, TransactionStatus, TypedDataDomain, TypedDataPayload,
+    ContractCall, CowEnv, Hash32, HexData, OrderKind, OrderUid, Provider, Signer, SupportedChainId,
+    TransactionBroadcast, TransactionHash, TransactionReceipt, TransactionRequest,
+    TransactionStatus, TypedDataDomain, TypedDataPayload,
 };
 use cow_sdk_orderbook::{
     Order, OrderCancellations, OrderCreation, OrderQuoteRequest, OrderQuoteResponse, OrderbookError,
@@ -335,13 +335,6 @@ impl Signer for CountingSigner {
         )
     }
 
-    async fn sign_transaction(&self, _tx: &TransactionRequest) -> Result<String, Self::Error> {
-        Err(
-            "CountingSigner::sign_transaction must not be reached under validator-first invariant"
-                .into(),
-        )
-    }
-
     async fn sign_typed_data_payload(
         &self,
         _payload: &TypedDataPayload,
@@ -529,10 +522,6 @@ impl Signer for MockSigner {
         Ok(MESSAGE_SIGNATURE.to_owned())
     }
 
-    async fn sign_transaction(&self, _tx: &TransactionRequest) -> Result<String, Self::Error> {
-        Ok(TX_HASH.to_owned())
-    }
-
     async fn sign_typed_data_payload(
         &self,
         payload: &TypedDataPayload,
@@ -671,14 +660,6 @@ impl Provider for MockProvider {
         Ok(None)
     }
 
-    async fn get_storage_at(
-        &self,
-        _address: &Address,
-        _slot: &str,
-    ) -> Result<HexData, Self::Error> {
-        Ok(HexData::empty())
-    }
-
     async fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> {
         Ok(HexData::empty())
     }
@@ -705,14 +686,6 @@ impl Provider for MockProvider {
 
     async fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
         Ok(BlockInfo::new(0, None))
-    }
-
-    async fn get_contract(
-        &self,
-        address: &Address,
-        abi_json: &str,
-    ) -> Result<ContractHandle, Self::Error> {
-        Ok(ContractHandle::new(*address, abi_json.to_owned()))
     }
 }
 
@@ -889,10 +862,6 @@ impl Signer for FakeSigner {
         Ok(MESSAGE_SIGNATURE.to_owned())
     }
 
-    async fn sign_transaction(&self, _tx: &TransactionRequest) -> Result<String, Self::Error> {
-        Ok(TX_HASH.to_owned())
-    }
-
     async fn sign_typed_data_payload(
         &self,
         _payload: &TypedDataPayload,
@@ -1024,14 +993,6 @@ impl Provider for FakeProvider {
             .and_then(|_| state.receipt.clone()))
     }
 
-    async fn get_storage_at(
-        &self,
-        _address: &Address,
-        _slot: &str,
-    ) -> Result<HexData, Self::Error> {
-        Ok(HexData::empty())
-    }
-
     async fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> {
         Ok(HexData::empty())
     }
@@ -1042,13 +1003,5 @@ impl Provider for FakeProvider {
 
     async fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
         Ok(BlockInfo::new(0, None))
-    }
-
-    async fn get_contract(
-        &self,
-        address: &Address,
-        abi_json: &str,
-    ) -> Result<ContractHandle, Self::Error> {
-        Ok(ContractHandle::new(*address, abi_json.to_owned()))
     }
 }

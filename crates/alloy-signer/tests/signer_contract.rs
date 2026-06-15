@@ -74,12 +74,6 @@ async fn transaction_methods_return_provider_required() {
     let tx = TransactionRequest::default();
 
     assert!(matches!(
-        signer.sign_transaction(&tx).await,
-        Err(SignerError::ProviderRequired {
-            method: "sign_transaction"
-        })
-    ));
-    assert!(matches!(
         send_transaction_signature_is_broadcast(&signer, &tx).await,
         Err(SignerError::ProviderRequired {
             method: "send_transaction"

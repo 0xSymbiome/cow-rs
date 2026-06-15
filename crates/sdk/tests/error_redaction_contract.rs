@@ -739,13 +739,6 @@ fn alloy_adapter_errors_redact_secret_bearing_payloads() {
         },
     );
     assert_render(
-        "AlloyClientError::UnsupportedTransactionRequest",
-        &AlloyClientError::UnsupportedTransactionRequest {
-            method: "sign_transaction",
-            reason: "raw transaction signing is deferred; use send_transaction",
-        },
-    );
-    assert_render(
         "SignerError::ProviderRequired",
         &SignerError::ProviderRequired {
             method: "send_transaction",

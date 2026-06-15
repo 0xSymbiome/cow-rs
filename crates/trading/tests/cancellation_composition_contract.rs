@@ -18,10 +18,9 @@ use std::{
 };
 
 use cow_sdk_core::{
-    Address, Amount, ApiContext, AppDataHash, BlockInfo, Cancellable, ContractCall, ContractHandle,
-    CowEnv, Hash32, HexData, OrderKind, OrderUid, Provider, Signer, SupportedChainId,
-    TransactionBroadcast, TransactionHash, TransactionReceipt, TransactionRequest,
-    TypedDataPayload,
+    Address, Amount, ApiContext, AppDataHash, BlockInfo, Cancellable, ContractCall, CowEnv, Hash32,
+    HexData, OrderKind, OrderUid, Provider, Signer, SupportedChainId, TransactionBroadcast,
+    TransactionHash, TransactionReceipt, TransactionRequest, TypedDataPayload,
 };
 use cow_sdk_orderbook::{
     Order, OrderCancellations, OrderCreation, OrderQuoteRequest, OrderQuoteResponse, OrderbookError,
@@ -297,11 +296,6 @@ impl Signer for SlowSigner {
         Ok(MESSAGE_SIGNATURE.to_owned())
     }
 
-    async fn sign_transaction(&self, _tx: &TransactionRequest) -> Result<String, Self::Error> {
-        self.wait().await;
-        Ok(TX_HASH.to_owned())
-    }
-
     async fn sign_typed_data_payload(
         &self,
         _payload: &TypedDataPayload,
@@ -361,15 +355,6 @@ impl Provider for SlowProvider {
         Ok(None)
     }
 
-    async fn get_storage_at(
-        &self,
-        _address: &Address,
-        _slot: &str,
-    ) -> Result<HexData, Self::Error> {
-        self.wait().await;
-        Ok(HexData::empty())
-    }
-
     async fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> {
         self.wait().await;
         Ok(HexData::empty())
@@ -383,15 +368,6 @@ impl Provider for SlowProvider {
     async fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
         self.wait().await;
         Ok(BlockInfo::new(0, None))
-    }
-
-    async fn get_contract(
-        &self,
-        address: &Address,
-        abi_json: &str,
-    ) -> Result<ContractHandle, Self::Error> {
-        self.wait().await;
-        Ok(ContractHandle::new(*address, abi_json.to_owned()))
     }
 }
 

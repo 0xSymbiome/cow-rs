@@ -65,14 +65,6 @@ fn class_label_table_covers_every_variant() {
             "pending_transaction",
         ),
         (
-            AlloyClientError::UnsupportedTransactionRequest {
-                method: "sign_transaction",
-                reason: "raw transaction signing is deferred",
-            },
-            AlloyClientErrorClass::UnsupportedTransactionRequest,
-            "unsupported_transaction_request",
-        ),
-        (
             AlloyClientError::Cancelled,
             AlloyClientErrorClass::Cancelled,
             "cancelled",

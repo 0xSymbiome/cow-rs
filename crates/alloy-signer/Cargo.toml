@@ -36,11 +36,11 @@ alloy-dyn-abi = { workspace = true, features = ["std", "eip712"] }
 alloy-primitives = { workspace = true, features = ["k256"] }
 alloy-signer.workspace = true
 alloy-signer-local.workspace = true
-alloy-sol-types = { workspace = true, features = ["std"] }
 serde_json.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]
+alloy-sol-types = { workspace = true, features = ["std"] }
 cow-sdk-signing = { path = "../signing", version = "0.1.0" }
 cow-sdk-test-utils = { path = "../test-utils" }
 proptest.workspace = true

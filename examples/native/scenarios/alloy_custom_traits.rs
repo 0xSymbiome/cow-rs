@@ -14,8 +14,8 @@ use std::{convert::Infallible, error::Error};
 use cow_sdk::alloy_provider::RpcAlloyProvider;
 use cow_sdk::alloy_signer::LocalAlloySigner;
 use cow_sdk::core::{
-    Address, Amount, BlockHash, BlockInfo, ChainId, ContractCall, ContractHandle, HexData,
-    Provider, Signer, SupportedChainId, TransactionBroadcast, TransactionHash, TransactionReceipt,
+    Address, Amount, BlockHash, BlockInfo, ChainId, ContractCall, HexData, Provider, Signer,
+    SupportedChainId, TransactionBroadcast, TransactionHash, TransactionReceipt,
     TransactionRequest, TransactionStatus, TypedDataPayload, address,
 };
 use cow_sdk::trading::{WaitOptions, submit_and_wait_for_receipt};
@@ -40,10 +40,6 @@ impl Signer for StaticSigner {
 
     async fn sign_message(&self, _message: &[u8]) -> Result<String, Self::Error> {
         Ok(format!("0x{}1b", "11".repeat(64)))
-    }
-
-    async fn sign_transaction(&self, _tx: &TransactionRequest) -> Result<String, Self::Error> {
-        Ok("0x01".to_owned())
     }
 
     async fn sign_typed_data_payload(
@@ -97,14 +93,6 @@ impl Provider for StaticProvider {
         )))
     }
 
-    async fn get_storage_at(
-        &self,
-        _address: &Address,
-        _slot: &str,
-    ) -> Result<HexData, Self::Error> {
-        Ok(HexData::new(format!("0x{:0>64}", "0")).unwrap())
-    }
-
     async fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> {
         Ok(HexData::new("0x").unwrap())
     }
@@ -115,14 +103,6 @@ impl Provider for StaticProvider {
 
     async fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
         Ok(BlockInfo::new(1, None))
-    }
-
-    async fn get_contract(
-        &self,
-        address: &Address,
-        abi_json: &str,
-    ) -> Result<ContractHandle, Self::Error> {
-        Ok(ContractHandle::new(*address, abi_json.to_owned()))
     }
 }
 

@@ -5,8 +5,8 @@ use std::collections::VecDeque;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use cow_sdk_core::{
-    Address, Amount, BlockInfo, ContractCall, ContractHandle, HexData, Provider, SigningProvider,
-    SupportedChainId, TransactionHash, TransactionReceipt, TransactionRequest,
+    Address, Amount, BlockInfo, ContractCall, HexData, Provider, SigningProvider, SupportedChainId,
+    TransactionHash, TransactionReceipt, TransactionRequest,
 };
 
 use crate::{error::MockError, signer::MockSigner};
@@ -200,14 +200,6 @@ impl Provider for MockProvider {
         Ok(guard.receipt.clone())
     }
 
-    async fn get_storage_at(
-        &self,
-        _address: &Address,
-        _slot: &str,
-    ) -> Result<HexData, Self::Error> {
-        Ok(HexData::empty())
-    }
-
     async fn call(&self, tx: &TransactionRequest) -> Result<HexData, Self::Error> {
         let mut guard = self.lock();
         if let Some(error) = &guard.fail_call {
@@ -226,14 +218,6 @@ impl Provider for MockProvider {
 
     async fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
         Ok(BlockInfo::new(0, None))
-    }
-
-    async fn get_contract(
-        &self,
-        address: &Address,
-        abi_json: &str,
-    ) -> Result<ContractHandle, Self::Error> {
-        Ok(ContractHandle::new(*address, abi_json.to_owned()))
     }
 }
 

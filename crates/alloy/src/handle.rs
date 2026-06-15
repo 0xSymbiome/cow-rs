@@ -67,13 +67,6 @@ impl Signer for AlloyClientSignerHandle {
         Ok(alloy_signature_to_hex(&signature)?)
     }
 
-    async fn sign_transaction(&self, _tx: &TransactionRequest) -> Result<String, Self::Error> {
-        Err(AlloyClientError::UnsupportedTransactionRequest {
-            method: "sign_transaction",
-            reason: "raw transaction signing is deferred; use send_transaction for on-chain operations",
-        })
-    }
-
     async fn sign_typed_data_payload(
         &self,
         payload: &TypedDataPayload,

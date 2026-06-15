@@ -98,10 +98,6 @@ impl Signer for RecordingSigner {
         Ok(self.message_signature.clone())
     }
 
-    async fn sign_transaction(&self, _tx: &TransactionRequest) -> Result<String, Self::Error> {
-        Ok("0xsigned-transaction".to_owned())
-    }
-
     async fn sign_typed_data_payload(
         &self,
         payload: &TypedDataPayload,

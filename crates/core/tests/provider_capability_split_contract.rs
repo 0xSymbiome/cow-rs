@@ -1,8 +1,8 @@
 use std::fmt;
 
 use cow_sdk_core::{
-    Address, Amount, BlockInfo, ContractCall, ContractHandle, Hash32, HexData, Provider, Signer,
-    SigningProvider, TransactionBroadcast, TransactionHash, TransactionReceipt, TransactionRequest,
+    Address, Amount, BlockInfo, ContractCall, Hash32, HexData, Provider, Signer, SigningProvider,
+    TransactionBroadcast, TransactionHash, TransactionReceipt, TransactionRequest,
     TypedDataPayload,
 };
 
@@ -36,14 +36,6 @@ impl Provider for ReadOnlyProvider {
         Ok(Some(TransactionReceipt::new(*transaction_hash)))
     }
 
-    async fn get_storage_at(
-        &self,
-        _address: &Address,
-        _slot: &str,
-    ) -> Result<HexData, Self::Error> {
-        Ok(HexData::new("0x12").unwrap())
-    }
-
     async fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> {
         Ok(HexData::new("0x34").unwrap())
     }
@@ -54,14 +46,6 @@ impl Provider for ReadOnlyProvider {
 
     async fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
         Ok(BlockInfo::new(42, None))
-    }
-
-    async fn get_contract(
-        &self,
-        address: &Address,
-        abi_json: &str,
-    ) -> Result<ContractHandle, Self::Error> {
-        Ok(ContractHandle::new(*address, abi_json.to_owned()))
     }
 }
 
@@ -79,10 +63,6 @@ impl Signer for DirectSigner {
 
     async fn sign_message(&self, message: &[u8]) -> Result<String, Self::Error> {
         Ok(format!("message:{}", message.len()))
-    }
-
-    async fn sign_transaction(&self, tx: &TransactionRequest) -> Result<String, Self::Error> {
-        Ok(format!("tx:{}", tx.to.is_some()))
     }
 
     async fn sign_typed_data_payload(
@@ -135,10 +115,6 @@ impl Provider for WalletProvider {
         self.read.get_transaction_receipt(transaction_hash).await
     }
 
-    async fn get_storage_at(&self, address: &Address, slot: &str) -> Result<HexData, Self::Error> {
-        self.read.get_storage_at(address, slot).await
-    }
-
     async fn call(&self, tx: &TransactionRequest) -> Result<HexData, Self::Error> {
         self.read.call(tx).await
     }
@@ -149,14 +125,6 @@ impl Provider for WalletProvider {
 
     async fn get_block(&self, block_tag: &str) -> Result<BlockInfo, Self::Error> {
         self.read.get_block(block_tag).await
-    }
-
-    async fn get_contract(
-        &self,
-        address: &Address,
-        abi_json: &str,
-    ) -> Result<ContractHandle, Self::Error> {
-        self.read.get_contract(address, abi_json).await
     }
 }
 
@@ -219,10 +187,6 @@ where
         tx_hash
     );
     assert_eq!(
-        provider.get_storage_at(&address, "0x0").await.unwrap(),
-        HexData::new("0x12").unwrap()
-    );
-    assert_eq!(
         provider.call(&tx).await.unwrap(),
         HexData::new("0x34").unwrap()
     );
@@ -231,14 +195,6 @@ where
         "read:balanceOf"
     );
     assert_eq!(provider.get_block("latest").await.unwrap().number, 42);
-    assert_eq!(
-        provider
-            .get_contract(&address, "[{\"type\":\"function\"}]")
-            .await
-            .unwrap()
-            .abi_json,
-        "[{\"type\":\"function\"}]"
-    );
 }
 
 #[tokio::test]

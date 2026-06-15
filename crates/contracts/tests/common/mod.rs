@@ -8,8 +8,8 @@ use std::{cell::RefCell, collections::BTreeMap, fmt, rc::Rc};
 use alloy_primitives::{Address as AlloyAddress, Bytes};
 use cow_sdk_contracts::Signature;
 use cow_sdk_core::{
-    Address, BlockInfo, ContractCall, ContractHandle, Hash32, HexData, Provider,
-    TransactionReceipt, TransactionRequest,
+    Address, BlockInfo, ContractCall, Hash32, HexData, Provider, TransactionReceipt,
+    TransactionRequest,
 };
 use k256::ecdsa::SigningKey;
 use serde_json::Value;
@@ -134,16 +134,6 @@ impl Provider for MockProvider {
         Ok(None)
     }
 
-    async fn get_storage_at(&self, address: &Address, slot: &str) -> Result<HexData, Self::Error> {
-        let value = self
-            .storage
-            .borrow()
-            .get(&(address.to_hex_string(), slot.to_ascii_lowercase()))
-            .cloned()
-            .ok_or_else(|| MockProviderError(format!("missing storage for {address} at {slot}")))?;
-        HexData::new(value).map_err(|error| MockProviderError(error.to_string()))
-    }
-
     async fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> {
         Err(MockProviderError("call not implemented".to_owned()))
     }
@@ -158,13 +148,5 @@ impl Provider for MockProvider {
 
     async fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
         Ok(BlockInfo::new(0, None))
-    }
-
-    async fn get_contract(
-        &self,
-        address: &Address,
-        abi_json: &str,
-    ) -> Result<ContractHandle, Self::Error> {
-        Ok(ContractHandle::new(*address, abi_json.to_owned()))
     }
 }

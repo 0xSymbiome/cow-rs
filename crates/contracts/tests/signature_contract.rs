@@ -10,8 +10,8 @@ use cow_sdk_contracts::{
     verify_eip1271_signature, verify_eip1271_signature_cached,
 };
 use cow_sdk_core::{
-    Address, Amount, BlockInfo, ContractCall, ContractHandle, Hash32, HexData, Provider, Signer,
-    SigningProvider, TransactionBroadcast, TransactionReceipt, TransactionRequest,
+    Address, Amount, BlockInfo, ContractCall, Hash32, HexData, Provider, Signer, SigningProvider,
+    TransactionBroadcast, TransactionReceipt, TransactionRequest,
 };
 use sha3::{Digest, Keccak256};
 
@@ -77,10 +77,6 @@ impl Signer for DummySigner {
     }
 
     async fn sign_message(&self, _message: &[u8]) -> Result<String, Self::Error> {
-        Err(AsyncMockProviderError("not used".to_owned()))
-    }
-
-    async fn sign_transaction(&self, _tx: &TransactionRequest) -> Result<String, Self::Error> {
         Err(AsyncMockProviderError("not used".to_owned()))
     }
 
@@ -164,14 +160,6 @@ impl Provider for AsyncMockProvider {
         Ok(None)
     }
 
-    async fn get_storage_at(
-        &self,
-        _address: &Address,
-        _slot: &str,
-    ) -> Result<HexData, Self::Error> {
-        Ok(HexData::new("0x").unwrap())
-    }
-
     async fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> {
         Ok(HexData::new("0x").unwrap())
     }
@@ -186,14 +174,6 @@ impl Provider for AsyncMockProvider {
 
     async fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
         Ok(BlockInfo::new(0, None))
-    }
-
-    async fn get_contract(
-        &self,
-        address: &Address,
-        abi_json: &str,
-    ) -> Result<ContractHandle, Self::Error> {
-        Ok(ContractHandle::new(*address, abi_json.to_owned()))
     }
 }
 

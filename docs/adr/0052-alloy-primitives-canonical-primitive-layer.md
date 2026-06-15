@@ -72,8 +72,10 @@ four maintained dependencies (`httpdate`, `serde_jcs`, `rs_merkle`,
 definitions of `keccak256`, `parse_u256`, `encode_address`, and
 `Call` (5 + 3 + 3 + 3 = 14 duplicate definitions collapse to one
 each). The two `SigningScheme` enums in `cow-sdk-contracts` and
-`cow-sdk-orderbook` retain divergent wire formats and are connected
-by a typed `From` / `TryFrom` bridge that prevents variant drift.
+`cow-sdk-orderbook` retain divergent wire formats and stay separate
+types; `cow-sdk-orderbook` carries no cross-crate conversion to the
+contracts enum, keeping its dependency graph free of the
+signing-recovery primitive stack.
 
 The maintained-crate path is byte-identical to the hand-rolled path
 on every existing parity fixture, with one documented exception:

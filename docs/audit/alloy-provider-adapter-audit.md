@@ -1,7 +1,7 @@
 # Alloy Provider Adapter Audit
 
 Status: Current
-Last reviewed: 2026-06-08
+Last reviewed: 2026-06-15
 Owning surface: `cow-sdk-alloy-provider` `RpcAlloyProvider`, its builder, and its `Provider` implementation
 Refresh trigger: ADR 0038 - rich receipt population, or changes to the provider public API, the `Provider` trait, transport classification, the `read_contract` algorithm, the opt-in `with_retry` seam or its `RetryConfig`, the inter-crate seam entries consumed by sibling Alloy adapters, the workspace Alloy runtime pin, or the crate dependency boundary
 Related docs:
@@ -36,7 +36,7 @@ transport support, browser-wallet behavior, or transaction submission.
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
 | Public API exposure | Documented provider and builder methods expose SDK-owned domain types; upstream Alloy values remain internal apart from the doc-hidden sibling seam, which is not semver-guaranteed consumer API | Conforms |
-| Trait coverage | `RpcAlloyProvider` implements all eight `Provider` methods from `cow-sdk-core` | Conforms |
+| Trait coverage | `RpcAlloyProvider` implements all six `Provider` methods from `cow-sdk-core` | Conforms |
 | Negative capability boundary | Compile-fail tests assert the provider is not a `SigningProvider` or `Signer` | Conforms |
 | Builder typestate | `build()` is callable only on the HTTP-selected builder state; transport state stores the URL through `Redacted<reqwest::Url>` | Conforms |
 | RPC retry seam | Retry is off by default (one request per call); `with_retry(RetryConfig)` wraps the JSON-RPC client in `alloy`'s bounded backoff layer and transparently retries a transient rate-limited request | Conforms |
@@ -64,10 +64,9 @@ consumers.
 ### Provider Methods
 
 The adapter implements `get_chain_id`, `get_code`,
-`get_transaction_receipt`, `get_storage_at`, `call`, `read_contract`,
-`get_block`, and `get_contract`. Each RPC method converts caller-owned SDK
-types to Alloy values before dispatch and converts the result back to
-`cow-sdk-core` types before returning.
+`get_transaction_receipt`, `call`, `read_contract`, and `get_block`. Each RPC
+method converts caller-owned SDK types to Alloy values before dispatch and
+converts the result back to `cow-sdk-core` types before returning.
 
 `get_transaction_receipt` converts Alloy receipts into the rich
 `TransactionReceipt` shape. Status comes from
@@ -75,9 +74,6 @@ types to Alloy values before dispatch and converts the result back to
 post-state receipt surfaces `status: None` rather than coerced success.
 Block number, block hash, gas used, sender, and recipient are populated when
 the Alloy receipt carries them; contract creation leaves `to` unset.
-
-`get_contract` returns the SDK contract handle without dispatching RPC. The
-handle carries the address and ABI for higher-level contract helpers.
 
 ### RPC Retry Seam
 

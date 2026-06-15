@@ -131,10 +131,11 @@ Their roles are:
   both `OrderbookApi::builder()` and `SubgraphApi::builder()`. See
   [Transport](transport.md) for the full seam.
 
-`cow-sdk-core` also ships narrower capability traits — [`Owner`],
-[`TypedDataSigner`], and [`DigestSigner`] per
+`cow-sdk-core` also ships narrower capability traits —
+[`TypedDataSigner`] and [`DigestSigner`] per
 [ADR 0045](adr/0045-async-signer-trait-narrowing.md) — for callback-shaped
-adapters that expose only one signing operation.
+adapters that expose only one signing operation. Owner resolution is served by
+`Signer::address`.
 
 ## TypeScript And JavaScript Runtime Boundary
 
@@ -173,7 +174,6 @@ An async signer owns:
 
 - address resolution via `address`
 - message signing via `sign_message`
-- transaction signing via `sign_transaction`
 - typed-data signing via `sign_typed_data_payload`, which receives the
   canonical EIP-712 payload: domain, full type map, primary-type name, and
   message in one self-contained value
@@ -193,11 +193,9 @@ An async provider owns:
 - chain id lookup
 - code lookup
 - transaction-receipt lookup
-- storage lookup
 - generic call execution
 - typed contract reads through `read_contract`
 - block lookup
-- typed contract-handle creation
 
 ### `SigningProvider`
 
@@ -219,7 +217,7 @@ Its job is to demonstrate the trait shape, not to model a production RPC stack.
 
 ```rust
 use cow_sdk_core::{
-    Address, Amount, BlockInfo, ChainId, ContractCall, ContractHandle, CoreError, HexData,
+    Address, Amount, BlockInfo, ChainId, ContractCall, CoreError, HexData,
     Provider, Signer, SigningProvider, TransactionBroadcast, TransactionHash, TransactionReceipt,
     TransactionRequest, TransactionStatus, TypedDataPayload,
 };
@@ -240,10 +238,6 @@ impl Signer for StaticSigner {
 
     async fn sign_message(&self, _message: &[u8]) -> Result<String, Self::Error> {
         Ok("0xfeedface".to_owned())
-    }
-
-    async fn sign_transaction(&self, _tx: &TransactionRequest) -> Result<String, Self::Error> {
-        Ok("0xdeadbeef".to_owned())
     }
 
     async fn sign_typed_data_payload(
@@ -296,14 +290,6 @@ impl Provider for StaticProvider {
         ))
     }
 
-    async fn get_storage_at(
-        &self,
-        _address: &Address,
-        _slot: &str,
-    ) -> Result<HexData, Self::Error> {
-        HexData::new("0x00")
-    }
-
     async fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> {
         HexData::new("0x")
     }
@@ -314,14 +300,6 @@ impl Provider for StaticProvider {
 
     async fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
         Ok(BlockInfo::new(1, None))
-    }
-
-    async fn get_contract(
-        &self,
-        address: &Address,
-        abi_json: &str,
-    ) -> Result<ContractHandle, Self::Error> {
-        Ok(ContractHandle::new(address.clone(), abi_json.to_owned()))
     }
 }
 

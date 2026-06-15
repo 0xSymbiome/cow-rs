@@ -11,7 +11,7 @@ use cow_sdk_core::{Redacted, SignerError, TransportErrorClass};
 
 #[test]
 fn every_variant_returns_none_so_the_signer_helper_keeps_redaction() {
-    let cases: [AlloyClientError; 8] = [
+    let cases: [AlloyClientError; 7] = [
         AlloyClientError::Validation("validation-detail".to_owned()),
         AlloyClientError::Transport {
             class: TransportErrorClass::Timeout,
@@ -26,10 +26,6 @@ fn every_variant_returns_none_so_the_signer_helper_keeps_redaction() {
         },
         AlloyClientError::PendingTransaction {
             detail: Redacted::new("pending-transaction-detail".to_owned()),
-        },
-        AlloyClientError::UnsupportedTransactionRequest {
-            method: "sign_transaction",
-            reason: "use send_transaction",
         },
         AlloyClientError::Cancelled,
         AlloyClientError::Internal("internal-detail".to_owned()),

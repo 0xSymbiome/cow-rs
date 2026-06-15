@@ -247,7 +247,6 @@ Primary regression coverage:
 - `cargo test -p cow-sdk-trading --doc` (the `SwapBuilder::execute` compile-fail witness)
 - `crates/alloy/tests/compile_fail.rs`
 - `crates/alloy/tests/chain_coherence.rs`
-- `crates/alloy/tests/no_broadcast_for_sign_transaction.rs`
 
 Validation surface:
 

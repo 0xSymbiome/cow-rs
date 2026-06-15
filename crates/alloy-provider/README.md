@@ -77,11 +77,9 @@ read methods required by the core trait:
 - `get_chain_id`
 - `get_code`
 - `get_transaction_receipt`
-- `get_storage_at`
 - `call`
 - `read_contract`
 - `get_block`
-- `get_contract`
 
 `read_contract` parses the supplied JSON ABI, resolves a single non-overloaded
 function, ABI-encodes JSON arguments with `alloy-dyn-abi`, dispatches

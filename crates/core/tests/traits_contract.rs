@@ -1,8 +1,8 @@
 use cow_sdk_core::{
-    Address, Amount, BlockInfo, ContractCall, ContractHandle, DigestSigner, Hash32, HexData, Owner,
-    Provider, Signer, SigningProvider, TransactionBroadcast, TransactionReceipt,
-    TransactionRequest, TransactionStatus, TypedDataDomain, TypedDataField, TypedDataPayload,
-    TypedDataSigner, TypedDataTypes,
+    Address, Amount, BlockInfo, ContractCall, DigestSigner, Hash32, HexData, Provider, Signer,
+    SigningProvider, TransactionBroadcast, TransactionReceipt, TransactionRequest,
+    TransactionStatus, TypedDataDomain, TypedDataField, TypedDataPayload, TypedDataSigner,
+    TypedDataTypes,
 };
 use cow_sdk_test_utils::mocks::canned_tx_hash;
 
@@ -25,10 +25,6 @@ impl Signer for MockSigner {
 
     async fn sign_message(&self, message: &[u8]) -> Result<String, Self::Error> {
         Ok(format!("signed-message:{}", message.len()))
-    }
-
-    async fn sign_transaction(&self, tx: &TransactionRequest) -> Result<String, Self::Error> {
-        Ok(format!("signed-transaction:{}", tx.to.is_some()))
     }
 
     async fn sign_typed_data_payload(
@@ -85,10 +81,6 @@ impl Provider for MockProvider {
         ))
     }
 
-    async fn get_storage_at(&self, _address: &Address, slot: &str) -> Result<HexData, Self::Error> {
-        Ok(HexData::new(format!("0x{slot:0>4}")).unwrap())
-    }
-
     async fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> {
         Ok(HexData::new("0x63616c6c").unwrap())
     }
@@ -102,14 +94,6 @@ impl Provider for MockProvider {
             1,
             Some(Hash32::new(format!("0x{}", "ab".repeat(32))).unwrap()),
         ))
-    }
-
-    async fn get_contract(
-        &self,
-        address: &Address,
-        abi_json: &str,
-    ) -> Result<ContractHandle, Self::Error> {
-        Ok(ContractHandle::new(*address, abi_json.to_owned()))
     }
 }
 
@@ -221,10 +205,6 @@ async fn assert_signer_contracts(
         "signed-message:3"
     );
     assert_eq!(
-        Signer::sign_transaction(active_signer, tx).await.unwrap(),
-        "signed-transaction:true"
-    );
-    assert_eq!(
         Signer::sign_typed_data_payload(active_signer, &sample_typed_data_payload(domain.clone()))
             .await
             .unwrap(),
@@ -265,16 +245,6 @@ async fn assert_provider_contracts(provider: &MockProvider, tx: &TransactionRequ
         receipt_hash
     );
     assert_eq!(
-        Provider::get_storage_at(
-            provider,
-            &Address::new("0x5555555555555555555555555555555555555555").unwrap(),
-            "0",
-        )
-        .await
-        .unwrap(),
-        HexData::new("0x0000").unwrap()
-    );
-    assert_eq!(
         Provider::call(provider, tx).await.unwrap(),
         HexData::new("0x63616c6c").unwrap()
     );
@@ -298,17 +268,6 @@ async fn assert_provider_contracts(provider: &MockProvider, tx: &TransactionRequ
             .unwrap()
             .number,
         1
-    );
-    assert_eq!(
-        Provider::get_contract(
-            provider,
-            &Address::new("0x7777777777777777777777777777777777777777").unwrap(),
-            "[{\"type\":\"function\"}]",
-        )
-        .await
-        .unwrap()
-        .abi_json,
-        "[{\"type\":\"function\"}]"
     );
 }
 
@@ -458,7 +417,7 @@ async fn signer_and_provider_contracts_are_runtime_agnostic_and_callable() {
 }
 
 #[tokio::test]
-async fn signer_satisfies_owner_typed_data_and_digest_capabilities() {
+async fn signer_satisfies_typed_data_and_digest_capabilities() {
     let signer = MockSigner {
         address: Address::new("0x9999999999999999999999999999999999999999").unwrap(),
     };
@@ -478,13 +437,6 @@ async fn signer_satisfies_owner_typed_data_and_digest_capabilities() {
         .unwrap();
     assert_eq!(
         Signer::address(&active_signer)
-            .await
-            .unwrap()
-            .to_hex_string(),
-        "0x9999999999999999999999999999999999999999"
-    );
-    assert_eq!(
-        Owner::address(&active_signer)
             .await
             .unwrap()
             .to_hex_string(),

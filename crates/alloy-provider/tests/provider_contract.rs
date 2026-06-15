@@ -46,20 +46,6 @@ async fn get_code_returns_present_bytecode() {
 }
 
 #[tokio::test]
-async fn get_storage_at_returns_32_byte_word() {
-    let word = format!("0x{:0>64}", "2a");
-    let (_server, provider) = provider_with_result(json!(word)).await;
-
-    assert_eq!(
-        provider
-            .get_storage_at(&Address::new(ADDRESS).unwrap(), "0x0")
-            .await
-            .unwrap(),
-        HexData::new(format!("0x{:0>64}", "2a")).unwrap()
-    );
-}
-
-#[tokio::test]
 async fn get_block_accepts_latest_tag() {
     let (_server, provider) = provider_with_result(block_response("0x2a")).await;
 
@@ -136,19 +122,6 @@ async fn call_returns_hex_data() {
     );
 
     assert_eq!(provider.call(&tx).await.unwrap().to_hex_string(), "0x1234");
-}
-
-#[tokio::test]
-async fn get_contract_returns_value_handle_without_rpc() {
-    let server = MockServer::start().await;
-    let provider = provider_for(&server);
-    let address = Address::new(ADDRESS).unwrap();
-
-    let handle = provider.get_contract(&address, "[]").await.unwrap();
-
-    assert_eq!(handle.address, address);
-    assert_eq!(handle.abi_json, "[]");
-    assert!(server.received_requests().await.unwrap().is_empty());
 }
 
 #[tokio::test]

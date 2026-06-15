@@ -151,23 +151,6 @@ impl Signer for Eip1193Signer {
         })
     }
 
-    async fn sign_transaction(&self, tx: &TransactionRequest) -> Result<String, Self::Error> {
-        let from = self.account().await?;
-        let value = self
-            .provider
-            .request(
-                "eth_signTransaction",
-                Some(json!([transaction_to_rpc(tx, Some(&from))?])),
-            )
-            .await?;
-        value.as_str().map(str::to_owned).ok_or_else(|| {
-            BrowserWalletError::malformed_response(
-                "eth_signTransaction",
-                "wallet must return a signed transaction string",
-            )
-        })
-    }
-
     async fn sign_typed_data_payload(
         &self,
         payload: &TypedDataPayload,

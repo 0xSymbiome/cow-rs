@@ -25,7 +25,6 @@ default = []
 tracing = ["dep:tracing", "cow-sdk-core/tracing"]
 
 [dependencies]
-cow-sdk-contracts = { path = "../contracts", version = "0.1.0" }
 cow-sdk-core = { path = "../core", version = "0.1.0", features = ["transport-policy"] }
 async-trait.workspace = true
 http.workspace = true

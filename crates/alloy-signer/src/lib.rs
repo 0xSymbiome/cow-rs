@@ -60,5 +60,6 @@ pub use signer::LocalAlloySigner;
 #[cfg(not(target_arch = "wasm32"))]
 #[doc(hidden)]
 pub mod __seam {
+    pub use crate::builder::parse_private_key_signer;
     pub use crate::conversion::{alloy_signature_to_hex, cow_typed_data_payload_to_alloy};
 }

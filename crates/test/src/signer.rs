@@ -50,7 +50,6 @@ struct Inner {
     address: Address,
     message_signature: Option<String>,
     typed_data_signature: Option<String>,
-    transaction_signature: String,
     transaction_hash: TransactionHash,
     estimated_gas: Amount,
     fail_send: Option<String>,
@@ -114,7 +113,6 @@ pub struct MockSignerBuilder {
     address: Address,
     message_signature: Option<String>,
     typed_data_signature: Option<String>,
-    transaction_signature: String,
     transaction_hash: TransactionHash,
     estimated_gas: Amount,
     fail_send: Option<String>,
@@ -128,7 +126,6 @@ impl Default for MockSignerBuilder {
             address: defaults::address(),
             message_signature: None,
             typed_data_signature: None,
-            transaction_signature: defaults::transaction_signature(),
             transaction_hash: defaults::transaction_hash(),
             estimated_gas: Amount::from(50_000_u64),
             fail_send: None,
@@ -165,13 +162,6 @@ impl MockSignerBuilder {
     #[must_use]
     pub fn typed_data_signature(mut self, signature: impl Into<String>) -> Self {
         self.typed_data_signature = Some(signature.into());
-        self
-    }
-
-    /// Sets the value [`Signer::sign_transaction`] returns.
-    #[must_use]
-    pub fn transaction_signature(mut self, signature: impl Into<String>) -> Self {
-        self.transaction_signature = signature.into();
         self
     }
 
@@ -221,7 +211,6 @@ impl MockSignerBuilder {
                 address: self.address,
                 message_signature: self.message_signature,
                 typed_data_signature: self.typed_data_signature,
-                transaction_signature: self.transaction_signature,
                 transaction_hash: self.transaction_hash,
                 estimated_gas: self.estimated_gas,
                 fail_send: self.fail_send,
@@ -254,10 +243,6 @@ impl Signer for MockSigner {
             return Ok(signature);
         }
         sign_personal_message(message)
-    }
-
-    async fn sign_transaction(&self, _tx: &TransactionRequest) -> Result<String, Self::Error> {
-        Ok(self.lock().transaction_signature.clone())
     }
 
     async fn sign_typed_data_payload(

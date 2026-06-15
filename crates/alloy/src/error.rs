@@ -20,8 +20,6 @@ pub enum AlloyClientErrorClass {
     Signing,
     /// Pending transaction registration or watch failed.
     PendingTransaction,
-    /// The requested transaction-signing shape is intentionally unsupported.
-    UnsupportedTransactionRequest,
     /// The future was cancelled by a consumer-provided cancellation token.
     Cancelled,
     /// A local invariant or unsupported upstream path was reached.
@@ -38,7 +36,6 @@ impl AlloyClientErrorClass {
             Self::Remote => "remote",
             Self::Signing => "signing",
             Self::PendingTransaction => "pending_transaction",
-            Self::UnsupportedTransactionRequest => "unsupported_transaction_request",
             Self::Cancelled => "cancelled",
             Self::Internal => "internal",
         }
@@ -80,13 +77,6 @@ pub enum AlloyClientError {
         /// Redacted pending-transaction detail.
         detail: Redacted<String>,
     },
-    /// The requested transaction-signing shape is intentionally unsupported.
-    UnsupportedTransactionRequest {
-        /// Method that is unsupported.
-        method: &'static str,
-        /// Static reason describing the supported alternative.
-        reason: &'static str,
-    },
     /// The operation was cancelled by [`cow_sdk_core::Cancellable`].
     Cancelled,
     /// A local invariant or internal conversion failed.
@@ -103,9 +93,6 @@ impl AlloyClientError {
             Self::Remote { .. } => AlloyClientErrorClass::Remote,
             Self::Signing { .. } => AlloyClientErrorClass::Signing,
             Self::PendingTransaction { .. } => AlloyClientErrorClass::PendingTransaction,
-            Self::UnsupportedTransactionRequest { .. } => {
-                AlloyClientErrorClass::UnsupportedTransactionRequest
-            }
             Self::Cancelled => AlloyClientErrorClass::Cancelled,
             Self::Internal(_) => AlloyClientErrorClass::Internal,
         }
@@ -179,11 +166,6 @@ impl fmt::Debug for AlloyClientError {
                 .debug_struct("PendingTransaction")
                 .field("detail", detail)
                 .finish(),
-            Self::UnsupportedTransactionRequest { method, reason } => f
-                .debug_struct("UnsupportedTransactionRequest")
-                .field("method", method)
-                .field("reason", reason)
-                .finish(),
             Self::Cancelled => f.write_str("Cancelled"),
             Self::Internal(_) => f
                 .debug_tuple("Internal")
@@ -206,9 +188,6 @@ impl fmt::Display for AlloyClientError {
             Self::Signing { detail } => write!(f, "signing error: {detail}"),
             Self::PendingTransaction { detail } => {
                 write!(f, "pending transaction error: {detail}")
-            }
-            Self::UnsupportedTransactionRequest { method, reason } => {
-                write!(f, "the {method} method is unsupported: {reason}")
             }
             Self::Cancelled => f.write_str("operation cancelled"),
             Self::Internal(_) => f.write_str("internal error: [redacted]"),
@@ -234,7 +213,6 @@ impl cow_sdk_core::SignerError for AlloyClientError {
             | Self::Remote { .. }
             | Self::Signing { .. }
             | Self::PendingTransaction { .. }
-            | Self::UnsupportedTransactionRequest { .. }
             | Self::Cancelled
             | Self::Internal(_) => None,
         }

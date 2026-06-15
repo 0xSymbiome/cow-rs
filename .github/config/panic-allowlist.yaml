@@ -42,9 +42,6 @@ allowed:
   - file: crates/orderbook/src/request.rs
     item: ResponseEnvelope::json
     reason: Test-only response envelope helper serializes serde_json::Value fixtures.
-  - file: crates/orderbook/src/types/enums.rs
-    item: SigningScheme::from
-    reason: The variant-by-variant SigningScheme bridge parity test prevents drift; any new cow-sdk-contracts SigningScheme variant must land in the same patch.
   - file: crates/signing/src/domain.rs
     item: domain
     reason: Canonical settlement address is guaranteed by the validated deployment registry.

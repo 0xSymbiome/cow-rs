@@ -1,7 +1,7 @@
 # Alloy Umbrella Adapter Audit
 
 Status: Current
-Last reviewed: 2026-06-11
+Last reviewed: 2026-06-15
 Owning surface: `cow-sdk-alloy` `AlloyClient`, its builder, its `Provider` and `LogProvider` implementations, and its owned signer handle
 Refresh trigger: ADR 0038 - transaction lifecycle types, or changes to the umbrella public API, `Provider`, `SigningProvider`, `LogProvider`, `Signer`, wallet-filler transaction submission, the opt-in `with_retry` seam consumed from the provider leaf, typed-data conversion, chain-coherence validation, read-contract and log-fetch consumption from the provider seam, error redaction, cancellation propagation, or the Alloy provider/signer dependency boundaries
 Related docs:
@@ -27,8 +27,8 @@ This audit covers:
 - the opt-in `with_retry` seam, which reuses the provider leaf's `RetryConfig`
   and backoff-layer constructor through the doc-hidden seam
 - the owned `AlloyClientSignerHandle` returned by `create_signer`
-- EIP-191, EIP-712, transaction submission, gas estimation, and raw
-  transaction-signing behavior on the handle
+- EIP-191, EIP-712, transaction submission, and gas estimation behavior on the
+  handle
 - `AlloyClientError` classification, redaction, and cancellation propagation
 - the provider-leaf and signer-leaf inter-crate seams consumed by the
   umbrella crate for read-contract dispatch, typed-data conversion, and
@@ -52,8 +52,7 @@ operator reliability, or smart-account signing.
 | Signing-provider coverage | `create_signer` returns an owned handle that survives parent client drop | Conforms |
 | Typed-data signing | Canonical payload signing preserves the caller's primary type and matches the CoW order reference vector | Conforms |
 | Transaction behavior | `send_transaction` uses the Alloy wallet-filler provider and reads the broadcast hash through `*pending.tx_hash()` without waiting for confirmation; returns `TransactionBroadcast`. `get_transaction_receipt` delegates to the provider crate, which populates rich receipt fields from the Alloy receipt. `estimate_gas` delegates to the provider. | Conforms |
-| Raw transaction deferral | `sign_transaction` returns `UnsupportedTransactionRequest` without dispatching HTTP | Conforms |
-| Error and cancellation | Error classes cover validation, transport, remote, signing, pending transaction, unsupported request, cancelled, and internal failures; sensitive details are redacted | Conforms |
+| Error and cancellation | Error classes cover validation, transport, remote, signing, pending transaction, cancelled, and internal failures; sensitive details are redacted | Conforms |
 | Stability boundary | Documented client, builder, trait, signer-handle, and error-class surfaces are consumer API; the doc-hidden inter-crate seams on both the provider leaf (`cow_sdk_alloy_provider::__seam`) and the signer leaf (`cow_sdk_alloy_signer::__seam`) that the umbrella consumes are sibling-crate internals and not semver-guaranteed | Conforms |
 | Dependency boundary | The umbrella is the only crate, alongside the provider and signer leaves, allowed to consume the native Alloy provider and signer-local families | Conforms |
 
@@ -66,7 +65,6 @@ operator reliability, or smart-account signing.
 - `crates/alloy/tests/error_contract.rs`
 - `crates/alloy/tests/read_contract_contract.rs`
 - `crates/alloy/tests/eip712_reference_vectors.rs`
-- `crates/alloy/tests/no_broadcast_for_sign_transaction.rs`
 - `crates/alloy/tests/send_transaction_does_not_wait_for_confirmation.rs`
 - `crates/alloy/tests/chain_coherence_mismatch.rs`
 - `crates/alloy/tests/handle_survives_drop.rs`

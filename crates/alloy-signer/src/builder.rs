@@ -193,10 +193,18 @@ pub enum LocalAlloySignerBuilderError {
 }
 
 fn parse_private_key(value: &str) -> Result<PrivateKeySigner, LocalAlloySignerBuilderError> {
+    parse_private_key_signer(value).ok_or(LocalAlloySignerBuilderError::InvalidPrivateKey)
+}
+
+/// Parses a [`PrivateKeySigner`] from a hex string, accepting an optional `0x`
+/// prefix. Shared with the umbrella builder through the crate `__seam` so the
+/// key-handling rule lives in exactly one place.
+#[must_use]
+pub fn parse_private_key_signer(value: &str) -> Option<PrivateKeySigner> {
     value
         .parse()
-        .or_else(|_| value.strip_prefix("0x").unwrap_or(value).parse())
-        .map_err(|_| LocalAlloySignerBuilderError::InvalidPrivateKey)
+        .ok()
+        .or_else(|| value.strip_prefix("0x").unwrap_or(value).parse().ok())
 }
 
 #[cfg(test)]

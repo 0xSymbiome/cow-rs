@@ -631,10 +631,6 @@ impl Signer for PreSignPlacementSigner {
         Err(Self::unreachable_operation("sign_message"))
     }
 
-    async fn sign_transaction(&self, _tx: &TransactionRequest) -> Result<String, Self::Error> {
-        Err(Self::unreachable_operation("sign_transaction"))
-    }
-
     async fn sign_typed_data_payload(
         &self,
         _payload: &TypedDataPayload,

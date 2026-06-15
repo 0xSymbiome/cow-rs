@@ -27,7 +27,7 @@
 
 #![warn(missing_docs)]
 
-use async_trait::async_trait;
+pub use async_trait::async_trait;
 use cow_sdk_core::{
     ApiContext as CoreApiContext, AppDataHash as CoreAppDataHash, CowEnv as CoreCowEnv,
     OrderUid as CoreOrderUid, SupportedChainId as CoreSupportedChainId,

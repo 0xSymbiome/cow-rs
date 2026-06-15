@@ -62,25 +62,6 @@ fn pending_transaction_display_and_debug_redact_detail() {
 }
 
 #[test]
-fn unsupported_transaction_request_uses_static_diagnostic() {
-    let error = AlloyClientError::UnsupportedTransactionRequest {
-        method: "sign_transaction",
-        reason: "raw transaction signing is deferred; use send_transaction for on-chain operations",
-    };
-    let display = error.to_string();
-    let debug = format!("{error:?}");
-
-    assert!(display.contains("sign_transaction"));
-    assert!(debug.contains("sign_transaction"));
-    assert_no_secret(&display, SECRET_DETAIL);
-    assert_no_secret(&debug, SECRET_DETAIL);
-    assert_eq!(
-        error.class(),
-        AlloyClientErrorClass::UnsupportedTransactionRequest
-    );
-}
-
-#[test]
 fn internal_display_and_debug_do_not_leak_input() {
     let error = AlloyClientError::Internal(SECRET_DETAIL.to_owned());
 
@@ -158,13 +139,6 @@ fn error_class_covers_every_variant() {
                 detail: Redacted::new("pending".to_owned()),
             },
             AlloyClientErrorClass::PendingTransaction,
-        ),
-        (
-            AlloyClientError::UnsupportedTransactionRequest {
-                method: "sign_transaction",
-                reason: "unsupported",
-            },
-            AlloyClientErrorClass::UnsupportedTransactionRequest,
         ),
         (
             AlloyClientError::Cancelled,

@@ -161,8 +161,12 @@ pub(crate) mod __transport_classification {
     use cow_sdk_core::{Redacted, TransportErrorClass};
 
     /// Classified Alloy JSON-RPC or transport error detail.
+    ///
+    /// Re-exported through the crate `__seam` module for sibling adapter
+    /// crates; not part of the stable consumer API.
     #[non_exhaustive]
-    pub(crate) enum RpcErrorClassification {
+    #[derive(Debug)]
+    pub enum RpcErrorClassification {
         /// Transport-layer classification with redacted detail.
         Transport {
             /// Shared transport class.

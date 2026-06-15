@@ -27,8 +27,8 @@ use cow_sdk_contracts::{
     ContractsError, Eip1271VerificationRequest, verify_eip1271_signature_cached,
 };
 use cow_sdk_core::{
-    Address, BlockInfo, ContractCall, ContractHandle, Hash32, HexData, Provider,
-    TransactionReceipt, TransactionRequest,
+    Address, BlockInfo, ContractCall, Hash32, HexData, Provider, TransactionReceipt,
+    TransactionRequest,
 };
 use cow_sdk_signing::cache::{Clock, Eip1271Cache, InMemoryEip1271Cache, NoopEip1271Cache};
 
@@ -416,14 +416,6 @@ impl Provider for MagicProvider {
         Ok(None)
     }
 
-    async fn get_storage_at(
-        &self,
-        _address: &Address,
-        _slot: &str,
-    ) -> Result<HexData, Self::Error> {
-        Ok(HexData::new("0x").unwrap())
-    }
-
     async fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> {
         Ok(HexData::new("0x").unwrap())
     }
@@ -435,14 +427,6 @@ impl Provider for MagicProvider {
 
     async fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
         Ok(BlockInfo::new(0, None))
-    }
-
-    async fn get_contract(
-        &self,
-        address: &Address,
-        abi_json: &str,
-    ) -> Result<ContractHandle, Self::Error> {
-        Ok(ContractHandle::new(*address, abi_json.to_owned()))
     }
 }
 
@@ -562,14 +546,6 @@ impl Provider for ScenarioProvider {
         Ok(None)
     }
 
-    async fn get_storage_at(
-        &self,
-        _address: &Address,
-        _slot: &str,
-    ) -> Result<HexData, Self::Error> {
-        Ok(HexData::new("0x").unwrap())
-    }
-
     async fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> {
         Ok(HexData::new("0x").unwrap())
     }
@@ -589,13 +565,5 @@ impl Provider for ScenarioProvider {
 
     async fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
         Ok(BlockInfo::new(0, None))
-    }
-
-    async fn get_contract(
-        &self,
-        address: &Address,
-        abi_json: &str,
-    ) -> Result<ContractHandle, Self::Error> {
-        Ok(ContractHandle::new(*address, abi_json.to_owned()))
     }
 }

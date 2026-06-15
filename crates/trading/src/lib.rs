@@ -16,10 +16,11 @@
 //! async entry. Each entry lifts a fired cancellation token into the
 //! crate-level [`TradingError::Cancelled`] variant.
 //!
-//! Narrow async signer capability traits ([`cow_sdk_core::Owner`],
-//! [`cow_sdk_core::TypedDataSigner`],
+//! Narrow async signer capability traits
+//! ([`cow_sdk_core::TypedDataSigner`],
 //! [`cow_sdk_core::DigestSigner`]) remain available for
-//! callback-shaped adapters that expose only one signing operation.
+//! callback-shaped adapters that expose only one signing operation; owner
+//! resolution is served by [`cow_sdk_core::Signer::address`].
 //!
 //! # Fluent swap lifecycle
 //!

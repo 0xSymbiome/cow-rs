@@ -96,7 +96,7 @@ enums:
     expected_marker: non_exhaustive
     reason: Provider diagnostics can grow as native adapter capabilities expand.
   - name: RpcErrorClassification
-    file: crates/alloy-provider/src/lib.rs
+    file: crates/alloy-provider/src/error.rs
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: Hidden inter-crate RPC classification can grow as adapter transport mappings expand.

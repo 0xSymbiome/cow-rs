@@ -19,7 +19,7 @@ use super::transaction::{BlockInfo, TransactionReceipt, TransactionRequest};
 ///
 /// ```
 /// # use cow_sdk_core::{
-/// #     Address, BlockInfo, ContractCall, ContractHandle, Hash32, HexData, Provider,
+/// #     Address, BlockInfo, ContractCall, Hash32, HexData, Provider,
 /// #     TransactionHash, TransactionReceipt, TransactionRequest,
 /// # };
 /// struct ReadOnlyProvider;
@@ -40,13 +40,6 @@ use super::transaction::{BlockInfo, TransactionReceipt, TransactionRequest};
 /// #   ) -> Result<Option<TransactionReceipt>, Self::Error> {
 /// #       Ok(None)
 /// #   }
-/// #   async fn get_storage_at(
-/// #       &self,
-/// #       _address: &Address,
-/// #       _slot: &str,
-/// #   ) -> Result<HexData, Self::Error> {
-/// #       Ok(HexData::new("0x").unwrap())
-/// #   }
 /// #   async fn call(&self, _tx: &TransactionRequest) -> Result<HexData, Self::Error> {
 /// #       Ok(HexData::new("0x").unwrap())
 /// #   }
@@ -55,13 +48,6 @@ use super::transaction::{BlockInfo, TransactionReceipt, TransactionRequest};
 /// #   }
 /// #   async fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
 /// #       Ok(BlockInfo::new(1, None))
-/// #   }
-/// #   async fn get_contract(
-/// #       &self,
-/// #       address: &Address,
-/// #       abi_json: &str,
-/// #   ) -> Result<ContractHandle, Self::Error> {
-/// #       Ok(ContractHandle::new(address.clone(), abi_json.to_owned()))
 /// #   }
 /// }
 ///
@@ -110,12 +96,6 @@ pub trait Provider {
         &self,
         transaction_hash: &TransactionHash,
     ) -> Result<Option<TransactionReceipt>, Self::Error>;
-    /// Reads a storage slot from a contract address.
-    ///
-    /// # Errors
-    ///
-    /// Returns the implementation-defined provider error when the storage lookup fails.
-    async fn get_storage_at(&self, address: &Address, slot: &str) -> Result<HexData, Self::Error>;
     /// Executes a read-only call.
     ///
     /// # Errors
@@ -145,16 +125,6 @@ pub trait Provider {
     ///
     /// Returns the implementation-defined provider error when the block lookup fails.
     async fn get_block(&self, block_tag: &str) -> Result<BlockInfo, Self::Error>;
-    /// Returns a typed contract handle for an address and ABI.
-    ///
-    /// # Errors
-    ///
-    /// Returns the implementation-defined provider error when contract creation fails.
-    async fn get_contract(
-        &self,
-        address: &Address,
-        abi_json: &str,
-    ) -> Result<ContractHandle, Self::Error>;
 }
 
 /// Signing-capable extension for provider implementations.
@@ -221,26 +191,6 @@ impl ContractCall {
             abi_json,
             args_json,
         }
-    }
-}
-
-/// Contract handle returned by providers that support typed contract creation.
-#[non_exhaustive]
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ContractHandle {
-    /// Target contract address.
-    pub address: Address,
-    /// JSON ABI for the contract handle.
-    pub abi_json: String,
-}
-
-impl ContractHandle {
-    /// Creates a typed contract handle.
-    #[inline]
-    #[must_use]
-    pub const fn new(address: Address, abi_json: String) -> Self {
-        Self { address, abi_json }
     }
 }
 

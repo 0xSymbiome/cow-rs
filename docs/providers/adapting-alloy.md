@@ -52,9 +52,9 @@ let client = AlloyClient::builder()
 The umbrella signer handle signs CoW EIP-712 typed-data payloads directly,
 normalizes ECDSA `v` values through the shared contracts helper, sends
 transactions through Alloy's wallet-filler provider, and returns the broadcast
-transaction hash as `TransactionBroadcast`. Raw `sign_transaction` is
-intentionally unsupported because the relevant Alloy provider path delegates to
-the remote JSON-RPC peer rather than producing a local signed payload.
+transaction hash as `TransactionBroadcast`. The `Signer` surface does not carry
+raw transaction signing; on-chain execution goes through `send_transaction`,
+where nonce, fee, chain, and broadcast context are available.
 
 The umbrella composes its provider and signer through Alloy's wallet-filler
 provider pattern rather than reimplementing transaction filling, signing, or

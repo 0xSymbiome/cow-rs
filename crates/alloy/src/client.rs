@@ -8,11 +8,10 @@ use alloy_rpc_client::ClientBuilder;
 use alloy_signer::Signer as AlloySigner;
 use alloy_signer_local::PrivateKeySigner;
 use cow_sdk_core::{
-    Address, BlockInfo, ChainId, ContractCall, ContractHandle, HexData, LogProvider, LogQuery,
-    Provider, RawLog, SigningProvider, TransactionHash, TransactionReceipt, TransactionRequest,
+    Address, BlockInfo, ChainId, ContractCall, HexData, LogProvider, LogQuery, Provider, RawLog,
+    SigningProvider, TransactionHash, TransactionReceipt, TransactionRequest,
 };
 
-use alloy_primitives::{B256, U256};
 use cow_sdk_alloy_provider::{
     __seam::{
         alloy_log_to_cow_raw_log as alloy_log_to_cow_raw_log_seam,
@@ -171,28 +170,6 @@ impl Provider for AlloyClient {
         Ok(receipt)
     }
 
-    async fn get_storage_at(&self, address: &Address, slot: &str) -> Result<HexData, Self::Error> {
-        let slot = slot
-            .strip_prefix("0x")
-            .map_or_else(
-                || U256::from_str_radix(slot, 10),
-                |hex| U256::from_str_radix(hex, 16),
-            )
-            .map_err(|error| {
-                AlloyClientError::Validation(format!(
-                    "storage slot `{slot}` is not a valid U256: {error}"
-                ))
-            })?;
-        let value = self
-            .inner
-            .provider
-            .get_storage_at(*address.as_alloy(), slot)
-            .await
-            .map_err(AlloyClientError::from_alloy_transport)?;
-        HexData::new(B256::from(value).to_string())
-            .map_err(|error| AlloyClientError::Internal(format!("storage conversion: {error}")))
-    }
-
     async fn call(&self, tx: &TransactionRequest) -> Result<HexData, Self::Error> {
         let tx = cow_request_to_alloy(tx).map_err(AlloyClientError::Validation)?;
         let bytes = self
@@ -222,14 +199,6 @@ impl Provider for AlloyClient {
                 AlloyClientError::Validation(format!("block `{block_tag}` not found on remote"))
             })?;
         Ok(alloy_to_cow_block_info(&block))
-    }
-
-    async fn get_contract(
-        &self,
-        address: &Address,
-        abi_json: &str,
-    ) -> Result<ContractHandle, Self::Error> {
-        Ok(ContractHandle::new(*address, abi_json.to_owned()))
     }
 }
 

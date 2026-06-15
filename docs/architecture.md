@@ -197,10 +197,11 @@ provider library directly, the wasm path would have to pull native-only
 dependencies or fork trading helpers per runtime.
 
 For custom integrations, implement `Provider` for the RPC backend and `Signer`
-for the signer backend; the narrower [`Owner`], [`TypedDataSigner`], and
+for the signer backend; the narrower [`TypedDataSigner`] and
 [`DigestSigner`] capability traits per
 [ADR 0045](adr/0045-async-signer-trait-narrowing.md) remain available for
-callback-shaped adapters that expose only one signing operation.
+callback-shaped adapters that expose only one signing operation, and
+`Signer::address` serves owner resolution.
 Wallet-capable adapters implement `SigningProvider`, which extends `Provider`
 with signer creation. Adapters that can fetch event logs additionally implement
 `LogProvider`, the opt-in log-fetch capability supertrait
