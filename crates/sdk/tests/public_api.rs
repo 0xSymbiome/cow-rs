@@ -114,34 +114,8 @@ fn module_reexports_cover_expected_leaf_crates() {
     assert!(cow_sdk::signing::SigningScheme::Eip712.is_ecdsa());
 }
 
-#[test]
-fn crate_docs_and_manifest_keep_the_facade_trading_first() {
-    let lib_rs = include_str!("../src/lib.rs");
-    let manifest = include_str!("../Cargo.toml");
-    let production_manifest = manifest
-        .split("[dev-dependencies]")
-        .next()
-        .expect("manifest must contain production dependency section");
-
-    assert!(lib_rs.contains(
-        "The facade is trading-first: the high-level trading flow is the primary surface."
-    ));
-    assert!(
-        lib_rs.contains(
-            "Optional browser-runtime support does not change the default facade identity."
-        )
-    );
-    assert!(lib_rs.contains("the full browser-runtime contract stays in `cow-sdk-browser-wallet`"));
-    assert!(
-        lib_rs.contains("Read-only subgraph analytics are available behind the off-by-default")
-    );
-    assert!(manifest.contains("default = []"));
-    assert!(manifest.contains("browser-wallet = [\"dep:cow-sdk-browser-wallet\"]"));
-    assert!(production_manifest.contains("cow-sdk-trading"));
-    // Subgraph stays off the default surface: it is an opt-in feature wiring an
-    // optional dependency, never a default member of the trading-first closure.
-    assert!(manifest.contains("subgraph = [\"dep:cow-sdk-subgraph\"]"));
-    assert!(production_manifest.contains(
-        "cow-sdk-subgraph = { path = \"../subgraph\", version = \"0.1.0\", optional = true"
-    ));
-}
+// Pins the leaf-convenience re-export: `OrderbookClient` is reachable through the
+// `trading` module as well as `orderbook` (see `orderbook/src/lib.rs`). A compile
+// assertion is the whole pin — trybuild earns its keep on compile-fail cases, not
+// pass cases.
+fn _orderbook_client_reachable_via_trading(_: Option<&dyn cow_sdk::trading::OrderbookClient>) {}

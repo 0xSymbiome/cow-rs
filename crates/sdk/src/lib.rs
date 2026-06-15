@@ -108,8 +108,8 @@ compile_error!(
 // on its module path (`cow_sdk::core::Address`, `cow_sdk::trading::Trading`),
 // matching `alloy`, `reqwest`, and `tower`. The crate root itself carries only
 // the cross-cutting aggregate error (`CowError` / `ErrorClass`, below) and the
-// typed transport, registry, and EIP-1271 cache leaf surfaces consumers match
-// against. No crate in the workspace ships a prelude; identity types are reached
+// typed transport leaf surface (the curated `cow_sdk::http` module) consumers
+// match against. No crate in the workspace ships a prelude; identity types are reached
 // on their module path (`cow_sdk::core::Address`), matching alloy and reqwest.
 
 #[cfg(all(feature = "alloy", not(target_arch = "wasm32")))]

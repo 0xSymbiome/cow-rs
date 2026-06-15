@@ -233,16 +233,15 @@ out of the wire-shape fixtures and are pinned by their own crate tests, so a
 fixture under a `services` header never presents an SDK-only field as an
 upstream one.
 
-### Cross-Fixture Amount Roundtrip
+### Amount Fixture Roundtrip
 
-The workspace-level SDK integration test at
-`crates/sdk/tests/amount_roundtrip.rs` pins the atomic-unit `Amount`
-round-trip invariant directly against canonical literals rather than any
-fixture file: a representative set of decimal atomic-unit strings — zero,
-one, common token magnitudes, and the full uint256 ceiling — parse through
-`cow_sdk_core::Amount::new` and render back byte-identically, and the parse
-is deterministic, so the same literal always decodes to the same typed
-`Amount`, compared bit-for-bit on its inner `U256`.
+Amount-shaped fixture strings parse through the shared `cow_sdk_core::Amount`
+codec and render back byte-identically. The orderbook wire-contract suite pins
+this directly against the committed fixtures: every promoted amount DTO field
+round-trips byte-for-byte through `Amount::new`, so a fixture value that drifts
+from its canonical decimal form fails closed. The deterministic `Amount`
+round-trip itself — zero through the full uint256 ceiling — is owned by the
+core property suite rather than this provenance record.
 
 ### Historical Snapshot Scope
 
@@ -275,7 +274,6 @@ Primary implementation points:
 - `xtask/src/main.rs`
 - `xtask/src/parity/mod.rs`
 - `xtask/src/parity/sync.rs`
-- `crates/sdk/tests/cross_fixture_amount_roundtrip.rs`
 - `.github/workflows/_quality-gate.yml`
 - `.github/workflows/upstream-drift.yml`
 - `.github/config/audit-refresh-map.yml`
@@ -291,7 +289,6 @@ Primary regression coverage:
 - `xtask/src/parity/mod.rs::tests::vendored_openapi_stamp_must_match_the_services_pin`
 - `crates/orderbook/tests/wire_contract.rs::openapi_response_dtos_roundtrip_required_fixture_fields`
 - `crates/orderbook/tests/wire_contract.rs::promoted_amount_dtos_roundtrip_byte_identical`
-- `crates/sdk/tests/cross_fixture_amount_roundtrip.rs::cross_fixture_amount_roundtrip`
 
 Validation surface:
 
@@ -301,5 +298,4 @@ cargo xtask parity sync
 cargo xtask parity drift
 cargo parity-validate --upstream-root <dir>
 cargo test -p xtask
-cargo test --workspace --all-features cross_fixture_amount_roundtrip
 ```

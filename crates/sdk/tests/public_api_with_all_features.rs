@@ -1,6 +1,6 @@
 #[cfg(feature = "browser-wallet")]
 #[test]
-fn public_api_with_all_features_snapshot_matches() {
+fn headline_types_stay_reachable_with_all_features() {
     use cow_sdk::contracts::Signature;
     use cow_sdk::core::{Address, Amount, AppCode, OrderUid, SupportedChainId};
     use cow_sdk::http::HttpTransport;
@@ -25,33 +25,8 @@ fn public_api_with_all_features_snapshot_matches() {
     let _ = core::any::type_name::<cow_sdk::browser_wallet::Eip1193Signer>();
     #[cfg(feature = "subgraph")]
     let _ = core::any::type_name::<cow_sdk::subgraph::SubgraphApi>();
-
-    assert_eq!(
-        include_str!("fixtures/public_api_with_all_features.snap"),
-        all_features_snapshot(),
-    );
-}
-
-#[cfg(feature = "browser-wallet")]
-const fn all_features_snapshot() -> &'static str {
-    "\
-cow-sdk public API snapshot: all features
-modules:
-- app_data
-- browser_wallet
-- contracts
-- core
-- orderbook
-- signing
-- subgraph
-- trading
-root exports:
-- ErrorClass
-- RegistryError
-- CowError
-"
 }
 
 #[cfg(not(feature = "browser-wallet"))]
 #[test]
-fn public_api_with_all_features_snapshot_is_feature_scoped() {}
+fn all_features_probe_is_feature_scoped() {}

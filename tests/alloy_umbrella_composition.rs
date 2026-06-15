@@ -1,10 +1,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 use cow_sdk_alloy::AlloyClient;
-use cow_sdk_core::{
-    Amount, CowEnv, HexData, OrderUid, SigningProvider, SupportedChainId, TransactionHash,
-    TransactionRequest,
-};
+use cow_sdk_core::{Amount, CowEnv, OrderUid, SigningProvider, SupportedChainId, TransactionHash};
 use cow_sdk_trading::{AllowanceParams, ApprovalParams, OrderTraderParams, Trading};
 use wiremock::MockServer;
 
@@ -100,17 +97,4 @@ fn address(value: &str) -> cow_sdk_core::Address {
 
 fn order_uid() -> OrderUid {
     OrderUid::new(ORDER_UID).unwrap()
-}
-
-#[allow(
-    dead_code,
-    reason = "test-helper fixture stays available for transaction-request shape coverage even when the active assertions exercise only the helper subset that the current test rows need"
-)]
-fn sample_transaction() -> TransactionRequest {
-    TransactionRequest::new(
-        Some(address(COW)),
-        Some(HexData::new("0x").unwrap()),
-        Some(Amount::ZERO),
-        None,
-    )
 }

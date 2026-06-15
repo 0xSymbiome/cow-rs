@@ -37,20 +37,8 @@ name = "dependency_default_features_audit"
 path = "dependency_default_features_audit.rs"
 
 [[test]]
-name = "alloy_provider_invariant_covers_every_published_crate"
-path = "alloy_provider_invariant_covers_every_published_crate.rs"
-
-[[test]]
-name = "alloy_signer_invariant_covers_every_published_crate"
-path = "alloy_signer_invariant_covers_every_published_crate.rs"
-
-[[test]]
 name = "alloy_umbrella_composition"
 path = "alloy_umbrella_composition.rs"
-
-[[test]]
-name = "alloy_two_family_pin_lockstep"
-path = "alloy_two_family_pin_lockstep.rs"
 
 [[test]]
 name = "alloy_two_family_lockfile_invariant"

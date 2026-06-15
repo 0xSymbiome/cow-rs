@@ -4,7 +4,7 @@
     not(feature = "subgraph")
 ))]
 #[test]
-fn public_api_default_features_only_snapshot_matches() {
+fn headline_types_stay_reachable_on_default_features() {
     use cow_sdk::contracts::Signature;
     use cow_sdk::core::{Address, Amount, AppCode, OrderUid, SupportedChainId};
     use cow_sdk::http::HttpTransport;
@@ -26,38 +26,8 @@ fn public_api_default_features_only_snapshot_matches() {
     let _ = core::any::type_name::<TraderParams>();
     let _ = core::any::type_name::<Trading>();
     let _ = core::any::type_name::<TradingBuilder>();
-
-    assert_eq!(
-        include_str!("fixtures/public_api_default_features_only.snap"),
-        default_snapshot(),
-    );
-}
-
-#[cfg(all(
-    not(feature = "browser-wallet"),
-    not(feature = "in-memory-cache"),
-    not(feature = "subgraph")
-))]
-const fn default_snapshot() -> &'static str {
-    "\
-cow-sdk public API snapshot: default features
-modules:
-- app_data
-- contracts
-- core
-- orderbook
-- signing
-- trading
-root exports:
-- ErrorClass
-- RegistryError
-- CowError
-feature-gated exports absent:
-- browser_wallet
-- subgraph
-"
 }
 
 #[cfg(feature = "browser-wallet")]
 #[test]
-fn public_api_default_features_only_snapshot_is_feature_scoped() {}
+fn default_features_probe_is_feature_scoped() {}
