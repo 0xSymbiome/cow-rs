@@ -101,7 +101,12 @@ pub trait Eip1271Cache: Send + Sync + 'static {
 pub struct NoopEip1271Cache;
 
 impl Eip1271Cache for NoopEip1271Cache {
-    fn contains_valid(&self, _verifier: Address, _digest: [u8; 32], _signature_hash: [u8; 32]) -> bool {
+    fn contains_valid(
+        &self,
+        _verifier: Address,
+        _digest: [u8; 32],
+        _signature_hash: [u8; 32],
+    ) -> bool {
         false
     }
 
@@ -237,4 +242,3 @@ fn emit_cache_skip_event() {
         verification_result = "error",
     );
 }
-

@@ -6,6 +6,10 @@
 //! and deployment metadata.
 
 #![warn(missing_docs)]
+#![allow(
+    clippy::redundant_pub_crate,
+    reason = "the cross-module helpers inside the private `primitives` module (`check_topics`, `order_uid_from_bytes`) are `pub(crate)` by design: `pub(crate)` keeps them crate-internal under `unreachable_pub` and documents the cross-module use, so the `redundant_pub_crate` pedantic lint is suppressed crate-wide rather than widening the items to `pub`"
+)]
 
 /// COW Shed account-abstraction proxy, EIP-712, and hook-signing helpers.
 ///

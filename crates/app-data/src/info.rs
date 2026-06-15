@@ -285,7 +285,6 @@ pub fn app_data_content(source: impl AppDataSource) -> Result<String, AppDataErr
     Ok(app_data_info(source)?.info.app_data_content)
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;

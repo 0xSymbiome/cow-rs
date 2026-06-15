@@ -20,8 +20,7 @@ use cow_sdk_contracts::{
     pack_order_uid_params,
 };
 use cow_sdk_core::{
-    Address, BuyTokenDestination, CowEnv, OrderData, SupportedChainId,
-    TypedDataDomain,
+    Address, BuyTokenDestination, CowEnv, OrderData, SupportedChainId, TypedDataDomain,
 };
 
 use common::fixture_case;

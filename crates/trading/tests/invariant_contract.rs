@@ -105,7 +105,14 @@ fn quote_amount_strategy() -> impl Strategy<Value = u64> {
 }
 
 fn fee_strategy() -> impl Strategy<Value = u64> {
-    1u64..1_000_000_000u64
+    // A network fee is always a fraction of the traded amount: the orderbook
+    // never returns a quote whose fee meets or exceeds the order amount, because
+    // the resulting order would be unfillable (sell-minus-fee would underflow).
+    // Keep the generated fee strictly below the `quote_amount_strategy` floor
+    // (1_000_000) so it stays below both the sell and buy amounts for every order
+    // kind, exercising the full fee-bearing range without the impossible
+    // fee >= amount corner.
+    1u64..1_000_000u64
 }
 
 fn price_quality_strategy() -> impl Strategy<Value = PriceQuality> {

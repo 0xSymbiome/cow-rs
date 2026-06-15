@@ -24,12 +24,12 @@ use alloy_sol_types::{
     SolCall,
     private::{Address as SolAddress, Bytes as SolBytes, U256},
 };
+use cow_sdk_contracts::settlement::IGPv2Settlement;
 use cow_sdk_contracts::{
     CANCELLATIONS_TYPE_FIELDS, EthFlowOrderData, IERC20, IERC1271, InteractionLike,
     ORDER_TYPE_FIELDS, ORDER_UID_LENGTH, SigningScheme, encode_create_order_calldata,
     encode_invalidate_order_calldata, normalize_interaction,
 };
-use cow_sdk_contracts::settlement::IGPv2Settlement;
 use cow_sdk_core::{
     Address, Amount, AppDataHash, BuyTokenDestination, OrderDigest, OrderUid, SellTokenSource,
 };

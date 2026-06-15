@@ -16,7 +16,7 @@ use crate::order::ORDER_UID_LENGTH;
 ///
 /// Returns [`ContractsError::InvalidOrderUidLength`] when `bytes` is not exactly
 /// [`ORDER_UID_LENGTH`] bytes long.
-pub fn order_uid_from_bytes(bytes: &[u8]) -> Result<OrderUid, ContractsError> {
+pub(crate) fn order_uid_from_bytes(bytes: &[u8]) -> Result<OrderUid, ContractsError> {
     let uid: [u8; ORDER_UID_LENGTH] =
         bytes
             .try_into()
@@ -151,7 +151,7 @@ pub fn buy_balance_from_marker(marker: B256) -> Result<BuyTokenDestination, Cont
 /// Returns [`ContractsError::UnexpectedEventTopics`] when the topic count does
 /// not equal `expected_len` or when `topics[0]` does not equal
 /// `expected_topic0`.
-pub fn check_topics(
+pub(crate) fn check_topics(
     log: &LogData,
     expected_topic0: B256,
     expected_len: usize,

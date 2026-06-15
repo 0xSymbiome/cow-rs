@@ -24,9 +24,6 @@ allowed:
   - file: crates/contracts/src/deployments.rs
     item: DeploymentEnv::from
     reason: CowEnv is the only producer and the bridge match is exhaustive across the currently supported environments; non-exhaustive future variants must land in the same patch with an explicit policy review.
-  - file: crates/contracts/src/deployments.rs
-    item: Registry::default
-    reason: The committed address constants are validated at construction and pinned by the deployment_addresses_resolve_to_canonical_singletons regression.
   - file: crates/contracts/src/primitives.rs
     item: sell_balance_name
     reason: In-crate balance mapping covers every currently representable settlement sell-balance variant.
