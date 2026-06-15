@@ -7,8 +7,8 @@
 use serde::{Serialize, de::DeserializeOwned};
 
 use cow_sdk_orderbook::{
-    Amount, CompetitionOrderStatus, OnchainOrderData, Order, OrderCreation, OrderKind,
-    OrderQuoteResponse, OrderQuoteSide, QuoteData, SigningScheme, SolverExecution,
+    Amount, CompetitionOrderStatus, OnchainOrderData, Order, OrderCancellations, OrderCreation,
+    OrderKind, OrderQuoteResponse, OrderQuoteSide, QuoteData, SigningScheme, SolverExecution,
     StoredOrderQuote, TotalSurplus, Trade,
 };
 
@@ -57,6 +57,49 @@ where
             actual.get(field),
             Some(value),
             "{label}: wire field `{field}` must round-trip",
+        );
+    }
+}
+
+/// Round-trips every example in a request-DTO fixture. Request DTOs are
+/// SDK-constructed, so the faithful contract is the typed value, not a byte
+/// string: each committed upstream wire example must deserialize into the typed
+/// payload and survive `deserialize → serialize → deserialize` unchanged. A
+/// required field that is renamed or retyped on the Rust struct fails closed
+/// here because the upstream example no longer deserializes.
+fn assert_request_fixture_examples_roundtrip<T>(label: &str, raw: &str)
+where
+    T: DeserializeOwned + Serialize + PartialEq + std::fmt::Debug,
+{
+    let fixture: serde_json::Value =
+        serde_json::from_str(raw).expect("request DTO fixture must be valid JSON");
+    let examples = fixture
+        .get("examples")
+        .and_then(serde_json::Value::as_array)
+        .unwrap_or_else(|| panic!("{label} fixture must carry an `examples` array"));
+    assert!(
+        !examples.is_empty(),
+        "{label} fixture must carry at least one example"
+    );
+    for example in examples {
+        let name = example
+            .get("name")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or("<unnamed>");
+        let payload = example
+            .get("payload")
+            .cloned()
+            .unwrap_or_else(|| panic!("{label} example `{name}` must carry a payload"));
+        let typed: T = serde_json::from_value(payload)
+            .unwrap_or_else(|error| panic!("{label} example `{name}` must deserialize: {error}"));
+        let reserialized = serde_json::to_value(&typed)
+            .unwrap_or_else(|error| panic!("{label} example `{name}` must serialize: {error}"));
+        let reparsed: T = serde_json::from_value(reserialized).unwrap_or_else(|error| {
+            panic!("{label} example `{name}` must re-deserialize: {error}")
+        });
+        assert_eq!(
+            typed, reparsed,
+            "{label} example `{name}`: typed request DTO must round-trip losslessly",
         );
     }
 }
@@ -214,5 +257,21 @@ fn openapi_response_dtos_roundtrip_required_fixture_fields() {
     assert_fixture_roundtrips_field_for_field::<TotalSurplus>(
         "TotalSurplus",
         include_str!("../../../parity/fixtures/orderbook/total_surplus.json"),
+    );
+}
+
+#[test]
+fn request_dtos_roundtrip_committed_examples() {
+    // The signed/submitted request DTOs are SDK-constructed; these committed,
+    // source-pinned examples are the upstream wire shapes the typed payloads
+    // must reproduce. Loading them here makes the request fixtures consumed
+    // evidence rather than orphaned files.
+    assert_request_fixture_examples_roundtrip::<OrderCreation>(
+        "OrderCreation",
+        include_str!("../../../parity/fixtures/orderbook-requests/order_creation.json"),
+    );
+    assert_request_fixture_examples_roundtrip::<OrderCancellations>(
+        "OrderCancellations",
+        include_str!("../../../parity/fixtures/orderbook-requests/order_cancellations.json"),
     );
 }

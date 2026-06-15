@@ -851,7 +851,6 @@ dependencies = [
  "cow-sdk-core",
  "gloo-timers",
  "js-sys",
- "serde",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",

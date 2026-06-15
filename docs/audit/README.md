@@ -132,13 +132,13 @@ If the reviewed surface did not change, leave the audit alone.
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [Source-Lock Provenance Audit](source-lock-provenance-audit.md) | Standing audit | source-lock provenance and release preflight authority | Source-lock commit pins (including the intentional cow-shed deployed-generation tag pin), per-file fixture provenance validation, upstream freshness disclosure, Alloy runtime/core dependency provenance, deep upstream-root validation, publication preflight, historical snapshot scope, and refresh ownership | Current | 2026-06-12 |
+| [Source-Lock Provenance Audit](source-lock-provenance-audit.md) | Standing audit | source-lock provenance and release preflight authority | Source-lock commit pins (including the intentional cow-shed deployed-generation tag pin), per-file fixture provenance validation, upstream freshness disclosure, Alloy runtime/core dependency provenance, deep upstream-root validation, publication preflight, historical snapshot scope, and refresh ownership | Current | 2026-06-15 |
 
 ## Orderbook Wire DTO Coverage
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [Wire DTO Coverage Audit](wire-dto-coverage-audit.md) | Standing audit | `cow-sdk-orderbook` DTO coverage | in-memory OpenAPI DTO coverage against the vendored orderbook spec, request-payload fixtures, field-level round trips, and response forward compatibility | Current | 2026-06-10 |
+| [Wire DTO Coverage Audit](wire-dto-coverage-audit.md) | Standing audit | `cow-sdk-orderbook` DTO coverage | in-memory OpenAPI DTO coverage against the vendored orderbook spec, request-payload fixtures, field-level round trips, and response forward compatibility | Current | 2026-06-15 |
 | [Quote Response Surface Audit](quote-response-surface-audit.md) | Standing audit | `cow-sdk-orderbook` quote DTOs and `cow-sdk-trading` quote projection | Quote response `OrderParameters` fidelity and coverage, the `priceQuality` default, read-only quote network-cost fields, projection parity (including protocol-fee composition), the quote-echo binding, and the trust posture | Current | 2026-06-14 |
 | [Quote Request App-Data Fix Review](quote-request-app-data-fix-review.md) | Fix review | `cow-sdk-orderbook` quote-request app-data wire shape (`OrderQuoteRequest`, `QuoteAppData`) | Hash-only, document-only, document-plus-hash, and default quote app-data wire forms and `QuoteAppData` round-trip stability | Current | 2026-05-30 |
 

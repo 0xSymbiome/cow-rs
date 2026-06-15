@@ -23,7 +23,9 @@
     "executedProtocolFees": [
       {
         "policy": {
-          "factor": 0.5
+          "volume": {
+            "factor": 0.5
+          }
         },
         "amount": "3000000000000000",
         "token": "0x0000000000000000000000000000000000000001"

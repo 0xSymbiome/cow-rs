@@ -1,9 +1,9 @@
 //! Contract suite pinning the public typed flash-loan hint surface.
 //!
-//! The fixture input mirrors the reviewed golden sample for the
-//! `flashloan-v0.2.0.json` drift fixture so drift in either the wire shape or
-//! the construction-time validation rules surfaces before it reaches
-//! release.
+//! The fixture input is the reviewed golden sample in
+//! `parity/fixtures/app_data/flashloan_v1.7.0.json`, so drift in either the
+//! wire shape or the construction-time validation rules surfaces before it
+//! reaches release.
 
 #![allow(
     clippy::doc_markdown,

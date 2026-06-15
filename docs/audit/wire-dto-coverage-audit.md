@@ -1,7 +1,7 @@
 # Wire DTO Coverage Audit
 
 Status: Current
-Last reviewed: 2026-06-10
+Last reviewed: 2026-06-15
 Owning surface: cow-sdk-orderbook DTO coverage
 Refresh trigger: changes to `parity/openapi/services-orderbook.yml`, changes to `parity/openapi/coverage.yaml`, source-lock refreshes for the services OpenAPI, or public field changes on covered orderbook request or response DTOs
 Related docs:
@@ -36,7 +36,7 @@ It does not cover app-data schema content, contract ABI DTOs, or live orderbook 
 | Rust DTO shape | The covered Rust response DTOs contain every inventory field with OpenAPI optionality preserved at the Rust boundary. | Conforms |
 | Fixture coverage | Each covered response DTO except `QuoteData` has a recorded fixture under `parity/fixtures/orderbook/` that exercises every modeled top-level inventory field; `QuoteData` is covered by required-field validation against the vendored spec. | Conforms |
 | Forward compatibility | Covered response DTOs do not use `serde(deny_unknown_fields)`, so additive upstream fields do not break deserialization. | Conforms |
-| Request DTO coverage | The signed and submitted request payloads (`OrderCreation`, `OrderCancellations`) carry committed source-pinned fixtures under `parity/fixtures/orderbook-requests/`; every request contract is documented below and enforced by the typed request constructors and their contract tests. | Conforms |
+| Request DTO coverage | The signed and submitted request payloads (`OrderCreation`, `OrderCancellations`) carry committed source-pinned fixtures under `parity/fixtures/orderbook-requests/`, round-tripped by `wire_contract.rs::request_dtos_roundtrip_committed_examples`; every request contract is documented below and enforced by that round-trip plus the typed request constructors' contract tests. | Conforms |
 | OrderCreation fee boundary | `OrderCreation` serializes `feeAmount` as `"0"` and rejects inbound non-zero `feeAmount` during deserialization. | Conforms |
 | OrderCreation app-data routing | `OrderCreation` serialises the `(app_data, app_data_hash)` pair onto the three services `OrderCreationAppData` untagged-enum variants (`Both`, `Hash`, `Full`); the hash-only case keys the hash hex string under the `appData` key per the services `Hash` variant. | Conforms |
 | Identity wire-form preservation | Cow newtypes `Address`, `Hash32`, `AppDataHash`, `HexData`, and `OrderUid` emit the lowercase `0x`-prefixed hex wire form through their cow-owned or alloy-forwarded `Display`/`Serialize`/`Deserialize` impls; `Amount` emits strict-decimal-only wire form through its cow-owned `Serialize`/`Deserialize` impls per [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md). | Conforms |
@@ -109,8 +109,8 @@ table that follows.
 
 | DTO type | Source file and Rust type | Audit verdict | Fixture path | Last reviewed |
 | --- | --- | --- | --- | --- |
-| `OrderCreation` | `crates/orderbook/src/types/order.rs::cow_sdk_orderbook::OrderCreation` | Conforms | `parity/fixtures/orderbook-requests/order_creation.json` | 2026-05-21 |
-| `OrderCancellations` | `crates/orderbook/src/types/order.rs::cow_sdk_orderbook::OrderCancellations` | Conforms | `parity/fixtures/orderbook-requests/order_cancellations.json` | 2026-05-12 |
+| `OrderCreation` | `crates/orderbook/src/types/order.rs::cow_sdk_orderbook::OrderCreation` | Conforms | `parity/fixtures/orderbook-requests/order_creation.json` | 2026-06-15 |
+| `OrderCancellations` | `crates/orderbook/src/types/order.rs::cow_sdk_orderbook::OrderCancellations` | Conforms | `parity/fixtures/orderbook-requests/order_cancellations.json` | 2026-06-15 |
 
 Request payload semantics reviewed against the services revision pinned in
 `parity/source-lock.yaml`:
@@ -173,6 +173,7 @@ Primary regression coverage:
 - `crates/orderbook/tests/transform_contract.rs::onchain_order_data_fixture_deserializes_typed_accessors`
 - `crates/orderbook/tests/wire_contract.rs::promoted_amount_dtos_roundtrip_byte_identical`
 - `crates/orderbook/tests/wire_contract.rs::openapi_response_dtos_roundtrip_required_fixture_fields`
+- `crates/orderbook/tests/wire_contract.rs::request_dtos_roundtrip_committed_examples`
 - `xtask/tests/openapi_coverage.rs::openapi_coverage_validate_reports_structured_field_mismatches`
 - `xtask/tests/openapi_coverage.rs::openapi_coverage_validate_reports_required_field_drift`
 

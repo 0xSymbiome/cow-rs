@@ -1,7 +1,7 @@
 # Source-Lock Provenance Audit
 
 Status: Current
-Last reviewed: 2026-06-12
+Last reviewed: 2026-06-15
 Owning surface: source-lock provenance and release preflight authority
 Refresh trigger: Changes to `parity/source-lock.yaml`, vendored parity OpenAPI or fixture provenance, any change to the maintained exclusion-list policy for historical progress snapshots, or any newly archived progress snapshot that should stay outside active preflight authority
 Related docs:
@@ -44,6 +44,7 @@ or changing SDK behavior.
 | Native Alloy provenance | The native adapter family pins Alloy by crates.io version (`alloy-* = 2.0.4`, `alloy-core-* = 1.5.7`), enforced by `Cargo.lock` and the two-family lockfile invariant | Conforms |
 | App-data schema drift fixtures | `parity/fixtures/app_data/schemas/` retains one self-contained drift fixture per modeled metadata family for the typed metadata structs, with lock-validated provenance headers (the flash-loan mirror cites its real producer, `services`) | Conforms |
 | Form enforcement | The lock parses through typed models that reject unknown or missing fields, row rules fail closed on malformed remotes, commits, or paths, and every fixture under `parity/fixtures/**/*.json` is validated per-file against the pins | Conforms |
+| Fixture wire-value fidelity | Every fixture payload value is a legal instance of the upstream schema its `sources` header cites, and each ref names the authoritative upstream producer symbol for the value it pins | Conforms |
 | Amount fixture roundtrip | Amount-shaped fixture strings parse through the shared `Amount` codec and round-trip byte-identically | Conforms |
 | Historical snapshot scope | Historical progress snapshots stay readable and unmodified while active preflight authority skips them by directory-prefix policy | Conforms |
 | Binding source pins | The upstream Solidity repository each `cow-sdk-contracts` inline `alloy::sol!` binding mirrors is pinned by commit under `repositories:` in `parity/source-lock.yaml`; the bindings themselves are proven byte-for-byte by the fixtures' `sources` headers and crate parity tests rather than a per-file source mirror | Conforms |
@@ -61,12 +62,14 @@ fixtures and source-derived evidence. It currently pins:
 - `cow-sdk` at `c931d7ecd67626736f5b8dff781741e727128c42`
 - `cow-shed` at `e15a131d626edbf779c8e44451566e2c36dbdb7d`
 - `ethflowcontract` at `762d182674f8f890bd27917872ee62125171b54d`
-- `app-data` at `31f130d1838ea5018facdfe240aef46ff0cc1881`
 
-The `app-data` row closes the last unpinned authority: the hooks parity
-fixture cites its schema families, and the `parity/fixtures/app_data/schemas/`
-drift mirrors are refreshed from this pin rather than from "a real checkout" with no
-recorded commit.
+The app-data JSON Schema families are pinned from the `cow-sdk` monorepo
+(`packages/app-data/`, published as `@cowprotocol/sdk-app-data`), their
+canonical home. The standalone `cowprotocol/app-data` repository it long ago
+superseded is deprecated; a prior source-lock revision pinned that deprecated
+repository, so this record repoints the hooks parity fixture and the
+`parity/fixtures/app_data/schemas/` drift mirrors at the monorepo authority the
+lock already pins for other surfaces.
 
 A prior review removed the deferred composable-order pins (`composable-cow`
 and its `lib/safe` submodule row): the SDK ships no composable surface, no
@@ -103,7 +106,6 @@ Upstream default-branch HEADs were checked on 2026-06-11 with
 | `cow-sdk` | `c931d7ecd67626736f5b8dff781741e727128c42` | `c931d7ecd67626736f5b8dff781741e727128c42` | Current |
 | `cow-shed` | `e15a131d626edbf779c8e44451566e2c36dbdb7d` | `9e01a88e0010314ee1e4c1a822105897a87d3bda` | Intentionally behind — deployed-generation pin (v1.0.1 tag; see above) |
 | `ethflowcontract` | `762d182674f8f890bd27917872ee62125171b54d` | `762d182674f8f890bd27917872ee62125171b54d` | Current |
-| `app-data` | `31f130d1838ea5018facdfe240aef46ff0cc1881` | `31f130d1838ea5018facdfe240aef46ff0cc1881` | Current |
 
 The source lock remains intentionally commit-based. A prior review advanced
 the `services` and `cow-sdk` pins to upstream HEAD. Every pin except
@@ -120,10 +122,14 @@ evidence to triage. A release claim that depends on upstream freshness re-runs
 
 `parity/fixtures/app_data/schemas/` holds one self-contained drift fixture per
 modeled metadata family (`flashloan`, `partnerFee`, `quote`, and the `hook`
-shape) under lock-validated provenance headers. The `hook`/`quote`/`partnerFee`
-mirrors cite the pinned `cowprotocol/app-data` schema files; the flash-loan
-mirror cites its real producer — the `services` `Flashloan` hint struct —
-because `cowprotocol/app-data` defines no schema with those fields. They are
+shape) under lock-validated provenance headers. All four mirrors cite the
+pinned `cow-sdk` `packages/app-data/src/schemas/` files: the `hook`, `quote`,
+and `partnerFee` schemas, and the `flashloan/v0.2.0.json` schema the monorepo
+defines with the liquidity-provider/protocol-adapter/receiver/token/amount
+shape the SDK uses (beside an older `flashloan/v0.1.0` lender/borrower variant).
+The flash-loan mirror was previously classified as services-derived only
+because it had been checked against the deprecated standalone pin, which did not
+carry this long-standing schema. They are
 test-only fixtures, not resolved at runtime: validation is typed by
 construction (ADR 0064). The `schema_drift_contract` regression test
 field-name-probes each fixture so an upstream rename of a field the typed
@@ -210,6 +216,22 @@ the services pin on every run, and deep validation compares its body against
 the blob at that pin. The parse, row-form, and fixture rules are pinned by the
 unit tests in `xtask/src/parity/mod.rs`, which the shared quality gate runs
 through `cargo test --workspace`.
+
+### Fixture Wire-Value Fidelity
+
+Each `parity/fixtures/**` payload value is a legal instance of the upstream
+schema its `sources` header cites: response samples carry only fields the
+vendored OpenAPI defines, and enum-valued fields use members the upstream
+producer actually serializes — for example `OnchainOrderData.placementError`
+uses an `OnchainOrderPlacementError` variant rather than a placeholder string.
+Each ref names the authoritative producer symbol for the value it pins: the
+on-chain placement-error enum in `crates/model/src/order.rs`, the order-status
+competition schema in the vendored OpenAPI, and the GPv2 order type-field
+source in `cowprotocol/contracts`. SDK-side transform outputs that have no
+upstream wire field — for example the orderbook `total_fee` projection — stay
+out of the wire-shape fixtures and are pinned by their own crate tests, so a
+fixture under a `services` header never presents an SDK-only field as an
+upstream one.
 
 ### Cross-Fixture Amount Roundtrip
 
