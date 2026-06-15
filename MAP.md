@@ -1,6 +1,6 @@
 # Repository File Map
 
-> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `d8dbdd28` &nbsp;&middot;&nbsp; **Generated:** 2026-06-15  
+> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `f15675dc` &nbsp;&middot;&nbsp; **Generated:** 2026-06-15  
 > **Total tracked files:** **1,003** &nbsp;&middot;&nbsp; **Lines of code:** tokei 14.0.0
 
 A navigable inventory of every file tracked by Git on this branch, grouped by the role each directory plays in the workspace. Use the table of contents to jump straight to a section; full file listings are collapsed by default so the high-level shape stays scannable.
@@ -33,8 +33,8 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 - **35,782 lines of Rust** across the 16 SDK crates, covered by **38,397 lines of tests** — a **1.1× test-to-code ratio** — plus **179 lines of benchmarks**.
 - **12,515 doc-comment lines** documenting the public API (~35% of crate code), plus **937 inline comment lines**.
 - **5,409 lines of TypeScript** across examples, e2e harnesses, and wasm bindings.
-- **22,195 lines of Markdown prose** — ADRs, audit notes, and READMEs.
-- **16,302 lines of data & config** — JSON schemas, parity fixtures, YAML, TOML, and lockfiles. Tracked and counted in the totals below; listed separately here because it's data, not hand-written code.
+- **22,551 lines of Markdown prose** — ADRs, audit notes, and READMEs.
+- **16,303 lines of data & config** — JSON schemas, parity fixtures, YAML, TOML, and lockfiles. Tracked and counted in the totals below; listed separately here because it's data, not hand-written code.
 
 **Footprint** (tracked files)
 
@@ -51,16 +51,16 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 | Path | Files | Lines | Code | Purpose |
 |------|------:|------:|-----:|---------|
-| `crates/` | 577 | 116,533 | 81,255 | Workspace member crates (the SDK itself) |
+| `crates/` | 577 | 116,959 | 81,255 | Workspace member crates (the SDK itself) |
 | `docs/` | 155 | 22,227 | 0 | Architecture decision records, audit notes, provider notes |
 | `examples/` | 62 | 12,652 | 5,601 | Runnable usage examples (Rust + TypeScript) |
 | `fuzz/` | 48 | 9,702 | 3,967 | cargo-fuzz targets, corpora, and failure artifacts |
-| `xtask/` | 44 | 8,949 | 7,638 | Cargo xtask automation crate (parity, policy, docs subcommands) |
+| `xtask/` | 44 | 8,954 | 7,642 | Cargo xtask automation crate (parity, policy, docs subcommands) |
 | `parity/` | 38 | 5,636 | 5,333 | Golden fixtures + pinned specs from upstream services |
 | `e2e/` | 26 | 3,928 | 3,170 | End-to-end integration harnesses |
-| `.github/` | 23 | 3,490 | 2,846 | GitHub Actions workflows and repo config |
+| `.github/` | 23 | 3,494 | 2,846 | GitHub Actions workflows and repo config |
 | `tests/` | 13 | 1,306 | 1,118 | Workspace-level integration tests |
-| `.cargo/` | 2 | 31 | 26 | Cargo configuration |
+| `.cargo/` | 2 | 32 | 27 | Cargo configuration |
 | `SECURITY.md` | 1 | 182 | 0 | Security policy |
 | `rust-toolchain.toml` | 1 | 6 | 4 | Pinned Rust toolchain |
 | `ROADMAP.md` | 1 | 67 | 0 | Roadmap document |
@@ -76,7 +76,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `CHANGELOG.md` | 1 | 831 | 0 | Release changelog |
 | `llvm-cov-summary.txt` | 1 | 200 | 0 | Coverage summary snapshot |
 | `Cargo.toml` | 1 | 123 | 108 | Workspace manifest |
-| **Total** | **1003** | **193,144** | **111,094** | |
+| **Total** | **1003** | **193,580** | **111,099** | |
 
 ---
 
@@ -84,13 +84,13 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 | Extension | Files | Lines | Code | Comments | Blank | Typical role |
 |-----------|------:|------:|-----:|---------:|------:|--------------|
-| `.rs` | 586 | 118,648 | 89,383 | 18,423 | 10,842 | Rust source and tests |
-| `.md` | 185 | 27,011 | 0 | 22,195 | 4,816 | Markdown docs (ADRs, audit notes, READMEs) |
+| `.rs` | 586 | 118,653 | 89,387 | 18,424 | 10,842 | Rust source and tests |
+| `.md` | 185 | 27,437 | 0 | 22,551 | 4,886 | Markdown docs (ADRs, audit notes, READMEs) |
 | `.ts` | 57 | 12,563 | 5,409 | 6,273 | 881 | TypeScript (examples, e2e, wasm bindings) |
 | `.json` | 47 | 2,815 | 2,712 | 103 | 0 | JSON schemas, parity fixtures, test vectors |
-| `.toml` | 31 | 1,936 | 1,583 | 93 | 260 | Cargo manifests and tool configs |
+| `.toml` | 31 | 1,937 | 1,584 | 93 | 260 | Cargo manifests and tool configs |
 | `.stderr` | 26 | 588 | 0 | 567 | 21 | trybuild compile-fail snapshots |
-| `.yml` | 16 | 5,330 | 4,754 | 417 | 159 | CI workflows and config |
+| `.yml` | 16 | 5,334 | 4,754 | 421 | 159 | CI workflows and config |
 | `.yaml` | 14 | 7,804 | 6,341 | 29 | 1,434 | CI workflows, OpenAPI specs, config |
 | `.txt` | 7 | 241 | 0 | 240 | 1 | Plain text fixtures / summaries |
 | `.mjs` | 6 | 594 | 485 | 35 | 74 | JavaScript modules |
@@ -106,7 +106,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `.yamllint` | 1 | 7 | 0 | 6 | 1 |  |
 | `.proptest-regressions` | 1 | 7 | 0 | 7 | 0 | proptest regression seeds |
 | `.npmignore` | 1 | 6 | 0 | 6 | 0 |  |
-| **Total** | **1003** | **193,144** | **111,094** | **61,989** | **20,061** | |
+| **Total** | **1003** | **193,580** | **111,099** | **62,350** | **20,131** | |
 
 > **Code + Comments + Blank = Lines** for every row. ``Comments`` is all non-code, non-blank content: inline + doc-comments in source, prose in Markdown/text, and raw content in formats tokei does not parse as code (lockfiles, ``.stderr``, snapshots). Rust doc-comments are isolated in the per-crate ``Doc`` column above.
 
@@ -261,7 +261,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <details>
 <summary><code>.cargo/</code> &mdash; 2 file(s)</summary>
 
-- [`config.toml`](.cargo/config.toml) &mdash; 28 lines
+- [`config.toml`](.cargo/config.toml) &mdash; 29 lines
 - [`mutants.toml`](.cargo/mutants.toml) &mdash; 3 lines
 
 </details>
@@ -308,7 +308,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`alloy-release-candidate.yml`](.github/workflows/alloy-release-candidate.yml) &mdash; 134 lines
 - [`benchmarks.yml`](.github/workflows/benchmarks.yml) &mdash; 68 lines
 - [`browser-wallet-wasm.yml`](.github/workflows/browser-wallet-wasm.yml) &mdash; 212 lines
-- [`ci.yml`](.github/workflows/ci.yml) &mdash; 313 lines
+- [`ci.yml`](.github/workflows/ci.yml) &mdash; 317 lines
 - [`codeql.yml`](.github/workflows/codeql.yml) &mdash; 55 lines
 - [`commit-format.yml`](.github/workflows/commit-format.yml) &mdash; 98 lines
 - [`crate-checks.yml`](.github/workflows/crate-checks.yml) &mdash; 99 lines
@@ -324,7 +324,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <summary><code>crates/alloy/</code> &mdash; 2 file(s)</summary>
 
 - [`Cargo.toml`](crates/alloy/Cargo.toml) &mdash; 57 lines
-- [`README.md`](crates/alloy/README.md) &mdash; 139 lines
+- [`README.md`](crates/alloy/README.md) &mdash; 151 lines
 
 </details>
 
@@ -332,7 +332,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <summary><code>crates/alloy-provider/</code> &mdash; 2 file(s)</summary>
 
 - [`Cargo.toml`](crates/alloy-provider/Cargo.toml) &mdash; 50 lines
-- [`README.md`](crates/alloy-provider/README.md) &mdash; 126 lines
+- [`README.md`](crates/alloy-provider/README.md) &mdash; 131 lines
 
 </details>
 
@@ -383,7 +383,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <summary><code>crates/alloy-signer/</code> &mdash; 2 file(s)</summary>
 
 - [`Cargo.toml`](crates/alloy-signer/Cargo.toml) &mdash; 48 lines
-- [`README.md`](crates/alloy-signer/README.md) &mdash; 129 lines
+- [`README.md`](crates/alloy-signer/README.md) &mdash; 135 lines
 
 </details>
 
@@ -479,7 +479,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <summary><code>crates/app-data/</code> &mdash; 2 file(s)</summary>
 
 - [`Cargo.toml`](crates/app-data/Cargo.toml) &mdash; 50 lines
-- [`README.md`](crates/app-data/README.md) &mdash; 139 lines
+- [`README.md`](crates/app-data/README.md) &mdash; 161 lines
 
 </details>
 
@@ -574,7 +574,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <summary><code>crates/browser-wallet/</code> &mdash; 2 file(s)</summary>
 
 - [`Cargo.toml`](crates/browser-wallet/Cargo.toml) &mdash; 51 lines
-- [`README.md`](crates/browser-wallet/README.md) &mdash; 73 lines
+- [`README.md`](crates/browser-wallet/README.md) &mdash; 120 lines
 
 </details>
 
@@ -634,7 +634,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <summary><code>crates/contracts/</code> &mdash; 2 file(s)</summary>
 
 - [`Cargo.toml`](crates/contracts/Cargo.toml) &mdash; 62 lines
-- [`README.md`](crates/contracts/README.md) &mdash; 68 lines
+- [`README.md`](crates/contracts/README.md) &mdash; 110 lines
 
 </details>
 
@@ -753,7 +753,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <summary><code>crates/core/</code> &mdash; 2 file(s)</summary>
 
 - [`Cargo.toml`](crates/core/Cargo.toml) &mdash; 74 lines
-- [`README.md`](crates/core/README.md) &mdash; 70 lines
+- [`README.md`](crates/core/README.md) &mdash; 124 lines
 
 </details>
 
@@ -894,7 +894,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <summary><code>crates/orderbook/</code> &mdash; 2 file(s)</summary>
 
 - [`Cargo.toml`](crates/orderbook/Cargo.toml) &mdash; 53 lines
-- [`README.md`](crates/orderbook/README.md) &mdash; 69 lines
+- [`README.md`](crates/orderbook/README.md) &mdash; 117 lines
 
 </details>
 
@@ -984,7 +984,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <summary><code>crates/sdk/</code> &mdash; 2 file(s)</summary>
 
 - [`Cargo.toml`](crates/sdk/Cargo.toml) &mdash; 96 lines
-- [`README.md`](crates/sdk/README.md) &mdash; 146 lines
+- [`README.md`](crates/sdk/README.md) &mdash; 151 lines
 
 </details>
 
@@ -1010,7 +1010,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <summary><code>crates/signing/</code> &mdash; 2 file(s)</summary>
 
 - [`Cargo.toml`](crates/signing/Cargo.toml) &mdash; 63 lines
-- [`README.md`](crates/signing/README.md) &mdash; 97 lines
+- [`README.md`](crates/signing/README.md) &mdash; 143 lines
 
 </details>
 
@@ -1083,7 +1083,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <summary><code>crates/subgraph/</code> &mdash; 2 file(s)</summary>
 
 - [`Cargo.toml`](crates/subgraph/Cargo.toml) &mdash; 45 lines
-- [`README.md`](crates/subgraph/README.md) &mdash; 72 lines
+- [`README.md`](crates/subgraph/README.md) &mdash; 95 lines
 
 </details>
 
@@ -1145,7 +1145,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <summary><code>crates/test/</code> &mdash; 2 file(s)</summary>
 
 - [`Cargo.toml`](crates/test/Cargo.toml) &mdash; 30 lines
-- [`README.md`](crates/test/README.md) &mdash; 64 lines
+- [`README.md`](crates/test/README.md) &mdash; 75 lines
 
 </details>
 
@@ -1200,7 +1200,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <summary><code>crates/trading/</code> &mdash; 2 file(s)</summary>
 
 - [`Cargo.toml`](crates/trading/Cargo.toml) &mdash; 71 lines
-- [`README.md`](crates/trading/README.md) &mdash; 257 lines
+- [`README.md`](crates/trading/README.md) &mdash; 280 lines
 
 </details>
 
@@ -1311,7 +1311,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <summary><code>crates/transport-wasm/</code> &mdash; 2 file(s)</summary>
 
 - [`Cargo.toml`](crates/transport-wasm/Cargo.toml) &mdash; 55 lines
-- [`README.md`](crates/transport-wasm/README.md) &mdash; 34 lines
+- [`README.md`](crates/transport-wasm/README.md) &mdash; 116 lines
 
 </details>
 
@@ -2131,8 +2131,8 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <details>
 <summary><code>xtask/src/</code> &mdash; 2 file(s)</summary>
 
-- [`lib.rs`](xtask/src/lib.rs) &mdash; 20 lines
-- [`main.rs`](xtask/src/main.rs) &mdash; 266 lines
+- [`lib.rs`](xtask/src/lib.rs) &mdash; 21 lines
+- [`main.rs`](xtask/src/main.rs) &mdash; 270 lines
 
 </details>
 
