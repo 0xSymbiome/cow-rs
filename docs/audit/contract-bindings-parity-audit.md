@@ -53,9 +53,15 @@ provider.
 ### Binding Families
 
 `GPv2Settlement` (`crates/contracts/src/settlement.rs`) carries the
-`settle`, `invalidateOrder(bytes)`, `setPreSignature`, trade-struct,
-and interaction-struct surface against the mainnet-deployed
-`0x9008D19f58AAbD9eD0D60971565AA8510560ab41` contract.
+`invalidateOrder(bytes)`, `setPreSignature(bytes,bool)`, and the
+`freeFilledAmountStorage` / `freePreSignatureStorage` order-refund calls
+against the mainnet-deployed
+`0x9008D19f58AAbD9eD0D60971565AA8510560ab41` contract; the SDK encodes
+`setPreSignature` and `invalidateOrder`. The solver-only `settle` entry
+point and its trade / interaction tuples are deliberately out of scope —
+this is an order-lifecycle SDK, not a solver — and the fixture-driven
+parity contract drives the shipped binding directly rather than a
+test-local re-declaration.
 
 `CoWSwapEthFlow` (`crates/contracts/src/eth_flow.rs`) carries
 `createOrder(EthFlowOrderData)` and `invalidateOrder(EthFlowOrderData)`
@@ -139,9 +145,8 @@ bit. The same contract covers:
 - Order hash, UID, and signing-scheme payload bytes
 - Compact order flag decoding across every supported kind/source/destination
   combination
-- Settlement call-data for multi-trade batches
-- Settlement encoder PRE, INTRA, POST interaction ordering
-- Multi-trade settlement clearing-price ordering
+- Settlement `setPreSignature` / `invalidateOrder` / order-refund call-data,
+  encoded through the shipped `IGPv2Settlement` binding
 - Encoded trade flags (kind, partial fill, balance source, balance
   destination, signing scheme)
 

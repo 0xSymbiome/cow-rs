@@ -83,7 +83,7 @@ If the reviewed surface did not change, leave the audit alone.
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [EIP-1271 Verification Cache Audit](eip1271-verification-cache-audit.md) | Standing audit | `cow-sdk-contracts` `Eip1271Cache` trait, the always-available `NoopEip1271Cache`, and the feature-gated `InMemoryEip1271Cache` | Trait contract, signature-keyed positive-only caching semantics, default availability and the `in-memory-cache` feature gate, verification telemetry, pre-interaction scope, thread-safety, and its integration with `verify_eip1271_signature_cached` | Current | 2026-05-28 |
+| [EIP-1271 Verification Cache Audit](eip1271-verification-cache-audit.md) | Standing audit | `cow-sdk-contracts` `Eip1271Cache` trait, the always-available `NoopEip1271Cache`, and the feature-gated `InMemoryEip1271Cache` | Trait contract, signature-keyed positive-only caching semantics, default availability and the `in-memory-cache` feature gate, verification telemetry, pre-interaction scope, thread-safety, and its integration with `verify_eip1271_signature_cached` | Current | 2026-06-14 |
 
 ## Signature Normalization
 
@@ -173,7 +173,7 @@ If the reviewed surface did not change, leave the audit alone.
 | [Unsafe-Code Policy Audit](unsafe-code-policy-audit.md) | Standing audit | Workspace `unsafe_code = deny` lint declared in `Cargo.toml` workspace lint section | Workspace unsafe-code deny lint, crate lint adoption, public-path source posture, and clippy enforcement | Current | 2026-04-23 |
 | [Panic-Free Public Surface Audit](panic-free-public-surface-audit.md) | Standing audit | Every `crates/*/src/**/*.rs` file accessible from the published public API | Public-runtime `expect`, `unwrap`, and `panic!` site set with rationale for every remaining static-invariant panic site, including the `Result`-returning `Amount::parse_units` and `Amount::from_units` constructors and infallible `Amount::format_units`, native Alloy adapter conversion, trading receipt-wait helpers, wasm exports, pure helpers, and allowlist coverage | Current | 2026-06-11 |
 | [Workflow Security Audit](workflow-security-audit.md) | Standing audit | Every `.github/workflows/*.yml` file | SHA-pinned third-party actions, explicit permissions, reviewed action source refs, and guarded `pull_request_target` use | Current | 2026-06-10 |
-| [Fuzz Coverage Audit](fuzz-coverage-audit.md) | Standing audit | The standalone `cow-sdk-fuzz` crate and every `cargo-fuzz` target it ships against the published SDK crates | Target inventory across encoder, signing, validator, parser, classifier, crypto envelope, app-data, transport, browser-wallet adjacent, and trading surfaces; per-target seed contract; stable-toolchain compile gate; nightly enumerate; property traceability; public-surface boundary on `pub(crate)` helpers | Current | 2026-06-08 |
+| [Fuzz Coverage Audit](fuzz-coverage-audit.md) | Standing audit | The standalone `cow-sdk-fuzz` crate and every `cargo-fuzz` target it ships against the published SDK crates | Target inventory across encoder, signing, validator, parser, classifier, crypto envelope, app-data, transport, browser-wallet adjacent, and trading surfaces; per-target seed contract; stable-toolchain compile gate; nightly enumerate; property traceability; public-surface boundary on `pub(crate)` helpers | Current | 2026-06-14 |
 
 ## Cross-Cutting Reviewability And Contract Hygiene
 

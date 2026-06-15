@@ -1,8 +1,8 @@
 # EIP-1271 Verification Cache Audit
 
 Status: Current
-Last reviewed: 2026-05-28
-Owning surface: `cow-sdk-contracts` `Eip1271Cache` trait, the always-available `NoopEip1271Cache`, and the `InMemoryEip1271Cache` implementation shipped from `cow-sdk-signing::cache` behind the opt-in `in-memory-cache` feature
+Last reviewed: 2026-06-14
+Owning surface: the `cow-sdk-contracts` `Eip1271Cache` trait and always-available `NoopEip1271Cache` (both re-exported from `cow-sdk-signing::cache`), and the `InMemoryEip1271Cache` implementation shipped from `cow-sdk-signing::cache` behind the opt-in `in-memory-cache` feature
 Refresh trigger: Changes to the trait signature, the cache key, the caching policy (what is recorded and what is not), the `verify_eip1271_signature_cached` call shape, the verification tracing fields, the default TTL or capacity on the in-memory implementation, the clock injection seam, the platform time-source selection, the `in-memory-cache` feature gate, or the thread-safety posture; a new canonical implementation that ships in the workspace
 Related docs:
 - [ADR 0014](../adr/0014-eip1271-verification-cache.md)
@@ -15,10 +15,11 @@ Related docs:
 
 This audit covers:
 
-- the `Eip1271Cache` trait defined in `cow-sdk-contracts`
-- the trait re-export from `cow-sdk-signing::cache`
-- the always-available `NoopEip1271Cache` and the
-  feature-gated `InMemoryEip1271Cache` implementation
+- the `Eip1271Cache` trait and the always-available `NoopEip1271Cache`,
+  both defined in `cow-sdk-contracts` next to `verify_eip1271_signature_cached`
+- the trait and `NoopEip1271Cache` re-export from `cow-sdk-signing::cache`
+- the feature-gated `InMemoryEip1271Cache` implementation owned by
+  `cow-sdk-signing`
 - the cache key (the full `(verifier, digest, signature_hash)` probe
   identity) and the positive-only recording policy on
   `verify_eip1271_signature_cached`

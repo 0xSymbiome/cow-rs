@@ -68,7 +68,9 @@ creating a breaking match exhaustiveness change for downstream code.
 
 - [ECDSA Signature Normalization Audit](../audit/ecdsa-signature-normalization-audit.md)
 - [EIP-1271 Verification Cache Audit](../audit/eip1271-verification-cache-audit.md)
-- `crates/contracts/tests/non_exhaustive_dto_contract.rs::adr_0027_signature_family_non_exhaustive`
+- `xtask/src/policy/check_enum_policy.rs` (run via `cargo check-enum-policy`),
+  the syn-based gate that asserts the `#[non_exhaustive]` marker on every
+  signature-family enum classified in `.github/config/enum-policy.yaml`
 - `crates/contracts/tests/ui/non_exhaustive_external_match.rs`
 - `.github/config/enum-policy.yaml` entries classifying the contracts
   `SigningScheme`, contracts `Signature`, and orderbook `SigningScheme`
