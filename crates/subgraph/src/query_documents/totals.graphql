@@ -1,0 +1,12 @@
+query Totals {
+  totals {
+    tokens
+    orders
+    traders
+    settlements
+    volumeUsd
+    volumeEth
+    feesUsd
+    feesEth
+  }
+}

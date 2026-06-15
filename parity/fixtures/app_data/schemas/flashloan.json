@@ -1,0 +1,60 @@
+{
+  "surface": "app-data-schema-flashloan",
+  "sources": {
+    "cow-sdk": {
+      "commit": "c931d7ecd67626736f5b8dff781741e727128c42",
+      "refs": [
+        "packages/app-data/src/schemas/flashloan/v0.2.0.json",
+        "packages/app-data/src/schemas/definitions.json#inlined-primitives"
+      ]
+    }
+  },
+  "payload": {
+    "$id": "flashloan.json",
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$comment": "Mirrors the cow-sdk app-data flashloan/v0.2.0 schema; shared primitives inlined from upstream definitions.json. Not resolved at runtime (ADR 0064).",
+    "title": "Flashloan",
+    "description": "Information about flashloan parameters for the order",
+    "type": "object",
+    "required": [
+      "amount",
+      "liquidityProvider",
+      "protocolAdapter",
+      "receiver",
+      "token"
+    ],
+    "properties": {
+      "amount": {
+        "title": "Loan amount",
+        "description": "The amount of tokens to be flash loaned (in token units, as uint256)",
+        "type": "string",
+        "pattern": "^[1-9]\\d*$"
+      },
+      "liquidityProvider": {
+        "title": "Liquidity provider address",
+        "description": "The Ethereum address of the flashloan liquidity provider",
+        "type": "string",
+        "pattern": "^0x[a-fA-F0-9]{40}$"
+      },
+      "protocolAdapter": {
+        "title": "Protocol adapter address",
+        "description": "The Ethereum address of the protocol adapter",
+        "type": "string",
+        "pattern": "^0x[a-fA-F0-9]{40}$"
+      },
+      "receiver": {
+        "title": "Receiver address",
+        "description": "The Ethereum address of the flashloan receiver",
+        "type": "string",
+        "pattern": "^0x[a-fA-F0-9]{40}$"
+      },
+      "token": {
+        "title": "Token address",
+        "description": "The Ethereum address of the token being borrowed",
+        "type": "string",
+        "pattern": "^0x[a-fA-F0-9]{40}$"
+      }
+    },
+    "additionalProperties": false
+  }
+}

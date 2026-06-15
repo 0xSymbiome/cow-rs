@@ -1,0 +1,36 @@
+{
+  "surface": "orderbook-trade",
+  "dto": "cow_sdk_orderbook::Trade",
+  "endpoint": "GET /api/v1/trades",
+  "sources": {
+    "services": {
+      "commit": "65b6953bfc2e96b2791cfb2382c7309d1fb19b99",
+      "refs": [
+        "crates/orderbook/openapi.yml#components.schemas.Trade"
+      ]
+    }
+  },
+  "payload": {
+    "blockNumber": 12345678,
+    "logIndex": 7,
+    "orderUid": "0x59920c85de0162e9e55df8d396e75f3b6b7c2dfdb535f03e5c807731c31585eaff714b8b0e2700303ec912bd40496c3997ceea2b616d6710",
+    "owner": "0x0000000000000000000000000000000000000004",
+    "sellToken": "0x0000000000000000000000000000000000000001",
+    "buyToken": "0x0000000000000000000000000000000000000002",
+    "sellAmount": "100000000000000000",
+    "sellAmountBeforeFees": "90000000000000000",
+    "buyAmount": "200000000000000000",
+    "executedProtocolFees": [
+      {
+        "policy": {
+          "volume": {
+            "factor": 0.5
+          }
+        },
+        "amount": "3000000000000000",
+        "token": "0x0000000000000000000000000000000000000001"
+      }
+    ],
+    "txHash": "0x1111111111111111111111111111111111111111111111111111111111111111"
+  }
+}

@@ -1,0 +1,6 @@
+query LastHoursVolume($hours: Int!) {
+  hourlyTotals(orderBy: timestamp, orderDirection: desc, first: $hours) {
+    timestamp
+    volumeUsd
+  }
+}

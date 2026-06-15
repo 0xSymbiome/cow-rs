@@ -1,0 +1,63 @@
+[package]
+name = "cow-sdk-signing"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+description = "Deterministic CoW Protocol order hashing, EIP-712 signing, and UID helpers"
+readme = "README.md"
+documentation = "https://docs.rs/cow-sdk-signing"
+homepage = "https://github.com/0xSymbiome/cow-rs"
+keywords = ["cow-protocol", "sdk", "eip712", "signing", "defi"]
+categories = ["cryptography", "cryptography::cryptocurrencies"]
+
+[package.metadata.docs.rs]
+default-target = "x86_64-unknown-linux-gnu"
+targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
+
+[lints]
+workspace = true
+
+[features]
+default = []
+# Opt-in batteries-included cache. Enables the capacity-bounded,
+# TTL-respecting `InMemoryEip1271Cache` and its `Clock`
+# machinery, and is the only reason the signing crate pulls `parking_lot`
+# (and, on wasm32, `web-time`). The `Eip1271Cache` trait and the
+# dependency-free `NoopEip1271Cache` are always available.
+in-memory-cache = ["dep:parking_lot", "dep:web-time"]
+tracing = ["dep:tracing", "cow-sdk-core/tracing", "cow-sdk-contracts/tracing"]
+
+[dependencies]
+alloy-primitives.workspace = true
+alloy-sol-types.workspace = true
+async-trait.workspace = true
+cow-sdk-core = { path = "../core", version = "0.1.0" }
+cow-sdk-contracts = { path = "../contracts", version = "0.1.0" }
+parking_lot = { workspace = true, optional = true }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tracing = { workspace = true, optional = true }
+
+[dev-dependencies]
+cow-sdk-test-utils = { path = "../test-utils", features = ["proptest"] }
+criterion.workspace = true
+sha3.workspace = true
+trybuild.workspace = true
+
+[[bench]]
+name = "typed_data"
+harness = false
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+web-time = { workspace = true, optional = true }
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test.workspace = true
+
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+proptest.workspace = true
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "time"] }

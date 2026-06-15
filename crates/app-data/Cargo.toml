@@ -1,0 +1,50 @@
+[package]
+name = "cow-sdk-app-data"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+description = "CoW Protocol app-data encoding, validation, and CID compatibility"
+readme = "README.md"
+documentation = "https://docs.rs/cow-sdk-app-data"
+homepage = "https://github.com/0xSymbiome/cow-rs"
+keywords = ["cow-protocol", "sdk", "app-data", "cid", "metadata"]
+categories = ["encoding", "cryptography::cryptocurrencies"]
+
+[package.metadata.docs.rs]
+default-target = "x86_64-unknown-linux-gnu"
+targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
+
+[lints]
+workspace = true
+
+[features]
+default = []
+tracing = ["dep:tracing", "cow-sdk-core/tracing"]
+
+[dependencies]
+cow-sdk-core = { path = "../core", version = "0.1.0" }
+alloy-primitives.workspace = true
+alloy-serde.workspace = true
+async-trait.workspace = true
+cid.workspace = true
+multibase.workspace = true
+multihash.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_jcs.workspace = true
+serde_json = { workspace = true, features = ["preserve_order"] }
+thiserror.workspace = true
+tracing = { workspace = true, optional = true }
+
+[dev-dependencies]
+cow-sdk-test-utils = { path = "../test-utils" }
+criterion.workspace = true
+proptest.workspace = true
+tokio = { workspace = true, features = ["macros", "rt"] }
+trybuild.workspace = true
+
+[[bench]]
+name = "stringify"
+harness = false

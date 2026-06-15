@@ -1,0 +1,930 @@
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::iter_on_single_items,
+    clippy::missing_const_for_fn,
+    clippy::option_if_let_else,
+    clippy::redundant_clone,
+    clippy::too_many_lines,
+    clippy::unnested_or_patterns,
+    reason = "pedantic, nursery, and perf lints acceptable in test helper code"
+)]
+
+mod common;
+
+use std::sync::{Arc, Mutex};
+
+use serde_json::json;
+
+use common::test_app_code;
+use cow_sdk_core::{
+    Amount, BuyTokenDestination, NATIVE_CURRENCY_ADDRESS, OrderKind, SellTokenSource,
+};
+use cow_sdk_orderbook::OrderClass;
+use cow_sdk_trading::{
+    LimitTradeParams, LimitTradeParamsFromQuote, PartnerFeePolicy, PostTradeAdditionalParams,
+    QuoteRequestOverride, TradeAdvancedSettings, TradingError, build_app_data, post_limit_order,
+    post_sell_native_currency_order, post_swap_order, post_swap_order_from_quote, quote_results,
+};
+
+use crate::common::{
+    ALT_RECEIVER, CountingSigner, MockEip1271Provider, MockEthFlowChecker, MockOrderbook,
+    MockSigner, OWNER, address, buy_quote_response, sample_limit_parameters,
+    sample_trade_parameters, sample_trader_parameters, sell_quote_response,
+};
+
+#[tokio::test]
+async fn swap_posting_matches_pinned_sell_and_buy_adjustment_vectors() {
+    // Convention pins (ADR 0066), self-derived from the mock quote builders in
+    // `common/mod.rs` (slippage_bps = 50 via `sample_trade_parameters`) — not
+    // transcribed from upstream, so the expected values live next to the
+    // assertion with their derivation rather than in a parity fixture:
+    //   sell sell_amount = quote_sell + quote_fee                (fee-inclusive)
+    //     98646335338956442 + 1353664661043558 = 100000000000000000
+    //   sell buy_amount  = quote_buy * (10000 - bps) / 10000     (floor)
+    //     30000000000000000000 * 9950 / 10000 = 29850000000000000000
+    //   buy sell_amount  = (quote_sell + quote_fee) * (10000 + bps) / 10000  (floor)
+    //     (1005456782512030400 + 1112955650440102) * 10050 / 10000 = 1011602586853282854
+    //   buy buy_amount   = quote_buy                              (held fixed)
+    //     400000000000000000000
+    const SELL_EXPECTED_SELL_AMOUNT: &str = "100000000000000000";
+    const SELL_EXPECTED_BUY_AMOUNT: &str = "29850000000000000000";
+    const BUY_EXPECTED_SELL_AMOUNT: &str = "1011602586853282854";
+    const BUY_EXPECTED_BUY_AMOUNT: &str = "400000000000000000000";
+
+    let trader = sample_trader_parameters();
+    let signer = MockSigner::default();
+
+    let sell_orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
+    let sell_trade = sample_trade_parameters(OrderKind::Sell);
+    let sell_result = post_swap_order(&sell_trade, &trader, &signer, None, &sell_orderbook)
+        .await
+        .expect("sell swap order should succeed");
+    let sell_order = sell_orderbook
+        .state()
+        .sent_orders
+        .last()
+        .cloned()
+        .expect("sell order must be recorded");
+
+    assert_eq!(
+        sell_order.sell_amount.to_string(),
+        SELL_EXPECTED_SELL_AMOUNT
+    );
+    assert_eq!(sell_order.buy_amount.to_string(), SELL_EXPECTED_BUY_AMOUNT);
+    assert_eq!(
+        sell_result.order_to_sign.sell_amount,
+        sell_order.sell_amount
+    );
+    assert_eq!(sell_result.order_to_sign.buy_amount, sell_order.buy_amount);
+
+    let buy_orderbook = MockOrderbook::new(trader.chain_id, buy_quote_response());
+    let buy_trade = sample_trade_parameters(OrderKind::Buy);
+    let buy_result = post_swap_order(&buy_trade, &trader, &signer, None, &buy_orderbook)
+        .await
+        .expect("buy swap order should succeed");
+    let buy_order = buy_orderbook
+        .state()
+        .sent_orders
+        .last()
+        .cloned()
+        .expect("buy order must be recorded");
+
+    assert_eq!(buy_order.sell_amount.to_string(), BUY_EXPECTED_SELL_AMOUNT);
+    assert_eq!(buy_order.buy_amount.to_string(), BUY_EXPECTED_BUY_AMOUNT);
+    assert_eq!(buy_result.order_to_sign.sell_amount, buy_order.sell_amount);
+    assert_eq!(buy_result.order_to_sign.buy_amount, buy_order.buy_amount);
+}
+
+/// Sell quote carrying `protocolFeeBps`, matching the upstream
+/// protocol-fee-with-partner-fee composition vector transcribed in
+/// `parity/fixtures/trading/protocol_fee_partner_fee_composition.json`
+/// (sell `1e18` → buy `2e18`, zero network cost). Reuses the shared quote's
+/// tokens, owner, validity, and app-data and overrides only the amounts.
+fn protocol_fee_quote_response() -> cow_sdk_orderbook::OrderQuoteResponse {
+    let mut quote = sell_quote_response();
+    quote.quote.sell_amount =
+        Amount::new("1000000000000000000").expect("sell amount literal must be valid");
+    quote.quote.buy_amount =
+        Amount::new("2000000000000000000").expect("buy amount literal must be valid");
+    quote.quote.set_network_cost_amount(Amount::ZERO);
+    quote.with_protocol_fee_bps("5")
+}
+
+fn partner_fee_volume_100() -> cow_sdk_trading::PartnerFee {
+    PartnerFeePolicy::volume(100, address(ALT_RECEIVER))
+        .expect("volume policy must validate")
+        .into()
+}
+
+// Composition goldens transcribed in
+// `parity/fixtures/trading/protocol_fee_partner_fee_composition.json`: the
+// signed buy amount for the upstream sell vector (partner 100 bps, slippage 50)
+// with `protocolFeeBps = 5` applied versus dropped. The protocol fee enlarges
+// the partner-fee base, so the signed buy amount is strictly lower when it
+// applies.
+const SIGNED_BUY_WITH_PROTOCOL_FEE: &str = "1970090045022511257";
+const SIGNED_BUY_WITHOUT_PROTOCOL_FEE: &str = "1970100000000000000";
+
+#[tokio::test]
+async fn swap_posting_defaults_protocol_fee_from_the_quote_response() {
+    // No advanced settings: the posting lane must default `protocolFeeBps` from
+    // the quote response so the posted order signs the protocol-fee-composed
+    // amounts the quote previewed (the lane drops the value at HEAD).
+    let trader = sample_trader_parameters();
+    let signer = MockSigner::default();
+    let orderbook = MockOrderbook::new(trader.chain_id, protocol_fee_quote_response());
+    let mut trade = sample_trade_parameters(OrderKind::Sell);
+    trade.partner_fee = Some(partner_fee_volume_100());
+
+    let result = post_swap_order(&trade, &trader, &signer, None, &orderbook)
+        .await
+        .expect("sell swap order should succeed");
+    let order = orderbook
+        .state()
+        .sent_orders
+        .last()
+        .cloned()
+        .expect("order must be recorded");
+
+    assert_eq!(order.sell_amount.to_string(), "1000000000000000000");
+    assert_eq!(order.buy_amount.to_string(), SIGNED_BUY_WITH_PROTOCOL_FEE);
+    assert_eq!(result.order_to_sign.buy_amount, order.buy_amount);
+}
+
+#[tokio::test]
+async fn swap_posting_protocol_fee_override_supersedes_the_quote_default_and_zero_disables() {
+    // An explicit `Some(0.0)` override wins over the quote-response default and
+    // disables the protocol-fee adjustment, reproducing the upstream
+    // no-protocol-fee golden for the same partner-fee vector.
+    let trader = sample_trader_parameters();
+    let signer = MockSigner::default();
+    let orderbook = MockOrderbook::new(trader.chain_id, protocol_fee_quote_response());
+    let mut trade = sample_trade_parameters(OrderKind::Sell);
+    trade.partner_fee = Some(partner_fee_volume_100());
+
+    let advanced = TradeAdvancedSettings::new()
+        .with_additional_params(PostTradeAdditionalParams::new().with_protocol_fee_bps(0.0));
+    let result = post_swap_order(&trade, &trader, &signer, Some(&advanced), &orderbook)
+        .await
+        .expect("sell swap order should succeed");
+    let order = orderbook
+        .state()
+        .sent_orders
+        .last()
+        .cloned()
+        .expect("order must be recorded");
+
+    assert_eq!(
+        order.buy_amount.to_string(),
+        SIGNED_BUY_WITHOUT_PROTOCOL_FEE
+    );
+    assert_eq!(result.order_to_sign.buy_amount, order.buy_amount);
+}
+
+#[tokio::test]
+async fn post_from_quote_signs_the_order_the_quote_previewed_under_a_protocol_fee() {
+    // The structural invariant: with a protocol fee on the quote response and a
+    // partner fee configured, the managed post lane must sign byte-identically
+    // what `QuoteResults.order_to_sign` previewed. `valid_to` is pinned so both
+    // lanes resolve the same deadline rather than two `now()` reads.
+    let trader = sample_trader_parameters();
+    let signer = MockSigner::default();
+    let orderbook = MockOrderbook::new(trader.chain_id, protocol_fee_quote_response());
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .expect("UNIX_EPOCH must remain reachable")
+        .as_secs();
+    let mut trade = sample_trade_parameters(OrderKind::Sell);
+    trade.partner_fee = Some(partner_fee_volume_100());
+    trade.valid_to = Some(u32::try_from(now + 3600).expect("valid_to must fit in u32"));
+
+    let quote = quote_results(&trade, &trader, &signer, None, &orderbook)
+        .await
+        .expect("quote flow should succeed");
+    assert_eq!(
+        quote.order_to_sign.buy_amount.to_string(),
+        SIGNED_BUY_WITH_PROTOCOL_FEE,
+        "the previewed order must already carry the protocol-fee composition"
+    );
+
+    let result = post_swap_order_from_quote(&quote, &trader, &signer, None, &orderbook)
+        .await
+        .expect("post from quote should succeed");
+
+    assert_eq!(
+        result.order_to_sign, quote.order_to_sign,
+        "the posted order must match the previewed order field-for-field"
+    );
+}
+
+#[tokio::test]
+async fn posting_propagates_partner_fee_receiver_valid_to_and_owner_precedence() {
+    let trader = sample_trader_parameters();
+    let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
+    let signer = MockSigner::new(address(ALT_RECEIVER));
+    let mut trade = sample_trade_parameters(OrderKind::Sell);
+    trade.owner = Some(address(OWNER));
+    trade.partner_fee = Some(
+        PartnerFeePolicy::volume(50, address(ALT_RECEIVER))
+            .expect("volume policy must validate")
+            .into(),
+    );
+
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .expect("UNIX_EPOCH must remain reachable")
+        .as_secs();
+    let override_valid_to = u32::try_from(now + 3600).expect("valid_to must fit in u32");
+    let advanced = TradeAdvancedSettings::new()
+        .with_quote_request(
+            QuoteRequestOverride::new()
+                .with_receiver(address(ALT_RECEIVER))
+                .with_valid_to(override_valid_to)
+                .with_signing_scheme(cow_sdk_orderbook::SigningScheme::Eip1271),
+        )
+        .with_app_data(
+            cow_sdk_app_data::AppDataParams::default().with_metadata(
+                serde_json::from_value(json!({
+                    "partnerFee": {
+                        "volumeBps": 50,
+                        "recipient": ALT_RECEIVER
+                    }
+                }))
+                .expect("partner fee metadata should build"),
+            ),
+        );
+
+    let result = post_swap_order(&trade, &trader, &signer, Some(&advanced), &orderbook)
+        .await
+        .expect("swap order with overrides should succeed");
+    let state = orderbook.state();
+    let order = state
+        .sent_orders
+        .last()
+        .cloned()
+        .expect("order must be sent");
+    let uploaded = state
+        .uploads
+        .last()
+        .cloned()
+        .expect("app data must be uploaded");
+    let uploaded_json: serde_json::Value =
+        serde_json::from_str(&uploaded.1).expect("uploaded app data must remain valid json");
+
+    assert_eq!(order.receiver, Some(address(ALT_RECEIVER)));
+    assert_eq!(order.valid_to, override_valid_to);
+    assert_eq!(order.from, address(OWNER));
+    assert_eq!(result.order_to_sign.receiver, address(ALT_RECEIVER));
+    assert_eq!(result.order_to_sign.valid_to, override_valid_to);
+    assert_eq!(
+        uploaded_json["metadata"]["partnerFee"]["volumeBps"],
+        serde_json::json!(50)
+    );
+}
+
+#[tokio::test]
+async fn swap_posting_preserves_non_default_balance_semantics_from_quote_to_submission() {
+    let trader = sample_trader_parameters();
+    let mut quote_response = sell_quote_response();
+    quote_response.quote.sell_token_balance = SellTokenSource::External;
+    quote_response.quote.buy_token_balance = BuyTokenDestination::Internal;
+    let orderbook = MockOrderbook::new(trader.chain_id, quote_response);
+    let signer = MockSigner::default();
+    let trade = sample_trade_parameters(OrderKind::Sell);
+    let advanced = TradeAdvancedSettings::new().with_quote_request(
+        QuoteRequestOverride::new()
+            .with_sell_token_balance(SellTokenSource::External)
+            .with_buy_token_balance(BuyTokenDestination::Internal),
+    );
+
+    let result = post_swap_order(&trade, &trader, &signer, Some(&advanced), &orderbook)
+        .await
+        .expect("swap posting with non-default balances should succeed");
+    let sent_order = orderbook
+        .state()
+        .sent_orders
+        .last()
+        .cloned()
+        .expect("order must be recorded");
+
+    assert_eq!(
+        result.order_to_sign.sell_token_balance,
+        SellTokenSource::External
+    );
+    assert_eq!(
+        result.order_to_sign.buy_token_balance,
+        BuyTokenDestination::Internal
+    );
+    assert_eq!(sent_order.sell_token_balance, SellTokenSource::External);
+    assert_eq!(sent_order.buy_token_balance, BuyTokenDestination::Internal);
+}
+
+#[tokio::test]
+async fn signed_balance_sources_bind_to_the_request_not_the_quote_response() {
+    // ADR 0058 / B3: the signed order binds the balance sources the caller
+    // requested, not the response echo. A response returning different sources
+    // (which the live `OrderbookApi::quote` echo gate rejects, but a mock
+    // bypasses) must not change the signed order — the request is authoritative.
+    let trader = sample_trader_parameters();
+    let mut quote_response = sell_quote_response();
+    quote_response.quote.sell_token_balance = SellTokenSource::External;
+    quote_response.quote.buy_token_balance = BuyTokenDestination::Internal;
+    let orderbook = MockOrderbook::new(trader.chain_id, quote_response);
+    let signer = MockSigner::default();
+    // No balance override: the trade parameters keep their default erc20 sources.
+    let trade = sample_trade_parameters(OrderKind::Sell);
+
+    let result = post_swap_order(&trade, &trader, &signer, None, &orderbook)
+        .await
+        .expect("swap posting should succeed");
+    let sent_order = orderbook
+        .state()
+        .sent_orders
+        .last()
+        .cloned()
+        .expect("order must be recorded");
+
+    assert_eq!(
+        result.order_to_sign.sell_token_balance,
+        SellTokenSource::Erc20
+    );
+    assert_eq!(
+        result.order_to_sign.buy_token_balance,
+        BuyTokenDestination::Erc20
+    );
+    assert_eq!(sent_order.sell_token_balance, SellTokenSource::Erc20);
+    assert_eq!(sent_order.buy_token_balance, BuyTokenDestination::Erc20);
+}
+
+#[tokio::test]
+async fn limit_posting_disables_cost_slippage_adjustments_for_sell_and_buy_orders() {
+    let trader = sample_trader_parameters();
+    let signer = MockSigner::default();
+
+    let sell_orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
+    let sell_params = sample_limit_parameters(OrderKind::Sell);
+    let sell_result = post_limit_order(&sell_params, &trader, &signer, None, &sell_orderbook)
+        .await
+        .expect("sell limit order should succeed");
+    let sell_sent = sell_orderbook
+        .state()
+        .sent_orders
+        .last()
+        .cloned()
+        .expect("sell limit order must be sent");
+
+    assert_eq!(sell_result.order_to_sign.buy_amount, sell_params.buy_amount);
+    assert_eq!(sell_sent.buy_amount, sell_params.buy_amount);
+
+    let buy_orderbook = MockOrderbook::new(trader.chain_id, buy_quote_response());
+    let buy_params = sample_limit_parameters(OrderKind::Buy);
+    let buy_result = post_limit_order(&buy_params, &trader, &signer, None, &buy_orderbook)
+        .await
+        .expect("buy limit order should succeed");
+    let buy_sent = buy_orderbook
+        .state()
+        .sent_orders
+        .last()
+        .cloned()
+        .expect("buy limit order must be sent");
+
+    assert_eq!(buy_result.order_to_sign.sell_amount, buy_params.sell_amount);
+    assert_eq!(buy_sent.sell_amount, buy_params.sell_amount);
+}
+
+#[tokio::test]
+async fn native_sell_post_flow_uploads_app_data_sends_transaction_and_supports_collision_checks() {
+    let trader = sample_trader_parameters();
+    let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
+    let signer = MockSigner::default();
+    let app_data = build_app_data(&test_app_code(), 50, OrderClass::Market, None, None)
+        .await
+        .expect("app data should build");
+    let mut params: LimitTradeParams = sample_limit_parameters(OrderKind::Sell);
+    params.sell_token = NATIVE_CURRENCY_ADDRESS;
+    params.quote_id = Some(3);
+    params.slippage_bps = Some(50);
+    let collision_results = Arc::new(Mutex::new(vec![true, false]));
+    let additional = PostTradeAdditionalParams::new()
+        .with_check_eth_flow_order_exists(MockEthFlowChecker {
+            results: collision_results.clone(),
+        })
+        .with_network_costs_amount(*sell_quote_response().quote.network_cost_amount())
+        .with_custom_eip1271_signature(MockEip1271Provider);
+
+    let from_quote =
+        LimitTradeParamsFromQuote::try_from_limit(params).expect("test params carry a quote id");
+    let result = post_sell_native_currency_order(
+        &orderbook,
+        &app_data,
+        &from_quote,
+        &additional,
+        &trader,
+        &signer,
+        None,
+    )
+    .await
+    .expect("native sell posting should succeed");
+
+    let state = orderbook.state();
+    let signer_state = signer.state();
+    let remaining = collision_results
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .clone();
+
+    assert_eq!(state.uploads.len(), 1);
+    assert_eq!(signer_state.sent_transactions.len(), 1);
+    assert!(result.tx_hash.is_some());
+    assert!(remaining.is_empty(), "collision callback must be consumed");
+}
+
+#[tokio::test]
+async fn native_sell_posting_requires_quote_id_before_signing_or_submission() {
+    let trader = sample_trader_parameters();
+    let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
+    let signer = CountingSigner::new(address(OWNER));
+    let mut params: LimitTradeParams = sample_limit_parameters(OrderKind::Sell);
+    params.sell_token = NATIVE_CURRENCY_ADDRESS;
+    params.quote_id = None;
+
+    let error = post_limit_order(&params, &trader, &signer, None, &orderbook)
+        .await
+        .expect_err("native sell posting must require a quote id");
+
+    assert!(matches!(
+        error,
+        TradingError::MissingQuoteId("EthFlow order posting")
+    ));
+    assert!(orderbook.state().uploads.is_empty());
+    assert!(orderbook.state().sent_orders.is_empty());
+    assert_eq!(signer.sign_calls(), 0);
+}
+
+#[tokio::test]
+async fn limit_posting_accepts_custom_eip1271_signatures_without_local_re_signing() {
+    let trader = sample_trader_parameters();
+    let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
+    let signer = MockSigner::default();
+    let params = sample_limit_parameters(OrderKind::Sell);
+    let advanced = TradeAdvancedSettings::new().with_additional_params(
+        PostTradeAdditionalParams::new()
+            .with_signing_scheme(cow_sdk_orderbook::SigningScheme::Eip1271)
+            .with_custom_eip1271_signature(MockEip1271Provider),
+    );
+
+    let result = post_limit_order(&params, &trader, &signer, Some(&advanced), &orderbook)
+        .await
+        .expect("eip1271 limit order should succeed");
+
+    assert_eq!(
+        result.signing_scheme,
+        cow_sdk_orderbook::SigningScheme::Eip1271
+    );
+    assert_eq!(result.signature, "0x7e57c0de");
+}
+
+#[tokio::test]
+async fn recoverable_limit_posting_rejects_owner_signer_mismatch_before_upload_or_submission() {
+    let trader = sample_trader_parameters();
+    let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
+    let signer = MockSigner::new(address(ALT_RECEIVER));
+    let params = sample_limit_parameters(OrderKind::Sell);
+
+    let error = post_limit_order(&params, &trader, &signer, None, &orderbook)
+        .await
+        .expect_err("recoverable signing must reject explicit owner and signer mismatches");
+
+    assert!(matches!(
+        error,
+        cow_sdk_trading::TradingError::ClientRejected(
+            cow_sdk_trading::ClientRejection::OwnerMismatch { .. },
+        )
+    ));
+    assert!(orderbook.state().uploads.is_empty());
+    assert!(orderbook.state().sent_orders.is_empty());
+    assert!(signer.state().last_typed_data_domain.is_none());
+}
+
+#[tokio::test]
+async fn post_sign_recovery_rejects_a_signer_that_signs_with_a_different_key() {
+    // ADR 0015 post-sign owner-recovery gate: the pre-sign self-report check
+    // passes because the owner resolves to the signer's reported address
+    // (OWNER), but the signer actually signs with the key for a different
+    // account, so the produced signature recovers to that other address. The
+    // gate inspects the signature itself and fails closed — a case the
+    // self-reported address cannot catch.
+    let trader = sample_trader_parameters();
+    let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
+    // Alloy `signer-local`'s second test key — a real key whose address
+    // differs from OWNER.
+    let other_key_address = address("0x9b543d61faf8d0baec92b26725dc5ddc0db61d82");
+    let signer = MockSigner::default().with_sign_key_address(other_key_address);
+    let trade = sample_trade_parameters(OrderKind::Sell);
+
+    let error = post_swap_order(&trade, &trader, &signer, None, &orderbook)
+        .await
+        .expect_err("a signature recovering to a different key must fail closed");
+
+    match error {
+        cow_sdk_trading::TradingError::ClientRejected(
+            cow_sdk_trading::ClientRejection::OwnerMismatch {
+                expected,
+                recovered,
+            },
+        ) => {
+            assert_eq!(expected, address(OWNER));
+            assert_eq!(recovered, other_key_address);
+        }
+        other => panic!("expected OwnerMismatch, got {other:?}"),
+    }
+    // The mismatched order never reaches submission.
+    assert!(orderbook.state().sent_orders.is_empty());
+}
+
+#[tokio::test]
+async fn chain_mismatch_fast_fails_before_any_upload_signing_or_submission() {
+    // ADR 0015 chain-coherence gate: the trading client posts to Sepolia, but
+    // the signer is statically bound to Mainnet. The mismatch must be caught
+    // before app-data upload, signing, or submission so the wrong domain
+    // separator never produces a signature the orderbook would reject.
+    let trader = sample_trader_parameters();
+    let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
+    let signer = MockSigner::default().with_chain_id(cow_sdk_core::SupportedChainId::Mainnet);
+    let params = sample_limit_parameters(OrderKind::Sell);
+
+    let error = post_limit_order(&params, &trader, &signer, None, &orderbook)
+        .await
+        .expect_err("a signer bound to the wrong chain must fail closed before signing");
+
+    match error {
+        TradingError::ChainMismatch { signer, trading } => {
+            assert_eq!(signer, cow_sdk_core::SupportedChainId::Mainnet);
+            assert_eq!(trading, cow_sdk_core::SupportedChainId::Sepolia);
+        }
+        other => panic!("expected ChainMismatch, got {other:?}"),
+    }
+    // Nothing reaches the orderbook or the signer.
+    assert!(orderbook.state().uploads.is_empty());
+    assert!(orderbook.state().sent_orders.is_empty());
+    assert!(signer.state().last_typed_data_domain.is_none());
+}
+
+#[tokio::test]
+async fn matching_signer_chain_passes_through_the_coherence_gate() {
+    // A signer bound to the same chain as the trading client clears the gate
+    // and the order posts normally.
+    let trader = sample_trader_parameters();
+    let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
+    let signer = MockSigner::default().with_chain_id(cow_sdk_core::SupportedChainId::Sepolia);
+    let params = sample_limit_parameters(OrderKind::Sell);
+
+    post_limit_order(&params, &trader, &signer, None, &orderbook)
+        .await
+        .expect("a signer on the trading chain must post successfully");
+
+    assert_eq!(orderbook.state().sent_orders.len(), 1);
+}
+
+#[tokio::test]
+async fn signer_without_static_chain_opts_out_of_the_coherence_gate() {
+    // The default signer reports `None` from `chain_id`, so the gate is a
+    // no-op and the order posts even though no static chain is declared.
+    let trader = sample_trader_parameters();
+    let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
+    let signer = MockSigner::default();
+    assert!(cow_sdk_core::Signer::chain_id(&signer).is_none());
+    let params = sample_limit_parameters(OrderKind::Sell);
+
+    post_limit_order(&params, &trader, &signer, None, &orderbook)
+        .await
+        .expect("a signer without a static chain must still post");
+
+    assert_eq!(orderbook.state().sent_orders.len(), 1);
+}
+
+#[tokio::test]
+async fn post_swap_order_appdata_from_mismatch_does_not_upload_or_sign() {
+    let trader = sample_trader_parameters();
+    let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
+    let signer = CountingSigner::new(address(OWNER));
+    let params = sample_limit_parameters(OrderKind::Sell);
+    let advanced = TradeAdvancedSettings::new().with_app_data(
+        cow_sdk_app_data::AppDataParams::default().with_signer(address(ALT_RECEIVER)),
+    );
+
+    let error = post_limit_order(&params, &trader, &signer, Some(&advanced), &orderbook)
+        .await
+        .expect_err("mismatched app-data signer must reject before upload or signing");
+
+    assert!(matches!(
+        error,
+        cow_sdk_trading::TradingError::ClientRejected(
+            cow_sdk_trading::ClientRejection::AppdataFromMismatch { .. },
+        )
+    ));
+    assert!(orderbook.state().uploads.is_empty());
+    assert!(orderbook.state().sent_orders.is_empty());
+    assert_eq!(signer.sign_calls(), 0);
+}
+
+#[tokio::test]
+async fn post_swap_order_same_buy_sell_token_does_not_upload_or_sign() {
+    let trader = sample_trader_parameters();
+    let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
+    let signer = CountingSigner::new(address(OWNER));
+    let mut params = sample_limit_parameters(OrderKind::Buy);
+    params.buy_token = params.sell_token;
+
+    let error = post_limit_order(&params, &trader, &signer, None, &orderbook)
+        .await
+        .expect_err("buy-side same-token limit order must reject before upload or signing");
+
+    assert!(matches!(
+        error,
+        cow_sdk_trading::TradingError::ClientRejected(
+            cow_sdk_trading::ClientRejection::SameBuyAndSellToken { .. },
+        )
+    ));
+    assert!(orderbook.state().uploads.is_empty());
+    assert!(orderbook.state().sent_orders.is_empty());
+    assert_eq!(signer.sign_calls(), 0);
+}
+
+#[tokio::test]
+async fn post_swap_order_sell_side_same_buy_sell_token_uploads_signs_and_submits() {
+    let trader = sample_trader_parameters();
+    let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
+    let signer = MockSigner::default();
+    let mut params = sample_limit_parameters(OrderKind::Sell);
+    params.buy_token = params.sell_token;
+
+    let result = post_limit_order(&params, &trader, &signer, None, &orderbook)
+        .await
+        .expect("sell-side same-token limit order must reach submission");
+
+    let state = orderbook.state();
+    assert_eq!(state.uploads.len(), 1);
+    assert_eq!(state.sent_orders.len(), 1);
+    assert_eq!(state.sent_orders[0].sell_token, params.sell_token);
+    assert_eq!(state.sent_orders[0].buy_token, params.sell_token);
+    assert_eq!(result.order_to_sign.sell_token, params.sell_token);
+    assert_eq!(result.order_to_sign.buy_token, params.sell_token);
+}
+
+#[tokio::test]
+async fn post_swap_order_zero_amount_does_not_upload_or_sign() {
+    let trader = sample_trader_parameters();
+    let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
+    let signer = CountingSigner::new(address(OWNER));
+    let mut params = sample_limit_parameters(OrderKind::Sell);
+    params.sell_amount = Amount::ZERO;
+
+    let error = post_limit_order(&params, &trader, &signer, None, &orderbook)
+        .await
+        .expect_err("zero-amount limit order must reject before upload or signing");
+
+    assert!(matches!(
+        error,
+        cow_sdk_trading::TradingError::ClientRejected(
+            cow_sdk_trading::ClientRejection::ZeroAmount { side: _ },
+        )
+    ));
+    assert!(orderbook.state().uploads.is_empty());
+    assert!(orderbook.state().sent_orders.is_empty());
+    assert_eq!(signer.sign_calls(), 0);
+}
+
+#[tokio::test]
+async fn limit_posting_rejects_trader_env_conflicts_with_orderbook_context() {
+    let mut trader = sample_trader_parameters();
+    trader.env = Some(cow_sdk_core::CowEnv::Staging);
+    let orderbook = MockOrderbook::new_with_env(
+        trader.chain_id,
+        cow_sdk_core::CowEnv::Prod,
+        sell_quote_response(),
+    );
+    let signer = MockSigner::default();
+    let mut params = sample_limit_parameters(OrderKind::Sell);
+    params.env = None;
+
+    let error = post_limit_order(&params, &trader, &signer, None, &orderbook)
+        .await
+        .expect_err("mismatched trader env must fail before signing or submission");
+
+    assert!(matches!(
+        error,
+        cow_sdk_trading::TradingError::InjectedOrderbookContextConflict { field: "env", .. }
+    ));
+    assert!(signer.state().last_typed_data_domain.is_none());
+    assert!(orderbook.state().sent_orders.is_empty());
+}
+
+#[tokio::test]
+async fn post_from_quote_reuses_matching_orderbook_binding_and_submits_order() {
+    let trader = sample_trader_parameters();
+    let signer = MockSigner::default();
+    let orderbook = MockOrderbook::new_with_base_url(
+        trader.chain_id,
+        cow_sdk_core::CowEnv::Prod,
+        "https://quotes.cow.test",
+        sell_quote_response(),
+    );
+    let trade = sample_trade_parameters(OrderKind::Sell);
+
+    let quote_results = quote_results(&trade, &trader, &signer, None, &orderbook)
+        .await
+        .expect("quote flow should succeed");
+    let result = post_swap_order_from_quote(&quote_results, &trader, &signer, None, &orderbook)
+        .await
+        .expect("post-from-quote should succeed when the orderbook binding matches");
+
+    assert_eq!(result.order_id, crate::common::order_uid());
+    assert_eq!(orderbook.state().sent_orders.len(), 1);
+}
+
+#[tokio::test]
+async fn post_from_quote_rejects_orderbook_binding_mismatch_before_signing_or_submission() {
+    let trader = sample_trader_parameters();
+    let signer = MockSigner::default();
+    let quoting_orderbook = MockOrderbook::new_with_base_url(
+        trader.chain_id,
+        cow_sdk_core::CowEnv::Prod,
+        "https://quotes.cow.test",
+        sell_quote_response(),
+    );
+    let posting_orderbook = MockOrderbook::new_with_base_url(
+        trader.chain_id,
+        cow_sdk_core::CowEnv::Prod,
+        "https://submit.cow.test",
+        sell_quote_response(),
+    );
+    let trade = sample_trade_parameters(OrderKind::Sell);
+
+    let quote_results = quote_results(&trade, &trader, &signer, None, &quoting_orderbook)
+        .await
+        .expect("quote flow should succeed");
+    let error =
+        post_swap_order_from_quote(&quote_results, &trader, &signer, None, &posting_orderbook)
+            .await
+            .expect_err("mismatched orderbook binding must fail before signing or submission");
+
+    assert!(matches!(
+        error,
+        cow_sdk_trading::TradingError::QuoteOrderbookBindingConflict {
+            field: "baseUrl",
+            ..
+        }
+    ));
+    assert!(signer.state().last_typed_data_domain.is_none());
+    assert!(posting_orderbook.state().sent_orders.is_empty());
+}
+
+// The three tests below pin the eth-flow submission seam's owner-vs-receiver
+// threading: the client-side validator reads `OrderCreation.from` from the
+// signer-derived owner carried on `EthFlowTransaction.from`, not from the
+// payout `receiver`. Owners and receivers may legitimately differ when a
+// caller asks the native-currency payout to land at a separate address; the
+// validator must fire on the owner identity so the `AppdataFromMismatch`
+// check stays bound to the signing authority.
+
+fn ethflow_additional_params(
+    quote: &cow_sdk_orderbook::OrderQuoteResponse,
+) -> PostTradeAdditionalParams {
+    PostTradeAdditionalParams::new()
+        .with_check_eth_flow_order_exists(MockEthFlowChecker {
+            results: Arc::new(Mutex::new(Vec::new())),
+        })
+        .with_network_costs_amount(*quote.quote.network_cost_amount())
+        .with_custom_eip1271_signature(MockEip1271Provider)
+}
+
+fn ethflow_params_with_receiver(receiver: Option<cow_sdk_core::Address>) -> LimitTradeParams {
+    let mut params: LimitTradeParams = sample_limit_parameters(OrderKind::Sell);
+    params.sell_token = NATIVE_CURRENCY_ADDRESS;
+    params.quote_id = Some(3);
+    params.slippage_bps = Some(50);
+    params.receiver = receiver;
+    params
+}
+
+#[tokio::test]
+async fn ethflow_validation_uses_signer_owner_not_receiver() {
+    let trader = sample_trader_parameters();
+    let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
+    // Signer owner is `OWNER`; caller asks payout to land at `ALT_RECEIVER`,
+    // which differs from the owner. The typed app-data signer matches the
+    // owner, so validation must accept this legitimate receiver override.
+    let signer = MockSigner::default();
+    let app_data = build_app_data(&test_app_code(), 50, OrderClass::Market, None, None)
+        .await
+        .expect("app data should build");
+    let params = ethflow_params_with_receiver(Some(address(ALT_RECEIVER)));
+    let additional = ethflow_additional_params(&sell_quote_response());
+
+    let from_quote =
+        LimitTradeParamsFromQuote::try_from_limit(params).expect("test params carry a quote id");
+    let result = post_sell_native_currency_order(
+        &orderbook,
+        &app_data,
+        &from_quote,
+        &additional,
+        &trader,
+        &signer,
+        Some(address(OWNER)),
+    )
+    .await
+    .expect("receiver override with matching owner and app-data signer must pass validation");
+
+    assert!(result.tx_hash.is_some());
+    assert_eq!(orderbook.state().uploads.len(), 1);
+    assert_eq!(signer.state().sent_transactions.len(), 1);
+}
+
+#[tokio::test]
+async fn ethflow_validation_rejects_mismatched_signer() {
+    let trader = sample_trader_parameters();
+    let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
+    // Signer owner is `OWNER`; receiver is a distinct payout address; the
+    // declared app-data signer is a third address that disagrees with the
+    // owner. Validation must reject and the surfaced typed rejection must
+    // carry the owner as `from`, not the receiver.
+    let signer = MockSigner::default();
+    let mismatched_signer =
+        cow_sdk_core::Address::new("0xcccccccccccccccccccccccccccccccccccccccc")
+            .expect("mismatched signer literal must be valid");
+    let app_data = build_app_data(&test_app_code(), 50, OrderClass::Market, None, None)
+        .await
+        .expect("app data should build");
+    let params = ethflow_params_with_receiver(Some(address(ALT_RECEIVER)));
+    let additional = ethflow_additional_params(&sell_quote_response());
+
+    let from_quote =
+        LimitTradeParamsFromQuote::try_from_limit(params).expect("test params carry a quote id");
+    let error = post_sell_native_currency_order(
+        &orderbook,
+        &app_data,
+        &from_quote,
+        &additional,
+        &trader,
+        &signer,
+        Some(mismatched_signer),
+    )
+    .await
+    .expect_err("mismatched app-data signer must trigger a typed rejection");
+
+    match error {
+        cow_sdk_trading::TradingError::ClientRejected(
+            cow_sdk_trading::ClientRejection::AppdataFromMismatch {
+                appdata_signer,
+                from,
+            },
+        ) => {
+            assert_eq!(
+                appdata_signer, mismatched_signer,
+                "rejection must surface the declared app-data signer verbatim"
+            );
+            assert_eq!(
+                from,
+                address(OWNER),
+                "rejection's from must be the signer-derived owner, not the payout receiver"
+            );
+        }
+        other => panic!("expected AppdataFromMismatch, got {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn ethflow_validation_accepts_matched_signer_with_default_receiver() {
+    let trader = sample_trader_parameters();
+    let orderbook = MockOrderbook::new(trader.chain_id, sell_quote_response());
+    // No explicit receiver: `order_to_sign` defaults it to the signer
+    // owner so owner and receiver converge. A matching app-data signer must
+    // pass validation through the same code path the custom-receiver test
+    // exercises.
+    let signer = MockSigner::default();
+    let app_data = build_app_data(&test_app_code(), 50, OrderClass::Market, None, None)
+        .await
+        .expect("app data should build");
+    let params = ethflow_params_with_receiver(None);
+    let additional = ethflow_additional_params(&sell_quote_response());
+
+    let from_quote =
+        LimitTradeParamsFromQuote::try_from_limit(params).expect("test params carry a quote id");
+    let result = post_sell_native_currency_order(
+        &orderbook,
+        &app_data,
+        &from_quote,
+        &additional,
+        &trader,
+        &signer,
+        Some(address(OWNER)),
+    )
+    .await
+    .expect("default-receiver eth-flow post with matching signer must succeed");
+
+    assert!(result.tx_hash.is_some());
+    assert_eq!(orderbook.state().uploads.len(), 1);
+    assert_eq!(signer.state().sent_transactions.len(), 1);
+}

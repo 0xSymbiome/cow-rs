@@ -1,0 +1,155 @@
+{
+  "surface": "ecdsa-v-normalization",
+  "standards": [
+    "Ethereum ECDSA recovery-id convention (v in {0, 1, 27, 28})"
+  ],
+  "derivation": "cow_sdk_contracts::RecoverableSignature::parse_bytes canonicalises v in {0, 1, 27, 28} onto {27, 28} and rejects every other recovery byte through ContractsError::InvalidSignatureRecoveryByte per ADR 0022",
+  "rows": [
+    {
+      "name": "v_0_normalizes_to_27",
+      "inputs": {
+        "raw_signature": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb00"
+      },
+      "expected": {
+        "normalized_signature": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb1b"
+      }
+    },
+    {
+      "name": "v_1_normalizes_to_28",
+      "inputs": {
+        "raw_signature": "0xccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd01"
+      },
+      "expected": {
+        "normalized_signature": "0xccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd1c"
+      }
+    },
+    {
+      "name": "v_27_passthrough",
+      "inputs": {
+        "raw_signature": "0x111111111111111111111111111111111111111111111111111111111111111122222222222222222222222222222222222222222222222222222222222222221b"
+      },
+      "expected": {
+        "normalized_signature": "0x111111111111111111111111111111111111111111111111111111111111111122222222222222222222222222222222222222222222222222222222222222221b"
+      }
+    },
+    {
+      "name": "v_28_passthrough",
+      "inputs": {
+        "raw_signature": "0x333333333333333333333333333333333333333333333333333333333333333344444444444444444444444444444444444444444444444444444444444444441c"
+      },
+      "expected": {
+        "normalized_signature": "0x333333333333333333333333333333333333333333333333333333333333333344444444444444444444444444444444444444444444444444444444444444441c"
+      }
+    },
+    {
+      "name": "zero_rs_with_v_0",
+      "inputs": {
+        "raw_signature": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "expected": {
+        "normalized_signature": "0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001b"
+      }
+    },
+    {
+      "name": "uppercase_hex_input_normalizes_to_lowercase",
+      "inputs": {
+        "raw_signature": "0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB1B"
+      },
+      "expected": {
+        "normalized_signature": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb1b"
+      }
+    }
+  ],
+  "rejection_rows": [
+    {
+      "name": "v_2_rejected",
+      "inputs": {
+        "raw_signature": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb02"
+      },
+      "expected": {
+        "error_discriminant": "InvalidSignatureRecoveryByte",
+        "value": 2
+      }
+    },
+    {
+      "name": "v_26_rejected_below_legacy_window",
+      "inputs": {
+        "raw_signature": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb1a"
+      },
+      "expected": {
+        "error_discriminant": "InvalidSignatureRecoveryByte",
+        "value": 26
+      }
+    },
+    {
+      "name": "v_29_rejected_above_legacy_window",
+      "inputs": {
+        "raw_signature": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb1d"
+      },
+      "expected": {
+        "error_discriminant": "InvalidSignatureRecoveryByte",
+        "value": 29
+      }
+    },
+    {
+      "name": "v_35_rejected_eip155_lower_bound",
+      "inputs": {
+        "raw_signature": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb23"
+      },
+      "expected": {
+        "error_discriminant": "InvalidSignatureRecoveryByte",
+        "value": 35
+      }
+    },
+    {
+      "name": "v_36_rejected_eip155_lower_bound",
+      "inputs": {
+        "raw_signature": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb24"
+      },
+      "expected": {
+        "error_discriminant": "InvalidSignatureRecoveryByte",
+        "value": 36
+      }
+    },
+    {
+      "name": "v_37_rejected_eip155_mainnet_pair",
+      "inputs": {
+        "raw_signature": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb25"
+      },
+      "expected": {
+        "error_discriminant": "InvalidSignatureRecoveryByte",
+        "value": 37
+      }
+    },
+    {
+      "name": "v_38_rejected_eip155_mainnet_pair",
+      "inputs": {
+        "raw_signature": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb26"
+      },
+      "expected": {
+        "error_discriminant": "InvalidSignatureRecoveryByte",
+        "value": 38
+      }
+    },
+    {
+      "name": "v_100_rejected_arbitrary_eip155_chain",
+      "inputs": {
+        "raw_signature": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb64"
+      },
+      "expected": {
+        "error_discriminant": "InvalidSignatureRecoveryByte",
+        "value": 100
+      }
+    },
+    {
+      "name": "v_255_rejected_upper_bound",
+      "inputs": {
+        "raw_signature": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbff"
+      },
+      "expected": {
+        "error_discriminant": "InvalidSignatureRecoveryByte",
+        "value": 255
+      }
+    }
+  ]
+}

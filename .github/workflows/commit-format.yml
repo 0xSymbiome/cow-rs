@@ -1,0 +1,98 @@
+name: commit-format
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          # fetch-depth: 0 pulls the full history of the PR head SHA,
+          # which includes the PR base SHA as an ancestor by construction.
+          # The validator below references the base purely by SHA via
+          # `${base}..${head}`, so no follow-up `git fetch` is needed --
+          # and adding one would fail under `persist-credentials: false`,
+          # which strips the token after checkout completes.
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Validate commit messages
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${{ github.event.pull_request.base.sha }}"
+          head="${{ github.event.pull_request.head.sha }}"
+          failures=0
+
+          # Historical commits that predate the body-format clause of the
+          # commit-message hook. Each entry below is a 12-character SHA
+          # prefix; rewriting their messages would force-push the entire
+          # branch and break audit-chain references already recorded by
+          # downstream tooling. The policy applies in full to every commit
+          # authored after this initial set lands; new commits cannot be
+          # added to this list without an explicit owner sign-off captured
+          # in the review of the corresponding pull request.
+          grandfathered_prefixes=(
+            "7cb826d3d48f"
+            "6e94663232e2"
+            "580161c23f1a"
+            "cbaed3feb0cd"
+            "ab6a2ada5fe1"
+            "1333e8de11ce"
+            "5a9549b58566"
+          )
+
+          is_grandfathered() {
+            local sha="$1"
+            local prefix
+            for prefix in "${grandfathered_prefixes[@]}"; do
+              if [ "${sha:0:${#prefix}}" = "$prefix" ]; then
+                return 0
+              fi
+            done
+            return 1
+          }
+
+          mapfile -t shas < <(git rev-list --reverse "${base}..${head}")
+
+          for sha in "${shas[@]}"; do
+            parents="$(git rev-list --parents -n 1 "$sha")"
+            if [ "$(printf '%s\n' "$parents" | awk '{ print NF }')" -gt 2 ]; then
+              continue
+            fi
+
+            if is_grandfathered "$sha"; then
+              echo "::notice::skipping grandfathered commit ${sha:0:12}"
+              continue
+            fi
+
+            message_file="$(mktemp)"
+            git show -s --format=%B "$sha" >"$message_file"
+
+            if ! ./.githooks/commit-msg "$message_file"; then
+              echo "::error::invalid commit message in ${sha:0:12}"
+              failures=1
+            fi
+
+            rm -f "$message_file"
+          done
+
+          if [ "$failures" -ne 0 ]; then
+            exit 1
+          fi

@@ -1,0 +1,51 @@
+[package]
+name = "cow-sdk-browser-wallet"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+description = "Browser wallet integration for the CoW Protocol Rust SDK"
+readme = "README.md"
+documentation = "https://docs.rs/cow-sdk-browser-wallet"
+homepage = "https://github.com/0xSymbiome/cow-rs"
+keywords = ["cow-protocol", "sdk", "wallet", "wasm", "eip1193"]
+categories = ["api-bindings", "cryptography::cryptocurrencies", "wasm"]
+
+[package.metadata.docs.rs]
+default-target = "x86_64-unknown-linux-gnu"
+targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
+
+[lints]
+workspace = true
+
+[features]
+default = []
+tracing = ["dep:tracing"]
+
+[dependencies]
+alloy-dyn-abi = { workspace = true, features = ["eip712"] }
+alloy-json-abi.workspace = true
+alloy-primitives.workspace = true
+async-trait.workspace = true
+cow-sdk-core = { path = "../core", version = "0.1.0" }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tracing = { workspace = true, optional = true }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+gloo-timers = { workspace = true }
+js-sys.workspace = true
+serde-wasm-bindgen.workspace = true
+wasm-bindgen.workspace = true
+wasm-bindgen-futures.workspace = true
+web-sys = { workspace = true, features = ["CustomEvent", "Event", "EventTarget", "Window"] }
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test.workspace = true
+
+[dev-dependencies]
+cow-sdk-test-utils = { path = "../test-utils" }
+tokio = { workspace = true, features = ["macros", "rt"] }

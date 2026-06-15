@@ -1,0 +1,55 @@
+{
+  "surface": "cow-shed-execute-hooks-digest",
+  "sources": {
+    "cow-shed": {
+      "commit": "e15a131d626edbf779c8e44451566e2c36dbdb7d",
+      "refs": [
+        "src/LibAuthenticatedHooks.sol#CALL_TYPE_HASH,EXECUTE_HOOKS_TYPE_HASH,hashToSign"
+      ]
+    }
+  },
+  "standards": [
+    "EIP-712"
+  ],
+  "version": "1.0.1",
+  "proxy": "0x66545B93A314e5BdEC9E5Ff9c4D2C7054e6afb04",
+  "call_type_hash": "0x3fad4ba9aae5ad2d96a46400ed3ee818b640829b240f127d0d98b9430f2aa136",
+  "execute_hooks_type_hash": "0x0da4f06c268cfd5c18a3ea3b26fc8357dd240b89ea101e6b7f7591f029707394",
+  "message": {
+    "calls": [
+      {
+        "target": "0x1111111111111111111111111111111111111111",
+        "value": "0",
+        "callData": "0x12345678",
+        "allowFailure": false,
+        "isDelegateCall": false
+      },
+      {
+        "target": "0x2222222222222222222222222222222222222222",
+        "value": "1",
+        "callData": "0xabcdef",
+        "allowFailure": true,
+        "isDelegateCall": true
+      }
+    ],
+    "nonce": "0x0101010101010101010101010101010101010101010101010101010101010101",
+    "deadline": "1893456000"
+  },
+  "rows": [
+    {
+      "chain_id": 1,
+      "domain_separator": "0x348ef3cb099421de4ecc01f3436bdb794ef5e4c9e036ce3ccaabd0b7a9bc80ad",
+      "digest": "0xe489e6d7ce9431d0131bb4bf6a5b2919ad6e8da96b6130ff3a93f3bc806eb952"
+    },
+    {
+      "chain_id": 100,
+      "domain_separator": "0xdfe8c56847a4d3a48941a5edaf657e80eb4b75f4b7fef99b62f1cb855098249d",
+      "digest": "0x368c4d21546a54f9e59699b3887a2e83893c24f0a955623f98495e8494439264"
+    },
+    {
+      "chain_id": 42161,
+      "domain_separator": "0xb89bdf90bf9c36369e6eb41d31eee2c80a49442d49bf020abc47fd964d3b1446",
+      "digest": "0x77a096fa2105acb22bf3848ecb5baeafbbf72ab180c94efaa2ba0ab60c0b27e0"
+    }
+  ]
+}

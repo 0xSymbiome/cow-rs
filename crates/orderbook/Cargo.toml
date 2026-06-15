@@ -1,0 +1,50 @@
+[package]
+name = "cow-sdk-orderbook"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+description = "Typed CoW Protocol orderbook client models and decoding helpers"
+readme = "README.md"
+documentation = "https://docs.rs/cow-sdk-orderbook"
+homepage = "https://github.com/0xSymbiome/cow-rs"
+keywords = ["cow-protocol", "sdk", "orderbook", "api", "trading"]
+categories = ["api-bindings", "cryptography::cryptocurrencies"]
+
+[package.metadata.docs.rs]
+default-target = "x86_64-unknown-linux-gnu"
+targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
+
+[lints]
+workspace = true
+
+[features]
+default = []
+tracing = ["dep:tracing", "cow-sdk-core/tracing"]
+
+[dependencies]
+cow-sdk-core = { path = "../core", version = "0.1.0", features = ["transport-policy"] }
+async-trait.workspace = true
+http.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+thiserror.workspace = true
+tracing = { workspace = true, optional = true }
+url.workspace = true
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+reqwest = { workspace = true, features = ["rustls", "gzip"] }
+
+[dev-dependencies]
+cow-sdk-test-utils = { path = "../test-utils" }
+criterion.workspace = true
+proptest.workspace = true
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "test-util", "time"] }
+trybuild.workspace = true
+wiremock.workspace = true
+
+[[bench]]
+name = "quote_cost"
+harness = false

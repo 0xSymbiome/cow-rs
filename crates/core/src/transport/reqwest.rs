@@ -1,0 +1,508 @@
+//! Native [`reqwest`]-backed [`HttpTransport`] default.
+//!
+//! [`ReqwestTransport`] provides a ready-to-use production implementation of
+//! [`HttpTransport`] for every non-`wasm32` target. The adapter applies the
+//! transport-layer error classification contract described on
+//! [`TransportErrorClass`]: every `reqwest::Error` passes through
+//! [`reqwest::Error::without_url`] before the adapter inspects it so no URL
+//! leaks through the typed error surface, and the failure is tagged with the
+//! appropriate class through the documented `is_timeout`, `is_connect`,
+//! `is_redirect`, `is_decode`, `is_body`, `is_builder`, `is_request`,
+//! `is_status`, fallthrough partition.
+//!
+//! Non-2xx responses are captured as [`TransportError::HttpStatus`] with the
+//! numeric status code, response headers, and raw body so the calling layer
+//! receives the response through the typed error channel instead of through
+//! `Ok(String)`.
+//! Per-call headers merge with any constructor-configured defaults, and the
+//! optional per-call timeout overrides the transport's default timeout when
+//! supplied.
+//!
+//! URL-bearing configuration is held in the [`Redacted`] newtype so the base
+//! URL never appears in debug, display, or serialized output. Callers that
+//! need to observe the configured URL for audit or telemetry purposes unwrap
+//! it explicitly through [`Redacted::as_inner`].
+
+use std::time::Duration;
+
+use ::reqwest::{
+    Client, RequestBuilder,
+    header::{HeaderMap, HeaderName, HeaderValue},
+};
+use async_trait::async_trait;
+
+use crate::{
+    config::{DEFAULT_MAX_RESPONSE_BYTES, DEFAULT_TCP_KEEPALIVE, DEFAULT_USER_AGENT},
+    redaction::Redacted,
+    transport::{
+        error::TransportError,
+        http::{HttpTransport, TransportResponse},
+    },
+    validation::TransportErrorClass,
+};
+
+/// Configuration bundle for [`ReqwestTransport`].
+///
+/// The base URL is wrapped in [`Redacted`] so it is never emitted through
+/// debug, display, or serde representations of the configuration value.
+#[derive(Debug, Clone)]
+pub struct ReqwestTransportConfig {
+    base_url: Redacted<String>,
+    user_agent: String,
+    tcp_keepalive: Duration,
+    timeout: Option<Duration>,
+    max_response_bytes: usize,
+}
+
+impl ReqwestTransportConfig {
+    /// Creates a configuration with the supplied base URL and default
+    /// transport policy.
+    ///
+    /// The default policy applies [`DEFAULT_USER_AGENT`],
+    /// [`DEFAULT_TCP_KEEPALIVE`], and no explicit request timeout.
+    /// Bare config has `timeout: None` by design. The default request
+    /// timeout is applied via `HttpClientPolicy::new` when this config is
+    /// wrapped through the orderbook builder. To get the policy default,
+    /// prefer constructing through `OrderbookApi::builder()` over
+    /// instantiating `ReqwestTransport` directly.
+    #[must_use]
+    pub fn new(base_url: impl Into<String>) -> Self {
+        Self {
+            base_url: Redacted::new(base_url.into()),
+            user_agent: DEFAULT_USER_AGENT.to_owned(),
+            tcp_keepalive: DEFAULT_TCP_KEEPALIVE,
+            timeout: None,
+            max_response_bytes: DEFAULT_MAX_RESPONSE_BYTES,
+        }
+    }
+
+    /// Returns a copy of the configuration with the supplied user-agent.
+    ///
+    /// The value is stored as-is; it is not validated here. An invalid HTTP
+    /// header value surfaces as [`TransportError::Configuration`] when
+    /// [`ReqwestTransport::new`] builds the client.
+    #[must_use]
+    pub fn with_user_agent(mut self, user_agent: impl Into<String>) -> Self {
+        self.user_agent = user_agent.into();
+        self
+    }
+
+    /// Returns a copy of the configuration with an explicit TCP keepalive.
+    #[must_use]
+    pub const fn with_tcp_keepalive(mut self, tcp_keepalive: Duration) -> Self {
+        self.tcp_keepalive = tcp_keepalive;
+        self
+    }
+
+    /// Returns a copy of the configuration with an explicit request timeout.
+    #[must_use]
+    pub const fn with_timeout(mut self, timeout: Duration) -> Self {
+        self.timeout = Some(timeout);
+        self
+    }
+
+    /// Returns a copy of the configuration with an explicit maximum
+    /// response-body size, in bytes.
+    #[must_use]
+    pub const fn with_max_response_bytes(mut self, max_response_bytes: usize) -> Self {
+        self.max_response_bytes = max_response_bytes;
+        self
+    }
+
+    /// Returns the base URL as a borrowed string for deliberate inspection.
+    #[must_use]
+    pub fn base_url(&self) -> &str {
+        self.base_url.as_inner()
+    }
+
+    /// Returns the configured user-agent header value.
+    #[must_use]
+    pub fn user_agent(&self) -> &str {
+        &self.user_agent
+    }
+
+    /// Returns the configured TCP keepalive duration.
+    #[must_use]
+    pub const fn tcp_keepalive(&self) -> Duration {
+        self.tcp_keepalive
+    }
+
+    /// Returns the configured maximum response-body size, in bytes.
+    #[must_use]
+    pub const fn max_response_bytes(&self) -> usize {
+        self.max_response_bytes
+    }
+}
+
+/// Native [`HttpTransport`] implementation backed by a shared [`reqwest::Client`].
+#[derive(Debug, Clone)]
+pub struct ReqwestTransport {
+    client: Client,
+    base_url: Redacted<String>,
+    max_response_bytes: usize,
+}
+
+impl ReqwestTransport {
+    /// Builds a transport from the supplied configuration.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TransportError::Configuration`] when the underlying HTTP
+    /// client could not be constructed from the supplied policy (for example
+    /// when the user-agent cannot be encoded as a header value).
+    pub fn new(config: ReqwestTransportConfig) -> Result<Self, TransportError> {
+        let base_url = config.base_url;
+        let trimmed = base_url.as_inner().trim_end_matches('/').to_owned();
+        let base_url = Redacted::new(trimmed);
+
+        let mut builder = Client::builder()
+            .user_agent(config.user_agent)
+            .tcp_keepalive(config.tcp_keepalive);
+        if let Some(timeout) = config.timeout {
+            builder = builder.timeout(timeout);
+        }
+
+        let client = builder
+            .build()
+            .map_err(|error| TransportError::Configuration {
+                message: Redacted::new(format!("could not build reqwest client: {error}")),
+            })?;
+
+        Ok(Self {
+            client,
+            base_url,
+            max_response_bytes: config.max_response_bytes,
+        })
+    }
+
+    /// Builds a transport from an existing client and a base URL.
+    ///
+    /// Callers that already share a [`reqwest::Client`] across subsystems can
+    /// reuse it here without rebuilding the TLS stack.
+    #[must_use]
+    pub fn with_client(client: Client, base_url: impl Into<String>) -> Self {
+        let trimmed = base_url.into().trim_end_matches('/').to_owned();
+        Self {
+            client,
+            base_url: Redacted::new(trimmed),
+            max_response_bytes: DEFAULT_MAX_RESPONSE_BYTES,
+        }
+    }
+
+    /// Returns the shared [`reqwest::Client`] used by this transport.
+    #[must_use]
+    pub const fn client(&self) -> &Client {
+        &self.client
+    }
+
+    /// Returns the configured base URL for deliberate inspection.
+    #[must_use]
+    pub fn base_url(&self) -> &str {
+        self.base_url.as_inner()
+    }
+
+    fn resolve_url(&self, path: &str) -> String {
+        super::join_request_url(self.base_url.as_inner(), path)
+    }
+
+    fn apply_call_overrides(
+        builder: RequestBuilder,
+        headers: &[(String, String)],
+        timeout: Option<Duration>,
+    ) -> Result<RequestBuilder, TransportError> {
+        let mut builder = builder;
+        if !headers.is_empty() {
+            let header_map = build_header_map(headers)?;
+            builder = builder.headers(header_map);
+        }
+        if let Some(timeout) = timeout {
+            builder = builder.timeout(timeout);
+        }
+        Ok(builder)
+    }
+
+    async fn dispatch(
+        &self,
+        builder: RequestBuilder,
+        method: &str,
+        path: &str,
+        bytes_sent: usize,
+    ) -> Result<TransportResponse, TransportError> {
+        let max_response_bytes = self.max_response_bytes;
+        #[cfg(feature = "tracing")]
+        {
+            use tracing::Instrument as _;
+
+            let endpoint = crate::transport::span_endpoint(path);
+            let span = tracing::info_span!(
+                target: "cow_sdk::transport",
+                "transport.dispatch",
+                method = method,
+                endpoint = endpoint,
+                bytes_sent = bytes_sent as u64,
+                bytes_received = tracing::field::Empty,
+            );
+            let recorder = span.clone();
+            async move {
+                let result = dispatch_request(builder, max_response_bytes).await;
+                if let Some(bytes_received) = bytes_received(&result) {
+                    recorder.record("bytes_received", bytes_received as u64);
+                }
+                result
+            }
+            .instrument(span)
+            .await
+        }
+
+        #[cfg(not(feature = "tracing"))]
+        {
+            let _ = (method, path, bytes_sent);
+            dispatch_request(builder, max_response_bytes).await
+        }
+    }
+}
+
+#[async_trait]
+impl HttpTransport for ReqwestTransport {
+    async fn get(
+        &self,
+        path: &str,
+        headers: &[(String, String)],
+        timeout: Option<Duration>,
+    ) -> Result<TransportResponse, TransportError> {
+        let url = self.resolve_url(path);
+        let builder = Self::apply_call_overrides(self.client.get(&url), headers, timeout)?;
+        self.dispatch(builder, "GET", path, 0).await
+    }
+
+    async fn post(
+        &self,
+        path: &str,
+        body: &str,
+        headers: &[(String, String)],
+        timeout: Option<Duration>,
+    ) -> Result<TransportResponse, TransportError> {
+        let url = self.resolve_url(path);
+        let builder = self.client.post(&url).body(body.to_owned());
+        let builder = Self::apply_call_overrides(builder, headers, timeout)?;
+        self.dispatch(builder, "POST", path, body.len()).await
+    }
+
+    async fn put(
+        &self,
+        path: &str,
+        body: &str,
+        headers: &[(String, String)],
+        timeout: Option<Duration>,
+    ) -> Result<TransportResponse, TransportError> {
+        let url = self.resolve_url(path);
+        let builder = self.client.put(&url).body(body.to_owned());
+        let builder = Self::apply_call_overrides(builder, headers, timeout)?;
+        self.dispatch(builder, "PUT", path, body.len()).await
+    }
+
+    async fn delete(
+        &self,
+        path: &str,
+        body: &str,
+        headers: &[(String, String)],
+        timeout: Option<Duration>,
+    ) -> Result<TransportResponse, TransportError> {
+        let url = self.resolve_url(path);
+        let builder = self.client.delete(&url).body(body.to_owned());
+        let builder = Self::apply_call_overrides(builder, headers, timeout)?;
+        self.dispatch(builder, "DELETE", path, body.len()).await
+    }
+}
+
+async fn dispatch_request(
+    builder: RequestBuilder,
+    max_response_bytes: usize,
+) -> Result<TransportResponse, TransportError> {
+    let response = builder.send().await.map_err(map_reqwest_error)?;
+    let status = response.status();
+    let status_code = status.as_u16();
+    let headers = response_headers(&response);
+    if status.is_success() {
+        let body = read_body_capped(response, max_response_bytes).await?;
+        return Ok(TransportResponse::new(status_code, headers, body));
+    }
+
+    let body = match read_body_capped(response, max_response_bytes).await {
+        Ok(text) => text,
+        Err(
+            error @ TransportError::Transport {
+                class: TransportErrorClass::ResponseTooLarge,
+                ..
+            },
+        ) => return Err(error),
+        Err(error) => format!("<body unavailable: {error}>"),
+    };
+    Err(TransportError::HttpStatus {
+        status: status_code,
+        headers,
+        body: Redacted::new(body),
+    })
+}
+
+/// Reads a response body, refusing to buffer more than `max_response_bytes`
+/// decoded bytes.
+///
+/// The body is consumed as a stream of chunks with a pre-extend check, so the
+/// accumulator never exceeds the limit and an over-large (or
+/// decompression-amplified) body is rejected after at most one over-limit
+/// chunk. The limit bounds decoded bytes, which is the only sound bound when
+/// transparent decompression is enabled, and the bytes are decoded leniently
+/// so a non-UTF-8 body is handled the same way the prior text read handled it.
+async fn read_body_capped(
+    mut response: ::reqwest::Response,
+    max_response_bytes: usize,
+) -> Result<String, TransportError> {
+    let mut buf: Vec<u8> = Vec::new();
+    while let Some(chunk) = response.chunk().await.map_err(map_reqwest_error)? {
+        if buf.len() + chunk.len() > max_response_bytes {
+            return Err(TransportError::Transport {
+                class: TransportErrorClass::ResponseTooLarge,
+                detail: Redacted::new(format!(
+                    "response body exceeded {max_response_bytes} byte limit"
+                )),
+            });
+        }
+        buf.extend_from_slice(&chunk);
+    }
+    Ok(String::from_utf8_lossy(&buf).into_owned())
+}
+
+#[cfg(feature = "tracing")]
+fn bytes_received(result: &Result<TransportResponse, TransportError>) -> Option<usize> {
+    match result {
+        Ok(response) => Some(response.body().len()),
+        Err(TransportError::HttpStatus { body, .. }) => Some(body.as_inner().len()),
+        Err(_) => None,
+    }
+}
+
+fn build_header_map(headers: &[(String, String)]) -> Result<HeaderMap, TransportError> {
+    let mut header_map = HeaderMap::with_capacity(headers.len());
+    for (name, value) in headers {
+        let header_name = HeaderName::from_bytes(name.as_bytes()).map_err(|error| {
+            TransportError::Configuration {
+                message: Redacted::new(format!("invalid header name: {error}")),
+            }
+        })?;
+        let header_value =
+            HeaderValue::from_str(value).map_err(|error| TransportError::Configuration {
+                message: Redacted::new(format!("invalid header value: {error}")),
+            })?;
+        header_map.append(header_name, header_value);
+    }
+    Ok(header_map)
+}
+
+fn response_headers(response: &::reqwest::Response) -> Vec<(String, Redacted<String>)> {
+    response
+        .headers()
+        .iter()
+        .map(|(name, value)| {
+            (
+                name.as_str().to_owned(),
+                Redacted::new(String::from_utf8_lossy(value.as_bytes()).into_owned()),
+            )
+        })
+        .collect()
+}
+
+/// Converts a `reqwest::Error` into the typed [`TransportError::Transport`]
+/// variant.
+///
+/// The helper strips any attached URL through
+/// [`reqwest::Error::without_url`] before classifying it through the
+/// documented [`TransportErrorClass`] partition. Downstream crates that
+/// bridge their own `reqwest::Error` wraps share the classification by
+/// routing every failure through this helper.
+///
+/// # Examples
+///
+/// Classify a builder-layer `reqwest::Error` and observe that the
+/// redaction path keeps the URL out of the rendered error text:
+///
+/// ```
+/// use cow_sdk_core::TransportErrorClass;
+/// use cow_sdk_core::transport::classify_reqwest_error;
+///
+/// let client = reqwest::Client::new();
+/// let builder_error = client
+///     .request(reqwest::Method::GET, "http://[invalid ipv6]/")
+///     .build()
+///     .expect_err("malformed URL must fail at the builder layer");
+///
+/// let transport_error = classify_reqwest_error(builder_error);
+/// assert_eq!(transport_error.class(), Some(TransportErrorClass::Builder));
+/// assert!(!format!("{transport_error}").contains("invalid ipv6"));
+/// ```
+///
+/// Timeout errors classify through the same helper, and the attached URL is
+/// stripped before the detail message is rendered:
+///
+/// ```no_run
+/// use std::time::Duration;
+///
+/// use cow_sdk_core::TransportErrorClass;
+/// use cow_sdk_core::transport::classify_reqwest_error;
+///
+/// # async fn demonstrate_timeout() {
+/// let client = reqwest::Client::builder()
+///     .timeout(Duration::from_millis(1))
+///     .build()
+///     .expect("client must build");
+/// let timeout_error = client
+///     .get("https://example.invalid/slow")
+///     .send()
+///     .await
+///     .expect_err("an unreachable host exceeds the 1ms timeout");
+///
+/// let transport_error = classify_reqwest_error(timeout_error);
+/// // The class surface is partitioned; timeouts always map to `Timeout`.
+/// let _: Option<TransportErrorClass> = transport_error.class();
+/// // The attached URL never appears in the rendered error text.
+/// assert!(!format!("{transport_error}").contains("example.invalid"));
+/// # }
+/// ```
+#[must_use]
+pub fn classify_reqwest_error(error: ::reqwest::Error) -> TransportError {
+    map_reqwest_error(error)
+}
+
+fn map_reqwest_error(error: ::reqwest::Error) -> TransportError {
+    let sanitized = error.without_url();
+    let class = classify(&sanitized);
+    TransportError::Transport {
+        class,
+        detail: Redacted::new(sanitized.to_string()),
+    }
+}
+
+fn classify(error: &::reqwest::Error) -> TransportErrorClass {
+    if error.is_timeout() {
+        return TransportErrorClass::Timeout;
+    }
+    if error.is_connect() {
+        return TransportErrorClass::Connect;
+    }
+    if error.is_redirect() {
+        return TransportErrorClass::Redirect;
+    }
+    if error.is_decode() {
+        TransportErrorClass::Decode
+    } else if error.is_body() {
+        TransportErrorClass::Body
+    } else if error.is_builder() {
+        TransportErrorClass::Builder
+    } else if error.is_status() {
+        TransportErrorClass::Status
+    } else if error.is_request() {
+        TransportErrorClass::Request
+    } else {
+        TransportErrorClass::Other
+    }
+}

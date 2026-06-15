@@ -1,0 +1,19 @@
+target/
+# Fuzz corpora are not committed. Binary seeds and libFuzzer mutation
+# accumulators stay in local working copies and are regenerated on
+# demand; the harnesses under fuzz/fuzz_targets/ and PROPERTIES.md are
+# the tracked record. See fuzz/README.md.
+fuzz/corpus/
+fuzz/artifacts/
+fuzz/target/
+playwright-report/
+test-results/
+pkg/
+node_modules/
+.local
+.agents
+crates/wasm/pkg/
+crates/wasm/npm/dist/
+crates/wasm/npm/package.json
+crates/wasm/npm/*.tgz
+e2e/wasm-typescript/dist/

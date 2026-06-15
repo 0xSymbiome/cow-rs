@@ -1,0 +1,27 @@
+{
+  "name": "cow-sdk-wasm-workers-e2e",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.0.9",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "build": "bash ../../crates/wasm/npm/scripts/build.sh",
+    "clean": "node -e \"const fs=require('node:fs'); for (const p of ['node_modules','.wrangler']) fs.rmSync(p,{recursive:true,force:true})\"",
+    "test": "vitest run --config vitest.config.ts",
+    "test:type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "cow-sdk-wasm-test-package": "file:../../crates/wasm/npm"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "0.16.13",
+    "@cloudflare/workers-types": "4.20260604.1",
+    "@types/node": "25.9.1",
+    "@types/ws": "8.18.1",
+    "typescript": "6.0.3",
+    "vitest": "4.1.8",
+    "wrangler": "4.98.0"
+  }
+}

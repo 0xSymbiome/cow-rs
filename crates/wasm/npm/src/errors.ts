@@ -1,0 +1,244 @@
+import type { SchemaVersion } from "./envelope.js";
+
+/**
+ * Coarse, switchable classification of an orderbook rejection. Lets a consumer
+ * branch on the action a rejection calls for — fix the request, fund the
+ * wallet, re-quote, wait, or escalate — without matching every wire tag. The
+ * `__unknown` member is the forward-compatible sentinel for a category a newer
+ * SDK may introduce.
+ */
+export type OrderBookRejectionCategory =
+  | "authorization"
+  | "insufficientFunds"
+  | "invalidOrder"
+  | "notFound"
+  | "conflict"
+  | "unfulfillable"
+  | "server"
+  | "__unknown";
+
+export type CowError =
+  | { schemaVersion: "v1"; kind: "invalidInput"; message: string; field?: string }
+  | { schemaVersion: "v1"; kind: "unknownEnumValue"; message: string; field: string; value: string }
+  | { schemaVersion: "v1"; kind: "unsupportedChain"; message: string; chainId: number }
+  | {
+      schemaVersion: "v1";
+      kind: "walletRequest";
+      method: string;
+      code?: number;
+      message: string;
+    }
+  | { schemaVersion: "v1"; kind: "walletTimeout"; message: string; timeoutMs: number }
+  | {
+      schemaVersion: "v1";
+      kind: "transport";
+      class: string;
+      message: string;
+      status?: number;
+      headers?: [string, string][];
+      body?: string;
+    }
+  | {
+      schemaVersion: "v1";
+      kind: "orderbook";
+      code?: string;
+      category?: OrderBookRejectionCategory;
+      message: string;
+      // Mirrors the native `OrderbookError::is_retryable` / `backoff_hint`
+      // verdict the Rust core emits (always serialized / parsed `Retry-After`),
+      // so a JavaScript consumer driving its own retry loop reaches the same
+      // decision without re-deriving the retryable-status set.
+      retryable: boolean;
+      retryAfterMs?: number;
+    }
+  | { schemaVersion: "v1"; kind: "subgraph"; message: string }
+  | { schemaVersion: "v1"; kind: "signing"; message: string }
+  | { schemaVersion: "v1"; kind: "appData"; class?: string; message: string }
+  | { schemaVersion: "v1"; kind: "cancelled"; message: string }
+  | { schemaVersion: "v1"; kind: "internal"; message: string }
+  | { schemaVersion: SchemaVersion; kind: "__unknown"; message: string; raw: unknown };
+
+const knownKinds = new Set([
+  "invalidInput",
+  "unknownEnumValue",
+  "unsupportedChain",
+  "walletRequest",
+  "walletTimeout",
+  "transport",
+  "orderbook",
+  "subgraph",
+  "signing",
+  "appData",
+  "cancelled",
+  "internal",
+  "__unknown"
+]);
+
+export function normalizeError(raw: unknown): CowError {
+  if (isRecord(raw)) {
+    const normalized = camelizeKnownFields(raw);
+    const kind = typeof normalized.kind === "string" ? normalized.kind : undefined;
+
+    if (kind && knownKinds.has(kind)) {
+      const schemaVersion = normalized.schemaVersion === "__unknown" ? "__unknown" : "v1";
+      if (kind === "__unknown") {
+        return {
+          schemaVersion,
+          kind: "__unknown",
+          message: unknownMessage(),
+          raw: normalized.raw ?? raw
+        };
+      }
+
+      return withActionableMessage({
+        ...normalized,
+        schemaVersion,
+        kind
+      } as CowError);
+    }
+
+    if (kind) {
+      return {
+        schemaVersion: normalized.schemaVersion === "__unknown" ? "__unknown" : "v1",
+        kind: "__unknown",
+        message: unknownMessage(),
+        raw
+      };
+    }
+  }
+
+  if (raw instanceof Error) {
+    return (
+      classifyDeserializationFailure(raw.message) ?? {
+        schemaVersion: "v1",
+        kind: "internal",
+        message: internalMessage(raw.message)
+      }
+    );
+  }
+
+  return (
+    classifyDeserializationFailure(String(raw)) ?? {
+      schemaVersion: "v1",
+      kind: "internal",
+      message: internalMessage(String(raw))
+    }
+  );
+}
+
+// Input-DTO deserialization failures cross the wasm boundary as a plain
+// `Error`: the generated wasm-bindgen glue throws the serde message, so it
+// never carries a structured `kind`. These are CALLER input errors — a value
+// that does not match the documented input type (unknown enum variant,
+// missing/unknown field, wrong type) — not SDK-internal faults, so they must
+// normalize to `invalidInput` rather than `internal` (whose contract implies
+// an SDK bug). The verbatim detail is preserved because it already names the
+// offending field/variant and the expected set, e.g.
+// "unknown variant `teleport`, expected `sell` or `buy`".
+const DESERIALIZATION_FAILURE_PATTERNS: readonly RegExp[] = [
+  /unknown variant `/,
+  /missing field `/,
+  /unknown field `/,
+  /duplicate field `/,
+  /invalid type:/,
+  /invalid length\b/,
+  /invalid value:/,
+  /data did not match any variant/
+];
+
+function classifyDeserializationFailure(message: string): CowError | undefined {
+  if (!DESERIALIZATION_FAILURE_PATTERNS.some((pattern) => pattern.test(message))) {
+    return undefined;
+  }
+  const detail = message.replace(/^Error:\s*/, "");
+  const field = detail.match(/(?:missing|unknown|duplicate) field `([^`]+)`/)?.[1];
+  const reason = `Invalid SDK input: ${detail}. Check the value against the documented input type and retry.`;
+  return field !== undefined
+    ? { schemaVersion: "v1", kind: "invalidInput", field, message: reason }
+    : { schemaVersion: "v1", kind: "invalidInput", message: reason };
+}
+
+export function cancelledError(): CowError {
+  return {
+    schemaVersion: "v1",
+    kind: "cancelled",
+    message: "Operation was cancelled. Create a fresh AbortController or retry without an already-aborted signal."
+  };
+}
+
+export function invalidInput(field: string, reason: string): CowError {
+  return {
+    schemaVersion: "v1",
+    kind: "invalidInput",
+    field,
+    message: `Invalid \`${field}\`: ${reason}. Check the value supplied for \`${field}\` and retry with a valid SDK input.`
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function camelizeKnownFields(raw: Record<string, unknown>): Record<string, unknown> {
+  const normalized: Record<string, unknown> = { ...raw };
+  copyField(normalized, raw, "schema_version", "schemaVersion");
+  copyField(normalized, raw, "chain_id", "chainId");
+  copyField(normalized, raw, "timeout_ms", "timeoutMs");
+  copyField(normalized, raw, "order_uid", "orderUid");
+  copyField(normalized, raw, "order_uids", "orderUids");
+  copyField(normalized, raw, "status_code", "status");
+  return normalized;
+}
+
+function copyField(
+  target: Record<string, unknown>,
+  source: Record<string, unknown>,
+  from: string,
+  to: string
+): void {
+  if (Object.hasOwn(source, from) && !Object.hasOwn(target, to)) {
+    target[to] = source[from];
+  }
+  delete target[from];
+}
+
+function withActionableMessage(error: CowError): CowError {
+  if ("message" in error && typeof error.message === "string" && error.message.length > 0) {
+    return error;
+  }
+
+  switch (error.kind) {
+    case "unknownEnumValue":
+      return {
+        ...error,
+        message: `Unsupported value \`${error.value}\` for \`${error.field}\`. Use one of the documented values for this field.`
+      };
+    case "unsupportedChain":
+      return {
+        ...error,
+        message: `Unsupported chain ID ${error.chainId}. Call supportedChainIds() before constructing requests and route unsupported networks to another integration.`
+      };
+    case "walletTimeout":
+      return {
+        ...error,
+        message: `Wallet request timed out after ${error.timeoutMs} ms. Increase walletConfig.timeoutMs or ask the user to approve the wallet request before the timeout.`
+      };
+    case "cancelled":
+      return cancelledError();
+    case "__unknown":
+      return {
+        ...error,
+        message: unknownMessage()
+      };
+    default:
+      return error;
+  }
+}
+
+function internalMessage(detail: string): string {
+  return `SDK internal error: ${detail}. This indicates serialization or invariant failure; retry with the same inputs only after checking the reported input shape.`;
+}
+
+function unknownMessage(): string {
+  return "SDK received an unrecognized error variant. Inspect raw, preserve it in logs without credentials, and update the SDK if the variant is now documented.";
+}

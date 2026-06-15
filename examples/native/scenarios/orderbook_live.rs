@@ -1,0 +1,63 @@
+//! Opt-in live orderbook version probe.
+//!
+//! Calls `OrderbookApi::version` against the real orderbook, configured from
+//! optional environment variables (chain, environment, base URL, and a
+//! `Redacted` API key). The one native scenario that contacts a live service; it
+//! is excluded from the deterministic runner.
+
+use std::error::Error;
+
+use serde_json::json;
+
+use cow_sdk::core::Redacted;
+use cow_sdk::orderbook::{ApiContext, ExternalHostPolicy, OrderbookApi};
+
+use cow_sdk_examples_native::support::{
+    optional_cow_env, optional_env, optional_supported_chain_id,
+};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
+    // Optional configuration from the environment; everything has a default, so
+    // the probe runs with no setup. The API key is wrapped in `Redacted` so it
+    // never appears in Debug output or logs.
+    let env = optional_cow_env("COW_SMOKE_ORDERBOOK_ENV")?;
+    let chain_id = optional_supported_chain_id("COW_SMOKE_ORDERBOOK_CHAIN_ID")?;
+    let api_key = optional_env("COW_SMOKE_ORDERBOOK_API_KEY").map(Redacted::new);
+    let base_url_override = optional_env("COW_SMOKE_ORDERBOOK_BASE_URL");
+
+    // Assemble the API context, attaching the partner API key when present.
+    let mut context = ApiContext::new(chain_id, env);
+    if let Some(api_key) = api_key {
+        context = context.with_api_key(api_key);
+    }
+    let resolved_base_url = base_url_override
+        .clone()
+        .unwrap_or(context.resolved_base_url()?);
+
+    // Build the client. A base-url override needs the AllowAny host policy,
+    // since it may point off the built-in CoW hosts.
+    let orderbook = if let Some(base_url) = base_url_override {
+        OrderbookApi::builder_from_context(context)
+            .external_host_policy(ExternalHostPolicy::AllowAny)
+            .base_url(base_url)
+            .build()?
+    } else {
+        OrderbookApi::builder_from_context(context).build()?
+    };
+
+    // The one live call: fetch the deployed orderbook version.
+    let version = orderbook.version().await?;
+    let report = json!({
+        "surface": "cow_sdk::orderbook::OrderbookApi",
+        "mode": "live",
+        "env": env.as_str(),
+        "chainId": u64::from(chain_id),
+        "partnerApi": orderbook.context().api_key.is_some(),
+        "baseUrl": resolved_base_url,
+        "version": version,
+    });
+
+    println!("{}", serde_json::to_string_pretty(&report)?);
+    Ok(())
+}

@@ -1,0 +1,87 @@
+[package]
+name = "cow-sdk"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+description = "Facade crate for CoW Protocol Rust SDK surfaces"
+readme = "README.md"
+documentation = "https://docs.rs/cow-sdk"
+homepage = "https://github.com/0xSymbiome/cow-rs"
+keywords = ["cow-protocol", "sdk", "trading", "defi", "ethereum"]
+categories = ["api-bindings", "cryptography::cryptocurrencies"]
+
+[package.metadata.docs.rs]
+features = ["browser-wallet", "cow-shed", "testing"]
+default-target = "x86_64-unknown-linux-gnu"
+targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
+
+[lib]
+path = "src/lib.rs"
+
+[lints]
+workspace = true
+
+[features]
+default = []
+alloy = [
+    "dep:cow-sdk-alloy",
+    "cow-sdk-alloy/eip712",
+    "alloy-provider",
+    "alloy-signer",
+]
+alloy-provider = ["dep:cow-sdk-alloy-provider"]
+alloy-signer = [
+    "dep:cow-sdk-alloy-signer",
+    "cow-sdk-alloy-signer/eip712",
+]
+browser-wallet = ["dep:cow-sdk-browser-wallet"]
+# Opt-in COW Shed account-abstraction hooks. Off by default, so the surface is
+# never on the default `cow-sdk` dependency closure (ADR 0049). Re-exports the
+# `cow-sdk-contracts` `cow_shed` module as `cow_sdk::cow_shed`.
+cow-shed = ["cow-sdk-contracts/cow-shed"]
+# Opt-in read-only subgraph analytics. Off by default, so the crate is never on
+# the default `cow-sdk` dependency closure. Re-exports the `cow-sdk-subgraph`
+# leaf as `cow_sdk::subgraph` and lifts `SubgraphError` into `CowError`.
+subgraph = ["dep:cow-sdk-subgraph"]
+# Re-exports the opt-in `InMemoryEip1271Cache`. Off by default;
+# the trait and `NoopEip1271Cache` are always available.
+in-memory-cache = ["cow-sdk-signing/in-memory-cache"]
+# Opt-in in-memory test doubles, re-exported as `cow_sdk::testing`, for
+# downstream apps to test their integration. Dev-dependency only; off by
+# default so the doubles never enter a production dependency graph (ADR 0063).
+testing = ["dep:cow-sdk-test"]
+tracing = [
+    "cow-sdk-app-data/tracing",
+    "cow-sdk-contracts/tracing",
+    "cow-sdk-core/tracing",
+    "cow-sdk-orderbook/tracing",
+    "cow-sdk-signing/tracing",
+    "cow-sdk-trading/tracing",
+    "cow-sdk-browser-wallet?/tracing",
+    "cow-sdk-subgraph?/tracing",
+]
+
+[dependencies]
+cow-sdk-alloy = { path = "../alloy", version = "0.1.0", optional = true, default-features = false }
+cow-sdk-alloy-provider = { path = "../alloy-provider", version = "0.1.0", optional = true, default-features = false }
+cow-sdk-alloy-signer = { path = "../alloy-signer", version = "0.1.0", optional = true, default-features = false }
+cow-sdk-app-data = { path = "../app-data", version = "0.1.0" }
+cow-sdk-browser-wallet = { path = "../browser-wallet", version = "0.1.0", optional = true, default-features = false }
+cow-sdk-contracts = { path = "../contracts", version = "0.1.0" }
+cow-sdk-orderbook = { path = "../orderbook", version = "0.1.0" }
+cow-sdk-signing = { path = "../signing", version = "0.1.0" }
+cow-sdk-subgraph = { path = "../subgraph", version = "0.1.0", optional = true, default-features = false }
+cow-sdk-trading = { path = "../trading", version = "0.1.0" }
+cow-sdk-test = { path = "../test", version = "0.1.0", optional = true, default-features = false }
+cow-sdk-core = { path = "../core", version = "0.1.0", features = ["transport-policy"] }
+thiserror.workspace = true
+
+[dev-dependencies]
+alloy-primitives.workspace = true
+alloy-sol-types.workspace = true
+num-bigint.workspace = true
+serde.workspace = true
+serde_json.workspace = true

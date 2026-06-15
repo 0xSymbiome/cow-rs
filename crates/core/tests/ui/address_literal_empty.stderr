@@ -1,0 +1,11 @@
+error: unexpected end of macro invocation
+ --> tests/ui/address_literal_empty.rs:8:13
+  |
+8 |     let _ = address!();
+  |             ^^^^^^^^^^ missing tokens in macro arguments
+  |
+note: while trying to match meta-variable `$hex:literal`
+ --> src/types/identity.rs
+  |
+  |     ($hex:literal) => {{
+  |      ^^^^^^^^^^^^

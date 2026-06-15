@@ -1,0 +1,99 @@
+name: crate-checks
+
+on:
+  workflow_dispatch:
+  # schedule: weekly cron paused during pre-publication; restore the schedule: block when ready
+
+permissions: {}
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+  CARGO_TERM_COLOR: always
+  RUST_CI_TOOLCHAIN: 1.94.1
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  crate-isolation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: ${{ env.RUST_CI_TOOLCHAIN }}
+      # Source ref: taiki-e/install-action@v2
+      - uses: taiki-e/install-action@94cb46f8d6e437890146ffbd78a778b78e623fb2
+        with:
+          tool: cargo-hack
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      - name: Run crate-isolation checks
+        shell: bash
+        run: |
+          set -o pipefail
+          cargo hack check --workspace --each-feature --no-dev-deps 2>&1 | tee crate-checks.log
+      - name: Publish crate-isolation summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "# Crate Isolation Report"
+            echo
+            echo "- Mode: scheduled or manual maintenance"
+            echo "- Policy boundary: this lane reports isolated crate and feature compilation drift without editing repository state."
+            echo
+            echo "## Command"
+            echo
+            echo '```text'
+            echo 'cargo hack check --workspace --each-feature --no-dev-deps'
+            echo '```'
+            echo
+            echo "## Output"
+            echo
+            echo "<details><summary><strong>cargo hack output</strong></summary>"
+            echo
+            echo '```text'
+            cat crate-checks.log
+            echo '```'
+            echo
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  published-crate-docs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        crate:
+          - cow-sdk-alloy-provider
+          - cow-sdk-alloy-signer
+          - cow-sdk-alloy
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: ${{ env.RUST_CI_TOOLCHAIN }}
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      - name: Check crate all targets and features
+        run: cargo check -p "${{ matrix.crate }}" --all-targets --all-features
+      - name: Build crate documentation with warnings denied
+        run: cargo doc -p "${{ matrix.crate }}" --no-deps --all-features
+        env:
+          RUSTDOCFLAGS: -D warnings

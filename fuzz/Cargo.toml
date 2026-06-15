@@ -1,0 +1,346 @@
+[package]
+name = "cow-sdk-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "=0.4.12"
+arbitrary = { version = "=1.4.2", features = ["derive"] }
+hex = "=0.4.3"
+http = "=1.4.0"
+serde_json = "=1.0.149"
+alloy-primitives = "=1.5.7"
+alloy-sol-types = "=1.5.7"
+tokio = { version = "=1.48.0", features = ["rt"] }
+cow-sdk-contracts = { path = "../crates/contracts" }
+cow-sdk-core = { path = "../crates/core", features = ["transport-policy"] }
+cow-sdk-orderbook = { path = "../crates/orderbook" }
+cow-sdk-signing = { path = "../crates/signing" }
+cow-sdk-app-data = { path = "../crates/app-data" }
+cow-sdk-subgraph = { path = "../crates/subgraph" }
+cow-sdk-trading = { path = "../crates/trading" }
+cow-sdk-browser-wallet = { path = "../crates/browser-wallet" }
+
+[[bin]]
+name = "fuzz_order_uid_pack_unpack"
+path = "fuzz_targets/fuzz_order_uid_pack_unpack.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_typed_data_digest"
+path = "fuzz_targets/fuzz_typed_data_digest.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_app_data_cid_roundtrip"
+path = "fuzz_targets/fuzz_app_data_cid_roundtrip.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_order_signature_classify"
+path = "fuzz_targets/fuzz_order_signature_classify.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_subgraph_graphql_error_decode"
+path = "fuzz_targets/fuzz_subgraph_graphql_error_decode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_ethflow_create_order_encode"
+path = "fuzz_targets/fuzz_ethflow_create_order_encode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_order_bounds_validator"
+path = "fuzz_targets/fuzz_order_bounds_validator.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_ecdsa_v_normalization"
+path = "fuzz_targets/fuzz_ecdsa_v_normalization.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_recover_ecdsa_address"
+path = "fuzz_targets/fuzz_recover_ecdsa_address.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_recoverable_signature_differential"
+path = "fuzz_targets/fuzz_recoverable_signature_differential.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_orderbook_rejection_decode"
+path = "fuzz_targets/fuzz_orderbook_rejection_decode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_app_data_merge"
+path = "fuzz_targets/fuzz_app_data_merge.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_transport_error_classify"
+path = "fuzz_targets/fuzz_transport_error_classify.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_redact_response_body"
+path = "fuzz_targets/fuzz_redact_response_body.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_amount_parse"
+path = "fuzz_targets/fuzz_amount_parse.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_amount_parse_units"
+path = "fuzz_targets/fuzz_amount_parse_units.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_core_identity_validators"
+path = "fuzz_targets/fuzz_core_identity_validators.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_valid_to_relative"
+path = "fuzz_targets/fuzz_valid_to_relative.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_hash_order_cancellations"
+path = "fuzz_targets/fuzz_hash_order_cancellations.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_recoverable_signature_parse_hex"
+path = "fuzz_targets/fuzz_recoverable_signature_parse_hex.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_eip1271_signature_data_codec"
+path = "fuzz_targets/fuzz_eip1271_signature_data_codec.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_decode_magic_value_response"
+path = "fuzz_targets/fuzz_decode_magic_value_response.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_signing_domain_separator"
+path = "fuzz_targets/fuzz_signing_domain_separator.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_calculate_total_fee"
+path = "fuzz_targets/fuzz_calculate_total_fee.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_decoded_body_canonical_status_text"
+path = "fuzz_targets/fuzz_decoded_body_canonical_status_text.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_orderbook_rejection_code"
+path = "fuzz_targets/fuzz_orderbook_rejection_code.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_cid_to_app_data_hex"
+path = "fuzz_targets/fuzz_cid_to_app_data_hex.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_partner_fee_from_value"
+path = "fuzz_targets/fuzz_partner_fee_from_value.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_flashloan_hints"
+path = "fuzz_targets/fuzz_flashloan_hints.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_hook_list_deserialize"
+path = "fuzz_targets/fuzz_hook_list_deserialize.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_schema_version_is_semver"
+path = "fuzz_targets/fuzz_schema_version_is_semver.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_stringify_deterministic"
+path = "fuzz_targets/fuzz_stringify_deterministic.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_app_data_size_limit"
+path = "fuzz_targets/fuzz_app_data_size_limit.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_app_data_params_from_doc"
+path = "fuzz_targets/fuzz_app_data_params_from_doc.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_parse_retry_after"
+path = "fuzz_targets/fuzz_parse_retry_after.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_retry_policy_delay"
+path = "fuzz_targets/fuzz_retry_policy_delay.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_jitter_delay_for_attempt"
+path = "fuzz_targets/fuzz_jitter_delay_for_attempt.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_rpc_error_payload_serde"
+path = "fuzz_targets/fuzz_rpc_error_payload_serde.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_contract_call_serde"
+path = "fuzz_targets/fuzz_contract_call_serde.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_transaction_request_serde"
+path = "fuzz_targets/fuzz_transaction_request_serde.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_slippage_amounts"
+path = "fuzz_targets/fuzz_slippage_amounts.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_slippage_policy_helpers"
+path = "fuzz_targets/fuzz_slippage_policy_helpers.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_onchain_order_log_decode"
+path = "fuzz_targets/fuzz_onchain_order_log_decode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_settlement_event_log_decode"
+path = "fuzz_targets/fuzz_settlement_event_log_decode.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_eth_flow_event_log_decode"
+path = "fuzz_targets/fuzz_eth_flow_event_log_decode.rs"
+test = false
+doc = false
+bench = false
+
+[workspace]
+# The fuzz crate stands alone because cargo-fuzz requires a nightly-only
+# toolchain with unstable RUSTFLAGS. Embedding it in the workspace at the
+# repo root would force every other crate onto the nightly channel.

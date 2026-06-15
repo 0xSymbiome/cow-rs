@@ -1,0 +1,46 @@
+{
+  "name": "cow-sdk-wasm-placeholder",
+  "version": "0.1.0",
+  "description": "TypeScript-callable wasm-bindgen bindings for the CoW Protocol Rust SDK",
+  "license": "GPL-3.0-or-later",
+  "homepage": "https://github.com/0xSymbiome/cow-rs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/0xSymbiome/cow-rs.git",
+    "directory": "crates/wasm/npm"
+  },
+  "keywords": [
+    "cow-protocol",
+    "sdk",
+    "wasm",
+    "wasm-bindgen",
+    "typescript",
+    "eip-1193",
+    "eip-1271"
+  ],
+  "packageManager": "pnpm@11.0.9",
+  "type": "module",
+  "main": "",
+  "module": "",
+  "types": "",
+  "exports": {},
+  "files": [],
+  "scripts": {
+    "build": "bash scripts/build.sh",
+    "compile:facade": "bash scripts/compile-facade.sh",
+    "test": "vitest run --config vitest.config.ts",
+    "typecheck": "tsc --project tsconfig.facade.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "25.6.2",
+    "typescript": "6.0.3",
+    "vitest": "4.1.5"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "sideEffects": false
+}

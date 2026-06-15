@@ -1,0 +1,8 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc d5073105a2e35afe305b31568ef91661046ee5219dc3a000ab6e0171732328c4 # shrinks to sell_amount = 10000000000000000, buy_amount = 10000000000000000, fee_amount = 0, partner_fee = Some(Single(Volume { volume_bps: 1, recipient: Address(0x974caa59e49682cda0ad2bbe82983419a2ecc400) })), protocol_fee = Some("0.3"), slippage = 1
+cc 398ebf5ab8e558c65e8d5a39b2fea88ce3af141919f39775350c4522f2f89d68 # shrinks to kind = Sell, sell_amount = 1000000, buy_amount = 1000000, fee_amount = 115279187, trader_prod = false, set_trade_owner = false, set_trade_receiver = false, trade_partially_fillable = false, trade_slippage = None, trade_partner_fee = Some(Single(Volume { volume_bps: 86, recipient: Address(0x974caa59e49682cda0ad2bbe82983419a2ecc400) })), trade_validity = (Some(60), None), override_receiver = false, override_validity = (None, None), override_from = false, override_price_quality = None

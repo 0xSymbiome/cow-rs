@@ -1,0 +1,315 @@
+name: ci
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_dependency_freshness:
+        description: Run the dependency freshness report
+        required: false
+        type: boolean
+        default: false
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - '.cargo/**'
+      - '.github/config/**'
+      - '.github/workflows/**'
+      - '.githooks/**'
+      - 'Cargo.lock'
+      - 'Cargo.toml'
+      - 'crates/**'
+      - 'docs/**'
+      - 'e2e/**'
+      - 'examples/**'
+      - 'parity/**'
+      - 'rust-toolchain.toml'
+      - 'xtask/**'
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - '.cargo/**'
+      - '.github/config/**'
+      - '.github/workflows/**'
+      - '.githooks/**'
+      - 'Cargo.lock'
+      - 'Cargo.toml'
+      - 'crates/**'
+      - 'docs/**'
+      - 'e2e/**'
+      - 'examples/**'
+      - 'parity/**'
+      - 'rust-toolchain.toml'
+      - 'xtask/**'
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+  CARGO_TERM_COLOR: always
+  RUST_CI_TOOLCHAIN: 1.94.1
+  RUST_MSRV: 1.94.0
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality-gate:
+    uses: ./.github/workflows/_quality-gate.yml
+    with:
+      rust_toolchain: '1.94.1'
+
+  doctest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: ${{ env.RUST_CI_TOOLCHAIN }}
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      - name: Run workspace doctests
+        run: cargo test --workspace --doc
+
+  msrv:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # Strip debuginfo in CI only. The all-features compile pulls the
+      # alloy 2.x stack plus aws-lc-sys; their debug sections blow past
+      # the ubuntu-latest runner disk during link. CI does not use lldb
+      # against these binaries, so dropping the symbols is free.
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_PROFILE_TEST_DEBUG: "0"
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      - name: Reclaim runner disk space
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Disk usage before reclaim:"
+          df -h /
+          # Microsoft pre-installs ~30 GB of toolchains we do not use for
+          # this Rust workspace. Removing them gives the all-features
+          # compatibility-floor build enough headroom to finish linking.
+          sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /usr/local/lib/android || true
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /opt/hostedtoolcache/CodeQL || true
+          sudo docker image prune --all --force >/dev/null 2>&1 || true
+          sudo apt-get clean || true
+          echo "Disk usage after reclaim:"
+          df -h /
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: ${{ env.RUST_MSRV }}
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      - name: Check workspace compatibility floor
+        run: cargo check --workspace --all-features
+      # trybuild .stderr snapshots assert exact rustc diagnostics and are blessed on
+      # the pinned toolchain, so the integration test targets that carry them are
+      # version-specific. The floor job runs library unit tests only; full-workspace
+      # floor compilation is already covered by `cargo check --all-features` above.
+      - name: Run workspace unit tests on compatibility floor
+        run: cargo test --workspace --lib
+
+  wasm-alloy-must-fail:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: ${{ env.RUST_CI_TOOLCHAIN }}
+          targets: wasm32-unknown-unknown
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      - name: Assert Alloy facade features fail closed on wasm
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected='the alloy / alloy-provider / alloy-signer features on cow-sdk are for native targets only'
+          for feature in alloy alloy-provider alloy-signer; do
+            set +e
+            output="$(cargo check -p cow-sdk --target wasm32-unknown-unknown --features "$feature" 2>&1)"
+            status="$?"
+            set -e
+            if [ "$status" -eq 0 ]; then
+              echo "::error::cow-sdk --features ${feature} unexpectedly compiled for wasm32-unknown-unknown" >&2
+              exit 1
+            fi
+            if ! grep -Fq "$expected" <<<"$output"; then
+              echo "::error::cow-sdk --features ${feature} failed without the documented wasm diagnostic" >&2
+              printf '%s\n' "$output" >&2
+              exit 1
+            fi
+          done
+
+  dependency-freshness:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_dependency_freshness }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: ${{ env.RUST_CI_TOOLCHAIN }}
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      - name: Capture lockfile refresh candidates
+        run: cargo update --dry-run --color never 2>&1 | sed '/crates.io index/d' | tee cargo-update.log
+      - name: Capture duplicate-version snapshot
+        run: cargo tree -d --workspace | tee cargo-tree-duplicates.log
+      - name: Publish dependency freshness summary
+        run: |
+          {
+            echo "# Dependency Freshness Report"
+            echo
+            echo "- Mode: read-only report"
+            echo "- Policy boundary: this lane does not update \`Cargo.lock\`, create commits, or replace the blocking \`cargo-deny\` / \`cargo-audit\` checks."
+            echo
+            echo "## Lockfile Refresh Candidates"
+            echo
+            echo "<details><summary><strong>cargo update --dry-run</strong></summary>"
+            echo
+            echo '```text'
+            cat cargo-update.log
+            echo '```'
+            echo
+            echo "</details>"
+            echo
+            echo "## Duplicate-Version Snapshot"
+            echo
+            echo "<details><summary><strong>cargo tree -d --workspace</strong></summary>"
+            echo
+            echo '```text'
+            cat cargo-tree-duplicates.log
+            echo '```'
+            echo
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  publication:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs:
+      - quality-gate
+      - doctest
+      - msrv
+      - wasm-alloy-must-fail
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: ${{ env.RUST_CI_TOOLCHAIN }}
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      - name: Validate parity fixtures and source lock
+        run: cargo parity-validate
+      - name: Fetch locked dependency graph
+        run: cargo fetch --locked
+      - name: Build workspace with frozen lockfile
+        run: cargo build --frozen --workspace --all-features
+      - name: Dry-run publish package family
+        # `--no-verify` skips the post-package compile step inside
+        # `cargo publish --dry-run`. Several crates in this workspace
+        # carry cyclic `dev-dependencies` against other workspace
+        # members (for example `cow-sdk-contracts` dev-depends on
+        # `cow-sdk-orderbook`, which in turn depends on
+        # `cow-sdk-contracts`). When the verify build runs from
+        # `target/package/<crate>-<version>/`, cargo's dependency
+        # resolver sees the in-progress packaged copy of the crate at
+        # `target/package/...` and the workspace member at
+        # `crates/...` simultaneously, reports
+        # `package collision in the lockfile: ... are different, but
+        # only one can be written to lockfile unambiguously`, and
+        # fails the step. The skipped compile step is already covered
+        # by the workspace-wide `cargo build --frozen --workspace
+        # --all-features` step above, plus the per-crate clippy and
+        # test gates that run in the surrounding workflow, so dropping
+        # only the verify pass keeps the dry-run focused on what it
+        # uniquely covers: tarball file inclusion, manifest
+        # publishability, and version availability against
+        # `crates.io`.
+        #
+        # The `WORKSPACE_PATCHES` bash array names every workspace
+        # crate (including dev-dep-only and optional-feature-gated
+        # entries) so cargo can resolve each one back to its
+        # `crates/<name>/` source rather than searching `crates.io`
+        # for a `0.1.0` placeholder that the registry returns only as
+        # a `0.0.1-reserved.0` name reservation. Applying the full
+        # set to every command keeps the resolver happy regardless of
+        # which subset a particular crate references, and cargo
+        # silently ignores patches it does not need.
+        run: |
+          WORKSPACE_PATCHES=(
+            --config "patch.crates-io.cow-sdk-alloy.path='crates/alloy'"
+            --config "patch.crates-io.cow-sdk-alloy-provider.path='crates/alloy-provider'"
+            --config "patch.crates-io.cow-sdk-alloy-signer.path='crates/alloy-signer'"
+            --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'"
+            --config "patch.crates-io.cow-sdk-browser-wallet.path='crates/browser-wallet'"
+            --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'"
+            --config "patch.crates-io.cow-sdk-core.path='crates/core'"
+            --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'"
+            --config "patch.crates-io.cow-sdk-signing.path='crates/signing'"
+            --config "patch.crates-io.cow-sdk-subgraph.path='crates/subgraph'"
+            --config "patch.crates-io.cow-sdk-test.path='crates/test'"
+            --config "patch.crates-io.cow-sdk-trading.path='crates/trading'"
+          )
+          cargo publish --dry-run --no-verify -p cow-sdk-core --allow-dirty "${WORKSPACE_PATCHES[@]}"
+          cargo publish --dry-run --no-verify -p cow-sdk-contracts --allow-dirty "${WORKSPACE_PATCHES[@]}"
+          cargo publish --dry-run --no-verify -p cow-sdk-app-data --allow-dirty "${WORKSPACE_PATCHES[@]}"
+          cargo publish --dry-run --no-verify -p cow-sdk-orderbook --allow-dirty "${WORKSPACE_PATCHES[@]}"
+          cargo publish --dry-run --no-verify -p cow-sdk-signing --allow-dirty "${WORKSPACE_PATCHES[@]}"
+          cargo publish --dry-run --no-verify -p cow-sdk-subgraph --allow-dirty "${WORKSPACE_PATCHES[@]}"
+          cargo publish --dry-run --no-verify -p cow-sdk-trading --allow-dirty "${WORKSPACE_PATCHES[@]}"
+          cargo publish --dry-run --no-verify -p cow-sdk-alloy-provider --allow-dirty "${WORKSPACE_PATCHES[@]}"
+          cargo publish --dry-run --no-verify -p cow-sdk-alloy-signer --allow-dirty "${WORKSPACE_PATCHES[@]}"
+          cargo publish --dry-run --no-verify -p cow-sdk-alloy --allow-dirty "${WORKSPACE_PATCHES[@]}"
+          cargo publish --dry-run --no-verify -p cow-sdk-browser-wallet --allow-dirty "${WORKSPACE_PATCHES[@]}"
+          cargo publish --dry-run --no-verify -p cow-sdk-test --allow-dirty "${WORKSPACE_PATCHES[@]}"
+          cargo publish --dry-run --no-verify -p cow-sdk --allow-dirty "${WORKSPACE_PATCHES[@]}"
+
+  ci-success:
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {}
+    needs:
+      - quality-gate
+      - doctest
+      - msrv
+      - wasm-alloy-must-fail
+      - publication
+    steps:
+      # Source ref: re-actors/alls-green@release/v1
+      - uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe
+        with:
+          jobs: ${{ toJSON(needs) }}

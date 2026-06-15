@@ -1,0 +1,252 @@
+{
+  "surface": "contracts",
+  "sources": {
+    "contracts": {
+      "commit": "c6b61ce75841ce4c25ab126def9cc981c568e6c6",
+      "refs": [
+        "src/ts/order.ts#ORDER_TYPE_FIELDS,BUY_ETH_ADDRESS,ORDER_UID_LENGTH,OrderCancellations,normalizeBuyTokenBalance,extractOrderUidParams",
+        "src/ts/sign.ts#SigningScheme,EIP1271_MAGICVALUE,encodeEip1271SignatureData,decodeEip1271SignatureData",
+        "src/ts/settlement.ts#SettlementEncoder",
+        "src/ts/interaction.ts#normalizeInteraction,normalizeInteractions",
+        "test/GPv2Order/PackOrderUidParams.t.sol#packOrderUidParams",
+        "test/GPv2Order/ExtractOrderUidParams.t.sol#extractOrderUidParams",
+        "test/GPv2Trade/ExtractFlags.t.sol#extractFlags",
+        "test/GPv2Trade/ExtractOrder.t.sol#extractOrder",
+        "test/GPv2Settlement/OrderRefunds.t.sol#freeFilledAmountStorage,freePreSignatureStorage",
+        "test/GPv2Settlement/Swap/Swap.t.sol#swap"
+      ]
+    },
+    "ethflowcontract": {
+      "commit": "762d182674f8f890bd27917872ee62125171b54d",
+      "refs": [
+        "src/CoWSwapEthFlow.sol#createOrder,invalidateOrder"
+      ]
+    }
+  },
+  "standards": [
+    "EIP-20 (approve and transferFrom calldata shapes)"
+  ],
+  "cases": [
+    {
+      "id": "contracts-order-type-fields",
+      "kind": "contract-shape",
+      "description": "Order field layout must match the canonical contracts TypeScript order type field order.",
+      "expected": {
+        "fields": [
+          "sellToken",
+          "buyToken",
+          "receiver",
+          "sellAmount",
+          "buyAmount",
+          "validTo",
+          "appData",
+          "feeAmount",
+          "kind",
+          "partiallyFillable",
+          "sellTokenBalance",
+          "buyTokenBalance"
+        ]
+      }
+    },
+    {
+      "id": "contracts-order-type-hash",
+      "kind": "positive",
+      "description": "The canonical order type hash matches the public contracts-ts helper constant.",
+      "expected": {
+        "hash": "0xd5a25ba2e97094ad7d83dc28a6572da797d6b3e7fc6663bd93efb789fc17e489"
+      }
+    },
+    {
+      "id": "contracts-cancellation-type-fields",
+      "kind": "contract-shape",
+      "description": "Order cancellation typed data uses a single orderUids bytes[] field.",
+      "expected": {
+        "fields": [
+          "orderUids"
+        ]
+      }
+    },
+    {
+      "id": "contracts-order-uid-length",
+      "kind": "positive",
+      "description": "Packed order UIDs are 56 bytes and therefore 112 hex characters without the 0x prefix.",
+      "expected": {
+        "bytes": 56,
+        "hex_chars": 112
+      }
+    },
+    {
+      "id": "contracts-extract-order-uid-invalid-length",
+      "kind": "negative",
+      "description": "Order UID extraction must reject payloads whose byte length is not 56.",
+      "expected": {
+        "must_reject": true,
+        "error_contains": "invalid order UID length"
+      }
+    },
+    {
+      "id": "contracts-buy-balance-domain",
+      "kind": "contract-shape",
+      "description": "BuyTokenDestination is a closed type whose supported variants are the services enum {erc20, internal}; the external variant is sell-only and cannot be constructed on the buy-side destination type.",
+      "expected": {
+        "buy_token_destination_variants": [
+          "erc20",
+          "internal"
+        ],
+        "sell_token_source_variants": [
+          "erc20",
+          "external",
+          "internal"
+        ]
+      }
+    },
+    {
+      "id": "contracts-signing-scheme-discriminants",
+      "kind": "contract-shape",
+      "description": "Signing scheme discriminants must match the canonical on-chain encoding order.",
+      "expected": {
+        "EIP712": 0,
+        "ETHSIGN": 1,
+        "EIP1271": 2,
+        "PRESIGN": 3
+      }
+    },
+    {
+      "id": "contracts-eip1271-magic-value",
+      "kind": "positive",
+      "description": "The EIP-1271 success value remains the standard 0x1626ba7e.",
+      "expected": {
+        "magic_value": "0x1626ba7e"
+      }
+    },
+    {
+      "id": "contracts-interaction-defaults",
+      "kind": "behavior-scenario",
+      "description": "Interaction normalization defaults missing value and calldata to zero-value call semantics.",
+      "expected": {
+        "value": "0",
+        "call_data": "0x"
+      }
+    },
+    {
+      "id": "contracts-settlement-invalidate-order-calldata",
+      "kind": "positive",
+      "description": "GPv2Settlement.invalidateOrder(bytes) call-data matches the canonical ABI encoding for a packed 56-byte OrderUid.",
+      "inputs": {
+        "order_uid": "0x1111111111111111111111111111111111111111111111111111111111111111222222222222222222222222222222222222222212345678"
+      },
+      "source_ref": "contracts:src/ts/settlement.ts#SettlementEncoder",
+      "expected": {
+        "call_data": "0x15337bc00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000003811111111111111111111111111111111111111111111111111111111111111112222222222222222222222222222222222222222123456780000000000000000"
+      }
+    },
+    {
+      "id": "contracts-settlement-set-presignature-calldata",
+      "kind": "positive",
+      "description": "GPv2Settlement.setPreSignature(bytes,bool) call-data for a packed 56-byte OrderUid marked as signed.",
+      "inputs": {
+        "order_uid": "0x1111111111111111111111111111111111111111111111111111111111111111222222222222222222222222222222222222222212345678",
+        "signed": true
+      },
+      "source_ref": "contracts:src/ts/settlement.ts#SettlementEncoder",
+      "expected": {
+        "call_data": "0xec6cb13f00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000003811111111111111111111111111111111111111111111111111111111111111112222222222222222222222222222222222222222123456780000000000000000"
+      }
+    },
+    {
+      "id": "contracts-settlement-free-filled-amount-storage-calldata",
+      "kind": "positive",
+      "description": "GPv2Settlement.freeFilledAmountStorage(bytes[]) call-data for two distinct packed OrderUid entries, including the dynamic-array offset and length prefix.",
+      "inputs": {
+        "order_uids": [
+          "0x1111111111111111111111111111111111111111111111111111111111111111222222222222222222222222222222222222222212345678",
+          "0x3333333333333333333333333333333333333333333333333333333333333333444444444444444444444444444444444444444444449abcdef0"
+        ]
+      },
+      "source_ref": "contracts:test/GPv2Settlement/OrderRefunds.t.sol#freeFilledAmountStorage",
+      "expected": {
+        "call_data": "0xed9f35ce00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000038111111111111111111111111111111111111111111111111111111111111111122222222222222222222222222222222222222221234567800000000000000000000000000000000000000000000000000000000000000000000000000000038333333333333333333333333333333333333333333333333333333333333333344444444444444444444444444444444444444449abcdef00000000000000000"
+      }
+    },
+    {
+      "id": "contracts-settlement-free-presignature-storage-calldata",
+      "kind": "positive",
+      "description": "GPv2Settlement.freePreSignatureStorage(bytes[]) call-data for two distinct packed OrderUid entries.",
+      "inputs": {
+        "order_uids": [
+          "0x1111111111111111111111111111111111111111111111111111111111111111222222222222222222222222222222222222222212345678",
+          "0x3333333333333333333333333333333333333333333333333333333333333333444444444444444444444444444444444444444444449abcdef0"
+        ]
+      },
+      "source_ref": "contracts:test/GPv2Settlement/OrderRefunds.t.sol#freePreSignatureStorage",
+      "expected": {
+        "call_data": "0xa2a7d51b00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000038111111111111111111111111111111111111111111111111111111111111111122222222222222222222222222222222222222221234567800000000000000000000000000000000000000000000000000000000000000000000000000000038333333333333333333333333333333333333333333333333333333333333333344444444444444444444444444444444444444449abcdef00000000000000000"
+      }
+    },
+    {
+      "id": "contracts-ethflow-create-order-calldata",
+      "kind": "positive",
+      "description": "CoWSwapEthFlow.createOrder(EthFlowOrderData) call-data for a canonical EthFlow order whose static-tuple encoding takes nine 32-byte head words after the 4-byte selector.",
+      "inputs": {
+        "buy_token": "0x1111111111111111111111111111111111111111",
+        "receiver": "0x2222222222222222222222222222222222222222",
+        "sell_amount": "1000000000000000000",
+        "buy_amount": "2000000000000000000",
+        "app_data": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "fee_amount": "0",
+        "valid_to": 305419896,
+        "partially_fillable": false,
+        "quote_id": 42
+      },
+      "source_ref": "ethflowcontract:src/CoWSwapEthFlow.sol#createOrder",
+      "expected": {
+        "call_data": "0x322bba21000000000000000000000000111111111111111111111111111111111111111100000000000000000000000022222222222222222222222222222222222222220000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000001bc16d674ec80000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000123456780000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002a"
+      }
+    },
+    {
+      "id": "contracts-ethflow-invalidate-order-calldata",
+      "kind": "positive",
+      "description": "CoWSwapEthFlow.invalidateOrder(EthFlowOrderData) call-data for the same canonical EthFlow payload; distinct from GPv2Settlement.invalidateOrder(bytes) which takes a packed UID.",
+      "inputs": {
+        "buy_token": "0x1111111111111111111111111111111111111111",
+        "receiver": "0x2222222222222222222222222222222222222222",
+        "sell_amount": "1000000000000000000",
+        "buy_amount": "2000000000000000000",
+        "app_data": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "fee_amount": "0",
+        "valid_to": 305419896,
+        "partially_fillable": false,
+        "quote_id": 42
+      },
+      "source_ref": "ethflowcontract:src/CoWSwapEthFlow.sol#invalidateOrder",
+      "expected": {
+        "call_data": "0x7bc41b96000000000000000000000000111111111111111111111111111111111111111100000000000000000000000022222222222222222222222222222222222222220000000000000000000000000000000000000000000000000de0b6b3a76400000000000000000000000000000000000000000000000000001bc16d674ec80000aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000123456780000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002a"
+      }
+    },
+    {
+      "id": "contracts-erc20-approve-calldata",
+      "kind": "positive",
+      "description": "ERC-20 approve(address,uint256) call-data: 4-byte selector 0x095ea7b3 plus 32-byte padded spender plus 32-byte padded value.",
+      "inputs": {
+        "spender": "0x1111111111111111111111111111111111111111",
+        "value": "1000000000000000000"
+      },
+      "expected": {
+        "call_data": "0x095ea7b300000000000000000000000011111111111111111111111111111111111111110000000000000000000000000000000000000000000000000de0b6b3a7640000"
+      }
+    },
+    {
+      "id": "contracts-erc20-transfer-from-calldata",
+      "kind": "positive",
+      "description": "ERC-20 transferFrom(address,address,uint256) call-data: 4-byte selector 0x23b872dd plus three 32-byte padded fields.",
+      "inputs": {
+        "from": "0x1111111111111111111111111111111111111111",
+        "to": "0x2222222222222222222222222222222222222222",
+        "value": "1000000000000000000"
+      },
+      "expected": {
+        "call_data": "0x23b872dd000000000000000000000000111111111111111111111111111111111111111100000000000000000000000022222222222222222222222222222222222222220000000000000000000000000000000000000000000000000de0b6b3a7640000"
+      }
+    }
+  ]
+}

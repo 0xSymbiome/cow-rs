@@ -1,0 +1,5 @@
+error[E0308]: mismatched types
+  --> tests/ui/partner_fee_bps_width_witness.rs:24:21
+   |
+24 |         volume_bps: 100_000_u32,
+   |                     ^^^^^^^^^^^ expected `u16`, found `u32`

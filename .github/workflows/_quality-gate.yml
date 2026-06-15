@@ -1,0 +1,349 @@
+name: _quality-gate
+
+# Reusable workflow that owns the shared quality-gate jobs consumed by the
+# `ci` and `release-readiness` workflows. Both callers delegate via
+# `uses: ./.github/workflows/_quality-gate.yml`.
+#
+# Every repository policy check runs in the single `policy` job through the
+# `cargo xtask` policy sweep: enum/panic/DTO allowlists, dependency and version
+# invariants, the alloy family-pin and adapter-isolation gates, ADR coverage,
+# property citations, the source-level never-swap fences, workflow security,
+# the shell-wrapper ban, README rendering, OpenAPI DTO coverage, release-gate
+# docs agreement, and chain-patch eligibility. The remaining jobs own fmt,
+# clippy, test, nextest, docs, typos, deny/audit, the feature matrix, the
+# public-API lints, and the deterministic examples.
+
+on:
+  workflow_call:
+    inputs:
+      rust_toolchain:
+        description: Rust toolchain channel used by the shared quality-gate jobs.
+        required: false
+        type: string
+        default: '1.94.1'
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+  CARGO_TERM_COLOR: always
+  # Strip debuginfo from dev / test builds in CI only. The alloy 2.x stack
+  # plus aws-lc-sys leaves test binaries with multi-GB debug sections that
+  # exhaust the ubuntu-latest runner disk at link time. CI does not run a
+  # debugger against these binaries, so dropping the symbols is free.
+  CARGO_PROFILE_DEV_DEBUG: "0"
+  CARGO_PROFILE_TEST_DEBUG: "0"
+
+jobs:
+  policy:
+    name: Repository policies
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          # Full history so check-chain-patch-eligibility can diff the PR base.
+          fetch-depth: 0
+          persist-credentials: false
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: ${{ inputs.rust_toolchain }}
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      - name: Run repository policy sweep
+        run: cargo check-policies
+      - name: Validate OpenAPI DTO coverage
+        run: cargo parity-openapi-coverage
+      - name: Verify release-gate commands agree across docs and CI
+        run: cargo docs-agree
+      - name: Check chain patch eligibility
+        if: github.event_name == 'pull_request'
+        run: cargo check-chain-patch-eligibility --base-ref "${{ github.event.pull_request.base.ref }}"
+      - name: Skip chain patch eligibility outside pull requests
+        if: github.event_name != 'pull_request'
+        run: echo "Chain patch eligibility is only evaluated for pull requests."
+
+  fmt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: ${{ inputs.rust_toolchain }}
+          components: rustfmt
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      - name: Check formatting
+        run: cargo fmt --all --check
+
+  clippy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: ${{ inputs.rust_toolchain }}
+          components: clippy
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      - name: Run clippy
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      - name: Reclaim runner disk space
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Disk usage before reclaim:"
+          df -h /
+          # Microsoft pre-installs ~30 GB of toolchains we do not use for
+          # this Rust workspace. Removing them gives the workspace test
+          # link enough headroom to finish without SIGBUS from ld.
+          sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /usr/local/lib/android || true
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /opt/hostedtoolcache/CodeQL || true
+          sudo docker image prune --all --force >/dev/null 2>&1 || true
+          sudo apt-get clean || true
+          echo "Disk usage after reclaim:"
+          df -h /
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: ${{ inputs.rust_toolchain }}
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      - name: Run workspace library and integration tests
+        run: cargo test --workspace --lib --tests
+      - name: Cargo.lock alloy lockstep invariant
+        run: cargo test -p cow-rs-workspace-tests --test alloy_two_family_lockfile_invariant
+      - name: Read-contract parity invariant
+        run: cargo test -p cow-rs-workspace-tests --test alloy_read_contract_parity_invariant
+      - name: Check native showcase examples
+        # --all-features so the alloy-gated examples (required-features = ["alloy",
+        # "alloy-provider", "alloy-signer"]) are actually compiled; without it cargo
+        # silently skips them and a broken alloy example passes CI.
+        run: cargo check -p cow-sdk-examples-native --examples --all-features
+      - name: Check fuzz crate against the stable toolchain
+        run: cargo check --manifest-path fuzz/Cargo.toml --locked
+
+  nextest:
+    name: nextest (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      - name: Reclaim runner disk space
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Disk usage before reclaim:"
+          df -h /
+          # Microsoft pre-installs ~30 GB of toolchains we do not use for
+          # this Rust workspace. Removing them gives `cargo nextest` enough
+          # headroom to finish linking the all-features test binaries.
+          sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /usr/local/lib/android || true
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /opt/hostedtoolcache/CodeQL || true
+          sudo docker image prune --all --force >/dev/null 2>&1 || true
+          sudo apt-get clean || true
+          echo "Disk usage after reclaim:"
+          df -h /
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: ${{ inputs.rust_toolchain }}
+      # Source ref: taiki-e/install-action@v2
+      - uses: taiki-e/install-action@94cb46f8d6e437890146ffbd78a778b78e623fb2
+        with:
+          tool: nextest
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      - name: Run workspace nextest suite
+        run: cargo nextest run --workspace --all-features --config-file .github/config/nextest.toml
+
+  docs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: ${{ inputs.rust_toolchain }}
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      - name: Build workspace documentation
+        run: cargo doc --workspace --all-features --no-deps
+        env:
+          RUSTDOCFLAGS: -D warnings
+
+  typos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: taiki-e/install-action@v2
+      - uses: taiki-e/install-action@94cb46f8d6e437890146ffbd78a778b78e623fb2
+        with:
+          tool: typos-cli
+      - name: Check repository spelling
+        run: typos --config .github/config/typos.toml
+
+  deny:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: taiki-e/install-action@v2
+      - uses: taiki-e/install-action@94cb46f8d6e437890146ffbd78a778b78e623fb2
+        with:
+          tool: cargo-deny
+      # Source ref: taiki-e/install-action@v2
+      - uses: taiki-e/install-action@94cb46f8d6e437890146ffbd78a778b78e623fb2
+        with:
+          tool: cargo-audit
+      - name: Check dependency policy
+        # The alloy-* family-pin coherence check runs in the `policy` job via
+        # `cargo check-alloy-family-pins`; the cross-family lockfile lockstep is
+        # `tests/alloy_two_family_lockfile_invariant.rs`.
+        run: cargo deny check --config .github/config/deny.toml
+      - name: Check RustSec advisories
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t audit_ignore_args < <(python - <<'PY'
+          import tomllib
+          from pathlib import Path
+
+          config = tomllib.loads(Path(".github/config/deny.toml").read_text(encoding="utf-8"))
+          for entry in config.get("advisories", {}).get("ignore", []):
+              advisory_id = entry["id"] if isinstance(entry, dict) else entry
+              print("--ignore")
+              print(advisory_id)
+          PY
+          )
+          cargo audit --deny unsound --deny unmaintained "${audit_ignore_args[@]}"
+
+  feature-matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: ${{ inputs.rust_toolchain }}
+      # Source ref: taiki-e/install-action@v2
+      - uses: taiki-e/install-action@94cb46f8d6e437890146ffbd78a778b78e623fb2
+        with:
+          tool: cargo-hack
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      - name: Check workspace feature matrix
+        run: cargo hack check --workspace --feature-powerset --depth 1
+
+  public-api-lints:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: ${{ inputs.rust_toolchain }}
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      - name: Check published crate public API lints
+        run: cargo check --workspace --all-features
+        env:
+          RUSTFLAGS: -Dmissing-docs -Dmissing-debug-implementations -Dunreachable-pub -Dunnameable-types
+
+  native-examples-locked:
+    name: deterministic examples locked
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: ${{ inputs.rust_toolchain }}
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      - name: Check native examples with locked dependencies
+        run: cargo check --locked -p cow-sdk-examples-native --examples --all-features
+      - name: Test native examples with locked dependencies
+        run: cargo test --locked -p cow-sdk-examples-native
+      - name: Run deterministic examples with locked dependencies
+        run: cargo run-deterministic-examples --locked
+
+  ci-success:
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {}
+    needs:
+      - policy
+      - fmt
+      - clippy
+      - test
+      - nextest
+      - docs
+      - typos
+      - deny
+      - feature-matrix
+      - public-api-lints
+      - native-examples-locked
+    steps:
+      # Source ref: re-actors/alls-green@release/v1
+      - uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe
+        with:
+          jobs: ${{ toJSON(needs) }}

@@ -1,0 +1,53 @@
+# cargo-release configuration for the cow-rs workspace.
+# https://github.com/crate-ci/cargo-release/blob/master/docs/reference.md
+#
+# One `cargo release <version> --execute` from `main`:
+#   - bumps the workspace + every member version in lockstep (shared-version),
+#     rewriting the internal `version = "x"` requirements so the family stays
+#     coherent — no hand-editing per-crate version reqs;
+#   - regenerates CHANGELOG.md from conventional commits via the git-cliff hook;
+#   - creates one signed commit and one signed tag `vX.Y.Z`;
+#   - publishes every `publish = true` crate in dependency order (the
+#     `publish = false` crates — cow-sdk-wasm, test-utils, examples, tests,
+#     xtask — are skipped automatically);
+#   - pushes the commit and tag.
+
+# Refuse to release from anywhere but main, so an immutable crates.io version is
+# never cut from an ephemeral feature branch.
+allow-branch = ["main"]
+
+# Lockstep versioning across the whole family + one consolidated commit/tag.
+shared-version = true
+consolidate-commits = true
+tag-prefix = ""                       # one `vX.Y.Z` tag, not one per crate
+tag-name = "v{{version}}"
+tag-message = "Release {{version}}"
+pre-release-commit-message = "chore(release): {{version}}"
+
+# Match the repo's signed-commit policy.
+sign-commit = true
+sign-tag = true
+
+# crates.io rate-limits new-version publishes; raise the cap so the whole crate
+# family can publish in a single run.
+rate-limit.existing-packages = 50
+
+# Regenerate the changelog for the new tag before the release commit is made.
+# Runs the `cargo changelog` xtask (Rust, cross-platform — no shell wrapper, so
+# `check-shell-wrappers` stays satisfied); it resolves the workspace root itself
+# so CHANGELOG.md lands at the repo root regardless of which crate cargo-release
+# is processing.
+pre-release-hook = ["cargo", "run", "--quiet", "-p", "xtask", "--", "changelog", "--tag", "v{{version}}"]
+
+# Keep the version strings inside each crate's README in lockstep with the
+# release. cargo-release bumps Cargo.toml only; without these, the README install
+# snippet and the disclaimer's opt-in hint would drift stale on every alpha bump.
+# `{{crate_name}}` scopes each replacement to the crate being released, so it
+# edits only that crate's own README.md; `min = 0` keeps a crate whose README
+# lacks a given form from failing the release. Verify with
+# `cargo release <version> --dry-run` before the first real run.
+pre-release-replacements = [
+    { file = "README.md", search = '{{crate_name}} = "[^"]*"', replace = '{{crate_name}} = "{{version}}"', min = 0 },
+    { file = "README.md", search = '{{crate_name}} = \{ version = "[^"]*"', replace = '{{crate_name}} = { version = "{{version}}"', min = 0 },
+    { file = "README.md", search = 'cow-sdk = \{ version = "[^"]*"', replace = 'cow-sdk = { version = "{{version}}"', min = 0 },
+]

@@ -1,0 +1,27 @@
+[package]
+name = "xtask"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow = "1.0.102"
+clap = { version = "4.6.1", features = ["derive", "env"] }
+cow-sdk-contracts = { path = "../crates/contracts", version = "0.1.0" }
+hex = "0.4.3"
+proc-macro2 = { version = "1.0.106", features = ["span-locations"] }
+regex = "1.12.3"
+reqwest = { workspace = true, features = ["blocking", "json", "rustls"] }
+semver = "1.0.28"
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_norway = "0.9.42"
+syn = { workspace = true, features = ["extra-traits", "visit"] }
+toml = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3.27.0"

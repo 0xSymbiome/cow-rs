@@ -1,0 +1,111 @@
+---
+# Primary and supporting ADR coverage for cow-rs principles.
+# Every principle has exactly one primary ADR. Supporting ADRs are optional.
+# Every accepted ADR is referenced under at least one principle or listed in
+# out_of_scope_adrs with a written rationale.
+#
+# ADRs 0030-0033 are accepted and covered by the blocking ADR coverage lane.
+#
+# Doctrines: `docs/alloy-doctrine.md` is the canonical human-readable
+# consolidation of the ADRs listed under principles 8 (Chain-RPC Runtime
+# Neutrality) and 9 (Canonical Contract Bindings). The doctrine is
+# read-only over the ADR set; it does not introduce policy. Doctrine
+# evolution requires an ADR amendment plus a refresh of this map's
+# supporting_adrs lists.
+
+version: 1
+
+principles:
+  - id: 1
+    name: Deterministic Protocol Transforms
+    primary_adr: "0012"
+    supporting_adrs: ["0011", "0022", "0052"]
+
+  - id: 2
+    name: Explicit Runtime Boundaries
+    primary_adr: "0010"
+    supporting_adrs: ["0055"]
+
+  - id: 3
+    name: Thin Facade, Real Crate Boundaries
+    primary_adr: "0001"
+    supporting_adrs: ["0002", "0003", "0062", "0063"]
+
+  - id: 4
+    name: Instance-Scoped Configuration
+    primary_adr: "0006"
+    supporting_adrs: []
+
+  - id: 5
+    name: Strong Typed Public Surfaces
+    primary_adr: "0011"
+    supporting_adrs: ["0005", "0015", "0016", "0017", "0018", "0021", "0052", "0053", "0059", "0060", "0061", "0064", "0067"]
+
+  - id: 6
+    name: Additive Optional Ecosystems
+    primary_adr: "0001"
+    supporting_adrs: ["0007", "0065"]
+
+  - id: 7
+    name: Sole Construction Seam
+    primary_adr: "0013"
+    supporting_adrs: ["0011"]
+
+  - id: 8
+    name: Chain-RPC Runtime Neutrality
+    primary_adr: "0024"
+    supporting_adrs: ["0010", "0014", "0028", "0057", "0068"]
+
+  - id: 9
+    name: Canonical Contract Bindings
+    primary_adr: "0012"
+    supporting_adrs: ["0020", "0022", "0052", "0054"]
+
+  - id: 10
+    name: Evidence-Backed Public Claims
+    primary_adr: "0026"
+    supporting_adrs: ["0025", "0030", "0032", "0052", "0066"]
+
+  - id: 11
+    name: Forward-Compatible Public Surfaces
+    primary_adr: "0031"
+    supporting_adrs: ["0027", "0058"]
+
+  - id: 12
+    name: Credential Redaction by Construction
+    primary_adr: "0025"
+    supporting_adrs: ["0005", "0010"]
+
+  - id: 13
+    name: Cooperative Cancellation Coverage
+    primary_adr: "0010"
+    supporting_adrs: ["0006"]
+
+  - id: 14
+    name: Minimum-Viable Panic Surface
+    primary_adr: "0033"
+    supporting_adrs: []
+
+  - id: 15
+    name: Layered Operation Surface
+    primary_adr: "0069"
+    supporting_adrs: ["0002", "0013"]
+
+  - id: 16
+    name: Off-Chain Orchestration Boundary
+    primary_adr: "0057"
+    supporting_adrs: ["0010", "0024", "0049", "0050", "0051"]
+
+out_of_scope_adrs:
+  # ADRs scoped to specific crate-topology, adapter, ecosystem, and audit
+  # contracts rather than to a standing principle. Each entry remains an
+  # accepted architecture decision; relocating one into a principle's
+  # supporting set is a documentation-only refresh.
+  - "0035"  # Alloy adapter family (provider, signer, umbrella) is governed by the alloy major-release plan and the alloy-provider/-signer invariant gates. Consolidates the former ADR 0036 and 0037.
+  - "0038"  # Transaction lifecycle types are typed adapter surface details under the alloy-provider adapter.
+  - "0039"  # TypeScript-callable wasm SDK surface is governed by the wasm-imports gate and the wasm flavour-matrix.
+  - "0040"  # Wallet provider callback boundary is governed by the browser-wallet audit lane and EIP-1271 verification cache audit.
+  - "0041"  # Transport policy L3 layering is governed by the transport-policy coverage audit.
+  - "0042"  # Pure helpers crate extraction is a crate-topology decision documented in the architecture guide.
+  - "0044"  # Bundle size profile and flavour builds are governed by the wasm flavour-matrix gate.
+  - "0045"  # Async signer trait narrowing is a typed adapter surface detail under the alloy-signer adapter.

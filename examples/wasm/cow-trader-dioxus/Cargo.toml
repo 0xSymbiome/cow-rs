@@ -1,0 +1,24 @@
+# Minimal Dioxus 0.7 web example for the cow-sdk-browser-wallet crate.
+# Standalone workspace (empty `[workspace]`) so it detaches from the parent
+# cow-rs workspace while path-depending into its crates.
+[package]
+name = "cow-trader-dioxus"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.94.0"
+publish = false
+description = "Minimal browser-wallet + trade example for the CoW Protocol Rust SDK (Dioxus)"
+
+[workspace]
+
+[dependencies]
+dioxus = { version = "0.7", features = ["web"] }
+cow-sdk = { path = "../../../crates/sdk", features = ["browser-wallet"] }
+anyhow = "1"
+serde_json = "1"
+console_error_panic_hook = "0.1"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1

@@ -1,0 +1,3 @@
+# Avoid copying nested example build artifacts into cargo-mutants scratch trees.
+# This keeps scoped mutation runs reproducible workspaces with large `target/` folders.
+gitignore = true

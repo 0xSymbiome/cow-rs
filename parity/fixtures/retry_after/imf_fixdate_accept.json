@@ -1,0 +1,109 @@
+{
+  "surface": "retry-after-imf-fixdate-accept",
+  "standards": [
+    "RFC 7231 §7.1.1.1 (IMF-fixdate)"
+  ],
+  "description": "Retry-After IMF-fixdate accept cases per RFC 7231 section 7.1.1.1. Each row carries the raw header text and the canonical Unix timestamp the HTTP-date resolves to. The parser routes through httpdate::parse_http_date so every accept case in this corpus must round-trip to its expected timestamp.",
+  "cases": [
+    {
+      "id": "retry-after-imf-fixdate-rfc7231-example",
+      "description": "Canonical RFC 7231 example.",
+      "inputs": {
+        "raw_header": "Sun, 06 Nov 1994 08:49:37 GMT"
+      },
+      "expected": {
+        "parsed_unix_timestamp": 784111777
+      }
+    },
+    {
+      "id": "retry-after-imf-fixdate-future-modern",
+      "description": "Future date used as the shared modern reference inside the existing inline contract suite.",
+      "inputs": {
+        "raw_header": "Wed, 21 Oct 2026 07:28:00 GMT"
+      },
+      "expected": {
+        "parsed_unix_timestamp": 1792567680
+      }
+    },
+    {
+      "id": "retry-after-imf-fixdate-year-end-edge",
+      "description": "Last second of 1995 — exercises the 23:59:59 lower-edge inside the civil day arithmetic.",
+      "inputs": {
+        "raw_header": "Sun, 31 Dec 1995 23:59:59 GMT"
+      },
+      "expected": {
+        "parsed_unix_timestamp": 820454399
+      }
+    },
+    {
+      "id": "retry-after-imf-fixdate-year-start-edge",
+      "description": "First second of 1996 — exercises the year rollover one second after the previous case.",
+      "inputs": {
+        "raw_header": "Mon, 01 Jan 1996 00:00:00 GMT"
+      },
+      "expected": {
+        "parsed_unix_timestamp": 820454400
+      }
+    },
+    {
+      "id": "retry-after-imf-fixdate-unix-epoch",
+      "description": "Unix epoch — exercises the zero-timestamp boundary.",
+      "inputs": {
+        "raw_header": "Thu, 01 Jan 1970 00:00:00 GMT"
+      },
+      "expected": {
+        "parsed_unix_timestamp": 0
+      }
+    },
+    {
+      "id": "retry-after-imf-fixdate-current-decade",
+      "description": "Mid 2025 reference inside the current decade.",
+      "inputs": {
+        "raw_header": "Sun, 06 Jul 2025 12:00:00 GMT"
+      },
+      "expected": {
+        "parsed_unix_timestamp": 1751803200
+      }
+    },
+    {
+      "id": "retry-after-imf-fixdate-leap-day-2000",
+      "description": "29 Feb 2000 — leap year accepted by every Gregorian leap rule (divisible by 4 and 400).",
+      "inputs": {
+        "raw_header": "Tue, 29 Feb 2000 12:00:00 GMT"
+      },
+      "expected": {
+        "parsed_unix_timestamp": 951825600
+      }
+    },
+    {
+      "id": "retry-after-imf-fixdate-y2k",
+      "description": "Start of 2000 — the Y2K crossover, validating the four-digit year path.",
+      "inputs": {
+        "raw_header": "Sat, 01 Jan 2000 00:00:00 GMT"
+      },
+      "expected": {
+        "parsed_unix_timestamp": 946684800
+      }
+    },
+    {
+      "id": "retry-after-imf-fixdate-modern-month-end",
+      "description": "End of January 2024 — exercises the 31-day month variant.",
+      "inputs": {
+        "raw_header": "Wed, 31 Jan 2024 00:00:00 GMT"
+      },
+      "expected": {
+        "parsed_unix_timestamp": 1706659200
+      }
+    },
+    {
+      "id": "retry-after-imf-fixdate-far-future",
+      "description": "Far-future date — the parser carries every intermediate as i64 so an attacker cannot overflow the civil-day arithmetic.",
+      "inputs": {
+        "raw_header": "Mon, 19 Jan 2099 03:14:08 GMT"
+      },
+      "expected": {
+        "parsed_unix_timestamp": 4072475648
+      }
+    }
+  ]
+}

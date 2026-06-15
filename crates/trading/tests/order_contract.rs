@@ -1,0 +1,185 @@
+mod common;
+
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
+
+use cow_sdk_contracts::{ContractId, Registry};
+use cow_sdk_core::{
+    Amount, BuyTokenDestination, CowEnv, MAX_VALID_TO_EPOCH, OrderData, ProtocolOptions,
+    SellTokenSource, SupportedChainId, wrapped_native_token,
+};
+use cow_sdk_signing::generate_order_id;
+use cow_sdk_trading::{OrderToSignParams, TradingError, calculate_unique_order_id, order_to_sign};
+use tokio::time::timeout;
+
+use crate::common::{MockEthFlowChecker, OWNER, address, app_data_hash, sample_limit_parameters};
+
+fn sample_ethflow_order(buy_amount: &str) -> OrderData {
+    OrderData::new(
+        address("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"),
+        address("0x0625aFB445C3B6B7B929342a04A22599fd5dBB59"),
+        address("0xc8c753Ee51E8Fc80e199AB297fB575634a1aC1d3"),
+        Amount::new("1000000000000000000").expect("test sell amount literal must be valid"),
+        Amount::new(buy_amount).expect("test buy amount literal must be valid"),
+        1_700_000_000,
+        app_data_hash(),
+        Amount::ZERO,
+        cow_sdk_core::OrderKind::Sell,
+        false,
+        SellTokenSource::Erc20,
+        BuyTokenDestination::Erc20,
+    )
+}
+
+#[tokio::test]
+async fn unique_order_id_decrements_buy_amount_after_a_collision() {
+    let chain_id = SupportedChainId::Sepolia;
+    let order = sample_ethflow_order("500");
+    let checker = MockEthFlowChecker {
+        results: Arc::new(Mutex::new(vec![true, false])),
+    };
+    let options = ProtocolOptions::new().with_env(CowEnv::Prod);
+
+    let generated = calculate_unique_order_id(chain_id, &order, Some(&checker), Some(&options))
+        .await
+        .expect("collision retry should produce a unique order id");
+
+    let mut expected_order = order.clone();
+    expected_order.valid_to = MAX_VALID_TO_EPOCH;
+    expected_order.sell_token = wrapped_native_token(chain_id).address;
+    expected_order.buy_amount =
+        Amount::new("499").expect("decremented buy amount literal must remain valid");
+    let expected_owner = Registry::default()
+        .address(ContractId::EthFlow, chain_id, CowEnv::Prod)
+        .expect("canonical EthFlow address is registered for every supported chain");
+    let expected = generate_order_id(chain_id, &expected_order, &expected_owner, Some(&options))
+        .expect("expected order id generation must succeed");
+
+    assert_eq!(generated.order_id, expected.order_id);
+    assert_eq!(generated.order_digest, expected.order_digest);
+}
+
+#[tokio::test]
+async fn unique_order_id_returns_immediately_when_no_collision_exists() {
+    let chain_id = SupportedChainId::Sepolia;
+    let order = sample_ethflow_order("500");
+
+    let generated = timeout(
+        Duration::from_millis(250),
+        calculate_unique_order_id(chain_id, &order, None, None),
+    )
+    .await
+    .expect("the no-collision path must not loop after the first generated id")
+    .expect("the first generated order id must remain valid");
+
+    let mut expected_order = order.clone();
+    expected_order.valid_to = MAX_VALID_TO_EPOCH;
+    expected_order.sell_token = wrapped_native_token(chain_id).address;
+    let expected_owner = Registry::default()
+        .address(ContractId::EthFlow, chain_id, CowEnv::Prod)
+        .expect("canonical EthFlow address is registered for every supported chain");
+    let expected = generate_order_id(chain_id, &expected_order, &expected_owner, None)
+        .expect("expected order id generation must succeed");
+
+    assert_eq!(generated.order_id, expected.order_id);
+    assert_eq!(generated.order_digest, expected.order_digest);
+}
+
+#[tokio::test]
+async fn unique_order_id_keeps_the_first_generated_value_when_checker_reports_no_collision() {
+    let chain_id = SupportedChainId::Sepolia;
+    let order = sample_ethflow_order("1");
+    let checker = MockEthFlowChecker {
+        results: Arc::new(Mutex::new(vec![false])),
+    };
+
+    let generated = calculate_unique_order_id(chain_id, &order, Some(&checker), None)
+        .await
+        .expect("a non-collision result must return the first generated id");
+
+    let mut expected_order = order.clone();
+    expected_order.valid_to = MAX_VALID_TO_EPOCH;
+    expected_order.sell_token = wrapped_native_token(chain_id).address;
+    let expected_owner = Registry::default()
+        .address(ContractId::EthFlow, chain_id, CowEnv::Prod)
+        .expect("canonical EthFlow address is registered for every supported chain");
+    let expected = generate_order_id(chain_id, &expected_order, &expected_owner, None)
+        .expect("expected order id generation must succeed");
+
+    assert_eq!(generated.order_id, expected.order_id);
+    assert_eq!(generated.order_digest, expected.order_digest);
+}
+
+#[tokio::test]
+async fn unique_order_id_rejects_zero_buy_amount_when_a_collision_requires_a_retry() {
+    let chain_id = SupportedChainId::Sepolia;
+    let order = sample_ethflow_order("0");
+    let checker = MockEthFlowChecker {
+        results: Arc::new(Mutex::new(vec![true])),
+    };
+
+    let error = calculate_unique_order_id(chain_id, &order, Some(&checker), None)
+        .await
+        .expect_err("zero buy amount must fail when a retry is required");
+
+    assert!(matches!(
+        error,
+        TradingError::InvalidInput {
+            field: "buyAmount",
+            reason: cow_sdk_core::ValidationReason::OutOfRange { .. }
+        }
+    ));
+}
+
+#[test]
+fn get_order_to_sign_preserves_non_default_balance_semantics() {
+    let mut params = sample_limit_parameters(cow_sdk_core::OrderKind::Sell);
+    params.sell_token_balance = SellTokenSource::External;
+    params.buy_token_balance = BuyTokenDestination::Internal;
+
+    let order = order_to_sign(
+        OrderToSignParams::new(SupportedChainId::Sepolia, address(OWNER), false)
+            .with_apply_costs_slippage_and_fees(false),
+        &params,
+        &app_data_hash(),
+    )
+    .expect("order construction should preserve configured balances");
+
+    assert_eq!(order.sell_token_balance, SellTokenSource::External);
+    assert_eq!(order.buy_token_balance, BuyTokenDestination::Internal);
+}
+
+#[test]
+fn order_to_sign_receiver_falls_back_to_from_when_zero_or_unset() {
+    let mut params = sample_limit_parameters(cow_sdk_core::OrderKind::Sell);
+    params.receiver = None;
+    let from = address(OWNER);
+
+    let order = order_to_sign(
+        OrderToSignParams::new(SupportedChainId::Sepolia, from, false)
+            .with_apply_costs_slippage_and_fees(false),
+        &params,
+        &app_data_hash(),
+    )
+    .expect("order construction without receiver must succeed");
+
+    assert_eq!(
+        order.receiver, from,
+        "unset receiver must fall back to the effective from address",
+    );
+
+    params.receiver = Some(address("0x0000000000000000000000000000000000000000"));
+    let order = order_to_sign(
+        OrderToSignParams::new(SupportedChainId::Sepolia, address(OWNER), false)
+            .with_apply_costs_slippage_and_fees(false),
+        &params,
+        &app_data_hash(),
+    )
+    .expect("order construction with explicit zero receiver must preserve the caller value");
+
+    assert_eq!(
+        order.receiver,
+        address(OWNER),
+        "explicit zero-address receiver must also fall back to the effective from address",
+    );
+}

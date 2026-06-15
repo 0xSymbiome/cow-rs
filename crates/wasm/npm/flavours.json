@@ -1,0 +1,66 @@
+{
+  "flavours": [
+    {
+      "name": "default",
+      "features": [
+        "orderbook",
+        "signing",
+        "app-data",
+        "ipfs",
+        "cancellation",
+        "transport-policy",
+        "trading",
+        "subgraph"
+      ],
+      "targets": ["bundler", "nodejs"],
+      "rawBudgetMiB": 3.3,
+      "brotliBudgetKiB": 900,
+      "gzipFailBytes": 1300000,
+      "gzipWarnBytes": 1200000,
+      "subpath": "."
+    },
+    {
+      "name": "orderbook",
+      "features": [
+        "orderbook",
+        "signing",
+        "cancellation",
+        "transport-policy"
+      ],
+      "targets": ["bundler", "nodejs"],
+      "rawBudgetMiB": 1.5,
+      "brotliBudgetKiB": 500,
+      "gzipFailBytes": 610000,
+      "gzipWarnBytes": 540000,
+      "subpath": "./orderbook"
+    },
+    {
+      "name": "signing",
+      "features": ["signing"],
+      "targets": ["bundler", "nodejs"],
+      "rawBudgetMiB": 0.9,
+      "brotliBudgetKiB": 300,
+      "gzipFailBytes": 370000,
+      "gzipWarnBytes": 320000,
+      "subpath": "./signing"
+    },
+    {
+      "name": "cloudflare",
+      "features": [
+        "orderbook",
+        "signing",
+        "app-data",
+        "cancellation",
+        "transport-policy",
+        "trading"
+      ],
+      "targets": ["web"],
+      "rawBudgetMiB": 3.2,
+      "brotliBudgetKiB": 850,
+      "gzipFailBytes": 3000000,
+      "gzipWarnBytes": 2700000,
+      "subpath": "./cloudflare",
+      "rawWasmSubpath": "./cloudflare/wasm"
+    }
+  ]
+}

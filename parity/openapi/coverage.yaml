@@ -1,0 +1,90 @@
+version: 1
+dtos:
+  - schema: components.schemas.Order
+    rust_type: cow_sdk_orderbook::Order
+    required_fields:
+      - appData
+      - buyAmount
+      - buyToken
+      - class
+      - creationDate
+      - executedBuyAmount
+      - executedFeeAmount
+      - executedSellAmount
+      - executedSellAmountBeforeFees
+      - feeAmount
+      - invalidated
+      - kind
+      - owner
+      - partiallyFillable
+      - sellAmount
+      - sellToken
+      - settlementContract
+      - signature
+      - signingScheme
+      - status
+      - uid
+      - validTo
+
+  - schema: components.schemas.OrderQuoteResponse
+    rust_type: cow_sdk_orderbook::OrderQuoteResponse
+    required_fields:
+      - expiration
+      - quote
+      - verified
+
+  - schema: components.schemas.OrderParameters
+    rust_type: cow_sdk_orderbook::QuoteData
+    required_fields:
+      - appData
+      - buyAmount
+      - buyToken
+      - feeAmount
+      - gasAmount
+      - gasPrice
+      - kind
+      - partiallyFillable
+      - sellAmount
+      - sellToken
+      - sellTokenPrice
+      - validTo
+
+  - schema: components.schemas.Trade
+    rust_type: cow_sdk_orderbook::Trade
+    required_fields:
+      - blockNumber
+      - buyAmount
+      - buyToken
+      - logIndex
+      - orderUid
+      - owner
+      - sellAmount
+      - sellAmountBeforeFees
+      - sellToken
+      - txHash
+
+  - schema: components.schemas.StoredOrderQuote
+    rust_type: cow_sdk_orderbook::StoredOrderQuote
+    required_fields:
+      - buyAmount
+      - feeAmount
+      - gasAmount
+      - gasPrice
+      - sellAmount
+      - sellTokenPrice
+      - solver
+      - verified
+
+  - schema: components.schemas.OnchainOrderData
+    rust_type: cow_sdk_orderbook::OnchainOrderData
+    required_fields:
+      - sender
+
+  - schema: components.schemas.TotalSurplus
+    rust_type: cow_sdk_orderbook::TotalSurplus
+    required_fields: []
+
+  - schema: components.schemas.CompetitionOrderStatus.properties.value.items
+    rust_type: cow_sdk_orderbook::SolverExecution
+    required_fields:
+      - solver

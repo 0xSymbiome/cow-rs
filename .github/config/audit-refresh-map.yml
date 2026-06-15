@@ -1,0 +1,32 @@
+version: 2
+entries:
+  - audit: docs/audit/source-lock-provenance-audit.md
+    owning_surface: source-lock provenance
+    refresh_triggers:
+      paths:
+        - parity/source-lock.yaml
+      upstreams:
+        - https://github.com/cowdao-grants/cow-shed
+  - audit: docs/audit/contract-bindings-parity-audit.md
+    owning_surface: canonical alloy::sol! bindings (settlement, vault-relayer, eth-flow, eip1967 proxy, ERC-20, EIP-1271)
+    refresh_triggers:
+      paths:
+        - crates/contracts/src
+        - parity/fixtures/contracts.json
+        - parity/source-lock.yaml
+  - audit: docs/audit/cow-shed-contract-bindings-audit.md
+    owning_surface: COW Shed contract binding evidence
+    refresh_triggers:
+      paths:
+        - crates/contracts/src/cow_shed
+  - audit: docs/audit/cow-shed-app-data-integration-audit.md
+    owning_surface: COW Shed app-data integration
+    refresh_triggers:
+      paths:
+        - crates/contracts/Cargo.toml
+        - docs/adr/0049-cow-shed-account-abstraction-proxy.md
+  - audit: docs/audit/lens-chain-evidence-audit.md
+    owning_surface: deployment chain taxonomy
+    refresh_triggers:
+      paths:
+        - crates/contracts/src/deployments.rs

@@ -1,0 +1,158 @@
+{
+  "surface": "browser-wallet-eth-sign-typed-data-request",
+  "dto": "cow_sdk_core::TypedDataPayload",
+  "endpoint": "EIP-1193 eth_signTypedData_v4 (params[1])",
+  "sources": {
+    "contracts": {
+      "commit": "c6b61ce75841ce4c25ab126def9cc981c568e6c6",
+      "refs": [
+        "src/contracts/mixins/GPv2Signing.sol#DOMAIN_NAME,DOMAIN_VERSION"
+      ]
+    }
+  },
+  "rows": [
+    {
+      "chain_id": 1,
+      "chain_name": "mainnet",
+      "primary_type": "Order",
+      "wire_payload": {
+        "domain": {
+          "chainId": 1,
+          "name": "Gnosis Protocol",
+          "verifyingContract": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
+          "version": "v2"
+        },
+        "message": {
+          "appData": "0xb48d38f93eaa084033fc5970bf96e559c33c4cdc07d889ab00b4d63f9590739d",
+          "buyAmount": "1000000000000000000",
+          "buyToken": "0x2222222222222222222222222222222222222222",
+          "buyTokenBalance": "erc20",
+          "feeAmount": "0",
+          "kind": "sell",
+          "partiallyFillable": false,
+          "receiver": "0x3333333333333333333333333333333333333333",
+          "sellAmount": "1000000",
+          "sellToken": "0x1111111111111111111111111111111111111111",
+          "sellTokenBalance": "erc20",
+          "validTo": 1700000000
+        },
+        "primaryType": "Order",
+        "types": {
+          "EIP712Domain": [
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "version",
+              "type": "string"
+            },
+            {
+              "name": "chainId",
+              "type": "uint256"
+            },
+            {
+              "name": "verifyingContract",
+              "type": "address"
+            }
+          ],
+          "Order": [
+            {
+              "name": "sellToken",
+              "type": "address"
+            },
+            {
+              "name": "buyToken",
+              "type": "address"
+            },
+            {
+              "name": "receiver",
+              "type": "address"
+            },
+            {
+              "name": "sellAmount",
+              "type": "uint256"
+            },
+            {
+              "name": "buyAmount",
+              "type": "uint256"
+            },
+            {
+              "name": "validTo",
+              "type": "uint32"
+            },
+            {
+              "name": "appData",
+              "type": "bytes32"
+            },
+            {
+              "name": "feeAmount",
+              "type": "uint256"
+            },
+            {
+              "name": "kind",
+              "type": "string"
+            },
+            {
+              "name": "partiallyFillable",
+              "type": "bool"
+            },
+            {
+              "name": "sellTokenBalance",
+              "type": "string"
+            },
+            {
+              "name": "buyTokenBalance",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "chain_id": 1,
+      "chain_name": "mainnet",
+      "primary_type": "OrderCancellations",
+      "wire_payload": {
+        "domain": {
+          "chainId": 1,
+          "name": "Gnosis Protocol",
+          "verifyingContract": "0x9008d19f58aabd9ed0d60971565aa8510560ab41",
+          "version": "v2"
+        },
+        "message": {
+          "orderUids": [
+            "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa11111111"
+          ]
+        },
+        "primaryType": "OrderCancellations",
+        "types": {
+          "EIP712Domain": [
+            {
+              "name": "name",
+              "type": "string"
+            },
+            {
+              "name": "version",
+              "type": "string"
+            },
+            {
+              "name": "chainId",
+              "type": "uint256"
+            },
+            {
+              "name": "verifyingContract",
+              "type": "address"
+            }
+          ],
+          "OrderCancellations": [
+            {
+              "name": "orderUids",
+              "type": "bytes[]"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

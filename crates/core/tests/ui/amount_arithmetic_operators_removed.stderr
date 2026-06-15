@@ -1,0 +1,47 @@
+error[E0369]: cannot subtract `Amount` from `Amount`
+  --> tests/ui/amount_arithmetic_operators_removed.rs:15:15
+   |
+15 |     let _ = a - b;
+   |             - ^ - Amount
+   |             |
+   |             Amount
+   |
+note: `Amount` does not implement `Sub`
+  --> src/types/amount.rs
+   |
+   | pub struct Amount(
+   | ^^^^^^^^^^^^^^^^^ `Amount` is defined in another crate
+
+error[E0369]: cannot add `Amount` to `Amount`
+  --> tests/ui/amount_arithmetic_operators_removed.rs:16:15
+   |
+16 |     let _ = a + b;
+   |             - ^ - Amount
+   |             |
+   |             Amount
+   |
+note: `Amount` does not implement `Add`
+  --> src/types/amount.rs
+   |
+   | pub struct Amount(
+   | ^^^^^^^^^^^^^^^^^ `Amount` is defined in another crate
+
+error[E0369]: cannot multiply `Amount` by `Amount`
+  --> tests/ui/amount_arithmetic_operators_removed.rs:17:15
+   |
+17 |     let _ = a * b;
+   |             - ^ - Amount
+   |             |
+   |             Amount
+   |
+note: `Amount` does not implement `Mul`
+  --> src/types/amount.rs
+   |
+   | pub struct Amount(
+   | ^^^^^^^^^^^^^^^^^ `Amount` is defined in another crate
+
+error[E0599]: no method named `pow` found for struct `Amount` in the current scope
+  --> tests/ui/amount_arithmetic_operators_removed.rs:18:15
+   |
+18 |     let _ = a.pow(&b);
+   |               ^^^ method not found in `Amount`

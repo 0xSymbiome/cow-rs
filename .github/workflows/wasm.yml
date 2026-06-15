@@ -1,0 +1,642 @@
+name: wasm
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - '.cargo/**'
+      - '.github/config/**'
+      - '.github/workflows/wasm.yml'
+      - 'Cargo.lock'
+      - 'Cargo.toml'
+      - 'crates/**'
+      - 'e2e/wasm-typescript/**'
+      - 'e2e/wasm-typescript-cf/**'
+      - 'examples/wasm/cow-signer-node/**'
+      - 'examples/wasm/cow-gateway-cloudflare/**'
+      - 'rust-toolchain.toml'
+      - 'xtask/**'
+      - 'tests/**'
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - '.cargo/**'
+      - '.github/config/**'
+      - '.github/workflows/wasm.yml'
+      - 'Cargo.lock'
+      - 'Cargo.toml'
+      - 'crates/**'
+      - 'e2e/wasm-typescript/**'
+      - 'e2e/wasm-typescript-cf/**'
+      - 'examples/wasm/cow-signer-node/**'
+      - 'examples/wasm/cow-gateway-cloudflare/**'
+      - 'rust-toolchain.toml'
+      - 'xtask/**'
+      - 'tests/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+  CARGO_TERM_COLOR: always
+  NODE_VERSION: '24'
+  PNPM_VERSION: '11.0.9'
+  # Strip debuginfo from dev / test builds: the alloy 2.x stack plus
+  # aws-lc-sys leaves test binaries with multi-GB debug sections that
+  # exhaust the hosted runner disk at link time. CI never debugs these
+  # binaries, so the symbols are free to drop. Workspace clippy and the
+  # full workspace test matrix run in the shared quality gate; this
+  # workflow only builds the wasm-facing subset.
+  CARGO_PROFILE_DEV_DEBUG: '0'
+  CARGO_PROFILE_TEST_DEBUG: '0'
+
+jobs:
+  rust-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+      - name: Install wasm32-unknown-unknown on the workspace-pinned toolchain
+        # The dtolnay action defaults to its @stable channel and installs
+        # the wasm32 target on stable. Cargo then runs under the workspace
+        # rust-toolchain.toml override (1.94.1), which does not have the
+        # target, producing E0463 "can't find crate for std". Running
+        # `rustup target add` from the workspace dir resolves the override
+        # first, so the target lands on the actual toolchain cargo uses.
+        run: rustup target add wasm32-unknown-unknown
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      - name: Install Binaryen
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends binaryen
+          wasm-opt --version
+      - name: Check formatting
+        run: cargo fmt --all --check
+      - name: Check cow-sdk-wasm host gate
+        run: cargo check -p cow-sdk-wasm --no-default-features
+      - name: Check cow-sdk-wasm wasm32
+        run: cargo check -p cow-sdk-wasm --target wasm32-unknown-unknown --no-default-features
+      - name: Check cow-sdk-wasm wasm32 default flavor
+        # The --no-default-features check above cannot see breakage in the
+        # signing, orderbook, or trading export surfaces, which only compile
+        # under flavor-default. This step compiles the default flavor for
+        # wasm32 so a shipped-flavor break fails in the fast checks rather than
+        # only in the slower wasm-pack flavour matrix.
+        run: cargo check -p cow-sdk-wasm --target wasm32-unknown-unknown
+      - name: Check default-transport builder crates compile for wasm32
+        # The orderbook and subgraph builders split their default-transport
+        # `.build()` impl by target: native targets construct `ReqwestTransport`
+        # and `wasm32` targets construct the browser `FetchTransport`, both of
+        # which live in `cow-sdk-core`. Compiling both crates for wasm32
+        # type-checks the `wasm32` default terminal and its
+        # `cow_sdk_core::FetchTransport` edge, so a break in the browser default
+        # surfaces in the fast checks.
+        run: cargo check -p cow-sdk-orderbook -p cow-sdk-subgraph --target wasm32-unknown-unknown
+      - name: Test host pure helpers
+        run: cargo test -p cow-sdk-wasm --test host_pure_helpers
+      - name: Test app-data fetch contract
+        run: cargo test -p cow-sdk-app-data --test fetch_contract
+      - name: Test wasm dependency invariant
+        run: cargo test -p cow-rs-workspace-tests --test wasm_dependency_invariant
+      - name: Run the wasm invariant policy check
+        run: cargo check-wasm-invariant
+
+  wasm-flavour-matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs:
+      - rust-checks
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      - id: matrix
+        name: Render wasm flavour matrix
+        run: |
+          matrix="$(node - <<'JS'
+          const fs = require("node:fs");
+          const descriptor = JSON.parse(fs.readFileSync("crates/wasm/npm/flavours.json", "utf8"));
+          const include = descriptor.flavours.flatMap((flavour) =>
+            flavour.targets.map((target) => ({ flavour: flavour.name, target }))
+          );
+          process.stdout.write(JSON.stringify({ include }));
+          JS
+          )"
+          echo "matrix=${matrix}" >> "$GITHUB_OUTPUT"
+
+  wasm-pack-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs:
+      - wasm-flavour-matrix
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.wasm-flavour-matrix.outputs.matrix) }}
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+      - name: Install wasm32-unknown-unknown on the workspace-pinned toolchain
+        # The dtolnay action defaults to its @stable channel and installs
+        # the wasm32 target on stable. Cargo then runs under the workspace
+        # rust-toolchain.toml override (1.94.1), which does not have the
+        # target, producing E0463 "can't find crate for std". Running
+        # `rustup target add` from the workspace dir resolves the override
+        # first, so the target lands on the actual toolchain cargo uses.
+        run: rustup target add wasm32-unknown-unknown
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      - name: Install Binaryen
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends binaryen
+          wasm-opt --version
+      # Source ref: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Install wasm-pack
+        run: cargo install wasm-pack --version 0.15.0 --locked
+      - name: Build wasm flavour target
+        env:
+          WASM_FLAVOUR: ${{ matrix.flavour }}
+          WASM_TARGET: ${{ matrix.target }}
+        run: bash crates/wasm/npm/scripts/build.sh
+      # Source ref: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: cow-sdk-wasm-raw-${{ matrix.flavour }}-${{ matrix.target }}
+          path: crates/wasm/npm/dist/raw/
+          if-no-files-found: error
+
+  wasm-package-staging:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs:
+      - wasm-pack-build
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: actions/download-artifact@v6
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+        with:
+          pattern: cow-sdk-wasm-raw-*
+          path: crates/wasm/npm/dist/raw
+          merge-multiple: true
+      # Source ref: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      # Source ref: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - name: Render package manifest
+        run: node crates/wasm/npm/scripts/render-package-json.mjs
+      - name: Install facade toolchain
+        run: pnpm --dir crates/wasm/npm install --frozen-lockfile
+      - name: Compile TypeScript facade
+        run: bash crates/wasm/npm/scripts/compile-facade.sh
+      - name: Verify export targets
+        run: node crates/wasm/npm/scripts/verify-exports.mjs
+      - name: Verify no raw package exports
+        run: node crates/wasm/npm/scripts/verify-no-raw-exports.mjs
+      - name: Verify facade declarations
+        run: node crates/wasm/npm/scripts/verify-facade-denylist.mjs
+      - name: Enforce wasm size budgets
+        run: node crates/wasm/npm/scripts/measure-wasm-size.mjs
+      - name: Check raw TypeScript declaration snapshots
+        run: |
+          node - <<'JS'
+          const fs = require("node:fs");
+          const { spawnSync } = require("node:child_process");
+          const descriptor = JSON.parse(fs.readFileSync("crates/wasm/npm/flavours.json", "utf8"));
+          // `__wasm_bindgen_func_elem_<n>` declarations are
+          // wasm-bindgen-generated function-table entries whose numeric
+          // suffix is reshuffled every time the wasm output changes for
+          // unrelated reasons. The opaque table elements are not part
+          // of the consumer-facing TypeScript surface, so suppressing
+          // hunks where every changed line matches that prefix avoids
+          // noisy snapshot failures while still asserting drift on
+          // every other declaration. The regex is written in basic
+          // regular-expression syntax because GNU diff's `-I` flag
+          // does not accept extended regex; `\+` is the BRE form of
+          // one-or-more and `[[:space:]]` covers leading indentation.
+          const ignoreFuncElem = "^[[:space:]]*readonly __wasm_bindgen_func_elem_[0-9]\\+:";
+          // The raw type declarations are loader-independent: wasm-bindgen emits a
+          // byte-identical `.d.ts` for every wasm-pack target of a flavour, so one
+          // snapshot per flavour pins the public type contract. Diffing every
+          // target's generated declaration against that single snapshot both
+          // detects drift and asserts the targets agree; a future per-target
+          // divergence fails closed here.
+          for (const flavour of descriptor.flavours) {
+            const snapshot = `crates/wasm/snapshots/raw/${flavour.name}.d.ts`;
+            for (const target of flavour.targets) {
+              const generated = `crates/wasm/npm/dist/raw/${flavour.name}-${target}/cow_sdk_wasm.d.ts`;
+              const result = spawnSync(
+                "diff",
+                ["-u", "-I", ignoreFuncElem, snapshot, generated],
+                { stdio: "inherit" }
+              );
+              if (result.status !== 0) {
+                process.exit(result.status);
+              }
+            }
+          }
+          JS
+      - name: Check facade TypeScript declaration snapshots
+        run: |
+          node - <<'JS'
+          const fs = require("node:fs");
+          const { spawnSync } = require("node:child_process");
+          const descriptor = JSON.parse(fs.readFileSync("crates/wasm/npm/flavours.json", "utf8"));
+          for (const flavour of descriptor.flavours) {
+            const snapshot = `crates/wasm/snapshots/facade/${flavour.name}.d.ts`;
+            const generated = `crates/wasm/npm/dist/${flavour.name}/index.d.ts`;
+            const result = spawnSync("diff", ["-u", snapshot, generated], { stdio: "inherit" });
+            if (result.status !== 0) {
+              process.exit(result.status);
+            }
+          }
+          JS
+      # Source ref: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: cow-sdk-wasm-npm
+          path: |
+            crates/wasm/npm/
+            !crates/wasm/npm/node_modules/**
+          if-no-files-found: error
+
+  wasm-bindgen-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs:
+      - rust-checks
+    env:
+      # CI-only knobs for the wasm32 test compile and the headless-Firefox
+      # memory budget on the ubuntu-latest runner. The `--release` steps
+      # below already strip symbols and optimise for size through the
+      # workspace `[profile.release]`, so no profile overrides are needed:
+      #   * `CARGO_INCREMENTAL=0` skips per-crate incremental metadata,
+      #     which otherwise accumulates on disk and inflates peak resident
+      #     memory across the matrix.
+      #   * `CARGO_BUILD_JOBS=2` caps the parallel rustc fan-out so several
+      #     heavy codegen units do not race headless Firefox for the same
+      #     memory budget.
+      CARGO_INCREMENTAL: "0"
+      CARGO_BUILD_JOBS: "2"
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      - name: Reclaim runner disk space
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Disk usage before reclaim:"
+          df -h /
+          # Microsoft pre-installs ~30 GB of toolchains we do not use
+          # for this Rust workspace. Removing them gives the wasm32
+          # test compile and the headless Chrome session enough
+          # headroom that the kernel OOM killer stops sending SIGKILL
+          # to ChromeDriver during wasm-pack test runs.
+          sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /usr/local/lib/android || true
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /opt/hostedtoolcache/CodeQL || true
+          sudo docker image prune --all --force >/dev/null 2>&1 || true
+          sudo apt-get clean || true
+          echo "Disk usage after reclaim:"
+          df -h /
+      - name: Expand swap headroom
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Memory before:"
+          free -h
+          # The default ubuntu-latest swapfile is small relative to the
+          # peak wasm32 test compile plus headless Chrome footprint.
+          # Replace it with a larger backing file so the kernel pages
+          # cold compile state out instead of sending SIGKILL to
+          # ChromeDriver when the working set spikes.
+          sudo swapoff -a
+          sudo rm -f /mnt/swapfile
+          sudo fallocate -l 12G /mnt/swapfile
+          sudo chmod 600 /mnt/swapfile
+          sudo mkswap /mnt/swapfile
+          sudo swapon /mnt/swapfile
+          echo "Memory after:"
+          free -h
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+      - name: Install wasm32-unknown-unknown on the workspace-pinned toolchain
+        # The dtolnay action defaults to its @stable channel and installs
+        # the wasm32 target on stable. Cargo then runs under the workspace
+        # rust-toolchain.toml override (1.94.1), which does not have the
+        # target, producing E0463 "can't find crate for std". Running
+        # `rustup target add` from the workspace dir resolves the override
+        # first, so the target lands on the actual toolchain cargo uses.
+        run: rustup target add wasm32-unknown-unknown
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+      - name: Install Binaryen
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends binaryen
+          wasm-opt --version
+      # Source ref: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Install wasm-pack
+        run: cargo install wasm-pack --version 0.15.0 --locked
+      # Source ref: browser-actions/setup-firefox@v1.7.2
+      - name: Set up Firefox
+        # The earlier `--release` plus disk-reclaim plus 12 GB swap plus
+        # `opt-level = 1` mitigations all left the headless Chrome path
+        # SIGKILL-ing ChromeDriver mid-handshake on the ubuntu-latest
+        # runner even after the wasm32 test binary shrank to its
+        # smallest viable form. The signature pattern is well known on
+        # Chrome 148 / wasm-bindgen-test 0.3.x in GitHub Actions and is
+        # not memory pressure: the same release-profile binary lands
+        # cleanly under Firefox + geckodriver. The two browser-actions
+        # actions are the standard way to land both binaries on the
+        # runner (ubuntu-latest no longer ships Firefox), they cache
+        # the binaries between runs, and they prepend `firefox-path` /
+        # geckodriver to `PATH` automatically.
+        uses: browser-actions/setup-firefox@8058e910ee76e74bb76b7b2e5b61a55b3a65ed78
+        with:
+          firefox-version: latest-esr
+      # Source ref: browser-actions/setup-geckodriver@latest 2026-04-29
+      # (the `latest` branch hosts the prebuilt `index.js`; the
+      # `master` branch only ships the TypeScript source.)
+      - name: Set up geckodriver
+        uses: browser-actions/setup-geckodriver@fac5b0424c584257f32cf12c5eb4ba86014c34f8
+        with:
+          geckodriver-version: '0.36.0'
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Test cow-sdk-wasm in headless Firefox
+        # `--release` keeps the workspace release-profile binary
+        # (`opt-level = "z"`, `lto = "fat"`, `strip = "symbols"`); the
+        # `--firefox` switch routes wasm-pack through geckodriver,
+        # which the setup-geckodriver step placed on `PATH`.
+        run: wasm-pack test --release --headless --firefox crates/wasm
+      - name: Test cow-sdk-wasm tracing spans in headless Firefox
+        # The export-surface and browser `FetchTransport` tracing-span tests are
+        # wasm32-only and gated on the crate's `tracing` feature, so the default
+        # run above never builds them. The `tracing` feature keeps the default
+        # flavor, adds span emission, and forwards `cow-sdk-core/tracing` so the
+        # transport telemetry contract tests run.
+        run: wasm-pack test --release --headless --firefox crates/wasm --features tracing
+
+  vitest-nodejs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs:
+      - wasm-package-staging
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: actions/download-artifact@v6
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+        with:
+          name: cow-sdk-wasm-npm
+          path: crates/wasm/npm
+      # Source ref: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      # Source ref: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - name: Install TypeScript fixture dependencies
+        run: pnpm --dir e2e/wasm-typescript install --frozen-lockfile
+      - name: Run Node Vitest
+        run: pnpm --dir e2e/wasm-typescript run test:vitest
+
+  playwright-bundler:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs:
+      - wasm-package-staging
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: actions/download-artifact@v6
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+        with:
+          name: cow-sdk-wasm-npm
+          path: crates/wasm/npm
+      # Source ref: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      # Source ref: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - name: Install TypeScript fixture dependencies
+        run: pnpm --dir e2e/wasm-typescript install --frozen-lockfile
+      - name: Install Chromium
+        run: pnpm --dir e2e/wasm-typescript exec playwright install --with-deps chromium
+      - name: Run Playwright bundler tests
+        run: pnpm --dir e2e/wasm-typescript run test:playwright
+
+  type-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs:
+      - wasm-package-staging
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: actions/download-artifact@v6
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+        with:
+          name: cow-sdk-wasm-npm
+          path: crates/wasm/npm
+      # Source ref: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      # Source ref: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - name: Install TypeScript fixture dependencies
+        run: pnpm --dir e2e/wasm-typescript install --frozen-lockfile
+      - name: Type-check TypeScript fixture
+        run: pnpm --dir e2e/wasm-typescript run test:type-check
+
+  workers-vitest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs:
+      - wasm-package-staging
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: actions/download-artifact@v6
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+        with:
+          name: cow-sdk-wasm-npm
+          path: crates/wasm/npm
+      # Source ref: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      # Source ref: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - name: Install Workers fixture dependencies
+        run: pnpm --dir e2e/wasm-typescript-cf install --frozen-lockfile
+      - name: Run Workers Vitest
+        run: pnpm --dir e2e/wasm-typescript-cf run test
+
+  example-signer-node:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs:
+      - wasm-package-staging
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['22', '24']
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: actions/download-artifact@v6
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+        with:
+          name: cow-sdk-wasm-npm
+          path: crates/wasm/npm
+      # Source ref: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: ${{ matrix.node-version }}
+      # Source ref: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - name: Install Node signer example dependencies
+        run: pnpm --dir examples/wasm/cow-signer-node install --frozen-lockfile
+      - name: Test Node signer example
+        run: pnpm --dir examples/wasm/cow-signer-node test
+
+  example-gateway-cloudflare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs:
+      - wasm-package-staging
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: actions/download-artifact@v6
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+        with:
+          name: cow-sdk-wasm-npm
+          path: crates/wasm/npm
+      # Source ref: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      # Source ref: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - name: Install Cloudflare gateway example dependencies
+        run: pnpm --dir examples/wasm/cow-gateway-cloudflare install --frozen-lockfile
+      - name: Test Cloudflare gateway example
+        run: pnpm --dir examples/wasm/cow-gateway-cloudflare test
+
+  npm-tarball-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs:
+      - wasm-package-staging
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: actions/download-artifact@v6
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
+        with:
+          name: cow-sdk-wasm-npm
+          path: crates/wasm/npm
+      # Source ref: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Verify export targets
+        run: node crates/wasm/npm/scripts/verify-exports.mjs
+      - name: Verify package subpath resolution
+        run: bash crates/wasm/npm/scripts/verify-package-resolution.sh
+      - name: Verify publish guard override
+        env:
+          ALLOW_PLACEHOLDER_NPM_PUBLISH: '1'
+        run: bash crates/wasm/npm/scripts/prepublish-guard.sh
+
+  wasm-success:
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {}
+    needs:
+      - rust-checks
+      - wasm-flavour-matrix
+      - wasm-pack-build
+      - wasm-package-staging
+      - wasm-bindgen-tests
+      - vitest-nodejs
+      - playwright-bundler
+      - type-check
+      - workers-vitest
+      - example-signer-node
+      - example-gateway-cloudflare
+      - npm-tarball-verify
+    steps:
+      # Source ref: re-actors/alls-green@release/v1
+      - uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe
+        with:
+          jobs: ${{ toJSON(needs) }}

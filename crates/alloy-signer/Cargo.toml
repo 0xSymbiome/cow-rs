@@ -1,0 +1,48 @@
+[package]
+name = "cow-sdk-alloy-signer"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+description = "Alloy-backed local private-key Signer adapter for the CoW Protocol Rust SDK"
+readme = "README.md"
+documentation = "https://docs.rs/cow-sdk-alloy-signer"
+homepage = "https://github.com/0xSymbiome/cow-rs"
+keywords = ["cow-protocol", "alloy", "signer", "ethereum", "eip712"]
+categories = ["api-bindings", "cryptography::cryptocurrencies"]
+
+[package.metadata.docs.rs]
+all-features = true
+default-target = "x86_64-unknown-linux-gnu"
+targets = ["x86_64-unknown-linux-gnu"]
+
+[lib]
+path = "src/lib.rs"
+
+[lints]
+workspace = true
+
+[features]
+default = ["eip712"]
+eip712 = ["alloy-signer/eip712", "alloy-signer-local/eip712"]
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+cow-sdk-core = { path = "../core", version = "0.1.0" }
+cow-sdk-contracts = { path = "../contracts", version = "0.1.0" }
+
+alloy-dyn-abi = { workspace = true, features = ["std", "eip712"] }
+alloy-primitives = { workspace = true, features = ["k256"] }
+alloy-signer.workspace = true
+alloy-signer-local.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+alloy-sol-types = { workspace = true, features = ["std"] }
+cow-sdk-signing = { path = "../signing", version = "0.1.0" }
+cow-sdk-test-utils = { path = "../test-utils" }
+proptest.workspace = true
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+trybuild.workspace = true

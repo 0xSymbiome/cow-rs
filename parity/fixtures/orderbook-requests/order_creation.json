@@ -1,0 +1,79 @@
+{
+  "surface": "orderbook-request-order-creation",
+  "dto": "cow_sdk_orderbook::OrderCreation",
+  "endpoint": "POST /api/v1/orders",
+  "sources": {
+    "services": {
+      "commit": "65b6953bfc2e96b2791cfb2382c7309d1fb19b99",
+      "refs": [
+        "crates/orderbook/openapi.yml#components.schemas.OrderCreation",
+        "crates/shared/src/order_validation.rs#partial_validate,validate_period",
+        "crates/model/src/order.rs#OrderCreationAppData"
+      ]
+    }
+  },
+  "examples": [
+    {
+      "name": "full_app_data_zero_fee",
+      "payload": {
+        "sellToken": "0x0000000000000000000000000000000000000001",
+        "buyToken": "0x0000000000000000000000000000000000000002",
+        "receiver": "0x0000000000000000000000000000000000000003",
+        "sellAmount": "1000000000000000000",
+        "buyAmount": "2000000000000000000",
+        "validTo": 1700000000,
+        "appData": "{\"version\":\"1.0.0\",\"metadata\":{}}",
+        "feeAmount": "0",
+        "kind": "sell",
+        "partiallyFillable": false,
+        "sellTokenBalance": "erc20",
+        "buyTokenBalance": "erc20",
+        "signingScheme": "eip712",
+        "signature": "0x1234",
+        "from": "0x0000000000000000000000000000000000000003",
+        "fullBalanceCheck": false
+      }
+    },
+    {
+      "name": "hash_app_data_zero_fee_with_quote",
+      "payload": {
+        "sellToken": "0x0000000000000000000000000000000000000001",
+        "buyToken": "0x0000000000000000000000000000000000000002",
+        "sellAmount": "1000000000000000000",
+        "buyAmount": "2000000000000000000",
+        "validTo": 1700000000,
+        "appData": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "feeAmount": "0",
+        "kind": "buy",
+        "partiallyFillable": true,
+        "sellTokenBalance": "erc20",
+        "buyTokenBalance": "internal",
+        "signingScheme": "ethsign",
+        "signature": "0x1234",
+        "from": "0x0000000000000000000000000000000000000003",
+        "quoteId": 7
+      }
+    },
+    {
+      "name": "both_app_data_and_hash_zero_fee",
+      "payload": {
+        "sellToken": "0x0000000000000000000000000000000000000001",
+        "buyToken": "0x0000000000000000000000000000000000000002",
+        "receiver": "0x0000000000000000000000000000000000000003",
+        "sellAmount": "1000000000000000000",
+        "buyAmount": "2000000000000000000",
+        "validTo": 1700000000,
+        "appData": "{\"version\":\"1.0.0\",\"metadata\":{}}",
+        "appDataHash": "0xa3f0b48d4cb38f1ad7ec8a4e2bbe1c2d05ce2e6dfc8db4ec2c8db2d65f25a31a",
+        "feeAmount": "0",
+        "kind": "sell",
+        "partiallyFillable": false,
+        "sellTokenBalance": "erc20",
+        "buyTokenBalance": "erc20",
+        "signingScheme": "eip712",
+        "signature": "0x1234",
+        "from": "0x0000000000000000000000000000000000000003"
+      }
+    }
+  ]
+}

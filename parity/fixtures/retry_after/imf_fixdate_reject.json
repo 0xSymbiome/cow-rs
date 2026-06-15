@@ -1,0 +1,79 @@
+{
+  "surface": "retry-after-imf-fixdate-reject",
+  "standards": [
+    "RFC 7231 §7.1.1.1 (IMF-fixdate, negative space)"
+  ],
+  "description": "Retry-After IMF-fixdate reject cases. Every row presents a malformed HTTP-date header value that must fail to parse and surface as a typed None to the caller. The parser routes through httpdate::parse_http_date which enforces strict RFC 7231 syntax.",
+  "cases": [
+    {
+      "id": "retry-after-imf-fixdate-rejects-missing-timezone",
+      "description": "Header is missing the trailing GMT timezone marker.",
+      "inputs": {
+        "raw_header": "Sun, 06 Nov 1994 08:49:37"
+      }
+    },
+    {
+      "id": "retry-after-imf-fixdate-rejects-non-gmt-timezone",
+      "description": "Header carries a non-GMT timezone (RFC 7231 only permits GMT).",
+      "inputs": {
+        "raw_header": "Sun, 06 Nov 1994 08:49:37 UTC"
+      }
+    },
+    {
+      "id": "retry-after-imf-fixdate-rejects-out-of-range-day",
+      "description": "Day 32 is invalid in every calendar month.",
+      "inputs": {
+        "raw_header": "Sun, 32 Nov 1994 08:49:37 GMT"
+      }
+    },
+    {
+      "id": "retry-after-imf-fixdate-rejects-day-31-in-30-day-month",
+      "description": "Day 31 is invalid in November (30-day month).",
+      "inputs": {
+        "raw_header": "Sun, 31 Nov 1994 08:49:37 GMT"
+      }
+    },
+    {
+      "id": "retry-after-imf-fixdate-rejects-feb-29-non-leap",
+      "description": "29 Feb 2025 is invalid (2025 is not a leap year).",
+      "inputs": {
+        "raw_header": "Sat, 29 Feb 2025 08:49:37 GMT"
+      }
+    },
+    {
+      "id": "retry-after-imf-fixdate-rejects-invalid-month",
+      "description": "Foo is not a valid three-letter month abbreviation.",
+      "inputs": {
+        "raw_header": "Sun, 06 Foo 1994 08:49:37 GMT"
+      }
+    },
+    {
+      "id": "retry-after-imf-fixdate-rejects-out-of-range-hour",
+      "description": "Hour 25 exceeds the 0-23 range.",
+      "inputs": {
+        "raw_header": "Sun, 06 Nov 1994 25:00:00 GMT"
+      }
+    },
+    {
+      "id": "retry-after-imf-fixdate-rejects-out-of-range-minute",
+      "description": "Minute 60 exceeds the 0-59 range.",
+      "inputs": {
+        "raw_header": "Sun, 06 Nov 1994 08:60:00 GMT"
+      }
+    },
+    {
+      "id": "retry-after-imf-fixdate-rejects-truncated-weekday",
+      "description": "Weekday is truncated before the trailing comma.",
+      "inputs": {
+        "raw_header": "Mon 06 Nov 1994 08:49:37 GMT"
+      }
+    },
+    {
+      "id": "retry-after-imf-fixdate-rejects-garbage-input",
+      "description": "Free-form garbage text never matches any HTTP-date form.",
+      "inputs": {
+        "raw_header": "not a date at all"
+      }
+    }
+  ]
+}

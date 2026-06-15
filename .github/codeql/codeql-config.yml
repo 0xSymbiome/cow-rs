@@ -1,0 +1,25 @@
+name: cow-rs-codeql
+
+queries:
+  - uses: security-and-quality
+
+paths:
+  - .github
+  - crates
+  - examples
+  - parity
+  - scripts
+
+# Security/quality SAST queries target shipped library code. Integration tests
+# under crates/*/tests use hardcoded, PUBLIC fixtures (an order UID is on-chain
+# data: orderDigest+owner+validTo) and deliberately Debug-format decoded domain
+# values for failure diagnostics. CodeQL's rust/cleartext-logging classifies any
+# identifier whose name contains the "uid" heuristic token as sensitive, so those
+# test assertions raise false positives. Excluding test and bench sources keeps
+# cleartext-logging fully active on crates/*/src -- where it guards the real
+# redaction discipline (Redacted<T>, redacting signer Debug) -- while dropping the
+# test-only noise. Mirrors cowprotocol/services, whose CodeQL config is a single
+# `paths-ignore: [crates/e2e]`.
+paths-ignore:
+  - '**/tests/**'
+  - '**/benches/**'

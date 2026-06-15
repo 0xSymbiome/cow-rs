@@ -1,0 +1,41 @@
+# Normalize line endings for files whose byte-exact contents are
+# compared by tests. Snapshot fixtures must stay LF on every host so
+# `include_str!` produces identical bytes across Windows, macOS, and
+# Linux checkouts.
+*.snap text eol=lf
+
+# trybuild compile-fail snapshots (`tests/ui/*.stderr`) are byte-compared
+# against the diagnostics the pinned toolchain emits. CRLF on a Windows
+# checkout would break that comparison against the LF output CI generates.
+*.stderr text eol=lf
+
+# wasm TypeScript declaration snapshots are byte-compared against freshly
+# generated declarations by the wasm workflow's snapshot diff. CRLF on a
+# Windows checkout would break that diff against the LF output CI generates.
+crates/wasm/snapshots/**/*.d.ts text eol=lf
+
+# YAML files under parity/openapi/ are read by Rust tooling:
+# `parity/openapi/services-orderbook.yml` is a vendored upstream
+# snapshot whose "Vendored from cowprotocol/services @ <commit>" header
+# pins it to a specific upstream commit, and `coverage.yaml` is the DTO
+# coverage manifest the validator expands in memory. CRLF on any host
+# would change the bytes the vendoring header and parser depend on.
+parity/openapi/**/*.yaml text eol=lf
+parity/openapi/**/*.yml text eol=lf
+
+# Frozen wire-byte fixtures pinned by Rust regression tests through
+# `include_str!`. CRLF would corrupt the byte-equality assertion the
+# fixture is built to enforce.
+parity/fixtures/**/*.json text eol=lf
+
+# Source-lock manifests carry pinned upstream commit hashes and are
+# parsed by `cargo parity-validate`. LF normalisation keeps the parser
+# input identical across hosts.
+parity/source-lock.yaml text eol=lf
+
+# COW Shed proxy creation-code is RAW EVM bytecode, not text. Mark it
+# explicitly `binary` so git neither normalises nor diffs the byte
+# stream. It is embedded via `include_bytes!` in cow-sdk-contracts, and
+# its derived CREATE2 proxy addresses are locked by the address-parity
+# fixtures.
+crates/contracts/src/cow_shed/address/proxy-creation-code/*.bin binary

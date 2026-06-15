@@ -1,0 +1,154 @@
+[advisories]
+version = 2
+yanked = "deny"
+unmaintained = "all"
+unsound = "all"
+unused-ignored-advisory = "allow"
+# Reviewed exceptions are the canonical RustSec tolerance register for both
+# cargo-deny and cargo-audit. CI derives the cargo-audit ignore arguments from
+# this list so advisory tolerances cannot drift between tools.
+ignore = [
+  { id = "RUSTSEC-2024-0436", reason = "Unmaintained `paste` is reachable only through the alloy-sol-macro and alloy-primitives proc-macro subtrees and does not compile runtime code; tracked in docs/audit/browser-wallet-alloy-dependency-audit.md. Next re-review on or before 2026-08-11 (90 days from 2026-05-13)." },
+  { id = "RUSTSEC-2024-0388", reason = "Unmaintained `derivative` is reachable only through the ark-ff / ruint / nybbles / alloy-trie subtree pulled by the alloy-consensus native adapter family; the crate is a derive-macro helper that does not compile into runtime cow-sdk code; tracked in docs/audit/dependency-gate-audit.md. Next re-review on or before 2026-08-16 (90 days from 2026-05-18)." },
+  { id = "RUSTSEC-2026-0173", reason = "Unmaintained `proc-macro-error2` is reachable only through the alloy-sol-macro proc-macro subtree that derives the inline `sol!` contract bindings; it is a build-time proc-macro helper that does not compile into runtime cow-sdk code; tracked in docs/audit/dependency-gate-audit.md. Next re-review on or before 2026-09-09 (90 days from 2026-06-11)." },
+]
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+# The unpublished `cow-sdk-test-utils` helper is pulled by every crate as a
+# path dev-dependency; such intra-workspace path links carry no registry
+# version by design, so they are allowed here while registry wildcards stay denied.
+allow-wildcard-paths = true
+highlight = "all"
+# Duplicate-version maintenance is curated here with explicit subtree scope and reasons.
+
+[[bans.skip-tree]]
+name = "alloy-primitives"
+version = "=1.5.7"
+reason = """
+The alloy 1.x ABI helper family used by contract bindings and the
+browser-wallet bridge still carries the crypto-common 0.1, digest
+0.10, block-buffer 0.10, sha3 0.10, keccak 0.1, and cpufeatures 0.2
+subtree internally.
+
+First-party hashing paths use the sha3 0.11 / digest 0.11 /
+block-buffer 0.12 / crypto-common 0.2 family directly.
+
+Re-review: when the pinned alloy family moves to a release that no
+longer carries the older digest stack, drop this skip-tree entry.
+
+Tracked in docs/audit/browser-wallet-alloy-dependency-audit.md and
+docs/audit/dependency-gate-audit.md.
+"""
+
+[[bans.skip-tree]]
+name = "rustls-platform-verifier"
+version = "=0.6.2"
+reason = """
+The native reqwest trust-store path still carries a legacy
+platform-verifier subtree alongside the current rustls-webpki line.
+
+Root cause:
+  reqwest 0.13.2
+    -> rustls-platform-verifier 0.6.2
+
+Re-review: when reqwest upgrades to a rustls-platform-verifier line
+that no longer duplicates the verifier stack, drop this skip-tree entry.
+
+Tracked in docs/audit/dependency-gate-audit.md.
+"""
+
+[[bans.skip-tree]]
+name = "sha2"
+version = "=0.10.9"
+reason = """
+The app-data dependency stack keeps sha2 0.10.9 available for
+legacy CID-compatible hashing dependencies, which carry the digest
+0.10 / block-buffer 0.10 / crypto-common 0.1 family.
+
+First-party deterministic hashing paths use the sha3 0.11-family tree.
+
+Re-review: when the CID dependency stack no longer reaches sha2 0.10,
+drop this skip-tree entry.
+
+Tracked in docs/audit/dependency-gate-audit.md.
+"""
+
+[[bans.skip-tree]]
+name = "winnow"
+version = "=0.7.15"
+reason = """
+The pinned alloy ABI parser stack carries the older winnow 0.7
+family while the workspace TOML tooling has moved to winnow 1.0.
+
+Root cause:
+  alloy-dyn-abi 1.5.7
+    -> alloy-sol-type-parser 1.5.7
+      -> winnow 0.7.15
+
+First-party workspace TOML tooling uses winnow 1.0 through toml 1.1.
+
+Re-review: when the pinned alloy family upgrades alloy-sol-type-parser
+to winnow 1.0, drop this skip-tree entry.
+
+Tracked in docs/audit/dependency-gate-audit.md.
+"""
+
+[[bans.skip-tree]]
+name = "getrandom"
+version = "=0.3.4"
+reason = """
+Test and validation support dependencies still carry getrandom 0.3.4.
+
+Root cause examples:
+  proptest 1.11.0
+    -> rand 0.9.3
+      -> rand_core 0.9.5
+        -> getrandom 0.3.4
+  jsonschema 0.45.1
+    -> ahash 0.8.12
+      -> getrandom 0.3.4
+
+First-party workspace dependencies use getrandom 0.4.2 directly.
+
+Re-review: when proptest/jsonschema/ahash move to getrandom 0.4,
+drop this skip-tree entry.
+
+Tracked in docs/audit/dependency-gate-audit.md.
+"""
+
+[licenses]
+version = 2
+confidence-threshold = 0.8
+private = { ignore = true }
+unused-allowed-license = "warn"
+
+allow = [
+  "Apache-2.0",
+  "Apache-2.0 WITH LLVM-exception",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "CDLA-Permissive-2.0",
+  "ISC",
+  "GPL-3.0-or-later",
+  "LicenseRef-rustls-webpki",
+  "MIT",
+  "MIT-0",
+  "Unicode-3.0",
+  "Unlicense",
+  "Zlib",
+]
+
+exceptions = []
+
+[[licenses.clarify]]
+name = "rustls-webpki"
+version = "*"
+expression = "LicenseRef-rustls-webpki"
+license-files = [{ path = "LICENSE", hash = 0x001c7e6c }]
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-git = []

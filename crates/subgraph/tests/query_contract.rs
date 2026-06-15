@@ -1,0 +1,175 @@
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::derive_partial_eq_without_eq,
+    clippy::iter_on_single_items,
+    clippy::missing_const_for_fn,
+    clippy::option_if_let_else,
+    clippy::redundant_clone,
+    clippy::too_many_lines,
+    clippy::uninlined_format_args,
+    clippy::unnested_or_patterns,
+    reason = "pedantic, nursery, style, and perf lints acceptable in test helper code"
+)]
+
+use cow_sdk_subgraph::{
+    LAST_DAYS_VOLUME_QUERY, LAST_HOURS_VOLUME_QUERY, SubgraphQueryRequest, TOTALS_QUERY,
+};
+use serde_json::json;
+
+#[test]
+fn totals_query_matches_required_operation_and_fields() {
+    assert_eq!(
+        TOTALS_QUERY,
+        include_str!("../src/query_documents/totals.graphql")
+    );
+    assert!(TOTALS_QUERY.starts_with("query Totals"));
+    for field in [
+        "totals",
+        "tokens",
+        "orders",
+        "traders",
+        "settlements",
+        "volumeUsd",
+        "volumeEth",
+        "feesUsd",
+        "feesEth",
+    ] {
+        assert!(TOTALS_QUERY.contains(field), "missing field {field}");
+    }
+}
+
+#[test]
+fn last_days_query_matches_required_operation_and_variable_contract() {
+    assert_eq!(
+        LAST_DAYS_VOLUME_QUERY,
+        include_str!("../src/query_documents/last_days_volume.graphql")
+    );
+    assert!(LAST_DAYS_VOLUME_QUERY.starts_with("query LastDaysVolume"));
+    assert!(LAST_DAYS_VOLUME_QUERY.contains("$days: Int!"));
+    assert!(LAST_DAYS_VOLUME_QUERY.contains("dailyTotals"));
+    assert!(LAST_DAYS_VOLUME_QUERY.contains("orderBy: timestamp"));
+    assert!(LAST_DAYS_VOLUME_QUERY.contains("orderDirection: desc"));
+    assert!(LAST_DAYS_VOLUME_QUERY.contains("first: $days"));
+    assert!(LAST_DAYS_VOLUME_QUERY.contains("timestamp"));
+    assert!(LAST_DAYS_VOLUME_QUERY.contains("volumeUsd"));
+}
+
+#[test]
+fn last_hours_query_matches_required_operation_and_variable_contract() {
+    assert_eq!(
+        LAST_HOURS_VOLUME_QUERY,
+        include_str!("../src/query_documents/last_hours_volume.graphql")
+    );
+    assert!(LAST_HOURS_VOLUME_QUERY.starts_with("query LastHoursVolume"));
+    assert!(LAST_HOURS_VOLUME_QUERY.contains("$hours: Int!"));
+    assert!(LAST_HOURS_VOLUME_QUERY.contains("hourlyTotals"));
+    assert!(LAST_HOURS_VOLUME_QUERY.contains("orderBy: timestamp"));
+    assert!(LAST_HOURS_VOLUME_QUERY.contains("orderDirection: desc"));
+    assert!(LAST_HOURS_VOLUME_QUERY.contains("first: $hours"));
+    assert!(LAST_HOURS_VOLUME_QUERY.contains("timestamp"));
+    assert!(LAST_HOURS_VOLUME_QUERY.contains("volumeUsd"));
+}
+
+#[test]
+fn subgraph_query_request_keeps_document_variables_and_operation_name_explicit() {
+    let request = SubgraphQueryRequest::new(
+        "query TokensByVolume($limit: Int!) { tokens(first: $limit) { symbol } }",
+    )
+    .with_variables(json!({ "limit": 5 }))
+    .with_operation_name("TokensByVolume");
+
+    assert_eq!(
+        request.document(),
+        "query TokensByVolume($limit: Int!) { tokens(first: $limit) { symbol } }"
+    );
+    assert_eq!(request.variables(), Some(&json!({ "limit": 5 })));
+    assert_eq!(request.operation_name(), Some("TokensByVolume"));
+}
+
+#[test]
+fn subgraph_query_request_from_plain_document_keeps_operation_name_absent() {
+    let request = SubgraphQueryRequest::from("{ totals { orders } }");
+
+    assert_eq!(request.document(), "{ totals { orders } }");
+    assert_eq!(request.variables(), None);
+    assert_eq!(request.operation_name(), None);
+}
+
+#[test]
+fn query_request_preserves_nested_variable_objects_and_arrays() {
+    // Nested variable objects and arrays survive request serialization and the
+    // round-trip back without normalization, key reordering, or field loss.
+    let variables = json!({
+        "limit": 25,
+        "offset": 100,
+        "filters": {
+            "owners": [
+                "0x1111111111111111111111111111111111111111",
+                "0x2222222222222222222222222222222222222222"
+            ],
+            "minVolume": 1000,
+            "includeInactive": false
+        },
+        "windows": [
+            { "kind": "daily", "size": 30 },
+            { "kind": "hourly", "size": 48 }
+        ]
+    });
+    let request = SubgraphQueryRequest::new(
+        "query WindowedTotals($limit: Int!, $offset: Int!, $filters: TotalsFilter!, $windows: [WindowInput!]!) { totals { orders } }",
+    )
+    .with_variables(variables.clone())
+    .with_operation_name("WindowedTotals");
+
+    let value = serde_json::to_value(&request).expect("request serialization must succeed");
+    assert_eq!(value["variables"], variables);
+
+    let roundtrip: SubgraphQueryRequest =
+        serde_json::from_value(value).expect("request roundtrip must remain stable");
+    assert_eq!(roundtrip, request);
+    assert_eq!(roundtrip.variables(), Some(&variables));
+}
+
+#[test]
+fn multi_operation_document_requires_explicit_operation_name() {
+    let document = "query TokensByVolume { tokens(first: 1) { symbol } }\n\nquery TotalsForAudit { totals { orders } }";
+
+    let missing = SubgraphQueryRequest::new(document);
+    assert_eq!(document.matches("query ").count(), 2);
+    assert_eq!(missing.operation_name(), None);
+
+    let explicit = SubgraphQueryRequest::new(document).with_operation_name("TokensByVolume");
+    assert_eq!(explicit.operation_name(), Some("TokensByVolume"));
+}
+
+#[test]
+fn query_documents_open_response_dto_tolerates_unknown_extra_fields() {
+    let totals: cow_sdk_subgraph::TotalsResponse = serde_json::from_value(json!({
+        "totals": [
+            {
+                "tokens": "1",
+                "orders": "2",
+                "traders": "3",
+                "settlements": "4",
+                "unexpected": "ignored"
+            }
+        ],
+        "topLevelExtra": true
+    }))
+    .expect("totals response must ignore unknown extra fields");
+    assert_eq!(totals.totals[0].orders, "2");
+
+    let days: cow_sdk_subgraph::LastDaysVolumeResponse = serde_json::from_value(json!({
+        "dailyTotals": [
+            {
+                "timestamp": "1651104000",
+                "volumeUsd": "1",
+                "unexpected": "ignored"
+            }
+        ],
+        "topLevelExtra": true
+    }))
+    .expect("last-days response must ignore unknown extra fields");
+    assert_eq!(days.daily_totals[0].timestamp, 1_651_104_000);
+}

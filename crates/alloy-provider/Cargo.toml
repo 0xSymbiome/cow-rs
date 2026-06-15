@@ -1,0 +1,50 @@
+[package]
+name = "cow-sdk-alloy-provider"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+description = "Alloy-backed read-only Provider adapter for the CoW Protocol Rust SDK"
+readme = "README.md"
+documentation = "https://docs.rs/cow-sdk-alloy-provider"
+homepage = "https://github.com/0xSymbiome/cow-rs"
+keywords = ["cow-protocol", "alloy", "provider", "ethereum", "rpc"]
+categories = ["api-bindings", "cryptography::cryptocurrencies"]
+
+[package.metadata.docs.rs]
+all-features = true
+default-target = "x86_64-unknown-linux-gnu"
+targets = ["x86_64-unknown-linux-gnu"]
+
+[lib]
+path = "src/lib.rs"
+
+[lints]
+workspace = true
+
+[features]
+default = []
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+cow-sdk-core = { path = "../core", version = "0.1.0" }
+
+alloy-consensus.workspace = true
+alloy-dyn-abi = { workspace = true, features = ["std", "eip712"] }
+alloy-json-abi.workspace = true
+alloy-json-rpc.workspace = true
+alloy-network.workspace = true
+alloy-primitives.workspace = true
+alloy-provider.workspace = true
+alloy-rpc-client.workspace = true
+alloy-rpc-types-eth.workspace = true
+alloy-transport.workspace = true
+reqwest = { workspace = true, default-features = false, features = ["rustls"] }
+serde_json.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+trybuild.workspace = true
+wiremock.workspace = true

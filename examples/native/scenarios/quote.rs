@@ -1,0 +1,67 @@
+//! Quote without submission.
+//!
+//! Requests a price through `Trading::quote_only` against a transport-mocked
+//! orderbook — the shortest read-only path for a consumer that wants a quote
+//! without building, signing, or posting an order.
+
+#![allow(
+    clippy::redundant_closure_for_method_calls,
+    reason = "example clarity: the explicit `|value| value.to_hex_string()` closure reads better for a learner than a fully-qualified method reference"
+)]
+
+use std::error::Error;
+
+use serde_json::json;
+
+use cow_sdk::core::SupportedChainId;
+use cow_sdk::trading::Trading;
+
+use cow_sdk::testing::MockOrderbook;
+use cow_sdk_examples_native::support::{sample_quote_response, sample_trade_parameters};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
+    // Transport-mocked orderbook seeded with a canned quote response.
+    let orderbook = MockOrderbook::builder(SupportedChainId::Sepolia)
+        .quote(sample_quote_response())
+        .build();
+
+    // Ready-state client with the mock injected. `orderbook.clone()` keeps a
+    // handle so we can read what the client sent after the call. The recording
+    // orderbook is injected by value through the builder's `orderbook` setter —
+    // the same one-call chain a real app uses, with no `Arc` wrapping.
+    let trading = Trading::builder()
+        .chain_id(SupportedChainId::Sepolia)
+        .app_code("cow-rs-quote-only")
+        .orderbook(orderbook.clone())
+        .build()?;
+
+    // Quote only — no order is built, signed, or posted.
+    let quote = trading.quote_only(sample_trade_parameters(), None).await?;
+
+    // Inspect the request the client actually sent to the orderbook.
+    let recorded = orderbook.recorded();
+    let request = recorded
+        .quote_requests
+        .last()
+        .expect("example quote request must be captured");
+
+    let report = json!({
+        "surface": "cow_sdk::trading::Trading::quote_only",
+        "mode": "simulated-transport",
+        "quote": {
+            "id": quote.quote_response.id,
+            "suggestedSlippageBps": quote.suggested_slippage_bps,
+            "sellAmount": quote.quote_response.quote.sell_amount,
+            "buyAmount": quote.quote_response.quote.buy_amount
+        },
+        "request": {
+            "from": request.from.to_hex_string(),
+            "receiver": request.receiver.as_ref().map(|address| address.to_hex_string()),
+            "priceQuality": request.price_quality
+        }
+    });
+
+    println!("{}", serde_json::to_string_pretty(&report)?);
+    Ok(())
+}

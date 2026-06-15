@@ -1,0 +1,96 @@
+# ADR 0041: Share Transport Policy Across HTTP Clients
+
+- Status: Accepted
+- Date: 2026-05-08
+- Last reviewed: 2026-06-15
+- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
+- Tags: transport, retry, layering
+- Related: [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), [ADR 0019](0019-http-transport-sole-dispatch.md), [ADR 0046](0046-transport-policy-js-exposure.md)
+
+## Decision
+
+Orderbook and subgraph retry, `Retry-After`, jitter, rate-limit, and
+transport-error classification behavior lives in the
+`cow_sdk_core::transport::policy` module, gated behind the off-by-default
+`transport-policy` feature of `cow-sdk-core`. The policy layer sits above
+`cow_sdk_core::transport::HttpTransport` and below typed clients.
+`OrderbookApiBuilder` and `SubgraphApiBuilder` accept the shared
+`TransportPolicy` through `.transport_policy(...)`.
+
+The TypeScript-callable package exposes the same policy through a typed
+`TransportPolicyConfig` on JavaScript client constructors. Omitting the config
+preserves Rust defaults; invalid policy values fail during constructor
+validation.
+
+## Why
+
+The raw transport trait should stay a dispatch seam. Retry and rate-limit
+behavior depends on client semantics, HTTP status handling, and caller policy,
+so it must not widen the `HttpTransport` trait. A feature-gated module keeps
+that behavior owned in one place — giving orderbook, subgraph, trading, and
+IPFS one consistent policy without duplicating backoff code or tying the browser
+transport crate to native HTTP details — while leaving the default `cow-sdk-core`
+surface and dependency closure exactly as lean as the bare transport seam.
+
+The single owner also avoids parallel public names for the same behavior.
+Downstream callers configure one policy type for every HTTP client instead of
+separate client-specific policy wrappers.
+
+## Must Remain True
+
+- Public surface: typed Rust clients consume `TransportPolicy`; JavaScript
+  clients consume `TransportPolicyConfig`; the policy types are reached through
+  `cow_sdk_core::transport::policy` and are not re-exported from orderbook or
+  subgraph.
+- Lean default: the `transport-policy` feature is off by default. With the
+  feature disabled, `cow-sdk-core` exposes no policy module and pulls none of
+  the retry-timer dependencies, so the raw transport seam stays unwidened.
+- Runtime and support: retryable statuses remain `408`, `425`, `429`, `500`,
+  `502`, `503`, and `504`; `Retry-After` is honored for `429` and `503`;
+  rate-limit state remains instance-scoped.
+- Shared driver: the retry driver loop is owned by
+  `cow_sdk_core::transport::policy` through `run_with_retry`. The orderbook,
+  subgraph, and IPFS clients route their retries through that driver instead of
+  hand-rolling a per-client loop, so the retry, backoff, `Retry-After`,
+  rate-limit acquisition, and retry telemetry behavior is defined once. A
+  non-retryable transport class returns immediately rather than re-dispatching.
+- Wall clock: retry-delay computation reads the wall clock through the
+  target-neutral `cow_sdk_core::transport::policy::system_now`, never
+  `std::time::SystemTime::now()` on a wasm-reachable path, so a retryable
+  response cannot abort a browser runtime.
+- Validation and review: the policy module must test default orderbook and
+  subgraph policy stability, no-retry behavior, jitter bounds, per-host limiter
+  keying, status completeness, classifier totality, the `run_with_retry`
+  outcome contract across the success, retry, exhaustion, and non-retryable
+  cases, the `system_now` browser-safe clock, and TypeScript config translation
+  for wasm clients.
+
+## Alternatives Rejected
+
+- Keep client-local policy types: this retained duplicated retry and
+  `Retry-After` logic and made subgraph retry behavior diverge from orderbook.
+- Ship the policy as a standalone published crate: the separation added a
+  workspace member, a `Cargo.toml`, and a docs.rs entry without protecting any
+  boundary that the off-by-default feature gate does not already protect. The
+  gate keeps the default transport seam unwidened, so the crate split was
+  surface the maintenance footprint did not need to carry.
+- Move retry policy into `cow-sdk-core` as an always-on module: this would
+  widen the default surface and dependency closure with client policy that
+  belongs above dispatch. The `transport-policy` feature gate avoids that — the
+  policy is present only when a consumer opts in.
+- Provide compatibility aliases from orderbook or subgraph: aliases would
+  preserve two names for one policy and make the public surface harder to audit.
+
+## Links
+
+- [Transport](../transport.md)
+- [Architecture](../architecture.md)
+- [ADR 0013](0013-http-transport-injection-and-typestate-builders.md)
+- [ADR 0019](0019-http-transport-sole-dispatch.md)
+- [WASM Public API Stability Audit](../audit/wasm-public-api-stability-audit.md)
+
+**Proven by:**
+
+- [Transport Policy Coverage Audit](../audit/transport-policy-coverage-audit.md)
+- [HTTP Transport Contract Audit](../audit/http-transport-contract-audit.md)
+- [WASM Public API Stability Audit](../audit/wasm-public-api-stability-audit.md)

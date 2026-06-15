@@ -1,0 +1,103 @@
+{
+  "name": "cow-sdk-wasm-placeholder",
+  "version": "0.1.0",
+  "description": "TypeScript-callable wasm-bindgen bindings for the CoW Protocol Rust SDK",
+  "license": "GPL-3.0-only",
+  "homepage": "https://github.com/0xSymbiome/cow-rs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/0xSymbiome/cow-rs.git",
+    "directory": "crates/wasm/npm"
+  },
+  "keywords": [
+    "cow-protocol",
+    "sdk",
+    "wasm",
+    "wasm-bindgen",
+    "typescript",
+    "eip-1193",
+    "eip-1271"
+  ],
+  "packageManager": "pnpm@11.0.9",
+  "type": "module",
+  "main": "./dist/default/index.cjs",
+  "module": "./dist/default/index.mjs",
+  "types": "./dist/default/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/default/index.d.ts",
+      "node": {
+        "types": "./dist/default/index.d.ts",
+        "require": "./dist/default/index.cjs",
+        "default": "./dist/default/index.cjs"
+      },
+      "browser": {
+        "types": "./dist/default/index.d.ts",
+        "import": "./dist/default/index.mjs"
+      },
+      "import": "./dist/default/index.mjs",
+      "default": "./dist/default/index.mjs"
+    },
+    "./orderbook": {
+      "types": "./dist/orderbook/index.d.ts",
+      "node": {
+        "types": "./dist/orderbook/index.d.ts",
+        "require": "./dist/orderbook/index.cjs",
+        "default": "./dist/orderbook/index.cjs"
+      },
+      "browser": {
+        "types": "./dist/orderbook/index.d.ts",
+        "import": "./dist/orderbook/index.mjs"
+      },
+      "import": "./dist/orderbook/index.mjs",
+      "default": "./dist/orderbook/index.mjs"
+    },
+    "./signing": {
+      "types": "./dist/signing/index.d.ts",
+      "node": {
+        "types": "./dist/signing/index.d.ts",
+        "require": "./dist/signing/index.cjs",
+        "default": "./dist/signing/index.cjs"
+      },
+      "browser": {
+        "types": "./dist/signing/index.d.ts",
+        "import": "./dist/signing/index.mjs"
+      },
+      "import": "./dist/signing/index.mjs",
+      "default": "./dist/signing/index.mjs"
+    },
+    "./cloudflare": {
+      "types": "./dist/cloudflare/index.d.ts",
+      "browser": {
+        "types": "./dist/cloudflare/index.d.ts",
+        "import": "./dist/cloudflare/index.mjs"
+      },
+      "import": "./dist/cloudflare/index.mjs",
+      "default": "./dist/cloudflare/index.mjs"
+    },
+    "./cloudflare/wasm": "./dist/raw/cloudflare-web/cow_sdk_wasm_bg.wasm"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "bash scripts/build.sh",
+    "compile:facade": "bash scripts/compile-facade.sh",
+    "test": "vitest run --config vitest.config.ts",
+    "typecheck": "tsc --project tsconfig.facade.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "25.6.2",
+    "typescript": "6.0.3",
+    "vitest": "4.1.5"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "sideEffects": false
+}

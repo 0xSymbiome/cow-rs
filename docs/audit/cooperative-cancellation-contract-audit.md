@@ -1,0 +1,187 @@
+# Cooperative Cancellation Contract Audit
+
+Status: Current
+Last reviewed: 2026-05-31
+Owning surface: Cross-cutting cooperative cancellation across `cow-sdk-core`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-trading`, native Alloy adapters, and `cow-sdk-wasm` callback transport
+Refresh trigger: Changes to the `Cancellable` combinator, to the `CancellationToken` re-export, to the canonical long-running public methods on client surfaces, to wasm abort/timeout bridging, or to the `From<Cancelled>` bridges on typed error aggregates
+Related docs:
+- [ADR 0005](../adr/0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
+- [ADR 0006](../adr/0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
+- [ADR 0010](../adr/0010-runtime-neutral-async-and-transport-posture.md)
+- [Alloy Umbrella Adapter Audit](alloy-umbrella-adapter-audit.md)
+- [WASM Callback Shape Design Audit](wasm-callback-shape-design-audit.md)
+- [Architecture](../architecture.md)
+- [Observability](../observability.md)
+
+## Scope
+
+This audit covers:
+
+- the shared `CancellationToken` re-export on `cow-sdk-core`
+- the `Cancellable` extension trait and its `WithCancellation<'t, F>`
+  wrapper on `cow-sdk-core`
+- the canonical long-running public methods on `OrderbookApi`,
+  `SubgraphApi`, and `Trading`, each composed with the combinator at
+  the call site
+- typed `Cancelled` variants on `CoreError`, `OrderbookError`,
+  `SubgraphError`, `TradingError`, `SigningError`, `BrowserWalletError`,
+  and the facade `CowError`, plus the `From<Cancelled>` bridges that lift
+  the marker across every public error boundary
+- typed `Cancelled` variants and `From<Cancelled>` bridges on the native
+  Alloy provider, signer, and umbrella adapter error aggregates
+- the biased cancellation poll inside the combinator that drops in-flight
+  request futures promptly when the caller cancels
+- `cow-sdk-wasm` callback HTTP timeouts that construct a live
+  `AbortSignal` and map JavaScript aborts to typed timeout errors
+
+It does not cover browser-wallet session cancellation, unrelated transport
+policy, or future capability crates outside the published surface.
+
+## Outcome Summary
+
+| Area | Reviewed contract | Result |
+| --- | --- | --- |
+| Shared token import | One typed cancellation token re-export across every public crate | Conforms |
+| Canonical public methods | Every long-running public operation on `OrderbookApi`, `SubgraphApi`, and `Trading` is exposed as one canonical async method; cancellation composes through `Cancellable::cancel_with(&token)` at the call site | Conforms |
+| Typed `Cancelled` variants | Every affected error aggregate surfaces cancellation as a discrete typed variant, and each carries a `From<Cancelled>` bridge so the marker propagates with `?` across every public boundary | Conforms |
+| Trading wait helper | `WaitError::Cancelled(Cancelled)` and its `From<Cancelled>` bridge let receipt-wait helpers propagate `Cancellable::cancel_with(&token)` cancellation without erasing signer or provider error types | Conforms |
+| Native Alloy adapters | Provider, signer, and umbrella adapter error aggregates expose cancellation as typed variants and propagate the marker through the same combinator contract | Conforms |
+| Combinator poll | The combinator polls the token in a biased branch, drops the inner future promptly on cancellation, and routes the marker through the inner result's `From<Cancelled>` implementation | Conforms |
+| WASM callback transport | `JsCallbackHttpTransport` constructs a live `AbortSignal`, owns its timer through `TimerGuard`, and maps aborts into the transport timeout class | Conforms |
+
+## Current Contract
+
+### Shared Token Import
+
+`cow-sdk-core` re-exports `tokio_util::sync::CancellationToken` as
+`cow_sdk_core::CancellationToken`. Every downstream crate routes
+cancellation through that one typed import so consumers do not mix
+independent tokens across crate boundaries.
+
+### `Cancellable` Combinator
+
+`cow-sdk-core` exposes the `Cancellable` extension trait, implemented for
+every `Future`, plus the `WithCancellation<'t, F>` future wrapper. Callers
+compose cancellation by wrapping any returned future through
+`cow_sdk_core::Cancellable::cancel_with(&token)` at the call site. The
+wrapper polls the borrowed `CancellationToken` in a biased branch before
+each inner poll; when the token fires, the wrapper drops the inner future
+promptly and resolves to the typed `Cancelled` variant through the inner
+result's `From<Cancelled>` implementation.
+
+### Canonical Public Methods
+
+Every long-running public operation on `OrderbookApi`, `SubgraphApi`, and
+`Trading` is exposed as one canonical async method that performs its
+request directly and carries the observability instrumentation for the
+operation. Callers that need cooperative cancellation wrap that future
+through the combinator at the call site.
+
+### Typed `Cancelled` Variants And `From<Cancelled>` Bridges
+
+`CoreError`, `OrderbookError`, `SubgraphError`, `TradingError`,
+`SigningError`, `BrowserWalletError`, `AlloyProviderError`,
+`AlloySignerError`, `AlloyClientError`, and the facade `CowError` each
+expose a typed `Cancelled` variant and an
+`impl From<cow_sdk_core::Cancelled>` that lifts the marker into that
+variant. Operation code therefore propagates cancellation with `?` across
+every public error boundary without pulling the raw `tokio-util` future
+type into downstream signatures. Facade classification through
+`CowError::class()` routes every reachable `Cancelled` variant to
+`ErrorClass::Cancelled`.
+
+The native Alloy adapter family uses the same boundary posture. Provider
+read calls, signer typed-data signing, and umbrella client operations can be
+wrapped by `Cancellable::cancel_with(&token)` and resolve to typed cancellation
+errors without exposing transport internals or signer state.
+
+`cow-sdk-wasm` uses the same cooperative boundary when JavaScript owns HTTP
+dispatch. `JsCallbackHttpTransport` builds a request DTO with a live
+`AbortSignal`, schedules SDK-owned timeout through `globalThis.AbortController`,
+and lets the `TimerGuard` clear the timer and drop the closure on success,
+throw, rejection, parse failure, or abort.
+
+`cow-sdk-trading::WaitError<S, P>` carries a `Cancelled(Cancelled)` variant and
+an `impl From<Cancelled>` bridge. A future returned by
+`submit_and_wait_for_receipt` or `poll_for_receipt` can therefore be wrapped by
+`Cancellable::cancel_with(&token)` and still preserve typed signer/provider
+error parameters for the non-cancelled paths.
+
+### Combinator Poll And Drop Semantics
+
+The `WithCancellation<'t, F>` wrapper drives a biased poll against the
+borrowed token's cancellation future. When the token fires, the wrapper
+returns `Poll::Ready(Err(E::from(Cancelled)))` and the caller's `.await`
+drops the inner future, so the underlying socket releases promptly rather
+than waiting for the request deadline. Cancellation is cooperative: the
+caller owns the token and can clone it to propagate shutdown across
+multiple SDK instances.
+
+## Evidence
+
+Primary implementation points:
+
+- `crates/core/src/cancellation.rs`
+- `crates/core/src/lib.rs`
+- `crates/core/src/errors.rs`
+- `crates/orderbook/src/api.rs`
+- `crates/orderbook/src/error.rs`
+- `crates/subgraph/src/api.rs`
+- `crates/subgraph/src/error.rs`
+- `crates/trading/src/client/mod.rs`, `crates/trading/src/client/*.rs`
+- `crates/trading/src/post/mod.rs`, `crates/trading/src/post/*.rs`
+- `crates/trading/src/error.rs`
+- `crates/trading/src/wait.rs`
+- `crates/signing/src/errors.rs`
+- `crates/browser-wallet/src/error.rs`
+- `crates/alloy-provider/src/error.rs`
+- `crates/alloy-signer/src/error.rs`
+- `crates/alloy/src/error.rs`
+- `crates/sdk/src/lib.rs`
+- `crates/wasm/src/exports/transport.rs`
+
+Primary regression coverage:
+
+- `crates/core/tests/cancellation_contract.rs`
+- `crates/core/tests/cancellation_coverage_validator.rs`
+- `crates/orderbook/tests/api_contract.rs`
+- `crates/orderbook/tests/cancellation_composition_contract.rs`
+- `crates/orderbook/tests/request_contract.rs::retry_after_backoff_wait_can_be_cancelled_before_next_attempt`
+- `crates/subgraph/tests/api_contract.rs`
+- `crates/subgraph/tests/cancellation_composition_contract.rs`
+- `crates/trading/tests/sdk_contract.rs`
+- `crates/trading/tests/cancellation_composition_contract.rs`
+- `crates/trading/tests/wait_helper_contract.rs::cancellation_through_cancellable_propagates_through_helper`
+- `crates/alloy-provider/tests/cancellation_contract.rs`
+- `crates/alloy-signer/tests/cancellation_contract.rs`
+- `crates/alloy/tests/cancellation_contract.rs`
+- `crates/wasm/tests/wasm_callback_transport_contract.rs::callback_transport_receives_request_dto_with_signal`
+- `crates/wasm/tests/wasm_callback_transport_contract.rs::timeout_overflow_fails_before_dispatch`
+- `crates/wasm/tests/wasm_cancellation_contract.rs::abort_bridge_removes_listener_after_success`
+- `crates/wasm/tests/wasm_cancellation_contract.rs::abort_bridge_removes_listener_after_callback_throw`
+- `crates/wasm/tests/wasm_cancellation_contract.rs::abort_bridge_removes_listener_after_callback_reject`
+- `crates/wasm/tests/wasm_cancellation_contract.rs::abort_bridge_removes_listener_after_parse_error`
+- `crates/wasm/tests/wasm_cancellation_contract.rs::abort_bridge_removes_listener_after_timeout_overflow`
+
+Validation surface:
+
+```text
+cargo fmt --all --check
+cargo test -p cow-sdk-core --test cancellation_coverage_validator
+cargo test -p cow-sdk-orderbook --test cancellation_composition_contract
+cargo test -p cow-sdk-orderbook --test request_contract
+cargo test -p cow-sdk-subgraph --test cancellation_composition_contract
+cargo test -p cow-sdk-trading --test cancellation_composition_contract
+cargo test -p cow-sdk-trading --test wait_helper_contract
+cargo test -p cow-sdk-alloy-provider --test cancellation_contract
+cargo test -p cow-sdk-alloy-signer --test cancellation_contract
+cargo test -p cow-sdk-alloy --test cancellation_contract
+cargo test -p cow-sdk-core
+cargo test -p cow-sdk-orderbook
+cargo test -p cow-sdk-subgraph
+cargo test -p cow-sdk-trading
+cargo test --workspace --all-features
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+cargo build --target wasm32-unknown-unknown -p cow-sdk
+wasm-pack test crates/wasm --headless --firefox
+```

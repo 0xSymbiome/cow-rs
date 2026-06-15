@@ -1,0 +1,37 @@
+{
+  "surface": "app-data-hooks-metadata",
+  "dto": "cow_sdk_app_data::HookList",
+  "sources": {
+    "cow-sdk": {
+      "commit": "c931d7ecd67626736f5b8dff781741e727128c42",
+      "refs": [
+        "packages/app-data/src/schemas/hooks/v0.2.0.json",
+        "packages/app-data/src/schemas/hook/v0.2.0.json"
+      ]
+    }
+  },
+  "payload": {
+    "version": "1.14.0",
+    "appCode": "hooks-contract",
+    "metadata": {
+      "hooks": {
+        "version": "0.2.0",
+        "pre": [
+          {
+            "target": "0x1234567890abcdef1234567890abcdef12345678",
+            "callData": "0x01020304",
+            "gasLimit": "100000",
+            "dappId": "cow-rs-hooks"
+          }
+        ],
+        "post": [
+          {
+            "target": "0xabcdef1234567890abcdef1234567890abcdef12",
+            "callData": "0x05060708",
+            "gasLimit": "125000"
+          }
+        ]
+      }
+    }
+  }
+}

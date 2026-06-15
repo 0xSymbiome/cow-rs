@@ -1,0 +1,71 @@
+# Pinned upstream commits backing the committed parity fixtures and the
+# inline alloy::sol! contract bindings. Validated by `cargo parity-validate`
+# (xtask): typed parsing rejects unknown fields, every repository row is
+# checked by form, and fixture provenance is validated per-file by globbing
+# parity/fixtures/**/*.json — each fixture carries its own sources/standards
+# header pinned to these rows. Pins are the only committed truth; every hash
+# is derived from them at check time.
+repositories:
+- id: contracts
+  remote: https://github.com/cowprotocol/contracts.git
+  commit: c6b61ce75841ce4c25ab126def9cc981c568e6c6
+  producer_paths:
+  - networks.json # settlement + vault-relayer addresses
+  - src/contracts/mixins/GPv2Signing.sol # EIP-712 domain name/version
+  - src/ts/order.ts # order layout, EIP-712 fields, UID, cancellations
+  - src/ts/sign.ts # signing schemes, EIP-1271 magic value
+  - src/ts/settlement.ts # settlement encoder calldata
+  - src/ts/interaction.ts # interaction normalization
+  - test/GPv2Order/PackOrderUidParams.t.sol # UID packing vector
+  - test/GPv2Order/ExtractOrderUidParams.t.sol # UID extraction vector
+  - test/GPv2Trade/ExtractFlags.t.sol # trade-flag decoding vector
+  - test/GPv2Trade/ExtractOrder.t.sol # trade extraction vector
+  - test/GPv2Settlement/OrderRefunds.t.sol # free filled/presignature calldata
+  - test/GPv2Settlement/Swap/Swap.t.sol # swap calldata vector
+- id: services
+  remote: https://github.com/cowprotocol/services.git
+  commit: 65b6953bfc2e96b2791cfb2382c7309d1fb19b99
+  producer_paths:
+  - crates/app-data/src/app_data.rs # app-data hashing, flashloan hint
+  - crates/model/src/order.rs # orderbook wire DTOs
+  - crates/model/src/solver_competition_v2.rs # solver-competition v2 producer
+  - crates/orderbook/openapi.yml # OpenAPI schema (vendored to parity/openapi/)
+  - crates/orderbook/src/app_data.rs # orderbook app-data handling
+  - crates/orderbook/src/quoter.rs # orderbook quote handling
+  - crates/shared/src/order_validation.rs # order-validation rules
+- id: cow-sdk
+  remote: https://github.com/cowprotocol/cow-sdk.git
+  commit: c931d7ecd67626736f5b8dff781741e727128c42
+  producer_paths:
+  - packages/app-data/src/schemas/definitions.json # shared schema primitives
+  - packages/app-data/src/schemas/flashloan/v0.2.0.json # flashloan app-data schema
+  - packages/app-data/src/schemas/hook/v0.2.0.json # single-hook app-data schema
+  - packages/app-data/src/schemas/hooks/v0.2.0.json # hooks-container app-data schema
+  - packages/app-data/src/schemas/partnerFee/v1.0.0.json # partner-fee app-data schema
+  - packages/app-data/src/schemas/quote/v1.1.0.json # quote app-data schema
+  - packages/config/src/chains/const/contracts.ts # contract-address constants
+  - packages/cow-shed/src/abi/CowShedFactoryAbi.ts # COW Shed factory ABI
+  - packages/cow-shed/src/const.ts # COW Shed per-version constants
+  - packages/cow-shed/src/contracts/CoWShedHooks.test.ts # COW Shed CREATE2 goldens
+  - packages/order-signing/src/orderSigningUtils.ts # EIP-1271 order+signature encoder
+  - packages/trading/src/postCoWProtocolTrade.test.ts # protocol-fee composition goldens
+- id: cow-shed
+  remote: https://github.com/cowdao-grants/cow-shed.git
+  commit: e15a131d626edbf779c8e44451566e2c36dbdb7d
+  # pinned to the DEPLOYED v1.0.1 tag, not HEAD's v2.x line (ENS purge, pre-sign, composable forwarder) — those ship only as the Gnosis chain-100 redeploy, outside the supported family (ADR 0049).
+  producer_paths:
+  - networks.json # v1.0.x deployment addresses
+  - src/COWShed.sol # proxy runtime, VERSION constant
+  - src/COWShedFactory.sol # factory, CREATE2 deploy
+  - src/COWShedProxy.sol # proxy creation code
+  - src/ICOWAuthHook.sol # auth-hook interface
+  - src/LibAuthenticatedHooks.sol # hooks hashing, EIP-712 type strings
+- id: ethflowcontract
+  remote: https://github.com/cowprotocol/ethflowcontract.git
+  commit: 762d182674f8f890bd27917872ee62125171b54d
+  producer_paths:
+  - src/CoWSwapEthFlow.sol # CoWSwapEthFlow create/invalidate
+  - src/libraries/EthFlowOrder.sol # EthFlowOrder.Data layout
+  - src/interfaces/ICoWSwapOnchainOrders.sol # on-chain order events
+  - src/mixins/CoWSwapOnchainOrders.sol # on-chain order broadcast
+  - src/interfaces/IWrappedNativeToken.sol # wrapped-native token interface

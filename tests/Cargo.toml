@@ -1,0 +1,69 @@
+[package]
+name = "cow-rs-workspace-tests"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+alloy-primitives.workspace = true
+cow-sdk = { path = "../crates/sdk", version = "0.1.0", features = ["alloy"] }
+cow-sdk-alloy = { path = "../crates/alloy", version = "0.1.0" }
+cow-sdk-alloy-provider = { path = "../crates/alloy-provider", version = "0.1.0" }
+cow-sdk-alloy-signer = { path = "../crates/alloy-signer", version = "0.1.0" }
+cow-sdk-browser-wallet = { path = "../crates/browser-wallet", version = "0.1.0" }
+cow-sdk-contracts = { path = "../crates/contracts", version = "0.1.0", features = ["cow-shed"] }
+cow-sdk-core = { path = "../crates/core", version = "0.1.0" }
+cow-sdk-signing = { path = "../crates/signing", version = "0.1.0" }
+cow-sdk-trading = { path = "../crates/trading", version = "0.1.0" }
+serde_json.workspace = true
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+toml.workspace = true
+wiremock.workspace = true
+
+[[test]]
+name = "msrv_consistency"
+path = "msrv_consistency.rs"
+
+[[test]]
+name = "workspace_alloy_pin_lockstep"
+path = "workspace_alloy_pin_lockstep.rs"
+
+[[test]]
+name = "dependency_default_features_audit"
+path = "dependency_default_features_audit.rs"
+
+[[test]]
+name = "alloy_umbrella_composition"
+path = "alloy_umbrella_composition.rs"
+
+[[test]]
+name = "alloy_two_family_lockfile_invariant"
+path = "alloy_two_family_lockfile_invariant.rs"
+
+[[test]]
+name = "alloy_read_contract_parity_invariant"
+path = "alloy_read_contract_parity_invariant.rs"
+
+[[test]]
+name = "supported_chains_doc_table"
+path = "supported_chains_doc_table.rs"
+
+[[test]]
+name = "transaction_lifecycle_cross_adapter_invariant"
+path = "transaction_lifecycle_cross_adapter_invariant.rs"
+
+[[test]]
+name = "wasm_dependency_invariant"
+path = "wasm_dependency_invariant.rs"
+
+[[test]]
+name = "signer_rejection_propagation_invariant"
+path = "signer_rejection_propagation_invariant.rs"
+
+[[test]]
+name = "cow_shed_typed_data_digest"
+path = "cow_shed_typed_data_digest.rs"

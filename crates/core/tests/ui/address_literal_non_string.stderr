@@ -1,0 +1,26 @@
+error[E0689]: can't call method `as_bytes` on ambiguous numeric type `{integer}`
+ --> tests/ui/address_literal_non_string.rs:7:13
+  |
+7 |     let _ = address!(42);
+  |             ^^^^^^^^^^^^
+  |
+  = note: this error originates in the macro `$crate::hex` which comes from the expansion of the macro `address` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: you must specify a concrete type for this numeric value, like `i32`
+  |
+7 |     let _ = address!(42_i32);
+  |                        ++++
+
+error[E0308]: mismatched types
+ --> tests/ui/address_literal_non_string.rs:7:22
+  |
+7 |     let _ = address!(42);
+  |             ---------^^-
+  |             |        |
+  |             |        expected `&str`, found integer
+  |             arguments to this function are incorrect
+  |
+note: function defined here
+ --> src/lib.rs
+  |
+  |     pub const fn assert_lowercase_address_literal(literal: &str) {
+  |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

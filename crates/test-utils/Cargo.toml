@@ -1,0 +1,30 @@
+[package]
+name = "cow-sdk-test-utils"
+publish = false
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+description = "Internal, unpublished shared test helpers for the cow-rs workspace."
+
+[lints]
+workspace = true
+
+[dependencies]
+cow-sdk-core = { path = "../core", version = "0.1.0" }
+alloy-primitives = { workspace = true }
+async-trait = { workspace = true }
+proptest = { workspace = true, optional = true }
+sha3 = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+tracing-core = "0.1.36"
+
+[features]
+# Exposes the shared `arb` proptest strategies used by the workspace property
+# suites. Enabled by the consuming crate's dev-dependency on this crate.
+proptest = ["dep:proptest"]
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt"] }

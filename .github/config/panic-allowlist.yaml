@@ -1,0 +1,101 @@
+version: 1
+allowed:
+  - file: crates/app-data/src/schema.rs
+    item: generate_app_data_doc
+    reason: Typed metadata serialization is guaranteed by the public constructors feeding this path.
+  - file: crates/app-data/src/types/partner_fee.rs
+    item: PartnerFee::to_value
+    reason: Partner fee schema enums serialize through derived serde for SDK-owned values.
+  - file: crates/browser-wallet/src/mock.rs
+    item: MockState::default
+    reason: Static mock account literals are repository-owned validated EVM addresses.
+  - file: crates/browser-wallet/src/wallet/chain.rs
+    item: WalletChainParameters::for_supported_chain
+    reason: Built-in chain metadata is static and shares the same validator as user-supplied metadata.
+  - file: crates/browser-wallet/src/wallet/mod.rs
+    item: BrowserWallet::from_transport_or_panic
+    reason: Panic-named constructor is documented as panic-on-invalid for explicitly trusted Rust transports.
+  - file: crates/browser-wallet/src/wallet/chain.rs
+    item: known_wallet_native_currency
+    reason: Built-in native-currency metadata is static and validated by construction.
+  - file: crates/contracts/src/deployments.rs
+    item: DeploymentChainId::from
+    reason: SupportedChainId is the only producer and the bridge match is exhaustive across the currently supported chains; non-exhaustive future variants must land in the same patch with an explicit policy review.
+  - file: crates/contracts/src/deployments.rs
+    item: DeploymentEnv::from
+    reason: CowEnv is the only producer and the bridge match is exhaustive across the currently supported environments; non-exhaustive future variants must land in the same patch with an explicit policy review.
+  - file: crates/contracts/src/primitives.rs
+    item: sell_balance_name
+    reason: In-crate balance mapping covers every currently representable settlement sell-balance variant.
+  - file: crates/contracts/src/primitives.rs
+    item: buy_balance_name
+    reason: In-crate balance mapping covers every currently representable settlement buy-balance variant.
+  - file: crates/core/src/redaction/body.rs
+    item: strip_credential_tokens
+    reason: Redaction offsets are computed from in-bounds string match indices.
+  - file: crates/contracts/src/order.rs
+    item: extract_order_uid_params
+    reason: The two slice-to-array conversions in extract_order_uid_params operate on slices whose length is guaranteed by the ORDER_UID_LENGTH guard at the top of the function (bytes.len() == 56); the try_into-to-[u8; 32] and try_into-to-[u8; 20] conversions cannot fail under that guard, and the expect calls document the unreachability proof inline through // SAFETY comments naming the guarantee.
+  - file: crates/contracts/src/signature.rs
+    item: decode_eip1271_signature_data
+    reason: The slice-to-array conversion in decode_eip1271_signature_data operates on a slice whose length is guaranteed by the bytes.len() < 20 early-return guard above; the try_into-to-[u8; 20] conversion cannot fail under that guard, and the expect call documents the unreachability proof inline through a // SAFETY comment naming the guarantee.
+  - file: crates/orderbook/src/request.rs
+    item: ResponseEnvelope::json
+    reason: Test-only response envelope helper serializes serde_json::Value fixtures.
+  - file: crates/signing/src/domain.rs
+    item: domain
+    reason: Canonical settlement address is guaranteed by the validated deployment registry.
+  - file: crates/trading/src/allowance.rs
+    item: resolve_vault_relayer
+    reason: Canonical vault-relayer address is guaranteed by the validated deployment registry.
+  - file: crates/trading/src/onchain.rs
+    item: resolve_settlement_address
+    reason: Canonical settlement address is guaranteed by the validated deployment registry.
+  - file: crates/trading/src/onchain.rs
+    item: resolve_eth_flow_address
+    reason: Canonical EthFlow address is guaranteed by the validated deployment registry.
+  - file: crates/trading/src/onchain.rs
+    item: default_gas_limit
+    reason: Static gas limit literal is within the validated amount range.
+  - file: crates/trading/src/order.rs
+    item: order_to_sign
+    reason: Validity timestamp is clamped to the supported u32 range before conversion.
+  - file: crates/trading/src/order.rs
+    item: calculate_unique_order_id
+    reason: Canonical EthFlow address is guaranteed by the validated deployment registry.
+  - file: crates/trading/src/types/params.rs
+    item: LimitTradeParamsFromQuote::quote_id
+    reason: try_from_limit is the only public constructor and rejects None on entry, and the inner field is private and immutable through the public API so the invariant cannot be broken.
+  - file: crates/trading/src/client/swap.rs
+    item: SwapBuilder::to_trade_parameters
+    reason: The method is only reachable from the fully-set builder typestate, whose marker parameters guarantee the three required fields were assigned before the conversion runs.
+  - file: crates/trading/src/client/limit.rs
+    item: LimitBuilder::to_limit_parameters
+    reason: The method is only reachable from the fully-set builder typestate, whose marker parameters guarantee the four required fields were assigned before the conversion runs.
+  - file: crates/trading/src/wait.rs
+    item: delay_for
+    reason: Millisecond polling delay is clamped to u32::MAX before wasm timer conversion.
+  - file: crates/core/src/transport/policy/jitter.rs
+    item: bounded_offset
+    reason: Jitter offset is explicitly capped to u64::MAX before conversion.
+  - file: crates/core/src/transport/policy/config.rs
+    item: TransportPolicy::default_orderbook
+    reason: Static orderbook user-agent is a repository-owned valid header literal.
+  - file: crates/core/src/transport/policy/config.rs
+    item: TransportPolicy::default_subgraph
+    reason: Static subgraph user-agent is a repository-owned valid header literal.
+  - file: crates/core/src/transport/policy/config.rs
+    item: TransportPolicy::default_trading
+    reason: Static trading user-agent is a repository-owned valid header literal.
+  - file: crates/core/src/transport/policy/config.rs
+    item: TransportPolicy::default_ipfs
+    reason: Static IPFS user-agent is a repository-owned valid header literal.
+  - file: crates/core/src/transport/policy/config.rs
+    item: TransportPolicyBuilder::new
+    reason: Static orderbook user-agent seed is a repository-owned valid header literal.
+  - file: crates/core/src/transport/policy/retry.rs
+    item: RetryPolicy::base_backoff_delay
+    reason: Retry exponent is clamped to a u32-safe range before conversion.
+  - file: crates/core/src/transport/policy/time.rs
+    item: sleep
+    reason: Millisecond retry delay is clamped to u32::MAX before wasm timer conversion.
