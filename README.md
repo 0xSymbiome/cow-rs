@@ -1,6 +1,6 @@
 # cow-rs
 
-[![CI](https://github.com/0xSymbiome/cow-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/0xSymbiome/cow-rs/actions/workflows/ci.yml) [![docs.rs](https://img.shields.io/docsrs/cow-sdk?label=docs.rs)](https://docs.rs/cow-sdk) [![crates.io](https://img.shields.io/crates/v/cow-sdk)](https://crates.io/crates/cow-sdk) [![MSRV 1.94.0](https://img.shields.io/badge/MSRV-1.94.0-0A7BBB)](docs/release-checklist.md#3-compatibility-and-host-coverage) [![License GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-1F6FEB)](LICENSE)
+[![CI](https://github.com/0xSymbiome/cow-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/0xSymbiome/cow-rs/actions/workflows/ci.yml) [![docs.rs](https://img.shields.io/docsrs/cow-sdk?label=docs.rs)](https://docs.rs/cow-sdk) [![crates.io](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fcrates.io%2Fapi%2Fv1%2Fcrates%2Fcow-sdk&query=%24.crate.max_version&label=crates.io&prefix=v&color=e6a96d)](https://crates.io/crates/cow-sdk) [![MSRV 1.94.0](https://img.shields.io/badge/MSRV-1.94.0-0A7BBB)](docs/release-checklist.md#3-compatibility-and-host-coverage) [![License GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-1F6FEB)](LICENSE)
 
 `cow-rs` is a Rust SDK for CoW Protocol.
 
