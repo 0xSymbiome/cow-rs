@@ -22,8 +22,8 @@ of reimplementing protocol primitives.
   implementation eliminates protocol-drift bugs.
 - **Cloudflare Workers**: the `./cloudflare` flavor (size-compatible with
   the current Workers Free compressed-size limit at the time of measurement;
-  full Workers support pending release-bundle and startup validation per
-  the Cloudflare Workers section below).
+  the `cloudflare` flavor is built and tested end-to-end in CI (Workers Vitest plus
+  the Cloudflare gateway example), within the Workers compressed-size budget).
 - **Embeddable signing helper**: the `./signing` flavor is the smallest and
   may be embedded in a larger TypeScript application.
 
@@ -35,11 +35,10 @@ equivalent feature subsets.
 
 ## Install
 
-The npm package name is selected at publication time and rendered into the
-package manifest by the package build script.
+The package is published to npm as `@symbiome-forge/cow-sdk-wasm`.
 
 ```bash
-npm install <published-cow-sdk-wasm-package>
+npm install @symbiome-forge/cow-sdk-wasm@0.1.0-alpha.1
 ```
 
 For Rust crate consumers:
@@ -114,8 +113,8 @@ statically imported `WebAssembly.Module`. Import the precompiled module from the
 `./cloudflare/wasm` subpath, initialize once, then use clients normally:
 
 ```ts
-import initialize, { OrderBookClient } from "<published-cow-sdk-wasm-package>/cloudflare";
-import wasmModule from "<published-cow-sdk-wasm-package>/cloudflare/wasm";
+import initialize, { OrderBookClient } from "@symbiome-forge/cow-sdk-wasm/cloudflare";
+import wasmModule from "@symbiome-forge/cow-sdk-wasm/cloudflare/wasm";
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {

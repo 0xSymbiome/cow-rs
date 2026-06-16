@@ -269,8 +269,9 @@ subsets. This package is appropriate for specialized cases:
 - Single-source-of-truth Rust + TypeScript embedding (one implementation
   across both runtimes).
 - Cloudflare Workers (size-compatible with the current Workers Free
-  compressed-size limit at the time of measurement; full Workers support
-  pending release-bundle and startup validation).
+  compressed-size limit at the time of measurement; the `cloudflare` flavor
+  is built and tested end-to-end in CI (Workers Vitest plus the Cloudflare
+  gateway example), within the Workers compressed-size budget).
 - Embeddable signing helpers (the `./signing` flavor is the smallest).
 
 The "When to use this SDK" table at the top of this README routes consumers
