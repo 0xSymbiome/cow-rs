@@ -38,12 +38,12 @@ rate-limit.existing-packages = 50
 # never rebuilt from full history. The hand-written first-release section
 # (`## [0.1.0-alpha.1]`) is preserved the same way.
 #
-# The hook is DISABLED for the first release: with no prior tag, `--unreleased`
-# would emit the entire history. So 0.1.0-alpha.1 ships with the hand-written
-# section above. AFTER `v0.1.0-alpha.1` is tagged, uncomment the line below and
-# every subsequent release (alpha.2, ...) auto-generates only its own slice.
-# Verify the first time with `cargo release <next-version> --dry-run`.
-# pre-release-hook = ["cargo", "run", "--quiet", "-p", "xtask", "--", "changelog", "--tag", "v{{version}}"]
+# `v0.1.0-alpha.1` is tagged, so the hook is now active: every subsequent release
+# (alpha.2, ...) auto-generates only its own slice (commits since the previous
+# tag). It stayed disabled for the first release because, with no prior tag,
+# `--unreleased` would have emitted the entire history. Verify a new release with
+# `cargo release <next-version> --dry-run` before running it for real.
+pre-release-hook = ["cargo", "run", "--quiet", "-p", "xtask", "--", "changelog", "--tag", "v{{version}}"]
 
 # Keep the version strings inside each crate's README in lockstep with the
 # release. cargo-release bumps Cargo.toml only; without these, the README install
