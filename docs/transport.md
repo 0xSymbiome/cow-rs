@@ -209,7 +209,7 @@ After publication, the TypeScript facade exposes one transport option on every
 client constructor:
 
 ```ts
-import { OrderBookClient } from "<published-cow-sdk-wasm-package>";
+import { OrderBookClient } from "@symbiome-forge/cow-sdk-wasm";
 
 const client = new OrderBookClient({
   chainId: 1,
@@ -317,6 +317,8 @@ arms include a wildcard to stay forward-compatible.
 | `Builder` | Client-builder misconfiguration |
 | `Request` | Request-level upstream failure |
 | `Status` | Non-success HTTP status class |
+| `Upgrade` | HTTP `101 Switching Protocols` upgrade, reserved for a future streaming response API and not produced by any in-tree transport |
+| `ResponseTooLarge` | The response body exceeded the configured maximum size, so the transport refused to buffer it (produced by the SDK response-size guard, not by `reqwest`) |
 | `Other` | Fallthrough for adapter-specific failure modes |
 
 Both defaults strip the URL through `reqwest::Error::without_url` (on
@@ -333,9 +335,10 @@ transport. A common pattern is a test transport that replays fixtures
 without touching the network:
 
 ```rust,no_run
-use async_trait::async_trait;
-use cow_sdk::http::{HttpTransport, TransportError};
 use std::{collections::HashMap, time::Duration};
+
+use cow_sdk::core::async_trait;
+use cow_sdk::http::{HttpTransport, TransportError, TransportResponse};
 
 #[derive(Debug, Clone, Default)]
 pub struct FixtureTransport {
@@ -350,10 +353,11 @@ impl HttpTransport for FixtureTransport {
         path: &str,
         _headers: &[(String, String)],
         _timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
+    ) -> Result<TransportResponse, TransportError> {
         self.responses
             .get(path)
             .cloned()
+            .map(|body| TransportResponse::new(200, Vec::new(), body))
             .ok_or_else(|| TransportError::Configuration {
                 message: format!("no fixture for GET {path}").into(),
             })
@@ -365,10 +369,11 @@ impl HttpTransport for FixtureTransport {
         _body: &str,
         _headers: &[(String, String)],
         _timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
+    ) -> Result<TransportResponse, TransportError> {
         self.responses
             .get(path)
             .cloned()
+            .map(|body| TransportResponse::new(200, Vec::new(), body))
             .ok_or_else(|| TransportError::Configuration {
                 message: format!("no fixture for POST {path}").into(),
             })
@@ -380,10 +385,11 @@ impl HttpTransport for FixtureTransport {
         _body: &str,
         _headers: &[(String, String)],
         _timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
+    ) -> Result<TransportResponse, TransportError> {
         self.responses
             .get(path)
             .cloned()
+            .map(|body| TransportResponse::new(200, Vec::new(), body))
             .ok_or_else(|| TransportError::Configuration {
                 message: format!("no fixture for PUT {path}").into(),
             })
@@ -395,10 +401,11 @@ impl HttpTransport for FixtureTransport {
         _body: &str,
         _headers: &[(String, String)],
         _timeout: Option<Duration>,
-    ) -> Result<String, TransportError> {
+    ) -> Result<TransportResponse, TransportError> {
         self.responses
             .get(path)
             .cloned()
+            .map(|body| TransportResponse::new(200, Vec::new(), body))
             .ok_or_else(|| TransportError::Configuration {
                 message: format!("no fixture for DELETE {path}").into(),
             })
