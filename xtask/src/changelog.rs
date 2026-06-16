@@ -16,7 +16,11 @@
 //! `--prepend`, which re-emits the configured header and would duplicate the
 //! `# Changelog` title.
 
-use std::{fs, path::PathBuf, process::Command};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+    process::Command,
+};
 
 use anyhow::{Context, Result, bail};
 
@@ -40,30 +44,27 @@ pub fn run(args: &Args) -> Result<()> {
     };
     let cliff_config = root.join("cliff.toml");
 
-    match &args.tag {
+    if let Some(tag) = &args.tag {
         // Release path: render only the new section and splice it in ourselves.
-        Some(tag) => {
-            let section = render_section(&root, &cliff_config, tag)?;
-            let changelog = root.join("CHANGELOG.md");
-            let existing = fs::read_to_string(&changelog)
-                .with_context(|| format!("failed to read {}", changelog.display()))?;
-            let updated = splice_section(&existing, &section)?;
-            fs::write(&changelog, updated)
-                .with_context(|| format!("failed to write {}", changelog.display()))?;
-            println!("inserted the {tag} section into {}", changelog.display());
-        }
+        let section = render_section(&root, &cliff_config, tag)?;
+        let changelog = root.join("CHANGELOG.md");
+        let existing = fs::read_to_string(&changelog)
+            .with_context(|| format!("failed to read {}", changelog.display()))?;
+        let updated = splice_section(&existing, &section)?;
+        fs::write(&changelog, updated)
+            .with_context(|| format!("failed to write {}", changelog.display()))?;
+        println!("inserted the {tag} section into {}", changelog.display());
+    } else {
         // Preview path: print the pending section to stdout, touch no files.
-        None => {
-            let status = Command::new("git-cliff")
-                .current_dir(&root)
-                .arg("--config")
-                .arg(&cliff_config)
-                .arg("--unreleased")
-                .status()
-                .context("failed to run git-cliff; install it with `cargo install git-cliff`")?;
-            if !status.success() {
-                bail!("git-cliff exited with {status}");
-            }
+        let status = Command::new("git-cliff")
+            .current_dir(&root)
+            .arg("--config")
+            .arg(&cliff_config)
+            .arg("--unreleased")
+            .status()
+            .context("failed to run git-cliff; install it with `cargo install git-cliff`")?;
+        if !status.success() {
+            bail!("git-cliff exited with {status}");
         }
     }
     Ok(())
@@ -71,7 +72,7 @@ pub fn run(args: &Args) -> Result<()> {
 
 /// Renders the commits since the previous tag as a single dated version section,
 /// stripped of the configured header and footer.
-fn render_section(root: &PathBuf, cliff_config: &PathBuf, tag: &str) -> Result<String> {
+fn render_section(root: &Path, cliff_config: &Path, tag: &str) -> Result<String> {
     let output = Command::new("git-cliff")
         .current_dir(root)
         .arg("--config")

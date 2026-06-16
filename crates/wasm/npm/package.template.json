@@ -1,6 +1,6 @@
 {
   "name": "cow-sdk-wasm-placeholder",
-  "version": "0.1.0",
+  "version": "0.1.0-alpha.1",
   "description": "TypeScript-callable wasm-bindgen bindings for the CoW Protocol Rust SDK",
   "license": "GPL-3.0-or-later",
   "homepage": "https://github.com/0xSymbiome/cow-rs",
