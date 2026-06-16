@@ -21,7 +21,7 @@ without depending on a specific wallet library.
 | Cloudflare Worker proxying CoW orderbook calls | `@symbiome-forge/cow-sdk-wasm/cloudflare` | Worker-compatible web target and explicit wasm module initialization |
 | Signer service or HSM proxy | `@symbiome-forge/cow-sdk-wasm/signing` | Signing primitives without orderbook, trading, subgraph, or IPFS clients |
 | Native Rust service, bot, solver, or treasury automation | `cow-sdk` | Avoids wasm-bindgen and npm packaging entirely |
-| Rust app compiled to browser WASM | `cow-sdk-browser-wallet` plus `cow-sdk-core` (browser `FetchTransport`) | Rust-on-wasm path; this package is for JavaScript hosts |
+| Rust app compiled to browser WASM | `cow-sdk` with `cow-sdk-core`'s browser `FetchTransport` (the `wasm32-unknown-unknown` `transport::fetch` module) | Rust-on-wasm path; this package is for JavaScript hosts |
 
 ## Not in this crate
 
@@ -270,8 +270,8 @@ subsets. This package is appropriate for specialized cases:
   across both runtimes).
 - Cloudflare Workers (size-compatible with the current Workers Free
   compressed-size limit at the time of measurement; the `cloudflare` flavor
-  is built and tested end-to-end in CI (Workers Vitest plus the Cloudflare
-  gateway example), within the Workers compressed-size budget).
+  is built and tested end-to-end in CI (Workers Vitest), within the Workers
+  compressed-size budget).
 - Embeddable signing helpers (the `./signing` flavor is the smallest).
 
 The "When to use this SDK" table at the top of this README routes consumers

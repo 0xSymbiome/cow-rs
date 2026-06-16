@@ -746,108 +746,6 @@ fn alloy_adapter_errors_redact_secret_bearing_payloads() {
     );
 }
 
-#[cfg(feature = "browser-wallet")]
-#[test]
-fn browser_wallet_errors_surface_method_and_redact_message_and_data() {
-    use cow_sdk::browser_wallet::{BrowserWalletError, RpcErrorPayload};
-
-    let rpc_payload = RpcErrorPayload::new(
-        4001,
-        secret_payload(),
-        Some(json!({ "nested": secret_payload() })),
-    );
-    assert_debug_render("RpcErrorPayload", &rpc_payload);
-    assert_serialize("RpcErrorPayload", &rpc_payload);
-
-    let errors = [
-        BrowserWalletError::WalletUnavailable,
-        BrowserWalletError::DiscoverySelectionRequired { candidates: 2 },
-        BrowserWalletError::DiscoverySelectionOutOfRange {
-            index: 2,
-            candidates: 1,
-        },
-        BrowserWalletError::InvalidProviderOrigin {
-            message: secret_payload().into(),
-        },
-        BrowserWalletError::UntrustedProviderOrigin {
-            origin: secret_payload().into(),
-        },
-        BrowserWalletError::UserRejectedRequest {
-            method: "eth_sendTransaction".to_owned(),
-            code: 4001,
-            message: secret_payload().into(),
-        },
-        BrowserWalletError::Disconnected {
-            method: "eth_sendTransaction".to_owned(),
-            code: 4900,
-            message: secret_payload().into(),
-        },
-        BrowserWalletError::WrongChain {
-            method: "eth_sendTransaction".to_owned(),
-            code: 4901,
-            message: secret_payload().into(),
-        },
-        BrowserWalletError::ChainNotAdded {
-            chain_id: Some(8453),
-            method: "eth_sendTransaction".to_owned(),
-            code: 4902,
-            message: secret_payload().into(),
-        },
-        BrowserWalletError::InvalidChainConfiguration {
-            chain_id: 8453,
-            message: secret_payload().into(),
-        },
-        BrowserWalletError::SessionChainMismatch {
-            expected_chain_id: 1,
-            session_chain_id: 8453,
-        },
-        BrowserWalletError::TypedDataChainMismatch {
-            expected_chain_id: 1,
-            typed_data_chain_id: 8453,
-        },
-        BrowserWalletError::UnsupportedRpcMethod {
-            method: "eth_sendTransaction".to_owned(),
-            message: secret_payload().into(),
-        },
-        BrowserWalletError::MalformedResponse {
-            method: "eth_sendTransaction".to_owned(),
-            message: secret_payload().into(),
-        },
-        BrowserWalletError::Rpc {
-            method: "eth_sendTransaction".to_owned(),
-            code: -32_000,
-            message: secret_payload().into(),
-            data: Some(json!({ "payload": secret_payload() }).into()),
-        },
-        BrowserWalletError::JsInterop {
-            message: secret_payload().into(),
-        },
-        BrowserWalletError::Serialization {
-            message: secret_payload().into(),
-        },
-        BrowserWalletError::Core(CoreError::Serialization(secret_payload().into())),
-        BrowserWalletError::Cancelled,
-    ];
-
-    assert_all_render("BrowserWalletError", &errors);
-
-    // The RPC method name is a closed-set protocol identifier supplied by the
-    // SDK, not a credential, so it is surfaced on the public message while the
-    // wallet's free-form message stays redacted. The `4001` user-rejection
-    // renders as cleanly as the signing-layer typed-data rejection.
-    let rejection = BrowserWalletError::UserRejectedRequest {
-        method: "eth_sendTransaction".to_owned(),
-        code: 4001,
-        message: secret_payload().into(),
-    };
-    let rendered = rejection.to_string();
-    assert!(
-        rendered.contains("eth_sendTransaction") && rendered.contains("4001"),
-        "the rejected method and EIP-1193 code must be visible: {rendered}"
-    );
-    assert_no_secret("UserRejectedRequest", "Display", &rendered);
-}
-
 fn assert_all_render<E>(label: &str, errors: &[E])
 where
     E: Debug + Display,
@@ -879,7 +777,7 @@ where
     assert_no_secret(label, "Debug", &debug);
 }
 
-#[cfg(any(feature = "subgraph", feature = "browser-wallet"))]
+#[cfg(feature = "subgraph")]
 fn assert_debug_render<T>(label: &str, value: &T)
 where
     T: Debug,

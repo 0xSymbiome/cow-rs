@@ -1,7 +1,7 @@
 # Alloy Provider Adapter Audit
 
 Status: Current
-Last reviewed: 2026-06-15
+Last reviewed: 2026-06-16
 Owning surface: `cow-sdk-alloy-provider` `RpcAlloyProvider`, its builder, and its `Provider` implementation
 Refresh trigger: ADR 0038 - rich receipt population, or changes to the provider public API, the `Provider` trait, transport classification, the `read_contract` algorithm, the opt-in `retry` seam or its `RetryConfig`, the inter-crate seam entries consumed by sibling Alloy adapters, the workspace Alloy runtime pin, or the crate dependency boundary
 Related docs:
@@ -29,7 +29,7 @@ This audit covers:
 - dependency boundaries for the read-only provider crate
 
 It does not cover upstream Alloy internals, signer or wallet support, WS or IPC
-transport support, browser-wallet behavior, or transaction submission.
+transport support, or transaction submission.
 
 ## Outcome Summary
 

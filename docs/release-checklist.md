@@ -19,9 +19,8 @@ cargo check-alloy-provider-invariant
 cargo check-alloy-signer-invariant
 cargo test -p cow-rs-workspace-tests --test alloy_two_family_lockfile_invariant
 cargo test -p cow-sdk-alloy --test send_transaction_does_not_wait_for_confirmation
-cargo test -p cow-sdk-browser-wallet --test transaction_receipt_parsing
 cargo test -p cow-rs-workspace-tests --test transaction_lifecycle_cross_adapter_invariant
-cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-browser-wallet -p cow-sdk-alloy-provider -p cow-sdk-alloy-signer -p cow-sdk-alloy -p cow-sdk -p cow-sdk-wasm -p cow-sdk-test
+cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-alloy-provider -p cow-sdk-alloy-signer -p cow-sdk-alloy -p cow-sdk -p cow-sdk-wasm -p cow-sdk-test
 ```
 
 The native Alloy dependency gates enforce explicit allow-lists:
@@ -56,8 +55,8 @@ any mismatch against `docs/verification.md`,
   sets are checked explicitly before release.
 - The transaction lifecycle checks enforce that signer-backed submission
   returns a broadcast acknowledgement without receipt polling and that adapter
-  receipt lookups populate the modeled mined fields consistently across native
-  Alloy and browser-wallet paths.
+  receipt lookups populate the modeled mined fields consistently across the
+  native Alloy paths.
 
 `cargo audit` is the blocking RustSec gate for published advisories. It keeps
 vulnerabilities, unsound advisories, and unmaintained advisories blocking while
@@ -132,7 +131,7 @@ Mutation:
 ```text
 cargo mutants -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-app-data --output target/mutants-report
 cargo mutants -p cow-sdk-orderbook -p cow-sdk-trading --file crates/orderbook/src/request.rs --file crates/orderbook/src/transform.rs --file crates/trading/src/order.rs --file crates/trading/src/slippage/policy.rs --file crates/trading/src/slippage/breakdown.rs --annotations none --no-times --re "decoded_body|execute_with|calculate_total_fee|add_decimal_strings|sanitize_protocol_fee_bps|partner_fee_bps|calculate_unique_order_id|adjust_buy_amount" --output target/mutants-report-orderbook-trading
-cargo mutants -p cow-sdk-subgraph -p cow-sdk-browser-wallet --file crates/subgraph/src/api.rs --file crates/subgraph/src/types.rs --file crates/browser-wallet/src/wallet/mod.rs --file crates/browser-wallet/src/wallet/discovery.rs --file crates/browser-wallet/src/wallet/chain.rs --file crates/browser-wallet/src/wallet/chain_mgmt.rs --file crates/browser-wallet/src/provider/mod.rs --file crates/browser-wallet/src/provider/provider_impl.rs --file crates/browser-wallet/src/error.rs --annotations none --no-times --re "query|with_config_override|base_url_for|deserialize_string_or_number|deserialize_optional_string_or_number|deserialize_u64_from_string_or_number|value_to_string|single_wallet|wallet_at|requires_explicit_selection|refresh_session|switch_or_add_chain|switch_chain_request|add_chain_request|validate_wallet_text|validate_wallet_url|query_accounts|query_chain_id|reset_session|parse_chain_id_value|parse_quantity_to_decimal|parse_address_array|transaction_to_rpc|from_rpc" --output target/mutants-report-subgraph-browser-wallet
+cargo mutants -p cow-sdk-subgraph --file crates/subgraph/src/api.rs --file crates/subgraph/src/types.rs --annotations none --no-times --re "query|with_config_override|base_url_for|deserialize_string_or_number|deserialize_optional_string_or_number|deserialize_u64_from_string_or_number|value_to_string" --output target/mutants-report-subgraph
 ```
 
 Nightly retry soak:
@@ -178,12 +177,11 @@ cargo package -p cow-sdk-orderbook --allow-dirty --config "patch.crates-io.cow-s
 cargo package -p cow-sdk-signing --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'"
 cargo package -p cow-sdk-subgraph --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
 cargo package -p cow-sdk-trading --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'"
-cargo package -p cow-sdk-browser-wallet --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
 cargo package -p cow-sdk-alloy-provider --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
 cargo package -p cow-sdk-alloy-signer --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'"
 cargo package -p cow-sdk-alloy --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-alloy-provider.path='crates/alloy-provider'" --config "patch.crates-io.cow-sdk-alloy-signer.path='crates/alloy-signer'"
 cargo package -p cow-sdk-test --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-trading.path='crates/trading'"
-cargo package -p cow-sdk --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-trading.path='crates/trading'" --config "patch.crates-io.cow-sdk-browser-wallet.path='crates/browser-wallet'" --config "patch.crates-io.cow-sdk-alloy-provider.path='crates/alloy-provider'" --config "patch.crates-io.cow-sdk-alloy-signer.path='crates/alloy-signer'" --config "patch.crates-io.cow-sdk-alloy.path='crates/alloy'"
+cargo package -p cow-sdk --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-trading.path='crates/trading'" --config "patch.crates-io.cow-sdk-alloy-provider.path='crates/alloy-provider'" --config "patch.crates-io.cow-sdk-alloy-signer.path='crates/alloy-signer'" --config "patch.crates-io.cow-sdk-alloy.path='crates/alloy'"
 ```
 
 Then run the registry-validation dry-run in the same order:
@@ -196,12 +194,11 @@ cargo publish --dry-run -p cow-sdk-orderbook --allow-dirty --config "patch.crate
 cargo publish --dry-run -p cow-sdk-signing --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'"
 cargo publish --dry-run -p cow-sdk-subgraph --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
 cargo publish --dry-run -p cow-sdk-trading --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'"
-cargo publish --dry-run -p cow-sdk-browser-wallet --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
 cargo publish --dry-run -p cow-sdk-alloy-provider --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'"
 cargo publish --dry-run -p cow-sdk-alloy-signer --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'"
 cargo publish --dry-run -p cow-sdk-alloy --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-alloy-provider.path='crates/alloy-provider'" --config "patch.crates-io.cow-sdk-alloy-signer.path='crates/alloy-signer'"
 cargo publish --dry-run -p cow-sdk-test --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-trading.path='crates/trading'"
-cargo publish --dry-run -p cow-sdk --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-trading.path='crates/trading'" --config "patch.crates-io.cow-sdk-browser-wallet.path='crates/browser-wallet'" --config "patch.crates-io.cow-sdk-alloy-provider.path='crates/alloy-provider'" --config "patch.crates-io.cow-sdk-alloy-signer.path='crates/alloy-signer'" --config "patch.crates-io.cow-sdk-alloy.path='crates/alloy'"
+cargo publish --dry-run -p cow-sdk --allow-dirty --config "patch.crates-io.cow-sdk-core.path='crates/core'" --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'" --config "patch.crates-io.cow-sdk-signing.path='crates/signing'" --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'" --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'" --config "patch.crates-io.cow-sdk-trading.path='crates/trading'" --config "patch.crates-io.cow-sdk-alloy-provider.path='crates/alloy-provider'" --config "patch.crates-io.cow-sdk-alloy-signer.path='crates/alloy-signer'" --config "patch.crates-io.cow-sdk-alloy.path='crates/alloy'"
 ```
 
 ## 6. Manual Publish Sequence
@@ -232,7 +229,6 @@ cargo publish -p cow-sdk-orderbook
 cargo publish -p cow-sdk-signing
 cargo publish -p cow-sdk-subgraph
 cargo publish -p cow-sdk-trading
-cargo publish -p cow-sdk-browser-wallet
 cargo publish -p cow-sdk-alloy-provider
 cargo publish -p cow-sdk-alloy-signer
 cargo publish -p cow-sdk-alloy
@@ -248,8 +244,8 @@ cargo publish -p cow-sdk
 - If the next publish fails with a missing-dependency or index-cache
   resolution error, pause another 30 to 60 seconds and retry. Repeat up
   to three times before escalating.
-- For the `cow-sdk-trading`, `cow-sdk-browser-wallet`, and `cow-sdk`
-  steps, which pull multiple freshly-published first-party dependencies,
+- For the `cow-sdk-trading` and `cow-sdk` steps, which pull multiple
+  freshly-published first-party dependencies,
   the safe fallback is a two-minute wait between that step and the
   previous step.
 - If crates.io returns an HTTP 429 or a documented publication
@@ -358,7 +354,6 @@ Build the WASM surfaces:
 
 ```text
 cargo build --target wasm32-unknown-unknown -p cow-sdk
-cargo build --target wasm32-unknown-unknown -p cow-sdk --features browser-wallet
 cargo build --target wasm32-unknown-unknown -p cow-sdk-app-data
 cargo build --target wasm32-unknown-unknown -p cow-sdk-core
 cargo build --target wasm32-unknown-unknown -p cow-sdk-wasm
@@ -370,25 +365,6 @@ put a matching `geckodriver` on `PATH`:
 
 ```text
 wasm-pack test --headless --firefox crates/wasm
-```
-
-Deterministic browser-wallet checks:
-
-```text
-# 1. Host-side crate
-cargo test -p cow-sdk-browser-wallet
-
-# 2. Direct-bridge wasm (browser-wallet crate)
-cd crates/browser-wallet && wasm-pack test --headless --firefox
-
-# 3. WASM build of the published SDK with the browser-wallet feature
-cargo build --target wasm32-unknown-unknown -p cow-sdk --features browser-wallet
-
-# 4. Canonical browser-wallet example (build, lint, format)
-cd examples/wasm/cow-trader-dioxus \
-  && cargo fmt --check \
-  && cargo clippy --target wasm32-unknown-unknown -- -D warnings \
-  && cargo check --target wasm32-unknown-unknown
 ```
 
 TypeScript-callable wasm package checks:
@@ -426,10 +402,6 @@ cargo registry-confirm --mode release --chain-ids 1,100,42161,8453,11155111,137,
 
 ## 10. Manual Confirmation Before Publish
 
-- serve the browser-wallet example (`dx serve` in `examples/wasm/cow-trader-dioxus`)
-  and confirm it loads and renders
-- if the browser-wallet example or `cow-sdk-browser-wallet` changed, run an
-  extension-backed spot check on a supported chain
 - if parity inputs changed, confirm that the pinned SHAs and fixture provenance
   still align
 
@@ -469,8 +441,8 @@ produces a build whose dependency tree matches the release-readiness build
 byte-for-byte.
 
 **Tier two: binary reproducibility (planned).** The WebAssembly artifacts
-produced for the `cow-sdk-wasm` npm package and the browser-wallet example
-build are not currently asserted to be byte-reproducible. A future extension to the
+produced for the `cow-sdk-wasm` npm package build are not currently asserted to
+be byte-reproducible. A future extension to the
 release-readiness automation will pin the `wasm-pack` toolchain version,
 capture the build environment provenance through the existing attestation
 lane, and add a binary-reproducibility check that compares two independent

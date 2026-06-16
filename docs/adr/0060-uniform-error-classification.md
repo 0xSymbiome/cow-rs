@@ -19,8 +19,8 @@ Every public error type the facade aggregates exposes a
 `const fn class(&self) -> ErrorClass` accessor:
 `cow_sdk_core::CoreError`, `cow_sdk_app_data::AppDataError`,
 `cow_sdk_signing::SigningError`, `cow_sdk_contracts::ContractsError`,
-`cow_sdk_orderbook::OrderbookError`, `cow_sdk_trading::TradingError`, and
-`cow_sdk_browser_wallet::BrowserWalletError`. Composite error types delegate to
+`cow_sdk_orderbook::OrderbookError`, and `cow_sdk_trading::TradingError`.
+Composite error types delegate to
 the wrapped error's `class()` so granularity is preserved (a wrapped 429
 orderbook rejection stays `RateLimited` rather than collapsing to a coarse
 bucket). The facade `CowError::class()` delegates to the per-type accessors and
@@ -39,14 +39,14 @@ layers partition any workspace error uniformly.
 convention that "every error type owns its own `class()` accessor returning a
 type-specific enum" and notes that departing from it "requires a specific
 justification." This ADR is that justification for using **one shared**
-`ErrorClass` across the facade error family rather than seven near-duplicate
+`ErrorClass` across the facade error family rather than six near-duplicate
 per-type enums:
 
 - The facade family (`CoreError`, `AppDataError`, `SigningError`,
-  `ContractsError`, `OrderbookError`, `TradingError`, `BrowserWalletError`)
+  `ContractsError`, `OrderbookError`, `TradingError`)
   classifies into a **single shared taxonomy** — the same seven buckets the
   facade already unified through `CowError::class()`. A per-type enum per crate
-  would reproduce that one taxonomy seven times, and `TradingErrorClass` would
+  would reproduce that one taxonomy six times, and `TradingErrorClass` would
   be a verbatim copy of `ErrorClass`.
 - `TradingError` is a **composite** over the rest of the family; a shared return
   type lets it delegate to the inner accessors directly without a mapping
@@ -83,16 +83,16 @@ to the shared enum.
   feature-gated `CowError::Subgraph` variant that delegates; the retry-decision
   accessors stay orderbook/trading-scoped (a subgraph error reports non-retryable
   with no hint).
-- Cost: seven small `class()` accessors plus the relocation of one public enum
+- Cost: six small `class()` accessors plus the relocation of one public enum
   from the facade to core (re-exported for source compatibility). The facade's
   private `classify_*` functions are removed; the public surface
   (`cow_sdk::ErrorClass`, `CowError::class()`) is unchanged.
 
 ## Alternatives Rejected
 
-- Seven per-type class enums for the facade error family (`OrderbookErrorClass`,
+- Six per-type class enums for the facade error family (`OrderbookErrorClass`,
   `TradingErrorClass`, and so on): rejected. The family classifies into a single
-  shared taxonomy, so per-type enums would reproduce that one taxonomy seven
+  shared taxonomy, so per-type enums would reproduce that one taxonomy six
   times, `TradingErrorClass` would be a verbatim copy of `ErrorClass`, and the
   composite `TradingError` could not delegate to its inner accessors without a
   mapping cascade.

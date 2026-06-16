@@ -85,8 +85,7 @@ real `V2_x` version family when upstream rolls v2 out beyond Gnosis.
 **Crate graph.** The `cow-shed` feature of `cow-sdk-contracts` adds only the
 `cow-sdk-app-data` dependency on top of `cow-sdk-core`. It MUST NOT pull
 `cow-sdk-trading`, `cow-sdk-orderbook`, `cow-sdk-subgraph`,
-`cow-sdk-browser-wallet`, `alloy-provider`, `alloy-signer-local`, `reqwest`, or
-`tokio`.
+`alloy-provider`, `alloy-signer-local`, `reqwest`, or `tokio`.
 
 ## Why
 

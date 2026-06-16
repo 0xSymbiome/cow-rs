@@ -31,8 +31,9 @@ dedicated alloy major-release runbook.
 
 ## Why
 
-Alloy powers contract bindings, typed ABI helpers, and browser-wallet ABI
-support, so major releases can surface real migration work. Letting alloy types
+Alloy powers contract bindings, typed ABI helpers, and the native provider and
+signer adapters, so major releases can surface real migration work. Letting
+alloy types
 leak into the stable SDK facade would turn those migrations into
 consumer-facing semver breaks. Keeping the seam behind SDK-owned traits and
 data types makes major-release absorption a local maintenance event unless
@@ -91,7 +92,6 @@ Future rows record exact resolved versions, not caret ranges.
 **Proven by:**
 
 - [Contract Bindings Parity Audit](../audit/contract-bindings-parity-audit.md)
-- [Browser-Wallet Alloy Dependency Audit](../audit/browser-wallet-alloy-dependency-audit.md)
 - [Alloy Umbrella Adapter Audit](../audit/alloy-umbrella-adapter-audit.md)
 - [Source-Lock Provenance Audit](../audit/source-lock-provenance-audit.md)
 - [Workflow Security Audit](../audit/workflow-security-audit.md)

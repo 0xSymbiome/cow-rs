@@ -1,7 +1,7 @@
 # Bounded Response Reads Audit
 
 Status: Current
-Last reviewed: 2026-06-12
+Last reviewed: 2026-06-16
 Owning surface: HTTP transport response reads across `cow-sdk-core` (including its `transport::policy` module and the browser `FetchTransport` in its `transport::fetch` module), `cow-sdk-wasm`, and the signature decode path in `cow-sdk-contracts`
 Refresh trigger: changes to the transport read loops, the `max_response_bytes` policy field or its per-client defaults, the `ResponseTooLarge` classification, the signature hex bound, or the reqwest/web-sys decompression posture
 Related docs:
@@ -34,7 +34,7 @@ It does not cover request-body construction, the URL-redaction contract
 | Per-client defaults | Untrusted gateways carry tighter bounds than the trusted orderbook | Conforms |
 | Retry posture | An over-limit outcome is classified non-retryable | Conforms |
 | Signature decode | Signature hex is length-bounded before the decoder allocates | Conforms |
-| Residual boundaries | RPC-stack, browser-wallet, and IPFS time bounds are stated, not implied closed | Documented |
+| Residual boundaries | RPC-stack and IPFS time bounds are stated, not implied closed | Documented |
 
 ## Current Contract
 
@@ -89,8 +89,8 @@ non-transport input before a large decode allocation.
 
 The JSON-RPC client the SDK builds disables response decompression to remove
 the amplification class and is otherwise bounded by the request timeout; the
-alloy-managed RPC client and the browser wallet are outside the SDK's read loop
-and are bounded by the timeout and caller trust; the IPFS read is byte-bounded
+alloy-managed RPC client is outside the SDK's read loop
+and is bounded by the timeout and caller trust; the IPFS read is byte-bounded
 but, by default, not time-bounded. These residuals are stated in the security
 policy rather than presented as hard caps.
 

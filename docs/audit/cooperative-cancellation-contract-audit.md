@@ -1,7 +1,7 @@
 # Cooperative Cancellation Contract Audit
 
 Status: Current
-Last reviewed: 2026-05-31
+Last reviewed: 2026-06-16
 Owning surface: Cross-cutting cooperative cancellation across `cow-sdk-core`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-trading`, native Alloy adapters, and `cow-sdk-wasm` callback transport
 Refresh trigger: Changes to the `Cancellable` combinator, to the `CancellationToken` re-export, to the canonical long-running public methods on client surfaces, to wasm abort/timeout bridging, or to the `From<Cancelled>` bridges on typed error aggregates
 Related docs:
@@ -24,7 +24,7 @@ This audit covers:
   `SubgraphApi`, and `Trading`, each composed with the combinator at
   the call site
 - typed `Cancelled` variants on `CoreError`, `OrderbookError`,
-  `SubgraphError`, `TradingError`, `SigningError`, `BrowserWalletError`,
+  `SubgraphError`, `TradingError`, `SigningError`,
   and the facade `CowError`, plus the `From<Cancelled>` bridges that lift
   the marker across every public error boundary
 - typed `Cancelled` variants and `From<Cancelled>` bridges on the native
@@ -34,8 +34,8 @@ This audit covers:
 - `cow-sdk-wasm` callback HTTP timeouts that construct a live
   `AbortSignal` and map JavaScript aborts to typed timeout errors
 
-It does not cover browser-wallet session cancellation, unrelated transport
-policy, or future capability crates outside the published surface.
+It does not cover unrelated transport
+policy or future capability crates outside the published surface.
 
 ## Outcome Summary
 
@@ -80,7 +80,7 @@ through the combinator at the call site.
 ### Typed `Cancelled` Variants And `From<Cancelled>` Bridges
 
 `CoreError`, `OrderbookError`, `SubgraphError`, `TradingError`,
-`SigningError`, `BrowserWalletError`, `AlloyProviderError`,
+`SigningError`, `AlloyProviderError`,
 `AlloySignerError`, `AlloyClientError`, and the facade `CowError` each
 expose a typed `Cancelled` variant and an
 `impl From<cow_sdk_core::Cancelled>` that lifts the marker into that
@@ -133,7 +133,6 @@ Primary implementation points:
 - `crates/trading/src/error.rs`
 - `crates/trading/src/wait.rs`
 - `crates/signing/src/errors.rs`
-- `crates/browser-wallet/src/error.rs`
 - `crates/alloy-provider/src/error.rs`
 - `crates/alloy-signer/src/error.rs`
 - `crates/alloy/src/error.rs`

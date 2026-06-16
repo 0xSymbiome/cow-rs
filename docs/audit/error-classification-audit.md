@@ -1,7 +1,7 @@
 # Error Classification Audit
 
 Status: Current
-Last reviewed: 2026-06-15
+Last reviewed: 2026-06-16
 Owning surface: the `class()`, `is_retryable()`, and `backoff_hint()` accessors on the `cow-sdk` error family and the shared `cow_sdk_core::ErrorClass`
 Refresh trigger: a new `ErrorClass` bucket; a new error type aggregated by `cow_sdk::CowError`; a change to any type's `class()` mapping; a change to the `is_retryable()` / `backoff_hint()` mapping or the retained `Retry-After` capture; or a new error variant whose class or retry verdict differs from its type's existing default arm
 Related docs:
@@ -18,7 +18,7 @@ This audit covers:
   `cow-sdk` facade
 - the `const fn class(&self) -> ErrorClass` accessor on each facade-family
   error type (`CoreError`, `AppDataError`, `SigningError`, `ContractsError`,
-  `OrderbookError`, `TradingError`, `BrowserWalletError`, and — behind the
+  `OrderbookError`, `TradingError`, and — behind the
   off-by-default `subgraph` feature — `SubgraphError`)
 - the `OrderbookError::is_retryable()` and `OrderbookError::backoff_hint()`
   retry-decision accessors, the `Retry-After` value retained on
@@ -75,14 +75,14 @@ Each facade-family error type owns its mapping in its own crate. Composite
 types delegate: `OrderbookError::class()` resolves a wrapped `CoreError`
 through `CoreError::class()`; `TradingError::class()` resolves wrapped
 `Core`/`AppData`/`Orderbook`/`Signing`/`Contracts` errors through their
-accessors. `CowError::class()` is a pure delegation over the seven leaf
+accessors. `CowError::class()` is a pure delegation over the six leaf
 accessors, so the class is identical whether a caller holds the facade error or
 a bare leaf error. `ContractsError::class()` partitions its variants by meaning
 rather than to a single bucket: caller-supplied shape and range failures map to
 `Validation`, serialization/ABI/decode invariants map to `Internal` (matching
 `CoreError`), and the EIP-1271, provider, and ECDSA-recovery operations map to
 `Signing`. When the off-by-default `subgraph` feature is enabled,
-`SubgraphError::class()` is the eighth accessor and the feature-gated
+`SubgraphError::class()` is the seventh accessor and the feature-gated
 `CowError::Subgraph` variant delegates to it the same way
 ([ADR 0003](../adr/0003-separate-read-only-subgraph-crate.md)); the
 retry-decision accessors stay orderbook-and-trading-scoped, so a subgraph error
@@ -116,7 +116,7 @@ Primary implementation points:
 - `crates/app-data/src/errors.rs`, `crates/signing/src/errors.rs`,
   `crates/contracts/src/errors.rs`, `crates/orderbook/src/error.rs`
   (`class`, `is_retryable`, `backoff_hint`),
-  `crates/browser-wallet/src/error.rs`, `crates/trading/src/error.rs`,
+  `crates/trading/src/error.rs`,
   `crates/subgraph/src/error.rs` (`class`, behind the `subgraph` feature)
 - `crates/orderbook/src/request.rs` (`OrderbookApiError` `Retry-After` capture)
 - `crates/core/src/transport/policy/retry_after.rs` (`retry_after_from_headers`)

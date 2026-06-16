@@ -10,8 +10,8 @@
 ## Decision
 
 The workspace ships the native Alloy runtime as a three-crate family, each gated to
-native targets (wasm fails closed at compile time, where the browser-wallet +
-EIP-1193 path applies instead):
+native targets (wasm fails closed at compile time, where the `cow-sdk-wasm`
+EIP-1193 callback path applies instead):
 
 - **`cow-sdk-alloy-provider`** — read-only RPC. `RpcAlloyProvider` wraps an
   `Arc<alloy_provider::DynProvider<Ethereum>>` and implements

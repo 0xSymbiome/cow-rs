@@ -14,7 +14,7 @@ providers, and orderbook clients into a single ready-state trading
 facade. The primary entry point is `Trading`. Most end-user code
 reaches this crate through [`cow-sdk`](https://crates.io/crates/cow-sdk);
 depend on it directly when you want the trading entry points without
-the browser-wallet optional dependency.
+the rest of the facade surface.
 
 ## Install
 
@@ -71,8 +71,8 @@ signer-backed flows the signer's address fills the slot when
 `Trading::swap()` opens a typed builder with named token setters, so the sell
 and buy tokens cannot be transposed. `execute` quotes, signs, and posts in one
 call; `quote` returns a result you can inspect before `submit`. The same chain
-works with any signer — a local key, a remote signer, a browser wallet, or a
-smart account:
+works with any signer — a local key, a remote signer, a host-supplied EIP-1193
+wallet, or a smart account:
 
 ```rust,no_run
 use cow_sdk_core::{Amount, Signer, UserRejection, address};
@@ -232,8 +232,8 @@ assert_eq!(receipt.status, Some(TransactionStatus::Success));
 The companion `poll_for_receipt` helper is available when a workflow already
 has a transaction hash from a separate broadcast path. Both helpers are generic
 over `Signer` and `Provider`, so they work with the native Alloy
-client, separate Alloy provider and signer adapters, browser-wallet adapters,
-and custom integrations.
+client, separate Alloy provider and signer adapters, host-supplied EIP-1193
+wallets, and custom integrations.
 
 When only the revert verdict matters, `WaitError::reverted()` returns the
 reverted receipt for a mined on-chain failure and `None` for the transient

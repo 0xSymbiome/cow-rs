@@ -1,7 +1,7 @@
 # Trading SDK Runtime Prerequisites Audit
 
 Status: Current
-Last reviewed: 2026-06-14
+Last reviewed: 2026-06-16
 Owning surface: `cow-sdk-trading` ready-state `Trading` construction, the chain-bound helper free functions, helper-specific prerequisite contract, and per-trade owner attribution
 Refresh trigger: Changes to ready-state `Trading` builder terminals, the chain-bound helper free functions, method-specific prerequisite enforcement, the per-trade owner-attribution placement, or any change to the target-neutral default orderbook factory inside `build()`
 Related docs:
@@ -23,7 +23,7 @@ This audit covers:
 - the boundary between trading attribution requirements and chain-bound helper
   requirements
 
-It does not cover browser-wallet session behavior, orderbook transport policy,
+It does not cover host wallet session behavior, orderbook transport policy,
 or unrelated credential-hygiene questions.
 
 ## Outcome Summary

@@ -107,10 +107,11 @@ This crate defines types and seams; it does not compute order hashes or signatur
 orderbook (see [`cow-sdk-orderbook`](https://crates.io/crates/cow-sdk-orderbook)),
 build or submit trades (see [`cow-sdk-trading`](https://crates.io/crates/cow-sdk-trading)),
 or decode contract events (see [`cow-sdk-contracts`](https://crates.io/crates/cow-sdk-contracts)).
-The `Signer` and `Provider` seams are defined here; concrete adapters live in
-[`cow-sdk-alloy-signer`](https://crates.io/crates/cow-sdk-alloy-signer),
+The `Signer` and `Provider` seams are defined here; concrete native adapters live in
+[`cow-sdk-alloy-signer`](https://crates.io/crates/cow-sdk-alloy-signer) and
 [`cow-sdk-alloy-provider`](https://crates.io/crates/cow-sdk-alloy-provider), and
-[`cow-sdk-browser-wallet`](https://crates.io/crates/cow-sdk-browser-wallet).
+JavaScript and TypeScript hosts supply their own wallet across the
+[`cow-sdk-wasm`](https://crates.io/crates/cow-sdk-wasm) callback boundary.
 
 ## Where to next
 

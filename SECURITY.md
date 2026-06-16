@@ -153,8 +153,9 @@ than presented as hard caps:
   body before the SDK sees it; the SDK refuses an oversized body but cannot
   prevent the JavaScript layer from allocating it. The callback contract is the
   place to impose a body limit before materialization.
-- The browser wallet returns data the wallet has already materialized; the SDK
-  imposes no response-byte cap on that boundary.
+- A host wallet reached through the EIP-1193 request callback returns data the
+  wallet has already materialized; the SDK imposes no response-byte cap on that
+  boundary.
 - The IPFS read is byte-bounded but, by default, not time-bounded.
 
 Operator recommendation: route untrusted JSON-RPC and IPFS traffic through a
@@ -162,15 +163,14 @@ trusted node or a size-limiting reverse proxy, and impose a body limit inside
 any custom JavaScript `fetch` callback before returning the response to the
 SDK.
 
-## Browser-wallet trust posture
+## Host wallet trust posture
 
-The browser-wallet integration treats provider identity as an explicit trust
-boundary. EIP-6963-discovered providers carry discovery metadata into the typed
-provider builder. Anonymous providers require
-`Eip1193ProviderBuilder::trusted_origin(...)` before construction
-succeeds. Wallet chain-management URLs such as `rpc_urls`,
-`block_explorer_urls`, and `icon_urls` are wallet payload data and are not
-validated with `ExternalHostPolicy`.
+The SDK does not connect to or discover wallets. JavaScript and TypeScript hosts
+drive `cow-sdk-wasm` with their own wallet stack (viem, wagmi, or any EIP-1193
+provider) and supply signatures across the SDK's request callbacks. Provider
+identity, EIP-6963 discovery, and origin trust are the host application's
+responsibility; the SDK treats whatever the callback returns as untrusted input
+and verifies it against the protocol's own rules.
 
 Operator recommendation: wrap third-party wallet integrations with a defensive
 `ecrecover` step at the consumer layer that asserts the recovered address

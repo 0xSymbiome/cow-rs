@@ -10,8 +10,7 @@ Primary Rust SDK facade for [CoW Protocol](https://cow.fi).
 `cow-sdk` is the curated first-touch entry point of the `cow-rs` crate
 family. It re-exports the core types, signing helpers, contract helpers,
 orderbook client, app-data helpers, and the high-level trading
-orchestration surface from one place. Browser-wallet support is optional
-and feature-gated behind `browser-wallet`.
+orchestration surface from one place.
 
 The cow-named identity and numeric primitive types (`Address`, `Hash32`,
 `AppDataHash`, `HexData`, `OrderUid`, `Amount`)
@@ -34,7 +33,6 @@ use. The HTTP retry, rate-limit, and `Retry-After` transport policy is always on
 | Feature | Enables |
 | --- | --- |
 | `subgraph` | Read-only subgraph analytics as `cow_sdk::subgraph`; lifts `SubgraphError` into `CowError`. |
-| `browser-wallet` | Browser EIP-1193 wallet integration for `wasm32` as `cow_sdk::browser_wallet`. |
 | `cow-shed` | COW Shed account-abstraction hooks as `cow_sdk::cow_shed` (proxy derivation, EIP-712 hook signing, factory calldata). |
 | `alloy-provider` | Native Alloy read-only `Provider` adapter as `cow_sdk::alloy_provider`. |
 | `alloy-signer` | Native Alloy local-key `Signer` adapter as `cow_sdk::alloy_signer`. |

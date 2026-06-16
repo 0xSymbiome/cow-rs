@@ -8,7 +8,7 @@
 ## Superseded
 
 The additive-capability-expansion rule — new capability surfaces land as
-additive leaf crates or off-by-default features (subgraph, browser-wallet, the
+additive leaf crates or off-by-default features (subgraph, the
 `cow-shed` contracts feature, the published `cow-sdk-test` doubles), never by
 widening the default facade closure, so an optional capability a default consumer
 does not use adds nothing to its dependency graph — is now recorded in

@@ -9,7 +9,7 @@
 //!
 //! The marker is deliberately minimal: every crate-level error aggregate
 //! (`CoreError`, `ContractsError`, `SigningError`, `AppDataError`,
-//! `OrderbookError`, `TradingError`, `SubgraphError`, `BrowserWalletError`) and
+//! `OrderbookError`, `TradingError`, `SubgraphError`) and
 //! the facade `CowError` implement `From<Cancelled>` into their typed
 //! `Cancelled` variant. Operation code
 //! therefore propagates cancellation with `?` across every public error

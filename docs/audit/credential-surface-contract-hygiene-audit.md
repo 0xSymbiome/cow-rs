@@ -1,7 +1,7 @@
 # Credential Surface Contract Hygiene Audit
 
 Status: Current
-Last reviewed: 2026-06-01
+Last reviewed: 2026-06-16
 Owning surface: Cross-cutting credential redaction and typed partner-fee public boundary across core, app-data, orderbook, subgraph, and trading
 Refresh trigger: Changes to public credential-bearing configs, URL-bearing public configuration fields, subgraph route identity or request-failure context, the `Redacted<T>` newtype contract, external host-policy validation, the transport `From<reqwest::Error>` conversion classifiers, the `redact_response_body` token-detection layers, or typed partner-fee request boundaries
 Related docs:
@@ -27,8 +27,8 @@ This audit covers:
   otherwise echo private endpoints or credentials
 - user-facing partner-fee policy on the `cow-sdk-trading` request surface
 
-It does not cover browser-wallet session management, unrelated transport-policy
-questions, or future capability crates that are still outside the active SDK
+It does not cover unrelated transport-policy
+questions or future capability crates that are still outside the active SDK
 surface.
 
 The native Alloy adapter family is now inside the active SDK surface and is
@@ -67,11 +67,11 @@ serialization from turning partner API keys into ordinary log output.
 ### URL-Bearing Configuration
 
 `ApiContext`, `ApiContextOverride`, `OrderbookApiBuilder`,
-`SubgraphApiBuilder`, `WalletChainParameters`, and `IpfsConfig` store
+`SubgraphApiBuilder`, and `IpfsConfig` store
 credential-bearing URLs in redacting wrappers. Map keys and unsupported-chain
 markers remain reviewable, while configured endpoint bytes serialize and format
 as `[redacted]`. Raw URL access stays confined to orderbook, subgraph,
-wallet-chain, and IPFS dispatch seams. Custom orderbook and subgraph endpoint
+and IPFS dispatch seams. Custom orderbook and subgraph endpoint
 debug output redacts userinfo-bearing URLs before they cross a diagnostic
 boundary.
 
@@ -123,7 +123,6 @@ Primary implementation points:
 - `crates/subgraph/src/api.rs`
 - `crates/subgraph/src/builder.rs`
 - `crates/subgraph/src/error.rs`
-- `crates/browser-wallet/src/wallet/chain.rs`
 - `crates/trading/src/types/options.rs`
 - `crates/trading/src/quote.rs`
 - `crates/trading/src/app_data.rs`
@@ -142,7 +141,6 @@ Primary regression coverage:
 - `crates/subgraph/tests/builder_contract.rs`
 - `crates/subgraph/tests/builder_contract.rs::builder_debug_redacts_userinfo_in_custom_endpoint_url`
 - `crates/subgraph/tests/host_policy_contract.rs`
-- `crates/browser-wallet/tests/wallet_contract.rs`
 - `crates/app-data/tests/ipfs_config_redaction_contract.rs`
 - `crates/trading/tests/quote_contract.rs`
 - `crates/trading/tests/post_contract.rs`
@@ -160,7 +158,6 @@ cargo test -p cow-sdk-core
 cargo test -p cow-sdk-app-data
 cargo test -p cow-sdk-orderbook
 cargo test -p cow-sdk-subgraph
-cargo test -p cow-sdk-browser-wallet
 cargo test -p cow-sdk-trading
 cargo test --workspace --all-features
 cargo clippy --workspace --all-targets --all-features -- -D warnings

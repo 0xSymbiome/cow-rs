@@ -1,7 +1,7 @@
 # Unsafe-Code Policy Audit
 
 Status: Current
-Last reviewed: 2026-04-23
+Last reviewed: 2026-06-16
 Owning surface: Workspace `unsafe_code = deny` lint declared in `Cargo.toml` workspace lint section
 Refresh trigger: any introduction of an `unsafe` block on a public path; any change that weakens or removes the workspace `deny` lint
 
@@ -67,7 +67,6 @@ Primary implementation points:
 - `crates/orderbook/Cargo.toml`
 - `crates/trading/Cargo.toml`
 - `crates/subgraph/Cargo.toml`
-- `crates/browser-wallet/Cargo.toml`
 - `crates/sdk/Cargo.toml`
 
 Primary regression coverage:

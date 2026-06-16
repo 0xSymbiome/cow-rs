@@ -3,14 +3,15 @@
 - Status: Superseded
 - Date: 2026-04-17
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: examples, wasm, browser-wallet, proof-posture, extensibility
-- Related: [ADR 0004](0004-feature-gated-browser-wallet-sidecar.md), [ADR 0007](0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md), [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md)
-- Superseded by: [ADR 0065](0065-canonical-browser-wallet-example.md)
+- Tags: examples, wasm, proof-posture, extensibility
+- Related: [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md), [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md)
+- Superseded by: [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md)
 
-> Superseded by [ADR 0065](0065-canonical-browser-wallet-example.md): the
-> verification-console genre is retired in favour of a single canonical
-> browser-wallet trade example. The decision below is retained as design
-> history.
+> Superseded by [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md): the
+> verification-console genre is retired. Browser/wallet integration for
+> JavaScript and TypeScript consumers is now served by the `cow-sdk-wasm`
+> package plus the host app's own wallet stack (viem, wagmi, or any EIP-1193
+> provider). The decision below is retained as design history.
 
 ## Decision
 
@@ -73,8 +74,5 @@ grows.
 
 - [Architecture](../architecture.md)
 - [Examples](../examples.md)
-- [Browser-Runtime Proof Posture](../browser-runtime-proof-posture.md)
-- [ADR 0004](0004-feature-gated-browser-wallet-sidecar.md)
-- [ADR 0007](0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md)
 - [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md)
-- [ADR 0065](0065-canonical-browser-wallet-example.md) (supersedes this ADR)
+- [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md) (supersedes this ADR)

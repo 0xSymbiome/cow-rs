@@ -10,26 +10,6 @@ enums:
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: Shared diagnostic partition can grow with new workspace error classes.
-  - name: InjectedWalletDiscoverySource
-    file: crates/browser-wallet/src/wallet/discovery.rs
-    category: upstream-growing
-    expected_marker: non_exhaustive
-    reason: Browser wallet discovery channels are controlled by evolving browser wallet standards.
-  - name: WalletChainChangeKind
-    file: crates/browser-wallet/src/wallet/chain.rs
-    category: upstream-growing
-    expected_marker: non_exhaustive
-    reason: Wallet chain-management outcomes can grow with EIP-1193 wallet behavior.
-  - name: WalletEvent
-    file: crates/browser-wallet/src/events.rs
-    category: upstream-growing
-    expected_marker: non_exhaustive
-    reason: Browser wallet provider events can add new event families over time.
-  - name: BrowserWalletError
-    file: crates/browser-wallet/src/error.rs
-    category: sdk-local-state
-    expected_marker: non_exhaustive
-    reason: Public browser-wallet diagnostics can grow as runtime checks are added.
   - name: ClientRejection
     file: crates/trading/src/validation.rs
     category: upstream-growing

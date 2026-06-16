@@ -8,7 +8,7 @@ unused-ignored-advisory = "allow"
 # cargo-deny and cargo-audit. CI derives the cargo-audit ignore arguments from
 # this list so advisory tolerances cannot drift between tools.
 ignore = [
-  { id = "RUSTSEC-2024-0436", reason = "Unmaintained `paste` is reachable only through the alloy-sol-macro and alloy-primitives proc-macro subtrees and does not compile runtime code; tracked in docs/audit/browser-wallet-alloy-dependency-audit.md. Next re-review on or before 2026-08-11 (90 days from 2026-05-13)." },
+  { id = "RUSTSEC-2024-0436", reason = "Unmaintained `paste` is reachable only through the alloy-sol-macro and alloy-primitives proc-macro subtrees and does not compile runtime code; tracked in docs/audit/dependency-gate-audit.md. Next re-review on or before 2026-08-11 (90 days from 2026-05-13)." },
   { id = "RUSTSEC-2024-0388", reason = "Unmaintained `derivative` is reachable only through the ark-ff / ruint / nybbles / alloy-trie subtree pulled by the alloy-consensus native adapter family; the crate is a derive-macro helper that does not compile into runtime cow-sdk code; tracked in docs/audit/dependency-gate-audit.md. Next re-review on or before 2026-08-16 (90 days from 2026-05-18)." },
   { id = "RUSTSEC-2026-0173", reason = "Unmaintained `proc-macro-error2` is reachable only through the alloy-sol-macro proc-macro subtree that derives the inline `sol!` contract bindings; it is a build-time proc-macro helper that does not compile into runtime cow-sdk code; tracked in docs/audit/dependency-gate-audit.md. Next re-review on or before 2026-09-09 (90 days from 2026-06-11)." },
 ]
@@ -27,10 +27,9 @@ highlight = "all"
 name = "alloy-primitives"
 version = "=1.5.7"
 reason = """
-The alloy 1.x ABI helper family used by contract bindings and the
-browser-wallet bridge still carries the crypto-common 0.1, digest
-0.10, block-buffer 0.10, sha3 0.10, keccak 0.1, and cpufeatures 0.2
-subtree internally.
+The alloy 1.x ABI helper family used by contract bindings still
+carries the crypto-common 0.1, digest 0.10, block-buffer 0.10, sha3
+0.10, keccak 0.1, and cpufeatures 0.2 subtree internally.
 
 First-party hashing paths use the sha3 0.11 / digest 0.11 /
 block-buffer 0.12 / crypto-common 0.2 family directly.
@@ -38,8 +37,7 @@ block-buffer 0.12 / crypto-common 0.2 family directly.
 Re-review: when the pinned alloy family moves to a release that no
 longer carries the older digest stack, drop this skip-tree entry.
 
-Tracked in docs/audit/browser-wallet-alloy-dependency-audit.md and
-docs/audit/dependency-gate-audit.md.
+Tracked in docs/audit/dependency-gate-audit.md.
 """
 
 [[bans.skip-tree]]

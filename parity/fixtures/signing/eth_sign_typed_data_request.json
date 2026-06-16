@@ -1,5 +1,5 @@
 {
-  "surface": "browser-wallet-eth-sign-typed-data-request",
+  "surface": "eip1193-eth-sign-typed-data-request",
   "dto": "cow_sdk_core::TypedDataPayload",
   "endpoint": "EIP-1193 eth_signTypedData_v4 (params[1])",
   "sources": {

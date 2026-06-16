@@ -1,7 +1,7 @@
 # WASM Capability Coverage Audit
 
 Status: Current
-Last reviewed: 2026-06-15
+Last reviewed: 2026-06-16
 Owning surface: `cow-sdk-wasm` capability coverage relative to the native `cow-rs` SDK crates
 Refresh trigger: changes to `crates/wasm/src/exports/**`; additions or removals of public operations on the `orderbook`, `trading`, `signing`, `contracts`, `app-data`, or `subgraph` crates; or revisions to the workflow scope in `docs/parity.md`
 Related docs:
@@ -38,7 +38,7 @@ and the [WASM Type Generation Audit](wasm-type-generation-audit.md).
 | --- | --- | --- |
 | Workflow scope | The deterministic-helper, signing, service-client, and trading workflows defined for `cow-sdk-wasm` in ADR 0039 and `docs/parity.md` are exposed and contract-tested | Conforms |
 | Surface layering | The four documented layers — deterministic helpers, wallet callbacks, service clients, trading — are present and contract-tested | Conforms |
-| Runtime-model boundary | The wasm32 dependency tree excludes the native Alloy adapters and browser-wallet, and exposes no Rust signer that broadcasts or provider that polls (ADR 0039) | Conforms |
+| Runtime-model boundary | The wasm32 dependency tree excludes the native Alloy adapters, and exposes no Rust signer that broadcasts or provider that polls (ADR 0039) | Conforms |
 | Non-surfaced capabilities | Every native capability without a `cow-sdk-wasm` export is classified, and each class has a stated rationale | Documented |
 | Shape correspondence | Native types and signatures map to the WASM DTO and TypeScript surface through a fixed transform set (config-object construction, callback injection, camelCase DTOs, string-typed primitives, versioned envelopes, discriminated-union errors); divergences beyond the uniform transforms are enumerated | Documented |
 | Transaction-builder coverage | The pre-sign, cancellation, native-currency-sell, and approval-transaction builders return unsigned transactions for host submission, completing the read-allowance-then-approve path | Conforms |
@@ -141,7 +141,7 @@ wallet; **Surfaced (composed)** — covered by combining exported operations;
 
 ### Non-surfaced capability classification
 
-Every native capability without a `cow-sdk-wasm` export falls into one of five
+Every native capability without a `cow-sdk-wasm` export falls into one of four
 classes.
 
 **Class 1 — Runtime-model boundary.** `cow-sdk-wasm` is a callback leaf. The
@@ -150,7 +150,7 @@ crate exposes unsigned transaction builders rather than managed broadcast or
 receipt-polling flows, and the native Alloy adapter crates
 (`cow-sdk-alloy`, `cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`) are
 native-only and cannot compile for `wasm32`. ADR 0039 holds the wasm32
-dependency tree free of those adapters, browser-wallet, reqwest, and hyper.
+dependency tree free of those adapters, reqwest, and hyper.
 Members: the managed-flow counterparts of pre-sign, on-chain and off-chain
 cancellation, and approval; and `poll_for_receipt` /
 `submit_and_wait_for_receipt`.
@@ -192,11 +192,9 @@ addition to the `cow-sdk-wasm` JavaScript surface; its absence from
 Bridging, the flashloan helper surface, and hook-trampoline chaining are
 likewise deferred on every target.
 
-**Class 5 — Separate WASM leaf.** `cow-sdk-browser-wallet` compiles for
-`wasm32` and carries its own wallet integration, but it is a distinct leaf and
-is intentionally not part of the `cow-sdk-wasm` dependency tree (ADR 0039). The
-`cow-sdk-wasm` consumer model for wallets is the typed JavaScript callback
-boundary rather than a Rust-side wallet.
+The `cow-sdk-wasm` consumer model for wallets is the typed JavaScript callback
+boundary (the EIP-1193 request-callback surface) together with the host
+application's own wallet stack, rather than a Rust-side wallet.
 
 ### Recorded observations
 

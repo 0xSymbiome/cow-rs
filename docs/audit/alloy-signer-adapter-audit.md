@@ -1,7 +1,7 @@
 # Alloy Signer Adapter Audit
 
 Status: Current
-Last reviewed: 2026-06-15
+Last reviewed: 2026-06-16
 Owning surface: `cow-sdk-alloy-signer` `LocalAlloySigner`, its builder, and its `Signer` implementation
 Refresh trigger: ADR 0038 - `send_transaction` return type clarification, or changes to the signer public API, the `Signer` trait, typed-data conversion, signature normalization, the inter-crate seam entries consumed by sibling Alloy adapters, cancellation propagation, the workspace Alloy signer pin, or the crate dependency boundary
 Related docs:
@@ -29,7 +29,7 @@ This audit covers:
 - dependency boundaries for the local signer crate
 
 It does not cover upstream Alloy internals, provider reads, transaction filling
-or submission, browser-wallet behavior, or smart-account signing.
+or submission, or smart-account signing.
 
 ## Outcome Summary
 

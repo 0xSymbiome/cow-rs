@@ -4,7 +4,7 @@
 - Date: 2026-05-19
 - Last reviewed: 2026-06-15
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: signing, error-surface, eip-1193, browser-wallet, alloy, classification
+- Tags: signing, error-surface, eip-1193, alloy, classification
 - Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0007](0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md), [ADR 0017](0017-typed-orderbook-rejection-parser.md), [ADR 0025](0025-workspace-url-redaction-convention.md), [ADR 0045](0045-async-signer-trait-narrowing.md)
 
 ## Decision
@@ -16,11 +16,12 @@
   redacted `cow_sdk_signing::SigningError::Signer` display path.
 - Every typed signer error in the workspace implements
   `UserRejection` against its own variants:
-  `cow_sdk_browser_wallet::BrowserWalletError` returns the code from
-  the `UserRejectedRequest` variant; `cow_sdk_alloy_signer::SignerError`
-  and `cow_sdk_alloy::AlloyClientError` return `None` for every
-  variant because local-key signing cannot produce an EIP-1193 4xxx
-  user rejection.
+  `cow_sdk_alloy_signer::SignerError` and `cow_sdk_alloy::AlloyClientError`
+  return `None` for every variant because local-key signing cannot produce an
+  EIP-1193 4xxx user rejection. A signer that surfaces EIP-1193 provider error
+  codes — for example a host-supplied wallet reached through the `cow-sdk-wasm`
+  EIP-1193 request callback (ADR 0040) — returns the carried code from its
+  user-rejection variant.
 - The helpers in `cow-sdk-signing` bound the signer's
   associated error on `fmt::Display + cow_sdk_core::UserRejection`.
   `signer_error` consumes the trait result first: when the code is
@@ -48,23 +49,22 @@ section is that justification.
 The signing crate's public helpers (`sign_order`,
 `sign_order_cancellation`, and their cancellation-batch siblings) are
 **generic over `S: TypedDataSigner`** with the associated
-`Error` type opaque. The crate cannot pattern-match on
-`BrowserWalletError::UserRejectedRequest` because it never sees
+`Error` type opaque. The crate cannot pattern-match on a concrete
+EIP-1193 signer's `UserRejectedRequest` variant because it never sees
 the concrete signer type at any of its call sites. Three
 alternatives were considered before adopting the shared trait:
 
-- **Per-type accessor on `BrowserWalletError` only**
+- **Per-type accessor on the concrete signer error only**
   (`user_rejection_code(&self) -> Option<i32>`) plus
-  classification at the consumer (the wasm-typescript console
-  example), keeping the signing crate ignorant of rejection
-  classes. Rejected because it pushes the responsibility onto
+  classification at the consumer, keeping the signing crate ignorant
+  of rejection classes. Rejected because it pushes the responsibility onto
   every consumer of `sign_*`, defeats the discoverable
   typed-error surface the signing crate already exposes, and
   cannot extend to a future hardware-wallet or transport-bridged
   signer that surfaces EIP-1193 4xxx codes through its own typed
   variant.
-- **`std::any::Any` downcast from `S::Error` to the concrete
-  `BrowserWalletError`**, performed inside the signing crate.
+- **`std::any::Any` downcast from `S::Error` to a concrete
+  signer error type**, performed inside the signing crate.
   Rejected because `Any` requires `'static` (not always satisfied
   by adapter error types that carry a borrowed lifetime), couples
   the signing crate to a specific signer crate it does not depend
@@ -150,7 +150,6 @@ problem the existing per-type `class()` convention does not.
 - [crates/core/src/traits/signer.rs](../../crates/core/src/traits/signer.rs)
 - [crates/signing/src/errors.rs](../../crates/signing/src/errors.rs)
 - [crates/signing/src/order_signing.rs](../../crates/signing/src/order_signing.rs)
-- [crates/browser-wallet/src/error.rs](../../crates/browser-wallet/src/error.rs)
 - [crates/alloy-signer/src/error.rs](../../crates/alloy-signer/src/error.rs)
 - [crates/alloy/src/error.rs](../../crates/alloy/src/error.rs)
 - [docs/audit/signer-error-classification-audit.md](../audit/signer-error-classification-audit.md)

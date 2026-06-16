@@ -34,7 +34,7 @@ the 1.0 runway.
 Read-only chain adapters should not carry signer dependencies merely to expose
 RPC reads. The split keeps signer creation explicit and opt-in while allowing
 native provider adapters to remain dependency-light. It also preserves the
-browser-wallet path: an EIP-1193 provider still implements the read trait and
+EIP-1193 path: a wallet-backed provider still implements the read trait and
 the signing extension, so wallet flows keep signer creation available through a
 separate capability bound.
 
@@ -68,7 +68,3 @@ separate capability bound.
 - [Architecture](../architecture.md)
 - [Providers](../providers/README.md)
 - [Adapting alloy providers](../providers/adapting-alloy.md)
-
-**Proven by:**
-
-- [Browser Wallet Trust Posture Audit](../audit/browser-wallet-trust-posture-audit.md)

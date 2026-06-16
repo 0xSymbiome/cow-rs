@@ -122,9 +122,9 @@ workflow for refreshing the lock lives in
 | App-data parity | `cowprotocol/cow-sdk` app-data JSON schemas and `cowprotocol/services` app-data hashing | `cow-sdk-app-data`, `cow-sdk-trading` | `parity/fixtures/app_data/` | `crates/app-data/tests/cid_contract.rs`, `crates/app-data/tests/schema_contract.rs`, `crates/app-data/tests/fetch_contract.rs`, `crates/trading/tests/quote_contract.rs` |
 | Subgraph support | the deployed CoW Protocol subgraph GraphQL schema, with cow-rs-owned query documents | `cow-sdk-subgraph` | `crates/subgraph/src/query_documents/` | `crates/subgraph/tests/api_contract.rs`, `crates/subgraph/tests/query_contract.rs`, `crates/subgraph/tests/types_contract.rs` |
 | Orderbook transport | `cowprotocol/services` orderbook OpenAPI and wire DTOs | `cow-sdk-orderbook` | `parity/fixtures/orderbook-requests/`, `parity/openapi/coverage.yaml` | `crates/orderbook/tests/api_contract.rs`, `crates/orderbook/tests/request_contract.rs`, `crates/orderbook/tests/transform_contract.rs`, `crates/orderbook/tests/types_contract.rs`, `crates/orderbook/tests/wire_contract.rs` |
-| WASM target | the cow-rs SDK helper surface compiled to WASM | `cow-sdk`, `cow-sdk-app-data`, the WASM example | committed workflow definitions, example READMEs | `crates/wasm/tests/transport_parity_contract.rs`, `crates/wasm/tests/transport_fetch_contract.rs`, `crates/wasm/tests/transport_fetch_smoke.rs`, `wasm-pack test --headless --firefox`, and the `wasm.yml` compatibility workflow |
+| WASM target | the cow-rs SDK helper surface compiled to WASM | `cow-sdk`, `cow-sdk-app-data`, `cow-sdk-wasm`, the WASM package examples | committed workflow definitions, example READMEs | `crates/wasm/tests/transport_parity_contract.rs`, `crates/wasm/tests/transport_fetch_contract.rs`, `crates/wasm/tests/transport_fetch_smoke.rs`, `wasm-pack test --headless --firefox`, and the `wasm.yml` compatibility workflow |
 | WASM event-log decoders | `cowprotocol/contracts` settlement surface and `cowprotocol/ethflowcontract` mixin | `cow-sdk-wasm` `decodeSettlementLog` / `decodeEthFlowLog` over the `cow-sdk-contracts` decoders | Facade and raw TypeScript declaration snapshots under `crates/wasm/snapshots/` | `crates/wasm/tests/wasm_facade_snapshot_contract.rs::facade_declarations_match_flavour_matrix` |
-| Browser wallet integration | the cow-rs browser-wallet surface over the EIP-1193 provider seam | `cow-sdk-browser-wallet`, `cow-sdk` | `examples/wasm/cow-trader-dioxus/README.md`, `docs/verification.md` | `crates/browser-wallet/tests/provider_contract.rs`, `crates/browser-wallet/tests/wallet_contract.rs`, the direct browser-bridge proof, and the canonical browser-wallet example |
+| Host wallet callback boundary | the EIP-1193 `request` semantics owned by the host JS wallet | `cow-sdk-wasm` typed callbacks (the EIP-1193 request callback) | Facade and raw TypeScript declaration snapshots under `crates/wasm/snapshots/` | `crates/wasm/tests/wasm_facade_snapshot_contract.rs::facade_declarations_match_flavour_matrix` |
 | Native Alloy adapters | `alloy` and `alloy-core` crates.io version pins (`2.0.4` / `1.5.7`) plus local trait contracts | `cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, `cow-sdk-alloy`, `cow-sdk` opt-in features | workspace `Cargo.toml` version pins, `Cargo.lock`, `docs/providers/adapting-alloy.md`, `examples/native/README.md` | `crates/alloy-provider/tests/*`, `crates/alloy-signer/tests/*`, `crates/alloy/tests/*`, `tests/alloy_umbrella_composition.rs` |
 
 ## Orderbook Rejection Tags
@@ -177,8 +177,7 @@ following invariants, each pinned by a parity fixture or a contract test:
 
 The invariants are enforced by the parity fixtures under `parity/fixtures/` and
 the regression tests at
-`crates/core/tests/wire_format_preservation_contract.rs` and
-`crates/browser-wallet/tests/signer_contract.rs`. The composable multiplexer
+`crates/core/tests/wire_format_preservation_contract.rs`. The composable multiplexer
 merkle-proof invariants land with the deferred composable capability recorded
 by [ADR 0048](adr/0048-composable-conditional-order-framework.md).
 
@@ -254,7 +253,6 @@ The Rust SDK ships in scope:
     cover their OpenAPI schemas as separate typed mirrors
 - typed subgraph transport (`cow-sdk-subgraph`)
 - quote-to-order trading workflows (`cow-sdk-trading`)
-- browser-runtime wallet integration (`cow-sdk-browser-wallet`)
 - browser-target HTTP transport (`FetchTransport`, the target-gated
   `transport::fetch` module of `cow-sdk-core`)
 - opt-in native Alloy provider, signer, and composed provider-plus-signer
@@ -320,9 +318,9 @@ Hook-trampoline bytecode chaining. Deferred; not in scope for the first release.
 ### Additional provider ecosystems
 
 Additional provider ecosystems beyond the native Alloy adapter and the
-browser-wallet leaf are not in scope for the first release. Consumers can
-implement the SDK's `Provider`, `SigningProvider`, and `Signer` trait seams to
-bridge a custom ecosystem.
+host-wallet EIP-1193 callback served by `cow-sdk-wasm` are not in scope for the
+first release. Consumers can implement the SDK's `Provider`, `SigningProvider`,
+and `Signer` trait seams to bridge a custom ecosystem.
 
 ### TypeScript-tooling-only packages
 

@@ -59,10 +59,10 @@ The root facade re-exports `cow-sdk-subgraph` only behind the off-by-default
 Read-only subgraph access otherwise stays in the separate `cow-sdk-subgraph`
 crate.
 
-Browser wallet support also stays additive.
-
-It is exposed only behind the `browser-wallet` feature and the dedicated
-`cow-sdk-browser-wallet` leaf crate.
+Browser and wallet integration is served to JavaScript and TypeScript
+consumers by the `cow-sdk-wasm` package together with the host app's own wallet
+stack (viem, wagmi, or any EIP-1193 provider). The SDK exposes the EIP-1193
+request callback and the host supplies the wallet connection.
 
 Native Alloy support is additive as well. Use `cow-sdk-alloy-provider` for
 read-only RPC, `cow-sdk-alloy-signer` for local private-key signing, and
@@ -77,9 +77,9 @@ That split matters when you choose where to start:
 
 - use `cow-sdk` for the main trading-first path
 - use `cow-sdk-subgraph` (directly, or through the `cow-sdk` `subgraph` feature) when you need explicit GraphQL reads
-- use `cow-sdk-browser-wallet` when you need injected-wallet flows in WASM
 - use `cow-sdk-wasm` when TypeScript or JavaScript code should call the Rust
-  SDK through wasm-bindgen exports
+  SDK through wasm-bindgen exports, including browser-wallet flows driven by the
+  host's own EIP-1193 provider
 
 On `wasm32-unknown-unknown`, the orderbook and subgraph builders auto-select
 the shipped browser-target HTTP transport. When you need an explicit instance,
@@ -551,7 +551,7 @@ That boundary is intentional.
 The examples above still do **not** claim:
 
 - live orderbook reachability
-- browser-wallet session support
+- host-wallet integration through the EIP-1193 request callback
 - deployed WASM page correctness
 - runtime-specific provider integration
 
@@ -688,14 +688,17 @@ available through the `cow-sdk` `subgraph` feature.
 
 ### WASM Follow-Ons
 
-When you want a runnable browser-wallet flow, use the canonical WASM example:
+When your goal is calling the Rust SDK from JavaScript or TypeScript, use the
+`cow-sdk-wasm` package examples in the dedicated
+[`0xSymbiome/cow-sdk-examples`](https://github.com/0xSymbiome/cow-sdk-examples)
+repository:
 
-- `examples/wasm/cow-trader-dioxus`
+- [`cow-signer-node`](https://github.com/0xSymbiome/cow-sdk-examples/tree/main/examples/wasm/cow-signer-node)
+- [`cow-gateway-cloudflare`](https://github.com/0xSymbiome/cow-sdk-examples/tree/main/examples/wasm/cow-gateway-cloudflare)
 
-It discovers an injected wallet (EIP-6963), connects, signs, and swaps a CoW
-order end to end in the browser using only `cow-sdk` public types. Deterministic
-browser-runtime proof lives in the `cow-sdk-browser-wallet` crate test lane and
-the browser-transport tests under `crates/wasm`, not in the example.
+For browser-wallet flows, integrate `cow-sdk-wasm` with your app's own wallet
+stack (viem, wagmi, or any EIP-1193 provider): the SDK exposes the EIP-1193
+request callback and the host supplies the wallet connection.
 
 ### Environment-Sensitive Follow-Ons
 

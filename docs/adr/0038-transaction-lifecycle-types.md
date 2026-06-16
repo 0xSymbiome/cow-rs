@@ -26,9 +26,9 @@ fields.
 
 The Alloy conversion reads status through
 `receipt.inner.status_or_post_state().as_eip658()`, so pre-Byzantium post-state
-receipts remain `None` instead of being coerced into success. The browser-wallet
-parser is tolerant when optional fields are absent and strict when present
-fields are malformed.
+receipts remain `None` instead of being coerced into success. The wasm callback
+receipt parser is tolerant when optional fields are absent and strict when
+present fields are malformed.
 
 ## Must Remain True
 
@@ -37,7 +37,7 @@ fields are malformed.
 - Runtime and support: adapters must not poll for receipts during
   `send_transaction`; mined observation is explicit through provider receipt
   lookup or a higher-level wait helper.
-- Validation and review: Alloy and browser-wallet tests must prove both
+- Validation and review: Alloy and wasm callback tests must prove both
   broadcast timing and rich receipt population, including absent-status and
   malformed-field cases.
 - Cost: adapters now maintain explicit conversion code for receipt fields
@@ -56,7 +56,7 @@ fields are malformed.
   mined observation where only a broadcast hash was known.
 - Use the Alloy `receipt.status()` accessor: it coerces post-state receipts to
   success and hides the absence of an EIP-658 status bit.
-- Make browser-wallet parsing silently ignore malformed optional fields:
+- Make wasm callback receipt parsing silently ignore malformed optional fields:
   absence is normal across wallet providers, but malformed present data should
   be diagnosable.
 

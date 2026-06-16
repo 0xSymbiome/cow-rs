@@ -56,7 +56,6 @@ outside the routine blocking contract.
 | `cow-sdk-orderbook` | Typed orderbook transport over the `HttpTransport` seam, typestate builder construction, retry/status behavior, DTO conversion, typed quote-request `oneOf`s, quote-request `appData` and pagination fidelity, quote-response `OrderParameters` coverage, malformed-payload failure boundaries, source-schema evidence, redacted context-override diagnostics, and validated partner header assembly | `api_contract.rs`, `builder_contract.rs`, `request_contract.rs`, `transform_contract.rs`, `types_contract.rs`, `wire_contract.rs`, `docs/audit/dependency-gate-audit.md`, `docs/audit/partner-api-routing-audit.md`, `docs/audit/typestate-builder-contract-audit.md`, `docs/audit/quote-response-surface-audit.md` | `cargo test -p cow-sdk-orderbook` | Live orderbook behavior depends on remote endpoints |
 | `cow-sdk-trading` | Quote, post, allowance, approval, cancellation, slippage monotonicity and boundary clamping, calldata boundary preservation, quote-request override precedence, quote-amounts projection parity, quote-to-order orchestration, order-id collision retry, receiver fallback, typed partner-fee public inputs and app-data merge-through, balance-semantics preservation, `Trading` construction and `AppCode` validation, helper-specific prerequisite resolution, and recoverable-signature owner or signer validation | `property_contract.rs`, `quote_contract.rs`, `post_contract.rs`, `order_contract.rs`, `allowance_contract.rs`, `cancel_contract.rs`, `onchain_contract.rs`, `slippage_contract.rs`, `sdk_contract.rs`, `app_code_contract.rs`, `quote_projection_parity.rs`, `ui.rs`, `docs/audit/trading-order-construction-integrity-audit.md`, `docs/audit/trading-sdk-runtime-prerequisites-audit.md`, `docs/audit/trading-app-data-merge-audit.md`, `docs/audit/quote-response-surface-audit.md`, `docs/audit/credential-surface-contract-hygiene-audit.md` | `cargo test -p cow-sdk-trading` | Optional live API calls remain outside the routine blocking contract |
 | `cow-sdk-subgraph` | Read-only GraphQL query construction over the `HttpTransport` seam, typestate builder construction, redacted production route identity, sanitized typed request-failure context, nested request-variable fidelity, typed responses, equivalent string-or-number scalar decoding, malformed-scalar failure boundaries, and source-schema evidence | `api_contract.rs`, `builder_contract.rs`, `query_contract.rs`, `types_contract.rs`, `docs/audit/dependency-gate-audit.md`, `docs/audit/credential-surface-contract-hygiene-audit.md`, `docs/audit/typestate-builder-contract-audit.md` | `cargo test -p cow-sdk-subgraph` | Live subgraph access depends on external endpoint configuration |
-| `cow-sdk-browser-wallet` | EIP-1193 browser wallet provider/signer boundaries, direct browser-bridge proof, deterministic mock proof, explicit session-state transitions, typed chain-management postconditions, and typed-data transport | `state_machine_contract.rs`, `provider_contract.rs`, `wallet_contract.rs`, `wasm_bridge_contract.rs`, `wasm-pack test --headless --firefox` | `cargo test -p cow-sdk-browser-wallet` and `cd crates/browser-wallet && wasm-pack test --headless --firefox` | Live extension-backed authorization, prompts, and vendor behavior remain environment-sensitive |
 | `cow-sdk-alloy-provider` | Native Alloy read-only RPC adapter, redacted builder and errors, contract-read ABI bridge, dependency boundary, and rich transaction receipt conversion | `provider_contract.rs`, `dependency_boundary_contract.rs`, `read_contract_parity.rs`, `read_contract_no_panic.rs`, `redaction_contract.rs`, `cancellation_contract.rs`, `src/conversion.rs` unit tests, `docs/audit/alloy-provider-adapter-audit.md` | `cargo test -p cow-sdk-alloy-provider --all-features` | Live RPC behavior depends on caller-supplied endpoints |
 | `cow-sdk-alloy-signer` | Native Alloy local-key signer adapter, typed-data primary-type preservation, ECDSA normalization, provider-required transaction boundary, redacted errors, and cancellation propagation | `signer_contract.rs`, `eip191_reference_vectors.rs`, `eip712_reference_vectors.rs`, `proptests.rs`, `redaction_contract.rs`, `cancellation_contract.rs`, `compile_fail.rs`, `docs/audit/alloy-signer-adapter-audit.md` | `cargo test -p cow-sdk-alloy-signer --all-features` | Live RPC behavior depends on caller-supplied endpoints |
 | `cow-sdk-alloy` | Composed native Alloy provider plus signer, owned signer handles, no implicit receipt polling during submission, rich receipt delegation, and Trading helper compatibility | `provider_contract.rs`, `signing_provider_contract.rs`, `send_transaction_does_not_wait_for_confirmation.rs`, `tests/transaction_lifecycle_cross_adapter_invariant.rs`, `tests/alloy_umbrella_composition.rs`, `docs/audit/alloy-umbrella-adapter-audit.md` | `cargo test -p cow-sdk-alloy --all-features` | Live RPC behavior depends on caller-supplied endpoints |
@@ -86,12 +85,11 @@ cross-cutting properties whose evidence spans more than one crate.
 | `PROP-SIG-006` | Shared EIP-712 domain separator parity across contracts and signing | `crates/contracts/src/primitives.rs::tests::domain_separator_matches_shared_parity_fixture`, `crates/signing/src/domain.rs::tests::domain_separator_matches_shared_parity_fixture` | `cargo test -p cow-sdk-contracts -p cow-sdk-signing` |
 | `PROP-CON-008` | EIP-1271 verification tracing and cache telemetry | `crates/contracts/tests/verify_telemetry_contract.rs::verifier_emits_canonical_span_and_safe_miss_store_events`, `crates/contracts/tests/verify_telemetry_contract.rs::verifier_emits_hit_event_without_reaching_provider`, `crates/contracts/tests/verify_telemetry_contract.rs::verifier_emits_skip_event_for_non_cacheable_errors` | `cargo test -p cow-sdk-contracts --test verify_telemetry_contract` |
 | `PROP-SEC-002` | Canonical-host guard rails for orderbook and subgraph base-URL overrides | `crates/orderbook/tests/host_policy_contract.rs::orderbook_builder_blocks_custom_hosts_by_default`, `crates/orderbook/tests/host_policy_contract.rs::orderbook_builder_accepts_explicit_allow_and_loopback_policy`, `crates/subgraph/tests/host_policy_contract.rs::subgraph_builder_blocks_custom_hosts_by_default`, `crates/subgraph/tests/host_policy_contract.rs::subgraph_builder_accepts_explicit_allow_and_loopback_policy` | `cargo test -p cow-sdk-orderbook -p cow-sdk-subgraph` |
-| `PROP-BWL-003` | Trust-aware EIP-1193 provider construction | `crates/browser-wallet/tests/provider_contract.rs::anonymous_provider_builder_requires_trusted_origin`, `crates/browser-wallet/tests/provider_contract.rs::provider_builder_accepts_explicit_trusted_origin`, `crates/browser-wallet/tests/wasm_bridge_contract.rs` | `cargo test -p cow-sdk-browser-wallet` |
 | `PROP-CON-009` | Scheme-aware ECDSA recovery and declared-owner reporting | `crates/contracts/tests/signature_contract.rs::signature_helpers_preserve_public_contract_surface`, `crates/contracts/tests/recoverable_signature_contract.rs::recover_eip712_round_trip_returns_the_signing_address`, `crates/contracts/tests/recoverable_signature_contract.rs::recover_eth_sign_round_trip_applies_eip191_prehash_internally`, `crates/contracts/tests/signature_contract.rs::recover_ecdsa_address_rejects_non_ecdsa_variants` | `cargo test -p cow-sdk-contracts --test signature_contract` |
 | `PROP-AP-009` | Alloy provider rich receipt conversion | `crates/alloy-provider/tests/provider_contract.rs::get_transaction_receipt_populates_status_block_gas_from_to`, `crates/alloy-provider/src/conversion.rs` unit tests | `cargo test -p cow-sdk-alloy-provider --test provider_contract` and `cargo test -p cow-sdk-alloy-provider --lib` |
 | `PROP-AU-004` | Alloy umbrella broadcast timing and receipt delegation | `crates/alloy/tests/send_transaction_does_not_wait_for_confirmation.rs::send_transaction_does_not_dispatch_get_transaction_receipt`, `crates/alloy/tests/provider_contract.rs::get_transaction_receipt_populates_rich_fields_from_alloy_receipt` | `cargo test -p cow-sdk-alloy --test send_transaction_does_not_wait_for_confirmation` and `cargo test -p cow-sdk-alloy --test provider_contract` |
-| `PROP-WS-RX-001` | Cross-adapter transaction receipt shape | `crates/browser-wallet/tests/transaction_receipt_parsing.rs`, `tests/transaction_lifecycle_cross_adapter_invariant.rs::alloy_get_transaction_receipt_populates_status_and_block`, `tests/transaction_lifecycle_cross_adapter_invariant.rs::browser_wallet_get_transaction_receipt_populates_status_and_block` | `cargo test -p cow-sdk-browser-wallet --test transaction_receipt_parsing` and `cargo test -p cow-rs-workspace-tests --test transaction_lifecycle_cross_adapter_invariant` |
-| `PROP-WS-TX-001` | Cross-adapter no receipt polling during submission | `crates/alloy/tests/send_transaction_does_not_wait_for_confirmation.rs`, `tests/transaction_lifecycle_cross_adapter_invariant.rs::alloy_send_transaction_does_not_poll_for_receipt`, `tests/transaction_lifecycle_cross_adapter_invariant.rs::browser_wallet_send_transaction_does_not_poll_for_receipt` | `cargo test -p cow-sdk-alloy --test send_transaction_does_not_wait_for_confirmation` and `cargo test -p cow-rs-workspace-tests --test transaction_lifecycle_cross_adapter_invariant` |
+| `PROP-WS-RX-001` | Cross-adapter transaction receipt shape | `tests/transaction_lifecycle_cross_adapter_invariant.rs::alloy_get_transaction_receipt_populates_status_and_block` | `cargo test -p cow-rs-workspace-tests --test transaction_lifecycle_cross_adapter_invariant` |
+| `PROP-WS-TX-001` | Cross-adapter no receipt polling during submission | `crates/alloy/tests/send_transaction_does_not_wait_for_confirmation.rs`, `tests/transaction_lifecycle_cross_adapter_invariant.rs::alloy_send_transaction_does_not_poll_for_receipt` | `cargo test -p cow-sdk-alloy --test send_transaction_does_not_wait_for_confirmation` and `cargo test -p cow-rs-workspace-tests --test transaction_lifecycle_cross_adapter_invariant` |
 
 ## Examples And Runtime Surfaces
 
@@ -99,8 +97,6 @@ cross-cutting properties whose evidence spans more than one crate.
 | --- | --- | --- | --- | --- |
 | Native examples | Deterministic consumer scenarios for app-data, signing, orderbook, quote-only, limit-order, native-sell / EthFlow, pre-sign, off-chain cancellation, on-chain cancellation, and subgraph behavior | `examples/native/tests/scenario_contract.rs` plus runnable scenario binaries including `ethflow.rs` and `onchain_actions.rs` | `subgraph_live` and `orderbook_live` remain opt-in because they depend on external services or configuration. | `cargo test -p cow-sdk-examples-native` |
 | Native deterministic example binaries | Readable command output for the complete native trading workflow surface without live order placement | `examples/native/scenarios/*.rs` | Live service examples are intentionally excluded from the deterministic runner. | `cargo run-deterministic-examples --locked` |
-| Browser-wallet WASM proof | Deterministic browser-runtime proof for the `cow-sdk-browser-wallet` EIP-1193 bridge | The direct crate bridge proof in `crates/browser-wallet/tests/wasm_bridge_contract.rs`, `cargo test -p cow-sdk-browser-wallet`, and the headless bridge run in `browser-wallet-wasm.yml` | Live extension-backed connect, sign, quote, submit, and cancel remain environment-sensitive because they depend on the installed wallet, authorization state, and vendor-specific behavior. | `cd crates/browser-wallet && wasm-pack test --headless --firefox` |
-| Browser-wallet WASM example | Runnable end-to-end browser-wallet trade demonstration built on `cow-sdk` public types | `examples/wasm/cow-trader-dioxus` builds for `wasm32-unknown-unknown` and stays clippy/rustfmt-clean under `browser-wallet-wasm.yml` | The example talks to the live orderbook, so it is a demonstration and compile gate rather than deterministic proof. | `cargo check --target wasm32-unknown-unknown --manifest-path examples/wasm/cow-trader-dioxus/Cargo.toml` |
 
 ## Workspace Gates
 
@@ -113,7 +109,6 @@ cross-cutting properties whose evidence spans more than one crate.
 | `cargo test --workspace` | Main workspace test gate |
 | `cargo test -p cow-rs-workspace-tests` | Workspace policy tests for MSRV alignment, root dependency default-feature review, nested Alloy pin lockstep, and native Alloy adapter composition coverage |
 | `cargo test -p cow-sdk-alloy --test send_transaction_does_not_wait_for_confirmation` | Native Alloy submission timing gate that rejects hidden receipt polling during broadcast |
-| `cargo test -p cow-sdk-browser-wallet --test transaction_receipt_parsing` | Browser-wallet receipt parser gate for absent-tolerant and present-malformed-strict fields |
 | `cargo test -p cow-rs-workspace-tests --test transaction_lifecycle_cross_adapter_invariant` | Cross-adapter transaction broadcast and receipt-shape invariant |
 | `cargo test --workspace --doc` | Explicit doctest gate for rustdoc examples |
 | Published crate README doctests | Every published crate README is wired into crate rustdoc with a `cfg_attr(doctest, ...)` shim, so `cargo test --workspace --doc` compiles every fenced README example on CI. |
@@ -131,7 +126,7 @@ cross-cutting properties whose evidence spans more than one crate.
 | `cargo parity-validate --upstream-root <dir>` | Deep parity gate against `cargo xtask parity sync --root <dir>` checkouts: every pinned repository's remote/HEAD/producer paths plus the vendored OpenAPI body at the services pin |
 | `ci-success` | Aggregate routine CI status for branch protection across the required native validation and publication jobs |
 | Alloy release-candidate canary | Scheduled and manual forward-compat drift workflow in `.github/workflows/alloy-release-candidate.yml` checks configurable `ALLOY_CANARY_REF` with a pinned SHA fallback and has no pull-request trigger. |
-| `cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-browser-wallet -p cow-sdk-alloy-provider -p cow-sdk-alloy-signer -p cow-sdk-alloy -p cow-sdk -p cow-sdk-wasm -p cow-sdk-test` | Blocking allow-list gate asserting `alloy-provider` remains limited to `cow-sdk-alloy-provider` and `cow-sdk-alloy`; `cargo check-alloy-provider-invariant` normalises the raw Cargo tree output, and `cargo docs-agree` keeps the raw package list aligned across the release checklist, `_quality-gate.yml`, `CONTRIBUTING.md`, and `PROPERTIES.md`. |
+| `cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-alloy-provider -p cow-sdk-alloy-signer -p cow-sdk-alloy -p cow-sdk -p cow-sdk-wasm -p cow-sdk-test` | Blocking allow-list gate asserting `alloy-provider` remains limited to `cow-sdk-alloy-provider` and `cow-sdk-alloy`; `cargo check-alloy-provider-invariant` normalises the raw Cargo tree output, and `cargo docs-agree` keeps the raw package list aligned across the release checklist, `_quality-gate.yml`, `CONTRIBUTING.md`, and `PROPERTIES.md`. |
 | `cargo check-alloy-signer-invariant` | Blocking allow-list gate asserting `alloy-signer-local` remains limited to `cow-sdk-alloy-signer` and `cow-sdk-alloy`. |
 | Release reproducibility posture | Reproducible-build posture documented across the release checklist with explicit source-and-lockfile guarantees and a documented future extension for WebAssembly artifact byte-reproducibility. |
 
@@ -196,19 +191,18 @@ here until the explicit app-data metadata translation boundary.
 
 ### Browser-Runtime Support
 
-Browser wallet support is explicit, bounded, and feature-gated. Deterministic
-proof comes from crate tests, direct browser-bridge coverage, mock-wallet
-flows, and fixture-backed browser automation. The deterministic Playwright lane
-excludes installed-wallet live-extension specs; those checks remain a manual,
-environment-sensitive canary. When a
-browser workflow already owns a chain authority,
-`BrowserWallet::signer_for_chain` keeps address,
-signature, gas, and transaction operations bound to that chain. Typed
-chain-management helpers such as `switch_chain` and `switch_or_add_chain`
-return success only after the refreshed wallet session confirms the requested
-chain. Live extension behavior remains environment-sensitive, and the shipped
-static browser consoles keep production live orderbook calls explicitly gated
-behind a proxy-enabled deployment requirement.
+Browser and wallet integration for JavaScript and TypeScript consumers is
+served by the `cow-sdk-wasm` package together with the host application's own
+wallet stack (viem, wagmi, or any EIP-1193 provider). The SDK owns the
+EIP-1193 request-callback boundary and the TypeScript-callable wasm surface;
+the host application supplies the wallet connection, chain authority, and user
+prompts. Deterministic proof for the wasm surface comes from the host-side
+helper tests, the headless `wasm-pack` browser lane, and the TypeScript
+end-to-end suites; the target-gated browser `FetchTransport` lives in
+`cow-sdk-core`'s `transport::fetch` module and is exercised by the
+`crates/wasm/tests/transport_*` contracts. Live wallet authorization,
+injected-provider behavior, and vendor-specific prompts remain manual,
+environment-sensitive boundaries owned by the host's wallet stack.
 
 ### Published Crate Policy
 
@@ -235,7 +229,7 @@ Release artifacts ship reproducible at the source and lockfile level today;
 the release checklist records the two-tier reproducibility posture and the path
 to binary reproducibility for the WebAssembly artifacts.
 
-The `cargo tree --invert alloy-provider` package list, the `cargo audit --deny ... --ignore RUSTSEC-...` ignore-token list, each ignored RustSec rationale entry, and the browser-wallet Playwright install browser set are guarded against their source-of-truth files by `cargo docs-agree`.
+The `cargo tree --invert alloy-provider` package list, the `cargo audit --deny ... --ignore RUSTSEC-...` ignore-token list, and each ignored RustSec rationale entry are guarded against their source-of-truth files by `cargo docs-agree`.
 
 ### Deployment And Capability Evidence
 
@@ -293,13 +287,11 @@ that every `fetch_doc_from_*` caller awaits the returned future and every
 - Dependency policy is intentionally split: `cargo-deny` owns bans, licenses, sources, and yanked advisory policy, while `cargo-audit` blocks vulnerabilities plus unsound and unmaintained advisories. Yanked published-upstream cases require explicit audit evidence instead of widened ignore lists or hidden unreleased overrides.
 - Routine native validation workflows and the dedicated WASM workflows disable checkout credential persistence and use explicit timeout budgets per job.
 - Mocked transports should assert request shape and failure behavior where those paths are part of the validated surface.
-- WASM/browser evidence is separated from native examples so browser runtime assumptions stay visible, and the direct `wasm-bindgen-test` coverage in `cow-sdk-browser-wallet` proves the owned browser bridge independent of any example surface.
-- `cow-sdk-browser-wallet` chain-switch proofs verify refreshed session state after successful switch acknowledgements instead of trusting wallet RPC success alone.
+- WASM/browser evidence is separated from native examples so browser runtime assumptions stay visible, and the `wasm-bindgen-test` coverage in `cow-sdk-wasm` proves the TypeScript-callable surface and the browser `FetchTransport` independent of any host wallet stack.
 - Live quote, orderbook, subgraph, and wallet checks stay manual unless explicitly promoted into a deterministic routed or injected test.
 - Schema-derived evidence stays test-only and outside the public SDK API.
 - Higher-iteration search-profile tests remain limited to narrow deterministic helper families whose inputs are large enough to justify the extra exploration and whose failures stay readable in ordinary crate test output.
-- `cow-sdk-browser-wallet` tests, mock console mode, and the committed browser-wallet console automation provide deterministic proof without a live extension, public RPC endpoint, or external website; extension-backed injected-provider execution remains environment-sensitive because authorization, chain inventory, wallet UX, and vendor-specific behavior are controlled by the installed extension.
-- The public rustc lint gate applies to `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-trading`, `cow-sdk-browser-wallet`, the native Alloy adapter crates, and the `cow-sdk` facade.
+- The public rustc lint gate applies to `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-trading`, the native Alloy adapter crates, and the `cow-sdk` facade.
 
 ## Going Deeper
 

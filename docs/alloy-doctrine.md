@@ -34,7 +34,7 @@ When a maintainer adds a new primitive, run the tree top-to-bottom:
    - Yes → **COW-OWNED**. The protocol authority is upstream Solidity, upstream services, and the upstream TypeScript SDK, not alloy.
    - No → step 5.
 
-5. **Is this a runtime-coupling concern (chain-RPC, signer creation, HTTP transport, browser-wallet session)?**
+5. **Is this a runtime-coupling concern (chain-RPC, signer creation, HTTP transport, host wallet callback)?**
    - Yes → **BOUNDARY-ADAPTER**. Define the trait in `cow-sdk-core`, ship the alloy wrap in a sibling adapter crate (`cow-sdk-alloy-*`), and keep the alloy-runtime family confined to that crate per ADR 0026.
    - No → **COW-OWNED** (last resort). Flag the primitive in the next ADR cycle so future maintainers can recognize the deliberate choice. Unflagged Bucket-2 entries that look like they could be Bucket 1 or 3 are the entropy this doctrine is designed to prevent.
 
@@ -44,7 +44,7 @@ Every primitive in this table uses the alloy symbol directly. No cow-owned re-im
 
 | Surface | Alloy crate + symbol | cow-rs consumer crate(s) | ADR authority | Notes |
 |---|---|---|---|---|
-| Inner-layer address type | `alloy_primitives::Address` | `cow-sdk-core` (via `Address` newtype), `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk-alloy*`, `cow-sdk-browser-wallet` | ADR 0052 | `repr(transparent)` newtype, bit-for-bit layout, zero-cost conversion via `From::from` and the `as_alloy` / `into_alloy` accessors. |
+| Inner-layer address type | `alloy_primitives::Address` | `cow-sdk-core` (via `Address` newtype), `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-orderbook`, `cow-sdk-trading`, `cow-sdk-alloy*`, `cow-sdk-wasm` | ADR 0052 | `repr(transparent)` newtype, bit-for-bit layout, zero-cost conversion via `From::from` and the `as_alloy` / `into_alloy` accessors. |
 | 32-byte hash | `alloy_primitives::B256` | `cow-sdk-core` (via `Hash32`, `AppDataHash`) | ADR 0052 | Two cow newtypes around `B256` preserve type-system distinction. |
 | Variable bytes | `alloy_primitives::Bytes` | `cow-sdk-core` (via `HexData`) | ADR 0052 | Display/Serialize/Deserialize forward to alloy defaults. |
 | Fixed-width 56-byte UID | `alloy_primitives::FixedBytes<56>` | `cow-sdk-core` (via `OrderUid`) | ADR 0052 | UID packing payload byte width is fixed by GPv2; cow owns only the 56-byte packing function (Bucket 2 below). |
@@ -114,14 +114,14 @@ Each entry defines a cow-owned trait in `cow-sdk-core` and ships a separate adap
 
 | Trait | cow-rs trait file | Adapter crate | Alloy types wrapped | ADR authority |
 |---|---|---|---|---|
-| `Provider` (read-only chain RPC) | `cow_sdk_core::Provider` | `cow-sdk-alloy-provider` (native, read-only); browser-wallet leaf provides an EIP-1193 impl on `wasm32` | `alloy_provider::DynProvider<Ethereum>`, transport via `reqwest`, redacted URL via `Redacted<reqwest::Url>` | ADR 0024, ADR 0035 |
+| `Provider` (read-only chain RPC) | `cow_sdk_core::Provider` | `cow-sdk-alloy-provider` (native, read-only); on `wasm32`, the host wallet's EIP-1193 provider is reached through the `cow-sdk-wasm` request callback | `alloy_provider::DynProvider<Ethereum>`, transport via `reqwest`, redacted URL via `Redacted<reqwest::Url>` | ADR 0024, ADR 0035 |
 | `SigningProvider: Provider` (signer creation extension) | `cow_sdk_core::SigningProvider` | `cow-sdk-alloy` (composed read+sign) | `alloy_provider::DynProvider<Ethereum>` with wallet filler | ADR 0024, ADR 0037 |
 | `Signer` (EIP-191 + EIP-712 signing) | `cow_sdk_core::Signer` | `cow-sdk-alloy-signer` (native local private-key); `cow-sdk-alloy::AlloyClientSignerHandle` (composed) | `alloy_signer_local::PrivateKeySigner`, `alloy_signer::Signer` | ADR 0024, ADR 0036, ADR 0045 |
-| Narrow capability traits (`TypedDataSigner`, `DigestSigner`) | `cow_sdk_core::{TypedDataSigner, DigestSigner}` | Callback-shaped adapters (`cow-sdk-browser-wallet`, `cow-sdk-wasm`) that expose a single signing operation | n/a — these are cow-owned shapes; alloy ships no peer | ADR 0024, ADR 0045 |
+| Narrow capability traits (`TypedDataSigner`, `DigestSigner`) | `cow_sdk_core::{TypedDataSigner, DigestSigner}` | Callback-shaped adapters (`cow-sdk-wasm`) that expose a single signing operation | n/a — these are cow-owned shapes; alloy ships no peer | ADR 0024, ADR 0045 |
 | `HttpTransport` (REST/GraphQL) | `cow_sdk_core::HttpTransport` | `ReqwestTransport` and `FetchTransport`, both target-gated inside `cow-sdk-core`; `cow_sdk_wasm::exports::JsCallbackHttpTransport` | `reqwest::Client` for native; `web_sys` global `fetch` for browser; JS callback for Node/Deno/Workers | ADR 0010, ADR 0013 |
 | `IpfsFetchTransport` | `cow_sdk_app_data::IpfsFetchTransport` (re-exported via `cow-sdk-core` cancellation contract) | `cow-sdk-app-data` native + browser variants | Same underlying transports as `HttpTransport`; the CID-fetch policy is cow-owned | ADR 0010 (cancellation extension to IPFS fetch) |
-| Wallet/provider/signer JS callback boundary | `cow_sdk_wasm` typed callbacks (`TypedDataSignerCallback`, `Eip1193RequestCallback`, `DigestSignerCallback`, `CustomEip1271Callback`, `CowFetchCallback`) | `cow-sdk-browser-wallet`, `cow-sdk-wasm` | EIP-1193 provider request semantics owned by the host JS, not by Rust types | ADR 0040, ADR 0045, ADR 0047 |
-| Transaction lifecycle types (`TransactionBroadcast`, `TransactionReceipt`) | `cow_sdk_core::transaction` | Implemented by `cow-sdk-alloy-provider`, `cow-sdk-alloy`, `cow-sdk-browser-wallet`, any custom adapter | `alloy_rpc_types_eth::TransactionReceipt` | ADR 0038 |
+| Wallet/provider/signer JS callback boundary | `cow_sdk_wasm` typed callbacks (`TypedDataSignerCallback`, `Eip1193RequestCallback`, `DigestSignerCallback`, `CustomEip1271Callback`, `CowFetchCallback`) | `cow-sdk-wasm` | EIP-1193 provider request semantics owned by the host JS, not by Rust types | ADR 0040, ADR 0045, ADR 0047 |
+| Transaction lifecycle types (`TransactionBroadcast`, `TransactionReceipt`) | `cow_sdk_core::transaction` | Implemented by `cow-sdk-alloy-provider`, `cow-sdk-alloy`, any custom adapter | `alloy_rpc_types_eth::TransactionReceipt` | ADR 0038 |
 
 The trait owns the public contract; the adapter is replaceable. A future post-alloy provider stack (e.g. a hypothetical `cow-sdk-foundry-provider`) would ship as a peer adapter implementing the same `Provider` trait, without touching `cow-sdk-trading`, `cow-sdk-orderbook`, `cow-sdk-signing`, or the default facade. This is the operational form of [Chain-RPC Runtime Neutrality](principles.md).
 

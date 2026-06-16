@@ -12,7 +12,7 @@
 Own subgraph access in a separate, read-only `cow-sdk-subgraph` crate, and also
 re-export it through the `cow-sdk` facade behind an off-by-default `subgraph`
 feature (`cow_sdk::subgraph`), alongside the other optional capability features
-such as `browser-wallet` and `cow-shed`.
+such as `cow-shed`.
 
 ## Why
 
@@ -36,8 +36,8 @@ rather than a special case.
   subgraph surface.
 - Standalone use: `cow-sdk-subgraph` stays usable directly; the facade
   re-export is additive convenience, not the only path.
-- Runtime and support: GraphQL analytics concerns stay separate from trading,
-  orderbook transport, and browser-wallet runtime behavior.
+- Runtime and support: GraphQL analytics concerns stay separate from trading
+  and orderbook transport.
 - Error family: when the feature is enabled, `SubgraphError` joins the uniform
   classification family through `CowError::Subgraph` and
   `SubgraphError::class()` ([ADR 0060](0060-uniform-error-classification.md)).

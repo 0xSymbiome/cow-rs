@@ -1,7 +1,8 @@
 # Examples
 
-The repository includes native and WASM example galleries for the public
-`cow-rs` surface.
+This directory holds the native Rust example gallery for the public `cow-rs`
+surface. The TypeScript-callable WASM package examples live in a separate
+repository: [`0xSymbiome/cow-sdk-examples`](https://github.com/0xSymbiome/cow-sdk-examples).
 
 ## Native
 
@@ -28,22 +29,15 @@ Run every deterministic non-live binary with:
 cargo run-deterministic-examples
 ```
 
-## WASM
-
-`examples/wasm/cow-trader-dioxus/` is a runnable browser-wallet trade example
-(Dioxus, wasm): it discovers an injected wallet (EIP-6963), connects, signs, and
-swaps a CoW order end to end using only `cow-sdk` public types.
-
-See [the example README](wasm/cow-trader-dioxus/README.md) to build and run it.
-
 ## TypeScript WASM Package
 
-The TypeScript-callable WASM package examples cover specialized JavaScript host
-patterns:
+The TypeScript-callable WASM package examples live in the dedicated
+[`0xSymbiome/cow-sdk-examples`](https://github.com/0xSymbiome/cow-sdk-examples)
+repository and cover specialized JavaScript host patterns:
 
-- `wasm/cow-signer-node/` signs an order offline with EIP-712 and EIP-1271
-  through the `signing` flavor.
-- `wasm/cow-gateway-cloudflare/` runs an orderbook quote gateway on the
-  `cloudflare` flavor inside a Worker.
+- [`cow-signer-node`](https://github.com/0xSymbiome/cow-sdk-examples/tree/main/examples/wasm/cow-signer-node)
+  signs an order offline with EIP-712 and EIP-1271 through the `signing` flavor.
+- [`cow-gateway-cloudflare`](https://github.com/0xSymbiome/cow-sdk-examples/tree/main/examples/wasm/cow-gateway-cloudflare)
+  runs an orderbook quote gateway on the `cloudflare` flavor inside a Worker.
 
-Each example has its own README and `pnpm test` check.
+Each example has its own README and `pnpm test` check in that repository.

@@ -1,7 +1,7 @@
 # Contract Bindings Parity Audit
 
 Status: Current
-Last reviewed: 2026-06-14
+Last reviewed: 2026-06-16
 Owning surface: `cow-sdk-contracts` `alloy::sol!`-generated bindings for `GPv2Settlement`, `CoWSwapEthFlow`, `CoWSwapOnchainOrders` events, the wrapped-native token, and `IERC20`
 Refresh trigger: A new binding family landing in `cow-sdk-contracts`; a signature change in any existing binding; a change to the upstream commit pin for any binding's source repository under `parity/source-lock.yaml`; a change to the TypeScript-SDK-derived parity fixtures that back the regression suite; a change to the EIP-712 domain-separator fixture shared with the signing crate; a change to the wasm target feature contract for the alloy/k256 dependency path
 Related docs:
@@ -306,14 +306,7 @@ contracts share the protocol's TypeScript-SDK-derived fixture authority.
 decimal-string `gasLimit` envelope through `#[serde(with =
 "alloy_serde::displayfromstr")]`, which serializes any `Display + FromStr`
 type into the same JSON-string-of-decimal-digits the hooks fixture
-`parity/fixtures/app_data/hooks_v1.14.0.json` pins. The
-`cow-sdk-browser-wallet` provider helpers
-`provider::async_provider::hex_quantity` and `parse_chain_id_value` parse
-the EIP-1474 hex-quantity wire form through
-`alloy_primitives::U256::from_str_radix` and format the canonical
-`0x`-prefixed lowercase hex via the U256 `LowerHex` impl, replacing the
-previous hand-rolled `BigUint` parser path with the canonical alloy
-primitive.
+`parity/fixtures/app_data/hooks_v1.14.0.json` pins.
 
 ### Identity Primitive Newtypes
 
@@ -357,19 +350,19 @@ Equality, hash, and ordering on the strict newtypes collapse onto the
 underlying alloy byte comparison, which is equivalent to the previous
 case-insensitive contract because every valid input parses to the same
 bytes regardless of input casing. The seam helpers in
-`cow_sdk_alloy_provider`, `cow_sdk_alloy`, and `cow_sdk_browser_wallet`
+`cow_sdk_alloy_provider` and `cow_sdk_alloy`
 consume the packed bytes directly through `*value.as_alloy()` and
 `value.into_alloy()`, replacing the previous `cow_to_alloy_address` /
 `cow_to_alloy_hash` / `alloy_address_to_cow_address` /
 `hex_data_from_bytes` / `decode_0x_hex` /
 `parse_u256_quantity` adapter helpers, which are removed. The
 `parse_u256` JSON-Value adapters that historically lived in each of
-`cow-sdk-alloy`, `cow-sdk-alloy-provider`, and `cow-sdk-browser-wallet`
+`cow-sdk-alloy` and `cow-sdk-alloy-provider`
 now delegate to `alloy_primitives::U256::from_str`, which natively
 recognises both the canonical decimal and `0x`-prefixed hex forms used
 by the JSON-RPC `eth_call` response shape and enforces the `uint256`
-ceiling at parse time, so the historical hand-rolled radix sniffer and
-the BigUint fallback path in the browser-wallet copy are retired and
+ceiling at parse time, so the historical hand-rolled radix sniffer is
+retired and
 the `num-bigint` direct dependency is dropped from
 `cow-sdk-core` `[dependencies]` (it persists only as a `[dev-dependency]`
 for the wider-product oracle in the U256 overflow property test).
@@ -453,9 +446,7 @@ can compute the canonical separator and signing hash. The cow type
 remains the public API surface; the alloy type is the transient
 hashing-step helper.
 
-The `signer_contract.rs::validate_typed_data_chain_rejects_payload_with_wrong_domain_chain_id`
-contract test exercises the cow `ChainId` field's strict equality
-against the signer's bound chain id, and the `domain_contract.rs`
+The `domain_contract.rs`
 + `parity_contract.rs` suites in the `cow-sdk-signing` crate pin the
 canonical wire shape and the byte-identity invariants. The byte-
 identity gates fix the mainnet domain separator
@@ -497,8 +488,6 @@ Primary regression coverage:
 - `crates/trading/tests/parity_contract.rs`
 - `crates/core/tests/wire_format_preservation_contract.rs`
 - `crates/core/tests/property_contract.rs`
-- `crates/browser-wallet/tests/signer_contract.rs::validate_typed_data_chain_rejects_payload_with_wrong_domain_chain_id`
-- `crates/browser-wallet/tests/signer_contract.rs::typed_data_payload_emits_canonical_eip1193_wire_shape_against_fixture`
 - `crates/signing/tests/domain_contract.rs`
 - `crates/signing/tests/parity_contract.rs`
 - `parity/fixtures/signing/eth_sign_typed_data_request.json`

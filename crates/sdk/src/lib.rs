@@ -12,9 +12,6 @@
 //! - trading orchestration
 //!
 //! The facade is trading-first: the high-level trading flow is the primary surface.
-//! Optional browser-runtime support does not change the default facade identity.
-//! Browser-wallet support is additive behind the `browser-wallet` feature,
-//! and the full browser-runtime contract stays in `cow-sdk-browser-wallet`.
 //!
 //! Read-only subgraph analytics are available behind the off-by-default
 //! `subgraph` feature as `cow_sdk::subgraph`; the full subgraph contract stays
@@ -122,9 +119,6 @@ pub use cow_sdk_alloy_provider as alloy_provider;
 #[cfg_attr(docsrs, doc(cfg(feature = "alloy-signer")))]
 pub use cow_sdk_alloy_signer as alloy_signer;
 pub use cow_sdk_app_data as app_data;
-#[cfg(feature = "browser-wallet")]
-#[cfg_attr(docsrs, doc(cfg(feature = "browser-wallet")))]
-pub use cow_sdk_browser_wallet as browser_wallet;
 pub use cow_sdk_contracts as contracts;
 /// Opt-in COW Shed account-abstraction hook helpers (proxy derivation,
 /// EIP-712 signing, factory calldata, and the [`cow_shed::CowShedHooks`]
@@ -230,10 +224,6 @@ pub enum CowError {
     /// Trading workflow, quoting, or submission error.
     #[error("trading error: {0}")]
     Trading(#[from] cow_sdk_trading::TradingError),
-    #[cfg(feature = "browser-wallet")]
-    /// Browser-wallet transport or session error.
-    #[error("browser wallet error: {0}")]
-    BrowserWallet(#[from] cow_sdk_browser_wallet::BrowserWalletError),
     #[cfg(feature = "subgraph")]
     /// Subgraph transport, GraphQL, or decoding error.
     #[error("subgraph error: {0}")]
@@ -263,8 +253,6 @@ impl CowError {
             Self::Contracts(error) => error.class(),
             Self::Orderbook(error) => error.class(),
             Self::Trading(error) => error.class(),
-            #[cfg(feature = "browser-wallet")]
-            Self::BrowserWallet(error) => error.class(),
             #[cfg(feature = "subgraph")]
             Self::Subgraph(error) => error.class(),
         }

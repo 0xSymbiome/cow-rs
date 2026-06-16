@@ -20,14 +20,14 @@ neutral core traits.
 
 ## Capability Boundary
 
-This crate is native-only. Wasm applications should use
-[`cow-sdk-browser-wallet`](https://docs.rs/cow-sdk-browser-wallet) for browser
-wallet signing and inject browser RPC access through the supported browser
-transport surfaces.
+This crate is native-only. JavaScript and TypeScript hosts targeting the browser
+should use the [`cow-sdk-wasm`](https://crates.io/crates/cow-sdk-wasm) package,
+supplying their own wallet across its EIP-1193 request-callback boundary and
+reaching CoW services through the browser fetch transport.
 
 The native-only boundary is enforced at compile time on `wasm32` targets. That
-keeps browser builds on the audited browser-wallet path instead of surfacing
-deep transitive native-runtime errors from Alloy networking or local-key
+keeps browser builds on the wasm callback path instead of surfacing deep
+transitive native-runtime errors from Alloy networking or local-key
 dependencies.
 
 The package boundary is intentionally narrow in this release. Read-only provider
