@@ -114,8 +114,7 @@ at equivalent feature subsets. `cow-sdk-wasm` is appropriate for specialized
 cases — deterministic Rust signing parity, single-source-of-truth Rust +
 TypeScript embedding, and Cloudflare Workers (size-compatible at the time of
 measurement; the `cloudflare` flavor is built and tested end-to-end in CI
-(Workers Vitest plus the Cloudflare gateway example), within the Workers
-compressed-size budget).
+(Workers Vitest), within the Workers compressed-size budget).
 
 Its surface has four layers: pure helpers for deterministic protocol output,
 wallet and signer callback exports, orderbook plus subgraph plus IPFS clients,

@@ -22,8 +22,8 @@ of reimplementing protocol primitives.
   implementation eliminates protocol-drift bugs.
 - **Cloudflare Workers**: the `./cloudflare` flavor (size-compatible with
   the current Workers Free compressed-size limit at the time of measurement;
-  the `cloudflare` flavor is built and tested end-to-end in CI (Workers Vitest plus
-  the Cloudflare gateway example), within the Workers compressed-size budget).
+  the `cloudflare` flavor is built and tested end-to-end in CI (Workers Vitest),
+  within the Workers compressed-size budget).
 - **Embeddable signing helper**: the `./signing` flavor is the smallest and
   may be embedded in a larger TypeScript application.
 

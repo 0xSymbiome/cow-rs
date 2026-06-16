@@ -59,8 +59,8 @@ this ADR does not blur:
   validation note's refresh triggers — the cloudflare flavor is
   size-compatible with the current Workers Free compressed-size limit at
   the time of measurement; the `cloudflare` flavor is built and tested
-  end-to-end in CI (Workers Vitest plus the Cloudflare gateway example),
-  within the Workers compressed-size budget).
+  end-to-end in CI (Workers Vitest), within the Workers compressed-size
+  budget).
 
 ## Must Remain True
 

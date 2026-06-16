@@ -46,9 +46,8 @@ JavaScript and TypeScript consumers may use `cow-sdk-wasm` for specialized
 cases: deterministic Rust signing parity, single-source-of-truth Rust +
 TypeScript embedding, and Cloudflare Workers (size-compatible with the current
 Workers Free compressed-size limit at the time of measurement; the
-`cloudflare` flavor is built and tested end-to-end in CI (Workers Vitest
-plus the Cloudflare gateway example), within the Workers compressed-size
-budget). The wasm package keeps
+`cloudflare` flavor is built and tested end-to-end in CI (Workers Vitest),
+within the Workers compressed-size budget). The wasm package keeps
 runtime objects (viem, ethers, wagmi, raw EIP-1193 providers, fetch) behind
 typed callbacks instead of asking adapter authors to store JavaScript handles
 inside Rust trait objects.

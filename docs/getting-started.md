@@ -689,10 +689,12 @@ available through the `cow-sdk` `subgraph` feature.
 ### WASM Follow-Ons
 
 When your goal is calling the Rust SDK from JavaScript or TypeScript, use the
-`cow-sdk-wasm` package examples:
+`cow-sdk-wasm` package examples in the dedicated
+[`0xSymbiome/cow-sdk-examples`](https://github.com/0xSymbiome/cow-sdk-examples)
+repository:
 
-- `examples/wasm/cow-signer-node`
-- `examples/wasm/cow-gateway-cloudflare`
+- [`cow-signer-node`](https://github.com/0xSymbiome/cow-sdk-examples/tree/main/examples/wasm/cow-signer-node)
+- [`cow-gateway-cloudflare`](https://github.com/0xSymbiome/cow-sdk-examples/tree/main/examples/wasm/cow-gateway-cloudflare)
 
 For browser-wallet flows, integrate `cow-sdk-wasm` with your app's own wallet
 stack (viem, wagmi, or any EIP-1193 provider): the SDK exposes the EIP-1193

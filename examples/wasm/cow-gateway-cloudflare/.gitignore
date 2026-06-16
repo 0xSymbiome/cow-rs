@@ -1,5 +1,0 @@
-node_modules/
-dist-worker/
-dist-worker-upload/
-.wrangler/
-*.tsbuildinfo
