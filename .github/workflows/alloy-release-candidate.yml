@@ -2,7 +2,6 @@ name: alloy-release-candidate
 
 on:
   workflow_dispatch:
-  # schedule: weekly cron paused during pre-publication; restore the schedule: block when ready
 
 permissions:
   contents: read
@@ -120,7 +119,7 @@ jobs:
           set -euo pipefail
           title="alloy canary failed on $(date -u +%Y-%m-%dT%H:%M:%SZ) run"
           run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-          body="$(printf 'The weekly alloy canary detected a breakage with the latest configured alloy release candidate.\n\nRun: %s\n\nNext steps follow the Upgrade Rehearsal section of docs/adr/0026-alloy-major-release-absorption-plan.md.\n' "${run_url}")"
+          body="$(printf 'The weekly alloy canary detected a breakage with the latest configured alloy release candidate.\n\nRun: %s\n\nNext steps follow the Pre-release Rehearsal section of docs/alloy-major-release-runbook.md.\n' "${run_url}")"
           gh api --method POST "repos/${GITHUB_REPOSITORY}/labels" \
             -f name='alloy-canary' \
             -f color='5319e7' \

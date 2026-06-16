@@ -1,7 +1,8 @@
 name: benchmarks
 
 on:
-  # schedule: weekly cron paused during pre-publication; restore the schedule: block when ready
+  schedule:
+    - cron: '0 7 * * 1'
   workflow_dispatch:
 
 permissions:
