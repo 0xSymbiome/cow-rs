@@ -1,32 +1,65 @@
 # cow-rs
 
-[![CI](https://github.com/0xSymbiome/cow-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/0xSymbiome/cow-rs/actions/workflows/ci.yml) [![docs.rs](https://img.shields.io/docsrs/cow-sdk?label=docs.rs)](https://docs.rs/cow-sdk) [![crates.io](https://img.shields.io/crates/v/cow-sdk)](https://crates.io/crates/cow-sdk) [![MSRV 1.94.0](https://img.shields.io/badge/MSRV-1.94.0-0A7BBB)](docs/release-checklist.md#3-compatibility-and-host-coverage) [![License GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-1F6FEB)](LICENSE)
+[![CI](https://github.com/0xSymbiome/cow-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/0xSymbiome/cow-rs/actions/workflows/ci.yml) [![docs.rs](https://img.shields.io/docsrs/cow-sdk?label=docs.rs)](https://docs.rs/cow-sdk) [![crates.io](https://img.shields.io/static/v1?label=crates.io&message=v0.1.0-alpha.1&color=e6a96d)](https://crates.io/crates/cow-sdk) [![npm](https://img.shields.io/npm/v/@symbiome-forge/cow-sdk-wasm/alpha?label=npm&color=cb3837)](https://www.npmjs.com/package/@symbiome-forge/cow-sdk-wasm) [![MSRV 1.94.0](https://img.shields.io/badge/MSRV-1.94.0-0A7BBB)](docs/release-checklist.md#3-compatibility-and-host-coverage) [![License GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-1F6FEB)](LICENSE)
 
-`cow-rs` is a Rust SDK for CoW Protocol.
+`cow-rs` is a model-first Rust SDK for [CoW Protocol](https://cow.fi): build and
+sign orders, drive the orderbook, and decode settlement across every supported
+chain.
 
-It is built model-first: the protocol's invariants are encoded into the type
-system and enforced by construction, then backed by executable evidence —
-typed amounts and addresses, typestate builders that turn a misconfigured
-client into a compile error, quote-to-order binding that fails closed if a
-quote response drifts from the request, signature rules checked against pinned
-upstream fixtures, credential redaction by construction, and a panic-free
-production surface.
-Every such invariant is indexed with its proof in the
-[Properties Registry](PROPERTIES.md) and held by release-gating CI policy, so
-correctness is enforced by the build rather than trusted to memory.
+Model-first means the protocol's invariants are encoded into the type system and
+enforced by construction, then backed by executable evidence: typed amounts and
+addresses, typestate builders that turn a misconfigured client into a compile
+error, quote-to-order binding that fails closed when a quote drifts from its
+request, signature rules pinned to upstream fixtures, credential redaction by
+construction, and a panic-free production surface. Every invariant is indexed to
+its proof in the [Properties Registry](PROPERTIES.md) and held by release-gating
+CI policy, so correctness is enforced by the build rather than trusted to memory.
 
-It provides typed Rust surfaces for order creation, signing, quoting,
-submission, app-data handling, orderbook access, read-only subgraph
-queries, browser-compatible WASM workflows, a pluggable `HttpTransport`
-seam with native and browser default adapters, shared retry and rate-limit
-transport policy, a typed deployment registry, opt-in native Alloy provider
-and signer adapters, TypeScript-callable wasm-bindgen bindings, and an
-optional EIP-1271 signature-verification cache.
+## Capabilities and guarantees
 
-The native Alloy adapter is provided for trading-flow consumers. Generic
-Ethereum applications without trading helpers should depend on Alloy directly;
-the adapter exists to wire native Alloy into the SDK's signing and transaction
-contracts.
+- **Quote → sign → post → look up → cancel** — the whole order lifecycle through
+  the fluent `Trading::swap` pipeline, plus limit, pre-sign, and EthFlow paths.
+- **All four signing schemes** (EIP-712, EthSign, EIP-1271, pre-sign) across the
+  11 chains in `SupportedChainId`, Mainnet through Sepolia.
+- **Misconfiguration is a compile error** — typestate builders make a transposed
+  sell/buy leg or a missing amount fail to build, not fail at runtime.
+- **Typed failure taxonomy, not strings** — every orderbook `errorType` decodes
+  to a typed rejection variant with `is_retryable()` and `backoff_hint()`, and
+  the `Retry-After` header is retained, so production retry logic is a match arm.
+- **Capability isolation by crate boundary** — the default facade carries no
+  Ethereum runtime; the native-Alloy provider and local-key signer live in
+  opt-in adapter crates whose dependency boundary is enforced by a CI allow-list,
+  so a keystore signer never enters a graph that did not ask for one.
+- **Runtime-free protocol core** — hashing, signing, and contract decoding
+  compute with no async runtime; only the HTTP client needs a reactor, and a
+  `wasm32` build drops the `reqwest` stack at compile time. The workspace
+  compiles to `wasm32-unknown-unknown` with a headless-browser e2e lane in CI.
+- **Evidence over adjectives** — every protocol transform is cross-checked
+  byte-for-byte against pinned `cowprotocol/services` and `cowprotocol/contracts`
+  fixtures in CI; see [Parity and Provenance](docs/parity.md).
+
+## Install
+
+```toml
+[dependencies]
+cow-sdk = "0.1.0-alpha.1"
+```
+
+`cow-sdk` is in alpha, so the pre-release is pinned explicitly; `cargo add
+cow-sdk@0.1.0-alpha.1` does the same. JavaScript and TypeScript consumers install
+the wasm bindings from npm:
+
+```sh
+npm install @symbiome-forge/cow-sdk-wasm@0.1.0-alpha.1
+```
+
+Published as [`cow-sdk`](https://crates.io/crates/cow-sdk) on crates.io and
+[`@symbiome-forge/cow-sdk-wasm`](https://www.npmjs.com/package/@symbiome-forge/cow-sdk-wasm)
+on npm. MSRV Rust `1.94.0`, edition 2024.
+
+The native Alloy adapter wires native Alloy into the SDK's signing and
+transaction contracts for trading-flow consumers; generic Ethereum applications
+without trading helpers should depend on Alloy directly.
 
 ## Quickstart
 
@@ -107,30 +140,20 @@ for the on-chain surfaces) across releases;
 the full source-to-fixture matrix is in
 [Parity And Provenance](docs/parity.md).
 
-<!-- runtime-routing:start -->
 ## When to use cow-rs
 
-| You are building... | Use | Why |
-| --- | --- | --- |
-| MEV bot, market maker, solver, analytics job, or treasury automation in Rust | `cow-sdk` | Native Rust facade over typed transport, signing, orderbook, trading, and subgraph surfaces |
-| Native Rust app using Alloy | `cow-sdk` plus `cow-sdk-alloy-*` | Opt-in Alloy provider and signer adapters without widening the default facade |
-| Rust app compiled to browser WASM | `cow-sdk-browser-wallet` plus `cow-sdk-core` | Rust-on-wasm wallet and the browser `FetchTransport` from `cow-sdk-core`; not the JavaScript-callable npm package |
-| Standard browser dapp or CowSwap-style UI in TypeScript | Upstream [`@cowprotocol/cow-sdk`](https://www.npmjs.com/package/@cowprotocol/cow-sdk) | Substantially smaller bundle at equivalent feature subsets; mature web ecosystem fit |
-| TypeScript service that needs byte-for-byte Rust signing parity (viem, ethers, wagmi, or EIP-1193 wallets) | npm package&nbsp;† | TypeScript facade over deterministic Rust helpers with wallet-stack-agnostic callbacks |
-| Single-source-of-truth Rust + TypeScript embedding | npm package&nbsp;† | One implementation across Rust and JavaScript runtimes |
-| Browser dapp that only needs orderbook plus signing (smaller bundle) | npm package&nbsp;† (orderbook flavor) | Smaller wasm flavor for quote, post, lookup, trade, and cancellation flows |
-| Signer service or HSM proxy | npm package&nbsp;† (signing flavor) | Signing, UID, EIP-1271, deployment, and version helpers without HTTP clients |
-| Node.js 22 or 24 LTS backend service | npm package&nbsp;† | Node target works with explicit fetch or callback transport |
-| Cloudflare Worker proxying orderbook calls | npm package&nbsp;† (cloudflare flavor) | Size-compatible with the current Workers Free compressed-size limit at the time of measurement; full Workers support pending release-bundle and startup validation |
-| Deno | npm package&nbsp;† | Experimental build-only support; validate in your own runtime before production use |
-| Account-abstraction hooks via Cow Shed | `cow-sdk` with the `cow-shed` feature, or `cow-sdk-contracts` with the `cow-shed` feature | Deterministic proxy derivation, EIP-712 hook signing, factory calldata, and the `CowShedHooks` orchestrator; opt-in and off the default closure |
-| TWAP, composable, bridging, flash-loan, weiroll, or hardware-wallet flows | Upstream TypeScript packages until `cow-rs` ships those capabilities | These capability families are intentionally outside the 0.1.0 package scope |
-| Non-JS wasm consumers, WASI, WebAssembly components, TinyGo, Blazor, AssemblyScript guests, or no_std | Out of scope for 0.1.0 | Use native Rust crates where possible; the npm package targets JavaScript hosts |
-<!-- runtime-routing:end -->
+| You are building in… | Use |
+| --- | --- |
+| Rust — bot, solver, market maker, analytics, or treasury automation | `cow-sdk`, plus `cow-sdk-alloy-*` for native Alloy provider/signer adapters |
+| Rust compiled to browser WASM | `cow-sdk` with the `browser-wallet` feature (the Rust-on-wasm path, not the npm package) |
+| JavaScript or TypeScript — Node, browser bundler, Cloudflare Workers, or Deno | the npm package [`@symbiome-forge/cow-sdk-wasm`](https://www.npmjs.com/package/@symbiome-forge/cow-sdk-wasm) |
+| A standard browser dapp where minimal bundle size dominates | upstream [`@cowprotocol/cow-sdk`](https://www.npmjs.com/package/@cowprotocol/cow-sdk) |
 
-† The TypeScript-callable WASM package name is finalized at npm publication; the
-install command is in [Start Here](#start-here). It ships in default,
-`orderbook`, `signing`, and `cloudflare` flavors.
+The npm package ships in `default`, `orderbook`, `signing`, and `cloudflare`
+flavors; pick the smallest one that covers your calls. Account-abstraction hooks
+ship behind the opt-in `cow-shed` feature. Capability families outside the 0.1.0
+scope — TWAP, composable orders, bridging, flash loans, and hardware-wallet
+flows — remain on the upstream TypeScript packages until cow-rs ships them.
 
 ## Start Here
 
@@ -138,23 +161,9 @@ The canonical first-touch path is [Getting Started](docs/getting-started.md).
 The shipped crate family and deferred capability boundaries are listed in the
 [First-Release Scope](docs/parity.md#first-release-scope).
 
-The functional published install surface will be:
-
-```text
-cargo add cow-sdk
-```
-
-The TypeScript-callable WASM package name is resolved at npm publication time:
-
-```text
-npm install <published-cow-sdk-wasm-package>
-```
-
-Reserved-placeholder `0.0.1-reserved.0` entries are already live on crates.io
-for the published crate family. They reserve package identity and are not the
-functional SDK release. Until `0.1.0` is live, use the getting-started guide
-and the maintained native scenarios in this repository to evaluate the same
-facade and trading flow end to end.
+Install is one line (see [Install](#install) above): `cargo add
+cow-sdk@0.1.0-alpha.1` for Rust, `npm install @symbiome-forge/cow-sdk-wasm@0.1.0-alpha.1`
+for JavaScript and TypeScript.
 
 Use `appCode` as the stable identifier for the application or integration
 surface that originates the order flow; the [Quickstart](#quickstart) above shows
@@ -210,7 +219,6 @@ configure transport explicitly through `transport: { kind: "fetch" }` or
 - Public evolution follows the [Forward-Compatible Public Surfaces](docs/principles.md#forward-compatible-public-surfaces),
   [Credential Redaction by Construction](docs/principles.md#credential-redaction-by-construction),
   [Cooperative Cancellation Coverage](docs/principles.md#cooperative-cancellation-coverage),
-  [Type The Lifecycle](docs/principles.md#type-the-lifecycle),
   and [Minimum-Viable Panic Surface](docs/principles.md#minimum-viable-panic-surface)
   principles.
 
@@ -222,7 +230,7 @@ configure transport explicitly through `transport: { kind: "fetch" }` or
 | Change history | [CHANGELOG.md](CHANGELOG.md) tracks the current unreleased public contract and future release notes. |
 | Security disclosure | [SECURITY.md](SECURITY.md) defines the private repository reporting path and protocol-level escalation route. |
 | Chain-RPC runtime neutrality | The default facade remains provider-neutral. Native Alloy runtime dependencies are limited to the opt-in Alloy adapter crates and facade features, and CI gates the allow-list. |
-| Publication state | Reserved-placeholder `0.0.1-reserved.0` crates.io and docs.rs entries are live for the published crate family, but the functional `0.1.0` release is still pending; [Getting Started](docs/getting-started.md) and [Release Checklist](docs/release-checklist.md) describe the current repo-local and release-ready contract truthfully. |
+| Publication state | `cow-sdk` `0.1.0-alpha.1` is published on crates.io and `@symbiome-forge/cow-sdk-wasm` `0.1.0-alpha.1` on npm. This is a pre-release: the public surface is stabilizing toward `0.1.0` and may change between alpha versions, as [Getting Started](docs/getting-started.md) and the [Release Checklist](docs/release-checklist.md) describe. |
 | Compatibility and license | Public MSRV is Rust `1.94.0`; the current workspace license is `GPL-3.0-or-later`. |
 
 ## Documentation
@@ -233,6 +241,7 @@ lives in the [Documentation Index](docs/README.md). Quick starts:
 - [Getting Started](docs/getting-started.md) — facade-first path to a signed order
 - [Architecture](docs/architecture.md) — crate ownership and public boundaries
 - [Verification](docs/verification.md) and [Parity And Provenance](docs/parity.md) — proof classes and upstream authorities
+- [cow-rs and the TypeScript SDK](docs/comparison-with-typescript-sdk.md) — deferred scope and the guarantees Rust adds
 - [Contributing](CONTRIBUTING.md)
 
 ## Examples

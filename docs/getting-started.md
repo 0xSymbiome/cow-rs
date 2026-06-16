@@ -17,38 +17,27 @@ It does not depend on:
 - a live orderbook session
 - a wallet extension
 - browser-hosted pages
-- the first functional crates.io release already being published
 
 If you need provider or signer integration guidance while you read this page,
 use [Integrations](integrations.md).
 
-## Install Surface
+## Install
 
-The functional published install surface will be:
+`cow-sdk` is published on crates.io. It is an alpha, so pin the pre-release:
 
-```text
-cargo add cow-sdk
+```toml
+[dependencies]
+cow-sdk = "0.1.0-alpha.1"
 ```
 
-Reserved-placeholder `0.0.1-reserved.0` entries are already live on crates.io
-for the crate family.
-
-They reserve package identity.
-
-They are not the functional SDK release.
-
-Until `0.1.0` is live, evaluate the same public surface from a local checkout
-or run the maintained example crates in this repository.
-
-Repo-local dependency shape:
+`cargo add cow-sdk@0.1.0-alpha.1` does the same. To run this guide's
+deterministic checks against a local checkout instead, depend on the crate by
+path and run the commands from the repository root:
 
 ```toml
 [dependencies]
 cow-sdk = { path = "/path/to/cow-rs/crates/sdk" }
 ```
-
-If you want the shortest path from checkout to deterministic proof, use the
-commands in this guide from the repository root.
 
 ## What The Root Crate Exposes
 
@@ -112,14 +101,14 @@ equivalent feature subsets.
 `cow-sdk-wasm` is appropriate for specialized cases — TypeScript services
 that need byte-for-byte parity with the Rust SDK's signing path,
 single-source-of-truth Rust + TypeScript embedding, and Cloudflare Workers
-(size-compatible at the time of measurement; full Workers support pending
-release-bundle and startup validation). The TypeScript-callable package name
-is selected at npm publication time. The package publishes the wasm-bindgen
-surface through a TypeScript facade, typed callbacks, per-flavor package
-exports, and runtime-specific wasm artifacts.
+(size-compatible at the time of measurement; the `cloudflare` flavor is built
+and tested end-to-end in CI). It is published to npm as
+`@symbiome-forge/cow-sdk-wasm`, exposing the wasm-bindgen surface through a
+TypeScript facade, typed callbacks, per-flavor package exports, and
+runtime-specific wasm artifacts.
 
 ```text
-npm install <published-cow-sdk-wasm-package>
+npm install @symbiome-forge/cow-sdk-wasm@0.1.0-alpha.1
 ```
 
 ## Choose the crate or package by runtime
@@ -457,49 +446,13 @@ A successful run from the committed example currently prints:
 
 ### How To Read The Output
 
-`surface`
-
-- confirms the scenario is validating the signing lane, not transport or
-  browser behavior
-
-`mode`
-
-- confirms the scenario is deterministic rather than environment-sensitive
-
-`order.primaryType`
-
-- confirms the typed-data primary type that downstream signers receive
-
-`order.digest`
-
-- confirms the stable digest derived from the typed order payload
-
-`order.orderId`
-
-- confirms the full generated order id that combines digest, owner, and
-  validity data
-
-`order.signature`
-
-- confirms that the signer-facing output is a signature string rather than a
-  crate-private binary shape
-
-`order.scheme`
-
-- confirms the explicit signing scheme returned by the helper
-
-`order.eip1271PayloadPrefix`
-
-- confirms the deterministic EIP-1271 helper payload prefix for contract
-  signature handling
-
-`cancellation.orderUid`
-
-- confirms that off-chain cancellation uses the stable order-UID surface
-
-`cancellation.signature`
-
-- confirms that cancellation signing follows the same typed-signature contract
+`surface` and `mode` confirm this is the deterministic signing lane.
+`order.digest` is the EIP-712 struct hash; `order.orderId` is the 56-byte order
+UID (digest, owner, and validity combined); `order.signature` is the
+signer-facing string rather than a crate-private binary shape; `order.scheme` is
+the explicit signing scheme; and `order.eip1271PayloadPrefix` is the
+deterministic EIP-1271 helper prefix. The `cancellation` block proves off-chain
+cancellation signs over the same typed order-UID surface.
 
 ### Why This Scenario Comes First
 
@@ -562,51 +515,14 @@ A successful run from the committed example currently prints:
 
 ### How To Read The Output
 
-`surface`
-
-- confirms the scenario is exercising the fluent `Trading::limit()` builder
-  post path
-
-`mode`
-
-- confirms the scenario is still deterministic even though it crosses the
-  submission seam
-
-`result.orderId`
-
-- confirms the posted order id that the SDK surfaced to the caller
-
-`result.signatureLength`
-
-- confirms a full signature was produced and attached during the simulated post
-
-`result.signingScheme`
-
-- confirms the flow signed under the lowercase wire-form `eip712` scheme
-
-`presign`
-
-- confirms the same builder's signer-free `post_presign` terminal: the order is
-  posted under the `presign` scheme and only becomes fillable once the owner
-  flips the on-chain pre-signature flag — the smart-account placement path
-
-`submission.quoteId`
-
-- confirms the limit path threads no quote id (`null`): a limit order takes the
-  explicit price you set rather than a fetched quote
-
-`submission.sellAmount`
-
-- confirms the committed sell-side amount that was actually sent through the
-  simulation
-
-`submission.buyAmount`
-
-- confirms the committed buy-side amount that reached submission
-
-`submission.uploadedAppDataCount`
-
-- confirms app-data upload activity was part of the flow
+`result` carries the posted order id, the full signature length, and the
+lowercase wire-form `eip712` scheme. `presign` is the same builder's signer-free
+`post_presign` terminal — posted under the `presign` scheme, fillable only once
+the owner flips the on-chain pre-signature flag (the smart-account placement
+path). `submission.quoteId` is `null` because a limit order takes the explicit
+price you set rather than a fetched quote; the sell and buy amounts and
+`uploadedAppDataCount` are the values that actually crossed the simulated
+submission seam.
 
 ### What This Scenario Adds Beyond Signing
 
@@ -812,44 +728,17 @@ That sequence — the native catalog's recommended first sequence — proves:
 
 ## Common Questions
 
-### Do I need a provider adapter to finish this guide?
+**Do I need a provider adapter, a browser wallet, or live credentials to finish
+this guide?** No. The deterministic first-touch path is provider-agnostic and
+runs without a wallet or live-service credentials; they matter only when you
+move into the environment-sensitive follow-ons. Wire native Alloy through
+[Adapting Alloy](providers/adapting-alloy.md) and custom runtimes through
+[Integrations](integrations.md) when you are ready.
 
-No.
-
-This guide stays provider-agnostic.
-
-The deterministic first-touch path does not assume a particular Ethereum
-runtime.
-
-When you are ready to wire native Alloy, use
-[Adapting Alloy](providers/adapting-alloy.md). For custom runtime adapters, use
-[Integrations](integrations.md).
-
-### Do I need a browser wallet to finish this guide?
-
-No.
-
-Browser-wallet support is a separate additive capability.
-
-The deterministic first-touch path stays entirely outside the browser-runtime
-contract.
-
-### Do I need live service credentials to finish this guide?
-
-No.
-
-The deterministic scenarios in this page run without live service credentials.
-
-Credentials matter only when you intentionally move into environment-sensitive
-follow-ons or custom transport configuration.
-
-### Why does the guide start with examples instead of a full application?
-
-Because the maintained examples are the canonical public proof surfaces for the
-current repository state.
-
-They are versioned with the SDK and already demonstrate the supported public
-contracts.
+**Why does the guide start with examples instead of a full application?** The
+maintained examples are the canonical public proof surfaces for the current
+repository state: versioned with the SDK, and already demonstrating the
+supported public contracts.
 
 ## Troubleshooting
 

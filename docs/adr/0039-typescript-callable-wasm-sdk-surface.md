@@ -58,8 +58,9 @@ this ADR does not blur:
 - Cloudflare deployment and startup evidence (separately tracked; see the
   validation note's refresh triggers — the cloudflare flavor is
   size-compatible with the current Workers Free compressed-size limit at
-  the time of measurement, with full Workers support pending release-bundle
-  and startup validation).
+  the time of measurement; the `cloudflare` flavor is built and tested
+  end-to-end in CI (Workers Vitest plus the Cloudflare gateway example),
+  within the Workers compressed-size budget).
 
 ## Must Remain True
 

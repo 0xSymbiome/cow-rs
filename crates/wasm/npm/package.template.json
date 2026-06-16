@@ -1,7 +1,7 @@
 {
-  "name": "cow-sdk-wasm-placeholder",
-  "version": "0.1.0",
-  "description": "TypeScript-callable wasm-bindgen bindings for the CoW Protocol Rust SDK",
+  "name": "@symbiome-forge/cow-sdk-wasm",
+  "version": "0.1.0-alpha.1",
+  "description": "TypeScript/WebAssembly SDK for CoW Protocol — typed orderbook, trading, signing (EIP-712/1271/1193), and app-data, compiled from the Rust SDK.",
   "license": "GPL-3.0-or-later",
   "homepage": "https://github.com/0xSymbiome/cow-rs",
   "repository": {
@@ -11,14 +11,22 @@
   },
   "keywords": [
     "cow-protocol",
+    "cowswap",
     "sdk",
+    "ethereum",
+    "defi",
+    "orderbook",
+    "trading",
     "wasm",
+    "webassembly",
     "wasm-bindgen",
     "typescript",
+    "eip-712",
+    "eip-1271",
     "eip-1193",
-    "eip-1271"
+    "app-data"
   ],
-  "packageManager": "pnpm@11.0.9",
+  "packageManager": "pnpm@11.7.0",
   "type": "module",
   "main": "",
   "module": "",

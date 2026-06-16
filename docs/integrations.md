@@ -146,8 +146,10 @@ TypeScript SDK is the recommended choice; it is substantially smaller at
 equivalent feature subsets. `cow-sdk-wasm` is appropriate for specialized
 cases — TypeScript services that need byte-for-byte parity with the Rust
 SDK's signing path, single-source-of-truth Rust + TypeScript embedding, and
-Cloudflare Workers (size-compatible at the time of measurement; full Workers
-support pending release-bundle and startup validation).
+Cloudflare Workers (size-compatible at the time of measurement; the
+`cloudflare` flavor is built and tested end-to-end in CI (Workers Vitest
+plus the Cloudflare gateway example), within the Workers compressed-size
+budget).
 
 `cow-sdk-wasm` exposes the SDK to JavaScript through typed callbacks rather
 than a bundled wallet or HTTP library. It names five host callbacks:

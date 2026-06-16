@@ -154,4 +154,5 @@ if [ -z "${filter_flavour}" ] && [ -z "${filter_target}" ]; then
   node "${npm_root}/scripts/verify-no-raw-exports.mjs"
   node "${npm_root}/scripts/verify-facade-denylist.mjs"
   node "${npm_root}/scripts/measure-wasm-size.mjs"
+  node "${npm_root}/scripts/dedupe-target-wasm.mjs"
 fi

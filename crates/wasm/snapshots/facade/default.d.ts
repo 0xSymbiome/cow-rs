@@ -1,3 +1,4 @@
+/// <reference lib="esnext.disposable" />
 import * as raw from "./raw/default.js";
 import type { WasmEnvelope } from "./envelope.js";
 import type { CommonClientConfig, IpfsClientConfig, SdkClientOptions, SigningOptions, SubgraphClientConfig, TradingClientConfig } from "./options.js";
@@ -10,6 +11,7 @@ export declare class IpfsClient {
     fetchAppDataFromCid(cid: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<raw.AppDataDocDto>>;
     fetchAppDataFromHex(appDataHex: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<raw.AppDataDocDto>>;
     dispose(): void;
+    [Symbol.dispose](): void;
 }
 export declare class OrderBookClient {
     #private;
@@ -35,6 +37,7 @@ export declare class OrderBookClient {
     sendOrder(signed: raw.SignedOrderDto, options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>;
     sendOrderCreation(input: raw.OrderCreationInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>;
     dispose(): void;
+    [Symbol.dispose](): void;
 }
 export declare class SubgraphClient {
     #private;
@@ -44,6 +47,7 @@ export declare class SubgraphClient {
     getTotals(options?: SdkClientOptions | null): Promise<WasmEnvelope<unknown>>;
     runQuery(request: raw.SubgraphQueryInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<unknown>>;
     dispose(): void;
+    [Symbol.dispose](): void;
 }
 export declare class TradingClient {
     #private;
@@ -57,6 +61,7 @@ export declare class TradingClient {
     postSwapOrderFromQuote(quoteResults: raw.QuoteResultsDto, owner: string, signerCallback: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<raw.OrderPostingResultDto>>;
     postSwapOrderWithEip1271(params: raw.SwapParametersInput, owner: string, customCallback: CustomEip1271Callback, options?: SigningOptions | null): Promise<WasmEnvelope<raw.OrderPostingResultDto>>;
     dispose(): void;
+    [Symbol.dispose](): void;
 }
 export declare function appDataDoc(doc: raw.AppDataDocInput): WasmEnvelope<raw.AppDataDocDto>;
 export declare function appDataHexToCid(appDataHex: string): WasmEnvelope<string>;
@@ -83,7 +88,7 @@ export declare function supportedChainIds(): Uint32Array;
 export declare function validateAppDataDoc(doc: raw.AppDataDocInput): WasmEnvelope<raw.ValidationResultDto>;
 export declare function wasmVersion(): string;
 export type { AllowanceParametersInput, AmountsDto, AppDataDocDto, AppDataDocInput, AppDataInfoDto, AppDataObjectDto, ApprovalParametersInput, BuiltSellNativeCurrencyTxDto, CompetitionOrderStatusDto, CompetitionOrderStatusKindDto, ContractCallDto, CostsDto, CowEip1271SignRequest, CowEnvDto, DeploymentAddressesDto, Eip1193Request, EthFlowEventDto, EthflowDataDto, EventLogInput, ExecutedAmountsDto, ExecutedProtocolFeeDto, FeeComponentDto, GeneratedOrderUidDto, InteractionDataDto, LimitTradeParametersInput, NativePriceResponseDto, NetworkFeeDto, OnchainOrderDataDto, OrderClassDto, OrderCreationInput, OrderDataDto, OrderDto, OrderInput, OrderInteractionsDto, OrderKindDto, OrderPostingResultDto, OrderQuoteRequestInput, OrderQuoteResponseDto, OrderStatusDto, OrderTraderParametersInput, OrderBookRuntimeBindingDto, PaginationOptions, PartnerFeeDto, PartnerFeeInput, PartnerFeePolicyDto, PartnerFeePolicyInput, QuoteAmountsAndCostsDto, QuoteDataDto, QuoteResultsDto, SettlementEventDto, SignedCancellationsInput, SignedOrderDto, SigningSchemeDto, SolverExecutionDto, StoredOrderQuoteDto, SubgraphQueryInput, SwapParametersInput, TokenBalanceDto, TotalSurplusDto, TradeDto, TradeParametersDto, TradesQueryInput, TradingAppDataInfoDto, TransactionRequestDto, TypedDataDomainDto, TypedDataEnvelopeDto, TypedDataFieldDto, ValidationResultDto } from "./raw/default.js";
-export type { ContractReadCallback, CowEip1271SignCallback, CustomEip1271Callback, DigestSignerCallback, Eip1193RequestCallback, TypedDataSignerCallback } from "./callbacks.js";
+export type { ContractReadCallback, CowEip1271SignCallback, CowEnv, CustomEip1271Callback, DigestSignerCallback, Eip1193RequestCallback, TypedDataSignerCallback } from "./callbacks.js";
 export type { OrderBookRejectionCategory, CowError } from "./errors.js";
 export type { SchemaVersion, WasmEnvelope } from "./envelope.js";
-export type { HttpTransportConfig, IpfsClientConfig, SdkClientOptions, SigningOptions, SubgraphClientConfig, TradingClientConfig, TransportPolicyConfig, WalletConfig } from "./options.js";
+export type { CowFetchCallback, CowFetchRequest, CowFetchResponse, HttpTransportConfig, IpfsClientConfig, JitterStrategyConfig, LimiterScopeConfig, RequestRateLimiterConfig, RetryPolicyConfig, SdkClientOptions, SigningOptions, SubgraphClientConfig, TradingClientConfig, TransportPolicyConfig, WalletConfig } from "./options.js";

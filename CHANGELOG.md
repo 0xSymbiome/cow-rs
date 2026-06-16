@@ -9,9 +9,12 @@ Semantic versioning begins with the first functional crate release.
 Reserved-placeholder `0.0.1-reserved.0` name-reservation publishes are
 excluded from this version history.
 
-The first functional crate-family release begins at `0.1.0`.
+`cow-sdk` `0.1.0-alpha.1` is published on crates.io and `@symbiome-forge/cow-sdk-wasm`
+`0.1.0-alpha.1` on npm.
 
 ## [Unreleased]
+
+## [0.1.0-alpha.1] - 2026-06-15
 
 The first functional release of `cow-rs`, a Rust SDK for CoW Protocol. The
 sections below describe the public contract a `0.1.0` consumer receives.
@@ -45,9 +48,9 @@ sections below describe the public contract a `0.1.0` consumer receives.
   bindings), the
   opt-in `cow-sdk-alloy-provider` / `cow-sdk-alloy-signer` / `cow-sdk-alloy`
   adapters, and `cow-sdk-test` (in-memory test doubles).
-- Reserved-placeholder `0.0.1-reserved.0` entries are live on crates.io and
-  docs.rs for the published crate family. They reserve package identity and are
-  not the functional SDK release; the functional release begins at `0.1.0`.
+- Reserved-placeholder `0.0.1-reserved.0` entries were earlier name-reservation
+  publishes on crates.io and docs.rs for the published crate family; they reserved
+  package identity and are superseded by this release.
 
 #### Trading workflows
 
@@ -827,5 +830,3 @@ sections below describe the public contract a `0.1.0` consumer receives.
   default, and browser-wallet provider construction fails closed on an unreviewed
   anonymous origin, so a misconfigured host or origin is rejected rather than
   silently trusted.
-
-[Unreleased]: https://github.com/0xSymbiome/cow-rs

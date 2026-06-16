@@ -76,7 +76,10 @@ const knownKinds = new Set([
 
 export function normalizeError(raw: unknown): CowError {
   if (isRecord(raw)) {
-    const normalized = camelizeKnownFields(raw);
+    // The Rust `WasmError` serializes with serde `rename_all(_fields) = "camelCase"`
+    // through a json-compatible serializer, so it already crosses the boundary as a
+    // camelCase plain object — no field renaming is needed here.
+    const normalized = raw;
     const kind = typeof normalized.kind === "string" ? normalized.kind : undefined;
 
     if (kind && knownKinds.has(kind)) {
@@ -177,29 +180,6 @@ export function invalidInput(field: string, reason: string): CowError {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
-}
-
-function camelizeKnownFields(raw: Record<string, unknown>): Record<string, unknown> {
-  const normalized: Record<string, unknown> = { ...raw };
-  copyField(normalized, raw, "schema_version", "schemaVersion");
-  copyField(normalized, raw, "chain_id", "chainId");
-  copyField(normalized, raw, "timeout_ms", "timeoutMs");
-  copyField(normalized, raw, "order_uid", "orderUid");
-  copyField(normalized, raw, "order_uids", "orderUids");
-  copyField(normalized, raw, "status_code", "status");
-  return normalized;
-}
-
-function copyField(
-  target: Record<string, unknown>,
-  source: Record<string, unknown>,
-  from: string,
-  to: string
-): void {
-  if (Object.hasOwn(source, from) && !Object.hasOwn(target, to)) {
-    target[to] = source[from];
-  }
-  delete target[from];
 }
 
 function withActionableMessage(error: CowError): CowError {

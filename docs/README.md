@@ -86,6 +86,7 @@ or publication-readiness contract.
 ## For Parity And Provenance
 
 - [Parity And Provenance](parity.md)
+- [cow-rs and the TypeScript SDK](comparison-with-typescript-sdk.md)
 
 ## For Performance And Transport Tuning
 

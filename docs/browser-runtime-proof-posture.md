@@ -71,7 +71,7 @@ Content-Security-Policy `connect-src` scoped to the host it calls
 
 `cow-sdk-wasm` extends browser-runtime evidence beyond the Rust browser-wallet
 leaf. Browser bundlers are default-http-supported through the fetch-backed
-package path and Playwright coverage. Node.js 24 LTS and Cloudflare Workers are
+package path and Playwright coverage. Node.js (22 and 24) and Cloudflare Workers are
 callback-http-tested through `CowFetchCallback`; Cloudflare also verifies that
 worker source does not use dynamic WebAssembly compilation or streaming
 instantiation entry points. Deno is optional experimental: the runtime-neutral

@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { brotliCompressSync, gzipSync } from "node:zlib";
@@ -99,13 +99,29 @@ for (const flavour of descriptor.flavours) {
   }
 
   for (const target of flavour.targets) {
-    const wasmPath = join(
+    let wasmPath = join(
       packageRoot,
       "dist",
       "raw",
       `${flavour.name}-${target}`,
       "cow_sdk_wasm_bg.wasm"
     );
+    if (!existsSync(wasmPath)) {
+      // The build deduplicates byte-identical binaries across a flavour's targets
+      // (see dedupe-target-wasm.mjs), so a target may reuse a sibling's binary.
+      // Measure whichever copy remains — the size is identical by construction.
+      const fallback = flavour.targets
+        .map((sibling) =>
+          join(packageRoot, "dist", "raw", `${flavour.name}-${sibling}`, "cow_sdk_wasm_bg.wasm")
+        )
+        .find((candidate) => existsSync(candidate));
+      if (!fallback) {
+        console.error(`::error::${flavour.name}/${target} wasm binary is missing`);
+        failed = true;
+        continue;
+      }
+      wasmPath = fallback;
+    }
     const bytes = readFileSync(wasmPath);
     const rawBytes = bytes.length;
     const brotliBytes = brotliCompressSync(bytes).length;

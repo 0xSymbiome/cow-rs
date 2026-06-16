@@ -173,6 +173,10 @@ export class OrderBookClient {
     }
   }
 
+  [Symbol.dispose](): void {
+    this.dispose();
+  }
+
   #call<T>(
     operation: (
       client: InstanceType<typeof raw.RawOrderBookClient>,
@@ -296,6 +300,10 @@ export class TradingClient {
       disposeRaw(this.#inner);
       this.#disposed = true;
     }
+  }
+
+  [Symbol.dispose](): void {
+    this.dispose();
   }
 
   #call<T>(
@@ -573,6 +581,7 @@ export type {
 export type {
   ContractReadCallback,
   CowEip1271SignCallback,
+  CowEnv,
   CustomEip1271Callback,
   DigestSignerCallback,
   Eip1193RequestCallback,
@@ -581,7 +590,14 @@ export type {
 export type { OrderBookRejectionCategory, CowError } from "./errors.js";
 export type { SchemaVersion, WasmEnvelope } from "./envelope.js";
 export type {
+  CowFetchCallback,
+  CowFetchRequest,
+  CowFetchResponse,
   HttpTransportConfig,
+  JitterStrategyConfig,
+  LimiterScopeConfig,
+  RequestRateLimiterConfig,
+  RetryPolicyConfig,
   SdkClientOptions,
   SigningOptions,
   TradingClientConfig,

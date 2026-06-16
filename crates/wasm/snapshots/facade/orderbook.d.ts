@@ -1,3 +1,4 @@
+/// <reference lib="esnext.disposable" />
 import * as raw from "./raw/orderbook.js";
 import type { WasmEnvelope } from "./envelope.js";
 import type { CommonClientConfig, SdkClientOptions, SigningOptions } from "./options.js";
@@ -28,6 +29,7 @@ export declare class OrderBookClient {
     sendOrder(signed: raw.SignedOrderDto, options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>;
     sendOrderCreation(input: raw.OrderCreationInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>;
     dispose(): void;
+    [Symbol.dispose](): void;
 }
 export declare function buildCancelOrderTx(params: raw.OrderTraderParametersInput): WasmEnvelope<raw.TransactionRequestDto>;
 export declare function buildPresignTx(params: raw.OrderTraderParametersInput): WasmEnvelope<raw.TransactionRequestDto>;
@@ -49,7 +51,7 @@ export declare function signOrderWithTypedDataSigner(input: raw.OrderInput, chai
 export declare function supportedChainIds(): Uint32Array;
 export declare function wasmVersion(): string;
 export type { AppDataObjectDto, CompetitionOrderStatusDto, CompetitionOrderStatusKindDto, CowEip1271SignRequest, DeploymentAddressesDto, Eip1193Request, EthFlowEventDto, EthflowDataDto, EventLogInput, ExecutedAmountsDto, ExecutedProtocolFeeDto, GeneratedOrderUidDto, InteractionDataDto, NativePriceResponseDto, OnchainOrderDataDto, OrderClassDto, OrderCreationInput, OrderDto, OrderInput, OrderInteractionsDto, OrderKindDto, OrderQuoteRequestInput, OrderQuoteResponseDto, OrderStatusDto, OrderTraderParametersInput, PaginationOptions, QuoteDataDto, SettlementEventDto, SignedCancellationsInput, SignedOrderDto, SigningSchemeDto, SolverExecutionDto, StoredOrderQuoteDto, TokenBalanceDto, TotalSurplusDto, TradeDto, TradesQueryInput, TransactionRequestDto, TypedDataDomainDto, TypedDataEnvelopeDto, TypedDataFieldDto } from "./raw/orderbook.js";
-export type { CowEip1271SignCallback, CustomEip1271Callback, DigestSignerCallback, Eip1193RequestCallback, TypedDataSignerCallback } from "./callbacks.js";
+export type { CowEip1271SignCallback, CowEnv, CustomEip1271Callback, DigestSignerCallback, Eip1193RequestCallback, TypedDataSignerCallback } from "./callbacks.js";
 export type { OrderBookRejectionCategory, CowError } from "./errors.js";
 export type { SchemaVersion, WasmEnvelope } from "./envelope.js";
-export type { SdkClientOptions, SigningOptions, WalletConfig } from "./options.js";
+export type { CowFetchCallback, CowFetchRequest, CowFetchResponse, HttpTransportConfig, JitterStrategyConfig, LimiterScopeConfig, RequestRateLimiterConfig, RetryPolicyConfig, SdkClientOptions, SigningOptions, TransportPolicyConfig, WalletConfig } from "./options.js";

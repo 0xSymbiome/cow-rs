@@ -148,10 +148,36 @@ for (const flavour of descriptor.flavours) {
     throw new Error(`compiled CommonJS facade entry missing for ${flavour.name}`);
   }
   cpSync(entryCjs, join(targetDir, "index.cjs"));
+
+  // Prune to the reachable closure. Each flavor is published as index.* and only
+  // pulls in the shared modules (internal/errors/options/callbacks/envelope) and
+  // its own raw/<flavor>; the copied sibling-flavor modules and the orphaned
+  // <flavor>.* duplicate never load, so drop them rather than ship dead weight.
+  for (const name of descriptor.flavours.map((f) => f.name)) {
+    for (const ext of [".js", ".cjs", ".d.ts"]) {
+      rmSync(join(targetDir, `${name}${ext}`), { force: true });
+      if (name !== flavour.name) {
+        rmSync(join(targetDir, "raw", `${name}${ext}`), { force: true });
+      }
+    }
+  }
 }
 
 rmSync(esmOut, { recursive: true, force: true });
 rmSync(cjsOut, { recursive: true, force: true });
 JS
+
+# The facade re-declares [Symbol.dispose] on its client classes. wasm-bindgen
+# adds the matching lib reference to its own raw declarations; mirror it on the
+# compiled facade declarations so the member resolves under consumer tsconfig
+# libs that predate the Disposable types.
+for facade_dts in "${dist_root}"/*/index.d.ts; do
+  [ -f "${facade_dts}" ] || continue
+  if grep -q '\[Symbol\.dispose\]' "${facade_dts}" \
+    && ! grep -q 'reference lib="esnext.disposable"' "${facade_dts}"; then
+    { printf '/// <reference lib="esnext.disposable" />\n'; cat "${facade_dts}"; } > "${facade_dts}.tmp"
+    mv "${facade_dts}.tmp" "${facade_dts}"
+  fi
+done
 
 node "${package_root}/scripts/render-package-json.mjs"

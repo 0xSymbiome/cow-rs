@@ -50,7 +50,7 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
   CARGO_TERM_COLOR: always
   NODE_VERSION: '24'
-  PNPM_VERSION: '11.0.9'
+  PNPM_VERSION: '11.7.0'
   # Strip debuginfo from dev / test builds: the alloy 2.x stack plus
   # aws-lc-sys leaves test binaries with multi-GB debug sections that
   # exhaust the hosted runner disk at link time. CI never debugs these
@@ -612,10 +612,6 @@ jobs:
         run: node crates/wasm/npm/scripts/verify-exports.mjs
       - name: Verify package subpath resolution
         run: bash crates/wasm/npm/scripts/verify-package-resolution.sh
-      - name: Verify publish guard override
-        env:
-          ALLOW_PLACEHOLDER_NPM_PUBLISH: '1'
-        run: bash crates/wasm/npm/scripts/prepublish-guard.sh
 
   wasm-success:
     if: always()

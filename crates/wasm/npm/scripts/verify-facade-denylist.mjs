@@ -27,9 +27,11 @@ const forbidden = [
   /\bregisterFetchCallback\b/,
   /\bFetchCallbackHandle\b/,
   /\bFunction\b/,
-  /\bfree\(\): void\b/,
-  /\[Symbol\.dispose\]/,
-  /reference lib="esnext\.disposable"/
+  // The raw wasm-bindgen `free()` stays hidden behind the facade's `dispose()`.
+  // `[Symbol.dispose]` (and its `esnext.disposable` lib reference) are now part
+  // of the facade contract — clients implement it so `using` works — so they are
+  // intentionally allowed.
+  /\bfree\(\): void\b/
 ];
 
 function fail(message) {

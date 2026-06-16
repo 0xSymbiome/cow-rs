@@ -12,16 +12,16 @@ single facade feature on `cow-sdk` that activates them all in one step:
 
 ```toml
 [dependencies]
-cow-sdk = { version = "0.1", features = ["tracing"] }
+cow-sdk = { version = "0.1.0-alpha.1", features = ["tracing"] }
 # or, reaching individual crates directly:
-cow-sdk-trading = { version = "0.1", features = ["tracing"] }
-cow-sdk-app-data = { version = "0.1", features = ["tracing"] }
-cow-sdk-contracts = { version = "0.1", features = ["tracing"] }
-cow-sdk-orderbook = { version = "0.1", features = ["tracing"] }
-cow-sdk-subgraph = { version = "0.1", features = ["tracing"] }
-cow-sdk-signing = { version = "0.1", features = ["tracing"] }
-cow-sdk-browser-wallet = { version = "0.1", features = ["tracing"] }
-cow-sdk-core = { version = "0.1", features = ["tracing"] }
+cow-sdk-trading = { version = "0.1.0-alpha.1", features = ["tracing"] }
+cow-sdk-app-data = { version = "0.1.0-alpha.1", features = ["tracing"] }
+cow-sdk-contracts = { version = "0.1.0-alpha.1", features = ["tracing"] }
+cow-sdk-orderbook = { version = "0.1.0-alpha.1", features = ["tracing"] }
+cow-sdk-subgraph = { version = "0.1.0-alpha.1", features = ["tracing"] }
+cow-sdk-signing = { version = "0.1.0-alpha.1", features = ["tracing"] }
+cow-sdk-browser-wallet = { version = "0.1.0-alpha.1", features = ["tracing"] }
+cow-sdk-core = { version = "0.1.0-alpha.1", features = ["tracing"] }
 ```
 
 With the feature off the SDK emits zero spans and zero events, and none of
@@ -219,7 +219,7 @@ is never recorded, matching the `Redacted<String>` posture of `IpfsConfig`.
 
 - `fetch_doc_from_cid_with_policy` (module-level; the shared read leaf for every `fetch_doc_*` entry)
 
-### `cow-sdk-contracts`
+### `cow-sdk-contracts` — EIP-1271 verification
 
 `verify_eip1271_signature_cached` emits one span named `verify.eip1271`
 with target `cow_sdk::verify_eip1271`. The contracts-layer span records
@@ -246,7 +246,7 @@ without logging signatures or private material.
 - `sign_order_cancellation_with_scheme`
 - `sign_order_cancellations_with_scheme`
 
-### `cow-sdk-contracts`
+### `cow-sdk-contracts` — COW Shed signing
 
 `CowShedHooks::sign` is the crate's one signer-mediated async method. It emits a
 single `sign` span carrying `chain`, `version`, and `endpoint = "cow_shed.sign"`.

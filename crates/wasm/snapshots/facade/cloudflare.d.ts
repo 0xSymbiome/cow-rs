@@ -1,3 +1,4 @@
+/// <reference lib="esnext.disposable" />
 import * as raw from "./raw/cloudflare.js";
 import type { WasmEnvelope } from "./envelope.js";
 import type { CommonClientConfig, SdkClientOptions, SigningOptions, TradingClientConfig } from "./options.js";
@@ -30,6 +31,7 @@ export declare class OrderBookClient {
     sendOrder(signed: raw.SignedOrderDto, options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>;
     sendOrderCreation(input: raw.OrderCreationInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>;
     dispose(): void;
+    [Symbol.dispose](): void;
 }
 export declare class TradingClient {
     #private;
@@ -43,6 +45,7 @@ export declare class TradingClient {
     postSwapOrderFromQuote(quoteResults: raw.QuoteResultsDto, owner: string, signerCallback: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<raw.OrderPostingResultDto>>;
     postSwapOrderWithEip1271(params: raw.SwapParametersInput, owner: string, customCallback: CustomEip1271Callback, options?: SigningOptions | null): Promise<WasmEnvelope<raw.OrderPostingResultDto>>;
     dispose(): void;
+    [Symbol.dispose](): void;
 }
 export declare function appDataDoc(doc: raw.AppDataDocInput): WasmEnvelope<raw.AppDataDocDto>;
 export declare function appDataHexToCid(appDataHex: string): WasmEnvelope<string>;
@@ -69,7 +72,7 @@ export declare function supportedChainIds(): Uint32Array;
 export declare function validateAppDataDoc(doc: raw.AppDataDocInput): WasmEnvelope<raw.ValidationResultDto>;
 export declare function wasmVersion(): string;
 export type { AllowanceParametersInput, AmountsDto, AppDataDocDto, AppDataDocInput, AppDataInfoDto, AppDataObjectDto, ApprovalParametersInput, BuiltSellNativeCurrencyTxDto, CompetitionOrderStatusDto, CompetitionOrderStatusKindDto, ContractCallDto, CostsDto, CowEip1271SignRequest, CowEnvDto, DeploymentAddressesDto, Eip1193Request, EthFlowEventDto, EthflowDataDto, EventLogInput, ExecutedAmountsDto, ExecutedProtocolFeeDto, FeeComponentDto, GeneratedOrderUidDto, InitInput, InteractionDataDto, LimitTradeParametersInput, NativePriceResponseDto, NetworkFeeDto, OnchainOrderDataDto, OrderClassDto, OrderCreationInput, OrderDataDto, OrderDto, OrderInput, OrderInteractionsDto, OrderKindDto, OrderPostingResultDto, OrderQuoteRequestInput, OrderQuoteResponseDto, OrderStatusDto, OrderTraderParametersInput, OrderBookRuntimeBindingDto, PaginationOptions, PartnerFeeDto, PartnerFeeInput, PartnerFeePolicyDto, PartnerFeePolicyInput, QuoteAmountsAndCostsDto, QuoteDataDto, QuoteResultsDto, SettlementEventDto, SignedCancellationsInput, SignedOrderDto, SigningSchemeDto, SolverExecutionDto, StoredOrderQuoteDto, SwapParametersInput, TokenBalanceDto, TotalSurplusDto, TradeDto, TradeParametersDto, TradesQueryInput, TradingAppDataInfoDto, TransactionRequestDto, TypedDataDomainDto, TypedDataEnvelopeDto, TypedDataFieldDto, ValidationResultDto } from "./raw/cloudflare.js";
-export type { ContractReadCallback, CowEip1271SignCallback, CustomEip1271Callback, DigestSignerCallback, Eip1193RequestCallback, TypedDataSignerCallback } from "./callbacks.js";
+export type { ContractReadCallback, CowEip1271SignCallback, CowEnv, CustomEip1271Callback, DigestSignerCallback, Eip1193RequestCallback, TypedDataSignerCallback } from "./callbacks.js";
 export type { OrderBookRejectionCategory, CowError } from "./errors.js";
 export type { SchemaVersion, WasmEnvelope } from "./envelope.js";
-export type { HttpTransportConfig, SdkClientOptions, SigningOptions, TradingClientConfig, TransportPolicyConfig, WalletConfig } from "./options.js";
+export type { CowFetchCallback, CowFetchRequest, CowFetchResponse, HttpTransportConfig, JitterStrategyConfig, LimiterScopeConfig, RequestRateLimiterConfig, RetryPolicyConfig, SdkClientOptions, SigningOptions, TradingClientConfig, TransportPolicyConfig, WalletConfig } from "./options.js";

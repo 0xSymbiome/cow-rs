@@ -26,6 +26,28 @@ re-export through the facade as cow-owned
 cow-sdk = "0.1.0-alpha.1"
 ```
 
+## Feature flags
+
+Every optional surface is off by default (`default = []`); enable only what you
+use. The HTTP retry, rate-limit, and `Retry-After` transport policy is always on.
+
+| Feature | Enables |
+| --- | --- |
+| `subgraph` | Read-only subgraph analytics as `cow_sdk::subgraph`; lifts `SubgraphError` into `CowError`. |
+| `browser-wallet` | Browser EIP-1193 wallet integration for `wasm32` as `cow_sdk::browser_wallet`. |
+| `cow-shed` | COW Shed account-abstraction hooks as `cow_sdk::cow_shed` (proxy derivation, EIP-712 hook signing, factory calldata). |
+| `alloy-provider` | Native Alloy read-only `Provider` adapter as `cow_sdk::alloy_provider`. |
+| `alloy-signer` | Native Alloy local-key `Signer` adapter as `cow_sdk::alloy_signer`. |
+| `alloy` | The composed native Alloy client as `cow_sdk::alloy`; implies `alloy-provider` and `alloy-signer`. |
+| `in-memory-cache` | The `InMemoryEip1271Cache` implementation. The cache trait and `NoopEip1271Cache` are always available; this adds the in-memory store. |
+| `testing` | In-memory test doubles (`OrderbookClient`, `Signer`, `Provider`) as `cow_sdk::testing` for downstream integration tests. Dev-dependency only. |
+| `tracing` | `tracing` spans and structured events across the SDK; see the [Observability](https://github.com/0xSymbiome/cow-rs/blob/main/docs/observability.md) guide. |
+
+```toml
+[dependencies]
+cow-sdk = { version = "0.1.0-alpha.1", features = ["subgraph", "cow-shed"] }
+```
+
 ## Native default example
 
 The shortest ready-state path uses the native default orderbook transport.

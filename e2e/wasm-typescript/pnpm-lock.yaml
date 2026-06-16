@@ -10,7 +10,7 @@ importers:
     dependencies:
       cow-sdk-wasm-test-package:
         specifier: file:../../crates/wasm/npm
-        version: cow-sdk-wasm-placeholder@file:../../crates/wasm/npm
+        version: '@symbiome-forge/cow-sdk-wasm@file:../../crates/wasm/npm'
     devDependencies:
       '@playwright/test':
         specifier: 1.60.0
@@ -568,6 +568,10 @@ packages:
   '@swc/wasm@1.15.33':
     resolution: {integrity: sha512-uZPBvYMwjvTtyNm018KFV6ino5ZL4z9riN/tBsfTSgbfONW9Jn+ca88+UeEIdMOZY5Dm+y2OBf6o0kxa1wfD0A==}
 
+  '@symbiome-forge/cow-sdk-wasm@file:../../crates/wasm/npm':
+    resolution: {directory: ../../crates/wasm/npm, type: directory}
+    engines: {node: '>=22.0.0'}
+
   '@tybys/wasm-util@0.10.2':
     resolution: {integrity: sha512-RoBvJ2X0wuKlWFIjrwffGw1IqZHKQqzIchKaadZZfnNpsAYp2mM0h36JtPCjNDAHGgYez/15uMBpfGwchhiMgg==}
 
@@ -622,10 +626,6 @@ packages:
 
   convert-source-map@2.0.0:
     resolution: {integrity: sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg==}
-
-  cow-sdk-wasm-placeholder@file:../../crates/wasm/npm:
-    resolution: {directory: ../../crates/wasm/npm, type: directory}
-    engines: {node: '>=22.0.0'}
 
   detect-libc@2.1.2:
     resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
@@ -1236,6 +1236,8 @@ snapshots:
 
   '@swc/wasm@1.15.33': {}
 
+  '@symbiome-forge/cow-sdk-wasm@file:../../crates/wasm/npm': {}
+
   '@tybys/wasm-util@0.10.2':
     dependencies:
       tslib: 2.8.1
@@ -1300,8 +1302,6 @@ snapshots:
   chai@6.2.2: {}
 
   convert-source-map@2.0.0: {}
-
-  cow-sdk-wasm-placeholder@file:../../crates/wasm/npm: {}
 
   detect-libc@2.1.2: {}
 

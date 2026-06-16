@@ -143,10 +143,10 @@ cargo test -p cow-sdk-orderbook --test request_contract retry_timeout_soak_exerc
 
 ## 5. Repo-Local Parity And Publication Proof
 
-Reserved-placeholder `0.0.1-reserved.0` crates.io and docs.rs entries may
-already be live for published crate names. Treat those publishes as
-name-reservation perimeter only; they do not satisfy the functional release
-contract described in this checklist.
+`cow-sdk` `0.1.0-alpha.1` is published on crates.io and
+`@symbiome-forge/cow-sdk-wasm` `0.1.0-alpha.1` on npm. The earlier
+`0.0.1-reserved.0` entries were name-reservation publishes; they do not
+satisfy the functional release contract described in this checklist.
 
 Validate the committed parity contract from the current checkout:
 
@@ -206,11 +206,10 @@ cargo publish --dry-run -p cow-sdk --allow-dirty --config "patch.crates-io.cow-s
 
 ## 6. Manual Publish Sequence
 
-The functional `0.1.0` crates.io release publishes the crates of the
-`cow-sdk` family in dependency order so every step depends only on a
-version already indexed by the registry. Reserved-placeholder
-`0.0.1-reserved.0` publishes are independent of the functional release
-and do not satisfy this sequence.
+Each release publishes the crates of the `cow-sdk` family in dependency
+order so every step depends only on a version already indexed by the
+registry. The first release (`0.1.0-alpha.1`) has shipped; use this
+sequence for every subsequent release.
 
 ### Prerequisites
 
@@ -408,10 +407,8 @@ pnpm --dir e2e/wasm-typescript-cf run test
 pnpm --dir e2e/wasm-typescript-cf run test:type-check
 ```
 
-The rendered npm package name is selected at publication time. Maintainer
-publish runs must keep the placeholder guard enabled by default: the
-`prepublish-guard.sh` script refuses to publish the placeholder package name
-unless the operator explicitly overrides it for a dry-run pipeline. The package
+The npm package name is baked into `package.template.json` and rendered into
+`package.json` by `render-package-json.mjs` during the build. The package
 exports map, declaration snapshots, Cloudflare `./cloudflare` and
 `./cloudflare/wasm` subpaths, and generated `dist` metadata cleanup are part of
 the release check.
