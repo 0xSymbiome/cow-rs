@@ -14,7 +14,7 @@ keywords = ["cow-protocol", "sdk", "trading", "defi", "ethereum"]
 categories = ["api-bindings", "cryptography::cryptocurrencies"]
 
 [package.metadata.docs.rs]
-features = ["browser-wallet", "cow-shed", "testing"]
+features = ["cow-shed", "testing"]
 default-target = "x86_64-unknown-linux-gnu"
 targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 
@@ -37,7 +37,6 @@ alloy-signer = [
     "dep:cow-sdk-alloy-signer",
     "cow-sdk-alloy-signer/eip712",
 ]
-browser-wallet = ["dep:cow-sdk-browser-wallet"]
 # Opt-in COW Shed account-abstraction hooks. Off by default, so the surface is
 # never on the default `cow-sdk` dependency closure (ADR 0049). Re-exports the
 # `cow-sdk-contracts` `cow_shed` module as `cow_sdk::cow_shed`.
@@ -60,7 +59,6 @@ tracing = [
     "cow-sdk-orderbook/tracing",
     "cow-sdk-signing/tracing",
     "cow-sdk-trading/tracing",
-    "cow-sdk-browser-wallet?/tracing",
     "cow-sdk-subgraph?/tracing",
 ]
 
@@ -69,7 +67,6 @@ cow-sdk-alloy = { path = "../alloy", version = "0.1.0-alpha.1", optional = true,
 cow-sdk-alloy-provider = { path = "../alloy-provider", version = "0.1.0-alpha.1", optional = true, default-features = false }
 cow-sdk-alloy-signer = { path = "../alloy-signer", version = "0.1.0-alpha.1", optional = true, default-features = false }
 cow-sdk-app-data = { path = "../app-data", version = "0.1.0-alpha.1" }
-cow-sdk-browser-wallet = { path = "../browser-wallet", version = "0.1.0-alpha.1", optional = true, default-features = false }
 cow-sdk-contracts = { path = "../contracts", version = "0.1.0-alpha.1" }
 cow-sdk-orderbook = { path = "../orderbook", version = "0.1.0-alpha.1" }
 cow-sdk-signing = { path = "../signing", version = "0.1.0-alpha.1" }

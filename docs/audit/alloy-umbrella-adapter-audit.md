@@ -1,7 +1,7 @@
 # Alloy Umbrella Adapter Audit
 
 Status: Current
-Last reviewed: 2026-06-15
+Last reviewed: 2026-06-16
 Owning surface: `cow-sdk-alloy` `AlloyClient`, its builder, its `Provider` and `LogProvider` implementations, and its owned signer handle
 Refresh trigger: ADR 0038 - transaction lifecycle types, or changes to the umbrella public API, `Provider`, `SigningProvider`, `LogProvider`, `Signer`, wallet-filler transaction submission, the opt-in `retry` seam consumed from the provider leaf, typed-data conversion, chain-coherence validation, read-contract and log-fetch consumption from the provider seam, error redaction, cancellation propagation, or the Alloy provider/signer dependency boundaries
 Related docs:
@@ -35,7 +35,7 @@ This audit covers:
   signature normalization
 - dependency allow-lists for the native Alloy provider and signer-local family
 
-It does not cover upstream Alloy internals, browser-wallet behavior, live RPC
+It does not cover upstream Alloy internals, live RPC
 operator reliability, or smart-account signing.
 
 ## Outcome Summary

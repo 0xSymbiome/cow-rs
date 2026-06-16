@@ -100,14 +100,14 @@ post-state root into a success value.
 
 ## Native Only
 
-This crate hard-fails on `wasm32` targets. Browser applications should use
-`cow-sdk-browser-wallet` for wallet-backed signing and provide RPC access
-through the browser's EIP-1193 provider surface.
+This crate hard-fails on `wasm32` targets. JavaScript and TypeScript hosts
+targeting the browser should use the `cow-sdk-wasm` package, supplying their own
+wallet across its EIP-1193 request-callback boundary and reaching RPC through the
+host's own provider.
 
-The compile-time failure is deliberate. It keeps browser builds on the
-browser-wallet adapter and fails with a direct SDK message instead of allowing
-native Alloy HTTP transport dependencies to fail later with platform-specific
-errors.
+The compile-time failure is deliberate. It keeps browser builds on the wasm
+callback path and fails with a direct SDK message instead of allowing native
+Alloy HTTP transport dependencies to fail later with platform-specific errors.
 
 ## Companion Crates
 

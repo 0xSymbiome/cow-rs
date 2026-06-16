@@ -5,7 +5,6 @@
 use std::sync::{Arc, Mutex};
 
 use cow_sdk_alloy::AlloyClient;
-use cow_sdk_browser_wallet::{BrowserWallet, MockEip1193Transport};
 use cow_sdk_core::{
     Address, Amount, Provider, Signer, SigningProvider, SupportedChainId, TransactionHash,
     TransactionRequest, TransactionStatus,
@@ -47,35 +46,6 @@ async fn alloy_send_transaction_does_not_poll_for_receipt() {
 }
 
 #[tokio::test]
-async fn browser_wallet_send_transaction_does_not_poll_for_receipt() {
-    let transport = MockEip1193Transport::sepolia();
-    let wallet = BrowserWallet::from_transport_or_panic(transport.clone());
-    wallet.connect().await.unwrap();
-    let signer = wallet.signer();
-
-    let broadcast = signer
-        .send_transaction(&sample_transaction())
-        .await
-        .unwrap();
-
-    assert_eq!(
-        broadcast.transaction_hash.to_hex_string(),
-        format!("0x{}", "33".repeat(32))
-    );
-    let methods = transport
-        .request_log()
-        .into_iter()
-        .map(|record| record.method)
-        .collect::<Vec<String>>();
-    assert!(methods.iter().any(|method| method == "eth_sendTransaction"));
-    assert!(
-        !methods
-            .iter()
-            .any(|method| method == "eth_getTransactionReceipt")
-    );
-}
-
-#[tokio::test]
 async fn alloy_get_transaction_receipt_populates_status_and_block() {
     let (server, client) = alloy_client_with_result(receipt_response()).await;
 
@@ -87,23 +57,6 @@ async fn alloy_get_transaction_receipt_populates_status_and_block() {
 
     assert_rich_receipt(&receipt);
     assert_eq!(server.received_requests().await.unwrap().len(), 1);
-}
-
-#[tokio::test]
-async fn browser_wallet_get_transaction_receipt_populates_status_and_block() {
-    let transport = MockEip1193Transport::sepolia();
-    transport.set_receipt(HASH, receipt_response());
-    let wallet = BrowserWallet::from_transport_or_panic(transport);
-    wallet.connect().await.unwrap();
-
-    let receipt = wallet
-        .provider()
-        .get_transaction_receipt(&TransactionHash::new(HASH).unwrap())
-        .await
-        .unwrap()
-        .expect("receipt available");
-
-    assert_rich_receipt(&receipt);
 }
 
 async fn alloy_client_with_result(result: Value) -> (MockServer, AlloyClient) {

@@ -23,7 +23,6 @@ cow-sdk-signing = { path = "../crates/signing" }
 cow-sdk-app-data = { path = "../crates/app-data" }
 cow-sdk-subgraph = { path = "../crates/subgraph" }
 cow-sdk-trading = { path = "../crates/trading" }
-cow-sdk-browser-wallet = { path = "../crates/browser-wallet" }
 
 [[bin]]
 name = "fuzz_order_uid_pack_unpack"
@@ -280,27 +279,6 @@ bench = false
 [[bin]]
 name = "fuzz_jitter_delay_for_attempt"
 path = "fuzz_targets/fuzz_jitter_delay_for_attempt.rs"
-test = false
-doc = false
-bench = false
-
-[[bin]]
-name = "fuzz_rpc_error_payload_serde"
-path = "fuzz_targets/fuzz_rpc_error_payload_serde.rs"
-test = false
-doc = false
-bench = false
-
-[[bin]]
-name = "fuzz_contract_call_serde"
-path = "fuzz_targets/fuzz_contract_call_serde.rs"
-test = false
-doc = false
-bench = false
-
-[[bin]]
-name = "fuzz_transaction_request_serde"
-path = "fuzz_targets/fuzz_transaction_request_serde.rs"
 test = false
 doc = false
 bench = false

@@ -49,8 +49,8 @@ dependencies in read-only flows and keeps order ownership reviewable.
   stay out of the core facade until stabilized.
 - Runtime and support: account-abstraction integrations are explicit adapters;
   the SDK does not silently choose a bundler, paymaster, or wallet runtime.
-- Validation and review: EIP-1271 cache behavior, browser-wallet trust
-  posture, typestate construction, and parity rows for signing, trading,
+- Validation and review: EIP-1271 cache behavior, signer trust posture,
+  typestate construction, and parity rows for signing, trading,
   contracts, and orderbook remain review anchors.
 - Cost: account-abstraction ergonomics may require adapter crates, preserving
   dependency and trust-boundary clarity for the stable facade.
@@ -59,7 +59,7 @@ dependencies in read-only flows and keeps order ownership reviewable.
 
 - Add one root account-abstraction client: this would mix read-only access,
   signer creation, bundler transport, paymaster policy, and wallet trust.
-- Treat every smart-account path as browser-wallet signing: native and contract
+- Treat every smart-account path as EIP-1193 wallet signing: native and contract
   account flows need the same trait contract without assuming EIP-1193.
 - Bypass EIP-1271 for contract-mediated signatures: that would duplicate the
   reviewed verification path and weaken cache behavior.
@@ -77,7 +77,6 @@ dependencies in read-only flows and keeps order ownership reviewable.
 **Proven by:**
 
 - [EIP-1271 Verification Cache Audit](../audit/eip1271-verification-cache-audit.md)
-- [Browser Wallet Trust Posture Audit](../audit/browser-wallet-trust-posture-audit.md)
 - [Typestate Builder Contract Audit](../audit/typestate-builder-contract-audit.md)
 
 _(The 2026-05-22 `as_str()` → `to_hex_string()` accessor rename is folded into

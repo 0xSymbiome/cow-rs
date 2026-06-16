@@ -274,7 +274,6 @@ jobs:
             --config "patch.crates-io.cow-sdk-alloy-provider.path='crates/alloy-provider'"
             --config "patch.crates-io.cow-sdk-alloy-signer.path='crates/alloy-signer'"
             --config "patch.crates-io.cow-sdk-app-data.path='crates/app-data'"
-            --config "patch.crates-io.cow-sdk-browser-wallet.path='crates/browser-wallet'"
             --config "patch.crates-io.cow-sdk-contracts.path='crates/contracts'"
             --config "patch.crates-io.cow-sdk-core.path='crates/core'"
             --config "patch.crates-io.cow-sdk-orderbook.path='crates/orderbook'"
@@ -293,7 +292,6 @@ jobs:
           cargo publish --dry-run --no-verify -p cow-sdk-alloy-provider --allow-dirty "${WORKSPACE_PATCHES[@]}"
           cargo publish --dry-run --no-verify -p cow-sdk-alloy-signer --allow-dirty "${WORKSPACE_PATCHES[@]}"
           cargo publish --dry-run --no-verify -p cow-sdk-alloy --allow-dirty "${WORKSPACE_PATCHES[@]}"
-          cargo publish --dry-run --no-verify -p cow-sdk-browser-wallet --allow-dirty "${WORKSPACE_PATCHES[@]}"
           cargo publish --dry-run --no-verify -p cow-sdk-test --allow-dirty "${WORKSPACE_PATCHES[@]}"
           cargo publish --dry-run --no-verify -p cow-sdk --allow-dirty "${WORKSPACE_PATCHES[@]}"
 

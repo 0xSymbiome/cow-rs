@@ -16,11 +16,12 @@ name, and the message — everything a backend needs to compute the canonical
 EIP-712 digest.
 
 Field-based signing — a `(domain, fields, message)` triple — is not a trait
-obligation. Wallet-protocol compatibility for the field-based layouts that
-legacy browser-wallet integrations expect lives in `cow-sdk-browser-wallet` as
-the inherent `sign_typed_data_compatibility` helper on its signer, which
-narrows the triple into a `TypedDataPayload` before delegating to the trait
-method.
+obligation. The former wallet-compatibility carve-out (a
+`sign_typed_data_compatibility` helper that narrowed a field-based triple into a
+`TypedDataPayload` for legacy field-based wallet layouts) has been removed along
+with the native browser-wallet crate it lived on. JavaScript and TypeScript
+consumers reach their wallet through the `cow-sdk-wasm` EIP-1193 request callback
+(ADR 0040), which carries the canonical typed-data payload directly.
 
 ## Why
 
@@ -33,7 +34,7 @@ protocol-meaningless digest for the general case fails the doctrine of
 compatibility shims that produced protocol-incorrect digests. Keeping one
 honest payload method also keeps the trait runtime-neutral per
 [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md): every
-implementor — local key, browser wallet, JS callback — receives the same
+implementor — local key or JS callback — receives the same
 complete signing input rather than a backend-specific reconstruction problem.
 
 The flip is taken pre-release, before the first functional crate release, so
@@ -46,11 +47,12 @@ there are no published consumers to migrate.
   typed-data method returns to either trait.
 - Adapters: every shipped `Signer` implementation signs the payload's own
   primary type; no adapter substitutes a placeholder primary type.
-- Compatibility boundary: field-based signing support is a wallet-protocol
-  concern owned by `cow-sdk-browser-wallet`'s inherent
-  `sign_typed_data_compatibility` helper, limited to the reviewed CoW order
-  and order-cancellation field layouts, and implemented by conversion into a
-  `TypedDataPayload`.
+- Compatibility boundary: the field-based wallet-compatibility carve-out is
+  voided. No trait or inherent helper in the workspace accepts a field-based
+  `(domain, fields, message)` triple; wallet protocol compatibility for
+  JavaScript and TypeScript consumers is a host-app concern reached through the
+  `cow-sdk-wasm` EIP-1193 request callback (ADR 0040), which carries the
+  canonical `TypedDataPayload`.
 - Validation: primary-type preservation stays covered by the alloy-signer and
   umbrella adapter typed-data tests and the committed EIP-712 reference
   vectors (`PROP-AS-005` in `PROPERTIES.md`).
@@ -66,13 +68,15 @@ there are no published consumers to migrate.
   definitions the triple does not carry, so the default would still guess; the
   conversion is only sound for closed, reviewed layouts, which is a
   wallet-protocol concern rather than a trait contract.
-- Move the compatibility helper into `cow-sdk-core`: the two-layout
-  compatibility rule exists for browser-wallet integrations specifically, and
-  core would gain wallet-protocol knowledge it otherwise does not have.
+- Reintroduce a field-based compatibility helper in `cow-sdk-core`: the
+  two-layout compatibility rule is a wallet-protocol concern, and core would gain
+  wallet-protocol knowledge it otherwise does not have; the canonical payload
+  already crosses the `cow-sdk-wasm` EIP-1193 callback (ADR 0040) intact.
 
 ## Links
 
 - [ADR 0023](0023-legacy-compatibility-shim-removal.md)
 - [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md)
 - [ADR 0036](0036-alloy-signer-adapter.md)
+- [ADR 0040](0040-wallet-provider-callback-boundary-for-js-consumers.md)
 - [Properties Registry](../../PROPERTIES.md)

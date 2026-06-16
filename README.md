@@ -145,8 +145,7 @@ the full source-to-fixture matrix is in
 | You are building in… | Use |
 | --- | --- |
 | Rust — bot, solver, market maker, analytics, or treasury automation | `cow-sdk`, plus `cow-sdk-alloy-*` for native Alloy provider/signer adapters |
-| Rust compiled to browser WASM | `cow-sdk` with the `browser-wallet` feature (the Rust-on-wasm path, not the npm package) |
-| JavaScript or TypeScript — Node, browser bundler, Cloudflare Workers, or Deno | the npm package [`@symbiome-forge/cow-sdk-wasm`](https://www.npmjs.com/package/@symbiome-forge/cow-sdk-wasm) |
+| JavaScript or TypeScript — Node, browser bundler, Cloudflare Workers, or Deno | the npm package [`@symbiome-forge/cow-sdk-wasm`](https://www.npmjs.com/package/@symbiome-forge/cow-sdk-wasm), driven by the host application's own wallet stack (viem, wagmi, or any EIP-1193 provider) |
 | A standard browser dapp where minimal bundle size dominates | upstream [`@cowprotocol/cow-sdk`](https://www.npmjs.com/package/@cowprotocol/cow-sdk) |
 
 The npm package ships in `default`, `orderbook`, `signing`, and `cloudflare`
@@ -169,17 +168,11 @@ Use `appCode` as the stable identifier for the application or integration
 surface that originates the order flow; the [Quickstart](#quickstart) above shows
 it wired into a full swap on the native/default transport path.
 
-Browser-wallet integrations that wrap a reviewed local transport should keep
-the trusted origin explicit:
-
-```rust
-use cow_sdk::browser_wallet::{BrowserWallet, MockEip1193Transport, Origin};
-
-let transport = MockEip1193Transport::sepolia().with_label("example wallet");
-let origin = Origin::new("test://example-wallet").expect("example origin must be valid");
-let _wallet = BrowserWallet::from_trusted_transport(transport, origin)
-    .expect("trusted example transport must build");
-```
+JavaScript and TypeScript hosts that connect a wallet in the browser drive the
+`@symbiome-forge/cow-sdk-wasm` package with their own wallet stack (viem, wagmi,
+or any EIP-1193 provider). The wasm surface exposes the EIP-1193 request-callback
+boundary and explicit signing and HTTP callbacks; the host supplies the wallet
+connection.
 
 ## Crate Guide
 
@@ -189,7 +182,6 @@ let _wallet = BrowserWallet::from_trusted_transport(transport, origin)
 | Shared domain types, runtime traits, the `HttpTransport` seam with its native `ReqwestTransport` default and browser `FetchTransport` default (the latter gated to `wasm32-unknown-unknown` in the `transport::fetch` module), and the opt-in HTTP retry, rate-limit, jitter, `Retry-After`, and error-classification policy (`transport-policy` feature) | `cow-sdk-core` |
 | TypeScript-callable wasm-bindgen SDK bindings for browser, Node.js, Workers, and optional Deno consumers | `cow-sdk-wasm` |
 | Read-only subgraph queries | `cow-sdk-subgraph` or `cow-sdk` with `subgraph` |
-| Browser wallet integration for WASM | `cow-sdk-browser-wallet` or `cow-sdk` with `browser-wallet` |
 | Native Alloy provider, signer, or composed provider-plus-signer support | `cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, `cow-sdk-alloy`, or `cow-sdk` with `alloy-provider`, `alloy-signer`, or `alloy` |
 | Deterministic protocol helpers, `alloy::sol!` bindings, the `Registry` authority, and EIP-1271 verification | `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data` |
 | Typed orderbook transport | `cow-sdk-orderbook` |
@@ -210,7 +202,6 @@ configure transport explicitly through `transport: { kind: "fetch" }` or
 - `cow-sdk` is a thin facade.
 - `cow-sdk-trading` owns quote-to-order workflows.
 - `cow-sdk-subgraph` is a separate read-only crate, re-exported through `cow-sdk` behind the off-by-default `subgraph` feature.
-- Browser wallet support is additive and feature-gated.
 - TypeScript-callable WASM support is an additive leaf crate with explicit
   JavaScript callbacks rather than bundled wallet-library dependencies.
 - Pure transform crates do not hide network I/O.
@@ -248,7 +239,6 @@ lives in the [Documentation Index](docs/README.md). Quick starts:
 
 - [Getting Started](docs/getting-started.md)
 - [Native examples](examples/native/README.md)
-- [Browser-wallet trade example (Dioxus, wasm)](examples/wasm/cow-trader-dioxus/README.md)
 
 ## Compatibility
 

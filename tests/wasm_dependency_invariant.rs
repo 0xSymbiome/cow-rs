@@ -5,7 +5,6 @@ use std::{collections::BTreeSet, path::PathBuf, process::Command};
 use serde_json::Value;
 
 const FORBIDDEN: &[&str] = &[
-    "cow-sdk-browser-wallet",
     "cow-sdk-alloy-provider",
     "cow-sdk-alloy-signer",
     "cow-sdk-alloy",

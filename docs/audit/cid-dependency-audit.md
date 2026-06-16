@@ -1,7 +1,7 @@
 # CID Dependency Audit
 
 Status: Current
-Last reviewed: 2026-06-08
+Last reviewed: 2026-06-16
 Owning surface: `cow-sdk-app-data` CID encoding, canonical-JSON serialisation, and published dependency boundary
 Refresh trigger: Changes to CID dependencies, the canonical-JSON dependency, the supported CID encoding, or the published dependency posture for the app-data and core stacks
 Related docs:
@@ -93,8 +93,8 @@ the CID stack.
 
 The `cargo-deny` advisory gate denies yanked crates, and the canonical RustSec
 ignore register no longer includes the prior CID-chain exceptions. The remaining
-`cargo audit` ignores belong to the browser-wallet alloy helper posture and are
-tracked in [Browser-Wallet Alloy Dependency Audit](browser-wallet-alloy-dependency-audit.md).
+`cargo audit` ignores belong to the alloy proc-macro subtree posture and are
+tracked in [Dependency Gate Audit](dependency-gate-audit.md).
 `RUSTSEC-2026-0105` is no longer tolerated because `core2` is no longer
 reachable from the app-data dependency graph.
 The workspace-wide RustSec command is recorded in

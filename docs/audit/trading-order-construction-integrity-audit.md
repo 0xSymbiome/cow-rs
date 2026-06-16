@@ -1,7 +1,7 @@
 # Trading Order Construction Integrity Audit
 
 Status: Current
-Last reviewed: 2026-05-31
+Last reviewed: 2026-06-16
 Owning surface: `cow-sdk-trading` order assembly, injected-orderbook builder terminal parity, and recoverable-signature posting boundary
 Refresh trigger: Changes to quote-derived or direct order construction, `Trading` builder terminals with injected orderbooks, recoverable-signature posting validation, upstream services `crates/shared/src/order_validation.rs` same-token semantics, the `TradeParams::validate` / `LimitTradeParams::validate` same-token predicate, the `LimitTradeParamsFromQuote` newtype invariant or its `EthFlow` entry binding
 Related docs:
@@ -25,7 +25,7 @@ This audit covers:
 - `Trading` builder terminals that accept injected orderbook context
 - local signature validation before orderbook submission
 
-It does not cover browser-wallet session management, approval flows, or
+It does not cover host wallet session management, approval flows, or
 unrelated leaf-crate transport policy.
 
 ## Outcome Summary

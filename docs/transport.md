@@ -40,9 +40,9 @@ message and typed-data signing. `cow-sdk-alloy` composes both through an Alloy
 wallet-filler provider so allowance, approval, pre-sign, and on-chain
 cancellation helpers can use one native client.
 
-The Alloy adapter crates are native-only. On `wasm32-unknown-unknown`, use
-`cow-sdk-browser-wallet` for signing and inject browser RPC access through the
-browser runtime instead.
+The Alloy adapter crates are native-only. On `wasm32-unknown-unknown`, the
+`cow-sdk-wasm` package bridges signing and RPC access to the host wallet through
+the EIP-1193 request callback instead.
 
 ## The `HttpTransport` Trait
 

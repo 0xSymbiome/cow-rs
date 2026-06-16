@@ -55,10 +55,10 @@ source-lock-pinned OpenAPI inventory, not from hand-written prior memory.
 ## Additive Optional Ecosystems
 
 Optional capabilities grow through leaf crates and feature-gated additions.
-Browser-runtime behavior, provider-specific behavior, and future capability
-families do not silently widen the default facade contract.
+Provider-specific behavior, JavaScript and TypeScript wasm integration, and
+future capability families do not silently widen the default facade contract.
 
-**Anchored by**: [ADR 0001](adr/0001-multi-crate-sdk-family-with-thin-facade.md) (primary). Supporting: [ADR 0007](adr/0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md), [ADR 0065](adr/0065-canonical-browser-wallet-example.md).
+**Anchored by**: [ADR 0001](adr/0001-multi-crate-sdk-family-with-thin-facade.md) (primary). Supporting: [ADR 0039](adr/0039-typescript-callable-wasm-sdk-surface.md), [ADR 0040](adr/0040-wallet-provider-callback-boundary-for-js-consumers.md).
 
 ## Sole Construction Seam
 
@@ -104,9 +104,10 @@ release-gating invariants rather than aspirations.
 
 The trait abstraction is the mechanism that keeps a single trading path working
 across runtimes. `cow-sdk-trading` depends on `cow-sdk-core` traits rather than
-on a concrete provider library, so native Alloy, the browser-wallet leaf, and a
-custom simulator or fork-test adapter can all satisfy the same helper calls
-without widening the default facade.
+on a concrete provider library, so native Alloy, a host-supplied EIP-1193 wallet
+reached through the `cow-sdk-wasm` callback, and a custom simulator or fork-test
+adapter can all satisfy the same helper calls without widening the default
+facade.
 
 **Anchored by**: [ADR 0024](adr/0024-asyncprovider-asyncsigningprovider-capability-split.md) (primary). Supporting: [ADR 0010](adr/0010-runtime-neutral-async-and-transport-posture.md), [ADR 0014](adr/0014-eip1271-verification-cache.md), [ADR 0028](adr/0028-account-abstraction-integration-plan.md), [ADR 0057](adr/0057-log-provider-capability-trait.md), [ADR 0068](adr/0068-payload-only-typed-data-signing.md).
 
@@ -185,7 +186,7 @@ Credential-bearing types use the workspace `Redacted<T>` wrapper. Their
 identity information. Transport errors strip credential-bearing query strings
 before wrapping URL strings; orderbook and subgraph diagnostics expose only
 redacted route identity. Public error diagnostics for provider, signer, RPC,
-transport, response-body, orderbook rejection, subgraph context, browser-wallet,
+transport, response-body, orderbook rejection, subgraph context,
 and facade errors keep credential-bearing message payloads behind explicit
 `Redacted<T>` access or typed sanitizers, while safe diagnostics such as chain
 IDs, HTTP status codes, EIP-1193 RPC method names, schema versions, environment

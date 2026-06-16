@@ -612,7 +612,6 @@ fn crate_src_dir(rust_type: &str) -> Result<PathBuf> {
         .with_context(|| format!("invalid rust type path {rust_type}"))?;
     let crate_dir = match crate_name {
         "cow_sdk_app_data" => "crates/app-data/src",
-        "cow_sdk_browser_wallet" => "crates/browser-wallet/src",
         "cow_sdk_contracts" => "crates/contracts/src",
         "cow_sdk_core" => "crates/core/src",
         "cow_sdk_orderbook" => "crates/orderbook/src",

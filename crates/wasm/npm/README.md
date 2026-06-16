@@ -21,7 +21,7 @@ without depending on a specific wallet library.
 | Cloudflare Worker proxying CoW orderbook calls | `@symbiome-forge/cow-sdk-wasm/cloudflare` | Worker-compatible web target and explicit wasm module initialization |
 | Signer service or HSM proxy | `@symbiome-forge/cow-sdk-wasm/signing` | Signing primitives without orderbook, trading, subgraph, or IPFS clients |
 | Native Rust service, bot, solver, or treasury automation | `cow-sdk` | Avoids wasm-bindgen and npm packaging entirely |
-| Rust app compiled to browser WASM | `cow-sdk-browser-wallet` plus `cow-sdk-core` (browser `FetchTransport`) | Rust-on-wasm path; this package is for JavaScript hosts |
+| Rust app compiled to browser WASM | `cow-sdk` with `cow-sdk-core`'s browser `FetchTransport` (the `wasm32-unknown-unknown` `transport::fetch` module) | Rust-on-wasm path; this package is for JavaScript hosts |
 
 ## Not in this crate
 

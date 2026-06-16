@@ -1,4 +1,3 @@
-#[cfg(feature = "browser-wallet")]
 #[test]
 fn headline_types_stay_reachable_with_all_features() {
     use cow_sdk::contracts::Signature;
@@ -22,11 +21,6 @@ fn headline_types_stay_reachable_with_all_features() {
     let _ = core::any::type_name::<TraderParams>();
     let _ = core::any::type_name::<Trading>();
     let _ = core::any::type_name::<TradingBuilder>();
-    let _ = core::any::type_name::<cow_sdk::browser_wallet::Eip1193Signer>();
     #[cfg(feature = "subgraph")]
     let _ = core::any::type_name::<cow_sdk::subgraph::SubgraphApi>();
 }
-
-#[cfg(not(feature = "browser-wallet"))]
-#[test]
-fn all_features_probe_is_feature_scoped() {}

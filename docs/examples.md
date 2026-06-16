@@ -46,20 +46,6 @@ The deterministic non-live native example binaries share one smoke command:
 cargo run-deterministic-examples
 ```
 
-## WASM
-
-Use the WASM example when you want a runnable browser-wallet flow in Rust.
-
-| Surface | Crate features | Purpose |
-| --- | --- | --- |
-| [`cow-trader-dioxus`](../examples/wasm/cow-trader-dioxus/README.md) | `cow-sdk` (`browser-wallet`) | Discover an injected wallet (EIP-6963), connect, sign, and swap a CoW order end to end in the browser — written entirely in Rust with Dioxus, using only SDK public types |
-
-The example is a consumer demonstration that talks to the live orderbook. The
-deterministic browser-runtime proof for the underlying contract lives in the
-`cow-sdk-browser-wallet` crate test lane and the browser-transport tests under
-`crates/wasm`, described in
-[Browser-runtime proof posture](browser-runtime-proof-posture.md).
-
 ## TypeScript WASM Package Examples
 
 These are specialized examples. For most browser dapps, web apps, and
@@ -111,5 +97,6 @@ The package is published to npm as `@symbiome-forge/cow-sdk-wasm`.
 - Use the TypeScript WASM package examples for Node.js signing or Cloudflare
   Worker integration.
 - Use `cow-sdk-subgraph` examples when you need read-only subgraph access.
-- Use the `cow-trader-dioxus` WASM example when you want a runnable
-  browser-wallet trade flow in Rust.
+- For browser-wallet trade flows, integrate the `cow-sdk-wasm` package with your
+  app's own wallet stack (viem, wagmi, or any EIP-1193 provider); the SDK exposes
+  the EIP-1193 request callback and the host supplies the wallet connection.

@@ -11,9 +11,9 @@ behind a typed callback. The key never enters the WASM — the SDK builds the
 EIP-712 payload, viem signs it, and the SDK wraps the returned signature.
 
 The repository-local project imports `cow-sdk-wasm-local` from the workspace so
-the example can run before publication. In an application, replace that module
-specifier with the final `<published-cow-sdk-wasm-package>` package name and
-import from its `/signing` subpath.
+the example can run before publication. In an application, the package is
+published to npm as `@symbiome-forge/cow-sdk-wasm`; import from its `/signing`
+subpath.
 
 ## Run
 
@@ -45,7 +45,7 @@ import type { TypedDataDefinition } from "viem";
 import {
   orderTypedData,
   signOrderWithTypedDataSigner
-} from "<published-cow-sdk-wasm-package>/signing";
+} from "@symbiome-forge/cow-sdk-wasm/signing";
 
 // The SDK hands your callback the EIP-712 envelope (plain `domain`, `types`,
 // `primaryType`, and `message`); you return the signature.

@@ -1,8 +1,4 @@
-#[cfg(all(
-    not(feature = "browser-wallet"),
-    not(feature = "in-memory-cache"),
-    not(feature = "subgraph")
-))]
+#[cfg(all(not(feature = "in-memory-cache"), not(feature = "subgraph")))]
 #[test]
 fn headline_types_stay_reachable_on_default_features() {
     use cow_sdk::contracts::Signature;
@@ -27,7 +23,3 @@ fn headline_types_stay_reachable_on_default_features() {
     let _ = core::any::type_name::<Trading>();
     let _ = core::any::type_name::<TradingBuilder>();
 }
-
-#[cfg(feature = "browser-wallet")]
-#[test]
-fn default_features_probe_is_feature_scoped() {}

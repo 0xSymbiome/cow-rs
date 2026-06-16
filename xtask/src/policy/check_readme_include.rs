@@ -32,7 +32,6 @@ const README_RENDERING_CRATES: &[&str] = &[
     "orderbook",
     "trading",
     "subgraph",
-    "browser-wallet",
     "sdk",
 ];
 

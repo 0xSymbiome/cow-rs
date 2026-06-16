@@ -1,7 +1,7 @@
 # Panic-Free Public Surface Audit
 
 Status: Current
-Last reviewed: 2026-06-15
+Last reviewed: 2026-06-16
 Owning surface: every `crates/*/src/**/*.rs` file accessible from the published public API
 Refresh trigger: any ADR 0033 panic-policy change, panic-allowlist addition, or new `expect`, `unwrap`, or `panic!` site on a path reachable from the published public API
 Related docs:
@@ -43,7 +43,6 @@ Documented public runtime sites:
 | Sites | Rationale |
 | --- | --- |
 | `crates/app-data/src/schema.rs` (`generate_app_data_doc`); `crates/app-data/src/types/partner_fee.rs` (`PartnerFee::to_value`) | Typed app-data and partner-fee structures serialize through owned `serde` implementations; failure would mean the shipped Rust types stopped being JSON-serializable. |
-| `crates/browser-wallet/src/mock.rs` (`MockState::default`); `crates/browser-wallet/src/wallet/chain.rs` (`WalletChainParameters::for_supported_chain`, `known_wallet_native_currency`); `crates/browser-wallet/src/wallet/mod.rs` (`BrowserWallet::from_transport_or_panic`) | Built-in mock-account, chain, and native-currency metadata are static validated values, and the panic-named constructor is documented panic-on-invalid for explicitly trusted Rust transports. |
 | `crates/contracts/src/deployments.rs` (`Registry::default`); `crates/signing/src/domain.rs` (`domain`); `crates/trading/src/allowance.rs` (`resolve_vault_relayer`); `crates/trading/src/onchain.rs` (`resolve_settlement_address`, `resolve_eth_flow_address`); `crates/trading/src/order.rs` (`calculate_unique_order_id`) | Canonical deployment lookups resolve through the const address table; the committed address literals are validated at construction and pinned by the `deployment_addresses_resolve_to_canonical_singletons` regression. |
 | `crates/contracts/src/deployments.rs` (`DeploymentChainId::from`, `DeploymentEnv::from`); `crates/contracts/src/primitives.rs` (`sell_balance_name`, `buy_balance_name`) | In-crate enum bridges are exhaustive over the currently supported chains, environments, and settlement balance flags; a new upstream variant must land in the same patch as its bridge arm, with bridge parity regressions preventing drift. |
 | `crates/core/src/redaction/body.rs` (`strip_credential_tokens`) | Redaction offsets are computed from in-bounds string match indices, so the slicing cannot leave the buffer. |

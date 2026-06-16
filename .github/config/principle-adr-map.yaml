@@ -44,7 +44,7 @@ principles:
   - id: 6
     name: Additive Optional Ecosystems
     primary_adr: "0001"
-    supporting_adrs: ["0007", "0065"]
+    supporting_adrs: []
 
   - id: 7
     name: Sole Construction Seam
@@ -104,7 +104,7 @@ out_of_scope_adrs:
   - "0035"  # Alloy adapter family (provider, signer, umbrella) is governed by the alloy major-release plan and the alloy-provider/-signer invariant gates. Consolidates the former ADR 0036 and 0037.
   - "0038"  # Transaction lifecycle types are typed adapter surface details under the alloy-provider adapter.
   - "0039"  # TypeScript-callable wasm SDK surface is governed by the wasm-imports gate and the wasm flavour-matrix.
-  - "0040"  # Wallet provider callback boundary is governed by the browser-wallet audit lane and EIP-1271 verification cache audit.
+  - "0040"  # Wallet provider callback boundary for JS consumers is governed by the wasm SDK surface gate and the EIP-1271 verification cache audit.
   - "0041"  # Transport policy L3 layering is governed by the transport-policy coverage audit.
   - "0042"  # Pure helpers crate extraction is a crate-topology decision documented in the architecture guide.
   - "0044"  # Bundle size profile and flavour builds are governed by the wasm flavour-matrix gate.

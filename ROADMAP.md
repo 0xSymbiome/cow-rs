@@ -9,15 +9,15 @@ changes, and review findings.
 The initial SDK foundation focuses on the existing SDK family:
 `cow-sdk`, `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`,
 `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-trading`,
-`cow-sdk-subgraph`, and `cow-sdk-browser-wallet`, plus the opt-in
-native Alloy adapter crates `cow-sdk-alloy-provider`,
-`cow-sdk-alloy-signer`, and `cow-sdk-alloy`.
+and `cow-sdk-subgraph`, plus the opt-in native Alloy adapter crates
+`cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, and `cow-sdk-alloy`,
+and the TypeScript-callable `cow-sdk-wasm` bindings.
 
 This work prioritizes a clean trading-first foundation: typed orderbook DTOs,
 typed signing and contract helpers, deployment registry provenance, cooperative
-cancellation, provider-neutral runtime seams, browser wallet support, opt-in
-native Alloy provider and signer support, and deterministic native and WASM
-examples.
+cancellation, provider-neutral runtime seams, an EIP-1193 request-callback
+boundary for host-supplied wallets, opt-in native Alloy provider and signer
+support, and deterministic native and WASM examples.
 
 ## In-Flight Account-Abstraction And Composable Capabilities
 

@@ -94,8 +94,8 @@ this ADR does not blur:
     paths.
 17. Snapshot-gated TypeScript declarations remain the source of truth for the
     npm surface.
-18. The wasm32 dependency tree excludes browser-wallet, native Alloy transport,
-    reqwest, and hyper.
+18. The wasm32 dependency tree excludes native Alloy transport, reqwest, and
+    hyper.
 19. Public declarations expose the TypeScript facade, not raw wasm-bindgen
     classes or callback registry handles.
 20. Client constructors accept one typed config object and do not grow parallel

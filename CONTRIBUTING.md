@@ -38,7 +38,7 @@ cargo test --workspace
 cargo check -p cow-sdk-examples-native --examples --all-features
 cargo run-deterministic-examples
 cargo check-policies
-cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-browser-wallet -p cow-sdk-alloy-provider -p cow-sdk-alloy-signer -p cow-sdk-alloy -p cow-sdk -p cow-sdk-wasm -p cow-sdk-test
+cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-alloy-provider -p cow-sdk-alloy-signer -p cow-sdk-alloy -p cow-sdk -p cow-sdk-wasm -p cow-sdk-test
 ```
 
 The Alloy dependency gates enforce explicit native adapter allow-lists:
@@ -105,16 +105,13 @@ justification. Broad file-scope silencing is not accepted in review.
 
 ## WASM And Browser Surfaces
 
-Run these checks when a change touches WASM-facing crates or browser-wallet
-surfaces:
+Run these checks when a change touches WASM-facing crates:
 
 ```text
 cargo build --target wasm32-unknown-unknown -p cow-sdk
-cargo build --target wasm32-unknown-unknown -p cow-sdk --features browser-wallet
-cargo build --target wasm32-unknown-unknown -p cow-sdk-browser-wallet
 cargo build --target wasm32-unknown-unknown -p cow-sdk-app-data
 cargo build --target wasm32-unknown-unknown -p cow-sdk-core
-cargo check --target wasm32-unknown-unknown --manifest-path examples/wasm/cow-trader-dioxus/Cargo.toml
+cargo build --target wasm32-unknown-unknown -p cow-sdk-wasm
 ```
 
 ## Running Fuzz Targets Locally
@@ -240,7 +237,6 @@ maintained by repository administrators.
 | Lane | Workflow | Blocks PRs that touch |
 | --- | --- | --- |
 | Core CI aggregate | `.github/workflows/ci.yml` (`ci-success`) | every pull request |
-| Browser wallet WASM | `.github/workflows/browser-wallet-wasm.yml` | `crates/browser-wallet/**`, `examples/wasm/cow-trader-dioxus/**`, and any workspace change that pulls the browser-wallet path (`crates/core/**`, `crates/sdk/**`, `Cargo.lock`, `Cargo.toml`, `rust-toolchain.toml`) |
 
 The path filters on each workflow keep the end-to-end lanes off PRs
 that cannot plausibly regress the covered surface, so workflows only
@@ -248,10 +244,9 @@ run (and only block) when the change touches code that the lane
 exercises.
 
 Repository administrators maintain the required-status-check set on
-the protected branches so the browser-wallet-wasm lane blocks merge
-whenever a PR matches the paths listed above. Contributors do not need
-to configure this; the path filters keep the lane deterministic, and
-the branch-protection list enforces the merge gate.
+the protected branches. Contributors do not need to configure this;
+the path filters keep the lanes deterministic, and the
+branch-protection list enforces the merge gate.
 
 ## Merge Policy
 

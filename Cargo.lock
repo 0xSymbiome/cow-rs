@@ -1379,7 +1379,6 @@ dependencies = [
  "cow-sdk-alloy",
  "cow-sdk-alloy-provider",
  "cow-sdk-alloy-signer",
- "cow-sdk-browser-wallet",
  "cow-sdk-contracts",
  "cow-sdk-core",
  "cow-sdk-signing",
@@ -1400,7 +1399,6 @@ dependencies = [
  "cow-sdk-alloy-provider",
  "cow-sdk-alloy-signer",
  "cow-sdk-app-data",
- "cow-sdk-browser-wallet",
  "cow-sdk-contracts",
  "cow-sdk-core",
  "cow-sdk-orderbook",
@@ -1503,30 +1501,6 @@ dependencies = [
  "tokio",
  "tracing",
  "trybuild",
-]
-
-[[package]]
-name = "cow-sdk-browser-wallet"
-version = "0.1.0-alpha.1"
-dependencies = [
- "alloy-dyn-abi",
- "alloy-json-abi",
- "alloy-primitives",
- "async-trait",
- "cow-sdk-core",
- "cow-sdk-test-utils",
- "gloo-timers",
- "js-sys",
- "serde",
- "serde-wasm-bindgen",
- "serde_json",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "wasm-bindgen-test",
- "web-sys",
 ]
 
 [[package]]

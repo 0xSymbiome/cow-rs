@@ -43,7 +43,6 @@ cargo owner --add <new-owner> cow-sdk-orderbook
 cargo owner --add <new-owner> cow-sdk-signing
 cargo owner --add <new-owner> cow-sdk-subgraph
 cargo owner --add <new-owner> cow-sdk-trading
-cargo owner --add <new-owner> cow-sdk-browser-wallet
 cargo owner --add <new-owner> cow-sdk-alloy-provider
 cargo owner --add <new-owner> cow-sdk-alloy-signer
 cargo owner --add <new-owner> cow-sdk-alloy

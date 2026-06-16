@@ -1,14 +1,14 @@
 # WASM Unsupported Target Audit
 
 Status: Current
-Last reviewed: 2026-05-06
+Last reviewed: 2026-06-16
 Owning surface: native-only Alloy adapter crates and facade Alloy features on `wasm32`
-Refresh trigger: Changes to `cow-sdk` Alloy feature gating, native Alloy adapter target guards, wasm workflows, or browser-wallet guidance
+Refresh trigger: Changes to `cow-sdk` Alloy feature gating, native Alloy adapter target guards, wasm workflows, or wasm browser-runtime guidance
 Related docs:
 - [ADR 0035](../adr/0035-alloy-provider-adapter.md)
 - [ADR 0036](../adr/0036-alloy-signer-adapter.md)
 - [ADR 0037](../adr/0037-alloy-umbrella-adapter.md)
-- [Browser Wallet Trust Posture Audit](browser-wallet-trust-posture-audit.md)
+- [WASM Surface Audit](wasm-surface-audit.md)
 
 ## Scope
 
@@ -19,9 +19,10 @@ This audit covers the explicit unsupported-target contract for:
 - `cow-sdk-alloy`
 - `cow-sdk` facade features `alloy-provider`, `alloy-signer`, and `alloy`
 
-It does not cover browser-wallet runtime behavior beyond the documented
-recommendation that wasm consumers use browser-wallet signing and
-consumer-supplied EIP-1193 provider reads.
+It does not cover wasm browser-runtime behavior beyond the documented
+recommendation that wasm consumers reach wallet signing through the
+`cow-sdk-wasm` EIP-1193 callback surface and consumer-supplied EIP-1193
+provider reads.
 
 ## Outcome Summary
 
@@ -29,7 +30,7 @@ consumer-supplied EIP-1193 provider reads.
 | --- | --- | --- |
 | Native adapter crates | Each native Alloy adapter fails closed on `wasm32` targets with a compile-time diagnostic | Conforms |
 | Facade features | Enabling any Alloy facade feature on `wasm32-unknown-unknown` fails with the documented native-only message | Conforms |
-| Supported wasm path | Browser-wallet signing and consumer-supplied provider reads remain the documented browser runtime path | Conforms |
+| Supported wasm path | Wallet signing through the `cow-sdk-wasm` EIP-1193 callback surface and consumer-supplied provider reads remain the documented browser runtime path | Conforms |
 | CI coverage | CI asserts the three facade Alloy features fail on wasm and treats a successful wasm build as a failure | Conforms |
 
 ## Evidence

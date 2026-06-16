@@ -11,8 +11,8 @@ surfaces.
 
 This crate owns the canonical typed-data boundary
 (`cow_sdk_core::TypedDataPayload`) and the explicit payload construction
-paths used by the trading orchestration surface and by browser-wallet
-runtime adapters. Most end-user code reaches these helpers through
+paths used by the trading orchestration surface and by host-supplied
+EIP-1193 wallet integrations. Most end-user code reaches these helpers through
 [`cow-sdk`](https://crates.io/crates/cow-sdk); depend on this crate
 directly when implementing custom signer integrations or offline
 signing tooling.
@@ -105,9 +105,8 @@ typestate via `RecoverableSignature::parse_erc2098` and
 `#[non_exhaustive]` struct with cow-owned `Serialize` / `Deserialize`
 impls; the cow `Serialize` emits the canonical EIP-1193
 `eth_signTypedData_v4` second-parameter wire shape (numeric `chainId`,
-lowercase-hex `verifyingContract`, no `salt`) directly, pinned by
-`PROP-BWL-007` against
-`parity/fixtures/signing/eth_sign_typed_data_request.json`. The cow-side
+lowercase-hex `verifyingContract`, no `salt`) directly, governed by
+[ADR 0040](https://github.com/0xSymbiome/cow-rs/blob/main/docs/adr/0040-wallet-provider-callback-boundary-for-js-consumers.md). The cow-side
 `cow_sdk_alloy_signer::conversion` adapter bridges `TypedDataDomain` to
 `alloy_sol_types::Eip712Domain` at the alloy-signer seam where the
 alloy-primitive form is needed for ECDSA signing.

@@ -21,7 +21,8 @@ boundary between the SDK and a caller-supplied signer or RPC backend:
 
 This directory documents shipped and custom adapter paths against those trait
 surfaces. Consumers who use `cow-sdk-trading` should pick the native Alloy
-adapter on native targets or the browser-wallet leaf on wasm. Consumers
+adapter on native targets, or, on wasm, the `cow-sdk-wasm` package wired to the
+host's own EIP-1193 wallet through the request callback. Consumers
 building a generic Ethereum application without trading helpers should use
 Alloy directly; the adapter exists to wire native Alloy into the SDK's trading
 and signing contracts.
@@ -37,9 +38,9 @@ and signing contracts.
 
 The SDK keeps provider ecosystems out of the default facade. Native Alloy
 support ships as explicit leaf crates, and other ecosystems can still integrate
-by implementing the same `cow-sdk-core` traits. Leaf crates such as
-`cow-sdk-browser-wallet` implement the trait surface directly for the
-runtimes they own.
+by implementing the same `cow-sdk-core` traits. For JavaScript and TypeScript
+runtimes, the `cow-sdk-wasm` package bridges those same traits to the host
+wallet through typed callbacks, including the EIP-1193 request callback.
 
 JavaScript and TypeScript consumers may use `cow-sdk-wasm` for specialized
 cases: deterministic Rust signing parity, single-source-of-truth Rust +
@@ -59,9 +60,9 @@ TypeScript SDK is the recommended choice; it is substantially smaller at
 equivalent feature subsets.
 
 Those traits are the runtime-neutral contract. A single trading helper can
-drive native Alloy, the browser-wallet leaf, or a custom adapter because the
-provider and signer seams live in `cow-sdk-core` rather than in a concrete
-runtime crate.
+drive native Alloy, a host-supplied EIP-1193 wallet reached through the
+`cow-sdk-wasm` callback, or a custom adapter because the provider and signer
+seams live in `cow-sdk-core` rather than in a concrete runtime crate.
 
 The transaction lifecycle is split across the same traits. Signers return
 `TransactionBroadcast` after a backend accepts a transaction hash for broadcast;

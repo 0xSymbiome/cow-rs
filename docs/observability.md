@@ -20,7 +20,6 @@ cow-sdk-contracts = { version = "0.1.0-alpha.1", features = ["tracing"] }
 cow-sdk-orderbook = { version = "0.1.0-alpha.1", features = ["tracing"] }
 cow-sdk-subgraph = { version = "0.1.0-alpha.1", features = ["tracing"] }
 cow-sdk-signing = { version = "0.1.0-alpha.1", features = ["tracing"] }
-cow-sdk-browser-wallet = { version = "0.1.0-alpha.1", features = ["tracing"] }
 cow-sdk-core = { version = "0.1.0-alpha.1", features = ["tracing"] }
 ```
 
@@ -109,7 +108,7 @@ downstream dashboards can pivot on the same names across every SDK call.
 
 Tracing spans are emitted by every long-running public async method on
 `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-trading`,
-`cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-browser-wallet`, and, behind
+`cow-sdk-signing`, `cow-sdk-app-data`, and, behind
 its opt-in `cow-shed` facade feature. Each canonical public async
 method carries `#[tracing::instrument]` and emits exactly one span per call.
 The `cow-sdk-wasm` JavaScript export surface emits one span per export call
@@ -259,24 +258,6 @@ the facade `cow-shed` feature ([ADR 0049](adr/0049-cow-shed-account-abstraction-
 
 - `sign`
 
-### `cow-sdk-browser-wallet`
-
-Wallet-mediated chain operations carry `chain` and an explicit `method`
-label identifying the operation.
-
-- `BrowserWallet::signer_for_chain`
-- `BrowserWallet::switch_chain`
-- `BrowserWallet::switch_or_add_chain`
-
-Connection and session operations drive `eth_requestAccounts`, `eth_accounts`,
-and `eth_chainId`. They carry the same explicit `method` label but no `chain`
-field, because they take no chain argument; the wallet's own chain is whatever
-the session already reflects.
-
-- `BrowserWallet::connect`
-- `BrowserWallet::request_accounts`
-- `BrowserWallet::refresh_session`
-
 ### `cow-sdk-wasm`
 
 The JavaScript export surface emits one span per export call, each carrying a
@@ -376,19 +357,14 @@ and the retry-event contract is covered by
 ## Host and Origin Trust
 
 The SDK emits a `warn`-level event on the `cow_sdk::trust` target when it
-evaluates a host or wallet origin that is outside the canonical allow-set. These
+evaluates a host that is outside the canonical allow-set. These
 are advisory signals, not failures: the call may still proceed under the
-configured policy. Two sites emit them:
+configured policy:
 
 - `cow-sdk-core` evaluates a non-canonical external service host and emits an
   event with `host`, `policy`, and `allowed`. The `host` value is wrapped in
   `Redacted` and always renders `[redacted]`; `policy` is the external-host
   policy label and `allowed` is the boolean verdict.
-- `cow-sdk-browser-wallet` evaluates a non-discovered or anonymous EIP-1193
-  provider origin and emits an event with `origin` and `allowed`. The `origin`
-  value is `Redacted` and always renders `[redacted]` (the anonymous case
-  records the constant `<anonymous>` placeholder, also redacted), and `allowed`
-  is the boolean verdict.
 
 The level is `warn` so a host running at the default `info` verbosity surfaces a
 non-canonical host or untrusted wallet origin without opting into SDK `debug`

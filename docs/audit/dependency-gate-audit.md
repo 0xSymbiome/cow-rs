@@ -1,14 +1,13 @@
 # Dependency Gate Audit
 
 Status: Current
-Last reviewed: 2026-06-10
+Last reviewed: 2026-06-16
 Owning surface: Release-facing dependency-audit gate for current published `cow-rs` surfaces
-Refresh trigger: Changes to blocking dependency policy, Cargo.lock advisory posture, release or verification dependency commands, published CID dependency posture, shared transport-policy dependencies, transport crate advisory posture, native Alloy two-family lockfile posture, ADR 0026 Alloy absorption rehearsal, the canonical primitive layer dependency closure per ADR 0052, or browser-wallet alloy advisory posture
+Refresh trigger: Changes to blocking dependency policy, Cargo.lock advisory posture, release or verification dependency commands, published CID dependency posture, shared transport-policy dependencies, transport crate advisory posture, native Alloy two-family lockfile posture, ADR 0026 Alloy absorption rehearsal, the canonical primitive layer dependency closure per ADR 0052, or the reachable proc-macro subtree advisory posture
 Related docs:
 - [ADR 0006](../adr/0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
 - [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md)
 - [CID Dependency Audit](cid-dependency-audit.md)
-- [Browser-Wallet Alloy Dependency Audit](browser-wallet-alloy-dependency-audit.md)
 - [Alloy Umbrella Adapter Audit](alloy-umbrella-adapter-audit.md)
 - [WASM Component Model Future Prep Audit](wasm-component-model-future-prep-audit.md)
 - [Release Checklist](../release-checklist.md)
@@ -32,8 +31,8 @@ This audit covers:
 - the native Alloy runtime and Alloy Core ABI two-family lockfile invariant
 - the release-doc guard that requires RustSec ignore rationale entries
 - the report-only alloy release-candidate canary and its failure response
-- the `cow-sdk-wasm` wasm32 dependency exclusion list for browser-wallet,
-  native Alloy, reqwest, and hyper families
+- the `cow-sdk-wasm` wasm32 dependency exclusion list for the native Alloy
+  adapter crates, reqwest, and hyper families
 - the pure-helper crate dependency boundary that keeps deterministic wasm
   helpers free of JavaScript FFI dependencies
 
@@ -60,7 +59,7 @@ architecture reviews.
 | Native Alloy allow-lists | Shipped crates that depend on `alloy-provider` or `alloy-signer-local` are limited to the reviewed adapter crates and fail the xtask policy gate if the dependency escapes | Conforms |
 | Native Alloy two-family lockfile | The workspace lockfile keeps reviewed Alloy runtime crates on `2.0.4` and Alloy Core ABI crates on `1.5.7`, with exactly one resolved version per listed crate | Conforms |
 | Alloy canary failures | Scheduled canary failures are triaged as upstream-compatibility reports, with local pins changed only after ordinary quality gates pass and without dependency-policy waivers | Conforms |
-| `cow-sdk-wasm` wasm32 tree | The wasm32 dependency graph excludes `cow-sdk-browser-wallet`, `cow-sdk-alloy*`, `alloy-provider`, reqwest, and hyper families; `tokio` is limited to the existing cancellation-token path | Conforms |
+| `cow-sdk-wasm` wasm32 tree | The wasm32 dependency graph excludes the native Alloy adapter crates (`cow-sdk-alloy*`, `alloy-provider`), reqwest, and hyper families; `tokio` is limited to the existing cancellation-token path | Conforms |
 | Helper-module FFI boundary | The `cow-sdk-wasm::helpers` module remains independent of wasm-bindgen, `js-sys`, `web-sys`, and `serde-wasm-bindgen` | Conforms |
 | Canonical primitive layer dependency closure | The workspace-level `sha3` and `num-bigint` declarations carry zero first-party direct production consumers and only resolve through `[dev-dependencies]` or transitive paths; the alloy-core ABI workspace pins, `httpdate`, and `serde_jcs` are consumed at the documented callsites per [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md) | Conforms |
 | `encode_prefixed` mechanical fence | The `encode-prefixed` source fences (`cargo check-source-fences`) block the `format!("0x{}", alloy_primitives::hex::encode(...))` legacy hand-roll and unqualified `use alloy_primitives::hex::encode` imports in production sources, locking the canonical-primitive-layer hex-string contract from [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md) | Conforms |
@@ -104,8 +103,11 @@ currently tolerated with documented revisit triggers:
   and does not compile into runtime `cow-sdk` code. Revisit when the alloy
   consensus stack drops `derivative` or when an actively-maintained drop-in
   replacement lands upstream.
-- `RUSTSEC-2024-0436` — covered by
-  [Browser-Wallet Alloy Dependency Audit](browser-wallet-alloy-dependency-audit.md)
+- `RUSTSEC-2024-0436` — `paste` is reachable only through the
+  `alloy-sol-macro` / `alloy-primitives` proc-macro subtrees pulled by
+  `cow-sdk-contracts`. The crate is a build-time macro helper and does not
+  compile into runtime `cow-sdk` code. Revisit when the pinned alloy family
+  moves to releases that no longer depend on `paste`.
 - `RUSTSEC-2026-0173` — `proc-macro-error2` is reachable only through the
   `alloy-sol-macro` proc-macro subtree that derives the inline `sol!` contract
   bindings. The crate is a build-time proc-macro helper and does not compile
@@ -150,7 +152,7 @@ encode and decode callsite across `crates/core/**`,
 `crates/contracts/**`, `crates/signing/**`,
 `crates/alloy-provider/**`, `crates/alloy-signer/**`,
 `crates/alloy/**`, `crates/app-data/**`, `crates/trading/**`,
-`crates/browser-wallet/**`, `crates/wasm/**`, and
+`crates/wasm/**`, and
 `crates/contracts/src/cow_shed/**` routes through `alloy_primitives::hex::{encode,
 decode}`, which resolves transitively to the `const-hex 1.18.x`
 re-export carried by `alloy-primitives 1.5.x`. The
@@ -170,7 +172,7 @@ across the workspace has collapsed onto the single-call
 `alloy_primitives::hex::encode_prefixed(...)` form anchored by ADR 0052.
 The cascade touched twenty production call sites plus three sites
 inside `#[cfg(test)] mod tests {}` blocks embedded in `src/`, spanning
-the alloy adapter, contracts, app-data, trading, browser-wallet, and
+the alloy adapter, contracts, app-data, trading, and
 wasm crates. The emitted hex strings remain byte-identical. The
 `encode-prefixed` source fences (`cargo check-source-fences`) fence
 future regression with two parallel rules: the first rejects any
@@ -219,7 +221,7 @@ plus first-party workspace paths.
 
 The workspace carries `getrandom 0.4.2` with the `wasm_js` feature as the
 canonical first-party direct dependency for wasm32 consumers.
-`cow-sdk-browser-wallet` and `cow-sdk-contracts` use the
+`cow-sdk-contracts` uses the
 workspace dependency instead of carrying leaf-local direct pins. The shared
 Alloy workspace pins keep their default `std` features disabled so the
 contracts crate can enable alloy-primitives' `k256` feature without also
@@ -240,8 +242,8 @@ place while preserving the existing target-specific dependency boundaries.
 The duplicate-version policy is fail-closed except for reviewed skip-tree
 roots that document why the duplicate is currently retained. The current
 register covers the upstream-owned `getrandom 0.3.4` transitive root, `winnow
-0.7.15` under the alloy Solidity parser chain, and the reviewed
-browser-wallet alloy advisory roots. The retained `getrandom 0.3.4` path is
+0.7.15` under the alloy Solidity parser chain, and the reviewed alloy
+proc-macro advisory roots. The retained `getrandom 0.3.4` path is
 upstream-owned validation and TLS build-support debt, not the first-party
 randomness API. The retired `tiny-keccak` license exception and stale
 `getrandom 0.2` duplicate exception are gone because the workspace graph no
@@ -297,9 +299,8 @@ published-crate invariant that no shipped leaf crate transitively depends on
 
 ### `cow-sdk-wasm` Dependency Boundary
 
-`cow-sdk-wasm` is a peer leaf of `cow-sdk-browser-wallet`
-and the native Alloy adapter family. Its wasm32
-dependency tree must not pull browser-wallet, native Alloy provider/signer
+`cow-sdk-wasm` is a peer leaf of the native Alloy adapter family. Its wasm32
+dependency tree must not pull the native Alloy provider/signer
 crates, reqwest, hyper, or native Alloy RPC transport families. The workspace
 test reads cargo metadata for the wasm32 target and fails if any forbidden
 crate appears in the dependency closure. This keeps the TypeScript-callable
@@ -328,11 +329,8 @@ Primary implementation points:
 - `docs/verification.md`
 - `docs/verification.md`
 - `docs/audit/cid-dependency-audit.md`
-- `docs/audit/browser-wallet-alloy-dependency-audit.md`
-- `crates/wasm/Cargo.toml`
 - `crates/wasm/Cargo.toml`
 - `crates/wasm/tests/no_ffi_helpers.rs`
-- `crates/browser-wallet/Cargo.toml`
 - `crates/contracts/Cargo.toml`
 - `crates/orderbook/Cargo.toml`
 - `examples/native/Cargo.lock`

@@ -15,13 +15,13 @@ published as a separate opt-in crate so read-only provider users and the default
 
 ## Capability Boundary
 
-This crate is native-only. Wasm applications should use
-[`cow-sdk-browser-wallet`](https://docs.rs/cow-sdk-browser-wallet) for browser
-wallet signing.
+This crate is native-only. JavaScript and TypeScript hosts targeting the browser
+should use the [`cow-sdk-wasm`](https://crates.io/crates/cow-sdk-wasm) package and
+supply their own wallet across its EIP-1193 request-callback boundary.
 
 The native-only boundary is enforced at compile time on `wasm32` targets. That
-keeps browser signing on the audited EIP-1193/browser-wallet path and avoids
-shipping local-key native dependencies into browser builds.
+keeps browser signing on the wasm callback path and avoids shipping local-key
+native dependencies into browser builds.
 
 The package boundary is intentionally narrow:
 

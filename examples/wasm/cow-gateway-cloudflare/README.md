@@ -6,9 +6,9 @@ runtime, acting as a gateway in front of the CoW orderbook. It is built on the
 Cloudflare Workers `web` runtime.
 
 The repository-local project imports `cow-sdk-wasm-local` from the workspace so
-the example can run before publication. In an application, replace that module
-specifier with the final `<published-cow-sdk-wasm-package>` package name and
-import from its `/cloudflare` subpath.
+the example can run before publication. In an application, the package is
+published to npm as `@symbiome-forge/cow-sdk-wasm`; import from its `/cloudflare`
+subpath.
 
 For most browser dapps and CowSwap-style UIs the upstream
 [`@cowprotocol/cow-sdk`](https://www.npmjs.com/package/@cowprotocol/cow-sdk) is
@@ -57,8 +57,8 @@ The cloudflare flavor is a `web`-target build initialized explicitly from a
 bundled wasm module — no dynamic compilation:
 
 ```ts
-import initialize, { OrderBookClient } from "<published-cow-sdk-wasm-package>/cloudflare";
-import wasmModule from "<published-cow-sdk-wasm-package>/cloudflare/wasm";
+import initialize, { OrderBookClient } from "@symbiome-forge/cow-sdk-wasm/cloudflare";
+import wasmModule from "@symbiome-forge/cow-sdk-wasm/cloudflare/wasm";
 
 await initialize(wasmModule); // once per isolate
 const client = new OrderBookClient({ chainId: 1, env: "prod", apiKey, transport: { kind: "fetch" } });

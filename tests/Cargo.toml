@@ -18,7 +18,6 @@ cow-sdk = { path = "../crates/sdk", version = "0.1.0-alpha.1", features = ["allo
 cow-sdk-alloy = { path = "../crates/alloy", version = "0.1.0-alpha.1" }
 cow-sdk-alloy-provider = { path = "../crates/alloy-provider", version = "0.1.0-alpha.1" }
 cow-sdk-alloy-signer = { path = "../crates/alloy-signer", version = "0.1.0-alpha.1" }
-cow-sdk-browser-wallet = { path = "../crates/browser-wallet", version = "0.1.0-alpha.1" }
 cow-sdk-contracts = { path = "../crates/contracts", version = "0.1.0-alpha.1", features = ["cow-shed"] }
 cow-sdk-core = { path = "../crates/core", version = "0.1.0-alpha.1" }
 cow-sdk-signing = { path = "../crates/signing", version = "0.1.0-alpha.1" }
@@ -63,10 +62,6 @@ path = "transaction_lifecycle_cross_adapter_invariant.rs"
 [[test]]
 name = "wasm_dependency_invariant"
 path = "wasm_dependency_invariant.rs"
-
-[[test]]
-name = "signer_rejection_propagation_invariant"
-path = "signer_rejection_propagation_invariant.rs"
 
 [[test]]
 name = "cow_shed_typed_data_digest"

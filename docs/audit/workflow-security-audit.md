@@ -1,7 +1,7 @@
 # Workflow Security Audit
 
 Status: Current
-Last reviewed: 2026-06-10
+Last reviewed: 2026-06-16
 Owning surface: every `.github/workflows/*.yml` file
 Refresh trigger: any new workflow file; any unpinned action; any addition of `pull_request_target`; any third-party action new to the workspace; any permission widening or issue-creation behavior in scheduled workflows
 Related docs:
@@ -41,7 +41,6 @@ Workflow snapshot:
 | `_quality-gate.yml` | `contents: read` | SHA-pinned; includes pinning guard | Absent |
 | `alloy-release-candidate.yml` | `contents: read`, `issues: write` | SHA-pinned | Absent |
 | `benchmarks.yml` | `contents: read` | SHA-pinned | Absent |
-| `browser-wallet-wasm.yml` | `contents: read` | SHA-pinned | Absent |
 | `ci.yml` | `contents: read`; aggregate job uses `{}` | SHA-pinned or same-repo reusable workflow | Absent |
 | `codeql.yml` | workflow `{}`; analyze job grants `actions: read`, `contents: read`, `security-events: write` | SHA-pinned | Absent |
 | `commit-format.yml` | `contents: read` | SHA-pinned | Absent |
@@ -124,7 +123,6 @@ Primary implementation points:
 - `.github/workflows/_quality-gate.yml`
 - `.github/workflows/alloy-release-candidate.yml`
 - `.github/workflows/benchmarks.yml`
-- `.github/workflows/browser-wallet-wasm.yml`
 - `.github/workflows/ci.yml`
 - `.github/workflows/codeql.yml`
 - `.github/workflows/commit-format.yml`

@@ -13,7 +13,8 @@ Use a multi-crate workspace with short local folders under `crates/*`, a
 ## Why
 
 The SDK spans protocol transforms, transport clients, trading workflows,
-analytics access, and browser support. Public package identity needs to read as
+analytics access, and a TypeScript-callable wasm surface. Public package
+identity needs to read as
 an SDK family on crates.io, while local workspace paths should remain short.
 A single crate, thick root facade, or repository-shaped public crate family
 would blur product identity, crate ownership, and runtime boundaries.
@@ -40,8 +41,8 @@ would blur product identity, crate ownership, and runtime boundaries.
   identity and numeric newtypes are reached on their module path, the way `alloy`
   and `reqwest` scope theirs.
 - Additive growth: new capability surfaces land as additive leaf crates or
-  off-by-default features (subgraph, browser-wallet, the `cow-shed` contracts
-  feature, the published `cow-sdk-test` doubles), never by widening the default
+  off-by-default features (subgraph, the `cow-shed` contracts feature, the
+  published `cow-sdk-test` doubles), never by widening the default
   facade closure; an optional capability a default consumer does not use adds
   nothing to its dependency graph.
 - Runtime and support: runtime-specific dependencies can stay isolated instead
@@ -66,4 +67,3 @@ would blur product identity, crate ownership, and runtime boundaries.
 - [Architecture](../architecture.md)
 - [ADR 0002](0002-dedicated-trading-orchestration-crate.md)
 - [ADR 0003](0003-separate-read-only-subgraph-crate.md)
-- [ADR 0004](0004-feature-gated-browser-wallet-sidecar.md)
