@@ -45,9 +45,11 @@ fn facade_declarations_hide_raw_wasm_bindgen_surface() {
         concat!("register", "FetchCallback"),
         concat!("FetchCallback", "Handle"),
         "Function",
+        // The raw wasm-bindgen `free()` stays hidden behind the facade's
+        // `dispose()`. `[Symbol.dispose]` (and its `esnext.disposable` lib
+        // reference) are part of the facade contract now — clients implement it
+        // so `using` works — so they are intentionally allowed.
         "free(): void",
-        "[Symbol.dispose]",
-        "esnext.disposable",
     ];
 
     for snapshot in snapshots() {
@@ -74,6 +76,11 @@ fn facade_declarations_expose_dispose_and_named_callback_types() {
             assert!(
                 content.contains("dispose(): void"),
                 "{} must expose dispose() for client resources",
+                snapshot.name
+            );
+            assert!(
+                content.contains("[Symbol.dispose]"),
+                "{} must expose [Symbol.dispose] so `using` releases client resources",
                 snapshot.name
             );
         }
