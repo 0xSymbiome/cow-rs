@@ -2,12 +2,12 @@ import { describe, expect, test } from "vitest";
 import { normalizeError } from "../src/errors.js";
 
 describe("facade error normalization", () => {
-  test("keeps typed errors and camel-cases known raw fields", () => {
+  test("keeps typed error fields and adds an actionable message when absent", () => {
     expect(
       normalizeError({
         schemaVersion: "v1",
         kind: "unsupportedChain",
-        chain_id: 5
+        chainId: 5
       })
     ).toMatchObject({
       schemaVersion: "v1",
@@ -70,7 +70,7 @@ describe("facade error normalization", () => {
   });
 
   test("adds actionable guidance to timeout and cancellation errors", () => {
-    expect(normalizeError({ schemaVersion: "v1", kind: "walletTimeout", timeout_ms: 250 }))
+    expect(normalizeError({ schemaVersion: "v1", kind: "walletTimeout", timeoutMs: 250 }))
       .toMatchObject({
         kind: "walletTimeout",
         timeoutMs: 250,

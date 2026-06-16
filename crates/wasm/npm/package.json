@@ -1,8 +1,8 @@
 {
-  "name": "cow-sdk-wasm-placeholder",
+  "name": "@symbiome-forge/cow-sdk-wasm",
   "version": "0.1.0-alpha.1",
-  "description": "TypeScript-callable wasm-bindgen bindings for the CoW Protocol Rust SDK",
-  "license": "GPL-3.0-only",
+  "description": "TypeScript/WebAssembly SDK for CoW Protocol — typed orderbook, trading, signing (EIP-712/1271/1193), and app-data, compiled from the Rust SDK.",
+  "license": "GPL-3.0-or-later",
   "homepage": "https://github.com/0xSymbiome/cow-rs",
   "repository": {
     "type": "git",
@@ -11,12 +11,20 @@
   },
   "keywords": [
     "cow-protocol",
+    "cowswap",
     "sdk",
+    "ethereum",
+    "defi",
+    "orderbook",
+    "trading",
     "wasm",
+    "webassembly",
     "wasm-bindgen",
     "typescript",
+    "eip-712",
+    "eip-1271",
     "eip-1193",
-    "eip-1271"
+    "app-data"
   ],
   "packageManager": "pnpm@11.0.9",
   "type": "module",
@@ -86,7 +94,8 @@
     "build": "bash scripts/build.sh",
     "compile:facade": "bash scripts/compile-facade.sh",
     "test": "vitest run --config vitest.config.ts",
-    "typecheck": "tsc --project tsconfig.facade.json --noEmit"
+    "typecheck": "tsc --project tsconfig.facade.json --noEmit",
+    "prepublishOnly": "node scripts/render-package-json.mjs && bash scripts/prepublish-guard.sh"
   },
   "devDependencies": {
     "@types/node": "25.6.2",

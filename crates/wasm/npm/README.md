@@ -1,23 +1,25 @@
-# cow-sdk-wasm package
+# @symbiome-forge/cow-sdk-wasm
 
 TypeScript-callable WebAssembly bindings for the CoW Protocol Rust SDK.
 
-The final npm package name is selected at publication time. Until then, the
-examples below use `<published-cow-sdk-wasm-package>` as the placeholder module
-specifier. The package exposes a TypeScript facade over deterministic Rust
-protocol logic. JavaScript and TypeScript consumers get typed DTOs, explicit
-wallet and HTTP callbacks, per-call cancellation, per-call timeouts, and
-flavor-specific imports without depending on a specific wallet library.
+```sh
+npm install @symbiome-forge/cow-sdk-wasm@alpha
+```
+
+The package exposes a TypeScript facade over deterministic Rust protocol logic.
+JavaScript and TypeScript consumers get typed DTOs, explicit wallet and HTTP
+callbacks, per-call cancellation, per-call timeouts, and flavor-specific imports
+without depending on a specific wallet library.
 
 ## When to use this SDK
 
 | You are building... | Choose | Why |
 | --- | --- | --- |
-| Browser dapp with viem, ethers, wagmi, or an EIP-1193 wallet | `<published-cow-sdk-wasm-package>` | Wallet stack stays outside the package behind typed callbacks |
-| Browser dapp with a smaller orderbook bundle target | `<published-cow-sdk-wasm-package>/orderbook` | Orderbook and signing subset with a smaller raw wasm budget |
-| Node.js 22 or 24 LTS backend | `<published-cow-sdk-wasm-package>` | Node target works without browser polyfills when transport is configured |
-| Cloudflare Worker proxying CoW orderbook calls | `<published-cow-sdk-wasm-package>/cloudflare` | Worker-compatible web target and explicit wasm module initialization |
-| Signer service or HSM proxy | `<published-cow-sdk-wasm-package>/signing` | Signing primitives without orderbook, trading, subgraph, or IPFS clients |
+| Browser dapp with viem, ethers, wagmi, or an EIP-1193 wallet | `@symbiome-forge/cow-sdk-wasm` | Wallet stack stays outside the package behind typed callbacks |
+| Browser dapp with a smaller orderbook bundle target | `@symbiome-forge/cow-sdk-wasm/orderbook` | Orderbook and signing subset with a smaller raw wasm budget |
+| Node.js 22 or 24 LTS backend | `@symbiome-forge/cow-sdk-wasm` | Node target works without browser polyfills when transport is configured |
+| Cloudflare Worker proxying CoW orderbook calls | `@symbiome-forge/cow-sdk-wasm/cloudflare` | Worker-compatible web target and explicit wasm module initialization |
+| Signer service or HSM proxy | `@symbiome-forge/cow-sdk-wasm/signing` | Signing primitives without orderbook, trading, subgraph, or IPFS clients |
 | Native Rust service, bot, solver, or treasury automation | `cow-sdk` | Avoids wasm-bindgen and npm packaging entirely |
 | Rust app compiled to browser WASM | `cow-sdk-browser-wallet` plus `cow-sdk-core` (browser `FetchTransport`) | Rust-on-wasm path; this package is for JavaScript hosts |
 
@@ -42,7 +44,7 @@ in `cow-rs`:
 ### Node.js 22 or 24 with viem
 
 ```ts
-import { TradingClient } from "<published-cow-sdk-wasm-package>";
+import { TradingClient } from "@symbiome-forge/cow-sdk-wasm";
 
 const trading = new TradingClient({
   chainId: 1,
@@ -77,7 +79,7 @@ const result = await trading.postSwapOrderFromQuote(
 ### Browser with `window.ethereum`
 
 ```ts
-import { signOrderWithEip1193 } from "<published-cow-sdk-wasm-package>";
+import { signOrderWithEip1193 } from "@symbiome-forge/cow-sdk-wasm";
 
 const ethereum = window.ethereum;
 const [owner] = await ethereum.request({ method: "eth_requestAccounts" });
@@ -118,7 +120,7 @@ callback. The helper hands the callback a typed-data envelope — plain `domain`
 returns the signature string for.
 
 ```ts
-import { signOrderWithTypedDataSigner } from "<published-cow-sdk-wasm-package>";
+import { signOrderWithTypedDataSigner } from "@symbiome-forge/cow-sdk-wasm";
 
 const [owner] = await window.ethereum.request({ method: "eth_requestAccounts" });
 
@@ -139,8 +141,8 @@ const signed = await signOrderWithTypedDataSigner(order, 1, owner, async (envelo
 ```ts
 import initialize, {
   OrderBookClient
-} from "<published-cow-sdk-wasm-package>/cloudflare";
-import wasmModule from "<published-cow-sdk-wasm-package>/cloudflare/wasm";
+} from "@symbiome-forge/cow-sdk-wasm/cloudflare";
+import wasmModule from "@symbiome-forge/cow-sdk-wasm/cloudflare/wasm";
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -168,11 +170,11 @@ export default {
 
 | Import | Surface | Use when |
 | --- | --- | --- |
-| `<published-cow-sdk-wasm-package>` | Default facade with orderbook, signing, app-data, IPFS, trading, and subgraph | General TypeScript or Node use |
-| `<published-cow-sdk-wasm-package>/orderbook` | Orderbook client, cancellation helpers, and signing helpers | Browser dapps that do not need trading or subgraph clients |
-| `<published-cow-sdk-wasm-package>/signing` | Signing, UID, EIP-1271, deployment, and version helpers | Signer services and HSM-facing adapters |
-| `<published-cow-sdk-wasm-package>/cloudflare` | Worker-compatible orderbook and trading facade | Cloudflare Workers |
-| `<published-cow-sdk-wasm-package>/cloudflare/wasm` | Raw Worker wasm module asset | Pass to the Cloudflare `initialize` helper |
+| `@symbiome-forge/cow-sdk-wasm` | Default facade with orderbook, signing, app-data, IPFS, trading, and subgraph | General TypeScript or Node use |
+| `@symbiome-forge/cow-sdk-wasm/orderbook` | Orderbook client, cancellation helpers, and signing helpers | Browser dapps that do not need trading or subgraph clients |
+| `@symbiome-forge/cow-sdk-wasm/signing` | Signing, UID, EIP-1271, deployment, and version helpers | Signer services and HSM-facing adapters |
+| `@symbiome-forge/cow-sdk-wasm/cloudflare` | Worker-compatible orderbook and trading facade | Cloudflare Workers |
+| `@symbiome-forge/cow-sdk-wasm/cloudflare/wasm` | Raw Worker wasm module asset | Pass to the Cloudflare `initialize` helper |
 
 Do not import from `dist/raw` or generated wasm-pack target directories. Raw
 wasm-bindgen output is package-internal; public imports go through the facade
@@ -181,14 +183,14 @@ subpaths above.
 ## Performance and bundle size
 
 The package is built with release-size settings and a `wasm-opt -Oz` post-pass.
-The current measured release artifacts are:
+Measured on the `0.1.0-alpha.1` build:
 
 | Flavor | Raw wasm | Brotli | Gzip | Gate |
 | --- | ---: | ---: | ---: | --- |
-| default | 1.59 MiB | 501 KiB | 674 KiB | 3.3 MiB raw / 900 KiB brotli |
-| orderbook | 0.98 MiB | 329 KiB | 430 KiB | 1.5 MiB raw / 500 KiB brotli |
-| signing | 0.31 MiB | 120 KiB | 142 KiB | 0.9 MiB raw / 300 KiB brotli |
-| cloudflare | 1.50 MiB | 478 KiB | 640 KiB | 3.2 MiB raw / 850 KiB brotli / 3,000,000 B gzip (warn at 2,700,000 B) |
+| default | 1.59 MiB | 501 KiB | 675 KiB | 3.3 MiB raw / 900 KiB brotli |
+| orderbook | 0.99 MiB | 330 KiB | 432 KiB | 1.5 MiB raw / 500 KiB brotli |
+| signing | 0.31 MiB | 119 KiB | 142 KiB | 0.9 MiB raw / 300 KiB brotli |
+| cloudflare | 1.50 MiB | 478 KiB | 642 KiB | 3.2 MiB raw / 850 KiB brotli / 3,000,000 B gzip (warn at 2,700,000 B) |
 
 The cloudflare flavor's gzip-compressed artifact is below the current
 Cloudflare Workers Free compressed-size limit at the time of measurement.
@@ -216,14 +218,24 @@ compatible `fetch`. Use `callback` when the host must own request dispatch,
 fixtures, proxying, custom authentication, or observability.
 
 Every client also accepts optional `transportPolicy` settings for retry,
-rate-limit, jitter, tracing, and user-agent behavior.
+rate-limit, jitter, and user-agent behavior.
+
+## Cancellation and timeouts
+
+Every call accepts an optional `signal` (an `AbortSignal`) and a per-call
+`timeoutMs`. Aborting the signal rejects the pending call promptly with a
+`cancelled` `CowError`; `timeoutMs` rejects with a `timeout` error. Both resolve
+the *awaited call* — an already-dispatched HTTP request may keep running in the
+background until it completes or the timeout elapses, so treat cancellation as
+"stop waiting," not a guarantee that the network request is halted.
 
 ## Architecture
 
 The TypeScript facade is the public package contract. It:
 
 - exposes camelCase TypeScript APIs;
-- hides raw wasm-bindgen resource-management members;
+- exposes `dispose()` and `[Symbol.dispose]` (so `using client = new …` works)
+  while hiding the raw wasm-bindgen `free()` handle;
 - maps raw wasm errors into `CowError`;
 - adapts `transport: { kind: "fetch" }` into the callback HTTP ABI;
 - keeps wallet libraries outside the package behind named callback types.
