@@ -71,12 +71,11 @@ the TypeScript-callable WASM package from JavaScript or TypeScript runtimes
 for specialized cases — deterministic Rust signing parity, single-source-of-
 truth Rust + TypeScript embedding, or Cloudflare Workers (size-compatible
 with the current Workers Free compressed-size limit at the time of
-measurement; full Workers support pending release-bundle and startup
-validation).
+measurement; the `cloudflare` flavor is built and tested end-to-end in CI
+(Workers Vitest plus the Cloudflare gateway example), within the Workers
+compressed-size budget).
 
-The examples use a repository-local package alias before publication;
-application code should replace it with the final
-`<published-cow-sdk-wasm-package>` package name.
+The package is published to npm as `@symbiome-forge/cow-sdk-wasm`.
 
 | Runtime | Example | Purpose |
 | --- | --- | --- |

@@ -12,10 +12,10 @@ themselves.
 
 ## Current Publisher Identity
 
-The reserved-placeholder entries on crates.io (version
-`0.0.1-reserved.0`) for every `cow-sdk*` name are owned by the
-`0xSymbiotic` crates.io account. Any ownership change to those
-entries is initiated by that account.
+The `cow-sdk*` crates on crates.io — published at `0.1.0-alpha.1`,
+alongside the earlier `0.0.1-reserved.0` name reservations — are owned
+by the `0xSymbiotic` crates.io account. Any ownership change is
+initiated by that account.
 
 ## Trusted Publisher List
 
@@ -48,6 +48,7 @@ cargo owner --add <new-owner> cow-sdk-alloy-provider
 cargo owner --add <new-owner> cow-sdk-alloy-signer
 cargo owner --add <new-owner> cow-sdk-alloy
 cargo owner --add <new-owner> cow-sdk
+cargo owner --add <new-owner> cow-sdk-test
 ```
 
 `cargo owner --add` issues an invitation that crates.io surfaces to

@@ -79,7 +79,6 @@ complete crate inventory is the [Crate Roles](#crate-roles) table below.
 | `cow-sdk-alloy-provider` | Native Alloy-backed `Provider` adapter | You need read-only chain RPC through Alloy without a signer dependency. |
 | `cow-sdk-alloy-signer` | Native Alloy-backed local private-key `Signer` adapter | You need local message or EIP-712 signing without provider-backed transaction submission. |
 | `cow-sdk-alloy` | Composed native Alloy provider plus signer adapter | You need one native client for `Provider`, `LogProvider`, `SigningProvider`, and `Signer` helper flows. |
-| `cow-sdk-composable` | Deferred composable-order capability recorded by [ADR 0048](adr/0048-composable-conditional-order-framework.md); no crate body ships, while composable deployment addresses remain resolvable through the typed `Registry` | You want to track the deferred composable capability; until it lands, use the upstream composable surface. |
 | `cow-sdk-test` | Published in-memory test doubles for the public trait seams (`OrderbookClient`, `Signer`, `Provider`/`SigningProvider`), surfaced through the facade `testing` feature as `cow_sdk::testing` | You want to test your integration with no live orderbook, RPC, or wallet (a dev-dependency). |
 
 The composable-order capability is deferred and recorded only by
@@ -117,8 +116,9 @@ TypeScript SDK is the recommended choice because of its smaller bundle size
 at equivalent feature subsets. `cow-sdk-wasm` is appropriate for specialized
 cases — deterministic Rust signing parity, single-source-of-truth Rust +
 TypeScript embedding, and Cloudflare Workers (size-compatible at the time of
-measurement; full Workers support pending release-bundle and startup
-validation).
+measurement; the `cloudflare` flavor is built and tested end-to-end in CI
+(Workers Vitest plus the Cloudflare gateway example), within the Workers
+compressed-size budget).
 
 Its surface has four layers: pure helpers for deterministic protocol output,
 wallet and signer callback exports, orderbook plus subgraph plus IPFS clients,

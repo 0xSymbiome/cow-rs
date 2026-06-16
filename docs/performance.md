@@ -22,8 +22,8 @@ every trading and settlement pipeline:
 
 Each benchmark target uses the `criterion` harness and lives under the owning
 crate's `benches/` directory. The workflow at `.github/workflows/benchmarks.yml`
-compiles and runs the full suite on a scheduled cadence and publishes the HTML
-and JSON reports as non-blocking build artifacts.
+compiles and runs the full suite on a weekly schedule and on demand, and
+publishes the HTML and JSON reports as non-blocking build artifacts.
 
 | Surface | Benchmark | Owning crate |
 | --- | --- | --- |
@@ -74,10 +74,10 @@ surface that covers their workflow.
 
 | Flavor | Public import | Raw wasm | Brotli | Gzip | Release gate |
 | --- | --- | ---: | ---: | ---: | --- |
-| default | `<published-cow-sdk-wasm-package>` | 1.49 MiB | 469 KiB | 631 KiB | 3.3 MiB raw / 900 KiB brotli |
-| orderbook | `<published-cow-sdk-wasm-package>/orderbook` | 0.94 MiB | 317 KiB | 413 KiB | 1.5 MiB raw / 500 KiB brotli |
-| signing | `<published-cow-sdk-wasm-package>/signing` | 0.31 MiB | 120 KiB | 143 KiB | 0.9 MiB raw / 300 KiB brotli |
-| cloudflare | `<published-cow-sdk-wasm-package>/cloudflare` | 1.39 MiB | 447 KiB | 598 KiB | 3.2 MiB raw / 850 KiB brotli / 3,000,000 B gzip (warn at 2,700,000 B) |
+| default | `@symbiome-forge/cow-sdk-wasm` | 1.49 MiB | 469 KiB | 631 KiB | 3.3 MiB raw / 900 KiB brotli |
+| orderbook | `@symbiome-forge/cow-sdk-wasm/orderbook` | 0.94 MiB | 317 KiB | 413 KiB | 1.5 MiB raw / 500 KiB brotli |
+| signing | `@symbiome-forge/cow-sdk-wasm/signing` | 0.31 MiB | 120 KiB | 143 KiB | 0.9 MiB raw / 300 KiB brotli |
+| cloudflare | `@symbiome-forge/cow-sdk-wasm/cloudflare` | 1.39 MiB | 447 KiB | 598 KiB | 3.2 MiB raw / 850 KiB brotli / 3,000,000 B gzip (warn at 2,700,000 B) |
 
 The raw and compressed measurements above come from the current package build
 pipeline after optimization. The gate values are enforced per flavor so the
@@ -98,8 +98,8 @@ as a release-readiness budget rather than a deterministic microbenchmark:
 | Under 500 ms | Release gate for the Worker flavor. |
 | Under 1 second | Platform-limit budget that Worker consumers should stay below. |
 
-Worker integrations should initialize `<published-cow-sdk-wasm-package>/cloudflare` once
-per isolate with the `<published-cow-sdk-wasm-package>/cloudflare/wasm` module asset, then
+Worker integrations should initialize `@symbiome-forge/cow-sdk-wasm/cloudflare` once
+per isolate with the `@symbiome-forge/cow-sdk-wasm/cloudflare/wasm` module asset, then
 reuse clients or create short-lived clients with explicit `dispose()` calls.
 
 ## Running Locally
