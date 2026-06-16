@@ -95,7 +95,7 @@
     "compile:facade": "bash scripts/compile-facade.sh",
     "test": "vitest run --config vitest.config.ts",
     "typecheck": "tsc --project tsconfig.facade.json --noEmit",
-    "prepublishOnly": "node scripts/render-package-json.mjs && bash scripts/prepublish-guard.sh"
+    "prepublishOnly": "node scripts/render-package-json.mjs && node scripts/prepublish-guard.mjs"
   },
   "devDependencies": {
     "@types/node": "25.6.2",

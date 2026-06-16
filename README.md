@@ -1,6 +1,6 @@
 # cow-rs
 
-[![CI](https://github.com/0xSymbiome/cow-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/0xSymbiome/cow-rs/actions/workflows/ci.yml) [![docs.rs](https://img.shields.io/docsrs/cow-sdk?label=docs.rs)](https://docs.rs/cow-sdk) [![crates.io](https://img.shields.io/static/v1?label=crates.io&message=v0.1.0-alpha.1&color=e6a96d)](https://crates.io/crates/cow-sdk) [![MSRV 1.94.0](https://img.shields.io/badge/MSRV-1.94.0-0A7BBB)](docs/release-checklist.md#3-compatibility-and-host-coverage) [![License GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-1F6FEB)](LICENSE)
+[![CI](https://github.com/0xSymbiome/cow-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/0xSymbiome/cow-rs/actions/workflows/ci.yml) [![docs.rs](https://img.shields.io/docsrs/cow-sdk?label=docs.rs)](https://docs.rs/cow-sdk) [![crates.io](https://img.shields.io/static/v1?label=crates.io&message=v0.1.0-alpha.1&color=e6a96d)](https://crates.io/crates/cow-sdk) [![npm](https://img.shields.io/npm/v/@symbiome-forge/cow-sdk-wasm/alpha?label=npm&color=cb3837)](https://www.npmjs.com/package/@symbiome-forge/cow-sdk-wasm) [![MSRV 1.94.0](https://img.shields.io/badge/MSRV-1.94.0-0A7BBB)](docs/release-checklist.md#3-compatibility-and-host-coverage) [![License GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-1F6FEB)](LICENSE)
 
 `cow-rs` is a Rust SDK for CoW Protocol.
 
@@ -27,6 +27,11 @@ The native Alloy adapter is provided for trading-flow consumers. Generic
 Ethereum applications without trading helpers should depend on Alloy directly;
 the adapter exists to wire native Alloy into the SDK's signing and transaction
 contracts.
+
+JavaScript and TypeScript consumers reach the same protocol logic through the
+wasm bindings, published to npm as
+[`@symbiome-forge/cow-sdk-wasm`](https://www.npmjs.com/package/@symbiome-forge/cow-sdk-wasm)
+(`npm install @symbiome-forge/cow-sdk-wasm@alpha`).
 
 ## Quickstart
 

@@ -612,10 +612,6 @@ jobs:
         run: node crates/wasm/npm/scripts/verify-exports.mjs
       - name: Verify package subpath resolution
         run: bash crates/wasm/npm/scripts/verify-package-resolution.sh
-      - name: Verify publish guard override
-        env:
-          ALLOW_PLACEHOLDER_NPM_PUBLISH: '1'
-        run: bash crates/wasm/npm/scripts/prepublish-guard.sh
 
   wasm-success:
     if: always()
