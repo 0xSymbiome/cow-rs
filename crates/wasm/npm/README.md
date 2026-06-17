@@ -183,7 +183,7 @@ subpaths above.
 ## Performance and bundle size
 
 The package is built with release-size settings and a `wasm-opt -Oz` post-pass.
-Measured on the `0.1.0-alpha.1` build:
+Measured on the current alpha build:
 
 | Flavor | Raw wasm | Brotli | Gzip | Gate |
 | --- | ---: | ---: | ---: | --- |

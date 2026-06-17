@@ -30,9 +30,10 @@ pub fn run(args: &Args) -> anyhow::Result<()> {
     let (workspace_version, members) = read_workspace_versions(&args.repo_root)?;
     let mut errors = validate_versions(&workspace_version, &members);
     errors.extend(validate_npm_template(&args.repo_root, &workspace_version)?);
+    errors.extend(validate_doc_pins(&args.repo_root, &workspace_version)?);
     if errors.is_empty() {
         println!(
-            "workspace version {workspace_version} is aligned across {} crate(s) and the npm package template",
+            "workspace version {workspace_version} is aligned across {} crate(s), the npm package template, and every documentation install-pin",
             members.len()
         );
         return Ok(());
@@ -41,6 +42,24 @@ pub fn run(args: &Args) -> anyhow::Result<()> {
         eprintln!("error: {error}");
     }
     bail!("workspace version alignment has {} error(s)", errors.len())
+}
+
+/// Confirms every documentation install-pin (README snippets, the crates.io
+/// badge, the npm install command, the "is published" prose) matches the
+/// workspace version, so a release can never ship stale install instructions.
+fn validate_doc_pins(repo_root: &Path, workspace_version: &str) -> anyhow::Result<Vec<String>> {
+    Ok(crate::version_surface::scan(repo_root)?
+        .into_iter()
+        .filter(|pin| pin.version != workspace_version)
+        .map(|pin| {
+            format!(
+                "{}:{} pins version {} but the workspace is {workspace_version}",
+                workspace::relative_path(repo_root, &pin.file),
+                pin.line,
+                pin.version
+            )
+        })
+        .collect())
 }
 
 /// Confirms the wasm npm package template version matches the workspace version

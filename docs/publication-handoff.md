@@ -12,8 +12,8 @@ themselves.
 
 ## Current Publisher Identity
 
-The `cow-sdk*` crates on crates.io — published at `0.1.0-alpha.1`,
-alongside the earlier `0.0.1-reserved.0` name reservations — are owned
+The `cow-sdk*` crates on crates.io — published in the `0.1.0-alpha`
+line, alongside the earlier `0.0.1-reserved.0` name reservations — are owned
 by the `0xSymbiotic` crates.io account. Any ownership change is
 initiated by that account.
 

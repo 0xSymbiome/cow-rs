@@ -41,12 +41,9 @@ The package is published to npm as `@symbiome-forge/cow-sdk-wasm`.
 npm install @symbiome-forge/cow-sdk-wasm@0.1.0-alpha.1
 ```
 
-For Rust crate consumers:
-
-```toml
-[dependencies]
-cow-sdk-wasm = "0.1"
-```
+Rust consumers use the [`cow-sdk`](https://crates.io/crates/cow-sdk) facade with
+a `wasm32` target rather than depending on this crate directly; it is a
+wasm-bindgen `cdylib` published only to npm.
 
 ## Surface Layers
 

@@ -20,8 +20,6 @@ All notable changes to `cow-rs` will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-Semantic versioning begins with the first functional crate release (`0.1.0`);
-reserved-placeholder `0.0.1-reserved.0` name-reservation publishes are excluded.
 """
 body = """
 {% if version %}\
@@ -34,7 +32,8 @@ body = """
     {% for commit in commits %}
         - {% if commit.breaking %}[**breaking**] {% endif %}\
 {% if commit.scope %}*({{ commit.scope }})* {% endif %}\
-{{ commit.message | upper_first | split(pat="\n") | first }}\
+{{ commit.message | upper_first | split(pat="\n") | first }} \
+([`{{ commit.id | truncate(length=7, end="") }}`](https://github.com/0xSymbiome/cow-rs/commit/{{ commit.id }}))\
     {% endfor %}
 {% endfor %}\n
 """
