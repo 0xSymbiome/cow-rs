@@ -1,9 +1,9 @@
 # URL Credential Redaction Audit
 
 Status: Current
-Last reviewed: 2026-06-16
+Last reviewed: 2026-06-17
 Owning surface: Credential-bearing URL storage and dispatch boundaries across core, orderbook, subgraph, app-data, and wasm error conversion
-Refresh trigger: Changes to URL-bearing public configuration fields, IPFS URI dispatch, wasm transport-error mapping, the `RedactedUrlMap` and `RedactedOptionalUrlMap` contracts, or the `redact_response_body` token-detection layers
+Refresh trigger: Changes to URL-bearing public configuration fields, subgraph production routing or its authentication header, IPFS URI dispatch, wasm transport-error mapping, the `RedactedUrlMap` and `RedactedOptionalUrlMap` contracts, or the `redact_response_body` token-detection layers
 Related docs:
 - [ADR 0025](../adr/0025-workspace-url-redaction-convention.md)
 - [Credential Surface Audit](credential-surface-audit.md)
@@ -27,7 +27,7 @@ where they share the same `Redacted<T>` storage contract.
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
 | Core and orderbook base URLs | Configured base-URL map values, including userinfo-bearing custom overrides, redact in public diagnostics and serialization while routing keeps raw URLs | Conforms |
-| Subgraph base URLs | Optional base-URL map values, including userinfo-bearing custom endpoints, redact and unsupported-chain `None` markers remain visible | Conforms |
+| Subgraph base URLs | Optional base-URL map values, including userinfo-bearing custom endpoints, redact and unsupported-chain `None` markers remain visible; production routing carries the partner key in the `Authorization` header, so the route-identity map and request path are key-free | Conforms |
 | Native Alloy URLs | Provider and umbrella builders store configured RPC URLs behind redacting state and debug output never prints credentials or query secrets | Conforms |
 | App-data IPFS URIs | IPFS URI config fields redact in public debug, display, and serialization while fetch and upload policies use raw URI bytes | Conforms |
 | WASM transport errors | `From<TransportError> for WasmError` uses display-safe transport messages and redacted response bodies before crossing the JavaScript ABI | Conforms |
@@ -54,6 +54,15 @@ public error-context sanitization read the raw map through `as_inner()` at the
 subgraph routing boundary.
 `SubgraphApiBuilder` debug output follows the same rule for custom
 userinfo-bearing endpoint overrides.
+
+Production routing does not embed the partner API key in the gateway URL: the
+key is sent in the request `Authorization: Bearer` header against the key-free
+gateway URL (`https://gateway.thegraph.com/api/subgraphs/id/<id>`). The
+production route-identity map exposed by `SubgraphApi::prod_config`, the
+dispatched request path, and the `transport.dispatch` span endpoint are
+therefore key-free by construction rather than by placeholder substitution. A
+`base_urls` override dispatches its URL verbatim with no SDK-injected
+authentication header.
 
 ### App-Data IPFS URIs
 
@@ -125,6 +134,7 @@ Primary regression coverage:
 - `crates/subgraph/tests/builder_contract.rs::builder_debug_redacts_base_url_credentials`
 - `crates/subgraph/tests/builder_contract.rs::builder_debug_redacts_userinfo_in_custom_endpoint_url`
 - `crates/subgraph/tests/api_contract.rs::config_debug_and_serialize_redact_custom_base_url_credentials`
+- `crates/subgraph/tests/api_contract.rs::recording_transport::production_routing_carries_the_key_in_the_authorization_header_not_the_url`
 - `crates/app-data/tests/ipfs_config_redaction_contract.rs`
 - `crates/wasm/tests/wasm_redaction_contract.rs::http_status_error_redacts_headers_and_body`
 - `crates/wasm/tests/wasm_redaction_contract.rs::display_format_of_redacted_transport_error_does_not_expose_secret`
@@ -138,6 +148,7 @@ cargo test -p cow-sdk-core --test redaction_contract
 cargo test -p cow-sdk-orderbook --test builder_contract
 cargo test -p cow-sdk-orderbook --test api_contract
 cargo test -p cow-sdk-subgraph --test builder_contract
+cargo test -p cow-sdk-subgraph --test api_contract
 cargo test -p cow-sdk-app-data --test ipfs_config_redaction_contract
 cargo test --workspace --all-features
 ```

@@ -29,6 +29,13 @@ requires raw URL access to happen through explicit accessors at dispatch seams.
 - Runtime and support: request dispatch, IPFS fetch, and
   `wallet_addEthereumChain` payload construction continue to use the exact raw
   URL bytes supplied by the caller through explicit accessors.
+- Credential placement: where the protocol allows a credential to travel
+  outside the URL, SDK-derived routing keeps it out of the URL rather than
+  embedding it in a path or query. Subgraph production routing sends the partner
+  Graph API key in the request `Authorization: Bearer` header against the
+  key-free gateway URL, so the key never enters a stored URL, a request path, a
+  telemetry span endpoint, or an error context, and there is nothing to redact
+  on those surfaces.
 - Validation and review: regression tests cover compact debug, pretty debug,
   JSON serialization, and byte-identical raw dispatch access for every
   credential-bearing URL surface.
