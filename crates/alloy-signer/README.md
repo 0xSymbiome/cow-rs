@@ -4,7 +4,7 @@ Native Alloy-backed local signing adapter package for the `cow-rs` SDK.
 
 > ⚠️ **Alpha — `0.1.0-alpha`.** Pre-release and not security-audited; the public
 > API may change before `0.1.0`. It is published as a pre-release, so Cargo
-> selects it only when you opt in (`cow-sdk-alloy-signer = "0.1.0-alpha.1"`).
+> selects it only when you opt in (`cow-sdk-alloy-signer = "0.1.0-alpha.3"`).
 > It handles local private keys — review it yourself before relying on it with
 > real funds.
 
@@ -69,7 +69,7 @@ provider plus signer composition is owned by
 
 ```toml
 [dependencies]
-cow-sdk-alloy-signer = "0.1.0-alpha.1"
+cow-sdk-alloy-signer = "0.1.0-alpha.3"
 ```
 
 The crate enables EIP-712 signing by default. Disable default features only if
@@ -77,7 +77,7 @@ your application needs the EIP-191 message path without typed-data support.
 
 ```toml
 [dependencies]
-cow-sdk-alloy-signer = { version = "0.1.0-alpha.1", default-features = false }
+cow-sdk-alloy-signer = { version = "0.1.0-alpha.3", default-features = false }
 ```
 
 ## Example

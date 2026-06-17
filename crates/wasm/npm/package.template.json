@@ -1,6 +1,6 @@
 {
   "name": "@symbiome-forge/cow-sdk-wasm",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.3",
   "description": "TypeScript/WebAssembly SDK for CoW Protocol — typed orderbook, trading, signing (EIP-712/1271/1193), and app-data, compiled from the Rust SDK.",
   "license": "GPL-3.0-or-later",
   "homepage": "https://github.com/0xSymbiome/cow-rs",

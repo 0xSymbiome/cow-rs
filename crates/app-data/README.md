@@ -5,7 +5,7 @@ validation, CID conversion, and the IPFS read transport seam.
 
 > ⚠️ **Alpha — `0.1.0-alpha`.** Pre-release and not security-audited; the public
 > API may change before `0.1.0`. It is published as a pre-release, so Cargo
-> selects it only when you opt in (`cow-sdk-app-data = "0.1.0-alpha.1"`). Review
+> selects it only when you opt in (`cow-sdk-app-data = "0.1.0-alpha.3"`). Review
 > it yourself before relying on it with real funds.
 
 `appData` is the canonical metadata attached to every CoW Protocol order.
@@ -24,7 +24,7 @@ through the orderbook.
 
 ```toml
 [dependencies]
-cow-sdk-app-data = "0.1.0-alpha.1"
+cow-sdk-app-data = "0.1.0-alpha.3"
 ```
 
 ## Minimal example
