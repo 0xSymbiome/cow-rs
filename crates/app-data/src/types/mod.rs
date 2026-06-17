@@ -16,4 +16,4 @@ pub const DEFAULT_APP_CODE: &str = "CoW Swap";
 /// which generic public IPFS gateways do not serve.
 pub const DEFAULT_IPFS_READ_URI: &str = "https://gnosis.mypinata.cloud/ipfs";
 /// Latest bundled app-data schema version.
-pub const LATEST_APP_DATA_VERSION: &str = "1.14.0";
+pub const LATEST_APP_DATA_VERSION: &str = "1.15.0";

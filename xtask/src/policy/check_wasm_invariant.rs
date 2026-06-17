@@ -27,17 +27,17 @@ pub struct Args {
 }
 
 pub fn run_default() -> anyhow::Result<()> {
-    run(Args {
+    run(&Args {
         repo_root: PathBuf::from("."),
     })
 }
 
-pub fn run(args: Args) -> anyhow::Result<()> {
-    let repo_root = args.repo_root;
-    run_host_gate(&repo_root)?;
+pub fn run(args: &Args) -> anyhow::Result<()> {
+    let repo_root = &args.repo_root;
+    run_host_gate(repo_root)?;
 
     let mut failures = Vec::new();
-    check_source_invariants(&repo_root, &mut failures)?;
+    check_source_invariants(repo_root, &mut failures)?;
 
     if failures.is_empty() {
         println!("wasm invariants hold");

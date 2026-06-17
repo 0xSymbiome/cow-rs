@@ -5,7 +5,7 @@
 - Last reviewed: 2026-06-15
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: testing, crate-boundary, dev-dependencies
-- Related: [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md), [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md), [ADR 0063](0063-published-consumer-test-doubles-crate.md)
+- Related: [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md), ADR 0008, [ADR 0063](0063-published-consumer-test-doubles-crate.md)
 
 ## Decision
 
@@ -57,5 +57,4 @@ build regardless of feature unification.
 - [Architecture](../architecture.md)
 - [Principles](../principles.md)
 - [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md)
-- [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md)
 - [ADR 0063](0063-published-consumer-test-doubles-crate.md)

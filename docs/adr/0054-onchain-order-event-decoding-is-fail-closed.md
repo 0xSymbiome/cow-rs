@@ -82,5 +82,4 @@ settlement contract derives.
 
 **Proven by:**
 
-- [On-Chain Order Log Decoding Audit](../audit/onchain-order-log-decoding-audit.md)
-- [Settlement Event Log Decoding Audit](../audit/settlement-event-log-decoding-audit.md)
+- [Event Log Decoding Audit](../audit/event-log-decoding-audit.md)

@@ -126,8 +126,11 @@ When the `tracing` feature is enabled, the native
 `cow_sdk_core::FetchTransport` emit one `info` span named
 `transport.dispatch` for each low-level dispatch. Both adapters record
 `method`, path-only `endpoint`, `bytes_sent`, and `bytes_received`; the
-browser adapter also records `chain = "wasm32"`. The endpoint field never
-contains the URL scheme, host, credentials, query string, or fragment.
+browser adapter also records `chain = "wasm32"`. The `endpoint` field strips the
+URL scheme, host, query string, and fragment, recording only the request path.
+SDK routing keeps credentials out of that path — the subgraph gateway is
+authenticated with an `Authorization` header rather than a path-embedded key — so
+the endpoint never carries a secret.
 
 ### `cow-sdk-orderbook`
 
@@ -163,7 +166,9 @@ emits a `warn`-level event on the same `cow_sdk::transport` target with
 
 Every top-level public async method on `SubgraphApi` emits one span.
 Spans carry `chain`, `endpoint`, and `method`; subgraph does not have a
-protocol `env` axis.
+protocol `env` axis. Production routing authenticates with an
+`Authorization: Bearer` header against the key-free gateway URL, so the partner
+API key never appears in a request path or a span.
 
 - `totals`
 - `last_days_volume`
@@ -312,6 +317,10 @@ No traced span or event must ever carry a secret. Concretely:
 - `IpfsConfig` read URIs (`uri`, `read_uri`) are stored as `Redacted<String>`
   and follow the same redaction contract, so a configured gateway endpoint
   is never captured in traces.
+- The subgraph partner Graph API key is sent in the request `Authorization`
+  header, never embedded in the gateway URL path, so it never reaches the
+  `transport.dispatch` span `endpoint`, the public route-identity map, or an
+  error context.
 - Wallet signatures, recovered public keys, and private-key material are
   never logged by the SDK. Downstream instrumentation that wants to record
   a signature should do so explicitly in host code.
@@ -381,3 +390,85 @@ transport's retry budget, and the remaining classes surface caller-side or
 protocol-level conditions that benefit from different recovery paths. The enum
 is `#[non_exhaustive]`, so consumer `match` arms keep a wildcard for future
 classes.
+
+## Asserting on Spans in Tests
+
+The SDK emits spans and events through the `tracing` facade. *Collecting* them to
+assert on is a test-collector concern the host owns: the SDK ships no collector,
+so with the `tracing` feature off no `tracing` types appear on its public
+surface. Two idiomatic options cover consumer tests.
+
+For the common "did span X fire, carrying substring Y?" case, add the community
+[`tracing-test`](https://crates.io/crates/tracing-test) crate as a dev-dependency
+and assert against its captured output:
+
+```toml
+[dev-dependencies]
+tracing-test = "0.2"
+```
+
+```rust,ignore
+use tracing_test::traced_test;
+
+#[traced_test]
+#[tokio::test]
+async fn quote_emits_a_span() {
+    my_app::fetch_quote().await.unwrap(); // the SDK emits the `quote` span
+    assert!(logs_contain("quote"));
+}
+```
+
+For field-level assertions (for example, checking the `endpoint` or `chain`
+field), install a small `tracing::Subscriber` for the duration of one test. This
+needs only the `tracing` crate:
+
+```rust,ignore
+use std::sync::{Arc, Mutex};
+use tracing::field::{Field, Visit};
+use tracing::span::Attributes;
+use tracing::{Event, Id, Subscriber};
+
+type Captured = Arc<Mutex<Vec<(String, Vec<(String, String)>)>>>;
+
+struct Capture(Captured);
+
+impl Subscriber for Capture {
+    fn enabled(&self, _: &tracing::Metadata<'_>) -> bool { true }
+    fn new_span(&self, attrs: &Attributes<'_>) -> Id {
+        let mut fields = Vec::new();
+        attrs.record(&mut Recorder(&mut fields));
+        self.0.lock().unwrap().push((attrs.metadata().name().to_owned(), fields));
+        Id::from_u64(1)
+    }
+    fn record(&self, _: &Id, _: &tracing::span::Record<'_>) {}
+    fn record_follows_from(&self, _: &Id, _: &Id) {}
+    fn event(&self, _: &Event<'_>) {}
+    fn enter(&self, _: &Id) {}
+    fn exit(&self, _: &Id) {}
+}
+
+struct Recorder<'a>(&'a mut Vec<(String, String)>);
+impl Visit for Recorder<'_> {
+    fn record_debug(&mut self, field: &Field, value: &dyn std::fmt::Debug) {
+        self.0.push((field.name().to_owned(), format!("{value:?}")));
+    }
+}
+
+#[tokio::test]
+async fn quote_span_carries_endpoint() {
+    let captured: Captured = Arc::default();
+    let guard = tracing::subscriber::set_default(tracing::Dispatch::new(Capture(captured.clone())));
+    my_app::fetch_quote().await.unwrap();
+    drop(guard);
+
+    let spans = captured.lock().unwrap();
+    assert!(spans.iter().any(|(name, fields)| name == "quote"
+        && fields.iter().any(|(key, value)| key == "endpoint" && value.contains("/api/v1/quote"))));
+}
+```
+
+The SDK deliberately does not ship a trace collector of its own: a collector
+stands in for the `tracing` ecosystem's subscriber side, which the SDK does not
+own, and shipping one would add `tracing` types to the public surface even when
+the `tracing` feature is off. Reach for `tracing-test` first, and drop to a small
+`Subscriber` like the one above only when a test needs exact field values.

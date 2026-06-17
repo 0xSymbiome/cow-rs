@@ -1,13 +1,16 @@
 # EIP-1271 Verification Cache Audit
 
 Status: Current
-Last reviewed: 2026-06-14
+Last reviewed: 2026-06-17
 Owning surface: the `cow-sdk-contracts` `Eip1271Cache` trait and always-available `NoopEip1271Cache` (both re-exported from `cow-sdk-signing::cache`), and the `InMemoryEip1271Cache` implementation shipped from `cow-sdk-signing::cache` behind the opt-in `in-memory-cache` feature
 Refresh trigger: Changes to the trait signature, the cache key, the caching policy (what is recorded and what is not), the `verify_eip1271_signature_cached` call shape, the verification tracing fields, the default TTL or capacity on the in-memory implementation, the clock injection seam, the platform time-source selection, the `in-memory-cache` feature gate, or the thread-safety posture; a new canonical implementation that ships in the workspace
 Related docs:
 - [ADR 0014](../adr/0014-eip1271-verification-cache.md)
 - [ADR 0027](../adr/0027-post-quantum-signing-absorption-plan.md)
 - [ADR 0028](../adr/0028-account-abstraction-integration-plan.md)
+- [ADR 0039](../adr/0039-typescript-callable-wasm-sdk-surface.md)
+- [ADR 0040](../adr/0040-wallet-provider-callback-boundary-for-js-consumers.md)
+- [ADR 0045](../adr/0045-async-signer-trait-narrowing.md)
 - [Verification Guide](../verification.md)
 - [Architecture](../architecture.md)
 
@@ -50,6 +53,12 @@ covered by its own contract).
 | Platform time source | `InMemoryEip1271Cache` defaults to wall-clock `Instant::now`, accepts an injected clock for deterministic TTL checks, and uses `web_time::Instant` on `wasm32` | Conforms |
 | TTL boundary | A 5-minute TTL cache hits at 4m59s999ms and misses at 5m1ms under controlled time on native and wasm32 targets | Conforms |
 | Thread-safety | `InMemoryEip1271Cache` sustains concurrent records against the same key space without losing writes | Conforms |
+| Native Rust parity | The wasm EIP-1271 payload equals `cow_sdk_signing::eip1271_signature_payload` for the fixed vector | Conforms |
+| TypeScript SDK parity | The fixed vector matches upstream `OrderSigningUtils.getEip1271Signature` output | Conforms |
+| Facade-resolves-callback | JavaScript supplies the final signature, while Rust stores only a pure resolved provider | Conforms |
+| UID and digest strings | Cross-ABI DTOs reuse canonical `as_str()` output instead of re-encoding bytes | Conforms |
+| Signature validation (wasm) | Malformed ECDSA signatures fail before being surfaced as signed orders | Conforms |
+| Capability split | Custom EIP-1271 signing uses a dedicated callback and does not require a broad wallet signer object | Conforms |
 
 ## Current Contract
 
@@ -167,12 +176,30 @@ tokio tasks against the same key space and asserts every key recorded by
 a racing task is observable through `contains_valid` after the tasks
 join. No write is lost.
 
+### WASM EIP-1271 Parity
+
+`eip1271SignaturePayload` and the EIP-1271 order-signing functions
+(`signOrderWithEip1271`, `signOrderWithCustomEip1271`) wrap the same Rust
+helper used by native signing; the wasm tests compare output against native
+Rust and a recorded upstream TypeScript SDK vector for the same order, owner,
+verifier, and signature bytes. `signOrderWithCustomEip1271` invokes a
+JavaScript callback at the facade boundary that returns the final ABI-encoded
+signature, which Rust wraps in a `Send + Sync` resolved provider; no JavaScript
+handle or `JsValue` is stored in the trait object. Order IDs and digests
+crossing to TypeScript reuse the canonical string stored by the Rust type and
+are never reconstructed from raw byte arrays.
+
 ## Evidence
 
 Primary implementation points:
 
 - `crates/contracts/src/verify.rs`
 - `crates/signing/src/cache.rs`
+- `crates/wasm/src/helpers/signing.rs`
+- `crates/wasm/src/exports/eip1271.rs`
+- `crates/wasm/src/exports/signing.rs`
+- `parity/fixtures/signing/eip1271_typescript_vector.json`
+- `parity/source-lock.yaml`
 
 Primary regression coverage:
 
@@ -186,6 +213,14 @@ Primary regression coverage:
 - `crates/signing/tests/eip1271_cache_contract.rs::cache_ttl_boundary_holds_at_minus_one_and_misses_at_plus_one`
 - `crates/signing/tests/wasm_cache_contract.rs::cache_ttl_boundary_holds_at_minus_one_and_misses_at_plus_one_on_wasm32`
 - `crates/signing/tests/ui.rs::eip1271_error_match_requires_wildcard`
+- `crates/wasm/tests/host_pure_helpers.rs::eip1271_payload_matches_signing_module_output_and_vector`
+- `crates/wasm/tests/host_pure_helpers.rs::generated_order_uid_uses_canonical_strings`
+- `crates/wasm/tests/wasm_eip1271_contract.rs::eip1271_payload_matches_native_rust`
+- `crates/wasm/tests/wasm_eip1271_contract.rs::eip1271_payload_matches_recorded_typescript_sdk_vector`
+- `crates/wasm/tests/wasm_eip1271_contract.rs::sign_order_with_eip1271_uid_equals_generated_order_id_as_str`
+- `crates/wasm/tests/wasm_eip1271_contract.rs::custom_eip1271_callback_signature_is_used_verbatim`
+- `crates/wasm/src/exports/eip1271.rs` (compile-time `Send + Sync` assertion on `ResolvedEip1271Provider`)
+- `e2e/wasm-typescript/tests/eip1271.spec.ts`
 
 Validation surface:
 
@@ -197,4 +232,7 @@ cargo test -p cow-sdk-signing --test ui
 cargo test -p cow-sdk-contracts -p cow-sdk-signing --all-features
 cargo check -p cow-sdk-signing --target wasm32-unknown-unknown --features in-memory-cache
 wasm-pack test --node crates/signing --features in-memory-cache
+cargo test -p cow-sdk-wasm --test host_pure_helpers
+wasm-pack test crates/wasm --headless --firefox
+pnpm --dir e2e/wasm-typescript test
 ```

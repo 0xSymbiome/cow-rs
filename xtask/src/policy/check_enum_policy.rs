@@ -31,26 +31,22 @@ pub struct EnumPolicy {
 pub struct EnumPolicyEntry {
     pub name: String,
     pub file: String,
-    #[allow(
-        dead_code,
-        reason = "manifest line numbers feed reviewer diagnostics, not validation"
-    )]
-    pub line: Option<u32>,
     pub category: String,
     pub expected_marker: String,
     pub reason: String,
 }
 
 pub fn run_default() -> anyhow::Result<()> {
-    run(Args {
+    run(&Args {
         repo_root: PathBuf::from("."),
         manifest: None,
     })
 }
 
-pub fn run(args: Args) -> anyhow::Result<()> {
+pub fn run(args: &Args) -> anyhow::Result<()> {
     let manifest_path = args
         .manifest
+        .clone()
         .unwrap_or_else(|| args.repo_root.join(".github/config/enum-policy.yaml"));
     let policy: EnumPolicy = fixtures::load_yaml(&manifest_path)
         .with_context(|| format!("failed to load {}", manifest_path.display()))?;
@@ -94,7 +90,10 @@ pub fn validate_policy(policy: &EnumPolicy, discovered: &[PublicEnum]) -> Vec<St
                 entry.file, entry.name, entry.category
             ));
         }
-        let key = (normalize_manifest_path(&entry.file), entry.name.clone());
+        let key = (
+            workspace::normalize_manifest_path(&entry.file),
+            entry.name.clone(),
+        );
         if manifest.insert(key.clone(), entry).is_some() {
             errors.push(format!(
                 "duplicate enum policy entry for {}::{}",
@@ -140,8 +139,4 @@ pub fn validate_policy(policy: &EnumPolicy, discovered: &[PublicEnum]) -> Vec<St
         }
     }
     errors
-}
-
-fn normalize_manifest_path(path: &str) -> String {
-    path.replace('\\', "/")
 }

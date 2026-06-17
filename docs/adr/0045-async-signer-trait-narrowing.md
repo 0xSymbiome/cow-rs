@@ -45,10 +45,10 @@ from depending on unrelated wallet methods.
 
 ## Links
 
-- [WASM Callback Shape Design Audit](../audit/wasm-callback-shape-design-audit.md)
-- [WASM EIP-1271 Parity Audit](../audit/wasm-eip1271-parity-audit.md)
+- [WASM Surface Audit](../audit/wasm-surface-audit.md)
+- [EIP-1271 Verification Cache Audit](../audit/eip1271-verification-cache-audit.md)
 
 **Proven by:**
 
-- [WASM Callback Shape Design Audit](../audit/wasm-callback-shape-design-audit.md)
-- [WASM EIP-1271 Parity Audit](../audit/wasm-eip1271-parity-audit.md)
+- [WASM Surface Audit](../audit/wasm-surface-audit.md)
+- [EIP-1271 Verification Cache Audit](../audit/eip1271-verification-cache-audit.md)

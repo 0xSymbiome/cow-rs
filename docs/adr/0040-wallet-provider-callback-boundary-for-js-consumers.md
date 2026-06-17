@@ -5,7 +5,7 @@
 - Last reviewed: 2026-06-15
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: wasm, wallet, provider, callback-boundary, eip1271
-- Related: [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), [ADR 0007](0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0043](0043-callback-registry-internalization.md), [ADR 0045](0045-async-signer-trait-narrowing.md)
+- Related: [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), ADR 0007, [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), ADR 0043, [ADR 0045](0045-async-signer-trait-narrowing.md)
 
 ## Decision
 
@@ -61,12 +61,11 @@ cross the public error envelope.
 
 - [cow-sdk-wasm README](../../crates/wasm/README.md)
 - [Integrations](../integrations.md)
-- [WASM Callback Shape Design Audit](../audit/wasm-callback-shape-design-audit.md)
-- [WASM EIP-1271 Parity Audit](../audit/wasm-eip1271-parity-audit.md)
+- [WASM Surface Audit](../audit/wasm-surface-audit.md)
+- [EIP-1271 Verification Cache Audit](../audit/eip1271-verification-cache-audit.md)
 - [wasm-bindgen guide](https://rustwasm.github.io/docs/wasm-bindgen/)
 
 **Proven by:**
 
 - [WASM Surface Audit](../audit/wasm-surface-audit.md)
-- [WASM Callback Shape Design Audit](../audit/wasm-callback-shape-design-audit.md)
-- [WASM EIP-1271 Parity Audit](../audit/wasm-eip1271-parity-audit.md)
+- [EIP-1271 Verification Cache Audit](../audit/eip1271-verification-cache-audit.md)

@@ -270,7 +270,7 @@ sections below describe the public contract a `0.1.0` consumer receives.
   body }` channel, which shares that representation. Trait futures are `Send` on
   native and `!Send` on `wasm32`. Governed by
   [ADR 0013](docs/adr/0013-http-transport-injection-and-typestate-builders.md)
-  and [ADR 0019](docs/adr/0019-sole-http-dispatch.md).
+  and ADR 0019.
 - The orderbook, subgraph, and IPFS clients run every HTTP attempt through one
   shared retry driver that owns the attempt loop, rate-limit acquisition,
   exponential backoff, `Retry-After` honoring, and retry telemetry. A
@@ -353,7 +353,7 @@ sections below describe the public contract a `0.1.0` consumer receives.
   typed `ContractsError` rather than panicking; every topic-0 hash is byte-locked
   against an independent keccak of the canonical signature. Governed by
   [ADR 0054](docs/adr/0054-onchain-order-event-decoding-is-fail-closed.md) and
-  [ADR 0056](docs/adr/0056-settlement-event-decoding-is-fail-closed.md).
+  ADR 0056.
 - `cow-sdk-core` adds an opt-in `LogProvider: Provider` capability supertrait for
   event-log fetching, whose single-call `get_logs` issues exactly one backend
   query over a caller-bounded block range and returns raw logs for the
@@ -505,7 +505,7 @@ sections below describe the public contract a `0.1.0` consumer receives.
   anonymous transports must supply an explicitly reviewed trusted origin, and
   rejected origins fail closed with a typed error. `BrowserWallet::from_trusted_transport`
   is the canonical fallible constructor for reviewed local transports. Governed
-  by [ADR 0007](docs/adr/0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md).
+  by ADR 0007.
 
 #### Native Alloy adapters
 
@@ -516,13 +516,13 @@ sections below describe the public contract a `0.1.0` consumer receives.
   provider-neutral unless `alloy-provider`, `alloy-signer`, or `alloy` is
   enabled; the family is native-only and hard-fails on WASM targets. Governed by
   [ADR 0035](docs/adr/0035-alloy-provider-adapter.md),
-  [ADR 0036](docs/adr/0036-alloy-signer-adapter.md), and
-  [ADR 0037](docs/adr/0037-alloy-umbrella-adapter.md).
+  ADR 0036, and
+  ADR 0037.
 - `cow_sdk_alloy_signer::LocalAlloySigner` (with `LocalAlloySignerBuilder` and
   `LocalAlloySignerBuilderError`) is the local signer's shipped name, named
   for what it holds — a locally-held private key; the adapter never loads
   keystore files. Recorded in the
-  [ADR 0036](docs/adr/0036-alloy-signer-adapter.md) amendment.
+  ADR 0036 amendment.
 - `cow_sdk_alloy_provider::RpcAlloyProviderBuilder::build()` is synchronous:
   constructing the HTTP-backed provider performs no network I/O, so no
   `.await` is required at the build terminal. The chain-checked construction
@@ -598,7 +598,7 @@ sections below describe the public contract a `0.1.0` consumer receives.
   cancellation, and transaction-lifecycle submission with mined-receipt waiting;
   the `cow-trader-dioxus` browser-wallet example demonstrates consumer-side input
   and economic hygiene over the WASM surface (governed by
-  [ADR 0065](docs/adr/0065-canonical-browser-wallet-example.md)). A public
+  ADR 0065). A public
   `ROADMAP.md` lists planned capability releases (composable and TWAP orders,
   permit signing, bridging, flash-loans, weiroll, and hardware-wallet support),
   `docs/parity.md` carries the first-release scope and `Intentionally
@@ -718,7 +718,7 @@ sections below describe the public contract a `0.1.0` consumer receives.
   `setPreSignature` and `invalidateOrder` calls encode directly from the
   binding, and the fail-closed `decode_settlement_log` decoder is retained.
   Governed by
-  [ADR 0034](docs/adr/0034-interaction-encoder-target-policy.md).
+  ADR 0034.
 - Collapsed the deployment registry to a const table, removing the
   `registry.toml` file, the `build.rs` schema validator, and the runtime TOML
   parser. `ContractId` narrows to `Settlement`, `VaultRelayer`, and `EthFlow`,
@@ -774,7 +774,7 @@ sections below describe the public contract a `0.1.0` consumer receives.
   declares the `retryable` and `retryAfterMs` fields the Rust `WasmError` emits,
   so a TypeScript consumer reads the retry verdict type-safely; a package test
   compares the facade union against the generated declaration snapshot. Governed
-  by [ADR 0047](docs/adr/0047-typescript-facade-architecture.md) and
+  by ADR 0047 and
   [ADR 0060](docs/adr/0060-uniform-error-classification.md).
 - `cow_sdk_orderbook::OrderQuoteRequest::with_app_data_hash` produces the
   hash-only quote app-data wire form instead of pairing the requested hash with

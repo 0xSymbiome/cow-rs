@@ -38,6 +38,14 @@ cow-sdk-test = "0.1.0-alpha.1"
 - Ready-made orderbook errors: `order_not_found()`, `rate_limited()`,
   `rejected(message)`.
 
+Only orderbook errors are canned. `OrderbookError` is not `Clone`, so the
+orderbook double stores a small cloneable description and rebuilds the error on
+each call — the canned constructors give that something to build. The other error
+types need none: `TradingError`, `SubgraphError`, `SigningError`, and
+`TransportError` variants are publicly constructible directly, and the signer and
+provider doubles surface injected failures as `MockError`. Simulate HTTP-layer
+failures by returning the status code you want from a `wiremock` server.
+
 ## When to use it
 
 You want to test your CoW integration — that your code posts exactly one order,

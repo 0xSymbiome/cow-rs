@@ -5,7 +5,7 @@
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Last reviewed: 2026-06-07
 - Tags: subgraph, analytics, read-only, facade, feature
-- Related: [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md), [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md), [ADR 0060](0060-uniform-error-classification.md)
+- Related: [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md), ADR 0008, [ADR 0060](0060-uniform-error-classification.md)
 
 ## Decision
 

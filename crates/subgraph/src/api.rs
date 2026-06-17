@@ -25,7 +25,6 @@ use crate::{
 };
 
 const SUBGRAPH_BASE_URL: &str = "https://gateway.thegraph.com/api/";
-const REDACTED_API_KEY_SEGMENT: &str = "<redacted>";
 
 /// Redacting base-URL overrides keyed by chain id.
 ///
@@ -104,8 +103,10 @@ impl SubgraphConfigOverride {
 ///
 /// The client owns API-key-derived production routing, optional per-instance
 /// configuration overrides, and a typed raw-query path through
-/// [`SubgraphQueryRequest`]. Public metadata exposes only redacted production
-/// route identity or sanitized override identity.
+/// [`SubgraphQueryRequest`]. Public metadata exposes key-free production route
+/// identity or sanitized override identity; on the production path the partner
+/// API key is sent only in the request `Authorization` header and never appears
+/// in a URL, a telemetry span, or an error context.
 #[derive(Clone)]
 pub struct SubgraphApi {
     config: SubgraphConfig,
@@ -131,6 +132,20 @@ impl fmt::Debug for SubgraphApi {
             .field("transport_policy", &self.transport_policy)
             .finish_non_exhaustive()
     }
+}
+
+/// A resolved dispatch route: the URL the transport receives, the key-free
+/// route identity safe to surface in errors and telemetry, and the per-request
+/// headers.
+///
+/// Production routing targets the key-free gateway URL and carries the partner
+/// API key in an `Authorization: Bearer` header, so no credential reaches the
+/// request path, a telemetry span, or an error context. A `base_urls` override
+/// dispatches its URL verbatim with no SDK-injected authentication header.
+struct SubgraphRoute {
+    url: String,
+    public_url: String,
+    headers: Vec<(String, String)>,
 }
 
 impl SubgraphApi {
@@ -191,11 +206,12 @@ impl SubgraphApi {
         &self.config
     }
 
-    /// Returns the redacted production route-identity map.
+    /// Returns the production route-identity map.
     ///
     /// Unsupported chains remain present with `None` values so the support
-    /// posture stays explicit, while the Graph API key remains private to the
-    /// request-routing path.
+    /// posture stays explicit. The production gateway URLs are key-free: the
+    /// partner Graph API key is sent in the request `Authorization` header, so
+    /// it never appears in the route map, a request URL, or a telemetry span.
     #[must_use]
     pub const fn prod_config(&self) -> &SubgraphApiBaseUrls {
         &self.prod_config
@@ -385,8 +401,7 @@ impl SubgraphApi {
     {
         let request = request.into();
         let chain_id = self.config.chain_id;
-        let api = self.base_url_for(&self.config)?;
-        let public_api = self.public_base_url_for(&self.config)?;
+        let route = self.route_for(&self.config)?;
         let graphql_request = GraphQlRequest {
             query: request.document(),
             variables: request.variables(),
@@ -394,19 +409,25 @@ impl SubgraphApi {
         };
 
         let body = serde_json::to_string(&graphql_request).map_err(|error| {
-            serialization_error(&public_api, chain_id, &request, "", error.to_string())
+            serialization_error(&route.public_url, chain_id, &request, "", error.to_string())
         })?;
         let body = self
-            .post_graphql_with_policy(&api, &public_api, chain_id, &request, &body)
+            .post_graphql_with_policy(&route, chain_id, &request, &body)
             .await?;
 
         let response: GraphQlResponse<T> = serde_json::from_str(&body).map_err(|error| {
-            serialization_error(&public_api, chain_id, &request, &body, error.to_string())
+            serialization_error(
+                &route.public_url,
+                chain_id,
+                &request,
+                &body,
+                error.to_string(),
+            )
         })?;
 
         if !response.errors.is_empty() {
             return Err(graphql_error(
-                &public_api,
+                &route.public_url,
                 chain_id,
                 &request,
                 response.errors,
@@ -415,23 +436,21 @@ impl SubgraphApi {
 
         response
             .data
-            .ok_or_else(|| missing_data_error(&public_api, chain_id, &request))
+            .ok_or_else(|| missing_data_error(&route.public_url, chain_id, &request))
     }
 
     async fn post_graphql_with_policy(
         &self,
-        api: &str,
-        public_api: &str,
+        route: &SubgraphRoute,
         chain_id: SupportedChainId,
         request: &SubgraphQueryRequest,
         body: &str,
     ) -> Result<String, SubgraphError> {
-        let headers = [("content-type".to_owned(), "application/json".to_owned())];
-        let headers = &headers;
+        let headers = route.headers.as_slice();
         let timeout = self.transport_policy.timeout();
-        let limiter_url = url::Url::parse(api).map_err(|error| {
+        let limiter_url = url::Url::parse(&route.url).map_err(|error| {
             transport_error(
-                public_api,
+                &route.public_url,
                 chain_id,
                 request,
                 TransportErrorClass::Builder,
@@ -448,7 +467,11 @@ impl SubgraphApi {
             &self.rate_limiter,
             LimiterKey::PerUrl(&limiter_url),
             |_attempt_index| async move {
-                match self.transport.post(api, body, headers, timeout).await {
+                match self
+                    .transport
+                    .post(&route.url, body, headers, timeout)
+                    .await
+                {
                     Ok(response) => RetryOutcome::Success(response.into_body()),
                     Err(TransportError::HttpStatus {
                         status,
@@ -461,7 +484,7 @@ impl SubgraphApi {
                             .collect::<Vec<_>>();
                         RetryOutcome::Failure {
                             error: http_status_error(
-                                public_api,
+                                &route.public_url,
                                 chain_id,
                                 request,
                                 status,
@@ -476,7 +499,13 @@ impl SubgraphApi {
                     Err(error) => {
                         let (class, details) = transport_failure_parts(error);
                         RetryOutcome::Failure {
-                            error: transport_error(public_api, chain_id, request, class, details),
+                            error: transport_error(
+                                &route.public_url,
+                                chain_id,
+                                request,
+                                class,
+                                details,
+                            ),
                             signal: RetrySignal::Transport { class },
                         }
                     }
@@ -486,46 +515,47 @@ impl SubgraphApi {
         .await
     }
 
-    fn base_url_for(&self, config: &SubgraphConfig) -> Result<String, SubgraphError> {
+    /// Resolves the dispatch route for `config`.
+    ///
+    /// This is the single point that decides both where a request is sent and
+    /// how it is authenticated. Production routing targets the key-free gateway
+    /// URL and adds an `Authorization: Bearer` header carrying the partner API
+    /// key, so the key never enters the request path, a telemetry span, or an
+    /// error context. A `base_urls` override dispatches its URL verbatim and
+    /// adds no authentication header — the caller owns authentication for a
+    /// custom endpoint, and its public route identity is the sanitized origin.
+    fn route_for(&self, config: &SubgraphConfig) -> Result<SubgraphRoute, SubgraphError> {
+        let unsupported = || SubgraphError::UnsupportedNetwork {
+            chain_id: config.chain_id as u64,
+        };
+        let mut headers = vec![("content-type".to_owned(), "application/json".to_owned())];
+
         if let Some(base_urls) = &config.base_urls {
-            return base_urls
+            let url = base_urls
                 .as_inner()
                 .get(&config.chain_id)
                 .cloned()
                 .flatten()
-                .ok_or(SubgraphError::UnsupportedNetwork {
-                    chain_id: config.chain_id as u64,
-                });
+                .ok_or_else(unsupported)?;
+            let public_url = sanitize_public_base_url(&url);
+            return Ok(SubgraphRoute {
+                url,
+                public_url,
+                headers,
+            });
         }
 
-        prod_subgraph_id(config.chain_id)
-            .map(|subgraph_id| build_prod_gateway_url(self.api_key.as_inner(), subgraph_id))
-            .ok_or(SubgraphError::UnsupportedNetwork {
-                chain_id: config.chain_id as u64,
-            })
-    }
-
-    fn public_base_url_for(&self, config: &SubgraphConfig) -> Result<String, SubgraphError> {
-        if let Some(base_urls) = &config.base_urls {
-            return base_urls
-                .as_inner()
-                .get(&config.chain_id)
-                .cloned()
-                .flatten()
-                .map(|base_url| sanitize_public_base_url(&base_url))
-                .ok_or(SubgraphError::UnsupportedNetwork {
-                    chain_id: config.chain_id as u64,
-                });
-        }
-
-        self.prod_config
-            .as_inner()
-            .get(&config.chain_id)
-            .cloned()
-            .flatten()
-            .ok_or(SubgraphError::UnsupportedNetwork {
-                chain_id: config.chain_id as u64,
-            })
+        let subgraph_id = prod_subgraph_id(config.chain_id).ok_or_else(unsupported)?;
+        let url = build_prod_gateway_url(subgraph_id);
+        headers.push((
+            "authorization".to_owned(),
+            format!("Bearer {}", self.api_key.as_inner()),
+        ));
+        Ok(SubgraphRoute {
+            public_url: url.clone(),
+            url,
+            headers,
+        })
     }
 }
 
@@ -548,9 +578,9 @@ struct GraphQlResponse<T> {
 
 /// Single source of truth for production subgraph deployments: each supported
 /// chain paired with its The Graph subgraph id. Both the routing path
-/// ([`prod_subgraph_id`]) and the redacted display map ([`build_prod_config`])
-/// read this slice, so a deployment-id rotation is a one-line edit and the two
-/// surfaces cannot drift apart.
+/// ([`prod_subgraph_id`]) and the public route-identity map
+/// ([`build_prod_config`]) read this slice, so a deployment-id rotation is a
+/// one-line edit and the two surfaces cannot drift apart.
 const PROD_SUBGRAPH_IDS: &[(SupportedChainId, &str)] = &[
     (
         SupportedChainId::Mainnet,
@@ -589,15 +619,7 @@ const UNSUPPORTED_PROD_CHAINS: &[SupportedChainId] = &[
 pub(crate) fn build_prod_config() -> SubgraphApiBaseUrls {
     PROD_SUBGRAPH_IDS
         .iter()
-        .map(|(chain_id, subgraph_id)| {
-            (
-                *chain_id,
-                Some(build_prod_gateway_url(
-                    REDACTED_API_KEY_SEGMENT,
-                    subgraph_id,
-                )),
-            )
-        })
+        .map(|(chain_id, subgraph_id)| (*chain_id, Some(build_prod_gateway_url(subgraph_id))))
         .chain(
             UNSUPPORTED_PROD_CHAINS
                 .iter()
@@ -613,8 +635,8 @@ fn prod_subgraph_id(chain_id: SupportedChainId) -> Option<&'static str> {
         .map(|(_, subgraph_id)| *subgraph_id)
 }
 
-fn build_prod_gateway_url(api_key: &str, subgraph_id: &str) -> String {
-    format!("{SUBGRAPH_BASE_URL}{api_key}/subgraphs/id/{subgraph_id}")
+fn build_prod_gateway_url(subgraph_id: &str) -> String {
+    format!("{SUBGRAPH_BASE_URL}subgraphs/id/{subgraph_id}")
 }
 
 fn transport_error(

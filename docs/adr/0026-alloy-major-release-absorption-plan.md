@@ -87,11 +87,10 @@ Future rows record exact resolved versions, not caret ranges.
 - [Parity scope source lock](../parity.md#source-lock)
 - [Verification matrix workspace gates](../verification.md#workspace-gates)
 - [Alloy release-candidate workflow](../../.github/workflows/alloy-release-candidate.yml)
-- [Alloy Umbrella Adapter ADR](0037-alloy-umbrella-adapter.md)
 
 **Proven by:**
 
 - [Contract Bindings Parity Audit](../audit/contract-bindings-parity-audit.md)
-- [Alloy Umbrella Adapter Audit](../audit/alloy-umbrella-adapter-audit.md)
+- [Alloy Adapters Audit](../audit/alloy-adapters-audit.md)
 - [Source-Lock Provenance Audit](../audit/source-lock-provenance-audit.md)
 - [Workflow Security Audit](../audit/workflow-security-audit.md)

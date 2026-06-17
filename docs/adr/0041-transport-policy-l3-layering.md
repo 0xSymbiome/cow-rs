@@ -5,7 +5,7 @@
 - Last reviewed: 2026-06-15
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: transport, retry, layering
-- Related: [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), [ADR 0019](0019-http-transport-sole-dispatch.md), [ADR 0046](0046-transport-policy-js-exposure.md)
+- Related: [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), ADR 0019, ADR 0046
 
 ## Decision
 
@@ -86,11 +86,9 @@ separate client-specific policy wrappers.
 - [Transport](../transport.md)
 - [Architecture](../architecture.md)
 - [ADR 0013](0013-http-transport-injection-and-typestate-builders.md)
-- [ADR 0019](0019-http-transport-sole-dispatch.md)
-- [WASM Public API Stability Audit](../audit/wasm-public-api-stability-audit.md)
+- [WASM Surface Audit](../audit/wasm-surface-audit.md)
 
 **Proven by:**
 
-- [Transport Policy Coverage Audit](../audit/transport-policy-coverage-audit.md)
 - [HTTP Transport Contract Audit](../audit/http-transport-contract-audit.md)
-- [WASM Public API Stability Audit](../audit/wasm-public-api-stability-audit.md)
+- [WASM Surface Audit](../audit/wasm-surface-audit.md)

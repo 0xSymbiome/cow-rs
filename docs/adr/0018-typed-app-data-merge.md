@@ -128,4 +128,4 @@ the three defects unreachable without reintroducing an opaque
 
 **Proven by:**
 
-- [Trading App-Data Merge Audit](../audit/trading-app-data-merge-audit.md)
+- [Trading Order Integrity Audit](../audit/trading-order-integrity-audit.md)

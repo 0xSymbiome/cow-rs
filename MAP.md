@@ -1,7 +1,7 @@
 # Repository File Map
 
-> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `0815400f` &nbsp;&middot;&nbsp; **Generated:** 2026-06-16  
-> **Total tracked files:** **931** &nbsp;&middot;&nbsp; **Lines of code:** tokei 14.0.0
+> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `40db5bdb` &nbsp;&middot;&nbsp; **Generated:** 2026-06-17  
+> **Total tracked files:** **879** &nbsp;&middot;&nbsp; **Lines of code:** tokei 14.0.0
 
 A navigable inventory of every file tracked by Git on this branch, grouped by the role each directory plays in the workspace. Use the table of contents to jump straight to a section; full file listings are collapsed by default so the high-level shape stays scannable.
 
@@ -30,17 +30,17 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 **Lines of code** (tracked files only)
 
-- **32,088 lines of Rust** across the 14 SDK crates, covered by **35,664 lines of tests** — a **1.1× test-to-code ratio** — plus **179 lines of benchmarks**.
-- **11,845 doc-comment lines** documenting the public API (~36.9% of crate code), plus **873 inline comment lines**.
-- **5,103 lines of TypeScript** across examples, e2e harnesses, and wasm bindings.
-- **21,419 lines of Markdown prose** — ADRs, audit notes, and READMEs.
-- **13,641 lines of data & config** — JSON schemas, parity fixtures, YAML, TOML, and lockfiles. Tracked and counted in the totals below; listed separately here because it's data, not hand-written code.
+- **32,232 lines of Rust** across the 14 SDK crates, covered by **35,858 lines of tests** — a **1.1× test-to-code ratio** — plus **179 lines of benchmarks**.
+- **11,927 doc-comment lines** documenting the public API (~37% of crate code), plus **759 inline comment lines**.
+- **5,276 lines of TypeScript** across examples, e2e harnesses, and wasm bindings.
+- **16,357 lines of Markdown prose** — ADRs, audit notes, and READMEs.
+- **13,858 lines of data & config** — JSON schemas, parity fixtures, YAML, TOML, and lockfiles. Tracked and counted in the totals below; listed separately here because it's data, not hand-written code.
 
 **Footprint** (tracked files)
 
-- **541 files** live under `crates/` — 14 workspace member crates make up roughly 58% of the repo.
-- **150 files** under `docs/` are mostly architecture decision records and audit notes.
-- **38 files** under `parity/` are golden fixtures captured from upstream services to keep the Rust SDK byte-compatible.
+- **541 files** live under `crates/` — 14 workspace member crates make up roughly 62% of the repo.
+- **95 files** under `docs/` are mostly architecture decision records and audit notes.
+- **40 files** under `parity/` are golden fixtures captured from upstream services to keep the Rust SDK byte-compatible.
 - **45 files** under `fuzz/` cover cargo-fuzz targets and their seed corpora.
 - **59 files** under `examples/` + `e2e/` are runnable demos and integration harnesses.
 - **45 files** under `xtask/` are the maintenance automation crate (parity refresh, policy checks, doc generation).
@@ -51,14 +51,14 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 | Path | Files | Lines | Code | Purpose |
 |------|------:|------:|-----:|---------|
-| `crates/` | 541 | 109,456 | 74,859 | Workspace member crates (the SDK itself) |
-| `docs/` | 150 | 21,301 | 0 | Architecture decision records, audit notes, provider notes |
-| `xtask/` | 45 | 9,273 | 7,880 | Cargo xtask automation crate (parity, policy, docs subcommands) |
+| `crates/` | 541 | 110,359 | 75,370 | Workspace member crates (the SDK itself) |
+| `docs/` | 95 | 14,992 | 0 | Architecture decision records, audit notes, provider notes |
+| `xtask/` | 45 | 9,285 | 7,880 | Cargo xtask automation crate (parity, policy, docs subcommands) |
 | `fuzz/` | 45 | 9,425 | 3,886 | cargo-fuzz targets, corpora, and failure artifacts |
-| `parity/` | 38 | 5,632 | 5,333 | Golden fixtures + pinned specs from upstream services |
+| `parity/` | 40 | 5,801 | 5,490 | Golden fixtures + pinned specs from upstream services |
 | `examples/` | 33 | 3,466 | 2,434 | Runnable usage examples (Rust + TypeScript) |
 | `e2e/` | 26 | 3,937 | 3,177 | End-to-end integration harnesses |
-| `.github/` | 22 | 3,164 | 2,611 | GitHub Actions workflows and repo config |
+| `.github/` | 23 | 3,242 | 2,671 | GitHub Actions workflows and repo config |
 | `tests/` | 12 | 1,124 | 969 | Workspace-level integration tests |
 | `.cargo/` | 2 | 32 | 27 | Cargo configuration |
 | `SECURITY.md` | 1 | 182 | 0 | Security policy |
@@ -66,7 +66,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `ROADMAP.md` | 1 | 67 | 0 | Roadmap document |
 | `release.toml` | 1 | 59 | 16 |  |
 | `README.md` | 1 | 251 | 0 | Top-level README |
-| `PROPERTIES.md` | 1 | 250 | 0 | Property-based testing index |
+| `PROPERTIES.md` | 1 | 252 | 0 | Property-based testing index |
 | `.gitattributes` | 1 | 41 | 0 | Git attributes |
 | `LICENSE` | 1 | 674 | 0 | License text |
 | `Cargo.lock` | 1 | 5,660 | 0 | Workspace lockfile |
@@ -78,7 +78,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `CHANGELOG.md` | 1 | 832 | 0 | Release changelog |
 | `llvm-cov-summary.txt` | 1 | 186 | 0 | Coverage summary snapshot |
 | `Cargo.toml` | 1 | 121 | 106 | Workspace manifest |
-| **Total** | **931** | **175,562** | **101,379** | |
+| **Total** | **879** | **170,417** | **102,107** | |
 
 ---
 
@@ -86,14 +86,14 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 | Extension | Files | Lines | Code | Comments | Blank | Typical role |
 |-----------|------:|------:|-----:|---------:|------:|--------------|
-| `.rs` | 551 | 110,104 | 82,635 | 17,341 | 10,128 | Rust source and tests |
-| `.md` | 175 | 25,974 | 0 | 21,419 | 4,555 | Markdown docs (ADRs, audit notes, READMEs) |
-| `.ts` | 47 | 12,133 | 5,103 | 6,198 | 832 | TypeScript (examples, e2e, wasm bindings) |
-| `.json` | 43 | 2,756 | 2,644 | 112 | 0 | JSON schemas, parity fixtures, test vectors |
+| `.rs` | 551 | 110,486 | 82,973 | 17,356 | 10,157 | Rust source and tests |
+| `.md` | 120 | 19,683 | 0 | 16,357 | 3,326 | Markdown docs (ADRs, audit notes, READMEs) |
+| `.ts` | 47 | 12,660 | 5,276 | 6,534 | 850 | TypeScript (examples, e2e, wasm bindings) |
+| `.json` | 45 | 2,908 | 2,797 | 111 | 0 | JSON schemas, parity fixtures, test vectors |
 | `.toml` | 28 | 1,908 | 1,508 | 151 | 249 | Cargo manifests and tool configs |
 | `.stderr` | 25 | 570 | 0 | 549 | 21 | trybuild compile-fail snapshots |
-| `.yml` | 15 | 5,040 | 4,555 | 341 | 144 | CI workflows and config |
-| `.yaml` | 11 | 4,894 | 4,019 | 25 | 850 | CI workflows, OpenAPI specs, config |
+| `.yml` | 16 | 5,119 | 4,616 | 353 | 150 | CI workflows and config |
+| `.yaml` | 11 | 4,900 | 4,022 | 28 | 850 | CI workflows, OpenAPI specs, config |
 | `.txt` | 7 | 227 | 0 | 226 | 1 | Plain text fixtures / summaries |
 | `.mjs` | 6 | 595 | 479 | 40 | 76 | JavaScript modules |
 | `.sh` | 4 | 432 | 372 | 3 | 57 | Shell scripts |
@@ -108,7 +108,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `.yamllint` | 1 | 7 | 0 | 6 | 1 |  |
 | `.proptest-regressions` | 1 | 7 | 0 | 7 | 0 | proptest regression seeds |
 | `.npmignore` | 1 | 6 | 0 | 6 | 0 |  |
-| **Total** | **931** | **175,562** | **101,379** | **56,100** | **18,083** | |
+| **Total** | **879** | **170,417** | **102,107** | **51,403** | **16,907** | |
 
 > **Code + Comments + Blank = Lines** for every row. ``Comments`` is all non-code, non-blank content: inline + doc-comments in source, prose in Markdown/text, and raw content in formats tokei does not parse as code (lockfiles, ``.stderr``, snapshots). Rust doc-comments are isolated in the per-crate ``Doc`` column above.
 
@@ -120,21 +120,21 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 | Crate | Files | Code | Tests | Benches | Doc | T:C | Purpose |
 |-------|------:|-----:|------:|--------:|----:|----:|---------|
-| [`wasm`](crates/wasm) | 113 | 6,131 | 4,485 | 0 | 1,626 | 0.7× | TypeScript-callable wasm-bindgen leaf for the CoW Protocol Rust SDK; built to wasm32 and shipped to npm, not crates.io |
+| [`wasm`](crates/wasm) | 113 | 6,264 | 4,531 | 0 | 1,685 | 0.7× | TypeScript-callable wasm-bindgen leaf for the CoW Protocol Rust SDK; built to wasm32 and shipped to npm, not crates.io |
 | [`core`](crates/core) | 74 | 5,557 | 4,039 | 0 | 2,347 | 0.7× | Shared CoW Protocol core types and validation primitives |
 | [`trading`](crates/trading) | 57 | 5,212 | 7,002 | 46 | 1,815 | 1.3× | High-level CoW Protocol trading orchestration surface |
-| [`orderbook`](crates/orderbook) | 42 | 4,328 | 5,542 | 14 | 1,756 | 1.3× | Typed CoW Protocol orderbook client models and decoding helpers |
+| [`orderbook`](crates/orderbook) | 42 | 4,332 | 5,567 | 14 | 1,758 | 1.3× | Typed CoW Protocol orderbook client models and decoding helpers |
 | [`contracts`](crates/contracts) | 59 | 2,920 | 3,901 | 60 | 1,577 | 1.3× | CoW Protocol low-level contracts helpers for order hashing, signature codecs and verification, ABI bindings, and fail-closed on-chain event decoding |
-| [`app-data`](crates/app-data) | 41 | 1,393 | 2,112 | 33 | 751 | 1.5× | CoW Protocol app-data encoding, validation, and CID compatibility |
+| [`app-data`](crates/app-data) | 41 | 1,393 | 2,182 | 33 | 751 | 1.6× | CoW Protocol app-data encoding, validation, and CID compatibility |
 | [`alloy-provider`](crates/alloy-provider) | 27 | 1,294 | 1,516 | 0 | 203 | 1.2× | Alloy-backed read-only Provider adapter for the CoW Protocol Rust SDK |
-| [`subgraph`](crates/subgraph) | 26 | 1,234 | 2,101 | 0 | 463 | 1.7× | Typed CoW Protocol subgraph query primitives |
+| [`subgraph`](crates/subgraph) | 26 | 1,236 | 2,154 | 0 | 483 | 1.7× | Typed CoW Protocol subgraph query primitives |
 | [`signing`](crates/signing) | 25 | 915 | 1,593 | 26 | 324 | 1.7× | Deterministic CoW Protocol order hashing, EIP-712 signing, and UID helpers |
-| [`test-utils`](crates/test-utils) | 10 | 795 | 143 | 0 | 235 | 0.2× | Internal, unpublished shared test helpers for the cow-rs workspace. |
+| [`test-utils`](crates/test-utils) | 10 | 800 | 143 | 0 | 236 | 0.2× | Internal, unpublished shared test helpers for the cow-rs workspace. |
 | [`alloy`](crates/alloy) | 27 | 777 | 1,265 | 0 | 209 | 1.6× | Composed Alloy provider and signer adapter for the CoW Protocol Rust SDK |
 | [`test`](crates/test) | 9 | 725 | 283 | 0 | 228 | 0.4× | In-memory test doubles for the cow-rs SDK public traits (OrderbookClient, Signer, Provider) so downstream applications can test their CoW Protocol integration without a live orderbook, RPC endpoint, or wallet. |
 | [`alloy-signer`](crates/alloy-signer) | 23 | 701 | 534 | 0 | 143 | 0.8× | Alloy-backed local private-key Signer adapter for the CoW Protocol Rust SDK |
 | [`sdk`](crates/sdk) | 8 | 106 | 1,148 | 0 | 168 | 10.8× | Facade crate for CoW Protocol Rust SDK surfaces |
-| **Total** | **541** | **32,088** | **35,664** | **179** | **11,845** | **1.1×** | |
+| **Total** | **541** | **32,232** | **35,858** | **179** | **11,927** | **1.1×** | |
 
 ---
 
@@ -144,9 +144,9 @@ The 25 largest hand-written source files by code lines (Rust + TypeScript). This
 
 | File | Lang | Kind | Code | Comments |
 |------|------|------|-----:|---------:|
-| [`xtask/src/parity/mod.rs`](xtask/src/parity/mod.rs) | Rust | src | 1,076 | 102 |
+| [`xtask/src/parity/mod.rs`](xtask/src/parity/mod.rs) | Rust | src | 1,122 | 111 |
 | [`crates/orderbook/tests/api_contract.rs`](crates/orderbook/tests/api_contract.rs) | Rust | test | 1,032 | 23 |
-| [`crates/subgraph/tests/api_contract.rs`](crates/subgraph/tests/api_contract.rs) | Rust | test | 959 | 0 |
+| [`crates/subgraph/tests/api_contract.rs`](crates/subgraph/tests/api_contract.rs) | Rust | test | 1,012 | 6 |
 | [`crates/orderbook/tests/request_contract.rs`](crates/orderbook/tests/request_contract.rs) | Rust | test | 856 | 21 |
 | [`crates/trading/tests/common/mod.rs`](crates/trading/tests/common/mod.rs) | Rust | test | 855 | 36 |
 | [`crates/trading/tests/quote_contract.rs`](crates/trading/tests/quote_contract.rs) | Rust | test | 782 | 12 |
@@ -154,16 +154,16 @@ The 25 largest hand-written source files by code lines (Rust + TypeScript). This
 | [`crates/sdk/tests/error_redaction_contract.rs`](crates/sdk/tests/error_redaction_contract.rs) | Rust | test | 773 | 58 |
 | [`crates/trading/tests/post_contract.rs`](crates/trading/tests/post_contract.rs) | Rust | test | 759 | 74 |
 | [`crates/orderbook/src/types/quote.rs`](crates/orderbook/src/types/quote.rs) | Rust | src | 736 | 297 |
+| [`crates/wasm/snapshots/raw/cloudflare.d.ts`](crates/wasm/snapshots/raw/cloudflare.d.ts) | TypeScript | src | 712 | 2,162 |
 | [`xtask/src/parity/openapi_coverage.rs`](xtask/src/parity/openapi_coverage.rs) | Rust | src | 686 | 5 |
-| [`crates/wasm/snapshots/raw/cloudflare.d.ts`](crates/wasm/snapshots/raw/cloudflare.d.ts) | TypeScript | src | 677 | 2,050 |
-| [`crates/wasm/npm/src/default.ts`](crates/wasm/npm/src/default.ts) | TypeScript | src | 646 | 0 |
-| [`crates/wasm/snapshots/raw/default.d.ts`](crates/wasm/snapshots/raw/default.d.ts) | TypeScript | src | 637 | 2,133 |
+| [`crates/wasm/src/exports/orderbook.rs`](crates/wasm/src/exports/orderbook.rs) | Rust | src | 680 | 181 |
+| [`crates/wasm/snapshots/raw/default.d.ts`](crates/wasm/snapshots/raw/default.d.ts) | TypeScript | src | 670 | 2,245 |
+| [`crates/wasm/npm/src/default.ts`](crates/wasm/npm/src/default.ts) | TypeScript | src | 668 | 0 |
 | [`crates/orderbook/src/types/order.rs`](crates/orderbook/src/types/order.rs) | Rust | src | 629 | 248 |
-| [`crates/wasm/src/exports/orderbook.rs`](crates/wasm/src/exports/orderbook.rs) | Rust | src | 619 | 160 |
 | [`crates/core/tests/transport_contract.rs`](crates/core/tests/transport_contract.rs) | Rust | test | 613 | 27 |
-| [`crates/wasm/src/exports/trading.rs`](crates/wasm/src/exports/trading.rs) | Rust | src | 611 | 115 |
 | [`crates/trading/src/post.rs`](crates/trading/src/post.rs) | Rust | src | 604 | 127 |
 | [`crates/trading/tests/sdk_contract.rs`](crates/trading/tests/sdk_contract.rs) | Rust | test | 601 | 8 |
+| [`crates/wasm/src/exports/trading.rs`](crates/wasm/src/exports/trading.rs) | Rust | src | 599 | 114 |
 | [`crates/trading/src/slippage.rs`](crates/trading/src/slippage.rs) | Rust | src | 595 | 121 |
 | [`crates/wasm/src/exports/signing.rs`](crates/wasm/src/exports/signing.rs) | Rust | src | 581 | 124 |
 | [`crates/core/tests/policy_contract.rs`](crates/core/tests/policy_contract.rs) | Rust | test | 580 | 64 |
@@ -195,9 +195,9 @@ The 25 largest hand-written source files by code lines (Rust + TypeScript). This
 
 | Subtree | Files | Lines | Code | Purpose |
 |---------|------:|------:|-----:|---------|
-| [`fixtures`](parity/fixtures) | 34 | 2,410 | 2,410 | Golden fixtures captured from upstream services |
+| [`fixtures`](parity/fixtures) | 36 | 2,563 | 2,563 | Golden fixtures captured from upstream services |
 | [`openapi`](parity/openapi) | 2 | 2,895 | 2,860 | OpenAPI specs pinned for parity |
-| **Total (listed)** | **36** | **5,305** | **5,270** | |
+| **Total (listed)** | **38** | **5,458** | **5,423** | |
 
 ---
 
@@ -205,10 +205,10 @@ The 25 largest hand-written source files by code lines (Rust + TypeScript). This
 
 | Subtree | Files | Lines | Code | Purpose |
 |---------|------:|------:|-----:|---------|
-| [`adr`](docs/adr) | 69 | 6,078 | 0 | Architecture Decision Records |
-| [`audit`](docs/audit) | 60 | 9,758 | 0 | Audit notes and review artifacts |
+| [`adr`](docs/adr) | 55 | 5,601 | 0 | Architecture Decision Records |
+| [`audit`](docs/audit) | 19 | 3,847 | 0 | Audit notes and review artifacts |
 | [`providers`](docs/providers) | 2 | 279 | 0 | Provider integration notes |
-| **Total (listed)** | **131** | **16,115** | **0** | |
+| **Total (listed)** | **76** | **9,727** | **0** | |
 
 ---
 
@@ -225,7 +225,7 @@ The 25 largest hand-written source files by code lines (Rust + TypeScript). This
 
 | Path | Files | Purpose |
 |------|------:|---------|
-| `.github/workflows/` | 12 | GitHub Actions pipelines |
+| `.github/workflows/` | 13 | GitHub Actions pipelines |
 | `.github/config/`    | 8 | Shared CI config |
 | `.githooks/`         | 1 | Tracked git hooks |
 | `.cargo/`            | 2 | Cargo config (e.g. rustflags) |
@@ -250,7 +250,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) &mdash; 283 lines
 - [`LICENSE`](LICENSE) &mdash; 674 lines
 - [`llvm-cov-summary.txt`](llvm-cov-summary.txt) &mdash; 186 lines
-- [`PROPERTIES.md`](PROPERTIES.md) &mdash; 250 lines
+- [`PROPERTIES.md`](PROPERTIES.md) &mdash; 252 lines
 - [`README.md`](README.md) &mdash; 251 lines
 - [`release.toml`](release.toml) &mdash; 59 lines
 - [`ROADMAP.md`](ROADMAP.md) &mdash; 67 lines
@@ -291,28 +291,29 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <details>
 <summary><code>.github/config/</code> &mdash; 8 file(s)</summary>
 
-- [`audit-refresh-map.yml`](.github/config/audit-refresh-map.yml) &mdash; 32 lines
+- [`audit-refresh-map.yml`](.github/config/audit-refresh-map.yml) &mdash; 30 lines
 - [`deny-unknown-fields-allowlist.yaml`](.github/config/deny-unknown-fields-allowlist.yaml) &mdash; 20 lines
 - [`deny.toml`](.github/config/deny.toml) &mdash; 152 lines
 - [`enum-policy.yaml`](.github/config/enum-policy.yaml) &mdash; 477 lines
 - [`nextest.toml`](.github/config/nextest.toml) &mdash; 38 lines
 - [`panic-allowlist.yaml`](.github/config/panic-allowlist.yaml) &mdash; 89 lines
-- [`principle-adr-map.yaml`](.github/config/principle-adr-map.yaml) &mdash; 111 lines
+- [`principle-adr-map.yaml`](.github/config/principle-adr-map.yaml) &mdash; 110 lines
 - [`typos.toml`](.github/config/typos.toml) &mdash; 30 lines
 
 </details>
 
 <details>
-<summary><code>.github/workflows/</code> &mdash; 12 file(s)</summary>
+<summary><code>.github/workflows/</code> &mdash; 13 file(s)</summary>
 
 - [`_quality-gate.yml`](.github/workflows/_quality-gate.yml) &mdash; 349 lines
 - [`alloy-release-candidate.yml`](.github/workflows/alloy-release-candidate.yml) &mdash; 133 lines
 - [`benchmarks.yml`](.github/workflows/benchmarks.yml) &mdash; 69 lines
-- [`ci.yml`](.github/workflows/ci.yml) &mdash; 313 lines
+- [`ci.yml`](.github/workflows/ci.yml) &mdash; 315 lines
 - [`codeql.yml`](.github/workflows/codeql.yml) &mdash; 55 lines
 - [`commit-format.yml`](.github/workflows/commit-format.yml) &mdash; 98 lines
 - [`crate-checks.yml`](.github/workflows/crate-checks.yml) &mdash; 99 lines
 - [`docs-quality.yml`](.github/workflows/docs-quality.yml) &mdash; 90 lines
+- [`fuzz.yml`](.github/workflows/fuzz.yml) &mdash; 79 lines
 - [`release-readiness.yml`](.github/workflows/release-readiness.yml) &mdash; 325 lines
 - [`retry-soak.yml`](.github/workflows/retry-soak.yml) &mdash; 35 lines
 - [`upstream-drift.yml`](.github/workflows/upstream-drift.yml) &mdash; 40 lines
@@ -519,7 +520,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`ipfs.rs`](crates/app-data/src/types/ipfs.rs) &mdash; 13 lines
 - [`mod.rs`](crates/app-data/src/types/mod.rs) &mdash; 19 lines
 - [`params.rs`](crates/app-data/src/types/params.rs) &mdash; 327 lines
-- [`partner_fee.rs`](crates/app-data/src/types/partner_fee.rs) &mdash; 382 lines
+- [`partner_fee.rs`](crates/app-data/src/types/partner_fee.rs) &mdash; 385 lines
 - [`validation.rs`](crates/app-data/src/types/validation.rs) &mdash; 31 lines
 
 </details>
@@ -542,7 +543,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`partner_fee_contract.rs`](crates/app-data/tests/partner_fee_contract.rs) &mdash; 412 lines
 - [`property_contract.rs`](crates/app-data/tests/property_contract.rs) &mdash; 326 lines
 - [`schema_contract.rs`](crates/app-data/tests/schema_contract.rs) &mdash; 158 lines
-- [`schema_drift_contract.rs`](crates/app-data/tests/schema_drift_contract.rs) &mdash; 124 lines
+- [`schema_drift_contract.rs`](crates/app-data/tests/schema_drift_contract.rs) &mdash; 218 lines
 - [`typed_metadata_contract.rs`](crates/app-data/tests/typed_metadata_contract.rs) &mdash; 24 lines
 - [`validated_shape_contract.rs`](crates/app-data/tests/validated_shape_contract.rs) &mdash; 142 lines
 
@@ -599,7 +600,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`order.rs`](crates/contracts/src/order.rs) &mdash; 529 lines
 - [`primitives.rs`](crates/contracts/src/primitives.rs) &mdash; 254 lines
 - [`settlement.rs`](crates/contracts/src/settlement.rs) &mdash; 258 lines
-- [`signature.rs`](crates/contracts/src/signature.rs) &mdash; 618 lines
+- [`signature.rs`](crates/contracts/src/signature.rs) &mdash; 609 lines
 - [`tokens.rs`](crates/contracts/src/tokens.rs) &mdash; 98 lines
 - [`verify.rs`](crates/contracts/src/verify.rs) &mdash; 244 lines
 
@@ -710,7 +711,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <details>
 <summary><code>crates/core/src/config/</code> &mdash; 6 file(s)</summary>
 
-- [`chains.rs`](crates/core/src/config/chains.rs) &mdash; 244 lines
+- [`chains.rs`](crates/core/src/config/chains.rs) &mdash; 222 lines
 - [`env.rs`](crates/core/src/config/env.rs) &mdash; 71 lines
 - [`hosts.rs`](crates/core/src/config/hosts.rs) &mdash; 236 lines
 - [`http.rs`](crates/core/src/config/http.rs) &mdash; 122 lines
@@ -735,7 +736,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`provider.rs`](crates/core/src/traits/provider.rs) &mdash; 238 lines
 - [`signer.rs`](crates/core/src/traits/signer.rs) &mdash; 213 lines
 - [`transaction.rs`](crates/core/src/traits/transaction.rs) &mdash; 209 lines
-- [`typed_data.rs`](crates/core/src/traits/typed_data.rs) &mdash; 199 lines
+- [`typed_data.rs`](crates/core/src/traits/typed_data.rs) &mdash; 184 lines
 
 </details>
 
@@ -758,7 +759,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`jitter.rs`](crates/core/src/transport/policy/jitter.rs) &mdash; 163 lines
 - [`mod.rs`](crates/core/src/transport/policy/mod.rs) &mdash; 55 lines
 - [`rate_limit.rs`](crates/core/src/transport/policy/rate_limit.rs) &mdash; 295 lines
-- [`retry_after.rs`](crates/core/src/transport/policy/retry_after.rs) &mdash; 153 lines
+- [`retry_after.rs`](crates/core/src/transport/policy/retry_after.rs) &mdash; 134 lines
 - [`retry.rs`](crates/core/src/transport/policy/retry.rs) &mdash; 231 lines
 - [`runner.rs`](crates/core/src/transport/policy/runner.rs) &mdash; 528 lines
 - [`status.rs`](crates/core/src/transport/policy/status.rs) &mdash; 47 lines
@@ -769,9 +770,9 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <details>
 <summary><code>crates/core/src/types/</code> &mdash; 8 file(s)</summary>
 
-- [`amount.rs`](crates/core/src/types/amount.rs) &mdash; 529 lines
+- [`amount.rs`](crates/core/src/types/amount.rs) &mdash; 506 lines
 - [`app_code.rs`](crates/core/src/types/app_code.rs) &mdash; 206 lines
-- [`identity.rs`](crates/core/src/types/identity.rs) &mdash; 930 lines
+- [`identity.rs`](crates/core/src/types/identity.rs) &mdash; 917 lines
 - [`logs.rs`](crates/core/src/types/logs.rs) &mdash; 281 lines
 - [`mod.rs`](crates/core/src/types/mod.rs) &mdash; 72 lines
 - [`order.rs`](crates/core/src/types/order.rs) &mdash; 207 lines
@@ -851,7 +852,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`builder.rs`](crates/orderbook/src/builder.rs) &mdash; 480 lines
 - [`error.rs`](crates/orderbook/src/error.rs) &mdash; 565 lines
 - [`lib.rs`](crates/orderbook/src/lib.rs) &mdash; 295 lines
-- [`rejection.rs`](crates/orderbook/src/rejection.rs) &mdash; 569 lines
+- [`rejection.rs`](crates/orderbook/src/rejection.rs) &mdash; 575 lines
 - [`request.rs`](crates/orderbook/src/request.rs) &mdash; 710 lines
 - [`transform.rs`](crates/orderbook/src/transform.rs) &mdash; 79 lines
 
@@ -885,7 +886,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`order_creation_fee_deserialize.rs`](crates/orderbook/tests/order_creation_fee_deserialize.rs) &mdash; 153 lines
 - [`quote_echo_contract.rs`](crates/orderbook/tests/quote_echo_contract.rs) &mdash; 469 lines
 - [`rejection_category_contract.rs`](crates/orderbook/tests/rejection_category_contract.rs) &mdash; 81 lines
-- [`rejection_contract.rs`](crates/orderbook/tests/rejection_contract.rs) &mdash; 567 lines
+- [`rejection_contract.rs`](crates/orderbook/tests/rejection_contract.rs) &mdash; 603 lines
 - [`request_contract.rs`](crates/orderbook/tests/request_contract.rs) &mdash; 963 lines
 - [`transform_contract.rs`](crates/orderbook/tests/transform_contract.rs) &mdash; 435 lines
 - [`types_contract.rs`](crates/orderbook/tests/types_contract.rs) &mdash; 582 lines
@@ -978,7 +979,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`error.rs`](crates/signing/src/eip1271/error.rs) &mdash; 27 lines
 - [`mod.rs`](crates/signing/src/eip1271/mod.rs) &mdash; 9 lines
 - [`provider.rs`](crates/signing/src/eip1271/provider.rs) &mdash; 44 lines
-- [`sol_types.rs`](crates/signing/src/eip1271/sol_types.rs) &mdash; 75 lines
+- [`sol_types.rs`](crates/signing/src/eip1271/sol_types.rs) &mdash; 59 lines
 
 </details>
 
@@ -1029,7 +1030,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <details>
 <summary><code>crates/subgraph/src/</code> &mdash; 6 file(s)</summary>
 
-- [`api.rs`](crates/subgraph/src/api.rs) &mdash; 712 lines
+- [`api.rs`](crates/subgraph/src/api.rs) &mdash; 734 lines
 - [`builder.rs`](crates/subgraph/src/builder.rs) &mdash; 402 lines
 - [`error.rs`](crates/subgraph/src/error.rs) &mdash; 358 lines
 - [`lib.rs`](crates/subgraph/src/lib.rs) &mdash; 36 lines
@@ -1050,7 +1051,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <details>
 <summary><code>crates/subgraph/tests/</code> &mdash; 8 file(s)</summary>
 
-- [`api_contract.rs`](crates/subgraph/tests/api_contract.rs) &mdash; 1,063 lines
+- [`api_contract.rs`](crates/subgraph/tests/api_contract.rs) &mdash; 1,128 lines
 - [`builder_contract.rs`](crates/subgraph/tests/builder_contract.rs) &mdash; 233 lines
 - [`cancellation_composition_contract.rs`](crates/subgraph/tests/cancellation_composition_contract.rs) &mdash; 206 lines
 - [`error_contract.rs`](crates/subgraph/tests/error_contract.rs) &mdash; 255 lines
@@ -1084,7 +1085,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <summary><code>crates/test/</code> &mdash; 2 file(s)</summary>
 
 - [`Cargo.toml`](crates/test/Cargo.toml) &mdash; 30 lines
-- [`README.md`](crates/test/README.md) &mdash; 75 lines
+- [`README.md`](crates/test/README.md) &mdash; 83 lines
 
 </details>
 
@@ -1104,7 +1105,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`eip712.rs`](crates/test-utils/src/eip712.rs) &mdash; 110 lines
 - [`fixtures.rs`](crates/test-utils/src/fixtures.rs) &mdash; 67 lines
 - [`lib.rs`](crates/test-utils/src/lib.rs) &mdash; 20 lines
-- [`mocks.rs`](crates/test-utils/src/mocks.rs) &mdash; 344 lines
+- [`mocks.rs`](crates/test-utils/src/mocks.rs) &mdash; 350 lines
 - [`trace.rs`](crates/test-utils/src/trace.rs) &mdash; 361 lines
 
 </details>
@@ -1250,7 +1251,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <summary><code>crates/wasm/</code> &mdash; 2 file(s)</summary>
 
 - [`Cargo.toml`](crates/wasm/Cargo.toml) &mdash; 104 lines
-- [`README.md`](crates/wasm/README.md) &mdash; 185 lines
+- [`README.md`](crates/wasm/README.md) &mdash; 184 lines
 
 </details>
 
@@ -1261,7 +1262,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`.npmignore`](crates/wasm/npm/.npmignore) &mdash; 6 lines
 - [`flavours.json`](crates/wasm/npm/flavours.json) &mdash; 66 lines
 - [`LICENSE`](crates/wasm/npm/LICENSE) &mdash; 674 lines
-- [`package.json`](crates/wasm/npm/package.json) &mdash; 112 lines
+- [`package.json`](crates/wasm/npm/package.json) &mdash; 111 lines
 - [`package.template.json`](crates/wasm/npm/package.template.json) &mdash; 54 lines
 - [`pnpm-lock.yaml`](crates/wasm/npm/pnpm-lock.yaml) &mdash; 771 lines
 - [`README.md`](crates/wasm/npm/README.md) &mdash; 279 lines
@@ -1291,14 +1292,14 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <summary><code>crates/wasm/npm/src/</code> &mdash; 10 file(s)</summary>
 
 - [`callbacks.ts`](crates/wasm/npm/src/callbacks.ts) &mdash; 95 lines
-- [`cloudflare.ts`](crates/wasm/npm/src/cloudflare.ts) &mdash; 606 lines
-- [`default.ts`](crates/wasm/npm/src/default.ts) &mdash; 723 lines
+- [`cloudflare.ts`](crates/wasm/npm/src/cloudflare.ts) &mdash; 630 lines
+- [`default.ts`](crates/wasm/npm/src/default.ts) &mdash; 747 lines
 - [`envelope.ts`](crates/wasm/npm/src/envelope.ts) &mdash; 6 lines
 - [`errors.ts`](crates/wasm/npm/src/errors.ts) &mdash; 224 lines
 - [`index.ts`](crates/wasm/npm/src/index.ts) &mdash; 1 lines
 - [`internal.ts`](crates/wasm/npm/src/internal.ts) &mdash; 159 lines
 - [`options.ts`](crates/wasm/npm/src/options.ts) &mdash; 79 lines
-- [`orderbook.ts`](crates/wasm/npm/src/orderbook.ts) &mdash; 402 lines
+- [`orderbook.ts`](crates/wasm/npm/src/orderbook.ts) &mdash; 426 lines
 - [`signing.ts`](crates/wasm/npm/src/signing.ts) &mdash; 150 lines
 
 </details>
@@ -1331,9 +1332,9 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <summary><code>crates/wasm/snapshots/facade/</code> &mdash; 5 file(s)</summary>
 
 - [`.keep`](crates/wasm/snapshots/facade/.keep) &mdash; 1 lines
-- [`cloudflare.d.ts`](crates/wasm/snapshots/facade/cloudflare.d.ts) &mdash; 78 lines
-- [`default.d.ts`](crates/wasm/snapshots/facade/default.d.ts) &mdash; 94 lines
-- [`orderbook.d.ts`](crates/wasm/snapshots/facade/orderbook.d.ts) &mdash; 57 lines
+- [`cloudflare.d.ts`](crates/wasm/snapshots/facade/cloudflare.d.ts) &mdash; 80 lines
+- [`default.d.ts`](crates/wasm/snapshots/facade/default.d.ts) &mdash; 96 lines
+- [`orderbook.d.ts`](crates/wasm/snapshots/facade/orderbook.d.ts) &mdash; 59 lines
 - [`signing.d.ts`](crates/wasm/snapshots/facade/signing.d.ts) &mdash; 23 lines
 
 </details>
@@ -1342,9 +1343,9 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <summary><code>crates/wasm/snapshots/raw/</code> &mdash; 5 file(s)</summary>
 
 - [`.keep`](crates/wasm/snapshots/raw/.keep) &mdash; 1 lines
-- [`cloudflare.d.ts`](crates/wasm/snapshots/raw/cloudflare.d.ts) &mdash; 2,870 lines
-- [`default.d.ts`](crates/wasm/snapshots/raw/default.d.ts) &mdash; 2,916 lines
-- [`orderbook.d.ts`](crates/wasm/snapshots/raw/orderbook.d.ts) &mdash; 1,876 lines
+- [`cloudflare.d.ts`](crates/wasm/snapshots/raw/cloudflare.d.ts) &mdash; 3,021 lines
+- [`default.d.ts`](crates/wasm/snapshots/raw/default.d.ts) &mdash; 3,065 lines
+- [`orderbook.d.ts`](crates/wasm/snapshots/raw/orderbook.d.ts) &mdash; 2,025 lines
 - [`signing.d.ts`](crates/wasm/snapshots/raw/signing.d.ts) &mdash; 774 lines
 
 </details>
@@ -1367,12 +1368,12 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`errors.rs`](crates/wasm/src/exports/errors.rs) &mdash; 758 lines
 - [`events.rs`](crates/wasm/src/exports/events.rs) &mdash; 64 lines
 - [`ipfs.rs`](crates/wasm/src/exports/ipfs.rs) &mdash; 255 lines
-- [`mod.rs`](crates/wasm/src/exports/mod.rs) &mdash; 107 lines
-- [`orderbook.rs`](crates/wasm/src/exports/orderbook.rs) &mdash; 825 lines
+- [`mod.rs`](crates/wasm/src/exports/mod.rs) &mdash; 135 lines
+- [`orderbook.rs`](crates/wasm/src/exports/orderbook.rs) &mdash; 911 lines
 - [`registry.rs`](crates/wasm/src/exports/registry.rs) &mdash; 95 lines
 - [`signing.rs`](crates/wasm/src/exports/signing.rs) &mdash; 742 lines
 - [`subgraph.rs`](crates/wasm/src/exports/subgraph.rs) &mdash; 241 lines
-- [`trading.rs`](crates/wasm/src/exports/trading.rs) &mdash; 769 lines
+- [`trading.rs`](crates/wasm/src/exports/trading.rs) &mdash; 756 lines
 - [`transport.rs`](crates/wasm/src/exports/transport.rs) &mdash; 488 lines
 
 </details>
@@ -1384,9 +1385,9 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`contracts.rs`](crates/wasm/src/exports/dto/contracts.rs) &mdash; 105 lines
 - [`core.rs`](crates/wasm/src/exports/dto/core.rs) &mdash; 144 lines
 - [`events.rs`](crates/wasm/src/exports/dto/events.rs) &mdash; 298 lines
-- [`mod.rs`](crates/wasm/src/exports/dto/mod.rs) &mdash; 92 lines
+- [`mod.rs`](crates/wasm/src/exports/dto/mod.rs) &mdash; 94 lines
 - [`order.rs`](crates/wasm/src/exports/dto/order.rs) &mdash; 239 lines
-- [`orderbook.rs`](crates/wasm/src/exports/dto/orderbook.rs) &mdash; 452 lines
+- [`orderbook.rs`](crates/wasm/src/exports/dto/orderbook.rs) &mdash; 550 lines
 - [`quote.rs`](crates/wasm/src/exports/dto/quote.rs) &mdash; 267 lines
 - [`signing.rs`](crates/wasm/src/exports/dto/signing.rs) &mdash; 205 lines
 - [`subgraph.rs`](crates/wasm/src/exports/dto/subgraph.rs) &mdash; 19 lines
@@ -1428,11 +1429,11 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`wasm_ipfs_contract.rs`](crates/wasm/tests/wasm_ipfs_contract.rs) &mdash; 181 lines
 - [`wasm_redaction_contract.rs`](crates/wasm/tests/wasm_redaction_contract.rs) &mdash; 127 lines
 - [`wasm_retry_runner_contract.rs`](crates/wasm/tests/wasm_retry_runner_contract.rs) &mdash; 69 lines
-- [`wasm_snapshot_surface_contract.rs`](crates/wasm/tests/wasm_snapshot_surface_contract.rs) &mdash; 428 lines
+- [`wasm_snapshot_surface_contract.rs`](crates/wasm/tests/wasm_snapshot_surface_contract.rs) &mdash; 434 lines
 - [`wasm_surface_contract.rs`](crates/wasm/tests/wasm_surface_contract.rs) &mdash; 229 lines
 - [`wasm_telemetry_contract.rs`](crates/wasm/tests/wasm_telemetry_contract.rs) &mdash; 54 lines
 - [`wasm_transport_policy_contract.rs`](crates/wasm/tests/wasm_transport_policy_contract.rs) &mdash; 320 lines
-- [`wasm_workflow_coverage_contract.rs`](crates/wasm/tests/wasm_workflow_coverage_contract.rs) &mdash; 445 lines
+- [`wasm_workflow_coverage_contract.rs`](crates/wasm/tests/wasm_workflow_coverage_contract.rs) &mdash; 493 lines
 
 </details>
 
@@ -1446,7 +1447,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <details>
 <summary><code>docs/</code> &mdash; 19 file(s)</summary>
 
-- [`alloy-doctrine.md`](docs/alloy-doctrine.md) &mdash; 199 lines
+- [`alloy-doctrine.md`](docs/alloy-doctrine.md) &mdash; 178 lines
 - [`alloy-major-release-runbook.md`](docs/alloy-major-release-runbook.md) &mdash; 63 lines
 - [`architecture.md`](docs/architecture.md) &mdash; 462 lines
 - [`code-of-conduct.md`](docs/code-of-conduct.md) &mdash; 71 lines
@@ -1454,12 +1455,12 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`deployments.md`](docs/deployments.md) &mdash; 102 lines
 - [`examples.md`](docs/examples.md) &mdash; 104 lines
 - [`getting-started.md`](docs/getting-started.md) &mdash; 781 lines
-- [`integrations.md`](docs/integrations.md) &mdash; 393 lines
+- [`integrations.md`](docs/integrations.md) &mdash; 391 lines
 - [`msrv-policy.md`](docs/msrv-policy.md) &mdash; 39 lines
-- [`observability.md`](docs/observability.md) &mdash; 383 lines
-- [`parity.md`](docs/parity.md) &mdash; 478 lines
+- [`observability.md`](docs/observability.md) &mdash; 474 lines
+- [`parity.md`](docs/parity.md) &mdash; 490 lines
 - [`performance.md`](docs/performance.md) &mdash; 273 lines
-- [`principles.md`](docs/principles.md) &mdash; 243 lines
+- [`principles.md`](docs/principles.md) &mdash; 242 lines
 - [`publication-handoff.md`](docs/publication-handoff.md) &mdash; 117 lines
 - [`README.md`](docs/README.md) &mdash; 124 lines
 - [`release-checklist.md`](docs/release-checklist.md) &mdash; 454 lines
@@ -1469,143 +1470,88 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>docs/adr/</code> &mdash; 69 file(s)</summary>
+<summary><code>docs/adr/</code> &mdash; 55 file(s)</summary>
 
 - [`0000-template.md`](docs/adr/0000-template.md) &mdash; 44 lines
 - [`0001-multi-crate-sdk-family-with-thin-facade.md`](docs/adr/0001-multi-crate-sdk-family-with-thin-facade.md) &mdash; 69 lines
-- [`0002-dedicated-trading-orchestration-crate.md`](docs/adr/0002-dedicated-trading-orchestration-crate.md) &mdash; 47 lines
+- [`0002-dedicated-trading-orchestration-crate.md`](docs/adr/0002-dedicated-trading-orchestration-crate.md) &mdash; 44 lines
 - [`0003-separate-read-only-subgraph-crate.md`](docs/adr/0003-separate-read-only-subgraph-crate.md) &mdash; 65 lines
-- [`0005-boundary-specific-runtime-contracts-and-strong-domain-types.md`](docs/adr/0005-boundary-specific-runtime-contracts-and-strong-domain-types.md) &mdash; 70 lines
-- [`0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md`](docs/adr/0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md) &mdash; 55 lines
-- [`0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md`](docs/adr/0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md) &mdash; 68 lines
-- [`0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md`](docs/adr/0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md) &mdash; 16 lines
-- [`0009-wasm-verification-consoles-hybrid-extensibility-and-two-tier-proof.md`](docs/adr/0009-wasm-verification-consoles-hybrid-extensibility-and-two-tier-proof.md) &mdash; 78 lines
-- [`0010-runtime-neutral-async-and-transport-posture.md`](docs/adr/0010-runtime-neutral-async-and-transport-posture.md) &mdash; 92 lines
-- [`0011-typed-amount-boundary-and-typestate-ready-state-construction.md`](docs/adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md) &mdash; 140 lines
+- [`0005-boundary-specific-runtime-contracts-and-strong-domain-types.md`](docs/adr/0005-boundary-specific-runtime-contracts-and-strong-domain-types.md) &mdash; 68 lines
+- [`0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md`](docs/adr/0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md) &mdash; 51 lines
+- [`0010-runtime-neutral-async-and-transport-posture.md`](docs/adr/0010-runtime-neutral-async-and-transport-posture.md) &mdash; 91 lines
+- [`0011-typed-amount-boundary-and-typestate-ready-state-construction.md`](docs/adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md) &mdash; 134 lines
 - [`0012-alloy-sol-bindings-and-registry-authority.md`](docs/adr/0012-alloy-sol-bindings-and-registry-authority.md) &mdash; 107 lines
-- [`0013-http-transport-injection-and-typestate-builders.md`](docs/adr/0013-http-transport-injection-and-typestate-builders.md) &mdash; 97 lines
+- [`0013-http-transport-injection-and-typestate-builders.md`](docs/adr/0013-http-transport-injection-and-typestate-builders.md) &mdash; 94 lines
 - [`0014-eip1271-verification-cache.md`](docs/adr/0014-eip1271-verification-cache.md) &mdash; 108 lines
-- [`0015-client-side-order-bounds-validator.md`](docs/adr/0015-client-side-order-bounds-validator.md) &mdash; 123 lines
+- [`0015-client-side-order-bounds-validator.md`](docs/adr/0015-client-side-order-bounds-validator.md) &mdash; 121 lines
 - [`0016-split-sell-and-buy-token-balance-enums.md`](docs/adr/0016-split-sell-and-buy-token-balance-enums.md) &mdash; 89 lines
 - [`0017-typed-orderbook-rejection-parser.md`](docs/adr/0017-typed-orderbook-rejection-parser.md) &mdash; 135 lines
 - [`0018-typed-app-data-merge.md`](docs/adr/0018-typed-app-data-merge.md) &mdash; 131 lines
-- [`0019-http-transport-sole-dispatch.md`](docs/adr/0019-http-transport-sole-dispatch.md) &mdash; 17 lines
 - [`0020-ethflow-owner-threading.md`](docs/adr/0020-ethflow-owner-threading.md) &mdash; 159 lines
 - [`0021-orderbook-total-fee-policy.md`](docs/adr/0021-orderbook-total-fee-policy.md) &mdash; 110 lines
 - [`0022-ecdsa-signature-v-normalization.md`](docs/adr/0022-ecdsa-signature-v-normalization.md) &mdash; 135 lines
-- [`0023-legacy-compatibility-shim-removal.md`](docs/adr/0023-legacy-compatibility-shim-removal.md) &mdash; 15 lines
 - [`0024-asyncprovider-asyncsigningprovider-capability-split.md`](docs/adr/0024-asyncprovider-asyncsigningprovider-capability-split.md) &mdash; 70 lines
-- [`0025-workspace-url-redaction-convention.md`](docs/adr/0025-workspace-url-redaction-convention.md) &mdash; 55 lines
-- [`0026-alloy-major-release-absorption-plan.md`](docs/adr/0026-alloy-major-release-absorption-plan.md) &mdash; 97 lines
+- [`0025-workspace-url-redaction-convention.md`](docs/adr/0025-workspace-url-redaction-convention.md) &mdash; 60 lines
+- [`0026-alloy-major-release-absorption-plan.md`](docs/adr/0026-alloy-major-release-absorption-plan.md) &mdash; 96 lines
 - [`0027-post-quantum-signing-absorption-plan.md`](docs/adr/0027-post-quantum-signing-absorption-plan.md) &mdash; 77 lines
-- [`0028-account-abstraction-integration-plan.md`](docs/adr/0028-account-abstraction-integration-plan.md) &mdash; 83 lines
-- [`0029-trait-evolution-extension-traits.md`](docs/adr/0029-trait-evolution-extension-traits.md) &mdash; 19 lines
+- [`0028-account-abstraction-integration-plan.md`](docs/adr/0028-account-abstraction-integration-plan.md) &mdash; 82 lines
 - [`0030-workspace-locked-versioning-tag-baseline.md`](docs/adr/0030-workspace-locked-versioning-tag-baseline.md) &mdash; 78 lines
 - [`0031-wire-dto-openapi-driven-with-order-auction-order-split.md`](docs/adr/0031-wire-dto-openapi-driven-with-order-auction-order-split.md) &mdash; 77 lines
 - [`0032-deployment-authority-machine-readable-provenance.md`](docs/adr/0032-deployment-authority-machine-readable-provenance.md) &mdash; 103 lines
 - [`0033-minimum-viable-panic-surface.md`](docs/adr/0033-minimum-viable-panic-surface.md) &mdash; 71 lines
-- [`0034-interaction-encoder-target-policy.md`](docs/adr/0034-interaction-encoder-target-policy.md) &mdash; 81 lines
-- [`0035-alloy-provider-adapter.md`](docs/adr/0035-alloy-provider-adapter.md) &mdash; 154 lines
-- [`0036-alloy-signer-adapter.md`](docs/adr/0036-alloy-signer-adapter.md) &mdash; 9 lines
-- [`0037-alloy-umbrella-adapter.md`](docs/adr/0037-alloy-umbrella-adapter.md) &mdash; 11 lines
-- [`0038-transaction-lifecycle-types.md`](docs/adr/0038-transaction-lifecycle-types.md) &mdash; 73 lines
-- [`0039-typescript-callable-wasm-sdk-surface.md`](docs/adr/0039-typescript-callable-wasm-sdk-surface.md) &mdash; 140 lines
-- [`0040-wallet-provider-callback-boundary-for-js-consumers.md`](docs/adr/0040-wallet-provider-callback-boundary-for-js-consumers.md) &mdash; 72 lines
-- [`0041-transport-policy-l3-layering.md`](docs/adr/0041-transport-policy-l3-layering.md) &mdash; 96 lines
-- [`0042-pure-helpers-extraction.md`](docs/adr/0042-pure-helpers-extraction.md) &mdash; 79 lines
-- [`0043-callback-registry-internalization.md`](docs/adr/0043-callback-registry-internalization.md) &mdash; 14 lines
-- [`0044-bundle-size-profile-and-flavor-builds.md`](docs/adr/0044-bundle-size-profile-and-flavor-builds.md) &mdash; 94 lines
+- [`0035-alloy-provider-adapter.md`](docs/adr/0035-alloy-provider-adapter.md) &mdash; 152 lines
+- [`0038-transaction-lifecycle-types.md`](docs/adr/0038-transaction-lifecycle-types.md) &mdash; 72 lines
+- [`0039-typescript-callable-wasm-sdk-surface.md`](docs/adr/0039-typescript-callable-wasm-sdk-surface.md) &mdash; 132 lines
+- [`0040-wallet-provider-callback-boundary-for-js-consumers.md`](docs/adr/0040-wallet-provider-callback-boundary-for-js-consumers.md) &mdash; 71 lines
+- [`0041-transport-policy-l3-layering.md`](docs/adr/0041-transport-policy-l3-layering.md) &mdash; 94 lines
+- [`0044-bundle-size-profile-and-flavor-builds.md`](docs/adr/0044-bundle-size-profile-and-flavor-builds.md) &mdash; 88 lines
 - [`0045-async-signer-trait-narrowing.md`](docs/adr/0045-async-signer-trait-narrowing.md) &mdash; 54 lines
-- [`0046-transport-policy-js-exposure.md`](docs/adr/0046-transport-policy-js-exposure.md) &mdash; 14 lines
-- [`0047-typescript-facade-architecture.md`](docs/adr/0047-typescript-facade-architecture.md) &mdash; 14 lines
 - [`0048-composable-conditional-order-framework.md`](docs/adr/0048-composable-conditional-order-framework.md) &mdash; 208 lines
-- [`0049-cow-shed-account-abstraction-proxy.md`](docs/adr/0049-cow-shed-account-abstraction-proxy.md) &mdash; 146 lines
+- [`0049-cow-shed-account-abstraction-proxy.md`](docs/adr/0049-cow-shed-account-abstraction-proxy.md) &mdash; 144 lines
 - [`0050-eip1271-signature-blob-encoding.md`](docs/adr/0050-eip1271-signature-blob-encoding.md) &mdash; 172 lines
 - [`0051-signing-owned-eip1271-signature-provider-trait.md`](docs/adr/0051-signing-owned-eip1271-signature-provider-trait.md) &mdash; 134 lines
 - [`0052-alloy-primitives-canonical-primitive-layer.md`](docs/adr/0052-alloy-primitives-canonical-primitive-layer.md) &mdash; 126 lines
 - [`0053-typed-signer-rejection-classification.md`](docs/adr/0053-typed-signer-rejection-classification.md) &mdash; 155 lines
-- [`0054-onchain-order-event-decoding-is-fail-closed.md`](docs/adr/0054-onchain-order-event-decoding-is-fail-closed.md) &mdash; 86 lines
-- [`0055-bounded-response-reads.md`](docs/adr/0055-bounded-response-reads.md) &mdash; 95 lines
-- [`0056-settlement-event-decoding-is-fail-closed.md`](docs/adr/0056-settlement-event-decoding-is-fail-closed.md) &mdash; 16 lines
-- [`0057-log-provider-capability-trait.md`](docs/adr/0057-log-provider-capability-trait.md) &mdash; 126 lines
-- [`0058-typed-quote-request-response-surface.md`](docs/adr/0058-typed-quote-request-response-surface.md) &mdash; 203 lines
-- [`0059-hash-concrete-orderdata-directly.md`](docs/adr/0059-hash-concrete-orderdata-directly.md) &mdash; 78 lines
+- [`0054-onchain-order-event-decoding-is-fail-closed.md`](docs/adr/0054-onchain-order-event-decoding-is-fail-closed.md) &mdash; 85 lines
+- [`0055-bounded-response-reads.md`](docs/adr/0055-bounded-response-reads.md) &mdash; 94 lines
+- [`0057-log-provider-capability-trait.md`](docs/adr/0057-log-provider-capability-trait.md) &mdash; 125 lines
+- [`0058-typed-quote-request-response-surface.md`](docs/adr/0058-typed-quote-request-response-surface.md) &mdash; 200 lines
+- [`0059-hash-concrete-orderdata-directly.md`](docs/adr/0059-hash-concrete-orderdata-directly.md) &mdash; 75 lines
 - [`0060-uniform-error-classification.md`](docs/adr/0060-uniform-error-classification.md) &mdash; 116 lines
 - [`0061-wasm-abi-receiver-pay-to-owner.md`](docs/adr/0061-wasm-abi-receiver-pay-to-owner.md) &mdash; 79 lines
-- [`0062-internal-shared-test-support-crate.md`](docs/adr/0062-internal-shared-test-support-crate.md) &mdash; 61 lines
-- [`0063-published-consumer-test-doubles-crate.md`](docs/adr/0063-published-consumer-test-doubles-crate.md) &mdash; 94 lines
-- [`0064-app-data-typed-validation.md`](docs/adr/0064-app-data-typed-validation.md) &mdash; 82 lines
+- [`0062-internal-shared-test-support-crate.md`](docs/adr/0062-internal-shared-test-support-crate.md) &mdash; 60 lines
+- [`0063-published-consumer-test-doubles-crate.md`](docs/adr/0063-published-consumer-test-doubles-crate.md) &mdash; 93 lines
+- [`0064-app-data-typed-validation.md`](docs/adr/0064-app-data-typed-validation.md) &mdash; 90 lines
 - [`0066-trading-slippage-and-suggestion-policy.md`](docs/adr/0066-trading-slippage-and-suggestion-policy.md) &mdash; 59 lines
-- [`0067-idiomatic-accessor-naming.md`](docs/adr/0067-idiomatic-accessor-naming.md) &mdash; 69 lines
-- [`0068-payload-only-typed-data-signing.md`](docs/adr/0068-payload-only-typed-data-signing.md) &mdash; 82 lines
+- [`0067-idiomatic-accessor-naming.md`](docs/adr/0067-idiomatic-accessor-naming.md) &mdash; 68 lines
+- [`0068-payload-only-typed-data-signing.md`](docs/adr/0068-payload-only-typed-data-signing.md) &mdash; 80 lines
 - [`0069-layered-trading-operation-surface-and-signing-free-transport.md`](docs/adr/0069-layered-trading-operation-surface-and-signing-free-transport.md) &mdash; 85 lines
-- [`README.md`](docs/adr/README.md) &mdash; 201 lines
+- [`README.md`](docs/adr/README.md) &mdash; 221 lines
 
 </details>
 
 <details>
-<summary><code>docs/audit/</code> &mdash; 60 file(s)</summary>
+<summary><code>docs/audit/</code> &mdash; 19 file(s)</summary>
 
-- [`alloy-provider-adapter-audit.md`](docs/audit/alloy-provider-adapter-audit.md) &mdash; 170 lines
-- [`alloy-signer-adapter-audit.md`](docs/audit/alloy-signer-adapter-audit.md) &mdash; 148 lines
-- [`alloy-umbrella-adapter-audit.md`](docs/audit/alloy-umbrella-adapter-audit.md) &mdash; 99 lines
-- [`bounded-response-reads-audit.md`](docs/audit/bounded-response-reads-audit.md) &mdash; 131 lines
-- [`cid-dependency-audit.md`](docs/audit/cid-dependency-audit.md) &mdash; 134 lines
-- [`contract-bindings-parity-audit.md`](docs/audit/contract-bindings-parity-audit.md) &mdash; 510 lines
-- [`cooperative-cancellation-contract-audit.md`](docs/audit/cooperative-cancellation-contract-audit.md) &mdash; 186 lines
-- [`cow-sdk-wasm-comparative-benchmark-validation-note.md`](docs/audit/cow-sdk-wasm-comparative-benchmark-validation-note.md) &mdash; 574 lines
-- [`cow-shed-app-data-integration-audit.md`](docs/audit/cow-shed-app-data-integration-audit.md) &mdash; 112 lines
-- [`cow-shed-contract-bindings-audit.md`](docs/audit/cow-shed-contract-bindings-audit.md) &mdash; 204 lines
-- [`credential-surface-audit.md`](docs/audit/credential-surface-audit.md) &mdash; 208 lines
-- [`credential-surface-contract-hygiene-audit.md`](docs/audit/credential-surface-contract-hygiene-audit.md) &mdash; 166 lines
-- [`dependency-gate-audit.md`](docs/audit/dependency-gate-audit.md) &mdash; 357 lines
-- [`deployment-registry-audit.md`](docs/audit/deployment-registry-audit.md) &mdash; 122 lines
-- [`ecdsa-signature-normalization-audit.md`](docs/audit/ecdsa-signature-normalization-audit.md) &mdash; 224 lines
-- [`eip1271-verification-cache-audit.md`](docs/audit/eip1271-verification-cache-audit.md) &mdash; 200 lines
-- [`error-classification-audit.md`](docs/audit/error-classification-audit.md) &mdash; 148 lines
-- [`fuzz-coverage-audit.md`](docs/audit/fuzz-coverage-audit.md) &mdash; 270 lines
-- [`http-transport-contract-audit.md`](docs/audit/http-transport-contract-audit.md) &mdash; 271 lines
-- [`lens-chain-evidence-audit.md`](docs/audit/lens-chain-evidence-audit.md) &mdash; 27 lines
-- [`log-provider-capability-audit.md`](docs/audit/log-provider-capability-audit.md) &mdash; 123 lines
-- [`onchain-order-log-decoding-audit.md`](docs/audit/onchain-order-log-decoding-audit.md) &mdash; 78 lines
-- [`panic-free-public-surface-audit.md`](docs/audit/panic-free-public-surface-audit.md) &mdash; 147 lines
-- [`partner-api-routing-audit.md`](docs/audit/partner-api-routing-audit.md) &mdash; 81 lines
-- [`public-api-naming-convention-audit.md`](docs/audit/public-api-naming-convention-audit.md) &mdash; 68 lines
-- [`quote-request-app-data-fix-review.md`](docs/audit/quote-request-app-data-fix-review.md) &mdash; 70 lines
-- [`quote-response-surface-audit.md`](docs/audit/quote-response-surface-audit.md) &mdash; 202 lines
-- [`README.md`](docs/audit/README.md) &mdash; 182 lines
-- [`settlement-event-log-decoding-audit.md`](docs/audit/settlement-event-log-decoding-audit.md) &mdash; 76 lines
-- [`shared-logic-reviewability-audit.md`](docs/audit/shared-logic-reviewability-audit.md) &mdash; 170 lines
-- [`signer-error-classification-audit.md`](docs/audit/signer-error-classification-audit.md) &mdash; 114 lines
-- [`source-lock-provenance-audit.md`](docs/audit/source-lock-provenance-audit.md) &mdash; 301 lines
-- [`subgraph-error-display-audit.md`](docs/audit/subgraph-error-display-audit.md) &mdash; 162 lines
-- [`trade-parameter-lifecycle-audit.md`](docs/audit/trade-parameter-lifecycle-audit.md) &mdash; 145 lines
-- [`trading-app-data-merge-audit.md`](docs/audit/trading-app-data-merge-audit.md) &mdash; 186 lines
-- [`trading-ethflow-owner-identity-audit.md`](docs/audit/trading-ethflow-owner-identity-audit.md) &mdash; 153 lines
-- [`trading-order-bounds-validator-audit.md`](docs/audit/trading-order-bounds-validator-audit.md) &mdash; 242 lines
-- [`trading-order-construction-integrity-audit.md`](docs/audit/trading-order-construction-integrity-audit.md) &mdash; 130 lines
-- [`trading-orderbook-context-audit.md`](docs/audit/trading-orderbook-context-audit.md) &mdash; 85 lines
-- [`trading-quote-orderbook-binding-audit.md`](docs/audit/trading-quote-orderbook-binding-audit.md) &mdash; 78 lines
-- [`trading-sdk-runtime-prerequisites-audit.md`](docs/audit/trading-sdk-runtime-prerequisites-audit.md) &mdash; 137 lines
-- [`transaction-receipt-shape-audit.md`](docs/audit/transaction-receipt-shape-audit.md) &mdash; 73 lines
-- [`transport-policy-coverage-audit.md`](docs/audit/transport-policy-coverage-audit.md) &mdash; 234 lines
-- [`typestate-builder-contract-audit.md`](docs/audit/typestate-builder-contract-audit.md) &mdash; 260 lines
-- [`unsafe-code-policy-audit.md`](docs/audit/unsafe-code-policy-audit.md) &mdash; 81 lines
-- [`url-credential-redaction-audit.md`](docs/audit/url-credential-redaction-audit.md) &mdash; 143 lines
-- [`wasm-browser-runner-determinism-audit.md`](docs/audit/wasm-browser-runner-determinism-audit.md) &mdash; 72 lines
-- [`wasm-callback-shape-design-audit.md`](docs/audit/wasm-callback-shape-design-audit.md) &mdash; 106 lines
-- [`wasm-capability-coverage-audit.md`](docs/audit/wasm-capability-coverage-audit.md) &mdash; 372 lines
-- [`wasm-component-model-future-prep-audit.md`](docs/audit/wasm-component-model-future-prep-audit.md) &mdash; 84 lines
-- [`wasm-eip1271-parity-audit.md`](docs/audit/wasm-eip1271-parity-audit.md) &mdash; 89 lines
-- [`wasm-facade-architecture-audit.md`](docs/audit/wasm-facade-architecture-audit.md) &mdash; 98 lines
-- [`wasm-performance-budget-audit.md`](docs/audit/wasm-performance-budget-audit.md) &mdash; 118 lines
-- [`wasm-public-api-stability-audit.md`](docs/audit/wasm-public-api-stability-audit.md) &mdash; 102 lines
-- [`wasm-schema-versioning-policy-audit.md`](docs/audit/wasm-schema-versioning-policy-audit.md) &mdash; 78 lines
-- [`wasm-surface-audit.md`](docs/audit/wasm-surface-audit.md) &mdash; 132 lines
-- [`wasm-type-generation-audit.md`](docs/audit/wasm-type-generation-audit.md) &mdash; 133 lines
-- [`wasm-unsupported-target-audit.md`](docs/audit/wasm-unsupported-target-audit.md) &mdash; 58 lines
-- [`wire-dto-coverage-audit.md`](docs/audit/wire-dto-coverage-audit.md) &mdash; 190 lines
-- [`workflow-security-audit.md`](docs/audit/workflow-security-audit.md) &mdash; 144 lines
+- [`alloy-adapters-audit.md`](docs/audit/alloy-adapters-audit.md) &mdash; 191 lines
+- [`bounded-response-reads-audit.md`](docs/audit/bounded-response-reads-audit.md) &mdash; 125 lines
+- [`contract-bindings-parity-audit.md`](docs/audit/contract-bindings-parity-audit.md) &mdash; 241 lines
+- [`cow-shed-contract-bindings-audit.md`](docs/audit/cow-shed-contract-bindings-audit.md) &mdash; 245 lines
+- [`credential-redaction-audit.md`](docs/audit/credential-redaction-audit.md) &mdash; 286 lines
+- [`dependency-gate-audit.md`](docs/audit/dependency-gate-audit.md) &mdash; 354 lines
+- [`deployment-registry-audit.md`](docs/audit/deployment-registry-audit.md) &mdash; 138 lines
+- [`ecdsa-signature-normalization-audit.md`](docs/audit/ecdsa-signature-normalization-audit.md) &mdash; 135 lines
+- [`eip1271-verification-cache-audit.md`](docs/audit/eip1271-verification-cache-audit.md) &mdash; 238 lines
+- [`error-classification-audit.md`](docs/audit/error-classification-audit.md) &mdash; 197 lines
+- [`event-log-decoding-audit.md`](docs/audit/event-log-decoding-audit.md) &mdash; 87 lines
+- [`fuzz-coverage-audit.md`](docs/audit/fuzz-coverage-audit.md) &mdash; 209 lines
+- [`http-transport-contract-audit.md`](docs/audit/http-transport-contract-audit.md) &mdash; 350 lines
+- [`panic-free-public-surface-audit.md`](docs/audit/panic-free-public-surface-audit.md) &mdash; 124 lines
+- [`README.md`](docs/audit/README.md) &mdash; 91 lines
+- [`source-lock-provenance-audit.md`](docs/audit/source-lock-provenance-audit.md) &mdash; 218 lines
+- [`trading-order-integrity-audit.md`](docs/audit/trading-order-integrity-audit.md) &mdash; 153 lines
+- [`wasm-surface-audit.md`](docs/audit/wasm-surface-audit.md) &mdash; 328 lines
+- [`workflow-security-audit.md`](docs/audit/workflow-security-audit.md) &mdash; 137 lines
 
 </details>
 
@@ -1808,8 +1754,8 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <details>
 <summary><code>parity/</code> &mdash; 2 file(s)</summary>
 
-- [`README.md`](parity/README.md) &mdash; 256 lines
-- [`source-lock.yaml`](parity/source-lock.yaml) &mdash; 71 lines
+- [`README.md`](parity/README.md) &mdash; 265 lines
+- [`source-lock.yaml`](parity/source-lock.yaml) &mdash; 78 lines
 
 </details>
 
@@ -1830,11 +1776,12 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>parity/fixtures/app_data/schemas/</code> &mdash; 4 file(s)</summary>
+<summary><code>parity/fixtures/app_data/schemas/</code> &mdash; 5 file(s)</summary>
 
+- [`app-data-document-v1.15.0.json`](parity/fixtures/app_data/schemas/app-data-document-v1.15.0.json) &mdash; 92 lines
 - [`flashloan.json`](parity/fixtures/app_data/schemas/flashloan.json) &mdash; 60 lines
 - [`hook-v0.2.0.json`](parity/fixtures/app_data/schemas/hook-v0.2.0.json) &mdash; 55 lines
-- [`partner-fee-v1.0.0.json`](parity/fixtures/app_data/schemas/partner-fee-v1.0.0.json) &mdash; 118 lines
+- [`partner-fee-v1.1.0.json`](parity/fixtures/app_data/schemas/partner-fee-v1.1.0.json) &mdash; 118 lines
 - [`quote-v1.1.0.json`](parity/fixtures/app_data/schemas/quote-v1.1.0.json) &mdash; 38 lines
 
 </details>
@@ -1868,11 +1815,12 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>parity/fixtures/orderbook/</code> &mdash; 8 file(s)</summary>
+<summary><code>parity/fixtures/orderbook/</code> &mdash; 9 file(s)</summary>
 
 - [`onchain_order_data.json`](parity/fixtures/orderbook/onchain_order_data.json) &mdash; 16 lines
 - [`order_quote_response.json`](parity/fixtures/orderbook/order_quote_response.json) &mdash; 38 lines
 - [`order_with_full_metadata.json`](parity/fixtures/orderbook/order_with_full_metadata.json) &mdash; 86 lines
+- [`rejection_error_types.json`](parity/fixtures/orderbook/rejection_error_types.json) &mdash; 61 lines
 - [`solver_competition_response.json`](parity/fixtures/orderbook/solver_competition_response.json) &mdash; 56 lines
 - [`solver_execution.json`](parity/fixtures/orderbook/solver_execution.json) &mdash; 19 lines
 - [`stored_order_quote.json`](parity/fixtures/orderbook/stored_order_quote.json) &mdash; 25 lines
@@ -1957,7 +1905,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 
 - [`changelog.rs`](xtask/src/changelog.rs) &mdash; 193 lines
 - [`lib.rs`](xtask/src/lib.rs) &mdash; 21 lines
-- [`main.rs`](xtask/src/main.rs) &mdash; 270 lines
+- [`main.rs`](xtask/src/main.rs) &mdash; 272 lines
 
 </details>
 
@@ -1973,10 +1921,10 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <details>
 <summary><code>xtask/src/parity/</code> &mdash; 5 file(s)</summary>
 
-- [`mod.rs`](xtask/src/parity/mod.rs) &mdash; 1,316 lines
+- [`mod.rs`](xtask/src/parity/mod.rs) &mdash; 1,375 lines
 - [`openapi_coverage.rs`](xtask/src/parity/openapi_coverage.rs) &mdash; 750 lines
 - [`registry_confirm.rs`](xtask/src/parity/registry_confirm.rs) &mdash; 364 lines
-- [`sync.rs`](xtask/src/parity/sync.rs) &mdash; 495 lines
+- [`sync.rs`](xtask/src/parity/sync.rs) &mdash; 565 lines
 - [`vendor_openapi.rs`](xtask/src/parity/vendor_openapi.rs) &mdash; 67 lines
 
 </details>
@@ -1984,26 +1932,26 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <details>
 <summary><code>xtask/src/policy/</code> &mdash; 20 file(s)</summary>
 
-- [`check_adr_coverage.rs`](xtask/src/policy/check_adr_coverage.rs) &mdash; 219 lines
-- [`check_alloy_family_pins.rs`](xtask/src/policy/check_alloy_family_pins.rs) &mdash; 238 lines
+- [`check_adr_coverage.rs`](xtask/src/policy/check_adr_coverage.rs) &mdash; 220 lines
+- [`check_alloy_family_pins.rs`](xtask/src/policy/check_alloy_family_pins.rs) &mdash; 237 lines
 - [`check_chain_patch_eligibility.rs`](xtask/src/policy/check_chain_patch_eligibility.rs) &mdash; 202 lines
-- [`check_deny_unknown_fields.rs`](xtask/src/policy/check_deny_unknown_fields.rs) &mdash; 127 lines
-- [`check_enum_policy.rs`](xtask/src/policy/check_enum_policy.rs) &mdash; 147 lines
+- [`check_deny_unknown_fields.rs`](xtask/src/policy/check_deny_unknown_fields.rs) &mdash; 126 lines
+- [`check_enum_policy.rs`](xtask/src/policy/check_enum_policy.rs) &mdash; 142 lines
 - [`check_msrv_notice.rs`](xtask/src/policy/check_msrv_notice.rs) &mdash; 163 lines
-- [`check_panic_allowlist.rs`](xtask/src/policy/check_panic_allowlist.rs) &mdash; 378 lines
-- [`check_property_citations.rs`](xtask/src/policy/check_property_citations.rs) &mdash; 158 lines
-- [`check_readme_include.rs`](xtask/src/policy/check_readme_include.rs) &mdash; 103 lines
-- [`check_shell_wrappers.rs`](xtask/src/policy/check_shell_wrappers.rs) &mdash; 95 lines
+- [`check_panic_allowlist.rs`](xtask/src/policy/check_panic_allowlist.rs) &mdash; 356 lines
+- [`check_property_citations.rs`](xtask/src/policy/check_property_citations.rs) &mdash; 152 lines
+- [`check_readme_include.rs`](xtask/src/policy/check_readme_include.rs) &mdash; 100 lines
+- [`check_shell_wrappers.rs`](xtask/src/policy/check_shell_wrappers.rs) &mdash; 90 lines
 - [`check_wasm_invariant.rs`](xtask/src/policy/check_wasm_invariant.rs) &mdash; 271 lines
 - [`check_workflow_security.rs`](xtask/src/policy/check_workflow_security.rs) &mdash; 131 lines
-- [`check_workspace_versions.rs`](xtask/src/policy/check_workspace_versions.rs) &mdash; 174 lines
-- [`classify_release.rs`](xtask/src/policy/classify_release.rs) &mdash; 205 lines
+- [`check_workspace_versions.rs`](xtask/src/policy/check_workspace_versions.rs) &mdash; 166 lines
+- [`classify_release.rs`](xtask/src/policy/classify_release.rs) &mdash; 188 lines
 - [`dependency_invariant.rs`](xtask/src/policy/dependency_invariant.rs) &mdash; 177 lines
-- [`fences.rs`](xtask/src/policy/fences.rs) &mdash; 514 lines
+- [`fences.rs`](xtask/src/policy/fences.rs) &mdash; 472 lines
 - [`fixtures.rs`](xtask/src/policy/fixtures.rs) &mdash; 13 lines
-- [`mod.rs`](xtask/src/policy/mod.rs) &mdash; 103 lines
+- [`mod.rs`](xtask/src/policy/mod.rs) &mdash; 102 lines
 - [`run_deterministic_examples.rs`](xtask/src/policy/run_deterministic_examples.rs) &mdash; 174 lines
-- [`workspace.rs`](xtask/src/policy/workspace.rs) &mdash; 547 lines
+- [`workspace.rs`](xtask/src/policy/workspace.rs) &mdash; 543 lines
 
 </details>
 
@@ -2013,11 +1961,11 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`check_adr_coverage.rs`](xtask/tests/check_adr_coverage.rs) &mdash; 51 lines
 - [`check_chain_patch_eligibility.rs`](xtask/tests/check_chain_patch_eligibility.rs) &mdash; 45 lines
 - [`check_deny_unknown_fields.rs`](xtask/tests/check_deny_unknown_fields.rs) &mdash; 46 lines
-- [`check_enum_policy.rs`](xtask/tests/check_enum_policy.rs) &mdash; 51 lines
+- [`check_enum_policy.rs`](xtask/tests/check_enum_policy.rs) &mdash; 50 lines
 - [`check_msrv_notice.rs`](xtask/tests/check_msrv_notice.rs) &mdash; 37 lines
 - [`check_panic_allowlist.rs`](xtask/tests/check_panic_allowlist.rs) &mdash; 192 lines
-- [`check_property_citations.rs`](xtask/tests/check_property_citations.rs) &mdash; 84 lines
-- [`check_workspace_versions.rs`](xtask/tests/check_workspace_versions.rs) &mdash; 26 lines
+- [`check_property_citations.rs`](xtask/tests/check_property_citations.rs) &mdash; 81 lines
+- [`check_workspace_versions.rs`](xtask/tests/check_workspace_versions.rs) &mdash; 25 lines
 - [`classify_release.rs`](xtask/tests/classify_release.rs) &mdash; 103 lines
 - [`openapi_coverage.rs`](xtask/tests/openapi_coverage.rs) &mdash; 162 lines
 - [`registry_confirm.rs`](xtask/tests/registry_confirm.rs) &mdash; 157 lines

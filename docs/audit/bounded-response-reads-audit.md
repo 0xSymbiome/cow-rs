@@ -21,8 +21,8 @@ This audit covers:
 - the documented residual boundaries where the SDK does not own the read loop
 
 It does not cover request-body construction, the URL-redaction contract
-(covered by the credential-redaction audits), or the on-chain log decoder
-(covered by the onchain-order-log-decoding audit).
+(covered by the credential-redaction audit), or the on-chain log decoder
+(covered by the event-log-decoding audit).
 
 ## Outcome Summary
 
@@ -41,37 +41,33 @@ It does not cover request-body construction, the URL-redaction contract
 ### Native transport read
 
 `ReqwestTransport` reads the response body as a stream of chunks with a
-pre-extend check, so the accumulator never exceeds the configured limit and a
-body larger than the limit is rejected after at most one over-limit chunk. The
-bound applies to both the success body and the non-2xx error body; an oversized
-error body is refused rather than carried through the typed status channel.
-Decoding is lenient, so a non-UTF-8 body is handled the same way the prior
-buffered read handled it rather than introducing a new rejection path.
+pre-extend check, so the accumulator never exceeds the configured limit and an
+over-limit body is rejected after at most one over-limit chunk. The bound applies
+to both the success body and the non-2xx error body. Decoding is lenient, so a
+non-UTF-8 body is handled without a new rejection path.
 
 ### Decompression bomb
 
 Because reqwest decompresses before yielding chunks, the bound observes the
-decoded size. A small compressed body that decodes far past the limit is
-refused on its decoded size rather than its compressed size.
+decoded size: a small compressed body that decodes far past the limit is refused
+on its decoded size, not its compressed size.
 
 ### Browser and JS-callback reads
 
-The browser `FetchTransport` and the runtime-neutral JS-callback transport
-receive a body that the surrounding JS layer has already materialized. Each
-applies the same limit as a post-receipt bound and refuses an oversized body.
-The residual — that the JS-side allocation precedes the SDK's view — is
-documented.
+The browser `FetchTransport` and the runtime-neutral JS-callback transport each
+apply the same limit as a post-receipt bound on a body the surrounding JS layer
+has already materialized. The residual — that the JS-side allocation precedes the
+SDK's view — is documented.
 
 ### Per-client defaults
 
-The orderbook and trading clients use the generous workspace default. The
-untrusted subgraph gateway uses a tighter default. The IPFS app-data read uses
-a bound sized to the protocol app-data document limit. All values are
-instance-scoped policy and are caller-overridable. The transport-policy builder
+The orderbook and trading clients use the generous workspace default; the
+untrusted subgraph gateway uses a tighter default; the IPFS app-data read uses a
+bound sized to the protocol app-data document limit. All values are
+instance-scoped policy and caller-overridable. The transport-policy builder
 refines a caller-set client policy in place, so a caller-tightened
 `max_response_bytes` — and a deliberately disabled timeout — survives a later
-`user_agent` or `timeout` refinement instead of resetting to the workspace
-default.
+`user_agent` or `timeout` refinement instead of resetting to the default.
 
 ### Retry posture
 
@@ -80,19 +76,17 @@ shared retry driver never re-requests a deterministically over-limit response.
 
 ### Signature decode
 
-Signature hex fields are length-bounded before the hex decoder allocates, with
-a bound equal to the orderbook request-body limit. The bound is generous enough
-that a valid signature is never rejected, and it refuses oversized
-non-transport input before a large decode allocation.
+Signature hex fields are length-bounded (at the orderbook request-body limit)
+before the hex decoder allocates. The bound is generous enough never to reject a
+valid signature, and it refuses oversized input before a large decode allocation.
 
 ### Residual boundaries
 
-The JSON-RPC client the SDK builds disables response decompression to remove
-the amplification class and is otherwise bounded by the request timeout; the
-alloy-managed RPC client is outside the SDK's read loop
-and is bounded by the timeout and caller trust; the IPFS read is byte-bounded
-but, by default, not time-bounded. These residuals are stated in the security
-policy rather than presented as hard caps.
+The JSON-RPC client the SDK builds disables response decompression and is
+otherwise bounded by the request timeout; the alloy-managed RPC client is outside
+the SDK's read loop and bounded by timeout and caller trust; the IPFS read is
+byte-bounded but, by default, not time-bounded. These residuals are stated in the
+security policy rather than presented as hard caps.
 
 ## Evidence
 

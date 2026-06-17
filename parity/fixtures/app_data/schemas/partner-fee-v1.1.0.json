@@ -2,15 +2,15 @@
   "surface": "app-data-schema-partner-fee",
   "sources": {
     "cow-sdk": {
-      "commit": "c931d7ecd67626736f5b8dff781741e727128c42",
+      "commit": "ccf01cb331a4d37cdf9082541eb4fa3c04f1bc26",
       "refs": [
-        "packages/app-data/src/schemas/partnerFee/v1.0.0.json",
+        "packages/app-data/src/schemas/partnerFee/v1.1.0.json",
         "packages/app-data/src/schemas/definitions.json#inlined-primitives"
       ]
     }
   },
   "payload": {
-    "$id": "partner-fee-v1.0.0.json",
+    "$id": "partner-fee-v1.1.0.json",
     "$schema": "http://json-schema.org/draft-07/schema",
     "$comment": "Shared primitives inlined from upstream definitions.json; not resolved at runtime (ADR 0064).",
     "title": "Partner fee",
@@ -37,7 +37,7 @@
             "properties": {
               "volumeBps": {
                 "title": "Volume Basis Point (BPS)",
-                "description": "The fee in basis points (BPS) to be paid to the partner based on volume. Capped at protocol level to 100 BPS (1%)",
+                "description": "The fee in basis points (BPS) to be paid to the partner based on volume. Capped to 9999 BPS (99%)",
                 "$ref": "#/definitions/maxVolumeBps"
               },
               "recipient": {
@@ -96,9 +96,9 @@
       },
       "maxVolumeBps": {
         "title": "Max Volume Basis Point (BPS)",
-        "description": "The maximum volume in basis points (BPS) to be paid to the partner. Capped at protocol level to 100 BPS (1%). You can chose to go lower but not higher",
+        "description": "The maximum volume in basis points (BPS) to be paid to the partner. Capped to 9999 BPS (99.99%). You can chose to go lower but not higher",
         "type": "integer",
-        "maximum": 100,
+        "maximum": 9999,
         "minimum": 1,
         "default": 100,
         "examples": [

@@ -4,7 +4,7 @@
 - Date: 2026-05-29
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: transport, security, orderbook, subgraph, ipfs, wasm, error-typing
-- Related: [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0019](0019-http-transport-sole-dispatch.md), [ADR 0025](0025-workspace-url-redaction-convention.md), [ADR 0033](0033-minimum-viable-panic-surface.md), [ADR 0040](0040-wallet-provider-callback-boundary-for-js-consumers.md), [ADR 0041](0041-transport-policy-l3-layering.md), [ADR 0046](0046-transport-policy-js-exposure.md)
+- Related: [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), ADR 0019, [ADR 0025](0025-workspace-url-redaction-convention.md), [ADR 0033](0033-minimum-viable-panic-surface.md), [ADR 0040](0040-wallet-provider-callback-boundary-for-js-consumers.md), [ADR 0041](0041-transport-policy-l3-layering.md), ADR 0046
 
 ## Decision
 
@@ -87,7 +87,6 @@ constant, consistent with the policy-contract rule.
 
 - [Architecture](../architecture.md)
 - [Security Policy](../../SECURITY.md)
-- [ADR 0019](0019-http-transport-sole-dispatch.md)
 - [ADR 0041](0041-transport-policy-l3-layering.md)
 
 **Proven by:**

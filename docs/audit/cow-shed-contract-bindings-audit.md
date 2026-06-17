@@ -1,7 +1,7 @@
 # COW Shed Contract Bindings Audit
 
 Status: Current
-Last reviewed: 2026-06-12
+Last reviewed: 2026-06-17
 Owning surface: inline COW Shed `alloy::sol!` bindings, proxy creation-code artifacts, deployed-generation address record, and the CREATE2/EIP-712/selector parity evidence
 Refresh trigger: Refresh when COW Shed deployments, proxy creation code, factory ABIs, hook type strings, the deployed `VERSION()` constants, or the upstream commit pins for the COW Shed sources change.
 Related docs:
@@ -9,7 +9,6 @@ Related docs:
 - [ADR 0050](../adr/0050-eip1271-signature-blob-encoding.md)
 - [ADR 0051](../adr/0051-signing-owned-eip1271-signature-provider-trait.md)
 - [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md)
-- [COW Shed App-Data Integration Audit](cow-shed-app-data-integration-audit.md)
 
 ## Scope
 
@@ -31,11 +30,10 @@ This audit covers:
   covering every bound function of both interfaces;
 - the EIP-712 type strings, domain/digest hashing, and the EOA signature
   byte order `r || s || v` with the ERC-2098 compact round-trip on
-  `RecoverableSignature`.
-
-It does not cover the COW Shed hook metadata schema integration with the
-app-data crate; that boundary is governed by the
-[COW Shed App-Data Integration Audit](cow-shed-app-data-integration-audit.md).
+  `RecoverableSignature`;
+- the COW Shed hook metadata integration with the app-data crate's `Hook`
+  schema, the EIP-1271 signing-trait boundary for account-abstraction signers,
+  and the helper crate-graph posture (see the App-Data Integration section).
 
 ## Generation posture
 
@@ -64,6 +62,10 @@ version strings.
 | EIP-712 hashing | Domain separator and signing digest are produced by `alloy_sol_types::Eip712Domain::separator` and `<ExecuteHooks as SolStruct>::eip712_signing_hash`; `domain_separator.json` and `execute_hooks_digest.json` lock the bytes, and the type hashes are re-derived with an independent keccak in the type-hash parity test | Conforms |
 | Call type identity | One macro-emitted `Call` backs typed-data hashing, both interfaces, and the calldata builders; the four `execute_hooks_calldata.json` rows lock the factory and proxy `executeHooks` wire bytes | Conforms |
 | EOA signature byte order | `r || s || v` with `v ∈ {27, 28}`, the only shape the on-chain `decodeEOASignature` accepts; the ERC-2098 compact pair lives solely on `RecoverableSignature` (`to_erc2098` normalizes to low-s per BIP-62 — a high-s input maps to its canonical twin — and `parse_erc2098` is the inverse), locked by `eoa_signature_byte_order.json` including an explicit high-s normalization row | Conforms |
+| Hook schema reuse | COW Shed hook metadata emits through the existing `crates/app-data/src/metadata/hooks.rs::Hook` schema via `SignedCowShedCall::to_app_data_hook`, with no parallel metadata format | Conforms |
+| EIP-1271 trait boundary | Custom COW Shed signers consume the signing-owned `Eip1271Signer` trait from `cow_sdk_signing::eip1271`; no parallel trait definition exists in the COW Shed helper crate | Conforms |
+| Crate-graph posture | `cow-sdk-contracts[cow-shed]` does not reach `cow-sdk-trading`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, or `alloy-provider` under `cargo metadata` | Conforms |
+| Version forwarding discipline | The caller-selected `CowShedVersion` is threaded through every internal builder; `distinct_versions_derive_distinct_proxies` asserts distinct versions produce distinct CREATE2 proxy addresses | Conforms |
 
 ## Current Contract
 
@@ -169,6 +171,32 @@ input maps to its canonical twin `(r, n − s, !y_parity)`, the same
 the inverse. `eoa_signature_byte_order.json` locks both directions,
 including an explicit high-s row proving normalize-on-encode.
 
+### App-Data Integration
+
+COW Shed hook metadata reuses the existing app-data hook schema at
+`crates/app-data/src/metadata/hooks.rs::Hook` and `HookList`; the helper module
+defines no parallel metadata format. `SignedCowShedCall::to_app_data_hook(gas_limit)`
+produces the `Hook` whose `target` is the COW Shed factory and whose `callData`
+is the encoded `executeHooks` calldata, so COW Shed-specific fields (proxy
+address, version, signed digest, signature bytes) live inside the hook's
+`callData` payload rather than as new schema columns. Custom account-abstraction
+signers consume the signing-owned `Eip1271Signer` trait at
+`cow_sdk_signing::eip1271`; trading-side call sites surface signature failures
+through inline `map_err` per [ADR 0051](../adr/0051-signing-owned-eip1271-signature-provider-trait.md),
+with no blanket `From<Eip1271SignatureError> for TradingError` bridge anywhere
+in the workspace.
+
+The helper module depends only on `cow-sdk-core`, `cow-sdk-contracts`, and
+`cow-sdk-app-data`; the negative-edge invariants `cow-sdk-contracts[cow-shed]`
+not reaching `cow-sdk-trading`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, or
+`alloy-provider` hold under `cargo metadata`, keeping the helper a peer leaf to
+trading. The facade-level `cow-shed` feature keeps the default `cow-sdk`
+dependency closure free of COW Shed types. The caller-selected `CowShedVersion`
+is threaded through every internal builder (defaulting to deployed reality
+`V1_0_1`), and `distinct_versions_derive_distinct_proxies` asserts distinct
+versions derive distinct CREATE2 proxy addresses, so the construction-time
+version is never dropped before signing.
+
 ## Evidence
 
 Primary implementation points:
@@ -178,6 +206,9 @@ Primary implementation points:
 - `crates/contracts/src/cow_shed/address/proxy-creation-code/v1.0.0.bin`
 - `crates/contracts/src/cow_shed/address/proxy-creation-code/v1.0.1.bin`
 - `crates/contracts/src/cow_shed/calls.rs`
+- `crates/contracts/src/cow_shed/hooks.rs` (`SignedCowShedCall::to_app_data_hook`)
+- `crates/app-data/src/metadata/hooks.rs` (existing hook schema)
+- `crates/signing/src/eip1271/` (signing-owned trait home)
 - `crates/contracts/src/signature.rs` (`RecoverableSignature::{to,parse}_erc2098`)
 - `parity/source-lock.yaml`
 - `parity/fixtures/cow_shed/` (`canonical_selectors`, `deployments`,
@@ -195,10 +226,20 @@ Primary regression coverage:
 - `crates/contracts/tests/signed_calldata_parity_contract.rs`
 - `crates/contracts/tests/eoa_signature_byte_order_contract.rs`
 - `tests/cow_shed_typed_data_digest.rs`
+- `crates/contracts/src/cow_shed/address/mod.rs::distinct_versions_derive_distinct_proxies`
+  (per-version distinct-proxy regression)
+- `crates/trading/tests/eip1271_signature_provider_no_reexport.rs`
+  (compile-fail regression for the trading re-export contract)
+- `cargo metadata --format-version 1` proves the four negative-edge invariants
 
 Validation surface:
 
 ```text
 cargo test -p cow-sdk-contracts --features cow-shed
+cargo test -p cow-sdk-app-data --all-features
 cargo parity-validate --source-lock parity/source-lock.yaml
+# The cow-shed feature closure of cow-sdk-contracts must stay clear of the
+# trading/orderbook/subgraph and alloy-provider edges (prints nothing on pass):
+cargo tree -p cow-sdk-contracts --features cow-shed --edges normal --prefix none \
+  | grep -E 'cow-sdk-(trading|orderbook|subgraph)|alloy-provider'
 ```

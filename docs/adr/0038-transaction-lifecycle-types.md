@@ -5,7 +5,7 @@
 - Last reviewed: 2026-05-22
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: types, adapters, trading
-- Related: [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0037](0037-alloy-umbrella-adapter.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+- Related: [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), ADR 0037, [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
 
 ## Decision
 
@@ -65,9 +65,8 @@ present fields are malformed.
 - [EIP-658](https://eips.ethereum.org/EIPS/eip-658)
 - [CoW Protocol SDK](https://github.com/cowprotocol/cow-sdk)
 - [Alloy `PendingTransactionBuilder`](https://docs.rs/alloy-provider/latest/alloy_provider/struct.PendingTransactionBuilder.html)
-- [ADR 0037](0037-alloy-umbrella-adapter.md)
 - See also: ADR 0030.
 
 **Proven by:**
 
-- [Transaction Receipt Shape Audit](../audit/transaction-receipt-shape-audit.md)
+- [Alloy Adapters Audit](../audit/alloy-adapters-audit.md)

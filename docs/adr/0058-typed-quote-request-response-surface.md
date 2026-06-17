@@ -188,13 +188,10 @@ the quote surface.
 
 - [Principles](../principles.md)
 - [Parity Matrix](../parity.md)
-- [Quote Response Surface Audit](../audit/quote-response-surface-audit.md)
-- [Wire DTO Coverage Audit](../audit/wire-dto-coverage-audit.md)
 - `parity/openapi/coverage.yaml`
 
 **Proven by:**
 
-- [Quote Response Surface Audit](../audit/quote-response-surface-audit.md)
 - `xtask/src/parity/openapi_coverage.rs`
 - `crates/orderbook/tests/wire_contract.rs`
 - `crates/orderbook/tests/fee_amount_is_not_a_public_builder_setter.rs`

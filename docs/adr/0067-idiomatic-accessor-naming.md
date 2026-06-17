@@ -66,4 +66,3 @@ TypeScript declaration snapshots as the mechanical completeness checks.
 - [Rust API Guidelines, naming (C-GETTER, C-CONV)](https://rust-lang.github.io/api-guidelines/naming.html)
 - [RFC 344, method-naming conventions](https://rust-lang.github.io/rfcs/0344-conventions-galore.html)
 - [ADR 0035](0035-alloy-provider-adapter.md)
-- [Public API naming convention audit](../audit/public-api-naming-convention-audit.md)

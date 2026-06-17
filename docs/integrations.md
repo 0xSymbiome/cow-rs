@@ -23,9 +23,7 @@ That design keeps the shipped surface:
 
 - provider-agnostic
 - easier to audit because every credential-bearing error surface is covered by
-  [Credential Surface Audit](audit/credential-surface-audit.md), and long
-  async methods are covered by
-  [Cooperative Cancellation Contract Audit](audit/cooperative-cancellation-contract-audit.md)
+  [Credential Redaction Audit](audit/credential-redaction-audit.md)
 - additive for downstream runtime crates
 
 If you need native Alloy, use the shipped adapter crates. For a custom

@@ -77,7 +77,6 @@ dependencies in read-only flows and keeps order ownership reviewable.
 **Proven by:**
 
 - [EIP-1271 Verification Cache Audit](../audit/eip1271-verification-cache-audit.md)
-- [Typestate Builder Contract Audit](../audit/typestate-builder-contract-audit.md)
 
 _(The 2026-05-22 `as_str()` → `to_hex_string()` accessor rename is folded into
 the Decision above.)_

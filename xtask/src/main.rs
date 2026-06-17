@@ -206,9 +206,9 @@ fn run_drift(args: &sync::DriftArgs) -> Result<()> {
 fn run_policy(cli: PolicyCli) -> Result<()> {
     match cli.command {
         PolicyCommand::All => xtask::policy::run_all(),
-        PolicyCommand::CheckEnumPolicy(args) => check_enum_policy::run(args),
-        PolicyCommand::CheckPanicAllowlist(args) => check_panic_allowlist::run(args),
-        PolicyCommand::CheckDenyUnknownFields(args) => check_deny_unknown_fields::run(args),
+        PolicyCommand::CheckEnumPolicy(args) => check_enum_policy::run(&args),
+        PolicyCommand::CheckPanicAllowlist(args) => check_panic_allowlist::run(&args),
+        PolicyCommand::CheckDenyUnknownFields(args) => check_deny_unknown_fields::run(&args),
         PolicyCommand::CheckWorkspaceVersions(args) => check_workspace_versions::run(&args),
         PolicyCommand::CheckMsrvNotice(args) => check_msrv_notice::run(&args),
         PolicyCommand::CheckAlloyProviderInvariant(args) => {
@@ -217,11 +217,13 @@ fn run_policy(cli: PolicyCli) -> Result<()> {
         PolicyCommand::CheckAlloySignerInvariant(args) => {
             dependency_invariant::run(&dependency_invariant::ALLOY_SIGNER, &args)
         }
-        PolicyCommand::CheckAdrCoverage(args) => check_adr_coverage::run(args),
+        PolicyCommand::CheckAdrCoverage(args) => check_adr_coverage::run(&args),
         PolicyCommand::CheckAlloyFamilyPins(args) => check_alloy_family_pins::run(&args),
-        PolicyCommand::CheckChainPatchEligibility(args) => check_chain_patch_eligibility::run(args),
-        PolicyCommand::CheckPropertyCitations(args) => check_property_citations::run(args),
-        PolicyCommand::CheckWasmInvariant(args) => check_wasm_invariant::run(args),
+        PolicyCommand::CheckChainPatchEligibility(args) => {
+            check_chain_patch_eligibility::run(&args)
+        }
+        PolicyCommand::CheckPropertyCitations(args) => check_property_citations::run(&args),
+        PolicyCommand::CheckWasmInvariant(args) => check_wasm_invariant::run(&args),
         PolicyCommand::CheckSourceFences(args) => fences::run(&args),
         PolicyCommand::CheckWorkflowSecurity(args) => check_workflow_security::run(&args),
         PolicyCommand::CheckShellWrappers(args) => check_shell_wrappers::run(&args),

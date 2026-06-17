@@ -35,14 +35,14 @@ pub struct DenyUnknownFieldsEntry {
 }
 
 pub fn run_default() -> anyhow::Result<()> {
-    run(Args {
+    run(&Args {
         repo_root: PathBuf::from("."),
         allowlist: None,
     })
 }
 
-pub fn run(args: Args) -> anyhow::Result<()> {
-    let allowlist_path = args.allowlist.unwrap_or_else(|| {
+pub fn run(args: &Args) -> anyhow::Result<()> {
+    let allowlist_path = args.allowlist.clone().unwrap_or_else(|| {
         args.repo_root
             .join(".github/config/deny-unknown-fields-allowlist.yaml")
     });
@@ -88,7 +88,10 @@ pub fn validate_allowlist(
                 entry.file, entry.item
             ));
         }
-        let key = (normalize_manifest_path(&entry.file), entry.item.clone());
+        let key = (
+            workspace::normalize_manifest_path(&entry.file),
+            entry.item.clone(),
+        );
         if allowed.insert(key.clone(), entry).is_some() {
             errors.push(format!(
                 "duplicate deny_unknown_fields allowlist entry for {}::{}",
@@ -120,8 +123,4 @@ pub fn validate_allowlist(
     }
 
     errors
-}
-
-fn normalize_manifest_path(path: &str) -> String {
-    path.replace('\\', "/")
 }

@@ -4,7 +4,7 @@
 - Date: 2026-04-24
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: core, provider, signing, async, dependencies
-- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md)
+- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), ADR 0008, [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md)
 
 ## Decision
 

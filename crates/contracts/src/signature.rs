@@ -264,25 +264,16 @@ impl RecoverableSignature {
     /// Returns [`ContractsError::InvalidSignatureLength`] for non-65-byte
     /// payloads, and [`ContractsError::InvalidSignatureRecoveryByte`]
     /// for trailing byte values outside `{0, 1, 27, 28}`.
-    // DO NOT SWAP for alloy_primitives::Signature::from_raw.
+    // Not `Signature::from_raw`: it delegates to `normalize_v`, which also
+    // accepts `v >= 35` — the EIP-155 encoding that folds the chain id into v.
+    // CoW off-chain signatures never carry that, so this surface narrows the
+    // accept set to {0, 1, 27, 28} and rejects the rest through
+    // `InvalidSignatureRecoveryByte`. The strict pre-validation yields a parity
+    // bool that `from_bytes_and_parity` consumes directly, skipping
+    // `normalize_v`; the legacy `27 + y_parity` byte then emerges from
+    // `as_bytes()` by construction.
     //
-    // `Signature::from_raw` delegates to `normalize_v`, which accepts
-    // v in {0, 1, 27, 28, 35..}. Values >= 35 are the EIP-155 legacy
-    // transaction encoding that mixes the chain id into v. CoW off-chain
-    // order signatures never carry an EIP-155 v value, so this surface
-    // narrows the accept set to {0, 1, 27, 28} and rejects every other
-    // value through the typed `InvalidSignatureRecoveryByte` variant
-    // (ADR 0022).
-    //
-    // After the strict pre-validation produces a parity bool,
-    // `from_bytes_and_parity` consumes the parity directly and skips
-    // `normalize_v` entirely. The legacy `27 + y_parity` byte emerges
-    // from `as_bytes()` by construction.
-    //
-    // ADR: docs/adr/0022-ecdsa-signature-v-normalization.md
-    // Doctrine: docs/alloy-doctrine.md, Bucket 2 row for ECDSA `v` byte
-    // canonicalization.
-    // Enforced by cargo check-source-fences (xtask/src/policy/fences.rs).
+    // ADR 0022. Enforced by cargo check-source-fences.
     pub fn parse_bytes(bytes: &[u8]) -> Result<Self, ContractsError> {
         if bytes.len() != 65 {
             return Err(ContractsError::InvalidSignatureLength {

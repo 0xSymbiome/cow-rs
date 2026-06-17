@@ -5,6 +5,7 @@
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: app-data, validation, typing
 - Related: [ADR-0018](0018-typed-app-data-merge.md), [ADR-0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR-0052](0052-alloy-primitives-canonical-primitive-layer.md)
+- Amended: 2026-06-17 — the retained drift mirrors now include a root-document manifest, and the drift tests add bound- and version-correspondence checks (the `partnerFee` bound tracks schema v1.1.0, and `LATEST_APP_DATA_VERSION` tracks the root manifest). The no-runtime-JSON-Schema decision is unchanged.
 
 ## Decision
 
@@ -23,15 +24,20 @@ validator.
   historical documents pass through so they continue to hash.
 - Unmodeled metadata families pass through unchanged, so the SDK is no stricter
   than the orderbook's own acceptance contract.
-- The schema bundle is reduced to one self-contained drift fixture per modeled
-  metadata family (`flashloan`, `partnerFee`, `quote`, and the `hook` shape)
-  retained under `parity/fixtures/app_data/schemas/`; a drift test asserts the typed
-  structs still cover the upstream field names, so an upstream rename or addition
-  fails review rather than diverging silently. The root-envelope schema, the
-  unmodeled-family sub-schemas, the shared `definitions.json`, and the
+- The retained schema surface under `parity/fixtures/app_data/schemas/` is a set
+  of test-only provenance mirrors, not a runtime bundle: one self-contained
+  fixture per modeled metadata family (`flashloan`, `partnerFee`, `quote`, and
+  the `hook` shape) plus the root-document manifest
+  (`app-data-document-v*.json`) recording the emitted document version and the
+  in-force sub-schema version per family. The `schema_drift_contract` tests
+  assert the typed structs still cover the upstream field names, that each
+  modeled numeric bound matches its mirror's declared `maximum`, and that
+  `LATEST_APP_DATA_VERSION` plus the modeled families' versions match the root
+  manifest — so an upstream rename, a constraint change (such as a basis-point
+  cap), or a version bump fails review rather than diverging silently. Nothing
+  resolves the schema graph at runtime; the unmodeled-family sub-schemas and the
   byte-for-byte schema-vendoring tooling (the `vendor-app-data-schemas` command)
-  are removed: nothing resolves the schema graph at runtime, so a flat fixture
-  per modeled family is the whole drift surface.
+  stay absent.
 
 ## Why
 
@@ -60,8 +66,10 @@ system, not a dynamic schema, is the validation authority.
   digests.
 - Validation and review: typed-construction bounds (addresses, amounts, basis
   points), the document-size ceiling, and the schema-drift fixtures stay covered
-  by the crate's contract tests; the drift test must fail when an upstream field
-  name the typed structs depend on changes.
+  by the crate's contract tests; the drift tests must fail when an upstream
+  field name the typed structs depend on changes, when a modeled numeric bound
+  diverges from its mirror, or when the emitted document version lags the pinned
+  root manifest.
 - Cost: validation no longer rejects every malformed shape of an unmodeled or
   earlier-versioned metadata family — the SDK is intentionally no stricter than
   the orderbook for metadata it does not model.

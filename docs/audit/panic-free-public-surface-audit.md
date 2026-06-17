@@ -6,8 +6,7 @@ Owning surface: every `crates/*/src/**/*.rs` file accessible from the published 
 Refresh trigger: any ADR 0033 panic-policy change, panic-allowlist addition, or new `expect`, `unwrap`, or `panic!` site on a path reachable from the published public API
 Related docs:
 - [ADR 0033](../adr/0033-minimum-viable-panic-surface.md)
-- [WASM Component Model Future Prep Audit](wasm-component-model-future-prep-audit.md)
-- [Alloy Umbrella Adapter Audit](alloy-umbrella-adapter-audit.md)
+- [Alloy Adapters Audit](alloy-adapters-audit.md)
 
 ## Scope
 
@@ -57,57 +56,35 @@ Documented public runtime sites:
 
 ### No Undocumented Runtime Panic Sites
 
-No new `expect`, `unwrap`, or `panic!` site on a public runtime path ships
-without a documented rationale and a refreshed entry in this audit. When a
-fallible operation can fail because of caller input, the public contract must
-return a typed error instead of panicking.
+No `expect`, `unwrap`, or `panic!` site on a public runtime path ships without a
+documented rationale and a refreshed entry in this audit. When a fallible
+operation can fail because of caller input, the public contract returns a typed
+error instead of panicking. The canonical panic allowlist is
+`.github/config/panic-allowlist.yaml`, which carries 33 reviewed item-path
+entries; each accepted production panic site is enumerated in the documented
+public runtime sites table above and remains tied to a static invariant rather
+than to caller-controlled input. `TransportErrorClass::Upgrade` is a reserved
+classification slot on an already non-exhaustive enum and adds no panic-bearing
+runtime path.
 
-`cow-sdk-trading` receipt-wait helpers follow that contract:
-`WaitOptions::new`, `WaitOptions::approve_default`,
-`WaitOptions::inclusion_default`, and the three `with_*` builders are total
-value constructors; `submit_and_wait_for_receipt` and `poll_for_receipt`
-surface signer, provider, timeout, revert, and cancellation outcomes through
-`WaitError`; the `Display` and `Error` implementations format or expose
-sources without unchecked assumptions; and the `WaitError::reverted()` accessor
-reads the reverted receipt through a total `const fn` match with no panic path.
-
-The canonical panic allowlist is `.github/config/panic-allowlist.yaml`.
-It currently contains 33 reviewed item-path entries. Each accepted production
-panic site is enumerated in the documented public runtime sites table above and
-remains tied to a documented static invariant rather than to caller-controlled
-input.
-
-`TransportErrorClass::Upgrade` is a reserved classification slot on an
-already non-exhaustive enum. It adds no conversion, allocation, parsing, or
-panic-bearing runtime path, and current transports continue producing only
-their existing classes.
-
-The `cargo check-panic-allowlist` gate enforces ADR 0033 at item
-level. Each allowlist entry keeps the reviewed rationale, and each documented
-entry must name an item whose rustdoc contains a `# Panics` section and whose
-body contains a `// SAFETY:` comment explaining the local invariant. The
-optional `documented: false` field is reserved for reviewed exceptions such as
-compile-time-only helpers or test-only items, and still requires a rationale in
-the allowlist entry.
-
-The TypeScript-callable wasm surface follows the same posture. Exported
-functions convert failures into `JsValue` through `WasmError`; the crate root
-forbids unsafe code, and `__cow_sdk_wasm_init` installs
-`console_error_panic_hook::set_once()` without requiring callers to duplicate
-panic-hook setup.
+The `cargo check-panic-allowlist` gate enforces ADR 0033 at item level: each
+documented entry must name an item whose rustdoc contains a `# Panics` section
+and whose body contains a `// SAFETY:` comment explaining the local invariant.
+The optional `documented: false` field is reserved for compile-time-only or
+test-only items and still requires a rationale.
 
 ### Allowed Static-Invariant Sites
 
 The remaining sites are limited to static literals, embedded assets, typestate
 marker invariants, already-clamped numeric conversions, and serialization of
-owned typed values. These sites document invariants that the crate owns and
-tests, rather than accepting untrusted caller input.
+owned typed values — invariants the crate owns and tests, not untrusted caller
+input.
 
 ### Test And Example Matches
 
-The repository intentionally keeps concise `unwrap` and `expect` calls in unit
-tests and rustdoc examples. Those are not part of the runtime public API and
-are excluded from the panic-free surface claim.
+Concise `unwrap` and `expect` calls in unit tests and rustdoc examples are not
+part of the runtime public API and are excluded from the panic-free surface
+claim.
 
 ## Evidence
 

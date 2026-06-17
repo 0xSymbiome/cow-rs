@@ -31,7 +31,7 @@ async fn prod_url_map_matches_pinned_supported_and_unsupported_chains() {
     assert_eq!(
         prod_config.get(&SupportedChainId::Mainnet).and_then(Clone::clone),
         Some(
-            "https://gateway.thegraph.com/api/<redacted>/subgraphs/id/8mdwJG7YCSwqfxUbhCypZvoubeZcFVpCHb4zmHhvuKTD"
+            "https://gateway.thegraph.com/api/subgraphs/id/8mdwJG7YCSwqfxUbhCypZvoubeZcFVpCHb4zmHhvuKTD"
                 .to_owned()
         )
     );
@@ -40,7 +40,7 @@ async fn prod_url_map_matches_pinned_supported_and_unsupported_chains() {
             .get(&SupportedChainId::GnosisChain)
             .and_then(Clone::clone),
         Some(
-            "https://gateway.thegraph.com/api/<redacted>/subgraphs/id/HTQcP2gLuAy235CMNE8ApN4cbzpLVjjNxtCAUfpzRubq"
+            "https://gateway.thegraph.com/api/subgraphs/id/HTQcP2gLuAy235CMNE8ApN4cbzpLVjjNxtCAUfpzRubq"
                 .to_owned()
         )
     );
@@ -49,21 +49,21 @@ async fn prod_url_map_matches_pinned_supported_and_unsupported_chains() {
             .get(&SupportedChainId::ArbitrumOne)
             .and_then(Clone::clone),
         Some(
-            "https://gateway.thegraph.com/api/<redacted>/subgraphs/id/CQ8g2uJCjdAkUSNkVbd9oqqRP2GALKu1jJCD3fyY5tdc"
+            "https://gateway.thegraph.com/api/subgraphs/id/CQ8g2uJCjdAkUSNkVbd9oqqRP2GALKu1jJCD3fyY5tdc"
                 .to_owned()
         )
     );
     assert_eq!(
         prod_config.get(&SupportedChainId::Base).and_then(Clone::clone),
         Some(
-            "https://gateway.thegraph.com/api/<redacted>/subgraphs/id/EYfBtJDj2thuBCVhdpYDpzfsWzDg3qzpEsitqMouU4Rg"
+            "https://gateway.thegraph.com/api/subgraphs/id/EYfBtJDj2thuBCVhdpYDpzfsWzDg3qzpEsitqMouU4Rg"
                 .to_owned()
         )
     );
     assert_eq!(
         prod_config.get(&SupportedChainId::Sepolia).and_then(Clone::clone),
         Some(
-            "https://gateway.thegraph.com/api/<redacted>/subgraphs/id/31isonmztVX9ejBneP6SaVDQwEtyKCGBb3RTafB9Uf2y"
+            "https://gateway.thegraph.com/api/subgraphs/id/31isonmztVX9ejBneP6SaVDQwEtyKCGBb3RTafB9Uf2y"
                 .to_owned()
         )
     );
@@ -1059,5 +1059,70 @@ mod recording_transport {
 
         assert_eq!(response["tokens"][0]["symbol"], "WXDAI");
         assert_eq!(recorder.observed().len(), 2);
+    }
+
+    fn prod_api_with_recorder(recorder: Arc<RecordingHttpTransport>) -> SubgraphApi {
+        SubgraphApi::builder()
+            .chain(SupportedChainId::Mainnet)
+            .api_key("FakeApiKey")
+            .transport_policy(
+                TransportPolicy::default_subgraph().with_retry(RetryPolicy::no_retry()),
+            )
+            .transport(recorder as Arc<dyn HttpTransport + Send + Sync>)
+            .build()
+            .expect("production-routing subgraph client with recording transport must build")
+    }
+
+    #[tokio::test]
+    async fn production_routing_carries_the_key_in_the_authorization_header_not_the_url() {
+        let recorder = RecordingHttpTransport::new([Canned::Ok(
+            json!({
+                "data": {
+                    "totals": [
+                        { "tokens": "1", "orders": "2", "traders": "3", "settlements": "4" }
+                    ]
+                }
+            })
+            .to_string(),
+        )]);
+        let api = prod_api_with_recorder(recorder.clone());
+
+        api.totals()
+            .await
+            .expect("the injected transport must deliver the canned totals response");
+
+        let calls = recorder.observed();
+        assert_eq!(calls.len(), 1);
+        let call = &calls[0];
+
+        // The production gateway URL is key-free. The low-level
+        // `transport.dispatch` span records the request path, so a key-free path
+        // is what keeps the partner key out of the span endpoint field.
+        assert_eq!(
+            call.url,
+            "https://gateway.thegraph.com/api/subgraphs/id/8mdwJG7YCSwqfxUbhCypZvoubeZcFVpCHb4zmHhvuKTD"
+        );
+        assert!(
+            !call.url.contains("FakeApiKey"),
+            "the API key must never appear in the request URL: {}",
+            call.url
+        );
+
+        // The key is carried in the Authorization header instead. Request
+        // headers are not recorded into telemetry, so the key stays out of every
+        // span and error context.
+        assert!(
+            call.headers
+                .iter()
+                .any(|(name, value)| name.eq_ignore_ascii_case("authorization")
+                    && value == "Bearer FakeApiKey"),
+            "expected an Authorization: Bearer header, got {:?}",
+            call.headers
+        );
+        assert!(
+            call.headers
+                .iter()
+                .any(|(name, value)| name == "content-type" && value == "application/json")
+        );
     }
 }

@@ -1,15 +1,17 @@
 # HTTP Transport Contract Audit
 
 Status: Current
-Last reviewed: 2026-06-12
+Last reviewed: 2026-06-17
 Owning surface: `cow-sdk-core::HttpTransport` trait and the `ReqwestTransport` (native) and `FetchTransport` (browser) default adapters, including the sole-dispatch contract that binds every live REST or GraphQL call from `cow-sdk-orderbook` and `cow-sdk-subgraph` to the injected transport
 Refresh trigger: Trait signature, method set, or dyn-compatibility posture changes on `HttpTransport`; changes to the `TransportResponse` success type or its accessor set; changes to `TransportError` or `TransportErrorClass`; changes to the `TransportError::HttpStatus` shape; changes to the URL-stripping contract on either default adapter; any change to the shared `run_with_retry` driver's backoff schedule, jitter policy, retry tracing events, `Retry-After` honor contract, the `Retry-After` IMF-fixdate civil-day arithmetic, or the `system_now` wall clock; a new shipped adapter crate that adopts the trait; any change that lets a live REST or GraphQL call from `OrderbookApi` or `SubgraphApi` bypass `self.transport`
 Related docs:
 - [ADR 0013](../adr/0013-http-transport-injection-and-typestate-builders.md)
 - [ADR 0019](../adr/0019-http-transport-sole-dispatch.md)
+- [ADR 0041](../adr/0041-transport-policy-l3-layering.md)
+- [ADR 0033](../adr/0033-minimum-viable-panic-surface.md)
 - [Transport](../transport.md)
 - [Architecture](../architecture.md)
-- [Credential Surface Contract Hygiene Audit](credential-surface-contract-hygiene-audit.md)
+- [Credential Redaction Audit](credential-redaction-audit.md)
 - [Bounded Response Reads Audit](bounded-response-reads-audit.md)
 - [ADR 0055](../adr/0055-bounded-response-reads.md)
 
@@ -34,10 +36,10 @@ This audit covers:
   `OrderbookApi` or `SubgraphApi` flows through `self.transport` rather
   than a parallel HTTP client held inside those structs
 
-It does not cover user-agent layering, the retry policy primitives and the
-`run_with_retry` outcome contract themselves (see
-`transport-policy-coverage-audit.md`), or the `Provider` chain-RPC seam (a
-separate runtime contract).
+It does not cover user-agent layering or the `Provider` chain-RPC seam (a
+separate runtime contract). The retry policy primitives and the
+`run_with_retry` outcome contract are covered by the Transport Policy Coverage
+section below.
 
 ## Outcome Summary
 
@@ -54,6 +56,14 @@ separate runtime contract).
 | Retry observability | The shared driver emits retry events that expose attempt index, backoff duration, and either response status or transport error class; the orderbook request methods record attempts and response status on the current span | Conforms |
 | Write-retry idempotency | The driver replays writes (`POST`/`PUT`/`DELETE`) as well as reads on a retryable failure; this is safe because every CoW write endpoint is idempotent on the server (order creation by UID, cancellation by order state, app-data by hash), so a replay cannot create a duplicate side effect | Conforms |
 | Sole-dispatch invariant | `OrderbookApi` and `SubgraphApi` hold only an `Arc<dyn HttpTransport + Send + Sync>` as their HTTP surface; every live REST and GraphQL call dispatches through that handle, and injected transports observe every request | Conforms |
+| Retry-After parser | `parse_retry_after` accepts delta-seconds and every RFC 7231 HTTP-date form (IMF-fixdate, legacy RFC 850, ANSI C `asctime`) via `httpdate::parse_http_date`, rejects every documented malformed shape, and the `parity/fixtures/retry_after/` corpus pins the accept and reject byte contracts | Conforms |
+| Jitter window | Every `JitterStrategy` variant returns a delay within `[0, max_delay]`; `None` returns the capped base delay; `Equal` preserves at least half the capped base delay; the zero-window short-circuit returns `Duration::ZERO` | Conforms |
+| Retry decision points | `should_retry_status` matches the public `RETRYABLE_STATUSES`; `should_retry_network` retries only `Timeout`, `Connect`, `Request`, `Other`; backoff clamps at `max_delay`; the case-insensitive `Retry-After` helper honours `429`/`503` only; `max_attempts(0)` clamps to `1` | Conforms |
+| Rate-limit scope | `PerHost` keys by `Url::host_str`; `Global` uses the constant `"global"` key; `unlimited()` never delays or errors; `acquire_global` shares one bucket; pre-cancelled tokens short-circuit before sleeping | Conforms |
+| Error classifier | `NetworkErrorKind::from_transport_error_class` is total across every `TransportErrorClass` variant including `Redirect`/`Upgrade` through the wildcard arm; the optional reqwest classifier maps real `reqwest::Error` shapes into the same partition | Conforms |
+| Retry driver | `run_with_retry` returns on the first `Success`, backs off and retries a retryable status or transport signal until `max_attempts`, returns the terminal error on a non-retryable signal without re-dispatching, and surfaces the last error on exhaustion; the backoff sequence matches the policy schedule | Conforms |
+| Wall clock | `system_now` returns a real wall-clock `SystemTime` on native and `wasm32` without reading `SystemTime::now`, so an HTTP-date `Retry-After` evaluates against current time on both targets and the retry path never aborts a browser runtime | Conforms |
+| Panic-free posture | The `Retry-After` HTTP-date path delegates to `httpdate::parse_http_date`, which surfaces malformed input as a typed `Err` rather than a panic, so an attacker-controlled header cannot panic the retry loop; the panic-allowlist entries on `jitter.rs::bounded_offset` and the `config.rs` static-UA constructors stay justified | Conforms |
 
 ## Current Contract
 
@@ -210,6 +220,45 @@ shared driver, mapping `TransportError::HttpStatus` straight into
 `SubgraphError::HttpStatus`. Injected transports — including the
 browser-native `FetchTransport` — therefore observe every live request.
 
+### Transport Policy Coverage
+
+The retry primitives live in `cow_sdk_core::transport::policy` behind the
+off-by-default `transport-policy` feature. `parse_retry_after(value, now)` on
+`retry_after.rs` accepts trimmed ASCII-digit delta-seconds and delegates
+HTTP-date inputs to `httpdate::parse_http_date` (the three RFC 7231 forms:
+IMF-fixdate, legacy RFC 850, ANSI C `asctime`); in-range past and epoch-equal
+dates clamp to `Duration::ZERO`, and pre-epoch or otherwise malformed input
+surfaces as `None`, collapsing into the "ignore the header" path. The corpus at
+`parity/fixtures/retry_after/` pins `imf_fixdate_accept.json`,
+`imf_fixdate_reject.json`, and `legacy_rfc850.json`.
+
+`JitterStrategy::delay_for_attempt` keeps every variant within `[0, max_delay]`
+(`None` returns the capped base, `Equal` keeps the lower half, `Decorrelated`
+adds a bounded offset, and zero base short-circuits to `Duration::ZERO`).
+`RetryPolicy` exposes `should_retry_status` (over `RETRYABLE_STATUSES` = 408,
+425, 429, 500, 502, 503, 504), `should_retry_network` (Timeout, Connect,
+Request, Other), `base_backoff_delay` (exponent clamped to six, result bounded
+by `max_delay`), and `delay_for_status` (reads `Retry-After` case-insensitively
+for 429 and 503 only). `RequestRateLimiter` keys `PerHost` on a lowercased
+`Url::host_str` and `Global` on the constant `"global"`; `unlimited()`
+short-circuits in `acquire_key`, `acquire_global` shares one bucket, and a
+pre-cancelled token never sleeps the interval.
+`NetworkErrorKind::from_transport_error_class` is a total `const fn` whose
+wildcard arm maps `Redirect`, `Upgrade`, and any future variant to `Other`.
+
+`run_with_retry(policy, rate_limiter, limiter_key, attempt)` is the shared loop
+consumed by the orderbook, subgraph, and IPFS clients. It is generic over `T`
+and `E`, acquires a rate-limit token per attempt, returns `Ok` on `Success`,
+sleeps and retries on a retryable status or transport signal while
+`attempt_index < max_attempts`, and otherwise returns the closure's terminal
+error without re-dispatching. It imposes no `Send` bound on the attempt future,
+so one driver serves native (`Send`) and browser (`?Send`) transports;
+cancellation is external through the call-site `Cancellable::cancel_with`
+wrapper. `system_now()` returns the current wall-clock `SystemTime`, delegating
+to `std::time::SystemTime::now()` on native and re-anchoring `web_time::SystemTime`
+onto `UNIX_EPOCH` (saturating at the epoch) on `wasm32`, so the HTTP-date
+`Retry-After` evaluation never triggers the standard clock's wasm abort.
+
 ## Evidence
 
 Primary implementation points:
@@ -221,6 +270,13 @@ Primary implementation points:
 - `crates/core/src/transport/fetch.rs`
 - `crates/core/src/transport/policy/runner.rs`
 - `crates/core/src/transport/policy/time.rs`
+- `crates/core/src/transport/policy/retry_after.rs`
+- `crates/core/src/transport/policy/jitter.rs`
+- `crates/core/src/transport/policy/retry.rs`
+- `crates/core/src/transport/policy/rate_limit.rs`
+- `crates/core/src/transport/policy/classify.rs`
+- `crates/core/src/transport/policy/config.rs`
+- `crates/core/src/transport/policy/status.rs`
 - `crates/orderbook/src/api.rs`
 - `crates/orderbook/src/request.rs`
 - `crates/orderbook/src/builder.rs`
@@ -253,6 +309,27 @@ Primary regression coverage:
 - `crates/orderbook/tests/builder_contract.rs::injected_transport_observes_every_live_request_from_the_built_client`
 - `crates/subgraph/tests/api_contract.rs::recording_transport::subgraph_run_query_dispatches_through_injected_transport`
 - `crates/subgraph/tests/builder_contract.rs::injected_transport_observes_every_live_request_from_the_built_client`
+- `crates/core/tests/retry_after_fixture_contract.rs`
+- `parity/fixtures/retry_after/imf_fixdate_accept.json`
+- `parity/fixtures/retry_after/imf_fixdate_reject.json`
+- `parity/fixtures/retry_after/legacy_rfc850.json`
+- `crates/wasm/tests/wasm_retry_runner_contract.rs::system_now_returns_a_wall_clock_value_without_panicking`
+- `crates/core/tests/policy_contract.rs::default_orderbook_transport_policy_is_stable`
+- `crates/core/tests/policy_contract.rs::default_trading_uses_trading_user_agent_and_orderbook_limiter`
+- `crates/core/tests/policy_contract.rs::default_ipfs_disables_retry_and_timeout_and_uses_unlimited_limiter`
+- `crates/core/tests/policy_contract.rs::none_jitter_returns_capped_base_delay_unchanged`
+- `crates/core/tests/policy_contract.rs::equal_jitter_returns_at_least_half_capped_base_delay`
+- `crates/core/tests/policy_contract.rs::zero_base_delay_returns_zero_across_every_strategy`
+- `crates/core/tests/policy_contract.rs::unlimited_rate_limiter_never_delays_or_errors`
+- `crates/core/tests/policy_contract.rs::global_scope_uses_constant_key_regardless_of_host`
+- `crates/core/tests/policy_contract.rs::pre_cancelled_token_returns_cancelled_immediately`
+- `crates/core/tests/policy_contract.rs::should_retry_status_matches_the_public_retryable_list`
+- `crates/core/tests/policy_contract.rs::should_retry_network_only_retries_documented_kinds`
+- `crates/core/tests/policy_contract.rs::base_backoff_clamps_to_max_delay_across_attempt_range`
+- `crates/core/tests/policy_contract.rs::retry_builder_round_trip_and_zero_attempts_clamps_to_one`
+- `fuzz/fuzz_targets/fuzz_parse_retry_after.rs`
+- `fuzz/fuzz_targets/fuzz_retry_policy_delay.rs`
+- `fuzz/fuzz_targets/fuzz_jitter_delay_for_attempt.rs`
 
 Validation surface:
 
@@ -265,6 +342,8 @@ cargo test -p cow-sdk-orderbook --test api_contract
 cargo test -p cow-sdk-orderbook --test request_contract
 cargo test -p cow-sdk-orderbook --features tracing --test request_contract
 cargo test -p cow-sdk-subgraph --test api_contract
+cargo test -p cow-sdk-core --features transport-policy
+cargo llvm-cov -p cow-sdk-core --features transport-policy --summary-only
 cargo check --workspace --all-features --target wasm32-unknown-unknown
 wasm-pack test --release --headless --firefox crates/wasm
 wasm-pack test --release --headless --firefox crates/wasm --features tracing

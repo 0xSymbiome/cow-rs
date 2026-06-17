@@ -63,9 +63,9 @@ Cloudflare Worker compatibility. For most browser dapps and standard
 TypeScript applications, the upstream
 [`@cowprotocol/cow-sdk`](https://www.npmjs.com/package/@cowprotocol/cow-sdk)
 TypeScript SDK is substantially smaller at equivalent feature subsets; see
-the [comparative benchmark validation note](audit/cow-sdk-wasm-comparative-benchmark-validation-note.md)
-for the measured tradeoff. Use the size table below to decide whether the
-specializations justify the bundle for a given use case.
+the [WASM Surface Audit](audit/wasm-surface-audit.md) for the measured
+tradeoff. Use the size table below to decide whether the specializations
+justify the bundle for a given use case.
 
 The package is built from release artifacts with the workspace size profile
 and a `wasm-opt -Oz` post-pass. The package publishes one npm package with
@@ -74,10 +74,10 @@ surface that covers their workflow.
 
 | Flavor | Public import | Raw wasm | Brotli | Gzip | Release gate |
 | --- | --- | ---: | ---: | ---: | --- |
-| default | `@symbiome-forge/cow-sdk-wasm` | 1.49 MiB | 469 KiB | 631 KiB | 3.3 MiB raw / 900 KiB brotli |
-| orderbook | `@symbiome-forge/cow-sdk-wasm/orderbook` | 0.94 MiB | 317 KiB | 413 KiB | 1.5 MiB raw / 500 KiB brotli |
-| signing | `@symbiome-forge/cow-sdk-wasm/signing` | 0.31 MiB | 120 KiB | 143 KiB | 0.9 MiB raw / 300 KiB brotli |
-| cloudflare | `@symbiome-forge/cow-sdk-wasm/cloudflare` | 1.39 MiB | 447 KiB | 598 KiB | 3.2 MiB raw / 850 KiB brotli / 3,000,000 B gzip (warn at 2,700,000 B) |
+| default | `@symbiome-forge/cow-sdk-wasm` | 1.63 MiB | 511 KiB | 688 KiB | 3.3 MiB raw / 900 KiB brotli |
+| orderbook | `@symbiome-forge/cow-sdk-wasm/orderbook` | 1.03 MiB | 341 KiB | 447 KiB | 1.5 MiB raw / 500 KiB brotli |
+| signing | `@symbiome-forge/cow-sdk-wasm/signing` | 0.31 MiB | 119 KiB | 142 KiB | 0.9 MiB raw / 300 KiB brotli |
+| cloudflare | `@symbiome-forge/cow-sdk-wasm/cloudflare` | 1.54 MiB | 489 KiB | 657 KiB | 3.2 MiB raw / 850 KiB brotli / 3,000,000 B gzip (warn at 2,700,000 B) |
 
 The raw and compressed measurements above come from the current package build
 pipeline after optimization. The gate values are enforced per flavor so the

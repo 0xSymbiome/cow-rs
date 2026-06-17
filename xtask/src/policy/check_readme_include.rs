@@ -1,11 +1,9 @@
 //! Verifies each consumer crate renders its README on docs.rs.
 //!
-//! The former docs-quality lane built nightly rustdoc and scraped each crate's
-//! HTML to confirm the README heading rendered. The invariant it was really
-//! protecting is that the crate's `lib.rs` includes the README into the docs.rs
-//! build via `#![cfg_attr(any(doctest, docsrs), doc = include_str!("../README.md"))]`
-//! (or an unconditional `#![doc = ...]`). This check asserts that at the source
-//! level, without rendering rustdoc.
+//! The invariant: a crate's `lib.rs` includes its README into the docs.rs build
+//! via `#![cfg_attr(any(doctest, docsrs), doc = include_str!("../README.md"))]`
+//! (or an unconditional `#![doc = ...]`). Asserted at the source level, without
+//! rendering rustdoc.
 
 use std::path::PathBuf;
 
@@ -22,8 +20,7 @@ pub struct Args {
 
 /// Consumer crate directories whose README must render on docs.rs. The thin
 /// native alloy adapter crates deliberately include their README under
-/// `doctest` only, so they stay out of scope (as in the former docs render
-/// check).
+/// `doctest` only, so they stay out of scope.
 const README_RENDERING_CRATES: &[&str] = &[
     "core",
     "contracts",

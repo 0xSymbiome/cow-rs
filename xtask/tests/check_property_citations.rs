@@ -17,7 +17,6 @@ fn cited_contract_holds() {}
     );
     let rows = vec![PropertyRow {
         id: "PROP-DEMO-001".to_owned(),
-        covered: "Yes".to_owned(),
         evidence: "`crates/demo/tests/contract.rs::cited_contract_holds`".to_owned(),
     }];
 
@@ -35,7 +34,6 @@ fn helper_only() {}
     );
     let rows = vec![PropertyRow {
         id: "PROP-DEMO-001".to_owned(),
-        covered: "Yes".to_owned(),
         evidence: "`crates/demo/tests/contract.rs::helper_only`".to_owned(),
     }];
 
@@ -61,7 +59,6 @@ proptest! {
     );
     let rows = vec![PropertyRow {
         id: "PROP-DEMO-001".to_owned(),
-        covered: "Yes".to_owned(),
         evidence: "`crates/demo/tests/contract.rs::cited_proptest_property_holds`".to_owned(),
     }];
 

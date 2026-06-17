@@ -10,8 +10,8 @@
 //! messages, each with unit-test fixtures.
 //!
 //! Matching is line-based and replicates the source greps exactly, including
-//! the `//`-comment skip that keeps the explanatory `// DO NOT SWAP` blocks
-//! from self-triggering.
+//! the `//`-comment skip that keeps an explanatory comment naming a forbidden
+//! symbol from self-triggering.
 
 use std::{
     fs,
@@ -45,19 +45,12 @@ enum Scope {
     DocsAndTypeScript,
 }
 
-/// What a fence asserts about the lines it scans.
-enum Rule {
-    /// Fail on any line matching `pattern`. When `skip_line_comments`, lines
-    /// whose first non-space characters are `//` are ignored.
-    Forbid {
-        pattern: &'static str,
-        skip_line_comments: bool,
-    },
-    /// Fail unless exactly `expected` lines contain `needle`.
-    Count {
-        needle: &'static str,
-        expected: usize,
-    },
+/// What a fence asserts about the lines it scans: fail on any line matching
+/// `pattern`. When `skip_line_comments`, lines whose first non-space characters
+/// are `//` are ignored.
+struct Rule {
+    pattern: &'static str,
+    skip_line_comments: bool,
 }
 
 /// Whether an empty candidate set passes or fails closed.
@@ -80,7 +73,7 @@ const FENCES: &[Fence] = &[
     Fence {
         name: "ecdsa-v-normalization",
         scope: Scope::RustUnder(&["crates/contracts/src", "crates/signing/src"]),
-        rule: Rule::Forbid {
+        rule: Rule {
             pattern: r"\bnormalize_v\b|\balloy_primitives::Signature::v\b|\b(AlloySignature|alloy_primitives::Signature)::from_raw\b|\bSignature::as_rsy\b",
             skip_line_comments: true,
         },
@@ -90,7 +83,7 @@ const FENCES: &[Fence] = &[
     Fence {
         name: "amount-radix",
         scope: Scope::Files(&["crates/core/src/types/amount.rs"]),
-        rule: Rule::Forbid {
+        rule: Rule {
             pattern: r"\b(U256|I256)::from_str\s*\(",
             skip_line_comments: true,
         },
@@ -100,7 +93,7 @@ const FENCES: &[Fence] = &[
     Fence {
         name: "address-display-lowercase",
         scope: Scope::Files(&["crates/core/src/types/identity.rs"]),
-        rule: Rule::Forbid {
+        rule: Rule {
             pattern: r"#\[derive\([^)]*Display[^)]*\)\]|\bto_checksum(_buffer)?\s*\(|\.to_checksum\b",
             skip_line_comments: true,
         },
@@ -114,7 +107,7 @@ const FENCES: &[Fence] = &[
             "crates/core/src/types",
             "crates/signing/src",
         ]),
-        rule: Rule::Forbid {
+        rule: Rule {
             pattern: r"^\s*pub\s+\w+\s*:\s*(alloy_sol_types::)?Eip712Domain\b",
             skip_line_comments: false,
         },
@@ -124,7 +117,7 @@ const FENCES: &[Fence] = &[
     Fence {
         name: "eip1271-shape-flag",
         scope: Scope::RustUnder(&["crates/signing/src/eip1271"]),
-        rule: Rule::Forbid {
+        rule: Rule {
             pattern: r"(shape|kind|variant)\s*:\s*(Shape|BlobShape|Eip1271(Blob)?Shape)\b|fn\s+encode_eip1271_blob\s*<|fn\s+encode_blob_(any|either|both)\b",
             skip_line_comments: true,
         },
@@ -138,7 +131,7 @@ const FENCES: &[Fence] = &[
             "crates/orderbook/src",
             "crates/subgraph/src",
         ]),
-        rule: Rule::Forbid {
+        rule: Rule {
             pattern: r"\balloy_transport(_http)?\b|\bRequestPacket\b|\bResponsePacket\b|alloy[_-]json[_-]rpc::|\bRetryBackoffLayer\b",
             skip_line_comments: true,
         },
@@ -146,19 +139,9 @@ const FENCES: &[Fence] = &[
         message: "alloy transport is tower::Service<RequestPacket> over JSON-RPC; cow-rs REST transport is HttpTransport over arbitrary JSON bodies (ADR 0010, 0019, 0041, 0046). REST crates must not import alloy-transport.",
     },
     Fence {
-        name: "do-not-swap-census",
-        scope: Scope::RustUnder(&["crates"]),
-        rule: Rule::Count {
-            needle: "DO NOT SWAP",
-            expected: 9,
-        },
-        on_empty: OnEmpty::Fail,
-        message: "expected exactly 9 DO NOT SWAP comment blocks across crates/. Restore the missing comment, or update this fence's expected count and amend docs/alloy-doctrine.md.",
-    },
-    Fence {
         name: "encode-prefixed-hand-roll",
         scope: Scope::ProductionRust,
-        rule: Rule::Forbid {
+        rule: Rule {
             pattern: r#"\bformat!\s*\(\s*"0x\{\}"\s*,\s*(alloy_primitives::)?hex::encode(_upper)?\s*\("#,
             skip_line_comments: true,
         },
@@ -168,7 +151,7 @@ const FENCES: &[Fence] = &[
     Fence {
         name: "encode-prefixed-unqualified-import",
         scope: Scope::ProductionRust,
-        rule: Rule::Forbid {
+        rule: Rule {
             pattern: r"^\s*use\s+alloy_primitives::hex::encode(\s*;|\s+as\s)",
             skip_line_comments: false,
         },
@@ -178,7 +161,7 @@ const FENCES: &[Fence] = &[
     Fence {
         name: "wasm-no-alloy-family",
         scope: Scope::WasmSources,
-        rule: Rule::Forbid {
+        rule: Rule {
             pattern: r"cow[-_]sdk[-_]alloy([-_](provider|signer))?",
             skip_line_comments: false,
         },
@@ -188,7 +171,7 @@ const FENCES: &[Fence] = &[
     Fence {
         name: "wasm-no-reqwest",
         scope: Scope::WasmSources,
-        rule: Rule::Forbid {
+        rule: Rule {
             pattern: r"\breqwest\b",
             skip_line_comments: false,
         },
@@ -198,7 +181,7 @@ const FENCES: &[Fence] = &[
     Fence {
         name: "wasm-no-tokio-runtime",
         scope: Scope::WasmSources,
-        rule: Rule::Forbid {
+        rule: Rule {
             pattern: r"tokio::(spawn|runtime|time)",
             skip_line_comments: false,
         },
@@ -208,7 +191,7 @@ const FENCES: &[Fence] = &[
     Fence {
         name: "wasm-no-tokio-macros",
         scope: Scope::WasmSources,
-        rule: Rule::Forbid {
+        rule: Rule {
             pattern: r"tokio::(macros)",
             skip_line_comments: false,
         },
@@ -218,7 +201,7 @@ const FENCES: &[Fence] = &[
     Fence {
         name: "wasm-no-core-reqwest-reexports",
         scope: Scope::WasmSources,
-        rule: Rule::Forbid {
+        rule: Rule {
             pattern: r"cow_sdk_core::Reqwest(Transport|TransportConfig|classify_reqwest_error)",
             skip_line_comments: false,
         },
@@ -228,7 +211,7 @@ const FENCES: &[Fence] = &[
     Fence {
         name: "wasm-no-dist-deep-import",
         scope: Scope::DocsAndTypeScript,
-        rule: Rule::Forbid {
+        rule: Rule {
             pattern: r#"cow-sdk-wasm(?:-test-package)?(?:/[^"'`\s\\]+)?/dist/"#,
             skip_line_comments: false,
         },
@@ -280,19 +263,17 @@ fn evaluate(repo_root: &Path, fence: &Fence) -> Result<Vec<String>> {
         };
     }
 
-    match &fence.rule {
-        Rule::Forbid {
-            pattern,
-            skip_line_comments,
-        } => forbid(
-            repo_root,
-            &files,
-            pattern,
-            *skip_line_comments,
-            fence.message,
-        ),
-        Rule::Count { needle, expected } => count(&files, needle, *expected, fence.message),
-    }
+    let Rule {
+        pattern,
+        skip_line_comments,
+    } = &fence.rule;
+    forbid(
+        repo_root,
+        &files,
+        pattern,
+        *skip_line_comments,
+        fence.message,
+    )
 }
 
 fn forbid(
@@ -322,23 +303,6 @@ fn forbid(
         }
     }
     Ok(violations)
-}
-
-fn count(files: &[PathBuf], needle: &str, expected: usize, message: &str) -> Result<Vec<String>> {
-    let mut total = 0usize;
-    for file in files {
-        total += read(file)?
-            .lines()
-            .filter(|line| line.contains(needle))
-            .count();
-    }
-    if total == expected {
-        Ok(Vec::new())
-    } else {
-        Ok(vec![format!(
-            "found {total} line(s) containing `{needle}`, expected {expected} -- {message}"
-        )])
-    }
 }
 
 fn read(path: &Path) -> Result<String> {
@@ -464,11 +428,10 @@ mod tests {
     #[test]
     fn every_forbid_pattern_compiles() {
         for fence in FENCES {
-            if let Rule::Forbid { pattern, .. } = &fence.rule {
-                Regex::new(pattern).unwrap_or_else(|error| {
-                    panic!("fence `{}` pattern is invalid: {error}", fence.name)
-                });
-            }
+            let Rule { pattern, .. } = &fence.rule;
+            Regex::new(pattern).unwrap_or_else(|error| {
+                panic!("fence `{}` pattern is invalid: {error}", fence.name)
+            });
         }
     }
 
@@ -478,21 +441,18 @@ mod tests {
             .iter()
             .find(|fence| fence.name == "ecdsa-v-normalization")
             .expect("ecdsa fence is registered");
-        let Rule::Forbid {
+        let Rule {
             pattern,
             skip_line_comments,
-        } = &fence.rule
-        else {
-            panic!("ecdsa fence is a forbid rule");
-        };
+        } = &fence.rule;
         let regex = Regex::new(pattern).unwrap();
         assert!(*skip_line_comments);
 
         let offending = "let v = normalize_v(raw);";
         assert!(regex.is_match(offending));
 
-        // A `// DO NOT SWAP` comment naming the symbol must be skipped.
-        let comment = "// DO NOT SWAP: normalize_v admits EIP-155 v >= 35.";
+        // An explanatory comment naming the symbol must be skipped.
+        let comment = "// Not normalize_v: it admits EIP-155 v >= 35.";
         assert!(regex.is_match(comment));
         assert!(comment.trim_start().starts_with("//"));
     }
@@ -503,9 +463,7 @@ mod tests {
             .iter()
             .find(|fence| fence.name == "encode-prefixed-hand-roll")
             .expect("encode-prefixed fence is registered");
-        let Rule::Forbid { pattern, .. } = &fence.rule else {
-            panic!("encode-prefixed fence is a forbid rule");
-        };
+        let Rule { pattern, .. } = &fence.rule;
         let regex = Regex::new(pattern).unwrap();
         assert!(regex.is_match(r#"format!("0x{}", hex::encode(bytes))"#));
         assert!(regex.is_match(r#"format!("0x{}", alloy_primitives::hex::encode_upper(bytes))"#));

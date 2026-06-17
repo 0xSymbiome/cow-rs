@@ -5,7 +5,7 @@
 - Last reviewed: 2026-05-30
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: contracts, core, hashing, dto, surface
-- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0016](0016-split-sell-and-buy-token-balance-enums.md), [ADR 0023](0023-legacy-compatibility-shim-removal.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0016](0016-split-sell-and-buy-token-balance-enums.md), ADR 0023, [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
 
 ## Decision
 
@@ -70,9 +70,6 @@ for a reviewer to audit against the protocol type hash.
 
 ## Links
 
-- [ADR 0023](0023-legacy-compatibility-shim-removal.md)
 - [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
 - [Architecture](../architecture.md)
 - `PROP-CON-006` and `PROP-CON-023` in [PROPERTIES.md](../../PROPERTIES.md)
-- **Proven by:**
-- [Shared Logic Reviewability Audit](../audit/shared-logic-reviewability-audit.md)

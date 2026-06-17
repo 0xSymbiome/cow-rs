@@ -17,31 +17,15 @@
 //! the canonical `abi.encode(order, signature)` byte layout (no outer
 //! tuple offset wrap).
 
-// DO NOT SWAP: do not collapse Shape A and Shape B into a single blob
-// encoder.
+// Shape A (Safe muxer) and Shape B (raw forwarder) stay distinct encoder entry
+// points. Shape A is `selector(safeSignature(...)) || abi.encode(...)`: the
+// 4-byte selector is load-bearing for Safe dispatch, and dropping it makes the
+// muxer fail to route. Shape B (this module) is `abi.encode(order, signature)`
+// with no selector: adding one shifts every ABI field offset by 4 and the
+// verifier `abi.decode` fails. A single shape-selecting encoder would turn that
+// into a silent on-chain revert rather than a compile error.
 //
-// Shape A (Safe muxer) is `selector(safeSignature(...)) ||
-// abi.encode(handler, params, GPv2Order.Data, payload)`. The 4-byte
-// selector prefix is load-bearing for Safe muxer dispatch; dropping
-// it makes the muxer fail to route and the on-chain signature
-// verification reverts at the Safe layer.
-//
-// Shape B (raw forwarder, this module) is `abi.encode(GPv2Order.Data,
-// signature)` with no selector prefix. Adding a 4-byte prefix shifts
-// every ABI field offset by 4 and the verifier `abi.decode` fails
-// with `InvalidData`.
-//
-// The two shapes must remain distinct encoder entry points. Do not
-// add a `fn encode_eip1271_blob<S: ShapeKind>(...)` helper that picks
-// the shape from an enum argument; the failure mode is silent
-// on-chain revert, not a compile error.
-//
-// ADR: docs/adr/0050-eip1271-signature-blob-encoding.md (the Shape A vs
-// Shape B blob-encoding decision, its Must Remain True invariants, and
-// the composable-deferral amendment).
-// Doctrine: docs/alloy-doctrine.md, Bucket 2 rows for EIP-1271
-// signature blob Shape A (Safe muxer) and Shape B (raw forwarder).
-// Enforced by cargo check-source-fences (xtask/src/policy/fences.rs).
+// ADR 0050. Enforced by cargo check-source-fences.
 alloy_sol_types::sol! {
     /// On-chain `GPv2Order.Data` representation as ABI-encoded into the
     /// EIP-1271 verifier payload. The `kind`, `sellTokenBalance`, and

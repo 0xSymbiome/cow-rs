@@ -47,9 +47,5 @@ work will copy accidental behavior instead of intentional design.
 
 **Proven by:**
 
-- [Credential Surface Contract Hygiene Audit](../audit/credential-surface-contract-hygiene-audit.md)
+- [Credential Redaction Audit](../audit/credential-redaction-audit.md)
 - [Dependency Gate Audit](../audit/dependency-gate-audit.md)
-- [Partner API Routing Audit](../audit/partner-api-routing-audit.md)
-- [Trading Orderbook Context Audit](../audit/trading-orderbook-context-audit.md)
-- [Trading SDK Runtime Prerequisites Audit](../audit/trading-sdk-runtime-prerequisites-audit.md)
-- [Cooperative Cancellation Contract Audit](../audit/cooperative-cancellation-contract-audit.md)

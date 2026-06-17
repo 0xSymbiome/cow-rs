@@ -102,8 +102,10 @@ For each repository the validator requires the git top-level, a remote
 matching the expected upstream, `HEAD` at the pinned commit, and all declared
 producer paths present and clean relative to `HEAD`. The scheduled
 `upstream-drift` workflow runs `cargo xtask parity drift` weekly to report
-producer-path movement on the upstream default branches. The maintainer
-workflow for refreshing the lock lives in
+producer-path movement — and, for any watched directory (`watch_dirs`, e.g. the
+app-data schema tree), files added or removed between the pin and the upstream
+default branch, so an additively versioned schema cannot land unseen. The
+maintainer workflow for refreshing the lock lives in
 [parity/README.md](../parity/README.md).
 
 ## Surface Matrix
@@ -129,9 +131,13 @@ workflow for refreshing the lock lives in
 
 ## Orderbook Rejection Tags
 
-`OrderbookRejection` models 49 variants including the forward-compatible
-`Unknown` fallback. The GET-side trade-filter and pagination tags below are
-represented directly and preserve services wire spelling.
+`OrderbookRejection` models 50 variants including the forward-compatible
+`Unknown` fallback. Every `errorType` the orderbook OpenAPI documents is pinned
+as a closed set in `parity/fixtures/orderbook/rejection_error_types.json` and
+asserted to classify to a typed variant, so an upstream enum addition surfaces
+when the vendored OpenAPI is re-stamped at a newer pin. The GET-side
+trade-filter and pagination tags below are represented directly and preserve
+services wire spelling.
 
 | Services wire tag | Rust variant | Primary upstream producer | Primary evidence |
 | --- | --- | --- | --- |
@@ -303,8 +309,10 @@ vectors, hook digest fixtures, and the per-version deployed-generation record.
 The bindings mirror the deployed v1.0.x generation (cow-shed pinned at the
 v1.0.1 tag); the v2.x source generations (ENS purge, pre-sign flow, composable
 forwarder) are deployed only as the out-of-family Gnosis redeploy and land
-later as explicit new `CowShedVersion` variants. ENS-record helpers remain
-additive.
+later as explicit new `CowShedVersion` variants. The lock marks this pin with a
+`hold:` reason, so `parity drift` reports its upstream movement for visibility
+without counting it as actionable drift and `parity sync --update` never
+auto-advances it. ENS-record helpers remain additive.
 
 ### Flash loans
 
@@ -465,10 +473,14 @@ inputs, or justification for copied literals or defaults.
 - keep fixture `sources` commits aligned with `parity/source-lock.yaml` — the
   validator enforces equality, so a pin bump names every fixture that still
   needs re-verification
-- keep the `parity/fixtures/app_data/schemas/` drift mirrors synchronized from
+- keep the `parity/fixtures/app_data/schemas/` mirrors synchronized from
   the `app-data` repository pinned in `parity/source-lock.yaml` (the
   flash-loan mirror tracks the `services` producer instead — its header says
-  so)
+  so): the per-family mirrors, plus the root-document manifest mirror
+  (`app-data-document-v*.json`) that anchors the emitted document version and
+  the in-force family versions — the `schema_drift_contract` correspondence
+  tests fail until `LATEST_APP_DATA_VERSION` and the typed bounds match the
+  refreshed mirrors
 - keep local upstream roots out of the normal repository contract
 
 ## See Also

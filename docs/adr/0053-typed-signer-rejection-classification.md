@@ -5,7 +5,7 @@
 - Last reviewed: 2026-06-15
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: signing, error-surface, eip-1193, alloy, classification
-- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0007](0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md), [ADR 0017](0017-typed-orderbook-rejection-parser.md), [ADR 0025](0025-workspace-url-redaction-convention.md), [ADR 0045](0045-async-signer-trait-narrowing.md)
+- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), ADR 0007, [ADR 0017](0017-typed-orderbook-rejection-parser.md), [ADR 0025](0025-workspace-url-redaction-convention.md), [ADR 0045](0045-async-signer-trait-narrowing.md)
 
 ## Decision
 
@@ -119,7 +119,7 @@ problem the existing per-type `class()` convention does not.
   cover the helper routing and the new variant `Display`; the
   redaction contract sweep continues to exercise
   `SignerRejection` alongside `Signer`. The standing audit at
-  `docs/audit/signer-error-classification-audit.md` carries the
+  `docs/audit/error-classification-audit.md` carries the
   refresh trigger for the next 90-day review.
 - Cost: the shared classification trait is the first of its kind
   in the workspace, so any future signer added to the workspace
@@ -152,4 +152,4 @@ problem the existing per-type `class()` convention does not.
 - [crates/signing/src/order_signing.rs](../../crates/signing/src/order_signing.rs)
 - [crates/alloy-signer/src/error.rs](../../crates/alloy-signer/src/error.rs)
 - [crates/alloy/src/error.rs](../../crates/alloy/src/error.rs)
-- [docs/audit/signer-error-classification-audit.md](../audit/signer-error-classification-audit.md)
+- [docs/audit/error-classification-audit.md](../audit/error-classification-audit.md)

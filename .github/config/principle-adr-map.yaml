@@ -106,6 +106,5 @@ out_of_scope_adrs:
   - "0039"  # TypeScript-callable wasm SDK surface is governed by the wasm-imports gate and the wasm flavour-matrix.
   - "0040"  # Wallet provider callback boundary for JS consumers is governed by the wasm SDK surface gate and the EIP-1271 verification cache audit.
   - "0041"  # Transport policy L3 layering is governed by the transport-policy coverage audit.
-  - "0042"  # Pure helpers crate extraction is a crate-topology decision documented in the architecture guide.
   - "0044"  # Bundle size profile and flavour builds are governed by the wasm flavour-matrix gate.
   - "0045"  # Async signer trait narrowing is a typed adapter surface detail under the alloy-signer adapter.

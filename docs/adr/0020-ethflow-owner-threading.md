@@ -155,5 +155,5 @@ the signer.
 
 **Proven by:**
 
-- [Trading EthFlow Owner Identity Audit](../audit/trading-ethflow-owner-identity-audit.md)
+- [Trading Order Integrity Audit](../audit/trading-order-integrity-audit.md)
 - [Contract Bindings Parity Audit](../audit/contract-bindings-parity-audit.md)

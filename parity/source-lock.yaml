@@ -24,7 +24,7 @@ repositories:
   - test/GPv2Settlement/Swap/Swap.t.sol # swap calldata vector
 - id: services
   remote: https://github.com/cowprotocol/services.git
-  commit: 65b6953bfc2e96b2791cfb2382c7309d1fb19b99
+  commit: 58045311c1b804fb42cbed74fd5bc347728e8bad
   producer_paths:
   - crates/app-data/src/app_data.rs # app-data hashing, flashloan hint
   - crates/model/src/order.rs # orderbook wire DTOs
@@ -35,13 +35,14 @@ repositories:
   - crates/shared/src/order_validation.rs # order-validation rules
 - id: cow-sdk
   remote: https://github.com/cowprotocol/cow-sdk.git
-  commit: c931d7ecd67626736f5b8dff781741e727128c42
+  commit: ccf01cb331a4d37cdf9082541eb4fa3c04f1bc26
   producer_paths:
   - packages/app-data/src/schemas/definitions.json # shared schema primitives
+  - packages/app-data/src/schemas/v1.15.0.json # root app-data document schema (per-family version manifest)
   - packages/app-data/src/schemas/flashloan/v0.2.0.json # flashloan app-data schema
   - packages/app-data/src/schemas/hook/v0.2.0.json # single-hook app-data schema
   - packages/app-data/src/schemas/hooks/v0.2.0.json # hooks-container app-data schema
-  - packages/app-data/src/schemas/partnerFee/v1.0.0.json # partner-fee app-data schema
+  - packages/app-data/src/schemas/partnerFee/v1.1.0.json # partner-fee app-data schema
   - packages/app-data/src/schemas/quote/v1.1.0.json # quote app-data schema
   - packages/config/src/chains/const/contracts.ts # contract-address constants
   - packages/cow-shed/src/abi/CowShedFactoryAbi.ts # COW Shed factory ABI
@@ -49,10 +50,16 @@ repositories:
   - packages/cow-shed/src/contracts/CoWShedHooks.test.ts # COW Shed CREATE2 goldens
   - packages/order-signing/src/orderSigningUtils.ts # EIP-1271 order+signature encoder
   - packages/trading/src/postCoWProtocolTrade.test.ts # protocol-fee composition goldens
+  watch_dirs:
+  # Schemas are versioned additively (a new version is a new file), so an exact
+  # producer-path diff is blind to a family upgrade. Watching the tree surfaces
+  # added/removed schema files (new family versions, root version bumps).
+  - packages/app-data/src/schemas
 - id: cow-shed
   remote: https://github.com/cowdao-grants/cow-shed.git
   commit: e15a131d626edbf779c8e44451566e2c36dbdb7d
-  # pinned to the DEPLOYED v1.0.1 tag, not HEAD's v2.x line (ENS purge, pre-sign, composable forwarder) — those ship only as the Gnosis chain-100 redeploy, outside the supported family (ADR 0049).
+  # Held at the deployed v1.0.1 tag; the hold reason below keeps drift/sync from treating it as actionable.
+  hold: "pinned to the deployed v1.0.1 tag, not HEAD's v2.x line (ENS purge, pre-sign, composable forwarder) which ships only as the out-of-family Gnosis chain-100 redeploy (ADR 0049); this pin is intentionally behind and must not auto-advance"
   producer_paths:
   - networks.json # v1.0.x deployment addresses
   - src/COWShed.sol # proxy runtime, VERSION constant

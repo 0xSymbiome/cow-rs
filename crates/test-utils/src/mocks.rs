@@ -174,6 +174,8 @@ pub struct RecordedRequest {
     pub url: String,
     /// The request body (empty for `GET`).
     pub body: String,
+    /// The request headers supplied by the caller, in order.
+    pub headers: Vec<(String, String)>,
     /// Whether the caller supplied a per-request timeout.
     pub has_timeout: bool,
 }
@@ -282,13 +284,14 @@ impl HttpTransport for RecordingHttpTransport {
     async fn get(
         &self,
         path: &str,
-        _headers: &[(String, String)],
+        headers: &[(String, String)],
         timeout: Option<Duration>,
     ) -> Result<TransportResponse, TransportError> {
         self.record(RecordedRequest {
             method: "GET",
             url: path.to_owned(),
             body: String::new(),
+            headers: headers.to_vec(),
             has_timeout: timeout.is_some(),
         })
         .into_result()
@@ -298,13 +301,14 @@ impl HttpTransport for RecordingHttpTransport {
         &self,
         path: &str,
         body: &str,
-        _headers: &[(String, String)],
+        headers: &[(String, String)],
         timeout: Option<Duration>,
     ) -> Result<TransportResponse, TransportError> {
         self.record(RecordedRequest {
             method: "POST",
             url: path.to_owned(),
             body: body.to_owned(),
+            headers: headers.to_vec(),
             has_timeout: timeout.is_some(),
         })
         .into_result()
@@ -314,13 +318,14 @@ impl HttpTransport for RecordingHttpTransport {
         &self,
         path: &str,
         body: &str,
-        _headers: &[(String, String)],
+        headers: &[(String, String)],
         timeout: Option<Duration>,
     ) -> Result<TransportResponse, TransportError> {
         self.record(RecordedRequest {
             method: "PUT",
             url: path.to_owned(),
             body: body.to_owned(),
+            headers: headers.to_vec(),
             has_timeout: timeout.is_some(),
         })
         .into_result()
@@ -330,13 +335,14 @@ impl HttpTransport for RecordingHttpTransport {
         &self,
         path: &str,
         body: &str,
-        _headers: &[(String, String)],
+        headers: &[(String, String)],
         timeout: Option<Duration>,
     ) -> Result<TransportResponse, TransportError> {
         self.record(RecordedRequest {
             method: "DELETE",
             url: path.to_owned(),
             body: body.to_owned(),
+            headers: headers.to_vec(),
             has_timeout: timeout.is_some(),
         })
         .into_result()

@@ -1,0 +1,61 @@
+{
+  "surface": "orderbook-rejection-error-types",
+  "sources": {
+    "services": {
+      "commit": "58045311c1b804fb42cbed74fd5bc347728e8bad",
+      "refs": [
+        "crates/orderbook/openapi.yml#components.schemas.OrderPostError",
+        "crates/orderbook/openapi.yml#components.schemas.OrderCancellationError",
+        "crates/orderbook/openapi.yml#components.schemas.PriceEstimationError"
+      ]
+    }
+  },
+  "payload": {
+    "$comment": "Closed union of the errorType wire tags documented by the orderbook OpenAPI error schemas at the services pin. parse_rejection must classify every tag here to a non-Unknown OrderbookRejection variant; new tags appear when the vendored OpenAPI is re-stamped at a newer pin.",
+    "errorTypes": [
+      "AlreadyCancelled",
+      "AppDataHashMismatch",
+      "AppDataMismatch",
+      "AppdataFromMismatch",
+      "CustomSolverError",
+      "DuplicatedOrder",
+      "ExcessiveValidTo",
+      "Forbidden",
+      "IncompatibleSigningScheme",
+      "InsufficientAllowance",
+      "InsufficientBalance",
+      "InsufficientLiquidity",
+      "InsufficientValidTo",
+      "InternalServerError",
+      "InvalidAppData",
+      "InvalidEip1271Signature",
+      "InvalidNativeSellToken",
+      "InvalidQuote",
+      "InvalidSignature",
+      "MetadataSerializationFailed",
+      "MissingFrom",
+      "NoLiquidity",
+      "OldOrderActivelyBidOn",
+      "OnChainOrder",
+      "OrderExpired",
+      "OrderFullyExecuted",
+      "OrderNotFound",
+      "QuoteNotFound",
+      "QuoteNotVerified",
+      "SameBuyAndSellToken",
+      "SellAmountDoesNotCoverFee",
+      "SellAmountOverflow",
+      "TokenTemporarilySuspended",
+      "TooManyLimitOrders",
+      "TooMuchGas",
+      "TradingOutsideAllowedWindow",
+      "TransferSimulationFailed",
+      "UnsupportedBuyTokenDestination",
+      "UnsupportedOrderType",
+      "UnsupportedSellTokenSource",
+      "UnsupportedToken",
+      "WrongOwner",
+      "ZeroAmount"
+    ]
+  }
+}
