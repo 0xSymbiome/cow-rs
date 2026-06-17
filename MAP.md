@@ -1,6 +1,6 @@
 # Repository File Map
 
-> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `19229683` &nbsp;&middot;&nbsp; **Generated:** 2026-06-17  
+> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `0f96442a` &nbsp;&middot;&nbsp; **Generated:** 2026-06-17  
 > **Total tracked files:** **931** &nbsp;&middot;&nbsp; **Lines of code:** tokei 14.0.0
 
 A navigable inventory of every file tracked by Git on this branch, grouped by the role each directory plays in the workspace. Use the table of contents to jump straight to a section; full file listings are collapsed by default so the high-level shape stays scannable.
@@ -33,8 +33,8 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 - **32,228 lines of Rust** across the 14 SDK crates, covered by **35,763 lines of tests** — a **1.1× test-to-code ratio** — plus **179 lines of benchmarks**.
 - **11,925 doc-comment lines** documenting the public API (~37% of crate code), plus **756 inline comment lines**.
 - **5,276 lines of TypeScript** across examples, e2e harnesses, and wasm bindings.
-- **21,512 lines of Markdown prose** — ADRs, audit notes, and READMEs.
-- **13,641 lines of data & config** — JSON schemas, parity fixtures, YAML, TOML, and lockfiles. Tracked and counted in the totals below; listed separately here because it's data, not hand-written code.
+- **21,521 lines of Markdown prose** — ADRs, audit notes, and READMEs.
+- **13,643 lines of data & config** — JSON schemas, parity fixtures, YAML, TOML, and lockfiles. Tracked and counted in the totals below; listed separately here because it's data, not hand-written code.
 
 **Footprint** (tracked files)
 
@@ -52,13 +52,13 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | Path | Files | Lines | Code | Purpose |
 |------|------:|------:|-----:|---------|
 | `crates/` | 541 | 110,221 | 75,271 | Workspace member crates (the SDK itself) |
-| `docs/` | 150 | 21,398 | 0 | Architecture decision records, audit notes, provider notes |
+| `docs/` | 150 | 21,407 | 0 | Architecture decision records, audit notes, provider notes |
 | `xtask/` | 45 | 9,137 | 7,761 | Cargo xtask automation crate (parity, policy, docs subcommands) |
 | `fuzz/` | 45 | 9,425 | 3,886 | cargo-fuzz targets, corpora, and failure artifacts |
 | `parity/` | 38 | 5,632 | 5,333 | Golden fixtures + pinned specs from upstream services |
 | `examples/` | 33 | 3,466 | 2,434 | Runnable usage examples (Rust + TypeScript) |
 | `e2e/` | 26 | 3,937 | 3,177 | End-to-end integration harnesses |
-| `.github/` | 22 | 3,164 | 2,611 | GitHub Actions workflows and repo config |
+| `.github/` | 22 | 3,166 | 2,613 | GitHub Actions workflows and repo config |
 | `tests/` | 12 | 1,124 | 969 | Workspace-level integration tests |
 | `.cargo/` | 2 | 32 | 27 | Cargo configuration |
 | `SECURITY.md` | 1 | 182 | 0 | Security policy |
@@ -78,7 +78,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `CHANGELOG.md` | 1 | 832 | 0 | Release changelog |
 | `llvm-cov-summary.txt` | 1 | 186 | 0 | Coverage summary snapshot |
 | `Cargo.toml` | 1 | 121 | 106 | Workspace manifest |
-| **Total** | **931** | **176,289** | **101,672** | |
+| **Total** | **931** | **176,300** | **101,674** | |
 
 ---
 
@@ -87,12 +87,12 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | Extension | Files | Lines | Code | Comments | Blank | Typical role |
 |-----------|------:|------:|-----:|---------:|------:|--------------|
 | `.rs` | 551 | 110,199 | 82,755 | 17,304 | 10,140 | Rust source and tests |
-| `.md` | 175 | 26,080 | 0 | 21,512 | 4,568 | Markdown docs (ADRs, audit notes, READMEs) |
+| `.md` | 175 | 26,089 | 0 | 21,521 | 4,568 | Markdown docs (ADRs, audit notes, READMEs) |
 | `.ts` | 47 | 12,660 | 5,276 | 6,534 | 850 | TypeScript (examples, e2e, wasm bindings) |
 | `.json` | 43 | 2,755 | 2,644 | 111 | 0 | JSON schemas, parity fixtures, test vectors |
 | `.toml` | 28 | 1,908 | 1,508 | 151 | 249 | Cargo manifests and tool configs |
 | `.stderr` | 25 | 570 | 0 | 549 | 21 | trybuild compile-fail snapshots |
-| `.yml` | 15 | 5,040 | 4,555 | 341 | 144 | CI workflows and config |
+| `.yml` | 15 | 5,042 | 4,557 | 341 | 144 | CI workflows and config |
 | `.yaml` | 11 | 4,894 | 4,019 | 25 | 850 | CI workflows, OpenAPI specs, config |
 | `.txt` | 7 | 227 | 0 | 226 | 1 | Plain text fixtures / summaries |
 | `.mjs` | 6 | 595 | 479 | 40 | 76 | JavaScript modules |
@@ -108,7 +108,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `.yamllint` | 1 | 7 | 0 | 6 | 1 |  |
 | `.proptest-regressions` | 1 | 7 | 0 | 7 | 0 | proptest regression seeds |
 | `.npmignore` | 1 | 6 | 0 | 6 | 0 |  |
-| **Total** | **931** | **176,289** | **101,672** | **56,491** | **18,126** | |
+| **Total** | **931** | **176,300** | **101,674** | **56,500** | **18,126** | |
 
 > **Code + Comments + Blank = Lines** for every row. ``Comments`` is all non-code, non-blank content: inline + doc-comments in source, prose in Markdown/text, and raw content in formats tokei does not parse as code (lockfiles, ``.stderr``, snapshots). Rust doc-comments are isolated in the per-crate ``Doc`` column above.
 
@@ -206,9 +206,9 @@ The 25 largest hand-written source files by code lines (Rust + TypeScript). This
 | Subtree | Files | Lines | Code | Purpose |
 |---------|------:|------:|-----:|---------|
 | [`adr`](docs/adr) | 69 | 6,085 | 0 | Architecture Decision Records |
-| [`audit`](docs/audit) | 60 | 9,778 | 0 | Audit notes and review artifacts |
+| [`audit`](docs/audit) | 60 | 9,787 | 0 | Audit notes and review artifacts |
 | [`providers`](docs/providers) | 2 | 279 | 0 | Provider integration notes |
-| **Total (listed)** | **131** | **16,142** | **0** | |
+| **Total (listed)** | **131** | **16,151** | **0** | |
 
 ---
 
@@ -308,7 +308,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`_quality-gate.yml`](.github/workflows/_quality-gate.yml) &mdash; 349 lines
 - [`alloy-release-candidate.yml`](.github/workflows/alloy-release-candidate.yml) &mdash; 133 lines
 - [`benchmarks.yml`](.github/workflows/benchmarks.yml) &mdash; 69 lines
-- [`ci.yml`](.github/workflows/ci.yml) &mdash; 313 lines
+- [`ci.yml`](.github/workflows/ci.yml) &mdash; 315 lines
 - [`codeql.yml`](.github/workflows/codeql.yml) &mdash; 55 lines
 - [`commit-format.yml`](.github/workflows/commit-format.yml) &mdash; 98 lines
 - [`crate-checks.yml`](.github/workflows/crate-checks.yml) &mdash; 99 lines
@@ -1563,7 +1563,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`ecdsa-signature-normalization-audit.md`](docs/audit/ecdsa-signature-normalization-audit.md) &mdash; 224 lines
 - [`eip1271-verification-cache-audit.md`](docs/audit/eip1271-verification-cache-audit.md) &mdash; 200 lines
 - [`error-classification-audit.md`](docs/audit/error-classification-audit.md) &mdash; 148 lines
-- [`fuzz-coverage-audit.md`](docs/audit/fuzz-coverage-audit.md) &mdash; 270 lines
+- [`fuzz-coverage-audit.md`](docs/audit/fuzz-coverage-audit.md) &mdash; 279 lines
 - [`http-transport-contract-audit.md`](docs/audit/http-transport-contract-audit.md) &mdash; 271 lines
 - [`lens-chain-evidence-audit.md`](docs/audit/lens-chain-evidence-audit.md) &mdash; 27 lines
 - [`log-provider-capability-audit.md`](docs/audit/log-provider-capability-audit.md) &mdash; 123 lines

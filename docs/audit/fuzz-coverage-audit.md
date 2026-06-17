@@ -1,7 +1,7 @@
 # Fuzz Coverage Audit
 
 Status: Current
-Last reviewed: 2026-06-16
+Last reviewed: 2026-06-17
 Owning surface: the standalone `cow-sdk-fuzz` crate (`fuzz/`) and every
 `cargo-fuzz` target it ships against the published SDK crates
 Refresh trigger: any new public untrusted-input surface, retired fuzz
@@ -37,11 +37,14 @@ This audit covers:
 - the cross-link between each fuzz target and the `PROPERTIES.md`
   invariant it strengthens through its asserted contract
 
-It does not cover fuzz EXECUTION mechanics. `cargo +nightly fuzz run` is
-run locally and on demand — there is no scheduled CI fuzz lane at present
-(one can be reinstated when the suite warrants it). Linux-only sanitizer
-runtime requirements and libFuzzer-internal mutation strategy are
-likewise out of scope for this static review.
+Beyond confirming the scheduled run lane exists and its public shape, it
+does not cover fuzz EXECUTION internals. A report-only `fuzz` workflow
+(`.github/workflows/fuzz.yml`) runs every target for a bounded time budget
+on a weekly cron plus manual dispatch; it is non-gating and never a
+pull-request check, and targets are also run locally on demand. The
+libFuzzer-internal mutation strategy, per-run corpus growth, and the
+Linux sanitizer-runtime requirements remain out of scope for this static
+review.
 
 ## Outcome Summary
 
@@ -49,6 +52,7 @@ likewise out of scope for this static review.
 | --- | --- | --- |
 | Target inventory | 42 fuzz targets (authoritative list: `cargo +nightly fuzz list --fuzz-dir fuzz`) cover every reviewed public untrusted-input boundary across `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-signing`, and `cow-sdk-trading` | Conforms |
 | Stable-toolchain compile | The fuzz crate compiles under `cargo +stable check --manifest-path fuzz/Cargo.toml` and is gated on every pull request through the shared workspace quality-gate workflow | Conforms |
+| Scheduled run lane | A report-only `fuzz` workflow runs every target for a bounded time budget on a weekly cron and on demand, uploading any crash reproducer; it is non-gating and never a pull-request check | Conforms |
 | Nightly-toolchain enumerate | `cargo +nightly fuzz list --fuzz-dir fuzz` enumerates the full target set by `[[bin]]` name | Conforms |
 | Seed-class contract | Every target is seeded locally from the canonical / boundary / adversarial classes documented in this audit and the harness doc-comment header; the entire `fuzz/corpus/` tree (baseline seeds and the libFuzzer accumulator alike) is gitignored per the cargo-fuzz convention of keeping the working corpus out of version control, and is regenerated locally from the documented classes | Conforms |
 | Property traceability | Every target carries a `**Property:**` doc-comment row citing one `PROP-*` invariant identifier from `PROPERTIES.md`; every cited identifier has its evidence column updated to reference the fuzz target source file | Conforms |
@@ -87,9 +91,10 @@ which the rest of the workspace does not consume. The shared quality
 gate keeps the harness type-checked against the same stable toolchain
 the rest of the repository uses by running
 `cargo check --manifest-path fuzz/Cargo.toml` from the workspace root
-on every pull request. This guards against type drift between published
-crate surfaces and fuzz target imports without forcing the workspace
-onto nightly.
+on every pull request. The `ci` workflow path filter includes `fuzz/**`,
+so a change confined to the fuzz crate triggers the same gate. This guards
+against type drift between published crate surfaces and fuzz target
+imports without forcing the workspace onto nightly.
 
 ### Nightly-toolchain Enumerate
 
@@ -141,8 +146,10 @@ reviewer's path from a `PROPERTIES.md` row to the fuzz coverage that
 strengthens it. The cited identifiers span the `PROP-CORE-*`,
 `PROP-CON-*`, `PROP-SIG-*`, `PROP-AD-*`, `PROP-APP-*`, `PROP-OBK-*`,
 `PROP-ORD-*`, `PROP-SBG-*`, `PROP-TPP-*`, and `PROP-TRD-*`
-families; 28 `PROP-*` rows in `PROPERTIES.md` carry fuzz-target
-evidence.
+families. The set of `PROP-*` rows carrying fuzz-target evidence is
+enumerated by `grep -n 'fuzz/fuzz_targets' PROPERTIES.md` rather than a
+hardcoded tally, so the cross-link survives target additions and cuts
+without a stale count.
 
 ### Public-surface Boundary
 
@@ -247,7 +254,9 @@ Primary implementation points:
   tree, so the working corpus stays in maintainer-local working copies)
 - `.github/workflows/_quality-gate.yml` (stable-toolchain compile gate
   step `Check fuzz crate against the stable toolchain`)
-- `PROPERTIES.md` (28 `PROP-*` rows with fuzz target evidence)
+- `.github/workflows/fuzz.yml` (scheduled report-only run lane)
+- `PROPERTIES.md` (the `PROP-*` rows with fuzz-target evidence, enumerated
+  by `grep -n 'fuzz/fuzz_targets' PROPERTIES.md`)
 
 Primary regression coverage:
 

@@ -1,0 +1,79 @@
+name: fuzz
+
+# Scheduled, report-only fuzzing of the standalone cow-sdk-fuzz crate. Each
+# cargo-fuzz target runs for a short, bounded budget so a code change that
+# regresses a codec or crypto boundary surfaces as a failing weekly run. This is
+# never a pull-request gate: fuzzing is non-deterministic and needs the nightly
+# toolchain, so it stays off the blocking path. Deterministic type-checking of
+# the fuzz crate stays in the shared quality gate on the stable toolchain.
+
+on:
+  schedule:
+    # Monday 05:42 UTC, offset from the other weekly crons.
+    - cron: '42 5 * * 1'
+  workflow_dispatch:
+    inputs:
+      max_total_time:
+        description: Seconds to fuzz each target
+        required: false
+        type: string
+        default: '60'
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+  CARGO_TERM_COLOR: always
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # Let a running campaign finish rather than cancelling it on a new trigger.
+  cancel-in-progress: false
+
+jobs:
+  fuzz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      MAX_TOTAL_TIME: ${{ github.event.inputs.max_total_time || '60' }}
+    steps:
+      # Source ref: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      # Source ref: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        with:
+          toolchain: nightly
+      # Source ref: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae
+        with:
+          workspaces: fuzz
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz --version 0.13.2 --locked
+      - name: Build every fuzz target
+        run: cargo +nightly fuzz build --fuzz-dir fuzz
+      - name: Run each target for a bounded budget
+        shell: bash
+        run: |
+          set -uo pipefail
+          status=0
+          while IFS= read -r target; do
+            echo "::group::fuzz ${target} (${MAX_TOTAL_TIME}s)"
+            if ! cargo +nightly fuzz run "${target}" --fuzz-dir fuzz \
+                 -- -max_total_time="${MAX_TOTAL_TIME}" -rss_limit_mb=4096; then
+              echo "::error::fuzz target ${target} surfaced a crash"
+              status=1
+            fi
+            echo "::endgroup::"
+          done < <(cargo +nightly fuzz list --fuzz-dir fuzz)
+          exit "${status}"
+      - name: Upload crash reproducers
+        if: failure()
+        # Source ref: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: fuzz-artifacts
+          path: fuzz/artifacts/
+          if-no-files-found: ignore
