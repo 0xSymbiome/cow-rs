@@ -88,5 +88,4 @@ to compose and review.
 
 **Proven by:**
 
-- [Cooperative Cancellation Contract Audit](../audit/cooperative-cancellation-contract-audit.md)
-- [Credential Surface Contract Hygiene Audit](../audit/credential-surface-contract-hygiene-audit.md)
+- [Credential Redaction Audit](../audit/credential-redaction-audit.md)

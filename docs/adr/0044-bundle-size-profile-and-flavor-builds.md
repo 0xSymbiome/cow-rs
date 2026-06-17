@@ -5,7 +5,7 @@
 - Last reviewed: 2026-06-01
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: wasm, npm, bundle-size, package-flavors
-- Related: [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), [ADR 0047](0047-typescript-facade-architecture.md)
+- Related: [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), ADR 0047
 
 ## Decision
 
@@ -23,11 +23,9 @@ support when they import only one surface, while one package keeps versioning
 and installation simple.
 
 The decision to ship feature-scoped flavors does not position `cow-sdk-wasm` as
-a replacement for the upstream `@cowprotocol/cow-sdk` TypeScript SDK. The
-benchmark documented in
-[cow-sdk-wasm Comparative Benchmark Validation Note](../audit/cow-sdk-wasm-comparative-benchmark-validation-note.md)
-shows that compiling the Rust SDK to wasm32 produces a binary larger than the
-upstream TypeScript SDK at equivalent feature subsets. The flavor split exists
+a replacement for the upstream `@cowprotocol/cow-sdk` TypeScript SDK. Compiling
+the Rust SDK to wasm32 produces a binary larger than the upstream TypeScript SDK
+at equivalent feature subsets. The flavor split exists
 so consumers in specialized use cases (deterministic Rust signing parity,
 single-source-of-truth Rust + TypeScript embedding, Cloudflare Workers) can
 choose the smallest runtime surface that covers their workflow. For standard
@@ -83,12 +81,8 @@ recommended choice.
 
 ## Links
 
-- [WASM Performance Budget Audit](../audit/wasm-performance-budget-audit.md)
-- [WASM Public API Stability Audit](../audit/wasm-public-api-stability-audit.md)
-- [WASM Facade Architecture Audit](../audit/wasm-facade-architecture-audit.md)
+- [WASM Surface Audit](../audit/wasm-surface-audit.md)
 
 **Proven by:**
 
-- [WASM Performance Budget Audit](../audit/wasm-performance-budget-audit.md)
-- [WASM Public API Stability Audit](../audit/wasm-public-api-stability-audit.md)
-- [cow-sdk-wasm Comparative Benchmark Validation Note](../audit/cow-sdk-wasm-comparative-benchmark-validation-note.md)
+- [WASM Surface Audit](../audit/wasm-surface-audit.md)

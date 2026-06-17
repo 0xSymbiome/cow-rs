@@ -1,7 +1,7 @@
 # Deployment Registry Audit
 
 Status: Current
-Last reviewed: 2026-06-10
+Last reviewed: 2026-06-17
 Re-review by: 2026-08-02
 Owning surface: `cow-sdk-contracts` deployment registry
 Refresh trigger: Changes to the address constants in `crates/contracts/src/deployments.rs`, the upstream commit pins in `parity/source-lock.yaml`, the `registry-confirm` presence probe, or supported chains
@@ -31,6 +31,8 @@ It does not cover binding generation, partner API routing, arbitrary consumer RP
 | Runtime lookup matrix | Every supported `(ContractId, SupportedChainId, CowEnv)` tuple is either a typed deployed address or an explicit unsupported lookup without silent fallback | Conforms |
 | Live presence | A live `eth_getCode` probe confirms on-chain bytecode presence for every probed row | Conforms |
 | Release probe | `registry-confirm --mode release` confirms presence read-only, failing closed on a missing production-chain RPC or an absent deployment | Conforms |
+| Lens taxonomy split | `DeploymentChainId::Lens = 232` carries composable / COW-Shed rows but is absent from `SupportedChainId`, so orderbook clients cannot select it as a trading chain | Conforms |
+| Lens runtime exclusion | A one-time public Lens orderbook route probe recorded 404 responses on 2026-05-15, confirming Lens is deployment-only and not a runtime orderbook chain | Conforms |
 
 ## Current Contract
 
@@ -45,6 +47,19 @@ supported chain and environment. Tuples present in the embedded manifest must
 resolve to the same non-zero address as their manifest row; unsupported tuples
 must stay typed misses rather than falling back to another chain, environment,
 or contract family.
+
+### Lens Chain Evidence
+
+Lens appears in the deployment registry taxonomy because upstream deployment
+evidence includes composable and COW-Shed rows for chain id `232`. That
+evidence alone does not add Lens to the runtime orderbook-supported chain list:
+`DeploymentChainId::Lens = 232` exists for deployment rows, but `SupportedChainId`
+does not include Lens, so orderbook clients cannot select it as a normal trading
+chain and unsupported or empty-code outcomes resolve to `None` rather than a
+deployed address. Lens registry addresses derive from the same per-repository
+upstream commit pins in `parity/source-lock.yaml` that anchor every other row.
+A one-time probe of the public Lens orderbook routes recorded 404 responses on
+2026-05-15, confirming Lens is deployment evidence, not runtime chain support.
 
 ## Per-chain Provenance
 
@@ -117,6 +132,7 @@ Validation surface:
 
 ```text
 cargo test -p cow-rs-workspace-tests --test supported_chains_doc_table
+cargo test -p cow-sdk-contracts --all-features
 cargo registry-confirm --mode release --chain-ids 1,100,42161,8453,11155111,137,43114,56,9745,59144,57073
 cargo docs-agree
 ```

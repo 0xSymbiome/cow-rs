@@ -50,7 +50,7 @@ defaults rather than `deny_unknown_fields`, so upstream-services additions
 remain backward-compatible. Wire-DTO field shapes are derived from the
 source-lock-pinned OpenAPI inventory, not from hand-written prior memory.
 
-**Anchored by**: [ADR 0011](adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md) (primary). Supporting: [ADR 0005](adr/0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0015](adr/0015-client-side-order-bounds-validator.md), [ADR 0016](adr/0016-split-sell-and-buy-token-balance-enums.md), [ADR 0017](adr/0017-typed-orderbook-rejection-parser.md), [ADR 0018](adr/0018-typed-app-data-merge.md), [ADR 0021](adr/0021-orderbook-total-fee-policy.md), [ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md), [ADR 0059](adr/0059-hash-concrete-orderdata-directly.md), [ADR 0060](adr/0060-uniform-error-classification.md), [ADR 0061](adr/0061-wasm-abi-receiver-pay-to-owner.md), [ADR 0067](adr/0067-idiomatic-accessor-naming.md).
+**Anchored by**: [ADR 0011](adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md) (primary). Supporting: [ADR 0005](adr/0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0015](adr/0015-client-side-order-bounds-validator.md), [ADR 0016](adr/0016-split-sell-and-buy-token-balance-enums.md), [ADR 0017](adr/0017-typed-orderbook-rejection-parser.md), [ADR 0018](adr/0018-typed-app-data-merge.md), [ADR 0021](adr/0021-orderbook-total-fee-policy.md), [ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md), [ADR 0053](adr/0053-typed-signer-rejection-classification.md), [ADR 0059](adr/0059-hash-concrete-orderdata-directly.md), [ADR 0060](adr/0060-uniform-error-classification.md), [ADR 0061](adr/0061-wasm-abi-receiver-pay-to-owner.md), [ADR 0064](adr/0064-app-data-typed-validation.md), [ADR 0067](adr/0067-idiomatic-accessor-naming.md).
 
 ## Additive Optional Ecosystems
 
@@ -58,7 +58,7 @@ Optional capabilities grow through leaf crates and feature-gated additions.
 Provider-specific behavior, JavaScript and TypeScript wasm integration, and
 future capability families do not silently widen the default facade contract.
 
-**Anchored by**: [ADR 0001](adr/0001-multi-crate-sdk-family-with-thin-facade.md) (primary). Supporting: [ADR 0039](adr/0039-typescript-callable-wasm-sdk-surface.md), [ADR 0040](adr/0040-wallet-provider-callback-boundary-for-js-consumers.md).
+**Anchored by**: [ADR 0001](adr/0001-multi-crate-sdk-family-with-thin-facade.md) (primary). Supporting: none.
 
 ## Sole Construction Seam
 
@@ -158,7 +158,7 @@ Deployment authority claims are backed by the typed `Registry` in
 by a release-mode live `eth_getCode` presence probe. Missing production-chain
 RPCs and absent deployments are never silently allowed in release mode.
 
-**Anchored by**: [ADR 0026](adr/0026-alloy-major-release-absorption-plan.md) (primary). Supporting: [ADR 0025](adr/0025-workspace-url-redaction-convention.md), [ADR 0030](adr/0030-workspace-locked-versioning-tag-baseline.md), [ADR 0032](adr/0032-deployment-authority-machine-readable-provenance.md), [ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md).
+**Anchored by**: [ADR 0026](adr/0026-alloy-major-release-absorption-plan.md) (primary). Supporting: [ADR 0025](adr/0025-workspace-url-redaction-convention.md), [ADR 0030](adr/0030-workspace-locked-versioning-tag-baseline.md), [ADR 0032](adr/0032-deployment-authority-machine-readable-provenance.md), [ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md), [ADR 0066](adr/0066-trading-slippage-and-suggestion-policy.md).
 
 ## Forward-Compatible Public Surfaces
 
@@ -177,7 +177,7 @@ supertraits (`SigningProvider`, `LogProvider`) rather than by silently widening
 the base trait. Adding `#[must_use]` and `# Errors` doc sections to
 fallible public APIs is a release-gating lint.
 
-**Anchored by**: [ADR 0031](adr/0031-wire-dto-openapi-driven-with-order-auction-order-split.md) (primary). Supporting: [ADR 0027](adr/0027-post-quantum-signing-absorption-plan.md).
+**Anchored by**: [ADR 0031](adr/0031-wire-dto-openapi-driven-with-order-auction-order-split.md) (primary). Supporting: [ADR 0027](adr/0027-post-quantum-signing-absorption-plan.md), [ADR 0058](adr/0058-typed-quote-request-response-surface.md).
 
 ## Credential Redaction by Construction
 
@@ -236,8 +236,7 @@ When it lands, its helpers stay bounded to deterministic encoders, decoders,
 selectors, event payloads, and single-call provider operations, and never embed
 production watcher loops, persistence adapters, notification integrations,
 automatic order posting, or hidden retry schedulers. Long-running orchestration
-belongs to applications and services built on top of the SDK primitives.
+belongs to applications and services built on top of the SDK primitives. The
+composable surface itself is deferred per [ADR 0048](adr/0048-composable-conditional-order-framework.md).
 
-**Required**: yes.
-
-**Anchored by**: [ADR 0048](adr/0048-composable-conditional-order-framework.md) (primary). Supporting: [ADR 0010](adr/0010-runtime-neutral-async-and-transport-posture.md), [ADR 0024](adr/0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0050](adr/0050-eip1271-signature-blob-encoding.md).
+**Anchored by**: [ADR 0057](adr/0057-log-provider-capability-trait.md) (primary). Supporting: [ADR 0010](adr/0010-runtime-neutral-async-and-transport-posture.md), [ADR 0024](adr/0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0049](adr/0049-cow-shed-account-abstraction-proxy.md), [ADR 0050](adr/0050-eip1271-signature-blob-encoding.md), [ADR 0051](adr/0051-signing-owned-eip1271-signature-provider-trait.md).

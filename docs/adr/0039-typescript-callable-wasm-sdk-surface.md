@@ -5,7 +5,7 @@
 - Last reviewed: 2026-05-22
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: wasm, typescript, public-surface, additive-leaf-crates
-- Related: [ADR 0007](0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), [ADR 0019](0019-http-transport-sole-dispatch.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0037](0037-alloy-umbrella-adapter.md), [ADR 0038](0038-transaction-lifecycle-types.md), [ADR 0042](0042-pure-helpers-extraction.md), [ADR 0043](0043-callback-registry-internalization.md), [ADR 0044](0044-bundle-size-profile-and-flavor-builds.md), [ADR 0046](0046-transport-policy-js-exposure.md), [ADR 0047](0047-typescript-facade-architecture.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+- Related: ADR 0007, [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), ADR 0019, [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), ADR 0037, [ADR 0038](0038-transaction-lifecycle-types.md), ADR 0042, ADR 0043, [ADR 0044](0044-bundle-size-profile-and-flavor-builds.md), ADR 0046, ADR 0047, [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
 
 ## Decision
 
@@ -44,8 +44,7 @@ as the default CoW Protocol TypeScript SDK for consumers. The upstream
 [`@cowprotocol/cow-sdk`](https://www.npmjs.com/package/@cowprotocol/cow-sdk)
 remains the recommended TypeScript SDK for standard browser dapps, web apps,
 CowSwap-style UIs, and most TypeScript applications because it is substantially
-smaller at equivalent feature subsets. The measured tradeoff is documented in
-the [comparative benchmark validation note](../audit/cow-sdk-wasm-comparative-benchmark-validation-note.md).
+smaller at equivalent feature subsets.
 
 Runtime support claims for `cow-sdk-wasm` are split into distinct gates that
 this ADR does not blur:
@@ -124,9 +123,6 @@ this ADR does not blur:
 
 - [cow-sdk-wasm README](../../crates/wasm/README.md)
 - [WASM Surface Audit](../audit/wasm-surface-audit.md)
-- [WASM Type Generation Audit](../audit/wasm-type-generation-audit.md)
-- [WASM Public API Stability Audit](../audit/wasm-public-api-stability-audit.md)
-- [WASM Facade Architecture Audit](../audit/wasm-facade-architecture-audit.md)
 - [Upstream TypeScript SDK](https://github.com/cowprotocol/cow-sdk)
 - [wasm-bindgen guide](https://rustwasm.github.io/docs/wasm-bindgen/)
 - [tsify crate docs](https://docs.rs/tsify/latest/tsify/)
@@ -134,7 +130,3 @@ this ADR does not blur:
 **Proven by:**
 
 - [WASM Surface Audit](../audit/wasm-surface-audit.md)
-- [WASM Type Generation Audit](../audit/wasm-type-generation-audit.md)
-- [WASM Public API Stability Audit](../audit/wasm-public-api-stability-audit.md)
-- [WASM Facade Architecture Audit](../audit/wasm-facade-architecture-audit.md)
-- [cow-sdk-wasm Comparative Benchmark Validation Note](../audit/cow-sdk-wasm-comparative-benchmark-validation-note.md)

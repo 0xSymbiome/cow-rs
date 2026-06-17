@@ -5,7 +5,7 @@
 - Last reviewed: 2026-06-15
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: composable, conditional-orders, off-chain-orchestration, watch-tower-boundary
-- Related: [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0049](0049-cow-shed-account-abstraction-proxy.md), [ADR 0050](0050-eip1271-signature-blob-encoding.md), [ADR 0051](0051-signing-owned-eip1271-signature-provider-trait.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+- Related: ADR 0008, [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0049](0049-cow-shed-account-abstraction-proxy.md), [ADR 0050](0050-eip1271-signature-blob-encoding.md), [ADR 0051](0051-signing-owned-eip1271-signature-provider-trait.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
 
 > **Deferred capability — not shipped.** `cow-sdk-composable` is **not** a
 > workspace member and is in no release; there is no `composable` facade feature
@@ -140,7 +140,7 @@ embedding `tokio::spawn` or `wasm_bindgen_futures::spawn_local` would tie the
 crate to a runtime and break the wasm32 target.
 
 The negative-edge invariant against `cow-sdk-trading` keeps the dependency
-graph additive per [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md):
+graph additive per ADR 0008:
 composable is a peer leaf to trading, not a layer above or below it. The
 invariant prevents a future change from making composable a transitive
 dependency of every facade consumer.

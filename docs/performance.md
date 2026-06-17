@@ -63,9 +63,9 @@ Cloudflare Worker compatibility. For most browser dapps and standard
 TypeScript applications, the upstream
 [`@cowprotocol/cow-sdk`](https://www.npmjs.com/package/@cowprotocol/cow-sdk)
 TypeScript SDK is substantially smaller at equivalent feature subsets; see
-the [comparative benchmark validation note](audit/cow-sdk-wasm-comparative-benchmark-validation-note.md)
-for the measured tradeoff. Use the size table below to decide whether the
-specializations justify the bundle for a given use case.
+the [WASM Surface Audit](audit/wasm-surface-audit.md) for the measured
+tradeoff. Use the size table below to decide whether the specializations
+justify the bundle for a given use case.
 
 The package is built from release artifacts with the workspace size profile
 and a `wasm-opt -Oz` post-pass. The package publishes one npm package with

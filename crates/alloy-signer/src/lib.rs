@@ -56,7 +56,7 @@ pub use signer::LocalAlloySigner;
 /// and signature normalization helpers without duplicating them.
 ///
 /// See the Stability section of
-/// `docs/adr/0036-alloy-signer-adapter.md` for the semver posture.
+/// `docs/adr/0035-alloy-provider-adapter.md` for the semver posture.
 #[cfg(not(target_arch = "wasm32"))]
 #[doc(hidden)]
 pub mod __seam {

@@ -5,7 +5,7 @@
 - Last reviewed: 2026-06-12
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: testing, crate-boundary, public-api, feature-gating, panic
-- Related: [ADR 0007](0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md), [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md), [ADR 0033](0033-minimum-viable-panic-surface.md), [ADR 0062](0062-internal-shared-test-support-crate.md)
+- Related: ADR 0007, [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md), [ADR 0033](0033-minimum-viable-panic-surface.md), [ADR 0062](0062-internal-shared-test-support-crate.md)
 
 ## Decision
 
@@ -86,7 +86,6 @@ outside the workspace.
 
 - [Architecture](../architecture.md)
 - [Principles](../principles.md)
-- [ADR 0007](0007-bounded-browser-wallet-support-and-current-browser-runtime-contract.md)
 - [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md)
 - [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md)
 - [ADR 0033](0033-minimum-viable-panic-surface.md)

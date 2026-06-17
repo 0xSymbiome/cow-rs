@@ -1,11 +1,11 @@
 # ADR 0035: Alloy Adapter Family (Provider, Signer, Umbrella)
 
-- Status: Accepted (amended)
+- Status: Accepted
 - Date: 2026-05-06 (consolidated 2026-06-15)
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: alloy, provider, signer, adapter, native, eip712
-- Related: [ADR 0008](0008-additive-capability-expansion-through-leaf-crates-and-owned-sidecars.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0022](0022-ecdsa-signature-v-normalization.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0025](0025-workspace-url-redaction-convention.md), [ADR 0026](0026-alloy-major-release-absorption-plan.md), [ADR 0038](0038-transaction-lifecycle-types.md), [ADR 0068](0068-payload-only-typed-data-signing.md)
-- Consolidates: [ADR 0036](0036-alloy-signer-adapter.md), [ADR 0037](0037-alloy-umbrella-adapter.md)
+- Related: ADR 0008, [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0022](0022-ecdsa-signature-v-normalization.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0025](0025-workspace-url-redaction-convention.md), [ADR 0026](0026-alloy-major-release-absorption-plan.md), [ADR 0038](0038-transaction-lifecycle-types.md), [ADR 0068](0068-payload-only-typed-data-signing.md)
+- Consolidates: ADR 0036, ADR 0037
 
 ## Decision
 
@@ -149,6 +149,4 @@ that the umbrella and provider leaf produce byte-identical `read_contract` outpu
 
 **Proven by:**
 
-- [Alloy Provider Adapter Audit](../audit/alloy-provider-adapter-audit.md)
-- [Alloy Signer Adapter Audit](../audit/alloy-signer-adapter-audit.md)
-- [Alloy Umbrella Adapter Audit](../audit/alloy-umbrella-adapter-audit.md)
+- [Alloy Adapters Audit](../audit/alloy-adapters-audit.md)

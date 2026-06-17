@@ -127,12 +127,6 @@ filing any issue claiming a missing positive fixture implies a parity gap.
   [ADR 0013](0013-http-transport-injection-and-typestate-builders.md),
   [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
 
-**Proven by:**
-
-- [Trading SDK Runtime Prerequisites Audit](../audit/trading-sdk-runtime-prerequisites-audit.md)
-- [Typestate Builder Contract Audit](../audit/typestate-builder-contract-audit.md)
-- [Trade-Parameter Lifecycle Audit](../audit/trade-parameter-lifecycle-audit.md)
-
 ## Acknowledgements
 
 The fluent typestate swap builder ergonomics were suggested by

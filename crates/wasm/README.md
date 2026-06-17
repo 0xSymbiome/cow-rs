@@ -175,8 +175,7 @@ JavaScript consumer driving its own retry loop reaches the same verdict.
 - [Integrations Guide](https://github.com/0xSymbiome/cow-rs/blob/main/docs/integrations.md)
 - [Architecture Overview](https://github.com/0xSymbiome/cow-rs/blob/main/docs/architecture.md)
 - [WASM Surface Audit](https://github.com/0xSymbiome/cow-rs/blob/main/docs/audit/wasm-surface-audit.md)
-- [WASM Type Generation Audit](https://github.com/0xSymbiome/cow-rs/blob/main/docs/audit/wasm-type-generation-audit.md)
-- [WASM EIP-1271 Parity Audit](https://github.com/0xSymbiome/cow-rs/blob/main/docs/audit/wasm-eip1271-parity-audit.md)
+- [EIP-1271 Verification Cache Audit](https://github.com/0xSymbiome/cow-rs/blob/main/docs/audit/eip1271-verification-cache-audit.md)
 
 ## License
 

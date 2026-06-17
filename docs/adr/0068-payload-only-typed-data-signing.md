@@ -4,7 +4,7 @@
 - Date: 2026-06-11
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: core, signer, eip712, traits
-- Related: [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0023](0023-legacy-compatibility-shim-removal.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0036](0036-alloy-signer-adapter.md), [ADR 0045](0045-async-signer-trait-narrowing.md)
+- Related: [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), ADR 0023, [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), ADR 0036, [ADR 0045](0045-async-signer-trait-narrowing.md)
 
 ## Decision
 
@@ -30,7 +30,7 @@ nested struct type definitions, so it cannot express the canonical EIP-712
 digest for an arbitrary payload: the backend must either guess a placeholder
 primary type or reject the call. A trait method that can only produce a
 protocol-meaningless digest for the general case fails the doctrine of
-[ADR 0023](0023-legacy-compatibility-shim-removal.md), which removed
+ADR 0023, which removed
 compatibility shims that produced protocol-incorrect digests. Keeping one
 honest payload method also keeps the trait runtime-neutral per
 [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md): every
@@ -75,8 +75,6 @@ there are no published consumers to migrate.
 
 ## Links
 
-- [ADR 0023](0023-legacy-compatibility-shim-removal.md)
 - [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md)
-- [ADR 0036](0036-alloy-signer-adapter.md)
 - [ADR 0040](0040-wallet-provider-callback-boundary-for-js-consumers.md)
 - [Properties Registry](../../PROPERTIES.md)

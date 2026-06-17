@@ -54,67 +54,60 @@ Workflow snapshot:
 
 ### SHA-Pinned Actions
 
-Third-party workflow actions are pinned by immutable commit SHA. The source
-tag or source branch used to choose the SHA remains in a nearby
-`# Source ref:` comment so reviewers can evaluate upgrades without relying on
-mutable workflow references.
-
-Same-repository reusable workflow calls, such as the shared quality gate, use
-relative `./.github/workflows/...` references and are reviewed as committed
-repository code rather than third-party actions.
+Third-party workflow actions are pinned by immutable commit SHA, with the source
+tag or branch used to choose the SHA kept in a nearby `# Source ref:` comment.
+Same-repository reusable workflow calls (such as the shared quality gate) use
+relative `./.github/workflows/...` references and are reviewed as committed repo
+code rather than third-party actions.
 
 ### Automated Pinning Guard
 
 The `workflow-security` job in `.github/workflows/_quality-gate.yml` scans
 `.github/workflows/*.yml` and fails when any third-party `uses:` reference does
-not end in `@[0-9a-f]{40}`. That check runs through the shared quality gate
-used by both routine CI and release-readiness validation.
+not end in `@[0-9a-f]{40}`. It runs through the shared quality gate used by both
+routine CI and release-readiness validation.
 
 ### Permissions Discipline
 
-Every workflow declares explicit `permissions:`. Most workflows use
-`contents: read`; workflows that need narrower or elevated rights declare them
-at job scope. The CodeQL analyze job is the only lane that grants
-`security-events: write`, and scheduled drift/canary lanes grant
-`issues: write` only when they create or reuse tracking issues.
+Every workflow declares explicit `permissions:`. Most use `contents: read`;
+narrower or elevated rights are declared at job scope. The CodeQL analyze job is
+the only lane granting `security-events: write`, and scheduled drift/canary lanes
+grant `issues: write` only when they create or reuse tracking issues.
 
 ### `pull_request_target` Review Guard
 
 No workflow currently declares `pull_request_target`. The shared quality gate
 fails any workflow that adds the trigger without an explicit
-`# allow-pull-request-target:` review comment in the same workflow file, so a
-future privileged-trigger lane cannot be introduced silently.
+`# allow-pull-request-target:` review comment in the same file, so a future
+privileged-trigger lane cannot be introduced silently.
 
 ### Docs-Quality Inline Smoke
 
-The docs-quality workflow now parses the rustdoc-rendered crate HTML with an
-inline Python standard-library parser inside the existing docs job. The change
-does not add a third-party `uses:` action, does not widen workflow
-permissions, and remains covered by the same workflow-security pinning and
-permissions checks as the rest of the workflow set.
+The docs-quality workflow parses the rustdoc-rendered crate HTML with an inline
+Python standard-library parser inside the existing docs job — no third-party
+`uses:` action, no widened permissions, still covered by the same pinning and
+permissions checks.
 
 ### WASM Import Fences
 
 The `cow-sdk-wasm` import fences run in the shared `policy` job (through
-`cargo check-source-fences`) on every pull request. The job uses the shared
-gate's read-only repository permissions and SHA-pinned checkout action, and the
-enforcement is a Rust policy in the `cargo xtask` sweep rather than inline
-shell, so it introduces no new third-party action.
+`cargo check-source-fences`) on every pull request, using the shared gate's
+read-only permissions and SHA-pinned checkout. Enforcement is a Rust policy in
+the `cargo xtask` sweep, not inline shell, so it adds no third-party action.
 
 ### Scheduled Retry Lane
 
-The `retry-soak.yml` workflow is a nightly lane that runs one ignored
-deterministic orderbook retry and timeout soak test. It uses only pinned
-third-party actions, `contents: read`, and no pull-request trigger.
+The `retry-soak.yml` nightly lane runs one ignored deterministic orderbook retry
+and timeout soak test, using only pinned actions, `contents: read`, and no
+pull-request trigger.
 
 ### Alloy Canary Issue Creation
 
-The Alloy release-candidate workflow remains report-only and scheduled/manual.
-When a canary step fails, the workflow uses the first-party GitHub CLI already
-available on the hosted runner to call `gh api`, create the `alloy-canary`
-label if needed, and create at most one open tracking issue for the failing
-canary. This requires `issues: write` but does not add a third-party action,
-does not run on pull requests, and does not mutate dependency pins.
+The report-only, scheduled/manual Alloy release-candidate workflow uses the
+first-party GitHub CLI already on the runner to `gh api` create the `alloy-canary`
+label and at most one open tracking issue when a canary step fails. This requires
+`issues: write` but adds no third-party action, does not run on pull requests, and
+does not mutate dependency pins.
 
 ## Evidence
 

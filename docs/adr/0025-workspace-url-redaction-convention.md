@@ -57,6 +57,4 @@ requires raw URL access to happen through explicit accessors at dispatch seams.
 
 **Proven by:**
 
-- [URL Credential Redaction Audit](../audit/url-credential-redaction-audit.md)
-- [Credential Surface Audit](../audit/credential-surface-audit.md)
-- [Credential Surface Contract Hygiene Audit](../audit/credential-surface-contract-hygiene-audit.md)
+- [Credential Redaction Audit](../audit/credential-redaction-audit.md)

@@ -117,10 +117,9 @@ in the `SigningProvider` mould (ADR 0024) rather than widening the base
 - [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md)
 - [ADR 0048](0048-composable-conditional-order-framework.md)
 - [ADR 0054](0054-onchain-order-event-decoding-is-fail-closed.md)
-- [ADR 0056](0056-settlement-event-decoding-is-fail-closed.md)
 
 **Proven by:**
 
 - `crates/core/tests/traits_contract.rs` (behavioral `Provider` capability coverage; the compiler enforces the supertrait shape across impls)
 - `crates/alloy/tests/log_provider_contract.rs::alloy_client_implements_log_provider_and_returns_typed_error_on_unreachable_rpc`
-- [Log-Provider Capability Audit](../audit/log-provider-capability-audit.md)
+- [Alloy Adapters Audit](../audit/alloy-adapters-audit.md)

@@ -85,13 +85,10 @@ set before a live client exists.
 - [Transport](../transport.md)
 - [Performance](../performance.md)
 - [Verification Guide](../verification.md)
-- [ADR 0019](0019-http-transport-sole-dispatch.md)
 - See also: ADR 0023, ADR 0030, ADR 0039, and ADR 0041.
 
 **Proven by:**
 
-- [ADR 0019](0019-http-transport-sole-dispatch.md)
 - [HTTP Transport Contract Audit](../audit/http-transport-contract-audit.md)
-- [Typestate Builder Contract Audit](../audit/typestate-builder-contract-audit.md)
 - `crates/orderbook/tests/api_contract.rs`
 - `crates/subgraph/tests/api_contract.rs`

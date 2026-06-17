@@ -7,9 +7,7 @@ Refresh trigger: Changes to blocking dependency policy, Cargo.lock advisory post
 Related docs:
 - [ADR 0006](../adr/0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
 - [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md)
-- [CID Dependency Audit](cid-dependency-audit.md)
-- [Alloy Umbrella Adapter Audit](alloy-umbrella-adapter-audit.md)
-- [WASM Component Model Future Prep Audit](wasm-component-model-future-prep-audit.md)
+- [Alloy Adapters Audit](alloy-adapters-audit.md)
 - [Release Checklist](../release-checklist.md)
 - [Verification Guide](../verification.md)
 
@@ -328,7 +326,6 @@ Primary implementation points:
 - `docs/release-checklist.md`
 - `docs/verification.md`
 - `docs/verification.md`
-- `docs/audit/cid-dependency-audit.md`
 - `crates/wasm/Cargo.toml`
 - `crates/wasm/tests/no_ffi_helpers.rs`
 - `crates/contracts/Cargo.toml`
