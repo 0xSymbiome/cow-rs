@@ -1,7 +1,7 @@
 # Repository File Map
 
-> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `c1bb3ad8` &nbsp;&middot;&nbsp; **Generated:** 2026-06-17  
-> **Total tracked files:** **876** &nbsp;&middot;&nbsp; **Lines of code:** tokei 14.0.0
+> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `f9e742f6` &nbsp;&middot;&nbsp; **Generated:** 2026-06-17  
+> **Total tracked files:** **879** &nbsp;&middot;&nbsp; **Lines of code:** tokei 14.0.0
 
 A navigable inventory of every file tracked by Git on this branch, grouped by the role each directory plays in the workspace. Use the table of contents to jump straight to a section; full file listings are collapsed by default so the high-level shape stays scannable.
 
@@ -34,13 +34,13 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 - **11,927 doc-comment lines** documenting the public API (~37% of crate code), plus **759 inline comment lines**.
 - **5,276 lines of TypeScript** across examples, e2e harnesses, and wasm bindings.
 - **16,357 lines of Markdown prose** — ADRs, audit notes, and READMEs.
-- **13,587 lines of data & config** — JSON schemas, parity fixtures, YAML, TOML, and lockfiles. Tracked and counted in the totals below; listed separately here because it's data, not hand-written code.
+- **13,858 lines of data & config** — JSON schemas, parity fixtures, YAML, TOML, and lockfiles. Tracked and counted in the totals below; listed separately here because it's data, not hand-written code.
 
 **Footprint** (tracked files)
 
 - **541 files** live under `crates/` — 14 workspace member crates make up roughly 62% of the repo.
 - **95 files** under `docs/` are mostly architecture decision records and audit notes.
-- **37 files** under `parity/` are golden fixtures captured from upstream services to keep the Rust SDK byte-compatible.
+- **40 files** under `parity/` are golden fixtures captured from upstream services to keep the Rust SDK byte-compatible.
 - **45 files** under `fuzz/` cover cargo-fuzz targets and their seed corpora.
 - **59 files** under `examples/` + `e2e/` are runnable demos and integration harnesses.
 - **45 files** under `xtask/` are the maintenance automation crate (parity refresh, policy checks, doc generation).
@@ -55,7 +55,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `docs/` | 95 | 14,992 | 0 | Architecture decision records, audit notes, provider notes |
 | `xtask/` | 45 | 9,264 | 7,859 | Cargo xtask automation crate (parity, policy, docs subcommands) |
 | `fuzz/` | 45 | 9,425 | 3,886 | cargo-fuzz targets, corpora, and failure artifacts |
-| `parity/` | 37 | 5,530 | 5,219 | Golden fixtures + pinned specs from upstream services |
+| `parity/` | 40 | 5,801 | 5,490 | Golden fixtures + pinned specs from upstream services |
 | `examples/` | 33 | 3,466 | 2,434 | Runnable usage examples (Rust + TypeScript) |
 | `e2e/` | 26 | 3,937 | 3,177 | End-to-end integration harnesses |
 | `.github/` | 23 | 3,242 | 2,671 | GitHub Actions workflows and repo config |
@@ -78,7 +78,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `CHANGELOG.md` | 1 | 832 | 0 | Release changelog |
 | `llvm-cov-summary.txt` | 1 | 186 | 0 | Coverage summary snapshot |
 | `Cargo.toml` | 1 | 121 | 106 | Workspace manifest |
-| **Total** | **876** | **170,124** | **101,814** | |
+| **Total** | **879** | **170,395** | **102,085** | |
 
 ---
 
@@ -89,7 +89,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `.rs` | 551 | 110,464 | 82,951 | 17,356 | 10,157 | Rust source and tests |
 | `.md` | 120 | 19,683 | 0 | 16,357 | 3,326 | Markdown docs (ADRs, audit notes, READMEs) |
 | `.ts` | 47 | 12,660 | 5,276 | 6,534 | 850 | TypeScript (examples, e2e, wasm bindings) |
-| `.json` | 42 | 2,637 | 2,526 | 111 | 0 | JSON schemas, parity fixtures, test vectors |
+| `.json` | 45 | 2,908 | 2,797 | 111 | 0 | JSON schemas, parity fixtures, test vectors |
 | `.toml` | 28 | 1,908 | 1,508 | 151 | 249 | Cargo manifests and tool configs |
 | `.stderr` | 25 | 570 | 0 | 549 | 21 | trybuild compile-fail snapshots |
 | `.yml` | 16 | 5,119 | 4,616 | 353 | 150 | CI workflows and config |
@@ -108,7 +108,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `.yamllint` | 1 | 7 | 0 | 6 | 1 |  |
 | `.proptest-regressions` | 1 | 7 | 0 | 7 | 0 | proptest regression seeds |
 | `.npmignore` | 1 | 6 | 0 | 6 | 0 |  |
-| **Total** | **876** | **170,124** | **101,814** | **51,403** | **16,907** | |
+| **Total** | **879** | **170,395** | **102,085** | **51,403** | **16,907** | |
 
 > **Code + Comments + Blank = Lines** for every row. ``Comments`` is all non-code, non-blank content: inline + doc-comments in source, prose in Markdown/text, and raw content in formats tokei does not parse as code (lockfiles, ``.stderr``, snapshots). Rust doc-comments are isolated in the per-crate ``Doc`` column above.
 
@@ -195,9 +195,9 @@ The 25 largest hand-written source files by code lines (Rust + TypeScript). This
 
 | Subtree | Files | Lines | Code | Purpose |
 |---------|------:|------:|-----:|---------|
-| [`fixtures`](parity/fixtures) | 33 | 2,292 | 2,292 | Golden fixtures captured from upstream services |
+| [`fixtures`](parity/fixtures) | 36 | 2,563 | 2,563 | Golden fixtures captured from upstream services |
 | [`openapi`](parity/openapi) | 2 | 2,895 | 2,860 | OpenAPI specs pinned for parity |
-| **Total (listed)** | **35** | **5,187** | **5,152** | |
+| **Total (listed)** | **38** | **5,458** | **5,423** | |
 
 ---
 
@@ -1776,10 +1776,12 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>parity/fixtures/app_data/schemas/</code> &mdash; 3 file(s)</summary>
+<summary><code>parity/fixtures/app_data/schemas/</code> &mdash; 5 file(s)</summary>
 
+- [`app-data-document-v1.15.0.json`](parity/fixtures/app_data/schemas/app-data-document-v1.15.0.json) &mdash; 92 lines
 - [`flashloan.json`](parity/fixtures/app_data/schemas/flashloan.json) &mdash; 60 lines
 - [`hook-v0.2.0.json`](parity/fixtures/app_data/schemas/hook-v0.2.0.json) &mdash; 55 lines
+- [`partner-fee-v1.1.0.json`](parity/fixtures/app_data/schemas/partner-fee-v1.1.0.json) &mdash; 118 lines
 - [`quote-v1.1.0.json`](parity/fixtures/app_data/schemas/quote-v1.1.0.json) &mdash; 38 lines
 
 </details>
@@ -1813,11 +1815,12 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 </details>
 
 <details>
-<summary><code>parity/fixtures/orderbook/</code> &mdash; 8 file(s)</summary>
+<summary><code>parity/fixtures/orderbook/</code> &mdash; 9 file(s)</summary>
 
 - [`onchain_order_data.json`](parity/fixtures/orderbook/onchain_order_data.json) &mdash; 16 lines
 - [`order_quote_response.json`](parity/fixtures/orderbook/order_quote_response.json) &mdash; 38 lines
 - [`order_with_full_metadata.json`](parity/fixtures/orderbook/order_with_full_metadata.json) &mdash; 86 lines
+- [`rejection_error_types.json`](parity/fixtures/orderbook/rejection_error_types.json) &mdash; 61 lines
 - [`solver_competition_response.json`](parity/fixtures/orderbook/solver_competition_response.json) &mdash; 56 lines
 - [`solver_execution.json`](parity/fixtures/orderbook/solver_execution.json) &mdash; 19 lines
 - [`stored_order_quote.json`](parity/fixtures/orderbook/stored_order_quote.json) &mdash; 25 lines
