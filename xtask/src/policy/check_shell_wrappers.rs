@@ -16,8 +16,7 @@ pub struct Args {
     pub repo_root: PathBuf,
 }
 
-/// Lanes where shell tooling is explicitly permitted: git hooks and the npm
-/// package's build scripts.
+/// Lanes where shell tooling is permitted.
 const ALLOWED_PREFIXES: &[&str] = &[".githooks/", "crates/wasm/npm/scripts/"];
 
 pub fn run_default() -> Result<()> {
@@ -55,10 +54,7 @@ pub fn run(args: &Args) -> Result<()> {
 }
 
 /// A tracked `*.sh`/`*.ps1` is a stray unless it lives in an allowed lane or
-/// under a hidden top-level directory. Hidden directories (first path segment
-/// begins with `.`) hold tooling and working-copy state — git hooks, editor and
-/// CI config, local scratch — that is governed separately from the shipped
-/// Rust-tooling discipline this check enforces.
+/// under a hidden top-level directory (separately-governed tooling and scratch).
 fn forbidden_scripts(listing: &str) -> Vec<&str> {
     listing
         .lines()
@@ -73,7 +69,6 @@ fn forbidden_scripts(listing: &str) -> Vec<&str> {
         .collect()
 }
 
-/// True when the path's first segment is a hidden directory (begins with `.`).
 fn is_hidden_top_level(path: &str) -> bool {
     path.split('/')
         .next()

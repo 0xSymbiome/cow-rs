@@ -16,7 +16,6 @@ pub struct Args {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct MemberVersion {
     pub manifest: String,
-    pub package_name: String,
     pub uses_workspace_version: bool,
     pub explicit_version: Option<String>,
 }
@@ -130,7 +129,6 @@ struct MemberManifest {
 
 #[derive(Deserialize)]
 struct MemberPackage {
-    name: Option<String>,
     version: Option<VersionField>,
 }
 
@@ -151,20 +149,14 @@ fn read_workspace_versions(repo_root: &Path) -> anyhow::Result<(String, Vec<Memb
         let manifest = repo_root.join(member).join("Cargo.toml");
         let parsed: MemberManifest = toml::from_str(&workspace::read_to_string(&manifest)?)
             .with_context(|| format!("failed to parse {}", manifest.display()))?;
-        let package = parsed.package;
-        let package_name = package
-            .as_ref()
-            .and_then(|package| package.name.clone())
-            .unwrap_or_else(|| member.clone());
         let (uses_workspace_version, explicit_version) =
-            match package.and_then(|package| package.version) {
+            match parsed.package.and_then(|package| package.version) {
                 Some(VersionField::Inherited { workspace }) => (workspace, None),
                 Some(VersionField::Explicit(version)) => (false, Some(version)),
                 None => (false, None),
             };
         output.push(MemberVersion {
             manifest: workspace::relative_path(repo_root, &manifest),
-            package_name,
             uses_workspace_version,
             explicit_version,
         });

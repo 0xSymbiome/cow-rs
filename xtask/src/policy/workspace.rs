@@ -3,7 +3,7 @@ use std::{
     path::{Component, Path, PathBuf},
 };
 
-use anyhow::{Context, bail};
+use anyhow::Context;
 use proc_macro2::{Delimiter, TokenStream, TokenTree};
 use serde::Deserialize;
 use syn::{Attribute, Item, Visibility, parse::Parser, visit::Visit};
@@ -182,12 +182,10 @@ pub fn read_to_string(path: &Path) -> anyhow::Result<String> {
     fs::read_to_string(path).with_context(|| format!("failed to read {}", path.display()))
 }
 
-pub fn ensure_file_exists(path: &Path) -> anyhow::Result<()> {
-    if path.is_file() {
-        Ok(())
-    } else {
-        bail!("expected file does not exist: {}", path.display())
-    }
+/// Normalizes a manifest path to forward slashes so allowlist keys compare
+/// equal across platforms.
+pub(crate) fn normalize_manifest_path(path: &str) -> String {
+    path.replace('\\', "/")
 }
 
 #[derive(Deserialize)]
@@ -218,14 +216,12 @@ enum PublishFlag {
     Registries(Vec<String>),
 }
 
-/// Sorted package names of every publishable workspace crate, read from the
-/// workspace manifest.
+/// Sorted package names of every publishable workspace crate.
 ///
-/// The shipped-surface dependency gates target exactly this set, so deriving it
-/// from `Cargo.toml` keeps coverage correct as crates are added or removed
-/// rather than tracking a hand-maintained roster. A member is publishable
-/// unless its manifest disables publication with `publish = false` or an empty
-/// `publish = []` registry list.
+/// Read from the workspace manifest so the shipped-surface dependency gates stay
+/// correct as crates are added or removed. A member is publishable unless its
+/// manifest disables publication with `publish = false` or an empty
+/// `publish = []` list.
 pub fn shipped_crates(repo_root: &Path) -> anyhow::Result<Vec<String>> {
     let root: RootManifest = toml::from_str(&read_to_string(&repo_root.join("Cargo.toml"))?)
         .context("failed to parse workspace Cargo.toml")?;
@@ -281,13 +277,13 @@ const fn is_public(vis: &Visibility) -> bool {
     matches!(vis, Visibility::Public(_))
 }
 
-fn is_cfg_test(attrs: &[Attribute]) -> bool {
+pub(crate) fn is_cfg_test(attrs: &[Attribute]) -> bool {
     attrs
         .iter()
         .any(|attr| attr.path().is_ident("cfg") && format!("{:?}", attr.meta).contains("test"))
 }
 
-fn item_path(modules: &[String], name: &str) -> String {
+pub(crate) fn item_path(modules: &[String], name: &str) -> String {
     if modules.is_empty() {
         name.to_owned()
     } else {
@@ -295,7 +291,7 @@ fn item_path(modules: &[String], name: &str) -> String {
     }
 }
 
-fn impl_type_name(ty: &syn::Type) -> String {
+pub(crate) fn impl_type_name(ty: &syn::Type) -> String {
     match ty {
         syn::Type::Path(path) => path
             .path

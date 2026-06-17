@@ -28,18 +28,8 @@ pub enum SemverChecksMode {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
-#[allow(
-    clippy::struct_excessive_bools,
-    reason = "serialized release-classification flags consumed as independent booleans by the chain-patch gate"
-)]
 pub struct Classification {
     pub release_kind: ReleaseKind,
-    pub is_first_functional_release: bool,
-    pub is_patch: bool,
-    pub is_minor: bool,
-    pub is_major: bool,
-    pub head_version: String,
-    pub base_version: String,
     pub baseline_tag: Option<String>,
     pub semver_checks_mode: SemverChecksMode,
 }
@@ -102,13 +92,6 @@ pub fn classify_versions(base: Option<&str>, head: &str) -> anyhow::Result<Class
 
     Ok(Classification {
         release_kind: kind,
-        is_first_functional_release: kind == ReleaseKind::FirstFunctional,
-        is_patch: kind == ReleaseKind::Patch,
-        is_minor: matches!(kind, ReleaseKind::Pre1_0Minor | ReleaseKind::Post1_0Minor),
-        is_major: kind == ReleaseKind::Major,
-        head_version: head_version.to_string(),
-        base_version: base_version
-            .map_or_else(|| "absent".to_owned(), |version| version.to_string()),
         baseline_tag,
         semver_checks_mode: mode,
     })

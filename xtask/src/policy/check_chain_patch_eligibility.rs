@@ -36,15 +36,15 @@ pub struct ChainPatchReport {
     pub source_lock_changed: bool,
 }
 
-pub fn run(args: Args) -> anyhow::Result<()> {
-    let should_enforce = args.enforce || args.diff_file.is_some() || is_patch_lane(&args)?;
+pub fn run(args: &Args) -> anyhow::Result<()> {
+    let should_enforce = args.enforce || args.diff_file.is_some() || is_patch_lane(args)?;
     if !should_enforce {
         println!("chain patch eligibility skipped outside a patch release lane");
         return Ok(());
     }
 
-    let diff = match args.diff_file {
-        Some(path) => workspace::read_to_string(&path)?,
+    let diff = match &args.diff_file {
+        Some(path) => workspace::read_to_string(path)?,
         None => git_diff(&args.repo_root, &args.base_ref)?,
     };
     let source_lock = workspace::read_to_string(&args.repo_root.join("parity/source-lock.yaml"))?;
@@ -71,7 +71,7 @@ fn is_patch_lane(args: &Args) -> anyhow::Result<bool> {
         &args.head_ref,
         args.workspace_cargo_toml.as_deref(),
     )?;
-    Ok(classification.is_patch)
+    Ok(classification.release_kind == classify_release::ReleaseKind::Patch)
 }
 
 pub fn validate_diff(diff: &str, source_lock: &str) -> Vec<String> {

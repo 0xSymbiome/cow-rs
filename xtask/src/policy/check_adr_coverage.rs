@@ -53,7 +53,7 @@ pub struct AdrStatus {
 }
 
 pub fn run_default() -> anyhow::Result<()> {
-    run(Args {
+    run(&Args {
         repo_root: PathBuf::from("."),
         // Blocking to match the CI invocation of this gate.
         mode: Mode::Blocking,
@@ -61,9 +61,10 @@ pub fn run_default() -> anyhow::Result<()> {
     })
 }
 
-pub fn run(args: Args) -> anyhow::Result<()> {
+pub fn run(args: &Args) -> anyhow::Result<()> {
     let map_path = args
         .map
+        .clone()
         .unwrap_or_else(|| args.repo_root.join(".github/config/principle-adr-map.yaml"));
     let map: PrincipleAdrMap = fixtures::load_yaml(&map_path)
         .with_context(|| format!("failed to load {}", map_path.display()))?;

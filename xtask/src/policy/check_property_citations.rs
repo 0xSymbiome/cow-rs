@@ -17,7 +17,6 @@ pub struct Args {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PropertyRow {
     pub id: String,
-    pub covered: String,
     pub evidence: String,
 }
 
@@ -25,19 +24,19 @@ pub struct PropertyRow {
 pub struct EvidenceRef {
     pub path: String,
     pub symbol: Option<String>,
-    pub raw: String,
 }
 
 pub fn run_default() -> anyhow::Result<()> {
-    run(Args {
+    run(&Args {
         repo_root: PathBuf::from("."),
         properties: None,
     })
 }
 
-pub fn run(args: Args) -> anyhow::Result<()> {
+pub fn run(args: &Args) -> anyhow::Result<()> {
     let path = args
         .properties
+        .clone()
         .unwrap_or_else(|| args.repo_root.join("PROPERTIES.md"));
     let text = workspace::read_to_string(&path)?;
     let rows = parse_property_rows(&text);
@@ -79,7 +78,6 @@ pub fn parse_property_rows(text: &str) -> Vec<PropertyRow> {
             }
             Some(PropertyRow {
                 id: cells[1].trim_matches('`').to_owned(),
-                covered: cells[5].to_owned(),
                 evidence: cells[6].to_owned(),
             })
         })
@@ -150,9 +148,5 @@ fn parse_evidence_ref(raw: &str) -> Option<EvidenceRef> {
             .find(|segment| !segment.is_empty())
             .map(str::to_owned)
     });
-    Some(EvidenceRef {
-        path,
-        symbol,
-        raw: raw.to_owned(),
-    })
+    Some(EvidenceRef { path, symbol })
 }

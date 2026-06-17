@@ -131,8 +131,7 @@ fn validate(dependencies: &BTreeMap<String, toml::Value>) -> Vec<String> {
 }
 
 fn check_family(label: &str, pins: &BTreeMap<String, String>, errors: &mut Vec<String>) {
-    let distinct: BTreeMap<&String, &String> = pins.iter().collect();
-    let minors: std::collections::BTreeSet<&String> = distinct.values().copied().collect();
+    let minors: std::collections::BTreeSet<&String> = pins.values().collect();
     match minors.len() {
         0 => errors.push(format!(
             "no {label} alloy-* pins found in the workspace manifest"

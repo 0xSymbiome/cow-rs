@@ -65,15 +65,16 @@ impl fmt::Display for PanicGateError {
 }
 
 pub fn run_default() -> anyhow::Result<()> {
-    run(Args {
+    run(&Args {
         repo_root: PathBuf::from("."),
         allowlist: None,
     })
 }
 
-pub fn run(args: Args) -> anyhow::Result<()> {
+pub fn run(args: &Args) -> anyhow::Result<()> {
     let allowlist_path = args
         .allowlist
+        .clone()
         .unwrap_or_else(|| args.repo_root.join(".github/config/panic-allowlist.yaml"));
     let allowlist: PanicAllowlist = fixtures::load_yaml(&allowlist_path)
         .with_context(|| format!("failed to load {}", allowlist_path.display()))?;
@@ -112,7 +113,7 @@ pub fn validate_allowlist(allowlist: &PanicAllowlist, calls: &[PanicCall]) -> Ve
                 entry.file, entry.item
             ));
         }
-        let key = (normalize_manifest_path(&entry.file), entry.item.clone());
+        let key = (workspace::normalize_manifest_path(&entry.file), entry.item.clone());
         if allowed.insert(key.clone(), entry).is_some() {
             errors.push(format!(
                 "duplicate panic allowlist entry for {}::{}",
@@ -154,7 +155,7 @@ pub fn validate_allowlist_artifacts(repo_root: &Path, allowlist: &PanicAllowlist
             continue;
         }
 
-        let relative_path = normalize_manifest_path(&entry.file);
+        let relative_path = workspace::normalize_manifest_path(&entry.file);
         let source_path = repo_root.join(&relative_path);
         let source = match fs::read_to_string(&source_path) {
             Ok(source) => source,
@@ -225,10 +226,6 @@ pub fn check_entry_artifacts(
     }
 }
 
-fn normalize_manifest_path(path: &str) -> String {
-    path.replace('\\', "/")
-}
-
 struct LocatedItem<'a> {
     attrs: &'a [Attribute],
     body: Option<Span>,
@@ -246,7 +243,7 @@ fn locate_in_items<'a>(
     for item in items {
         match item {
             Item::Fn(function) => {
-                if item_path(modules, &function.sig.ident.to_string()) == target {
+                if workspace::item_path(modules, &function.sig.ident.to_string()) == target {
                     return Some(LocatedItem {
                         attrs: &function.attrs,
                         body: Some(function.block.span()),
@@ -254,7 +251,8 @@ fn locate_in_items<'a>(
                 }
             }
             Item::Impl(implementation) => {
-                let impl_path = item_path(modules, &impl_type_name(&implementation.self_ty));
+                let impl_path =
+                    workspace::item_path(modules, &workspace::impl_type_name(&implementation.self_ty));
                 for item in &implementation.items {
                     if let syn::ImplItem::Fn(function) = item
                         && format!("{impl_path}::{}", function.sig.ident) == target
@@ -267,7 +265,7 @@ fn locate_in_items<'a>(
                 }
             }
             Item::Mod(module) => {
-                if is_cfg_test(&module.attrs) {
+                if workspace::is_cfg_test(&module.attrs) {
                     continue;
                 }
                 if let Some((_, items)) = &module.content {
@@ -280,7 +278,7 @@ fn locate_in_items<'a>(
                 }
             }
             Item::Trait(trait_item) => {
-                let trait_path = item_path(modules, &trait_item.ident.to_string());
+                let trait_path = workspace::item_path(modules, &trait_item.ident.to_string());
                 for item in &trait_item.items {
                     if let syn::TraitItem::Fn(function) = item
                         && format!("{trait_path}::{}", function.sig.ident) == target
@@ -350,29 +348,4 @@ fn line_col_to_offset(src: &str, location: LineColumn) -> usize {
         offset += line.len();
     }
     offset
-}
-
-fn is_cfg_test(attrs: &[Attribute]) -> bool {
-    attrs
-        .iter()
-        .any(|attr| attr.path().is_ident("cfg") && format!("{:?}", attr.meta).contains("test"))
-}
-
-fn item_path(modules: &[String], name: &str) -> String {
-    if modules.is_empty() {
-        name.to_owned()
-    } else {
-        format!("{}::{name}", modules.join("::"))
-    }
-}
-
-fn impl_type_name(ty: &syn::Type) -> String {
-    match ty {
-        syn::Type::Path(path) => path
-            .path
-            .segments
-            .last()
-            .map_or_else(|| "impl".to_owned(), |segment| segment.ident.to_string()),
-        _ => "impl".to_owned(),
-    }
 }

@@ -7,7 +7,6 @@ fn entry(marker: &str) -> EnumPolicyEntry {
     EnumPolicyEntry {
         name: "Mode".to_owned(),
         file: "crates/demo/src/lib.rs".to_owned(),
-        line: Some(1),
         category: "sdk-local-state".to_owned(),
         expected_marker: marker.to_owned(),
         reason: "fixture enum classification".to_owned(),

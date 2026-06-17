@@ -104,7 +104,7 @@ pub fn run(args: &Args) -> Result<()> {
     }
 
     // 3. Re-validate the property registry and the audit index.
-    check_property_citations::run(check_property_citations::Args {
+    check_property_citations::run(&check_property_citations::Args {
         repo_root: root.clone(),
         properties: None,
     })?;

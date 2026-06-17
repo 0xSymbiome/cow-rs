@@ -3,7 +3,6 @@ use xtask::policy::check_workspace_versions::{MemberVersion, validate_versions};
 fn member(uses_workspace_version: bool, explicit_version: Option<&str>) -> MemberVersion {
     MemberVersion {
         manifest: "crates/demo/Cargo.toml".to_owned(),
-        package_name: "cow-sdk-demo".to_owned(),
         uses_workspace_version,
         explicit_version: explicit_version.map(str::to_owned),
     }

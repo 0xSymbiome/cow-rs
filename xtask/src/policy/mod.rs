@@ -78,8 +78,7 @@ const REPO_STATE_CHECKS: &[Check] = &[
     ("check-readme-include", check_readme_include::run_default),
 ];
 
-/// Runs every repository-state policy check, continuing past failures and
-/// summarizing at the end.
+/// Runs every repository-state policy check, summarizing failures at the end.
 pub fn run_all() -> anyhow::Result<()> {
     let mut failures = Vec::new();
     for (name, check) in REPO_STATE_CHECKS {

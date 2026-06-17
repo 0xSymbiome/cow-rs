@@ -1,6 +1,6 @@
 # Repository File Map
 
-> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `e23d2943` &nbsp;&middot;&nbsp; **Generated:** 2026-06-17  
+> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `19229683` &nbsp;&middot;&nbsp; **Generated:** 2026-06-17  
 > **Total tracked files:** **931** &nbsp;&middot;&nbsp; **Lines of code:** tokei 14.0.0
 
 A navigable inventory of every file tracked by Git on this branch, grouped by the role each directory plays in the workspace. Use the table of contents to jump straight to a section; full file listings are collapsed by default so the high-level shape stays scannable.
@@ -53,7 +53,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 |------|------:|------:|-----:|---------|
 | `crates/` | 541 | 110,221 | 75,271 | Workspace member crates (the SDK itself) |
 | `docs/` | 150 | 21,398 | 0 | Architecture decision records, audit notes, provider notes |
-| `xtask/` | 45 | 9,225 | 7,834 | Cargo xtask automation crate (parity, policy, docs subcommands) |
+| `xtask/` | 45 | 9,137 | 7,761 | Cargo xtask automation crate (parity, policy, docs subcommands) |
 | `fuzz/` | 45 | 9,425 | 3,886 | cargo-fuzz targets, corpora, and failure artifacts |
 | `parity/` | 38 | 5,632 | 5,333 | Golden fixtures + pinned specs from upstream services |
 | `examples/` | 33 | 3,466 | 2,434 | Runnable usage examples (Rust + TypeScript) |
@@ -78,7 +78,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `CHANGELOG.md` | 1 | 832 | 0 | Release changelog |
 | `llvm-cov-summary.txt` | 1 | 186 | 0 | Coverage summary snapshot |
 | `Cargo.toml` | 1 | 121 | 106 | Workspace manifest |
-| **Total** | **931** | **176,377** | **101,745** | |
+| **Total** | **931** | **176,289** | **101,672** | |
 
 ---
 
@@ -86,7 +86,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 | Extension | Files | Lines | Code | Comments | Blank | Typical role |
 |-----------|------:|------:|-----:|---------:|------:|--------------|
-| `.rs` | 551 | 110,287 | 82,828 | 17,313 | 10,146 | Rust source and tests |
+| `.rs` | 551 | 110,199 | 82,755 | 17,304 | 10,140 | Rust source and tests |
 | `.md` | 175 | 26,080 | 0 | 21,512 | 4,568 | Markdown docs (ADRs, audit notes, READMEs) |
 | `.ts` | 47 | 12,660 | 5,276 | 6,534 | 850 | TypeScript (examples, e2e, wasm bindings) |
 | `.json` | 43 | 2,755 | 2,644 | 111 | 0 | JSON schemas, parity fixtures, test vectors |
@@ -108,7 +108,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `.yamllint` | 1 | 7 | 0 | 6 | 1 |  |
 | `.proptest-regressions` | 1 | 7 | 0 | 7 | 0 | proptest regression seeds |
 | `.npmignore` | 1 | 6 | 0 | 6 | 0 |  |
-| **Total** | **931** | **176,377** | **101,745** | **56,500** | **18,132** | |
+| **Total** | **931** | **176,289** | **101,672** | **56,491** | **18,126** | |
 
 > **Code + Comments + Blank = Lines** for every row. ``Comments`` is all non-code, non-blank content: inline + doc-comments in source, prose in Markdown/text, and raw content in formats tokei does not parse as code (lockfiles, ``.stderr``, snapshots). Rust doc-comments are isolated in the per-crate ``Doc`` column above.
 
@@ -1984,26 +1984,26 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <details>
 <summary><code>xtask/src/policy/</code> &mdash; 20 file(s)</summary>
 
-- [`check_adr_coverage.rs`](xtask/src/policy/check_adr_coverage.rs) &mdash; 219 lines
-- [`check_alloy_family_pins.rs`](xtask/src/policy/check_alloy_family_pins.rs) &mdash; 238 lines
+- [`check_adr_coverage.rs`](xtask/src/policy/check_adr_coverage.rs) &mdash; 220 lines
+- [`check_alloy_family_pins.rs`](xtask/src/policy/check_alloy_family_pins.rs) &mdash; 237 lines
 - [`check_chain_patch_eligibility.rs`](xtask/src/policy/check_chain_patch_eligibility.rs) &mdash; 202 lines
-- [`check_deny_unknown_fields.rs`](xtask/src/policy/check_deny_unknown_fields.rs) &mdash; 127 lines
-- [`check_enum_policy.rs`](xtask/src/policy/check_enum_policy.rs) &mdash; 147 lines
+- [`check_deny_unknown_fields.rs`](xtask/src/policy/check_deny_unknown_fields.rs) &mdash; 123 lines
+- [`check_enum_policy.rs`](xtask/src/policy/check_enum_policy.rs) &mdash; 139 lines
 - [`check_msrv_notice.rs`](xtask/src/policy/check_msrv_notice.rs) &mdash; 163 lines
-- [`check_panic_allowlist.rs`](xtask/src/policy/check_panic_allowlist.rs) &mdash; 378 lines
-- [`check_property_citations.rs`](xtask/src/policy/check_property_citations.rs) &mdash; 158 lines
-- [`check_readme_include.rs`](xtask/src/policy/check_readme_include.rs) &mdash; 103 lines
-- [`check_shell_wrappers.rs`](xtask/src/policy/check_shell_wrappers.rs) &mdash; 95 lines
+- [`check_panic_allowlist.rs`](xtask/src/policy/check_panic_allowlist.rs) &mdash; 351 lines
+- [`check_property_citations.rs`](xtask/src/policy/check_property_citations.rs) &mdash; 152 lines
+- [`check_readme_include.rs`](xtask/src/policy/check_readme_include.rs) &mdash; 100 lines
+- [`check_shell_wrappers.rs`](xtask/src/policy/check_shell_wrappers.rs) &mdash; 90 lines
 - [`check_wasm_invariant.rs`](xtask/src/policy/check_wasm_invariant.rs) &mdash; 271 lines
 - [`check_workflow_security.rs`](xtask/src/policy/check_workflow_security.rs) &mdash; 131 lines
-- [`check_workspace_versions.rs`](xtask/src/policy/check_workspace_versions.rs) &mdash; 174 lines
-- [`classify_release.rs`](xtask/src/policy/classify_release.rs) &mdash; 205 lines
+- [`check_workspace_versions.rs`](xtask/src/policy/check_workspace_versions.rs) &mdash; 166 lines
+- [`classify_release.rs`](xtask/src/policy/classify_release.rs) &mdash; 188 lines
 - [`dependency_invariant.rs`](xtask/src/policy/dependency_invariant.rs) &mdash; 177 lines
 - [`fences.rs`](xtask/src/policy/fences.rs) &mdash; 466 lines
 - [`fixtures.rs`](xtask/src/policy/fixtures.rs) &mdash; 13 lines
-- [`mod.rs`](xtask/src/policy/mod.rs) &mdash; 103 lines
+- [`mod.rs`](xtask/src/policy/mod.rs) &mdash; 102 lines
 - [`run_deterministic_examples.rs`](xtask/src/policy/run_deterministic_examples.rs) &mdash; 174 lines
-- [`workspace.rs`](xtask/src/policy/workspace.rs) &mdash; 547 lines
+- [`workspace.rs`](xtask/src/policy/workspace.rs) &mdash; 543 lines
 
 </details>
 
@@ -2013,11 +2013,11 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`check_adr_coverage.rs`](xtask/tests/check_adr_coverage.rs) &mdash; 51 lines
 - [`check_chain_patch_eligibility.rs`](xtask/tests/check_chain_patch_eligibility.rs) &mdash; 45 lines
 - [`check_deny_unknown_fields.rs`](xtask/tests/check_deny_unknown_fields.rs) &mdash; 46 lines
-- [`check_enum_policy.rs`](xtask/tests/check_enum_policy.rs) &mdash; 51 lines
+- [`check_enum_policy.rs`](xtask/tests/check_enum_policy.rs) &mdash; 50 lines
 - [`check_msrv_notice.rs`](xtask/tests/check_msrv_notice.rs) &mdash; 37 lines
 - [`check_panic_allowlist.rs`](xtask/tests/check_panic_allowlist.rs) &mdash; 192 lines
-- [`check_property_citations.rs`](xtask/tests/check_property_citations.rs) &mdash; 84 lines
-- [`check_workspace_versions.rs`](xtask/tests/check_workspace_versions.rs) &mdash; 26 lines
+- [`check_property_citations.rs`](xtask/tests/check_property_citations.rs) &mdash; 81 lines
+- [`check_workspace_versions.rs`](xtask/tests/check_workspace_versions.rs) &mdash; 25 lines
 - [`classify_release.rs`](xtask/tests/classify_release.rs) &mdash; 103 lines
 - [`openapi_coverage.rs`](xtask/tests/openapi_coverage.rs) &mdash; 162 lines
 - [`registry_confirm.rs`](xtask/tests/registry_confirm.rs) &mdash; 157 lines
