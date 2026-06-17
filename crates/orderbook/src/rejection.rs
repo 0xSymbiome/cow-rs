@@ -104,6 +104,10 @@ pub enum OrderbookRejection {
     /// state.
     #[error("quote not verified")]
     QuoteNotVerified,
+    /// The bound quote is invalid on order creation (for example malformed
+    /// or no longer usable).
+    #[error("invalid quote")]
+    InvalidQuote,
 
     // --- Signing and signer identity ---
     /// Order requires a `from` address for the declared signing scheme
@@ -394,6 +398,7 @@ impl OrderbookRejection {
             }
             Self::Unknown { .. } => OrderbookRejectionCategory::Unknown,
             Self::QuoteNotVerified
+            | Self::InvalidQuote
             | Self::MissingFrom
             | Self::WrongOwner
             | Self::InvalidEip1271Signature
@@ -478,6 +483,7 @@ fn classify(envelope: RejectionEnvelope) -> OrderbookRejection {
         "OldOrderActivelyBidOn" => OrderbookRejection::OldOrderActivelyBidOn,
         "QuoteNotFound" => OrderbookRejection::QuoteNotFound,
         "QuoteNotVerified" => OrderbookRejection::QuoteNotVerified,
+        "InvalidQuote" => OrderbookRejection::InvalidQuote,
         "MissingFrom" => OrderbookRejection::MissingFrom,
         "WrongOwner" => OrderbookRejection::WrongOwner,
         "InvalidEip1271Signature" => OrderbookRejection::InvalidEip1271Signature,

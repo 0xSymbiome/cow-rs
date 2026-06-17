@@ -108,14 +108,16 @@ Step by step:
 # 1. Materialize (or re-detach) the pinned checkouts as blob-less clones.
 cargo xtask parity sync
 
-# 2. Read-only drift report: which producer paths moved on the upstream
-#    default branches. Exit 0 = clean, 1 = drift, 2 = a pin/fetch failed.
-#    The upstream-drift workflow runs this weekly.
+# 2. Read-only drift report: which producer paths (and watched directories)
+#    moved on the upstream default branches. Exit 0 = clean, 1 = drift, 2 = a
+#    pin/fetch failed. A pin marked `hold:` is reported for visibility but does
+#    not count as actionable drift. The upstream-drift workflow runs this weekly.
 cargo xtask parity drift
 
 # 3. Advance the pins: fetch each default branch, print the per-file drift
 #    table (git blob OIDs), rewrite the commit: lines, fail closed if a
-#    producer path vanished at the new pin.
+#    producer path vanished at the new pin. A pin marked `hold:` is left at its
+#    pinned commit and never advanced here.
 cargo xtask parity sync --update
 
 # 4. Re-vendor the OpenAPI if services moved (zero-argument: it pins the
@@ -209,11 +211,18 @@ fixture here instead of moving.
 
 The app-data metadata is validated by typed Rust construction, not a vendored
 JSON-Schema bundle. `fixtures/app_data/schemas/` retains one self-contained
-drift fixture per modeled metadata family: the `schema_drift_contract` test
-asserts the typed metadata structs still match the producer field names.
-Refresh them from the pinned `app-data` repository (the flash-loan mirror tracks
-the `services` producer instead — its header says so) when the drift test flags
-a change.
+mirror per modeled metadata family plus the root-document manifest mirror
+(`app-data-document-v*.json`). The `schema_drift_contract` tests assert the typed
+structs still match the producer field names, that each modeled numeric bound
+matches the mirror's declared `maximum`, and that `LATEST_APP_DATA_VERSION` and
+the modeled families' versions track the manifest — so a rename, a constraint
+change, or a version bump fails at review time. Because schemas are versioned
+additively (a new version is a new file), the `cow-sdk` lock row also lists
+`watch_dirs` over the schema tree, so `cargo xtask parity drift` reports a newly
+added schema file the exact producer-path diff cannot see. Refresh the mirrors
+from the pinned `app-data` repository (the flash-loan mirror tracks the
+`services` producer instead — its header says so) when the drift report or a
+drift test flags a change.
 
 ## Command reference
 

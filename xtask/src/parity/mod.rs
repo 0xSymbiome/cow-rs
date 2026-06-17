@@ -53,6 +53,19 @@ pub(crate) struct RepositoryEntry {
     pub(crate) remote: String,
     pub(crate) commit: String,
     pub(crate) producer_paths: Vec<String>,
+    /// Directories whose member set is reported by `parity drift` over the
+    /// union of files present at each commit, so an upstream that adds a new
+    /// file (a new schema version next to a tracked one) surfaces as drift.
+    /// Unlike `producer_paths` these are not fixture-provenance anchors; they
+    /// are an additive-change radar and default to empty.
+    #[serde(default)]
+    pub(crate) watch_dirs: Vec<String>,
+    /// When set, the pin is intentionally held behind the upstream default
+    /// branch and the string documents why. A held pin is never advanced by
+    /// `parity sync --update`, and `parity drift` reports its movement for
+    /// visibility without counting it as actionable drift (a non-zero exit).
+    #[serde(default)]
+    pub(crate) hold: Option<String>,
 }
 
 /// Provenance header every committed fixture carries. Unknown top-level keys
@@ -186,6 +199,23 @@ fn validate_repository_form(repo: &RepositoryEntry) -> Result<()> {
                 path
             );
         }
+    }
+    let mut seen_dirs = BTreeSet::new();
+    for dir in &repo.watch_dirs {
+        if !is_clean_relative_path(dir) {
+            bail!("repository {} has an invalid watch dir: {}", repo.id, dir);
+        }
+        if !seen_dirs.insert(dir.as_str()) {
+            bail!("repository {} has a duplicate watch dir: {}", repo.id, dir);
+        }
+    }
+    if let Some(reason) = &repo.hold
+        && reason.trim().is_empty()
+    {
+        bail!(
+            "repository {} sets an empty hold reason; document why the pin is held",
+            repo.id
+        );
     }
     Ok(())
 }
@@ -775,6 +805,8 @@ mod tests {
                 .iter()
                 .map(|path| (*path).to_owned())
                 .collect(),
+            watch_dirs: Vec::new(),
+            hold: None,
         }
     }
 
@@ -921,6 +953,34 @@ mod tests {
         ))
         .expect_err("a duplicate producer path is rejected");
         assert!(format!("{duplicate:#}").contains("duplicate producer path"));
+    }
+
+    #[test]
+    fn repository_form_rejects_invalid_and_duplicate_watch_dirs() {
+        let mut traversal = entry(VALID_SHA, REMOTE, PRODUCER_PATHS);
+        traversal.watch_dirs = vec!["../escape".to_owned()];
+        let error = validate_repository_form(&traversal)
+            .expect_err("a traversing watch dir is rejected");
+        assert!(format!("{error:#}").contains("invalid watch dir"));
+
+        let mut duplicate = entry(VALID_SHA, REMOTE, PRODUCER_PATHS);
+        duplicate.watch_dirs = vec!["src/schemas".to_owned(), "src/schemas".to_owned()];
+        let error = validate_repository_form(&duplicate)
+            .expect_err("a duplicate watch dir is rejected");
+        assert!(format!("{error:#}").contains("duplicate watch dir"));
+    }
+
+    #[test]
+    fn repository_form_accepts_a_documented_hold_and_rejects_an_empty_one() {
+        let mut held = entry(VALID_SHA, REMOTE, PRODUCER_PATHS);
+        held.hold = Some("pinned to the deployed tag (ADR 0049)".to_owned());
+        validate_repository_form(&held).expect("a hold with a documented reason passes");
+
+        let mut empty = entry(VALID_SHA, REMOTE, PRODUCER_PATHS);
+        empty.hold = Some("   ".to_owned());
+        let error =
+            validate_repository_form(&empty).expect_err("an empty hold reason is rejected");
+        assert!(format!("{error:#}").contains("empty hold reason"));
     }
 
     #[test]

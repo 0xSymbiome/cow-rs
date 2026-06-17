@@ -32,8 +32,8 @@ impl PartnerFee {
     /// # Errors
     ///
     /// Returns [`AppDataError::InvalidPartnerFee`] on the first policy whose
-    /// basis-point values fall outside the documented `[1..=9999]` /
-    /// `[1..=100]` ranges, or whose recipient address is the zero address.
+    /// basis-point values fall outside the documented `[1..=9999]` range, or
+    /// whose recipient address is the zero address.
     pub fn validate(&self) -> Result<(), AppDataError> {
         match self {
             Self::Single(policy) => policy.validate(),
@@ -132,7 +132,7 @@ impl PartnerFeePolicy {
     /// # Errors
     ///
     /// Returns [`AppDataError::InvalidPartnerFee`] when `volume_bps` falls
-    /// outside the documented `[1..=100]` range, or when `recipient` is the
+    /// outside the documented `[1..=9999]` range, or when `recipient` is the
     /// zero address.
     pub fn volume(volume_bps: u16, recipient: Address) -> Result<Self, AppDataError> {
         let policy = Self::Volume {
@@ -150,7 +150,7 @@ impl PartnerFeePolicy {
     /// # Errors
     ///
     /// Returns [`AppDataError::InvalidPartnerFee`] when `surplus_bps` falls
-    /// outside `[1..=9999]`, when `max_volume_bps` falls outside `[1..=100]`,
+    /// outside `[1..=9999]`, when `max_volume_bps` falls outside `[1..=9999]`,
     /// or when `recipient` is the zero address.
     pub fn surplus(
         surplus_bps: u16,
@@ -174,7 +174,7 @@ impl PartnerFeePolicy {
     ///
     /// Returns [`AppDataError::InvalidPartnerFee`] when
     /// `price_improvement_bps` falls outside `[1..=9999]`, when
-    /// `max_volume_bps` falls outside `[1..=100]`, or when `recipient` is the
+    /// `max_volume_bps` falls outside `[1..=9999]`, or when `recipient` is the
     /// zero address.
     pub fn price_improvement(
         price_improvement_bps: u16,
@@ -203,10 +203,10 @@ impl PartnerFeePolicy {
     ///
     /// The bounds the reviewed schema applies:
     ///
-    /// * `volumeBps` — integer in `[1..=100]`
+    /// * `volumeBps` — integer in `[1..=9999]`
     /// * `surplusBps` — integer in `[1..=9999]`
     /// * `priceImprovementBps` — integer in `[1..=9999]`
-    /// * `maxVolumeBps` — integer in `[1..=100]`
+    /// * `maxVolumeBps` — integer in `[1..=9999]`
     /// * `recipient` — non-zero 20-byte address
     ///
     /// # Errors
@@ -299,7 +299,10 @@ impl<'de> Deserialize<'de> for PartnerFeePolicy {
     }
 }
 
-const MAX_VOLUME_BPS: u16 = 100;
+// partnerFee schema v1.1.0 raised the volume cap to match the surplus cap. The two
+// constants now coincide but stay distinct to mirror upstream's separate `maxVolumeBps`
+// and `surplusBps` definitions, so a future divergence is a one-line change here.
+const MAX_VOLUME_BPS: u16 = 9_999;
 const MAX_SURPLUS_BPS: u16 = 9_999;
 
 const fn validate_max_volume_bps(field: &'static str, value: u16) -> Result<(), AppDataError> {
@@ -307,7 +310,7 @@ const fn validate_max_volume_bps(field: &'static str, value: u16) -> Result<(), 
         return Err(AppDataError::InvalidPartnerFee {
             field,
             reason: ValidationReason::OutOfRange {
-                details: "value must be an integer in the inclusive range [1, 100]",
+                details: "value must be an integer in the inclusive range [1, 9999]",
             },
         });
     }

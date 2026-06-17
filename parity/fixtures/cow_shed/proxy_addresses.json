@@ -9,7 +9,7 @@
       ]
     },
     "cow-sdk": {
-      "commit": "c931d7ecd67626736f5b8dff781741e727128c42",
+      "commit": "ccf01cb331a4d37cdf9082541eb4fa3c04f1bc26",
       "refs": [
         "packages/cow-shed/src/const.ts#COW_SHED_PROXY_INIT_CODE",
         "packages/cow-shed/src/contracts/CoWShedHooks.test.ts#golden-vectors"

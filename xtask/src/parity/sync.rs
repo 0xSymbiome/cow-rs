@@ -10,7 +10,7 @@
 //! pin. `drift` is the read-only report with CI-friendly exit codes.
 
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     fmt::Write as _,
     fs,
     path::{Path, PathBuf},
@@ -82,6 +82,16 @@ pub fn sync(args: &SyncArgs) -> Result<()> {
             .with_context(|| format!("pin {} unreachable for {}", repo.commit, repo.id))?;
 
         if args.update {
+            if let Some(reason) = &repo.hold {
+                println!(
+                    "{}: pin held at {} and not advanced ({reason})",
+                    repo.id,
+                    &repo.commit[..12.min(repo.commit.len())]
+                );
+                checkout_detached(&checkout, &repo.commit, args.force)?;
+                continue;
+            }
+
             let head = remote_default_head(&checkout)
                 .with_context(|| format!("failed to resolve the default branch of {}", repo.id))?;
             fetch_commit(&checkout, &head)
@@ -174,10 +184,28 @@ pub fn drift(args: &DriftArgs) -> Result<DriftStatus> {
         fetch_commit(&checkout, &against)
             .with_context(|| format!("failed to fetch {against} for {}", repo.id))?;
 
+        // A held pin is intentionally behind its upstream default branch; its
+        // movement is shown for visibility but never counts as actionable drift.
+        let held = repo.hold.is_some();
         let rows = drift_rows(&checkout, &repo.producer_paths, &repo.commit, &against)?;
         print_drift(&repo.id, &repo.commit, &against, &rows);
-        if rows.iter().any(|row| row.old_oid != row.new_oid) {
+        if let Some(reason) = &repo.hold {
+            println!("  held: {reason}");
+        }
+        if !held && rows.iter().any(|row| row.old_oid != row.new_oid) {
             status = DriftStatus::Drifted;
+        }
+
+        // Additive-change radar: a watched directory is diffed over the union
+        // of files present at each commit, so a newly added sibling (a new
+        // schema version next to a tracked one) is surfaced even though no
+        // tracked producer path changed.
+        for dir in &repo.watch_dirs {
+            let rows = watch_rows(&checkout, dir, &repo.commit, &against)?;
+            print_watch(&repo.id, dir, &rows);
+            if !held && rows.iter().any(|row| row.old_oid != row.new_oid) {
+                status = DriftStatus::Drifted;
+            }
         }
     }
     Ok(status)
@@ -225,6 +253,45 @@ fn print_drift(repo_id: &str, old: &str, new: &str, rows: &[DriftRow]) {
             (None, None) => "missing-at-both",
         };
         let _ = writeln!(table, "  {state:>15}  {}", row.path);
+    }
+    print!("{table}");
+}
+
+/// Compares the file set under one watched directory between two commits over
+/// the union of paths present at either, so an added or removed file surfaces
+/// even though no tracked producer path changed. `git ls-tree -r` expands the
+/// directory pathspec recursively.
+fn watch_rows(checkout: &Path, dir: &str, old: &str, new: &str) -> Result<Vec<DriftRow>> {
+    let pathspec = [dir.to_owned()];
+    let old_oids = ls_tree_oids(checkout, old, &pathspec)?;
+    let new_oids = ls_tree_oids(checkout, new, &pathspec)?;
+    let paths: BTreeSet<&String> = old_oids.keys().chain(new_oids.keys()).collect();
+    Ok(paths
+        .into_iter()
+        .map(|path| DriftRow {
+            path: path.clone(),
+            old_oid: old_oids.get(path).cloned(),
+            new_oid: new_oids.get(path).cloned(),
+        })
+        .collect())
+}
+
+/// Prints only the differing rows of a watched directory (the unchanged set is
+/// summarized by count) so a weekly radar over a many-file tree stays readable.
+fn print_watch(repo_id: &str, dir: &str, rows: &[DriftRow]) {
+    let changed: Vec<&DriftRow> = rows.iter().filter(|row| row.old_oid != row.new_oid).collect();
+    let mut table = format!(
+        "{repo_id} watch {dir}: {} of {} file(s) differ\n",
+        changed.len(),
+        rows.len()
+    );
+    for row in changed {
+        let state = match (&row.old_oid, &row.new_oid) {
+            (None, Some(_)) => "ADDED",
+            (Some(_), None) => "REMOVED",
+            _ => "CHANGED",
+        };
+        let _ = writeln!(table, "  {state:>9}  {}", row.path);
     }
     print!("{table}");
 }

@@ -1,12 +1,13 @@
 # Source-Lock Provenance Audit
 
 Status: Current
-Last reviewed: 2026-06-15
+Last reviewed: 2026-06-17
 Owning surface: source-lock provenance and release preflight authority
-Refresh trigger: Changes to `parity/source-lock.yaml`, vendored parity OpenAPI or fixture provenance, any change to the maintained exclusion-list policy for historical progress snapshots, or any newly archived progress snapshot that should stay outside active preflight authority
+Refresh trigger: Changes to `parity/source-lock.yaml` (including `producer_paths` and `watch_dirs`), vendored parity OpenAPI or fixture provenance, any change to the maintained exclusion-list policy for historical progress snapshots, or any newly archived progress snapshot that should stay outside active preflight authority
 Related docs:
 - [ADR 0026](../adr/0026-alloy-major-release-absorption-plan.md)
 - [ADR 0030](../adr/0030-workspace-locked-versioning-tag-baseline.md)
+- [ADR 0064](../adr/0064-app-data-typed-validation.md)
 - [Alloy Adapters Audit](alloy-adapters-audit.md)
 
 ## Scope
@@ -33,11 +34,13 @@ changing SDK behavior.
 | --- | --- | --- |
 | Source-lock pins | `parity/source-lock.yaml` pins exact upstream commits for every repository that contributes parity evidence | Conforms |
 | Freshness disclosure | Current upstream HEADs are checked explicitly so stale pins are visible before release evidence relies on freshness | Conforms |
-| Refresh outcome | The 2026-06-11 refresh advanced the `services` pin (its OpenAPI document and order-validation source had moved) and the `cow-sdk` pin (no producer path changed), re-vendored the services OpenAPI, and re-stamped the twelve services-citing fixtures after re-verifying each against the new commit; parity validation passes offline and deep, and the contract suites reproduce the fixture values | Conforms |
+| Held pins | A pin intentionally behind upstream (cow-shed at the deployed v1.0.1 tag) carries a documented `hold:` reason; `parity drift` reports its movement without counting it as actionable drift, and `parity sync --update` never advances it | Conforms |
+| Refresh outcome | The 2026-06-17 refresh advanced the `services` pin (65b6953→58045311) and the `cow-sdk` pin (c931d7→ccf01cb) — both with no producer-path change — left the held `cow-shed` pin in place, re-vendored the services OpenAPI, and re-stamped every citing fixture against the new commits; parity validation passes offline and deep, and the contract suites reproduce the fixture values | Conforms |
 | Deep upstream-root validation | Reviewer-supplied upstream roots (`--upstream-root <dir>`, one checkout per lock repository) are fail-closed checked for independent git top-levels, expected remotes, pinned `HEAD` commits, clean producer paths, and the vendored OpenAPI body at the services pin, without making repo-local validation depend on those roots | Conforms |
 | Publication preflight | The package-family dry-run contract (with local patches for unpublished intra-family crates) lives in the release-readiness publication job, which validates the committed lock before the dry runs | Conforms |
 | Native Alloy provenance | The native adapter family pins Alloy by crates.io version (`alloy-* = 2.0.4`, `alloy-core-* = 1.5.7`), enforced by `Cargo.lock` and the two-family lockfile invariant | Conforms |
-| App-data schema drift fixtures | `parity/fixtures/app_data/schemas/` retains one self-contained drift fixture per modeled metadata family for the typed metadata structs, with lock-validated provenance headers (the flash-loan mirror cites its real producer, `services`) | Conforms |
+| App-data schema drift fixtures | `parity/fixtures/app_data/schemas/` retains one self-contained mirror per modeled metadata family plus the root-document manifest mirror, all under lock-validated provenance headers (the flash-loan mirror cites its real producer, `services`); the drift tests assert field-name, numeric-bound, and document-version correspondence | Conforms |
+| Additive-change radar | `watch_dirs` in the lock makes `parity drift` report files added or removed under a watched directory (the app-data schema tree) over the union of files at each commit, so an additively versioned schema cannot land unseen | Conforms |
 | Form enforcement | The lock parses through typed models that reject unknown or missing fields, row rules fail closed on malformed remotes, commits, or paths, and every fixture under `parity/fixtures/**/*.json` is validated per-file against the pins | Conforms |
 | Fixture wire-value fidelity | Every fixture payload value is a legal instance of the upstream schema its `sources` header cites, and each ref names the authoritative upstream producer symbol for the value it pins | Conforms |
 | Amount fixture roundtrip | Amount-shaped fixture strings parse through the shared `Amount` codec and round-trip byte-identically | Conforms |
@@ -69,21 +72,36 @@ repositories before treating the evidence as current.
 `cargo xtask parity drift` checks each pin against its upstream default-branch
 HEAD. Every pin except `cow-shed` matches its upstream default branch; the
 `cow-shed` pin is deliberately held at the v1.0.1 tag because the SDK binds the
-deployed generation, not source HEAD, so the drift report is expected to flag it
-until upstream's v2.x generation replaces the v1.0.x deployments — at which point
-the pin advances together with new `CowShedVersion` variants. A release claim
-that depends on freshness re-runs `cargo xtask parity drift` before relying on
-the evidence.
+deployed generation, not source HEAD. That hold is declared by a `hold:` field
+on the lock row (whose value documents the reason), so `parity drift` prints the
+pin's movement for visibility but does not count it as actionable drift (the
+command stays exit-zero), and `parity sync --update` never advances a held pin.
+The pin advances only by a deliberate edit when upstream's v2.x generation
+replaces the v1.0.x deployments, together with new `CowShedVersion` variants. A
+release claim that depends on freshness re-runs `cargo xtask parity drift` before
+relying on the evidence.
 
 ### App-Data Schema Drift Fixtures
 
-`parity/fixtures/app_data/schemas/` holds one self-contained drift fixture per
-modeled metadata family (`flashloan`, `partnerFee`, `quote`, and the `hook`
-shape) under lock-validated provenance headers, all citing the pinned `cow-sdk`
+`parity/fixtures/app_data/schemas/` holds one self-contained mirror per modeled
+metadata family (`flashloan`, `partnerFee`, `quote`, and the `hook` shape) plus
+the root-document manifest mirror (`app-data-document-v*.json`), under
+lock-validated provenance headers citing the pinned `cow-sdk`
 `packages/app-data/src/schemas/` files. They are test-only fixtures, not resolved
 at runtime: validation is typed by construction (ADR 0064). The
-`schema_drift_contract` regression test field-name-probes each fixture so an
-upstream rename of a field the typed structs depend on fails at review time.
+`schema_drift_contract` tests assert three correspondences against the mirrors:
+field names (a typed struct that renames or drops a wire field fails), numeric
+bounds (the `partnerFee` cap tracks the mirror's declared `maximum`, currently
+schema v1.1.0 at 9999 bps), and document version (`LATEST_APP_DATA_VERSION` and
+the modeled families' versions track the root manifest), so a rename, a
+constraint change, or a version bump fails at review time.
+
+Because schemas are versioned additively upstream — a new version is a new file
+beside the tracked one — the `cow-sdk` row also declares
+`watch_dirs: [packages/app-data/src/schemas]`. `cargo xtask parity drift` diffs
+that directory over the union of files present at each commit, surfacing an added
+or removed schema file (a new family version or root bump) that the exact
+`producer_paths` diff cannot see.
 
 ### Deep Upstream-Root Validation
 
@@ -111,7 +129,10 @@ hardcoded contract: the typed model rejects unknown or missing fields
 (`deny_unknown_fields`, so a misspelled key — or the retired `fixtures:`
 section — cannot be silently ignored), and each repository row must carry a
 GitHub `.git` remote, a 40-character lowercase hex commit, and unique
-non-traversing producer paths. The lock carries no schema-version field: its
+non-traversing producer paths; the optional `watch_dirs` are held to the same
+clean-path, no-duplicate rule, and a `hold:` field, when present, must carry a
+non-empty reason so an intentionally-frozen pin is always documented. The lock
+carries no schema-version field: its
 only parser (`xtask`) ships in the same commit as the file, so tool/file skew
 cannot occur, and shape changes fail closed at parse time.
 

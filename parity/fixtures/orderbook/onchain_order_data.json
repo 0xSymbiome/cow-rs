@@ -3,7 +3,7 @@
   "dto": "cow_sdk_orderbook::OnchainOrderData",
   "sources": {
     "services": {
-      "commit": "65b6953bfc2e96b2791cfb2382c7309d1fb19b99",
+      "commit": "58045311c1b804fb42cbed74fd5bc347728e8bad",
       "refs": [
         "crates/model/src/order.rs#OnchainOrderPlacementError"
       ]

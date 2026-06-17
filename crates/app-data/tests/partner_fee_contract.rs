@@ -174,7 +174,7 @@ fn ambiguous_mixed_keys_fail_with_bad_shape() {
 #[test]
 fn validate_rejects_out_of_range_volume_bps() {
     let policy = PartnerFeePolicy::Volume {
-        volume_bps: 200,
+        volume_bps: 10_000,
         recipient: address(RECIPIENT_A),
     };
     let error = policy
@@ -235,7 +235,7 @@ fn validate_rejects_out_of_range_price_improvement_bps() {
 fn validate_rejects_max_volume_bps_above_cap() {
     let policy = PartnerFeePolicy::Surplus {
         surplus_bps: 500,
-        max_volume_bps: 101,
+        max_volume_bps: 10_000,
         recipient: address(RECIPIENT_A),
     };
     let error = policy
@@ -258,7 +258,7 @@ fn validate_accepts_boundaries_of_the_published_ranges() {
             recipient: address(RECIPIENT_A),
         },
         PartnerFeePolicy::Volume {
-            volume_bps: 100,
+            volume_bps: 9_999,
             recipient: address(RECIPIENT_A),
         },
         PartnerFeePolicy::Surplus {
@@ -268,7 +268,7 @@ fn validate_accepts_boundaries_of_the_published_ranges() {
         },
         PartnerFeePolicy::Surplus {
             surplus_bps: 9_999,
-            max_volume_bps: 100,
+            max_volume_bps: 9_999,
             recipient: address(RECIPIENT_A),
         },
         PartnerFeePolicy::PriceImprovement {
@@ -278,7 +278,7 @@ fn validate_accepts_boundaries_of_the_published_ranges() {
         },
         PartnerFeePolicy::PriceImprovement {
             price_improvement_bps: 9_999,
-            max_volume_bps: 100,
+            max_volume_bps: 9_999,
             recipient: address(RECIPIENT_A),
         },
     ] {
@@ -290,16 +290,16 @@ fn validate_accepts_boundaries_of_the_published_ranges() {
 
 #[test]
 fn bounds_coverage_across_the_full_u16_range_matches_published_bounds() {
-    for candidate in 0u16..=200 {
+    for candidate in [0u16, 1, 100, 500, 9_998, 9_999, 10_000, 12_345, u16::MAX] {
         let policy = PartnerFeePolicy::Volume {
             volume_bps: candidate,
             recipient: address(RECIPIENT_A),
         };
-        let expected_ok = (1..=100).contains(&candidate);
+        let expected_ok = (1..=9_999).contains(&candidate);
         let outcome = policy.validate().is_ok();
         assert_eq!(
             outcome, expected_ok,
-            "volume_bps={candidate} must respect the published [1, 100] range",
+            "volume_bps={candidate} must respect the published [1, 9999] range",
         );
     }
 

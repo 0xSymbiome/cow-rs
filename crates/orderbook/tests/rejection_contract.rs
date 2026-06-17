@@ -565,3 +565,39 @@ fn from_api_error_falls_back_to_api_when_body_has_no_envelope() {
         ),
     }
 }
+
+/// Every `errorType` tag the pinned orderbook `OpenAPI` documents must classify
+/// to a typed (non-`Unknown`) [`OrderbookRejection`]. The closed set is pinned
+/// in `parity/fixtures/orderbook/rejection_error_types.json` with a provenance
+/// header at the services pin, so an upstream enum addition surfaces here when
+/// the vendored `OpenAPI` is re-stamped at a newer pin rather than silently
+/// degrading to the forward-compatible fallback.
+#[test]
+fn every_documented_error_type_classifies_to_a_typed_variant() {
+    const FIXTURE: &str =
+        include_str!("../../../parity/fixtures/orderbook/rejection_error_types.json");
+    let fixture: serde_json::Value =
+        serde_json::from_str(FIXTURE).expect("rejection error-type fixture must be valid JSON");
+    let tags = fixture
+        .pointer("/payload/errorTypes")
+        .and_then(serde_json::Value::as_array)
+        .expect("fixture declares payload.errorTypes");
+    assert!(
+        !tags.is_empty(),
+        "the documented error-type set must be non-empty",
+    );
+
+    for tag in tags {
+        let tag = tag.as_str().expect("each errorType entry must be a string");
+        // A `data.fee_amount` is supplied so the one data-bearing tag
+        // (`SellAmountDoesNotCoverFee`) classifies on its typed path; every
+        // other tag ignores it.
+        let body = envelope_with_data(tag, "diagnostic", &json!({ "fee_amount": "1" }));
+        let rejection = parse_rejection(StatusCode::BAD_REQUEST, &body)
+            .unwrap_or_else(|| panic!("documented tag `{tag}` must parse into a rejection"));
+        assert!(
+            !matches!(rejection, OrderbookRejection::Unknown { .. }),
+            "documented tag `{tag}` fell back to Unknown; add a classify() arm and typed variant",
+        );
+    }
+}
