@@ -1,6 +1,6 @@
 # Repository File Map
 
-> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `f9e742f6` &nbsp;&middot;&nbsp; **Generated:** 2026-06-17  
+> **Branch:** `feat/ferrous-foundation` &nbsp;&middot;&nbsp; **HEAD:** `40db5bdb` &nbsp;&middot;&nbsp; **Generated:** 2026-06-17  
 > **Total tracked files:** **879** &nbsp;&middot;&nbsp; **Lines of code:** tokei 14.0.0
 
 A navigable inventory of every file tracked by Git on this branch, grouped by the role each directory plays in the workspace. Use the table of contents to jump straight to a section; full file listings are collapsed by default so the high-level shape stays scannable.
@@ -30,7 +30,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 **Lines of code** (tracked files only)
 
-- **32,232 lines of Rust** across the 14 SDK crates, covered by **35,857 lines of tests** — a **1.1× test-to-code ratio** — plus **179 lines of benchmarks**.
+- **32,232 lines of Rust** across the 14 SDK crates, covered by **35,858 lines of tests** — a **1.1× test-to-code ratio** — plus **179 lines of benchmarks**.
 - **11,927 doc-comment lines** documenting the public API (~37% of crate code), plus **759 inline comment lines**.
 - **5,276 lines of TypeScript** across examples, e2e harnesses, and wasm bindings.
 - **16,357 lines of Markdown prose** — ADRs, audit notes, and READMEs.
@@ -51,9 +51,9 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 | Path | Files | Lines | Code | Purpose |
 |------|------:|------:|-----:|---------|
-| `crates/` | 541 | 110,358 | 75,369 | Workspace member crates (the SDK itself) |
+| `crates/` | 541 | 110,359 | 75,370 | Workspace member crates (the SDK itself) |
 | `docs/` | 95 | 14,992 | 0 | Architecture decision records, audit notes, provider notes |
-| `xtask/` | 45 | 9,264 | 7,859 | Cargo xtask automation crate (parity, policy, docs subcommands) |
+| `xtask/` | 45 | 9,285 | 7,880 | Cargo xtask automation crate (parity, policy, docs subcommands) |
 | `fuzz/` | 45 | 9,425 | 3,886 | cargo-fuzz targets, corpora, and failure artifacts |
 | `parity/` | 40 | 5,801 | 5,490 | Golden fixtures + pinned specs from upstream services |
 | `examples/` | 33 | 3,466 | 2,434 | Runnable usage examples (Rust + TypeScript) |
@@ -78,7 +78,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `CHANGELOG.md` | 1 | 832 | 0 | Release changelog |
 | `llvm-cov-summary.txt` | 1 | 186 | 0 | Coverage summary snapshot |
 | `Cargo.toml` | 1 | 121 | 106 | Workspace manifest |
-| **Total** | **879** | **170,395** | **102,085** | |
+| **Total** | **879** | **170,417** | **102,107** | |
 
 ---
 
@@ -86,7 +86,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 
 | Extension | Files | Lines | Code | Comments | Blank | Typical role |
 |-----------|------:|------:|-----:|---------:|------:|--------------|
-| `.rs` | 551 | 110,464 | 82,951 | 17,356 | 10,157 | Rust source and tests |
+| `.rs` | 551 | 110,486 | 82,973 | 17,356 | 10,157 | Rust source and tests |
 | `.md` | 120 | 19,683 | 0 | 16,357 | 3,326 | Markdown docs (ADRs, audit notes, READMEs) |
 | `.ts` | 47 | 12,660 | 5,276 | 6,534 | 850 | TypeScript (examples, e2e, wasm bindings) |
 | `.json` | 45 | 2,908 | 2,797 | 111 | 0 | JSON schemas, parity fixtures, test vectors |
@@ -108,7 +108,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | `.yamllint` | 1 | 7 | 0 | 6 | 1 |  |
 | `.proptest-regressions` | 1 | 7 | 0 | 7 | 0 | proptest regression seeds |
 | `.npmignore` | 1 | 6 | 0 | 6 | 0 |  |
-| **Total** | **879** | **170,395** | **102,085** | **51,403** | **16,907** | |
+| **Total** | **879** | **170,417** | **102,107** | **51,403** | **16,907** | |
 
 > **Code + Comments + Blank = Lines** for every row. ``Comments`` is all non-code, non-blank content: inline + doc-comments in source, prose in Markdown/text, and raw content in formats tokei does not parse as code (lockfiles, ``.stderr``, snapshots). Rust doc-comments are isolated in the per-crate ``Doc`` column above.
 
@@ -125,7 +125,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | [`trading`](crates/trading) | 57 | 5,212 | 7,002 | 46 | 1,815 | 1.3× | High-level CoW Protocol trading orchestration surface |
 | [`orderbook`](crates/orderbook) | 42 | 4,332 | 5,567 | 14 | 1,758 | 1.3× | Typed CoW Protocol orderbook client models and decoding helpers |
 | [`contracts`](crates/contracts) | 59 | 2,920 | 3,901 | 60 | 1,577 | 1.3× | CoW Protocol low-level contracts helpers for order hashing, signature codecs and verification, ABI bindings, and fail-closed on-chain event decoding |
-| [`app-data`](crates/app-data) | 41 | 1,393 | 2,181 | 33 | 751 | 1.6× | CoW Protocol app-data encoding, validation, and CID compatibility |
+| [`app-data`](crates/app-data) | 41 | 1,393 | 2,182 | 33 | 751 | 1.6× | CoW Protocol app-data encoding, validation, and CID compatibility |
 | [`alloy-provider`](crates/alloy-provider) | 27 | 1,294 | 1,516 | 0 | 203 | 1.2× | Alloy-backed read-only Provider adapter for the CoW Protocol Rust SDK |
 | [`subgraph`](crates/subgraph) | 26 | 1,236 | 2,154 | 0 | 483 | 1.7× | Typed CoW Protocol subgraph query primitives |
 | [`signing`](crates/signing) | 25 | 915 | 1,593 | 26 | 324 | 1.7× | Deterministic CoW Protocol order hashing, EIP-712 signing, and UID helpers |
@@ -134,7 +134,7 @@ A navigable inventory of every file tracked by Git on this branch, grouped by th
 | [`test`](crates/test) | 9 | 725 | 283 | 0 | 228 | 0.4× | In-memory test doubles for the cow-rs SDK public traits (OrderbookClient, Signer, Provider) so downstream applications can test their CoW Protocol integration without a live orderbook, RPC endpoint, or wallet. |
 | [`alloy-signer`](crates/alloy-signer) | 23 | 701 | 534 | 0 | 143 | 0.8× | Alloy-backed local private-key Signer adapter for the CoW Protocol Rust SDK |
 | [`sdk`](crates/sdk) | 8 | 106 | 1,148 | 0 | 168 | 10.8× | Facade crate for CoW Protocol Rust SDK surfaces |
-| **Total** | **541** | **32,232** | **35,857** | **179** | **11,927** | **1.1×** | |
+| **Total** | **541** | **32,232** | **35,858** | **179** | **11,927** | **1.1×** | |
 
 ---
 
@@ -144,7 +144,7 @@ The 25 largest hand-written source files by code lines (Rust + TypeScript). This
 
 | File | Lang | Kind | Code | Comments |
 |------|------|------|-----:|---------:|
-| [`xtask/src/parity/mod.rs`](xtask/src/parity/mod.rs) | Rust | src | 1,123 | 111 |
+| [`xtask/src/parity/mod.rs`](xtask/src/parity/mod.rs) | Rust | src | 1,122 | 111 |
 | [`crates/orderbook/tests/api_contract.rs`](crates/orderbook/tests/api_contract.rs) | Rust | test | 1,032 | 23 |
 | [`crates/subgraph/tests/api_contract.rs`](crates/subgraph/tests/api_contract.rs) | Rust | test | 1,012 | 6 |
 | [`crates/orderbook/tests/request_contract.rs`](crates/orderbook/tests/request_contract.rs) | Rust | test | 856 | 21 |
@@ -543,7 +543,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`partner_fee_contract.rs`](crates/app-data/tests/partner_fee_contract.rs) &mdash; 412 lines
 - [`property_contract.rs`](crates/app-data/tests/property_contract.rs) &mdash; 326 lines
 - [`schema_contract.rs`](crates/app-data/tests/schema_contract.rs) &mdash; 158 lines
-- [`schema_drift_contract.rs`](crates/app-data/tests/schema_drift_contract.rs) &mdash; 217 lines
+- [`schema_drift_contract.rs`](crates/app-data/tests/schema_drift_contract.rs) &mdash; 218 lines
 - [`typed_metadata_contract.rs`](crates/app-data/tests/typed_metadata_contract.rs) &mdash; 24 lines
 - [`validated_shape_contract.rs`](crates/app-data/tests/validated_shape_contract.rs) &mdash; 142 lines
 
@@ -1905,7 +1905,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 
 - [`changelog.rs`](xtask/src/changelog.rs) &mdash; 193 lines
 - [`lib.rs`](xtask/src/lib.rs) &mdash; 21 lines
-- [`main.rs`](xtask/src/main.rs) &mdash; 270 lines
+- [`main.rs`](xtask/src/main.rs) &mdash; 272 lines
 
 </details>
 
@@ -1921,10 +1921,10 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 <details>
 <summary><code>xtask/src/parity/</code> &mdash; 5 file(s)</summary>
 
-- [`mod.rs`](xtask/src/parity/mod.rs) &mdash; 1,376 lines
+- [`mod.rs`](xtask/src/parity/mod.rs) &mdash; 1,375 lines
 - [`openapi_coverage.rs`](xtask/src/parity/openapi_coverage.rs) &mdash; 750 lines
 - [`registry_confirm.rs`](xtask/src/parity/registry_confirm.rs) &mdash; 364 lines
-- [`sync.rs`](xtask/src/parity/sync.rs) &mdash; 562 lines
+- [`sync.rs`](xtask/src/parity/sync.rs) &mdash; 565 lines
 - [`vendor_openapi.rs`](xtask/src/parity/vendor_openapi.rs) &mdash; 67 lines
 
 </details>
@@ -1935,10 +1935,10 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`check_adr_coverage.rs`](xtask/src/policy/check_adr_coverage.rs) &mdash; 220 lines
 - [`check_alloy_family_pins.rs`](xtask/src/policy/check_alloy_family_pins.rs) &mdash; 237 lines
 - [`check_chain_patch_eligibility.rs`](xtask/src/policy/check_chain_patch_eligibility.rs) &mdash; 202 lines
-- [`check_deny_unknown_fields.rs`](xtask/src/policy/check_deny_unknown_fields.rs) &mdash; 123 lines
-- [`check_enum_policy.rs`](xtask/src/policy/check_enum_policy.rs) &mdash; 139 lines
+- [`check_deny_unknown_fields.rs`](xtask/src/policy/check_deny_unknown_fields.rs) &mdash; 126 lines
+- [`check_enum_policy.rs`](xtask/src/policy/check_enum_policy.rs) &mdash; 142 lines
 - [`check_msrv_notice.rs`](xtask/src/policy/check_msrv_notice.rs) &mdash; 163 lines
-- [`check_panic_allowlist.rs`](xtask/src/policy/check_panic_allowlist.rs) &mdash; 351 lines
+- [`check_panic_allowlist.rs`](xtask/src/policy/check_panic_allowlist.rs) &mdash; 356 lines
 - [`check_property_citations.rs`](xtask/src/policy/check_property_citations.rs) &mdash; 152 lines
 - [`check_readme_include.rs`](xtask/src/policy/check_readme_include.rs) &mdash; 100 lines
 - [`check_shell_wrappers.rs`](xtask/src/policy/check_shell_wrappers.rs) &mdash; 90 lines
@@ -1947,7 +1947,7 @@ Every tracked file, grouped by the directory it lives in. Each section is collap
 - [`check_workspace_versions.rs`](xtask/src/policy/check_workspace_versions.rs) &mdash; 166 lines
 - [`classify_release.rs`](xtask/src/policy/classify_release.rs) &mdash; 188 lines
 - [`dependency_invariant.rs`](xtask/src/policy/dependency_invariant.rs) &mdash; 177 lines
-- [`fences.rs`](xtask/src/policy/fences.rs) &mdash; 466 lines
+- [`fences.rs`](xtask/src/policy/fences.rs) &mdash; 472 lines
 - [`fixtures.rs`](xtask/src/policy/fixtures.rs) &mdash; 13 lines
 - [`mod.rs`](xtask/src/policy/mod.rs) &mdash; 102 lines
 - [`run_deterministic_examples.rs`](xtask/src/policy/run_deterministic_examples.rs) &mdash; 174 lines

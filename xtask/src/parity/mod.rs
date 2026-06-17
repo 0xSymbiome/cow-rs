@@ -959,14 +959,14 @@ mod tests {
     fn repository_form_rejects_invalid_and_duplicate_watch_dirs() {
         let mut traversal = entry(VALID_SHA, REMOTE, PRODUCER_PATHS);
         traversal.watch_dirs = vec!["../escape".to_owned()];
-        let error = validate_repository_form(&traversal)
-            .expect_err("a traversing watch dir is rejected");
+        let error =
+            validate_repository_form(&traversal).expect_err("a traversing watch dir is rejected");
         assert!(format!("{error:#}").contains("invalid watch dir"));
 
         let mut duplicate = entry(VALID_SHA, REMOTE, PRODUCER_PATHS);
         duplicate.watch_dirs = vec!["src/schemas".to_owned(), "src/schemas".to_owned()];
-        let error = validate_repository_form(&duplicate)
-            .expect_err("a duplicate watch dir is rejected");
+        let error =
+            validate_repository_form(&duplicate).expect_err("a duplicate watch dir is rejected");
         assert!(format!("{error:#}").contains("duplicate watch dir"));
     }
 
@@ -978,8 +978,7 @@ mod tests {
 
         let mut empty = entry(VALID_SHA, REMOTE, PRODUCER_PATHS);
         empty.hold = Some("   ".to_owned());
-        let error =
-            validate_repository_form(&empty).expect_err("an empty hold reason is rejected");
+        let error = validate_repository_form(&empty).expect_err("an empty hold reason is rejected");
         assert!(format!("{error:#}").contains("empty hold reason"));
     }
 

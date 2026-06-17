@@ -267,7 +267,13 @@ fn evaluate(repo_root: &Path, fence: &Fence) -> Result<Vec<String>> {
         pattern,
         skip_line_comments,
     } = &fence.rule;
-    forbid(repo_root, &files, pattern, *skip_line_comments, fence.message)
+    forbid(
+        repo_root,
+        &files,
+        pattern,
+        *skip_line_comments,
+        fence.message,
+    )
 }
 
 fn forbid(

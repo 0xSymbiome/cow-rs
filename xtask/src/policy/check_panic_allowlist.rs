@@ -113,7 +113,10 @@ pub fn validate_allowlist(allowlist: &PanicAllowlist, calls: &[PanicCall]) -> Ve
                 entry.file, entry.item
             ));
         }
-        let key = (workspace::normalize_manifest_path(&entry.file), entry.item.clone());
+        let key = (
+            workspace::normalize_manifest_path(&entry.file),
+            entry.item.clone(),
+        );
         if allowed.insert(key.clone(), entry).is_some() {
             errors.push(format!(
                 "duplicate panic allowlist entry for {}::{}",
@@ -251,8 +254,10 @@ fn locate_in_items<'a>(
                 }
             }
             Item::Impl(implementation) => {
-                let impl_path =
-                    workspace::item_path(modules, &workspace::impl_type_name(&implementation.self_ty));
+                let impl_path = workspace::item_path(
+                    modules,
+                    &workspace::impl_type_name(&implementation.self_ty),
+                );
                 for item in &implementation.items {
                     if let syn::ImplItem::Fn(function) = item
                         && format!("{impl_path}::{}", function.sig.ident) == target

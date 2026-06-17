@@ -279,7 +279,10 @@ fn watch_rows(checkout: &Path, dir: &str, old: &str, new: &str) -> Result<Vec<Dr
 /// Prints only the differing rows of a watched directory (the unchanged set is
 /// summarized by count) so a weekly radar over a many-file tree stays readable.
 fn print_watch(repo_id: &str, dir: &str, rows: &[DriftRow]) {
-    let changed: Vec<&DriftRow> = rows.iter().filter(|row| row.old_oid != row.new_oid).collect();
+    let changed: Vec<&DriftRow> = rows
+        .iter()
+        .filter(|row| row.old_oid != row.new_oid)
+        .collect();
     let mut table = format!(
         "{repo_id} watch {dir}: {} of {} file(s) differ\n",
         changed.len(),

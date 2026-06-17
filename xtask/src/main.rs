@@ -219,7 +219,9 @@ fn run_policy(cli: PolicyCli) -> Result<()> {
         }
         PolicyCommand::CheckAdrCoverage(args) => check_adr_coverage::run(&args),
         PolicyCommand::CheckAlloyFamilyPins(args) => check_alloy_family_pins::run(&args),
-        PolicyCommand::CheckChainPatchEligibility(args) => check_chain_patch_eligibility::run(&args),
+        PolicyCommand::CheckChainPatchEligibility(args) => {
+            check_chain_patch_eligibility::run(&args)
+        }
         PolicyCommand::CheckPropertyCitations(args) => check_property_citations::run(&args),
         PolicyCommand::CheckWasmInvariant(args) => check_wasm_invariant::run(&args),
         PolicyCommand::CheckSourceFences(args) => fences::run(&args),

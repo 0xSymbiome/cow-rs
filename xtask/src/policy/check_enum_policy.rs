@@ -90,7 +90,10 @@ pub fn validate_policy(policy: &EnumPolicy, discovered: &[PublicEnum]) -> Vec<St
                 entry.file, entry.name, entry.category
             ));
         }
-        let key = (workspace::normalize_manifest_path(&entry.file), entry.name.clone());
+        let key = (
+            workspace::normalize_manifest_path(&entry.file),
+            entry.name.clone(),
+        );
         if manifest.insert(key.clone(), entry).is_some() {
             errors.push(format!(
                 "duplicate enum policy entry for {}::{}",

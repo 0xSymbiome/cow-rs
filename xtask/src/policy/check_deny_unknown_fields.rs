@@ -88,7 +88,10 @@ pub fn validate_allowlist(
                 entry.file, entry.item
             ));
         }
-        let key = (workspace::normalize_manifest_path(&entry.file), entry.item.clone());
+        let key = (
+            workspace::normalize_manifest_path(&entry.file),
+            entry.item.clone(),
+        );
         if allowed.insert(key.clone(), entry).is_some() {
             errors.push(format!(
                 "duplicate deny_unknown_fields allowlist entry for {}::{}",

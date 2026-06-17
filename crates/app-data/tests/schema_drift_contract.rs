@@ -141,14 +141,13 @@ fn read_mirror(relative: &str) -> serde_json::Value {
 /// Extracts the `vMAJOR.MINOR.PATCH` token from a schema id or `$ref` such as
 /// `partnerFee/v1.1.0.json#` or `partner-fee-v1.1.0.json`.
 fn schema_version_token(value: &str) -> String {
-    let after = value
-        .find("/v")
-        .or_else(|| value.find("-v"))
-        .map(|index| &value[index + 1..])
-        .unwrap_or_else(|| panic!("`{value}` carries no version token"));
-    let end = after
-        .find(".json")
-        .unwrap_or_else(|| panic!("`{value}` version token is not followed by .json"));
+    let Some(index) = value.find("/v").or_else(|| value.find("-v")) else {
+        panic!("`{value}` carries no version token");
+    };
+    let after = &value[index + 1..];
+    let Some(end) = after.find(".json") else {
+        panic!("`{value}` version token is not followed by .json");
+    };
     after[..end].to_owned()
 }
 
@@ -202,11 +201,13 @@ fn app_data_version_and_modeled_families_track_the_root_manifest() {
             ))
             .and_then(serde_json::Value::as_str)
             .unwrap_or_else(|| panic!("root manifest must reference {family_key}"));
-        let mirror_id = read_mirror(mirror_file)
+        let Some(mirror_id) = read_mirror(mirror_file)
             .pointer("/payload/$id")
             .and_then(serde_json::Value::as_str)
             .map(str::to_owned)
-            .unwrap_or_else(|| panic!("{mirror_file} must declare payload.$id"));
+        else {
+            panic!("{mirror_file} must declare payload.$id");
+        };
         assert_eq!(
             schema_version_token(manifest_ref),
             schema_version_token(&mirror_id),
