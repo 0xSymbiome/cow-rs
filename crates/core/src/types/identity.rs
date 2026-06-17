@@ -143,27 +143,14 @@ impl Address {
     }
 }
 
-// DO NOT SWAP for #[derive(Display)] or alloy's default Address Display.
+// Hand-written rather than `#[derive(Display)]` or `.to_checksum()`: the cow
+// wire form for Address is lowercase, but alloy's default Display emits the
+// EIP-55 mixed-case checksum. Deriving it would diff every parity fixture on
+// hash, misreport mismatches against lowercase-emitting tools, and shift the
+// EIP-712 digest wherever address strings are hashed. The `{:#x}` spec routes
+// through alloy's lowercase `LowerHex` impl.
 //
-// cow-rs wire form for Address is lowercase (`0x` followed by 40
-// lowercase hex digits) because every parity fixture under
-// `parity/fixtures/`, every services-backend response, and every
-// EIP-712 JSON-stringified payload uses lowercase. alloy's default
-// Display emits the EIP-55 mixed-case checksum.
-//
-// Swapping to derived Display or calling `.to_checksum()` would diff
-// every parity fixture on hash, falsely report mismatches against
-// lowercase-emitting tools, and silently change the EIP-712 digest
-// where address strings get hashed for transport.
-//
-// The `{:#x}` format spec routes through alloy's `LowerHex` impl,
-// which emits the lowercase byte sequence we depend on; keep it.
-//
-// ADR: docs/adr/0052-alloy-primitives-canonical-primitive-layer.md
-// (the Address lowercase Display invariant).
-// Doctrine: docs/alloy-doctrine.md, Bucket 2 row for `Address::Display`
-// lowercase emission.
-// Enforced by cargo check-source-fences (xtask/src/policy/fences.rs).
+// ADR 0052. Enforced by cargo check-source-fences.
 impl fmt::Display for Address {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:#x}", self.0)

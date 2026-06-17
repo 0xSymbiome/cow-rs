@@ -127,21 +127,12 @@ impl Amount {
     /// minus, has an `0o` / `0b` radix prefix, contains characters
     /// outside the recognised decimal or hex digit set, or exceeds
     /// `uint256` bounds.
-    // DO NOT SWAP for alloy_primitives::U256::from_str (or I256::from_str).
+    // Not `U256::from_str`: alloy's `Uint::FromStr` sniffs `0x`/`0o`/`0b` radix
+    // prefixes, so a config typo like "0o755" would silently parse as 493 wei.
+    // This constructor picks the radix explicitly via `from_str_radix` and
+    // rejects the octal and binary prefixes as `InvalidNumeric`.
     //
-    // alloy's `Uint::FromStr` sniffs four radix prefixes (`0x`, `0X`, `0o`,
-    // `0O`, `0b`, `0B`) per ruint-1.18.0/src/string.rs:225-240. The cow
-    // constructor explicitly rejects the octal and binary prefixes so a
-    // config typo like "0o755" surfaces as `InvalidNumeric` instead of
-    // silently parsing as 493 wei. The constructor uses
-    // `U256::from_str_radix(_, 10)` and `U256::from_str_radix(hex, 16)` to
-    // pick the radix explicitly; do not collapse onto `U256::from_str`.
-    //
-    // ADR: docs/adr/0052-alloy-primitives-canonical-primitive-layer.md
-    // (the strict-decimal Amount wire-form / constructor contract).
-    // Doctrine: docs/alloy-doctrine.md, Bucket 2 row for `Amount::new`
-    // lenient constructor.
-    // Enforced by cargo check-source-fences (xtask/src/policy/fences.rs).
+    // ADR 0052. Enforced by cargo check-source-fences.
     pub fn new(value: impl AsRef<str>) -> Result<Self, CoreError> {
         let value = value.as_ref();
         if value.is_empty() {
@@ -265,31 +256,17 @@ impl Amount {
     /// leading sign (`+` / `-`, since [`Amount`] is unsigned), is not a valid
     /// decimal, or when `decimals` exceeds `77`
     /// ([`alloy_primitives::utils::Unit::MAX`]).
-    // DO NOT SWAP for a bare `alloy_primitives::utils::parse_units` call.
+    // Not a bare `alloy_primitives::utils::parse_units` call: it is fail-OPEN on
+    // untrusted input — `parse_units("", d)` returns `Ok(0)`; a leading `-`
+    // routes to the signed `I256` arm whose `Into<U256>` yields a huge
+    // two's-complement positive; fractional truncation slices by *byte* offset
+    // and panics when a non-ASCII boundary lands mid-UTF-8 char; and the final
+    // scaling `*=` wraps over `uint256`. To honour the fail-closed `# Errors`
+    // contract, this constructor does the integer scaling itself with checked
+    // arithmetic (ASCII-digit grammar, single `.` separator, `checked_mul`) and
+    // uses alloy only for the `Unit::new` decimals bound.
     //
-    // alloy's `parse_units` is fail-OPEN on several inputs (the relevant
-    // body is `crates/primitives/src/utils/units.rs`):
-    //   - `parse_units("", d)` returns `Ok(0)`, so an empty field silently
-    //     becomes a zero amount instead of an error.
-    //   - a leading `-` routes to the signed `I256` arm, and the subsequent
-    //     `Into<U256>` returns the two's-complement bit pattern (a huge
-    //     positive) with no error.
-    //   - the fractional-truncation step slices the input by *byte* offset
-    //     (`&amount[..(amount.len() - (dec_len - exponent))]`, units.rs:258),
-    //     so a non-ASCII input whose boundary lands inside a multi-byte
-    //     UTF-8 char PANICS with "byte index N is not a char boundary".
-    //   - the final scaling multiply (`a_uint *= 10.pow(exp - dec_len)`,
-    //     units.rs:285) is a *wrapping* `*=` (only the `pow` is checked), so
-    //     a value whose true magnitude exceeds `uint256` silently WRAPS to a
-    //     wrong number with no error.
-    // To honour the documented fail-closed `# Errors` contract (and never
-    // panic or silently wrap on untrusted input), this constructor does the
-    // exact integer scaling itself with checked arithmetic rather than
-    // delegating to the alloy helper: it pre-rejects empty/whitespace and a
-    // leading `+` / `-` (the same guards as `Amount::new`), restricts the
-    // grammar to ASCII decimal digits and a single `.` separator, truncates
-    // the fractional digits beyond `decimals`, and rejects an over-`uint256`
-    // result through `checked_mul`. Do not collapse onto the raw alloy call.
+    // ADR 0011.
     pub fn parse_units(value: impl AsRef<str>, decimals: u8) -> Result<Self, CoreError> {
         let value = value.as_ref().trim();
         if value.is_empty() {

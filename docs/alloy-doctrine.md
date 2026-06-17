@@ -53,7 +53,7 @@ Every primitive in this table uses the alloy symbol directly. No cow-owned re-im
 | EIP-712 domain separator | `alloy_sol_types::Eip712Domain::separator()` | `cow-sdk-signing`, `cow-sdk-contracts` | ADR 0052 | Bridged from cow `TypedDataDomain` via `to_alloy_domain()` (Bucket 2). |
 | EIP-712 struct signing hash | `alloy_sol_types::SolStruct::eip712_signing_hash` | `cow-sdk-contracts`; composable deferred per ADR 0048 | ADR 0052 | cow-shed routes through `ExecuteHooks { ... }.eip712_signing_hash(domain)` once the inner hashing has collapsed onto `SolStruct::eip712_signing_hash`. |
 | EIP-191 personal-sign hash | `alloy_primitives::eip191_hash_message` | `cow-sdk-contracts`, `cow-sdk-signing` | ADR 0052 | EIP-191 prefix ownership is split per ADR 0022 (signing emits raw digest, contracts applies prefix at recovery). |
-| ECDSA signature container | `alloy_primitives::Signature::from_bytes_and_parity` + `recover_address_from_prehash` recovery API | `cow-sdk-contracts::Signature::recover_ecdsa_address` | ADR 0022, ADR 0052 | The recovery surface is alloy. Strict `v ∈ {0, 1, 27, 28}` pre-validation feeds `from_bytes_and_parity`; that canonicalization is cow-owned (Bucket 2). `Signature::from_raw` is deliberately **not** used — it delegates to `normalize_v`, which would silently admit EIP-155 `v ≥ 35`; the swap is fence-banned (`ecdsa-v-normalization`, see the `DO NOT SWAP` note in `crates/contracts/src/signature.rs`). |
+| ECDSA signature container | `alloy_primitives::Signature::from_bytes_and_parity` + `recover_address_from_prehash` recovery API | `cow-sdk-contracts::Signature::recover_ecdsa_address` | ADR 0022, ADR 0052 | The recovery surface is alloy. Strict `v ∈ {0, 1, 27, 28}` pre-validation feeds `from_bytes_and_parity`; that canonicalization is cow-owned (Bucket 2). `Signature::from_raw` is deliberately **not** used — it delegates to `normalize_v`, which would silently admit EIP-155 `v ≥ 35`; the swap is fence-banned (`ecdsa-v-normalization`; see the rationale comment in `crates/contracts/src/signature.rs`). |
 | ERC-2098 compact signature | `alloy_primitives::Signature::from_erc2098` | `cow-sdk-contracts` | ADR 0052 | Used at the compact-signature ingress only. |
 | CREATE2 derivation | `alloy_primitives::Address::create2` | `cow-sdk-contracts` | ADR 0052 | Replaces hand-rolled `create2`. |
 | sol! ABI bindings | `alloy_sol_types::sol!` macro | `cow-sdk-contracts` (canonical home); composable bindings deferred per ADR 0048 | ADR 0012, [Canonical Contract Bindings](principles.md) | Declared inline with `sol!` and proven byte-for-byte by the parity fixtures under `parity/fixtures/`, mirroring upstream Solidity pinned by commit in `parity/source-lock.yaml`. |
@@ -142,29 +142,6 @@ The tree is runnable as-is. Two traces that show the non-obvious verdicts:
   (ADR 0040) with zero Rust changes — wallet identity never becomes an SDK-owned
   Rust type; the host application wires it in JS-side.
 
-## Never-swap fences
-
-Every entry below is enforced by a source fence in
-`xtask/src/policy/fences.rs` — run by `cargo check-source-fences` — that
-mechanically rejects the forbidden alloy symbol. The most security-sensitive
-call sites (in `crates/contracts/`, `crates/core/`, and `crates/signing/`) also
-carry an explanatory `// DO NOT SWAP` comment; others, such as the browser
-`FetchTransport`, rely on the fence alone. The canonical roster:
-
-1. ECDSA `v` byte canonicalization (ADR 0022).
-2. `Amount::new` radix sniffing (ADR 0052).
-3. `Address::Display` lowercase (ADR 0052).
-4. `SupportedChainId` + `api_path()` (ADR 0005, ADR 0011).
-5. `TypedDataDomain` cow struct (ADR 0052, ADR 0040).
-6. EIP-1271 blob Shape A vs B (ADR 0050 — future, composable deferred).
-7. `cow_sdk_core::transport::policy` + `cow_sdk_core::transport::fetch` (ADR 0010, 0013, 0041, 0046).
-8. Plus three additional never-swap surfaces:
-   - `api_path()` URL labels (sub-invariant of #4),
-   - `keccak_word` test oracle in `crates/contracts/src/order.rs`,
-   - EIP-712 type-string whitespace contract (ADR 0050).
-
-The doctrine treats every entry in the canonical roster above as a binding never-swap fence; the source fences run by `cargo check-source-fences` (`xtask/src/policy/fences.rs`) enforce them mechanically.
-
 ## Traceability and evolution
 
 Every Bucket 2/3 row resolves to a binding ADR cite; the principle-ADR map
@@ -177,9 +154,11 @@ follow-up ADR.
 
 ## Enforcement
 
-The never-swap fences are mechanized by `cargo check-source-fences`
-(`xtask/src/policy/fences.rs`) — the doctrine names the roster but does not
-duplicate the patterns. Allow-list policy confines the alloy-runtime family
+Each Bucket 2 divergence is mechanized by a source guard in
+`xtask/src/policy/fences.rs` (run via `cargo check-source-fences`) that rejects
+the forbidden alloy symbol on the protected surface; the most security-sensitive
+call sites also carry a short rationale comment naming the ADR. Allow-list policy
+confines the alloy-runtime family
 (`alloy-provider`, `alloy-signer-local`, `alloy-network`, `alloy-consensus`,
 `alloy-rpc-types-eth`, `alloy-transport-*`) to the three adapter crates
 (`cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, `cow-sdk-alloy`) per ADR 0026

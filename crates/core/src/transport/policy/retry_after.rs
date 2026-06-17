@@ -32,34 +32,15 @@ impl RetryAfter {
 /// (`Sun Nov  6 08:49:37 1994`). Invalid, empty, negative, or
 /// unsupported date formats return [`None`]. Past or epoch-equal dates
 /// clamp to `Duration::ZERO`.
-// DO NOT SWAP for alloy_transport's parse_retry_after.
+// Not alloy_transport's `parse_retry_after`: that parses JSON-RPC error-message
+// strings like "try again in 4ms" and has no concept of the HTTP header. This
+// parser handles the `Retry-After` *response header* per RFC 7231 §7.1.1.1 — a
+// delta-seconds integer or an HTTP-date (delegated to `httpdate::parse_http_date`,
+// Bucket 1 in the alloy doctrine; only the RFC 7231 dispatch policy around it is
+// cow-owned). Swapping would silently ignore the backend's `Retry-After` on
+// 429/503 and retry too aggressively.
 //
-// This parser handles the HTTP `Retry-After` *response header* per
-// RFC 7231 §7.1.1.1: a delta-seconds integer OR an HTTP-date
-// (IMF-fixdate, RFC 850, or ANSI C `asctime`, delegated to
-// `httpdate::parse_http_date`).
-//
-// alloy's namesake parses JSON-RPC error-message strings like
-// `"try again in 4ms"` and has no concept of the HTTP header.
-// Swapping would silently ignore the orderbook backend's
-// `Retry-After` header on 429/503, retry too aggressively, and
-// trigger harder rate limits.
-//
-// The IMF-fixdate parse itself (`httpdate::parse_http_date`) is
-// Bucket 1 in the alloy doctrine; only the RFC 7231 *dispatch
-// policy* around it is Bucket 2.
-//
-// ADR: docs/adr/0010-runtime-neutral-async-and-transport-posture.md
-// (runtime-neutral transport),
-// docs/adr/0019-http-transport-sole-dispatch.md (HttpTransport sole
-// dispatch),
-// docs/adr/0041-transport-policy-l3-layering.md (transport policy
-// layering),
-// docs/adr/0046-transport-policy-js-exposure.md (transport policy
-// JS exposure).
-// Doctrine: docs/alloy-doctrine.md, Bucket 2 row for `parse_retry_after`
-// for the HTTP `Retry-After` header.
-// Enforced by cargo check-source-fences (xtask/src/policy/fences.rs).
+// ADR 0010, ADR 0019, ADR 0041, ADR 0046. Enforced by cargo check-source-fences.
 #[must_use]
 pub fn parse_retry_after(value: &str, now: SystemTime) -> Option<RetryAfter> {
     let trimmed = value.trim();
