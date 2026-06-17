@@ -113,7 +113,11 @@ pub fn scan(root: &Path) -> Result<Vec<Pin>> {
                 let matched = caps.name("ver").expect("every pattern captures `ver`");
                 pins.push(Pin {
                     file: file.clone(),
-                    line: text[..matched.start()].bytes().filter(|&b| b == b'\n').count() + 1,
+                    line: text[..matched.start()]
+                        .bytes()
+                        .filter(|&b| b == b'\n')
+                        .count()
+                        + 1,
                     version: matched.as_str().to_owned(),
                 });
             }
@@ -161,8 +165,8 @@ fn surface_files(root: &Path) -> Result<Vec<PathBuf>> {
     let mut files = vec![root.join("README.md")];
 
     let crates = root.join("crates");
-    for entry in fs::read_dir(&crates)
-        .with_context(|| format!("failed to read {}", crates.display()))?
+    for entry in
+        fs::read_dir(&crates).with_context(|| format!("failed to read {}", crates.display()))?
     {
         let readme = entry?.path().join("README.md");
         if readme.is_file() {
@@ -173,8 +177,8 @@ fn surface_files(root: &Path) -> Result<Vec<PathBuf>> {
 
     let docs = root.join("docs");
     if docs.is_dir() {
-        for entry in fs::read_dir(&docs)
-            .with_context(|| format!("failed to read {}", docs.display()))?
+        for entry in
+            fs::read_dir(&docs).with_context(|| format!("failed to read {}", docs.display()))?
         {
             let path = entry?.path();
             if path.extension().is_some_and(|ext| ext == "md") {
@@ -216,7 +220,10 @@ npm install @symbiome-forge/cow-sdk-wasm@0.1.0-alpha.1
 `cow-sdk` `0.1.0-alpha.1` is published and `@symbiome-forge/cow-sdk-wasm` `0.1.0-alpha.1` on npm.
 "#;
         let out = rewrite_text(input, "0.1.0-alpha.3");
-        assert!(!out.contains("0.1.0-alpha.1"), "a pin was left stale:\n{out}");
+        assert!(
+            !out.contains("0.1.0-alpha.1"),
+            "a pin was left stale:\n{out}"
+        );
         // Eight pins: five Cargo/cargo-add/npm/badge plus the two backtick
         // "is published" versions on the final line.
         assert_eq!(out.matches("0.1.0-alpha.3").count(), 8);
@@ -243,7 +250,11 @@ The alpha line is `0.1.0-alpha`.";
             "intro\ncow-sdk = \"0.1.0-alpha.1\"\n",
         )
         .unwrap();
-        fs::write(root.join("crates/core/README.md"), "cow-sdk-core = \"0.1.0-alpha.3\"\n").unwrap();
+        fs::write(
+            root.join("crates/core/README.md"),
+            "cow-sdk-core = \"0.1.0-alpha.3\"\n",
+        )
+        .unwrap();
 
         let pins = scan(root).unwrap();
         let root_pin = pins
