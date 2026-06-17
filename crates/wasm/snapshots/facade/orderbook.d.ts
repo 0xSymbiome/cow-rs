@@ -22,6 +22,8 @@ export declare class OrderBookClient {
     getTrades(query: raw.TradesQueryInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<raw.TradeDto[]>>;
     getOrderCompetitionStatus(orderUid: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<raw.CompetitionOrderStatusDto>>;
     getTotalSurplus(owner: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<raw.TotalSurplusDto>>;
+    getSolverCompetition(auctionId: number, options?: SdkClientOptions | null): Promise<WasmEnvelope<raw.SolverCompetitionResponseDto>>;
+    getSolverCompetitionByTxHash(txHash: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<raw.SolverCompetitionResponseDto>>;
     getAppData(appDataHash: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<raw.AppDataObjectDto>>;
     uploadAppData(appDataHash: string, fullAppData: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<{
         uploaded: true;
@@ -50,7 +52,7 @@ export declare function signOrderWithEip1271(input: raw.OrderInput, chainId: num
 export declare function signOrderWithTypedDataSigner(input: raw.OrderInput, chainId: number, owner: string, typedDataSigner: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<raw.SignedOrderDto>>;
 export declare function supportedChainIds(): Uint32Array;
 export declare function wasmVersion(): string;
-export type { AppDataObjectDto, CompetitionOrderStatusDto, CompetitionOrderStatusKindDto, CowEip1271SignRequest, DeploymentAddressesDto, Eip1193Request, EthFlowEventDto, EthflowDataDto, EventLogInput, ExecutedAmountsDto, ExecutedProtocolFeeDto, GeneratedOrderUidDto, InteractionDataDto, NativePriceResponseDto, OnchainOrderDataDto, OrderClassDto, OrderCreationInput, OrderDto, OrderInput, OrderInteractionsDto, OrderKindDto, OrderQuoteRequestInput, OrderQuoteResponseDto, OrderStatusDto, OrderTraderParametersInput, PaginationOptions, QuoteDataDto, SettlementEventDto, SignedCancellationsInput, SignedOrderDto, SigningSchemeDto, SolverExecutionDto, StoredOrderQuoteDto, TokenBalanceDto, TotalSurplusDto, TradeDto, TradesQueryInput, TransactionRequestDto, TypedDataDomainDto, TypedDataEnvelopeDto, TypedDataFieldDto } from "./raw/orderbook.js";
+export type { AppDataObjectDto, CompetitionAuctionDto, CompetitionOrderStatusDto, CompetitionOrderStatusKindDto, CowEip1271SignRequest, DeploymentAddressesDto, Eip1193Request, EthFlowEventDto, EthflowDataDto, EventLogInput, ExecutedAmountsDto, ExecutedProtocolFeeDto, GeneratedOrderUidDto, InteractionDataDto, NativePriceResponseDto, OnchainOrderDataDto, OrderClassDto, OrderCreationInput, OrderDto, OrderInput, OrderInteractionsDto, OrderKindDto, OrderQuoteRequestInput, OrderQuoteResponseDto, OrderStatusDto, OrderTraderParametersInput, PaginationOptions, QuoteDataDto, SettlementEventDto, SignedCancellationsInput, SignedOrderDto, SigningSchemeDto, SolverCompetitionOrderDto, SolverCompetitionResponseDto, SolverExecutionDto, SolverSettlementDto, StoredOrderQuoteDto, TokenBalanceDto, TotalSurplusDto, TradeDto, TradesQueryInput, TransactionRequestDto, TypedDataDomainDto, TypedDataEnvelopeDto, TypedDataFieldDto } from "./raw/orderbook.js";
 export type { CowEip1271SignCallback, CowEnv, CustomEip1271Callback, DigestSignerCallback, Eip1193RequestCallback, TypedDataSignerCallback } from "./callbacks.js";
 export type { OrderBookRejectionCategory, CowError } from "./errors.js";
 export type { SchemaVersion, WasmEnvelope } from "./envelope.js";

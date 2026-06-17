@@ -562,21 +562,8 @@ async fn trading_build_sell_native_currency_tx(
 /// on-chain order data. Quote ids are non-negative database integers well
 /// within the JavaScript safe-integer range, so `number` is the precise and
 /// consistent representation across the ABI.
-#[allow(
-    clippy::cast_possible_truncation,
-    reason = "value is validated as a non-negative integer at most 2^53-1 before the cast, so the i64 conversion is exact"
-)]
 fn quote_id_from_js(value: f64) -> Result<i64, WasmError> {
-    /// Largest integer a JavaScript `number` represents exactly (2^53 - 1).
-    const MAX_SAFE_INTEGER: f64 = 9_007_199_254_740_991.0;
-    if value.is_finite() && value.fract() == 0.0 && (0.0..=MAX_SAFE_INTEGER).contains(&value) {
-        Ok(value as i64)
-    } else {
-        Err(WasmError::invalid(
-            "quoteId",
-            "quote id must be a non-negative integer within the JavaScript safe-integer range",
-        ))
-    }
+    super::js_safe_integer_to_i64(value, "quoteId")
 }
 
 async fn trading_get_cow_protocol_allowance(

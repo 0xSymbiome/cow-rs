@@ -1,7 +1,7 @@
 # WASM Capability Coverage Audit
 
 Status: Current
-Last reviewed: 2026-06-16
+Last reviewed: 2026-06-17
 Owning surface: `cow-sdk-wasm` capability coverage relative to the native `cow-rs` SDK crates
 Refresh trigger: changes to `crates/wasm/src/exports/**`; additions or removals of public operations on the `orderbook`, `trading`, `signing`, `contracts`, `app-data`, or `subgraph` crates; or revisions to the workflow scope in `docs/parity.md`
 Related docs:
@@ -97,8 +97,8 @@ wallet; **Surfaced (composed)** — covered by combining exported operations;
 | `tx_orders` | `getTxOrders` | Surfaced |
 | `order_competition_status` | `getOrderCompetitionStatus` | Surfaced |
 | `total_surplus` | `getTotalSurplus` | Surfaced |
-| `solver_competition` | — | Not surfaced (Class 2) |
-| `solver_competition_by_tx_hash` | — | Not surfaced (Class 2) |
+| `solver_competition` | `getSolverCompetition` | Surfaced |
+| `solver_competition_by_tx_hash` | `getSolverCompetitionByTxHash` | Surfaced |
 
 #### trading — `Trading` → `TradingClient`
 
@@ -153,26 +153,26 @@ native-only and cannot compile for `wasm32`. ADR 0039 holds the wasm32
 dependency tree free of those adapters, reqwest, and hyper.
 Members: the managed-flow counterparts of pre-sign, on-chain and off-chain
 cancellation, and approval; and `poll_for_receipt` /
-`submit_and_wait_for_receipt`.
+`submit_and_wait_for_receipt`. The upstream TypeScript SDK draws the same
+boundary: it returns transaction hashes and unsigned transactions and leaves
+receipt-waiting to the host adapter, with no managed `submitAndWait` or
+`pollForReceipt` orchestration to mirror.
 
-**Class 2 — Outside the defined workflow scope.** These are public read
-operations the native crates carry because the orderbook and signing crates
-mirror the full upstream service and protocol surface. They are omitted from
-`cow-sdk-wasm` because the crate is scoped to the workflow set in
-`docs/parity.md`, which routes full-feature consumers to the upstream
-TypeScript SDK (ADR 0039). They use the same transport, DTO, and envelope
-machinery as the surfaced reads, so each is an additive item rather than a
-runtime-model boundary. Members:
+**Class 2 — Outside the defined workflow scope.** Native capabilities the
+crates carry to mirror the full upstream protocol surface, but which the
+upstream TypeScript SDK does not expose as a core consumer API, so they fall
+outside the workflow set `cow-sdk-wasm` is scoped to (ADR 0039). Members:
 
-- The solver-competition reads `solver_competition` and
-  `solver_competition_by_tx_hash`. The native client targets the v2
-  (`/api/v2/solver_competition`) routes — the only solver-competition contract
-  the services backend still serves. Surfacing them on the WASM client would
-  require modelling the CIP-67 `SolverCompetitionResponse` as a dedicated DTO,
-  which is deferred.
 - On-chain EIP-1271 signature verification (`verify_eip1271_signature` /
-  `verify_eip1271_signature_cached`) and its verification caches, which require
-  a chain `Provider` read rather than a service call.
+  `verify_eip1271_signature_cached`) and its verification caches. The upstream
+  TypeScript SDK performs on-chain EIP-1271 verification only inside the
+  composable cow-shed hook-signing flow (a deferred capability family; see
+  Class 4), not as a standalone order-signing API, so there is no core-surface
+  parity demand for it. Surfacing it would also require extending the
+  read-only `ContractReadCallback` bridge — which today wires only the
+  `read_contract` chain read used by `getCowProtocolAllowance` — with the
+  contract-code read the verifier additionally performs. A host that signs an
+  EIP-1271 order verifies it through its own provider.
 
 **Class 3 — Internal contract-binding surface.** The low-level `contracts`
 encoding and verification surface is building-block code shared by native
@@ -218,9 +218,17 @@ application's own wallet stack, rather than a Rust-side wallet.
   (`getOrderMultiEnv`), and `tx_orders` (`getTxOrders`) are surfaced as
   `OrderBookClient` reads, matching the upstream `OrderBookApi`'s `getVersion`,
   `getOrderLink`, `getOrderMultiEnv`, and `getTxOrders`. They reuse the existing
-  `OrderDto` and string envelope machinery and add no new DTO. The remaining
-  solver-competition reads stay out of scope (Class 2); full-feature consumers
-  route to the upstream TypeScript SDK.
+  `OrderDto` and string envelope machinery and add no new DTO.
+- **Solver-competition reads.** `solver_competition` (`getSolverCompetition`)
+  and `solver_competition_by_tx_hash` (`getSolverCompetitionByTxHash`) are
+  surfaced as `OrderBookClient` reads, matching the upstream
+  `OrderBookApi.getSolverCompetition`. They target the v2
+  `/api/v2/solver_competition/{auctionId}` and `/by_tx_hash/{txHash}` routes —
+  the only solver-competition contract the services backend serves — and return
+  the CIP-67 `SolverCompetitionResponseDto` family, which mirrors the native
+  `SolverCompetitionResponse` through the same pass-through envelope machinery as
+  the other surfaced reads. The auction id crosses the ABI as a `number`,
+  validated to the JavaScript safe-integer range.
 
 ## Shape Correspondence
 
@@ -277,6 +285,7 @@ native type under the uniform transforms above. The principal correspondences:
 | `OrderQuoteRequestInput` / `OrderQuoteResponseDto` / `QuoteDataDto` | `OrderQuoteRequest` / `OrderQuoteResponse` / `QuoteData` |
 | `TradeDto` | `cow_sdk_orderbook::Trade` |
 | `CompetitionOrderStatusDto` / `SolverExecutionDto` / `ExecutedAmountsDto` | `cow_sdk_orderbook::{CompetitionOrderStatus, SolverExecution, ExecutedAmounts}` |
+| `SolverCompetitionResponseDto` / `CompetitionAuctionDto` / `SolverSettlementDto` / `SolverCompetitionOrderDto` | `cow_sdk_orderbook::{SolverCompetitionResponse, CompetitionAuction, SolverSettlement, SolverCompetitionOrder}` |
 | `TotalSurplusDto` | `cow_sdk_orderbook::TotalSurplus` |
 | `SwapParametersInput` / `LimitTradeParametersInput` | `cow_sdk_trading::TradeParams` / `LimitTradeParams` |
 | `AllowanceParametersInput` / `ApprovalParametersInput` | `cow_sdk_trading::AllowanceParams` / `ApprovalParams` |

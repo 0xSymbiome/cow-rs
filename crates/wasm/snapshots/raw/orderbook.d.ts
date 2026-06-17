@@ -120,6 +120,21 @@ export interface InteractionDataDto {
 }
 
 /**
+ * Auction snapshot nested in a solver-competition response, mirroring
+ * `cow_sdk_orderbook::CompetitionAuction`.
+ */
+export interface CompetitionAuctionDto {
+    /**
+     * Order UIDs included in the auction.
+     */
+    orders?: string[];
+    /**
+     * Reference prices keyed by token address.
+     */
+    prices?: Record<string, string>;
+}
+
+/**
  * Coarse, switchable classification of an orderbook rejection, mirrored for
  * the JS error surface.
  *
@@ -328,6 +343,77 @@ export interface OnchainOrderDataDto {
      * Placement error emitted by services, when on-chain placement failed.
      */
     placementError?: string;
+}
+
+/**
+ * One order touched by a solver settlement, mirroring
+ * `cow_sdk_orderbook::SolverCompetitionOrder`.
+ */
+export interface SolverCompetitionOrderDto {
+    /**
+     * Order UID.
+     */
+    id: string;
+    /**
+     * Sell amount in the upstream decimal-string wire shape.
+     */
+    sellAmount: string;
+    /**
+     * Buy amount in the upstream decimal-string wire shape.
+     */
+    buyAmount: string;
+    /**
+     * Buy-token address, when the service returns it.
+     */
+    buyToken?: string;
+    /**
+     * Sell-token address, when the service returns it.
+     */
+    sellToken?: string;
+}
+
+/**
+ * One solver\'s settlement entry in a competition, mirroring
+ * `cow_sdk_orderbook::SolverSettlement`.
+ */
+export interface SolverSettlementDto {
+    /**
+     * On-chain executor address (the zero address for legacy settlements).
+     */
+    solverAddress: string;
+    /**
+     * CIP-20 score in the upstream decimal-string wire shape.
+     */
+    score: string;
+    /**
+     * Position in the total ranking.
+     */
+    ranking: number;
+    /**
+     * Clearing prices keyed by token address (deprecated; empty for recent
+     * auctions).
+     */
+    clearingPrices?: Record<string, string>;
+    /**
+     * Orders touched by this settlement.
+     */
+    orders?: SolverCompetitionOrderDto[];
+    /**
+     * Whether this solver received the right to execute.
+     */
+    isWinner: boolean;
+    /**
+     * Whether this solution was filtered out under CIP-67.
+     */
+    filteredOut: boolean;
+    /**
+     * CIP-67 reference score, when available.
+     */
+    referenceScore?: string;
+    /**
+     * Settlement transaction hash, when available.
+     */
+    txHash?: string;
 }
 
 /**
@@ -1027,6 +1113,42 @@ export interface SolverExecutionDto {
 }
 
 /**
+ * Solver-competition result for an auction, mirroring
+ * `cow_sdk_orderbook::SolverCompetitionResponse` (the CIP-67 contract served at
+ * the `/api/v2/solver_competition/*` routes).
+ */
+export interface SolverCompetitionResponseDto {
+    /**
+     * Auction identifier.
+     */
+    auctionId: number;
+    /**
+     * Block the auction started on.
+     */
+    auctionStartBlock: number;
+    /**
+     * Block deadline by which the auction must settle.
+     */
+    auctionDeadlineBlock: number;
+    /**
+     * Winning-solution transaction hashes.
+     */
+    transactionHashes?: string[];
+    /**
+     * CIP-67 per-winning-solver reference scores keyed by solver address.
+     */
+    referenceScores?: Record<string, string>;
+    /**
+     * Auction snapshot.
+     */
+    auction: CompetitionAuctionDto;
+    /**
+     * Per-solver settlements.
+     */
+    solutions?: SolverSettlementDto[];
+}
+
+/**
  * Stored quote metadata for quote-linked orders, mirroring
  * `cow_sdk_orderbook::StoredOrderQuote`.
  */
@@ -1495,6 +1617,33 @@ export class OrderBookClient {
      * @throws CowError for invalid input, transport failure, timeout, or cancellation.
      */
     getQuote(request: OrderQuoteRequestInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<OrderQuoteResponseDto>>;
+    /**
+     * Fetches the solver-competition result for an auction.
+     *
+     * Returns the solver competition the protocol ran for the auction: the
+     * winning solvers, their scores and rankings, the auction snapshot, and the
+     * per-solver settlements, in the upstream wire shape. Targets the v2
+     * `/api/v2/solver_competition/{auctionId}` route.
+     *
+     * @param auctionId Auction id to look up (a non-negative integer).
+     * @param options Optional per-call cancellation and timeout settings.
+     * @returns A versioned envelope containing the solver-competition response.
+     * @throws CowError for an out-of-range id, not-found responses, transport failure, or timeout.
+     */
+    getSolverCompetition(auctionId: number, options?: SdkClientOptions | null): Promise<WasmEnvelope<SolverCompetitionResponseDto>>;
+    /**
+     * Fetches the solver-competition result by settlement transaction hash.
+     *
+     * Like `getSolverCompetition`, keyed by the settlement transaction hash
+     * rather than the auction id. Targets the v2
+     * `/api/v2/solver_competition/by_tx_hash/{txHash}` route.
+     *
+     * @param txHash Settlement transaction hash as a `0x`-prefixed 32-byte hex string.
+     * @param options Optional per-call cancellation and timeout settings.
+     * @returns A versioned envelope containing the solver-competition response.
+     * @throws CowError for an invalid hash, not-found responses, transport failure, or timeout.
+     */
+    getSolverCompetitionByTxHash(txHash: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<SolverCompetitionResponseDto>>;
     /**
      * Fetches the total accumulated surplus for an account.
      *

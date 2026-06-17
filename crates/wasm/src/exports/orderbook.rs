@@ -425,6 +425,67 @@ impl OrderBookClient {
         .await
     }
 
+    /// Fetches the solver-competition result for an auction.
+    ///
+    /// Returns the solver competition the protocol ran for the auction: the
+    /// winning solvers, their scores and rankings, the auction snapshot, and the
+    /// per-solver settlements, in the upstream wire shape. Targets the v2
+    /// `/api/v2/solver_competition/{auctionId}` route.
+    ///
+    /// @param auctionId Auction id to look up (a non-negative integer).
+    /// @param options Optional per-call cancellation and timeout settings.
+    /// @returns A versioned envelope containing the solver-competition response.
+    /// @throws CowError for an out-of-range id, not-found responses, transport failure, or timeout.
+    #[wasm_bindgen(
+        js_name = "getSolverCompetition",
+        unchecked_return_type = "WasmEnvelope<SolverCompetitionResponseDto>"
+    )]
+    pub async fn solver_competition(
+        &self,
+        #[wasm_bindgen(js_name = auctionId)] auction_id: f64,
+        #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
+    ) -> Result<JsValue, JsValue> {
+        super::traced("wasm.orderbook.solver_competition", async move {
+            let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+            let inner = orderbook_for_scope(&self.inner, &scope);
+            run_with_client_options(scope, async move {
+                orderbook_get_solver_competition(&inner, auction_id).await
+            })
+            .await
+        })
+        .await
+    }
+
+    /// Fetches the solver-competition result by settlement transaction hash.
+    ///
+    /// Like `getSolverCompetition`, keyed by the settlement transaction hash
+    /// rather than the auction id. Targets the v2
+    /// `/api/v2/solver_competition/by_tx_hash/{txHash}` route.
+    ///
+    /// @param txHash Settlement transaction hash as a `0x`-prefixed 32-byte hex string.
+    /// @param options Optional per-call cancellation and timeout settings.
+    /// @returns A versioned envelope containing the solver-competition response.
+    /// @throws CowError for an invalid hash, not-found responses, transport failure, or timeout.
+    #[wasm_bindgen(
+        js_name = "getSolverCompetitionByTxHash",
+        unchecked_return_type = "WasmEnvelope<SolverCompetitionResponseDto>"
+    )]
+    pub async fn solver_competition_by_tx_hash(
+        &self,
+        #[wasm_bindgen(js_name = txHash)] tx_hash: String,
+        #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
+    ) -> Result<JsValue, JsValue> {
+        super::traced("wasm.orderbook.solver_competition_by_tx_hash", async move {
+            let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+            let inner = orderbook_for_scope(&self.inner, &scope);
+            run_with_client_options(scope, async move {
+                orderbook_get_solver_competition_by_tx_hash(&inner, tx_hash).await
+            })
+            .await
+        })
+        .await
+    }
+
     /// Submits signed off-chain order cancellations.
     ///
     /// Build the signed cancellation payload with one of the cancellation
@@ -752,6 +813,31 @@ async fn orderbook_get_total_surplus(
         .await
         .map_err(|error| WasmError::from(error).into_js())?;
     to_js_value(&WasmEnvelope::v1(total))
+}
+
+async fn orderbook_get_solver_competition(
+    inner: &OrderbookApi,
+    auction_id: f64,
+) -> Result<JsValue, JsValue> {
+    let auction_id =
+        super::js_safe_integer_to_i64(auction_id, "auctionId").map_err(WasmError::into_js)?;
+    let response = inner
+        .solver_competition(auction_id)
+        .await
+        .map_err(|error| WasmError::from(error).into_js())?;
+    to_js_value(&WasmEnvelope::v1(response))
+}
+
+async fn orderbook_get_solver_competition_by_tx_hash(
+    inner: &OrderbookApi,
+    tx_hash: String,
+) -> Result<JsValue, JsValue> {
+    let tx_hash = parse_transaction_hash(tx_hash)?;
+    let response = inner
+        .solver_competition_by_tx_hash(&tx_hash)
+        .await
+        .map_err(|error| WasmError::from(error).into_js())?;
+    to_js_value(&WasmEnvelope::v1(response))
 }
 
 async fn orderbook_cancel_orders(

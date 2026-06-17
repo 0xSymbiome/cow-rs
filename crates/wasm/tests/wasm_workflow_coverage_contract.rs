@@ -443,3 +443,51 @@ async fn trading_exposes_allowance_and_transaction_builders() {
             .starts_with("0x")
     );
 }
+
+const SOLVER_COMPETITION_TX: &str =
+    "0x1111111111111111111111111111111111111111111111111111111111111111";
+
+#[wasm_bindgen_test]
+async fn orderbook_reads_solver_competition_over_v2_routes() {
+    js_sys::eval("globalThis.__cowCoverageRequests = []").unwrap();
+    // A v2 SolverCompetitionResponse body that deserializes into the native
+    // `SolverCompetitionResponse`, exercised end-to-end through both reads.
+    let body = r#"{"auctionId":123,"auctionStartBlock":100,"auctionDeadlineBlock":110,"transactionHashes":["0x1111111111111111111111111111111111111111111111111111111111111111"],"referenceScores":{"0x2222222222222222222222222222222222222222":"42"},"auction":{"orders":[],"prices":{"0x2222222222222222222222222222222222222222":"7"}},"solutions":[{"solverAddress":"0x3333333333333333333333333333333333333333","score":"99","ranking":0,"clearingPrices":{},"orders":[],"isWinner":true,"filteredOut":false}]}"#;
+    let fetch = callback(
+        "request",
+        &format!(
+            "globalThis.__cowCoverageRequests.push(request);
+             return {{ status: 200, headers: {{}}, body: {body:?} }};"
+        ),
+    );
+    let client =
+        OrderBookClient::new(crate::common::orderbook_config(CHAIN_MAINNET, None, &fetch)).unwrap();
+
+    let by_id = json(client.solver_competition(123.0, None).await.unwrap());
+    let by_hash = json(
+        client
+            .solver_competition_by_tx_hash(SOLVER_COMPETITION_TX.to_owned(), None)
+            .await
+            .unwrap(),
+    );
+    let requests = recorded_requests();
+
+    // The native typed response round-trips through the envelope unchanged.
+    assert_eq!(by_id["value"]["auctionId"], 123);
+    assert_eq!(by_id["value"]["solutions"][0]["isWinner"], true);
+    assert_eq!(by_id["value"]["solutions"][0]["score"], "99");
+    assert_eq!(by_hash["value"]["auctionId"], 123);
+    // Both reads target the v2 routes the services backend serves.
+    assert!(
+        requests[0]["url"]
+            .as_str()
+            .unwrap()
+            .contains("/api/v2/solver_competition/123")
+    );
+    assert!(
+        requests[1]["url"]
+            .as_str()
+            .unwrap()
+            .contains("/api/v2/solver_competition/by_tx_hash/")
+    );
+}

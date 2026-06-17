@@ -1,7 +1,7 @@
 # WASM Type Generation Audit
 
 Status: Current
-Last reviewed: 2026-06-15
+Last reviewed: 2026-06-17
 Owning surface: `cow-sdk-wasm` DTO exports, tsify-derived TypeScript declarations, and npm declaration snapshots
 Refresh trigger: Changes to exported DTOs, `tsify` usage, wasm-pack targets, declaration snapshots, or package export targets
 Related docs:

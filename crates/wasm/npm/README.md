@@ -187,10 +187,10 @@ Measured on the `0.1.0-alpha.1` build:
 
 | Flavor | Raw wasm | Brotli | Gzip | Gate |
 | --- | ---: | ---: | ---: | --- |
-| default | 1.59 MiB | 501 KiB | 675 KiB | 3.3 MiB raw / 900 KiB brotli |
-| orderbook | 0.99 MiB | 330 KiB | 432 KiB | 1.5 MiB raw / 500 KiB brotli |
+| default | 1.63 MiB | 511 KiB | 688 KiB | 3.3 MiB raw / 900 KiB brotli |
+| orderbook | 1.03 MiB | 341 KiB | 447 KiB | 1.5 MiB raw / 500 KiB brotli |
 | signing | 0.31 MiB | 119 KiB | 142 KiB | 0.9 MiB raw / 300 KiB brotli |
-| cloudflare | 1.50 MiB | 478 KiB | 642 KiB | 3.2 MiB raw / 850 KiB brotli / 3,000,000 B gzip (warn at 2,700,000 B) |
+| cloudflare | 1.54 MiB | 489 KiB | 657 KiB | 3.2 MiB raw / 850 KiB brotli / 3,000,000 B gzip (warn at 2,700,000 B) |
 
 The cloudflare flavor's gzip-compressed artifact is below the current
 Cloudflare Workers Free compressed-size limit at the time of measurement.

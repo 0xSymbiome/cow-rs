@@ -100,6 +100,34 @@ where
     future
 }
 
+/// Converts a JavaScript `number` into a native `i64`, rejecting non-integral or
+/// out-of-range values so a lossy float cannot cross the ABI boundary. Used for
+/// the database integers carried as `number` on the TypeScript surface — quote
+/// ids and auction ids — which are non-negative and well within the JavaScript
+/// safe-integer range.
+#[cfg(any(feature = "orderbook", feature = "trading"))]
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "value is validated as a non-negative integer at most 2^53-1 before the cast, so the i64 conversion is exact"
+)]
+pub(crate) fn js_safe_integer_to_i64(
+    value: f64,
+    field: &'static str,
+) -> Result<i64, errors::WasmError> {
+    /// Largest integer a JavaScript `number` represents exactly (2^53 - 1).
+    const MAX_SAFE_INTEGER: f64 = 9_007_199_254_740_991.0;
+    if value.is_finite() && value.fract() == 0.0 && (0.0..=MAX_SAFE_INTEGER).contains(&value) {
+        Ok(value as i64)
+    } else {
+        Err(errors::WasmError::invalid(
+            field,
+            format!(
+                "{field} must be a non-negative integer within the JavaScript safe-integer range"
+            ),
+        ))
+    }
+}
+
 /// Initializes the wasm crate's panic hook once.
 #[wasm_bindgen(js_name = "__cow_sdk_wasm_init")]
 pub fn cow_sdk_wasm_init() {

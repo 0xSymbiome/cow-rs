@@ -191,6 +191,104 @@ pub struct TotalSurplusDto {
     pub total_surplus: Option<String>,
 }
 
+/// One order touched by a solver settlement, mirroring
+/// `cow_sdk_orderbook::SolverCompetitionOrder`.
+#[cfg(feature = "orderbook")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+pub struct SolverCompetitionOrderDto {
+    /// Order UID.
+    pub id: String,
+    /// Sell amount in the upstream decimal-string wire shape.
+    pub sell_amount: String,
+    /// Buy amount in the upstream decimal-string wire shape.
+    pub buy_amount: String,
+    /// Buy-token address, when the service returns it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub buy_token: Option<String>,
+    /// Sell-token address, when the service returns it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sell_token: Option<String>,
+}
+
+/// One solver's settlement entry in a competition, mirroring
+/// `cow_sdk_orderbook::SolverSettlement`.
+#[cfg(feature = "orderbook")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+pub struct SolverSettlementDto {
+    /// On-chain executor address (the zero address for legacy settlements).
+    pub solver_address: String,
+    /// CIP-20 score in the upstream decimal-string wire shape.
+    pub score: String,
+    /// Position in the total ranking.
+    pub ranking: i64,
+    /// Clearing prices keyed by token address (deprecated; empty for recent
+    /// auctions).
+    #[serde(default)]
+    #[tsify(type = "Record<string, string>")]
+    pub clearing_prices: std::collections::BTreeMap<String, String>,
+    /// Orders touched by this settlement.
+    #[serde(default)]
+    pub orders: Vec<SolverCompetitionOrderDto>,
+    /// Whether this solver received the right to execute.
+    pub is_winner: bool,
+    /// Whether this solution was filtered out under CIP-67.
+    pub filtered_out: bool,
+    /// CIP-67 reference score, when available.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reference_score: Option<String>,
+    /// Settlement transaction hash, when available.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tx_hash: Option<String>,
+}
+
+/// Auction snapshot nested in a solver-competition response, mirroring
+/// `cow_sdk_orderbook::CompetitionAuction`.
+#[cfg(feature = "orderbook")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+pub struct CompetitionAuctionDto {
+    /// Order UIDs included in the auction.
+    #[serde(default)]
+    pub orders: Vec<String>,
+    /// Reference prices keyed by token address.
+    #[serde(default)]
+    #[tsify(type = "Record<string, string>")]
+    pub prices: std::collections::BTreeMap<String, String>,
+}
+
+/// Solver-competition result for an auction, mirroring
+/// `cow_sdk_orderbook::SolverCompetitionResponse` (the CIP-67 contract served at
+/// the `/api/v2/solver_competition/*` routes).
+#[cfg(feature = "orderbook")]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+pub struct SolverCompetitionResponseDto {
+    /// Auction identifier.
+    pub auction_id: i64,
+    /// Block the auction started on.
+    pub auction_start_block: u64,
+    /// Block deadline by which the auction must settle.
+    pub auction_deadline_block: u64,
+    /// Winning-solution transaction hashes.
+    #[serde(default)]
+    pub transaction_hashes: Vec<String>,
+    /// CIP-67 per-winning-solver reference scores keyed by solver address.
+    #[serde(default)]
+    #[tsify(type = "Record<string, string>")]
+    pub reference_scores: std::collections::BTreeMap<String, String>,
+    /// Auction snapshot.
+    pub auction: CompetitionAuctionDto,
+    /// Per-solver settlements.
+    #[serde(default)]
+    pub solutions: Vec<SolverSettlementDto>,
+}
+
 /// Resolved quote payload echoed by the orderbook `/quote` response, mirroring
 /// `cow_sdk_orderbook::QuoteData`.
 #[cfg(feature = "orderbook")]

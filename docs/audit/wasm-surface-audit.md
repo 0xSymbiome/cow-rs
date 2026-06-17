@@ -1,7 +1,7 @@
 # WASM Surface Audit
 
 Status: Current
-Last reviewed: 2026-06-15
+Last reviewed: 2026-06-17
 Owning surface: `cow-sdk-wasm` TypeScript-callable wasm-bindgen crate, npm package layout, and JavaScript callback runtime boundary
 Refresh trigger: Changes to `crates/wasm/src/**`, wasm-pack package exports, runtime support claims, wallet callback shapes, or the `JsCallbackHttpTransport` contract
 Related docs:
