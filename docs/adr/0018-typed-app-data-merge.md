@@ -82,7 +82,10 @@ the three defects unreachable without reintroducing an opaque
   `AppdataFromMismatch` detection when the base document carries
   signer metadata, the override-signer precedence, the
   extra-top-level-key preservation, the round-trip idempotency of
-  `params_from_doc(generate_app_data_doc(p)) == p`, and the
+  `params_from_doc(generate_app_data_doc(p)) == p`, the fail-closed
+  rejection when an override shadows a reserved metadata key
+  (`signer`, `hooks`, `flashloan`) with a value the typed extractor
+  rejects, and the
   `metadata.userConsents` array replacement. The typed merge pipeline
   is exercised end-to-end by
   `crates/trading/tests/app_data_merge_contract.rs`.

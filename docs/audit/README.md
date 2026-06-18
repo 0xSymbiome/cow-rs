@@ -70,7 +70,7 @@ record alone.
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [Trading Order Integrity Audit](trading-order-integrity-audit.md) | Standing audit | `cow-sdk-trading` order assembly, bounds validation, app-data merge, and EthFlow owner threading | Balance/same-token policy, builder-terminal parity, local signature validation, the post-sign owner-recovery gate, the `OrderBoundsValidator` client-rejection surface, the typed app-data merge, and EthFlow owner identity | Current | 2026-06-17 |
+| [Trading Order Integrity Audit](trading-order-integrity-audit.md) | Standing audit | `cow-sdk-trading` order assembly, bounds validation, app-data merge, and EthFlow owner threading | Balance/same-token policy, builder-terminal parity, local signature validation, the post-sign owner-recovery gate, the `OrderBoundsValidator` client-rejection surface, the typed app-data merge, and EthFlow owner identity | Current | 2026-06-18 |
 
 ## TypeScript-Callable WASM
 
