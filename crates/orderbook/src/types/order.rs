@@ -762,7 +762,8 @@ pub struct Order {
     /// Executed sell amount before fees.
     #[serde(default)]
     pub executed_sell_amount_before_fees: Amount,
-    /// Executed buy amount.
+    /// Executed buy amount. Defaults to zero and stays `"0"` on the wire until
+    /// the order's first fill, rather than being absent.
     #[serde(default)]
     pub executed_buy_amount: Amount,
     /// Executed fee component, when provided.

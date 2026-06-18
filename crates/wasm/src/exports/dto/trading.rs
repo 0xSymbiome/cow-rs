@@ -111,7 +111,9 @@ pub enum PartnerFeeInput {
 pub struct SwapParametersInput {
     /// Order side.
     pub kind: OrderKindDto,
-    /// Optional owner override.
+    /// Owner override. Optional for the post helpers, which take the owner
+    /// positionally, but required for `getQuote`: quote-only flows resolve no
+    /// signer, so a missing owner is an error there.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub owner: Option<String>,
     /// Sell-token address.

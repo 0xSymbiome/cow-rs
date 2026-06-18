@@ -55,6 +55,7 @@ export declare class TradingClient {
     #private;
     constructor(config: TradingClientConfig);
     buildSellNativeCurrencyTx(order: raw.OrderInput, quoteId: number, from: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<raw.BuiltSellNativeCurrencyTxDto>>;
+    buildSellNativeCurrencyTxFromQuote(quoteResults: raw.QuoteResultsDto, from: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<raw.BuiltSellNativeCurrencyTxDto>>;
     getCowProtocolAllowance(params: raw.AllowanceParametersInput, readContractCallback: ContractReadCallback, options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>;
     buildApprovalTx(params: raw.ApprovalParametersInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<raw.TransactionRequestDto>>;
     getQuote(params: raw.SwapParametersInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<raw.QuoteResultsDto>>;

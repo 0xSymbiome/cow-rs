@@ -81,9 +81,13 @@ impl OrderBookClient {
     /// through the configured transport. Per-call options can override the
     /// constructor timeout or attach an `AbortSignal`.
     ///
+    /// This returns the raw `OrderQuoteResponseDto`, distinct from
+    /// `TradingClient.getQuote`, which returns the richer `QuoteResultsDto`
+    /// carrying `orderToSign` and `amountsAndCosts` for posting.
+    ///
     /// @param request Quote request DTO.
     /// @param options Optional per-call cancellation and timeout settings.
-    /// @returns A versioned envelope containing the quote response.
+    /// @returns A versioned envelope containing the raw quote response.
     /// @throws CowError for invalid input, transport failure, timeout, or cancellation.
     #[wasm_bindgen(
         js_name = "getQuote",
@@ -208,10 +212,14 @@ impl OrderBookClient {
         .await
     }
 
-    /// Builds the public order-details URL for a UID without any network call.
+    /// Builds the orderbook API URL (`/api/v1/orders/{uid}`) for a UID without
+    /// any network call.
+    ///
+    /// This is the canonical machine-readable order handle, not the human-facing
+    /// CoW Explorer page; build the explorer URL in the application.
     ///
     /// @param orderUid Full order UID to link to.
-    /// @returns A versioned envelope containing the order-details URL.
+    /// @returns A versioned envelope containing the orderbook API URL for the order.
     /// @throws CowError for an invalid UID or an unresolved base URL.
     #[wasm_bindgen(
         js_name = "getOrderLink",
@@ -309,10 +317,12 @@ impl OrderBookClient {
     /// Fetches orders owned by an address with optional pagination.
     ///
     /// The owner address is validated before the request is dispatched. The
-    /// response preserves the typed orderbook order shape.
+    /// response preserves the typed orderbook order shape. When `pagination` is
+    /// omitted the request sends the upstream default `limit` of 1000, so an
+    /// account with more orders is truncated unless an explicit page is set.
     ///
     /// @param owner Owner address to query.
-    /// @param pagination Optional offset and limit.
+    /// @param pagination Optional offset and limit; defaults to `limit` 1000 when omitted.
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing matching orders.
     /// @throws CowError for invalid owner, transport failure, timeout, or cancellation.
@@ -400,10 +410,12 @@ impl OrderBookClient {
     ///
     /// Returns the lifetime surplus the protocol has captured for the owner
     /// across its settled orders, in the upstream decimal-string wire shape.
+    /// The value is denominated in the chain's native-token base units (wei,
+    /// 18 decimals), not USD or sell-token atoms.
     ///
     /// @param owner Owner address to query.
     /// @param options Optional per-call cancellation and timeout settings.
-    /// @returns A versioned envelope containing the total-surplus response.
+    /// @returns A versioned envelope containing the total-surplus response in native-token wei.
     /// @throws CowError for invalid owner, transport failure, or timeout.
     #[wasm_bindgen(
         js_name = "getTotalSurplus",

@@ -25,6 +25,11 @@ const ERC20_ALLOWANCE_ABI_JSON: &str = r#"[{"type":"function","name":"allowance"
 
 /// Reads the `CoW` Protocol vault-relayer allowance.
 ///
+/// The spender is the canonical vault relayer for the chain and environment
+/// unless `vault_relayer_override` is set. The provider's `read_contract` must
+/// return the ABI-decoded `uint256` allowance as a decimal string or JSON
+/// number; a raw `0x`-hex `eth_call` payload is rejected.
+///
 /// # Errors
 ///
 /// Returns [`TradingError`] when the contract call cannot be encoded, the

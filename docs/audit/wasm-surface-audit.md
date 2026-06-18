@@ -93,8 +93,12 @@ and exercised behaviorally by `wasm_surface_contract.rs` and
 `app_data`, `version`, `order_link`, lookup, status/surplus, and the v2
 solver-competition routes) are surfaced. Trading surfaces quote/post/limit/swap
 plus builder-form transactions (`buildPresignTx`, `buildCancelOrderTx`,
-`buildSellNativeCurrencyTx`, `buildApprovalTx`) and the allowance read,
-completing the read-allowance-then-approve path. Signing surfaces typed-data,
+`buildSellNativeCurrencyTx`, `buildSellNativeCurrencyTxFromQuote`,
+`buildApprovalTx`) and the allowance read, completing the
+read-allowance-then-approve path. `buildSellNativeCurrencyTxFromQuote` is the
+native-sell sibling of `postSwapOrderFromQuote`: it derives the EthFlow
+transaction from a `getQuote` result, failing closed when the quote was not a
+native-currency sell. Signing surfaces typed-data,
 EIP-1193, digest, EIP-1271, and cancellation signing plus the deterministic
 helpers. App-data, subgraph (totals, daily/hourly volume, arbitrary GraphQL),
 and the consumer-relevant contracts surface (decoders, deployment lookup,

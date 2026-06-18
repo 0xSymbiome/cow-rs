@@ -1,287 +1,240 @@
 # @symbiome-forge/cow-sdk-wasm
 
-TypeScript-callable WebAssembly bindings for the CoW Protocol Rust SDK.
+[CoW Protocol](https://cow.fi)'s Rust SDK, compiled to WebAssembly for JavaScript
+and TypeScript. One protocol implementation runs in both runtimes, so the EIP-712
+and EIP-1271 signatures a browser produces are byte-identical to the Rust
+service's — checked against the upstream `cowprotocol/services` and
+`cowprotocol/contracts` fixtures in CI, not asserted in prose.
 
 ```sh
 npm install @symbiome-forge/cow-sdk-wasm@alpha
 ```
 
-The package exposes a TypeScript facade over deterministic Rust protocol logic.
-JavaScript and TypeScript consumers get typed DTOs, explicit wallet and HTTP
-callbacks, per-call cancellation, per-call timeouts, and flavor-specific imports
-without depending on a specific wallet library.
+A TypeScript facade over deterministic Rust protocol logic: typed DTOs, explicit
+wallet and HTTP callbacks, per-call cancellation and timeouts, and
+flavor-specific imports — with no bundled wallet library.
 
-## When to use this SDK
+## Why this package
 
-| You are building... | Choose | Why |
+- **One source of truth.** Quote echoing, order-UID packing, app-data hashing,
+  and the EIP-712 / EIP-1271 signing path are the same Rust code a native
+  `cow-sdk` service runs, compiled to wasm — so protocol drift between a Rust
+  backend and a TypeScript frontend cannot happen. Every transform is proven
+  byte-for-byte against pinned upstream fixtures on each CI run.
+- **No private key ever enters the SDK.** Signing is a callback you supply (viem,
+  ethers, an EIP-1193 wallet, or a Safe). There is no code path — not even a
+  feature-gated one — that accepts a private key or holds a wallet inside wasm
+  memory. The package produces typed data and transaction requests; your wallet
+  signs and submits.
+- **The TypeScript surface is locked.** The public `.d.ts` for every flavor is a
+  committed snapshot that CI diffs on every build, so a contract change is a
+  reviewed diff, never a silent drift — the wasm analog of `cargo-public-api`.
+- **Honest about fit.** For a standard browser dapp where minimal bundle size
+  dominates, upstream
+  [`@cowprotocol/cow-sdk`](https://www.npmjs.com/package/@cowprotocol/cow-sdk) is
+  smaller — use it. This package is for Rust ↔ TypeScript parity, single-source
+  embedding, edge runtimes, and embeddable signing.
+
+## Pick your import
+
+| Import | Surface | Use when |
 | --- | --- | --- |
-| Browser dApp — quote, sign, post, cancel (full order lifecycle) with viem, ethers, wagmi, or an EIP-1193 wallet | `@symbiome-forge/cow-sdk-wasm/trading` | Order lifecycle plus app-data, built for a browser bundler (Vite, webpack); wallet stack stays outside the package behind typed callbacks |
-| Browser dApp — orderbook reads and cancellation only | `@symbiome-forge/cow-sdk-wasm/orderbook` | Smaller read-focused subset, no trading or app-data |
-| Node.js 22 or 24 LTS backend running order flow | `@symbiome-forge/cow-sdk-wasm/trading` | Same order-lifecycle surface on the Node target, no browser polyfills |
-| Edge runtime — Cloudflare Workers, Deno, or Vercel Edge | `@symbiome-forge/cow-sdk-wasm/trading/edge` | The `trading` flavour's web-target build with explicit wasm module initialization |
-| Signer service or HSM proxy | `@symbiome-forge/cow-sdk-wasm/signing` | Signing primitives without orderbook, trading, subgraph, or IPFS clients |
-| Everything, including subgraph analytics and IPFS app-data | `@symbiome-forge/cow-sdk-wasm` | The full default surface |
-| Native Rust service, bot, solver, or treasury automation | `cow-sdk` | Avoids wasm-bindgen and npm packaging entirely |
-| Rust app compiled to browser WASM | `cow-sdk` with `cow-sdk-core`'s browser `FetchTransport` (the `wasm32-unknown-unknown` `transport::fetch` module) | Rust-on-wasm path; this package is for JavaScript hosts |
+| `@symbiome-forge/cow-sdk-wasm/trading` | Full order lifecycle: quote, sign, post, cancel, app-data | A browser dapp, a Node backend, or an edge runtime running order flow — one feature set serves all three; pick the runtime by import |
+| `@symbiome-forge/cow-sdk-wasm/trading/edge` | The `trading` flavor's web-target build, with explicit wasm init | Cloudflare Workers, Deno, or Vercel Edge; pair with `…/trading/edge/wasm` for the module asset |
+| `@symbiome-forge/cow-sdk-wasm/orderbook` | Orderbook reads, cancellation, and signing — no trading or app-data | A read-focused dapp that does not post orders |
+| `@symbiome-forge/cow-sdk-wasm/signing` | Signing, UID, EIP-1271, deployment, and version helpers — the smallest flavor | A signer service or HSM-facing adapter |
+| `@symbiome-forge/cow-sdk-wasm` | Everything above plus subgraph analytics and IPFS app-data | General use that needs subgraph or IPFS |
 
-The same `trading` flavour serves a browser dApp (bundler target), a Node backend
-(nodejs target), and an edge runtime (web target) from one feature set — pick the
-import by runtime; the package resolves the target through standard conditional
-exports, with `./trading/edge` as the explicit entry for Cloudflare Workers.
+The `trading` flavor resolves the right target automatically through standard
+conditional exports — `node` and `browser` for bundlers and Node, and `workerd` /
+`deno` / `edge-light` / `bun` for edge — with `./trading/edge` as the explicit
+Workers entry. Public imports go through these subpaths; do not import from
+`dist/raw` or generated wasm-pack directories.
 
-## Not in this crate
+Building a **native Rust** service, or a Rust app you compile to wasm yourself?
+Use [`cow-sdk`](https://crates.io/crates/cow-sdk) — this package is for
+JavaScript hosts.
 
-Use the upstream TypeScript SDK packages until these capability families ship
-in `cow-rs`:
+## Quickstart — a browser swap, end to end
 
-- TWAP and composable orders.
-- Cross-chain bridging.
-- Cow Shed account abstraction.
-- Flash-loan helpers.
-- Weiroll command planning.
-- Hardware wallet adapters.
-- On-chain transaction submission; this package emits typed data or
-  transaction requests and lets the caller's wallet submit.
-- WASI, WebAssembly components, TinyGo, Blazor, AssemblyScript guests, and
-  `no_std` embedded targets.
-
-## Quickstart
-
-### Node.js 22 or 24 with viem
+Quote, then reuse that quote to sign and post in one call, so the amounts the user
+confirms are the amounts that get posted — no second quote, no drift between
+preview and signature. The wallet signs a typed-data envelope the SDK hands it;
+no key reaches the package.
 
 ```ts
-import { TradingClient } from "@symbiome-forge/cow-sdk-wasm";
+import { TradingClient } from "@symbiome-forge/cow-sdk-wasm/trading";
+import { createWalletClient, custom } from "viem";
+import { mainnet } from "viem/chains";
+
+const [owner] = await window.ethereum.request({ method: "eth_requestAccounts" });
+const wallet = createWalletClient({ chain: mainnet, transport: custom(window.ethereum) });
 
 const trading = new TradingClient({
   chainId: 1,
   env: "prod",
-  appCode: "my-node-service",
-  transport: { kind: "fetch" },
-  transportPolicy: {
-    retryPolicy: { maxAttempts: 3, baseDelayMs: 200 },
-    userAgent: "my-node-service/1.0"
-  }
+  appCode: "my-dapp",
+  transport: { kind: "fetch" }
 });
 
-// `getQuote` returns a fully resolved `QuoteResultsDto` envelope.
+// 1. Quote. `getQuote` returns a fully resolved QuoteResultsDto envelope.
+//    `owner` is required for a quote-only call.
 const quote = await trading.getQuote({
   kind: "sell",
-  sellToken: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
-  buyToken: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+  owner,
+  sellToken: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", // WETH
+  buyToken: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",  // USDC
   amount: "1000000000000000000"
 });
 
-// Reuse the quote to sign and post in one call; `quote.value` is the
-// `QuoteResultsDto` and the callback receives the EIP-712 envelope.
+// 2. Reuse the quote to sign and post. The callback receives the EIP-712
+//    envelope and returns the signature — the key stays in the wallet.
 const result = await trading.postSwapOrderFromQuote(
   quote.value,
-  "0x1111111111111111111111111111111111111111",
-  async (envelope) => walletClient.signTypedData(envelope),
-  { walletConfig: { timeoutMs: 15_000 } }
-);
-// `result.value.orderId` is the posted order UID.
-```
-
-### Browser with `window.ethereum`
-
-```ts
-import { signOrderWithEip1193 } from "@symbiome-forge/cow-sdk-wasm";
-
-const ethereum = window.ethereum;
-const [owner] = await ethereum.request({ method: "eth_requestAccounts" });
-const abortController = new AbortController();
-
-// The order to sign: build it yourself or map it from a fetched quote.
-const order = {
-  sellToken: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
-  buyToken: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-  receiver: owner,
-  sellAmount: "1000000000000000000",
-  buyAmount: "3500000000",
-  validTo: Math.floor(Date.now() / 1000) + 3_600,
-  appData: "0x0000000000000000000000000000000000000000000000000000000000000000",
-  feeAmount: "0",
-  kind: "sell",
-  partiallyFillable: false,
-  sellTokenBalance: "erc20",
-  buyTokenBalance: "erc20"
-};
-
-const signed = await signOrderWithEip1193(
-  order,
-  1,
   owner,
-  (rpc) => ethereum.request(rpc),
-  { signal: abortController.signal, walletConfig: { timeoutMs: 20_000 } }
+  (envelope) => {
+    // viem derives EIP712Domain from `domain`; drop it from `types`.
+    const types = Object.fromEntries(
+      Object.entries(envelope.types).filter(([name]) => name !== "EIP712Domain")
+    );
+    return wallet.signTypedData({
+      account: owner,
+      domain: envelope.domain,
+      types,
+      primaryType: envelope.primaryType,
+      message: envelope.message
+    });
+  },
+  { walletConfig: { timeoutMs: 20_000 } }
 );
-// `signed.value` is the SignedOrderDto.
+
+console.log(`https://explorer.cow.fi/mainnet/orders/${result.value.orderId}`);
+trading.dispose();
 ```
 
-### Browser with MetaMask `eth_signTypedData_v4`
+Selling the native asset is the same shape: `getQuote`, then
+`buildSellNativeCurrencyTxFromQuote(quote.value, owner)`, which returns the EthFlow
+transaction request for the wallet to submit.
 
-When the wallet exposes the typed-data JSON-RPC method directly, callers can
-pass the envelope to `eth_signTypedData_v4` from inside the typed-data signer
-callback. The helper hands the callback a typed-data envelope — plain `domain`,
-`types`, `primaryType`, and `message` objects — that the callback serializes and
-returns the signature string for.
+### Cloudflare Worker (edge)
 
-```ts
-import { signOrderWithTypedDataSigner } from "@symbiome-forge/cow-sdk-wasm";
-
-const [owner] = await window.ethereum.request({ method: "eth_requestAccounts" });
-
-const signed = await signOrderWithTypedDataSigner(order, 1, owner, async (envelope) => {
-  const signature = await window.ethereum.request({
-    method: "eth_signTypedData_v4",
-    params: [owner, JSON.stringify(envelope)]
-  });
-  if (typeof signature !== "string") {
-    throw new Error("wallet did not return a signature");
-  }
-  return signature;
-});
-```
-
-### Cloudflare Worker
+Workers cannot compile wasm from bytes at runtime, so the edge build takes the
+statically imported module through an explicit `initialize`.
 
 ```ts
-import initialize, {
-  OrderBookClient
-} from "@symbiome-forge/cow-sdk-wasm/trading/edge";
+import initialize, { OrderBookClient } from "@symbiome-forge/cow-sdk-wasm/trading/edge";
 import wasmModule from "@symbiome-forge/cow-sdk-wasm/trading/edge/wasm";
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     await initialize(wasmModule);
-
     const client = new OrderBookClient({
       chainId: 1,
       env: "prod",
       apiKey: env.COW_PARTNER_API_KEY ?? null,
-      transport: { kind: "fetch" },
-      transportPolicy: { userAgent: "my-worker/1.0" }
+      transport: { kind: "fetch" }
     });
-
-    const quote = await client.getQuote(await request.json(), {
-      timeoutMs: 8_000
-    });
+    const quote = await client.getQuote(await request.json(), { timeoutMs: 8_000 });
     client.dispose();
-
     return Response.json(quote);
   }
 };
 ```
 
-## Choosing your import
+### Lower-level signing
 
-| Import | Surface | Use when |
-| --- | --- | --- |
-| `@symbiome-forge/cow-sdk-wasm` | Default facade with orderbook, signing, app-data, IPFS, trading, and subgraph | General TypeScript or Node use that needs subgraph or IPFS |
-| `@symbiome-forge/cow-sdk-wasm/trading` | Orderbook, trading, signing, app-data, and cancellation — the full order lifecycle | Browser dApps, Node backends, and edge runtimes running order flow |
-| `@symbiome-forge/cow-sdk-wasm/orderbook` | Orderbook client, cancellation helpers, and signing helpers | Read-focused dApps that do not post orders |
-| `@symbiome-forge/cow-sdk-wasm/signing` | Signing, UID, EIP-1271, deployment, and version helpers | Signer services and HSM-facing adapters |
-| `@symbiome-forge/cow-sdk-wasm/trading/edge` | The `trading` flavour's web-target facade | Edge runtimes (Cloudflare Workers, Deno, Vercel Edge) |
-| `@symbiome-forge/cow-sdk-wasm/trading/edge/wasm` | Raw Worker wasm module asset | Pass to the `initialize` helper |
+For control over an order you build yourself, sign through an EIP-1193 wallet with
+`signOrderWithEip1193(order, chainId, owner, (rpc) => ethereum.request(rpc))`, or
+hand a typed-data method directly to `signOrderWithTypedDataSigner`. Both return a
+`SignedOrderDto` you submit with `OrderBookClient.sendOrder`.
 
-Do not import from `dist/raw` or generated wasm-pack target directories. Raw
-wasm-bindgen output is package-internal; public imports go through the facade
-subpaths above.
+## The callback boundary
 
-## Performance and bundle size
+The package names host responsibilities as typed callbacks and never reaches past
+them for a key or a provider:
 
-The package is built with release-size settings and a `wasm-opt -Oz` post-pass.
-Measured on the current alpha build:
+- `TypedDataSignerCallback` — signs an EIP-712 typed-data envelope.
+- `Eip1193RequestCallback` — answers EIP-1193 requests from an injected or hosted
+  provider.
+- `DigestSignerCallback` — signs a raw digest for explicit EthSign flows.
+- `CustomEip1271Callback` — returns a smart-account's final EIP-1271 signature.
+- `ContractReadCallback` — performs a read-only `eth_call` and returns the
+  ABI-decoded value as a decimal string or number (e.g. viem's `readContract`
+  result via `String(value)`).
+- `CowFetchCallback` — dispatches HTTP for Node, Workers, Deno, and custom hosts.
 
-| Flavor | Raw wasm | Brotli | Gzip | Gate |
-| --- | ---: | ---: | ---: | --- |
-| default | 1.63 MiB | 511 KiB | 689 KiB | 3.3 MiB raw / 900 KiB brotli |
-| orderbook | 1.03 MiB | 341 KiB | 447 KiB | 1.5 MiB raw / 500 KiB brotli |
-| signing | 0.31 MiB | 120 KiB | 142 KiB | 0.9 MiB raw / 300 KiB brotli |
-| trading | 1.54 MiB | 489 KiB | 657 KiB | 3.2 MiB raw / 850 KiB brotli / 3,000,000 B gzip (warn at 2,700,000 B) |
-
-The `trading` flavour emits one wasm binary shared across its bundler, nodejs, and
-web targets. Its web-target gzip-compressed artifact is below the current
-Cloudflare Workers Free compressed-size limit at the time of measurement.
-Full Workers support still requires release-bundle verification and Worker
-startup measurement; the release pipeline enforces the gzip byte budget on
-every build, but Wrangler deployment and `startup_time_ms` telemetry are
-separate operational gates.
-
-Cloudflare Workers cold starts are runtime-sensitive. The package treats
-300 ms as the warning threshold, 500 ms as the release gate, and 1 second as
-the platform-limit budget that Worker consumers should stay well below.
-
-## Transport configuration
-
-Every client accepts one transport:
-
-```ts
-transport: { kind: "fetch" }
-transport: { kind: "fetch", fetch: customFetch }
-transport: { kind: "callback", callback: customHttpCallback }
-```
-
-Use `fetch` for browser, Node, and Worker runtimes that expose a standards
-compatible `fetch`. Use `callback` when the host must own request dispatch,
-fixtures, proxying, custom authentication, or observability.
-
-Every client also accepts optional `transportPolicy` settings for retry,
-rate-limit, jitter, and user-agent behavior.
+A callback may return a plain value, a Promise, or a thenable. Clients expose
+`dispose()` and `[Symbol.dispose]` (so `using client = new …` works) and release
+the callbacks they hold on disposal.
 
 ## Cancellation and timeouts
 
-Every call accepts an optional `signal` (an `AbortSignal`) and a per-call
-`timeoutMs`. Aborting the signal rejects the pending call promptly with a
-`cancelled` `CowError`; `timeoutMs` rejects with a `timeout` error. Both resolve
-the *awaited call* — an already-dispatched HTTP request may keep running in the
-background until it completes or the timeout elapses, so treat cancellation as
-"stop waiting," not a guarantee that the network request is halted.
+Every call accepts an optional `signal` (an `AbortSignal`) and `timeoutMs`.
+Aborting the signal rejects the pending call with a `cancelled` `CowError`;
+`timeoutMs` rejects with a `timeout` error. Both resolve the *awaited call* — an
+already-dispatched HTTP request may keep running in the background until it
+completes or the timeout elapses, so treat cancellation as "stop waiting," not a
+guarantee that the network request is halted.
 
-## Architecture
+## Transport
 
-The TypeScript facade is the public package contract. It:
+Every client takes one transport:
 
-- exposes camelCase TypeScript APIs;
-- exposes `dispose()` and `[Symbol.dispose]` (so `using client = new …` works)
-  while hiding the raw wasm-bindgen `free()` handle;
-- maps raw wasm errors into `CowError`;
-- adapts `transport: { kind: "fetch" }` into the callback HTTP ABI;
-- keeps wallet libraries outside the package behind named callback types.
+```ts
+transport: { kind: "fetch" }                       // standards `fetch` (browser, Node, Workers)
+transport: { kind: "fetch", fetch: customFetch }   // a fetch you supply
+transport: { kind: "callback", callback }          // you own request dispatch
+```
 
-## API reference
+Use `callback` when the host must own dispatch for fixtures, proxying, custom
+authentication, or observability. Each client also takes optional
+`transportPolicy` settings for retry, rate-limit, jitter, and user-agent behavior.
 
-The declaration snapshots under `crates/wasm/snapshots/facade/` show the
-public TypeScript surface for each flavor. Key exports include:
+## Errors
 
-- clients: `OrderBookClient`, `TradingClient`, `SubgraphClient`, `IpfsClient`;
-- signing helpers: `signOrderWithTypedDataSigner`, `signOrderWithEip1193`,
-  `signOrderEthSignDigest`, `signOrderWithEip1271`,
-  `signOrderWithCustomEip1271`;
-- cancellation helpers: `signCancellationWithTypedDataSigner`,
-  `signCancellationWithEip1193`, `signCancellationEthSignDigest`,
-  `buildCancelOrderTx`, `buildPresignTx`;
-- pure helpers: `domainSeparator`, `orderTypedData`, `computeOrderUid`,
-  `deploymentAddresses`, `supportedChainIds`, `appDataInfo`,
-  `validateAppDataDoc`, `appDataDoc`, `appDataHexToCid`,
-  `cidToAppDataHex`, `wasmVersion`.
+JavaScript-visible failures are a typed `CowError` discriminated union — transport,
+app-data, signing, orderbook, subgraph, trading, wallet, cancellation, and
+internal variants — with low-cardinality fields visible and URLs, headers, bodies,
+and secret-shaped values redacted. The `orderbook` variant carries `retryable` and
+an optional `retryAfterMs` parsed from the response `Retry-After`, mirroring the
+native `OrderbookError::is_retryable` / `backoff_hint`, so a JavaScript retry loop
+reaches the same verdict as the Rust one.
 
-## When to use this package vs the upstream TypeScript SDK
+## Bundle size
 
-For most browser dapps, web apps, and CowSwap-style UIs, the upstream
-[`@cowprotocol/cow-sdk`](https://www.npmjs.com/package/@cowprotocol/cow-sdk)
-is the recommended choice; it is substantially smaller at equivalent feature
-subsets. This package is appropriate for specialized cases:
+Built with release-size settings and a `wasm-opt -Oz` pass; measured on the
+current alpha build (gzip is the compressed-transfer figure):
 
-- TypeScript services that need byte-for-byte parity with the Rust SDK's
-  EIP-712 + EIP-1271 signing path.
-- Single-source-of-truth Rust + TypeScript embedding (one implementation
-  across both runtimes).
-- Cloudflare Workers (size-compatible with the current Workers Free
-  compressed-size limit at the time of measurement; the `trading` flavour's
-  edge build is built and tested end-to-end in CI (Workers Vitest), within the
-  Workers compressed-size budget).
-- Embeddable signing helpers (the `./signing` flavor is the smallest).
+| Flavor | Raw wasm | Brotli | Gzip | Release gate |
+| --- | ---: | ---: | ---: | --- |
+| signing | 0.31 MiB | 120 KiB | 142 KiB | 0.9 MiB raw / 300 KiB brotli |
+| orderbook | 1.02 MiB | 341 KiB | 447 KiB | 1.5 MiB raw / 500 KiB brotli |
+| trading | 1.54 MiB | 490 KiB | 659 KiB | 3.2 MiB raw / 850 KiB brotli |
+| default | 1.63 MiB | 513 KiB | 692 KiB | 3.3 MiB raw / 900 KiB brotli |
 
-The "When to use this SDK" table at the top of this README routes consumers
-by use case. The Quickstart sections above show the supported import shapes
-for the most common runtimes.
+The `trading` flavor emits one wasm binary across its bundler, Node, and web
+targets; its web-target gzip size is within the current Cloudflare Workers Free
+compressed-size limit, enforced as a byte budget on every build. End-to-end
+Workers support also depends on `wrangler deploy --dry-run` verification and a
+Worker startup-time gate, tracked separately.
+
+## Not in this package
+
+Use the upstream TypeScript SDK for these until they ship in `cow-rs`: TWAP and
+composable orders, cross-chain bridging, CoW Shed account abstraction, flash-loan
+helpers, and hardware-wallet adapters. This package emits typed data or
+transaction requests and lets the caller's wallet submit on-chain; it ships no
+WASI, WebAssembly-component, or `no_std` guest target.
+
+## More
+
+- The public TypeScript surface for each flavor is the committed declaration
+  snapshot under `crates/wasm/snapshots/facade/`.
+- [Architecture](https://github.com/0xSymbiome/cow-rs/blob/main/docs/architecture.md),
+  [Observability](https://github.com/0xSymbiome/cow-rs/blob/main/docs/observability.md),
+  and the
+  [WASM Surface Audit](https://github.com/0xSymbiome/cow-rs/blob/main/docs/audit/wasm-surface-audit.md).
+- Runnable browser, Node, and Worker examples live in the
+  [`cow-sdk-examples`](https://github.com/0xSymbiome/cow-sdk-examples) repository.
+
+Licensed under GPL-3.0-or-later.

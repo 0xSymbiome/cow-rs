@@ -30,6 +30,10 @@ impl From<pure::dto::DeploymentAddresses> for DeploymentAddressesDto {
 }
 
 /// Contract-read callback request.
+///
+/// The host callback receiving this request must perform the read and return
+/// the ABI-decoded result as a decimal string or JSON number, not the raw
+/// `0x`-hex `eth_call` payload.
 #[cfg(feature = "trading")]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
