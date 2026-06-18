@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.4] - 2026-06-18
+
+### Bug Fixes
+
+- *(release)* Re-lock the fuzz crate on release and format the version-surface module ([`e4a8798`](https://github.com/0xSymbiome/cow-rs/commit/e4a8798fb085b430b0eba3a61d6261fbadcd177b))
+
+### Features
+
+- [**breaking**] *(wasm)* Serve the trading flavour on bundler, nodejs, and web targets (#8) ([`3140635`](https://github.com/0xSymbiome/cow-rs/commit/3140635584690c35c07ec87d2341f850abe22522))
+
 ## [0.1.0-alpha.3] - 2026-06-17
 
 ### Bug Fixes

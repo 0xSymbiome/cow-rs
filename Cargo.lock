@@ -1372,7 +1372,7 @@ checksum = "773648b94d0e5d620f64f280777445740e61fe701025087ec8b57f45c791888b"
 
 [[package]]
 name = "cow-rs-workspace-tests"
-version = "0.1.0-alpha.3"
+version = "0.1.0-alpha.4"
 dependencies = [
  "alloy-primitives",
  "cow-sdk",
@@ -1391,7 +1391,7 @@ dependencies = [
 
 [[package]]
 name = "cow-sdk"
-version = "0.1.0-alpha.3"
+version = "0.1.0-alpha.4"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-types",
@@ -1414,7 +1414,7 @@ dependencies = [
 
 [[package]]
 name = "cow-sdk-alloy"
-version = "0.1.0-alpha.3"
+version = "0.1.0-alpha.4"
 dependencies = [
  "alloy-network",
  "alloy-primitives",
@@ -1439,7 +1439,7 @@ dependencies = [
 
 [[package]]
 name = "cow-sdk-alloy-provider"
-version = "0.1.0-alpha.3"
+version = "0.1.0-alpha.4"
 dependencies = [
  "alloy-consensus",
  "alloy-dyn-abi",
@@ -1462,7 +1462,7 @@ dependencies = [
 
 [[package]]
 name = "cow-sdk-alloy-signer"
-version = "0.1.0-alpha.3"
+version = "0.1.0-alpha.4"
 dependencies = [
  "alloy-dyn-abi",
  "alloy-primitives",
@@ -1482,7 +1482,7 @@ dependencies = [
 
 [[package]]
 name = "cow-sdk-app-data"
-version = "0.1.0-alpha.3"
+version = "0.1.0-alpha.4"
 dependencies = [
  "alloy-primitives",
  "alloy-serde 1.8.3",
@@ -1505,7 +1505,7 @@ dependencies = [
 
 [[package]]
 name = "cow-sdk-contracts"
-version = "0.1.0-alpha.3"
+version = "0.1.0-alpha.4"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-types",
@@ -1529,7 +1529,7 @@ dependencies = [
 
 [[package]]
 name = "cow-sdk-core"
-version = "0.1.0-alpha.3"
+version = "0.1.0-alpha.4"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-types",
@@ -1564,7 +1564,7 @@ dependencies = [
 
 [[package]]
 name = "cow-sdk-examples-native"
-version = "0.1.0-alpha.3"
+version = "0.1.0-alpha.4"
 dependencies = [
  "cow-sdk",
  "serde",
@@ -1575,7 +1575,7 @@ dependencies = [
 
 [[package]]
 name = "cow-sdk-orderbook"
-version = "0.1.0-alpha.3"
+version = "0.1.0-alpha.4"
 dependencies = [
  "async-trait",
  "cow-sdk-core",
@@ -1596,7 +1596,7 @@ dependencies = [
 
 [[package]]
 name = "cow-sdk-signing"
-version = "0.1.0-alpha.3"
+version = "0.1.0-alpha.4"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-types",
@@ -1620,7 +1620,7 @@ dependencies = [
 
 [[package]]
 name = "cow-sdk-subgraph"
-version = "0.1.0-alpha.3"
+version = "0.1.0-alpha.4"
 dependencies = [
  "cow-sdk-core",
  "cow-sdk-test-utils",
@@ -1637,7 +1637,7 @@ dependencies = [
 
 [[package]]
 name = "cow-sdk-test"
-version = "0.1.0-alpha.3"
+version = "0.1.0-alpha.4"
 dependencies = [
  "alloy-dyn-abi",
  "alloy-primitives",
@@ -1653,7 +1653,7 @@ dependencies = [
 
 [[package]]
 name = "cow-sdk-test-utils"
-version = "0.1.0-alpha.3"
+version = "0.1.0-alpha.4"
 dependencies = [
  "alloy-primitives",
  "async-trait",
@@ -1668,7 +1668,7 @@ dependencies = [
 
 [[package]]
 name = "cow-sdk-trading"
-version = "0.1.0-alpha.3"
+version = "0.1.0-alpha.4"
 dependencies = [
  "alloy-dyn-abi",
  "alloy-primitives",
@@ -1697,7 +1697,7 @@ dependencies = [
 
 [[package]]
 name = "cow-sdk-wasm"
-version = "0.1.0-alpha.3"
+version = "0.1.0-alpha.4"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-types",
@@ -5518,7 +5518,7 @@ dependencies = [
 
 [[package]]
 name = "xtask"
-version = "0.1.0-alpha.3"
+version = "0.1.0-alpha.4"
 dependencies = [
  "anyhow",
  "clap",

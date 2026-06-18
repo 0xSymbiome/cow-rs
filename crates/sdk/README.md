@@ -4,7 +4,7 @@ Primary Rust SDK facade for [CoW Protocol](https://cow.fi).
 
 > ⚠️ **Alpha — `0.1.0-alpha`.** Pre-release and not security-audited; the public
 > API may change before `0.1.0`. It is published as a pre-release, so Cargo
-> selects it only when you opt in (`cow-sdk = "0.1.0-alpha.3"`). Review it
+> selects it only when you opt in (`cow-sdk = "0.1.0-alpha.4"`). Review it
 > yourself before relying on it with real funds.
 
 `cow-sdk` is the curated first-touch entry point of the `cow-rs` crate
@@ -22,7 +22,7 @@ re-export through the facade as cow-owned
 
 ```toml
 [dependencies]
-cow-sdk = "0.1.0-alpha.3"
+cow-sdk = "0.1.0-alpha.4"
 ```
 
 ## Feature flags
@@ -43,7 +43,7 @@ use. The HTTP retry, rate-limit, and `Retry-After` transport policy is always on
 
 ```toml
 [dependencies]
-cow-sdk = { version = "0.1.0-alpha.3", features = ["subgraph", "cow-shed"] }
+cow-sdk = { version = "0.1.0-alpha.4", features = ["subgraph", "cow-shed"] }
 ```
 
 ## Native default example

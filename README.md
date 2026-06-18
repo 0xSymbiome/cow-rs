@@ -1,6 +1,6 @@
 # cow-rs
 
-[![CI](https://github.com/0xSymbiome/cow-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/0xSymbiome/cow-rs/actions/workflows/ci.yml) [![docs.rs](https://img.shields.io/docsrs/cow-sdk?label=docs.rs)](https://docs.rs/cow-sdk) [![crates.io](https://img.shields.io/static/v1?label=crates.io&message=v0.1.0-alpha.3&color=e6a96d)](https://crates.io/crates/cow-sdk) [![npm](https://img.shields.io/npm/v/@symbiome-forge/cow-sdk-wasm/alpha?label=npm&color=cb3837)](https://www.npmjs.com/package/@symbiome-forge/cow-sdk-wasm) [![MSRV 1.94.0](https://img.shields.io/badge/MSRV-1.94.0-0A7BBB)](docs/release-checklist.md#3-compatibility-and-host-coverage) [![License GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-1F6FEB)](LICENSE)
+[![CI](https://github.com/0xSymbiome/cow-rs/actions/workflows/ci.yml/badge.svg)](https://github.com/0xSymbiome/cow-rs/actions/workflows/ci.yml) [![docs.rs](https://img.shields.io/docsrs/cow-sdk?label=docs.rs)](https://docs.rs/cow-sdk) [![crates.io](https://img.shields.io/static/v1?label=crates.io&message=v0.1.0-alpha.4&color=e6a96d)](https://crates.io/crates/cow-sdk) [![npm](https://img.shields.io/npm/v/@symbiome-forge/cow-sdk-wasm/alpha?label=npm&color=cb3837)](https://www.npmjs.com/package/@symbiome-forge/cow-sdk-wasm) [![MSRV 1.94.0](https://img.shields.io/badge/MSRV-1.94.0-0A7BBB)](docs/release-checklist.md#3-compatibility-and-host-coverage) [![License GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-1F6FEB)](LICENSE)
 
 `cow-rs` is a model-first Rust SDK for [CoW Protocol](https://cow.fi): build and
 sign orders, drive the orderbook, and decode settlement across every supported
@@ -42,15 +42,15 @@ CI policy, so correctness is enforced by the build rather than trusted to memory
 
 ```toml
 [dependencies]
-cow-sdk = "0.1.0-alpha.3"
+cow-sdk = "0.1.0-alpha.4"
 ```
 
 `cow-sdk` is in alpha, so the pre-release is pinned explicitly; `cargo add
-cow-sdk@0.1.0-alpha.3` does the same. JavaScript and TypeScript consumers install
+cow-sdk@0.1.0-alpha.4` does the same. JavaScript and TypeScript consumers install
 the wasm bindings from npm:
 
 ```sh
-npm install @symbiome-forge/cow-sdk-wasm@0.1.0-alpha.3
+npm install @symbiome-forge/cow-sdk-wasm@0.1.0-alpha.4
 ```
 
 Published as [`cow-sdk`](https://crates.io/crates/cow-sdk) on crates.io and
@@ -164,7 +164,7 @@ The shipped crate family and deferred capability boundaries are listed in the
 [First-Release Scope](docs/parity.md#first-release-scope).
 
 Install is one line (see [Install](#install) above): `cargo add
-cow-sdk@0.1.0-alpha.3` for Rust, `npm install @symbiome-forge/cow-sdk-wasm@0.1.0-alpha.3`
+cow-sdk@0.1.0-alpha.4` for Rust, `npm install @symbiome-forge/cow-sdk-wasm@0.1.0-alpha.4`
 for JavaScript and TypeScript.
 
 Use `appCode` as the stable identifier for the application or integration
@@ -224,7 +224,7 @@ configure transport explicitly through `transport: { kind: "fetch" }` or
 | Change history | [CHANGELOG.md](CHANGELOG.md) tracks the current unreleased public contract and future release notes. |
 | Security disclosure | [SECURITY.md](SECURITY.md) defines the private repository reporting path and protocol-level escalation route. |
 | Chain-RPC runtime neutrality | The default facade remains provider-neutral. Native Alloy runtime dependencies are limited to the opt-in Alloy adapter crates and facade features, and CI gates the allow-list. |
-| Publication state | `cow-sdk` `0.1.0-alpha.3` is published on crates.io and `@symbiome-forge/cow-sdk-wasm` `0.1.0-alpha.3` on npm. This is a pre-release: the public surface is stabilizing toward `0.1.0` and may change between alpha versions, as [Getting Started](docs/getting-started.md) and the [Release Checklist](docs/release-checklist.md) describe. |
+| Publication state | `cow-sdk` `0.1.0-alpha.4` is published on crates.io and `@symbiome-forge/cow-sdk-wasm` `0.1.0-alpha.4` on npm. This is a pre-release: the public surface is stabilizing toward `0.1.0` and may change between alpha versions, as [Getting Started](docs/getting-started.md) and the [Release Checklist](docs/release-checklist.md) describe. |
 | Compatibility and license | Public MSRV is Rust `1.94.0`; the current workspace license is `GPL-3.0-or-later`. |
 
 ## Documentation
