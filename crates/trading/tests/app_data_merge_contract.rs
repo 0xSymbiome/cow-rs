@@ -118,6 +118,48 @@ fn sealed_base_doc(params: AppDataParams) -> Value {
     doc
 }
 
+/// A merge whose override shadows a reserved metadata key (`signer`, `hooks`,
+/// `flashloan`) with a value the typed extractor rejects must fail closed
+/// rather than seal a wire document the SDK cannot re-parse. Regression for the
+/// `fuzz_app_data_merge` / `fuzz_app_data_params_from_doc` crashes where such a
+/// document passed `app_data_info` but failed `params_from_doc` on a second
+/// merge.
+#[test]
+fn merge_fails_closed_when_override_shadows_a_reserved_key_with_an_invalid_value() {
+    let base_doc = sealed_base_doc(base_params_with_quote_metadata());
+
+    for invalid in [
+        // `app_data_info` does not re-check `signer`/`hooks`, so these reach the
+        // round-trip guard; `flashloan` is already rejected by `app_data_info`.
+        json!({ "hooks": 5 }),
+        json!({ "signer": "not-an-address" }),
+        json!({ "flashloan": 1 }),
+    ] {
+        let metadata: MetadataMap =
+            serde_json::from_value(invalid.clone()).expect("override metadata fixture must build");
+        let override_params = AppDataParams::default().with_metadata(metadata);
+
+        let result = merge_and_seal_app_data(&base_doc, &override_params);
+        assert!(
+            matches!(result, Err(TradingError::AppData(_))),
+            "override {invalid} must fail closed with an AppData error, got {result:?}",
+        );
+    }
+}
+
+/// The fail-closed guard does not reject a well-formed override: a valid typed
+/// hooks override still seals, and the sealed document round-trips back through
+/// `params_from_doc`.
+#[test]
+fn merge_with_a_valid_reserved_key_override_still_round_trips() {
+    let base_doc = sealed_base_doc(base_params_with_quote_metadata());
+    let override_params = AppDataParams::default().with_hooks(typed_post_hooks());
+
+    let (info, _merged) = merge_and_seal_app_data(&base_doc, &override_params)
+        .expect("a valid hooks override must seal");
+    params_from_doc(&info.doc).expect("a sealed document must round-trip through params_from_doc");
+}
+
 #[test]
 fn override_with_only_signer_survives_into_wire_doc() {
     let base_doc = sealed_base_doc(base_params_with_quote_metadata());

@@ -1,7 +1,7 @@
 # Trading Order Integrity Audit
 
 Status: Current
-Last reviewed: 2026-06-17
+Last reviewed: 2026-06-18
 Owning surface: `cow-sdk-trading` order assembly, the `OrderBoundsValidator` client-rejection gate, the quote-to-post app-data merge path, and the EthFlow owner-identity threading.
 Refresh trigger: Changes to quote-derived or direct order construction, balance semantics, the same-token predicate, `Trading` injected-orderbook builder terminals, the post-sign owner-recovery gate (`assert_owner_matches_signer` over `RecoverableSignature::recover`); the `OrderBoundsValidator::validate` signature, the `ClientRejection` variant set, the `ValidToInPast` check, `services_default_for_chain`, or the `is_eth_flow` skip rule; the `merge_and_seal_app_data` / `params_from_doc` signatures, the `metadata.hooks` replacement rule, or the submission-seam `app_data_signer` derivation; the `EthFlowTransaction.from` threading, `eth_flow_transaction` owner resolution, or the `LimitTradeParamsFromQuote` newtype invariant and its EthFlow entry binding.
 Related docs:
@@ -44,7 +44,7 @@ It does not cover host wallet session management, approval flows, leaf-crate tra
 | Typed field survival | Override `signer` and `flashloan` survive into `metadata.signer` and `metadata.flashloan` on the wire | Conforms |
 | Hooks replacement | An override `metadata.hooks` fully replaces the base set before recursive merge | Conforms |
 | Signer derivation | The seam reads `app_data_signer` from `merged_params.signer`; no override-only read remains | Conforms |
-| Round-trip idempotency | `params_from_doc(generate_app_data_doc(p)) == p` for every public-surface value | Conforms |
+| Round-trip idempotency | A value built through the typed setters satisfies `params_from_doc(generate_app_data_doc(p)) == p`; both seal helpers fail closed rather than emit a document that cannot round-trip back through `params_from_doc` | Conforms |
 | EthFlow bundle shape | `EthFlowTransaction` carries a public typed `from: Address` populated at construction | Conforms |
 | EthFlow owner resolution | `eth_flow_transaction` resolves the owner via `Signer::address` once and stores it on the bundle | Conforms |
 | EthFlow submission validation | The seam passes `tx.from` directly to `validate`; no intermediate `OrderCreation`, no receiver-as-owner fallback | Conforms |
@@ -74,7 +74,7 @@ The post-sign owner-recovery gate runs inside `post_cow_protocol_trade`: after s
 
 `merge_and_seal_app_data` parses the base wire document into `AppDataParams` (lifting `metadata.signer`/`metadata.flashloan` into typed sub-fields), calls `merge_app_data_params(&base_params, override_params)`, re-emits the wire document via `generate_app_data_doc`, and derives the digest via `app_data_info`. It returns `(TradingAppDataInfo, AppDataParams)` so the submission seam reads the signer from the same typed value that produced the upload. The opaque `serde_json::Value`-taking merge helper is deleted; no public merge helper reaches into the wire shape directly.
 
-`AppDataParams` carries typed `signer: Option<Address>` and `flashloan: Option<FlashloanHints>`; `metadata_wire_value` is the only translation point lifting them onto the wire, so both survive every override merge. `merge_app_data_params` removes the base's `metadata.hooks` before recursive merge when the override carries `"hooks"`, so the override hook set fully replaces the base; the rule is narrow to `metadata.hooks`. Array-valued siblings (including `metadata.userConsents`) fall through to the override value via `deep_merge_values`, replacing rather than concatenating. Partner-fee metadata supplied through `advanced_settings.app_data` flows through the same typed path. The submission seam reads `app_data_signer = merged_params.signer`; when the override is absent it re-parses the base via `params_from_doc` so the derivation still reflects the uploaded document. `params_from_doc(generate_app_data_doc(p)) == p` is pinned explicitly. `cow_sdk_app_data::validate_app_data_doc` validates the same `AppDataDoc` shape used by browser bindings, keeping validation ownership in `cow-sdk-app-data`.
+`AppDataParams` carries typed `signer: Option<Address>` and `flashloan: Option<FlashloanHints>`; `metadata_wire_value` is the only translation point lifting them onto the wire, so both survive every override merge. `merge_app_data_params` removes the base's `metadata.hooks` before recursive merge when the override carries `"hooks"`, so the override hook set fully replaces the base; the rule is narrow to `metadata.hooks`. Array-valued siblings (including `metadata.userConsents`) fall through to the override value via `deep_merge_values`, replacing rather than concatenating. Partner-fee metadata supplied through `advanced_settings.app_data` flows through the same typed path. The submission seam reads `app_data_signer = merged_params.signer`; when the override is absent it re-parses the base via `params_from_doc` so the derivation still reflects the uploaded document. A value built through the typed setters satisfies `params_from_doc(generate_app_data_doc(p)) == p`. Both seal helpers (`build_app_data` and `merge_and_seal_app_data`) re-parse their freshly generated document through `params_from_doc` and fail closed with a typed `AppData` error when an override shadows a reserved metadata key (`signer`, `hooks`, or `flashloan`) — for example through the open `metadata` map — with a value the typed extractor rejects but the lighter `validate_app_data_doc` pass does not re-check, so the SDK never emits a sealed document it cannot itself re-parse. `cow_sdk_app_data::validate_app_data_doc` validates the same `AppDataDoc` shape used by browser bindings, keeping validation ownership in `cow-sdk-app-data`.
 
 ### EthFlow owner identity
 
@@ -126,6 +126,8 @@ Primary regression coverage:
 - `crates/trading/tests/app_data_merge_contract.rs::override_with_only_signer_survives_into_wire_doc`
 - `crates/trading/tests/app_data_merge_contract.rs::override_with_only_flashloan_survives_into_wire_doc`
 - `crates/trading/tests/app_data_merge_contract.rs::merge_replaces_hooks_per_adr_0018`
+- `crates/trading/tests/app_data_merge_contract.rs::merge_fails_closed_when_override_shadows_a_reserved_key_with_an_invalid_value`
+- `crates/trading/tests/app_data_merge_contract.rs::merge_with_a_valid_reserved_key_override_still_round_trips`
 - `crates/trading/tests/app_data_merge_contract.rs::partner_fee_in_advanced_settings_appdata_merges_through_to_post`
 - `crates/trading/tests/quote_contract.rs`
 - `crates/trading/tests/quote_contract.rs::order_id_collision_retries_with_new_salt_until_success_or_cap`

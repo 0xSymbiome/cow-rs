@@ -710,7 +710,12 @@ async fn quote_results_reject_zero_address_partner_fee_before_quoting() {
 async fn build_app_data_injects_default_utm_when_override_absent() {
     const EXPECTED_UTM_SOURCE: &str = "cow-sdk";
     const EXPECTED_UTM_CAMPAIGN: &str = "developer-cohort";
-    const EXPECTED_UTM_CONTENT: &str = "";
+    // `utmContent` carries the compile target: empty on native, `wasm` on wasm32.
+    const EXPECTED_UTM_CONTENT: &str = if cfg!(target_arch = "wasm32") {
+        "wasm"
+    } else {
+        ""
+    };
     const EXPECTED_UTM_TERM: &str = "rs";
     const EXPECTED_UTM_MEDIUM_PREFIX: &str = "cow-rs@";
 

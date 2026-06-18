@@ -278,12 +278,26 @@ deterministic and carry no spans.
 
 The covered export areas are:
 
-- `wasm.trading.*` (`TradingClient` quote, post, and allowance exports)
+- `wasm.trading.*` (`TradingClient` quote, post, allowance, and transaction-builder exports)
 - `wasm.orderbook.*` (`OrderBookClient` quote, order, trade, and app-data exports)
 - `wasm.signing.*` (order and cancellation signing exports)
 - `wasm.eip1271.*` (`signOrderWithEip1271`, `signOrderWithCustomEip1271`)
 - `wasm.subgraph.*` (`SubgraphClient` totals, volume, and query exports)
 - `wasm.ipfs.*` (`IpfsClient` app-data read exports)
+
+The published npm flavours (`crates/wasm/npm/flavours.json`) build **without**
+the `tracing` feature, so the shipped package emits no `wasm.*` spans and links
+none of the `tracing` machinery — matching the SDK's zero-cost-when-off posture
+and keeping the wasm bundle minimal. Rust spans are producer-only; a browser or
+JavaScript host installs no Rust subscriber, so shipping them on by default would
+add bundle weight for output nothing in the default runtime consumes. The
+`wasm.*` spans are therefore a build-from-source capability: enable the crate's
+`tracing` feature and install a wasm subscriber bridge (for example
+`tracing-wasm`) to surface them — the path CI uses to verify the export-span
+contract. For consumers of the published package, the JavaScript-side
+observability surface is the typed `WasmError` discriminated union and the
+`WasmEnvelope` results, instrumented by the host's own JS or OpenTelemetry
+tooling around SDK calls.
 
 ### Native Alloy Adapters
 

@@ -25,8 +25,9 @@ export function translateHttpTransport(transport?: HttpTransportConfig): {
   }
 
   // An omitted transport (or `{ kind: "fetch" }` without an explicit fetch)
-  // defaults to the runtime's global `fetch`, matching the Rust builders'
-  // zero-config default.
+  // defaults to the runtime's global `fetch`. This default is a facade
+  // affordance: the raw wasm layer has no transport default and requires an
+  // explicit callback transport, so the facade injects `globalThis.fetch` here.
   const fetchFn = transport?.fetch ?? globalThis.fetch;
   if (typeof fetchFn !== "function") {
     throw invalidInput(

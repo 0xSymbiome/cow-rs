@@ -16,7 +16,7 @@
 //! signing helpers. For most browser dapps and standard
 //! TypeScript applications, the upstream `@cowprotocol/cow-sdk`
 //! TypeScript SDK is the recommended choice because of its smaller
-//! bundle size at equivalent feature subsets. The crate-level README
+//! bundle size at equivalent feature subsets. The npm package README
 //! covers the consumer routing matrix.
 //!
 //! The crate separates runtime-neutral helpers from the JavaScript binding

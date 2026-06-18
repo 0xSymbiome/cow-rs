@@ -356,6 +356,17 @@ export class TradingClient {
     );
   }
 
+  async buildSellNativeCurrencyTxFromQuote(
+    quoteResults: raw.QuoteResultsDto,
+    from: string,
+    options?: SdkClientOptions | null
+  ): Promise<WasmEnvelope<raw.BuiltSellNativeCurrencyTxDto>> {
+    return this.#call(
+      (client, merged) => client.buildSellNativeCurrencyTxFromQuote(quoteResults, from, merged),
+      options
+    );
+  }
+
   async getCowProtocolAllowance(
     params: raw.AllowanceParametersInput,
     readContractCallback: ContractReadCallback,

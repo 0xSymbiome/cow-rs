@@ -90,6 +90,24 @@ export type CowEip1271SignCallback = (
 
 export type CustomEip1271Callback = CowEip1271SignCallback;
 
+/**
+ * Performs a read-only contract call on behalf of the SDK and returns the
+ * ABI-decoded result.
+ *
+ * The callback must return the decoded value as a decimal string or number, not
+ * the raw `0x`-hex `eth_call` payload. With viem, pass the `readContract`
+ * result through `String(value)`:
+ *
+ * ```ts
+ * const readContract: ContractReadCallback = async ({ address, method, abiJson, argsJson }) =>
+ *   String(await publicClient.readContract({
+ *     address: address as `0x${string}`,
+ *     abi: JSON.parse(abiJson),
+ *     functionName: method,
+ *     args: JSON.parse(argsJson)
+ *   }));
+ * ```
+ */
 export type ContractReadCallback = (
   request: ContractCallDto
 ) => Promise<string> | string;

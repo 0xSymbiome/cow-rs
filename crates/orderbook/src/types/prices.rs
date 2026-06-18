@@ -24,7 +24,8 @@ impl NativePriceResponse {
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct TotalSurplus {
-    /// Total surplus value in the upstream decimal-string wire shape.
+    /// Total surplus value in the upstream decimal-string wire shape,
+    /// denominated in the chain's native-token base units (wei, 18 decimals).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub total_surplus: Option<Amount>,
 }

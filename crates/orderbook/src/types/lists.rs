@@ -11,7 +11,9 @@ pub struct OrdersQuery {
     /// Pagination offset.
     #[serde(default)]
     pub offset: u32,
-    /// Pagination limit.
+    /// Pagination limit. Defaults to the upstream maximum of 1000, so a larger
+    /// order history is truncated unless the caller pages with an explicit
+    /// offset and limit.
     #[serde(default = "default_orders_limit")]
     pub limit: u32,
 }

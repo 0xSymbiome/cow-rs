@@ -178,7 +178,10 @@ impl OrderbookApi {
         self.transport_policy.retry()
     }
 
-    /// Returns the canonical order details link for `order_uid`.
+    /// Returns the orderbook API URL for `order_uid` (`/api/v1/orders/{uid}`).
+    ///
+    /// This is the canonical machine-readable order handle, not the human-facing
+    /// `CoW Explorer` page; constructing the explorer URL is an application concern.
     ///
     /// # Errors
     ///

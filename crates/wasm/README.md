@@ -1,50 +1,22 @@
 # cow-sdk-wasm
 
-TypeScript-callable wasm-bindgen bindings for the CoW Protocol Rust SDK. The
-crate exposes deterministic Rust protocol logic to JavaScript and TypeScript
-through typed DTOs, package export subpaths, and explicit callbacks for wallet,
-signer, smart-account, and HTTP runtime behavior.
+The TypeScript-callable WebAssembly layer of the `cow-rs` SDK. It compiles the
+same deterministic Rust protocol logic the native crates run — order signing,
+EIP-712 / EIP-1271 envelope construction, UID packing, app-data hashing,
+event-log decoding, and the orderbook, subgraph, IPFS, and trading clients — to
+`wasm32` and exposes it to JavaScript and TypeScript through typed DTOs and
+explicit callbacks. It wraps the existing `cow-sdk-core`, `cow-sdk-contracts`,
+`cow-sdk-signing`, `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-subgraph`,
+and `cow-sdk-trading` crates rather than reimplementing them, so a signature a
+browser produces is byte-identical to the one a Rust service produces.
 
-The crate is a peer leaf of the native Rust facade. It wraps existing
-`cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data`,
-`cow-sdk-orderbook`, `cow-sdk-subgraph`, and `cow-sdk-trading` helpers instead
-of reimplementing protocol primitives.
-
-## When to use
-
-`cow-sdk-wasm` is appropriate for specialized cases:
-
-- **Deterministic Rust signing parity**: JavaScript or TypeScript apps that
-  need byte-for-byte parity with the Rust SDK's EIP-712 + EIP-1271 signing
-  path.
-- **Single-source-of-truth Rust + TypeScript embedding**: applications that
-  run cow-rs in both a Rust service and a TypeScript web consumer, where one
-  implementation eliminates protocol-drift bugs.
-- **Edge runtimes**: the `trading` flavour's web-target build, imported at
-  `./trading/edge` (size-compatible with the current Cloudflare Workers Free
-  compressed-size limit at the time of measurement; built and tested end-to-end
-  in CI (Workers Vitest), within the Workers compressed-size budget). The same
-  `trading` feature set serves browser bundlers and Node from one build.
-- **Embeddable signing helper**: the `./signing` flavor is the smallest and
-  may be embedded in a larger TypeScript application.
-
-For most browser dapps, web apps, CowSwap-style UIs, and standard
-TypeScript applications, the upstream
-[`@cowprotocol/cow-sdk`](https://www.npmjs.com/package/@cowprotocol/cow-sdk)
-TypeScript SDK is the recommended choice; it is substantially smaller at
-equivalent feature subsets.
-
-## Install
-
-The package is published to npm as `@symbiome-forge/cow-sdk-wasm`.
-
-```bash
-npm install @symbiome-forge/cow-sdk-wasm@0.1.0-alpha.4
-```
-
-Rust consumers use the [`cow-sdk`](https://crates.io/crates/cow-sdk) facade with
-a `wasm32` target rather than depending on this crate directly; it is a
-wasm-bindgen `cdylib` published only to npm.
+This README is the **engineering face** of the crate — how the binding is built
+and why it holds. **Consumer documentation — import selection, quickstarts, and
+runtime support — is the published npm package README**
+([`@symbiome-forge/cow-sdk-wasm`](https://www.npmjs.com/package/@symbiome-forge/cow-sdk-wasm)).
+The crate is a `wasm-bindgen` `cdylib` published only to npm; Rust consumers use
+the [`cow-sdk`](https://crates.io/crates/cow-sdk) facade on a `wasm32` target
+rather than depending on this crate directly.
 
 ## Surface Layers
 
@@ -91,50 +63,20 @@ a live `AbortSignal`. Timeout remains SDK-owned through
 handle and timeout closure so cleanup happens on success, throw, rejection,
 malformed response, or abort.
 
-## Runtime Support
+## Edge and the explicit initialize
 
-| Runtime | Support claim | HTTP transport |
-| --- | --- | --- |
-| Browser bundlers (Vite, webpack, Next.js, Rollup, Parcel, esbuild) | `default-http-supported` | Default browser fetch |
-| Node.js 24 LTS | `callback-http-tested` | `CowFetchCallback` |
-| Cloudflare Workers (workerd) | `callback-http-tested` | `CowFetchCallback` through `./trading/edge` and `./trading/edge/wasm` |
-| Deno | `callback-http-tested` | `CowFetchCallback` through `./trading` (deno condition) or `./trading/edge` |
-| Bun, Vercel Edge, Fly.io | `best-effort` | `CowFetchCallback` through the `trading` web build |
-
-Edge runtimes use the `trading` flavour's web-target output through the package
-export map — resolved automatically through the `workerd`, `deno`, `edge-light`,
-and `bun` conditions on `./trading`, or imported explicitly at `./trading/edge`
-(with the precompiled module at `./trading/edge/wasm`). Nested build-output paths
-are not public API.
-
-Because Workers cannot compile WebAssembly from bytes at runtime, the
-`./trading/edge` facade exposes an explicit `initialize` step that accepts the
-statically imported `WebAssembly.Module`. Import the precompiled module from the
-`./trading/edge/wasm` subpath, initialize once, then use clients normally:
-
-```ts
-import initialize, { OrderBookClient } from "@symbiome-forge/cow-sdk-wasm/trading/edge";
-import wasmModule from "@symbiome-forge/cow-sdk-wasm/trading/edge/wasm";
-
-export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
-    await initialize(wasmModule);
-    const client = new OrderBookClient({ chainId: 1, transport: { kind: "fetch" } });
-    const quote = await client.getQuote(await request.json(), { timeoutMs: 8_000 });
-    client.dispose();
-    return Response.json(quote);
-  }
-};
-```
-
-The `trading` flavour's edge (web-target) build shares one wasm binary with its
-bundler and nodejs targets; that binary's gzip-compressed size is below the
-current Cloudflare Workers Free compressed-size limit at the time of measurement,
-and the release pipeline enforces an explicit byte budget on every build. Full Workers
-support still requires release-bundle verification with `wrangler deploy
---dry-run` and Worker startup measurement against Cloudflare's 1-second
-startup limit. Cloudflare's published platform limits are at
-`https://developers.cloudflare.com/workers/platform/limits/`.
+Edge runtimes (Cloudflare Workers, Deno, Vercel Edge) consume the `trading`
+flavour's web-target build, resolved through the `workerd`, `deno`, `edge-light`,
+and `bun` export conditions on `./trading` or imported explicitly at
+`./trading/edge`. Because Workers cannot compile WebAssembly from bytes at
+runtime, the `./trading/edge` facade takes the statically imported
+`WebAssembly.Module` through an explicit `initialize` step instead of
+instantiating on import. The `trading` flavour emits one wasm binary across its
+bundler, Node, and web targets, and the release pipeline enforces a per-build
+gzip byte budget against the Cloudflare Workers Free compressed-size limit; full
+Workers support additionally depends on `wrangler deploy --dry-run` verification
+and a Worker startup-time gate. The consumer-facing runtime-support matrix and
+the edge quickstart are in the npm package README.
 
 ## TypeScript Declarations
 

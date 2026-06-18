@@ -70,7 +70,10 @@ impl TradingClient {
     ///
     /// The config must include `chainId`, `appCode`, and `transport`. Optional
     /// environment, API key, timeout, signal, and transport policy fields become
-    /// defaults for all trading methods.
+    /// defaults for all trading methods. When constructed through the TypeScript
+    /// facade, an omitted `transport` defaults to the runtime global `fetch`;
+    /// that default is a facade affordance, so the raw constructor documented
+    /// here requires the transport explicitly.
     ///
     /// @param config Trading client configuration.
     /// @throws CowError when chain, app-code, environment, transport, or policy validation fails.
@@ -114,12 +117,18 @@ impl TradingClient {
     /// Fetches a quote without signing or submitting an order.
     ///
     /// Use this method when a host wants to preview the quote response before
-    /// asking a wallet to sign or before constructing a post request.
+    /// asking a wallet to sign or before constructing a post request. Set
+    /// `owner` on the swap parameters: quote-only flows resolve no signer, so a
+    /// missing owner surfaces as an error rather than defaulting to an account.
     ///
-    /// @param params Swap parameters DTO.
+    /// This returns the rich `QuoteResultsDto` carrying `orderToSign` and
+    /// `amountsAndCosts` for posting, distinct from `OrderBookClient.getQuote`,
+    /// which returns the raw orderbook `OrderQuoteResponseDto`.
+    ///
+    /// @param params Swap parameters DTO; set `owner` for quote-only flows.
     /// @param options Optional per-call cancellation and timeout settings.
-    /// @returns A versioned envelope containing quote results.
-    /// @throws CowError for invalid parameters, transport failure, timeout, or cancellation.
+    /// @returns A versioned envelope containing the rich quote results.
+    /// @throws CowError for a missing owner, invalid parameters, transport failure, timeout, or cancellation.
     #[wasm_bindgen(
         js_name = "getQuote",
         unchecked_return_type = "WasmEnvelope<QuoteResultsDto>"
@@ -296,16 +305,66 @@ impl TradingClient {
         .await
     }
 
+    /// Builds the native-currency sell transaction directly from a quote result.
+    ///
+    /// This is the native-sell sibling of `postSwapOrderFromQuote`: it consumes
+    /// the `QuoteResultsDto` that `getQuote` returns for a native-currency sell
+    /// and derives the EthFlow transaction without the host reconstructing the
+    /// order or extracting the quote id. The quote must have been requested with
+    /// the native-token sentinel as the sell token and must carry the quote id
+    /// the orderbook returns for EthFlow submission.
+    ///
+    /// @param quoteResults Quote result DTO returned by `getQuote` for a native sell.
+    /// @param from Transaction sender address.
+    /// @param options Optional per-call cancellation and timeout settings.
+    /// @returns A versioned envelope containing order UID and transaction request.
+    /// @throws CowError when the quote is not a native-currency sell, lacks a quote id, or the chain, deployment, or sender is invalid.
+    #[wasm_bindgen(
+        js_name = "buildSellNativeCurrencyTxFromQuote",
+        unchecked_return_type = "WasmEnvelope<BuiltSellNativeCurrencyTxDto>"
+    )]
+    pub async fn build_sell_native_currency_tx_from_quote(
+        &self,
+        #[wasm_bindgen(js_name = quoteResults, unchecked_param_type = "QuoteResultsDto")]
+        quote_results: JsValue,
+        from: String,
+        #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
+    ) -> Result<JsValue, JsValue> {
+        super::traced(
+            "wasm.trading.build_sell_native_currency_tx_from_quote",
+            async move {
+                let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
+                let chain_id = self.chain_id;
+                let env = self.env.clone();
+                run_with_client_options(scope, async move {
+                    trading_build_sell_native_currency_tx_from_quote(
+                        chain_id,
+                        env,
+                        quote_results,
+                        from,
+                    )
+                    .await
+                })
+                .await
+            },
+        )
+        .await
+    }
+
     /// Reads CoW Protocol allowance through a read-only contract callback.
     ///
     /// The SDK builds the contract call while the JavaScript host performs the
     /// actual chain read. Use this when a TypeScript runtime owns the RPC
-    /// provider.
+    /// provider. The vault-relayer spender is resolved per chain and environment
+    /// unless overridden in the parameters. The callback must return the
+    /// ABI-decoded `uint256` allowance as a decimal string or JSON number — for
+    /// example viem's `readContract` result passed through `String(value)` — not
+    /// a raw `0x`-hex `eth_call` payload.
     ///
     /// @param params Allowance parameters DTO.
-    /// @param readContractCallback Callback that executes the read-only call.
+    /// @param readContractCallback Callback that executes the read-only call and returns the ABI-decoded allowance.
     /// @param options Optional per-call cancellation and timeout settings.
-    /// @returns A versioned envelope containing the allowance amount string.
+    /// @returns A versioned envelope containing the allowance amount as a decimal string.
     /// @throws CowError for invalid parameters, callback failure, timeout, or cancellation.
     #[wasm_bindgen(
         js_name = "getCowProtocolAllowance",
@@ -555,6 +614,38 @@ async fn trading_build_sell_native_currency_tx(
         from: from.to_hex_string(),
     };
     to_js_value(&WasmEnvelope::v1(result))
+}
+
+async fn trading_build_sell_native_currency_tx_from_quote(
+    chain_id: u32,
+    env: Option<String>,
+    quote_results: JsValue,
+    from: String,
+) -> Result<JsValue, JsValue> {
+    let results: QuoteResults = serde_wasm_bindgen::from_value(quote_results)
+        .map_err(|error| WasmError::invalid("quoteResults", error.to_string()).into_js())?;
+    if results.trade_parameters.sell_token != NATIVE_CURRENCY_ADDRESS {
+        return Err(WasmError::invalid(
+            "quoteResults",
+            "the quote was not requested for a native-currency sell",
+        )
+        .into_js());
+    }
+    let quote_id = results.quote_response.id.ok_or_else(|| {
+        WasmError::invalid(
+            "quoteResults.quoteResponse.id",
+            "the quote did not return an id required for a native-currency sell",
+        )
+        .into_js()
+    })?;
+    // The orderbook quotes a native sell against the wrapped-native token, so the
+    // signed order carries the wrapped sell token. The EthFlow builder expects the
+    // native sentinel, matching the lower-level `buildSellNativeCurrencyTx` entry
+    // point, so this restores it before delegating to the shared builder.
+    let mut order = results.order_to_sign;
+    order.sell_token = NATIVE_CURRENCY_ADDRESS;
+    trading_build_sell_native_currency_tx(chain_id, env, OrderInput::from(&order), quote_id, from)
+        .await
 }
 
 /// Converts a JavaScript `number` quote id into the native `i64`, rejecting

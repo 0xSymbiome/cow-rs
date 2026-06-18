@@ -283,6 +283,7 @@ fn generated_type_declarations_expose_feature_scoped_workflow_helpers() {
                     "export interface QuoteResultsDto",
                     "buildApprovalTx(params: ApprovalParametersInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<TransactionRequestDto>>",
                     "buildSellNativeCurrencyTx(order: OrderInput, quoteId: number, from: string",
+                    "buildSellNativeCurrencyTxFromQuote(quoteResults: QuoteResultsDto, from: string",
                     "getCowProtocolAllowance(params: AllowanceParametersInput, readContractCallback: ContractReadCallback",
                     "getQuote(params: SwapParametersInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<QuoteResultsDto>>",
                     "postLimitOrder(params: LimitTradeParametersInput, owner: string, signerCallback: TypedDataSignerCallback",

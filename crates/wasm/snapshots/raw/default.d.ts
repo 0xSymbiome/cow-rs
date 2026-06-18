@@ -337,6 +337,10 @@ export type CompetitionOrderStatusKindDto = "open" | "scheduled" | "active" | "s
 
 /**
  * Contract-read callback request.
+ *
+ * The host callback receiving this request must perform the read and return
+ * the ABI-decoded result as a decimal string or JSON number, not the raw
+ * `0x`-hex `eth_call` payload.
  */
 export interface ContractCallDto {
     /**
@@ -1891,7 +1895,9 @@ export interface SwapParametersInput {
      */
     kind: OrderKindDto;
     /**
-     * Optional owner override.
+     * Owner override. Optional for the post helpers, which take the owner
+     * positionally, but required for `getQuote`: quote-only flows resolve no
+     * signer, so a missing owner is an error there.
      */
     owner?: string;
     /**
@@ -2350,10 +2356,14 @@ export class OrderBookClient {
      */
     getOrderCompetitionStatus(orderUid: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<CompetitionOrderStatusDto>>;
     /**
-     * Builds the public order-details URL for a UID without any network call.
+     * Builds the orderbook API URL (`/api/v1/orders/{uid}`) for a UID without
+     * any network call.
+     *
+     * This is the canonical machine-readable order handle, not the human-facing
+     * CoW Explorer page; build the explorer URL in the application.
      *
      * @param orderUid Full order UID to link to.
-     * @returns A versioned envelope containing the order-details URL.
+     * @returns A versioned envelope containing the orderbook API URL for the order.
      * @throws CowError for an invalid UID or an unresolved base URL.
      */
     getOrderLink(orderUid: string): WasmEnvelope<string>;
@@ -2370,10 +2380,12 @@ export class OrderBookClient {
      * Fetches orders owned by an address with optional pagination.
      *
      * The owner address is validated before the request is dispatched. The
-     * response preserves the typed orderbook order shape.
+     * response preserves the typed orderbook order shape. When `pagination` is
+     * omitted the request sends the upstream default `limit` of 1000, so an
+     * account with more orders is truncated unless an explicit page is set.
      *
      * @param owner Owner address to query.
-     * @param pagination Optional offset and limit.
+     * @param pagination Optional offset and limit; defaults to `limit` 1000 when omitted.
      * @param options Optional per-call cancellation and timeout settings.
      * @returns A versioned envelope containing matching orders.
      * @throws CowError for invalid owner, transport failure, timeout, or cancellation.
@@ -2386,9 +2398,13 @@ export class OrderBookClient {
      * through the configured transport. Per-call options can override the
      * constructor timeout or attach an `AbortSignal`.
      *
+     * This returns the raw `OrderQuoteResponseDto`, distinct from
+     * `TradingClient.getQuote`, which returns the richer `QuoteResultsDto`
+     * carrying `orderToSign` and `amountsAndCosts` for posting.
+     *
      * @param request Quote request DTO.
      * @param options Optional per-call cancellation and timeout settings.
-     * @returns A versioned envelope containing the quote response.
+     * @returns A versioned envelope containing the raw quote response.
      * @throws CowError for invalid input, transport failure, timeout, or cancellation.
      */
     getQuote(request: OrderQuoteRequestInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<OrderQuoteResponseDto>>;
@@ -2424,10 +2440,12 @@ export class OrderBookClient {
      *
      * Returns the lifetime surplus the protocol has captured for the owner
      * across its settled orders, in the upstream decimal-string wire shape.
+     * The value is denominated in the chain's native-token base units (wei,
+     * 18 decimals), not USD or sell-token atoms.
      *
      * @param owner Owner address to query.
      * @param options Optional per-call cancellation and timeout settings.
-     * @returns A versioned envelope containing the total-surplus response.
+     * @returns A versioned envelope containing the total-surplus response in native-token wei.
      * @throws CowError for invalid owner, transport failure, or timeout.
      */
     getTotalSurplus(owner: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<TotalSurplusDto>>;
@@ -2623,16 +2641,37 @@ export class TradingClient {
      */
     buildSellNativeCurrencyTx(order: OrderInput, quoteId: number, from: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<BuiltSellNativeCurrencyTxDto>>;
     /**
+     * Builds the native-currency sell transaction directly from a quote result.
+     *
+     * This is the native-sell sibling of `postSwapOrderFromQuote`: it consumes
+     * the `QuoteResultsDto` that `getQuote` returns for a native-currency sell
+     * and derives the EthFlow transaction without the host reconstructing the
+     * order or extracting the quote id. The quote must have been requested with
+     * the native-token sentinel as the sell token and must carry the quote id
+     * the orderbook returns for EthFlow submission.
+     *
+     * @param quoteResults Quote result DTO returned by `getQuote` for a native sell.
+     * @param from Transaction sender address.
+     * @param options Optional per-call cancellation and timeout settings.
+     * @returns A versioned envelope containing order UID and transaction request.
+     * @throws CowError when the quote is not a native-currency sell, lacks a quote id, or the chain, deployment, or sender is invalid.
+     */
+    buildSellNativeCurrencyTxFromQuote(quoteResults: QuoteResultsDto, from: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<BuiltSellNativeCurrencyTxDto>>;
+    /**
      * Reads CoW Protocol allowance through a read-only contract callback.
      *
      * The SDK builds the contract call while the JavaScript host performs the
      * actual chain read. Use this when a TypeScript runtime owns the RPC
-     * provider.
+     * provider. The vault-relayer spender is resolved per chain and environment
+     * unless overridden in the parameters. The callback must return the
+     * ABI-decoded `uint256` allowance as a decimal string or JSON number — for
+     * example viem's `readContract` result passed through `String(value)` — not
+     * a raw `0x`-hex `eth_call` payload.
      *
      * @param params Allowance parameters DTO.
-     * @param readContractCallback Callback that executes the read-only call.
+     * @param readContractCallback Callback that executes the read-only call and returns the ABI-decoded allowance.
      * @param options Optional per-call cancellation and timeout settings.
-     * @returns A versioned envelope containing the allowance amount string.
+     * @returns A versioned envelope containing the allowance amount as a decimal string.
      * @throws CowError for invalid parameters, callback failure, timeout, or cancellation.
      */
     getCowProtocolAllowance(params: AllowanceParametersInput, readContractCallback: ContractReadCallback, options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>;
@@ -2640,12 +2679,18 @@ export class TradingClient {
      * Fetches a quote without signing or submitting an order.
      *
      * Use this method when a host wants to preview the quote response before
-     * asking a wallet to sign or before constructing a post request.
+     * asking a wallet to sign or before constructing a post request. Set
+     * `owner` on the swap parameters: quote-only flows resolve no signer, so a
+     * missing owner surfaces as an error rather than defaulting to an account.
      *
-     * @param params Swap parameters DTO.
+     * This returns the rich `QuoteResultsDto` carrying `orderToSign` and
+     * `amountsAndCosts` for posting, distinct from `OrderBookClient.getQuote`,
+     * which returns the raw orderbook `OrderQuoteResponseDto`.
+     *
+     * @param params Swap parameters DTO; set `owner` for quote-only flows.
      * @param options Optional per-call cancellation and timeout settings.
-     * @returns A versioned envelope containing quote results.
-     * @throws CowError for invalid parameters, transport failure, timeout, or cancellation.
+     * @returns A versioned envelope containing the rich quote results.
+     * @throws CowError for a missing owner, invalid parameters, transport failure, timeout, or cancellation.
      */
     getQuote(params: SwapParametersInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<QuoteResultsDto>>;
     /**
@@ -2653,7 +2698,10 @@ export class TradingClient {
      *
      * The config must include `chainId`, `appCode`, and `transport`. Optional
      * environment, API key, timeout, signal, and transport policy fields become
-     * defaults for all trading methods.
+     * defaults for all trading methods. When constructed through the TypeScript
+     * facade, an omitted `transport` defaults to the runtime global `fetch`;
+     * that default is a facade affordance, so the raw constructor documented
+     * here requires the transport explicitly.
      *
      * @param config Trading client configuration.
      * @throws CowError when chain, app-code, environment, transport, or policy validation fails.

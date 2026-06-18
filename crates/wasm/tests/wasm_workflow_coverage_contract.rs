@@ -296,6 +296,20 @@ async fn trading_posts_swap_from_quote_and_limit_orders_through_typed_signers() 
     let quote_results = Reflect::get(&quote_envelope, &JsValue::from_str("value"))
         .expect("getQuote envelope should expose the QuoteResults value");
 
+    // The native-sell `…FromQuote` builder fails closed on a quote that was not
+    // requested for a native-currency sell: this swap quote sells an ERC-20, so
+    // its provenance check rejects it before deriving any EthFlow transaction.
+    let swap_quote_for_native = Reflect::get(&quote_envelope, &JsValue::from_str("value"))
+        .expect("getQuote envelope should expose the QuoteResults value");
+    client
+        .build_sell_native_currency_tx_from_quote(
+            swap_quote_for_native,
+            ADDR_OWNER.to_owned(),
+            None,
+        )
+        .await
+        .expect_err("a non-native-currency-sell quote must be rejected by the from-quote builder");
+
     // Both posts sign and then run the post-sign owner-recovery gate (ADR 0015).
     // This wasm harness signs with a fixed canned signature that does not
     // recover to ADDR_OWNER, so the gate fails closed — exactly as it would for

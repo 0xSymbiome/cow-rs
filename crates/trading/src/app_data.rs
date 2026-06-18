@@ -22,6 +22,19 @@ const UTM_CAMPAIGN: &str = "developer-cohort";
 /// so Rust-SDK adoption is not mislabelled.
 const UTM_TERM: &str = "rs";
 
+/// `metadata.utm.utmContent` default. The slot carries the SDK compile target so
+/// protocol-side analytics can distinguish wasm-originated traffic from
+/// native-Rust traffic, which otherwise report the same `utmMedium`/`utmTerm`.
+/// `cfg(target_arch = "wasm32")` covers the `cow-sdk-wasm` build and any
+/// native-Rust consumer compiled to wasm; every other target stays empty.
+const fn utm_content() -> &'static str {
+    if cfg!(target_arch = "wasm32") {
+        "wasm"
+    } else {
+        ""
+    }
+}
+
 /// Builds the default `metadata.utm` block stamped on app-data documents
 /// when the caller does not supply their own `metadata.utm`.
 ///
@@ -29,13 +42,15 @@ const UTM_TERM: &str = "rs";
 /// so protocol-side attribution analytics can group SDK traffic while still
 /// distinguishing this crate from other client SDKs. The `utmMedium` value
 /// embeds the trading crate's published version through
-/// `env!("CARGO_PKG_VERSION")`.
+/// `env!("CARGO_PKG_VERSION")`, and `utmContent` carries the compile target
+/// (`wasm` on `wasm32`, otherwise empty) so wasm-originated traffic is
+/// distinguishable. Any caller-supplied `metadata.utm` disables this default.
 fn default_utm() -> Value {
     json!({
         "utmSource": UTM_SOURCE,
         "utmMedium": format!("cow-rs@{}", env!("CARGO_PKG_VERSION")),
         "utmCampaign": UTM_CAMPAIGN,
-        "utmContent": "",
+        "utmContent": utm_content(),
         "utmTerm": UTM_TERM,
     })
 }
@@ -88,6 +103,7 @@ pub async fn build_app_data(
 
     let doc = generate_app_data_doc(params);
     let info = app_data_info(doc.clone())?.info;
+    ensure_sealed_doc_round_trips(&doc)?;
 
     Ok(TradingAppDataInfo {
         doc,
@@ -115,6 +131,22 @@ pub async fn build_app_data(
 pub fn params_from_doc(base_doc: &Value) -> Result<AppDataParams, TradingError> {
     serde_json::from_value::<AppDataParams>(base_doc.clone())
         .map_err(|error| TradingError::AppData(cow_sdk_app_data::AppDataError::from(error)))
+}
+
+/// Fails closed when a freshly sealed app-data document cannot round-trip back
+/// through [`params_from_doc`].
+///
+/// The typed extractor validates the reserved `signer`, `flashloan`, and
+/// `hooks` metadata keys, but the document writer copies the open metadata map
+/// verbatim and the lighter `validate_app_data_doc` pass run by `app_data_info`
+/// does not re-check `signer`/`hooks`. An override that shadows one of those
+/// reserved keys with a value the extractor rejects (for example a non-address
+/// `metadata.signer` or a `metadata.hooks` that is not a hooks envelope) would
+/// otherwise seal a document the SDK itself cannot parse — and the services
+/// reject — so the seal surfaces it as a typed `AppData` error here instead of
+/// emitting an unparsable order payload.
+fn ensure_sealed_doc_round_trips(doc: &Value) -> Result<(), TradingError> {
+    params_from_doc(doc).map(|_| ())
 }
 
 /// Merges a typed [`AppDataParams`] override onto a previously-sealed
@@ -150,6 +182,7 @@ pub fn merge_and_seal_app_data(
     let merged_params = merge_app_data_params(&base_params, override_params);
     let doc = generate_app_data_doc(merged_params.clone());
     let info = app_data_info(doc.clone())?.info;
+    ensure_sealed_doc_round_trips(&doc)?;
 
     Ok((
         TradingAppDataInfo {
