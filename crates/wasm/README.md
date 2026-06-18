@@ -39,7 +39,7 @@ equivalent feature subsets.
 The package is published to npm as `@symbiome-forge/cow-sdk-wasm`.
 
 ```bash
-npm install @symbiome-forge/cow-sdk-wasm@0.1.0-alpha.3
+npm install @symbiome-forge/cow-sdk-wasm@0.1.0-alpha.4
 ```
 
 Rust consumers use the [`cow-sdk`](https://crates.io/crates/cow-sdk) facade with

@@ -25,7 +25,7 @@ default = []
 tracing = ["dep:tracing", "cow-sdk-core/tracing"]
 
 [dependencies]
-cow-sdk-core = { path = "../core", version = "0.1.0-alpha.3", features = ["transport-policy"] }
+cow-sdk-core = { path = "../core", version = "0.1.0-alpha.4", features = ["transport-policy"] }
 async-trait.workspace = true
 http.workspace = true
 serde = { workspace = true, features = ["derive"] }
