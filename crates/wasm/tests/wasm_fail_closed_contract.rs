@@ -169,7 +169,9 @@ fn flavour_descriptor_exposes_trading_web_subpath() {
         "trading must ship the web target for edge runtimes"
     );
     assert!(
-        targets.iter().any(|target| target.as_str() == Some("bundler")),
+        targets
+            .iter()
+            .any(|target| target.as_str() == Some("bundler")),
         "trading must ship the bundler target for browser dApps"
     );
 }
