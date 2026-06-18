@@ -45,15 +45,12 @@ rate-limit.existing-packages = 50
 # `cargo release <next-version> --dry-run` before running it for real.
 pre-release-hook = ["cargo", "run", "--quiet", "-p", "xtask", "--", "changelog", "--tag", "v{{version}}"]
 
-# Keep the version strings inside each crate's README in lockstep with the
-# release. cargo-release bumps Cargo.toml only; without these, the README install
-# snippet and the disclaimer's opt-in hint would drift stale on every alpha bump.
-# `{{crate_name}}` scopes each replacement to the crate being released, so it
-# edits only that crate's own README.md; `min = 0` keeps a crate whose README
-# lacks a given form from failing the release. Verify with
-# `cargo release <version> --dry-run` before the first real run.
-pre-release-replacements = [
-    { file = "README.md", search = '{{crate_name}} = "[^"]*"', replace = '{{crate_name}} = "{{version}}"', min = 0 },
-    { file = "README.md", search = '{{crate_name}} = \{ version = "[^"]*"', replace = '{{crate_name}} = { version = "{{version}}"', min = 0 },
-    { file = "README.md", search = 'cow-sdk = \{ version = "[^"]*"', replace = 'cow-sdk = { version = "{{version}}"', min = 0 },
-]
+# Documentation version pins (README install snippets, the crates.io badge, the
+# npm install command and package template, the "is published" prose) are NOT
+# bumped through cargo-release's per-crate `pre-release-replacements`: those
+# resolve relative to each crate directory, so they cannot reach the root README
+# or the npm template, and they silently no-op on the snippets they can reach.
+# Instead the pre-release-hook above rewrites the whole documentation surface in
+# one pass at the repository root (see `xtask::version_surface`), and the
+# `check-workspace-versions` policy fails CI if any pin drifts from the workspace
+# version — so a release can never ship stale install instructions.

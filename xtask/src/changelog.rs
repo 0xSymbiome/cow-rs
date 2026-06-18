@@ -45,11 +45,39 @@ pub fn run(args: &Args) -> Result<()> {
     let cliff_config = root.join("cliff.toml");
 
     if let Some(tag) = &args.tag {
+        // Sync every documentation install-pin (READMEs, the crates.io badge,
+        // the npm install command, the npm package template) to the release
+        // version. cargo-release bumps Cargo manifests but cannot reach these,
+        // so the hook owns them; the rewrite is idempotent across the
+        // once-per-crate hook invocations.
+        let version = tag.strip_prefix('v').unwrap_or(tag);
+        for file in crate::version_surface::rewrite(&root, version)? {
+            println!("synced the {version} install-pins in {}", file.display());
+        }
+
+        // Re-lock the standalone fuzz crate (its own out-of-workspace lockfile)
+        // against the bumped path-dependency versions, so the `--locked` fuzz CI
+        // lane does not fail on a stale lock. Idempotent: a no-op once in step.
+        sync_fuzz_lock(&root)?;
+
         // Release path: render only the new section and splice it in ourselves.
         let section = render_section(&root, &cliff_config, tag)?;
         let changelog = root.join("CHANGELOG.md");
         let existing = fs::read_to_string(&changelog)
             .with_context(|| format!("failed to read {}", changelog.display()))?;
+        // cargo-release fires this hook once per published crate, so a naive
+        // splice would insert the same section a dozen times in one release.
+        // Splice only when the version is not already present; repeated
+        // invocations within a release then collapse to a no-op.
+        if let Some(heading) = version_heading(&section)
+            && existing.contains(&heading)
+        {
+            println!(
+                "{heading} is already present in {}; leaving it unchanged",
+                changelog.display()
+            );
+            return Ok(());
+        }
         let updated = splice_section(&existing, &section)?;
         fs::write(&changelog, updated)
             .with_context(|| format!("failed to write {}", changelog.display()))?;
@@ -67,6 +95,54 @@ pub fn run(args: &Args) -> Result<()> {
             bail!("git-cliff exited with {status}");
         }
     }
+    Ok(())
+}
+
+/// Re-locks the standalone `fuzz/` crate against the just-bumped path-dependency
+/// versions.
+///
+/// The fuzz crate is its own workspace with a separate lockfile that
+/// cargo-release does not touch, so a version bump leaves it stale and the
+/// `cargo check --locked` fuzz lane fails. The update is scoped to the
+/// `cow-sdk-*` path dependencies (discovered from the manifest), so no unrelated
+/// transitive dependency churns, and it is a no-op once already in step.
+fn sync_fuzz_lock(root: &Path) -> Result<()> {
+    let manifest = root.join("fuzz/Cargo.toml");
+    if !manifest.is_file() {
+        return Ok(());
+    }
+    let parsed = fs::read_to_string(&manifest)
+        .with_context(|| format!("failed to read {}", manifest.display()))?
+        .parse::<toml::Table>()
+        .with_context(|| format!("failed to parse {}", manifest.display()))?;
+    let path_deps: Vec<&str> = parsed
+        .get("dependencies")
+        .and_then(toml::Value::as_table)
+        .into_iter()
+        .flatten()
+        .filter(|(_, value)| value.as_table().is_some_and(|dep| dep.contains_key("path")))
+        .map(|(name, _)| name.as_str())
+        .collect();
+    if path_deps.is_empty() {
+        return Ok(());
+    }
+
+    let mut command = Command::new("cargo");
+    command
+        .arg("update")
+        .arg("--manifest-path")
+        .arg(&manifest)
+        .arg("--offline");
+    for dep in &path_deps {
+        command.arg("-p").arg(dep);
+    }
+    let status = command
+        .status()
+        .context("failed to run cargo update for the fuzz lockfile")?;
+    if !status.success() {
+        bail!("cargo update for the fuzz lockfile exited with {status}");
+    }
+    println!("re-locked the fuzz crate against the released path-dependency versions");
     Ok(())
 }
 
@@ -132,6 +208,15 @@ fn splice_section(existing: &str, section: &str) -> Result<String> {
     Ok(out)
 }
 
+/// The leading `## [x.y.z]` heading of a rendered section, with the date suffix
+/// dropped. Used to detect a section already spliced into CHANGELOG.md so the
+/// hook stays idempotent across cargo-release's per-crate invocations.
+fn version_heading(section: &str) -> Option<String> {
+    let first_line = section.lines().next()?;
+    let close = first_line.find(']')?;
+    Some(first_line[..=close].to_owned())
+}
+
 /// Resolves the repository root via `git rev-parse --show-toplevel`.
 fn git_toplevel() -> Result<PathBuf> {
     let output = Command::new("git")
@@ -189,5 +274,25 @@ All notable changes to `cow-rs` will be documented in this file.
     fn errors_when_no_version_section_exists() {
         let bare = "# Changelog\n\n## [Unreleased]\n";
         assert!(splice_section(bare, "## [9.9.9] - 2026-07-01\n\n### x\n\n- y").is_err());
+    }
+
+    #[test]
+    fn version_heading_drops_the_date_suffix() {
+        let section = "## [0.1.0-alpha.2] - 2026-07-01\n\n### Features\n\n- A feature.";
+        assert_eq!(
+            super::version_heading(section).as_deref(),
+            Some("## [0.1.0-alpha.2]")
+        );
+    }
+
+    #[test]
+    fn heading_detects_an_already_spliced_section() {
+        // The guard in `run` keys off this containment check; a freshly rendered
+        // section's heading must be found in a file that already carries it,
+        // even though the dates differ.
+        let section = "## [0.1.0-alpha.2] - 2026-07-02\n\n### Features\n\n- x";
+        let heading = super::version_heading(section).unwrap();
+        let already = "# Changelog\n\n## [0.1.0-alpha.2] - 2026-07-01\n\n### Features\n\n- x";
+        assert!(already.contains(&heading));
     }
 }

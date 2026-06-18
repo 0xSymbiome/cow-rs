@@ -19,3 +19,4 @@ pub mod changelog;
 pub mod docs;
 pub mod parity;
 pub mod policy;
+pub mod version_surface;

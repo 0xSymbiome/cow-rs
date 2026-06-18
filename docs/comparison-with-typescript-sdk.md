@@ -16,9 +16,9 @@ a parity contract; they differ in the guarantees they place around it.
 ## Scope: the TypeScript SDK is broader
 
 The TypeScript SDK ships programmable-order capability families that `cow-rs`
-`0.1.0-alpha.1` does not yet implement:
+does not yet implement:
 
-| Capability | TypeScript SDK | cow-rs `0.1.0-alpha.1` |
+| Capability | TypeScript SDK | cow-rs |
 | --- | --- | --- |
 | Composable / conditional orders (TWAP and others) | `@cowprotocol/sdk-composable` | Deferred — deployment addresses resolve through the typed `Registry`; the order-building framework is recorded by [ADR 0048](adr/0048-composable-conditional-order-framework.md) |
 | Cross-chain bridging | `@cowprotocol/sdk-bridging` | Not yet implemented |

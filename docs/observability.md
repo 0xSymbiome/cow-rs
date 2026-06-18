@@ -12,15 +12,15 @@ single facade feature on `cow-sdk` that activates them all in one step:
 
 ```toml
 [dependencies]
-cow-sdk = { version = "0.1.0-alpha.1", features = ["tracing"] }
+cow-sdk = { version = "0.1.0-alpha.3", features = ["tracing"] }
 # or, reaching individual crates directly:
-cow-sdk-trading = { version = "0.1.0-alpha.1", features = ["tracing"] }
-cow-sdk-app-data = { version = "0.1.0-alpha.1", features = ["tracing"] }
-cow-sdk-contracts = { version = "0.1.0-alpha.1", features = ["tracing"] }
-cow-sdk-orderbook = { version = "0.1.0-alpha.1", features = ["tracing"] }
-cow-sdk-subgraph = { version = "0.1.0-alpha.1", features = ["tracing"] }
-cow-sdk-signing = { version = "0.1.0-alpha.1", features = ["tracing"] }
-cow-sdk-core = { version = "0.1.0-alpha.1", features = ["tracing"] }
+cow-sdk-trading = { version = "0.1.0-alpha.3", features = ["tracing"] }
+cow-sdk-app-data = { version = "0.1.0-alpha.3", features = ["tracing"] }
+cow-sdk-contracts = { version = "0.1.0-alpha.3", features = ["tracing"] }
+cow-sdk-orderbook = { version = "0.1.0-alpha.3", features = ["tracing"] }
+cow-sdk-subgraph = { version = "0.1.0-alpha.3", features = ["tracing"] }
+cow-sdk-signing = { version = "0.1.0-alpha.3", features = ["tracing"] }
+cow-sdk-core = { version = "0.1.0-alpha.3", features = ["tracing"] }
 ```
 
 With the feature off the SDK emits zero spans and zero events, and none of
