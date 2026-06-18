@@ -65,3 +65,38 @@ for (const flavour of descriptor.flavours) {
   rmSync(nodeWasm);
   console.log(`dedupe-target-wasm: ${flavour.name} nodejs now reuses the bundler wasm binary`);
 }
+
+// Deduplicate the wasm binary across a flavour's bundler/web targets too. The two
+// targets emit a byte-identical binary — only the JS loader glue differs — so the
+// redundant web binary is dropped; the raw Worker module subpath (set by
+// render-package-json.mjs) points at the bundler copy, and the web glue is
+// initialized with a module the host supplies, so it needs no sibling binary. The
+// rewrite is guarded by a strict identity assertion so a future wasm-pack output
+// change fails the build loudly instead of silently shipping a divergent web build.
+for (const flavour of descriptor.flavours) {
+  const targets = flavour.targets ?? [];
+  if (!targets.includes("bundler") || !targets.includes("web")) {
+    continue;
+  }
+
+  const bundlerWasm = join(rawRoot, `${flavour.name}-bundler`, WASM);
+  const webWasm = join(rawRoot, `${flavour.name}-web`, WASM);
+
+  if (!existsSync(webWasm)) {
+    // Already deduplicated (idempotent re-run) — nothing to do.
+    continue;
+  }
+
+  if (!existsSync(bundlerWasm)) {
+    throw new Error(`dedupe-target-wasm: ${flavour.name} is missing ${bundlerWasm}`);
+  }
+
+  if (!readFileSync(bundlerWasm).equals(readFileSync(webWasm))) {
+    throw new Error(
+      `dedupe-target-wasm: ${flavour.name} bundler and web wasm differ; refusing to deduplicate`
+    );
+  }
+
+  rmSync(webWasm);
+  console.log(`dedupe-target-wasm: ${flavour.name} web now reuses the bundler wasm binary`);
+}

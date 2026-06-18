@@ -1,11 +1,22 @@
 /// <reference lib="esnext.disposable" />
-import * as raw from "./raw/cloudflare.js";
+import * as raw from "./raw/trading.js";
 import type { WasmEnvelope } from "./envelope.js";
 import type { CommonClientConfig, SdkClientOptions, SigningOptions, TradingClientConfig } from "./options.js";
 import type { ContractReadCallback, CustomEip1271Callback, DigestSignerCallback, Eip1193RequestCallback, TypedDataSignerCallback } from "./callbacks.js";
 export interface OrderBookClientConfig extends CommonClientConfig {
 }
-export declare function initialize(module: WebAssembly.Module | raw.InitInput): Promise<void>;
+/**
+ * Initialize the wasm module, idempotently, once per module instance.
+ *
+ * On the `web` build — Cloudflare Workers, Deno, Vercel Edge, and no-bundler
+ * browsers — the host owns module instantiation, so it must call this once with
+ * the compiled module (Workers pass the `CompiledWasm` binding) or its URL/bytes
+ * (Deno and browsers). On the `bundler` and `nodejs` builds the host
+ * bundler/runtime instantiates the module on import, so this resolves
+ * immediately and the argument is ignored — calling it is optional and harmless,
+ * which keeps one call shape working across every target.
+ */
+export declare function initialize(module?: WebAssembly.Module | raw.InitInput): Promise<void>;
 export default initialize;
 export declare class OrderBookClient {
     #private;
@@ -73,7 +84,7 @@ export declare function signOrderWithTypedDataSigner(input: raw.OrderInput, chai
 export declare function supportedChainIds(): Uint32Array;
 export declare function validateAppDataDoc(doc: raw.AppDataDocInput): WasmEnvelope<raw.ValidationResultDto>;
 export declare function wasmVersion(): string;
-export type { AllowanceParametersInput, AmountsDto, AppDataDocDto, AppDataDocInput, AppDataInfoDto, AppDataObjectDto, ApprovalParametersInput, BuiltSellNativeCurrencyTxDto, CompetitionAuctionDto, CompetitionOrderStatusDto, CompetitionOrderStatusKindDto, ContractCallDto, CostsDto, CowEip1271SignRequest, CowEnvDto, DeploymentAddressesDto, Eip1193Request, EthFlowEventDto, EthflowDataDto, EventLogInput, ExecutedAmountsDto, ExecutedProtocolFeeDto, FeeComponentDto, GeneratedOrderUidDto, InitInput, InteractionDataDto, LimitTradeParametersInput, NativePriceResponseDto, NetworkFeeDto, OnchainOrderDataDto, OrderClassDto, OrderCreationInput, OrderDataDto, OrderDto, OrderInput, OrderInteractionsDto, OrderKindDto, OrderPostingResultDto, OrderQuoteRequestInput, OrderQuoteResponseDto, OrderStatusDto, OrderTraderParametersInput, OrderBookRuntimeBindingDto, PaginationOptions, PartnerFeeDto, PartnerFeeInput, PartnerFeePolicyDto, PartnerFeePolicyInput, QuoteAmountsAndCostsDto, QuoteDataDto, QuoteResultsDto, SettlementEventDto, SignedCancellationsInput, SignedOrderDto, SigningSchemeDto, SolverCompetitionOrderDto, SolverCompetitionResponseDto, SolverExecutionDto, SolverSettlementDto, StoredOrderQuoteDto, SwapParametersInput, TokenBalanceDto, TotalSurplusDto, TradeDto, TradeParametersDto, TradesQueryInput, TradingAppDataInfoDto, TransactionRequestDto, TypedDataDomainDto, TypedDataEnvelopeDto, TypedDataFieldDto, ValidationResultDto } from "./raw/cloudflare.js";
+export type { AllowanceParametersInput, AmountsDto, AppDataDocDto, AppDataDocInput, AppDataInfoDto, AppDataObjectDto, ApprovalParametersInput, BuiltSellNativeCurrencyTxDto, CompetitionAuctionDto, CompetitionOrderStatusDto, CompetitionOrderStatusKindDto, ContractCallDto, CostsDto, CowEip1271SignRequest, CowEnvDto, DeploymentAddressesDto, Eip1193Request, EthFlowEventDto, EthflowDataDto, EventLogInput, ExecutedAmountsDto, ExecutedProtocolFeeDto, FeeComponentDto, GeneratedOrderUidDto, InitInput, InteractionDataDto, LimitTradeParametersInput, NativePriceResponseDto, NetworkFeeDto, OnchainOrderDataDto, OrderClassDto, OrderCreationInput, OrderDataDto, OrderDto, OrderInput, OrderInteractionsDto, OrderKindDto, OrderPostingResultDto, OrderQuoteRequestInput, OrderQuoteResponseDto, OrderStatusDto, OrderTraderParametersInput, OrderBookRuntimeBindingDto, PaginationOptions, PartnerFeeDto, PartnerFeeInput, PartnerFeePolicyDto, PartnerFeePolicyInput, QuoteAmountsAndCostsDto, QuoteDataDto, QuoteResultsDto, SettlementEventDto, SignedCancellationsInput, SignedOrderDto, SigningSchemeDto, SolverCompetitionOrderDto, SolverCompetitionResponseDto, SolverExecutionDto, SolverSettlementDto, StoredOrderQuoteDto, SwapParametersInput, TokenBalanceDto, TotalSurplusDto, TradeDto, TradeParametersDto, TradesQueryInput, TradingAppDataInfoDto, TransactionRequestDto, TypedDataDomainDto, TypedDataEnvelopeDto, TypedDataFieldDto, ValidationResultDto } from "./raw/trading.js";
 export type { ContractReadCallback, CowEip1271SignCallback, CowEnv, CustomEip1271Callback, DigestSignerCallback, Eip1193RequestCallback, TypedDataSignerCallback } from "./callbacks.js";
 export type { OrderBookRejectionCategory, CowError } from "./errors.js";
 export type { SchemaVersion, WasmEnvelope } from "./envelope.js";

@@ -49,9 +49,16 @@ if (!existsSync(packagePath)) {
 const manifest = JSON.parse(readFileSync(packagePath, "utf8"));
 const descriptor = JSON.parse(readFileSync(flavoursPath, "utf8"));
 const expectedExports = new Set(
-  descriptor.flavours.flatMap((flavour) =>
-    flavour.rawWasmSubpath ? [flavour.subpath, flavour.rawWasmSubpath] : [flavour.subpath]
-  )
+  descriptor.flavours.flatMap((flavour) => {
+    const subpaths = [flavour.subpath];
+    if (flavour.webSubpath) {
+      subpaths.push(flavour.webSubpath);
+    }
+    if (flavour.rawWasmSubpath) {
+      subpaths.push(flavour.rawWasmSubpath);
+    }
+    return subpaths;
+  })
 );
 
 for (const forbidden of ["./web", "./bundler", "./nodejs"]) {

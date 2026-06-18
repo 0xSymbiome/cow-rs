@@ -243,15 +243,22 @@ jobs:
           // does not accept extended regex; `\+` is the BRE form of
           // one-or-more and `[[:space:]]` covers leading indentation.
           const ignoreFuncElem = "^[[:space:]]*readonly __wasm_bindgen_func_elem_[0-9]\\+:";
-          // The raw type declarations are loader-independent: wasm-bindgen emits a
-          // byte-identical `.d.ts` for every wasm-pack target of a flavour, so one
-          // snapshot per flavour pins the public type contract. Diffing every
-          // target's generated declaration against that single snapshot both
-          // detects drift and asserts the targets agree; a future per-target
-          // divergence fails closed here.
+          // The consumer-facing raw declarations are loader-independent: wasm-bindgen
+          // emits a byte-identical `.d.ts` for the `bundler` and `nodejs` targets of a
+          // flavour, so one snapshot per flavour pins the public type contract. The
+          // `web` target adds only wasm-bindgen's standard module-init scaffolding
+          // (`InitInput`/`InitOutput`/`initSync`/the default initializer) — loader glue
+          // rather than consumer surface — so it is not diffed against the shared
+          // snapshot; the public `initialize` contract is pinned by the facade
+          // declaration check below. Diffing every other target's declaration against
+          // the single snapshot both detects drift and asserts the targets agree; a
+          // future per-target divergence fails closed here.
           for (const flavour of descriptor.flavours) {
             const snapshot = `crates/wasm/snapshots/raw/${flavour.name}.d.ts`;
             for (const target of flavour.targets) {
+              if (target === "web") {
+                continue;
+              }
               const generated = `crates/wasm/npm/dist/raw/${flavour.name}-${target}/cow_sdk_wasm.d.ts`;
               const result = spawnSync(
                 "diff",

@@ -25,9 +25,10 @@ internal, and non-browser runtimes configure explicit callback HTTP transport
 plus `TransportPolicyConfig`.
 
 The runtime support matrix is explicit: browser bundlers are
-`default-http-supported`, Node.js 22 and 24 LTS plus Cloudflare Workers are
-`callback-http-tested`, Deno is opt-in experimental, and Bun, Vercel Edge, and
-Fly.io are best-effort without a CI claim.
+`default-http-supported`, Node.js 22 and 24 LTS plus Cloudflare Workers and
+Deno are `callback-http-tested` through the shipped `trading` flavour's
+web (edge) build, and Bun, Vercel Edge, and Fly.io are best-effort without a CI
+claim.
 
 ## Why
 
@@ -55,11 +56,10 @@ this ADR does not blur:
 - Runtime performance and support evidence (governed by the comparative
   benchmark validation note and its refresh triggers).
 - Cloudflare deployment and startup evidence (separately tracked; see the
-  validation note's refresh triggers — the cloudflare flavor is
-  size-compatible with the current Workers Free compressed-size limit at
-  the time of measurement; the `cloudflare` flavor is built and tested
-  end-to-end in CI (Workers Vitest), within the Workers compressed-size
-  budget).
+  validation note's refresh triggers — the `trading` flavour's web (edge) build
+  is size-compatible with the current Workers Free compressed-size limit at
+  the time of measurement, and is built and tested end-to-end in CI (Workers
+  Vitest), within the Workers compressed-size budget).
 
 ## Must Remain True
 
@@ -84,7 +84,7 @@ this ADR does not blur:
     JavaScript boundary.
 12. `WasmError` messages use redacted display strings and response-body
     redaction.
-13. Cloudflare imports the web-target package subpaths and initializes the
+13. Edge runtimes import the web-target package subpaths and initialize the
     module once per isolate.
 14. Worker source does not call dynamic WebAssembly compilation or streaming
     instantiation APIs.

@@ -20,10 +20,11 @@ of reimplementing protocol primitives.
 - **Single-source-of-truth Rust + TypeScript embedding**: applications that
   run cow-rs in both a Rust service and a TypeScript web consumer, where one
   implementation eliminates protocol-drift bugs.
-- **Cloudflare Workers**: the `./cloudflare` flavor (size-compatible with
-  the current Workers Free compressed-size limit at the time of measurement;
-  the `cloudflare` flavor is built and tested end-to-end in CI (Workers Vitest),
-  within the Workers compressed-size budget).
+- **Edge runtimes**: the `trading` flavour's web-target build, imported at
+  `./trading/edge` (size-compatible with the current Cloudflare Workers Free
+  compressed-size limit at the time of measurement; built and tested end-to-end
+  in CI (Workers Vitest), within the Workers compressed-size budget). The same
+  `trading` feature set serves browser bundlers and Node from one build.
 - **Embeddable signing helper**: the `./signing` flavor is the smallest and
   may be embedded in a larger TypeScript application.
 
@@ -96,22 +97,24 @@ malformed response, or abort.
 | --- | --- | --- |
 | Browser bundlers (Vite, webpack, Next.js, Rollup, Parcel, esbuild) | `default-http-supported` | Default browser fetch |
 | Node.js 24 LTS | `callback-http-tested` | `CowFetchCallback` |
-| Cloudflare Workers (workerd) | `callback-http-tested` | `CowFetchCallback` through `./cloudflare` and `./cloudflare/wasm` |
-| Deno | `optional-experimental` | `CowFetchCallback`; self-built target only, no shipped build |
-| Bun, Vercel Edge, Fly.io | `best-effort` | No CI support claim |
+| Cloudflare Workers (workerd) | `callback-http-tested` | `CowFetchCallback` through `./trading/edge` and `./trading/edge/wasm` |
+| Deno | `callback-http-tested` | `CowFetchCallback` through `./trading` (deno condition) or `./trading/edge` |
+| Bun, Vercel Edge, Fly.io | `best-effort` | `CowFetchCallback` through the `trading` web build |
 
-Cloudflare Workers use the web-target package output through the package export
-map. Consumers should import public subpaths such as `./cloudflare` and
-`./cloudflare/wasm`; nested build-output paths are not public API.
+Edge runtimes use the `trading` flavour's web-target output through the package
+export map — resolved automatically through the `workerd`, `deno`, `edge-light`,
+and `bun` conditions on `./trading`, or imported explicitly at `./trading/edge`
+(with the precompiled module at `./trading/edge/wasm`). Nested build-output paths
+are not public API.
 
 Because Workers cannot compile WebAssembly from bytes at runtime, the
-`./cloudflare` facade exposes an explicit `initialize` step that accepts the
+`./trading/edge` facade exposes an explicit `initialize` step that accepts the
 statically imported `WebAssembly.Module`. Import the precompiled module from the
-`./cloudflare/wasm` subpath, initialize once, then use clients normally:
+`./trading/edge/wasm` subpath, initialize once, then use clients normally:
 
 ```ts
-import initialize, { OrderBookClient } from "@symbiome-forge/cow-sdk-wasm/cloudflare";
-import wasmModule from "@symbiome-forge/cow-sdk-wasm/cloudflare/wasm";
+import initialize, { OrderBookClient } from "@symbiome-forge/cow-sdk-wasm/trading/edge";
+import wasmModule from "@symbiome-forge/cow-sdk-wasm/trading/edge/wasm";
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -124,9 +127,10 @@ export default {
 };
 ```
 
-The cloudflare flavor's gzip-compressed artifact is below the current
-Cloudflare Workers Free compressed-size limit at the time of measurement; the
-release pipeline enforces an explicit byte budget on every build. Full Workers
+The `trading` flavour's edge (web-target) build shares one wasm binary with its
+bundler and nodejs targets; that binary's gzip-compressed size is below the
+current Cloudflare Workers Free compressed-size limit at the time of measurement,
+and the release pipeline enforces an explicit byte budget on every build. Full Workers
 support still requires release-bundle verification with `wrangler deploy
 --dry-run` and Worker startup measurement against Cloudflare's 1-second
 startup limit. Cloudflare's published platform limits are at
@@ -142,9 +146,12 @@ is the wasm/TypeScript analog of the Rust ecosystem's `cargo-public-api`
 snapshot pattern (and of TypeScript's API Extractor report files). The two
 snapshot layers lock complementary surfaces and are not redundant:
 
-- `snapshots/raw/` (bundler and nodejs targets, plus the web target for the
-  Cloudflare flavor) locks the wasm-bindgen output and the `tsify` DTO **fields**
-  — the field-level shape a consumer sees through the re-exported DTO types.
+- `snapshots/raw/` (bundler and nodejs targets) locks the wasm-bindgen output
+  and the `tsify` DTO **fields** — the field-level shape a consumer sees through
+  the re-exported DTO types. The `trading` flavour's web target adds only
+  wasm-bindgen's standard module-init scaffolding on top of the bundler surface,
+  so it is not snapshotted separately; the facade snapshot pins its public
+  `initialize` contract.
 - `snapshots/facade/` locks the public **class and function surface** of the
   TypeScript facade — method signatures, option objects, and disposal.
 

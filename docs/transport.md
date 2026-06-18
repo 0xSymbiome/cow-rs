@@ -200,8 +200,8 @@ drops its closure on success, throw, rejection, malformed response, or abort.
 
 Use this path for Node.js 22 or 24 LTS, Cloudflare Workers, Deno, custom service
 workers, and tests that need precise control over HTTP responses. Cloudflare
-Workers consume the web-target package through `./cloudflare` and
-`./cloudflare/wasm`, not the bundler target.
+Workers consume the web-target package through `./trading/edge` and
+`./trading/edge/wasm`, not the bundler target.
 
 ## TypeScript TransportConfig
 

@@ -38,6 +38,6 @@ repository and cover specialized JavaScript host patterns:
 - [`cow-signer-node`](https://github.com/0xSymbiome/cow-sdk-examples/tree/main/examples/wasm/cow-signer-node)
   signs an order offline with EIP-712 and EIP-1271 through the `signing` flavor.
 - [`cow-gateway-cloudflare`](https://github.com/0xSymbiome/cow-sdk-examples/tree/main/examples/wasm/cow-gateway-cloudflare)
-  runs an orderbook quote gateway on the `cloudflare` flavor inside a Worker.
+  runs an orderbook quote gateway on the `trading` flavour's edge build inside a Worker.
 
 Each example has its own README and `pnpm test` check in that repository.

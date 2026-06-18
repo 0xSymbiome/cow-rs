@@ -46,7 +46,7 @@ function checkBudget({ label, actual, failBudget, warnBudget, flavour, target })
 
 function resolveGzipBudget(flavour) {
   // Prefer explicit byte budgets when present (the canonical shape per
-  // crates/wasm/npm/flavours.json — cloudflare flavor uses gzipFailBytes
+  // crates/wasm/npm/flavours.json — the trading flavour uses gzipFailBytes
   // + gzipWarnBytes to track Cloudflare Workers' published 3 MB
   // compressed-size limit without MiB / MB ambiguity).
   if (typeof flavour.gzipFailBytes === "number") {

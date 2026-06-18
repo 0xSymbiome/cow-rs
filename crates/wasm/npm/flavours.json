@@ -45,7 +45,7 @@
       "subpath": "./signing"
     },
     {
-      "name": "cloudflare",
+      "name": "trading",
       "features": [
         "orderbook",
         "signing",
@@ -54,13 +54,14 @@
         "transport-policy",
         "trading"
       ],
-      "targets": ["web"],
+      "targets": ["bundler", "nodejs", "web"],
       "rawBudgetMiB": 3.2,
       "brotliBudgetKiB": 850,
       "gzipFailBytes": 3000000,
       "gzipWarnBytes": 2700000,
-      "subpath": "./cloudflare",
-      "rawWasmSubpath": "./cloudflare/wasm"
+      "subpath": "./trading",
+      "webSubpath": "./trading/edge",
+      "rawWasmSubpath": "./trading/edge/wasm"
     }
   ]
 }
