@@ -5,7 +5,7 @@ trait contracts.
 
 > ⚠️ **Alpha — `0.1.0-alpha`.** Pre-release and not security-audited; the public
 > API may change before `0.1.0`. It is published as a pre-release, so Cargo
-> selects it only when you opt in (`cow-sdk-core = "0.1.0-alpha.4"`). Review it
+> selects it only when you opt in (`cow-sdk-core = "0.1.0-alpha.5"`). Review it
 > yourself before relying on it with real funds.
 
 `cow-sdk-core` is the foundation of the
@@ -59,7 +59,7 @@ The cow-named identity and numeric primitive types ship as cow-owned
 
 ```toml
 [dependencies]
-cow-sdk-core = "0.1.0-alpha.4"
+cow-sdk-core = "0.1.0-alpha.5"
 ```
 
 ## Minimal example

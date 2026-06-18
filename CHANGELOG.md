@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.5] - 2026-06-18
+
+### Features
+
+- *(wasm)* Harden and document the WebAssembly consumer surface (#9) ([`aff75d8`](https://github.com/0xSymbiome/cow-rs/commit/aff75d876cfb788e400476991b3ca4fe9048209b))
+
 ## [0.1.0-alpha.4] - 2026-06-18
 
 ### Bug Fixes

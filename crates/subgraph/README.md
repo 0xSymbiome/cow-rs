@@ -6,7 +6,7 @@ typed, credential-redacting error boundary.
 
 > ⚠️ **Alpha — `0.1.0-alpha`.** Pre-release and not security-audited; the public
 > API may change before `0.1.0`. It is published as a pre-release, so Cargo
-> selects it only when you opt in (`cow-sdk-subgraph = "0.1.0-alpha.4"`). Review
+> selects it only when you opt in (`cow-sdk-subgraph = "0.1.0-alpha.5"`). Review
 > it yourself before relying on it with real funds.
 
 This is a read-only analytics crate. It stays separate from the **default**
@@ -32,7 +32,7 @@ key is redacted in every debug, display, and serialized rendering.
 
 ```toml
 [dependencies]
-cow-sdk-subgraph = "0.1.0-alpha.4"
+cow-sdk-subgraph = "0.1.0-alpha.5"
 ```
 
 ## Example

@@ -33,9 +33,9 @@ eip712 = [
 ]
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-cow-sdk-alloy-provider = { path = "../alloy-provider", version = "0.1.0-alpha.4", default-features = false }
-cow-sdk-alloy-signer = { path = "../alloy-signer", version = "0.1.0-alpha.4", default-features = false }
-cow-sdk-core = { path = "../core", version = "0.1.0-alpha.4" }
+cow-sdk-alloy-provider = { path = "../alloy-provider", version = "0.1.0-alpha.5", default-features = false }
+cow-sdk-alloy-signer = { path = "../alloy-signer", version = "0.1.0-alpha.5", default-features = false }
+cow-sdk-core = { path = "../core", version = "0.1.0-alpha.5" }
 
 alloy-network.workspace = true
 alloy-primitives = { workspace = true, features = ["k256"] }
@@ -44,12 +44,12 @@ alloy-rpc-client.workspace = true
 alloy-signer.workspace = true
 alloy-signer-local.workspace = true
 alloy-transport.workspace = true
-cow-sdk-contracts = { path = "../contracts", version = "0.1.0-alpha.4" }
+cow-sdk-contracts = { path = "../contracts", version = "0.1.0-alpha.5" }
 reqwest = { workspace = true, default-features = false, features = ["rustls"] }
 thiserror.workspace = true
 
 [dev-dependencies]
-cow-sdk-signing = { path = "../signing", version = "0.1.0-alpha.4" }
+cow-sdk-signing = { path = "../signing", version = "0.1.0-alpha.5" }
 cow-sdk-test-utils = { path = "../test-utils" }
 serde_json.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
