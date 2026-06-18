@@ -229,7 +229,7 @@ of upstream TypeScript methods. The release supports these workflow buckets:
    per-version address tables, with typed misses for chains where a contract
    is not deployed.
 9. **Runtime support**: browser bundlers, Node.js 22 and 24 LTS, Cloudflare
-   Workers, and best-effort self-built Deno targets.
+   Workers, Deno, and Vercel Edge through the shipped `trading` flavour's web (edge) build.
 10. **Cancellation and timeouts**: per-call `signal`, per-call `timeoutMs`, and
     wallet callback `walletConfig.timeoutMs`.
 

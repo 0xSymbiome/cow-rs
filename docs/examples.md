@@ -57,8 +57,8 @@ the TypeScript-callable WASM package from JavaScript or TypeScript runtimes
 for specialized cases — deterministic Rust signing parity, single-source-of-
 truth Rust + TypeScript embedding, or Cloudflare Workers (size-compatible
 with the current Workers Free compressed-size limit at the time of
-measurement; the `cloudflare` flavor is built and tested end-to-end in CI
-(Workers Vitest), within the Workers compressed-size budget).
+measurement; the `trading` flavour's edge build is built and tested end-to-end
+in CI (Workers Vitest), within the Workers compressed-size budget).
 
 The package is published to npm as `@symbiome-forge/cow-sdk-wasm`. The
 runnable WASM package examples live in the dedicated
@@ -68,7 +68,7 @@ repository; each carries its own README and `pnpm test` check.
 | Runtime | Example | Purpose |
 | --- | --- | --- |
 | Node.js 22 or 24 | [`cow-signer-node`](https://github.com/0xSymbiome/cow-sdk-examples/tree/main/examples/wasm/cow-signer-node) | Sign an order offline with EIP-712 and EIP-1271 using the `signing` flavor |
-| Cloudflare Workers | [`cow-gateway-cloudflare`](https://github.com/0xSymbiome/cow-sdk-examples/tree/main/examples/wasm/cow-gateway-cloudflare) | Run an orderbook quote gateway on the `cloudflare` flavor |
+| Cloudflare Workers | [`cow-gateway-cloudflare`](https://github.com/0xSymbiome/cow-sdk-examples/tree/main/examples/wasm/cow-gateway-cloudflare) | Run an orderbook quote gateway on the `trading` flavour's edge build |
 
 ## Integration Notes
 

@@ -149,17 +149,31 @@ async fn empty_cancellation_rejects_before_wallet_callback() {
 }
 
 #[wasm_bindgen_test]
-fn flavour_descriptor_exposes_cloudflare_wasm_subpath() {
+fn flavour_descriptor_exposes_trading_web_subpath() {
     let descriptor: Value = serde_json::from_str(include_str!("../npm/flavours.json")).unwrap();
-    let cloudflare = descriptor["flavours"]
+    let trading = descriptor["flavours"]
         .as_array()
         .unwrap()
         .iter()
-        .find(|flavour| flavour["name"] == "cloudflare")
+        .find(|flavour| flavour["name"] == "trading")
         .unwrap();
 
-    assert_eq!(cloudflare["rawWasmSubpath"], "./cloudflare/wasm");
-    assert_eq!(cloudflare["targets"], serde_json::json!(["web"]));
+    // The dApp/order-lifecycle flavour ships every target: the bundler build backs
+    // browser dApps, nodejs backs Node hosts, and the web build backs edge runtimes
+    // (Cloudflare Workers, Deno, Vercel Edge) through the explicit web subpath.
+    assert_eq!(trading["webSubpath"], "./trading/edge");
+    assert_eq!(trading["rawWasmSubpath"], "./trading/edge/wasm");
+    let targets = trading["targets"].as_array().unwrap();
+    assert!(
+        targets.iter().any(|target| target.as_str() == Some("web")),
+        "trading must ship the web target for edge runtimes"
+    );
+    assert!(
+        targets
+            .iter()
+            .any(|target| target.as_str() == Some("bundler")),
+        "trading must ship the bundler target for browser dApps"
+    );
 }
 
 #[wasm_bindgen_test]

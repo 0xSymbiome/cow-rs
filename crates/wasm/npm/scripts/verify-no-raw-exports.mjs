@@ -27,12 +27,21 @@ if (!existsSync(packagePath)) {
   fail("package.json has not been rendered");
 } else {
   const manifest = JSON.parse(readFileSync(packagePath, "utf8"));
-  const rawWasmTarget = manifest.exports?.["./cloudflare/wasm"];
+  const descriptor = JSON.parse(readFileSync(join(packageRoot, "flavours.json"), "utf8"));
+  // The only exports allowed to point at raw wasm-bindgen output are the
+  // per-flavour raw wasm module subpaths (for example `./trading/edge/wasm`),
+  // which Cloudflare Workers import as a CompiledWasm module and pass to
+  // `initialize`.
+  const allowedRawWasm = new Map(
+    descriptor.flavours
+      .filter((flavour) => flavour.rawWasmSubpath)
+      .map((flavour) => [flavour.rawWasmSubpath, manifest.exports?.[flavour.rawWasmSubpath]])
+  );
 
   for (const [subpath, target] of Object.entries(manifest.exports ?? {})) {
     for (const value of collectStrings(target)) {
       if (value.includes("/dist/raw/") || value.startsWith("./dist/raw/")) {
-        if (subpath !== "./cloudflare/wasm" || value !== rawWasmTarget) {
+        if (!allowedRawWasm.has(subpath) || value !== allowedRawWasm.get(subpath)) {
           fail(`${subpath} exposes raw wasm-bindgen output through ${value}`);
         }
       }

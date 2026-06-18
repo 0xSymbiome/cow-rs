@@ -1,6 +1,6 @@
-import init, * as wasm from "../../dist/raw/cloudflare-web/cow_sdk_wasm.js";
+import init, * as wasm from "../../dist/raw/trading-web/cow_sdk_wasm.js";
 
-export type * from "../../dist/raw/cloudflare-web/cow_sdk_wasm.js";
+export type * from "../../dist/raw/trading-web/cow_sdk_wasm.js";
 
 export const initializeRaw = init;
 export const RawOrderBookClient = wasm.OrderBookClient;

@@ -15,13 +15,19 @@ without depending on a specific wallet library.
 
 | You are building... | Choose | Why |
 | --- | --- | --- |
-| Browser dapp with viem, ethers, wagmi, or an EIP-1193 wallet | `@symbiome-forge/cow-sdk-wasm` | Wallet stack stays outside the package behind typed callbacks |
-| Browser dapp with a smaller orderbook bundle target | `@symbiome-forge/cow-sdk-wasm/orderbook` | Orderbook and signing subset with a smaller raw wasm budget |
-| Node.js 22 or 24 LTS backend | `@symbiome-forge/cow-sdk-wasm` | Node target works without browser polyfills when transport is configured |
-| Cloudflare Worker proxying CoW orderbook calls | `@symbiome-forge/cow-sdk-wasm/cloudflare` | Worker-compatible web target and explicit wasm module initialization |
+| Browser dApp — quote, sign, post, cancel (full order lifecycle) with viem, ethers, wagmi, or an EIP-1193 wallet | `@symbiome-forge/cow-sdk-wasm/trading` | Order lifecycle plus app-data, built for a browser bundler (Vite, webpack); wallet stack stays outside the package behind typed callbacks |
+| Browser dApp — orderbook reads and cancellation only | `@symbiome-forge/cow-sdk-wasm/orderbook` | Smaller read-focused subset, no trading or app-data |
+| Node.js 22 or 24 LTS backend running order flow | `@symbiome-forge/cow-sdk-wasm/trading` | Same order-lifecycle surface on the Node target, no browser polyfills |
+| Edge runtime — Cloudflare Workers, Deno, or Vercel Edge | `@symbiome-forge/cow-sdk-wasm/trading/edge` | The `trading` flavour's web-target build with explicit wasm module initialization |
 | Signer service or HSM proxy | `@symbiome-forge/cow-sdk-wasm/signing` | Signing primitives without orderbook, trading, subgraph, or IPFS clients |
+| Everything, including subgraph analytics and IPFS app-data | `@symbiome-forge/cow-sdk-wasm` | The full default surface |
 | Native Rust service, bot, solver, or treasury automation | `cow-sdk` | Avoids wasm-bindgen and npm packaging entirely |
 | Rust app compiled to browser WASM | `cow-sdk` with `cow-sdk-core`'s browser `FetchTransport` (the `wasm32-unknown-unknown` `transport::fetch` module) | Rust-on-wasm path; this package is for JavaScript hosts |
+
+The same `trading` flavour serves a browser dApp (bundler target), a Node backend
+(nodejs target), and an edge runtime (web target) from one feature set — pick the
+import by runtime; the package resolves the target through standard conditional
+exports, with `./trading/edge` as the explicit entry for Cloudflare Workers.
 
 ## Not in this crate
 
@@ -141,8 +147,8 @@ const signed = await signOrderWithTypedDataSigner(order, 1, owner, async (envelo
 ```ts
 import initialize, {
   OrderBookClient
-} from "@symbiome-forge/cow-sdk-wasm/cloudflare";
-import wasmModule from "@symbiome-forge/cow-sdk-wasm/cloudflare/wasm";
+} from "@symbiome-forge/cow-sdk-wasm/trading/edge";
+import wasmModule from "@symbiome-forge/cow-sdk-wasm/trading/edge/wasm";
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -170,11 +176,12 @@ export default {
 
 | Import | Surface | Use when |
 | --- | --- | --- |
-| `@symbiome-forge/cow-sdk-wasm` | Default facade with orderbook, signing, app-data, IPFS, trading, and subgraph | General TypeScript or Node use |
-| `@symbiome-forge/cow-sdk-wasm/orderbook` | Orderbook client, cancellation helpers, and signing helpers | Browser dapps that do not need trading or subgraph clients |
+| `@symbiome-forge/cow-sdk-wasm` | Default facade with orderbook, signing, app-data, IPFS, trading, and subgraph | General TypeScript or Node use that needs subgraph or IPFS |
+| `@symbiome-forge/cow-sdk-wasm/trading` | Orderbook, trading, signing, app-data, and cancellation — the full order lifecycle | Browser dApps, Node backends, and edge runtimes running order flow |
+| `@symbiome-forge/cow-sdk-wasm/orderbook` | Orderbook client, cancellation helpers, and signing helpers | Read-focused dApps that do not post orders |
 | `@symbiome-forge/cow-sdk-wasm/signing` | Signing, UID, EIP-1271, deployment, and version helpers | Signer services and HSM-facing adapters |
-| `@symbiome-forge/cow-sdk-wasm/cloudflare` | Worker-compatible orderbook and trading facade | Cloudflare Workers |
-| `@symbiome-forge/cow-sdk-wasm/cloudflare/wasm` | Raw Worker wasm module asset | Pass to the Cloudflare `initialize` helper |
+| `@symbiome-forge/cow-sdk-wasm/trading/edge` | The `trading` flavour's web-target facade | Edge runtimes (Cloudflare Workers, Deno, Vercel Edge) |
+| `@symbiome-forge/cow-sdk-wasm/trading/edge/wasm` | Raw Worker wasm module asset | Pass to the `initialize` helper |
 
 Do not import from `dist/raw` or generated wasm-pack target directories. Raw
 wasm-bindgen output is package-internal; public imports go through the facade
@@ -187,12 +194,13 @@ Measured on the current alpha build:
 
 | Flavor | Raw wasm | Brotli | Gzip | Gate |
 | --- | ---: | ---: | ---: | --- |
-| default | 1.63 MiB | 511 KiB | 688 KiB | 3.3 MiB raw / 900 KiB brotli |
+| default | 1.63 MiB | 511 KiB | 689 KiB | 3.3 MiB raw / 900 KiB brotli |
 | orderbook | 1.03 MiB | 341 KiB | 447 KiB | 1.5 MiB raw / 500 KiB brotli |
-| signing | 0.31 MiB | 119 KiB | 142 KiB | 0.9 MiB raw / 300 KiB brotli |
-| cloudflare | 1.54 MiB | 489 KiB | 657 KiB | 3.2 MiB raw / 850 KiB brotli / 3,000,000 B gzip (warn at 2,700,000 B) |
+| signing | 0.31 MiB | 120 KiB | 142 KiB | 0.9 MiB raw / 300 KiB brotli |
+| trading | 1.54 MiB | 489 KiB | 657 KiB | 3.2 MiB raw / 850 KiB brotli / 3,000,000 B gzip (warn at 2,700,000 B) |
 
-The cloudflare flavor's gzip-compressed artifact is below the current
+The `trading` flavour emits one wasm binary shared across its bundler, nodejs, and
+web targets. Its web-target gzip-compressed artifact is below the current
 Cloudflare Workers Free compressed-size limit at the time of measurement.
 Full Workers support still requires release-bundle verification and Worker
 startup measurement; the release pipeline enforces the gzip byte budget on
@@ -269,9 +277,9 @@ subsets. This package is appropriate for specialized cases:
 - Single-source-of-truth Rust + TypeScript embedding (one implementation
   across both runtimes).
 - Cloudflare Workers (size-compatible with the current Workers Free
-  compressed-size limit at the time of measurement; the `cloudflare` flavor
-  is built and tested end-to-end in CI (Workers Vitest), within the Workers
-  compressed-size budget).
+  compressed-size limit at the time of measurement; the `trading` flavour's
+  edge build is built and tested end-to-end in CI (Workers Vitest), within the
+  Workers compressed-size budget).
 - Embeddable signing helpers (the `./signing` flavor is the smallest).
 
 The "When to use this SDK" table at the top of this README routes consumers

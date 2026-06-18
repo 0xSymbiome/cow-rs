@@ -1,4 +1,4 @@
-declare module "cow-sdk-wasm-test-package/cloudflare/wasm" {
+declare module "cow-sdk-wasm-test-package/trading/edge/wasm" {
   const wasmModule: WebAssembly.Module;
   export default wasmModule;
 }

@@ -51,7 +51,7 @@ const entries = new Map([
   ["default", "default"],
   ["orderbook", "orderbook"],
   ["signing", "signing"],
-  ["cloudflare", "cloudflare"]
+  ["trading", "trading"]
 ]);
 
 function walk(directory, output = []) {
@@ -103,9 +103,9 @@ function rewriteCjs(content) {
 }
 
 function rewriteNodeTarget(content, flavourName) {
-  if (flavourName === "cloudflare") {
-    return content;
-  }
+  // The CommonJS entry loads the nodejs target's glue instead of the bundler
+  // glue. Flavours without a nodejs target never reach this (they ship no CJS
+  // entry), so the rewrite is unconditional here.
   return content
     .replaceAll(`${flavourName}-bundler/cow_sdk_wasm.js`, `${flavourName}-nodejs/cow_sdk_wasm.cjs`)
     .replaceAll(`${flavourName}-bundler/cow_sdk_wasm.cjs`, `${flavourName}-nodejs/cow_sdk_wasm.cjs`)
@@ -149,6 +149,23 @@ for (const flavour of descriptor.flavours) {
   }
   cpSync(entryCjs, join(targetDir, "index.cjs"));
 
+  // A flavour that also ships the standalone `web` target gets a second ESM
+  // entry (`edge.mjs`) bound to the web raw shim (`raw/<flavour>-web`), exposed at
+  // its `webSubpath` (for example `./trading/edge`). The facade source is
+  // identical across targets — only the raw binding and the wasm-init path differ
+  // — so the web entry reuses the bundler entry's compiled output and
+  // declarations with the raw import swapped, and the redundant web shim CJS is
+  // dropped (the web build is ESM-only).
+  if (Array.isArray(flavour.targets) && flavour.targets.includes("web") && flavour.targets.includes("bundler")) {
+    const webEntry = readFileSync(join(targetDir, "index.mjs"), "utf8").replaceAll(
+      `./raw/${flavour.name}.js`,
+      `./raw/${flavour.name}-web.js`
+    );
+    writeFileSync(join(targetDir, "edge.mjs"), webEntry);
+    cpSync(join(targetDir, "index.d.ts"), join(targetDir, "edge.d.ts"));
+    rmSync(join(targetDir, "raw", `${flavour.name}-web.cjs`), { force: true });
+  }
+
   // Prune to the reachable closure. Each flavor is published as index.* and only
   // pulls in the shared modules (internal/errors/options/callbacks/envelope) and
   // its own raw/<flavor>; the copied sibling-flavor modules and the orphaned
@@ -170,8 +187,9 @@ JS
 # The facade re-declares [Symbol.dispose] on its client classes. wasm-bindgen
 # adds the matching lib reference to its own raw declarations; mirror it on the
 # compiled facade declarations so the member resolves under consumer tsconfig
-# libs that predate the Disposable types.
-for facade_dts in "${dist_root}"/*/index.d.ts; do
+# libs that predate the Disposable types. The web build's separate `edge.d.ts`
+# entry needs the same reference.
+for facade_dts in "${dist_root}"/*/index.d.ts "${dist_root}"/*/edge.d.ts; do
   [ -f "${facade_dts}" ] || continue
   if grep -q '\[Symbol\.dispose\]' "${facade_dts}" \
     && ! grep -q 'reference lib="esnext.disposable"' "${facade_dts}"; then

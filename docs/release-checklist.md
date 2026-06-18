@@ -385,8 +385,8 @@ pnpm --dir e2e/wasm-typescript-cf run test:type-check
 
 The npm package name is baked into `package.template.json` and rendered into
 `package.json` by `render-package-json.mjs` during the build. The package
-exports map, declaration snapshots, Cloudflare `./cloudflare` and
-`./cloudflare/wasm` subpaths, and generated `dist` metadata cleanup are part of
+exports map, declaration snapshots, the `trading` flavour's `./trading/edge` and
+`./trading/edge/wasm` subpaths, and generated `dist` metadata cleanup are part of
 the release check.
 
 ## 9. Optional Validation Smoke

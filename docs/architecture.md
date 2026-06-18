@@ -113,7 +113,7 @@ TypeScript SDK is the recommended choice because of its smaller bundle size
 at equivalent feature subsets. `cow-sdk-wasm` is appropriate for specialized
 cases — deterministic Rust signing parity, single-source-of-truth Rust +
 TypeScript embedding, and Cloudflare Workers (size-compatible at the time of
-measurement; the `cloudflare` flavor is built and tested end-to-end in CI
+measurement; the `trading` flavour's edge build is built and tested end-to-end in CI
 (Workers Vitest), within the Workers compressed-size budget).
 
 Its surface has four layers: pure helpers for deterministic protocol output,

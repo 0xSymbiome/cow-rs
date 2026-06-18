@@ -101,7 +101,7 @@ equivalent feature subsets.
 `cow-sdk-wasm` is appropriate for specialized cases — TypeScript services
 that need byte-for-byte parity with the Rust SDK's signing path,
 single-source-of-truth Rust + TypeScript embedding, and Cloudflare Workers
-(size-compatible at the time of measurement; the `cloudflare` flavor is built
+(size-compatible at the time of measurement; the `trading` flavour's edge build is built
 and tested end-to-end in CI). It is published to npm as
 `@symbiome-forge/cow-sdk-wasm`, exposing the wasm-bindgen surface through a
 TypeScript facade, typed callbacks, per-flavor package exports, and

@@ -56,6 +56,14 @@ function preferredTypesTarget(flavour) {
   return flavour.targets[0];
 }
 
+function webFacadeModulePath(flavour) {
+  return `${facadeDir(flavour)}/edge.mjs`;
+}
+
+function webFacadeDeclarationPath(flavour) {
+  return `${facadeDir(flavour)}/edge.d.ts`;
+}
+
 function flavourExport(flavour) {
   const entry = {
     types: facadeDeclarationPath(flavour)
@@ -67,6 +75,22 @@ function flavourExport(flavour) {
       require: facadeRequirePath(flavour),
       default: facadeRequirePath(flavour)
     };
+  }
+
+  // When a flavour also ships the standalone `web` target, edge runtimes resolve
+  // the explicit-init web build, where the host owns module instantiation. These
+  // conditions precede `browser`/`import`/`default` so a Cloudflare Worker, Deno,
+  // Vercel Edge, or Bun host matches the web entry rather than the bundler entry.
+  if (flavour.targets.includes("web") && flavour.targets.includes("bundler")) {
+    const web = {
+      types: webFacadeDeclarationPath(flavour),
+      default: webFacadeModulePath(flavour)
+    };
+    entry.workerd = web;
+    entry.worker = web;
+    entry.deno = web;
+    entry["edge-light"] = web;
+    entry.bun = web;
   }
 
   // The browser condition points at the facade ESM entry (`index.mjs`), which is
@@ -101,8 +125,25 @@ template.exports = {};
 
 for (const flavour of descriptor.flavours) {
   template.exports[flavour.subpath] = flavourExport(flavour);
+  if (flavour.webSubpath) {
+    // The explicit web subpath (for example `./trading/edge`) is the unambiguous
+    // entry for Cloudflare Workers, which import the precompiled module from the
+    // `rawWasmSubpath` and pass it to `initialize`. Deno, Vercel Edge, and Bun can
+    // use it too, or resolve the same build through the runtime conditions above.
+    template.exports[flavour.webSubpath] = {
+      types: webFacadeDeclarationPath(flavour),
+      import: webFacadeModulePath(flavour),
+      default: webFacadeModulePath(flavour)
+    };
+  }
   if (flavour.rawWasmSubpath) {
-    template.exports[flavour.rawWasmSubpath] = wasmPath(flavour, "web");
+    // The web and bundler targets emit a byte-identical wasm binary — only the JS
+    // loader glue differs — so the raw Worker module subpath points at the bundler
+    // copy and the redundant web binary is dropped (dedupe-target-wasm.mjs). The
+    // web glue instantiates a module the host supplies, so it needs no sibling
+    // binary. A flavour without a bundler target keeps the web binary as canonical.
+    const rawWasmTarget = flavour.targets.includes("bundler") ? "bundler" : "web";
+    template.exports[flavour.rawWasmSubpath] = wasmPath(flavour, rawWasmTarget);
   }
 }
 
