@@ -144,7 +144,7 @@ pub fn params_from_doc(base_doc: &Value) -> Result<AppDataParams, TradingError> 
 /// `metadata.signer` or a `metadata.hooks` that is not a hooks envelope) would
 /// otherwise seal a document the SDK itself cannot parse — and the services
 /// reject — so the seal surfaces it as a typed `AppData` error here instead of
-/// emitting an unparseable order payload.
+/// emitting an unparsable order payload.
 fn ensure_sealed_doc_round_trips(doc: &Value) -> Result<(), TradingError> {
     params_from_doc(doc).map(|_| ())
 }
