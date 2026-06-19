@@ -279,6 +279,12 @@ impl<'a> SwapBuilder<'a, Set, Set, Set> {
 
 /// A fetched swap quote, ready to inspect and submit. Produced by
 /// [`SwapBuilder::quote`].
+///
+/// `QuotedSwap` borrows the [`Trading`] client, so it is ephemeral by design:
+/// inspect the quote and call [`QuotedSwap::submit`] in the same scope. For a
+/// deferred "quote now, submit later" flow that must outlive the borrow, use the
+/// owned API instead — `Trading::quote_only` returns an owned `QuoteResults`
+/// that `Trading::post_swap_order_from_quote` re-submits.
 #[derive(Debug)]
 pub struct QuotedSwap<'a> {
     trading: &'a Trading,
