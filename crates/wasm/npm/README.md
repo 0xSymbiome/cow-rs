@@ -42,7 +42,7 @@ runtime entries over one shared wasm binary, so pick the **runtime** by the suff
 
 | Import | Surface | Use when |
 | --- | --- | --- |
-| `@symbiome-forge/cow-sdk-wasm/trading` | Full order lifecycle: quote, sign, post, cancel, app-data | A browser dapp, a Node backend, or an edge runtime running order flow — one feature set serves all three; pick the runtime by suffix |
+| `@symbiome-forge/cow-sdk-wasm/trading` | Full order lifecycle: quote, sign, post, cancel, app-data, and native wrap/unwrap | A browser dapp, a Node backend, or an edge runtime running order flow — one feature set serves all three; pick the runtime by suffix |
 | `@symbiome-forge/cow-sdk-wasm/orderbook` | Orderbook reads, cancellation, and signing — no trading or app-data | A read-focused dapp that does not post orders |
 | `@symbiome-forge/cow-sdk-wasm/signing` | Signing, UID, EIP-1271, deployment, and version helpers — the smallest flavor | A signer service or HSM-facing adapter |
 | `@symbiome-forge/cow-sdk-wasm` | Everything above plus subgraph analytics and IPFS app-data | General use that needs subgraph or IPFS |
@@ -139,6 +139,13 @@ Selling the native asset is the same shape: `getQuote`, then
 `buildSellNativeCurrencyTxFromQuote(quote.value, owner)`, which returns the EthFlow
 transaction request for the wallet to submit.
 
+Converting between the native asset and its wrapped form is not an order:
+`buildWrapTx(chainId, amount)` and `buildUnwrapTx(chainId, amount)` return the
+WETH deposit/withdraw transaction for the wallet to submit, and
+`wrappedNativeToken(chainId)` resolves the wrapped-native token (address, symbol,
+decimals) for detecting a wrap pair in a swap UI. (Selling native currency to
+trade does not need a manual wrap — eth-flow wraps on-chain.)
+
 ### Cloudflare Worker (edge)
 
 Workers cannot compile wasm from bytes at runtime, so the edge build takes the
@@ -230,10 +237,10 @@ current alpha build (gzip is the compressed-transfer figure):
 
 | Flavor | Raw wasm | Brotli | Gzip | Release gate |
 | --- | ---: | ---: | ---: | --- |
-| signing | 0.31 MiB | 120 KiB | 142 KiB | 0.9 MiB raw / 300 KiB brotli |
-| orderbook | 1.02 MiB | 341 KiB | 447 KiB | 1.5 MiB raw / 500 KiB brotli |
-| trading | 1.54 MiB | 490 KiB | 659 KiB | 3.2 MiB raw / 850 KiB brotli |
-| default | 1.63 MiB | 513 KiB | 691 KiB | 3.3 MiB raw / 900 KiB brotli |
+| signing | 0.31 MiB | 121 KiB | 144 KiB | 0.9 MiB raw / 300 KiB brotli |
+| orderbook | 1.03 MiB | 341 KiB | 448 KiB | 1.5 MiB raw / 500 KiB brotli |
+| trading | 1.54 MiB | 491 KiB | 661 KiB | 3.2 MiB raw / 850 KiB brotli |
+| default | 1.64 MiB | 514 KiB | 693 KiB | 3.3 MiB raw / 900 KiB brotli |
 
 Each flavor emits one wasm binary shared across its bundler, Node, web, and
 source-phase module targets — the web glue's default URL, the module glue's

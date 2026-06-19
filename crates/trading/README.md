@@ -1,8 +1,8 @@
 # cow-sdk-trading
 
 High-level [CoW Protocol](https://cow.fi) trading orchestration surface
-covering quoting, signing, posting, allowance management, and on-chain
-order actions.
+covering quoting, signing, posting, allowance management, native-asset
+wrapping, and on-chain order actions.
 
 > ⚠️ **Alpha — `0.1.0-alpha`.** Pre-release and not security-audited; the public
 > API may change before `0.1.0`. It is published as a pre-release, so Cargo
@@ -58,8 +58,10 @@ Allowance reads, approval submission, pre-sign transaction construction, and
 on-chain cancellation need chain authority but no app code, so they are the
 crate's free functions — `cow_protocol_allowance`, `approval_transaction`,
 `pre_sign_transaction`, and `onchain_cancel_order` — and need no trading
-client. Quote, post, order lookup, and off-chain cancellation flows use the
-ready `Trading` client.
+client. `wrap_transaction` and `unwrap_transaction` build the native-asset wrap
+and unwrap transactions, resolving the chain's wrapped-native token from the
+chain id, and need neither a client nor a provider. Quote, post, order lookup,
+and off-chain cancellation flows use the ready `Trading` client.
 
 Owner attribution lives on the per-trade `TradeParams` (or
 `LimitTradeParams`); the `Trading` client does not store a default owner. For

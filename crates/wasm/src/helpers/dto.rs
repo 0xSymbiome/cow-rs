@@ -180,6 +180,18 @@ pub struct DeploymentAddresses {
     pub eth_flow: String,
 }
 
+/// Wrapped-native token metadata for a supported chain.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WrappedNativeToken {
+    /// Wrapped-native token contract address.
+    pub address: String,
+    /// Token symbol, such as `WETH` or `WXDAI`.
+    pub symbol: String,
+    /// Token decimals.
+    pub decimals: u8,
+}
+
 /// Generated order UID and digest.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

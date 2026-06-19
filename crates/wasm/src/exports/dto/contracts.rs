@@ -29,6 +29,29 @@ impl From<pure::dto::DeploymentAddresses> for DeploymentAddressesDto {
     }
 }
 
+/// Wrapped-native token metadata.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[serde(rename_all = "camelCase")]
+pub struct WrappedNativeTokenDto {
+    /// Wrapped-native token contract address.
+    pub address: String,
+    /// Token symbol, such as `WETH` or `WXDAI`.
+    pub symbol: String,
+    /// Token decimals.
+    pub decimals: u8,
+}
+
+impl From<pure::dto::WrappedNativeToken> for WrappedNativeTokenDto {
+    fn from(value: pure::dto::WrappedNativeToken) -> Self {
+        Self {
+            address: value.address,
+            symbol: value.symbol,
+            decimals: value.decimals,
+        }
+    }
+}
+
 /// Contract-read callback request.
 ///
 /// The host callback receiving this request must perform the read and return

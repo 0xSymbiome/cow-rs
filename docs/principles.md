@@ -92,7 +92,7 @@ signs, generates app-data, and resolves eth-flow contracts, so the swap builder 
 `cow-sdk-trading` where those dependencies already are, not on the orderbook client.
 Each operation is reachable by one public import path.
 
-**Anchored by**: [ADR 0069](adr/0069-layered-trading-operation-surface-and-signing-free-transport.md) (primary). Supporting: [ADR 0002](adr/0002-dedicated-trading-orchestration-crate.md), [ADR 0013](adr/0013-http-transport-injection-and-typestate-builders.md).
+**Anchored by**: [ADR 0069](adr/0069-layered-trading-operation-surface-and-signing-free-transport.md) (primary). Supporting: [ADR 0002](adr/0002-dedicated-trading-orchestration-crate.md), [ADR 0013](adr/0013-http-transport-injection-and-typestate-builders.md), [ADR 0070](adr/0070-onchain-transaction-helper-boundary.md).
 
 ## Chain-RPC Runtime Neutrality
 

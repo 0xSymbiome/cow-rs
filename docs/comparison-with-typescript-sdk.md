@@ -33,7 +33,7 @@ If you need those families today, use the TypeScript SDK.
 Within the order lifecycle, `cow-rs` is complete: quote; sign under all four
 schemes (EIP-712, EthSign, EIP-1271, pre-sign); post; look up (order, trades,
 native price, solver competition, total surplus, competition status); cancel
-both off-chain and on-chain; allowance and approval; app-data generation and
+both off-chain and on-chain; allowance and approval; native-asset wrap and unwrap; app-data generation and
 upload; EthFlow native-currency sells; and COW Shed account-abstraction hooks
 ([ADR 0049](adr/0049-cow-shed-account-abstraction-proxy.md), behind the
 `cow-shed` feature). Within that scope it adds the guarantees below.

@@ -3,7 +3,10 @@
 use cow_sdk_contracts::{ContractId, Registry};
 use cow_sdk_core::{CowEnv, SupportedChainId};
 
-use crate::helpers::{dto::DeploymentAddresses, errors::PureError};
+use crate::helpers::{
+    dto::{DeploymentAddresses, WrappedNativeToken},
+    errors::PureError,
+};
 
 /// Parses a numeric chain id into the SDK-supported chain set.
 ///
@@ -72,6 +75,21 @@ pub fn deployment_addresses(
         settlement: address(ContractId::Settlement)?,
         vault_relayer: address(ContractId::VaultRelayer)?,
         eth_flow: address(ContractId::EthFlow)?,
+    })
+}
+
+/// Returns wrapped-native token metadata for a chain.
+///
+/// # Errors
+///
+/// Returns [`PureError::UnsupportedChain`] when the chain is not configured.
+pub fn wrapped_native_token(chain_id: u32) -> Result<WrappedNativeToken, PureError> {
+    let chain = supported_chain(chain_id)?;
+    let info = cow_sdk_core::wrapped_native_token(chain);
+    Ok(WrappedNativeToken {
+        address: info.address.to_hex_string(),
+        symbol: info.symbol,
+        decimals: info.decimals,
     })
 }
 

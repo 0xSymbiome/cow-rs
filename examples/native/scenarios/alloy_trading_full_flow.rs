@@ -3,7 +3,7 @@
 //! Drives the async `Trading` boundaries through a real `AlloyClient`
 //! (a `SigningProvider`) against a wiremock JSON-RPC server: read the protocol
 //! allowance (`cow_protocol_allowance`), wrap native currency into the
-//! wrapped-native token (`wrap_interaction` + `submit_and_wait_for_receipt`),
+//! wrapped-native token (`wrap_transaction` + `submit_and_wait_for_receipt`),
 //! broadcast an approval and wait for its receipt (`approval_transaction` +
 //! `submit_and_wait_for_receipt`), and build a pre-sign transaction
 //! (`pre_sign_transaction`).
@@ -11,14 +11,12 @@
 use std::error::Error;
 
 use cow_sdk::alloy::AlloyClient;
-use cow_sdk::contracts::wrap_interaction;
 use cow_sdk::core::{
-    Amount, CowEnv, SigningProvider, SupportedChainId, TransactionHash, TransactionRequest,
-    TransactionStatus, wrapped_native_token,
+    Amount, CowEnv, SigningProvider, SupportedChainId, TransactionHash, TransactionStatus,
 };
 use cow_sdk::trading::{
     AllowanceParams, ApprovalParams, OrderTraderParams, Trading, WaitOptions, approval_transaction,
-    submit_and_wait_for_receipt,
+    submit_and_wait_for_receipt, wrap_transaction,
 };
 use cow_sdk_examples_native::support::{
     COW, OWNER, TEST_KEY, TX_HASH, mount_rpc, sample_order_uid,
@@ -68,12 +66,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
     );
     assert_eq!(approval_receipt.status, Some(TransactionStatus::Success));
 
-    // 3. Wrap native currency into the wrapped-native token. `wrap_interaction`
-    //    returns a settlement `Interaction` (target + native value + calldata);
-    //    `.into()` lifts it into the `TransactionRequest` the submit-and-wait
-    //    helper accepts, leaving gas estimation to the signer backend.
-    let weth = wrapped_native_token(SupportedChainId::Mainnet).address;
-    let wrap_tx: TransactionRequest = wrap_interaction(weth, Amount::new("1000")?).into();
+    // 3. Wrap native currency into the wrapped-native token. `wrap_transaction`
+    //    resolves the chain's canonical wrapped-native address and builds the
+    //    `deposit()` transaction; the submit-and-wait helper estimates gas through
+    //    the signer backend.
+    let wrap_tx = wrap_transaction(SupportedChainId::Mainnet, Amount::new("1000")?);
     let wrap_receipt =
         submit_and_wait_for_receipt(&signer, &client, &wrap_tx, WaitOptions::approve_default())
             .await?;
@@ -94,7 +91,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         "approvalStatus": approval_receipt.status,
         "approvalBlockNumber": approval_receipt.block_number,
         "approvalGasUsed": approval_receipt.gas_used,
-        "wrapTarget": weth.to_hex_string(),
+        // wrap_transaction resolved the wrapped-native target; read it back here.
+        "wrapTarget": wrap_tx.to.map(|target| target.to_hex_string()),
         "wrapStatus": wrap_receipt.status,
         "preSignGasLimit": pre_sign.gas_limit,
         "rpcMethods": methods

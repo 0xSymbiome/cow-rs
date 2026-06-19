@@ -2214,6 +2214,24 @@ export interface WasmEnvelope<T> {
 }
 
 /**
+ * Wrapped-native token metadata.
+ */
+export interface WrappedNativeTokenDto {
+    /**
+     * Wrapped-native token contract address.
+     */
+    address: string;
+    /**
+     * Token symbol, such as `WETH` or `WXDAI`.
+     */
+    symbol: string;
+    /**
+     * Token decimals.
+     */
+    decimals: number;
+}
+
+/**
  * `CoW` Protocol environment, mirroring `cow_sdk_core::CowEnv`.
  */
 export type CowEnvDto = "prod" | "staging";
@@ -2657,6 +2675,32 @@ export class TradingClient {
      * @throws CowError when the quote is not a native-currency sell, lacks a quote id, or the chain, deployment, or sender is invalid.
      */
     buildSellNativeCurrencyTxFromQuote(quoteResults: QuoteResultsDto, from: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<BuiltSellNativeCurrencyTxDto>>;
+    /**
+     * Builds the transaction that unwraps the wrapped-native token back into
+     * native currency (for example WETH into ETH) on this client's chain.
+     *
+     * `withdraw` burns the caller's own wrapped-native balance, so no token
+     * approval is required. Submit the returned request with the host wallet.
+     *
+     * @param amount Amount of the wrapped-native token to unwrap, in wei as a decimal string.
+     * @returns A versioned envelope containing the unsigned unwrap transaction request.
+     * @throws CowError when the chain is unsupported or the amount is invalid.
+     */
+    buildUnwrapTx(amount: string): WasmEnvelope<TransactionRequestDto>;
+    /**
+     * Builds the transaction that wraps native currency into its wrapped-native
+     * token (for example ETH into WETH) on this client's chain.
+     *
+     * The target wrapped-native address is resolved from the chain; submit the
+     * returned request with the host wallet. Selling native currency through CoW
+     * Protocol does not require a manual wrap — the eth-flow path wraps on-chain
+     * during order creation — so use this for standalone wrap and treasury flows.
+     *
+     * @param amount Amount of native currency to wrap, in wei as a decimal string.
+     * @returns A versioned envelope containing the unsigned wrap transaction request.
+     * @throws CowError when the chain is unsupported or the amount is invalid.
+     */
+    buildWrapTx(amount: string): WasmEnvelope<TransactionRequestDto>;
     /**
      * Reads CoW Protocol allowance through a read-only contract callback.
      *
@@ -3111,3 +3155,16 @@ export function validateAppDataDoc(doc: AppDataDocInput): WasmEnvelope<Validatio
  * @returns The semantic version string for this wasm build.
  */
 export function wasmVersion(): string;
+
+/**
+ * Returns wrapped-native token metadata for a chain.
+ *
+ * Use this to recognise a wrap pair in a swap UI — compare a selected token's
+ * address against the returned address — or to display the wrapped-native
+ * token. This is a pure lookup and performs no network I/O.
+ *
+ * @param chainId EVM chain id to resolve.
+ * @returns The wrapped-native token address, symbol, and decimals.
+ * @throws CowError when the chain is not supported.
+ */
+export function wrappedNativeToken(chainId: number): WasmEnvelope<WrappedNativeTokenDto>;

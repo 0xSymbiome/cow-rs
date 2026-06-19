@@ -12,7 +12,7 @@ use cow_sdk_orderbook::{OrderbookApi, SigningScheme};
 use cow_sdk_trading::{
     AllowanceParams, ApprovalParams, DEFAULT_GAS_LIMIT, LimitTradeParams,
     PostTradeAdditionalParams, QuoteRequestOverride, QuoteResults, TradeAdvancedSettings,
-    TradeParams, Trading,
+    TradeParams, Trading, unwrap_transaction, wrap_transaction,
 };
 use js_sys::Function;
 use wasm_bindgen::prelude::*;
@@ -417,6 +417,50 @@ impl TradingClient {
             .await
         })
         .await
+    }
+
+    /// Builds the transaction that wraps native currency into its wrapped-native
+    /// token (for example ETH into WETH) on this client's chain.
+    ///
+    /// The target wrapped-native address is resolved from the chain; submit the
+    /// returned request with the host wallet. Selling native currency through CoW
+    /// Protocol does not require a manual wrap — the eth-flow path wraps on-chain
+    /// during order creation — so use this for standalone wrap and treasury flows.
+    ///
+    /// @param amount Amount of native currency to wrap, in wei as a decimal string.
+    /// @returns A versioned envelope containing the unsigned wrap transaction request.
+    /// @throws CowError when the chain is unsupported or the amount is invalid.
+    #[wasm_bindgen(
+        js_name = "buildWrapTx",
+        unchecked_return_type = "WasmEnvelope<TransactionRequestDto>"
+    )]
+    pub fn build_wrap_tx(&self, amount: String) -> Result<JsValue, JsValue> {
+        let chain = parse_chain(self.chain_id)?;
+        let amount = pure::dto::parse_amount("amount", &amount)
+            .map_err(|error| WasmError::from(error).into_js())?;
+        let tx = wrap_transaction(chain, amount);
+        to_js_value(&WasmEnvelope::v1(TransactionRequestDto::from(&tx)))
+    }
+
+    /// Builds the transaction that unwraps the wrapped-native token back into
+    /// native currency (for example WETH into ETH) on this client's chain.
+    ///
+    /// `withdraw` burns the caller's own wrapped-native balance, so no token
+    /// approval is required. Submit the returned request with the host wallet.
+    ///
+    /// @param amount Amount of the wrapped-native token to unwrap, in wei as a decimal string.
+    /// @returns A versioned envelope containing the unsigned unwrap transaction request.
+    /// @throws CowError when the chain is unsupported or the amount is invalid.
+    #[wasm_bindgen(
+        js_name = "buildUnwrapTx",
+        unchecked_return_type = "WasmEnvelope<TransactionRequestDto>"
+    )]
+    pub fn build_unwrap_tx(&self, amount: String) -> Result<JsValue, JsValue> {
+        let chain = parse_chain(self.chain_id)?;
+        let amount = pure::dto::parse_amount("amount", &amount)
+            .map_err(|error| WasmError::from(error).into_js())?;
+        let tx = unwrap_transaction(chain, amount);
+        to_js_value(&WasmEnvelope::v1(TransactionRequestDto::from(&tx)))
     }
 
     /// Quotes and posts a swap order with a custom EIP-1271 signature callback.

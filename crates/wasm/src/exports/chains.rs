@@ -3,7 +3,7 @@ use wasm_bindgen::prelude::*;
 use crate::helpers as pure;
 
 use crate::exports::{
-    dto::{DeploymentAddressesDto, to_js_value},
+    dto::{DeploymentAddressesDto, WrappedNativeTokenDto, to_js_value},
     envelope::WasmEnvelope,
     errors::WasmError,
 };
@@ -122,6 +122,27 @@ pub fn deployment_addresses(
     let addresses = pure::chains::deployment_addresses(chain_id, env.as_deref())
         .map_err(|error| WasmError::from(error).into_js())?;
     to_js_value(&WasmEnvelope::v1(DeploymentAddressesDto::from(addresses)))
+}
+
+/// Returns wrapped-native token metadata for a chain.
+///
+/// Use this to recognise a wrap pair in a swap UI — compare a selected token's
+/// address against the returned address — or to display the wrapped-native
+/// token. This is a pure lookup and performs no network I/O.
+///
+/// @param chainId EVM chain id to resolve.
+/// @returns The wrapped-native token address, symbol, and decimals.
+/// @throws CowError when the chain is not supported.
+#[wasm_bindgen(
+    js_name = "wrappedNativeToken",
+    unchecked_return_type = "WasmEnvelope<WrappedNativeTokenDto>"
+)]
+pub fn wrapped_native_token(
+    #[wasm_bindgen(js_name = chainId)] chain_id: u32,
+) -> Result<JsValue, JsValue> {
+    let token = pure::chains::wrapped_native_token(chain_id)
+        .map_err(|error| WasmError::from(error).into_js())?;
+    to_js_value(&WasmEnvelope::v1(WrappedNativeTokenDto::from(token)))
 }
 
 /// Builds app-data content and returns its deterministic hash and CID.

@@ -89,7 +89,7 @@ principles:
   - id: 15
     name: Layered Operation Surface
     primary_adr: "0069"
-    supporting_adrs: ["0002", "0013"]
+    supporting_adrs: ["0002", "0013", "0070"]
 
   - id: 16
     name: Off-Chain Orchestration Boundary

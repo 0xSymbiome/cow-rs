@@ -22,10 +22,10 @@ rather than depending on this crate directly.
 
 | Layer | Surface | Purpose |
 | --- | --- | --- |
-| Pure helpers | `domainSeparator`, `orderTypedData`, `computeOrderUid`, app-data helpers, deployment helpers, supported-chain helpers | Deterministic protocol output without JavaScript runtime state |
+| Pure helpers | `domainSeparator`, `orderTypedData`, `computeOrderUid`, app-data helpers, deployment helpers, supported-chain helpers, `wrappedNativeToken` | Deterministic protocol output without JavaScript runtime state |
 | Wallet callbacks | typed-data signer, EIP-1193 request, digest signer, custom EIP-1271 callbacks, cancellation signing | Host-owned wallet integration through typed callback shapes |
 | Clients | orderbook, subgraph, IPFS, and callback-fetch clients | CoW service access through default browser fetch or callback HTTP |
-| Trading facade | quote and post clients, including EIP-1271 posting | Higher-level trading flows over the same DTO and callback boundary |
+| Trading facade | quote and post clients, including EIP-1271 posting, plus native `buildWrapTx` / `buildUnwrapTx` transaction builders | Higher-level trading flows over the same DTO and callback boundary |
 
 ## Callback Shapes
 

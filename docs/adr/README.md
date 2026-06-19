@@ -61,6 +61,7 @@ public and runtime shape of `cow-rs`.
 | [0067](0067-idiomatic-accessor-naming.md) | Accepted | Name public accessors and domain fetch methods by their bare domain noun with no `get_` prefix, retaining `get_` only on the chain-RPC `Provider` / `LogProvider` methods that mirror Ethereum JSON-RPC names. |
 | [0068](0068-payload-only-typed-data-signing.md) | Accepted | Take the canonical EIP-712 typed-data payload at the signer seam — `sign_typed_data_payload(&TypedDataPayload)` is the single required typed-data method — and keep field-based signing out of the trait contract; the former wallet-compatibility carve-out is voided. |
 | [0069](0069-layered-trading-operation-surface-and-signing-free-transport.md) | Accepted | Offer trading operations at layered free-function, bound-method, and fluent-builder entries (swap and limit) that thin-delegate downward, and keep the order-lifecycle builders in `cow-sdk-trading` so `cow-sdk-orderbook` and `cow-sdk-subgraph` stay signing-free typed transport clients. |
+| [0070](0070-onchain-transaction-helper-boundary.md) | Accepted | Ship one single-call transaction builder per on-chain trade step (approve, wrap/unwrap, eth-flow, pre-sign, cancel) and add native-asset `wrap_transaction` / `unwrap_transaction` under that boundary. |
 
 ## Superseded And Rejected
 
