@@ -57,6 +57,9 @@ const expectedExports = new Set(
     if (flavour.rawWasmSubpath) {
       subpaths.push(flavour.rawWasmSubpath);
     }
+    if (flavour.moduleSubpath) {
+      subpaths.push(flavour.moduleSubpath);
+    }
     return subpaths;
   })
 );
@@ -111,6 +114,32 @@ for (const target of targets) {
 for (const path of collectFiles(join(packageRoot, "dist"))) {
   if (path.endsWith(`${sep}README.md`) || path.endsWith(`${sep}package.json`)) {
     fail(`generated dist metadata must not be published: ${path.slice(packageRoot.length + 1)}`);
+  }
+}
+
+// The export-map check above proves each entry file exists, but not that the entry
+// resolves its own `./...` imports — each facade entry binds a raw shim through a
+// relative specifier, so a generated or renamed shim an entry references but the
+// build never emitted (a missing `<flavour>-web.js`, say) would pass every check
+// above and only fail at a consumer's bundler. Assert every relative import each
+// shipped facade entry declares resolves to a shipped file.
+const relativeImport = /\bfrom\s+["'](\.[^"']+)["']|\brequire\(["'](\.[^"']+)["']\)/g;
+for (const flavour of descriptor.flavours) {
+  const flavourDir = join(packageRoot, "dist", flavour.name);
+  if (!existsSync(flavourDir)) {
+    continue;
+  }
+  for (const entry of ["index.mjs", "index.cjs", "edge.mjs", "module.mjs"]) {
+    const entryPath = join(flavourDir, entry);
+    if (!existsSync(entryPath)) {
+      continue;
+    }
+    for (const match of readFileSync(entryPath, "utf8").matchAll(relativeImport)) {
+      const specifier = match[1] ?? match[2];
+      if (!existsSync(join(flavourDir, specifier))) {
+        fail(`${flavour.name}/${entry} imports ${specifier}, which is not a shipped file`);
+      }
+    }
   }
 }
 

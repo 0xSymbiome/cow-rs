@@ -149,11 +149,12 @@ the full source-to-fixture matrix is in
 | A standard browser dapp where minimal bundle size dominates | upstream [`@cowprotocol/cow-sdk`](https://www.npmjs.com/package/@cowprotocol/cow-sdk) |
 
 The npm package ships in `default`, `orderbook`, `signing`, and `trading`
-flavors; pick the smallest one that covers your calls. The `trading` flavour is
-built for browser bundlers, Node, and edge runtimes (its web-target build is
-reached at `@symbiome-forge/cow-sdk-wasm/trading/edge` for Cloudflare Workers,
-Deno, and Vercel Edge). Account-abstraction hooks
-ship behind the opt-in `cow-shed` feature. Capability families outside the 0.1.0
+flavors; pick the smallest one that covers your calls. Every flavour serves browser
+bundlers, Node, and edge: its web-target build is the browser default
+(`await initialize()` once) and its explicit Workers entry is at `…/edge` (for
+example `@symbiome-forge/cow-sdk-wasm/trading/edge`), with a source-phase `…/module`
+build alongside. Account-abstraction hooks ship behind the opt-in `cow-shed`
+feature. Capability families outside the 0.1.0
 scope — TWAP, composable orders, bridging, flash loans, and hardware-wallet
 flows — remain on the upstream TypeScript packages until cow-rs ships them.
 

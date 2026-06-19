@@ -1,7 +1,7 @@
 # WASM Surface Audit
 
 Status: Current
-Last reviewed: 2026-06-18
+Last reviewed: 2026-06-19
 Owning surface: the `cow-sdk-wasm` TypeScript-callable crate, its npm package layout/exports, the JavaScript callback runtime boundary, DTO/type generation, schema-versioned envelopes, the size-budget gate, unsupported-target diagnostics, and the deterministic browser test runner.
 Refresh trigger: Changes to `crates/wasm/src/**`, exported DTOs or `tsify` usage, wasm-pack targets, declaration/facade snapshots, package export maps, callback shapes or registry ownership, the `JsCallbackHttpTransport` contract, transport-policy or error-envelope schema, release-profile size settings or measured budgets, native Alloy adapter `wasm32` guards, or the wasm-pack browser lanes.
 Related docs:
@@ -75,13 +75,21 @@ The package keeps one installable npm package while exposing flavor-specific
 public subpaths (`default`, `orderbook`, `signing`, `trading`). Public
 imports resolve through compiled facade subpaths, never generated `dist/raw`
 paths; the export-map verifier walks string and conditional exports, asserts
-every target exists, and rejects nested wasm-pack metadata in `dist`. The
-`trading` flavor is built for the `bundler`, `nodejs`, and `web` targets, with
-runtime selection through the `node`, `browser`, `workerd`, `worker`, `deno`,
-`edge-light`, and `bun` export conditions on `./trading`. Cloudflare Workers
-consume the web-target glue through `./trading/edge` and the precompiled module
-through `./trading/edge/wasm`, and worker code uses no dynamic WebAssembly
-compilation or streaming-instantiation APIs.
+every target exists, and rejects nested wasm-pack metadata in `dist`. Every
+flavor is built for the `bundler`, `nodejs`, `web`, and source-phase `module`
+targets. Each flavor's `node` condition resolves the nodejs CommonJS build; its
+`browser`, `import`, `default`, and edge conditions (`workerd`, `worker`, `deno`,
+`edge-light`, `bun`) and the explicit `…/edge` subpath all resolve the web build,
+whose `new URL(import.meta.url)` loader is portable where the bundler target's
+`import * as wasm` ESM integration is not. Browser callers run `initialize()`
+once; Cloudflare Workers, which cannot compile WebAssembly from bytes at runtime,
+pass the precompiled module from `…/edge/wasm` to `initialize` and use no
+dynamic-compilation or streaming-instantiation APIs. Each flavor's `…/module`
+subpath is the standards-track source-phase build (`import source` / Wasm ESM
+Integration), auto-initializing and opt-in (Node 24, Deno, esbuild today), driven
+through `wasm-bindgen --target module` because wasm-pack does not emit it. No
+flavor is browser-portable while another is bundler-only — `default`, `orderbook`,
+`signing`, and `trading` ship the same target coverage.
 
 ### Capability coverage
 
@@ -184,19 +192,20 @@ invalid values.
 ### Performance budget
 
 Default, orderbook, signing, and `trading` flavors each have their own facade
-declarations and a raw wasm snapshot. The `bundler` and `nodejs` raw builds back
-every flavor's facade ESM and CommonJS entries; the `trading` flavor additionally
-builds the `web` target, whose declaration adds only wasm-bindgen's standard
-module-init scaffolding on top of the bundler surface and so is not snapshotted
-separately (the facade snapshot pins the public `initialize` contract). The
-`trading` flavor's `bundler` and `web` targets emit a byte-identical wasm binary,
-so the package ships one binary per flavor and the `./trading/edge/wasm` Worker
-module reuses the bundler copy. Release artifacts run through the size-oriented
+declarations and a raw wasm snapshot. Every flavor is built for the `bundler`,
+`nodejs`, and `web` targets plus the source-phase `module` build; the `bundler`
+and `nodejs` raw builds back the facade ESM and CommonJS entries, while the `web`
+and `module` targets' declarations add only wasm-bindgen's standard target
+scaffolding on top of the bundler surface and so are not snapshotted separately
+(the facade snapshot pins the public `initialize` contract). Each flavor's
+`bundler`, `web`, and `module` targets emit a byte-identical wasm binary, so the
+package ships one binary per flavor; the `…/edge/wasm` Worker module, the web
+glue's default loader URL, and the module glue's `import source` specifier all
+reuse the bundler copy. Release artifacts run through the size-oriented
 release profile and a wasm optimization pass during package generation. The npm
-README records current raw, brotli, gzip, and gate values per flavor. The
-`trading` flavor's gzip budget is an explicit byte budget below Cloudflare's
-published Workers Free compressed-size limit (safety margin avoids MB/MiB
-ambiguity). End-to-end Cloudflare support additionally depends on
+README records current raw, brotli, gzip, and gate values per flavor. Each
+flavor's gzip budget is an explicit byte budget below Cloudflare's published
+Workers Free compressed-size limit (safety margin avoids MB/MiB ambiguity). End-to-end Cloudflare support additionally depends on
 `wrangler deploy --dry-run` release-bundle verification and a Worker
 startup-time gate against the 1-second startup limit, tracked separately.
 
@@ -262,10 +271,11 @@ covered through `postSwapOrder`, `postSwapOrderFromQuote`, and `getQuote`).
 
 Browser bundlers (`default-http-supported`), Node.js 22/24 LTS and Cloudflare
 Workers (`callback-http-tested`) are claimed and CI-evidenced. Deno is
-supported through the shipped `./trading/edge` web build (the same web target as
-Cloudflare Workers) with the runtime-neutral `CowFetchCallback`. Bun, Vercel
-Edge, and Fly.io remain `best-effort` until dedicated fixtures and CI evidence
-exist; they share the same `./trading/edge` build.
+supported through the shipped web build — every flavor ships one (the same web
+target as Cloudflare Workers), exercised in CI via `./trading/edge` — with the
+runtime-neutral `CowFetchCallback`. Bun, Vercel Edge, and Fly.io remain
+`best-effort` until dedicated fixtures and CI evidence exist; they share the same
+web build.
 
 ## Evidence
 
@@ -286,7 +296,7 @@ Primary implementation points:
 - `crates/wasm/npm/src/` (`index.ts`, `default.ts`, `orderbook.ts`, `signing.ts`, `trading.ts`, `callbacks.ts`, `internal.ts`, `options.ts`, `envelope.ts`, `errors.ts`, `raw/`)
 - `crates/wasm/npm/package.template.json`
 - `crates/wasm/npm/README.md`
-- `crates/wasm/npm/scripts/` (`build.sh`, `compile-facade.sh`, `render-package-json.mjs`, `measure-wasm-size.mjs`, `verify-exports.mjs`, `verify-no-raw-exports.mjs`, `verify-facade-denylist.mjs`, `verify-package-resolution.sh`)
+- `crates/wasm/npm/scripts/` (`build.sh`, `compile-facade.sh`, `render-package-json.mjs`, `measure-wasm-size.mjs`, `dedupe-target-wasm.mjs`, `verify-exports.mjs`, `verify-no-raw-exports.mjs`, `verify-facade-denylist.mjs`, `verify-package-resolution.sh`)
 - `crates/orderbook/src/api.rs`, `crates/trading/src/`, `crates/signing/src/`
 - `crates/alloy-provider/src/lib.rs`, `crates/alloy-signer/src/lib.rs`, `crates/alloy/src/lib.rs`, `crates/sdk/src/lib.rs`
 - `Cargo.toml`, `crates/wasm/Cargo.toml`
@@ -307,7 +317,7 @@ Primary regression coverage:
 - `crates/wasm/tests/wasm_callback_transport_contract.rs`
 - `crates/wasm/tests/wasm_cancellation_contract.rs` (`abort_bridge_removes_listener_after_{success,callback_throw,callback_reject,parse_error,timeout_overflow}`)
 - `crates/wasm/tests/wasm_transport_policy_contract.rs` (`all_client_constructors_accept_transport_policy`, `invalid_transport_policy_user_agent_is_rejected`)
-- `crates/wasm/tests/wasm_fail_closed_contract.rs::flavour_descriptor_exposes_trading_web_subpath`
+- `crates/wasm/tests/wasm_fail_closed_contract.rs::flavour_descriptor_exposes_web_and_module_subpaths`
 - `crates/wasm/tests/wasm_redaction_contract.rs`
 - `crates/wasm/tests/transport_fetch_smoke.rs`
 - `tests/wasm_dependency_invariant.rs`

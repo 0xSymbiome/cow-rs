@@ -46,22 +46,20 @@ function requireTarget(flavour, target) {
   }
 }
 
-function preferredTypesTarget(flavour) {
-  if (flavour.targets.includes("bundler")) {
-    return "bundler";
-  }
-  if (flavour.targets.includes("web")) {
-    return "web";
-  }
-  return flavour.targets[0];
-}
-
 function webFacadeModulePath(flavour) {
   return `${facadeDir(flavour)}/edge.mjs`;
 }
 
 function webFacadeDeclarationPath(flavour) {
   return `${facadeDir(flavour)}/edge.d.ts`;
+}
+
+function moduleFacadeModulePath(flavour) {
+  return `${facadeDir(flavour)}/module.mjs`;
+}
+
+function moduleFacadeDeclarationPath(flavour) {
+  return `${facadeDir(flavour)}/module.d.ts`;
 }
 
 function flavourExport(flavour) {
@@ -93,20 +91,27 @@ function flavourExport(flavour) {
     entry.bun = web;
   }
 
-  // The browser condition points at the facade ESM entry (`index.mjs`), which is
-  // independent of which raw wasm-bindgen target produced it. Emit it for any flavour
-  // that has a browser-capable ESM build (`bundler` or `web`) so the published exports
-  // map is unchanged when a flavour ships only `bundler`+`nodejs` (no standalone `web`).
-  if (flavour.targets.includes("web") || flavour.targets.includes("bundler")) {
+  // A flavour that ships the standalone `web` target routes browser, import, and
+  // default at the explicit-init web build (`edge.mjs`): its
+  // `new URL(import.meta.url)` loader instantiates across every bundler and with no
+  // bundler at all, where the bundler target's `import * as wasm` ESM integration is
+  // not portable (it is broken on Rolldown/esbuild and webpack-first elsewhere). A
+  // flavour with only `bundler`+`nodejs` keeps the bundler facade entry; browser
+  // consumers are steered to a `web`-target flavour (`./trading`). The `node`
+  // condition above keeps resolving to the nodejs CJS build, so Node is unaffected.
+  const hasWeb = flavour.targets.includes("web");
+  const browserModule = hasWeb ? webFacadeModulePath(flavour) : facadeModulePath(flavour);
+  const browserTypes = hasWeb ? webFacadeDeclarationPath(flavour) : facadeDeclarationPath(flavour);
+
+  if (hasWeb || flavour.targets.includes("bundler")) {
     entry.browser = {
-      types: facadeDeclarationPath(flavour),
-      import: facadeModulePath(flavour)
+      types: browserTypes,
+      import: browserModule
     };
   }
 
-  preferredTypesTarget(flavour);
-  entry.import = facadeModulePath(flavour);
-  entry.default = facadeModulePath(flavour);
+  entry.import = browserModule;
+  entry.default = browserModule;
 
   return entry;
 }
@@ -119,7 +124,14 @@ requireTarget(defaultFlavour, "bundler");
 requireTarget(defaultFlavour, "nodejs");
 
 template.main = facadeRequirePath(defaultFlavour);
-template.module = facadeModulePath(defaultFlavour);
+// When the default flavour also ships the `web` target, the bundler ESM facade
+// entry (`index.mjs`) is dropped (compile-facade.sh) — its browser/import/default
+// conditions resolve to the portable web build (`edge.mjs`). Point the legacy
+// top-level `module` field at that same web entry so it never references a
+// pruned file. A default flavour without a web target keeps the bundler entry.
+template.module = defaultFlavour.targets.includes("web")
+  ? webFacadeModulePath(defaultFlavour)
+  : facadeModulePath(defaultFlavour);
 template.types = facadeDeclarationPath(defaultFlavour);
 template.exports = {};
 
@@ -134,6 +146,19 @@ for (const flavour of descriptor.flavours) {
       types: webFacadeDeclarationPath(flavour),
       import: webFacadeModulePath(flavour),
       default: webFacadeModulePath(flavour)
+    };
+  }
+  if (flavour.moduleSubpath) {
+    // The standards-track `module` build (TC39 source-phase imports / Wasm ESM
+    // Integration): `import source` + synchronous instantiation, auto-initializing
+    // like the bundler build with no `initialize()` call. Supported today on
+    // Node 24, Deno, and esbuild (external), and the forward path for browser
+    // bundlers as source-phase lands. Opt-in subpath; the default `./trading`
+    // browser path stays the `web` build until source-phase is broadly portable.
+    template.exports[flavour.moduleSubpath] = {
+      types: moduleFacadeDeclarationPath(flavour),
+      import: moduleFacadeModulePath(flavour),
+      default: moduleFacadeModulePath(flavour)
     };
   }
   if (flavour.rawWasmSubpath) {

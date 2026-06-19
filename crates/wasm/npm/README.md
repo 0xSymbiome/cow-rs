@@ -37,19 +37,37 @@ flavor-specific imports — with no bundled wallet library.
 
 ## Pick your import
 
+Pick the **flavor** (feature set) by its base subpath. Every flavor ships the same
+runtime entries over one shared wasm binary, so pick the **runtime** by the suffix:
+
 | Import | Surface | Use when |
 | --- | --- | --- |
-| `@symbiome-forge/cow-sdk-wasm/trading` | Full order lifecycle: quote, sign, post, cancel, app-data | A browser dapp, a Node backend, or an edge runtime running order flow — one feature set serves all three; pick the runtime by import |
-| `@symbiome-forge/cow-sdk-wasm/trading/edge` | The `trading` flavor's web-target build, with explicit wasm init | Cloudflare Workers, Deno, or Vercel Edge; pair with `…/trading/edge/wasm` for the module asset |
+| `@symbiome-forge/cow-sdk-wasm/trading` | Full order lifecycle: quote, sign, post, cancel, app-data | A browser dapp, a Node backend, or an edge runtime running order flow — one feature set serves all three; pick the runtime by suffix |
 | `@symbiome-forge/cow-sdk-wasm/orderbook` | Orderbook reads, cancellation, and signing — no trading or app-data | A read-focused dapp that does not post orders |
 | `@symbiome-forge/cow-sdk-wasm/signing` | Signing, UID, EIP-1271, deployment, and version helpers — the smallest flavor | A signer service or HSM-facing adapter |
 | `@symbiome-forge/cow-sdk-wasm` | Everything above plus subgraph analytics and IPFS app-data | General use that needs subgraph or IPFS |
 
-The `trading` flavor resolves the right target automatically through standard
-conditional exports — `node` and `browser` for bundlers and Node, and `workerd` /
-`deno` / `edge-light` / `bun` for edge — with `./trading/edge` as the explicit
-Workers entry. Public imports go through these subpaths; do not import from
-`dist/raw` or generated wasm-pack directories.
+Each flavor exposes three runtime entries that share one wasm binary:
+
+- the **base** import (above) auto-selects the build through standard conditional
+  exports: `node` loads the Node (CommonJS) build; `browser`, `import`, and the edge
+  conditions (`workerd` / `worker` / `deno` / `edge-light` / `bun`) load the
+  explicit-init **web** build, which instantiates its wasm through
+  `new URL(import.meta.url)` and so works across every bundler and with no bundler at
+  all — call `await initialize()` once before the first call;
+- **`…/edge`** is the explicit web entry for Cloudflare Workers, Deno, and Vercel
+  Edge — pair it with **`…/edge/wasm`** for the precompiled module and call
+  `await initialize(wasmModule)`;
+- **`…/module`** is the standards-track source-phase build (`import source` / Wasm
+  ESM Integration): it auto-initializes with no `initialize()` call, runs today on
+  Node 24, Deno, and esbuild, and is the forward path for browser bundlers as they
+  adopt source-phase.
+
+So the focused flavors' entries are `…/trading/edge`, `…/trading/module`,
+`…/orderbook/edge`, `…/signing/module`, and so on; the root (everything) flavor's are
+`@symbiome-forge/cow-sdk-wasm/edge` and `@symbiome-forge/cow-sdk-wasm/module`. Public
+imports go through these subpaths; do not import from `dist/raw` or generated
+wasm-pack directories.
 
 Building a **native Rust** service, or a Rust app you compile to wasm yourself?
 Use [`cow-sdk`](https://crates.io/crates/cow-sdk) — this package is for
@@ -63,9 +81,14 @@ preview and signature. The wallet signs a typed-data envelope the SDK hands it;
 no key reaches the package.
 
 ```ts
-import { TradingClient } from "@symbiome-forge/cow-sdk-wasm/trading";
+import { initialize, TradingClient } from "@symbiome-forge/cow-sdk-wasm/trading";
 import { createWalletClient, custom } from "viem";
 import { mainnet } from "viem/chains";
+
+// Instantiate the wasm module once before any call. The bundled module is resolved
+// from the package via `new URL(import.meta.url)`, so this works in every bundler
+// and with no bundler at all — no bundler wasm plugin required.
+await initialize();
 
 const [owner] = await window.ethereum.request({ method: "eth_requestAccounts" });
 const wallet = createWalletClient({ chain: mainnet, transport: custom(window.ethereum) });
@@ -210,13 +233,16 @@ current alpha build (gzip is the compressed-transfer figure):
 | signing | 0.31 MiB | 120 KiB | 142 KiB | 0.9 MiB raw / 300 KiB brotli |
 | orderbook | 1.02 MiB | 341 KiB | 447 KiB | 1.5 MiB raw / 500 KiB brotli |
 | trading | 1.54 MiB | 490 KiB | 659 KiB | 3.2 MiB raw / 850 KiB brotli |
-| default | 1.63 MiB | 513 KiB | 692 KiB | 3.3 MiB raw / 900 KiB brotli |
+| default | 1.63 MiB | 513 KiB | 691 KiB | 3.3 MiB raw / 900 KiB brotli |
 
-The `trading` flavor emits one wasm binary across its bundler, Node, and web
-targets; its web-target gzip size is within the current Cloudflare Workers Free
-compressed-size limit, enforced as a byte budget on every build. End-to-end
-Workers support also depends on `wrangler deploy --dry-run` verification and a
-Worker startup-time gate, tracked separately.
+Each flavor emits one wasm binary shared across its bundler, Node, web, and
+source-phase module targets — the web glue's default URL, the module glue's
+`import source`, and the raw Worker module subpath all reuse the one bundler copy,
+so a flavor's gzip figure above is its size on every runtime. Each flavor's gzip
+size is enforced as a per-build byte budget within the current Cloudflare Workers
+Free compressed-size limit. End-to-end Workers support also depends on
+`wrangler deploy --dry-run` verification and a Worker startup-time gate, tracked
+separately.
 
 ## Not in this package
 

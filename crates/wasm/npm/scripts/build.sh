@@ -79,6 +79,25 @@ run_wasm_pack() {
   fi
 }
 
+# Build the source-phase `module` target. wasm-pack does not expose it, so it is
+# driven through wasm-bindgen directly: build the raw cdylib for this flavour's
+# feature set, then run `wasm-bindgen --target module` to emit `import source`
+# (TC39 source-phase / Wasm ESM Integration) glue. wasm-bindgen must match the
+# pinned crate version; a mismatch fails here loudly.
+run_wasm_bindgen_module() {
+  local flavour="$1"
+  local features="$2"
+  local out_dir="crates/wasm/npm/dist/raw/${flavour}-module"
+  local cargo_wasm="${repo_root}/target/wasm32-unknown-unknown/release/cow_sdk_wasm.wasm"
+
+  rm -rf "${repo_root}/${out_dir}"
+  cargo build -p cow-sdk-wasm --target wasm32-unknown-unknown --release \
+    --no-default-features --features "${features}"
+  wasm-bindgen --target module "${cargo_wasm}" \
+    --out-dir "${repo_root}/${out_dir}" --out-name cow_sdk_wasm
+  optimize_wasm_output "${repo_root}/${out_dir}"
+}
+
 if ! command -v wasm-pack >/dev/null 2>&1; then
   printf 'wasm-pack is required to build wasm flavours\n' >&2
   exit 1
@@ -139,6 +158,41 @@ for row in "${matrix[@]}"; do
   IFS=$'\t' read -r flavour target features <<< "${row}"
   printf 'building wasm flavour %s for %s\n' "${flavour}" "${target}"
   run_wasm_pack "${flavour}" "${target}" "${features}"
+done
+
+# The source-phase `module` target is driven separately for flavours that declare
+# a `moduleSubpath` (wasm-pack cannot emit it). It respects the same filters: a
+# `WASM_TARGET` filter other than `module` skips it.
+mapfile -t module_matrix < <(
+  node --input-type=module - "${flavours_json}" "${filter_flavour}" "${filter_target}" <<'JS'
+import { readFileSync } from "node:fs";
+
+const [, , flavoursPath, flavourFilter, targetFilter] = process.argv;
+const descriptor = JSON.parse(readFileSync(flavoursPath, "utf8"));
+const rows = [];
+
+for (const flavour of descriptor.flavours) {
+  if (!flavour.moduleSubpath) {
+    continue;
+  }
+  if (flavourFilter && flavour.name !== flavourFilter) {
+    continue;
+  }
+  if (targetFilter && targetFilter !== "module") {
+    continue;
+  }
+  rows.push([flavour.name, flavour.features.join(",")].join("\t"));
+}
+
+console.log(rows.join("\n"));
+JS
+)
+
+for row in "${module_matrix[@]}"; do
+  [ -n "${row}" ] || continue
+  IFS=$'\t' read -r flavour features <<< "${row}"
+  printf 'building wasm flavour %s for module (source-phase)\n' "${flavour}"
+  run_wasm_bindgen_module "${flavour}" "${features}"
 done
 
 while IFS= read -r declaration_file; do

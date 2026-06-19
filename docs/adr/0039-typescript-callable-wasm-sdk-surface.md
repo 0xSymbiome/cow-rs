@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-05-09
-- Last reviewed: 2026-05-22
+- Last reviewed: 2026-06-19
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: wasm, typescript, public-surface, additive-leaf-crates
 - Related: ADR 0007, [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), ADR 0019, [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), ADR 0037, [ADR 0038](0038-transaction-lifecycle-types.md), ADR 0042, ADR 0043, [ADR 0044](0044-bundle-size-profile-and-flavor-builds.md), ADR 0046, ADR 0047, [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
@@ -26,9 +26,9 @@ plus `TransportPolicyConfig`.
 
 The runtime support matrix is explicit: browser bundlers are
 `default-http-supported`, Node.js 22 and 24 LTS plus Cloudflare Workers and
-Deno are `callback-http-tested` through the shipped `trading` flavour's
-web (edge) build, and Bun, Vercel Edge, and Fly.io are best-effort without a CI
-claim.
+Deno are `callback-http-tested` through the shipped web (edge) build — which
+every flavour ships, exercised end-to-end via the `trading` flavour in CI — and
+Bun, Vercel Edge, and Fly.io are best-effort without a CI claim.
 
 ## Why
 
@@ -56,10 +56,10 @@ this ADR does not blur:
 - Runtime performance and support evidence (governed by the comparative
   benchmark validation note and its refresh triggers).
 - Cloudflare deployment and startup evidence (separately tracked; see the
-  validation note's refresh triggers — the `trading` flavour's web (edge) build
-  is size-compatible with the current Workers Free compressed-size limit at
-  the time of measurement, and is built and tested end-to-end in CI (Workers
-  Vitest), within the Workers compressed-size budget).
+  validation note's refresh triggers — every flavour's web (edge) build is
+  size-compatible with the current Workers Free compressed-size limit at the
+  time of measurement, and the `trading` flavour is built and tested end-to-end
+  in CI (Workers Vitest), within the Workers compressed-size budget).
 
 ## Must Remain True
 
@@ -84,8 +84,11 @@ this ADR does not blur:
     JavaScript boundary.
 12. `WasmError` messages use redacted display strings and response-body
     redaction.
-13. Edge runtimes import the web-target package subpaths and initialize the
-    module once per isolate.
+13. Browser and edge consumers of a `web`-target flavor import the web build and
+    call `initialize` once per module instance — browsers with no argument (the
+    bundled module resolves through `new URL(import.meta.url)`), Workers with the
+    precompiled module. The `node` condition loads the auto-initializing CommonJS
+    build.
 14. Worker source does not call dynamic WebAssembly compilation or streaming
     instantiation APIs.
 15. Callback registries are scoped to a wasm module instance.

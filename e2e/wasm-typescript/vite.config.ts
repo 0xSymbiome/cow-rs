@@ -1,31 +1,15 @@
-import type { PluginOption } from "vite";
 import { defineConfig } from "vite";
-import topLevelAwaitImport from "vite-plugin-top-level-await";
-import wasmImport from "vite-plugin-wasm";
 
-// The `cow-sdk-wasm-test-package` bundler entry uses the ESM
-// integration proposal for WebAssembly (`import * as wasm from
-// "./cow_sdk_wasm_bg.wasm";`). Vite 8 removed the experimental
-// `builtin:vite-wasm-fallback` plugin, so the `vite-plugin-wasm`
-// official plugin (paired with `vite-plugin-top-level-await` because
-// the generated init flow uses top-level `await`) handles the import
-// on the dev server and in the production bundle.
-//
-// Both plugins ship as CommonJS packages (their `package.json`
-// `type` field is unset) whose `.d.ts` files declare
-// `export default function ...`. Under TypeScript 6 + NodeNext the
-// synthetic default for that shape resolves the default binding to
-// the namespace itself rather than to the underlying function, so
-// `wasmImport()` fails type-check with TS2349 even though the
-// runtime semantics are correct. Re-typing each plugin entry as the
-// concrete factory signature keeps the call sites under static
-// type-check; the runtime continues to call the same factory
-// resolved through `exports.import.default` in each package.
-const wasm = wasmImport as unknown as () => PluginOption;
-const topLevelAwait = topLevelAwaitImport as unknown as () => PluginOption;
-
+// `cow-sdk-wasm-test-package` resolves to its web-target build for the browser
+// (`browser` / `import` conditions): the facade calls `await initialize()` from an
+// async function, and the loader fetches the wasm through
+// `new URL('..._bg.wasm', import.meta.url)` — an asset Vite emits and resolves
+// natively. The bundler-target `import * as wasm` ESM integration, which needed
+// `vite-plugin-wasm` plus `vite-plugin-top-level-await`, is no longer used; the
+// top-level-await plugin would even downlevel the bundle and fail. The package is
+// excluded from dependency pre-bundling so Vite serves its ESM facade and wasm
+// asset directly.
 export default defineConfig({
-  plugins: [wasm(), topLevelAwait()],
   optimizeDeps: {
     exclude: ["cow-sdk-wasm-test-package"]
   }

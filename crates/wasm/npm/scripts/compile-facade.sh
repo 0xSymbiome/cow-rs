@@ -149,14 +149,34 @@ for (const flavour of descriptor.flavours) {
   }
   cpSync(entryCjs, join(targetDir, "index.cjs"));
 
-  // A flavour that also ships the standalone `web` target gets a second ESM
-  // entry (`edge.mjs`) bound to the web raw shim (`raw/<flavour>-web`), exposed at
-  // its `webSubpath` (for example `./trading/edge`). The facade source is
-  // identical across targets — only the raw binding and the wasm-init path differ
-  // — so the web entry reuses the bundler entry's compiled output and
-  // declarations with the raw import swapped, and the redundant web shim CJS is
-  // dropped (the web build is ESM-only).
+  // A flavour that also ships the standalone `web` target gets a second ESM entry
+  // (`edge.mjs`) bound to a generated web raw shim (`raw/<flavour>-web`), exposed at
+  // its `webSubpath` (for example `./trading/edge`). The web raw shim differs from
+  // the bundler shim only in its loader, so it is generated from the compiled
+  // bundler shim — importing the wasm-bindgen `init` and wiring `initializeRaw` to
+  // it (replacing the bundler shim's no-op) against the `<flavour>-web` glue —
+  // keeping the per-flavour export surface single-sourced in the bundler shim. The
+  // facade entry is identical across targets, so `edge.mjs` reuses the bundler
+  // entry's compiled output with the raw import swapped; the redundant web shim CJS
+  // is dropped (the web build is ESM-only).
   if (Array.isArray(flavour.targets) && flavour.targets.includes("web") && flavour.targets.includes("bundler")) {
+    const toWeb = (text) =>
+      text
+        .replaceAll(`${flavour.name}-bundler`, `${flavour.name}-web`)
+        .replace("import * as wasm from", "import init, * as wasm from");
+    const webRawJs = toWeb(readFileSync(join(targetDir, "raw", `${flavour.name}.js`), "utf8")).replace(
+      /export const initializeRaw = async \(_input\) => \{\s*\};/,
+      "export const initializeRaw = init;"
+    );
+    writeFileSync(join(targetDir, "raw", `${flavour.name}-web.js`), webRawJs);
+    const webRawDts = toWeb(readFileSync(join(targetDir, "raw", `${flavour.name}.d.ts`), "utf8"))
+      .replace("export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;\n", "")
+      .replace(
+        /export declare const initializeRaw: \(_input\?: \{\s*module_or_path\?: unknown;\s*\}\) => Promise<void>;/,
+        "export declare const initializeRaw: typeof init;"
+      );
+    writeFileSync(join(targetDir, "raw", `${flavour.name}-web.d.ts`), webRawDts);
+
     const webEntry = readFileSync(join(targetDir, "index.mjs"), "utf8").replaceAll(
       `./raw/${flavour.name}.js`,
       `./raw/${flavour.name}-web.js`
@@ -164,6 +184,37 @@ for (const flavour of descriptor.flavours) {
     writeFileSync(join(targetDir, "edge.mjs"), webEntry);
     cpSync(join(targetDir, "index.d.ts"), join(targetDir, "edge.d.ts"));
     rmSync(join(targetDir, "raw", `${flavour.name}-web.cjs`), { force: true });
+  }
+
+  // A flavour with a `moduleSubpath` gets a source-phase `module` entry
+  // (`module.mjs`). The module target auto-instantiates synchronously like the
+  // bundler target, so its raw shim is identical to the bundler shim but for the
+  // glue directory — generate it from the compiled bundler shim rather than
+  // committing a duplicate source file. The entry reuses the bundler entry's
+  // compiled output with the raw import swapped, and its declaration is the same
+  // public surface.
+  if (flavour.moduleSubpath) {
+    const moduleRawJs = readFileSync(join(targetDir, "raw", `${flavour.name}.js`), "utf8")
+      .replaceAll(`${flavour.name}-bundler`, `${flavour.name}-module`);
+    writeFileSync(join(targetDir, "raw", `${flavour.name}-module.js`), moduleRawJs);
+    const moduleRawDts = readFileSync(join(targetDir, "raw", `${flavour.name}.d.ts`), "utf8")
+      .replaceAll(`${flavour.name}-bundler`, `${flavour.name}-module`);
+    writeFileSync(join(targetDir, "raw", `${flavour.name}-module.d.ts`), moduleRawDts);
+    const moduleEntry = readFileSync(join(targetDir, "index.mjs"), "utf8").replaceAll(
+      `./raw/${flavour.name}.js`,
+      `./raw/${flavour.name}-module.js`
+    );
+    writeFileSync(join(targetDir, "module.mjs"), moduleEntry);
+    cpSync(join(targetDir, "index.d.ts"), join(targetDir, "module.d.ts"));
+  }
+
+  // For a flavour whose browser/import/default conditions resolve to the web build
+  // (`edge.mjs`), the bundler ESM facade entry (`index.mjs`) is unreferenced by any
+  // package export — `index.cjs` backs the node condition and `index.d.ts` the
+  // types. Drop it so the package ships no dead entry; the `edge.mjs` and
+  // `module.mjs` entries above were already generated from it.
+  if (flavour.targets.includes("web")) {
+    rmSync(join(targetDir, "index.mjs"), { force: true });
   }
 
   // Prune to the reachable closure. Each flavor is published as index.* and only
@@ -187,9 +238,9 @@ JS
 # The facade re-declares [Symbol.dispose] on its client classes. wasm-bindgen
 # adds the matching lib reference to its own raw declarations; mirror it on the
 # compiled facade declarations so the member resolves under consumer tsconfig
-# libs that predate the Disposable types. The web build's separate `edge.d.ts`
-# entry needs the same reference.
-for facade_dts in "${dist_root}"/*/index.d.ts "${dist_root}"/*/edge.d.ts; do
+# libs that predate the Disposable types. The web `edge.d.ts` and source-phase
+# `module.d.ts` entries need the same reference.
+for facade_dts in "${dist_root}"/*/index.d.ts "${dist_root}"/*/edge.d.ts "${dist_root}"/*/module.d.ts; do
   [ -f "${facade_dts}" ] || continue
   if grep -q '\[Symbol\.dispose\]' "${facade_dts}" \
     && ! grep -q 'reference lib="esnext.disposable"' "${facade_dts}"; then
