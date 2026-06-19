@@ -580,3 +580,21 @@ fn order_status_terminal_and_open_predicates_partition_known_variants() {
         );
     }
 }
+
+#[test]
+fn order_status_is_fulfilled_is_the_precise_settled_predicate() {
+    assert!(OrderStatus::Fulfilled.is_fulfilled());
+    for non_fill in [
+        OrderStatus::PresignaturePending,
+        OrderStatus::Open,
+        OrderStatus::Cancelled,
+        OrderStatus::Expired,
+    ] {
+        assert!(
+            !non_fill.is_fulfilled(),
+            "{non_fill:?} is not a settled fill",
+        );
+    }
+    // A settled fill is always terminal.
+    assert!(OrderStatus::Fulfilled.is_terminal());
+}

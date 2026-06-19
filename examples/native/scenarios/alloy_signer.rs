@@ -23,10 +23,7 @@ const RECEIVER: Address = address!("0xa6ddbd0de6b310819b49f680f65871bee85f517e")
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     // Build the signer leaf from a private key — entirely in memory, no provider.
-    let signer = LocalAlloySigner::builder()
-        .private_key(TEST_KEY)?
-        .chain_id(SupportedChainId::Mainnet)
-        .build()?;
+    let signer = LocalAlloySigner::from_private_key(TEST_KEY, SupportedChainId::Mainnet)?;
 
     // Build the EIP-712 typed-data payload for a CoW order and confirm its
     // primary type matches the protocol constant.

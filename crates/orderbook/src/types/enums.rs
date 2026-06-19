@@ -147,4 +147,17 @@ impl OrderStatus {
     pub const fn is_open(self) -> bool {
         matches!(self, Self::Open | Self::PresignaturePending)
     }
+
+    /// Returns whether the order settled with a fill (`Fulfilled`).
+    ///
+    /// The precise predicate within the terminal set: a terminal order may have
+    /// filled, been cancelled, or expired, and a fill is the outcome a consumer
+    /// usually acts on. Prefer this over a caller-side `Fulfilled` match, which
+    /// the `#[non_exhaustive]` enum cannot keep exhaustive; like the other
+    /// predicates it is owned by the crate that owns the wire tags.
+    #[inline]
+    #[must_use]
+    pub const fn is_fulfilled(self) -> bool {
+        matches!(self, Self::Fulfilled)
+    }
 }

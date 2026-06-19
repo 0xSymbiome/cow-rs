@@ -28,6 +28,29 @@ impl LocalAlloySigner {
         LocalAlloySignerBuilder::new()
     }
 
+    /// Binds a private key (hex, with or without the `0x` prefix) to a chain in
+    /// one call.
+    ///
+    /// The `from_x` total-input shortcut. Alloy parses the key and binds the
+    /// chain in two optional steps (`FromStr`, then `Signer::with_chain_id`);
+    /// this signer instead requires the chain up front — it backs the EIP-712
+    /// domain — so it takes both. Reach for [`LocalAlloySigner::builder`] for raw
+    /// key bytes or explicit typestate construction.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`InvalidPrivateKey`](crate::LocalAlloySignerBuilderError::InvalidPrivateKey)
+    /// when the input is not a valid secp256k1 private key. The error carries no
+    /// key material.
+    pub fn from_private_key(
+        hex: impl AsRef<str>,
+        chain_id: SupportedChainId,
+    ) -> Result<Self, crate::builder::LocalAlloySignerBuilderError> {
+        let inner = crate::builder::parse_private_key_signer(hex.as_ref())
+            .ok_or(crate::builder::LocalAlloySignerBuilderError::InvalidPrivateKey)?;
+        Ok(Self::from_parts(inner, ChainId::from(chain_id)))
+    }
+
     pub(crate) fn from_parts(inner: PrivateKeySigner, chain_id: ChainId) -> Self {
         let bound = inner.with_chain_id(Some(chain_id));
         Self {
