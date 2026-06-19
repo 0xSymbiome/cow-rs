@@ -57,6 +57,7 @@ pub const DETERMINISTIC_EXAMPLES: &[DeterministicExample] = &[
     DeterministicExample::new("ethflow_checker", &[]),
     DeterministicExample::new("alloy_quickstart", &["alloy"]),
     DeterministicExample::new("alloy_provider", &["alloy-provider"]),
+    DeterministicExample::new("token_balance", &["alloy-provider"]),
     DeterministicExample::new("alloy_signer", &["alloy-signer"]),
     DeterministicExample::new("alloy_custom_traits", &["alloy"]),
     DeterministicExample::new("alloy_trading_full_flow", &["alloy"]),
