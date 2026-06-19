@@ -45,6 +45,8 @@ repositories:
   - packages/app-data/src/schemas/partnerFee/v1.1.0.json # partner-fee app-data schema
   - packages/app-data/src/schemas/quote/v1.1.0.json # quote app-data schema
   - packages/config/src/chains/const/contracts.ts # contract-address constants
+  - packages/config/src/chains/types.ts # SupportedChainId enum (directly-supported network set)
+  - packages/config/src/constants/wrappedTokens.ts # WRAPPED_NATIVE_CURRENCIES (per-chain wrapped-native token)
   - packages/cow-shed/src/abi/CowShedFactoryAbi.ts # COW Shed factory ABI
   - packages/cow-shed/src/const.ts # COW Shed per-version constants
   - packages/cow-shed/src/contracts/CoWShedHooks.test.ts # COW Shed CREATE2 goldens
