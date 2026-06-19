@@ -6,7 +6,7 @@ order actions.
 
 > ⚠️ **Alpha — `0.1.0-alpha`.** Pre-release and not security-audited; the public
 > API may change before `0.1.0`. It is published as a pre-release, so Cargo
-> selects it only when you opt in (`cow-sdk-trading = "0.1.0-alpha.5"`). Review
+> selects it only when you opt in (`cow-sdk-trading = "0.1.0-alpha.6"`). Review
 > it yourself before relying on it with real funds.
 
 This is the orchestration layer that turns configured signers,
@@ -20,7 +20,7 @@ the rest of the facade surface.
 
 ```toml
 [dependencies]
-cow-sdk-trading = "0.1.0-alpha.5"
+cow-sdk-trading = "0.1.0-alpha.6"
 ```
 
 ## Minimal example

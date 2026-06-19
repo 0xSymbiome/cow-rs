@@ -27,10 +27,10 @@ use [Integrations](integrations.md).
 
 ```toml
 [dependencies]
-cow-sdk = "0.1.0-alpha.5"
+cow-sdk = "0.1.0-alpha.6"
 ```
 
-`cargo add cow-sdk@0.1.0-alpha.5` does the same. To run this guide's
+`cargo add cow-sdk@0.1.0-alpha.6` does the same. To run this guide's
 deterministic checks against a local checkout instead, depend on the crate by
 path and run the commands from the repository root:
 
@@ -108,7 +108,7 @@ TypeScript facade, typed callbacks, per-flavor package exports, and
 runtime-specific wasm artifacts.
 
 ```text
-npm install @symbiome-forge/cow-sdk-wasm@0.1.0-alpha.5
+npm install @symbiome-forge/cow-sdk-wasm@0.1.0-alpha.6
 ```
 
 ## Choose the crate or package by runtime

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.6] - 2026-06-19
+
+### Features
+
+- [**breaking**] *(wasm)* Serve every flavour on the web and source-phase module targets (#10) ([`15d32cc`](https://github.com/0xSymbiome/cow-rs/commit/15d32cca7d0602f75f34234cf15dfc41e1b43cc3))
+
 ## [0.1.0-alpha.5] - 2026-06-18
 
 ### Features
