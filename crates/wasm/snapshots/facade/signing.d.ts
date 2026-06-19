@@ -2,6 +2,20 @@ import * as raw from "./raw/signing.js";
 import type { WasmEnvelope } from "./envelope.js";
 import type { SigningOptions } from "./options.js";
 import type { CustomEip1271Callback, DigestSignerCallback, Eip1193RequestCallback, TypedDataSignerCallback } from "./callbacks.js";
+/**
+ * Initialize the wasm module, idempotently, once per module instance.
+ *
+ * On the `web` build — Cloudflare Workers, Deno, Vercel Edge, and no-bundler
+ * browsers — the host owns module instantiation, so it must call this once with
+ * the compiled module (Workers pass the `CompiledWasm` binding) or its URL/bytes
+ * (Deno and browsers). On the `bundler` and `nodejs` builds the host
+ * bundler/runtime instantiates the module on import, so this resolves
+ * immediately and the argument is ignored — calling it is optional and harmless,
+ * which keeps one call shape working across every target.
+ */
+export declare function initialize(module?: WebAssembly.Module | raw.InitInput): Promise<void>;
+export default initialize;
+export type { InitInput } from "./raw/signing.js";
 export declare function computeOrderUid(input: raw.OrderInput, chainId: number, owner: string): WasmEnvelope<raw.GeneratedOrderUidDto>;
 export declare function decodeEthFlowLog(log: raw.EventLogInput): WasmEnvelope<raw.EthFlowEventDto>;
 export declare function decodeSettlementLog(log: raw.EventLogInput): WasmEnvelope<raw.SettlementEventDto>;

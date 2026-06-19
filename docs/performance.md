@@ -74,16 +74,17 @@ surface that covers their workflow.
 
 | Flavor | Public import | Raw wasm | Brotli | Gzip | Release gate |
 | --- | --- | ---: | ---: | ---: | --- |
-| default | `@symbiome-forge/cow-sdk-wasm` | 1.63 MiB | 511 KiB | 689 KiB | 3.3 MiB raw / 900 KiB brotli |
-| orderbook | `@symbiome-forge/cow-sdk-wasm/orderbook` | 1.03 MiB | 341 KiB | 447 KiB | 1.5 MiB raw / 500 KiB brotli |
+| default | `@symbiome-forge/cow-sdk-wasm` | 1.63 MiB | 513 KiB | 691 KiB | 3.3 MiB raw / 900 KiB brotli |
+| orderbook | `@symbiome-forge/cow-sdk-wasm/orderbook` | 1.02 MiB | 341 KiB | 447 KiB | 1.5 MiB raw / 500 KiB brotli |
 | signing | `@symbiome-forge/cow-sdk-wasm/signing` | 0.31 MiB | 120 KiB | 142 KiB | 0.9 MiB raw / 300 KiB brotli |
-| trading | `@symbiome-forge/cow-sdk-wasm/trading` | 1.54 MiB | 489 KiB | 657 KiB | 3.2 MiB raw / 850 KiB brotli / 3,000,000 B gzip (warn at 2,700,000 B) |
+| trading | `@symbiome-forge/cow-sdk-wasm/trading` | 1.54 MiB | 490 KiB | 659 KiB | 3.2 MiB raw / 850 KiB brotli / 3,000,000 B gzip (warn at 2,700,000 B) |
 
 The raw and compressed measurements above come from the current package build
 pipeline after optimization. The gate values are enforced per flavor so the
-default and Worker surfaces cannot grow silently. The `trading` flavour emits one
-wasm binary shared across its bundler, nodejs, and web targets; its gzip budget
-tracks Cloudflare's published Workers Free compressed-size limit at the time of
+default and Worker surfaces cannot grow silently. Every flavour emits one wasm
+binary shared across its bundler, nodejs, web, and module targets, so the figure
+above is its size on every runtime; the `trading` flavour's gzip budget tracks
+Cloudflare's published Workers Free compressed-size limit at the time of
 measurement, and the byte budget avoids MB / MiB ambiguity against the external
 platform contract.
 
@@ -99,10 +100,10 @@ as a release-readiness budget rather than a deterministic microbenchmark:
 | Under 500 ms | Release gate for the Worker flavor. |
 | Under 1 second | Platform-limit budget that Worker consumers should stay below. |
 
-Worker integrations should initialize `@symbiome-forge/cow-sdk-wasm/trading/edge`
-once per isolate with the `@symbiome-forge/cow-sdk-wasm/trading/edge/wasm` module
-asset, then reuse clients or create short-lived clients with explicit `dispose()`
-calls.
+Worker integrations should initialize a flavour's `…/edge` entry (for example
+`@symbiome-forge/cow-sdk-wasm/trading/edge`) once per isolate with its matching
+`…/edge/wasm` module asset, then reuse clients or create short-lived clients with
+explicit `dispose()` calls.
 
 ## Running Locally
 

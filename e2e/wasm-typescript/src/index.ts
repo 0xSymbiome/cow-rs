@@ -3,6 +3,7 @@ import {
   cidToAppDataHex,
   computeOrderUid,
   domainSeparator,
+  initialize,
   orderTypedData,
   supportedChainIds,
   wasmVersion
@@ -26,6 +27,11 @@ const ORDER = {
 const OWNER = "0x3333333333333333333333333333333333333333";
 
 export async function runBrowserSmoke() {
+  // The browser (`browser`/`import`) condition resolves the web-target build, so
+  // the wasm module is instantiated explicitly once before any export runs — the
+  // loader fetches it through `new URL(import.meta.url)`, which Vite emits as an
+  // asset. (Node tests keep the auto-initializing CommonJS build.)
+  await initialize();
   const cid = appDataHexToCid(ORDER.appData).value;
   const uid = computeOrderUid(ORDER, 1, OWNER).value;
   const typedData = orderTypedData(ORDER, 1).value;

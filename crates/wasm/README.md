@@ -63,20 +63,33 @@ a live `AbortSignal`. Timeout remains SDK-owned through
 handle and timeout closure so cleanup happens on success, throw, rejection,
 malformed response, or abort.
 
-## Edge and the explicit initialize
+## Browser, edge, and the explicit initialize
 
-Edge runtimes (Cloudflare Workers, Deno, Vercel Edge) consume the `trading`
-flavour's web-target build, resolved through the `workerd`, `deno`, `edge-light`,
-and `bun` export conditions on `./trading` or imported explicitly at
-`./trading/edge`. Because Workers cannot compile WebAssembly from bytes at
-runtime, the `./trading/edge` facade takes the statically imported
-`WebAssembly.Module` through an explicit `initialize` step instead of
-instantiating on import. The `trading` flavour emits one wasm binary across its
-bundler, Node, and web targets, and the release pipeline enforces a per-build
+Every flavour's `browser`, `import`, and `default` export conditions, its edge
+conditions (`workerd`, `deno`, `edge-light`, `bun`), and its explicit `…/edge`
+subpath all resolve to the web-target build. wasm-bindgen's bundler-target ESM
+integration (`import * as wasm from "./…_bg.wasm"`) is not portable across bundlers
+— unsupported on several and webpack-first elsewhere — so the web build is the
+browser default for every flavour. A browser caller runs `initialize()` once; its
+loader resolves the bundled module through `new URL(import.meta.url)`, the universal
+asset path. Workers cannot compile WebAssembly from bytes at runtime, so the `…/edge`
+subpath takes a statically imported `WebAssembly.Module` through `initialize(module)`
+instead, paired with the precompiled module at `…/edge/wasm`. The `node` condition
+keeps the auto-initializing CommonJS build.
+
+Every flavour also ships the wasm-bindgen source-phase build at `…/module`
+(`--target module`, TC39 source-phase imports / Wasm ESM Integration), driven
+directly because wasm-pack does not emit it. It auto-instantiates synchronously on
+import with no `initialize()` call — the standards-track forward path as browser
+bundlers adopt source-phase — and is opt-in today (Node 24, Deno, esbuild).
+
+Each flavour emits one wasm binary across its bundler, Node, web, and module
+targets — the web glue's default loader URL and the module glue's `import source`
+both repoint at the single bundler copy. The release pipeline enforces a per-build
 gzip byte budget against the Cloudflare Workers Free compressed-size limit; full
-Workers support additionally depends on `wrangler deploy --dry-run` verification
-and a Worker startup-time gate. The consumer-facing runtime-support matrix and
-the edge quickstart are in the npm package README.
+Workers support additionally depends on `wrangler deploy --dry-run` verification and
+a Worker startup-time gate. The consumer-facing runtime-support matrix and
+quickstarts are in the npm package README.
 
 ## TypeScript Declarations
 
@@ -90,9 +103,9 @@ snapshot layers lock complementary surfaces and are not redundant:
 
 - `snapshots/raw/` (bundler and nodejs targets) locks the wasm-bindgen output
   and the `tsify` DTO **fields** — the field-level shape a consumer sees through
-  the re-exported DTO types. The `trading` flavour's web target adds only
-  wasm-bindgen's standard module-init scaffolding on top of the bundler surface,
-  so it is not snapshotted separately; the facade snapshot pins its public
+  the re-exported DTO types. Every flavour's web and source-phase `module` targets
+  add only wasm-bindgen's standard target scaffolding on top of the bundler surface,
+  so they are not snapshotted separately; the facade snapshot pins their public
   `initialize` contract.
 - `snapshots/facade/` locks the public **class and function surface** of the
   TypeScript facade — method signatures, option objects, and disposal.

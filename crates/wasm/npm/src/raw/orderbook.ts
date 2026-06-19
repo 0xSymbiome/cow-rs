@@ -2,6 +2,14 @@ import * as wasm from "../../dist/raw/orderbook-bundler/cow_sdk_wasm.js";
 
 export type * from "../../dist/raw/orderbook-bundler/cow_sdk_wasm.js";
 
+// Bundler and nodejs targets instantiate on import (no wasm-bindgen `init`), so
+// `InitInput` is declared here and `initializeRaw` is a no-op — the facade exposes
+// one `initialize(module?)` across targets. compile-facade generates the web shim,
+// swapping `initializeRaw` for the real `init` (Workers/Deno/edge/no-bundler hosts
+// supply the module).
+export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
+export const initializeRaw = async (_input?: { module_or_path?: unknown }): Promise<void> => {};
+
 export const RawOrderBookClient = wasm.OrderBookClient;
 
 export const __cow_sdk_wasm_init = wasm.__cow_sdk_wasm_init;

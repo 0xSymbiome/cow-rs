@@ -2,18 +2,12 @@ import * as wasm from "../../dist/raw/trading-bundler/cow_sdk_wasm.js";
 
 export type * from "../../dist/raw/trading-bundler/cow_sdk_wasm.js";
 
-// The bundler target instantiates on import and ships no wasm-bindgen `init`, so
-// it emits no `InitInput` type. Declare it here, matching the web target's
-// shape, so the single `trading` facade can type a uniform `initialize(module?)`
-// across every target.
+// Bundler and nodejs targets instantiate on import (no wasm-bindgen `init`), so
+// `InitInput` is declared here and `initializeRaw` is a no-op — the facade exposes
+// one `initialize(module?)` across targets. compile-facade generates the web shim,
+// swapping `initializeRaw` for the real `init` (Workers/Deno/edge/no-bundler hosts
+// supply the module).
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
-
-// The bundler target instantiates the module as part of the host bundler's wasm
-// import, so there is nothing to initialize at runtime. `initializeRaw` is a
-// no-op here so the single `trading` facade can expose a uniform `initialize()`
-// across targets; the `web` target's shim (`trading-web.ts`) wires the real
-// wasm-bindgen initializer for hosts that must supply the module themselves
-// (Cloudflare Workers, Deno, Vercel Edge, no-bundler browsers).
 export const initializeRaw = async (_input?: { module_or_path?: unknown }): Promise<void> => {};
 export const RawOrderBookClient = wasm.OrderBookClient;
 export const RawTradingClient = wasm.TradingClient;

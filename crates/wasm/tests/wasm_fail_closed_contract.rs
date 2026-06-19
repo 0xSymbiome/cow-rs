@@ -149,31 +149,50 @@ async fn empty_cancellation_rejects_before_wallet_callback() {
 }
 
 #[wasm_bindgen_test]
-fn flavour_descriptor_exposes_trading_web_subpath() {
+fn flavour_descriptor_exposes_web_and_module_subpaths() {
     let descriptor: Value = serde_json::from_str(include_str!("../npm/flavours.json")).unwrap();
-    let trading = descriptor["flavours"]
-        .as_array()
-        .unwrap()
+    let flavours = descriptor["flavours"].as_array().unwrap();
+
+    // Every flavour ships the same target coverage so a browser, Node, edge, or
+    // source-phase host resolves a working build for any feature set: the bundler
+    // build backs browser dApps, nodejs backs Node hosts, the web build backs edge
+    // runtimes (Cloudflare Workers, Deno, Vercel Edge) through the explicit web
+    // subpath, and the source-phase module build is the opt-in standards-track
+    // entry. Consistency is the contract — no flavour is browser-portable while
+    // another is bundler-only.
+    for flavour in flavours {
+        let name = flavour["name"].as_str().unwrap();
+        let targets = flavour["targets"].as_array().unwrap();
+        for required in ["bundler", "nodejs", "web"] {
+            assert!(
+                targets
+                    .iter()
+                    .any(|target| target.as_str() == Some(required)),
+                "{name} must ship the {required} target"
+            );
+        }
+        assert!(
+            flavour["webSubpath"].is_string(),
+            "{name} must declare a webSubpath for edge runtimes"
+        );
+        assert!(
+            flavour["rawWasmSubpath"].is_string(),
+            "{name} must declare a rawWasmSubpath for the Worker module asset"
+        );
+        assert!(
+            flavour["moduleSubpath"].is_string(),
+            "{name} must declare a moduleSubpath for the source-phase build"
+        );
+    }
+
+    // The order-lifecycle flavour anchors the concrete subpath shape.
+    let trading = flavours
         .iter()
         .find(|flavour| flavour["name"] == "trading")
         .unwrap();
-
-    // The dApp/order-lifecycle flavour ships every target: the bundler build backs
-    // browser dApps, nodejs backs Node hosts, and the web build backs edge runtimes
-    // (Cloudflare Workers, Deno, Vercel Edge) through the explicit web subpath.
     assert_eq!(trading["webSubpath"], "./trading/edge");
     assert_eq!(trading["rawWasmSubpath"], "./trading/edge/wasm");
-    let targets = trading["targets"].as_array().unwrap();
-    assert!(
-        targets.iter().any(|target| target.as_str() == Some("web")),
-        "trading must ship the web target for edge runtimes"
-    );
-    assert!(
-        targets
-            .iter()
-            .any(|target| target.as_str() == Some("bundler")),
-        "trading must ship the bundler target for browser dApps"
-    );
+    assert_eq!(trading["moduleSubpath"], "./trading/module");
 }
 
 #[wasm_bindgen_test]

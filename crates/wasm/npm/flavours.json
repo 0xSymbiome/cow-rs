@@ -12,12 +12,15 @@
         "trading",
         "subgraph"
       ],
-      "targets": ["bundler", "nodejs"],
+      "targets": ["bundler", "nodejs", "web"],
       "rawBudgetMiB": 3.3,
       "brotliBudgetKiB": 900,
       "gzipFailBytes": 1300000,
       "gzipWarnBytes": 1200000,
-      "subpath": "."
+      "subpath": ".",
+      "webSubpath": "./edge",
+      "rawWasmSubpath": "./edge/wasm",
+      "moduleSubpath": "./module"
     },
     {
       "name": "orderbook",
@@ -27,22 +30,28 @@
         "cancellation",
         "transport-policy"
       ],
-      "targets": ["bundler", "nodejs"],
+      "targets": ["bundler", "nodejs", "web"],
       "rawBudgetMiB": 1.5,
       "brotliBudgetKiB": 500,
       "gzipFailBytes": 610000,
       "gzipWarnBytes": 540000,
-      "subpath": "./orderbook"
+      "subpath": "./orderbook",
+      "webSubpath": "./orderbook/edge",
+      "rawWasmSubpath": "./orderbook/edge/wasm",
+      "moduleSubpath": "./orderbook/module"
     },
     {
       "name": "signing",
       "features": ["signing"],
-      "targets": ["bundler", "nodejs"],
+      "targets": ["bundler", "nodejs", "web"],
       "rawBudgetMiB": 0.9,
       "brotliBudgetKiB": 300,
       "gzipFailBytes": 370000,
       "gzipWarnBytes": 320000,
-      "subpath": "./signing"
+      "subpath": "./signing",
+      "webSubpath": "./signing/edge",
+      "rawWasmSubpath": "./signing/edge/wasm",
+      "moduleSubpath": "./signing/module"
     },
     {
       "name": "trading",
@@ -61,7 +70,8 @@
       "gzipWarnBytes": 2700000,
       "subpath": "./trading",
       "webSubpath": "./trading/edge",
-      "rawWasmSubpath": "./trading/edge/wasm"
+      "rawWasmSubpath": "./trading/edge/wasm",
+      "moduleSubpath": "./trading/module"
     }
   ]
 }

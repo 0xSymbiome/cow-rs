@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-05-11
-- Last reviewed: 2026-06-18
+- Last reviewed: 2026-06-19
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: wasm, npm, bundle-size, package-flavors
 - Related: [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), ADR 0047
@@ -11,10 +11,13 @@
 
 `cow-sdk-wasm` ships as one Cargo crate and one npm package with multiple
 feature-scoped flavor builds. The public package exposes `default`, `orderbook`,
-`signing`, and `trading` subpaths through the package exports map, plus the
-`trading` flavour's web (edge) facade at `./trading/edge` and its precompiled
-wasm module at `./trading/edge/wasm`. Release builds use the workspace release
-profile and a wasm optimization pass before package verification.
+`signing`, and `trading` subpaths through the package exports map. Every flavour is
+built for the `bundler`, `nodejs`, and `web` targets plus the standards-track
+source-phase `module` build, so each one exposes a web (edge) facade at `…/edge`, a
+precompiled wasm module at `…/edge/wasm`, and a source-phase build at `…/module`
+(the root flavour's at `./edge`, `./edge/wasm`, and `./module`). Release builds use
+the workspace release profile and a wasm optimization pass before package
+verification.
 
 ## Why
 
@@ -37,20 +40,31 @@ recommended choice.
 
 - Flavor subpaths are public package exports, not deep `dist/raw` paths.
 - Cloudflare Workers use a web-target facade plus a precompiled wasm module
-  subpath (`./trading/edge` and `./trading/edge/wasm`).
+  subpath (each flavour's `…/edge` and `…/edge/wasm`, for example `./trading/edge`).
 - Flavor and target are separate axes. A flavor is a feature set; a target
-  (`bundler`, `nodejs`, `web`) is a runtime loader. The `trading` flavor is built
-  for all three targets, so one feature set serves browser dApps (bundler), Node
-  (nodejs), and edge runtimes (web) — the web build is reached at the
-  `./trading/edge` subpath and through the `workerd`, `worker`, `deno`,
-  `edge-light`, and `bun` export conditions on `./trading`, not through a
-  vendor-named flavor. The `default`, `orderbook`, and `signing` flavors ship the
-  `bundler` and `nodejs` targets only: their facade ESM and CommonJS entries
-  consume the `bundler` and `nodejs` raw builds respectively, so a standalone
-  `web` build for those flavors is unreferenced by any package export and is not
-  produced. The `trading` flavor's `bundler` and `web` targets emit a
-  byte-identical wasm binary, so the package ships one binary per flavor and the
-  raw Worker module subpath reuses the bundler copy.
+  (`bundler`, `nodejs`, `web`) is a runtime loader. Every flavor is built for all
+  three targets. Each flavor's `node` condition loads the `nodejs` CommonJS build;
+  its `browser`, `import`, `default`, and edge conditions (`workerd`, `worker`,
+  `deno`, `edge-light`, `bun`), plus the explicit `…/edge` subpath, load the `web`
+  build, which instantiates its wasm through `new URL(import.meta.url)` and is
+  therefore portable across every bundler and with no bundler — the bundler target's
+  `import * as wasm` ESM integration is not. Browser consumers call `initialize()`
+  once; Workers pass the precompiled module. The `bundler` target still produces the
+  one canonical wasm binary that the `web` and `nodejs` glue reuse, but its facade
+  ESM entry is not a browser export. No flavor is browser-portable while another is
+  bundler-only: every flavor — `default`, `orderbook`, `signing`, and `trading` —
+  ships the same target coverage, so a browser consumer of any feature set gets the
+  portable web path. Each flavor's `bundler` and `web` targets emit a byte-identical
+  wasm binary, so the package ships one binary per flavor, and both the web glue's
+  default loader URL and the raw Worker module subpath point at that bundler copy.
+- Every flavour additionally ships a source-phase `module` build at `…/module`
+  (TC39 source-phase imports / Wasm ESM Integration), driven through
+  `wasm-bindgen --target module` because wasm-pack does not emit it. It
+  auto-initializes like the bundler build (no `initialize()` call) and shares the
+  one byte-identical bundler binary through a repointed `import source` specifier.
+  It is an opt-in forward-compatible path (Node 24, Deno, and esbuild today); it
+  does not replace the portable `web` build as each flavour's browser default until
+  source-phase is broadly supported by bundlers.
 - The shipped flavor enumeration is exactly four — `default`, `orderbook`,
   `signing`, and `trading`. No `full` flavor ships: its feature set was
   mechanically identical to `default` (verified through the shipped
@@ -65,10 +79,10 @@ recommended choice.
 - Public docs do not frame `cow-sdk-wasm` as a replacement for the upstream
   `@cowprotocol/cow-sdk` TypeScript SDK; the consumer routing matrix in
   `README.md` and `crates/wasm/README.md` documents the supported use cases.
-- The `trading` flavor's gzip artifact size is verified against the configured
-  Cloudflare Workers compressed-size byte budget on every release build. The
-  byte budget tracks Cloudflare's published Free compressed-size limit (the
-  configured fail threshold is below the platform limit with safety margin).
+- Each flavor's gzip artifact size is verified against its configured Cloudflare
+  Workers compressed-size byte budget on every release build. The byte budget
+  tracks Cloudflare's published Free compressed-size limit (the configured fail
+  threshold is below the platform limit with safety margin).
 - Full Workers support depends on additional release-bundle and startup-time
   gates that are not enforced by the size release gate alone; those gates are
   tracked in the comparative benchmark validation note's refresh triggers.

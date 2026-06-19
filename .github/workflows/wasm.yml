@@ -131,9 +131,15 @@ jobs:
           matrix="$(node - <<'JS'
           const fs = require("node:fs");
           const descriptor = JSON.parse(fs.readFileSync("crates/wasm/npm/flavours.json", "utf8"));
-          const include = descriptor.flavours.flatMap((flavour) =>
-            flavour.targets.map((target) => ({ flavour: flavour.name, target }))
-          );
+          const include = descriptor.flavours.flatMap((flavour) => {
+            const rows = flavour.targets.map((target) => ({ flavour: flavour.name, target }));
+            // The source-phase `module` target is not a wasm-pack target; build.sh
+            // drives it directly for flavours that declare a `moduleSubpath`.
+            if (flavour.moduleSubpath) {
+              rows.push({ flavour: flavour.name, target: "module" });
+            }
+            return rows;
+          });
           process.stdout.write(JSON.stringify({ include }));
           JS
           )"
@@ -175,6 +181,12 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - name: Install wasm-pack
         run: cargo install wasm-pack --version 0.15.0 --locked
+      - name: Install wasm-bindgen CLI for the source-phase module target
+        if: matrix.target == 'module'
+        # Source ref: taiki-e/install-action@v2
+        uses: taiki-e/install-action@94cb46f8d6e437890146ffbd78a778b78e623fb2
+        with:
+          tool: wasm-bindgen-cli@0.2.125
       - name: Build wasm flavour target
         env:
           WASM_FLAVOUR: ${{ matrix.flavour }}
