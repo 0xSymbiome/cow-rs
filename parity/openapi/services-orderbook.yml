@@ -1,4 +1,4 @@
-# Vendored from cowprotocol/services @ 58045311c1b804fb42cbed74fd5bc347728e8bad
+# Vendored from cowprotocol/services @ 754bb6a0a2082e7185cc90eeaa5efaea2e80bfaa
 # Path: crates/orderbook/openapi.yml
 # DO NOT EDIT - regenerate via `cargo parity-vendor-openapi`.
 openapi: 3.0.3

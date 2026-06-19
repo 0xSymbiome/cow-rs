@@ -24,7 +24,7 @@ repositories:
   - test/GPv2Settlement/Swap/Swap.t.sol # swap calldata vector
 - id: services
   remote: https://github.com/cowprotocol/services.git
-  commit: 58045311c1b804fb42cbed74fd5bc347728e8bad
+  commit: 754bb6a0a2082e7185cc90eeaa5efaea2e80bfaa
   producer_paths:
   - crates/app-data/src/app_data.rs # app-data hashing, flashloan hint
   - crates/model/src/order.rs # orderbook wire DTOs

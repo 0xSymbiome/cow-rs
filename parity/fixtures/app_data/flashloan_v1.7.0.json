@@ -3,7 +3,7 @@
   "dto": "cow_sdk_app_data::FlashloanHints",
   "sources": {
     "services": {
-      "commit": "58045311c1b804fb42cbed74fd5bc347728e8bad",
+      "commit": "754bb6a0a2082e7185cc90eeaa5efaea2e80bfaa",
       "refs": [
         "crates/app-data/src/app_data.rs#Flashloan"
       ]
