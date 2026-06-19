@@ -1,0 +1,25 @@
+{
+  "surface": "config-supported-networks",
+  "sources": {
+    "cow-sdk": {
+      "commit": "ccf01cb331a4d37cdf9082541eb4fa3c04f1bc26",
+      "refs": [
+        "packages/config/src/chains/types.ts#SupportedChainId",
+        "packages/config/src/constants/wrappedTokens.ts#WRAPPED_NATIVE_CURRENCIES"
+      ]
+    }
+  },
+  "rows": [
+    { "chain_id": 1, "wrapped_native_address": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", "wrapped_native_name": "Wrapped Ether", "wrapped_native_symbol": "WETH", "wrapped_native_decimals": 18 },
+    { "chain_id": 56, "wrapped_native_address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c", "wrapped_native_name": "Wrapped BNB", "wrapped_native_symbol": "WBNB", "wrapped_native_decimals": 18 },
+    { "chain_id": 100, "wrapped_native_address": "0xe91D153E0b41518A2Ce8Dd3D7944Fa863463a97d", "wrapped_native_name": "Wrapped XDAI", "wrapped_native_symbol": "WXDAI", "wrapped_native_decimals": 18 },
+    { "chain_id": 137, "wrapped_native_address": "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270", "wrapped_native_name": "Wrapped POL", "wrapped_native_symbol": "WPOL", "wrapped_native_decimals": 18 },
+    { "chain_id": 8453, "wrapped_native_address": "0x4200000000000000000000000000000000000006", "wrapped_native_name": "Wrapped Ether", "wrapped_native_symbol": "WETH", "wrapped_native_decimals": 18 },
+    { "chain_id": 9745, "wrapped_native_address": "0x6100e367285b01f48d07953803a2d8dca5d19873", "wrapped_native_name": "Wrapped XPL", "wrapped_native_symbol": "WXPL", "wrapped_native_decimals": 18 },
+    { "chain_id": 42161, "wrapped_native_address": "0x82aF49447D8a07e3bd95BD0d56f35241523fBab1", "wrapped_native_name": "Wrapped Ether", "wrapped_native_symbol": "WETH", "wrapped_native_decimals": 18 },
+    { "chain_id": 43114, "wrapped_native_address": "0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7", "wrapped_native_name": "Wrapped AVAX", "wrapped_native_symbol": "WAVAX", "wrapped_native_decimals": 18 },
+    { "chain_id": 57073, "wrapped_native_address": "0x4200000000000000000000000000000000000006", "wrapped_native_name": "Wrapped Ether", "wrapped_native_symbol": "WETH", "wrapped_native_decimals": 18 },
+    { "chain_id": 59144, "wrapped_native_address": "0xe5d7c2a44ffddf6b295a15c148167daaaf5cf34f", "wrapped_native_name": "Wrapped Ether", "wrapped_native_symbol": "WETH", "wrapped_native_decimals": 18 },
+    { "chain_id": 11155111, "wrapped_native_address": "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14", "wrapped_native_name": "Wrapped Ether", "wrapped_native_symbol": "WETH", "wrapped_native_decimals": 18 }
+  ]
+}
