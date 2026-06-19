@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.7] - 2026-06-19
+
+### Bug Fixes
+
+- *(examples)* Cover token_balance in the deterministic example runner ([`559346e`](https://github.com/0xSymbiome/cow-rs/commit/559346e8f2719901cb8f896a64d185588cbf94d0))
+
+### Features
+
+- *(ergonomics)* Add OrderStatus::is_fulfilled and LocalAlloySigner::from_private_key ([`ba3c3bd`](https://github.com/0xSymbiome/cow-rs/commit/ba3c3bd3f536eb57403375799c877b3d1e70b130))
+- *(trading)* Add native wrap and unwrap transaction builders ([`91366dd`](https://github.com/0xSymbiome/cow-rs/commit/91366dddfe5be4f3f17e961aeba3ddb4be70abbc))
+
 ## [0.1.0-alpha.6] - 2026-06-19
 
 ### Features

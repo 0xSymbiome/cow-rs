@@ -34,8 +34,8 @@ tracing = ["dep:tracing", "cow-sdk-core/tracing", "cow-sdk-contracts/tracing"]
 alloy-primitives.workspace = true
 alloy-sol-types.workspace = true
 async-trait.workspace = true
-cow-sdk-core = { path = "../core", version = "0.1.0-alpha.6" }
-cow-sdk-contracts = { path = "../contracts", version = "0.1.0-alpha.6" }
+cow-sdk-core = { path = "../core", version = "0.1.0-alpha.7" }
+cow-sdk-contracts = { path = "../contracts", version = "0.1.0-alpha.7" }
 parking_lot = { workspace = true, optional = true }
 serde.workspace = true
 serde_json.workspace = true
