@@ -58,6 +58,7 @@ The catalog below is listed in reference order; see
 | `subgraph_live` | Run an opt-in live subgraph query |
 | `alloy_quickstart` | Build the composed native Alloy client against a mock RPC |
 | `alloy_provider` | Use the read-only Alloy provider leaf against a mock RPC |
+| `token_balance` | Read an ERC-20 balance through the generic `Provider::read_contract` seam — the SDK ships no `balance_of` method by design, matching the upstream TypeScript SDK |
 | `alloy_signer` | Sign a real CoW order typed-data payload with the Alloy signer leaf |
 | `transaction_lifecycle` | Compare helper-based receipt waiting with broadcast-only submission through the composed Alloy signer |
 | `alloy_custom_traits` | Compose an Alloy leaf with a consumer-supplied trait impl in both directions, proving the mixed pair through `submit_and_wait_for_receipt` |
@@ -124,6 +125,7 @@ cargo run -p cow-sdk-examples-native --example subgraph_query
 cargo run -p cow-sdk-examples-native --example subgraph_live
 cargo run -p cow-sdk-examples-native --example alloy_quickstart --features alloy
 cargo run -p cow-sdk-examples-native --example alloy_provider --features alloy-provider
+cargo run -p cow-sdk-examples-native --example token_balance --features alloy-provider
 cargo run -p cow-sdk-examples-native --example alloy_signer --features alloy-signer
 cargo run -p cow-sdk-examples-native --example transaction_lifecycle --features alloy
 cargo run -p cow-sdk-examples-native --example alloy_custom_traits --features alloy

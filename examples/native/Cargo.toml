@@ -93,6 +93,11 @@ path = "scenarios/alloy_provider.rs"
 required-features = ["alloy-provider"]
 
 [[example]]
+name = "token_balance"
+path = "scenarios/token_balance.rs"
+required-features = ["alloy-provider"]
+
+[[example]]
 name = "alloy_signer"
 path = "scenarios/alloy_signer.rs"
 required-features = ["alloy-signer"]

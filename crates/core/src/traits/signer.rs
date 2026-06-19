@@ -59,6 +59,12 @@ pub trait DigestSigner {
 )]
 pub trait Signer {
     /// Error type returned by signer operations.
+    ///
+    /// The high-level trading terminals additionally require `Self::Error:
+    /// Display + UserRejection`: `Display` lets the SDK redact the error into a
+    /// non-leaking message, and `UserRejection` lets it tell a deliberate
+    /// user/wallet rejection apart from a transient failure. Implement both on a
+    /// custom signer's error type to drive `Trading::swap` and `Trading::limit`.
     type Error;
 
     /// Returns the chain this signer signs for, when statically known.
