@@ -4,7 +4,7 @@
   "endpoint": "GET /api/v2/solver_competition/{auction_id}",
   "sources": {
     "services": {
-      "commit": "58045311c1b804fb42cbed74fd5bc347728e8bad",
+      "commit": "754bb6a0a2082e7185cc90eeaa5efaea2e80bfaa",
       "refs": [
         "crates/orderbook/openapi.yml#components.schemas.SolverCompetitionResponse",
         "crates/model/src/solver_competition_v2.rs#Response"

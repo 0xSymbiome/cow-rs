@@ -4,7 +4,7 @@
   "endpoint": "POST /api/v1/orders",
   "sources": {
     "services": {
-      "commit": "58045311c1b804fb42cbed74fd5bc347728e8bad",
+      "commit": "754bb6a0a2082e7185cc90eeaa5efaea2e80bfaa",
       "refs": [
         "crates/orderbook/openapi.yml#components.schemas.OrderCreation",
         "crates/shared/src/order_validation.rs#partial_validate,validate_period",
