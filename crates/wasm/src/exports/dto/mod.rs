@@ -28,7 +28,7 @@ mod transport;
 pub use self::app_data::{AppDataDocDto, AppDataDocInput, AppDataInfoDto, ValidationResultDto};
 #[cfg(feature = "trading")]
 pub use self::contracts::{BuiltSellNativeCurrencyTxDto, ContractCallDto};
-pub use self::contracts::{DeploymentAddressesDto, TransactionRequestDto};
+pub use self::contracts::{DeploymentAddressesDto, TransactionRequestDto, WrappedNativeTokenDto};
 pub use self::core::{OrderInput, OrderKindDto, TokenBalanceDto};
 #[cfg(feature = "signing")]
 pub use self::events::{EthFlowEventDto, EventLogInput, SettlementEventDto};

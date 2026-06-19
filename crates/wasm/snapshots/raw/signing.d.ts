@@ -560,6 +560,24 @@ export interface WasmEnvelope<T> {
     value: T;
 }
 
+/**
+ * Wrapped-native token metadata.
+ */
+export interface WrappedNativeTokenDto {
+    /**
+     * Wrapped-native token contract address.
+     */
+    address: string;
+    /**
+     * Token symbol, such as `WETH` or `WXDAI`.
+     */
+    symbol: string;
+    /**
+     * Token decimals.
+     */
+    decimals: number;
+}
+
 
 /**
  * Initializes the wasm crate's panic hook once.
@@ -772,3 +790,16 @@ export function supportedChainIds(): Uint32Array;
  * @returns The semantic version string for this wasm build.
  */
 export function wasmVersion(): string;
+
+/**
+ * Returns wrapped-native token metadata for a chain.
+ *
+ * Use this to recognise a wrap pair in a swap UI — compare a selected token's
+ * address against the returned address — or to display the wrapped-native
+ * token. This is a pure lookup and performs no network I/O.
+ *
+ * @param chainId EVM chain id to resolve.
+ * @returns The wrapped-native token address, symbol, and decimals.
+ * @throws CowError when the chain is not supported.
+ */
+export function wrappedNativeToken(chainId: number): WasmEnvelope<WrappedNativeTokenDto>;

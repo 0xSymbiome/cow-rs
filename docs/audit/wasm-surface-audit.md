@@ -57,8 +57,9 @@ bundler behavior.
 reimplemented:
 
 1. **Deterministic helpers** — domain separator, order typed-data, order-UID,
-   app-data document/info/validation, CID and hash conversion, supported-chain
-   and deployment-address lookup, EIP-1271 payload encoding, and the
+   app-data document/info/validation, CID and hash conversion, supported-chain,
+   deployment-address, and wrapped-native-token lookup, EIP-1271 payload
+   encoding, and the
    provider-free, fail-closed `decodeSettlementLog` / `decodeEthFlowLog`
    event-log decoders (they reconstruct borrowed log bytes and dispatch to the
    `cow-sdk-contracts` decoders without network access).
@@ -68,8 +69,9 @@ reimplemented:
 3. **Service clients** — `OrderBookClient`, `SubgraphClient`, and `IpfsClient`
    over default or callback HTTP.
 4. **Trading** — `TradingClient` quote and post flows, including the
-   EIP-1271-backed swap path, the native-currency-sell transaction builder, and
-   the vault-relayer approval transaction builder.
+   EIP-1271-backed swap path, the native-currency-sell transaction builder, the
+   vault-relayer approval transaction builder, and the native wrap and unwrap
+   transaction builders.
 
 The package keeps one installable npm package while exposing flavor-specific
 public subpaths (`default`, `orderbook`, `signing`, `trading`). Public
@@ -102,8 +104,10 @@ and exercised behaviorally by `wasm_surface_contract.rs` and
 solver-competition routes) are surfaced. Trading surfaces quote/post/limit/swap
 plus builder-form transactions (`buildPresignTx`, `buildCancelOrderTx`,
 `buildSellNativeCurrencyTx`, `buildSellNativeCurrencyTxFromQuote`,
-`buildApprovalTx`) and the allowance read, completing the
-read-allowance-then-approve path. `buildSellNativeCurrencyTxFromQuote` is the
+`buildApprovalTx`, `buildWrapTx`, `buildUnwrapTx`) and the allowance read,
+completing the read-allowance-then-approve path; `wrappedNativeToken` resolves
+the chain's wrapped-native token (address, symbol, decimals) for native-and-wrapped
+pair detection and display. `buildSellNativeCurrencyTxFromQuote` is the
 native-sell sibling of `postSwapOrderFromQuote`: it derives the EthFlow
 transaction from a `getQuote` result, failing closed when the quote was not a
 native-currency sell. Signing surfaces typed-data,

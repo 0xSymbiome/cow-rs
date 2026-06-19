@@ -108,7 +108,9 @@ println!("https://explorer.cow.fi/sepolia/orders/{}", posted.order_id);
 For allowance, approval, pre-sign, or on-chain cancellation that does not need
 an app code, call the crate's free functions directly —
 `cow_protocol_allowance`, `approval_transaction`, `pre_sign_transaction`,
-and `onchain_cancel_order` — without constructing a trading client.
+and `onchain_cancel_order` — without constructing a trading client. The native
+`wrap_transaction` and `unwrap_transaction` builders resolve the chain's
+wrapped-native token from the chain id and need neither a client nor a provider.
 
 ## Handling errors
 
