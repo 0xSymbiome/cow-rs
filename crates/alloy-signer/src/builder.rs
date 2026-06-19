@@ -267,4 +267,25 @@ mod tests {
 
         assert_eq!(signer.chain_id(), ChainId::from(SupportedChainId::Sepolia));
     }
+
+    #[test]
+    fn from_private_key_binds_key_and_chain_in_one_call() {
+        let signer = LocalAlloySigner::from_private_key(TEST_KEY, SupportedChainId::Sepolia)
+            .expect("valid key must build a signer");
+
+        assert_eq!(signer.chain_id(), ChainId::from(SupportedChainId::Sepolia));
+    }
+
+    #[test]
+    fn from_private_key_rejects_invalid_key_without_leaking() {
+        let secret = "not-a-private-key";
+        let Err(error) = LocalAlloySigner::from_private_key(secret, SupportedChainId::Sepolia)
+        else {
+            panic!("invalid key must fail");
+        };
+
+        let rendered = format!("{error}");
+        assert_eq!(rendered, "invalid private key");
+        assert!(!rendered.contains(secret));
+    }
 }

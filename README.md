@@ -85,10 +85,7 @@ const COW: Address = address!("0x0625afb445c3b6b7b929342a04a22599fd5dbb59");
 async fn main() -> Result<(), Box<dyn Error>> {
     let chain = SupportedChainId::Sepolia;
 
-    let signer = LocalAlloySigner::builder()
-        .private_key(&std::env::var("PRIVATE_KEY")?)?
-        .chain_id(chain)
-        .build()?;
+    let signer = LocalAlloySigner::from_private_key(&std::env::var("PRIVATE_KEY")?, chain)?;
 
     let trading = Trading::builder()
         .chain_id(chain)

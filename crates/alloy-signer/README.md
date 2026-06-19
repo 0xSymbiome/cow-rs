@@ -87,10 +87,10 @@ use cow_sdk_alloy_signer::LocalAlloySigner;
 use cow_sdk_core::{Signer, SupportedChainId};
 
 # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-let signer = LocalAlloySigner::builder()
-    .private_key("0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d")?
-    .chain_id(SupportedChainId::Mainnet)
-    .build()?;
+let signer = LocalAlloySigner::from_private_key(
+    "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
+    SupportedChainId::Mainnet,
+)?;
 
 let owner = signer.address().await?;
 let signature = signer.sign_message(b"hello cow").await?;
@@ -99,9 +99,10 @@ let signature = signer.sign_message(b"hello cow").await?;
 # }
 ```
 
-The builder requires both key source and chain id before `build()` is available.
-Its typestate markers are sealed, so external code cannot construct a completed
-builder state by hand.
+`from_private_key` is the one-call path for a hex key. For raw key bytes or
+explicit typestate construction, use `LocalAlloySigner::builder()`, whose sealed
+markers require both a key source and a chain id before `build()` is available,
+so external code cannot construct a completed builder state by hand.
 
 ## Errors
 
