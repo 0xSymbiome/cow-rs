@@ -223,13 +223,64 @@ authentication, or observability. Each client also takes optional
 
 ## Errors
 
-JavaScript-visible failures are a typed `CowError` discriminated union — transport,
-app-data, signing, orderbook, subgraph, trading, wallet, cancellation, and
-internal variants — with low-cardinality fields visible and URLs, headers, bodies,
-and secret-shaped values redacted. The `orderbook` variant carries `retryable` and
-an optional `retryAfterMs` parsed from the response `Retry-After`, mirroring the
-native `OrderbookError::is_retryable` / `backoff_hint`, so a JavaScript retry loop
-reaches the same verdict as the Rust one.
+Every call throws a single `CowError`, a real `Error` subclass: catch it, narrow
+with `isCowError(e)` (or `e instanceof CowError`), then branch on `e.kind`. The
+shape is a discriminated union — `transport`, `appData`, `signing`, `orderbook`,
+`subgraph`, `walletRequest`, `walletTimeout`, `invalidInput`, `unknownEnumValue`,
+`unsupportedChain`, `cancelled`, `internal`, and an `__unknown` forward-compatible
+sentinel that preserves the unrecognised value in `raw`. Low-cardinality fields
+are visible; URLs, headers, bodies, and secret-shaped values are redacted, and the
+`message` is actionable on its own.
+
+```ts
+import {
+  CowError,
+  isCowError,
+  isRetryable,
+  isUserRejection,
+  retryAfterMs,
+  withRetry,
+} from "@symbiome-forge/cow-sdk-wasm/trading";
+
+// Building on the quickstart's `trading` client and `quoteRequest`:
+try {
+  // `withRetry` retries only a transient orderbook failure, waiting the server's
+  // `Retry-After` (or an exponential backoff), and rethrows everything else. The
+  // optional `onRetry` hook is for telemetry — it never alters the outcome.
+  const quote = await withRetry(() => trading.getQuote(quoteRequest), {
+    onRetry: (attempt, error, delayMs) => console.warn(`retry ${attempt} in ${delayMs}ms`, error.kind),
+  });
+} catch (e) {
+  if (!isCowError(e)) throw e;
+  if (isUserRejection(e)) {
+    // Declined signature or cancellation — a soft state, not a failure.
+  } else if (e.kind === "invalidInput") {
+    // `e.field` names the offending field; fix it and retry.
+  } else if (e.kind === "orderbook") {
+    // `e.errorType` is the exact services tag — pick the right action:
+    if (e.errorType === "InsufficientAllowance") {
+      // Prompt a token approval.
+    } else if (e.errorType === "InsufficientBalance") {
+      // Prompt the user to add funds.
+    } else if (isRetryable(e)) {
+      // Transient: retry later, after `retryAfterMs(e)` ms when present.
+    }
+  }
+  throw e;
+}
+```
+
+The `orderbook` variant carries `retryable` and an optional `retryAfterMs` parsed
+from the response `Retry-After`, mirroring the native
+`OrderbookError::is_retryable` / `backoff_hint`, so a JavaScript retry loop reaches
+the same verdict as the Rust one. It also carries `errorType` — the exact services
+rejection tag (`"InsufficientAllowance"` vs `"InsufficientBalance"`, and the rest)
+— the fine-grained partner of the coarse `category`. `isUserRejection(e)` is `true`
+for a declined wallet request (`4001`) or a cancellation, so a UI can show those as
+a soft state rather than a failure. `normalizeError(value)` coerces an arbitrary
+caught value to a `CowError`; `e.toJSON()` and the static `CowError.fromJSON(value)`
+move an error across a `structuredClone` / worker boundary without losing its
+fields.
 
 ## Bundle size
 
@@ -239,9 +290,9 @@ current alpha build (gzip is the compressed-transfer figure):
 | Flavor | Raw wasm | Brotli | Gzip | Release gate |
 | --- | ---: | ---: | ---: | --- |
 | signing | 0.31 MiB | 121 KiB | 144 KiB | 0.9 MiB raw / 300 KiB brotli |
-| orderbook | 1.02 MiB | 341 KiB | 447 KiB | 1.5 MiB raw / 500 KiB brotli |
-| trading | 1.54 MiB | 490 KiB | 659 KiB | 3.2 MiB raw / 850 KiB brotli |
-| default | 1.63 MiB | 514 KiB | 692 KiB | 3.3 MiB raw / 900 KiB brotli |
+| orderbook | 1.03 MiB | 341 KiB | 448 KiB | 1.5 MiB raw / 500 KiB brotli |
+| trading | 1.54 MiB | 491 KiB | 660 KiB | 3.2 MiB raw / 850 KiB brotli |
+| default | 1.64 MiB | 514 KiB | 693 KiB | 3.3 MiB raw / 900 KiB brotli |
 
 Each flavor emits one wasm binary shared across its bundler, Node, web, and
 source-phase module targets — the web glue's default URL, the module glue's

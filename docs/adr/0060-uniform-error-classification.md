@@ -77,7 +77,8 @@ to the shared enum.
   the coarse `Remote` class cannot) and `backoff_hint(&self) -> Option<Duration>`
   (the parsed `Retry-After`, resolved against the wasm-safe clock); `TradingError`
   and `CowError` delegate to the wrapped orderbook error and the wasm `WasmError`
-  projects `retryable` / `retryAfterMs`.
+  projects `retryable` / `retryAfterMs`, alongside the specific `errorType` wire
+  tag (the fine-grained partner of the coarse `OrderBookRejectionCategory`).
 - Subgraph eighth member: under the off-by-default `subgraph` feature,
   `cow_sdk_subgraph::SubgraphError` joins the family with its own `class()` and a
   feature-gated `CowError::Subgraph` variant that delegates; the retry-decision

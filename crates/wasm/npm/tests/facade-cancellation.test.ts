@@ -19,7 +19,6 @@ describe("facade cancellation", () => {
     controller.abort();
 
     await expect(client.fetchAppDataFromCid(CID, { signal: controller.signal })).rejects.toMatchObject({
-      schemaVersion: "v1",
       kind: "cancelled",
       message: expect.stringContaining("AbortController")
     });

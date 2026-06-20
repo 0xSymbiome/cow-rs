@@ -7,7 +7,7 @@ use cow_sdk_core::{
     Cancelled, REDACTED_PLACEHOLDER, Redacted, TransportError, redact_response_body,
 };
 #[cfg(feature = "orderbook")]
-use cow_sdk_orderbook::{OrderbookError, OrderbookRejectionCategory};
+use cow_sdk_orderbook::{OrderbookError, OrderbookRejection, OrderbookRejectionCategory};
 #[cfg(feature = "signing")]
 use cow_sdk_signing::SigningError;
 #[cfg(feature = "subgraph")]
@@ -21,8 +21,6 @@ use std::time::Duration;
 use tsify::Tsify;
 use wasm_bindgen::prelude::*;
 
-use crate::exports::envelope::SchemaVersion;
-
 /// JS-visible typed error envelope for every wasm export.
 #[derive(Debug, Clone, Serialize, Deserialize, Tsify)]
 #[serde(
@@ -34,8 +32,6 @@ use crate::exports::envelope::SchemaVersion;
 pub enum WasmError {
     /// Invalid user input.
     InvalidInput {
-        /// Error schema version.
-        schema_version: SchemaVersion,
         /// Human-readable validation failure.
         message: String,
         /// Optional field name.
@@ -44,8 +40,6 @@ pub enum WasmError {
     },
     /// Unknown string enum value.
     UnknownEnumValue {
-        /// Error schema version.
-        schema_version: SchemaVersion,
         /// Human-readable recovery guidance.
         message: String,
         /// Field name.
@@ -55,8 +49,6 @@ pub enum WasmError {
     },
     /// Unsupported chain id.
     UnsupportedChain {
-        /// Error schema version.
-        schema_version: SchemaVersion,
         /// Human-readable recovery guidance.
         message: String,
         /// Numeric chain id.
@@ -64,8 +56,6 @@ pub enum WasmError {
     },
     /// Wallet or signer callback failure.
     WalletRequest {
-        /// Error schema version.
-        schema_version: SchemaVersion,
         /// Request method or callback name.
         method: String,
         /// Optional provider error code.
@@ -76,8 +66,6 @@ pub enum WasmError {
     },
     /// Wallet callback timeout.
     WalletTimeout {
-        /// Error schema version.
-        schema_version: SchemaVersion,
         /// Human-readable recovery guidance.
         message: String,
         /// Timeout in milliseconds.
@@ -85,8 +73,6 @@ pub enum WasmError {
     },
     /// HTTP transport failure.
     Transport {
-        /// Error schema version.
-        schema_version: SchemaVersion,
         /// Transport class.
         class: String,
         /// Redacted message.
@@ -103,8 +89,6 @@ pub enum WasmError {
     },
     /// Orderbook failure.
     Orderbook {
-        /// Error schema version.
-        schema_version: SchemaVersion,
         /// Optional orderbook rejection code (the HTTP status when known).
         #[serde(skip_serializing_if = "Option::is_none")]
         code: Option<String>,
@@ -112,6 +96,14 @@ pub enum WasmError {
         /// recognised rejection envelope.
         #[serde(skip_serializing_if = "Option::is_none")]
         category: Option<OrderBookRejectionCategoryDto>,
+        /// The services `errorType` wire tag for the specific rejection
+        /// (`"InsufficientBalance"`, `"InsufficientAllowance"`, ...), so a
+        /// consumer can branch on the exact reason where `category` is too
+        /// coarse. The forward-compatible unknown rejection carries its
+        /// sanitized code; only the sanitized tag crosses, never the free-form
+        /// services description (ADR 0053).
+        #[serde(skip_serializing_if = "Option::is_none")]
+        error_type: Option<String>,
         /// Redacted message.
         message: String,
         /// Whether retrying the same request may succeed. The SDK retried
@@ -128,22 +120,16 @@ pub enum WasmError {
     },
     /// Subgraph failure.
     Subgraph {
-        /// Error schema version.
-        schema_version: SchemaVersion,
         /// Redacted message.
         message: String,
     },
     /// Signing failure.
     Signing {
-        /// Error schema version.
-        schema_version: SchemaVersion,
         /// Redacted message.
         message: String,
     },
     /// App-data failure.
     AppData {
-        /// Error schema version.
-        schema_version: SchemaVersion,
         /// Optional class.
         #[serde(skip_serializing_if = "Option::is_none")]
         class: Option<String>,
@@ -152,23 +138,17 @@ pub enum WasmError {
     },
     /// Cooperative cancellation.
     Cancelled {
-        /// Error schema version.
-        schema_version: SchemaVersion,
         /// Human-readable recovery guidance.
         message: String,
     },
     /// Internal serialization or invariant failure.
     Internal {
-        /// Error schema version.
-        schema_version: SchemaVersion,
         /// Human-readable message.
         message: String,
     },
     /// Forward-compatible sentinel for errors unknown to this crate.
     #[serde(rename = "__unknown")]
     Unknown {
-        /// Error schema version.
-        schema_version: SchemaVersion,
         /// Human-readable recovery guidance.
         message: String,
         /// Raw unrecognized error value.
@@ -238,7 +218,6 @@ impl WasmError {
         let field = field.into();
         let message = invalid_input_message(&field, message.into());
         Self::InvalidInput {
-            schema_version: SchemaVersion::V1,
             field: Some(field),
             message,
         }
@@ -248,7 +227,6 @@ impl WasmError {
         let method = method.into();
         let message = wallet_request_message(&method, message.into());
         Self::WalletRequest {
-            schema_version: SchemaVersion::V1,
             method,
             code: None,
             message,
@@ -268,7 +246,6 @@ impl WasmError {
         let method = method.into();
         let message = wallet_request_message(&method, wallet_code_hint(code).to_owned());
         Self::WalletRequest {
-            schema_version: SchemaVersion::V1,
             method,
             code,
             message,
@@ -277,7 +254,6 @@ impl WasmError {
 
     pub(crate) fn wallet_timeout(timeout_ms: u32) -> Self {
         Self::WalletTimeout {
-            schema_version: SchemaVersion::V1,
             message: wallet_timeout_message(timeout_ms),
             timeout_ms,
         }
@@ -285,14 +261,12 @@ impl WasmError {
 
     pub(crate) fn cancelled() -> Self {
         Self::Cancelled {
-            schema_version: SchemaVersion::V1,
             message: cancelled_message(),
         }
     }
 
     pub(crate) fn internal(message: impl Into<String>) -> Self {
         Self::Internal {
-            schema_version: SchemaVersion::V1,
             message: internal_message(message.into()),
         }
     }
@@ -308,18 +282,15 @@ impl From<PureError> for WasmError {
     fn from(value: PureError) -> Self {
         match value {
             PureError::InvalidInput { field, message } => Self::InvalidInput {
-                schema_version: SchemaVersion::V1,
                 message: invalid_input_message(&field, message),
                 field: Some(field),
             },
             PureError::UnknownEnumValue { field, value } => Self::UnknownEnumValue {
-                schema_version: SchemaVersion::V1,
                 message: unknown_enum_message(&field, &value),
                 field,
                 value,
             },
             PureError::UnsupportedChain { chain_id } => Self::UnsupportedChain {
-                schema_version: SchemaVersion::V1,
                 message: unsupported_chain_message(chain_id),
                 chain_id,
             },
@@ -331,7 +302,6 @@ impl From<TransportError> for WasmError {
     fn from(value: TransportError) -> Self {
         match value {
             TransportError::Transport { class, detail } => Self::Transport {
-                schema_version: SchemaVersion::V1,
                 class: class.to_string(),
                 message: transport_message(&class.to_string(), detail.to_string()),
                 status: None,
@@ -339,7 +309,6 @@ impl From<TransportError> for WasmError {
                 body: None,
             },
             TransportError::Configuration { message } => Self::Transport {
-                schema_version: SchemaVersion::V1,
                 class: "builder".to_owned(),
                 message: transport_message("builder", message.to_string()),
                 status: None,
@@ -351,7 +320,6 @@ impl From<TransportError> for WasmError {
                 headers,
                 body,
             } => Self::Transport {
-                schema_version: SchemaVersion::V1,
                 class: "status".to_owned(),
                 message: http_status_message(status),
                 status: Some(status),
@@ -359,7 +327,6 @@ impl From<TransportError> for WasmError {
                 body: Some(redact_response_body(body.as_inner())),
             },
             error => Self::Transport {
-                schema_version: SchemaVersion::V1,
                 class: "other".to_owned(),
                 message: transport_message("other", error.to_string()),
                 status: None,
@@ -375,16 +342,13 @@ impl From<AppDataError> for WasmError {
     fn from(value: AppDataError) -> Self {
         match value {
             AppDataError::Transport { class, detail } => Self::AppData {
-                schema_version: SchemaVersion::V1,
                 class: Some(class.to_string()),
                 message: app_data_message(Some(&class.to_string()), detail.to_string()),
             },
             AppDataError::Cancelled => Self::Cancelled {
-                schema_version: SchemaVersion::V1,
                 message: cancelled_message(),
             },
             error => Self::AppData {
-                schema_version: SchemaVersion::V1,
                 class: None,
                 message: app_data_message(None, error.to_string()),
             },
@@ -396,9 +360,26 @@ impl From<AppDataError> for WasmError {
 impl From<SigningError> for WasmError {
     fn from(value: SigningError) -> Self {
         Self::Signing {
-            schema_version: SchemaVersion::V1,
             message: signing_message(value.to_string()),
         }
+    }
+}
+
+/// Projects an [`OrderbookRejection`] to its services `errorType` wire tag for
+/// the JS surface (`"InsufficientBalance"`, `"DuplicatedOrder"`, ...). The
+/// forward-compatible `Unknown` rejection carries its already-sanitized code;
+/// every other variant reuses the derived `Serialize` tag, the single source
+/// that mirrors `parse_rejection`. Only the sanitized tag is read, so the
+/// redacted free-form `description` some variants carry never crosses (ADR 0053).
+#[cfg(feature = "orderbook")]
+fn orderbook_rejection_tag(rejection: &OrderbookRejection) -> Option<String> {
+    if let OrderbookRejection::Unknown { code, .. } = rejection {
+        return Some(code.as_str().to_owned());
+    }
+    match serde_json::to_value(rejection).ok()? {
+        Value::String(tag) => Some(tag),
+        Value::Object(fields) => fields.into_iter().next().map(|(tag, _)| tag),
+        _ => None,
     }
 }
 
@@ -411,7 +392,6 @@ impl From<OrderbookError> for WasmError {
         let retry_after_ms = backoff_hint_ms(value.backoff_hint());
         match value {
             OrderbookError::Transport { class, detail } => Self::Transport {
-                schema_version: SchemaVersion::V1,
                 class: class.to_string(),
                 message: transport_message(&class.to_string(), detail.to_string()),
                 status: None,
@@ -422,9 +402,9 @@ impl From<OrderbookError> for WasmError {
             OrderbookError::Rejected {
                 status, rejection, ..
             } => Self::Orderbook {
-                schema_version: SchemaVersion::V1,
                 code: Some(status.as_u16().to_string()),
                 category: Some(rejection.category().into()),
+                error_type: orderbook_rejection_tag(&rejection),
                 message: orderbook_rejection_message(status.as_u16(), rejection.to_string()),
                 retryable,
                 retry_after_ms,
@@ -441,9 +421,9 @@ impl From<OrderbookError> for WasmError {
             // the orderbook kind (not `internal`, which reads as an SDK bug, and
             // not `invalidInput`, since the caller's request was well-formed).
             error @ OrderbookError::QuoteEchoMismatch { .. } => Self::Orderbook {
-                schema_version: SchemaVersion::V1,
                 code: None,
                 category: None,
+                error_type: None,
                 message: orderbook_message(error.to_string()),
                 retryable,
                 retry_after_ms,
@@ -458,11 +438,9 @@ impl From<OrderbookError> for WasmError {
             error => match error.class() {
                 ErrorClass::Validation => Self::invalid("input", error.to_string()),
                 ErrorClass::Signing => Self::Signing {
-                    schema_version: SchemaVersion::V1,
                     message: signing_message(error.to_string()),
                 },
                 ErrorClass::Transport => Self::Transport {
-                    schema_version: SchemaVersion::V1,
                     class: "other".to_owned(),
                     message: transport_message("other", error.to_string()),
                     status: None,
@@ -475,9 +453,9 @@ impl From<OrderbookError> for WasmError {
                 // status in `code` rather than gaining a distinct kind), plus
                 // future additive classes, surface as the orderbook kind.
                 _ => Self::Orderbook {
-                    schema_version: SchemaVersion::V1,
                     code: orderbook_status_code(&error),
                     category: None,
+                    error_type: None,
                     message: orderbook_message(error.to_string()),
                     retryable,
                     retry_after_ms,
@@ -509,11 +487,9 @@ impl From<SubgraphError> for WasmError {
     fn from(value: SubgraphError) -> Self {
         match value {
             SubgraphError::Cancelled => Self::Cancelled {
-                schema_version: SchemaVersion::V1,
                 message: cancelled_message(),
             },
             error => Self::Subgraph {
-                schema_version: SchemaVersion::V1,
                 message: subgraph_message(error.to_string()),
             },
         }
@@ -540,11 +516,9 @@ impl From<TradingError> for WasmError {
             error => match error.class() {
                 ErrorClass::Validation => Self::invalid("input", error.to_string()),
                 ErrorClass::Signing => Self::Signing {
-                    schema_version: SchemaVersion::V1,
                     message: signing_message(error.to_string()),
                 },
                 ErrorClass::Transport => Self::Transport {
-                    schema_version: SchemaVersion::V1,
                     class: "other".to_owned(),
                     message: transport_message("other", error.to_string()),
                     status: None,
@@ -555,9 +529,9 @@ impl From<TradingError> for WasmError {
                 ErrorClass::Internal => Self::internal(error.to_string()),
                 // Remote, RateLimited, and future additive classes → orderbook.
                 _ => Self::Orderbook {
-                    schema_version: SchemaVersion::V1,
                     code: None,
                     category: None,
+                    error_type: None,
                     message: orderbook_message(error.to_string()),
                     retryable: error.is_retryable(),
                     retry_after_ms: backoff_hint_ms(error.backoff_hint()),
@@ -607,7 +581,6 @@ const fn client_rejection_field(rejection: &ClientRejection) -> &'static str {
 impl From<Cancelled> for WasmError {
     fn from(_: Cancelled) -> Self {
         Self::Cancelled {
-            schema_version: SchemaVersion::V1,
             message: cancelled_message(),
         }
     }
@@ -635,7 +608,6 @@ impl From<cow_sdk_core::CoreError> for WasmError {
 impl From<cow_sdk_contracts::ContractsError> for WasmError {
     fn from(value: cow_sdk_contracts::ContractsError) -> Self {
         Self::Signing {
-            schema_version: SchemaVersion::V1,
             message: signing_message(value.to_string()),
         }
     }

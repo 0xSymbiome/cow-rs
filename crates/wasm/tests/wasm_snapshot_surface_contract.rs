@@ -101,8 +101,10 @@ fn generated_type_declarations_name_callback_params() {
     }
 }
 
+// The success envelope is version-tagged (`schemaVersion: SchemaVersion`); thrown
+// errors are not, but the error discriminants stay exposed by `kind`.
 #[test]
-fn generated_type_declarations_version_errors_and_outputs() {
+fn generated_type_declarations_version_the_envelope_and_expose_error_kinds() {
     let expected = [
         "export type SchemaVersion = \"v1\" | \"__unknown\";",
         "export interface WasmEnvelope<T>",

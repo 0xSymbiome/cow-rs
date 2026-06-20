@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-05-09
-- Last reviewed: 2026-06-19
+- Last reviewed: 2026-06-20
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: wasm, typescript, public-surface, additive-leaf-crates
 - Related: ADR 0007, [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), ADR 0019, [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), ADR 0037, [ADR 0038](0038-transaction-lifecycle-types.md), ADR 0042, ADR 0043, [ADR 0044](0044-bundle-size-profile-and-flavor-builds.md), ADR 0046, ADR 0047, [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
@@ -110,6 +110,25 @@ this ADR does not blur:
     canonicality within cow-rs's WASM package, not to default-recommendation
     status for CoW Protocol TypeScript consumers; see the comparative
     benchmark validation note for the consumer-routing discipline.
+24. The thrown error type is one `CowError` class that extends `Error`. Every
+    error a wasm export throws is `instanceof CowError` (and `instanceof Error`),
+    is keyed by `kind`, and exposes its per-kind fields — including the
+    `__unknown` sentinel's `raw` — as enumerable own properties. A thrown error
+    carries no `schemaVersion`; only the success envelope is version-tagged.
+    `toJSON` and the static `CowError.fromJSON` round-trip the full field set
+    across a `structuredClone` or worker boundary, and the facade exports
+    `CowError`, `isCowError`, `normalizeError`, `isRetryable`, `retryAfterMs`,
+    `isUserRejection`, and `withRetry` (the retry verdict is governed by
+    [ADR 0060](0060-uniform-error-classification.md)).
+25. The runtime known-error-kind registry is compile-checked against the
+    `CowError` discriminant union, so the normalizer cannot drift from the
+    declared error kinds.
+26. A `kind: "orderbook"` error carries the services `errorType` wire tag (the
+    sanitized protocol identifier — `"InsufficientAllowance"` vs
+    `"InsufficientBalance"`) as the fine-grained partner of the coarse
+    `category`, so a consumer can branch on the exact rejection without parsing
+    the message. Only the sanitized tag crosses the boundary; the free-form
+    services description never does.
 
 ## Alternatives Rejected
 

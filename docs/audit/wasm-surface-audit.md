@@ -1,7 +1,7 @@
 # WASM Surface Audit
 
 Status: Current
-Last reviewed: 2026-06-19
+Last reviewed: 2026-06-20
 Owning surface: the `cow-sdk-wasm` TypeScript-callable crate, its npm package layout/exports, the JavaScript callback runtime boundary, DTO/type generation, schema-versioned envelopes, the size-budget gate, unsupported-target diagnostics, and the deterministic browser test runner.
 Refresh trigger: Changes to `crates/wasm/src/**`, exported DTOs or `tsify` usage, wasm-pack targets, declaration/facade snapshots, package export maps, callback shapes or registry ownership, the `JsCallbackHttpTransport` contract, transport-policy or error-envelope schema, release-profile size settings or measured budgets, native Alloy adapter `wasm32` guards, or the wasm-pack browser lanes.
 Related docs:
@@ -43,8 +43,8 @@ bundler behavior.
 | Event decoding | `decodeSettlementLog` / `decodeEthFlowLog` produce typed events with no network access and fail closed on malformed input | Conforms |
 | Type generation + snapshots | Cross-ABI DTOs are `tsify`-generated; one raw snapshot per flavor catches drift and asserts per-target agreement; a facade-coverage contract holds the hand-written facade in step with the raw surface; map fields declare `Record<...>` to match the runtime shape | Conforms |
 | Facade + API stability | Public imports resolve through compiled facade modules; raw wasm-bindgen output is package-internal and denied as a public import target | Conforms |
-| Schema versioning | Success envelopes carry `schemaVersion`; unknown variants round-trip behind a scoped `__unknown` sentinel; facade normalizes raw failures to `CowError` | Conforms |
-| Error posture | `WasmError` (aliased `CowError`) preserves typed redaction; input-DTO deserialization failures map to `invalidInput`, not `internal`; the `orderbook` variant carries `retryable` + optional `retryAfterMs` | Conforms |
+| Schema versioning | The success envelope carries `schemaVersion`; thrown errors do not (the error `__unknown` sentinel round-trips its `raw` payload un-versioned); the facade normalizes raw failures to a `CowError` | Conforms |
+| Error posture | The Rust `WasmError` projects to a `CowError` `Error` subclass (`instanceof`, exported `isCowError` / `normalizeError` / `isUserRejection` / `withRetry`) that preserves typed redaction; input-DTO deserialization failures map to `invalidInput`, not `internal`; the `orderbook` variant carries the services `errorType` tag, `retryable`, and optional `retryAfterMs` | Conforms |
 | Performance budget | Flavor builds expose feature-scoped subpaths; release artifacts run the size profile + wasm opt pass; raw/brotli/gzip budgets are recorded and gated, with a dedicated Cloudflare gzip budget | Conforms |
 | Unsupported targets | Native Alloy adapter crates and the `alloy`/`alloy-provider`/`alloy-signer` facade features fail closed on `wasm32` with a compile-time diagnostic, CI-asserted | Conforms |
 | Browser runner determinism | Browser lanes provision headless Firefox via pinned setup actions (pinned geckodriver, `latest-esr` Firefox); tests use in-test state + serde round trips | Conforms |
@@ -185,7 +185,7 @@ package contract. Raw binding imports remain behind package-internal adapter
 modules; verification scripts reject public raw export entries and the facade
 denylist, and facade snapshots assert raw wasm-bindgen classes do not leak.
 Facade clients own callback retention and expose explicit `dispose`. Errors
-crossing the facade normalize into schema-versioned `CowError` envelopes with
+crossing the facade normalize into `CowError` `Error`-subclass instances with
 redacted, low-cardinality fields; input-DTO deserialization failures at the wasm
 boundary (unknown enum variant, missing required field, wrong field type)
 normalize to `invalidInput`, leaving `internal` for genuine SDK-side faults.
@@ -255,8 +255,9 @@ newtypes → lowercase `0x` `string`; `serde_json::Value` → `unknown`; chain i
 quote id → `number` (quote id validated to the JS safe-integer range); Rust enums
 → string-literal unions; per-chain maps → `Record<string, string>`;
 cancellation/timeout → `options?: { signal?; timeoutMs? }`; typed `Result` errors
-→ rejected `Promise<WasmError>` (a `kind`-tagged discriminated union with
-redacted, lower-cardinality fields); `async fn` → `Promise`-returning method;
+→ a thrown `CowError` (an `Error` subclass whose instances form a `kind`-tagged
+discriminated union with redacted, lower-cardinality fields); `async fn` →
+`Promise`-returning method;
 Rust ownership release → explicit `free()` / `dispose()`.
 
 Divergences beyond the uniform transforms: subgraph response payloads are
@@ -312,7 +313,7 @@ Primary regression coverage:
 - `crates/wasm/tests/host_pure_helpers.rs` (incl. `typed_data_payload_matches_signing_module_output`, `wasm_version_matches_package_version`)
 - `crates/wasm/tests/wasm_surface_contract.rs` (incl. `order_typed_data_serializes_to_expected_js_shape`, `wasm_version_matches_crate_version`)
 - `crates/wasm/tests/wasm_workflow_coverage_contract.rs`
-- `crates/wasm/tests/wasm_snapshot_surface_contract.rs` (incl. `generated_type_declarations_version_errors_and_outputs`, `generated_type_declarations_hide_callback_registry`, `generated_type_declarations_name_callback_params`, `generated_type_declarations_expose_abort_and_wallet_options`, `generated_type_declarations_expose_transport_policy_config_for_http_flavours`, `generated_type_declarations_match_flavour_matrix`)
+- `crates/wasm/tests/wasm_snapshot_surface_contract.rs` (incl. `generated_type_declarations_version_the_envelope_and_expose_error_kinds`, `generated_type_declarations_hide_callback_registry`, `generated_type_declarations_name_callback_params`, `generated_type_declarations_expose_abort_and_wallet_options`, `generated_type_declarations_expose_transport_policy_config_for_http_flavours`, `generated_type_declarations_match_flavour_matrix`)
 - `crates/wasm/tests/wasm_facade_snapshot_contract.rs` (`facade_declarations_match_flavour_matrix`, `facade_declarations_hide_raw_wasm_bindgen_surface`, `facade_declarations_expose_dispose_and_named_callback_types`)
 - `crates/wasm/tests/wasm_envelope_contract.rs` (`envelope_serializes_schema_version_and_payload`, `envelope_preserves_unknown_schema_sentinel`)
 - `crates/wasm/tests/wasm_error_abi_contract.rs` (`invalid_input_variant_round_trips`, `unknown_enum_variant_round_trips`, `unknown_sentinel_round_trips_raw_payload`)
