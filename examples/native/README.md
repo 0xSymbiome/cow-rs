@@ -62,7 +62,7 @@ The catalog below is listed in reference order; see
 | `alloy_signer` | Sign a real CoW order typed-data payload with the Alloy signer leaf |
 | `transaction_lifecycle` | Compare helper-based receipt waiting with broadcast-only submission through the composed Alloy signer |
 | `alloy_custom_traits` | Compose an Alloy leaf with a consumer-supplied trait impl in both directions, proving the mixed pair through `submit_and_wait_for_receipt` |
-| `alloy_trading_full_flow` | Invoke allowance, approval receipt waiting, native-currency wrapping (`wrap_interaction`), and pre-sign Trading async boundaries through `Client` |
+| `alloy_trading_full_flow` | Invoke allowance, approval receipt waiting, native-currency wrapping (`wrap_interaction`), and pre-sign Trading async boundaries through `AlloyClient` |
 
 Subgraph scenarios reach the subgraph surface through the `cow-sdk` `subgraph`
 feature, which re-exports the `cow-sdk-subgraph` crate, the same way the other

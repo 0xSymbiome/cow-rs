@@ -76,8 +76,8 @@ builder.
 
 ## Capability Boundary
 
-`RpcAlloyProvider` implements `Provider` only. The crate provides all
-read methods required by the core trait:
+`RpcAlloyProvider` implements `Provider` and `LogProvider`. The crate provides
+all read methods required by the core traits:
 
 - `get_chain_id`
 - `get_code`
@@ -85,6 +85,7 @@ read methods required by the core trait:
 - `call`
 - `read_contract`
 - `get_block`
+- `get_logs`
 
 `read_contract` parses the supplied JSON ABI, resolves a single non-overloaded
 function, ABI-encodes JSON arguments with `alloy-dyn-abi`, dispatches
@@ -100,14 +101,17 @@ post-state root into a success value.
 
 ## Native Only
 
-This crate hard-fails on `wasm32` targets. JavaScript and TypeScript hosts
-targeting the browser should use the `cow-sdk-wasm` package, supplying their own
-wallet across its EIP-1193 request-callback boundary and reaching RPC through the
-host's own provider.
+This crate's modules are `cfg`'d out on `wasm32` targets, so it compiles to an
+empty library there. JavaScript and TypeScript hosts targeting the browser
+should use the `cow-sdk-wasm` package, supplying their own wallet across its
+EIP-1193 request-callback boundary and reaching RPC through the host's own
+provider.
 
-The compile-time failure is deliberate. It keeps browser builds on the wasm
-callback path and fails with a direct SDK message instead of allowing native
-Alloy HTTP transport dependencies to fail later with platform-specific errors.
+The crate is excluded from the wasm dependency tree, so its native Alloy HTTP
+transport dependencies never reach a browser build. The workspace test
+`tests/wasm_dependency_invariant.rs` enforces this by asserting that
+`cow-sdk-wasm`'s `wasm32-unknown-unknown` tree omits this crate and its native
+transport dependencies.
 
 ## Companion Crates
 

@@ -1,7 +1,7 @@
 # Error Classification Audit
 
 Status: Current
-Last reviewed: 2026-06-17
+Last reviewed: 2026-06-20
 Owning surface: the `class()`, `is_retryable()`, and `backoff_hint()` accessors on the `cow-sdk` error family and the shared `cow_sdk_core::ErrorClass`
 Refresh trigger: a new `ErrorClass` bucket; a new error type aggregated by `cow_sdk::CowError`; a change to any type's `class()` mapping; a change to the `is_retryable()` / `backoff_hint()` mapping or the retained `Retry-After` capture; or a new error variant whose class or retry verdict differs from its type's existing default arm
 Related docs:
@@ -100,7 +100,8 @@ reports as non-retryable with no backoff hint.
 retry loop applies: a structured non-2xx response keys off the retained HTTP
 status through `cow_sdk_core::transport::policy::is_retryable_status`, and a transport
 failure keys off its `TransportErrorClass` through
-`RetryPolicy::should_retry_network`. It keys off the status rather than
+`cow_sdk_core::transport::policy::is_retryable_network` (the same function the
+`RetryPolicy::should_retry_network` method forwards to). It keys off the status rather than
 `class()` because the coarse partition collapses every non-429 remote response
 into `Remote`, so the status-precise accessor separates a retryable `503` from
 a non-retryable `400`. `OrderbookError::backoff_hint()` returns the
@@ -176,9 +177,8 @@ Primary regression coverage:
 - `crates/wasm/tests/wasm_error_abi_contract.rs::orderbook_variant_carries_retry_hints`
 - `crates/alloy-signer/tests/signer_error_trait_contract.rs`
 - `crates/alloy/tests/signer_error_trait_contract.rs`
-- `crates/signing/src/order_signing.rs::signer_error_tests` (helper-routing unit tests)
-- `tests/signer_rejection_propagation_invariant.rs` (workspace end-to-end
-  propagation through `sign_order`)
+- `crates/signing/src/order_signing.rs::signer_error_tests` (helper-routing unit
+  tests that drive the `signer_error` routing helper directly)
 - `crates/sdk/tests/error_redaction_contract.rs` (redaction sweep including
   `SignerRejection`)
 
@@ -192,6 +192,5 @@ cargo check-enum-policy
 cargo test -p cow-sdk-alloy-signer --test signer_error_trait_contract
 cargo test -p cow-sdk-alloy --test signer_error_trait_contract
 cargo test -p cow-sdk-signing --lib signer_error_tests
-cargo test -p cow-rs-workspace-tests --test signer_rejection_propagation_invariant
 cargo test -p cow-sdk --test error_redaction_contract
 ```

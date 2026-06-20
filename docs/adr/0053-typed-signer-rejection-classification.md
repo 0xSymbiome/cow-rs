@@ -5,7 +5,7 @@
 - Last reviewed: 2026-06-15
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: signing, error-surface, eip-1193, alloy, classification
-- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), ADR 0007, [ADR 0017](0017-typed-orderbook-rejection-parser.md), [ADR 0025](0025-workspace-url-redaction-convention.md), [ADR 0045](0045-async-signer-trait-narrowing.md)
+- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0040](0040-wallet-provider-callback-boundary-for-js-consumers.md), [ADR 0017](0017-typed-orderbook-rejection-parser.md), [ADR 0025](0025-workspace-url-redaction-convention.md), [ADR 0045](0045-async-signer-trait-narrowing.md)
 
 ## Decision
 
@@ -113,10 +113,9 @@ problem the existing per-type `class()` convention does not.
   route through the signing crate stay free of the requirement.
 - Validation and review: per-crate `signer_error_trait_contract`
   host tests enumerate every variant of every implementer and pin
-  the trait result; the workspace
-  `signer_rejection_propagation_invariant` host test exercises the
-  full propagation chain end-to-end; signing-crate unit tests
-  cover the helper routing and the new variant `Display`; the
+  the trait result; signing-crate unit tests cover the helper
+  routing from `user_rejection_code` through to the
+  `SignerRejection` variant and the new variant `Display`; the
   redaction contract sweep continues to exercise
   `SignerRejection` alongside `Signer`. The standing audit at
   `docs/audit/error-classification-audit.md` carries the

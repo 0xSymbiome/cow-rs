@@ -45,7 +45,7 @@ wallet through typed callbacks, including the EIP-1193 request callback.
 JavaScript and TypeScript consumers may use `cow-sdk-wasm` for specialized
 cases: deterministic Rust signing parity, single-source-of-truth Rust +
 TypeScript embedding, and Cloudflare Workers (size-compatible with the current
-Workers Free compressed-size limit at the time of measurement; the
+Workers Paid/Bundled (~3 MB) compressed-size limit at the time of measurement; the
 `trading` flavour's edge build is built and tested end-to-end in CI (Workers Vitest),
 within the Workers compressed-size budget). The wasm package keeps
 runtime objects (viem, ethers, wagmi, raw EIP-1193 providers, fetch) behind

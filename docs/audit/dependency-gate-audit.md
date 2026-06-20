@@ -1,7 +1,7 @@
 # Dependency Gate Audit
 
 Status: Current
-Last reviewed: 2026-06-16
+Last reviewed: 2026-06-20
 Owning surface: Release-facing dependency-audit gate for current published `cow-rs` surfaces
 Refresh trigger: Changes to blocking dependency policy, Cargo.lock advisory posture, release or verification dependency commands, published CID dependency posture, shared transport-policy dependencies, transport crate advisory posture, native Alloy two-family lockfile posture, ADR 0026 Alloy absorption rehearsal, the canonical primitive layer dependency closure per ADR 0052, or the reachable proc-macro subtree advisory posture
 Related docs:
@@ -116,7 +116,7 @@ Each ignore lives in `.github/config/deny.toml` under `[advisories].ignore`.
 The shared quality gate reads that TOML register at runtime and derives the
 `cargo audit --ignore ...` arguments from it, so closure or addition of a
 reviewed advisory has one committed source of truth. The
-`docs-agree-on-release-gates` guard compares the public command examples
+`cargo docs-agree` guard compares the public command examples
 against the same canonical register and fails if any ignored RustSec token
 lacks a matching rationale in this audit.
 
@@ -134,8 +134,9 @@ digest path routes through `alloy_primitives::keccak256`, and the cow
 `Amount` newtype wraps `alloy_primitives::U256` directly per
 [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md).
 The alloy-core ABI workspace dependency family (`alloy-primitives`,
-`alloy-sol-types`, `alloy-sol-macro`, `alloy-dyn-abi`, `alloy-json-abi`,
-`alloy-serde`), `httpdate 1.0` (consumed by `cow-sdk-core`
+`alloy-sol-types`, `alloy-sol-macro`, `alloy-dyn-abi`, `alloy-json-abi`;
+`alloy-serde` is excluded from the `1.5.7` lockstep invariant and tracks
+the runtime/serde line at `1.8.3` / `2.0.4`), `httpdate 1.0` (consumed by `cow-sdk-core`
 to parse `Retry-After` HTTP-date headers), and `serde_jcs 0.2.0`
 (consumed by `cow-sdk-app-data` for the RFC 8785 canonical JSON that
 feeds the keccak256 digest input) are consumed at the callsites
@@ -157,11 +158,10 @@ re-export carried by `alloy-primitives 1.5.x`. The
 `ContractsError::DecodeHex { source }` variant carries the typed
 `alloy_primitives::hex::FromHexError` value (a re-export of
 `const_hex::FromHexError`) so the production error surface no longer
-references the upstream `hex` crate's error type. The standalone
-example workspace at `examples/native/Cargo.toml` carries its own
-`alloy-primitives` declaration for the same canonical resolution and
-no longer declares `hex` in either its workspace or its package
-dependency block. The workspace lockfile contains a single `hex`
+references the upstream `hex` crate's error type. The native example
+crate at `examples/native/Cargo.toml` is a workspace member that inherits
+`alloy-primitives` transitively through `cow-sdk` for the same canonical
+resolution and declares no direct `hex` dependency. The workspace lockfile contains a single `hex`
 node, brought in transitively through `const-hex`'s wide compatibility
 range, and is not a direct edge from any first-party manifest.
 
@@ -177,16 +177,17 @@ future regression with two parallel rules: the first rejects any
 production-source `format!("0x{}", alloy_primitives::hex::encode(...))`
 hand-roll on its pattern, and the second rejects unqualified
 `use alloy_primitives::hex::encode` imports in production sources so
-the call-site pattern's coverage envelope stays honest. Both rules filter
-`//`-prefixed lines so doc-comment narratives that name the forbidden
-symbol cannot self-trigger them.
+the call-site pattern's coverage envelope stays honest. The hand-roll
+rule filters `//`-prefixed lines so doc-comment narratives that name the
+forbidden symbol cannot self-trigger it; the unqualified-import rule scans
+every line, since a leading `use` is never a comment.
 
 The orphan `async-lock = "3.4.2"` workspace dependency declaration has
 been retired from the root `Cargo.toml`. At the prior HEAD the pin had
 zero first-party consumers: no `[dependencies]`, `[dev-dependencies]`,
 or `[target.'cfg(...)'.dependencies]` table inside the seventeen
-workspace members referenced the workspace pin. The lockfile node
-retires on the next `cargo update`, removing one row of supply-chain
+workspace members referenced the workspace pin. The lockfile node has
+already been removed from `Cargo.lock`, removing one row of supply-chain
 attack surface and one entry from the workspace default-feature
 exception register.
 
@@ -237,18 +238,27 @@ place while preserving the existing target-specific dependency boundaries.
 
 ### Duplicate-Version Exceptions
 
-The duplicate-version policy is fail-closed except for reviewed skip-tree
-roots that document why the duplicate is currently retained. The current
-register covers the upstream-owned `getrandom 0.3.4` transitive root, `winnow
-0.7.15` under the alloy Solidity parser chain, and the reviewed alloy
-proc-macro advisory roots. The retained `getrandom 0.3.4` path is
-upstream-owned validation and TLS build-support debt, not the first-party
-randomness API. The retired `tiny-keccak` license exception and stale
-`getrandom 0.2` duplicate exception are gone because the workspace graph no
-longer reaches them. `Cargo.lock` can still carry inactive package metadata
-for `getrandom 0.2.17` through `rustls-webpki` / `ring`, but
-`cargo tree --workspace --target all --all-features -i getrandom:0.2.17`
-prints no dependency path and no first-party crate aliases that package.
+`[bans] multiple-versions = "warn"` keeps duplicate versions report-only:
+CI captures a `cargo tree -d` snapshot rather than failing the build. The
+reviewed `[[bans.skip-tree]]` register documents why each duplicate subtree
+is currently retained, and covers five roots: `alloy-primitives 1.5.7` (the
+older digest stack carried by the alloy ABI helper family),
+`rustls-platform-verifier 0.6.2` (the legacy native reqwest trust-store
+subtree), `sha2 0.10.9` (the legacy CID-compatible hashing stack in the
+app-data dependencies), `winnow 0.7.15` (under the alloy Solidity parser
+chain), and the upstream-owned `getrandom 0.3.4` transitive root. The
+retained `getrandom 0.3.4` path is upstream-owned validation and TLS
+build-support debt, not the first-party randomness API. The reviewed
+`paste`, `derivative`, and `proc-macro-error2` advisory tolerances live in
+the separate `[advisories].ignore` register, not in `[[bans.skip-tree]]`.
+The retired `tiny-keccak` license exception and stale `getrandom 0.2`
+duplicate exception are gone because the workspace graph no longer reaches
+them. `Cargo.lock` still resolves `getrandom 0.2.17` through the
+alloy ECDSA stack (`rand_core 0.6` reached via `elliptic-curve` / `k256`),
+so `cargo tree --workspace --all-features -i getrandom:0.2.17` prints an
+active path that routes through the native alloy crates
+(`cow-sdk-alloy`, `cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`) into
+`cow-sdk`.
 
 ### Legacy Thiserror Reachability
 
@@ -300,8 +310,9 @@ published-crate invariant that no shipped leaf crate transitively depends on
 `cow-sdk-wasm` is a peer leaf of the native Alloy adapter family. Its wasm32
 dependency tree must not pull the native Alloy provider/signer
 crates, reqwest, hyper, or native Alloy RPC transport families. The workspace
-test reads cargo metadata for the wasm32 target and fails if any forbidden
-crate appears in the dependency closure. This keeps the TypeScript-callable
+test reads `cargo metadata --filter-platform wasm32-unknown-unknown --no-deps`
+and fails if any forbidden crate appears among `cow-sdk-wasm`'s direct
+(manifest) wasm32 dependencies. This keeps the TypeScript-callable
 crate browser-safe and preserves the native Alloy adapter boundary.
 
 The `cow-sdk-wasm::helpers` module is a pure Rust boundary for deterministic
@@ -330,14 +341,13 @@ Primary implementation points:
 - `crates/wasm/tests/no_ffi_helpers.rs`
 - `crates/contracts/Cargo.toml`
 - `crates/orderbook/Cargo.toml`
-- `examples/native/Cargo.lock`
 
 Validation surface:
 
 ```text
 cargo deny check --config .github/config/deny.toml
 cargo audit --deny unsound --deny unmaintained \
-  --ignore RUSTSEC-2024-0436
+  --ignore RUSTSEC-2024-0388 --ignore RUSTSEC-2024-0436 --ignore RUSTSEC-2026-0173
 cargo tree --workspace --invert thiserror:1.0.69 -e no-build
 cargo check-alloy-provider-invariant
 cargo check-alloy-signer-invariant

@@ -1,7 +1,7 @@
 # Trading Order Integrity Audit
 
 Status: Current
-Last reviewed: 2026-06-18
+Last reviewed: 2026-06-20
 Owning surface: `cow-sdk-trading` order assembly, the `OrderBoundsValidator` client-rejection gate, the quote-to-post app-data merge path, and the EthFlow owner-identity threading.
 Refresh trigger: Changes to quote-derived or direct order construction, balance semantics, the same-token predicate, `Trading` injected-orderbook builder terminals, the post-sign owner-recovery gate (`assert_owner_matches_signer` over `RecoverableSignature::recover`); the `OrderBoundsValidator::validate` signature, the `ClientRejection` variant set, the `ValidToInPast` check, `services_default_for_chain`, or the `is_eth_flow` skip rule; the `merge_and_seal_app_data` / `params_from_doc` signatures, the `metadata.hooks` replacement rule, or the submission-seam `app_data_signer` derivation; the `EthFlowTransaction.from` threading, `eth_flow_transaction` owner resolution, or the `LimitTradeParamsFromQuote` newtype invariant and its EthFlow entry binding.
 Related docs:
@@ -62,7 +62,7 @@ It does not cover host wallet session management, approval flows, leaf-crate tra
 
 `OrderBoundsValidator::validate` (`crates/trading/src/validation.rs`) accepts the signing order (`cow_sdk_core::OrderData`), the submission owner (`from: Address`, threaded separately because the order carries no owner field), the typed `Option<Address>` app-data signer, the caller-supplied UNIX-seconds `now`, and the `is_eth_flow` flag, returning `Result<(), ClientRejection>`. It is documented as a defence-in-depth guard: a successful local validation does not guarantee services acceptance, and deny-list, transferability, gas budget, banned-users, and market-class classification are explicitly left to the authoritative services surface.
 
-The only stable validity invariant checked is `valid_to <= now` rejecting as `ValidToInPast { valid_to, now }`; minimum/maximum lifetimes are operator configuration left to services. `ClientRejection` is `#[non_exhaustive]` with a typed variant per invariant: `ValidToInPast`, `MissingFrom`, `AppdataFromMismatch`, `SameBuyAndSellToken`, `InvalidNativeSellToken`, `ZeroAmount { side: AmountSide }`, and `OwnerMismatch { expected, recovered }`. `TradingError::ClientRejected(ClientRejection)` lifts every variant onto the public surface.
+The only stable validity invariant checked is `valid_to <= now` rejecting as `ValidToInPast { valid_to, now }`; minimum/maximum lifetimes are operator configuration left to services. `ClientRejection` is `#[non_exhaustive]` with a typed variant per invariant: `ValidToInPast`, `MissingFrom`, `AppdataFromMismatch`, `SameBuyAndSellToken`, `InvalidNativeSellToken`, `ZeroAmount { side: AmountSide }`, `OwnerMismatch { expected, recovered }`, and `InvalidPartnerFee { field, reason }`. `TradingError::ClientRejected(ClientRejection)` lifts every variant onto the public surface.
 
 Every public submission entry point constructs the chain-aware default via `OrderBoundsValidator::services_default_for_chain(chain_id)`, runs `validate` between construction and HTTP upload, and surfaces failures through `ClientRejected`. The central `post_cow_protocol_trade` sink is the shared submission helper; no caller-side policy configuration is exposed.
 
@@ -88,15 +88,15 @@ Primary implementation points:
 
 - `crates/trading/src/error.rs`
 - `crates/trading/src/order.rs`
-- `crates/trading/src/parameters.rs`
+- `crates/trading/src/params.rs`
 - `crates/trading/src/validation.rs`
 - `crates/trading/src/onchain.rs`
 - `crates/trading/src/app_data.rs`
 - `crates/trading/src/quote.rs`
-- `crates/trading/src/post.rs`, `crates/trading/src/post/{swap,limit,native,generic}.rs`
+- `crates/trading/src/post.rs`
 - `crates/trading/src/client/helpers.rs`
-- `crates/trading/src/types/{trade,advanced,overrides}.rs`
-- `crates/trading/src/slippage/amounts.rs`
+- `crates/trading/src/types/params.rs`, `crates/trading/src/types/result.rs`, `crates/trading/src/types/seams.rs`
+- `crates/trading/src/slippage.rs`
 - `crates/trading/src/lib.rs`
 - `crates/core/src/types/amount.rs` (`Amount::is_zero`)
 - `crates/core/src/types/identity.rs` (`Address`)
@@ -131,7 +131,7 @@ Primary regression coverage:
 - `crates/trading/tests/app_data_merge_contract.rs::partner_fee_in_advanced_settings_appdata_merges_through_to_post`
 - `crates/trading/tests/quote_contract.rs`
 - `crates/trading/tests/quote_contract.rs::order_id_collision_retries_with_new_salt_until_success_or_cap`
-- `crates/trading/tests/parity_contract.rs`
+- `crates/trading/tests/quote_projection_parity.rs`
 - `crates/trading/tests/sdk_contract.rs`
 
 Validation surface:
@@ -144,7 +144,7 @@ cargo test -p cow-sdk-trading --test property_contract
 cargo test -p cow-sdk-trading --test onchain_contract
 cargo test -p cow-sdk-trading --test app_data_merge_contract
 cargo test -p cow-sdk-trading --test post_contract
-cargo test -p cow-sdk-trading --test parity_contract
+cargo test -p cow-sdk-trading --test quote_projection_parity
 cargo test -p cow-sdk-trading --all-features
 cargo test --workspace --all-features
 cargo check --workspace --all-features --target wasm32-unknown-unknown

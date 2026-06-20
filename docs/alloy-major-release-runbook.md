@@ -40,8 +40,9 @@ byte-identically across alloy major-version transitions.
    versions.
 4. Merge only after the release-candidate workflow and invariant checks are
    green.
-5. Leave the scheduled canary informational unless maintainers explicitly
-   promote it to a blocking gate.
+5. Leave the manually-dispatched canary (weekly schedule currently paused per
+   ADR 0026) informational unless maintainers explicitly promote it to a
+   blocking gate.
 
 ## Rollback
 

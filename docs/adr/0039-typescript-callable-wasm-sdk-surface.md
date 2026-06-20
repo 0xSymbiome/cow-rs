@@ -5,7 +5,7 @@
 - Last reviewed: 2026-06-20
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: wasm, typescript, public-surface, additive-leaf-crates
-- Related: ADR 0007, [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), ADR 0019, [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), ADR 0037, [ADR 0038](0038-transaction-lifecycle-types.md), ADR 0042, ADR 0043, [ADR 0044](0044-bundle-size-profile-and-flavor-builds.md), ADR 0046, ADR 0047, [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+- Related: [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0038](0038-transaction-lifecycle-types.md), [ADR 0044](0044-bundle-size-profile-and-flavor-builds.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
 
 ## Decision
 
@@ -25,10 +25,11 @@ internal, and non-browser runtimes configure explicit callback HTTP transport
 plus `TransportPolicyConfig`.
 
 The runtime support matrix is explicit: browser bundlers are
-`default-http-supported`, Node.js 22 and 24 LTS plus Cloudflare Workers and
-Deno are `callback-http-tested` through the shipped web (edge) build — which
+`default-http-supported`, Node.js 24 LTS plus Cloudflare Workers are
+`callback-http-tested` through the shipped web (edge) build — which
 every flavour ships, exercised end-to-end via the `trading` flavour in CI — and
-Bun, Vercel Edge, and Fly.io are best-effort without a CI claim.
+Node.js 22 LTS, Deno, Bun, Vercel Edge, and Fly.io are best-effort without a CI
+claim.
 
 ## Why
 
@@ -57,7 +58,7 @@ this ADR does not blur:
   benchmark validation note and its refresh triggers).
 - Cloudflare deployment and startup evidence (separately tracked; see the
   validation note's refresh triggers — every flavour's web (edge) build is
-  size-compatible with the current Workers Free compressed-size limit at the
+  size-compatible with the current Workers Paid/Bundled (~3 MB) compressed-size limit at the
   time of measurement, and the `trading` flavour is built and tested end-to-end
   in CI (Workers Vitest), within the Workers compressed-size budget).
 

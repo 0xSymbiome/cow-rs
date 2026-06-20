@@ -42,8 +42,8 @@ against the Rust mirror. The `quote` field of
 `OrderQuoteResponse` is therefore validated for field-level fidelity rather than
 treated as an opaque object.
 
-The quote network-cost inputs (`feeAmount`, `gasAmount`, `gasPrice`,
-`sellTokenPrice`) are read-only on `QuoteData`, consistent with
+The quote gas estimates (`gasAmount`, `gasPrice`, `sellTokenPrice`) are
+read-only on `QuoteData`, consistent with
 [ADR 0021](0021-orderbook-total-fee-policy.md). They are populated only by
 deserializing the `/quote` response and are surfaced through accessors; no
 public builder exposes a setter for them.
@@ -108,7 +108,7 @@ Defaulting `priceQuality` to `optimal` matches the estimate the backend expects
 order creation to build from, so the unmanaged "quote then sign" path produces a
 submittable order by default instead of a simulation-only estimate.
 
-Keeping the network-cost fields read-only stops callers from fabricating quote
+Keeping the gas estimates read-only stops callers from fabricating quote
 economics, the same reasoning that makes order-level `feeAmount` read-only under
 [ADR 0021](0021-orderbook-total-fee-policy.md).
 
@@ -141,8 +141,8 @@ variable price leg stays trusted, because it is the answer to the request.
   `QuoteSigningScheme` (verification gas limit only on EIP-1271; ECDSA never
   on-chain). The signing constraints are enforced on the wire by a `try_from`
   deserialization guard.
-- No public builder exposes a setter for the quote network-cost fields
-  (`feeAmount`, `gasAmount`, `gasPrice`, `sellTokenPrice`); they are read-only
+- No public builder exposes a setter for the quote gas estimates
+  (`gasAmount`, `gasPrice`, `sellTokenPrice`); they are read-only
   accessors populated from the wire.
 - The quote-amounts projection has a parity regression test.
 - `OrderbookApi::quote` binds every request-determined field of the response to
@@ -167,7 +167,7 @@ variable price leg stays trusted, because it is the answer to the request.
 - Default `priceQuality` to `verified`: more conservative in isolation, but
   produces a non-submittable default for the "quote then sign" path that the
   backend expects to build from `optimal`.
-- Expose public setters for the quote network-cost fields: convenient for
+- Expose public setters for the quote gas estimates: convenient for
   test construction, but lets callers fabricate quote economics.
 - Field-bind *every* response field to the request, including the variable price
   leg: rejected — it would reject every legitimate quote, since the solver-quoted

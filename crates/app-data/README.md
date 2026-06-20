@@ -126,8 +126,8 @@ are byte-identical to any earlier bytewise canonicalisation.
 The cow `AppDataHash` is a cow-owned `#[repr(transparent)]` newtype over
 `alloy_primitives::B256` per
 [ADR 0052](https://github.com/0xSymbiome/cow-rs/blob/main/docs/adr/0052-alloy-primitives-canonical-primitive-layer.md);
-the canonical CID conversion lives on the inherent method
-`AppDataHash::to_cid`. The digest input fed to
+the canonical CID conversion is the free function `app_data_hex_to_cid`,
+which takes the hash's `to_hex_string` form. The digest input fed to
 `alloy_primitives::keccak256` is the canonical-JSON byte stream produced
 by `serde_jcs`.
 

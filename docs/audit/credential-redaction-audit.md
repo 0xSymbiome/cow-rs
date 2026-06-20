@@ -1,7 +1,7 @@
 # Credential Redaction Audit
 
 Status: Current
-Last reviewed: 2026-06-17
+Last reviewed: 2026-06-20
 Owning surface: Cross-cutting credential redaction across config/builder storage, URL-bearing config, transport/RPC/orderbook/subgraph error diagnostics, native Alloy adapters, and wasm error envelopes
 Refresh trigger: Changes to orderbook or subgraph builder API-key storage, URL-bearing public configuration fields, external host-policy validation, the `Redacted<T>` newtype or the `RedactedUrlMap`/`RedactedOptionalUrlMap` contracts, subgraph production routing or its `Authorization` header, public error message/detail/body/data fields, any `SubgraphError` variant or its `#[error(...)]` template, the transport `From<reqwest::Error>` classifiers, the `redact_response_body` token-detection layers, native Alloy adapter `Debug`/redaction state, the wasm transport-error mapping, the JSON decode-failure or digest-calculation diagnostic shapes, the app-data typed validation render, or any new credential-bearing surface that lands without a redacting storage type or an equivalent safe-by-construction render
 Related docs:
@@ -36,10 +36,10 @@ It does not cover unrelated transport-policy questions, non-URL credentials outs
 | Subgraph route identity | Graph API credentials stay out of stable metadata and typed failure context; failure context is sanitized to a public origin or generic override marker | Conforms |
 | Core and orderbook base URLs | `ApiBaseUrls` (`RedactedUrlMap<u64>`) values, including userinfo-bearing custom overrides, redact in diagnostics and serialization while routing reads raw URLs via `as_inner()` | Conforms |
 | Subgraph base URLs | `SubgraphApiBaseUrls` (`RedactedOptionalUrlMap`) configured URLs serialize as `[redacted]`, unsupported chains as `null`; production routing carries the key in the `Authorization` header so the route map and request path are key-free | Conforms |
-| App-data IPFS URIs | `IpfsConfig` `uri`/`read_uri` redact in debug, display, and serialization; fetch/upload policies unwrap only at the dispatch seam | Conforms |
+| App-data IPFS URIs | `IpfsConfig` `uri`/`read_uri` redact in debug and serialization; fetch/upload policies unwrap only at the dispatch seam | Conforms |
 | Host-policy failures | Orderbook and subgraph overrides fail closed against canonical hosts; `HostPolicyError` retains only a redacted host or sanitized failure class, never raw URL credentials, paths, queries, or fragments | Conforms |
 | Native Alloy adapters | Provider URLs, private-key material, signer internals, transport details, and pending-transaction details are redacted across provider, signer, umbrella, and facade error tests | Conforms |
-| Transport error redaction | `From<reqwest::Error>` on orderbook and subgraph classifies via the upstream kind checkers and calls `without_url` before wrapping | Conforms |
+| Transport error redaction | `From<reqwest::Error>` on the orderbook surface classifies via the canonical core reqwest classifier (which strips the URL) before wrapping; the subgraph surface receives an already-redacted `TransportError` from the transport seam | Conforms |
 | Public error diagnostics | Provider, signer, RPC, transport, response-body, subgraph-context, orderbook-API, and orderbook-rejection payloads wrap secrets in `Redacted<T>` or render through a safe-by-construction pipeline; typed diagnostics (chain ids, status codes, field names, rejection tags) stay visible | Conforms |
 | Subgraph `Display` pairing | Every chain-scoped `SubgraphError` variant pairs redacted `context.api` with plaintext `chain_id` plus a typed structural token; `TransportConfiguration` pairs the typed `class` label and carries no chain id | Conforms |
 | Subgraph `Display` non-tautology | Every chain-scoped diagnostic variant carries at least one ASCII-digit token, and `TransportConfiguration` carries its typed `class` label, so renderings never collapse to a placeholder-only string | Conforms |
@@ -58,10 +58,13 @@ It does not cover unrelated transport-policy questions, non-URL credentials outs
 whose `Debug`, `Display`, and `Serialize` implementations emit the literal
 `[redacted]` placeholder; consumers reach the secret through an explicit
 `into_inner`/`as_inner` escape. `OrderbookApiBuilder`
-(`crates/orderbook/src/builder.rs`) and `SubgraphApiBuilder`
-(`crates/subgraph/src/builder.rs`) store the partner API key as
+(`crates/orderbook/src/builder.rs`) stores the partner API key as
 `Option<Redacted<String>>`, wrapping in the `.api_key(...)` setter so `Debug`
 on a partially configured builder emits the marker instead of the secret.
+`SubgraphApiBuilder` (`crates/subgraph/src/builder.rs`) is typestate-checked:
+an unconfigured builder holds the `ApiKeyUnset` marker (no secret stored), and
+the `.api_key(...)` setter advances it to `ApiKeySet(Redacted<String>)`, so a
+configured builder's `Debug` emits the marker instead of the secret.
 `ApiContext`, `ApiContextOverride`, `IpfsConfig`, and the internal subgraph API
 key slot carry `Redacted<String>` at the type level, so accidental logging,
 default serialization, and ad-hoc diagnostics cannot print the secret while
@@ -87,8 +90,8 @@ construction. A `base_urls` override dispatches its URL verbatim with no
 SDK-injected auth header.
 
 `IpfsConfig` (`crates/app-data/src/types/ipfs.rs`) stores `uri` and `read_uri`
-as `Option<Redacted<String>>`; `Display` follows the same contract as `Debug`,
-and `IpfsFetchPolicy::from_config` unwraps only at the read dispatch seam.
+as `Option<Redacted<String>>`, so `Debug` and serialization emit the marker;
+`IpfsFetchPolicy::from_config` unwraps only at the read dispatch seam.
 
 `crates/core/src/config/hosts.rs` owns `ExternalHostPolicy` and
 `HostPolicyError`. Builders validate explicit endpoint overrides against
@@ -111,10 +114,13 @@ fallback surfaces the HTTP status while its free-form body stays redacted. The
 SDK facade regression test constructs every reviewed family with URL,
 bearer-token, private-key-shaped, and PEM-shaped payloads and verifies no
 secret substring appears in public renderings. `From<reqwest::Error>` on the
-orderbook and subgraph surfaces classifies via the upstream `is_timeout`,
-`is_connect`, `is_decode`, `is_body`, `is_redirect`, `is_builder`,
-`is_request`, and `is_status` set and calls `without_url` before wrapping,
-adding a layer below the config-level `Redacted<T>` storage.
+orderbook surface delegates to the canonical core classifier
+(`cow_sdk_core::transport::classify_reqwest_error`), which calls `without_url`
+and tags the typed class via the upstream `is_timeout`, `is_connect`,
+`is_redirect`, `is_decode`, `is_body`, `is_builder`, `is_status`, and
+`is_request` set before wrapping, adding a layer below the config-level
+`Redacted<T>` storage. The subgraph surface never sees a raw `reqwest::Error`:
+its transport seam hands it an already-redacted `TransportError`.
 
 The orderbook, app-data, and contracts JSON decode failures each carry a
 structured `{ category, line, column }` triple rather than the raw
@@ -162,10 +168,12 @@ so provider URLs, private-key material, signer internals, transport details,
 and pending-transaction details never print. The wasm surface extends the
 contract to JavaScript: `WasmError` (`crates/wasm/src/exports/errors.rs`)
 exposes typed discriminants and low-cardinality fields, maps `TransportError`
-through `Display` and `cow_sdk_core::redact_response_body`, and never unwraps
-`Redacted<T>` into a JS-visible field, so URL credentials and secret-shaped
-response snippets stay redacted across `Debug`, `Display`, and serialized
-output.
+through `Display` and `cow_sdk_core::redact_response_body`, and never exposes a
+`Redacted<T>` secret to JS without re-redacting it: the response body is read
+via `as_inner()` and immediately passed back through `redact_response_body`, so
+URL credentials and secret-shaped response snippets stay redacted across
+`Debug`, `Display`, and serialized output. The guard test bans `into_inner`
+escapes in the module source.
 
 ### Response-Body Scanner Detection Layers
 
@@ -174,9 +182,9 @@ that replaces every credential-shaped span with the sanitized placeholder. The
 layers run in a fixed order so a more specific pattern is never reclassified as
 a more general one:
 
-1. JWT-shaped tokens (`eyJ` prefix + at least 23 credential-value characters)
-   are matched first so an opaque JWT surrounded by URL syntax cannot ship
-   verbatim ahead of userinfo redaction.
+1. JWT-shaped tokens (a run of at least 23 credential-value characters
+   beginning with the `eyJ` prefix) are matched first so an opaque JWT
+   surrounded by URL syntax cannot ship verbatim ahead of userinfo redaction.
 2. `Bearer <token>` schemes match anywhere with no word-boundary constraint, so
    `someBearer secret-...` still has its trailing token redacted.
 3. Strict URLs (`scheme://userinfo@host`, IANA-shaped scheme) redact the
@@ -209,11 +217,11 @@ Primary implementation points:
 - `crates/contracts/src/errors.rs`
 - `crates/signing/src/errors.rs`
 - `crates/trading/src/error.rs`
-- `crates/trading/src/types/options.rs`
+- `crates/trading/src/types/params.rs`
 - `crates/trading/src/quote.rs`
 - `crates/trading/src/app_data.rs`
-- `crates/trading/src/post/generic.rs`
-- `crates/trading/src/slippage/policy.rs`
+- `crates/trading/src/post.rs`
+- `crates/trading/src/slippage.rs`
 - `crates/app-data/src/types/ipfs.rs`
 - `crates/app-data/src/types/params.rs`
 - `crates/app-data/src/errors.rs`

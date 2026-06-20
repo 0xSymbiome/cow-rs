@@ -1,6 +1,6 @@
 # cow-sdk-alloy
 
-Native composed Alloy adapter package for the `cow-rs` SDK.
+Native composed Alloy adapter crate for the `cow-rs` SDK.
 
 > ⚠️ **Alpha — `0.1.0-alpha`.** Pre-release and not security-audited; the public
 > API may change before `0.1.0`. It is published as a pre-release, so Cargo
@@ -8,9 +8,9 @@ Native composed Alloy adapter package for the `cow-rs` SDK.
 > a local private-key signer — review it yourself before relying on it with real
 > funds.
 
-This crate is the umbrella package for applications that want native Alloy
+This crate is the umbrella crate for applications that want native Alloy
 provider and signer support through one opt-in dependency. It re-exports the
-leaf package namespaces while keeping the default `cow-sdk` facade free of
+leaf crate namespaces while keeping the default `cow-sdk` facade free of
 native Alloy runtime dependencies.
 
 The three-crate split is intentional: `cow-sdk-alloy-provider` owns read-only
@@ -25,16 +25,16 @@ should use the [`cow-sdk-wasm`](https://crates.io/crates/cow-sdk-wasm) package,
 supplying their own wallet across its EIP-1193 request-callback boundary and
 reaching CoW services through the browser fetch transport.
 
-The native-only boundary is enforced at compile time on `wasm32` targets. That
-keeps browser builds on the wasm callback path instead of surfacing deep
-transitive native-runtime errors from Alloy networking or local-key
-dependencies.
+Native-only items are excluded from `wasm32` builds via `cfg`, so they do not
+pull native runtime dependencies into browser builds. That keeps browser builds
+on the wasm callback path instead of surfacing deep transitive native-runtime
+errors from Alloy networking or local-key dependencies.
 
-The package boundary is intentionally narrow in this release. Read-only provider
+The crate boundary is intentionally narrow in this release. Read-only provider
 support is owned by
 [`cow-sdk-alloy-provider`](https://docs.rs/cow-sdk-alloy-provider), signing
 support is owned by [`cow-sdk-alloy-signer`](https://docs.rs/cow-sdk-alloy-signer),
-and this package is the composed namespace for consumers that want both.
+and this crate is the composed namespace for consumers that want both.
 `AlloyClient` implements `Provider`, `LogProvider`, and `SigningProvider`; the
 owned signer handle returned by `create_signer` implements `Signer`, signs CoW
 EIP-712

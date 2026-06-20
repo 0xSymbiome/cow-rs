@@ -1,7 +1,7 @@
 # COW Shed Contract Bindings Audit
 
 Status: Current
-Last reviewed: 2026-06-17
+Last reviewed: 2026-06-20
 Owning surface: inline COW Shed `alloy::sol!` bindings, proxy creation-code artifacts, deployed-generation address record, and the CREATE2/EIP-712/selector parity evidence
 Refresh trigger: Refresh when COW Shed deployments, proxy creation code, factory ABIs, hook type strings, the deployed `VERSION()` constants, or the upstream commit pins for the COW Shed sources change.
 Related docs:
@@ -228,8 +228,6 @@ Primary regression coverage:
 - `tests/cow_shed_typed_data_digest.rs`
 - `crates/contracts/src/cow_shed/address/mod.rs::distinct_versions_derive_distinct_proxies`
   (per-version distinct-proxy regression)
-- `crates/trading/tests/eip1271_signature_provider_no_reexport.rs`
-  (compile-fail regression for the trading re-export contract)
 - `cargo metadata --format-version 1` proves the four negative-edge invariants
 
 Validation surface:

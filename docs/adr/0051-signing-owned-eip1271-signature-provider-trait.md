@@ -5,7 +5,7 @@
 - Last reviewed: 2026-06-15
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: eip-1271, signing, trait-ownership, additive-leaf-crates
-- Related: ADR 0008, [ADR 0014](0014-eip1271-verification-cache.md), [ADR 0048](0048-composable-conditional-order-framework.md), [ADR 0050](0050-eip1271-signature-blob-encoding.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+- Related: [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md), [ADR 0014](0014-eip1271-verification-cache.md), [ADR 0048](0048-composable-conditional-order-framework.md), [ADR 0050](0050-eip1271-signature-blob-encoding.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
 
 ## Context
 
@@ -21,7 +21,7 @@ higher-layer leaf that consumes signing, not the other way around.
 Keeping the trait in trading would force composable and COW Shed to depend
 on trading, which would:
 
-- break the additive-leaf-crates discipline from ADR 0008 (leaves must not
+- break the additive-leaf-crates discipline from ADR 0001 (leaves must not
   depend on peer leaves);
 - create a dependency cycle if composable ever needs to publish a custom
   signer alongside trading's signer consumer; and
@@ -87,9 +87,9 @@ guessing among re-export aliases.
 ## Must Remain True
 
 - Public surface: `Eip1271Signer` and
-  `Eip1271SignatureError` are reachable exclusively from
-  `cow_sdk_signing::eip1271`. No re-export from any other crate's public
-  surface.
+  `Eip1271SignatureError` are reachable only from `cow-sdk-signing`
+  (canonical path `cow_sdk_signing::eip1271`); no other crate re-exports
+  them.
 - Runtime and support: trading-side call sites that surface EIP-1271
   failures use inline `map_err` with a per-operation message. No
   `From<Eip1271SignatureError> for TradingError` impl exists anywhere in

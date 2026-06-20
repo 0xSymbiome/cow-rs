@@ -1,6 +1,6 @@
 # cow-sdk-alloy-signer
 
-Native Alloy-backed local signing adapter package for the `cow-rs` SDK.
+Native Alloy-backed local signing adapter crate for the `cow-rs` SDK.
 
 > ⚠️ **Alpha — `0.1.0-alpha`.** Pre-release and not security-audited; the public
 > API may change before `0.1.0`. It is published as a pre-release, so Cargo
@@ -23,7 +23,7 @@ The native-only boundary is enforced at compile time on `wasm32` targets. That
 keeps browser signing on the wasm callback path and avoids shipping local-key
 native dependencies into browser builds.
 
-The package boundary is intentionally narrow:
+The crate boundary is intentionally narrow:
 
 - `LocalAlloySigner` implements `cow_sdk_core::Signer`.
 - It signs EIP-191 messages and EIP-712 typed-data payloads.
@@ -32,7 +32,7 @@ The package boundary is intentionally narrow:
   reference other structs declared in the type map, directly or as arrays.
 - ECDSA signatures are normalized through the shared `cow-sdk-contracts`
   signature helper before they are returned.
-- `sign_transaction`, `send_transaction`, and `estimate_gas` return
+- `send_transaction` and `estimate_gas` return
   `SignerError::ProviderRequired` because a standalone local signer cannot
   fill nonce, fee, chain, or transaction-type context.
 - Provider-backed transaction submission is owned by `cow-sdk-alloy`, whose
@@ -124,7 +124,7 @@ crate's error type.
 ## Related Crates
 
 - [`cow-sdk-alloy`](https://docs.rs/cow-sdk-alloy) composes provider and signer
-  support behind one native package.
+  support behind one native crate.
 - [`cow-sdk-alloy-provider`](https://docs.rs/cow-sdk-alloy-provider) owns
   read-only provider support.
 - [`cow-sdk`](https://docs.rs/cow-sdk) is the curated facade for most SDK users.

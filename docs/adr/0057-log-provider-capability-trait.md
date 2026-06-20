@@ -36,7 +36,7 @@ richer per-call filters do not loosen the single-call boundary, and the
 `removed` flag serves a caller composing its own watcher from successive bounded
 calls.
 
-The fail-closed, provider-free decoders (ADR 0054, ADR 0056) stay pure;
+The fail-closed, provider-free decoders (ADR 0054) stay pure;
 `LogProvider` is the optional fetch seam that feeds them through
 `RawLog::data`. `get_logs` is a genuinely new RPC primitive, not derivable from
 existing `Provider` methods, so it lands as its own opt-in capability supertrait
@@ -45,7 +45,7 @@ in the `SigningProvider` mould (ADR 0024) rather than widening the base
 
 ## Why
 
-- Decoding is already pure and provider-free (ADR 0054, ADR 0056): any
+- Decoding is already pure and provider-free (ADR 0054): any
   `Provider` consumer can fetch logs by other means and hand `&RawLog::data` to
   a decoder. The fetch seam is therefore a separate, optional convenience, not a
   decoding dependency.
@@ -68,9 +68,8 @@ in the `SigningProvider` mould (ADR 0024) rather than widening the base
 
 ## Must Remain True
 
-- `Provider`'s method set stays frozen, pinned by
-  `provider_trait_shape_unchanged`; `LogProvider` adds only `get_logs`, pinned
-  by `log_provider_trait_shape`.
+- `Provider`'s method set stays frozen and `LogProvider` adds only `get_logs`;
+  the compiler enforces the supertrait shape across impls.
 - `LogProvider: Provider` is opt-in by bound. Read-only adapters implement only
   `Provider`; an adapter that cannot fetch logs is never required to implement
   `LogProvider`.

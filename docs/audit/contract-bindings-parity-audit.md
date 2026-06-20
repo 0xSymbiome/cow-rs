@@ -1,7 +1,7 @@
 # Contract Bindings Parity Audit
 
 Status: Current
-Last reviewed: 2026-06-16
+Last reviewed: 2026-06-20
 Owning surface: `cow-sdk-contracts` `alloy::sol!`-generated bindings for `GPv2Settlement`, `CoWSwapEthFlow`, `CoWSwapOnchainOrders` events, the wrapped-native token, and `IERC20`
 Refresh trigger: A new binding family landing in `cow-sdk-contracts`; a signature change in any existing binding; a change to the upstream commit pin for any binding's source repository under `parity/source-lock.yaml`; a change to the TypeScript-SDK-derived parity fixtures that back the regression suite; a change to the EIP-712 domain-separator fixture shared with the signing crate; a change to the wasm target feature contract for the alloy/k256 dependency path
 Related docs:
@@ -35,7 +35,7 @@ audit) or the HTTP transport that delivers call-data to a provider.
 | Pinned provenance | Every binding's `alloy::sol!` interface reproduces the upstream Solidity surface verbatim, and the upstream repository each binding mirrors is pinned by commit in `parity/source-lock.yaml` so a reviewer can diff the binding against the upstream source at the pinned commit | Conforms |
 | Byte-identity parity | Encoded call-data and hashed payloads match the TypeScript-SDK-derived golden fixtures on every binding | Conforms |
 | Domain separator parity | `cow-sdk-contracts` and `cow-sdk-signing` route every EIP-712 domain separator through `alloy_sol_types::Eip712Domain::separator` and pin the same fixture value | Conforms |
-| Order EIP-712 hashing | The `GPv2 Order` and `OrderCancellations` typed-data structs are macro-emitted via `alloy_sol_types::sol!` and route their signing hashes through `<T as SolStruct>::eip712_signing_hash`; the eight per-chain rows in the order-digest fixture pin the wire-byte contract | Conforms |
+| Order EIP-712 hashing | The `GPv2 Order` and `OrderCancellations` typed-data structs are macro-emitted via `alloy_sol_types::sol!` and route their signing hashes through `<T as SolStruct>::eip712_signing_hash`; the eight representative rows in the order-digest fixture pin the wire-byte contract | Conforms |
 | EIP-1271 payload encoding | The COW EIP-1271 verifier payload `abi.encode(GPv2Order.Data, bytes)` is composed from the macro-emitted `OnchainOrder` sol struct and the raw ECDSA signature via `alloy_sol_types::SolValue::abi_encode_sequence`; the inline regression contract reproduces the canonical 12-word order tuple plus dynamic-bytes tail layout byte-for-byte | Conforms |
 | WASM compatibility | The `alloy-primitives` `k256` path enables the browser `getrandom` backend for `wasm32-unknown-unknown` builds | Conforms |
 | Scope discipline | The shipped set is the five families named above; any new family follows the same provenance and parity contract before it lands | Conforms |
@@ -93,9 +93,10 @@ commit under `repositories:` in `parity/source-lock.yaml`, so a reviewer can
 diff the inline interface against the upstream source at the pinned commit. The
 shipped bindings mirror three CoW Protocol repositories:
 
-- `cowprotocol/contracts` — `GPv2Settlement`, `GPv2Trade`, `GPv2Interaction`,
-  and `IERC20`.
-- `cowprotocol/ethflowcontract` — `CoWSwapEthFlow` and `EthFlowOrder`.
+- `cowprotocol/contracts` — `GPv2Settlement`. `IERC20` is authored inline
+  against the published EIP-20 standard, not against this repository.
+- `cowprotocol/ethflowcontract` — `CoWSwapEthFlow`, `EthFlowOrder`,
+  `CoWSwapOnchainOrders`, and `IWrappedNativeToken`.
 - `cowdao-grants/cow-shed` — the COW Shed surfaces (reviewed in the
   [COW Shed Contract Bindings Audit](cow-shed-contract-bindings-audit.md)).
 
@@ -125,10 +126,11 @@ extend it for surfaces that need additional fixtures.
 
 The EIP-712 domain separator routes through
 `alloy_sol_types::Eip712Domain::separator` in both `cow-sdk-contracts`
-(`primitives::domain_separator`) and `cow-sdk-signing`
-(`domain::domain_separator_for`). Both crates read one shared JSON fixture
-(under `crates/contracts/tests/fixtures/` and `crates/signing/tests/fixtures/`),
-so a domain-encoding change cannot move one crate without the other.
+(folded into `order::hash_order`'s `eip712_signing_hash` call) and
+`cow-sdk-signing` (`domain::domain_separator_for`). Both crates read one shared
+JSON fixture (`parity/fixtures/eip712/settlement_domain_separator.json`,
+included by each crate via `include_str!`), so a domain-encoding change cannot
+move one crate without the other.
 
 The `GPv2 Order` and `OrderCancellations` EIP-712 schemas are macro-emitted via
 `alloy_sol_types::sol!`, and signing hashes route through
@@ -138,10 +140,12 @@ hashes to the deployed protocol constant
 representative rows in `parity/fixtures/eip712/order_digests.json` pin per-row
 domain separator, struct hash, and signing hash so a future change cannot
 silently move the wire bytes. The mainnet domain separator is fixed at
-`0xc078f884a2676e1345748b1feace7b0abee5d00ecadb6e574dcdd109a63e8943`, sepolia at
-`0xdaee378bd0eb30ddf479272accf91761e697bc00e067a268f95f1d2732ed230b`, and the
-canonical EIP-712 reference signature at
-`0x34bc8d9249f7f9399d1db57b96bfc3a2f935a25965fe265292142c305284c7241daf1b3049bc75da81012cf33aeac1de09ec5684bccf03afe7274262703780d01c`.
+`0xc078f884a2676e1345748b1feace7b0abee5d00ecadb6e574dcdd109a63e8943` and sepolia
+at `0xdaee378bd0eb30ddf479272accf91761e697bc00e067a268f95f1d2732ed230b`. The
+canonical EIP-712 reference signature
+`0x34bc8d9249f7f9399d1db57b96bfc3a2f935a25965fe265292142c305284c7241daf1b3049bc75da81012cf33aeac1de09ec5684bccf03afe7274262703780d01c`
+is pinned separately as the `EXPECTED_ORDER_SIGNATURE` constant in
+`crates/test-utils/src/consts.rs`, not as a row in the order-digest fixture.
 
 The COW EIP-1271 verifier payload `abi.encode(GPv2Order.Data, bytes)` is
 macro-emitted as `OnchainOrder` at `crates/signing/src/eip1271/sol_types.rs`;
@@ -153,10 +157,13 @@ a distinct schema from the EIP-712 typed-data `Order`. The inline regression in
 `crates/signing/tests/order_signing_contract.rs` reproduces the byte layout by
 hand at signature length 65.
 
-The `cow-sdk-trading` on-chain helpers build settlement and EthFlow calldata by
-composing the `IGPv2Settlement` and `ICoWSwapEthFlow` sol! bindings and routing
-through `<C as alloy_sol_types::SolCall>::abi_encode`, the same canonical path
-the contracts parity contract gates. No hand-rolled selector or offset helpers
+The `cow-sdk-trading` on-chain helpers build settlement calldata by composing
+the `IGPv2Settlement` sol! binding directly and routing through
+`<C as alloy_sol_types::SolCall>::abi_encode`, the same canonical path the
+contracts parity contract gates. EthFlow calldata is delegated to
+`cow-sdk-contracts`' `encode_create_order_calldata` /
+`encode_invalidate_order_calldata` helpers, which compose the `ICoWSwapEthFlow`
+binding inside the contracts crate. No hand-rolled selector or offset helpers
 remain in the trading crate. The fixture rows
 `contracts-settlement-set-presignature-calldata` and
 `contracts-settlement-invalidate-order-calldata` in
@@ -172,8 +179,8 @@ wire byte sequence for each.
 ### WASM Target Contract
 
 `crates/contracts/Cargo.toml` keeps the `alloy-primitives` `k256` path
-compatible with browser-target builds by enabling the `getrandom` `js` backend
-only for `wasm32`. This is a build-contract detail, not a public API change:
+compatible with browser-target builds by enabling the `getrandom` `wasm_js`
+backend only for `wasm32`. This is a build-contract detail, not a public API change:
 callers interact with the same contract DTOs and hashing helpers on native and
 wasm targets.
 
@@ -216,11 +223,10 @@ Primary regression coverage:
 - `crates/signing/src/domain.rs::tests::domain_separator_matches_shared_parity_fixture`
 - `crates/signing/tests/order_signing_contract.rs`
 - `crates/trading/tests/onchain_contract.rs`
-- `crates/trading/tests/parity_contract.rs`
+- `crates/trading/tests/quote_projection_parity.rs`
 - `crates/core/tests/wire_format_preservation_contract.rs`
 - `crates/core/tests/property_contract.rs`
 - `crates/signing/tests/domain_contract.rs`
-- `crates/signing/tests/parity_contract.rs`
 - `parity/fixtures/signing/eth_sign_typed_data_request.json`
 
 Validation surface:
@@ -230,7 +236,7 @@ cargo test -p cow-sdk-contracts --all-features
 cargo test -p cow-sdk-contracts --test property_contract
 cargo test -p cow-sdk-contracts --test interaction_contract
 cargo test -p cow-sdk-contracts --test onchain_orders
-cargo test -p cow-sdk-contracts --test weth
+cargo test -p cow-sdk-contracts --test tokens_contract
 cargo test -p cow-sdk-contracts --test parity_contract parity_fixture_cases_hold
 cargo test -p cow-sdk-contracts domain_separator_matches_shared_parity_fixture
 cargo test -p cow-sdk-signing domain_separator_matches_shared_parity_fixture

@@ -20,7 +20,7 @@ does not yet implement:
 
 | Capability | TypeScript SDK | cow-rs |
 | --- | --- | --- |
-| Composable / conditional orders (TWAP and others) | `@cowprotocol/sdk-composable` | Deferred — deployment addresses resolve through the typed `Registry`; the order-building framework is recorded by [ADR 0048](adr/0048-composable-conditional-order-framework.md) |
+| Composable / conditional orders (TWAP and others) | `@cowprotocol/sdk-composable` | Deferred — not yet shipped; only the planned framework is recorded by [ADR 0048](adr/0048-composable-conditional-order-framework.md) |
 | Cross-chain bridging | `@cowprotocol/sdk-bridging` | Not yet implemented |
 | Flash-loan collateral swaps | `@cowprotocol/sdk-flash-loans` | Not yet implemented |
 | Weiroll multi-step scripting | `@cowprotocol/sdk-weiroll` | Not yet implemented |
@@ -47,12 +47,12 @@ unrepresentable, rather than a runtime bug.
 
 | Guarantee | How Rust enforces it | Governed by |
 | --- | --- | --- |
-| **Typed values, not strings** | `Amount`, `Address`, and `OrderUid` are distinct newtypes; passing a sell amount where a buy amount belongs, or a hash where an address belongs, does not compile | [ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md) |
-| **Misconfiguration is unrepresentable** | Typestate builders make `build()` and `execute()` reachable only once the required inputs are set; a transposed sell/buy leg or a missing amount fails to compile | [ADR 0011](adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md), [ADR 0013](adr/0013-http-transport-injection-and-typestate-builders.md) |
-| **Capability isolation by crate boundary** | The local-key signer lives in a separate crate (`cow-sdk-alloy-signer`) held to its boundary by a CI allow-list; a consumer that does not opt in has no keystore in its dependency graph. A single package cannot express that boundary | [ADR 0035](adr/0035-alloy-provider-adapter.md)–[0037](adr/0037-alloy-umbrella-adapter.md) |
+| **Typed values, not strings** | `Amount`, `Address`, and `OrderUid` are distinct newtypes; passing a hash where an address belongs does not compile | [ADR 0052](adr/0052-alloy-primitives-canonical-primitive-layer.md) |
+| **Misconfiguration is unrepresentable** | Typestate builders make `build()` and `execute()` reachable only once the required inputs are set; a missing required input fails to compile, and named setters keep the sell and buy legs from being transposed the way positional arguments could be | [ADR 0011](adr/0011-typed-amount-boundary-and-typestate-ready-state-construction.md), [ADR 0013](adr/0013-http-transport-injection-and-typestate-builders.md) |
+| **Capability isolation by crate boundary** | The local-key signer lives in a separate crate (`cow-sdk-alloy-signer`) held to its boundary by a CI allow-list; a consumer that does not opt in has no keystore in its dependency graph. A single crate cannot express that boundary | [ADR 0035](adr/0035-alloy-provider-adapter.md) |
 | **Runtime-free protocol core** | Hashing, signing, and contract decoding need no async runtime; on `wasm32` the `reqwest` stack is removed from the build by target `cfg`, not switched off at runtime | [ADR 0010](adr/0010-runtime-neutral-async-and-transport-posture.md), [ADR 0041](adr/0041-transport-policy-l3-layering.md) |
 | **Credential redaction by construction** | Secrets are stored in a `Redacted<T>` newtype with a private field; `Debug`, `Display`, and `Serialize` emit `[redacted]`, and the private field blocks any accessor-based bypass | [ADR 0025](adr/0025-workspace-url-redaction-convention.md) |
-| **Panic-free production surface** | A CI gate fails the build on any panic-capable call site that is not on an audited allow-list | [ADR 0033](adr/0033-minimum-viable-panic-surface.md) |
+| **Audited panic surface** | A CI gate fails the build on any panic-capable call site that is not on an audited allow-list | [ADR 0033](adr/0033-minimum-viable-panic-surface.md) |
 | **Typed failure taxonomy** | Every orderbook `errorType` decodes to a typed `OrderbookRejection` variant; `is_retryable()` and `backoff_hint()` turn retry logic into a `match` arm instead of string comparison | [ADR 0017](adr/0017-typed-orderbook-rejection-parser.md), [ADR 0060](adr/0060-uniform-error-classification.md) |
 | **Forward-compatible surfaces** | `#[non_exhaustive]` enums and response DTOs make a new protocol variant or field a compile-time prompt for downstream `match` arms, enforced across crate versions | [ADR 0031](adr/0031-wire-dto-openapi-driven-with-order-auction-order-split.md) |
 

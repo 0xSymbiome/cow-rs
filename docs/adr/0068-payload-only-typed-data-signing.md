@@ -4,7 +4,7 @@
 - Date: 2026-06-11
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: core, signer, eip712, traits
-- Related: [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), ADR 0023, [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), ADR 0036, [ADR 0045](0045-async-signer-trait-narrowing.md)
+- Related: [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0059](0059-hash-concrete-orderdata-directly.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0035](0035-alloy-provider-adapter.md), [ADR 0045](0045-async-signer-trait-narrowing.md)
 
 ## Decision
 
@@ -30,7 +30,7 @@ nested struct type definitions, so it cannot express the canonical EIP-712
 digest for an arbitrary payload: the backend must either guess a placeholder
 primary type or reject the call. A trait method that can only produce a
 protocol-meaningless digest for the general case fails the doctrine of
-ADR 0023, which removed
+ADR 0059, which removed
 compatibility shims that produced protocol-incorrect digests. Keeping one
 honest payload method also keeps the trait runtime-neutral per
 [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md): every
@@ -62,7 +62,7 @@ there are no published consumers to migrate.
 - Keep the field-based method beside the payload method on the traits: every
   implementor must then maintain a second path that cannot express a canonical
   digest for the general case, and the placeholder-primary-type behavior the
-  flat path requires contradicts ADR 0023.
+  flat path requires contradicts ADR 0059.
 - Default-implement field-based signing on the trait by converting into a
   payload: the conversion needs the primary-type name and nested type
   definitions the triple does not carry, so the default would still guess; the

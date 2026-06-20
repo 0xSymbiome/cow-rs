@@ -32,8 +32,10 @@ CI policy, so correctness is enforced by the build rather than trusted to memory
   so a keystore signer never enters a graph that did not ask for one.
 - **Runtime-free protocol core** — hashing, signing, and contract decoding
   compute with no async runtime; only the HTTP client needs a reactor, and a
-  `wasm32` build drops the `reqwest` stack at compile time. The workspace
-  compiles to `wasm32-unknown-unknown` with a headless-browser e2e lane in CI.
+  `wasm32` build drops the `reqwest` stack at compile time. The `cow-sdk`
+  facade and the wasm-facing crates (`cow-sdk-wasm`, `cow-sdk-orderbook`,
+  `cow-sdk-subgraph`) compile to `wasm32-unknown-unknown` with a
+  headless-browser e2e lane in CI.
 - **Evidence over adjectives** — every protocol transform is cross-checked
   byte-for-byte against pinned `cowprotocol/services` and `cowprotocol/contracts`
   fixtures in CI; see [Parity and Provenance](docs/parity.md).

@@ -61,12 +61,13 @@ select the shape that matches their callback at construction time.
 The Shape A encoder produces:
 
 ```text
-safeSignature(...)_selector(4 bytes) || abi.encode(handler, params, GPv2Order.Data, payload)
+safeSignature(...)_selector(4 bytes) || abi.encode(domain_separator, type_hash, order, payload)
 ```
 
 The selector is the 4-byte function selector for the muxer's
-`safeSignature(bytes32 ConditionalOrder.Params memory params, GPv2Order.Data memory order, bytes memory payload)`
-entry point. The selector value matches `forge methodIdentifiers` for the
+`safeSignature(bytes32 domain_separator, bytes32 type_hash, bytes order, bytes payload)`
+entry point, matching the `safeSignature(bytes32,bytes32,bytes,bytes)`
+signature named in the Context section. The selector value matches `forge methodIdentifiers` for the
 canonical Safe muxer ABI. The encoder rejects callers that omit the
 selector at construction time.
 

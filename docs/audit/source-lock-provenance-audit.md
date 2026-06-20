@@ -1,9 +1,9 @@
 # Source-Lock Provenance Audit
 
 Status: Current
-Last reviewed: 2026-06-17
+Last reviewed: 2026-06-20
 Owning surface: source-lock provenance and release preflight authority
-Refresh trigger: Changes to `parity/source-lock.yaml` (including `producer_paths` and `watch_dirs`), vendored parity OpenAPI or fixture provenance, any change to the maintained exclusion-list policy for historical progress snapshots, or any newly archived progress snapshot that should stay outside active preflight authority
+Refresh trigger: Changes to `parity/source-lock.yaml` (including `commit` pins, `producer_paths`, and `watch_dirs`), or to vendored parity OpenAPI or fixture provenance
 Related docs:
 - [ADR 0026](../adr/0026-alloy-major-release-absorption-plan.md)
 - [ADR 0030](../adr/0030-workspace-locked-versioning-tag-baseline.md)
@@ -22,7 +22,7 @@ This audit covers:
 - the deep upstream-root validation mode for reviewer-supplied checkouts
 - the publication preflight that validates the committed lock before package dry runs
 - the native Alloy runtime/core upstream pins used for dependency evidence
-- the exclusion-list rule keeping historical progress snapshots readable but
+- the fixture-tree scoping that keeps historical progress snapshots readable but
   outside active preflight authority, and the audit-refresh mapping back to this record
 
 It does not cover future source-lock refreshes, fixture authoring methodology, or
@@ -35,18 +35,18 @@ changing SDK behavior.
 | Source-lock pins | `parity/source-lock.yaml` pins exact upstream commits for every repository that contributes parity evidence | Conforms |
 | Freshness disclosure | Current upstream HEADs are checked explicitly so stale pins are visible before release evidence relies on freshness | Conforms |
 | Held pins | A pin intentionally behind upstream (cow-shed at the deployed v1.0.1 tag) carries a documented `hold:` reason; `parity drift` reports its movement without counting it as actionable drift, and `parity sync --update` never advances it | Conforms |
-| Refresh outcome | The 2026-06-17 refresh advanced the `services` pin (65b6953→58045311) and the `cow-sdk` pin (c931d7→ccf01cb) — both with no producer-path change — left the held `cow-shed` pin in place, re-vendored the services OpenAPI, and re-stamped every citing fixture against the new commits; parity validation passes offline and deep, and the contract suites reproduce the fixture values | Conforms |
+| Refresh outcome | The committed lock pins `services` at `754bb6a0` and `cow-sdk` at `ccf01cb`, with the held `cow-shed` pin left in place. The `cow-sdk` refresh changed producer paths — it added the `v1.15.0.json` root-document schema, bumped `partnerFee` to `v1.1.0`, and added the `watch_dirs` block — while the `services` advance changed only its commit; both re-vendored the services OpenAPI and re-stamped every citing fixture against the new commits. Parity validation passes offline and deep, and the contract suites reproduce the fixture values | Conforms |
 | Deep upstream-root validation | Reviewer-supplied upstream roots (`--upstream-root <dir>`, one checkout per lock repository) are fail-closed checked for independent git top-levels, expected remotes, pinned `HEAD` commits, clean producer paths, and the vendored OpenAPI body at the services pin, without making repo-local validation depend on those roots | Conforms |
 | Publication preflight | The package-family dry-run contract (with local patches for unpublished intra-family crates) lives in the release-readiness publication job, which validates the committed lock before the dry runs | Conforms |
 | Native Alloy provenance | The native adapter family pins Alloy by crates.io version (`alloy-* = 2.0.4`, `alloy-core-* = 1.5.7`), enforced by `Cargo.lock` and the two-family lockfile invariant | Conforms |
-| App-data schema drift fixtures | `parity/fixtures/app_data/schemas/` retains one self-contained mirror per modeled metadata family plus the root-document manifest mirror, all under lock-validated provenance headers (the flash-loan mirror cites its real producer, `services`); the drift tests assert field-name, numeric-bound, and document-version correspondence | Conforms |
+| App-data schema drift fixtures | `parity/fixtures/app_data/schemas/` retains one self-contained mirror per modeled metadata family plus the root-document manifest mirror, all under lock-validated provenance headers citing the pinned `cow-sdk` `packages/app-data/src/schemas/` files; the drift tests assert field-name, numeric-bound, and document-version correspondence | Conforms |
 | Additive-change radar | `watch_dirs` in the lock makes `parity drift` report files added or removed under a watched directory (the app-data schema tree) over the union of files at each commit, so an additively versioned schema cannot land unseen | Conforms |
 | Form enforcement | The lock parses through typed models that reject unknown or missing fields, row rules fail closed on malformed remotes, commits, or paths, and every fixture under `parity/fixtures/**/*.json` is validated per-file against the pins | Conforms |
 | Fixture wire-value fidelity | Every fixture payload value is a legal instance of the upstream schema its `sources` header cites, and each ref names the authoritative upstream producer symbol for the value it pins | Conforms |
 | Amount fixture roundtrip | Amount-shaped fixture strings parse through the shared `Amount` codec and round-trip byte-identically | Conforms |
-| Historical snapshot scope | Historical progress snapshots stay readable and unmodified while active preflight authority skips them by directory-prefix policy | Conforms |
+| Historical snapshot scope | Historical progress snapshots stay readable and unmodified; active preflight authority is scoped by glob to `parity/fixtures/**/*.json`, so anything outside that tree is outside its authority by construction | Conforms |
 | Binding source pins | The upstream Solidity repository each `cow-sdk-contracts` inline `alloy::sol!` binding mirrors is pinned by commit under `repositories:` in `parity/source-lock.yaml`; the bindings themselves are proven byte-for-byte by the fixtures' `sources` headers and crate parity tests rather than a per-file source mirror | Conforms |
-| Refresh mapping | The public audit-refresh map points source-lock changes and exclusion-policy changes back to this audit | Conforms |
+| Refresh mapping | The public audit-refresh map points `parity/source-lock.yaml` changes back to this audit | Conforms |
 
 ## Current Contract
 
@@ -170,15 +170,16 @@ canonical decimal form fails closed.
 ### Historical Snapshot Scope
 
 Historical progress snapshots are review history, not active lifecycle authority.
-They remain readable and unmodified while active preflight authority skips them by
-a maintained directory-prefix exclusion policy — auditable, free of fragile
-file-by-file suppression, with a single refresh point for future archive additions.
+They remain readable and unmodified. Active preflight authority is scoped by glob
+to `parity/fixtures/**/*.json` (the validator walks only that tree, in
+`xtask/src/parity/mod.rs`), so a snapshot kept outside the fixture tree is outside
+preflight authority by construction — no per-file suppression list is involved.
 
 ### Refresh Ownership
 
-`.github/config/audit-refresh-map.yml` maps source-lock changes and the named
-preflight exclusion policy to this audit. The public map records the review
-contract without exposing maintainer-only path names.
+`.github/config/audit-refresh-map.yml` maps `parity/source-lock.yaml` changes to
+this audit, with `cowdao-grants/cow-shed` as the watched upstream. The public map
+records the review contract directly from committed paths.
 
 ## Evidence
 

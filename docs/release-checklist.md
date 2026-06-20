@@ -32,9 +32,9 @@ output via `cargo check-alloy-provider-invariant` and
 rather than reading raw Cargo tree output directly.
 
 This command is guarded for drift by `cargo docs-agree`;
-any mismatch against `docs/verification.md`,
-`.github/workflows/_quality-gate.yml`, `CONTRIBUTING.md`, or
-`PROPERTIES.md` fails the `docs-agree-on-release-gates` CI job.
+any mismatch against `docs/verification.md`, `CONTRIBUTING.md`, or
+`PROPERTIES.md` fails the "Verify release-gate commands agree across docs
+and CI" step in the `_quality-gate.yml` "Repository policies" job.
 
 - The `_quality-gate.yml` lane enforces both the `alloy-*` workspace-pin
   same-minor invariant and the inner-workspace WASM pin diff against the
@@ -67,8 +67,9 @@ a published replacement exists.
 
 This command is guarded for drift by `cargo docs-agree`;
 any mismatch against `docs/verification.md` or the advisory tolerance
-register in `.github/config/deny.toml` fails the
-`docs-agree-on-release-gates` CI job.
+register in `.github/config/deny.toml` fails the "Verify release-gate
+commands agree across docs and CI" step in the `_quality-gate.yml`
+"Repository policies" job.
 
 ## 2. Documentation And Public API Gates
 

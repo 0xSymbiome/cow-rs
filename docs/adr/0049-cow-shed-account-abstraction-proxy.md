@@ -5,7 +5,7 @@
 - Last reviewed: 2026-06-15
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: cow-shed, account-abstraction, version-forwarding, proxy-derivation
-- Related: ADR 0008, [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md), [ADR 0022](0022-ecdsa-signature-v-normalization.md), [ADR 0050](0050-eip1271-signature-blob-encoding.md), [ADR 0051](0051-signing-owned-eip1271-signature-provider-trait.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+- Related: [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md), [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md), [ADR 0022](0022-ecdsa-signature-v-normalization.md), [ADR 0050](0050-eip1271-signature-blob-encoding.md), [ADR 0051](0051-signing-owned-eip1271-signature-provider-trait.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
 
 ## Context
 
@@ -37,7 +37,7 @@ latest. The Rust SDK must not mirror it.
 The COW Shed surface ships as the `cow_sdk_contracts::cow_shed` module, gated
 behind the off-by-default `cow-shed` feature of `cow-sdk-contracts` and exposed
 through the facade-level `cow-shed` feature as `cow_sdk::cow_shed`. It is an
-additive capability per ADR 0008
+additive capability per ADR 0001
 and never on the default `cow-sdk` dependency closure.
 
 **Version forwarding.** `CowShedVersion` has variants `V1_0_0` and `V1_0_1`
@@ -96,7 +96,7 @@ builder prevents the upstream silent-drop bug, and the regression test makes it
 checkable. Binding only the deployed v1.0.x surface keeps every shipped selector
 callable — the v2 pre-sign and forwarder families revert on the supported
 deployments, so binding them would ship functions that always fail. The negative
-edge against `cow-sdk-trading` keeps cow-shed an additive peer leaf per ADR 0008.
+edge against `cow-sdk-trading` keeps cow-shed an additive peer leaf per ADR 0001.
 
 ## Must Remain True
 
@@ -114,8 +114,8 @@ edge against `cow-sdk-trading` keeps cow-shed an additive peer leaf per ADR 0008
   duplicate).
 - Crate graph: `cargo metadata` proves the `cow-shed` feature closure excludes
   `cow-sdk-trading`, `cow-sdk-orderbook`, `cow-sdk-subgraph`, and `alloy-provider`.
-- Validation: the COW Shed contract-bindings and app-data-integration audits
-  cross-link this ADR and stay `Current` when the surface moves.
+- Validation: the COW Shed contract-bindings audit cross-links this ADR and
+  stays `Current` when the surface moves.
 
 ## Alternatives Rejected
 

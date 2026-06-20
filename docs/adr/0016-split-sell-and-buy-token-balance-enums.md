@@ -59,10 +59,12 @@ side-specific type on the right field.
   that assigning a `SellTokenSource` value into a
   `BuyTokenDestination`-typed field on `OrderData` fails to
   compile.
-- Cost: every shipped crate (`cow-sdk-core`, `cow-sdk-contracts`,
-  `cow-sdk-orderbook`, `cow-sdk-signing`, `cow-sdk-trading`,
-  `cow-sdk`) carries the side-specific type on its sell- and
-  buy-side fields. The `#[non_exhaustive]` discipline keeps the
+- Cost: every shipped crate that owns a sell- or buy-side DTO field
+  (`cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-orderbook`,
+  `cow-sdk-trading`) carries the side-specific type on
+  that field; `cow-sdk-signing` reads those typed fields through the
+  borrowed `OrderData` rather than declaring its own. The
+  `#[non_exhaustive]` discipline keeps the
   contract open to future minor wire additions without breaking
   downstream exhaustive matches.
 

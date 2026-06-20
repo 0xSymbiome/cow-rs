@@ -4,7 +4,7 @@
 - Date: 2026-05-06 (consolidated 2026-06-15)
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: alloy, provider, signer, adapter, native, eip712
-- Related: ADR 0008, [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0022](0022-ecdsa-signature-v-normalization.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0025](0025-workspace-url-redaction-convention.md), [ADR 0026](0026-alloy-major-release-absorption-plan.md), [ADR 0038](0038-transaction-lifecycle-types.md), [ADR 0068](0068-payload-only-typed-data-signing.md)
+- Related: [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0022](0022-ecdsa-signature-v-normalization.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0025](0025-workspace-url-redaction-convention.md), [ADR 0026](0026-alloy-major-release-absorption-plan.md), [ADR 0038](0038-transaction-lifecycle-types.md), [ADR 0068](0068-payload-only-typed-data-signing.md)
 - Consolidates: ADR 0036, ADR 0037
 
 ## Decision
@@ -38,13 +38,13 @@ enlarging the default facade dependency graph.
 - **SDK-owned surface.** Documented APIs expose `cow-sdk-core` domain types plus
   per-crate error, builder, and typestate types — never upstream Alloy provider,
   signer, transport, or `reqwest` values.
-- **`__seam`.** Each crate exposes a `#[doc(hidden)] pub mod __seam` so sibling
-  adapter crates can share conversion, transport-classification, and key-parsing
+- **`__seam`.** Each leaf crate exposes a `#[doc(hidden)] pub mod __seam` so the
+  umbrella can share conversion, transport-classification, and key-parsing
   helpers from a single source. It is not a semver-stable consumer API and may
   change in any minor release; the same posture covers the `from_alloy_*` error
   constructors.
-- **Native-only.** Wasm targets fail closed with a documented compile-time
-  diagnostic.
+- **Native-only.** Each crate `cfg`-excludes its entire surface on `wasm32`,
+  compiling to an empty library so wasm consumers fail at the unresolved import.
 - **Redaction.** Transport URLs are held in `Redacted<…>` and never reach `Debug`,
   `Display`, or serde output (ADR 0025).
 - **Error posture.** Each error enum is `#[non_exhaustive]`, classifies
