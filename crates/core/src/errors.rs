@@ -198,6 +198,22 @@ impl core::fmt::Display for ErrorClass {
     }
 }
 
+/// Maps a `serde_json` failure to its stable category tag.
+///
+/// Returns `"io"`, `"syntax"`, `"data"`, or `"eof"` — the label names the failure
+/// class without echoing any decoded bytes, so it is safe to surface on a redacted
+/// error (ADR 0025). The orderbook, contracts, and app-data crates share this one
+/// classifier on their `From<serde_json::Error>` conversions.
+#[must_use]
+pub fn serialization_error_category(error: &serde_json::Error) -> &'static str {
+    match error.classify() {
+        serde_json::error::Category::Io => "io",
+        serde_json::error::Category::Syntax => "syntax",
+        serde_json::error::Category::Data => "data",
+        serde_json::error::Category::Eof => "eof",
+    }
+}
+
 impl CoreError {
     /// Returns the coarse-grained [`ErrorClass`] for this error.
     #[must_use]

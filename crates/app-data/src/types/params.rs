@@ -301,7 +301,7 @@ impl AppDataParams {
     ///
     /// # Errors
     ///
-    /// Returns [`AppDataError::Json`] when a typed `flashloan` or `hooks`
+    /// Returns [`AppDataError::Serialization`] when a typed `flashloan` or `hooks`
     /// sub-field fails to serialize — which cannot happen for values produced
     /// through the public constructors and is surfaced only for the defensive
     /// path.

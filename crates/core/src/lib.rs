@@ -31,7 +31,7 @@ pub use config::{
     UrlParseFailureClass, canonical_orderbook_hosts, canonical_subgraph_hosts,
     default_api_base_urls, validate_external_service_url, wrapped_native_token,
 };
-pub use errors::{CoreError, ErrorClass, ValidationError};
+pub use errors::{CoreError, ErrorClass, ValidationError, serialization_error_category};
 pub use redaction::{
     REDACTED_PLACEHOLDER, REDACTED_RESPONSE_BODY_MAX_BYTES, RESPONSE_BODY_TRUNCATION_MARKER,
     Redacted, RedactedOptionalUrlMap, RedactedUrlMap, redact_response_body,

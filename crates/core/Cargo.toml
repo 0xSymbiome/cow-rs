@@ -38,6 +38,7 @@ http.workspace = true
 httpdate = { workspace = true, optional = true }
 pin-project-lite.workspace = true
 serde.workspace = true
+serde_json.workspace = true
 thiserror.workspace = true
 tokio-util.workspace = true
 tracing = { workspace = true, optional = true }
@@ -67,7 +68,6 @@ web-sys = { workspace = true, features = ["AbortController", "AbortSignal", "Hea
 cow-sdk-test-utils = { path = "../test-utils", features = ["proptest"] }
 num-bigint.workspace = true
 proptest.workspace = true
-serde_json.workspace = true
 syn.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread", "test-util", "time"] }
 trybuild.workspace = true

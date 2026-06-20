@@ -27,7 +27,7 @@ pub enum AppDataError {
     /// (ADR 0025); the `category`/`line`/`column` triple is the safe structural
     /// diagnostic, mirroring `cow_sdk_orderbook::OrderbookError::Serialization`.
     #[error("json error ({category}) at line {line} column {column}")]
-    Json {
+    Serialization {
         /// serde failure category: `"syntax"`, `"data"`, `"eof"`, or `"io"`.
         category: &'static str,
         /// 1-based line where decoding failed, or `0` when the position is unknown.
@@ -116,21 +116,11 @@ impl From<serde_json::Error> for AppDataError {
     /// document or response body, so it is intentionally dropped here
     /// (ADR 0025); only the `category`/`line`/`column` triple is retained.
     fn from(error: serde_json::Error) -> Self {
-        Self::Json {
-            category: serialization_error_category(&error),
+        Self::Serialization {
+            category: cow_sdk_core::serialization_error_category(&error),
             line: error.line(),
             column: error.column(),
         }
-    }
-}
-
-/// Maps a `serde_json` failure to its stable category tag.
-fn serialization_error_category(error: &serde_json::Error) -> &'static str {
-    match error.classify() {
-        serde_json::error::Category::Io => "io",
-        serde_json::error::Category::Syntax => "syntax",
-        serde_json::error::Category::Data => "data",
-        serde_json::error::Category::Eof => "eof",
     }
 }
 
@@ -147,8 +137,8 @@ impl AppDataError {
             | Self::TooLarge { .. } => ErrorClass::Validation,
             Self::Transport { .. } => ErrorClass::Transport,
             Self::Cancelled => ErrorClass::Cancelled,
-            // Json, Calculation, and partner-fee / flashloan validation failures
-            // plus any future additive variants classify as internal.
+            // Serialization, Calculation, and partner-fee / flashloan validation
+            // failures plus any future additive variants classify as internal.
             _ => ErrorClass::Internal,
         }
     }
@@ -172,12 +162,12 @@ impl Serialize for AppDataError {
             Self::MissingSchemaVersion => {
                 map.serialize_entry("type", "MissingSchemaVersion")?;
             }
-            Self::Json {
+            Self::Serialization {
                 category,
                 line,
                 column,
             } => {
-                map.serialize_entry("type", "Json")?;
+                map.serialize_entry("type", "Serialization")?;
                 map.serialize_entry("category", category)?;
                 map.serialize_entry("line", line)?;
                 map.serialize_entry("column", column)?;

@@ -599,5 +599,37 @@ fn every_documented_error_type_classifies_to_a_typed_variant() {
             !matches!(rejection, OrderbookRejection::Unknown { .. }),
             "documented tag `{tag}` fell back to Unknown; add a classify() arm and typed variant",
         );
+        // The wasm `errorType` projection reads the variant's serde tag — the
+        // single source mirroring `classify` — so it must round-trip back to the
+        // documented wire tag and never drift from services on the JS surface.
+        let projected = match serde_json::to_value(&rejection).expect("a rejection serializes") {
+            serde_json::Value::String(t) => t,
+            serde_json::Value::Object(fields) => fields
+                .into_iter()
+                .next()
+                .map(|(t, _)| t)
+                .expect("a tagged rejection object"),
+            other => panic!("unexpected serialization for `{tag}`: {other}"),
+        };
+        assert_eq!(
+            projected.as_str(),
+            tag,
+            "wasm errorType projection drift: `{tag}` serializes as `{projected}`",
+        );
     }
+}
+
+/// A services tag the SDK does not yet model classifies to
+/// [`OrderbookRejection::Unknown`] carrying its sanitized code; the wasm
+/// `errorType` projection emits that code, so a newly-introduced services tag
+/// still reaches the JS consumer as itself rather than the literal `"Unknown"`.
+#[test]
+fn unknown_rejection_projects_its_sanitized_code() {
+    let body = envelope_with_data("FutureServicesTag", "diagnostic", &json!({}));
+    let rejection = parse_rejection(StatusCode::BAD_REQUEST, &body)
+        .expect("an unmodelled tag still parses into a rejection");
+    let OrderbookRejection::Unknown { code, .. } = &rejection else {
+        panic!("an unmodelled tag must classify to Unknown, got {rejection:?}");
+    };
+    assert_eq!(code.as_str(), "FutureServicesTag");
 }

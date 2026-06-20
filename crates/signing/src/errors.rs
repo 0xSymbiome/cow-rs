@@ -66,8 +66,9 @@ impl SigningError {
         match self {
             Self::Core(error) => error.class(),
             Self::Cancelled => ErrorClass::Cancelled,
-            // Contracts, Serialization, Signer, SignerRejection, and
-            // UnsupportedSignerGeneratedScheme failures classify as signing.
+            // Contracts, Serialization, Signer, SignerRejection,
+            // UnsupportedSignerGeneratedScheme, and any future additive variant
+            // classify as the signing crate's signing bucket.
             _ => ErrorClass::Signing,
         }
     }
