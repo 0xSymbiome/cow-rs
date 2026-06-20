@@ -505,24 +505,6 @@ export interface ExecutedAmountsDto {
 }
 
 /**
- * Explicit raw GraphQL query input.
- */
-export interface SubgraphQueryInput {
-    /**
-     * Raw GraphQL document.
-     */
-    query: string;
-    /**
-     * Optional GraphQL variables.
-     */
-    variables?: Value;
-    /**
-     * Optional operation name.
-     */
-    operationName?: string;
-}
-
-/**
  * Fee component represented by an amount and a basis-point value.
  */
 export interface FeeComponentDto {

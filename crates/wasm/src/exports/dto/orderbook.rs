@@ -488,6 +488,7 @@ impl OrderCreationInput {
 }
 
 /// Pagination options shared by orderbook list helpers.
+#[cfg(feature = "orderbook")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
@@ -501,6 +502,7 @@ pub struct PaginationOptions {
 }
 
 /// Trades query accepted by `OrderBookClient.getTrades`.
+#[cfg(feature = "orderbook")]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]

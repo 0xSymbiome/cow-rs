@@ -110,6 +110,13 @@ snapshot layers lock complementary surfaces and are not redundant:
 - `snapshots/facade/` locks the public **class and function surface** of the
   TypeScript facade — method signatures, option objects, and disposal.
 
+A third contract, `wasm_facade_coverage_contract.rs`, locks the **relationship**
+between the two layers: every public raw symbol — client method, free function, and
+DTO type — must be exposed by the facade or carry a reasoned allowlist entry. Adding
+a `#[wasm_bindgen]` export without wiring it through `crates/wasm/npm/src/*.ts` then
+fails the build, so a binding can never reach the raw layer yet be absent from the
+published facade.
+
 Committing generated declarations is a deliberate choice: pure-`wasm-bindgen`
 projects typically regenerate them, but locking the published contract matches
 this SDK's parity-and-stability goal. The package export verification script

@@ -232,6 +232,7 @@ impl LimitTradeParametersInput {
 }
 
 /// Order transaction helper parameters.
+#[cfg(feature = "cancellation")]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]

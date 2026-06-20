@@ -281,6 +281,16 @@ export class TradingClient {
     return this.#call((client, merged) => client.buildApprovalTx(params, merged), options);
   }
 
+  buildWrapTx(amount: string): WasmEnvelope<raw.TransactionRequestDto> {
+    assertActive(this.#disposed);
+    return callSync(() => this.#inner.buildWrapTx(amount));
+  }
+
+  buildUnwrapTx(amount: string): WasmEnvelope<raw.TransactionRequestDto> {
+    assertActive(this.#disposed);
+    return callSync(() => this.#inner.buildUnwrapTx(amount));
+  }
+
   async getQuote(
     params: raw.SwapParametersInput,
     options?: SdkClientOptions | null
@@ -550,6 +560,10 @@ export function wasmVersion(): string {
   return callSync(() => raw.wasmVersion());
 }
 
+export function wrappedNativeToken(chainId: number): WasmEnvelope<raw.WrappedNativeTokenDto> {
+  return callSync(() => raw.wrappedNativeToken(chainId));
+}
+
 export type {
   AllowanceParametersInput,
   AmountsDto,
@@ -622,7 +636,8 @@ export type {
   TypedDataDomainDto,
   TypedDataEnvelopeDto,
   TypedDataFieldDto,
-  ValidationResultDto
+  ValidationResultDto,
+  WrappedNativeTokenDto
 } from "./raw/trading.js";
 export type {
   ContractReadCallback,

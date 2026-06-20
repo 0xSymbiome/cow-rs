@@ -41,7 +41,7 @@ bundler behavior.
 | Wallet/signer callbacks | Typed-data, EIP-1193, digest, and custom EIP-1271 callbacks are named, explicit, capability-scoped, and fail closed | Conforms |
 | HTTP callback transport | `JsCallbackHttpTransport` owns timeout, abort signal, internal callback retention, and typed error mapping | Conforms |
 | Event decoding | `decodeSettlementLog` / `decodeEthFlowLog` produce typed events with no network access and fail closed on malformed input | Conforms |
-| Type generation + snapshots | Cross-ABI DTOs are `tsify`-generated; one raw snapshot per flavor catches drift and asserts per-target agreement; map fields declare `Record<...>` to match the runtime shape | Conforms |
+| Type generation + snapshots | Cross-ABI DTOs are `tsify`-generated; one raw snapshot per flavor catches drift and asserts per-target agreement; a facade-coverage contract holds the hand-written facade in step with the raw surface; map fields declare `Record<...>` to match the runtime shape | Conforms |
 | Facade + API stability | Public imports resolve through compiled facade modules; raw wasm-bindgen output is package-internal and denied as a public import target | Conforms |
 | Schema versioning | Success envelopes carry `schemaVersion`; unknown variants round-trip behind a scoped `__unknown` sentinel; facade normalizes raw failures to `CowError` | Conforms |
 | Error posture | `WasmError` (aliased `CowError`) preserves typed redaction; input-DTO deserialization failures map to `invalidInput`, not `internal`; the `orderbook` variant carries `retryable` + optional `retryAfterMs` | Conforms |

@@ -85,6 +85,7 @@ impl From<&cow_sdk_core::ContractCall> for ContractCallDto {
 }
 
 /// Transaction request DTO returned by transaction builders.
+#[cfg(any(feature = "cancellation", feature = "trading"))]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
@@ -103,6 +104,7 @@ pub struct TransactionRequestDto {
     pub gas_limit: Option<String>,
 }
 
+#[cfg(any(feature = "cancellation", feature = "trading"))]
 impl From<&cow_sdk_core::TransactionRequest> for TransactionRequestDto {
     fn from(value: &cow_sdk_core::TransactionRequest) -> Self {
         Self {

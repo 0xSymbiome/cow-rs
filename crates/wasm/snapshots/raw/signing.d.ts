@@ -127,24 +127,6 @@ export interface Eip1193Request {
 }
 
 /**
- * Explicit raw GraphQL query input.
- */
-export interface SubgraphQueryInput {
-    /**
-     * Raw GraphQL document.
-     */
-    query: string;
-    /**
-     * Optional GraphQL variables.
-     */
-    variables?: Value;
-    /**
-     * Optional operation name.
-     */
-    operationName?: string;
-}
-
-/**
  * Generated order UID output.
  */
 export interface GeneratedOrderUidDto {
@@ -234,53 +216,6 @@ export interface OrderInput {
 export type OrderKindDto = "sell" | "buy";
 
 /**
- * Order transaction helper parameters.
- */
-export interface OrderTraderParametersInput {
-    /**
-     * Target order UID.
-     */
-    orderUid: string;
-    /**
-     * Optional chain-id override.
-     */
-    chainId?: number;
-    /**
-     * Optional environment override.
-     */
-    env?: string;
-    /**
-     * Optional settlement-contract overrides keyed by chain id.
-     *
-     * Typed as `Record` rather than `Map` because the runtime
-     * serializer emits a plain JavaScript object for `BTreeMap`
-     * fields; the override aligns the declaration with the runtime.
-     */
-    settlementContractOverride?: Record<string, string>;
-    /**
-     * Optional `EthFlow` contract overrides keyed by chain id.
-     *
-     * Typed as `Record` rather than `Map` for the same runtime
-     * alignment reason as `settlement_contract_override`.
-     */
-    ethFlowContractOverride?: Record<string, string>;
-}
-
-/**
- * Pagination options shared by orderbook list helpers.
- */
-export interface PaginationOptions {
-    /**
-     * Pagination offset.
-     */
-    offset?: number;
-    /**
-     * Pagination limit.
-     */
-    limit?: number;
-}
-
-/**
  * Raw EVM event log accepted by the on-chain event decoders.
  *
  * `topics` carries the indexed log topics as `0x`-prefixed 32-byte hex
@@ -334,71 +269,9 @@ export interface SignedOrderDto {
 }
 
 /**
- * Signed order-cancellation DTO.
- */
-export interface SignedCancellationsInput {
-    /**
-     * Order UIDs to cancel.
-     */
-    orderUids: string[];
-    /**
-     * Cancellation signature.
-     */
-    signature: string;
-    /**
-     * ECDSA signing scheme.
-     */
-    signingScheme: string;
-}
-
-/**
  * Token-balance mode accepted by wasm order inputs.
  */
 export type TokenBalanceDto = "erc20" | "external" | "internal";
-
-/**
- * Trades query accepted by `OrderBookClient.getTrades`.
- */
-export interface TradesQueryInput {
-    /**
-     * Owner filter. Set exactly one of `owner` or `orderUid`.
-     */
-    owner?: string;
-    /**
-     * Order UID filter. Set exactly one of `owner` or `orderUid`.
-     */
-    orderUid?: string;
-    /**
-     * Pagination offset.
-     */
-    offset?: number;
-    /**
-     * Pagination limit.
-     */
-    limit?: number;
-}
-
-/**
- * Transaction request DTO returned by transaction builders.
- */
-export interface TransactionRequestDto {
-    /**
-     * Destination address.
-     */
-    to?: string;
-    /**
-     * Hex-encoded calldata.
-     */
-    data?: string;
-    /**
-     * Native value.
-     */
-    value?: string;
-    /**
-     * Gas limit.
-     */
-    gasLimit?: string;
-}
 
 /**
  * Typed-data domain DTO.
