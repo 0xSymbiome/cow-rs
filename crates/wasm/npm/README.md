@@ -176,8 +176,9 @@ export default {
 
 For control over an order you build yourself, sign through an EIP-1193 wallet with
 `signOrderWithEip1193(order, chainId, owner, (rpc) => ethereum.request(rpc))`, or
-hand a typed-data method directly to `signOrderWithTypedDataSigner`. Both return a
-`SignedOrderDto` you submit with `OrderBookClient.sendOrder`.
+hand a typed-data method directly to `signOrderWithTypedDataSigner`. Both resolve
+to an envelope whose `result.value` is the `SignedOrderDto` you submit with
+`OrderBookClient.sendOrder`.
 
 ## The callback boundary
 
@@ -284,8 +285,9 @@ fields.
 
 ## Bundle size
 
-Built with release-size settings and a `wasm-opt -Oz` pass; measured on the
-current alpha build (gzip is the compressed-transfer figure):
+Built with release-size settings and a `wasm-opt -Oz` pass. The figures below are
+representative of an alpha build (gzip is the compressed-transfer figure); the
+binding contract is the per-build **Release gate** column, which CI enforces:
 
 | Flavor | Raw wasm | Brotli | Gzip | Release gate |
 | --- | ---: | ---: | ---: | --- |
@@ -299,9 +301,8 @@ source-phase module targets — the web glue's default URL, the module glue's
 `import source`, and the raw Worker module subpath all reuse the one bundler copy,
 so a flavor's gzip figure above is its size on every runtime. Each flavor's gzip
 size is enforced as a per-build byte budget within the current Cloudflare Workers
-Free compressed-size limit. End-to-end Workers support also depends on
-`wrangler deploy --dry-run` verification and a Worker startup-time gate, tracked
-separately.
+Paid/Bundled (~3 MB) compressed-size limit. End-to-end Workers behavior is exercised by the
+`workers-vitest` CI job, which runs the package against `vitest-pool-workers`.
 
 ## Not in this package
 

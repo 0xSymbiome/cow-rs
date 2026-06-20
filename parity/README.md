@@ -220,9 +220,8 @@ change, or a version bump fails at review time. Because schemas are versioned
 additively (a new version is a new file), the `cow-sdk` lock row also lists
 `watch_dirs` over the schema tree, so `cargo xtask parity drift` reports a newly
 added schema file the exact producer-path diff cannot see. Refresh the mirrors
-from the pinned `app-data` repository (the flash-loan mirror tracks the
-`services` producer instead — its header says so) when the drift report or a
-drift test flags a change.
+from the `cow-sdk` pin (its `packages/app-data/src/schemas` tree) when the drift
+report or a drift test flags a change.
 
 ## Command reference
 

@@ -75,8 +75,9 @@ let gnosis_totals = subgraph
 
 This crate is read-only analytics; it does not place, sign, or mutate orders. It
 requires a partner The Graph API key — there is no keyless route — and the key is
-redacted in every debug, display, and serialized rendering, including the gateway
-URL that embeds it (ADR 0025). Chains without a deployed subgraph (for example
+redacted in every debug, display, and serialized rendering. Production routing
+carries it in an `Authorization: Bearer` header against the key-free gateway URL,
+so it never enters the URL itself (ADR 0025). Chains without a deployed subgraph (for example
 Polygon, Avalanche, BNB, and Linea) return `SubgraphError::UnsupportedNetwork`
 rather than failing silently. Order placement, signing, and submission live in
 [`cow-sdk-trading`](https://crates.io/crates/cow-sdk-trading),

@@ -15,9 +15,10 @@ enum carries a `#[non_exhaustive]` variant for every published
 `errorType` tag the orderbook surfaces across order submission,
 quoting, cancellation, and price-estimation routes, plus a
 permanent tail variant `Unknown { code, message }` that preserves
-forward compatibility whenever a new tag ships. The single
-data-carrying variant `SellAmountDoesNotCoverFee { fee_amount:
-Amount }` lifts the typed payload through the same parser. The
+forward compatibility whenever a new tag ships. The only variant
+carrying a typed machine-readable data-field payload,
+`SellAmountDoesNotCoverFee { fee_amount: Amount }`, lifts that
+payload through the same parser. The
 public free function `parse_rejection(status: http::StatusCode,
 body: &[u8]) -> Option<OrderbookRejection>` exposes the same
 classification at the byte-slice level, and
@@ -47,8 +48,8 @@ on the happy diagnostic path.
 
 - Public surface: `OrderbookRejection` is `#[non_exhaustive]` and
   carries a typed variant for every published `errorType` tag the
-  orderbook surfaces. The tail variant `Unknown { code: String,
-  message: String }` is permanent and is the canonical home for any
+  orderbook surfaces. The tail variant `Unknown { code: OrderbookRejectionCode,
+  message: Redacted<String> }` is permanent and is the canonical home for any
   new tag the orderbook ships before the SDK adopts a typed
   variant. `parse_rejection(status, body) -> Option<OrderbookRejection>`
   classifies a raw `http::StatusCode` plus byte slice; it returns

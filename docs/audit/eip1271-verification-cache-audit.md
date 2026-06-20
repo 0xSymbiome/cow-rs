@@ -1,7 +1,7 @@
 # EIP-1271 Verification Cache Audit
 
 Status: Current
-Last reviewed: 2026-06-17
+Last reviewed: 2026-06-20
 Owning surface: the `cow-sdk-contracts` `Eip1271Cache` trait and always-available `NoopEip1271Cache` (both re-exported from `cow-sdk-signing::cache`), and the `InMemoryEip1271Cache` implementation shipped from `cow-sdk-signing::cache` behind the opt-in `in-memory-cache` feature
 Refresh trigger: Changes to the trait signature, the cache key, the caching policy (what is recorded and what is not), the `verify_eip1271_signature_cached` call shape, the verification tracing fields, the default TTL or capacity on the in-memory implementation, the clock injection seam, the platform time-source selection, the `in-memory-cache` feature gate, or the thread-safety posture; a new canonical implementation that ships in the workspace
 Related docs:
@@ -47,7 +47,7 @@ covered by its own contract).
 | Positive-only recording | Only a magic-value match (`Ok(())`) is recorded; a mismatch and every other error class are never recorded, so a `contains_valid` miss means "unknown", never "known invalid" | Conforms |
 | EOA miss posture | Verifiers with no contract code return a typed error and do not record anything | Conforms |
 | Pre-interaction scope | The verification helpers document that they do not simulate order pre-interactions before checking EIP-1271 signatures | Conforms |
-| Verification telemetry | `verify_eip1271_signature_cached` emits `verify.eip1271` tracing with cache, RPC, and final magic-value outcome fields | Conforms |
+| Verification telemetry | `verify_eip1271_signature_cached` emits `verify.eip1271` tracing whose child debug events use two field keys, `cache_status` and `verification_result`; RPC failures surface as `cache_status=skip` / `verification_result=error` rather than a separate field | Conforms |
 | Shipped implementations | `NoopEip1271Cache` (zero-sized, always miss, always available) and `InMemoryEip1271Cache` (bounded capacity, TTL-expiring, behind the `in-memory-cache` feature) | Conforms |
 | Default availability | The default build performs no memoized verification; the only in-tree caller passes `NoopEip1271Cache`, and the in-memory implementation is compiled only when `in-memory-cache` is enabled | Conforms |
 | Platform time source | `InMemoryEip1271Cache` defaults to wall-clock `Instant::now`, accepts an injected clock for deterministic TTL checks, and uses `web_time::Instant` on `wasm32` | Conforms |
@@ -119,12 +119,15 @@ seam before calling the helper.
 ### Verification Telemetry
 
 `verify_eip1271_signature_cached` carries a `verify.eip1271` tracing span
-under the `cow_sdk::verify_eip1271` target. The span records cache hit or
-miss state, chain-RPC dispatch outcome, and final magic-value match state
-without recording signature payload bytes or provider internals. Because
-the cache is positive-only, a `hit` is always a VALID outcome; a `store`
-is emitted only when a fresh probe verifies VALID; and a mismatch or
-error is reported as `skip` and is never recorded.
+under the `cow_sdk::verify_eip1271` target. The span declares only the
+`verifier` field; the cache and magic-value states are emitted as child
+debug events with two field keys, `cache_status` (`hit` / `miss` /
+`store` / `skip`) and `verification_result` (`valid` / `invalid` /
+`error`), and never record signature payload bytes or provider
+internals. Because the cache is positive-only, a `hit` is always a VALID
+outcome; a `store` is emitted only when a fresh probe verifies VALID; and
+a mismatch or any other error is reported as `skip` and is never
+recorded.
 
 ### Shipped Implementations
 

@@ -1,7 +1,7 @@
 # Deployment Registry Audit
 
 Status: Current
-Last reviewed: 2026-06-17
+Last reviewed: 2026-06-20
 Re-review by: 2026-08-02
 Owning surface: `cow-sdk-contracts` deployment registry
 Refresh trigger: Changes to the address constants in `crates/contracts/src/deployments.rs`, the upstream commit pins in `parity/source-lock.yaml`, the `registry-confirm` presence probe, or supported chains
@@ -31,8 +31,8 @@ It does not cover binding generation, partner API routing, arbitrary consumer RP
 | Runtime lookup matrix | Every supported `(ContractId, SupportedChainId, CowEnv)` tuple is either a typed deployed address or an explicit unsupported lookup without silent fallback | Conforms |
 | Live presence | A live `eth_getCode` probe confirms on-chain bytecode presence for every probed row | Conforms |
 | Release probe | `registry-confirm --mode release` confirms presence read-only, failing closed on a missing production-chain RPC or an absent deployment | Conforms |
-| Lens taxonomy split | `DeploymentChainId::Lens = 232` carries composable / COW-Shed rows but is absent from `SupportedChainId`, so orderbook clients cannot select it as a trading chain | Conforms |
-| Lens runtime exclusion | A one-time public Lens orderbook route probe recorded 404 responses on 2026-05-15, confirming Lens is deployment-only and not a runtime orderbook chain | Conforms |
+| Lens taxonomy split | `DeploymentChainId::Lens = 232` exists in the deployment taxonomy for the composable / COW-Shed families but is absent from `SupportedChainId`, so the registry holds no rows for it (`Registry::address` returns `None`) and orderbook clients cannot select it as a trading chain | Conforms |
+| Lens runtime exclusion | `SupportedChainId` omits Lens and `Registry::address` returns `None` for `DeploymentChainId::Lens`, so Lens is deployment-only and not a runtime orderbook chain | Conforms |
 
 ## Current Contract
 
@@ -58,8 +58,9 @@ does not include Lens, so orderbook clients cannot select it as a normal trading
 chain and unsupported or empty-code outcomes resolve to `None` rather than a
 deployed address. Lens registry addresses derive from the same per-repository
 upstream commit pins in `parity/source-lock.yaml` that anchor every other row.
-A one-time probe of the public Lens orderbook routes recorded 404 responses on
-2026-05-15, confirming Lens is deployment evidence, not runtime chain support.
+The source itself proves the exclusion: `SupportedChainId` omits Lens and
+`Registry::address` returns `None` for `DeploymentChainId::Lens`, so Lens is
+deployment evidence, not runtime orderbook chain support.
 
 ## Per-chain Provenance
 
@@ -80,17 +81,17 @@ pinned `cow-sdk` row, and the eth-flow family from the pinned
 
 | Chain | `SupportedChainId` variant | Numeric chain id | Deployment source | Services metadata | TypeScript SDK source | Wrapped native token | Last reviewed |
 | --- | --- | ---: | --- | --- | --- | --- | --- |
-| Ethereum Mainnet | `Mainnet` | 1 | `parity/source-lock.yaml` `contracts` row | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5075` | `packages/config/src/chains/const/chainIds.ts:21`; `README.md:19` | `0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2` (`crates/core/src/config/chains.rs:11`) | 2026-05-04 |
-| BNB Smart Chain | `Bnb` | 56 | `parity/source-lock.yaml` `contracts` row | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5083` | `packages/config/src/chains/const/chainIds.ts:27`; `README.md:20` | `0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c` (`crates/core/src/config/chains.rs:25`) | 2026-05-04 |
-| Gnosis Chain | `GnosisChain` | 100 | `parity/source-lock.yaml` `contracts` row | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5087` | `packages/config/src/chains/const/chainIds.ts:22`; `README.md:21` | `0xe91D153E0b41518A2Ce8Dd3D7944Fa863463a97d` (`crates/core/src/config/chains.rs:13`) | 2026-05-04 |
-| Polygon PoS | `Polygon` | 137 | `parity/source-lock.yaml` `contracts` row | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5091` | `packages/config/src/chains/const/chainIds.ts:26`; `README.md:22` | `0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270` (`crates/core/src/config/chains.rs:21`) | 2026-05-04 |
-| Base | `Base` | 8453 | `parity/source-lock.yaml` `contracts` row | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5095` | `packages/config/src/chains/const/chainIds.ts:24`; `README.md:23` | `0x4200000000000000000000000000000000000006` (`crates/core/src/config/chains.rs:17`) | 2026-05-04 |
-| Plasma | `Plasma` | 9745 | `parity/source-lock.yaml` `contracts` row | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5099` | `packages/config/src/chains/const/chainIds.ts:28`; `README.md:24` | `0x6100e367285b01f48d07953803a2d8dca5d19873` (`crates/core/src/config/chains.rs:27`) | 2026-05-04 |
-| Arbitrum One | `ArbitrumOne` | 42161 | `parity/source-lock.yaml` `contracts` row | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5103` | `packages/config/src/chains/const/chainIds.ts:23`; `README.md:25` | `0x82aF49447D8a07e3bd95BD0d56f35241523fBab1` (`crates/core/src/config/chains.rs:15`) | 2026-05-04 |
-| Avalanche C-Chain | `Avalanche` | 43114 | `parity/source-lock.yaml` `contracts` row | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5107` | `packages/config/src/chains/const/chainIds.ts:25`; `README.md:26` | `0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7` (`crates/core/src/config/chains.rs:23`) | 2026-05-04 |
-| Ink | `Ink` | 57073 | `parity/source-lock.yaml` `contracts` row | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5111` | `packages/config/src/chains/const/chainIds.ts:30`; `README.md:27` | `0x4200000000000000000000000000000000000006` (`crates/core/src/config/chains.rs:17`) | 2026-05-04 |
-| Linea | `Linea` | 59144 | `parity/source-lock.yaml` `contracts` row | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5115` | `packages/config/src/chains/const/chainIds.ts:29`; `README.md:28` | `0xe5d7c2a44ffddf6b295a15c148167daaaf5cf34f` (`crates/core/src/config/chains.rs:29`) | 2026-05-04 |
-| Sepolia (Ethereum testnet) | `Sepolia` | 11155111 | `parity/source-lock.yaml` `contracts` row | `services/contracts/generated/contracts-generated/gpv2settlement/src/lib.rs:5119` | `packages/config/src/chains/const/chainIds.ts:31`; `README.md:29` | `0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14` (`crates/core/src/config/chains.rs:19`) | 2026-05-04 |
+| Ethereum Mainnet | `Mainnet` | 1 | `parity/source-lock.yaml` `contracts` row | `parity/source-lock.yaml` `services` row | `parity/source-lock.yaml` `cow-sdk` row | `0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2` (`crates/core/src/config/chains.rs:11`) | 2026-05-04 |
+| BNB Smart Chain | `Bnb` | 56 | `parity/source-lock.yaml` `contracts` row | `parity/source-lock.yaml` `services` row | `parity/source-lock.yaml` `cow-sdk` row | `0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c` (`crates/core/src/config/chains.rs:18`) | 2026-05-04 |
+| Gnosis Chain | `GnosisChain` | 100 | `parity/source-lock.yaml` `contracts` row | `parity/source-lock.yaml` `services` row | `parity/source-lock.yaml` `cow-sdk` row | `0xe91D153E0b41518A2Ce8Dd3D7944Fa863463a97d` (`crates/core/src/config/chains.rs:12`) | 2026-05-04 |
+| Polygon PoS | `Polygon` | 137 | `parity/source-lock.yaml` `contracts` row | `parity/source-lock.yaml` `services` row | `parity/source-lock.yaml` `cow-sdk` row | `0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270` (`crates/core/src/config/chains.rs:16`) | 2026-05-04 |
+| Base | `Base` | 8453 | `parity/source-lock.yaml` `contracts` row | `parity/source-lock.yaml` `services` row | `parity/source-lock.yaml` `cow-sdk` row | `0x4200000000000000000000000000000000000006` (`crates/core/src/config/chains.rs:14`) | 2026-05-04 |
+| Plasma | `Plasma` | 9745 | `parity/source-lock.yaml` `contracts` row | `parity/source-lock.yaml` `services` row | `parity/source-lock.yaml` `cow-sdk` row | `0x6100e367285b01f48d07953803a2d8dca5d19873` (`crates/core/src/config/chains.rs:19`) | 2026-05-04 |
+| Arbitrum One | `ArbitrumOne` | 42161 | `parity/source-lock.yaml` `contracts` row | `parity/source-lock.yaml` `services` row | `parity/source-lock.yaml` `cow-sdk` row | `0x82aF49447D8a07e3bd95BD0d56f35241523fBab1` (`crates/core/src/config/chains.rs:13`) | 2026-05-04 |
+| Avalanche C-Chain | `Avalanche` | 43114 | `parity/source-lock.yaml` `contracts` row | `parity/source-lock.yaml` `services` row | `parity/source-lock.yaml` `cow-sdk` row | `0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7` (`crates/core/src/config/chains.rs:17`) | 2026-05-04 |
+| Ink | `Ink` | 57073 | `parity/source-lock.yaml` `contracts` row | `parity/source-lock.yaml` `services` row | `parity/source-lock.yaml` `cow-sdk` row | `0x4200000000000000000000000000000000000006` (`crates/core/src/config/chains.rs:14`) | 2026-05-04 |
+| Linea | `Linea` | 59144 | `parity/source-lock.yaml` `contracts` row | `parity/source-lock.yaml` `services` row | `parity/source-lock.yaml` `cow-sdk` row | `0xe5d7c2a44ffddf6b295a15c148167daaaf5cf34f` (`crates/core/src/config/chains.rs:20`) | 2026-05-04 |
+| Sepolia (Ethereum testnet) | `Sepolia` | 11155111 | `parity/source-lock.yaml` `contracts` row | `parity/source-lock.yaml` `services` row | `parity/source-lock.yaml` `cow-sdk` row | `0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14` (`crates/core/src/config/chains.rs:15`) | 2026-05-04 |
 
 ### Live Presence
 
@@ -104,8 +105,9 @@ read-only live probe confirms the claimed deployment actually exists on-chain.
 vault-relayer, and eth-flow — guards the RPC with `eth_chainId`, and asserts
 `eth_getCode` returns non-empty bytecode at the recorded address. It is
 non-mutating and fails closed on a missing production-chain RPC or an absent
-deployment. The last full run confirmed presence for all six registry rows
-across the 11 runtime-supported chains with zero failures.
+deployment. The release-readiness CI workflow runs this probe against live RPC
+endpoints for all six registry rows across the 11 runtime-supported chains and
+fails the gate if any probed row is absent.
 
 Per ADR 0032, committed code-hash confirmation is reserved for upgradeable
 deployments. The current contract set is non-upgradeable CREATE2 singletons whose
@@ -119,7 +121,7 @@ Primary implementation points:
 - `crates/contracts/src/deployments.rs`
 - `crates/core/src/config/chains.rs`
 - `parity/source-lock.yaml`
-- `xtask/src/registry_confirm.rs`
+- `xtask/src/parity/registry_confirm.rs`
 
 Primary regression coverage:
 

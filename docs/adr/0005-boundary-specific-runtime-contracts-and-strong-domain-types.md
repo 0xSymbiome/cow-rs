@@ -29,7 +29,7 @@ actual runtime seams.
   contracts. The HTTP transport seam has crossed into a production trait in
   `cow-sdk-core` (`HttpTransport`) adopted by the native `ReqwestTransport`
   default and the browser `FetchTransport` adapter. GraphQL dispatch adopted
-  the same `HttpTransport` seam (ADR 0019);
+  the same `HttpTransport` seam ([ADR 0013](0013-http-transport-injection-and-typestate-builders.md));
   no separate GraphQL transport trait exists.
 - Validation and review: conversions between user-domain, normalized, wire,
   and ABI forms stay explicit, test-backed, and documented. Order-like DTOs do

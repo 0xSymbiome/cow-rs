@@ -26,9 +26,8 @@ requires raw URL access to happen through explicit accessors at dispatch seams.
 - Public surface: public `Debug`, `Display`, and `Serialize` output for
   credential-bearing URL fields emits `[redacted]` for configured URL values
   while preserving map keys and unsupported-chain `None` markers.
-- Runtime and support: request dispatch, IPFS fetch, and
-  `wallet_addEthereumChain` payload construction continue to use the exact raw
-  URL bytes supplied by the caller through explicit accessors.
+- Runtime and support: request dispatch and IPFS fetch continue to use the
+  exact raw URL bytes supplied by the caller through explicit accessors.
 - Credential placement: where the protocol allows a credential to travel
   outside the URL, SDK-derived routing keeps it out of the URL rather than
   embedding it in a path or query. Subgraph production routing sends the partner

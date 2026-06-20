@@ -58,7 +58,9 @@ crates and is shown in
 [TypeScript-Callable WASM Surface](#typescript-callable-wasm-surface); the
 browser HTTP transport (`FetchTransport`) is a target-gated module of
 `cow-sdk-core`, the browser sibling of the native `ReqwestTransport`. The
-complete crate inventory is the [Crate Roles](#crate-roles) table below.
+full inventory of consumer-facing crates is the [Crate Roles](#crate-roles)
+table below (the internal, unpublished `cow-sdk-test-utils` helper crate is
+omitted).
 
 ## Crate Roles
 

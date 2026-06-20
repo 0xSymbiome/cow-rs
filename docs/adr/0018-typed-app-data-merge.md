@@ -86,9 +86,7 @@ the three defects unreachable without reintroducing an opaque
   rejection when an override shadows a reserved metadata key
   (`signer`, `hooks`, `flashloan`) with a value the typed extractor
   rejects, and the
-  `metadata.userConsents` array replacement. The typed merge pipeline
-  is exercised end-to-end by
-  `crates/trading/tests/app_data_merge_contract.rs`.
+  `metadata.userConsents` array replacement.
 - Cost: one public helper pair on `cow-sdk-trading`
   (`merge_and_seal_app_data` and `params_from_doc`), one
   extension to the private `merge_app_data_params` helper for the

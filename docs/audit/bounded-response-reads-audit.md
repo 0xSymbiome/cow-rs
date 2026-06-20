@@ -1,7 +1,7 @@
 # Bounded Response Reads Audit
 
 Status: Current
-Last reviewed: 2026-06-16
+Last reviewed: 2026-06-20
 Owning surface: HTTP transport response reads across `cow-sdk-core` (including its `transport::policy` module and the browser `FetchTransport` in its `transport::fetch` module), `cow-sdk-wasm`, and the signature decode path in `cow-sdk-contracts`
 Refresh trigger: changes to the transport read loops, the `max_response_bytes` policy field or its per-client defaults, the `ResponseTooLarge` classification, the signature hex bound, or the reqwest/web-sys decompression posture
 Related docs:
@@ -29,7 +29,7 @@ It does not cover request-body construction, the URL-redaction contract
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
 | Native transport read | Response and error bodies are streamed under `max_response_bytes` and refused past the limit | Conforms |
-| Decompression bomb | The bound is on decoded bytes, so an amplified body is refused on its decoded size | Conforms |
+| Decompression bomb | When the build enables reqwest gzip decompression, the bound is on decoded bytes, so an amplified body is refused on its decoded size | Conforms (with decompression enabled) |
 | Browser and JS-callback reads | A post-receipt bound refuses oversized bodies the JS layer materialized | Conforms |
 | Per-client defaults | Untrusted gateways carry tighter bounds than the trusted orderbook | Conforms |
 | Retry posture | An over-limit outcome is classified non-retryable | Conforms |
@@ -48,9 +48,14 @@ non-UTF-8 body is handled without a new rejection path.
 
 ### Decompression bomb
 
-Because reqwest decompresses before yielding chunks, the bound observes the
-decoded size: a small compressed body that decodes far past the limit is refused
-on its decoded size, not its compressed size.
+When the consuming build enables reqwest's `gzip` feature, reqwest decompresses
+before yielding chunks, so the bound observes the decoded size: a small
+compressed body that decodes far past the limit is refused on its decoded size,
+not its compressed size. The `cow-sdk` umbrella gets this via the orderbook and
+subgraph clients, which enable `gzip`; a `cow-sdk-core`-only consumer of the
+exported `ReqwestTransport` builds without `gzip`, so reqwest yields the raw
+compressed bytes and the bound applies to the compressed size instead. This is
+the only sound bound when transparent decompression is enabled.
 
 ### Browser and JS-callback reads
 
@@ -63,7 +68,8 @@ SDK's view — is documented.
 
 The orderbook and trading clients use the generous workspace default; the
 untrusted subgraph gateway uses a tighter default; the IPFS app-data read uses a
-bound sized to the protocol app-data document limit. All values are
+bound sized at twice the protocol app-data document limit (16 KiB against the
+8 KiB `APP_DATA_MAX_BYTES`). All values are
 instance-scoped policy and caller-overridable. The transport-policy builder
 refines a caller-set client policy in place, so a caller-tightened
 `max_response_bytes` — and a deliberately disabled timeout — survives a later

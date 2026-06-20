@@ -199,4 +199,4 @@ signing path consumes the cow `TypedDataDomain` struct directly; the cow
 struct emits the canonical EIP-1193 `eth_signTypedData_v4` wire shape
 through its own `Serialize` impl and bridges to
 `alloy_sol_types::Eip712Domain` at the EIP-712 hashing seam through the
-`to_alloy_domain()` adapter at `crates/alloy-signer/src/conversion.rs`.
+`to_alloy_domain()` adapter at `crates/core/src/traits/typed_data.rs`.

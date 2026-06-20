@@ -46,7 +46,7 @@ bundler behavior.
 | Schema versioning | The success envelope carries `schemaVersion`; thrown errors do not (the error `__unknown` sentinel round-trips its `raw` payload un-versioned); the facade normalizes raw failures to a `CowError` | Conforms |
 | Error posture | The Rust `WasmError` projects to a `CowError` `Error` subclass (`instanceof`, exported `isCowError` / `normalizeError` / `isUserRejection` / `withRetry`) that preserves typed redaction; input-DTO deserialization failures map to `invalidInput`, not `internal`; the `orderbook` variant carries the services `errorType` tag, `retryable`, and optional `retryAfterMs` | Conforms |
 | Performance budget | Flavor builds expose feature-scoped subpaths; release artifacts run the size profile + wasm opt pass; raw/brotli/gzip budgets are recorded and gated, with a dedicated Cloudflare gzip budget | Conforms |
-| Unsupported targets | Native Alloy adapter crates and the `alloy`/`alloy-provider`/`alloy-signer` facade features fail closed on `wasm32` with a compile-time diagnostic, CI-asserted | Conforms |
+| Unsupported targets | Native Alloy adapter crates compile to empty crates on `wasm32`; the `cow-sdk` `alloy`/`alloy-provider`/`alloy-signer` facade features fail closed there with a compile-time diagnostic, CI-asserted | Conforms |
 | Browser runner determinism | Browser lanes provision headless Firefox via pinned setup actions (pinned geckodriver, `latest-esr` Firefox); tests use in-test state + serde round trips | Conforms |
 
 ## Current Contract
@@ -140,11 +140,14 @@ matches the runtime shape. Decoded event DTOs are internally tagged unions
 
 One committed raw declaration per flavor under `crates/wasm/snapshots/raw/`
 represents the public TypeScript contract. wasm-bindgen emits a byte-identical
-`.d.ts` for every wasm-pack target of a flavor (the type surface is
+`.d.ts` for the `bundler` and `nodejs` targets of a flavor (the type surface is
 loader-independent; only the JS loader glue and `.wasm` packaging differ), so
-the workflow diffs every target's generated declaration against the single
+the workflow diffs those targets' generated declarations against the single
 per-flavor snapshot — detecting export drift and asserting the targets agree,
-failing closed on any future per-target divergence. Declarations using
+failing closed on any future per-target divergence. The `web` target adds only
+wasm-bindgen's standard module-init scaffolding (`InitInput`/`InitOutput`/
+`initSync`/the default initializer) and is intentionally skipped; its public
+`initialize` contract is pinned by the facade snapshot instead. Declarations using
 `[Symbol.dispose]` must include the `esnext.disposable` reference. Facade
 snapshots under `crates/wasm/snapshots/facade/` are checked separately so
 generated implementation classes do not become the published contract.
@@ -160,9 +163,10 @@ misclassification.
 
 The package exposes named, capability-scoped callbacks rather than raw provider
 objects: `TypedDataSignerCallback`, `Eip1193RequestCallback`,
-`DigestSignerCallback`, `CustomEip1271Callback`, and `CowFetchCallback`; each
-receives a typed payload/request DTO and may return a value, Promise, or
-thenable. Each signing/cancellation function requests only the callback it needs.
+`DigestSignerCallback`, `CustomEip1271Callback`, `CowFetchCallback`, and the
+trading-flavor `ContractReadCallback` (the read-only `eth_call` used by the
+allowance read); each receives a typed payload/request DTO and may return a
+value, Promise, or thenable. Each signing/cancellation function requests only the callback it needs.
 When a cow identity newtype (`Address`, `Hash32`, `AppDataHash`, `HexData`,
 `OrderUid`) or the `Amount` newtype crosses the boundary, the ABI shape is the
 canonical lowercase `0x`-hex string (identity) or strict-decimal string
@@ -209,18 +213,20 @@ reuse the bundler copy. Release artifacts run through the size-oriented
 release profile and a wasm optimization pass during package generation. The npm
 README records current raw, brotli, gzip, and gate values per flavor. Each
 flavor's gzip budget is an explicit byte budget below Cloudflare's published
-Workers Free compressed-size limit (safety margin avoids MB/MiB ambiguity). End-to-end Cloudflare support additionally depends on
+Workers Paid/Bundled (~3 MB) compressed-size limit (safety margin avoids MB/MiB ambiguity). End-to-end Cloudflare support additionally depends on
 `wrangler deploy --dry-run` release-bundle verification and a Worker
 startup-time gate against the 1-second startup limit, tracked separately.
 
 ### Unsupported-target diagnostics
 
 Each native Alloy adapter crate (`cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`,
-`cow-sdk-alloy`) fails closed on `wasm32` with a compile-time diagnostic, and
-enabling any of the `cow-sdk` facade features `alloy`, `alloy-provider`, or
-`alloy-signer` on `wasm32-unknown-unknown` fails with the documented native-only
-message. CI asserts all three facade features fail on wasm and treats a
-successful wasm build as a failure. The documented browser path for wallet
+`cow-sdk-alloy`) gates all of its contents behind `#[cfg(not(target_arch =
+"wasm32"))]`, so on `wasm32` it compiles cleanly to an empty crate; the
+compile-time native-only diagnostic is emitted by the `cow-sdk` facade
+(`crates/sdk/src/lib.rs`) when any of its `alloy`, `alloy-provider`, or
+`alloy-signer` features are enabled on `wasm32-unknown-unknown`. CI asserts all
+three facade features fail on wasm and treats a successful wasm build as a
+failure. The documented browser path for wallet
 signing is the `cow-sdk-wasm` EIP-1193 callback surface plus consumer-supplied
 EIP-1193 provider reads. Residual risk: future upstream Alloy releases may add
 browser-compatible provider components; until a separate browser-provider design
@@ -274,13 +280,14 @@ covered through `postSwapOrder`, `postSwapOrderFromQuote`, and `getQuote`).
 
 ### Runtime support and open questions
 
-Browser bundlers (`default-http-supported`), Node.js 22/24 LTS and Cloudflare
-Workers (`callback-http-tested`) are claimed and CI-evidenced. Deno is
-supported through the shipped web build — every flavor ships one (the same web
-target as Cloudflare Workers), exercised in CI via `./trading/edge` — with the
-runtime-neutral `CowFetchCallback`. Bun, Vercel Edge, and Fly.io remain
-`best-effort` until dedicated fixtures and CI evidence exist; they share the same
-web build.
+Browser bundlers (`default-http-supported`), Node.js 24 LTS (the engines floor
+is Node 22) and Cloudflare Workers (`callback-http-tested`) are claimed and
+CI-evidenced. The shared web
+build itself is CI-exercised through the Cloudflare Workers fixture (via the
+`./trading/edge` subpath). Deno reuses that same web build — every flavor ships
+one — with the runtime-neutral `CowFetchCallback`, but has no dedicated Deno CI
+fixture. Deno, Bun, Vercel Edge, and Fly.io therefore remain `best-effort` until
+dedicated fixtures and CI evidence exist; they share the same web build.
 
 ## Evidence
 
@@ -351,6 +358,7 @@ node crates/wasm/npm/scripts/verify-facade-denylist.mjs
 node crates/wasm/npm/scripts/measure-wasm-size.mjs
 bash crates/wasm/npm/scripts/verify-package-resolution.sh
 pnpm --dir crates/wasm/npm test
-pnpm --dir e2e/wasm-typescript test
+pnpm --dir e2e/wasm-typescript run test:vitest
+pnpm --dir e2e/wasm-typescript run test:playwright
 pnpm --dir e2e/wasm-typescript-cf test
 ```

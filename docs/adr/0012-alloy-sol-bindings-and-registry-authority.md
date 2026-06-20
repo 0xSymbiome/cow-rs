@@ -5,7 +5,7 @@
 - Last reviewed: 2026-06-15
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: contracts, bindings, abi, registry, deployments
-- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), ADR 0008, [ADR 0032](0032-deployment-authority-machine-readable-provenance.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md), [ADR 0054](0054-onchain-order-event-decoding-is-fail-closed.md)
+- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0032](0032-deployment-authority-machine-readable-provenance.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md), [ADR 0054](0054-onchain-order-event-decoding-is-fail-closed.md)
 
 ## Decision
 

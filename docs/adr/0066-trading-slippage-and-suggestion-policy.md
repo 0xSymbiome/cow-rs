@@ -47,9 +47,10 @@ rest of the ecosystem; it is not cow-rs's place to diverge from it.
   `cowprotocol/services` `quoter.rs` fee accounting and `order_validation.rs`
   market-price invariant must satisfy.
 - `@cowprotocol/cow-sdk` is the convention's reference implementation (prior
-  art). It is not a pinned parity source in `parity/source-lock.yaml`; the wire,
-  fee, and validity authority is `cowprotocol/services`.
-- The implementation lives in `crates/trading/src/slippage/`. The signed-order
+  art). It is now a pinned parity source in `parity/source-lock.yaml` (app-data
+  schemas plus the protocol-fee composition goldens); the wire, fee, and
+  validity authority remains `cowprotocol/services`.
+- The implementation lives in `crates/trading/src/slippage.rs`. The signed-order
   amount math (slippage transform, network/protocol/partner-fee folding, and the
   `Math.floor`/`Math.round` fixed-point truncation) is byte-for-byte identical to
   the reference SDK. The slippage-suggestion heuristics implement the same

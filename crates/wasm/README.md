@@ -86,9 +86,9 @@ bundlers adopt source-phase — and is opt-in today (Node 24, Deno, esbuild).
 Each flavour emits one wasm binary across its bundler, Node, web, and module
 targets — the web glue's default loader URL and the module glue's `import source`
 both repoint at the single bundler copy. The release pipeline enforces a per-build
-gzip byte budget against the Cloudflare Workers Free compressed-size limit; full
-Workers support additionally depends on `wrangler deploy --dry-run` verification and
-a Worker startup-time gate. The consumer-facing runtime-support matrix and
+gzip byte budget against the Cloudflare Workers Paid/Bundled (~3 MB) compressed-size limit, and
+a `workers-vitest` job runs the Cloudflare end-to-end suite under
+`@cloudflare/vitest-pool-workers`. The consumer-facing runtime-support matrix and
 quickstarts are in the npm package README.
 
 ## TypeScript Declarations

@@ -1,12 +1,11 @@
 # HTTP Transport Contract Audit
 
 Status: Current
-Last reviewed: 2026-06-17
+Last reviewed: 2026-06-20
 Owning surface: `cow-sdk-core::HttpTransport` trait and the `ReqwestTransport` (native) and `FetchTransport` (browser) default adapters, including the sole-dispatch contract that binds every live REST or GraphQL call from `cow-sdk-orderbook` and `cow-sdk-subgraph` to the injected transport
-Refresh trigger: Trait signature, method set, or dyn-compatibility posture changes on `HttpTransport`; changes to the `TransportResponse` success type or its accessor set; changes to `TransportError` or `TransportErrorClass`; changes to the `TransportError::HttpStatus` shape; changes to the URL-stripping contract on either default adapter; any change to the shared `run_with_retry` driver's backoff schedule, jitter policy, retry tracing events, `Retry-After` honor contract, the `Retry-After` IMF-fixdate civil-day arithmetic, or the `system_now` wall clock; a new shipped adapter crate that adopts the trait; any change that lets a live REST or GraphQL call from `OrderbookApi` or `SubgraphApi` bypass `self.transport`
+Refresh trigger: Trait signature, method set, or dyn-compatibility posture changes on `HttpTransport`; changes to the `TransportResponse` success type or its accessor set; changes to `TransportError` or `TransportErrorClass`; changes to the `TransportError::HttpStatus` shape; changes to the URL-stripping contract on either default adapter; any change to the shared `run_with_retry` driver's backoff schedule, jitter policy, retry tracing events, `Retry-After` honor contract, the `Retry-After` HTTP-date parsing and Unix-timestamp conversion, or the `system_now` wall clock; a new shipped adapter crate that adopts the trait; any change that lets a live REST or GraphQL call from `OrderbookApi` or `SubgraphApi` bypass `self.transport`
 Related docs:
-- [ADR 0013](../adr/0013-http-transport-injection-and-typestate-builders.md)
-- [ADR 0019](../adr/0019-http-transport-sole-dispatch.md)
+- [ADR 0013](../adr/0013-http-transport-injection-and-typestate-builders.md) (the sole-dispatch invariant of the superseded ADR 0019 is folded in here)
 - [ADR 0041](../adr/0041-transport-policy-l3-layering.md)
 - [ADR 0033](../adr/0033-minimum-viable-panic-surface.md)
 - [Transport](../transport.md)
@@ -63,7 +62,7 @@ section below.
 | Error classifier | `NetworkErrorKind::from_transport_error_class` is total across every `TransportErrorClass` variant including `Redirect`/`Upgrade` through the wildcard arm; the optional reqwest classifier maps real `reqwest::Error` shapes into the same partition | Conforms |
 | Retry driver | `run_with_retry` returns on the first `Success`, backs off and retries a retryable status or transport signal until `max_attempts`, returns the terminal error on a non-retryable signal without re-dispatching, and surfaces the last error on exhaustion; the backoff sequence matches the policy schedule | Conforms |
 | Wall clock | `system_now` returns a real wall-clock `SystemTime` on native and `wasm32` without reading `SystemTime::now`, so an HTTP-date `Retry-After` evaluates against current time on both targets and the retry path never aborts a browser runtime | Conforms |
-| Panic-free posture | The `Retry-After` HTTP-date path delegates to `httpdate::parse_http_date`, which surfaces malformed input as a typed `Err` rather than a panic, so an attacker-controlled header cannot panic the retry loop; the panic-allowlist entries on `jitter.rs::bounded_offset` and the `config.rs` static-UA constructors stay justified | Conforms |
+| Panic-free posture | The `Retry-After` HTTP-date path delegates to `httpdate::parse_http_date`, which surfaces malformed input as a typed `Err` rather than a panic, so an attacker-controlled header cannot panic the retry loop; the panic-allowlist entries on `jitter.rs::bounded_offset`, the `config.rs` static-UA constructors, `retry.rs::RetryPolicy::base_backoff_delay`, and `time.rs::sleep` stay justified | Conforms |
 
 ## Current Contract
 
@@ -101,7 +100,8 @@ requires the server to opt in through `Access-Control-Expose-Headers`.
 
 `TransportError::Transport { class, detail }` pairs a categorical
 `TransportErrorClass` tag (`Timeout`, `Connect`, `Redirect`, `Decode`,
-`Body`, `Builder`, `Request`, `Status`, `Upgrade`, `Other`) with a redacted
+`Body`, `Builder`, `Request`, `Status`, `Upgrade`, `ResponseTooLarge`,
+`Other`) with a redacted
 detail string. `TransportError::Configuration { message }` captures
 builder-time failures that prevent a request from dispatching.
 `TransportError::HttpStatus { status, headers, body }` captures a
@@ -155,10 +155,11 @@ retry loop for the orderbook, subgraph, and IPFS clients. It reads
 accepts both delta-seconds and HTTP-date forms, parse failures fall back to
 the local exponential backoff schedule, and successful parses hold the retry
 loop for the larger of the jittered local backoff and the server-supplied
-cooldown. The HTTP-date branch performs its civil-day arithmetic in `i64` so
-an attacker-controlled year value cannot panic the retry loop through integer
-overflow; out-of-range timestamps fall back to local backoff through the
-documented `checked_mul` guard. The "now" reference is the target-neutral
+cooldown. The HTTP-date branch delegates date parsing to `httpdate::parse_http_date`
+and converts the parsed instant to a Unix timestamp through the
+`Option`-returning `unix_timestamp` helper (a checked `i64` `try_into`), so an
+attacker-controlled year value cannot panic the retry loop; an out-of-range
+timestamp yields `None` and falls back to the local backoff path. The "now" reference is the target-neutral
 `system_now` wall clock, so an HTTP-date `Retry-After` evaluates against the
 current time on both native and `wasm32` targets without the standard clock's
 wasm abort. `RetryPolicy::with_jitter` accepts an explicit `JitterStrategy`;

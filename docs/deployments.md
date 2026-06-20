@@ -4,8 +4,8 @@ This page explains how `cow-rs` resolves deployed contract addresses.
 
 ## Single Authority
 
-Every deployed-address lookup in the workspace routes through one typed
-registry:
+Every GPv2 settlement, vault-relayer, and eth-flow address lookup routes
+through one typed registry:
 
 ```rust
 use cow_sdk::contracts::{ContractId, Registry};
@@ -25,9 +25,12 @@ assert_ne!(
 `Registry::address` returns the deployed address for a
 `(ContractId, chain, env)` triple, or `None` when the contract is not
 deployed on that chain. Resolving an address is a pure in-memory lookup; the
-SDK never dispatches a network call on behalf of `Registry::address`. Shipped
-leaf crates resolve through the registry rather than reading chain-scoped
-address constants directly.
+SDK never dispatches a network call on behalf of `Registry::address`. For
+these contracts, shipped leaf crates resolve through the registry rather than
+reading chain-scoped address constants directly. The COW-Shed factory,
+implementation, and proxy addresses live outside the registry: they are
+resolved by version-keyed const fns and CREATE2 derivation in
+`cow-sdk-contracts` (`cow_shed::address`).
 
 ## Deployment Taxonomy
 

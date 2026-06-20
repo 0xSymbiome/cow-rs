@@ -76,8 +76,10 @@ set before a live client exists.
   construction paths and excludes wasm transports.
 - Expose one free-function constructor: shorter, but loses compile-time
   coverage for missing required inputs.
-- Put browser transport in `cow-sdk-core`: smaller surface, but pulls
-  wasm-bindgen concerns into native consumers.
+- Extract a separate per-target transport crate: cleaner boundary on paper,
+  but the default transports already live in `cow-sdk-core` gated by target
+  cfgs (per ADR 0010), so native builds carry no wasm-bindgen deps and an
+  extra crate buys nothing.
 
 ## Links
 
@@ -85,7 +87,7 @@ set before a live client exists.
 - [Transport](../transport.md)
 - [Performance](../performance.md)
 - [Verification Guide](../verification.md)
-- See also: ADR 0023, ADR 0030, ADR 0039, and ADR 0041.
+- See also: ADR 0030, ADR 0039, and ADR 0041.
 
 **Proven by:**
 

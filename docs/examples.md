@@ -56,7 +56,7 @@ equivalent feature subsets. Use the examples below when you are integrating
 the TypeScript-callable WASM package from JavaScript or TypeScript runtimes
 for specialized cases — deterministic Rust signing parity, single-source-of-
 truth Rust + TypeScript embedding, or Cloudflare Workers (size-compatible
-with the current Workers Free compressed-size limit at the time of
+with the current Workers Paid/Bundled (~3 MB) compressed-size limit at the time of
 measurement; the `trading` flavour's edge build is built and tested end-to-end
 in CI (Workers Vitest), within the Workers compressed-size budget).
 

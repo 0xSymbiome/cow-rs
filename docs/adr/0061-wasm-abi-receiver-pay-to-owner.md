@@ -5,7 +5,7 @@
 - Last reviewed: 2026-05-31
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: wasm, abi, order-construction, receiver
-- Related: [ADR 0020](0020-ethflow-owner-threading.md), [ADR 0059](0059-hash-concrete-orderdata-directly.md), ADR 0047
+- Related: [ADR 0020](0020-ethflow-owner-threading.md), [ADR 0059](0059-hash-concrete-orderdata-directly.md), [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md)
 
 ## Decision
 

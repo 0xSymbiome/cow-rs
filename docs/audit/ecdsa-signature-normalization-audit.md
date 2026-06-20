@@ -1,7 +1,7 @@
 # ECDSA Signature Normalization Audit
 
 Status: Current
-Last reviewed: 2026-05-28
+Last reviewed: 2026-06-20
 Owning surface: `cow_sdk_contracts::RecoverableSignature` and
 `Signature::recover_ecdsa_address`
 Refresh trigger: Changes to the accepted ECDSA recovery-byte set, the
@@ -129,7 +129,7 @@ cargo test -p cow-sdk-contracts --test signature_contract
 cargo test -p cow-sdk-contracts --test recoverable_signature_contract
 cargo test -p cow-sdk-contracts --test v_normalization_contract
 cargo test -p cow-sdk-contracts --test property_contract
-cargo test -p cow-sdk-signing --test parity_contract
+cargo test -p cow-sdk-signing --test order_signing_contract
 # build and run each fuzz target above, e.g.:
 cargo +nightly fuzz run --fuzz-dir fuzz fuzz_ecdsa_v_normalization -- -runs=65536
 ```

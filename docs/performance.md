@@ -84,7 +84,7 @@ pipeline after optimization. The gate values are enforced per flavor so the
 default and Worker surfaces cannot grow silently. Every flavour emits one wasm
 binary shared across its bundler, nodejs, web, and module targets, so the figure
 above is its size on every runtime; the `trading` flavour's gzip budget tracks
-Cloudflare's published Workers Free compressed-size limit at the time of
+Cloudflare's published Workers Paid/Bundled (~3 MB) compressed-size limit at the time of
 measurement, and the byte budget avoids MB / MiB ambiguity against the external
 platform contract.
 
@@ -125,12 +125,11 @@ crate in the matrix.
 
 ## Zero-Copy Call Data
 
-Settlement, interaction, and swap encoder outputs hold their call-data payload
-as `bytes::Bytes`. Reference-counted cloning means fanning the same encoded
-payload across multiple settlement candidates no longer reallocates, which
-matters most inside tight solver-evaluation loops. Public JSON wire
-serialisation remains a `0x`-prefixed hexadecimal string, so the storage change
-is invisible to downstream consumers.
+The `Interaction.call_data` field holds its calldata payload as
+`alloy_primitives::Bytes`. Reference-counted cloning means fanning the same
+encoded payload across multiple settlement candidates no longer reallocates.
+Public JSON wire serialisation remains a `0x`-prefixed hexadecimal string, so the
+storage choice is invisible to downstream consumers.
 
 ## Address Equality
 

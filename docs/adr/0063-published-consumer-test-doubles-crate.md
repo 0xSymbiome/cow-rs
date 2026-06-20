@@ -5,7 +5,7 @@
 - Last reviewed: 2026-06-12
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: testing, crate-boundary, public-api, feature-gating, panic
-- Related: ADR 0007, [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md), [ADR 0033](0033-minimum-viable-panic-surface.md), [ADR 0062](0062-internal-shared-test-support-crate.md)
+- Related: [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md), [ADR 0033](0033-minimum-viable-panic-surface.md), [ADR 0062](0062-internal-shared-test-support-crate.md)
 
 ## Decision
 
@@ -34,7 +34,8 @@ outside the workspace.
 ## Must Remain True
 
 - Public surface: `cow-sdk-test` is `publish = true` and depends only on
-  published cow crates plus `async-trait`; it never depends on the
+  published cow crates, `async-trait`, and the confined crypto/serde deps named
+  below; it never depends on the
   `publish = false` `cow-sdk-test-utils` of ADR 0062, because a published crate
   cannot normal-depend on an unpublished one. It is built strictly on the public
   trait surface — no private or internal APIs.
@@ -43,8 +44,9 @@ outside the workspace.
   facade contract unchanged; the doubles reach a build only through
   `[dev-dependencies]`, so test code cannot enter a production dependency graph.
   Doubles are instance-scoped (ADR 0006) and hold no credentials (ADR 0025).
-  Native `Send` doubles ship first; a `wasm32` (`?Send`) variant is an additive
-  follow-on behind a feature.
+  The `OrderbookClient` double carries both arms today, target-cfg selected:
+  native gets the `Send` `async_trait` and `wasm32` gets the `?Send` variant,
+  with no Cargo feature gating the choice.
 - Validation and review: as a published crate it is part of the panic-free
   shipped surface of ADR 0033 — canned defaults are built through infallible
   constructors with no `unwrap`/`expect`/`panic!` and no allowlist carve-out.
@@ -63,7 +65,8 @@ outside the workspace.
   case). The fixed-signature overrides (`MockSignerBuilder::typed_data_signature`
   / `message_signature`) remain for error-path and wire-shape tests.
 - Confined crypto: the added dependencies are the pure `alloy-dyn-abi` typed-data
-  hasher, `k256`, `cow-sdk-contracts`, and `alloy-primitives` — none keystore-capable.
+  hasher, `k256`, `cow-sdk-contracts`, `alloy-primitives`, and `serde_json` — none
+  keystore-capable.
   `alloy-signer-local` stays confined to the alloy-adapter crates, so the workspace
   no longer dev-depends on `cow-sdk-alloy-signer` outside those crates and the
   dependency-isolation gate covers the full dev-edge-inclusive graph.

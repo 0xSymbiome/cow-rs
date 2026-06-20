@@ -1,9 +1,9 @@
 # Workflow Security Audit
 
 Status: Current
-Last reviewed: 2026-06-16
+Last reviewed: 2026-06-20
 Owning surface: every `.github/workflows/*.yml` file
-Refresh trigger: any new workflow file; any unpinned action; any addition of `pull_request_target`; any third-party action new to the workspace; any permission widening or issue-creation behavior in scheduled workflows
+Refresh trigger: any new workflow file; any unpinned action; any addition of `pull_request_target`; any third-party action new to the workspace; any permission widening or new issue-creation behavior in any workflow
 Related docs:
 - [ADR 0026](../adr/0026-alloy-major-release-absorption-plan.md)
 
@@ -31,7 +31,7 @@ runner infrastructure outside the committed workflow definitions.
 | Third-party review log | Each pinned third-party action keeps a nearby `# Source ref:` comment naming the reviewed tag or source ref | Conforms |
 | WASM import fences | The `cow-sdk-wasm` import fences (`cargo check-source-fences`) run in the shared policy job with read-only permissions and SHA-pinned checkout only | Conforms |
 | README inclusion check | The README docs.rs inclusion check runs at source level in the policy sweep, with no rendered-HTML scrape, new third-party action, or elevated permission | Conforms |
-| Scheduled retry soak | The retry-soak workflow uses read-only permissions, pinned actions, no privileged triggers, and a deterministic ignored test invocation | Conforms |
+| Manual-dispatch retry soak | The retry-soak workflow (nightly cron paused pre-publication) uses read-only permissions, pinned actions, no privileged triggers, and a deterministic ignored test invocation | Conforms |
 | Alloy canary issue creation | The report-only Alloy canary grants `issues: write` only to create or reuse a tracking issue through `gh api`, with no new third-party action | Conforms |
 
 Workflow snapshot:
@@ -46,8 +46,10 @@ Workflow snapshot:
 | `commit-format.yml` | `contents: read` | SHA-pinned | Absent |
 | `crate-checks.yml` | workflow `{}`; job grants `contents: read` | SHA-pinned | Absent |
 | `docs-quality.yml` | workflow `{}`; jobs grant `contents: read` | SHA-pinned | Absent |
-| `release-readiness.yml` | `contents: read` | SHA-pinned or same-repo reusable workflow | Absent |
+| `fuzz.yml` | `contents: read` | SHA-pinned | Absent |
+| `release-readiness.yml` | workflow `contents: read`; publication job grants `id-token: write`, `attestations: write`, `contents: read` | SHA-pinned or same-repo reusable workflow | Absent |
 | `retry-soak.yml` | `contents: read` | SHA-pinned | Absent |
+| `upstream-drift.yml` | `contents: read` | SHA-pinned | Absent |
 | `wasm.yml` | `contents: read` | SHA-pinned | Absent |
 
 ## Current Contract
@@ -62,17 +64,23 @@ code rather than third-party actions.
 
 ### Automated Pinning Guard
 
-The `workflow-security` job in `.github/workflows/_quality-gate.yml` scans
-`.github/workflows/*.yml` and fails when any third-party `uses:` reference does
-not end in `@[0-9a-f]{40}`. It runs through the shared quality gate used by both
-routine CI and release-readiness validation.
+The SHA-pin scan runs inside the `policy` job of
+`.github/workflows/_quality-gate.yml` through `cargo check-policies`, which
+invokes the xtask `check-workflow-security` policy. There is no job literally
+named `workflow-security`. The policy scans `.github/workflows/*.yml` and fails
+when any third-party `uses:` reference does not end in `@[0-9a-f]{40}`. It runs
+through the shared quality gate used by both routine CI and release-readiness
+validation.
 
 ### Permissions Discipline
 
 Every workflow declares explicit `permissions:`. Most use `contents: read`;
 narrower or elevated rights are declared at job scope. The CodeQL analyze job is
-the only lane granting `security-events: write`, and scheduled drift/canary lanes
-grant `issues: write` only when they create or reuse tracking issues.
+the only lane granting `security-events: write`. The release-readiness
+`publication` job grants `id-token: write` and `attestations: write` to emit a
+SLSA build-provenance attestation over the packaged crates. The manual Alloy
+release-candidate lane grants `issues: write` only when it creates or reuses a
+tracking issue.
 
 ### `pull_request_target` Review Guard
 
@@ -81,13 +89,6 @@ fails any workflow that adds the trigger without an explicit
 `# allow-pull-request-target:` review comment in the same file, so a future
 privileged-trigger lane cannot be introduced silently.
 
-### Docs-Quality Inline Smoke
-
-The docs-quality workflow parses the rustdoc-rendered crate HTML with an inline
-Python standard-library parser inside the existing docs job — no third-party
-`uses:` action, no widened permissions, still covered by the same pinning and
-permissions checks.
-
 ### WASM Import Fences
 
 The `cow-sdk-wasm` import fences run in the shared `policy` job (through
@@ -95,15 +96,15 @@ The `cow-sdk-wasm` import fences run in the shared `policy` job (through
 read-only permissions and SHA-pinned checkout. Enforcement is a Rust policy in
 the `cargo xtask` sweep, not inline shell, so it adds no third-party action.
 
-### Scheduled Retry Lane
+### Retry Soak Lane
 
-The `retry-soak.yml` nightly lane runs one ignored deterministic orderbook retry
-and timeout soak test, using only pinned actions, `contents: read`, and no
-pull-request trigger.
+The `retry-soak.yml` manual-dispatch lane (its nightly cron is paused
+pre-publication) runs one ignored deterministic orderbook retry and timeout soak
+test, using only pinned actions, `contents: read`, and no pull-request trigger.
 
 ### Alloy Canary Issue Creation
 
-The report-only, scheduled/manual Alloy release-candidate workflow uses the
+The report-only, manual-dispatch Alloy release-candidate workflow uses the
 first-party GitHub CLI already on the runner to `gh api` create the `alloy-canary`
 label and at most one open tracking issue when a canary step fails. This requires
 `issues: write` but adds no third-party action, does not run on pull requests, and
@@ -121,8 +122,10 @@ Primary implementation points:
 - `.github/workflows/commit-format.yml`
 - `.github/workflows/crate-checks.yml`
 - `.github/workflows/docs-quality.yml`
+- `.github/workflows/fuzz.yml`
 - `.github/workflows/release-readiness.yml`
 - `.github/workflows/retry-soak.yml`
+- `.github/workflows/upstream-drift.yml`
 - `.github/workflows/wasm.yml`
 
 Primary regression coverage:

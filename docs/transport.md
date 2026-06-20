@@ -47,7 +47,8 @@ the EIP-1193 request callback instead.
 ## The `HttpTransport` Trait
 
 ```rust,ignore
-#[async_trait(?Send)]
+#[cfg_attr(not(target_arch = "wasm32"), async_trait)]
+#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 pub trait HttpTransport: std::fmt::Debug {
     async fn get(
         &self,

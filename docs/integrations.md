@@ -67,13 +67,14 @@ provider) through the SDK's EIP-1193 request callback.
 
 COW Shed ships as the `cow-sdk-contracts` leaf crate behind the opt-in `cow-shed`
 facade feature; the composable-order capability is deferred and recorded only by
-[ADR 0048](adr/0048-composable-conditional-order-framework.md), with its
-deployment addresses still resolvable through the typed `Registry`. COW Shed
+[ADR 0048](adr/0048-composable-conditional-order-framework.md). Its
+deployment addresses come from version-keyed const fns
+(`cow_shed_factory` / `cow_shed_implementation`), not the typed `Registry`. COW Shed
 rests on the same provenance and registry foundations, which improve on directly
 copying TypeScript package behavior in these concrete ways:
 
-- protocol deployment addresses (settlement, vault relayer, eth-flow,
-  composable) resolve through one typed `Registry` const table; the COW Shed
+- protocol deployment addresses (settlement, vault relayer, eth-flow)
+  resolve through one typed `Registry` const table; the COW Shed
   factory/implementation pairs are version-keyed module constants because each
   deployed generation is a deterministic CREATE2 deployment identical on every
   supported chain — there is no chain axis to register

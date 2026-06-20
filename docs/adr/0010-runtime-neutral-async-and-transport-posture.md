@@ -35,9 +35,9 @@ path. The same cancellation and transport contract extends to
 dual-gate `async_trait(?Send)` on wasm32 and `async_trait` on native targets.
 
 Wire-format envelopes for the wasm surface use a string `schemaVersion` field
-such as `"1"`, not a numeric one. The Rust-side `#[non_exhaustive]`
-`SchemaVersion` enum serializes and deserializes through custom impls that emit
-and parse strings, avoiding JSON numeric-precision risks across future schema
+such as `"v1"`, not a numeric one. The Rust-side `#[non_exhaustive]`
+`SchemaVersion` enum serializes and deserializes as a string via serde `rename`
+attributes, avoiding JSON numeric-precision risks across future schema
 evolutions.
 
 ## Why

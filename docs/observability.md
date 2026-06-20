@@ -74,7 +74,6 @@ downstream dashboards can pivot on the same names across every SDK call.
 | Field | Type | Meaning |
 | --- | --- | --- |
 | `chain` | numeric or string/debug | Active chain id, `SupportedChainId` variant, or platform label such as `wasm32` |
-| `chain_id` | debug | Active chain id on caller spans that wrap lower-level contract helpers |
 | `env` | string | Environment label (`prod` / `staging`) |
 | `endpoint` | string | Stable route identity, GraphQL operation name, or path-only transport endpoint with scheme, authority, query, and fragment stripped |
 | `method` | string | HTTP method (`GET`, `POST`, `PUT`, `DELETE`) for transport calls, or JSON-RPC-like operation name for wallet-mediated calls |
@@ -108,8 +107,8 @@ downstream dashboards can pivot on the same names across every SDK call.
 
 Tracing spans are emitted by every long-running public async method on
 `cow-sdk-orderbook`, `cow-sdk-subgraph`, `cow-sdk-trading`,
-`cow-sdk-signing`, `cow-sdk-app-data`, and, behind
-its opt-in `cow-shed` facade feature. Each canonical public async
+`cow-sdk-signing`, `cow-sdk-app-data`, and `cow-sdk-contracts`, the last
+behind its opt-in `cow-shed` facade feature. Each canonical public async
 method carries `#[tracing::instrument]` and emits exactly one span per call.
 The `cow-sdk-wasm` JavaScript export surface emits one span per export call
 under the same redaction posture; see its subsection below.
@@ -179,9 +178,9 @@ API key never appears in a request path or a span.
 
 Every public async method on `Trading` plus the module-level async
 helpers emit one span each. Spans carry `chain`, `env`, and `endpoint`;
-`order_uid` is added on order-bound helpers. The EIP-1271 order verifier
-also wraps its lower-level contract call in a
-`trading.verify_eip1271_caller` span carrying `chain_id` and `verifier`.
+`order_uid` is added on order-bound helpers. EIP-1271 order verification
+is instrumented at the contracts layer through the `verify.eip1271` span
+(records only `verifier`); see the `cow-sdk-contracts` subsection below.
 
 - `quote_only`
 - `quote_results`
@@ -265,14 +264,15 @@ the facade `cow-shed` feature ([ADR 0049](adr/0049-cow-shed-account-abstraction-
 
 ### `cow-sdk-wasm`
 
-The JavaScript export surface emits one span per export call, each carrying a
-stable `endpoint` label of the form `wasm.<area>.<method>` where `<area>` is the
+The JavaScript export surface emits one span per export call, each named
+`wasm_export` and carrying a stable `endpoint` field of the form
+`wasm.<area>.<method>` where `<area>` is the
 export module and `<method>` is the Rust export name. The spans capture only
-the `endpoint` label, so no JavaScript callback, signer, payload, or wallet
+the `endpoint` field, so no JavaScript callback, signer, payload, or wallet
 input is recorded. The
 underlying Rust crate's own spans are gated by that crate's `tracing` feature
 and are not enabled by `cow-sdk-wasm`'s feature alone, so each export call
-surfaces exactly one `wasm.*` span. Synchronous transaction-building exports
+surfaces exactly one `wasm_export` span. Synchronous transaction-building exports
 (`buildPresignTx`, `buildCancelOrderTx`, `eip1271SignaturePayload`) are
 deterministic and carry no spans.
 

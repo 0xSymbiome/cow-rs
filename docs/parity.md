@@ -155,7 +155,7 @@ rather than by a committed parity fixture.
 | Surface | Default | Opt-out / opt-in |
 | --- | --- | --- |
 | `OrderToSignParams::new(...)` `apply_costs_slippage_and_fees` | applied on by default (cost, slippage, partner-fee, and protocol-fee adjustments are folded into the unsigned order amounts) | call `.with_apply_costs_slippage_and_fees(false)` to preserve raw caller amounts |
-| `build_app_data` `metadata.utm` | when the caller does not supply `metadata.utm`, the helper stamps an SDK-family attribution block with `utmSource = "cow-sdk"`, `utmMedium = "cow-rs@<crate-version>"`, `utmCampaign = "developer-cohort"`, `utmContent = ""`, and `utmTerm = "rs"` so downstream analytics can group CoW SDK traffic while distinguishing the Rust SDK and its published version | supply any `metadata.utm` key in the advanced app-data parameters — partial or full — and the caller-declared block is carried through byte-identical with no defaults merged on top |
+| `build_app_data` `metadata.utm` | when the caller does not supply `metadata.utm`, the helper stamps an SDK-family attribution block with `utmSource = "cow-sdk"`, `utmMedium = "cow-rs@<crate-version>"`, `utmCampaign = "developer-cohort"`, `utmContent = "wasm"` on `wasm32` targets and `""` otherwise, and `utmTerm = "rs"` so downstream analytics can group CoW SDK traffic while distinguishing the Rust SDK and its published version | supply any `metadata.utm` key in the advanced app-data parameters — partial or full — and the caller-declared block is carried through byte-identical with no defaults merged on top |
 | `Order.total_fee` | computed narrowly as the canonical executed-fee component (`calculate_total_fee(executed_fee)`); the legacy wire field `executedFeeAmount` is never folded into the canonical sum | `Order.executed_fee_amount: Amount` surfaces the legacy wire value as a typed read-only sibling so consumers that need the legacy summation compute `executed_fee + executed_fee_amount` explicitly at the call site |
 
 ## Wire-Format Invariants
@@ -277,7 +277,8 @@ models: status, block number, block hash, gas used, sender, and recipient.
 
 The first release does **not** ship every helper crate body below. Deployment
 registry rows and compatibility fixtures are in scope where listed, while full
-ergonomic helper APIs remain additive under ADR 0008.
+ergonomic helper APIs remain additive under
+[ADR 0001](adr/0001-multi-crate-sdk-family-with-thin-facade.md).
 
 ### Bridging
 
@@ -474,9 +475,10 @@ inputs, or justification for copied literals or defaults.
   validator enforces equality, so a pin bump names every fixture that still
   needs re-verification
 - keep the `parity/fixtures/app_data/schemas/` mirrors synchronized from
-  the `app-data` repository pinned in `parity/source-lock.yaml` (the
-  flash-loan mirror tracks the `services` producer instead — its header says
-  so): the per-family mirrors, plus the root-document manifest mirror
+  the `cow-sdk` repository pinned in `parity/source-lock.yaml` (every schema
+  mirror, including the flash-loan one, cites the `cow-sdk` producer in its
+  header; only the data fixture `flashloan_v1.7.0.json` tracks the `services`
+  producer): the per-family mirrors, plus the root-document manifest mirror
   (`app-data-document-v*.json`) that anchors the emitted document version and
   the in-force family versions — the `schema_drift_contract` correspondence
   tests fail until `LATEST_APP_DATA_VERSION` and the typed bounds match the

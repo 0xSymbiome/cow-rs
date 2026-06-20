@@ -1,7 +1,7 @@
 # Fuzz Coverage Audit
 
 Status: Current
-Last reviewed: 2026-06-17
+Last reviewed: 2026-06-20
 Owning surface: the standalone `cow-sdk-fuzz` crate (`fuzz/`) and every
 `cargo-fuzz` target it ships against the published SDK crates
 Refresh trigger: any new public untrusted-input surface, retired fuzz
@@ -52,9 +52,9 @@ requirements are out of scope for this static review.
 | Scheduled run lane | A report-only `fuzz` workflow runs every target for a bounded time budget on a weekly cron and on demand, uploading any crash reproducer; it is non-gating and never a pull-request check | Conforms |
 | Nightly-toolchain enumerate | `cargo +nightly fuzz list --fuzz-dir fuzz` enumerates the full target set by `[[bin]]` name | Conforms |
 | Seed-class contract | Every target is seeded locally from the canonical / boundary / adversarial classes documented in this audit and the harness doc-comment header; the entire `fuzz/corpus/` tree (baseline seeds and the libFuzzer accumulator alike) is gitignored per the cargo-fuzz convention of keeping the working corpus out of version control, and is regenerated locally from the documented classes | Conforms |
-| Property traceability | Every target carries a `**Property:**` doc-comment row citing one `PROP-*` invariant identifier from `PROPERTIES.md`; every cited identifier has its evidence column updated to reference the fuzz target source file | Conforms |
+| Property traceability | 40 of the 42 targets carry a `**Property:**` doc-comment row citing one `PROP-*` invariant identifier from `PROPERTIES.md` (the two `*_event_log_decode` targets are cited from the `PROPERTIES.md` side instead); every cited identifier has its evidence column updated to reference the fuzz target source file | Conforms |
 | Public-surface boundary | Every target imports only published SDK surface; crate-private helpers are exercised through the nearest public wrapper, with the routing documented in the target doc-comment header | Conforms |
-| Invariant strength | Existing targets carry semantic assertions beyond bare panic-freedom: encoder targets check selector and decoder round-trip, classifier targets check determinism and class boundaries, redaction targets check credential-shape absence including URL userinfo, JWT prefixes, Bearer prefixes, and credential key/value forms | Conforms |
+| Invariant strength | Most targets carry semantic assertions beyond bare panic-freedom: the encoder target checks decoder round-trip equality, classifier targets check determinism and class boundaries, redaction targets check credential-shape absence including URL userinfo, JWT prefixes, Bearer prefixes, and credential key/value forms; the three log-decode targets assert only the decoder's never-panic contract | Conforms |
 
 ## Current Contract
 
@@ -119,10 +119,12 @@ classes. A local run that finds a crash writes the reproducer under the gitignor
 
 ### Property Traceability
 
-Every target's doc-comment header carries a `**Property:**` row citing exactly
-one `PROP-*` invariant identifier from `PROPERTIES.md`, and every cited identifier
-references the target source file in its evidence column — the reviewer's path
-from a `PROPERTIES.md` row to the fuzz coverage that strengthens it. The cited
+40 of the 42 targets carry a `**Property:**` doc-comment header row citing exactly
+one `PROP-*` invariant identifier from `PROPERTIES.md`; the two `*_event_log_decode`
+targets carry no header row but are cited from the `PROPERTIES.md` side, where
+`PROP-CON-021` and `PROP-CON-022` name them in the evidence column. Every cited
+identifier references the target source file in its evidence column — the reviewer's
+path from a `PROPERTIES.md` row to the fuzz coverage that strengthens it. The cited
 identifiers span the `PROP-CORE-*`, `PROP-CON-*`, `PROP-SIG-*`, `PROP-AD-*`,
 `PROP-APP-*`, `PROP-OBK-*`, `PROP-ORD-*`, `PROP-SBG-*`, `PROP-TPP-*`, and
 `PROP-TRD-*` families. The set carrying fuzz-target evidence is enumerated by
@@ -142,11 +144,14 @@ the canonical primitive layer per
 
 ### Invariant Strength
 
-Every target asserts at least one semantic property beyond panic-freedom:
+Most targets assert at least one semantic property beyond panic-freedom. The
+three log-decode targets (`fuzz_settlement_event_log_decode`,
+`fuzz_eth_flow_event_log_decode`, `fuzz_onchain_order_log_decode`) assert only the
+decoder's never-panic contract on untrusted log input; every other target adds at
+least one of the following:
 
-- **Encoder targets**: selector equality against `keccak256(signature)[0..4]`,
-  decoder round-trip equality, encoded-length structural floor, and
-  canonical-encoding determinism.
+- **Encoder target**: decoder round-trip equality, asserting the ABI encoder and
+  decoder are inverses field-wise on every well-typed `EthFlowOrderData` shape.
 - **Crypto envelope targets**: independent keccak256 envelope equality, two-call
   determinism, mutation-resistance on every typed-data domain field.
 - **Classifier and parser targets**: typed-error-partition coverage, two-call
@@ -160,8 +165,10 @@ Every target asserts at least one semantic property beyond panic-freedom:
 
 ### Empirical Run Evidence
 
-A local sweep on a Linux x86-64 host (8-way parallel, 10-minute budget per target,
-`timeout=10` per input) covered every target without a panic. Earlier iterations
+A maintainer-local sweep on a Linux x86-64 host covered every target without a
+panic; this run is anecdotal and not committed, so the reproducible record is the
+scheduled report-only `fuzz` workflow (`.github/workflows/fuzz.yml`) rather than
+this audit. Earlier iterations
 surfaced and fixed three real SDK defects on attacker-controlled surfaces —
 `redact_response_body` (URL userinfo with mangled scheme prefixes, bare `Bearer`
 tokens, embedded JWTs, partial credential keys), `parse_retry_after` (`i64`

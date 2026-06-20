@@ -5,7 +5,7 @@
 - Last reviewed: 2026-06-15
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: transport, retry, layering
-- Related: [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), ADR 0019, ADR 0046
+- Related: [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md) (folds in superseded ADR 0046; superseded ADR 0019 folded into 0013)
 
 ## Decision
 

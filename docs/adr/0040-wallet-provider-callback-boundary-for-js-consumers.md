@@ -5,7 +5,7 @@
 - Last reviewed: 2026-06-15
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: wasm, wallet, provider, callback-boundary, eip1271
-- Related: [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), ADR 0007, [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), ADR 0043, [ADR 0045](0045-async-signer-trait-narrowing.md)
+- Related: [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), ADR 0007 (superseded by 0039/0040), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), ADR 0043 (superseded by 0039), [ADR 0045](0045-async-signer-trait-narrowing.md)
 
 ## Decision
 

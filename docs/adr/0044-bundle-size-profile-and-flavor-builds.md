@@ -5,7 +5,7 @@
 - Last reviewed: 2026-06-19
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: wasm, npm, bundle-size, package-flavors
-- Related: [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), ADR 0047
+- Related: [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), ADR 0047 (superseded)
 
 ## Decision
 
@@ -81,8 +81,8 @@ recommended choice.
   `README.md` and `crates/wasm/README.md` documents the supported use cases.
 - Each flavor's gzip artifact size is verified against its configured Cloudflare
   Workers compressed-size byte budget on every release build. The byte budget
-  tracks Cloudflare's published Free compressed-size limit (the configured fail
-  threshold is below the platform limit with safety margin).
+  tracks Cloudflare's published Paid/Bundled (~3 MB) compressed-size limit (the
+  configured fail threshold is below that platform limit with safety margin).
 - Full Workers support depends on additional release-bundle and startup-time
   gates that are not enforced by the size release gate alone; those gates are
   tracked in the comparative benchmark validation note's refresh triggers.
