@@ -125,15 +125,22 @@ carry the required TypeScript library references.
 
 ## Error Contract
 
-JavaScript-visible errors use a typed `WasmError` discriminated union. Transport,
-app-data, signing, orderbook, subgraph, trading, wallet, cancellation, and
-internal failures keep low-cardinality fields visible while preserving the SDK's
-redaction posture for URLs, headers, response bodies, and secret-shaped details.
+The Rust `WasmError` discriminated union projects to JavaScript as a single
+`CowError` class — a real `Error` subclass keyed by `kind` that consumers catch,
+narrow with the exported `isCowError`, and `switch` on. Transport, app-data,
+signing, orderbook, subgraph, trading, wallet, cancellation, and internal
+failures keep low-cardinality fields visible while preserving the SDK's redaction
+posture for URLs, headers, response bodies, and secret-shaped details. A thrown
+error carries no `schemaVersion`; only the success envelope is version-tagged.
 
-The `orderbook` variant additionally carries a `retryable` boolean and an optional
-`retryAfterMs` backoff hint parsed from the response `Retry-After` header, mirroring
-the native `OrderbookError::is_retryable` and `backoff_hint` accessors so a
-JavaScript consumer driving its own retry loop reaches the same verdict.
+The `orderbook` variant additionally carries the services `errorType` wire tag
+(`"InsufficientAllowance"` vs `"InsufficientBalance"`, the fine-grained partner of
+the coarse `category`), a `retryable` boolean, and an optional `retryAfterMs` backoff
+hint parsed from the response `Retry-After` header, mirroring the native
+`OrderbookError::is_retryable` and `backoff_hint` accessors. The facade exports
+`isRetryable`, `retryAfterMs`, `isUserRejection` (a declined-signature / cancellation
+guard), and a `withRetry` helper so a JavaScript consumer driving its own retry loop
+reaches the same verdict as the Rust core.
 
 ## Where To Next
 

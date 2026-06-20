@@ -437,7 +437,10 @@ export type {
   Eip1193RequestCallback,
   TypedDataSignerCallback
 } from "./callbacks.js";
-export type { OrderBookRejectionCategory, CowError } from "./errors.js";
+export { CowError, isCowError, isRetryable, isUserRejection, normalizeError, retryAfterMs } from "./errors.js";
+export type { CowErrorData, OrderBookErrorType, OrderBookRejectionCategory } from "./errors.js";
+export { withRetry } from "./retry.js";
+export type { RetryOptions } from "./retry.js";
 export type { SchemaVersion, WasmEnvelope } from "./envelope.js";
 export type {
   CowFetchCallback,

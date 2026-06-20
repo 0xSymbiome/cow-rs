@@ -29,7 +29,6 @@ fn transport_connect_error_uses_redacted_message() {
     let value = error_value(error);
 
     assert_eq!(value["kind"], "transport");
-    assert_eq!(value["schemaVersion"], "v1");
     let message = value["message"].as_str().unwrap();
     assert!(message.contains("[redacted]"));
     assert!(!message.contains(SECRET_URL));
@@ -44,7 +43,6 @@ fn transport_configuration_error_uses_redacted_message() {
     let value = error_value(error);
 
     assert_eq!(value["class"], "builder");
-    assert_eq!(value["schemaVersion"], "v1");
     let message = value["message"].as_str().unwrap();
     assert!(message.contains("[redacted]"));
     assert!(!message.contains(SECRET_URL));
@@ -63,7 +61,6 @@ fn http_status_error_redacts_headers_and_body() {
     let value = error_value(error);
 
     assert_eq!(value["status"], 401);
-    assert_eq!(value["schemaVersion"], "v1");
     assert_eq!(value["headers"][0][1], "[redacted]");
     assert_eq!(value["body"], "{\"apiKey\":\"[redacted]\"}");
     assert!(!value.to_string().contains("secret"));
@@ -78,7 +75,6 @@ fn app_data_transport_error_redacts_detail() {
     let value = error_value(error);
 
     assert_eq!(value["kind"], "appData");
-    assert_eq!(value["schemaVersion"], "v1");
     let message = value["message"].as_str().unwrap();
     assert!(message.contains("[redacted]"));
     assert!(!message.contains(SECRET_URL));

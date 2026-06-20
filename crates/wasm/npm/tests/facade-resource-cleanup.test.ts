@@ -16,7 +16,6 @@ describe("facade resource cleanup", () => {
     client.dispose();
 
     await expect(client.fetchAppDataFromCid(CID)).rejects.toMatchObject({
-      schemaVersion: "v1",
       kind: "invalidInput",
       field: "client"
     });
@@ -36,7 +35,6 @@ describe("facade resource cleanup", () => {
     client[Symbol.dispose]();
 
     await expect(client.fetchAppDataFromCid(CID)).rejects.toMatchObject({
-      schemaVersion: "v1",
       kind: "invalidInput",
       field: "client"
     });

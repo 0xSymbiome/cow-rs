@@ -54,7 +54,6 @@ fn unsupported_chain_returns_typed_error() {
     let value = error_json(error);
 
     assert_eq!(value["kind"], "unsupportedChain");
-    assert_eq!(value["schemaVersion"], "v1");
     assert_eq!(value["chainId"], CHAIN_UNSUPPORTED);
 }
 

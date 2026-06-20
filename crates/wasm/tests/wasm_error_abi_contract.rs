@@ -15,13 +15,11 @@ fn round_trip(value: Value) -> Value {
 #[wasm_bindgen_test]
 fn invalid_input_variant_round_trips() {
     let value = round_trip(json!({
-        "schemaVersion": "v1",
         "kind": "invalidInput",
         "message": "invalid address",
         "field": "owner"
     }));
 
-    assert_eq!(value["schemaVersion"], "v1");
     assert_eq!(value["kind"], "invalidInput");
     assert_eq!(value["field"], "owner");
 }
@@ -29,7 +27,6 @@ fn invalid_input_variant_round_trips() {
 #[wasm_bindgen_test]
 fn unknown_enum_variant_round_trips() {
     let value = round_trip(json!({
-        "schemaVersion": "v1",
         "kind": "unknownEnumValue",
         "message": "Unsupported value `swap` for `kind`. Use one of the documented values for this field.",
         "field": "kind",
@@ -43,7 +40,6 @@ fn unknown_enum_variant_round_trips() {
 #[wasm_bindgen_test]
 fn unsupported_chain_variant_round_trips() {
     let value = round_trip(json!({
-        "schemaVersion": "v1",
         "kind": "unsupportedChain",
         "message": "Unsupported chain ID 13337. Call supportedChainIds() before constructing requests and route unsupported networks to another integration.",
         "chainId": 13337
@@ -62,7 +58,6 @@ fn unsupported_chain_variant_round_trips() {
 #[wasm_bindgen_test]
 fn wallet_request_variant_round_trips() {
     let value = round_trip(json!({
-        "schemaVersion": "v1",
         "kind": "walletRequest",
         "method": "eth_signTypedData_v4",
         "code": 4001,
@@ -77,7 +72,6 @@ fn wallet_request_variant_round_trips() {
 #[wasm_bindgen_test]
 fn wallet_timeout_variant_round_trips() {
     let value = round_trip(json!({
-        "schemaVersion": "v1",
         "kind": "walletTimeout",
         "message": "Wallet request timed out after 250 ms. Increase walletConfig.timeoutMs or ask the user to approve the wallet request before the timeout.",
         "timeoutMs": 250
@@ -96,7 +90,6 @@ fn wallet_timeout_variant_round_trips() {
 #[wasm_bindgen_test]
 fn transport_variant_round_trips() {
     let value = round_trip(json!({
-        "schemaVersion": "v1",
         "kind": "transport",
         "class": "status",
         "message": "HTTP 500",
@@ -113,23 +106,19 @@ fn transport_variant_round_trips() {
 #[wasm_bindgen_test]
 fn orderbook_subgraph_signing_and_app_data_variants_round_trip() {
     let orderbook = round_trip(json!({
-        "schemaVersion": "v1",
         "kind": "orderbook",
         "code": "422",
         "message": "order rejected"
     }));
     let subgraph = round_trip(json!({
-        "schemaVersion": "v1",
         "kind": "subgraph",
         "message": "query failed"
     }));
     let signing = round_trip(json!({
-        "schemaVersion": "v1",
         "kind": "signing",
         "message": "signature invalid"
     }));
     let app_data = round_trip(json!({
-        "schemaVersion": "v1",
         "kind": "appData",
         "class": "decode",
         "message": "document invalid"
@@ -144,12 +133,10 @@ fn orderbook_subgraph_signing_and_app_data_variants_round_trip() {
 #[wasm_bindgen_test]
 fn cancelled_variant_carries_actionable_message() {
     let value = round_trip(json!({
-        "schemaVersion": "v1",
         "kind": "cancelled",
         "message": "Operation was cancelled. Create a fresh AbortController or retry without an already-aborted signal."
     }));
 
-    assert_eq!(value["schemaVersion"], "v1");
     assert_eq!(value["kind"], "cancelled");
     assert!(
         value["message"]
@@ -162,13 +149,11 @@ fn cancelled_variant_carries_actionable_message() {
 #[wasm_bindgen_test]
 fn unknown_sentinel_round_trips_raw_payload() {
     let value = round_trip(json!({
-        "schemaVersion": "__unknown",
         "kind": "__unknown",
-        "message": "SDK received an unrecognized error variant. Inspect raw and update the SDK if the variant is now documented.",
+        "message": "SDK received an unrecognized error variant. Inspect raw, preserve it in logs without credentials, and update the SDK if the variant is now documented.",
         "raw": { "kind": "futureVariant", "detail": "unknown" }
     }));
 
-    assert_eq!(value["schemaVersion"], "__unknown");
     assert_eq!(value["kind"], "__unknown");
     assert_eq!(value["raw"]["kind"], "futureVariant");
 }
@@ -176,7 +161,6 @@ fn unknown_sentinel_round_trips_raw_payload() {
 #[wasm_bindgen_test]
 fn internal_variant_carries_opaque_message() {
     let value = round_trip(json!({
-        "schemaVersion": "v1",
         "kind": "internal",
         "message": "serialization failed"
     }));
@@ -188,7 +172,6 @@ fn internal_variant_carries_opaque_message() {
 #[wasm_bindgen_test]
 fn malformed_kind_is_rejected_without_panic() {
     let js_value = serde_wasm_bindgen::to_value(&json!({
-        "schemaVersion": "v1",
         "kind": "futureVariant",
         "message": "unknown"
     }))
@@ -201,7 +184,6 @@ fn malformed_kind_is_rejected_without_panic() {
 #[wasm_bindgen_test]
 fn optional_fields_are_omitted_when_absent() {
     let value = round_trip(json!({
-        "schemaVersion": "v1",
         "kind": "invalidInput",
         "message": "invalid input"
     }));
@@ -213,7 +195,6 @@ fn optional_fields_are_omitted_when_absent() {
 #[wasm_bindgen_test]
 fn orderbook_variant_carries_retry_hints() {
     let value = round_trip(json!({
-        "schemaVersion": "v1",
         "kind": "orderbook",
         "code": "429",
         "message": "rate limited",
@@ -232,7 +213,6 @@ fn orderbook_variant_defaults_retryable_and_omits_absent_backoff() {
     // `retryable` falls back to `false` (and always serializes), while the optional
     // `retryAfterMs` stays omitted.
     let value = round_trip(json!({
-        "schemaVersion": "v1",
         "kind": "orderbook",
         "code": "400",
         "message": "bad request"
