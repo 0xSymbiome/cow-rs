@@ -30,7 +30,8 @@ export declare function signOrderWithEip1271(input: raw.OrderInput, chainId: num
 export declare function signOrderWithTypedDataSigner(input: raw.OrderInput, chainId: number, owner: string, typedDataSigner: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<raw.SignedOrderDto>>;
 export declare function supportedChainIds(): Uint32Array;
 export declare function wasmVersion(): string;
-export type { CowEip1271SignRequest, DeploymentAddressesDto, Eip1193Request, EthFlowEventDto, EventLogInput, GeneratedOrderUidDto, OrderInput, OrderKindDto, OrderTraderParametersInput, PaginationOptions, SettlementEventDto, SignedOrderDto, TokenBalanceDto, TradesQueryInput, TransactionRequestDto, TypedDataDomainDto, TypedDataEnvelopeDto, TypedDataFieldDto } from "./raw/signing.js";
+export declare function wrappedNativeToken(chainId: number): WasmEnvelope<raw.WrappedNativeTokenDto>;
+export type { CowEip1271SignRequest, DeploymentAddressesDto, Eip1193Request, EthFlowEventDto, EventLogInput, GeneratedOrderUidDto, OrderInput, OrderKindDto, SettlementEventDto, SignedOrderDto, TokenBalanceDto, TypedDataDomainDto, TypedDataEnvelopeDto, TypedDataFieldDto, WrappedNativeTokenDto } from "./raw/signing.js";
 export type { CowEip1271SignCallback, CustomEip1271Callback, DigestSignerCallback, Eip1193RequestCallback, TypedDataSignerCallback } from "./callbacks.js";
 export type { OrderBookRejectionCategory, CowError } from "./errors.js";
 export type { SchemaVersion, WasmEnvelope } from "./envelope.js";

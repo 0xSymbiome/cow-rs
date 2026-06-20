@@ -20,15 +20,18 @@ mod orderbook;
 #[cfg(feature = "trading")]
 mod quote;
 mod signing;
+#[cfg(feature = "subgraph")]
 mod subgraph;
 mod trading;
 mod transport;
 
 #[cfg(feature = "app-data")]
 pub use self::app_data::{AppDataDocDto, AppDataDocInput, AppDataInfoDto, ValidationResultDto};
+#[cfg(any(feature = "cancellation", feature = "trading"))]
+pub use self::contracts::TransactionRequestDto;
 #[cfg(feature = "trading")]
 pub use self::contracts::{BuiltSellNativeCurrencyTxDto, ContractCallDto};
-pub use self::contracts::{DeploymentAddressesDto, TransactionRequestDto, WrappedNativeTokenDto};
+pub use self::contracts::{DeploymentAddressesDto, WrappedNativeTokenDto};
 pub use self::core::{OrderInput, OrderKindDto, TokenBalanceDto};
 #[cfg(feature = "signing")]
 pub use self::events::{EthFlowEventDto, EventLogInput, SettlementEventDto};
@@ -42,14 +45,19 @@ pub use self::orderbook::{
     SigningSchemeDto, SolverCompetitionOrderDto, SolverCompetitionResponseDto, SolverExecutionDto,
     SolverSettlementDto, TotalSurplusDto, TradeDto,
 };
+#[cfg(feature = "orderbook")]
 pub use self::orderbook::{PaginationOptions, TradesQueryInput};
 #[cfg(feature = "trading")]
 pub use self::quote::QuoteResultsDto;
+#[cfg(any(feature = "cancellation", feature = "orderbook"))]
+pub use self::signing::SignedCancellationsInput;
 pub use self::signing::{
-    CowEip1271SignRequest, Eip1193Request, GeneratedOrderUidDto, SignedCancellationsInput,
-    SignedOrderDto, TypedDataDomainDto, TypedDataEnvelopeDto, TypedDataFieldDto,
+    CowEip1271SignRequest, Eip1193Request, GeneratedOrderUidDto, SignedOrderDto,
+    TypedDataDomainDto, TypedDataEnvelopeDto, TypedDataFieldDto,
 };
+#[cfg(feature = "subgraph")]
 pub use self::subgraph::SubgraphQueryInput;
+#[cfg(feature = "cancellation")]
 pub use self::trading::OrderTraderParametersInput;
 #[cfg(feature = "trading")]
 pub use self::trading::{

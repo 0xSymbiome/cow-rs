@@ -139,11 +139,12 @@ Selling the native asset is the same shape: `getQuote`, then
 `buildSellNativeCurrencyTxFromQuote(quote.value, owner)`, which returns the EthFlow
 transaction request for the wallet to submit.
 
-Converting between the native asset and its wrapped form is not an order:
-`buildWrapTx(chainId, amount)` and `buildUnwrapTx(chainId, amount)` return the
-WETH deposit/withdraw transaction for the wallet to submit, and
-`wrappedNativeToken(chainId)` resolves the wrapped-native token (address, symbol,
-decimals) for detecting a wrap pair in a swap UI. (Selling native currency to
+Converting between the native asset and its wrapped form is not an order: the
+trading client's `buildWrapTx(amount)` and `buildUnwrapTx(amount)` return the
+WETH deposit/withdraw transaction for the wallet to submit (the chain comes from
+the client), and the standalone `wrappedNativeToken(chainId)` resolves the
+wrapped-native token (address, symbol, decimals) for detecting a wrap pair in a
+swap UI. (Selling native currency to
 trade does not need a manual wrap — eth-flow wraps on-chain.)
 
 ### Cloudflare Worker (edge)
@@ -238,9 +239,9 @@ current alpha build (gzip is the compressed-transfer figure):
 | Flavor | Raw wasm | Brotli | Gzip | Release gate |
 | --- | ---: | ---: | ---: | --- |
 | signing | 0.31 MiB | 121 KiB | 144 KiB | 0.9 MiB raw / 300 KiB brotli |
-| orderbook | 1.03 MiB | 341 KiB | 448 KiB | 1.5 MiB raw / 500 KiB brotli |
-| trading | 1.54 MiB | 491 KiB | 661 KiB | 3.2 MiB raw / 850 KiB brotli |
-| default | 1.64 MiB | 514 KiB | 693 KiB | 3.3 MiB raw / 900 KiB brotli |
+| orderbook | 1.02 MiB | 341 KiB | 447 KiB | 1.5 MiB raw / 500 KiB brotli |
+| trading | 1.54 MiB | 490 KiB | 659 KiB | 3.2 MiB raw / 850 KiB brotli |
+| default | 1.63 MiB | 514 KiB | 692 KiB | 3.3 MiB raw / 900 KiB brotli |
 
 Each flavor emits one wasm binary shared across its bundler, Node, web, and
 source-phase module targets — the web glue's default URL, the module glue's

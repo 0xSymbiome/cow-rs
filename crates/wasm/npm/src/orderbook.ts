@@ -377,6 +377,10 @@ export function wasmVersion(): string {
   return callSync(() => raw.wasmVersion());
 }
 
+export function wrappedNativeToken(chainId: number): WasmEnvelope<raw.WrappedNativeTokenDto> {
+  return callSync(() => raw.wrappedNativeToken(chainId));
+}
+
 export type {
   AppDataObjectDto,
   CompetitionAuctionDto,
@@ -422,7 +426,8 @@ export type {
   TransactionRequestDto,
   TypedDataDomainDto,
   TypedDataEnvelopeDto,
-  TypedDataFieldDto
+  TypedDataFieldDto,
+  WrappedNativeTokenDto
 } from "./raw/orderbook.js";
 export type {
   CowEip1271SignCallback,

@@ -25,3 +25,4 @@ export const signOrderWithEip1271 = wasm.signOrderWithEip1271;
 export const signOrderWithTypedDataSigner = wasm.signOrderWithTypedDataSigner;
 export const supportedChainIds = wasm.supportedChainIds;
 export const wasmVersion = wasm.wasmVersion;
+export const wrappedNativeToken = wasm.wrappedNativeToken;

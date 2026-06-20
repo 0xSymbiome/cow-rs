@@ -182,6 +182,7 @@ pub struct CowEip1271SignRequest {
 }
 
 /// Signed order-cancellation DTO.
+#[cfg(any(feature = "cancellation", feature = "orderbook"))]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[serde(rename_all = "camelCase")]
