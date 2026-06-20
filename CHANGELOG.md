@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.8] - 2026-06-20
+
+### Bug Fixes
+
+- *(wasm)* Expose the wrap surface to consumers and gate per-flavour dtos ([`2bac1e0`](https://github.com/0xSymbiome/cow-rs/commit/2bac1e0abda0a85ea96c8a2096861c9891d079ed))
+
+### Features
+
+- [**breaking**] *(wasm)* Make CowError a thrown Error subclass with the orderbook errorType tag and retry helpers ([`1aaea0f`](https://github.com/0xSymbiome/cow-rs/commit/1aaea0fb7bb06ce844e1b044e591a84ee0c10c3d))
+
+### Refactor
+
+- [**breaking**] *(errors)* Share one serde classifier and rename the app-data serialization variant ([`d74fbae`](https://github.com/0xSymbiome/cow-rs/commit/d74fbaed9e72285eff21b5bf3c7a33292a1f6eda))
+
 ## [0.1.0-alpha.7] - 2026-06-19
 
 ### Bug Fixes

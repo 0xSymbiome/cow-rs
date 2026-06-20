@@ -63,17 +63,17 @@ tracing = [
 ]
 
 [dependencies]
-cow-sdk-alloy = { path = "../alloy", version = "0.1.0-alpha.7", optional = true, default-features = false }
-cow-sdk-alloy-provider = { path = "../alloy-provider", version = "0.1.0-alpha.7", optional = true, default-features = false }
-cow-sdk-alloy-signer = { path = "../alloy-signer", version = "0.1.0-alpha.7", optional = true, default-features = false }
-cow-sdk-app-data = { path = "../app-data", version = "0.1.0-alpha.7" }
-cow-sdk-contracts = { path = "../contracts", version = "0.1.0-alpha.7" }
-cow-sdk-orderbook = { path = "../orderbook", version = "0.1.0-alpha.7" }
-cow-sdk-signing = { path = "../signing", version = "0.1.0-alpha.7" }
-cow-sdk-subgraph = { path = "../subgraph", version = "0.1.0-alpha.7", optional = true, default-features = false }
-cow-sdk-trading = { path = "../trading", version = "0.1.0-alpha.7" }
-cow-sdk-test = { path = "../test", version = "0.1.0-alpha.7", optional = true, default-features = false }
-cow-sdk-core = { path = "../core", version = "0.1.0-alpha.7", features = ["transport-policy"] }
+cow-sdk-alloy = { path = "../alloy", version = "0.1.0-alpha.8", optional = true, default-features = false }
+cow-sdk-alloy-provider = { path = "../alloy-provider", version = "0.1.0-alpha.8", optional = true, default-features = false }
+cow-sdk-alloy-signer = { path = "../alloy-signer", version = "0.1.0-alpha.8", optional = true, default-features = false }
+cow-sdk-app-data = { path = "../app-data", version = "0.1.0-alpha.8" }
+cow-sdk-contracts = { path = "../contracts", version = "0.1.0-alpha.8" }
+cow-sdk-orderbook = { path = "../orderbook", version = "0.1.0-alpha.8" }
+cow-sdk-signing = { path = "../signing", version = "0.1.0-alpha.8" }
+cow-sdk-subgraph = { path = "../subgraph", version = "0.1.0-alpha.8", optional = true, default-features = false }
+cow-sdk-trading = { path = "../trading", version = "0.1.0-alpha.8" }
+cow-sdk-test = { path = "../test", version = "0.1.0-alpha.8", optional = true, default-features = false }
+cow-sdk-core = { path = "../core", version = "0.1.0-alpha.8", features = ["transport-policy"] }
 thiserror.workspace = true
 
 [dev-dependencies]

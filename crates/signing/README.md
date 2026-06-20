@@ -6,7 +6,7 @@ surfaces.
 
 > ⚠️ **Alpha — `0.1.0-alpha`.** Pre-release and not security-audited; the public
 > API may change before `0.1.0`. It is published as a pre-release, so Cargo
-> selects it only when you opt in (`cow-sdk-signing = "0.1.0-alpha.7"`). Review
+> selects it only when you opt in (`cow-sdk-signing = "0.1.0-alpha.8"`). Review
 > it yourself before relying on it with real funds.
 
 This crate owns the canonical typed-data boundary
@@ -44,7 +44,7 @@ signing tooling.
 
 ```toml
 [dependencies]
-cow-sdk-signing = "0.1.0-alpha.7"
+cow-sdk-signing = "0.1.0-alpha.8"
 ```
 
 ## Minimal example

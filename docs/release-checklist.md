@@ -143,8 +143,8 @@ cargo test -p cow-sdk-orderbook --test request_contract retry_timeout_soak_exerc
 
 ## 5. Repo-Local Parity And Publication Proof
 
-`cow-sdk` `0.1.0-alpha.7` is published on crates.io and
-`@symbiome-forge/cow-sdk-wasm` `0.1.0-alpha.7` on npm. The earlier
+`cow-sdk` `0.1.0-alpha.8` is published on crates.io and
+`@symbiome-forge/cow-sdk-wasm` `0.1.0-alpha.8` on npm. The earlier
 `0.0.1-reserved.0` entries were name-reservation publishes; they do not
 satisfy the functional release contract described in this checklist.
 
