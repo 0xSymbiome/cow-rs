@@ -372,6 +372,36 @@ impl OrderbookError {
     /// assert!(!permanent.is_retryable());
     /// assert_eq!(permanent.backoff_hint(), None);
     /// ```
+    ///
+    /// The two accessors compose into a retry loop: retry only while the error
+    /// is transient, wait the server hint (or your own backoff), and give up
+    /// after a fixed budget.
+    ///
+    /// ```no_run
+    /// use cow_sdk_orderbook::OrderbookError;
+    /// use std::time::Duration;
+    ///
+    /// fn with_retry<T>(
+    ///     mut attempt: impl FnMut() -> Result<T, OrderbookError>,
+    /// ) -> Result<T, OrderbookError> {
+    ///     // Up to four attempts: the initial call plus three transient retries.
+    ///     let mut remaining = 3u32;
+    ///     loop {
+    ///         match attempt() {
+    ///             Ok(value) => return Ok(value),
+    ///             // Out of budget, or a failure decided on the request's merits.
+    ///             Err(error) if remaining == 0 || !error.is_retryable() => return Err(error),
+    ///             Err(error) => {
+    ///                 let wait = error
+    ///                     .backoff_hint()
+    ///                     .unwrap_or(Duration::from_millis(500) * 2u32.pow(3 - remaining));
+    ///                 std::thread::sleep(wait);
+    ///                 remaining -= 1;
+    ///             }
+    ///         }
+    ///     }
+    /// }
+    /// ```
     #[must_use]
     pub const fn is_retryable(&self) -> bool {
         match self {
@@ -414,7 +444,7 @@ impl From<serde_json::Error> for OrderbookError {
     /// (ADR 0025).
     fn from(error: serde_json::Error) -> Self {
         Self::Serialization {
-            category: serialization_error_category(&error),
+            category: cow_sdk_core::serialization_error_category(&error),
             line: error.line(),
             column: error.column(),
         }
@@ -428,16 +458,6 @@ impl From<serde_json::Error> for OrderbookError {
 /// error message even when the response body is redacted.
 fn http_status_label(status: u16) -> String {
     StatusCode::from_u16(status).map_or_else(|_| format!("HTTP {status}"), |code| code.to_string())
-}
-
-/// Maps a `serde_json` failure to its stable category tag.
-fn serialization_error_category(error: &serde_json::Error) -> &'static str {
-    match error.classify() {
-        serde_json::error::Category::Io => "io",
-        serde_json::error::Category::Syntax => "syntax",
-        serde_json::error::Category::Data => "data",
-        serde_json::error::Category::Eof => "eof",
-    }
 }
 
 #[cfg(not(target_arch = "wasm32"))]

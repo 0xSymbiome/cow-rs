@@ -66,7 +66,7 @@ impl PartnerFee {
     ///
     /// # Errors
     ///
-    /// Returns [`AppDataError::Json`] when the JSON value does not match any
+    /// Returns [`AppDataError::Serialization`] when the JSON value does not match any
     /// supported partner-fee schema shape. Bounds validation is not performed
     /// here — call [`PartnerFee::validate`] on the parsed value to enforce the
     /// documented basis-point ranges.

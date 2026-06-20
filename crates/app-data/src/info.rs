@@ -239,7 +239,7 @@ fn approaching_size_limit(bytes_used: usize, max_bytes: usize) -> bool {
 ///
 /// # Errors
 ///
-/// Returns [`AppDataError::Json`] if the canonicalisation pass fails.
+/// Returns [`AppDataError::Serialization`] if the canonicalisation pass fails.
 pub fn stringify_deterministic(value: &AppDataDoc) -> Result<String, AppDataError> {
     serde_jcs::to_string(value).map_err(AppDataError::from)
 }

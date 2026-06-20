@@ -89,7 +89,7 @@ impl QuoteMetadata {
     ///
     /// # Errors
     ///
-    /// Returns [`AppDataError::Json`] when the value does not match the typed
+    /// Returns [`AppDataError::Serialization`] when the value does not match the typed
     /// quote shape.
     pub fn from_value(value: Value) -> Result<Self, AppDataError> {
         serde_json::from_value(value).map_err(AppDataError::from)

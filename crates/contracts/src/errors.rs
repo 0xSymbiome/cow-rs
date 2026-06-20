@@ -208,19 +208,9 @@ impl From<serde_json::Error> for ContractsError {
     /// `category`/`line`/`column` triple is retained.
     fn from(error: serde_json::Error) -> Self {
         Self::Serialization {
-            category: serialization_error_category(&error),
+            category: cow_sdk_core::serialization_error_category(&error),
             line: error.line(),
             column: error.column(),
         }
-    }
-}
-
-/// Maps a `serde_json` failure to its stable category tag.
-fn serialization_error_category(error: &serde_json::Error) -> &'static str {
-    match error.classify() {
-        serde_json::error::Category::Io => "io",
-        serde_json::error::Category::Syntax => "syntax",
-        serde_json::error::Category::Data => "data",
-        serde_json::error::Category::Eof => "eof",
     }
 }

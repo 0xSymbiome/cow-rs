@@ -334,8 +334,8 @@ fn app_data_and_contracts_serialization_errors_drop_decoded_bytes() {
         AppDataError::from(serde_unknown_field_error()),
         AppDataError::from(serde_type_mismatch_error()),
     ];
-    assert_all_render("AppDataError::Json", &app_data_errors);
-    assert_all_serialize("AppDataError::Json", &app_data_errors);
+    assert_all_render("AppDataError::Serialization", &app_data_errors);
+    assert_all_serialize("AppDataError::Serialization", &app_data_errors);
 
     let contracts_errors = [
         ContractsError::from(serde_unknown_field_error()),
@@ -361,8 +361,8 @@ fn app_data_metadata_parse_failures_do_not_echo_caller_input() {
         let serde_error = serde_json::from_value::<AppDataParams>(input)
             .expect_err("malformed metadata must fail to deserialize");
         let error = AppDataError::from(serde_error);
-        assert_render("AppDataError::Json (metadata parse)", &error);
-        assert_serialize("AppDataError::Json (metadata parse)", &error);
+        assert_render("AppDataError::Serialization (metadata parse)", &error);
+        assert_serialize("AppDataError::Serialization (metadata parse)", &error);
     }
 }
 
