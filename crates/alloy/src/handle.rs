@@ -71,23 +71,12 @@ impl Signer for AlloyClientSignerHandle {
         &self,
         payload: &TypedDataPayload,
     ) -> Result<String, Self::Error> {
-        #[cfg(feature = "eip712")]
-        {
-            let typed =
-                cow_typed_data_payload_to_alloy(payload).map_err(AlloyClientError::Validation)?;
-            let signature = AlloySigner::sign_dynamic_typed_data(&self.inner.signer, &typed)
-                .await
-                .map_err(|error| AlloyClientError::from_alloy_signer(&error))?;
-            Ok(alloy_signature_to_hex(&signature)?)
-        }
-
-        #[cfg(not(feature = "eip712"))]
-        {
-            let _ = payload;
-            Err(AlloyClientError::Validation(
-                "sign_typed_data_payload requires the eip712 feature".to_owned(),
-            ))
-        }
+        let typed =
+            cow_typed_data_payload_to_alloy(payload).map_err(AlloyClientError::Validation)?;
+        let signature = AlloySigner::sign_dynamic_typed_data(&self.inner.signer, &typed)
+            .await
+            .map_err(|error| AlloyClientError::from_alloy_signer(&error))?;
+        Ok(alloy_signature_to_hex(&signature)?)
     }
 
     /// Submits a transaction through the wallet-filler provider and

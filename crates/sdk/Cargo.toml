@@ -28,15 +28,11 @@ workspace = true
 default = []
 alloy = [
     "dep:cow-sdk-alloy",
-    "cow-sdk-alloy/eip712",
     "alloy-provider",
     "alloy-signer",
 ]
 alloy-provider = ["dep:cow-sdk-alloy-provider"]
-alloy-signer = [
-    "dep:cow-sdk-alloy-signer",
-    "cow-sdk-alloy-signer/eip712",
-]
+alloy-signer = ["dep:cow-sdk-alloy-signer"]
 # Opt-in COW Shed account-abstraction hooks. Off by default, so the surface is
 # never on the default `cow-sdk` dependency closure (ADR 0049). Re-exports the
 # `cow-sdk-contracts` `cow_shed` module as `cow_sdk::cow_shed`.
