@@ -54,7 +54,7 @@ use cow_sdk_core::{ReqwestTransport, ReqwestTransportConfig};
 #[cfg(not(target_arch = "wasm32"))]
 use reqwest::Client;
 
-use crate::api::OrderbookApi;
+use crate::api::{OrderbookApi, normalize_base_url};
 use crate::error::OrderbookError;
 use crate::types::{ApiContext, EnvBaseUrlOverrides};
 
@@ -455,10 +455,6 @@ fn validate_orderbook_base_urls(
     }
 
     Ok(())
-}
-
-fn normalize_base_url(base_url: &str) -> String {
-    base_url.trim_end_matches('/').to_owned()
 }
 
 #[cfg(test)]

@@ -63,15 +63,12 @@ impl RequestRateLimiter {
         RequestRateLimiterBuilder::new()
     }
 
-    /// Returns the default orderbook request limiter.
+    /// Returns the default per-host request limiter.
+    ///
+    /// The orderbook and subgraph hosts share this budget; the subgraph
+    /// transport policy reuses it rather than declaring a byte-identical twin.
     #[must_use]
     pub fn default_orderbook() -> Self {
-        Self::builder().build()
-    }
-
-    /// Returns the default subgraph request limiter.
-    #[must_use]
-    pub fn default_subgraph() -> Self {
         Self::builder().build()
     }
 

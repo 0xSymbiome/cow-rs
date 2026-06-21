@@ -1,6 +1,6 @@
 use alloy_primitives::aliases::I512;
 
-use cow_sdk_contracts::{ContractId, Registry};
+use cow_sdk_contracts::ContractId;
 use cow_sdk_core::{
     Address, Amount, AppDataHash, CowEnv, MAX_VALID_TO_EPOCH, NATIVE_CURRENCY_ADDRESS, OrderData,
     ProtocolOptions, SupportedChainId, wrapped_native_token,
@@ -284,18 +284,16 @@ pub async fn calculate_unique_order_id(
     checker: Option<&dyn EthFlowOrderExistsChecker>,
     options: Option<&ProtocolOptions>,
 ) -> Result<GeneratedOrderId, TradingError> {
-    let owner = options
+    let env = options.and_then(|opts| opts.env).unwrap_or(CowEnv::Prod);
+    let eth_flow_override = options
         .and_then(|opts| opts.eth_flow_contract_override.as_ref())
-        .and_then(|override_map| override_map.get(&u64::from(chain_id)).copied())
-        .unwrap_or_else(|| {
-            let env = options.and_then(|opts| opts.env).unwrap_or(CowEnv::Prod);
-            // SAFETY: Registry::default parses the build-validated embedded
-            // manifest, which must include EthFlow addresses for supported
-            // chain/environment pairs.
-            Registry::default()
-                .address(ContractId::EthFlow, chain_id, env)
-                .expect("canonical EthFlow address is registered for every supported chain/env")
-        });
+        .and_then(|override_map| override_map.get(&u64::from(chain_id)).copied());
+    let owner = crate::onchain::resolve_contract_address(
+        ContractId::EthFlow,
+        eth_flow_override,
+        chain_id,
+        env,
+    );
     let mut current = order.clone();
 
     let Some(checker) = checker else {

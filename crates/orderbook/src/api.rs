@@ -878,7 +878,10 @@ impl OrderbookApi {
     }
 }
 
-fn normalize_base_url(base_url: &str) -> String {
+/// Strips a trailing `/` from a base URL. Shared with
+/// [`crate::builder`] so the host-policy-validated normalization cannot drift
+/// between the two construction paths.
+pub(crate) fn normalize_base_url(base_url: &str) -> String {
     base_url.trim_end_matches('/').to_owned()
 }
 

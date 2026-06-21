@@ -1,5 +1,5 @@
 use alloy_sol_types::SolCall as _;
-use cow_sdk_contracts::{ContractId, IERC20, Registry};
+use cow_sdk_contracts::{ContractId, IERC20};
 use cow_sdk_core::{
     Address, Amount, ContractCall, Provider, Signer, SupportedChainId, TransactionHash,
     TransactionRequest,
@@ -8,17 +8,8 @@ use cow_sdk_core::{
 use crate::{ApprovalParams, TradingError};
 
 /// Resolves the canonical vault-relayer address for allowance checks.
-///
-/// # Panics
-///
-/// Panics only if the embedded deployment registry is missing the canonical
-/// vault-relayer entry for a supported chain/environment pair.
 fn resolve_vault_relayer(chain_id: SupportedChainId, env: cow_sdk_core::CowEnv) -> Address {
-    // SAFETY: Registry::default parses the build-validated embedded manifest,
-    // which must include vault-relayer addresses for supported chains.
-    Registry::default()
-        .address(ContractId::VaultRelayer, chain_id, env)
-        .expect("canonical vault-relayer address is registered for every supported chain/env")
+    crate::onchain::resolve_contract_address(ContractId::VaultRelayer, None, chain_id, env)
 }
 
 const ERC20_ALLOWANCE_ABI_JSON: &str = r#"[{"type":"function","name":"allowance","inputs":[{"name":"owner","type":"address"},{"name":"spender","type":"address"}],"outputs":[{"name":"","type":"uint256"}],"stateMutability":"view"}]"#;

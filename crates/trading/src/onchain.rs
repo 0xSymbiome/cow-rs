@@ -369,56 +369,78 @@ pub(crate) fn protocol_options_for_partial_order(
     )
 }
 
-/// Resolves the settlement address for on-chain helper calls.
+/// Resolves a registry-backed contract address, honoring a caller override and
+/// otherwise reading the canonical deployment from the embedded registry.
+///
+/// The single source for the override-then-registry fallback used by every
+/// trading helper that resolves a deployment address, so the panic-vs-error
+/// policy lives in one place.
 ///
 /// # Panics
 ///
 /// Panics only if the embedded deployment registry is missing the canonical
-/// settlement entry for a supported chain/environment pair.
+/// entry for `contract_id` on a supported chain/environment pair.
+pub(crate) fn resolve_contract_address(
+    contract_id: ContractId,
+    override_address: Option<Address>,
+    chain_id: SupportedChainId,
+    env: cow_sdk_core::CowEnv,
+) -> Address {
+    override_address.unwrap_or_else(|| {
+        // SAFETY: Registry::default parses the build-validated embedded manifest,
+        // which carries every canonical contract address for supported
+        // chain/environment pairs.
+        Registry::default()
+            .address(contract_id, chain_id, env)
+            .expect("canonical contract address is registered for every supported chain/env")
+    })
+}
+
+/// Reads the per-chain override for `contract_id` from `options`, if present.
+fn contract_override(
+    contract_id: ContractId,
+    chain_id: SupportedChainId,
+    options: Option<&ProtocolOptions>,
+) -> Option<Address> {
+    let map = options.and_then(|opts| match contract_id {
+        ContractId::Settlement => opts.settlement_contract_override.as_ref(),
+        ContractId::EthFlow => opts.eth_flow_contract_override.as_ref(),
+        _ => None,
+    })?;
+    map.get(&u64::from(chain_id)).copied()
+}
+
+/// Resolves the environment from `options`, defaulting to production.
+fn resolved_env(options: Option<&ProtocolOptions>) -> cow_sdk_core::CowEnv {
+    options
+        .and_then(|opts| opts.env)
+        .unwrap_or(cow_sdk_core::CowEnv::Prod)
+}
+
+/// Resolves the settlement address for on-chain helper calls.
 fn resolve_settlement_address(
     chain_id: SupportedChainId,
     options: Option<&ProtocolOptions>,
 ) -> Address {
-    options
-        .and_then(|opts| opts.settlement_contract_override.as_ref())
-        .and_then(|override_map| override_map.get(&u64::from(chain_id)).copied())
-        .unwrap_or_else(|| {
-            let env = options
-                .and_then(|opts| opts.env)
-                .unwrap_or(cow_sdk_core::CowEnv::Prod);
-            // SAFETY: Registry::default parses the build-validated embedded
-            // manifest, which must include settlement addresses for supported
-            // chain/environment pairs.
-            Registry::default()
-                .address(ContractId::Settlement, chain_id, env)
-                .expect("canonical settlement address is registered for every supported chain/env")
-        })
+    resolve_contract_address(
+        ContractId::Settlement,
+        contract_override(ContractId::Settlement, chain_id, options),
+        chain_id,
+        resolved_env(options),
+    )
 }
 
 /// Resolves the `EthFlow` address for on-chain helper calls.
-///
-/// # Panics
-///
-/// Panics only if the embedded deployment registry is missing the canonical
-/// `EthFlow` entry for a supported chain/environment pair.
 fn resolve_eth_flow_address(
     chain_id: SupportedChainId,
     options: Option<&ProtocolOptions>,
 ) -> Address {
-    options
-        .and_then(|opts| opts.eth_flow_contract_override.as_ref())
-        .and_then(|override_map| override_map.get(&u64::from(chain_id)).copied())
-        .unwrap_or_else(|| {
-            let env = options
-                .and_then(|opts| opts.env)
-                .unwrap_or(cow_sdk_core::CowEnv::Prod);
-            // SAFETY: Registry::default parses the build-validated embedded
-            // manifest, which must include EthFlow addresses for supported
-            // chain/environment pairs.
-            Registry::default()
-                .address(ContractId::EthFlow, chain_id, env)
-                .expect("canonical EthFlow address is registered for every supported chain/env")
-        })
+    resolve_contract_address(
+        ContractId::EthFlow,
+        contract_override(ContractId::EthFlow, chain_id, options),
+        chain_id,
+        resolved_env(options),
+    )
 }
 
 /// Returns the default on-chain helper gas limit as a typed amount.
