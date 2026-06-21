@@ -106,7 +106,7 @@ impl Signer for LocalAlloySigner {
         &self,
         payload: &TypedDataPayload,
     ) -> Result<String, Self::Error> {
-        let typed = cow_typed_data_payload_to_alloy(payload).map_err(SignerError::Validation)?;
+        let typed = cow_typed_data_payload_to_alloy(payload).map_err(SignerError::validation)?;
         let signature = AlloySigner::sign_dynamic_typed_data(self.upstream_signer(), &typed)
             .await
             .map_err(|error| SignerError::from_alloy_signer(&error))?;

@@ -690,7 +690,7 @@ fn alloy_adapter_errors_redact_secret_bearing_payloads() {
     };
 
     let client_errors = [
-        AlloyClientError::Validation(secret_payload()),
+        AlloyClientError::Validation(secret_payload().into()),
         AlloyClientError::Transport {
             class: TransportErrorClass::Other,
             detail: Redacted::new(secret_payload()),
@@ -701,26 +701,26 @@ fn alloy_adapter_errors_redact_secret_bearing_payloads() {
         AlloyClientError::PendingTransaction {
             detail: Redacted::new(secret_payload()),
         },
-        AlloyClientError::Internal(secret_payload()),
+        AlloyClientError::Internal(secret_payload().into()),
     ];
     assert_all_render("AlloyClientError", &client_errors);
 
     let provider_errors = [
-        ProviderError::Validation(secret_payload()),
+        ProviderError::Validation(secret_payload().into()),
         ProviderError::Transport {
             class: TransportErrorClass::Other,
             detail: Redacted::new(secret_payload()),
         },
-        ProviderError::Internal(secret_payload()),
+        ProviderError::Internal(secret_payload().into()),
     ];
     assert_all_render("ProviderError", &provider_errors);
 
     let signer_errors = [
-        SignerError::Validation(secret_payload()),
+        SignerError::Validation(secret_payload().into()),
         SignerError::Signing {
             detail: Redacted::new(secret_payload()),
         },
-        SignerError::Internal(secret_payload()),
+        SignerError::Internal(secret_payload().into()),
     ];
     assert_all_render("SignerError", &signer_errors);
 

@@ -12,7 +12,7 @@ use cow_sdk_core::{Redacted, TransportErrorClass, UserRejection};
 #[test]
 fn every_variant_returns_none_so_the_signer_helper_keeps_redaction() {
     let cases: [AlloyClientError; 7] = [
-        AlloyClientError::Validation("validation-detail".to_owned()),
+        AlloyClientError::Validation("validation-detail".to_owned().into()),
         AlloyClientError::Transport {
             class: TransportErrorClass::Timeout,
             detail: Redacted::new("transport-detail".to_owned()),
@@ -28,7 +28,7 @@ fn every_variant_returns_none_so_the_signer_helper_keeps_redaction() {
             detail: Redacted::new("pending-transaction-detail".to_owned()),
         },
         AlloyClientError::Cancelled,
-        AlloyClientError::Internal("internal-detail".to_owned()),
+        AlloyClientError::Internal("internal-detail".to_owned().into()),
     ];
     for error in cases {
         assert!(

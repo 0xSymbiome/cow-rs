@@ -64,7 +64,7 @@ record alone.
 | --- | --- | --- | --- | --- | --- |
 | [HTTP Transport Contract Audit](http-transport-contract-audit.md) | Standing audit | `cow-sdk-core::HttpTransport` trait, its adapters, and the shared transport policy | Trait shape, `TransportResponse`, typed errors, `Retry-After` cooldown, URL redaction, and the retry/jitter/rate-limit/classification policy surface | Current | 2026-06-20 |
 | [Bounded Response Reads Audit](bounded-response-reads-audit.md) | Standing audit | HTTP response reads across core, wasm, and the contracts signature-decode path | Per-client `max_response_bytes` bound on decoded bytes, non-retryable `ResponseTooLarge`, and signature hex pre-decode bounds | Current | 2026-06-20 |
-| [Alloy Adapters Audit](alloy-adapters-audit.md) | Standing audit | The native Alloy adapter family, the transaction-lifecycle/receipt types, and the `LogProvider` capability | Read-only provider, local signer typed-data, umbrella composition, broadcast-only submission, receipt shape, single-call `get_logs`, redaction, cancellation, and dependency boundaries | Current | 2026-06-20 |
+| [Alloy Adapters Audit](alloy-adapters-audit.md) | Standing audit | The native Alloy adapter family, the transaction-lifecycle/receipt types, and the `LogProvider` capability | Read-only provider, local signer typed-data, umbrella composition, broadcast-only submission, receipt shape, single-call `get_logs`, redaction, cancellation, and dependency boundaries | Current | 2026-06-21 |
 
 ## Trading
 

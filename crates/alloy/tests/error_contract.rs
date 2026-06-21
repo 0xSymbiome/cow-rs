@@ -30,7 +30,7 @@ use cow_sdk_core::{Cancelled, Redacted, TransportErrorClass};
 fn class_label_table_covers_every_variant() {
     let cases: &[(AlloyClientError, AlloyClientErrorClass, &str)] = &[
         (
-            AlloyClientError::Validation("ignored".to_owned()),
+            AlloyClientError::Validation("ignored".to_owned().into()),
             AlloyClientErrorClass::Validation,
             "validation",
         ),
@@ -70,7 +70,7 @@ fn class_label_table_covers_every_variant() {
             "cancelled",
         ),
         (
-            AlloyClientError::Internal("ignored".to_owned()),
+            AlloyClientError::Internal("ignored".to_owned().into()),
             AlloyClientErrorClass::Internal,
             "internal",
         ),
@@ -101,7 +101,7 @@ fn class_label_table_covers_every_variant() {
 
 #[test]
 fn from_provider_error_validation_lifts_to_validation_variant() {
-    let upstream = ProviderError::Validation("invalid chain id".to_owned());
+    let upstream = ProviderError::Validation("invalid chain id".to_owned().into());
     let lifted: AlloyClientError = upstream.into();
     assert!(matches!(lifted, AlloyClientError::Validation(_)));
     assert_eq!(lifted.class(), AlloyClientErrorClass::Validation);
@@ -148,7 +148,7 @@ fn from_provider_error_cancelled_lifts_to_cancelled_variant() {
 
 #[test]
 fn from_provider_error_internal_lifts_to_internal_variant() {
-    let upstream = ProviderError::Internal("internal detail".to_owned());
+    let upstream = ProviderError::Internal("internal detail".to_owned().into());
     let lifted: AlloyClientError = upstream.into();
     assert!(matches!(lifted, AlloyClientError::Internal(_)));
     assert_eq!(lifted.class(), AlloyClientErrorClass::Internal);

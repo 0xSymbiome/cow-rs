@@ -261,7 +261,7 @@ fn builder_error_display_renders_each_variant_safely() {
 
 #[test]
 fn from_alloy_client_error_lifts_into_client_variant_transparently() {
-    let inner = AlloyClientError::Internal("inner detail".to_owned());
+    let inner = AlloyClientError::Internal("inner detail".to_owned().into());
     let lifted: AlloyClientBuilderError = inner.into();
 
     assert!(

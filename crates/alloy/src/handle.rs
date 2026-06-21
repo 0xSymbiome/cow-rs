@@ -72,7 +72,7 @@ impl Signer for AlloyClientSignerHandle {
         payload: &TypedDataPayload,
     ) -> Result<String, Self::Error> {
         let typed =
-            cow_typed_data_payload_to_alloy(payload).map_err(AlloyClientError::Validation)?;
+            cow_typed_data_payload_to_alloy(payload).map_err(AlloyClientError::validation)?;
         let signature = AlloySigner::sign_dynamic_typed_data(&self.inner.signer, &typed)
             .await
             .map_err(|error| AlloyClientError::from_alloy_signer(&error))?;
@@ -94,7 +94,7 @@ impl Signer for AlloyClientSignerHandle {
         &self,
         tx: &TransactionRequest,
     ) -> Result<TransactionBroadcast, Self::Error> {
-        let tx = cow_request_to_alloy(tx).map_err(AlloyClientError::Validation)?;
+        let tx = cow_request_to_alloy(tx).map_err(AlloyClientError::validation)?;
         let pending = self
             .inner
             .provider
@@ -103,12 +103,12 @@ impl Signer for AlloyClientSignerHandle {
             .map_err(AlloyClientError::from_alloy_transport)?;
         let tx_hash = *pending.tx_hash();
         let transaction_hash = TransactionHash::new(format!("0x{tx_hash:x}"))
-            .map_err(|error| AlloyClientError::Internal(format!("hash conversion: {error}")))?;
+            .map_err(|error| AlloyClientError::internal(format!("hash conversion: {error}")))?;
         Ok(TransactionBroadcast::new(transaction_hash))
     }
 
     async fn estimate_gas(&self, tx: &TransactionRequest) -> Result<Amount, Self::Error> {
-        let tx = cow_request_to_alloy(tx).map_err(AlloyClientError::Validation)?;
+        let tx = cow_request_to_alloy(tx).map_err(AlloyClientError::validation)?;
         let gas = self
             .inner
             .provider

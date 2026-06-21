@@ -13,7 +13,7 @@ use cow_sdk_core::{Redacted, UserRejection};
 #[test]
 fn every_variant_returns_none_so_the_signer_helper_keeps_redaction() {
     let cases: [SignerError; 6] = [
-        SignerError::Validation("validation-detail".to_owned()),
+        SignerError::Validation("validation-detail".to_owned().into()),
         SignerError::Signing {
             detail: Redacted::new("signing-detail".to_owned()),
         },
@@ -22,7 +22,7 @@ fn every_variant_returns_none_so_the_signer_helper_keeps_redaction() {
         },
         SignerError::Unsupported("unsupported-method"),
         SignerError::Cancelled,
-        SignerError::Internal("internal-detail".to_owned()),
+        SignerError::Internal("internal-detail".to_owned().into()),
     ];
     for error in cases {
         assert!(

@@ -1,6 +1,6 @@
 //! Error types for the native Alloy signer adapter.
 
-use std::{error::Error, fmt};
+use std::fmt;
 
 use cow_sdk_core::Redacted;
 
@@ -44,26 +44,37 @@ impl fmt::Display for SignerErrorClass {
 }
 
 /// Error returned by [`crate::LocalAlloySigner`].
+///
+/// `Validation` and `Internal` hold caller- or upstream-authored text behind
+/// [`Redacted`] so neither the `thiserror`-derived `Display` nor the hand-written
+/// `Debug` can leak credential-bearing detail.
 #[non_exhaustive]
+#[derive(thiserror::Error)]
 pub enum SignerError {
     /// Caller-controlled input failed validation.
-    Validation(String),
+    #[error("validation error: {0}")]
+    Validation(Redacted<String>),
     /// The upstream signer failed.
+    #[error("signing error: {detail}")]
     Signing {
         /// Redacted signing detail.
         detail: Redacted<String>,
     },
     /// A provider is required for this method.
+    #[error("the {method} method requires a provider")]
     ProviderRequired {
         /// Method that requires provider context.
         method: &'static str,
     },
     /// The requested operation is unsupported.
+    #[error("unsupported: {0}")]
     Unsupported(&'static str),
     /// The operation was cancelled by [`cow_sdk_core::Cancellable`].
+    #[error("operation cancelled")]
     Cancelled,
     /// A local invariant or internal conversion failed.
-    Internal(String),
+    #[error("internal error: {0}")]
+    Internal(Redacted<String>),
 }
 
 impl SignerError {
@@ -78,6 +89,11 @@ impl SignerError {
             Self::Cancelled => SignerErrorClass::Cancelled,
             Self::Internal(_) => SignerErrorClass::Internal,
         }
+    }
+
+    /// Wraps caller-input detail in the redacted `Validation` arm.
+    pub(crate) const fn validation(message: String) -> Self {
+        Self::Validation(Redacted::new(message))
     }
 
     /// Inter-crate seam constructor; not part of the semver-stable consumer
@@ -114,23 +130,6 @@ impl fmt::Debug for SignerError {
         }
     }
 }
-
-impl fmt::Display for SignerError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Validation(_) => f.write_str("validation error: [redacted]"),
-            Self::Signing { detail } => write!(f, "signing error: {detail}"),
-            Self::ProviderRequired { method } => {
-                write!(f, "the {method} method requires a provider")
-            }
-            Self::Unsupported(message) => write!(f, "unsupported: {message}"),
-            Self::Cancelled => f.write_str("operation cancelled"),
-            Self::Internal(_) => f.write_str("internal error: [redacted]"),
-        }
-    }
-}
-
-impl Error for SignerError {}
 
 impl From<cow_sdk_contracts::ContractsError> for SignerError {
     fn from(error: cow_sdk_contracts::ContractsError) -> Self {
@@ -180,7 +179,7 @@ mod tests {
     fn class_returns_expected_discriminant_for_every_variant() {
         let cases = [
             (
-                SignerError::Validation("invalid".to_owned()),
+                SignerError::Validation("invalid".to_owned().into()),
                 SignerErrorClass::Validation,
             ),
             (
@@ -199,7 +198,7 @@ mod tests {
             ),
             (SignerError::Cancelled, SignerErrorClass::Cancelled),
             (
-                SignerError::Internal("secret".to_owned()),
+                SignerError::Internal("secret".to_owned().into()),
                 SignerErrorClass::Internal,
             ),
         ];

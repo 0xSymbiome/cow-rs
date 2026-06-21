@@ -6,7 +6,7 @@ use cow_sdk_core::{Redacted, SupportedChainId};
 #[test]
 fn validation_display_and_debug_do_not_leak_input() {
     let secret = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
-    let error = SignerError::Validation(secret.to_owned());
+    let error = SignerError::Validation(secret.to_owned().into());
 
     assert_redacted(&error, secret);
     assert_eq!(error.class(), SignerErrorClass::Validation);
@@ -48,7 +48,7 @@ fn unsupported_message_is_static() {
 #[test]
 fn internal_display_and_debug_do_not_leak_input() {
     let secret = "internal private key fragment";
-    let error = SignerError::Internal(secret.to_owned());
+    let error = SignerError::Internal(secret.to_owned().into());
 
     assert_redacted(&error, secret);
     assert_eq!(error.class(), SignerErrorClass::Internal);
@@ -86,7 +86,7 @@ fn signer_debug_redacts_private_key_material() {
 fn error_class_covers_every_variant() {
     let cases = [
         (
-            SignerError::Validation("invalid".to_owned()),
+            SignerError::Validation("invalid".to_owned().into()),
             SignerErrorClass::Validation,
         ),
         (
@@ -105,7 +105,7 @@ fn error_class_covers_every_variant() {
         ),
         (SignerError::Cancelled, SignerErrorClass::Cancelled),
         (
-            SignerError::Internal("internal".to_owned()),
+            SignerError::Internal("internal".to_owned().into()),
             SignerErrorClass::Internal,
         ),
     ];

@@ -1,6 +1,6 @@
 //! Error types for the native Alloy provider adapter.
 
-use std::{error::Error, fmt};
+use std::fmt;
 
 use cow_sdk_core::{Redacted, TransportErrorClass};
 
@@ -41,11 +41,18 @@ impl fmt::Display for ProviderErrorClass {
 }
 
 /// Error returned by [`crate::RpcAlloyProvider`].
+///
+/// `Validation` and `Internal` hold caller- or upstream-authored text behind
+/// [`Redacted`] so neither the `thiserror`-derived `Display` nor the hand-written
+/// `Debug` can leak credential-bearing detail.
 #[non_exhaustive]
+#[derive(thiserror::Error)]
 pub enum ProviderError {
     /// Caller-controlled input failed validation.
-    Validation(String),
+    #[error("validation error: {0}")]
+    Validation(Redacted<String>),
     /// The HTTP transport, JSON-RPC envelope, or response decoding failed.
+    #[error("transport error ({class}): {detail}")]
     Transport {
         /// Stable transport class for retry and telemetry decisions.
         class: TransportErrorClass,
@@ -53,6 +60,7 @@ pub enum ProviderError {
         detail: Redacted<String>,
     },
     /// The remote JSON-RPC server returned an error payload.
+    #[error("remote error (code {code}): {message}")]
     Remote {
         /// JSON-RPC error code.
         code: i64,
@@ -60,9 +68,11 @@ pub enum ProviderError {
         message: String,
     },
     /// The operation was cancelled by [`cow_sdk_core::Cancellable`].
+    #[error("operation cancelled")]
     Cancelled,
     /// A local invariant or unsupported upstream path was reached.
-    Internal(String),
+    #[error("internal error: {0}")]
+    Internal(Redacted<String>),
 }
 
 impl ProviderError {
@@ -76,6 +86,16 @@ impl ProviderError {
             Self::Cancelled => ProviderErrorClass::Cancelled,
             Self::Internal(_) => ProviderErrorClass::Internal,
         }
+    }
+
+    /// Wraps caller-input detail in the redacted `Validation` arm.
+    pub(crate) const fn validation(message: String) -> Self {
+        Self::Validation(Redacted::new(message))
+    }
+
+    /// Wraps internal detail in the redacted `Internal` arm.
+    pub(crate) const fn internal(message: String) -> Self {
+        Self::Internal(Redacted::new(message))
     }
 
     /// Inter-crate seam constructor; not part of the semver-stable consumer
@@ -93,7 +113,7 @@ impl ProviderError {
                 Self::Remote { code, message }
             }
             __transport_classification::RpcErrorClassification::Internal(message) => {
-                Self::Internal(message)
+                Self::internal(message)
             }
         }
     }
@@ -125,27 +145,9 @@ impl fmt::Debug for ProviderError {
     }
 }
 
-impl fmt::Display for ProviderError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Validation(_) => f.write_str("validation error: [redacted]"),
-            Self::Transport { class, detail } => {
-                write!(f, "transport error ({class}): {detail}")
-            }
-            Self::Remote { code, message } => {
-                write!(f, "remote error (code {code}): {message}")
-            }
-            Self::Cancelled => f.write_str("operation cancelled"),
-            Self::Internal(_) => f.write_str("internal error: [redacted]"),
-        }
-    }
-}
-
-impl Error for ProviderError {}
-
 impl From<cow_sdk_core::CoreError> for ProviderError {
     fn from(error: cow_sdk_core::CoreError) -> Self {
-        Self::Validation(error.to_string())
+        Self::validation(error.to_string())
     }
 }
 

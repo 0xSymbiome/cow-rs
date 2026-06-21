@@ -1,6 +1,6 @@
 //! Error types for the native composed Alloy adapter.
 
-use std::{error::Error, fmt};
+use std::fmt;
 
 use cow_sdk_core::{Redacted, TransportErrorClass};
 
@@ -49,11 +49,18 @@ impl fmt::Display for AlloyClientErrorClass {
 }
 
 /// Error returned by [`crate::AlloyClient`] and [`crate::AlloyClientSignerHandle`].
+///
+/// `Validation` and `Internal` hold caller- or upstream-authored text behind
+/// [`Redacted`] so neither the `thiserror`-derived `Display` nor the hand-written
+/// `Debug` can leak credential-bearing detail.
 #[non_exhaustive]
+#[derive(thiserror::Error)]
 pub enum AlloyClientError {
     /// Caller-controlled input failed validation.
-    Validation(String),
+    #[error("validation error: {0}")]
+    Validation(Redacted<String>),
     /// The HTTP transport, JSON-RPC envelope, or response decoding failed.
+    #[error("transport error ({class}): {detail}")]
     Transport {
         /// Stable transport class for retry and telemetry decisions.
         class: TransportErrorClass,
@@ -61,6 +68,7 @@ pub enum AlloyClientError {
         detail: Redacted<String>,
     },
     /// The remote JSON-RPC server returned an error payload.
+    #[error("remote error (code {code}): {message}")]
     Remote {
         /// JSON-RPC error code.
         code: i64,
@@ -68,19 +76,23 @@ pub enum AlloyClientError {
         message: String,
     },
     /// The upstream signer failed.
+    #[error("signing error: {detail}")]
     Signing {
         /// Redacted signing detail.
         detail: Redacted<String>,
     },
     /// Pending transaction registration or watch failed.
+    #[error("pending transaction error: {detail}")]
     PendingTransaction {
         /// Redacted pending-transaction detail.
         detail: Redacted<String>,
     },
     /// The operation was cancelled by [`cow_sdk_core::Cancellable`].
+    #[error("operation cancelled")]
     Cancelled,
     /// A local invariant or internal conversion failed.
-    Internal(String),
+    #[error("internal error: {0}")]
+    Internal(Redacted<String>),
 }
 
 impl AlloyClientError {
@@ -98,6 +110,16 @@ impl AlloyClientError {
         }
     }
 
+    /// Wraps caller-input detail in the redacted `Validation` arm.
+    pub(crate) const fn validation(message: String) -> Self {
+        Self::Validation(Redacted::new(message))
+    }
+
+    /// Wraps internal detail in the redacted `Internal` arm.
+    pub(crate) const fn internal(message: String) -> Self {
+        Self::Internal(Redacted::new(message))
+    }
+
     /// Inter-crate seam constructor; not part of the semver-stable consumer
     /// API. Sibling adapter crates use this to lift Alloy transport errors into
     /// the umbrella's typed error surface. The argument shape may change in any
@@ -113,9 +135,9 @@ impl AlloyClientError {
                 Self::Remote { code, message }
             }
             cow_sdk_alloy_provider::__seam::RpcErrorClassification::Internal(message) => {
-                Self::Internal(message)
+                Self::internal(message)
             }
-            _ => Self::Internal("unknown alloy transport error classification".to_owned()),
+            _ => Self::internal("unknown alloy transport error classification".to_owned()),
         }
     }
 
@@ -175,28 +197,6 @@ impl fmt::Debug for AlloyClientError {
     }
 }
 
-impl fmt::Display for AlloyClientError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Validation(_) => f.write_str("validation error: [redacted]"),
-            Self::Transport { class, detail } => {
-                write!(f, "transport error ({class}): {detail}")
-            }
-            Self::Remote { code, message } => {
-                write!(f, "remote error (code {code}): {message}")
-            }
-            Self::Signing { detail } => write!(f, "signing error: {detail}"),
-            Self::PendingTransaction { detail } => {
-                write!(f, "pending transaction error: {detail}")
-            }
-            Self::Cancelled => f.write_str("operation cancelled"),
-            Self::Internal(_) => f.write_str("internal error: [redacted]"),
-        }
-    }
-}
-
-impl Error for AlloyClientError {}
-
 /// `AlloyClient` composes a local-key signer with the alloy HTTP
 /// provider and never surfaces an EIP-1193 wallet rejection: the
 /// signer holds the key locally, so the user-prompt flow that
@@ -221,7 +221,7 @@ impl cow_sdk_core::UserRejection for AlloyClientError {
 
 impl From<cow_sdk_core::CoreError> for AlloyClientError {
     fn from(error: cow_sdk_core::CoreError) -> Self {
-        Self::Validation(error.to_string())
+        Self::validation(error.to_string())
     }
 }
 
@@ -251,7 +251,7 @@ impl From<cow_sdk_alloy_provider::ProviderError> for AlloyClientError {
             }
             cow_sdk_alloy_provider::ProviderError::Cancelled => Self::Cancelled,
             cow_sdk_alloy_provider::ProviderError::Internal(detail) => Self::Internal(detail),
-            _ => Self::Internal("unknown alloy provider error".to_owned()),
+            _ => Self::internal("unknown alloy provider error".to_owned()),
         }
     }
 }

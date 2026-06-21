@@ -170,7 +170,12 @@ carried `errors` vector, which the `GraphQl` rustdoc documents as a doctest.
 The native Alloy provider, signer, umbrella, and facade adapters store
 configured RPC URLs behind redacting state and use hand-written opaque `Debug`
 so provider URLs, private-key material, signer internals, transport details,
-and pending-transaction details never print. The wasm surface extends the
+and pending-transaction details never print. The adapter error types
+(`ProviderError`, `SignerError`, `AlloyClientError`) hold their `Validation` and
+`Internal` detail behind `Redacted<String>`, so the `thiserror`-derived `Display`
+renders the placeholder from the type rather than from a hand-written literal;
+each error keeps its hand-written `Debug` so the credential firewall does not
+depend on a derive. The wasm surface extends the
 contract to JavaScript: `WasmError` (`crates/wasm/src/exports/errors.rs`)
 exposes typed discriminants and low-cardinality fields, maps `TransportError`
 through `Display` and `cow_sdk_core::redact_response_body`, and never exposes a
