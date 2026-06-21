@@ -1,7 +1,7 @@
 # Error Classification Audit
 
 Status: Current
-Last reviewed: 2026-06-20
+Last reviewed: 2026-06-21
 Owning surface: the `class()`, `is_retryable()`, and `backoff_hint()` accessors on the `cow-sdk` error family and the shared `cow_sdk_core::ErrorClass`
 Refresh trigger: a new `ErrorClass` bucket; a new error type aggregated by `cow_sdk::CowError`; a change to any type's `class()` mapping; a change to the `is_retryable()` / `backoff_hint()` mapping or the retained `Retry-After` capture; or a new error variant whose class or retry verdict differs from its type's existing default arm
 Related docs:
@@ -87,7 +87,13 @@ a bare leaf error. `ContractsError::class()` partitions its variants by meaning
 rather than to a single bucket: caller-supplied shape and range failures map to
 `Validation`, serialization/ABI/decode invariants map to `Internal` (matching
 `CoreError`), and the EIP-1271, provider, and ECDSA-recovery operations map to
-`Signing`. When the off-by-default `subgraph` feature is enabled,
+`Signing`. `OrderbookError::class()` follows the same meaning-first rule:
+caller-input faults raised before or independent of the network — a malformed
+trades query or quote request, a rejected base-URL override (`HostPolicy`), and a
+signing-scheme/onchain-flag conflict (`IncompatibleSigningScheme`) — map to
+`Validation`, while post-response integrity faults (serialization, transform,
+app-data and quote-echo mismatches) stay `Internal`. When the off-by-default
+`subgraph` feature is enabled,
 `SubgraphError::class()` is the seventh accessor and the feature-gated
 `CowError::Subgraph` variant delegates to it the same way
 ([ADR 0003](../adr/0003-separate-read-only-subgraph-crate.md)); the
