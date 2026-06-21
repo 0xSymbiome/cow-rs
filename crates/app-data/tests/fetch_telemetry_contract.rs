@@ -8,7 +8,6 @@
 
 mod common;
 
-use async_trait::async_trait;
 use cow_sdk_app_data::{
     AppDataError, IpfsFetchTransport, fetch_doc_from_app_data_hex, fetch_doc_from_cid,
 };
@@ -18,8 +17,6 @@ use crate::common::{APP_DATA_HEX, APP_DATA_STRING, CID};
 
 struct StubTransport;
 
-#[cfg_attr(not(target_arch = "wasm32"), async_trait)]
-#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 impl IpfsFetchTransport for StubTransport {
     async fn get(&self, _uri: &str) -> Result<String, AppDataError> {
         Ok(APP_DATA_STRING.to_owned())

@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use crate::helpers as pure;
-use async_trait::async_trait;
 use cow_sdk_app_data::{AppDataError, IpfsFetchTransport};
 use cow_sdk_core::transport::policy::{
     AttemptOutcome as RetryOutcome, LimiterKey, RetrySignal, TransportPolicy, run_with_retry,
@@ -44,7 +43,6 @@ impl IpfsHttpAdapter {
     }
 }
 
-#[async_trait(?Send)]
 impl IpfsFetchTransport for IpfsHttpAdapter {
     async fn get(&self, uri: &str) -> Result<String, AppDataError> {
         // The shared driver in `cow_sdk_core::transport::policy` owns the retry loop,

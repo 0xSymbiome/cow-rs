@@ -89,7 +89,6 @@ use cow_sdk_app_data::{AppDataError, IpfsFetchTransport, fetch_doc_from_app_data
 
 struct IpfsClient;
 
-#[async_trait::async_trait]
 impl IpfsFetchTransport for IpfsClient {
     async fn get(&self, uri: &str) -> Result<String, AppDataError> {
         // Issue the GET with your HTTP client of choice and return the body.

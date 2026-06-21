@@ -28,7 +28,6 @@ tracing = ["dep:tracing", "cow-sdk-core/tracing"]
 cow-sdk-core = { path = "../core", version = "0.1.0-alpha.8" }
 alloy-primitives.workspace = true
 alloy-serde.workspace = true
-async-trait.workspace = true
 cid.workspace = true
 multibase.workspace = true
 multihash.workspace = true
