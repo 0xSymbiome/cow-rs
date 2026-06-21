@@ -15,7 +15,7 @@ workspace = true
 [dependencies]
 anyhow = "1.0.102"
 clap = { version = "4.6.1", features = ["derive", "env"] }
-cow-sdk-contracts = { path = "../crates/contracts", version = "0.1.0-alpha.8" }
+cow-sdk-contracts = { path = "../crates/contracts", version = "0.1.0-alpha.4" }
 hex = "0.4.3"
 proc-macro2 = { version = "1.0.106", features = ["span-locations"] }
 regex = "1.12.3"

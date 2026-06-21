@@ -142,5 +142,9 @@ name = "eip1271_signer"
 path = "scenarios/eip1271_signer.rs"
 
 [[example]]
+name = "receiver_redirect"
+path = "scenarios/receiver_redirect.rs"
+
+[[example]]
 name = "ethflow_checker"
 path = "scenarios/ethflow_checker.rs"
