@@ -38,10 +38,8 @@ struct FuzzInput {
 fuzz_target!(|input: FuzzInput| {
     let domain = build_domain(&input);
 
-    let first = domain_separator_for(&domain)
-        .expect("domain_separator_for must accept any byte-constructed domain");
-    let second =
-        domain_separator_for(&domain).expect("domain_separator_for must remain deterministic");
+    let first = domain_separator_for(&domain);
+    let second = domain_separator_for(&domain);
     assert_eq!(
         first, second,
         "domain_separator_for must produce the same digest for identical inputs",
@@ -71,8 +69,7 @@ fuzz_target!(|input: FuzzInput| {
     // round of fuzzing visits a deterministic mutation class.
     let mutated = mutate_domain(&input);
     if mutated != domain {
-        let mutated_separator = domain_separator_for(&mutated)
-            .expect("mutated domain_separator_for must remain deterministic");
+        let mutated_separator = domain_separator_for(&mutated);
         assert_ne!(
             first, mutated_separator,
             "mutating any single domain field must change the separator (baseline={domain:?}, mutated={mutated:?})",

@@ -71,10 +71,8 @@ fuzz_target!(|input: FuzzInput| {
     let cancellations = OrderCancellations::new(uids.clone());
 
     // Empty cancellation batches still must hash deterministically.
-    let first = hash_order_cancellations(&domain, &cancellations)
-        .expect("hash_order_cancellations must accept well-typed UIDs");
-    let second = hash_order_cancellations(&domain, &cancellations)
-        .expect("hash_order_cancellations must remain deterministic");
+    let first = hash_order_cancellations(&domain, &cancellations);
+    let second = hash_order_cancellations(&domain, &cancellations);
     assert_eq!(
         first, second,
         "hash_order_cancellations must produce the same digest for identical inputs",
@@ -84,10 +82,8 @@ fuzz_target!(|input: FuzzInput| {
         // Singular-vs-batch consistency: the documented wrapper must hash
         // identically to a single-UID batch.
         let single_batch = OrderCancellations::new(vec![first_uid.clone()]);
-        let batched = hash_order_cancellations(&domain, &single_batch)
-            .expect("single-UID batch hashing must accept the just-packed UID");
-        let single = hash_order_cancellation(&domain, first_uid)
-            .expect("singular cancellation hashing must accept the just-packed UID");
+        let batched = hash_order_cancellations(&domain, &single_batch);
+        let single = hash_order_cancellation(&domain, first_uid);
         assert_eq!(
             single, batched,
             "hash_order_cancellation must equal a single-UID hash_order_cancellations",
@@ -99,8 +95,7 @@ fuzz_target!(|input: FuzzInput| {
         mutated[0] = rotate_uid(&input.seed_digest, &input.seed_owner, input.seed_valid_to);
         if &mutated[0] != first_uid {
             let mutated_batch = OrderCancellations::new(mutated);
-            let mutated_digest = hash_order_cancellations(&domain, &mutated_batch)
-                .expect("rotated UID batch must still hash");
+            let mutated_digest = hash_order_cancellations(&domain, &mutated_batch);
             assert_ne!(
                 first, mutated_digest,
                 "two structurally distinct UID batches must hash to different digests",
