@@ -98,10 +98,9 @@ async fn cancellation_signing_uses_typed_data_and_ethsign_digest_paths() {
     .unwrap();
 
     let expected_digest = hash_order_cancellations(
-        &domain(SupportedChainId::Sepolia, None).unwrap(),
+        &domain(SupportedChainId::Sepolia, None),
         &OrderCancellations::new(batch_uids),
-    )
-    .unwrap();
+    );
     assert_eq!(
         format!(
             "0x{}",

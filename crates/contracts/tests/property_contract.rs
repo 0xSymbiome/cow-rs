@@ -277,8 +277,8 @@ proptest! {
         order in order_strategy(),
         owner in address_strategy(),
     ) {
-        let first = compute_order_uid(&domain, &order, &owner).unwrap();
-        let second = compute_order_uid(&domain, &order, &owner).unwrap();
+        let first = compute_order_uid(&domain, &order, &owner);
+        let second = compute_order_uid(&domain, &order, &owner);
         prop_assert_eq!(first.to_hex_string(), second.to_hex_string());
 
         let extracted = extract_order_uid_params(&first).unwrap();
@@ -294,8 +294,8 @@ proptest! {
         domain in domain_strategy(),
         order in order_strategy(),
     ) {
-        let hash = hash_order(&domain, &order).unwrap();
-        let repeat = hash_order(&domain, &order).unwrap();
+        let hash = hash_order(&domain, &order);
+        let repeat = hash_order(&domain, &order);
         prop_assert_eq!(repeat.to_hex_string(), hash.to_hex_string());
     }
 
@@ -326,8 +326,8 @@ proptest! {
 
         prop_assert_eq!(&order.sell_token, &uppercase_order.sell_token);
 
-        let hash_original = hash_order(&domain, &order).unwrap();
-        let hash_upper = hash_order(&domain, &uppercase_order).unwrap();
+        let hash_original = hash_order(&domain, &order);
+        let hash_upper = hash_order(&domain, &uppercase_order);
         prop_assert_eq!(hash_original.to_hex_string(), hash_upper.to_hex_string());
     }
 

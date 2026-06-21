@@ -21,12 +21,11 @@ use common::sample_order;
 
 #[test]
 fn domain_resolution_honors_default_env_staging_and_override_precedence() {
-    let default_domain = domain(SupportedChainId::Mainnet, None).unwrap();
+    let default_domain = domain(SupportedChainId::Mainnet, None);
     let staging_domain = domain(
         SupportedChainId::Mainnet,
         Some(&ProtocolOptions::new().with_env(CowEnv::Staging)),
-    )
-    .unwrap();
+    );
     let override_address = Address::new("0x1111111111111111111111111111111111111111").unwrap();
     let override_domain = domain(
         SupportedChainId::Mainnet,
@@ -39,8 +38,7 @@ fn domain_resolution_honors_default_env_staging_and_override_precedence() {
                         .collect(),
                 ),
         ),
-    )
-    .unwrap();
+    );
 
     assert_eq!(
         default_domain.verifying_contract,
@@ -57,7 +55,7 @@ fn domain_resolution_honors_default_env_staging_and_override_precedence() {
 fn typed_data_domain_and_separator_match_fixture_contract() {
     let order = sample_order();
     let typed = order_typed_data(SupportedChainId::Mainnet, &order, None).unwrap();
-    let separator = domain_separator(SupportedChainId::Mainnet, None).unwrap();
+    let separator = domain_separator(SupportedChainId::Mainnet, None);
     let expected = independent_domain_separator(
         &typed.domain.name,
         &typed.domain.version,

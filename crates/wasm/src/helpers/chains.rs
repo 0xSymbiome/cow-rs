@@ -35,11 +35,10 @@ pub fn env_from_str(env: Option<&str>) -> Result<CowEnv, PureError> {
 ///
 /// # Errors
 ///
-/// Returns [`PureError`] for unsupported chains or signing-domain failures.
+/// Returns [`PureError`] for unsupported chains.
 pub fn domain_separator(chain_id: u32) -> Result<String, PureError> {
     let chain = supported_chain(chain_id)?;
-    cow_sdk_signing::domain_separator(chain, None)
-        .map_err(|error| PureError::invalid("chainId", error.to_string()))
+    Ok(cow_sdk_signing::domain_separator(chain, None))
 }
 
 /// Returns supported chain ids in deterministic order.

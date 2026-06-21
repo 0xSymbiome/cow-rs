@@ -627,8 +627,7 @@ fn cancellation_payload(
     let payload = order_cancellations_typed_data_payload(&uids, chain, None)
         .map_err(|error| WasmError::from(error).into_js())?;
     let cancellations = cow_sdk_contracts::OrderCancellations::new(uids.clone());
-    let digest = cow_sdk_contracts::hash_order_cancellations(&payload.domain, &cancellations)
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let digest = cow_sdk_contracts::hash_order_cancellations(&payload.domain, &cancellations);
     Ok((uids, payload, digest))
 }
 

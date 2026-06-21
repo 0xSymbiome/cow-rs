@@ -258,9 +258,9 @@ proptest! {
     fn domain_separators_change_only_when_the_typed_data_domain_changes(
         (domain, changed) in domain_and_changed_strategy(),
     ) {
-        let separator = domain_separator_for(&domain).unwrap();
-        let repeated = domain_separator_for(&domain).unwrap();
-        let changed_separator = domain_separator_for(&changed).unwrap();
+        let separator = domain_separator_for(&domain);
+        let repeated = domain_separator_for(&domain);
+        let changed_separator = domain_separator_for(&changed);
 
         prop_assert_eq!(&separator, &repeated);
         prop_assert_ne!(&separator, &changed_separator);
@@ -282,7 +282,7 @@ proptest! {
         let repeated_payload = order_typed_data_payload(chain, &order, None).unwrap();
         let generated = generate_order_id(chain, &order, &owner, None).unwrap();
         let repeated_generated = generate_order_id(chain, &order, &owner, None).unwrap();
-        let expected_digest = hash_order(&domain(chain, None).unwrap(), &order).unwrap();
+        let expected_digest = hash_order(&domain(chain, None), &order);
 
         prop_assert_eq!(&payload, &repeated_payload);
         prop_assert_eq!(&generated, &repeated_generated);
@@ -338,10 +338,9 @@ proptest! {
         let repeated_payload =
             order_cancellations_typed_data_payload(&order_uids, chain, None).unwrap();
         let expected_digest = hash_order_cancellations(
-            &domain(chain, None).unwrap(),
+            &domain(chain, None),
             &OrderCancellations::new(order_uids.clone()),
-        )
-        .unwrap();
+        );
 
         prop_assert_eq!(&payload, &repeated_payload);
 
@@ -393,7 +392,7 @@ proptest! {
         (chain, options) in chain_with_protocol_options_strategy(),
         order in unsigned_order_strategy(),
     ) {
-        let expected_domain = domain(chain, options.as_ref()).unwrap();
+        let expected_domain = domain(chain, options.as_ref());
 
         let payload = order_typed_data_payload(chain, &order, options.as_ref()).unwrap();
         let repeated_payload = order_typed_data_payload(chain, &order, options.as_ref()).unwrap();

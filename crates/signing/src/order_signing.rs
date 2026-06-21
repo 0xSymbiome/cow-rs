@@ -135,8 +135,8 @@ pub fn generate_order_id(
     owner: &Address,
     options: Option<&ProtocolOptions>,
 ) -> Result<GeneratedOrderId, SigningError> {
-    let domain = domain(chain_id, options)?;
-    let order_digest = hash_order(&domain, order)?;
+    let domain = domain(chain_id, options);
+    let order_digest = hash_order(&domain, order);
     let order_id =
         pack_order_uid_params(&OrderUidParams::new(order_digest, *owner, order.valid_to));
 
@@ -239,8 +239,8 @@ fn order_signing_payload(
     chain_id: SupportedChainId,
     options: Option<&ProtocolOptions>,
 ) -> Result<OrderSigningPayload, SigningError> {
-    let domain = domain(chain_id, options)?;
-    let digest = hash_order(&domain, order)?;
+    let domain = domain(chain_id, options);
+    let digest = hash_order(&domain, order);
 
     Ok(OrderSigningPayload {
         payload: order_typed_data_payload(chain_id, order, options)?,

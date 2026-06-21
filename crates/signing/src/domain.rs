@@ -14,10 +14,6 @@ pub type OrderTypedData = TypedDataEnvelope<OrderData>;
 
 /// Builds the `CoW` typed-data domain for a chain and optional protocol overrides.
 ///
-/// # Errors
-///
-/// Returns [`SigningError`] if any override address is invalid through lower-level contracts.
-///
 /// # Panics
 ///
 /// Panics if the deployment registry is missing the canonical
@@ -25,10 +21,8 @@ pub type OrderTypedData = TypedDataEnvelope<OrderData>;
 /// registry's const table carries a settlement deployment for every supported
 /// chain and environment, so this panic cannot be reached from an unmodified
 /// binary.
-pub fn domain(
-    chain_id: SupportedChainId,
-    options: Option<&ProtocolOptions>,
-) -> Result<TypedDataDomain, SigningError> {
+#[must_use]
+pub fn domain(chain_id: SupportedChainId, options: Option<&ProtocolOptions>) -> TypedDataDomain {
     let env = options
         .and_then(|options| options.env)
         .unwrap_or(CowEnv::Prod);
@@ -36,7 +30,7 @@ pub fn domain(
         .and_then(|options| options.settlement_contract_override.as_ref())
         .and_then(|addresses| addresses.get(&u64::from(chain_id)).copied());
 
-    Ok(TypedDataDomain::new(
+    TypedDataDomain::new(
         "Gnosis Protocol".to_owned(),
         "v2".to_owned(),
         chain_id.into(),
@@ -48,20 +42,13 @@ pub fn domain(
                 .address(ContractId::Settlement, chain_id, env)
                 .expect("canonical settlement address is registered for every supported chain/env")
         }),
-    ))
+    )
 }
 
 /// Computes the domain separator for a chain and optional protocol overrides.
-///
-/// # Errors
-///
-/// Returns [`SigningError`] if domain construction or address encoding fails.
-pub fn domain_separator(
-    chain_id: SupportedChainId,
-    options: Option<&ProtocolOptions>,
-) -> Result<String, SigningError> {
-    let domain = domain(chain_id, options)?;
-    domain_separator_for(&domain)
+#[must_use]
+pub fn domain_separator(chain_id: SupportedChainId, options: Option<&ProtocolOptions>) -> String {
+    domain_separator_for(&domain(chain_id, options))
 }
 
 /// Computes the domain separator for an explicit typed-data domain.
@@ -74,15 +61,12 @@ pub fn domain_separator(
 /// per EIP-712. The
 /// `parity/fixtures/eip712/settlement_domain_separator.json` case
 /// locks the byte contract.
-///
-/// # Errors
-///
-/// Returns [`SigningError`] if the verifying-contract address cannot be parsed.
-pub fn domain_separator_for(domain: &TypedDataDomain) -> Result<String, SigningError> {
-    Ok(format!(
+#[must_use]
+pub fn domain_separator_for(domain: &TypedDataDomain) -> String {
+    format!(
         "0x{}",
         alloy_primitives::hex::encode(domain.to_alloy_domain().separator().as_slice())
-    ))
+    )
 }
 
 /// Builds the typed-data envelope with the fully typed order message body.
@@ -109,7 +93,7 @@ pub fn order_typed_data_payload(
     options: Option<&ProtocolOptions>,
 ) -> Result<TypedDataPayload, SigningError> {
     Ok(TypedDataPayload::new(
-        domain(chain_id, options)?,
+        domain(chain_id, options),
         ORDER_PRIMARY_TYPE.to_owned(),
         typed_data_types(ORDER_PRIMARY_TYPE, order_fields()),
         serialize_message(order)?,
@@ -168,7 +152,7 @@ mod tests {
     #[test]
     fn domain_separator_matches_shared_parity_fixture() {
         let (domain, expected_separator) = domain_separator_parity_fixture();
-        let actual_separator = domain_separator_for(&domain).unwrap();
+        let actual_separator = domain_separator_for(&domain);
 
         assert_eq!(actual_separator, expected_separator);
     }

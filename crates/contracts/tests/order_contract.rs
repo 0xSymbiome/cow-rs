@@ -74,12 +74,12 @@ fn order_hash_and_uid_helpers_are_consistent() {
     let order = sample_order();
     let domain = sample_domain();
 
-    let order_hash = hash_order(&domain, &order).unwrap();
+    let order_hash = hash_order(&domain, &order);
     assert_eq!(order_hash.to_hex_string().len(), 66);
-    assert_eq!(hash_order(&domain, &order).unwrap(), order_hash);
+    assert_eq!(hash_order(&domain, &order), order_hash);
 
     let owner = Address::new("0x1111111111111111111111111111111111111111").unwrap();
-    let uid = compute_order_uid(&domain, &order, &owner).unwrap();
+    let uid = compute_order_uid(&domain, &order, &owner);
 
     let uid_case = fixture_case("contracts-order-uid-length");
     assert_eq!(
@@ -96,9 +96,8 @@ fn order_hash_and_uid_helpers_are_consistent() {
     let roundtrip = pack_order_uid_params(&OrderUidParams::new(order_hash, owner, order.valid_to));
     assert_eq!(roundtrip, uid);
 
-    let cancellation = hash_order_cancellation(&domain, &uid).unwrap();
-    let batch =
-        hash_order_cancellations(&domain, &OrderCancellations::new(vec![uid, roundtrip])).unwrap();
+    let cancellation = hash_order_cancellation(&domain, &uid);
+    let batch = hash_order_cancellations(&domain, &OrderCancellations::new(vec![uid, roundtrip]));
     assert_eq!(cancellation.to_hex_string().len(), 66);
     assert_eq!(batch.to_hex_string().len(), 66);
     assert_ne!(cancellation, batch);
@@ -110,10 +109,10 @@ fn canonical_unsigned_order_path_matches_upstream_signing_fixture_digest_and_uid
     let domain = upstream_signing_domain();
     let owner = Address::new(UPSTREAM_SEPOLIA_ORDER_OWNER).unwrap();
 
-    let digest = hash_order(&domain, &unsigned).unwrap();
+    let digest = hash_order(&domain, &unsigned);
     assert_eq!(digest.to_hex_string(), UPSTREAM_SEPOLIA_ORDER_DIGEST);
 
-    let uid = compute_order_uid(&domain, &unsigned, &owner).unwrap();
+    let uid = compute_order_uid(&domain, &unsigned, &owner);
     assert_eq!(uid.to_hex_string(), UPSTREAM_SEPOLIA_ORDER_UID);
 
     let unpacked = extract_order_uid_params(&uid).unwrap();

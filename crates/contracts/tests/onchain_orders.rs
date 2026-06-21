@@ -129,7 +129,7 @@ fn order_hash_matches_canonical_ethflow_foundry_vector() {
         BuyTokenDestination::Erc20,
     );
 
-    let digest = hash_order(&domain, &order).expect("hashing must succeed");
+    let digest = hash_order(&domain, &order);
     assert_eq!(
         digest.to_hex_string(),
         "0x65e25f4dac20ef9e411ba2e6a5c6c2697ce004564ffeeb5fe8a3d9f6529974f5",
@@ -161,7 +161,7 @@ fn eip1271_placement_decodes_owner_uid_and_trailer() {
 
     let settlement = Address::new("0x9008D19f58AAbD9eD0D60971565AA8510560ab41").unwrap();
     let domain = TypedDataDomain::new("Gnosis Protocol".to_owned(), "v2".to_owned(), 1, settlement);
-    let expected_uid = compute_order_uid(&domain, &decoded.order, &eth_flow).unwrap();
+    let expected_uid = compute_order_uid(&domain, &decoded.order, &eth_flow);
     assert_eq!(decoded.order_uid(&domain).unwrap(), expected_uid);
 
     let parsed = parse_eth_flow_onchain_data(decoded.data.as_ref()).unwrap();
