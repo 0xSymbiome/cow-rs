@@ -167,7 +167,7 @@ impl CowShedHooks {
         let owner = signer
             .address()
             .await
-            .map_err(|error| CowShedError::OwnerResolution(error.to_string()))?;
+            .map_err(|error| CowShedError::OwnerResolution(error.to_string().into()))?;
         let owner_alloy = owner.into_alloy();
         let shed = self.shed_account(owner_alloy);
         let payload = execute_hooks_typed_data_payload(
@@ -181,7 +181,7 @@ impl CowShedHooks {
         let signature_hex = signer
             .sign_typed_data_payload(&payload)
             .await
-            .map_err(|error| CowShedError::Signing(error.to_string()))?;
+            .map_err(|error| CowShedError::Signing(error.to_string().into()))?;
         let signature = RecoverableSignature::parse_hex(&signature_hex)
             .map_err(CowShedError::SignatureParse)?;
         let factory_calldata =

@@ -157,6 +157,37 @@ fn serialization_variant_drops_raw_serde_error_for_structured_position() {
     );
 }
 
+#[cfg(feature = "cow-shed")]
+#[test]
+fn cow_shed_errors_redact_signer_authored_text() {
+    use cow_sdk_contracts::cow_shed::CowShedError;
+
+    // A custom `Signer` controls the text of these two errors, so the captured
+    // message must stay behind `Redacted<String>` and never reach `Display` or
+    // `Debug` (ADR 0025), matching `ContractsError::Eip1271Provider`.
+    const SECRET: &str = "https://user:s3cr3t@rpc.example/v1 0xdeadbeefprivatekey";
+
+    for error in [
+        CowShedError::OwnerResolution(SECRET.to_owned().into()),
+        CowShedError::Signing(SECRET.to_owned().into()),
+    ] {
+        let display = error.to_string();
+        let debug = format!("{error:?}");
+        assert!(
+            display.contains("[redacted]"),
+            "display should redact: {display}",
+        );
+        assert!(
+            !display.contains("s3cr3t") && !display.contains("privatekey"),
+            "display leaked the signer message: {display}",
+        );
+        assert!(
+            !debug.contains("s3cr3t") && !debug.contains("privatekey"),
+            "debug leaked the signer message: {debug}",
+        );
+    }
+}
+
 #[test]
 fn class_partitions_validation_internal_and_signing() {
     use cow_sdk_core::ErrorClass;

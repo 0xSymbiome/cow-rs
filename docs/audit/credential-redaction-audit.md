@@ -1,7 +1,7 @@
 # Credential Redaction Audit
 
 Status: Current
-Last reviewed: 2026-06-20
+Last reviewed: 2026-06-21
 Owning surface: Cross-cutting credential redaction across config/builder storage, URL-bearing config, transport/RPC/orderbook/subgraph error diagnostics, native Alloy adapters, and wasm error envelopes
 Refresh trigger: Changes to orderbook or subgraph builder API-key storage, URL-bearing public configuration fields, external host-policy validation, the `Redacted<T>` newtype or the `RedactedUrlMap`/`RedactedOptionalUrlMap` contracts, subgraph production routing or its `Authorization` header, public error message/detail/body/data fields, any `SubgraphError` variant or its `#[error(...)]` template, the transport `From<reqwest::Error>` classifiers, the `redact_response_body` token-detection layers, native Alloy adapter `Debug`/redaction state, the wasm transport-error mapping, the JSON decode-failure or digest-calculation diagnostic shapes, the app-data typed validation render, or any new credential-bearing surface that lands without a redacting storage type or an equivalent safe-by-construction render
 Related docs:
@@ -41,6 +41,7 @@ It does not cover unrelated transport-policy questions, non-URL credentials outs
 | Native Alloy adapters | Provider URLs, private-key material, signer internals, transport details, and pending-transaction details are redacted across provider, signer, umbrella, and facade error tests | Conforms |
 | Transport error redaction | `From<reqwest::Error>` on the orderbook surface classifies via the canonical core reqwest classifier (which strips the URL) before wrapping; the subgraph surface receives an already-redacted `TransportError` from the transport seam | Conforms |
 | Public error diagnostics | Provider, signer, RPC, transport, response-body, subgraph-context, orderbook-API, and orderbook-rejection payloads wrap secrets in `Redacted<T>` or render through a safe-by-construction pipeline; typed diagnostics (chain ids, status codes, field names, rejection tags) stay visible | Conforms |
+| COW Shed helper errors | `CowShedError::OwnerResolution`/`Signing` capture the signer-authored message behind `Redacted<String>`, so a custom `Signer` cannot leak credential-bearing text through `Display` or `Debug` | Conforms |
 | Subgraph `Display` pairing | Every chain-scoped `SubgraphError` variant pairs redacted `context.api` with plaintext `chain_id` plus a typed structural token; `TransportConfiguration` pairs the typed `class` label and carries no chain id | Conforms |
 | Subgraph `Display` non-tautology | Every chain-scoped diagnostic variant carries at least one ASCII-digit token, and `TransportConfiguration` carries its typed `class` label, so renderings never collapse to a placeholder-only string | Conforms |
 | Subgraph `Redacted<T>` posture | No `Display` template interpolates `.as_inner()`, including the free-form `errors[].message` payload on `GraphQl` | Conforms |
@@ -137,7 +138,11 @@ only the public wire key. `AppDataError::Calculation` renders only the stable
 field and the canonical `ValidationReason`; `InvalidSchemaVersion` wraps the
 rejected version string in `Redacted<String>`. `cow-sdk-trading` keeps
 partner-fee inputs typed until explicit app-data translation, rejecting invalid
-raw metadata before quote or post transport proceeds.
+raw metadata before quote or post transport proceeds. The COW Shed signing
+helper (`crates/contracts/src/cow_shed/`) captures the owner-resolution and
+`ExecuteHooks` signing messages from an arbitrary consumer `Signer` behind
+`Redacted<String>`, matching `ContractsError::Eip1271Provider`, so a custom
+signer's error text cannot reach `Display` or `Debug` unredacted.
 
 #### Subgraph `Display` Non-Tautology
 
