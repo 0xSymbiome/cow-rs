@@ -10,7 +10,7 @@ use wasm_bindgen_futures::JsFuture;
 
 use crate::exports::{
     dto::CowFetchResponse,
-    errors::WasmError,
+    errors::{JsResultExt, WasmError},
     registry::{
         FetchCallbackGuard, FetchCallbackKey, lookup_fetch_callback, register_fetch_callback,
     },
@@ -156,7 +156,7 @@ fn callback_fetch_transport_from_handle_id(
 ) -> Result<Arc<dyn HttpTransport + Send + Sync>, JsValue> {
     let transport =
         JsCallbackHttpTransport::new(String::new(), handle_id, timeout, max_response_bytes)
-            .map_err(|error| WasmError::from(error).into_js())?;
+            .map_js()?;
     Ok(Arc::new(transport))
 }
 

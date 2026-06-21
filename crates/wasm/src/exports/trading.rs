@@ -30,7 +30,7 @@ use crate::exports::{
     },
     eip1271::ResolvedEip1271Provider,
     envelope::WasmEnvelope,
-    errors::WasmError,
+    errors::{JsResultExt, WasmError},
     orderbook::{build_orderbook, orderbook_for_scope},
     signing::{await_callback_string, js_error_to_string, js_message, normalize_signature},
     transport::{
@@ -436,8 +436,7 @@ impl TradingClient {
     )]
     pub fn build_wrap_tx(&self, amount: String) -> Result<JsValue, JsValue> {
         let chain = parse_chain(self.chain_id)?;
-        let amount = pure::dto::parse_amount("amount", &amount)
-            .map_err(|error| WasmError::from(error).into_js())?;
+        let amount = pure::dto::parse_amount("amount", &amount).map_js()?;
         let tx = wrap_transaction(chain, amount);
         to_js_value(&WasmEnvelope::v1(TransactionRequestDto::from(&tx)))
     }
@@ -457,8 +456,7 @@ impl TradingClient {
     )]
     pub fn build_unwrap_tx(&self, amount: String) -> Result<JsValue, JsValue> {
         let chain = parse_chain(self.chain_id)?;
-        let amount = pure::dto::parse_amount("amount", &amount)
-            .map_err(|error| WasmError::from(error).into_js())?;
+        let amount = pure::dto::parse_amount("amount", &amount).map_js()?;
         let tx = unwrap_transaction(chain, amount);
         to_js_value(&WasmEnvelope::v1(TransactionRequestDto::from(&tx)))
     }
@@ -529,15 +527,14 @@ fn build_trading_with_orderbook(
     orderbook: Arc<OrderbookApi>,
 ) -> Result<Trading, JsValue> {
     let chain = parse_chain(chain_id)?;
-    let env_value = pure::chains::env_from_str(env.as_deref())
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let env_value = pure::chains::env_from_str(env.as_deref()).map_js()?;
     Trading::builder()
         .chain_id(chain)
         .app_code(app_code)
         .env(env_value)
         .orderbook_shared(orderbook)
         .build()
-        .map_err(|error| WasmError::from(error).into_js())
+        .map_js()
 }
 
 async fn trading_get_quote(
@@ -545,10 +542,7 @@ async fn trading_get_quote(
     params: SwapParametersInput,
 ) -> Result<JsValue, JsValue> {
     let params: TradeParams = from_json_value("params", params.into_value()?)?;
-    let quote = inner
-        .quote_only(params, None)
-        .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let quote = inner.quote_only(params, None).await.map_js()?;
     to_js_value(&WasmEnvelope::v1(quote))
 }
 
@@ -566,7 +560,7 @@ async fn trading_post_swap_order(
     let result = inner
         .post_swap_order(params, &signer, None)
         .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+        .map_js()?;
     to_js_value(&WasmEnvelope::v1(result))
 }
 
@@ -584,7 +578,7 @@ async fn trading_post_swap_order_from_quote(
     let result = inner
         .post_swap_order_from_quote(&results, &signer, None)
         .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+        .map_js()?;
     to_js_value(&WasmEnvelope::v1(result))
 }
 
@@ -597,12 +591,15 @@ async fn trading_post_limit_order(
 ) -> Result<JsValue, JsValue> {
     let owner = parse_address("owner", owner)?;
     let mut params: LimitTradeParams = from_json_value("params", params.into_value()?)?;
-    params.owner = params.owner.or_else(|| Some(owner.clone()));
+    // The positional owner is canonical for the post* exports — it is the only
+    // address the signing callback can report — so it overrides any owner echoed
+    // in the DTO, matching postSwapOrder rather than letting the DTO win.
+    params.owner = Some(owner.clone());
     let signer = JsTradingSigner::new(owner, signer_callback, wallet_timeout_ms);
     let result = inner
         .post_limit_order(params, &signer, None)
         .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+        .map_js()?;
     to_js_value(&WasmEnvelope::v1(result))
 }
 
@@ -623,8 +620,7 @@ async fn trading_build_sell_native_currency_tx(
         .into_js());
     }
     let chain = parse_chain(chain_id)?;
-    let env = pure::chains::env_from_str(env.as_deref())
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let env = pure::chains::env_from_str(env.as_deref()).map_js()?;
     let options = ProtocolOptions::new().with_env(env);
     let eth_flow = cow_sdk_contracts::Registry::default()
         .address(cow_sdk_contracts::ContractId::EthFlow, chain, env)
@@ -635,16 +631,15 @@ async fn trading_build_sell_native_currency_tx(
             )
             .into_js()
         })?;
-    let payload = EthFlowOrderData::from_unsigned_order(&order, quote_id)
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let payload = EthFlowOrderData::from_unsigned_order(&order, quote_id).map_js()?;
     let data = HexData::new(format!(
         "0x{}",
         alloy_primitives::hex::encode(encode_create_order_calldata(&payload))
     ))
-    .map_err(|error| WasmError::from(error).into_js())?;
+    .map_js()?;
     let generated = cow_sdk_trading::calculate_unique_order_id(chain, &order, None, Some(&options))
         .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+        .map_js()?;
     let tx = TransactionRequest::new(
         Some(eth_flow),
         Some(data),
@@ -711,7 +706,7 @@ async fn trading_get_cow_protocol_allowance(
     let allowance = inner
         .cow_protocol_allowance(&provider, &params)
         .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+        .map_js()?;
     to_js_value(&WasmEnvelope::v1(allowance))
 }
 
@@ -721,11 +716,9 @@ async fn trading_build_approval_tx(
     params: ApprovalParametersInput,
 ) -> Result<JsValue, JsValue> {
     let chain = parse_chain(chain_id)?;
-    let env = pure::chains::env_from_str(env.as_deref())
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let env = pure::chains::env_from_str(env.as_deref()).map_js()?;
     let params: ApprovalParams = from_json_value("params", params.into_value()?)?;
-    let tx = cow_sdk_trading::approval_transaction(&params, chain, env)
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let tx = cow_sdk_trading::approval_transaction(&params, chain, env).map_js()?;
     to_js_value(&WasmEnvelope::v1(TransactionRequestDto::from(&tx)))
 }
 
@@ -748,12 +741,11 @@ async fn trading_post_swap_order_with_eip1271(
     let quote = inner
         .quote_only(params, Some(&quote_settings))
         .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+        .map_js()?;
     // Resolve the contract signature at the wallet boundary, then hand the managed
     // submission path a pure provider that carries it.
     let chain = parse_chain(chain_id)?;
-    let payload = pure::signing::order_typed_data_payload(chain, &quote.order_to_sign)
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let payload = pure::signing::order_typed_data_payload(chain, &quote.order_to_sign).map_js()?;
     let typed_data = TypedDataEnvelopeDto::from_payload(&payload)?;
     let request = CowEip1271SignRequest {
         order: OrderInput::from(&quote.order_to_sign),
@@ -776,7 +768,7 @@ async fn trading_post_swap_order_with_eip1271(
     let result = inner
         .post_swap_order_from_quote(&quote, &signer, Some(&settings))
         .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+        .map_js()?;
     to_js_value(&WasmEnvelope::v1(result))
 }
 

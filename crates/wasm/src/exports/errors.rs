@@ -205,6 +205,23 @@ impl From<OrderbookRejectionCategory> for OrderBookRejectionCategoryDto {
     }
 }
 
+/// Collapses the `WasmError` -> `JsValue` conversion on a `Result` whose error
+/// converts into [`WasmError`], replacing the repeated
+/// `.map_err(|error| WasmError::from(error).into_js())` closure with `.map_js()`.
+pub(crate) trait JsResultExt<T> {
+    /// Maps the error through [`WasmError`] into a `JsValue`.
+    fn map_js(self) -> Result<T, JsValue>;
+}
+
+impl<T, E> JsResultExt<T> for Result<T, E>
+where
+    WasmError: From<E>,
+{
+    fn map_js(self) -> Result<T, JsValue> {
+        self.map_err(|error| WasmError::from(error).into_js())
+    }
+}
+
 impl WasmError {
     /// Converts this typed error into a `JsValue` without panicking.
     #[must_use]

@@ -14,7 +14,7 @@ use crate::exports::{
     },
     dto::{AppDataDocDto, to_js_value, transport_policy_from_config},
     envelope::WasmEnvelope,
-    errors::WasmError,
+    errors::JsResultExt,
     transport::{configured_fetch_transport, optional_string, optional_timeout},
 };
 
@@ -219,7 +219,7 @@ async fn fetch_doc_from_cid_with_adapter(
 ) -> Result<JsValue, JsValue> {
     let document = pure::app_data::fetch_doc_from_cid(cid, adapter, ipfs_uri)
         .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+        .map_js()?;
     to_js_value(&WasmEnvelope::v1(AppDataDocDto::from(document)))
 }
 
@@ -230,7 +230,7 @@ async fn fetch_doc_from_hex_with_adapter(
 ) -> Result<JsValue, JsValue> {
     let document = pure::app_data::fetch_doc_from_app_data_hex(app_data_hex, adapter, ipfs_uri)
         .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+        .map_js()?;
     to_js_value(&WasmEnvelope::v1(AppDataDocDto::from(document)))
 }
 
