@@ -20,6 +20,160 @@ const HASH32_HEX_CHARS: usize = 64;
 /// Numeric EVM chain id.
 pub type ChainId = u64;
 
+/// Declares a fixed-width, `#[repr(transparent)]` hex-newtype over an alloy
+/// fixed-bytes primitive whose lowercase `0x`-prefixed canonical form already
+/// matches the cow wire form.
+///
+/// Emits the uniform constructor / accessor / conversion / `serde(transparent)`
+/// surface shared by [`AppDataHash`], [`Hash32`], and [`OrderUid`]. [`Address`]
+/// keeps a hand-written lowercase `serde` (alloy's default is the EIP-55
+/// checksum form, which would shift the wire bytes), and [`HexData`] is
+/// variable-length, so neither is built through this macro.
+macro_rules! hex_newtype {
+    (
+        $(#[$meta:meta])*
+        $name:ident($inner:ty, $bytes:literal, field = $field:literal, hex_chars = $hex_chars:expr $(,)?)
+    ) => {
+        $(#[$meta])*
+        #[repr(transparent)]
+        #[derive(
+            Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Default, Serialize, Deserialize,
+        )]
+        #[serde(transparent)]
+        #[cfg_attr(target_family = "wasm", derive(tsify::Tsify))]
+        #[cfg_attr(
+            target_family = "wasm",
+            tsify(into_wasm_abi, from_wasm_abi, type = "string")
+        )]
+        pub struct $name(
+            // Private inner: the constructors (`new` / `from_*` / `From`) and the
+            // `as_alloy` / `into_alloy` accessors are the entire contract, so a
+            // future runtime invariant can land without breaking consumers (ADR 0052).
+            $inner,
+        );
+
+        impl $name {
+            /// Raw decoded byte length of this value.
+            pub const BYTE_LENGTH: usize = $bytes;
+
+            /// Canonical zero value (all bytes zero).
+            pub const ZERO: Self = Self(<$inner>::ZERO);
+
+            /// Creates a validated value from a `0x`-prefixed lowercase hex string.
+            ///
+            /// # Errors
+            ///
+            /// Returns [`CoreError`] when the input is empty, not `0x`-prefixed
+            /// (lowercase), has the wrong length, or contains non-hex characters.
+            pub fn new(value: impl AsRef<str>) -> Result<Self, CoreError> {
+                let value = value.as_ref();
+                if value.is_empty() {
+                    return Err(ValidationError::EmptyField { field: $field }.into());
+                }
+                if !value.starts_with("0x") {
+                    return Err(ValidationError::InvalidHexPrefix { field: $field }.into());
+                }
+                let inner = <$inner>::from_str(value)
+                    .map_err(|e| classify_alloy_hex_error($field, $hex_chars, e))?;
+                Ok(Self(inner))
+            }
+
+            /// Creates a value from its raw byte representation.
+            #[inline]
+            #[must_use]
+            pub const fn from_bytes(bytes: [u8; $bytes]) -> Self {
+                Self(<$inner>::new(bytes))
+            }
+
+            /// Returns the canonical lowercase 0x-prefixed hex form as an owned
+            /// [`String`].
+            ///
+            /// Follows the Rust stdlib naming convention: `to_*` returns an owned
+            /// value; `as_*` returns a borrow.
+            #[inline]
+            #[must_use]
+            pub fn to_hex_string(&self) -> String {
+                format!("{:#x}", self.0)
+            }
+
+            /// Returns the raw bytes as a borrowed slice.
+            #[inline]
+            #[must_use]
+            pub const fn as_slice(&self) -> &[u8] {
+                self.0.as_slice()
+            }
+
+            /// Returns the underlying packed alloy primitive.
+            ///
+            /// Use this accessor when handing the value to an
+            /// `alloy_primitives`-typed surface without re-parsing the hex string.
+            #[inline]
+            #[must_use]
+            pub const fn as_alloy(&self) -> &$inner {
+                &self.0
+            }
+
+            /// Returns the underlying packed alloy primitive by value.
+            #[inline]
+            #[must_use]
+            pub const fn into_alloy(self) -> $inner {
+                self.0
+            }
+
+            /// Returns `true` when this is the zero value.
+            #[inline]
+            #[must_use]
+            pub fn is_zero(&self) -> bool {
+                self.0 == <$inner>::ZERO
+            }
+        }
+
+        impl From<$inner> for $name {
+            #[inline]
+            fn from(value: $inner) -> Self {
+                Self(value)
+            }
+        }
+
+        impl From<$name> for $inner {
+            #[inline]
+            fn from(value: $name) -> Self {
+                value.0
+            }
+        }
+
+        impl FromStr for $name {
+            type Err = CoreError;
+
+            fn from_str(s: &str) -> Result<Self, Self::Err> {
+                Self::new(s)
+            }
+        }
+
+        impl TryFrom<String> for $name {
+            type Error = CoreError;
+
+            fn try_from(value: String) -> Result<Self, Self::Error> {
+                Self::new(value.as_str())
+            }
+        }
+
+        impl TryFrom<&str> for $name {
+            type Error = CoreError;
+
+            fn try_from(value: &str) -> Result<Self, Self::Error> {
+                Self::new(value)
+            }
+        }
+
+        impl fmt::Display for $name {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                fmt::Display::fmt(&self.0, f)
+            }
+        }
+    };
+}
+
 // --- Address ---------------------------------------------------------------
 
 /// Validated EVM address.
@@ -402,84 +556,20 @@ impl TryFrom<&str> for HexData {
 
 // --- AppDataHash ----------------------------------------------------------
 
-/// Validated 32-byte app-data hash.
-///
-/// The wire form is the protocol-canonical `0x`-prefixed 66-character
-/// lowercase hexadecimal string. The newtype is `#[repr(transparent)]`
-/// over [`alloy_primitives::B256`], so the in-memory layout is
-/// bit-for-bit identical to the alloy primitive and conversion at the
-/// alloy seam is free at runtime through [`AppDataHash::as_alloy`]
-/// (borrowed), [`AppDataHash::into_alloy`] (owned), or [`From`] /
-/// [`Into`].
-///
-/// `AppDataHash` forwards [`Serialize`] / [`Deserialize`] to the inner
-/// [`alloy_primitives::B256`] via `#[serde(transparent)]` because the
-/// alloy lowercase 0x-prefixed default already matches the cow wire
-/// form. [`fmt::Display`] is a one-line delegate to the inner primitive
-/// for the same reason.
-///
-/// Equality, hash, and ordering derive from the packed 32-byte
-/// representation, which is equivalent to the documented
-/// case-insensitive comparison contract because every valid value parses
-/// to the same bytes regardless of input casing.
-#[doc(alias = "app-data")]
-#[doc(alias = "AppData")]
-#[repr(transparent)]
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Default, Serialize, Deserialize,
-)]
-#[serde(transparent)]
-#[cfg_attr(target_family = "wasm", derive(tsify::Tsify))]
-#[cfg_attr(
-    target_family = "wasm",
-    tsify(into_wasm_abi, from_wasm_abi, type = "string")
-)]
-pub struct AppDataHash(
-    // Private inner: the constructors (`new` / `from_*` / `From`) and the
-    // `as_alloy` / `into_alloy` accessors are the entire contract, so a future
-    // runtime invariant can land without breaking consumers (ADR 0052).
-    B256,
-);
+hex_newtype! {
+    /// Validated 32-byte app-data hash.
+    ///
+    /// The wire form is the protocol-canonical `0x`-prefixed 66-character
+    /// lowercase hexadecimal string. The newtype is `#[repr(transparent)]` over
+    /// [`alloy_primitives::B256`] and forwards `Display`/`Serialize`/
+    /// `Deserialize` to the inner alloy type, whose lowercase 0x-prefixed
+    /// default already matches the cow wire form.
+    #[doc(alias = "app-data")]
+    #[doc(alias = "AppData")]
+    AppDataHash(B256, 32, field = "app_data_hash", hex_chars = APP_DATA_HASH_HEX_CHARS)
+}
 
 impl AppDataHash {
-    /// Raw decoded byte length of an app-data hash.
-    pub const BYTE_LENGTH: usize = 32;
-
-    /// Canonical zero app-data hash (32 zero bytes).
-    pub const ZERO: Self = Self(B256::ZERO);
-
-    /// Creates a validated app-data hash from a `0x`-prefixed 32-byte hex string.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`CoreError`] when the input is empty, not `0x`-prefixed
-    /// (lowercase), has the wrong length, or contains non-hex characters.
-    pub fn new(value: impl AsRef<str>) -> Result<Self, CoreError> {
-        let value = value.as_ref();
-        if value.is_empty() {
-            return Err(ValidationError::EmptyField {
-                field: "app_data_hash",
-            }
-            .into());
-        }
-        if !value.starts_with("0x") {
-            return Err(ValidationError::InvalidHexPrefix {
-                field: "app_data_hash",
-            }
-            .into());
-        }
-        let inner = B256::from_str(value)
-            .map_err(|e| classify_alloy_hex_error("app_data_hash", APP_DATA_HASH_HEX_CHARS, e))?;
-        Ok(Self(inner))
-    }
-
-    /// Creates an app-data hash from its raw 32-byte representation.
-    #[inline]
-    #[must_use]
-    pub const fn from_bytes(bytes: [u8; 32]) -> Self {
-        Self(B256::new(bytes))
-    }
-
     /// Computes the canonical [`AppDataHash`] for a serialized app-data document.
     ///
     /// Returns `AppDataHash(keccak256(full_app_data.as_bytes()))`. The hashing
@@ -496,154 +586,22 @@ impl AppDataHash {
     pub fn from_full_app_data(full_app_data: &str) -> Self {
         Self(alloy_primitives::keccak256(full_app_data.as_bytes()))
     }
-
-    /// Returns the canonical lowercase 0x-prefixed hex form as an owned
-    /// [`String`].
-    ///
-    /// Follows the Rust stdlib naming convention: `to_*` returns an owned
-    /// value; `as_*` returns a borrow.
-    #[inline]
-    #[must_use]
-    pub fn to_hex_string(&self) -> String {
-        format!("{:#x}", self.0)
-    }
-
-    /// Returns the raw 32 bytes of the hash as a borrowed slice.
-    #[inline]
-    #[must_use]
-    pub const fn as_slice(&self) -> &[u8] {
-        self.0.as_slice()
-    }
-
-    /// Returns the underlying packed [`alloy_primitives::B256`].
-    ///
-    /// Use this accessor when handing the hash to an
-    /// `alloy_primitives`-typed surface (contract bindings, EIP-712 hash
-    /// composition) without re-parsing the lowercase hex string.
-    #[inline]
-    #[must_use]
-    pub const fn as_alloy(&self) -> &B256 {
-        &self.0
-    }
-
-    /// Returns the underlying packed [`alloy_primitives::B256`] by value.
-    #[inline]
-    #[must_use]
-    pub const fn into_alloy(self) -> B256 {
-        self.0
-    }
-
-    /// Returns `true` when this is the zero app-data hash.
-    #[inline]
-    #[must_use]
-    pub fn is_zero(&self) -> bool {
-        self.0 == B256::ZERO
-    }
-}
-
-impl From<B256> for AppDataHash {
-    #[inline]
-    fn from(value: B256) -> Self {
-        Self(value)
-    }
-}
-
-impl From<AppDataHash> for B256 {
-    #[inline]
-    fn from(value: AppDataHash) -> Self {
-        value.0
-    }
-}
-
-impl FromStr for AppDataHash {
-    type Err = CoreError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::new(s)
-    }
-}
-
-impl TryFrom<String> for AppDataHash {
-    type Error = CoreError;
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        Self::new(value.as_str())
-    }
-}
-
-impl TryFrom<&str> for AppDataHash {
-    type Error = CoreError;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        Self::new(value)
-    }
-}
-
-impl fmt::Display for AppDataHash {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Display::fmt(&self.0, f)
-    }
 }
 
 // --- Hash32 -----------------------------------------------------------------
 
-/// Generic validated 32-byte hash wrapper for user-domain and contract surfaces.
-///
-/// The wire form is the protocol-canonical `0x`-prefixed 66-character
-/// lowercase hexadecimal string. The newtype is `#[repr(transparent)]` over
-/// [`alloy_primitives::B256`] and forwards `Display`/`Serialize`/
-/// `Deserialize` to the inner alloy type, whose canonical defaults already
-/// emit the cow lowercase wire form.
-#[repr(transparent)]
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Default, Serialize, Deserialize,
-)]
-#[serde(transparent)]
-#[cfg_attr(target_family = "wasm", derive(tsify::Tsify))]
-#[cfg_attr(
-    target_family = "wasm",
-    tsify(into_wasm_abi, from_wasm_abi, type = "string")
-)]
-pub struct Hash32(
-    // Private inner: the constructors (`new` / `from_*` / `From`) and the
-    // `as_alloy` / `into_alloy` accessors are the entire contract, so a future
-    // runtime invariant can land without breaking consumers (ADR 0052).
-    B256,
-);
+hex_newtype! {
+    /// Generic validated 32-byte hash wrapper for user-domain and contract surfaces.
+    ///
+    /// The wire form is the protocol-canonical `0x`-prefixed 66-character
+    /// lowercase hexadecimal string. The newtype is `#[repr(transparent)]` over
+    /// [`alloy_primitives::B256`] and forwards `Display`/`Serialize`/
+    /// `Deserialize` to the inner alloy type, whose canonical defaults already
+    /// emit the cow lowercase wire form.
+    Hash32(B256, 32, field = "hash32", hex_chars = HASH32_HEX_CHARS)
+}
 
 impl Hash32 {
-    /// Raw decoded byte length of a 32-byte hash.
-    pub const BYTE_LENGTH: usize = 32;
-
-    /// Canonical zero 32-byte hash (32 zero bytes).
-    pub const ZERO: Self = Self(B256::ZERO);
-
-    /// Creates a validated 32-byte hash from a `0x`-prefixed hex string.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`CoreError`] when the input is empty, not `0x`-prefixed
-    /// (lowercase), has the wrong length, or contains non-hex characters.
-    pub fn new(value: impl AsRef<str>) -> Result<Self, CoreError> {
-        let value = value.as_ref();
-        if value.is_empty() {
-            return Err(ValidationError::EmptyField { field: "hash32" }.into());
-        }
-        if !value.starts_with("0x") {
-            return Err(ValidationError::InvalidHexPrefix { field: "hash32" }.into());
-        }
-        let inner = B256::from_str(value)
-            .map_err(|e| classify_alloy_hex_error("hash32", HASH32_HEX_CHARS, e))?;
-        Ok(Self(inner))
-    }
-
-    /// Creates a 32-byte hash from its raw 32-byte representation.
-    #[inline]
-    #[must_use]
-    pub const fn from_bytes(bytes: [u8; 32]) -> Self {
-        Self(B256::new(bytes))
-    }
-
     /// Creates the 32-byte topic form of an indexed `address` event argument.
     ///
     /// An EVM indexed address is encoded as a 32-byte topic with the 20 address
@@ -656,86 +614,6 @@ impl Hash32 {
     pub fn from_indexed_address(address: &Address) -> Self {
         Self(B256::left_padding_from(address.as_alloy().as_slice()))
     }
-
-    /// Returns the canonical lowercase 0x-prefixed hex form as an owned
-    /// [`String`].
-    #[inline]
-    #[must_use]
-    pub fn to_hex_string(&self) -> String {
-        format!("{:#x}", self.0)
-    }
-
-    /// Returns the raw 32 bytes of the hash as a borrowed slice.
-    #[inline]
-    #[must_use]
-    pub const fn as_slice(&self) -> &[u8] {
-        self.0.as_slice()
-    }
-
-    /// Returns the underlying [`alloy_primitives::B256`] hash.
-    #[inline]
-    #[must_use]
-    pub const fn as_alloy(&self) -> &B256 {
-        &self.0
-    }
-
-    /// Returns the underlying [`alloy_primitives::B256`] hash by value.
-    #[inline]
-    #[must_use]
-    pub const fn into_alloy(self) -> B256 {
-        self.0
-    }
-
-    /// Returns `true` when this is the zero hash.
-    #[inline]
-    #[must_use]
-    pub fn is_zero(&self) -> bool {
-        self.0 == B256::ZERO
-    }
-}
-
-impl fmt::Display for Hash32 {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Display::fmt(&self.0, f)
-    }
-}
-
-impl From<B256> for Hash32 {
-    #[inline]
-    fn from(value: B256) -> Self {
-        Self(value)
-    }
-}
-
-impl From<Hash32> for B256 {
-    #[inline]
-    fn from(value: Hash32) -> Self {
-        value.0
-    }
-}
-
-impl FromStr for Hash32 {
-    type Err = CoreError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::new(s)
-    }
-}
-
-impl TryFrom<String> for Hash32 {
-    type Error = CoreError;
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        Self::new(value.as_str())
-    }
-}
-
-impl TryFrom<&str> for Hash32 {
-    type Error = CoreError;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        Self::new(value)
-    }
 }
 
 /// Transaction hash alias.
@@ -747,145 +625,18 @@ pub type OrderDigest = Hash32;
 
 // --- OrderUid ---------------------------------------------------------------
 
-/// Validated `CoW` order UID.
-///
-/// The wire form is the protocol-canonical `0x`-prefixed 114-character
-/// lowercase hexadecimal string. The newtype is `#[repr(transparent)]` over
-/// [`alloy_primitives::FixedBytes<56>`] and forwards `Display`/`Serialize`/
-/// `Deserialize` to the inner alloy type, whose canonical defaults already
-/// emit the cow lowercase wire form.
-#[doc(alias = "UID")]
-#[doc(alias = "Uid")]
-#[doc(alias = "order-id")]
-#[repr(transparent)]
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Default, Serialize, Deserialize,
-)]
-#[serde(transparent)]
-#[cfg_attr(target_family = "wasm", derive(tsify::Tsify))]
-#[cfg_attr(
-    target_family = "wasm",
-    tsify(into_wasm_abi, from_wasm_abi, type = "string")
-)]
-pub struct OrderUid(
-    // Private inner: the constructors (`new` / `from_*` / `From`) and the
-    // `as_alloy` / `into_alloy` accessors are the entire contract, so a future
-    // runtime invariant can land without breaking consumers (ADR 0052).
-    FixedBytes<56>,
-);
-
-impl OrderUid {
-    /// Raw decoded byte length of an order UID.
-    pub const BYTE_LENGTH: usize = 56;
-
-    /// Canonical zero order UID (56 zero bytes).
-    pub const ZERO: Self = Self(FixedBytes::<56>::ZERO);
-
-    /// Creates a validated order UID from a `0x`-prefixed 56-byte hex string.
+hex_newtype! {
+    /// Validated `CoW` order UID.
     ///
-    /// # Errors
-    ///
-    /// Returns [`CoreError`] when the input is empty, not `0x`-prefixed
-    /// (lowercase), has the wrong length, or contains non-hex characters.
-    pub fn new(value: impl AsRef<str>) -> Result<Self, CoreError> {
-        let value = value.as_ref();
-        if value.is_empty() {
-            return Err(ValidationError::EmptyField { field: "order_uid" }.into());
-        }
-        if !value.starts_with("0x") {
-            return Err(ValidationError::InvalidHexPrefix { field: "order_uid" }.into());
-        }
-        let inner = FixedBytes::<56>::from_str(value)
-            .map_err(|e| classify_alloy_hex_error("order_uid", ORDER_UID_HEX_CHARS, e))?;
-        Ok(Self(inner))
-    }
-
-    /// Creates an order UID from its raw 56-byte representation.
-    #[inline]
-    #[must_use]
-    pub const fn from_bytes(bytes: [u8; 56]) -> Self {
-        Self(FixedBytes::<56>::new(bytes))
-    }
-
-    /// Returns the canonical lowercase 0x-prefixed hex form as an owned
-    /// [`String`].
-    #[inline]
-    #[must_use]
-    pub fn to_hex_string(&self) -> String {
-        format!("{:#x}", self.0)
-    }
-
-    /// Returns the raw 56 bytes of the UID as a borrowed slice.
-    #[inline]
-    #[must_use]
-    pub const fn as_slice(&self) -> &[u8] {
-        self.0.as_slice()
-    }
-
-    /// Returns the underlying [`alloy_primitives::FixedBytes<56>`] UID.
-    #[inline]
-    #[must_use]
-    pub const fn as_alloy(&self) -> &FixedBytes<56> {
-        &self.0
-    }
-
-    /// Returns the underlying [`alloy_primitives::FixedBytes<56>`] UID by value.
-    #[inline]
-    #[must_use]
-    pub const fn into_alloy(self) -> FixedBytes<56> {
-        self.0
-    }
-
-    /// Returns `true` when this is the zero UID.
-    #[inline]
-    #[must_use]
-    pub fn is_zero(&self) -> bool {
-        self.0 == FixedBytes::<56>::ZERO
-    }
-}
-
-impl fmt::Display for OrderUid {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Display::fmt(&self.0, f)
-    }
-}
-
-impl From<FixedBytes<56>> for OrderUid {
-    #[inline]
-    fn from(value: FixedBytes<56>) -> Self {
-        Self(value)
-    }
-}
-
-impl From<OrderUid> for FixedBytes<56> {
-    #[inline]
-    fn from(value: OrderUid) -> Self {
-        value.0
-    }
-}
-
-impl FromStr for OrderUid {
-    type Err = CoreError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::new(s)
-    }
-}
-
-impl TryFrom<String> for OrderUid {
-    type Error = CoreError;
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        Self::new(value.as_str())
-    }
-}
-
-impl TryFrom<&str> for OrderUid {
-    type Error = CoreError;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        Self::new(value)
-    }
+    /// The wire form is the protocol-canonical `0x`-prefixed 114-character
+    /// lowercase hexadecimal string. The newtype is `#[repr(transparent)]` over
+    /// [`alloy_primitives::FixedBytes<56>`] and forwards `Display`/`Serialize`/
+    /// `Deserialize` to the inner alloy type, whose canonical defaults already
+    /// emit the cow lowercase wire form.
+    #[doc(alias = "UID")]
+    #[doc(alias = "Uid")]
+    #[doc(alias = "order-id")]
+    OrderUid(FixedBytes<56>, 56, field = "order_uid", hex_chars = ORDER_UID_HEX_CHARS)
 }
 
 // --- Private validation helpers --------------------------------------------
