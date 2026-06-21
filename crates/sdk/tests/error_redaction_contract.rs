@@ -80,9 +80,7 @@ fn validation_and_host_policy_errors_keep_safe_public_diagnostics() {
         },
         ValidationError::UnsupportedChain { chain_id: 999_999 },
         ValidationError::ValidToOutOfRange {
-            actual_seconds: 1,
-            min: 60,
-            max: 4_294_967_295,
+            actual_seconds: 4_294_967_296,
         },
     ];
     assert_all_render("ValidationError", &validation_errors);

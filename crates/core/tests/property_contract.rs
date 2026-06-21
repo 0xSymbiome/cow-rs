@@ -23,8 +23,7 @@ use std::collections::{HashMap, HashSet};
 
 use alloy_primitives::U256;
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, ChainId, Hash32, HexData, OrderUid, SupportedChainId,
-    VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS, ValidTo,
+    Address, Amount, AppDataHash, ChainId, Hash32, HexData, OrderUid, SupportedChainId, ValidTo,
 };
 use num_bigint::BigUint;
 use proptest::prelude::*;
@@ -568,18 +567,17 @@ proptest! {
         prop_assert_eq!(SupportedChainId::try_from(candidate).is_ok(), is_supported);
     }
 
-    /// [`ValidTo::relative`] admits every duration inside
-    /// `[VALID_TO_MIN_RELATIVE_SECONDS, VALID_TO_MAX_RELATIVE_SECONDS]`
-    /// and fails closed on every duration outside that inclusive window.
+    /// [`ValidTo::relative`] accepts every anchor-plus-duration whose absolute
+    /// timestamp fits the protocol-fixed `u32` epoch ceiling and fails closed
+    /// past it, with no operator-tunable validity window.
     #[test]
-    fn valid_to_relative_enforces_documented_bounds(
+    fn valid_to_relative_fails_closed_only_at_the_u32_ceiling(
         now_epoch_seconds in 1_600_000_000u64..=4_000_000_000u64,
-        duration_seconds in 0u64..=(u64::from(VALID_TO_MAX_RELATIVE_SECONDS) + 3_600),
+        duration_seconds in 0u64..=2_000_000_000u64,
     ) {
         let result = ValidTo::relative(now_epoch_seconds, duration_seconds);
-        let in_range = (u64::from(VALID_TO_MIN_RELATIVE_SECONDS)
-            ..=u64::from(VALID_TO_MAX_RELATIVE_SECONDS))
-            .contains(&duration_seconds);
-        prop_assert_eq!(result.is_ok(), in_range);
+        let fits_u32 =
+            u32::try_from(now_epoch_seconds.saturating_add(duration_seconds)).is_ok();
+        prop_assert_eq!(result.is_ok(), fits_u32);
     }
 }

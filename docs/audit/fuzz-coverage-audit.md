@@ -1,7 +1,7 @@
 # Fuzz Coverage Audit
 
 Status: Current
-Last reviewed: 2026-06-20
+Last reviewed: 2026-06-21
 Owning surface: the standalone `cow-sdk-fuzz` crate (`fuzz/`) and every
 `cargo-fuzz` target it ships against the published SDK crates
 Refresh trigger: any new public untrusted-input surface, retired fuzz
@@ -70,7 +70,7 @@ boundary class rather than a count that would rot on every add or cut.
 | --- | --- |
 | Encoder | `CoWSwapEthFlow.createOrder` (`fuzz_ethflow_create_order_encode`) |
 | Signing | EIP-712 typed-data digest, ECDSA `v` normalization, ECDSA address recovery, recoverable-signature hex parse, recoverable-signature differential, EIP-712 domain separator |
-| Validator and bounds | Order bounds validator, `ValidTo::relative` window |
+| Validator and bounds | Order bounds validator, `ValidTo::relative` protocol-fixed `u32` epoch ceiling |
 | Parser and decoder | Orderbook rejection envelope, orderbook rejection code allowlist, decoded body and canonical status text, subgraph GraphQL error decoder, transport-error classifier, retry-after header parser, retry policy delay, jitter strategy delay, partner-fee `from_value`, flashloan-hints deserializer, hook-list deserializer, on-chain order log decoder, settlement event log decoder, eth-flow event log decoder |
 | Crypto envelope and hash | EIP-712 order-cancellations hash, EIP-1271 signature data decoder, EIP-1271 magic-value response decoder |
 | Order UID and signature classifier | Order UID pack and unpack, signature classifier and signing-scheme discriminant |
