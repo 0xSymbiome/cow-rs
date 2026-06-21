@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{fmt, sync::Arc};
 
 use crate::helpers as pure;
 use cow_sdk_contracts::eth_flow::{EthFlowOrderData, encode_create_order_calldata};
@@ -6,7 +6,7 @@ use cow_sdk_core::transport::policy::TransportPolicy;
 use cow_sdk_core::{
     Address, Amount, BlockInfo, ContractCall, HexData, NATIVE_CURRENCY_ADDRESS, ProtocolOptions,
     Provider, Signer, TransactionBroadcast, TransactionHash, TransactionReceipt,
-    TransactionRequest,
+    TransactionRequest, UserRejection,
 };
 use cow_sdk_orderbook::{OrderbookApi, SigningScheme};
 use cow_sdk_trading::{
@@ -14,7 +14,7 @@ use cow_sdk_trading::{
     PostTradeAdditionalParams, QuoteRequestOverride, QuoteResults, TradeAdvancedSettings,
     TradeParams, Trading, unwrap_transaction, wrap_transaction,
 };
-use js_sys::Function;
+use js_sys::{Function, Reflect};
 use wasm_bindgen::prelude::*;
 
 use crate::exports::{
@@ -32,7 +32,7 @@ use crate::exports::{
     envelope::WasmEnvelope,
     errors::WasmError,
     orderbook::{build_orderbook, orderbook_for_scope},
-    signing::{await_callback_string, js_error_to_string, normalize_signature},
+    signing::{await_callback_string, js_error_to_string, js_message, normalize_signature},
     transport::{
         configured_fetch_transport, optional_string, optional_timeout, required_string,
         required_u32,
@@ -805,15 +805,68 @@ impl JsTradingSigner {
     }
 }
 
+/// Typed error for the JS typed-data callback signer.
+///
+/// `Signer::Error` must be `Display + UserRejection` for the trading terminals:
+/// `Display` feeds the redacted message path, and `UserRejection` lets a
+/// deliberate wallet rejection (EIP-1193 `4001`) surface as a `walletRequest`
+/// error the JS `isUserRejection` predicate recognises, instead of collapsing to
+/// an opaque `signing` failure. Only the structured provider `code` is kept; the
+/// provider-authored message is replaced by SDK guidance downstream (ADR 0053).
+struct WalletCallbackError {
+    code: Option<i32>,
+    message: String,
+}
+
+impl WalletCallbackError {
+    /// Reads the structured EIP-1193 `code` and the message from a callback error
+    /// `JsValue`, which `await_callback_string` already shaped as an SDK error.
+    fn from_js(value: &JsValue) -> Self {
+        let code = Reflect::get(value, &JsValue::from_str("code"))
+            .ok()
+            .and_then(|code| code.as_f64())
+            .map(|code| code as i32);
+        Self {
+            code,
+            message: js_message(value),
+        }
+    }
+
+    /// A signer operation this typed-data callback does not support.
+    fn unsupported(message: &'static str) -> Self {
+        Self {
+            code: None,
+            message: message.to_owned(),
+        }
+    }
+}
+
+impl fmt::Display for WalletCallbackError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.message)
+    }
+}
+
+impl UserRejection for WalletCallbackError {
+    fn user_rejection_code(&self) -> Option<i32> {
+        // EIP-1193 `4001` is the standard "user rejected the request" code; every
+        // other provider code is a non-rejection fault that takes the redacted
+        // message path.
+        (self.code == Some(4001)).then_some(4001)
+    }
+}
+
 impl Signer for JsTradingSigner {
-    type Error = String;
+    type Error = WalletCallbackError;
 
     async fn address(&self) -> Result<Address, Self::Error> {
         Ok(self.owner.clone())
     }
 
     async fn sign_message(&self, _message: &[u8]) -> Result<String, Self::Error> {
-        Err("message signing is not available through this typed-data callback".to_owned())
+        Err(WalletCallbackError::unsupported(
+            "message signing is not available through this typed-data callback",
+        ))
     }
 
     async fn sign_typed_data_payload(
@@ -821,8 +874,10 @@ impl Signer for JsTradingSigner {
         payload: &cow_sdk_core::TypedDataPayload,
     ) -> Result<String, Self::Error> {
         let envelope = TypedDataEnvelopeDto::from_payload(payload)
-            .map_err(|error| js_error_to_string(error.into_js()))?;
-        let value = envelope.callback_value().map_err(js_error_to_string)?;
+            .map_err(|error| WalletCallbackError::from_js(&error.into_js()))?;
+        let value = envelope
+            .callback_value()
+            .map_err(|error| WalletCallbackError::from_js(&error))?;
         let signature = await_callback_string(
             &self.callback,
             value,
@@ -830,19 +885,23 @@ impl Signer for JsTradingSigner {
             self.wallet_timeout_ms,
         )
         .await
-        .map_err(js_error_to_string)?;
-        normalize_signature(&signature).map_err(js_error_to_string)
+        .map_err(|error| WalletCallbackError::from_js(&error))?;
+        normalize_signature(&signature).map_err(|error| WalletCallbackError::from_js(&error))
     }
 
     async fn send_transaction(
         &self,
         _tx: &TransactionRequest,
     ) -> Result<TransactionBroadcast, Self::Error> {
-        Err("transaction submission is not available through this typed-data callback".to_owned())
+        Err(WalletCallbackError::unsupported(
+            "transaction submission is not available through this typed-data callback",
+        ))
     }
 
     async fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {
-        Err("gas estimation is not available through this typed-data callback".to_owned())
+        Err(WalletCallbackError::unsupported(
+            "gas estimation is not available through this typed-data callback",
+        ))
     }
 }
 
@@ -887,5 +946,32 @@ impl Provider for JsContractReadProvider {
 
     async fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
         Err("block reads are not available through this contract-read callback".to_owned())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use wasm_bindgen_test::*;
+
+    #[wasm_bindgen_test]
+    fn wallet_callback_error_flags_only_the_eip1193_user_rejection_code() {
+        // 4001 is the EIP-1193 "user rejected" code -> routes to SignerRejection.
+        let rejected = WalletCallbackError {
+            code: Some(4001),
+            message: String::new(),
+        };
+        assert_eq!(rejected.user_rejection_code(), Some(4001));
+
+        // Any other provider code is a non-rejection fault -> redacted message path.
+        let other = WalletCallbackError {
+            code: Some(4100),
+            message: String::new(),
+        };
+        assert_eq!(other.user_rejection_code(), None);
+
+        // A DTO/serialization fault carries no code and is never a user rejection.
+        let codeless = WalletCallbackError::unsupported("nope");
+        assert_eq!(codeless.user_rejection_code(), None);
     }
 }

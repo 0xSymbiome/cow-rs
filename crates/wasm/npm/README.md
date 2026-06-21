@@ -293,8 +293,8 @@ binding contract is the per-build **Release gate** column, which CI enforces:
 | --- | ---: | ---: | ---: | --- |
 | signing | 0.31 MiB | 121 KiB | 144 KiB | 0.9 MiB raw / 300 KiB brotli |
 | orderbook | 1.03 MiB | 341 KiB | 448 KiB | 1.5 MiB raw / 500 KiB brotli |
-| trading | 1.54 MiB | 491 KiB | 660 KiB | 3.2 MiB raw / 850 KiB brotli |
-| default | 1.64 MiB | 514 KiB | 693 KiB | 3.3 MiB raw / 900 KiB brotli |
+| trading | 1.55 MiB | 491 KiB | 661 KiB | 3.2 MiB raw / 850 KiB brotli |
+| default | 1.64 MiB | 515 KiB | 694 KiB | 3.3 MiB raw / 900 KiB brotli |
 
 Each flavor emits one wasm binary shared across its bundler, Node, web, and
 source-phase module targets — the web glue's default URL, the module glue's

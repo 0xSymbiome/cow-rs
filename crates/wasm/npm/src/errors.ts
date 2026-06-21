@@ -185,7 +185,7 @@ class CowErrorObject extends Error {
    * an error across a `structuredClone` / worker boundary without losing fields.
    */
   toJSON(): CowErrorData {
-    return { ...this } as unknown as CowErrorData;
+    return { ...this } as CowErrorData;
   }
 
   /**
@@ -219,7 +219,7 @@ interface CowErrorConstructor {
 export type CowError = CowErrorObject & CowErrorData;
 
 /** Runtime constructor and static helpers for {@link CowError}. */
-export const CowError: CowErrorConstructor = CowErrorObject as unknown as CowErrorConstructor;
+export const CowError: CowErrorConstructor = CowErrorObject as CowErrorConstructor;
 
 /**
  * Narrows an unknown caught value to a {@link CowError}. Equivalent to
@@ -254,6 +254,11 @@ export function retryAfterMs(value: unknown): number | undefined {
  * wallet request the user declined (EIP-1193 code `4001`) or a cancelled
  * operation. A UI should treat these as a soft, non-error state (dismiss the
  * flow) rather than surfacing them as a failure.
+ *
+ * Covers rejections from SDK-mediated calls only (quote / post / sign / cancel).
+ * A wallet decline on your own transaction — an ERC-20 approval, eth-flow submit,
+ * or chain switch issued directly through viem — never crosses the SDK, so detect
+ * its EIP-1193 `4001` yourself.
  */
 export function isUserRejection(value: unknown): boolean {
   if (!isCowError(value)) {
