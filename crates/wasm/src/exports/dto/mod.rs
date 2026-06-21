@@ -7,6 +7,8 @@ use serde::de::DeserializeOwned;
 use serde_json::Value;
 use wasm_bindgen::JsValue;
 
+use crate::exports::errors::JsResultExt;
+#[cfg(any(feature = "orderbook", feature = "trading"))]
 use crate::exports::errors::WasmError;
 
 mod app_data;
@@ -87,9 +89,7 @@ pub(crate) use self::transport::transport_policy_from_config;
 
 pub(crate) fn to_js_value<T: Serialize>(value: &T) -> Result<JsValue, JsValue> {
     let serializer = serde_wasm_bindgen::Serializer::json_compatible();
-    value
-        .serialize(&serializer)
-        .map_err(|error| WasmError::from(error).into_js())
+    value.serialize(&serializer).map_js()
 }
 
 #[cfg(any(feature = "orderbook", feature = "trading"))]

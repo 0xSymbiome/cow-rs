@@ -214,31 +214,17 @@ pub(crate) fn reject_zero_receiver(receiver: &Address) -> Result<(), ContractsEr
 /// A `receiver` of `address(0)` is hashed verbatim: the `GPv2` order surface
 /// reads it as the `RECEIVER_SAME_AS_OWNER` (pay-to-owner) sentinel, so this
 /// general hash path never rejects it.
-///
-/// # Errors
-///
-/// Returns [`ContractsError`] if address parsing fails. The signature stays
-/// fallible so callers can thread `?` through the shared [`ContractsError`]
-/// envelope.
-pub fn hash_order(
-    domain: &TypedDataDomain,
-    order: &OrderData,
-) -> Result<OrderDigest, ContractsError> {
+#[must_use]
+pub fn hash_order(domain: &TypedDataDomain, order: &OrderData) -> OrderDigest {
     let sol_order = sol_order_from_order_data(order);
     let alloy_domain = domain.to_alloy_domain();
     let digest = sol_order.eip712_signing_hash(&alloy_domain);
-    Ok(OrderDigest::from_bytes(digest.into()))
+    OrderDigest::from_bytes(digest.into())
 }
 
 /// Computes the EIP-712 digest for a single order cancellation.
-///
-/// # Errors
-///
-/// Returns [`ContractsError`] if UID decoding or typed-data hashing fails.
-pub fn hash_order_cancellation(
-    domain: &TypedDataDomain,
-    order_uid: &OrderUid,
-) -> Result<Hash32, ContractsError> {
+#[must_use]
+pub fn hash_order_cancellation(domain: &TypedDataDomain, order_uid: &OrderUid) -> Hash32 {
     hash_order_cancellations(domain, &OrderCancellations::new(vec![*order_uid]))
 }
 
@@ -248,14 +234,11 @@ pub fn hash_order_cancellation(
 /// `keccak256(0x19 || 0x01 || domain_separator || struct_hash)`
 /// envelope per the EIP-712 specification, evaluated against the
 /// macro-emitted [`sol::OrderCancellations`] struct hash.
-///
-/// # Errors
-///
-/// Returns [`ContractsError`] if UID decoding or address parsing fails.
+#[must_use]
 pub fn hash_order_cancellations(
     domain: &TypedDataDomain,
     cancellations: &OrderCancellations,
-) -> Result<Hash32, ContractsError> {
+) -> Hash32 {
     let order_uids = cancellations
         .order_uids
         .iter()
@@ -266,7 +249,7 @@ pub fn hash_order_cancellations(
     };
     let alloy_domain = domain.to_alloy_domain();
     let digest = sol_cancellations.eip712_signing_hash(&alloy_domain);
-    Ok(Hash32::from_bytes(digest.into()))
+    Hash32::from_bytes(digest.into())
 }
 
 /// Returns the canonical EIP-712 `Order` type hash.
@@ -312,21 +295,14 @@ fn decode_order_uid_bytes(uid: &OrderUid) -> AlloyBytes {
 }
 
 /// Computes the encoded order UID for an order and owner.
-///
-/// # Errors
-///
-/// Returns [`ContractsError`] if order hashing or UID packing fails.
 #[inline]
-pub fn compute_order_uid(
-    domain: &TypedDataDomain,
-    order: &OrderData,
-    owner: &Address,
-) -> Result<OrderUid, ContractsError> {
-    Ok(pack_order_uid_params(&OrderUidParams::new(
-        hash_order(domain, order)?,
+#[must_use]
+pub fn compute_order_uid(domain: &TypedDataDomain, order: &OrderData, owner: &Address) -> OrderUid {
+    pack_order_uid_params(&OrderUidParams::new(
+        hash_order(domain, order),
         *owner,
         order.valid_to,
-    )))
+    ))
 }
 
 /// Packs structured order UID components into the compact 56-byte UID.
@@ -505,7 +481,7 @@ mod tests {
         let sol_order = sol_order_from_order_data(&order);
         assert_eq!(sol_order.eip712_hash_struct().0, expected_struct_hash);
         assert_eq!(
-            hash_order(&domain, &order).unwrap().to_hex_string(),
+            hash_order(&domain, &order).to_hex_string(),
             alloy_primitives::hex::encode_prefixed(expected_digest)
         );
     }
@@ -521,8 +497,8 @@ mod tests {
         let decoded = decode_order_uid_bytes(&uid);
         assert_eq!(decoded.as_ref(), uid.as_slice());
 
-        let single = hash_order_cancellation(&domain, &uid).unwrap();
-        let batch = hash_order_cancellations(&domain, &OrderCancellations::new(vec![uid])).unwrap();
+        let single = hash_order_cancellation(&domain, &uid);
+        let batch = hash_order_cancellations(&domain, &OrderCancellations::new(vec![uid]));
         assert_eq!(single, batch);
         assert_ne!(single, Hash32::from_bytes([0u8; 32]));
     }

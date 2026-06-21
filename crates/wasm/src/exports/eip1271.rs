@@ -11,7 +11,7 @@ use crate::exports::{
         parse_order, parse_owner, to_js_value,
     },
     envelope::WasmEnvelope,
-    errors::WasmError,
+    errors::JsResultExt,
     signing::{await_callback_string, signed_order_from_parts},
 };
 
@@ -76,8 +76,7 @@ pub fn eip1271_signature_payload_export(
     #[wasm_bindgen(js_name = ecdsaSignature)] ecdsa_signature: String,
 ) -> Result<JsValue, JsValue> {
     let order = parse_order(input)?;
-    let payload = pure::signing::eip1271_signature_payload(&order, &ecdsa_signature)
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let payload = pure::signing::eip1271_signature_payload(&order, &ecdsa_signature).map_js()?;
     to_js_value(&WasmEnvelope::v1(payload))
 }
 
@@ -114,8 +113,7 @@ pub async fn sign_order_with_eip1271(
             let order = parse_order(input.clone())?;
             let chain = parse_chain(chain_id)?;
             let owner = parse_owner(&owner)?;
-            let payload = pure::signing::order_typed_data_payload(chain, &order)
-                .map_err(|error| WasmError::from(error).into_js())?;
+            let payload = pure::signing::order_typed_data_payload(chain, &order).map_js()?;
             let typed_data = TypedDataEnvelopeDto::from_payload(&payload)?;
             let ecdsa_signature = crate::exports::signing::await_callback_string(
                 &typed_data_signer,
@@ -124,10 +122,9 @@ pub async fn sign_order_with_eip1271(
                 wallet_timeout_ms,
             )
             .await?;
-            let signature = pure::signing::eip1271_signature_payload(&order, &ecdsa_signature)
-                .map_err(|error| WasmError::from(error).into_js())?;
-            let generated = pure::signing::generate_order_id(chain, &order, &owner)
-                .map_err(|error| WasmError::from(error).into_js())?;
+            let signature =
+                pure::signing::eip1271_signature_payload(&order, &ecdsa_signature).map_js()?;
+            let generated = pure::signing::generate_order_id(chain, &order, &owner).map_js()?;
             let signed: SignedOrderDto =
                 signed_order_from_parts(generated, owner, typed_data, signature, "eip1271", None);
             to_js_value(&WasmEnvelope::v1(signed))
@@ -170,8 +167,7 @@ pub async fn sign_order_with_custom_eip1271(
             let order = parse_order(input.clone())?;
             let chain = parse_chain(chain_id)?;
             let owner_address = parse_owner(&owner)?;
-            let payload = pure::signing::order_typed_data_payload(chain, &order)
-                .map_err(|error| WasmError::from(error).into_js())?;
+            let payload = pure::signing::order_typed_data_payload(chain, &order).map_js()?;
             let typed_data = TypedDataEnvelopeDto::from_payload(&payload)?;
             let request = CowEip1271SignRequest {
                 order: input,
@@ -186,8 +182,8 @@ pub async fn sign_order_with_custom_eip1271(
                 wallet_timeout_ms,
             )
             .await?;
-            let generated = pure::signing::generate_order_id(chain, &order, &owner_address)
-                .map_err(|error| WasmError::from(error).into_js())?;
+            let generated =
+                pure::signing::generate_order_id(chain, &order, &owner_address).map_js()?;
             let signed = signed_order_from_parts(
                 generated,
                 owner_address,

@@ -43,6 +43,7 @@ The catalog below is listed in reference order; see
 | `cancel_in_flight` | Cancel an in-flight quote with `Cancellable::cancel_with(&token)` |
 | `limit_order` | Build and simulate signed limit-order submission through the fluent `Trading::limit()` builder, plus the signer-less pre-sign variant (`limit().post_presign()`) |
 | `eip1271_signer` | Post a limit order signed by a custom `Eip1271Signer` (smart account) |
+| `receiver_redirect` | Redirect swap proceeds to an address other than the owner via `receiver` |
 | `order_lifecycle` | Inspect order lookup and off-chain cancellation |
 | `receipt_lifecycle` | Drive `submit_and_wait_for_receipt` through the testing doubles for mined, reverted, and timeout outcomes |
 | `swap_quickstart` | Make your first swap end to end (quote, sign, post) against a mock |

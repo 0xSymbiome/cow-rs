@@ -69,8 +69,7 @@ pub use types::{
     Address, Amount, Amounts, AppCode, AppCodeError, AppDataHash, BlockHash, BuyTokenDestination,
     ChainId, Costs, FeeComponent, Hash32, HexData, LogBlockSelector, LogMeta, LogQuery, NetworkFee,
     OrderData, OrderDigest, OrderKind, OrderUid, QuoteAmountsAndCosts, RawLog, SellTokenSource,
-    TokenInfo, TransactionHash, VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS,
-    ValidTo,
+    TokenInfo, TransactionHash, ValidTo,
 };
 pub use validation::{TransportErrorClass, ValidationReason};
 

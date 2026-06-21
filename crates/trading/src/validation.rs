@@ -78,7 +78,14 @@ pub enum ClientRejection {
         side: AmountSide,
     },
     /// The signer-recovered owner does not match the submitted `from`.
-    #[error("owner mismatch: expected owner={expected}, recovered signer={recovered}")]
+    ///
+    /// An ECDSA signer can only place orders for its own address, so a declared
+    /// owner that differs from the signer is rejected. A smart-contract account
+    /// (Safe) places its order by passing that account as the owner and using
+    /// the pre-sign or EIP-1271 path instead.
+    #[error(
+        "declared owner {expected} does not match the signer address {recovered}; an ECDSA signer can only sign for its own address — for a smart-contract account use the pre-sign or EIP-1271 path"
+    )]
     OwnerMismatch {
         /// Owner address submitted alongside the order.
         expected: Address,

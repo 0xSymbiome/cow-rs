@@ -16,7 +16,7 @@ use cow_sdk_core::{Cancelled, Redacted, TransportErrorClass};
 fn class_label_table_covers_every_variant() {
     let cases: &[(ProviderError, ProviderErrorClass, &str)] = &[
         (
-            ProviderError::Validation("ignored".to_owned()),
+            ProviderError::Validation("ignored".to_owned().into()),
             ProviderErrorClass::Validation,
             "validation",
         ),
@@ -42,7 +42,7 @@ fn class_label_table_covers_every_variant() {
             "cancelled",
         ),
         (
-            ProviderError::Internal("ignored".to_owned()),
+            ProviderError::Internal("ignored".to_owned().into()),
             ProviderErrorClass::Internal,
             "internal",
         ),
@@ -90,7 +90,7 @@ fn from_core_error_lifts_into_validation_variant_with_redacted_display() {
 
 #[test]
 fn internal_variant_display_emits_redacted_placeholder() {
-    let err = ProviderError::Internal("operator-only detail".to_owned());
+    let err = ProviderError::Internal("operator-only detail".to_owned().into());
     let rendered = err.to_string();
     let debug = format!("{err:?}");
 

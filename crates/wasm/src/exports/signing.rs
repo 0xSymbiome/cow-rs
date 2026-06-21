@@ -28,7 +28,7 @@ use crate::exports::{
         parse_owner, to_js_value, typed_data_json,
     },
     envelope::WasmEnvelope,
-    errors::WasmError,
+    errors::{JsResultExt, WasmError},
 };
 
 #[cfg(feature = "cancellation")]
@@ -190,11 +190,10 @@ pub async fn sign_order_with_eip1193(
             let order = parse_order(input.clone())?;
             let chain = parse_chain(chain_id)?;
             let owner_address = parse_owner(&owner)?;
-            let payload = pure::signing::order_typed_data_payload(chain, &order)
-                .map_err(|error| WasmError::from(error).into_js())?;
+            let payload = pure::signing::order_typed_data_payload(chain, &order).map_js()?;
             let typed_data = TypedDataEnvelopeDto::from_payload(&payload)?;
-            let typed_data_string = serde_json::to_string(&typed_data_json(&typed_data))
-                .map_err(|error| WasmError::from(error).into_js())?;
+            let typed_data_string =
+                serde_json::to_string(&typed_data_json(&typed_data)).map_js()?;
             let requester = JsEip1193Requester::new(request_callback, wallet_timeout_ms);
             let signature = requester
                 .request(
@@ -246,11 +245,10 @@ pub async fn sign_order_eth_sign_digest(
             let chain = parse_chain(chain_id)?;
             let owner_address = parse_owner(&owner)?;
             let typed_data = TypedDataEnvelopeDto::from_payload(
-                &pure::signing::order_typed_data_payload(chain, &order)
-                    .map_err(|error| WasmError::from(error).into_js())?,
+                &pure::signing::order_typed_data_payload(chain, &order).map_js()?,
             )?;
-            let generated = pure::signing::generate_order_id(chain, &order, &owner_address)
-                .map_err(|error| WasmError::from(error).into_js())?;
+            let generated =
+                pure::signing::generate_order_id(chain, &order, &owner_address).map_js()?;
             let digest = alloy_primitives::hex::decode(
                 generated
                     .order_digest
@@ -404,8 +402,7 @@ pub async fn sign_cancellation_with_eip1193(
             let owner = parse_owner(&owner)?;
             let (uids, payload, _digest) = cancellation_payload(order_uids, chain_id)?;
             let envelope = TypedDataEnvelopeDto::from_payload(&payload)?;
-            let typed_data_string = serde_json::to_string(&typed_data_json(&envelope))
-                .map_err(|error| WasmError::from(error).into_js())?;
+            let typed_data_string = serde_json::to_string(&typed_data_json(&envelope)).map_js()?;
             let requester = JsEip1193Requester::new(request_callback, wallet_timeout_ms);
             let signature = requester
                 .request(
@@ -513,7 +510,7 @@ pub(crate) async fn await_callback_string(
 pub(crate) fn normalize_signature(raw_hex: &str) -> Result<String, JsValue> {
     RecoverableSignature::parse_hex(raw_hex)
         .map(|sig| sig.to_hex_string())
-        .map_err(|error| WasmError::from(error).into_js())
+        .map_js()
 }
 
 // Only the `trading` module consumes this (and the `js_message` helper it
@@ -575,8 +572,7 @@ async fn sign_order_with_callback(
     let order = parse_order(input.clone())?;
     let chain = parse_chain(chain_id)?;
     let owner = parse_owner(&owner)?;
-    let payload = pure::signing::order_typed_data_payload(chain, &order)
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let payload = pure::signing::order_typed_data_payload(chain, &order).map_js()?;
     let typed_data = TypedDataEnvelopeDto::from_payload(&payload)?;
     let signature = await_callback_string(
         &typed_data_signer,
@@ -598,8 +594,7 @@ fn build_signed_order(
     scheme: &str,
 ) -> Result<SignedOrderDto, JsValue> {
     let order = parse_order(input)?;
-    let generated = pure::signing::generate_order_id(chain, &order, &owner)
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let generated = pure::signing::generate_order_id(chain, &order, &owner).map_js()?;
     Ok(signed_order_from_parts(
         generated, owner, typed_data, signature, scheme, None,
     ))
@@ -624,11 +619,9 @@ fn cancellation_payload(
         })
         .collect::<Result<Vec<_>, _>>()
         .map_err(WasmError::into_js)?;
-    let payload = order_cancellations_typed_data_payload(&uids, chain, None)
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let payload = order_cancellations_typed_data_payload(&uids, chain, None).map_js()?;
     let cancellations = cow_sdk_contracts::OrderCancellations::new(uids.clone());
-    let digest = cow_sdk_contracts::hash_order_cancellations(&payload.domain, &cancellations)
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let digest = cow_sdk_contracts::hash_order_cancellations(&payload.domain, &cancellations);
     Ok((uids, payload, digest))
 }
 
@@ -641,8 +634,7 @@ fn settlement_transaction(
         .chain_id
         .ok_or_else(|| WasmError::invalid("chainId", "chainId is required").into_js())?;
     let chain = parse_chain(chain_id)?;
-    let env = pure::chains::env_from_str(params.env.as_deref())
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let env = pure::chains::env_from_str(params.env.as_deref()).map_js()?;
     let settlement = params
         .settlement_contract_override
         .as_ref()
@@ -664,7 +656,7 @@ fn settlement_transaction(
     let data = alloy_primitives::hex::encode_prefixed(calldata);
     Ok(TransactionRequest::new(
         Some(settlement),
-        Some(HexData::new(data).map_err(|error| WasmError::from(error).into_js())?),
+        Some(HexData::new(data).map_js()?),
         Some(Amount::ZERO),
         Some(default_gas_limit()?),
     ))
@@ -683,8 +675,7 @@ fn default_gas_limit() -> Result<Amount, JsValue> {
 /// rather than the previous ad-hoc hex decode path.
 #[cfg(feature = "cancellation")]
 fn order_uid_bytes_from_str(uid: &str) -> Result<AlloyBytes, JsValue> {
-    let order_uid =
-        OrderUid::new(uid.to_owned()).map_err(|error| WasmError::from(error).into_js())?;
+    let order_uid = OrderUid::new(uid.to_owned()).map_js()?;
     Ok(AlloyBytes::from(order_uid.as_slice().to_vec()))
 }
 

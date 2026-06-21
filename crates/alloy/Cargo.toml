@@ -24,25 +24,17 @@ path = "src/lib.rs"
 [lints]
 workspace = true
 
-[features]
-default = ["eip712"]
-eip712 = [
-  "alloy-signer/eip712",
-  "alloy-signer-local/eip712",
-  "cow-sdk-alloy-signer/eip712",
-]
-
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 cow-sdk-alloy-provider = { path = "../alloy-provider", version = "0.1.0-alpha.8", default-features = false }
-cow-sdk-alloy-signer = { path = "../alloy-signer", version = "0.1.0-alpha.8", default-features = false }
+cow-sdk-alloy-signer = { path = "../alloy-signer", version = "0.1.0-alpha.8" }
 cow-sdk-core = { path = "../core", version = "0.1.0-alpha.8" }
 
 alloy-network.workspace = true
 alloy-primitives = { workspace = true, features = ["k256"] }
 alloy-provider.workspace = true
 alloy-rpc-client.workspace = true
-alloy-signer.workspace = true
-alloy-signer-local.workspace = true
+alloy-signer = { workspace = true, features = ["eip712"] }
+alloy-signer-local = { workspace = true, features = ["eip712"] }
 alloy-transport.workspace = true
 cow-sdk-contracts = { path = "../contracts", version = "0.1.0-alpha.8" }
 reqwest = { workspace = true, default-features = false, features = ["rustls"] }

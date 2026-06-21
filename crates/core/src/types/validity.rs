@@ -3,22 +3,14 @@ use std::fmt;
 use serde::{Deserialize, Serialize};
 
 use crate::errors::{CoreError, ValidationError};
-/// Minimum relative-window duration accepted by [`ValidTo::relative`], in seconds.
-pub const VALID_TO_MIN_RELATIVE_SECONDS: u32 = 30;
-
-/// Maximum relative-window duration accepted by [`ValidTo::relative`], in seconds.
-///
-/// The default ceiling of 90 days matches the longest order horizon the
-/// orderbook accepts today and keeps typed construction ahead of the
-/// server-side 422 response path.
-pub const VALID_TO_MAX_RELATIVE_SECONDS: u32 = 90 * 24 * 60 * 60;
 
 /// Validated order expiration timestamp encoded as a UNIX epoch in seconds.
 ///
-/// `ValidTo` guards construction of order-deadline values so relative durations
-/// that would produce an instantly-expired order or run past the orderbook's
-/// accepted horizon fail closed with a typed
-/// [`ValidationError::ValidToOutOfRange`] at the client boundary. Absolute
+/// `ValidTo` keeps order-deadline values inside the protocol-fixed `u32` epoch
+/// range (the `MAX_VALID_TO_EPOCH` ceiling, year 2106). It does not bake an
+/// operator-tunable validity window: per ADR 0015 the exact minimum/maximum
+/// order-validity policy is the orderbook's, so the client mirrors only the
+/// protocol-fixed range and lets the server own the tunable window. Absolute
 /// epochs that already fit the `u32` range are accepted as-is so existing
 /// orderbook quote responses continue to round-trip without additional
 /// validation.
@@ -34,32 +26,21 @@ impl ValidTo {
         Self(epoch_seconds)
     }
 
-    /// Creates a [`ValidTo`] by adding a relative window to the supplied UNIX epoch anchor.
+    /// Creates a [`ValidTo`] by adding a relative duration to a UNIX epoch anchor.
+    ///
+    /// The anchor and duration are added with saturating arithmetic; the result
+    /// fails closed only against the protocol-fixed `u32` epoch ceiling, leaving
+    /// the operator-tunable validity window to the orderbook (ADR 0015).
     ///
     /// # Errors
     ///
-    /// Returns [`ValidationError::ValidToOutOfRange`] when the window falls
-    /// outside the inclusive `[VALID_TO_MIN_RELATIVE_SECONDS,
-    /// VALID_TO_MAX_RELATIVE_SECONDS]` range.
+    /// Returns [`ValidationError::ValidToOutOfRange`] when the resulting absolute
+    /// timestamp exceeds the protocol-fixed `u32` epoch ceiling.
     pub fn relative(now_epoch_seconds: u64, duration_seconds: u64) -> Result<Self, CoreError> {
-        if duration_seconds < u64::from(VALID_TO_MIN_RELATIVE_SECONDS)
-            || duration_seconds > u64::from(VALID_TO_MAX_RELATIVE_SECONDS)
-        {
-            return Err(ValidationError::ValidToOutOfRange {
-                actual_seconds: duration_seconds,
-                min: VALID_TO_MIN_RELATIVE_SECONDS,
-                max: VALID_TO_MAX_RELATIVE_SECONDS,
-            }
-            .into());
-        }
-
         let projected = now_epoch_seconds.saturating_add(duration_seconds);
-        let clamped = projected.min(u64::from(u32::MAX));
-        u32::try_from(clamped).map(Self).map_err(|_| {
+        u32::try_from(projected).map(Self).map_err(|_| {
             ValidationError::ValidToOutOfRange {
-                actual_seconds: duration_seconds,
-                min: VALID_TO_MIN_RELATIVE_SECONDS,
-                max: VALID_TO_MAX_RELATIVE_SECONDS,
+                actual_seconds: projected,
             }
             .into()
         })

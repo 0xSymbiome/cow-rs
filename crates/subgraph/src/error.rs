@@ -268,21 +268,23 @@ impl SubgraphError {
     /// retry budget is [`ErrorClass::RateLimited`]; other non-success statuses
     /// and GraphQL error payloads are [`ErrorClass::Remote`]; transport
     /// failures are [`ErrorClass::Transport`]; an unsupported-network selection
-    /// is caller-side [`ErrorClass::Validation`]; cancellation is
-    /// [`ErrorClass::Cancelled`]; and transport-construction, host-policy,
-    /// serialization, empty-totals, and missing-data faults are
-    /// [`ErrorClass::Internal`].
+    /// and a rejected base-URL override are caller-side
+    /// [`ErrorClass::Validation`]; cancellation is [`ErrorClass::Cancelled`];
+    /// and transport-construction, serialization, empty-totals, and missing-data
+    /// faults are [`ErrorClass::Internal`].
     #[must_use]
     pub const fn class(&self) -> ErrorClass {
         match self {
-            Self::UnsupportedNetwork { .. } => ErrorClass::Validation,
+            // Caller-input faults: an unsupported-network selection and a
+            // rejected base-URL override are both fixable by the caller.
+            Self::UnsupportedNetwork { .. } | Self::HostPolicy(_) => ErrorClass::Validation,
             Self::HttpStatus { status, .. } if *status == 429 => ErrorClass::RateLimited,
             Self::HttpStatus { .. } | Self::GraphQl { .. } => ErrorClass::Remote,
             Self::Transport { .. } => ErrorClass::Transport,
             Self::Cancelled => ErrorClass::Cancelled,
-            // `NoTotalsFound`, `TransportConfiguration`, `HostPolicy`,
-            // `Serialization`, `MissingData`, and future additive variants
-            // classify as internal invariant or contract faults.
+            // `NoTotalsFound`, `TransportConfiguration`, `Serialization`,
+            // `MissingData`, and future additive variants classify as internal
+            // invariant or contract faults.
             _ => ErrorClass::Internal,
         }
     }

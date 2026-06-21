@@ -84,11 +84,8 @@ fuzz_target!(|input: FuzzInput| {
 
     // `hash_order` is deterministic and panic-free for the concrete order on
     // every arbitrary input.
-    let first = match hash_order(&domain, &unsigned) {
-        Ok(digest) => digest,
-        Err(_) => return,
-    };
-    let second = hash_order(&domain, &unsigned).expect("hash_order must remain deterministic");
+    let first = hash_order(&domain, &unsigned);
+    let second = hash_order(&domain, &unsigned);
     assert_eq!(
         first, second,
         "hash_order must produce the same digest for identical inputs",
@@ -103,8 +100,7 @@ fuzz_target!(|input: FuzzInput| {
         input.valid_to,
     ));
     let cancellations = OrderCancellations::new(vec![uid]);
-    let _ = hash_order_cancellations(&domain, &cancellations)
-        .expect("hash_order_cancellations must accept a just-packed UID");
+    let _ = hash_order_cancellations(&domain, &cancellations);
 });
 
 fn sell_token_source_from_code(code: u8) -> SellTokenSource {

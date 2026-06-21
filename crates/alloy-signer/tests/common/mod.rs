@@ -16,5 +16,5 @@ pub fn sample_order() -> OrderData {
 
 /// The order digest for `order` under the mainnet `GPv2` domain.
 pub fn order_digest(order: &OrderData) -> Hash32 {
-    hash_order(&domain(SupportedChainId::Mainnet, None).unwrap(), order).unwrap()
+    hash_order(&domain(SupportedChainId::Mainnet, None), order)
 }

@@ -18,7 +18,7 @@ use crate::exports::{
         to_js_value, transport_policy_from_config,
     },
     envelope::WasmEnvelope,
-    errors::WasmError,
+    errors::{JsResultExt, WasmError},
     transport::{configured_fetch_transport, optional_string, optional_timeout, required_u32},
 };
 
@@ -600,8 +600,7 @@ pub(crate) fn build_orderbook(
     api_key: Option<String>,
 ) -> Result<OrderbookApi, JsValue> {
     let chain = parse_chain(chain_id)?;
-    let env = pure::chains::env_from_str(env.as_deref())
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let env = pure::chains::env_from_str(env.as_deref()).map_js()?;
     let mut builder = OrderbookApi::builder()
         .chain(chain)
         .env(env)
@@ -610,9 +609,7 @@ pub(crate) fn build_orderbook(
     if let Some(api_key) = api_key {
         builder = builder.api_key(api_key);
     }
-    builder
-        .build()
-        .map_err(|error| WasmError::from(error).into_js())
+    builder.build().map_js()
 }
 
 pub(crate) fn orderbook_for_scope(inner: &OrderbookApi, scope: &ClientCallScope) -> OrderbookApi {
@@ -629,10 +626,7 @@ async fn orderbook_get_app_data(
     app_data_hash: String,
 ) -> Result<JsValue, JsValue> {
     let hash = parse_app_data_hash(&app_data_hash)?;
-    let object = inner
-        .app_data(&hash)
-        .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let object = inner.app_data(&hash).await.map_js()?;
     to_js_value(&WasmEnvelope::v1(AppDataObjectDto::from(object)))
 }
 
@@ -645,7 +639,7 @@ async fn orderbook_upload_app_data(
     inner
         .upload_app_data(&hash, &full_app_data)
         .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+        .map_js()?;
     to_js_value(&WasmEnvelope::v1(json!({ "uploaded": true })))
 }
 
@@ -659,10 +653,7 @@ async fn orderbook_get_quote(
     request: OrderQuoteRequestInput,
 ) -> Result<JsValue, JsValue> {
     let request = from_json_value("quote", request.into_value()?)?;
-    let response = inner
-        .quote(&request)
-        .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let response = inner.quote(&request).await.map_js()?;
     to_js_value(&WasmEnvelope::v1(response))
 }
 
@@ -675,7 +666,7 @@ async fn orderbook_send_order(
         .send_order(&request)
         .await
         .map(|uid| uid.to_hex_string())
-        .map_err(|error| WasmError::from(error).into_js())?;
+        .map_js()?;
     to_js_value(&WasmEnvelope::v1(uid))
 }
 
@@ -688,32 +679,24 @@ async fn orderbook_send_order_creation(
         .send_order(&request)
         .await
         .map(|uid| uid.to_hex_string())
-        .map_err(|error| WasmError::from(error).into_js())?;
+        .map_js()?;
     to_js_value(&WasmEnvelope::v1(uid))
 }
 
 async fn orderbook_get_order(inner: &OrderbookApi, order_uid: String) -> Result<JsValue, JsValue> {
     let order_uid = parse_order_uid(order_uid)?;
-    let order = inner
-        .order(&order_uid)
-        .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let order = inner.order(&order_uid).await.map_js()?;
     to_js_value(&WasmEnvelope::v1(order))
 }
 
 async fn orderbook_get_version(inner: &OrderbookApi) -> Result<JsValue, JsValue> {
-    let version = inner
-        .version()
-        .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let version = inner.version().await.map_js()?;
     to_js_value(&WasmEnvelope::v1(version))
 }
 
 fn orderbook_get_order_link(inner: &OrderbookApi, order_uid: String) -> Result<JsValue, JsValue> {
     let order_uid = parse_order_uid(order_uid)?;
-    let link = inner
-        .order_link(&order_uid)
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let link = inner.order_link(&order_uid).map_js()?;
     to_js_value(&WasmEnvelope::v1(link))
 }
 
@@ -722,10 +705,7 @@ async fn orderbook_get_order_multi_env(
     order_uid: String,
 ) -> Result<JsValue, JsValue> {
     let order_uid = parse_order_uid(order_uid)?;
-    let order = inner
-        .order_multi_env(&order_uid)
-        .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let order = inner.order_multi_env(&order_uid).await.map_js()?;
     to_js_value(&WasmEnvelope::v1(order))
 }
 
@@ -734,10 +714,7 @@ async fn orderbook_get_tx_orders(
     tx_hash: String,
 ) -> Result<JsValue, JsValue> {
     let tx_hash = parse_transaction_hash(tx_hash)?;
-    let orders = inner
-        .tx_orders(&tx_hash)
-        .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let orders = inner.tx_orders(&tx_hash).await.map_js()?;
     to_js_value(&WasmEnvelope::v1(orders))
 }
 
@@ -762,10 +739,7 @@ async fn orderbook_get_trades(
     if let Some(limit) = query.limit {
         request = request.with_limit(limit);
     }
-    let trades = inner
-        .trades(&request)
-        .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let trades = inner.trades(&request).await.map_js()?;
     to_js_value(&WasmEnvelope::v1(trades))
 }
 
@@ -784,10 +758,7 @@ async fn orderbook_get_orders_by_owner(
             request = request.with_limit(limit);
         }
     }
-    let orders = inner
-        .orders(&request)
-        .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let orders = inner.orders(&request).await.map_js()?;
     to_js_value(&WasmEnvelope::v1(orders))
 }
 
@@ -796,10 +767,7 @@ async fn orderbook_get_native_price(
     token: String,
 ) -> Result<JsValue, JsValue> {
     let token = parse_address("token", token)?;
-    let price = inner
-        .native_price(&token)
-        .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let price = inner.native_price(&token).await.map_js()?;
     to_js_value(&WasmEnvelope::v1(price))
 }
 
@@ -808,10 +776,7 @@ async fn orderbook_get_order_competition_status(
     order_uid: String,
 ) -> Result<JsValue, JsValue> {
     let order_uid = parse_order_uid(order_uid)?;
-    let status = inner
-        .order_competition_status(&order_uid)
-        .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let status = inner.order_competition_status(&order_uid).await.map_js()?;
     to_js_value(&WasmEnvelope::v1(status))
 }
 
@@ -820,10 +785,7 @@ async fn orderbook_get_total_surplus(
     owner: String,
 ) -> Result<JsValue, JsValue> {
     let owner = parse_address("owner", owner)?;
-    let total = inner
-        .total_surplus(&owner)
-        .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let total = inner.total_surplus(&owner).await.map_js()?;
     to_js_value(&WasmEnvelope::v1(total))
 }
 
@@ -833,10 +795,7 @@ async fn orderbook_get_solver_competition(
 ) -> Result<JsValue, JsValue> {
     let auction_id =
         super::js_safe_integer_to_i64(auction_id, "auctionId").map_err(WasmError::into_js)?;
-    let response = inner
-        .solver_competition(auction_id)
-        .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let response = inner.solver_competition(auction_id).await.map_js()?;
     to_js_value(&WasmEnvelope::v1(response))
 }
 
@@ -848,7 +807,7 @@ async fn orderbook_get_solver_competition_by_tx_hash(
     let response = inner
         .solver_competition_by_tx_hash(&tx_hash)
         .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+        .map_js()?;
     to_js_value(&WasmEnvelope::v1(response))
 }
 
@@ -863,10 +822,7 @@ async fn orderbook_cancel_orders(
         .collect::<Result<Vec<_>, _>>()?;
     let scheme = ecdsa_signing_scheme(&signed.signing_scheme)?;
     let request = OrderCancellations::new(order_uids, signed.signature).with_signing_scheme(scheme);
-    inner
-        .send_cancellations(&request)
-        .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+    inner.send_cancellations(&request).await.map_js()?;
     to_js_value(&WasmEnvelope::v1(json!({ "cancelled": true })))
 }
 
@@ -892,7 +848,7 @@ pub(crate) fn order_creation_from_signed(signed: SignedOrderDto) -> Result<Order
     .with_sell_token_balance(order.sell_token_balance)
     .with_buy_token_balance(order.buy_token_balance);
 
-    if !is_zero_address(&order.receiver) {
+    if !order.receiver.is_zero() {
         creation = creation.with_receiver(order.receiver.clone());
     }
     if let Some(quote_id) = signed.quote_id {
@@ -914,10 +870,4 @@ fn parse_address(field: &'static str, value: String) -> Result<Address, JsValue>
 fn parse_transaction_hash(tx_hash: String) -> Result<TransactionHash, JsValue> {
     TransactionHash::new(tx_hash)
         .map_err(|error| WasmError::invalid("txHash", error.to_string()).into_js())
-}
-
-fn is_zero_address(address: &Address) -> bool {
-    address
-        .to_hex_string()
-        .eq_ignore_ascii_case("0x0000000000000000000000000000000000000000")
 }

@@ -16,8 +16,7 @@ fn bench_hash_order(c: &mut Criterion) {
     let order = sample_order();
     c.bench_function("hash_order", |b| {
         b.iter(|| {
-            let digest = hash_order(black_box(&domain), black_box(&order))
-                .expect("fixed sample order must hash successfully");
+            let digest = hash_order(black_box(&domain), black_box(&order));
             black_box(digest);
         });
     });

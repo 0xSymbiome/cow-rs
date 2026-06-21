@@ -71,23 +71,12 @@ impl Signer for AlloyClientSignerHandle {
         &self,
         payload: &TypedDataPayload,
     ) -> Result<String, Self::Error> {
-        #[cfg(feature = "eip712")]
-        {
-            let typed =
-                cow_typed_data_payload_to_alloy(payload).map_err(AlloyClientError::Validation)?;
-            let signature = AlloySigner::sign_dynamic_typed_data(&self.inner.signer, &typed)
-                .await
-                .map_err(|error| AlloyClientError::from_alloy_signer(&error))?;
-            Ok(alloy_signature_to_hex(&signature)?)
-        }
-
-        #[cfg(not(feature = "eip712"))]
-        {
-            let _ = payload;
-            Err(AlloyClientError::Validation(
-                "sign_typed_data_payload requires the eip712 feature".to_owned(),
-            ))
-        }
+        let typed =
+            cow_typed_data_payload_to_alloy(payload).map_err(AlloyClientError::validation)?;
+        let signature = AlloySigner::sign_dynamic_typed_data(&self.inner.signer, &typed)
+            .await
+            .map_err(|error| AlloyClientError::from_alloy_signer(&error))?;
+        Ok(alloy_signature_to_hex(&signature)?)
     }
 
     /// Submits a transaction through the wallet-filler provider and
@@ -105,7 +94,7 @@ impl Signer for AlloyClientSignerHandle {
         &self,
         tx: &TransactionRequest,
     ) -> Result<TransactionBroadcast, Self::Error> {
-        let tx = cow_request_to_alloy(tx).map_err(AlloyClientError::Validation)?;
+        let tx = cow_request_to_alloy(tx).map_err(AlloyClientError::validation)?;
         let pending = self
             .inner
             .provider
@@ -114,12 +103,12 @@ impl Signer for AlloyClientSignerHandle {
             .map_err(AlloyClientError::from_alloy_transport)?;
         let tx_hash = *pending.tx_hash();
         let transaction_hash = TransactionHash::new(format!("0x{tx_hash:x}"))
-            .map_err(|error| AlloyClientError::Internal(format!("hash conversion: {error}")))?;
+            .map_err(|error| AlloyClientError::internal(format!("hash conversion: {error}")))?;
         Ok(TransactionBroadcast::new(transaction_hash))
     }
 
     async fn estimate_gas(&self, tx: &TransactionRequest) -> Result<Amount, Self::Error> {
-        let tx = cow_request_to_alloy(tx).map_err(AlloyClientError::Validation)?;
+        let tx = cow_request_to_alloy(tx).map_err(AlloyClientError::validation)?;
         let gas = self
             .inner
             .provider

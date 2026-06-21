@@ -2,7 +2,6 @@ mod common;
 
 use std::{collections::HashMap, sync::Mutex};
 
-use async_trait::async_trait;
 use cow_sdk_app_data::{
     AppDataError, DEFAULT_IPFS_READ_URI, IpfsConfig, IpfsFetchPolicy, IpfsFetchTransport,
     fetch_doc_from_app_data_hex, fetch_doc_from_cid, fetch_doc_from_cid_with_policy,
@@ -28,7 +27,6 @@ impl RecordingFetchTransport {
     }
 }
 
-#[async_trait]
 impl IpfsFetchTransport for RecordingFetchTransport {
     async fn get(&self, uri: &str) -> Result<String, AppDataError> {
         self.captured.lock().unwrap().push(uri.to_string());

@@ -112,7 +112,7 @@ impl AlloyClient {
     pub async fn verify_chain_id(&self) -> Result<(), AlloyClientError> {
         let remote = self.get_chain_id().await?;
         if remote != self.inner.chain_id {
-            return Err(AlloyClientError::Validation(format!(
+            return Err(AlloyClientError::validation(format!(
                 "configured chain id `{}` does not match remote `eth_chainId` `{remote}`",
                 self.inner.chain_id
             )));
@@ -171,7 +171,7 @@ impl Provider for AlloyClient {
     }
 
     async fn call(&self, tx: &TransactionRequest) -> Result<HexData, Self::Error> {
-        let tx = cow_request_to_alloy(tx).map_err(AlloyClientError::Validation)?;
+        let tx = cow_request_to_alloy(tx).map_err(AlloyClientError::validation)?;
         let bytes = self
             .inner
             .provider
@@ -188,7 +188,7 @@ impl Provider for AlloyClient {
     }
 
     async fn get_block(&self, block_tag: &str) -> Result<BlockInfo, Self::Error> {
-        let block_id = cow_block_tag_to_alloy(block_tag).map_err(AlloyClientError::Validation)?;
+        let block_id = cow_block_tag_to_alloy(block_tag).map_err(AlloyClientError::validation)?;
         let block = self
             .inner
             .provider
@@ -196,7 +196,7 @@ impl Provider for AlloyClient {
             .await
             .map_err(AlloyClientError::from_alloy_transport)?
             .ok_or_else(|| {
-                AlloyClientError::Validation(format!("block `{block_tag}` not found on remote"))
+                AlloyClientError::validation(format!("block `{block_tag}` not found on remote"))
             })?;
         Ok(alloy_to_cow_block_info(&block))
     }

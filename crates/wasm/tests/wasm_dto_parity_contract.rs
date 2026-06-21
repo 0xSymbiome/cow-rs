@@ -23,7 +23,7 @@ use wasm_bindgen_test::*;
 
 use cow_sdk_wasm::exports::{
     CompetitionOrderStatusDto, NativePriceResponseDto, OrderDto, OrderQuoteResponseDto,
-    TotalSurplusDto, TradeDto,
+    SolverCompetitionResponseDto, TotalSurplusDto, TradeDto,
 };
 
 wasm_bindgen_test_configure!(run_in_browser);
@@ -35,6 +35,8 @@ const ORDER_QUOTE_RESPONSE_FIXTURE: &str =
 const TRADE_FIXTURE: &str = include_str!("../../../parity/fixtures/orderbook/trade.json");
 const TOTAL_SURPLUS_FIXTURE: &str =
     include_str!("../../../parity/fixtures/orderbook/total_surplus.json");
+const SOLVER_COMPETITION_FIXTURE: &str =
+    include_str!("../../../parity/fixtures/orderbook/solver_competition_response.json");
 
 /// Asserts every field present in `fixture` survives a `fixture → DTO → JSON`
 /// round-trip with an identical value — the same field-preservation contract
@@ -118,6 +120,24 @@ fn total_surplus_dto_mirrors_native_fixture() {
         .expect("TotalSurplusDto must deserialize the native fixture");
     let rendered = serde_json::to_value(&dto).expect("TotalSurplusDto must serialize");
     assert_fixture_preserved("TotalSurplusDto", TOTAL_SURPLUS_FIXTURE, &rendered);
+}
+
+#[wasm_bindgen_test]
+fn solver_competition_response_dto_mirrors_native_fixture() {
+    // `SolverCompetitionResponseDto` is the highest-field-count shadow DTO (the
+    // CIP-67 `/solver_competition/*` contract): it nests `CompetitionAuctionDto`
+    // and a `SolverSettlementDto` vector that the binding never constructs from a
+    // native value, so only this fixture round-trip catches a rename, retype, or
+    // drop between `cow_sdk_orderbook::SolverCompetitionResponse` and the mirror.
+    let dto: SolverCompetitionResponseDto =
+        serde_json::from_value(fixture_payload(SOLVER_COMPETITION_FIXTURE))
+            .expect("SolverCompetitionResponseDto must deserialize the native fixture");
+    let rendered = serde_json::to_value(&dto).expect("SolverCompetitionResponseDto must serialize");
+    assert_fixture_preserved(
+        "SolverCompetitionResponseDto",
+        SOLVER_COMPETITION_FIXTURE,
+        &rendered,
+    );
 }
 
 #[wasm_bindgen_test]

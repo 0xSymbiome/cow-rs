@@ -107,7 +107,7 @@ impl Provider for RpcAlloyProvider {
     }
 
     async fn call(&self, tx: &TransactionRequest) -> Result<HexData, Self::Error> {
-        let tx = cow_request_to_alloy(tx).map_err(ProviderError::Validation)?;
+        let tx = cow_request_to_alloy(tx).map_err(ProviderError::validation)?;
         let bytes = self
             .inner()
             .call(tx)
@@ -121,14 +121,14 @@ impl Provider for RpcAlloyProvider {
     }
 
     async fn get_block(&self, block_tag: &str) -> Result<BlockInfo, Self::Error> {
-        let block_id = cow_block_tag_to_alloy(block_tag).map_err(ProviderError::Validation)?;
+        let block_id = cow_block_tag_to_alloy(block_tag).map_err(ProviderError::validation)?;
         let block = self
             .inner()
             .get_block(block_id)
             .await
             .map_err(ProviderError::from_alloy_transport)?
             .ok_or_else(|| {
-                ProviderError::Validation(format!("block `{block_tag}` not found on remote"))
+                ProviderError::validation(format!("block `{block_tag}` not found on remote"))
             })?;
         Ok(alloy_to_cow_block_info(&block))
     }

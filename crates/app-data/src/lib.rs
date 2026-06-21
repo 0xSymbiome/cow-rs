@@ -50,15 +50,6 @@ pub use fetch::{
     IpfsFetchPolicy, IpfsFetchTransport, fetch_doc_from_app_data_hex,
     fetch_doc_from_app_data_hex_with_policy, fetch_doc_from_cid, fetch_doc_from_cid_with_policy,
 };
-
-/// The [`async_trait`](macro@async_trait) attribute macro, re-exported for
-/// implementors of the object-safe [`IpfsFetchTransport`] seam.
-///
-/// `IpfsFetchTransport` is dispatched behind a trait object, which native
-/// `async fn` in traits cannot express, so implementors annotate their `impl`
-/// with this macro. Re-exporting it here means a downstream implementor does
-/// not declare a separate `async-trait` dependency at a matching version.
-pub use async_trait::async_trait;
 pub use info::{
     APP_DATA_APPROACHING_LIMIT_RATIO, APP_DATA_MAX_BYTES, AppDataSource, AppDataValidated,
     AppDataValidation, AppDataWarning, app_data_cid, app_data_content, app_data_info,

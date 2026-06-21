@@ -7,7 +7,7 @@ const SECRET_URL: &str = "https://user:secret@example.invalid/rpc?api_key=top-se
 
 #[test]
 fn validation_display_does_not_leak_url() {
-    let error = ProviderError::Validation(SECRET_URL.to_owned());
+    let error = ProviderError::Validation(SECRET_URL.to_owned().into());
 
     assert_no_secret(&format!("{error}"));
     assert_no_secret(&format!("{error:?}"));
@@ -52,7 +52,7 @@ fn remote_display_emits_code_and_message() {
 
 #[test]
 fn internal_display_does_not_leak_input() {
-    let error = ProviderError::Internal(SECRET_URL.to_owned());
+    let error = ProviderError::Internal(SECRET_URL.to_owned().into());
 
     assert_no_secret(&format!("{error}"));
     assert_no_secret(&format!("{error:?}"));
@@ -61,7 +61,7 @@ fn internal_display_does_not_leak_input() {
 #[test]
 fn error_class_covers_every_variant() {
     assert_eq!(
-        ProviderError::Validation("bad input".to_owned()).class(),
+        ProviderError::Validation("bad input".to_owned().into()).class(),
         ProviderErrorClass::Validation
     );
     assert_eq!(
@@ -85,7 +85,7 @@ fn error_class_covers_every_variant() {
         ProviderErrorClass::Cancelled
     );
     assert_eq!(
-        ProviderError::Internal("internal".to_owned()).class(),
+        ProviderError::Internal("internal".to_owned().into()).class(),
         ProviderErrorClass::Internal
     );
 }

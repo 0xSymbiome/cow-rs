@@ -10,7 +10,7 @@ const SECRET_DETAIL: &str =
 
 #[test]
 fn validation_display_and_debug_do_not_leak_input() {
-    let error = AlloyClientError::Validation(SECRET_DETAIL.to_owned());
+    let error = AlloyClientError::Validation(SECRET_DETAIL.to_owned().into());
 
     assert_redacted(&error, SECRET_DETAIL);
     assert_eq!(error.class(), AlloyClientErrorClass::Validation);
@@ -63,7 +63,7 @@ fn pending_transaction_display_and_debug_redact_detail() {
 
 #[test]
 fn internal_display_and_debug_do_not_leak_input() {
-    let error = AlloyClientError::Internal(SECRET_DETAIL.to_owned());
+    let error = AlloyClientError::Internal(SECRET_DETAIL.to_owned().into());
 
     assert_redacted(&error, SECRET_DETAIL);
     assert_eq!(error.class(), AlloyClientErrorClass::Internal);
@@ -111,7 +111,7 @@ async fn client_and_handle_debug_redact_transport_and_key_material() {
 fn error_class_covers_every_variant() {
     let cases = [
         (
-            AlloyClientError::Validation("invalid".to_owned()),
+            AlloyClientError::Validation("invalid".to_owned().into()),
             AlloyClientErrorClass::Validation,
         ),
         (
@@ -145,7 +145,7 @@ fn error_class_covers_every_variant() {
             AlloyClientErrorClass::Cancelled,
         ),
         (
-            AlloyClientError::Internal("internal".to_owned()),
+            AlloyClientError::Internal("internal".to_owned().into()),
             AlloyClientErrorClass::Internal,
         ),
     ];

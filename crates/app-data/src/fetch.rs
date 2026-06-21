@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use serde_json::Value;
 
 use crate::{AppDataDoc, AppDataError, DEFAULT_IPFS_READ_URI, IpfsConfig, app_data_hex_to_cid};
@@ -7,26 +6,25 @@ use crate::{AppDataDoc, AppDataError, DEFAULT_IPFS_READ_URI, IpfsConfig, app_dat
 ///
 /// # Implementing
 ///
-/// The seam is dispatched behind a trait object, so an implementor annotates
-/// the `impl` with the re-exported [`async_trait`](macro@async_trait).
-/// `cow-sdk-app-data` re-exports the macro, so an out-of-tree implementor does
-/// not declare an `async-trait` dependency itself:
+/// The seam is consumed generically (`&impl IpfsFetchTransport`), never as a
+/// trait object, so an implementor writes `get` as a native `async fn` with no
+/// attribute macro:
 ///
 /// ```
-/// use cow_sdk_app_data::{async_trait, AppDataError, IpfsFetchTransport};
+/// use cow_sdk_app_data::{AppDataError, IpfsFetchTransport};
 ///
 /// struct MyIpfsReads;
 ///
-/// #[cfg_attr(not(target_arch = "wasm32"), async_trait)]
-/// #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 /// impl IpfsFetchTransport for MyIpfsReads {
 ///     async fn get(&self, uri: &str) -> Result<String, AppDataError> {
 ///         todo!("fetch `uri` and return the response body")
 ///     }
 /// }
 /// ```
-#[cfg_attr(not(target_arch = "wasm32"), async_trait)]
-#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
+#[expect(
+    async_fn_in_trait,
+    reason = "the trait surface adopts native async fn in trait per ADR 0010 runtime-neutral posture; the resulting non-Send futures are covered by the workspace future_not_send allow so wasm callbacks can satisfy the same trait without an explicit Send bound"
+)]
 pub trait IpfsFetchTransport {
     /// Performs a GET request against `uri`.
     ///

@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{fmt, sync::Arc};
 
 use crate::helpers as pure;
 use cow_sdk_contracts::eth_flow::{EthFlowOrderData, encode_create_order_calldata};
@@ -6,7 +6,7 @@ use cow_sdk_core::transport::policy::TransportPolicy;
 use cow_sdk_core::{
     Address, Amount, BlockInfo, ContractCall, HexData, NATIVE_CURRENCY_ADDRESS, ProtocolOptions,
     Provider, Signer, TransactionBroadcast, TransactionHash, TransactionReceipt,
-    TransactionRequest,
+    TransactionRequest, UserRejection,
 };
 use cow_sdk_orderbook::{OrderbookApi, SigningScheme};
 use cow_sdk_trading::{
@@ -14,7 +14,7 @@ use cow_sdk_trading::{
     PostTradeAdditionalParams, QuoteRequestOverride, QuoteResults, TradeAdvancedSettings,
     TradeParams, Trading, unwrap_transaction, wrap_transaction,
 };
-use js_sys::Function;
+use js_sys::{Function, Reflect};
 use wasm_bindgen::prelude::*;
 
 use crate::exports::{
@@ -30,9 +30,9 @@ use crate::exports::{
     },
     eip1271::ResolvedEip1271Provider,
     envelope::WasmEnvelope,
-    errors::WasmError,
+    errors::{JsResultExt, WasmError},
     orderbook::{build_orderbook, orderbook_for_scope},
-    signing::{await_callback_string, js_error_to_string, normalize_signature},
+    signing::{await_callback_string, js_error_to_string, js_message, normalize_signature},
     transport::{
         configured_fetch_transport, optional_string, optional_timeout, required_string,
         required_u32,
@@ -436,8 +436,7 @@ impl TradingClient {
     )]
     pub fn build_wrap_tx(&self, amount: String) -> Result<JsValue, JsValue> {
         let chain = parse_chain(self.chain_id)?;
-        let amount = pure::dto::parse_amount("amount", &amount)
-            .map_err(|error| WasmError::from(error).into_js())?;
+        let amount = pure::dto::parse_amount("amount", &amount).map_js()?;
         let tx = wrap_transaction(chain, amount);
         to_js_value(&WasmEnvelope::v1(TransactionRequestDto::from(&tx)))
     }
@@ -457,8 +456,7 @@ impl TradingClient {
     )]
     pub fn build_unwrap_tx(&self, amount: String) -> Result<JsValue, JsValue> {
         let chain = parse_chain(self.chain_id)?;
-        let amount = pure::dto::parse_amount("amount", &amount)
-            .map_err(|error| WasmError::from(error).into_js())?;
+        let amount = pure::dto::parse_amount("amount", &amount).map_js()?;
         let tx = unwrap_transaction(chain, amount);
         to_js_value(&WasmEnvelope::v1(TransactionRequestDto::from(&tx)))
     }
@@ -529,15 +527,14 @@ fn build_trading_with_orderbook(
     orderbook: Arc<OrderbookApi>,
 ) -> Result<Trading, JsValue> {
     let chain = parse_chain(chain_id)?;
-    let env_value = pure::chains::env_from_str(env.as_deref())
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let env_value = pure::chains::env_from_str(env.as_deref()).map_js()?;
     Trading::builder()
         .chain_id(chain)
         .app_code(app_code)
         .env(env_value)
         .orderbook_shared(orderbook)
         .build()
-        .map_err(|error| WasmError::from(error).into_js())
+        .map_js()
 }
 
 async fn trading_get_quote(
@@ -545,10 +542,7 @@ async fn trading_get_quote(
     params: SwapParametersInput,
 ) -> Result<JsValue, JsValue> {
     let params: TradeParams = from_json_value("params", params.into_value()?)?;
-    let quote = inner
-        .quote_only(params, None)
-        .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let quote = inner.quote_only(params, None).await.map_js()?;
     to_js_value(&WasmEnvelope::v1(quote))
 }
 
@@ -566,7 +560,7 @@ async fn trading_post_swap_order(
     let result = inner
         .post_swap_order(params, &signer, None)
         .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+        .map_js()?;
     to_js_value(&WasmEnvelope::v1(result))
 }
 
@@ -584,7 +578,7 @@ async fn trading_post_swap_order_from_quote(
     let result = inner
         .post_swap_order_from_quote(&results, &signer, None)
         .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+        .map_js()?;
     to_js_value(&WasmEnvelope::v1(result))
 }
 
@@ -597,12 +591,15 @@ async fn trading_post_limit_order(
 ) -> Result<JsValue, JsValue> {
     let owner = parse_address("owner", owner)?;
     let mut params: LimitTradeParams = from_json_value("params", params.into_value()?)?;
-    params.owner = params.owner.or_else(|| Some(owner.clone()));
+    // The positional owner is canonical for the post* exports — it is the only
+    // address the signing callback can report — so it overrides any owner echoed
+    // in the DTO, matching postSwapOrder rather than letting the DTO win.
+    params.owner = Some(owner.clone());
     let signer = JsTradingSigner::new(owner, signer_callback, wallet_timeout_ms);
     let result = inner
         .post_limit_order(params, &signer, None)
         .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+        .map_js()?;
     to_js_value(&WasmEnvelope::v1(result))
 }
 
@@ -623,8 +620,7 @@ async fn trading_build_sell_native_currency_tx(
         .into_js());
     }
     let chain = parse_chain(chain_id)?;
-    let env = pure::chains::env_from_str(env.as_deref())
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let env = pure::chains::env_from_str(env.as_deref()).map_js()?;
     let options = ProtocolOptions::new().with_env(env);
     let eth_flow = cow_sdk_contracts::Registry::default()
         .address(cow_sdk_contracts::ContractId::EthFlow, chain, env)
@@ -635,16 +631,15 @@ async fn trading_build_sell_native_currency_tx(
             )
             .into_js()
         })?;
-    let payload = EthFlowOrderData::from_unsigned_order(&order, quote_id)
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let payload = EthFlowOrderData::from_unsigned_order(&order, quote_id).map_js()?;
     let data = HexData::new(format!(
         "0x{}",
         alloy_primitives::hex::encode(encode_create_order_calldata(&payload))
     ))
-    .map_err(|error| WasmError::from(error).into_js())?;
+    .map_js()?;
     let generated = cow_sdk_trading::calculate_unique_order_id(chain, &order, None, Some(&options))
         .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+        .map_js()?;
     let tx = TransactionRequest::new(
         Some(eth_flow),
         Some(data),
@@ -711,7 +706,7 @@ async fn trading_get_cow_protocol_allowance(
     let allowance = inner
         .cow_protocol_allowance(&provider, &params)
         .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+        .map_js()?;
     to_js_value(&WasmEnvelope::v1(allowance))
 }
 
@@ -721,11 +716,9 @@ async fn trading_build_approval_tx(
     params: ApprovalParametersInput,
 ) -> Result<JsValue, JsValue> {
     let chain = parse_chain(chain_id)?;
-    let env = pure::chains::env_from_str(env.as_deref())
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let env = pure::chains::env_from_str(env.as_deref()).map_js()?;
     let params: ApprovalParams = from_json_value("params", params.into_value()?)?;
-    let tx = cow_sdk_trading::approval_transaction(&params, chain, env)
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let tx = cow_sdk_trading::approval_transaction(&params, chain, env).map_js()?;
     to_js_value(&WasmEnvelope::v1(TransactionRequestDto::from(&tx)))
 }
 
@@ -748,12 +741,11 @@ async fn trading_post_swap_order_with_eip1271(
     let quote = inner
         .quote_only(params, Some(&quote_settings))
         .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+        .map_js()?;
     // Resolve the contract signature at the wallet boundary, then hand the managed
     // submission path a pure provider that carries it.
     let chain = parse_chain(chain_id)?;
-    let payload = pure::signing::order_typed_data_payload(chain, &quote.order_to_sign)
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let payload = pure::signing::order_typed_data_payload(chain, &quote.order_to_sign).map_js()?;
     let typed_data = TypedDataEnvelopeDto::from_payload(&payload)?;
     let request = CowEip1271SignRequest {
         order: OrderInput::from(&quote.order_to_sign),
@@ -776,7 +768,7 @@ async fn trading_post_swap_order_with_eip1271(
     let result = inner
         .post_swap_order_from_quote(&quote, &signer, Some(&settings))
         .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+        .map_js()?;
     to_js_value(&WasmEnvelope::v1(result))
 }
 
@@ -805,15 +797,68 @@ impl JsTradingSigner {
     }
 }
 
+/// Typed error for the JS typed-data callback signer.
+///
+/// `Signer::Error` must be `Display + UserRejection` for the trading terminals:
+/// `Display` feeds the redacted message path, and `UserRejection` lets a
+/// deliberate wallet rejection (EIP-1193 `4001`) surface as a `walletRequest`
+/// error the JS `isUserRejection` predicate recognises, instead of collapsing to
+/// an opaque `signing` failure. Only the structured provider `code` is kept; the
+/// provider-authored message is replaced by SDK guidance downstream (ADR 0053).
+struct WalletCallbackError {
+    code: Option<i32>,
+    message: String,
+}
+
+impl WalletCallbackError {
+    /// Reads the structured EIP-1193 `code` and the message from a callback error
+    /// `JsValue`, which `await_callback_string` already shaped as an SDK error.
+    fn from_js(value: &JsValue) -> Self {
+        let code = Reflect::get(value, &JsValue::from_str("code"))
+            .ok()
+            .and_then(|code| code.as_f64())
+            .map(|code| code as i32);
+        Self {
+            code,
+            message: js_message(value),
+        }
+    }
+
+    /// A signer operation this typed-data callback does not support.
+    fn unsupported(message: &'static str) -> Self {
+        Self {
+            code: None,
+            message: message.to_owned(),
+        }
+    }
+}
+
+impl fmt::Display for WalletCallbackError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.message)
+    }
+}
+
+impl UserRejection for WalletCallbackError {
+    fn user_rejection_code(&self) -> Option<i32> {
+        // EIP-1193 `4001` is the standard "user rejected the request" code; every
+        // other provider code is a non-rejection fault that takes the redacted
+        // message path.
+        (self.code == Some(4001)).then_some(4001)
+    }
+}
+
 impl Signer for JsTradingSigner {
-    type Error = String;
+    type Error = WalletCallbackError;
 
     async fn address(&self) -> Result<Address, Self::Error> {
         Ok(self.owner.clone())
     }
 
     async fn sign_message(&self, _message: &[u8]) -> Result<String, Self::Error> {
-        Err("message signing is not available through this typed-data callback".to_owned())
+        Err(WalletCallbackError::unsupported(
+            "message signing is not available through this typed-data callback",
+        ))
     }
 
     async fn sign_typed_data_payload(
@@ -821,8 +866,10 @@ impl Signer for JsTradingSigner {
         payload: &cow_sdk_core::TypedDataPayload,
     ) -> Result<String, Self::Error> {
         let envelope = TypedDataEnvelopeDto::from_payload(payload)
-            .map_err(|error| js_error_to_string(error.into_js()))?;
-        let value = envelope.callback_value().map_err(js_error_to_string)?;
+            .map_err(|error| WalletCallbackError::from_js(&error.into_js()))?;
+        let value = envelope
+            .callback_value()
+            .map_err(|error| WalletCallbackError::from_js(&error))?;
         let signature = await_callback_string(
             &self.callback,
             value,
@@ -830,19 +877,23 @@ impl Signer for JsTradingSigner {
             self.wallet_timeout_ms,
         )
         .await
-        .map_err(js_error_to_string)?;
-        normalize_signature(&signature).map_err(js_error_to_string)
+        .map_err(|error| WalletCallbackError::from_js(&error))?;
+        normalize_signature(&signature).map_err(|error| WalletCallbackError::from_js(&error))
     }
 
     async fn send_transaction(
         &self,
         _tx: &TransactionRequest,
     ) -> Result<TransactionBroadcast, Self::Error> {
-        Err("transaction submission is not available through this typed-data callback".to_owned())
+        Err(WalletCallbackError::unsupported(
+            "transaction submission is not available through this typed-data callback",
+        ))
     }
 
     async fn estimate_gas(&self, _tx: &TransactionRequest) -> Result<Amount, Self::Error> {
-        Err("gas estimation is not available through this typed-data callback".to_owned())
+        Err(WalletCallbackError::unsupported(
+            "gas estimation is not available through this typed-data callback",
+        ))
     }
 }
 
@@ -887,5 +938,32 @@ impl Provider for JsContractReadProvider {
 
     async fn get_block(&self, _block_tag: &str) -> Result<BlockInfo, Self::Error> {
         Err("block reads are not available through this contract-read callback".to_owned())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use wasm_bindgen_test::*;
+
+    #[wasm_bindgen_test]
+    fn wallet_callback_error_flags_only_the_eip1193_user_rejection_code() {
+        // 4001 is the EIP-1193 "user rejected" code -> routes to SignerRejection.
+        let rejected = WalletCallbackError {
+            code: Some(4001),
+            message: String::new(),
+        };
+        assert_eq!(rejected.user_rejection_code(), Some(4001));
+
+        // Any other provider code is a non-rejection fault -> redacted message path.
+        let other = WalletCallbackError {
+            code: Some(4100),
+            message: String::new(),
+        };
+        assert_eq!(other.user_rejection_code(), None);
+
+        // A DTO/serialization fault carries no code and is never a user rejection.
+        let codeless = WalletCallbackError::unsupported("nope");
+        assert_eq!(codeless.user_rejection_code(), None);
     }
 }

@@ -177,10 +177,10 @@ impl OnchainOrderPlacement {
     ///
     /// # Errors
     ///
-    /// Returns [`ContractsError`] when owner resolution or order hashing fails.
+    /// Returns [`ContractsError`] when owner resolution fails.
     pub fn order_uid(&self, domain: &TypedDataDomain) -> Result<OrderUid, ContractsError> {
         let owner = self.resolve_owner()?;
-        compute_order_uid(domain, &self.order, &owner)
+        Ok(compute_order_uid(domain, &self.order, &owner))
     }
 
     /// Computes the 56-byte order UID using the canonical settlement domain for

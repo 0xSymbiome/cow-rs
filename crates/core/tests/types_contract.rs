@@ -2,7 +2,7 @@ use alloy_primitives::U256;
 use cow_sdk_core::{
     Address, Amount, Amounts, AppDataHash, BuyTokenDestination, Costs, FeeComponent, Hash32,
     HexData, NetworkFee, OrderData, OrderKind, OrderUid, QuoteAmountsAndCosts, SellTokenSource,
-    VALID_TO_MAX_RELATIVE_SECONDS, VALID_TO_MIN_RELATIVE_SECONDS, ValidTo, ValidationError,
+    ValidTo, ValidationError,
 };
 
 #[test]
@@ -189,43 +189,25 @@ fn valid_to_absolute_accepts_any_representable_epoch() {
 }
 
 #[test]
-fn valid_to_relative_rejects_values_outside_the_supported_window() {
+fn valid_to_relative_accepts_any_duration_within_the_u32_ceiling() {
     let now = 1_800_000_000u64;
 
-    let min = VALID_TO_MIN_RELATIVE_SECONDS;
-    let max = VALID_TO_MAX_RELATIVE_SECONDS;
+    // No operator-tunable window: a short duration the old 30s floor would have
+    // rejected is accepted, and a long one the old 90-day ceiling would have
+    // rejected is accepted too, as long as the absolute timestamp fits `u32`.
+    let short = ValidTo::relative(now, 5).expect("a short duration is accepted");
+    assert_eq!(short.as_u64(), now + 5);
 
-    let at_min = ValidTo::relative(now, u64::from(min)).expect("min must be accepted");
-    assert_eq!(at_min.as_u64(), now + u64::from(min));
+    let long_duration = 200 * 24 * 60 * 60;
+    let long = ValidTo::relative(now, long_duration).expect("a long duration is accepted");
+    assert_eq!(long.as_u64(), now + long_duration);
 
-    let at_max = ValidTo::relative(now, u64::from(max)).expect("max must be accepted");
-    assert_eq!(
-        at_max.as_u64(),
-        (now + u64::from(max)).min(u64::from(u32::MAX))
-    );
-
-    match ValidTo::relative(now, u64::from(min) - 1) {
-        Err(err) => {
-            let validation: ValidationError = match err {
-                cow_sdk_core::CoreError::Validation(v) => v,
-                other => panic!("expected validation error, got {other:?}"),
-            };
-            assert!(matches!(
-                validation,
-                ValidationError::ValidToOutOfRange { .. }
-            ));
-        }
-        Ok(value) => panic!("sub-minimum duration must fail closed, got {value:?}"),
-    }
-
-    match ValidTo::relative(now, u64::from(max) + 1) {
-        Err(err) => {
-            assert!(matches!(
-                err,
-                cow_sdk_core::CoreError::Validation(ValidationError::ValidToOutOfRange { .. })
-            ));
-        }
-        Ok(value) => panic!("above-maximum duration must fail closed, got {value:?}"),
+    // The only fail-closed boundary is the protocol-fixed `u32` epoch ceiling.
+    match ValidTo::relative(u64::from(u32::MAX), 1) {
+        Err(cow_sdk_core::CoreError::Validation(ValidationError::ValidToOutOfRange {
+            actual_seconds,
+        })) => assert_eq!(actual_seconds, u64::from(u32::MAX) + 1),
+        other => panic!("a timestamp past the u32 ceiling must fail closed, got {other:?}"),
     }
 }
 

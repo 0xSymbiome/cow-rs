@@ -90,9 +90,7 @@ fn order_digest_fixture_rows_hold() {
         );
         let order = build_order(&row.order);
 
-        let actual_signing_hash = hash_order(&domain, &order)
-            .expect("hash_order succeeds for every fixture row")
-            .to_hex_string();
+        let actual_signing_hash = hash_order(&domain, &order).to_hex_string();
         assert_eq!(
             actual_signing_hash, row.expected.signing_hash,
             "row {}: order signing hash must match the fixture",

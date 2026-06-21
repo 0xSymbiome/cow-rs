@@ -675,7 +675,6 @@ version = "0.1.0-alpha.8"
 dependencies = [
  "alloy-primitives",
  "alloy-serde",
- "async-trait",
  "cid",
  "cow-sdk-core",
  "multibase",

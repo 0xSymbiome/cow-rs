@@ -94,14 +94,10 @@ builder's `retry` setter to opt into bounded exponential backoff for
 transient, rate-limited reads; the umbrella reuses the provider leaf's retry
 policy.
 
-## Features
-
-| Feature | Default | Enables |
-| --- | --- | --- |
-| `eip712` | on | EIP-712 typed-data signing through the signer leaf. Disable default features for the EIP-191 message-only path. |
-
 ## Signing And Submission
 
+EIP-712 typed-data signing is always available; every CoW order is EIP-712
+typed data, so the adapter ships no toggle that could leave it unable to sign.
 Raw `sign_transaction` is intentionally unsupported in this release because
 the relevant Alloy provider path asks the remote JSON-RPC peer to sign. Use
 `send_transaction` for wallet-filler submission or the signer leaf for local

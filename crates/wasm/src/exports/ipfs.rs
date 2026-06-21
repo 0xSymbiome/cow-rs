@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use crate::helpers as pure;
-use async_trait::async_trait;
 use cow_sdk_app_data::{AppDataError, IpfsFetchTransport};
 use cow_sdk_core::transport::policy::{
     AttemptOutcome as RetryOutcome, LimiterKey, RetrySignal, TransportPolicy, run_with_retry,
@@ -15,7 +14,7 @@ use crate::exports::{
     },
     dto::{AppDataDocDto, to_js_value, transport_policy_from_config},
     envelope::WasmEnvelope,
-    errors::WasmError,
+    errors::JsResultExt,
     transport::{configured_fetch_transport, optional_string, optional_timeout},
 };
 
@@ -44,7 +43,6 @@ impl IpfsHttpAdapter {
     }
 }
 
-#[async_trait(?Send)]
 impl IpfsFetchTransport for IpfsHttpAdapter {
     async fn get(&self, uri: &str) -> Result<String, AppDataError> {
         // The shared driver in `cow_sdk_core::transport::policy` owns the retry loop,
@@ -221,7 +219,7 @@ async fn fetch_doc_from_cid_with_adapter(
 ) -> Result<JsValue, JsValue> {
     let document = pure::app_data::fetch_doc_from_cid(cid, adapter, ipfs_uri)
         .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+        .map_js()?;
     to_js_value(&WasmEnvelope::v1(AppDataDocDto::from(document)))
 }
 
@@ -232,7 +230,7 @@ async fn fetch_doc_from_hex_with_adapter(
 ) -> Result<JsValue, JsValue> {
     let document = pure::app_data::fetch_doc_from_app_data_hex(app_data_hex, adapter, ipfs_uri)
         .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+        .map_js()?;
     to_js_value(&WasmEnvelope::v1(AppDataDocDto::from(document)))
 }
 

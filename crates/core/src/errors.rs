@@ -56,17 +56,11 @@ pub enum ValidationError {
         /// Unsupported numeric chain id supplied by the caller.
         chain_id: u64,
     },
-    /// A `valid_to` duration fell outside the supported relative-window range.
-    #[error(
-        "valid_to duration {actual_seconds} is outside the supported relative range {min}..={max}"
-    )]
+    /// A `valid_to` timestamp exceeded the protocol-fixed `u32` epoch ceiling.
+    #[error("valid_to {actual_seconds} exceeds the protocol u32 epoch ceiling")]
     ValidToOutOfRange {
-        /// Requested duration in seconds.
+        /// Requested absolute timestamp in seconds.
         actual_seconds: u64,
-        /// Minimum supported duration in seconds.
-        min: u32,
-        /// Maximum supported duration in seconds.
-        max: u32,
     },
     /// A decimals scale passed to [`Amount::parse_units`] was above the
     /// maximum representable value.

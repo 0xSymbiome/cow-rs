@@ -5,7 +5,7 @@ use crate::helpers as pure;
 use crate::exports::{
     dto::{DeploymentAddressesDto, WrappedNativeTokenDto, to_js_value},
     envelope::WasmEnvelope,
-    errors::WasmError,
+    errors::JsResultExt,
 };
 
 #[cfg(feature = "signing")]
@@ -29,7 +29,7 @@ use crate::exports::dto::{AppDataDocDto, AppDataDocInput, AppDataInfoDto, Valida
 pub fn domain_separator(
     #[wasm_bindgen(js_name = chainId)] chain_id: u32,
 ) -> Result<String, JsValue> {
-    pure::chains::domain_separator(chain_id).map_err(|error| WasmError::from(error).into_js())
+    pure::chains::domain_separator(chain_id).map_js()
 }
 
 /// Builds signer-facing EIP-712 typed data for an unsigned order.
@@ -53,8 +53,7 @@ pub fn order_typed_data(
 ) -> Result<JsValue, JsValue> {
     let order = parse_order(input)?;
     let chain = parse_chain(chain_id)?;
-    let payload = pure::signing::order_typed_data_payload(chain, &order)
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let payload = pure::signing::order_typed_data_payload(chain, &order).map_js()?;
     to_js_value(&WasmEnvelope::v1(TypedDataEnvelopeDto::from_payload(
         &payload,
     )?))
@@ -83,8 +82,7 @@ pub fn compute_order_uid(
     let order = parse_order(input)?;
     let chain = parse_chain(chain_id)?;
     let owner = parse_owner(&owner)?;
-    let generated = pure::signing::generate_order_id(chain, &order, &owner)
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let generated = pure::signing::generate_order_id(chain, &order, &owner).map_js()?;
     let dto = GeneratedOrderUidDto::from(pure::dto::generated_order_uid_dto(&generated));
     to_js_value(&WasmEnvelope::v1(dto))
 }
@@ -119,8 +117,7 @@ pub fn deployment_addresses(
     #[wasm_bindgen(js_name = chainId)] chain_id: u32,
     env: Option<String>,
 ) -> Result<JsValue, JsValue> {
-    let addresses = pure::chains::deployment_addresses(chain_id, env.as_deref())
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let addresses = pure::chains::deployment_addresses(chain_id, env.as_deref()).map_js()?;
     to_js_value(&WasmEnvelope::v1(DeploymentAddressesDto::from(addresses)))
 }
 
@@ -140,8 +137,7 @@ pub fn deployment_addresses(
 pub fn wrapped_native_token(
     #[wasm_bindgen(js_name = chainId)] chain_id: u32,
 ) -> Result<JsValue, JsValue> {
-    let token = pure::chains::wrapped_native_token(chain_id)
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let token = pure::chains::wrapped_native_token(chain_id).map_js()?;
     to_js_value(&WasmEnvelope::v1(WrappedNativeTokenDto::from(token)))
 }
 
@@ -159,10 +155,8 @@ pub fn wrapped_native_token(
     unchecked_return_type = "WasmEnvelope<AppDataInfoDto>"
 )]
 pub fn app_data_info(doc: AppDataDocInput) -> Result<JsValue, JsValue> {
-    let document = pure::app_data::document_from_input(doc.into())
-        .map_err(|error| WasmError::from(error).into_js())?;
-    let info = pure::app_data::app_data_info(&document)
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let document = pure::app_data::document_from_input(doc.into()).map_js()?;
+    let info = pure::app_data::app_data_info(&document).map_js()?;
     to_js_value(&WasmEnvelope::v1(AppDataInfoDto::from(
         pure::dto::AppDataInfoDto::from(info),
     )))
@@ -182,8 +176,7 @@ pub fn app_data_info(doc: AppDataDocInput) -> Result<JsValue, JsValue> {
     unchecked_return_type = "WasmEnvelope<ValidationResultDto>"
 )]
 pub fn validate_app_data_doc(doc: AppDataDocInput) -> Result<JsValue, JsValue> {
-    let document = pure::app_data::document_from_input(doc.into())
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let document = pure::app_data::document_from_input(doc.into()).map_js()?;
     let result = pure::app_data::validate_app_data_doc(&document);
     to_js_value(&WasmEnvelope::v1(ValidationResultDto::from(
         pure::dto::ValidationResultDto::from(result),
@@ -204,8 +197,7 @@ pub fn validate_app_data_doc(doc: AppDataDocInput) -> Result<JsValue, JsValue> {
     unchecked_return_type = "WasmEnvelope<AppDataDocDto>"
 )]
 pub fn app_data_doc(doc: AppDataDocInput) -> Result<JsValue, JsValue> {
-    let document = pure::app_data::document_from_input(doc.into())
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let document = pure::app_data::document_from_input(doc.into()).map_js()?;
     to_js_value(&WasmEnvelope::v1(AppDataDocDto::from(document)))
 }
 
@@ -225,8 +217,7 @@ pub fn app_data_doc(doc: AppDataDocInput) -> Result<JsValue, JsValue> {
 pub fn app_data_hex_to_cid(
     #[wasm_bindgen(js_name = appDataHex)] app_data_hex: String,
 ) -> Result<JsValue, JsValue> {
-    let cid = pure::app_data::app_data_hex_to_cid(&app_data_hex)
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let cid = pure::app_data::app_data_hex_to_cid(&app_data_hex).map_js()?;
     to_js_value(&WasmEnvelope::v1(cid))
 }
 
@@ -244,8 +235,7 @@ pub fn app_data_hex_to_cid(
     unchecked_return_type = "WasmEnvelope<string>"
 )]
 pub fn cid_to_app_data_hex(cid: String) -> Result<JsValue, JsValue> {
-    let hash = pure::app_data::cid_to_app_data_hex(&cid)
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let hash = pure::app_data::cid_to_app_data_hex(&cid).map_js()?;
     to_js_value(&WasmEnvelope::v1(hash))
 }
 

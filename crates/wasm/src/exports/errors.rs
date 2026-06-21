@@ -205,6 +205,23 @@ impl From<OrderbookRejectionCategory> for OrderBookRejectionCategoryDto {
     }
 }
 
+/// Collapses the `WasmError` -> `JsValue` conversion on a `Result` whose error
+/// converts into [`WasmError`], replacing the repeated
+/// `.map_err(|error| WasmError::from(error).into_js())` closure with `.map_js()`.
+pub(crate) trait JsResultExt<T> {
+    /// Maps the error through [`WasmError`] into a `JsValue`.
+    fn map_js(self) -> Result<T, JsValue>;
+}
+
+impl<T, E> JsResultExt<T> for Result<T, E>
+where
+    WasmError: From<E>,
+{
+    fn map_js(self) -> Result<T, JsValue> {
+        self.map_err(|error| WasmError::from(error).into_js())
+    }
+}
+
 impl WasmError {
     /// Converts this typed error into a `JsValue` without panicking.
     #[must_use]
@@ -359,8 +376,17 @@ impl From<AppDataError> for WasmError {
 #[cfg(feature = "signing")]
 impl From<SigningError> for WasmError {
     fn from(value: SigningError) -> Self {
-        Self::Signing {
-            message: signing_message(value.to_string()),
+        match value {
+            // A structured user rejection carries the EIP-1193 code, so it
+            // surfaces as a wallet request error (which the JS `isUserRejection`
+            // predicate recognises) rather than collapsing to an opaque signing
+            // failure. The `label` is the operation the user declined.
+            SigningError::SignerRejection { label, code } => {
+                Self::wallet_from_code(label, Some(i64::from(code)))
+            }
+            other => Self::Signing {
+                message: signing_message(other.to_string()),
+            },
         }
     }
 }
@@ -374,7 +400,11 @@ impl From<SigningError> for WasmError {
 #[cfg(feature = "orderbook")]
 fn orderbook_rejection_tag(rejection: &OrderbookRejection) -> Option<String> {
     if let OrderbookRejection::Unknown { code, .. } = rejection {
-        return Some(code.as_str().to_owned());
+        let code = code.as_str();
+        // A code that failed sanitization is surfaced as an absent tag rather
+        // than the redaction sentinel, so consumers branch on a missing
+        // `errorType` instead of a meaningless `"[redacted]"` value (ADR 0053).
+        return (code != REDACTED_PLACEHOLDER).then(|| code.to_owned());
     }
     match serde_json::to_value(rejection).ok()? {
         Value::String(tag) => Some(tag),
@@ -727,4 +757,85 @@ fn internal_message(detail: String) -> String {
     format!(
         "SDK internal error: {detail}. This indicates serialization or invariant failure; retry with the same inputs only after checking the reported input shape."
     )
+}
+
+#[cfg(all(test, any(feature = "signing", feature = "orderbook")))]
+mod tests {
+    use super::*;
+    use wasm_bindgen_test::*;
+
+    #[cfg(feature = "signing")]
+    #[wasm_bindgen_test]
+    fn signer_rejection_surfaces_as_a_wallet_request_with_the_provider_code() {
+        // A deliberate EIP-1193 4001 rejection on the trading signing path must
+        // reach JS as `walletRequest { code: 4001 }` — the shape `isUserRejection`
+        // recognises — instead of flattening into an opaque `signing` failure.
+        let error = WasmError::from(SigningError::SignerRejection {
+            label: "typed-data signature",
+            code: 4001,
+        });
+        match error {
+            WasmError::WalletRequest { method, code, .. } => {
+                assert_eq!(method, "typed-data signature");
+                assert_eq!(code, Some(4001));
+            }
+            other => panic!("expected WalletRequest, got {other:?}"),
+        }
+    }
+
+    #[cfg(feature = "orderbook")]
+    #[wasm_bindgen_test]
+    fn orderbook_rejection_tag_projects_the_serde_variant_name() {
+        // Unit variant -> the serde tag string.
+        assert_eq!(
+            orderbook_rejection_tag(&OrderbookRejection::InsufficientAllowance),
+            Some("InsufficientAllowance".to_owned()),
+        );
+        assert_eq!(
+            orderbook_rejection_tag(&OrderbookRejection::DuplicatedOrder),
+            Some("DuplicatedOrder".to_owned()),
+        );
+        // Struct variant -> the outer variant key only, never the inner fields.
+        let struct_variant = OrderbookRejection::SellAmountDoesNotCoverFee {
+            fee_amount: cow_sdk_core::Amount::new("1000000").expect("valid amount"),
+        };
+        assert_eq!(
+            orderbook_rejection_tag(&struct_variant),
+            Some("SellAmountDoesNotCoverFee".to_owned()),
+        );
+    }
+
+    #[cfg(feature = "orderbook")]
+    #[wasm_bindgen_test]
+    fn unknown_rejection_projects_its_safe_code_but_never_the_redaction_sentinel() {
+        use cow_sdk_orderbook::rejection::OrderbookRejectionCode;
+        // A safe code is surfaced verbatim.
+        let safe = OrderbookRejection::Unknown {
+            code: OrderbookRejectionCode::new("FutureVariant"),
+            message: Redacted::new(String::new()),
+        };
+        assert_eq!(
+            orderbook_rejection_tag(&safe),
+            Some("FutureVariant".to_owned()),
+        );
+        // A code that failed sanitization becomes an absent tag, not "[redacted]".
+        let redacted = OrderbookRejection::Unknown {
+            code: OrderbookRejectionCode::new("definitely not a safe code!"),
+            message: Redacted::new(String::new()),
+        };
+        assert_eq!(orderbook_rejection_tag(&redacted), None);
+    }
+
+    #[cfg(feature = "orderbook")]
+    #[wasm_bindgen_test]
+    fn orderbook_category_projects_to_the_js_dto() {
+        // The allowance/balance split lives in `errorType`; both share the coarse
+        // `insufficientFunds` category, which the JS DTO mirrors.
+        assert_eq!(
+            OrderBookRejectionCategoryDto::from(
+                OrderbookRejection::InsufficientAllowance.category()
+            ),
+            OrderBookRejectionCategoryDto::InsufficientFunds,
+        );
+    }
 }

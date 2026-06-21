@@ -54,6 +54,7 @@ pub const DETERMINISTIC_EXAMPLES: &[DeterministicExample] = &[
     DeterministicExample::new("receipt_lifecycle", &[]),
     DeterministicExample::new("slippage_suggester", &[]),
     DeterministicExample::new("eip1271_signer", &[]),
+    DeterministicExample::new("receiver_redirect", &[]),
     DeterministicExample::new("ethflow_checker", &[]),
     DeterministicExample::new("alloy_quickstart", &["alloy"]),
     DeterministicExample::new("alloy_provider", &["alloy-provider"]),

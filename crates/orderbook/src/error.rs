@@ -317,15 +317,19 @@ impl OrderbookError {
             Self::Api(error) if error.status == 429 => ErrorClass::RateLimited,
             Self::Api(_) | Self::Rejected { .. } => ErrorClass::Remote,
             Self::Transport { .. } => ErrorClass::Transport,
-            Self::InvalidTradesQuery { .. } | Self::InvalidQuoteRequest { .. } => {
-                ErrorClass::Validation
-            }
+            // Caller-input faults raised before or independent of the network:
+            // a malformed trades query or quote request, a rejected base-URL
+            // override, and a signing-scheme/onchain-flag conflict are all
+            // fixable by the caller, so they classify as validation.
+            Self::InvalidTradesQuery { .. }
+            | Self::InvalidQuoteRequest { .. }
+            | Self::HostPolicy(_)
+            | Self::IncompatibleSigningScheme { .. } => ErrorClass::Validation,
             Self::Cancelled => ErrorClass::Cancelled,
-            // HostPolicy, Serialization, IncompatibleSigningScheme,
-            // InvalidTransform, AppDataHashMismatch, QuoteEchoMismatch, and
-            // future additive variants classify as internal — a successful
-            // response that violates an SDK integrity invariant rather than a
-            // transport or remote-status fault.
+            // Serialization, InvalidTransform, AppDataHashMismatch,
+            // QuoteEchoMismatch, and future additive variants classify as
+            // internal — a successful response that violates an SDK integrity
+            // invariant rather than a transport or remote-status fault.
             _ => ErrorClass::Internal,
         }
     }

@@ -20,14 +20,14 @@ pub(crate) async fn execute_read_contract(
     let abi = load_abi(&request.abi_json, request.method.as_str())?;
     let function = resolve_function(&abi, request.method.as_str())?;
     let args = serde_json::from_str::<Value>(&request.args_json).map_err(|error| {
-        ProviderError::Validation(format!(
+        ProviderError::validation(format!(
             "args_json for `{}` is not valid JSON: {error}",
             request.method
         ))
     })?;
     let values = json_args_to_dyn_values(&function.inputs, &args, request.method.as_str())?;
     let calldata = function.abi_encode_input(&values).map_err(|error| {
-        ProviderError::Validation(format!(
+        ProviderError::validation(format!(
             "ABI-encoding inputs for `{}` failed: {error}",
             request.method
         ))
@@ -43,7 +43,7 @@ pub(crate) async fn execute_read_contract(
     let decoded = function
         .abi_decode_output(output.as_ref())
         .map_err(|error| {
-            ProviderError::Validation(format!(
+            ProviderError::validation(format!(
                 "ABI-decoding output of `{}` failed: {error}",
                 request.method
             ))
@@ -59,7 +59,7 @@ pub(crate) async fn execute_read_contract(
         )
     };
     serde_json::to_string(&json).map_err(|error| {
-        ProviderError::Internal(format!(
+        ProviderError::internal(format!(
             "JSON-encoding read_contract output failed: {error}"
         ))
     })
@@ -67,7 +67,7 @@ pub(crate) async fn execute_read_contract(
 
 fn load_abi(abi_json: &str, method: &str) -> Result<JsonAbi, ProviderError> {
     serde_json::from_str::<JsonAbi>(abi_json).map_err(|error| {
-        ProviderError::Validation(format!("failed to load ABI for `{method}`: {error}"))
+        ProviderError::validation(format!("failed to load ABI for `{method}`: {error}"))
     })
 }
 
@@ -76,22 +76,22 @@ fn resolve_function<'abi>(
     method: &str,
 ) -> Result<&'abi Function, ProviderError> {
     let functions = abi.function(method).ok_or_else(|| {
-        ProviderError::Validation(format!("ABI has no function named `{method}`"))
+        ProviderError::validation(format!("ABI has no function named `{method}`"))
     })?;
     if functions.len() > 1 {
-        return Err(ProviderError::Validation(format!(
+        return Err(ProviderError::validation(format!(
             "ABI defines {} overloads for `{method}`; read_contract requires a unique function name",
             functions.len()
         )));
     }
     functions
         .first()
-        .ok_or_else(|| ProviderError::Validation(format!("ABI has no function named `{method}`")))
+        .ok_or_else(|| ProviderError::validation(format!("ABI has no function named `{method}`")))
 }
 
 fn resolve_param_type(param: &Param, method: &str) -> Result<DynSolType, ProviderError> {
     DynSolType::parse(&param.selector_type()).map_err(|error| {
-        ProviderError::Validation(format!(
+        ProviderError::validation(format!(
             "failed to resolve ABI type `{}` for `{method}`: {error}",
             param.ty
         ))
@@ -106,7 +106,7 @@ fn json_args_to_dyn_values(
     match args {
         Value::Array(items) => {
             if items.len() != inputs.len() {
-                return Err(ProviderError::Validation(format!(
+                return Err(ProviderError::validation(format!(
                     "method `{method}`: expected {} ABI arguments, received {}",
                     inputs.len(),
                     items.len()
@@ -130,7 +130,7 @@ fn json_args_to_dyn_values(
                 .iter()
                 .map(|param| {
                     let value = map.get(&param.name).ok_or_else(|| {
-                        ProviderError::Validation(format!(
+                        ProviderError::validation(format!(
                             "method `{method}`: missing ABI argument `{}`",
                             param.name
                         ))
@@ -144,7 +144,7 @@ fn json_args_to_dyn_values(
             let ty = resolve_param_type(&inputs[0], method)?;
             Ok(vec![json_to_dyn_value(&ty, other, method)?])
         }
-        _ => Err(ProviderError::Validation(format!(
+        _ => Err(ProviderError::validation(format!(
             "method `{method}`: contract arguments must be a JSON array, object, or single value"
         ))),
     }
@@ -162,7 +162,7 @@ fn json_to_dyn_value(
     match ty {
         DynSolType::Address => {
             let address = value.as_str().ok_or_else(|| {
-                ProviderError::Validation(format!("method `{method}`: address must be a string"))
+                ProviderError::validation(format!("method `{method}`: address must be a string"))
             })?;
             let address = Address::new(address)?;
             Ok(DynSolValue::Address(address.into_alloy()))
@@ -170,19 +170,19 @@ fn json_to_dyn_value(
         DynSolType::Uint(bits) => Ok(DynSolValue::Uint(parse_u256(value, method)?, *bits)),
         DynSolType::Int(bits) => Ok(DynSolValue::Int(parse_i256(value, method)?, *bits)),
         DynSolType::Bool => value.as_bool().map(DynSolValue::Bool).ok_or_else(|| {
-            ProviderError::Validation(format!("method `{method}`: bool must be a boolean"))
+            ProviderError::validation(format!("method `{method}`: bool must be a boolean"))
         }),
         DynSolType::String => value
             .as_str()
             .map(|item| DynSolValue::String(item.to_owned()))
             .ok_or_else(|| {
-                ProviderError::Validation(format!("method `{method}`: string must be a string"))
+                ProviderError::validation(format!("method `{method}`: string must be a string"))
             }),
         DynSolType::Bytes => Ok(DynSolValue::Bytes(bytes_from_json(value, method)?)),
         DynSolType::FixedBytes(length) => {
             let bytes = bytes_from_json(value, method)?;
             if bytes.len() != *length {
-                return Err(ProviderError::Validation(format!(
+                return Err(ProviderError::validation(format!(
                     "method `{method}`: expected {length} fixed bytes, received {}",
                     bytes.len()
                 )));
@@ -193,7 +193,7 @@ fn json_to_dyn_value(
         }
         DynSolType::Array(inner) => {
             let items = value.as_array().ok_or_else(|| {
-                ProviderError::Validation(format!(
+                ProviderError::validation(format!(
                     "method `{method}`: array argument must be a JSON array"
                 ))
             })?;
@@ -205,12 +205,12 @@ fn json_to_dyn_value(
         }
         DynSolType::FixedArray(inner, length) => {
             let items = value.as_array().ok_or_else(|| {
-                ProviderError::Validation(format!(
+                ProviderError::validation(format!(
                     "method `{method}`: array argument must be a JSON array"
                 ))
             })?;
             if items.len() != *length {
-                return Err(ProviderError::Validation(format!(
+                return Err(ProviderError::validation(format!(
                     "method `{method}`: expected fixed array of length {length}, received {}",
                     items.len()
                 )));
@@ -223,12 +223,12 @@ fn json_to_dyn_value(
         }
         DynSolType::Tuple(components) => {
             let items = value.as_array().ok_or_else(|| {
-                ProviderError::Validation(format!(
+                ProviderError::validation(format!(
                     "method `{method}`: tuple arguments must be represented as a JSON array"
                 ))
             })?;
             if items.len() != components.len() {
-                return Err(ProviderError::Validation(format!(
+                return Err(ProviderError::validation(format!(
                     "method `{method}`: expected tuple of length {}, received {}",
                     components.len(),
                     items.len()
@@ -241,7 +241,7 @@ fn json_to_dyn_value(
                 .collect::<Result<Vec<_>, _>>()
                 .map(DynSolValue::Tuple)
         }
-        _ => Err(ProviderError::Validation(format!(
+        _ => Err(ProviderError::validation(format!(
             "method `{method}`: unsupported ABI type `{ty:?}`"
         ))),
     }
@@ -279,10 +279,10 @@ fn dyn_value_to_json(value: &DynSolValue) -> Result<Value, ProviderError> {
             "0x{}",
             alloy_primitives::hex::encode(function.as_slice())
         ))),
-        DynSolValue::CustomStruct { name, .. } => Err(ProviderError::Validation(format!(
+        DynSolValue::CustomStruct { name, .. } => Err(ProviderError::validation(format!(
             "unsupported ABI output shape: custom struct `{name}` not supported in this release"
         ))),
-        other => Err(ProviderError::Validation(format!(
+        other => Err(ProviderError::validation(format!(
             "unsupported ABI output shape: {other:?}"
         ))),
     }
@@ -292,12 +292,12 @@ fn bytes_from_json(value: &Value, method: &str) -> Result<Vec<u8>, ProviderError
     match value {
         Value::String(raw) => {
             let stripped = raw.strip_prefix("0x").ok_or_else(|| {
-                ProviderError::Validation(format!(
+                ProviderError::validation(format!(
                     "method `{method}`: hex value must be 0x-prefixed"
                 ))
             })?;
             alloy_primitives::hex::decode(stripped)
-                .map_err(|error| ProviderError::Validation(format!("method `{method}`: {error}")))
+                .map_err(|error| ProviderError::validation(format!("method `{method}`: {error}")))
         }
         Value::Array(items) => items
             .iter()
@@ -305,13 +305,13 @@ fn bytes_from_json(value: &Value, method: &str) -> Result<Vec<u8>, ProviderError
                 item.as_u64()
                     .and_then(|value| u8::try_from(value).ok())
                     .ok_or_else(|| {
-                        ProviderError::Validation(format!(
+                        ProviderError::validation(format!(
                             "method `{method}`: byte arrays must contain u8-compatible numbers"
                         ))
                     })
             })
             .collect(),
-        _ => Err(ProviderError::Validation(format!(
+        _ => Err(ProviderError::validation(format!(
             "method `{method}`: bytes must be a hex string or byte array"
         ))),
     }
@@ -322,7 +322,7 @@ fn parse_u256(value: &Value, method: &str) -> Result<U256, ProviderError> {
         Value::String(raw) => raw.clone(),
         Value::Number(number) => number.to_string(),
         _ => {
-            return Err(ProviderError::Validation(format!(
+            return Err(ProviderError::validation(format!(
                 "method `{method}`: numeric arguments must be strings or numbers"
             )));
         }
@@ -335,7 +335,7 @@ fn parse_u256(value: &Value, method: &str) -> Result<U256, ProviderError> {
     // argument JSON. The historical hand-rolled four-radix sniffer is
     // retired in favour of the canonical alloy parser per ADR 0052.
     U256::from_str(&raw).map_err(|error| {
-        ProviderError::Validation(format!(
+        ProviderError::validation(format!(
             "method `{method}`: invalid integer `{raw}`: {error}"
         ))
     })
@@ -346,21 +346,21 @@ fn parse_i256(value: &Value, method: &str) -> Result<I256, ProviderError> {
         Value::String(raw) => raw.clone(),
         Value::Number(number) => number.to_string(),
         _ => {
-            return Err(ProviderError::Validation(format!(
+            return Err(ProviderError::validation(format!(
                 "method `{method}`: numeric arguments must be strings or numbers"
             )));
         }
     };
     if let Some(hex) = raw.strip_prefix("0x") {
         let unsigned = U256::from_str_radix(hex, 16).map_err(|error| {
-            ProviderError::Validation(format!(
+            ProviderError::validation(format!(
                 "method `{method}`: invalid hexadecimal signed integer `{raw}`: {error}"
             ))
         })?;
         Ok(I256::from_raw(unsigned))
     } else {
         I256::from_dec_str(&raw).map_err(|error| {
-            ProviderError::Validation(format!(
+            ProviderError::validation(format!(
                 "method `{method}`: invalid signed integer `{raw}`: {error}"
             ))
         })

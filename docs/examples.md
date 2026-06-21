@@ -32,6 +32,7 @@ and post in one call — or `quote` to inspect the result before `submit`. The
 | Inspect order lifecycle and on-chain actions | `order_lifecycle`, `receipt_lifecycle`, `ethflow`, `ethflow_checker`, `onchain_actions` |
 | Classify and handle SDK errors | `error_classification` |
 | Work with app-data and signing | `app_data`, `sign_order`, `eip1271_signer` |
+| Redirect swap proceeds to another address | `receiver_redirect` |
 | Inspect typed orderbook transport | `orderbook_transport`, `order_history` |
 | Work with read-only subgraph access | `subgraph_query` |
 | Work with native Alloy adapters | `alloy_quickstart`, `alloy_provider`, `alloy_signer`, `transaction_lifecycle`, `alloy_custom_traits`, `alloy_trading_full_flow` |

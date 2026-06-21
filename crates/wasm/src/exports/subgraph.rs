@@ -9,7 +9,7 @@ use crate::exports::{
     },
     dto::{SubgraphQueryInput, parse_chain, to_js_value, transport_policy_from_config},
     envelope::WasmEnvelope,
-    errors::WasmError,
+    errors::JsResultExt,
     transport::{configured_fetch_transport, optional_timeout, required_string, required_u32},
 };
 
@@ -178,7 +178,7 @@ fn build_subgraph(
         .transport(transport)
         .transport_policy(transport_policy)
         .build()
-        .map_err(|error| WasmError::from(error).into_js())
+        .map_js()
 }
 
 fn subgraph_for_scope(inner: &SubgraphApi, scope: &ClientCallScope) -> SubgraphApi {
@@ -191,18 +191,12 @@ fn subgraph_for_scope(inner: &SubgraphApi, scope: &ClientCallScope) -> SubgraphA
 }
 
 async fn subgraph_get_totals(inner: &SubgraphApi) -> Result<JsValue, JsValue> {
-    let totals = inner
-        .totals()
-        .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let totals = inner.totals().await.map_js()?;
     to_js_value(&WasmEnvelope::v1(totals))
 }
 
 async fn subgraph_get_last_days_volume(inner: &SubgraphApi, days: u32) -> Result<JsValue, JsValue> {
-    let volume = inner
-        .last_days_volume(days)
-        .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let volume = inner.last_days_volume(days).await.map_js()?;
     to_js_value(&WasmEnvelope::v1(volume))
 }
 
@@ -210,10 +204,7 @@ async fn subgraph_get_last_hours_volume(
     inner: &SubgraphApi,
     hours: u32,
 ) -> Result<JsValue, JsValue> {
-    let volume = inner
-        .last_hours_volume(hours)
-        .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let volume = inner.last_hours_volume(hours).await.map_js()?;
     to_js_value(&WasmEnvelope::v1(volume))
 }
 
@@ -222,10 +213,7 @@ async fn subgraph_run_query(
     request: SubgraphQueryInput,
 ) -> Result<JsValue, JsValue> {
     let request = parse_subgraph_request(request);
-    let value: Value = inner
-        .query(request)
-        .await
-        .map_err(|error| WasmError::from(error).into_js())?;
+    let value: Value = inner.query(request).await.map_js()?;
     to_js_value(&WasmEnvelope::v1(value))
 }
 

@@ -106,23 +106,11 @@ impl Signer for LocalAlloySigner {
         &self,
         payload: &TypedDataPayload,
     ) -> Result<String, Self::Error> {
-        #[cfg(feature = "eip712")]
-        {
-            let typed =
-                cow_typed_data_payload_to_alloy(payload).map_err(SignerError::Validation)?;
-            let signature = AlloySigner::sign_dynamic_typed_data(self.upstream_signer(), &typed)
-                .await
-                .map_err(|error| SignerError::from_alloy_signer(&error))?;
-            Ok(alloy_signature_to_hex(&signature)?)
-        }
-
-        #[cfg(not(feature = "eip712"))]
-        {
-            let _ = payload;
-            Err(SignerError::Unsupported(
-                "sign_typed_data_payload requires the eip712 feature",
-            ))
-        }
+        let typed = cow_typed_data_payload_to_alloy(payload).map_err(SignerError::validation)?;
+        let signature = AlloySigner::sign_dynamic_typed_data(self.upstream_signer(), &typed)
+            .await
+            .map_err(|error| SignerError::from_alloy_signer(&error))?;
+        Ok(alloy_signature_to_hex(&signature)?)
     }
 
     async fn send_transaction(

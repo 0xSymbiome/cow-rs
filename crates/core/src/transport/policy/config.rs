@@ -98,7 +98,9 @@ impl TransportPolicy {
             retry: RetryPolicy::builder()
                 .jitter(JitterStrategy::decorrelated_process())
                 .build(),
-            rate_limit: RequestRateLimiter::default_subgraph(),
+            // The subgraph host carries the same per-host request budget as the
+            // orderbook; one limiter constructor keeps the two from drifting.
+            rate_limit: RequestRateLimiter::default_orderbook(),
         }
     }
 
