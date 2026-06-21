@@ -1,9 +1,12 @@
 #[cfg(feature = "orderbook")]
 use crate::helpers::errors::PureError;
+#[cfg(feature = "orderbook")]
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "orderbook")]
 use serde_json::Value;
+#[cfg(feature = "orderbook")]
 use tsify::Tsify;
+#[cfg(feature = "orderbook")]
 use wasm_bindgen::prelude::*;
 
 #[cfg(feature = "orderbook")]

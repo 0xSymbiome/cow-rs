@@ -1,9 +1,13 @@
+#[cfg(any(feature = "trading", feature = "cancellation"))]
 use std::collections::BTreeMap;
 
+#[cfg(any(feature = "trading", feature = "cancellation"))]
 use serde::{Deserialize, Serialize};
 #[cfg(feature = "trading")]
 use serde_json::Value;
+#[cfg(any(feature = "trading", feature = "cancellation"))]
 use tsify::Tsify;
+#[cfg(any(feature = "trading", feature = "cancellation"))]
 use wasm_bindgen::prelude::*;
 
 #[cfg(feature = "trading")]
