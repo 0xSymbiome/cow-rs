@@ -1,9 +1,10 @@
 //! Slippage and fee calculation helpers.
 
+use alloy_primitives::U256;
 use alloy_primitives::aliases::I512;
 
 use cow_sdk_app_data::PartnerFee;
-use cow_sdk_core::{Amount, OrderKind, QuoteAmountsAndCosts, SupportedChainId};
+use cow_sdk_core::{Amount, CoreError, OrderKind, QuoteAmountsAndCosts, SupportedChainId};
 use cow_sdk_orderbook::{OrderQuoteResponse, PriceQuality, QuoteData};
 
 use crate::{
@@ -48,6 +49,45 @@ const fn i512(value: i64) -> I512 {
     ]))
 }
 
+/// Widens a typed [`Amount`] into the slippage-math [`I512`] by reinterpreting
+/// its `uint256` limbs, with no decimal-string round-trip.
+///
+/// The four `U256` limbs are the low four limbs of the non-negative `I512`; the
+/// upper four are zero. Mirrors the [`i512`] sign-extension helper; it is the
+/// typed-amount entry into the slippage math (the math takes typed amounts, not
+/// strings).
+#[inline]
+const fn i512_from_amount(amount: &Amount) -> I512 {
+    let [l0, l1, l2, l3] = amount.as_u256().into_limbs();
+    I512::from_raw(alloy_primitives::Uint::from_limbs([
+        l0, l1, l2, l3, 0, 0, 0, 0,
+    ]))
+}
+
+/// Narrows a slippage-math [`I512`] back into a typed [`Amount`] by
+/// reinterpreting its low `uint256` limbs, with no decimal-string round-trip.
+///
+/// The in-range case is a pure limb copy. A negative value or one exceeding
+/// `uint256` is rejected through [`Amount::new`] on the cold path, so the
+/// returned [`CoreError`] is byte-identical to the prior `Amount::new(_.to_string())`
+/// round-trip (which rejected both the leading `-` and an over-`uint256` magnitude).
+///
+/// # Errors
+///
+/// Returns [`CoreError`] when `value` is negative or exceeds the `uint256` range.
+fn amount_from_i512(value: I512) -> Result<Amount, CoreError> {
+    if !value.is_negative() {
+        let [l0, l1, l2, l3, hi0, hi1, hi2, hi3] = value.into_raw().into_limbs();
+        if hi0 | hi1 | hi2 | hi3 == 0 {
+            return Ok(Amount::from_u256(U256::from_limbs([l0, l1, l2, l3])));
+        }
+    }
+    // Cold path (malformed or adversarial quote math): delegate to the
+    // constructor so the rejection error matches the prior decimal round-trip
+    // byte-for-byte.
+    Amount::new(value.to_string())
+}
+
 /// Derives the signed and intermediate quote amounts after protocol, network, partner, and
 /// slippage adjustments.
 ///
@@ -68,9 +108,9 @@ pub fn calculate_quote_amounts_and_costs(
     protocol_fee_bps: Option<f64>,
 ) -> Result<QuoteAmountsAndCosts, TradingError> {
     let is_sell = quote.kind == OrderKind::Sell;
-    let sell_amount = parse_integer("sellAmount", &quote.sell_amount.to_string())?;
-    let buy_amount = parse_integer("buyAmount", &quote.buy_amount.to_string())?;
-    let network_cost_amount = parse_integer("feeAmount", &quote.network_cost_amount().to_string())?;
+    let sell_amount = i512_from_amount(&quote.sell_amount);
+    let buy_amount = i512_from_amount(&quote.buy_amount);
+    let network_cost_amount = i512_from_amount(quote.network_cost_amount());
 
     if sell_amount <= I512::ZERO {
         return Err(TradingError::InvalidInput {
@@ -131,28 +171,9 @@ pub fn calculate_quote_amounts_and_costs(
     reason = "crate-visible re-export preserves crate::slippage helper imports from sibling modules"
 )]
 pub(crate) fn gas_with_margin(gas: &Amount) -> Result<Amount, TradingError> {
-    let gas = parse_integer("gas", &gas.to_string())?;
+    let gas = i512_from_amount(gas);
     let margin = (gas * i512(i64::from(GAS_MARGIN_PERCENT))) / i512(100i64);
-    Amount::new((gas + margin).to_string()).map_err(Into::into)
-}
-
-#[allow(
-    clippy::redundant_pub_crate,
-    clippy::option_if_let_else,
-    reason = "crate-visible re-export preserves crate::slippage helper imports from sibling modules, and the if let/else form keeps the two parse-radix paths visually parallel"
-)]
-pub(crate) fn parse_integer(field: &'static str, value: &str) -> Result<I512, TradingError> {
-    if value.starts_with("0x") {
-        I512::from_hex_str(value).map_err(|_| TradingError::InvalidNumeric {
-            field,
-            value: value.to_owned().into(),
-        })
-    } else {
-        I512::from_dec_str(value).map_err(|_| TradingError::InvalidNumeric {
-            field,
-            value: value.to_owned().into(),
-        })
-    }
+    amount_from_i512(gas + margin).map_err(Into::into)
 }
 
 #[derive(Clone, Copy)]
@@ -315,8 +336,8 @@ fn build_quote_amount_stages(inputs: &QuoteStageInputs<'_>) -> (QuoteAmountStage
 impl AmountsBig {
     fn into_amounts(self) -> Result<cow_sdk_core::Amounts<Amount>, TradingError> {
         Ok(cow_sdk_core::Amounts::new(
-            Amount::new(self.sell_amount.to_string())?,
-            Amount::new(self.buy_amount.to_string())?,
+            amount_from_i512(self.sell_amount)?,
+            amount_from_i512(self.buy_amount)?,
         ))
     }
 }
@@ -450,9 +471,9 @@ pub(super) fn get_protocol_fee_amount(
         return Ok(I512::ZERO);
     }
 
-    let sell_amount = parse_integer("sellAmount", &quote.sell_amount.to_string())?;
-    let buy_amount = parse_integer("buyAmount", &quote.buy_amount.to_string())?;
-    let fee_amount = parse_integer("feeAmount", &quote.network_cost_amount().to_string())?;
+    let sell_amount = i512_from_amount(&quote.sell_amount);
+    let buy_amount = i512_from_amount(&quote.buy_amount);
+    let fee_amount = i512_from_amount(quote.network_cost_amount());
     let denominator_base = i512(ONE_HUNDRED_BPS) * i512(PROTOCOL_FEE_BPS_SCALE);
 
     // Reject protocol-fee values at or above 100%: on the sell path that
@@ -481,17 +502,10 @@ pub(super) fn get_slippage_percent_scaled(
     is_sell: bool,
     sell_amount_before_network_costs: &Amount,
     sell_amount_after_network_costs: &Amount,
-    slippage: &str,
+    slippage: I512,
 ) -> Result<I512, TradingError> {
-    let sell_before = parse_integer(
-        "sellAmountBeforeNetworkCosts",
-        &sell_amount_before_network_costs.to_string(),
-    )?;
-    let sell_after = parse_integer(
-        "sellAmountAfterNetworkCosts",
-        &sell_amount_after_network_costs.to_string(),
-    )?;
-    let slippage = parse_integer("slippage", slippage)?;
+    let sell_before = i512_from_amount(sell_amount_before_network_costs);
+    let sell_after = i512_from_amount(sell_amount_after_network_costs);
     let sell_amount = if is_sell { sell_after } else { sell_before };
 
     if sell_amount <= I512::ZERO {
@@ -547,15 +561,15 @@ impl QuoteFeeBreakdown {
     pub(super) fn into_costs(self) -> Result<cow_sdk_core::Costs<Amount>, TradingError> {
         Ok(cow_sdk_core::Costs::new(
             cow_sdk_core::NetworkFee::new(
-                Amount::new(self.network_cost_amount.to_string())?,
-                Amount::new(self.network_cost_amount_in_buy_currency.to_string())?,
+                amount_from_i512(self.network_cost_amount)?,
+                amount_from_i512(self.network_cost_amount_in_buy_currency)?,
             ),
             cow_sdk_core::FeeComponent::new(
-                Amount::new(self.partner_fee_amount.to_string())?,
+                amount_from_i512(self.partner_fee_amount)?,
                 self.partner_fee_bps,
             ),
             cow_sdk_core::FeeComponent::new(
-                Amount::new(self.protocol_fee_amount.to_string())?,
+                amount_from_i512(self.protocol_fee_amount)?,
                 rounded_nonnegative_f64_to_u32(self.protocol_fee_bps, "protocolFeeBps")?,
             ),
         ))
@@ -588,25 +602,15 @@ pub fn sanitize_protocol_fee_bps(protocol_fee_bps: Option<&str>) -> Option<f64> 
 ///
 /// # Errors
 ///
-/// Returns an error when the fee amount is malformed, negative, or the multiplier is negative or
-/// non-finite.
+/// Returns an error when the multiplier is negative or non-finite, or when the
+/// suggested amount exceeds the supported `uint256` range.
 pub fn suggest_slippage_from_fee(
-    fee_amount: &str,
+    fee_amount: &Amount,
     multiplying_factor_percent: f64,
 ) -> Result<Amount, TradingError> {
-    let fee_amount = parse_integer("feeAmount", fee_amount)?;
-
-    if fee_amount < I512::ZERO {
-        return Err(TradingError::InvalidInput {
-            field: "feeAmount",
-            reason: cow_sdk_core::ValidationReason::OutOfRange {
-                details: "fee amount must be non-negative",
-            },
-        });
-    }
-
+    let fee_amount = i512_from_amount(fee_amount);
     let percent = parse_percent_scaled(multiplying_factor_percent, "multiplyingFactorPercent")?;
-    Amount::new(apply_percentage(&fee_amount, percent).to_string()).map_err(Into::into)
+    amount_from_i512(apply_percentage(&fee_amount, percent)).map_err(Into::into)
 }
 
 /// Suggests a slippage amount from the quoted sell volume after network-cost adjustment.
@@ -617,22 +621,17 @@ pub fn suggest_slippage_from_fee(
 ///
 /// # Errors
 ///
-/// Returns an error when the referenced amounts are malformed, when the selected sell amount is
-/// zero or negative, or when the percentage is negative or non-finite.
+/// Returns an error when the selected sell amount is zero, when the percentage is
+/// negative or non-finite, or when the suggested amount exceeds the supported
+/// `uint256` range.
 pub fn suggest_slippage_from_volume(
     is_sell: bool,
-    sell_amount_before_network_costs: &str,
-    sell_amount_after_network_costs: &str,
+    sell_amount_before_network_costs: &Amount,
+    sell_amount_after_network_costs: &Amount,
     slippage_percent: f64,
 ) -> Result<Amount, TradingError> {
-    let sell_before = parse_integer(
-        "sellAmountBeforeNetworkCosts",
-        sell_amount_before_network_costs,
-    )?;
-    let sell_after = parse_integer(
-        "sellAmountAfterNetworkCosts",
-        sell_amount_after_network_costs,
-    )?;
+    let sell_before = i512_from_amount(sell_amount_before_network_costs);
+    let sell_after = i512_from_amount(sell_amount_after_network_costs);
     let sell_amount = if is_sell { sell_after } else { sell_before };
 
     if sell_amount <= I512::ZERO {
@@ -645,7 +644,7 @@ pub fn suggest_slippage_from_volume(
     }
 
     let percent = parse_percent_scaled(slippage_percent, "slippagePercent")?;
-    Amount::new(apply_percentage(&sell_amount, percent).to_string()).map_err(Into::into)
+    amount_from_i512(apply_percentage(&sell_amount, percent)).map_err(Into::into)
 }
 
 /// Suggests a slippage tolerance in basis points for a quote response.
@@ -672,23 +671,22 @@ pub fn suggest_slippage_bps(
         sanitize_protocol_fee_bps(quote.protocol_fee_bps.as_deref()),
     )?;
     let fee_amount = suggest_slippage_from_fee(
-        &quote.quote.network_cost_amount().to_string(),
+        quote.quote.network_cost_amount(),
         SLIPPAGE_FEE_MULTIPLIER_PERCENT,
     )?;
     let volume_amount = suggest_slippage_from_volume(
         amounts.is_sell,
-        &amounts.before_network_costs.sell_amount.to_string(),
-        &amounts.after_network_costs.sell_amount.to_string(),
+        &amounts.before_network_costs.sell_amount,
+        &amounts.after_network_costs.sell_amount,
         volume_multiplier_percent.unwrap_or(SLIPPAGE_VOLUME_MULTIPLIER_PERCENT),
     )?;
 
-    let total_slippage = parse_integer("totalSlippage", &fee_amount.to_string())?
-        + parse_integer("totalSlippage", &volume_amount.to_string())?;
+    let total_slippage = i512_from_amount(&fee_amount) + i512_from_amount(&volume_amount);
     let slippage_percent_scaled = get_slippage_percent_scaled(
         amounts.is_sell,
         &amounts.before_network_costs.sell_amount,
         &amounts.after_network_costs.sell_amount,
-        &total_slippage.to_string(),
+        total_slippage,
     )?;
     let slippage_bps = scaled_percent_to_bps(&slippage_percent_scaled)?;
     let lower_cap = if is_eth_flow {
@@ -778,5 +776,53 @@ pub async fn resolve_slippage_suggestion(
         Ok(_) | Err(_) => Ok(crate::SlippageToleranceResponse {
             slippage_bps: Some(default_suggestion),
         }),
+    }
+}
+
+#[cfg(test)]
+mod conversion_tests {
+    use super::{amount_from_i512, i512_from_amount};
+    use alloy_primitives::aliases::I512;
+    use cow_sdk_core::Amount;
+
+    fn sample_amounts() -> Vec<Amount> {
+        vec![
+            Amount::ZERO,
+            Amount::from(1u32),
+            Amount::from(1_000_000u64),
+            Amount::new("1000000000000000000").unwrap(),
+            Amount::MAX,
+        ]
+    }
+
+    #[test]
+    fn i512_from_amount_equals_the_decimal_round_trip() {
+        for amount in sample_amounts() {
+            assert_eq!(
+                i512_from_amount(&amount),
+                I512::from_dec_str(&amount.to_string()).expect("a uint256 decimal fits I512"),
+                "limb widening must equal the decimal round-trip for {amount}",
+            );
+        }
+    }
+
+    #[test]
+    fn amount_from_i512_equals_the_decimal_round_trip_and_rejections() {
+        for amount in sample_amounts() {
+            let widened = i512_from_amount(&amount);
+            assert_eq!(
+                amount_from_i512(widened).ok(),
+                Amount::new(widened.to_string()).ok(),
+                "limb narrowing must equal the decimal round-trip",
+            );
+            assert_eq!(amount_from_i512(widened).ok(), Some(amount));
+        }
+        // Over-uint256 and negative both reject, matching Amount::new.
+        let over_uint256 = i512_from_amount(&Amount::MAX) + I512::ONE;
+        assert!(amount_from_i512(over_uint256).is_err());
+        assert!(Amount::new(over_uint256.to_string()).is_err());
+        let negative = -I512::ONE;
+        assert!(amount_from_i512(negative).is_err());
+        assert!(Amount::new(negative.to_string()).is_err());
     }
 }

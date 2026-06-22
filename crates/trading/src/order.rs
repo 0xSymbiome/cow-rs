@@ -1,5 +1,3 @@
-use alloy_primitives::aliases::I512;
-
 use cow_sdk_contracts::ContractId;
 use cow_sdk_core::{
     Address, Amount, AppDataHash, CowEnv, MAX_VALID_TO_EPOCH, NATIVE_CURRENCY_ADDRESS, OrderData,
@@ -8,7 +6,6 @@ use cow_sdk_core::{
 use cow_sdk_orderbook::OrderQuoteResponse;
 use cow_sdk_signing::{GeneratedOrderId, generate_order_id};
 
-use crate::slippage::parse_integer;
 use crate::{
     DEFAULT_QUOTE_VALIDITY, EthFlowOrderExistsChecker, LimitTradeParams, LimitTradeParamsFromQuote,
     TradeParams, TradingError, calculate_quote_amounts_and_costs, default_slippage_bps,
@@ -322,8 +319,7 @@ pub async fn calculate_unique_order_id(
 }
 
 fn adjust_buy_amount(value: &Amount) -> Result<Amount, TradingError> {
-    let amount = parse_integer("buyAmount", &value.to_string())?;
-    if amount <= I512::ZERO {
+    if value.is_zero() {
         return Err(TradingError::InvalidInput {
             field: "buyAmount",
             reason: cow_sdk_core::ValidationReason::OutOfRange {
@@ -331,5 +327,6 @@ fn adjust_buy_amount(value: &Amount) -> Result<Amount, TradingError> {
             },
         });
     }
-    Amount::new((amount - I512::ONE).to_string()).map_err(Into::into)
+    // `value >= 1` after the zero guard, so the decrement cannot underflow.
+    Ok(value.saturating_sub(Amount::from(1u32)))
 }
