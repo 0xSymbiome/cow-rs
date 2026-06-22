@@ -9,6 +9,11 @@
 
 ## Decision
 
+_Amended 2026-06-22: `executed_fee` is a typed `Amount` (serde-validated at the DTO
+boundary), so the `calculate_total_fee` wire-string normalizer was redundant and has
+been removed; `transform_order` now sets `total_fee` from the typed `executed_fee`
+directly. The narrow-`total_fee` policy below is unchanged._
+
 The orderbook `Order` DTO in `cow_sdk_orderbook::types::Order`
 defines `total_fee` narrowly as the normalised executed-fee
 component sourced from the wire `executedFee` field. The DTO also
@@ -17,12 +22,10 @@ read-only sibling
 `executed_fee_amount: Amount`, deserialized through the standard
 camelCase DTO mapping and skipped on serialization when it is zero so
 absence on the wire does not re-emit the legacy descriptor.
-`calculate_total_fee`
-remains pure and continues to define `total_fee` as
-`executed_fee` only — the helper does not fold
-`executed_fee_amount` into the canonical sum. Consumers
-that need the legacy summation compute it explicitly from the two
-typed fields.
+`transform_order` sets `total_fee` to the typed `executed_fee`
+directly (zero when absent) and never folds `executed_fee_amount`
+into the canonical sum. Consumers that need the legacy summation
+compute it explicitly from the two typed fields.
 
 ## Why
 
@@ -46,8 +49,8 @@ order-level fees on submission.
 ## Must Remain True
 
 - Public surface: `Order.total_fee: Amount` is the canonical
-  executed-fee exposure and is defined as the normalised
-  `executedFee` value through `calculate_total_fee`. The
+  executed-fee exposure and is defined as the typed
+  `executed_fee` (zero when absent). The
   `Order.executed_fee_amount: Amount` field is
   read-only on the public surface — it is populated only by
   deserialization of the legacy `executedFeeAmount` wire field
@@ -56,14 +59,11 @@ order-level fees on submission.
   serializer skips the field when the value is zero so an
   `Order` round-tripped from a payload that did not carry
   `executedFeeAmount` does not re-emit the legacy descriptor.
-- Runtime and support: `calculate_total_fee` is pure, treats a
-  missing `executed_fee` as zero, validates the value as an
-  unsigned decimal string, and never reads
-  `executed_fee_amount`. `transform_order` only writes
-  `total_fee` from the canonical `executed_fee`; it never
-  silently sums the two fee fields. Consumers that want the
-  legacy summation perform `executed_fee + executed_fee_amount`
-  themselves at the call site.
+- Runtime and support: `transform_order` is infallible and writes
+  `total_fee` from the typed `executed_fee` (zero when absent); it
+  never reads `executed_fee_amount` or silently sums the two fee
+  fields. Consumers that want the legacy summation perform
+  `executed_fee + executed_fee_amount` themselves at the call site.
 - Validation and review: regression tests in
   `crates/orderbook/tests/transform_contract.rs` cover the four
   field-population transitions — both fields populated, only the
@@ -75,13 +75,12 @@ order-level fees on submission.
   fee-amount write path.
 - Cost: one legacy field on the `Order` DTO, one default
   initialiser update inside `Order::new`, and the documented
-  serde emission rule. No change to `calculate_total_fee` or
-  `transform_order`. No change to the public write surface.
+  serde emission rule. No change to the public write surface.
 
 ## Alternatives Rejected
 
-- Sum both fields silently inside `calculate_total_fee` so
-  `total_fee` matches the historical TypeScript behaviour:
+- Sum both fields silently when computing `total_fee` so
+  it matches the historical TypeScript behaviour:
   shorter migration for cross-SDK ports, but binds the canonical
   Rust type to the deprecated wire descriptor permanently and
   hides the legacy contribution from consumers that want to

@@ -131,7 +131,7 @@ Mutation:
 
 ```text
 cargo mutants -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-app-data --output target/mutants-report
-cargo mutants -p cow-sdk-orderbook -p cow-sdk-trading --file crates/orderbook/src/request.rs --file crates/orderbook/src/transform.rs --file crates/trading/src/order.rs --file crates/trading/src/slippage/policy.rs --file crates/trading/src/slippage/breakdown.rs --annotations none --no-times --re "decoded_body|execute_with|calculate_total_fee|add_decimal_strings|sanitize_protocol_fee_bps|partner_fee_bps|calculate_unique_order_id|adjust_buy_amount" --output target/mutants-report-orderbook-trading
+cargo mutants -p cow-sdk-orderbook -p cow-sdk-trading --file crates/orderbook/src/request.rs --file crates/orderbook/src/transform.rs --file crates/trading/src/order.rs --file crates/trading/src/slippage.rs --annotations none --no-times --re "decoded_body|execute_with|sanitize_protocol_fee_bps|partner_fee_bps|calculate_unique_order_id|adjust_buy_amount" --output target/mutants-report-orderbook-trading
 cargo mutants -p cow-sdk-subgraph --file crates/subgraph/src/api.rs --file crates/subgraph/src/types.rs --annotations none --no-times --re "query|with_config_override|base_url_for|deserialize_string_or_number|deserialize_optional_string_or_number|deserialize_u64_from_string_or_number|value_to_string" --output target/mutants-report-subgraph
 ```
 

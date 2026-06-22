@@ -77,7 +77,6 @@ boundary class rather than a count that would rot on every add or cut.
 | Core types and identities | `Amount` parser, hex identity validators (`Address`, `Hash32`, `AppDataHash`, `OrderUid`, `HexData`), `Amount::parse_units`, redaction body scanner |
 | App-data | CID round-trip, CID-to-hex decoder, schema version `is_semver`, `stringify_deterministic`, app-data size limit, `params_from_doc` |
 | Trading and slippage | App-data merge, slippage amounts, slippage policy helpers |
-| Orderbook wire totals | `calculate_total_fee` |
 
 ### Stable-toolchain Compile Gate
 

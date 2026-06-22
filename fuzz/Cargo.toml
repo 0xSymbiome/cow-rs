@@ -186,13 +186,6 @@ doc = false
 bench = false
 
 [[bin]]
-name = "fuzz_calculate_total_fee"
-path = "fuzz_targets/fuzz_calculate_total_fee.rs"
-test = false
-doc = false
-bench = false
-
-[[bin]]
 name = "fuzz_decoded_body_canonical_status_text"
 path = "fuzz_targets/fuzz_decoded_body_canonical_status_text.rs"
 test = false

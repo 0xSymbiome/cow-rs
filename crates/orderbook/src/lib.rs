@@ -278,7 +278,7 @@ pub use builder::{
 pub use error::{HashMismatchStage, OrderbookError, QuoteEchoField};
 pub use rejection::{OrderbookRejection, OrderbookRejectionCategory, parse_rejection};
 pub use request::{HttpMethod, OrderbookApiError, ResponseBody};
-pub use transform::{calculate_total_fee, transform_order, transform_orders};
+pub use transform::{transform_order, transform_orders};
 pub use types::{
     Address, Amount, ApiBaseUrls, ApiContext, ApiContextOverride, AppDataHash, AppDataObject,
     AuctionPrices, BuyTokenDestination, CompetitionAuction, CompetitionOrderStatus,

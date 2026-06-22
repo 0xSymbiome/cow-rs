@@ -19,7 +19,6 @@ use cow_sdk_core::Amount;
 use cow_sdk_orderbook::{
     BuyTokenDestination, OrderQuoteRequest, OrderQuoteResponse, OrderQuoteSide, OrdersQuery,
     PriceQuality, QuoteSigningScheme, QuoteValidity, SellTokenSource, SigningScheme, TradesQuery,
-    calculate_total_fee,
 };
 use proptest::prelude::*;
 use proptest::test_runner::FileFailurePersistence;
@@ -37,10 +36,6 @@ const REGRESSION_FILE: &str = concat!(
 fn amount_strategy() -> impl Strategy<Value = Amount> {
     (1u64..1_000_000_000_000u64)
         .prop_map(|value| Amount::new(value.to_string()).expect("generated amount must parse"))
-}
-
-fn decimal_strategy() -> impl Strategy<Value = String> {
-    (1u64..1_000_000_000_000u64).prop_map(|value| value.to_string())
 }
 
 fn price_quality_strategy() -> impl Strategy<Value = PriceQuality> {
@@ -275,24 +270,6 @@ proptest! {
         prop_assert_eq!(roundtrip.is_valid(), request.is_valid());
     }
 
-    #[test]
-    fn fee_normalization_trims_leading_zeroes_across_generated_decimal_inputs(
-        value in decimal_strategy(),
-        leading_zeroes in 0usize..3,
-    ) {
-        let padded = format!("{}{}", "0".repeat(leading_zeroes), value);
-        let expected = value
-            .parse::<u128>()
-            .expect("generated decimal must parse")
-            .to_string();
-        let total_fee =
-            calculate_total_fee(Some(&padded)).expect("generated decimal normalization must remain valid");
-
-        prop_assert_eq!(
-            total_fee,
-            Amount::new(expected).expect("expected amount must parse")
-        );
-    }
 }
 
 #[test]

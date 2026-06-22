@@ -31,7 +31,6 @@ publishes the HTML and JSON reports as non-blocking build artifacts.
 | Order UID pack and extract | `uid_packing::pack_order_uid_params`, `uid_packing::extract_order_uid_params` | `cow-sdk-contracts` |
 | Signing typed-data envelope | `typed_data::order_typed_data_payload` | `cow-sdk-signing` |
 | App-data deterministic stringify | `stringify::stringify_deterministic` | `cow-sdk-app-data` |
-| Orderbook quote fee aggregation | `quote_cost::calculate_total_fee` | `cow-sdk-orderbook` |
 | Trading limit-order construction | `order_build::order_to_sign` | `cow-sdk-trading` |
 
 ## Reported Ranges
@@ -49,7 +48,6 @@ window, not a single absolute number.
 | `extract_order_uid_params` | sub-microsecond |
 | `order_typed_data_payload` | single-digit microseconds |
 | `stringify_deterministic` | single-digit microseconds |
-| `calculate_total_fee` | sub-microsecond |
 | `order_to_sign` | low-single-digit microseconds |
 
 Refresh the table when the next scheduled run reports a shift that crosses one
