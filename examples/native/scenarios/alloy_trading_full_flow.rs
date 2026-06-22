@@ -52,7 +52,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // 2. Build an approval transaction, broadcast it, and wait for the receipt.
     let approval_params = ApprovalParams::new(COW, Amount::new("1000")?);
     let approval_tx =
-        approval_transaction(&approval_params, SupportedChainId::Mainnet, CowEnv::Prod)?;
+        approval_transaction(&approval_params, SupportedChainId::Mainnet, CowEnv::Prod);
     let approval_receipt = submit_and_wait_for_receipt(
         &signer,
         &client,

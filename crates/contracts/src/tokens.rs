@@ -3,14 +3,16 @@
 //! - [`IERC20`] reproduces the minimal [EIP-20](https://eips.ethereum.org/EIPS/eip-20)
 //!   surface every downstream consumer needs (`balanceOf`, `approve`,
 //!   `allowance`, `transfer`, `transferFrom`) plus the standard `Transfer` and
-//!   `Approval` events.
+//!   `Approval` events. [`encode_approve`] emits the `approve(spender, amount)`
+//!   call-data and [`approve_transaction`] wraps it into a gas-free
+//!   [`UnsignedTransaction`].
 //! - [`IWrappedNativeToken`] reproduces the WETH9-family `deposit()` /
 //!   `withdraw(uint256)` surface, with [`wrap_interaction`] /
 //!   [`unwrap_interaction`] helpers that emit the canonical settlement
 //!   [`Interaction`] for converting between the native asset and its wrapped
 //!   form, and the [`wrap_transaction`] / [`unwrap_transaction`] builders that
-//!   wrap those into a ready-to-submit [`cow_sdk_core::TransactionRequest`]. The
-//!   wrapped-native token address for a chain is resolved by
+//!   wrap those into a gas-free [`UnsignedTransaction`]. The wrapped-native
+//!   token address for a chain is resolved by
 //!   [`cow_sdk_core::wrapped_native_token`].
 //!
 //! Both interfaces are authored inline as `alloy::sol!` against the published
@@ -22,9 +24,10 @@
 use alloy_primitives::Bytes;
 use alloy_sol_types::{SolCall, sol};
 
-use cow_sdk_core::{Address, Amount, SupportedChainId, TransactionRequest, wrapped_native_token};
+use cow_sdk_core::{Address, Amount, HexData, SupportedChainId, wrapped_native_token};
 
 use crate::interaction::Interaction;
+use crate::tx::UnsignedTransaction;
 
 sol! {
     /// Minimal ERC-20 interface.
@@ -99,32 +102,76 @@ pub fn unwrap_interaction(wrapped_native_token: Address, amount: Amount) -> Inte
     )
 }
 
-/// Builds the transaction that wraps `amount` of the chain's native asset into
-/// its wrapped-native token (for example ETH into WETH).
+/// Builds the gas-free transaction that wraps `amount` of the chain's native
+/// asset into its wrapped-native token (for example ETH into WETH).
 ///
 /// The target is the chain's canonical wrapped-native token, resolved from
-/// `chain_id`; `amount` is sent as the call's native value. Submit the returned
-/// request with any [`cow_sdk_core::Signer`].
+/// `chain_id`; `amount` is sent as the call's native value. The returned
+/// [`UnsignedTransaction`] carries no gas limit; the caller estimates gas,
+/// signs, and submits.
 #[must_use]
-pub fn wrap_transaction(chain_id: SupportedChainId, amount: Amount) -> TransactionRequest {
+pub fn wrap_transaction(chain_id: SupportedChainId, amount: Amount) -> UnsignedTransaction {
     wrap_interaction(wrapped_native_token(chain_id).address, amount).into()
 }
 
-/// Builds the transaction that unwraps `amount` of the wrapped-native token back
-/// into the chain's native asset (for example WETH into ETH).
+/// Builds the gas-free transaction that unwraps `amount` of the wrapped-native
+/// token back into the chain's native asset (for example WETH into ETH).
 ///
 /// The target is the chain's canonical wrapped-native token, resolved from
 /// `chain_id`. `withdraw` burns the caller's own wrapped-native balance, so no
-/// ERC-20 approval is required and no native value is attached.
+/// ERC-20 approval is required and no native value is attached. The returned
+/// [`UnsignedTransaction`] carries no gas limit; the caller estimates gas,
+/// signs, and submits.
 #[must_use]
-pub fn unwrap_transaction(chain_id: SupportedChainId, amount: Amount) -> TransactionRequest {
+pub fn unwrap_transaction(chain_id: SupportedChainId, amount: Amount) -> UnsignedTransaction {
     unwrap_interaction(wrapped_native_token(chain_id).address, amount).into()
+}
+
+/// Returns the ABI-encoded `approve(spender, amount)` call-data for an ERC-20
+/// token, granting `spender` an allowance of `amount`.
+///
+/// Infallible: the cow [`Amount`] newtype enforces the `uint256` boundary at
+/// construction per ADR 0052, so the alloy-sol `abi_encode` call cannot fail by
+/// construction.
+#[must_use]
+pub fn encode_approve(spender: &Address, amount: &Amount) -> Vec<u8> {
+    IERC20::approveCall {
+        spender: (*spender).into(),
+        value: *amount.as_u256(),
+    }
+    .abi_encode()
+}
+
+/// Builds the gas-free ERC-20 approval transaction that grants `spender` an
+/// allowance of `amount` on `token`.
+///
+/// The target is `token`, the value is zero, and the call-data is the
+/// [`encode_approve`] payload. The `CoW` Protocol vault relayer is the usual
+/// `spender`; the caller resolves its deployment through
+/// [`resolve_contract_address`](crate::resolve_contract_address) and passes it
+/// here. The returned [`UnsignedTransaction`] carries no gas limit; the caller
+/// estimates gas, signs, and submits.
+#[must_use]
+pub fn approve_transaction(
+    token: Address,
+    spender: Address,
+    amount: Amount,
+) -> UnsignedTransaction {
+    UnsignedTransaction::new(
+        token,
+        HexData::from_bytes(encode_approve(&spender, &amount)),
+        Amount::ZERO,
+    )
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{unwrap_transaction, wrap_transaction};
-    use cow_sdk_core::{Amount, SupportedChainId, wrapped_native_token};
+    use super::{
+        IWrappedNativeToken, approve_transaction, encode_approve, unwrap_transaction,
+        wrap_transaction,
+    };
+    use alloy_sol_types::SolCall as _;
+    use cow_sdk_core::{Address, Amount, HexData, SupportedChainId, wrapped_native_token};
 
     #[test]
     fn wrap_transaction_resolves_canonical_address_and_sends_amount_as_value() {
@@ -133,12 +180,12 @@ mod tests {
 
         assert_eq!(
             tx.to,
-            Some(wrapped_native_token(SupportedChainId::Mainnet).address)
+            wrapped_native_token(SupportedChainId::Mainnet).address
         );
-        assert_eq!(tx.value, Some(amount));
-        assert!(
-            tx.data.is_some(),
-            "wrap transaction carries deposit calldata"
+        assert_eq!(tx.value, amount);
+        assert_eq!(
+            tx.data,
+            HexData::from_bytes(IWrappedNativeToken::depositCall {}.abi_encode())
         );
     }
 
@@ -147,14 +194,16 @@ mod tests {
         let amount = Amount::from(1_000u32);
         let tx = unwrap_transaction(SupportedChainId::Base, amount);
 
+        assert_eq!(tx.to, wrapped_native_token(SupportedChainId::Base).address);
+        assert_eq!(tx.value, Amount::ZERO);
         assert_eq!(
-            tx.to,
-            Some(wrapped_native_token(SupportedChainId::Base).address)
-        );
-        assert_eq!(tx.value, Some(Amount::ZERO));
-        assert!(
-            tx.data.is_some(),
-            "unwrap transaction carries withdraw calldata"
+            tx.data,
+            HexData::from_bytes(
+                IWrappedNativeToken::withdrawCall {
+                    wad: *amount.as_u256(),
+                }
+                .abi_encode()
+            )
         );
     }
 
@@ -165,6 +214,21 @@ mod tests {
             wrap_transaction(SupportedChainId::Mainnet, amount).to,
             wrap_transaction(SupportedChainId::GnosisChain, amount).to,
             "each chain wraps into its own native token"
+        );
+    }
+
+    #[test]
+    fn approve_transaction_targets_token_with_zero_value_and_encodes_spender() {
+        let token = Address::from_bytes([0x11; 20]);
+        let spender = Address::from_bytes([0x22; 20]);
+        let amount = Amount::from(5_000u32);
+        let tx = approve_transaction(token, spender, amount);
+
+        assert_eq!(tx.to, token);
+        assert_eq!(tx.value, Amount::ZERO);
+        assert_eq!(
+            tx.data,
+            HexData::from_bytes(encode_approve(&spender, &amount))
         );
     }
 }

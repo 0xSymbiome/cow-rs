@@ -60,8 +60,7 @@ async fn allowance_reads_use_runtime_chain_resolution_and_explicit_overrides() {
         .with_vault_relayer_override(custom),
         SupportedChainId::Mainnet,
         CowEnv::Staging,
-    )
-    .expect("approval transaction should build");
+    );
 
     assert_eq!(tx.to, Some(address(COW)));
     let data_lower = tx
@@ -109,8 +108,7 @@ fn approval_transaction_accepts_max_uint256_amount() {
         .with_env(CowEnv::Prod),
         SupportedChainId::Sepolia,
         CowEnv::Prod,
-    )
-    .expect("max uint256 approval amount should encode");
+    );
 
     assert!(
         tx.data

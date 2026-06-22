@@ -436,7 +436,7 @@ impl TradingClient {
     pub fn build_wrap_tx(&self, amount: String) -> Result<JsValue, JsValue> {
         let chain = parse_chain(self.chain_id)?;
         let amount = pure::dto::parse_amount("amount", &amount).map_js()?;
-        let tx = wrap_transaction(chain, amount);
+        let tx = TransactionRequest::from(wrap_transaction(chain, amount));
         to_js_value(&WasmEnvelope::v1(TransactionRequestDto::from(&tx)))
     }
 
@@ -456,7 +456,7 @@ impl TradingClient {
     pub fn build_unwrap_tx(&self, amount: String) -> Result<JsValue, JsValue> {
         let chain = parse_chain(self.chain_id)?;
         let amount = pure::dto::parse_amount("amount", &amount).map_js()?;
-        let tx = unwrap_transaction(chain, amount);
+        let tx = TransactionRequest::from(unwrap_transaction(chain, amount));
         to_js_value(&WasmEnvelope::v1(TransactionRequestDto::from(&tx)))
     }
 
@@ -705,7 +705,7 @@ async fn trading_build_approval_tx(
     let chain = parse_chain(chain_id)?;
     let env = pure::chains::env_from_str(env.as_deref()).map_js()?;
     let params: ApprovalParams = from_json_value("params", params.into_value()?)?;
-    let tx = cow_sdk_trading::approval_transaction(&params, chain, env).map_js()?;
+    let tx = cow_sdk_trading::approval_transaction(&params, chain, env);
     to_js_value(&WasmEnvelope::v1(TransactionRequestDto::from(&tx)))
 }
 

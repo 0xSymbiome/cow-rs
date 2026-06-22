@@ -87,12 +87,12 @@ pub use signature::{
     verify_eip1271_signature,
 };
 pub use tokens::{
-    IERC20, IWrappedNativeToken, unwrap_interaction, unwrap_transaction, wrap_interaction,
-    wrap_transaction,
+    IERC20, IWrappedNativeToken, approve_transaction, encode_approve, unwrap_interaction,
+    unwrap_transaction, wrap_interaction, wrap_transaction,
 };
 pub use tx::{
-    UnsignedTransaction, ethflow_create_order_transaction, invalidate_order_transaction,
-    pre_sign_transaction, resolve_contract_address, resolve_eth_flow_address,
-    resolve_settlement_address,
+    UnsignedTransaction, ethflow_create_order_transaction, ethflow_invalidate_order_transaction,
+    invalidate_order_transaction, pre_sign_transaction, resolve_contract_address,
+    resolve_eth_flow_address, resolve_settlement_address,
 };
 pub use verify::{Eip1271Cache, NoopEip1271Cache, verify_eip1271_signature_cached};

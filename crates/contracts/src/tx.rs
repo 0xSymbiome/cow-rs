@@ -14,7 +14,9 @@ use cow_sdk_core::{
     TransactionRequest,
 };
 
-use crate::eth_flow::{EthFlowOrderData, encode_create_order_calldata};
+use crate::eth_flow::{
+    EthFlowOrderData, encode_create_order_calldata, encode_invalidate_order_calldata,
+};
 use crate::settlement::{encode_invalidate_order, encode_set_pre_signature};
 use crate::{ContractId, ContractsError, Registry};
 
@@ -209,4 +211,67 @@ pub fn ethflow_create_order_transaction(
         HexData::from_bytes(encode_create_order_calldata(&payload)),
         order.sell_amount,
     ))
+}
+
+/// Builds the gas-free `CoWSwapEthFlow` on-chain order-cancellation transaction.
+///
+/// Targets the eth-flow contract with `invalidateOrder(EthFlowOrderData)`
+/// call-data and zero native value. This is distinct from the settlement-level
+/// [`invalidate_order_transaction`], which cancels a regular order by its packed
+/// UID; eth-flow cancellation takes the full order payload back.
+///
+/// # Errors
+///
+/// Returns [`ContractsError::DeploymentNotFound`] when no eth-flow deployment is
+/// registered for the chain/environment, or [`ContractsError::ZeroReceiver`] when
+/// the order receiver is the zero address (matching
+/// [`EthFlowOrderData::from_unsigned_order`]).
+pub fn ethflow_invalidate_order_transaction(
+    order: &OrderData,
+    quote_id: i64,
+    chain_id: SupportedChainId,
+    options: Option<&ProtocolOptions>,
+) -> Result<UnsignedTransaction, ContractsError> {
+    let to =
+        resolve_eth_flow_address(chain_id, options).ok_or(ContractsError::DeploymentNotFound {
+            contract: "eth-flow",
+            chain_id: u64::from(chain_id),
+        })?;
+    let payload = EthFlowOrderData::from_unsigned_order(order, quote_id)?;
+    Ok(UnsignedTransaction::new(
+        to,
+        HexData::from_bytes(encode_invalidate_order_calldata(&payload)),
+        Amount::ZERO,
+    ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{ethflow_invalidate_order_transaction, resolve_eth_flow_address};
+    use crate::eth_flow::{EthFlowOrderData, encode_invalidate_order_calldata};
+    use cow_sdk_core::{Amount, HexData, SupportedChainId};
+
+    #[test]
+    fn ethflow_invalidate_targets_eth_flow_with_zero_value_and_invalidate_calldata() {
+        let order = cow_sdk_test_utils::builders::OrderBuilder::weth_dai()
+            .receiver("0x2222222222222222222222222222222222222222")
+            .build();
+        let quote_id = 1_234_567_i64;
+
+        let tx =
+            ethflow_invalidate_order_transaction(&order, quote_id, SupportedChainId::Mainnet, None)
+                .expect("eth-flow is deployed on mainnet");
+
+        let eth_flow = resolve_eth_flow_address(SupportedChainId::Mainnet, None)
+            .expect("eth-flow is deployed on mainnet");
+        let payload =
+            EthFlowOrderData::from_unsigned_order(&order, quote_id).expect("non-zero receiver");
+
+        assert_eq!(tx.to, eth_flow);
+        assert_eq!(tx.value, Amount::ZERO);
+        assert_eq!(
+            tx.data,
+            HexData::from_bytes(encode_invalidate_order_calldata(&payload))
+        );
+    }
 }
