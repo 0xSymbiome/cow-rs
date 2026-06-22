@@ -5,7 +5,6 @@ import type { SigningOptions } from "./options.js";
 import type {
   CustomEip1271Callback,
   DigestSignerCallback,
-  Eip1193RequestCallback,
   TypedDataSignerCallback
 } from "./callbacks.js";
 
@@ -98,18 +97,6 @@ export function signOrderWithCustomEip1271(
   );
 }
 
-export function signOrderWithEip1193(
-  input: raw.OrderInput,
-  chainId: number,
-  owner: string,
-  requestCallback: Eip1193RequestCallback,
-  options?: SigningOptions | null
-): Promise<WasmEnvelope<raw.SignedOrderDto>> {
-  return callAsync(() =>
-    raw.signOrderWithEip1193(input, chainId, owner, requestCallback, options ?? null)
-  );
-}
-
 export function signOrderWithEip1271(
   input: raw.OrderInput,
   chainId: number,
@@ -149,7 +136,6 @@ export function wrappedNativeToken(chainId: number): WasmEnvelope<raw.WrappedNat
 export type {
   CowEip1271SignRequest,
   DeploymentAddressesDto,
-  Eip1193Request,
   EthFlowEventDto,
   EventLogInput,
   GeneratedOrderUidDto,
@@ -164,10 +150,8 @@ export type {
   WrappedNativeTokenDto
 } from "./raw/signing.js";
 export type {
-  CowEip1271SignCallback,
   CustomEip1271Callback,
   DigestSignerCallback,
-  Eip1193RequestCallback,
   TypedDataSignerCallback
 } from "./callbacks.js";
 export { CowError, isCowError, isRetryable, isUserRejection, normalizeError, retryAfterMs } from "./errors.js";

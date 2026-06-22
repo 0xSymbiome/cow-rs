@@ -15,7 +15,7 @@ and the TypeScript-callable `cow-sdk-wasm` bindings.
 
 This work prioritizes a clean trading-first foundation: typed orderbook DTOs,
 typed signing and contract helpers, deployment registry provenance, cooperative
-cancellation, provider-neutral runtime seams, an EIP-1193 request-callback
+cancellation, provider-neutral runtime seams, a typed callback
 boundary for host-supplied wallets, opt-in native Alloy provider and signer
 support, and deterministic native and WASM examples.
 

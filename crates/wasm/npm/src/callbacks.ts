@@ -77,18 +77,11 @@ export type TypedDataSignerCallback = (
   envelope: TypedDataEnvelopeDto
 ) => Promise<string> | string;
 
-export type Eip1193RequestCallback = (request: {
-  method: string;
-  params?: unknown[];
-}) => Promise<unknown> | unknown;
-
 export type DigestSignerCallback = (digest: string) => Promise<string> | string;
 
-export type CowEip1271SignCallback = (
+export type CustomEip1271Callback = (
   request: CowEip1271SignRequest
 ) => Promise<string> | string;
-
-export type CustomEip1271Callback = CowEip1271SignCallback;
 
 /**
  * Performs a read-only contract call on behalf of the SDK and returns the

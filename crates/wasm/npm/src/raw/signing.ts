@@ -20,7 +20,6 @@ export const eip1271SignaturePayload = wasm.eip1271SignaturePayload;
 export const orderTypedData = wasm.orderTypedData;
 export const signOrderEthSignDigest = wasm.signOrderEthSignDigest;
 export const signOrderWithCustomEip1271 = wasm.signOrderWithCustomEip1271;
-export const signOrderWithEip1193 = wasm.signOrderWithEip1193;
 export const signOrderWithEip1271 = wasm.signOrderWithEip1271;
 export const signOrderWithTypedDataSigner = wasm.signOrderWithTypedDataSigner;
 export const supportedChainIds = wasm.supportedChainIds;

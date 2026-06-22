@@ -13,19 +13,13 @@ export type TypedDataSignerCallback = (
 envelope: TypedDataEnvelopeDto,
 ) => Promise<string> | string;
 
-export type Eip1193RequestCallback = (
-request: { method: string; params?: unknown[] },
-) => Promise<unknown> | unknown;
-
 export type DigestSignerCallback = (
 digest: string,
 ) => Promise<string> | string;
 
-export type CowEip1271SignCallback = (
+export type CustomEip1271Callback = (
 request: CowEip1271SignRequest,
 ) => Promise<string> | string;
-
-export type CustomEip1271Callback = CowEip1271SignCallback;
 
 
 
@@ -110,20 +104,6 @@ export interface DeploymentAddressesDto {
      * EthFlow contract.
      */
     ethFlow: string;
-}
-
-/**
- * EIP-1193 request DTO.
- */
-export interface Eip1193Request {
-    /**
-     * Provider method.
-     */
-    method: string;
-    /**
-     * Provider params.
-     */
-    params?: Value[];
 }
 
 /**
@@ -591,23 +571,6 @@ export function signOrderEthSignDigest(input: OrderInput, chainId: number, owner
  * @throws CowError for invalid input, callback failure, timeout, or cancellation.
  */
 export function signOrderWithCustomEip1271(input: OrderInput, chainId: number, owner: string, customCallback: CustomEip1271Callback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrderDto>>;
-
-/**
- * Signs an order through an EIP-1193 request callback.
- *
- * The callback receives an `eth_signTypedData_v4` request object with owner
- * address and serialized typed data. This is the bridge for injected wallets
- * and wallet-client libraries that expose an EIP-1193-style request function.
- *
- * @param input Unsigned order fields to sign.
- * @param chainId EVM chain id used for the EIP-712 domain.
- * @param owner Owner address used in the wallet request and order UID.
- * @param requestCallback Callback that executes the EIP-1193 request.
- * @param options Optional cancellation, timeout, and wallet timeout settings.
- * @returns A versioned envelope containing the signed order.
- * @throws CowError for invalid input, wallet failure, timeout, or cancellation.
- */
-export function signOrderWithEip1193(input: OrderInput, chainId: number, owner: string, requestCallback: Eip1193RequestCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrderDto>>;
 
 /**
  * Signs an order through typed-data ECDSA and wraps it as EIP-1271.

@@ -74,7 +74,7 @@ omitted).
 | `cow-sdk-orderbook` | Typed orderbook transport over the `HttpTransport` seam, with the `OrderbookApiBuilder` typestate | You need explicit request and response control, or the typed quote, post, and query surface without compiling the signing stack. |
 | `cow-sdk-trading` | Quote-to-order workflows plus the quote, submit, cancel, and approve orchestration surface | You need the main trading orchestration layer. |
 | `cow-sdk-subgraph` | Read-only subgraph access over the `HttpTransport` seam, with the `SubgraphApiBuilder` typestate | You need GraphQL reads or custom subgraph queries (via the `cow-sdk` `subgraph` feature or this crate directly). |
-| `cow-sdk-wasm` | TypeScript-callable wasm-bindgen bindings over deterministic SDK helpers, typed callbacks (including the EIP-1193 request callback that bridges to a host wallet), orderbook/subgraph/IPFS clients, and trading flows | JavaScript or TypeScript should call the Rust SDK through wasm exports, including browser-wallet flows driven by the host's own provider. |
+| `cow-sdk-wasm` | TypeScript-callable wasm-bindgen bindings over deterministic SDK helpers, typed callbacks that bridge to a host wallet, orderbook/subgraph/IPFS clients, and trading flows | JavaScript or TypeScript should call the Rust SDK through wasm exports, including browser-wallet flows driven by the host's own provider. |
 | `cow-sdk-alloy-provider` | Native Alloy-backed `Provider` adapter | You need read-only chain RPC through Alloy without a signer dependency. |
 | `cow-sdk-alloy-signer` | Native Alloy-backed local private-key `Signer` adapter | You need local message or EIP-712 signing without provider-backed transaction submission. |
 | `cow-sdk-alloy` | Composed native Alloy provider plus signer adapter | You need one native client for `Provider`, `LogProvider`, `SigningProvider`, and `Signer` helper flows. |
@@ -189,8 +189,8 @@ explicit provider call.
 The SDK declares its provider, signer, and signing-provider contracts in
 `cow-sdk-core` rather than binding trading helpers directly to a concrete
 Ethereum runtime library. This lets one trading call site drive native Alloy on
-x86 / ARM, a host-supplied EIP-1193 wallet on `wasm32` (through the
-`cow-sdk-wasm` request callback), or any custom adapter that
+x86 / ARM, a host-supplied EIP-1193 wallet on `wasm32` (wrapped into the
+`cow-sdk-wasm` typed wallet callbacks), or any custom adapter that
 implements the same traits. If `cow-sdk-trading` depended on a concrete
 provider library directly, the wasm path would have to pull native-only
 dependencies or fork trading helpers per runtime.
@@ -211,7 +211,7 @@ fail-closed event decoders.
 Native Alloy support is already shipped as
 `cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, and `cow-sdk-alloy`.
 For JavaScript and TypeScript consumers, the `cow-sdk-wasm` package exposes the
-same trait surface as typed callbacks — including the EIP-1193 request callback
+same trait surface as typed callbacks — including the typed-data signer callback
 ([ADR 0040](adr/0040-wallet-provider-callback-boundary-for-js-consumers.md)) — so
 the host application's own wallet stack (viem, wagmi, or any EIP-1193 provider)
 supplies the wallet connection without widening the native facade.
@@ -406,8 +406,8 @@ back the workflow.
 
 Browser and wallet integration is served to JavaScript and TypeScript consumers
 by the `cow-sdk-wasm` package together with the host application's own wallet
-stack (viem, wagmi, or any EIP-1193 provider). The SDK exposes the EIP-1193
-request-callback boundary
+stack (viem, wagmi, or any EIP-1193 provider). The SDK exposes the typed
+callback boundary
 ([ADR 0040](adr/0040-wallet-provider-callback-boundary-for-js-consumers.md)) and
 the TypeScript-callable wasm surface
 ([ADR 0039](adr/0039-typescript-callable-wasm-sdk-surface.md)); the host supplies
@@ -425,8 +425,8 @@ crate, and chain coherence is enforced at the workflow level through the same
   signing stack.
 - `cow-sdk-subgraph` stays a separate read-only crate, re-exported through
   `cow-sdk` only behind the off-by-default `subgraph` feature.
-- Wallet integration crosses into the host through the typed EIP-1193 request
-  callback in `cow-sdk-wasm`; the SDK owns the callback shape, not the wallet
+- Wallet integration crosses into the host through the typed wallet callbacks
+  in `cow-sdk-wasm`; the SDK owns the callback shape, not the wallet
   connection.
 - Orderbook wire DTOs remain string-heavy only at the explicit HTTP boundary.
 - Public configs, endpoint discovery, and typed request failures expose only

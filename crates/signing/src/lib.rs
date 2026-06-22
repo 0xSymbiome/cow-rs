@@ -5,7 +5,7 @@
 //! The durable typed-data boundary is `cow_sdk_core::TypedDataPayload`.
 //! This crate owns explicit payload construction for `CoW` order and order
 //! cancellation signing so runtime adapters such as `cow-sdk-alloy-signer`
-//! and the `cow-sdk-wasm` EIP-1193 callback surface can transport typed-data
+//! and the `cow-sdk-wasm` typed-data signer callback can transport typed-data
 //! payloads without reconstructing structure from field-name heuristics.
 
 #![warn(missing_docs)]

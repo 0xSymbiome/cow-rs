@@ -56,7 +56,6 @@ fn generated_type_declarations_use_camel_case_public_params() {
         "ecdsa_signature:",
         "order_uid:",
         "order_uids:",
-        "request_callback:",
         "signer_callback:",
         "typed_data_signer:",
     ];
@@ -77,7 +76,6 @@ fn generated_type_declarations_use_camel_case_public_params() {
 fn generated_type_declarations_name_callback_params() {
     let expected = [
         "digestSigner: DigestSignerCallback",
-        "requestCallback: Eip1193RequestCallback",
         "typedDataSigner: TypedDataSignerCallback",
         "customCallback: CustomEip1271Callback",
     ];
@@ -304,7 +302,7 @@ fn generated_type_declarations_expose_feature_scoped_workflow_helpers() {
 
 #[test]
 fn generated_type_declarations_keep_unknown_escape_hatch_scoped() {
-    let expected = ["message: Value;", "params?: Value[];", "raw: Value"];
+    let expected = ["message: Value;", "raw: Value"];
     let forbidden = [
         "input: Value",
         "request: Value",

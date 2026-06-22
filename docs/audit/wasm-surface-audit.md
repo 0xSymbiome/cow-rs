@@ -1,7 +1,7 @@
 # WASM Surface Audit
 
 Status: Current
-Last reviewed: 2026-06-20
+Last reviewed: 2026-06-22
 Owning surface: the `cow-sdk-wasm` TypeScript-callable crate, its npm package layout/exports, the JavaScript callback runtime boundary, DTO/type generation, schema-versioned envelopes, the size-budget gate, unsupported-target diagnostics, and the deterministic browser test runner.
 Refresh trigger: Changes to `crates/wasm/src/**`, exported DTOs or `tsify` usage, wasm-pack targets, declaration/facade snapshots, package export maps, callback shapes or registry ownership, the `JsCallbackHttpTransport` contract, transport-policy or error-envelope schema, release-profile size settings or measured budgets, native Alloy adapter `wasm32` guards, or the wasm-pack browser lanes.
 Related docs:
@@ -38,7 +38,7 @@ bundler behavior.
 | Workflow + capability coverage | The ADR 0039 / `docs/parity.md` workflow set is exposed; every non-surfaced native capability is classified with a rationale | Conforms / Documented |
 | Runtime-model boundary | The wasm32 tree excludes native Alloy adapters, reqwest, and hyper; no Rust signer broadcasts and no provider polls | Conforms |
 | Shape correspondence | Native types/signatures map to the WASM DTO + TS surface through a fixed transform set; divergences beyond it are enumerated | Documented |
-| Wallet/signer callbacks | Typed-data, EIP-1193, digest, and custom EIP-1271 callbacks are named, explicit, capability-scoped, and fail closed | Conforms |
+| Wallet/signer callbacks | Typed-data, digest, and custom EIP-1271 callbacks are named, explicit, capability-scoped, and fail closed | Conforms |
 | HTTP callback transport | `JsCallbackHttpTransport` owns timeout, abort signal, internal callback retention, and typed error mapping | Conforms |
 | Event decoding | `decodeSettlementLog` / `decodeEthFlowLog` produce typed events with no network access and fail closed on malformed input | Conforms |
 | Type generation + snapshots | Cross-ABI DTOs are `tsify`-generated; one raw snapshot per flavor catches drift and asserts per-target agreement; a facade-coverage contract holds the hand-written facade in step with the raw surface; map fields declare `Record<...>` to match the runtime shape | Conforms |
@@ -63,8 +63,8 @@ reimplemented:
    provider-free, fail-closed `decodeSettlementLog` / `decodeEthFlowLog`
    event-log decoders (they reconstruct borrowed log bytes and dispatch to the
    `cow-sdk-contracts` decoders without network access).
-2. **Wallet-callback signing** — typed-data, EIP-1193, digest, EIP-1271, and
-   custom EIP-1271 order signing; cancellation signing; and the pre-sign and
+2. **Wallet-callback signing** — typed-data, digest, EIP-1271, and custom
+   EIP-1271 order signing; cancellation signing; and the pre-sign and
    cancellation transaction builders.
 3. **Service clients** — `OrderBookClient`, `SubgraphClient`, and `IpfsClient`
    over default or callback HTTP.
@@ -111,7 +111,7 @@ pair detection and display. `buildSellNativeCurrencyTxFromQuote` is the
 native-sell sibling of `postSwapOrderFromQuote`: it derives the EthFlow
 transaction from a `getQuote` result, failing closed when the quote was not a
 native-currency sell. Signing surfaces typed-data,
-EIP-1193, digest, EIP-1271, and cancellation signing plus the deterministic
+digest, EIP-1271, and cancellation signing plus the deterministic
 helpers. App-data, subgraph (totals, daily/hourly volume, arbitrary GraphQL),
 and the consumer-relevant contracts surface (decoders, deployment lookup,
 builder calldata) are surfaced.
@@ -162,11 +162,11 @@ misclassification.
 ### Callback boundary
 
 The package exposes named, capability-scoped callbacks rather than raw provider
-objects: `TypedDataSignerCallback`, `Eip1193RequestCallback`,
-`DigestSignerCallback`, `CustomEip1271Callback`, `CowFetchCallback`, and the
-trading-flavor `ContractReadCallback` (the read-only `eth_call` used by the
-allowance read); each receives a typed payload/request DTO and may return a
-value, Promise, or thenable. Each signing/cancellation function requests only the callback it needs.
+objects: `TypedDataSignerCallback`, `DigestSignerCallback`,
+`CustomEip1271Callback`, `CowFetchCallback`, and the trading-flavor
+`ContractReadCallback` (the read-only `eth_call` used by the allowance read);
+each receives a typed payload/request DTO and may return a value, Promise, or
+thenable. Each signing/cancellation function requests only the callback it needs.
 When a cow identity newtype (`Address`, `Hash32`, `AppDataHash`, `HexData`,
 `OrderUid`) or the `Amount` newtype crosses the boundary, the ABI shape is the
 canonical lowercase `0x`-hex string (identity) or strict-decimal string
@@ -227,7 +227,7 @@ compile-time native-only diagnostic is emitted by the `cow-sdk` facade
 `alloy-signer` features are enabled on `wasm32-unknown-unknown`. CI asserts all
 three facade features fail on wasm and treats a successful wasm build as a
 failure. The documented browser path for wallet
-signing is the `cow-sdk-wasm` EIP-1193 callback surface plus consumer-supplied
+signing is the `cow-sdk-wasm` typed callback surface plus consumer-supplied
 EIP-1193 provider reads. Residual risk: future upstream Alloy releases may add
 browser-compatible provider components; until a separate browser-provider design
 is accepted and tested, these adapters stay unsupported on wasm.
@@ -324,7 +324,7 @@ Primary regression coverage:
 - `crates/wasm/tests/wasm_facade_snapshot_contract.rs` (`facade_declarations_match_flavour_matrix`, `facade_declarations_hide_raw_wasm_bindgen_surface`, `facade_declarations_expose_dispose_and_named_callback_types`)
 - `crates/wasm/tests/wasm_envelope_contract.rs` (`envelope_serializes_schema_version_and_payload`, `envelope_preserves_unknown_schema_sentinel`)
 - `crates/wasm/tests/wasm_error_abi_contract.rs` (`invalid_input_variant_round_trips`, `unknown_enum_variant_round_trips`, `unknown_sentinel_round_trips_raw_payload`)
-- `crates/wasm/tests/wasm_callback_contract.rs` (`wallet_config_timeout_rejects_pending_signer_callback`, `typed_cancellation_signer_returns_order_uids`, `eip1193_cancellation_callback_shape_is_stable`)
+- `crates/wasm/tests/wasm_callback_contract.rs` (`wallet_config_timeout_rejects_pending_signer_callback`, `typed_cancellation_signer_returns_order_uids`, `signer_rejection_redacts_provider_message`)
 - `crates/wasm/tests/wasm_callback_lifetime_contract.rs::client_owned_callback_survives_until_request_resolves`
 - `crates/wasm/tests/wasm_callback_transport_contract.rs`
 - `crates/wasm/tests/wasm_cancellation_contract.rs` (`abort_bridge_removes_listener_after_{success,callback_throw,callback_reject,parse_error,timeout_overflow}`)

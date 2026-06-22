@@ -154,18 +154,6 @@ pub struct SignedOrderDto {
     pub quote_id: Option<i64>,
 }
 
-/// EIP-1193 request DTO.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Tsify)]
-#[tsify(into_wasm_abi, from_wasm_abi)]
-#[serde(rename_all = "camelCase")]
-pub struct Eip1193Request {
-    /// Provider method.
-    pub method: String,
-    /// Provider params.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub params: Option<Vec<Value>>,
-}
-
 /// Custom EIP-1271 callback request.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
@@ -194,13 +182,4 @@ pub struct SignedCancellationsInput {
     pub signature: String,
     /// ECDSA signing scheme.
     pub signing_scheme: String,
-}
-
-pub fn typed_data_json(payload: &TypedDataEnvelopeDto) -> Value {
-    serde_json::json!({
-        "domain": payload.domain,
-        "types": payload.types,
-        "primaryType": payload.primary_type,
-        "message": payload.message,
-    })
 }

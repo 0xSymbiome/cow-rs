@@ -72,10 +72,10 @@ surface that covers their workflow.
 
 | Flavor | Public import | Raw wasm | Brotli | Gzip | Release gate |
 | --- | --- | ---: | ---: | ---: | --- |
-| default | `@symbiome-forge/cow-sdk-wasm` | 1.63 MiB | 512 KiB | 691 KiB | 3.3 MiB raw / 900 KiB brotli |
-| orderbook | `@symbiome-forge/cow-sdk-wasm/orderbook` | 1.02 MiB | 338 KiB | 445 KiB | 1.5 MiB raw / 500 KiB brotli |
-| signing | `@symbiome-forge/cow-sdk-wasm/signing` | 0.31 MiB | 120 KiB | 143 KiB | 0.9 MiB raw / 300 KiB brotli |
-| trading | `@symbiome-forge/cow-sdk-wasm/trading` | 1.54 MiB | 489 KiB | 657 KiB | 3.2 MiB raw / 850 KiB brotli / 3,000,000 B gzip (warn at 2,700,000 B) |
+| default | `@symbiome-forge/cow-sdk-wasm` | 1.62 MiB | 508 KiB | 687 KiB | 3.3 MiB raw / 900 KiB brotli |
+| orderbook | `@symbiome-forge/cow-sdk-wasm/orderbook` | 1.01 MiB | 335 KiB | 442 KiB | 1.5 MiB raw / 500 KiB brotli |
+| signing | `@symbiome-forge/cow-sdk-wasm/signing` | 0.29 MiB | 108 KiB | 130 KiB | 0.9 MiB raw / 300 KiB brotli |
+| trading | `@symbiome-forge/cow-sdk-wasm/trading` | 1.53 MiB | 486 KiB | 654 KiB | 3.2 MiB raw / 850 KiB brotli / 3,000,000 B gzip (warn at 2,700,000 B) |
 
 The raw and compressed measurements above come from the current package build
 pipeline after optimization. The gate values are enforced per flavor so the

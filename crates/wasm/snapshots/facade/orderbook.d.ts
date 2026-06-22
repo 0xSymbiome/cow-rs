@@ -2,7 +2,7 @@
 import * as raw from "./raw/orderbook.js";
 import type { WasmEnvelope } from "./envelope.js";
 import type { CommonClientConfig, SdkClientOptions, SigningOptions } from "./options.js";
-import type { CustomEip1271Callback, DigestSignerCallback, Eip1193RequestCallback, TypedDataSignerCallback } from "./callbacks.js";
+import type { CustomEip1271Callback, DigestSignerCallback, TypedDataSignerCallback } from "./callbacks.js";
 export interface OrderBookClientConfig extends CommonClientConfig {
 }
 /**
@@ -57,18 +57,16 @@ export declare function domainSeparator(chainId: number): string;
 export declare function eip1271SignaturePayload(input: raw.OrderInput, ecdsaSignature: string): WasmEnvelope<string>;
 export declare function orderTypedData(input: raw.OrderInput, chainId: number): WasmEnvelope<raw.TypedDataEnvelopeDto>;
 export declare function signCancellationEthSignDigest(orderUids: string[], chainId: number, digestSigner: DigestSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<raw.SignedCancellationsInput>>;
-export declare function signCancellationWithEip1193(orderUids: string[], chainId: number, owner: string, requestCallback: Eip1193RequestCallback, options?: SigningOptions | null): Promise<WasmEnvelope<raw.SignedCancellationsInput>>;
 export declare function signCancellationWithTypedDataSigner(orderUids: string[], chainId: number, typedDataSigner: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<raw.SignedCancellationsInput>>;
 export declare function signOrderEthSignDigest(input: raw.OrderInput, chainId: number, owner: string, digestSigner: DigestSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<raw.SignedOrderDto>>;
 export declare function signOrderWithCustomEip1271(input: raw.OrderInput, chainId: number, owner: string, customCallback: CustomEip1271Callback, options?: SigningOptions | null): Promise<WasmEnvelope<raw.SignedOrderDto>>;
-export declare function signOrderWithEip1193(input: raw.OrderInput, chainId: number, owner: string, requestCallback: Eip1193RequestCallback, options?: SigningOptions | null): Promise<WasmEnvelope<raw.SignedOrderDto>>;
 export declare function signOrderWithEip1271(input: raw.OrderInput, chainId: number, owner: string, typedDataSigner: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<raw.SignedOrderDto>>;
 export declare function signOrderWithTypedDataSigner(input: raw.OrderInput, chainId: number, owner: string, typedDataSigner: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<raw.SignedOrderDto>>;
 export declare function supportedChainIds(): Uint32Array;
 export declare function wasmVersion(): string;
 export declare function wrappedNativeToken(chainId: number): WasmEnvelope<raw.WrappedNativeTokenDto>;
-export type { AppDataObjectDto, CompetitionAuctionDto, CompetitionOrderStatusDto, CompetitionOrderStatusKindDto, CowEip1271SignRequest, DeploymentAddressesDto, Eip1193Request, EthFlowEventDto, EthflowDataDto, EventLogInput, ExecutedAmountsDto, ExecutedProtocolFeeDto, GeneratedOrderUidDto, InteractionDataDto, NativePriceResponseDto, OnchainOrderDataDto, OrderClassDto, OrderCreationInput, OrderDto, OrderInput, OrderInteractionsDto, OrderKindDto, OrderQuoteRequestInput, OrderQuoteResponseDto, OrderStatusDto, OrderTraderParametersInput, PaginationOptions, QuoteDataDto, SettlementEventDto, SignedCancellationsInput, SignedOrderDto, SigningSchemeDto, SolverCompetitionOrderDto, SolverCompetitionResponseDto, SolverExecutionDto, SolverSettlementDto, StoredOrderQuoteDto, TokenBalanceDto, TotalSurplusDto, TradeDto, TradesQueryInput, TransactionRequestDto, TypedDataDomainDto, TypedDataEnvelopeDto, TypedDataFieldDto, WrappedNativeTokenDto } from "./raw/orderbook.js";
-export type { CowEip1271SignCallback, CowEnv, CustomEip1271Callback, DigestSignerCallback, Eip1193RequestCallback, TypedDataSignerCallback } from "./callbacks.js";
+export type { AppDataObjectDto, CompetitionAuctionDto, CompetitionOrderStatusDto, CompetitionOrderStatusKindDto, CowEip1271SignRequest, DeploymentAddressesDto, EthFlowEventDto, EthflowDataDto, EventLogInput, ExecutedAmountsDto, ExecutedProtocolFeeDto, GeneratedOrderUidDto, InteractionDataDto, NativePriceResponseDto, OnchainOrderDataDto, OrderClassDto, OrderCreationInput, OrderDto, OrderInput, OrderInteractionsDto, OrderKindDto, OrderQuoteRequestInput, OrderQuoteResponseDto, OrderStatusDto, OrderTraderParametersInput, PaginationOptions, QuoteDataDto, SettlementEventDto, SignedCancellationsInput, SignedOrderDto, SigningSchemeDto, SolverCompetitionOrderDto, SolverCompetitionResponseDto, SolverExecutionDto, SolverSettlementDto, StoredOrderQuoteDto, TokenBalanceDto, TotalSurplusDto, TradeDto, TradesQueryInput, TransactionRequestDto, TypedDataDomainDto, TypedDataEnvelopeDto, TypedDataFieldDto, WrappedNativeTokenDto } from "./raw/orderbook.js";
+export type { CowEnv, CustomEip1271Callback, DigestSignerCallback, TypedDataSignerCallback } from "./callbacks.js";
 export { CowError, isCowError, isRetryable, isUserRejection, normalizeError, retryAfterMs } from "./errors.js";
 export type { CowErrorData, OrderBookErrorType, OrderBookRejectionCategory } from "./errors.js";
 export { withRetry } from "./retry.js";

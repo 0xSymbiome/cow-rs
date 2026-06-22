@@ -101,5 +101,5 @@ repository; each carries its own README and `pnpm test` check.
   Worker integration.
 - Use `cow-sdk-subgraph` examples when you need read-only subgraph access.
 - For browser-wallet trade flows, integrate the `cow-sdk-wasm` package with your
-  app's own wallet stack (viem, wagmi, or any EIP-1193 provider); the SDK exposes
-  the EIP-1193 request callback and the host supplies the wallet connection.
+  app's own wallet stack (viem, wagmi, or any EIP-1193 provider); the host wraps its
+  EIP-1193 provider into the SDK's typed-data signer callback to supply the wallet connection.

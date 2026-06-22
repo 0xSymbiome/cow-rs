@@ -193,7 +193,7 @@ here until the explicit app-data metadata translation boundary.
 Browser and wallet integration for JavaScript and TypeScript consumers is
 served by the `cow-sdk-wasm` package together with the host application's own
 wallet stack (viem, wagmi, or any EIP-1193 provider). The SDK owns the
-EIP-1193 request-callback boundary and the TypeScript-callable wasm surface;
+typed callback boundary and the TypeScript-callable wasm surface;
 the host application supplies the wallet connection, chain authority, and user
 prompts. Deterministic proof for the wasm surface comes from the host-side
 helper tests, the headless `wasm-pack` browser lane, and the TypeScript

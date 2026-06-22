@@ -22,8 +22,8 @@ free of transport plumbing.
 The default `cow-sdk` facade remains provider-neutral. Native Alloy support is
 explicitly enabled by feature or direct crate dependency and is not available
 on `wasm32-unknown-unknown`; browser applications use the `cow-sdk-wasm` package
-to bridge signing and RPC access to the host wallet through the EIP-1193 request
-callback.
+to bridge signing and RPC access to the host wallet by wrapping its EIP-1193
+provider into the typed-data signer callback.
 
 ## Umbrella Client
 

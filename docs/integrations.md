@@ -61,7 +61,7 @@ The root facade exposes matching features named `alloy-provider`,
 `alloy-signer`, and `alloy`. These features are native-only and hard-fail on
 `wasm32-unknown-unknown`; browser integrations use the `cow-sdk-wasm` package
 together with the host app's own wallet stack (viem, wagmi, or any EIP-1193
-provider) through the SDK's EIP-1193 request callback.
+provider) by wrapping its EIP-1193 provider into the typed-data signer callback.
 
 ## Composable Deferral And COW Shed
 
@@ -152,8 +152,8 @@ within the Workers compressed-size budget).
 
 `cow-sdk-wasm` exposes the SDK to JavaScript through typed callbacks rather
 than a bundled wallet or HTTP library. It names five host callbacks:
-`TypedDataSignerCallback`, `Eip1193RequestCallback`, `DigestSignerCallback`,
-`CustomEip1271Callback`, and `CowFetchCallback`. The callback HTTP transport
+`TypedDataSignerCallback`, `DigestSignerCallback`, `CustomEip1271Callback`,
+`ContractReadCallback`, and `CowFetchCallback`. The callback HTTP transport
 uses SDK-owned timeout and a live `AbortSignal`, while the host runtime owns
 actual network dispatch.
 
@@ -185,9 +185,9 @@ An async signer owns:
 - gas estimation via `estimate_gas`
 
 For browser integrations, the `cow-sdk-wasm` package bridges `Signer` to the
-host wallet through the EIP-1193 request callback. Native key-store adapters
-such as `cow-sdk-alloy-signer` implement `Signer` against their own private-key
-backend.
+host wallet by wrapping its EIP-1193 provider into the typed-data signer
+callback. Native key-store adapters such as `cow-sdk-alloy-signer` implement
+`Signer` against their own private-key backend.
 
 ### `Provider`
 

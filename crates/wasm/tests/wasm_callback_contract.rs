@@ -4,8 +4,8 @@ mod common;
 
 use cow_sdk_wasm::exports::{
     SigningOptions, compute_order_uid, sign_cancellation_eth_sign_digest,
-    sign_cancellation_with_eip1193, sign_cancellation_with_typed_data_signer,
-    sign_order_eth_sign_digest, sign_order_with_eip1193, sign_order_with_typed_data_signer,
+    sign_cancellation_with_typed_data_signer, sign_order_eth_sign_digest,
+    sign_order_with_typed_data_signer,
 };
 use js_sys::{Function, Object, Reflect};
 use serde_json::Value;
@@ -116,69 +116,42 @@ async fn typed_data_signer_normalizes_modern_v_signatures() {
 }
 
 #[wasm_bindgen_test]
-async fn eip1193_request_uses_eth_sign_typed_data_v4() {
-    let provider = callback(
-        "request",
-        &format!(
-            "globalThis.__cowRequest = request; return Promise.resolve('{}');",
-            ECDSA_SIGNATURE
-        ),
-    );
-    let signed = json(
-        sign_order_with_eip1193(
-            wasm_order_input(),
-            CHAIN_MAINNET,
-            ADDR_OWNER.to_owned(),
-            provider,
-            None,
-        )
-        .await
-        .unwrap(),
-    );
-    let request = json(js_sys::eval("globalThis.__cowRequest").unwrap());
-
-    assert_eq!(request["method"], "eth_signTypedData_v4");
-    assert_eq!(request["params"][0], ADDR_OWNER);
-    assert_eq!(signed["value"]["signingScheme"], "eip712");
-}
-
-#[wasm_bindgen_test]
-async fn eip1193_throw_maps_to_wallet_error() {
-    let provider = callback(
-        "request",
+async fn signer_throw_preserves_provider_code_as_wallet_error() {
+    let signer = callback(
+        "envelope",
         "const err = new Error('provider denied request'); err.code = 4001; throw err;",
     );
-    let error = sign_order_with_eip1193(
+    let error = sign_order_with_typed_data_signer(
         wasm_order_input(),
         CHAIN_MAINNET,
         ADDR_OWNER.to_owned(),
-        provider,
+        signer,
         None,
     )
     .await
-    .expect_err("provider throw must fail");
+    .expect_err("callback throw must fail");
     let value = json(error);
 
     assert_eq!(value["kind"], "walletRequest");
-    assert_eq!(value["method"], "eth_signTypedData_v4");
+    assert_eq!(value["method"], "signTypedData");
     assert_eq!(value["code"], 4001);
 }
 
 #[wasm_bindgen_test]
-async fn eip1193_rejection_maps_to_wallet_error() {
-    let provider = callback(
-        "request",
+async fn signer_rejection_redacts_provider_message() {
+    let signer = callback(
+        "envelope",
         "return Promise.reject(Object.assign(new Error('async denial'), { code: 4900 }));",
     );
-    let error = sign_order_with_eip1193(
+    let error = sign_order_with_typed_data_signer(
         wasm_order_input(),
         CHAIN_MAINNET,
         ADDR_OWNER.to_owned(),
-        provider,
+        signer,
         None,
     )
     .await
-    .expect_err("provider rejection must fail");
+    .expect_err("callback rejection must fail");
     let value = json(error);
 
     assert_eq!(value["kind"], "walletRequest");
@@ -318,34 +291,6 @@ async fn typed_cancellation_signer_returns_order_uids() {
 
     assert_eq!(envelope["primaryType"], "OrderCancellations");
     assert_eq!(signed["value"]["orderUids"][0], order_uid);
-    assert_eq!(signed["value"]["signingScheme"], "eip712");
-}
-
-#[wasm_bindgen_test]
-async fn eip1193_cancellation_callback_shape_is_stable() {
-    let order_uid = generated_order_uid();
-    let provider = callback(
-        "request",
-        &format!(
-            "globalThis.__cowCancelRequest = request; return '{}';",
-            ECDSA_SIGNATURE
-        ),
-    );
-    let signed = json(
-        sign_cancellation_with_eip1193(
-            vec![order_uid],
-            CHAIN_MAINNET,
-            ADDR_OWNER.to_owned(),
-            provider,
-            None,
-        )
-        .await
-        .unwrap(),
-    );
-    let request = json(js_sys::eval("globalThis.__cowCancelRequest").unwrap());
-
-    assert_eq!(request["method"], "eth_signTypedData_v4");
-    assert_eq!(request["params"][0], ADDR_OWNER);
     assert_eq!(signed["value"]["signingScheme"], "eip712");
 }
 

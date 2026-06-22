@@ -20,7 +20,7 @@
   return `None` for every variant because local-key signing cannot produce an
   EIP-1193 4xxx user rejection. A signer that surfaces EIP-1193 provider error
   codes — for example a host-supplied wallet reached through the `cow-sdk-wasm`
-  EIP-1193 request callback (ADR 0040) — returns the carried code from its
+  typed-data signer callback (ADR 0040) — returns the carried code from its
   user-rejection variant.
 - The helpers in `cow-sdk-signing` bound the signer's
   associated error on `fmt::Display + cow_sdk_core::UserRejection`.

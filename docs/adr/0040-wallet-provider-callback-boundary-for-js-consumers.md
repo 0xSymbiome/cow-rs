@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-05-09
-- Last reviewed: 2026-06-15
+- Last reviewed: 2026-06-22
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: wasm, wallet, provider, callback-boundary, eip1271
 - Related: [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), ADR 0007 (superseded by 0039/0040), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), ADR 0043 (superseded by 0039), [ADR 0045](0045-async-signer-trait-narrowing.md)
@@ -10,10 +10,17 @@
 ## Decision
 
 JavaScript wallet and HTTP runtime interop crosses `cow-sdk-wasm` through five
-typed callback shapes: `TypedDataSignerCallback`, `Eip1193RequestCallback`,
-`DigestSignerCallback`, `CustomEip1271Callback`, and `CowFetchCallback`.
-`signOrderWithCustomEip1271` is the smart-account entry point for callers that
-need custom contract-wallet behavior.
+typed callback shapes: `TypedDataSignerCallback`, `DigestSignerCallback`,
+`CustomEip1271Callback`, `ContractReadCallback`, and `CowFetchCallback`. Signing
+exposes one entry per on-wire scheme — `TypedDataSignerCallback` for `eip712`
+(the primary path), `DigestSignerCallback` for `ethsign`, and
+`signOrderWithCustomEip1271` (`CustomEip1271Callback`) for smart-account
+`eip1271`. The SDK ships no raw EIP-1193 request signer: a host that holds only
+an EIP-1193 provider wraps it into `TypedDataSignerCallback` through
+`eth_signTypedData_v4`, keeping the provider-protocol detail at the host edge.
+Scheme fallback — a wallet that rejects typed data — is host-owned: the host
+chooses the entry point, falling back to the `eth_sign` digest entry for legacy
+or hardware wallets.
 
 Callback dispatch uses `Promise::resolve` so plain return values, native
 Promises, and thenables share the JavaScript `await` semantic. SDK-owned
@@ -27,16 +34,21 @@ types.
 ## Why
 
 Wallet and provider ecosystems move faster than the Rust SDK's stable public
-API. Typed callbacks keep the Rust contract language-agnostic while letting
-the host application decide whether a request goes through EIP-1193, a smart
-account client, custom fetch, or a service worker. The SDK still owns timeout,
-error typing, ECDSA recovery-byte normalization, and redaction before values
-cross the public error envelope.
+API. Typed callbacks keep the Rust contract language-agnostic while letting the
+host application own its wallet stack — a viem or ethers typed-data signer, an
+EIP-1193 provider it wraps, a smart-account client, custom fetch, or a service
+worker. Naming one callback per signing operation, rather than baking a specific
+provider protocol such as `eth_signTypedData_v4` request-shaping into the SDK,
+keeps that fast-moving detail at the host edge. The SDK still owns timeout, error
+typing, ECDSA recovery-byte normalization, and redaction before values cross the
+public error envelope.
 
 ## Must Remain True
 
 - Public surface: the callback names and payloads remain typed and documented;
-  raw wallet-library objects do not become SDK-owned Rust types.
+  raw wallet-library objects do not become SDK-owned Rust types. Signing exposes
+  one entry per on-wire scheme (`eip712`, `ethsign`, `eip1271`) and no raw
+  EIP-1193 request signer; scheme fallback is host-owned.
 - Runtime and support: ECDSA signatures normalize to legacy `27` / `28`
   recovery bytes; callback results are awaited through `Promise::resolve`;
   `AbortSignal` is passed by reference, not serialized.
@@ -54,6 +66,11 @@ cross the public error envelope.
   dependency and compatibility promise the Rust SDK should not own.
 - Expose only raw EIP-1193 requests: flexible, but it would make typed-data,
   digest, and EIP-1271 flows less reviewable.
+- Keep a dedicated raw EIP-1193 request signer alongside the typed-data signer:
+  it duplicates the `eip712` scheme behind a second shape and bakes
+  `eth_signTypedData_v4` request-shaping into the SDK — the host-edge concern
+  this ADR keeps out. A host with only a provider wraps it into the typed-data
+  callback instead.
 - Store callback functions inside Rust trait objects: compact, but it would
   couple `Send + Sync` Rust traits to JavaScript runtime handles.
 

@@ -23,7 +23,7 @@ rather than depending on this crate directly.
 | Layer | Surface | Purpose |
 | --- | --- | --- |
 | Pure helpers | `domainSeparator`, `orderTypedData`, `computeOrderUid`, app-data helpers, deployment helpers, supported-chain helpers, `wrappedNativeToken` | Deterministic protocol output without JavaScript runtime state |
-| Wallet callbacks | typed-data signer, EIP-1193 request, digest signer, custom EIP-1271 callbacks, cancellation signing | Host-owned wallet integration through typed callback shapes |
+| Wallet callbacks | typed-data signer, digest signer, custom EIP-1271 callbacks, cancellation signing | Host-owned wallet integration through typed callback shapes |
 | Clients | orderbook, subgraph, IPFS, and callback-fetch clients | CoW service access through default browser fetch or callback HTTP |
 | Trading facade | quote and post clients, including EIP-1271 posting, plus native `buildWrapTx` / `buildUnwrapTx` transaction builders | Higher-level trading flows over the same DTO and callback boundary |
 
@@ -31,11 +31,12 @@ rather than depending on this crate directly.
 
 The public callback boundary names the host responsibilities explicitly:
 
-- `TypedDataSignerCallback` signs canonical EIP-712 typed-data payloads.
-- `Eip1193RequestCallback` lets an injected or hosted provider answer
-  EIP-1193 requests.
+- `TypedDataSignerCallback` signs canonical EIP-712 typed-data payloads. A raw
+  EIP-1193 provider wraps into this callback through `eth_signTypedData_v4`.
 - `DigestSignerCallback` signs raw digests for explicit EthSign flows.
 - `CustomEip1271Callback` returns the final smart-account EIP-1271 signature.
+- `ContractReadCallback` runs a read-only `eth_call` (the trading flavour's
+  allowance read) and returns the ABI-decoded value.
 - `CowFetchCallback` dispatches HTTP for Node.js, Workers, Deno, and custom
   runtimes.
 

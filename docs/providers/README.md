@@ -22,7 +22,7 @@ boundary between the SDK and a caller-supplied signer or RPC backend:
 This directory documents shipped and custom adapter paths against those trait
 surfaces. Consumers who use `cow-sdk-trading` should pick the native Alloy
 adapter on native targets, or, on wasm, the `cow-sdk-wasm` package wired to the
-host's own EIP-1193 wallet through the request callback. Consumers
+host's own EIP-1193 wallet by wrapping it into the typed-data signer callback. Consumers
 building a generic Ethereum application without trading helpers should use
 Alloy directly; the adapter exists to wire native Alloy into the SDK's trading
 and signing contracts.
@@ -40,7 +40,7 @@ The SDK keeps provider ecosystems out of the default facade. Native Alloy
 support ships as explicit leaf crates, and other ecosystems can still integrate
 by implementing the same `cow-sdk-core` traits. For JavaScript and TypeScript
 runtimes, the `cow-sdk-wasm` package bridges those same traits to the host
-wallet through typed callbacks, including the EIP-1193 request callback.
+wallet through typed callbacks, including the typed-data signer callback.
 
 JavaScript and TypeScript consumers may use `cow-sdk-wasm` for specialized
 cases: deterministic Rust signing parity, single-source-of-truth Rust +

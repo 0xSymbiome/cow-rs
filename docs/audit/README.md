@@ -76,7 +76,7 @@ record alone.
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [WASM Surface Audit](wasm-surface-audit.md) | Standing audit | `cow-sdk-wasm` TypeScript-callable crate, npm package, and runtime boundary | Surface/exports, capability coverage, type generation and schema versioning, the callback boundary, facade architecture and API stability, the performance budget, unsupported-target diagnostics, and the deterministic browser runner | Current | 2026-06-20 |
+| [WASM Surface Audit](wasm-surface-audit.md) | Standing audit | `cow-sdk-wasm` TypeScript-callable crate, npm package, and runtime boundary | Surface/exports, capability coverage, type generation and schema versioning, the callback boundary, facade architecture and API stability, the performance budget, unsupported-target diagnostics, and the deterministic browser runner | Current | 2026-06-22 |
 
 ## Cross-Cutting Safety And Hygiene
 

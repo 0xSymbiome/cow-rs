@@ -11,15 +11,14 @@ use cow_sdk_signing::GeneratedOrderId;
 #[cfg(feature = "cancellation")]
 use cow_sdk_signing::order_cancellations_typed_data_payload;
 use js_sys::{Array, Function, Promise, Reflect};
-use serde_json::json;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::JsFuture;
 
 use crate::exports::{
     cancel::{ClientCallScope, SigningOptions, run_with_client_options, signing_wallet_timeout_ms},
     dto::{
-        Eip1193Request, OrderInput, SignedOrderDto, TypedDataEnvelopeDto, parse_chain, parse_order,
-        parse_owner, to_js_value, typed_data_json,
+        OrderInput, SignedOrderDto, TypedDataEnvelopeDto, parse_chain, parse_order, parse_owner,
+        to_js_value,
     },
     envelope::WasmEnvelope,
     errors::{JsResultExt, WasmError},
@@ -73,35 +72,6 @@ impl DigestSigner for JsDigestSigner {
     }
 }
 
-pub(crate) struct JsEip1193Requester {
-    callback: Function,
-    wallet_timeout_ms: Option<u32>,
-}
-
-impl JsEip1193Requester {
-    const fn new(callback: Function, wallet_timeout_ms: Option<u32>) -> Self {
-        Self {
-            callback,
-            wallet_timeout_ms,
-        }
-    }
-
-    async fn request(&self, method: &str, params: &[String]) -> Result<String, JsValue> {
-        let request = Eip1193Request {
-            method: method.to_owned(),
-            params: Some(params.iter().map(|param| json!(param)).collect()),
-        };
-        let value = to_js_value(&request)?;
-        await_callback_string(
-            &self.callback,
-            value,
-            "eth_signTypedData_v4",
-            self.wallet_timeout_ms,
-        )
-        .await
-    }
-}
-
 /// Signs an order through a typed-data callback.
 ///
 /// The SDK builds the EIP-712 typed-data envelope, passes it to the callback,
@@ -148,60 +118,6 @@ pub async fn sign_order_with_typed_data_signer(
             .await
         },
     )
-    .await
-}
-
-/// Signs an order through an EIP-1193 request callback.
-///
-/// The callback receives an `eth_signTypedData_v4` request object with owner
-/// address and serialized typed data. This is the bridge for injected wallets
-/// and wallet-client libraries that expose an EIP-1193-style request function.
-///
-/// @param input Unsigned order fields to sign.
-/// @param chainId EVM chain id used for the EIP-712 domain.
-/// @param owner Owner address used in the wallet request and order UID.
-/// @param requestCallback Callback that executes the EIP-1193 request.
-/// @param options Optional cancellation, timeout, and wallet timeout settings.
-/// @returns A versioned envelope containing the signed order.
-/// @throws CowError for invalid input, wallet failure, timeout, or cancellation.
-#[wasm_bindgen(
-    js_name = "signOrderWithEip1193",
-    unchecked_return_type = "WasmEnvelope<SignedOrderDto>"
-)]
-pub async fn sign_order_with_eip1193(
-    input: OrderInput,
-    #[wasm_bindgen(js_name = chainId)] chain_id: u32,
-    owner: String,
-    #[wasm_bindgen(js_name = requestCallback, unchecked_param_type = "Eip1193RequestCallback")]
-    request_callback: Function,
-    #[wasm_bindgen(js_name = options)] options: Option<SigningOptions>,
-) -> Result<JsValue, JsValue> {
-    super::traced("wasm.signing.sign_order_with_eip1193", async move {
-        let options = options.as_ref().map(AsRef::as_ref);
-        let scope = ClientCallScope::new(options)?;
-        let wallet_timeout_ms = signing_wallet_timeout_ms(options)?;
-        run_with_client_options(scope, async move {
-            let order = parse_order(input.clone())?;
-            let chain = parse_chain(chain_id)?;
-            let owner_address = parse_owner(&owner)?;
-            let payload = pure::signing::order_typed_data_payload(chain, &order).map_js()?;
-            let typed_data = TypedDataEnvelopeDto::from_payload(&payload)?;
-            let typed_data_string =
-                serde_json::to_string(&typed_data_json(&typed_data)).map_js()?;
-            let requester = JsEip1193Requester::new(request_callback, wallet_timeout_ms);
-            let signature = requester
-                .request(
-                    "eth_signTypedData_v4",
-                    &[owner_address.to_hex_string(), typed_data_string],
-                )
-                .await?;
-            let signature = normalize_signature(&signature)?;
-            let signed =
-                build_signed_order(input, chain, owner_address, typed_data, signature, "eip712")?;
-            to_js_value(&WasmEnvelope::v1(signed))
-        })
-        .await
-    })
     .await
 }
 
@@ -362,59 +278,6 @@ pub async fn sign_cancellation_with_typed_data_signer(
             .await
         },
     )
-    .await
-}
-
-/// Signs cancellation typed data through an EIP-1193 callback.
-///
-/// The callback receives an `eth_signTypedData_v4` request object. Use this
-/// helper when an injected wallet or wallet client owns typed-data signing.
-///
-/// @param orderUids One or more full order UIDs to cancel.
-/// @param chainId EVM chain id used for the cancellation domain.
-/// @param owner Owner address included in the EIP-1193 request parameters.
-/// @param requestCallback Callback that executes the EIP-1193 request.
-/// @param options Optional cancellation, timeout, and wallet timeout settings.
-/// @returns A versioned envelope containing signed cancellations.
-/// @throws CowError for invalid input, wallet failure, timeout, or cancellation.
-#[cfg(feature = "cancellation")]
-#[wasm_bindgen(
-    js_name = "signCancellationWithEip1193",
-    unchecked_return_type = "WasmEnvelope<SignedCancellationsInput>"
-)]
-pub async fn sign_cancellation_with_eip1193(
-    #[wasm_bindgen(js_name = orderUids)] order_uids: Vec<String>,
-    #[wasm_bindgen(js_name = chainId)] chain_id: u32,
-    owner: String,
-    #[wasm_bindgen(js_name = requestCallback, unchecked_param_type = "Eip1193RequestCallback")]
-    request_callback: Function,
-    #[wasm_bindgen(js_name = options)] options: Option<SigningOptions>,
-) -> Result<JsValue, JsValue> {
-    super::traced("wasm.signing.sign_cancellation_with_eip1193", async move {
-        let options = options.as_ref().map(AsRef::as_ref);
-        let scope = ClientCallScope::new(options)?;
-        let wallet_timeout_ms = signing_wallet_timeout_ms(options)?;
-        run_with_client_options(scope, async move {
-            let owner = parse_owner(&owner)?;
-            let (uids, payload, _digest) = cancellation_payload(order_uids, chain_id)?;
-            let envelope = TypedDataEnvelopeDto::from_payload(&payload)?;
-            let typed_data_string = serde_json::to_string(&typed_data_json(&envelope)).map_js()?;
-            let requester = JsEip1193Requester::new(request_callback, wallet_timeout_ms);
-            let signature = requester
-                .request(
-                    "eth_signTypedData_v4",
-                    &[owner.to_hex_string(), typed_data_string],
-                )
-                .await?;
-            let signature = normalize_signature(&signature)?;
-            to_js_value(&WasmEnvelope::v1(SignedCancellationsInput {
-                order_uids: uid_strings(&uids),
-                signature,
-                signing_scheme: "eip712".to_owned(),
-            }))
-        })
-        .await
-    })
     .await
 }
 

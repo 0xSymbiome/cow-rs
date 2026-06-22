@@ -153,7 +153,7 @@ than presented as hard caps:
   body before the SDK sees it; the SDK refuses an oversized body but cannot
   prevent the JavaScript layer from allocating it. The callback contract is the
   place to impose a body limit before materialization.
-- A host wallet reached through the EIP-1193 request callback returns data the
+- A host wallet reached through the typed-data signer callback returns data the
   wallet has already materialized; the SDK imposes no response-byte cap on that
   boundary.
 - The IPFS read is byte-bounded but, by default, not time-bounded.

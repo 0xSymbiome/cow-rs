@@ -104,7 +104,7 @@ post-state root into a success value.
 This crate's modules are `cfg`'d out on `wasm32` targets, so it compiles to an
 empty library there. JavaScript and TypeScript hosts targeting the browser
 should use the `cow-sdk-wasm` package, supplying their own wallet across its
-EIP-1193 request-callback boundary and reaching RPC through the host's own
+typed callback boundary and reaching RPC through the host's own
 provider.
 
 The crate is excluded from the wasm dependency tree, so its native Alloy HTTP

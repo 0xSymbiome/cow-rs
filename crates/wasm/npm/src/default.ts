@@ -23,7 +23,6 @@ import type {
   ContractReadCallback,
   CustomEip1271Callback,
   DigestSignerCallback,
-  Eip1193RequestCallback,
   TypedDataSignerCallback
 } from "./callbacks.js";
 
@@ -593,18 +592,6 @@ export function signCancellationEthSignDigest(
   );
 }
 
-export function signCancellationWithEip1193(
-  orderUids: string[],
-  chainId: number,
-  owner: string,
-  requestCallback: Eip1193RequestCallback,
-  options?: SigningOptions | null
-): Promise<WasmEnvelope<raw.SignedCancellationsInput>> {
-  return callAsync(() =>
-    raw.signCancellationWithEip1193(orderUids, chainId, owner, requestCallback, options ?? null)
-  );
-}
-
 export function signCancellationWithTypedDataSigner(
   orderUids: string[],
   chainId: number,
@@ -637,18 +624,6 @@ export function signOrderWithCustomEip1271(
 ): Promise<WasmEnvelope<raw.SignedOrderDto>> {
   return callAsync(() =>
     raw.signOrderWithCustomEip1271(input, chainId, owner, customCallback, options ?? null)
-  );
-}
-
-export function signOrderWithEip1193(
-  input: raw.OrderInput,
-  chainId: number,
-  owner: string,
-  requestCallback: Eip1193RequestCallback,
-  options?: SigningOptions | null
-): Promise<WasmEnvelope<raw.SignedOrderDto>> {
-  return callAsync(() =>
-    raw.signOrderWithEip1193(input, chainId, owner, requestCallback, options ?? null)
   );
 }
 
@@ -709,7 +684,6 @@ export type {
   CowEip1271SignRequest,
   CowEnvDto,
   DeploymentAddressesDto,
-  Eip1193Request,
   EthFlowEventDto,
   EthflowDataDto,
   EventLogInput,
@@ -769,11 +743,9 @@ export type {
 } from "./raw/default.js";
 export type {
   ContractReadCallback,
-  CowEip1271SignCallback,
   CowEnv,
   CustomEip1271Callback,
   DigestSignerCallback,
-  Eip1193RequestCallback,
   TypedDataSignerCallback
 } from "./callbacks.js";
 export { CowError, isCowError, isRetryable, isUserRejection, normalizeError, retryAfterMs } from "./errors.js";

@@ -42,7 +42,7 @@ cancellation helpers can use one native client.
 
 The Alloy adapter crates are native-only. On `wasm32-unknown-unknown`, the
 `cow-sdk-wasm` package bridges signing and RPC access to the host wallet through
-the EIP-1193 request callback instead.
+the typed-data signer callback instead.
 
 ## The `HttpTransport` Trait
 

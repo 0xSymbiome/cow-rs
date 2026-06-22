@@ -173,9 +173,9 @@ it wired into a full swap on the native/default transport path.
 
 JavaScript and TypeScript hosts that connect a wallet in the browser drive the
 `@symbiome-forge/cow-sdk-wasm` package with their own wallet stack (viem, wagmi,
-or any EIP-1193 provider). The wasm surface exposes the EIP-1193 request-callback
-boundary and explicit signing and HTTP callbacks; the host supplies the wallet
-connection.
+or any EIP-1193 provider). The wasm surface exposes typed signing and HTTP
+callbacks; the host wraps its provider into the typed-data signer and supplies the
+wallet connection.
 
 ## Crate Guide
 

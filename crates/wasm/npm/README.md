@@ -12,7 +12,7 @@ npm install @symbiome-forge/cow-sdk-wasm@alpha
 
 A TypeScript facade over deterministic Rust protocol logic: typed DTOs, explicit
 wallet and HTTP callbacks, per-call cancellation and timeouts, and
-flavor-specific imports — with no bundled wallet library.
+flavor-specific imports.
 
 ## Why this package
 
@@ -174,10 +174,22 @@ export default {
 
 ### Lower-level signing
 
-For control over an order you build yourself, sign through an EIP-1193 wallet with
-`signOrderWithEip1193(order, chainId, owner, (rpc) => ethereum.request(rpc))`, or
-hand a typed-data method directly to `signOrderWithTypedDataSigner`. Both resolve
-to an envelope whose `result.value` is the `SignedOrderDto` you submit with
+For control over an order you build yourself, hand a typed-data method to
+`signOrderWithTypedDataSigner` — with viem or ethers, the wallet's `signTypedData`.
+A raw EIP-1193 provider wraps into the same callback:
+
+```ts
+const typedDataSigner: TypedDataSignerCallback = (envelope) =>
+  provider.request({
+    method: "eth_signTypedData_v4",
+    params: [owner, JSON.stringify({
+      ...envelope,
+      domain: { ...envelope.domain, chainId: Number(envelope.domain.chainId) }
+    })]
+  });
+```
+
+The result is an envelope whose `value` is the `SignedOrderDto` you submit with
 `OrderBookClient.sendOrder`.
 
 ## The callback boundary
@@ -185,9 +197,8 @@ to an envelope whose `result.value` is the `SignedOrderDto` you submit with
 The package names host responsibilities as typed callbacks and never reaches past
 them for a key or a provider:
 
-- `TypedDataSignerCallback` — signs an EIP-712 typed-data envelope.
-- `Eip1193RequestCallback` — answers EIP-1193 requests from an injected or hosted
-  provider.
+- `TypedDataSignerCallback` — signs an EIP-712 typed-data envelope (wrap a viem or
+  ethers signer, or a raw EIP-1193 provider's `eth_signTypedData_v4`).
 - `DigestSignerCallback` — signs a raw digest for explicit EthSign flows.
 - `CustomEip1271Callback` — returns a smart-account's final EIP-1271 signature.
 - `ContractReadCallback` — performs a read-only `eth_call` and returns the

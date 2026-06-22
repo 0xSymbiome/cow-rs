@@ -61,8 +61,8 @@ crate.
 
 Browser and wallet integration is served to JavaScript and TypeScript
 consumers by the `cow-sdk-wasm` package together with the host app's own wallet
-stack (viem, wagmi, or any EIP-1193 provider). The SDK exposes the EIP-1193
-request callback and the host supplies the wallet connection.
+stack (viem, wagmi, or any EIP-1193 provider). The host wraps its EIP-1193
+provider into the SDK's typed-data signer callback to supply the wallet connection.
 
 Native Alloy support is additive as well. Use `cow-sdk-alloy-provider` for
 read-only RPC, `cow-sdk-alloy-signer` for local private-key signing, and
@@ -117,7 +117,7 @@ The canonical runtime-to-package routing table lives in the root README:
 [When to use cow-rs](../README.md#when-to-use-cow-rs).
 
 The WASM package keeps wallet libraries outside the Rust crate. Supply typed
-JavaScript callbacks for typed-data signing, EIP-1193 requests, digest signing,
+JavaScript callbacks for typed-data signing, digest signing,
 custom EIP-1271 signatures, and HTTP fetch dispatch.
 
 ## Step 1: Build A Ready-State `Trading`
@@ -551,7 +551,7 @@ That boundary is intentional.
 The examples above still do **not** claim:
 
 - live orderbook reachability
-- host-wallet integration through the EIP-1193 request callback
+- host-wallet integration through the typed-data signer callback
 - deployed WASM page correctness
 - runtime-specific provider integration
 
@@ -697,8 +697,8 @@ repository:
 - [`cow-gateway-cloudflare`](https://github.com/0xSymbiome/cow-sdk-examples/tree/main/examples/wasm/cow-gateway-cloudflare)
 
 For browser-wallet flows, integrate `cow-sdk-wasm` with your app's own wallet
-stack (viem, wagmi, or any EIP-1193 provider): the SDK exposes the EIP-1193
-request callback and the host supplies the wallet connection.
+stack (viem, wagmi, or any EIP-1193 provider): the host wraps its EIP-1193
+provider into the SDK's typed-data signer callback to supply the wallet connection.
 
 ### Environment-Sensitive Follow-Ons
 

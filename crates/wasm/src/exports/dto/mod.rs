@@ -54,8 +54,8 @@ pub use self::quote::QuoteResultsDto;
 #[cfg(any(feature = "cancellation", feature = "orderbook"))]
 pub use self::signing::SignedCancellationsInput;
 pub use self::signing::{
-    CowEip1271SignRequest, Eip1193Request, GeneratedOrderUidDto, SignedOrderDto,
-    TypedDataDomainDto, TypedDataEnvelopeDto, TypedDataFieldDto,
+    CowEip1271SignRequest, GeneratedOrderUidDto, SignedOrderDto, TypedDataDomainDto,
+    TypedDataEnvelopeDto, TypedDataFieldDto,
 };
 #[cfg(feature = "subgraph")]
 pub use self::subgraph::SubgraphQueryInput;
@@ -82,8 +82,6 @@ pub use self::transport::{
 pub(crate) use self::core::{parse_chain, parse_order, parse_owner};
 #[cfg(feature = "orderbook")]
 pub(crate) use self::orderbook::{ecdsa_signing_scheme, orderbook_signing_scheme};
-#[cfg(feature = "signing")]
-pub(crate) use self::signing::typed_data_json;
 #[cfg(feature = "transport-policy")]
 pub(crate) use self::transport::transport_policy_from_config;
 
