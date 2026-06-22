@@ -1,7 +1,6 @@
 use std::{fmt, sync::Arc};
 
 use crate::helpers as pure;
-use cow_sdk_contracts::eth_flow::{EthFlowOrderData, encode_create_order_calldata};
 use cow_sdk_core::transport::policy::TransportPolicy;
 use cow_sdk_core::{
     Address, Amount, BlockInfo, ContractCall, HexData, NATIVE_CURRENCY_ADDRESS, ProtocolOptions,
@@ -622,30 +621,18 @@ async fn trading_build_sell_native_currency_tx(
     let chain = parse_chain(chain_id)?;
     let env = pure::chains::env_from_str(env.as_deref()).map_js()?;
     let options = ProtocolOptions::new().with_env(env);
-    let eth_flow = cow_sdk_contracts::Registry::default()
-        .address(cow_sdk_contracts::ContractId::EthFlow, chain, env)
-        .ok_or_else(|| {
-            WasmError::invalid(
-                "chainId",
-                "EthFlow deployment is not available for this chain and environment",
-            )
-            .into_js()
-        })?;
-    let payload = EthFlowOrderData::from_unsigned_order(&order, quote_id).map_js()?;
-    let data = HexData::new(format!(
-        "0x{}",
-        alloy_primitives::hex::encode(encode_create_order_calldata(&payload))
-    ))
+    let unsigned = cow_sdk_contracts::ethflow_create_order_transaction(
+        &order,
+        quote_id,
+        chain,
+        Some(&options),
+    )
     .map_js()?;
     let generated = cow_sdk_trading::calculate_unique_order_id(chain, &order, None, Some(&options))
         .await
         .map_js()?;
-    let tx = TransactionRequest::new(
-        Some(eth_flow),
-        Some(data),
-        Some(order.sell_amount),
-        Some(default_gas_limit()?),
-    );
+    let mut tx = TransactionRequest::from(unsigned);
+    tx.gas_limit = Some(default_gas_limit()?);
     let result = BuiltSellNativeCurrencyTxDto {
         order_uid: generated.order_id.to_hex_string(),
         transaction: TransactionRequestDto::from(&tx),

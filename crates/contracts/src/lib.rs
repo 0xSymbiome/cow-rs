@@ -44,6 +44,8 @@ pub mod signature;
 /// Typed ERC-20 and wrapped-native (WETH9-family) token bindings and wrap /
 /// unwrap interaction helpers.
 pub mod tokens;
+/// Gas-free on-chain transaction builders with override-or-registry resolution.
+pub mod tx;
 /// Cache-aware EIP-1271 signature verification path.
 pub mod verify;
 
@@ -87,5 +89,10 @@ pub use signature::{
 pub use tokens::{
     IERC20, IWrappedNativeToken, unwrap_interaction, unwrap_transaction, wrap_interaction,
     wrap_transaction,
+};
+pub use tx::{
+    UnsignedTransaction, ethflow_create_order_transaction, invalidate_order_transaction,
+    pre_sign_transaction, resolve_contract_address, resolve_eth_flow_address,
+    resolve_settlement_address,
 };
 pub use verify::{Eip1271Cache, NoopEip1271Cache, verify_eip1271_signature_cached};

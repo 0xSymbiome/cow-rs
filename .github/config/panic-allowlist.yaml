@@ -33,9 +33,9 @@ allowed:
   - file: crates/signing/src/domain.rs
     item: domain
     reason: Canonical settlement address is guaranteed by the validated deployment registry.
-  - file: crates/trading/src/onchain.rs
-    item: resolve_contract_address
-    reason: Canonical contract address is guaranteed by the validated deployment registry.
+  - file: crates/trading/src/allowance.rs
+    item: resolve_vault_relayer
+    reason: The vault relayer is deployed on every supported chain/environment, so the validated deployment registry always resolves it.
   - file: crates/trading/src/onchain.rs
     item: default_gas_limit
     reason: Static gas limit literal is within the validated amount range.

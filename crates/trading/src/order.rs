@@ -285,12 +285,16 @@ pub async fn calculate_unique_order_id(
     let eth_flow_override = options
         .and_then(|opts| opts.eth_flow_contract_override.as_ref())
         .and_then(|override_map| override_map.get(&u64::from(chain_id)).copied());
-    let owner = crate::onchain::resolve_contract_address(
+    let owner = cow_sdk_contracts::resolve_contract_address(
         ContractId::EthFlow,
         eth_flow_override,
         chain_id,
         env,
-    );
+    )
+    .ok_or(cow_sdk_contracts::ContractsError::DeploymentNotFound {
+        contract: "eth-flow",
+        chain_id: u64::from(chain_id),
+    })?;
     let mut current = order.clone();
 
     let Some(checker) = checker else {

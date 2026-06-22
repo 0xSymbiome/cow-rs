@@ -1,12 +1,10 @@
 use cow_sdk_contracts::RecoverableSignature;
-#[cfg(feature = "cancellation")]
-use cow_sdk_contracts::{ContractId, Registry};
 use std::{cell::RefCell, rc::Rc};
 
 use crate::helpers as pure;
 use cow_sdk_core::{Address, DigestSigner};
 #[cfg(feature = "cancellation")]
-use cow_sdk_core::{Amount, Hash32, HexData, OrderUid, TransactionRequest};
+use cow_sdk_core::{Amount, Hash32, OrderUid, TransactionRequest};
 use cow_sdk_signing::GeneratedOrderId;
 #[cfg(feature = "cancellation")]
 use cow_sdk_signing::order_cancellations_typed_data_payload;
@@ -202,8 +200,11 @@ pub async fn sign_order_eth_sign_digest(
 )]
 pub fn build_presign_tx(params: OrderTraderParametersInput) -> Result<JsValue, JsValue> {
     let order_uid = OrderUid::new(params.order_uid.as_str()).map_js()?;
-    let calldata = cow_sdk_contracts::encode_set_pre_signature(&order_uid, true);
-    let tx = settlement_transaction(params, calldata)?;
+    let (chain, options) = settlement_options(&params)?;
+    let unsigned =
+        cow_sdk_contracts::pre_sign_transaction(&order_uid, chain, Some(&options)).map_js()?;
+    let mut tx = TransactionRequest::from(unsigned);
+    tx.gas_limit = Some(default_gas_limit()?);
     to_js_value(&WasmEnvelope::v1(TransactionRequestDto::from(&tx)))
 }
 
@@ -223,8 +224,12 @@ pub fn build_presign_tx(params: OrderTraderParametersInput) -> Result<JsValue, J
 )]
 pub fn build_cancel_order_tx(params: OrderTraderParametersInput) -> Result<JsValue, JsValue> {
     let order_uid = OrderUid::new(params.order_uid.as_str()).map_js()?;
-    let calldata = cow_sdk_contracts::encode_invalidate_order(&order_uid);
-    let tx = settlement_transaction(params, calldata)?;
+    let (chain, options) = settlement_options(&params)?;
+    let unsigned =
+        cow_sdk_contracts::invalidate_order_transaction(&order_uid, chain, Some(&options))
+            .map_js()?;
+    let mut tx = TransactionRequest::from(unsigned);
+    tx.gas_limit = Some(default_gas_limit()?);
     to_js_value(&WasmEnvelope::v1(TransactionRequestDto::from(&tx)))
 }
 
@@ -484,40 +489,38 @@ fn cancellation_payload(
     Ok((uids, payload, digest))
 }
 
+/// Builds the `(chain, protocol options)` pair for a settlement transaction from
+/// the trader DTO, carrying the per-chain settlement override into the shared
+/// `cow_sdk_contracts` resolver.
 #[cfg(feature = "cancellation")]
-fn settlement_transaction(
-    params: OrderTraderParametersInput,
-    calldata: Vec<u8>,
-) -> Result<TransactionRequest, JsValue> {
+fn settlement_options(
+    params: &OrderTraderParametersInput,
+) -> Result<
+    (
+        cow_sdk_core::SupportedChainId,
+        cow_sdk_core::ProtocolOptions,
+    ),
+    JsValue,
+> {
     let chain_id = params
         .chain_id
         .ok_or_else(|| WasmError::invalid("chainId", "chainId is required").into_js())?;
     let chain = parse_chain(chain_id)?;
     let env = pure::chains::env_from_str(params.env.as_deref()).map_js()?;
-    let settlement = params
+    let mut options = cow_sdk_core::ProtocolOptions::new().with_env(env);
+    if let Some(address) = params
         .settlement_contract_override
         .as_ref()
         .and_then(|overrides| overrides.get(&u64::from(chain_id)))
-        .map(|address| {
-            Address::new(address.clone()).map_err(|error| {
-                WasmError::invalid("settlementContractOverride", error.to_string()).into_js()
-            })
-        })
-        .transpose()?
-        .or_else(|| Registry::default().address(ContractId::Settlement, chain, env))
-        .ok_or_else(|| {
-            WasmError::invalid(
-                "chainId",
-                "settlement deployment is not available for this chain and environment",
-            )
-            .into_js()
+    {
+        let address = Address::new(address.clone()).map_err(|error| {
+            WasmError::invalid("settlementContractOverride", error.to_string()).into_js()
         })?;
-    Ok(TransactionRequest::new(
-        Some(settlement),
-        Some(HexData::from_bytes(calldata)),
-        Some(Amount::ZERO),
-        Some(default_gas_limit()?),
-    ))
+        let mut overrides = cow_sdk_core::AddressPerChain::new();
+        overrides.insert(u64::from(chain), address);
+        options = options.with_settlement_contract_override(overrides);
+    }
+    Ok((chain, options))
 }
 
 #[cfg(feature = "cancellation")]

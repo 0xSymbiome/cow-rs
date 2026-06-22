@@ -8,10 +8,17 @@
 
 ## Decision
 
-_Amended 2026-06-22: the pure `wrap_transaction` / `unwrap_transaction` builders and
-the `setPreSignature` / `invalidateOrder` call-data encoders now live in
-`cow-sdk-contracts` (re-exported, where applicable, from `cow-sdk-trading`); the
-paragraphs below reflect that placement._
+_Amended 2026-06-22: `cow-sdk-contracts` owns the complete gas-free on-chain
+transaction builders — `pre_sign_transaction`, `invalidate_order_transaction`, and
+`ethflow_create_order_transaction`, each returning a gas-free
+`UnsignedTransaction { to, data, value }` (the upstream services `eth::Tx` shape) —
+together with the shared override-or-registry target resolver
+(`resolve_contract_address`). `cow-sdk-trading` wraps these with signer-bound gas
+estimation and submission; `cow-sdk-wasm` surfaces them through its existing
+`buildPresignTx` / `buildCancelOrderTx` / `buildSellNativeCurrencyTx` exports. The
+pure `wrap_transaction` / `unwrap_transaction` builders and the `setPreSignature` /
+`invalidateOrder` call-data encoders also live in `cow-sdk-contracts`; the paragraphs
+below reflect that placement._
 
 The SDK ships one deterministic, single-call, parity-pinned builder for each
 on-chain transaction a trader sends directly: approve the vault relayer, wrap and
@@ -34,13 +41,22 @@ composition. The wasm `trading` surface mirrors the helpers as `buildWrapTx` /
 `buildUnwrapTx` and exposes `wrappedNativeToken(chainId)` for wrap-pair detection
 and display.
 
-The pure call-data encoders for the pre-sign and settlement-cancel steps —
-`encode_set_pre_signature` and `encode_invalidate_order`, over the `IGPv2Settlement`
-binding — are likewise canonical public helpers in `cow-sdk-contracts`. The
-signer-bound `pre_sign_transaction` / `onchain_cancel_order` builders in
-`cow-sdk-trading` and the wasm `buildPresignTx` / `buildCancelOrderTx` exports encode
-through them instead of re-deriving the call data, so one byte-locked source backs
-the settlement calldata across the native and browser surfaces.
+The pre-sign, settlement-cancel, and eth-flow native-sell steps build through the
+gas-free `cow-sdk-contracts` builders `pre_sign_transaction`,
+`invalidate_order_transaction`, and `ethflow_create_order_transaction` (over the
+`IGPv2Settlement` `encode_set_pre_signature` / `encode_invalidate_order` and
+`CoWSwapEthFlow` `createOrder` encoders). Each resolves its deployment through the
+shared override-or-registry resolver and returns a gas-free `UnsignedTransaction`
+mirroring the upstream services `eth::Tx` shape, leaving gas to the caller. The
+signer-bound `cow-sdk-trading` flows (`pre_sign_transaction`,
+`onchain_cancellation_transaction`, `eth_flow_transaction`) and the wasm
+`buildPresignTx` / `buildCancelOrderTx` / `buildSellNativeCurrencyTx` exports delegate
+the resolve-and-encode step to these builders — adding only signer-bound gas
+estimation, or the gas-defaulted wire DTO — so one byte-locked source backs the
+calldata and one resolver backs the target across the native and browser surfaces.
+The eth-flow on-chain cancellation is the sole exception: its orderbook-`Order`
+projection encoder stays in `cow-sdk-trading` (which sits above `cow-sdk-contracts`),
+so it delegates only the target resolution.
 
 ## Why
 
@@ -59,12 +75,16 @@ integrations. It belongs at the on-chain helper boundary, not re-derived beneath
 
 ## Must Remain True
 
-- Public surface: each on-chain trade step has one single-call transaction builder;
-  the pure `wrap_transaction` / `unwrap_transaction` builders live in
-  `cow-sdk-contracts` (re-exported from `cow-sdk-trading`), resolve the address from
-  the typed chain, and stay infallible; the `wrap_interaction` / `unwrap_interaction`
-  primitives and the `encode_set_pre_signature` / `encode_invalidate_order` settlement
-  call-data encoders stay public and parity-pinned.
+- Public surface: each on-chain trade step has one single-call transaction builder.
+  The complete gas-free builders (`pre_sign_transaction`,
+  `invalidate_order_transaction`, `ethflow_create_order_transaction`) and the shared
+  override-or-registry resolver live in `cow-sdk-contracts` and return a gas-free
+  `UnsignedTransaction`; the pure `wrap_transaction` / `unwrap_transaction` builders
+  live there too (re-exported from `cow-sdk-trading`) and stay infallible. The
+  `wrap_interaction` / `unwrap_interaction` primitives and the
+  `encode_set_pre_signature` / `encode_invalidate_order` settlement call-data encoders
+  stay public and parity-pinned. A missing deployment is a typed
+  `ContractsError::DeploymentNotFound`, never a panic.
 - Runtime and support: the helpers perform no I/O and add no orchestration,
   settlement, retry, or wallet management; native-currency selling continues to use
   eth-flow rather than a required manual wrap.

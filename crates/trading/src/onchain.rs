@@ -1,7 +1,4 @@
-use cow_sdk_contracts::eth_flow::{
-    EthFlowOrderData, encode_create_order_calldata, encode_invalidate_order_calldata,
-};
-use cow_sdk_contracts::{ContractId, Registry, encode_invalidate_order, encode_set_pre_signature};
+use cow_sdk_contracts::eth_flow::{EthFlowOrderData, encode_invalidate_order_calldata};
 use cow_sdk_core::{
     Address, AddressPerChain, Amount, HexData, ProtocolOptions, Signer, SupportedChainId,
     TransactionHash, TransactionRequest,
@@ -128,23 +125,14 @@ where
     S: Signer,
     S::Error: std::fmt::Display + cow_sdk_core::UserRejection,
 {
-    let settlement = resolve_settlement_address(chain_id, options);
-    let data = HexData::from_bytes(encode_set_pre_signature(order_uid, true));
-    let gas_limit = gas_limit_with_margin_or_default(
-        signer,
-        &TransactionRequest::new(
-            Some(settlement),
-            Some(data.clone()),
-            Some(Amount::ZERO),
-            None,
-        ),
-    )
-    .await?;
+    let unsigned = cow_sdk_contracts::pre_sign_transaction(order_uid, chain_id, options)?;
+    let gas_limit =
+        gas_limit_with_margin_or_default(signer, &TransactionRequest::from(&unsigned)).await?;
 
     Ok(PreparedTransaction::new(
-        settlement,
-        data,
-        Amount::ZERO,
+        unsigned.to,
+        unsigned.data,
+        unsigned.value,
         gas_limit,
     ))
 }
@@ -235,19 +223,24 @@ where
         Some(&options),
     )
     .await?;
-    let to = resolve_eth_flow_address(chain_id, Some(&options));
-    let data = HexData::new(encode_ethflow_create_order(&order_to_sign, quote_id)?)?;
-    let value = order_to_sign.sell_amount;
-    let gas_limit = gas_limit_with_margin_or_default(
-        signer,
-        &TransactionRequest::new(Some(to), Some(data.clone()), Some(value), None),
-    )
-    .await?;
+    let unsigned = cow_sdk_contracts::ethflow_create_order_transaction(
+        &order_to_sign,
+        quote_id,
+        chain_id,
+        Some(&options),
+    )?;
+    let gas_limit =
+        gas_limit_with_margin_or_default(signer, &TransactionRequest::from(&unsigned)).await?;
 
     Ok(EthFlowTransaction {
         order_id: generated.order_id,
         order_to_sign,
-        transaction: PreparedTransaction::new(to, data, value, gas_limit),
+        transaction: PreparedTransaction::new(
+            unsigned.to,
+            unsigned.data,
+            unsigned.value,
+            gas_limit,
+        ),
         from,
     })
 }
@@ -272,19 +265,20 @@ where
     S::Error: std::fmt::Display + cow_sdk_core::UserRejection,
 {
     let mut tx = if order.ethflow_data.is_some() {
+        let eth_flow = cow_sdk_contracts::resolve_eth_flow_address(chain_id, options).ok_or(
+            cow_sdk_contracts::ContractsError::DeploymentNotFound {
+                contract: "eth-flow",
+                chain_id: u64::from(chain_id),
+            },
+        )?;
         TransactionRequest::new(
-            Some(resolve_eth_flow_address(chain_id, options)),
+            Some(eth_flow),
             Some(HexData::new(encode_ethflow_invalidate_order(order)?)?),
             Some(Amount::ZERO),
             None,
         )
     } else {
-        TransactionRequest::new(
-            Some(resolve_settlement_address(chain_id, options)),
-            Some(HexData::from_bytes(encode_invalidate_order(&order.uid))),
-            Some(Amount::ZERO),
-            None,
-        )
+        cow_sdk_contracts::invalidate_order_transaction(&order.uid, chain_id, options)?.into()
     };
     tx.gas_limit = Some(
         signer
@@ -366,80 +360,6 @@ pub(crate) fn protocol_options_for_partial_order(
     )
 }
 
-/// Resolves a registry-backed contract address, honoring a caller override and
-/// otherwise reading the canonical deployment from the embedded registry.
-///
-/// The single source for the override-then-registry fallback used by every
-/// trading helper that resolves a deployment address, so the panic-vs-error
-/// policy lives in one place.
-///
-/// # Panics
-///
-/// Panics only if the embedded deployment registry is missing the canonical
-/// entry for `contract_id` on a supported chain/environment pair.
-pub(crate) fn resolve_contract_address(
-    contract_id: ContractId,
-    override_address: Option<Address>,
-    chain_id: SupportedChainId,
-    env: cow_sdk_core::CowEnv,
-) -> Address {
-    override_address.unwrap_or_else(|| {
-        // SAFETY: Registry::default parses the build-validated embedded manifest,
-        // which carries every canonical contract address for supported
-        // chain/environment pairs.
-        Registry::default()
-            .address(contract_id, chain_id, env)
-            .expect("canonical contract address is registered for every supported chain/env")
-    })
-}
-
-/// Reads the per-chain override for `contract_id` from `options`, if present.
-fn contract_override(
-    contract_id: ContractId,
-    chain_id: SupportedChainId,
-    options: Option<&ProtocolOptions>,
-) -> Option<Address> {
-    let map = options.and_then(|opts| match contract_id {
-        ContractId::Settlement => opts.settlement_contract_override.as_ref(),
-        ContractId::EthFlow => opts.eth_flow_contract_override.as_ref(),
-        _ => None,
-    })?;
-    map.get(&u64::from(chain_id)).copied()
-}
-
-/// Resolves the environment from `options`, defaulting to production.
-fn resolved_env(options: Option<&ProtocolOptions>) -> cow_sdk_core::CowEnv {
-    options
-        .and_then(|opts| opts.env)
-        .unwrap_or(cow_sdk_core::CowEnv::Prod)
-}
-
-/// Resolves the settlement address for on-chain helper calls.
-fn resolve_settlement_address(
-    chain_id: SupportedChainId,
-    options: Option<&ProtocolOptions>,
-) -> Address {
-    resolve_contract_address(
-        ContractId::Settlement,
-        contract_override(ContractId::Settlement, chain_id, options),
-        chain_id,
-        resolved_env(options),
-    )
-}
-
-/// Resolves the `EthFlow` address for on-chain helper calls.
-fn resolve_eth_flow_address(
-    chain_id: SupportedChainId,
-    options: Option<&ProtocolOptions>,
-) -> Address {
-    resolve_contract_address(
-        ContractId::EthFlow,
-        contract_override(ContractId::EthFlow, chain_id, options),
-        chain_id,
-        resolved_env(options),
-    )
-}
-
 /// Returns the default on-chain helper gas limit as a typed amount.
 ///
 /// # Panics
@@ -450,16 +370,6 @@ fn default_gas_limit() -> Amount {
     // SAFETY: DEFAULT_GAS_LIMIT is a small static decimal literal that remains
     // within the supported amount range.
     Amount::new(DEFAULT_GAS_LIMIT.to_string()).expect("static gas limit literal must remain valid")
-}
-
-fn encode_ethflow_create_order(
-    order: &cow_sdk_core::OrderData,
-    quote_id: i64,
-) -> Result<String, TradingError> {
-    let payload = EthFlowOrderData::from_unsigned_order(order, quote_id)?;
-    Ok(alloy_primitives::hex::encode_prefixed(
-        encode_create_order_calldata(&payload),
-    ))
 }
 
 fn encode_ethflow_invalidate_order(order: &Order) -> Result<String, TradingError> {

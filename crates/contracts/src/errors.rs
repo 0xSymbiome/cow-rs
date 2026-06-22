@@ -14,6 +14,15 @@ pub enum ContractsError {
     /// A chain id is outside the supported `CoW` deployment set.
     #[error("unsupported chain id: {0}")]
     UnsupportedChain(u64),
+    /// No canonical deployment of the named contract is registered for the
+    /// chain/environment pair.
+    #[error("no {contract} deployment registered for chain {chain_id}")]
+    DeploymentNotFound {
+        /// Contract whose deployment is missing.
+        contract: &'static str,
+        /// Chain id with no registered deployment.
+        chain_id: u64,
+    },
     /// An order UID had the wrong encoded byte length.
     #[error("invalid order UID length: expected 56 bytes, got {actual}")]
     InvalidOrderUidLength {
@@ -177,6 +186,7 @@ impl ContractsError {
             // Caller-supplied input that failed a client-side shape or range
             // check classifies as validation.
             Self::UnsupportedChain(_)
+            | Self::DeploymentNotFound { .. }
             | Self::InvalidOrderUidLength { .. }
             | Self::InvalidHexPrefix { .. }
             | Self::InvalidDecodedLength { .. }

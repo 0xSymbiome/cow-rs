@@ -386,6 +386,42 @@ async fn onchain_cancellation_routes_regular_orders_to_settlement_and_ethflow_or
 }
 
 #[tokio::test]
+async fn ethflow_cancellation_projects_order_receiver_and_zero_fee_into_invalidate_calldata() {
+    // Guards the `Order -> EthFlowOrderData -> invalidateOrder` projection that
+    // stays in trading: when the order receiver differs from the owner, the
+    // on-chain cancel payload must carry the receiver (not the owner) and a zero
+    // feeAmount, matching the TS SDK `getEthFlowCancellation` arbiter.
+    let signer = MockSigner::default();
+    let mut order = ethflow_order();
+    order.receiver = Some(address(ALT_RECEIVER));
+
+    let tx = onchain_cancellation_transaction(&signer, SupportedChainId::Sepolia, &order, None)
+        .await
+        .expect("ethflow cancellation should build");
+    let data = tx
+        .data
+        .as_ref()
+        .expect("eth-flow cancellation carries calldata")
+        .to_hex_string();
+
+    // word 1: receiver — the order's own receiver, right-aligned, not the owner.
+    assert_eq!(
+        calldata_word(&data, 1),
+        format!(
+            "000000000000000000000000{}",
+            ALT_RECEIVER.trim_start_matches("0x")
+        ),
+        "eth-flow invalidate must encode the order receiver, not the owner",
+    );
+    // word 5: feeAmount — zero on the live protocol (signed-order invariant).
+    assert_eq!(
+        calldata_word(&data, 5),
+        "0".repeat(64),
+        "eth-flow signed-order feeAmount must be zero",
+    );
+}
+
+#[tokio::test]
 async fn onchain_cancellation_uses_fallback_gas_when_estimation_fails() {
     let signer = MockSigner::default();
     signer

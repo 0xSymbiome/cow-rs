@@ -8,8 +8,17 @@ use cow_sdk_core::{
 use crate::{ApprovalParams, TradingError};
 
 /// Resolves the canonical vault-relayer address for allowance checks.
+///
+/// # Panics
+///
+/// Panics only if the embedded deployment registry is missing the vault-relayer
+/// entry for a supported chain/environment pair — ruled out by the
+/// build-validated manifest.
 fn resolve_vault_relayer(chain_id: SupportedChainId, env: cow_sdk_core::CowEnv) -> Address {
-    crate::onchain::resolve_contract_address(ContractId::VaultRelayer, None, chain_id, env)
+    // SAFETY: the vault relayer is deployed on every supported chain/environment,
+    // so the embedded registry always resolves it.
+    cow_sdk_contracts::resolve_contract_address(ContractId::VaultRelayer, None, chain_id, env)
+        .expect("vault relayer is registered for every supported chain/env")
 }
 
 const ERC20_ALLOWANCE_ABI_JSON: &str = r#"[{"type":"function","name":"allowance","inputs":[{"name":"owner","type":"address"},{"name":"spender","type":"address"}],"outputs":[{"name":"","type":"uint256"}],"stateMutability":"view"}]"#;
