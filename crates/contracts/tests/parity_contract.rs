@@ -28,7 +28,8 @@ use cow_sdk_contracts::settlement::IGPv2Settlement;
 use cow_sdk_contracts::{
     CANCELLATIONS_TYPE_FIELDS, EthFlowOrderData, IERC20, IERC1271, InteractionLike,
     ORDER_TYPE_FIELDS, ORDER_UID_LENGTH, SigningScheme, encode_create_order_calldata,
-    encode_invalidate_order_calldata, normalize_interaction,
+    encode_invalidate_order, encode_invalidate_order_calldata, encode_set_pre_signature,
+    normalize_interaction,
 };
 use cow_sdk_core::{
     Address, Amount, AppDataHash, BuyTokenDestination, OrderDigest, OrderUid, SellTokenSource,
@@ -440,10 +441,7 @@ fn assert_settlement_invalidate_order_calldata(id: &str, expected: &Value) {
         .unwrap_or_else(|| panic!("case {id}: expected.call_data must be a string"));
 
     let uid = sample_order_uid();
-    let call_data = IGPv2Settlement::invalidateOrderCall {
-        orderUid: order_uid_as_sol_bytes(&uid),
-    }
-    .abi_encode();
+    let call_data = encode_invalidate_order(&uid);
 
     assert_calldata_hex(id, &call_data, expected_hex);
 }
@@ -454,11 +452,7 @@ fn assert_settlement_set_presignature_calldata(id: &str, expected: &Value) {
         .unwrap_or_else(|| panic!("case {id}: expected.call_data must be a string"));
 
     let uid = sample_order_uid();
-    let call_data = IGPv2Settlement::setPreSignatureCall {
-        orderUid: order_uid_as_sol_bytes(&uid),
-        signed: true,
-    }
-    .abi_encode();
+    let call_data = encode_set_pre_signature(&uid, true);
 
     assert_calldata_hex(id, &call_data, expected_hex);
 }

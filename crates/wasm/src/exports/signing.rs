@@ -1,10 +1,4 @@
-#[cfg(feature = "cancellation")]
-use alloy_primitives::Bytes as AlloyBytes;
-#[cfg(feature = "cancellation")]
-use alloy_sol_types::SolCall as _;
 use cow_sdk_contracts::RecoverableSignature;
-#[cfg(feature = "cancellation")]
-use cow_sdk_contracts::settlement::IGPv2Settlement;
 #[cfg(feature = "cancellation")]
 use cow_sdk_contracts::{ContractId, Registry};
 use std::{cell::RefCell, rc::Rc};
@@ -291,7 +285,8 @@ pub async fn sign_order_eth_sign_digest(
     unchecked_return_type = "WasmEnvelope<TransactionRequestDto>"
 )]
 pub fn build_presign_tx(params: OrderTraderParametersInput) -> Result<JsValue, JsValue> {
-    let calldata = encode_set_pre_signature_calldata(params.order_uid.as_str())?;
+    let order_uid = OrderUid::new(params.order_uid.as_str()).map_js()?;
+    let calldata = cow_sdk_contracts::encode_set_pre_signature(&order_uid, true);
     let tx = settlement_transaction(params, calldata)?;
     to_js_value(&WasmEnvelope::v1(TransactionRequestDto::from(&tx)))
 }
@@ -311,7 +306,8 @@ pub fn build_presign_tx(params: OrderTraderParametersInput) -> Result<JsValue, J
     unchecked_return_type = "WasmEnvelope<TransactionRequestDto>"
 )]
 pub fn build_cancel_order_tx(params: OrderTraderParametersInput) -> Result<JsValue, JsValue> {
-    let calldata = encode_invalidate_order_calldata(params.order_uid.as_str())?;
+    let order_uid = OrderUid::new(params.order_uid.as_str()).map_js()?;
+    let calldata = cow_sdk_contracts::encode_invalidate_order(&order_uid);
     let tx = settlement_transaction(params, calldata)?;
     to_js_value(&WasmEnvelope::v1(TransactionRequestDto::from(&tx)))
 }
@@ -653,10 +649,9 @@ fn settlement_transaction(
             )
             .into_js()
         })?;
-    let data = alloy_primitives::hex::encode_prefixed(calldata);
     Ok(TransactionRequest::new(
         Some(settlement),
-        Some(HexData::new(data).map_js()?),
+        Some(HexData::from_bytes(calldata)),
         Some(Amount::ZERO),
         Some(default_gas_limit()?),
     ))
@@ -666,43 +661,6 @@ fn settlement_transaction(
 fn default_gas_limit() -> Result<Amount, JsValue> {
     Amount::new(DEFAULT_GAS_LIMIT.to_string())
         .map_err(|error| WasmError::invalid("gasLimit", error.to_string()).into_js())
-}
-
-/// Parses the JS-supplied order UID hex string and returns the typed
-/// 56-byte payload as an [`alloy_primitives::Bytes`] suitable for the
-/// `IGPv2Settlement::*Call` Solidity `bytes` field. Routes through
-/// `OrderUid::new` so malformed input surfaces as a typed `WasmError`
-/// rather than the previous ad-hoc hex decode path.
-#[cfg(feature = "cancellation")]
-fn order_uid_bytes_from_str(uid: &str) -> Result<AlloyBytes, JsValue> {
-    let order_uid = OrderUid::new(uid.to_owned()).map_js()?;
-    Ok(AlloyBytes::from(order_uid.as_slice().to_vec()))
-}
-
-/// Encodes the `setPreSignature(bytes,bool)` calldata for the given order
-/// UID through the workspace `alloy::sol!`-generated
-/// `IGPv2Settlement::setPreSignatureCall` binding (ADR 0012). The selector,
-/// the dynamic-bytes head/length words, and the bool word are emitted at
-/// compile time through `SolCall::abi_encode`.
-#[cfg(feature = "cancellation")]
-fn encode_set_pre_signature_calldata(uid: &str) -> Result<Vec<u8>, JsValue> {
-    let order_uid_bytes = order_uid_bytes_from_str(uid)?;
-    Ok(IGPv2Settlement::setPreSignatureCall {
-        orderUid: order_uid_bytes,
-        signed: true,
-    }
-    .abi_encode())
-}
-
-/// Encodes the `invalidateOrder(bytes)` calldata for the given order UID
-/// through the `IGPv2Settlement::invalidateOrderCall` binding.
-#[cfg(feature = "cancellation")]
-fn encode_invalidate_order_calldata(uid: &str) -> Result<Vec<u8>, JsValue> {
-    let order_uid_bytes = order_uid_bytes_from_str(uid)?;
-    Ok(IGPv2Settlement::invalidateOrderCall {
-        orderUid: order_uid_bytes,
-    }
-    .abi_encode())
 }
 
 #[cfg(feature = "cancellation")]

@@ -74,12 +74,18 @@ pub use order::{
     extract_order_uid_params, hash_order, hash_order_cancellation, hash_order_cancellations,
     order_eip712_type_hash, pack_order_uid_params,
 };
-pub use settlement::{IGPv2SettlementEvents, SettlementEvent, decode_settlement_log};
+pub use settlement::{
+    IGPv2SettlementEvents, SettlementEvent, decode_settlement_log, encode_invalidate_order,
+    encode_set_pre_signature,
+};
 pub use signature::{
     Eip1271SignatureData, Eip1271VerificationRequest, IERC1271, MAX_SIGNATURE_HEX_BYTES,
     RecoverableSignature, Signature, SigningScheme, decode_eip1271_signature_data,
     decode_signing_scheme, encode_eip1271_signature_data, encode_signing_scheme,
     verify_eip1271_signature,
 };
-pub use tokens::{IERC20, IWrappedNativeToken, unwrap_interaction, wrap_interaction};
+pub use tokens::{
+    IERC20, IWrappedNativeToken, unwrap_interaction, unwrap_transaction, wrap_interaction,
+    wrap_transaction,
+};
 pub use verify::{Eip1271Cache, NoopEip1271Cache, verify_eip1271_signature_cached};

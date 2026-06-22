@@ -37,7 +37,7 @@
 /// dependency, mirroring serde's derive re-export.
 pub use async_trait::async_trait;
 pub use cow_sdk_app_data::{PartnerFee, PartnerFeePolicy};
-pub use cow_sdk_contracts::eth_flow;
+pub use cow_sdk_contracts::{eth_flow, unwrap_transaction, wrap_transaction};
 pub use cow_sdk_core::SupportedChainId;
 pub use cow_sdk_orderbook::{OrderbookClient, OrderbookRuntimeBinding};
 
@@ -70,8 +70,6 @@ pub mod types;
 pub mod validation;
 /// Broadcast-then-poll helpers for mined transaction receipts.
 pub mod wait;
-/// Native-asset wrap and unwrap transaction builders.
-pub mod wrap;
 
 pub use allowance::{approval_transaction, approve_cow_protocol, cow_protocol_allowance};
 pub use app_data::{build_app_data, merge_and_seal_app_data, params_from_doc};
@@ -114,4 +112,3 @@ pub use types::{
 pub(crate) use types::PartialTraderParams;
 pub use validation::{AmountSide, ClientRejection, OrderBoundsValidator};
 pub use wait::{WaitError, WaitOptions, poll_for_receipt, submit_and_wait_for_receipt};
-pub use wrap::{unwrap_transaction, wrap_transaction};

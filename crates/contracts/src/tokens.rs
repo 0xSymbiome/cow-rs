@@ -8,7 +8,9 @@
 //!   `withdraw(uint256)` surface, with [`wrap_interaction`] /
 //!   [`unwrap_interaction`] helpers that emit the canonical settlement
 //!   [`Interaction`] for converting between the native asset and its wrapped
-//!   form. The wrapped-native token address for a chain is resolved by
+//!   form, and the [`wrap_transaction`] / [`unwrap_transaction`] builders that
+//!   wrap those into a ready-to-submit [`cow_sdk_core::TransactionRequest`]. The
+//!   wrapped-native token address for a chain is resolved by
 //!   [`cow_sdk_core::wrapped_native_token`].
 //!
 //! Both interfaces are authored inline as `alloy::sol!` against the published
@@ -20,7 +22,7 @@
 use alloy_primitives::Bytes;
 use alloy_sol_types::{SolCall, sol};
 
-use cow_sdk_core::{Address, Amount};
+use cow_sdk_core::{Address, Amount, SupportedChainId, TransactionRequest, wrapped_native_token};
 
 use crate::interaction::Interaction;
 
@@ -95,4 +97,74 @@ pub fn unwrap_interaction(wrapped_native_token: Address, amount: Amount) -> Inte
             .abi_encode(),
         ),
     )
+}
+
+/// Builds the transaction that wraps `amount` of the chain's native asset into
+/// its wrapped-native token (for example ETH into WETH).
+///
+/// The target is the chain's canonical wrapped-native token, resolved from
+/// `chain_id`; `amount` is sent as the call's native value. Submit the returned
+/// request with any [`cow_sdk_core::Signer`].
+#[must_use]
+pub fn wrap_transaction(chain_id: SupportedChainId, amount: Amount) -> TransactionRequest {
+    wrap_interaction(wrapped_native_token(chain_id).address, amount).into()
+}
+
+/// Builds the transaction that unwraps `amount` of the wrapped-native token back
+/// into the chain's native asset (for example WETH into ETH).
+///
+/// The target is the chain's canonical wrapped-native token, resolved from
+/// `chain_id`. `withdraw` burns the caller's own wrapped-native balance, so no
+/// ERC-20 approval is required and no native value is attached.
+#[must_use]
+pub fn unwrap_transaction(chain_id: SupportedChainId, amount: Amount) -> TransactionRequest {
+    unwrap_interaction(wrapped_native_token(chain_id).address, amount).into()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{unwrap_transaction, wrap_transaction};
+    use cow_sdk_core::{Amount, SupportedChainId, wrapped_native_token};
+
+    #[test]
+    fn wrap_transaction_resolves_canonical_address_and_sends_amount_as_value() {
+        let amount = Amount::from(1_000u32);
+        let tx = wrap_transaction(SupportedChainId::Mainnet, amount);
+
+        assert_eq!(
+            tx.to,
+            Some(wrapped_native_token(SupportedChainId::Mainnet).address)
+        );
+        assert_eq!(tx.value, Some(amount));
+        assert!(
+            tx.data.is_some(),
+            "wrap transaction carries deposit calldata"
+        );
+    }
+
+    #[test]
+    fn unwrap_transaction_resolves_canonical_address_with_zero_value() {
+        let amount = Amount::from(1_000u32);
+        let tx = unwrap_transaction(SupportedChainId::Base, amount);
+
+        assert_eq!(
+            tx.to,
+            Some(wrapped_native_token(SupportedChainId::Base).address)
+        );
+        assert_eq!(tx.value, Some(Amount::ZERO));
+        assert!(
+            tx.data.is_some(),
+            "unwrap transaction carries withdraw calldata"
+        );
+    }
+
+    #[test]
+    fn wrap_transaction_resolves_a_distinct_address_per_chain() {
+        let amount = Amount::from(1u32);
+        assert_ne!(
+            wrap_transaction(SupportedChainId::Mainnet, amount).to,
+            wrap_transaction(SupportedChainId::GnosisChain, amount).to,
+            "each chain wraps into its own native token"
+        );
+    }
 }

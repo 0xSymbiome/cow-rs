@@ -1,10 +1,7 @@
-use alloy_primitives::Bytes as AlloyBytes;
-use alloy_sol_types::SolCall;
 use cow_sdk_contracts::eth_flow::{
     EthFlowOrderData, encode_create_order_calldata, encode_invalidate_order_calldata,
 };
-use cow_sdk_contracts::settlement::IGPv2Settlement;
-use cow_sdk_contracts::{ContractId, Registry};
+use cow_sdk_contracts::{ContractId, Registry, encode_invalidate_order, encode_set_pre_signature};
 use cow_sdk_core::{
     Address, AddressPerChain, Amount, HexData, ProtocolOptions, Signer, SupportedChainId,
     TransactionHash, TransactionRequest,
@@ -132,7 +129,7 @@ where
     S::Error: std::fmt::Display + cow_sdk_core::UserRejection,
 {
     let settlement = resolve_settlement_address(chain_id, options);
-    let data = HexData::new(encode_set_pre_signature(order_uid, true))?;
+    let data = HexData::from_bytes(encode_set_pre_signature(order_uid, true));
     let gas_limit = gas_limit_with_margin_or_default(
         signer,
         &TransactionRequest::new(
@@ -284,7 +281,7 @@ where
     } else {
         TransactionRequest::new(
             Some(resolve_settlement_address(chain_id, options)),
-            Some(HexData::new(encode_invalidate_order_uid(&order.uid))?),
+            Some(HexData::from_bytes(encode_invalidate_order(&order.uid))),
             Some(Amount::ZERO),
             None,
         )
@@ -453,25 +450,6 @@ fn default_gas_limit() -> Amount {
     // SAFETY: DEFAULT_GAS_LIMIT is a small static decimal literal that remains
     // within the supported amount range.
     Amount::new(DEFAULT_GAS_LIMIT.to_string()).expect("static gas limit literal must remain valid")
-}
-
-fn encode_set_pre_signature(order_uid: &cow_sdk_core::OrderUid, enabled: bool) -> String {
-    let call = IGPv2Settlement::setPreSignatureCall {
-        orderUid: order_uid_bytes(order_uid),
-        signed: enabled,
-    };
-    alloy_primitives::hex::encode_prefixed(call.abi_encode())
-}
-
-fn encode_invalidate_order_uid(order_uid: &cow_sdk_core::OrderUid) -> String {
-    let call = IGPv2Settlement::invalidateOrderCall {
-        orderUid: order_uid_bytes(order_uid),
-    };
-    alloy_primitives::hex::encode_prefixed(call.abi_encode())
-}
-
-fn order_uid_bytes(order_uid: &cow_sdk_core::OrderUid) -> AlloyBytes {
-    AlloyBytes::from(order_uid.as_slice().to_vec())
 }
 
 fn encode_ethflow_create_order(

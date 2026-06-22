@@ -8,23 +8,39 @@
 
 ## Decision
 
+_Amended 2026-06-22: the pure `wrap_transaction` / `unwrap_transaction` builders and
+the `setPreSignature` / `invalidateOrder` call-data encoders now live in
+`cow-sdk-contracts` (re-exported, where applicable, from `cow-sdk-trading`); the
+paragraphs below reflect that placement._
+
 The SDK ships one deterministic, single-call, parity-pinned builder for each
 on-chain transaction a trader sends directly: approve the vault relayer, wrap and
 unwrap the native asset, place an eth-flow native sell, pre-sign, and cancel
 on-chain. It ships no long-running orchestration, no solver settlement path, and no
 wallet or provider management.
 
-Native-asset wrapping joins this boundary. `cow-sdk-trading` adds the free functions
-`wrap_transaction(chain_id, amount)` and `unwrap_transaction(chain_id, amount)`. Each
-resolves the chain's canonical wrapped-native token through
+Native-asset wrapping joins this boundary. The free functions
+`wrap_transaction(chain_id, amount)` and `unwrap_transaction(chain_id, amount)` are
+pure and signing-free, so they live in `cow-sdk-contracts` — the lean layer that
+already owns the `wrap_interaction` / `unwrap_interaction` primitives — and are
+re-exported from `cow-sdk-trading`, leaving the trader-facing free-function surface
+unchanged. Each resolves the chain's canonical wrapped-native token through
 `cow_sdk_core::wrapped_native_token` and returns a `TransactionRequest`. They are
 infallible: a typed `SupportedChainId`, a construction-validated `Amount`, and the
 fixed `deposit()` / `withdraw(uint256)` calldata leave no failure mode, so — unlike
 the signing- and registry-bound builders — they do not return `Result`. The
-`cow-sdk-contracts` primitives `wrap_interaction` / `unwrap_interaction` stay public
-for interaction composition. The wasm `trading` surface mirrors the helpers as
-`buildWrapTx` / `buildUnwrapTx` and exposes `wrappedNativeToken(chainId)` for
-wrap-pair detection and display.
+`wrap_interaction` / `unwrap_interaction` primitives stay public for interaction
+composition. The wasm `trading` surface mirrors the helpers as `buildWrapTx` /
+`buildUnwrapTx` and exposes `wrappedNativeToken(chainId)` for wrap-pair detection
+and display.
+
+The pure call-data encoders for the pre-sign and settlement-cancel steps —
+`encode_set_pre_signature` and `encode_invalidate_order`, over the `IGPv2Settlement`
+binding — are likewise canonical public helpers in `cow-sdk-contracts`. The
+signer-bound `pre_sign_transaction` / `onchain_cancel_order` builders in
+`cow-sdk-trading` and the wasm `buildPresignTx` / `buildCancelOrderTx` exports encode
+through them instead of re-deriving the call data, so one byte-locked source backs
+the settlement calldata across the native and browser surfaces.
 
 ## Why
 
@@ -44,9 +60,11 @@ integrations. It belongs at the on-chain helper boundary, not re-derived beneath
 ## Must Remain True
 
 - Public surface: each on-chain trade step has one single-call transaction builder;
-  `wrap_transaction` / `unwrap_transaction` resolve the address from the typed chain
-  and stay infallible; the `wrap_interaction` / `unwrap_interaction` primitives stay
-  public and parity-pinned.
+  the pure `wrap_transaction` / `unwrap_transaction` builders live in
+  `cow-sdk-contracts` (re-exported from `cow-sdk-trading`), resolve the address from
+  the typed chain, and stay infallible; the `wrap_interaction` / `unwrap_interaction`
+  primitives and the `encode_set_pre_signature` / `encode_invalidate_order` settlement
+  call-data encoders stay public and parity-pinned.
 - Runtime and support: the helpers perform no I/O and add no orchestration,
   settlement, retry, or wallet management; native-currency selling continues to use
   eth-flow rather than a required manual wrap.
