@@ -6,7 +6,7 @@
 //! **Property:** `PROP-ORD-008`.
 //! **Seed contract:** corpus inputs cover canonical services rejection
 //! tags pinned by
-//! `parity/fixtures/orderbook.json::orderbook-duplicate-order-error`,
+//! `parity/fixtures/orderbook/rejection_error_types.json`,
 //! length and first-byte boundaries, and adversarial bodies containing
 //! UTF-8 escapes, control bytes, or services-style description prose
 //! that must collapse to the public redaction placeholder.

@@ -227,7 +227,7 @@ Primary regression coverage:
 - `crates/core/tests/wire_format_preservation_contract.rs`
 - `crates/core/tests/property_contract.rs`
 - `crates/signing/tests/domain_contract.rs`
-- `parity/fixtures/signing/eth_sign_typed_data_request.json`
+- `crates/signing/tests/cancellation_contract.rs`
 
 Validation surface:
 

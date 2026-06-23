@@ -10,7 +10,7 @@
 //! **Property:** `PROP-OBK-002`.
 //! **Seed contract:** corpus inputs cover canonical orderbook rejection
 //! envelopes anchored to
-//! `parity/fixtures/orderbook.json::orderbook-duplicate-order-error`,
+//! `parity/fixtures/orderbook/rejection_error_types.json`,
 //! empty-body and `204 No Content` boundary cases, content-type
 //! variations (absent, `application/json`, plain text), and adversarial
 //! bodies containing non-UTF-8 sequences plus over-long content-type
