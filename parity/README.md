@@ -4,9 +4,8 @@
 **not** a runtime dependency of any published crate — normal builds, tests, and
 publishes never touch it.
 
-Its job: let a reviewer trust that every committed test vector genuinely came
-from the upstream code it claims, at the exact version it claims — without
-cloning anything.
+Its job: let a reviewer trust that every committed test vector came from the
+upstream code and version it claims — without cloning anything.
 
 ## What lives here
 
@@ -41,10 +40,11 @@ flowchart TD
     class pin truth;
 ```
 
-`cargo parity-validate` proves the **provenance** half (vectors are real,
-pinned, honestly attributed). `cargo test` proves the **value** half (our Rust
-reproduces those vectors byte-for-byte). Green on both = the SDK matches
-upstream at a known, auditable commit.
+`cargo parity-validate` proves the **provenance** half (every vector is pinned
+and honestly attributed to a declared upstream source; the deep pass also
+reproduces the pinned bytes from a real checkout). `cargo test` proves the
+**value** half (our Rust reproduces those vectors byte-for-byte). Green on both =
+the SDK matches upstream at a known, auditable commit.
 
 ## Everyday check
 
@@ -52,8 +52,12 @@ upstream at a known, auditable commit.
 cargo parity-validate
 ```
 
-Offline, needs no checkouts, runs on every PR. It is the gate that converts
-"trust me, this vector came from upstream" into a machine-checked fact.
+Offline, needs no checkouts, runs on every PR. It turns a fixture's source
+attribution from a claim into a machine-checked fact: the cited commit is the
+one pinned in the lock, and every ref lands in that repository's declared
+producer paths, so no fixture can drift its pin or cite an undeclared source. It
+does **not** re-derive the bytes from upstream — that is the deep pass below and
+`cargo test`.
 
 ## What validation checks
 
@@ -73,10 +77,10 @@ flowchart TD
 
 - **Offline** (every PR): the lock is well-formed, every fixture is honestly
   attributed to a pin, and the vendored spec is stamped at the services pin.
-- **Deep** (release lane + on demand): additionally every pinned repository is
-  present at its commit and the vendored OpenAPI body is byte-identical to the
-  upstream blob at the pin. No committed checksum is involved — both sides
-  derive from the pin.
+- **Deep** (`workflow_dispatch` and the weekly cron, never the PR lane):
+  additionally every pinned repository is present at its commit and the vendored
+  OpenAPI body is byte-identical to the upstream blob at the pin. No committed
+  checksum is involved; both sides derive from the pin.
 
 ## Maintainer workflow: refreshing the pins
 
@@ -138,7 +142,7 @@ flagged fixture is re-verified and re-stamped — that fail-closed behavior is
 the point, not a bug.
 
 Deep-validate every pinned repository plus the vendored OpenAPI body against
-the blob at the services pin — the release provenance lane runs exactly this:
+the blob at the services pin — the deep CI lane runs exactly this:
 
 ```sh
 cargo xtask parity sync --root <dir>
@@ -240,9 +244,7 @@ report or a drift test flags a change.
 
 This is a structural parity contract, not a runtime cross-language harness. No
 TypeScript executes during `cargo test`; behavioral cross-verification would
-require a separate harness beyond this layer. The provenance gate proves the
-vectors are anchored and honest; the consuming contract tests prove the SDK
-reproduces them.
+require a separate harness beyond this layer.
 
 `cargo parity-validate` checks **provenance**, not payload values: it holds every
 fixture to its pinned source and confirms each ref lands in a declared producer
@@ -254,9 +256,8 @@ opaque string for forward compatibility, a dedicated contract test pins the clos
 set of legal values against its upstream producer.
 
 External reference implementations are not part of this contract. They may be
-consulted as secondary implementation references, but they must never be used as
-provenance sources for committed fixtures, placeholder values, or copied
-defaults.
+consulted as a secondary reference, but never as a provenance source for
+committed fixtures, placeholder values, or copied defaults.
 
 See [docs/parity.md](../docs/parity.md) for the full authority and ownership
 split, and the

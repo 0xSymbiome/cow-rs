@@ -100,11 +100,14 @@ cargo parity-validate --upstream-root <dir>
 
 For each repository the validator requires the git top-level, a remote
 matching the expected upstream, `HEAD` at the pinned commit, and all declared
-producer paths present and clean relative to `HEAD`. The scheduled
-`upstream-drift` workflow runs `cargo xtask parity drift` weekly to report
-producer-path movement — and, for any watched directory (`watch_dirs`, e.g. the
-app-data schema tree), files added or removed between the pin and the upstream
-default branch, so an additively versioned schema cannot land unseen. The
+producer paths present and clean relative to `HEAD`. The `release-readiness`
+workflow runs this deep pass on `workflow_dispatch` and the weekly cron, so a pin
+that no longer reproduces is caught unattended rather than only at release time.
+The scheduled `upstream-drift` workflow additionally runs `cargo xtask parity
+drift` weekly to report producer-path movement — and, for any watched directory
+(`watch_dirs`, e.g. the app-data schema tree), files added or removed between the
+pin and the upstream default branch, so an additively versioned schema cannot
+land unseen. The
 maintainer workflow for refreshing the lock lives in
 [parity/README.md](../parity/README.md).
 
