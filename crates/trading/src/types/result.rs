@@ -41,10 +41,13 @@ pub struct QuoteResults {
     /// Originating orderbook runtime binding captured by the quote flow.
     ///
     /// Quote-derived posting requires this binding to match the submission-time
-    /// orderbook runtime. The binding is skipped on serialization, so a
-    /// `QuoteResults` that is serialized and then deserialized loses it and fails
-    /// closed on resubmission with `TradingError::MissingQuoteOrderbookBinding`:
-    /// a quote rehydrated from storage must be re-quoted, never blindly replayed.
+    /// orderbook runtime. It is omitted from serialization when `None` and
+    /// defaults back to `None` when absent, so a `QuoteResults` whose binding was
+    /// not carried through — rehydrated from storage, or rebuilt without it —
+    /// fails closed on resubmission with `TradingError::MissingQuoteOrderbookBinding`
+    /// rather than posting against an unverified runtime. A faithful round-trip
+    /// preserves a `Some` binding; the gate enforces runtime-authority match, not
+    /// quote freshness (the quote's own expiry governs that).
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub orderbook_binding: Option<OrderbookRuntimeBinding>,
     /// Typed order-facing envelope kept for consumers while signers use the
