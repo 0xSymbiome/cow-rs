@@ -29,6 +29,18 @@ pub struct OpenApiCoverageArgs {
 struct CoverageManifest {
     version: u32,
     dtos: Vec<CoverageEntry>,
+    #[serde(default)]
+    excluded_schemas: Vec<ExcludedSchemas>,
+}
+
+/// A reason-annotated bucket of top-level spec schemas intentionally not
+/// enrolled as `dtos`. Every `components.schemas.*` must be either a `dtos`
+/// entry or listed here, so a newly vendored schema fails the ratchet until a
+/// maintainer decides.
+#[derive(Debug, Deserialize)]
+struct ExcludedSchemas {
+    reason: String,
+    schemas: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -128,6 +140,12 @@ pub fn run(args: &OpenApiCoverageArgs) -> Result<()> {
         validate_inventory_fields(entry, &inventory, &rust_struct, &mut diagnostics);
     }
 
+    // Spec-completeness only makes sense over the whole manifest, not a
+    // single `--schema`/`--rust_type` slice.
+    if args.schema.is_none() && args.rust_type.is_none() {
+        validate_schema_completeness(&manifest, &openapi, &mut diagnostics)?;
+    }
+
     if diagnostics.is_empty() {
         println!(
             "validated OpenAPI coverage for {} DTO entries",
@@ -144,6 +162,92 @@ pub fn run(args: &OpenApiCoverageArgs) -> Result<()> {
             serde_norway::to_string(&report).context("failed to serialize diagnostics")?
         );
         bail!("openapi coverage validation failed")
+    }
+}
+
+/// The coverage ratchet: every top-level `components.schemas.*` in the vendored
+/// spec must be enrolled as a `dtos` entry or recorded in `excluded_schemas`
+/// with a reason. A newly vendored schema that is neither fails closed, forcing
+/// a conscious model-it-or-exclude-it decision rather than silent omission.
+fn validate_schema_completeness(
+    manifest: &CoverageManifest,
+    openapi: &Value,
+    diagnostics: &mut Vec<Diagnostic>,
+) -> Result<()> {
+    let schemas = component_schema_names(openapi)?;
+    let covered: BTreeSet<&str> = manifest
+        .dtos
+        .iter()
+        .filter_map(|entry| entry.schema.strip_prefix("components.schemas."))
+        .filter(|rest| !rest.contains('.'))
+        .collect();
+
+    let mut excluded: BTreeSet<&str> = BTreeSet::new();
+    for bucket in &manifest.excluded_schemas {
+        if bucket.reason.trim().is_empty() {
+            diagnostics.push(schema_diagnostic(
+                String::new(),
+                "excluded_without_reason",
+                format!(
+                    "excluded_schemas bucket {:?} carries no reason",
+                    bucket.schemas
+                ),
+            ));
+        }
+        for schema in &bucket.schemas {
+            if !schemas.contains(schema.as_str()) {
+                diagnostics.push(schema_diagnostic(
+                    schema.clone(),
+                    "stale_excluded_schema",
+                    format!("excluded schema `{schema}` is not present in components.schemas"),
+                ));
+            }
+            if covered.contains(schema.as_str()) {
+                diagnostics.push(schema_diagnostic(
+                    schema.clone(),
+                    "excluded_and_covered",
+                    format!("schema `{schema}` is both enrolled as a dto and excluded"),
+                ));
+            }
+            excluded.insert(schema.as_str());
+        }
+    }
+
+    for schema in &schemas {
+        if !covered.contains(schema.as_str()) && !excluded.contains(schema.as_str()) {
+            diagnostics.push(schema_diagnostic(
+                schema.clone(),
+                "uncovered_schema",
+                format!(
+                    "schema `{schema}` is neither enrolled as a dto nor recorded in excluded_schemas; model it or record why not"
+                ),
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// The top-level schema names under `components.schemas`.
+fn component_schema_names(openapi: &Value) -> Result<BTreeSet<String>> {
+    let schemas = resolve_schema(openapi, "components.schemas")?;
+    let mapping = schemas
+        .as_mapping()
+        .context("components.schemas is not a mapping")?;
+    Ok(mapping
+        .keys()
+        .filter_map(Value::as_str)
+        .map(ToOwned::to_owned)
+        .collect())
+}
+
+/// A schema-level diagnostic, with no Rust type or field.
+const fn schema_diagnostic(schema: String, kind: &'static str, message: String) -> Diagnostic {
+    Diagnostic {
+        schema,
+        rust_type: String::new(),
+        field: None,
+        kind,
+        message,
     }
 }
 
