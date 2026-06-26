@@ -37,7 +37,6 @@ use. The HTTP retry, rate-limit, and `Retry-After` transport policy is always on
 | `alloy-provider` | Native Alloy read-only `Provider` adapter as `cow_sdk::alloy_provider`. |
 | `alloy-signer` | Native Alloy local-key `Signer` adapter as `cow_sdk::alloy_signer`. |
 | `alloy` | The composed native Alloy client as `cow_sdk::alloy`; implies `alloy-provider` and `alloy-signer`. |
-| `in-memory-cache` | The `InMemoryEip1271Cache` implementation. The cache trait and `NoopEip1271Cache` are always available; this adds the in-memory store. |
 | `testing` | In-memory test doubles (`MockOrderbook`, `MockSigner`, `MockProvider`) as `cow_sdk::testing` for downstream integration tests. Dev-dependency only. |
 | `tracing` | `tracing` spans and structured events across the SDK; see the [Observability](https://github.com/0xSymbiome/cow-rs/blob/main/docs/observability.md) guide. |
 
