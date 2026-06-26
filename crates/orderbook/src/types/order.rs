@@ -463,7 +463,7 @@ pub struct EthflowData {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[cfg_attr(
         all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
-        tsify(type = "string")
+        tsify(type = "`0x${string}`")
     )]
     pub refund_tx_hash: Option<TransactionHash>,
     /// User-facing validity timestamp for the `EthFlow` order.

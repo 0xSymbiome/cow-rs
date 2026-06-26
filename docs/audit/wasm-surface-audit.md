@@ -1,7 +1,7 @@
 # WASM Surface Audit
 
 Status: Current
-Last reviewed: 2026-06-22
+Last reviewed: 2026-06-26
 Owning surface: the `cow-sdk-wasm` TypeScript-callable crate, its npm package layout/exports, the JavaScript callback runtime boundary, DTO/type generation, schema-versioned envelopes, the size-budget gate, unsupported-target diagnostics, and the deterministic browser test runner.
 Refresh trigger: Changes to `crates/wasm/src/**`, the boundary DTO module or the source-crate `tsify` boundary derives, wasm-pack targets, declaration/facade snapshots, package export maps, callback shapes or registry ownership, the `JsCallbackHttpTransport` contract, transport-policy or error-envelope schema, release-profile size settings or measured budgets, native Alloy adapter `wasm32` guards, or the wasm-pack browser lanes.
 Related docs:
@@ -175,9 +175,13 @@ objects: `TypedDataSignerCallback`, `DigestSignerCallback`,
 each receives a typed payload/request DTO and may return a value, Promise, or
 thenable. Each signing/cancellation function requests only the callback it needs.
 When a cow identity newtype (`Address`, `Hash32`, `AppDataHash`, `HexData`,
-`OrderUid`) or the `Amount` newtype crosses the boundary, the ABI shape is the
-canonical lowercase `0x`-hex string (identity) or strict-decimal string
-(`Amount`), via a `Tsify` derive gated to `target_family = "wasm"` (ADR 0052).
+`OrderUid`) or the `Amount` newtype crosses the boundary, the runtime ABI shape
+is the canonical lowercase `0x`-hex string (identity) or strict-decimal string
+(`Amount`), via a `Tsify` derive gated to the wasm-bindgen target (ADR 0052).
+The identity newtypes declare the `0x`-prefixed hex template-literal type that
+viem uses for `Address`/`Hex` (the transaction-hash response fields share it),
+so a typed output drops into a viem call without a cast and a misplaced decimal
+`Amount` is rejected at compile time; `Amount` stays a decimal `string`.
 
 Callback registry state is implementation-owned: public TS declarations expose
 no registry classes, ids, or handle constructors. Facade clients retain
@@ -264,7 +268,8 @@ package-internal per ADR 0039). The fixed transforms: typestate builders →
 single typed config object; trait-generic capability injection → JS callbacks
 and `HttpTransportConfig`; typed input structs → camelCase input DTOs; typed
 outputs → `WasmEnvelope<T>`; `Amount` → decimal `string`; address/UID/hash
-newtypes → lowercase `0x` `string`; `serde_json::Value` → `unknown`; chain id /
+newtypes → the viem-compatible `0x`-prefixed hex template-literal type;
+`serde_json::Value` → `unknown`; chain id /
 quote id → `number` (quote id validated to the JS safe-integer range); Rust enums
 → string-literal unions; per-chain maps → `Record<string, string>`;
 cancellation/timeout → `options?: { signal?; timeoutMs? }`; typed `Result` errors

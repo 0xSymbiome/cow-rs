@@ -49,7 +49,7 @@ pub type ChainId = u64;
 )]
 #[cfg_attr(
     all(target_arch = "wasm32", target_os = "unknown"),
-    tsify(into_wasm_abi, from_wasm_abi, type = "string")
+    tsify(into_wasm_abi, from_wasm_abi, type = "`0x${string}`")
 )]
 pub struct Address(
     // Private inner: the constructors (`new` / `from_*` / `From`) and the
@@ -264,7 +264,7 @@ impl TryFrom<&str> for Address {
 )]
 #[cfg_attr(
     all(target_arch = "wasm32", target_os = "unknown"),
-    tsify(into_wasm_abi, from_wasm_abi, type = "string")
+    tsify(into_wasm_abi, from_wasm_abi, type = "`0x${string}`")
 )]
 pub struct HexData(
     // Private inner: the constructors (`new` / `from_*` / `From`) and the
@@ -441,7 +441,7 @@ impl TryFrom<&str> for HexData {
 )]
 #[cfg_attr(
     all(target_arch = "wasm32", target_os = "unknown"),
-    tsify(into_wasm_abi, from_wasm_abi, type = "string")
+    tsify(into_wasm_abi, from_wasm_abi, type = "`0x${string}`")
 )]
 pub struct AppDataHash(
     // Private inner: the constructors (`new` / `from_*` / `From`) and the
@@ -614,7 +614,7 @@ impl fmt::Display for AppDataHash {
 )]
 #[cfg_attr(
     all(target_arch = "wasm32", target_os = "unknown"),
-    tsify(into_wasm_abi, from_wasm_abi, type = "string")
+    tsify(into_wasm_abi, from_wasm_abi, type = "`0x${string}`")
 )]
 pub struct Hash32(
     // Private inner: the constructors (`new` / `from_*` / `From`) and the
@@ -780,7 +780,7 @@ pub type OrderDigest = Hash32;
 )]
 #[cfg_attr(
     all(target_arch = "wasm32", target_os = "unknown"),
-    tsify(into_wasm_abi, from_wasm_abi, type = "string")
+    tsify(into_wasm_abi, from_wasm_abi, type = "`0x${string}`")
 )]
 pub struct OrderUid(
     // Private inner: the constructors (`new` / `from_*` / `From`) and the

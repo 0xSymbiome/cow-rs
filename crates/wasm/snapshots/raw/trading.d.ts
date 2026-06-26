@@ -674,7 +674,7 @@ export interface Amounts<T> {
  * `Deserialize` to the inner alloy type, whose canonical defaults already
  * emit the cow lowercase wire form.
  */
-export type Hash32 = string;
+export type Hash32 = `0x${string}`;
 
 /**
  * JS-visible typed error envelope for every wasm export.
@@ -1513,12 +1513,12 @@ export interface OrderPostingResult {
      * Settlement transaction hash when the flow submits an on-chain
      * transaction directly (32-byte `0x`-prefixed hex string).
      *
-     * Spelled `string` on the TypeScript boundary: the native `TransactionHash`
-     * alias of `Hash32` is not emitted as a declaration, so the override pins
-     * the protocol-canonical `0x`-prefixed hex wire form (the same idiom the
-     * orderbook `Trade.tx_hash` field uses).
+     * Spelled as a viem-compatible `0x`-prefixed hex string on the TypeScript
+     * boundary: the native `TransactionHash` alias of `Hash32` is not emitted as
+     * a declaration, so the override pins the protocol-canonical `0x`-prefixed
+     * hex wire form (the same idiom the orderbook `Trade.tx_hash` field uses).
      */
-    txHash?: string;
+    txHash?: `0x${string}`;
     /**
      * Signature scheme used for the posted order.
      */
@@ -1622,7 +1622,7 @@ export interface SolverSettlement {
     /**
      * Transaction in which the solution was executed on-chain, when available.
      */
-    txHash?: string;
+    txHash?: `0x${string}`;
 }
 
 /**
@@ -1941,7 +1941,7 @@ export interface Trade {
     /**
      * Settlement transaction hash.
      */
-    txHash: string;
+    txHash: `0x${string}`;
 }
 
 /**
@@ -2155,7 +2155,7 @@ export interface OrderData {
  *
  *
  */
-export type AppDataHash = string;
+export type AppDataHash = `0x${string}`;
 
 /**
  * Validated EVM address.
@@ -2178,7 +2178,7 @@ export type AppDataHash = string;
  * [`Ord`] derive from the inner alloy primitive, which compares addresses on
  * the packed 20-byte representation.
  */
-export type Address = string;
+export type Address = `0x${string}`;
 
 /**
  * Validated `CoW` order UID.
@@ -2192,7 +2192,7 @@ export type Address = string;
  *
  *
  */
-export type OrderUid = string;
+export type OrderUid = `0x${string}`;
 
 /**
  * Validated hex payload used for calldata and byte blobs.
@@ -2205,7 +2205,7 @@ export type OrderUid = string;
  * one zero nibble during construction so the stored value remains
  * byte-aligned hex.
  */
-export type HexData = string;
+export type HexData = `0x${string}`;
 
 /**
  * Version tag carried by wasm output and error envelopes.
@@ -2256,7 +2256,7 @@ export interface EthflowData {
     /**
      * Transaction in which the order was refunded, when present.
      */
-    refundTxHash?: string;
+    refundTxHash?: `0x${string}`;
     /**
      * User-facing validity timestamp for the `EthFlow` order.
      */

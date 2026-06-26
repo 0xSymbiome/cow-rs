@@ -158,7 +158,7 @@ pub struct Trade {
     /// Settlement transaction hash.
     #[cfg_attr(
         all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
-        tsify(type = "string")
+        tsify(type = "`0x${string}`")
     )]
     pub tx_hash: Option<TransactionHash>,
 }

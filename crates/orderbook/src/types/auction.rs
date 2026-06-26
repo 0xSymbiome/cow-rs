@@ -281,7 +281,7 @@ pub struct SolverSettlement {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[cfg_attr(
         all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
-        tsify(type = "string")
+        tsify(type = "`0x${string}`")
     )]
     pub tx_hash: Option<TransactionHash>,
 }

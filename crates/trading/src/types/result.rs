@@ -95,14 +95,14 @@ pub struct OrderPostingResult {
     /// Settlement transaction hash when the flow submits an on-chain
     /// transaction directly (32-byte `0x`-prefixed hex string).
     ///
-    /// Spelled `string` on the TypeScript boundary: the native `TransactionHash`
-    /// alias of `Hash32` is not emitted as a declaration, so the override pins
-    /// the protocol-canonical `0x`-prefixed hex wire form (the same idiom the
-    /// orderbook `Trade.tx_hash` field uses).
+    /// Spelled as a viem-compatible `0x`-prefixed hex string on the TypeScript
+    /// boundary: the native `TransactionHash` alias of `Hash32` is not emitted as
+    /// a declaration, so the override pins the protocol-canonical `0x`-prefixed
+    /// hex wire form (the same idiom the orderbook `Trade.tx_hash` field uses).
     #[serde(skip_serializing_if = "Option::is_none")]
     #[cfg_attr(
         all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
-        tsify(type = "string")
+        tsify(type = "`0x${string}`")
     )]
     pub tx_hash: Option<TransactionHash>,
     /// Signature scheme used for the posted order.
