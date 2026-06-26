@@ -2,30 +2,29 @@ use cow_sdk_contracts::RecoverableSignature;
 use std::{cell::RefCell, rc::Rc};
 
 use crate::helpers as pure;
-use cow_sdk_core::{Address, DigestSigner};
+use cow_sdk_core::{Address, DigestSigner, TypedDataEnvelope};
 #[cfg(feature = "cancellation")]
 use cow_sdk_core::{Amount, Hash32, OrderUid, TransactionRequest};
 use cow_sdk_signing::GeneratedOrderId;
 #[cfg(feature = "cancellation")]
 use cow_sdk_signing::order_cancellations_typed_data_payload;
 use js_sys::{Array, Function, Promise, Reflect};
+use serde_json::Value;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::JsFuture;
 
+use crate::dto::{
+    SignedOrder, envelope_callback_value, parse_chain, parse_owner, payload_to_envelope,
+    to_js_value,
+};
 use crate::exports::{
     cancel::{ClientCallScope, SigningOptions, run_with_client_options, signing_wallet_timeout_ms},
-    dto::{
-        OrderInput, SignedOrderDto, TypedDataEnvelopeDto, parse_chain, parse_order, parse_owner,
-        to_js_value,
-    },
     envelope::WasmEnvelope,
     errors::{JsResultExt, WasmError},
 };
 
 #[cfg(feature = "cancellation")]
-use crate::exports::dto::{
-    OrderTraderParametersInput, SignedCancellationsInput, TransactionRequestDto,
-};
+use crate::dto::{OrderTraderParams, SignedCancellations};
 
 // The `cancellation` feature does not depend on `cow-sdk-trading`, so this
 // settlement-tx gas fallback is kept local and in step with
@@ -76,7 +75,7 @@ impl DigestSigner for JsDigestSigner {
 /// normalizes the returned ECDSA signature, and returns the signed-order DTO
 /// with the canonical order UID and digest.
 ///
-/// @param input Unsigned order fields to sign.
+/// @param order Unsigned order fields to sign.
 /// @param chainId EVM chain id used for the EIP-712 domain.
 /// @param owner Owner address used in the generated order UID.
 /// @param typedDataSigner Callback that signs the typed-data envelope.
@@ -85,10 +84,10 @@ impl DigestSigner for JsDigestSigner {
 /// @throws CowError for invalid input, callback failure, timeout, or cancellation.
 #[wasm_bindgen(
     js_name = "signOrderWithTypedDataSigner",
-    unchecked_return_type = "WasmEnvelope<SignedOrderDto>"
+    unchecked_return_type = "WasmEnvelope<SignedOrder>"
 )]
 pub async fn sign_order_with_typed_data_signer(
-    input: OrderInput,
+    order: cow_sdk_core::OrderData,
     #[wasm_bindgen(js_name = chainId)] chain_id: u32,
     owner: String,
     #[wasm_bindgen(js_name = typedDataSigner, unchecked_param_type = "TypedDataSignerCallback")]
@@ -103,7 +102,7 @@ pub async fn sign_order_with_typed_data_signer(
             let wallet_timeout_ms = signing_wallet_timeout_ms(options)?;
             run_with_client_options(scope, async move {
                 let signed = sign_order_with_callback(
-                    input,
+                    order,
                     chain_id,
                     owner,
                     typed_data_signer,
@@ -125,7 +124,7 @@ pub async fn sign_order_with_typed_data_signer(
 /// `0x`-prefixed string to the callback, normalizes the signature, and returns
 /// an `ethsign` signed-order DTO.
 ///
-/// @param input Unsigned order fields to sign.
+/// @param order Unsigned order fields to sign.
 /// @param chainId EVM chain id used for the digest.
 /// @param owner Owner address used in the generated order UID.
 /// @param digestSigner Callback that signs the digest string.
@@ -134,10 +133,10 @@ pub async fn sign_order_with_typed_data_signer(
 /// @throws CowError for invalid input, callback failure, timeout, or cancellation.
 #[wasm_bindgen(
     js_name = "signOrderEthSignDigest",
-    unchecked_return_type = "WasmEnvelope<SignedOrderDto>"
+    unchecked_return_type = "WasmEnvelope<SignedOrder>"
 )]
 pub async fn sign_order_eth_sign_digest(
-    input: OrderInput,
+    order: cow_sdk_core::OrderData,
     #[wasm_bindgen(js_name = chainId)] chain_id: u32,
     owner: String,
     #[wasm_bindgen(js_name = digestSigner, unchecked_param_type = "DigestSignerCallback")]
@@ -149,10 +148,9 @@ pub async fn sign_order_eth_sign_digest(
         let scope = ClientCallScope::new(options)?;
         let wallet_timeout_ms = signing_wallet_timeout_ms(options)?;
         run_with_client_options(scope, async move {
-            let order = parse_order(input.clone())?;
             let chain = parse_chain(chain_id)?;
             let owner_address = parse_owner(&owner)?;
-            let typed_data = TypedDataEnvelopeDto::from_payload(
+            let typed_data = payload_to_envelope(
                 &pure::signing::order_typed_data_payload(chain, &order).map_js()?,
             )?;
             let generated =
@@ -196,16 +194,16 @@ pub async fn sign_order_eth_sign_digest(
 #[cfg(feature = "cancellation")]
 #[wasm_bindgen(
     js_name = "buildPresignTx",
-    unchecked_return_type = "WasmEnvelope<TransactionRequestDto>"
+    unchecked_return_type = "WasmEnvelope<TransactionRequest>"
 )]
-pub fn build_presign_tx(params: OrderTraderParametersInput) -> Result<JsValue, JsValue> {
+pub fn build_presign_tx(params: OrderTraderParams) -> Result<JsValue, JsValue> {
     let order_uid = OrderUid::new(params.order_uid.as_str()).map_js()?;
     let (chain, options) = settlement_options(&params)?;
     let unsigned =
         cow_sdk_contracts::pre_sign_transaction(&order_uid, chain, Some(&options)).map_js()?;
     let mut tx = TransactionRequest::from(unsigned);
     tx.gas_limit = Some(default_gas_limit()?);
-    to_js_value(&WasmEnvelope::v1(TransactionRequestDto::from(&tx)))
+    to_js_value(&WasmEnvelope::v1(tx))
 }
 
 /// Builds a settlement cancellation transaction for an order UID.
@@ -220,9 +218,9 @@ pub fn build_presign_tx(params: OrderTraderParametersInput) -> Result<JsValue, J
 #[cfg(feature = "cancellation")]
 #[wasm_bindgen(
     js_name = "buildCancelOrderTx",
-    unchecked_return_type = "WasmEnvelope<TransactionRequestDto>"
+    unchecked_return_type = "WasmEnvelope<TransactionRequest>"
 )]
-pub fn build_cancel_order_tx(params: OrderTraderParametersInput) -> Result<JsValue, JsValue> {
+pub fn build_cancel_order_tx(params: OrderTraderParams) -> Result<JsValue, JsValue> {
     let order_uid = OrderUid::new(params.order_uid.as_str()).map_js()?;
     let (chain, options) = settlement_options(&params)?;
     let unsigned =
@@ -230,7 +228,7 @@ pub fn build_cancel_order_tx(params: OrderTraderParametersInput) -> Result<JsVal
             .map_js()?;
     let mut tx = TransactionRequest::from(unsigned);
     tx.gas_limit = Some(default_gas_limit()?);
-    to_js_value(&WasmEnvelope::v1(TransactionRequestDto::from(&tx)))
+    to_js_value(&WasmEnvelope::v1(tx))
 }
 
 /// Signs cancellation typed data through a typed-data callback.
@@ -248,7 +246,7 @@ pub fn build_cancel_order_tx(params: OrderTraderParametersInput) -> Result<JsVal
 #[cfg(feature = "cancellation")]
 #[wasm_bindgen(
     js_name = "signCancellationWithTypedDataSigner",
-    unchecked_return_type = "WasmEnvelope<SignedCancellationsInput>"
+    unchecked_return_type = "WasmEnvelope<SignedCancellations>"
 )]
 pub async fn sign_cancellation_with_typed_data_signer(
     #[wasm_bindgen(js_name = orderUids)] order_uids: Vec<String>,
@@ -265,16 +263,16 @@ pub async fn sign_cancellation_with_typed_data_signer(
             let wallet_timeout_ms = signing_wallet_timeout_ms(options)?;
             run_with_client_options(scope, async move {
                 let (uids, payload, _digest) = cancellation_payload(order_uids, chain_id)?;
-                let envelope = TypedDataEnvelopeDto::from_payload(&payload)?;
+                let envelope = payload_to_envelope(&payload)?;
                 let signature = await_callback_string(
                     &typed_data_signer,
-                    envelope.callback_value()?,
+                    envelope_callback_value(&envelope)?,
                     "signTypedData",
                     wallet_timeout_ms,
                 )
                 .await?;
                 let signature = normalize_signature(&signature)?;
-                to_js_value(&WasmEnvelope::v1(SignedCancellationsInput {
+                to_js_value(&WasmEnvelope::v1(SignedCancellations {
                     order_uids: uid_strings(&uids),
                     signature,
                     signing_scheme: "eip712".to_owned(),
@@ -300,7 +298,7 @@ pub async fn sign_cancellation_with_typed_data_signer(
 #[cfg(feature = "cancellation")]
 #[wasm_bindgen(
     js_name = "signCancellationEthSignDigest",
-    unchecked_return_type = "WasmEnvelope<SignedCancellationsInput>"
+    unchecked_return_type = "WasmEnvelope<SignedCancellations>"
 )]
 pub async fn sign_cancellation_eth_sign_digest(
     #[wasm_bindgen(js_name = orderUids)] order_uids: Vec<String>,
@@ -324,7 +322,7 @@ pub async fn sign_cancellation_eth_sign_digest(
                         })?;
                 let signer = JsDigestSigner::new(digest_signer, wallet_timeout_ms);
                 let signature = signer.sign_digest(&digest_bytes).await?;
-                to_js_value(&WasmEnvelope::v1(SignedCancellationsInput {
+                to_js_value(&WasmEnvelope::v1(SignedCancellations {
                     order_uids: uid_strings(&uids),
                     signature,
                     signing_scheme: "ethsign".to_owned(),
@@ -409,12 +407,12 @@ pub(crate) fn js_message(value: &JsValue) -> String {
 pub(crate) fn signed_order_from_parts(
     generated: GeneratedOrderId,
     owner: Address,
-    typed_data: TypedDataEnvelopeDto,
+    typed_data: TypedDataEnvelope<Value>,
     signature: String,
     signing_scheme: &str,
     quote_id: Option<i64>,
-) -> SignedOrderDto {
-    SignedOrderDto {
+) -> SignedOrder {
+    SignedOrder {
         order_uid: generated.order_id.to_hex_string(),
         signature,
         signing_scheme: signing_scheme.to_owned(),
@@ -426,39 +424,37 @@ pub(crate) fn signed_order_from_parts(
 }
 
 async fn sign_order_with_callback(
-    input: OrderInput,
+    order: cow_sdk_core::OrderData,
     chain_id: u32,
     owner: String,
     typed_data_signer: Function,
     wallet_timeout_ms: Option<u32>,
     scheme: &str,
-) -> Result<SignedOrderDto, JsValue> {
-    let order = parse_order(input.clone())?;
+) -> Result<SignedOrder, JsValue> {
     let chain = parse_chain(chain_id)?;
     let owner = parse_owner(&owner)?;
     let payload = pure::signing::order_typed_data_payload(chain, &order).map_js()?;
-    let typed_data = TypedDataEnvelopeDto::from_payload(&payload)?;
+    let typed_data = payload_to_envelope(&payload)?;
     let signature = await_callback_string(
         &typed_data_signer,
-        typed_data.callback_value()?,
+        envelope_callback_value(&typed_data)?,
         "signTypedData",
         wallet_timeout_ms,
     )
     .await?;
     let signature = normalize_signature(&signature)?;
-    build_signed_order(input, chain, owner, typed_data, signature, scheme)
+    build_signed_order(&order, chain, owner, typed_data, signature, scheme)
 }
 
 fn build_signed_order(
-    input: OrderInput,
+    order: &cow_sdk_core::OrderData,
     chain: cow_sdk_core::SupportedChainId,
     owner: Address,
-    typed_data: TypedDataEnvelopeDto,
+    typed_data: TypedDataEnvelope<Value>,
     signature: String,
     scheme: &str,
-) -> Result<SignedOrderDto, JsValue> {
-    let order = parse_order(input)?;
-    let generated = pure::signing::generate_order_id(chain, &order, &owner).map_js()?;
+) -> Result<SignedOrder, JsValue> {
+    let generated = pure::signing::generate_order_id(chain, order, &owner).map_js()?;
     Ok(signed_order_from_parts(
         generated, owner, typed_data, signature, scheme, None,
     ))
@@ -494,7 +490,7 @@ fn cancellation_payload(
 /// `cow_sdk_contracts` resolver.
 #[cfg(feature = "cancellation")]
 fn settlement_options(
-    params: &OrderTraderParametersInput,
+    params: &OrderTraderParams,
 ) -> Result<
     (
         cow_sdk_core::SupportedChainId,

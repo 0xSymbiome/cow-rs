@@ -8,11 +8,11 @@ use cow_sdk_core::transport::policy::{
 use cow_sdk_core::{HttpTransport, Redacted, TransportError, TransportErrorClass};
 use wasm_bindgen::prelude::*;
 
+use crate::dto::{AppDataDocument, to_js_value, transport_policy_from_config};
 use crate::exports::{
     cancel::{
         ClientCallScope, SdkClientOptions, run_with_client_options, transport_policy_with_timeout,
     },
-    dto::{AppDataDocDto, to_js_value, transport_policy_from_config},
     envelope::WasmEnvelope,
     errors::JsResultExt,
     transport::{configured_fetch_transport, optional_string, optional_timeout},
@@ -162,7 +162,7 @@ impl IpfsClient {
     /// @throws CowError for invalid CID, transport failure, timeout, or parse failure.
     #[wasm_bindgen(
         js_name = "fetchAppDataFromCid",
-        unchecked_return_type = "WasmEnvelope<AppDataDocDto>"
+        unchecked_return_type = "WasmEnvelope<AppDataDocument>"
     )]
     pub async fn fetch_app_data_from_cid(
         &self,
@@ -192,7 +192,7 @@ impl IpfsClient {
     /// @throws CowError for invalid hash, transport failure, timeout, or parse failure.
     #[wasm_bindgen(
         js_name = "fetchAppDataFromHex",
-        unchecked_return_type = "WasmEnvelope<AppDataDocDto>"
+        unchecked_return_type = "WasmEnvelope<AppDataDocument>"
     )]
     pub async fn fetch_app_data_from_hex(
         &self,
@@ -220,7 +220,7 @@ async fn fetch_doc_from_cid_with_adapter(
     let document = pure::app_data::fetch_doc_from_cid(cid, adapter, ipfs_uri)
         .await
         .map_js()?;
-    to_js_value(&WasmEnvelope::v1(AppDataDocDto::from(document)))
+    to_js_value(&WasmEnvelope::v1(AppDataDocument::from(document)))
 }
 
 async fn fetch_doc_from_hex_with_adapter(
@@ -231,7 +231,7 @@ async fn fetch_doc_from_hex_with_adapter(
     let document = pure::app_data::fetch_doc_from_app_data_hex(app_data_hex, adapter, ipfs_uri)
         .await
         .map_js()?;
-    to_js_value(&WasmEnvelope::v1(AppDataDocDto::from(document)))
+    to_js_value(&WasmEnvelope::v1(AppDataDocument::from(document)))
 }
 
 fn transport_to_app_data_error(error: TransportError) -> AppDataError {

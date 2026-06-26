@@ -10,7 +10,7 @@ export interface SigningOptions extends SdkClientOptions {
 }
 
 export type TypedDataSignerCallback = (
-envelope: TypedDataEnvelopeDto,
+envelope: TypedDataEnvelope<Value>,
 ) => Promise<string> | string;
 
 export type DigestSignerCallback = (
@@ -35,25 +35,122 @@ export interface SdkClientOptions {
 /**
  * A decoded `GPv2Settlement` (or inherited `GPv2Signing`) event.
  *
- * Mirrors `cow_sdk_contracts::SettlementEvent`. Addresses and the order UID
+ * Projects `cow_sdk_contracts::SettlementEvent`. Addresses and the order UID
  * are lowercase `0x`-prefixed hex; amounts are base-10 atom strings; the
  * interaction `selector` is a `0x`-prefixed 4-byte hex string. The `kind`
  * discriminator distinguishes the variants.
  */
-export type SettlementEventDto = { kind: "trade"; owner: string; sellToken: string; buyToken: string; sellAmount: string; buyAmount: string; feeAmount: string; orderUid: string } | { kind: "interaction"; target: string; value: string; selector: string } | { kind: "settlement"; solver: string } | { kind: "orderInvalidated"; owner: string; orderUid: string } | { kind: "preSignature"; owner: string; orderUid: string; signed: boolean };
+export type SettlementEvent = { kind: "trade"; owner: string; sellToken: string; buyToken: string; sellAmount: string; buyAmount: string; feeAmount: string; orderUid: string } | { kind: "interaction"; target: string; value: string; selector: string } | { kind: "settlement"; solver: string } | { kind: "orderInvalidated"; owner: string; orderUid: string } | { kind: "preSignature"; owner: string; orderUid: string; signed: boolean };
 
 /**
  * A decoded eth-flow on-chain order lifecycle event.
  *
- * Mirrors `cow_sdk_contracts::EthFlowEvent`. The placement `order` reuses the
- * canonical [`OrderInput`] shape (its `validTo` is the on-chain clamped value;
+ * Projects `cow_sdk_contracts::EthFlowEvent`. The placement `order` reuses the
+ * canonical [`OrderData`] shape (its `validTo` is the on-chain clamped value;
  * the trader\'s real expiry travels in the opaque `data` trailer). `signature`
  * and `data` are `0x`-prefixed hex strings carrying the raw on-chain signature
  * payload and the opaque trailing data field; addresses and the order UID are
  * lowercase `0x`-prefixed hex. The `kind` discriminator distinguishes the
  * variants.
  */
-export type EthFlowEventDto = { kind: "orderPlacement"; sender: string; order: OrderInput; signingScheme: string; signature: string; data: string } | { kind: "orderInvalidation"; orderUid: string } | { kind: "orderRefund"; orderUid: string; refunder: string };
+export type EthFlowEvent = { kind: "orderPlacement"; sender: string; order: OrderData; signingScheme: string; signature: string; data: string } | { kind: "orderInvalidation"; orderUid: string } | { kind: "orderRefund"; orderUid: string; refunder: string };
+
+/**
+ * A single EIP-712 typed-data field descriptor.
+ */
+export interface TypedDataField {
+    /**
+     * Field name as it appears in the typed-data schema.
+     */
+    name: string;
+    /**
+     * Solidity type name for the field.
+     */
+    type: string;
+}
+
+/**
+ * Canonical non-negative `uint256` quantity.
+ *
+ * `Amount` is the typed boundary for atomic token values on every
+ * `CoW` Protocol surface: contract hashing, EIP-712 typed data,
+ * orderbook DTOs, and decimal-aware display. The newtype is
+ * `#[repr(transparent)]` over [`alloy_primitives::U256`], so the
+ * in-memory layout is bit-for-bit identical to the alloy primitive and
+ * conversion at the alloy seam is free at runtime through
+ * [`Amount::as_u256`] (borrowed), [`Amount::into_u256`] (owned), or
+ * [`From`] / [`Into`].
+ *
+ * `Amount` carries cow-owned [`fmt::Display`], [`Serialize`], and
+ * [`Deserialize`] impls so the wire form stays the canonical decimal
+ * string the orderbook and contract layer accept. The cow-owned
+ * `Deserialize` is strict-decimal fail-closed: it rejects `0x`, `0X`,
+ * `0o`, `0O`, `0b`, `0B` prefixes (the four alternative radices the
+ * alloy [`U256`] `FromStr` impl would otherwise accept silently) so the
+ * cow JSON-decimal-only wire contract holds even when the value is fed
+ * through serde rather than [`Amount::new`].
+ *
+ * # Construction
+ *
+ * Pick the constructor that matches the value you already hold; every
+ * path lands on the same atomic `uint256`:
+ *
+ * - Raw atomic units from an integer — [`Amount::from`] (`u32` / `u64` /
+ *   `u128` / `usize`) or [`Amount::from_u256`].
+ * - Whole display units from a number — [`Amount::from_units`], for
+ *   example `Amount::from_units(1000, 6)` for 1000 USDC (no string and no
+ *   hand-counted zeros).
+ * - Fractional or untrusted-text display units — [`Amount::parse_units`],
+ *   for example `Amount::parse_units(\"1.5\", 18)` for 1.5 WETH.
+ * - A decimal or `0x`-hex string of atomic units from a CLI flag,
+ *   environment variable, or config file — [`Amount::new`].
+ *
+ * [`Amount::format_units`] is the inverse of the unit-scaled constructors
+ * for human-readable display.
+ *
+ * # Surface boundary
+ *
+ * The arithmetic surface is intentionally narrower than the inner
+ * [`alloy_primitives::U256`]. `Amount` does **not** expose:
+ *
+ * - `Add` / `Sub` / `Mul` (and the `*Assign` operators): the bare
+ *   `+` `-` `*` operators on the inner `U256` wrap silently on
+ *   overflow and underflow, which is incompatible with
+ *   financial-amount safety — `a - b` for `a < b` would silently
+ *   become a value near `2^256`. Typed arithmetic is therefore
+ *   fallible by return: use [`Amount::checked_add`] /
+ *   [`Amount::checked_sub`] / [`Amount::checked_mul`] (`-> Option`),
+ *   or the explicit [`Amount::saturating_add`] /
+ *   [`Amount::saturating_sub`] / [`Amount::saturating_mul`] clamps.
+ *   A caller who genuinely wants wrapping reaches through
+ *   [`Amount::as_u256`] / [`Amount::into_u256`], making the wrapping
+ *   intent visible at the type boundary.
+ * - `wrapping_*` / `overflowing_*`: same rationale; the wrapping and
+ *   `(value, overflow)` tuple forms belong at the low-level
+ *   primitive seam, not on the typed financial surface.
+ * - Exponentiation (`pow`, `checked_pow`, `saturating_pow`): raising
+ *   a token amount to a power has no money meaning, so no
+ *   exponentiation form is exposed.
+ * - Bit-inspection helpers (`bit_len`, `bits`, `count_ones`,
+ *   `count_zeros`, `leading_zeros`, `trailing_zeros`,
+ *   `is_power_of_two`, `next_power_of_two`): counting or measuring
+ *   the bits of a token amount has no money meaning either, so none
+ *   are exposed. A caller that genuinely needs them reaches through
+ *   [`Amount::as_u256`].
+ *
+ * The shipped surface is: [`Amount::ZERO`], [`Amount::MAX`],
+ * [`Amount::new`], [`Amount::checked_add`] / [`Amount::checked_sub`]
+ * / [`Amount::checked_mul`], [`Amount::saturating_add`] /
+ * [`Amount::saturating_sub`] / [`Amount::saturating_mul`], and
+ * [`Amount::as_u256`] / [`Amount::into_u256`] for the explicit alloy
+ * seam. This covers every operation cow\'s own crates need to perform
+ * on a typed amount.
+ *
+ * There is no `From<String>` or `From<&str>` conversion: construct through
+ * [`Amount::new`] or [`Amount::parse_units`] so malformed input fails closed
+ * at the typed boundary rather than via an infallible `.into()`.
+ */
+export type Amount = string;
 
 /**
  * Coarse, switchable classification of an orderbook rejection, mirrored for
@@ -71,13 +168,13 @@ export type OrderBookRejectionCategoryDto = "authorization" | "insufficientFunds
  */
 export interface CowEip1271SignRequest {
     /**
-     * Original order input.
+     * Unsigned order being signed.
      */
-    order: OrderInput;
+    order: OrderData;
     /**
      * Typed-data envelope.
      */
-    typedData: TypedDataEnvelopeDto;
+    typedData: TypedDataEnvelope<Value>;
     /**
      * Owner or smart-account address.
      */
@@ -90,8 +187,13 @@ export interface CowEip1271SignRequest {
 
 /**
  * Deployment address output.
+ *
+ * A default-flavour boundary construct built by the leaf\'s host-safe `helpers`
+ * from the chain deployment registry and surfaced by `deploymentAddresses`. The
+ * shape is always defined so the host-side `helpers` can build it; only the
+ * TypeScript declaration derive is scoped to the wasm-bindgen target.
  */
-export interface DeploymentAddressesDto {
+export interface DeploymentAddresses {
     /**
      * Settlement contract.
      */
@@ -101,15 +203,32 @@ export interface DeploymentAddressesDto {
      */
     vaultRelayer: string;
     /**
-     * EthFlow contract.
+     * `EthFlow` contract.
      */
     ethFlow: string;
 }
 
 /**
- * Generated order UID output.
+ * Destination to which the `buyAmount` is transferred upon order fulfillment.
+ *
+ * This mirrors the services `BuyTokenDestination` enum byte-for-byte on the
+ * wire. The buy-side payout path only accepts the ERC-20 and internal
+ * variants; the [`SellTokenSource::External`] variant has no buy-side
+ * counterpart.
  */
-export interface GeneratedOrderUidDto {
+export type BuyTokenDestination = "erc20" | "internal";
+
+/**
+ * Generated order UID output.
+ *
+ * A default-flavour boundary projection that renames the native signing crate\'s
+ * generated-order-id fields to the `{orderUid, orderDigest}` the boundary
+ * surfaces (from `computeOrderUid` / `orderDigest`). The rename helper that
+ * builds it from the native type lives in the leaf\'s host-safe `helpers`; this
+ * module carries only the boundary shape. The shape is always defined; only the
+ * TypeScript declaration derive is scoped to the wasm-bindgen target.
+ */
+export interface GeneratedOrderUid {
     /**
      * Compact order UID.
      */
@@ -118,6 +237,36 @@ export interface GeneratedOrderUidDto {
      * Underlying order digest.
      */
     orderDigest: string;
+}
+
+/**
+ * Generic EIP-712 envelope shape used by typed helpers and signer payloads.
+ *
+ * The signer-facing alias uses a canonical JSON string for `message` so the
+ * payload travels as one self-contained, digest-complete value: domain,
+ * full type map, primary-type name, and message together.
+ */
+export interface TypedDataEnvelope<M> {
+    /**
+     * Domain metadata used to compute the typed-data digest.
+     */
+    domain: TypedDataDomain;
+    /**
+     * Primary type name for the payload.
+     */
+    primaryType: string;
+    /**
+     * Full type map including the primary type and `EIP712Domain`.
+     *
+     * Typed as `Record` on the TypeScript boundary because the runtime
+     * serializer emits a plain JavaScript object for the `BTreeMap`; the
+     * override aligns the generated declaration with the wire shape.
+     */
+    types: Record<string, TypedDataField[]>;
+    /**
+     * Payload message body.
+     */
+    message: M;
 }
 
 /**
@@ -137,65 +286,6 @@ export type Hash32 = string;
 export type WasmError = { kind: "invalidInput"; message: string; field?: string } | { kind: "unknownEnumValue"; message: string; field: string; value: string } | { kind: "unsupportedChain"; message: string; chainId: number } | { kind: "walletRequest"; method: string; code?: number; message: string } | { kind: "walletTimeout"; message: string; timeoutMs: number } | { kind: "transport"; class: string; message: string; status?: number; headers?: [string, string][]; body?: string } | { kind: "orderbook"; code?: string; category?: OrderBookRejectionCategoryDto; errorType?: string; message: string; retryable?: boolean; retryAfterMs?: number } | { kind: "subgraph"; message: string } | { kind: "signing"; message: string } | { kind: "appData"; class?: string; message: string } | { kind: "cancelled"; message: string } | { kind: "internal"; message: string } | { kind: "__unknown"; message: string; raw: Value };
 
 /**
- * Order input shared by signing and UID exports.
- */
-export interface OrderInput {
-    /**
-     * Sell token address.
-     */
-    sellToken: string;
-    /**
-     * Buy token address.
-     */
-    buyToken: string;
-    /**
-     * Optional receiver.
-     */
-    receiver?: string;
-    /**
-     * Sell amount.
-     */
-    sellAmount: string;
-    /**
-     * Buy amount.
-     */
-    buyAmount: string;
-    /**
-     * Valid-to timestamp.
-     */
-    validTo: number;
-    /**
-     * App-data hash.
-     */
-    appData: string;
-    /**
-     * Fee amount.
-     */
-    feeAmount: string;
-    /**
-     * Order side.
-     */
-    kind: OrderKindDto;
-    /**
-     * Partial fill flag.
-     */
-    partiallyFillable: boolean;
-    /**
-     * Sell balance source.
-     */
-    sellTokenBalance: TokenBalanceDto;
-    /**
-     * Buy balance destination.
-     */
-    buyTokenBalance: TokenBalanceDto;
-}
-
-/**
- * Order side accepted by wasm order inputs.
- */
-export type OrderKindDto = "sell" | "buy";
-
-/**
  * Raw EVM event log accepted by the on-chain event decoders.
  *
  * `topics` carries the indexed log topics as `0x`-prefixed 32-byte hex
@@ -203,7 +293,7 @@ export type OrderKindDto = "sell" | "buy";
  * ABI-encoded non-indexed payload as a `0x`-prefixed hex string (`\"0x\"` for an
  * empty payload).
  */
-export interface EventLogInput {
+export interface EventLog {
     /**
      * Indexed log topics as 0x-prefixed 32-byte hex strings (topic-0 first).
      */
@@ -215,9 +305,19 @@ export interface EventLogInput {
 }
 
 /**
- * Signed order DTO returned by wallet callback exports.
+ * Sell or buy side of a trade.
+ *
+ * Encoded as `keccak256(\"buy\")` / `keccak256(\"sell\")` in the EIP-712
+ * `Order` type. The set of variants is fixed by the protocol; adding a third
+ * variant would change the protocol, not the SDK. Classified as
+ * `protocol-fixed-exhaustive` in the workspace enum policy manifest.
  */
-export interface SignedOrderDto {
+export type OrderKind = "sell" | "buy";
+
+/**
+ * Signed order returned by wallet callback exports.
+ */
+export interface SignedOrder {
     /**
      * Compact order UID.
      */
@@ -241,7 +341,7 @@ export interface SignedOrderDto {
     /**
      * Typed-data envelope used for signing.
      */
-    typedData: TypedDataEnvelopeDto;
+    typedData: TypedDataEnvelope<Value>;
     /**
      * Optional quote id.
      */
@@ -249,73 +349,106 @@ export interface SignedOrderDto {
 }
 
 /**
- * Token-balance mode accepted by wasm order inputs.
+ * Source from which the `sellAmount` is drawn upon order fulfillment.
+ *
+ * This mirrors the services `SellTokenSource` enum byte-for-byte on the wire.
+ * Orders model the sell-side allowance path independently of the buy-side
+ * payout path, which is typed as [`BuyTokenDestination`].
  */
-export type TokenBalanceDto = "erc20" | "external" | "internal";
+export type SellTokenSource = "erc20" | "external" | "internal";
 
 /**
- * Typed-data domain DTO.
+ * Typed-data domain metadata used for EIP-712 signing.
  */
-export interface TypedDataDomainDto {
+export interface TypedDataDomain {
     /**
-     * Domain name.
+     * Human-readable protocol name.
      */
     name: string;
     /**
-     * Domain version.
+     * Domain version string.
      */
     version: string;
     /**
-     * Chain id.
+     * Numeric chain id for the typed-data domain.
      */
     chainId: number;
     /**
-     * Verifying contract.
+     * Contract address used as the domain verifier.
      */
-    verifyingContract: string;
+    verifyingContract: Address;
 }
 
 /**
- * Typed-data envelope DTO.
+ * User-domain order shape prepared for signing and trading workflows.
+ *
+ * It is the canonical signed-order payload and mirrors the upstream services
+ * `OrderData` byte-for-byte (the same field set, EIP-712 type hash, and field
+ * ordering). This is not an orderbook wire DTO or an ABI struct. It is hashed
+ * directly by `cow_sdk_contracts::hash_order` for the EIP-712 digest and UID
+ * (a `receiver` of `address(0)` is the legal \"pay-to-owner\" sentinel). It is
+ * submitted to the orderbook as `cow_sdk_orderbook::OrderCreation` and read
+ * back as the separate `cow_sdk_orderbook::Order` response record.
+ *
+ * All fields are public and the struct is exhaustive: the field set is the
+ * EIP-712 `Order` struct frozen by the deployed settlement contract, so it
+ * cannot grow without a protocol-level change. Construct it as a struct
+ * literal (named fields make the three addresses and three amounts
+ * impossible to transpose) or through [`OrderData::new`] and the chainable
+ * `with_*` setters when positional construction reads better at the call
+ * site.
  */
-export interface TypedDataEnvelopeDto {
+export interface OrderData {
     /**
-     * Domain metadata.
+     * Sell token address.
      */
-    domain: TypedDataDomainDto;
+    sellToken: Address;
     /**
-     * Primary type.
+     * Buy token address.
      */
-    primaryType: string;
+    buyToken: Address;
     /**
-     * Type map.
-     *
-     * Typed as `Record` because the runtime serializer
-     * (`serde_wasm_bindgen::Serializer::json_compatible`) emits a
-     * plain JavaScript object for `BTreeMap` fields. The override
-     * aligns the generated TypeScript declaration with the runtime
-     * shape so the declared type matches the value the wasm boundary
-     * emits byte-for-byte.
+     * Receiver of the bought tokens. Defaults to the zero address — which the
+     * settlement contract interprets as pay-to-owner — when omitted on the input
+     * boundary; always serialized on a resolved order.
      */
-    types: Record<string, TypedDataFieldDto[]>;
+    receiver?: Address;
     /**
-     * Parsed message body.
+     * Exact sell amount for sell orders or maximum sell amount for buy orders.
      */
-    message: Value;
-}
-
-/**
- * Typed-data field DTO.
- */
-export interface TypedDataFieldDto {
+    sellAmount: Amount;
     /**
-     * Field name.
+     * Exact buy amount for buy orders or minimum buy amount for sell orders.
      */
-    name: string;
+    buyAmount: Amount;
     /**
-     * Solidity field type.
+     * Expiration timestamp encoded as `uint32`.
      */
-    type: string;
+    validTo: number;
+    /**
+     * App-data hash linked to the order.
+     */
+    appData: AppDataHash;
+    /**
+     * Fee amount encoded in sell-token units.
+     */
+    feeAmount: Amount;
+    /**
+     * Order side.
+     */
+    kind: OrderKind;
+    /**
+     * Whether the order can be partially filled.
+     */
+    partiallyFillable?: boolean;
+    /**
+     * Sell-token balance source.
+     */
+    sellTokenBalance?: SellTokenSource;
+    /**
+     * Buy-token balance destination.
+     */
+    buyTokenBalance?: BuyTokenDestination;
 }
 
 /**
@@ -415,8 +548,13 @@ export interface WasmEnvelope<T> {
 
 /**
  * Wrapped-native token metadata.
+ *
+ * A default-flavour boundary construct built by the leaf\'s host-safe `helpers`
+ * from the native wrapped-native lookup and surfaced by `wrappedNativeToken`.
+ * The shape is always defined; only the TypeScript declaration derive is scoped
+ * to the wasm-bindgen target.
  */
-export interface WrappedNativeTokenDto {
+export interface WrappedNativeToken {
     /**
      * Wrapped-native token contract address.
      */
@@ -443,13 +581,13 @@ export function __cow_sdk_wasm_init(): void;
  * The UID combines the EIP-712 order digest, owner address, and validity
  * timestamp using the same packing rules as the native Rust SDK.
  *
- * @param input Unsigned order fields to hash and pack.
+ * @param order Unsigned order fields to hash and pack.
  * @param chainId EVM chain id used for the EIP-712 domain.
  * @param owner Order owner address included in the UID suffix.
  * @returns A versioned envelope with `orderUid` and `orderDigest`.
  * @throws CowError when the order, owner, or chain id is invalid.
  */
-export function computeOrderUid(input: OrderInput, chainId: number, owner: string): WasmEnvelope<GeneratedOrderUidDto>;
+export function computeOrderUid(order: OrderData, chainId: number, owner: string): WasmEnvelope<GeneratedOrderUid>;
 
 /**
  * Decodes an eth-flow on-chain order lifecycle event log into a typed event.
@@ -466,7 +604,7 @@ export function computeOrderUid(input: OrderInput, chainId: number, owner: strin
  * @throws CowError when the log is malformed or its topic set matches no known
  * eth-flow lifecycle event.
  */
-export function decodeEthFlowLog(log: EventLogInput): WasmEnvelope<EthFlowEventDto>;
+export function decodeEthFlowLog(log: EventLog): WasmEnvelope<EthFlowEvent>;
 
 /**
  * Decodes a `GPv2Settlement` event log into a typed settlement event.
@@ -482,7 +620,7 @@ export function decodeEthFlowLog(log: EventLogInput): WasmEnvelope<EthFlowEventD
  * @throws CowError when the log is malformed or its topic set matches no known
  * settlement event.
  */
-export function decodeSettlementLog(log: EventLogInput): WasmEnvelope<SettlementEventDto>;
+export function decodeSettlementLog(log: EventLog): WasmEnvelope<SettlementEvent>;
 
 /**
  * Returns canonical CoW Protocol deployment addresses for a chain.
@@ -495,7 +633,7 @@ export function decodeSettlementLog(log: EventLogInput): WasmEnvelope<Settlement
  * @returns Settlement, VaultRelayer, EthFlow, and AllowListAuth addresses.
  * @throws CowError when the chain or environment is unsupported.
  */
-export function deploymentAddresses(chainId: number, env?: string | null): WasmEnvelope<DeploymentAddressesDto>;
+export function deploymentAddresses(chainId: number, env?: string | null): WasmEnvelope<DeploymentAddresses>;
 
 /**
  * Computes the CoW Protocol EIP-712 domain separator for a supported chain.
@@ -508,7 +646,7 @@ export function deploymentAddresses(chainId: number, env?: string | null): WasmE
  * @returns The `0x`-prefixed 32-byte domain separator.
  * @throws CowError when the chain is not supported.
  */
-export function domainSeparator(chainId: number): string;
+export function domainSeparator(chainId: number): any;
 
 /**
  * Encodes a CoW EIP-1271 payload from an ECDSA order signature.
@@ -517,12 +655,12 @@ export function domainSeparator(chainId: number): string;
  * signature and needs the contract-signature payload bytes expected by CoW
  * Protocol order submission.
  *
- * @param input Unsigned order used to derive the EIP-1271 payload.
+ * @param order Unsigned order used to derive the EIP-1271 payload.
  * @param ecdsaSignature Wrapped ECDSA signature as a `0x`-prefixed string.
  * @returns A versioned envelope containing the encoded EIP-1271 payload.
  * @throws CowError when the order or signature is invalid.
  */
-export function eip1271SignaturePayload(input: OrderInput, ecdsaSignature: string): WasmEnvelope<string>;
+export function eip1271SignaturePayload(order: OrderData, ecdsaSignature: string): WasmEnvelope<string>;
 
 /**
  * Builds signer-facing EIP-712 typed data for an unsigned order.
@@ -531,12 +669,12 @@ export function eip1271SignaturePayload(input: OrderInput, ecdsaSignature: strin
  * order message that wallet libraries expect for EIP-712 signing. It is
  * deterministic for the provided order and chain id.
  *
- * @param input Unsigned order fields using the facade order DTO shape.
+ * @param order Unsigned order fields using the native order shape.
  * @param chainId EVM chain id used for the EIP-712 domain.
  * @returns A versioned envelope containing typed-data DTO fields.
  * @throws CowError when order parsing or chain validation fails.
  */
-export function orderTypedData(input: OrderInput, chainId: number): WasmEnvelope<TypedDataEnvelopeDto>;
+export function orderTypedData(order: OrderData, chainId: number): WasmEnvelope<TypedDataEnvelope<Value>>;
 
 /**
  * Signs an order digest through an explicit `eth_sign` callback.
@@ -545,7 +683,7 @@ export function orderTypedData(input: OrderInput, chainId: number): WasmEnvelope
  * `0x`-prefixed string to the callback, normalizes the signature, and returns
  * an `ethsign` signed-order DTO.
  *
- * @param input Unsigned order fields to sign.
+ * @param order Unsigned order fields to sign.
  * @param chainId EVM chain id used for the digest.
  * @param owner Owner address used in the generated order UID.
  * @param digestSigner Callback that signs the digest string.
@@ -553,7 +691,7 @@ export function orderTypedData(input: OrderInput, chainId: number): WasmEnvelope
  * @returns A versioned envelope containing the signed order.
  * @throws CowError for invalid input, callback failure, timeout, or cancellation.
  */
-export function signOrderEthSignDigest(input: OrderInput, chainId: number, owner: string, digestSigner: DigestSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrderDto>>;
+export function signOrderEthSignDigest(order: OrderData, chainId: number, owner: string, digestSigner: DigestSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrder>>;
 
 /**
  * Signs an order through a custom EIP-1271 callback.
@@ -562,7 +700,7 @@ export function signOrderEthSignDigest(input: OrderInput, chainId: number, owner
  * account-abstraction client and can return the final contract signature
  * directly. The SDK still builds typed data and the deterministic order UID.
  *
- * @param input Unsigned order to sign.
+ * @param order Unsigned order to sign.
  * @param chainId EVM chain id for the EIP-712 domain.
  * @param owner Smart-account owner address used in the generated order UID.
  * @param customCallback Callback that returns the final EIP-1271 signature.
@@ -570,7 +708,7 @@ export function signOrderEthSignDigest(input: OrderInput, chainId: number, owner
  * @returns A versioned envelope containing the signed-order DTO.
  * @throws CowError for invalid input, callback failure, timeout, or cancellation.
  */
-export function signOrderWithCustomEip1271(input: OrderInput, chainId: number, owner: string, customCallback: CustomEip1271Callback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrderDto>>;
+export function signOrderWithCustomEip1271(order: OrderData, chainId: number, owner: string, customCallback: CustomEip1271Callback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrder>>;
 
 /**
  * Signs an order through typed-data ECDSA and wraps it as EIP-1271.
@@ -579,7 +717,7 @@ export function signOrderWithCustomEip1271(input: OrderInput, chainId: number, o
  * then converts the returned ECDSA signature into the CoW EIP-1271 payload.
  * Per-call options may attach cancellation and wallet timeout settings.
  *
- * @param input Unsigned order to sign.
+ * @param order Unsigned order to sign.
  * @param chainId EVM chain id for the EIP-712 domain.
  * @param owner Smart-account owner address used in the generated order UID.
  * @param typedDataSigner Callback that signs the typed-data envelope.
@@ -587,7 +725,7 @@ export function signOrderWithCustomEip1271(input: OrderInput, chainId: number, o
  * @returns A versioned envelope containing the signed-order DTO.
  * @throws CowError for invalid input, callback failure, timeout, or cancellation.
  */
-export function signOrderWithEip1271(input: OrderInput, chainId: number, owner: string, typedDataSigner: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrderDto>>;
+export function signOrderWithEip1271(order: OrderData, chainId: number, owner: string, typedDataSigner: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrder>>;
 
 /**
  * Signs an order through a typed-data callback.
@@ -596,7 +734,7 @@ export function signOrderWithEip1271(input: OrderInput, chainId: number, owner: 
  * normalizes the returned ECDSA signature, and returns the signed-order DTO
  * with the canonical order UID and digest.
  *
- * @param input Unsigned order fields to sign.
+ * @param order Unsigned order fields to sign.
  * @param chainId EVM chain id used for the EIP-712 domain.
  * @param owner Owner address used in the generated order UID.
  * @param typedDataSigner Callback that signs the typed-data envelope.
@@ -604,7 +742,7 @@ export function signOrderWithEip1271(input: OrderInput, chainId: number, owner: 
  * @returns A versioned envelope containing the signed order.
  * @throws CowError for invalid input, callback failure, timeout, or cancellation.
  */
-export function signOrderWithTypedDataSigner(input: OrderInput, chainId: number, owner: string, typedDataSigner: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrderDto>>;
+export function signOrderWithTypedDataSigner(order: OrderData, chainId: number, owner: string, typedDataSigner: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrder>>;
 
 /**
  * Returns the EVM chain ids supported by the SDK deployment registry.
@@ -638,4 +776,4 @@ export function wasmVersion(): string;
  * @returns The wrapped-native token address, symbol, and decimals.
  * @throws CowError when the chain is not supported.
  */
-export function wrappedNativeToken(chainId: number): WasmEnvelope<WrappedNativeTokenDto>;
+export function wrappedNativeToken(chainId: number): WasmEnvelope<WrappedNativeToken>;

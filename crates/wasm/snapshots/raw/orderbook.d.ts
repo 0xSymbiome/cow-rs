@@ -22,7 +22,7 @@ export interface SigningOptions extends SdkClientOptions {
 }
 
 export type TypedDataSignerCallback = (
-envelope: TypedDataEnvelopeDto,
+envelope: TypedDataEnvelope<Value>,
 ) => Promise<string> | string;
 
 export type DigestSignerCallback = (
@@ -74,59 +74,148 @@ export interface SdkClientOptions {
 /**
  * A decoded `GPv2Settlement` (or inherited `GPv2Signing`) event.
  *
- * Mirrors `cow_sdk_contracts::SettlementEvent`. Addresses and the order UID
+ * Projects `cow_sdk_contracts::SettlementEvent`. Addresses and the order UID
  * are lowercase `0x`-prefixed hex; amounts are base-10 atom strings; the
  * interaction `selector` is a `0x`-prefixed 4-byte hex string. The `kind`
  * discriminator distinguishes the variants.
  */
-export type SettlementEventDto = { kind: "trade"; owner: string; sellToken: string; buyToken: string; sellAmount: string; buyAmount: string; feeAmount: string; orderUid: string } | { kind: "interaction"; target: string; value: string; selector: string } | { kind: "settlement"; solver: string } | { kind: "orderInvalidated"; owner: string; orderUid: string } | { kind: "preSignature"; owner: string; orderUid: string; signed: boolean };
+export type SettlementEvent = { kind: "trade"; owner: string; sellToken: string; buyToken: string; sellAmount: string; buyAmount: string; feeAmount: string; orderUid: string } | { kind: "interaction"; target: string; value: string; selector: string } | { kind: "settlement"; solver: string } | { kind: "orderInvalidated"; owner: string; orderUid: string } | { kind: "preSignature"; owner: string; orderUid: string; signed: boolean };
 
 /**
  * A decoded eth-flow on-chain order lifecycle event.
  *
- * Mirrors `cow_sdk_contracts::EthFlowEvent`. The placement `order` reuses the
- * canonical [`OrderInput`] shape (its `validTo` is the on-chain clamped value;
+ * Projects `cow_sdk_contracts::EthFlowEvent`. The placement `order` reuses the
+ * canonical [`OrderData`] shape (its `validTo` is the on-chain clamped value;
  * the trader\'s real expiry travels in the opaque `data` trailer). `signature`
  * and `data` are `0x`-prefixed hex strings carrying the raw on-chain signature
  * payload and the opaque trailing data field; addresses and the order UID are
  * lowercase `0x`-prefixed hex. The `kind` discriminator distinguishes the
  * variants.
  */
-export type EthFlowEventDto = { kind: "orderPlacement"; sender: string; order: OrderInput; signingScheme: string; signature: string; data: string } | { kind: "orderInvalidation"; orderUid: string } | { kind: "orderRefund"; orderUid: string; refunder: string };
+export type EthFlowEvent = { kind: "orderPlacement"; sender: string; order: OrderData; signingScheme: string; signature: string; data: string } | { kind: "orderInvalidation"; orderUid: string } | { kind: "orderRefund"; orderUid: string; refunder: string };
 
 /**
- * A single pre/post interaction attached to an order, mirroring
- * `cow_sdk_orderbook::InteractionData`.
+ * A single EIP-712 typed-data field descriptor.
  */
-export interface InteractionDataDto {
+export interface TypedDataField {
     /**
-     * Contract address targeted by the interaction.
+     * Field name as it appears in the typed-data schema.
      */
-    target: string;
+    name: string;
     /**
-     * Native token value sent with the interaction.
+     * Solidity type name for the field.
      */
-    value: string;
-    /**
-     * Hex-encoded calldata forwarded to `target`.
-     */
-    callData: string;
+    type: string;
 }
 
 /**
- * Auction snapshot nested in a solver-competition response, mirroring
- * `cow_sdk_orderbook::CompetitionAuction`.
+ * A single order touched by a solver\'s settlement.
  */
-export interface CompetitionAuctionDto {
+export interface SolverCompetitionOrder {
     /**
-     * Order UIDs included in the auction.
+     * Order UID.
      */
-    orders?: string[];
+    id: OrderUid;
     /**
-     * Reference prices keyed by token address.
+     * Effective sell amount including all fees.
      */
-    prices?: Record<string, string>;
+    sellAmount: Amount;
+    /**
+     * Effective buy amount after all fees.
+     */
+    buyAmount: Amount;
+    /**
+     * Buy-token address, when rendered by the API.
+     */
+    buyToken?: Address;
+    /**
+     * Sell-token address, when rendered by the API.
+     */
+    sellToken?: Address;
 }
+
+/**
+ * Canonical non-negative `uint256` quantity.
+ *
+ * `Amount` is the typed boundary for atomic token values on every
+ * `CoW` Protocol surface: contract hashing, EIP-712 typed data,
+ * orderbook DTOs, and decimal-aware display. The newtype is
+ * `#[repr(transparent)]` over [`alloy_primitives::U256`], so the
+ * in-memory layout is bit-for-bit identical to the alloy primitive and
+ * conversion at the alloy seam is free at runtime through
+ * [`Amount::as_u256`] (borrowed), [`Amount::into_u256`] (owned), or
+ * [`From`] / [`Into`].
+ *
+ * `Amount` carries cow-owned [`fmt::Display`], [`Serialize`], and
+ * [`Deserialize`] impls so the wire form stays the canonical decimal
+ * string the orderbook and contract layer accept. The cow-owned
+ * `Deserialize` is strict-decimal fail-closed: it rejects `0x`, `0X`,
+ * `0o`, `0O`, `0b`, `0B` prefixes (the four alternative radices the
+ * alloy [`U256`] `FromStr` impl would otherwise accept silently) so the
+ * cow JSON-decimal-only wire contract holds even when the value is fed
+ * through serde rather than [`Amount::new`].
+ *
+ * # Construction
+ *
+ * Pick the constructor that matches the value you already hold; every
+ * path lands on the same atomic `uint256`:
+ *
+ * - Raw atomic units from an integer — [`Amount::from`] (`u32` / `u64` /
+ *   `u128` / `usize`) or [`Amount::from_u256`].
+ * - Whole display units from a number — [`Amount::from_units`], for
+ *   example `Amount::from_units(1000, 6)` for 1000 USDC (no string and no
+ *   hand-counted zeros).
+ * - Fractional or untrusted-text display units — [`Amount::parse_units`],
+ *   for example `Amount::parse_units(\"1.5\", 18)` for 1.5 WETH.
+ * - A decimal or `0x`-hex string of atomic units from a CLI flag,
+ *   environment variable, or config file — [`Amount::new`].
+ *
+ * [`Amount::format_units`] is the inverse of the unit-scaled constructors
+ * for human-readable display.
+ *
+ * # Surface boundary
+ *
+ * The arithmetic surface is intentionally narrower than the inner
+ * [`alloy_primitives::U256`]. `Amount` does **not** expose:
+ *
+ * - `Add` / `Sub` / `Mul` (and the `*Assign` operators): the bare
+ *   `+` `-` `*` operators on the inner `U256` wrap silently on
+ *   overflow and underflow, which is incompatible with
+ *   financial-amount safety — `a - b` for `a < b` would silently
+ *   become a value near `2^256`. Typed arithmetic is therefore
+ *   fallible by return: use [`Amount::checked_add`] /
+ *   [`Amount::checked_sub`] / [`Amount::checked_mul`] (`-> Option`),
+ *   or the explicit [`Amount::saturating_add`] /
+ *   [`Amount::saturating_sub`] / [`Amount::saturating_mul`] clamps.
+ *   A caller who genuinely wants wrapping reaches through
+ *   [`Amount::as_u256`] / [`Amount::into_u256`], making the wrapping
+ *   intent visible at the type boundary.
+ * - `wrapping_*` / `overflowing_*`: same rationale; the wrapping and
+ *   `(value, overflow)` tuple forms belong at the low-level
+ *   primitive seam, not on the typed financial surface.
+ * - Exponentiation (`pow`, `checked_pow`, `saturating_pow`): raising
+ *   a token amount to a power has no money meaning, so no
+ *   exponentiation form is exposed.
+ * - Bit-inspection helpers (`bit_len`, `bits`, `count_ones`,
+ *   `count_zeros`, `leading_zeros`, `trailing_zeros`,
+ *   `is_power_of_two`, `next_power_of_two`): counting or measuring
+ *   the bits of a token amount has no money meaning either, so none
+ *   are exposed. A caller that genuinely needs them reaches through
+ *   [`Amount::as_u256`].
+ *
+ * The shipped surface is: [`Amount::ZERO`], [`Amount::MAX`],
+ * [`Amount::new`], [`Amount::checked_add`] / [`Amount::checked_sub`]
+ * / [`Amount::checked_mul`], [`Amount::saturating_add`] /
+ * [`Amount::saturating_sub`] / [`Amount::saturating_mul`], and
+ * [`Amount::as_u256`] / [`Amount::into_u256`] for the explicit alloy
+ * seam. This covers every operation cow\'s own crates need to perform
+ * on a typed amount.
+ *
+ * There is no `From<String>` or `From<&str>` conversion: construct through
+ * [`Amount::new`] or [`Amount::parse_units`] so malformed input fails closed
+ * at the typed boundary rather than via an infallible `.into()`.
+ */
+export type Amount = string;
 
 /**
  * Coarse, switchable classification of an orderbook rejection, mirrored for
@@ -140,39 +229,36 @@ export interface CompetitionAuctionDto {
 export type OrderBookRejectionCategoryDto = "authorization" | "insufficientFunds" | "invalidOrder" | "notFound" | "conflict" | "unfulfillable" | "server" | "__unknown";
 
 /**
- * Competition status for an order, mirroring
- * `cow_sdk_orderbook::CompetitionOrderStatus`.
+ * Competition-status kind returned by `/api/v1/orders/{uid}/status`.
  */
-export interface CompetitionOrderStatusDto {
+export type CompetitionOrderStatusKind = "open" | "scheduled" | "active" | "solved" | "executing" | "traded" | "cancelled";
+
+/**
+ * Competition-status response for an order.
+ */
+export interface CompetitionOrderStatus {
     /**
-     * High-level competition status kind (the wire `type` field).
+     * High-level competition status kind.
      */
-    type: CompetitionOrderStatusKindDto;
+    type: CompetitionOrderStatusKind;
     /**
      * Optional solver execution payload.
      */
-    value?: SolverExecutionDto[];
+    value?: SolverExecution[];
 }
-
-/**
- * Competition-status kind for an order, mirroring
- * `cow_sdk_orderbook::CompetitionOrderStatusKind`, whose wire form is the
- * camelCased variant name.
- */
-export type CompetitionOrderStatusKindDto = "open" | "scheduled" | "active" | "solved" | "executing" | "traded" | "cancelled";
 
 /**
  * Custom EIP-1271 callback request.
  */
 export interface CowEip1271SignRequest {
     /**
-     * Original order input.
+     * Unsigned order being signed.
      */
-    order: OrderInput;
+    order: OrderData;
     /**
      * Typed-data envelope.
      */
-    typedData: TypedDataEnvelopeDto;
+    typedData: TypedDataEnvelope<Value>;
     /**
      * Owner or smart-account address.
      */
@@ -185,8 +271,13 @@ export interface CowEip1271SignRequest {
 
 /**
  * Deployment address output.
+ *
+ * A default-flavour boundary construct built by the leaf\'s host-safe `helpers`
+ * from the chain deployment registry and surfaced by `deploymentAddresses`. The
+ * shape is always defined so the host-side `helpers` can build it; only the
+ * TypeScript declaration derive is scoped to the wasm-bindgen target.
  */
-export interface DeploymentAddressesDto {
+export interface DeploymentAddresses {
     /**
      * Settlement contract.
      */
@@ -196,50 +287,57 @@ export interface DeploymentAddressesDto {
      */
     vaultRelayer: string;
     /**
-     * EthFlow contract.
+     * `EthFlow` contract.
      */
     ethFlow: string;
 }
 
 /**
- * Executed protocol-fee component of a trade, mirroring
- * `cow_sdk_orderbook::ExecutedProtocolFee`.
+ * Destination to which the `buyAmount` is transferred upon order fulfillment.
+ *
+ * This mirrors the services `BuyTokenDestination` enum byte-for-byte on the
+ * wire. The buy-side payout path only accepts the ERC-20 and internal
+ * variants; the [`SellTokenSource::External`] variant has no buy-side
+ * counterpart.
  */
-export interface ExecutedProtocolFeeDto {
+export type BuyTokenDestination = "erc20" | "internal";
+
+/**
+ * Executed protocol-fee metadata returned on trade records.
+ */
+export interface ExecutedProtocolFee {
     /**
-     * Fee policy that produced this fee, when services returns it (arbitrary
-     * JSON mirroring the upstream policy shape).
+     * Fee policy that produced this fee, when services returns it.
      */
     policy?: Value;
     /**
      * Fee amount taken.
      */
-    amount?: string;
+    amount?: Amount;
     /**
      * Token in which the fee was taken.
      */
-    token?: string;
+    token?: Address;
 }
 
 /**
- * Executed sell and buy amounts for a solver path, mirroring
- * `cow_sdk_orderbook::ExecutedAmounts`.
+ * Executed sell and buy amounts for a solver path.
  */
-export interface ExecutedAmountsDto {
+export interface ExecutedAmounts {
     /**
-     * Executed sell amount in the upstream decimal-string wire shape.
+     * Executed sell amount.
      */
-    sell: string;
+    sell: Amount;
     /**
-     * Executed buy amount in the upstream decimal-string wire shape.
+     * Executed buy amount.
      */
-    buy: string;
+    buy: Amount;
 }
 
 /**
- * Full app-data document returned by the orderbook app-data endpoint.
+ * Full app-data response from the orderbook app-data endpoint.
  */
-export interface AppDataObjectDto {
+export interface AppDataObject {
     /**
      * Full serialized app-data payload.
      */
@@ -248,8 +346,15 @@ export interface AppDataObjectDto {
 
 /**
  * Generated order UID output.
+ *
+ * A default-flavour boundary projection that renames the native signing crate\'s
+ * generated-order-id fields to the `{orderUid, orderDigest}` the boundary
+ * surfaces (from `computeOrderUid` / `orderDigest`). The rename helper that
+ * builds it from the native type lives in the leaf\'s host-safe `helpers`; this
+ * module carries only the boundary shape. The shape is always defined; only the
+ * TypeScript declaration derive is scoped to the wasm-bindgen target.
  */
-export interface GeneratedOrderUidDto {
+export interface GeneratedOrderUid {
     /**
      * Compact order UID.
      */
@@ -258,6 +363,36 @@ export interface GeneratedOrderUidDto {
      * Underlying order digest.
      */
     orderDigest: string;
+}
+
+/**
+ * Generic EIP-712 envelope shape used by typed helpers and signer payloads.
+ *
+ * The signer-facing alias uses a canonical JSON string for `message` so the
+ * payload travels as one self-contained, digest-complete value: domain,
+ * full type map, primary-type name, and message together.
+ */
+export interface TypedDataEnvelope<M> {
+    /**
+     * Domain metadata used to compute the typed-data digest.
+     */
+    domain: TypedDataDomain;
+    /**
+     * Primary type name for the payload.
+     */
+    primaryType: string;
+    /**
+     * Full type map including the primary type and `EIP712Domain`.
+     *
+     * Typed as `Record` on the TypeScript boundary because the runtime
+     * serializer emits a plain JavaScript object for the `BTreeMap`; the
+     * override aligns the generated declaration with the wire shape.
+     */
+    types: Record<string, TypedDataField[]>;
+    /**
+     * Payload message body.
+     */
+    message: M;
 }
 
 /**
@@ -282,10 +417,9 @@ export type WasmError = { kind: "invalidInput"; message: string; field?: string 
 export type JitterStrategyConfig = "none" | "full" | "equal" | "decorrelated";
 
 /**
- * Native-price response from the orderbook native-price endpoint, mirroring
- * `cow_sdk_orderbook::NativePriceResponse`.
+ * Native-price response from `/api/v1/token/{token}/native_price`.
  */
-export interface NativePriceResponseDto {
+export interface NativePriceResponse {
     /**
      * Token price quoted in the chain\'s native asset.
      */
@@ -293,14 +427,28 @@ export interface NativePriceResponseDto {
 }
 
 /**
- * On-chain placement metadata, mirroring
- * `cow_sdk_orderbook::OnchainOrderData`.
+ * Nested auction snapshot inside solver-competition responses.
  */
-export interface OnchainOrderDataDto {
+export interface CompetitionAuction {
+    /**
+     * Order UIDs participating in the competition.
+     */
+    orders?: OrderUid[];
+    /**
+     * Clearing prices keyed by token address.
+     */
+    prices?: Record<string, string>;
+}
+
+/**
+ * On-chain order placement metadata returned by the orderbook for orders that
+ * originated from an on-chain submission path.
+ */
+export interface OnchainOrderData {
     /**
      * Sender address associated with the on-chain placement.
      */
-    sender: string;
+    sender: Address;
     /**
      * Placement error emitted by services, when on-chain placement failed.
      */
@@ -308,317 +456,33 @@ export interface OnchainOrderDataDto {
 }
 
 /**
- * One order touched by a solver settlement, mirroring
- * `cow_sdk_orderbook::SolverCompetitionOrder`.
+ * Optional pre and post interactions attached to an order response.
  */
-export interface SolverCompetitionOrderDto {
+export interface OrderInteractions {
     /**
-     * Order UID.
+     * Interactions executed before the order\'s trade.
      */
-    id: string;
+    pre?: InteractionData[];
     /**
-     * Sell amount in the upstream decimal-string wire shape.
+     * Interactions executed after the order\'s trade.
      */
-    sellAmount: string;
-    /**
-     * Buy amount in the upstream decimal-string wire shape.
-     */
-    buyAmount: string;
-    /**
-     * Buy-token address, when the service returns it.
-     */
-    buyToken?: string;
-    /**
-     * Sell-token address, when the service returns it.
-     */
-    sellToken?: string;
+    post?: InteractionData[];
 }
 
 /**
- * One solver\'s settlement entry in a competition, mirroring
- * `cow_sdk_orderbook::SolverSettlement`.
+ * Order class surfaced by the orderbook API.
  */
-export interface SolverSettlementDto {
-    /**
-     * On-chain executor address (the zero address for legacy settlements).
-     */
-    solverAddress: string;
-    /**
-     * CIP-20 score in the upstream decimal-string wire shape.
-     */
-    score: string;
-    /**
-     * Position in the total ranking.
-     */
-    ranking: number;
-    /**
-     * Clearing prices keyed by token address (deprecated; empty for recent
-     * auctions).
-     */
-    clearingPrices?: Record<string, string>;
-    /**
-     * Orders touched by this settlement.
-     */
-    orders?: SolverCompetitionOrderDto[];
-    /**
-     * Whether this solver received the right to execute.
-     */
-    isWinner: boolean;
-    /**
-     * Whether this solution was filtered out under CIP-67.
-     */
-    filteredOut: boolean;
-    /**
-     * CIP-67 reference score, when available.
-     */
-    referenceScore?: string;
-    /**
-     * Settlement transaction hash, when available.
-     */
-    txHash?: string;
-}
+export type OrderClass = "market" | "limit" | "liquidity";
 
 /**
- * Order class surfaced by the orderbook API, mirroring
- * `cow_sdk_orderbook::OrderClass`.
+ * Order lifecycle status returned by the orderbook API.
  */
-export type OrderClassDto = "market" | "limit" | "liquidity";
-
-/**
- * Order input shared by signing and UID exports.
- */
-export interface OrderInput {
-    /**
-     * Sell token address.
-     */
-    sellToken: string;
-    /**
-     * Buy token address.
-     */
-    buyToken: string;
-    /**
-     * Optional receiver.
-     */
-    receiver?: string;
-    /**
-     * Sell amount.
-     */
-    sellAmount: string;
-    /**
-     * Buy amount.
-     */
-    buyAmount: string;
-    /**
-     * Valid-to timestamp.
-     */
-    validTo: number;
-    /**
-     * App-data hash.
-     */
-    appData: string;
-    /**
-     * Fee amount.
-     */
-    feeAmount: string;
-    /**
-     * Order side.
-     */
-    kind: OrderKindDto;
-    /**
-     * Partial fill flag.
-     */
-    partiallyFillable: boolean;
-    /**
-     * Sell balance source.
-     */
-    sellTokenBalance: TokenBalanceDto;
-    /**
-     * Buy balance destination.
-     */
-    buyTokenBalance: TokenBalanceDto;
-}
-
-/**
- * Order lifecycle status returned by the orderbook API, mirroring
- * `cow_sdk_orderbook::OrderStatus`.
- */
-export type OrderStatusDto = "presignaturePending" | "open" | "fulfilled" | "cancelled" | "expired";
-
-/**
- * Order returned by the orderbook order endpoints, mirroring
- * `cow_sdk_orderbook::Order` (the enriched order shape, with the normalized
- * `totalFee` folded in).
- */
-export interface OrderDto {
-    /**
-     * Sell-token address.
-     */
-    sellToken: string;
-    /**
-     * Buy-token address.
-     */
-    buyToken: string;
-    /**
-     * Optional receiver override.
-     */
-    receiver?: string;
-    /**
-     * Sell amount in the upstream decimal-string wire shape.
-     */
-    sellAmount: string;
-    /**
-     * Buy amount in the upstream decimal-string wire shape.
-     */
-    buyAmount: string;
-    /**
-     * Absolute UNIX expiry timestamp.
-     */
-    validTo: number;
-    /**
-     * App-data hash attached to the order.
-     */
-    appData: string;
-    /**
-     * Optional app-data hash echoed for debugging by the orderbook.
-     */
-    appDataHash?: string;
-    /**
-     * Order-level fee echoed on the orderbook response; always `\"0\"` in
-     * practice because services rejects non-zero order-level fees.
-     */
-    feeAmount: string;
-    /**
-     * Strict balance-check flag, present only when the order was created with
-     * it set.
-     */
-    fullBalanceCheck?: boolean;
-    /**
-     * Order kind.
-     */
-    kind: OrderKindDto;
-    /**
-     * Whether partial fills are allowed.
-     */
-    partiallyFillable: boolean;
-    /**
-     * Sell-token balance source.
-     */
-    sellTokenBalance: TokenBalanceDto;
-    /**
-     * Buy-token balance destination.
-     */
-    buyTokenBalance: TokenBalanceDto;
-    /**
-     * Signature scheme used for `signature`.
-     */
-    signingScheme: SigningSchemeDto;
-    /**
-     * Raw signature string.
-     */
-    signature: string;
-    /**
-     * Effective owner field returned by the API, when present.
-     */
-    from?: string;
-    /**
-     * Quote id used when the order originated from a quote.
-     */
-    quoteId?: number;
-    /**
-     * Order class.
-     */
-    class: OrderClassDto;
-    /**
-     * Canonical owner surfaced by the orderbook response.
-     */
-    owner: string;
-    /**
-     * Order UID.
-     */
-    uid: string;
-    /**
-     * Creation timestamp string returned by the API.
-     */
-    creationDate?: string;
-    /**
-     * Executed sell amount.
-     */
-    executedSellAmount?: string;
-    /**
-     * Executed sell amount before fees.
-     */
-    executedSellAmountBeforeFees?: string;
-    /**
-     * Executed buy amount.
-     */
-    executedBuyAmount?: string;
-    /**
-     * Executed fee component, when provided.
-     */
-    executedFee?: string;
-    /**
-     * Deprecated legacy executed-fee value, present on older order payloads.
-     */
-    executedFeeAmount?: string;
-    /**
-     * Token in which the executed fee was captured, when returned.
-     */
-    executedFeeToken?: string;
-    /**
-     * Whether the order was invalidated by the protocol.
-     */
-    invalidated?: boolean;
-    /**
-     * Order lifecycle status.
-     */
-    status: OrderStatusDto;
-    /**
-     * Whether services classified the order as a liquidity order.
-     */
-    isLiquidityOrder?: boolean;
-    /**
-     * On-chain user for `EthFlow`-style orders.
-     */
-    onchainUser?: string;
-    /**
-     * `EthFlow`-specific metadata.
-     */
-    ethflowData?: EthflowDataDto;
-    /**
-     * On-chain placement metadata, when services returns it.
-     */
-    onchainOrderData?: OnchainOrderDataDto;
-    /**
-     * Full app-data payload, when services returns it.
-     */
-    fullAppData?: string;
-    /**
-     * Settlement contract address against which the order was signed.
-     */
-    settlementContract: string;
-    /**
-     * Stored quote metadata for quote-linked orders.
-     */
-    quote?: StoredOrderQuoteDto;
-    /**
-     * Optional pre and post interactions associated with the order.
-     */
-    interactions?: OrderInteractionsDto;
-    /**
-     * Total fee normalized by the SDK transform layer.
-     */
-    totalFee?: string;
-}
-
-/**
- * Order side accepted by wasm order inputs.
- */
-export type OrderKindDto = "sell" | "buy";
+export type OrderStatus = "presignaturePending" | "open" | "fulfilled" | "cancelled" | "expired";
 
 /**
  * Order transaction helper parameters.
  */
-export interface OrderTraderParametersInput {
+export interface OrderTraderParams {
     /**
      * Target order UID.
      */
@@ -649,9 +513,217 @@ export interface OrderTraderParametersInput {
 }
 
 /**
+ * Orderbook order response DTO.
+ *
+ * This response includes status, owner, uid, execution totals, and `EthFlow`
+ * metadata that are not part of the user-domain signing order or contract ABI
+ * hashing payload. It is one of two order-shaped types: the signing and
+ * EIP-712 hashing pivot is `cow_sdk_core::OrderData`, and this is the
+ * orderbook record. Use [`Order::signing_order`] to project a fetched order
+ * back into the `cow_sdk_core::OrderData` for client-side digest or UID
+ * re-derivation; it fails closed for `EthFlow` orders, whose response fields
+ * are rewritten for display.
+ */
+export interface Order {
+    /**
+     * Sell-token address.
+     */
+    sellToken: Address;
+    /**
+     * Buy-token address.
+     */
+    buyToken: Address;
+    /**
+     * Optional receiver override.
+     */
+    receiver?: Address;
+    /**
+     * Sell amount in the upstream decimal-string wire shape.
+     */
+    sellAmount: Amount;
+    /**
+     * Buy amount in the upstream decimal-string wire shape.
+     */
+    buyAmount: Amount;
+    /**
+     * Absolute UNIX expiry timestamp.
+     */
+    validTo: number;
+    /**
+     * App-data hash attached to the order.
+     */
+    appData: AppDataHash;
+    /**
+     * Optional app-data hash echoed for debugging by the orderbook.
+     */
+    appDataHash?: AppDataHash;
+    /**
+     * Order-level fee echoed on the orderbook response; always `\"0\"` in
+     * practice because services rejects non-zero order-level fees.
+     *
+     * Stored under the upstream wire name `feeAmount` so deserialization
+     * preserves services-schema parity; the value is not exposed on the
+     * public Rust surface.
+     *
+     * Always present in the orderbook response (services rejects a non-zero
+     * order-level fee but still echoes the `\"0\"` field), so the wire field is
+     * required rather than defaulted: a response missing it is malformed.
+     */
+    feeAmount: Amount;
+    /**
+     * Strict balance-check flag accepted by services when the order was created.
+     */
+    fullBalanceCheck?: boolean;
+    /**
+     * Order kind.
+     */
+    kind: OrderKind;
+    /**
+     * Whether partial fills are allowed. Always serialized on the response, so
+     * the wire field is required rather than defaulted.
+     */
+    partiallyFillable: boolean;
+    /**
+     * Sell-token balance source.
+     */
+    sellTokenBalance?: SellTokenSource;
+    /**
+     * Buy-token balance destination.
+     */
+    buyTokenBalance?: BuyTokenDestination;
+    /**
+     * Signature scheme used for `signature`. Always serialized on the
+     * response, so the wire field is required rather than defaulted.
+     */
+    signingScheme: SigningScheme;
+    /**
+     * Raw signature string.
+     */
+    signature: string;
+    /**
+     * Effective owner field returned by the API, when present.
+     */
+    from?: Address;
+    /**
+     * Quote id used when the order originated from a quote.
+     */
+    quoteId?: number;
+    /**
+     * Order class. Always serialized on the response, so the wire field is
+     * required rather than defaulted.
+     */
+    class: OrderClass;
+    /**
+     * Canonical owner surfaced by the orderbook response.
+     */
+    owner: Address;
+    /**
+     * Order UID.
+     */
+    uid: OrderUid;
+    /**
+     * Creation timestamp string returned by the API. Always serialized on the
+     * response, so the wire field is required rather than defaulted; the
+     * `creationTime` alias is retained for the legacy response key.
+     */
+    creationDate: string;
+    /**
+     * Executed sell amount. Always serialized on the response, so the wire
+     * field is required rather than defaulted.
+     */
+    executedSellAmount: Amount;
+    /**
+     * Executed sell amount before fees. Always serialized on the response, so
+     * the wire field is required rather than defaulted.
+     */
+    executedSellAmountBeforeFees: Amount;
+    /**
+     * Executed buy amount. Stays `\"0\"` on the wire until the order\'s first
+     * fill, rather than being absent, so the wire field is required rather
+     * than defaulted.
+     */
+    executedBuyAmount: Amount;
+    /**
+     * Executed fee component, when provided.
+     */
+    executedFee?: Amount;
+    /**
+     * Deprecated legacy fee value some orderbook responses still emit on
+     * older order payloads alongside [`executed_fee`].
+     *
+     * Surfaced as a read-only sibling so consumers that need the legacy
+     * summation can compute it explicitly as
+     * `executed_fee + executed_fee_amount`. New code should prefer
+     * [`executed_fee`]; [`total_fee`] intentionally does not fold this
+     * field in.
+     *
+     * [`executed_fee`]: Order::executed_fee
+     * [`total_fee`]: Order::total_fee
+     */
+    executedFeeAmount?: Amount;
+    /**
+     * Token in which the executed fee was captured, when returned.
+     */
+    executedFeeToken?: Address;
+    /**
+     * Whether the order was invalidated by the protocol.
+     *
+     * Kept defaulted: although the services schema lists it as required, the
+     * `EthFlow` response shape omits it (see the `sample_ethflow_order_json`
+     * fixture), so the field must remain absent-able on the wire.
+     */
+    invalidated?: boolean;
+    /**
+     * Order lifecycle status. Always serialized on the response, so the wire
+     * field is required rather than defaulted.
+     */
+    status: OrderStatus;
+    /**
+     * Whether services classified the order as a liquidity order.
+     */
+    isLiquidityOrder?: boolean;
+    /**
+     * On-chain user for `EthFlow`-style orders.
+     */
+    onchainUser?: Address;
+    /**
+     * `EthFlow`-specific metadata.
+     */
+    ethflowData?: EthflowData;
+    /**
+     * On-chain placement metadata, when services returns it.
+     */
+    onchainOrderData?: OnchainOrderData;
+    /**
+     * Full app-data payload, when services returns it.
+     */
+    fullAppData?: string;
+    /**
+     * Settlement contract address against which the order was signed.
+     */
+    settlementContract: Address;
+    /**
+     * Stored quote metadata for quote-linked orders.
+     */
+    quote?: StoredOrderQuote;
+    /**
+     * Optional pre and post interactions associated with the order.
+     */
+    interactions?: OrderInteractions;
+    /**
+     * Total fee normalized by the SDK transform layer.
+     *
+     * Kept defaulted: this is an SDK-synthesized field with no services-schema
+     * counterpart, so an inbound orderbook response never carries it and it
+     * must remain absent-able on the wire.
+     */
+    totalFee?: Amount;
+}
+
+/**
  * Orderbook order-creation input.
  */
-export interface OrderCreationInput {
+export interface OrderCreation {
     /**
      * Sell-token address.
      */
@@ -695,7 +767,7 @@ export interface OrderCreationInput {
     /**
      * Order side.
      */
-    kind: OrderKindDto;
+    kind: OrderKind;
     /**
      * Whether partial fills are allowed.
      */
@@ -703,11 +775,11 @@ export interface OrderCreationInput {
     /**
      * Sell-token balance source.
      */
-    sellTokenBalance?: TokenBalanceDto;
+    sellTokenBalance?: SellTokenSource;
     /**
      * Buy-token balance destination.
      */
-    buyTokenBalance?: TokenBalanceDto;
+    buyTokenBalance?: BuyTokenDestination;
     /**
      * Signature scheme.
      */
@@ -729,7 +801,7 @@ export interface OrderCreationInput {
 /**
  * Orderbook quote request input.
  */
-export interface OrderQuoteRequestInput {
+export interface OrderQuoteRequest {
     /**
      * Sell-token address.
      */
@@ -749,7 +821,7 @@ export interface OrderQuoteRequestInput {
     /**
      * Quote side.
      */
-    kind: OrderKindDto;
+    kind: OrderKind;
     /**
      * Sell amount before fee for sell quotes.
      */
@@ -777,11 +849,11 @@ export interface OrderQuoteRequestInput {
     /**
      * Sell-token balance source.
      */
-    sellTokenBalance?: TokenBalanceDto;
+    sellTokenBalance?: SellTokenSource;
     /**
      * Buy-token balance destination.
      */
-    buyTokenBalance?: TokenBalanceDto;
+    buyTokenBalance?: BuyTokenDestination;
     /**
      * Quote-quality mode.
      */
@@ -819,18 +891,183 @@ export interface PaginationOptions {
 }
 
 /**
- * Pre/post interactions associated with an order, mirroring
- * `cow_sdk_orderbook::OrderInteractions`.
+ * Quote metadata stored with an order response when an order was created from
+ * a quote.
  */
-export interface OrderInteractionsDto {
+export interface StoredOrderQuote {
     /**
-     * Interactions executed before the order\'s trade.
+     * Estimated gas units required to execute the quoted trade.
      */
-    pre?: InteractionDataDto[];
+    gasAmount: string;
     /**
-     * Interactions executed after the order\'s trade.
+     * Estimated gas price at quote time, in wei per gas unit.
      */
-    post?: InteractionDataDto[];
+    gasPrice: string;
+    /**
+     * Sell-token price in native-token atoms per sell-token atom.
+     */
+    sellTokenPrice: string;
+    /**
+     * Quoted sell amount.
+     */
+    sellAmount: Amount;
+    /**
+     * Quoted buy amount.
+     */
+    buyAmount: Amount;
+    /**
+     * Estimated network fee in sell-token atoms.
+     */
+    feeAmount: Amount;
+    /**
+     * Solver address that provided the quote.
+     */
+    solver: Address;
+    /**
+     * Whether the quote was verified through simulation.
+     */
+    verified: boolean;
+    /**
+     * Additional services-provided quote metadata, when present.
+     */
+    metadata?: Value;
+}
+
+/**
+ * Quote order data returned by the orderbook API.
+ *
+ * This mirrors the orderbook `OrderParameters` schema — the order
+ * parameters payload returned inside a `/quote` response — and is named
+ * `QuoteData` for that role (see ADR 0058). It is a wire DTO, not the
+ * user-domain signing order (`cow_sdk_core::OrderData`), which is also the
+ * contract EIP-712 hashing input. It accepts the orderbook\'s full-app-data
+ * echo shape and resolves that into the app-data hash used by downstream
+ * order creation.
+ */
+export interface QuoteData {
+    /**
+     * Sell-token address.
+     */
+    sellToken: Address;
+    /**
+     * Buy-token address.
+     */
+    buyToken: Address;
+    /**
+     * Optional receiver override.
+     */
+    receiver?: Address;
+    /**
+     * Sell amount in the upstream decimal-string wire shape.
+     */
+    sellAmount: Amount;
+    /**
+     * Buy amount in the upstream decimal-string wire shape.
+     */
+    buyAmount: Amount;
+    /**
+     * Absolute UNIX expiry timestamp.
+     */
+    validTo: number;
+    /**
+     * Effective app-data hash derived from the orderbook response.
+     */
+    appData: AppDataHash;
+    /**
+     * Explicit app-data hash echoed alongside full app data, present only
+     * when the orderbook response carried both forms. Mirrors the optional
+     * `OrderParameters.appDataHash` wire field.
+     */
+    appDataHash?: AppDataHash;
+    /**
+     * Network-cost amount echoed by the orderbook `/quote` response.
+     *
+     * Stored under the upstream wire name `feeAmount` so the deterministic
+     * JSON schema stays aligned with the services contract; consumers read
+     * the value through [`QuoteData::network_cost_amount`] and configure it
+     * through [`QuoteData::with_network_cost_amount`].
+     */
+    feeAmount: Amount;
+    /**
+     * Order kind.
+     */
+    kind: OrderKind;
+    /**
+     * Whether partial fills are allowed. Always serialized on the quote
+     * response, so the wire field is required rather than defaulted; inbound
+     * deserialization still tolerates its absence through the wire shim below.
+     */
+    partiallyFillable: boolean;
+    /**
+     * Sell-token balance source.
+     */
+    sellTokenBalance?: SellTokenSource;
+    /**
+     * Buy-token balance destination.
+     */
+    buyTokenBalance?: BuyTokenDestination;
+    /**
+     * Estimated gas units for the quoted trade, in the upstream
+     * decimal-string wire shape. Read-only quote estimate populated from the
+     * orderbook `/quote` response (ADR 0021); empty for a locally constructed
+     * quote. Read through [`QuoteData::gas_amount`].
+     */
+    gasAmount?: string;
+    /**
+     * Estimated gas price at quote time (wei per gas unit), in the upstream
+     * decimal-string wire shape. Read-only quote estimate (ADR 0021); read
+     * through [`QuoteData::gas_price`].
+     */
+    gasPrice?: string;
+    /**
+     * Sell-token price in native-token atoms per sell-token atom, in the
+     * upstream decimal-string wire shape. Read-only quote estimate
+     * (ADR 0021); read through [`QuoteData::sell_token_price`].
+     */
+    sellTokenPrice?: string;
+    /**
+     * Signing scheme for the quoted order. Mirrors
+     * `OrderParameters.signingScheme`, which defaults to `eip712`. Read-only
+     * quote field (ADR 0021); read through [`QuoteData::signing_scheme`].
+     */
+    signingScheme?: SigningScheme;
+}
+
+/**
+ * Quote response DTO returned by `/api/v1/quote`.
+ */
+export interface OrderQuoteResponse {
+    /**
+     * Resolved quote payload.
+     */
+    quote: QuoteData;
+    /**
+     * Effective owner used for the quote, when returned by the API.
+     */
+    from?: Address;
+    /**
+     * Quote price/fee expiry as the orderbook\'s ISO-8601 UTC string (for
+     * example `2026-04-28T10:00:00Z`), exposed losslessly.
+     *
+     * cow-rs intentionally takes no datetime dependency; parse this with your
+     * preferred datetime crate (`chrono::DateTime::parse_from_rfc3339`,
+     * `time::OffsetDateTime::parse`, ...) when a typed value is needed. This is
+     * when the quoted price and fee expire; the eventual order\'s validity is
+     * the [`QuoteData::valid_to`] UNIX epoch on `quote`.
+     */
+    expiration: string;
+    /**
+     * Quote identifier used when submitting the corresponding order.
+     */
+    id?: number;
+    /**
+     * Whether the quote was verified by the orderbook.
+     */
+    verified: boolean;
+    /**
+     * Optional protocol fee basis points for the quote.
+     */
+    protocolFeeBps?: string;
 }
 
 /**
@@ -846,7 +1083,7 @@ export type LimiterScopeConfig = "global" | "perHost";
  * ABI-encoded non-indexed payload as a `0x`-prefixed hex string (`\"0x\"` for an
  * empty payload).
  */
-export interface EventLogInput {
+export interface EventLog {
     /**
      * Indexed log topics as 0x-prefixed 32-byte hex strings (topic-0 first).
      */
@@ -855,37 +1092,6 @@ export interface EventLogInput {
      * ABI-encoded non-indexed log data as a 0x-prefixed hex string.
      */
     data: string;
-}
-
-/**
- * Raw orderbook quote response, mirroring
- * `cow_sdk_orderbook::OrderQuoteResponse`.
- */
-export interface OrderQuoteResponseDto {
-    /**
-     * Resolved quote payload.
-     */
-    quote: QuoteDataDto;
-    /**
-     * Effective owner used for the quote, when returned by the API.
-     */
-    from?: string;
-    /**
-     * Quote price/fee expiry as an ISO-8601 UTC string.
-     */
-    expiration: string;
-    /**
-     * Quote identifier used when submitting the corresponding order.
-     */
-    id?: number;
-    /**
-     * Whether the quote was verified by the orderbook.
-     */
-    verified: boolean;
-    /**
-     * Optional protocol fee basis points for the quote.
-     */
-    protocolFeeBps?: string;
 }
 
 /**
@@ -907,82 +1113,6 @@ export interface RequestRateLimiterConfig {
 }
 
 /**
- * Resolved quote payload echoed by the orderbook `/quote` response, mirroring
- * `cow_sdk_orderbook::QuoteData`.
- */
-export interface QuoteDataDto {
-    /**
-     * Sell-token address.
-     */
-    sellToken: string;
-    /**
-     * Buy-token address.
-     */
-    buyToken: string;
-    /**
-     * Optional receiver override.
-     */
-    receiver?: string;
-    /**
-     * Sell amount in the upstream decimal-string wire shape.
-     */
-    sellAmount: string;
-    /**
-     * Buy amount in the upstream decimal-string wire shape.
-     */
-    buyAmount: string;
-    /**
-     * Absolute UNIX expiry timestamp.
-     */
-    validTo: number;
-    /**
-     * Effective app-data hash derived from the orderbook response.
-     */
-    appData: string;
-    /**
-     * Explicit app-data hash echoed alongside full app data, when present.
-     */
-    appDataHash?: string;
-    /**
-     * Network-cost amount echoed by the orderbook `/quote` response.
-     */
-    feeAmount: string;
-    /**
-     * Order kind.
-     */
-    kind: OrderKindDto;
-    /**
-     * Whether partial fills are allowed.
-     */
-    partiallyFillable: boolean;
-    /**
-     * Sell-token balance source.
-     */
-    sellTokenBalance: TokenBalanceDto;
-    /**
-     * Buy-token balance destination.
-     */
-    buyTokenBalance: TokenBalanceDto;
-    /**
-     * Estimated gas units for the quoted trade; empty for a locally
-     * constructed quote.
-     */
-    gasAmount?: string;
-    /**
-     * Estimated gas price at quote time (wei per gas unit).
-     */
-    gasPrice?: string;
-    /**
-     * Sell-token price in native-token atoms per sell-token atom.
-     */
-    sellTokenPrice?: string;
-    /**
-     * Signing scheme for the quoted order.
-     */
-    signingScheme: SigningSchemeDto;
-}
-
-/**
  * Retry-policy override accepted by JS client constructors.
  */
 export interface RetryPolicyConfig {
@@ -1001,16 +1131,66 @@ export interface RetryPolicyConfig {
 }
 
 /**
- * Signature scheme carried on posted and returned orders, mirroring
- * `cow_sdk_orderbook::SigningScheme`, whose wire form is the lowercased
- * variant name.
+ * Sell or buy side of a trade.
+ *
+ * Encoded as `keccak256(\"buy\")` / `keccak256(\"sell\")` in the EIP-712
+ * `Order` type. The set of variants is fixed by the protocol; adding a third
+ * variant would change the protocol, not the SDK. Classified as
+ * `protocol-fixed-exhaustive` in the workspace enum policy manifest.
  */
-export type SigningSchemeDto = "eip712" | "ethsign" | "eip1271" | "presign";
+export type OrderKind = "sell" | "buy";
 
 /**
- * Signed order DTO returned by wallet callback exports.
+ * Settlement candidate nested inside solver-competition responses.
  */
-export interface SignedOrderDto {
+export interface SolverSettlement {
+    /**
+     * Address the solver used to execute the settlement on-chain.
+     */
+    solverAddress: Address;
+    /**
+     * Settlement score.
+     */
+    score: Amount;
+    /**
+     * Position of this solution in the competition ranking.
+     */
+    ranking: number;
+    /**
+     * Clearing prices keyed by token address.
+     */
+    clearingPrices?: Record<string, string>;
+    /**
+     * Orders touched by this solution.
+     */
+    orders?: SolverCompetitionOrder[];
+    /**
+     * Whether this solution won the right to be executed.
+     */
+    isWinner: boolean;
+    /**
+     * Whether this solution was filtered out by the competition rules.
+     */
+    filteredOut: boolean;
+    /**
+     * Reference score for this solution, when available.
+     */
+    referenceScore?: Amount;
+    /**
+     * Transaction in which the solution was executed on-chain, when available.
+     */
+    txHash?: string;
+}
+
+/**
+ * Signature scheme encoded in orderbook wire DTOs.
+ */
+export type SigningScheme = "eip712" | "ethsign" | "eip1271" | "presign";
+
+/**
+ * Signed order returned by wallet callback exports.
+ */
+export interface SignedOrder {
     /**
      * Compact order UID.
      */
@@ -1034,7 +1214,7 @@ export interface SignedOrderDto {
     /**
      * Typed-data envelope used for signing.
      */
-    typedData: TypedDataEnvelopeDto;
+    typedData: TypedDataEnvelope<Value>;
     /**
      * Optional quote id.
      */
@@ -1044,7 +1224,7 @@ export interface SignedOrderDto {
 /**
  * Signed order-cancellation DTO.
  */
-export interface SignedCancellationsInput {
+export interface SignedCancellations {
     /**
      * Order UIDs to cancel.
      */
@@ -1060,10 +1240,27 @@ export interface SignedCancellationsInput {
 }
 
 /**
- * Solver execution entry nested in competition-status responses, mirroring
- * `cow_sdk_orderbook::SolverExecution`.
+ * Smart-contract interaction payload used by order pre and post hooks.
  */
-export interface SolverExecutionDto {
+export interface InteractionData {
+    /**
+     * Contract address targeted by the interaction.
+     */
+    target: Address;
+    /**
+     * Native token value sent with the interaction.
+     */
+    value: Amount;
+    /**
+     * Hex-encoded calldata forwarded to `target`.
+     */
+    callData: string;
+}
+
+/**
+ * Solver execution entry nested inside competition-status responses.
+ */
+export interface SolverExecution {
     /**
      * Solver identifier or address rendered by the API.
      */
@@ -1071,17 +1268,15 @@ export interface SolverExecutionDto {
     /**
      * Executed amounts for this solver path, when present.
      */
-    executedAmounts?: ExecutedAmountsDto;
+    executedAmounts?: ExecutedAmounts;
 }
 
 /**
- * Solver-competition result for an auction, mirroring
- * `cow_sdk_orderbook::SolverCompetitionResponse` (the CIP-67 contract served at
- * the `/api/v2/solver_competition/*` routes).
+ * Solver-competition response returned by the orderbook.
  */
-export interface SolverCompetitionResponseDto {
+export interface SolverCompetitionResponse {
     /**
-     * Auction identifier.
+     * Identifier of the auction this competition is for.
      */
     auctionId: number;
     /**
@@ -1089,91 +1284,51 @@ export interface SolverCompetitionResponseDto {
      */
     auctionStartBlock: number;
     /**
-     * Block deadline by which the auction must settle.
+     * Block deadline by which the auction must be settled.
      */
     auctionDeadlineBlock: number;
     /**
-     * Winning-solution transaction hashes.
+     * Transaction hashes for the winning solutions of this competition.
      */
     transactionHashes?: string[];
     /**
-     * CIP-67 per-winning-solver reference scores keyed by solver address.
+     * Reference score for each winning solver, keyed by solver address.
      */
     referenceScores?: Record<string, string>;
     /**
-     * Auction snapshot.
+     * Auction snapshot for the competition.
      */
-    auction: CompetitionAuctionDto;
+    auction: CompetitionAuction;
     /**
-     * Per-solver settlements.
+     * Settlement candidates submitted by solvers.
      */
-    solutions?: SolverSettlementDto[];
+    solutions?: SolverSettlement[];
 }
 
 /**
- * Stored quote metadata for quote-linked orders, mirroring
- * `cow_sdk_orderbook::StoredOrderQuote`.
+ * Source from which the `sellAmount` is drawn upon order fulfillment.
+ *
+ * This mirrors the services `SellTokenSource` enum byte-for-byte on the wire.
+ * Orders model the sell-side allowance path independently of the buy-side
+ * payout path, which is typed as [`BuyTokenDestination`].
  */
-export interface StoredOrderQuoteDto {
+export type SellTokenSource = "erc20" | "external" | "internal";
+
+/**
+ * Total-surplus response from `/api/v1/users/{owner}/total_surplus`.
+ */
+export interface TotalSurplus {
     /**
-     * Estimated gas units required to execute the quoted trade.
+     * Total surplus value in the upstream decimal-string wire shape,
+     * denominated in the chain\'s native-token base units (wei, 18 decimals).
      */
-    gasAmount: string;
-    /**
-     * Estimated gas price at quote time, in wei per gas unit.
-     */
-    gasPrice: string;
-    /**
-     * Sell-token price in native-token atoms per sell-token atom.
-     */
-    sellTokenPrice: string;
-    /**
-     * Quoted sell amount.
-     */
-    sellAmount: string;
-    /**
-     * Quoted buy amount.
-     */
-    buyAmount: string;
-    /**
-     * Estimated network fee in sell-token atoms.
-     */
-    feeAmount: string;
-    /**
-     * Solver address that provided the quote.
-     */
-    solver: string;
-    /**
-     * Whether the quote was verified through simulation.
-     */
-    verified: boolean;
-    /**
-     * Additional services-provided quote metadata, when present.
-     */
-    metadata?: Value;
+    totalSurplus?: Amount;
 }
 
 /**
- * Token-balance mode accepted by wasm order inputs.
+ * Trade DTO returned by the orderbook trades endpoint.
  */
-export type TokenBalanceDto = "erc20" | "external" | "internal";
-
-/**
- * Total accumulated surplus for an account, mirroring
- * `cow_sdk_orderbook::TotalSurplus`.
- */
-export interface TotalSurplusDto {
-    /**
-     * Total surplus in the upstream decimal-string wire shape, when present.
-     */
-    totalSurplus?: string;
-}
-
-/**
- * Trade returned by the orderbook trades endpoint, mirroring
- * `cow_sdk_orderbook::Trade`.
- */
-export interface TradeDto {
+export interface Trade {
     /**
      * Block number containing the trade event.
      */
@@ -1185,45 +1340,46 @@ export interface TradeDto {
     /**
      * Order UID associated with the trade.
      */
-    orderUid: string;
+    orderUid: OrderUid;
     /**
      * Owner address.
      */
-    owner: string;
+    owner: Address;
     /**
      * Sell-token address.
      */
-    sellToken: string;
+    sellToken: Address;
     /**
      * Buy-token address.
      */
-    buyToken: string;
+    buyToken: Address;
     /**
      * Executed sell amount in the upstream decimal-string wire shape.
      */
-    sellAmount: string;
+    sellAmount: Amount;
     /**
-     * Executed sell amount before fees.
+     * Executed sell amount before fees. Always serialized on the trade
+     * response, so the wire field is required rather than defaulted.
      */
-    sellAmountBeforeFees?: string;
+    sellAmountBeforeFees: Amount;
     /**
      * Executed buy amount in the upstream decimal-string wire shape.
      */
-    buyAmount: string;
+    buyAmount: Amount;
     /**
      * Protocol fees executed as part of the trade, when services returns them.
      */
-    executedProtocolFees?: ExecutedProtocolFeeDto[];
+    executedProtocolFees?: ExecutedProtocolFee[];
     /**
      * Settlement transaction hash.
      */
-    txHash: string | undefined;
+    txHash: string;
 }
 
 /**
  * Trades query accepted by `OrderBookClient.getTrades`.
  */
-export interface TradesQueryInput {
+export interface GetTradesRequest {
     /**
      * Owner filter. Set exactly one of `owner` or `orderUid`.
      */
@@ -1243,25 +1399,25 @@ export interface TradesQueryInput {
 }
 
 /**
- * Transaction request DTO returned by transaction builders.
+ * Transaction request shape used across signer and provider traits.
  */
-export interface TransactionRequestDto {
+export interface TransactionRequest {
     /**
-     * Destination address.
+     * Destination address for the transaction.
      */
-    to?: string;
+    to?: Address;
     /**
-     * Hex-encoded calldata.
+     * Hex-encoded calldata payload.
      */
-    data?: string;
+    data?: HexData;
     /**
-     * Native value.
+     * Native token value to transfer.
      */
-    value?: string;
+    value?: Amount;
     /**
-     * Gas limit.
+     * Optional gas limit override.
      */
-    gasLimit?: string;
+    gasLimit?: Amount;
 }
 
 /**
@@ -1287,68 +1443,97 @@ export interface TransportPolicyConfig {
 }
 
 /**
- * Typed-data domain DTO.
+ * Typed-data domain metadata used for EIP-712 signing.
  */
-export interface TypedDataDomainDto {
+export interface TypedDataDomain {
     /**
-     * Domain name.
+     * Human-readable protocol name.
      */
     name: string;
     /**
-     * Domain version.
+     * Domain version string.
      */
     version: string;
     /**
-     * Chain id.
+     * Numeric chain id for the typed-data domain.
      */
     chainId: number;
     /**
-     * Verifying contract.
+     * Contract address used as the domain verifier.
      */
-    verifyingContract: string;
+    verifyingContract: Address;
 }
 
 /**
- * Typed-data envelope DTO.
+ * User-domain order shape prepared for signing and trading workflows.
+ *
+ * It is the canonical signed-order payload and mirrors the upstream services
+ * `OrderData` byte-for-byte (the same field set, EIP-712 type hash, and field
+ * ordering). This is not an orderbook wire DTO or an ABI struct. It is hashed
+ * directly by `cow_sdk_contracts::hash_order` for the EIP-712 digest and UID
+ * (a `receiver` of `address(0)` is the legal \"pay-to-owner\" sentinel). It is
+ * submitted to the orderbook as `cow_sdk_orderbook::OrderCreation` and read
+ * back as the separate `cow_sdk_orderbook::Order` response record.
+ *
+ * All fields are public and the struct is exhaustive: the field set is the
+ * EIP-712 `Order` struct frozen by the deployed settlement contract, so it
+ * cannot grow without a protocol-level change. Construct it as a struct
+ * literal (named fields make the three addresses and three amounts
+ * impossible to transpose) or through [`OrderData::new`] and the chainable
+ * `with_*` setters when positional construction reads better at the call
+ * site.
  */
-export interface TypedDataEnvelopeDto {
+export interface OrderData {
     /**
-     * Domain metadata.
+     * Sell token address.
      */
-    domain: TypedDataDomainDto;
+    sellToken: Address;
     /**
-     * Primary type.
+     * Buy token address.
      */
-    primaryType: string;
+    buyToken: Address;
     /**
-     * Type map.
-     *
-     * Typed as `Record` because the runtime serializer
-     * (`serde_wasm_bindgen::Serializer::json_compatible`) emits a
-     * plain JavaScript object for `BTreeMap` fields. The override
-     * aligns the generated TypeScript declaration with the runtime
-     * shape so the declared type matches the value the wasm boundary
-     * emits byte-for-byte.
+     * Receiver of the bought tokens. Defaults to the zero address — which the
+     * settlement contract interprets as pay-to-owner — when omitted on the input
+     * boundary; always serialized on a resolved order.
      */
-    types: Record<string, TypedDataFieldDto[]>;
+    receiver?: Address;
     /**
-     * Parsed message body.
+     * Exact sell amount for sell orders or maximum sell amount for buy orders.
      */
-    message: Value;
-}
-
-/**
- * Typed-data field DTO.
- */
-export interface TypedDataFieldDto {
+    sellAmount: Amount;
     /**
-     * Field name.
+     * Exact buy amount for buy orders or minimum buy amount for sell orders.
      */
-    name: string;
+    buyAmount: Amount;
     /**
-     * Solidity field type.
+     * Expiration timestamp encoded as `uint32`.
      */
-    type: string;
+    validTo: number;
+    /**
+     * App-data hash linked to the order.
+     */
+    appData: AppDataHash;
+    /**
+     * Fee amount encoded in sell-token units.
+     */
+    feeAmount: Amount;
+    /**
+     * Order side.
+     */
+    kind: OrderKind;
+    /**
+     * Whether the order can be partially filled.
+     */
+    partiallyFillable?: boolean;
+    /**
+     * Sell-token balance source.
+     */
+    sellTokenBalance?: SellTokenSource;
+    /**
+     * Buy-token balance destination.
+     */
+    buyTokenBalance?: BuyTokenDestination;
 }
 
 /**
@@ -1448,8 +1633,13 @@ export interface WasmEnvelope<T> {
 
 /**
  * Wrapped-native token metadata.
+ *
+ * A default-flavour boundary construct built by the leaf\'s host-safe `helpers`
+ * from the native wrapped-native lookup and surfaced by `wrappedNativeToken`.
+ * The shape is always defined; only the TypeScript declaration derive is scoped
+ * to the wasm-bindgen target.
  */
-export interface WrappedNativeTokenDto {
+export interface WrappedNativeToken {
     /**
      * Wrapped-native token contract address.
      */
@@ -1465,10 +1655,9 @@ export interface WrappedNativeTokenDto {
 }
 
 /**
- * `EthFlow`-specific order metadata, mirroring
- * `cow_sdk_orderbook::EthflowData`.
+ * `EthFlow`-specific orderbook metadata.
  */
-export interface EthflowDataDto {
+export interface EthflowData {
     /**
      * Transaction in which the order was refunded, when present.
      */
@@ -1503,7 +1692,7 @@ export class OrderBookClient {
      * @returns A versioned envelope containing `{ cancelled: true }` on success.
      * @throws CowError for invalid UID, signature, transport failure, or timeout.
      */
-    cancelOrders(signed: SignedCancellationsInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<{ cancelled: true }>>;
+    cancelOrders(signed: SignedCancellations, options?: SdkClientOptions | null): Promise<WasmEnvelope<{ cancelled: true }>>;
     /**
      * Fetches the full app-data document registered for an app-data hash.
      *
@@ -1516,7 +1705,7 @@ export class OrderBookClient {
      * @returns A versioned envelope containing the app-data document.
      * @throws CowError for an invalid hash, transport failure, or timeout.
      */
-    getAppData(appDataHash: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<AppDataObjectDto>>;
+    getAppData(appDataHash: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<AppDataObject>>;
     /**
      * Fetches a token's native price from the orderbook API.
      *
@@ -1528,7 +1717,7 @@ export class OrderBookClient {
      * @returns A versioned envelope containing native price data.
      * @throws CowError for invalid token address, transport failure, or timeout.
      */
-    getNativePrice(token: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<NativePriceResponseDto>>;
+    getNativePrice(token: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<NativePriceResponse>>;
     /**
      * Fetches one order by its canonical order UID.
      *
@@ -1540,7 +1729,7 @@ export class OrderBookClient {
      * @returns A versioned envelope containing the order response.
      * @throws CowError for invalid UID, not-found responses, transport failure, or timeout.
      */
-    getOrder(orderUid: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<OrderDto>>;
+    getOrder(orderUid: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<Order>>;
     /**
      * Fetches the live competition status for one order.
      *
@@ -1553,7 +1742,7 @@ export class OrderBookClient {
      * @returns A versioned envelope containing the competition status.
      * @throws CowError for invalid UID, not-found responses, transport failure, or timeout.
      */
-    getOrderCompetitionStatus(orderUid: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<CompetitionOrderStatusDto>>;
+    getOrderCompetitionStatus(orderUid: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<CompetitionOrderStatus>>;
     /**
      * Builds the orderbook API URL (`/api/v1/orders/{uid}`) for a UID without
      * any network call.
@@ -1574,7 +1763,7 @@ export class OrderBookClient {
      * @returns A versioned envelope containing the order response.
      * @throws CowError for invalid UID, not-found responses, transport failure, or timeout.
      */
-    getOrderMultiEnv(orderUid: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<OrderDto>>;
+    getOrderMultiEnv(orderUid: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<Order>>;
     /**
      * Fetches orders owned by an address with optional pagination.
      *
@@ -1589,7 +1778,7 @@ export class OrderBookClient {
      * @returns A versioned envelope containing matching orders.
      * @throws CowError for invalid owner, transport failure, timeout, or cancellation.
      */
-    getOrders(owner: string, pagination?: PaginationOptions | null, options?: SdkClientOptions | null): Promise<WasmEnvelope<OrderDto[]>>;
+    getOrders(owner: string, pagination?: PaginationOptions | null, options?: SdkClientOptions | null): Promise<WasmEnvelope<Order[]>>;
     /**
      * Fetches a price quote from the orderbook API.
      *
@@ -1597,8 +1786,8 @@ export class OrderBookClient {
      * through the configured transport. Per-call options can override the
      * constructor timeout or attach an `AbortSignal`.
      *
-     * This returns the raw `OrderQuoteResponseDto`, distinct from
-     * `TradingClient.getQuote`, which returns the richer `QuoteResultsDto`
+     * This returns the raw `OrderQuoteResponse`, distinct from
+     * `TradingClient.getQuote`, which returns the richer `QuoteResults`
      * carrying `orderToSign` and `amountsAndCosts` for posting.
      *
      * @param request Quote request DTO.
@@ -1606,7 +1795,7 @@ export class OrderBookClient {
      * @returns A versioned envelope containing the raw quote response.
      * @throws CowError for invalid input, transport failure, timeout, or cancellation.
      */
-    getQuote(request: OrderQuoteRequestInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<OrderQuoteResponseDto>>;
+    getQuote(request: OrderQuoteRequest, options?: SdkClientOptions | null): Promise<WasmEnvelope<OrderQuoteResponse>>;
     /**
      * Fetches the solver-competition result for an auction.
      *
@@ -1620,7 +1809,7 @@ export class OrderBookClient {
      * @returns A versioned envelope containing the solver-competition response.
      * @throws CowError for an out-of-range id, not-found responses, transport failure, or timeout.
      */
-    getSolverCompetition(auctionId: number, options?: SdkClientOptions | null): Promise<WasmEnvelope<SolverCompetitionResponseDto>>;
+    getSolverCompetition(auctionId: number, options?: SdkClientOptions | null): Promise<WasmEnvelope<SolverCompetitionResponse>>;
     /**
      * Fetches the solver-competition result by settlement transaction hash.
      *
@@ -1633,7 +1822,7 @@ export class OrderBookClient {
      * @returns A versioned envelope containing the solver-competition response.
      * @throws CowError for an invalid hash, not-found responses, transport failure, or timeout.
      */
-    getSolverCompetitionByTxHash(txHash: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<SolverCompetitionResponseDto>>;
+    getSolverCompetitionByTxHash(txHash: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<SolverCompetitionResponse>>;
     /**
      * Fetches the total accumulated surplus for an account.
      *
@@ -1647,7 +1836,7 @@ export class OrderBookClient {
      * @returns A versioned envelope containing the total-surplus response in native-token wei.
      * @throws CowError for invalid owner, transport failure, or timeout.
      */
-    getTotalSurplus(owner: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<TotalSurplusDto>>;
+    getTotalSurplus(owner: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<TotalSurplus>>;
     /**
      * Fetches trades for exactly one owner address or order UID.
      *
@@ -1659,7 +1848,7 @@ export class OrderBookClient {
      * @returns A versioned envelope containing matching trades.
      * @throws CowError when the query is ambiguous or transport fails.
      */
-    getTrades(query: TradesQueryInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<TradeDto[]>>;
+    getTrades(query: GetTradesRequest, options?: SdkClientOptions | null): Promise<WasmEnvelope<Trade[]>>;
     /**
      * Fetches the orders contained in a settlement transaction.
      *
@@ -1668,7 +1857,7 @@ export class OrderBookClient {
      * @returns A versioned envelope containing the settled orders.
      * @throws CowError for an invalid hash, transport failure, timeout, or cancellation.
      */
-    getTxOrders(txHash: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<OrderDto[]>>;
+    getTxOrders(txHash: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<Order[]>>;
     /**
      * Fetches the orderbook service version string.
      *
@@ -1700,7 +1889,7 @@ export class OrderBookClient {
      * @returns A versioned envelope containing the submitted order UID.
      * @throws CowError for invalid signatures, transport failure, timeout, or rejection.
      */
-    sendOrder(signed: SignedOrderDto, options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>;
+    sendOrder(signed: SignedOrder, options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>;
     /**
      * Submits a raw order-creation payload to the orderbook.
      *
@@ -1713,7 +1902,7 @@ export class OrderBookClient {
      * @returns A versioned envelope containing the submitted order UID.
      * @throws CowError for malformed input, transport failure, timeout, or rejection.
      */
-    sendOrderCreation(input: OrderCreationInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>;
+    sendOrderCreation(input: OrderCreation, options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>;
     /**
      * Uploads the full app-data JSON for a content-addressed app-data hash.
      *
@@ -1747,7 +1936,7 @@ export function __cow_sdk_wasm_init(): void;
  * @returns A versioned envelope containing the transaction request DTO.
  * @throws CowError when the chain, deployment, or order UID is invalid.
  */
-export function buildCancelOrderTx(params: OrderTraderParametersInput): WasmEnvelope<TransactionRequestDto>;
+export function buildCancelOrderTx(params: OrderTraderParams): WasmEnvelope<TransactionRequest>;
 
 /**
  * Builds a settlement pre-sign transaction for an order UID.
@@ -1760,7 +1949,7 @@ export function buildCancelOrderTx(params: OrderTraderParametersInput): WasmEnve
  * @returns A versioned envelope containing the transaction request DTO.
  * @throws CowError when the chain, deployment, or order UID is invalid.
  */
-export function buildPresignTx(params: OrderTraderParametersInput): WasmEnvelope<TransactionRequestDto>;
+export function buildPresignTx(params: OrderTraderParams): WasmEnvelope<TransactionRequest>;
 
 /**
  * Computes the canonical order UID and order digest for an unsigned order.
@@ -1768,13 +1957,13 @@ export function buildPresignTx(params: OrderTraderParametersInput): WasmEnvelope
  * The UID combines the EIP-712 order digest, owner address, and validity
  * timestamp using the same packing rules as the native Rust SDK.
  *
- * @param input Unsigned order fields to hash and pack.
+ * @param order Unsigned order fields to hash and pack.
  * @param chainId EVM chain id used for the EIP-712 domain.
  * @param owner Order owner address included in the UID suffix.
  * @returns A versioned envelope with `orderUid` and `orderDigest`.
  * @throws CowError when the order, owner, or chain id is invalid.
  */
-export function computeOrderUid(input: OrderInput, chainId: number, owner: string): WasmEnvelope<GeneratedOrderUidDto>;
+export function computeOrderUid(order: OrderData, chainId: number, owner: string): WasmEnvelope<GeneratedOrderUid>;
 
 /**
  * Decodes an eth-flow on-chain order lifecycle event log into a typed event.
@@ -1791,7 +1980,7 @@ export function computeOrderUid(input: OrderInput, chainId: number, owner: strin
  * @throws CowError when the log is malformed or its topic set matches no known
  * eth-flow lifecycle event.
  */
-export function decodeEthFlowLog(log: EventLogInput): WasmEnvelope<EthFlowEventDto>;
+export function decodeEthFlowLog(log: EventLog): WasmEnvelope<EthFlowEvent>;
 
 /**
  * Decodes a `GPv2Settlement` event log into a typed settlement event.
@@ -1807,7 +1996,7 @@ export function decodeEthFlowLog(log: EventLogInput): WasmEnvelope<EthFlowEventD
  * @throws CowError when the log is malformed or its topic set matches no known
  * settlement event.
  */
-export function decodeSettlementLog(log: EventLogInput): WasmEnvelope<SettlementEventDto>;
+export function decodeSettlementLog(log: EventLog): WasmEnvelope<SettlementEvent>;
 
 /**
  * Returns canonical CoW Protocol deployment addresses for a chain.
@@ -1820,7 +2009,7 @@ export function decodeSettlementLog(log: EventLogInput): WasmEnvelope<Settlement
  * @returns Settlement, VaultRelayer, EthFlow, and AllowListAuth addresses.
  * @throws CowError when the chain or environment is unsupported.
  */
-export function deploymentAddresses(chainId: number, env?: string | null): WasmEnvelope<DeploymentAddressesDto>;
+export function deploymentAddresses(chainId: number, env?: string | null): WasmEnvelope<DeploymentAddresses>;
 
 /**
  * Computes the CoW Protocol EIP-712 domain separator for a supported chain.
@@ -1833,7 +2022,7 @@ export function deploymentAddresses(chainId: number, env?: string | null): WasmE
  * @returns The `0x`-prefixed 32-byte domain separator.
  * @throws CowError when the chain is not supported.
  */
-export function domainSeparator(chainId: number): string;
+export function domainSeparator(chainId: number): any;
 
 /**
  * Encodes a CoW EIP-1271 payload from an ECDSA order signature.
@@ -1842,12 +2031,12 @@ export function domainSeparator(chainId: number): string;
  * signature and needs the contract-signature payload bytes expected by CoW
  * Protocol order submission.
  *
- * @param input Unsigned order used to derive the EIP-1271 payload.
+ * @param order Unsigned order used to derive the EIP-1271 payload.
  * @param ecdsaSignature Wrapped ECDSA signature as a `0x`-prefixed string.
  * @returns A versioned envelope containing the encoded EIP-1271 payload.
  * @throws CowError when the order or signature is invalid.
  */
-export function eip1271SignaturePayload(input: OrderInput, ecdsaSignature: string): WasmEnvelope<string>;
+export function eip1271SignaturePayload(order: OrderData, ecdsaSignature: string): WasmEnvelope<string>;
 
 /**
  * Builds signer-facing EIP-712 typed data for an unsigned order.
@@ -1856,12 +2045,12 @@ export function eip1271SignaturePayload(input: OrderInput, ecdsaSignature: strin
  * order message that wallet libraries expect for EIP-712 signing. It is
  * deterministic for the provided order and chain id.
  *
- * @param input Unsigned order fields using the facade order DTO shape.
+ * @param order Unsigned order fields using the native order shape.
  * @param chainId EVM chain id used for the EIP-712 domain.
  * @returns A versioned envelope containing typed-data DTO fields.
  * @throws CowError when order parsing or chain validation fails.
  */
-export function orderTypedData(input: OrderInput, chainId: number): WasmEnvelope<TypedDataEnvelopeDto>;
+export function orderTypedData(order: OrderData, chainId: number): WasmEnvelope<TypedDataEnvelope<Value>>;
 
 /**
  * Signs a cancellation digest through an explicit `eth_sign` callback.
@@ -1876,7 +2065,7 @@ export function orderTypedData(input: OrderInput, chainId: number): WasmEnvelope
  * @returns A versioned envelope containing signed cancellations.
  * @throws CowError for empty input, invalid UID, callback failure, or timeout.
  */
-export function signCancellationEthSignDigest(orderUids: string[], chainId: number, digestSigner: DigestSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedCancellationsInput>>;
+export function signCancellationEthSignDigest(orderUids: string[], chainId: number, digestSigner: DigestSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedCancellations>>;
 
 /**
  * Signs cancellation typed data through a typed-data callback.
@@ -1892,7 +2081,7 @@ export function signCancellationEthSignDigest(orderUids: string[], chainId: numb
  * @returns A versioned envelope containing signed cancellations.
  * @throws CowError for empty input, invalid UID, callback failure, or timeout.
  */
-export function signCancellationWithTypedDataSigner(orderUids: string[], chainId: number, typedDataSigner: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedCancellationsInput>>;
+export function signCancellationWithTypedDataSigner(orderUids: string[], chainId: number, typedDataSigner: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedCancellations>>;
 
 /**
  * Signs an order digest through an explicit `eth_sign` callback.
@@ -1901,7 +2090,7 @@ export function signCancellationWithTypedDataSigner(orderUids: string[], chainId
  * `0x`-prefixed string to the callback, normalizes the signature, and returns
  * an `ethsign` signed-order DTO.
  *
- * @param input Unsigned order fields to sign.
+ * @param order Unsigned order fields to sign.
  * @param chainId EVM chain id used for the digest.
  * @param owner Owner address used in the generated order UID.
  * @param digestSigner Callback that signs the digest string.
@@ -1909,7 +2098,7 @@ export function signCancellationWithTypedDataSigner(orderUids: string[], chainId
  * @returns A versioned envelope containing the signed order.
  * @throws CowError for invalid input, callback failure, timeout, or cancellation.
  */
-export function signOrderEthSignDigest(input: OrderInput, chainId: number, owner: string, digestSigner: DigestSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrderDto>>;
+export function signOrderEthSignDigest(order: OrderData, chainId: number, owner: string, digestSigner: DigestSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrder>>;
 
 /**
  * Signs an order through a custom EIP-1271 callback.
@@ -1918,7 +2107,7 @@ export function signOrderEthSignDigest(input: OrderInput, chainId: number, owner
  * account-abstraction client and can return the final contract signature
  * directly. The SDK still builds typed data and the deterministic order UID.
  *
- * @param input Unsigned order to sign.
+ * @param order Unsigned order to sign.
  * @param chainId EVM chain id for the EIP-712 domain.
  * @param owner Smart-account owner address used in the generated order UID.
  * @param customCallback Callback that returns the final EIP-1271 signature.
@@ -1926,7 +2115,7 @@ export function signOrderEthSignDigest(input: OrderInput, chainId: number, owner
  * @returns A versioned envelope containing the signed-order DTO.
  * @throws CowError for invalid input, callback failure, timeout, or cancellation.
  */
-export function signOrderWithCustomEip1271(input: OrderInput, chainId: number, owner: string, customCallback: CustomEip1271Callback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrderDto>>;
+export function signOrderWithCustomEip1271(order: OrderData, chainId: number, owner: string, customCallback: CustomEip1271Callback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrder>>;
 
 /**
  * Signs an order through typed-data ECDSA and wraps it as EIP-1271.
@@ -1935,7 +2124,7 @@ export function signOrderWithCustomEip1271(input: OrderInput, chainId: number, o
  * then converts the returned ECDSA signature into the CoW EIP-1271 payload.
  * Per-call options may attach cancellation and wallet timeout settings.
  *
- * @param input Unsigned order to sign.
+ * @param order Unsigned order to sign.
  * @param chainId EVM chain id for the EIP-712 domain.
  * @param owner Smart-account owner address used in the generated order UID.
  * @param typedDataSigner Callback that signs the typed-data envelope.
@@ -1943,7 +2132,7 @@ export function signOrderWithCustomEip1271(input: OrderInput, chainId: number, o
  * @returns A versioned envelope containing the signed-order DTO.
  * @throws CowError for invalid input, callback failure, timeout, or cancellation.
  */
-export function signOrderWithEip1271(input: OrderInput, chainId: number, owner: string, typedDataSigner: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrderDto>>;
+export function signOrderWithEip1271(order: OrderData, chainId: number, owner: string, typedDataSigner: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrder>>;
 
 /**
  * Signs an order through a typed-data callback.
@@ -1952,7 +2141,7 @@ export function signOrderWithEip1271(input: OrderInput, chainId: number, owner: 
  * normalizes the returned ECDSA signature, and returns the signed-order DTO
  * with the canonical order UID and digest.
  *
- * @param input Unsigned order fields to sign.
+ * @param order Unsigned order fields to sign.
  * @param chainId EVM chain id used for the EIP-712 domain.
  * @param owner Owner address used in the generated order UID.
  * @param typedDataSigner Callback that signs the typed-data envelope.
@@ -1960,7 +2149,7 @@ export function signOrderWithEip1271(input: OrderInput, chainId: number, owner: 
  * @returns A versioned envelope containing the signed order.
  * @throws CowError for invalid input, callback failure, timeout, or cancellation.
  */
-export function signOrderWithTypedDataSigner(input: OrderInput, chainId: number, owner: string, typedDataSigner: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrderDto>>;
+export function signOrderWithTypedDataSigner(order: OrderData, chainId: number, owner: string, typedDataSigner: TypedDataSignerCallback, options?: SigningOptions | null): Promise<WasmEnvelope<SignedOrder>>;
 
 /**
  * Returns the EVM chain ids supported by the SDK deployment registry.
@@ -1994,4 +2183,4 @@ export function wasmVersion(): string;
  * @returns The wrapped-native token address, symbol, and decimals.
  * @throws CowError when the chain is not supported.
  */
-export function wrappedNativeToken(chainId: number): WasmEnvelope<WrappedNativeTokenDto>;
+export function wrappedNativeToken(chainId: number): WasmEnvelope<WrappedNativeToken>;

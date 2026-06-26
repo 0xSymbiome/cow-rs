@@ -3,6 +3,22 @@ use serde::{Deserialize, Serialize};
 use crate::types::{Address, Amount, BlockHash, HexData, TransactionHash};
 /// Transaction request shape used across signer and provider traits.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[cfg_attr(
+    all(
+        target_arch = "wasm32",
+        target_os = "unknown",
+        feature = "ts-bindings-tx"
+    ),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(
+        target_arch = "wasm32",
+        target_os = "unknown",
+        feature = "ts-bindings-tx"
+    ),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase")]
 pub struct TransactionRequest {
     #[serde(skip_serializing_if = "Option::is_none")]

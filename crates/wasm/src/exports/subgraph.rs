@@ -3,13 +3,13 @@ use cow_sdk_subgraph::{SubgraphApi, SubgraphQueryRequest};
 use serde_json::Value;
 use wasm_bindgen::prelude::*;
 
+use crate::dto::{parse_chain, to_js_value, transport_policy_from_config};
 use crate::exports::{
     cancel::{
         ClientCallScope, SdkClientOptions, run_with_client_options, transport_policy_with_timeout,
     },
-    dto::{SubgraphQueryInput, parse_chain, to_js_value, transport_policy_from_config},
     envelope::WasmEnvelope,
-    errors::JsResultExt,
+    errors::{JsResultExt, WasmError},
     transport::{configured_fetch_transport, optional_timeout, required_string, required_u32},
 };
 
@@ -140,25 +140,28 @@ impl SubgraphClient {
     /// Runs a caller-provided GraphQL query against the configured subgraph.
     ///
     /// Use this method when the built-in totals or volume helpers are too
-    /// narrow. Variables and operation name are forwarded when present.
+    /// narrow. `variables` and `operationName` are forwarded when provided.
     ///
-    /// @param request GraphQL query, variables, and optional operation name.
+    /// @param query Raw GraphQL document to execute.
+    /// @param variables Optional GraphQL variables object.
+    /// @param operationName Optional operation name for a multi-operation document.
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing the JSON GraphQL response.
-    /// @throws CowError for transport, timeout, cancellation, or GraphQL errors.
+    /// @throws CowError for invalid variables, transport, timeout, cancellation, or GraphQL errors.
     #[wasm_bindgen(js_name = "runQuery")]
     pub async fn query(
         &self,
-        request: SubgraphQueryInput,
+        query: String,
+        #[wasm_bindgen(unchecked_param_type = "Value")] variables: JsValue,
+        #[wasm_bindgen(js_name = operationName)] operation_name: Option<String>,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
     ) -> Result<JsValue, JsValue> {
         super::traced("wasm.subgraph.query", async move {
             let scope = ClientCallScope::new(options.as_ref().map(AsRef::as_ref))?;
             let inner = subgraph_for_scope(&self.inner, &scope);
-            run_with_client_options(
-                scope,
-                async move { subgraph_run_query(&inner, request).await },
-            )
+            run_with_client_options(scope, async move {
+                subgraph_run_query(&inner, query, variables, operation_name).await
+            })
             .await
         })
         .await
@@ -210,20 +213,19 @@ async fn subgraph_get_last_hours_volume(
 
 async fn subgraph_run_query(
     inner: &SubgraphApi,
-    request: SubgraphQueryInput,
+    query: String,
+    variables: JsValue,
+    operation_name: Option<String>,
 ) -> Result<JsValue, JsValue> {
-    let request = parse_subgraph_request(request);
-    let value: Value = inner.query(request).await.map_js()?;
-    to_js_value(&WasmEnvelope::v1(value))
-}
-
-fn parse_subgraph_request(input: SubgraphQueryInput) -> SubgraphQueryRequest {
-    let mut request = SubgraphQueryRequest::new(input.query);
-    if let Some(variables) = input.variables {
+    let mut request = SubgraphQueryRequest::new(query);
+    if !variables.is_undefined() && !variables.is_null() {
+        let variables: Value = serde_wasm_bindgen::from_value(variables)
+            .map_err(|error| WasmError::invalid("variables", error.to_string()).into_js())?;
         request = request.with_variables(variables);
     }
-    if let Some(operation_name) = input.operation_name {
+    if let Some(operation_name) = operation_name {
         request = request.with_operation_name(operation_name);
     }
-    request
+    let value: Value = inner.query(request).await.map_js()?;
+    to_js_value(&WasmEnvelope::v1(value))
 }

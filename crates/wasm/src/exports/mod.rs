@@ -6,7 +6,6 @@ pub mod callbacks;
 pub mod cancel;
 /// Supported-chain lookup helpers exposed to JavaScript.
 pub mod chains;
-pub mod dto;
 /// EIP-1271 signature-payload and smart-account signing exports.
 #[cfg(feature = "signing")]
 pub mod eip1271;
@@ -62,7 +61,7 @@ pub use trading::*;
     feature = "trading"
 ))]
 pub use transport::*;
-pub use {cancel::*, chains::*, dto::*, envelope::*, errors::*};
+pub use {crate::dto::*, cancel::*, chains::*, envelope::*, errors::*};
 #[cfg(feature = "signing")]
 pub use {eip1271::*, events::*, signing::*};
 

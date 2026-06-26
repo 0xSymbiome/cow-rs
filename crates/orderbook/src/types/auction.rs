@@ -14,6 +14,14 @@ pub type AuctionPrices = BTreeMap<Address, Amount>;
 /// Competition-status kind returned by `/api/v1/orders/{uid}/status`.
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase")]
 pub enum CompetitionOrderStatusKind {
     /// Open but not yet scheduled.
@@ -34,6 +42,14 @@ pub enum CompetitionOrderStatusKind {
 
 /// Executed sell and buy amounts for a solver path.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct ExecutedAmounts {
@@ -53,6 +69,14 @@ impl ExecutedAmounts {
 
 /// Solver execution entry nested inside competition-status responses.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct SolverExecution {
@@ -83,6 +107,14 @@ impl SolverExecution {
 
 /// Competition-status response for an order.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct CompetitionOrderStatus {
@@ -90,6 +122,10 @@ pub struct CompetitionOrderStatus {
     #[serde(rename = "type")]
     pub kind: CompetitionOrderStatusKind,
     /// Optional solver execution payload.
+    #[cfg_attr(
+        all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+        tsify(optional)
+    )]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub value: Option<Vec<SolverExecution>>,
 }
@@ -111,6 +147,14 @@ impl CompetitionOrderStatus {
 
 /// Nested auction snapshot inside solver-competition responses.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct CompetitionAuction {
@@ -118,6 +162,10 @@ pub struct CompetitionAuction {
     #[serde(default)]
     pub orders: Vec<OrderUid>,
     /// Clearing prices keyed by token address.
+    #[cfg_attr(
+        all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+        tsify(type = "Record<string, string>")
+    )]
     #[serde(default)]
     pub prices: AuctionPrices,
 }
@@ -146,6 +194,14 @@ impl CompetitionAuction {
 
 /// A single order touched by a solver's settlement.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct SolverCompetitionOrder {
@@ -187,6 +243,14 @@ impl SolverCompetitionOrder {
 
 /// Settlement candidate nested inside solver-competition responses.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct SolverSettlement {
@@ -197,6 +261,10 @@ pub struct SolverSettlement {
     /// Position of this solution in the competition ranking.
     pub ranking: i64,
     /// Clearing prices keyed by token address.
+    #[cfg_attr(
+        all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+        tsify(type = "Record<string, string>")
+    )]
     #[serde(default)]
     pub clearing_prices: AuctionPrices,
     /// Orders touched by this solution.
@@ -211,6 +279,10 @@ pub struct SolverSettlement {
     pub reference_score: Option<Amount>,
     /// Transaction in which the solution was executed on-chain, when available.
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(
+        all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+        tsify(type = "string")
+    )]
     pub tx_hash: Option<TransactionHash>,
 }
 
@@ -277,6 +349,14 @@ impl SolverSettlement {
 
 /// Solver-competition response returned by the orderbook.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct SolverCompetitionResponse {
@@ -288,8 +368,16 @@ pub struct SolverCompetitionResponse {
     pub auction_deadline_block: u64,
     /// Transaction hashes for the winning solutions of this competition.
     #[serde(default)]
+    #[cfg_attr(
+        all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+        tsify(type = "string[]")
+    )]
     pub transaction_hashes: Vec<TransactionHash>,
     /// Reference score for each winning solver, keyed by solver address.
+    #[cfg_attr(
+        all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+        tsify(type = "Record<string, string>")
+    )]
     #[serde(default)]
     pub reference_scores: BTreeMap<Address, Amount>,
     /// Auction snapshot for the competition.

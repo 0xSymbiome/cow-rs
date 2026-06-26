@@ -80,6 +80,16 @@ pub enum TradingError {
     /// Order submission requires an explicit owner or a signer address that can supply one.
     #[error("owner address is required for order submission")]
     MissingSubmissionOwner,
+    /// No default orderbook transport exists on the current build target.
+    ///
+    /// On `wasm32-wasip2` (the component target) there is no default transport —
+    /// neither the native `reqwest` client nor the browser `fetch` client — so a
+    /// trading client must be built with an orderbook injected through
+    /// [`TradingBuilder::orderbook`](crate::TradingBuilder::orderbook).
+    #[error(
+        "no default orderbook transport on this target; inject one via TradingBuilder::orderbook"
+    )]
+    MissingOrderbookTransport,
     /// The signer is statically bound to a chain that disagrees with the
     /// trading client's canonical chain, caught before signing (ADR 0015).
     ///

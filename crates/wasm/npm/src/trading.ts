@@ -19,7 +19,7 @@ import type {
   TypedDataSignerCallback
 } from "./callbacks.js";
 
-export interface OrderBookClientConfig extends CommonClientConfig {}
+export type OrderBookClientConfig = CommonClientConfig;
 
 let initialized: Promise<void> | undefined;
 
@@ -62,7 +62,7 @@ export class OrderBookClient {
   }
 
   async cancelOrders(
-    signed: raw.SignedCancellationsInput,
+    signed: raw.SignedCancellations,
     options?: SdkClientOptions | null
   ): Promise<WasmEnvelope<{ cancelled: true }>> {
     return this.#call((client, merged) => client.cancelOrders(signed, merged), options);
@@ -71,14 +71,14 @@ export class OrderBookClient {
   async getNativePrice(
     token: string,
     options?: SdkClientOptions | null
-  ): Promise<WasmEnvelope<raw.NativePriceResponseDto>> {
+  ): Promise<WasmEnvelope<raw.NativePriceResponse>> {
     return this.#call((client, merged) => client.getNativePrice(token, merged), options);
   }
 
   async getOrder(
     orderUid: string,
     options?: SdkClientOptions | null
-  ): Promise<WasmEnvelope<raw.OrderDto>> {
+  ): Promise<WasmEnvelope<raw.Order>> {
     return this.#call((client, merged) => client.getOrder(orderUid, merged), options);
   }
 
@@ -86,21 +86,21 @@ export class OrderBookClient {
     owner: string,
     pagination?: raw.PaginationOptions | null,
     options?: SdkClientOptions | null
-  ): Promise<WasmEnvelope<raw.OrderDto[]>> {
+  ): Promise<WasmEnvelope<raw.Order[]>> {
     return this.#call((client, merged) => client.getOrders(owner, pagination ?? null, merged), options);
   }
 
   async getOrderMultiEnv(
     orderUid: string,
     options?: SdkClientOptions | null
-  ): Promise<WasmEnvelope<raw.OrderDto>> {
+  ): Promise<WasmEnvelope<raw.Order>> {
     return this.#call((client, merged) => client.getOrderMultiEnv(orderUid, merged), options);
   }
 
   async getTxOrders(
     txHash: string,
     options?: SdkClientOptions | null
-  ): Promise<WasmEnvelope<raw.OrderDto[]>> {
+  ): Promise<WasmEnvelope<raw.Order[]>> {
     return this.#call((client, merged) => client.getTxOrders(txHash, merged), options);
   }
 
@@ -114,23 +114,23 @@ export class OrderBookClient {
   }
 
   async getQuote(
-    request: raw.OrderQuoteRequestInput,
+    request: raw.OrderQuoteRequest,
     options?: SdkClientOptions | null
-  ): Promise<WasmEnvelope<raw.OrderQuoteResponseDto>> {
+  ): Promise<WasmEnvelope<raw.OrderQuoteResponse>> {
     return this.#call((client, merged) => client.getQuote(request, merged), options);
   }
 
   async getTrades(
-    query: raw.TradesQueryInput,
+    query: raw.GetTradesRequest,
     options?: SdkClientOptions | null
-  ): Promise<WasmEnvelope<raw.TradeDto[]>> {
+  ): Promise<WasmEnvelope<raw.Trade[]>> {
     return this.#call((client, merged) => client.getTrades(query, merged), options);
   }
 
   async getOrderCompetitionStatus(
     orderUid: string,
     options?: SdkClientOptions | null
-  ): Promise<WasmEnvelope<raw.CompetitionOrderStatusDto>> {
+  ): Promise<WasmEnvelope<raw.CompetitionOrderStatus>> {
     return this.#call(
       (client, merged) => client.getOrderCompetitionStatus(orderUid, merged),
       options
@@ -140,14 +140,14 @@ export class OrderBookClient {
   async getTotalSurplus(
     owner: string,
     options?: SdkClientOptions | null
-  ): Promise<WasmEnvelope<raw.TotalSurplusDto>> {
+  ): Promise<WasmEnvelope<raw.TotalSurplus>> {
     return this.#call((client, merged) => client.getTotalSurplus(owner, merged), options);
   }
 
   async getSolverCompetition(
     auctionId: number,
     options?: SdkClientOptions | null
-  ): Promise<WasmEnvelope<raw.SolverCompetitionResponseDto>> {
+  ): Promise<WasmEnvelope<raw.SolverCompetitionResponse>> {
     return this.#call(
       (client, merged) => client.getSolverCompetition(auctionId, merged),
       options
@@ -157,7 +157,7 @@ export class OrderBookClient {
   async getSolverCompetitionByTxHash(
     txHash: string,
     options?: SdkClientOptions | null
-  ): Promise<WasmEnvelope<raw.SolverCompetitionResponseDto>> {
+  ): Promise<WasmEnvelope<raw.SolverCompetitionResponse>> {
     return this.#call(
       (client, merged) => client.getSolverCompetitionByTxHash(txHash, merged),
       options
@@ -167,7 +167,7 @@ export class OrderBookClient {
   async getAppData(
     appDataHash: string,
     options?: SdkClientOptions | null
-  ): Promise<WasmEnvelope<raw.AppDataObjectDto>> {
+  ): Promise<WasmEnvelope<raw.AppDataObject>> {
     return this.#call((client, merged) => client.getAppData(appDataHash, merged), options);
   }
 
@@ -183,14 +183,14 @@ export class OrderBookClient {
   }
 
   async sendOrder(
-    signed: raw.SignedOrderDto,
+    signed: raw.SignedOrder,
     options?: SdkClientOptions | null
   ): Promise<WasmEnvelope<string>> {
     return this.#call((client, merged) => client.sendOrder(signed, merged), options);
   }
 
   async sendOrderCreation(
-    input: raw.OrderCreationInput,
+    input: raw.OrderCreation,
     options?: SdkClientOptions | null
   ): Promise<WasmEnvelope<string>> {
     return this.#call((client, merged) => client.sendOrderCreation(input, merged), options);
@@ -240,11 +240,11 @@ export class TradingClient {
   }
 
   async buildSellNativeCurrencyTx(
-    order: raw.OrderInput,
+    order: raw.OrderData,
     quoteId: number,
     from: string,
     options?: SdkClientOptions | null
-  ): Promise<WasmEnvelope<raw.BuiltSellNativeCurrencyTxDto>> {
+  ): Promise<WasmEnvelope<raw.BuiltSellNativeCurrencyTx>> {
     return this.#call(
       (client, merged) => client.buildSellNativeCurrencyTx(order, quoteId, from, merged),
       options
@@ -252,10 +252,10 @@ export class TradingClient {
   }
 
   async buildSellNativeCurrencyTxFromQuote(
-    quoteResults: raw.QuoteResultsDto,
+    quoteResults: raw.QuoteResults,
     from: string,
     options?: SdkClientOptions | null
-  ): Promise<WasmEnvelope<raw.BuiltSellNativeCurrencyTxDto>> {
+  ): Promise<WasmEnvelope<raw.BuiltSellNativeCurrencyTx>> {
     return this.#call(
       (client, merged) => client.buildSellNativeCurrencyTxFromQuote(quoteResults, from, merged),
       options
@@ -263,7 +263,7 @@ export class TradingClient {
   }
 
   async getCowProtocolAllowance(
-    params: raw.AllowanceParametersInput,
+    params: raw.AllowanceParams,
     readContractCallback: ContractReadCallback,
     options?: SdkClientOptions | null
   ): Promise<WasmEnvelope<string>> {
@@ -274,35 +274,35 @@ export class TradingClient {
   }
 
   async buildApprovalTx(
-    params: raw.ApprovalParametersInput,
+    params: raw.ApprovalParams,
     options?: SdkClientOptions | null
-  ): Promise<WasmEnvelope<raw.TransactionRequestDto>> {
+  ): Promise<WasmEnvelope<raw.TransactionRequest>> {
     return this.#call((client, merged) => client.buildApprovalTx(params, merged), options);
   }
 
-  buildWrapTx(amount: string): WasmEnvelope<raw.TransactionRequestDto> {
+  buildWrapTx(amount: string): WasmEnvelope<raw.TransactionRequest> {
     assertActive(this.#disposed);
     return callSync(() => this.#inner.buildWrapTx(amount));
   }
 
-  buildUnwrapTx(amount: string): WasmEnvelope<raw.TransactionRequestDto> {
+  buildUnwrapTx(amount: string): WasmEnvelope<raw.TransactionRequest> {
     assertActive(this.#disposed);
     return callSync(() => this.#inner.buildUnwrapTx(amount));
   }
 
   async getQuote(
-    params: raw.SwapParametersInput,
+    params: raw.TradeParams,
     options?: SdkClientOptions | null
-  ): Promise<WasmEnvelope<raw.QuoteResultsDto>> {
+  ): Promise<WasmEnvelope<raw.QuoteResults>> {
     return this.#call((client, merged) => client.getQuote(params, merged), options);
   }
 
   async postLimitOrder(
-    params: raw.LimitTradeParametersInput,
+    params: raw.LimitTradeParams,
     owner: string,
     signerCallback: TypedDataSignerCallback,
     options?: SigningOptions | null
-  ): Promise<WasmEnvelope<raw.OrderPostingResultDto>> {
+  ): Promise<WasmEnvelope<raw.OrderPostingResult>> {
     return this.#callSigning(
       (client, merged) => client.postLimitOrder(params, owner, signerCallback, merged ?? null),
       options
@@ -310,11 +310,11 @@ export class TradingClient {
   }
 
   async postSwapOrder(
-    params: raw.SwapParametersInput,
+    params: raw.TradeParams,
     owner: string,
     signerCallback: TypedDataSignerCallback,
     options?: SigningOptions | null
-  ): Promise<WasmEnvelope<raw.OrderPostingResultDto>> {
+  ): Promise<WasmEnvelope<raw.OrderPostingResult>> {
     return this.#callSigning(
       (client, merged) => client.postSwapOrder(params, owner, signerCallback, merged ?? null),
       options
@@ -322,11 +322,11 @@ export class TradingClient {
   }
 
   async postSwapOrderFromQuote(
-    quoteResults: raw.QuoteResultsDto,
+    quoteResults: raw.QuoteResults,
     owner: string,
     signerCallback: TypedDataSignerCallback,
     options?: SigningOptions | null
-  ): Promise<WasmEnvelope<raw.OrderPostingResultDto>> {
+  ): Promise<WasmEnvelope<raw.OrderPostingResult>> {
     return this.#callSigning(
       (client, merged) =>
         client.postSwapOrderFromQuote(quoteResults, owner, signerCallback, merged ?? null),
@@ -335,11 +335,11 @@ export class TradingClient {
   }
 
   async postSwapOrderWithEip1271(
-    params: raw.SwapParametersInput,
+    params: raw.TradeParams,
     owner: string,
     customCallback: CustomEip1271Callback,
     options?: SigningOptions | null
-  ): Promise<WasmEnvelope<raw.OrderPostingResultDto>> {
+  ): Promise<WasmEnvelope<raw.OrderPostingResult>> {
     return this.#callSigning(
       (client, merged) => client.postSwapOrderWithEip1271(params, owner, customCallback, merged ?? null),
       options
@@ -384,7 +384,7 @@ export class TradingClient {
   }
 }
 
-export function appDataDoc(doc: raw.AppDataDocInput): WasmEnvelope<raw.AppDataDocDto> {
+export function appDataDoc(doc: raw.AppDataParams): WasmEnvelope<raw.AppDataDocument> {
   return callSync(() => raw.appDataDoc(doc));
 }
 
@@ -392,19 +392,19 @@ export function appDataHexToCid(appDataHex: string): WasmEnvelope<string> {
   return callSync(() => raw.appDataHexToCid(appDataHex));
 }
 
-export function appDataInfo(doc: raw.AppDataDocInput): WasmEnvelope<raw.AppDataInfoDto> {
+export function appDataInfo(doc: raw.AppDataParams): WasmEnvelope<raw.AppDataInfo> {
   return callSync(() => raw.appDataInfo(doc));
 }
 
 export function buildCancelOrderTx(
-  params: raw.OrderTraderParametersInput
-): WasmEnvelope<raw.TransactionRequestDto> {
+  params: raw.OrderTraderParams
+): WasmEnvelope<raw.TransactionRequest> {
   return callSync(() => raw.buildCancelOrderTx(params));
 }
 
 export function buildPresignTx(
-  params: raw.OrderTraderParametersInput
-): WasmEnvelope<raw.TransactionRequestDto> {
+  params: raw.OrderTraderParams
+): WasmEnvelope<raw.TransactionRequest> {
   return callSync(() => raw.buildPresignTx(params));
 }
 
@@ -413,44 +413,46 @@ export function cidToAppDataHex(cid: string): WasmEnvelope<string> {
 }
 
 export function computeOrderUid(
-  input: raw.OrderInput,
+  order: raw.OrderData,
   chainId: number,
   owner: string
-): WasmEnvelope<raw.GeneratedOrderUidDto> {
-  return callSync(() => raw.computeOrderUid(input, chainId, owner));
+): WasmEnvelope<raw.GeneratedOrderUid> {
+  return callSync(() => raw.computeOrderUid(order, chainId, owner));
 }
 
-export function decodeEthFlowLog(log: raw.EventLogInput): WasmEnvelope<raw.EthFlowEventDto> {
+export function decodeEthFlowLog(log: raw.EventLog): WasmEnvelope<raw.EthFlowEvent> {
   return callSync(() => raw.decodeEthFlowLog(log));
 }
 
-export function decodeSettlementLog(log: raw.EventLogInput): WasmEnvelope<raw.SettlementEventDto> {
+export function decodeSettlementLog(log: raw.EventLog): WasmEnvelope<raw.SettlementEvent> {
   return callSync(() => raw.decodeSettlementLog(log));
 }
 
 export function deploymentAddresses(
   chainId: number,
   env?: string | null
-): WasmEnvelope<raw.DeploymentAddressesDto> {
+): WasmEnvelope<raw.DeploymentAddresses> {
   return callSync(() => raw.deploymentAddresses(chainId, env ?? null));
 }
 
-export function domainSeparator(chainId: number): string {
+export function domainSeparator(chainId: number): WasmEnvelope<string> {
   return callSync(() => raw.domainSeparator(chainId));
 }
 
 export function eip1271SignaturePayload(
-  input: raw.OrderInput,
+  order: raw.OrderData,
   ecdsaSignature: string
 ): WasmEnvelope<string> {
-  return callSync(() => raw.eip1271SignaturePayload(input, ecdsaSignature));
+  return callSync(() => raw.eip1271SignaturePayload(order, ecdsaSignature));
 }
 
+export type TypedDataMessage = unknown;
+
 export function orderTypedData(
-  input: raw.OrderInput,
+  order: raw.OrderData,
   chainId: number
-): WasmEnvelope<raw.TypedDataEnvelopeDto> {
-  return callSync(() => raw.orderTypedData(input, chainId));
+): WasmEnvelope<raw.TypedDataEnvelope<TypedDataMessage>> {
+  return callSync(() => raw.orderTypedData(order, chainId));
 }
 
 export function signCancellationEthSignDigest(
@@ -458,7 +460,7 @@ export function signCancellationEthSignDigest(
   chainId: number,
   digestSigner: DigestSignerCallback,
   options?: SigningOptions | null
-): Promise<WasmEnvelope<raw.SignedCancellationsInput>> {
+): Promise<WasmEnvelope<raw.SignedCancellations>> {
   return callAsync(() =>
     raw.signCancellationEthSignDigest(orderUids, chainId, digestSigner, options ?? null)
   );
@@ -469,57 +471,57 @@ export function signCancellationWithTypedDataSigner(
   chainId: number,
   typedDataSigner: TypedDataSignerCallback,
   options?: SigningOptions | null
-): Promise<WasmEnvelope<raw.SignedCancellationsInput>> {
+): Promise<WasmEnvelope<raw.SignedCancellations>> {
   return callAsync(() =>
     raw.signCancellationWithTypedDataSigner(orderUids, chainId, typedDataSigner, options ?? null)
   );
 }
 
 export function signOrderEthSignDigest(
-  input: raw.OrderInput,
+  order: raw.OrderData,
   chainId: number,
   owner: string,
   digestSigner: DigestSignerCallback,
   options?: SigningOptions | null
-): Promise<WasmEnvelope<raw.SignedOrderDto>> {
+): Promise<WasmEnvelope<raw.SignedOrder>> {
   return callAsync(() =>
-    raw.signOrderEthSignDigest(input, chainId, owner, digestSigner, options ?? null)
+    raw.signOrderEthSignDigest(order, chainId, owner, digestSigner, options ?? null)
   );
 }
 
 export function signOrderWithCustomEip1271(
-  input: raw.OrderInput,
+  order: raw.OrderData,
   chainId: number,
   owner: string,
   customCallback: CustomEip1271Callback,
   options?: SigningOptions | null
-): Promise<WasmEnvelope<raw.SignedOrderDto>> {
+): Promise<WasmEnvelope<raw.SignedOrder>> {
   return callAsync(() =>
-    raw.signOrderWithCustomEip1271(input, chainId, owner, customCallback, options ?? null)
+    raw.signOrderWithCustomEip1271(order, chainId, owner, customCallback, options ?? null)
   );
 }
 
 export function signOrderWithEip1271(
-  input: raw.OrderInput,
+  order: raw.OrderData,
   chainId: number,
   owner: string,
   typedDataSigner: TypedDataSignerCallback,
   options?: SigningOptions | null
-): Promise<WasmEnvelope<raw.SignedOrderDto>> {
+): Promise<WasmEnvelope<raw.SignedOrder>> {
   return callAsync(() =>
-    raw.signOrderWithEip1271(input, chainId, owner, typedDataSigner, options ?? null)
+    raw.signOrderWithEip1271(order, chainId, owner, typedDataSigner, options ?? null)
   );
 }
 
 export function signOrderWithTypedDataSigner(
-  input: raw.OrderInput,
+  order: raw.OrderData,
   chainId: number,
   owner: string,
   typedDataSigner: TypedDataSignerCallback,
   options?: SigningOptions | null
-): Promise<WasmEnvelope<raw.SignedOrderDto>> {
+): Promise<WasmEnvelope<raw.SignedOrder>> {
   return callAsync(() =>
-    raw.signOrderWithTypedDataSigner(input, chainId, owner, typedDataSigner, options ?? null)
+    raw.signOrderWithTypedDataSigner(order, chainId, owner, typedDataSigner, options ?? null)
   );
 }
 
@@ -527,7 +529,7 @@ export function supportedChainIds(): Uint32Array {
   return callSync(() => raw.supportedChainIds());
 }
 
-export function validateAppDataDoc(doc: raw.AppDataDocInput): WasmEnvelope<raw.ValidationResultDto> {
+export function validateAppDataDoc(doc: raw.AppDataParams): WasmEnvelope<raw.ValidationResult> {
   return callSync(() => raw.validateAppDataDoc(doc));
 }
 
@@ -535,83 +537,79 @@ export function wasmVersion(): string {
   return callSync(() => raw.wasmVersion());
 }
 
-export function wrappedNativeToken(chainId: number): WasmEnvelope<raw.WrappedNativeTokenDto> {
+export function wrappedNativeToken(chainId: number): WasmEnvelope<raw.WrappedNativeToken> {
   return callSync(() => raw.wrappedNativeToken(chainId));
 }
 
 export type {
-  AllowanceParametersInput,
-  AmountsDto,
-  AppDataDocDto,
-  AppDataDocInput,
-  AppDataInfoDto,
-  AppDataObjectDto,
-  ApprovalParametersInput,
-  BuiltSellNativeCurrencyTxDto,
-  CompetitionAuctionDto,
-  CompetitionOrderStatusDto,
-  CompetitionOrderStatusKindDto,
-  ContractCallDto,
-  CostsDto,
+  AllowanceParams,
+  Amounts,
+  AppDataDocument,
+  AppDataParams,
+  AppDataInfo,
+  AppDataObject,
+  ApprovalParams,
+  BuiltSellNativeCurrencyTx,
+  BuyTokenDestination,
+  CompetitionAuction,
+  CompetitionOrderStatus,
+  CompetitionOrderStatusKind,
+  ContractCall,
+  Costs,
   CowEip1271SignRequest,
-  CowEnvDto,
-  DeploymentAddressesDto,
-  EthFlowEventDto,
-  EthflowDataDto,
-  EventLogInput,
-  ExecutedAmountsDto,
-  ExecutedProtocolFeeDto,
-  FeeComponentDto,
-  GeneratedOrderUidDto,
+  DeploymentAddresses,
+  EthflowData,
+  EthFlowEvent,
+  EventLog,
+  ExecutedAmounts,
+  ExecutedProtocolFee,
+  FeeComponent,
+  GeneratedOrderUid,
   InitInput,
-  InteractionDataDto,
-  LimitTradeParametersInput,
-  NativePriceResponseDto,
-  NetworkFeeDto,
-  OnchainOrderDataDto,
-  OrderClassDto,
-  OrderCreationInput,
-  OrderDataDto,
-  OrderDto,
-  OrderInput,
-  OrderInteractionsDto,
-  OrderKindDto,
-  OrderPostingResultDto,
-  OrderQuoteRequestInput,
-  OrderQuoteResponseDto,
-  OrderStatusDto,
-  OrderTraderParametersInput,
-  OrderBookRuntimeBindingDto,
+  InteractionData,
+  LimitTradeParams,
+  NativePriceResponse,
+  NetworkFee,
+  OnchainOrderData,
+  Order,
+  OrderData,
+  OrderbookBinding,
+  OrderClass,
+  OrderCreation,
+  OrderInteractions,
+  OrderKind,
+  OrderPostingResult,
+  OrderQuoteRequest,
+  OrderQuoteResponse,
+  OrderStatus,
+  OrderTraderParams,
   PaginationOptions,
-  PartnerFeeDto,
-  PartnerFeeInput,
-  PartnerFeePolicyDto,
-  PartnerFeePolicyInput,
-  QuoteAmountsAndCostsDto,
-  QuoteDataDto,
-  QuoteResultsDto,
-  SettlementEventDto,
-  SignedCancellationsInput,
-  SignedOrderDto,
-  SigningSchemeDto,
-  SolverCompetitionOrderDto,
-  SolverCompetitionResponseDto,
-  SolverExecutionDto,
-  SolverSettlementDto,
-  StoredOrderQuoteDto,
-  SwapParametersInput,
-  TokenBalanceDto,
-  TotalSurplusDto,
-  TradeDto,
-  TradeParametersDto,
-  TradesQueryInput,
-  TradingAppDataInfoDto,
-  TransactionRequestDto,
-  TypedDataDomainDto,
-  TypedDataEnvelopeDto,
-  TypedDataFieldDto,
-  ValidationResultDto,
-  WrappedNativeTokenDto
+  PartnerFee,
+  PartnerFeePolicy,
+  QuoteAmountsAndCosts,
+  QuoteData,
+  QuoteResults,
+  SellTokenSource,
+  SettlementEvent,
+  SignedCancellations,
+  SignedOrder,
+  SigningScheme,
+  SolverCompetitionOrder,
+  SolverCompetitionResponse,
+  SolverExecution,
+  SolverSettlement,
+  StoredOrderQuote,
+  TotalSurplus,
+  Trade,
+  TradeParams,
+  GetTradesRequest,
+  TradingAppDataInfo,
+  TransactionRequest,
+  TypedDataDomain,
+  TypedDataEnvelope,
+  TypedDataField,
+  ValidationResult,
+  WrappedNativeToken
 } from "./raw/trading.js";
 export type {
   ContractReadCallback,

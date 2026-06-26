@@ -3,8 +3,7 @@
 [CoW Protocol](https://cow.fi)'s Rust SDK, compiled to WebAssembly for JavaScript
 and TypeScript. One protocol implementation runs in both runtimes, so the EIP-712
 and EIP-1271 signatures a browser produces are byte-identical to the Rust
-service's — checked against the upstream `cowprotocol/services` and
-`cowprotocol/contracts` fixtures in CI, not asserted in prose.
+service's.
 
 ```sh
 npm install @symbiome-forge/cow-sdk-wasm@alpha
@@ -100,7 +99,7 @@ const trading = new TradingClient({
   transport: { kind: "fetch" }
 });
 
-// 1. Quote. `getQuote` returns a fully resolved QuoteResultsDto envelope.
+// 1. Quote. `getQuote` returns a fully resolved QuoteResults envelope.
 //    `owner` is required for a quote-only call.
 const quote = await trading.getQuote({
   kind: "sell",
@@ -189,7 +188,7 @@ const typedDataSigner: TypedDataSignerCallback = (envelope) =>
   });
 ```
 
-The result is an envelope whose `value` is the `SignedOrderDto` you submit with
+The result is an envelope whose `value` is the `SignedOrder` you submit with
 `OrderBookClient.sendOrder`.
 
 ## The callback boundary

@@ -11,18 +11,25 @@ use serde::{Deserialize, Serialize};
 use cow_sdk_app_data::AppDataDoc;
 use cow_sdk_core::{
     Address, Amount, AppDataHash, CowEnv, OrderData, OrderUid, QuoteAmountsAndCosts,
-    SupportedChainId, TransactionHash,
+    SupportedChainId, TransactionHash, TypedDataEnvelope,
 };
 use cow_sdk_orderbook::{
-    OrderQuoteResponse, OrderbookClient, OrderbookRuntimeBinding, SigningScheme,
+    OrderQuoteResponse, OrderbookClient, OrderbookBinding, SigningScheme,
 };
-use cow_sdk_signing::OrderTypedData;
 
 use super::params::TradeParams;
 use crate::{OrderbookContextValue, TradingError};
 
 /// Fully resolved quote result produced by trading quote helpers.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct QuoteResults {
@@ -31,6 +38,16 @@ pub struct QuoteResults {
     /// Suggested slippage in basis points after SDK or custom-provider resolution.
     pub suggested_slippage_bps: u32,
     /// Fee and amount breakdown derived from the orderbook quote.
+    ///
+    /// Spelled with the explicit `<Amount>` type argument on the TypeScript
+    /// boundary: the native field uses the `T = Amount` default of
+    /// [`QuoteAmountsAndCosts`], but TypeScript generics carry no default, so a
+    /// bare reference to the emitted `QuoteAmountsAndCosts<T>` would not
+    /// type-check.
+    #[cfg_attr(
+        all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+        tsify(type = "QuoteAmountsAndCosts<Amount>")
+    )]
     pub amounts_and_costs: QuoteAmountsAndCosts,
     /// Unsigned order payload produced for signing or on-chain submission.
     pub order_to_sign: OrderData,
@@ -49,21 +66,44 @@ pub struct QuoteResults {
     /// preserves a `Some` binding; the gate enforces runtime-authority match, not
     /// quote freshness (the quote's own expiry governs that).
     #[serde(skip_serializing_if = "Option::is_none", default)]
-    pub orderbook_binding: Option<OrderbookRuntimeBinding>,
+    pub orderbook_binding: Option<OrderbookBinding>,
     /// Typed order-facing envelope kept for consumers while signers use the
     /// lower-level `TypedDataPayload` seam internally.
-    pub order_typed_data: OrderTypedData,
+    ///
+    /// Spelled as the concrete `TypedDataEnvelope<OrderData>` rather than the
+    /// `OrderTypedData` alias so the generated TypeScript boundary references
+    /// the emitted `TypedDataEnvelope<OrderData>` declaration; the alias is a
+    /// transparent synonym, so native construction and reads are unchanged.
+    pub order_typed_data: TypedDataEnvelope<OrderData>,
 }
 
 /// Result returned after submitting a trade or transaction-producing flow.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct OrderPostingResult {
     /// Final order UID.
     pub order_id: OrderUid,
-    /// Transaction hash when the flow submits an on-chain transaction directly.
+    /// Settlement transaction hash when the flow submits an on-chain
+    /// transaction directly (32-byte `0x`-prefixed hex string).
+    ///
+    /// Spelled `string` on the TypeScript boundary: the native `TransactionHash`
+    /// alias of `Hash32` is not emitted as a declaration, so the override pins
+    /// the protocol-canonical `0x`-prefixed hex wire form (the same idiom the
+    /// orderbook `Trade.tx_hash` field uses).
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(
+        all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+        tsify(type = "string")
+    )]
     pub tx_hash: Option<TransactionHash>,
     /// Signature scheme used for the posted order.
     pub signing_scheme: SigningScheme,
@@ -79,10 +119,26 @@ pub struct OrderPostingResult {
     reason = "the `doc: AppDataDoc` field is a `serde_json::Value` alias, and `serde_json::Value` does not implement `Eq`"
 )]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct TradingAppDataInfo {
     /// Parsed app-data document.
+    ///
+    /// Spelled as the `Value` escape hatch on the TypeScript boundary because
+    /// the app-data document is arbitrary JSON; the native field is the
+    /// [`AppDataDoc`] alias of `serde_json::Value`.
+    #[cfg_attr(
+        all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+        tsify(type = "Value")
+    )]
     pub doc: AppDataDoc,
     /// Canonically serialized app-data payload.
     pub full_app_data: String,
@@ -219,7 +275,7 @@ where
 
 pub(crate) fn validate_quote_orderbook_binding<O>(
     orderbook_client: &O,
-    quoted_binding: Option<&OrderbookRuntimeBinding>,
+    quoted_binding: Option<&OrderbookBinding>,
 ) -> Result<(), TradingError>
 where
     O: OrderbookClient + ?Sized,

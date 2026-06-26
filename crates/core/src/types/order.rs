@@ -12,12 +12,28 @@ use super::{
 /// variant would change the protocol, not the SDK. Classified as
 /// `protocol-fixed-exhaustive` in the workspace enum policy manifest.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[cfg_attr(
+    all(
+        target_arch = "wasm32",
+        target_os = "unknown",
+        feature = "ts-bindings-boundary"
+    ),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(
+        target_arch = "wasm32",
+        target_os = "unknown",
+        feature = "ts-bindings-boundary"
+    ),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "lowercase")]
 pub enum OrderKind {
-    /// Buy an exact amount of the buy token.
-    Buy,
     /// Sell an exact amount of the sell token.
     Sell,
+    /// Buy an exact amount of the buy token.
+    Buy,
 }
 
 /// Source from which the `sellAmount` is drawn upon order fulfillment.
@@ -26,6 +42,22 @@ pub enum OrderKind {
 /// Orders model the sell-side allowance path independently of the buy-side
 /// payout path, which is typed as [`BuyTokenDestination`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
+#[cfg_attr(
+    all(
+        target_arch = "wasm32",
+        target_os = "unknown",
+        feature = "ts-bindings-boundary"
+    ),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(
+        target_arch = "wasm32",
+        target_os = "unknown",
+        feature = "ts-bindings-boundary"
+    ),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[non_exhaustive]
 #[serde(rename_all = "snake_case")]
 pub enum SellTokenSource {
@@ -47,6 +79,22 @@ pub enum SellTokenSource {
 /// variants; the [`SellTokenSource::External`] variant has no buy-side
 /// counterpart.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
+#[cfg_attr(
+    all(
+        target_arch = "wasm32",
+        target_os = "unknown",
+        feature = "ts-bindings-boundary"
+    ),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(
+        target_arch = "wasm32",
+        target_os = "unknown",
+        feature = "ts-bindings-boundary"
+    ),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[non_exhaustive]
 #[serde(rename_all = "snake_case")]
 pub enum BuyTokenDestination {
@@ -95,13 +143,32 @@ pub struct TokenInfo {
 /// `with_*` setters when positional construction reads better at the call
 /// site.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(
+        target_arch = "wasm32",
+        target_os = "unknown",
+        feature = "ts-bindings-boundary"
+    ),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(
+        target_arch = "wasm32",
+        target_os = "unknown",
+        feature = "ts-bindings-boundary"
+    ),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase")]
 pub struct OrderData {
     /// Sell token address.
     pub sell_token: Address,
     /// Buy token address.
     pub buy_token: Address,
-    /// Receiver of the bought tokens.
+    /// Receiver of the bought tokens. Defaults to the zero address — which the
+    /// settlement contract interprets as pay-to-owner — when omitted on the input
+    /// boundary; always serialized on a resolved order.
+    #[serde(default = "default_order_receiver")]
     pub receiver: Address,
     /// Exact sell amount for sell orders or maximum sell amount for buy orders.
     pub sell_amount: Amount,
@@ -114,16 +181,47 @@ pub struct OrderData {
     /// Fee amount encoded in sell-token units.
     pub fee_amount: Amount,
     /// Order side.
+    #[cfg_attr(
+        all(
+            target_arch = "wasm32",
+            target_os = "unknown",
+            feature = "ts-bindings-boundary"
+        ),
+        tsify(type = "OrderKind")
+    )]
     pub kind: OrderKind,
     /// Whether the order can be partially filled.
     #[serde(default)]
     pub partially_fillable: bool,
     /// Sell-token balance source.
+    #[cfg_attr(
+        all(
+            target_arch = "wasm32",
+            target_os = "unknown",
+            feature = "ts-bindings-boundary"
+        ),
+        tsify(type = "SellTokenSource")
+    )]
     #[serde(default)]
     pub sell_token_balance: SellTokenSource,
     /// Buy-token balance destination.
+    #[cfg_attr(
+        all(
+            target_arch = "wasm32",
+            target_os = "unknown",
+            feature = "ts-bindings-boundary"
+        ),
+        tsify(type = "BuyTokenDestination")
+    )]
     #[serde(default)]
     pub buy_token_balance: BuyTokenDestination,
+}
+
+/// The default order receiver: the zero address, which the settlement contract
+/// interprets as "pay the bought tokens to the order owner." Lets the input
+/// boundary omit `receiver` and fall back to the protocol's pay-to-owner default.
+const fn default_order_receiver() -> Address {
+    Address::ZERO
 }
 
 impl OrderData {

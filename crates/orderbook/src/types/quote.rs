@@ -616,6 +616,14 @@ impl OrderQuoteRequest {
 /// echo shape and resolves that into the app-data hash used by downstream
 /// order creation.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct QuoteData {
@@ -647,30 +655,55 @@ pub struct QuoteData {
     /// through [`QuoteData::with_network_cost_amount`].
     fee_amount: Amount,
     /// Order kind.
+    #[cfg_attr(
+        all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+        tsify(type = "OrderKind")
+    )]
     pub kind: OrderKind,
-    /// Whether partial fills are allowed.
-    #[serde(default)]
+    /// Whether partial fills are allowed. Always serialized on the quote
+    /// response, so the wire field is required rather than defaulted; inbound
+    /// deserialization still tolerates its absence through the wire shim below.
     pub partially_fillable: bool,
     /// Sell-token balance source.
+    #[cfg_attr(
+        all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+        tsify(type = "SellTokenSource")
+    )]
     #[serde(default)]
     pub sell_token_balance: SellTokenSource,
     /// Buy-token balance destination.
+    #[cfg_attr(
+        all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+        tsify(type = "BuyTokenDestination")
+    )]
     #[serde(default)]
     pub buy_token_balance: BuyTokenDestination,
     /// Estimated gas units for the quoted trade, in the upstream
     /// decimal-string wire shape. Read-only quote estimate populated from the
     /// orderbook `/quote` response (ADR 0021); empty for a locally constructed
     /// quote. Read through [`QuoteData::gas_amount`].
+    #[cfg_attr(
+        all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+        tsify(optional)
+    )]
     #[serde(skip_serializing_if = "String::is_empty")]
     gas_amount: String,
     /// Estimated gas price at quote time (wei per gas unit), in the upstream
     /// decimal-string wire shape. Read-only quote estimate (ADR 0021); read
     /// through [`QuoteData::gas_price`].
+    #[cfg_attr(
+        all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+        tsify(optional)
+    )]
     #[serde(skip_serializing_if = "String::is_empty")]
     gas_price: String,
     /// Sell-token price in native-token atoms per sell-token atom, in the
     /// upstream decimal-string wire shape. Read-only quote estimate
     /// (ADR 0021); read through [`QuoteData::sell_token_price`].
+    #[cfg_attr(
+        all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+        tsify(optional)
+    )]
     #[serde(skip_serializing_if = "String::is_empty")]
     sell_token_price: String,
     /// Signing scheme for the quoted order. Mirrors
@@ -862,6 +895,14 @@ impl QuoteData {
 
 /// Quote response DTO returned by `/api/v1/quote`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct OrderQuoteResponse {

@@ -11,7 +11,7 @@ use crate::types::{
     validate_orderbook_env_context,
 };
 use crate::{
-    DEFAULT_QUOTE_VALIDITY, OrderbookClient, OrderbookRuntimeBinding, QuoteRequestOverride,
+    DEFAULT_QUOTE_VALIDITY, OrderbookClient, OrderbookBinding, QuoteRequestOverride,
     QuoteResults, QuoterParams, TradeAdvancedSettings, TradeParams, TraderParams,
     TradingAppDataInfo, TradingError, adjust_eth_flow_trade_params,
     calculate_quote_amounts_and_costs, default_slippage_bps, is_eth_flow_order, order_to_sign,
@@ -222,7 +222,7 @@ struct QuoteResultInputs<'a> {
     trade_parameters: TradeParams,
     quote_response: cow_sdk_orderbook::OrderQuoteResponse,
     app_data_info: TradingAppDataInfo,
-    orderbook_binding: OrderbookRuntimeBinding,
+    orderbook_binding: OrderbookBinding,
     suggested_slippage: u32,
     amounts_and_costs: cow_sdk_core::QuoteAmountsAndCosts,
     is_eth_flow: bool,

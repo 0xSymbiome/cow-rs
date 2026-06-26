@@ -4,6 +4,14 @@ use super::Amount;
 
 /// Native-price response from `/api/v1/token/{token}/native_price`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct NativePriceResponse {
@@ -21,6 +29,14 @@ impl NativePriceResponse {
 
 /// Total-surplus response from `/api/v1/users/{owner}/total_surplus`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct TotalSurplus {
@@ -42,6 +58,14 @@ impl TotalSurplus {
 
 /// Full app-data response from the orderbook app-data endpoint.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct AppDataObject {

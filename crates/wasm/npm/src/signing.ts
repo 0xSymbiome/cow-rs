@@ -33,91 +33,93 @@ export default initialize;
 export type { InitInput } from "./raw/signing.js";
 
 export function computeOrderUid(
-  input: raw.OrderInput,
+  order: raw.OrderData,
   chainId: number,
   owner: string
-): WasmEnvelope<raw.GeneratedOrderUidDto> {
-  return callSync(() => raw.computeOrderUid(input, chainId, owner));
+): WasmEnvelope<raw.GeneratedOrderUid> {
+  return callSync(() => raw.computeOrderUid(order, chainId, owner));
 }
 
-export function decodeEthFlowLog(log: raw.EventLogInput): WasmEnvelope<raw.EthFlowEventDto> {
+export function decodeEthFlowLog(log: raw.EventLog): WasmEnvelope<raw.EthFlowEvent> {
   return callSync(() => raw.decodeEthFlowLog(log));
 }
 
-export function decodeSettlementLog(log: raw.EventLogInput): WasmEnvelope<raw.SettlementEventDto> {
+export function decodeSettlementLog(log: raw.EventLog): WasmEnvelope<raw.SettlementEvent> {
   return callSync(() => raw.decodeSettlementLog(log));
 }
 
 export function deploymentAddresses(
   chainId: number,
   env?: string | null
-): WasmEnvelope<raw.DeploymentAddressesDto> {
+): WasmEnvelope<raw.DeploymentAddresses> {
   return callSync(() => raw.deploymentAddresses(chainId, env ?? null));
 }
 
-export function domainSeparator(chainId: number): string {
+export function domainSeparator(chainId: number): WasmEnvelope<string> {
   return callSync(() => raw.domainSeparator(chainId));
 }
 
 export function eip1271SignaturePayload(
-  input: raw.OrderInput,
+  order: raw.OrderData,
   ecdsaSignature: string
 ): WasmEnvelope<string> {
-  return callSync(() => raw.eip1271SignaturePayload(input, ecdsaSignature));
+  return callSync(() => raw.eip1271SignaturePayload(order, ecdsaSignature));
 }
 
+export type TypedDataMessage = unknown;
+
 export function orderTypedData(
-  input: raw.OrderInput,
+  order: raw.OrderData,
   chainId: number
-): WasmEnvelope<raw.TypedDataEnvelopeDto> {
-  return callSync(() => raw.orderTypedData(input, chainId));
+): WasmEnvelope<raw.TypedDataEnvelope<TypedDataMessage>> {
+  return callSync(() => raw.orderTypedData(order, chainId));
 }
 
 export function signOrderEthSignDigest(
-  input: raw.OrderInput,
+  order: raw.OrderData,
   chainId: number,
   owner: string,
   digestSigner: DigestSignerCallback,
   options?: SigningOptions | null
-): Promise<WasmEnvelope<raw.SignedOrderDto>> {
+): Promise<WasmEnvelope<raw.SignedOrder>> {
   return callAsync(() =>
-    raw.signOrderEthSignDigest(input, chainId, owner, digestSigner, options ?? null)
+    raw.signOrderEthSignDigest(order, chainId, owner, digestSigner, options ?? null)
   );
 }
 
 export function signOrderWithCustomEip1271(
-  input: raw.OrderInput,
+  order: raw.OrderData,
   chainId: number,
   owner: string,
   customCallback: CustomEip1271Callback,
   options?: SigningOptions | null
-): Promise<WasmEnvelope<raw.SignedOrderDto>> {
+): Promise<WasmEnvelope<raw.SignedOrder>> {
   return callAsync(() =>
-    raw.signOrderWithCustomEip1271(input, chainId, owner, customCallback, options ?? null)
+    raw.signOrderWithCustomEip1271(order, chainId, owner, customCallback, options ?? null)
   );
 }
 
 export function signOrderWithEip1271(
-  input: raw.OrderInput,
+  order: raw.OrderData,
   chainId: number,
   owner: string,
   typedDataSigner: TypedDataSignerCallback,
   options?: SigningOptions | null
-): Promise<WasmEnvelope<raw.SignedOrderDto>> {
+): Promise<WasmEnvelope<raw.SignedOrder>> {
   return callAsync(() =>
-    raw.signOrderWithEip1271(input, chainId, owner, typedDataSigner, options ?? null)
+    raw.signOrderWithEip1271(order, chainId, owner, typedDataSigner, options ?? null)
   );
 }
 
 export function signOrderWithTypedDataSigner(
-  input: raw.OrderInput,
+  order: raw.OrderData,
   chainId: number,
   owner: string,
   typedDataSigner: TypedDataSignerCallback,
   options?: SigningOptions | null
-): Promise<WasmEnvelope<raw.SignedOrderDto>> {
+): Promise<WasmEnvelope<raw.SignedOrder>> {
   return callAsync(() =>
-    raw.signOrderWithTypedDataSigner(input, chainId, owner, typedDataSigner, options ?? null)
+    raw.signOrderWithTypedDataSigner(order, chainId, owner, typedDataSigner, options ?? null)
   );
 }
 
@@ -129,25 +131,26 @@ export function wasmVersion(): string {
   return callSync(() => raw.wasmVersion());
 }
 
-export function wrappedNativeToken(chainId: number): WasmEnvelope<raw.WrappedNativeTokenDto> {
+export function wrappedNativeToken(chainId: number): WasmEnvelope<raw.WrappedNativeToken> {
   return callSync(() => raw.wrappedNativeToken(chainId));
 }
 
 export type {
+  BuyTokenDestination,
   CowEip1271SignRequest,
-  DeploymentAddressesDto,
-  EthFlowEventDto,
-  EventLogInput,
-  GeneratedOrderUidDto,
-  OrderInput,
-  OrderKindDto,
-  SettlementEventDto,
-  SignedOrderDto,
-  TokenBalanceDto,
-  TypedDataDomainDto,
-  TypedDataEnvelopeDto,
-  TypedDataFieldDto,
-  WrappedNativeTokenDto
+  DeploymentAddresses,
+  EthFlowEvent,
+  EventLog,
+  GeneratedOrderUid,
+  OrderData,
+  OrderKind,
+  SellTokenSource,
+  SettlementEvent,
+  SignedOrder,
+  TypedDataDomain,
+  TypedDataEnvelope,
+  TypedDataField,
+  WrappedNativeToken
 } from "./raw/signing.js";
 export type {
   CustomEip1271Callback,

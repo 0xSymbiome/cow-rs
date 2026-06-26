@@ -14,6 +14,22 @@ use crate::types::{Address, ChainId};
 // ADR 0052, ADR 0040. Enforced by cargo check-source-fences.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(
+        target_arch = "wasm32",
+        target_os = "unknown",
+        feature = "ts-bindings-typed-data"
+    ),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(
+        target_arch = "wasm32",
+        target_os = "unknown",
+        feature = "ts-bindings-typed-data"
+    ),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase")]
 pub struct TypedDataDomain {
     /// Human-readable protocol name.
@@ -21,6 +37,14 @@ pub struct TypedDataDomain {
     /// Domain version string.
     pub version: String,
     /// Numeric chain id for the typed-data domain.
+    #[cfg_attr(
+        all(
+            target_arch = "wasm32",
+            target_os = "unknown",
+            feature = "ts-bindings-typed-data"
+        ),
+        tsify(type = "number")
+    )]
     pub chain_id: ChainId,
     /// Contract address used as the domain verifier.
     pub verifying_contract: Address,
@@ -71,6 +95,22 @@ impl TypedDataDomain {
 /// A single EIP-712 typed-data field descriptor.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(
+        target_arch = "wasm32",
+        target_os = "unknown",
+        feature = "ts-bindings-typed-data"
+    ),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(
+        target_arch = "wasm32",
+        target_os = "unknown",
+        feature = "ts-bindings-typed-data"
+    ),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 pub struct TypedDataField {
     /// Field name as it appears in the typed-data schema.
     pub name: String,
@@ -98,6 +138,14 @@ pub type TypedDataTypes = BTreeMap<String, Vec<TypedDataField>>;
 /// full type map, primary-type name, and message together.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(
+        target_arch = "wasm32",
+        target_os = "unknown",
+        feature = "ts-bindings-typed-data"
+    ),
+    derive(tsify::Tsify)
+)]
 #[serde(rename_all = "camelCase")]
 pub struct TypedDataEnvelope<M> {
     /// Domain metadata used to compute the typed-data digest.
@@ -105,6 +153,18 @@ pub struct TypedDataEnvelope<M> {
     /// Primary type name for the payload.
     pub primary_type: String,
     /// Full type map including the primary type and `EIP712Domain`.
+    ///
+    /// Typed as `Record` on the TypeScript boundary because the runtime
+    /// serializer emits a plain JavaScript object for the `BTreeMap`; the
+    /// override aligns the generated declaration with the wire shape.
+    #[cfg_attr(
+        all(
+            target_arch = "wasm32",
+            target_os = "unknown",
+            feature = "ts-bindings-typed-data"
+        ),
+        tsify(type = "Record<string, TypedDataField[]>")
+    )]
     pub types: TypedDataTypes,
     /// Payload message body.
     pub message: M,

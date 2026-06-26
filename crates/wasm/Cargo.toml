@@ -40,16 +40,52 @@ workspace = true
 
 [features]
 default = ["flavor-default"]
-orderbook = ["dep:cow-sdk-orderbook", "transport-policy"]
+# `cow-sdk-orderbook/ts-bindings` turns on the Tsify boundary derive on the
+# orderbook response types (e.g. `NativePriceResponse`) only for the flavours
+# that surface a native-price client. `signing` does not enable `orderbook`, so
+# its `.d.ts` carries no orderbook boundary type.
+orderbook = ["dep:cow-sdk-orderbook", "cow-sdk-orderbook/ts-bindings", "transport-policy"]
 # `cow-sdk-contracts`, `cow-sdk-signing`, and `cow-sdk-app-data` are unconditional
 # dependencies of the `helpers` module, so these features are pure cfg toggles
 # that gate the matching wasm-bindgen `exports` submodules.
-signing = []
-app-data = []
+signing = ["cow-sdk-core/ts-bindings-typed-data"]
+# `cow-sdk-app-data/ts-bindings` turns on the Tsify boundary derive on the native
+# `AppDataInfo` (surfaced by `appDataInfo`) and `ValidationResult`, while this
+# feature also gates the Tsify derive on `AppDataDocInput`, defined in this crate.
+# Only flavours that surface app-data (`default`, `trading`) enable this;
+# `signing` and `orderbook` do not, so the types stay out of their `.d.ts`.
+app-data = ["cow-sdk-app-data/ts-bindings"]
 ipfs = ["app-data", "transport-policy"]
-cancellation = ["signing"]
+# `cow-sdk-core/ts-bindings-tx` turns on the Tsify boundary derive on the native
+# `TransactionRequest` (surfaced by `buildCancelOrderTx` / `buildPresignTx` and,
+# through `trading`, the build-tx exports). It is the transaction-boundary feature,
+# scoped apart from the `ts-bindings` trading tree so enabling it in the leaner
+# `orderbook` flavour does not drag `OrderData` / `CowEnv` / the quote tree into
+# that flavour's `.d.ts`. `cancellation` is reachable from the `orderbook`,
+# `trading`, and `default` flavours; `signing` does not enable it, so
+# `TransactionRequest` stays out of the `signing` `.d.ts`.
+cancellation = ["signing", "cow-sdk-core/ts-bindings-tx"]
 transport-policy = ["cow-sdk-core/transport-policy"]
-trading = ["orderbook", "signing", "app-data", "dep:cow-sdk-trading"]
+# `cow-sdk-trading/ts-bindings` turns on the Tsify boundary derive on the trading
+# result/parameter trees (`QuoteResults` and the native trading-parameter types
+# `TradeParams` / `LimitTradeParams`, plus the typed-data / quote-amounts /
+# partner-fee / runtime-binding types they reference across core, app-data, and
+# orderbook). `TradeParams` / `LimitTradeParams` serve as both the JS input and
+# the resolved output shape, so this flavour links them and their serde defaults
+# directly; `signing` and `orderbook` enable none of these, so the trading-only
+# types stay out of their `.d.ts`. The shared order enums and the native boundary
+# types ride `cow-sdk-core/ts-bindings-boundary` (always on through the base
+# dependency), so orderbook and signing still get `OrderKind` /
+# `SellTokenSource` / `BuyTokenDestination` / `OrderData` but link neither the
+# trading parameters nor the trading client stack behind them.
+# `cow-sdk-core/ts-bindings` is named explicitly so the native `ContractCall`
+# (surfaced only by this flavour's `getCowProtocolAllowance` callback) carries its
+# Tsify derive at the point of use, rather than relying on the transitive
+# `cow-sdk-trading/ts-bindings` chain; `cow-sdk-core/ts-bindings-tx` does the same
+# for the native `TransactionRequest` returned by this flavour's `buildApprovalTx`
+# / `buildWrapTx` / `buildUnwrapTx` exports, which are present even when
+# `cancellation` is not.
+trading = ["orderbook", "signing", "app-data", "dep:cow-sdk-trading", "cow-sdk-trading/ts-bindings", "cow-sdk-core/ts-bindings", "cow-sdk-core/ts-bindings-tx"]
 subgraph = ["dep:cow-sdk-subgraph", "transport-policy"]
 flavor-default = [
     "orderbook",
@@ -69,7 +105,12 @@ alloy-sol-types.workspace = true
 async-trait.workspace = true
 cow-sdk-app-data = { path = "../app-data", version = "0.1.0-alpha.8" }
 cow-sdk-contracts = { path = "../contracts", version = "0.1.0-alpha.8" }
-cow-sdk-core = { path = "../core", version = "0.1.0-alpha.8" }
+# `ts-bindings-boundary` is always on so the shared boundary shapes (the order
+# enums and the native `OrderData` / deployment / wrapped-native / order-uid
+# types) carry their Tsify derive for the npm `.d.ts`. The derive is gated to the
+# wasm-bindgen target inside `cow-sdk-core`, so a native build links the same
+# shapes without pulling wasm-bindgen.
+cow-sdk-core = { path = "../core", version = "0.1.0-alpha.8", features = ["ts-bindings-boundary"] }
 cow-sdk-signing = { path = "../signing", version = "0.1.0-alpha.8" }
 serde.workspace = true
 serde_json.workspace = true

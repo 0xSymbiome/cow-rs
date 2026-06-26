@@ -7,7 +7,7 @@ use cow_sdk_core::{
     Cancelled, REDACTED_PLACEHOLDER, Redacted, TransportError, redact_response_body,
 };
 #[cfg(feature = "orderbook")]
-use cow_sdk_orderbook::{OrderbookError, OrderbookRejection, OrderbookRejectionCategory};
+use cow_sdk_orderbook::{OrderbookError, OrderbookRejectionCategory};
 #[cfg(feature = "signing")]
 use cow_sdk_signing::SigningError;
 #[cfg(feature = "subgraph")]
@@ -391,28 +391,6 @@ impl From<SigningError> for WasmError {
     }
 }
 
-/// Projects an [`OrderbookRejection`] to its services `errorType` wire tag for
-/// the JS surface (`"InsufficientBalance"`, `"DuplicatedOrder"`, ...). The
-/// forward-compatible `Unknown` rejection carries its already-sanitized code;
-/// every other variant reuses the derived `Serialize` tag, the single source
-/// that mirrors `parse_rejection`. Only the sanitized tag is read, so the
-/// redacted free-form `description` some variants carry never crosses (ADR 0053).
-#[cfg(feature = "orderbook")]
-fn orderbook_rejection_tag(rejection: &OrderbookRejection) -> Option<String> {
-    if let OrderbookRejection::Unknown { code, .. } = rejection {
-        let code = code.as_str();
-        // A code that failed sanitization is surfaced as an absent tag rather
-        // than the redaction sentinel, so consumers branch on a missing
-        // `errorType` instead of a meaningless `"[redacted]"` value (ADR 0053).
-        return (code != REDACTED_PLACEHOLDER).then(|| code.to_owned());
-    }
-    match serde_json::to_value(rejection).ok()? {
-        Value::String(tag) => Some(tag),
-        Value::Object(fields) => fields.into_iter().next().map(|(tag, _)| tag),
-        _ => None,
-    }
-}
-
 #[cfg(feature = "orderbook")]
 impl From<OrderbookError> for WasmError {
     fn from(value: OrderbookError) -> Self {
@@ -434,7 +412,7 @@ impl From<OrderbookError> for WasmError {
             } => Self::Orderbook {
                 code: Some(status.as_u16().to_string()),
                 category: Some(rejection.category().into()),
-                error_type: orderbook_rejection_tag(&rejection),
+                error_type: rejection.error_type_tag(),
                 message: orderbook_rejection_message(status.as_u16(), rejection.to_string()),
                 retryable,
                 retry_after_ms,
@@ -783,52 +761,18 @@ mod tests {
         }
     }
 
-    #[cfg(feature = "orderbook")]
-    #[wasm_bindgen_test]
-    fn orderbook_rejection_tag_projects_the_serde_variant_name() {
-        // Unit variant -> the serde tag string.
-        assert_eq!(
-            orderbook_rejection_tag(&OrderbookRejection::InsufficientAllowance),
-            Some("InsufficientAllowance".to_owned()),
-        );
-        assert_eq!(
-            orderbook_rejection_tag(&OrderbookRejection::DuplicatedOrder),
-            Some("DuplicatedOrder".to_owned()),
-        );
-        // Struct variant -> the outer variant key only, never the inner fields.
-        let struct_variant = OrderbookRejection::SellAmountDoesNotCoverFee {
-            fee_amount: cow_sdk_core::Amount::new("1000000").expect("valid amount"),
-        };
-        assert_eq!(
-            orderbook_rejection_tag(&struct_variant),
-            Some("SellAmountDoesNotCoverFee".to_owned()),
-        );
-    }
-
-    #[cfg(feature = "orderbook")]
-    #[wasm_bindgen_test]
-    fn unknown_rejection_projects_its_safe_code_but_never_the_redaction_sentinel() {
-        use cow_sdk_orderbook::rejection::OrderbookRejectionCode;
-        // A safe code is surfaced verbatim.
-        let safe = OrderbookRejection::Unknown {
-            code: OrderbookRejectionCode::new("FutureVariant"),
-            message: Redacted::new(String::new()),
-        };
-        assert_eq!(
-            orderbook_rejection_tag(&safe),
-            Some("FutureVariant".to_owned()),
-        );
-        // A code that failed sanitization becomes an absent tag, not "[redacted]".
-        let redacted = OrderbookRejection::Unknown {
-            code: OrderbookRejectionCode::new("definitely not a safe code!"),
-            message: Redacted::new(String::new()),
-        };
-        assert_eq!(orderbook_rejection_tag(&redacted), None);
-    }
+    // The fine-grained `errorType` tag projection — `Unknown`-code
+    // sanitization, the struct-variant outer-key rule, and the never-leak
+    // `[redacted]` guard — is single-sourced on
+    // `OrderbookRejection::error_type_tag` and exercised by the orderbook
+    // crate's own unit tests (both wasm distribution lanes read that one
+    // accessor). The wasm lane's `From<OrderbookError>` simply threads the
+    // native tag through, so that projection is covered there rather than here.
 
     #[cfg(feature = "orderbook")]
     #[wasm_bindgen_test]
     fn orderbook_category_projects_to_the_js_dto() {
+        use cow_sdk_orderbook::OrderbookRejection;
         // The allowance/balance split lives in `errorType`; both share the coarse
         // `insufficientFunds` category, which the JS DTO mirrors.
         assert_eq!(

@@ -2,20 +2,20 @@ use crate::helpers as pure;
 use cow_sdk_core::transport::policy::TransportPolicy;
 use cow_sdk_core::{Address, AppDataHash, OrderUid, TransactionHash};
 use cow_sdk_orderbook::{
-    OrderCancellations, OrderCreation, OrderbookApi, OrdersQuery, TradesQuery,
+    OrderCancellations, OrderCreation as NativeOrderCreation, OrderbookApi, OrdersQuery,
+    TradesQuery,
 };
 use serde_json::json;
 use wasm_bindgen::prelude::*;
 
+use crate::dto::{
+    OrderCreation, OrderQuoteRequest, PaginationOptions, SignedCancellations,
+    SignedOrder, GetTradesRequest, ecdsa_signing_scheme, from_json_value, orderbook_signing_scheme,
+    parse_chain, to_js_value, transport_policy_from_config,
+};
 use crate::exports::{
     cancel::{
         ClientCallScope, SdkClientOptions, run_with_client_options, transport_policy_with_timeout,
-    },
-    dto::{
-        AppDataObjectDto, OrderCreationInput, OrderInput, OrderQuoteRequestInput,
-        PaginationOptions, SignedCancellationsInput, SignedOrderDto, TradesQueryInput,
-        ecdsa_signing_scheme, from_json_value, orderbook_signing_scheme, parse_chain, parse_order,
-        to_js_value, transport_policy_from_config,
     },
     envelope::WasmEnvelope,
     errors::{JsResultExt, WasmError},
@@ -81,8 +81,8 @@ impl OrderBookClient {
     /// through the configured transport. Per-call options can override the
     /// constructor timeout or attach an `AbortSignal`.
     ///
-    /// This returns the raw `OrderQuoteResponseDto`, distinct from
-    /// `TradingClient.getQuote`, which returns the richer `QuoteResultsDto`
+    /// This returns the raw `OrderQuoteResponse`, distinct from
+    /// `TradingClient.getQuote`, which returns the richer `QuoteResults`
     /// carrying `orderToSign` and `amountsAndCosts` for posting.
     ///
     /// @param request Quote request DTO.
@@ -91,11 +91,11 @@ impl OrderBookClient {
     /// @throws CowError for invalid input, transport failure, timeout, or cancellation.
     #[wasm_bindgen(
         js_name = "getQuote",
-        unchecked_return_type = "WasmEnvelope<OrderQuoteResponseDto>"
+        unchecked_return_type = "WasmEnvelope<OrderQuoteResponse>"
     )]
     pub async fn quote(
         &self,
-        request: OrderQuoteRequestInput,
+        request: OrderQuoteRequest,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
     ) -> Result<JsValue, JsValue> {
         super::traced("wasm.orderbook.quote", async move {
@@ -123,7 +123,7 @@ impl OrderBookClient {
     #[wasm_bindgen(js_name = "sendOrder", unchecked_return_type = "WasmEnvelope<string>")]
     pub async fn send_order(
         &self,
-        signed: SignedOrderDto,
+        signed: SignedOrder,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
     ) -> Result<JsValue, JsValue> {
         super::traced("wasm.orderbook.send_order", async move {
@@ -154,7 +154,7 @@ impl OrderBookClient {
     )]
     pub async fn send_order_creation(
         &self,
-        input: OrderCreationInput,
+        input: OrderCreation,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
     ) -> Result<JsValue, JsValue> {
         super::traced("wasm.orderbook.send_order_creation", async move {
@@ -177,7 +177,7 @@ impl OrderBookClient {
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing the order response.
     /// @throws CowError for invalid UID, not-found responses, transport failure, or timeout.
-    #[wasm_bindgen(js_name = "getOrder", unchecked_return_type = "WasmEnvelope<OrderDto>")]
+    #[wasm_bindgen(js_name = "getOrder", unchecked_return_type = "WasmEnvelope<Order>")]
     pub async fn order(
         &self,
         #[wasm_bindgen(js_name = orderUid)] order_uid: String,
@@ -240,7 +240,7 @@ impl OrderBookClient {
     /// @throws CowError for invalid UID, not-found responses, transport failure, or timeout.
     #[wasm_bindgen(
         js_name = "getOrderMultiEnv",
-        unchecked_return_type = "WasmEnvelope<OrderDto>"
+        unchecked_return_type = "WasmEnvelope<Order>"
     )]
     pub async fn order_multi_env(
         &self,
@@ -266,7 +266,7 @@ impl OrderBookClient {
     /// @throws CowError for an invalid hash, transport failure, timeout, or cancellation.
     #[wasm_bindgen(
         js_name = "getTxOrders",
-        unchecked_return_type = "WasmEnvelope<OrderDto[]>"
+        unchecked_return_type = "WasmEnvelope<Order[]>"
     )]
     pub async fn tx_orders(
         &self,
@@ -293,13 +293,10 @@ impl OrderBookClient {
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing matching trades.
     /// @throws CowError when the query is ambiguous or transport fails.
-    #[wasm_bindgen(
-        js_name = "getTrades",
-        unchecked_return_type = "WasmEnvelope<TradeDto[]>"
-    )]
+    #[wasm_bindgen(js_name = "getTrades", unchecked_return_type = "WasmEnvelope<Trade[]>")]
     pub async fn trades(
         &self,
-        query: TradesQueryInput,
+        query: GetTradesRequest,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
     ) -> Result<JsValue, JsValue> {
         super::traced("wasm.orderbook.trades", async move {
@@ -326,10 +323,7 @@ impl OrderBookClient {
     /// @param options Optional per-call cancellation and timeout settings.
     /// @returns A versioned envelope containing matching orders.
     /// @throws CowError for invalid owner, transport failure, timeout, or cancellation.
-    #[wasm_bindgen(
-        js_name = "getOrders",
-        unchecked_return_type = "WasmEnvelope<OrderDto[]>"
-    )]
+    #[wasm_bindgen(js_name = "getOrders", unchecked_return_type = "WasmEnvelope<Order[]>")]
     pub async fn orders(
         &self,
         owner: String,
@@ -358,7 +352,7 @@ impl OrderBookClient {
     /// @throws CowError for invalid token address, transport failure, or timeout.
     #[wasm_bindgen(
         js_name = "getNativePrice",
-        unchecked_return_type = "WasmEnvelope<NativePriceResponseDto>"
+        unchecked_return_type = "WasmEnvelope<NativePriceResponse>"
     )]
     pub async fn native_price(
         &self,
@@ -388,7 +382,7 @@ impl OrderBookClient {
     /// @throws CowError for invalid UID, not-found responses, transport failure, or timeout.
     #[wasm_bindgen(
         js_name = "getOrderCompetitionStatus",
-        unchecked_return_type = "WasmEnvelope<CompetitionOrderStatusDto>"
+        unchecked_return_type = "WasmEnvelope<CompetitionOrderStatus>"
     )]
     pub async fn order_competition_status(
         &self,
@@ -419,7 +413,7 @@ impl OrderBookClient {
     /// @throws CowError for invalid owner, transport failure, or timeout.
     #[wasm_bindgen(
         js_name = "getTotalSurplus",
-        unchecked_return_type = "WasmEnvelope<TotalSurplusDto>"
+        unchecked_return_type = "WasmEnvelope<TotalSurplus>"
     )]
     pub async fn total_surplus(
         &self,
@@ -450,7 +444,7 @@ impl OrderBookClient {
     /// @throws CowError for an out-of-range id, not-found responses, transport failure, or timeout.
     #[wasm_bindgen(
         js_name = "getSolverCompetition",
-        unchecked_return_type = "WasmEnvelope<SolverCompetitionResponseDto>"
+        unchecked_return_type = "WasmEnvelope<SolverCompetitionResponse>"
     )]
     pub async fn solver_competition(
         &self,
@@ -480,7 +474,7 @@ impl OrderBookClient {
     /// @throws CowError for an invalid hash, not-found responses, transport failure, or timeout.
     #[wasm_bindgen(
         js_name = "getSolverCompetitionByTxHash",
-        unchecked_return_type = "WasmEnvelope<SolverCompetitionResponseDto>"
+        unchecked_return_type = "WasmEnvelope<SolverCompetitionResponse>"
     )]
     pub async fn solver_competition_by_tx_hash(
         &self,
@@ -514,7 +508,7 @@ impl OrderBookClient {
     )]
     pub async fn cancel_orders(
         &self,
-        signed: SignedCancellationsInput,
+        signed: SignedCancellations,
         #[wasm_bindgen(js_name = options)] options: Option<SdkClientOptions>,
     ) -> Result<JsValue, JsValue> {
         super::traced("wasm.orderbook.cancel_orders", async move {
@@ -540,7 +534,7 @@ impl OrderBookClient {
     /// @throws CowError for an invalid hash, transport failure, or timeout.
     #[wasm_bindgen(
         js_name = "getAppData",
-        unchecked_return_type = "WasmEnvelope<AppDataObjectDto>"
+        unchecked_return_type = "WasmEnvelope<AppDataObject>"
     )]
     pub async fn app_data(
         &self,
@@ -627,7 +621,7 @@ async fn orderbook_get_app_data(
 ) -> Result<JsValue, JsValue> {
     let hash = parse_app_data_hash(&app_data_hash)?;
     let object = inner.app_data(&hash).await.map_js()?;
-    to_js_value(&WasmEnvelope::v1(AppDataObjectDto::from(object)))
+    to_js_value(&WasmEnvelope::v1(object))
 }
 
 async fn orderbook_upload_app_data(
@@ -650,7 +644,7 @@ fn parse_app_data_hash(value: &str) -> Result<AppDataHash, JsValue> {
 
 async fn orderbook_get_quote(
     inner: &OrderbookApi,
-    request: OrderQuoteRequestInput,
+    request: OrderQuoteRequest,
 ) -> Result<JsValue, JsValue> {
     let request = from_json_value("quote", request.into_value()?)?;
     let response = inner.quote(&request).await.map_js()?;
@@ -659,7 +653,7 @@ async fn orderbook_get_quote(
 
 async fn orderbook_send_order(
     inner: &OrderbookApi,
-    signed: SignedOrderDto,
+    signed: SignedOrder,
 ) -> Result<JsValue, JsValue> {
     let request = order_creation_from_signed(signed)?;
     let uid = inner
@@ -672,7 +666,7 @@ async fn orderbook_send_order(
 
 async fn orderbook_send_order_creation(
     inner: &OrderbookApi,
-    input: OrderCreationInput,
+    input: OrderCreation,
 ) -> Result<JsValue, JsValue> {
     let request = from_json_value("order", input.into_value()?)?;
     let uid = inner
@@ -720,7 +714,7 @@ async fn orderbook_get_tx_orders(
 
 async fn orderbook_get_trades(
     inner: &OrderbookApi,
-    query: TradesQueryInput,
+    query: GetTradesRequest,
 ) -> Result<JsValue, JsValue> {
     let mut request = match (query.owner, query.order_uid) {
         (Some(owner), None) => TradesQuery::by_owner(parse_address("owner", owner)?),
@@ -813,7 +807,7 @@ async fn orderbook_get_solver_competition_by_tx_hash(
 
 async fn orderbook_cancel_orders(
     inner: &OrderbookApi,
-    signed: SignedCancellationsInput,
+    signed: SignedCancellations,
 ) -> Result<JsValue, JsValue> {
     let order_uids = signed
         .order_uids
@@ -826,13 +820,14 @@ async fn orderbook_cancel_orders(
     to_js_value(&WasmEnvelope::v1(json!({ "cancelled": true })))
 }
 
-pub(crate) fn order_creation_from_signed(signed: SignedOrderDto) -> Result<OrderCreation, JsValue> {
-    let order_input: OrderInput = serde_json::from_value(signed.typed_data.message.clone())
+pub(crate) fn order_creation_from_signed(
+    signed: SignedOrder,
+) -> Result<NativeOrderCreation, JsValue> {
+    let order: cow_sdk_core::OrderData = serde_json::from_value(signed.typed_data.message.clone())
         .map_err(|error| WasmError::invalid("typedData.message", error.to_string()).into_js())?;
-    let order = parse_order(order_input)?;
     let from = parse_address("from", signed.from)?;
     let signing_scheme = orderbook_signing_scheme(&signed.signing_scheme)?;
-    let mut creation = OrderCreation::new(
+    let mut creation = NativeOrderCreation::new(
         order.sell_token.clone(),
         order.buy_token.clone(),
         order.sell_amount.clone(),

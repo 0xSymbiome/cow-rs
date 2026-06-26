@@ -122,6 +122,14 @@ impl TradesQuery {
 
 /// Trade DTO returned by the orderbook trades endpoint.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct Trade {
@@ -139,8 +147,8 @@ pub struct Trade {
     pub buy_token: Address,
     /// Executed sell amount in the upstream decimal-string wire shape.
     pub sell_amount: Amount,
-    /// Executed sell amount before fees.
-    #[serde(default)]
+    /// Executed sell amount before fees. Always serialized on the trade
+    /// response, so the wire field is required rather than defaulted.
     pub sell_amount_before_fees: Amount,
     /// Executed buy amount in the upstream decimal-string wire shape.
     pub buy_amount: Amount,
@@ -148,6 +156,10 @@ pub struct Trade {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub executed_protocol_fees: Option<Vec<ExecutedProtocolFee>>,
     /// Settlement transaction hash.
+    #[cfg_attr(
+        all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+        tsify(type = "string")
+    )]
     pub tx_hash: Option<TransactionHash>,
 }
 

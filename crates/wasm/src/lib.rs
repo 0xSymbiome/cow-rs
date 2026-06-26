@@ -25,6 +25,10 @@
 //! - [`helpers`] holds host-safe protocol helpers. Those modules compile for
 //!   both native and `wasm32-unknown-unknown` targets and contain no
 //!   `wasm-bindgen` derives, no `tsify` derives, and no `JsValue` references.
+//! - [`dto`] holds the boundary shapes the surface accepts and returns that have
+//!   no native crate counterpart. They compile for both targets; their
+//!   TypeScript declaration derive is gated to the wasm-bindgen target, so the
+//!   host build links the plain shapes.
 //! - `exports` (visible only on `wasm32-unknown-unknown`) holds the
 //!   `wasm-bindgen` surface, the `tsify`-derived DTOs, the four
 //!   typed wallet callback shapes, the JS callback HTTP transport,
@@ -37,6 +41,7 @@
 
 #![warn(missing_docs)]
 
+pub mod dto;
 pub mod helpers;
 
 #[cfg(target_arch = "wasm32")]

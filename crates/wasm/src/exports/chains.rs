@@ -2,19 +2,14 @@ use wasm_bindgen::prelude::*;
 
 use crate::helpers as pure;
 
-use crate::exports::{
-    dto::{DeploymentAddressesDto, WrappedNativeTokenDto, to_js_value},
-    envelope::WasmEnvelope,
-    errors::JsResultExt,
-};
+use crate::dto::to_js_value;
+use crate::exports::{envelope::WasmEnvelope, errors::JsResultExt};
 
 #[cfg(feature = "signing")]
-use crate::exports::dto::{
-    GeneratedOrderUidDto, TypedDataEnvelopeDto, parse_chain, parse_order, parse_owner,
-};
+use crate::dto::{GeneratedOrderUid, parse_chain, parse_owner, payload_to_envelope};
 
 #[cfg(feature = "app-data")]
-use crate::exports::dto::{AppDataDocDto, AppDataDocInput, AppDataInfoDto, ValidationResultDto};
+use crate::dto::{AppDataParams, AppDataDocument, AppDataInfo, ValidationResult};
 
 /// Computes the CoW Protocol EIP-712 domain separator for a supported chain.
 ///
@@ -28,8 +23,9 @@ use crate::exports::dto::{AppDataDocDto, AppDataDocInput, AppDataInfoDto, Valida
 #[wasm_bindgen(js_name = "domainSeparator")]
 pub fn domain_separator(
     #[wasm_bindgen(js_name = chainId)] chain_id: u32,
-) -> Result<String, JsValue> {
-    pure::chains::domain_separator(chain_id).map_js()
+) -> Result<JsValue, JsValue> {
+    let separator = pure::chains::domain_separator(chain_id).map_js()?;
+    to_js_value(&WasmEnvelope::v1(separator))
 }
 
 /// Builds signer-facing EIP-712 typed data for an unsigned order.
@@ -38,25 +34,22 @@ pub fn domain_separator(
 /// order message that wallet libraries expect for EIP-712 signing. It is
 /// deterministic for the provided order and chain id.
 ///
-/// @param input Unsigned order fields using the facade order DTO shape.
+/// @param order Unsigned order fields using the native order shape.
 /// @param chainId EVM chain id used for the EIP-712 domain.
 /// @returns A versioned envelope containing typed-data DTO fields.
 /// @throws CowError when order parsing or chain validation fails.
 #[cfg(feature = "signing")]
 #[wasm_bindgen(
     js_name = "orderTypedData",
-    unchecked_return_type = "WasmEnvelope<TypedDataEnvelopeDto>"
+    unchecked_return_type = "WasmEnvelope<TypedDataEnvelope<Value>>"
 )]
 pub fn order_typed_data(
-    input: OrderInput,
+    order: cow_sdk_core::OrderData,
     #[wasm_bindgen(js_name = chainId)] chain_id: u32,
 ) -> Result<JsValue, JsValue> {
-    let order = parse_order(input)?;
     let chain = parse_chain(chain_id)?;
     let payload = pure::signing::order_typed_data_payload(chain, &order).map_js()?;
-    to_js_value(&WasmEnvelope::v1(TypedDataEnvelopeDto::from_payload(
-        &payload,
-    )?))
+    to_js_value(&WasmEnvelope::v1(payload_to_envelope(&payload)?))
 }
 
 /// Computes the canonical order UID and order digest for an unsigned order.
@@ -64,7 +57,7 @@ pub fn order_typed_data(
 /// The UID combines the EIP-712 order digest, owner address, and validity
 /// timestamp using the same packing rules as the native Rust SDK.
 ///
-/// @param input Unsigned order fields to hash and pack.
+/// @param order Unsigned order fields to hash and pack.
 /// @param chainId EVM chain id used for the EIP-712 domain.
 /// @param owner Order owner address included in the UID suffix.
 /// @returns A versioned envelope with `orderUid` and `orderDigest`.
@@ -72,18 +65,17 @@ pub fn order_typed_data(
 #[cfg(feature = "signing")]
 #[wasm_bindgen(
     js_name = "computeOrderUid",
-    unchecked_return_type = "WasmEnvelope<GeneratedOrderUidDto>"
+    unchecked_return_type = "WasmEnvelope<GeneratedOrderUid>"
 )]
 pub fn compute_order_uid(
-    input: OrderInput,
+    order: cow_sdk_core::OrderData,
     #[wasm_bindgen(js_name = chainId)] chain_id: u32,
     owner: String,
 ) -> Result<JsValue, JsValue> {
-    let order = parse_order(input)?;
     let chain = parse_chain(chain_id)?;
     let owner = parse_owner(&owner)?;
     let generated = pure::signing::generate_order_id(chain, &order, &owner).map_js()?;
-    let dto = GeneratedOrderUidDto::from(pure::dto::generated_order_uid_dto(&generated));
+    let dto: GeneratedOrderUid = pure::dto::generated_order_uid_dto(&generated);
     to_js_value(&WasmEnvelope::v1(dto))
 }
 
@@ -111,14 +103,14 @@ pub fn supported_chain_ids() -> Vec<u32> {
 /// @throws CowError when the chain or environment is unsupported.
 #[wasm_bindgen(
     js_name = "deploymentAddresses",
-    unchecked_return_type = "WasmEnvelope<DeploymentAddressesDto>"
+    unchecked_return_type = "WasmEnvelope<DeploymentAddresses>"
 )]
 pub fn deployment_addresses(
     #[wasm_bindgen(js_name = chainId)] chain_id: u32,
     env: Option<String>,
 ) -> Result<JsValue, JsValue> {
     let addresses = pure::chains::deployment_addresses(chain_id, env.as_deref()).map_js()?;
-    to_js_value(&WasmEnvelope::v1(DeploymentAddressesDto::from(addresses)))
+    to_js_value(&WasmEnvelope::v1(addresses))
 }
 
 /// Returns wrapped-native token metadata for a chain.
@@ -132,13 +124,13 @@ pub fn deployment_addresses(
 /// @throws CowError when the chain is not supported.
 #[wasm_bindgen(
     js_name = "wrappedNativeToken",
-    unchecked_return_type = "WasmEnvelope<WrappedNativeTokenDto>"
+    unchecked_return_type = "WasmEnvelope<WrappedNativeToken>"
 )]
 pub fn wrapped_native_token(
     #[wasm_bindgen(js_name = chainId)] chain_id: u32,
 ) -> Result<JsValue, JsValue> {
     let token = pure::chains::wrapped_native_token(chain_id).map_js()?;
-    to_js_value(&WasmEnvelope::v1(WrappedNativeTokenDto::from(token)))
+    to_js_value(&WasmEnvelope::v1(token))
 }
 
 /// Builds app-data content and returns its deterministic hash and CID.
@@ -152,14 +144,12 @@ pub fn wrapped_native_token(
 #[cfg(feature = "app-data")]
 #[wasm_bindgen(
     js_name = "appDataInfo",
-    unchecked_return_type = "WasmEnvelope<AppDataInfoDto>"
+    unchecked_return_type = "WasmEnvelope<AppDataInfo>"
 )]
-pub fn app_data_info(doc: AppDataDocInput) -> Result<JsValue, JsValue> {
-    let document = pure::app_data::document_from_input(doc.into()).map_js()?;
-    let info = pure::app_data::app_data_info(&document).map_js()?;
-    to_js_value(&WasmEnvelope::v1(AppDataInfoDto::from(
-        pure::dto::AppDataInfoDto::from(info),
-    )))
+pub fn app_data_info(doc: AppDataParams) -> Result<JsValue, JsValue> {
+    let document = pure::app_data::document_from_input(doc).map_js()?;
+    let info: AppDataInfo = pure::app_data::app_data_info(&document).map_js()?;
+    to_js_value(&WasmEnvelope::v1(info))
 }
 
 /// Validates an app-data document against the typed metadata contract.
@@ -173,14 +163,12 @@ pub fn app_data_info(doc: AppDataDocInput) -> Result<JsValue, JsValue> {
 #[cfg(feature = "app-data")]
 #[wasm_bindgen(
     js_name = "validateAppDataDoc",
-    unchecked_return_type = "WasmEnvelope<ValidationResultDto>"
+    unchecked_return_type = "WasmEnvelope<ValidationResult>"
 )]
-pub fn validate_app_data_doc(doc: AppDataDocInput) -> Result<JsValue, JsValue> {
-    let document = pure::app_data::document_from_input(doc.into()).map_js()?;
+pub fn validate_app_data_doc(doc: AppDataParams) -> Result<JsValue, JsValue> {
+    let document = pure::app_data::document_from_input(doc).map_js()?;
     let result = pure::app_data::validate_app_data_doc(&document);
-    to_js_value(&WasmEnvelope::v1(ValidationResultDto::from(
-        pure::dto::ValidationResultDto::from(result),
-    )))
+    to_js_value(&WasmEnvelope::v1(ValidationResult::from(result)))
 }
 
 /// Builds a normalized app-data document without deriving storage metadata.
@@ -194,11 +182,11 @@ pub fn validate_app_data_doc(doc: AppDataDocInput) -> Result<JsValue, JsValue> {
 #[cfg(feature = "app-data")]
 #[wasm_bindgen(
     js_name = "appDataDoc",
-    unchecked_return_type = "WasmEnvelope<AppDataDocDto>"
+    unchecked_return_type = "WasmEnvelope<AppDataDocument>"
 )]
-pub fn app_data_doc(doc: AppDataDocInput) -> Result<JsValue, JsValue> {
-    let document = pure::app_data::document_from_input(doc.into()).map_js()?;
-    to_js_value(&WasmEnvelope::v1(AppDataDocDto::from(document)))
+pub fn app_data_doc(doc: AppDataParams) -> Result<JsValue, JsValue> {
+    let document = pure::app_data::document_from_input(doc).map_js()?;
+    to_js_value(&WasmEnvelope::v1(AppDataDocument::from(document)))
 }
 
 /// Converts a `0x`-prefixed app-data hash into the canonical IPFS CID.
@@ -250,5 +238,3 @@ pub fn cid_to_app_data_hex(cid: String) -> Result<JsValue, JsValue> {
 pub fn wasm_version() -> String {
     pure::chains::wasm_version()
 }
-
-pub use crate::exports::dto::OrderInput;

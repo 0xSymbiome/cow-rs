@@ -4,12 +4,12 @@ use async_trait::async_trait;
 use js_sys::Function;
 use wasm_bindgen::prelude::*;
 
+use crate::dto::{
+    CowEip1271SignRequest, SignedOrder, envelope_callback_value, parse_chain, parse_owner,
+    payload_to_envelope, to_js_value,
+};
 use crate::exports::{
     cancel::{ClientCallScope, SigningOptions, run_with_client_options, signing_wallet_timeout_ms},
-    dto::{
-        CowEip1271SignRequest, OrderInput, SignedOrderDto, TypedDataEnvelopeDto, parse_chain,
-        parse_order, parse_owner, to_js_value,
-    },
     envelope::WasmEnvelope,
     errors::JsResultExt,
     signing::{await_callback_string, signed_order_from_parts},
@@ -63,7 +63,7 @@ const _: fn() = || {
 /// signature and needs the contract-signature payload bytes expected by CoW
 /// Protocol order submission.
 ///
-/// @param input Unsigned order used to derive the EIP-1271 payload.
+/// @param order Unsigned order used to derive the EIP-1271 payload.
 /// @param ecdsaSignature Wrapped ECDSA signature as a `0x`-prefixed string.
 /// @returns A versioned envelope containing the encoded EIP-1271 payload.
 /// @throws CowError when the order or signature is invalid.
@@ -72,10 +72,9 @@ const _: fn() = || {
     unchecked_return_type = "WasmEnvelope<string>"
 )]
 pub fn eip1271_signature_payload_export(
-    input: OrderInput,
+    order: cow_sdk_core::OrderData,
     #[wasm_bindgen(js_name = ecdsaSignature)] ecdsa_signature: String,
 ) -> Result<JsValue, JsValue> {
-    let order = parse_order(input)?;
     let payload = pure::signing::eip1271_signature_payload(&order, &ecdsa_signature).map_js()?;
     to_js_value(&WasmEnvelope::v1(payload))
 }
@@ -86,7 +85,7 @@ pub fn eip1271_signature_payload_export(
 /// then converts the returned ECDSA signature into the CoW EIP-1271 payload.
 /// Per-call options may attach cancellation and wallet timeout settings.
 ///
-/// @param input Unsigned order to sign.
+/// @param order Unsigned order to sign.
 /// @param chainId EVM chain id for the EIP-712 domain.
 /// @param owner Smart-account owner address used in the generated order UID.
 /// @param typedDataSigner Callback that signs the typed-data envelope.
@@ -95,10 +94,10 @@ pub fn eip1271_signature_payload_export(
 /// @throws CowError for invalid input, callback failure, timeout, or cancellation.
 #[wasm_bindgen(
     js_name = "signOrderWithEip1271",
-    unchecked_return_type = "WasmEnvelope<SignedOrderDto>"
+    unchecked_return_type = "WasmEnvelope<SignedOrder>"
 )]
 pub async fn sign_order_with_eip1271(
-    input: OrderInput,
+    order: cow_sdk_core::OrderData,
     #[wasm_bindgen(js_name = chainId)] chain_id: u32,
     owner: String,
     #[wasm_bindgen(js_name = typedDataSigner, unchecked_param_type = "TypedDataSignerCallback")]
@@ -110,14 +109,13 @@ pub async fn sign_order_with_eip1271(
         let scope = ClientCallScope::new(options)?;
         let wallet_timeout_ms = signing_wallet_timeout_ms(options)?;
         run_with_client_options(scope, async move {
-            let order = parse_order(input.clone())?;
             let chain = parse_chain(chain_id)?;
             let owner = parse_owner(&owner)?;
             let payload = pure::signing::order_typed_data_payload(chain, &order).map_js()?;
-            let typed_data = TypedDataEnvelopeDto::from_payload(&payload)?;
+            let typed_data = payload_to_envelope(&payload)?;
             let ecdsa_signature = crate::exports::signing::await_callback_string(
                 &typed_data_signer,
-                typed_data.callback_value()?,
+                envelope_callback_value(&typed_data)?,
                 "signTypedData",
                 wallet_timeout_ms,
             )
@@ -125,7 +123,7 @@ pub async fn sign_order_with_eip1271(
             let signature =
                 pure::signing::eip1271_signature_payload(&order, &ecdsa_signature).map_js()?;
             let generated = pure::signing::generate_order_id(chain, &order, &owner).map_js()?;
-            let signed: SignedOrderDto =
+            let signed: SignedOrder =
                 signed_order_from_parts(generated, owner, typed_data, signature, "eip1271", None);
             to_js_value(&WasmEnvelope::v1(signed))
         })
@@ -140,7 +138,7 @@ pub async fn sign_order_with_eip1271(
 /// account-abstraction client and can return the final contract signature
 /// directly. The SDK still builds typed data and the deterministic order UID.
 ///
-/// @param input Unsigned order to sign.
+/// @param order Unsigned order to sign.
 /// @param chainId EVM chain id for the EIP-712 domain.
 /// @param owner Smart-account owner address used in the generated order UID.
 /// @param customCallback Callback that returns the final EIP-1271 signature.
@@ -149,10 +147,10 @@ pub async fn sign_order_with_eip1271(
 /// @throws CowError for invalid input, callback failure, timeout, or cancellation.
 #[wasm_bindgen(
     js_name = "signOrderWithCustomEip1271",
-    unchecked_return_type = "WasmEnvelope<SignedOrderDto>"
+    unchecked_return_type = "WasmEnvelope<SignedOrder>"
 )]
 pub async fn sign_order_with_custom_eip1271(
-    input: OrderInput,
+    order: cow_sdk_core::OrderData,
     #[wasm_bindgen(js_name = chainId)] chain_id: u32,
     owner: String,
     #[wasm_bindgen(js_name = customCallback, unchecked_param_type = "CustomEip1271Callback")]
@@ -164,13 +162,12 @@ pub async fn sign_order_with_custom_eip1271(
         let scope = ClientCallScope::new(options)?;
         let wallet_timeout_ms = signing_wallet_timeout_ms(options)?;
         run_with_client_options(scope, async move {
-            let order = parse_order(input.clone())?;
             let chain = parse_chain(chain_id)?;
             let owner_address = parse_owner(&owner)?;
             let payload = pure::signing::order_typed_data_payload(chain, &order).map_js()?;
-            let typed_data = TypedDataEnvelopeDto::from_payload(&payload)?;
+            let typed_data = payload_to_envelope(&payload)?;
             let request = CowEip1271SignRequest {
-                order: input,
+                order: order.clone(),
                 typed_data: typed_data.clone(),
                 owner,
                 chain_id,

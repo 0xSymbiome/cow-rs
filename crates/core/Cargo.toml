@@ -28,6 +28,49 @@ tracing = ["dep:tracing"]
 # default so a `cow-sdk-core` consumer that needs only the primitive types does
 # not pull the retry-timer dependencies.
 transport-policy = ["dep:httpdate", "dep:futures-timer", "dep:gloo-timers", "dep:web-time"]
+# The Tsify boundary derive on the user-domain quote tree (`CowEnv` and the
+# `QuoteAmountsAndCosts` generic tree) surfaced by the wasm-bindgen npm leaf's
+# `trading` flavour. Off by default and pulled only by that flavour: Tsify emits
+# each `.d.ts` as a global `typescript_custom_section`, so a target-gated (but
+# feature-ungated) derive would leak these trading-only types into every flavour
+# that links this crate — including `signing` and `orderbook`, which surface none
+# of them. Gating the derive behind this feature scopes it to the `trading`
+# flavour. The identity newtypes (`Address`, `Amount`, ...) stay on the broad
+# target-os gate because the shared boundary `OrderData` references them across
+# every flavour; the quote-amounts tree here is trading-only.
+# The wasm `tsify`/`wasm-bindgen` deps are already target-gated to JS realms, so
+# enabling this on a non-wasm or WASI target is an inert no-op. Enables
+# `ts-bindings-typed-data` because the `trading` flavour surfaces the typed-data
+# envelope as well.
+ts-bindings = ["ts-bindings-typed-data"]
+# The Tsify boundary derive on the EIP-712 typed-data family
+# (`TypedDataEnvelope`/`TypedDataDomain`/`TypedDataField`). Scoped separately from
+# the `ts-bindings` trading tree because the typed-data envelope surfaces in the
+# leaner `signing` and `orderbook` flavours too: every flavour with the `signing`
+# feature returns it from `orderTypedData` and carries it on `SignedOrder`, while
+# the rest of the trading tree must stay out of those flavours' `.d.ts`. Off by
+# default and pulled by the wasm leaf's `signing` feature (and, transitively, by
+# `ts-bindings`). Same inert-no-op posture off the wasm-bindgen target.
+ts-bindings-typed-data = []
+# The Tsify boundary derive on the transaction-boundary types `TransactionRequest`
+# and `ContractCall`-adjacent surface. `TransactionRequest` is scoped separately
+# from the `ts-bindings` trading tree because it surfaces in the *cancellation*
+# flavour (orderbook + trading + default) via `buildCancelOrderTx` /
+# `buildPresignTx`, while the `ts-bindings` trading tree must stay out of the
+# leaner `orderbook` flavour. Off by default and pulled by the wasm leaf's
+# `cancellation` and `trading` features; `signing` enables neither, so
+# `TransactionRequest` stays out of the `signing` `.d.ts`.
+# Same inert-no-op posture off the wasm-bindgen target as `ts-bindings`.
+ts-bindings-tx = []
+# The Tsify boundary derive on the shared boundary shapes — the order enums
+# (`OrderKind`, `SellTokenSource`, `BuyTokenDestination`) and the native
+# `OrderData` — that every wasm-bindgen flavour surfaces. The
+# wasm-bindgen npm leaf enables it
+# unconditionally so each type generates its `.d.ts`; the WebAssembly Component
+# leaf links this crate without it, so its `wasm32-wasip2` build inherits no
+# wasm-bindgen. The `tsify`/`wasm-bindgen` deps are already target-gated to JS
+# realms, so enabling this on a non-wasm or WASI target is an inert no-op.
+ts-bindings-boundary = []
 
 [dependencies]
 alloy-primitives.workspace = true
@@ -47,20 +90,21 @@ url.workspace = true
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 reqwest = { workspace = true, features = ["rustls"] }
 
-[target.'cfg(target_family = "wasm")'.dependencies]
-tsify.workspace = true
-wasm-bindgen.workspace = true
-
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 gloo-timers = { workspace = true, optional = true }
 web-time = { workspace = true, optional = true }
 
-# Browser fetch transport (`cow_sdk_core::transport::fetch`). Gated to JS realms
-# (`target_os = "unknown"`) so WASI builds never pull the browser-global stack.
-# This is the wasm sibling of the native `reqwest` transport above.
+# Browser fetch transport (`cow_sdk_core::transport::fetch`) and the Tsify
+# boundary derive on the identity newtypes (ADR 0052). Gated to JS realms
+# (`target_os = "unknown"`) so WASI / Component builds never pull the
+# browser-global stack or tsify/wasm-bindgen — only the wasm-bindgen npm lane
+# (the one wasm target whose `target_os` is `unknown`) carries them. The wasm
+# sibling of the native `reqwest` transport above.
 [target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
 gloo-timers = { workspace = true }
 js-sys = { workspace = true }
+tsify.workspace = true
+wasm-bindgen.workspace = true
 wasm-bindgen-futures = { workspace = true }
 web-sys = { workspace = true, features = ["AbortController", "AbortSignal", "Headers", "Request", "RequestInit", "Response"] }
 

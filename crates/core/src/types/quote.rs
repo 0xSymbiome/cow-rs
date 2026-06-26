@@ -5,6 +5,10 @@ use super::amount::Amount;
 /// Generic sell/buy amount pair.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
 #[serde(rename_all = "camelCase")]
 pub struct Amounts<T> {
     /// Sell-side amount.
@@ -28,6 +32,10 @@ impl<T> Amounts<T> {
 /// Network-fee amounts expressed in both quote currencies.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
 #[serde(rename_all = "camelCase")]
 pub struct NetworkFee<T> {
     /// Network fee expressed in sell-token units.
@@ -51,6 +59,10 @@ impl<T> NetworkFee<T> {
 /// Generic fee component represented by amount and basis points.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
 #[serde(rename_all = "camelCase")]
 pub struct FeeComponent<T> {
     /// Fee amount.
@@ -71,6 +83,10 @@ impl<T> FeeComponent<T> {
 /// Full quote cost breakdown.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
 #[serde(rename_all = "camelCase")]
 pub struct Costs<T> {
     /// Network fee component.
@@ -100,6 +116,10 @@ impl<T> Costs<T> {
 
 /// Stepwise quote amounts and cost components across the quote lifecycle.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct QuoteAmountsAndCosts<T = Amount> {

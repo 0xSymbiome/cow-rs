@@ -8,8 +8,8 @@ use js_sys::{Function, Object, Reflect};
 use wasm_bindgen::{JsCast, closure::Closure, prelude::*};
 use wasm_bindgen_futures::JsFuture;
 
+use crate::dto::CowFetchResponse;
 use crate::exports::{
-    dto::CowFetchResponse,
     errors::{JsResultExt, WasmError},
     registry::{
         FetchCallbackGuard, FetchCallbackKey, lookup_fetch_callback, register_fetch_callback,

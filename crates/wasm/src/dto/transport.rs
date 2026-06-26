@@ -1,20 +1,18 @@
 use std::collections::HashMap;
-#[cfg(feature = "transport-policy")]
+#[cfg(all(target_arch = "wasm32", feature = "transport-policy"))]
 use std::time::Duration;
 
-#[cfg(feature = "transport-policy")]
+#[cfg(all(target_arch = "wasm32", feature = "transport-policy"))]
 use cow_sdk_core::transport::policy::{
     JitterStrategy, LimiterScope, RequestRateLimiter, RetryPolicy, TransportPolicy,
 };
-#[cfg(feature = "transport-policy")]
+#[cfg(all(target_arch = "wasm32", feature = "transport-policy"))]
 use js_sys::Reflect;
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "transport-policy")]
-use tsify::Tsify;
-#[cfg(feature = "transport-policy")]
+#[cfg(all(target_arch = "wasm32", feature = "transport-policy"))]
 use wasm_bindgen::{JsValue, prelude::*};
 
-#[cfg(feature = "transport-policy")]
+#[cfg(all(target_arch = "wasm32", feature = "transport-policy"))]
 use crate::exports::errors::WasmError;
 
 /// Fetch request shape for callback transports.
@@ -54,8 +52,23 @@ pub struct CowFetchResponse {
 
 /// Retry-policy override accepted by JS client constructors.
 #[cfg(feature = "transport-policy")]
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
-#[tsify(into_wasm_abi, from_wasm_abi)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(
+        target_arch = "wasm32",
+        target_os = "unknown",
+        feature = "transport-policy"
+    ),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(
+        target_arch = "wasm32",
+        target_os = "unknown",
+        feature = "transport-policy"
+    ),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct RetryPolicyConfig {
     /// Maximum attempts, including the initial request.
@@ -71,8 +84,23 @@ pub struct RetryPolicyConfig {
 
 /// Rate-limiter bucket scope accepted by JS client constructors.
 #[cfg(feature = "transport-policy")]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Tsify)]
-#[tsify(into_wasm_abi, from_wasm_abi)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(
+        target_arch = "wasm32",
+        target_os = "unknown",
+        feature = "transport-policy"
+    ),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(
+        target_arch = "wasm32",
+        target_os = "unknown",
+        feature = "transport-policy"
+    ),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase")]
 pub enum LimiterScopeConfig {
     /// One shared bucket.
@@ -81,7 +109,7 @@ pub enum LimiterScopeConfig {
     PerHost,
 }
 
-#[cfg(feature = "transport-policy")]
+#[cfg(all(target_arch = "wasm32", feature = "transport-policy"))]
 impl From<LimiterScopeConfig> for LimiterScope {
     fn from(value: LimiterScopeConfig) -> Self {
         match value {
@@ -91,7 +119,7 @@ impl From<LimiterScopeConfig> for LimiterScope {
     }
 }
 
-#[cfg(feature = "transport-policy")]
+#[cfg(all(target_arch = "wasm32", feature = "transport-policy"))]
 impl From<LimiterScope> for LimiterScopeConfig {
     fn from(value: LimiterScope) -> Self {
         match value {
@@ -104,8 +132,23 @@ impl From<LimiterScope> for LimiterScopeConfig {
 
 /// Request-rate limiter override accepted by JS client constructors.
 #[cfg(feature = "transport-policy")]
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
-#[tsify(into_wasm_abi, from_wasm_abi)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(
+        target_arch = "wasm32",
+        target_os = "unknown",
+        feature = "transport-policy"
+    ),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(
+        target_arch = "wasm32",
+        target_os = "unknown",
+        feature = "transport-policy"
+    ),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct RequestRateLimiterConfig {
     /// Request tokens granted per interval. Zero disables limiting.
@@ -121,8 +164,23 @@ pub struct RequestRateLimiterConfig {
 
 /// Jitter strategy accepted by JS client constructors.
 #[cfg(feature = "transport-policy")]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Tsify)]
-#[tsify(into_wasm_abi, from_wasm_abi)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(
+        target_arch = "wasm32",
+        target_os = "unknown",
+        feature = "transport-policy"
+    ),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(
+        target_arch = "wasm32",
+        target_os = "unknown",
+        feature = "transport-policy"
+    ),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase")]
 pub enum JitterStrategyConfig {
     /// No retry jitter.
@@ -135,7 +193,7 @@ pub enum JitterStrategyConfig {
     Decorrelated,
 }
 
-#[cfg(feature = "transport-policy")]
+#[cfg(all(target_arch = "wasm32", feature = "transport-policy"))]
 impl From<JitterStrategyConfig> for JitterStrategy {
     fn from(value: JitterStrategyConfig) -> Self {
         match value {
@@ -147,7 +205,7 @@ impl From<JitterStrategyConfig> for JitterStrategy {
     }
 }
 
-#[cfg(feature = "transport-policy")]
+#[cfg(all(target_arch = "wasm32", feature = "transport-policy"))]
 impl From<JitterStrategy> for JitterStrategyConfig {
     fn from(value: JitterStrategy) -> Self {
         match value {
@@ -162,8 +220,23 @@ impl From<JitterStrategy> for JitterStrategyConfig {
 
 /// Transport-policy override accepted by JS client constructors.
 #[cfg(feature = "transport-policy")]
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
-#[tsify(into_wasm_abi, from_wasm_abi)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(
+        target_arch = "wasm32",
+        target_os = "unknown",
+        feature = "transport-policy"
+    ),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(
+        target_arch = "wasm32",
+        target_os = "unknown",
+        feature = "transport-policy"
+    ),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct TransportPolicyConfig {
     /// Retry-policy override.
@@ -180,7 +253,7 @@ pub struct TransportPolicyConfig {
     pub user_agent: Option<String>,
 }
 
-#[cfg(feature = "transport-policy")]
+#[cfg(all(target_arch = "wasm32", feature = "transport-policy"))]
 impl TransportPolicyConfig {
     /// Applies this JS-facing override to a client-specific default policy.
     pub fn apply_to_policy(self, base: TransportPolicy) -> Result<TransportPolicy, WasmError> {
@@ -211,7 +284,7 @@ impl TransportPolicyConfig {
     }
 }
 
-#[cfg(feature = "transport-policy")]
+#[cfg(all(target_arch = "wasm32", feature = "transport-policy"))]
 fn apply_retry_config(
     config: Option<RetryPolicyConfig>,
     base: &RetryPolicy,
@@ -242,7 +315,7 @@ fn apply_retry_config(
     builder.build()
 }
 
-#[cfg(feature = "transport-policy")]
+#[cfg(all(target_arch = "wasm32", feature = "transport-policy"))]
 impl RequestRateLimiterConfig {
     fn apply_to_rate_limiter(self, base: &RequestRateLimiter) -> RequestRateLimiter {
         let mut builder = RequestRateLimiter::builder()
@@ -265,7 +338,7 @@ impl RequestRateLimiterConfig {
     }
 }
 
-#[cfg(feature = "transport-policy")]
+#[cfg(all(target_arch = "wasm32", feature = "transport-policy"))]
 pub fn transport_policy_from_config(
     config: &JsValue,
     default_policy: TransportPolicy,
@@ -289,7 +362,7 @@ pub fn transport_policy_from_config(
     Ok(policy)
 }
 
-#[cfg(feature = "transport-policy")]
+#[cfg(all(target_arch = "wasm32", feature = "transport-policy"))]
 fn optional_js_value(value: &JsValue, field: &'static str) -> Result<Option<JsValue>, JsValue> {
     let value = Reflect::get(value, &JsValue::from_str(field))
         .map_err(|error| WasmError::invalid(field, js_message(&error)).into_js())?;
@@ -300,7 +373,7 @@ fn optional_js_value(value: &JsValue, field: &'static str) -> Result<Option<JsVa
     }
 }
 
-#[cfg(feature = "transport-policy")]
+#[cfg(all(target_arch = "wasm32", feature = "transport-policy"))]
 fn js_message(value: &JsValue) -> String {
     Reflect::get(value, &JsValue::from_str("message"))
         .ok()

@@ -86,6 +86,14 @@ use crate::errors::{CoreError, ValidationError};
 /// at the typed boundary rather than via an infallible `.into()`.
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown"),
+    tsify(into_wasm_abi, from_wasm_abi, type = "string")
+)]
 pub struct Amount(
     // Private inner: the constructors (`new` / `parse_units` / `from_units` /
     // `from_u256` / `From`) and the `as_u256` / `into_u256` accessors are the

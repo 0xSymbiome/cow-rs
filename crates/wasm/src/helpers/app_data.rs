@@ -2,14 +2,17 @@
 
 use cow_sdk_app_data::{AppDataDoc, AppDataError, AppDataInfo, IpfsFetchTransport};
 
-use crate::helpers::{dto::AppDataDocInput, errors::PureError};
+use crate::helpers::{
+    dto::{AppDataParams, AppDataParamsExt},
+    errors::PureError,
+};
 
 /// Builds an app-data document from the wasm input DTO.
 ///
 /// # Errors
 ///
 /// Returns [`PureError`] when the DTO cannot be represented as an app-data document.
-pub fn document_from_input(input: AppDataDocInput) -> Result<AppDataDoc, PureError> {
+pub fn document_from_input(input: AppDataParams) -> Result<AppDataDoc, PureError> {
     input.into_document()
 }
 

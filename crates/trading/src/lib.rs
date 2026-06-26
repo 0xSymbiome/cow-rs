@@ -39,7 +39,7 @@ pub use async_trait::async_trait;
 pub use cow_sdk_app_data::{PartnerFee, PartnerFeePolicy};
 pub use cow_sdk_contracts::{eth_flow, unwrap_transaction, wrap_transaction};
 pub use cow_sdk_core::SupportedChainId;
-pub use cow_sdk_orderbook::{OrderbookClient, OrderbookRuntimeBinding};
+pub use cow_sdk_orderbook::{OrderbookClient, OrderbookBinding};
 
 /// Allowance reads, approval transactions, and approval submission helpers.
 pub mod allowance;
@@ -107,6 +107,7 @@ pub use types::{
     SlippageToleranceResponse, TradeAdvancedSettings, TradeParams, TraderParams,
     TradingAppDataInfo,
 };
+
 // Crate-internal: the partial trader defaults are stored state, not a public
 // construction shape (see ADR 0011). Internal modules reach it through the crate root.
 pub(crate) use types::PartialTraderParams;

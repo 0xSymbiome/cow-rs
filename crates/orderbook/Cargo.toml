@@ -23,6 +23,23 @@ workspace = true
 [features]
 default = []
 tracing = ["dep:tracing", "cow-sdk-core/tracing"]
+# The Tsify boundary derive on the orderbook response types surfaced by the
+# wasm-bindgen npm leaf (`crates/wasm`). Off by default and pulled only by the
+# wasm flavours that expose a native-price client: Tsify emits each `.d.ts` as a
+# global `typescript_custom_section`, so a target-gated (but feature-ungated)
+# derive would leak `NativePriceResponse` into every flavour that links this
+# crate — including `signing`, which surfaces no native-price method. Gating the
+# derive behind this feature scopes it to the orderbook/trading flavours.
+# The wasm `tsify`/`wasm-bindgen` deps are target-gated to JS realms, so enabling
+# this on a non-wasm or WASI target is an inert no-op.
+ts-bindings = ["dep:tsify", "dep:wasm-bindgen"]
+# Narrower split for the boundary types that only the `trading` flavour surfaces
+# (today: `OrderbookBinding`, embedded in the trading `QuoteResults`
+# tree). It is NOT pulled by the `orderbook` flavour because that flavour does
+# not enable `cow-sdk-core/ts-bindings`, so its `env: CowEnv` field would
+# otherwise reference an undeclared type. The `trading` flavour enables both
+# this and `cow-sdk-core/ts-bindings`, so the reference resolves there.
+ts-bindings-trading = ["ts-bindings"]
 
 [dependencies]
 cow-sdk-core = { path = "../core", version = "0.1.0-alpha.8", features = ["transport-policy"] }
@@ -36,6 +53,18 @@ url.workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 reqwest = { workspace = true, features = ["rustls", "gzip"] }
+
+# The Tsify boundary derive on the orderbook response types consumed by the
+# wasm-bindgen npm leaf (`crates/wasm`). Gated to JS realms
+# (`target_os = "unknown"`) so WASI / Component builds never pull
+# tsify/wasm-bindgen — only the one wasm target whose `target_os` is `unknown`
+# carries them. Mirrors the identity-newtype gate in `crates/core/Cargo.toml`.
+# Optional and pulled by the `ts-bindings` feature: a wasm flavour that does not
+# surface a native-price client (e.g. `signing`) links this crate without the
+# feature and so emits no `NativePriceResponse` declaration.
+[target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
+tsify = { workspace = true, optional = true }
+wasm-bindgen = { workspace = true, optional = true }
 
 [dev-dependencies]
 cow-sdk-test-utils = { path = "../test-utils" }

@@ -1,20 +1,23 @@
-//! DTOs for the pure on-chain event-log decoding exports.
+//! Boundary types for the pure on-chain event-log decoding exports.
 //!
-//! [`EventLogInput`] is the JavaScript-facing log shape (`topics` + `data` as
+//! [`EventLog`] is the JavaScript-facing log shape (`topics` + `data` as
 //! hex strings) that the decode exports reconstruct into borrowed
-//! [`alloy_primitives::LogData`]; [`SettlementEventDto`] and [`EthFlowEventDto`]
-//! mirror the typed `cow_sdk_contracts::SettlementEvent` /
-//! `cow_sdk_contracts::EthFlowEvent` results as tagged unions. Reconstruction
-//! is fail-closed: malformed hex returns a typed [`WasmError`] and the
-//! underlying decoders never panic.
+//! [`alloy_primitives::LogData`]; [`SettlementEvent`] and [`EthFlowEvent`]
+//! project the typed `cow_sdk_contracts` decode results as tagged unions.
+//! Reconstruction is fail-closed: malformed hex returns a typed [`WasmError`]
+//! and the underlying decoders never panic.
 
+#[cfg(target_arch = "wasm32")]
 use alloy_primitives::{B256, Bytes, LogData};
-use cow_sdk_contracts::{EthFlowEvent, OnchainSigningScheme, SettlementEvent};
+#[cfg(target_arch = "wasm32")]
+use cow_sdk_contracts::{
+    EthFlowEvent as ContractsEthFlowEvent, OnchainSigningScheme,
+    SettlementEvent as ContractsSettlementEvent,
+};
+use cow_sdk_core::OrderData;
 use serde::{Deserialize, Serialize};
-use tsify::Tsify;
-use wasm_bindgen::prelude::*;
 
-use super::OrderInput;
+#[cfg(target_arch = "wasm32")]
 use crate::exports::errors::WasmError;
 
 /// Raw EVM event log accepted by the on-chain event decoders.
@@ -23,17 +26,25 @@ use crate::exports::errors::WasmError;
 /// strings with topic-0 (the event signature hash) first; `data` is the
 /// ABI-encoded non-indexed payload as a `0x`-prefixed hex string (`"0x"` for an
 /// empty payload).
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
-#[tsify(into_wasm_abi, from_wasm_abi)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "signing"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "signing"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase")]
-pub struct EventLogInput {
+pub struct EventLog {
     /// Indexed log topics as 0x-prefixed 32-byte hex strings (topic-0 first).
     pub topics: Vec<String>,
     /// ABI-encoded non-indexed log data as a 0x-prefixed hex string.
     pub data: String,
 }
 
-impl EventLogInput {
+#[cfg(target_arch = "wasm32")]
+impl EventLog {
     /// Reconstructs borrowed [`LogData`] from the hex topic and data fields.
     ///
     /// Topic-count and indexed arity are intentionally not validated here; the
@@ -57,6 +68,7 @@ impl EventLogInput {
 }
 
 /// Parses one indexed topic into a 32-byte [`B256`].
+#[cfg(target_arch = "wasm32")]
 fn parse_topic(index: usize, value: &str) -> Result<B256, WasmError> {
     let field = format!("topics[{index}]");
     let stripped = value
@@ -74,6 +86,7 @@ fn parse_topic(index: usize, value: &str) -> Result<B256, WasmError> {
 }
 
 /// Parses the non-indexed data payload into borrowed [`Bytes`].
+#[cfg(target_arch = "wasm32")]
 fn parse_data(value: &str) -> Result<Bytes, WasmError> {
     let stripped = value
         .strip_prefix("0x")
@@ -85,18 +98,26 @@ fn parse_data(value: &str) -> Result<Bytes, WasmError> {
 
 /// A decoded `GPv2Settlement` (or inherited `GPv2Signing`) event.
 ///
-/// Mirrors `cow_sdk_contracts::SettlementEvent`. Addresses and the order UID
+/// Projects `cow_sdk_contracts::SettlementEvent`. Addresses and the order UID
 /// are lowercase `0x`-prefixed hex; amounts are base-10 atom strings; the
 /// interaction `selector` is a `0x`-prefixed 4-byte hex string. The `kind`
 /// discriminator distinguishes the variants.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "signing"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "signing"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(
     tag = "kind",
     rename_all = "camelCase",
     rename_all_fields = "camelCase"
 )]
 #[non_exhaustive]
-pub enum SettlementEventDto {
+pub enum SettlementEvent {
     /// A user order was executed in a settlement.
     Trade {
         /// Order owner.
@@ -146,16 +167,18 @@ pub enum SettlementEventDto {
     },
 }
 
-impl SettlementEventDto {
-    /// Maps a decoded `cow_sdk_contracts::SettlementEvent` into the DTO.
+#[cfg(target_arch = "wasm32")]
+impl SettlementEvent {
+    /// Maps a decoded `cow_sdk_contracts::SettlementEvent` into the boundary
+    /// projection.
     ///
     /// # Errors
     ///
     /// Returns [`WasmError::Internal`] only if a future settlement-event variant
     /// is decoded that this wasm build does not yet model.
-    pub(crate) fn from_event(event: SettlementEvent) -> Result<Self, WasmError> {
+    pub(crate) fn from_event(event: ContractsSettlementEvent) -> Result<Self, WasmError> {
         Ok(match event {
-            SettlementEvent::Trade {
+            ContractsSettlementEvent::Trade {
                 owner,
                 sell_token,
                 buy_token,
@@ -172,7 +195,7 @@ impl SettlementEventDto {
                 fee_amount: fee_amount.to_string(),
                 order_uid: order_uid.to_hex_string(),
             },
-            SettlementEvent::Interaction {
+            ContractsSettlementEvent::Interaction {
                 target,
                 value,
                 selector,
@@ -181,14 +204,16 @@ impl SettlementEventDto {
                 value: value.to_string(),
                 selector: alloy_primitives::hex::encode_prefixed(selector),
             },
-            SettlementEvent::Settlement { solver } => Self::Settlement {
+            ContractsSettlementEvent::Settlement { solver } => Self::Settlement {
                 solver: solver.to_hex_string(),
             },
-            SettlementEvent::OrderInvalidated { owner, order_uid } => Self::OrderInvalidated {
-                owner: owner.to_hex_string(),
-                order_uid: order_uid.to_hex_string(),
-            },
-            SettlementEvent::PreSignature {
+            ContractsSettlementEvent::OrderInvalidated { owner, order_uid } => {
+                Self::OrderInvalidated {
+                    owner: owner.to_hex_string(),
+                    order_uid: order_uid.to_hex_string(),
+                }
+            }
+            ContractsSettlementEvent::PreSignature {
                 owner,
                 order_uid,
                 signed,
@@ -208,28 +233,40 @@ impl SettlementEventDto {
 
 /// A decoded eth-flow on-chain order lifecycle event.
 ///
-/// Mirrors `cow_sdk_contracts::EthFlowEvent`. The placement `order` reuses the
-/// canonical [`OrderInput`] shape (its `validTo` is the on-chain clamped value;
+/// Projects `cow_sdk_contracts::EthFlowEvent`. The placement `order` reuses the
+/// canonical [`OrderData`] shape (its `validTo` is the on-chain clamped value;
 /// the trader's real expiry travels in the opaque `data` trailer). `signature`
 /// and `data` are `0x`-prefixed hex strings carrying the raw on-chain signature
 /// payload and the opaque trailing data field; addresses and the order UID are
 /// lowercase `0x`-prefixed hex. The `kind` discriminator distinguishes the
 /// variants.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Tsify)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "signing"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "signing"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(
     tag = "kind",
     rename_all = "camelCase",
     rename_all_fields = "camelCase"
 )]
 #[non_exhaustive]
-pub enum EthFlowEventDto {
+#[allow(
+    clippy::large_enum_variant,
+    reason = "the `OrderPlacement` variant carries the full reconstructed `OrderData` by value because this boundary projection mirrors the on-chain event payload; boxing it would change the TypeScript declaration shape"
+)]
+pub enum EthFlowEvent {
     /// An eth-flow order was broadcast on-chain.
     OrderPlacement {
         /// Account that triggered the on-chain order creation (not necessarily
         /// the order owner).
         sender: String,
         /// The reconstructed on-chain order.
-        order: OrderInput,
+        order: OrderData,
         /// On-chain signing scheme: `"eip1271"` or `"presign"`.
         signing_scheme: String,
         /// Raw on-chain signature payload as 0x-prefixed hex.
@@ -251,17 +288,19 @@ pub enum EthFlowEventDto {
     },
 }
 
-impl EthFlowEventDto {
-    /// Maps a decoded `cow_sdk_contracts::EthFlowEvent` into the DTO.
+#[cfg(target_arch = "wasm32")]
+impl EthFlowEvent {
+    /// Maps a decoded `cow_sdk_contracts::EthFlowEvent` into the boundary
+    /// projection.
     ///
     /// # Errors
     ///
     /// Returns [`WasmError::Internal`] only if a future eth-flow event variant
     /// or on-chain signing scheme is decoded that this wasm build does not yet
     /// model.
-    pub(crate) fn from_event(event: EthFlowEvent) -> Result<Self, WasmError> {
+    pub(crate) fn from_event(event: ContractsEthFlowEvent) -> Result<Self, WasmError> {
         Ok(match event {
-            EthFlowEvent::OrderPlacement(placement) => {
+            ContractsEthFlowEvent::OrderPlacement(placement) => {
                 let signing_scheme = match placement.signing_scheme {
                     OnchainSigningScheme::Eip1271 => "eip1271",
                     OnchainSigningScheme::PreSign => "presign",
@@ -273,7 +312,7 @@ impl EthFlowEventDto {
                 };
                 Self::OrderPlacement {
                     sender: placement.sender.to_hex_string(),
-                    order: OrderInput::from(&placement.order),
+                    order: placement.order,
                     signing_scheme: signing_scheme.to_owned(),
                     signature: alloy_primitives::hex::encode_prefixed(
                         placement.signature_data.as_ref(),
@@ -281,10 +320,10 @@ impl EthFlowEventDto {
                     data: alloy_primitives::hex::encode_prefixed(placement.data.as_ref()),
                 }
             }
-            EthFlowEvent::OrderInvalidation(invalidation) => Self::OrderInvalidation {
+            ContractsEthFlowEvent::OrderInvalidation(invalidation) => Self::OrderInvalidation {
                 order_uid: invalidation.order_uid.to_hex_string(),
             },
-            EthFlowEvent::OrderRefund(refund) => Self::OrderRefund {
+            ContractsEthFlowEvent::OrderRefund(refund) => Self::OrderRefund {
                 order_uid: refund.order_uid.to_hex_string(),
                 refunder: refund.refunder.to_hex_string(),
             },

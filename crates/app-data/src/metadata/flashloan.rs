@@ -20,11 +20,13 @@ use crate::AppDataError;
 
 /// Typed flash-loan hint carried inside the app-data metadata envelope.
 ///
-/// The wire form is a single camelCase object with five required fields.
-/// The struct head is `#[non_exhaustive]` so future additions to the
-/// reviewed schema may be introduced as a minor change without breaking
-/// downstream exhaustive matches.
-#[non_exhaustive]
+/// The wire form is a single camelCase object with five required fields. The
+/// struct mirrors the reviewed flashloan schema, which is closed
+/// (`additionalProperties: false`), so it is exhaustive and is built through the
+/// validating [`FlashloanHints::new`]; `deny_unknown_fields` rejects any wire
+/// field outside that schema. A future schema revision adds fields as a
+/// deliberate schema change, not a silent minor, so the struct head is not
+/// `#[non_exhaustive]`.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct FlashloanHints {

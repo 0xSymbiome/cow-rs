@@ -23,7 +23,7 @@ export interface SigningOptions extends SdkClientOptions {
 }
 
 export type TypedDataSignerCallback = (
-  envelope: TypedDataEnvelopeDto,
+  envelope: TypedDataEnvelope<Value>,
 ) => Promise<string> | string;
 
 export type DigestSignerCallback = (
@@ -73,7 +73,7 @@ export type HttpTransportConfig =
 #[wasm_bindgen(typescript_custom_section)]
 const TRADING_CALLBACK_TYPES: &str = r#"
 export type ContractReadCallback = (
-  request: ContractCallDto,
+  request: ContractCall,
 ) => Promise<string> | string;
 "#;
 

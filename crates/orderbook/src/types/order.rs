@@ -448,11 +448,23 @@ impl OrderCancellations {
 
 /// `EthFlow`-specific orderbook metadata.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct EthflowData {
     /// Transaction in which the order was refunded, when present.
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(
+        all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+        tsify(type = "string")
+    )]
     pub refund_tx_hash: Option<TransactionHash>,
     /// User-facing validity timestamp for the `EthFlow` order.
     pub user_valid_to: u32,
@@ -479,6 +491,14 @@ impl EthflowData {
 /// On-chain order placement metadata returned by the orderbook for orders that
 /// originated from an on-chain submission path.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct OnchainOrderData {
@@ -509,6 +529,14 @@ impl OnchainOrderData {
 
 /// Smart-contract interaction payload used by order pre and post hooks.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase")]
 pub struct InteractionData {
     /// Contract address targeted by the interaction.
@@ -533,6 +561,14 @@ impl InteractionData {
 
 /// Optional pre and post interactions attached to an order response.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct OrderInteractions {
@@ -569,6 +605,14 @@ impl OrderInteractions {
 /// Quote metadata stored with an order response when an order was created from
 /// a quote.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct StoredOrderQuote {
@@ -589,6 +633,10 @@ pub struct StoredOrderQuote {
     /// Whether the quote was verified through simulation.
     pub verified: bool,
     /// Additional services-provided quote metadata, when present.
+    #[cfg_attr(
+        all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+        tsify(type = "Value")
+    )]
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub metadata: Option<serde_json::Value>,
 }
@@ -638,10 +686,22 @@ pub struct FeePolicy(pub serde_json::Value);
 
 /// Executed protocol-fee metadata returned on trade records.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct ExecutedProtocolFee {
     /// Fee policy that produced this fee, when services returns it.
+    #[cfg_attr(
+        all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+        tsify(type = "Value")
+    )]
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub policy: Option<FeePolicy>,
     /// Fee amount taken.
@@ -692,6 +752,14 @@ impl ExecutedProtocolFee {
 /// re-derivation; it fails closed for `EthFlow` orders, whose response fields
 /// are rewritten for display.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase")]
 #[non_exhaustive]
 pub struct Order {
@@ -719,24 +787,39 @@ pub struct Order {
     /// Stored under the upstream wire name `feeAmount` so deserialization
     /// preserves services-schema parity; the value is not exposed on the
     /// public Rust surface.
-    #[serde(default = "order_creation_zero_fee_amount")]
+    ///
+    /// Always present in the orderbook response (services rejects a non-zero
+    /// order-level fee but still echoes the `"0"` field), so the wire field is
+    /// required rather than defaulted: a response missing it is malformed.
     fee_amount: Amount,
     /// Strict balance-check flag accepted by services when the order was created.
     #[serde(default, skip_serializing_if = "is_false")]
     pub full_balance_check: bool,
     /// Order kind.
+    #[cfg_attr(
+        all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+        tsify(type = "OrderKind")
+    )]
     pub kind: OrderKind,
-    /// Whether partial fills are allowed.
-    #[serde(default)]
+    /// Whether partial fills are allowed. Always serialized on the response, so
+    /// the wire field is required rather than defaulted.
     pub partially_fillable: bool,
     /// Sell-token balance source.
+    #[cfg_attr(
+        all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+        tsify(type = "SellTokenSource")
+    )]
     #[serde(default)]
     pub sell_token_balance: SellTokenSource,
     /// Buy-token balance destination.
+    #[cfg_attr(
+        all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+        tsify(type = "BuyTokenDestination")
+    )]
     #[serde(default)]
     pub buy_token_balance: BuyTokenDestination,
-    /// Signature scheme used for `signature`.
-    #[serde(default)]
+    /// Signature scheme used for `signature`. Always serialized on the
+    /// response, so the wire field is required rather than defaulted.
     pub signing_scheme: SigningScheme,
     /// Raw signature string.
     pub signature: String,
@@ -746,25 +829,27 @@ pub struct Order {
     /// Quote id used when the order originated from a quote.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub quote_id: Option<i64>,
-    /// Order class.
-    #[serde(default)]
+    /// Order class. Always serialized on the response, so the wire field is
+    /// required rather than defaulted.
     pub class: OrderClass,
     /// Canonical owner surfaced by the orderbook response.
     pub owner: Address,
     /// Order UID.
     pub uid: OrderUid,
-    /// Creation timestamp string returned by the API.
-    #[serde(default, alias = "creationTime")]
+    /// Creation timestamp string returned by the API. Always serialized on the
+    /// response, so the wire field is required rather than defaulted; the
+    /// `creationTime` alias is retained for the legacy response key.
+    #[serde(alias = "creationTime")]
     pub creation_date: String,
-    /// Executed sell amount.
-    #[serde(default)]
+    /// Executed sell amount. Always serialized on the response, so the wire
+    /// field is required rather than defaulted.
     pub executed_sell_amount: Amount,
-    /// Executed sell amount before fees.
-    #[serde(default)]
+    /// Executed sell amount before fees. Always serialized on the response, so
+    /// the wire field is required rather than defaulted.
     pub executed_sell_amount_before_fees: Amount,
-    /// Executed buy amount. Defaults to zero and stays `"0"` on the wire until
-    /// the order's first fill, rather than being absent.
-    #[serde(default)]
+    /// Executed buy amount. Stays `"0"` on the wire until the order's first
+    /// fill, rather than being absent, so the wire field is required rather
+    /// than defaulted.
     pub executed_buy_amount: Amount,
     /// Executed fee component, when provided.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -786,10 +871,14 @@ pub struct Order {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub executed_fee_token: Option<Address>,
     /// Whether the order was invalidated by the protocol.
+    ///
+    /// Kept defaulted: although the services schema lists it as required, the
+    /// `EthFlow` response shape omits it (see the `sample_ethflow_order_json`
+    /// fixture), so the field must remain absent-able on the wire.
     #[serde(default)]
     pub invalidated: bool,
-    /// Order lifecycle status.
-    #[serde(default)]
+    /// Order lifecycle status. Always serialized on the response, so the wire
+    /// field is required rather than defaulted.
     pub status: OrderStatus,
     /// Whether services classified the order as a liquidity order.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -815,6 +904,10 @@ pub struct Order {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub interactions: Option<OrderInteractions>,
     /// Total fee normalized by the SDK transform layer.
+    ///
+    /// Kept defaulted: this is an SDK-synthesized field with no services-schema
+    /// counterpart, so an inbound orderbook response never carries it and it
+    /// must remain absent-able on the wire.
     #[serde(default)]
     pub total_fee: Amount,
 }

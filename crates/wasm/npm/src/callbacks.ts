@@ -35,38 +35,38 @@ export type CowFetchCallback = (
   request: CowFetchRequest
 ) => Promise<CowFetchResponse> | CowFetchResponse;
 
-// Fields are required to match the Rust `TypedDataDomainDto` (`dto/signing.rs`):
+// Fields are required to match the Rust `TypedDataDomain` in `cow-sdk-core`:
 // the SDK always emits a fully-populated EIP-712 domain across the ABI, so the
-// envelope a host callback receives carries every field. The public
-// `TypedDataDomainDto` is re-exported from the per-flavor raw module; this
-// flavor-agnostic mirror is the callback-parameter shape only.
-export interface TypedDataDomainDto {
+// envelope a host callback receives carries every field. The per-flavour raw
+// module exports the same `TypedDataEnvelope` generated from the native type;
+// this flavour-agnostic mirror is the callback-parameter shape only.
+export interface TypedDataDomain {
   name: string;
   version: string;
   chainId: number;
   verifyingContract: string;
 }
 
-export interface TypedDataFieldDto {
+export interface TypedDataField {
   name: string;
   type: string;
 }
 
-export interface TypedDataEnvelopeDto {
-  domain: TypedDataDomainDto;
-  types: Record<string, TypedDataFieldDto[]>;
+export interface TypedDataEnvelope<M = unknown> {
+  domain: TypedDataDomain;
+  types: Record<string, TypedDataField[]>;
   primaryType: string;
-  message: unknown;
+  message: M;
 }
 
 export interface CowEip1271SignRequest {
   order: unknown;
-  typedData: TypedDataEnvelopeDto;
+  typedData: TypedDataEnvelope;
   owner: string;
   chainId: number;
 }
 
-export interface ContractCallDto {
+export interface ContractCall {
   address: string;
   method: string;
   abiJson: string;
@@ -74,7 +74,7 @@ export interface ContractCallDto {
 }
 
 export type TypedDataSignerCallback = (
-  envelope: TypedDataEnvelopeDto
+  envelope: TypedDataEnvelope
 ) => Promise<string> | string;
 
 export type DigestSignerCallback = (digest: string) => Promise<string> | string;
@@ -102,5 +102,5 @@ export type CustomEip1271Callback = (
  * ```
  */
 export type ContractReadCallback = (
-  request: ContractCallDto
+  request: ContractCall
 ) => Promise<string> | string;
