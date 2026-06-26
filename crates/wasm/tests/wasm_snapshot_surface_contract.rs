@@ -209,35 +209,35 @@ fn generated_type_declarations_expose_feature_scoped_workflow_helpers() {
                 &[
                     "apiKey?: string | null;",
                     "export interface PaginationOptions",
-                    "export interface TradesQueryInput",
-                    "export interface OrderDto",
-                    "export interface TradeDto",
-                    "export interface NativePriceResponseDto",
-                    "export interface AppDataObjectDto",
-                    "export interface CompetitionOrderStatusDto",
-                    "export interface TotalSurplusDto",
-                    "export interface SolverCompetitionResponseDto",
-                    "export interface CompetitionAuctionDto",
-                    "export interface SolverSettlementDto",
-                    "export interface SolverCompetitionOrderDto",
-                    "getNativePrice(token: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<NativePriceResponseDto>>",
-                    "getOrder(orderUid: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<OrderDto>>",
-                    "getOrders(owner: string, pagination?: PaginationOptions | null, options?: SdkClientOptions | null): Promise<WasmEnvelope<OrderDto[]>>",
-                    "getTrades(query: TradesQueryInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<TradeDto[]>>",
-                    "getOrderMultiEnv(orderUid: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<OrderDto>>",
-                    "getTxOrders(txHash: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<OrderDto[]>>",
+                    "export interface GetTradesRequest",
+                    "export interface Order",
+                    "export interface Trade",
+                    "export interface NativePriceResponse",
+                    "export interface AppDataObject",
+                    "export interface CompetitionOrderStatus",
+                    "export interface TotalSurplus",
+                    "export interface SolverCompetitionResponse",
+                    "export interface CompetitionAuction",
+                    "export interface SolverSettlement",
+                    "export interface SolverCompetitionOrder",
+                    "getNativePrice(token: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<NativePriceResponse>>",
+                    "getOrder(orderUid: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<Order>>",
+                    "getOrders(owner: string, pagination?: PaginationOptions | null, options?: SdkClientOptions | null): Promise<WasmEnvelope<Order[]>>",
+                    "getTrades(query: GetTradesRequest, options?: SdkClientOptions | null): Promise<WasmEnvelope<Trade[]>>",
+                    "getOrderMultiEnv(orderUid: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<Order>>",
+                    "getTxOrders(txHash: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<Order[]>>",
                     "getVersion(options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>",
                     "getOrderLink(orderUid: string): WasmEnvelope<string>",
-                    "getOrderCompetitionStatus(orderUid: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<CompetitionOrderStatusDto>>",
-                    "getTotalSurplus(owner: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<TotalSurplusDto>>",
-                    "getSolverCompetition(auctionId: number, options?: SdkClientOptions | null): Promise<WasmEnvelope<SolverCompetitionResponseDto>>",
-                    "getSolverCompetitionByTxHash(txHash: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<SolverCompetitionResponseDto>>",
-                    "getAppData(appDataHash: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<AppDataObjectDto>>",
+                    "getOrderCompetitionStatus(orderUid: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<CompetitionOrderStatus>>",
+                    "getTotalSurplus(owner: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<TotalSurplus>>",
+                    "getSolverCompetition(auctionId: number, options?: SdkClientOptions | null): Promise<WasmEnvelope<SolverCompetitionResponse>>",
+                    "getSolverCompetitionByTxHash(txHash: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<SolverCompetitionResponse>>",
+                    "getAppData(appDataHash: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<AppDataObject>>",
                     "uploadAppData(appDataHash: string, fullAppData: string, options?: SdkClientOptions | null): Promise<WasmEnvelope<{ uploaded: true }>>",
-                    "getQuote(request: OrderQuoteRequestInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<OrderQuoteResponseDto>>",
-                    "sendOrder(signed: SignedOrderDto, options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>",
-                    "sendOrderCreation(input: OrderCreationInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>",
-                    "cancelOrders(signed: SignedCancellationsInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<{ cancelled: true }>>",
+                    "getQuote(request: OrderQuoteRequest, options?: SdkClientOptions | null): Promise<WasmEnvelope<OrderQuoteResponse>>",
+                    "sendOrder(signed: SignedOrder, options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>",
+                    "sendOrderCreation(input: OrderCreation, options?: SdkClientOptions | null): Promise<WasmEnvelope<string>>",
+                    "cancelOrders(signed: SignedCancellations, options?: SdkClientOptions | null): Promise<WasmEnvelope<{ cancelled: true }>>",
                 ],
             );
         }
@@ -251,7 +251,7 @@ fn generated_type_declarations_expose_feature_scoped_workflow_helpers() {
                     "getTotals(options?: SdkClientOptions | null): Promise<any>",
                     "getLastDaysVolume(days: number, options?: SdkClientOptions | null): Promise<any>",
                     "getLastHoursVolume(hours: number, options?: SdkClientOptions | null): Promise<any>",
-                    "runQuery(request: SubgraphQueryInput, options?: SdkClientOptions | null): Promise<any>",
+                    "runQuery(query: string, variables: Value, operationName?: string | null, options?: SdkClientOptions | null): Promise<any>",
                 ],
             );
         }
@@ -261,10 +261,10 @@ fn generated_type_declarations_expose_feature_scoped_workflow_helpers() {
                 &snapshot.name,
                 &content,
                 &[
-                    "export interface OrderTraderParametersInput",
-                    "export interface TransactionRequestDto",
-                    "buildCancelOrderTx(params: OrderTraderParametersInput): WasmEnvelope<TransactionRequestDto>",
-                    "buildPresignTx(params: OrderTraderParametersInput): WasmEnvelope<TransactionRequestDto>",
+                    "export interface OrderTraderParams",
+                    "export interface TransactionRequest",
+                    "buildCancelOrderTx(params: OrderTraderParams): WasmEnvelope<TransactionRequest>",
+                    "buildPresignTx(params: OrderTraderParams): WasmEnvelope<TransactionRequest>",
                 ],
             );
         }
@@ -275,19 +275,27 @@ fn generated_type_declarations_expose_feature_scoped_workflow_helpers() {
                 &content,
                 &[
                     "export type ContractReadCallback",
-                    "export interface AllowanceParametersInput",
-                    "export interface ApprovalParametersInput",
-                    "export interface BuiltSellNativeCurrencyTxDto",
-                    "export interface ContractCallDto",
-                    "export interface LimitTradeParametersInput",
-                    "export interface QuoteResultsDto",
-                    "buildApprovalTx(params: ApprovalParametersInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<TransactionRequestDto>>",
-                    "buildSellNativeCurrencyTx(order: OrderInput, quoteId: number, from: string",
-                    "buildSellNativeCurrencyTxFromQuote(quoteResults: QuoteResultsDto, from: string",
-                    "getCowProtocolAllowance(params: AllowanceParametersInput, readContractCallback: ContractReadCallback",
-                    "getQuote(params: SwapParametersInput, options?: SdkClientOptions | null): Promise<WasmEnvelope<QuoteResultsDto>>",
-                    "postLimitOrder(params: LimitTradeParametersInput, owner: string, signerCallback: TypedDataSignerCallback",
-                    "postSwapOrderFromQuote(quoteResults: QuoteResultsDto, owner: string, signerCallback: TypedDataSignerCallback",
+                    "export interface AllowanceParams",
+                    "export interface ApprovalParams",
+                    "export interface BuiltSellNativeCurrencyTx",
+                    "export interface ContractCall",
+                    "export interface LimitTradeParams",
+                    // The quote-result tree is generated from the native types:
+                    // `QuoteResults` plus the generic
+                    // amounts/costs tree and the typed-data envelope it embeds.
+                    "export interface QuoteResults",
+                    "export interface TradeParams",
+                    "export interface QuoteAmountsAndCosts<T>",
+                    "export interface Amounts<T>",
+                    "export interface TypedDataEnvelope<M>",
+                    "export type CowEnv = \"prod\" | \"staging\";",
+                    "buildApprovalTx(params: ApprovalParams, options?: SdkClientOptions | null): Promise<WasmEnvelope<TransactionRequest>>",
+                    "buildSellNativeCurrencyTx(order: OrderData, quoteId: number, from: string",
+                    "buildSellNativeCurrencyTxFromQuote(quoteResults: QuoteResults, from: string",
+                    "getCowProtocolAllowance(params: AllowanceParams, readContractCallback: ContractReadCallback",
+                    "getQuote(params: TradeParams, options?: SdkClientOptions | null): Promise<WasmEnvelope<QuoteResults>>",
+                    "postLimitOrder(params: LimitTradeParams, owner: string, signerCallback: TypedDataSignerCallback",
+                    "postSwapOrderFromQuote(quoteResults: QuoteResults, owner: string, signerCallback: TypedDataSignerCallback",
                 ],
             );
         } else {
@@ -302,7 +310,10 @@ fn generated_type_declarations_expose_feature_scoped_workflow_helpers() {
 
 #[test]
 fn generated_type_declarations_keep_unknown_escape_hatch_scoped() {
-    let expected = ["message: Value;", "raw: Value"];
+    // The typed-data envelope is generic over its message body (`message: M`),
+    // so the `Value` escape hatch reaches the message only through the concrete
+    // `TypedDataEnvelope<Value>` binding; `raw` carries it on the unknown-error arm.
+    let expected = ["message: M;", "TypedDataEnvelope<Value>", "raw: Value"];
     let forbidden = [
         "input: Value",
         "request: Value",
@@ -321,7 +332,7 @@ fn generated_type_declarations_keep_unknown_escape_hatch_scoped() {
         }
         if snapshot.has_feature("subgraph") {
             assert!(
-                content.contains("variables?: Value;"),
+                content.contains("variables: Value"),
                 "{} must expose subgraph variables",
                 snapshot.name
             );
@@ -352,8 +363,8 @@ fn generated_type_declarations_expose_event_log_decoders() {
     // The provider-free settlement and eth-flow event-log decoders are
     // always-compiled deterministic helpers, present on every flavour.
     let expected = [
-        "decodeSettlementLog(log: EventLogInput): WasmEnvelope<SettlementEventDto>",
-        "decodeEthFlowLog(log: EventLogInput): WasmEnvelope<EthFlowEventDto>",
+        "decodeSettlementLog(log: EventLog): WasmEnvelope<SettlementEvent>",
+        "decodeEthFlowLog(log: EventLog): WasmEnvelope<EthFlowEvent>",
     ];
 
     for snapshot in snapshots() {

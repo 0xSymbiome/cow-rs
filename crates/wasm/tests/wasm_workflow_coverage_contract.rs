@@ -3,10 +3,9 @@
 mod common;
 
 use cow_sdk_wasm::exports::{
-    AllowanceParametersInput, ApprovalParametersInput, LimitTradeParametersInput, OrderBookClient,
-    OrderBookClientConfig, OrderKindDto, OrderTraderParametersInput, PaginationOptions,
-    SwapParametersInput, TokenBalanceDto, TradesQueryInput, TradingClient, build_cancel_order_tx,
-    build_presign_tx, compute_order_uid,
+    AllowanceParams, ApprovalParams, LimitTradeParams, OrderBookClient,
+    OrderBookClientConfig, OrderTraderParams, PaginationOptions, TradeParams,
+    GetTradesRequest, TradingClient, build_cancel_order_tx, build_presign_tx, compute_order_uid,
 };
 use js_sys::{Function, Object, Reflect};
 use serde_json::Value;
@@ -154,27 +153,20 @@ fn signer_callback() -> Function {
     )
 }
 
-fn limit_params(valid_to: u32) -> LimitTradeParametersInput {
-    LimitTradeParametersInput {
-        kind: OrderKindDto::Sell,
-        owner: None,
-        sell_token: ADDR_SELL.to_owned(),
-        buy_token: ADDR_BUY.to_owned(),
-        sell_amount: "1000000000000000000".to_owned(),
-        buy_amount: "2000000000000000000".to_owned(),
-        quote_id: None,
-        env: None,
-        settlement_contract_override: None,
-        eth_flow_contract_override: None,
-        partially_fillable: false,
-        sell_token_balance: Some(TokenBalanceDto::Erc20),
-        buy_token_balance: Some(TokenBalanceDto::Erc20),
-        slippage_bps: Some(0),
-        receiver: Some(ADDR_RECEIVER.to_owned()),
-        valid_for: None,
-        valid_to: Some(valid_to),
-        partner_fee: None,
-    }
+fn limit_params(valid_to: u32) -> LimitTradeParams {
+    serde_json::from_value(serde_json::json!({
+        "kind": "sell",
+        "sellToken": ADDR_SELL,
+        "buyToken": ADDR_BUY,
+        "sellAmount": "1000000000000000000",
+        "buyAmount": "2000000000000000000",
+        "sellTokenBalance": "erc20",
+        "buyTokenBalance": "erc20",
+        "slippageBps": 0,
+        "receiver": ADDR_RECEIVER,
+        "validTo": valid_to,
+    }))
+    .expect("limit params deserialize")
 }
 
 #[wasm_bindgen_test]
@@ -204,7 +196,7 @@ async fn orderbook_lists_support_api_key_routing_and_owner_trade_pagination() {
     let trades = json(
         client
             .trades(
-                TradesQueryInput {
+                GetTradesRequest {
                     owner: Some(ADDR_OWNER.to_owned()),
                     order_uid: None,
                     offset: Some(3),
@@ -270,25 +262,22 @@ async fn trading_posts_swap_from_quote_and_limit_orders_through_typed_signers() 
     // `postSwapOrderFromQuote`, the documented host workflow.
     let quote_envelope = client
         .quote(
-            SwapParametersInput {
-                kind: OrderKindDto::Sell,
-                owner: Some(ADDR_OWNER.to_owned()),
-                sell_token: ADDR_SELL.to_owned(),
-                buy_token: ADDR_BUY.to_owned(),
-                // sellAmountBeforeFee: reconciles with the canned response's
-                // fixed leg (sellAmount 98646335338956442 + feeAmount
-                // 1353664661043558) so the quote-echo gate accepts it.
-                amount: "100000000000000000".to_owned(),
-                env: None,
-                partially_fillable: false,
-                sell_token_balance: Some(TokenBalanceDto::Erc20),
-                buy_token_balance: Some(TokenBalanceDto::Erc20),
-                slippage_bps: Some(50),
-                receiver: Some(ADDR_RECEIVER.to_owned()),
-                valid_for: None,
-                valid_to: Some(valid_to),
-                partner_fee: None,
-            },
+            serde_json::from_value::<TradeParams>(serde_json::json!({
+                "kind": "sell",
+                "owner": ADDR_OWNER,
+                "sellToken": ADDR_SELL,
+                "buyToken": ADDR_BUY,
+                // sellAmountBeforeFee: reconciles with the canned response's fixed
+                // leg (sellAmount 98646335338956442 + feeAmount 1353664661043558)
+                // so the quote-echo gate accepts it.
+                "amount": "100000000000000000",
+                "sellTokenBalance": "erc20",
+                "buyTokenBalance": "erc20",
+                "slippageBps": 50,
+                "receiver": ADDR_RECEIVER,
+                "validTo": valid_to,
+            }))
+            .expect("swap params deserialize"),
             None,
         )
         .await
@@ -370,7 +359,7 @@ async fn trading_exposes_allowance_and_transaction_builders() {
     let allowance = json(
         client
             .cow_protocol_allowance(
-                AllowanceParametersInput {
+                AllowanceParams {
                     token_address: ADDR_SELL.to_owned(),
                     owner: ADDR_OWNER.to_owned(),
                     chain_id: None,
@@ -386,9 +375,9 @@ async fn trading_exposes_allowance_and_transaction_builders() {
     let allowance_request = json(js_sys::eval("globalThis.__cowAllowanceRead").unwrap());
 
     let mut native_order = wasm_order_input();
-    native_order.sell_token = NATIVE_TOKEN.to_owned();
+    native_order.sell_token = cow_sdk_core::Address::new(NATIVE_TOKEN).unwrap();
     native_order.valid_to = future_valid_to();
-    native_order.app_data = HASH_APP_DATA.to_owned();
+    native_order.app_data = cow_sdk_core::AppDataHash::new(HASH_APP_DATA).unwrap();
     let ethflow = json(
         client
             .build_sell_native_currency_tx(native_order, 77.0, ADDR_OWNER.to_owned(), None)
@@ -398,7 +387,7 @@ async fn trading_exposes_allowance_and_transaction_builders() {
     let approval = json(
         client
             .build_approval_tx(
-                ApprovalParametersInput {
+                ApprovalParams {
                     token_address: ADDR_SELL.to_owned(),
                     amount: "1000000000000000000".to_owned(),
                     vault_relayer_override: None,
@@ -410,7 +399,7 @@ async fn trading_exposes_allowance_and_transaction_builders() {
     );
     let order_uid = generated_order_uid();
     let presign = json(
-        build_presign_tx(OrderTraderParametersInput {
+        build_presign_tx(OrderTraderParams {
             order_uid: order_uid.clone(),
             chain_id: Some(CHAIN_MAINNET),
             env: None,
@@ -420,7 +409,7 @@ async fn trading_exposes_allowance_and_transaction_builders() {
         .unwrap(),
     );
     let cancel = json(
-        build_cancel_order_tx(OrderTraderParametersInput {
+        build_cancel_order_tx(OrderTraderParams {
             order_uid,
             chain_id: Some(CHAIN_MAINNET),
             env: None,

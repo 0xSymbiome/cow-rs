@@ -2,9 +2,9 @@
 
 mod common;
 
+use cow_sdk_core::OrderData;
 use cow_sdk_wasm::exports::{
-    OrderInput, compute_order_uid, sign_cancellation_with_typed_data_signer,
-    sign_order_with_typed_data_signer,
+    compute_order_uid, sign_cancellation_with_typed_data_signer, sign_order_with_typed_data_signer,
 };
 use js_sys::{Function, Reflect};
 use serde_json::Value;
@@ -40,7 +40,7 @@ fn unknown_order_kind_fails_closed_during_input_decode() {
         "buyTokenBalance": "erc20"
     });
     let value = serde_wasm_bindgen::to_value(&input).unwrap();
-    let decoded = serde_wasm_bindgen::from_value::<OrderInput>(value);
+    let decoded = serde_wasm_bindgen::from_value::<OrderData>(value);
 
     assert!(decoded.is_err());
 }
@@ -48,7 +48,7 @@ fn unknown_order_kind_fails_closed_during_input_decode() {
 #[wasm_bindgen_test]
 fn unknown_buy_balance_fails_closed_during_input_decode() {
     let mut input = wasm_order_input();
-    input.buy_token_balance = cow_sdk_wasm::exports::TokenBalanceDto::Internal;
+    input.buy_token_balance = cow_sdk_core::BuyTokenDestination::Internal;
     assert!(compute_order_uid(input, CHAIN_MAINNET, ADDR_OWNER.to_owned()).is_ok());
 
     let invalid = serde_json::json!({
@@ -65,7 +65,7 @@ fn unknown_buy_balance_fails_closed_during_input_decode() {
         "sellTokenBalance": "erc20",
         "buyTokenBalance": "external"
     });
-    let decoded = serde_wasm_bindgen::from_value::<OrderInput>(
+    let decoded = serde_wasm_bindgen::from_value::<OrderData>(
         serde_wasm_bindgen::to_value(&invalid).unwrap(),
     );
 
@@ -87,21 +87,31 @@ fn missing_required_order_field_fails_closed() {
         "buyTokenBalance": "erc20"
     });
     let decoded =
-        serde_wasm_bindgen::from_value::<OrderInput>(serde_wasm_bindgen::to_value(&input).unwrap());
+        serde_wasm_bindgen::from_value::<OrderData>(serde_wasm_bindgen::to_value(&input).unwrap());
 
     assert!(decoded.is_err());
 }
 
 #[wasm_bindgen_test]
-fn malformed_app_data_hash_rejects_before_uid_generation() {
-    let mut input = wasm_order_input();
-    input.app_data = "0x1234".to_owned();
-    let error = compute_order_uid(input, CHAIN_MAINNET, ADDR_OWNER.to_owned())
-        .expect_err("malformed app-data hash must fail");
-    let value = json(error);
+fn malformed_app_data_hash_fails_closed_during_input_decode() {
+    let input = serde_json::json!({
+        "sellToken": crate::common::ADDR_SELL,
+        "buyToken": crate::common::ADDR_BUY,
+        "receiver": crate::common::ADDR_ZERO,
+        "sellAmount": "1",
+        "buyAmount": "2",
+        "validTo": crate::common::VALID_TO,
+        "appData": "0x1234",
+        "feeAmount": "0",
+        "kind": "sell",
+        "partiallyFillable": false,
+        "sellTokenBalance": "erc20",
+        "buyTokenBalance": "erc20"
+    });
+    let decoded =
+        serde_wasm_bindgen::from_value::<OrderData>(serde_wasm_bindgen::to_value(&input).unwrap());
 
-    assert_eq!(value["kind"], "invalidInput");
-    assert_eq!(value["field"], "appData");
+    assert!(decoded.is_err());
 }
 
 #[wasm_bindgen_test]

@@ -6,7 +6,7 @@ use cow_sdk_core::{Address, SupportedChainId};
 use cow_sdk_wasm::helpers::{
     app_data, chains,
     dto::{
-        AppDataDocInput, OrderKindDto, TokenBalanceDto, ValidationResultDto,
+        AppDataParams, BuyTokenDestination, OrderKind, SellTokenSource, ValidationResult,
         generated_order_uid_dto,
     },
     errors::PureError,
@@ -15,9 +15,9 @@ use cow_sdk_wasm::helpers::{
 use serde_json::json;
 
 use crate::common::{
-    ADDR_OWNER, ADDR_SELL, APP_DATA_CONTENT, CHAIN_GNOSIS, CHAIN_MAINNET, CHAIN_UNSUPPORTED,
-    CID_APP_DATA, CID_APP_DATA_TWO, ECDSA_SIGNATURE, EIP1271_SIGNATURE, HASH_APP_DATA,
-    HASH_APP_DATA_TWO, host_app_data_input, host_order_input,
+    ADDR_OWNER, APP_DATA_CONTENT, CHAIN_GNOSIS, CHAIN_MAINNET, CHAIN_UNSUPPORTED, CID_APP_DATA,
+    CID_APP_DATA_TWO, ECDSA_SIGNATURE, EIP1271_SIGNATURE, HASH_APP_DATA, HASH_APP_DATA_TWO,
+    host_app_data_input, host_order_input,
 };
 
 #[test]
@@ -106,64 +106,30 @@ fn domain_separator_is_stable_hex() {
 }
 
 #[test]
-fn order_input_parses_to_unsigned_order() {
-    let order = host_order_input().to_unsigned_order().unwrap();
-    assert_eq!(order.sell_token.to_hex_string(), ADDR_SELL);
-    assert_eq!(order.kind, cow_sdk_core::OrderKind::Sell);
-}
-
-#[test]
-fn order_input_rejects_malformed_address() {
-    let mut input = host_order_input();
-    input.sell_token = "0x1234".to_owned();
-    assert!(matches!(
-        input.to_unsigned_order(),
-        Err(PureError::InvalidInput { field, .. }) if field == "sellToken"
-    ));
-}
-
-#[test]
-fn order_input_rejects_external_buy_balance() {
-    let mut input = host_order_input();
-    input.buy_token_balance = TokenBalanceDto::External;
-    assert!(matches!(
-        input.to_unsigned_order(),
-        Err(PureError::UnknownEnumValue { field, value })
-            if field == "buyTokenBalance" && value == "external"
-    ));
-}
-
-#[test]
 fn token_balance_maps_to_expected_sell_sources() {
     assert_eq!(
-        serde_json::to_string(&TokenBalanceDto::Erc20).unwrap(),
+        serde_json::to_string(&SellTokenSource::Erc20).unwrap(),
         "\"erc20\""
     );
     assert_eq!(
-        serde_json::to_string(&TokenBalanceDto::External).unwrap(),
+        serde_json::to_string(&SellTokenSource::External).unwrap(),
         "\"external\""
     );
     assert_eq!(
-        serde_json::to_string(&TokenBalanceDto::Internal).unwrap(),
+        serde_json::to_string(&BuyTokenDestination::Internal).unwrap(),
         "\"internal\""
     );
 }
 
 #[test]
 fn order_kind_serde_shape_is_lowercase() {
-    assert_eq!(
-        serde_json::to_string(&OrderKindDto::Sell).unwrap(),
-        "\"sell\""
-    );
-    assert_eq!(
-        serde_json::to_string(&OrderKindDto::Buy).unwrap(),
-        "\"buy\""
-    );
+    assert_eq!(serde_json::to_string(&OrderKind::Sell).unwrap(), "\"sell\"");
+    assert_eq!(serde_json::to_string(&OrderKind::Buy).unwrap(), "\"buy\"");
 }
 
 #[test]
 fn app_data_doc_input_requires_object_metadata() {
-    let input = AppDataDocInput {
+    let input = AppDataParams {
         app_code: "CoW Swap".to_owned(),
         metadata: json!("not an object"),
         version: "0.7.0".to_owned(),
@@ -190,7 +156,7 @@ fn app_data_doc_validation_reports_success() {
     let result = app_data::validate_app_data_doc(&doc);
     assert!(result.is_ok());
 
-    let dto = ValidationResultDto::from(result);
+    let dto = ValidationResult::from(result);
     assert!(dto.success);
     assert!(dto.errors.is_none());
 }
@@ -203,7 +169,7 @@ fn app_data_doc_validation_failure_maps_into_the_js_dto() {
     let result = app_data::validate_app_data_doc(&doc);
     assert!(result.is_err());
 
-    let dto = ValidationResultDto::from(result);
+    let dto = ValidationResult::from(result);
     assert!(!dto.success);
     assert!(
         dto.errors
@@ -236,7 +202,7 @@ fn app_data_hex_and_cid_round_trip_for_two_vectors() {
 
 #[test]
 fn typed_data_payload_matches_signing_module_output() {
-    let order = host_order_input().to_unsigned_order().unwrap();
+    let order = host_order_input();
     let chain = chains::supported_chain(CHAIN_MAINNET).unwrap();
     let wasm_payload = signing::order_typed_data_payload(chain, &order).unwrap();
     let native_payload =
@@ -248,7 +214,7 @@ fn typed_data_payload_matches_signing_module_output() {
 
 #[test]
 fn generated_order_uid_uses_canonical_strings() {
-    let order = host_order_input().to_unsigned_order().unwrap();
+    let order = host_order_input();
     let chain = chains::supported_chain(CHAIN_MAINNET).unwrap();
     let owner = Address::new(ADDR_OWNER).unwrap();
     let generated = signing::generate_order_id(chain, &order, &owner).unwrap();
@@ -261,7 +227,7 @@ fn generated_order_uid_uses_canonical_strings() {
 
 #[test]
 fn eip1271_payload_matches_signing_module_output_and_vector() {
-    let order = host_order_input().to_unsigned_order().unwrap();
+    let order = host_order_input();
     let wasm_payload = signing::eip1271_signature_payload(&order, ECDSA_SIGNATURE).unwrap();
     let native_payload =
         cow_sdk_signing::eip1271_signature_payload(&order, ECDSA_SIGNATURE).unwrap();

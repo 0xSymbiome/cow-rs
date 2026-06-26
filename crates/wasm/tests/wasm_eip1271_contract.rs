@@ -6,7 +6,6 @@ use cow_sdk_wasm::exports::{
     compute_order_uid, eip1271_signature_payload_export, sign_order_with_custom_eip1271,
     sign_order_with_eip1271,
 };
-use cow_sdk_wasm::helpers as pure;
 use js_sys::Function;
 use serde::Deserialize;
 use serde_json::Value;
@@ -47,9 +46,7 @@ fn envelope_string(value: JsValue) -> String {
 
 #[wasm_bindgen_test]
 fn eip1271_payload_matches_native_rust() {
-    let order = pure::dto::OrderInput::from(wasm_order_input())
-        .to_unsigned_order()
-        .unwrap();
+    let order = wasm_order_input();
     let native = cow_sdk_signing::eip1271_signature_payload(&order, ECDSA_SIGNATURE).unwrap();
     let exported = envelope_string(
         eip1271_signature_payload_export(wasm_order_input(), ECDSA_SIGNATURE.to_owned()).unwrap(),

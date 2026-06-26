@@ -28,6 +28,7 @@ const FUNC_ALLOWLIST: &[&str] = &[
 const TYPE_ALLOWLIST: &[&str] = &[
     // Opaque wasm-bindgen newtypes — the DTO surface represents these as `string`.
     "Address",
+    "Amount",
     "AppDataHash",
     "Hash32",
     "HexData",

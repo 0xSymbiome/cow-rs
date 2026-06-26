@@ -28,6 +28,7 @@ use serde_json::Value;
 const STANDALONE_ALLOWLIST: &[&str] = &[
     // Opaque wasm-bindgen newtypes — the DTO surface represents these as `string`.
     "Address",
+    "Amount",
     "AppDataHash",
     "Hash32",
     "HexData",
@@ -39,7 +40,7 @@ const STANDALONE_ALLOWLIST: &[&str] = &[
     // Callback request shapes — reached through the callback type a consumer
     // implements, not through a direct export signature.
     "CowEip1271SignRequest",
-    "ContractCallDto",
+    "ContractCall",
     "CowFetchCallback",
     "CowFetchRequest",
     "CowFetchResponse",

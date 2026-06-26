@@ -3,7 +3,7 @@
 mod common;
 
 use cow_sdk_wasm::exports::{
-    AppDataDocInput, IpfsClient, OrderBookClient, SubgraphClient, TradingClient, app_data_doc,
+    AppDataParams, IpfsClient, OrderBookClient, SubgraphClient, TradingClient, app_data_doc,
     app_data_hex_to_cid, app_data_info, cid_to_app_data_hex, compute_order_uid,
     deployment_addresses, domain_separator, order_typed_data, supported_chain_ids,
     validate_app_data_doc, wasm_version,
@@ -157,7 +157,7 @@ fn app_data_validation_succeeds_for_canonical_doc() {
 
 #[wasm_bindgen_test]
 fn app_data_input_rejects_non_object_metadata() {
-    let input = AppDataDocInput {
+    let input = AppDataParams {
         app_code: "CoW Swap".to_owned(),
         metadata: Value::String("invalid".to_owned()),
         version: "0.7.0".to_owned(),
