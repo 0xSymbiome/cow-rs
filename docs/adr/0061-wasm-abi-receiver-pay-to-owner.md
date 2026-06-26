@@ -1,4 +1,4 @@
-# ADR 0061: WASM order-input receiver omission resolves to the pay-to-owner sentinel
+# ADR 0061: WASM order receiver omission resolves to the pay-to-owner sentinel
 
 - Status: Accepted
 - Date: 2026-05-31
@@ -9,23 +9,25 @@
 
 ## Decision
 
-At the WASM order-input boundary, an omitted `receiver` and an explicit
+At the WASM order boundary, an omitted `receiver` and an explicit
 zero-address `receiver` are not distinguished. Both resolve to the zero address,
 which CoW Protocol settlement defines as `RECEIVER_SAME_AS_OWNER` — the order
 proceeds are paid to the order owner. The boundary performs no
 receiver-to-owner reinterpretation: it never rewrites a concrete receiver to the
 owner, and it never collapses the owner into the receiver field.
 
-Concretely:
+The native `cow_sdk_core::OrderData` crosses the WASM ABI directly, so its
+`receiver` field carries this rule. Concretely:
 
-- Input: `OrderInput.receiver` is `Option<String>`. `None` resolves to the zero
-  address, and an explicit `"0x0000…0000"` parses to the same zero address, so
-  the two inputs construct an identical `OrderData` (and therefore an identical
-  EIP-712 struct hash and order UID).
-- Output: `OrderInput` produced from a native `OrderData` always carries a
-  concrete `receiver` string, because the native order receiver is a concrete
-  `Address` after [ADR 0059](0059-hash-concrete-orderdata-directly.md). A
-  pay-to-owner order therefore round-trips as the explicit zero address.
+- Input: `OrderData.receiver` is a concrete `Address` that omitting consumers may
+  leave out of the JSON payload, because it deserializes through
+  `#[serde(default = "default_order_receiver")]` to the zero address. An omitted
+  `receiver` and an explicit `"0x0000…0000"` therefore construct an identical
+  `OrderData` (and therefore an identical EIP-712 struct hash and order UID).
+- Output: an `OrderData` always serializes a concrete `receiver` string, because
+  the native order receiver is a concrete `Address` after
+  [ADR 0059](0059-hash-concrete-orderdata-directly.md). A pay-to-owner order
+  therefore round-trips as the explicit zero address.
 
 ## Why
 
@@ -44,8 +46,8 @@ signed struct, or from treating omission as an error.
 
 ## Must Remain True
 
-- Public surface: `OrderInput.receiver` stays `Option<String>`; omission is
-  valid input and means pay-to-owner.
+- Public surface: `OrderData.receiver` stays a concrete `Address` with a serde
+  default; omission from the wire payload is valid input and means pay-to-owner.
 - Runtime and support: an omitted receiver and an explicit zero receiver
   construct byte-identical `OrderData`, so they produce the same order UID and
   the same signature. The eth-flow native-currency path keeps its own narrower
@@ -73,7 +75,7 @@ signed struct, or from treating omission as an error.
 
 ## Links
 
-- [WASM order-input construction](../../crates/wasm/src/exports/dto/core.rs)
-- [Host-safe order-input mapping](../../crates/wasm/src/helpers/dto.rs)
+- [Native order receiver and its serde default](../../crates/core/src/types/order.rs)
+- [Host-safe order mapping](../../crates/wasm/src/helpers/dto.rs)
 - [ADR 0020](0020-ethflow-owner-threading.md)
 - [ADR 0059](0059-hash-concrete-orderdata-directly.md)

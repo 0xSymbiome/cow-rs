@@ -167,11 +167,18 @@ workspace `enum-policy.yaml` manifest classifies every public enum as
 `protocol-fixed-exhaustive`, `upstream-growing`, `sdk-local-state`, or
 `private-leak`; CI enforces the manifest. Public response DTOs preserve unknown
 fields under `serde` defaults so upstream additions remain backward-compatible.
-SDK-constructed response DTOs and EIP-712 protocol wire structs may carry
-`#[non_exhaustive]` so additive fields stay non-breaking, but caller-built
-request and configuration structs do not: they expose a `new()` plus `with_*()`
-builder, so additive fields land through the builder without blocking the
-literal construction and exhaustive matching those input types exist for.
+Public structs take one of three postures by role. SDK-produced output structs —
+response DTOs, decoded events, and recorded-call snapshots — carry
+`#[non_exhaustive]` so additive fields stay non-breaking for the consumers that
+only read them. Frozen wire and ABI structs whose field set is fixed by a
+deployed contract or a closed (`additionalProperties: false`) schema are
+exhaustive and literal-constructible, because adding a field there is a protocol
+or schema change rather than an SDK minor; this is the posture `OrderData`
+documents. Caller-built request and configuration structs are exhaustive and
+expose a `new()` plus `with_*()` builder, so additive fields land through the
+builder without blocking the literal construction and exhaustive matching those
+input types exist for; when such a struct mirrors a closed upstream schema it
+carries `deny_unknown_fields` to match it.
 Frozen public chain-RPC traits grow new primitives through opt-in capability
 supertraits (`SigningProvider`, `LogProvider`) rather than by silently widening
 the base trait. Adding `#[must_use]` and `# Errors` doc sections to

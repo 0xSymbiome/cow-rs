@@ -3,7 +3,7 @@
 Status: Current
 Last reviewed: 2026-06-22
 Owning surface: the `cow-sdk-wasm` TypeScript-callable crate, its npm package layout/exports, the JavaScript callback runtime boundary, DTO/type generation, schema-versioned envelopes, the size-budget gate, unsupported-target diagnostics, and the deterministic browser test runner.
-Refresh trigger: Changes to `crates/wasm/src/**`, exported DTOs or `tsify` usage, wasm-pack targets, declaration/facade snapshots, package export maps, callback shapes or registry ownership, the `JsCallbackHttpTransport` contract, transport-policy or error-envelope schema, release-profile size settings or measured budgets, native Alloy adapter `wasm32` guards, or the wasm-pack browser lanes.
+Refresh trigger: Changes to `crates/wasm/src/**`, the boundary DTO module or the source-crate `tsify` boundary derives, wasm-pack targets, declaration/facade snapshots, package export maps, callback shapes or registry ownership, the `JsCallbackHttpTransport` contract, transport-policy or error-envelope schema, release-profile size settings or measured budgets, native Alloy adapter `wasm32` guards, or the wasm-pack browser lanes.
 Related docs:
 - [ADR 0039](../adr/0039-typescript-callable-wasm-sdk-surface.md)
 - [ADR 0040](../adr/0040-wallet-provider-callback-boundary-for-js-consumers.md)
@@ -37,11 +37,11 @@ bundler behavior.
 | Surface layering | The four layers — deterministic helpers (host-safe in `cow-sdk-wasm::helpers`), wallet callbacks, service clients, trading — are present and contract-tested; wasm-bindgen exports own JS interop | Conforms |
 | Workflow + capability coverage | The ADR 0039 / `docs/parity.md` workflow set is exposed; every non-surfaced native capability is classified with a rationale | Conforms / Documented |
 | Runtime-model boundary | The wasm32 tree excludes native Alloy adapters, reqwest, and hyper; no Rust signer broadcasts and no provider polls | Conforms |
-| Shape correspondence | Native types/signatures map to the WASM DTO + TS surface through a fixed transform set; divergences beyond it are enumerated | Documented |
+| Shape correspondence | Native types/signatures map to the WASM + TS surface through a fixed transform set; divergences beyond it are enumerated | Documented |
 | Wallet/signer callbacks | Typed-data, digest, and custom EIP-1271 callbacks are named, explicit, capability-scoped, and fail closed | Conforms |
 | HTTP callback transport | `JsCallbackHttpTransport` owns timeout, abort signal, internal callback retention, and typed error mapping | Conforms |
 | Event decoding | `decodeSettlementLog` / `decodeEthFlowLog` produce typed events with no network access and fail closed on malformed input | Conforms |
-| Type generation + snapshots | Cross-ABI DTOs are `tsify`-generated; one raw snapshot per flavor catches drift and asserts per-target agreement; a facade-coverage contract holds the hand-written facade in step with the raw surface; map fields declare `Record<...>` to match the runtime shape | Conforms |
+| Type generation + snapshots | Types crossing the ABI carry a `tsify` boundary derive (native types in their source crate, boundary-only shapes in the wasm `dto` module); one raw snapshot per flavor catches drift and asserts per-target agreement; a facade-coverage contract holds the hand-written facade in step with the raw surface; map fields declare `Record<...>` to match the runtime shape | Conforms |
 | Facade + API stability | Public imports resolve through compiled facade modules; raw wasm-bindgen output is package-internal and denied as a public import target | Conforms |
 | Schema versioning | The success envelope carries `schemaVersion`; thrown errors do not (the error `__unknown` sentinel round-trips its `raw` payload un-versioned); the facade normalizes raw failures to a `CowError` | Conforms |
 | Error posture | The Rust `WasmError` projects to a `CowError` `Error` subclass (`instanceof`, exported `isCowError` / `normalizeError` / `isUserRejection` / `withRetry`) that preserves typed redaction; input-DTO deserialization failures map to `invalidInput`, not `internal`; the `orderbook` variant carries the services `errorType` tag, `retryable`, and optional `retryAfterMs` | Conforms |
@@ -129,9 +129,16 @@ not WASM-specific.
 
 ### Type generation and schema versioning
 
-Types crossing the ABI live in the `exports` module tree and derive their TS
-shape there via `tsify`; host-safe helpers in `cow-sdk-wasm::helpers` compile
-natively without wasm-bindgen, JsValue, or tsify-derived public types. The
+Types crossing the ABI derive their TS shape via `tsify`. Native types cross the
+boundary directly: each carries its own `tsify::Tsify` derive in its source
+crate, gated to the wasm-bindgen target (`target_arch = "wasm32"`, `target_os =
+"unknown"`), so the derive is inert on native and WASI builds and a single
+definition generates the `.d.ts`. The boundary shapes that have no native
+counterpart — the chain/deployment constructs, the app-data input shape, and the
+per-domain input and projection shapes — live in `crates/wasm/src/dto/`, outside
+the FFI-bearing `exports` tree, and the `exports` module re-exports them.
+Host-safe helpers in `cow-sdk-wasm::helpers` compile natively without
+wasm-bindgen, JsValue, or tsify-derived public types. The
 cross-ABI serializer is `serde_wasm_bindgen::Serializer::json_compatible`, which
 emits plain objects for Rust `BTreeMap`/`HashMap` fields, so those fields carry
 an explicit `#[tsify(type = "Record<...>")]` override so the declared shape
@@ -252,7 +259,7 @@ a live chain.
 
 A surfaced capability does not carry the native Rust shape unchanged. The public
 consumer surface is the committed facade snapshot, which re-exports the
-`tsify`-generated DTO types from the raw snapshot (raw wasm-bindgen output is
+`tsify`-generated boundary types from the raw snapshot (raw wasm-bindgen output is
 package-internal per ADR 0039). The fixed transforms: typestate builders →
 single typed config object; trait-generic capability injection → JS callbacks
 and `HttpTransportConfig`; typed input structs → camelCase input DTOs; typed
@@ -275,7 +282,7 @@ cardinality is reduced; `feeAmount` is structurally present for EIP-712
 struct-hash compatibility but services accepts only `"0"`; client instances
 require explicit release; and the native fluent `Trading::swap()` typestate
 builder has no TS counterpart (its `Set`/`Unset` typestate cannot cross the ABI
-and its safety is already provided by the named-field `SwapParametersInput` DTO —
+and its safety is already provided by the named-field `TradeParams` type —
 covered through `postSwapOrder`, `postSwapOrderFromQuote`, and `getQuote`).
 
 ### Runtime support and open questions
@@ -295,7 +302,7 @@ Primary implementation points:
 
 - `crates/wasm/src/helpers/`
 - `crates/wasm/src/exports/`
-- `crates/wasm/src/exports/dto/`
+- `crates/wasm/src/dto/`
 - `crates/wasm/src/exports/callbacks.rs`
 - `crates/wasm/src/exports/registry.rs`
 - `crates/wasm/src/exports/transport.rs`

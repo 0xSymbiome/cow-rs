@@ -16,7 +16,8 @@ Security-relevant public surfaces worth a reviewer's attention include:
   and its conservative positive-only caching semantics (only `Ok(())`
   magic-value matches are cached; every other outcome — including
   `Eip1271MagicValueMismatch`, transport, missing-contract-code, decode,
-  and provider failures — re-hits the chain)
+  and provider failures — re-hits the chain). The SDK ships only the
+  always-available no-op default; a memoizing cache is consumer-supplied
 - the `Redacted<T>` newtype applied to partner API keys, IPFS pinning
   credentials, transport base URLs, and other secret-adjacent inputs so
   debug, display, and serialized output of configuration types never

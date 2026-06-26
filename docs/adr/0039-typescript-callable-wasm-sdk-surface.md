@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-05-09
-- Last reviewed: 2026-06-20
+- Last reviewed: 2026-06-26
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: wasm, typescript, public-surface, additive-leaf-crates
 - Related: [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0038](0038-transaction-lifecycle-types.md), [ADR 0044](0044-bundle-size-profile-and-flavor-builds.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
@@ -130,6 +130,10 @@ this ADR does not blur:
     `category`, so a consumer can branch on the exact rejection without parsing
     the message. Only the sanitized tag crosses the boundary; the free-form
     services description never does.
+27. Consumer-facing boundary type names mirror the native Rust type they
+    project: no `Input` suffix is added where a native name exists, and
+    request shapes follow the upstream `…Params` / `…Request` convention. The
+    EIP-712 typed-data message type is exposed as `TypedDataMessage`.
 
 ## Alternatives Rejected
 

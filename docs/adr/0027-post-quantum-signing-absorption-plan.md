@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-04-27
-- Last reviewed: 2026-06-15
+- Last reviewed: 2026-06-25
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
 - Tags: signing, signatures, compatibility, eip1271, eip7212
 - Related: [ADR 0014](0014-eip1271-verification-cache.md), [ADR 0022](0022-ecdsa-signature-v-normalization.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
@@ -57,6 +57,7 @@ creating a breaking match exhaustiveness change for downstream code.
 
 ## Links
 
+- [Forward-compatible public surfaces principle](../principles.md#forward-compatible-public-surfaces) — the general enum and struct openness doctrine; this ADR instantiates it for signing.
 - [Parity scope source lock](../parity.md#source-lock)
 - [Parity scope surface boundaries](../parity.md#surface-matrix)
 - [Parity matrix signing and contract rows](../parity.md#surface-matrix)
