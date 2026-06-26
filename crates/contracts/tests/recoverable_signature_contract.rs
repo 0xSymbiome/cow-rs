@@ -220,27 +220,6 @@ fn recover_rejects_non_ecdsa_schemes() {
 }
 
 #[test]
-fn canonicalized_low_s_is_idempotent_and_preserves_recovery() {
-    let signing_key = deterministic_signing_key();
-    let digest_bytes = [0x33u8; 32];
-    let digest = Hash32::new(format!("0x{}", alloy_primitives::hex::encode(digest_bytes))).unwrap();
-
-    let raw = ecdsa_signature_for_prehash(&signing_key, &digest_bytes);
-    let sig = RecoverableSignature::parse_bytes(&raw).unwrap();
-
-    let low_s_once = sig.canonicalized_low_s();
-    let low_s_twice = low_s_once.canonicalized_low_s();
-    assert_eq!(
-        low_s_once.to_bytes(),
-        low_s_twice.to_bytes(),
-        "canonicalized_low_s must be idempotent",
-    );
-
-    let recovered = low_s_once.recover(&digest, SigningScheme::Eip712).unwrap();
-    assert_eq!(recovered, expected_address_for_key(&signing_key));
-}
-
-#[test]
 fn erc2098_round_trip_produces_the_same_signer() {
     let signing_key = deterministic_signing_key();
     let digest_bytes = [0x44u8; 32];

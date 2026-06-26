@@ -1,6 +1,8 @@
 use serde_json::{Map, Value, json};
 
-use cow_sdk_app_data::{AppDataParams, PartnerFee, app_data_info, generate_app_data_doc};
+use cow_sdk_app_data::{
+    AppDataParams, PartnerFee, QuoteMetadata, app_data_info, generate_app_data_doc,
+};
 use cow_sdk_core::AppCode;
 use cow_sdk_orderbook::OrderClass;
 
@@ -79,7 +81,11 @@ pub async fn build_app_data(
     advanced_params: Option<&AppDataParams>,
 ) -> Result<TradingAppDataInfo, TradingError> {
     let mut metadata = Map::new();
-    metadata.insert("quote".to_owned(), json!({ "slippageBips": slippage_bps }));
+    metadata.insert(
+        "quote".to_owned(),
+        serde_json::to_value(QuoteMetadata::new(slippage_bps)?)
+            .map_err(cow_sdk_app_data::AppDataError::from)?,
+    );
     metadata.insert(
         "orderClass".to_owned(),
         json!({ "orderClass": order_class }),

@@ -6,48 +6,6 @@ use cow_sdk_core::{Redacted, TransportErrorClass};
 
 use crate::conversion::rpc_error_to_class_and_detail;
 
-/// Coarse classification for [`AlloyClientError`].
-#[non_exhaustive]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum AlloyClientErrorClass {
-    /// Caller-controlled input failed validation.
-    Validation,
-    /// Transport or response decoding failed before a remote JSON-RPC error.
-    Transport,
-    /// The JSON-RPC peer returned a structured remote error.
-    Remote,
-    /// The upstream signing backend failed.
-    Signing,
-    /// Pending transaction registration or watch failed.
-    PendingTransaction,
-    /// The future was cancelled by a consumer-provided cancellation token.
-    Cancelled,
-    /// A local invariant or unsupported upstream path was reached.
-    Internal,
-}
-
-impl AlloyClientErrorClass {
-    /// Returns the stable lowercase class label.
-    #[must_use]
-    pub const fn as_str(self) -> &'static str {
-        match self {
-            Self::Validation => "validation",
-            Self::Transport => "transport",
-            Self::Remote => "remote",
-            Self::Signing => "signing",
-            Self::PendingTransaction => "pending_transaction",
-            Self::Cancelled => "cancelled",
-            Self::Internal => "internal",
-        }
-    }
-}
-
-impl fmt::Display for AlloyClientErrorClass {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.as_str())
-    }
-}
-
 /// Error returned by [`crate::AlloyClient`] and [`crate::AlloyClientSignerHandle`].
 ///
 /// `Validation` and `Internal` hold caller- or upstream-authored text behind
@@ -96,20 +54,6 @@ pub enum AlloyClientError {
 }
 
 impl AlloyClientError {
-    /// Returns this error's coarse class.
-    #[must_use]
-    pub const fn class(&self) -> AlloyClientErrorClass {
-        match self {
-            Self::Validation(_) => AlloyClientErrorClass::Validation,
-            Self::Transport { .. } => AlloyClientErrorClass::Transport,
-            Self::Remote { .. } => AlloyClientErrorClass::Remote,
-            Self::Signing { .. } => AlloyClientErrorClass::Signing,
-            Self::PendingTransaction { .. } => AlloyClientErrorClass::PendingTransaction,
-            Self::Cancelled => AlloyClientErrorClass::Cancelled,
-            Self::Internal(_) => AlloyClientErrorClass::Internal,
-        }
-    }
-
     /// Wraps caller-input detail in the redacted `Validation` arm.
     pub(crate) const fn validation(message: String) -> Self {
         Self::Validation(Redacted::new(message))
