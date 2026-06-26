@@ -39,7 +39,7 @@ export async function runBrowserSmoke() {
     chainIds: supportedChainIds(),
     cid,
     hash: cidToAppDataHex(cid).value,
-    domainSeparator: domainSeparator(1),
+    domainSeparator: domainSeparator(1).value,
     primaryType: typedData.primaryType,
     uid: uid.orderUid,
     version: wasmVersion()

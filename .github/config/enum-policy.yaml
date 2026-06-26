@@ -1,3 +1,14 @@
+# Workspace enum policy manifest.
+#
+# Classifies every public enum so the `xtask check-enum-policy` gate can hold one
+# invariant that code review cannot: protocol-fixed enums (for example the
+# keccak-encoded `OrderKind`) stay exhaustive, while services-controlled and
+# SDK-owned enums stay `#[non_exhaustive]` for forward compatibility. The markers
+# are the standard forward-compatibility idiom for public protocol and error
+# enums; this manifest is the ratchet that records the open or closed decision and
+# the rationale for each one and keeps them from drifting.
+#
+# Categories: protocol-fixed-exhaustive | upstream-growing | sdk-local-state | private-leak.
 version: 1
 enums:
   - name: CowError
@@ -100,11 +111,6 @@ enums:
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: Alloy client builder diagnostics can grow with additional checked-build validation.
-  - name: AlloyClientErrorClass
-    file: crates/alloy/src/error.rs
-    category: sdk-local-state
-    expected_marker: non_exhaustive
-    reason: Alloy client error classes can grow as provider and signer composition expands.
   - name: AlloyClientError
     file: crates/alloy/src/error.rs
     category: sdk-local-state
@@ -300,81 +306,21 @@ enums:
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: Partner fee policy variants can grow with upstream partner fee semantics.
-  - name: OrderKindDto
-    file: crates/wasm/src/helpers/dto.rs
-    category: protocol-fixed-exhaustive
-    expected_marker: exhaustive
-    reason: Pure helper order-kind DTO mirrors the fixed CoW order side wire values.
-  - name: TokenBalanceDto
-    file: crates/wasm/src/helpers/dto.rs
-    category: sdk-local-state
-    expected_marker: exhaustive
-    reason: Pure helper balance DTO accepts only the SDK-supported balance tags and maps unsupported buy paths to typed errors.
   - name: PureError
     file: crates/wasm/src/helpers/errors.rs
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: Pure helper diagnostics can grow as additional host-safe validation paths are added.
-  - name: OrderKindDto
-    file: crates/wasm/src/exports/dto/core.rs
-    category: protocol-fixed-exhaustive
-    expected_marker: exhaustive
-    reason: Wasm order-kind DTO mirrors the fixed CoW order side wire values.
-  - name: TokenBalanceDto
-    file: crates/wasm/src/exports/dto/core.rs
-    category: sdk-local-state
-    expected_marker: exhaustive
-    reason: Wasm balance DTO accepts only the SDK-supported balance tags exported to JavaScript callers.
   - name: LimiterScopeConfig
-    file: crates/wasm/src/exports/dto/transport.rs
+    file: crates/wasm/src/dto/transport.rs
     category: sdk-local-state
     expected_marker: exhaustive
     reason: Wasm limiter-scope config is a closed JavaScript override surface for the currently supported SDK buckets.
   - name: JitterStrategyConfig
-    file: crates/wasm/src/exports/dto/transport.rs
+    file: crates/wasm/src/dto/transport.rs
     category: sdk-local-state
     expected_marker: exhaustive
     reason: Wasm jitter config is a closed JavaScript override surface for the currently supported SDK retry strategies.
-  - name: PartnerFeeInput
-    file: crates/wasm/src/exports/dto/trading.rs
-    category: sdk-local-state
-    expected_marker: exhaustive
-    reason: Wasm partner-fee input accepts the SDK-owned single-or-multiple shapes currently supported by trading helpers.
-  - name: SigningSchemeDto
-    file: crates/wasm/src/exports/dto/orderbook.rs
-    category: upstream-growing
-    expected_marker: non_exhaustive
-    reason: Wasm mirror of the orderbook SigningScheme; non_exhaustive matches the native enum that future protocol signing schemes can grow.
-  - name: CompetitionOrderStatusKindDto
-    file: crates/wasm/src/exports/dto/orderbook.rs
-    category: upstream-growing
-    expected_marker: non_exhaustive
-    reason: Wasm mirror of the orderbook CompetitionOrderStatusKind; non_exhaustive matches the native enum whose competition status tags upstream auction services can grow.
-  - name: OrderClassDto
-    file: crates/wasm/src/exports/dto/order.rs
-    category: upstream-growing
-    expected_marker: non_exhaustive
-    reason: Wasm mirror of the orderbook OrderClass read enum; non_exhaustive matches the native enum that future order classes can grow.
-  - name: OrderStatusDto
-    file: crates/wasm/src/exports/dto/order.rs
-    category: upstream-growing
-    expected_marker: non_exhaustive
-    reason: Wasm mirror of the orderbook OrderStatus read enum; non_exhaustive matches the native enum that future lifecycle states can grow.
-  - name: CowEnvDto
-    file: crates/wasm/src/exports/dto/quote.rs
-    category: upstream-growing
-    expected_marker: non_exhaustive
-    reason: Wasm mirror of the CoW environment enum embedded in quote results; non_exhaustive matches the native CowEnv that future deployment environments can grow.
-  - name: PartnerFeePolicyDto
-    file: crates/wasm/src/exports/dto/quote.rs
-    category: upstream-growing
-    expected_marker: non_exhaustive
-    reason: Wasm mirror of the partner-fee policy enum embedded in quote results; non_exhaustive matches the native PartnerFeePolicy that future fee-policy shapes can grow.
-  - name: PartnerFeeDto
-    file: crates/wasm/src/exports/dto/quote.rs
-    category: upstream-growing
-    expected_marker: non_exhaustive
-    reason: Wasm mirror of the single-or-multiple partner-fee enum embedded in quote results; non_exhaustive matches the native PartnerFee that future fee shapes can grow.
   - name: SchemaVersion
     file: crates/wasm/src/exports/envelope.rs
     category: sdk-local-state
@@ -395,13 +341,13 @@ enums:
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: Published test-double orderbook failure kinds; non_exhaustive keeps new injectable failures additive for downstream consumers.
-  - name: SettlementEventDto
-    file: crates/wasm/src/exports/dto/events.rs
+  - name: SettlementEvent
+    file: crates/wasm/src/dto/events.rs
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: Wasm settlement-event DTO mirrors the GPv2Settlement on-chain event family, which can grow as the protocol adds settlement events.
-  - name: EthFlowEventDto
-    file: crates/wasm/src/exports/dto/events.rs
+  - name: EthFlowEvent
+    file: crates/wasm/src/dto/events.rs
     category: upstream-growing
     expected_marker: non_exhaustive
     reason: Wasm eth-flow event DTO mirrors the eth-flow on-chain order lifecycle event family, which can grow as the protocol adds events.

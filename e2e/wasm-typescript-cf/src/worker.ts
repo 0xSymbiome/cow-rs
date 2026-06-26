@@ -3,11 +3,11 @@ import initialize, {
   computeOrderUid,
   supportedChainIds,
   wasmVersion,
-  type OrderInput
+  type OrderData
 } from "cow-sdk-wasm-test-package/trading/edge";
 import wasmModule from "cow-sdk-wasm-test-package/trading/edge/wasm";
 
-const ORDER: OrderInput = {
+const ORDER: OrderData = {
   sellToken: "0x1111111111111111111111111111111111111111",
   buyToken: "0x2222222222222222222222222222222222222222",
   receiver: "0x4444444444444444444444444444444444444444",

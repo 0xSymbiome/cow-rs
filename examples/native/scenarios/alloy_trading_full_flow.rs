@@ -12,7 +12,8 @@ use std::error::Error;
 
 use cow_sdk::alloy::AlloyClient;
 use cow_sdk::core::{
-    Amount, CowEnv, SigningProvider, SupportedChainId, TransactionHash, TransactionStatus,
+    Amount, CowEnv, SigningProvider, SupportedChainId, TransactionHash, TransactionRequest,
+    TransactionStatus,
 };
 use cow_sdk::trading::{
     AllowanceParams, ApprovalParams, OrderTraderParams, Trading, WaitOptions, approval_transaction,
@@ -70,7 +71,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     //    resolves the chain's canonical wrapped-native address and builds the
     //    `deposit()` transaction; the submit-and-wait helper estimates gas through
     //    the signer backend.
-    let wrap_tx = wrap_transaction(SupportedChainId::Mainnet, Amount::new("1000")?);
+    let wrap_tx: TransactionRequest =
+        wrap_transaction(SupportedChainId::Mainnet, Amount::new("1000")?).into();
     let wrap_receipt =
         submit_and_wait_for_receipt(&signer, &client, &wrap_tx, WaitOptions::approve_default())
             .await?;

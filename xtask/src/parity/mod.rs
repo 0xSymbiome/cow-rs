@@ -299,6 +299,12 @@ fn validate_fixture_consumers(source_lock: &Path) -> Result<()> {
     let parity = parity_root(source_lock);
     let repo_root = parity.parent().unwrap_or_else(|| Path::new("."));
 
+    // The orphan-consumer rule only applies against a real repository checkout;
+    // a synthetic lock outside the workspace has no `crates/` corpus to scan.
+    if !repo_root.join("crates").is_dir() {
+        return Ok(());
+    }
+
     let mut sources = String::new();
     for dir in [
         repo_root.join("crates"),
