@@ -80,11 +80,11 @@ omitted).
 | `cow-sdk-alloy` | Composed native Alloy provider plus signer adapter | You need one native client for `Provider`, `LogProvider`, `SigningProvider`, and `Signer` helper flows. |
 | `cow-sdk-test` | Published in-memory test doubles for the public trait seams (`OrderbookClient`, `Signer`, `Provider`/`SigningProvider`), surfaced through the facade `testing` feature as `cow_sdk::testing` | You want to test your integration with no live orderbook, RPC, or wallet (a dev-dependency). |
 
-The composable-order capability is deferred and recorded only by
-[ADR 0048](adr/0048-composable-conditional-order-framework.md). No
-`cow-sdk-composable` crate ships in the workspace, while the shared
-deployment `Registry` already resolves composable contract addresses so the
-capability can land additively without disturbing the registry authority.
+The composable-order capability ships as the off-by-default `composable`
+feature-module of `cow-sdk-contracts` (no separate crate, per
+[ADR 0048](adr/0048-composable-conditional-order-framework.md)), while the shared
+deployment `Registry` resolves composable contract addresses so the capability
+rests on the existing registry authority.
 
 Client type names follow the crate's role: the transport clients carry the `Api`
 suffix (`OrderbookApi`, `SubgraphApi`) because they wrap a REST or GraphQL API,

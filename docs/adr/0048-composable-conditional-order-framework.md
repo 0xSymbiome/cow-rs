@@ -1,184 +1,189 @@
 # ADR 0048: Composable Conditional Order Framework
 
-- Status: Proposed (deferred — not yet rooted in the workspace)
+- Status: Accepted (TWAP shipped in `cow-sdk-contracts`; broader handler taxonomy deferred)
 - Date: 2026-05-15
-- Last reviewed: 2026-06-15
+- Last reviewed: 2026-06-26
 - Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: composable, conditional-orders, off-chain-orchestration, watch-tower-boundary
-- Related: [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0049](0049-cow-shed-account-abstraction-proxy.md), [ADR 0050](0050-eip1271-signature-blob-encoding.md), [ADR 0051](0051-signing-owned-eip1271-signature-provider-trait.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+- Tags: composable, conditional-orders, twap, off-chain-orchestration, watch-tower-boundary
+- Related: [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0049](0049-cow-shed-account-abstraction-proxy.md), [ADR 0050](0050-eip1271-signature-blob-encoding.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md), [ADR 0054](0054-onchain-order-event-decoding-is-fail-closed.md), [ADR 0070](0070-onchain-transaction-helper-boundary.md)
 
-> **Deferred capability — not shipped.** `cow-sdk-composable` is **not** a
-> workspace member and is in no release; there is no `composable` facade feature
-> and no composable CI invariant today. This ADR records the *planned* design and
-> watch-tower boundary so the capability lands consistently when it is built —
-> every present-tense claim below describes the intended shape, not shipped code.
+> **Shipped surface.** The TWAP slice of the composable framework ships as the
+> off-by-default `composable` feature-module in `cow-sdk-contracts`
+> (`cow_sdk_contracts::composable`), re-exported through the `cow-sdk` facade's
+> `composable` feature. It is a pure encoding, hashing, and schedule-classifying
+> surface — no provider, no loop. The broader handler taxonomy and the watcher
+> discovery primitives remain deferred; the sections below mark what is shipped
+> and what is not.
 
 ## Context
 
 The CoW Protocol composable-order surface defines a conditional-order framework
-on top of the `ComposableCoW` registry contract. Conditional orders are
-not posted by the user at trade time; instead, the user pre-authorizes a
-conditional-order handler (TWAP, GoodAfterTime, StopLoss,
-TradeAboveThreshold, PerpetualStableSwap, or a custom handler), and an
-off-chain watcher polls the on-chain framework to discover when the next
-constituent order becomes tradeable. Production deployments rely on a
-cowprotocol-operated watcher service for discovery and orderbook posting.
+on top of the `ComposableCoW` registry contract. Conditional orders are not
+posted by the user at trade time; instead, the user pre-authorizes a
+conditional-order handler (TWAP, GoodAfterTime, StopLoss, TradeAboveThreshold,
+PerpetualStableSwap, or a custom handler), and an off-chain watcher discovers
+when the next constituent order becomes tradeable and posts it. Production
+deployments rely on a cowprotocol-operated watcher service for discovery and
+orderbook posting.
 
 A Rust SDK for composable orders has two natural shapes that must be kept
-separate. The first is a library of typed encoders, decoders, custom-error
-selector constants, single-call provider operations, and an offline simulator —
-primitives that any consumer can compose into their own watcher. The second is
-a production watcher service that maintains block subscriptions, persistent
-registry storage, retry timers, notification systems, and automatic order
-posting credentials. Shipping the second inside the SDK turns the library into
-a service and absorbs operational concerns that belong to the cowprotocol-
-operated watcher or to consumers who build a self-hosted watcher on top of the
-primitives.
+separate. The first is a library of typed encoders, hashes, a merkle helper, and
+a pure schedule classifier — primitives any consumer composes into their own
+watcher. The second is a production watcher service that maintains block
+subscriptions, persistent registry storage, retry timers, notification systems,
+and automatic order posting credentials. Shipping the second inside the SDK
+turns the library into a service and absorbs operational concerns that belong to
+the cowprotocol-operated watcher or to a consumer who builds a self-hosted
+watcher on top of the primitives.
 
-The composable surface also intersects the COW Shed account-abstraction proxy
-(see [ADR 0049](0049-cow-shed-account-abstraction-proxy.md)) and the EIP-1271
-signature blob encoders (see [ADR 0050](0050-eip1271-signature-blob-encoding.md)).
-Those decisions are coupled because composable conditional orders are
-EIP-1271-authenticated through the registered handler, and the COW Shed
-account-abstraction proxy is a separately deployed forwarder that the
-composable framework can target on Gnosis Chain only.
+The owner of a conditional order is a smart-contract account that authenticates
+through EIP-1271 (a Safe with the `ExtensibleFallbackHandler`, or a custom
+forwarder), never an externally owned account. The composable surface therefore
+intersects the EIP-1271 signature encoders (see
+[ADR 0050](0050-eip1271-signature-blob-encoding.md)); the COW Shed
+account-abstraction proxy (see [ADR 0049](0049-cow-shed-account-abstraction-proxy.md))
+is a separately deployed forwarder the framework can target on Gnosis Chain.
 
 ## Decision
 
-`cow-sdk-composable` is an additive leaf crate per [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md). The crate is
-opt-in behind the facade-level `composable` feature and is never on the
-default `cow-sdk` dependency closure. The crate's public surface is bound by
-the watch-tower boundary stated below.
+Composable ships as the off-by-default `composable` feature on
+`cow-sdk-contracts`, surfaced under `cow_sdk_contracts::composable` and
+re-exported through the `cow-sdk` facade's `composable` feature. It is **not** a
+separate `cow-sdk-composable` crate — this reverses the earlier separate-crate
+plan.
+
+The shipped surface is TWAP encoding, identity, a merkle multiplexer, and a pure
+schedule classifier: a pure-transform peer to the eth-flow encoders, which
+already live in `cow-sdk-contracts`. A separate crate would duplicate the
+`sol!` bindings, the primitive seam, and the transaction-helper boundary for a
+surface that is, today, contract call-data construction. Hosting it as a
+feature-module mirrors `cow_shed` (also an off-by-default feature-module in
+`cow-sdk-contracts`) and keeps the dependency graph additive without a new crate.
+
+The bindings are authored inline as `alloy::sol!` against the on-chain
+`ComposableCoW` / TWAP Solidity surface, pinned by commit in
+`parity/source-lock.yaml`.
 
 ### Watch-Tower Boundary
 
-The watch-tower boundary is binding. `cow-sdk-composable` DOES expose:
+The watch-tower boundary is binding. `cow_sdk_contracts::composable` DOES expose:
 
-- custom-error selector constants for the five conditional-order poll outcomes
-  plus the seven Rust-side decode, validation, and provider errors of the
-  `PollResult` taxonomy;
-- ABI decode helpers for those poll errors;
-- the `#[non_exhaustive]` `PollResult` classification enum;
-- selectors and pure offline encoders and decoders for
-  `ConditionalOrderParams`, `GPv2Order.Data`, signature blobs (per
-  [ADR 0050](0050-eip1271-signature-blob-encoding.md)), and merkle leaves;
-- the single-call `ComposableCowApi::poll_async` over an injected
-  `Provider` (one `eth_call` per invocation);
-- `event_scan_async` as a single-call provider operation over a
-  caller-bounded block range (one `eth_getLogs` per invocation);
-- the local poll simulator `local_poll_async` that replays a `PollResult`
-  from a captured `(owner, params, offchainInput, proof, block_state)` tuple
-  without any RPC; and
-- the reference watcher example crate (out of the published library) showing
-  how an external service composes these primitives into a watcher.
+- the typed `ConditionalOrderParams` and `conditional_order_id`, byte-identical
+  to the on-chain `ComposableCoW.hash(params)` (`keccak256(abi.encode(params))`);
+- the `create` / `createWithContext` / `remove` call-data encoders;
+- the `TwapData` builder, the validated per-part `TwapStaticInput` (the 320-byte
+  handler input), and the `twap_create_transaction` / `twap_remove_transaction`
+  gas-free `UnsignedTransaction` builders (per
+  [ADR 0070](0070-onchain-transaction-helper-boundary.md)), where
+  `twap_create_transaction` routes start-at-mining-time orders through
+  `createWithContext` and start-at-epoch orders through `create`;
+- the hand-rolled `Multiplexer` merkle helper, `merkle_leaf`, and
+  `verify_merkle_proof` over an order's params, for the `setRoot` batch path; and
+- the pure `TwapStaticInput::timing_at` classifier returning `TwapTiming`, which
+  mirrors `TWAPOrderMathLib.calculateValidTo` — it selects the live discrete part
+  from a TWAP's schedule with no RPC.
 
-`cow-sdk-composable` DOES NOT expose:
+`cow_sdk_contracts::composable` DOES NOT expose (now or under any feature):
 
-- service loops;
-- persistence adapters (no Redis, no Postgres, no on-disk registry);
-- notification or alerting systems;
-- automatic order posting (the published `OrderbookExt::post_composable_order`
-  is a blanket-impl helper that wraps the existing
-  `OrderbookClient::send_order` and the caller controls when to invoke it);
-- global retry cadence policy as default behavior;
-- chain event indexing beyond the single-call `event_scan_async`;
-- production watch-tower state machines; or
-- any `tokio::spawn`, `wasm_bindgen_futures::spawn_local`, or background task.
+- a revert decoder or poll-error selector constants. The TWAP handler reverts
+  with a generic `IConditionalOrder.OrderNotValid(string)` carrying no epoch, and
+  the `Provider` seam collapses a revert to an opaque error — there is nothing for
+  a decoder to read, so discovery timing is read from the schedule instead;
+- a provider-consuming `poll` or `event_scan` wrapper. Discovery reads
+  (`cabinet`, `getTradeableOrderWithSignature`) are ordinary `read_contract`
+  calls a consumer composes with `timing_at` through their own `Provider`/RPC;
+- service loops, persistence adapters, notification systems, automatic order
+  posting, a global retry cadence, chain event indexing, or any background task
+  (`tokio::spawn` / `wasm_bindgen_futures::spawn_local`).
 
-The cowprotocol-operated watcher remains canonical for production discovery
-and orderbook posting. Consumers who want a self-hosted watcher build it from
-the crate's primitives inside their own runtime; the reference example crate
-is documentation, not a published library.
+The cowprotocol-operated watcher remains canonical for production discovery and
+orderbook posting. A consumer who wants a self-hosted watcher composes it from
+`timing_at`, their own reads, and the existing `OrderbookClient::send_order`.
 
 ### Ergonomic Surface
 
-Five first-release conditional-order types ship as typed builders with
-typestate-enforced required-field discipline: `Twap`, `GoodAfterTime`,
-`StopLoss`, `TradeAboveThreshold`, and `PerpetualStableSwap`. Each builder
-runs pre-flight validation that mirrors the Solidity revert sites of the
-corresponding handler contract; the typed errors form the `ComposableError`
-enum.
+TWAP ships first as a typed builder with build-time validation that mirrors the
+Solidity revert sites of the TWAP handler, plus divisibility guards so totals are
+never silently floored; the typed errors form `TwapValidationError`. The other
+handler types (GoodAfterTime, StopLoss, TradeAboveThreshold, PerpetualStableSwap,
+custom) are deferred to demand and land additively under the same module and
+boundary.
 
-The `Multiplexer` merkle helper uses OpenZeppelin double-hashed leaves and
-sorted-pair internal nodes. Params hashing uses `abi.encode` (never
-`abi.encodePacked`). Twelve custom-error selectors are byte-identical to
-`forge methodIdentifiers` output. EIP-1271 dual blob encoders cover Shape A
-(Safe-muxer with `safeSignature(...)` selector prefix) and Shape B (raw
-`ERC1271Forwarder` order + payload tuple) per
-[ADR 0050](0050-eip1271-signature-blob-encoding.md).
-
-### Crate-Graph Invariants
-
-`cow-sdk-composable` depends on `cow-sdk-core`, `cow-sdk-contracts`,
-`cow-sdk-signing`, and `cow-sdk-orderbook`. It MUST
-NOT depend on `cow-sdk-trading`, `alloy-provider`, or `alloy-signer`. The
-negative-edge invariants `cow-sdk-composable ⇏ cow-sdk-trading` and
-`cow-sdk-composable ⇏ alloy-provider` must be asserted via `cargo metadata` and
-the workspace dependency-invariant checks when the crate lands (no such check
-exists today — the dependency-invariant policy currently covers only the alloy
-adapters). An optional
-`composable-with-cow-shed` feature lifts a non-default dependency on
-`cow-sdk-contracts` for the narrow Gnosis-only `COWShedForComposableCoW`
-forwarder flow; that forwarder belongs to the cow-shed v2.x generation, so the
-composable crate binds it itself when this capability lands (the deployed
-v1.0.x cow-shed surface in `cow-sdk-contracts` carries no forwarder binding —
-ADR 0049, 2026-06-12 amendment).
+The `Multiplexer` merkle helper is hand-rolled: double-hashed leaves
+(`keccak256(keccak256(abi.encode(params)))`, the form `ComposableCoW._auth`
+checks) and sorted-pair keccak internal nodes, matching the on-chain
+`OpenZeppelin MerkleProof.verify`. Params hashing uses `abi.encode` of the
+params struct — carrying Solidity's dynamic-struct offset, the form the contract
+hashes — never `abi.encodePacked` or a bare field tuple.
 
 ## Why
 
 A library that silently embeds a watch-tower loop becomes a service: it owns
-block subscriptions, persistent registry storage, retry timers, and orderbook
-credentials. The composable strategy ships typed encoders, on-chain reads, and
-a local simulator — primitives that compose into a watcher when the consumer
+block subscriptions, persistent storage, retry timers, and orderbook
+credentials. This module ships typed encoders, a merkle helper, and a pure
+schedule classifier — primitives that compose into a watcher when the consumer
 chooses, but never a watcher by default. The DOES / DOES NOT lists make the
-boundary concrete: reviewers can cite the list rather than reasoning from
-first principles each time a new feature lands.
+boundary concrete: reviewers cite the list rather than reasoning from first
+principles each time a feature lands.
 
-The off-chain orchestration boundary is also a portability boundary. The
-composable crate is runtime-neutral per [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md);
-embedding `tokio::spawn` or `wasm_bindgen_futures::spawn_local` would tie the
-crate to a runtime and break the wasm32 target.
+Reading discovery timing from the schedule is forced by the contract and the
+transport seam: the handler reverts with a hint-free `OrderNotValid`, and the
+`Provider` trait does not surface revert bytes. `timing_at` reproduces the
+handler's own `calculateValidTo` arithmetic, so a consumer answers "which part is
+live now, and when is the next one" without an RPC, and reads only to fetch the
+order to post.
 
-The negative-edge invariant against `cow-sdk-trading` keeps the dependency
-graph additive per [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md):
-composable is a peer leaf to trading, not a layer above or below it. The
-invariant prevents a future change from making composable a transitive
-dependency of every facade consumer.
+Hosting composable as a feature-module rather than a crate keeps the surface a
+peer to the other `cow-sdk-contracts` encoders (eth-flow, settlement, cow-shed)
+without a new crate boundary, and keeps it runtime-neutral per
+[ADR 0010](0010-runtime-neutral-async-and-transport-posture.md): no `Provider`,
+no runtime, so the module builds on every target including wasm32.
 
 ## Must Remain True
 
-- Public surface: every item in the DOES list is reachable behind the
-  facade-level `composable` feature; no item in the DOES NOT list is reachable
-  at any feature combination.
-- Runtime and support: no `tokio::spawn` site, no `wasm_bindgen_futures::spawn_local`
-  site, no `start()` or `run_forever()` method, no `Storage` trait
-  implementation, no Slack / Discord / email / webhook hook, and no internal
-  call to `OrderbookClient::create_order` may appear in `cow-sdk-composable`.
-- Crate graph: when the crate lands, `cargo metadata` must prove
-  `cow-sdk-composable ⇏ cow-sdk-trading` and
-  `cow-sdk-composable ⇏ alloy-provider` (default features), and the
-  reverse-edge guard `cow-sdk-orderbook ⇏ cow-sdk-composable` must hold.
-- Cost: any future PR that adds a service loop, a persistence adapter, a
-  notification system, an automatic order poster, a global retry cadence, a
-  chain event indexer beyond `event_scan_async`, or any background task into
-  `cow-sdk-composable` violates this ADR and must be rejected at review.
+- Public surface: the items in the DOES list are reachable behind the
+  `composable` feature; no item in the DOES NOT list is reachable at any feature
+  combination.
+- No runtime or service: no `tokio::spawn`, no `wasm_bindgen_futures::spawn_local`,
+  no `start()` / `run_forever()`, no persistence trait, no notification hook, and
+  no internal orderbook write may appear in the module.
+- Contract fidelity: `conditional_order_id` equals the on-chain
+  `ComposableCoW.hash`; the merkle root and proofs verify under the on-chain
+  sorted-pair double-hashed algorithm; `TwapStaticInput` matches the upstream
+  `TWAPOrder.Data` field order as a 320-byte static input; `timing_at` matches
+  `TWAPOrderMathLib.calculateValidTo`. Each is bound to the pinned
+  `source_commit` in `parity/source-lock.yaml`, and tracked by `PROP-CON-026`.
+- Pinned binding: the module binds only the contract pinned in
+  `parity/source-lock.yaml`, confirmed on-chain per the deployment-authority rule.
 
 ## Alternatives Rejected
 
-- Embed a production watcher service inside `cow-sdk-composable`: this would
-  absorb operational concerns (persistence, notifications, retry cadence,
-  orderbook credentials) that belong to the cowprotocol-operated watcher or
-  to consumers building a self-hosted watcher.
-- Surface only `local_poll_async` and omit `poll_async`: the offline simulator
-  alone cannot answer "is this order tradeable now"; consumers would still
-  need a single-call probe. Splitting the answer into two crates removes a
-  coherent boundary.
-- Merge `cow-sdk-composable` into `cow-sdk-trading`: this would force every
-  trading-facade consumer to depend transitively on composable encoders and
-  break the additive-leaf-crates discipline.
-- Ship without typed pre-flight validation: validation errors would surface
-  only as Solidity reverts at simulation time, losing the ergonomic
-  builder-time feedback that distinguishes Rust-over-TS.
+- A separate `cow-sdk-composable` crate: for a TWAP-encoding surface this
+  duplicates the binding and primitive stack of `cow-sdk-contracts` and adds a
+  crate boundary with no isolation benefit; the feature-module is the lean peer
+  to eth-flow and cow-shed.
+- An SDK-side revert decoder: the handler emits a hint-free `OrderNotValid` and
+  the `Provider` seam yields no revert bytes, so the decoder would have no input.
+- A provider-consuming `poll` wrapper: the pure `timing_at` plus the consumer's
+  own reads compose the same answer while keeping the module provider-free and
+  runtime-neutral, matching the pure-pieces-plus-consumer-fetch posture of
+  [ADR 0054](0054-onchain-order-event-decoding-is-fail-closed.md).
+- Shipping without build-time validation: validation errors would surface only
+  as Solidity reverts at simulation time, losing the builder-time feedback that
+  distinguishes the Rust surface.
+- A maintained merkle crate (`rs_merkle` or similar) for the `Multiplexer`: a
+  generic merkle crate pairs siblings in fixed index order and carries a lone odd
+  node up unchanged, so its proofs do not fold under `OpenZeppelin`'s sorted-pair
+  `MerkleProof.verify`; a custom hasher recovers the pairing but not the odd-node
+  handling, so any non-power-of-2 batch fails on-chain. No Rust crate implements
+  the contract's verifier, so the helper is hand-rolled (no dependency).
+- Building the tree as `@openzeppelin/merkle-tree`'s `StandardMerkleTree` (the
+  shape the TypeScript SDK uses): `StandardMerkleTree` ABI-encodes the leaf as a
+  bare `(address, bytes32, bytes)` tuple, but `ComposableCoW.hash` encodes the
+  `ConditionalOrderParams` struct, which Solidity prepends with the dynamic-struct
+  `0x20` offset. The two leaves differ, so a `StandardMerkleTree` root does not
+  authenticate on-chain. The hand-rolled tree uses the contract's struct-encoded
+  leaf, pinned to it by a golden-vector test against an independent ABI encoding.
 
 ## Links
 
@@ -186,23 +191,5 @@ dependency of every facade consumer.
 - [Principles](../principles.md)
 - [ADR 0049](0049-cow-shed-account-abstraction-proxy.md)
 - [ADR 0050](0050-eip1271-signature-blob-encoding.md)
-- [ADR 0051](0051-signing-owned-eip1271-signature-provider-trait.md)
-
-## Deferred primitive-layer binding
-
-The `cow-sdk-composable` crate is not yet rooted in the workspace
-members list and is deferred to a later capability landing. The
-prescribed shape above anchors to the canonical primitive layer per
-[ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md). When
-the crate lands per the watch-tower boundary above, the
-`#[non_exhaustive]` `PollResult` classification enum sources its
-custom-error selector constants from `alloy_sol_types::SolError::SELECTOR`
-and routes poll-error decoding through `alloy_sol_types::SolInterface`;
-the `Multiplexer` merkle helper routes through
-`rs_merkle::MerkleTree` with an `OzSortedPairKeccakHasher` wrapper that
-preserves the OpenZeppelin double-hashed leaves and sorted-pair
-internal-node contract; params hashing through
-`alloy_sol_types::SolValue::abi_encode` matches `abi.encode(...)`
-byte-for-byte; and the byte-typed identity parameters flowing through
-the composable encoders resolve through the cow-owned
-`#[repr(transparent)]` newtypes per ADR 0052.
+- [ADR 0054](0054-onchain-order-event-decoding-is-fail-closed.md)
+- [ADR 0070](0070-onchain-transaction-helper-boundary.md)

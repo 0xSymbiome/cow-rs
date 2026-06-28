@@ -421,3 +421,28 @@ enums:
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: Rate-limiter bucket selectors can grow as additional request-routing scopes are added.
+  - name: TwapStartTime
+    file: crates/contracts/src/composable/twap.rs
+    category: protocol-fixed-exhaustive
+    expected_marker: exhaustive
+    reason: The handler reads exactly two TWAP start forms — a mining-time start (t0 = 0, filled by the value factory) or an explicit epoch.
+  - name: TwapDurationOfPart
+    file: crates/contracts/src/composable/twap.rs
+    category: protocol-fixed-exhaustive
+    expected_marker: exhaustive
+    reason: The on-chain span field has two forms only — the whole interval (span 0) or a limited window at the interval start (span > 0).
+  - name: TwapTiming
+    file: crates/contracts/src/composable/twap.rs
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: The schedule classification can grow, for example to model the intra-interval span gap as its own state.
+  - name: TwapValidationError
+    file: crates/contracts/src/composable/twap.rs
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: TWAP build-time validation can grow as new handler revert sites and divisibility guards are mirrored.
+  - name: MultiplexerError
+    file: crates/contracts/src/composable/multiplexer.rs
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: The merkle multiplexer construction and proof-generation failure modes can grow.

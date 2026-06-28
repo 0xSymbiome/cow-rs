@@ -152,6 +152,36 @@ pub fn app_data_info(doc: AppDataParams) -> Result<JsValue, JsValue> {
     to_js_value(&WasmEnvelope::v1(info))
 }
 
+/// Builds app-data with the SDK's standard metadata and returns its hash and content.
+///
+/// This is the high-level counterpart to [`app_data_info`]: it stamps the quote
+/// slippage, the given order class, and — unless a caller later overrides it via the
+/// low-level path — the default SDK UTM attribution, exactly as the swap/limit flows
+/// attach automatically. `orderClass` is the app-data order class (`market`, `limit`,
+/// `liquidity`, or `twap`), distinct from the order-book order class.
+///
+/// @param appCode The dApp's app code.
+/// @param slippageBps Slippage tolerance in basis points, recorded in `metadata.quote`.
+/// @param orderClass App-data order class: `market`, `limit`, `liquidity`, or `twap`.
+/// @returns A versioned envelope containing document, hash, CID, and hex data.
+/// @throws CowError when the document cannot be built or hashed.
+#[cfg(feature = "trading")]
+#[wasm_bindgen(
+    js_name = "buildAppData",
+    unchecked_return_type = "WasmEnvelope<AppDataInfo>"
+)]
+pub fn build_app_data(
+    #[wasm_bindgen(js_name = appCode)] app_code: String,
+    #[wasm_bindgen(js_name = slippageBps)] slippage_bps: u32,
+    #[wasm_bindgen(js_name = orderClass)] order_class: String,
+) -> Result<JsValue, JsValue> {
+    let code = cow_sdk_core::AppCode::new(app_code).map_js()?;
+    let built = cow_sdk_trading::build_app_data_doc(&code, slippage_bps, &order_class, None, None)
+        .map_js()?;
+    let info: AppDataInfo = pure::app_data::app_data_info(&built.doc).map_js()?;
+    to_js_value(&WasmEnvelope::v1(info))
+}
+
 /// Validates an app-data document against the typed metadata contract.
 ///
 /// Validation is local and deterministic. The result reports whether the

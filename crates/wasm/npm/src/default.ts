@@ -529,6 +529,27 @@ export function appDataInfo(doc: raw.AppDataParams): WasmEnvelope<raw.AppDataInf
   return callSync(() => raw.appDataInfo(doc));
 }
 
+/**
+ * The app-data order class. Distinct from the order-book order class — it carries
+ * the additional `twap` value used by composable orders.
+ */
+export type AppDataOrderClass = "market" | "limit" | "liquidity" | "twap";
+
+/**
+ * Builds app-data with the SDK's standard metadata — quote slippage, the given
+ * order class, and (unless overridden) the default SDK UTM attribution — and
+ * returns its hash and content. The high-level counterpart to {@link appDataInfo},
+ * matching what the swap and limit flows attach automatically; pass
+ * `orderClass: "twap"` for a composable TWAP order.
+ */
+export function buildAppData(params: {
+  appCode: string;
+  slippageBps: number;
+  orderClass: AppDataOrderClass;
+}): WasmEnvelope<raw.AppDataInfo> {
+  return callSync(() => raw.buildAppData(params.appCode, params.slippageBps, params.orderClass));
+}
+
 export function buildCancelOrderTx(
   params: raw.OrderTraderParams
 ): WasmEnvelope<raw.TransactionRequest> {
@@ -539,6 +560,18 @@ export function buildPresignTx(
   params: raw.OrderTraderParams
 ): WasmEnvelope<raw.TransactionRequest> {
   return callSync(() => raw.buildPresignTx(params));
+}
+
+export function buildTwapCreateTransaction(
+  params: raw.TwapCreateParams
+): WasmEnvelope<raw.TwapCreateResult> {
+  return callSync(() => raw.buildTwapCreateTransaction(params));
+}
+
+export function buildTwapRemoveTransaction(
+  orderId: string
+): WasmEnvelope<raw.TransactionRequest> {
+  return callSync(() => raw.buildTwapRemoveTransaction(orderId));
 }
 
 export function cidToAppDataHex(cid: string): WasmEnvelope<string> {
@@ -737,6 +770,8 @@ export type {
   GetTradesRequest,
   TradingAppDataInfo,
   TransactionRequest,
+  TwapCreateParams,
+  TwapCreateResult,
   TypedDataDomain,
   TypedDataEnvelope,
   TypedDataField,

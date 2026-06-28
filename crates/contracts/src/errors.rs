@@ -168,6 +168,14 @@ pub enum ContractsError {
         /// Sanitized recovery failure description from the backend.
         message: Redacted<String>,
     },
+    /// Composable TWAP inputs failed client-side validation.
+    #[cfg(feature = "composable")]
+    #[error("composable TWAP validation error: {0}")]
+    TwapValidation(#[from] crate::composable::TwapValidationError),
+    /// A composable conditional-order multiplexer operation failed.
+    #[cfg(feature = "composable")]
+    #[error("composable multiplexer error: {0}")]
+    Multiplexer(#[from] crate::composable::MultiplexerError),
 }
 
 impl From<Cancelled> for ContractsError {
@@ -194,6 +202,9 @@ impl ContractsError {
             | Self::InvalidSignatureLength { .. }
             | Self::InvalidSignatureRecoveryByte { .. }
             | Self::ZeroReceiver => ErrorClass::Validation,
+            // Composable TWAP/multiplexer errors are client-side input checks.
+            #[cfg(feature = "composable")]
+            Self::TwapValidation(_) | Self::Multiplexer(_) => ErrorClass::Validation,
             // Serialization, ABI, hex-decode, and on-chain event/marker decode
             // failures are data round-trip invariants, matching the
             // `CoreError` serialization classification.

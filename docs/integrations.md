@@ -63,11 +63,12 @@ The root facade exposes matching features named `alloy-provider`,
 together with the host app's own wallet stack (viem, wagmi, or any EIP-1193
 provider) by wrapping its EIP-1193 provider into the typed-data signer callback.
 
-## Composable Deferral And COW Shed
+## Composable And COW Shed
 
 COW Shed ships as the `cow-sdk-contracts` leaf crate behind the opt-in `cow-shed`
-facade feature; the composable-order capability is deferred and recorded only by
-[ADR 0048](adr/0048-composable-conditional-order-framework.md). Its
+facade feature; the composable-order capability ships as the off-by-default
+`composable` feature-module of `cow-sdk-contracts`
+([ADR 0048](adr/0048-composable-conditional-order-framework.md)). The COW Shed
 deployment addresses come from version-keyed const fns
 (`cow_shed_factory` / `cow_shed_implementation`), not the typed `Registry`. COW Shed
 rests on the same provenance and registry foundations, which improve on directly

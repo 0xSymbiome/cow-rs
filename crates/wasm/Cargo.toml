@@ -85,7 +85,12 @@ transport-policy = ["cow-sdk-core/transport-policy"]
 # for the native `TransactionRequest` returned by this flavour's `buildApprovalTx`
 # / `buildWrapTx` / `buildUnwrapTx` exports, which are present even when
 # `cancellation` is not.
-trading = ["orderbook", "signing", "app-data", "dep:cow-sdk-trading", "cow-sdk-trading/ts-bindings", "cow-sdk-core/ts-bindings", "cow-sdk-core/ts-bindings-tx"]
+# `composable` gates the TWAP conditional-order tx builders (`buildTwapCreateTransaction`
+# / `buildTwapRemoveTransaction`); `cow-sdk-core/ts-bindings-tx` carries the native
+# `TransactionRequest` Tsify derive these exports return. Folded into `trading` so the
+# full trading flavour surfaces TWAP alongside swap and limit orders.
+composable = ["cow-sdk-contracts/composable", "cow-sdk-core/ts-bindings-tx"]
+trading = ["orderbook", "signing", "app-data", "composable", "dep:cow-sdk-trading", "cow-sdk-trading/ts-bindings", "cow-sdk-core/ts-bindings", "cow-sdk-core/ts-bindings-tx"]
 subgraph = ["dep:cow-sdk-subgraph", "transport-policy"]
 flavor-default = [
     "orderbook",

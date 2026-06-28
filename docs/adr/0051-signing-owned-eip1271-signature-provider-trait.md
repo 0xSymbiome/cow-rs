@@ -56,8 +56,8 @@ definition exists in any other crate.
 
 The negative edge `cow-sdk-signing ⇏ cow-sdk-trading` holds structurally:
 `cow-sdk-trading ⇒ cow-sdk-signing`, so a signing → trading dependency would be
-a cargo-rejected cycle. The same edge for `cow-sdk-composable` and
-`cow-sdk-contracts[cow-shed]` applies when those consumers land; there is no
+a cargo-rejected cycle. The same edge for `cow-sdk-contracts[cow-shed]`
+applies when that consumer lands; there is no
 dedicated dependency-invariant check for them today.
 
 The single-canonical-path contract — no re-export of `Eip1271Signer` from
@@ -117,8 +117,8 @@ guessing among re-export aliases.
 - Re-export the trait from trading at the old path: would create two
   canonical paths and confuse downstream callers; any future renaming
   would have to touch both.
-- Duplicate the trait definition in `cow-sdk-composable` and
-  `cow-sdk-contracts`: would let every leaf crate implement its own
+- Duplicate the trait definition in `cow-sdk-contracts` or another
+  leaf consumer: would let every leaf crate implement its own
   variant and break interop with the trading submission path.
 
 ## Links

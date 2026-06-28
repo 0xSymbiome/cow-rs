@@ -80,6 +80,36 @@ pub async fn build_app_data(
     partner_fee: Option<&PartnerFee>,
     advanced_params: Option<&AppDataParams>,
 ) -> Result<TradingAppDataInfo, TradingError> {
+    build_app_data_doc(
+        app_code,
+        slippage_bps,
+        order_class.as_str(),
+        partner_fee,
+        advanced_params,
+    )
+}
+
+/// Builds the trading app-data document from an app-data order-class *string*.
+///
+/// This is the engine behind [`build_app_data`], taking the order class in its
+/// app-data wire form (`market` | `limit` | `liquidity` | `twap`) rather than the
+/// order-book [`OrderClass`] enum. The app-data order class is a distinct concept
+/// from the order-book order class — it carries the additional `twap` value used by
+/// composable orders — so this entry point serves those classes the order-book enum
+/// does not model. It stamps the same quote slippage, order class, and (unless the
+/// caller overrides `metadata.utm`) default SDK UTM block.
+///
+/// # Errors
+///
+/// Returns an error when the merged document cannot be normalized into a valid
+/// app-data payload or hash.
+pub fn build_app_data_doc(
+    app_code: &AppCode,
+    slippage_bps: u32,
+    order_class: &str,
+    partner_fee: Option<&PartnerFee>,
+    advanced_params: Option<&AppDataParams>,
+) -> Result<TradingAppDataInfo, TradingError> {
     let mut metadata = Map::new();
     metadata.insert(
         "quote".to_owned(),

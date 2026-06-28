@@ -6,6 +6,9 @@ pub mod callbacks;
 pub mod cancel;
 /// Supported-chain lookup helpers exposed to JavaScript.
 pub mod chains;
+/// TWAP conditional-order transaction builders.
+#[cfg(feature = "composable")]
+pub mod composable;
 /// EIP-1271 signature-payload and smart-account signing exports.
 #[cfg(feature = "signing")]
 pub mod eip1271;
@@ -46,6 +49,8 @@ pub mod trading;
 ))]
 pub mod transport;
 
+#[cfg(feature = "composable")]
+pub use composable::*;
 #[cfg(feature = "ipfs")]
 pub use ipfs::*;
 #[cfg(feature = "orderbook")]

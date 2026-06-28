@@ -14,7 +14,7 @@ keywords = ["cow-protocol", "sdk", "trading", "defi", "ethereum"]
 categories = ["api-bindings", "cryptography::cryptocurrencies"]
 
 [package.metadata.docs.rs]
-features = ["cow-shed", "testing"]
+features = ["composable", "cow-shed", "testing"]
 default-target = "x86_64-unknown-linux-gnu"
 targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 
@@ -37,6 +37,10 @@ alloy-signer = ["dep:cow-sdk-alloy-signer"]
 # never on the default `cow-sdk` dependency closure (ADR 0049). Re-exports the
 # `cow-sdk-contracts` `cow_shed` module as `cow_sdk::cow_shed`.
 cow-shed = ["cow-sdk-contracts/cow-shed"]
+# Opt-in composable conditional orders (ComposableCoW framework + TWAP). Off by
+# default (ADR 0048). Re-exports the `cow-sdk-contracts` `composable` module as
+# `cow_sdk::composable`.
+composable = ["cow-sdk-contracts/composable"]
 # Opt-in read-only subgraph analytics. Off by default, so the crate is never on
 # the default `cow-sdk` dependency closure. Re-exports the `cow-sdk-subgraph`
 # leaf as `cow_sdk::subgraph` and lifts `SubgraphError` into `CowError`.

@@ -187,8 +187,8 @@ following invariants, each pinned by a parity fixture or a contract test:
 The invariants are enforced by the parity fixtures under `parity/fixtures/` and
 the regression tests at
 `crates/core/tests/wire_format_preservation_contract.rs`. The composable multiplexer
-merkle-proof invariants land with the deferred composable capability recorded
-by [ADR 0048](adr/0048-composable-conditional-order-framework.md).
+merkle-proof invariants ship under `PROP-CON-026`
+([ADR 0048](adr/0048-composable-conditional-order-framework.md)).
 
 ## Schema Evidence Policy
 
@@ -239,9 +239,10 @@ of upstream TypeScript methods. The release supports these workflow buckets:
 The 0.1.0 scope does not claim total method-for-method parity with the upstream
 TypeScript SDK. The COW Shed account-abstraction proxy ships its full helper body
 in 0.1.0 — the `cow-sdk-contracts` leaf crate behind the opt-in `cow-shed` facade
-feature. Composable conditional-order helpers are deferred and recorded only by
-[ADR 0048](adr/0048-composable-conditional-order-framework.md); the helper
-surface and its upstream pin land additively in a later release. Capability families that are
+feature. The TWAP composable helpers ship behind the off-by-default `composable`
+feature-module of `cow-sdk-contracts`
+([ADR 0048](adr/0048-composable-conditional-order-framework.md)), with their
+`composable-cow` source-lock pin. Capability families that are
 explicitly deferred for 0.1.0 (cross-chain bridging order construction,
 hook-trampoline bytecode chaining, ecosystem provider adapters outside Alloy, and
 other items listed under Out-of-Scope below) should continue to use the upstream
@@ -291,11 +292,12 @@ Deferred; not in scope for the first release. The planned home is a future
 
 ### Composable orders
 
-Composable-CoW order construction is deferred and recorded only by
-[ADR 0048](adr/0048-composable-conditional-order-framework.md). No
-`cow-sdk-composable` crate ships; composable deployment addresses already
-resolve through the typed `Registry`, and the order-construction helpers land
-additively in a later release. Until then, use the upstream composable surface.
+The TWAP slice of Composable-CoW ships behind the off-by-default `composable`
+feature-module of `cow-sdk-contracts`
+([ADR 0048](adr/0048-composable-conditional-order-framework.md)), pinned to
+`cowprotocol/composable-cow @ 471ca59a`. No `cow-sdk-composable` crate ships —
+the helpers are a feature-module, not a separate crate — and composable
+deployment addresses resolve through the typed `Registry`.
 
 ### Cow-shed
 

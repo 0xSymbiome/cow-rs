@@ -105,7 +105,9 @@ solver-competition routes) are surfaced. Trading surfaces quote/post/limit/swap
 plus builder-form transactions (`buildPresignTx`, `buildCancelOrderTx`,
 `buildSellNativeCurrencyTx`, `buildSellNativeCurrencyTxFromQuote`,
 `buildApprovalTx`, `buildWrapTx`, `buildUnwrapTx`) and the allowance read,
-completing the read-allowance-then-approve path; `wrappedNativeToken` resolves
+completing the read-allowance-then-approve path. The composable TWAP builders
+(`buildTwapCreateTransaction` / `buildTwapRemoveTransaction`) surface in the
+default and trading flavors. `wrappedNativeToken` resolves
 the chain's wrapped-native token (address, symbol, decimals) for native-and-wrapped
 pair detection and display. `buildSellNativeCurrencyTxFromQuote` is the
 native-sell sibling of `postSwapOrderFromQuote`: it derives the EthFlow
@@ -123,9 +125,7 @@ owns the wallet, event loop, and provider, and the native Alloy adapters are
 native-only; the upstream TS SDK draws the same line. (2) On-chain EIP-1271
 verification and its caches — outside the defined workflow scope, no upstream
 core-surface analogue. (3) The low-level `contracts` encoding/verification
-surface — internal building-block code on every target. (4) The composable
-conditional-order framework — a deferred capability (ADR 0048) on every target,
-not WASM-specific.
+surface — internal building-block code on every target.
 
 ### Type generation and schema versioning
 

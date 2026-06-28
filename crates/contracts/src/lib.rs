@@ -11,6 +11,13 @@
     reason = "the cross-module helpers inside the private `primitives` module (`check_topics`, `order_uid_from_bytes`) are `pub(crate)` by design: `pub(crate)` keeps them crate-internal under `unreachable_pub` and documents the cross-module use, so the `redundant_pub_crate` pedantic lint is suppressed crate-wide rather than widening the items to `pub`"
 )]
 
+/// Composable conditional orders (`ComposableCoW` framework + TWAP).
+///
+/// Gated behind the off-by-default `composable` feature so the default
+/// `cow-sdk-contracts` surface stays lean.
+#[cfg(feature = "composable")]
+#[cfg_attr(docsrs, doc(cfg(feature = "composable")))]
+pub mod composable;
 /// COW Shed account-abstraction proxy, EIP-712, and hook-signing helpers.
 ///
 /// Gated behind the off-by-default `cow-shed` feature so the default

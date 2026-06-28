@@ -315,6 +315,12 @@ impl From<PureError> for WasmError {
     }
 }
 
+impl From<cow_sdk_core::AppCodeError> for WasmError {
+    fn from(value: cow_sdk_core::AppCodeError) -> Self {
+        Self::invalid("appCode", value.to_string())
+    }
+}
+
 impl From<TransportError> for WasmError {
     fn from(value: TransportError) -> Self {
         match value {
@@ -501,6 +507,13 @@ impl From<SubgraphError> for WasmError {
                 message: subgraph_message(error.to_string()),
             },
         }
+    }
+}
+
+#[cfg(feature = "composable")]
+impl From<cow_sdk_contracts::composable::TwapValidationError> for WasmError {
+    fn from(value: cow_sdk_contracts::composable::TwapValidationError) -> Self {
+        Self::invalid("twap", value.to_string())
     }
 }
 

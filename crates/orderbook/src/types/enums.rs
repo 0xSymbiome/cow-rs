@@ -116,6 +116,19 @@ pub enum OrderClass {
     Liquidity,
 }
 
+impl OrderClass {
+    /// The lowercase wire token (matching the serde representation), for callers
+    /// that need the string form — e.g. an app-data `metadata.orderClass` value.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Market => "market",
+            Self::Limit => "limit",
+            Self::Liquidity => "liquidity",
+        }
+    }
+}
+
 /// Order lifecycle status returned by the orderbook API.
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]

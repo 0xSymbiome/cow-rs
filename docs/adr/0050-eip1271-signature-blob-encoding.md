@@ -10,12 +10,17 @@
 > **Partially shipped.** Shape B (the raw `ERC1271Forwarder`
 > `abi.encode(order, payload)` layout) ships today in `cow_sdk_signing::eip1271`
 > (`OrderAndSignature` + `SolValue::abi_encode_sequence`, consumed by
-> `eip1271_signature_payload`). Shape A (the Safe-muxer encoder), the
-> `cow-sdk-composable` hosting crate, and the `parity/fixtures/composable/*`
-> vectors are **deferred** with the composable capability (ADR 0048). The live
-> guard for the no-shape-flag rule is the `eip1271-shape-flag` fence in
-> `xtask/src/policy/fences.rs`. Present-tense claims about composable below
-> describe the planned shape, not shipped code.
+> `eip1271_signature_payload`). The composable TWAP capability ships as the
+> off-by-default `composable` feature-module of `cow-sdk-contracts` (ADR 0048),
+> proven by in-crate contract tests against the source-locked commit — there is
+> no separate `cow-sdk-composable` crate. Shape A (the selector-prefixed
+> Safe-muxer encoder) is **not shipped**: the watch tower produces the composable
+> EIP-1271 signature blob through `getTradeableOrderWithSignature`, so this SDK
+> never encodes it, and the `parity/fixtures/composable/*` vectors below describe
+> that still-unshipped Shape-A plan. The live guard for the no-shape-flag rule is
+> the `eip1271-shape-flag` fence in `xtask/src/policy/fences.rs`. Present-tense
+> claims about Shape A below describe the watch tower's encoding, not shipped SDK
+> code.
 
 ## Context
 
@@ -94,8 +99,9 @@ shapes; every row must encode byte-identically to the pinned vector.
 
 ### Public Surface Boundary
 
-The signature-shape decision lives in `cow-sdk-composable` because the
-encoder needs typed access to `ConditionalOrderParams`. The trait that
+Shape A's encoder belongs with `cow_sdk_contracts::composable` — the
+`composable` feature-module that defines `ConditionalOrderParams` — and is not
+shipped today. The trait that
 custom smart-account signers implement to plug their callback into the
 trading submission path lives in `cow-sdk-signing` per
 [ADR 0051](0051-signing-owned-eip1271-signature-provider-trait.md). Trading
@@ -134,14 +140,14 @@ fixture parity assertions catch any future whitespace creep.
   upstream test vectors.
 - Validation and review: the shipped Shape-B layout is exercised by the
   signing-crate tests around `eip1271_signature_payload`, and the no-shape-flag
-  rule is enforced by the `eip1271-shape-flag` fence. When composable lands, the
+  rule is enforced by the `eip1271-shape-flag` fence. When Shape A lands, the
   fixture parity tests at
   `parity/fixtures/composable/safe_muxer_signature_blob.json` and
   `forwarder_signature_blob.json` must stay byte-exact against the pinned
   upstream vectors (those files do not exist yet).
 - Crate graph: the trait that lets custom signers plug into the trading
-  submission path lives in `cow-sdk-signing` per ADR 0051. When composable
-  lands it consumes that canonical signing path directly; no parallel trait
+  submission path lives in `cow-sdk-signing` per ADR 0051. When a Shape-A
+  signer lands it consumes that canonical signing path directly; no parallel trait
   definition exists.
 - Cost: any future shape addition requires a new ADR and a new fixture
   file; the two-shape boundary is not silently extendable.
@@ -157,8 +163,8 @@ fixture parity assertions catch any future whitespace creep.
 - Never emit the muxer selector prefix: Safe multisigs would fail every
   verification because the muxer would not dispatch to the right module.
 - Move the encoder into `cow-sdk-signing`: the encoder needs typed access
-  to `ConditionalOrderParams` from `cow-sdk-composable`; moving it to
-  signing would force signing to depend on composable and break the leaf
+  to `ConditionalOrderParams` from `cow_sdk_contracts::composable`; moving it to
+  signing would force signing to depend on contracts and break the leaf
   ordering.
 - Tolerate whitespace between commas in EIP-712 type strings: the
   resulting struct hash would diverge from upstream and every signature

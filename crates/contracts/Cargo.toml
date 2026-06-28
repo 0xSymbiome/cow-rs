@@ -28,6 +28,10 @@ tracing = ["dep:tracing", "cow-sdk-core/tracing"]
 # helpers. Off by default so the core contract helpers stay lean and pull no
 # account-abstraction surface or `cow-sdk-app-data` dependency.
 cow-shed = ["dep:cow-sdk-app-data"]
+# Composable conditional orders (ComposableCoW framework + TWAP). Pure ABI
+# encoding and a hand-rolled merkle multiplexer; off by default so the core
+# contract surface stays lean. Adds no dependency.
+composable = []
 
 [dependencies]
 alloy-primitives = { workspace = true, features = ["k256", "serde"] }

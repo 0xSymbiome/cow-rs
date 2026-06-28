@@ -238,12 +238,12 @@ regression contract fails on uncommented additions.
 
 ## Off-Chain Orchestration Boundary
 
-The composable order surface is a planned additive leaf, deferred per ADR 0048.
-When it lands, its helpers stay bounded to deterministic encoders, decoders,
-selectors, event payloads, and single-call provider operations, and never embed
-production watcher loops, persistence adapters, notification integrations,
-automatic order posting, or hidden retry schedulers. Long-running orchestration
-belongs to applications and services built on top of the SDK primitives. The
-composable surface itself is deferred per [ADR 0048](adr/0048-composable-conditional-order-framework.md).
+The composable order surface ships as the off-by-default `composable`
+feature-module per [ADR 0048](adr/0048-composable-conditional-order-framework.md).
+Its helpers are bounded to deterministic encoders plus the pure `timing_at`
+schedule classifier, and ship without production watcher loops, persistence
+adapters, notification integrations, automatic order posting, or hidden retry
+schedulers. Long-running orchestration belongs to applications and services
+built on top of the SDK primitives.
 
 **Anchored by**: [ADR 0057](adr/0057-log-provider-capability-trait.md) (primary). Supporting: [ADR 0010](adr/0010-runtime-neutral-async-and-transport-posture.md), [ADR 0024](adr/0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0049](adr/0049-cow-shed-account-abstraction-proxy.md), [ADR 0050](adr/0050-eip1271-signature-blob-encoding.md), [ADR 0051](adr/0051-signing-owned-eip1271-signature-provider-trait.md).

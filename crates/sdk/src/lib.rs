@@ -120,6 +120,13 @@ pub use cow_sdk_alloy_provider as alloy_provider;
 pub use cow_sdk_alloy_signer as alloy_signer;
 pub use cow_sdk_app_data as app_data;
 pub use cow_sdk_contracts as contracts;
+/// Opt-in composable conditional orders: the `ComposableCoW` framework and the
+/// TWAP builder, encoders, and gas-free transaction builder. Behind the
+/// off-by-default `composable` feature (ADR 0048); enable it with
+/// `cow-sdk = { features = ["composable"] }`.
+#[cfg(feature = "composable")]
+#[cfg_attr(docsrs, doc(cfg(feature = "composable")))]
+pub use cow_sdk_contracts::composable;
 /// Opt-in COW Shed account-abstraction hook helpers (proxy derivation,
 /// EIP-712 signing, factory calldata, and the [`cow_shed::CowShedHooks`]
 /// orchestrator). Behind the off-by-default `cow-shed` feature, so the default

@@ -41,7 +41,7 @@ public and runtime shape of `cow-rs`.
 | [0041](0041-transport-policy-l3-layering.md) | Accepted | Share retry, rate-limit, cooldown, and classification policy across HTTP clients. |
 | [0044](0044-bundle-size-profile-and-flavor-builds.md) | Accepted | Ship feature-scoped WASM flavor builds from one package. |
 | [0045](0045-async-signer-trait-narrowing.md) | Accepted | Narrow async signer capabilities by operation. |
-| [0048](0048-composable-conditional-order-framework.md) | Proposed (deferred) | Plan the composable conditional-order framework as a deferred additive leaf crate (not yet rooted), bounded by the watch-tower boundary. |
+| [0048](0048-composable-conditional-order-framework.md) | Accepted | Ship the TWAP slice of the composable framework as the off-by-default `composable` feature-module of `cow-sdk-contracts`, bounded by the watch-tower boundary. |
 | [0049](0049-cow-shed-account-abstraction-proxy.md) | Accepted | Ship COW Shed account-abstraction proxy support as a feature-gated module of `cow-sdk-contracts` behind the `cow-shed` feature. |
 | [0050](0050-eip1271-signature-blob-encoding.md) | Accepted | Recognise exactly two EIP-1271 payload shapes through distinct encoder entry points selected at signer construction. |
 | [0051](0051-signing-owned-eip1271-signature-provider-trait.md) | Accepted | Own `Eip1271Signer` in `cow-sdk-signing` and forbid any downstream re-export so the canonical path stays single-rooted. |

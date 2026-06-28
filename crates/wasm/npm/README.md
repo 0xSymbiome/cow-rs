@@ -41,7 +41,7 @@ runtime entries over one shared wasm binary, so pick the **runtime** by the suff
 
 | Import | Surface | Use when |
 | --- | --- | --- |
-| `@symbiome-forge/cow-sdk-wasm/trading` | Full order lifecycle: quote, sign, post, cancel, app-data, and native wrap/unwrap | A browser dapp, a Node backend, or an edge runtime running order flow — one feature set serves all three; pick the runtime by suffix |
+| `@symbiome-forge/cow-sdk-wasm/trading` | Full order lifecycle: quote, sign, post, cancel, app-data, native wrap/unwrap, and TWAP create/remove (`buildTwapCreateTransaction` / `buildTwapRemoveTransaction`) | A browser dapp, a Node backend, or an edge runtime running order flow — one feature set serves all three; pick the runtime by suffix |
 | `@symbiome-forge/cow-sdk-wasm/orderbook` | Orderbook reads, cancellation, and signing — no trading or app-data | A read-focused dapp that does not post orders |
 | `@symbiome-forge/cow-sdk-wasm/signing` | Signing, UID, EIP-1271, deployment, and version helpers — the smallest flavor | A signer service or HSM-facing adapter |
 | `@symbiome-forge/cow-sdk-wasm` | Everything above plus subgraph analytics and IPFS app-data | General use that needs subgraph or IPFS |
@@ -316,9 +316,9 @@ Paid/Bundled (~3 MB) compressed-size limit. End-to-end Workers behavior is exerc
 
 ## Not in this package
 
-Use the upstream TypeScript SDK for these until they ship in `cow-rs`: TWAP and
-composable orders, cross-chain bridging, CoW Shed account abstraction, flash-loan
-helpers, and hardware-wallet adapters. This package emits typed data or
+Use the upstream TypeScript SDK for these until they ship in `cow-rs`:
+cross-chain bridging, CoW Shed account abstraction, flash-loan helpers, and
+hardware-wallet adapters. This package emits typed data or
 transaction requests and lets the caller's wallet submit on-chain; it ships no
 WASI, WebAssembly-component, or `no_std` guest target.
 

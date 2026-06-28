@@ -72,7 +72,7 @@ pub mod validation;
 pub mod wait;
 
 pub use allowance::{approval_transaction, approve_cow_protocol, cow_protocol_allowance};
-pub use app_data::{build_app_data, merge_and_seal_app_data, params_from_doc};
+pub use app_data::{build_app_data, build_app_data_doc, merge_and_seal_app_data, params_from_doc};
 pub use cancel::offchain_cancel_order;
 pub use client::{
     AppCodeSet, AppCodeUnset, ChainIdSet, ChainIdUnset, LimitBuilder, QuotedSwap, Set, SwapBuilder,

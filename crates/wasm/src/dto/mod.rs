@@ -50,6 +50,8 @@ use crate::helpers::{self as pure};
 
 pub mod app_data;
 pub mod chains;
+#[cfg(feature = "composable")]
+mod composable;
 mod contracts;
 #[cfg(feature = "signing")]
 mod events;
@@ -105,6 +107,8 @@ pub use self::signing::{CowEip1271SignRequest, SignedOrder};
 #[cfg(all(target_arch = "wasm32", feature = "signing"))]
 pub(crate) use self::signing::{envelope_callback_value, payload_to_envelope};
 
+#[cfg(feature = "composable")]
+pub use self::composable::{TwapCreateParams, TwapCreateResult};
 #[cfg(feature = "cancellation")]
 pub use self::trading::OrderTraderParams;
 #[cfg(feature = "trading")]

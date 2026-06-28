@@ -20,7 +20,7 @@ does not yet implement:
 
 | Capability | TypeScript SDK | cow-rs |
 | --- | --- | --- |
-| Composable / conditional orders (TWAP and others) | `@cowprotocol/sdk-composable` | Deferred — not yet shipped; only the planned framework is recorded by [ADR 0048](adr/0048-composable-conditional-order-framework.md) |
+| Composable / conditional orders (TWAP and others) | `@cowprotocol/sdk-composable` | TWAP shipped behind the off-by-default `composable` feature ([ADR 0048](adr/0048-composable-conditional-order-framework.md)); the broader handler taxonomy is deferred |
 | Cross-chain bridging | `@cowprotocol/sdk-bridging` | Not yet implemented |
 | Flash-loan collateral swaps | `@cowprotocol/sdk-flash-loans` | Not yet implemented |
 | Weiroll multi-step scripting | `@cowprotocol/sdk-weiroll` | Not yet implemented |
