@@ -11,7 +11,11 @@
 > off-by-default `composable` feature-module in `cow-sdk-contracts`
 > (`cow_sdk_contracts::composable`), re-exported through the `cow-sdk` facade's
 > `composable` feature. It is a pure encoding, hashing, and schedule-classifying
-> surface — no provider, no loop. The broader handler taxonomy and the watcher
+> surface — no provider, no loop. The WebAssembly component channel
+> ([ADR 0071](0071-wasm-component-distribution-channel.md)) surfaces the
+> single-order path — TWAP create, remove, conditional-order id, and the
+> `timing_at` classifier — through its engine world's `composable` interface; the
+> merkle multiplexer stays native. The broader handler taxonomy and the watcher
 > discovery primitives remain deferred; the sections below mark what is shipped
 > and what is not.
 

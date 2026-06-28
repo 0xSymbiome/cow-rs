@@ -118,9 +118,16 @@ TypeScript embedding, and Cloudflare Workers (size-compatible at the time of
 measurement; the `trading` flavour's edge build is built and tested end-to-end in CI
 (Workers Vitest), within the Workers compressed-size budget).
 
-Its surface has four layers: pure helpers for deterministic protocol output,
-wallet and signer callback exports, orderbook plus subgraph plus IPFS clients,
-and trading clients. The crate reuses the same Rust helpers that native
+A second WebAssembly lane, the language-neutral WebAssembly Component
+(`cow-sdk-component`), is a `publish = false` leaf that compiles the same
+deterministic core and stateful clients to `wasm32-wasip2` against a typed WIT
+contract, for native hosts and polyglot consumers through Wasmtime and jco. Its
+distribution channel is deferred and experimental; see
+[ADR 0071](adr/0071-wasm-component-distribution-channel.md).
+
+The `cow-sdk-js` surface has four layers: pure helpers for deterministic protocol
+output, wallet and signer callback exports, orderbook plus subgraph plus IPFS
+clients, and trading clients. The crate reuses the same Rust helpers that native
 consumers call, then crosses into JavaScript only at typed wasm-bindgen
 exports and callbacks.
 

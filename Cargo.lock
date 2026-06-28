@@ -1387,6 +1387,7 @@ dependencies = [
  "cow-sdk-alloy-signer",
  "cow-sdk-contracts",
  "cow-sdk-core",
+ "cow-sdk-orderbook",
  "cow-sdk-signing",
  "cow-sdk-trading",
  "serde_json",

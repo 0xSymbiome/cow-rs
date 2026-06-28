@@ -417,7 +417,12 @@ impl<'ast> Visit<'ast> for PanicVisitor<'_> {
     }
 
     fn visit_item_fn(&mut self, item: &'ast syn::ItemFn) {
-        if is_cfg_test(&item.attrs) {
+        // Skip test code: `#[cfg(test)]` modules/functions and `#[test]` /
+        // `#[wasm_bindgen_test]` functions. A separate-file test module
+        // (`#[cfg(test)] mod tests;`) loses its `cfg(test)` marker when the file
+        // is parsed standalone, so the per-function test attribute is the guard
+        // that keeps the production panic surface from flagging test panics.
+        if is_cfg_test(&item.attrs) || is_test_function(item) {
             return;
         }
         self.items

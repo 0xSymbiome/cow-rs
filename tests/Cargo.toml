@@ -20,6 +20,7 @@ cow-sdk-alloy-provider = { path = "../crates/alloy-provider", version = "0.1.0-a
 cow-sdk-alloy-signer = { path = "../crates/alloy-signer", version = "0.1.0-alpha.8" }
 cow-sdk-contracts = { path = "../crates/contracts", version = "0.1.0-alpha.8", features = ["cow-shed"] }
 cow-sdk-core = { path = "../crates/core", version = "0.1.0-alpha.8" }
+cow-sdk-orderbook = { path = "../crates/orderbook", version = "0.1.0-alpha.8" }
 cow-sdk-signing = { path = "../crates/signing", version = "0.1.0-alpha.8" }
 cow-sdk-trading = { path = "../crates/trading", version = "0.1.0-alpha.8" }
 serde_json.workspace = true
@@ -66,3 +67,7 @@ path = "wasm_dependency_invariant.rs"
 [[test]]
 name = "cow_shed_typed_data_digest"
 path = "cow_shed_typed_data_digest.rs"
+
+[[test]]
+name = "component_wit_record_drift"
+path = "component_wit_record_drift.rs"

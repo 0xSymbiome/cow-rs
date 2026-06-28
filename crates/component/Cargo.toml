@@ -1,0 +1,102 @@
+[package]
+name = "cow-sdk-component"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+# Component Model leaf: compiled to wasm32-wasip2 as a WebAssembly Component and
+# distributed through OCI / GitHub Release, never to crates.io. A cdylib
+# component producer is not a `cargo add`-able library; the Rust API is the
+# published cow-sdk-core / cow-sdk-signing crates this crate wraps.
+publish = false
+
+description = "The CoW Protocol Rust SDK as a WebAssembly Component (WASI 0.2 and 0.3); built to wasm32-wasip2 and distributed via OCI, not crates.io"
+readme = "README.md"
+homepage = "https://github.com/0xSymbiome/cow-rs"
+keywords = ["cow-protocol", "sdk", "wasm", "component-model", "wasi"]
+categories = ["api-bindings", "wasm"]
+
+[package.metadata.docs.rs]
+default-target = "wasm32-wasip2"
+targets = ["wasm32-wasip2"]
+
+# Distributed as a component artifact, never version-bumped or published by a
+# crates.io release run.
+[package.metadata.release]
+release = false
+
+# `rlib` lets the native golden test link the pure engine; the component artifact
+# is the `cdylib` built for wasm32-wasip2.
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[lints]
+workspace = true
+
+# Exactly one world feature selects the component this crate emits. The worlds
+# are mutually exclusive (one cdylib is one component), enforced by a wasm32
+# `compile_error!` guard; build a client lane with
+# `--no-default-features --features world-client-sync` (or `-p3`).
+[features]
+default = ["world-engine"]
+world-engine = []
+world-client-sync = [
+    "dep:serde",
+    "dep:wstd",
+    "dep:alloy-dyn-abi",
+    "dep:cow-sdk-orderbook",
+    # The client lanes build the WIT swap/limit record into a serde_json value and
+    # `from_value` it into the native trade parameters; those native types
+    # (`TradeParams` / `LimitTradeParams`) live in `cow-sdk-trading`.
+    "dep:cow-sdk-trading",
+]
+world-client-async = [
+    "dep:serde",
+    "dep:wasip3",
+    "dep:http",
+    "dep:http-body-util",
+    "dep:bytes",
+    "dep:futures",
+    "dep:alloy-dyn-abi",
+    "dep:cow-sdk-orderbook",
+    "dep:cow-sdk-trading",
+]
+
+[dependencies]
+# The deterministic engine wraps these published crates; it never forks logic.
+cow-sdk-core = { path = "../core", version = "0.1.0-alpha.8" }
+cow-sdk-signing = { path = "../signing", version = "0.1.0-alpha.8" }
+# Registry / ContractId for the engine's chain-introspection surface, and the
+# `composable` ComposableCoW/TWAP encoders for the engine's composable interface.
+cow-sdk-contracts = { path = "../contracts", version = "0.1.0-alpha.8", features = ["composable"] }
+# App-data document validation and CID conversion (pure, no I/O).
+cow-sdk-app-data = { path = "../app-data", version = "0.1.0-alpha.8" }
+alloy-primitives.workspace = true
+serde_json.workspace = true
+
+# The Component Model bindings and the stateful lanes only build for wasm32; on
+# native this crate is empty, so a workspace `--all-features` check stays green.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wit-bindgen = { version = "0.58", features = ["async"] }
+alloy-dyn-abi = { workspace = true, features = ["eip712"], optional = true }
+# 0.2 lane: synchronous exports drive async wasi:http@0.2 through `block_on`.
+wstd = { version = "0.6", optional = true }
+# 0.3 lane: native async exports over wasi:http@0.3; `http-compat` carries the
+# `http`/`http-body` request and response bridge.
+wasip3 = { version = "0.7", features = ["http-compat"], optional = true }
+http = { workspace = true, optional = true }
+http-body-util = { version = "0.1", optional = true }
+bytes = { version = "1", optional = true }
+futures = { version = "0.3", optional = true }
+cow-sdk-orderbook = { path = "../orderbook", version = "0.1.0-alpha.8", optional = true }
+# The native trade-parameter types `TradeParams` / `LimitTradeParams`: the WIT
+# swap/limit record is built into a serde_json value and deserialized into them
+# with `from_value`. The component links this crate without the `ts-bindings`
+# feature, so it inherits no wasm-bindgen of its own.
+cow-sdk-trading = { path = "../trading", version = "0.1.0-alpha.8", optional = true }
+# Names the `Serialize` bound the read layer uses to render SDK responses as
+# JSON; already in the tree through the orderbook client, direct here so it can
+# be named. Gated to the client lanes, so the engine build never pulls it.
+serde = { workspace = true, optional = true }

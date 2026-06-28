@@ -11,7 +11,7 @@ The initial SDK foundation focuses on the existing SDK family:
 `cow-sdk-app-data`, `cow-sdk-orderbook`, `cow-sdk-trading`,
 and `cow-sdk-subgraph`, plus the opt-in native Alloy adapter crates
 `cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, and `cow-sdk-alloy`,
-and the TypeScript-callable `cow-sdk-wasm` bindings.
+and the JavaScript and TypeScript `cow-sdk-js` bindings.
 
 This work prioritizes a clean trading-first foundation: typed orderbook DTOs,
 typed signing and contract helpers, deployment registry provenance, cooperative
@@ -28,6 +28,21 @@ composable-order support remains in preparation. The shipped readiness
 surface includes source pins, deployment provenance, schema v2 registry and
 coverage taxonomy, COW Shed proxy bytecode evidence, reserved crate
 manifests, ABI excerpts, parity fixtures, and audit records.
+
+## WebAssembly Component Distribution Channel
+
+An experimental second WASM distribution lane has landed as the additive
+`cow-sdk-component` leaf crate, parallel to the wasm-bindgen npm lane. It
+compiles the deterministic SDK core to `wasm32-wasip2` as a WebAssembly
+Component against a typed WIT contract, so one audited Rust source is consumable
+from polyglot hosts (JavaScript and TypeScript through jco, native hosts through
+Wasmtime, and composition through the Component Model). The crate is a workspace
+member that CI builds for `wasm32-wasip2`; it is `publish = false` and never goes
+to crates.io. Per [ADR 0071](docs/adr/0071-wasm-component-distribution-channel.md)
+(Proposed), the crate and its WIT contract are experimental (`0.x`): the
+distribution and cross-runtime parity machinery — OCI and GitHub Release
+publishing, jco and Wasmtime execution, and a WIT snapshot gate — is not yet
+built, so today CI only compiles the component.
 
 ## Composable Order Capabilities
 

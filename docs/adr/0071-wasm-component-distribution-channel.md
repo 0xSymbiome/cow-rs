@@ -36,9 +36,10 @@ The crate wraps the SDK crates and never forks protocol logic. HTTP and signing 
 host imports, not bundled: the stateful surface runs over the SDK's existing
 transport seam, and signing is a host import so the private key never enters the
 component. The contract carries a deterministic engine world — order identity, chain and
-deployment introspection, app-data, and the gas-free on-chain transaction builders —
-with no host imports, and a stateful client world for the order lifecycle; both the
-WASI 0.2 and WASI 0.3 lanes are in scope behind one shared implementation.
+deployment introspection, app-data, the gas-free on-chain transaction builders, the
+signing payloads, event-log decoding, and the composable (TWAP) conditional-order
+builders — with no host imports, and a stateful client world for the order lifecycle;
+both the WASI 0.2 and WASI 0.3 lanes are in scope behind one shared implementation.
 
 Outputs distribute only through OCI and GitHub Release. The crate is never published
 to crates.io — a component-producing `cdylib` is not a `cargo add`-able library, and
