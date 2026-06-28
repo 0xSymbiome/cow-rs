@@ -137,9 +137,7 @@ fuzz_target!(|data: &[u8]| {
             }
         }
         _ => {
-            panic!(
-                "app_data_info Ok/Err classification must be deterministic on identical input"
-            );
+            panic!("app_data_info Ok/Err classification must be deterministic on identical input");
         }
     }
 });

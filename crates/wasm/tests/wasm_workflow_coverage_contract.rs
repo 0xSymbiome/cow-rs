@@ -3,9 +3,9 @@
 mod common;
 
 use cow_sdk_wasm::exports::{
-    AllowanceParams, ApprovalParams, LimitTradeParams, OrderBookClient,
-    OrderBookClientConfig, OrderTraderParams, PaginationOptions, TradeParams,
-    GetTradesRequest, TradingClient, build_cancel_order_tx, build_presign_tx, compute_order_uid,
+    AllowanceParams, ApprovalParams, GetTradesRequest, LimitTradeParams, OrderBookClient,
+    OrderBookClientConfig, OrderTraderParams, PaginationOptions, TradeParams, TradingClient,
+    build_cancel_order_tx, build_presign_tx, compute_order_uid,
 };
 use js_sys::{Function, Object, Reflect};
 use serde_json::Value;
