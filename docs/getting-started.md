@@ -60,7 +60,7 @@ Read-only subgraph access otherwise stays in the separate `cow-sdk-subgraph`
 crate.
 
 Browser and wallet integration is served to JavaScript and TypeScript
-consumers by the `cow-sdk-wasm` package together with the host app's own wallet
+consumers by the `cow-sdk-js` package together with the host app's own wallet
 stack (viem, wagmi, or any EIP-1193 provider). The host wraps its EIP-1193
 provider into the SDK's typed-data signer callback to supply the wallet connection.
 
@@ -77,7 +77,7 @@ That split matters when you choose where to start:
 
 - use `cow-sdk` for the main trading-first path
 - use `cow-sdk-subgraph` (directly, or through the `cow-sdk` `subgraph` feature) when you need explicit GraphQL reads
-- use `cow-sdk-wasm` when TypeScript or JavaScript code should call the Rust
+- use `cow-sdk-js` when TypeScript or JavaScript code should call the Rust
   SDK through wasm-bindgen exports, including browser-wallet flows driven by the
   host's own EIP-1193 provider
 
@@ -91,14 +91,14 @@ orderbook and subgraph builders through `.transport(...)` as
 For the rest of this guide, stay on the default `cow-sdk` facade on a
 native target.
 
-## Using cow-sdk-wasm From TypeScript
+## Using cow-sdk-js From TypeScript
 
 For most browser dapps, web apps, and CowSwap-style UIs, the upstream
 [`@cowprotocol/cow-sdk`](https://www.npmjs.com/package/@cowprotocol/cow-sdk)
 TypeScript SDK is the recommended choice. It is substantially smaller at
 equivalent feature subsets.
 
-`cow-sdk-wasm` is appropriate for specialized cases — TypeScript services
+`cow-sdk-js` is appropriate for specialized cases — TypeScript services
 that need byte-for-byte parity with the Rust SDK's signing path,
 single-source-of-truth Rust + TypeScript embedding, and Cloudflare Workers
 (size-compatible at the time of measurement; the `trading` flavour's edge build is built
@@ -689,14 +689,14 @@ available through the `cow-sdk` `subgraph` feature.
 ### WASM Follow-Ons
 
 When your goal is calling the Rust SDK from JavaScript or TypeScript, use the
-`cow-sdk-wasm` package examples in the dedicated
+`cow-sdk-js` package examples in the dedicated
 [`0xSymbiome/cow-sdk-examples`](https://github.com/0xSymbiome/cow-sdk-examples)
 repository:
 
 - [`cow-signer-node`](https://github.com/0xSymbiome/cow-sdk-examples/tree/main/examples/wasm/cow-signer-node)
 - [`cow-gateway-cloudflare`](https://github.com/0xSymbiome/cow-sdk-examples/tree/main/examples/wasm/cow-gateway-cloudflare)
 
-For browser-wallet flows, integrate `cow-sdk-wasm` with your app's own wallet
+For browser-wallet flows, integrate `cow-sdk-js` with your app's own wallet
 stack (viem, wagmi, or any EIP-1193 provider): the host wraps its EIP-1193
 provider into the SDK's typed-data signer callback to supply the wallet connection.
 

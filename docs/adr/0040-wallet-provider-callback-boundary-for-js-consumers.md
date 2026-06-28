@@ -9,7 +9,7 @@
 
 ## Decision
 
-JavaScript wallet and HTTP runtime interop crosses `cow-sdk-wasm` through five
+JavaScript wallet and HTTP runtime interop crosses `cow-sdk-js` through five
 typed callback shapes: `TypedDataSignerCallback`, `DigestSignerCallback`,
 `CustomEip1271Callback`, `ContractReadCallback`, and `CowFetchCallback`. Signing
 exposes one entry per on-wire scheme — `TypedDataSignerCallback` for `eip712`
@@ -76,7 +76,7 @@ public error envelope.
 
 ## Links
 
-- [cow-sdk-wasm README](../../crates/wasm/README.md)
+- [cow-sdk-js README](../../crates/js/README.md)
 - [Integrations](../integrations.md)
 - [WASM Surface Audit](../audit/wasm-surface-audit.md)
 - [EIP-1271 Verification Cache Audit](../audit/eip1271-verification-cache-audit.md)

@@ -29,7 +29,7 @@ runner infrastructure outside the committed workflow definitions.
 | Permissions | Every workflow declares explicit least-privilege `permissions:` at workflow or job scope | Conforms |
 | Trigger safety | Any workflow using `pull_request_target` must carry an explicit allow-list review comment; the current workflow set does not use the trigger | Conforms |
 | Third-party review log | Each pinned third-party action keeps a nearby `# Source ref:` comment naming the reviewed tag or source ref | Conforms |
-| WASM import fences | The `cow-sdk-wasm` import fences (`cargo check-source-fences`) run in the shared policy job with read-only permissions and SHA-pinned checkout only | Conforms |
+| WASM import fences | The `cow-sdk-js` import fences (`cargo check-source-fences`) run in the shared policy job with read-only permissions and SHA-pinned checkout only | Conforms |
 | README inclusion check | The README docs.rs inclusion check runs at source level in the policy sweep, with no rendered-HTML scrape, new third-party action, or elevated permission | Conforms |
 | Manual-dispatch retry soak | The retry-soak workflow (nightly cron paused pre-publication) uses read-only permissions, pinned actions, no privileged triggers, and a deterministic ignored test invocation | Conforms |
 | Alloy canary issue creation | The report-only Alloy canary grants `issues: write` only to create or reuse a tracking issue through `gh api`, with no new third-party action | Conforms |
@@ -91,7 +91,7 @@ privileged-trigger lane cannot be introduced silently.
 
 ### WASM Import Fences
 
-The `cow-sdk-wasm` import fences run in the shared `policy` job (through
+The `cow-sdk-js` import fences run in the shared `policy` job (through
 `cargo check-source-fences`) on every pull request, using the shared gate's
 read-only permissions and SHA-pinned checkout. Enforcement is a Rust policy in
 the `cargo xtask` sweep, not inline shell, so it adds no third-party action.

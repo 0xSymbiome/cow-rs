@@ -9,7 +9,7 @@ import {
   supportedChainIds,
   validateAppDataDoc,
   wasmVersion
-} from "cow-sdk-wasm-test-package";
+} from "cow-sdk-js-test-package";
 import { describe, expect, test } from "vitest";
 
 export const ORDER = {

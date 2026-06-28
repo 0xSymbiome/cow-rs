@@ -24,7 +24,7 @@ workspace = true
 default = []
 tracing = ["dep:tracing", "cow-sdk-core/tracing"]
 # The Tsify boundary derive on the orderbook response types surfaced by the
-# wasm-bindgen npm leaf (`crates/wasm`). Off by default and pulled only by the
+# wasm-bindgen npm leaf (`crates/js`). Off by default and pulled only by the
 # wasm flavours that expose a native-price client: Tsify emits each `.d.ts` as a
 # global `typescript_custom_section`, so a target-gated (but feature-ungated)
 # derive would leak `NativePriceResponse` into every flavour that links this
@@ -55,7 +55,7 @@ url.workspace = true
 reqwest = { workspace = true, features = ["rustls", "gzip"] }
 
 # The Tsify boundary derive on the orderbook response types consumed by the
-# wasm-bindgen npm leaf (`crates/wasm`). Gated to JS realms
+# wasm-bindgen npm leaf (`crates/js`). Gated to JS realms
 # (`target_os = "unknown"`) so WASI / Component builds never pull
 # tsify/wasm-bindgen — only the one wasm target whose `target_os` is `unknown`
 # carries them. Mirrors the identity-newtype gate in `crates/core/Cargo.toml`.

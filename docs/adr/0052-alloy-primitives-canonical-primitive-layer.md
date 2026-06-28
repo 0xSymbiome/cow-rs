@@ -60,7 +60,7 @@ in-scope dependency of `cow-sdk-core`, `cow-sdk-contracts`, `cow-sdk-signing`,
 and `cow-sdk-app-data`. The alloy-runtime family (`alloy-provider`,
 `alloy-signer-local`, `alloy-network`, `alloy-consensus`, `alloy-rpc-types-eth`,
 `alloy-transport-*`) stays confined to the native adapter crates per
-[ADR 0026](0026-alloy-major-release-absorption-plan.md). `cow-sdk-wasm` consumes
+[ADR 0026](0026-alloy-major-release-absorption-plan.md). `cow-sdk-js` consumes
 alloy-core primitives (`alloy_primitives`, `alloy_sol_types`) directly for ABI
 and event decoding, but takes no dependency on the native alloy adapter crates
 (`cow-sdk-alloy*`) or the alloy-runtime family; the `wasm-no-alloy-family` fence
@@ -91,7 +91,7 @@ unchanged.
 - Layout stays bit-for-bit identical to the alloy base; the alloy seam is crossed
   only through `From` / `as_alloy` / `into_alloy` / `as_u256` / `into_u256`.
 - `Amount` exposes no operator overloads; arithmetic is `checked_*` / `saturating_*`.
-- No capability crate depends on an alloy-runtime crate, and `cow-sdk-wasm` takes
+- No capability crate depends on an alloy-runtime crate, and `cow-sdk-js` takes
   no dependency on the `cow-sdk-alloy*` adapter crates.
 - Every parity fixture continues to pass byte-identically, the RFC 8785 UTF-16
   app-data case excepted.

@@ -17,7 +17,7 @@ transport-error classification behavior lives in the
 `OrderbookApiBuilder` and `SubgraphApiBuilder` accept the shared
 `TransportPolicy` through `.transport_policy(...)`.
 
-The TypeScript-callable package exposes the same policy through a typed
+The JavaScript and TypeScript package exposes the same policy through a typed
 `TransportPolicyConfig` on JavaScript client constructors. Omitting the config
 preserves Rust defaults; invalid policy values fail during constructor
 validation.

@@ -114,7 +114,7 @@ impl std::fmt::Debug for TransportResponse {
 /// the per-call header set, and shape retry, rate limiting, timeout, and
 /// user-agent through `TransportPolicy`. Implementing this trait is the
 /// deliberate escape hatch for three cases: a JavaScript host supplying its own
-/// `fetch` or callback (see `cow_sdk_wasm::exports::JsCallbackHttpTransport`),
+/// `fetch` or callback (see `cow_sdk_js::exports::JsCallbackHttpTransport`),
 /// test doubles that record or replay requests, and wrapping an inner transport
 /// to add caching or other middleware. The `Arc<dyn HttpTransport>` seam is what
 /// keeps those injectable at runtime.

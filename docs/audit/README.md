@@ -72,11 +72,11 @@ record alone.
 | --- | --- | --- | --- | --- | --- |
 | [Trading Order Integrity Audit](trading-order-integrity-audit.md) | Standing audit | `cow-sdk-trading` order assembly, bounds validation, app-data merge, and EthFlow owner threading | Balance/same-token policy, builder-terminal parity, local signature validation, the post-sign owner-recovery gate, the `OrderBoundsValidator` client-rejection surface, the typed app-data merge, and EthFlow owner identity | Current | 2026-06-20 |
 
-## TypeScript-Callable WASM
+## JavaScript and TypeScript WASM
 
 | Artifact | Type | Owning surface | Scope | Status | Last reviewed |
 | --- | --- | --- | --- | --- | --- |
-| [WASM Surface Audit](wasm-surface-audit.md) | Standing audit | `cow-sdk-wasm` TypeScript-callable crate, npm package, and runtime boundary | Surface/exports, capability coverage, type generation and schema versioning, the callback boundary, facade architecture and API stability, the performance budget, unsupported-target diagnostics, and the deterministic browser runner | Current | 2026-06-26 |
+| [WASM Surface Audit](wasm-surface-audit.md) | Standing audit | `cow-sdk-js` JavaScript and TypeScript crate, npm package, and runtime boundary | Surface/exports, capability coverage, type generation and schema versioning, the callback boundary, facade architecture and API stability, the performance budget, unsupported-target diagnostics, and the deterministic browser runner | Current | 2026-06-26 |
 
 ## Cross-Cutting Safety And Hygiene
 

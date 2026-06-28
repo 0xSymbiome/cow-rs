@@ -103,7 +103,7 @@ out_of_scope_adrs:
   # supporting set is a documentation-only refresh.
   - "0035"  # Alloy adapter family (provider, signer, umbrella) is governed by the alloy major-release plan and the alloy-provider/-signer invariant gates. Consolidates the former ADR 0036 and 0037.
   - "0038"  # Transaction lifecycle types are typed adapter surface details under the alloy-provider adapter.
-  - "0039"  # TypeScript-callable wasm SDK surface is governed by the wasm-imports gate and the wasm flavour-matrix.
+  - "0039"  # JavaScript and TypeScript wasm SDK surface is governed by the wasm-imports gate and the wasm flavour-matrix.
   - "0040"  # Wallet provider callback boundary for JS consumers is governed by the wasm SDK surface gate and the EIP-1271 verification cache audit.
   - "0041"  # Transport policy L3 layering is governed by the transport-policy coverage audit.
   - "0044"  # Bundle size profile and flavour builds are governed by the wasm flavour-matrix gate.

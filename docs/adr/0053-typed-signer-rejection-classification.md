@@ -19,7 +19,7 @@
   `cow_sdk_alloy_signer::SignerError` and `cow_sdk_alloy::AlloyClientError`
   return `None` for every variant because local-key signing cannot produce an
   EIP-1193 4xxx user rejection. A signer that surfaces EIP-1193 provider error
-  codes — for example a host-supplied wallet reached through the `cow-sdk-wasm`
+  codes — for example a host-supplied wallet reached through the `cow-sdk-js`
   typed-data signer callback (ADR 0040) — returns the carried code from its
   user-rejection variant.
 - The helpers in `cow-sdk-signing` bound the signer's

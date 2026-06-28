@@ -10,7 +10,7 @@
 ## Decision
 
 The workspace ships the native Alloy runtime as a three-crate family, each gated to
-native targets (wasm fails closed at compile time, where the `cow-sdk-wasm`
+native targets (wasm fails closed at compile time, where the `cow-sdk-js`
 callback path applies instead):
 
 - **`cow-sdk-alloy-provider`** — read-only RPC. `RpcAlloyProvider` wraps an

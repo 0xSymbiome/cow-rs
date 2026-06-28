@@ -28,10 +28,10 @@ For JavaScript and TypeScript consumers, the
 [when-to-use table in the root README](../README.md#when-to-use-cow-rs) maps each
 runtime to the upstream
 [`@cowprotocol/cow-sdk`](https://www.npmjs.com/package/@cowprotocol/cow-sdk) or a
-`cow-sdk-wasm` flavor. See
-[Architecture](architecture.md#typescript-callable-wasm-surface),
+`cow-sdk-js` flavor. See
+[Architecture](architecture.md#javascript-and-typescript-wasm-surface),
 [Integrations](integrations.md#typescript-and-javascript-runtime-boundary), and
-[cow-sdk-wasm](../crates/wasm/README.md) for the detail.
+[cow-sdk-js](../crates/js/README.md) for the detail.
 
 ## Common Boundary Questions
 
@@ -60,7 +60,7 @@ runtime to the upstream
   `ReqwestTransport` by default; browser consumers get `cow-sdk-core`'s
   `FetchTransport` (the browser sibling of `ReqwestTransport`, in its
   `transport::fetch` module). See [Transport](transport.md) for the full seam.
-- How do TypeScript apps use the SDK? Use `cow-sdk-wasm` after npm
+- How do TypeScript apps use the SDK? Use `cow-sdk-js` after npm
   publication. Browser bundlers can use the default fetch-backed path, while
   Node.js, Workers, Deno, and custom runtimes provide `CowFetchCallback`
   through the callback transport. See [Integrations](integrations.md).

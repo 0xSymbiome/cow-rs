@@ -1,5 +1,5 @@
 {
-  "name": "cow-sdk-wasm-typescript-e2e",
+  "name": "cow-sdk-js-typescript-e2e",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.7.0",
@@ -7,14 +7,14 @@
     "node": ">=24.0.0"
   },
   "scripts": {
-    "build": "bash ../../crates/wasm/npm/scripts/build.sh",
+    "build": "bash ../../crates/js/npm/scripts/build.sh",
     "clean": "node -e \"const fs=require('node:fs'); for (const p of ['node_modules','.vite','playwright-report','test-results']) fs.rmSync(p,{recursive:true,force:true})\"",
     "test:vitest": "vitest run --config vitest.config.ts",
     "test:playwright": "playwright test --config playwright.config.ts",
     "test:type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "cow-sdk-wasm-test-package": "file:../../crates/wasm/npm"
+    "cow-sdk-js-test-package": "file:../../crates/js/npm"
   },
   "devDependencies": {
     "@playwright/test": "1.60.0",

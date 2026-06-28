@@ -162,9 +162,9 @@ Primary implementation points:
 
 - `crates/contracts/src/verify.rs`
 - `crates/signing/src/cache.rs`
-- `crates/wasm/src/helpers/signing.rs`
-- `crates/wasm/src/exports/eip1271.rs`
-- `crates/wasm/src/exports/signing.rs`
+- `crates/js/src/helpers/signing.rs`
+- `crates/js/src/exports/eip1271.rs`
+- `crates/js/src/exports/signing.rs`
 - `parity/fixtures/signing/eip1271_typescript_vector.json`
 - `parity/source-lock.yaml`
 
@@ -176,13 +176,13 @@ Primary regression coverage:
 - `crates/contracts/tests/signature_contract.rs::async_eip1271_verification_fails_closed_for_missing_code_and_transport_errors`
 - `crates/contracts/tests/signature_contract.rs::eip1271_verification_reads_contract_code_and_magic_value`
 - `crates/signing/tests/ui.rs::eip1271_error_match_requires_wildcard`
-- `crates/wasm/tests/host_pure_helpers.rs::eip1271_payload_matches_signing_module_output_and_vector`
-- `crates/wasm/tests/host_pure_helpers.rs::generated_order_uid_uses_canonical_strings`
-- `crates/wasm/tests/wasm_eip1271_contract.rs::eip1271_payload_matches_native_rust`
-- `crates/wasm/tests/wasm_eip1271_contract.rs::eip1271_payload_matches_recorded_typescript_sdk_vector`
-- `crates/wasm/tests/wasm_eip1271_contract.rs::sign_order_with_eip1271_uid_equals_generated_order_id_as_str`
-- `crates/wasm/tests/wasm_eip1271_contract.rs::custom_eip1271_callback_signature_is_used_verbatim`
-- `crates/wasm/src/exports/eip1271.rs` (compile-time `Send + Sync` assertion on `ResolvedEip1271Provider`)
+- `crates/js/tests/host_pure_helpers.rs::eip1271_payload_matches_signing_module_output_and_vector`
+- `crates/js/tests/host_pure_helpers.rs::generated_order_uid_uses_canonical_strings`
+- `crates/js/tests/wasm_eip1271_contract.rs::eip1271_payload_matches_native_rust`
+- `crates/js/tests/wasm_eip1271_contract.rs::eip1271_payload_matches_recorded_typescript_sdk_vector`
+- `crates/js/tests/wasm_eip1271_contract.rs::sign_order_with_eip1271_uid_equals_generated_order_id_as_str`
+- `crates/js/tests/wasm_eip1271_contract.rs::custom_eip1271_callback_signature_is_used_verbatim`
+- `crates/js/src/exports/eip1271.rs` (compile-time `Send + Sync` assertion on `ResolvedEip1271Provider`)
 - `e2e/wasm-typescript/tests/eip1271.spec.ts`
 
 Validation surface:
@@ -193,7 +193,7 @@ cargo test -p cow-sdk-contracts --test signature_contract
 cargo test -p cow-sdk-signing --test ui
 cargo test -p cow-sdk-contracts -p cow-sdk-signing --all-features
 cargo check -p cow-sdk-signing --target wasm32-unknown-unknown
-cargo test -p cow-sdk-wasm --test host_pure_helpers
-wasm-pack test crates/wasm --headless --firefox
+cargo test -p cow-sdk-js --test host_pure_helpers
+wasm-pack test crates/js --headless --firefox
 pnpm --dir e2e/wasm-typescript test
 ```

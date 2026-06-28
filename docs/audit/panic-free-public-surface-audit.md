@@ -34,8 +34,8 @@ benchmarks, or private review tooling. Those surfaces may use `unwrap` or
 | Trading wait helper | `WaitOptions` constructors/builders, `submit_and_wait_for_receipt`, `poll_for_receipt`, and `WaitError` formatting/error implementations return typed results and retain only a clamped wasm timer conversion behind the allowlist | Conforms |
 | Transport classification growth | `TransportErrorClass::Upgrade` is an additive non-exhaustive enum variant and introduces no new panic path | Conforms |
 | Item-level panic artifacts | Each documented allowlist entry requires a rationale, `# Panics` rustdoc on the named item, and a `// SAFETY:` comment in the item body | Conforms |
-| WASM exports | Every fallible `#[wasm_bindgen]` export returns `Result<T, JsValue>`; infallible exports (e.g. `supportedChainIds`, `wasmVersion`, `__cow_sdk_wasm_init`) return plain values, and `__cow_sdk_wasm_init` initializes `console_error_panic_hook` exactly once | Conforms |
-| Pure WASM helpers | The `cow-sdk-wasm::helpers` module exposes fallible helper APIs through typed errors rather than JavaScript or panic boundaries | Conforms |
+| WASM exports | Every fallible `#[wasm_bindgen]` export returns `Result<T, JsValue>`; infallible exports (e.g. `supportedChainIds`, `wasmVersion`, `__cow_sdk_js_init`) return plain values, and `__cow_sdk_js_init` initializes `console_error_panic_hook` exactly once | Conforms |
+| Pure WASM helpers | The `cow-sdk-js::helpers` module exposes fallible helper APIs through typed errors rather than JavaScript or panic boundaries | Conforms |
 
 Documented public runtime sites:
 
@@ -95,10 +95,10 @@ Primary implementation points:
 - `crates/trading/src/wait.rs`
 - `Cargo.toml` workspace clippy lint configuration
 - `xtask/src/policy/check_panic_allowlist.rs`
-- `crates/wasm/src/lib.rs`
-- `crates/wasm/src/exports/mod.rs`
-- `crates/wasm/src/exports/errors.rs`
-- `crates/wasm/src/helpers/`
+- `crates/js/src/lib.rs`
+- `crates/js/src/exports/mod.rs`
+- `crates/js/src/exports/errors.rs`
+- `crates/js/src/helpers/`
 
 Primary regression coverage:
 
@@ -111,9 +111,9 @@ Primary regression coverage:
   static-invariant panic site carries a `# Panics` rustdoc section
 - public rustdoc `# Panics` sections on exposed functions that retain a
   static-invariant panic site
-- `crates/wasm/tests/wasm_error_abi_contract.rs`
-- `crates/wasm/tests/wasm_fail_closed_contract.rs`
-- `crates/wasm/tests/host_pure_helpers.rs`
+- `crates/js/tests/wasm_error_abi_contract.rs`
+- `crates/js/tests/wasm_fail_closed_contract.rs`
+- `crates/js/tests/host_pure_helpers.rs`
 
 Validation surface:
 

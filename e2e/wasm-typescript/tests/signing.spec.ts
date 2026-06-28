@@ -4,7 +4,7 @@ import {
   signCancellationWithTypedDataSigner,
   signOrderEthSignDigest,
   signOrderWithTypedDataSigner
-} from "cow-sdk-wasm-test-package";
+} from "cow-sdk-js-test-package";
 import { describe, expect, test } from "vitest";
 import { ORDER, OWNER } from "./orderbook.spec.js";
 

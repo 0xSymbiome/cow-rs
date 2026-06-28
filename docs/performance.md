@@ -55,7 +55,7 @@ of these order-of-magnitude boundaries.
 
 ## WASM Package Size And Startup Budgets
 
-The TypeScript-callable package trades bundle size for deterministic Rust
+The JavaScript and TypeScript package trades bundle size for deterministic Rust
 signing parity, single-source-of-truth Rust + TypeScript embedding, and
 Cloudflare Worker compatibility. For most browser dapps and standard
 TypeScript applications, the upstream
@@ -72,10 +72,10 @@ surface that covers their workflow.
 
 | Flavor | Public import | Raw wasm | Brotli | Gzip | Release gate |
 | --- | --- | ---: | ---: | ---: | --- |
-| default | `@symbiome-forge/cow-sdk-wasm` | 1.62 MiB | 508 KiB | 687 KiB | 3.3 MiB raw / 900 KiB brotli |
-| orderbook | `@symbiome-forge/cow-sdk-wasm/orderbook` | 1.01 MiB | 335 KiB | 442 KiB | 1.5 MiB raw / 500 KiB brotli |
-| signing | `@symbiome-forge/cow-sdk-wasm/signing` | 0.29 MiB | 108 KiB | 130 KiB | 0.9 MiB raw / 300 KiB brotli |
-| trading | `@symbiome-forge/cow-sdk-wasm/trading` | 1.53 MiB | 486 KiB | 654 KiB | 3.2 MiB raw / 850 KiB brotli / 3,000,000 B gzip (warn at 2,700,000 B) |
+| default | `@symbiome-forge/cow-sdk-wasm` | 1.59 MiB | 502 KiB | 668 KiB | 3.3 MiB raw / 900 KiB brotli |
+| orderbook | `@symbiome-forge/cow-sdk-wasm/orderbook` | 1.01 MiB | 336 KiB | 440 KiB | 1.5 MiB raw / 500 KiB brotli |
+| signing | `@symbiome-forge/cow-sdk-wasm/signing` | 0.28 MiB | 105 KiB | 126 KiB | 0.9 MiB raw / 300 KiB brotli |
+| trading | `@symbiome-forge/cow-sdk-wasm/trading` | 1.50 MiB | 480 KiB | 635 KiB | 3.2 MiB raw / 850 KiB brotli / 3,000,000 B gzip (warn at 2,700,000 B) |
 
 The raw and compressed measurements above come from the current package build
 pipeline after optimization. The gate values are enforced per flavor so the

@@ -13,7 +13,7 @@ Use a multi-crate workspace with short local folders under `crates/*`, a
 ## Why
 
 The SDK spans protocol transforms, transport clients, trading workflows,
-analytics access, and a TypeScript-callable wasm surface. Public package
+analytics access, and a JavaScript and TypeScript wasm surface. Public package
 identity needs to read as
 an SDK family on crates.io, while local workspace paths should remain short.
 A single crate, thick root facade, or repository-shaped public crate family

@@ -76,6 +76,6 @@ signed struct, or from treating omission as an error.
 ## Links
 
 - [Native order receiver and its serde default](../../crates/core/src/types/order.rs)
-- [Host-safe order mapping](../../crates/wasm/src/helpers/dto.rs)
+- [Host-safe order mapping](../../crates/js/src/helpers/dto.rs)
 - [ADR 0020](0020-ethflow-owner-threading.md)
 - [ADR 0059](0059-hash-concrete-orderdata-directly.md)

@@ -103,14 +103,14 @@ post-state root into a success value.
 
 This crate's modules are `cfg`'d out on `wasm32` targets, so it compiles to an
 empty library there. JavaScript and TypeScript hosts targeting the browser
-should use the `cow-sdk-wasm` package, supplying their own wallet across its
+should use the `cow-sdk-js` package, supplying their own wallet across its
 typed callback boundary and reaching RPC through the host's own
 provider.
 
 The crate is excluded from the wasm dependency tree, so its native Alloy HTTP
 transport dependencies never reach a browser build. The workspace test
 `tests/wasm_dependency_invariant.rs` enforces this by asserting that
-`cow-sdk-wasm`'s `wasm32-unknown-unknown` tree omits this crate and its native
+`cow-sdk-js`'s `wasm32-unknown-unknown` tree omits this crate and its native
 transport dependencies.
 
 ## Companion Crates

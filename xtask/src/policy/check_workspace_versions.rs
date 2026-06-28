@@ -65,7 +65,7 @@ fn validate_doc_pins(repo_root: &Path, workspace_version: &str) -> anyhow::Resul
 /// Confirms the wasm npm package template version matches the workspace version
 /// (the wasm crate's own version is validated through member alignment above).
 fn validate_npm_template(repo_root: &Path, workspace_version: &str) -> anyhow::Result<Vec<String>> {
-    let path = repo_root.join("crates/wasm/npm/package.template.json");
+    let path = repo_root.join("crates/js/npm/package.template.json");
     if !path.is_file() {
         return Ok(Vec::new());
     }

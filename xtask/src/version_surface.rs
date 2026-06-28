@@ -132,7 +132,7 @@ fn substitute(caps: &Captures<'_>, version: &str) -> String {
     format!("{pre}{version}{post}")
 }
 
-const NPM_TEMPLATE: &str = "crates/wasm/npm/package.template.json";
+const NPM_TEMPLATE: &str = "crates/js/npm/package.template.json";
 
 /// Sets the top-level `"version"` field of the npm package template.
 ///
@@ -173,7 +173,7 @@ fn surface_files(root: &Path) -> Result<Vec<PathBuf>> {
             files.push(readme);
         }
     }
-    files.push(root.join("crates/wasm/npm/README.md"));
+    files.push(root.join("crates/js/npm/README.md"));
 
     let docs = root.join("docs");
     if docs.is_dir() {

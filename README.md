@@ -33,7 +33,7 @@ CI policy, so correctness is enforced by the build rather than trusted to memory
 - **Runtime-free protocol core** — hashing, signing, and contract decoding
   compute with no async runtime; only the HTTP client needs a reactor, and a
   `wasm32` build drops the `reqwest` stack at compile time. The `cow-sdk`
-  facade and the wasm-facing crates (`cow-sdk-wasm`, `cow-sdk-orderbook`,
+  facade and the wasm-facing crates (`cow-sdk-js`, `cow-sdk-orderbook`,
   `cow-sdk-subgraph`) compile to `wasm32-unknown-unknown` with a
   headless-browser e2e lane in CI.
 - **Evidence over adjectives** — every protocol transform is cross-checked
@@ -183,7 +183,7 @@ wallet connection.
 | --- | --- |
 | Main Rust SDK entrypoint | `cow-sdk` |
 | Shared domain types, runtime traits, the `HttpTransport` seam with its native `ReqwestTransport` default and browser `FetchTransport` default (the latter gated to `wasm32-unknown-unknown` in the `transport::fetch` module), and the opt-in HTTP retry, rate-limit, jitter, `Retry-After`, and error-classification policy (`transport-policy` feature) | `cow-sdk-core` |
-| TypeScript-callable wasm-bindgen SDK bindings for browser, Node.js, Workers, and optional Deno consumers | `cow-sdk-wasm` |
+| wasm-bindgen SDK bindings for JavaScript and TypeScript — browser, Node.js, Workers, and optional Deno | `cow-sdk-js` |
 | Read-only subgraph queries | `cow-sdk-subgraph` or `cow-sdk` with `subgraph` |
 | Native Alloy provider, signer, or composed provider-plus-signer support | `cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, `cow-sdk-alloy`, or `cow-sdk` with `alloy-provider`, `alloy-signer`, or `alloy` |
 | Deterministic protocol helpers, `alloy::sol!` bindings, the `Registry` authority, and EIP-1271 verification | `cow-sdk-contracts`, `cow-sdk-signing`, `cow-sdk-app-data` |
@@ -191,9 +191,9 @@ wallet connection.
 | High-level trading workflows | `cow-sdk-trading` |
 | In-memory test doubles for the public traits (`OrderbookClient`, `Signer`, `Provider`) so downstream apps test without a live orderbook, RPC, or wallet | `cow-sdk-test` |
 
-## TypeScript-Callable WASM
+## JavaScript and TypeScript WASM
 
-`cow-sdk-wasm` exposes deterministic Rust SDK logic to JavaScript and
+`cow-sdk-js` exposes deterministic Rust SDK logic to JavaScript and
 TypeScript through a TypeScript facade, typed DTOs, explicit callbacks for
 signing and HTTP dispatch, per-call cancellation, per-call timeouts, and
 flavor-specific imports. Browser, Node.js, Workers, and other JavaScript hosts
@@ -205,7 +205,7 @@ configure transport explicitly through `transport: { kind: "fetch" }` or
 - `cow-sdk` is a thin facade.
 - `cow-sdk-trading` owns quote-to-order workflows.
 - `cow-sdk-subgraph` is a separate read-only crate, re-exported through `cow-sdk` behind the off-by-default `subgraph` feature.
-- TypeScript-callable WASM support is an additive leaf crate with explicit
+- JavaScript and TypeScript WASM support is an additive leaf crate with explicit
   JavaScript callbacks rather than bundled wallet-library dependencies.
 - Pure transform crates do not hide network I/O.
 - Public claims are backed by repository-visible tests, fixtures, and release

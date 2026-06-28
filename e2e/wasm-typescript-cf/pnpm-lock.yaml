@@ -8,9 +8,9 @@ importers:
 
   .:
     dependencies:
-      cow-sdk-wasm-test-package:
-        specifier: file:../../crates/wasm/npm
-        version: '@symbiome-forge/cow-sdk-wasm@file:../../crates/wasm/npm'
+      cow-sdk-js-test-package:
+        specifier: file:../../crates/js/npm
+        version: '@symbiome-forge/cow-sdk-wasm@file:../../crates/js/npm'
     devDependencies:
       '@cloudflare/vitest-pool-workers':
         specifier: 0.16.13
@@ -547,8 +547,8 @@ packages:
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
 
-  '@symbiome-forge/cow-sdk-wasm@file:../../crates/wasm/npm':
-    resolution: {directory: ../../crates/wasm/npm, type: directory}
+  '@symbiome-forge/cow-sdk-wasm@file:../../crates/js/npm':
+    resolution: {directory: ../../crates/js/npm, type: directory}
     engines: {node: '>=22.0.0'}
 
   '@tybys/wasm-util@0.10.2':
@@ -1288,7 +1288,7 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
-  '@symbiome-forge/cow-sdk-wasm@file:../../crates/wasm/npm': {}
+  '@symbiome-forge/cow-sdk-wasm@file:../../crates/js/npm': {}
 
   '@tybys/wasm-util@0.10.2':
     dependencies:

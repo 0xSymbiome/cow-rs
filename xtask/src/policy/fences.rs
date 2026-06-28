@@ -39,7 +39,7 @@ enum Scope {
     /// All `*.rs` under `crates/`, excluding crate-level
     /// `tests`/`benches`/`examples`/`fuzz` directories.
     ProductionRust,
-    /// All `*.rs` under `crates/wasm/src`.
+    /// All `*.rs` under `crates/js/src`.
     WasmSources,
     /// Documentation and TypeScript surfaces that must not deep-import dist paths.
     DocsAndTypeScript,
@@ -166,7 +166,7 @@ const FENCES: &[Fence] = &[
             skip_line_comments: false,
         },
         on_empty: OnEmpty::Pass,
-        message: "cow-sdk-wasm must not reference the native alloy adapter crates.",
+        message: "cow-sdk-js must not reference the native alloy adapter crates.",
     },
     Fence {
         name: "wasm-no-reqwest",
@@ -176,7 +176,7 @@ const FENCES: &[Fence] = &[
             skip_line_comments: false,
         },
         on_empty: OnEmpty::Pass,
-        message: "cow-sdk-wasm must not reference reqwest; the browser transport is the Fetch seam.",
+        message: "cow-sdk-js must not reference reqwest; the browser transport is the Fetch seam.",
     },
     Fence {
         name: "wasm-no-tokio-runtime",
@@ -186,7 +186,7 @@ const FENCES: &[Fence] = &[
             skip_line_comments: false,
         },
         on_empty: OnEmpty::Pass,
-        message: "cow-sdk-wasm must not reference tokio runtime parts.",
+        message: "cow-sdk-js must not reference tokio runtime parts.",
     },
     Fence {
         name: "wasm-no-tokio-macros",
@@ -196,7 +196,7 @@ const FENCES: &[Fence] = &[
             skip_line_comments: false,
         },
         on_empty: OnEmpty::Pass,
-        message: "cow-sdk-wasm must not reference tokio macros.",
+        message: "cow-sdk-js must not reference tokio macros.",
     },
     Fence {
         name: "wasm-no-core-reqwest-reexports",
@@ -206,13 +206,13 @@ const FENCES: &[Fence] = &[
             skip_line_comments: false,
         },
         on_empty: OnEmpty::Pass,
-        message: "cow-sdk-wasm must not reference the cow-sdk-core reqwest re-exports.",
+        message: "cow-sdk-js must not reference the cow-sdk-core reqwest re-exports.",
     },
     Fence {
         name: "wasm-no-dist-deep-import",
         scope: Scope::DocsAndTypeScript,
         rule: Rule {
-            pattern: r#"cow-sdk-wasm(?:-test-package)?(?:/[^"'`\s\\]+)?/dist/"#,
+            pattern: r#"cow-sdk-js(?:-test-package)?(?:/[^"'`\s\\]+)?/dist/"#,
             skip_line_comments: false,
         },
         on_empty: OnEmpty::Pass,
@@ -327,7 +327,7 @@ fn collect(repo_root: &Path, scope: &Scope) -> Result<Vec<PathBuf>> {
         }
         Scope::ProductionRust => collect_production_rust(repo_root, &mut files)?,
         Scope::WasmSources => {
-            collect_by_extension(&repo_root.join("crates/wasm/src"), "rs", &mut files)?;
+            collect_by_extension(&repo_root.join("crates/js/src"), "rs", &mut files)?;
         }
         Scope::DocsAndTypeScript => collect_docs_and_typescript(repo_root, &mut files)?,
     }

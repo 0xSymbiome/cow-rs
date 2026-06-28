@@ -2,8 +2,8 @@
 
 Status: Current
 Last reviewed: 2026-06-26
-Owning surface: the `cow-sdk-wasm` TypeScript-callable crate, its npm package layout/exports, the JavaScript callback runtime boundary, DTO/type generation, schema-versioned envelopes, the size-budget gate, unsupported-target diagnostics, and the deterministic browser test runner.
-Refresh trigger: Changes to `crates/wasm/src/**`, the boundary DTO module or the source-crate `tsify` boundary derives, wasm-pack targets, declaration/facade snapshots, package export maps, callback shapes or registry ownership, the `JsCallbackHttpTransport` contract, transport-policy or error-envelope schema, release-profile size settings or measured budgets, native Alloy adapter `wasm32` guards, or the wasm-pack browser lanes.
+Owning surface: the `cow-sdk-js` JavaScript and TypeScript crate, its npm package layout/exports, the JavaScript callback runtime boundary, DTO/type generation, schema-versioned envelopes, the size-budget gate, unsupported-target diagnostics, and the deterministic browser test runner.
+Refresh trigger: Changes to `crates/js/src/**`, the boundary DTO module or the source-crate `tsify` boundary derives, wasm-pack targets, declaration/facade snapshots, package export maps, callback shapes or registry ownership, the `JsCallbackHttpTransport` contract, transport-policy or error-envelope schema, release-profile size settings or measured budgets, native Alloy adapter `wasm32` guards, or the wasm-pack browser lanes.
 Related docs:
 - [ADR 0039](../adr/0039-typescript-callable-wasm-sdk-surface.md)
 - [ADR 0040](../adr/0040-wallet-provider-callback-boundary-for-js-consumers.md)
@@ -13,7 +13,7 @@ Related docs:
 
 This audit covers:
 
-- the four-layer `cow-sdk-wasm` public surface (deterministic helpers, wallet
+- the four-layer `cow-sdk-js` public surface (deterministic helpers, wallet
   callbacks, service clients, trading) and its mapping to the native `cow-rs`
   crates, including capabilities intentionally not surfaced
 - the JavaScript callback boundary: typed wallet/signer/cancellation/EIP-1271
@@ -34,7 +34,7 @@ bundler behavior.
 
 | Area | Reviewed contract | Result |
 | --- | --- | --- |
-| Surface layering | The four layers — deterministic helpers (host-safe in `cow-sdk-wasm::helpers`), wallet callbacks, service clients, trading — are present and contract-tested; wasm-bindgen exports own JS interop | Conforms |
+| Surface layering | The four layers — deterministic helpers (host-safe in `cow-sdk-js::helpers`), wallet callbacks, service clients, trading — are present and contract-tested; wasm-bindgen exports own JS interop | Conforms |
 | Workflow + capability coverage | The ADR 0039 / `docs/parity.md` workflow set is exposed; every non-surfaced native capability is classified with a rationale | Conforms / Documented |
 | Runtime-model boundary | The wasm32 tree excludes native Alloy adapters, reqwest, and hyper; no Rust signer broadcasts and no provider polls | Conforms |
 | Shape correspondence | Native types/signatures map to the WASM + TS surface through a fixed transform set; divergences beyond it are enumerated | Documented |
@@ -53,7 +53,7 @@ bundler behavior.
 
 ### Surface and package exports
 
-`cow-sdk-wasm` exposes four layers, sourced from the native crates rather than
+`cow-sdk-js` exposes four layers, sourced from the native crates rather than
 reimplemented:
 
 1. **Deterministic helpers** — domain separator, order typed-data, order-UID,
@@ -120,7 +120,7 @@ builder calldata) are surfaced.
 
 Intentionally **not surfaced**, each by stated rationale: (1) managed
 broadcast/receipt flows (`approve_cow_protocol`, `poll_for_receipt`,
-`submit_and_wait_for_receipt`) — `cow-sdk-wasm` is a callback leaf, the JS host
+`submit_and_wait_for_receipt`) — `cow-sdk-js` is a callback leaf, the JS host
 owns the wallet, event loop, and provider, and the native Alloy adapters are
 native-only; the upstream TS SDK draws the same line. (2) On-chain EIP-1271
 verification and its caches — outside the defined workflow scope, no upstream
@@ -135,9 +135,9 @@ crate, gated to the wasm-bindgen target (`target_arch = "wasm32"`, `target_os =
 "unknown"`), so the derive is inert on native and WASI builds and a single
 definition generates the `.d.ts`. The boundary shapes that have no native
 counterpart — the chain/deployment constructs, the app-data input shape, and the
-per-domain input and projection shapes — live in `crates/wasm/src/dto/`, outside
+per-domain input and projection shapes — live in `crates/js/src/dto/`, outside
 the FFI-bearing `exports` tree, and the `exports` module re-exports them.
-Host-safe helpers in `cow-sdk-wasm::helpers` compile natively without
+Host-safe helpers in `cow-sdk-js::helpers` compile natively without
 wasm-bindgen, JsValue, or tsify-derived public types. The
 cross-ABI serializer is `serde_wasm_bindgen::Serializer::json_compatible`, which
 emits plain objects for Rust `BTreeMap`/`HashMap` fields, so those fields carry
@@ -145,7 +145,7 @@ an explicit `#[tsify(type = "Record<...>")]` override so the declared shape
 matches the runtime shape. Decoded event DTOs are internally tagged unions
 (serde `tag = "kind"`).
 
-One committed raw declaration per flavor under `crates/wasm/snapshots/raw/`
+One committed raw declaration per flavor under `crates/js/snapshots/raw/`
 represents the public TypeScript contract. wasm-bindgen emits a byte-identical
 `.d.ts` for the `bundler` and `nodejs` targets of a flavor (the type surface is
 loader-independent; only the JS loader glue and `.wasm` packaging differ), so
@@ -156,7 +156,7 @@ wasm-bindgen's standard module-init scaffolding (`InitInput`/`InitOutput`/
 `initSync`/the default initializer) and is intentionally skipped; its public
 `initialize` contract is pinned by the facade snapshot instead. Declarations using
 `[Symbol.dispose]` must include the `esnext.disposable` reference. Facade
-snapshots under `crates/wasm/snapshots/facade/` are checked separately so
+snapshots under `crates/js/snapshots/facade/` are checked separately so
 generated implementation classes do not become the published contract.
 
 Success envelopes serialize through `WasmEnvelope<T> = { schemaVersion: "v1" |
@@ -194,7 +194,7 @@ and aborts all map to typed errors.
 
 ### Facade architecture and API stability
 
-The facade modules under `crates/wasm/npm/src/**` adapt raw wasm-bindgen output
+The facade modules under `crates/js/npm/src/**` adapt raw wasm-bindgen output
 into stable TypeScript classes, helpers, and config objects, and are the public
 package contract. Raw binding imports remain behind package-internal adapter
 modules; verification scripts reject public raw export entries and the facade
@@ -238,7 +238,7 @@ compile-time native-only diagnostic is emitted by the `cow-sdk` facade
 `alloy-signer` features are enabled on `wasm32-unknown-unknown`. CI asserts all
 three facade features fail on wasm and treats a successful wasm build as a
 failure. The documented browser path for wallet
-signing is the `cow-sdk-wasm` typed callback surface plus consumer-supplied
+signing is the `cow-sdk-js` typed callback surface plus consumer-supplied
 EIP-1193 provider reads. Residual risk: future upstream Alloy releases may add
 browser-compatible provider components; until a separate browser-provider design
 is accepted and tested, these adapters stay unsupported on wasm.
@@ -305,71 +305,71 @@ dedicated fixtures and CI evidence exist; they share the same web build.
 
 Primary implementation points:
 
-- `crates/wasm/src/helpers/`
-- `crates/wasm/src/exports/`
-- `crates/wasm/src/dto/`
-- `crates/wasm/src/exports/callbacks.rs`
-- `crates/wasm/src/exports/registry.rs`
-- `crates/wasm/src/exports/transport.rs`
-- `crates/wasm/src/exports/signing.rs`
-- `crates/wasm/src/exports/cancel.rs`
-- `crates/wasm/src/exports/envelope.rs`
-- `crates/wasm/src/exports/errors.rs`
-- `crates/wasm/snapshots/raw/{default,orderbook,signing,trading}.d.ts`
-- `crates/wasm/snapshots/facade/`
-- `crates/wasm/npm/src/` (`index.ts`, `default.ts`, `orderbook.ts`, `signing.ts`, `trading.ts`, `callbacks.ts`, `internal.ts`, `options.ts`, `envelope.ts`, `errors.ts`, `raw/`)
-- `crates/wasm/npm/package.template.json`
-- `crates/wasm/npm/README.md`
-- `crates/wasm/npm/scripts/` (`build.sh`, `compile-facade.sh`, `render-package-json.mjs`, `measure-wasm-size.mjs`, `dedupe-target-wasm.mjs`, `verify-exports.mjs`, `verify-no-raw-exports.mjs`, `verify-facade-denylist.mjs`, `verify-package-resolution.sh`)
+- `crates/js/src/helpers/`
+- `crates/js/src/exports/`
+- `crates/js/src/dto/`
+- `crates/js/src/exports/callbacks.rs`
+- `crates/js/src/exports/registry.rs`
+- `crates/js/src/exports/transport.rs`
+- `crates/js/src/exports/signing.rs`
+- `crates/js/src/exports/cancel.rs`
+- `crates/js/src/exports/envelope.rs`
+- `crates/js/src/exports/errors.rs`
+- `crates/js/snapshots/raw/{default,orderbook,signing,trading}.d.ts`
+- `crates/js/snapshots/facade/`
+- `crates/js/npm/src/` (`index.ts`, `default.ts`, `orderbook.ts`, `signing.ts`, `trading.ts`, `callbacks.ts`, `internal.ts`, `options.ts`, `envelope.ts`, `errors.ts`, `raw/`)
+- `crates/js/npm/package.template.json`
+- `crates/js/npm/README.md`
+- `crates/js/npm/scripts/` (`build.sh`, `compile-facade.sh`, `render-package-json.mjs`, `measure-wasm-size.mjs`, `dedupe-target-wasm.mjs`, `verify-exports.mjs`, `verify-no-raw-exports.mjs`, `verify-facade-denylist.mjs`, `verify-package-resolution.sh`)
 - `crates/orderbook/src/api.rs`, `crates/trading/src/`, `crates/signing/src/`
 - `crates/alloy-provider/src/lib.rs`, `crates/alloy-signer/src/lib.rs`, `crates/alloy/src/lib.rs`, `crates/sdk/src/lib.rs`
-- `Cargo.toml`, `crates/wasm/Cargo.toml`
+- `Cargo.toml`, `crates/js/Cargo.toml`
 - `.github/workflows/wasm.yml`, `.github/workflows/ci.yml`
 - `docs/providers/adapting-alloy.md`, `docs/transport.md`
 
 Primary regression coverage:
 
-- `crates/wasm/tests/host_pure_helpers.rs` (incl. `typed_data_payload_matches_signing_module_output`, `wasm_version_matches_package_version`)
-- `crates/wasm/tests/wasm_surface_contract.rs` (incl. `order_typed_data_serializes_to_expected_js_shape`, `wasm_version_matches_crate_version`)
-- `crates/wasm/tests/wasm_workflow_coverage_contract.rs`
-- `crates/wasm/tests/wasm_snapshot_surface_contract.rs` (incl. `generated_type_declarations_version_the_envelope_and_expose_error_kinds`, `generated_type_declarations_hide_callback_registry`, `generated_type_declarations_name_callback_params`, `generated_type_declarations_expose_abort_and_wallet_options`, `generated_type_declarations_expose_transport_policy_config_for_http_flavours`, `generated_type_declarations_match_flavour_matrix`)
-- `crates/wasm/tests/wasm_facade_snapshot_contract.rs` (`facade_declarations_match_flavour_matrix`, `facade_declarations_hide_raw_wasm_bindgen_surface`, `facade_declarations_expose_dispose_and_named_callback_types`)
-- `crates/wasm/tests/wasm_envelope_contract.rs` (`envelope_serializes_schema_version_and_payload`, `envelope_preserves_unknown_schema_sentinel`)
-- `crates/wasm/tests/wasm_error_abi_contract.rs` (`invalid_input_variant_round_trips`, `unknown_enum_variant_round_trips`, `unknown_sentinel_round_trips_raw_payload`)
-- `crates/wasm/tests/wasm_callback_contract.rs` (`wallet_config_timeout_rejects_pending_signer_callback`, `typed_cancellation_signer_returns_order_uids`, `signer_rejection_redacts_provider_message`)
-- `crates/wasm/tests/wasm_callback_lifetime_contract.rs::client_owned_callback_survives_until_request_resolves`
-- `crates/wasm/tests/wasm_callback_transport_contract.rs`
-- `crates/wasm/tests/wasm_cancellation_contract.rs` (`abort_bridge_removes_listener_after_{success,callback_throw,callback_reject,parse_error,timeout_overflow}`)
-- `crates/wasm/tests/wasm_transport_policy_contract.rs` (`all_client_constructors_accept_transport_policy`, `invalid_transport_policy_user_agent_is_rejected`)
-- `crates/wasm/tests/wasm_fail_closed_contract.rs::flavour_descriptor_exposes_web_and_module_subpaths`
-- `crates/wasm/tests/wasm_redaction_contract.rs`
-- `crates/wasm/tests/transport_fetch_smoke.rs`
+- `crates/js/tests/host_pure_helpers.rs` (incl. `typed_data_payload_matches_signing_module_output`, `wasm_version_matches_package_version`)
+- `crates/js/tests/wasm_surface_contract.rs` (incl. `order_typed_data_serializes_to_expected_js_shape`, `wasm_version_matches_crate_version`)
+- `crates/js/tests/wasm_workflow_coverage_contract.rs`
+- `crates/js/tests/wasm_snapshot_surface_contract.rs` (incl. `generated_type_declarations_version_the_envelope_and_expose_error_kinds`, `generated_type_declarations_hide_callback_registry`, `generated_type_declarations_name_callback_params`, `generated_type_declarations_expose_abort_and_wallet_options`, `generated_type_declarations_expose_transport_policy_config_for_http_flavours`, `generated_type_declarations_match_flavour_matrix`)
+- `crates/js/tests/wasm_facade_snapshot_contract.rs` (`facade_declarations_match_flavour_matrix`, `facade_declarations_hide_raw_wasm_bindgen_surface`, `facade_declarations_expose_dispose_and_named_callback_types`)
+- `crates/js/tests/wasm_envelope_contract.rs` (`envelope_serializes_schema_version_and_payload`, `envelope_preserves_unknown_schema_sentinel`)
+- `crates/js/tests/wasm_error_abi_contract.rs` (`invalid_input_variant_round_trips`, `unknown_enum_variant_round_trips`, `unknown_sentinel_round_trips_raw_payload`)
+- `crates/js/tests/wasm_callback_contract.rs` (`wallet_config_timeout_rejects_pending_signer_callback`, `typed_cancellation_signer_returns_order_uids`, `signer_rejection_redacts_provider_message`)
+- `crates/js/tests/wasm_callback_lifetime_contract.rs::client_owned_callback_survives_until_request_resolves`
+- `crates/js/tests/wasm_callback_transport_contract.rs`
+- `crates/js/tests/wasm_cancellation_contract.rs` (`abort_bridge_removes_listener_after_{success,callback_throw,callback_reject,parse_error,timeout_overflow}`)
+- `crates/js/tests/wasm_transport_policy_contract.rs` (`all_client_constructors_accept_transport_policy`, `invalid_transport_policy_user_agent_is_rejected`)
+- `crates/js/tests/wasm_fail_closed_contract.rs::flavour_descriptor_exposes_web_and_module_subpaths`
+- `crates/js/tests/wasm_redaction_contract.rs`
+- `crates/js/tests/transport_fetch_smoke.rs`
 - `tests/wasm_dependency_invariant.rs`
-- `crates/wasm/npm/tests/` (`facade-default.test.ts`, `facade-orderbook.test.ts`, `facade-signing.test.ts`, `facade-cancellation.test.ts`, `facade-resource-cleanup.test.ts`, `facade-error-normalization.test.ts`)
+- `crates/js/npm/tests/` (`facade-default.test.ts`, `facade-orderbook.test.ts`, `facade-signing.test.ts`, `facade-cancellation.test.ts`, `facade-resource-cleanup.test.ts`, `facade-error-normalization.test.ts`)
 - `e2e/wasm-typescript/tests/browser/browser.spec.ts`, `e2e/wasm-typescript/tests/signing.spec.ts`
 - `e2e/wasm-typescript-cf/tests/forbidden-instantiation.spec.ts`
 
 Validation surface:
 
 ```text
-cargo test -p cow-sdk-wasm --test host_pure_helpers
-cargo test -p cow-sdk-wasm --test wasm_surface_contract
-cargo test -p cow-sdk-wasm --test wasm_snapshot_surface_contract
-cargo test -p cow-sdk-wasm --test wasm_facade_snapshot_contract
-cargo test -p cow-sdk-wasm --test wasm_envelope_contract
-cargo test -p cow-sdk-wasm --test wasm_error_abi_contract
+cargo test -p cow-sdk-js --test host_pure_helpers
+cargo test -p cow-sdk-js --test wasm_surface_contract
+cargo test -p cow-sdk-js --test wasm_snapshot_surface_contract
+cargo test -p cow-sdk-js --test wasm_facade_snapshot_contract
+cargo test -p cow-sdk-js --test wasm_envelope_contract
+cargo test -p cow-sdk-js --test wasm_error_abi_contract
 cargo test -p cow-rs-workspace-tests --test wasm_dependency_invariant
 cargo check -p cow-sdk --target wasm32-unknown-unknown --features alloy
 cargo check -p cow-sdk --target wasm32-unknown-unknown --features alloy-provider
 cargo check -p cow-sdk --target wasm32-unknown-unknown --features alloy-signer
-wasm-pack test crates/wasm --headless --firefox
-bash crates/wasm/npm/scripts/build.sh
-node crates/wasm/npm/scripts/verify-exports.mjs
-node crates/wasm/npm/scripts/verify-no-raw-exports.mjs
-node crates/wasm/npm/scripts/verify-facade-denylist.mjs
-node crates/wasm/npm/scripts/measure-wasm-size.mjs
-bash crates/wasm/npm/scripts/verify-package-resolution.sh
-pnpm --dir crates/wasm/npm test
+wasm-pack test crates/js --headless --firefox
+bash crates/js/npm/scripts/build.sh
+node crates/js/npm/scripts/verify-exports.mjs
+node crates/js/npm/scripts/verify-no-raw-exports.mjs
+node crates/js/npm/scripts/verify-facade-denylist.mjs
+node crates/js/npm/scripts/measure-wasm-size.mjs
+bash crates/js/npm/scripts/verify-package-resolution.sh
+pnpm --dir crates/js/npm test
 pnpm --dir e2e/wasm-typescript run test:vitest
 pnpm --dir e2e/wasm-typescript run test:playwright
 pnpm --dir e2e/wasm-typescript-cf test

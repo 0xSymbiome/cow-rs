@@ -17,7 +17,7 @@ value }` (the upstream services `eth::Tx` shape), with the shared override-or-re
 target resolver (`resolve_contract_address`). The deployment-resolving builders fail
 closed with `ContractsError::DeploymentNotFound`; `approve_transaction`,
 `wrap_transaction`, and `unwrap_transaction` are infallible. `cow-sdk-trading` wraps
-them with signer-bound gas estimation and submission, and `cow-sdk-wasm` surfaces them
+them with signer-bound gas estimation and submission, and `cow-sdk-js` surfaces them
 through its `buildApprovalTx` / `buildPresignTx` / `buildCancelOrderTx` /
 `buildSellNativeCurrencyTx` / `buildWrapTx` / `buildUnwrapTx` exports. The matching
 `approve` / `setPreSignature` / `invalidateOrder` / `createOrder` call-data encoders

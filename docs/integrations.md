@@ -59,7 +59,7 @@ The native Alloy family is opt-in:
 
 The root facade exposes matching features named `alloy-provider`,
 `alloy-signer`, and `alloy`. These features are native-only and hard-fail on
-`wasm32-unknown-unknown`; browser integrations use the `cow-sdk-wasm` package
+`wasm32-unknown-unknown`; browser integrations use the `cow-sdk-js` package
 together with the host app's own wallet stack (viem, wagmi, or any EIP-1193
 provider) by wrapping its EIP-1193 provider into the typed-data signer callback.
 
@@ -144,14 +144,14 @@ adapters that expose only one signing operation. Owner resolution is served by
 For most browser dapps, web apps, and CowSwap-style UIs, the upstream
 [`@cowprotocol/cow-sdk`](https://www.npmjs.com/package/@cowprotocol/cow-sdk)
 TypeScript SDK is the recommended choice; it is substantially smaller at
-equivalent feature subsets. `cow-sdk-wasm` is appropriate for specialized
+equivalent feature subsets. `cow-sdk-js` is appropriate for specialized
 cases — TypeScript services that need byte-for-byte parity with the Rust
 SDK's signing path, single-source-of-truth Rust + TypeScript embedding, and
 Cloudflare Workers (size-compatible at the time of measurement; the
 `trading` flavour's edge build is built and tested end-to-end in CI (Workers Vitest),
 within the Workers compressed-size budget).
 
-`cow-sdk-wasm` exposes the SDK to JavaScript through typed callbacks rather
+`cow-sdk-js` exposes the SDK to JavaScript through typed callbacks rather
 than a bundled wallet or HTTP library. It names five host callbacks:
 `TypedDataSignerCallback`, `DigestSignerCallback`, `CustomEip1271Callback`,
 `ContractReadCallback`, and `CowFetchCallback`. The callback HTTP transport
@@ -185,7 +185,7 @@ An async signer owns:
   receipt and does not prove block inclusion or execution success.
 - gas estimation via `estimate_gas`
 
-For browser integrations, the `cow-sdk-wasm` package bridges `Signer` to the
+For browser integrations, the `cow-sdk-js` package bridges `Signer` to the
 host wallet by wrapping its EIP-1193 provider into the typed-data signer
 callback. Native key-store adapters such as `cow-sdk-alloy-signer` implement
 `Signer` against their own private-key backend.

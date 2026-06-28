@@ -19,7 +19,7 @@ The runtime-neutral transport posture supports three
 `cow_sdk_core::HttpTransport` implementations, two of which ship inside
 `cow-sdk-core` under target cfgs: `ReqwestTransport` for native targets and
 `FetchTransport` (browser `fetch`) for `wasm32-unknown-unknown`. The third,
-`cow_sdk_wasm::exports::JsCallbackHttpTransport`, serves runtime-neutral JS
+`cow_sdk_js::exports::JsCallbackHttpTransport`, serves runtime-neutral JS
 consumers such as Node, Workers, and Deno. Both default transports stay in
 `cow-sdk-core`, each gated to its target; the workspace does not extract a
 separate per-target transport crate. The browser `FetchTransport` is the

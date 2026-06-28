@@ -36,7 +36,7 @@ public and runtime shape of `cow-rs`.
 | [0033](0033-minimum-viable-panic-surface.md) | Accepted | Keep production panic sites allowlisted, documented, and limited to static invariants. |
 | [0035](0035-alloy-provider-adapter.md) | Accepted | Alloy adapter family: read-only provider, local signer, and composed umbrella as three native crates (consolidates the former ADR 0036 and ADR 0037). |
 | [0038](0038-transaction-lifecycle-types.md) | Accepted | Split transaction broadcast acknowledgement from mined receipt observation. |
-| [0039](0039-typescript-callable-wasm-sdk-surface.md) | Accepted | Keep the TypeScript-callable WASM SDK surface as an additive leaf crate. |
+| [0039](0039-typescript-callable-wasm-sdk-surface.md) | Accepted | Keep the JavaScript and TypeScript WASM SDK surface as an additive leaf crate. |
 | [0040](0040-wallet-provider-callback-boundary-for-js-consumers.md) | Accepted | Keep wallet and provider interop behind typed JavaScript callbacks. |
 | [0041](0041-transport-policy-l3-layering.md) | Accepted | Share retry, rate-limit, cooldown, and classification policy across HTTP clients. |
 | [0044](0044-bundle-size-profile-and-flavor-builds.md) | Accepted | Ship feature-scoped WASM flavor builds from one package. |
@@ -75,14 +75,14 @@ retired record lives in git history, and its current home is named below.
 | 0004 | Superseded | Feature-gated browser-wallet sidecar; the native browser-wallet crate was retired — see [0039](0039-typescript-callable-wasm-sdk-surface.md) and [0040](0040-wallet-provider-callback-boundary-for-js-consumers.md). |
 | 0007 | Superseded | Bounded native browser-wallet posture; browser/wallet integration now served by [0039](0039-typescript-callable-wasm-sdk-surface.md) and [0040](0040-wallet-provider-callback-boundary-for-js-consumers.md). |
 | 0008 | Superseded | Additive-capability growth rule folded into the multi-crate-family decision in [0001](0001-multi-crate-sdk-family-with-thin-facade.md). |
-| 0009 | Superseded | WASM verification-console example genre retired in favour of the `cow-sdk-wasm` surface in [0039](0039-typescript-callable-wasm-sdk-surface.md). |
+| 0009 | Superseded | WASM verification-console example genre retired in favour of the `cow-sdk-js` surface in [0039](0039-typescript-callable-wasm-sdk-surface.md). |
 | 0019 | Superseded | Sole-live-dispatch invariant folded into [0013](0013-http-transport-injection-and-typestate-builders.md). |
 | 0023 | Superseded | Legacy-shim removal folded into the single `OrderData` order-identity path in [0059](0059-hash-concrete-orderdata-directly.md). |
 | 0029 | Rejected | Proposed evolving public traits through `*Ext` extension traits; rejected — the SDK owns its traits and grows new RPC primitives through opt-in capability supertraits ([0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [0057](0057-log-provider-capability-trait.md)). |
 | 0034 | Superseded | Vault-relayer interaction-target guard; retired when the settlement encoder was removed (a solver/backend concern). |
 | 0036 | Superseded | Consolidated into the Alloy adapter family ([0035](0035-alloy-provider-adapter.md)). |
 | 0037 | Superseded | Consolidated into the Alloy adapter family ([0035](0035-alloy-provider-adapter.md)). |
-| 0042 | Superseded | Pure-helpers crate folded into the `cow-sdk-wasm::helpers` module ([0039](0039-typescript-callable-wasm-sdk-surface.md)). |
+| 0042 | Superseded | Pure-helpers crate folded into the `cow-sdk-js::helpers` module ([0039](0039-typescript-callable-wasm-sdk-surface.md)). |
 | 0043 | Superseded | Callback-registry internalization folded into the WASM surface ([0039](0039-typescript-callable-wasm-sdk-surface.md)). |
 | 0046 | Superseded | JavaScript transport-policy exposure folded into the WASM surface ([0039](0039-typescript-callable-wasm-sdk-surface.md)). |
 | 0047 | Superseded | TypeScript-facade-as-public-surface folded into the WASM surface ([0039](0039-typescript-callable-wasm-sdk-surface.md)). |

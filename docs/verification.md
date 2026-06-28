@@ -48,7 +48,7 @@ outside the routine blocking contract.
 
 | Crate | Boundary | Deterministic evidence | Primary command | Environment-sensitive or manual boundary |
 | --- | --- | --- | --- | --- |
-| `cow-sdk-core` | Shared chain config, validated partner-route selection, domain types, runtime traits, the `HttpTransport` seam with its native `ReqwestTransport` default and the target-gated browser `FetchTransport` (`transport::fetch`) — including cross-adapter parity against the native default, request/response-only scope, and cache-control header forwarding — and redacted API-context diagnostics | `config_contract.rs`, `types_contract.rs`, `traits_contract.rs`, `transport_contract.rs`, the browser-transport tests in `crates/wasm/tests/transport_parity_contract.rs`, `crates/wasm/tests/transport_fetch_contract.rs`, and `crates/wasm/tests/transport_fetch_smoke.rs`, `docs/audit/http-transport-contract-audit.md` | `cargo test -p cow-sdk-core`; `wasm-pack test crates/wasm` covers the browser `FetchTransport` | Foundational seam; native path has no live dependency, while live browser fetch behavior depends on vendor-specific network stacks |
+| `cow-sdk-core` | Shared chain config, validated partner-route selection, domain types, runtime traits, the `HttpTransport` seam with its native `ReqwestTransport` default and the target-gated browser `FetchTransport` (`transport::fetch`) — including cross-adapter parity against the native default, request/response-only scope, and cache-control header forwarding — and redacted API-context diagnostics | `config_contract.rs`, `types_contract.rs`, `traits_contract.rs`, `transport_contract.rs`, the browser-transport tests in `crates/js/tests/transport_parity_contract.rs`, `crates/js/tests/transport_fetch_contract.rs`, and `crates/js/tests/transport_fetch_smoke.rs`, `docs/audit/http-transport-contract-audit.md` | `cargo test -p cow-sdk-core`; `wasm-pack test crates/js` covers the browser `FetchTransport` | Foundational seam; native path has no live dependency, while live browser fetch behavior depends on vendor-specific network stacks |
 | `cow-sdk-core` (`transport-policy`) | Default policy stability, retryable-status completeness, jitter bounds, per-host limiter keying, and optional reqwest classifier coverage | `cargo test -p cow-sdk-core --features transport-policy` over default-policy, retryable-status, jitter-bound, limiter-keying, and classifier coverage | `cargo test -p cow-sdk-core --features transport-policy` | Live endpoint timing remains environment-sensitive |
 | `cow-sdk-contracts` | `alloy::sol!`-generated typed bindings for Settlement, EthFlow, CoWSwapOnchainOrders event decoding, the wrapped-native token, and ERC-20; the typed `Registry` deployment authority; and the `Eip1271Cache` trait co-located with `verify_eip1271_signature_cached` | `parity_contract.rs`, `order_contract.rs`, `onchain_orders.rs`, `tokens_contract.rs`, `signature_contract.rs`, `settlement_events_contract.rs`, `interaction_contract.rs`, `deployments.rs (tests)`, `docs/audit/contract-bindings-parity-audit.md`, `docs/audit/event-log-decoding-audit.md`, `docs/audit/deployment-registry-audit.md` | `cargo test -p cow-sdk-contracts` | Live chain-backed spot checks are optional |
 | `cow-sdk-signing` | EIP-712 order signing, typed-data payload construction, generated ids, EIP-1271 payloads, cancellation signing, domain separation, and the always-available `NoopEip1271Cache` (the `Eip1271Cache` seam; consumers implement the trait to memoize) | `property_contract.rs`, `order_signing_contract.rs`, `eip1271_contract.rs`, `cancellation_contract.rs`, `domain_contract.rs`, `docs/audit/eip1271-verification-cache-audit.md` | `cargo test -p cow-sdk-signing` | Live chain-backed spot checks are optional |
@@ -114,7 +114,7 @@ cross-cutting properties whose evidence spans more than one crate.
 | Published crate README doctests | Every published crate README is wired into crate rustdoc with a `cfg_attr(doctest, ...)` shim, so `cargo test --workspace --doc` compiles every fenced README example on CI. |
 | `cargo test --all-features --workspace --doc` | All-feature doctest gate for the public docs contract |
 | Native host matrix | Shared quality-gate host coverage on Ubuntu, macOS, and Windows |
-| `cow-sdk-wasm` import fences (`cargo check-source-fences`) | Forbidden-import fences for `cow-sdk-wasm` source files; reject native-only Alloy crates, `reqwest`, Tokio runtime entrypoints, Tokio macros, and the `cow-sdk-core` reqwest re-exports before they can enter the browser leaf crate. |
+| `cow-sdk-js` import fences (`cargo check-source-fences`) | Forbidden-import fences for `cow-sdk-js` source files; reject native-only Alloy crates, `reqwest`, Tokio runtime entrypoints, Tokio macros, and the `cow-sdk-core` reqwest re-exports before they can enter the browser leaf crate. |
 | Shared nextest OS matrix | `_quality-gate.yml` runs `cargo nextest run --workspace --all-features --config-file .github/config/nextest.toml` on Ubuntu, macOS, and Windows with `fail-fast: false`. |
 | IpfsFetch await contract | Compiler-enforced: the `fetch_doc_from_*` futures are `#[must_use]`, so an un-awaited call fails the workspace's `unused_must_use = deny`; an `IpfsFetchTransport` impl whose `get` does not return the trait's future does not compile. |
 | `cargo doc --workspace --all-features --no-deps` | Public rustdoc build gate |
@@ -126,7 +126,7 @@ cross-cutting properties whose evidence spans more than one crate.
 | `cargo parity-validate --upstream-root <dir>` | Deep parity gate against `cargo xtask parity sync --root <dir>` checkouts: every pinned repository's remote/HEAD/producer paths plus the vendored OpenAPI body at the services pin |
 | `ci-success` | Aggregate routine CI status for branch protection across the required native validation and publication jobs |
 | Alloy release-candidate canary | Manual forward-compat drift workflow in `.github/workflows/alloy-release-candidate.yml` triggered via `workflow_dispatch`; it checks configurable `ALLOY_CANARY_REF` with a pinned SHA fallback and has no pull-request trigger. |
-| `cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-alloy-provider -p cow-sdk-alloy-signer -p cow-sdk-alloy -p cow-sdk -p cow-sdk-wasm -p cow-sdk-test` | Blocking allow-list gate asserting `alloy-provider` remains limited to `cow-sdk-alloy-provider` and `cow-sdk-alloy`; `cargo check-alloy-provider-invariant` normalises the raw Cargo tree output, and `cargo docs-agree` keeps the raw package list aligned across the release checklist, `_quality-gate.yml`, `CONTRIBUTING.md`, and `PROPERTIES.md`. |
+| `cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-alloy-provider -p cow-sdk-alloy-signer -p cow-sdk-alloy -p cow-sdk -p cow-sdk-js -p cow-sdk-test` | Blocking allow-list gate asserting `alloy-provider` remains limited to `cow-sdk-alloy-provider` and `cow-sdk-alloy`; `cargo check-alloy-provider-invariant` normalises the raw Cargo tree output, and `cargo docs-agree` keeps the raw package list aligned across the release checklist, `_quality-gate.yml`, `CONTRIBUTING.md`, and `PROPERTIES.md`. |
 | `cargo check-alloy-signer-invariant` | Blocking allow-list gate asserting `alloy-signer-local` remains limited to `cow-sdk-alloy-signer` and `cow-sdk-alloy`. |
 
 ## Publication Gates
@@ -191,15 +191,15 @@ here until the explicit app-data metadata translation boundary.
 ### Browser-Runtime Support
 
 Browser and wallet integration for JavaScript and TypeScript consumers is
-served by the `cow-sdk-wasm` package together with the host application's own
+served by the `cow-sdk-js` package together with the host application's own
 wallet stack (viem, wagmi, or any EIP-1193 provider). The SDK owns the
-typed callback boundary and the TypeScript-callable wasm surface;
+typed callback boundary and the JavaScript and TypeScript wasm surface;
 the host application supplies the wallet connection, chain authority, and user
 prompts. Deterministic proof for the wasm surface comes from the host-side
 helper tests, the headless `wasm-pack` browser lane, and the TypeScript
 end-to-end suites; the target-gated browser `FetchTransport` lives in
 `cow-sdk-core`'s `transport::fetch` module and is exercised by the
-`crates/wasm/tests/transport_*` contracts. Live wallet authorization,
+`crates/js/tests/transport_*` contracts. Live wallet authorization,
 injected-provider behavior, and vendor-specific prompts remain manual,
 environment-sensitive boundaries owned by the host's wallet stack.
 
@@ -264,9 +264,9 @@ TypeScript arbiter's own CREATE2 golden vectors.
 ### CI Architecture Gates
 
 The policy layer carries the source-level architecture fences in addition to the
-ordinary Rust build and test jobs. The `cow-sdk-wasm` import fences in
+ordinary Rust build and test jobs. The `cow-sdk-js` import fences in
 `cargo check-source-fences` reject native-only Alloy, `reqwest`, Tokio runtime, Tokio macro, and
-`cow-sdk-core` reqwest re-export references in `cow-sdk-wasm` sources. The
+`cow-sdk-core` reqwest re-export references in `cow-sdk-js` sources. The
 shared quality gate runs the standard nextest suite on Ubuntu, macOS, and
 Windows with `fail-fast: false`, replacing duplicate single-host jobs with one
 matrix-owned host-coverage lane. The same shared quality gate also checks
@@ -285,7 +285,7 @@ that every `fetch_doc_from_*` caller awaits the returned future and every
 - Dependency policy is intentionally split: `cargo-deny` owns bans, licenses, sources, and yanked advisory policy, while `cargo-audit` blocks vulnerabilities plus unsound and unmaintained advisories. Yanked published-upstream cases require explicit audit evidence instead of widened ignore lists or hidden unreleased overrides.
 - Routine native validation workflows and the dedicated WASM workflows disable checkout credential persistence and use explicit timeout budgets per job.
 - Mocked transports should assert request shape and failure behavior where those paths are part of the validated surface.
-- WASM/browser evidence is separated from native examples so browser runtime assumptions stay visible, and the `wasm-bindgen-test` coverage in `cow-sdk-wasm` proves the TypeScript-callable surface and the browser `FetchTransport` independent of any host wallet stack.
+- WASM/browser evidence is separated from native examples so browser runtime assumptions stay visible, and the `wasm-bindgen-test` coverage in `cow-sdk-js` proves the JavaScript and TypeScript surface and the browser `FetchTransport` independent of any host wallet stack.
 - Live quote, orderbook, subgraph, and wallet checks stay manual unless explicitly promoted into a deterministic routed or injected test.
 - Schema-derived evidence stays test-only and outside the public SDK API.
 - Higher-iteration search-profile tests remain limited to narrow deterministic helper families whose inputs are large enough to justify the extra exploration and whose failures stay readable in ordinary crate test output.

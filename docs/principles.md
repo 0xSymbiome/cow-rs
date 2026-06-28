@@ -105,7 +105,7 @@ release-gating invariants rather than aspirations.
 The trait abstraction is the mechanism that keeps a single trading path working
 across runtimes. `cow-sdk-trading` depends on `cow-sdk-core` traits rather than
 on a concrete provider library, so native Alloy, a host-supplied EIP-1193 wallet
-reached through the `cow-sdk-wasm` callback, and a custom simulator or fork-test
+reached through the `cow-sdk-js` callback, and a custom simulator or fork-test
 adapter can all satisfy the same helper calls without widening the default
 facade.
 

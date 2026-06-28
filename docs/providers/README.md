@@ -21,7 +21,7 @@ boundary between the SDK and a caller-supplied signer or RPC backend:
 
 This directory documents shipped and custom adapter paths against those trait
 surfaces. Consumers who use `cow-sdk-trading` should pick the native Alloy
-adapter on native targets, or, on wasm, the `cow-sdk-wasm` package wired to the
+adapter on native targets, or, on wasm, the `cow-sdk-js` package wired to the
 host's own EIP-1193 wallet by wrapping it into the typed-data signer callback. Consumers
 building a generic Ethereum application without trading helpers should use
 Alloy directly; the adapter exists to wire native Alloy into the SDK's trading
@@ -39,10 +39,10 @@ and signing contracts.
 The SDK keeps provider ecosystems out of the default facade. Native Alloy
 support ships as explicit leaf crates, and other ecosystems can still integrate
 by implementing the same `cow-sdk-core` traits. For JavaScript and TypeScript
-runtimes, the `cow-sdk-wasm` package bridges those same traits to the host
+runtimes, the `cow-sdk-js` package bridges those same traits to the host
 wallet through typed callbacks, including the typed-data signer callback.
 
-JavaScript and TypeScript consumers may use `cow-sdk-wasm` for specialized
+JavaScript and TypeScript consumers may use `cow-sdk-js` for specialized
 cases: deterministic Rust signing parity, single-source-of-truth Rust +
 TypeScript embedding, and Cloudflare Workers (size-compatible with the current
 Workers Paid/Bundled (~3 MB) compressed-size limit at the time of measurement; the
@@ -60,7 +60,7 @@ equivalent feature subsets.
 
 Those traits are the runtime-neutral contract. A single trading helper can
 drive native Alloy, a host-supplied EIP-1193 wallet reached through the
-`cow-sdk-wasm` callback, or a custom adapter because the provider and signer
+`cow-sdk-js` callback, or a custom adapter because the provider and signer
 seams live in `cow-sdk-core` rather than in a concrete runtime crate.
 
 The transaction lifecycle is split across the same traits. Signers return

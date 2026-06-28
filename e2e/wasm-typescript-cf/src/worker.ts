@@ -4,8 +4,8 @@ import initialize, {
   supportedChainIds,
   wasmVersion,
   type OrderData
-} from "cow-sdk-wasm-test-package/trading/edge";
-import wasmModule from "cow-sdk-wasm-test-package/trading/edge/wasm";
+} from "cow-sdk-js-test-package/trading/edge";
+import wasmModule from "cow-sdk-js-test-package/trading/edge/wasm";
 
 const ORDER: OrderData = {
   sellToken: "0x1111111111111111111111111111111111111111",

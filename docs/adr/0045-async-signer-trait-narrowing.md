@@ -9,7 +9,7 @@
 
 ## Decision
 
-Async signing capabilities stay split by operation. TypeScript-callable signing
+Async signing capabilities stay split by operation. JavaScript and TypeScript signing
 surfaces request only the capability they need: typed-data signing, digest
 signing, cancellation signing, or custom EIP-1271 signing. Unsupported
 operations fail before wallet dispatch instead of flowing through a broad

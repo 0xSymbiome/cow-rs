@@ -53,9 +53,9 @@ flowchart TD
 This diagram is an overview, not a build graph. Every crate depends on
 `cow-sdk-core`, so only the transform-layer edges to the foundation are drawn,
 and optional capabilities appear as dashed `feature:` edges that are off by
-default. The `wasm32`-target leaf `cow-sdk-wasm` composes and serves the same
+default. The `wasm32`-target leaf `cow-sdk-js` composes and serves the same
 crates and is shown in
-[TypeScript-Callable WASM Surface](#typescript-callable-wasm-surface); the
+[JavaScript and TypeScript WASM Surface](#javascript-and-typescript-wasm-surface); the
 browser HTTP transport (`FetchTransport`) is a target-gated module of
 `cow-sdk-core`, the browser sibling of the native `ReqwestTransport`. The
 full inventory of consumer-facing crates is the [Crate Roles](#crate-roles)
@@ -74,7 +74,7 @@ omitted).
 | `cow-sdk-orderbook` | Typed orderbook transport over the `HttpTransport` seam, with the `OrderbookApiBuilder` typestate | You need explicit request and response control, or the typed quote, post, and query surface without compiling the signing stack. |
 | `cow-sdk-trading` | Quote-to-order workflows plus the quote, submit, cancel, and approve orchestration surface | You need the main trading orchestration layer. |
 | `cow-sdk-subgraph` | Read-only subgraph access over the `HttpTransport` seam, with the `SubgraphApiBuilder` typestate | You need GraphQL reads or custom subgraph queries (via the `cow-sdk` `subgraph` feature or this crate directly). |
-| `cow-sdk-wasm` | TypeScript-callable wasm-bindgen bindings over deterministic SDK helpers, typed callbacks that bridge to a host wallet, orderbook/subgraph/IPFS clients, and trading flows | JavaScript or TypeScript should call the Rust SDK through wasm exports, including browser-wallet flows driven by the host's own provider. |
+| `cow-sdk-js` | wasm-bindgen bindings for JavaScript and TypeScript over deterministic SDK helpers, typed callbacks that bridge to a host wallet, orderbook/subgraph/IPFS clients, and trading flows | JavaScript or TypeScript should call the Rust SDK through wasm exports, including browser-wallet flows driven by the host's own provider. |
 | `cow-sdk-alloy-provider` | Native Alloy-backed `Provider` adapter | You need read-only chain RPC through Alloy without a signer dependency. |
 | `cow-sdk-alloy-signer` | Native Alloy-backed local private-key `Signer` adapter | You need local message or EIP-712 signing without provider-backed transaction submission. |
 | `cow-sdk-alloy` | Composed native Alloy provider plus signer adapter | You need one native client for `Provider`, `LogProvider`, `SigningProvider`, and `Signer` helper flows. |
@@ -102,17 +102,17 @@ that composes them.
 | Client | `cow-sdk-orderbook`, `cow-sdk-subgraph` | Typed HTTP and GraphQL access through the `HttpTransport` seam |
 | Workflow | `cow-sdk-trading` | Quote, submit, cancel, approve, and related flows |
 | Runtime adapter | `cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, `cow-sdk-alloy` | Opt-in native Alloy provider/signer adapters (the browser HTTP transport ships as `cow-sdk-core`'s target-gated `transport::fetch` module) |
-| TypeScript WASM leaf | `cow-sdk-wasm` | Typed wasm-bindgen exports and JavaScript callbacks over the same protocol helpers and HTTP seams |
+| TypeScript WASM leaf | `cow-sdk-js` | Typed wasm-bindgen exports and JavaScript callbacks over the same protocol helpers and HTTP seams |
 | Facade | `cow-sdk` | Curated public entrypoint |
 | Test support | `cow-sdk-test` | Published in-memory trait doubles for downstream integration tests, off the default dependency graph |
 
-## TypeScript-Callable WASM Surface
+## JavaScript and TypeScript WASM Surface
 
-`cow-sdk-wasm` is a peer leaf, not a replacement for the native facade and
+`cow-sdk-js` is a peer leaf, not a replacement for the native facade and
 not a replacement for the upstream `@cowprotocol/cow-sdk` TypeScript SDK.
 For most browser dapps and standard TypeScript applications, the upstream
 TypeScript SDK is the recommended choice because of its smaller bundle size
-at equivalent feature subsets. `cow-sdk-wasm` is appropriate for specialized
+at equivalent feature subsets. `cow-sdk-js` is appropriate for specialized
 cases — deterministic Rust signing parity, single-source-of-truth Rust +
 TypeScript embedding, and Cloudflare Workers (size-compatible at the time of
 measurement; the `trading` flavour's edge build is built and tested end-to-end in CI
@@ -190,7 +190,7 @@ The SDK declares its provider, signer, and signing-provider contracts in
 `cow-sdk-core` rather than binding trading helpers directly to a concrete
 Ethereum runtime library. This lets one trading call site drive native Alloy on
 x86 / ARM, a host-supplied EIP-1193 wallet on `wasm32` (wrapped into the
-`cow-sdk-wasm` typed wallet callbacks), or any custom adapter that
+`cow-sdk-js` typed wallet callbacks), or any custom adapter that
 implements the same traits. If `cow-sdk-trading` depended on a concrete
 provider library directly, the wasm path would have to pull native-only
 dependencies or fork trading helpers per runtime.
@@ -210,7 +210,7 @@ indexed arguments such as an event's `owner` filter server-side — that feeds t
 fail-closed event decoders.
 Native Alloy support is already shipped as
 `cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`, and `cow-sdk-alloy`.
-For JavaScript and TypeScript consumers, the `cow-sdk-wasm` package exposes the
+For JavaScript and TypeScript consumers, the `cow-sdk-js` package exposes the
 same trait surface as typed callbacks — including the typed-data signer callback
 ([ADR 0040](adr/0040-wallet-provider-callback-boundary-for-js-consumers.md)) — so
 the host application's own wallet stack (viem, wagmi, or any EIP-1193 provider)
@@ -405,11 +405,11 @@ back the workflow.
 ### Browser-Runtime Support
 
 Browser and wallet integration is served to JavaScript and TypeScript consumers
-by the `cow-sdk-wasm` package together with the host application's own wallet
+by the `cow-sdk-js` package together with the host application's own wallet
 stack (viem, wagmi, or any EIP-1193 provider). The SDK exposes the typed
 callback boundary
 ([ADR 0040](adr/0040-wallet-provider-callback-boundary-for-js-consumers.md)) and
-the TypeScript-callable wasm surface
+the JavaScript and TypeScript wasm surface
 ([ADR 0039](adr/0039-typescript-callable-wasm-sdk-surface.md)); the host supplies
 the wallet connection. The native facade stays free of any browser-specific
 crate, and chain coherence is enforced at the workflow level through the same
@@ -426,7 +426,7 @@ crate, and chain coherence is enforced at the workflow level through the same
 - `cow-sdk-subgraph` stays a separate read-only crate, re-exported through
   `cow-sdk` only behind the off-by-default `subgraph` feature.
 - Wallet integration crosses into the host through the typed wallet callbacks
-  in `cow-sdk-wasm`; the SDK owns the callback shape, not the wallet
+  in `cow-sdk-js`; the SDK owns the callback shape, not the wallet
   connection.
 - Orderbook wire DTOs remain string-heavy only at the explicit HTTP boundary.
 - Public configs, endpoint discovery, and typed request failures expose only

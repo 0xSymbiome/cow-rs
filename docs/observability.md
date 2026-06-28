@@ -110,7 +110,7 @@ Tracing spans are emitted by every long-running public async method on
 `cow-sdk-signing`, `cow-sdk-app-data`, and `cow-sdk-contracts`, the last
 behind its opt-in `cow-shed` facade feature. Each canonical public async
 method carries `#[tracing::instrument]` and emits exactly one span per call.
-The `cow-sdk-wasm` JavaScript export surface emits one span per export call
+The `cow-sdk-js` JavaScript export surface emits one span per export call
 under the same redaction posture; see its subsection below.
 The native Alloy adapter crates emit no telemetry of their own by design; see
 the Native Alloy Adapters section below.
@@ -262,7 +262,7 @@ the facade `cow-shed` feature ([ADR 0049](adr/0049-cow-shed-account-abstraction-
 
 - `sign`
 
-### `cow-sdk-wasm`
+### `cow-sdk-js`
 
 The JavaScript export surface emits one span per export call, each named
 `wasm_export` and carrying a stable `endpoint` field of the form
@@ -271,7 +271,7 @@ export module and `<method>` is the Rust export name. The spans capture only
 the `endpoint` field, so no JavaScript callback, signer, payload, or wallet
 input is recorded. The
 underlying Rust crate's own spans are gated by that crate's `tracing` feature
-and are not enabled by `cow-sdk-wasm`'s feature alone, so each export call
+and are not enabled by `cow-sdk-js`'s feature alone, so each export call
 surfaces exactly one `wasm_export` span. Synchronous transaction-building exports
 (`buildPresignTx`, `buildCancelOrderTx`, `eip1271SignaturePayload`) are
 deterministic and carry no spans.
@@ -285,7 +285,7 @@ The covered export areas are:
 - `wasm.subgraph.*` (`SubgraphClient` totals, volume, and query exports)
 - `wasm.ipfs.*` (`IpfsClient` app-data read exports)
 
-The published npm flavours (`crates/wasm/npm/flavours.json`) build **without**
+The published npm flavours (`crates/js/npm/flavours.json`) build **without**
 the `tracing` feature, so the shipped package emits no `wasm.*` spans and links
 none of the `tracing` machinery — matching the SDK's zero-cost-when-off posture
 and keeping the wasm bundle minimal. Rust spans are producer-only; a browser or
@@ -342,7 +342,7 @@ No traced span or event must ever carry a secret. Concretely:
   secrets before public formatting; the adapters emit no telemetry of their
   own, so the redaction posture covers only `Debug`, `Display`, and
   `Error::source` rendering.
-- `cow-sdk-wasm` maps transport, app-data, signing, orderbook, subgraph, and
+- `cow-sdk-js` maps transport, app-data, signing, orderbook, subgraph, and
   trading failures into `WasmError` with display-safe messages and redacted
   response bodies before those values cross into JavaScript.
 - EIP-1271 verification telemetry records the verifier address and

@@ -167,7 +167,7 @@ SDK.
 ## Host wallet trust posture
 
 The SDK does not connect to or discover wallets. JavaScript and TypeScript hosts
-drive `cow-sdk-wasm` with their own wallet stack (viem, wagmi, or any EIP-1193
+drive `cow-sdk-js` with their own wallet stack (viem, wagmi, or any EIP-1193
 provider) and supply signatures across the SDK's request callbacks. Provider
 identity, EIP-6963 discovery, and origin trust are the host application's
 responsibility; the SDK treats whatever the callback returns as untrusted input

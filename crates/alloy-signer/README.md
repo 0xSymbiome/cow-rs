@@ -16,7 +16,7 @@ published as a separate opt-in crate so read-only provider users and the default
 ## Capability Boundary
 
 This crate is native-only. JavaScript and TypeScript hosts targeting the browser
-should use the [`cow-sdk-wasm`](https://crates.io/crates/cow-sdk-wasm) package and
+should use the [`cow-sdk-js`](https://crates.io/crates/cow-sdk-js) package and
 supply their own wallet across its typed callback boundary.
 
 The native-only boundary is enforced at compile time on `wasm32` targets. That

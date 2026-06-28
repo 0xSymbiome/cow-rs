@@ -8,7 +8,7 @@
 #   - regenerates CHANGELOG.md from conventional commits via the git-cliff hook;
 #   - creates one signed commit and one signed tag `vX.Y.Z`;
 #   - publishes every `publish = true` crate in dependency order (the
-#     `publish = false` crates — cow-sdk-wasm, test-utils, examples, tests,
+#     `publish = false` crates — cow-sdk-js, test-utils, examples, tests,
 #     xtask — are skipped automatically);
 #   - pushes the commit and tag.
 

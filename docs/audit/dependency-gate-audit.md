@@ -29,7 +29,7 @@ This audit covers:
 - the native Alloy runtime and Alloy Core ABI two-family lockfile invariant
 - the release-doc guard that requires RustSec ignore rationale entries
 - the report-only alloy release-candidate canary and its failure response
-- the `cow-sdk-wasm` wasm32 dependency exclusion list for the native Alloy
+- the `cow-sdk-js` wasm32 dependency exclusion list for the native Alloy
   adapter crates, reqwest, and hyper families
 - the pure-helper crate dependency boundary that keeps deterministic wasm
   helpers free of JavaScript FFI dependencies
@@ -57,8 +57,8 @@ architecture reviews.
 | Native Alloy allow-lists | Shipped crates that depend on `alloy-provider` or `alloy-signer-local` are limited to the reviewed adapter crates and fail the xtask policy gate if the dependency escapes | Conforms |
 | Native Alloy two-family lockfile | The workspace lockfile keeps reviewed Alloy runtime crates on `2.0.4` and Alloy Core ABI crates on `1.5.7`, with exactly one resolved version per listed crate | Conforms |
 | Alloy canary failures | Scheduled canary failures are triaged as upstream-compatibility reports, with local pins changed only after ordinary quality gates pass and without dependency-policy waivers | Conforms |
-| `cow-sdk-wasm` wasm32 tree | The wasm32 dependency graph excludes the native Alloy adapter crates (`cow-sdk-alloy*`, `alloy-provider`), reqwest, and hyper families; `tokio` is limited to the existing cancellation-token path | Conforms |
-| Helper-module FFI boundary | The `cow-sdk-wasm::helpers` module remains independent of wasm-bindgen, `js-sys`, `web-sys`, and `serde-wasm-bindgen` | Conforms |
+| `cow-sdk-js` wasm32 tree | The wasm32 dependency graph excludes the native Alloy adapter crates (`cow-sdk-alloy*`, `alloy-provider`), reqwest, and hyper families; `tokio` is limited to the existing cancellation-token path | Conforms |
+| Helper-module FFI boundary | The `cow-sdk-js::helpers` module remains independent of wasm-bindgen, `js-sys`, `web-sys`, and `serde-wasm-bindgen` | Conforms |
 | Canonical primitive layer dependency closure | The workspace-level `sha3` and `num-bigint` declarations carry zero first-party direct production consumers and only resolve through `[dev-dependencies]` or transitive paths; the alloy-core ABI workspace pins, `httpdate`, and `serde_jcs` are consumed at the documented callsites per [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md) | Conforms |
 | `encode_prefixed` mechanical fence | The `encode-prefixed` source fences (`cargo check-source-fences`) block the `format!("0x{}", alloy_primitives::hex::encode(...))` legacy hand-roll and unqualified `use alloy_primitives::hex::encode` imports in production sources, locking the canonical-primitive-layer hex-string contract from [ADR 0052](../adr/0052-alloy-primitives-canonical-primitive-layer.md) | Conforms |
 | Workspace dependency hygiene | The orphan `async-lock` workspace pin has been retired; no first-party crate referenced the pin and the lockfile no longer carries a first-party direct edge into the crate | Conforms |
@@ -151,7 +151,7 @@ encode and decode callsite across `crates/core/**`,
 `crates/contracts/**`, `crates/signing/**`,
 `crates/alloy-provider/**`, `crates/alloy-signer/**`,
 `crates/alloy/**`, `crates/app-data/**`, `crates/trading/**`,
-`crates/wasm/**`, and
+`crates/js/**`, and
 `crates/contracts/src/cow_shed/**` routes through `alloy_primitives::hex::{encode,
 decode}`, which resolves transitively to the `const-hex 1.18.x`
 re-export carried by `alloy-primitives 1.5.x`. The
@@ -305,17 +305,17 @@ response to the canary alone. If a local change is needed, it must preserve the
 published-crate invariant that no shipped leaf crate transitively depends on
 `alloy-provider`.
 
-### `cow-sdk-wasm` Dependency Boundary
+### `cow-sdk-js` Dependency Boundary
 
-`cow-sdk-wasm` is a peer leaf of the native Alloy adapter family. Its wasm32
+`cow-sdk-js` is a peer leaf of the native Alloy adapter family. Its wasm32
 dependency tree must not pull the native Alloy provider/signer
 crates, reqwest, hyper, or native Alloy RPC transport families. The workspace
 test reads `cargo metadata --filter-platform wasm32-unknown-unknown --no-deps`
-and fails if any forbidden crate appears among `cow-sdk-wasm`'s direct
-(manifest) wasm32 dependencies. This keeps the TypeScript-callable
+and fails if any forbidden crate appears among `cow-sdk-js`'s direct
+(manifest) wasm32 dependencies. This keeps the JavaScript and TypeScript
 crate browser-safe and preserves the native Alloy adapter boundary.
 
-The `cow-sdk-wasm::helpers` module is a pure Rust boundary for deterministic
+The `cow-sdk-js::helpers` module is a pure Rust boundary for deterministic
 wasm helper logic. Its FFI-neutrality test rejects JavaScript FFI imports so the helper module
 does not pull wasm-bindgen concerns into reusable protocol code.
 
@@ -337,8 +337,8 @@ Primary implementation points:
 - `docs/release-checklist.md`
 - `docs/verification.md`
 - `docs/verification.md`
-- `crates/wasm/Cargo.toml`
-- `crates/wasm/tests/no_ffi_helpers.rs`
+- `crates/js/Cargo.toml`
+- `crates/js/tests/no_ffi_helpers.rs`
 - `crates/contracts/Cargo.toml`
 - `crates/orderbook/Cargo.toml`
 
@@ -359,6 +359,6 @@ cargo test --workspace --all-features
 cargo clippy --workspace --all-targets --all-features -- -D warnings
 cargo check --workspace --all-features --target wasm32-unknown-unknown
 cargo test -p cow-rs-workspace-tests --test dependency_default_features_audit
-cargo test -p cow-sdk-wasm --test no_ffi_helpers
+cargo test -p cow-sdk-js --test no_ffi_helpers
 cargo docs-agree
 ```

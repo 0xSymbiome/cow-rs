@@ -8,7 +8,7 @@
 # must stay LF on every host so comparisons against CI's LF output hold.
 *.snap                                   text eol=lf
 *.stderr                                 text eol=lf
-crates/wasm/snapshots/**/*.d.ts          text eol=lf
+crates/js/snapshots/**/*.d.ts          text eol=lf
 parity/fixtures/**/*.json                text eol=lf
 
 # Parser inputs read by parity tooling: vendored upstream snapshots, the DTO

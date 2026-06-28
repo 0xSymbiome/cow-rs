@@ -84,12 +84,12 @@ jobs:
           wasm-opt --version
       - name: Check formatting
         run: cargo fmt --all --check
-      - name: Check cow-sdk-wasm host gate
-        run: cargo check -p cow-sdk-wasm --no-default-features
-      - name: Check cow-sdk-wasm wasm32
-        run: cargo check -p cow-sdk-wasm --target wasm32-unknown-unknown --no-default-features
+      - name: Check cow-sdk-js host gate
+        run: cargo check -p cow-sdk-js --no-default-features
+      - name: Check cow-sdk-js wasm32
+        run: cargo check -p cow-sdk-js --target wasm32-unknown-unknown --no-default-features
       - name: Check every wasm flavour compiles warning-free on wasm32
-        # Each shipped flavour (crates/wasm/npm/flavours.json) must compile clean
+        # Each shipped flavour (crates/js/npm/flavours.json) must compile clean
         # on wasm32 with warnings promoted to errors. The --no-default-features
         # check above cannot see breakage in the signing/orderbook/trading export
         # surfaces, and a flavour-specific unused-import or dead-code warning — for
@@ -100,9 +100,9 @@ jobs:
         env:
           RUSTFLAGS: "-D warnings"
         run: |
-          for features in $(node -e 'JSON.parse(require("node:fs").readFileSync("crates/wasm/npm/flavours.json", "utf8")).flavours.forEach((flavour) => console.log(flavour.features.join(",")))'); do
+          for features in $(node -e 'JSON.parse(require("node:fs").readFileSync("crates/js/npm/flavours.json", "utf8")).flavours.forEach((flavour) => console.log(flavour.features.join(",")))'); do
             echo "::group::wasm32 flavour [${features}]"
-            cargo check -p cow-sdk-wasm --target wasm32-unknown-unknown --no-default-features --features "${features}"
+            cargo check -p cow-sdk-js --target wasm32-unknown-unknown --no-default-features --features "${features}"
             echo "::endgroup::"
           done
       - name: Check default-transport builder crates compile for wasm32
@@ -115,7 +115,7 @@ jobs:
         # surfaces in the fast checks.
         run: cargo check -p cow-sdk-orderbook -p cow-sdk-subgraph --target wasm32-unknown-unknown
       - name: Test host pure helpers
-        run: cargo test -p cow-sdk-wasm --test host_pure_helpers
+        run: cargo test -p cow-sdk-js --test host_pure_helpers
       - name: Test app-data fetch contract
         run: cargo test -p cow-sdk-app-data --test fetch_contract
       - name: Test wasm dependency invariant
@@ -140,7 +140,7 @@ jobs:
         run: |
           matrix="$(node - <<'JS'
           const fs = require("node:fs");
-          const descriptor = JSON.parse(fs.readFileSync("crates/wasm/npm/flavours.json", "utf8"));
+          const descriptor = JSON.parse(fs.readFileSync("crates/js/npm/flavours.json", "utf8"));
           const include = descriptor.flavours.flatMap((flavour) => {
             const rows = flavour.targets.map((target) => ({ flavour: flavour.name, target }));
             // The source-phase `module` target is not a wasm-pack target; build.sh
@@ -201,12 +201,12 @@ jobs:
         env:
           WASM_FLAVOUR: ${{ matrix.flavour }}
           WASM_TARGET: ${{ matrix.target }}
-        run: bash crates/wasm/npm/scripts/build.sh
+        run: bash crates/js/npm/scripts/build.sh
       # Source ref: actions/upload-artifact@v4
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: cow-sdk-wasm-raw-${{ matrix.flavour }}-${{ matrix.target }}
-          path: crates/wasm/npm/dist/raw/
+          name: cow-sdk-js-raw-${{ matrix.flavour }}-${{ matrix.target }}
+          path: crates/js/npm/dist/raw/
           if-no-files-found: error
 
   wasm-package-staging:
@@ -222,8 +222,8 @@ jobs:
       # Source ref: actions/download-artifact@v6
       - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
         with:
-          pattern: cow-sdk-wasm-raw-*
-          path: crates/wasm/npm/dist/raw
+          pattern: cow-sdk-js-raw-*
+          path: crates/js/npm/dist/raw
           merge-multiple: true
       # Source ref: actions/setup-node@v6
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
@@ -234,25 +234,25 @@ jobs:
         with:
           version: ${{ env.PNPM_VERSION }}
       - name: Render package manifest
-        run: node crates/wasm/npm/scripts/render-package-json.mjs
+        run: node crates/js/npm/scripts/render-package-json.mjs
       - name: Install facade toolchain
-        run: pnpm --dir crates/wasm/npm install --frozen-lockfile
+        run: pnpm --dir crates/js/npm install --frozen-lockfile
       - name: Compile TypeScript facade
-        run: bash crates/wasm/npm/scripts/compile-facade.sh
+        run: bash crates/js/npm/scripts/compile-facade.sh
       - name: Verify export targets
-        run: node crates/wasm/npm/scripts/verify-exports.mjs
+        run: node crates/js/npm/scripts/verify-exports.mjs
       - name: Verify no raw package exports
-        run: node crates/wasm/npm/scripts/verify-no-raw-exports.mjs
+        run: node crates/js/npm/scripts/verify-no-raw-exports.mjs
       - name: Verify facade declarations
-        run: node crates/wasm/npm/scripts/verify-facade-denylist.mjs
+        run: node crates/js/npm/scripts/verify-facade-denylist.mjs
       - name: Enforce wasm size budgets
-        run: node crates/wasm/npm/scripts/measure-wasm-size.mjs
+        run: node crates/js/npm/scripts/measure-wasm-size.mjs
       - name: Check raw TypeScript declaration snapshots
         run: |
           node - <<'JS'
           const fs = require("node:fs");
           const { spawnSync } = require("node:child_process");
-          const descriptor = JSON.parse(fs.readFileSync("crates/wasm/npm/flavours.json", "utf8"));
+          const descriptor = JSON.parse(fs.readFileSync("crates/js/npm/flavours.json", "utf8"));
           // `__wasm_bindgen_func_elem_<n>` declarations are
           // wasm-bindgen-generated function-table entries whose numeric
           // suffix is reshuffled every time the wasm output changes for
@@ -276,12 +276,12 @@ jobs:
           // the single snapshot both detects drift and asserts the targets agree; a
           // future per-target divergence fails closed here.
           for (const flavour of descriptor.flavours) {
-            const snapshot = `crates/wasm/snapshots/raw/${flavour.name}.d.ts`;
+            const snapshot = `crates/js/snapshots/raw/${flavour.name}.d.ts`;
             for (const target of flavour.targets) {
               if (target === "web") {
                 continue;
               }
-              const generated = `crates/wasm/npm/dist/raw/${flavour.name}-${target}/cow_sdk_wasm.d.ts`;
+              const generated = `crates/js/npm/dist/raw/${flavour.name}-${target}/cow_sdk_js.d.ts`;
               const result = spawnSync(
                 "diff",
                 ["-u", "-I", ignoreFuncElem, snapshot, generated],
@@ -298,10 +298,10 @@ jobs:
           node - <<'JS'
           const fs = require("node:fs");
           const { spawnSync } = require("node:child_process");
-          const descriptor = JSON.parse(fs.readFileSync("crates/wasm/npm/flavours.json", "utf8"));
+          const descriptor = JSON.parse(fs.readFileSync("crates/js/npm/flavours.json", "utf8"));
           for (const flavour of descriptor.flavours) {
-            const snapshot = `crates/wasm/snapshots/facade/${flavour.name}.d.ts`;
-            const generated = `crates/wasm/npm/dist/${flavour.name}/index.d.ts`;
+            const snapshot = `crates/js/snapshots/facade/${flavour.name}.d.ts`;
+            const generated = `crates/js/npm/dist/${flavour.name}/index.d.ts`;
             const result = spawnSync("diff", ["-u", snapshot, generated], { stdio: "inherit" });
             if (result.status !== 0) {
               process.exit(result.status);
@@ -311,10 +311,10 @@ jobs:
       # Source ref: actions/upload-artifact@v4
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: cow-sdk-wasm-npm
+          name: cow-sdk-js-npm
           path: |
-            crates/wasm/npm/
-            !crates/wasm/npm/node_modules/**
+            crates/js/npm/
+            !crates/js/npm/node_modules/**
           if-no-files-found: error
 
   wasm-bindgen-tests:
@@ -426,19 +426,19 @@ jobs:
         with:
           geckodriver-version: '0.36.0'
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Test cow-sdk-wasm in headless Firefox
+      - name: Test cow-sdk-js in headless Firefox
         # `--release` keeps the workspace release-profile binary
         # (`opt-level = "z"`, `lto = "fat"`, `strip = "symbols"`); the
         # `--firefox` switch routes wasm-pack through geckodriver,
         # which the setup-geckodriver step placed on `PATH`.
-        run: wasm-pack test --release --headless --firefox crates/wasm
-      - name: Test cow-sdk-wasm tracing spans in headless Firefox
+        run: wasm-pack test --release --headless --firefox crates/js
+      - name: Test cow-sdk-js tracing spans in headless Firefox
         # The export-surface and browser `FetchTransport` tracing-span tests are
         # wasm32-only and gated on the crate's `tracing` feature, so the default
         # run above never builds them. The `tracing` feature keeps the default
         # flavor, adds span emission, and forwards `cow-sdk-core/tracing` so the
         # transport telemetry contract tests run.
-        run: wasm-pack test --release --headless --firefox crates/wasm --features tracing
+        run: wasm-pack test --release --headless --firefox crates/js --features tracing
 
   vitest-nodejs:
     runs-on: ubuntu-latest
@@ -453,8 +453,8 @@ jobs:
       # Source ref: actions/download-artifact@v6
       - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
         with:
-          name: cow-sdk-wasm-npm
-          path: crates/wasm/npm
+          name: cow-sdk-js-npm
+          path: crates/js/npm
       # Source ref: actions/setup-node@v6
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
@@ -481,8 +481,8 @@ jobs:
       # Source ref: actions/download-artifact@v6
       - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
         with:
-          name: cow-sdk-wasm-npm
-          path: crates/wasm/npm
+          name: cow-sdk-js-npm
+          path: crates/js/npm
       # Source ref: actions/setup-node@v6
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
@@ -511,8 +511,8 @@ jobs:
       # Source ref: actions/download-artifact@v6
       - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
         with:
-          name: cow-sdk-wasm-npm
-          path: crates/wasm/npm
+          name: cow-sdk-js-npm
+          path: crates/js/npm
       # Source ref: actions/setup-node@v6
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
@@ -539,8 +539,8 @@ jobs:
       # Source ref: actions/download-artifact@v6
       - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
         with:
-          name: cow-sdk-wasm-npm
-          path: crates/wasm/npm
+          name: cow-sdk-js-npm
+          path: crates/js/npm
       # Source ref: actions/setup-node@v6
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
@@ -567,16 +567,16 @@ jobs:
       # Source ref: actions/download-artifact@v6
       - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53
         with:
-          name: cow-sdk-wasm-npm
-          path: crates/wasm/npm
+          name: cow-sdk-js-npm
+          path: crates/js/npm
       # Source ref: actions/setup-node@v6
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
           node-version: ${{ env.NODE_VERSION }}
       - name: Verify export targets
-        run: node crates/wasm/npm/scripts/verify-exports.mjs
+        run: node crates/js/npm/scripts/verify-exports.mjs
       - name: Verify package subpath resolution
-        run: bash crates/wasm/npm/scripts/verify-package-resolution.sh
+        run: bash crates/js/npm/scripts/verify-package-resolution.sh
 
   wasm-success:
     if: always()

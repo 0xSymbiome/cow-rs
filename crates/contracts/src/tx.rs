@@ -5,7 +5,7 @@
 //! bindings, and returns a gas-free [`UnsignedTransaction`] (`to` / `data` /
 //! `value`, no gas limit), mirroring the upstream services `eth::Tx` shape. The
 //! caller estimates gas, signs, and submits: `cow-sdk-trading` wraps these with
-//! signer-bound gas estimation and submission, while `cow-sdk-wasm` surfaces them
+//! signer-bound gas estimation and submission, while `cow-sdk-js` surfaces them
 //! directly. Resolution is fail-closed — a chain/environment with no registered
 //! deployment yields [`ContractsError::DeploymentNotFound`] rather than a panic.
 

@@ -57,7 +57,7 @@ system, not a dynamic schema, is the validation authority.
   (a valid document is `Ok(())`, a failure the typed field-named `AppDataError`)
   and `AppDataParams::into_validated` are the validation entries; the
   `ValidationResult { success, errors }` struct is removed from `cow-sdk-app-data`
-  and survives only in the `cow-sdk-wasm` DTO layer. `get_app_data_schema` and the
+  and survives only in the `cow-sdk-js` DTO layer. `get_app_data_schema` and the
   per-family `LATEST_*_METADATA_VERSION` constants are removed; `SchemaVersion`
   remains the typed semver version.
 - Runtime and support: the crate carries no JSON-Schema validator or embedded

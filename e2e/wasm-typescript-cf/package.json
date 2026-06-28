@@ -1,5 +1,5 @@
 {
-  "name": "cow-sdk-wasm-workers-e2e",
+  "name": "cow-sdk-js-workers-e2e",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.7.0",
@@ -7,13 +7,13 @@
     "node": ">=24.0.0"
   },
   "scripts": {
-    "build": "bash ../../crates/wasm/npm/scripts/build.sh",
+    "build": "bash ../../crates/js/npm/scripts/build.sh",
     "clean": "node -e \"const fs=require('node:fs'); for (const p of ['node_modules','.wrangler']) fs.rmSync(p,{recursive:true,force:true})\"",
     "test": "vitest run --config vitest.config.ts",
     "test:type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "cow-sdk-wasm-test-package": "file:../../crates/wasm/npm"
+    "cow-sdk-js-test-package": "file:../../crates/js/npm"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "0.16.13",

@@ -81,7 +81,7 @@ gloo-timers.workspace = true
 web-time.workspace = true
 
 # The Tsify boundary derive on the trading result/parameter trees consumed by
-# the wasm-bindgen npm leaf (`crates/wasm`). Gated to JS realms
+# the wasm-bindgen npm leaf (`crates/js`). Gated to JS realms
 # (`target_os = "unknown"`) so WASI / Component builds never pull
 # tsify/wasm-bindgen — only the one wasm target whose `target_os` is `unknown`
 # carries them. Mirrors the orderbook-crate gate. Optional and pulled by the

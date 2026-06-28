@@ -14,8 +14,8 @@ dist/
 *.tgz
 .wrangler/
 
-# Generated from package.template.json by crates/wasm/npm/scripts/render-package-json.mjs
-crates/wasm/npm/package.json
+# Generated from package.template.json by crates/js/npm/scripts/render-package-json.mjs
+crates/js/npm/package.json
 
 # Test reports and results
 playwright-report/

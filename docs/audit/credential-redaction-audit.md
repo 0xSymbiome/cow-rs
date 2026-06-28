@@ -176,7 +176,7 @@ and pending-transaction details never print. The adapter error types
 renders the placeholder from the type rather than from a hand-written literal;
 each error keeps its hand-written `Debug` so the credential firewall does not
 depend on a derive. The wasm surface extends the
-contract to JavaScript: `WasmError` (`crates/wasm/src/exports/errors.rs`)
+contract to JavaScript: `WasmError` (`crates/js/src/exports/errors.rs`)
 exposes typed discriminants and low-cardinality fields, maps `TransportError`
 through `Display` and `cow_sdk_core::redact_response_body`, and never exposes a
 `Redacted<T>` secret to JS without re-redacting it: the response body is read
@@ -237,7 +237,7 @@ Primary implementation points:
 - `crates/app-data/src/errors.rs`
 - `crates/app-data/src/fetch.rs`
 - `crates/sdk/src/lib.rs`
-- `crates/wasm/src/exports/errors.rs`
+- `crates/js/src/exports/errors.rs`
 
 Primary regression coverage:
 
@@ -272,10 +272,10 @@ Primary regression coverage:
 - `crates/sdk/tests/error_redaction_contract.rs::subgraph_errors_and_contexts_redact_serialized_request_payloads`
 - `crates/sdk/tests/error_redaction_contract.rs::subgraph_display_carries_plaintext_structural_diagnostic`
 - `crates/sdk/tests/public_api.rs`
-- `crates/wasm/tests/wasm_redaction_contract.rs::transport_connect_error_uses_redacted_message`
-- `crates/wasm/tests/wasm_redaction_contract.rs::http_status_error_redacts_headers_and_body`
-- `crates/wasm/tests/wasm_redaction_contract.rs::display_format_of_redacted_transport_error_does_not_expose_secret`
-- `crates/wasm/tests/wasm_redaction_contract.rs::errors_module_does_not_unwrap_redacted_values`
+- `crates/js/tests/wasm_redaction_contract.rs::transport_connect_error_uses_redacted_message`
+- `crates/js/tests/wasm_redaction_contract.rs::http_status_error_redacts_headers_and_body`
+- `crates/js/tests/wasm_redaction_contract.rs::display_format_of_redacted_transport_error_does_not_expose_secret`
+- `crates/js/tests/wasm_redaction_contract.rs::errors_module_does_not_unwrap_redacted_values`
 
 Validation surface:
 

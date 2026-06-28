@@ -7,7 +7,7 @@ import {
   orderTypedData,
   supportedChainIds,
   wasmVersion
-} from "cow-sdk-wasm-test-package";
+} from "cow-sdk-js-test-package";
 
 const ORDER = {
   sellToken: "0x1111111111111111111111111111111111111111",

@@ -283,7 +283,7 @@ Primary implementation points:
 - `crates/orderbook/src/builder.rs`
 - `crates/subgraph/src/api.rs`
 - `crates/subgraph/src/builder.rs`
-- `crates/wasm/src/exports/ipfs.rs`
+- `crates/js/src/exports/ipfs.rs`
 
 Primary regression coverage:
 
@@ -291,13 +291,13 @@ Primary regression coverage:
 - `crates/core/tests/transport_contract.rs::transport_response_accessors_expose_status_headers_and_body`
 - `crates/core/tests/transport_contract.rs::transport_response_debug_redacts_headers_and_hides_the_body`
 - `crates/core/tests/transport_contract.rs::success_response_carries_the_real_status_and_headers`
-- `crates/wasm/tests/transport_parity_contract.rs`
+- `crates/js/tests/transport_parity_contract.rs`
 - `crates/orderbook/tests/api_contract.rs::recording_transport::orderbook_non_2xx_in_the_ok_channel_is_normalized_onto_the_error_path`
 - `crates/core/tests/retry_after_contract.rs`
 - `crates/core/tests/classify_contract.rs::network_error_kind_mapping_round_trip_is_total`
 - `crates/core/tests/policy_contract.rs::retry_after_helper_is_case_insensitive`
 - `crates/core/src/transport/policy/runner.rs` (`tests::non_retryable_transport_returns_without_redispatch`, `tests::http_date_retry_after_uses_the_injected_clock`, `tests::persistent_transport_error_exhausts_attempts`)
-- `crates/wasm/tests/wasm_retry_runner_contract.rs::retryable_status_drives_backoff_without_panicking`
+- `crates/js/tests/wasm_retry_runner_contract.rs::retryable_status_drives_backoff_without_panicking`
 - `crates/core/tests/policy_contract.rs::decorrelated_jitter_is_bounded_by_max_delay`
 - `crates/orderbook/tests/request_contract.rs::tracing_contract::execute_with_emits_retry_events_with_status_and_transport_error_fields`
 - `crates/orderbook/tests/request_contract.rs::tracing_contract::send_order_span_records_quote_id_attempts_and_status`
@@ -314,7 +314,7 @@ Primary regression coverage:
 - `parity/fixtures/retry_after/imf_fixdate_accept.json`
 - `parity/fixtures/retry_after/imf_fixdate_reject.json`
 - `parity/fixtures/retry_after/legacy_rfc850.json`
-- `crates/wasm/tests/wasm_retry_runner_contract.rs::system_now_returns_a_wall_clock_value_without_panicking`
+- `crates/js/tests/wasm_retry_runner_contract.rs::system_now_returns_a_wall_clock_value_without_panicking`
 - `crates/core/tests/policy_contract.rs::default_orderbook_transport_policy_is_stable`
 - `crates/core/tests/policy_contract.rs::default_trading_uses_trading_user_agent_and_orderbook_limiter`
 - `crates/core/tests/policy_contract.rs::default_ipfs_disables_retry_and_timeout_and_uses_unlimited_limiter`
@@ -346,6 +346,6 @@ cargo test -p cow-sdk-subgraph --test api_contract
 cargo test -p cow-sdk-core --features transport-policy
 cargo llvm-cov -p cow-sdk-core --features transport-policy --summary-only
 cargo check --workspace --all-features --target wasm32-unknown-unknown
-wasm-pack test --release --headless --firefox crates/wasm
-wasm-pack test --release --headless --firefox crates/wasm --features tracing
+wasm-pack test --release --headless --firefox crates/js
+wasm-pack test --release --headless --firefox crates/js --features tracing
 ```

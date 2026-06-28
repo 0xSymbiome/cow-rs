@@ -1,0 +1,150 @@
+[package]
+name = "cow-sdk-js"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+# JavaScript-only leaf: built to wasm32 and shipped to npm (see crates/js/npm),
+# never published to crates.io. Its `exports` are a wasm-bindgen JS ABI with no
+# crates.io consumer, and its host-safe `helpers` only forward to the published
+# cow-sdk-signing / cow-sdk-core / cow-sdk-app-data / cow-sdk-contracts crates.
+publish = false
+
+description = "The CoW Protocol Rust SDK compiled to wasm for JavaScript and TypeScript with wasm-bindgen; shipped to npm, not crates.io"
+readme = "README.md"
+homepage = "https://github.com/0xSymbiome/cow-rs"
+keywords = ["cow-protocol", "sdk", "wasm", "typescript", "wasm-bindgen"]
+categories = ["api-bindings", "cryptography::cryptocurrencies", "wasm"]
+
+[package.metadata.docs.rs]
+default-target = "wasm32-unknown-unknown"
+targets = ["wasm32-unknown-unknown"]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+# Shipped to npm, never to crates.io: excluded from cargo-release so it is not
+# version-bumped, README-replaced, or published during a release run.
+[package.metadata.release]
+release = false
+
+[lints]
+workspace = true
+
+[features]
+default = ["flavor-default"]
+# `cow-sdk-orderbook/ts-bindings` turns on the Tsify boundary derive on the
+# orderbook response types (e.g. `NativePriceResponse`) only for the flavours
+# that surface a native-price client. `signing` does not enable `orderbook`, so
+# its `.d.ts` carries no orderbook boundary type.
+orderbook = ["dep:cow-sdk-orderbook", "cow-sdk-orderbook/ts-bindings", "transport-policy"]
+# `cow-sdk-contracts`, `cow-sdk-signing`, and `cow-sdk-app-data` are unconditional
+# dependencies of the `helpers` module, so these features are pure cfg toggles
+# that gate the matching wasm-bindgen `exports` submodules.
+signing = ["cow-sdk-core/ts-bindings-typed-data"]
+# `cow-sdk-app-data/ts-bindings` turns on the Tsify boundary derive on the native
+# `AppDataInfo` (surfaced by `appDataInfo`) and `ValidationResult`, while this
+# feature also gates the Tsify derive on `AppDataDocInput`, defined in this crate.
+# Only flavours that surface app-data (`default`, `trading`) enable this;
+# `signing` and `orderbook` do not, so the types stay out of their `.d.ts`.
+app-data = ["cow-sdk-app-data/ts-bindings"]
+ipfs = ["app-data", "transport-policy"]
+# `cow-sdk-core/ts-bindings-tx` turns on the Tsify boundary derive on the native
+# `TransactionRequest` (surfaced by `buildCancelOrderTx` / `buildPresignTx` and,
+# through `trading`, the build-tx exports). It is the transaction-boundary feature,
+# scoped apart from the `ts-bindings` trading tree so enabling it in the leaner
+# `orderbook` flavour does not drag `OrderData` / `CowEnv` / the quote tree into
+# that flavour's `.d.ts`. `cancellation` is reachable from the `orderbook`,
+# `trading`, and `default` flavours; `signing` does not enable it, so
+# `TransactionRequest` stays out of the `signing` `.d.ts`.
+cancellation = ["signing", "cow-sdk-core/ts-bindings-tx"]
+transport-policy = ["cow-sdk-core/transport-policy"]
+# `cow-sdk-trading/ts-bindings` turns on the Tsify boundary derive on the trading
+# result/parameter trees (`QuoteResults` and the native trading-parameter types
+# `TradeParams` / `LimitTradeParams`, plus the typed-data / quote-amounts /
+# partner-fee / runtime-binding types they reference across core, app-data, and
+# orderbook). `TradeParams` / `LimitTradeParams` serve as both the JS input and
+# the resolved output shape, so this flavour links them and their serde defaults
+# directly; `signing` and `orderbook` enable none of these, so the trading-only
+# types stay out of their `.d.ts`. The shared order enums and the native boundary
+# types ride `cow-sdk-core/ts-bindings-boundary` (always on through the base
+# dependency), so orderbook and signing still get `OrderKind` /
+# `SellTokenSource` / `BuyTokenDestination` / `OrderData` but link neither the
+# trading parameters nor the trading client stack behind them.
+# `cow-sdk-core/ts-bindings` is named explicitly so the native `ContractCall`
+# (surfaced only by this flavour's `getCowProtocolAllowance` callback) carries its
+# Tsify derive at the point of use, rather than relying on the transitive
+# `cow-sdk-trading/ts-bindings` chain; `cow-sdk-core/ts-bindings-tx` does the same
+# for the native `TransactionRequest` returned by this flavour's `buildApprovalTx`
+# / `buildWrapTx` / `buildUnwrapTx` exports, which are present even when
+# `cancellation` is not.
+# `composable` gates the TWAP conditional-order tx builders (`buildTwapCreateTransaction`
+# / `buildTwapRemoveTransaction`); `cow-sdk-core/ts-bindings-tx` carries the native
+# `TransactionRequest` Tsify derive these exports return. Folded into `trading` so the
+# full trading flavour surfaces TWAP alongside swap and limit orders.
+composable = ["cow-sdk-contracts/composable", "cow-sdk-core/ts-bindings-tx"]
+trading = ["orderbook", "signing", "app-data", "composable", "dep:cow-sdk-trading", "cow-sdk-trading/ts-bindings", "cow-sdk-core/ts-bindings", "cow-sdk-core/ts-bindings-tx"]
+subgraph = ["dep:cow-sdk-subgraph", "transport-policy"]
+flavor-default = [
+    "orderbook",
+    "signing",
+    "app-data",
+    "ipfs",
+    "cancellation",
+    "transport-policy",
+    "trading",
+    "subgraph",
+]
+tracing = ["dep:tracing", "cow-sdk-core/tracing"]
+
+[dependencies]
+alloy-primitives.workspace = true
+alloy-sol-types.workspace = true
+async-trait.workspace = true
+cow-sdk-app-data = { path = "../app-data", version = "0.1.0-alpha.8" }
+cow-sdk-contracts = { path = "../contracts", version = "0.1.0-alpha.8" }
+# `ts-bindings-boundary` is always on so the shared boundary shapes (the order
+# enums and the native `OrderData` / deployment / wrapped-native / order-uid
+# types) carry their Tsify derive for the npm `.d.ts`. The derive is gated to the
+# wasm-bindgen target inside `cow-sdk-core`, so a native build links the same
+# shapes without pulling wasm-bindgen.
+cow-sdk-core = { path = "../core", version = "0.1.0-alpha.8", features = ["ts-bindings-boundary"] }
+cow-sdk-signing = { path = "../signing", version = "0.1.0-alpha.8" }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tracing = { workspace = true, optional = true }
+
+# tsify is target-gated under wasm32 because the js feature pulls wasm-bindgen and serde-wasm-bindgen which would contradict the native facade invariant if placed in target-agnostic dependencies
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+console_error_panic_hook.workspace = true
+cow-sdk-orderbook = { path = "../orderbook", version = "0.1.0-alpha.8", optional = true }
+cow-sdk-subgraph = { path = "../subgraph", version = "0.1.0-alpha.8", optional = true }
+cow-sdk-trading = { path = "../trading", version = "0.1.0-alpha.8", optional = true }
+getrandom = { workspace = true }
+gloo-timers = { workspace = true }
+js-sys.workspace = true
+serde-wasm-bindgen.workspace = true
+tsify.workspace = true
+wasm-bindgen.workspace = true
+wasm-bindgen-futures.workspace = true
+web-sys = { workspace = true, features = ["AbortController", "AbortSignal", "EventTarget", "console"] }
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test.workspace = true
+cow-sdk-test-utils = { path = "../test-utils" }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+# Drives the native `ReqwestTransport` half of the cross-adapter transport
+# parity and tracing-span contract tests; the wasm `FetchTransport` half of the
+# same files runs under `wasm-pack test`.
+cow-sdk-test-utils = { path = "../test-utils" }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "test-util"] }
+wiremock.workspace = true

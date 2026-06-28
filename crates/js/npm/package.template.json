@@ -1,0 +1,54 @@
+{
+  "name": "@symbiome-forge/cow-sdk-wasm",
+  "version": "0.1.0-alpha.8",
+  "description": "JavaScript and TypeScript SDK for CoW Protocol, compiled from Rust to WebAssembly — typed orderbook, trading, signing (EIP-712/1271/1193), and app-data.",
+  "license": "GPL-3.0-or-later",
+  "homepage": "https://github.com/0xSymbiome/cow-rs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/0xSymbiome/cow-rs.git",
+    "directory": "crates/js/npm"
+  },
+  "keywords": [
+    "cow-protocol",
+    "cowswap",
+    "sdk",
+    "ethereum",
+    "defi",
+    "orderbook",
+    "trading",
+    "wasm",
+    "webassembly",
+    "wasm-bindgen",
+    "typescript",
+    "eip-712",
+    "eip-1271",
+    "eip-1193",
+    "app-data"
+  ],
+  "packageManager": "pnpm@11.7.0",
+  "type": "module",
+  "main": "",
+  "module": "",
+  "types": "",
+  "exports": {},
+  "files": [],
+  "scripts": {
+    "build": "bash scripts/build.sh",
+    "compile:facade": "bash scripts/compile-facade.sh",
+    "test": "vitest run --config vitest.config.ts",
+    "typecheck": "tsc --project tsconfig.facade.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "25.6.2",
+    "typescript": "6.0.3",
+    "vitest": "4.1.5"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "sideEffects": false
+}

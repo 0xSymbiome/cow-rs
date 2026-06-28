@@ -2,7 +2,7 @@
 
 Status: Current
 Last reviewed: 2026-06-20
-Owning surface: HTTP transport response reads across `cow-sdk-core` (including its `transport::policy` module and the browser `FetchTransport` in its `transport::fetch` module), `cow-sdk-wasm`, and the signature decode path in `cow-sdk-contracts`
+Owning surface: HTTP transport response reads across `cow-sdk-core` (including its `transport::policy` module and the browser `FetchTransport` in its `transport::fetch` module), `cow-sdk-js`, and the signature decode path in `cow-sdk-contracts`
 Refresh trigger: changes to the transport read loops, the `max_response_bytes` policy field or its per-client defaults, the `ResponseTooLarge` classification, the signature hex bound, or the reqwest/web-sys decompression posture
 Related docs:
 - [ADR 0055](../adr/0055-bounded-response-reads.md)
@@ -104,7 +104,7 @@ Primary implementation points:
 - `crates/core/src/transport/policy/config.rs`
 - `crates/core/src/transport/policy/classify.rs`
 - `crates/core/src/transport/fetch.rs`
-- `crates/wasm/src/exports/transport.rs`
+- `crates/js/src/exports/transport.rs`
 - `crates/contracts/src/hex_field.rs`
 - `crates/contracts/src/signature.rs`
 

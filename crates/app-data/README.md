@@ -79,7 +79,7 @@ through a fetch transport you supply, so the SDK stays decoupled from any
 specific HTTP stack.
 
 The seam is `async`, so native and browser runtimes can plug in their own HTTP
-client; `cow-sdk-wasm` implements it over JavaScript's `CowFetchCallback`, and
+client; `cow-sdk-js` implements it over JavaScript's `CowFetchCallback`, and
 browser and non-browser wasm runtimes share the same app-data contract.
 Because documents are addressed by a keccak-256 CID, the gateway must be able
 to resolve keccak-CID documents — a generic public gateway cannot.

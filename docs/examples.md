@@ -54,12 +54,9 @@ CowSwap-style UIs, the upstream
 [`@cowprotocol/cow-sdk`](https://www.npmjs.com/package/@cowprotocol/cow-sdk)
 TypeScript SDK is the recommended choice; it is substantially smaller at
 equivalent feature subsets. Use the examples below when you are integrating
-the TypeScript-callable WASM package from JavaScript or TypeScript runtimes
-for specialized cases — deterministic Rust signing parity, single-source-of-
-truth Rust + TypeScript embedding, or Cloudflare Workers (size-compatible
-with the current Workers Paid/Bundled (~3 MB) compressed-size limit at the time of
-measurement; the `trading` flavour's edge build is built and tested end-to-end
-in CI (Workers Vitest), within the Workers compressed-size budget).
+the `cow-sdk-js` WASM package from JavaScript or TypeScript runtimes for
+specialized cases — deterministic Rust signing parity, single-source-of-truth
+Rust + TypeScript embedding, or Cloudflare Workers.
 
 The package is published to npm as `@symbiome-forge/cow-sdk-wasm`. The
 runnable WASM package examples live in the dedicated
@@ -100,6 +97,6 @@ repository; each carries its own README and `pnpm test` check.
 - Use the TypeScript WASM package examples for Node.js signing or Cloudflare
   Worker integration.
 - Use `cow-sdk-subgraph` examples when you need read-only subgraph access.
-- For browser-wallet trade flows, integrate the `cow-sdk-wasm` package with your
+- For browser-wallet trade flows, integrate the `cow-sdk-js` package with your
   app's own wallet stack (viem, wagmi, or any EIP-1193 provider); the host wraps its
   EIP-1193 provider into the SDK's typed-data signer callback to supply the wallet connection.

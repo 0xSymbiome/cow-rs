@@ -111,7 +111,7 @@ The `Signer` and `Provider` seams are defined here; concrete native adapters liv
 [`cow-sdk-alloy-signer`](https://crates.io/crates/cow-sdk-alloy-signer) and
 [`cow-sdk-alloy-provider`](https://crates.io/crates/cow-sdk-alloy-provider), and
 JavaScript and TypeScript hosts supply their own wallet across the
-[`cow-sdk-wasm`](https://crates.io/crates/cow-sdk-wasm) callback boundary.
+[`cow-sdk-js`](https://crates.io/crates/cow-sdk-js) callback boundary.
 
 ## Where to next
 

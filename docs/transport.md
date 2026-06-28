@@ -41,7 +41,7 @@ wallet-filler provider so allowance, approval, pre-sign, and on-chain
 cancellation helpers can use one native client.
 
 The Alloy adapter crates are native-only. On `wasm32-unknown-unknown`, the
-`cow-sdk-wasm` package bridges signing and RPC access to the host wallet through
+`cow-sdk-js` package bridges signing and RPC access to the host wallet through
 the typed-data signer callback instead.
 
 ## The `HttpTransport` Trait
@@ -188,7 +188,7 @@ classification arm against both adapters.
 
 ## JavaScript Callback Transport
 
-`cow-sdk-wasm` also exposes `JsCallbackHttpTransport` for JavaScript runtimes
+`cow-sdk-js` also exposes `JsCallbackHttpTransport` for JavaScript runtimes
 that do not have a browser `Window` or that need to own HTTP dispatch. The
 transport implements the same `cow_sdk_core::HttpTransport` trait, but calls a
 host-provided `CowFetchCallback` with a typed request object.
@@ -482,6 +482,6 @@ succeeded — callers confirm the real state with an order lookup
 - [ADR 0041](adr/0041-transport-policy-l3-layering.md)
   — the shared retry and rate-limit policy layer
 - [ADR 0039](adr/0039-typescript-callable-wasm-sdk-surface.md)
-  — the TypeScript-callable wasm SDK surface
+  — the JavaScript and TypeScript wasm SDK surface
 - [ADR 0040](adr/0040-wallet-provider-callback-boundary-for-js-consumers.md)
   — the JavaScript callback boundary

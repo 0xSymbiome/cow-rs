@@ -20,7 +20,7 @@ cargo check-alloy-signer-invariant
 cargo test -p cow-rs-workspace-tests --test alloy_two_family_lockfile_invariant
 cargo test -p cow-sdk-alloy --test send_transaction_does_not_wait_for_confirmation
 cargo test -p cow-rs-workspace-tests --test transaction_lifecycle_cross_adapter_invariant
-cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-alloy-provider -p cow-sdk-alloy-signer -p cow-sdk-alloy -p cow-sdk -p cow-sdk-wasm -p cow-sdk-test
+cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-alloy-provider -p cow-sdk-alloy-signer -p cow-sdk-alloy -p cow-sdk -p cow-sdk-js -p cow-sdk-test
 ```
 
 The native Alloy dependency gates enforce explicit allow-lists:
@@ -42,8 +42,8 @@ and CI" step in the `_quality-gate.yml` "Repository policies" job.
 - The `_quality-gate.yml` nextest lane runs the standard workspace test
   runner on Ubuntu, macOS, and Windows with `fail-fast: false`, so routine
   host coverage is centralized in the shared quality gate.
-- The `cow-sdk-wasm` import fences in `cargo check-source-fences` reject forbidden
-  `cow-sdk-wasm` source imports for native-only Alloy crates, `reqwest`, Tokio
+- The `cow-sdk-js` import fences in `cargo check-source-fences` reject forbidden
+  `cow-sdk-js` source imports for native-only Alloy crates, `reqwest`, Tokio
   runtime entrypoints, Tokio macros, and the `cow-sdk-core` reqwest re-exports.
 - The compiler enforces the IpfsFetch await contract: the `fetch_doc_from_*`
   futures are `#[must_use]`, so an un-awaited call fails `unused_must_use = deny`,
@@ -357,7 +357,7 @@ Build the WASM surfaces:
 cargo build --target wasm32-unknown-unknown -p cow-sdk
 cargo build --target wasm32-unknown-unknown -p cow-sdk-app-data
 cargo build --target wasm32-unknown-unknown -p cow-sdk-core
-cargo build --target wasm32-unknown-unknown -p cow-sdk-wasm
+cargo build --target wasm32-unknown-unknown -p cow-sdk-js
 ```
 
 Run the wasm-pack browser lanes in headless Firefox. The CI lanes provision the
@@ -365,16 +365,16 @@ runner with `browser-actions/setup-firefox` and geckodriver `0.36.0`; locally,
 put a matching `geckodriver` on `PATH`:
 
 ```text
-wasm-pack test --headless --firefox crates/wasm
+wasm-pack test --headless --firefox crates/js
 ```
 
-TypeScript-callable wasm package checks:
+JavaScript and TypeScript wasm package checks:
 
 ```text
-cargo test -p cow-sdk-wasm --test host_pure_helpers
-wasm-pack test crates/wasm --headless --firefox
-bash crates/wasm/npm/scripts/build.sh
-node crates/wasm/npm/scripts/verify-exports.mjs
+cargo test -p cow-sdk-js --test host_pure_helpers
+wasm-pack test crates/js --headless --firefox
+bash crates/js/npm/scripts/build.sh
+node crates/js/npm/scripts/verify-exports.mjs
 pnpm install --dir e2e/wasm-typescript --frozen-lockfile
 pnpm --dir e2e/wasm-typescript run test:vitest
 pnpm --dir e2e/wasm-typescript run test:playwright
@@ -442,7 +442,7 @@ produces a build whose dependency tree matches the release-readiness build
 byte-for-byte.
 
 **Tier two: binary reproducibility (planned).** The WebAssembly artifacts
-produced for the `cow-sdk-wasm` npm package build are not currently asserted to
+produced for the `cow-sdk-js` npm package build are not currently asserted to
 be byte-reproducible. A future extension to the
 release-readiness automation will pin the `wasm-pack` toolchain version,
 capture the build environment provenance through the existing attestation

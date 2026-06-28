@@ -27,7 +27,7 @@ const UTM_TERM: &str = "rs";
 /// `metadata.utm.utmContent` default. The slot carries the SDK compile target so
 /// protocol-side analytics can distinguish wasm-originated traffic from
 /// native-Rust traffic, which otherwise report the same `utmMedium`/`utmTerm`.
-/// `cfg(target_arch = "wasm32")` covers the `cow-sdk-wasm` build and any
+/// `cfg(target_arch = "wasm32")` covers the `cow-sdk-js` build and any
 /// native-Rust consumer compiled to wasm; every other target stays empty.
 const fn utm_content() -> &'static str {
     if cfg!(target_arch = "wasm32") {

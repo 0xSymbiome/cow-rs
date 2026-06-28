@@ -117,7 +117,7 @@ resolved against the wasm-safe wall clock at error construction), retained on
 paths; it is `None` for transport failures and headerless responses.
 `TradingError` and `CowError` delegate both accessors to the wrapped orderbook
 error and return `false` / `None` for every non-orderbook variant. The
-TypeScript-callable `cow-sdk-wasm` surface projects the same verdict to
+JavaScript and TypeScript `cow-sdk-js` surface projects the same verdict to
 JavaScript: the `WasmError` `orderbook` variant carries a `retryable` boolean
 and an optional `retryAfterMs` populated from these accessors.
 
@@ -180,7 +180,7 @@ Primary regression coverage:
 - `crates/contracts/tests/error_contract.rs::class_partitions_validation_internal_and_signing`
 - `crates/orderbook/src/error.rs` retry-classification unit tests
 - `crates/core/src/transport/policy/retry_after.rs` `Retry-After` header tests
-- `crates/wasm/tests/wasm_error_abi_contract.rs::orderbook_variant_carries_retry_hints`
+- `crates/js/tests/wasm_error_abi_contract.rs::orderbook_variant_carries_retry_hints`
 - `crates/alloy-signer/tests/signer_error_trait_contract.rs`
 - `crates/alloy/tests/signer_error_trait_contract.rs`
 - `crates/signing/src/order_signing.rs::signer_error_tests` (helper-routing unit
