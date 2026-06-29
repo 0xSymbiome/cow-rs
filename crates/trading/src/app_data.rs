@@ -1,6 +1,8 @@
 use serde_json::{Map, Value, json};
 
-use cow_sdk_app_data::{AppDataParams, PartnerFee, app_data_info, generate_app_data_doc};
+use cow_sdk_app_data::{
+    AppDataParams, PartnerFee, QuoteMetadata, app_data_info, generate_app_data_doc,
+};
 use cow_sdk_core::AppCode;
 use cow_sdk_orderbook::OrderClass;
 
@@ -22,16 +24,27 @@ const UTM_CAMPAIGN: &str = "developer-cohort";
 /// so Rust-SDK adoption is not mislabelled.
 const UTM_TERM: &str = "rs";
 
-/// `metadata.utm.utmContent` default. The slot carries the SDK compile target so
-/// protocol-side analytics can distinguish wasm-originated traffic from
-/// native-Rust traffic, which otherwise report the same `utmMedium`/`utmTerm`.
-/// `cfg(target_arch = "wasm32")` covers the `cow-sdk-wasm` build and any
-/// native-Rust consumer compiled to wasm; every other target stays empty.
+/// `metadata.utm.utmContent` default. The slot names the SDK distribution lane
+/// so protocol-side analytics can tell the three lanes apart, which otherwise
+/// report the same `utmMedium`/`utmTerm`. The lane is read from the compile
+/// target, since each lane has a distinct one:
+///
+/// - `wasi` — the WebAssembly Component (`cow-sdk-component`), compiled to
+///   `wasm32-wasip2` (`target_os = "wasi"`). Both client worlds share this
+///   target, so the WASI interface minor version is not encoded here.
+/// - `wasm-bindgen` — the npm/JavaScript lane (`cow-sdk-js`), compiled to
+///   `wasm32-unknown-unknown`.
+/// - `native` — a native-Rust consumer (any non-wasm target).
+///
+/// The value reflects the compile target, which the SDK's own lanes map to
+/// one-to-one; a third-party build to the same target reports the same lane.
 const fn utm_content() -> &'static str {
-    if cfg!(target_arch = "wasm32") {
-        "wasm"
+    if cfg!(all(target_arch = "wasm32", target_os = "wasi")) {
+        "wasi"
+    } else if cfg!(target_arch = "wasm32") {
+        "wasm-bindgen"
     } else {
-        ""
+        "native"
     }
 }
 
@@ -42,9 +55,10 @@ const fn utm_content() -> &'static str {
 /// so protocol-side attribution analytics can group SDK traffic while still
 /// distinguishing this crate from other client SDKs. The `utmMedium` value
 /// embeds the trading crate's published version through
-/// `env!("CARGO_PKG_VERSION")`, and `utmContent` carries the compile target
-/// (`wasm` on `wasm32`, otherwise empty) so wasm-originated traffic is
-/// distinguishable. Any caller-supplied `metadata.utm` disables this default.
+/// `env!("CARGO_PKG_VERSION")`, and `utmContent` names the distribution lane
+/// (`wasi` / `wasm-bindgen` / `native`, read from the compile target) so the
+/// three lanes are distinguishable. Any caller-supplied `metadata.utm` disables
+/// this default.
 fn default_utm() -> Value {
     json!({
         "utmSource": UTM_SOURCE,
@@ -78,8 +92,42 @@ pub async fn build_app_data(
     partner_fee: Option<&PartnerFee>,
     advanced_params: Option<&AppDataParams>,
 ) -> Result<TradingAppDataInfo, TradingError> {
+    build_app_data_doc(
+        app_code,
+        slippage_bps,
+        order_class.as_str(),
+        partner_fee,
+        advanced_params,
+    )
+}
+
+/// Builds the trading app-data document from an app-data order-class *string*.
+///
+/// This is the engine behind [`build_app_data`], taking the order class in its
+/// app-data wire form (`market` | `limit` | `liquidity` | `twap`) rather than the
+/// order-book [`OrderClass`] enum. The app-data order class is a distinct concept
+/// from the order-book order class — it carries the additional `twap` value used by
+/// composable orders — so this entry point serves those classes the order-book enum
+/// does not model. It stamps the same quote slippage, order class, and (unless the
+/// caller overrides `metadata.utm`) default SDK UTM block.
+///
+/// # Errors
+///
+/// Returns an error when the merged document cannot be normalized into a valid
+/// app-data payload or hash.
+pub fn build_app_data_doc(
+    app_code: &AppCode,
+    slippage_bps: u32,
+    order_class: &str,
+    partner_fee: Option<&PartnerFee>,
+    advanced_params: Option<&AppDataParams>,
+) -> Result<TradingAppDataInfo, TradingError> {
     let mut metadata = Map::new();
-    metadata.insert("quote".to_owned(), json!({ "slippageBips": slippage_bps }));
+    metadata.insert(
+        "quote".to_owned(),
+        serde_json::to_value(QuoteMetadata::new(slippage_bps)?)
+            .map_err(cow_sdk_app_data::AppDataError::from)?,
+    );
     metadata.insert(
         "orderClass".to_owned(),
         json!({ "orderClass": order_class }),

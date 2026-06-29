@@ -21,8 +21,8 @@ neutral core traits.
 ## Capability Boundary
 
 This crate is native-only. JavaScript and TypeScript hosts targeting the browser
-should use the [`cow-sdk-wasm`](https://crates.io/crates/cow-sdk-wasm) package,
-supplying their own wallet across its EIP-1193 request-callback boundary and
+should use the [`cow-sdk-js`](https://crates.io/crates/cow-sdk-js) package,
+supplying their own wallet across its typed callback boundary and
 reaching CoW services through the browser fetch transport.
 
 Native-only items are excluded from `wasm32` builds via `cfg`, so they do not

@@ -4,10 +4,10 @@
 //! Comparisons performed:
 //!
 //! 1. The `cargo tree --invert alloy-provider` `-p` package list must be
-//!    identical across `docs/release-checklist.md`, `docs/verification.md`,
-//!    `CONTRIBUTING.md`, and `PROPERTIES.md`.
+//!    identical across `docs/guides/release-checklist.md`, `docs/guides/verification.md`,
+//!    `CONTRIBUTING.md`, and `docs/properties/index.md`.
 //! 2. The `cargo audit` `--ignore RUSTSEC-…` token lists in
-//!    `docs/release-checklist.md` and `docs/verification.md` must match the
+//!    `docs/guides/release-checklist.md` and `docs/guides/verification.md` must match the
 //!    canonical advisory tolerance register in `.github/config/deny.toml`,
 //!    and every canonical advisory must be documented in
 //!    `docs/audit/dependency-gate-audit.md`.
@@ -36,22 +36,22 @@ pub fn run(args: &Args) -> Result<()> {
             .with_context(|| format!("required source file missing: {rel}"))
     };
 
-    let release_checklist = read("docs/release-checklist.md")?;
-    let verification = read("docs/verification.md")?;
+    let release_checklist = read("docs/guides/release-checklist.md")?;
+    let verification = read("docs/guides/verification.md")?;
     let deny_config = read(".github/config/deny.toml")?;
     let contributing = read("CONTRIBUTING.md")?;
-    let properties = read("PROPERTIES.md")?;
+    let properties = read("docs/properties/index.md")?;
     let dependency_gate_audit = read("docs/audit/dependency-gate-audit.md")?;
 
     // 1. cargo tree alloy-provider package-list agreement.
     let sites = [
         (
-            "docs/release-checklist.md",
+            "docs/guides/release-checklist.md",
             tree_packages(&release_checklist),
         ),
-        ("docs/verification.md", tree_packages(&verification)),
+        ("docs/guides/verification.md", tree_packages(&verification)),
         ("CONTRIBUTING.md", tree_packages(&contributing)),
-        ("PROPERTIES.md", tree_packages(&properties)),
+        ("docs/properties/index.md", tree_packages(&properties)),
     ];
     for (site, packages) in &sites {
         if packages.is_empty() {
@@ -73,10 +73,12 @@ pub fn run(args: &Args) -> Result<()> {
     let verification_tokens = audit_ignore_tokens(&verification);
     let canonical = canonical_audit_ignores(&deny_config)?;
     if checklist_tokens.is_empty() {
-        bail!("docs/release-checklist.md does not declare the cargo audit ignore-token list");
+        bail!(
+            "docs/guides/release-checklist.md does not declare the cargo audit ignore-token list"
+        );
     }
     if verification_tokens.is_empty() {
-        bail!("docs/verification.md does not declare the cargo audit ignore-token list");
+        bail!("docs/guides/verification.md does not declare the cargo audit ignore-token list");
     }
     if canonical.is_empty() {
         bail!(
@@ -84,8 +86,8 @@ pub fn run(args: &Args) -> Result<()> {
         );
     }
     for (site, tokens) in [
-        ("docs/release-checklist.md", &checklist_tokens),
-        ("docs/verification.md", &verification_tokens),
+        ("docs/guides/release-checklist.md", &checklist_tokens),
+        ("docs/guides/verification.md", &verification_tokens),
     ] {
         if tokens != &canonical {
             bail!(

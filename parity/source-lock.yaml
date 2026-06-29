@@ -78,3 +78,13 @@ repositories:
   - src/interfaces/ICoWSwapOnchainOrders.sol # on-chain order events
   - src/mixins/CoWSwapOnchainOrders.sol # on-chain order broadcast
   - src/interfaces/IWrappedNativeToken.sol # wrapped-native token interface
+- id: composable-cow
+  remote: https://github.com/cowprotocol/composable-cow.git
+  commit: 471ca59aa95da1bbf3b03e002de96449bc78e6f0
+  producer_paths:
+  - src/ComposableCoW.sol # registry: create/createWithContext/remove; hash; _auth merkle leaf
+  - src/interfaces/IConditionalOrder.sol # ConditionalOrderParams struct; poll-signal errors
+  - src/types/twap/TWAP.sol # TWAP handler getTradeableOrder
+  - src/types/twap/libraries/TWAPOrder.sol # TWAPOrder.Data struct layout and validation
+  - src/types/twap/libraries/TWAPOrderMathLib.sol # calculateValidTo, mirrored by TwapStaticInput::timing_at
+  - src/value_factories/CurrentBlockTimestampFactory.sol # CURRENT_BLOCK_TIMESTAMP_FACTORY address and getValue

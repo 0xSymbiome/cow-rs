@@ -1,11 +1,18 @@
-# ADR 0041: Share Transport Policy Across HTTP Clients
+---
+type: Decision Record
+id: ADR-0041
+title: "ADR 0041: Share Transport Policy Across HTTP Clients"
+description: "Orderbook and subgraph retry, Retry-After, jitter, rate-limit, and transport-error classification behavior lives in the cow_sdk_core::transport::policy module, gated behind the off-by-default transport-policy feature of cow-sdk-core."
+status: Accepted
+date: 2026-05-08
+last_reviewed: 2026-06-15
+authors: ["0xSymbiotic"]
+tags: [transport, retry, layering]
+related: [ADR-0013, ADR-0039, ADR-0046, ADR-0019]
+timestamp: 2026-06-15T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-05-08
-- Last reviewed: 2026-06-15
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: transport, retry, layering
-- Related: [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md) (folds in superseded ADR 0046; superseded ADR 0019 folded into 0013)
+# ADR 0041: Share Transport Policy Across HTTP Clients
 
 ## Decision
 
@@ -17,7 +24,7 @@ transport-error classification behavior lives in the
 `OrderbookApiBuilder` and `SubgraphApiBuilder` accept the shared
 `TransportPolicy` through `.transport_policy(...)`.
 
-The TypeScript-callable package exposes the same policy through a typed
+The JavaScript and TypeScript package exposes the same policy through a typed
 `TransportPolicyConfig` on JavaScript client constructors. Omitting the config
 preserves Rust defaults; invalid policy values fail during constructor
 validation.
@@ -83,8 +90,8 @@ separate client-specific policy wrappers.
 
 ## Links
 
-- [Transport](../transport.md)
-- [Architecture](../architecture.md)
+- [Transport](../guides/transport.md)
+- [Architecture](../guides/architecture.md)
 - [ADR 0013](0013-http-transport-injection-and-typestate-builders.md)
 - [WASM Surface Audit](../audit/wasm-surface-audit.md)
 

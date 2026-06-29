@@ -363,7 +363,7 @@ impl OrderbookApi {
             HttpMethod::Get,
         );
         let order: Order = self.fetch_json(params).await?;
-        transform_order(order)
+        Ok(transform_order(order))
     }
 
     /// Fetches an order by UID, retrying once against the other environment on a `404`.
@@ -421,8 +421,7 @@ impl OrderbookApi {
     ///
     /// # Errors
     ///
-    /// Returns [`OrderbookError`] if request execution fails or any order in
-    /// the response cannot be normalized.
+    /// Returns [`OrderbookError`] if request execution fails.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(
@@ -445,7 +444,7 @@ impl OrderbookApi {
         .with_query("limit", request.limit.to_string());
 
         let orders: Vec<Order> = self.fetch_json(params).await?;
-        transform_orders(orders)
+        Ok(transform_orders(orders))
     }
 
     /// Fetches and normalizes orders associated with a settlement transaction.
@@ -456,8 +455,7 @@ impl OrderbookApi {
     ///
     /// # Errors
     ///
-    /// Returns [`OrderbookError`] if request execution fails or any order in
-    /// the response cannot be normalized.
+    /// Returns [`OrderbookError`] if request execution fails.
     #[cfg_attr(
         feature = "tracing",
         tracing::instrument(
@@ -477,7 +475,7 @@ impl OrderbookApi {
         );
 
         let orders: Vec<Order> = self.fetch_json(params).await?;
-        transform_orders(orders)
+        Ok(transform_orders(orders))
     }
 
     /// Fetches trades filtered by owner or order UID.

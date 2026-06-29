@@ -7,11 +7,14 @@
 
 pub mod check_adr_coverage;
 pub mod check_alloy_family_pins;
+pub mod check_audit_freshness;
+pub mod check_audit_lane;
 pub mod check_chain_patch_eligibility;
 pub mod check_deny_unknown_fields;
 pub mod check_enum_policy;
 pub mod check_msrv_notice;
 pub mod check_panic_allowlist;
+pub mod check_principles;
 pub mod check_property_citations;
 pub mod check_readme_include;
 pub mod check_shell_wrappers;
@@ -60,6 +63,8 @@ const REPO_STATE_CHECKS: &[Check] = &[
         dependency_invariant::run_alloy_signer_default,
     ),
     ("check-adr-coverage", check_adr_coverage::run_default),
+    ("check-principles", check_principles::run_default),
+    ("check-audit-lane", check_audit_lane::run_default),
     (
         "check-alloy-family-pins",
         check_alloy_family_pins::run_default,

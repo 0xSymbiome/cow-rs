@@ -5,10 +5,10 @@
 //! **Surface:** `cow_sdk_trading::{sanitize_protocol_fee_bps,
 //! suggest_slippage_from_fee, suggest_slippage_from_volume}`.
 //! **Property:** `PROP-TRD-002`.
-//! **Seed contract:** corpus inputs cover canonical decimal and `0x`-hex
-//! quantity strings, boundary zero / one / `u128::MAX` amounts, and
-//! adversarial NaN / Inf / negative / oversized values that exercise the
-//! documented sanitization and integer-math fast paths.
+//! **Seed contract:** the protocol-fee string covers canonical decimal,
+//! `0x`-hex, and adversarial NaN / Inf / negative shapes for the sanitizer;
+//! the typed fee and volume amounts cover boundary zero / one / `u128` /
+//! `Amount::MAX` values that exercise the integer slippage math.
 //!
 //! The target maps arbitrary bytes through `Arbitrary` into a typed
 //! `PolicyInput`, exercises `sanitize_protocol_fee_bps` on the candidate
@@ -22,6 +22,7 @@
 //! - `suggest_slippage_from_fee` and `suggest_slippage_from_volume`
 //!   produce non-negative amounts within the documented uint256 bound.
 
+use cow_sdk_core::Amount;
 use cow_sdk_trading::{
     sanitize_protocol_fee_bps, suggest_slippage_from_fee, suggest_slippage_from_volume,
 };
@@ -33,10 +34,10 @@ use libfuzzer_sys::{
 #[derive(Debug)]
 struct PolicyInput {
     protocol_fee_bps: Option<String>,
-    fee_amount: String,
+    fee_amount: Amount,
     multiplier_tag: u8,
-    sell_before: String,
-    sell_after: String,
+    sell_before: Amount,
+    sell_after: Amount,
     slippage_tag: u8,
     is_sell: bool,
 }
@@ -49,10 +50,10 @@ impl<'a> Arbitrary<'a> for PolicyInput {
             } else {
                 None
             },
-            fee_amount: read_quantity_string(bytes),
+            fee_amount: read_amount(bytes),
             multiplier_tag: read_u8(bytes, 0),
-            sell_before: read_quantity_string(bytes),
-            sell_after: read_quantity_string(bytes),
+            sell_before: read_amount(bytes),
+            sell_after: read_amount(bytes),
             slippage_tag: read_u8(bytes, 0),
             is_sell: bool::arbitrary(bytes).unwrap_or(false),
         })
@@ -174,6 +175,16 @@ fn read_quantity_string(bytes: &mut Unstructured<'_>) -> String {
         5 => format!("-{value}"),
         6 => "0x".to_owned(),
         _ => "not-a-number".to_owned(),
+    }
+}
+
+fn read_amount(bytes: &mut Unstructured<'_>) -> Amount {
+    let value = u128::arbitrary(bytes).unwrap_or(0);
+    match read_u8(bytes, 0) % 4 {
+        0 => Amount::from(value),
+        1 => Amount::ZERO,
+        2 => Amount::from(1u32),
+        _ => Amount::MAX,
     }
 }
 

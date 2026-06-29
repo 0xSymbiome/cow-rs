@@ -16,7 +16,8 @@ Security-relevant public surfaces worth a reviewer's attention include:
   and its conservative positive-only caching semantics (only `Ok(())`
   magic-value matches are cached; every other outcome — including
   `Eip1271MagicValueMismatch`, transport, missing-contract-code, decode,
-  and provider failures — re-hits the chain)
+  and provider failures — re-hits the chain). The SDK ships only the
+  always-available no-op default; a memoizing cache is consumer-supplied
 - the `Redacted<T>` newtype applied to partner API keys, IPFS pinning
   credentials, transport base URLs, and other secret-adjacent inputs so
   debug, display, and serialized output of configuration types never
@@ -153,7 +154,7 @@ than presented as hard caps:
   body before the SDK sees it; the SDK refuses an oversized body but cannot
   prevent the JavaScript layer from allocating it. The callback contract is the
   place to impose a body limit before materialization.
-- A host wallet reached through the EIP-1193 request callback returns data the
+- A host wallet reached through the typed-data signer callback returns data the
   wallet has already materialized; the SDK imposes no response-byte cap on that
   boundary.
 - The IPFS read is byte-bounded but, by default, not time-bounded.
@@ -166,7 +167,7 @@ SDK.
 ## Host wallet trust posture
 
 The SDK does not connect to or discover wallets. JavaScript and TypeScript hosts
-drive `cow-sdk-wasm` with their own wallet stack (viem, wagmi, or any EIP-1193
+drive `cow-sdk-js` with their own wallet stack (viem, wagmi, or any EIP-1193
 provider) and supply signatures across the SDK's request callbacks. Provider
 identity, EIP-6963 discovery, and origin trust are the host application's
 responsibility; the SDK treats whatever the callback returns as untrusted input

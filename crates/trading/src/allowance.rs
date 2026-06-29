@@ -1,5 +1,4 @@
-use alloy_sol_types::SolCall as _;
-use cow_sdk_contracts::{ContractId, IERC20};
+use cow_sdk_contracts::ContractId;
 use cow_sdk_core::{
     Address, Amount, ContractCall, Provider, Signer, SupportedChainId, TransactionHash,
     TransactionRequest,
@@ -8,8 +7,17 @@ use cow_sdk_core::{
 use crate::{ApprovalParams, TradingError};
 
 /// Resolves the canonical vault-relayer address for allowance checks.
+///
+/// # Panics
+///
+/// Panics only if the embedded deployment registry is missing the vault-relayer
+/// entry for a supported chain/environment pair — ruled out by the
+/// build-validated manifest.
 fn resolve_vault_relayer(chain_id: SupportedChainId, env: cow_sdk_core::CowEnv) -> Address {
-    crate::onchain::resolve_contract_address(ContractId::VaultRelayer, None, chain_id, env)
+    // SAFETY: the vault relayer is deployed on every supported chain/environment,
+    // so the embedded registry always resolves it.
+    cow_sdk_contracts::resolve_contract_address(ContractId::VaultRelayer, None, chain_id, env)
+        .expect("vault relayer is registered for every supported chain/env")
 }
 
 const ERC20_ALLOWANCE_ABI_JSON: &str = r#"[{"type":"function","name":"allowance","inputs":[{"name":"owner","type":"address"},{"name":"spender","type":"address"}],"outputs":[{"name":"","type":"uint256"}],"stateMutability":"view"}]"#;
@@ -60,30 +68,19 @@ where
 
 /// Builds the ERC-20 approval transaction for the `CoW` Protocol vault relayer.
 ///
-/// The approval amount must fit inside the ABI `uint256` range; negative values
-/// and values wider than 32 bytes are rejected.
-///
-/// # Errors
-///
-/// Returns [`TradingError`] when ABI encoding fails or `amount` is outside the
-/// supported `uint256` range.
+/// The spender is the canonical vault relayer for the chain and environment
+/// unless `params.vault_relayer_override` is set. The approval amount is the
+/// construction-validated `params.amount`, so the build cannot fail.
+#[must_use]
 pub fn approval_transaction(
     params: &ApprovalParams,
     chain_id: SupportedChainId,
     env: cow_sdk_core::CowEnv,
-) -> Result<TransactionRequest, TradingError> {
+) -> TransactionRequest {
     let spender = params
         .vault_relayer_override
         .unwrap_or_else(|| resolve_vault_relayer(chain_id, env));
-    Ok(TransactionRequest::new(
-        Some(params.token_address),
-        Some(cow_sdk_core::HexData::new(encode_approve_call(
-            &spender,
-            &params.amount,
-        ))?),
-        Some(Amount::ZERO),
-        None,
-    ))
+    cow_sdk_contracts::approve_transaction(params.token_address, spender, params.amount).into()
 }
 
 /// Sends the approval transaction.
@@ -101,7 +98,7 @@ where
     S: Signer,
     S::Error: std::fmt::Display + cow_sdk_core::UserRejection,
 {
-    let tx = approval_transaction(params, chain_id, env)?;
+    let tx = approval_transaction(params, chain_id, env);
     signer
         .send_transaction(&tx)
         .await
@@ -110,20 +107,6 @@ where
             operation: "send_transaction",
             message: error.to_string().into(),
         })
-}
-
-fn encode_approve_call(spender: &Address, amount: &Amount) -> String {
-    // Routes through the workspace `alloy::sol!`-generated
-    // `IERC20::approveCall` binding per ADR 0012. The selector, the
-    // address word, and the uint256 word are emitted at compile time
-    // through `SolCall::abi_encode`; the wire bytes are pinned
-    // byte-for-byte by the parity fixture exercised at
-    // `crates/contracts/tests/parity_contract.rs::assert_erc20_approve_calldata`.
-    let call = IERC20::approveCall {
-        spender: (*spender).into(),
-        value: *amount.as_u256(),
-    };
-    alloy_primitives::hex::encode_prefixed(call.abi_encode())
 }
 
 fn decode_allowance_result(raw: &str) -> Result<Amount, TradingError> {

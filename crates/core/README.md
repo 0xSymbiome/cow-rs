@@ -111,12 +111,12 @@ The `Signer` and `Provider` seams are defined here; concrete native adapters liv
 [`cow-sdk-alloy-signer`](https://crates.io/crates/cow-sdk-alloy-signer) and
 [`cow-sdk-alloy-provider`](https://crates.io/crates/cow-sdk-alloy-provider), and
 JavaScript and TypeScript hosts supply their own wallet across the
-[`cow-sdk-wasm`](https://crates.io/crates/cow-sdk-wasm) callback boundary.
+[`cow-sdk-js`](https://crates.io/crates/cow-sdk-js) callback boundary.
 
 ## Where to next
 
-- [Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/getting-started.md)
-- [Integrations Guide](https://github.com/0xSymbiome/cow-rs/blob/main/docs/integrations.md)
+- [Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/guides/getting-started.md)
+- [Integrations Guide](https://github.com/0xSymbiome/cow-rs/blob/main/docs/guides/integrations.md)
 - [Workspace README](https://github.com/0xSymbiome/cow-rs/blob/main/README.md)
 
 ## License

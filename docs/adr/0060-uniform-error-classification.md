@@ -1,12 +1,18 @@
-# ADR 0060: Uniform error classification through a shared `ErrorClass`
+---
+type: Decision Record
+id: ADR-0060
+title: "ADR 0060: Uniform error classification through a shared ErrorClass"
+description: "The coarse-grained failure-classification enum ErrorClass (Validation | Transport | Remote | RateLimited | Signing | Cancelled | Internal, #[non_exhaustive]) lives in cow-sdk-core and is re-exported from the cow-sdk facade so the existing c..."
+status: Accepted
+date: 2026-05-31
+last_reviewed: 2026-06-15
+authors: ["0xSymbiotic"]
+tags: [error-surface, classification, telemetry, ergonomics]
+related: [ADR-0053, ADR-0017, ADR-0025]
+timestamp: 2026-06-15T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-05-31
-- Last reviewed: 2026-06-15
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: error-surface, classification, telemetry, ergonomics
-- Anchors: Strong Typed Public Surfaces (supporting)
-- Related: [ADR 0053](0053-typed-signer-rejection-classification.md), [ADR 0017](0017-typed-orderbook-rejection-parser.md), [ADR 0025](0025-workspace-url-redaction-convention.md)
+# ADR 0060: Uniform error classification through a shared `ErrorClass`
 
 ## Decision
 
@@ -109,9 +115,13 @@ to the shared enum.
 
 ## Links
 
-- [Principles](../principles.md)
+- [Principles](../principles/index.md)
 - [Shared `ErrorClass` definition](../../crates/core/src/errors.rs)
 - [Facade error aggregation and re-export](../../crates/sdk/src/lib.rs)
 - [ADR 0053](0053-typed-signer-rejection-classification.md)
 - [ADR 0017](0017-typed-orderbook-rejection-parser.md)
 - [ADR 0025](0025-workspace-url-redaction-convention.md)
+
+**Proven by:**
+
+- [Error Classification Audit](../audit/error-classification-audit.md)

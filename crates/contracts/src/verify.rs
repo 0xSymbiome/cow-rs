@@ -6,10 +6,8 @@
 //! [`Eip1271Cache`] before reaching the chain. The trait is
 //! defined here so the contracts crate can take it as a parameter
 //! without depending on its sibling crates; callers typically reach for
-//! the trait through `cow_sdk_signing::cache` and the
-//! `NoopEip1271Cache` and
-//! `InMemoryEip1271Cache` implementations in the signing
-//! crate.
+//! the trait through `cow_sdk_signing::cache` and the always-available
+//! `NoopEip1271Cache` implementation, or provide their own.
 //!
 //! # Cache key
 //!
@@ -36,7 +34,7 @@
 //!   becomes valid on-chain within the TTL) is never blocked by a stale
 //!   negative entry — the next probe observes the live activation.
 //!
-//! The TTL on the in-memory implementation bounds the only residual
+//! A cache implementation's TTL, if any, bounds the only residual
 //! staleness, an optimistic VALID that survives an on-chain revocation
 //! until the entry expires; the cache is never an authoritative view of
 //! mutable on-chain state, and on-chain settlement re-checks the
@@ -93,8 +91,7 @@ pub trait Eip1271Cache: Send + Sync + 'static {
 /// consumers keep the cache parameter on [`verify_eip1271_signature_cached`]
 /// mandatory without paying any allocation or synchronization overhead. It lives
 /// here next to the trait so the contracts crate owns the always-available
-/// implementation; `cow_sdk_signing::cache` re-exports it alongside the
-/// capacity-bounded `InMemoryEip1271Cache`.
+/// implementation; `cow_sdk_signing::cache` re-exports it.
 ///
 /// [`verify_eip1271_signature`]: crate::signature::verify_eip1271_signature
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]

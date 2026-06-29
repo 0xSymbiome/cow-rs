@@ -1,12 +1,18 @@
-# ADR 0057: Log-Provider Capability Trait For Event-Log Fetching
+---
+type: Decision Record
+id: ADR-0057
+title: "ADR 0057: Log-Provider Capability Trait For Event-Log Fetching"
+description: "cow-sdk-core exposes an opt-in LogProvider: Provider capability supertrait for event-log fetching, mirroring the SigningProvider: Provider split (ADR 0024)."
+status: Accepted
+date: 2026-05-29
+last_reviewed: 2026-05-29
+authors: ["0xSymbiotic"]
+tags: [traits, providers, events, capability-split, semver]
+related: [ADR-0024, ADR-0048, ADR-0010]
+timestamp: 2026-05-29T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-05-29
-- Last reviewed: 2026-05-29
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: traits, providers, events, capability-split, semver
-- Anchors: Off-Chain Orchestration Boundary (primary); Chain-RPC Runtime Neutrality (supporting)
-- Related: [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0048](0048-composable-conditional-order-framework.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md)
+# ADR 0057: Log-Provider Capability Trait For Event-Log Fetching
 
 ## Decision
 
@@ -111,8 +117,8 @@ in the `SigningProvider` mould (ADR 0024) rather than widening the base
 
 ## Links
 
-- [Principles](../principles.md)
-- [Architecture](../architecture.md)
+- [Principles](../principles/index.md)
+- [Architecture](../guides/architecture.md)
 - [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md)
 - [ADR 0048](0048-composable-conditional-order-framework.md)
 - [ADR 0054](0054-onchain-order-event-decoding-is-fail-closed.md)

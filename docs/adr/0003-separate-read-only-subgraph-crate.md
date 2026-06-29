@@ -1,11 +1,18 @@
-# ADR 0003: Separate Read-Only Subgraph Crate
+---
+type: Decision Record
+id: ADR-0003
+title: "ADR 0003: Separate Read-Only Subgraph Crate"
+description: "Own subgraph access in a separate, read-only cow-sdk-subgraph crate, and also re-export it through the cow-sdk facade behind an off-by-default subgraph feature (cow_sdk::subgraph), alongside the other optional capability features such as co..."
+status: Accepted
+date: 2026-04-09
+last_reviewed: 2026-06-07
+authors: ["0xSymbiotic"]
+tags: [subgraph, analytics, read-only, facade, feature]
+related: [ADR-0001, ADR-0060]
+timestamp: 2026-06-07T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-04-09
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Last reviewed: 2026-06-07
-- Tags: subgraph, analytics, read-only, facade, feature
-- Related: [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md), [ADR 0060](0060-uniform-error-classification.md)
+# ADR 0003: Separate Read-Only Subgraph Crate
 
 ## Decision
 
@@ -61,5 +68,5 @@ rather than a special case.
 
 ## Links
 
-- [Architecture](../architecture.md)
+- [Architecture](../guides/architecture.md)
 - [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md)

@@ -59,13 +59,6 @@ impl QuoteMetadata {
         Ok(quote)
     }
 
-    /// Returns a copy flagged as smart-slippage derived.
-    #[must_use]
-    pub const fn with_smart_slippage(mut self, smart_slippage: bool) -> Self {
-        self.smart_slippage = Some(smart_slippage);
-        self
-    }
-
     /// Validates the slippage tolerance against the published `[0, 10000]`
     /// basis-point bound.
     ///

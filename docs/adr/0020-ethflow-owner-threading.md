@@ -1,11 +1,18 @@
-# ADR 0020: EthFlow Transaction Bundle Carries The Signer-Derived Owner For Pre-HTTP Validation
+---
+type: Decision Record
+id: ADR-0020
+title: "ADR 0020: EthFlow Transaction Bundle Carries The Signer-Derived Owner For Pre-HTTP Validation"
+description: "The EthFlow transaction bundle returned by cow_sdk_trading::eth_flow_transaction exposes a typed from: cow_sdk_core::Address field carrying the signer-derived owner resolved during transaction construction via Signer::address."
+status: Accepted
+date: 2026-04-22
+last_reviewed: 2026-06-11
+authors: ["0xSymbiotic"]
+tags: [trading, eth-flow, validation, client-side, defense-in-depth]
+related: [ADR-0005, ADR-0011, ADR-0015, ADR-0052]
+timestamp: 2026-06-11T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-04-22
-- Last reviewed: 2026-06-11
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: trading, eth-flow, validation, client-side, defense-in-depth
-- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md), [ADR 0015](0015-client-side-order-bounds-validator.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+# ADR 0020: EthFlow Transaction Bundle Carries The Signer-Derived Owner For Pre-HTTP Validation
 
 ## Decision
 
@@ -147,8 +154,8 @@ the signer.
 
 ## Links
 
-- [Architecture](../architecture.md)
-- [Verification Guide](../verification.md)
+- [Architecture](../guides/architecture.md)
+- [Verification Guide](../guides/verification.md)
 - [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
 - [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md)
 - [ADR 0015](0015-client-side-order-bounds-validator.md)

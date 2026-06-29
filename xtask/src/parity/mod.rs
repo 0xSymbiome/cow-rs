@@ -109,6 +109,7 @@ pub struct CliOptions {
 pub fn validate(options: &CliOptions) -> Result<()> {
     let lock = validate_lock_form(&options.source_lock)?;
     let fixture_count = validate_fixtures(&options.source_lock, &lock)?;
+    validate_fixture_consumers(&options.source_lock)?;
     validate_vendored_openapi_stamp(&options.source_lock, &lock)?;
 
     if let Some(root) = &options.upstream_root {
@@ -270,6 +271,96 @@ fn validate_fixtures(source_lock: &Path, lock: &SourceLock) -> Result<usize> {
             .with_context(|| format!("fixture {} failed validation", file.display()))?;
     }
     Ok(files.len())
+}
+
+/// Fixtures intentionally not referenced by name from a consuming source, with
+/// the reason recorded inline. Empty today.
+const FIXTURE_CONSUMER_OPT_OUT: &[&str] = &[];
+
+/// The fixed fixture-header keys; any other top-level key is fixture payload.
+const FIXTURE_HEADER_KEYS: &[&str] = &[
+    "surface",
+    "sources",
+    "standards",
+    "dto",
+    "endpoint",
+    "derivation",
+];
+
+/// Verifies every fixture is exercised by a consumer and carries a payload.
+///
+/// A fixture's correctness is proven only by the consuming `cargo test` (the
+/// value half of the provenance/value split); a fixture with no consumer ships
+/// green-but-unproven, since its header validates in isolation. This walks the
+/// corpus and bails listing any fixture whose stem is referenced by no
+/// `crates/**` or `fuzz/fuzz_targets/**` source, or whose payload (every
+/// top-level key drawn from the header set) is empty.
+fn validate_fixture_consumers(source_lock: &Path) -> Result<()> {
+    let parity = parity_root(source_lock);
+    let repo_root = parity.parent().unwrap_or_else(|| Path::new("."));
+
+    // The orphan-consumer rule only applies against a real repository checkout;
+    // a synthetic lock outside the workspace has no `crates/` corpus to scan.
+    if !repo_root.join("crates").is_dir() {
+        return Ok(());
+    }
+
+    let mut sources = String::new();
+    for dir in [
+        repo_root.join("crates"),
+        repo_root.join("fuzz").join("fuzz_targets"),
+    ] {
+        for file in collect_files(&dir, "rs")? {
+            sources.push_str(
+                &fs::read_to_string(&file)
+                    .with_context(|| format!("failed to read source {}", file.display()))?,
+            );
+            sources.push('\n');
+        }
+    }
+
+    let mut orphans = Vec::new();
+    let mut empty = Vec::new();
+    for fixture in collect_files(&parity.join("fixtures"), "json")? {
+        let stem = fixture
+            .file_stem()
+            .and_then(|stem| stem.to_str())
+            .with_context(|| format!("fixture {} has no stem", fixture.display()))?;
+        if !FIXTURE_CONSUMER_OPT_OUT.contains(&stem) && !sources.contains(stem) {
+            orphans.push(fixture.display().to_string());
+        }
+        if fixture_payload_is_empty(&fixture)? {
+            empty.push(fixture.display().to_string());
+        }
+    }
+
+    if orphans.is_empty() && empty.is_empty() {
+        return Ok(());
+    }
+    let mut lines = vec!["every parity fixture must be consumed and carry a payload:".to_owned()];
+    for orphan in orphans {
+        lines.push(format!(
+            "  orphan (no crates/** or fuzz/** consumer references its stem): {orphan}"
+        ));
+    }
+    for fixture in empty {
+        lines.push(format!("  empty payload (only header keys): {fixture}"));
+    }
+    bail!("{}", lines.join("\n"));
+}
+
+/// Returns whether a fixture carries no payload — every top-level key belongs to
+/// the header set.
+fn fixture_payload_is_empty(file: &Path) -> Result<bool> {
+    let text = fs::read_to_string(file)
+        .with_context(|| format!("failed to read fixture {}", file.display()))?;
+    let value: serde_json::Value = serde_json::from_str(&text)
+        .with_context(|| format!("fixture {} is not valid JSON", file.display()))?;
+    Ok(value.as_object().is_some_and(|object| {
+        object
+            .keys()
+            .all(|key| FIXTURE_HEADER_KEYS.contains(&key.as_str()))
+    }))
 }
 
 fn validate_fixture_file(

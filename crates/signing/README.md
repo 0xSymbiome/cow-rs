@@ -34,9 +34,9 @@ signing tooling.
   custom-signer seam for smart accounts. The `SigningScheme` enum and
   `verify_eip1271_signature(_cached)` are re-exported from `cow-sdk-contracts`
   for one-import ergonomics.
-- **Optional EIP-1271 verification cache** — `InMemoryEip1271Cache` (positive-only,
-  TTL-bounded) behind the `in-memory-cache` feature; the `Eip1271Cache` trait and
-  `NoopEip1271Cache` are always available.
+- **EIP-1271 verification cache seam** — the `Eip1271Cache` trait and the
+  always-available `NoopEip1271Cache`; a consumer that wants memoization
+  implements the trait over the store of its choice.
 - **Typed wallet rejection** — a user-declined signature is surfaced as a typed
   rejection carrying the EIP-1193 provider error code, not a redacted string.
 
@@ -116,7 +116,6 @@ internal seam helper.
 
 | Feature | Default | Enables |
 | --- | --- | --- |
-| `in-memory-cache` | off | The capacity-bounded, TTL-respecting `InMemoryEip1271Cache` plus the `Clock` / `SystemClock` seam. The `Eip1271Cache` trait and `NoopEip1271Cache` are available without it. |
 | `tracing` | off | `tracing` spans on the sign, cancellation, and verify paths; enables `cow-sdk-core` and `cow-sdk-contracts` tracing. |
 
 ## Where this fits
@@ -133,8 +132,8 @@ orders or quotes (that is [`cow-sdk-trading`](https://crates.io/crates/cow-sdk-t
 
 ## Where to next
 
-- [Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/getting-started.md)
-- [Integrations Guide](https://github.com/0xSymbiome/cow-rs/blob/main/docs/integrations.md)
+- [Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/guides/getting-started.md)
+- [Integrations Guide](https://github.com/0xSymbiome/cow-rs/blob/main/docs/guides/integrations.md)
 - [Workspace README](https://github.com/0xSymbiome/cow-rs/blob/main/README.md)
 
 ## License

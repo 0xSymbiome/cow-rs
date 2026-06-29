@@ -8,6 +8,14 @@ use crate::AppDataError;
 /// Typed partner-fee metadata accepted by app-data and trading helpers.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(untagged)]
 pub enum PartnerFee {
     /// Single fee policy object.
@@ -90,6 +98,14 @@ impl From<Vec<PartnerFeePolicy>> for PartnerFee {
 /// One typed partner-fee policy object.
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(untagged)]
 pub enum PartnerFeePolicy {
     /// Fee paid from traded volume.
@@ -380,6 +396,57 @@ mod tests {
             )
             .volume_bps(),
             None
+        );
+    }
+
+    #[test]
+    fn native_deserialize_selects_variant_by_field_presence() {
+        let recipient = "0x1111111111111111111111111111111111111111";
+        // A single object selects `Single` and the right variant from which
+        // basis-point fields are present — the shape both wasm distribution lanes send.
+        let volume: PartnerFee =
+            serde_json::from_value(serde_json::json!({ "volumeBps": 100, "recipient": recipient }))
+                .expect("a volume policy object deserializes as Single(Volume)");
+        assert!(matches!(volume, PartnerFee::Single(_)));
+        assert_eq!(volume.volume_bps(), Some(100));
+
+        let surplus: PartnerFee = serde_json::from_value(serde_json::json!({
+            "surplusBps": 100, "maxVolumeBps": 50, "recipient": recipient
+        }))
+        .expect("a surplus policy object deserializes as Single(Surplus)");
+        assert!(matches!(surplus, PartnerFee::Single(_)));
+        assert_eq!(surplus.volume_bps(), None);
+
+        // A JSON array deserializes as `Multiple`.
+        let many: PartnerFee = serde_json::from_value(serde_json::json!([
+            { "volumeBps": 100, "recipient": recipient },
+            { "volumeBps": 200, "recipient": recipient }
+        ]))
+        .expect("an array deserializes as Multiple");
+        assert!(matches!(many, PartnerFee::Multiple(ref policies) if policies.len() == 2));
+    }
+
+    #[test]
+    fn native_deserialize_rejects_ambiguous_and_underspecified_policies() {
+        let recipient = "0x1111111111111111111111111111111111111111";
+        // Both volume and surplus present is ambiguous.
+        assert!(
+            serde_json::from_value::<PartnerFee>(serde_json::json!({
+                "volumeBps": 10, "surplusBps": 20, "recipient": recipient
+            }))
+            .is_err()
+        );
+        // No basis-point field at all.
+        assert!(
+            serde_json::from_value::<PartnerFee>(serde_json::json!({ "recipient": recipient }))
+                .is_err()
+        );
+        // Surplus without its required max-volume cap.
+        assert!(
+            serde_json::from_value::<PartnerFee>(serde_json::json!({
+                "surplusBps": 100, "recipient": recipient
+            }))
+            .is_err()
         );
     }
 }

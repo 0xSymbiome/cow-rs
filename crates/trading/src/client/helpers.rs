@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
 use cow_sdk_core::{Address, CowEnv, SupportedChainId};
+// `OrderbookApi` builds the default-transport client, which only exists on
+// native and browser targets; `wasm32-wasip2` requires an injected orderbook.
+#[cfg(not(all(target_arch = "wasm32", target_os = "wasi")))]
 use cow_sdk_orderbook::OrderbookApi;
 
 use super::Trading;
@@ -117,6 +120,13 @@ impl Trading {
         ))
     }
 
+    #[cfg_attr(
+        all(target_arch = "wasm32", target_os = "wasi"),
+        allow(
+            clippy::needless_pass_by_value,
+            reason = "missing_chain_error is consumed by value on native and browser targets; the wasip2 branch returns MissingOrderbookTransport instead"
+        )
+    )]
     pub(super) fn resolve_orderbook_binding(
         &self,
         requested_chain: Option<SupportedChainId>,
@@ -134,19 +144,26 @@ impl Trading {
             });
         }
 
-        let chain_id = requested_chain.ok_or(missing_chain_error)?;
-        let env = requested_env.unwrap_or(CowEnv::Prod);
-        // The default-built client carries the standard orderbook transport
-        // policy and works on every target: the orderbook builder's
-        // default-transport terminal constructs `ReqwestTransport` on native
-        // and the browser `FetchTransport` on `wasm32`. Consumers needing a
-        // custom retry/rate-limit policy build their own `OrderbookApi` with
-        // it and inject it through `TradingBuilder::orderbook`.
-        let client = OrderbookApi::builder().chain(chain_id).env(env).build()?;
-        Ok(ResolvedOrderbookBinding {
-            client: Arc::new(client),
-            chain_id,
-            env,
-        })
+        // No orderbook client was injected, so fall back to the default
+        // transport. The orderbook builder's default-transport terminal exists
+        // only on native (`reqwest`) and the browser (`fetch`); the component
+        // target `wasm32-wasip2` has neither, so it requires an orderbook
+        // injected through `TradingBuilder::orderbook` instead.
+        #[cfg(not(all(target_arch = "wasm32", target_os = "wasi")))]
+        {
+            let chain_id = requested_chain.ok_or(missing_chain_error)?;
+            let env = requested_env.unwrap_or(CowEnv::Prod);
+            let client = OrderbookApi::builder().chain(chain_id).env(env).build()?;
+            Ok(ResolvedOrderbookBinding {
+                client: Arc::new(client),
+                chain_id,
+                env,
+            })
+        }
+        #[cfg(all(target_arch = "wasm32", target_os = "wasi"))]
+        {
+            let _ = missing_chain_error;
+            Err(TradingError::MissingOrderbookTransport)
+        }
     }
 }

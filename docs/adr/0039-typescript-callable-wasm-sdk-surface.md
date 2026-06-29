@@ -1,17 +1,24 @@
-# ADR 0039: Keep The TypeScript-Callable WASM SDK Surface As An Additive Leaf Crate
+---
+type: Decision Record
+id: ADR-0039
+title: "ADR 0039: Keep The JavaScript and TypeScript WASM SDK Surface As An Additive Leaf Crate"
+description: "cow-sdk-js is the canonical JavaScript and TypeScript SDK surface."
+status: Accepted
+date: 2026-05-09
+last_reviewed: 2026-06-26
+authors: ["0xSymbiotic"]
+tags: [wasm, typescript, public-surface, additive-leaf-crates]
+related: [ADR-0010, ADR-0013, ADR-0024, ADR-0038, ADR-0044, ADR-0052]
+timestamp: 2026-06-26T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-05-09
-- Last reviewed: 2026-06-20
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: wasm, typescript, public-surface, additive-leaf-crates
-- Related: [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0038](0038-transaction-lifecycle-types.md), [ADR 0044](0044-bundle-size-profile-and-flavor-builds.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+# ADR 0039: Keep The JavaScript and TypeScript WASM SDK Surface As An Additive Leaf Crate
 
 ## Decision
 
-`cow-sdk-wasm` is the canonical TypeScript-callable SDK surface. It remains a
+`cow-sdk-js` is the canonical JavaScript and TypeScript SDK surface. It remains a
 publishable additive leaf crate, not part of `cow-sdk-core`, and exposes four
-layers: pure protocol helpers in the host-safe `cow-sdk-wasm::helpers` module, wallet and
+layers: pure protocol helpers in the host-safe `cow-sdk-js::helpers` module, wallet and
 signer callback functions, orderbook plus subgraph plus IPFS clients, and
 trading clients. EIP-1271 signing uses a facade-resolves-callback pattern:
 JavaScript resolves the final signature at the wasm boundary, while Rust stores
@@ -40,15 +47,15 @@ ecosystem into the Rust crate. Keeping the surface as a leaf preserves the
 native SDK dependency graph and keeps wasm-bindgen concerns local to the crate
 that exports them.
 
-This decision establishes `cow-sdk-wasm` as the canonical TypeScript-callable
-surface FOR THE COW-RS RUST WASM PACKAGE. It does NOT establish `cow-sdk-wasm`
+This decision establishes `cow-sdk-js` as the canonical JavaScript and TypeScript
+surface FOR THE COW-RS RUST WASM PACKAGE. It does NOT establish `cow-sdk-js`
 as the default CoW Protocol TypeScript SDK for consumers. The upstream
 [`@cowprotocol/cow-sdk`](https://www.npmjs.com/package/@cowprotocol/cow-sdk)
 remains the recommended TypeScript SDK for standard browser dapps, web apps,
 CowSwap-style UIs, and most TypeScript applications because it is substantially
 smaller at equivalent feature subsets.
 
-Runtime support claims for `cow-sdk-wasm` are split into distinct gates that
+Runtime support claims for `cow-sdk-js` are split into distinct gates that
 this ADR does not blur:
 
 - Public API and facade contract (governed by this ADR).
@@ -107,7 +114,7 @@ this ADR does not blur:
     snapshot-gated.
 22. JavaScript transport policy configuration maps into the shared Rust
     `TransportPolicy` contract.
-23. The phrase "canonical TypeScript-callable surface" in this ADR refers to
+23. The phrase "canonical JavaScript and TypeScript surface" in this ADR refers to
     canonicality within cow-rs's WASM package, not to default-recommendation
     status for CoW Protocol TypeScript consumers; see the comparative
     benchmark validation note for the consumer-routing discipline.
@@ -130,6 +137,10 @@ this ADR does not blur:
     `category`, so a consumer can branch on the exact rejection without parsing
     the message. Only the sanitized tag crosses the boundary; the free-form
     services description never does.
+27. Consumer-facing boundary type names mirror the native Rust type they
+    project: no `Input` suffix is added where a native name exists, and
+    request shapes follow the upstream `…Params` / `…Request` convention. The
+    EIP-712 typed-data message type is exposed as `TypedDataMessage`.
 
 ## Alternatives Rejected
 
@@ -144,7 +155,7 @@ this ADR does not blur:
 
 ## Links
 
-- [cow-sdk-wasm README](../../crates/wasm/README.md)
+- [cow-sdk-js README](../../crates/js/README.md)
 - [WASM Surface Audit](../audit/wasm-surface-audit.md)
 - [Upstream TypeScript SDK](https://github.com/cowprotocol/cow-sdk)
 - [wasm-bindgen guide](https://rustwasm.github.io/docs/wasm-bindgen/)

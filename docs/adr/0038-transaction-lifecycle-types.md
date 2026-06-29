@@ -1,11 +1,18 @@
-# ADR 0038: Split Transaction Broadcast And Receipt Observation
+---
+type: Decision Record
+id: ADR-0038
+title: "ADR 0038: Split Transaction Broadcast And Receipt Observation"
+description: "Signer-backed submission returns TransactionBroadcast, a hash-only broadcast acknowledgement."
+status: Accepted
+date: 2026-05-07
+last_reviewed: 2026-05-22
+authors: ["0xSymbiotic"]
+tags: [types, adapters, trading]
+related: [ADR-0010, ADR-0024, ADR-0035, ADR-0052]
+timestamp: 2026-05-22T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-05-07
-- Last reviewed: 2026-05-22
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: types, adapters, trading
-- Related: [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0035](0035-alloy-provider-adapter.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+# ADR 0038: Split Transaction Broadcast And Receipt Observation
 
 ## Decision
 

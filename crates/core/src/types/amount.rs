@@ -86,6 +86,14 @@ use crate::errors::{CoreError, ValidationError};
 /// at the typed boundary rather than via an infallible `.into()`.
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown"),
+    tsify(into_wasm_abi, from_wasm_abi, type = "string")
+)]
 pub struct Amount(
     // Private inner: the constructors (`new` / `parse_units` / `from_units` /
     // `from_u256` / `From`) and the `as_u256` / `into_u256` accessors are the
@@ -478,7 +486,14 @@ impl<'de> Deserialize<'de> for Amount {
         // fail closed at the serde boundary.
         validate_strict_decimal_unsigned("amount", value.as_ref())
             .map_err(serde::de::Error::custom)?;
-        Self::new(value.as_ref()).map_err(serde::de::Error::custom)
+        // The strict gate guarantees `value` is exactly `[0-9]+`, so the only
+        // reachable failure is the base-10 overflow; parse directly and surface
+        // the same `InvalidNumeric` error `Amount::new` would, instead of
+        // re-walking the empty / sign / radix-prefix checks the gate excluded.
+        U256::from_str_radix(value.as_ref(), 10)
+            .map(Self)
+            .map_err(|_| CoreError::from(ValidationError::InvalidNumeric { field: "amount" }))
+            .map_err(serde::de::Error::custom)
     }
 }
 

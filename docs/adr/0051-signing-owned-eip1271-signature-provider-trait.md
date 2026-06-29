@@ -1,11 +1,18 @@
-# ADR 0051: Signing-Owned EIP-1271 Signature Provider
+---
+type: Decision Record
+id: ADR-0051
+title: "ADR 0051: Signing-Owned EIP-1271 Signature Provider"
+description: "Eip1271Signer and Eip1271SignatureError live in cow_sdk_signing::eip1271."
+status: Accepted
+date: 2026-05-15
+last_reviewed: 2026-06-15
+authors: ["0xSymbiotic"]
+tags: [eip-1271, signing, trait-ownership, additive-leaf-crates]
+related: [ADR-0001, ADR-0014, ADR-0048, ADR-0050, ADR-0052]
+timestamp: 2026-06-15T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-05-15
-- Last reviewed: 2026-06-15
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: eip-1271, signing, trait-ownership, additive-leaf-crates
-- Related: [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md), [ADR 0014](0014-eip1271-verification-cache.md), [ADR 0048](0048-composable-conditional-order-framework.md), [ADR 0050](0050-eip1271-signature-blob-encoding.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+# ADR 0051: Signing-Owned EIP-1271 Signature Provider
 
 ## Context
 
@@ -56,8 +63,8 @@ definition exists in any other crate.
 
 The negative edge `cow-sdk-signing ⇏ cow-sdk-trading` holds structurally:
 `cow-sdk-trading ⇒ cow-sdk-signing`, so a signing → trading dependency would be
-a cargo-rejected cycle. The same edge for `cow-sdk-composable` and
-`cow-sdk-contracts[cow-shed]` applies when those consumers land; there is no
+a cargo-rejected cycle. The same edge for `cow-sdk-contracts[cow-shed]`
+applies when that consumer lands; there is no
 dedicated dependency-invariant check for them today.
 
 The single-canonical-path contract — no re-export of `Eip1271Signer` from
@@ -117,14 +124,14 @@ guessing among re-export aliases.
 - Re-export the trait from trading at the old path: would create two
   canonical paths and confuse downstream callers; any future renaming
   would have to touch both.
-- Duplicate the trait definition in `cow-sdk-composable` and
-  `cow-sdk-contracts`: would let every leaf crate implement its own
+- Duplicate the trait definition in `cow-sdk-contracts` or another
+  leaf consumer: would let every leaf crate implement its own
   variant and break interop with the trading submission path.
 
 ## Links
 
-- [Architecture](../architecture.md)
-- [Principles](../principles.md)
+- [Architecture](../guides/architecture.md)
+- [Principles](../principles/index.md)
 - [ADR 0014](0014-eip1271-verification-cache.md)
 - [ADR 0048](0048-composable-conditional-order-framework.md)
 - [ADR 0050](0050-eip1271-signature-blob-encoding.md)

@@ -20,7 +20,7 @@ alloy-signer = ["cow-sdk/alloy-signer"]
 alloy = ["cow-sdk/alloy"]
 
 [dependencies]
-cow-sdk = { path = "../../crates/sdk", features = ["testing", "subgraph"] }
+cow-sdk = { path = "../../crates/sdk", features = ["testing", "subgraph", "composable"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread", "time"] }
@@ -29,6 +29,10 @@ wiremock.workspace = true
 [[example]]
 name = "facade_surface"
 path = "scenarios/facade_surface.rs"
+
+[[example]]
+name = "twap_order"
+path = "scenarios/twap_order.rs"
 
 [[example]]
 name = "app_data"

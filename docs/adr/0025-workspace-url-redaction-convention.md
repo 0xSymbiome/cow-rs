@@ -1,10 +1,17 @@
-# ADR 0025: Redact Credential-Bearing URL Fields At Storage Boundaries
+---
+type: Decision Record
+id: ADR-0025
+title: "ADR 0025: Redact Credential-Bearing URL Fields At Storage Boundaries"
+description: "Credential-bearing URL fields are stored in redacting types before they become part of public SDK state."
+status: Accepted
+date: 2026-04-27
+authors: ["0xSymbiotic"]
+tags: [security, redaction, configuration, diagnostics]
+related: [ADR-0005, ADR-0013]
+timestamp: 2026-04-27T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-04-27
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: security, redaction, configuration, diagnostics
-- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0013](0013-http-transport-injection-and-typestate-builders.md)
+# ADR 0025: Redact Credential-Bearing URL Fields At Storage Boundaries
 
 ## Decision
 

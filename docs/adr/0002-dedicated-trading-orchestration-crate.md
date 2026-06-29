@@ -1,10 +1,17 @@
-# ADR 0002: Dedicated Trading Orchestration Crate
+---
+type: Decision Record
+id: ADR-0002
+title: "ADR 0002: Dedicated Trading Orchestration Crate"
+description: "Place user-facing quote-to-order workflows in cow-sdk-trading."
+status: Accepted
+date: 2026-04-09
+authors: ["0xSymbiotic"]
+tags: [trading, orchestration, package-boundary]
+related: [ADR-0001]
+timestamp: 2026-04-09T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-04-09
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: trading, orchestration, package-boundary
-- Related: [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md)
+# ADR 0002: Dedicated Trading Orchestration Crate
 
 ## Decision
 
@@ -36,7 +43,7 @@ stable home that is not the transport layer and not the root facade.
 
 ## Links
 
-- [Architecture](../architecture.md)
+- [Architecture](../guides/architecture.md)
 - [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md)
 
 **Proven by:**

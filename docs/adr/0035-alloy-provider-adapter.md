@@ -1,17 +1,23 @@
-# ADR 0035: Alloy Adapter Family (Provider, Signer, Umbrella)
+---
+type: Decision Record
+id: ADR-0035
+title: "ADR 0035: Alloy Adapter Family (Provider, Signer, Umbrella)"
+description: "The workspace ships the native Alloy runtime as a three-crate family, each gated to native targets (wasm fails closed at compile time, where the cow-sdk-js callback path applies instead): - **cow-sdk-alloy-provider** — read-only RPC."
+status: Accepted
+date: 2026-05-06 (consolidated 2026-06-15)
+authors: ["0xSymbiotic"]
+tags: [alloy, provider, signer, adapter, native, eip712]
+related: [ADR-0001, ADR-0010, ADR-0022, ADR-0024, ADR-0025, ADR-0026, ADR-0038, ADR-0068]
+timestamp: 2026-05-06T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-05-06 (consolidated 2026-06-15)
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: alloy, provider, signer, adapter, native, eip712
-- Related: [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0022](0022-ecdsa-signature-v-normalization.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0025](0025-workspace-url-redaction-convention.md), [ADR 0026](0026-alloy-major-release-absorption-plan.md), [ADR 0038](0038-transaction-lifecycle-types.md), [ADR 0068](0068-payload-only-typed-data-signing.md)
-- Consolidates: ADR 0036, ADR 0037
+# ADR 0035: Alloy Adapter Family (Provider, Signer, Umbrella)
 
 ## Decision
 
 The workspace ships the native Alloy runtime as a three-crate family, each gated to
-native targets (wasm fails closed at compile time, where the `cow-sdk-wasm`
-EIP-1193 callback path applies instead):
+native targets (wasm fails closed at compile time, where the `cow-sdk-js`
+callback path applies instead):
 
 - **`cow-sdk-alloy-provider`** — read-only RPC. `RpcAlloyProvider` wraps an
   `Arc<alloy_provider::DynProvider<Ethereum>>` and implements
@@ -142,10 +148,10 @@ that the umbrella and provider leaf produce byte-identical `read_contract` outpu
 
 ## Links
 
-- [Architecture](../architecture.md)
-- [Provider adapters](../providers/README.md)
+- [Architecture](../guides/architecture.md)
+- [Provider adapters](../providers/index.md)
 - [Adapting alloy providers](../providers/adapting-alloy.md)
-- [Transport](../transport.md)
+- [Transport](../guides/transport.md)
 
 **Proven by:**
 

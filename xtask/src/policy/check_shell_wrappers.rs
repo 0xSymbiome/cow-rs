@@ -2,7 +2,7 @@
 //!
 //! Repository tooling is Rust behind the `cargo xtask` aliases; shell stays
 //! confined to git hooks (`.githooks/`) and the npm package's build scripts
-//! (`crates/wasm/npm/scripts/`). New shell wrappers anywhere else must become a
+//! (`crates/js/npm/scripts/`). New shell wrappers anywhere else must become a
 //! cargo alias instead.
 
 use std::{path::PathBuf, process::Command};
@@ -17,7 +17,7 @@ pub struct Args {
 }
 
 /// Lanes where shell tooling is permitted.
-const ALLOWED_PREFIXES: &[&str] = &[".githooks/", "crates/wasm/npm/scripts/"];
+const ALLOWED_PREFIXES: &[&str] = &[".githooks/", "crates/js/npm/scripts/"];
 
 pub fn run_default() -> Result<()> {
     run(&Args {
@@ -81,7 +81,7 @@ mod tests {
 
     #[test]
     fn allowed_and_hidden_lanes_pass_and_shipped_strays_fail() {
-        let listing = ".githooks/commit-msg\ncrates/wasm/npm/scripts/build.sh\n.private-tooling/dev.ps1\nscripts/rogue.sh\ntools/setup.ps1\n";
+        let listing = ".githooks/commit-msg\ncrates/js/npm/scripts/build.sh\n.private-tooling/dev.ps1\nscripts/rogue.sh\ntools/setup.ps1\n";
         assert_eq!(
             forbidden_scripts(listing),
             ["scripts/rogue.sh", "tools/setup.ps1"]

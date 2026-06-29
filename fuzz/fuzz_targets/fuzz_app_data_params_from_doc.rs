@@ -174,8 +174,8 @@ fn override_for_seed(seed_class: u8, bytes: &mut Unstructured<'_>) -> AppDataPar
         }))),
         4 => AppDataParams::default().with_signer(address(0x77)),
         _ => {
-            let mut params = AppDataParams::default()
-                .with_metadata(metadata_from_value(bounded_json(bytes, 0)));
+            let mut params =
+                AppDataParams::default().with_metadata(metadata_from_value(bounded_json(bytes, 0)));
             params.app_code = maybe_string(bytes, "CoW Swap").and_then(|s| AppCode::new(s).ok());
             params.environment = maybe_string(bytes, "production");
             params.signer =

@@ -23,8 +23,8 @@
 use cow_sdk_contracts::order::{hash_order, hash_order_cancellations};
 use cow_sdk_contracts::{OrderCancellations, OrderUidParams, pack_order_uid_params};
 use cow_sdk_core::{
-    Address, Amount, AppDataHash, BuyTokenDestination, ChainId, OrderDigest, OrderKind,
-    SellTokenSource, TypedDataDomain, OrderData,
+    Address, Amount, AppDataHash, BuyTokenDestination, ChainId, OrderData, OrderDigest, OrderKind,
+    SellTokenSource, TypedDataDomain,
 };
 use libfuzzer_sys::{arbitrary::Arbitrary, fuzz_target};
 

@@ -20,6 +20,14 @@ const PARTNER_STAGING_BASE_URL: &str = "https://partners.barn.cow.fi";
 /// deployment environments remain semver-compatible.
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "lowercase")]
 pub enum CowEnv {
     /// Production endpoints and deployments.

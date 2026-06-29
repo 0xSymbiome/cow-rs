@@ -7,7 +7,7 @@ import {
   orderTypedData,
   supportedChainIds,
   wasmVersion
-} from "cow-sdk-wasm-test-package";
+} from "cow-sdk-js-test-package";
 
 const ORDER = {
   sellToken: "0x1111111111111111111111111111111111111111",
@@ -39,7 +39,7 @@ export async function runBrowserSmoke() {
     chainIds: supportedChainIds(),
     cid,
     hash: cidToAppDataHex(cid).value,
-    domainSeparator: domainSeparator(1),
+    domainSeparator: domainSeparator(1).value,
     primaryType: typedData.primaryType,
     uid: uid.orderUid,
     version: wasmVersion()

@@ -1,11 +1,18 @@
-# ADR 0013: HTTP Transport Injection Seam And Typestate Construction For Orderbook And Subgraph
+---
+type: Decision Record
+id: ADR-0013
+title: "ADR 0013: HTTP Transport Injection Seam And Typestate Construction For Orderbook And Subgraph"
+description: "HTTP dispatch for orderbook and subgraph flows through the single HttpTransport trait in cow-sdk-core."
+status: Accepted
+date: 2026-04-21
+last_reviewed: 2026-06-15
+authors: ["0xSymbiotic"]
+tags: [transport, typestate, builders, wasm, async]
+related: [ADR-0005, ADR-0006, ADR-0010, ADR-0011, ADR-0039]
+timestamp: 2026-06-15T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-04-21
-- Last reviewed: 2026-06-15
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: transport, typestate, builders, wasm, async
-- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md), [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md)
+# ADR 0013: HTTP Transport Injection Seam And Typestate Construction For Orderbook And Subgraph
 
 ## Decision
 
@@ -83,10 +90,10 @@ set before a live client exists.
 
 ## Links
 
-- [Architecture](../architecture.md)
-- [Transport](../transport.md)
-- [Performance](../performance.md)
-- [Verification Guide](../verification.md)
+- [Architecture](../guides/architecture.md)
+- [Transport](../guides/transport.md)
+- [Performance](../guides/performance.md)
+- [Verification Guide](../guides/verification.md)
 - See also: ADR 0030, ADR 0039, and ADR 0041.
 
 **Proven by:**

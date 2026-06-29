@@ -1,10 +1,17 @@
-# ADR 0006: Explicit Policy Contracts And Instance-Scoped Runtime State
+---
+type: Decision Record
+id: ADR-0006
+title: "ADR 0006: Explicit Policy Contracts And Instance-Scoped Runtime State"
+description: "Keep shared policy contracts explicit and review-visible, and keep optional runtime state instance-scoped through builders or typed configuration."
+status: Accepted
+date: 2026-04-11
+authors: ["0xSymbiotic"]
+tags: [policy, transport, builders, runtime-state]
+related: [ADR-0002, ADR-0005]
+timestamp: 2026-04-11T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-04-11
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: policy, transport, builders, runtime-state
-- Related: [ADR 0002](0002-dedicated-trading-orchestration-crate.md), [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
+# ADR 0006: Explicit Policy Contracts And Instance-Scoped Runtime State
 
 ## Decision
 
@@ -41,9 +48,9 @@ work will copy accidental behavior instead of intentional design.
 
 ## Links
 
-- [Architecture](../architecture.md)
-- [Release Checklist](../release-checklist.md)
-- [Verification Guide](../verification.md)
+- [Architecture](../guides/architecture.md)
+- [Release Checklist](../guides/release-checklist.md)
+- [Verification Guide](../guides/verification.md)
 
 **Proven by:**
 

@@ -40,6 +40,10 @@ need the full trading facade.
   committed const addresses, no RPC.
 - **(feature `cow-shed`)** account-abstraction proxy derivation, EIP-712 hook
   signing, and `executeHooks` calldata via the `CowShedHooks` orchestrator.
+- **(feature `composable`)** the ComposableCoW + TWAP module: the
+  conditional-order id and create/createWithContext/remove encoders, the
+  `TwapData` builder, the `Multiplexer` merkle helper, and the pure `timing_at`
+  schedule classifier.
 
 ## Install
 
@@ -76,6 +80,11 @@ All off by default:
 - `cow-shed` — the COW Shed account-abstraction module (`cow_shed`):
   deterministic proxy derivation, EIP-712 hook signing, and `executeHooks`
   calldata, with the `CowShedHooks` orchestrator.
+- `composable` — the ComposableCoW + TWAP module behind the off-by-default
+  `composable` feature: the conditional-order id and
+  create/createWithContext/remove encoders, the `TwapData` builder, the
+  hand-rolled `Multiplexer` merkle helper, and the pure `timing_at` schedule
+  classifier.
 - `tracing` — structured spans through the
   [`tracing`](https://docs.rs/tracing) facade.
 
@@ -100,7 +109,7 @@ building ([`cow-sdk-trading`](https://crates.io/crates/cow-sdk-trading)).
 
 ## Where to next
 
-- [Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/getting-started.md)
+- [Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/guides/getting-started.md)
 - [Workspace README](https://github.com/0xSymbiome/cow-rs/blob/main/README.md)
 
 ## License

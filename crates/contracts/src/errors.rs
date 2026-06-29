@@ -14,6 +14,15 @@ pub enum ContractsError {
     /// A chain id is outside the supported `CoW` deployment set.
     #[error("unsupported chain id: {0}")]
     UnsupportedChain(u64),
+    /// No canonical deployment of the named contract is registered for the
+    /// chain/environment pair.
+    #[error("no {contract} deployment registered for chain {chain_id}")]
+    DeploymentNotFound {
+        /// Contract whose deployment is missing.
+        contract: &'static str,
+        /// Chain id with no registered deployment.
+        chain_id: u64,
+    },
     /// An order UID had the wrong encoded byte length.
     #[error("invalid order UID length: expected 56 bytes, got {actual}")]
     InvalidOrderUidLength {
@@ -159,6 +168,14 @@ pub enum ContractsError {
         /// Sanitized recovery failure description from the backend.
         message: Redacted<String>,
     },
+    /// Composable TWAP inputs failed client-side validation.
+    #[cfg(feature = "composable")]
+    #[error("composable TWAP validation error: {0}")]
+    TwapValidation(#[from] crate::composable::TwapValidationError),
+    /// A composable conditional-order multiplexer operation failed.
+    #[cfg(feature = "composable")]
+    #[error("composable multiplexer error: {0}")]
+    Multiplexer(#[from] crate::composable::MultiplexerError),
 }
 
 impl From<Cancelled> for ContractsError {
@@ -177,6 +194,7 @@ impl ContractsError {
             // Caller-supplied input that failed a client-side shape or range
             // check classifies as validation.
             Self::UnsupportedChain(_)
+            | Self::DeploymentNotFound { .. }
             | Self::InvalidOrderUidLength { .. }
             | Self::InvalidHexPrefix { .. }
             | Self::InvalidDecodedLength { .. }
@@ -184,6 +202,9 @@ impl ContractsError {
             | Self::InvalidSignatureLength { .. }
             | Self::InvalidSignatureRecoveryByte { .. }
             | Self::ZeroReceiver => ErrorClass::Validation,
+            // Composable TWAP/multiplexer errors are client-side input checks.
+            #[cfg(feature = "composable")]
+            Self::TwapValidation(_) | Self::Multiplexer(_) => ErrorClass::Validation,
             // Serialization, ABI, hex-decode, and on-chain event/marker decode
             // failures are data round-trip invariants, matching the
             // `CoreError` serialization classification.

@@ -1,12 +1,18 @@
-# ADR 0030: Workspace-Locked Versioning With Patch Tag Baselines
+---
+type: Decision Record
+id: ADR-0030
+title: "ADR 0030: Workspace-Locked Versioning With Patch Tag Baselines"
+description: "Every crate in the cow-sdk family carries the same workspace version through 0.x.y."
+status: Accepted
+date: 2026-04-29
+last_reviewed: 2026-06-15
+authors: ["0xSymbiotic"]
+tags: [versioning, semver, release, compatibility]
+related: [ADR-0026]
+timestamp: 2026-06-15T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-04-29
-- Last reviewed: 2026-06-15
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: versioning, semver, release, compatibility
-- Anchors: Evidence-Backed Public Claims (supporting)
-- Related: [ADR 0026](0026-alloy-major-release-absorption-plan.md)
+# ADR 0030: Workspace-Locked Versioning With Patch Tag Baselines
 
 ## Decision
 
@@ -19,7 +25,7 @@ The version-lockstep rule above is active today. The `cargo-semver-checks`
 policy below is the **target release-gate policy**, not a currently-running
 CI lane: a pre-1.0 semver report against an unpublished baseline is
 non-blocking, so the lane is removed through the pre-1.0 cycle and is
-reintroduced on the 1.0 runway (see [Release Checklist](../release-checklist.md)).
+reintroduced on the 1.0 runway (see [Release Checklist](../guides/release-checklist.md)).
 The `SemverChecksMode` classifier in `xtask` already encodes the per-release
 modes below, so the gate activates without rework. When it runs, the patch
 baseline is the crates.io version published from the previous tag
@@ -66,9 +72,9 @@ This ADR supports the Evidence-Backed Public Claims principle.
 
 ## Links
 
-- [Principles](../principles.md)
-- [Verification Matrix](../verification.md)
-- [Release Checklist](../release-checklist.md)
+- [Principles](../principles/index.md)
+- [Verification Matrix](../guides/verification.md)
+- [Release Checklist](../guides/release-checklist.md)
 - [Source-Lock Provenance Audit](../audit/source-lock-provenance-audit.md)
 - [ADR 0026](0026-alloy-major-release-absorption-plan.md)
 

@@ -5,7 +5,7 @@
 //! The durable typed-data boundary is `cow_sdk_core::TypedDataPayload`.
 //! This crate owns explicit payload construction for `CoW` order and order
 //! cancellation signing so runtime adapters such as `cow-sdk-alloy-signer`
-//! and the `cow-sdk-wasm` EIP-1193 callback surface can transport typed-data
+//! and the `cow-sdk-js` typed-data signer callback can transport typed-data
 //! payloads without reconstructing structure from field-name heuristics.
 
 #![warn(missing_docs)]
@@ -26,8 +26,6 @@ pub mod order_signing;
 /// Re-exported so seam-trait implementors need no direct `async-trait`
 /// dependency, mirroring serde's derive re-export.
 pub use async_trait::async_trait;
-#[cfg(feature = "in-memory-cache")]
-pub use cache::{Clock, InMemoryEip1271Cache, SystemClock};
 pub use cache::{Eip1271Cache, NoopEip1271Cache};
 pub use cancellation::{
     ORDER_CANCELLATIONS_PRIMARY_TYPE, order_cancellation_typed_data_payload,

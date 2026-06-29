@@ -14,7 +14,7 @@ keywords = ["cow-protocol", "sdk", "trading", "defi", "ethereum"]
 categories = ["api-bindings", "cryptography::cryptocurrencies"]
 
 [package.metadata.docs.rs]
-features = ["cow-shed", "testing"]
+features = ["composable", "cow-shed", "testing"]
 default-target = "x86_64-unknown-linux-gnu"
 targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 
@@ -37,13 +37,14 @@ alloy-signer = ["dep:cow-sdk-alloy-signer"]
 # never on the default `cow-sdk` dependency closure (ADR 0049). Re-exports the
 # `cow-sdk-contracts` `cow_shed` module as `cow_sdk::cow_shed`.
 cow-shed = ["cow-sdk-contracts/cow-shed"]
+# Opt-in composable conditional orders (ComposableCoW framework + TWAP). Off by
+# default (ADR 0048). Re-exports the `cow-sdk-contracts` `composable` module as
+# `cow_sdk::composable`.
+composable = ["cow-sdk-contracts/composable"]
 # Opt-in read-only subgraph analytics. Off by default, so the crate is never on
 # the default `cow-sdk` dependency closure. Re-exports the `cow-sdk-subgraph`
 # leaf as `cow_sdk::subgraph` and lifts `SubgraphError` into `CowError`.
 subgraph = ["dep:cow-sdk-subgraph"]
-# Re-exports the opt-in `InMemoryEip1271Cache`. Off by default;
-# the trait and `NoopEip1271Cache` are always available.
-in-memory-cache = ["cow-sdk-signing/in-memory-cache"]
 # Opt-in in-memory test doubles, re-exported as `cow_sdk::testing`, for
 # downstream apps to test their integration. Dev-dependency only; off by
 # default so the doubles never enter a production dependency graph (ADR 0063).

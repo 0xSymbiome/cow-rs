@@ -1,10 +1,17 @@
-# ADR 0024: Split AsyncProvider Into Read-Only And Signing-Capable Traits
+---
+type: Decision Record
+id: ADR-0024
+title: "ADR 0024: Split AsyncProvider Into Read-Only And Signing-Capable Traits"
+description: "Provider is the read-only async chain-RPC trait."
+status: Accepted
+date: 2026-04-24
+authors: ["0xSymbiotic"]
+tags: [core, provider, signing, async, dependencies]
+related: [ADR-0005, ADR-0010]
+timestamp: 2026-04-24T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-04-24
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: core, provider, signing, async, dependencies
-- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md)
+# ADR 0024: Split AsyncProvider Into Read-Only And Signing-Capable Traits
 
 ## Decision
 
@@ -65,6 +72,6 @@ separate capability bound.
 
 ## Links
 
-- [Architecture](../architecture.md)
-- [Providers](../providers/README.md)
+- [Architecture](../guides/architecture.md)
+- [Providers](../providers/index.md)
 - [Adapting alloy providers](../providers/adapting-alloy.md)

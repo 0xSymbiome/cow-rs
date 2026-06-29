@@ -63,6 +63,54 @@ fn canonical_order_and_quote_shapes_are_pinned() {
 }
 
 #[test]
+fn omitted_receiver_resolves_to_the_pay_to_owner_sentinel() {
+    // ADR 0061: an omitted `receiver` on the input boundary resolves to the zero
+    // address — which the settlement contract reads as pay-to-owner — identically
+    // to an explicit zero address. The invariant lives on `OrderData`'s serde
+    // default (`#[serde(default = "default_order_receiver")]`).
+    let without_receiver = r#"{
+        "sellToken": "0x1111111111111111111111111111111111111111",
+        "buyToken": "0x2222222222222222222222222222222222222222",
+        "sellAmount": "100",
+        "buyAmount": "200",
+        "validTo": 1700000000,
+        "appData": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "feeAmount": "5",
+        "kind": "sell"
+    }"#;
+    let with_explicit_zero = without_receiver.replace(
+        "\"sellToken\"",
+        "\"receiver\": \"0x0000000000000000000000000000000000000000\", \"sellToken\"",
+    );
+
+    let omitted: OrderData = serde_json::from_str(without_receiver).unwrap();
+    let explicit_zero: OrderData = serde_json::from_str(&with_explicit_zero).unwrap();
+
+    assert_eq!(omitted.receiver, Address::ZERO);
+    assert_eq!(
+        omitted, explicit_zero,
+        "an omitted receiver must deserialize identically to an explicit zero receiver",
+    );
+}
+
+#[test]
+fn a_concrete_receiver_is_distinct_from_the_pay_to_owner_sentinel() {
+    let with_receiver = r#"{
+        "receiver": "0x4444444444444444444444444444444444444444",
+        "sellToken": "0x1111111111111111111111111111111111111111",
+        "buyToken": "0x2222222222222222222222222222222222222222",
+        "sellAmount": "100",
+        "buyAmount": "200",
+        "validTo": 1700000000,
+        "appData": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "feeAmount": "5",
+        "kind": "sell"
+    }"#;
+    let order: OrderData = serde_json::from_str(with_receiver).unwrap();
+    assert_ne!(order.receiver, Address::ZERO);
+}
+
+#[test]
 fn quote_amount_breakdown_serializes_canonical_stage_names() {
     let amounts = QuoteAmountsAndCosts::new(
         true,

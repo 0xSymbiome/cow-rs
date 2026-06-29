@@ -11,6 +11,13 @@
     reason = "the cross-module helpers inside the private `primitives` module (`check_topics`, `order_uid_from_bytes`) are `pub(crate)` by design: `pub(crate)` keeps them crate-internal under `unreachable_pub` and documents the cross-module use, so the `redundant_pub_crate` pedantic lint is suppressed crate-wide rather than widening the items to `pub`"
 )]
 
+/// Composable conditional orders (`ComposableCoW` framework + TWAP).
+///
+/// Gated behind the off-by-default `composable` feature so the default
+/// `cow-sdk-contracts` surface stays lean.
+#[cfg(feature = "composable")]
+#[cfg_attr(docsrs, doc(cfg(feature = "composable")))]
+pub mod composable;
 /// COW Shed account-abstraction proxy, EIP-712, and hook-signing helpers.
 ///
 /// Gated behind the off-by-default `cow-shed` feature so the default
@@ -44,6 +51,8 @@ pub mod signature;
 /// Typed ERC-20 and wrapped-native (WETH9-family) token bindings and wrap /
 /// unwrap interaction helpers.
 pub mod tokens;
+/// Gas-free on-chain transaction builders with override-or-registry resolution.
+pub mod tx;
 /// Cache-aware EIP-1271 signature verification path.
 pub mod verify;
 
@@ -74,12 +83,23 @@ pub use order::{
     extract_order_uid_params, hash_order, hash_order_cancellation, hash_order_cancellations,
     order_eip712_type_hash, pack_order_uid_params,
 };
-pub use settlement::{IGPv2SettlementEvents, SettlementEvent, decode_settlement_log};
+pub use settlement::{
+    IGPv2SettlementEvents, SettlementEvent, decode_settlement_log, encode_invalidate_order,
+    encode_set_pre_signature,
+};
 pub use signature::{
     Eip1271SignatureData, Eip1271VerificationRequest, IERC1271, MAX_SIGNATURE_HEX_BYTES,
     RecoverableSignature, Signature, SigningScheme, decode_eip1271_signature_data,
     decode_signing_scheme, encode_eip1271_signature_data, encode_signing_scheme,
     verify_eip1271_signature,
 };
-pub use tokens::{IERC20, IWrappedNativeToken, unwrap_interaction, wrap_interaction};
+pub use tokens::{
+    IERC20, IWrappedNativeToken, approve_transaction, encode_approve, unwrap_interaction,
+    unwrap_transaction, wrap_interaction, wrap_transaction,
+};
+pub use tx::{
+    UnsignedTransaction, ethflow_create_order_transaction, ethflow_invalidate_order_transaction,
+    invalidate_order_transaction, pre_sign_transaction, resolve_contract_address,
+    resolve_eth_flow_address, resolve_settlement_address,
+};
 pub use verify::{Eip1271Cache, NoopEip1271Cache, verify_eip1271_signature_cached};

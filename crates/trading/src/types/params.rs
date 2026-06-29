@@ -114,9 +114,21 @@ macro_rules! impl_common_trade_setters {
 
 /// Swap-style trade request accepted by quote and post helpers.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase")]
 pub struct TradeParams {
     /// Order kind.
+    #[cfg_attr(
+        all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+        tsify(type = "OrderKind")
+    )]
     pub kind: OrderKind,
     /// Optional owner override. Signer address becomes the fallback in signer-backed flows.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -130,19 +142,40 @@ pub struct TradeParams {
     /// Optional environment override for endpoint and contract resolution.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub env: Option<CowEnv>,
-    /// Optional settlement contract overrides keyed by chain id.
+    /// Optional settlement contract overrides keyed by chain id. Typed as
+    /// `Record` rather than `Map` on the TypeScript boundary because the runtime
+    /// serializer emits a plain JavaScript object for the `BTreeMap`.
+    #[cfg_attr(
+        all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+        tsify(optional, type = "Record<string, string>")
+    )]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub settlement_contract_override: Option<AddressPerChain>,
     /// Optional `EthFlow` contract overrides keyed by chain id.
+    #[cfg_attr(
+        all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+        tsify(optional, type = "Record<string, string>")
+    )]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub eth_flow_contract_override: Option<AddressPerChain>,
-    /// Whether partial fills are allowed.
+    /// Whether partial fills are allowed. Defaults to `false` when omitted on the
+    /// input boundary; always serialized on a resolved `QuoteResults.tradeParameters`.
     #[serde(default)]
     pub partially_fillable: bool,
-    /// Sell-token balance source preserved through quote and post flows.
+    /// Sell-token balance source. Defaults to `erc20` when omitted on the input
+    /// boundary; always serialized through quote and post flows.
+    #[cfg_attr(
+        all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+        tsify(type = "SellTokenSource")
+    )]
     #[serde(default = "default_sell_token_source")]
     pub sell_token_balance: SellTokenSource,
-    /// Buy-token balance destination preserved through quote and post flows.
+    /// Buy-token balance destination. Defaults to `erc20` when omitted on the input
+    /// boundary; always serialized through quote and post flows.
+    #[cfg_attr(
+        all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+        tsify(type = "BuyTokenDestination")
+    )]
     #[serde(default = "default_buy_token_destination")]
     pub buy_token_balance: BuyTokenDestination,
     /// Optional explicit slippage tolerance in basis points.
@@ -196,9 +229,21 @@ impl_common_trade_setters!(TradeParams);
 
 /// Limit-order request accepted by posting and signing helpers.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase")]
 pub struct LimitTradeParams {
     /// Order kind.
+    #[cfg_attr(
+        all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+        tsify(type = "OrderKind")
+    )]
     pub kind: OrderKind,
     /// Optional owner override. Signer address becomes the fallback in signer-backed flows.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -218,18 +263,34 @@ pub struct LimitTradeParams {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub env: Option<CowEnv>,
     /// Optional settlement contract overrides keyed by chain id.
+    #[cfg_attr(
+        all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+        tsify(optional, type = "Record<string, string>")
+    )]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub settlement_contract_override: Option<AddressPerChain>,
     /// Optional `EthFlow` contract overrides keyed by chain id.
+    #[cfg_attr(
+        all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+        tsify(optional, type = "Record<string, string>")
+    )]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub eth_flow_contract_override: Option<AddressPerChain>,
-    /// Whether partial fills are allowed.
+    /// Whether partial fills are allowed. Defaults to `false` when omitted on the input boundary.
     #[serde(default)]
     pub partially_fillable: bool,
-    /// Sell-token balance source preserved through final order construction.
+    /// Sell-token balance source. Defaults to `erc20` when omitted on the input boundary.
+    #[cfg_attr(
+        all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+        tsify(type = "SellTokenSource")
+    )]
     #[serde(default = "default_sell_token_source")]
     pub sell_token_balance: SellTokenSource,
-    /// Buy-token balance destination preserved through final order construction.
+    /// Buy-token balance destination. Defaults to `erc20` when omitted on the input boundary.
+    #[cfg_attr(
+        all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+        tsify(type = "BuyTokenDestination")
+    )]
     #[serde(default = "default_buy_token_destination")]
     pub buy_token_balance: BuyTokenDestination,
     /// Optional explicit slippage tolerance in basis points.
@@ -300,8 +361,9 @@ impl_common_trade_setters!(LimitTradeParams);
 /// type system rather than as a runtime check on the submission path.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[non_exhaustive]
 pub struct LimitTradeParamsFromQuote {
+    // The private `inner` field already seals external construction, so the
+    // newtype carries no `#[non_exhaustive]` marker (it would be redundant).
     #[serde(flatten)]
     inner: LimitTradeParams,
 }
@@ -1143,5 +1205,28 @@ impl fmt::Debug for TradeAdvancedSettings {
             .field("additional_params", &self.additional_params)
             .field("slippage_suggester", &self.slippage_suggester.is_some())
             .finish()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn trade_params_deserializes_minimal_swap_input() {
+        // A minimal swap input that omits the defaulted fields lowers cleanly. It
+        // previously failed with `missing field partiallyFillable`, so the wasm swap
+        // path rejected an input its own declaration typed those fields as optional.
+        let minimal = serde_json::json!({
+            "kind": "sell",
+            "sellToken": "0x1111111111111111111111111111111111111111",
+            "buyToken": "0x2222222222222222222222222222222222222222",
+            "amount": "1000000"
+        });
+        let params: TradeParams =
+            serde_json::from_value(minimal).expect("minimal swap input deserializes");
+        assert!(!params.partially_fillable);
+        assert_eq!(params.sell_token_balance, default_sell_token_source());
+        assert_eq!(params.buy_token_balance, default_buy_token_destination());
     }
 }

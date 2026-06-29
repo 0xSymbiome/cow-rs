@@ -43,10 +43,13 @@ pub type ChainId = u64;
 /// the packed 20-byte representation.
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Default)]
-#[cfg_attr(target_family = "wasm", derive(tsify::Tsify))]
 #[cfg_attr(
-    target_family = "wasm",
-    tsify(into_wasm_abi, from_wasm_abi, type = "string")
+    all(target_arch = "wasm32", target_os = "unknown"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown"),
+    tsify(into_wasm_abi, from_wasm_abi, type = "`0x${string}`")
 )]
 pub struct Address(
     // Private inner: the constructors (`new` / `from_*` / `From`) and the
@@ -255,10 +258,13 @@ impl TryFrom<&str> for Address {
 #[repr(transparent)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Default, Serialize, Deserialize)]
 #[serde(transparent)]
-#[cfg_attr(target_family = "wasm", derive(tsify::Tsify))]
 #[cfg_attr(
-    target_family = "wasm",
-    tsify(into_wasm_abi, from_wasm_abi, type = "string")
+    all(target_arch = "wasm32", target_os = "unknown"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown"),
+    tsify(into_wasm_abi, from_wasm_abi, type = "`0x${string}`")
 )]
 pub struct HexData(
     // Private inner: the constructors (`new` / `from_*` / `From`) and the
@@ -429,10 +435,13 @@ impl TryFrom<&str> for HexData {
     Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Default, Serialize, Deserialize,
 )]
 #[serde(transparent)]
-#[cfg_attr(target_family = "wasm", derive(tsify::Tsify))]
 #[cfg_attr(
-    target_family = "wasm",
-    tsify(into_wasm_abi, from_wasm_abi, type = "string")
+    all(target_arch = "wasm32", target_os = "unknown"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown"),
+    tsify(into_wasm_abi, from_wasm_abi, type = "`0x${string}`")
 )]
 pub struct AppDataHash(
     // Private inner: the constructors (`new` / `from_*` / `From`) and the
@@ -599,10 +608,13 @@ impl fmt::Display for AppDataHash {
     Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Default, Serialize, Deserialize,
 )]
 #[serde(transparent)]
-#[cfg_attr(target_family = "wasm", derive(tsify::Tsify))]
 #[cfg_attr(
-    target_family = "wasm",
-    tsify(into_wasm_abi, from_wasm_abi, type = "string")
+    all(target_arch = "wasm32", target_os = "unknown"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown"),
+    tsify(into_wasm_abi, from_wasm_abi, type = "`0x${string}`")
 )]
 pub struct Hash32(
     // Private inner: the constructors (`new` / `from_*` / `From`) and the
@@ -762,10 +774,13 @@ pub type OrderDigest = Hash32;
     Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Default, Serialize, Deserialize,
 )]
 #[serde(transparent)]
-#[cfg_attr(target_family = "wasm", derive(tsify::Tsify))]
 #[cfg_attr(
-    target_family = "wasm",
-    tsify(into_wasm_abi, from_wasm_abi, type = "string")
+    all(target_arch = "wasm32", target_os = "unknown"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown"),
+    tsify(into_wasm_abi, from_wasm_abi, type = "`0x${string}`")
 )]
 pub struct OrderUid(
     // Private inner: the constructors (`new` / `from_*` / `From`) and the

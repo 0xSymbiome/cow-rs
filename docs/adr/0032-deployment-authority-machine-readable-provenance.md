@@ -1,12 +1,18 @@
-# ADR 0032: Deployment Authority Uses Machine-Readable Provenance
+---
+type: Decision Record
+id: ADR-0032
+title: "ADR 0032: Deployment Authority Uses Machine-Readable Provenance"
+description: "Every deployed-contract address the SDK resolves at runtime comes from the typed Registry of committed CREATE2-singleton constants in crates/contracts/src/deployments.rs, keyed by (ContractId, chain, env) through Registry::address (per [ADR..."
+status: Accepted
+date: 2026-04-29
+last_reviewed: 2026-06-15
+authors: ["0xSymbiotic"]
+tags: [deployments, provenance, contracts, release]
+related: [ADR-0012, ADR-0026, ADR-0052]
+timestamp: 2026-06-15T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-04-29
-- Last reviewed: 2026-06-15
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: deployments, provenance, contracts, release
-- Anchors: Deterministic Protocol Transforms (supporting); Evidence-Backed Public Claims (supporting)
-- Related: [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md), [ADR 0026](0026-alloy-major-release-absorption-plan.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+# ADR 0032: Deployment Authority Uses Machine-Readable Provenance
 
 ## Decision
 
@@ -90,8 +96,8 @@ Public Claims principles.
 
 ## Links
 
-- [Principles](../principles.md)
-- [Deployments](../deployments.md)
+- [Principles](../principles/index.md)
+- [Deployments](../guides/deployments.md)
 - [Deployment Registry Audit](../audit/deployment-registry-audit.md)
 - [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md)
 - [ADR 0026](0026-alloy-major-release-absorption-plan.md)

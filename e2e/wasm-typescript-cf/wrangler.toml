@@ -1,4 +1,4 @@
-name = "cow-sdk-wasm-workers-e2e"
+name = "cow-sdk-js-workers-e2e"
 main = "src/worker.ts"
 compatibility_date = "2026-05-09"
 

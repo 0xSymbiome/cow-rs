@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 
 use cow_sdk_core::{Address, Amount, HexData, TransactionRequest};
 
+use crate::tx::UnsignedTransaction;
+
 /// Fully normalized settlement interaction.
 ///
 /// The calldata payload is stored as [`alloy_primitives::Bytes`] so encoder
@@ -76,6 +78,21 @@ impl From<Interaction> for TransactionRequest {
             Some(HexData::from_bytes(interaction.call_data)),
             Some(interaction.value),
             None,
+        )
+    }
+}
+
+/// Lifts a settlement interaction into a gas-free [`UnsignedTransaction`].
+///
+/// The interaction's `target`, `call_data`, and `value` map onto the unsigned
+/// transaction's `to`, `data`, and `value`. The caller estimates gas, signs, and
+/// submits.
+impl From<Interaction> for UnsignedTransaction {
+    fn from(interaction: Interaction) -> Self {
+        Self::new(
+            interaction.target,
+            HexData::from_bytes(interaction.call_data),
+            interaction.value,
         )
     }
 }

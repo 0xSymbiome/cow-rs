@@ -63,10 +63,7 @@ fuzz_target!(|data: [u8; 65]| {
             // (EIP-155 v >= 35). This is the proper-subset payoff of the
             // strict cow contract.
         }
-        (
-            Err(ContractsError::InvalidSignatureRecoveryByte { value }),
-            Err(alloy_err),
-        ) => {
+        (Err(ContractsError::InvalidSignatureRecoveryByte { value }), Err(alloy_err)) => {
             assert_eq!(value, data[64]);
             // Agreed rejection: alloy also rejects on parity. The
             // alloy-side reason must be InvalidParity for the same v.
@@ -85,8 +82,8 @@ fuzz_target!(|data: [u8; 65]| {
                 "cow accepted but alloy rejected (cow must be a strict subset of alloy): {alloy_err:?}",
             );
         }
-        (Err(other), _) => panic!(
-            "cow rejected through unexpected variant on 65-byte fixed input: {other:?}",
-        ),
+        (Err(other), _) => {
+            panic!("cow rejected through unexpected variant on 65-byte fixed input: {other:?}",)
+        }
     }
 });

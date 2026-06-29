@@ -30,6 +30,26 @@ tracing = [
   "cow-sdk-orderbook/tracing",
   "cow-sdk-signing/tracing",
 ]
+# The Tsify boundary derive on the trading result/parameter trees
+# (`QuoteResults`, `TradeParams`, `TradingAppDataInfo`) surfaced by the
+# wasm-bindgen npm leaf's `trading` flavour. Off by default and pulled only by
+# that flavour. Enabling it transitively enables the boundary derive on the
+# crates the trees reference (`cow-sdk-core/ts-bindings` for the order /
+# typed-data / quote-amounts types and `CowEnv`, `cow-sdk-app-data/ts-bindings`
+# for the partner-fee types, and `cow-sdk-orderbook/ts-bindings` for the runtime
+# binding) so the whole `.d.ts` tree generates from one definition each. Tsify
+# emits each `.d.ts` as a global `typescript_custom_section`, so a target-gated
+# (but feature-ungated) derive would leak these trading-only types into every
+# flavour that links this crate; this feature scopes them to `trading`. The wasm
+# `tsify`/`wasm-bindgen` deps are target-gated to JS realms, so enabling this on
+# a non-wasm or WASI target is an inert no-op.
+ts-bindings = [
+  "dep:tsify",
+  "dep:wasm-bindgen",
+  "cow-sdk-core/ts-bindings",
+  "cow-sdk-app-data/ts-bindings",
+  "cow-sdk-orderbook/ts-bindings-trading",
+]
 
 [dependencies]
 alloy-primitives.workspace = true
@@ -59,6 +79,16 @@ harness = false
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 gloo-timers.workspace = true
 web-time.workspace = true
+
+# The Tsify boundary derive on the trading result/parameter trees consumed by
+# the wasm-bindgen npm leaf (`crates/js`). Gated to JS realms
+# (`target_os = "unknown"`) so WASI / Component builds never pull
+# tsify/wasm-bindgen — only the one wasm target whose `target_os` is `unknown`
+# carries them. Mirrors the orderbook-crate gate. Optional and pulled by the
+# `ts-bindings` feature.
+[target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]
+tsify = { workspace = true, optional = true }
+wasm-bindgen = { workspace = true, optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt", "test-util", "time"] }

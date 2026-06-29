@@ -2,7 +2,7 @@
 
 Use this file for the public contribution contract. For crate boundaries,
 verification scope, and release posture, see the public docs hub in
-[docs/README.md](docs/README.md).
+[the docs index](docs/index.md).
 
 ## Code Of Conduct
 
@@ -24,7 +24,7 @@ rustup component add clippy rustfmt
 which keeps the local toolchain version aligned with the CI contract.
 
 - The public Rust floor and bump rules are documented in the
-  [MSRV policy](docs/msrv-policy.md), including the 30-day notice window and
+  [MSRV policy](docs/guides/msrv-policy.md), including the 30-day notice window and
   the dependency, stable-feature, and security-advisory triggers for a bump.
 
 ## Baseline Validation
@@ -38,7 +38,7 @@ cargo test --workspace
 cargo check -p cow-sdk-examples-native --examples --all-features
 cargo run-deterministic-examples
 cargo check-policies
-cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-alloy-provider -p cow-sdk-alloy-signer -p cow-sdk-alloy -p cow-sdk -p cow-sdk-wasm -p cow-sdk-test
+cargo tree --invert alloy-provider -p cow-sdk-core -p cow-sdk-contracts -p cow-sdk-signing -p cow-sdk-orderbook -p cow-sdk-subgraph -p cow-sdk-app-data -p cow-sdk-trading -p cow-sdk-alloy-provider -p cow-sdk-alloy-signer -p cow-sdk-alloy -p cow-sdk -p cow-sdk-js -p cow-sdk-test
 ```
 
 The Alloy dependency gates enforce explicit native adapter allow-lists:
@@ -111,7 +111,7 @@ Run these checks when a change touches WASM-facing crates:
 cargo build --target wasm32-unknown-unknown -p cow-sdk
 cargo build --target wasm32-unknown-unknown -p cow-sdk-app-data
 cargo build --target wasm32-unknown-unknown -p cow-sdk-core
-cargo build --target wasm32-unknown-unknown -p cow-sdk-wasm
+cargo build --target wasm32-unknown-unknown -p cow-sdk-js
 ```
 
 ## Running Fuzz Targets Locally

@@ -1,11 +1,18 @@
-# ADR 0063: Publish Consumer Test Doubles As The `cow-sdk-test` Crate
+---
+type: Decision Record
+id: ADR-0063
+title: "ADR 0063: Publish Consumer Test Doubles As The cow-sdk-test Crate"
+description: "Consumer-facing test doubles for the SDK public trait seams ship as a published cow-sdk-test crate built only on public APIs."
+status: Accepted
+date: 2026-06-02
+last_reviewed: 2026-06-12
+authors: ["0xSymbiotic"]
+tags: [testing, crate-boundary, public-api, feature-gating, panic]
+related: [ADR-0001, ADR-0033, ADR-0062]
+timestamp: 2026-06-12T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-06-02
-- Last reviewed: 2026-06-12
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: testing, crate-boundary, public-api, feature-gating, panic
-- Related: [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md), [ADR 0033](0033-minimum-viable-panic-surface.md), [ADR 0062](0062-internal-shared-test-support-crate.md)
+# ADR 0063: Publish Consumer Test Doubles As The `cow-sdk-test` Crate
 
 ## Decision
 
@@ -87,8 +94,8 @@ outside the workspace.
 
 ## Links
 
-- [Architecture](../architecture.md)
-- [Principles](../principles.md)
+- [Architecture](../guides/architecture.md)
+- [Principles](../principles/index.md)
 - [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md)
 - [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md)
 - [ADR 0033](0033-minimum-viable-panic-surface.md)

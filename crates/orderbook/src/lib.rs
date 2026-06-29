@@ -52,18 +52,54 @@ pub mod types;
 
 /// Runtime binding captured from an orderbook client for quote-derived workflows.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(
+    all(
+        target_arch = "wasm32",
+        target_os = "unknown",
+        feature = "ts-bindings-trading"
+    ),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(
+        target_arch = "wasm32",
+        target_os = "unknown",
+        feature = "ts-bindings-trading"
+    ),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase")]
-pub struct OrderbookRuntimeBinding {
-    /// Chain id fixed by the orderbook client.
+pub struct OrderbookBinding {
+    /// Chain id fixed by the orderbook client. Rendered as `number` on the
+    /// TypeScript boundary because [`CoreSupportedChainId`] serializes as the
+    /// numeric chain id.
+    #[cfg_attr(
+        all(
+            target_arch = "wasm32",
+            target_os = "unknown",
+            feature = "ts-bindings-trading"
+        ),
+        tsify(type = "number")
+    )]
     pub chain_id: CoreSupportedChainId,
-    /// Environment fixed by the orderbook client.
+    /// Environment fixed by the orderbook client. Spelled `CowEnv` on the
+    /// TypeScript boundary; the orderbook crate imports it under the
+    /// `CoreCowEnv` alias, which is not the emitted declaration name.
+    #[cfg_attr(
+        all(
+            target_arch = "wasm32",
+            target_os = "unknown",
+            feature = "ts-bindings-trading"
+        ),
+        tsify(type = "CowEnv")
+    )]
     pub env: CoreCowEnv,
     /// Resolved base URL used by the orderbook client when it is available.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub resolved_base_url: Option<String>,
 }
 
-impl OrderbookRuntimeBinding {
+impl OrderbookBinding {
     /// Creates a runtime binding with the required chain and environment identifiers.
     #[must_use]
     pub const fn new(chain_id: CoreSupportedChainId, env: CoreCowEnv) -> Self {
@@ -165,8 +201,8 @@ pub trait OrderbookClient: Send + Sync {
     /// Implementations that apply additional endpoint overrides should override
     /// this method so quote-derived posting can validate the originating
     /// runtime authority precisely.
-    fn runtime_binding(&self) -> OrderbookRuntimeBinding {
-        OrderbookRuntimeBinding {
+    fn runtime_binding(&self) -> OrderbookBinding {
+        OrderbookBinding {
             chain_id: self.context().chain_id,
             env: self.context().env,
             resolved_base_url: self.context().resolved_base_url().ok(),
@@ -229,8 +265,8 @@ impl OrderbookClient for api::OrderbookApi {
         self.context()
     }
 
-    fn runtime_binding(&self) -> OrderbookRuntimeBinding {
-        OrderbookRuntimeBinding {
+    fn runtime_binding(&self) -> OrderbookBinding {
+        OrderbookBinding {
             chain_id: self.context().chain_id,
             env: self.context().env,
             resolved_base_url: self.effective_base_url().ok(),
@@ -278,7 +314,7 @@ pub use builder::{
 pub use error::{HashMismatchStage, OrderbookError, QuoteEchoField};
 pub use rejection::{OrderbookRejection, OrderbookRejectionCategory, parse_rejection};
 pub use request::{HttpMethod, OrderbookApiError, ResponseBody};
-pub use transform::{calculate_total_fee, transform_order, transform_orders};
+pub use transform::{transform_order, transform_orders};
 pub use types::{
     Address, Amount, ApiBaseUrls, ApiContext, ApiContextOverride, AppDataHash, AppDataObject,
     AuctionPrices, BuyTokenDestination, CompetitionAuction, CompetitionOrderStatus,

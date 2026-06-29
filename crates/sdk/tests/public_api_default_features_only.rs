@@ -1,4 +1,4 @@
-#[cfg(all(not(feature = "in-memory-cache"), not(feature = "subgraph")))]
+#[cfg(not(feature = "subgraph"))]
 #[test]
 fn headline_types_stay_reachable_on_default_features() {
     use cow_sdk::contracts::Signature;

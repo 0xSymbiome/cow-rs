@@ -1,15 +1,22 @@
-# ADR 0044: Ship Feature-Scoped WASM Flavor Builds From One Package
+---
+type: Decision Record
+id: ADR-0044
+title: "ADR 0044: Ship Feature-Scoped WASM Flavor Builds From One Package"
+description: "cow-sdk-js ships as one Cargo crate and one npm package with multiple feature-scoped flavor builds."
+status: Accepted
+date: 2026-05-11
+last_reviewed: 2026-06-19
+authors: ["0xSymbiotic"]
+tags: [wasm, npm, bundle-size, package-flavors]
+related: [ADR-0039, ADR-0047]
+timestamp: 2026-06-19T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-05-11
-- Last reviewed: 2026-06-19
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: wasm, npm, bundle-size, package-flavors
-- Related: [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), ADR 0047 (superseded)
+# ADR 0044: Ship Feature-Scoped WASM Flavor Builds From One Package
 
 ## Decision
 
-`cow-sdk-wasm` ships as one Cargo crate and one npm package with multiple
+`cow-sdk-js` ships as one Cargo crate and one npm package with multiple
 feature-scoped flavor builds. The public package exposes `default`, `orderbook`,
 `signing`, and `trading` subpaths through the package exports map. Every flavour is
 built for the `bundler`, `nodejs`, and `web` targets plus the standards-track
@@ -26,7 +33,7 @@ applications from paying for orderbook, signing, trading, IPFS, and Cloudflare
 support when they import only one surface, while one package keeps versioning
 and installation simple.
 
-The decision to ship feature-scoped flavors does not position `cow-sdk-wasm` as
+The decision to ship feature-scoped flavors does not position `cow-sdk-js` as
 a replacement for the upstream `@cowprotocol/cow-sdk` TypeScript SDK. Compiling
 the Rust SDK to wasm32 produces a binary larger than the upstream TypeScript SDK
 at equivalent feature subsets. The flavor split exists
@@ -76,9 +83,9 @@ recommended choice.
   release gate when budgets are exceeded.
 - The cost is extra build orchestration and snapshot maintenance for each
   shipped flavor.
-- Public docs do not frame `cow-sdk-wasm` as a replacement for the upstream
+- Public docs do not frame `cow-sdk-js` as a replacement for the upstream
   `@cowprotocol/cow-sdk` TypeScript SDK; the consumer routing matrix in
-  `README.md` and `crates/wasm/README.md` documents the supported use cases.
+  `README.md` and `crates/js/README.md` documents the supported use cases.
 - Each flavor's gzip artifact size is verified against its configured Cloudflare
   Workers compressed-size byte budget on every release build. The byte budget
   tracks Cloudflare's published Paid/Bundled (~3 MB) compressed-size limit (the
@@ -86,7 +93,7 @@ recommended choice.
 - Full Workers support depends on additional release-bundle and startup-time
   gates that are not enforced by the size release gate alone; those gates are
   tracked in the comparative benchmark validation note's refresh triggers.
-- Flavor builds reduce the WASM package footprint within `cow-sdk-wasm`; they
+- Flavor builds reduce the WASM package footprint within `cow-sdk-js`; they
   do not make WASM size-competitive with the upstream `@cowprotocol/cow-sdk`
   TypeScript SDK at equivalent feature subsets.
 

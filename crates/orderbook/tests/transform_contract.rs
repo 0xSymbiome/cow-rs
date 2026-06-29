@@ -2,7 +2,7 @@ mod common;
 
 use cow_sdk_orderbook::{
     NATIVE_CURRENCY_ADDRESS, OnchainOrderData, Order, OrderQuoteResponse,
-    SolverCompetitionResponse, StoredOrderQuote, Trade, calculate_total_fee, transform_order,
+    SolverCompetitionResponse, StoredOrderQuote, Trade, transform_order,
 };
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::Value;
@@ -153,7 +153,7 @@ fn onchain_order_data_fixture_deserializes_typed_accessors() {
 // optionality (identity and collection fields non-optional; only `txHash` and
 // `referenceScore` optional) is the authoritative contract this fixture pins.
 // The type is therefore covered here by a producer-pinned round-trip rather than
-// the OpenAPI-optionality manifest (see ADR 0031 and docs/parity.md).
+// the OpenAPI-optionality manifest (see ADR 0031 and docs/guides/parity.md).
 #[test]
 fn solver_competition_response_fixture_roundtrips_upstream_producer_vector() {
     let (response, _, _) = assert_fixture_fields_roundtrip::<SolverCompetitionResponse>(
@@ -230,46 +230,11 @@ fn order_with_fee_fields(executed_fee: Option<&str>, executed_fee_amount: Option
 }
 
 #[test]
-fn total_fee_transform_surfaces_executed_fee_value() {
-    let total_fee = calculate_total_fee(Some("9")).expect("fee normalization must succeed");
-
-    assert_eq!(total_fee, amount("9"));
-}
-
-#[test]
-fn total_fee_transform_defaults_missing_executed_fee_to_zero() {
-    let total_fee = calculate_total_fee(None).expect("missing executed fee defaults to zero");
-
-    assert_eq!(total_fee, amount("0"));
-}
-
-#[test]
-fn total_fee_transform_treats_all_zero_input_as_single_zero() {
-    let total_fee = calculate_total_fee(Some("0000")).expect("all-zero input must normalize");
-
-    assert_eq!(total_fee, amount("0"));
-}
-
-#[test]
-fn total_fee_transform_rejects_invalid_decimal_input() {
-    let error = calculate_total_fee(Some("nope")).expect_err("invalid decimal should fail");
-
-    match error {
-        cow_sdk_orderbook::OrderbookError::InvalidTransform { field, reason } => {
-            assert_eq!(field, "executedFee");
-            let rendered = reason.to_string();
-            assert!(rendered.contains("unsigned decimal string"));
-        }
-        other => panic!("expected InvalidTransform, got {other:?}"),
-    }
-}
-
-#[test]
 fn ethflow_transform_rewrites_owner_sell_token_and_valid_to() {
     let uid = sample_order_uid();
     let order = serde_json::from_value::<Order>(sample_ethflow_order_json(&uid))
         .expect("ethflow fixture must deserialize");
-    let transformed = transform_order(order).expect("ethflow order must transform");
+    let transformed = transform_order(order);
 
     assert_eq!(transformed.owner, sample_owner());
     assert_eq!(transformed.sell_token, NATIVE_CURRENCY_ADDRESS);
@@ -325,7 +290,7 @@ fn regular_order_transform_keeps_order_shape_and_adds_total_fee() {
     let uid = sample_order_uid();
     let order = serde_json::from_value::<Order>(sample_order_json(&uid))
         .expect("order fixture must deserialize");
-    let transformed = transform_order(order).expect("order must transform");
+    let transformed = transform_order(order);
 
     assert_eq!(transformed.uid, uid);
     assert_eq!(transformed.owner, sample_owner());
@@ -344,8 +309,7 @@ fn total_fee_x_executed_fee_amount_matrix_holds_for_zero_legacy_zero_canonical_l
         ("neither", None, None, "0", "0"),
     ] {
         let order = order_with_fee_fields(executed_fee, executed_fee_amount);
-        let transformed = transform_order(order)
-            .unwrap_or_else(|error| panic!("{label} must transform: {error}"));
+        let transformed = transform_order(order);
 
         assert_eq!(
             transformed.total_fee,

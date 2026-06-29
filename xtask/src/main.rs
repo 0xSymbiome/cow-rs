@@ -13,11 +13,11 @@ use xtask::changelog;
 use xtask::docs::{agree, audit_index};
 use xtask::parity::{self, openapi_coverage, registry_confirm, sync, vendor_openapi};
 use xtask::policy::{
-    check_adr_coverage, check_alloy_family_pins, check_chain_patch_eligibility,
-    check_deny_unknown_fields, check_enum_policy, check_msrv_notice, check_panic_allowlist,
-    check_property_citations, check_readme_include, check_shell_wrappers, check_wasm_invariant,
-    check_workflow_security, check_workspace_versions, dependency_invariant, fences,
-    run_deterministic_examples,
+    check_adr_coverage, check_alloy_family_pins, check_audit_freshness, check_audit_lane,
+    check_chain_patch_eligibility, check_deny_unknown_fields, check_enum_policy, check_msrv_notice,
+    check_panic_allowlist, check_principles, check_property_citations, check_readme_include,
+    check_shell_wrappers, check_wasm_invariant, check_workflow_security, check_workspace_versions,
+    dependency_invariant, fences, run_deterministic_examples,
 };
 
 #[derive(Debug, Parser)]
@@ -134,6 +134,15 @@ enum PolicyCommand {
     /// Verify principles and accepted ADRs are mutually covered.
     #[command(name = "check-adr-coverage")]
     CheckAdrCoverage(check_adr_coverage::Args),
+    /// Verify principle documents stay consistent with the ADR map.
+    #[command(name = "check-principles")]
+    CheckPrinciples(check_principles::Args),
+    /// Verify audit-lane frontmatter, skeleton, and the ADR reciprocity graph.
+    #[command(name = "check-audit-lane")]
+    CheckAuditLane(check_audit_lane::Args),
+    /// Report (advisory) when a change touches a mapped audit path without a refresh.
+    #[command(name = "check-audit-freshness")]
+    CheckAuditFreshness(check_audit_freshness::Args),
     /// Verify alloy-* workspace pins are internally consistent per family.
     #[command(name = "check-alloy-family-pins")]
     CheckAlloyFamilyPins(check_alloy_family_pins::Args),
@@ -218,6 +227,9 @@ fn run_policy(cli: PolicyCli) -> Result<()> {
             dependency_invariant::run(&dependency_invariant::ALLOY_SIGNER, &args)
         }
         PolicyCommand::CheckAdrCoverage(args) => check_adr_coverage::run(&args),
+        PolicyCommand::CheckPrinciples(args) => check_principles::run(&args),
+        PolicyCommand::CheckAuditLane(args) => check_audit_lane::run(&args),
+        PolicyCommand::CheckAuditFreshness(args) => check_audit_freshness::run(&args),
         PolicyCommand::CheckAlloyFamilyPins(args) => check_alloy_family_pins::run(&args),
         PolicyCommand::CheckChainPatchEligibility(args) => {
             check_chain_patch_eligibility::run(&args)

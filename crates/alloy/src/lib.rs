@@ -60,7 +60,7 @@ pub use client::AlloyClient;
 #[cfg(not(target_arch = "wasm32"))]
 pub use cow_sdk_alloy_provider::RetryConfig;
 #[cfg(not(target_arch = "wasm32"))]
-pub use error::{AlloyClientError, AlloyClientErrorClass};
+pub use error::AlloyClientError;
 #[cfg(not(target_arch = "wasm32"))]
 pub use handle::AlloyClientSignerHandle;
 

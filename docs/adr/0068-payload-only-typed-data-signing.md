@@ -1,10 +1,17 @@
-# ADR 0068: Typed-Data Signing Is Payload-Only At The Signer Seam
+---
+type: Decision Record
+id: ADR-0068
+title: "ADR 0068: Typed-Data Signing Is Payload-Only At The Signer Seam"
+description: "cow_sdk_core::Signer and the narrow cow_sdk_core::TypedDataSigner capability take the canonical EIP-712 typed-data payload: sign_typed_data_payload(&TypedDataPayload) is the single required typed-data method."
+status: Accepted
+date: 2026-06-11
+authors: ["0xSymbiotic"]
+tags: [core, signer, eip712, traits]
+related: [ADR-0010, ADR-0059, ADR-0024, ADR-0035, ADR-0045]
+timestamp: 2026-06-11T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-06-11
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: core, signer, eip712, traits
-- Related: [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0059](0059-hash-concrete-orderdata-directly.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0035](0035-alloy-provider-adapter.md), [ADR 0045](0045-async-signer-trait-narrowing.md)
+# ADR 0068: Typed-Data Signing Is Payload-Only At The Signer Seam
 
 ## Decision
 
@@ -20,8 +27,8 @@ obligation. The former wallet-compatibility carve-out (a
 `sign_typed_data_compatibility` helper that narrowed a field-based triple into a
 `TypedDataPayload` for legacy field-based wallet layouts) has been removed along
 with the native browser-wallet crate it lived on. JavaScript and TypeScript
-consumers reach their wallet through the `cow-sdk-wasm` EIP-1193 request callback
-(ADR 0040), which carries the canonical typed-data payload directly.
+consumers reach their wallet through the `cow-sdk-js` typed-data signer
+callback (ADR 0040), which carries the canonical typed-data payload directly.
 
 ## Why
 
@@ -51,7 +58,7 @@ there are no published consumers to migrate.
   voided. No trait or inherent helper in the workspace accepts a field-based
   `(domain, fields, message)` triple; wallet protocol compatibility for
   JavaScript and TypeScript consumers is a host-app concern reached through the
-  `cow-sdk-wasm` EIP-1193 request callback (ADR 0040), which carries the
+  `cow-sdk-js` typed-data signer callback (ADR 0040), which carries the
   canonical `TypedDataPayload`.
 - Validation: primary-type preservation stays covered by the alloy-signer and
   umbrella adapter typed-data tests and the committed EIP-712 reference
@@ -71,10 +78,10 @@ there are no published consumers to migrate.
 - Reintroduce a field-based compatibility helper in `cow-sdk-core`: the
   two-layout compatibility rule is a wallet-protocol concern, and core would gain
   wallet-protocol knowledge it otherwise does not have; the canonical payload
-  already crosses the `cow-sdk-wasm` EIP-1193 callback (ADR 0040) intact.
+  already crosses the `cow-sdk-js` typed-data signer callback (ADR 0040) intact.
 
 ## Links
 
 - [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md)
 - [ADR 0040](0040-wallet-provider-callback-boundary-for-js-consumers.md)
-- [Properties Registry](../../PROPERTIES.md)
+- [Properties Registry](../properties/index.md)

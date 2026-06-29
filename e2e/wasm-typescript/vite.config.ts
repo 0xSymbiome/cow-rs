@@ -1,6 +1,6 @@
 import { defineConfig } from "vite";
 
-// `cow-sdk-wasm-test-package` resolves to its web-target build for the browser
+// `cow-sdk-js-test-package` resolves to its web-target build for the browser
 // (`browser` / `import` conditions): the facade calls `await initialize()` from an
 // async function, and the loader fetches the wasm through
 // `new URL('..._bg.wasm', import.meta.url)` — an asset Vite emits and resolves
@@ -11,6 +11,6 @@ import { defineConfig } from "vite";
 // asset directly.
 export default defineConfig({
   optimizeDeps: {
-    exclude: ["cow-sdk-wasm-test-package"]
+    exclude: ["cow-sdk-js-test-package"]
   }
 });

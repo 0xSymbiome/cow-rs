@@ -9,7 +9,7 @@ use cow_sdk_core::{
 #[test]
 fn environment_defaults_match_core_fixture() {
     let actual_envs: Vec<&str> = CowEnv::ALL.iter().map(|env| env.as_str()).collect();
-    // Canonical environment list (formerly pinned in the retired core fixture).
+    // Canonical environment list.
     assert_eq!(actual_envs, ["prod", "staging"]);
 
     let ctx = ApiContext::default();
@@ -23,8 +23,7 @@ fn environment_defaults_match_core_fixture() {
 
 #[test]
 fn protocol_options_and_base_url_resolution_are_chain_aware() {
-    // Canonical ProtocolOptions serialized field names (formerly pinned in the
-    // retired core fixture).
+    // Canonical ProtocolOptions serialized field names.
     let expected_fields = [
         "env",
         "settlementContractOverride",
@@ -139,10 +138,10 @@ fn protocol_constants_surface_byte_equivalent_addresses_across_every_accessor() 
         );
     }
 
-    // Cross-contract distinctness assertions now live alongside the
-    // address registry at `crates/contracts/tests/registry.rs`; the
-    // legacy `(SupportedChainId, CowEnv)` accessors in this crate have
-    // been retired in favour of the typed `Registry` surface.
+    // Cross-contract distinctness assertions live alongside the address
+    // registry at `crates/contracts/tests/registry.rs`; this crate exposes the
+    // typed `Registry` surface rather than `(SupportedChainId, CowEnv)`
+    // accessors.
 }
 
 #[test]

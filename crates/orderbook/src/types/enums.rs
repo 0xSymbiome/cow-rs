@@ -25,6 +25,14 @@ pub enum PriceQuality {
 /// Signature scheme encoded in orderbook wire DTOs.
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "lowercase")]
 pub enum SigningScheme {
     /// EIP-712 typed-data signature.
@@ -89,6 +97,14 @@ impl TryFrom<SigningScheme> for EcdsaSigningScheme {
 /// Order class surfaced by the orderbook API.
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "lowercase")]
 pub enum OrderClass {
     /// Market order.
@@ -100,9 +116,30 @@ pub enum OrderClass {
     Liquidity,
 }
 
+impl OrderClass {
+    /// The lowercase wire token (matching the serde representation), for callers
+    /// that need the string form — e.g. an app-data `metadata.orderClass` value.
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Market => "market",
+            Self::Limit => "limit",
+            Self::Liquidity => "liquidity",
+        }
+    }
+}
+
 /// Order lifecycle status returned by the orderbook API.
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    derive(tsify::Tsify)
+)]
+#[cfg_attr(
+    all(target_arch = "wasm32", target_os = "unknown", feature = "ts-bindings"),
+    tsify(into_wasm_abi, from_wasm_abi)
+)]
 #[serde(rename_all = "camelCase")]
 pub enum OrderStatus {
     /// Waiting for a pre-signature to become valid.

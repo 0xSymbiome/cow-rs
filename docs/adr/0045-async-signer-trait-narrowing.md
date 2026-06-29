@@ -1,15 +1,22 @@
-# ADR 0045: Narrow Async Signer Capabilities By Operation
+---
+type: Decision Record
+id: ADR-0045
+title: "ADR 0045: Narrow Async Signer Capabilities By Operation"
+description: "Async signing capabilities stay split by operation."
+status: Accepted
+date: 2026-05-11
+last_reviewed: 2026-05-11
+authors: ["0xSymbiotic"]
+tags: [signing, wasm, callbacks, capability-traits]
+related: [ADR-0024, ADR-0040]
+timestamp: 2026-05-11T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-05-11
-- Last reviewed: 2026-05-11
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: signing, wasm, callbacks, capability-traits
-- Related: [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0040](0040-wallet-provider-callback-boundary-for-js-consumers.md)
+# ADR 0045: Narrow Async Signer Capabilities By Operation
 
 ## Decision
 
-Async signing capabilities stay split by operation. TypeScript-callable signing
+Async signing capabilities stay split by operation. JavaScript and TypeScript signing
 surfaces request only the capability they need: typed-data signing, digest
 signing, cancellation signing, or custom EIP-1271 signing. Unsupported
 operations fail before wallet dispatch instead of flowing through a broad

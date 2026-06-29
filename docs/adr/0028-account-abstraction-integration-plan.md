@@ -1,11 +1,18 @@
-# ADR 0028: Integrate Account Abstraction Through Provider Capabilities And EIP-1271 Signing
+---
+type: Decision Record
+id: ADR-0028
+title: "ADR 0028: Integrate Account Abstraction Through Provider Capabilities And EIP-1271 Signing"
+description: "Account-abstraction support enters through the existing provider and signing capability split."
+status: Accepted
+date: 2026-04-27
+last_reviewed: 2026-06-15
+authors: ["0xSymbiotic"]
+tags: [account-abstraction, provider, signing, eip1271, eip4337, eip7702, eip7212]
+related: [ADR-0014, ADR-0024, ADR-0039, ADR-0040, ADR-0052]
+timestamp: 2026-06-15T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-04-27
-- Last reviewed: 2026-06-15
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: account-abstraction, provider, signing, eip1271, eip4337, eip7702, eip7212
-- Related: [ADR 0014](0014-eip1271-verification-cache.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), [ADR 0040](0040-wallet-provider-callback-boundary-for-js-consumers.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+# ADR 0028: Integrate Account Abstraction Through Provider Capabilities And EIP-1271 Signing
 
 ## Decision
 
@@ -66,10 +73,10 @@ dependencies in read-only flows and keeps order ownership reviewable.
 
 ## Links
 
-- [Providers](../providers/README.md)
+- [Providers](../providers/index.md)
 - [Adapting alloy providers](../providers/adapting-alloy.md)
-- [Parity scope surface boundaries](../parity.md#surface-matrix)
-- [Verification matrix crate contracts](../verification.md#crate-evidence-matrix)
+- [Parity scope surface boundaries](../guides/parity.md#surface-matrix)
+- [Verification matrix crate contracts](../guides/verification.md#crate-evidence-matrix)
 - [Core provider traits](../../crates/core/src/traits/provider.rs)
 - [EIP-1271 signature provider](../../crates/signing/src/eip1271/provider.rs)
 - See also: ADR 0024, ADR 0031, ADR 0039, and ADR 0040.

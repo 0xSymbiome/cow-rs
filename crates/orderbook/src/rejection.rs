@@ -428,6 +428,36 @@ impl OrderbookRejection {
             | Self::LimitOutOfBounds => OrderbookRejectionCategory::InvalidOrder,
         }
     }
+
+    /// Projects this rejection to its services `errorType` wire tag
+    /// (`"InsufficientBalance"`, `"DuplicatedOrder"`, ...) for a typed boundary
+    /// surface, returning `None` when no safe tag is available.
+    ///
+    /// The forward-compatible [`Self::Unknown`] variant carries its
+    /// already-sanitized [`OrderbookRejectionCode`]; every other variant reuses
+    /// the derived `Serialize` tag — the single source that mirrors
+    /// [`parse_rejection`] — so the tag never drifts from the wire contract.
+    /// Only the sanitized tag is read, so the redacted free-form `description`
+    /// some variants carry never crosses (ADR 0053), and a code that failed
+    /// sanitization becomes an absent tag rather than the redaction sentinel
+    /// (consumers branch on a missing `errorType`, not a meaningless
+    /// `"[redacted]"` value).
+    ///
+    /// Both wasm distribution lanes — the wasm-bindgen npm leaf's `WasmError`
+    /// and the WebAssembly Component's `query-error` — read this one accessor so
+    /// they surface the identical fine-grained tag from a single source.
+    #[must_use]
+    pub fn error_type_tag(&self) -> Option<String> {
+        if let Self::Unknown { code, .. } = self {
+            let code = code.as_str();
+            return (code != REDACTED_PLACEHOLDER).then(|| code.to_owned());
+        }
+        match serde_json::to_value(self).ok()? {
+            serde_json::Value::String(tag) => Some(tag),
+            serde_json::Value::Object(fields) => fields.into_iter().next().map(|(tag, _)| tag),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -572,4 +602,53 @@ fn is_safe_rejection_code(code: &str) -> bool {
         && code
             .bytes()
             .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')
+}
+
+#[cfg(test)]
+mod error_type_tag_tests {
+    use super::{OrderbookRejection, OrderbookRejectionCode};
+    use cow_sdk_core::{Amount, Redacted};
+
+    #[test]
+    fn unit_variant_projects_the_serde_tag_string() {
+        assert_eq!(
+            OrderbookRejection::InsufficientAllowance.error_type_tag(),
+            Some("InsufficientAllowance".to_owned()),
+        );
+        assert_eq!(
+            OrderbookRejection::DuplicatedOrder.error_type_tag(),
+            Some("DuplicatedOrder".to_owned()),
+        );
+    }
+
+    #[test]
+    fn struct_variant_projects_only_the_outer_key_never_the_inner_fields() {
+        let struct_variant = OrderbookRejection::SellAmountDoesNotCoverFee {
+            fee_amount: Amount::new("1000000").expect("valid amount"),
+        };
+        assert_eq!(
+            struct_variant.error_type_tag(),
+            Some("SellAmountDoesNotCoverFee".to_owned()),
+        );
+    }
+
+    #[test]
+    fn unknown_variant_surfaces_its_safe_code_verbatim() {
+        let safe = OrderbookRejection::Unknown {
+            code: OrderbookRejectionCode::new("FutureVariant"),
+            message: Redacted::new(String::new()),
+        };
+        assert_eq!(safe.error_type_tag(), Some("FutureVariant".to_owned()));
+    }
+
+    #[test]
+    fn unknown_variant_with_an_unsanitizable_code_is_an_absent_tag_not_the_sentinel() {
+        // A code that failed sanitization becomes an absent tag rather than the
+        // `[redacted]` marker, so consumers branch on a missing `errorType`.
+        let redacted = OrderbookRejection::Unknown {
+            code: OrderbookRejectionCode::new("definitely not a safe code!"),
+            message: Redacted::new(String::new()),
+        };
+        assert_eq!(redacted.error_type_tag(), None);
+    }
 }

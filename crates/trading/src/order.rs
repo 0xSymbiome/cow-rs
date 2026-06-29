@@ -1,5 +1,3 @@
-use alloy_primitives::aliases::I512;
-
 use cow_sdk_contracts::ContractId;
 use cow_sdk_core::{
     Address, Amount, AppDataHash, CowEnv, MAX_VALID_TO_EPOCH, NATIVE_CURRENCY_ADDRESS, OrderData,
@@ -8,7 +6,6 @@ use cow_sdk_core::{
 use cow_sdk_orderbook::OrderQuoteResponse;
 use cow_sdk_signing::{GeneratedOrderId, generate_order_id};
 
-use crate::slippage::parse_integer;
 use crate::{
     DEFAULT_QUOTE_VALIDITY, EthFlowOrderExistsChecker, LimitTradeParams, LimitTradeParamsFromQuote,
     TradeParams, TradingError, calculate_quote_amounts_and_costs, default_slippage_bps,
@@ -288,12 +285,16 @@ pub async fn calculate_unique_order_id(
     let eth_flow_override = options
         .and_then(|opts| opts.eth_flow_contract_override.as_ref())
         .and_then(|override_map| override_map.get(&u64::from(chain_id)).copied());
-    let owner = crate::onchain::resolve_contract_address(
+    let owner = cow_sdk_contracts::resolve_contract_address(
         ContractId::EthFlow,
         eth_flow_override,
         chain_id,
         env,
-    );
+    )
+    .ok_or(cow_sdk_contracts::ContractsError::DeploymentNotFound {
+        contract: "eth-flow",
+        chain_id: u64::from(chain_id),
+    })?;
     let mut current = order.clone();
 
     let Some(checker) = checker else {
@@ -322,8 +323,7 @@ pub async fn calculate_unique_order_id(
 }
 
 fn adjust_buy_amount(value: &Amount) -> Result<Amount, TradingError> {
-    let amount = parse_integer("buyAmount", &value.to_string())?;
-    if amount <= I512::ZERO {
+    if value.is_zero() {
         return Err(TradingError::InvalidInput {
             field: "buyAmount",
             reason: cow_sdk_core::ValidationReason::OutOfRange {
@@ -331,5 +331,6 @@ fn adjust_buy_amount(value: &Amount) -> Result<Amount, TradingError> {
             },
         });
     }
-    Amount::new((amount - I512::ONE).to_string()).map_err(Into::into)
+    // `value >= 1` after the zero guard, so the decrement cannot underflow.
+    Ok(value.saturating_sub(Amount::from(1u32)))
 }

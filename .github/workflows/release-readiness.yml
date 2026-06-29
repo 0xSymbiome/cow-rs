@@ -250,11 +250,14 @@ jobs:
 
   upstream-provenance:
     name: Upstream parity provenance
-    if: ${{ github.event_name != 'schedule' }}
+    # The deep, real-upstream check the offline PR lane cannot perform. It runs
+    # on workflow_dispatch and the weekly cron, and is kept independent of the
+    # publish chain so the schedule trigger reaches it.
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    needs:
-      - publication
+    permissions:
+      contents: read
+      issues: write
     steps:
       # Source ref: actions/checkout@v4
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
@@ -270,6 +273,27 @@ jobs:
         run: cargo xtask parity sync --root "$RUNNER_TEMP/parity-upstreams"
       - name: Validate pinned upstream provenance
         run: cargo parity-validate --upstream-root "$RUNNER_TEMP/parity-upstreams"
+      - name: Open a tracking issue when the scheduled deep parity check fails
+        if: ${{ failure() && github.event_name == 'schedule' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          title="parity deep provenance failed on $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          body="$(printf 'The weekly deep parity check (parity sync + parity-validate --upstream-root) failed: a pinned upstream no longer reproduces at its commit, or a cited fixture ref-fragment is gone. Refresh the pins per parity/README.md.\n\nRun: %s\n' "${run_url}")"
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/labels" \
+            -f name='parity-provenance' \
+            -f color='b60205' \
+            -f description='Weekly deep parity provenance failures' >/dev/null 2>&1 || true
+          existing="$(gh api "repos/${GITHUB_REPOSITORY}/issues?state=open&labels=parity-provenance&per_page=1" --jq 'length')"
+          if [ "${existing}" -eq 0 ]; then
+            gh api --method POST "repos/${GITHUB_REPOSITORY}/issues" \
+              -f title="${title}" \
+              -f body="${body}" \
+              -f labels[]='parity-provenance' >/dev/null
+          fi
 
   sbom:
     if: ${{ github.event_name != 'schedule' }}

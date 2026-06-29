@@ -39,8 +39,7 @@ fn order_typed_data_matches_fixture_contract_and_consumer_shape() {
     assert_eq!(payload.primary_type, ORDER_PRIMARY_TYPE);
     assert_eq!(payload.types, typed.types);
     assert_eq!(payload.message, serde_json::to_string(&order).unwrap());
-    // Canonical CoW `Order` EIP-712 field order (formerly pinned in the retired
-    // signing parity fixture).
+    // Canonical CoW `Order` EIP-712 field order.
     assert_eq!(
         typed.types["Order"]
             .iter()

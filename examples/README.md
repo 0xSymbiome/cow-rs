@@ -1,7 +1,7 @@
 # Examples
 
 This directory holds the native Rust example gallery for the public `cow-rs`
-surface. The TypeScript-callable WASM package examples live in a separate
+surface. The JavaScript and TypeScript WASM package examples live in a separate
 repository: [`0xSymbiome/cow-sdk-examples`](https://github.com/0xSymbiome/cow-sdk-examples).
 
 ## Native
@@ -31,7 +31,7 @@ cargo run-deterministic-examples
 
 ## TypeScript WASM Package
 
-The TypeScript-callable WASM package examples live in the dedicated
+The JavaScript and TypeScript WASM package examples live in the dedicated
 [`0xSymbiome/cow-sdk-examples`](https://github.com/0xSymbiome/cow-sdk-examples)
 repository and cover specialized JavaScript host patterns:
 

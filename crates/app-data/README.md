@@ -79,7 +79,7 @@ through a fetch transport you supply, so the SDK stays decoupled from any
 specific HTTP stack.
 
 The seam is `async`, so native and browser runtimes can plug in their own HTTP
-client; `cow-sdk-wasm` implements it over JavaScript's `CowFetchCallback`, and
+client; `cow-sdk-js` implements it over JavaScript's `CowFetchCallback`, and
 browser and non-browser wasm runtimes share the same app-data contract.
 Because documents are addressed by a keccak-256 CID, the gateway must be able
 to resolve keccak-CID documents — a generic public gateway cannot.
@@ -149,7 +149,7 @@ CIDv1 + raw + keccak-256 shape is supported; CIDv0 is rejected.
 
 ## Where to next
 
-- [Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/getting-started.md)
+- [Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/guides/getting-started.md)
 - [Dependency Gate Audit](https://github.com/0xSymbiome/cow-rs/blob/main/docs/audit/dependency-gate-audit.md)
 - [Workspace README](https://github.com/0xSymbiome/cow-rs/blob/main/README.md)
 

@@ -15,9 +15,8 @@ fn ipfs_config_public_debug_and_serialize_redact_configured_uris() {
     };
 
     let debug = format!("{config:#?}");
-    // Non-alternate `{:?}` coverage folded in from the former
-    // crates/app-data/src/types/ipfs.rs inline test: the compact Debug form
-    // must also render the struct name and redact every configured URI.
+    // The compact `{:?}` form must also render the struct name and redact every
+    // configured URI.
     let debug_compact = format!("{config:?}");
     let json = serde_json::to_value(&config).expect("ipfs config serializes");
 

@@ -9,7 +9,7 @@ import {
   supportedChainIds,
   validateAppDataDoc,
   wasmVersion
-} from "cow-sdk-wasm-test-package";
+} from "cow-sdk-js-test-package";
 import { describe, expect, test } from "vitest";
 
 export const ORDER = {
@@ -47,7 +47,7 @@ describe("node package surface", () => {
   });
 
   test("computes a domain separator", () => {
-    expect(domainSeparator(1)).toMatch(/^0x[0-9a-f]{64}$/);
+    expect(domainSeparator(1).value).toMatch(/^0x[0-9a-f]{64}$/);
   });
 
   test("builds order typed data", () => {

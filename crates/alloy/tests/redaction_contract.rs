@@ -1,6 +1,6 @@
 #![cfg(not(target_arch = "wasm32"))]
 
-use cow_sdk_alloy::{AlloyClient, AlloyClientError, AlloyClientErrorClass};
+use cow_sdk_alloy::{AlloyClient, AlloyClientError};
 use cow_sdk_core::{Redacted, SigningProvider, SupportedChainId, TransportErrorClass};
 
 const TEST_KEY: &str = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
@@ -13,7 +13,6 @@ fn validation_display_and_debug_do_not_leak_input() {
     let error = AlloyClientError::Validation(SECRET_DETAIL.to_owned().into());
 
     assert_redacted(&error, SECRET_DETAIL);
-    assert_eq!(error.class(), AlloyClientErrorClass::Validation);
 }
 
 #[test]
@@ -24,7 +23,6 @@ fn transport_display_and_debug_redact_detail() {
     };
 
     assert_redacted(&error, SECRET_DETAIL);
-    assert_eq!(error.class(), AlloyClientErrorClass::Transport);
 }
 
 #[test]
@@ -38,7 +36,6 @@ fn remote_display_emits_code_and_safe_message() {
         error.to_string(),
         "remote error (code -32000): execution reverted"
     );
-    assert_eq!(error.class(), AlloyClientErrorClass::Remote);
 }
 
 #[test]
@@ -48,7 +45,6 @@ fn signing_display_and_debug_redact_detail() {
     };
 
     assert_redacted(&error, SECRET_DETAIL);
-    assert_eq!(error.class(), AlloyClientErrorClass::Signing);
 }
 
 #[test]
@@ -58,7 +54,6 @@ fn pending_transaction_display_and_debug_redact_detail() {
     };
 
     assert_redacted(&error, SECRET_DETAIL);
-    assert_eq!(error.class(), AlloyClientErrorClass::PendingTransaction);
 }
 
 #[test]
@@ -66,7 +61,6 @@ fn internal_display_and_debug_do_not_leak_input() {
     let error = AlloyClientError::Internal(SECRET_DETAIL.to_owned().into());
 
     assert_redacted(&error, SECRET_DETAIL);
-    assert_eq!(error.class(), AlloyClientErrorClass::Internal);
 }
 
 #[test]
@@ -105,55 +99,6 @@ async fn client_and_handle_debug_redact_transport_and_key_material() {
     assert_no_secret(&client_debug, "top-secret");
     assert_no_secret(&client_debug, "user:secret");
     assert_no_secret(&handle_debug, "59c6995e");
-}
-
-#[test]
-fn error_class_covers_every_variant() {
-    let cases = [
-        (
-            AlloyClientError::Validation("invalid".to_owned().into()),
-            AlloyClientErrorClass::Validation,
-        ),
-        (
-            AlloyClientError::Transport {
-                class: TransportErrorClass::Other,
-                detail: Redacted::new("transport".to_owned()),
-            },
-            AlloyClientErrorClass::Transport,
-        ),
-        (
-            AlloyClientError::Remote {
-                code: -32_000,
-                message: "execution reverted".to_owned(),
-            },
-            AlloyClientErrorClass::Remote,
-        ),
-        (
-            AlloyClientError::Signing {
-                detail: Redacted::new("signing".to_owned()),
-            },
-            AlloyClientErrorClass::Signing,
-        ),
-        (
-            AlloyClientError::PendingTransaction {
-                detail: Redacted::new("pending".to_owned()),
-            },
-            AlloyClientErrorClass::PendingTransaction,
-        ),
-        (
-            AlloyClientError::Cancelled,
-            AlloyClientErrorClass::Cancelled,
-        ),
-        (
-            AlloyClientError::Internal("internal".to_owned().into()),
-            AlloyClientErrorClass::Internal,
-        ),
-    ];
-
-    for (error, expected) in cases {
-        assert_eq!(error.class(), expected);
-        assert_eq!(error.class().to_string(), expected.as_str());
-    }
 }
 
 fn assert_redacted(error: &AlloyClientError, secret: &str) {

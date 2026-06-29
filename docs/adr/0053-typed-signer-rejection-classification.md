@@ -1,11 +1,18 @@
-# ADR 0053: Typed signer rejection classification through the `UserRejection` trait
+---
+type: Decision Record
+id: ADR-0053
+title: "ADR 0053: Typed signer rejection classification through the UserRejection trait"
+description: "- cow_sdk_core exposes a UserRejection trait whose single user_rejection_code(&self) -> Option<i32> method names the EIP-1193 provider error code carried by a user-driven rejection."
+status: Accepted
+date: 2026-05-19
+last_reviewed: 2026-06-15
+authors: ["0xSymbiotic"]
+tags: [signing, error-surface, eip-1193, alloy, classification]
+related: [ADR-0005, ADR-0040, ADR-0017, ADR-0025, ADR-0045]
+timestamp: 2026-06-15T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-05-19
-- Last reviewed: 2026-06-15
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: signing, error-surface, eip-1193, alloy, classification
-- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0040](0040-wallet-provider-callback-boundary-for-js-consumers.md), [ADR 0017](0017-typed-orderbook-rejection-parser.md), [ADR 0025](0025-workspace-url-redaction-convention.md), [ADR 0045](0045-async-signer-trait-narrowing.md)
+# ADR 0053: Typed signer rejection classification through the `UserRejection` trait
 
 ## Decision
 
@@ -19,8 +26,8 @@
   `cow_sdk_alloy_signer::SignerError` and `cow_sdk_alloy::AlloyClientError`
   return `None` for every variant because local-key signing cannot produce an
   EIP-1193 4xxx user rejection. A signer that surfaces EIP-1193 provider error
-  codes — for example a host-supplied wallet reached through the `cow-sdk-wasm`
-  EIP-1193 request callback (ADR 0040) — returns the carried code from its
+  codes — for example a host-supplied wallet reached through the `cow-sdk-js`
+  typed-data signer callback (ADR 0040) — returns the carried code from its
   user-rejection variant.
 - The helpers in `cow-sdk-signing` bound the signer's
   associated error on `fmt::Display + cow_sdk_core::UserRejection`.

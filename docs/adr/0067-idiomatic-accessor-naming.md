@@ -1,10 +1,17 @@
-# ADR 0067: Idiomatic Accessor Naming Without A get_ Prefix
+---
+type: Decision Record
+id: ADR-0067
+title: "ADR 0067: Idiomatic Accessor Naming Without A get_ Prefix"
+description: "Public accessors and domain fetch methods do not use a get_ prefix."
+status: Accepted
+date: 2026-06-06
+authors: ["0xSymbiotic"]
+tags: [api, naming, conventions, accessors]
+related: [ADR-0035, ADR-0024, ADR-0052]
+timestamp: 2026-06-06T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-06-06
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: api, naming, conventions, accessors
-- Related: [ADR 0035](0035-alloy-provider-adapter.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+# ADR 0067: Idiomatic Accessor Naming Without A get_ Prefix
 
 ## Decision
 

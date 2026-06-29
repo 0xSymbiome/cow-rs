@@ -7,7 +7,7 @@
 //! **Seed contract:** corpus inputs cover canonical sell- and buy-sided
 //! quote shapes, boundary zero / one / `u128::MAX` inputs, and adversarial
 //! oversized fee, partner-fee, and slippage shapes that exercise the
-//! documented `parse_integer` and protocol-fee math boundaries.
+//! `Amount`/`I512` limb-conversion and protocol-fee math boundaries.
 //!
 //! The target maps arbitrary bytes through `Arbitrary` into a typed
 //! `SlippageInput`, builds a `QuoteData` from the canonical public builder,

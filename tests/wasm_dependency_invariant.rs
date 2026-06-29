@@ -18,7 +18,7 @@ const FORBIDDEN: &[&str] = &[
 ];
 
 #[test]
-fn cow_sdk_wasm_wasm32_tree_omits_forbidden_dependencies() {
+fn cow_sdk_js_wasm32_tree_omits_forbidden_dependencies() {
     let metadata = Command::new("cargo")
         .args([
             "metadata",
@@ -45,8 +45,8 @@ fn cow_sdk_wasm_wasm32_tree_omits_forbidden_dependencies() {
         .expect("metadata packages should be an array");
     let wasm_package = packages
         .iter()
-        .find(|package| package["name"] == "cow-sdk-wasm")
-        .expect("cow-sdk-wasm should be a workspace package");
+        .find(|package| package["name"] == "cow-sdk-js")
+        .expect("cow-sdk-js should be a workspace package");
     let deps = wasm_package["dependencies"]
         .as_array()
         .expect("dependencies should be an array")
@@ -57,7 +57,7 @@ fn cow_sdk_wasm_wasm32_tree_omits_forbidden_dependencies() {
     for forbidden in FORBIDDEN {
         assert!(
             !deps.contains(forbidden),
-            "cow-sdk-wasm must not depend on {forbidden} for wasm32"
+            "cow-sdk-js must not depend on {forbidden} for wasm32"
         );
     }
 }

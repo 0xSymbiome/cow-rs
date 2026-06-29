@@ -1,11 +1,18 @@
-# ADR 0022: Canonicalize ECDSA Signature `v` At The Contracts Boundary
+---
+type: Decision Record
+id: ADR-0022
+title: "ADR 0022: Canonicalize ECDSA Signature v At The Contracts Boundary"
+description: "cow_sdk_contracts::RecoverableSignature is the single contracts-boundary typestate for recoverable ECDSA signatures."
+status: Accepted
+date: 2026-04-23
+last_reviewed: 2026-05-28
+authors: ["0xSymbiotic"]
+tags: [contracts, signing, ecdsa, normalization, error-typing]
+related: [ADR-0005, ADR-0015, ADR-0017, ADR-0052]
+timestamp: 2026-05-28T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-04-23
-- Last reviewed: 2026-05-28
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: contracts, signing, ecdsa, normalization, error-typing
-- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0015](0015-client-side-order-bounds-validator.md), [ADR 0017](0017-typed-orderbook-rejection-parser.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+# ADR 0022: Canonicalize ECDSA Signature `v` At The Contracts Boundary
 
 ## Decision
 
@@ -124,8 +131,8 @@ produced the signature.
 
 ## Links
 
-- [Architecture](../architecture.md)
-- [Verification Guide](../verification.md)
+- [Architecture](../guides/architecture.md)
+- [Verification Guide](../guides/verification.md)
 - [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
 - [ADR 0015](0015-client-side-order-bounds-validator.md)
 - [ADR 0017](0017-typed-orderbook-rejection-parser.md)

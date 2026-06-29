@@ -63,8 +63,7 @@ fn typed_data_domain_and_separator_match_fixture_contract() {
         &typed.domain.verifying_contract.to_hex_string(),
     );
 
-    // Canonical EIP-712 domain field order (formerly pinned in the retired
-    // signing parity fixture).
+    // Canonical EIP-712 domain field order.
     assert_eq!(
         typed.types["EIP712Domain"]
             .iter()

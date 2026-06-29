@@ -42,27 +42,21 @@ impl SlippageSuggester for CountingProvider {
 #[test]
 fn slippage_helpers_follow_upstream_fee_and_volume_examples() {
     assert_eq!(
-        suggest_slippage_from_fee("20", 50.0).expect("fee suggestion should work"),
+        suggest_slippage_from_fee(&Amount::from(20u32), 50.0).expect("fee suggestion should work"),
         Amount::new("10").expect("test amount literal must be valid")
     );
     assert_eq!(
-        suggest_slippage_from_volume(true, "20", "15", 50.0)
+        suggest_slippage_from_volume(true, &Amount::from(20u32), &Amount::from(15u32), 50.0)
             .expect("sell-volume suggestion should work"),
         Amount::new("8").expect("test amount literal must be valid")
     );
     assert_eq!(
-        suggest_slippage_from_volume(false, "20", "15", 25.0)
+        suggest_slippage_from_volume(false, &Amount::from(20u32), &Amount::from(15u32), 25.0)
             .expect("buy-volume suggestion should work"),
         Amount::new("5").expect("test amount literal must be valid")
     );
-
-    let error = suggest_slippage_from_fee("-100", 50.0)
-        .expect_err("negative fee must fail")
-        .to_string();
-    assert!(
-        error.contains("feeAmount") && error.contains("non-negative"),
-        "negative fee error must name the field and reason, got: {error}"
-    );
+    // The negative-fee case is now unrepresentable: `Amount` is unsigned, so the
+    // type system rejects what the old `&str` path checked at runtime.
 }
 
 #[test]

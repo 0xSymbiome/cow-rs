@@ -1,12 +1,10 @@
 import {
   computeOrderUid,
   signCancellationEthSignDigest,
-  signCancellationWithEip1193,
   signCancellationWithTypedDataSigner,
   signOrderEthSignDigest,
-  signOrderWithEip1193,
   signOrderWithTypedDataSigner
-} from "cow-sdk-wasm-test-package";
+} from "cow-sdk-js-test-package";
 import { describe, expect, test } from "vitest";
 import { ORDER, OWNER } from "./orderbook.spec.js";
 
@@ -29,16 +27,6 @@ describe("callback signing", () => {
     expect(signed.value.from).toBe(OWNER);
   });
 
-  test("signs an order through EIP-1193 callback", async () => {
-    const signed = await signOrderWithEip1193(ORDER, 1, OWNER, async (request: any) => {
-      expect(request.method).toBe("eth_signTypedData_v4");
-      expect(request.params?.[0]).toBe(OWNER);
-      return SIGNATURE;
-    });
-
-    expect(signed.value.signingScheme).toBe("eip712");
-  });
-
   test("signs an order digest with eth_sign scheme", async () => {
     const signed = await signOrderEthSignDigest(ORDER, 1, OWNER, async (digest: string) => {
       expect(digest).toMatch(/^0x[0-9a-f]{64}$/);
@@ -57,16 +45,6 @@ describe("callback signing", () => {
 
     expect(signed.value.orderUids).toEqual([uid]);
     expect(signed.value.signingScheme).toBe("eip712");
-  });
-
-  test("signs EIP-1193 cancellations", async () => {
-    const uid = orderUid();
-    const signed = await signCancellationWithEip1193([uid], 1, OWNER, async (request: any) => {
-      expect(request.method).toBe("eth_signTypedData_v4");
-      return SIGNATURE;
-    });
-
-    expect(signed.value.orderUids).toEqual([uid]);
   });
 
   test("signs digest cancellations", async () => {

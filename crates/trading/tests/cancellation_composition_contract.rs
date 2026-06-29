@@ -232,7 +232,7 @@ impl OrderbookClient for DelayedOrderbook {
         OrderbookClient::context(&self.inner)
     }
 
-    fn runtime_binding(&self) -> cow_sdk_trading::OrderbookRuntimeBinding {
+    fn runtime_binding(&self) -> cow_sdk_trading::OrderbookBinding {
         OrderbookClient::runtime_binding(&self.inner)
     }
 

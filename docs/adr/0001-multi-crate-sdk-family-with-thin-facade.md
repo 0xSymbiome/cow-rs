@@ -1,9 +1,16 @@
-# ADR 0001: Multi-Crate SDK Family With Thin Facade
+---
+type: Decision Record
+id: ADR-0001
+title: "ADR 0001: Multi-Crate SDK Family With Thin Facade"
+description: "Use a multi-crate workspace with short local folders under crates/*, a cow-sdk public facade, and cow-sdk-* leaf crates that own behavior."
+status: Accepted
+date: 2026-04-09
+authors: ["0xSymbiotic"]
+tags: [topology, packages, facade]
+timestamp: 2026-04-09T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-04-09
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: topology, packages, facade
+# ADR 0001: Multi-Crate SDK Family With Thin Facade
 
 ## Decision
 
@@ -13,7 +20,7 @@ Use a multi-crate workspace with short local folders under `crates/*`, a
 ## Why
 
 The SDK spans protocol transforms, transport clients, trading workflows,
-analytics access, and a TypeScript-callable wasm surface. Public package
+analytics access, and a JavaScript and TypeScript wasm surface. Public package
 identity needs to read as
 an SDK family on crates.io, while local workspace paths should remain short.
 A single crate, thick root facade, or repository-shaped public crate family
@@ -64,6 +71,6 @@ would blur product identity, crate ownership, and runtime boundaries.
 
 ## Links
 
-- [Architecture](../architecture.md)
+- [Architecture](../guides/architecture.md)
 - [ADR 0002](0002-dedicated-trading-orchestration-crate.md)
 - [ADR 0003](0003-separate-read-only-subgraph-crate.md)

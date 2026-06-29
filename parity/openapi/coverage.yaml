@@ -88,3 +88,94 @@ dtos:
     rust_type: cow_sdk_orderbook::SolverExecution
     required_fields:
       - solver
+
+# Every other top-level `components.schemas.*` in the vendored spec must appear
+# here with a reason, or the coverage ratchet fails closed. A newly vendored
+# upstream schema therefore forces a conscious decision: enroll it as a `dtos`
+# entry, or record why it is out of scope.
+excluded_schemas:
+  - reason: >-
+      Solver, auction, competition, debug, and simulation surface (the
+      batch-auction and the restricted debug/Tenderly endpoints). The SDK is a
+      trader-side client and deliberately does not model the solver or operator
+      API.
+    schemas:
+      - AccessListItem
+      - Auction
+      - AuctionOrder
+      - AuctionPrices
+      - CompetitionAuction
+      - CompetitionOrderStatus
+      - DebugAuction
+      - DebugEvent
+      - DebugExecution
+      - DebugFeePolicy
+      - DebugOrderResponse
+      - DebugProposedSolution
+      - DebugProtocolFee
+      - DebugSettlementAttempt
+      - DebugTrade
+      - ExecutedAmounts
+      - FeePolicy
+      - OrderSimulation
+      - PriceImprovement
+      - Quote
+      - SimulationRequest
+      - SimulationType
+      - SolverCompetitionResponse
+      - SolverSettlement
+      - StateObject
+      - Surplus
+      - TenderlyRequest
+      - Volume
+  - reason: >-
+      Enums, scalar wire types, and sub-records the SDK models as typed cow
+      values rather than first-class round-trip DTOs; those that compose a
+      covered DTO (for example into Order) are validated transitively through it.
+    schemas:
+      - Address
+      - AppData
+      - AppDataHash
+      - BigUint
+      - BuyTokenDestination
+      - CallData
+      - EcdsaSignature
+      - EcdsaSigningScheme
+      - EthflowData
+      - ExecutedProtocolFee
+      - InteractionData
+      - OrderClass
+      - OrderCreation
+      - OrderKind
+      - OrderMetaData
+      - OrderQuoteSide
+      - OrderQuoteSideKindBuy
+      - OrderQuoteSideKindSell
+      - OrderQuoteValidity
+      - OrderStatus
+      - PreSignature
+      - PriceQuality
+      - SellTokenSource
+      - Signature
+      - SigningScheme
+      - TokenAmount
+      - TransactionHash
+      - UID
+  - reason: >-
+      Trader-facing error bodies surfaced through the SDK's typed error enums
+      rather than as round-trip DTOs.
+    schemas:
+      - OrderCancellationError
+      - OrderPostError
+      - PriceEstimationError
+  - reason: >-
+      Trader-surface request and helper bodies modeled in the SDK but not yet
+      enrolled in the round-trip ratchet — a known first-cut asymmetry (responses
+      are enrolled; the quote, cancel, and app-data request bodies are not),
+      recorded here pending enrollment.
+    schemas:
+      - AppDataObject
+      - NativePriceResponse
+      - OrderCancellation
+      - OrderCancellations
+      - OrderQuoteRequest

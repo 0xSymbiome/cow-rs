@@ -52,26 +52,26 @@ pub fn run(args: &Args) -> anyhow::Result<()> {
 fn run_host_gate(repo_root: &Path) -> anyhow::Result<()> {
     let output = Command::new("cargo")
         .current_dir(repo_root)
-        .args(["check", "-p", "cow-sdk-wasm", "--no-default-features"])
+        .args(["check", "-p", "cow-sdk-js", "--no-default-features"])
         .output()
-        .context("failed to invoke cargo check for cow-sdk-wasm")?;
+        .context("failed to invoke cargo check for cow-sdk-js")?;
 
     if output.status.success() {
         return Ok(());
     }
 
     bail!(
-        "cow-sdk-wasm host gate failed; keep wasm-bindgen ABI derives out of pure helpers\nstdout:\n{}\nstderr:\n{}",
+        "cow-sdk-js host gate failed; keep wasm-bindgen ABI derives out of pure helpers\nstdout:\n{}\nstderr:\n{}",
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     )
 }
 
 fn check_source_invariants(repo_root: &Path, failures: &mut Vec<String>) -> anyhow::Result<()> {
-    let helpers_mod = read(repo_root, "crates/wasm/src/helpers/mod.rs")?;
-    let exports_mod = read(repo_root, "crates/wasm/src/exports/mod.rs")?;
-    let transport = read(repo_root, "crates/wasm/src/exports/transport.rs")?;
-    let errors = read(repo_root, "crates/wasm/src/exports/errors.rs")?;
+    let helpers_mod = read(repo_root, "crates/js/src/helpers/mod.rs")?;
+    let exports_mod = read(repo_root, "crates/js/src/exports/mod.rs")?;
+    let transport = read(repo_root, "crates/js/src/exports/transport.rs")?;
+    let errors = read(repo_root, "crates/js/src/exports/errors.rs")?;
 
     require_contains(
         &helpers_mod,
@@ -148,8 +148,8 @@ fn check_build_pipeline_invariants(
     repo_root: &Path,
     failures: &mut Vec<String>,
 ) -> anyhow::Result<()> {
-    let build_script = read(repo_root, "crates/wasm/npm/scripts/build.sh")?;
-    let crate_manifest = read(repo_root, "crates/wasm/Cargo.toml")?;
+    let build_script = read(repo_root, "crates/js/npm/scripts/build.sh")?;
+    let crate_manifest = read(repo_root, "crates/js/Cargo.toml")?;
     require_contains(
         &build_script,
         "wasm-pack build",
@@ -168,17 +168,17 @@ fn check_build_pipeline_invariants(
     require_contains(
         &crate_manifest,
         "[package.metadata.wasm-pack.profile.release]",
-        "cow-sdk-wasm must disable wasm-pack implicit release optimization",
+        "cow-sdk-js must disable wasm-pack implicit release optimization",
         failures,
     );
     require_contains(
         &crate_manifest,
         "wasm-opt = false",
-        "cow-sdk-wasm must leave release optimization to the explicit build post-pass",
+        "cow-sdk-js must leave release optimization to the explicit build post-pass",
         failures,
     );
 
-    let scripts_dir = repo_root.join("crates/wasm/npm/scripts");
+    let scripts_dir = repo_root.join("crates/js/npm/scripts");
     if scripts_dir.join("build.ps1").exists() {
         failures.push("PowerShell wasm build entrypoint must not be added".to_string());
     }
@@ -256,9 +256,9 @@ mod tests {
         let mut failures = Vec::new();
         require_wasm_opt_after_every_wasm_pack(
             r"
-            wasm-pack build crates/wasm --target web --release
+            wasm-pack build crates/js --target web --release
             wasm-opt -Oz out.wasm -o out.opt.wasm
-            wasm-pack build crates/wasm --target nodejs --release
+            wasm-pack build crates/js --target nodejs --release
             ",
             &mut failures,
         );

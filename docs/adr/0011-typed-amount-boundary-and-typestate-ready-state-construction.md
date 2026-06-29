@@ -1,11 +1,18 @@
-# ADR 0011: Typed Amount Boundary And Typestate Ready-State Construction
+---
+type: Decision Record
+id: ADR-0011
+title: "ADR 0011: Typed Amount Boundary And Typestate Ready-State Construction"
+description: "Two boundaries are typed so the most common integration mistakes surface as compile errors instead of production failures: amount handling and Trading construction."
+status: Accepted
+date: 2026-04-17
+last_reviewed: 2026-06-15
+authors: ["0xSymbiotic"]
+tags: [types, trading, builders, semver]
+related: [ADR-0002, ADR-0005, ADR-0013, ADR-0052]
+timestamp: 2026-06-15T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-04-17
-- Last reviewed: 2026-06-15
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: types, trading, builders, semver
-- Related: [ADR 0002](0002-dedicated-trading-orchestration-crate.md), [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+# ADR 0011: Typed Amount Boundary And Typestate Ready-State Construction
 
 ## Decision
 
@@ -113,15 +120,15 @@ aligns the typed-amount surface with [ADR 0033](0033-minimum-viable-panic-surfac
 The decision records the canonical atomic type; it does not mirror every
 historical upstream surface, including the retired wire-string `Amount` wrapper.
 The authoritative list of TypeScript-SDK surfaces `cow-rs` intentionally
-declines to mirror lives in [Parity Scope](../parity.md); consult it before
+declines to mirror lives in [Parity Scope](../guides/parity.md); consult it before
 filing any issue claiming a missing positive fixture implies a parity gap.
 
 ## Links
 
-- [Parity Scope](../parity.md)
-- [Architecture](../architecture.md)
-- [Verification](../verification.md)
-- [Properties](../../PROPERTIES.md)
+- [Parity Scope](../guides/parity.md)
+- [Architecture](../guides/architecture.md)
+- [Verification](../guides/verification.md)
+- [Properties](../properties/index.md)
 - [ADR 0002](0002-dedicated-trading-orchestration-crate.md),
   [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md),
   [ADR 0013](0013-http-transport-injection-and-typestate-builders.md),

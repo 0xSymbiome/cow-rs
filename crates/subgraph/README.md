@@ -86,7 +86,7 @@ rather than failing silently. Order placement, signing, and submission live in
 
 ## Where to next
 
-- [Architecture](https://github.com/0xSymbiome/cow-rs/blob/main/docs/architecture.md)
+- [Architecture](https://github.com/0xSymbiome/cow-rs/blob/main/docs/guides/architecture.md)
 - [Workspace README](https://github.com/0xSymbiome/cow-rs/blob/main/README.md)
 
 ## License

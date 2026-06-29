@@ -316,21 +316,6 @@ impl RecoverableSignature {
         &self.inner
     }
 
-    /// Returns the low-s canonical form per BIP-62, or `self` if the
-    /// signature is already low-s.
-    ///
-    /// This is opt-in defense in depth against `(r, s)` malleability.
-    /// The orderbook accepts both low-s and high-s recoverable signatures
-    /// today, so this canonicalization is not applied at parse time;
-    /// callers opt in when their downstream invariants require a
-    /// uniquely-shaped signature.
-    #[must_use]
-    pub fn canonicalized_low_s(self) -> Self {
-        Self {
-            inner: self.inner.normalized_s(),
-        }
-    }
-
     /// Returns the ERC-2098 compact 64-byte form.
     ///
     /// The `s` component is normalized to low-s first so the parity bit
