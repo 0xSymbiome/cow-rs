@@ -287,6 +287,90 @@ fn map_twap_timing(
     })
 }
 
+impl exports::cow::protocol::trading_math::Guest for Component {
+    fn calculate_amounts_and_costs(
+        quote_json: String,
+        slippage_bps: u32,
+        partner_fee_bps: u32,
+        protocol_fee_bps: String,
+    ) -> Result<exports::cow::protocol::trading_math::QuoteAmountsAndCosts, String> {
+        let amounts = super::trading_math::calculate_amounts_and_costs(
+            &quote_json,
+            slippage_bps,
+            partner_fee_bps,
+            &protocol_fee_bps,
+        )?;
+        Ok(map_quote_amounts_and_costs(&amounts))
+    }
+
+    fn suggest_slippage_bps(
+        quote_json: String,
+        partner_fee_bps: u32,
+        is_eth_flow: bool,
+    ) -> Result<u32, String> {
+        super::trading_math::suggest_slippage(&quote_json, partner_fee_bps, is_eth_flow)
+    }
+
+    fn build_app_data(
+        app_code: String,
+        slippage_bps: u32,
+        order_class: Option<String>,
+    ) -> Result<exports::cow::protocol::trading_math::AppDataInfo, String> {
+        let info =
+            super::trading_math::build_app_data(&app_code, slippage_bps, order_class.as_deref())?;
+        Ok(exports::cow::protocol::trading_math::AppDataInfo {
+            cid: info.cid,
+            app_data_content: info.app_data_content,
+            app_data_hex: info.app_data_hex,
+        })
+    }
+}
+
+/// Maps the native [`cow_sdk_core::QuoteAmountsAndCosts`] stage breakdown to its
+/// WIT record, stringifying each typed amount in atoms.
+fn map_quote_amounts_and_costs(
+    amounts: &cow_sdk_core::QuoteAmountsAndCosts,
+) -> exports::cow::protocol::trading_math::QuoteAmountsAndCosts {
+    use exports::cow::protocol::trading_math as wit;
+
+    let stage = |pair: &cow_sdk_core::Amounts<cow_sdk_core::Amount>| wit::StageAmounts {
+        sell_amount: pair.sell_amount.to_string(),
+        buy_amount: pair.buy_amount.to_string(),
+    };
+    wit::QuoteAmountsAndCosts {
+        is_sell: amounts.is_sell,
+        costs: wit::QuoteCosts {
+            network_fee: wit::NetworkFee {
+                amount_in_sell_currency: amounts
+                    .costs
+                    .network_fee
+                    .amount_in_sell_currency
+                    .to_string(),
+                amount_in_buy_currency: amounts
+                    .costs
+                    .network_fee
+                    .amount_in_buy_currency
+                    .to_string(),
+            },
+            partner_fee: wit::FeeComponent {
+                amount: amounts.costs.partner_fee.amount.to_string(),
+                bps: amounts.costs.partner_fee.bps,
+            },
+            protocol_fee: wit::FeeComponent {
+                amount: amounts.costs.protocol_fee.amount.to_string(),
+                bps: amounts.costs.protocol_fee.bps,
+            },
+        },
+        before_all_fees: stage(&amounts.before_all_fees),
+        before_network_costs: stage(&amounts.before_network_costs),
+        after_protocol_fees: stage(&amounts.after_protocol_fees),
+        after_network_costs: stage(&amounts.after_network_costs),
+        after_partner_fees: stage(&amounts.after_partner_fees),
+        after_slippage: stage(&amounts.after_slippage),
+        amounts_to_sign: stage(&amounts.amounts_to_sign),
+    }
+}
+
 impl exports::cow::protocol::order_signing::Guest for Component {
     fn order_typed_data(chain_id: u64, order: OrderData) -> Result<String, String> {
         super::signing::order_typed_data(chain_id, &order_data_json(&order))

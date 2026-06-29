@@ -192,6 +192,103 @@ fn twap_encoding_targets_composablecow_and_classifies_schedule() {
 }
 
 #[test]
+fn trading_math_breaks_down_amounts_suggests_slippage_and_builds_app_data() {
+    // A sell quote: sell 1e15 sell-atoms for 1e18 buy-atoms, network cost 1e14.
+    const QUOTE_DATA: &str = r#"{
+        "sellToken": "0xfff9976782d46cc05630d1f6ebab18b2324d6b14",
+        "buyToken": "0x0625afb445c3b6b7b929342a04a22599fd5dbb59",
+        "sellAmount": "1000000000000000",
+        "buyAmount": "1000000000000000000",
+        "feeAmount": "100000000000000",
+        "validTo": 2000000000,
+        "appData": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "kind": "sell",
+        "partiallyFillable": false
+    }"#;
+
+    // amounts-and-costs: 50 bps slippage, no partner/protocol fee.
+    let amounts =
+        super::trading_math::calculate_amounts_and_costs(QUOTE_DATA, 50, 0, "").expect("amounts");
+    assert!(amounts.is_sell, "sell quote");
+    // before-all-fees sell = sellAmount + networkCost (sell side adds the cost).
+    assert_eq!(
+        amounts.before_all_fees.sell_amount.to_string(),
+        "1100000000000000"
+    );
+    // amounts-to-sign sell side pins the gross sell and the post-slippage buy.
+    assert_eq!(
+        amounts.amounts_to_sign.sell_amount,
+        amounts.before_all_fees.sell_amount,
+    );
+    assert_eq!(
+        amounts.amounts_to_sign.buy_amount,
+        amounts.after_slippage.buy_amount,
+    );
+    // 50 bps off the post-partner buy is the post-slippage buy: x - x*50/10000.
+    let after_partner_buy: u128 = amounts
+        .after_partner_fees
+        .buy_amount
+        .to_string()
+        .parse()
+        .expect("u128");
+    let expected_after_slippage = after_partner_buy - (after_partner_buy * 50 / 10_000);
+    assert_eq!(
+        amounts.after_slippage.buy_amount.to_string(),
+        expected_after_slippage.to_string(),
+    );
+    // No fees configured: partner and protocol cost components are zero.
+    assert_eq!(amounts.costs.partner_fee.amount.to_string(), "0");
+    assert_eq!(amounts.costs.protocol_fee.amount.to_string(), "0");
+    assert_eq!(
+        amounts
+            .costs
+            .network_fee
+            .amount_in_sell_currency
+            .to_string(),
+        "100000000000000",
+    );
+
+    // suggest-slippage-bps over the full quote response: a positive, in-range bps.
+    const QUOTE_RESPONSE: &str = r#"{
+        "quote": {
+            "sellToken": "0xfff9976782d46cc05630d1f6ebab18b2324d6b14",
+            "buyToken": "0x0625afb445c3b6b7b929342a04a22599fd5dbb59",
+            "sellAmount": "1000000000000000",
+            "buyAmount": "1000000000000000000",
+            "feeAmount": "100000000000000",
+            "validTo": 2000000000,
+            "appData": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "kind": "sell",
+            "partiallyFillable": false
+        },
+        "expiration": "2026-01-01T00:00:00Z",
+        "verified": true
+    }"#;
+    let suggested =
+        super::trading_math::suggest_slippage(QUOTE_RESPONSE, 0, false).expect("slippage");
+    assert!(suggested <= 10_000, "slippage is clamped into range");
+    // An eth-flow quote applies the default floor (50 bps).
+    let eth_flow =
+        super::trading_math::suggest_slippage(QUOTE_RESPONSE, 0, true).expect("eth-flow slippage");
+    assert!(eth_flow >= 50, "eth-flow applies the default floor");
+
+    // build-app-data: stamps app-code + slippage + class, returns canonical info.
+    let info = super::trading_math::build_app_data("cow-rs/component-test", 50, Some("market"))
+        .expect("app-data");
+    assert!(info.app_data_hex.starts_with("0x") && info.app_data_hex.len() == 2 + 64);
+    assert!(!info.cid.is_empty(), "a content id is derived");
+    let doc: serde_json::Value =
+        serde_json::from_str(&info.app_data_content).expect("content is json");
+    assert_eq!(doc["appCode"], "cow-rs/component-test");
+    assert_eq!(doc["metadata"]["quote"]["slippageBips"], 50);
+    assert_eq!(doc["metadata"]["orderClass"]["orderClass"], "market");
+    // The builder stamps the SDK UTM block, with the lane read from the compile
+    // target. This golden runs natively, where the lane is `native`; the
+    // wasm32-wasip2 component build stamps `wasi`.
+    assert_eq!(doc["metadata"]["utm"]["utmContent"], "native");
+}
+
+#[test]
 fn event_decoding_is_wired_and_fails_closed() {
     let zero_topic = format!("0x{}", "00".repeat(32));
     // A log whose topic-0 matches no known event is rejected, never panicked

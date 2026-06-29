@@ -22,7 +22,7 @@ One world is one component; build with exactly one world feature.
 
 | World | Feature | Exports | Imports |
 | --- | --- | --- | --- |
-| `order-engine` | `world-engine` (default) | `order`, `chains`, `app-data`, `tx`, `composable`, `order-signing`, `events` | none |
+| `order-engine` | `world-engine` (default) | `order`, `chains`, `app-data`, `tx`, `composable`, `trading-math`, `order-signing`, `events` | none |
 | `client-sync` | `world-client-sync` | `orderbook-read`, `orderbook-write`, `trading` (sync) | `signer`, `contract-read`, `wasi:http@0.2` |
 | `client-async` | `world-client-async` | `orderbook-read-async`, `orderbook-write-async`, `trading-async` | `signer`, `contract-read`, `wasi:http@0.3` |
 

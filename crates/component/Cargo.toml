@@ -41,7 +41,14 @@ workspace = true
 # `--no-default-features --features world-client-sync` (or `-p3`).
 [features]
 default = ["world-engine"]
-world-engine = []
+# The engine's `trading-math` interface exposes the pure quote-pipeline helpers
+# (`calculate_quote_amounts_and_costs`, `suggest_slippage_bps`, the app-data
+# document builder) from `cow-sdk-trading`, which take the `cow-sdk-orderbook`
+# quote DTOs (`QuoteData` / `OrderQuoteResponse` / `OrderClass`). Those helpers
+# are pure and sync; the orderbook network transport stays out of the engine
+# because the engine declares no host HTTP import and never calls the async,
+# transport-backed paths.
+world-engine = ["dep:cow-sdk-trading", "dep:cow-sdk-orderbook"]
 world-client-sync = [
     "dep:serde",
     "dep:wstd",
@@ -73,6 +80,19 @@ cow-sdk-signing = { path = "../signing", version = "0.1.0-alpha.8" }
 cow-sdk-contracts = { path = "../contracts", version = "0.1.0-alpha.8", features = ["composable"] }
 # App-data document validation and CID conversion (pure, no I/O).
 cow-sdk-app-data = { path = "../app-data", version = "0.1.0-alpha.8" }
+# The pure quote-pipeline helpers behind the engine's `trading-math` interface
+# and the native trade-parameter types the client lanes deserialize into. The
+# component links this crate without the `ts-bindings` feature, so it inherits no
+# wasm-bindgen of its own; its own network surface is async and never called
+# here. Optional so a plain native build (where this crate is empty) does not
+# pull it; enabled by every world feature that needs it.
+cow-sdk-trading = { path = "../trading", version = "0.1.0-alpha.8", optional = true }
+# The orderbook quote DTOs the pure trading helpers and the client read layer
+# consume (`QuoteData` / `OrderQuoteResponse` / `OrderClass` / `Order` / `Trade`).
+# Optional, on every target, so the engine's `trading-math` lowering links the
+# DTOs while a plain native build stays empty; the network transport is wired
+# only by the client worlds, which declare the host HTTP import.
+cow-sdk-orderbook = { path = "../orderbook", version = "0.1.0-alpha.8", optional = true }
 alloy-primitives.workspace = true
 serde_json.workspace = true
 
@@ -90,12 +110,6 @@ http = { workspace = true, optional = true }
 http-body-util = { version = "0.1", optional = true }
 bytes = { version = "1", optional = true }
 futures = { version = "0.3", optional = true }
-cow-sdk-orderbook = { path = "../orderbook", version = "0.1.0-alpha.8", optional = true }
-# The native trade-parameter types `TradeParams` / `LimitTradeParams`: the WIT
-# swap/limit record is built into a serde_json value and deserialized into them
-# with `from_value`. The component links this crate without the `ts-bindings`
-# feature, so it inherits no wasm-bindgen of its own.
-cow-sdk-trading = { path = "../trading", version = "0.1.0-alpha.8", optional = true }
 # Names the `Serialize` bound the read layer uses to render SDK responses as
 # JSON; already in the tree through the orderbook client, direct here so it can
 # be named. Gated to the client lanes, so the engine build never pulls it.

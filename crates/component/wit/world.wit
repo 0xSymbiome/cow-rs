@@ -255,6 +255,83 @@ interface composable {
     twap-timing-at: func(twap: twap-data, start: u64, now: u64) -> result<twap-timing, string>;
 }
 
+/// Pure quote-pipeline math: the stepwise amounts-and-costs breakdown, the
+/// automatic slippage suggestion, and the high-level app-data document builder.
+/// These are the same audited `cow-sdk-trading` helpers the network client lanes
+/// run, exposed here as pure offline functions so a consumer that fetches its own
+/// `/quote` (for example over the host's own HTTP stack) still derives the signed
+/// amounts and the app-data document from one Rust source. No host imports and no
+/// network — the quote is supplied as JSON; the math is integer-exact.
+interface trading-math {
+    use app-data.{app-data-info};
+
+    /// One sell/buy amount pair at a stage of the quote pipeline. Decimal-string
+    /// atoms. Mirrors `cow_sdk_core::Amounts`.
+    record stage-amounts {
+        sell-amount: string,
+        buy-amount: string,
+    }
+
+    /// Network-fee component in both quote currencies. Mirrors
+    /// `cow_sdk_core::NetworkFee`.
+    record network-fee {
+        amount-in-sell-currency: string,
+        amount-in-buy-currency: string,
+    }
+
+    /// A fee component as an amount and its basis points. Mirrors
+    /// `cow_sdk_core::FeeComponent`.
+    record fee-component {
+        amount: string,
+        bps: u32,
+    }
+
+    /// The cost breakdown of a quote. Mirrors `cow_sdk_core::Costs`.
+    record quote-costs {
+        network-fee: network-fee,
+        partner-fee: fee-component,
+        protocol-fee: fee-component,
+    }
+
+    /// The stepwise quote amounts and costs across the pipeline. Mirrors
+    /// `cow_sdk_core::QuoteAmountsAndCosts`: each stage is a sell/buy pair, with
+    /// the cost components alongside. `amounts-to-sign` are the amounts the order
+    /// is signed for.
+    record quote-amounts-and-costs {
+        is-sell: bool,
+        costs: quote-costs,
+        before-all-fees: stage-amounts,
+        before-network-costs: stage-amounts,
+        after-protocol-fees: stage-amounts,
+        after-network-costs: stage-amounts,
+        after-partner-fees: stage-amounts,
+        after-slippage: stage-amounts,
+        amounts-to-sign: stage-amounts,
+    }
+
+    /// Computes the stepwise amounts and costs for a quote. `quote-json` is the
+    /// `quote` object of an orderbook `/quote` response (camelCase JSON, the
+    /// `QuoteData` shape). `protocol-fee-bps` is the optional decimal-string
+    /// protocol fee echoed by the response (`"1.5"`); pass `"0"` or an empty
+    /// string when absent. Integer math, truncating toward zero, identical to the
+    /// client lanes.
+    calculate-amounts-and-costs: func(quote-json: string, slippage-bps: u32, partner-fee-bps: u32, protocol-fee-bps: string) -> result<quote-amounts-and-costs, string>;
+
+    /// Suggests an automatic slippage tolerance (basis points) for a quote.
+    /// `quote-json` is a full orderbook `/quote` response (the `OrderQuoteResponse`
+    /// shape carrying `quote` and the optional `protocolFeeBps`). Combines the
+    /// fee- and volume-based suggestions and clamps into range; an eth-flow quote
+    /// applies the default floor.
+    suggest-slippage-bps: func(quote-json: string, partner-fee-bps: u32, is-eth-flow: bool) -> result<u32, string>;
+
+    /// Builds the trading app-data document and its canonical identity. Stamps the
+    /// quote slippage, the order class (`market` | `limit` | `liquidity` | `twap`,
+    /// defaulting to `market`), and the SDK attribution block, then canonicalizes
+    /// and hashes the document. Returns the same `app-data-info` (`cid` /
+    /// content / `0x` hash) the `app-data` interface produces.
+    build-app-data: func(app-code: string, slippage-bps: u32, order-class: option<string>) -> result<app-data-info, string>;
+}
+
 /// Pure order-signing payload helpers: the typed data a host wallet signs, the
 /// EIP-1271 contract-signature wrapper, and the deterministic order id. No host
 /// imports and no key — the host produces the signature; this interface only
@@ -708,6 +785,7 @@ world order-engine {
     export app-data;
     export tx;
     export composable;
+    export trading-math;
     export order-signing;
     export events;
 }

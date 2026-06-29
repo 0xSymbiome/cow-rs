@@ -14,6 +14,9 @@ mod signing;
 mod events;
 // ComposableCoW / TWAP conditional-order encoding for the `composable` interface.
 mod composable;
+// Pure quote-amounts / slippage / app-data helpers for the `trading-math`
+// interface.
+mod trading_math;
 
 // The engine golden test: pins the deterministic entry points (uid/digest, the
 // tx-builder targets and selectors, the signing payloads, and fail-closed event

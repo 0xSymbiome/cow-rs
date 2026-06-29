@@ -10,14 +10,17 @@
 //!
 //! - `world-engine` (default) exports the deterministic interfaces — order
 //!   identity, chain and deployment introspection, app-data, the gas-free
-//!   transaction builders, the signing payloads, event-log decoding, and the
-//!   composable (TWAP) conditional-order builders; it has no host imports.
+//!   transaction builders, the signing payloads, event-log decoding, the
+//!   composable (TWAP) conditional-order builders, and the trading-math quote
+//!   helpers (amounts-and-costs, slippage suggestion, and the app-data document
+//!   builder); it has no host imports.
 //! - `world-client-sync` exports the orderbook read/write and trading lifecycle
 //!   over the WASI 0.2 HTTP lane.
 //! - `world-client-async` exports the same surface over the WASI 0.3 HTTP lane.
 //!
 //! The deterministic logic wraps `cow-sdk-core`, `cow-sdk-signing`,
-//! `cow-sdk-app-data`, and `cow-sdk-contracts`; the stateful lanes run the real
+//! `cow-sdk-app-data`, `cow-sdk-contracts`, and the pure quote helpers from
+//! `cow-sdk-trading`; the stateful lanes run the real
 //! `cow-sdk-orderbook` and `cow-sdk-trading` clients over the SDK's
 //! `HttpTransport` seam. HTTP and signing are host imports: the host signs the
 //! digest through the `signer` import, so the private key never enters the
