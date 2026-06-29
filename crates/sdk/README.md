@@ -38,7 +38,7 @@ use. The HTTP retry, rate-limit, and `Retry-After` transport policy is always on
 | `alloy-signer` | Native Alloy local-key `Signer` adapter as `cow_sdk::alloy_signer`. |
 | `alloy` | The composed native Alloy client as `cow_sdk::alloy`; implies `alloy-provider` and `alloy-signer`. |
 | `testing` | In-memory test doubles (`MockOrderbook`, `MockSigner`, `MockProvider`) as `cow_sdk::testing` for downstream integration tests. Dev-dependency only. |
-| `tracing` | `tracing` spans and structured events across the SDK; see the [Observability](https://github.com/0xSymbiome/cow-rs/blob/main/docs/observability.md) guide. |
+| `tracing` | `tracing` spans and structured events across the SDK; see the [Observability](https://github.com/0xSymbiome/cow-rs/blob/main/docs/guides/observability.md) guide. |
 
 ```toml
 [dependencies]
@@ -50,7 +50,7 @@ cow-sdk = { version = "0.1.0-alpha.8", features = ["subgraph", "cow-shed"] }
 The shortest ready-state path uses the native default orderbook transport.
 Browser targets use the same trading API but must inject a browser transport;
 see the workspace
-[Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/getting-started.md)
+[Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/guides/getting-started.md)
 guide for that wiring.
 
 ```rust
@@ -155,15 +155,15 @@ on-chain revert from a transient broadcast, lookup, timeout, or cancellation.
 The workspace ships runnable, deterministic scenarios for every facade
 workflow — quoting, posting, signing, app-data, transport, subgraph access,
 and the Alloy adapters — cataloged by goal in
-[Examples](https://github.com/0xSymbiome/cow-rs/blob/main/docs/examples.md).
-[Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/getting-started.md)
+[Examples](https://github.com/0xSymbiome/cow-rs/blob/main/docs/guides/examples.md).
+[Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/guides/getting-started.md)
 walks the recommended first session.
 
 ## Where to next
 
-- [Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/getting-started.md)
+- [Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/guides/getting-started.md)
 - [Workspace README](https://github.com/0xSymbiome/cow-rs/blob/main/README.md)
-- [Architecture](https://github.com/0xSymbiome/cow-rs/blob/main/docs/architecture.md)
+- [Architecture](https://github.com/0xSymbiome/cow-rs/blob/main/docs/guides/architecture.md)
 
 ## License
 

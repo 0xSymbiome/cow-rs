@@ -2,7 +2,7 @@
 
 Use this file for the public contribution contract. For crate boundaries,
 verification scope, and release posture, see the public docs hub in
-[docs/README.md](docs/README.md).
+[the docs index](docs/index.md).
 
 ## Code Of Conduct
 
@@ -24,7 +24,7 @@ rustup component add clippy rustfmt
 which keeps the local toolchain version aligned with the CI contract.
 
 - The public Rust floor and bump rules are documented in the
-  [MSRV policy](docs/msrv-policy.md), including the 30-day notice window and
+  [MSRV policy](docs/guides/msrv-policy.md), including the 30-day notice window and
   the dependency, stable-feature, and security-advisory triggers for a bump.
 
 ## Baseline Validation

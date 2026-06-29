@@ -39,7 +39,7 @@ pub use async_trait::async_trait;
 pub use cow_sdk_app_data::{PartnerFee, PartnerFeePolicy};
 pub use cow_sdk_contracts::{eth_flow, unwrap_transaction, wrap_transaction};
 pub use cow_sdk_core::SupportedChainId;
-pub use cow_sdk_orderbook::{OrderbookClient, OrderbookBinding};
+pub use cow_sdk_orderbook::{OrderbookBinding, OrderbookClient};
 
 /// Allowance reads, approval transactions, and approval submission helpers.
 pub mod allowance;

@@ -210,11 +210,16 @@ fn read_adr_statuses(repo_root: &Path) -> anyhow::Result<Vec<AdrStatus>> {
 }
 
 fn parse_status(text: &str) -> Option<String> {
+    // Accept the OKF frontmatter `status:` key and the legacy `- Status:` /
+    // `Status:` banner, case-insensitively on the key.
+    const KEY: &str = "status:";
     text.lines().find_map(|line| {
         let trimmed = line.trim().trim_start_matches("- ").trim();
-        trimmed
-            .strip_prefix("Status:")
-            .map(str::trim)
-            .map(str::to_owned)
+        match trimmed.get(..KEY.len()) {
+            Some(head) if head.eq_ignore_ascii_case(KEY) => {
+                Some(trimmed[KEY.len()..].trim().to_owned())
+            }
+            _ => None,
+        }
     })
 }

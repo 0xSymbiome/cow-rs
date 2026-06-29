@@ -1,11 +1,18 @@
-# ADR 0040: Keep Wallet And Provider Interop Behind Typed JavaScript Callbacks
+---
+type: Decision Record
+id: ADR-0040
+title: "ADR 0040: Keep Wallet And Provider Interop Behind Typed JavaScript Callbacks"
+description: "JavaScript wallet and HTTP runtime interop crosses cow-sdk-js through five typed callback shapes: TypedDataSignerCallback, DigestSignerCallback, CustomEip1271Callback, ContractReadCallback, and CowFetchCallback."
+status: Accepted
+date: 2026-05-09
+last_reviewed: 2026-06-22
+authors: ["0xSymbiotic"]
+tags: [wasm, wallet, provider, callback-boundary, eip1271]
+related: [ADR-0039, ADR-0007, ADR-0024, ADR-0043, ADR-0045]
+timestamp: 2026-06-22T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-05-09
-- Last reviewed: 2026-06-22
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: wasm, wallet, provider, callback-boundary, eip1271
-- Related: [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), ADR 0007 (superseded by 0039/0040), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), ADR 0043 (superseded by 0039), [ADR 0045](0045-async-signer-trait-narrowing.md)
+# ADR 0040: Keep Wallet And Provider Interop Behind Typed JavaScript Callbacks
 
 ## Decision
 
@@ -77,7 +84,7 @@ public error envelope.
 ## Links
 
 - [cow-sdk-js README](../../crates/js/README.md)
-- [Integrations](../integrations.md)
+- [Integrations](../guides/integrations.md)
 - [WASM Surface Audit](../audit/wasm-surface-audit.md)
 - [EIP-1271 Verification Cache Audit](../audit/eip1271-verification-cache-audit.md)
 - [wasm-bindgen guide](https://rustwasm.github.io/docs/wasm-bindgen/)

@@ -61,7 +61,7 @@ fn cross_adapter_error_matrix_names_every_exercised_class() {
 #[test]
 fn fetch_transport_contract_remains_request_response_only() {
     let fetch_source = include_str!("../../core/src/transport/fetch.rs");
-    let transport_docs = include_str!("../../../docs/transport.md");
+    let transport_docs = include_str!("../../../docs/guides/transport.md");
 
     assert!(
         !fetch_source.contains("EventSource"),

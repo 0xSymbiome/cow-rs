@@ -2,7 +2,7 @@
 //! hand-rolls and forbidden imports out of protected crate surfaces.
 //!
 //! Each `Fence` is one constraint anchored by an ADR (see
-//! `docs/alloy-doctrine.md`). A fence scans a scope of files for a forbidden
+//! `docs/guides/alloy-doctrine.md`). A fence scans a scope of files for a forbidden
 //! pattern, or asserts a required marker count, and fails with the ADR-cited
 //! guidance. This table is the Rust home of the former `never-swap-gates.yml`
 //! grep jobs plus the `encode_prefixed`, forbidden-wasm-import, and dist-path

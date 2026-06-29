@@ -144,9 +144,9 @@ reaches the same verdict as the Rust core.
 
 ## Where To Next
 
-- [Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/getting-started.md)
-- [Integrations Guide](https://github.com/0xSymbiome/cow-rs/blob/main/docs/integrations.md)
-- [Architecture Overview](https://github.com/0xSymbiome/cow-rs/blob/main/docs/architecture.md)
+- [Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/guides/getting-started.md)
+- [Integrations Guide](https://github.com/0xSymbiome/cow-rs/blob/main/docs/guides/integrations.md)
+- [Architecture Overview](https://github.com/0xSymbiome/cow-rs/blob/main/docs/guides/architecture.md)
 - [WASM Surface Audit](https://github.com/0xSymbiome/cow-rs/blob/main/docs/audit/wasm-surface-audit.md)
 - [EIP-1271 Verification Cache Audit](https://github.com/0xSymbiome/cow-rs/blob/main/docs/audit/eip1271-verification-cache-audit.md)
 

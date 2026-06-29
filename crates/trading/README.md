@@ -265,14 +265,14 @@ appears in the public API. Most consumers reach this crate through the
 The workspace ships runnable, deterministic scenarios for the trading
 workflows — quoting, posting, EthFlow, receipt waiting, and the advanced
 seam traits — cataloged by goal in
-[Examples](https://github.com/0xSymbiome/cow-rs/blob/main/docs/examples.md).
-[Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/getting-started.md)
+[Examples](https://github.com/0xSymbiome/cow-rs/blob/main/docs/guides/examples.md).
+[Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/guides/getting-started.md)
 walks the recommended first session.
 
 ## Where to next
 
-- [Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/getting-started.md)
-- [Integrations Guide](https://github.com/0xSymbiome/cow-rs/blob/main/docs/integrations.md)
+- [Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/guides/getting-started.md)
+- [Integrations Guide](https://github.com/0xSymbiome/cow-rs/blob/main/docs/guides/integrations.md)
 - [Workspace README](https://github.com/0xSymbiome/cow-rs/blob/main/README.md)
 
 ## License

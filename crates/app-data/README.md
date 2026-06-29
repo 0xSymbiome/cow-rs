@@ -149,7 +149,7 @@ CIDv1 + raw + keccak-256 shape is supported; CIDv0 is rejected.
 
 ## Where to next
 
-- [Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/getting-started.md)
+- [Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/guides/getting-started.md)
 - [Dependency Gate Audit](https://github.com/0xSymbiome/cow-rs/blob/main/docs/audit/dependency-gate-audit.md)
 - [Workspace README](https://github.com/0xSymbiome/cow-rs/blob/main/README.md)
 

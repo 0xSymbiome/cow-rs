@@ -1,10 +1,17 @@
-# ADR 0055: HTTP Response Reads Are Bounded By A Configurable Per-Client Byte Limit
+---
+type: Decision Record
+id: ADR-0055
+title: "ADR 0055: HTTP Response Reads Are Bounded By A Configurable Per-Client Byte Limit"
+description: "Every HTTP response body that the SDK buffers is bounded by a configurable maximum size, in decoded bytes, carried on HttpClientPolicy as max_response_bytes: - The native ReqwestTransport reads the body as a stream of chunks and refuses to..."
+status: Accepted
+date: 2026-05-29
+authors: ["0xSymbiotic"]
+tags: [transport, security, orderbook, subgraph, ipfs, wasm, error-typing]
+related: [ADR-0006, ADR-0010, ADR-0013, ADR-0025, ADR-0033, ADR-0040, ADR-0041]
+timestamp: 2026-05-29T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-05-29
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: transport, security, orderbook, subgraph, ipfs, wasm, error-typing
-- Related: [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), [ADR 0025](0025-workspace-url-redaction-convention.md), [ADR 0033](0033-minimum-viable-panic-surface.md), [ADR 0040](0040-wallet-provider-callback-boundary-for-js-consumers.md), [ADR 0041](0041-transport-policy-l3-layering.md)
+# ADR 0055: HTTP Response Reads Are Bounded By A Configurable Per-Client Byte Limit
 
 ## Decision
 
@@ -85,7 +92,7 @@ constant, consistent with the policy-contract rule.
 
 ## Links
 
-- [Architecture](../architecture.md)
+- [Architecture](../guides/architecture.md)
 - [Security Policy](../../SECURITY.md)
 - [ADR 0041](0041-transport-policy-l3-layering.md)
 

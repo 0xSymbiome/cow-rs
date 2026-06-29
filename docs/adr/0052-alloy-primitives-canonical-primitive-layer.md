@@ -1,11 +1,18 @@
-# ADR 0052: Alloy primitives as the canonical primitive layer
+---
+type: Decision Record
+id: ADR-0052
+title: "ADR 0052: Alloy primitives as the canonical primitive layer"
+description: "cow-sdk-core adopts alloy-primitives and alloy-sol-types as the canonical primitive and EIP-712 / ABI layer for the workspace."
+status: Accepted
+date: 2026-05-19
+last_reviewed: 2026-06-15
+authors: ["0xSymbiotic"]
+tags: [alloy-primitives, alloy-sol-types, eip-712, abi, canonical-types]
+related: [ADR-0011, ADR-0012, ADR-0022, ADR-0026]
+timestamp: 2026-06-15T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-05-19
-- Last reviewed: 2026-06-15
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: alloy-primitives, alloy-sol-types, eip-712, abi, canonical-types
-- Related: [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md), [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md), [ADR 0022](0022-ecdsa-signature-v-normalization.md), [ADR 0026](0026-alloy-major-release-absorption-plan.md), [Alloy Doctrine](../alloy-doctrine.md)
+# ADR 0052: Alloy primitives as the canonical primitive layer
 
 ## Decision
 
@@ -51,7 +58,7 @@ maintained alloy surface (`keccak256`, `Eip712Domain::separator`,
 `Signature`) and a small set of maintained companion crates. cow-rs retains an
 implementation only where a binding ADR records a required divergence from the
 alloy behaviour; those exceptions are enumerated in the
-[Alloy Doctrine](../alloy-doctrine.md) and pinned at their call sites by
+[Alloy Doctrine](../guides/alloy-doctrine.md) and pinned at their call sites by
 `cargo check-source-fences`.
 
 The alloy-core ABI family (`alloy-primitives`, `alloy-sol-types`,
@@ -116,10 +123,10 @@ unchanged.
 
 ## Links
 
-- [Alloy Doctrine](../alloy-doctrine.md) — the operational bucket tables and
+- [Alloy Doctrine](../guides/alloy-doctrine.md) — the operational bucket tables and
   never-swap fences this decision anchors
-- [Architecture](../architecture.md)
-- [Principles](../principles.md)
+- [Architecture](../guides/architecture.md)
+- [Principles](../principles/index.md)
 - [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md),
   [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md),
   [ADR 0022](0022-ecdsa-signature-v-normalization.md),

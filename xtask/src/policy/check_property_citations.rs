@@ -1,4 +1,7 @@
-use std::path::{Path, PathBuf};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 use anyhow::{Context, bail};
 
@@ -34,12 +37,13 @@ pub fn run_default() -> anyhow::Result<()> {
 }
 
 pub fn run(args: &Args) -> anyhow::Result<()> {
-    let path = args
-        .properties
-        .clone()
-        .unwrap_or_else(|| args.repo_root.join("PROPERTIES.md"));
-    let text = workspace::read_to_string(&path)?;
-    let rows = parse_property_rows(&text);
+    let rows = match &args.properties {
+        // explicit single-file override (used by fixtures/tests)
+        Some(path) => parse_property_rows(&workspace::read_to_string(path)?),
+        // the registry now lives as per-family concept files under docs/properties/;
+        // docs/properties/index.md keeps only the methodology + ToC.
+        None => read_registry_rows(&args.repo_root)?,
+    };
     let errors = validate_rows(&args.repo_root, &rows)?;
     if errors.is_empty() {
         println!(
@@ -52,6 +56,36 @@ pub fn run(args: &Args) -> anyhow::Result<()> {
         eprintln!("error: {error}");
     }
     bail!("property citations have {} error(s)", errors.len())
+}
+
+/// Collect property rows from every per-family concept file under
+/// `docs/properties/`. Falls back to a single `PROPERTIES.md` for repos that
+/// have not split the registry yet.
+fn read_registry_rows(repo_root: &Path) -> anyhow::Result<Vec<PropertyRow>> {
+    let dir = repo_root.join("docs/properties");
+    let mut rows = Vec::new();
+    if dir.is_dir() {
+        let mut files = fs::read_dir(&dir)
+            .with_context(|| format!("failed to read {}", dir.display()))?
+            .filter_map(std::result::Result::ok)
+            .map(|entry| entry.path())
+            .filter(|path| {
+                path.extension().is_some_and(|ext| ext == "md")
+                    && path.file_name().is_some_and(|name| name != "index.md")
+            })
+            .collect::<Vec<_>>();
+        files.sort();
+        for file in files {
+            rows.extend(parse_property_rows(&workspace::read_to_string(&file)?));
+        }
+    }
+    if rows.is_empty() {
+        let single = repo_root.join("PROPERTIES.md");
+        if single.exists() {
+            rows = parse_property_rows(&workspace::read_to_string(&single)?);
+        }
+    }
+    Ok(rows)
 }
 
 pub fn validate_rows(repo_root: &Path, rows: &[PropertyRow]) -> anyhow::Result<Vec<String>> {
@@ -72,7 +106,7 @@ pub fn parse_property_rows(text: &str) -> Vec<PropertyRow> {
             if !trimmed.starts_with("| `PROP-") {
                 return None;
             }
-            let cells = trimmed.split('|').map(str::trim).collect::<Vec<_>>();
+            let cells = split_table_row(trimmed);
             if cells.len() < 8 {
                 return None;
             }
@@ -82,6 +116,25 @@ pub fn parse_property_rows(text: &str) -> Vec<PropertyRow> {
             })
         })
         .collect()
+}
+
+/// Splits a markdown table row on **unescaped** `|`. A cell may legitimately
+/// contain an escaped pipe (`\|`) — `PROP-CON-023` uses it for the EIP-712
+/// preimage notation — which `str::split('|')` would fragment, shifting every
+/// later column (including `Evidence`). `|` and `\` are ASCII, so byte scanning
+/// stays on `char` boundaries.
+fn split_table_row(line: &str) -> Vec<&str> {
+    let bytes = line.as_bytes();
+    let mut cells = Vec::new();
+    let mut start = 0;
+    for i in 0..bytes.len() {
+        if bytes[i] == b'|' && (i == 0 || bytes[i - 1] != b'\\') {
+            cells.push(line[start..i].trim());
+            start = i + 1;
+        }
+    }
+    cells.push(line[start..].trim());
+    cells
 }
 
 pub fn evidence_refs(evidence: &str) -> Vec<EvidenceRef> {
@@ -149,4 +202,21 @@ fn parse_evidence_ref(raw: &str) -> Option<EvidenceRef> {
             .map(str::to_owned)
     });
     Some(EvidenceRef { path, symbol })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_property_rows;
+
+    #[test]
+    fn escaped_pipes_keep_the_evidence_column_aligned() {
+        let row = r"| `PROP-CON-023` | `cow-sdk-contracts` | hash over 0x01 \| domain_separator \| struct_hash | Contract | Yes | `crates/contracts/tests/order_digest_parity_contract.rs::order_digest_fixture_rows_hold` | 2026-05-30 |";
+        let rows = parse_property_rows(row);
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].id, "PROP-CON-023");
+        assert_eq!(
+            rows[0].evidence,
+            "`crates/contracts/tests/order_digest_parity_contract.rs::order_digest_fixture_rows_hold`"
+        );
+    }
 }

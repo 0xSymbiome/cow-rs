@@ -56,6 +56,7 @@ pub const DETERMINISTIC_EXAMPLES: &[DeterministicExample] = &[
     DeterministicExample::new("eip1271_signer", &[]),
     DeterministicExample::new("receiver_redirect", &[]),
     DeterministicExample::new("ethflow_checker", &[]),
+    DeterministicExample::new("twap_order", &[]),
     DeterministicExample::new("alloy_quickstart", &["alloy"]),
     DeterministicExample::new("alloy_provider", &["alloy-provider"]),
     DeterministicExample::new("token_balance", &["alloy-provider"]),
@@ -148,7 +149,7 @@ mod tests {
     #[test]
     fn deterministic_runner_covers_every_non_live_example() {
         // The smoke runner claims to cover "every deterministic non-live binary"
-        // (examples/README.md, docs/examples.md). Enforce it mechanically: the
+        // (examples/README.md, docs/guides/examples.md). Enforce it mechanically: the
         // run set must equal every declared `[[example]]` minus the two opt-in
         // live probes, so a newly added example cannot silently fall out of the
         // smoke command and falsify that claim.

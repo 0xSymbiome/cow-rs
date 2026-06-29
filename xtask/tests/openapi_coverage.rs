@@ -91,6 +91,10 @@ dtos:
       - id
       - enabled
       - amount
+excluded_schemas:
+  - reason: base mixin folded into FixtureOrder via allOf; not modeled as a standalone DTO
+    schemas:
+      - FixtureBase
 ",
     )?;
     write_file(

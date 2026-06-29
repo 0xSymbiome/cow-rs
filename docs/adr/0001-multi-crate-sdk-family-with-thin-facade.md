@@ -1,9 +1,16 @@
-# ADR 0001: Multi-Crate SDK Family With Thin Facade
+---
+type: Decision Record
+id: ADR-0001
+title: "ADR 0001: Multi-Crate SDK Family With Thin Facade"
+description: "Use a multi-crate workspace with short local folders under crates/*, a cow-sdk public facade, and cow-sdk-* leaf crates that own behavior."
+status: Accepted
+date: 2026-04-09
+authors: ["0xSymbiotic"]
+tags: [topology, packages, facade]
+timestamp: 2026-04-09T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-04-09
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: topology, packages, facade
+# ADR 0001: Multi-Crate SDK Family With Thin Facade
 
 ## Decision
 
@@ -64,6 +71,6 @@ would blur product identity, crate ownership, and runtime boundaries.
 
 ## Links
 
-- [Architecture](../architecture.md)
+- [Architecture](../guides/architecture.md)
 - [ADR 0002](0002-dedicated-trading-orchestration-crate.md)
 - [ADR 0003](0003-separate-read-only-subgraph-crate.md)

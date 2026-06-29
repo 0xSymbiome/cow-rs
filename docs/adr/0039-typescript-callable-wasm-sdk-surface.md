@@ -1,11 +1,18 @@
-# ADR 0039: Keep The JavaScript and TypeScript WASM SDK Surface As An Additive Leaf Crate
+---
+type: Decision Record
+id: ADR-0039
+title: "ADR 0039: Keep The JavaScript and TypeScript WASM SDK Surface As An Additive Leaf Crate"
+description: "cow-sdk-js is the canonical JavaScript and TypeScript SDK surface."
+status: Accepted
+date: 2026-05-09
+last_reviewed: 2026-06-26
+authors: ["0xSymbiotic"]
+tags: [wasm, typescript, public-surface, additive-leaf-crates]
+related: [ADR-0010, ADR-0013, ADR-0024, ADR-0038, ADR-0044, ADR-0052]
+timestamp: 2026-06-26T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-05-09
-- Last reviewed: 2026-06-26
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: wasm, typescript, public-surface, additive-leaf-crates
-- Related: [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0038](0038-transaction-lifecycle-types.md), [ADR 0044](0044-bundle-size-profile-and-flavor-builds.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+# ADR 0039: Keep The JavaScript and TypeScript WASM SDK Surface As An Additive Leaf Crate
 
 ## Decision
 

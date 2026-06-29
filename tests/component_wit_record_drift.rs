@@ -62,7 +62,7 @@ fn wit_record_fields(record: &str) -> Vec<String> {
 /// Asserts every wire field the native type serializes is mirrored in the WIT
 /// record. (Subset, not equality: the WIT may carry optional fields the fixture
 /// omits — the drop we guard against is a *native* field missing from the WIT.)
-fn assert_no_drift(native: serde_json::Value, record: &str) {
+fn assert_no_drift(native: &serde_json::Value, record: &str) {
     let wit_fields = wit_record_fields(record);
     let object = native
         .as_object()
@@ -95,7 +95,7 @@ fn book_order_record_mirrors_native_order() {
     let order: Order =
         serde_json::from_value(payload(ORDER_FIXTURE)).expect("order fixture deserializes");
     let value = serde_json::to_value(&order).expect("order serializes");
-    assert_no_drift(value, "order");
+    assert_no_drift(&value, "order");
 }
 
 #[test]
@@ -103,5 +103,5 @@ fn book_trade_record_mirrors_native_trade() {
     let trade: Trade =
         serde_json::from_value(payload(TRADE_FIXTURE)).expect("trade fixture deserializes");
     let value = serde_json::to_value(&trade).expect("trade serializes");
-    assert_no_drift(value, "trade");
+    assert_no_drift(&value, "trade");
 }

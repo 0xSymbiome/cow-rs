@@ -326,8 +326,8 @@ WASI, WebAssembly-component, or `no_std` guest target.
 
 - The public TypeScript surface for each flavor is the committed declaration
   snapshot under `crates/js/snapshots/facade/`.
-- [Architecture](https://github.com/0xSymbiome/cow-rs/blob/main/docs/architecture.md),
-  [Observability](https://github.com/0xSymbiome/cow-rs/blob/main/docs/observability.md),
+- [Architecture](https://github.com/0xSymbiome/cow-rs/blob/main/docs/guides/architecture.md),
+  [Observability](https://github.com/0xSymbiome/cow-rs/blob/main/docs/guides/observability.md),
   and the
   [WASM Surface Audit](https://github.com/0xSymbiome/cow-rs/blob/main/docs/audit/wasm-surface-audit.md).
 - Runnable browser, Node, and Worker examples live in the

@@ -1,12 +1,18 @@
-# ADR 0066: Trading Slippage and Fee Math Faithfully Implements the CoW SDK Convention
+---
+type: Decision Record
+id: ADR-0066
+title: "ADR 0066: Trading Slippage and Fee Math Faithfully Implements the CoW SDK Convention"
+description: "cow-rs faithfully implements the established CoW Protocol SDK trade-construction convention — the slippage transform, the fee folding (network, protocol, and partner fees), and the slippage-suggestion heuristics."
+status: Accepted
+date: 2026-06-04
+last_reviewed: 2026-06-04
+authors: ["0xSymbiotic"]
+tags: [trading, slippage, quote, fee, parity]
+related: [ADR-0058, ADR-0021, ADR-0015]
+timestamp: 2026-06-04T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-06-04
-- Last reviewed: 2026-06-04
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: trading, slippage, quote, fee, parity
-- Anchors: Evidence-Backed Public Claims (primary)
-- Related: [ADR 0058](0058-typed-quote-request-response-surface.md), [ADR 0021](0021-orderbook-total-fee-policy.md), [ADR 0015](0015-client-side-order-bounds-validator.md)
+# ADR 0066: Trading Slippage and Fee Math Faithfully Implements the CoW SDK Convention
 
 ## Decision
 

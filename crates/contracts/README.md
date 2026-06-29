@@ -109,7 +109,7 @@ building ([`cow-sdk-trading`](https://crates.io/crates/cow-sdk-trading)).
 
 ## Where to next
 
-- [Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/getting-started.md)
+- [Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/guides/getting-started.md)
 - [Workspace README](https://github.com/0xSymbiome/cow-rs/blob/main/README.md)
 
 ## License

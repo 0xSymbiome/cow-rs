@@ -1,10 +1,17 @@
-# ADR 0068: Typed-Data Signing Is Payload-Only At The Signer Seam
+---
+type: Decision Record
+id: ADR-0068
+title: "ADR 0068: Typed-Data Signing Is Payload-Only At The Signer Seam"
+description: "cow_sdk_core::Signer and the narrow cow_sdk_core::TypedDataSigner capability take the canonical EIP-712 typed-data payload: sign_typed_data_payload(&TypedDataPayload) is the single required typed-data method."
+status: Accepted
+date: 2026-06-11
+authors: ["0xSymbiotic"]
+tags: [core, signer, eip712, traits]
+related: [ADR-0010, ADR-0059, ADR-0024, ADR-0035, ADR-0045]
+timestamp: 2026-06-11T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-06-11
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: core, signer, eip712, traits
-- Related: [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0059](0059-hash-concrete-orderdata-directly.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0035](0035-alloy-provider-adapter.md), [ADR 0045](0045-async-signer-trait-narrowing.md)
+# ADR 0068: Typed-Data Signing Is Payload-Only At The Signer Seam
 
 ## Decision
 
@@ -77,4 +84,4 @@ there are no published consumers to migrate.
 
 - [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md)
 - [ADR 0040](0040-wallet-provider-callback-boundary-for-js-consumers.md)
-- [Properties Registry](../../PROPERTIES.md)
+- [Properties Registry](../properties/index.md)

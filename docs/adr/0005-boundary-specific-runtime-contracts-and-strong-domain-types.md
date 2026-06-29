@@ -1,11 +1,18 @@
-# ADR 0005: Boundary-Specific Runtime Contracts And Strong Domain Types
+---
+type: Decision Record
+id: ADR-0005
+title: "ADR 0005: Boundary-Specific Runtime Contracts And Strong Domain Types"
+description: "Keep runtime traits and DTOs boundary-specific, and make strong domain types the default public Rust contract."
+status: Accepted
+date: 2026-04-10
+last_reviewed: 2026-06-15
+authors: ["0xSymbiotic"]
+tags: [types, traits, boundaries]
+related: [ADR-0001, ADR-0002, ADR-0052]
+timestamp: 2026-06-15T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-04-10
-- Last reviewed: 2026-06-15
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: types, traits, boundaries
-- Related: [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md), [ADR 0002](0002-dedicated-trading-orchestration-crate.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+# ADR 0005: Boundary-Specific Runtime Contracts And Strong Domain Types
 
 ## Decision
 
@@ -57,9 +64,9 @@ actual runtime seams.
 
 ## Links
 
-- [Architecture](../architecture.md)
-- [Transport](../transport.md)
-- [Verification Guide](../verification.md)
+- [Architecture](../guides/architecture.md)
+- [Transport](../guides/transport.md)
+- [Verification Guide](../guides/verification.md)
 - [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md)
 - [ADR 0013](0013-http-transport-injection-and-typestate-builders.md)
 

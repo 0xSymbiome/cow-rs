@@ -1,10 +1,17 @@
-# ADR 0016: Split `SellTokenSource` And `BuyTokenDestination` Into Distinct Side-Specific Enums
+---
+type: Decision Record
+id: ADR-0016
+title: "ADR 0016: Split SellTokenSource And BuyTokenDestination Into Distinct Side-Specific Enums"
+description: "cow-sdk-core exposes the sell-side allowance path and the buy-side payout path as two distinct typed enums."
+status: Accepted
+date: 2026-04-21
+authors: ["0xSymbiotic"]
+tags: [core, contracts, types, balance-sources, error-typing]
+related: [ADR-0005, ADR-0011]
+timestamp: 2026-04-21T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-04-21
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: core, contracts, types, balance-sources, error-typing
-- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md)
+# ADR 0016: Split `SellTokenSource` And `BuyTokenDestination` Into Distinct Side-Specific Enums
 
 ## Decision
 
@@ -86,6 +93,6 @@ side-specific type on the right field.
 
 ## Links
 
-- [Architecture](../architecture.md)
+- [Architecture](../guides/architecture.md)
 - [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
 - [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md)

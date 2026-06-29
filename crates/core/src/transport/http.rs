@@ -121,7 +121,7 @@ impl std::fmt::Debug for TransportResponse {
 ///
 /// This trait does not retry. Retry, jitter, rate limiting, and
 /// `Retry-After` handling are applied at the orderbook layer via
-/// `cow_sdk_core::transport::policy::TransportPolicy`. See `docs/transport.md`.
+/// `cow_sdk_core::transport::policy::TransportPolicy`. See `docs/guides/transport.md`.
 ///
 /// Every method carries the per-call header set and an optional per-call
 /// timeout alongside the URL and body so downstream crates compose typed

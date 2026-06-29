@@ -1,30 +1,141 @@
 version: 2
+# Per-audit refresh triggers for docs/audit/. Every docs/audit/*-audit.md has
+# exactly one entry here (and every entry resolves to an audit file), and each
+# entry's `owning_surface` matches that audit's frontmatter `owning_surface`.
+# Enforced by `cargo check-audit-lane`. The non-blocking
+# `cargo check-audit-freshness --base <ref>` reports when a change touches a
+# mapped path without refreshing the owning audit's `timestamp`.
 entries:
-  - audit: docs/audit/source-lock-provenance-audit.md
-    owning_surface: source-lock provenance
+  - audit: docs/audit/alloy-adapters-audit.md
+    owning_surface: native Alloy adapter family and the LogProvider capability
     refresh_triggers:
       paths:
-        - parity/source-lock.yaml
-      upstreams:
-        - https://github.com/cowdao-grants/cow-shed
+        - crates/alloy-provider/src
+        - crates/alloy-signer/src
+        - crates/alloy/src
+        - crates/core/src/traits
+  - audit: docs/audit/bounded-response-reads-audit.md
+    owning_surface: HTTP response reads across core, wasm, and the signature-decode path
+    refresh_triggers:
+      paths:
+        - crates/core/src/transport
+        - crates/contracts/src/signature.rs
+        - crates/js/src/exports
   - audit: docs/audit/contract-bindings-parity-audit.md
-    owning_surface: canonical alloy::sol! bindings (settlement, vault-relayer, eth-flow, eip1967 proxy, ERC-20, EIP-1271)
+    owning_surface: cow-sdk-contracts alloy::sol! bindings and their byte-identity parity
     refresh_triggers:
       paths:
         - crates/contracts/src
+        - crates/signing/src
         - parity/fixtures/contracts.json
         - parity/source-lock.yaml
   - audit: docs/audit/cow-shed-contract-bindings-audit.md
-    owning_surface: COW Shed contract binding evidence and app-data integration
+    owning_surface: COW Shed bindings, proxy creation code, and app-data hook integration
     refresh_triggers:
       paths:
         - crates/contracts/src/cow_shed
         - crates/contracts/Cargo.toml
         - crates/app-data/src/metadata/hooks.rs
-        - docs/adr/0049-cow-shed-account-abstraction-proxy.md
+        - crates/signing/src/eip1271
+        - parity/fixtures/cow_shed
+      upstreams:
+        - https://github.com/cowdao-grants/cow-shed
+  - audit: docs/audit/credential-redaction-audit.md
+    owning_surface: cross-cutting credential redaction
+    refresh_triggers:
+      paths:
+        - crates/core/src/redaction
+        - crates/core/src/config/hosts.rs
+        - crates/js/src/exports/errors.rs
+  - audit: docs/audit/dependency-gate-audit.md
+    owning_surface: release-facing dependency-audit gate
+    refresh_triggers:
+      paths:
+        - .github/config/deny.toml
+        - xtask/src/policy/dependency_invariant.rs
+        - Cargo.lock
   - audit: docs/audit/deployment-registry-audit.md
-    owning_surface: deployment registry and chain taxonomy
+    owning_surface: cow-sdk-contracts Registry deployment authority
     refresh_triggers:
       paths:
         - crates/contracts/src/deployments.rs
+        - crates/core/src/config/chains.rs
         - parity/source-lock.yaml
+  - audit: docs/audit/ecdsa-signature-normalization-audit.md
+    owning_surface: RecoverableSignature and ECDSA address recovery
+    refresh_triggers:
+      paths:
+        - crates/contracts/src/signature.rs
+        - crates/contracts/src/errors.rs
+        - crates/signing/src/order_signing.rs
+  - audit: docs/audit/eip1271-verification-cache-audit.md
+    owning_surface: the Eip1271Cache trait, NoopEip1271Cache, and the wasm EIP-1271 payload parity
+    refresh_triggers:
+      paths:
+        - crates/contracts/src/verify.rs
+        - crates/signing/src/cache.rs
+        - crates/js/src/exports/eip1271.rs
+  - audit: docs/audit/error-classification-audit.md
+    owning_surface: the class(), is_retryable(), and backoff_hint() accessors and the shared ErrorClass
+    refresh_triggers:
+      paths:
+        - crates/core/src/errors.rs
+        - crates/orderbook/src/error.rs
+        - crates/trading/src/error.rs
+        - crates/sdk/src/lib.rs
+  - audit: docs/audit/event-log-decoding-audit.md
+    owning_surface: contracts on-chain event-log decoders
+    refresh_triggers:
+      paths:
+        - crates/contracts/src/onchain_orders.rs
+        - crates/contracts/src/settlement.rs
+        - crates/contracts/src/eth_flow.rs
+  - audit: docs/audit/fuzz-coverage-audit.md
+    owning_surface: the cow-sdk-fuzz crate and its cargo-fuzz targets
+    refresh_triggers:
+      paths:
+        - fuzz
+        - .github/workflows/fuzz.yml
+        - .github/workflows/_quality-gate.yml
+  - audit: docs/audit/http-transport-contract-audit.md
+    owning_surface: the HttpTransport trait, its adapters, and the shared transport policy
+    refresh_triggers:
+      paths:
+        - crates/core/src/transport
+        - crates/orderbook/src/api.rs
+        - crates/subgraph/src/api.rs
+  - audit: docs/audit/panic-free-public-surface-audit.md
+    owning_surface: public runtime surface under crates/*/src reachable from published crates
+    refresh_triggers:
+      paths:
+        - .github/config/panic-allowlist.yaml
+        - xtask/src/policy/check_panic_allowlist.rs
+        - crates
+  - audit: docs/audit/source-lock-provenance-audit.md
+    owning_surface: source-lock provenance pins and the release preflight that validates them
+    refresh_triggers:
+      paths:
+        - parity/source-lock.yaml
+        - parity/fixtures
+      upstreams:
+        - https://github.com/cowdao-grants/cow-shed
+  - audit: docs/audit/trading-order-integrity-audit.md
+    owning_surface: cow-sdk-trading order assembly, bounds validation, app-data merge, and EthFlow owner threading
+    refresh_triggers:
+      paths:
+        - crates/trading/src/validation.rs
+        - crates/trading/src/app_data.rs
+        - crates/trading/src/onchain.rs
+        - crates/trading/src/post.rs
+  - audit: docs/audit/wasm-surface-audit.md
+    owning_surface: cow-sdk-js JavaScript and TypeScript crate, npm package, and runtime boundary
+    refresh_triggers:
+      paths:
+        - crates/js/src
+        - crates/sdk/src/lib.rs
+  - audit: docs/audit/workflow-security-audit.md
+    owning_surface: GitHub Actions workflow security posture
+    refresh_triggers:
+      paths:
+        - .github/workflows
+        - xtask/src/policy/check_workflow_security.rs

@@ -1,12 +1,18 @@
-# ADR 0010: Runtime-Neutral Async And Transport Posture
+---
+type: Decision Record
+id: ADR-0010
+title: "ADR 0010: Runtime-Neutral Async And Transport Posture"
+description: "The public async surface stays runtime-neutral."
+status: Accepted
+date: 2026-04-17
+last_reviewed: 2026-06-15
+authors: ["0xSymbiotic"]
+tags: [async, cancellation, transport, observability, error-model]
+related: [ADR-0005, ADR-0006, ADR-0013, ADR-0039, ADR-0040]
+timestamp: 2026-06-15T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-04-17
-- Last reviewed: 2026-06-15
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: async, cancellation, transport, observability, error-model
-- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md), [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), [ADR 0040](0040-wallet-provider-callback-boundary-for-js-consumers.md)
-- Superseded in part by: [ADR 0013](0013-http-transport-injection-and-typestate-builders.md)
+# ADR 0010: Runtime-Neutral Async And Transport Posture
 
 ## Decision
 
@@ -78,11 +84,11 @@ to compose and review.
 
 ## Links
 
-- [Architecture](../architecture.md)
-- [Transport](../transport.md)
-- [Observability](../observability.md)
-- [Performance](../performance.md)
-- [Verification Guide](../verification.md)
+- [Architecture](../guides/architecture.md)
+- [Transport](../guides/transport.md)
+- [Observability](../guides/observability.md)
+- [Performance](../guides/performance.md)
+- [Verification Guide](../guides/verification.md)
 - [ADR 0013](0013-http-transport-injection-and-typestate-builders.md)
 - See also: ADR 0024, ADR 0030, ADR 0039, ADR 0040, and ADR 0041.
 

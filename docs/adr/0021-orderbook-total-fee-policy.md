@@ -1,11 +1,18 @@
-# ADR 0021: Narrow `Order.total_fee` And Read-Only Legacy Executed-Fee Surface
+---
+type: Decision Record
+id: ADR-0021
+title: "ADR 0021: Narrow Order.total_fee And Read-Only Legacy Executed-Fee Surface"
+description: "_Amended 2026-06-22: executed_fee is a typed Amount (serde-validated at the DTO boundary), so the calculate_total_fee wire-string normalizer was redundant and has been removed; transform_order now sets total_fee from the typed executed_fee..."
+status: Accepted
+date: 2026-04-22
+last_reviewed: 2026-05-22
+authors: ["0xSymbiotic"]
+tags: [orderbook, dto, fees, legacy-fields, semver]
+related: [ADR-0005, ADR-0013, ADR-0017, ADR-0052]
+timestamp: 2026-05-22T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-04-22
-- Last reviewed: 2026-05-22
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: orderbook, dto, fees, legacy-fields, semver
-- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), [ADR 0017](0017-typed-orderbook-rejection-parser.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+# ADR 0021: Narrow `Order.total_fee` And Read-Only Legacy Executed-Fee Surface
 
 ## Decision
 
@@ -102,8 +109,8 @@ order-level fees on submission.
 
 ## Links
 
-- [Architecture](../architecture.md)
-- [Parity Matrix](../parity.md)
+- [Architecture](../guides/architecture.md)
+- [Parity Matrix](../guides/parity.md)
 - [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
 - [ADR 0013](0013-http-transport-injection-and-typestate-builders.md)
 - [ADR 0017](0017-typed-orderbook-rejection-parser.md)

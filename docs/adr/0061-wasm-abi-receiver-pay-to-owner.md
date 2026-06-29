@@ -1,11 +1,18 @@
-# ADR 0061: WASM order receiver omission resolves to the pay-to-owner sentinel
+---
+type: Decision Record
+id: ADR-0061
+title: "ADR 0061: WASM order receiver omission resolves to the pay-to-owner sentinel"
+description: "At the WASM order boundary, an omitted receiver and an explicit zero-address receiver are not distinguished."
+status: Accepted
+date: 2026-05-31
+last_reviewed: 2026-05-31
+authors: ["0xSymbiotic"]
+tags: [wasm, abi, order-construction, receiver]
+related: [ADR-0020, ADR-0059, ADR-0039]
+timestamp: 2026-05-31T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-05-31
-- Last reviewed: 2026-05-31
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: wasm, abi, order-construction, receiver
-- Related: [ADR 0020](0020-ethflow-owner-threading.md), [ADR 0059](0059-hash-concrete-orderdata-directly.md), [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md)
+# ADR 0061: WASM order receiver omission resolves to the pay-to-owner sentinel
 
 ## Decision
 

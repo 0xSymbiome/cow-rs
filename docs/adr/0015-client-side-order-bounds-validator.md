@@ -1,11 +1,18 @@
-# ADR 0015: Typed Client-Side Order-Bounds Validator On Every Trading Submission Seam
+---
+type: Decision Record
+id: ADR-0015
+title: "ADR 0015: Typed Client-Side Order-Bounds Validator On Every Trading Submission Seam"
+description: "Every public trading submission seam in cow-sdk-trading runs the typed OrderBoundsValidator as a mandatory pre-transport step."
+status: Accepted
+date: 2026-04-21
+last_reviewed: 2026-06-11
+authors: ["0xSymbiotic"]
+tags: [trading, validation, client-side, defense-in-depth, error-typing]
+related: [ADR-0005, ADR-0006, ADR-0011, ADR-0052]
+timestamp: 2026-06-11T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-04-21
-- Last reviewed: 2026-06-11
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: trading, validation, client-side, defense-in-depth, error-typing
-- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md), [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+# ADR 0015: Typed Client-Side Order-Bounds Validator On Every Trading Submission Seam
 
 ## Decision
 
@@ -110,8 +117,8 @@ deterministic under replay.
 
 ## Links
 
-- [Architecture](../architecture.md)
-- [Verification Guide](../verification.md)
+- [Architecture](../guides/architecture.md)
+- [Verification Guide](../guides/verification.md)
 - [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
 - [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
 - [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md)

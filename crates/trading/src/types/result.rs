@@ -13,9 +13,7 @@ use cow_sdk_core::{
     Address, Amount, AppDataHash, CowEnv, OrderData, OrderUid, QuoteAmountsAndCosts,
     SupportedChainId, TransactionHash, TypedDataEnvelope,
 };
-use cow_sdk_orderbook::{
-    OrderQuoteResponse, OrderbookClient, OrderbookBinding, SigningScheme,
-};
+use cow_sdk_orderbook::{OrderQuoteResponse, OrderbookBinding, OrderbookClient, SigningScheme};
 
 use super::params::TradeParams;
 use crate::{OrderbookContextValue, TradingError};

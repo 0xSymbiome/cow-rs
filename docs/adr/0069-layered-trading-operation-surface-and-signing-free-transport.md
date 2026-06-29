@@ -1,10 +1,17 @@
-# ADR 0069: Layered Trading Operation Surface With Signing-Free Transport Crates
+---
+type: Decision Record
+id: ADR-0069
+title: "ADR 0069: Layered Trading Operation Surface With Signing-Free Transport Crates"
+description: "High-level trading operations are offered at complementary layers, and the fluent order-lifecycle builder lives in the orchestration crate rather than in a transport crate."
+status: Accepted
+date: 2026-06-14
+authors: ["0xSymbiotic"]
+tags: [trading, orderbook, package-boundary, public-surface]
+related: [ADR-0002, ADR-0013, ADR-0001]
+timestamp: 2026-06-14T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-06-14
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: trading, orderbook, package-boundary, public-surface
-- Related: [ADR 0002](0002-dedicated-trading-orchestration-crate.md), [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md)
+# ADR 0069: Layered Trading Operation Surface With Signing-Free Transport Crates
 
 ## Decision
 
@@ -79,7 +86,7 @@ reached through whichever entry fits the caller.
 
 ## Links
 
-- [Architecture](../architecture.md)
+- [Architecture](../guides/architecture.md)
 - [ADR 0002](0002-dedicated-trading-orchestration-crate.md)
 - [ADR 0013](0013-http-transport-injection-and-typestate-builders.md)
 - [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md)

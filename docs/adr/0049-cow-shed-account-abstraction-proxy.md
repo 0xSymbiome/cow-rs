@@ -1,11 +1,18 @@
-# ADR 0049: COW Shed Account-Abstraction Proxy
+---
+type: Decision Record
+id: ADR-0049
+title: "ADR 0049: COW Shed Account-Abstraction Proxy"
+description: "The COW Shed surface ships as the cow_sdk_contracts::cow_shed module, gated behind the off-by-default cow-shed feature of cow-sdk-contracts and exposed through the facade-level cow-shed feature as cow_sdk::cow_shed."
+status: Accepted
+date: 2026-05-15
+last_reviewed: 2026-06-15
+authors: ["0xSymbiotic"]
+tags: [cow-shed, account-abstraction, version-forwarding, proxy-derivation]
+related: [ADR-0001, ADR-0012, ADR-0022, ADR-0050, ADR-0051, ADR-0052]
+timestamp: 2026-06-15T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-05-15
-- Last reviewed: 2026-06-15
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: cow-shed, account-abstraction, version-forwarding, proxy-derivation
-- Related: [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md), [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md), [ADR 0022](0022-ecdsa-signature-v-normalization.md), [ADR 0050](0050-eip1271-signature-blob-encoding.md), [ADR 0051](0051-signing-owned-eip1271-signature-provider-trait.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+# ADR 0049: COW Shed Account-Abstraction Proxy
 
 ## Context
 
@@ -133,8 +140,8 @@ edge against `cow-sdk-trading` keeps cow-shed an additive peer leaf per ADR 0001
 
 ## Links
 
-- [Architecture](../architecture.md)
-- [Principles](../principles.md)
+- [Architecture](../guides/architecture.md)
+- [Principles](../principles/index.md)
 - [ADR 0022](0022-ecdsa-signature-v-normalization.md)
 - [ADR 0050](0050-eip1271-signature-blob-encoding.md)
 - [ADR 0051](0051-signing-owned-eip1271-signature-provider-trait.md)

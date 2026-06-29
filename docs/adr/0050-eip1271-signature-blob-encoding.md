@@ -1,26 +1,18 @@
+---
+type: Decision Record
+id: ADR-0050
+title: "ADR 0050: EIP-1271 Signature Blob Encoding"
+description: "The SDK recognizes exactly two EIP-1271 payload shapes and produces them through two distinct encoder entry points."
+status: Accepted
+date: 2026-05-15
+last_reviewed: 2026-06-15
+authors: ["0xSymbiotic"]
+tags: [eip-1271, signature-encoding, composable, safe-muxer, erc1271-forwarder]
+related: [ADR-0014, ADR-0048, ADR-0049, ADR-0051, ADR-0052]
+timestamp: 2026-06-15T00:00:00Z
+---
+
 # ADR 0050: EIP-1271 Signature Blob Encoding
-
-- Status: Accepted
-- Date: 2026-05-15
-- Last reviewed: 2026-06-15
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: eip-1271, signature-encoding, composable, safe-muxer, erc1271-forwarder
-- Related: [ADR 0014](0014-eip1271-verification-cache.md), [ADR 0048](0048-composable-conditional-order-framework.md), [ADR 0049](0049-cow-shed-account-abstraction-proxy.md), [ADR 0051](0051-signing-owned-eip1271-signature-provider-trait.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
-
-> **Partially shipped.** Shape B (the raw `ERC1271Forwarder`
-> `abi.encode(order, payload)` layout) ships today in `cow_sdk_signing::eip1271`
-> (`OrderAndSignature` + `SolValue::abi_encode_sequence`, consumed by
-> `eip1271_signature_payload`). The composable TWAP capability ships as the
-> off-by-default `composable` feature-module of `cow-sdk-contracts` (ADR 0048),
-> proven by in-crate contract tests against the source-locked commit — there is
-> no separate `cow-sdk-composable` crate. Shape A (the selector-prefixed
-> Safe-muxer encoder) is **not shipped**: the watch tower produces the composable
-> EIP-1271 signature blob through `getTradeableOrderWithSignature`, so this SDK
-> never encodes it, and the `parity/fixtures/composable/*` vectors below describe
-> that still-unshipped Shape-A plan. The live guard for the no-shape-flag rule is
-> the `eip1271-shape-flag` fence in `xtask/src/policy/fences.rs`. Present-tense
-> claims about Shape A below describe the watch tower's encoding, not shipped SDK
-> code.
 
 ## Context
 
@@ -172,7 +164,7 @@ fixture parity assertions catch any future whitespace creep.
 
 ## Links
 
-- [Architecture](../architecture.md)
+- [Architecture](../guides/architecture.md)
 - [ADR 0014](0014-eip1271-verification-cache.md)
 - [ADR 0048](0048-composable-conditional-order-framework.md)
 - [ADR 0049](0049-cow-shed-account-abstraction-proxy.md)

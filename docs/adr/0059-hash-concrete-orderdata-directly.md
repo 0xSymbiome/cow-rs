@@ -1,11 +1,18 @@
-# ADR 0059: Hash The Concrete OrderData Directly And Remove The Contracts-Layer Order Type
+---
+type: Decision Record
+id: ADR-0059
+title: "ADR 0059: Hash The Concrete OrderData Directly And Remove The Contracts-Layer Order Type"
+description: "EIP-712 order hashing and UID derivation operate directly on the concrete cow_sdk_core::OrderData."
+status: Accepted
+date: 2026-05-30
+last_reviewed: 2026-05-30
+authors: ["0xSymbiotic"]
+tags: [contracts, core, hashing, dto, surface]
+related: [ADR-0005, ADR-0016, ADR-0052]
+timestamp: 2026-05-30T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-05-30
-- Last reviewed: 2026-05-30
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: contracts, core, hashing, dto, surface
-- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0016](0016-split-sell-and-buy-token-balance-enums.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+# ADR 0059: Hash The Concrete OrderData Directly And Remove The Contracts-Layer Order Type
 
 ## Decision
 
@@ -71,5 +78,5 @@ for a reviewer to audit against the protocol type hash.
 ## Links
 
 - [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
-- [Architecture](../architecture.md)
-- `PROP-CON-006` and `PROP-CON-023` in [PROPERTIES.md](../../PROPERTIES.md)
+- [Architecture](../guides/architecture.md)
+- `PROP-CON-006` and `PROP-CON-023` in [the property registry](../properties/index.md)

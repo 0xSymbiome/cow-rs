@@ -1,12 +1,17 @@
-# ADR 0033: Minimum-Viable Panic Surface
+---
+type: Decision Record
+id: ADR-0033
+title: "ADR 0033: Minimum-Viable Panic Surface"
+description: "Production code in shipped crates does not contain unwrap/expect/panic!/unreachable!/todo!/unimplemented!"
+status: Accepted
+date: 2026-04-29
+last_reviewed: 2026-04-29
+authors: ["0xSymbiotic"]
+tags: [panic, safety, public-api, audit]
+timestamp: 2026-04-29T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-04-29
-- Last reviewed: 2026-04-29
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: panic, safety, public-api, audit
-- Anchors: Minimum-Viable Panic Surface (primary)
-- Related: none
+# ADR 0033: Minimum-Viable Panic Surface
 
 ## Decision
 
@@ -61,7 +66,7 @@ Minimum-Viable Panic Surface principle.
 
 ## Links
 
-- [Principles](../principles.md)
+- [Principles](../principles/index.md)
 - [Panic-Free Public Surface Audit](../audit/panic-free-public-surface-audit.md)
 - `.github/config/panic-allowlist.yaml`
 

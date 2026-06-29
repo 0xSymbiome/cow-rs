@@ -1,11 +1,18 @@
-# ADR 0044: Ship Feature-Scoped WASM Flavor Builds From One Package
+---
+type: Decision Record
+id: ADR-0044
+title: "ADR 0044: Ship Feature-Scoped WASM Flavor Builds From One Package"
+description: "cow-sdk-js ships as one Cargo crate and one npm package with multiple feature-scoped flavor builds."
+status: Accepted
+date: 2026-05-11
+last_reviewed: 2026-06-19
+authors: ["0xSymbiotic"]
+tags: [wasm, npm, bundle-size, package-flavors]
+related: [ADR-0039, ADR-0047]
+timestamp: 2026-06-19T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-05-11
-- Last reviewed: 2026-06-19
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: wasm, npm, bundle-size, package-flavors
-- Related: [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), ADR 0047 (superseded)
+# ADR 0044: Ship Feature-Scoped WASM Flavor Builds From One Package
 
 ## Decision
 

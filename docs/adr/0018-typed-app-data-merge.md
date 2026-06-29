@@ -1,11 +1,18 @@
-# ADR 0018: Typed App-Data Merge As The Single Canonical Quote-To-Post Edit Path
+---
+type: Decision Record
+id: ADR-0018
+title: "ADR 0018: Typed App-Data Merge As The Single Canonical Quote-To-Post Edit Path"
+description: "Quote-to-post app-data edits in cow-sdk-trading run through a single typed merge pipeline: the base wire document is parsed back into cow_sdk_app_data::AppDataParams through the crate's Deserialize impl, the override merges through merge_ap..."
+status: Accepted
+date: 2026-04-22
+last_reviewed: 2026-05-22
+authors: ["0xSymbiotic"]
+tags: [trading, app-data, metadata, validation, typed-boundaries]
+related: [ADR-0005, ADR-0011, ADR-0015, ADR-0052]
+timestamp: 2026-05-22T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-04-22
-- Last reviewed: 2026-05-22
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: trading, app-data, metadata, validation, typed-boundaries
-- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md), [ADR 0015](0015-client-side-order-bounds-validator.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+# ADR 0018: Typed App-Data Merge As The Single Canonical Quote-To-Post Edit Path
 
 ## Decision
 
@@ -120,9 +127,9 @@ the three defects unreachable without reintroducing an opaque
 
 ## Links
 
-- [Architecture](../architecture.md)
-- [Parity Matrix](../parity.md)
-- [Verification Guide](../verification.md)
+- [Architecture](../guides/architecture.md)
+- [Parity Matrix](../guides/parity.md)
+- [Verification Guide](../guides/verification.md)
 - [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
 - [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md)
 - [ADR 0015](0015-client-side-order-bounds-validator.md)

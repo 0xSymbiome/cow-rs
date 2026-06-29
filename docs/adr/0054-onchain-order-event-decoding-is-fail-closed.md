@@ -1,11 +1,18 @@
-# ADR 0054: On-Chain Event Decoding Is Fail-Closed And Provider-Free
+---
+type: Decision Record
+id: ADR-0054
+title: "ADR 0054: On-Chain Event Decoding Is Fail-Closed And Provider-Free"
+description: "The CoWSwapOnchainOrders event decoder in cow-sdk-contracts decodes OrderPlacement and OrderInvalidation logs through alloy::sol!-generated event types and is fail-closed."
+status: Accepted
+date: 2026-05-28
+last_reviewed: 2026-05-28
+authors: ["0xSymbiotic"]
+tags: [contracts, bindings, events, decoding, defense-in-depth]
+related: [ADR-0012, ADR-0020, ADR-0052]
+timestamp: 2026-05-28T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-05-28
-- Last reviewed: 2026-05-28
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: contracts, bindings, events, decoding, defense-in-depth
-- Related: [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md), [ADR 0020](0020-ethflow-owner-threading.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+# ADR 0054: On-Chain Event Decoding Is Fail-Closed And Provider-Free
 
 ## Decision
 
@@ -77,8 +84,8 @@ settlement contract derives.
 
 - [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md)
 - [ADR 0020](0020-ethflow-owner-threading.md)
-- [Architecture](../architecture.md)
-- [Parity Matrix](../parity.md)
+- [Architecture](../guides/architecture.md)
+- [Parity Matrix](../guides/parity.md)
 
 **Proven by:**
 

@@ -11,11 +11,11 @@ use crate::types::{
     validate_orderbook_env_context,
 };
 use crate::{
-    DEFAULT_QUOTE_VALIDITY, OrderbookClient, OrderbookBinding, QuoteRequestOverride,
-    QuoteResults, QuoterParams, TradeAdvancedSettings, TradeParams, TraderParams,
-    TradingAppDataInfo, TradingError, adjust_eth_flow_trade_params,
-    calculate_quote_amounts_and_costs, default_slippage_bps, is_eth_flow_order, order_to_sign,
-    partner_fee_bps, resolve_slippage_suggestion, sanitize_protocol_fee_bps,
+    DEFAULT_QUOTE_VALIDITY, OrderbookBinding, OrderbookClient, QuoteRequestOverride, QuoteResults,
+    QuoterParams, TradeAdvancedSettings, TradeParams, TraderParams, TradingAppDataInfo,
+    TradingError, adjust_eth_flow_trade_params, calculate_quote_amounts_and_costs,
+    default_slippage_bps, is_eth_flow_order, order_to_sign, partner_fee_bps,
+    resolve_slippage_suggestion, sanitize_protocol_fee_bps,
 };
 
 /// Builds a quote and signing payload without requiring a signer.

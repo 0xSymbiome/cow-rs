@@ -1,32 +1,18 @@
+---
+type: Decision Record
+id: ADR-0058
+title: "ADR 0058: Typed Quote Request/Response Surface"
+description: "The quote surface follows the source-lock-pinned orderbook OpenAPI as its authority, consistent with ADR 0031."
+status: Accepted
+date: 2026-05-29
+last_reviewed: 2026-06-12
+authors: ["0xSymbiotic"]
+tags: [orderbook, trading, quote, dto, openapi, compatibility]
+related: [ADR-0031, ADR-0021, ADR-0015, ADR-0017, ADR-0011]
+timestamp: 2026-06-12T00:00:00Z
+---
+
 # ADR 0058: Typed Quote Request/Response Surface
-
-- Status: Accepted
-- Date: 2026-05-29
-- Last reviewed: 2026-06-12
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: orderbook, trading, quote, dto, openapi, compatibility
-- Anchors: Forward-Compatible Public Surfaces (primary)
-
-> **Revision (2026-06-11):** the original decision did not bind the quote
-> response to the request, on the premise that the client-side bounds validator
-> was the defensive layer. On re-review that premise was found incomplete — the
-> bounds validator checks order well-formedness, not agreement with the caller's
-> intent, and has no access to the request — so a coherent response that altered
-> the fixed amount leg or the balance sources reached a signable order
-> unchecked. This ADR now binds the request-determined fields of the response
-> (the variable price leg stays free); the superseded clauses are marked inline.
->
-> **Revision (2026-06-12):** the receiver and app-data echo checks were
-> tightened to close two residual gaps. The receiver is reconciled as the
-> *effective* receiver — an unset or zero receiver resolves to the owner — so a
-> response that fabricates a receiver for a request that pinned none now fails
-> closed; the check previously ran only when both sides carried a receiver. The
-> app-data hash is reconciled for *every* request form (an explicit pin, the
-> keccak digest of a full document, or the zero hash for an omitted pair), not
-> only when the request pinned a hash. Both expected values are
-> request-derivable and equal what the orderbook itself returns, so the
-> tightening adds no false positives.
-- Related: [ADR 0031](0031-wire-dto-openapi-driven-with-order-auction-order-split.md), [ADR 0021](0021-orderbook-total-fee-policy.md), [ADR 0015](0015-client-side-order-bounds-validator.md), [ADR 0017](0017-typed-orderbook-rejection-parser.md), [ADR 0011](0011-typed-amount-boundary-and-typestate-ready-state-construction.md)
 
 ## Decision
 
@@ -186,8 +172,8 @@ the quote surface.
 
 ## Links
 
-- [Principles](../principles.md)
-- [Parity Matrix](../parity.md)
+- [Principles](../principles/index.md)
+- [Parity Matrix](../guides/parity.md)
 - `parity/openapi/coverage.yaml`
 
 **Proven by:**

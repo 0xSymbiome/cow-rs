@@ -1,12 +1,18 @@
-# ADR 0031: Wire DTOs Follow OpenAPI; The Order/AuctionOrder Split Collapsed To One Order Type
+---
+type: Decision Record
+id: ADR-0031
+title: "ADR 0031: Wire DTOs Follow OpenAPI; The Order/AuctionOrder Split Collapsed To One Order Type"
+description: "Public wire DTOs in response position never use #[serde(deny_unknown_fields)]."
+status: Accepted
+date: 2026-04-29
+last_reviewed: 2026-05-30
+authors: ["0xSymbiotic"]
+tags: [orderbook, dto, openapi, compatibility]
+related: [ADR-0017, ADR-0027, ADR-0058]
+timestamp: 2026-05-30T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-04-29
-- Last reviewed: 2026-05-30
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: orderbook, dto, openapi, compatibility
-- Anchors: Forward-Compatible Public Surfaces (primary)
-- Related: [ADR 0017](0017-typed-orderbook-rejection-parser.md), [ADR 0027](0027-post-quantum-signing-absorption-plan.md), [ADR 0058](0058-typed-quote-request-response-surface.md)
+# ADR 0031: Wire DTOs Follow OpenAPI; The Order/AuctionOrder Split Collapsed To One Order Type
 
 ## Decision
 

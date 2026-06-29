@@ -1,11 +1,18 @@
-# ADR 0026: Bound Alloy Major Releases Behind SDK Types And A Configurable Canary Lane
+---
+type: Decision Record
+id: ADR-0026
+title: "ADR 0026: Bound Alloy Major Releases Behind SDK Types And A Configurable Canary Lane"
+description: "Alloy major releases are absorbed at repository-controlled boundaries, not at the published SDK facade."
+status: Accepted
+date: 2026-04-27
+last_reviewed: 2026-06-15
+authors: ["0xSymbiotic"]
+tags: [alloy, dependencies, provider, compatibility, ci]
+related: [ADR-0012, ADR-0024, ADR-0052]
+timestamp: 2026-06-15T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-04-27
-- Last reviewed: 2026-06-15
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: alloy, dependencies, provider, compatibility, ci
-- Related: [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+# ADR 0026: Bound Alloy Major Releases Behind SDK Types And A Configurable Canary Lane
 
 ## Decision
 
@@ -81,11 +88,11 @@ Future rows record exact resolved versions, not caret ranges.
 
 ## Links
 
-- [Alloy Major-Release Absorption Runbook](../alloy-major-release-runbook.md)
-- [Architecture](../architecture.md)
+- [Alloy Major-Release Absorption Runbook](../guides/alloy-major-release-runbook.md)
+- [Architecture](../guides/architecture.md)
 - [Adapting alloy providers](../providers/adapting-alloy.md)
-- [Parity scope source lock](../parity.md#source-lock)
-- [Verification matrix workspace gates](../verification.md#workspace-gates)
+- [Parity scope source lock](../guides/parity.md#source-lock)
+- [Verification matrix workspace gates](../guides/verification.md#workspace-gates)
 - [Alloy release-candidate workflow](../../.github/workflows/alloy-release-candidate.yml)
 
 **Proven by:**

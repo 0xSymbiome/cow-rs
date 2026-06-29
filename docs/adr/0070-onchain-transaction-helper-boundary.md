@@ -1,10 +1,17 @@
-# ADR 0070: On-Chain Transaction Helper Boundary And Native-Asset Wrapping
+---
+type: Decision Record
+id: ADR-0070
+title: "ADR 0070: On-Chain Transaction Helper Boundary And Native-Asset Wrapping"
+description: "_Amended 2026-06-22: cow-sdk-contracts owns the complete gas-free on-chain transaction builders — approve_transaction, pre_sign_transaction, invalidate_order_transaction, ethflow_create_order_transaction, ethflow_invalidate_order_transactio..."
+status: Accepted
+date: 2026-06-19
+authors: ["0xSymbiotic"]
+tags: [trading, contracts, public-surface, scope]
+related: [ADR-0002, ADR-0012, ADR-0069]
+timestamp: 2026-06-19T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-06-19
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: trading, contracts, public-surface, scope
-- Related: [ADR 0002](0002-dedicated-trading-orchestration-crate.md), [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md), [ADR 0069](0069-layered-trading-operation-surface-and-signing-free-transport.md)
+# ADR 0070: On-Chain Transaction Helper Boundary And Native-Asset Wrapping
 
 ## Decision
 
@@ -113,7 +120,7 @@ integrations. It belongs at the on-chain helper boundary, not re-derived beneath
 
 ## Links
 
-- [Architecture](../architecture.md)
+- [Architecture](../guides/architecture.md)
 - [ADR 0002](0002-dedicated-trading-orchestration-crate.md)
 - [ADR 0012](0012-alloy-sol-bindings-and-registry-authority.md)
 - [ADR 0069](0069-layered-trading-operation-surface-and-signing-free-transport.md)

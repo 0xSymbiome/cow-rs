@@ -4,7 +4,7 @@
 //! Every instrumented export emits one span carrying a stable
 //! `wasm.<area>.<method>` endpoint label. This contract exercises a
 //! representative IPFS read export; the full endpoint scheme is documented in
-//! `docs/observability.md`.
+//! `docs/guides/observability.md`.
 
 mod common;
 

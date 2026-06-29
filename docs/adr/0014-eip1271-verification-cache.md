@@ -1,11 +1,18 @@
-# ADR 0014: Pluggable EIP-1271 Verification Cache With Conservative Caching Semantics
+---
+type: Decision Record
+id: ADR-0014
+title: "ADR 0014: Pluggable EIP-1271 Verification Cache With Conservative Caching Semantics"
+description: "EIP-1271 signature verification threads an Eip1271Cache trait through verify_eip1271_signature_cached, which takes the cache as a **required** parameter — it never silently memoizes without a caller-supplied cache."
+status: Accepted
+date: 2026-04-21
+last_reviewed: 2026-06-24
+authors: ["0xSymbiotic"]
+tags: [signing, eip1271, caching, security]
+related: [ADR-0005, ADR-0006, ADR-0052]
+timestamp: 2026-06-24T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-04-21
-- Last reviewed: 2026-06-24
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: signing, eip1271, caching, security
-- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+# ADR 0014: Pluggable EIP-1271 Verification Cache With Conservative Caching Semantics
 
 ## Decision
 
@@ -119,8 +126,8 @@ on contracts, never the reverse).
 
 ## Links
 
-- [Architecture](../architecture.md)
-- [Verification](../verification.md)
+- [Architecture](../guides/architecture.md)
+- [Verification](../guides/verification.md)
 - [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
 - [ADR 0006](0006-explicit-policy-contracts-and-instance-scoped-runtime-state.md)
 

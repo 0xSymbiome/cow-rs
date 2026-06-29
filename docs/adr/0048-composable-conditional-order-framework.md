@@ -1,23 +1,18 @@
+---
+type: Decision Record
+id: ADR-0048
+title: "ADR 0048: Composable Conditional Order Framework"
+description: "Composable ships as the off-by-default composable feature on cow-sdk-contracts, surfaced under cow_sdk_contracts::composable and re-exported through the cow-sdk facade's composable feature."
+status: Accepted (TWAP shipped in `cow-sdk-contracts`; broader handler taxonomy deferred)
+date: 2026-05-15
+last_reviewed: 2026-06-26
+authors: ["0xSymbiotic"]
+tags: [composable, conditional-orders, twap, off-chain-orchestration, watch-tower-boundary]
+related: [ADR-0001, ADR-0010, ADR-0024, ADR-0049, ADR-0050, ADR-0052, ADR-0054, ADR-0070]
+timestamp: 2026-06-26T00:00:00Z
+---
+
 # ADR 0048: Composable Conditional Order Framework
-
-- Status: Accepted (TWAP shipped in `cow-sdk-contracts`; broader handler taxonomy deferred)
-- Date: 2026-05-15
-- Last reviewed: 2026-06-26
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: composable, conditional-orders, twap, off-chain-orchestration, watch-tower-boundary
-- Related: [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0049](0049-cow-shed-account-abstraction-proxy.md), [ADR 0050](0050-eip1271-signature-blob-encoding.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md), [ADR 0054](0054-onchain-order-event-decoding-is-fail-closed.md), [ADR 0070](0070-onchain-transaction-helper-boundary.md)
-
-> **Shipped surface.** The TWAP slice of the composable framework ships as the
-> off-by-default `composable` feature-module in `cow-sdk-contracts`
-> (`cow_sdk_contracts::composable`), re-exported through the `cow-sdk` facade's
-> `composable` feature. It is a pure encoding, hashing, and schedule-classifying
-> surface — no provider, no loop. The WebAssembly component channel
-> ([ADR 0071](0071-wasm-component-distribution-channel.md)) surfaces the
-> single-order path — TWAP create, remove, conditional-order id, and the
-> `timing_at` classifier — through its engine world's `composable` interface; the
-> merkle multiplexer stays native. The broader handler taxonomy and the watcher
-> discovery primitives remain deferred; the sections below mark what is shipped
-> and what is not.
 
 ## Context
 
@@ -191,8 +186,8 @@ no runtime, so the module builds on every target including wasm32.
 
 ## Links
 
-- [Architecture](../architecture.md)
-- [Principles](../principles.md)
+- [Architecture](../guides/architecture.md)
+- [Principles](../principles/index.md)
 - [ADR 0049](0049-cow-shed-account-abstraction-proxy.md)
 - [ADR 0050](0050-eip1271-signature-blob-encoding.md)
 - [ADR 0054](0054-onchain-order-event-decoding-is-fail-closed.md)

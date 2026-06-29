@@ -4,9 +4,14 @@
 # Every accepted ADR is referenced under at least one principle or listed in
 # out_of_scope_adrs with a written rationale.
 #
+# `slug` is the principle's `docs/principles/<slug>.md` filename stem. The
+# check-principles gate uses it to prove a 1:1 file<->map correspondence and to
+# keep each file's `anchored_by` frontmatter and rendered "Anchored by" line in
+# agreement with the primary + supporting ADRs listed here.
+#
 # ADRs 0030-0033 are accepted and covered by the blocking ADR coverage lane.
 #
-# Doctrines: `docs/alloy-doctrine.md` is the canonical human-readable
+# Doctrines: `docs/guides/alloy-doctrine.md` is the canonical human-readable
 # consolidation of the ADRs listed under principles 8 (Chain-RPC Runtime
 # Neutrality) and 9 (Canonical Contract Bindings). The doctrine is
 # read-only over the ADR set; it does not introduce policy. Doctrine
@@ -18,81 +23,97 @@ version: 1
 principles:
   - id: 1
     name: Deterministic Protocol Transforms
+    slug: deterministic-protocol-transforms
     primary_adr: "0012"
     supporting_adrs: ["0011", "0022", "0052"]
 
   - id: 2
     name: Explicit Runtime Boundaries
+    slug: explicit-runtime-boundaries
     primary_adr: "0010"
     supporting_adrs: ["0055"]
 
   - id: 3
     name: Thin Facade, Real Crate Boundaries
+    slug: thin-facade-real-crate-boundaries
     primary_adr: "0001"
     supporting_adrs: ["0002", "0003", "0062", "0063"]
 
   - id: 4
     name: Instance-Scoped Configuration
+    slug: instance-scoped-configuration
     primary_adr: "0006"
     supporting_adrs: []
 
   - id: 5
     name: Strong Typed Public Surfaces
+    slug: strong-typed-public-surfaces
     primary_adr: "0011"
     supporting_adrs: ["0005", "0015", "0016", "0017", "0018", "0021", "0052", "0053", "0059", "0060", "0061", "0064", "0067"]
 
   - id: 6
     name: Additive Optional Ecosystems
+    slug: additive-optional-ecosystems
     primary_adr: "0001"
     supporting_adrs: []
 
   - id: 7
     name: Sole Construction Seam
+    slug: sole-construction-seam
     primary_adr: "0013"
     supporting_adrs: ["0011"]
 
   - id: 8
     name: Chain-RPC Runtime Neutrality
+    slug: chain-rpc-runtime-neutrality
     primary_adr: "0024"
     supporting_adrs: ["0010", "0014", "0028", "0057", "0068"]
 
   - id: 9
     name: Canonical Contract Bindings
+    slug: canonical-contract-bindings
     primary_adr: "0012"
     supporting_adrs: ["0020", "0022", "0052", "0054"]
 
   - id: 10
     name: Evidence-Backed Public Claims
+    slug: evidence-backed-public-claims
     primary_adr: "0026"
     supporting_adrs: ["0025", "0030", "0032", "0052", "0066"]
 
   - id: 11
     name: Forward-Compatible Public Surfaces
+    slug: forward-compatible-public-surfaces
     primary_adr: "0031"
     supporting_adrs: ["0027", "0058"]
 
   - id: 12
     name: Credential Redaction by Construction
+    slug: credential-redaction-by-construction
     primary_adr: "0025"
     supporting_adrs: ["0005", "0010"]
 
   - id: 13
     name: Cooperative Cancellation Coverage
+    slug: cooperative-cancellation-coverage
     primary_adr: "0010"
     supporting_adrs: ["0006"]
 
   - id: 14
     name: Minimum-Viable Panic Surface
+    slug: minimum-viable-panic-surface
     primary_adr: "0033"
     supporting_adrs: []
 
   - id: 15
     name: Layered Operation Surface
+    slug: layered-operation-surface
     primary_adr: "0069"
     supporting_adrs: ["0002", "0013", "0070"]
 
   - id: 16
     name: Off-Chain Orchestration Boundary
+    slug: off-chain-orchestration-boundary
     primary_adr: "0057"
     supporting_adrs: ["0010", "0024", "0049", "0050", "0051"]
 
@@ -108,3 +129,4 @@ out_of_scope_adrs:
   - "0041"  # Transport policy L3 layering is governed by the transport-policy coverage audit.
   - "0044"  # Bundle size profile and flavour builds are governed by the wasm flavour-matrix gate.
   - "0045"  # Async signer trait narrowing is a typed adapter surface detail under the alloy-signer adapter.
+  - "0072"  # Open Knowledge Format documentation adoption is a documentation-format decision governed by the documentation gates (check-principles, check-audit-lane, docs-agree, audit-index, check-property-citations), not a standing engineering principle.

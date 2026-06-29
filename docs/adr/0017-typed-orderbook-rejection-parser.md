@@ -1,11 +1,18 @@
-# ADR 0017: Typed `OrderbookRejection` Parser With Permanent Unknown-Tag Fallback
+---
+type: Decision Record
+id: ADR-0017
+title: "ADR 0017: Typed OrderbookRejection Parser With Permanent Unknown-Tag Fallback"
+description: "Non-2xx orderbook responses classify through a typed OrderbookRejection enum at cow_sdk_orderbook::rejection."
+status: Accepted
+date: 2026-04-21
+last_reviewed: 2026-05-31
+authors: ["0xSymbiotic"]
+tags: [orderbook, errors, rejections, transport, error-typing]
+related: [ADR-0005, ADR-0010, ADR-0013, ADR-0052]
+timestamp: 2026-05-31T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-04-21
-- Last reviewed: 2026-05-31
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: orderbook, errors, rejections, transport, error-typing
-- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0013](0013-http-transport-injection-and-typestate-builders.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+# ADR 0017: Typed `OrderbookRejection` Parser With Permanent Unknown-Tag Fallback
 
 ## Decision
 
@@ -129,8 +136,8 @@ on the happy diagnostic path.
 
 ## Links
 
-- [Architecture](../architecture.md)
-- [Verification Guide](../verification.md)
+- [Architecture](../guides/architecture.md)
+- [Verification Guide](../guides/verification.md)
 - [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
 - [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md)
 - [ADR 0013](0013-http-transport-injection-and-typestate-builders.md)

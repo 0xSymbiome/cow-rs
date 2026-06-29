@@ -1,0 +1,22 @@
+---
+type: Property
+id: subgraph
+title: "Subgraph analytics invariants"
+description: "The `cow-sdk-subgraph` read-only analytics client: typed query and response modeling for the subgraph surface."
+resource: https://github.com/0xSymbiome/cow-rs/blob/main/docs/properties/subgraph.md
+families: [PROP-SBG]
+tags: [property, invariants]
+timestamp: 2026-06-29T00:00:00Z
+---
+
+# Subgraph analytics invariants
+
+The `cow-sdk-subgraph` read-only analytics client: typed query and response modeling for the subgraph surface. Part of the [Properties Registry](index.md): 5 invariant(s), 5 covered.
+
+| Id | Crate | Property | Type | Covered | Evidence | Last reviewed |
+| --- | --- | --- | --- | --- | --- | --- |
+| `PROP-SBG-001` | `cow-sdk-subgraph` | Query requests preserve explicit operation-name handling plus nested variable object and array shape. | Contract | Yes | `crates/subgraph/tests/query_contract.rs::query_request_preserves_nested_variable_objects_and_arrays`, `crates/subgraph/tests/query_contract.rs::multi_operation_document_requires_explicit_operation_name`, `crates/subgraph/tests/query_contract.rs::query_documents_open_response_dto_tolerates_unknown_extra_fields`, `crates/subgraph/tests/query_contract.rs`, `crates/subgraph/tests/api_contract.rs` | 2026-06-20 |
+| `PROP-SBG-002` | `cow-sdk-subgraph` | Typed response decoding accepts equivalent string-or-number scalar forms and fails closed on malformed, non-finite, overflowed, missing, or GraphQL-error-response data. | Contract | Yes | `crates/subgraph/tests/types_contract.rs::subgraph_graphql_error_decodes_the_graph_wire_shape`, `crates/subgraph/tests/types_contract.rs::scalar_decode_rejects_non_finite_floats_and_overflows`, `crates/subgraph/tests/types_contract.rs`, `crates/subgraph/tests/api_contract.rs`, `fuzz/fuzz_targets/fuzz_subgraph_graphql_error_decode.rs` | 2026-06-20 |
+| `PROP-SBG-003` | `cow-sdk-subgraph` | `SubgraphApi::builder()` is the sole production construction path; the typestate encodes the required inputs (chain, API key, transport) at compile time; `trybuild` compile-fail witnesses assert `.build()` is unreachable until the chain id and API key are supplied, and the default-transport `build()` terminal exists on both targets — native `ReqwestTransport`, `wasm32` browser `FetchTransport` (the realm's global `fetch`) — with the policy timeout and response-byte cap applied to either default. Governed by [ADR 0013](../adr/0013-http-transport-injection-and-typestate-builders.md). | Contract | Yes | `crates/subgraph/tests/builder_contract.rs`, `crates/subgraph/tests/ui/build_without_chain.rs`, `crates/subgraph/tests/ui/build_without_api_key.rs`, `crates/subgraph/tests/ui/build_on_empty_builder.rs`, `crates/subgraph/src/builder.rs`, `.github/workflows/wasm.yml` | 2026-06-12 |
+| `PROP-SBG-004` | `cow-sdk-subgraph` | `SubgraphError::Transport` and the build-time `SubgraphError::TransportConfiguration` each carry a typed `TransportErrorClass` alongside redacted transport details, so subgraph callers can classify failures without parsing rendered error text and credential-bearing content stays stripped before display. Governed by [ADR 0013](../adr/0013-http-transport-injection-and-typestate-builders.md). | Contract | Yes | `crates/subgraph/tests/error_contract.rs::transport_variant_carries_typed_class_and_sanitized_detail`, `crates/subgraph/tests/api_contract.rs::transport_failures_surface_typed_context`, `crates/sdk/tests/error_redaction_contract.rs::subgraph_errors_and_contexts_redact_serialized_request_payloads`, `crates/subgraph/src/error.rs` | 2026-05-31 |
+| `PROP-SBG-005` | `cow-sdk-subgraph` | Production routing sends the partner Graph API key only in the request `Authorization: Bearer` header against the key-free gateway URL (`https://gateway.thegraph.com/api/subgraphs/id/<id>`); the request path, the public route-identity map exposed by `SubgraphApi::prod_config`, the `transport.dispatch` span endpoint (which records the request path), and every error context stay key-free. A `base_urls` override dispatches its URL verbatim with no SDK-injected authentication header, and its public route identity is the sanitized origin. Governed by [ADR 0025](../adr/0025-workspace-url-redaction-convention.md). | Contract | Yes | `crates/subgraph/tests/api_contract.rs::recording_transport::production_routing_carries_the_key_in_the_authorization_header_not_the_url`, `crates/subgraph/tests/api_contract.rs::prod_url_map_matches_pinned_supported_and_unsupported_chains`, `crates/subgraph/src/api.rs` | 2026-06-17 |

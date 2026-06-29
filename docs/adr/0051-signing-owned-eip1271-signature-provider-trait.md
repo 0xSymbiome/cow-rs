@@ -1,11 +1,18 @@
-# ADR 0051: Signing-Owned EIP-1271 Signature Provider
+---
+type: Decision Record
+id: ADR-0051
+title: "ADR 0051: Signing-Owned EIP-1271 Signature Provider"
+description: "Eip1271Signer and Eip1271SignatureError live in cow_sdk_signing::eip1271."
+status: Accepted
+date: 2026-05-15
+last_reviewed: 2026-06-15
+authors: ["0xSymbiotic"]
+tags: [eip-1271, signing, trait-ownership, additive-leaf-crates]
+related: [ADR-0001, ADR-0014, ADR-0048, ADR-0050, ADR-0052]
+timestamp: 2026-06-15T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-05-15
-- Last reviewed: 2026-06-15
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: eip-1271, signing, trait-ownership, additive-leaf-crates
-- Related: [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md), [ADR 0014](0014-eip1271-verification-cache.md), [ADR 0048](0048-composable-conditional-order-framework.md), [ADR 0050](0050-eip1271-signature-blob-encoding.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+# ADR 0051: Signing-Owned EIP-1271 Signature Provider
 
 ## Context
 
@@ -123,8 +130,8 @@ guessing among re-export aliases.
 
 ## Links
 
-- [Architecture](../architecture.md)
-- [Principles](../principles.md)
+- [Architecture](../guides/architecture.md)
+- [Principles](../principles/index.md)
 - [ADR 0014](0014-eip1271-verification-cache.md)
 - [ADR 0048](0048-composable-conditional-order-framework.md)
 - [ADR 0050](0050-eip1271-signature-blob-encoding.md)

@@ -1,3 +1,10 @@
+---
+type: Guide
+title: "Adapting Alloy"
+description: "cow-rs ships native Alloy adapters as opt-in crates."
+timestamp: 2026-06-28T00:00:00Z
+---
+
 # Adapting Alloy
 
 `cow-rs` ships native Alloy adapters as opt-in crates. Use them when a

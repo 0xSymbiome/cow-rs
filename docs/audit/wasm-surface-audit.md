@@ -1,376 +1,49 @@
-# WASM Surface Audit
+---
+type: Audit
+id: wasm-surface
+title: "WASM Surface Audit"
+description: "The cow-sdk-js four-layer surface maps to the native crates through uniform transforms, pins its TypeScript contract with committed snapshots, and gates flavor builds on size budgets."
+status: Current
+owning_surface: "cow-sdk-js JavaScript and TypeScript crate, npm package, and runtime boundary"
+related: [ADR-0039, ADR-0040, ADR-0041, ADR-0044, ADR-0045]
+timestamp: 2026-06-26
+---
 
-Status: Current
-Last reviewed: 2026-06-26
-Owning surface: the `cow-sdk-js` JavaScript and TypeScript crate, its npm package layout/exports, the JavaScript callback runtime boundary, DTO/type generation, schema-versioned envelopes, the size-budget gate, unsupported-target diagnostics, and the deterministic browser test runner.
-Refresh trigger: Changes to `crates/js/src/**`, the boundary DTO module or the source-crate `tsify` boundary derives, wasm-pack targets, declaration/facade snapshots, package export maps, callback shapes or registry ownership, the `JsCallbackHttpTransport` contract, transport-policy or error-envelope schema, release-profile size settings or measured budgets, native Alloy adapter `wasm32` guards, or the wasm-pack browser lanes.
-Related docs:
-- [ADR 0039](../adr/0039-typescript-callable-wasm-sdk-surface.md)
-- [ADR 0040](../adr/0040-wallet-provider-callback-boundary-for-js-consumers.md)
-- [ADR 0044](../adr/0044-bundle-size-profile-and-flavor-builds.md)
+# WASM Surface Audit
 
 ## Scope
 
-This audit covers:
+Reviews the `cow-sdk-js` public surface — deterministic helpers, wallet
+callbacks, service clients, and trading — its npm package layout, the callback
+boundary, type generation, the error envelopes, the flavor size budgets, and the
+unsupported-target diagnostics. It does not cover the native Alloy adapters (the
+Alloy Adapters Audit) or the upstream TypeScript SDK.
 
-- the four-layer `cow-sdk-js` public surface (deterministic helpers, wallet
-  callbacks, service clients, trading) and its mapping to the native `cow-rs`
-  crates, including capabilities intentionally not surfaced
-- the JavaScript callback boundary: typed wallet/signer/cancellation/EIP-1271
-  callbacks, the fetch-callback registry, and the `JsCallbackHttpTransport`
-- DTO/type generation through `tsify`, raw and facade declaration snapshots,
-  and schema-versioned success/error envelopes
-- the TypeScript facade as the public contract and its raw-export denylist
-- npm export maps for browser bundlers, Node.js, and Cloudflare Workers
-- flavor builds and the size-budget release gate
-- the unsupported-target diagnostics for native Alloy adapters on `wasm32`
-- the headless Firefox browser test runner
+## Findings
 
-It does not cover npm publication or package-name ownership, live wallet-vendor
-or on-chain verification behavior, service API schema evolution, or third-party
-bundler behavior.
-
-## Outcome Summary
-
-| Area | Reviewed contract | Result |
-| --- | --- | --- |
-| Surface layering | The four layers — deterministic helpers (host-safe in `cow-sdk-js::helpers`), wallet callbacks, service clients, trading — are present and contract-tested; wasm-bindgen exports own JS interop | Conforms |
-| Workflow + capability coverage | The ADR 0039 / `docs/parity.md` workflow set is exposed; every non-surfaced native capability is classified with a rationale | Conforms / Documented |
-| Runtime-model boundary | The wasm32 tree excludes native Alloy adapters, reqwest, and hyper; no Rust signer broadcasts and no provider polls | Conforms |
-| Shape correspondence | Native types/signatures map to the WASM + TS surface through a fixed transform set; divergences beyond it are enumerated | Documented |
-| Wallet/signer callbacks | Typed-data, digest, and custom EIP-1271 callbacks are named, explicit, capability-scoped, and fail closed | Conforms |
-| HTTP callback transport | `JsCallbackHttpTransport` owns timeout, abort signal, internal callback retention, and typed error mapping | Conforms |
-| Event decoding | `decodeSettlementLog` / `decodeEthFlowLog` produce typed events with no network access and fail closed on malformed input | Conforms |
-| Type generation + snapshots | Types crossing the ABI carry a `tsify` boundary derive (native types in their source crate, boundary-only shapes in the wasm `dto` module); one raw snapshot per flavor catches drift and asserts per-target agreement; a facade-coverage contract holds the hand-written facade in step with the raw surface; map fields declare `Record<...>` to match the runtime shape | Conforms |
-| Facade + API stability | Public imports resolve through compiled facade modules; raw wasm-bindgen output is package-internal and denied as a public import target | Conforms |
-| Schema versioning | The success envelope carries `schemaVersion`; thrown errors do not (the error `__unknown` sentinel round-trips its `raw` payload un-versioned); the facade normalizes raw failures to a `CowError` | Conforms |
-| Error posture | The Rust `WasmError` projects to a `CowError` `Error` subclass (`instanceof`, exported `isCowError` / `normalizeError` / `isUserRejection` / `withRetry`) that preserves typed redaction; input-DTO deserialization failures map to `invalidInput`, not `internal`; the `orderbook` variant carries the services `errorType` tag, `retryable`, and optional `retryAfterMs` | Conforms |
-| Performance budget | Flavor builds expose feature-scoped subpaths; release artifacts run the size profile + wasm opt pass; raw/brotli/gzip budgets are recorded and gated, with a dedicated Cloudflare gzip budget | Conforms |
-| Unsupported targets | Native Alloy adapter crates compile to empty crates on `wasm32`; the `cow-sdk` `alloy`/`alloy-provider`/`alloy-signer` facade features fail closed there with a compile-time diagnostic, CI-asserted | Conforms |
-| Browser runner determinism | Browser lanes provision headless Firefox via pinned setup actions (pinned geckodriver, `latest-esr` Firefox); tests use in-test state + serde round trips | Conforms |
-
-## Current Contract
-
-### Surface and package exports
-
-`cow-sdk-js` exposes four layers, sourced from the native crates rather than
-reimplemented:
-
-1. **Deterministic helpers** — domain separator, order typed-data, order-UID,
-   app-data document/info/validation, CID and hash conversion, supported-chain,
-   deployment-address, and wrapped-native-token lookup, EIP-1271 payload
-   encoding, and the
-   provider-free, fail-closed `decodeSettlementLog` / `decodeEthFlowLog`
-   event-log decoders (they reconstruct borrowed log bytes and dispatch to the
-   `cow-sdk-contracts` decoders without network access).
-2. **Wallet-callback signing** — typed-data, digest, EIP-1271, and custom
-   EIP-1271 order signing; cancellation signing; and the pre-sign and
-   cancellation transaction builders.
-3. **Service clients** — `OrderBookClient`, `SubgraphClient`, and `IpfsClient`
-   over default or callback HTTP.
-4. **Trading** — `TradingClient` quote and post flows, including the
-   EIP-1271-backed swap path, the native-currency-sell transaction builder, the
-   vault-relayer approval transaction builder, and the native wrap and unwrap
-   transaction builders.
-
-The package keeps one installable npm package while exposing flavor-specific
-public subpaths (`default`, `orderbook`, `signing`, `trading`). Public
-imports resolve through compiled facade subpaths, never generated `dist/raw`
-paths; the export-map verifier walks string and conditional exports, asserts
-every target exists, and rejects nested wasm-pack metadata in `dist`. Every
-flavor is built for the `bundler`, `nodejs`, `web`, and source-phase `module`
-targets. Each flavor's `node` condition resolves the nodejs CommonJS build; its
-`browser`, `import`, `default`, and edge conditions (`workerd`, `worker`, `deno`,
-`edge-light`, `bun`) and the explicit `…/edge` subpath all resolve the web build,
-whose `new URL(import.meta.url)` loader is portable where the bundler target's
-`import * as wasm` ESM integration is not. Browser callers run `initialize()`
-once; Cloudflare Workers, which cannot compile WebAssembly from bytes at runtime,
-pass the precompiled module from `…/edge/wasm` to `initialize` and use no
-dynamic-compilation or streaming-instantiation APIs. Each flavor's `…/module`
-subpath is the standards-track source-phase build (`import source` / Wasm ESM
-Integration), auto-initializing and opt-in (Node 24, Deno, esbuild today), driven
-through `wasm-bindgen --target module` because wasm-pack does not emit it. No
-flavor is browser-portable while another is bundler-only — `default`, `orderbook`,
-`signing`, and `trading` ship the same target coverage.
-
-### Capability coverage
-
-Native operations map to WASM exports under uniform transforms; the canonical
-inventory is pinned at the declaration level by `wasm_snapshot_surface_contract.rs`
-and exercised behaviorally by `wasm_surface_contract.rs` and
-`wasm_workflow_coverage_contract.rs`. Orderbook reads/writes (`quote`,
-`send_order`, `send_cancellations`, `order(s)`, `trades`, `native_price`,
-`app_data`, `version`, `order_link`, lookup, status/surplus, and the v2
-solver-competition routes) are surfaced. Trading surfaces quote/post/limit/swap
-plus builder-form transactions (`buildPresignTx`, `buildCancelOrderTx`,
-`buildSellNativeCurrencyTx`, `buildSellNativeCurrencyTxFromQuote`,
-`buildApprovalTx`, `buildWrapTx`, `buildUnwrapTx`) and the allowance read,
-completing the read-allowance-then-approve path. The composable TWAP builders
-(`buildTwapCreateTransaction` / `buildTwapRemoveTransaction`) surface in the
-default and trading flavors. `wrappedNativeToken` resolves
-the chain's wrapped-native token (address, symbol, decimals) for native-and-wrapped
-pair detection and display. `buildSellNativeCurrencyTxFromQuote` is the
-native-sell sibling of `postSwapOrderFromQuote`: it derives the EthFlow
-transaction from a `getQuote` result, failing closed when the quote was not a
-native-currency sell. Signing surfaces typed-data,
-digest, EIP-1271, and cancellation signing plus the deterministic
-helpers. App-data, subgraph (totals, daily/hourly volume, arbitrary GraphQL),
-and the consumer-relevant contracts surface (decoders, deployment lookup,
-builder calldata) are surfaced.
-
-Intentionally **not surfaced**, each by stated rationale: (1) managed
-broadcast/receipt flows (`approve_cow_protocol`, `poll_for_receipt`,
-`submit_and_wait_for_receipt`) — `cow-sdk-js` is a callback leaf, the JS host
-owns the wallet, event loop, and provider, and the native Alloy adapters are
-native-only; the upstream TS SDK draws the same line. (2) On-chain EIP-1271
-verification and its caches — outside the defined workflow scope, no upstream
-core-surface analogue. (3) The low-level `contracts` encoding/verification
-surface — internal building-block code on every target.
-
-### Type generation and schema versioning
-
-Types crossing the ABI derive their TS shape via `tsify`. Native types cross the
-boundary directly: each carries its own `tsify::Tsify` derive in its source
-crate, gated to the wasm-bindgen target (`target_arch = "wasm32"`, `target_os =
-"unknown"`), so the derive is inert on native and WASI builds and a single
-definition generates the `.d.ts`. The boundary shapes that have no native
-counterpart — the chain/deployment constructs, the app-data input shape, and the
-per-domain input and projection shapes — live in `crates/js/src/dto/`, outside
-the FFI-bearing `exports` tree, and the `exports` module re-exports them.
-Host-safe helpers in `cow-sdk-js::helpers` compile natively without
-wasm-bindgen, JsValue, or tsify-derived public types. The
-cross-ABI serializer is `serde_wasm_bindgen::Serializer::json_compatible`, which
-emits plain objects for Rust `BTreeMap`/`HashMap` fields, so those fields carry
-an explicit `#[tsify(type = "Record<...>")]` override so the declared shape
-matches the runtime shape. Decoded event DTOs are internally tagged unions
-(serde `tag = "kind"`).
-
-One committed raw declaration per flavor under `crates/js/snapshots/raw/`
-represents the public TypeScript contract. wasm-bindgen emits a byte-identical
-`.d.ts` for the `bundler` and `nodejs` targets of a flavor (the type surface is
-loader-independent; only the JS loader glue and `.wasm` packaging differ), so
-the workflow diffs those targets' generated declarations against the single
-per-flavor snapshot — detecting export drift and asserting the targets agree,
-failing closed on any future per-target divergence. The `web` target adds only
-wasm-bindgen's standard module-init scaffolding (`InitInput`/`InitOutput`/
-`initSync`/the default initializer) and is intentionally skipped; its public
-`initialize` contract is pinned by the facade snapshot instead. Declarations using
-`[Symbol.dispose]` must include the `esnext.disposable` reference. Facade
-snapshots under `crates/js/snapshots/facade/` are checked separately so
-generated implementation classes do not become the published contract.
-
-Success envelopes serialize through `WasmEnvelope<T> = { schemaVersion: "v1" |
-"__unknown"; value: T }`, identifying the JS-visible shape (not the service
-schema). Three deterministic helpers (`domainSeparator`, `supportedChainIds`,
-`wasmVersion`) return bare values. Unknown enum variants round-trip behind a
-scoped `__unknown` sentinel that keeps the raw payload while preventing
-misclassification.
-
-### Callback boundary
-
-The package exposes named, capability-scoped callbacks rather than raw provider
-objects: `TypedDataSignerCallback`, `DigestSignerCallback`,
-`CustomEip1271Callback`, `CowFetchCallback`, and the trading-flavor
-`ContractReadCallback` (the read-only `eth_call` used by the allowance read);
-each receives a typed payload/request DTO and may return a value, Promise, or
-thenable. Each signing/cancellation function requests only the callback it needs.
-When a cow identity newtype (`Address`, `Hash32`, `AppDataHash`, `HexData`,
-`OrderUid`) or the `Amount` newtype crosses the boundary, the runtime ABI shape
-is the canonical lowercase `0x`-hex string (identity) or strict-decimal string
-(`Amount`), via a `Tsify` derive gated to the wasm-bindgen target (ADR 0052).
-The identity newtypes declare the `0x`-prefixed hex template-literal type that
-viem uses for `Address`/`Hex` (the transaction-hash response fields share it),
-so a typed output drops into a viem call without a cast and a misplaced decimal
-`Amount` is rejected at compile time; `Amount` stays a decimal `string`.
-
-Callback registry state is implementation-owned: public TS declarations expose
-no registry classes, ids, or handle constructors. Facade clients retain
-callbacks for the owning client's lifetime, scoped to one wasm module instance,
-and release them on disposal. Per-call options carry `signal` and `timeoutMs`;
-signing options also carry `walletConfig.timeoutMs`. HTTP callback requests
-receive a live `AbortSignal`; abort and timeout paths clean up listeners and
-timer handles. Callback throws, rejects, malformed outputs, timeout overflow,
-and aborts all map to typed errors.
-
-### Facade architecture and API stability
-
-The facade modules under `crates/js/npm/src/**` adapt raw wasm-bindgen output
-into stable TypeScript classes, helpers, and config objects, and are the public
-package contract. Raw binding imports remain behind package-internal adapter
-modules; verification scripts reject public raw export entries and the facade
-denylist, and facade snapshots assert raw wasm-bindgen classes do not leak.
-Facade clients own callback retention and expose explicit `dispose`. Errors
-crossing the facade normalize into `CowError` `Error`-subclass instances with
-redacted, low-cardinality fields; input-DTO deserialization failures at the wasm
-boundary (unknown enum variant, missing required field, wrong field type)
-normalize to `invalidInput`, leaving `internal` for genuine SDK-side faults.
-HTTP-capable constructors accept a single typed config object including
-`TransportPolicyConfig`, translated into the shared Rust policy and rejecting
-invalid values.
-
-### Performance budget
-
-Default, orderbook, signing, and `trading` flavors each have their own facade
-declarations and a raw wasm snapshot. Every flavor is built for the `bundler`,
-`nodejs`, and `web` targets plus the source-phase `module` build; the `bundler`
-and `nodejs` raw builds back the facade ESM and CommonJS entries, while the `web`
-and `module` targets' declarations add only wasm-bindgen's standard target
-scaffolding on top of the bundler surface and so are not snapshotted separately
-(the facade snapshot pins the public `initialize` contract). Each flavor's
-`bundler`, `web`, and `module` targets emit a byte-identical wasm binary, so the
-package ships one binary per flavor; the `…/edge/wasm` Worker module, the web
-glue's default loader URL, and the module glue's `import source` specifier all
-reuse the bundler copy. Release artifacts run through the size-oriented
-release profile and a wasm optimization pass during package generation. The npm
-README records current raw, brotli, gzip, and gate values per flavor. Each
-flavor's gzip budget is an explicit byte budget below Cloudflare's published
-Workers Paid/Bundled (~3 MB) compressed-size limit (safety margin avoids MB/MiB ambiguity). End-to-end Cloudflare support additionally depends on
-`wrangler deploy --dry-run` release-bundle verification and a Worker
-startup-time gate against the 1-second startup limit, tracked separately.
-
-### Unsupported-target diagnostics
-
-Each native Alloy adapter crate (`cow-sdk-alloy-provider`, `cow-sdk-alloy-signer`,
-`cow-sdk-alloy`) gates all of its contents behind `#[cfg(not(target_arch =
-"wasm32"))]`, so on `wasm32` it compiles cleanly to an empty crate; the
-compile-time native-only diagnostic is emitted by the `cow-sdk` facade
-(`crates/sdk/src/lib.rs`) when any of its `alloy`, `alloy-provider`, or
-`alloy-signer` features are enabled on `wasm32-unknown-unknown`. CI asserts all
-three facade features fail on wasm and treats a successful wasm build as a
-failure. The documented browser path for wallet
-signing is the `cow-sdk-js` typed callback surface plus consumer-supplied
-EIP-1193 provider reads. Residual risk: future upstream Alloy releases may add
-browser-compatible provider components; until a separate browser-provider design
-is accepted and tested, these adapters stay unsupported on wasm.
-
-### Deterministic browser runner
-
-Browser-targeted WASM tests run under headless Firefox. The compatibility lane
-(`.github/workflows/wasm.yml`) installs Firefox via `browser-actions/setup-firefox`
-on the `latest-esr` channel and geckodriver at a pinned version via
-`browser-actions/setup-geckodriver`, then runs `wasm-pack test --headless
---firefox`. Provisioning through these setup actions keeps the lane off the
-ambient runner image's drifting browser install and pins the WebDriver and
-provisioning path (the browser channel itself tracks `latest-esr`). Firefox is
-used because Chrome 148 with wasm-bindgen-test 0.3.x SIGKILLs ChromeDriver
-mid-handshake on hosted runners, while the same release-profile binary runs
-cleanly under Firefox and geckodriver. The tests run as `wasm_bindgen_test`
-cases exercising the callback boundary against in-test state and serde round
-trips, so determinism does not depend on the browser version, a live wallet, or
-a live chain.
-
-### Shape correspondence (systematic transforms)
-
-A surfaced capability does not carry the native Rust shape unchanged. The public
-consumer surface is the committed facade snapshot, which re-exports the
-`tsify`-generated boundary types from the raw snapshot (raw wasm-bindgen output is
-package-internal per ADR 0039). The fixed transforms: typestate builders →
-single typed config object; trait-generic capability injection → JS callbacks
-and `HttpTransportConfig`; typed input structs → camelCase input DTOs; typed
-outputs → `WasmEnvelope<T>`; `Amount` → decimal `string`; address/UID/hash
-newtypes → the viem-compatible `0x`-prefixed hex template-literal type;
-`serde_json::Value` → `unknown`; chain id /
-quote id → `number` (quote id validated to the JS safe-integer range); Rust enums
-→ string-literal unions; per-chain maps → `Record<string, string>`;
-cancellation/timeout → `options?: { signal?; timeoutMs? }`; typed `Result` errors
-→ a thrown `CowError` (an `Error` subclass whose instances form a `kind`-tagged
-discriminated union with redacted, lower-cardinality fields); `async fn` →
-`Promise`-returning method;
-Rust ownership release → explicit `free()` / `dispose()`.
-
-Divergences beyond the uniform transforms: subgraph response payloads are
-untyped (`Promise<WasmEnvelope<unknown>>`); `getOrders` decomposes the native
-`OrdersQuery` into `(owner, pagination?)` and `getTrades` enforces its
-exactly-one-of `owner`/`orderUid` constraint at runtime; signing/managed-post
-take `owner: string` positionally (no Rust `Signer` resolves it); error
-cardinality is reduced; `feeAmount` is structurally present for EIP-712
-struct-hash compatibility but services accepts only `"0"`; client instances
-require explicit release; and the native fluent `Trading::swap()` typestate
-builder has no TS counterpart (its `Set`/`Unset` typestate cannot cross the ABI
-and its safety is already provided by the named-field `TradeParams` type —
-covered through `postSwapOrder`, `postSwapOrderFromQuote`, and `getQuote`).
-
-### Runtime support and open questions
-
-Browser bundlers (`default-http-supported`), Node.js 24 LTS (the engines floor
-is Node 22) and Cloudflare Workers (`callback-http-tested`) are claimed and
-CI-evidenced. The shared web
-build itself is CI-exercised through the Cloudflare Workers fixture (via the
-`./trading/edge` subpath). Deno reuses that same web build — every flavor ships
-one — with the runtime-neutral `CowFetchCallback`, but has no dedicated Deno CI
-fixture. Deno, Bun, Vercel Edge, and Fly.io therefore remain `best-effort` until
-dedicated fixtures and CI evidence exist; they share the same web build.
+- The four layers each map to native crates through uniform transforms;
+  deterministic helpers stay host-safe in `cow-sdk-js::helpers`, and wallet
+  interop crosses only through typed callbacks.
+- Types crossing the ABI carry `tsify` derives gated to `wasm32` (inert on
+  native); the raw wasm-bindgen output is package-internal and denied as a public
+  import target, so consumers see only the curated facade.
+- One committed declaration snapshot per flavor pins the published TypeScript
+  contract; the build diffs the bundler and nodejs targets against the snapshot
+  and fails on drift.
+- Success results carry a `schemaVersion` envelope; thrown errors normalize to a
+  `CowError` subclass, input-DTO failures map to `invalidInput` (not `internal`),
+  and the orderbook variant carries its typed `errorType`, `retryable`, and
+  optional `retryAfterMs`.
+- Flavor builds expose feature-scoped subpaths and run the release size profile;
+  the raw, brotli, and gzip budgets are recorded and gated.
+- The native Alloy adapter crates compile empty on `wasm32`, and enabling any
+  `alloy` feature on `wasm32` is a compile-time diagnostic, so a browser build
+  cannot silently pull native RPC.
 
 ## Evidence
 
-Primary implementation points:
-
-- `crates/js/src/helpers/`
-- `crates/js/src/exports/`
-- `crates/js/src/dto/`
-- `crates/js/src/exports/callbacks.rs`
-- `crates/js/src/exports/registry.rs`
-- `crates/js/src/exports/transport.rs`
-- `crates/js/src/exports/signing.rs`
-- `crates/js/src/exports/cancel.rs`
-- `crates/js/src/exports/envelope.rs`
-- `crates/js/src/exports/errors.rs`
-- `crates/js/snapshots/raw/{default,orderbook,signing,trading}.d.ts`
-- `crates/js/snapshots/facade/`
-- `crates/js/npm/src/` (`index.ts`, `default.ts`, `orderbook.ts`, `signing.ts`, `trading.ts`, `callbacks.ts`, `internal.ts`, `options.ts`, `envelope.ts`, `errors.ts`, `raw/`)
-- `crates/js/npm/package.template.json`
-- `crates/js/npm/README.md`
-- `crates/js/npm/scripts/` (`build.sh`, `compile-facade.sh`, `render-package-json.mjs`, `measure-wasm-size.mjs`, `dedupe-target-wasm.mjs`, `verify-exports.mjs`, `verify-no-raw-exports.mjs`, `verify-facade-denylist.mjs`, `verify-package-resolution.sh`)
-- `crates/orderbook/src/api.rs`, `crates/trading/src/`, `crates/signing/src/`
-- `crates/alloy-provider/src/lib.rs`, `crates/alloy-signer/src/lib.rs`, `crates/alloy/src/lib.rs`, `crates/sdk/src/lib.rs`
-- `Cargo.toml`, `crates/js/Cargo.toml`
-- `.github/workflows/wasm.yml`, `.github/workflows/ci.yml`
-- `docs/providers/adapting-alloy.md`, `docs/transport.md`
-
-Primary regression coverage:
-
-- `crates/js/tests/host_pure_helpers.rs` (incl. `typed_data_payload_matches_signing_module_output`, `wasm_version_matches_package_version`)
-- `crates/js/tests/wasm_surface_contract.rs` (incl. `order_typed_data_serializes_to_expected_js_shape`, `wasm_version_matches_crate_version`)
-- `crates/js/tests/wasm_workflow_coverage_contract.rs`
-- `crates/js/tests/wasm_snapshot_surface_contract.rs` (incl. `generated_type_declarations_version_the_envelope_and_expose_error_kinds`, `generated_type_declarations_hide_callback_registry`, `generated_type_declarations_name_callback_params`, `generated_type_declarations_expose_abort_and_wallet_options`, `generated_type_declarations_expose_transport_policy_config_for_http_flavours`, `generated_type_declarations_match_flavour_matrix`)
-- `crates/js/tests/wasm_facade_snapshot_contract.rs` (`facade_declarations_match_flavour_matrix`, `facade_declarations_hide_raw_wasm_bindgen_surface`, `facade_declarations_expose_dispose_and_named_callback_types`)
-- `crates/js/tests/wasm_envelope_contract.rs` (`envelope_serializes_schema_version_and_payload`, `envelope_preserves_unknown_schema_sentinel`)
-- `crates/js/tests/wasm_error_abi_contract.rs` (`invalid_input_variant_round_trips`, `unknown_enum_variant_round_trips`, `unknown_sentinel_round_trips_raw_payload`)
-- `crates/js/tests/wasm_callback_contract.rs` (`wallet_config_timeout_rejects_pending_signer_callback`, `typed_cancellation_signer_returns_order_uids`, `signer_rejection_redacts_provider_message`)
-- `crates/js/tests/wasm_callback_lifetime_contract.rs::client_owned_callback_survives_until_request_resolves`
-- `crates/js/tests/wasm_callback_transport_contract.rs`
-- `crates/js/tests/wasm_cancellation_contract.rs` (`abort_bridge_removes_listener_after_{success,callback_throw,callback_reject,parse_error,timeout_overflow}`)
-- `crates/js/tests/wasm_transport_policy_contract.rs` (`all_client_constructors_accept_transport_policy`, `invalid_transport_policy_user_agent_is_rejected`)
-- `crates/js/tests/wasm_fail_closed_contract.rs::flavour_descriptor_exposes_web_and_module_subpaths`
-- `crates/js/tests/wasm_redaction_contract.rs`
-- `crates/js/tests/transport_fetch_smoke.rs`
-- `tests/wasm_dependency_invariant.rs`
-- `crates/js/npm/tests/` (`facade-default.test.ts`, `facade-orderbook.test.ts`, `facade-signing.test.ts`, `facade-cancellation.test.ts`, `facade-resource-cleanup.test.ts`, `facade-error-normalization.test.ts`)
-- `e2e/wasm-typescript/tests/browser/browser.spec.ts`, `e2e/wasm-typescript/tests/signing.spec.ts`
-- `e2e/wasm-typescript-cf/tests/forbidden-instantiation.spec.ts`
-
-Validation surface:
-
-```text
-cargo test -p cow-sdk-js --test host_pure_helpers
-cargo test -p cow-sdk-js --test wasm_surface_contract
-cargo test -p cow-sdk-js --test wasm_snapshot_surface_contract
-cargo test -p cow-sdk-js --test wasm_facade_snapshot_contract
-cargo test -p cow-sdk-js --test wasm_envelope_contract
-cargo test -p cow-sdk-js --test wasm_error_abi_contract
-cargo test -p cow-rs-workspace-tests --test wasm_dependency_invariant
-cargo check -p cow-sdk --target wasm32-unknown-unknown --features alloy
-cargo check -p cow-sdk --target wasm32-unknown-unknown --features alloy-provider
-cargo check -p cow-sdk --target wasm32-unknown-unknown --features alloy-signer
-wasm-pack test crates/js --headless --firefox
-bash crates/js/npm/scripts/build.sh
-node crates/js/npm/scripts/verify-exports.mjs
-node crates/js/npm/scripts/verify-no-raw-exports.mjs
-node crates/js/npm/scripts/verify-facade-denylist.mjs
-node crates/js/npm/scripts/measure-wasm-size.mjs
-bash crates/js/npm/scripts/verify-package-resolution.sh
-pnpm --dir crates/js/npm test
-pnpm --dir e2e/wasm-typescript run test:vitest
-pnpm --dir e2e/wasm-typescript run test:playwright
-pnpm --dir e2e/wasm-typescript-cf test
-```
+- Decision: [ADR 0039](../adr/0039-typescript-callable-wasm-sdk-surface.md), [ADR 0040](../adr/0040-wallet-provider-callback-boundary-for-js-consumers.md), [ADR 0041](../adr/0041-transport-policy-l3-layering.md), [ADR 0044](../adr/0044-bundle-size-profile-and-flavor-builds.md), [ADR 0045](../adr/0045-async-signer-trait-narrowing.md).
+- Rule: [Additive Optional Ecosystems](../principles/additive-optional-ecosystems.md).
+- Invariants: the `PROP-WB` family ([JS/WASM boundary](../properties/js.md)).
+- Governing gate: `wasm-pack test --headless --firefox` plus the declaration-snapshot contract.
+- Code: `crates/js/src/exports/`, `crates/js/src/dto/`, `crates/js/snapshots/`, `crates/sdk/src/lib.rs`.

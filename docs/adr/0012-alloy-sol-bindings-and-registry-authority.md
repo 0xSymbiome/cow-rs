@@ -1,11 +1,18 @@
-# ADR 0012: Canonical `alloy::sol!` Bindings And A Single Registry Authority
+---
+type: Decision Record
+id: ADR-0012
+title: "ADR 0012: Canonical alloy::sol! Bindings And A Single Registry Authority"
+description: "Every ABI binding in cow-sdk-contracts is authored as an inline alloy::sol!"
+status: Accepted
+date: 2026-04-21
+last_reviewed: 2026-06-15
+authors: ["0xSymbiotic"]
+tags: [contracts, bindings, abi, registry, deployments]
+related: [ADR-0005, ADR-0032, ADR-0052, ADR-0054]
+timestamp: 2026-06-15T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-04-21
-- Last reviewed: 2026-06-15
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: contracts, bindings, abi, registry, deployments
-- Related: [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR 0032](0032-deployment-authority-machine-readable-provenance.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md), [ADR 0054](0054-onchain-order-event-decoding-is-fail-closed.md)
+# ADR 0012: Canonical `alloy::sol!` Bindings And A Single Registry Authority
 
 ## Decision
 
@@ -94,9 +101,9 @@ bytes.
 
 ## Links
 
-- [Architecture](../architecture.md)
-- [Deployments](../deployments.md)
-- [Parity And Provenance](../parity.md)
+- [Architecture](../guides/architecture.md)
+- [Deployments](../guides/deployments.md)
+- [Parity And Provenance](../guides/parity.md)
 - [ADR 0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md)
 - [ADR 0032](0032-deployment-authority-machine-readable-provenance.md)
 - [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)

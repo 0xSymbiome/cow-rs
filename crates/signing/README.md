@@ -132,8 +132,8 @@ orders or quotes (that is [`cow-sdk-trading`](https://crates.io/crates/cow-sdk-t
 
 ## Where to next
 
-- [Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/getting-started.md)
-- [Integrations Guide](https://github.com/0xSymbiome/cow-rs/blob/main/docs/integrations.md)
+- [Getting Started](https://github.com/0xSymbiome/cow-rs/blob/main/docs/guides/getting-started.md)
+- [Integrations Guide](https://github.com/0xSymbiome/cow-rs/blob/main/docs/guides/integrations.md)
 - [Workspace README](https://github.com/0xSymbiome/cow-rs/blob/main/README.md)
 
 ## License

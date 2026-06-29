@@ -1,11 +1,18 @@
-# ADR 0027: Add New Signing Schemes Through Non-Exhaustive Signature Boundaries
+---
+type: Decision Record
+id: ADR-0027
+title: "ADR 0027: Add New Signing Schemes Through Non-Exhaustive Signature Boundaries"
+description: "Future signature families land additively through non-exhaustive signing and signature enums."
+status: Accepted
+date: 2026-04-27
+last_reviewed: 2026-06-25
+authors: ["0xSymbiotic"]
+tags: [signing, signatures, compatibility, eip1271, eip7212]
+related: [ADR-0014, ADR-0022, ADR-0024, ADR-0052]
+timestamp: 2026-06-25T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-04-27
-- Last reviewed: 2026-06-25
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: signing, signatures, compatibility, eip1271, eip7212
-- Related: [ADR 0014](0014-eip1271-verification-cache.md), [ADR 0022](0022-ecdsa-signature-v-normalization.md), [ADR 0024](0024-asyncprovider-asyncsigningprovider-capability-split.md), [ADR 0052](0052-alloy-primitives-canonical-primitive-layer.md)
+# ADR 0027: Add New Signing Schemes Through Non-Exhaustive Signature Boundaries
 
 ## Decision
 
@@ -57,10 +64,10 @@ creating a breaking match exhaustiveness change for downstream code.
 
 ## Links
 
-- [Forward-compatible public surfaces principle](../principles.md#forward-compatible-public-surfaces) — the general enum and struct openness doctrine; this ADR instantiates it for signing.
-- [Parity scope source lock](../parity.md#source-lock)
-- [Parity scope surface boundaries](../parity.md#surface-matrix)
-- [Parity matrix signing and contract rows](../parity.md#surface-matrix)
+- [Forward-compatible public surfaces principle](../principles/forward-compatible-public-surfaces.md) — the general enum and struct openness doctrine; this ADR instantiates it for signing.
+- [Parity scope source lock](../guides/parity.md#source-lock)
+- [Parity scope surface boundaries](../guides/parity.md#surface-matrix)
+- [Parity matrix signing and contract rows](../guides/parity.md#surface-matrix)
 - [Contracts signature boundary](../../crates/contracts/src/signature.rs)
 - [Orderbook signing scheme boundary](../../crates/orderbook/src/types/enums.rs)
 - [EIP-1271 signature provider](../../crates/signing/src/eip1271/provider.rs)

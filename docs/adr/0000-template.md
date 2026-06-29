@@ -1,19 +1,16 @@
+---
+type: Decision Record
+id: ADR-0000
+title: "ADR 0000: [Decision Statement]"
+description: "[State the rule in one short paragraph or in 1 to 3 bullets."
+status: Proposed
+date: YYYY-MM-DD
+authors: ["0xSymbiotic"]
+tags: [[tag-1], [tag-2]]
+timestamp: 2026-06-29T00:00:00Z
+---
+
 # ADR 0000: [Decision Statement]
-
-- Status: Proposed
-- Date: YYYY-MM-DD
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: [tag-1], [tag-2]
-- Related: [ADR-0001](0001-multi-crate-sdk-family-with-thin-facade.md)
-- Supersedes: ADR-XXXX
-- Superseded by: ADR-XXXX
-
-> Remove optional metadata lines that do not apply.
->
-> Keep the section headings exactly as written so deep links and symlinked
-> references remain stable.
->
-> The title should state the chosen rule, not just the topic.
 
 ## Decision
 
@@ -40,5 +37,5 @@
 
 ## Links
 
-- [Supporting doc or source file](../architecture.md)
+- [Supporting doc or source file](../guides/architecture.md)
 - [Related ADR](0001-multi-crate-sdk-family-with-thin-facade.md)

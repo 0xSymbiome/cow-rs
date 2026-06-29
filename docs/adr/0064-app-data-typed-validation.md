@@ -1,11 +1,16 @@
-# ADR 0064: App-Data Validation Is Typed By Construction, Not JSON-Schema
+---
+type: Decision Record
+id: ADR-0064
+title: "ADR 0064: App-Data Validation Is Typed By Construction, Not JSON-Schema"
+description: "cow-sdk-app-data validates app-data documents through typed Rust construction plus a small set of structural checks, not through a runtime JSON-Schema validator."
+status: Accepted
+date: 2026-06-03
+authors: ["0xSymbiotic"]
+tags: [app-data, validation, typing]
+timestamp: 2026-06-03T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-06-03
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: app-data, validation, typing
-- Related: [ADR-0018](0018-typed-app-data-merge.md), [ADR-0005](0005-boundary-specific-runtime-contracts-and-strong-domain-types.md), [ADR-0052](0052-alloy-primitives-canonical-primitive-layer.md)
-- Amended: 2026-06-17 — the retained drift mirrors now include a root-document manifest, and the drift tests add bound- and version-correspondence checks (the `partnerFee` bound tracks schema v1.1.0, and `LATEST_APP_DATA_VERSION` tracks the root manifest). The no-runtime-JSON-Schema decision is unchanged.
+# ADR 0064: App-Data Validation Is Typed By Construction, Not JSON-Schema
 
 ## Decision
 

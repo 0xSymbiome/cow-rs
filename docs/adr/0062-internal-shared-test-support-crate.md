@@ -1,11 +1,18 @@
-# ADR 0062: Shared Test Support Lives In One Unpublished `cow-sdk-test-utils` Crate
+---
+type: Decision Record
+id: ADR-0062
+title: "ADR 0062: Shared Test Support Lives In One Unpublished cow-sdk-test-utils Crate"
+description: "Shared, cross-crate test support lives in a single cow-sdk-test-utils crate marked publish = false."
+status: Accepted
+date: 2026-06-02
+last_reviewed: 2026-06-15
+authors: ["0xSymbiotic"]
+tags: [testing, crate-boundary, dev-dependencies]
+related: [ADR-0001, ADR-0063]
+timestamp: 2026-06-15T00:00:00Z
+---
 
-- Status: Accepted
-- Date: 2026-06-02
-- Last reviewed: 2026-06-15
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: testing, crate-boundary, dev-dependencies
-- Related: [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md), [ADR 0063](0063-published-consumer-test-doubles-crate.md)
+# ADR 0062: Shared Test Support Lives In One Unpublished `cow-sdk-test-utils` Crate
 
 ## Decision
 
@@ -54,7 +61,7 @@ build regardless of feature unification.
 
 ## Links
 
-- [Architecture](../architecture.md)
-- [Principles](../principles.md)
+- [Architecture](../guides/architecture.md)
+- [Principles](../principles/index.md)
 - [ADR 0001](0001-multi-crate-sdk-family-with-thin-facade.md)
 - [ADR 0063](0063-published-consumer-test-doubles-crate.md)

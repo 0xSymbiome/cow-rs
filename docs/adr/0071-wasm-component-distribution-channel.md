@@ -1,19 +1,17 @@
+---
+type: Decision Record
+id: ADR-0071
+title: "ADR 0071: WebAssembly Component Distribution Channel"
+description: "The SDK ships a second WebAssembly distribution channel: a WebAssembly Component, built from an additive leaf crate (cow-sdk-component, publish = false) that compiles the deterministic SDK core to wasm32-wasip2 with wit-bindgen against a pu..."
+status: Proposed (deferred)
+date: 2026-06-21
+authors: ["0xSymbiotic"]
+tags: [wasm, component-model, public-surface, distribution]
+related: [ADR-0010, ADR-0039, ADR-0044]
+timestamp: 2026-06-21T00:00:00Z
+---
+
 # ADR 0071: WebAssembly Component Distribution Channel
-
-- Status: Proposed (deferred)
-- Date: 2026-06-21
-- Authors: [0xSymbiotic](https://github.com/0xSymbiotic)
-- Tags: wasm, component-model, public-surface, distribution
-- Related: [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md), [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md), [ADR 0044](0044-bundle-size-profile-and-flavor-builds.md)
-
-> **What ships today vs. what is planned.** The `cow-sdk-component` crate is a
-> workspace member, and CI builds its three worlds for `wasm32-wasip2` and runs
-> its native test. The distribution and cross-runtime parity machinery this ADR
-> describes — jco and Wasmtime execution, OCI and GitHub Release publishing, and
-> a WIT snapshot gate — is **not yet built**: CI only compiles the component. The
-> present-tense claims below describe the planned channel, not shipped pipeline
-> steps; the crate and its WIT contract are experimental (`0.x`) until that
-> machinery lands.
 
 ## Decision
 
@@ -100,7 +98,7 @@ parity-test with them rather than drift in a separate consumer repository.
 
 ## Links
 
-- [Architecture](../architecture.md)
+- [Architecture](../guides/architecture.md)
 - [ADR 0010](0010-runtime-neutral-async-and-transport-posture.md)
 - [ADR 0039](0039-typescript-callable-wasm-sdk-surface.md)
 - [ADR 0044](0044-bundle-size-profile-and-flavor-builds.md)
