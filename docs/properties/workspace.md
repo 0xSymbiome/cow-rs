@@ -11,7 +11,7 @@ timestamp: 2026-06-29T00:00:00Z
 
 # Workspace policy invariants
 
-Workspace-wide contracts: native Alloy dependency boundaries, typestate marker fences, cross-crate dependency-pin lockstep, `source-lock.yaml` form validation, MSRV alignment, atomic-unit `Amount` parsing, and the native receipt/transaction-submission lifecycle adapters. Part of the [Properties Registry](index.md): 9 invariant(s), 9 covered.
+Workspace-wide contracts: native Alloy dependency boundaries, typestate marker fences, cross-crate dependency-pin lockstep, `source-lock.yaml` form validation, MSRV alignment, atomic-unit `Amount` parsing, and the native receipt/transaction-submission lifecycle adapters. Part of the [Properties Registry](index.md): 9 invariant(s), 8 covered.
 
 ## Dependency, version & release policy
 
@@ -25,7 +25,7 @@ Workspace-wide contracts: native Alloy dependency boundaries, typestate marker f
 
 | Id | Crate | Property | Type | Covered | Evidence | Last reviewed |
 | --- | --- | --- | --- | --- | --- | --- |
-| `PROP-WS-002` | whole workspace | SDK-constructed response and error-payload structs in `cow-sdk-app-data` (`AppDataValidated`, `AppDataInfo`), `cow-sdk-subgraph` (`SubgraphGraphQlError`, `SubgraphGraphQlErrorLocation`, `SubgraphRequestErrorContext`), and `cow-sdk-signing` (`SigningResult`, `GeneratedOrderId`) carry `#[non_exhaustive]` at the struct head so additive fields remain compatible for downstream consumers. Caller-built request and configuration structs deliberately do not carry the marker (see the Forward-Compatible Public Surfaces principle); they expose `new()` plus `with_*()` builders so additive fields land without blocking literal construction. | Public API | Yes | `crates/app-data/src/info.rs`, `crates/app-data/src/types/validation.rs`, `crates/subgraph/src/error.rs`, `crates/signing/src/order_signing.rs`, `docs/principles/index.md` | 2026-06-11 |
+| `PROP-WS-002` | whole workspace | SDK-constructed response and error-payload structs in `cow-sdk-app-data` (`AppDataValidated`, `AppDataInfo`), `cow-sdk-subgraph` (`SubgraphGraphQlError`, `SubgraphGraphQlErrorLocation`, `SubgraphRequestErrorContext`), and `cow-sdk-signing` (`SigningResult`, `GeneratedOrderId`) carry `#[non_exhaustive]` at the struct head so additive fields remain compatible for downstream consumers. Caller-built request and configuration structs deliberately do not carry the marker (see the Forward-Compatible Public Surfaces principle); they expose `new()` plus `with_*()` builders so additive fields land without blocking literal construction. | Public API | Partial | `crates/app-data/src/info.rs`, `crates/app-data/src/types/validation.rs`, `crates/subgraph/src/error.rs`, `crates/signing/src/order_signing.rs`, `docs/principles/index.md` | 2026-06-11 |
 | `PROP-WS-003` | whole workspace | Typestate marker structs across `cow-sdk-orderbook`, `cow-sdk-subgraph`, and `cow-sdk-trading` are sealed with private tuple fields, so external callers cannot construct marker values directly and must use the documented builder transition methods. | Public API | Yes | `crates/orderbook/src/builder.rs`, `crates/subgraph/src/builder.rs`, `crates/trading/src/client/mod.rs`, `crates/trading/src/client/builder.rs`, `crates/contracts/tests/ui/typestate_marker_sealing.rs` | 2026-05-31 |
 
 ## Provenance & primitives

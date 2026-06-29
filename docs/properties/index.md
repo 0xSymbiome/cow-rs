@@ -72,7 +72,8 @@ The invariants are grouped into per-domain concept files under [`docs/properties
 | [Orderbook client invariants](orderbook.md) | 17 | 17/17 | `PROP-ORD` |
 | [Subgraph analytics invariants](subgraph.md) | 5 | 5/5 | `PROP-SBG` |
 | [Trading lifecycle invariants](trading.md) | 21 | 21/21 | `PROP-TRD` `PROP-TRD-CANCEL-WAIT` `PROP-TRD-WAIT` |
-| [JS/WASM boundary invariants](js.md) | 31 | 31/31 | `PROP-WB` |
+| [JS/WASM boundary invariants](js.md) | 30 | 30/30 | `PROP-WB` |
+| [WASM Component boundary invariants](component.md) | 7 | 3/7 | `PROP-CMP` |
 | [SDK facade invariants](sdk.md) | 4 | 4/4 | `PROP-SDK` |
 | [Test double invariants](test.md) | 1 | 1/1 | `PROP-TST` |
 
@@ -83,5 +84,5 @@ The invariants are grouped into per-domain concept files under [`docs/properties
 | [Transport policy invariants](transport-policy.md) | 14 | 14/14 | `PROP-TPP` |
 | [Signing consistency invariants](signing.md) | 6 | 6/6 | `PROP-SIG` |
 | [Security invariants](security.md) | 3 | 3/3 | `PROP-SEC` |
-| [Workspace policy invariants](workspace.md) | 9 | 9/9 | `PROP-WS` `PROP-WS-RX` `PROP-WS-TX` |
-| [Documentation governance invariants](docs.md) | 5 | 5/5 | `PROP-AUD` `PROP-DOCS` |
+| [Workspace policy invariants](workspace.md) | 9 | 8/9 | `PROP-WS` `PROP-WS-RX` `PROP-WS-TX` |
+| [Documentation governance invariants](docs.md) | 5 | 4/5 | `PROP-AUD` `PROP-DOCS` |
