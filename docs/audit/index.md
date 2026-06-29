@@ -63,7 +63,7 @@ re-narrating the implementation.
 | [Error Classification Audit](error-classification-audit.md) | `ErrorClass` + `class()` accessors | Current | 2026-06-21 |
 | [Panic-Free Public Surface Audit](panic-free-public-surface-audit.md) | public-API panic surface | Current | 2026-06-20 |
 | [Fuzz Coverage Audit](fuzz-coverage-audit.md) | `cow-sdk-fuzz` targets | Current | 2026-06-21 |
-| [Dependency Gate Audit](dependency-gate-audit.md) | dependency-audit gate | Current | 2026-06-20 |
+| [Dependency Gate Audit](dependency-gate-audit.md) | dependency-audit gate | Current | 2026-06-29 |
 | [Workflow Security Audit](workflow-security-audit.md) | GitHub workflow security posture | Current | 2026-06-20 |
 | [Source-Lock Provenance Audit](source-lock-provenance-audit.md) | source-lock provenance + preflight | Current | 2026-06-20 |
 

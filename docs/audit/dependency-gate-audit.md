@@ -6,7 +6,7 @@ description: "The release-facing dependency gate splits cargo-deny and cargo-aud
 status: Current
 owning_surface: "release-facing dependency-audit gate"
 related: [ADR-0006]
-timestamp: 2026-06-20
+timestamp: 2026-06-29
 ---
 
 # Dependency Gate Audit
@@ -43,10 +43,11 @@ blocking gate.
 
 ## Tracked advisories
 
-Three RustSec identifiers are tolerated, each reachable only through a
-build-time macro subtree of the native Alloy stack (none compiles into runtime
-`cow-sdk` code). Each lives in `.github/config/deny.toml` under
-`[advisories].ignore`:
+Four RustSec identifiers are tolerated, each living in
+`.github/config/deny.toml` under `[advisories].ignore`. Three are build-time
+macro subtrees of the native Alloy stack that compile no runtime `cow-sdk`
+code; the fourth is an unmaintained timekeeping shim confined to the
+experimental WebAssembly component's WASI 0.2 lane:
 
 - `RUSTSEC-2024-0388` — `derivative`, reached only through the
   `alloy-trie` / `alloy-consensus` subtree. Revisit when that stack drops it.
@@ -56,6 +57,13 @@ build-time macro subtree of the native Alloy stack (none compiles into runtime
 - `RUSTSEC-2026-0173` — `proc-macro-error2`, reached only through the
   `alloy-sol-macro` subtree that derives the inline `sol!` bindings. Revisit
   when that release drops it.
+- `RUSTSEC-2024-0384` — `instant`, an unmaintained (not vulnerable) timekeeping
+  shim reached only through `wstd`'s pinned `futures-lite 1.x` / `fastrand 1.x`
+  subtree in the `cow-sdk-component` WASI 0.2 sync-HTTP lane
+  (`world-client-sync`). `wstd 0.6.x` pins the old `futures-lite`, so it cannot
+  be resolved away without an upstream `wstd` release, and the component is a
+  `publish = false` experimental leaf off the default dependency graph. Revisit
+  when `wstd` ships a `futures-lite 2.x` line.
 
 ## Evidence
 
