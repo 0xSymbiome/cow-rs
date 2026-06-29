@@ -206,6 +206,23 @@ fn trading_math_breaks_down_amounts_suggests_slippage_and_builds_app_data() {
         "partiallyFillable": false
     }"#;
 
+    // The same quote wrapped in a full `/quote` response, for the slippage suggestion.
+    const QUOTE_RESPONSE: &str = r#"{
+        "quote": {
+            "sellToken": "0xfff9976782d46cc05630d1f6ebab18b2324d6b14",
+            "buyToken": "0x0625afb445c3b6b7b929342a04a22599fd5dbb59",
+            "sellAmount": "1000000000000000",
+            "buyAmount": "1000000000000000000",
+            "feeAmount": "100000000000000",
+            "validTo": 2000000000,
+            "appData": "0x0000000000000000000000000000000000000000000000000000000000000000",
+            "kind": "sell",
+            "partiallyFillable": false
+        },
+        "expiration": "2026-01-01T00:00:00Z",
+        "verified": true
+    }"#;
+
     // amounts-and-costs: 50 bps slippage, no partner/protocol fee.
     let amounts =
         super::trading_math::calculate_amounts_and_costs(QUOTE_DATA, 50, 0, "").expect("amounts");
@@ -249,21 +266,6 @@ fn trading_math_breaks_down_amounts_suggests_slippage_and_builds_app_data() {
     );
 
     // suggest-slippage-bps over the full quote response: a positive, in-range bps.
-    const QUOTE_RESPONSE: &str = r#"{
-        "quote": {
-            "sellToken": "0xfff9976782d46cc05630d1f6ebab18b2324d6b14",
-            "buyToken": "0x0625afb445c3b6b7b929342a04a22599fd5dbb59",
-            "sellAmount": "1000000000000000",
-            "buyAmount": "1000000000000000000",
-            "feeAmount": "100000000000000",
-            "validTo": 2000000000,
-            "appData": "0x0000000000000000000000000000000000000000000000000000000000000000",
-            "kind": "sell",
-            "partiallyFillable": false
-        },
-        "expiration": "2026-01-01T00:00:00Z",
-        "verified": true
-    }"#;
     let suggested =
         super::trading_math::suggest_slippage(QUOTE_RESPONSE, 0, false).expect("slippage");
     assert!(suggested <= 10_000, "slippage is clamped into range");

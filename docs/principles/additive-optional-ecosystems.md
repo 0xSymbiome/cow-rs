@@ -29,12 +29,12 @@ flowchart TD
   subgraph cl_default["Default facade: unchanged by additions"]
     core["cow-sdk core surface"]
   end
-  subgraph cl_optin["Opt-in: off by default"]
+  subgraph cl_opt_in["Opt-in: off by default"]
     alloy["cow-sdk-alloy adapter crates"]
     js["cow-sdk-js (wasm leaf)"]
     future["future capability families"]
   end
-  cl_optin -->|"adds onto"| cl_default
+  cl_opt_in -->|"adds onto"| cl_default
 ```
 
 **Enforced by** — `crates/js/tests/wasm_flavour_reachability_contract.rs` proves each wasm

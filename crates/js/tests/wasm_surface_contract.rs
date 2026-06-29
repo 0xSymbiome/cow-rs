@@ -42,7 +42,10 @@ fn empty_fetch_callback() -> Function {
 
 #[wasm_bindgen_test]
 fn domain_separator_returns_hex_string() {
-    let separator = domain_separator(CHAIN_MAINNET).expect("mainnet separator should exist");
+    let separator = domain_separator(CHAIN_MAINNET)
+        .expect("mainnet separator should exist")
+        .as_string()
+        .expect("the domain separator is a hex string");
 
     assert_eq!(separator.len(), 66);
     assert!(separator.starts_with("0x"));

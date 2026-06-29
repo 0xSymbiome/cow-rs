@@ -1,7 +1,7 @@
 ---
 type: Guide
 title: "Observability"
-description: "The cow-rs SDK family ships an opt-in tracing feature so host applications can route structured spans and events from the SDK into their own subscriber without paying any dependency or runtime cost when the featur..."
+description: "The cow-rs SDK family ships an opt-in tracing feature so host applications can route structured spans and events from the SDK into their own subscriber without paying any dependency or runtime cost when the feature is disabled."
 timestamp: 2026-06-28T00:00:00Z
 ---
 

@@ -11,7 +11,7 @@ Task- and surface-oriented documentation for cow-rs.
 * [Getting Started](getting-started.md) - cow-rs is a trading-first Rust SDK for CoW Protocol.
 * [Integrations](integrations.md) - This guide explains how native runtime adapters plug into the public cow-rs surface.
 * [MSRV Policy](msrv-policy.md) - This workspace declares Rust 1.94.0 as its minimum supported Rust version for the published cow-sdk crate family.
-* [Observability](observability.md) - The cow-rs SDK family ships an opt-in tracing feature so host applications can route structured spans and events from the SDK into their own subscriber without paying any dependency or runtime cost when the featur...
+* [Observability](observability.md) - The cow-rs SDK family ships an opt-in tracing feature so host applications can route structured spans and events from the SDK into their own subscriber without paying any dependency or runtime cost when the feature is disabled.
 * [Parity And Provenance](parity.md) - This document defines the parity authorities for cow-rs, the committed source-lock contract that pins them, the surface-to-evidence map, and the in-scope and out-of-scope boundaries for the release.
 * [Performance Posture](performance.md) - This document maps the performance-sensitive surfaces of the cow-rs SDK family and records the benchmark coverage that protects them against regressions.
 * [Publication Handoff](publication-handoff.md) - This document describes how publication ownership for the cow-rs crates on crates.io is managed: how invitations are issued, how maintainers are rotated on and off the owner list, and how a broken release is retracted.
