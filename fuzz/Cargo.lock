@@ -671,7 +671,7 @@ checksum = "773648b94d0e5d620f64f280777445740e61fe701025087ec8b57f45c791888b"
 
 [[package]]
 name = "cow-sdk-app-data"
-version = "0.1.0-alpha.8"
+version = "0.1.0-alpha.9"
 dependencies = [
  "alloy-primitives",
  "alloy-serde",
@@ -687,7 +687,7 @@ dependencies = [
 
 [[package]]
 name = "cow-sdk-contracts"
-version = "0.1.0-alpha.8"
+version = "0.1.0-alpha.9"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-types",
@@ -700,7 +700,7 @@ dependencies = [
 
 [[package]]
 name = "cow-sdk-core"
-version = "0.1.0-alpha.8"
+version = "0.1.0-alpha.9"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-types",
@@ -747,7 +747,7 @@ dependencies = [
 
 [[package]]
 name = "cow-sdk-orderbook"
-version = "0.1.0-alpha.8"
+version = "0.1.0-alpha.9"
 dependencies = [
  "async-trait",
  "cow-sdk-core",
@@ -761,7 +761,7 @@ dependencies = [
 
 [[package]]
 name = "cow-sdk-signing"
-version = "0.1.0-alpha.8"
+version = "0.1.0-alpha.9"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-types",
@@ -775,7 +775,7 @@ dependencies = [
 
 [[package]]
 name = "cow-sdk-subgraph"
-version = "0.1.0-alpha.8"
+version = "0.1.0-alpha.9"
 dependencies = [
  "cow-sdk-core",
  "reqwest",
@@ -787,7 +787,7 @@ dependencies = [
 
 [[package]]
 name = "cow-sdk-trading"
-version = "0.1.0-alpha.8"
+version = "0.1.0-alpha.9"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-types",
@@ -892,7 +892,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ccc2776f0c61eca1ca32528f85548abd1a4be8fb53d1b21c013e4f18da1e7090"
 dependencies = [
  "data-encoding",
- "syn 1.0.109",
+ "syn 2.0.118",
 ]
 
 [[package]]

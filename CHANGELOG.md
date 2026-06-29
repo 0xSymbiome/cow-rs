@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.9] - 2026-06-29
+
+### Bug Fixes
+
+- *(js)* Decode the domain-separator envelope in the wasm surface test ([`af8f752`](https://github.com/0xSymbiome/cow-rs/commit/af8f752cf1f130e4e696134e2b86a219eadda5d5))
+- *(deps)* Patch the RustSec advisory gate ([`6826f8e`](https://github.com/0xSymbiome/cow-rs/commit/6826f8e345be220da18d7b001d6e6710aea3644c))
+- *(ci)* Green the workspace build ([`b4405c5`](https://github.com/0xSymbiome/cow-rs/commit/b4405c57e6d954cc11880ab7de1a244b414a2e14))
+- *(fuzz)* Drop Result handling from the now-infallible digest helpers ([`876d773`](https://github.com/0xSymbiome/cow-rs/commit/876d77342fe6ea55af217ae1d74680635545a074))
+- *(trading)* Clarify the owner-mismatch rejection message ([`7409c85`](https://github.com/0xSymbiome/cow-rs/commit/7409c85fbb84680ece4322815d7a074444f1f62a))
+- *(orderbook)* Classify host-policy and scheme-conflict faults as validation ([`22e66e7`](https://github.com/0xSymbiome/cow-rs/commit/22e66e7fb4025da4d8b25eb6bf268abd8f156524))
+- *(contracts)* Redact signer-authored text in cow-shed errors ([`9434bb7`](https://github.com/0xSymbiome/cow-rs/commit/9434bb7a21bd3ac3da4e1cc9abc38ac4090dc99a))
+- *(wasm)* Surface a declined trading signature as a typed wallet rejection ([`edbac3b`](https://github.com/0xSymbiome/cow-rs/commit/edbac3b200b6b65babdc63ce0af11300d8187cd9))
+- *(wasm)* Feature-gate the orderbook and trading dto imports ([`431cc22`](https://github.com/0xSymbiome/cow-rs/commit/431cc22f426fecfd8b24b4d89b6dcf47806da694))
+
+### Features
+
+- *(component)* Expose the pure trading-math helpers in the engine world ([`8e29e8c`](https://github.com/0xSymbiome/cow-rs/commit/8e29e8c7998bb824af12a66dcedd1928019b9b53))
+- *(component)* Add the WebAssembly Component distribution crate ([`47308c8`](https://github.com/0xSymbiome/cow-rs/commit/47308c8aaa9d32f95a4f1c6a6271def487aba80e))
+- *(composable)* Add the ComposableCoW TWAP conditional-order surface ([`939ef10`](https://github.com/0xSymbiome/cow-rs/commit/939ef10676477d06c6249e5ac49eb8645f9228c8))
+- [**breaking**] *(wasm)* Type the boundary hex scalars as viem-compatible 0x template literals ([`ab89f5b`](https://github.com/0xSymbiome/cow-rs/commit/ab89f5bf13722c9c554d5191ec0dd348693bb4d1))
+
+### Refactor
+
+- [**breaking**] *(js)* Rename the wasm-bindgen leaf cow-sdk-wasm to cow-sdk-js ([`e237d64`](https://github.com/0xSymbiome/cow-rs/commit/e237d64b09c505b93be9d5bc8abbae7ed6f4dfef))
+- [**breaking**] *(wasm)* De-Dto the boundary and surface native types directly ([`d4b257c`](https://github.com/0xSymbiome/cow-rs/commit/d4b257c6bd8c372571f8cb527bc6e837743d7871))
+- [**breaking**] *(repo)* Drop unused error-class and signature helpers, type the quote metadata ([`f27a9fd`](https://github.com/0xSymbiome/cow-rs/commit/f27a9fd4e58fa82da82aa1b4cf0850f6f9d93ac3))
+- [**breaking**] *(signing)* Drop the in-memory EIP-1271 cache, keep the seam ([`c0f1cc2`](https://github.com/0xSymbiome/cow-rs/commit/c0f1cc286f4cc506753b78f66c8ca8dea3312e80))
+- [**breaking**] *(contracts)* Complete the gas-free transaction builder surface ([`a3bb743`](https://github.com/0xSymbiome/cow-rs/commit/a3bb743f0436a78f1bc6405a97c7d8e0d6c41e66))
+- [**breaking**] *(wasm)* Drop the eip1193 signer and collapse the eip1271 alias ([`8119740`](https://github.com/0xSymbiome/cow-rs/commit/81197400dbcadfa4e2636d908d0673b5d90a0955))
+- [**breaking**] Set Order.total_fee from the typed executed_fee and drop the dead calculate_total_fee ([`c11e140`](https://github.com/0xSymbiome/cow-rs/commit/c11e140daa031a62fda04e6c55672161cfd0fa34))
+- [**breaking**] Type the amount and slippage math, dropping the decimal-string round-trips ([`7292e2d`](https://github.com/0xSymbiome/cow-rs/commit/7292e2d93783b226348b6a158f9bb59d7519733b))
+- [**breaking**] *(contracts)* Own the pure tx builders and settlement encoders ([`ce67fe9`](https://github.com/0xSymbiome/cow-rs/commit/ce67fe98a07efcfcb48576ede26ddbc1e0a0a0f9))
+- [**breaking**] *(wasm)* Collapse js error plumbing and align the limit owner ([`c6da747`](https://github.com/0xSymbiome/cow-rs/commit/c6da747b8a1d5eb0cbf9e9bfe7c23fdedb43967e))
+- [**breaking**] *(core)* Drop the operator-tunable window from ValidTo::relative ([`2b1fc1b`](https://github.com/0xSymbiome/cow-rs/commit/2b1fc1b5994ed9c7447b07eae8309f3d9a1476d0))
+- [**breaking**] Single-source duplicated transport and registry helpers ([`d04fdb3`](https://github.com/0xSymbiome/cow-rs/commit/d04fdb39eb15af7654a85f526ffd9c493b2d50cb))
+- [**breaking**] *(app-data)* Convert IpfsFetchTransport to native async fn in trait ([`2c5a343`](https://github.com/0xSymbiome/cow-rs/commit/2c5a3434f557d6f5ce09a1546f14740fad76fbe9))
+- [**breaking**] *(contracts)* Drop the vestigial Result from infallible EIP-712 helpers ([`9193f6e`](https://github.com/0xSymbiome/cow-rs/commit/9193f6e5e8998451df99b770a7a517e29d80406c))
+- [**breaking**] *(alloy)* Derive adapter error Display via thiserror over redacted payloads ([`cdbdb28`](https://github.com/0xSymbiome/cow-rs/commit/cdbdb286203217c7b196ea599701c043fd1bd2b6))
+- [**breaking**] *(alloy)* Make EIP-712 signing unconditional ([`9768a54`](https://github.com/0xSymbiome/cow-rs/commit/9768a54e88a75c6ac13ca0e97135b8a22fc2f760))
+
 ## [0.1.0-alpha.8] - 2026-06-20
 
 ### Bug Fixes

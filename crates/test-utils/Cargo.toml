@@ -17,7 +17,7 @@ release = false
 workspace = true
 
 [dependencies]
-cow-sdk-core = { path = "../core", version = "0.1.0-alpha.8" }
+cow-sdk-core = { path = "../core", version = "0.1.0-alpha.9" }
 alloy-primitives = { workspace = true }
 async-trait = { workspace = true }
 proptest = { workspace = true, optional = true }

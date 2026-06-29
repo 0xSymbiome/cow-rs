@@ -42,7 +42,7 @@ ts-bindings = ["dep:tsify", "dep:wasm-bindgen"]
 ts-bindings-trading = ["ts-bindings"]
 
 [dependencies]
-cow-sdk-core = { path = "../core", version = "0.1.0-alpha.8", features = ["transport-policy"] }
+cow-sdk-core = { path = "../core", version = "0.1.0-alpha.9", features = ["transport-policy"] }
 async-trait.workspace = true
 http.workspace = true
 serde = { workspace = true, features = ["derive"] }
