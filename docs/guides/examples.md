@@ -76,6 +76,13 @@ repository; each carries its own README and `pnpm test` check.
 | Node.js 22 or 24 | [`cow-signer-node`](https://github.com/0xSymbiome/cow-sdk-examples/tree/main/examples/wasm/cow-signer-node) | Sign an order offline with EIP-712 and EIP-1271 using the `signing` flavor |
 | Cloudflare Workers | [`cow-gateway-cloudflare`](https://github.com/0xSymbiome/cow-sdk-examples/tree/main/examples/wasm/cow-gateway-cloudflare) | Run an orderbook quote gateway on the `trading` flavour's edge build |
 
+## WebAssembly Component Examples
+
+For consuming the `cow-sdk-component` worlds (the language-neutral component
+distributed as OCI packages, see [Architecture](architecture.md)), the
+[`examples/component`](https://github.com/0xSymbiome/cow-sdk-examples/tree/main/examples/component)
+family in the same repository shows polyglot host usage through jco and Wasmtime.
+
 ## Integration Notes
 
 - The default `cow-sdk` facade stays trading-first. Read-only analytics and

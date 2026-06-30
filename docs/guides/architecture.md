@@ -135,8 +135,9 @@ flowchart TD
 A second WebAssembly lane, the language-neutral component `cow-sdk-component`,
 is a `publish = false` leaf that compiles the same core and clients to
 `wasm32-wasip2` against a typed WIT contract for native hosts and polyglot
-consumers through Wasmtime and jco. Its distribution channel is deferred and
-experimental; see [ADR 0071](../adr/0071-wasm-component-distribution-channel.md).
+consumers through Wasmtime and jco. It is distributed as OCI packages on
+`ghcr.io/0xsymbiome` (experimental `0.x`); see
+[ADR 0071](../adr/0071-wasm-component-distribution-channel.md).
 
 ## TypeScript facade
 

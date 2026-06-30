@@ -3,7 +3,7 @@ type: Decision Record
 id: ADR-0071
 title: "ADR 0071: WebAssembly Component Distribution Channel"
 description: "The SDK ships a second WebAssembly distribution channel: a WebAssembly Component, built from an additive leaf crate (cow-sdk-component, publish = false) that compiles the deterministic SDK core to wasm32-wasip2 with wit-bindgen against a pu..."
-status: Proposed (deferred)
+status: Accepted
 date: 2026-06-21
 authors: ["0xSymbiotic"]
 tags: [wasm, component-model, public-surface, distribution]
@@ -43,7 +43,10 @@ both the WASI 0.2 and WASI 0.3 lanes are in scope behind one shared implementati
 
 Outputs distribute only through OCI and GitHub Release. The crate is never published
 to crates.io — a component-producing `cdylib` is not a `cargo add`-able library, and
-the Rust API already ships as the existing crates — and never through Warg.
+the Rust API already ships as the existing crates — and never through Warg. The engine,
+sync-client, and async-client worlds publish as `cow-sdk-component-engine`,
+`cow-sdk-component-client-sync`, and `cow-sdk-component-client-async` under
+`ghcr.io/0xsymbiome`, versioned `0.1.0-alpha.x`.
 
 ## Why
 
@@ -64,24 +67,25 @@ parity-test with them rather than drift in a separate consumer repository.
   logic stays plain functions and the Component Model bindings stay a thin,
   target-gated `wit-bindgen` wrapper, so native tests and the component share one
   implementation.
-- A native golden test pins the reference values; the planned build step asserts
-  the component reproduces them through jco and a Wasmtime host (not yet wired —
-  CI builds the component but does not execute it).
+- A native golden test pins the reference values and runs in CI; runtime
+  reproduction through jco and a Wasmtime host is not yet exercised in CI, so the
+  golden remains the native-only reference.
 - The crate is `publish = false` for crates.io and is never published as a Rust
   library.
 - Keys never enter the component: signing is a host import and HTTP is a host
   import; the component build excludes the native HTTP client.
 - The WIT contract is versioned, and a planned snapshot gate keeps it from
   drifting silently (the gate is deferred — no `.wit` snapshot test exists yet).
-- When publishing is wired, outputs distribute only through OCI and GitHub
-  Release, behind the pre-1.0 release trigger; never crates.io, and never Warg.
-  (No publish step exists yet — CI only builds the component.)
+- Outputs distribute only through OCI and GitHub Release; never crates.io, and
+  never Warg. The three worlds publish as `cow-sdk-component-engine`,
+  `cow-sdk-component-client-sync`, and `cow-sdk-component-client-async` under
+  `ghcr.io/0xsymbiome`.
 - The two WebAssembly channels stay distinct and documented: wasm-bindgen to npm for
   JavaScript applications; component to OCI for hosts, polyglot consumers, and
   composition.
-- The build target is `wasm32-wasip2`, `wit-bindgen` is pinned, and the component is
-  built in a dedicated CI job; runtime parity testing in that job is planned, not
-  yet wired.
+- The build target is `wasm32-wasip2`, `wit-bindgen` is pinned, and CI builds all
+  three worlds and runs the engine golden in a dedicated job; cross-runtime parity
+  testing in that job is not yet wired.
 - Pre-1.0, the component and its contract are experimental (`0.x`).
 - Consumer demonstrations live in the examples repository, not in this crate.
 
