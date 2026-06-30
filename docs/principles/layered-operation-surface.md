@@ -4,7 +4,7 @@ title: "Layered Operation Surface"
 description: "Trading operations are offered as free functions, bound-client methods, and fluent builders, each a thin delegation to the layer below."
 tags: [principle]
 timestamp: 2026-06-29T00:00:00Z
-anchored_by: [ADR-0069, ADR-0002, ADR-0013, ADR-0070]
+anchored_by: [ADR-0069, ADR-0002, ADR-0013, ADR-0070, ADR-0073]
 shape: structure
 enforced_by: "documentation-only (unenforced)"
 ---
@@ -42,4 +42,4 @@ flowchart TD
 **Enforced by** — documentation-only (unenforced). No test asserts the one-import-path rule or
 the delegation layering today; an import-path/layer test is a candidate future hardening.
 
-**Anchored by**: [ADR 0069](../adr/0069-layered-trading-operation-surface-and-signing-free-transport.md) (primary). Supporting: [ADR 0002](../adr/0002-dedicated-trading-orchestration-crate.md), [ADR 0013](../adr/0013-http-transport-injection-and-typestate-builders.md), [ADR 0070](../adr/0070-onchain-transaction-helper-boundary.md).
+**Anchored by**: [ADR 0069](../adr/0069-layered-trading-operation-surface-and-signing-free-transport.md) (primary). Supporting: [ADR 0002](../adr/0002-dedicated-trading-orchestration-crate.md), [ADR 0013](../adr/0013-http-transport-injection-and-typestate-builders.md), [ADR 0070](../adr/0070-onchain-transaction-helper-boundary.md), [ADR 0073](../adr/0073-order-authorization-and-bundled-presign-activation.md).

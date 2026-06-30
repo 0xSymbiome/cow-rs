@@ -316,6 +316,7 @@ impl cow_sdk_signing::eip1271::Eip1271Signer for HostEip1271Provider {
 /// shape: `Ecdsa` signs through the host signer, `Eip1271` carries the
 /// (possibly empty) pre-resolved contract-signature blob, and `PreSign` consults
 /// no signer.
+#[derive(Debug)]
 pub enum AuthParams {
     /// EOA / EIP-712 signing through the host signer.
     Ecdsa,
@@ -330,6 +331,7 @@ pub enum AuthParams {
 /// `order-placement` variant (ADR 0073). `Live` carries the order UID; `Pending`
 /// additionally carries the on-chain activation calls as `(to, data, value)`
 /// wire parts.
+#[derive(Debug)]
 pub enum Placement {
     /// The order is live at post (`Ecdsa` / `Eip1271`).
     Live { order_uid: String },

@@ -353,7 +353,7 @@ async fn resolve_limit_order_build_inputs(
 /// [`cow_sdk_signing::order_typed_data`] for the EIP-712 payload to present to the
 /// wallet.
 ///
-/// This shares [`resolve_limit_order_build_inputs`] and [`build_order_to_sign`]
+/// This shares `resolve_limit_order_build_inputs` and `build_order_to_sign`
 /// with [`post_limit_order`], so the produced order is byte-identical to the one
 /// the posting path signs for the same inputs.
 ///

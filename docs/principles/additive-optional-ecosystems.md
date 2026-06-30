@@ -4,7 +4,7 @@ title: "Additive Optional Ecosystems"
 description: "Optional capabilities grow through leaf crates and feature-gated additions, never by widening the default facade."
 tags: [principle]
 timestamp: 2026-06-29T00:00:00Z
-anchored_by: [ADR-0001]
+anchored_by: [ADR-0001, ADR-0071]
 shape: structure
 enforced_by: "crates/js/tests/wasm_flavour_reachability_contract.rs + check-wasm-invariant"
 ---
@@ -41,4 +41,4 @@ flowchart TD
 flavour's bindings stay reachable (an under-gated feature leaking into a leaner build fails),
 backed by the `check-wasm-invariant` gate.
 
-**Anchored by**: [ADR 0001](../adr/0001-multi-crate-sdk-family-with-thin-facade.md) (primary). Supporting: none.
+**Anchored by**: [ADR 0001](../adr/0001-multi-crate-sdk-family-with-thin-facade.md) (primary). Supporting: [ADR 0071](../adr/0071-wasm-component-distribution-channel.md).

@@ -164,6 +164,20 @@ pub enum Authorization<'a, S: Signer = NoSigner> {
     PreSign,
 }
 
+impl<S: Signer> core::fmt::Debug for Authorization<'_, S> {
+    /// Prints the authorization arm by name only, never the carried signer or
+    /// contract-signature provider, so a signer's internals stay out of any
+    /// debug rendering.
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let arm = match self {
+            Self::Ecdsa(_) => "Ecdsa(..)",
+            Self::Eip1271(_) => "Eip1271(..)",
+            Self::PreSign => "PreSign",
+        };
+        formatter.write_str(arm)
+    }
+}
+
 impl<'a, S: Signer> Authorization<'a, S> {
     /// Constructs the ECDSA authorization carrying `signer`.
     #[must_use]
