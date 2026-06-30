@@ -64,6 +64,7 @@ public and runtime shape of `cow-rs`.
 | [0070](0070-onchain-transaction-helper-boundary.md) | Accepted | Ship one single-call transaction builder per on-chain trade step (approve, wrap/unwrap, eth-flow, pre-sign, cancel) and add native-asset `wrap_transaction` / `unwrap_transaction` under that boundary. |
 | [0071](0071-wasm-component-distribution-channel.md) | Proposed (deferred) | Plan a WebAssembly Component distribution channel parallel to the wasm-bindgen npm lane; the crate builds in CI, while its OCI/Release distribution and cross-runtime parity machinery are deferred. |
 | [0072](0072-open-knowledge-format-documentation.md) | Accepted | Adopt the Open Knowledge Format for all `docs/` documentation: every document is a typed OKF concept document with YAML frontmatter, gate-enforced. |
+| [0073](0073-order-authorization-and-bundled-presign-activation.md) | Accepted | Place orders with the authorization mode carried as one `Authorization` value, return a typed `OrderPlacement` sum (`Live` / `PendingActivation`), and activate a smart-contract-wallet pre-sign order through an SDK-built `approve` + `setPreSignature` transaction bundle. |
 
 ## Superseded And Rejected
 

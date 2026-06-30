@@ -10,11 +10,16 @@
 //! the runnable lifecycle example.
 
 use std::marker::PhantomData;
+use std::sync::Arc;
 
 use cow_sdk_core::{Address, Amount, OrderKind, Signer, UserRejection};
+use cow_sdk_signing::eip1271::Eip1271Signer;
 
 use super::Trading;
-use crate::{OrderPostingResult, QuoteResults, TradeAdvancedSettings, TradeParams, TradingError};
+use crate::{
+    Authorization, OrderPlacement, OrderPostingResult, QuoteResults, TradeAdvancedSettings,
+    TradeParams, TradingError,
+};
 
 /// Typestate marker: a required swap field has not been supplied yet.
 #[derive(Debug, Clone, Copy)]
@@ -274,6 +279,60 @@ impl<'a> SwapBuilder<'a, Set, Set, Set> {
             quote,
             advanced,
         })
+    }
+
+    /// Quotes and posts the swap under the pre-sign scheme without consulting a
+    /// signer (ADR 0073).
+    ///
+    /// The smart-contract-owner path: the order is posted with an empty
+    /// signature and returned as [`OrderPlacement::PendingActivation`] carrying
+    /// the on-chain approve-then-set-pre-signature bundle the owner must send or
+    /// propose from the smart account. Because no signer participates, an
+    /// explicit [`owner`](SwapBuilder::owner) is required.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError::MissingOwner`] when no explicit owner is set, and
+    /// otherwise [`TradingError`] when quoting, app-data upload, submission, or
+    /// activation construction fails.
+    pub async fn post_presign(self) -> Result<OrderPlacement, TradingError> {
+        let owner = self.owner.ok_or(TradingError::MissingOwner)?;
+        let params = self.to_trade_parameters();
+        let advanced = self.advanced;
+        let quote = self.trading.quote_only(params, advanced.as_ref()).await?;
+        self.trading
+            .place_swap(&quote, owner, Authorization::pre_sign(), advanced.as_ref())
+            .await
+    }
+
+    /// Quotes and posts the swap under the EIP-1271 scheme using a
+    /// smart-account contract-signature provider (ADR 0073).
+    ///
+    /// Resolves to [`OrderPlacement::Live`]: an EIP-1271 order is valid once
+    /// posted. Because the provider produces the signature, an explicit
+    /// [`owner`](SwapBuilder::owner) is required.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError::MissingOwner`] when no explicit owner is set, and
+    /// otherwise [`TradingError`] when quoting, signing, app-data upload, or
+    /// submission fails.
+    pub async fn post_eip1271(
+        self,
+        provider: Arc<dyn Eip1271Signer>,
+    ) -> Result<OrderPlacement, TradingError> {
+        let owner = self.owner.ok_or(TradingError::MissingOwner)?;
+        let params = self.to_trade_parameters();
+        let advanced = self.advanced;
+        let quote = self.trading.quote_only(params, advanced.as_ref()).await?;
+        self.trading
+            .place_swap(
+                &quote,
+                owner,
+                Authorization::eip1271(provider),
+                advanced.as_ref(),
+            )
+            .await
     }
 }
 

@@ -254,6 +254,92 @@ impl Signer for HostSigner {
     }
 }
 
+/// A pre-resolved EIP-1271 contract signature, returned verbatim as the order
+/// signature (ADR 0073). The Component `authorization.eip1271` variant carries
+/// the already-resolved opaque blob — the host signs at the boundary, exactly as
+/// the wasm-bindgen lane resolves its callback before crossing into native — so
+/// this adapter holds only the bytes and never consults a key.
+struct ResolvedEip1271Provider {
+    signature: String,
+}
+
+#[cfg_attr(target_arch = "wasm32", cow_sdk_signing::async_trait(?Send))]
+#[cfg_attr(not(target_arch = "wasm32"), cow_sdk_signing::async_trait)]
+impl cow_sdk_signing::eip1271::Eip1271Signer for ResolvedEip1271Provider {
+    async fn sign(
+        &self,
+        _order_to_sign: &cow_sdk_core::OrderData,
+    ) -> Result<String, cow_sdk_signing::eip1271::Eip1271SignatureError> {
+        Ok(self.signature.clone())
+    }
+}
+
+/// EIP-1271 provider that signs the order digest through the host `sign-digest`
+/// import and wraps the result as the `CoW` contract-signature payload (ADR
+/// 0073). It backs the `authorization.eip1271` arm when the carried blob is
+/// empty: a Safe whose owner is the host key produces the verifier payload on
+/// demand instead of supplying a pre-resolved blob. Keys-out — the private key
+/// stays in the host.
+struct HostEip1271Provider {
+    chain: SupportedChainId,
+    sign: SignFn,
+}
+
+#[cfg_attr(target_arch = "wasm32", cow_sdk_signing::async_trait(?Send))]
+#[cfg_attr(not(target_arch = "wasm32"), cow_sdk_signing::async_trait)]
+impl cow_sdk_signing::eip1271::Eip1271Signer for HostEip1271Provider {
+    async fn sign(
+        &self,
+        order_to_sign: &cow_sdk_core::OrderData,
+    ) -> Result<String, cow_sdk_signing::eip1271::Eip1271SignatureError> {
+        let fail = |message: String| {
+            cow_sdk_signing::eip1271::Eip1271SignatureError::provider("host-sign-digest", message)
+        };
+        let generated =
+            cow_sdk_signing::generate_order_id(self.chain, order_to_sign, &Address::ZERO, None)
+                .map_err(|error| fail(error.to_string()))?;
+        let ecdsa = (self.sign)(generated.order_digest.as_slice()).map_err(fail)?;
+        if ecdsa.len() != 65 {
+            return Err(fail(format!(
+                "host signer returned {} bytes, expected 65",
+                ecdsa.len()
+            )));
+        }
+        let ecdsa_hex = alloy_primitives::hex::encode_prefixed(&ecdsa);
+        cow_sdk_signing::eip1271_signature_payload(order_to_sign, &ecdsa_hex)
+            .map_err(|error| fail(error.to_string()))
+    }
+}
+
+/// The lane-agnostic order authorization mode, lowered from each world's
+/// generated `authorization` variant (ADR 0073). It mirrors the data-only WIT
+/// shape: `Ecdsa` signs through the host signer, `Eip1271` carries the
+/// (possibly empty) pre-resolved contract-signature blob, and `PreSign` consults
+/// no signer.
+pub enum AuthParams {
+    /// EOA / EIP-712 signing through the host signer.
+    Ecdsa,
+    /// Safe off-chain contract signature; the bytes are the pre-resolved blob,
+    /// empty meaning the host signer produces it on demand.
+    Eip1271(Vec<u8>),
+    /// Safe on-chain pre-sign; no signing.
+    PreSign,
+}
+
+/// The lane-agnostic placement result, lowered into each world's generated
+/// `order-placement` variant (ADR 0073). `Live` carries the order UID; `Pending`
+/// additionally carries the on-chain activation calls as `(to, data, value)`
+/// wire parts.
+pub enum Placement {
+    /// The order is live at post (`Ecdsa` / `Eip1271`).
+    Live { order_uid: String },
+    /// The order is posted but not yet authorized on-chain (`PreSign`).
+    Pending {
+        order_uid: String,
+        calls: Vec<(String, String, String)>,
+    },
+}
+
 /// A host contract-read call: `(address, method, abi-json, args-json)` in, the
 /// host's ABI-decoded result as JSON out. World-agnostic — each world wraps its
 /// generated `contract-read` import as this fn pointer.
@@ -517,6 +603,172 @@ where
         .await
         .map_err(|error| from_trading(&error))?;
     Ok(serde_json::json!({ "uid": posted.order_id.to_hex_string() }).to_string())
+}
+
+/// Builds the `Arc<dyn Eip1271Signer>` the `Eip1271` authorization arm threads
+/// into the native placement: the pre-resolved blob returned verbatim, or — when
+/// the blob is empty — the host signer producing the contract-signature payload
+/// on demand (ADR 0073).
+#[cfg(any(feature = "world-client-sync", feature = "world-client-async"))]
+fn eip1271_provider(
+    blob: &[u8],
+    chain: SupportedChainId,
+    sign: SignFn,
+) -> Arc<dyn cow_sdk_signing::eip1271::Eip1271Signer> {
+    if blob.is_empty() {
+        Arc::new(HostEip1271Provider { chain, sign })
+    } else {
+        Arc::new(ResolvedEip1271Provider {
+            signature: alloy_primitives::hex::encode_prefixed(blob),
+        })
+    }
+}
+
+/// Lowers the native [`OrderPlacement`] sum into the lane-agnostic [`Placement`]
+/// (ADR 0073), stringifying the activation calls of a pending pre-sign order to
+/// their `(to, data, value)` wire parts.
+#[cfg(any(feature = "world-client-sync", feature = "world-client-async"))]
+fn to_placement(placement: cow_sdk_trading::OrderPlacement) -> Placement {
+    use cow_sdk_trading::OrderPlacement;
+    match placement {
+        OrderPlacement::Live { order_uid } => Placement::Live {
+            order_uid: order_uid.to_hex_string(),
+        },
+        OrderPlacement::PendingActivation {
+            order_uid,
+            activation,
+        } => Placement::Pending {
+            order_uid: order_uid.to_hex_string(),
+            calls: activation
+                .calls
+                .iter()
+                .map(|tx| {
+                    (
+                        tx.to.to_hex_string(),
+                        tx.data.to_hex_string(),
+                        tx.value.to_string(),
+                    )
+                })
+                .collect(),
+        },
+        // `OrderPlacement` is `#[non_exhaustive]`; a future arm fails closed
+        // rather than emitting a placement the consumer cannot match.
+        _ => Placement::Live {
+            order_uid: String::new(),
+        },
+    }
+}
+
+/// Quotes, authorizes a swap through `auth`, and posts it for `owner`,
+/// returning the typed placement sum (ADR 0073). `Ecdsa` signs through the host
+/// signer and `Eip1271` through the resolved-or-host provider, both resolving to
+/// `Live`; `PreSign` posts with no signer and resolves to `Pending` carrying the
+/// on-chain activation calls.
+#[cfg(any(feature = "world-client-sync", feature = "world-client-async"))]
+pub async fn run_place_swap<T>(
+    transport: T,
+    sign: SignFn,
+    params: SwapParams<'_>,
+    owner: &str,
+    auth: AuthParams,
+) -> Result<Placement, ReadError>
+where
+    T: HttpTransport + Send + Sync + 'static,
+{
+    use cow_sdk_trading::{Authorization, NoSigner};
+
+    let chain =
+        SupportedChainId::try_from(params.chain_id).map_err(|error| invalid(error.to_string()))?;
+    let env = parse_env(params.env).map_err(invalid)?;
+    let app_code = params.app_code;
+    let owner = parse_addr(owner)?;
+    let trade = swap_trade_params(&params)?;
+
+    let trading = build_trading(transport, chain, env, app_code)?;
+    let quote = trading
+        .quote_only(trade, None)
+        .await
+        .map_err(|error| from_trading(&error))?;
+
+    let placement = match auth {
+        AuthParams::Ecdsa => {
+            let signer = HostSigner { owner, chain, sign };
+            trading
+                .place_swap(&quote, owner, Authorization::ecdsa(&signer), None)
+                .await
+        }
+        AuthParams::Eip1271(blob) => {
+            let provider = eip1271_provider(&blob, chain, sign);
+            trading
+                .place_swap(
+                    &quote,
+                    owner,
+                    Authorization::<NoSigner>::eip1271(provider),
+                    None,
+                )
+                .await
+        }
+        AuthParams::PreSign => {
+            trading
+                .place_swap(&quote, owner, Authorization::<NoSigner>::pre_sign(), None)
+                .await
+        }
+    }
+    .map_err(|error| from_trading(&error))?;
+    Ok(to_placement(placement))
+}
+
+/// Authorizes a limit order through `auth` and posts it for `owner`, returning
+/// the typed placement sum (ADR 0073). The authorization arms map exactly as for
+/// `run_place_swap`.
+#[cfg(any(feature = "world-client-sync", feature = "world-client-async"))]
+pub async fn run_place_limit<T>(
+    transport: T,
+    sign: SignFn,
+    params: LimitParams<'_>,
+    owner: &str,
+    auth: AuthParams,
+) -> Result<Placement, ReadError>
+where
+    T: HttpTransport + Send + Sync + 'static,
+{
+    use cow_sdk_trading::{Authorization, NoSigner};
+
+    let chain =
+        SupportedChainId::try_from(params.chain_id).map_err(|error| invalid(error.to_string()))?;
+    let env = parse_env(params.env).map_err(invalid)?;
+    let app_code = params.app_code;
+    let owner = parse_addr(owner)?;
+    let limit = limit_trade_params(&params)?;
+
+    let trading = build_trading(transport, chain, env, app_code)?;
+
+    let placement = match auth {
+        AuthParams::Ecdsa => {
+            let signer = HostSigner { owner, chain, sign };
+            trading
+                .place_limit(limit, owner, Authorization::ecdsa(&signer), None)
+                .await
+        }
+        AuthParams::Eip1271(blob) => {
+            let provider = eip1271_provider(&blob, chain, sign);
+            trading
+                .place_limit(
+                    limit,
+                    owner,
+                    Authorization::<NoSigner>::eip1271(provider),
+                    None,
+                )
+                .await
+        }
+        AuthParams::PreSign => {
+            trading
+                .place_limit(limit, owner, Authorization::<NoSigner>::pre_sign(), None)
+                .await
+        }
+    }
+    .map_err(|error| from_trading(&error))?;
+    Ok(to_placement(placement))
 }
 
 /// Fetches a rich trading quote — amounts and costs, suggested slippage, and

@@ -346,6 +346,37 @@ export class TradingClient {
     );
   }
 
+  async placeSwap(
+    quoteResults: raw.QuoteResults,
+    owner: string,
+    auth: raw.Authorization,
+    options?: SigningOptions | null
+  ): Promise<WasmEnvelope<raw.OrderPlacement>> {
+    return this.#callSigning(
+      (client, merged) => client.placeSwap(quoteResults, owner, auth, merged ?? null),
+      options
+    );
+  }
+
+  async placeLimit(
+    params: raw.LimitTradeParams,
+    owner: string,
+    auth: raw.Authorization,
+    options?: SigningOptions | null
+  ): Promise<WasmEnvelope<raw.OrderPlacement>> {
+    return this.#callSigning(
+      (client, merged) => client.placeLimit(params, owner, auth, merged ?? null),
+      options
+    );
+  }
+
+  buildPresignActivationTransaction(
+    params: raw.PresignActivationParams
+  ): WasmEnvelope<raw.SafeActivation> {
+    assertActive(this.#disposed);
+    return callSync(() => this.#inner.buildPresignActivationTransaction(params));
+  }
+
   dispose(): void {
     if (!this.#disposed) {
       disposeRaw(this.#inner);
@@ -582,6 +613,7 @@ export type {
   AppDataInfo,
   AppDataObject,
   ApprovalParams,
+  Authorization,
   BuiltSellNativeCurrencyTx,
   BuyTokenDestination,
   CompetitionAuction,
@@ -611,6 +643,7 @@ export type {
   OrderCreation,
   OrderInteractions,
   OrderKind,
+  OrderPlacement,
   OrderPostingResult,
   OrderQuoteRequest,
   OrderQuoteResponse,
@@ -619,9 +652,11 @@ export type {
   PaginationOptions,
   PartnerFee,
   PartnerFeePolicy,
+  PresignActivationParams,
   QuoteAmountsAndCosts,
   QuoteData,
   QuoteResults,
+  SafeActivation,
   SellTokenSource,
   SettlementEvent,
   SignedCancellations,

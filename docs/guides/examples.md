@@ -39,6 +39,7 @@ and post in one call — or `quote` to inspect the result before `submit`. The
 | Inspect order lifecycle and on-chain actions | `order_lifecycle`, `receipt_lifecycle`, `ethflow`, `ethflow_checker`, `onchain_actions` |
 | Classify and handle SDK errors | `error_classification` |
 | Work with app-data and signing | `app_data`, `sign_order`, `eip1271_signer` |
+| Authorize an order from a Safe (off-chain EIP-1271 or on-chain pre-sign) | `eip1271_signer`, `presign_order` |
 | Redirect swap proceeds to another address | `receiver_redirect` |
 | Inspect typed orderbook transport | `orderbook_transport`, `order_history` |
 | Work with read-only subgraph access | `subgraph_query` |

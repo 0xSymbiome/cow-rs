@@ -48,6 +48,14 @@ fn tx_helpers_resolve_targets_and_encode_canonical_calls() {
         .address(ContractId::EthFlow, SupportedChainId::Mainnet, CowEnv::Prod)
         .expect("eth-flow registered for mainnet")
         .to_hex_string();
+    let vault_relayer = Registry::default()
+        .address(
+            ContractId::VaultRelayer,
+            SupportedChainId::Mainnet,
+            CowEnv::Prod,
+        )
+        .expect("vault relayer registered for mainnet")
+        .to_hex_string();
 
     // wrap: target the wrapped-native token, deposit() selector, amount as value.
     let (to, data, value) = super::tx::wrap(1, "1000").expect("wrap");
@@ -78,6 +86,37 @@ fn tx_helpers_resolve_targets_and_encode_canonical_calls() {
     let (to, _, value) = super::tx::cancel(1, &uid, None).expect("cancel");
     assert_eq!(to, settlement);
     assert_eq!(value, "0");
+
+    // presign-activation (ADR 0073): the ordered approve-then-set-pre-signature
+    // bundle. The approve targets the sell token (spender = vault relayer) and
+    // the set-pre-signature targets the settlement contract; both send no value.
+    let calls =
+        super::tx::presign_activation(1, &uid, &token, "5", None).expect("presign-activation");
+    assert_eq!(calls.len(), 2, "approve then set-pre-signature");
+    let (approve_to, approve_data, approve_value) = &calls[0];
+    assert_eq!(approve_to, &token, "approve targets the sell token");
+    assert!(
+        approve_data.starts_with("0x095ea7b3"),
+        "approve(address,uint256)"
+    );
+    assert!(
+        approve_data.contains(&vault_relayer.trim_start_matches("0x").to_lowercase()),
+        "approve spender is the vault relayer"
+    );
+    assert_eq!(approve_value, "0");
+    let (presign_to, presign_data, presign_value) = &calls[1];
+    assert_eq!(
+        presign_to, &settlement,
+        "set-pre-signature targets settlement"
+    );
+    let set_pre_signature_selector = alloy_primitives::hex::encode_prefixed(
+        &alloy_primitives::keccak256(b"setPreSignature(bytes,bool)").0[..4],
+    );
+    assert!(
+        presign_data.starts_with(&set_pre_signature_selector),
+        "setPreSignature(bytes,bool)"
+    );
+    assert_eq!(presign_value, "0");
 
     // sell-native and cancel-native: target the eth-flow contract.
     let (to, _, _) = super::tx::sell_native(1, ORDER_JSON, 7, None).expect("sell-native");

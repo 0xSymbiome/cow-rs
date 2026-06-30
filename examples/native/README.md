@@ -43,6 +43,7 @@ The catalog below is listed in reference order; see
 | `cancel_in_flight` | Cancel an in-flight quote with `Cancellable::cancel_with(&token)` |
 | `limit_order` | Build and simulate signed limit-order submission through the fluent `Trading::limit()` builder, plus the signer-less pre-sign variant (`limit().post_presign()`) |
 | `eip1271_signer` | Post a limit order signed by a custom `Eip1271Signer` (smart account) |
+| `presign_order` | Place a Safe pre-sign swap via `Trading::place_swap` with `Authorization::pre_sign()`, match `OrderPlacement::PendingActivation`, and inspect the bundled approve / `setPreSignature` activation calls |
 | `receiver_redirect` | Redirect swap proceeds to an address other than the owner via `receiver` |
 | `order_lifecycle` | Inspect order lookup and off-chain cancellation |
 | `receipt_lifecycle` | Drive `submit_and_wait_for_receipt` through the testing doubles for mined, reverted, and timeout outcomes |
@@ -111,6 +112,7 @@ cargo run -p cow-sdk-examples-native --example slippage_suggester
 cargo run -p cow-sdk-examples-native --example cancel_in_flight
 cargo run -p cow-sdk-examples-native --example limit_order
 cargo run -p cow-sdk-examples-native --example eip1271_signer
+cargo run -p cow-sdk-examples-native --example presign_order
 cargo run -p cow-sdk-examples-native --example order_lifecycle
 cargo run -p cow-sdk-examples-native --example receipt_lifecycle
 cargo run -p cow-sdk-examples-native --example swap_quickstart

@@ -63,6 +63,32 @@ pub fn pre_sign(
     Ok(parts(&tx))
 }
 
+/// Builds the on-chain activation bundle for an already-posted pre-sign order:
+/// the ordered `[approve, setPreSignature]` calls a smart-contract wallet runs
+/// to authorize it. Wraps the native `build_presign_activation`, returning each
+/// call as the `(to, data, value)` wire parts.
+pub fn presign_activation(
+    chain_id: u64,
+    order_uid: &str,
+    sell_token: &str,
+    amount: &str,
+    env: Option<&str>,
+) -> Result<Vec<(String, String, String)>, String> {
+    let chain = parse_chain(chain_id)?;
+    let uid = OrderUid::new(order_uid).map_err(|error| error.to_string())?;
+    let sell_token = Address::new(sell_token).map_err(|error| error.to_string())?;
+    let amount = Amount::new(amount).map_err(|error| error.to_string())?;
+    let activation = cow_sdk_trading::build_presign_activation(
+        &uid,
+        sell_token,
+        amount,
+        chain,
+        Some(&options(env)?),
+    )
+    .map_err(|error| error.to_string())?;
+    Ok(activation.calls.iter().map(parts).collect())
+}
+
 /// Builds a settlement on-chain cancellation transaction.
 pub fn cancel(
     chain_id: u64,

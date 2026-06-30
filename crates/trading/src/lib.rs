@@ -30,6 +30,19 @@
 //! or [`SwapBuilder::quote`] to inspect a [`QuotedSwap`] before
 //! [`QuotedSwap::submit`]. The flat free functions and [`Trading`] methods remain
 //! the full surface; the builder is an additive ergonomic entry over them.
+//!
+//! # Placement by authorization
+//!
+//! [`place_swap`] and [`place_limit`] take the authorization mode as one
+//! [`Authorization`] value — [`Authorization::Ecdsa`], [`Authorization::Eip1271`],
+//! or [`Authorization::PreSign`] — so a smart-contract-wallet order is the same
+//! call shape as an EOA order. The mode statically selects the typed
+//! [`OrderPlacement`] result: the signing arms resolve to
+//! [`OrderPlacement::Live`], while [`Authorization::PreSign`] resolves to
+//! [`OrderPlacement::PendingActivation`], whose [`SafeActivation`] carries the
+//! on-chain approve-then-set-pre-signature bundle the owner must still send or
+//! propose from the smart account ([`build_presign_activation`] builds the same
+//! bundle for an already-posted order).
 
 #![warn(missing_docs)]
 
@@ -55,6 +68,8 @@ pub mod onchain;
 pub mod order;
 /// Offline helper validation entry points on trade-parameter builders.
 pub mod params;
+/// Authorization-as-a-value placement and bundled pre-sign activation.
+pub mod placement;
 /// Quote-to-post orchestration helpers.
 pub mod post;
 /// Quote construction and quote-request precedence helpers.
@@ -68,6 +83,8 @@ pub mod types;
 /// Typed client-side validator enforcing the reviewed services
 /// protocol-invariant matrix on every submission seam.
 pub mod validation;
+/// Honest EIP-1271 preflight and pre-sign lifecycle status helpers.
+pub mod verify;
 /// Broadcast-then-poll helpers for mined transaction receipts.
 pub mod wait;
 
@@ -89,9 +106,14 @@ pub use order::{
 pub(crate) use order::{
     adjust_eth_flow_limit_params, adjust_eth_flow_trade_params, is_eth_flow_order,
 };
+pub use placement::{
+    Authorization, NoSigner, OrderPlacement, SafeActivation, build_presign_activation, place_limit,
+    place_swap,
+};
 pub use post::{
-    post_cow_protocol_trade, post_limit_order, post_limit_order_presign,
+    build_limit_order_to_sign, post_cow_protocol_trade, post_limit_order, post_limit_order_presign,
     post_sell_native_currency_order, post_swap_order, post_swap_order_from_quote,
+    post_swap_order_presign,
 };
 pub use quote::{quote_only, quote_results};
 pub use slippage::{
@@ -112,4 +134,5 @@ pub use types::{
 // construction shape (see ADR 0011). Internal modules reach it through the crate root.
 pub(crate) use types::PartialTraderParams;
 pub use validation::{AmountSide, ClientRejection, OrderBoundsValidator};
+pub use verify::{preflight_eip1271, presign_activation_status};
 pub use wait::{WaitError, WaitOptions, poll_for_receipt, submit_and_wait_for_receipt};

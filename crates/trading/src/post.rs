@@ -188,20 +188,7 @@ where
         params.eth_flow_contract_override.as_ref(),
         trader.eth_flow_contract_override.as_ref(),
     );
-    let order_to_sign = order_to_sign(
-        crate::order::OrderToSignParams {
-            chain_id,
-            from,
-            is_eth_flow: false,
-            network_costs_amount: additional_params.network_costs_amount,
-            apply_costs_slippage_and_fees: additional_params
-                .apply_costs_slippage_and_fees
-                .unwrap_or(true),
-            protocol_fee_bps: additional_params.protocol_fee_bps,
-        },
-        &params,
-        &app_data.app_data_keccak256,
-    )?;
+    let order_to_sign = build_order_to_sign(chain_id, from, additional_params, &params, app_data)?;
 
     let validator = OrderBoundsValidator::services_default_for_chain(chain_id);
     validator
@@ -272,6 +259,121 @@ pub(super) fn current_unix_seconds() -> u64 {
         .duration_since(UNIX_EPOCH)
         .map(|duration| duration.as_secs())
         .unwrap_or(0)
+}
+
+/// Builds the unsigned order payload (`order_to_sign`) for a postable trade.
+///
+/// The single site that assembles [`OrderToSignParams`](crate::order::OrderToSignParams)
+/// from the resolved owner and additional-params bag and calls the public
+/// [`order_to_sign`] helper. [`post_cow_protocol_trade`] consumes it on the
+/// submission path, and [`build_limit_order_to_sign`] consumes it to expose the
+/// same digest at a boundary, so the two cannot diverge.
+fn build_order_to_sign(
+    chain_id: cow_sdk_core::SupportedChainId,
+    from: Address,
+    additional_params: &crate::types::PostTradeAdditionalParams,
+    params: &LimitTradeParams,
+    app_data: &TradingAppDataInfo,
+) -> Result<cow_sdk_core::OrderData, TradingError> {
+    order_to_sign(
+        crate::order::OrderToSignParams {
+            chain_id,
+            from,
+            is_eth_flow: false,
+            network_costs_amount: additional_params.network_costs_amount,
+            apply_costs_slippage_and_fees: additional_params
+                .apply_costs_slippage_and_fees
+                .unwrap_or(true),
+            protocol_fee_bps: additional_params.protocol_fee_bps,
+        },
+        params,
+        &app_data.app_data_keccak256,
+    )
+}
+
+/// Resolves the limit-order app-data and the limit-specific posting defaults
+/// from the caller's parameters and advanced settings.
+///
+/// Runs the pre-submission steps [`post_limit_order`] applies before building the
+/// order: it folds quote-request and app-data overrides onto the parameters,
+/// defaults the limit slippage to `0` basis points, builds the app-data document
+/// under [`OrderClass::Limit`], and defaults `apply_costs_slippage_and_fees` to
+/// `false` so the signed amounts are the raw limit amounts. Both
+/// [`post_limit_order`] and [`build_limit_order_to_sign`] call it, so the limit
+/// defaults live in one place.
+async fn resolve_limit_order_build_inputs(
+    params: &LimitTradeParams,
+    trader: &TraderParams,
+    advanced_settings: Option<&TradeAdvancedSettings>,
+) -> Result<
+    (
+        LimitTradeParams,
+        TradingAppDataInfo,
+        crate::types::PostTradeAdditionalParams,
+    ),
+    TradingError,
+> {
+    let mut params = apply_settings_to_limit_trade_parameters(
+        params,
+        advanced_settings.and_then(|settings| settings.quote_request.as_ref()),
+        advanced_settings.and_then(|settings| settings.app_data.as_ref()),
+    )?;
+    if params.slippage_bps.is_none() {
+        params.slippage_bps = Some(0);
+    }
+
+    let app_data_info = build_app_data(
+        &trader.app_code,
+        params.slippage_bps.unwrap_or(0),
+        OrderClass::Limit,
+        params.partner_fee.as_ref(),
+        advanced_settings.and_then(|settings| settings.app_data.as_ref()),
+    )
+    .await?;
+
+    let mut additional = advanced_additional_params(advanced_settings);
+    if additional.apply_costs_slippage_and_fees.is_none() {
+        additional.apply_costs_slippage_and_fees = Some(false);
+    }
+
+    Ok((params, app_data_info, additional))
+}
+
+/// Builds the unsigned limit order (`order_to_sign`) and its app-data exactly as
+/// [`post_limit_order`] does before posting, without contacting a signer or the
+/// orderbook.
+///
+/// `owner` is injected as the order owner (the same assignment the placement path
+/// makes), so `from == owner` and the receiver default resolve identically to the
+/// posting path. The returned [`OrderData`](cow_sdk_core::OrderData) is the digest
+/// a smart account signs for an EIP-1271 limit order: a caller that resolves a
+/// contract signature against it can hand the resolved blob to
+/// [`place_limit`](crate::place_limit) with [`Authorization::Eip1271`](crate::Authorization::Eip1271),
+/// which rebuilds the same order and echoes the resolved signature. Pair it with
+/// [`cow_sdk_signing::order_typed_data`] for the EIP-712 payload to present to the
+/// wallet.
+///
+/// This shares [`resolve_limit_order_build_inputs`] and [`build_order_to_sign`]
+/// with [`post_limit_order`], so the produced order is byte-identical to the one
+/// the posting path signs for the same inputs.
+///
+/// # Errors
+///
+/// Returns [`TradingError`] when app-data generation, amount calculation, or
+/// order construction fails — the same failures [`post_limit_order`] surfaces
+/// before posting.
+pub async fn build_limit_order_to_sign(
+    params: &LimitTradeParams,
+    owner: Address,
+    trader: &TraderParams,
+    advanced_settings: Option<&TradeAdvancedSettings>,
+) -> Result<(cow_sdk_core::OrderData, TradingAppDataInfo), TradingError> {
+    let mut params = params.clone();
+    params.owner = Some(owner);
+    let (params, app_data_info, additional) =
+        resolve_limit_order_build_inputs(&params, trader, advanced_settings).await?;
+    let order = build_order_to_sign(trader.chain_id, owner, &additional, &params, &app_data_info)?;
+    Ok((order, app_data_info))
 }
 
 pub(super) fn apply_settings_to_limit_trade_parameters(
@@ -474,6 +576,56 @@ where
     .await
 }
 
+/// Posts a swap order from quote results under the pre-sign scheme without
+/// consulting a signer.
+///
+/// The swap counterpart of [`post_limit_order_presign`]: the order is submitted
+/// with [`SigningScheme::PreSign`] and only becomes fillable once the owner sets
+/// the on-chain pre-signature flag via `setPreSignature` on the settlement
+/// contract — for example by submitting the transaction built by
+/// [`crate::pre_sign_transaction`], or the bundled
+/// [`crate::build_presign_activation`]. This is the smart-contract-owner path:
+/// Safes and other smart accounts place the order off-chain first and approve it
+/// on-chain from the contract itself.
+///
+/// Because no signer participates, the owner must be explicit on the quote's
+/// trade parameters (or an advanced-settings `quote_request.from` override). Any
+/// signing-scheme override carried in `advanced_settings` is superseded by
+/// [`SigningScheme::PreSign`].
+///
+/// # Errors
+///
+/// Returns [`TradingError::MissingSubmissionOwner`] when no explicit owner is
+/// resolvable, and otherwise the same binding, app-data, signing-dispatch, and
+/// submission errors as [`post_swap_order_from_quote`].
+pub async fn post_swap_order_presign<O>(
+    quote_results: &QuoteResults,
+    trader: &TraderParams,
+    advanced_settings: Option<&TradeAdvancedSettings>,
+    orderbook: &O,
+) -> Result<OrderPostingResult, TradingError>
+where
+    O: OrderbookClient + ?Sized,
+{
+    let mut settings = advanced_settings.cloned().unwrap_or_default();
+    settings.quote_request = Some(
+        settings
+            .quote_request
+            .take()
+            .unwrap_or_default()
+            .with_signing_scheme(SigningScheme::PreSign),
+    );
+
+    post_swap_order_from_quote(
+        quote_results,
+        trader,
+        &PreSignPlacementSigner,
+        Some(&settings),
+        orderbook,
+    )
+    .await
+}
+
 /// Signs and submits a limit order.
 ///
 /// Advanced settings override overlapping quote-request and app-data fields before submission.
@@ -500,28 +652,8 @@ where
         .and_then(|settings| settings.app_data.as_ref())
         .and_then(|params| params.signer);
 
-    let mut params = apply_settings_to_limit_trade_parameters(
-        params,
-        advanced_settings.and_then(|settings| settings.quote_request.as_ref()),
-        advanced_settings.and_then(|settings| settings.app_data.as_ref()),
-    )?;
-    if params.slippage_bps.is_none() {
-        params.slippage_bps = Some(0);
-    }
-
-    let app_data_info = build_app_data(
-        &trader.app_code,
-        params.slippage_bps.unwrap_or(0),
-        OrderClass::Limit,
-        params.partner_fee.as_ref(),
-        advanced_settings.and_then(|settings| settings.app_data.as_ref()),
-    )
-    .await?;
-
-    let mut additional = advanced_additional_params(advanced_settings);
-    if additional.apply_costs_slippage_and_fees.is_none() {
-        additional.apply_costs_slippage_and_fees = Some(false);
-    }
+    let (params, app_data_info, additional) =
+        resolve_limit_order_build_inputs(params, trader, advanced_settings).await?;
 
     post_cow_protocol_trade(
         orderbook,

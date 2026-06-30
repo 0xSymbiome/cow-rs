@@ -149,6 +149,25 @@ impl exports::cow::protocol::tx::Guest for Component {
         super::tx::pre_sign(chain_id, &order_uid, env.as_deref()).map(tx_request)
     }
 
+    fn presign_activation(
+        chain_id: u64,
+        order_uid: String,
+        sell_token: String,
+        amount: String,
+        env: Option<String>,
+    ) -> Result<exports::cow::protocol::tx::SafeActivation, String> {
+        let calls = super::tx::presign_activation(
+            chain_id,
+            &order_uid,
+            &sell_token,
+            &amount,
+            env.as_deref(),
+        )?;
+        Ok(exports::cow::protocol::tx::SafeActivation {
+            calls: calls.into_iter().map(tx_request).collect(),
+        })
+    }
+
     fn cancel(
         chain_id: u64,
         order_uid: String,
