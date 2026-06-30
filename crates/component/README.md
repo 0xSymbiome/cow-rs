@@ -8,8 +8,8 @@ runtimes: JavaScript/TypeScript through [`jco`](https://bytecodealliance.github.
 
 It is the second WASM distribution lane of the SDK, alongside the wasm-bindgen
 crate `cow-sdk-js` (which targets npm for JavaScript apps). This crate targets
-`wasm32-wasip2`; distribution as a component through OCI and GitHub Release (never
-crates.io) is planned and not yet wired.
+`wasm32-wasip2` and distributes as a component through OCI and GitHub Release,
+never crates.io.
 
 The crate wraps `cow-sdk-core`, `cow-sdk-signing`, `cow-sdk-orderbook`, and
 `cow-sdk-trading`; it never forks protocol logic. HTTP and signing are host
@@ -25,6 +25,20 @@ One world is one component; build with exactly one world feature.
 | `order-engine` | `world-engine` (default) | `order`, `chains`, `app-data`, `tx`, `composable`, `trading-math`, `order-signing`, `events` | none |
 | `client-sync` | `world-client-sync` | `orderbook-read`, `orderbook-write`, `trading` (sync) | `signer`, `contract-read`, `wasi:http@0.2` |
 | `client-async` | `world-client-async` | `orderbook-read-async`, `orderbook-write-async`, `trading-async` | `signer`, `contract-read`, `wasi:http@0.3` |
+
+## Pull
+
+Each world ships as an OCI package under `ghcr.io/0xsymbiome`:
+
+| World | Package |
+| --- | --- |
+| `order-engine` | `cow-sdk-component-engine` |
+| `client-sync` | `cow-sdk-component-client-sync` |
+| `client-async` | `cow-sdk-component-client-async` |
+
+```text
+wkg oci pull ghcr.io/0xsymbiome/cow-sdk-component-engine:0.1.0-alpha.9
+```
 
 ## Build
 

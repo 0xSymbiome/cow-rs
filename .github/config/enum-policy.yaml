@@ -446,3 +446,28 @@ enums:
     category: sdk-local-state
     expected_marker: non_exhaustive
     reason: The merkle multiplexer construction and proof-generation failure modes can grow.
+  - name: Authorization
+    file: crates/trading/src/placement.rs
+    category: protocol-fixed-exhaustive
+    expected_marker: exhaustive
+    reason: The order authorization modes are the three protocol signing paths (Ecdsa, Eip1271, PreSign); a new mode is a placement-surface change, not an additive wire value.
+  - name: OrderPlacement
+    file: crates/trading/src/placement.rs
+    category: sdk-local-state
+    expected_marker: non_exhaustive
+    reason: The typed placement result can grow as new authorization outcomes are modeled beyond the live and pending-activation arms.
+  - name: OrderPlacement
+    file: crates/js/src/dto/contracts.rs
+    category: sdk-local-state
+    expected_marker: exhaustive
+    reason: Wasm-boundary projection of the placement sum into a status-tagged DTO; the JavaScript ABI surface stays closed and a new native arm is rendered live by the projection rather than widening this type.
+  - name: AuthParams
+    file: crates/component/src/client/core.rs
+    category: sdk-local-state
+    expected_marker: exhaustive
+    reason: Lane-agnostic authorization lowered from the data-only WIT authorization variant; closed to the three modes the contract models.
+  - name: Placement
+    file: crates/component/src/client/core.rs
+    category: sdk-local-state
+    expected_marker: exhaustive
+    reason: Lane-agnostic placement lowered into the data-only WIT order-placement variant; closed to the live and pending arms the contract models.

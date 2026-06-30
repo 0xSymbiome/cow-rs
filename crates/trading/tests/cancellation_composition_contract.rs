@@ -26,8 +26,8 @@ use cow_sdk_orderbook::{
     Order, OrderCancellations, OrderCreation, OrderQuoteRequest, OrderQuoteResponse, OrderbookError,
 };
 use cow_sdk_trading::{
-    AllowanceParams, ApprovalParams, OrderPostingResult, OrderTraderParams, OrderbookClient,
-    PreparedTransaction, QuoteResults, Trading, TradingError,
+    AllowanceParams, ApprovalParams, Authorization, OrderPlacement, OrderPostingResult,
+    OrderTraderParams, OrderbookClient, PreparedTransaction, QuoteResults, Trading, TradingError,
 };
 
 use crate::common::{
@@ -65,6 +65,18 @@ const TESTED_METHODS: &[CancellationCase] = &[
     CancellationCase {
         method_name: "post_limit_order_presign",
         invoke: invoke_post_limit_order_presign,
+    },
+    CancellationCase {
+        method_name: "place_swap",
+        invoke: invoke_place_swap,
+    },
+    CancellationCase {
+        method_name: "place_limit",
+        invoke: invoke_place_limit,
+    },
+    CancellationCase {
+        method_name: "preflight_eip1271",
+        invoke: invoke_preflight_eip1271,
     },
     CancellationCase {
         method_name: "pre_sign_transaction",
@@ -440,6 +452,50 @@ fn invoke_post_limit_order_presign(harness: &TradingHarness) -> CaseFuture<'_> {
             .post_limit_order_presign(sample_limit_parameters(OrderKind::Sell), None)
             .await
             .map(|_: OrderPostingResult| ())
+    })
+}
+
+fn invoke_place_swap(harness: &TradingHarness) -> CaseFuture<'_> {
+    Box::pin(async move {
+        harness
+            .trading
+            .place_swap(
+                &harness.quote_results,
+                address(OWNER),
+                Authorization::ecdsa(&harness.signer),
+                None,
+            )
+            .await
+            .map(|_: OrderPlacement| ())
+    })
+}
+
+fn invoke_place_limit(harness: &TradingHarness) -> CaseFuture<'_> {
+    Box::pin(async move {
+        harness
+            .trading
+            .place_limit(
+                sample_limit_parameters(OrderKind::Sell),
+                address(OWNER),
+                Authorization::ecdsa(&harness.signer),
+                None,
+            )
+            .await
+            .map(|_: OrderPlacement| ())
+    })
+}
+
+fn invoke_preflight_eip1271(harness: &TradingHarness) -> CaseFuture<'_> {
+    Box::pin(async move {
+        harness
+            .trading
+            .preflight_eip1271(
+                &harness.provider,
+                address(OWNER),
+                Hash32::new(TX_HASH).expect("test digest literal must be valid"),
+                HexData::empty(),
+            )
+            .await
     })
 }
 

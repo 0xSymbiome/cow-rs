@@ -146,6 +146,10 @@ name = "eip1271_signer"
 path = "scenarios/eip1271_signer.rs"
 
 [[example]]
+name = "presign_order"
+path = "scenarios/presign_order.rs"
+
+[[example]]
 name = "receiver_redirect"
 path = "scenarios/receiver_redirect.rs"
 

@@ -55,7 +55,7 @@ principles:
     name: Additive Optional Ecosystems
     slug: additive-optional-ecosystems
     primary_adr: "0001"
-    supporting_adrs: []
+    supporting_adrs: ["0071"]
 
   - id: 7
     name: Sole Construction Seam
@@ -109,7 +109,7 @@ principles:
     name: Layered Operation Surface
     slug: layered-operation-surface
     primary_adr: "0069"
-    supporting_adrs: ["0002", "0013", "0070"]
+    supporting_adrs: ["0002", "0013", "0070", "0073"]
 
   - id: 16
     name: Off-Chain Orchestration Boundary

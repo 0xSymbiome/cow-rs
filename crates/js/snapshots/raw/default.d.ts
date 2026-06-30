@@ -42,6 +42,12 @@ export interface TradingClientConfig {
     timeoutMs?: number | null;
 }
 
+export interface PresignActivationParams {
+    orderUid: string;
+    sellToken: string;
+    amount: string;
+}
+
 
 
 export interface WalletConfig {
@@ -69,6 +75,11 @@ request: CowEip1271SignRequest,
 export type ContractReadCallback = (
 request: ContractCall,
 ) => Promise<string> | string;
+
+export type Authorization =
+| { kind: "ecdsa"; sign: TypedDataSignerCallback }
+| { kind: "eip1271"; sign: CustomEip1271Callback }
+| { kind: "presign" };
 
 
 
@@ -909,6 +920,25 @@ export interface NetworkFee<T> {
      * Network fee expressed in buy-token units.
      */
     amountInBuyCurrency: T;
+}
+
+/**
+ * On-chain activation a smart-contract wallet runs to authorize a posted
+ * pre-sign order (ADR 0073).
+ *
+ * Carries the ordered approve-then-set-pre-signature pair as transaction
+ * requests for one smart-account batch. The first call grants the vault relayer
+ * the sell-token allowance the order needs at fill time; the second flips the
+ * settlement `setPreSignature` flag that makes the order fillable. The bundle is
+ * transport-neutral: a single-owner Safe sends the calls directly, while a
+ * higher-threshold Safe proposes them to its transaction service for the owners
+ * to co-sign.
+ */
+export interface SafeActivation {
+    /**
+     * Ordered `[approve, setPreSignature]` calls for one smart-account batch.
+     */
+    calls: TransactionRequest[];
 }
 
 /**
@@ -2125,6 +2155,18 @@ export interface ContractCall {
 export type PartnerFee = PartnerFeePolicy | PartnerFeePolicy[];
 
 /**
+ * Typed placement result returned by `placeSwap` and `placeLimit` (ADR 0073).
+ *
+ * The authorization mode statically selects the arm: an ECDSA or EIP-1271 order
+ * is `live` at post, while a pre-sign order is `pendingActivation` and carries
+ * the [`SafeActivation`] the owner must send or propose from the smart account.
+ * The `status` discriminator distinguishes the variants, and the `orderId` is
+ * reachable only by matching the arm, so the on-chain obligation of a pre-sign
+ * order cannot be dropped.
+ */
+export type OrderPlacement = { status: "live"; orderId: string } | { status: "pendingActivation"; orderId: string; activation: SafeActivation };
+
+/**
  * Typed-data domain metadata used for EIP-712 signing.
  */
 export interface TypedDataDomain {
@@ -2745,6 +2787,22 @@ export class TradingClient {
      */
     buildApprovalTx(params: ApprovalParams, options?: SdkClientOptions | null): Promise<WasmEnvelope<TransactionRequest>>;
     /**
+     * Builds the on-chain activation bundle for an already-posted pre-sign order
+     * (ADR 0073).
+     *
+     * Composes the ordered approve-then-set-pre-signature pair a smart-contract
+     * wallet runs to authorize the order: the ERC-20 `approve` of the sell-token
+     * allowance for the vault relayer and the settlement
+     * `setPreSignature(uid, true)`. The builder is pure — it reads no on-chain
+     * allowance and always emits both calls, so a caller whose vault-relayer
+     * allowance already covers the sell amount may drop the approve leg.
+     *
+     * @param params Order UID, sell token, and sell amount of the pre-sign order.
+     * @returns A versioned envelope containing the activation calls.
+     * @throws CowError when the order UID, sell token, amount, or settlement deployment is invalid.
+     */
+    buildPresignActivationTransaction(params: PresignActivationParams): WasmEnvelope<SafeActivation>;
+    /**
      * Builds the transaction for a native-currency sell order.
      *
      * The helper validates that the order sells the native-token sentinel,
@@ -2852,6 +2910,55 @@ export class TradingClient {
      * @throws CowError when chain, app-code, environment, transport, or policy validation fails.
      */
     constructor(config: TradingClientConfig);
+    /**
+     * Posts a limit order, selecting the authorization mode from `auth` and
+     * returning the typed placement result (ADR 0073).
+     *
+     * `auth` is a tagged union: `{ kind: "ecdsa", sign }` signs the EIP-712
+     * envelope through the typed-data callback (gasless EOA / EIP-712);
+     * `{ kind: "eip1271", sign }` resolves a smart-account contract signature
+     * against the SDK-built limit order through the callback (gasless smart
+     * account); `{ kind: "presign" }` posts with no signer and resolves to
+     * `pendingActivation` carrying the on-chain
+     * approve-then-set-pre-signature bundle the owner must send or propose from
+     * the smart account. The `ecdsa` and `eip1271` arms resolve to a `live`
+     * placement.
+     *
+     * For a Safe, `presign` is the recommended default: it matches the CoW Swap
+     * reference UI, which never asks a Safe to produce an off-chain limit
+     * signature. The `eip1271` arm is for smart accounts that do sign messages
+     * (a 1-of-1 Safe owner, a smart-account wallet). This mirrors the `placeSwap`
+     * guidance, so the limit and swap paths read consistently.
+     *
+     * @param params Limit-order parameters DTO.
+     * @param owner Owner address to bind to the order.
+     * @param auth Authorization mode: ECDSA, EIP-1271, or pre-sign.
+     * @param options Optional cancellation, timeout, and wallet timeout settings.
+     * @returns A versioned envelope containing the typed order placement.
+     * @throws CowError for invalid input, wallet failure, timeout, or rejection.
+     */
+    placeLimit(params: LimitTradeParams, owner: string, auth: Authorization, options?: SigningOptions | null): Promise<WasmEnvelope<OrderPlacement>>;
+    /**
+     * Posts a swap order, selecting the authorization mode from `auth` and
+     * returning the typed placement result (ADR 0073).
+     *
+     * `auth` is a tagged union: `{ kind: "ecdsa", sign }` signs the EIP-712
+     * envelope through the typed-data callback (gasless EOA / EIP-712);
+     * `{ kind: "eip1271", sign }` resolves the smart-account contract signature
+     * through the custom callback at the boundary (gasless Safe); `{ kind:
+     * "presign" }` posts with no signer. The `ecdsa` and `eip1271` arms resolve
+     * to a `live` placement, while `presign` resolves to `pendingActivation`
+     * carrying the on-chain approve-then-set-pre-signature bundle the owner must
+     * send or propose from the smart account.
+     *
+     * @param quoteResults Quote result DTO returned by `getQuote`.
+     * @param owner Owner address to bind to the order.
+     * @param auth Authorization mode: ECDSA, EIP-1271, or pre-sign.
+     * @param options Optional cancellation, timeout, and wallet timeout settings.
+     * @returns A versioned envelope containing the typed order placement.
+     * @throws CowError for invalid input, quote mismatch, wallet failure, timeout, or rejection.
+     */
+    placeSwap(quoteResults: QuoteResults, owner: string, auth: Authorization, options?: SigningOptions | null): Promise<WasmEnvelope<OrderPlacement>>;
     /**
      * Signs and posts a limit order through a typed-data callback.
      *

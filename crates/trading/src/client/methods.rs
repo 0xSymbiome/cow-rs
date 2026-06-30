@@ -3,14 +3,18 @@
 //! Each method resolves trader and orderbook context through the helpers in
 //! [`super`] and delegates to the corresponding crate-level free function.
 
-use cow_sdk_core::{Amount, CowEnv, Provider, Signer, TransactionHash};
+use cow_sdk_core::{
+    Address, Amount, CowEnv, Hash32, HexData, OrderUid, ProtocolOptions, Provider, Signer,
+    TransactionHash,
+};
 
 use super::Trading;
 use crate::{
-    AllowanceParams, ApprovalParams, LimitTradeParams, OrderTraderParams, PreparedTransaction,
-    QuoteResults, TradeAdvancedSettings, TradeParams, TradingError, cow_protocol_allowance,
+    AllowanceParams, ApprovalParams, Authorization, LimitTradeParams, OrderPlacement,
+    OrderTraderParams, PreparedTransaction, QuoteResults, SafeActivation, TradeAdvancedSettings,
+    TradeParams, TradingError, build_presign_activation, cow_protocol_allowance,
     offchain_cancel_order, onchain::protocol_options_for_partial_order, onchain_cancel_order,
-    pre_sign_transaction, quote_only, quote_results,
+    place_limit, place_swap, pre_sign_transaction, preflight_eip1271, quote_only, quote_results,
 };
 
 impl Trading {
@@ -238,6 +242,167 @@ impl Trading {
             orderbook.client.as_ref(),
         )
         .await
+    }
+}
+
+impl Trading {
+    /// Posts a swap order from quote results, selecting the signing path from
+    /// `auth` and returning the typed [`OrderPlacement`] sum (ADR 0073).
+    ///
+    /// [`Authorization::Ecdsa`] and [`Authorization::Eip1271`] resolve to
+    /// [`OrderPlacement::Live`]; [`Authorization::PreSign`] resolves to
+    /// [`OrderPlacement::PendingActivation`] carrying the on-chain
+    /// approve-then-set-pre-signature bundle the owner must send or propose from
+    /// the smart account.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError`] when the stored orderbook binding no longer
+    /// matches, when signing fails, when the orderbook rejects the submission,
+    /// or when the pre-sign activation cannot be built.
+    pub async fn place_swap<S>(
+        &self,
+        quote_results: &QuoteResults,
+        owner: Address,
+        auth: Authorization<'_, S>,
+        advanced_settings: Option<&TradeAdvancedSettings>,
+    ) -> Result<OrderPlacement, TradingError>
+    where
+        S: Signer,
+        S::Error: std::fmt::Display + cow_sdk_core::UserRejection,
+    {
+        let (trader, orderbook) =
+            self.resolve_orderbook_trader(None, quote_results.trade_parameters.env)?;
+
+        place_swap(
+            quote_results,
+            owner,
+            auth,
+            &trader,
+            advanced_settings,
+            orderbook.client.as_ref(),
+        )
+        .await
+    }
+
+    /// Posts a limit order, selecting the signing path from `auth` and returning
+    /// the typed [`OrderPlacement`] sum (ADR 0073).
+    ///
+    /// [`Authorization::Ecdsa`] and [`Authorization::Eip1271`] resolve to
+    /// [`OrderPlacement::Live`]; [`Authorization::PreSign`] resolves to
+    /// [`OrderPlacement::PendingActivation`] carrying the on-chain
+    /// approve-then-set-pre-signature bundle the owner must send or propose from
+    /// the smart account.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError`] when required defaults are missing, when app-data
+    /// generation or signing fails, when the orderbook rejects the submission,
+    /// or when the pre-sign activation cannot be built.
+    pub async fn place_limit<S>(
+        &self,
+        params: LimitTradeParams,
+        owner: Address,
+        auth: Authorization<'_, S>,
+        advanced_settings: Option<&TradeAdvancedSettings>,
+    ) -> Result<OrderPlacement, TradingError>
+    where
+        S: Signer,
+        S::Error: std::fmt::Display + cow_sdk_core::UserRejection,
+    {
+        let (trader, orderbook) = self.resolve_orderbook_trader(None, params.env)?;
+
+        place_limit(
+            params,
+            owner,
+            auth,
+            &trader,
+            advanced_settings,
+            orderbook.client.as_ref(),
+        )
+        .await
+    }
+
+    /// Builds the unsigned limit order (`order_to_sign`) and its app-data the
+    /// posting path would produce for these inputs, without contacting a signer
+    /// or the orderbook.
+    ///
+    /// Resolves trader defaults the same way [`Trading::place_limit`] does, then
+    /// delegates to [`build_limit_order_to_sign`](crate::build_limit_order_to_sign).
+    /// The returned [`OrderData`](cow_sdk_core::OrderData) is the digest a smart
+    /// account signs for an EIP-1271 limit order, so a caller can resolve a
+    /// contract signature against it before handing the order to
+    /// [`Trading::place_limit`] with
+    /// [`Authorization::Eip1271`](crate::Authorization::Eip1271), which rebuilds
+    /// the same order and echoes the resolved signature.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError`] when trader defaults are missing or when app-data
+    /// generation or order construction fails.
+    pub async fn build_limit_order_to_sign(
+        &self,
+        params: &LimitTradeParams,
+        owner: Address,
+        advanced_settings: Option<&TradeAdvancedSettings>,
+    ) -> Result<(cow_sdk_core::OrderData, crate::TradingAppDataInfo), TradingError> {
+        let (trader, _orderbook) = self.resolve_orderbook_trader(None, params.env)?;
+
+        crate::build_limit_order_to_sign(params, owner, &trader, advanced_settings).await
+    }
+
+    /// Builds the on-chain activation bundle for an already-posted pre-sign
+    /// order (ADR 0073).
+    ///
+    /// Resolves the chain and environment from trader defaults, then composes
+    /// the ordered approve-then-set-pre-signature pair via
+    /// [`build_presign_activation`]. Pure: it reads no on-chain allowance and
+    /// always emits both calls.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError::MissingTraderParams`] when no chain default is
+    /// configured, or [`TradingError::Contracts`] when no settlement deployment
+    /// is registered for the chain/environment.
+    pub fn build_presign_activation(
+        &self,
+        order_uid: &OrderUid,
+        sell_token: Address,
+        amount: Amount,
+    ) -> Result<SafeActivation, TradingError> {
+        let chain_id = self
+            .trader_defaults
+            .chain_id
+            .ok_or(TradingError::MissingTraderParams("chainId"))?;
+        let mut options =
+            ProtocolOptions::new().with_env(self.trader_defaults.env.unwrap_or(CowEnv::Prod));
+        if let Some(overrides) = self.trader_defaults.settlement_contract_override.as_ref() {
+            options = options.with_settlement_contract_override(overrides.clone());
+        }
+
+        build_presign_activation(order_uid, sell_token, amount, chain_id, Some(&options))
+    }
+
+    /// Verifies a smart-contract-wallet EIP-1271 signature on-chain and returns
+    /// the real verdict (ADR 0073).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError::Contracts`] when the verifier has no code, the
+    /// provider call fails, or the response does not match the EIP-1271 magic
+    /// value.
+    pub async fn preflight_eip1271<P>(
+        &self,
+        provider: &P,
+        owner: Address,
+        digest: Hash32,
+        signature: HexData,
+    ) -> Result<(), TradingError>
+    where
+        P: Provider,
+        P::Error: std::fmt::Display,
+    {
+        preflight_eip1271(provider, owner, digest, signature).await
     }
 }
 

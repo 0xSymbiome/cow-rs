@@ -79,7 +79,7 @@ pub use self::chains::{DeploymentAddresses, GeneratedOrderUid, WrappedNativeToke
 pub use cow_sdk_app_data::AppDataInfo;
 
 #[cfg(feature = "trading")]
-pub use self::contracts::BuiltSellNativeCurrencyTx;
+pub use self::contracts::{BuiltSellNativeCurrencyTx, OrderPlacement, SafeActivation};
 #[cfg(feature = "trading")]
 pub use cow_sdk_core::ContractCall;
 #[cfg(any(feature = "cancellation", feature = "trading"))]

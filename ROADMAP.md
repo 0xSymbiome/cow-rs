@@ -39,10 +39,12 @@ from polyglot hosts (JavaScript and TypeScript through jco, native hosts through
 Wasmtime, and composition through the Component Model). The crate is a workspace
 member that CI builds for `wasm32-wasip2`; it is `publish = false` and never goes
 to crates.io. Per [ADR 0071](docs/adr/0071-wasm-component-distribution-channel.md)
-(Proposed), the crate and its WIT contract are experimental (`0.x`): the
-distribution and cross-runtime parity machinery — OCI and GitHub Release
-publishing, jco and Wasmtime execution, and a WIT snapshot gate — is not yet
-built, so today CI only compiles the component.
+(Accepted), the crate and its WIT contract are experimental (`0.x`). It is
+published as three OCI packages on `ghcr.io/0xsymbiome` —
+`cow-sdk-component-engine`, `cow-sdk-component-client-sync`, and
+`cow-sdk-component-client-async`; CI builds all three worlds and runs the engine
+golden, while cross-runtime parity machinery — jco and Wasmtime execution and a
+WIT snapshot gate — is not yet wired.
 
 ## Composable Order Capabilities
 

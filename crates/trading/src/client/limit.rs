@@ -9,12 +9,17 @@
 //! counter-amount. The builder mirrors the swap builder so the two read alike.
 
 use std::marker::PhantomData;
+use std::sync::Arc;
 
 use cow_sdk_core::{Address, Amount, OrderKind, Signer, UserRejection};
+use cow_sdk_signing::eip1271::Eip1271Signer;
 
 use super::Trading;
 use super::swap::{Set, Unset};
-use crate::{LimitTradeParams, OrderPostingResult, TradeAdvancedSettings, TradingError};
+use crate::{
+    Authorization, LimitTradeParams, OrderPlacement, OrderPostingResult, TradeAdvancedSettings,
+    TradingError,
+};
 
 impl Trading {
     /// Opens the fluent, typed limit-order lifecycle.
@@ -283,6 +288,34 @@ impl LimitBuilder<'_, Set, Set, Set, Set> {
         let params = self.to_limit_parameters();
         self.trading
             .post_limit_order_presign(params, self.advanced.as_ref())
+            .await
+    }
+
+    /// Posts the limit order under the EIP-1271 scheme using a smart-account
+    /// contract-signature provider (ADR 0073).
+    ///
+    /// Resolves to [`OrderPlacement::Live`]: an EIP-1271 order is valid once
+    /// posted. Because the provider produces the signature, an explicit
+    /// [`owner`](LimitBuilder::owner) is required.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`TradingError::MissingSubmissionOwner`] when no explicit owner is
+    /// set, and otherwise [`TradingError`] when app-data generation, signing, or
+    /// submission fails.
+    pub async fn post_eip1271(
+        self,
+        provider: Arc<dyn Eip1271Signer>,
+    ) -> Result<OrderPlacement, TradingError> {
+        let owner = self.owner.ok_or(TradingError::MissingSubmissionOwner)?;
+        let params = self.to_limit_parameters();
+        self.trading
+            .place_limit(
+                params,
+                owner,
+                Authorization::eip1271(provider),
+                self.advanced.as_ref(),
+            )
             .await
     }
 }

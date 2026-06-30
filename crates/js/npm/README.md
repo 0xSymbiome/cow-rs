@@ -301,10 +301,10 @@ binding contract is the per-build **Release gate** column, which CI enforces:
 
 | Flavor | Raw wasm | Brotli | Gzip | Release gate |
 | --- | ---: | ---: | ---: | --- |
-| signing | 0.31 MiB | 120 KiB | 143 KiB | 0.9 MiB raw / 300 KiB brotli |
-| orderbook | 1.02 MiB | 338 KiB | 445 KiB | 1.5 MiB raw / 500 KiB brotli |
-| trading | 1.54 MiB | 489 KiB | 657 KiB | 3.2 MiB raw / 850 KiB brotli |
-| default | 1.63 MiB | 512 KiB | 691 KiB | 3.3 MiB raw / 900 KiB brotli |
+| signing | 0.28 MiB | 105 KiB | 126 KiB | 0.9 MiB raw / 300 KiB brotli |
+| orderbook | 1.01 MiB | 335 KiB | 439 KiB | 1.5 MiB raw / 500 KiB brotli |
+| trading | 1.57 MiB | 491 KiB | 652 KiB | 3.2 MiB raw / 850 KiB brotli |
+| default | 1.67 MiB | 515 KiB | 684 KiB | 3.3 MiB raw / 900 KiB brotli |
 
 Each flavor emits one wasm binary shared across its bundler, Node, web, and
 source-phase module targets — the web glue's default URL, the module glue's

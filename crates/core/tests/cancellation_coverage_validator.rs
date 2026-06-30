@@ -34,7 +34,11 @@ const SURFACES: &[Surface] = &[
         type_name: "Trading",
         source_paths: &["crates/trading/src/client"],
         table_path: "crates/trading/tests/cancellation_composition_contract.rs",
-        seed_methods: &["quote_only"],
+        // `quote_only` and `build_limit_order_to_sign` contact neither the
+        // orderbook, a signer, nor a provider, so they have no in-flight
+        // operation to abort; the cancellation table covers only methods that
+        // do I/O. Callers still compose either future with `cancel_with`.
+        seed_methods: &["quote_only", "build_limit_order_to_sign"],
     },
 ];
 
@@ -84,9 +88,13 @@ fn trading_sdk_source_directory_aggregates_public_async_methods() {
     let public_async = public_async_methods(&root, &["crates/trading/src/client"], "Trading");
     let expected = [
         "approve_cow_protocol",
+        "build_limit_order_to_sign",
         "cow_protocol_allowance",
         "order",
+        "place_limit",
+        "place_swap",
         "pre_sign_transaction",
+        "preflight_eip1271",
         "quote_only",
         "quote_results",
         "offchain_cancel_order",

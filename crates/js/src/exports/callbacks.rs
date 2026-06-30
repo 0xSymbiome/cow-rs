@@ -75,6 +75,11 @@ const TRADING_CALLBACK_TYPES: &str = r#"
 export type ContractReadCallback = (
   request: ContractCall,
 ) => Promise<string> | string;
+
+export type Authorization =
+  | { kind: "ecdsa"; sign: TypedDataSignerCallback }
+  | { kind: "eip1271"; sign: CustomEip1271Callback }
+  | { kind: "presign" };
 "#;
 
 #[cfg(feature = "orderbook")]
@@ -113,6 +118,12 @@ export interface TradingClientConfig {
   transport?: HttpTransportConfig;
   transportPolicy?: TransportPolicyConfig | null;
   timeoutMs?: number | null;
+}
+
+export interface PresignActivationParams {
+  orderUid: string;
+  sellToken: string;
+  amount: string;
 }
 "#;
 

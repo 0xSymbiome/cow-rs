@@ -39,6 +39,7 @@ and post in one call — or `quote` to inspect the result before `submit`. The
 | Inspect order lifecycle and on-chain actions | `order_lifecycle`, `receipt_lifecycle`, `ethflow`, `ethflow_checker`, `onchain_actions` |
 | Classify and handle SDK errors | `error_classification` |
 | Work with app-data and signing | `app_data`, `sign_order`, `eip1271_signer` |
+| Authorize an order from a Safe (off-chain EIP-1271 or on-chain pre-sign) | `eip1271_signer`, `presign_order` |
 | Redirect swap proceeds to another address | `receiver_redirect` |
 | Inspect typed orderbook transport | `orderbook_transport`, `order_history` |
 | Work with read-only subgraph access | `subgraph_query` |
@@ -74,6 +75,13 @@ repository; each carries its own README and `pnpm test` check.
 | --- | --- | --- |
 | Node.js 22 or 24 | [`cow-signer-node`](https://github.com/0xSymbiome/cow-sdk-examples/tree/main/examples/wasm/cow-signer-node) | Sign an order offline with EIP-712 and EIP-1271 using the `signing` flavor |
 | Cloudflare Workers | [`cow-gateway-cloudflare`](https://github.com/0xSymbiome/cow-sdk-examples/tree/main/examples/wasm/cow-gateway-cloudflare) | Run an orderbook quote gateway on the `trading` flavour's edge build |
+
+## WebAssembly Component Examples
+
+For consuming the `cow-sdk-component` worlds (the language-neutral component
+distributed as OCI packages, see [Architecture](architecture.md)), the
+[`examples/component`](https://github.com/0xSymbiome/cow-sdk-examples/tree/main/examples/component)
+family in the same repository shows polyglot host usage through jco and Wasmtime.
 
 ## Integration Notes
 

@@ -559,6 +559,54 @@ impl exports::cow::protocol::trading::Guest for Component {
         ))
     }
 
+    fn place_swap(
+        request: exports::cow::protocol::trading::SwapRequest,
+        owner: String,
+        auth: exports::cow::protocol::trading::Authorization,
+    ) -> Result<exports::cow::protocol::trading::OrderPlacement, QueryError> {
+        let kind = request.kind.map(order_kind);
+        let placement = wstd::runtime::block_on(super::core::run_place_swap(
+            WstdTransport,
+            cow::protocol::signer::sign_digest,
+            swap_params(&request, kind),
+            &owner,
+            auth_params(auth),
+        ))
+        .map_err(to_wit_error)?;
+        Ok(to_wit_placement(placement))
+    }
+
+    fn place_limit(
+        request: exports::cow::protocol::trading::LimitRequest,
+        owner: String,
+        auth: exports::cow::protocol::trading::Authorization,
+    ) -> Result<exports::cow::protocol::trading::OrderPlacement, QueryError> {
+        let kind = request.kind.map(order_kind);
+        let common = common_limit_params(&request);
+        let placement = wstd::runtime::block_on(super::core::run_place_limit(
+            WstdTransport,
+            cow::protocol::signer::sign_digest,
+            super::core::LimitParams {
+                chain_id: request.chain_id,
+                owner: &request.owner,
+                sell_token: &request.sell_token,
+                buy_token: &request.buy_token,
+                sell_amount: &request.sell_amount,
+                buy_amount: &request.buy_amount,
+                app_code: &request.app_code,
+                kind,
+                env: request.env.map(cow_env),
+                quote_id: request.quote_id,
+                slippage_bps: request.slippage_bps,
+                common,
+            },
+            &owner,
+            auth_params(auth),
+        ))
+        .map_err(to_wit_error)?;
+        Ok(to_wit_placement(placement))
+    }
+
     fn cow_allowance(
         chain_id: u64,
         owner: String,
@@ -572,6 +620,38 @@ impl exports::cow::protocol::trading::Guest for Component {
             &token,
             env.as_deref(),
         ))
+    }
+}
+
+/// Lowers the WIT `authorization` variant into the lane-agnostic `AuthParams`.
+fn auth_params(auth: exports::cow::protocol::trading::Authorization) -> super::core::AuthParams {
+    use exports::cow::protocol::trading::Authorization;
+    match auth {
+        Authorization::Ecdsa => super::core::AuthParams::Ecdsa,
+        Authorization::Eip1271(blob) => super::core::AuthParams::Eip1271(blob),
+        Authorization::PreSign => super::core::AuthParams::PreSign,
+    }
+}
+
+/// Lowers the lane-agnostic `Placement` into the WIT `order-placement` variant.
+fn to_wit_placement(
+    placement: super::core::Placement,
+) -> exports::cow::protocol::trading::OrderPlacement {
+    use cow::protocol::tx::TxRequest;
+    use exports::cow::protocol::trading::{OrderPlacement, PendingPlacement, SafeActivation};
+    match placement {
+        super::core::Placement::Live { order_uid } => OrderPlacement::Live(order_uid),
+        super::core::Placement::Pending { order_uid, calls } => {
+            OrderPlacement::PendingActivation(PendingPlacement {
+                order_uid,
+                activation: SafeActivation {
+                    calls: calls
+                        .into_iter()
+                        .map(|(to, data, value)| TxRequest { to, data, value })
+                        .collect(),
+                },
+            })
+        }
     }
 }
 

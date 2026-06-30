@@ -140,6 +140,23 @@ println!("posted order {}", posted.order_id.to_hex_string());
 # }
 ```
 
+## Placing an order from a Safe
+
+`place_swap` and `place_limit` take the authorization mode as one `Authorization`
+value, so a smart-contract-wallet order is the same call shape as an EOA order:
+
+- `Authorization::Ecdsa(signer)` — EOA / EIP-712 signing.
+- `Authorization::Eip1271(provider)` — Safe off-chain contract signature.
+- `Authorization::PreSign` — Safe on-chain pre-sign, no signer.
+
+The mode selects the typed `OrderPlacement` result. The signing arms resolve to
+`OrderPlacement::Live { order_uid }`; `PreSign` resolves to
+`OrderPlacement::PendingActivation { order_uid, activation }`, where `activation`
+is the ordered approve-then-set-pre-signature `SafeActivation` bundle the owner
+sends or proposes from the smart account to make the order fillable.
+`build_presign_activation` builds the same bundle for an already-posted pre-sign
+order.
+
 ## Quoting a swap
 
 Quoting is the lowest-friction action and needs no signer — the owner comes

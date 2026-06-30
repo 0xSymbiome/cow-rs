@@ -146,12 +146,32 @@ interface tx {
         value: string,
     }
 
+    /// The on-chain bundle a smart-contract wallet runs to authorize a posted
+    /// pre-sign order (ADR 0073). `calls` is the ordered `[approve,
+    /// setPreSignature]` pair as gas-free `tx-request` values for one
+    /// smart-account batch: the first grants the vault relayer the sell-token
+    /// allowance the order needs at fill, the second flips the settlement
+    /// `setPreSignature` flag that makes the order fillable. The bundle is
+    /// transport-neutral: a single-owner Safe sends the calls directly, a
+    /// higher-threshold Safe proposes them to its transaction service.
+    record safe-activation {
+        calls: list<tx-request>,
+    }
+
     /// ERC-20 `approve(spender, amount)` on `token`. `spender` defaults to the
     /// chain's canonical vault relayer; `env` defaults to `prod`.
     approve: func(chain-id: u64, token: string, amount: string, spender: option<string>, env: option<string>) -> result<tx-request, string>;
 
     /// Settlement `setPreSignature(order-uid, true)`. `env` defaults to `prod`.
     pre-sign: func(chain-id: u64, order-uid: string, env: option<string>) -> result<tx-request, string>;
+
+    /// The on-chain activation bundle for an already-posted pre-sign order
+    /// (ADR 0073): the ordered `approve(sell-token, vault-relayer, amount)` and
+    /// `setPreSignature(order-uid, true)` calls. `env` defaults to `prod`. Pure:
+    /// it reads no on-chain allowance and always emits both calls, so a caller
+    /// whose vault-relayer allowance already covers the amount may drop the
+    /// approve leg.
+    presign-activation: func(chain-id: u64, order-uid: string, sell-token: string, amount: string, env: option<string>) -> result<safe-activation, string>;
 
     /// Settlement `invalidateOrder(order-uid)` for a regular order. `env`
     /// defaults to `prod`.
@@ -685,6 +705,43 @@ interface trading {
     use order.{order-kind, cow-env, sell-token-source, buy-token-destination};
     use trade.{swap-request, partner-fee};
     use orderbook-read.{query-error};
+    use tx.{safe-activation};
+
+    /// Order authorization mode carried as a value (ADR 0073). The Component
+    /// signer is a host import, so this variant is data-only: it selects the
+    /// scheme and the host-imported `signer.sign-digest` does the ECDSA signing.
+    ///
+    /// * `ecdsa` — EOA / EIP-712 signing through the host signer; gasless.
+    ///   Resolves to `order-placement.live`.
+    /// * `eip1271` — Safe off-chain contract signature; gasless. Carries the
+    ///   pre-resolved opaque signature blob; an empty blob signs the order
+    ///   digest through the host signer and wraps the result as the contract
+    ///   signature. Resolves to `order-placement.live`.
+    /// * `pre-sign` — Safe on-chain pre-sign; no signing. Resolves to
+    ///   `order-placement.pending-activation`.
+    variant authorization {
+        ecdsa,
+        eip1271(list<u8>),
+        pre-sign,
+    }
+
+    /// A posted but not-yet-authorized pre-sign order (ADR 0073): its UID and
+    /// the on-chain `activation` the owner must send or propose from the smart
+    /// account to make it fillable.
+    record pending-placement {
+        order-uid: string,
+        activation: safe-activation,
+    }
+
+    /// Typed placement result (ADR 0073). The authorization mode statically
+    /// selects the arm, so the on-chain obligation of a pre-sign order cannot be
+    /// dropped: the UID of a `pending-activation` is reachable only with its
+    /// `activation`. `ecdsa` and `eip1271` yield `live`; `pre-sign` yields
+    /// `pending-activation`.
+    variant order-placement {
+        live(string),
+        pending-activation(pending-placement),
+    }
 
     /// A limit order: an explicit sell/buy price, no quote. The override,
     /// validity, balance, slippage, partner-fee, and quote-id fields mirror the
@@ -727,6 +784,15 @@ interface trading {
     /// Sign (via the host signer) and post a limit order. The result is JSON
     /// carrying the order UID.
     post-limit: func(request: limit-request) -> result<string, query-error>;
+    /// Quote, authorize a swap through `auth`, and post it for `owner`,
+    /// returning the typed `order-placement` sum (ADR 0073). `ecdsa` /
+    /// `eip1271` resolve to `live`; `pre-sign` resolves to `pending-activation`
+    /// carrying the on-chain bundle the owner sends or proposes from the smart
+    /// account.
+    place-swap: func(request: swap-request, owner: string, auth: authorization) -> result<order-placement, query-error>;
+    /// Authorize a limit order through `auth` and post it for `owner`,
+    /// returning the typed `order-placement` sum (ADR 0073).
+    place-limit: func(request: limit-request, owner: string, auth: authorization) -> result<order-placement, query-error>;
     /// Read the trader's `CoW` Protocol allowance — the ERC-20 allowance `token`
     /// has granted the chain's vault relayer — via the host `contract-read` import.
     /// Returns the allowance as a JSON decimal-string value.
@@ -766,7 +832,7 @@ interface orderbook-write-async {
 }
 
 interface trading-async {
-    use trading.{limit-request};
+    use trading.{limit-request, authorization, order-placement};
     use trade.{swap-request, partner-fee};
     use orderbook-read.{query-error};
 
@@ -774,6 +840,8 @@ interface trading-async {
     quote: async func(request: swap-request) -> result<string, query-error>;
     post-swap-from-quote: async func(quote-json: string) -> result<string, query-error>;
     post-limit: async func(request: limit-request) -> result<string, query-error>;
+    place-swap: async func(request: swap-request, owner: string, auth: authorization) -> result<order-placement, query-error>;
+    place-limit: async func(request: limit-request, owner: string, auth: authorization) -> result<order-placement, query-error>;
     cow-allowance: async func(chain-id: u64, owner: string, token: string, env: option<string>) -> result<string, query-error>;
 }
 
