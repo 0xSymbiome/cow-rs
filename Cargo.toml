@@ -27,7 +27,7 @@ edition = "2024"
 license = "GPL-3.0-or-later"
 repository = "https://github.com/0xSymbiome/cow-rs"
 rust-version = "1.94.0"
-version = "0.1.0-alpha.9"
+version = "0.1.0-alpha.10"
 
 [workspace.lints.rust]
 rust_2018_idioms = { level = "deny", priority = -1 }

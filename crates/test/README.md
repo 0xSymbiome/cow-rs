@@ -6,13 +6,13 @@ wallet — the `tokio-test` / `tower-test` pattern, built only on the public API
 
 > ⚠️ **Alpha — `0.1.0-alpha`.** Pre-release and not security-audited; the public
 > API may change before `0.1.0`. It is published as a pre-release, so Cargo
-> selects it only when you opt in (`cow-sdk-test = "0.1.0-alpha.9"`).
+> selects it only when you opt in (`cow-sdk-test = "0.1.0-alpha.10"`).
 
 ## Install
 
 ```toml
 [dev-dependencies]
-cow-sdk-test = "0.1.0-alpha.9"
+cow-sdk-test = "0.1.0-alpha.10"
 ```
 
 ## What it provides

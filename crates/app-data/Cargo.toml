@@ -35,7 +35,7 @@ tracing = ["dep:tracing", "cow-sdk-core/tracing"]
 ts-bindings = ["dep:tsify", "dep:wasm-bindgen"]
 
 [dependencies]
-cow-sdk-core = { path = "../core", version = "0.1.0-alpha.9" }
+cow-sdk-core = { path = "../core", version = "0.1.0-alpha.10" }
 alloy-primitives.workspace = true
 alloy-serde.workspace = true
 cid.workspace = true

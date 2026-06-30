@@ -14,15 +14,15 @@ workspace = true
 
 [dev-dependencies]
 alloy-primitives.workspace = true
-cow-sdk = { path = "../crates/sdk", version = "0.1.0-alpha.9", features = ["alloy"] }
-cow-sdk-alloy = { path = "../crates/alloy", version = "0.1.0-alpha.9" }
-cow-sdk-alloy-provider = { path = "../crates/alloy-provider", version = "0.1.0-alpha.9" }
-cow-sdk-alloy-signer = { path = "../crates/alloy-signer", version = "0.1.0-alpha.9" }
-cow-sdk-contracts = { path = "../crates/contracts", version = "0.1.0-alpha.9", features = ["cow-shed"] }
-cow-sdk-core = { path = "../crates/core", version = "0.1.0-alpha.9" }
-cow-sdk-orderbook = { path = "../crates/orderbook", version = "0.1.0-alpha.9" }
-cow-sdk-signing = { path = "../crates/signing", version = "0.1.0-alpha.9" }
-cow-sdk-trading = { path = "../crates/trading", version = "0.1.0-alpha.9" }
+cow-sdk = { path = "../crates/sdk", version = "0.1.0-alpha.10", features = ["alloy"] }
+cow-sdk-alloy = { path = "../crates/alloy", version = "0.1.0-alpha.10" }
+cow-sdk-alloy-provider = { path = "../crates/alloy-provider", version = "0.1.0-alpha.10" }
+cow-sdk-alloy-signer = { path = "../crates/alloy-signer", version = "0.1.0-alpha.10" }
+cow-sdk-contracts = { path = "../crates/contracts", version = "0.1.0-alpha.10", features = ["cow-shed"] }
+cow-sdk-core = { path = "../crates/core", version = "0.1.0-alpha.10" }
+cow-sdk-orderbook = { path = "../crates/orderbook", version = "0.1.0-alpha.10" }
+cow-sdk-signing = { path = "../crates/signing", version = "0.1.0-alpha.10" }
+cow-sdk-trading = { path = "../crates/trading", version = "0.1.0-alpha.10" }
 serde_json.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 toml.workspace = true

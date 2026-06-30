@@ -14,10 +14,10 @@ readme = "README.md"
 workspace = true
 
 [dependencies]
-cow-sdk-core = { path = "../core", version = "0.1.0-alpha.9" }
-cow-sdk-orderbook = { path = "../orderbook", version = "0.1.0-alpha.9" }
-cow-sdk-contracts = { path = "../contracts", version = "0.1.0-alpha.9" }
-cow-sdk-trading = { path = "../trading", version = "0.1.0-alpha.9" }
+cow-sdk-core = { path = "../core", version = "0.1.0-alpha.10" }
+cow-sdk-orderbook = { path = "../orderbook", version = "0.1.0-alpha.10" }
+cow-sdk-contracts = { path = "../contracts", version = "0.1.0-alpha.10" }
+cow-sdk-trading = { path = "../trading", version = "0.1.0-alpha.10" }
 async-trait = { workspace = true }
 # The default signer really signs (a public dev key) so its signatures recover
 # to the reported address, clearing the owner-recovery gate end to end.

@@ -73,26 +73,26 @@ world-client-async = [
 
 [dependencies]
 # The deterministic engine wraps these published crates; it never forks logic.
-cow-sdk-core = { path = "../core", version = "0.1.0-alpha.9" }
-cow-sdk-signing = { path = "../signing", version = "0.1.0-alpha.9" }
+cow-sdk-core = { path = "../core", version = "0.1.0-alpha.10" }
+cow-sdk-signing = { path = "../signing", version = "0.1.0-alpha.10" }
 # Registry / ContractId for the engine's chain-introspection surface, and the
 # `composable` ComposableCoW/TWAP encoders for the engine's composable interface.
-cow-sdk-contracts = { path = "../contracts", version = "0.1.0-alpha.9", features = ["composable"] }
+cow-sdk-contracts = { path = "../contracts", version = "0.1.0-alpha.10", features = ["composable"] }
 # App-data document validation and CID conversion (pure, no I/O).
-cow-sdk-app-data = { path = "../app-data", version = "0.1.0-alpha.9" }
+cow-sdk-app-data = { path = "../app-data", version = "0.1.0-alpha.10" }
 # The pure quote-pipeline helpers behind the engine's `trading-math` interface
 # and the native trade-parameter types the client lanes deserialize into. The
 # component links this crate without the `ts-bindings` feature, so it inherits no
 # wasm-bindgen of its own; its own network surface is async and never called
 # here. Optional so a plain native build (where this crate is empty) does not
 # pull it; enabled by every world feature that needs it.
-cow-sdk-trading = { path = "../trading", version = "0.1.0-alpha.9", optional = true }
+cow-sdk-trading = { path = "../trading", version = "0.1.0-alpha.10", optional = true }
 # The orderbook quote DTOs the pure trading helpers and the client read layer
 # consume (`QuoteData` / `OrderQuoteResponse` / `OrderClass` / `Order` / `Trade`).
 # Optional, on every target, so the engine's `trading-math` lowering links the
 # DTOs while a plain native build stays empty; the network transport is wired
 # only by the client worlds, which declare the host HTTP import.
-cow-sdk-orderbook = { path = "../orderbook", version = "0.1.0-alpha.9", optional = true }
+cow-sdk-orderbook = { path = "../orderbook", version = "0.1.0-alpha.10", optional = true }
 alloy-primitives.workspace = true
 serde_json.workspace = true
 

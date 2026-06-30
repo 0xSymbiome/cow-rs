@@ -25,8 +25,8 @@ path = "src/lib.rs"
 workspace = true
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-cow-sdk-core = { path = "../core", version = "0.1.0-alpha.9" }
-cow-sdk-contracts = { path = "../contracts", version = "0.1.0-alpha.9" }
+cow-sdk-core = { path = "../core", version = "0.1.0-alpha.10" }
+cow-sdk-contracts = { path = "../contracts", version = "0.1.0-alpha.10" }
 
 alloy-dyn-abi = { workspace = true, features = ["std", "eip712"] }
 alloy-primitives = { workspace = true, features = ["k256"] }
@@ -37,7 +37,7 @@ thiserror.workspace = true
 
 [dev-dependencies]
 alloy-sol-types = { workspace = true, features = ["std"] }
-cow-sdk-signing = { path = "../signing", version = "0.1.0-alpha.9" }
+cow-sdk-signing = { path = "../signing", version = "0.1.0-alpha.10" }
 cow-sdk-test-utils = { path = "../test-utils" }
 proptest.workspace = true
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }

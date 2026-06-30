@@ -4,7 +4,7 @@ Native composed Alloy adapter crate for the `cow-rs` SDK.
 
 > ⚠️ **Alpha — `0.1.0-alpha`.** Pre-release and not security-audited; the public
 > API may change before `0.1.0`. It is published as a pre-release, so Cargo
-> selects it only when you opt in (`cow-sdk-alloy = "0.1.0-alpha.9"`). It builds
+> selects it only when you opt in (`cow-sdk-alloy = "0.1.0-alpha.10"`). It builds
 > a local private-key signer — review it yourself before relying on it with real
 > funds.
 
@@ -63,7 +63,7 @@ the adapter consumes cow values directly without per-call conversion.
 
 ```toml
 [dependencies]
-cow-sdk-alloy = "0.1.0-alpha.9"
+cow-sdk-alloy = "0.1.0-alpha.10"
 ```
 
 ## Quick Start

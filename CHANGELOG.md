@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.10] - 2026-06-30
+
+### Bug Fixes
+
+- *(ci)* Green the workspace gates for the placement and component surface ([`6def60c`](https://github.com/0xSymbiome/cow-rs/commit/6def60ce7697028da7f1366759bc2fcaf2f2286e))
+
+### Features
+
+- *(trading)* Place orders from smart-contract wallets via an authorization value ([`b7bf976`](https://github.com/0xSymbiome/cow-rs/commit/b7bf976d2e7ed44b3bcc96fc204720d1b653ab27))
+
 ## [0.1.0-alpha.9] - 2026-06-29
 
 ### Bug Fixes
