@@ -20,6 +20,12 @@ targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 [lints]
 workspace = true
 
+# The library target carries no `#[bench]` functions; the criterion harness
+# lives in the `[[bench]]` target below. Marking the lib non-bench keeps
+# `cargo bench` from routing criterion's CLI flags to the libtest harness.
+[lib]
+bench = false
+
 [features]
 default = []
 tracing = ["dep:tracing"]
@@ -110,6 +116,7 @@ web-sys = { workspace = true, features = ["AbortController", "AbortSignal", "Hea
 
 [dev-dependencies]
 cow-sdk-test-utils = { path = "../test-utils", features = ["proptest"] }
+criterion.workspace = true
 num-bigint.workspace = true
 proptest.workspace = true
 syn.workspace = true
@@ -125,3 +132,7 @@ trybuild.workspace = true
 flate2 = "1"
 reqwest = { workspace = true, features = ["json", "gzip"] }
 wiremock.workspace = true
+
+[[bench]]
+name = "amount"
+harness = false

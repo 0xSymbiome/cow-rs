@@ -1,7 +1,7 @@
 use criterion::{Criterion, black_box, criterion_group, criterion_main};
 
 use cow_sdk_app_data::{
-    AppDataParams, MetadataMap, generate_app_data_doc, stringify_deterministic,
+    AppDataParams, MetadataMap, app_data_hex_to_cid, generate_app_data_doc, stringify_deterministic,
 };
 use cow_sdk_core::AppCode;
 
@@ -34,5 +34,20 @@ fn bench_stringify_deterministic(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, bench_stringify_deterministic);
+fn bench_app_data_hex_to_cid(c: &mut Criterion) {
+    let app_data_hex = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    c.bench_function("app_data_hex_to_cid", |b| {
+        b.iter(|| {
+            let cid = app_data_hex_to_cid(black_box(app_data_hex))
+                .expect("fixed app-data hash must convert to a CID");
+            black_box(cid);
+        });
+    });
+}
+
+criterion_group!(
+    benches,
+    bench_stringify_deterministic,
+    bench_app_data_hex_to_cid
+);
 criterion_main!(benches);

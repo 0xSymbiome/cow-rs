@@ -18,12 +18,14 @@ than pin exact timings.
 The benchmarked hot paths align with the `0x`-bounded workflows that appear in
 every trading and settlement pipeline:
 
-- Order hashing and UID packing for every signed order and batch cancellation.
+- Order hashing and UID computation for every signed order.
+- ECDSA signer recovery for every off-chain signature verified against a digest.
 - Typed-data payload construction for every signing round-trip.
-- Deterministic app-data stringification for every persisted order metadata
-  payload.
-- Orderbook quote fee aggregation for every public quote surface.
-- Limit-order construction for every quote-to-post flow.
+- Amount parsing for every order amount field.
+- Deterministic app-data stringification and CID conversion for every persisted
+  order metadata payload.
+- Limit-order construction, including the fee, cost, and slippage math, for
+  every quote-to-post flow.
 
 ## Benchmark Coverage
 
@@ -35,27 +37,35 @@ publishes the HTML and JSON reports as non-blocking build artifacts.
 | Surface | Benchmark | Owning crate |
 | --- | --- | --- |
 | Order EIP-712 digest | `order_hashing::hash_order` | `cow-sdk-contracts` |
+| Order UID computation | `order_hashing::compute_order_uid` | `cow-sdk-contracts` |
 | Order UID pack and extract | `uid_packing::pack_order_uid_params`, `uid_packing::extract_order_uid_params` | `cow-sdk-contracts` |
+| ECDSA signer recovery | `signature::recover` | `cow-sdk-contracts` |
 | Signing typed-data envelope | `typed_data::order_typed_data_payload` | `cow-sdk-signing` |
 | App-data deterministic stringify | `stringify::stringify_deterministic` | `cow-sdk-app-data` |
-| Trading limit-order construction | `order_build::order_to_sign` | `cow-sdk-trading` |
+| App-data CID conversion | `stringify::app_data_hex_to_cid` | `cow-sdk-app-data` |
+| Amount decimal parsing | `amount::amount_new_decimal` | `cow-sdk-core` |
+| Trading limit-order construction with fee and slippage math | `order_build::order_to_sign` | `cow-sdk-trading` |
 
 ## Reported Ranges
 
-The benchmarks are reported as coarse ranges because microbenchmark absolutes
-are hardware-sensitive and day-to-day variance is expected. The ranges below
-capture the latest scheduled-run measurements on a GitHub-hosted `ubuntu-latest`
-runner; each bound is the min-max observed across a representative sampling
-window, not a single absolute number.
+The benchmarks are reported as coarse order-of-magnitude ranges because
+microbenchmark absolutes are hardware-sensitive and day-to-day variance is
+expected. The scheduled workflow measures each surface on a GitHub-hosted
+`ubuntu-latest` runner; the ranges below track the expected order of magnitude
+rather than a pinned absolute.
 
 | Benchmark | Reported range |
 | --- | --- |
 | `hash_order` | single-digit microseconds |
+| `compute_order_uid` | single-digit microseconds |
 | `pack_order_uid_params` | sub-microsecond |
 | `extract_order_uid_params` | sub-microsecond |
+| `recover` | hundreds of microseconds |
 | `order_typed_data_payload` | single-digit microseconds |
 | `stringify_deterministic` | single-digit microseconds |
-| `order_to_sign` | low-single-digit microseconds |
+| `app_data_hex_to_cid` | sub-microsecond |
+| `amount_new_decimal` | tens of nanoseconds |
+| `order_to_sign` | sub-microsecond to low-single-digit microseconds |
 
 Refresh the table when the next scheduled run reports a shift that crosses one
 of these order-of-magnitude boundaries.

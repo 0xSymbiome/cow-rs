@@ -25,7 +25,10 @@ fn sample_params() -> OrderToSignParams {
         Address::new("0x3333333333333333333333333333333333333333").unwrap(),
         false,
     )
-    .with_apply_costs_slippage_and_fees(false)
+    // Exercise the fee, cost, and slippage math (the I512 quote engine) rather
+    // than the raw pass-through branch, so the bench covers the work a real
+    // quote-to-order build performs.
+    .with_apply_costs_slippage_and_fees(true)
 }
 
 fn bench_get_order_to_sign(c: &mut Criterion) {

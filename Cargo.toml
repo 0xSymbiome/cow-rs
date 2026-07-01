@@ -65,6 +65,15 @@ strip = "symbols"
 debug = false
 panic = "abort"
 
+# Benchmarks measure representative native speed, not the size-first release
+# profile the shipped artifacts use. opt-level 3 matches how a native SDK
+# consumer compiles, and a pinned single codegen unit keeps microbenchmark
+# timings stable across runs.
+[profile.bench]
+opt-level = 3
+codegen-units = 1
+lto = "thin"
+
 [workspace.dependencies]
 alloy-dyn-abi = { version = "1.5.7", default-features = false }
 alloy-consensus = { version = "2.0.4", default-features = false }

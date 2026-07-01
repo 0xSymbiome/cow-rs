@@ -1566,6 +1566,7 @@ dependencies = [
  "alloy-sol-types",
  "async-trait",
  "cow-sdk-test-utils",
+ "criterion",
  "flate2",
  "futures-timer",
  "gloo-timers",
