@@ -2,7 +2,7 @@
 type: Decision Record
 id: ADR-0012
 title: "ADR 0012: Canonical alloy::sol! Bindings And A Single Registry Authority"
-description: "Every ABI binding in cow-sdk-contracts is authored as an inline alloy::sol!"
+description: "Every ABI binding in cow-sdk-contracts is an inline alloy::sol! interface proven byte-for-byte against pinned upstream fixtures, and every deployed address resolves through a single typed Registry authority."
 status: Accepted
 date: 2026-04-21
 last_reviewed: 2026-06-15

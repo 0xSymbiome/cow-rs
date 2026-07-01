@@ -2,7 +2,7 @@
 type: Decision Record
 id: ADR-0071
 title: "ADR 0071: WebAssembly Component Distribution Channel"
-description: "The SDK ships a second WebAssembly distribution channel: a WebAssembly Component, built from an additive leaf crate (cow-sdk-component, publish = false) that compiles the deterministic SDK core to wasm32-wasip2 with wit-bindgen against a pu..."
+description: "The SDK ships a second WebAssembly distribution channel: a WebAssembly Component built from an additive leaf crate (cow-sdk-component, publish = false) that compiles the deterministic SDK core to wasm32-wasip2 with wit-bindgen against a published WIT contract, parallel to the wasm-bindgen channel (ADR 0039)."
 status: Accepted
 date: 2026-06-21
 authors: ["0xSymbiotic"]

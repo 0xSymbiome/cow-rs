@@ -2,7 +2,7 @@
 type: Decision Record
 id: ADR-0021
 title: "ADR 0021: Narrow Order.total_fee And Read-Only Legacy Executed-Fee Surface"
-description: "_Amended 2026-06-22: executed_fee is a typed Amount (serde-validated at the DTO boundary), so the calculate_total_fee wire-string normalizer was redundant and has been removed; transform_order now sets total_fee from the typed executed_fee..."
+description: "Define the orderbook Order.total_fee narrowly as the canonical executed-fee component and surface the deprecated executedFeeAmount wire field as a typed read-only sibling, so consumers compute any legacy summation explicitly."
 status: Accepted
 date: 2026-04-22
 last_reviewed: 2026-05-22

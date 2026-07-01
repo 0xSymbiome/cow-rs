@@ -2,7 +2,7 @@
 type: Decision Record
 id: ADR-0070
 title: "ADR 0070: On-Chain Transaction Helper Boundary And Native-Asset Wrapping"
-description: "_Amended 2026-06-22: cow-sdk-contracts owns the complete gas-free on-chain transaction builders — approve_transaction, pre_sign_transaction, invalidate_order_transaction, ethflow_create_order_transaction, ethflow_invalidate_order_transactio..."
+description: "cow-sdk-contracts owns one deterministic, single-call, gas-free UnsignedTransaction builder for each on-chain action a trader sends directly — approve, wrap/unwrap the native asset, eth-flow native sell, pre-sign, and cancel — and cow-sdk-trading wraps them with signer-bound gas estimation and submission."
 status: Accepted
 date: 2026-06-19
 authors: ["0xSymbiotic"]

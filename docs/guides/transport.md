@@ -1,7 +1,7 @@
 ---
 type: Guide
 title: "Transport"
-description: "This page explains how cow-rs dispatches HTTP requests to the CoW Protocol orderbook and the subgraph, how to choose a transport on native and browser targets, and how to plug in a custom transport implementation for tests, bridging, or bes..."
+description: "This page explains how cow-rs dispatches HTTP requests to the CoW Protocol orderbook and the subgraph, how to choose a transport on native and browser targets, and how to plug in a custom transport implementation for tests, bridging, or bespoke deployments."
 timestamp: 2026-06-28T00:00:00Z
 ---
 

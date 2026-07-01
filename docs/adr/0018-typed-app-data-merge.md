@@ -2,7 +2,7 @@
 type: Decision Record
 id: ADR-0018
 title: "ADR 0018: Typed App-Data Merge As The Single Canonical Quote-To-Post Edit Path"
-description: "Quote-to-post app-data edits in cow-sdk-trading run through a single typed merge pipeline: the base wire document is parsed back into cow_sdk_app_data::AppDataParams through the crate's Deserialize impl, the override merges through merge_ap..."
+description: "Quote-to-post app-data edits in cow-sdk-trading run through one typed merge pipeline over cow_sdk_app_data::AppDataParams, retiring the opaque serde_json::Value merge helper so no edit path touches the wire shape directly."
 status: Accepted
 date: 2026-04-22
 last_reviewed: 2026-05-22

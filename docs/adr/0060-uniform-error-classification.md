@@ -2,7 +2,7 @@
 type: Decision Record
 id: ADR-0060
 title: "ADR 0060: Uniform error classification through a shared ErrorClass"
-description: "The coarse-grained failure-classification enum ErrorClass (Validation | Transport | Remote | RateLimited | Signing | Cancelled | Internal, #[non_exhaustive]) lives in cow-sdk-core and is re-exported from the cow-sdk facade so the existing c..."
+description: "The shared ErrorClass enum lives in cow-sdk-core and is re-exported from the cow-sdk facade, and every facade-family error type exposes a const class() accessor, with composites delegating to preserve granularity."
 status: Accepted
 date: 2026-05-31
 last_reviewed: 2026-06-15

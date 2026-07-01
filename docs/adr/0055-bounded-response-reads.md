@@ -2,7 +2,7 @@
 type: Decision Record
 id: ADR-0055
 title: "ADR 0055: HTTP Response Reads Are Bounded By A Configurable Per-Client Byte Limit"
-description: "Every HTTP response body that the SDK buffers is bounded by a configurable maximum size, in decoded bytes, carried on HttpClientPolicy as max_response_bytes: - The native ReqwestTransport reads the body as a stream of chunks and refuses to..."
+description: "Every HTTP response body the SDK buffers is bounded by a configurable per-client max_response_bytes measured on decoded bytes, on both the success and error paths, with a deterministic non-retryable ResponseTooLarge outcome."
 status: Accepted
 date: 2026-05-29
 authors: ["0xSymbiotic"]

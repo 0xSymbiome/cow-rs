@@ -2,7 +2,7 @@
 type: Decision Record
 id: ADR-0000
 title: "ADR 0000: [Decision Statement]"
-description: "[State the rule in one short paragraph or in 1 to 3 bullets."
+description: "[One-sentence summary of the decision recorded in this ADR.]"
 status: Proposed
 date: YYYY-MM-DD
 authors: ["0xSymbiotic"]

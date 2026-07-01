@@ -2,7 +2,7 @@
 type: Decision Record
 id: ADR-0053
 title: "ADR 0053: Typed signer rejection classification through the UserRejection trait"
-description: "- cow_sdk_core exposes a UserRejection trait whose single user_rejection_code(&self) -> Option<i32> method names the EIP-1193 provider error code carried by a user-driven rejection."
+description: "cow_sdk_core exposes a UserRejection trait whose single user_rejection_code(&self) -> Option<i32> method names the EIP-1193 provider error code carried by a user-driven rejection, so cow-sdk-signing emits a typed SigningError::SignerRejection across signer implementations."
 status: Accepted
 date: 2026-05-19
 last_reviewed: 2026-06-15

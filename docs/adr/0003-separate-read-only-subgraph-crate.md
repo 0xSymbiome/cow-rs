@@ -2,7 +2,7 @@
 type: Decision Record
 id: ADR-0003
 title: "ADR 0003: Separate Read-Only Subgraph Crate"
-description: "Own subgraph access in a separate, read-only cow-sdk-subgraph crate, and also re-export it through the cow-sdk facade behind an off-by-default subgraph feature (cow_sdk::subgraph), alongside the other optional capability features such as co..."
+description: "Own subgraph access in a separate, read-only cow-sdk-subgraph crate, re-exported through the cow-sdk facade behind an off-by-default subgraph feature (cow_sdk::subgraph)."
 status: Accepted
 date: 2026-04-09
 last_reviewed: 2026-06-07

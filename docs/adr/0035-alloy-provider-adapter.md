@@ -2,7 +2,7 @@
 type: Decision Record
 id: ADR-0035
 title: "ADR 0035: Alloy Adapter Family (Provider, Signer, Umbrella)"
-description: "The workspace ships the native Alloy runtime as a three-crate family, each gated to native targets (wasm fails closed at compile time, where the cow-sdk-js callback path applies instead): - **cow-sdk-alloy-provider** — read-only RPC."
+description: "The workspace ships the native Alloy runtime as a three-crate family gated to native targets: cow-sdk-alloy-provider (read-only RPC), cow-sdk-alloy-signer (local keystore signer), and cow-sdk-alloy (composed umbrella client)."
 status: Accepted
 date: 2026-05-06 (consolidated 2026-06-15)
 authors: ["0xSymbiotic"]

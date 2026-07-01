@@ -2,7 +2,7 @@
 type: Decision Record
 id: ADR-0032
 title: "ADR 0032: Deployment Authority Uses Machine-Readable Provenance"
-description: "Every deployed-contract address the SDK resolves at runtime comes from the typed Registry of committed CREATE2-singleton constants in crates/contracts/src/deployments.rs, keyed by (ContractId, chain, env) through Registry::address (per [ADR..."
+description: "Every deployed-contract address the SDK resolves comes from the typed Registry of committed CREATE2-singleton constants keyed by (ContractId, chain, env), with upstream provenance pinned in parity/source-lock.yaml and confirmed live by an eth_getCode probe."
 status: Accepted
 date: 2026-04-29
 last_reviewed: 2026-06-15
